@@ -362,8 +362,8 @@ namespace couchbaseembed
 
     unsigned CouchbaseRecordBinder::checkNextParam(const RtlFieldInfo * field)
     {
-       if (logctx.queryTraceLevel() > 4)
-           logctx.CTXLOG("Binding %s to %d", field->name, thisParam);
+       if (doTrace(traceCouchbase))
+          logctx.CTXLOG("Binding %s to %d", field->name, thisParam);
        return thisParam++;
     }
 
@@ -376,8 +376,7 @@ namespace couchbaseembed
 
         public:
 
-            ConnectionCacheObj(int _traceLevel)
-                :   traceLevel(_traceLevel)
+            ConnectionCacheObj()
             {
 
             }
@@ -436,7 +435,7 @@ namespace couchbaseembed
                             keyIter->second.erase(connectionIter);
                             idleConnections[keyIter->first].push_back(connectionPtr);
 
-                            if (traceLevel > 4)
+                            if (doTrace(traceCouchbase))
                             {
                                 DBGLOG("Couchbase: Released connection object %p", connectionPtr);
                             }
@@ -482,7 +481,7 @@ namespace couchbaseembed
                         }
                     }
 
-                    if (traceLevel > 4 && expireCount > 0)
+                    if (doTrace(traceCouchbase) && expireCount > 0)
                     {
                         DBGLOG("Couchbase: Expired %d cached connection%s", expireCount, (expireCount == 1 ? "" : "s"));
                     }
@@ -517,7 +516,7 @@ namespace couchbaseembed
                             // Push the connection object onto our active list
                             activeConnections[key].push_back(connectionObjPtr);
 
-                            if (traceLevel > 4)
+                            if (doTrace(traceCouchbase))
                             {
                                 DBGLOG("Couchbase: Using cached connection object %p: %s", connectionObjPtr, connectionString.str());
                             }
@@ -564,7 +563,7 @@ namespace couchbaseembed
                                 activeConnectionList.push_back(connectionObjPtr);
                             }
 
-                            if (traceLevel > 4)
+                            if (doTrace(traceCouchbase))
                             {
                                 DBGLOG("Couchbase: Created and cached new connection object %p: %s", connectionObjPtr, connectionString.str());
                             }
@@ -619,7 +618,6 @@ namespace couchbaseembed
             ObjMap          idleConnections;    //!< std::map of created CouchbaseConnection object pointers
             ObjMap          activeConnections;  //!< std::map of created CouchbaseConnection object pointers
             CriticalSection cacheLock;          //!< Mutex guarding modifications to connection pools
-            int             traceLevel;         //!< The current logging level
     } *connectionCache;
 
     static class ConnectionCacheExpirerObj : public Thread
@@ -672,9 +670,9 @@ namespace couchbaseembed
             std::atomic_bool    shouldRun;      //!< If true, we should execute our thread's main event loop
     } *connectionCacheExpirer;
 
-    static void setupConnectionCache(int traceLevel)
+    static void setupConnectionCache()
     {
-        couchbaseembed::connectionCache = new couchbaseembed::ConnectionCacheObj(traceLevel);
+        couchbaseembed::connectionCache = new couchbaseembed::ConnectionCacheObj();
 
         couchbaseembed::connectionCacheExpirer = new couchbaseembed::ConnectionCacheExpirerObj;
         couchbaseembed::connectionCacheExpirer->start();
@@ -881,7 +879,7 @@ namespace couchbaseembed
             }
         }
 
-        std::call_once(connectionCacheInitFlag, setupConnectionCache, logctx.queryTraceLevel());
+        std::call_once(connectionCacheInitFlag, setupConnectionCache);
 
         // Get a cached idle connection or create a new one
         m_oCBConnection = connectionCache->getConnection(useSSL, server, port, bucketname, password, connectionOptions.str(), maxConnections, user);

@@ -41,6 +41,7 @@ static const char* const SESSION_ID_COOKIE = "ESPSessionID";
 static const char* const SESSION_START_URL_COOKIE = "ESPAuthURL";
 static const char* const SESSION_TIMEOUT_COOKIE = "ESPSessionTimeoutSeconds";
 static const char* const SESSION_ID_TEMP_COOKIE = "ESPAuthIDTemp";
+static const char* const SESSION_DOMAIN_AUTH_DATA_TEMP_COOKIE = "ESPDomainAuthDataTemp";
 static const char* const SESSION_AUTH_OK_COOKIE = "ESPAuthenticated";
 static const char* const SESSION_AUTH_MSG_COOKIE = "ESPAuthenticationMSG";
 static const char* const USER_ACCT_ERROR_COOKIE = "ESPUserAcctError";
@@ -68,6 +69,7 @@ static const char* const PathSessionSession="Session_";
 static const char* const PropSessionID = "@id";
 static const char* const PropSessionExternalID = "@externalid";
 static const char* const PropSessionUserID = "@userid";
+static const char* const PropSessionDomainAuthData = "@domainauthdata";
 static const char* const PropSessionNetworkAddress = "@netaddr";
 static const char* const PropSessionState = "@state";
 static const char* const PropSessionCreateTime = "@createtime";
@@ -109,7 +111,7 @@ static const char* const PropSessionLoginURL = "@loginurl";
 
 interface IEspSecureContext;
 
-esp_http_decl IEspContext* createEspContext(IEspSecureContext* secureContext = nullptr);
+esp_http_decl IEspContext* createEspContext(IEspSecureContextEx* secureContext = nullptr);
 
 // Get URL parameters (include these from Content)
 // Return: a=b&c=d format. 

@@ -50,7 +50,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/esp/smc/SMCLib
     )
 
-ADD_DEFINITIONS( -D_USRDLL -DWsPackageProcess_API_LOCAL -DFileSpray_API_LOCAL -DWSDFU_API_LOCAL )
+ADD_DEFINITIONS( -D_USRDLL -DWsPackageProcess_API_LOCAL -DFileSpray_API_LOCAL -DWSDFU_API_LOCAL -DESP_SERVICE_WsPackageProcess)
 
 HPCC_ADD_LIBRARY( ws_packageprocess SHARED ${SRCS} )
 install ( TARGETS ws_packageprocess RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
@@ -62,6 +62,7 @@ target_link_libraries ( ws_packageprocess
          dalibase
          ws_fs
          pkgfiles
+         ${COMMON_ESP_SERVICE_LIBS}
     )
 
 IF (USE_OPENSSL)

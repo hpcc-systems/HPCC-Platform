@@ -139,4 +139,38 @@ Pass in dict with root and warnings
   {{- $_ := set $warning "msg" (printf "Insecure feature enabled in ecl: %s " $ctx.insecureEclFeature) -}}
   {{- $_ := set $ctx "warnings" (append $ctx.warnings $warning) -}}
  {{- end -}}
+ {{- /* Warn if TLS not enabled */ -}}
+ {{- $_ := set $ctx "TLSdisabled" list -}}
+ {{- range $espservice := .root.Values.esp -}}
+  {{- if not $espservice.tls -}}
+   {{- if (and ($ctx.root.Values.certificates|default false) $ctx.root.Values.certificates.enabled) -}}
+    {{- $externalCert := (ne (include "hpcc.isVisibilityPublic" (dict "root" $ctx.root "visibility" $espservice.service.visibility)) "") -}}
+    {{- $externalIssuerKeyName := ternary "remote" "public" (eq "true" ( include "hpcc.usesRemoteClientCertificates" $espservice )) -}}
+    {{- $issuerKeyName := ternary $externalIssuerKeyName "local" $externalCert -}}
+    {{- if ne (include "hpcc.isIssuerEnabled" (dict "root" $ctx.root "issuerKeyName" "local")) "true" -}}
+     {{- $_ := set $ctx "TLSdisabled" (append $ctx.TLSdisabled $espservice.name) -}}
+    {{- end -}}
+   {{- else -}}
+    {{- $_ := set $ctx "TLSdisabled" (append $ctx.TLSdisabled $espservice.name) -}}
+   {{- end -}}
+  {{- end -}}
+ {{- end -}}
+ {{- if $ctx.TLSdisabled -}}
+  {{- $warning := dict "source" "helm" "severity" "warning" -}}
+  {{- $_ := set $warning "msg" (printf "tls disabled for esp services: %s" ($ctx.TLSdisabled|toStrings)) -}}
+  {{- $_ := set $ctx "warnings" (append $ctx.warnings $warning) -}}
+ {{- end -}}
+ {{- /* Warn if kubeApiCidr/kubeApiPort not provided */ -}}
+ {{- $egress := (.root.Values.global.egress | default dict) -}}
+ {{- if not (and (hasKey $egress "kubeApiCidr") (hasKey $egress "kubeApiPort")) -}}
+  {{- $warning := dict "source" "helm" "severity" "warning" -}}
+  {{- $_ := set $warning "msg" "egress control to API not restricted (kubeApiCidr/kubeApiPort not provided)" -}}
+  {{- $_ := set $ctx "warnings" (append $ctx.warnings $warning) -}}
+ {{- end -}}
+ {{- $egressRestricted := $egress.restricted | default false -}}
+ {{- if not $egressRestricted -}}
+  {{- $warning := dict "source" "helm" "severity" "warning" -}}
+  {{- $_ := set $warning "msg" "egress is not restricted to minimum required" -}}
+  {{- $_ := set $ctx "warnings" (append $ctx.warnings $warning) -}}
+ {{- end -}}
 {{- end -}}

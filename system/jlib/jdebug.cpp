@@ -431,6 +431,11 @@ double getCycleToNanoScale()
 
 #endif
 
+cycle_t millisec_to_cycle(unsigned ms)
+{
+    return nanosec_to_cycle((__int64)ms * 1000000);
+}
+
 
 void display_time(const char *title, cycle_t diff)
 {
@@ -818,80 +823,237 @@ static __uint64 ticksToNs = I64C(100);  // FILETIME is in 100ns increments
 static __uint64 ticksToNs = I64C(1000000000) / sysconf(_SC_CLK_TCK);
 #endif
 
-
 #ifdef _WIN32
 inline unsigned __int64 extractFILETIME(const FILETIME & value)
 {
     return ((__uint64)value.dwHighDateTime << (sizeof(value.dwLowDateTime) * 8) | value.dwLowDateTime);
 }
+#else
+static bool matchExtractValue(const char * text, const char * prefix, __uint64 & value)
+{
+    if (!startsWith(text, prefix))
+        return false;
+
+    char *tail;
+    value = strtoull(text + strlen(prefix), &tail, 10);
+    while (std::isspace(*(byte *)tail))
+        tail++;
+
+    offset_t scale = 1;
+    if (*tail)
+    {
+        switch (*tail)
+        {
+        case 'k': case 'K': scale = 1llu<<10; break;
+        case 'm': case 'M': scale = 1llu<<20; break;
+        case 'g': case 'G': scale = 1llu<<30; break;
+        case 't': case 'T': scale = 1llu<<40; break;
+        case 'p': case 'P': scale = 1llu<<50; break;
+        case 'e': case 'E': scale = 1llu<<60; break;
+        }
+    }
+
+    value *= scale;
+    return true;
+}
 #endif
 
-CpuInfo::CpuInfo(bool processTime, bool systemTime) : CpuInfo()
-{
-    if (processTime)
-        getProcessTimes();
-    else if (systemTime)
-        getSystemTimes();
-}
-
-void CpuInfo::clear()
+void SystemProcessInfo::clear()
 {
     user = 0;
     system = 0;
     idle = 0;
     iowait = 0;
+    contextSwitches = 0;
+    peakVirtualMemory = 0;
+    activeVirtualMemory = 0;
+    peakResidentMemory = 0;
+    activeResidentMemory = 0;
+    activeSwapMemory = 0;
+    activeDataMemory = 0;
+    majorFaults = 0;
+    numThreads = 0;
 }
 
-CpuInfo CpuInfo::operator - (const CpuInfo & rhs) const
+SystemProcessInfo SystemProcessInfo::operator - (const SystemProcessInfo & rhs) const
 {
-    CpuInfo result;
+    SystemProcessInfo result;
     result.user = user - rhs.user;
     result.system = system - rhs.system;
     result.idle = idle - rhs.idle;
     result.iowait = iowait - rhs.iowait;
-    result.ctx = ctx - rhs.ctx;
+    result.contextSwitches = contextSwitches - rhs.contextSwitches;
+    result.peakVirtualMemory = peakVirtualMemory - rhs.peakVirtualMemory;
+    result.activeVirtualMemory = activeVirtualMemory - rhs.activeVirtualMemory;
+    result.peakResidentMemory = peakResidentMemory - rhs.peakResidentMemory;
+    result.activeResidentMemory = activeResidentMemory - rhs.activeResidentMemory;
+    result.activeSwapMemory = activeSwapMemory - rhs.activeSwapMemory;
+    result.activeDataMemory = activeDataMemory - rhs.activeDataMemory;
+    result.majorFaults = majorFaults - rhs.majorFaults;
+    result.numThreads = numThreads - rhs.numThreads;
     return result;
 }
 
-bool CpuInfo::getProcessTimes()
+unsigned SystemProcessInfo::getPercentCpu() const
+{
+    __uint64 total = getTotal();
+    if (total == 0)
+        return 0;
+    unsigned percent = (unsigned)(((total - idle) * 100) / total);
+    if (percent > 100)
+        percent = 100;
+    return percent;
+}
+
+__uint64 SystemProcessInfo::getSystemNs() const
+{
+    return system * ticksToNs;
+}
+
+__uint64 SystemProcessInfo::getUserNs() const
+{
+    return user * ticksToNs;
+}
+
+__uint64 SystemProcessInfo::getTotalNs() const
+{
+    return getTotal() * ticksToNs;
+}
+
+unsigned SystemProcessInfo::getIdlePercent() const
+{
+    __uint64 total = getTotal();
+    if (total == 0)
+        return 0;
+    return (unsigned)((idle * 100) / total);
+}
+
+unsigned SystemProcessInfo::getIoWaitPercent() const
+{
+    __uint64 total = getTotal();
+    if (total == 0)
+        return 0;
+    return (unsigned)((iowait * 100) / total);
+}
+
+unsigned SystemProcessInfo::getSystemPercent() const
+{
+    __uint64 total = getTotal();
+    if (total == 0)
+        return 0;
+    return (unsigned)((system * 100) / total);
+}
+
+unsigned SystemProcessInfo::getUserPercent() const
+{
+    __uint64 total = getTotal();
+    if (total == 0)
+        return 0;
+    return (unsigned)((user * 100) / total);
+}
+
+//===========================================================================
+
+ProcessInfo::ProcessInfo(unsigned flags) : ProcessInfo()
+{
+    update(flags);
+}
+
+bool ProcessInfo::update(unsigned flags)
 {
 #ifdef _WIN32
-    FILETIME creationTime, exitTime;
-    FILETIME kernelTime, userTime;
-    GetProcessTimes(GetCurrentProcess(), &creationTime, &exitTime, &kernelTime, &userTime);
-
-    user = extractFILETIME(userTime);
-    system = extractFILETIME(kernelTime);
-    return true;
-#else
-    VStringBuffer fname("/proc/%u/stat", getpid());
-    //NOTE: This file needs to be reopened each time - seeking to the start and rereading does not refresh it
-    clear();
-    FILE* cpufp = fopen(fname.str(), "r");
-    if (!cpufp) {
-        return false;
-    }
-    char ln[2560];
-    if (fgets(ln, sizeof(ln), cpufp))
+    if (flags & ReadMemoryInfo)
     {
-        long int majorFaults = 0;
-        long unsigned userTime = 0;
-        long unsigned systemTime = 0;
-        long unsigned childUserTime = 0;
-        long unsigned childSystemTime = 0;
-        int matched = sscanf(ln, "%*d %*s %*c %*d %*d %*d %*d %*d %*u %*u %*u %lu %*u %lu %lu %lu %lu", &majorFaults, &userTime, &systemTime, &childUserTime, &childSystemTime);
-        if (matched >= 3)
+        PROCESS_MEMORY_COUNTERS pmc;
+        if (GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc)))
         {
-            user = userTime + childUserTime;
-            system = systemTime + childSystemTime;
+            peakVirtualMemory = pmc.PeakWorkingSetSize;
+            peakResidentMemory = pmc.PeakWorkingSetSize;
         }
     }
-    fclose(cpufp);
+
+    if (flags & ReadCpuInfo)
+    {
+        FILETIME creationTime, exitTime;
+        FILETIME kernelTime, userTime;
+        GetProcessTimes(GetCurrentProcess(), &creationTime, &exitTime, &kernelTime, &userTime);
+
+        user = extractFILETIME(userTime);
+        system = extractFILETIME(kernelTime);
+    }
+    return true;
+#else
+    clear();
+
+    StringBuffer contents;
+    if (flags & (ReadMemoryInfo|ReadContextInfo))
+    {
+        //Takes ~7us
+        //NOTE: This file needs to be reopened each time - seeking to the start and rereading does not refresh it
+        if (loadBinaryFile(contents, "/proc/self/status", false))
+        {
+            contextSwitches = 0;
+            auto processLine = [this](const char * cur)
+            {
+                __uint64 value;
+                switch (*cur)
+                {
+                case 'V':
+                    matchExtractValue(cur, "VmPeak:", peakVirtualMemory) ||
+                    matchExtractValue(cur, "VmSize:", activeVirtualMemory) ||
+                    matchExtractValue(cur, "VmHWM:", peakResidentMemory) ||
+                    matchExtractValue(cur, "VmRSS:", activeResidentMemory) ||
+                    matchExtractValue(cur, "VmSwap:", activeSwapMemory) ||
+                    matchExtractValue(cur, "VmData:", activeDataMemory);
+                    break;
+                case 'T':
+                    matchExtractValue(cur, "Threads:", numThreads);
+                    break;
+                case 'v':
+                    if (matchExtractValue(cur, "voluntary_ctxt_switches:", value))
+                        contextSwitches += value;
+                    break;
+                case 'n':
+                    if (matchExtractValue(cur, "nonvoluntary_ctxt_switches:", value))
+                        contextSwitches += value;
+                    break;
+                }
+            };
+
+            processLines(contents, processLine);
+        }
+    }
+
+    if (flags & (ReadCpuInfo|ReadFaultInfo))
+    {
+        //Takes ~4-5us
+        if (loadBinaryFile(contents.clear(), "/proc/self/stat", false))
+        {
+            long unsigned userTime = 0;
+            long unsigned systemTime = 0;
+            long unsigned childUserTime = 0;
+            long unsigned childSystemTime = 0;
+            int matched = sscanf(contents.str(), "%*d %*s %*c %*d %*d %*d %*d %*d %*u %*u %*u %llu %*u %lu %lu %lu %lu", &majorFaults, &userTime, &systemTime, &childUserTime, &childSystemTime);
+            if (matched >= 3)
+            {
+                user = userTime + childUserTime;
+                system = systemTime + childSystemTime;
+            }
+        }
+    }
+
     return true;
 #endif
 }
 
-bool CpuInfo::getSystemTimes()
+//===========================================================================
+
+SystemInfo::SystemInfo(unsigned flags) : SystemInfo()
+{
+    update(flags);
+}
+
+bool SystemInfo::update(unsigned flags)
 {
 #ifdef _WIN32
     FILETIME idleTime, kernelTime, userTime;
@@ -903,100 +1065,46 @@ bool CpuInfo::getSystemTimes()
     system = extractFILETIME(kernelTime) - idle;
     return true;
 #else
-    //NOTE: This file needs to be reopened each time - seeking to the start and rereading does not refresh it
-    FILE* cpufp = fopen("/proc/stat", "r");
-    if (!cpufp) {
-        clear();
-        return false;
-    }
-    char ln[256];
-    while (fgets(ln, sizeof(ln), cpufp))
+    StringBuffer contents;
+    if (loadBinaryFile(contents, "/proc/stat", false))
     {
-        if (strncmp(ln, "cpu ", 4) == 0)
+        auto processLine = [this](const char * ln)
         {
-            int items;
-            __uint64 nice, irq, softirq;
+            switch (*ln)
+            {
+            case 'c':
+                if (strncmp(ln, "cpu ", 4) == 0)
+                {
+                    int items;
+                    __uint64 nice, irq, softirq;
 
-            items = sscanf(ln,
-                "cpu %llu %llu %llu %llu %llu %llu %llu",
-                &user, &nice,
-                &system,
-                &idle,
-                &iowait,
-                &irq, &softirq);
+                    items = sscanf(ln,
+                        "cpu %llu %llu %llu %llu %llu %llu %llu",
+                        &user, &nice,
+                        &system,
+                        &idle,
+                        &iowait,
+                        &irq, &softirq);
 
-            user += nice;
-            if (items == 4)
-                iowait = 0;
-            if (items == 7)
-                system += irq + softirq;
-        }
-        else if (strncmp(ln, "ctxt ", 5) == 0)
-        {
-            (void)sscanf(ln, "ctxt %llu", &ctx);
-        }
+                    user += nice;
+                    if (items == 4)
+                        iowait = 0;
+                    if (items == 7)
+                        system += irq + softirq;
+                }
+                else if (strncmp(ln, "ctxt ", 5) == 0)
+                {
+                    (void)sscanf(ln, "ctxt %llu", &contextSwitches);
+                }
+                break;
+            }
+        };
+
+        processLines(contents, processLine);
     }
-    fclose(cpufp);
+
     return true;
 #endif
-}
-
-unsigned CpuInfo::getPercentCpu() const
-{
-    __uint64 total = getTotal();
-    if (total == 0)
-        return 0;
-    unsigned percent = (unsigned)(((total - idle) * 100) / total);
-    if (percent > 100)
-        percent = 100;
-    return percent;
-}
-
-__uint64 CpuInfo::getSystemNs() const
-{
-    return system * ticksToNs;
-}
-
-__uint64 CpuInfo::getUserNs() const
-{
-    return user * ticksToNs;
-}
-
-__uint64 CpuInfo::getTotalNs() const
-{
-    return getTotal() * ticksToNs;
-}
-
-unsigned CpuInfo::getIdlePercent() const
-{
-    __uint64 total = getTotal();
-    if (total == 0)
-        return 0;
-    return (unsigned)((idle * 100) / total);
-}
-
-unsigned CpuInfo::getIoWaitPercent() const
-{
-    __uint64 total = getTotal();
-    if (total == 0)
-        return 0;
-    return (unsigned)((iowait * 100) / total);
-}
-
-unsigned CpuInfo::getSystemPercent() const
-{
-    __uint64 total = getTotal();
-    if (total == 0)
-        return 0;
-    return (unsigned)((system * 100) / total);
-}
-
-unsigned CpuInfo::getUserPercent() const
-{
-    __uint64 total = getTotal();
-    if (total == 0)
-        return 0;
-    return (unsigned)((user * 100) / total);
 }
 
 //===========================================================================
@@ -1058,12 +1166,7 @@ memsize_t getMapInfo(const char *type)
     return 0; // TODO/UNKNOWN
 }
 
-memsize_t getVMInfo(const char *type)
-{
-    return 0; // TODO/UNKNOWN
-}
-
-void getCpuInfo(unsigned &numCPUs, unsigned &CPUSpeed)
+void getSystemProcessInfo(unsigned &numCPUs, unsigned &CPUSpeed)
 {
     // MORE: Might be a better way to get CPU speed (actual) than the one stored in Registry
     LONG  lRet;
@@ -1116,7 +1219,7 @@ static unsigned evalAffinityCpus()
         Owned<IException> e = makeOsException(GetLastError(), "Failed to get affinity");
         EXCLOG(e, NULL);
         unsigned cpuSpeed;
-        getCpuInfo(numCpus, cpuSpeed);
+        getSystemProcessInfo(numCpus, cpuSpeed);
         return numCpus;
     }
     return numCpus;
@@ -1192,45 +1295,7 @@ memsize_t getMapInfo(const char *type)
     return ret;
 }
 
-static bool matchExtract(const char * prefix, const char * line, memsize_t & value)
-{
-    size32_t len = strlen(prefix);
-    if (strncmp(prefix, line, len)==0)
-    {
-        char * tail = NULL;
-        value = strtol(line+len, &tail, 10);
-        while (isspace(*tail))
-            tail++;
-        if (strncmp(tail, "kB", 2) == 0)
-            value *= 0x400;
-        else if (strncmp(tail, "mB", 2) == 0)
-            value *= 0x100000;
-        else if (strncmp(tail, "gB", 2) == 0)
-            value *= 0x40000000;
-        return true;
-    }
-    return false;
-}
-
-memsize_t getVMInfo(const char *type)
-{
-    memsize_t ret = 0;
-    VStringBuffer name("%s:", type);
-    VStringBuffer procMaps("/proc/self/status");
-    FILE *diskfp = fopen(procMaps.str(), "r");
-    if (!diskfp)
-        return 0;
-    char ln[256];
-    while (fgets(ln, sizeof(ln), diskfp))
-    {
-        if (matchExtract(name.str(), ln, ret))
-            break;
-    }
-    fclose(diskfp);
-    return ret;
-}
-
-void getCpuInfo(unsigned &numCPUs, unsigned &CPUSpeed)
+void getSystemProcessInfo(unsigned &numCPUs, unsigned &CPUSpeed)
 {
     numCPUs = 1;
     CPUSpeed = 0;
@@ -1420,7 +1485,8 @@ void getMemStats(StringBuffer &out, unsigned &memused, unsigned &memtot)
     __int64 total = getMapInfo("heap");
     __int64 sbrkmem = getMapInfo("sbrk");
     __int64 mmapmem = total - sbrkmem;
-    __int64 virttot = getVMInfo("VmData");
+    ProcessInfo processInfo(ReadMemoryInfo);
+    __int64 virttot = processInfo.getActiveDataMemory();
     unsigned mu;
     unsigned ma;
     unsigned mt;
@@ -1507,45 +1573,6 @@ void clearAffinityCache()
     cachedNumCpus.store(0, std::memory_order_release);
 }
 
-
-void getPeakMemUsage(memsize_t &peakVm,memsize_t &peakResident)
-{
-    peakVm = 0;
-    peakResident = 0;
-
-#ifdef _WIN32
-    PROCESS_MEMORY_COUNTERS pmc;
-    if (GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc)))
-    {
-        peakVm = pmc.PeakWorkingSetSize;
-        peakResident = pmc.PeakWorkingSetSize;
-
-    }
-#else
-    static int memfd = -1;
-    if (memfd==-1)
-        memfd = open("/proc/self/status",O_RDONLY);
-    if (memfd==-1)
-        return;
-    char buf[2048];
-    size32_t l = pread(memfd, buf, sizeof(buf)-1, 0L);
-    if ((int)l<=0)
-        return;
-    buf[l] = 0;
-
-    const char *bufptr = buf;
-    while (bufptr) {
-        if (*bufptr =='\n')
-            bufptr++;
-        if (!matchExtract("VmPeak:", bufptr, peakVm) &&
-            !matchExtract("VmHWM:", bufptr, peakResident))
-        {
-            //ignore this line
-        }
-        bufptr = strchr(bufptr, '\n');
-    }
-#endif
-}
 
 #define RXMAX 1000000       // can be 10x bigger but this produces reasonable amounts
 
@@ -2167,10 +2194,10 @@ class CExtendedStats  // Disk network and cpu stats
     unsigned nparts;
     OsDiskStats *newDiskStats;
     OsDiskStats *oldDiskStats;
-    CpuInfo newcpu;
+    SystemInfo newcpu;
     unsigned numcpu;
-    CpuInfo oldcpu;
-    CpuInfo cpu;
+    SystemInfo oldcpu;
+    SystemProcessInfo deltacpu;
     OsNetworkStats oldnet;
     OsNetworkStats newnet;
     unsigned ncpu;
@@ -2189,21 +2216,21 @@ class CExtendedStats  // Disk network and cpu stats
     {
         if (!ncpu) {
             unsigned speed;
-            getCpuInfo(ncpu, speed);
+            getSystemProcessInfo(ncpu, speed);
             if (!ncpu)
                 ncpu = 1;
         }
 
         oldcpu = newcpu;
-        if (newcpu.getSystemTimes())
+        if (newcpu.update(ReadCpuInfo))
         {
-            cpu = newcpu - oldcpu;
-            totalcpu = cpu.getTotal();
+            deltacpu = newcpu - oldcpu;
+            totalcpu = deltacpu.getTotal();
             return true;
         }
         else
         {
-            cpu.clear();
+            deltacpu.clear();
             totalcpu = 0;
             return false;
         }
@@ -2316,7 +2343,7 @@ public:
     {
         if (!getNextCPU())
             return (unsigned)-1;
-        return cpu.getPercentCpu();
+        return deltacpu.getPercentCpu();
     }
 
 
@@ -2412,7 +2439,7 @@ public:
         {
             if (out.length()&&(out.charAt(out.length()-1)!=' '))
                 out.append(' ');
-            out.appendf("CPU: usr=%d sys=%d iow=%d idle=%d", cpu.getUserPercent(), cpu.getSystemPercent(), cpu.getIoWaitPercent(), cpu.getIdlePercent());
+            out.appendf("CPU: usr=%d sys=%d iow=%d idle=%d", deltacpu.getUserPercent(), deltacpu.getSystemPercent(), deltacpu.getIoWaitPercent(), deltacpu.getIdlePercent());
         }
         return true;
     }
@@ -2684,8 +2711,8 @@ static class CMemoryUsageReporter: public Thread
     unsigned latestCPU;
 #ifdef _WIN32
     LONG                           status;
-    CpuInfo                        prevTime;
-    CpuInfo                        deltaTime;
+    SystemProcessInfo              prevTime;
+    SystemProcessInfo              deltaTime;
 #else
     CProcessMonitor                procmon;
     CExtendedStats                 extstats;
@@ -2739,8 +2766,8 @@ public:
     {
         CriticalBlock block(sect);
 #ifdef _WIN32
-        CpuInfo current;
-        current.getSystemTimes();
+        SystemInfo current;
+        current.update(ReadCpuInfo);
         if (prevTime.getTotal())
         {
             deltaTime = current - prevTime;
@@ -3067,7 +3094,7 @@ unsigned getLatestCPUUsage()
 void getHardwareInfo(HardwareInfo &hdwInfo, const char *primDiskPath, const char *secDiskPath)
 {
     memset(&hdwInfo, 0, sizeof(HardwareInfo));
-    getCpuInfo(hdwInfo.numCPUs, hdwInfo.CPUSpeed);
+    getSystemProcessInfo(hdwInfo.numCPUs, hdwInfo.CPUSpeed);
 
 #ifdef _WIN32
 

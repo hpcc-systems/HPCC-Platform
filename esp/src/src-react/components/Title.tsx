@@ -12,6 +12,7 @@ import { ModernMode } from "src/BuildInfo";
 
 import { useBanner } from "../hooks/banner";
 import { useECLWatchLogger } from "../hooks/logging";
+import { useBuildInfo } from "../hooks/platform";
 import { useGlobalStore, useUserStore } from "../hooks/store";
 import { useMyAccount, useUserSession } from "../hooks/user";
 import { replaceUrl } from "../util/history";
@@ -40,6 +41,8 @@ interface DevTitleProps {
 
 export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
 }) => {
+
+    const [, { opsCategory }] = useBuildInfo();
     const theme = useTheme();
     const { userSession, setUserSession, deleteUserSession } = useUserSession();
     const toolbarThemeDefaults = { active: false, text: "", color: theme.palette.themeLight };
@@ -47,7 +50,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
 
     const [showAbout, setShowAbout] = React.useState(false);
     const [showMyAccount, setShowMyAccount] = React.useState(false);
-    const { currentUser } = useMyAccount();
+    const { currentUser, isAdmin } = useMyAccount();
     const [showAppPanel, { setTrue: openAppPanel, setFalse: dismissAppPanel }] = useBoolean(false);
 
     const [showTitlebarConfig, setShowTitlebarConfig] = React.useState(false);
@@ -60,7 +63,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
 
     const personaProps: IPersonaSharedProps = React.useMemo(() => {
         return {
-            text: currentUser?.firstName + " " + currentUser?.lastName,
+            text: (currentUser?.firstName && currentUser?.lastName) ? currentUser.firstName + " " + currentUser.lastName : currentUser?.username,
             secondaryText: currentUser?.accountType,
             size: PersonaSize.size32
         };
@@ -72,9 +75,9 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
     const onTechPreviewClick = React.useCallback(
         (ev?: React.MouseEvent<HTMLButtonElement>, item?: IContextualMenuItem): void => {
             setModernMode(String(false));
-            switchTechPreview(false);
+            switchTechPreview(false, opsCategory);
         },
-        [setModernMode]
+        [opsCategory, setModernMode]
     );
 
     const [logCount, setLogCount] = React.useState(0);
@@ -110,8 +113,8 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
     const advMenuProps = React.useMemo(() => {
         return {
             items: [
-                { key: "banner", text: nlsHPCC.SetBanner, onClick: () => setShowBannerConfig(true) },
-                { key: "toolbar", text: nlsHPCC.SetToolbar, onClick: () => setShowTitlebarConfig(true) },
+                { key: "banner", text: nlsHPCC.SetBanner, disabled: !isAdmin, onClick: () => setShowBannerConfig(true) },
+                { key: "toolbar", text: nlsHPCC.SetToolbar, disabled: !isAdmin, onClick: () => setShowTitlebarConfig(true) },
                 { key: "divider_1", itemType: ContextualMenuItemType.Divider },
                 { key: "docs", href: "https://hpccsystems.com/training/documentation/", text: nlsHPCC.Documentation, target: "_blank" },
                 { key: "downloads", href: "https://hpccsystems.com/download", text: nlsHPCC.Downloads, target: "_blank" },
@@ -166,7 +169,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
             ],
             directionalHintFixed: true
         };
-    }, [currentUser?.username, deleteUserSession, onTechPreviewClick, setUserSession, userSession]);
+    }, [currentUser?.username, deleteUserSession, isAdmin, onTechPreviewClick, setUserSession, userSession]);
 
     const btnStyles = React.useMemo(() => mergeStyleSets({
         errorsWarnings: {
@@ -186,7 +189,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
             if (currentUser.passwordIsExpired) {
                 alert(nlsHPCC.PasswordExpired);
                 setShowMyAccount(true);
-            } else if (currentUser.passwordDaysRemaining <= currentUser.passwordExpirationWarningDays) {
+            } else if (currentUser.passwordDaysRemaining && currentUser.passwordDaysRemaining <= currentUser.passwordExpirationWarningDays) {
                 if (confirm(nlsHPCC.PasswordExpirePrefix + currentUser.passwordDaysRemaining + nlsHPCC.PasswordExpirePostfix)) {
                     setShowMyAccount(true);
                 }

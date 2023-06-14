@@ -384,7 +384,7 @@ interface IEntityHelper
     virtual bool find(const char *entity, StringBuffer &value) = 0;
 };
 
-void jlib_decl appendURL(StringBuffer *dest, const char *src, size32_t len = -1, char lower=FALSE);
+void jlib_decl appendURL(StringBuffer *dest, const char *src, size32_t len = -1, char lower=FALSE, bool keepUnderscore=false);
 extern jlib_decl StringBuffer &appendDecodedURL(StringBuffer &out, const char *url);
 extern jlib_decl StringBuffer &appendDecodedURL(StringBuffer &s, size_t len, const char *url);
 extern jlib_decl StringBuffer & appendStringAsCPP(StringBuffer &out, unsigned len, const char * src, bool addBreak);
@@ -417,7 +417,7 @@ interface IVariableSubstitutionHelper
 extern jlib_decl StringBuffer &replaceVariables(StringBuffer & result, const char *source, bool exceptions, IVariableSubstitutionHelper *helper, const char* delim = "${", const char* term = "}");
 extern jlib_decl StringBuffer &replaceEnvVariables(StringBuffer & result, const char *source, bool exceptions, const char* delim = "${env.", const char* term = "}");
 
-inline const char *encodeUtf8XML(const char *x, StringBuffer &ret, unsigned flags=false, unsigned len=(unsigned)-1)
+inline const char *encodeUtf8XML(const char *x, StringBuffer &ret, unsigned flags=0, unsigned len=(unsigned)-1)
 {
     return encodeXML(x, ret, flags, len, true);
 }
@@ -619,5 +619,24 @@ extern jlib_decl int j_memicmp (const void *s1, const void *s2, size32_t len);
 extern jlib_decl size32_t memcount(size32_t len, const char * str, char search);
 
 extern jlib_decl const char * nullText(const char * text);
+extern jlib_decl bool loadBinaryFile(StringBuffer & contents, const char *filename, bool throwOnError);
+
+template <typename LineProcessor>
+void processLines(const StringBuffer & content, LineProcessor process)
+{
+    const char * cur = content;
+    while (*cur)
+    {
+        process(cur);
+        const char * next = strchr(cur, '\n');
+        if (!next)
+            break;
+        cur = next+1;
+    }
+}
+
+//General purpose function for processing option strings in the form option[=value],option[=value],...
+using optionCallback = std::function<void(const char * name, const char * value)>;
+extern jlib_decl void processOptionString(const char * options, optionCallback callback);
 
 #endif

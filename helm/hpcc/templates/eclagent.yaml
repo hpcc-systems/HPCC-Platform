@@ -183,6 +183,10 @@ spec:
 {{ include "hpcc.addSecretVolumes" $commonCtx | indent 6 }}
 {{ include "hpcc.addCertificateVolume" (dict "root" $ "name" .name "component" "eclagent") | indent 6 }}
 ---
+{{- if and (hasKey . "hpa") .useChildProcesses }}
+ {{- include "hpcc.addHorizontalPodAutoscaler" (dict "name" .name "kind" "Deployment" "hpa" .hpa) }}
+{{- end }}
+---
 kind: ConfigMap 
 {{ include "hpcc.generateConfig" ($commonCtx | merge (dict "configMapHelper" "hpcc.agentConfigMap")) }}
 ---

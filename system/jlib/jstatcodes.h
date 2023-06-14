@@ -279,6 +279,20 @@ enum StatisticKind
     StWhenK8sLaunched,
     StWhenK8sStarted,
     StWhenK8sReady,
+    StNumSocketWrites,
+    StSizeSocketWrite,
+    StTimeSocketWriteIO,
+    StCycleSocketWriteIOCycles,
+    StNumSocketReads,
+    StSizeSocketRead,
+    StTimeSocketReadIO,
+    StCycleSocketReadIOCycles,
+    StSizeMemory,   // StSizePeakMemory above
+    StSizeRowMemory,
+    StSizePeakRowMemory,
+    StSizeAgentSend,
+    StTimeIndexCacheBlocked,
+    StCycleIndexCacheBlockedCycles,
     StMax,
 
     //For any quantity there is potentially the following variants.

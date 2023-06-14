@@ -1189,7 +1189,7 @@ public:
 protected:
     inline unsigned checkNextParam(const RtlFieldInfo * field)
     {
-        if (logctx.queryTraceLevel() > 4)
+        if (doTrace(traceCassandra))
             logctx.CTXLOG("Binding %s to %d", field->name, thisParam);
         return thisParam++;
     }

@@ -168,7 +168,7 @@ static size_t os_page_size = getpagesize();
 
 class StandaloneCacheWarmer : implements ICacheWarmer
 {
-    unsigned traceLevel;
+    unsigned trace;
     unsigned filesTouched = 0;
     unsigned pagesTouched = 0;
     char *file_mmap = nullptr;
@@ -191,7 +191,7 @@ class StandaloneCacheWarmer : implements ICacheWarmer
         while (startOffset < endOffset);
     }
 public:
-    StandaloneCacheWarmer(unsigned _traceLevel) : traceLevel(_traceLevel) {}
+    StandaloneCacheWarmer(unsigned _trace) : trace(_trace) {}
 
     virtual void startFile(const char *filename) override
     {
@@ -208,7 +208,7 @@ public:
             else
                 filesTouched++;
         }
-        else if (traceLevel)
+        else if (trace)
         {
             printf("Failed to open file %s to pre-warm cache (error %d)\n", filename, errno);
         }
@@ -218,7 +218,7 @@ public:
     {
         if (!includeInCacheIndexes && nodeType != NodeNone)
             return true;
-        if (traceLevel > 8)
+        if (trace > 1)
             printf("Touching %s %" I64F "x-%" I64F "x\n", filename, startOffset, endOffset);
         if (file_mmap)
         {
@@ -229,7 +229,7 @@ public:
             }
             else
             {
-                if (traceLevel)
+                if (trace)
                     printf("SIGBUF caught while trying to touch file %s at offset %" I64F "x\n", filename, startOffset);
                 sigbus_jmp_set = false;
                 return false;
@@ -253,7 +253,7 @@ public:
 
     virtual void report() override
     {
-        if (traceLevel)
+        if (trace)
             printf("Touched %u pages from %u files (dummyval %u)\n", pagesTouched, filesTouched, dummy);  // We report dummy to make sure that compiler doesn't decide to optimize it away entirely
     }
 };
@@ -273,7 +273,7 @@ int main(int argc, const char **argv)
         usage();
     int arg = 1;
     const char *cacheFileName = nullptr;
-    unsigned traceLevel = 1;
+    unsigned trace = 1;
     while (arg < argc)
     {
         if (streq(argv[arg], "-t") || streq(argv[arg], "--traceLevel"))
@@ -281,7 +281,7 @@ int main(int argc, const char **argv)
             arg++;
             if (arg == argc)
                 usage();
-            traceLevel = atoi(argv[arg]);
+            trace = atoi(argv[arg]);
         }
         else if (streq(argv[arg], "-e") || streq(argv[arg], "--testErrors"))
         {
@@ -301,12 +301,12 @@ int main(int argc, const char **argv)
         usage();
     StringBuffer cacheInfo;
     install_signal_handlers();
-    StandaloneCacheWarmer warmer(traceLevel);
+    StandaloneCacheWarmer warmer(trace);
     try
     {
         if (checkFileExists(cacheFileName))
         {
-             if (traceLevel)
+             if (trace)
                 printf("Loading cache information from %s\n", cacheFileName);
             cacheInfo.loadFile(cacheFileName, false);
             if (!warmOsCache(cacheInfo, &warmer))

@@ -25,6 +25,7 @@
 #include <ctype.h>
 #include <time.h>
 #include <math.h>
+#include <utility>
 
 #ifndef WIN32
 #include <sys/mman.h>
@@ -189,6 +190,11 @@ void MemoryAttr::setOwn(size_t _len, void * _ptr)
     ptr = _ptr;
 }
 
+void MemoryAttr::swapWith(MemoryAttr & other)
+{
+    std::swap(len, other.len);
+    std::swap(ptr, other.ptr);
+}
 
 void MemoryAttr::clear()
 {

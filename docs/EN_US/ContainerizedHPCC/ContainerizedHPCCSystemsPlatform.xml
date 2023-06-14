@@ -70,10 +70,10 @@
     or local testing/development deployments.</para>
 
     <para>Docker containers managed by Kubernetes (K8s) is a new target
-    operating environment, alongside continued support for traditional “bare
-    metal” installations using .deb or .rpm installer files. Support for
+    operating environment, alongside continued support for traditional
+    “bare-metal” installations using .deb or .rpm installer files. Support for
     traditional installers continues and that type of deployment is viable for
-    bare metal deployments or manual setups in the Cloud.</para>
+    bare-metal deployments or manual setups in the Cloud.</para>
 
     <para>This is not a <emphasis>lift and shift</emphasis> type change, where
     the platform runs its legacy structure unchanged and treat the containers
@@ -170,8 +170,8 @@
         enough that we recommend using a special tool for editing it.</para>
 
         <para>The <emphasis role="strong">values.yaml</emphasis> from the
-        default helm chart is relatively small and can be opened in any
-        editor, and/or modified via helm’s command-line overrides. It also is
+        default Helm chart is relatively small and can be opened in any
+        editor, and/or modified via command-line overrides. It also is
         self-documented with extensive comments.</para>
       </sect2>
 
@@ -230,13 +230,11 @@
   <xi:include href="ContainerizedHPCC/ContainerizedMods/LocalDeployment.xml"
               xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-
   <xi:include href="ContainerizedHPCC/ContainerizedMods/AzureDeployment.xml"
               xmlns:xi="http://www.w3.org/2001/XInclude" />
 
   <xi:include href="ContainerizedHPCC/ContainerizedMods/TerraformDeployChap.xml"
               xmlns:xi="http://www.w3.org/2001/XInclude" />
-
 
   <xi:include href="ContainerizedHPCC/ContainerizedMods/CustomConfig.xml"
               xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -246,5 +244,4 @@
 
   <xi:include href="ContainerizedHPCC/ContainerizedMods/ContainerLogging.xml"
               xmlns:xi="http://www.w3.org/2001/XInclude" />
-
 </book>

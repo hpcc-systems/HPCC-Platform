@@ -40,6 +40,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/esp/services
          ${HPCC_SOURCE_DIR}/esp/services/common
          ${HPCC_SOURCE_DIR}/esp/clients
+         ${HPCC_SOURCE_DIR}/esp/clients/wsecl
          ${HPCC_SOURCE_DIR}/esp/bindings
          ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/xpp
          ${HPCC_SOURCE_DIR}/esp/bindings/http/client
@@ -87,6 +88,7 @@ target_link_libraries ( esdl_svc_engine
          esdllib
          dllserver
          dalibase
+         ${COMMON_ESP_SERVICE_LIBS}
     )
 
 IF (USE_OPENSSL)

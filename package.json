@@ -6,6 +6,7 @@
     "docs-dev": "vitepress dev devdoc",
     "docs-build": "vitepress build devdoc",
     "docs-preview": "vitepress preview devdoc",
+    "convert": "pandoc -w markdown -o ./docs/DOCUMENTATION.md ./docs/DOCUMENTATION.rst",
     "build":"run-s docs-build copy-res"
   },
   "devDependencies": {

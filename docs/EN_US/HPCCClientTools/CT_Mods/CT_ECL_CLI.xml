@@ -30,8 +30,6 @@
         role="bold">[</emphasis>&lt;options&gt;<emphasis
         role="bold">]</emphasis></title>
 
-        <para></para>
-
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
             <colspec align="left" colwidth="125.55pt" />
@@ -171,8 +169,6 @@
           </tgroup>
         </informaltable>
 
-        <para></para>
-
         <sect3 id="CT_ECL_CLI_ecl.ini" role="brk">
           <title>ecl.ini</title>
 
@@ -236,13 +232,11 @@ resultLimit=200
             </listitem>
           </itemizedlist>
 
-          <para></para>
-
           <para>If a username is supplied by any method, and a password is
           not, you are prompted for the password.</para>
         </sect3>
 
-        <sect3 id="CT_CLI_Syntax_EnvironmentVariables" role="brk">
+        <sect3 id="CT_CLI_Syntax_EnvironmentVariables">
           <title>Environment Variables</title>
 
           <para>Some options can be stored in Environment Variables on your
@@ -276,6 +270,59 @@ ECLCC_PATH
                 </tbody>
               </tgroup>
             </informaltable></para>
+        </sect3>
+
+        <sect3 id="CT-CLI-GIT-Support">
+          <title>Git Support</title>
+
+          <para>Starting with the HPCC Systems version 8.4, the
+          <emphasis>--main</emphasis> option has been extended to support
+          compiling a query directly from a Git repository. When invoked, It
+          retrieves the ECL code specified from the Git repository, compiles
+          the code, and runs the query. Only the checkout will be done on the
+          remote ECLCCServer rather than on the client machine. Here is the
+          syntax to reference a repository location:</para>
+
+          <programlisting>&lt;protocol:&gt;//&lt;urn&gt;/&lt;user&gt;/&lt;repository&gt;#version </programlisting>
+
+          <para>The <emphasis>#version</emphasis> component can be either the
+          name of a <emphasis>branch</emphasis>, <emphasis>tag</emphasis>, or
+          SHA (Secure Hash Algorithm) of the
+          <emphasis>commit</emphasis>.</para>
+
+          <para>For example:</para>
+
+          <para><programlisting>ecl run thor --main demo.main@gituser/gch-ecldemo-d#version1 --server=...
+</programlisting>This example runs the <emphasis>demo.main</emphasis> ECL code
+          in the <emphasis>version1</emphasis> branch of the
+          <emphasis>gituser</emphasis>/<emphasis>gch-ecldemo-d</emphasis>
+          repository.</para>
+
+          <para>This feature is supported by both the ecl and eclcc command
+          line tools.</para>
+
+          <sect4 id="CT-Main-Addl-Examples">
+            <title>Additional Examples</title>
+
+            <para>The following examples all compile the attribute
+            <emphasis>demo.main</emphasis> from <emphasis>version3</emphasis>
+            branch of the GitHub repository gituser/gch-ecldemo-d:</para>
+
+            <programlisting>eclcc --main demo.main@gituser/gch-ecldemo-d#version3
+eclcc --main demo.main@gituser/gch-ecldemo-d --mainrepoversion=version3 
+eclcc --main demo.main@gituser/gch-ecldemo-d --defaultrepoversion=version3 
+eclcc --main demo.main#version3 --defaultrepo=gituser/gch-ecldemo-d 
+eclcc --main demo.main --defaultrepo=gituser/gch-ecldemo-d --defaultrepoversion=version3</programlisting>
+
+            <para>If you are submitting a source file query.ecl, and you want
+            it to replace the definition of demo.main with the same repo, the
+            following will work:</para>
+
+            <programlisting>eclcc query.ecl --main demo.main@gituser/gch-ecldemo-d#version3 
+eclcc query.ecl --main demo.main@gituser/gch-ecldemo-d --mainrepoversion=version3 
+eclcc query.ecl --main "demo.main#version3" --mainrepo=gituser/gch-ecldemo-d 
+eclcc query.ecl --main demo.main --defaultrepo=gituser/gch-ecldemo-d --defaultrepoversion=version3</programlisting>
+          </sect4>
         </sect3>
       </sect2>
 
@@ -381,8 +428,11 @@ ecl deploy roxie - --job-name=FindPersonService
                 <row>
                   <entry>--main=&lt;definition&gt;</entry>
 
-                  <entry>The definition to use from a legacy ECL
-                  repository</entry>
+                  <entry>This option allows you to compile queries from
+                  existing source trees or repositories. It can be used to
+                  specify default repositories and versions to use. See the
+                  "<link linkend="CT-CLI-GIT-Support">Git Support</link>"
+                  section for specific usage.</entry>
                 </row>
 
                 <row>
@@ -859,6 +909,14 @@ ecl publish roxie ArchiveQuery.xml --query-name=FindPersonService --no-activate
                 </row>
 
                 <row>
+                  <entry>--init-publisher-wuid</entry>
+
+                  <entry>Preallocates the publisher workunit at the beginning
+                  of the command and displays the WUID on the command
+                  line</entry>
+                </row>
+
+                <row>
                   <entry>--dfu-queue</entry>
 
                   <entry>The DFU Queue to use when doing a DFU copy</entry>
@@ -904,8 +962,11 @@ ecl publish roxie ArchiveQuery.xml --query-name=FindPersonService --no-activate
                 <row>
                   <entry>--main=&lt;definition&gt;</entry>
 
-                  <entry>The definition to use from a legacy ECL
-                  repository</entry>
+                  <entry>This option allows you to compile queries from
+                  existing source trees or repositories. It can be used to
+                  specify default repositories and versions to use. See the
+                  "<link linkend="CT-CLI-GIT-Support">Git Support</link>"
+                  section for specific usage.</entry>
                 </row>
 
                 <row>
@@ -1456,8 +1517,11 @@ ecl run thor findperson.ecl -I C:\MyECL\
                 <row>
                   <entry>--main=&lt;definition&gt;</entry>
 
-                  <entry>The definition to use from a legacy ECL
-                  repository</entry>
+                  <entry>This option allows you to compile queries from
+                  existing source trees or repositories. It can be used to
+                  specify default repositories and versions to use. See the
+                  "<link linkend="CT-CLI-GIT-Support">Git Support</link>"
+                  section for specific usage.</entry>
                 </row>
 
                 <row>
@@ -2682,6 +2746,14 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
                 </row>
 
                 <row>
+                  <entry>--init-publisher-wuid</entry>
+
+                  <entry>Preallocates the publisher workunit at the beginning
+                  of the command and displays the WUID on the command
+                  line</entry>
+                </row>
+
+                <row>
                   <entry>--dfu-queue</entry>
 
                   <entry>The DFU Queue to use when doing a DFU copy</entry>
@@ -2968,6 +3040,14 @@ ecl queries copy-set roxie1 roxie2 --clone-active-state</programlisting>
 
                   <entry>Use DFU to copy files during deployment, not on Roxie
                   in the background</entry>
+                </row>
+
+                <row>
+                  <entry>--init-publisher-wuid</entry>
+
+                  <entry>Preallocates the publisher workunit at the beginning
+                  of the command and displays the WUID on the command
+                  line</entry>
                 </row>
 
                 <row>
@@ -3527,6 +3607,14 @@ ecl queries recreate roxie findpeople roxie2</programlisting>
                 </row>
 
                 <row>
+                  <entry>--init-publisher-wuid</entry>
+
+                  <entry>Preallocates the publisher workunit at the beginning
+                  of the command and displays the WUID on the command
+                  line</entry>
+                </row>
+
+                <row>
                   <entry>--dfu-queue</entry>
 
                   <entry>The DFU Queue to use when doing a DFU copy</entry>
@@ -3807,6 +3895,14 @@ ecl queries recreate roxie findpeople roxie2</programlisting>
 
                   <entry>Use DFU to copy files during deployment, not on Roxie
                   in the background</entry>
+                </row>
+
+                <row>
+                  <entry>--init-publisher-wuid</entry>
+
+                  <entry>Preallocates the publisher workunit at the beginning
+                  of the command and displays the WUID on the command
+                  line</entry>
                 </row>
 
                 <row>
@@ -4262,6 +4358,14 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
 
                   <entry>Use DFU to copy files during deployment, not on Roxie
                   in the background</entry>
+                </row>
+
+                <row>
+                  <entry>--init-publisher-wuid</entry>
+
+                  <entry>Preallocates the publisher workunit at the beginning
+                  of the command and displays the WUID on the command
+                  line</entry>
                 </row>
 
                 <row>
@@ -5297,6 +5401,14 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 </row>
 
                 <row>
+                  <entry>--init-publisher-wuid</entry>
+
+                  <entry>Preallocates the publisher workunit at the beginning
+                  of the command and displays the WUID on the command
+                  line</entry>
+                </row>
+
+                <row>
                   <entry>--dfu-queue</entry>
 
                   <entry>The DFU Queue to use when doing a DFU copy</entry>
@@ -6133,6 +6245,14 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
 
                   <entry>Use DFU to copy files during deployment, not on Roxie
                   in the background</entry>
+                </row>
+
+                <row>
+                  <entry>--init-publisher-wuid</entry>
+
+                  <entry>Preallocates the publisher workunit at the beginning
+                  of the command and displays the WUID on the command
+                  line</entry>
                 </row>
 
                 <row>

@@ -15,7 +15,7 @@
 ################################################################################
 
 
-# Component: ws_topology 
+# Component: ws_topology
 
 #####################################################
 # Description:
@@ -24,59 +24,60 @@
 #####################################################
 
 
-project( ws_topology ) 
+project( ws_topology )
 
 include(${HPCC_SOURCE_DIR}/esp/scm/smcscm.cmake)
 
-set (    SRCS 
-         ${ESPSCM_GENERATED_DIR}/ws_topology_esp.cpp 
-         ws_topologyPlugin.cpp 
-         ws_topologyService.cpp 
+set (    SRCS
+         ${ESPSCM_GENERATED_DIR}/ws_topology_esp.cpp
+         ws_topologyPlugin.cpp
+         ws_topologyService.cpp
     )
 
-include_directories ( 
-         ./../../../system/mp 
-         ./../../platform 
-         ./../../../system/jlib 
-         ./../../../common/environment 
-         ./../../services 
-         ./../../../system/xmllib 
-         ./../../../system/security/securesocket         
-         ./../../../system/security/shared 
-         ./../../../system/security/zcrypt 
-         ./../../../system/include 
-         ./../../../common/workunit 
-         ./../../../common/remote 
-         ./../../clients 
-         ./../../../tools/swapnode 
+include_directories (
+         ./../../../system/mp
+         ./../../platform
+         ./../../../system/jlib
+         ./../../../common/environment
+         ./../../services
+         ./../../../system/xmllib
+         ./../../../system/security/securesocket
+         ./../../../system/security/shared
+         ./../../../system/security/zcrypt
+         ./../../../system/include
+         ./../../../common/workunit
+         ./../../../common/remote
+         ./../../clients
+         ./../../../tools/swapnode
          ./../../../dali/base
          ./../../../dali/sasha
-         ./../ws_workunits 
-         ./../../bindings 
-         ./../../smc/SMCLib 
-         ./../../bindings/SOAP/xpp 
+         ./../ws_workunits
+         ./../../bindings
+         ./../../smc/SMCLib
+         ./../../bindings/SOAP/xpp
          ./../..//esplib
          ${HPCC_SOURCE_DIR}/common/thorhelper
     )
 
-ADD_DEFINITIONS( -D_USRDLL -DWS_TOPOLOGY_EXPORTS -DWSWU_API_LOCAL )
+ADD_DEFINITIONS( -D_USRDLL -DWS_TOPOLOGY_EXPORTS -DWSWU_API_LOCAL -DESP_SERVICE_WsTopology)
 
 HPCC_ADD_LIBRARY( ws_topology SHARED ${SRCS} )
 add_dependencies ( ws_topology espscm )
 install ( TARGETS ws_topology RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
 target_link_libraries ( ws_topology
          jlib
-         remote 
-         xmllib 
-         esphttp 
-         dalibase 
-         dllserver 
-         nbcd 
-         eclrtl 
-         deftype 
-         workunit 
-         SMCLib 
+         remote
+         xmllib
+         esphttp
+         dalibase
+         dllserver
+         nbcd
+         eclrtl
+         deftype
+         workunit
+         SMCLib
          swapnodelib
+         ${COMMON_ESP_SERVICE_LIBS}
          )
 
 if (NOT CONTAINERIZED)
@@ -88,7 +89,7 @@ IF (USE_OPENSSL)
     	securesocket
     )
 ENDIF()
-         
+
 IF (USE_ZLIB)
   target_link_libraries ( ws_topology
       ${ZLIB_LIBRARIES}

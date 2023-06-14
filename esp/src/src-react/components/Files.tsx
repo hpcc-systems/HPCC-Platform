@@ -86,7 +86,7 @@ interface FilesProps {
 }
 
 const emptyFilter = {};
-const defaultSort = { attribute: undefined, descending: false };
+export const defaultSort = { attribute: "Modified", descending: true };
 
 export const Files: React.FunctionComponent<FilesProps> = ({
     filter = emptyFilter,
@@ -155,7 +155,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
                     return "";
                 }, [])
             },
-            __hpcc_displayName: {
+            Name: {
                 label: nlsHPCC.LogicalName,
                 formatter: React.useCallback(function (name, row) {
                     if (row.__hpcc_isDir) {

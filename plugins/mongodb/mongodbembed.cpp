@@ -652,7 +652,7 @@ namespace mongodbembed
      */
     unsigned MongoDBRecordBinder::checkNextParam(const RtlFieldInfo * field)
     {
-       if (logctx.queryTraceLevel() > 4) logctx.CTXLOG("Binding %s to %d", field->name, thisParam);
+       if (doTrace(traceMongoDB)) logctx.CTXLOG("Binding %s to %d", field->name, thisParam);
        return thisParam++;
     }
 
@@ -860,12 +860,10 @@ namespace mongodbembed
     }
 
     /**
-     * @brief Configures a mongocxx::instance and allows for multiple threads to use it for making connections.
-     * 
-     * @param uri Configures the connection with a mongocxx::uri. It has the username, password, cluster string, 
-     * and the port number to use for connecting.
+     * @brief Configures a mongocxx::instance allowing for multiple threads to use it for making connections.
+     * The instance is accessed through the MongoDBConnection class.
      */
-    static void configure(mongocxx::uri uri) 
+    static void configure() 
     {
         class noop_logger : public mongocxx::logger 
         {
@@ -877,7 +875,7 @@ namespace mongodbembed
 
         auto instance = bsoncxx::stdx::make_unique<mongocxx::instance>(bsoncxx::stdx::make_unique<noop_logger>());
 
-        MongoDBConnection::instance().configure(std::move(instance), bsoncxx::stdx::make_unique<mongocxx::pool>(std::move(uri)));
+        MongoDBConnection::createInstance().configure(std::move(instance));
     }
 
     /**
@@ -892,18 +890,19 @@ namespace mongodbembed
     MongoDBEmbedFunctionContext::MongoDBEmbedFunctionContext(const IContextLogger &_logctx, const char *options, unsigned _flags)
     : logctx(_logctx), m_NextRow(), m_nextParam(0), m_numParams(0), m_scriptFlags(_flags)
     {
+        // User options
         const char *server = "";
         const char *user = "";
         const char *password = "";
         const char *databaseName = "";
         const char *collectionName = "";
         const char *connectionOptions = "";
-
         unsigned port = 0;
-        unsigned batchSize = 0;
-        bool useSSL = false;
+        unsigned batchSize = 100;
+        std::int32_t limit = 0; // The maximum number of documents that the cursor can return. 0 is equivalent to no limit.
         StringBuffer connectionString;
 
+        // Iterate over the options from the user
         StringArray inputOptions;
         inputOptions.appendList(options, ",");
         ForEachItemIn(idx, inputOptions) 
@@ -928,6 +927,8 @@ namespace mongodbembed
                     collectionName = val;
                 else if (stricmp(optName, "batchSize")==0)
                     batchSize = atoi(val);
+                else if (stricmp(optName, "limit")==0)
+                    limit = atoi(val);
                 else if (stricmp(optName, "connectionOptions") ==0)
                     connectionOptions = val;
                 else
@@ -964,12 +965,12 @@ namespace mongodbembed
         }
         else
         {
-            failx("A Server or Port must be suppplied in order to connect to MongoDB. Use the server() or port() option to specify the connection type. More information can be found in the README.md file on the plugin github page.");
+            failx("A Server or Port must be supplied in order to connect to MongoDB. Use the server() or port() option to specify the connection type. More information can be found in the README.md file on the plugin github page.");
         }
-        std::shared_ptr<MongoDBQuery> ptr(new MongoDBQuery(databaseName, collectionName, batchSize));
+        std::shared_ptr<MongoDBQuery> ptr(new MongoDBQuery(databaseName, collectionName, connectionString, batchSize, limit));
         query = ptr;
 
-        std::call_once(CONNECTION_CACHE_INIT_FLAG, configure, mongocxx::uri{connectionString.str()});
+        std::call_once(CONNECTION_CACHE_INIT_FLAG, configure); 
     }
 
     /**
@@ -1479,6 +1480,8 @@ namespace mongodbembed
                 mongocxx::options::find opts{};
                 if (query->size() != 0)
                     opts.batch_size(query->size()); // Batch size default is 100 and is set by user in MongoDBEmbedFunctionContext constructor
+                opts.limit(query->queryLimit());
+                
                 while (*start && *start == ' ') 
                     start++; // Move past whitespace if there is any
                 // if there is a comma then we have a projection to build
@@ -1823,12 +1826,13 @@ namespace mongodbembed
      */
     void MongoDBEmbedFunctionContext::execute()
     {
+        m_oMDBConnection->createInstance().create_connection(query->queryConnectionString(), query->queryQueryString());
         if (m_oInputStream)
             m_oInputStream->executeAll(m_oMDBConnection);
         else 
         {
             // Get a MongoDB instance from the connection object
-            auto conn = m_oMDBConnection->instance().get_connection();
+            auto conn = m_oMDBConnection->createInstance().get_connection(query->queryConnectionString(), query->queryQueryString());
             mongocxx::database db = (*conn)[query->database()];
             mongocxx::collection coll = db[query->collection()];
 

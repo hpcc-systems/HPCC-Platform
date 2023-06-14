@@ -613,7 +613,9 @@ enum
     XWFopt          = 0x0002,
     XWFnoindent     = 0x0004,
     XWFexpandempty  = 0x0008,
-    XWFonlyindentroot = 0x0010 //JSON only for now.  only indent and add newline at root level.  Useful for writing out individual rows in ECL ouptut
+    XWFonlyindentroot = 0x0010, //JSON only for now.  only indent and add newline at root level.  Useful for writing out individual rows in ECL output
+    XWFbracketformenc = 0x0020,  //form encoding has a couple different styles: bracket, dot, and our hpcc proprietary format
+    XWFhpccformenc = 0x0040
 };
 
 
@@ -776,6 +778,7 @@ interface ICodeContext : public IResourceContext
     virtual ISectionTimer * registerTimer(unsigned activityId, const char * name) = 0;
     virtual IEngineRowAllocator * getRowAllocatorEx(IOutputMetaData * meta, unsigned activityId, unsigned flags) const = 0;
     virtual void addWuExceptionEx(const char * text, unsigned code, unsigned severity, unsigned audience, const char * source) = 0;
+    virtual unsigned getElapsedMs() const = 0;
 };
 
 
@@ -2226,7 +2229,8 @@ enum
     SOAPFnoroot         = 0x004000,
     SOAPFjson           = 0x008000,
     SOAPFxml            = 0x010000,
-    SOAPFlogusertail    = 0x020000
+    SOAPFlogusertail    = 0x020000,
+    SOAPFformEncoded    = 0x040000
 };
 
 struct IHThorWebServiceCallActionArg : public IHThorArg

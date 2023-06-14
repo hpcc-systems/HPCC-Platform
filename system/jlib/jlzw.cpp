@@ -1336,7 +1336,7 @@ public:
             free(outbuf);
     }
 
-    void open(MemoryBuffer &mb, size32_t initialSize)
+    virtual void open(MemoryBuffer &mb, size32_t initialSize) override
     {
         outBufMb = &mb;
         outBufStart = mb.length();
@@ -1346,7 +1346,7 @@ public:
         remaining = outBufMb->capacity()-outlen;
     }
 
-    void open(void *buf,size32_t max)
+    virtual void open(void *buf,size32_t max) override
     {
         originalMax = max;
         if (buf)
@@ -1369,7 +1369,7 @@ public:
         remaining = max-outlen;
     }
 
-    void close()
+    virtual void close() override
     {
         transbuf.clear();
         memcpy(outbuf,&inlen,sizeof(inlen));        // expanded size
@@ -1380,6 +1380,11 @@ public:
             outBufMb = NULL;
         }
     }
+
+    virtual bool supportsBlockCompression() const override { return false; }
+    virtual bool supportsIncrementalCompression() const override { return true; }
+
+    virtual size32_t compressBlock(size32_t destSize, void * dest, size32_t srcSize, const void * src) override { return 0; }
 
     virtual bool adjustLimit(size32_t newLimit) override
     {
@@ -1395,7 +1400,7 @@ public:
 
     inline size32_t maxcompsize(size32_t s) { return s+((s+254)/255)*2; }
 
-    size32_t write(const void *buf,size32_t buflen)
+    virtual size32_t write(const void *buf,size32_t buflen) override
     {
         // assumes a transaction is a row and at least one row fits in
         if (prev)
@@ -1424,12 +1429,12 @@ public:
 
 
 
-    void startblock()
+    virtual void startblock() override
     {
         transbuf.clear();
     }
 
-    void commitblock()
+    virtual void commitblock() override
     {
         if (prev)
         {
@@ -1455,8 +1460,8 @@ public:
     }
 
 
-    virtual void *bufptr() { return outbuf;}
-    virtual size32_t buflen() { return outlen;}
+    virtual void *bufptr() override { return outbuf;}
+    virtual size32_t buflen() override { return outlen;}
 
     virtual CompressionMethod getCompressionMethod() const override { return COMPRESS_METHOD_ROWDIF; }
 };
@@ -1617,7 +1622,7 @@ public:
             free(outbuf);
     }
 
-    void open(MemoryBuffer &mb, size32_t initialSize)
+    virtual void open(MemoryBuffer &mb, size32_t initialSize) override
     {
         outBufMb = &mb;
         outBufStart = mb.length();
@@ -1626,7 +1631,7 @@ public:
         initCommon();
     }
 
-    void open(void *buf,size32_t _max)
+    virtual void open(void *buf,size32_t _max) override
     {
         max = _max;
         originalMax = max;
@@ -1648,7 +1653,7 @@ public:
         initCommon();
     }
 
-    void close()
+    virtual void close() override
     {
         header->rowofs[0] = (unsigned short)diffbuf.length();
         ASSERT((size32_t)(header->totsize+header->firstrlesize)<=max || max == 0);
@@ -1690,9 +1695,14 @@ public:
         return true;
     }
 
+    virtual bool supportsBlockCompression() const override { return false; }
+    virtual bool supportsIncrementalCompression() const override { return true; }
+
+    virtual size32_t compressBlock(size32_t destSize, void * dest, size32_t srcSize, const void * src) override { return 0; }
+
     inline size32_t maxcompsize(size32_t s) { return s+((s+254)/255)*2; }
 
-    size32_t write(const void *buf,size32_t buflen)
+    virtual size32_t write(const void *buf,size32_t buflen) override
     {
         // assumes a transaction is a row and at least one row fits in
         unsigned nr = header->numrows;
@@ -1716,12 +1726,12 @@ public:
 
 
 
-    void startblock()
+    virtual void startblock() override
     {
         rowbuf.clear();
     }
 
-    void commitblock()
+    virtual void commitblock() override
     {
         unsigned nr = header->numrows;
         if (nr) {
@@ -1744,8 +1754,8 @@ public:
     }
 
 
-    void *bufptr() { return outbuf;}
-    size32_t buflen() { return header->totsize;}
+    virtual void *bufptr() override { return outbuf;}
+    virtual size32_t buflen() override { return header->totsize;}
 
     virtual CompressionMethod getCompressionMethod() const override { return COMPRESS_METHOD_RANDROW; }
 };
@@ -1992,11 +2002,9 @@ class CCompressedFile : implements ICompressedFileIO, public CInterface
         while (b>a) {
             unsigned m = a+(b-a)/2;
             __int64 dif = (__int64)pos-index[m];
-            if (dif==0) {
-                b = m+1;
-                a = b;
-            }
-            else if (dif>0) 
+            //Do not optimize exact matches - because if there are zero length blocks this needs
+            //to return the block that follows
+            if (dif >= 0)
                 a = m+1;
             else
                 b = m;
@@ -2165,10 +2173,10 @@ public:
                             compressor.setown(createFastLZCompressor());
                             break;
                         case COMPRESS_METHOD_LZ4:
-                            compressor.setown(createLZ4Compressor(false));
+                            compressor.setown(createLZ4Compressor(nullptr, false));
                             break;
                         case COMPRESS_METHOD_LZ4HC:
-                            compressor.setown(createLZ4Compressor(true));
+                            compressor.setown(createLZ4Compressor(nullptr, true));
                             break;
                         default:
                             compMethod = COMPRESS_METHOD_LZW;
@@ -2589,7 +2597,7 @@ public:
         outBufMb = NULL;
     }
 
-    void open(MemoryBuffer &mb, size32_t initialSize)
+    virtual void open(MemoryBuffer &mb, size32_t initialSize) override
     {
         outlen = 0;
         outmax = initialSize;
@@ -2598,7 +2606,7 @@ public:
         comp->open(compattr, initialSize);
     }
 
-    void open(void *blk,size32_t blksize)
+    virtual void open(void *blk,size32_t blksize) override
     {
         outlen = 0;
         outmax = blksize;
@@ -2622,7 +2630,12 @@ public:
         return true;
     }
 
-    void close()
+    virtual bool supportsBlockCompression() const override { return false; }
+    virtual bool supportsIncrementalCompression() const override { return true; }
+
+    virtual size32_t compressBlock(size32_t destSize, void * dest, size32_t srcSize, const void * src) override { return 0; }
+
+    virtual void close() override
     {
         comp->close();
         // now encrypt
@@ -2642,29 +2655,29 @@ public:
         outmax = 0;
     }
 
-    size32_t write(const void *buf,size32_t len)
+    virtual size32_t write(const void *buf,size32_t len) override
     {
         return comp->write(buf,len);
     }
 
-    void * bufptr()
+    virtual void * bufptr() override
     {
         assertex(0 == outmax); // i.e. closed
         return outbuf;
     }
 
-    size32_t buflen()
+    virtual size32_t buflen() override
     {
         assertex(0 == outmax); // i.e. closed
         return outlen;
     }
 
-    void startblock()
+    virtual void startblock() override
     {
         comp->startblock();
     }
 
-    void commitblock()
+    virtual void commitblock() override
     {
         comp->commitblock();
     }
@@ -2858,14 +2871,14 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     {
     public:
         CLZ4CompressHandler() : CCompressHandlerBase("LZ4") { }
-        virtual ICompressor *getCompressor(const char *options) { return createLZ4Compressor(false); }
+        virtual ICompressor *getCompressor(const char *options) { return createLZ4Compressor(options, false); }
         virtual IExpander *getExpander(const char *options) { return createLZ4Expander(); }
     };
     class CLZ4HCCompressHandler : public CCompressHandlerBase
     {
     public:
         CLZ4HCCompressHandler() : CCompressHandlerBase("LZ4HC") { }
-        virtual ICompressor *getCompressor(const char *options) { return createLZ4Compressor(true); }
+        virtual ICompressor *getCompressor(const char *options) { return createLZ4Compressor(options, true); }
         virtual IExpander *getExpander(const char *options) { return createLZ4Expander(); }
     };
     class CAESCompressHandler : public CCompressHandlerBase

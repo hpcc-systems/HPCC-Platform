@@ -2922,6 +2922,10 @@ public:
         et->setPropInt("@exceptionCode", e->errorCode());
         StringBuffer msg;
         et->setProp("@exceptionMessage",e->errorMessage(msg).str());
+        Owned<IJlibDateTime> now = createDateTimeNow();
+        SCMStringBuffer temp;
+        now->getString(temp);
+        et->setProp("@time", temp.str());
     }
 
     IExceptionIterator *getExceptionIterator()

@@ -4,7 +4,9 @@ import nlsHPCC from "src/nlsHPCC";
 import { QuerySortItem } from "src/store/Store";
 import { useFluentGrid } from "../hooks/grid";
 import { useWorkunitResources } from "../hooks/workunit";
+import { updateParam } from "../util/history";
 import { ShortVerticalDivider } from "./Common";
+import { IFrame } from "./IFrame";
 
 const defaultUIState = {
     hasSelection: false
@@ -13,18 +15,24 @@ const defaultUIState = {
 interface ResourcesProps {
     wuid: string;
     sort?: QuerySortItem;
+    preview?: boolean;
 }
 
 const defaultSort = { attribute: "Wuid", descending: true };
 
+function formatUrl(wuid: string, url: string) {
+    return `#/workunits/${wuid}/resources/content?url=/WsWorkunits/${url}`;
+}
+
 export const Resources: React.FunctionComponent<ResourcesProps> = ({
     wuid,
-    sort = defaultSort
+    sort = defaultSort,
+    preview = true
 }) => {
-
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
     const [resources, , , refreshData] = useWorkunitResources(wuid);
     const [data, setData] = React.useState<any[]>([]);
+    const [webUrl, setWebUrl] = React.useState("");
 
     //  Grid ---
     const { Grid, selection, copyButtons } = useFluentGrid({
@@ -41,8 +49,8 @@ export const Resources: React.FunctionComponent<ResourcesProps> = ({
             DisplayPath: {
                 label: nlsHPCC.Name, sortable: true,
                 formatter: React.useCallback(function (url, row) {
-                    return <Link href={`#/iframe?src=${encodeURIComponent(`/WsWorkunits/${row.URL}`)}`}>{url}</Link>;
-                }, [])
+                    return <Link href={formatUrl(wuid, row.URL)}>{url}</Link>;
+                }, [wuid])
             }
         }
     });
@@ -58,27 +66,21 @@ export const Resources: React.FunctionComponent<ResourcesProps> = ({
             key: "open", text: nlsHPCC.Open, disabled: !uiState.hasSelection, iconProps: { iconName: "WindowEdit" },
             onClick: () => {
                 if (selection.length === 1) {
-                    window.location.href = `#/iframe?src=${encodeURIComponent(`/WsWorkunits/${selection[0].URL}`)}`;
+                    window.location.href = formatUrl(wuid, selection[0].URL);
                 } else {
                     for (let i = selection.length - 1; i >= 0; --i) {
-                        window.open(`#/iframe?src=${encodeURIComponent(`/WsWorkunits/${selection[i].URL}`)}`, "_blank");
+                        window.open(formatUrl(wuid, selection[i].URL), "_blank");
                     }
                 }
             }
         },
         {
-            key: "content", text: nlsHPCC.Content, disabled: !uiState.hasSelection, iconProps: { iconName: "WindowEdit" },
+            key: "preview", text: nlsHPCC.Preview, canCheck: true, checked: preview, iconProps: { iconName: "FileHTML" },
             onClick: () => {
-                if (selection.length === 1) {
-                    window.location.href = `#/text?src=${encodeURIComponent(`/WsWorkunits/${selection[0].URL}`)}`;
-                } else {
-                    for (let i = selection.length - 1; i >= 0; --i) {
-                        window.open(`#/text?src=${encodeURIComponent(`/WsWorkunits/${selection[i].URL}`)}`, "_blank");
-                    }
-                }
+                updateParam("preview", !preview);
             }
         },
-    ], [refreshData, selection, uiState.hasSelection]);
+    ], [refreshData, selection, uiState.hasSelection, wuid, preview]);
 
     //  Selection  ---
     React.useEffect(() => {
@@ -92,10 +94,15 @@ export const Resources: React.FunctionComponent<ResourcesProps> = ({
     }, [selection]);
 
     React.useEffect(() => {
-        setData(resources.filter((row, idx) => idx > 0).map(row => {
+        setData(resources.map(row => {
+            if (row.endsWith("/index.html")) {
+                setWebUrl(`/WsWorkunits/${row}`);
+            }
             return {
                 URL: row,
-                DisplayPath: row.substring(`res/${wuid}/`.length)
+                DisplayPath: row.indexOf(`res/${wuid}/`) === 0 ?
+                    row.substring(`res/${wuid}/`.length) :
+                    row
             };
         }));
     }, [resources, wuid]);
@@ -104,6 +111,8 @@ export const Resources: React.FunctionComponent<ResourcesProps> = ({
         <Sticky>
             <CommandBar items={buttons} farItems={copyButtons} />
         </Sticky>
-        <Grid />
+        {preview && webUrl ?
+            <IFrame src={webUrl} /> :
+            <Grid />}
     </ScrollablePane>;
 };

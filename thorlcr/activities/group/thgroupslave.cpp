@@ -73,6 +73,17 @@ public:
             rolloverEnabled = true;
         }
     }
+    virtual void preStart(size32_t parentExtractSz, const byte *parentExtract) override
+    {
+        PARENT::preStart(parentExtractSz, parentExtract);
+
+        if (rolloverEnabled)
+        {
+            // Ensure stale messages from last iteration are cleared.
+            // e.g. if this slave cancelled listening (in IRowServer::stop()).
+            queryJobChannel().queryJobComm().flush(mpTag);
+        }
+    }
     virtual void start() override
     {
         ActivityTimer s(slaveTimerStats, timeActivities);

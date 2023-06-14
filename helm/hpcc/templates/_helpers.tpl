@@ -761,7 +761,18 @@ A kludge to ensure mounted storage (e.g. for nfs, minikube or docker for desktop
 # This is only required when mounting a remote filing systems from another container or machine.
 # NB: this includes where the filing system is on the containers host machine .
 # Examples include, minikube, docker for desktop, or NFS mounted storage.
-{{- $permCmd := printf "chown -R %v:%v %s || true" .uid .gid .volumePath }}
+{{- $permCmd := "" -}}
+{{- $uid := .uid -}}
+{{- $gid := .gid -}}
+{{- range $index, $volume := .volumes }}
+ {{- if ne $index 0 }}
+  {{- $permCmd = printf "%s & " $permCmd -}}
+ {{- end -}}
+ {{- $permCmd = printf "%s(chown -R %v:%v %s || true)" $permCmd $uid $gid $volume.path }}
+{{- end }}
+{{- if gt (len .volumes) 1 -}}
+ {{- $permCmd = printf "%s; wait" $permCmd -}}
+{{- end }}
 - name: volume-mount-hack
   image: {{ .root.Values.global.busybox | default "busybox:stable" }}
   command: [
@@ -770,8 +781,10 @@ A kludge to ensure mounted storage (e.g. for nfs, minikube or docker for desktop
              "{{ $permCmd }}"
            ]
   volumeMounts:
-    - name: {{ .volumeName | quote}}
-      mountPath: {{ .volumePath | quote }}
+{{- range $volume := .volumes }}
+    - name: {{ $volume.name | quote}}
+      mountPath: {{ $volume.path | quote }}
+{{- end }}
 {{- end }}
 
 
@@ -788,6 +801,7 @@ NB: uid=10000 and gid=10001 are the uid/gid of the hpcc user, built into platfor
 {{- $planes := ($storage.planes | default list) -}}
 {{- $includeCategories := .includeCategories | default list -}}
 {{- $includeNames := .includeNames | default list -}}
+{{- $planesToChown := list -}}
 {{- $component := .me -}}
 {{- range $plane := $planes -}}
  {{- if not $plane.disabled -}}
@@ -795,11 +809,18 @@ NB: uid=10000 and gid=10001 are the uid/gid of the hpcc user, built into platfor
    {{- $mountpath := $plane.prefix -}}
    {{- $componentMatches := or (not (hasKey $plane "components")) (has $component.name $plane.components) -}}
    {{- if and (or (has $plane.category $includeCategories) (has $plane.name $includeNames)) $componentMatches }}
-    {{- $volumeName := (printf "%s-pv" $plane.name) -}}
-   {{- include "hpcc.changeMountPerms" (dict "root" $root "uid" $uid "gid" $gid "volumeName" $volumeName "volumePath" $plane.prefix) | nindent 0 }}
+    {{- $planesToChown = append $planesToChown $plane -}}
    {{- end -}}
   {{- end -}}
  {{- end -}}
+{{- end -}}
+{{- $volumes := list -}}
+{{- if len $planesToChown -}}
+ {{- range $plane := $planesToChown -}}
+  {{- $volumeName := (printf "%s-pv" $plane.name) -}}
+  {{- $volumes = append $volumes (dict "name" $volumeName "path" $plane.prefix) -}}
+ {{- end -}}
+ {{- include "hpcc.changeMountPerms" (dict "root" $root "uid" $uid "gid" $gid "volumes" $volumes) | nindent 0 }}
 {{- end -}}
 {{- end -}}
 
@@ -1206,10 +1227,21 @@ Pass in dict with .root, .name, .service, .defaultPort, .selector defined
   {{- else -}}
    {{- required "global visibilities section not found" nil -}}
   {{- end -}}
+  {{- if .appProtocolHTTP -}}
+   {{- if (.root.Values.certificates | default dict).enabled -}}
+    {{- $externalCert := (ne (include "hpcc.isVisibilityPublic" (dict "root" $.root "visibility" .service.visibility)) "") -}}
+    {{- $externalIssuerKeyName := ternary "remote" "public" (eq "true" ( include "hpcc.usesRemoteClientCertificates" . )) -}}
+    {{- $issuerKeyName := ternary $externalIssuerKeyName "local" $externalCert -}}
+    {{- if eq (include "hpcc.isIssuerEnabled" (dict "root" $.root "issuerKeyName" $issuerKeyName)) "true" -}}
+     {{- $_ := set $lvars "tls" true -}}
+    {{- end }}
+   {{- end }}
+  {{- end }}
  {{- end -}}
  {{- if hasKey .service "ingress" -}}{{- $_ := set $lvars "ingress" .service.ingress -}}{{- end -}}
  {{- if hasKey .service "loadBalancerSourceRanges" -}}{{- $_ := set $lvars "loadBalancerSourceRanges" .service.loadBalancerSourceRanges -}}{{- end -}}
 {{- end }}
+
 apiVersion: v1
 kind: Service
 metadata:
@@ -1229,6 +1261,9 @@ spec:
   - port: {{ required "servicePort must be specified" .service.servicePort }}
     protocol: TCP
     targetPort: {{ .service.port | default .defaultPort }}
+{{- if .appProtocolHTTP }}
+    appProtocol: {{ ternary "https" "http" (hasKey $lvars "tls" | ternary $lvars.tls false) }}
+{{- end }}
   selector:
     server: {{ .selector | quote }}
   type: {{ $lvars.type }}
@@ -1525,7 +1560,7 @@ use "public" or "local"
 */}}
 {{- define "hpcc.addCertificate" }}
  {{- if (.root.Values.certificates | default dict).enabled -}}
-  {{- $externalCert := or (and (hasKey . "external") .external) (ne (include "hpcc.isVisibilityPublic" .) "") -}}
+  {{- $externalCert := ((hasKey . "external") | ternary .external (ne (include "hpcc.isVisibilityPublic" .) "")) -}}
   {{- $externalIssuerKeyName := ternary "remote" "public" (eq "true" ( include "hpcc.usesRemoteClientCertificates" . )) -}}
   {{- $issuerKeyName := .issuerKeyName | default (ternary $externalIssuerKeyName "local" $externalCert) -}}
   {{- if eq (include "hpcc.isIssuerEnabled" (dict "root" .root "issuerKeyName" $issuerKeyName)) "true" -}}
@@ -1536,6 +1571,7 @@ use "public" or "local"
     {{- $spiffe := (hasKey $issuer "spiffe" | ternary $issuer.spiffe (ne "public" $issuerKeyName)) }}
     {{- $service := (.service | default dict) -}}
     {{- $wildcard := (hasKey $issuer "wildcard" | ternary $issuer.wildcard false) -}}
+    {{- $useCommonName := (hasKey $issuer "useCommonName" | ternary $issuer.useCommonName true) -}}
     {{- /* Having a service specific domain overrules wildcard. We can consider wildcard at the service level later */ -}}
     {{- if and $wildcard (not $service.domain) -}}
      {{- /* Issuer wildcard certifiacte should already be generated */ -}}
@@ -1554,6 +1590,29 @@ use "public" or "local"
     {{- else -}}
      {{- $domain := ( $service.domain | default $issuer.domain | default $namespace | default "default" ) -}}
      {{- $name := .name -}}
+
+     {{- /* Prepare Common and DNS names */ -}}
+     {{- $local := dict "dnsNames" list -}}
+     {{- if hasKey . "service" -}}{{- /* ESP style - if service is passed in, it has service properties but the name comes from the name parameter */ -}}
+      {{- $public := and (hasKey .service "visibility") (not (eq .service.visibility "cluster")) -}}
+      {{- if eq $public $externalCert -}}
+        {{- $_ := set $local "dnsNames" (append $local.dnsNames $name ) -}}
+      {{- end -}}
+     {{- end -}}
+     {{- if hasKey . "services" -}}{{- /* Roxie style - if services parameter is passed in, the component can have mulitple services with different names */ -}}
+      {{- range $service := .services -}}
+       {{- $public := and (hasKey $service "visibility") (not (eq $service.visibility "cluster")) -}}
+       {{- if eq $public $externalCert -}}
+        {{- $_ := set $local "dnsNames" (append $local.dnsNames $service.name ) -}}
+       {{- end -}}
+      {{- end -}}
+     {{- end -}}
+     {{- $_ := set $local "dnsNames" (uniq $local.dnsNames ) -}}
+     {{- if $externalCert -}}
+       {{- $_ := set $local "commonName" (mustFirst $local.dnsNames ) -}}
+     {{- else -}}
+       {{- $_ := set $local "commonName" $name -}}
+     {{- end -}}
      # spiffe and clientUsage default is off for public issuer to simplify use of letsencrypt, etc.
 apiVersion: cert-manager.io/v1
 kind: Certificate
@@ -1568,7 +1627,10 @@ spec:
   subject:
     organizations:
     - HPCC Systems
-  commonName: {{ (trunc 64 (printf "%s.%s" $name $domain)) | quote }}
+     {{- /* Initially turning off commonName is experimental, but it may help with some issuers.  Rules may require commonName to also be in alt dns names but truncation may make that impossible */ -}}
+     {{- if $useCommonName }}
+  commonName: {{ (trunc 64 (printf "%s.%s" $local.commonName $domain)) | quote }}
+     {{- end }}
   isCA: false
   privateKey:
     algorithm: RSA
@@ -1580,25 +1642,8 @@ spec:
     - client auth
      {{- end }}
   dnsNames:
-     {{- /* if servicename is passed we simply create a service entry of that name */ -}}
-     {{- if .servicename }}
-  - {{ .servicename }}.{{ $domain }}
-      {{- /* if service parameter is passed in we are using the component config as a service config entry */ -}}
-     {{- else if .service -}}
-      {{- $public := and (hasKey .service "visibility") (not (eq .service.visibility "cluster")) -}}
-      {{- if eq $public $externalCert }}
-  - {{ $name }}.{{ $domain }}
-      {{- end }}
-     {{- /* if services parameter is passed the component has an array of services to configure */ -}}
-     {{- else if .services -}}
-      {{- range $service := .services }}
-       {{- $external := and (hasKey $service "external") $service.external -}}
-       {{- if eq $external $externalCert }}
-  - {{ $service.name }}.{{ $domain }}
-       {{- end }}
-      {{- end }}
-     {{- else if not $externalCert }}
-  - "{{ $name }}.{{ $domain }}"
+     {{- range $dnsName := $local.dnsNames }}
+  - {{ (printf "%s.%s" $dnsName $domain) | quote }}
      {{- end }}
      {{- if $spiffe }}
   uris:
@@ -2000,8 +2045,8 @@ A template to output a merged environment. Pass in a list with global then local
 {{- $_ := set $result .name .value -}}
 {{- end -}}
 {{- range $key,$value := $result -}}
-- name: {{ $key }}
-  value: {{ $value }}
+- name: {{ $key | quote }}
+  value: {{ $value | quote }}
 {{ end -}}
 {{- end -}}
 
@@ -2199,4 +2244,100 @@ Fills "result" dictionary with "planeCategories" and "namedPlanes"
 {{- end -}}
 {{- $_ := set .result "planeCategories" $planeCategories -}}
 {{- $_ := set .result "namedPlanes" $namedPlanes -}}
+{{- end -}}
+
+{{/*
+A template to generate a HPA Behavior.scaleUp/Down clause for HPA object
+Pass in dict behaviorscale section
+*/}}
+{{- define "hpcc.addHPABehaviorScale" -}}
+{{- if .behaviorScale }}
+ {{- if hasKey .behaviorScale "stabilizationWindowSeconds" -}}
+stabilizationWindowSeconds: {{ .behaviorScale.stabilizationWindowSeconds }}
+ {{- end -}}
+ {{- if hasKey .behaviorScale "policies" }}
+policies:
+  {{- range $policy := .behaviorScale.policies }}
+- type: {{ $policy.type }}
+  value: {{ $policy.value }}
+  periodSeconds: {{ $policy.periodSeconds }}
+  {{- end -}}
+  {{- if hasKey .behaviorScale "selectPolicy" }}
+selectPolicy: {{ .behaviorScale.selectPolicy }}
+  {{- end }}
+ {{- end }}
+{{- end }}
+{{- end -}}
+
+{{/*
+A template to generate a HorizontalPodAutoscaler for a named workload resource (such as a Deployment or StatefulSet)
+Pass in dict with workload resource name and kind (Deployment|ReplicaSet|StatefulSet|ReplicationController), and hpa section
+*/}}
+{{- define "hpcc.addHorizontalPodAutoscaler" }}
+ {{- if .name -}}
+  {{- if .hpa -}}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ printf "%s-hpa" .name }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: {{ .kind }}
+    name: {{ printf "%s" .name }}
+  minReplicas: {{ (hasKey .hpa "minReplicas") | ternary .hpa.minReplicas 1 }}
+  maxReplicas: {{ .hpa.maxReplicas }}
+   {{- if hasKey .hpa "behavior" }}
+  behavior: 
+    {{- if hasKey .hpa.behavior "scaleDown" }}
+    scaleDown:
+      {{- include "hpcc.addHPABehaviorScale" (dict "behaviorScale" .hpa.behavior.scaleDown) | nindent 6 }}
+    {{- end }}
+    {{- if hasKey .hpa.behavior "scaleUp" }}
+    scaleUp:
+      {{- include "hpcc.addHPABehaviorScale" (dict "behaviorScale" .hpa.behavior.scaleUp) | nindent 6 }}
+    {{- end }}
+   {{- end }}
+  metrics:
+   {{- range $metric := .hpa.metrics }}
+  - type: {{ $metric.type }}
+    {{ lower $metric.type }}:
+     {{- if eq $metric.type "Pods" }}
+      metric:
+        name: {{ $metric.name }}
+      {{- if hasKey $metric "selector" }}
+        selector: {{ $metric.selector }}
+      {{- end }}
+     {{- else if eq $metric.type "Object" }}
+      {{- if hasKey $metric "describedObject" }}
+      metric:
+        name: {{ $metric.name }}
+      describedObject:
+        apiVersion: {{ $metric.describedObject.apiVersion }}
+        kind: {{ $metric.describedObject.kind }}
+        name: {{ $metric.describedObject.name }}
+      {{- end }}
+     {{- else if eq $metric.type "External"}}
+      metric:
+        name: {{ $metric.name }}
+      {{- if hasKey $metric "selector" }}
+        selector:
+          matchLabels:
+            {{- toYaml $metric.selector.matchLabels | nindent 12 }}
+      {{- end }}
+     {{- else if eq $metric.type "Resource"}}
+      name: {{ $metric.name }}
+     {{- end }}
+      target:
+        type: {{ $metric.target.type }}
+      {{- if eq $metric.target.type "Utilization" }}
+        averageUtilization: {{ $metric.target.value }}
+      {{- else if eq $metric.target.type "AverageValue" }}
+        averageValue: {{ $metric.target.value }}
+      {{- else if eq $metric.target.type "Value" }}
+        value: {{ $metric.target.value }}
+     {{- end }}
+   {{- end -}}
+  {{- end -}}
+ {{- end -}}
 {{- end -}}

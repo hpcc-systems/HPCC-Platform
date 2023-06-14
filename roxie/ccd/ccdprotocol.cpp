@@ -22,6 +22,7 @@
 #include "rtlcommon.hpp"
 
 #include "roxie.hpp"
+#include "ccd.hpp"
 #include "roxiehelper.hpp"
 #include "ccdprotocol.hpp"
 #include "securesocket.hpp"
@@ -114,7 +115,7 @@ public:
             }
 #endif /* GLIBC */
             if (traceLevel)
-                traceAffinity(&cpuMask);
+                traceAffinitySettings(&cpuMask);
         }
 #endif
     }
@@ -168,14 +169,14 @@ public:
                         }
                     }
                 }
-                if (traceLevel > 3)
-                    traceAffinity(&threadMask);
+                if (doTrace(traceAffinity))
+                    traceAffinitySettings(&threadMask);
                 pthread_setaffinity_np(GetCurrentThreadId(), sizeof(cpu_set_t), &threadMask);
             }
             else
             {
-                if (traceLevel > 3)
-                    traceAffinity(&cpuMask);
+                if (doTrace(traceAffinity))
+                    traceAffinitySettings(&cpuMask);
                 pthread_setaffinity_np(GetCurrentThreadId(), sizeof(cpu_set_t), &cpuMask);
             }
         }
@@ -195,7 +196,7 @@ protected:
     static unsigned lastCore;
 
 private:
-    static void traceAffinity(cpu_set_t *mask)
+    static void traceAffinitySettings(cpu_set_t *mask)
     {
         StringBuffer trace;
         for (unsigned core = 0; core < CPU_SETSIZE; core++)
@@ -295,7 +296,7 @@ public:
         {
             ssock.setown(secureContext->createSecureSocket(base));
             int loglevel = SSLogMin;
-            if (traceLevel > 2)
+            if (doTrace(traceSockets))
                 loglevel = SSLogMax;
             int status = ssock->secure_accept(loglevel);
             if (status < 0)
@@ -1682,7 +1683,7 @@ private:
 
     const char *queryRequestGlobalIdHeader(HttpHelper &httpHelper, IContextLogger &logctx, StringAttr &headerused)
     {
-        const char *id = queryRequestIdHeader(httpHelper, logctx.queryGlobalIdHttpHeader(), headerused);
+        const char *id = queryRequestIdHeader(httpHelper, logctx.queryGlobalIdHttpHeaderName(), headerused);
         if (!id || !*id)
         {
             id = queryRequestIdHeader(httpHelper, "Global-Id", headerused);
@@ -1694,7 +1695,7 @@ private:
 
     const char *queryRequestCallerIdHeader(HttpHelper &httpHelper, IContextLogger &logctx, StringAttr &headerused)
     {
-        const char *id = queryRequestIdHeader(httpHelper, logctx.queryCallerIdHttpHeader(), headerused);
+        const char *id = queryRequestIdHeader(httpHelper, logctx.queryCallerIdHttpHeaderName(), headerused);
         if (!id || !*id)
         {
             id = queryRequestIdHeader(httpHelper, "Caller-Id", headerused);
@@ -1731,7 +1732,7 @@ readAnother:
                 client->querySocket()->getPeerAddress(peer);
                 if (!client->readBlocktms(rawText.clear(), readWait, &httpHelper, continuationNeeded, isStatus, global->maxBlockSize))
                 {
-                    if (traceLevel > 8)
+                    if (doTrace(traceSockets, TraceFlags::Max))
                     {
                         StringBuffer b;
                         DBGLOG("No data reading query from socket");
@@ -1765,7 +1766,7 @@ readAnother:
                         break;
                 }
             }
-            if (traceLevel > 0 && !expectedError)
+            if (doTrace(traceSockets) && !expectedError)
             {
                 StringBuffer b;
                 IERRLOG("Error reading query from socket: %s", E->errorMessage(b).str());
@@ -1776,7 +1777,7 @@ readAnother:
         }
 
         PerfTracer perf;
-        IContextLogger &logctx = *msgctx->queryLogContext();
+        IRoxieContextLogger &logctx = static_cast<IRoxieContextLogger&>(*msgctx->queryLogContext());
         bool isHTTP = httpHelper.isHttp();
         if (isHTTP)
         {
@@ -1800,7 +1801,7 @@ readAnother:
                 StringAttr globalIdHeader, callerIdHeader;
                 const char *globalId = queryRequestGlobalIdHeader(httpHelper, logctx, globalIdHeader);
                 const char *callerId = queryRequestCallerIdHeader(httpHelper, logctx, callerIdHeader);
-                logctx.setHttpIdHeaders(globalIdHeader, callerIdHeader);
+                logctx.setHttpIdHeaderNames(globalIdHeader, callerIdHeader);
                 if (globalId && *globalId)
                     msgctx->setTransactionId(globalId, callerId, true);  //logged and forwarded through SOAPCALL/HTTPCALL
                 else if (callerId && *callerId)
@@ -2126,6 +2127,16 @@ readAnother:
         }
         unsigned bytesOut = client? client->bytesOut() : 0;
         unsigned elapsed = msTick() - qstart;
+        if (client)
+        {
+            logctx.noteStatistic(StTimeSocketReadIO, client->getStatistic(StTimeSocketReadIO));
+            logctx.noteStatistic(StTimeSocketWriteIO, client->getStatistic(StTimeSocketWriteIO));
+            logctx.noteStatistic(StSizeSocketRead, client->getStatistic(StSizeSocketRead));
+            logctx.noteStatistic(StSizeSocketWrite, client->getStatistic(StSizeSocketWrite));
+            logctx.noteStatistic(StNumSocketReads, client->getStatistic(StNumSocketReads));
+            logctx.noteStatistic(StNumSocketWrites, client->getStatistic(StNumSocketWrites));
+        }
+
         sink->noteQuery(msgctx.get(), peerStr, failed, bytesOut, elapsed,  memused, agentsReplyLen, agentsDuplicates, agentsResends, continuationNeeded, requestArraySize);
         if (continuationNeeded)
         {
@@ -2159,6 +2170,15 @@ readAnother:
                         response.startDataset("Statistics", NULL, (unsigned) -1);
                         VStringBuffer xml(" <wuid>%s</wuid>\n", statsWuid.str());
                         response.flushXML(xml, true);
+                    }
+                    if (queryPT->getPropBool("@summaryStats", alwaysSendSummaryStats))
+                    {
+                        FlushingStringBuffer response(client, (protocolFlags & HPCC_PROTOCOL_BLOCKED), mlResponseFmt, (protocolFlags & HPCC_PROTOCOL_NATIVE_RAW), false, logctx);
+                        response.startDataset("SummaryStats", NULL, (unsigned) -1);
+                        VStringBuffer s(" COMPLETE: %s %s complete in %u msecs memory=%u Mb agentsreply=%u duplicatePackets=%u resentPackets=%u resultsize=%u continue=%d", queryName.get(), uid, elapsed, memused, agentsReplyLen, agentsDuplicates, agentsResends, bytesOut, continuationNeeded);
+                        logctx.getStats(s).newline();
+                        response.flushXML(s, true);
+
                     }
                     unsigned replyLen = 0;
                     client->write(&replyLen, sizeof(replyLen));

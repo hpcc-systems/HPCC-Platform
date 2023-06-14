@@ -1,0 +1,62 @@
+.eclwatch_MetricGraphWidget .cluster>polygon {
+    stroke: darkgray;
+}
+
+.eclwatch_MetricGraphWidget .cluster.started>polygon {
+    stroke: darkorange;
+}
+
+.eclwatch_MetricGraphWidget .cluster.completed>polygon {
+    stroke: darkgreen;
+}
+
+.eclwatch_MetricGraphWidget .node>path {
+    stroke: darkgray;
+}
+
+.eclwatch_MetricGraphWidget .node>polygon {
+    stroke: darkgray;
+}
+
+.eclwatch_MetricGraphWidget .node.started>path {
+    stroke: darkorange;
+}
+
+.eclwatch_MetricGraphWidget .node.started>polygon {
+    stroke: darkorange;
+}
+
+.eclwatch_MetricGraphWidget .node.completed>path {
+    stroke: darkgreen;
+}
+
+.eclwatch_MetricGraphWidget .node.completed>polygon {
+    stroke: darkgreen;
+}
+
+.eclwatch_MetricGraphWidget .edge>path {
+    stroke: darkgray;
+}
+
+.eclwatch_MetricGraphWidget .edge>polygon {
+    stroke: darkgray;
+    fill: darkgray;
+}
+
+.eclwatch_MetricGraphWidget .edge.started>path {
+    stroke: darkorange;
+}
+
+.eclwatch_MetricGraphWidget .edge.started>polygon {
+    stroke: darkorange;
+    fill: darkorange;
+}
+
+.eclwatch_MetricGraphWidget .edge.completed>path {
+    stroke: darkgreen;
+}
+
+.eclwatch_MetricGraphWidget .edge.completed>polygon {
+    stroke: darkgreen;
+    fill: darkgreen;
+}

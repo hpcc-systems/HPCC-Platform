@@ -25,10 +25,7 @@ set ( ESPSCM_GENERATED_DIR ${CMAKE_BINARY_DIR}/generated )
 
 set ( ESPSCM_SRCS
       common.ecm
-      esp.ecm
       ws_access.ecm
-      soapesp.ecm
-      ws_ecl_client.ecm
       ws_fs.ecm
       ws_smc.ecm
       ws_topology.ecm
@@ -78,4 +75,4 @@ foreach ( loop_var ${ESPSCM_SRCS} )
     endif ( PLATFORM )
 endforeach ( loop_var ${ESPSCM_SRCS} )
 
-include_directories ( ${ESPSCM_GENERATED_DIR} )
+include_directories ( ${ESPSCM_GENERATED_DIR} ${HPCC_SOURCE_DIR}/esp/espcommon )

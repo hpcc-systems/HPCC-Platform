@@ -18,7 +18,7 @@
   <sect1 id="addrepo" role="nobrk">
     <title>Add a Repository</title>
 
-    <para>To use the HPCC Systems helm chart, you must add it to the helm
+    <para>To use the HPCC Systems Helm chart, you must add it to the Helm
     repository list, as shown below:</para>
 
     <para><programlisting>helm repo add hpcc https://hpcc-systems.github.io/helm-chart/</programlisting></para>
@@ -44,7 +44,7 @@ Update Complete. Happy Helming!</programlisting></para>
   <sect1 id="startdefault">
     <title>Start a Default System</title>
 
-    <para>The default helm chart starts a simple test system with Dali, ESP,
+    <para>The default Helm chart starts a simple test system with Dali, ESP,
     ECL CC Server, two ECL Agent queues (ROXIE and hThor mode), and one Thor
     queue.</para>
 
@@ -207,7 +207,7 @@ dfs                   LoadBalancer 10.100.52.9     localhost    8520:30184/TCP  
     <para>This displays the installed charts and their names. In this example,
     mycluster.</para>
 
-    <para>To stop the HPCC Systems pods, use helm to uninstall:</para>
+    <para>To stop the HPCC Systems pods, use Helm to uninstall:</para>
 
     <para><programlisting>helm uninstall mycluster</programlisting></para>
 
@@ -306,9 +306,10 @@ helm install hpcc-localfile hpcc/hpcc-localfile --set common.hostpath=~/hpccdata
       </listitem>
 
       <listitem>
-        <para>Copy the output from the helm install command in the previous
-        step from the word <emphasis role="bold">storage:</emphasis> to the
-        end, and save it to a text file.</para>
+        <para>Copy the output from the <emphasis>helm install</emphasis>
+        command in the previous step from the word <emphasis
+        role="bold">storage:</emphasis> to the end, and save it to a text
+        file.</para>
 
         <para>In this example, we will call the file
         <emphasis>mystorage.yaml</emphasis>. The file should look similar to
@@ -400,8 +401,8 @@ OUTPUT(allPeople,,'MyData::allPeople',THOR,OVERWRITE);
       </listitem>
 
       <listitem>
-        <para>Use the helm uninstall command to terminate your cluster, then
-        restart your deployment.</para>
+        <para>Use the <emphasis>helm uninstall</emphasis> command to terminate
+        your cluster, then restart your deployment.</para>
       </listitem>
 
       <listitem>
@@ -458,7 +459,7 @@ OUTPUT(allPeople,,'MyData::allPeople',THOR,OVERWRITE);
 
           <listitem>
             <para>The <emphasis role="strong">originalperson</emphasis> file
-            is available from the HPCC Systems Web site: </para>
+            is available from the HPCC Systems Web site:</para>
 
             <para
             role="syntax">(https://cdn.hpccsystems.com/install/docs/3_8_0_8rc_CE/OriginalPerson).</para>

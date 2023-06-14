@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useConst, useForceUpdate } from "@fluentui/react-hooks";
-import { AccountService, WsAccount } from "@hpcc-js/comms";
+import { AccessService, AccountService, WsAccount } from "@hpcc-js/comms";
 import { cookieKeyValStore } from "src/KeyValStore";
 
 const defaults = {
@@ -58,7 +58,10 @@ export function useUserSession(): {
             }
             store.set("Status", "Unlocked");
             store.set("ECLWatchUser", "true");
-        }).catch(err => console.log("Unable to create user session."));
+        }).catch(err => {
+            store.set("ESPSessionState", "false");
+            console.error("Authorization Request Error:  " + err.message);
+        });
     }, [store]);
 
     const deleteUserSession = React.useCallback(() => {
@@ -73,21 +76,36 @@ export function useUserSession(): {
     return { userSession, createUserSession, setUserSession, deleteUserSession };
 }
 
-export function useMyAccount(): { currentUser: WsAccount.MyAccountResponse } {
+export function useMyAccount(): { currentUser: WsAccount.MyAccountResponse, isAdmin: boolean } {
 
     const [currentUser, setCurrentUser] = React.useState<WsAccount.MyAccountResponse>({ username: "" } as WsAccount.MyAccountResponse);
+    const [isAdmin, setIsAdmin] = React.useState(false);
 
-    const service = useConst(() => new AccountService({ baseUrl: "" }));
+    const accountService = useConst(() => new AccountService({ baseUrl: "" }));
+    const accessService = useConst(() => new AccessService({ baseUrl: "" }));
 
     React.useEffect(() => {
-        service.MyAccount({})
-            .then((response) => {
-                response.username = response.username ?? "";
-                setCurrentUser(response);
+        accountService.MyAccount({})
+            .then((account) => {
+                account.username = account.username ?? "";
+                if (account.username) {
+                    accessService.UserEdit({ username: account.username }).then((response) => {
+                        const groups = response.Groups.Group;
+                        const adminGroupNames = ["Administrator", "Directory Administrators"];
+                        if (response.isLDAPAdmin || groups.filter(group => !adminGroupNames.indexOf(group.name)).length > 0) {
+                            setIsAdmin(true);
+                        } else {
+                            setIsAdmin(account.accountType === "Administrator");
+                        }
+                    });
+                } else {
+                    setIsAdmin(true);
+                }
+                setCurrentUser(account);
             });
-    }, [service, setCurrentUser]);
+    }, [accessService, accountService, setCurrentUser]);
 
-    return { currentUser };
+    return { currentUser, isAdmin };
 
 }
 

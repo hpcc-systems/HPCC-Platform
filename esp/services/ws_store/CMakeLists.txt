@@ -63,7 +63,7 @@ HPCC_ADD_SUBDIRECTORY (espstorelib)
         ${HPCC_SOURCE_DIR}/common/thorhelper
         )
 
-    add_definitions(-D_USRDLL -Dwsstore_API_LOCAL )
+    add_definitions(-D_USRDLL -Dwsstore_API_LOCAL -DESP_SERVICE_wsstore)
     HPCC_ADD_LIBRARY(ws_store SHARED ${SRCS})
 
     target_link_libraries(
@@ -73,6 +73,7 @@ HPCC_ADD_SUBDIRECTORY (espstorelib)
         esphttp
         dalibase
         wuwebview
+        ${COMMON_ESP_SERVICE_LIBS}
         )
 
 IF (USE_OPENSSL)

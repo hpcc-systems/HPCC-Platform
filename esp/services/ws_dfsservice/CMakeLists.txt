@@ -61,7 +61,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/rtl/eclrtl
     )
 
-ADD_DEFINITIONS( -D_USRDLL -DWS_DFS_EXPORTS -DWsDfs_API_LOCAL )
+ADD_DEFINITIONS( -D_USRDLL -DWS_DFS_EXPORTS -DWsDfs_API_LOCAL -DESP_SERVICE_WsDfs)
 
 HPCC_ADD_LIBRARY( ws_dfsservice SHARED ${SRCS} )
 add_dependencies ( ws_dfsservice espscm )
@@ -75,6 +75,7 @@ target_link_libraries ( ws_dfsservice
          xmllib
          esphttp
          SMCLib
+         ${COMMON_ESP_SERVICE_LIBS}
     )
 
 IF (USE_OPENSSL)

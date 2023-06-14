@@ -26,8 +26,11 @@
 // subclasses required to provide access to key protocol-independent data.
 // Handles protocol-independent requests, such as accessing the TxSummary
 // instance. Requests for protocol-dependent data raise exceptions.
-class CEspBaseSecureContext : extends CInterface, implements IEspSecureContext
+class CEspBaseSecureContext : extends CInterface, implements IEspSecureContextEx
 {
+    StringAttr domainAuthData;
+    AuthType domainAuthType = AuthTypeMixed;
+
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -36,6 +39,30 @@ public:
     virtual CTxSummary* queryTxSummary() const override { return (queryContext() ? queryContext()->queryTxSummary() : NULL); }
 
     virtual bool getProp(int type, const char* name, StringBuffer& value) override { UNIMPLEMENTED; }
+
+    inline virtual StringBuffer& getDomainAuthData(StringBuffer& data) override
+    {
+        return data.append(domainAuthData);
+    }
+
+    inline virtual bool setDomainAuthData(const char* data) override
+    {
+        if (!domainAuthData.isEmpty()) //The domainAuthData has been set. Should not be changed.
+            return false;
+
+        domainAuthData.set(data);
+        return true;
+    }
+
+    inline virtual AuthType getDomainAuthType() override
+    {
+        return domainAuthType;
+    }
+
+    inline virtual void setDomainAuthType(AuthType type) override
+    {
+        domainAuthType = type;
+    }
 
 protected:
     // Abstract method providing internal access to the full ESP context.

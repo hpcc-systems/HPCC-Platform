@@ -1946,6 +1946,11 @@ void CSafeSocket::sendException(const char *source, unsigned code, const char *m
 #endif
 }
 
+unsigned __int64 CSafeSocket::getStatistic(StatisticKind kind) const
+{
+    return sock->getStatistic(kind);
+}
+
 //==============================================================================================================
 
 #define RESULT_FLUSH_THRESHOLD 10000u
@@ -2152,7 +2157,7 @@ void FlushingStringBuffer::flush(bool closing)
         unsigned replyLen = s.length() - sizeof(size32_t);
         unsigned revLen = replyLen | ((isBlocked)?0x80000000:0);
         _WINREV(revLen);
-        if (logctx.queryTraceLevel() > 1)
+        if (doTrace(traceSockets))
         {
             if (isBlocked)
                 logctx.CTXLOG("Sending reply: Sending blocked %s data", getFormatName(mlFmt));
@@ -2170,7 +2175,7 @@ void FlushingStringBuffer::flush(bool closing)
             _WINREV(revRowCount);
             *(size32_t *) (s.str()+9) = revRowCount;
         }
-        if (logctx.queryTraceLevel() > 9)
+        if (doTrace(traceSockets, TraceFlags::Max))
             logctx.CTXLOG("writing block size %d to socket", replyLen);
         try
         {
@@ -2186,7 +2191,7 @@ void FlushingStringBuffer::flush(bool closing)
         }
         catch (...)
         {
-            if (logctx.queryTraceLevel() > 9)
+        if (doTrace(traceSockets, TraceFlags::Max))
                 logctx.CTXLOG("Exception caught FlushingStringBuffer::flush");
 
             s.clear();
@@ -2194,7 +2199,7 @@ void FlushingStringBuffer::flush(bool closing)
             throw;
         }
 
-        if (logctx.queryTraceLevel() > 9)
+        if (doTrace(traceSockets, TraceFlags::Max))
             logctx.CTXLOG("wrote block size %d to socket", replyLen);
 
         if (closing)

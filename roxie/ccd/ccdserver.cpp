@@ -224,6 +224,10 @@ public:
     {
         ctx->mergeStats(from);
     }
+    virtual StringBuffer &getStats(StringBuffer &ret) const
+    {
+        return ctx->getStats(ret);
+    }
     virtual void gatherStats(CRuntimeStatisticCollection & merged) const override
     {
         ctx->gatherStats(merged);
@@ -288,17 +292,17 @@ public:
     {
         return ctx->queryLocalId();
     }
-    virtual void setHttpIdHeaders(const char *global, const char *caller)
+    virtual void setHttpIdHeaderNames(const char *global, const char *caller)
     {
-        ctx->setHttpIdHeaders(global, caller);
+        ctx->setHttpIdHeaderNames(global, caller);
     }
-    virtual const char *queryGlobalIdHttpHeader() const
+    virtual const char *queryGlobalIdHttpHeaderName() const
     {
-        return ctx->queryGlobalIdHttpHeader();
+        return ctx->queryGlobalIdHttpHeaderName();
     }
-    virtual const char *queryCallerIdHttpHeader() const
+    virtual const char *queryCallerIdHttpHeaderName() const override
     {
-        return ctx->queryCallerIdHttpHeader();
+        return ctx->queryCallerIdHttpHeaderName();
     }
     virtual const QueryOptions &queryOptions() const
     {
@@ -408,6 +412,7 @@ static const StatisticsMapping keyedJoinStatistics({ StNumServerCacheHits, StNum
                                                     StTimeBlobLoad, StCycleBlobLoadCycles, StTimeLeafLoad, StCycleLeafLoadCycles, StTimeNodeLoad, StCycleNodeLoadCycles,
                                                     StCycleBlobReadCycles, StCycleLeafReadCycles, StCycleNodeReadCycles, StTimeBlobRead, StTimeLeafRead, StTimeNodeRead,
                                                     StCycleBlobFetchCycles, StCycleLeafFetchCycles, StCycleNodeFetchCycles, StTimeBlobFetch, StTimeLeafFetch, StTimeNodeFetch,
+                                                    StCycleIndexCacheBlockedCycles, StTimeIndexCacheBlocked,
                                                     StNumNodeDiskFetches, StNumLeafDiskFetches, StNumBlobDiskFetches,
                                                     StNumDiskRejected, StSizeAgentReply, StTimeAgentWait, StTimeAgentQueue, StTimeIBYTIDelay }, joinStatistics);
 static const StatisticsMapping indexStatistics({StNumServerCacheHits, StNumIndexSeeks, StNumIndexScans, StNumIndexWildSeeks,
@@ -418,6 +423,7 @@ static const StatisticsMapping indexStatistics({StNumServerCacheHits, StNumIndex
                                                 StTimeBlobLoad, StCycleBlobLoadCycles, StTimeLeafLoad, StCycleLeafLoadCycles, StTimeNodeLoad, StCycleNodeLoadCycles,
                                                 StCycleBlobReadCycles, StCycleLeafReadCycles, StCycleNodeReadCycles, StTimeBlobRead, StTimeLeafRead, StTimeNodeRead,
                                                 StCycleBlobFetchCycles, StCycleLeafFetchCycles, StCycleNodeFetchCycles, StTimeBlobFetch, StTimeLeafFetch, StTimeNodeFetch,
+                                                StCycleIndexCacheBlockedCycles, StTimeIndexCacheBlocked,
                                                 StNumNodeDiskFetches, StNumLeafDiskFetches, StNumBlobDiskFetches,
                                                 StNumIndexRowsRead, StSizeAgentReply, StTimeAgentWait, StTimeAgentQueue, StTimeIBYTIDelay }, actStatistics);
 static const StatisticsMapping diskStatistics({StNumServerCacheHits, StNumDiskRowsRead, StNumDiskSeeks, StNumDiskAccepted,
@@ -449,7 +455,11 @@ extern const StatisticsMapping accumulatedStatistics({StWhenFirstRow, StTimeLoca
                                                       StNumGroups,
                                                       StTimeSortElapsed,
                                                       StNumDuplicateKeys,
-                                                      StTimeAgentQueue, StTimeIBYTIDelay });
+                                                      StTimeAgentQueue, StTimeIBYTIDelay,
+                                                      StNumSocketWrites, StSizeSocketWrite, StTimeSocketWriteIO,
+                                                      StNumSocketReads, StSizeSocketRead, StTimeSocketReadIO,
+                                                      StCycleIndexCacheBlockedCycles, StTimeIndexCacheBlocked,
+                                                      });
 
 //=================================================================================
 
@@ -1044,7 +1054,7 @@ protected:
     IHThorArg *colocalParent;
     IEngineRowAllocator *rowAllocator;
     CriticalSection statecrit;
-    CriticalSection statscrit;
+    mutable CriticalSection statscrit;
 
     mutable CRuntimeStatisticCollection stats;
     MapStringToMyClass<ThorSectionTimer> functionTimers;
@@ -1214,6 +1224,11 @@ public:
         CriticalBlock b(statscrit);
         stats.merge(childStats);
     }
+    virtual StringBuffer &getStats(StringBuffer &ret) const
+    {
+        CriticalBlock b(statscrit);
+        return stats.toStr(ret);
+    }
     virtual ISectionTimer *registerTimer(unsigned _activityId, const char * name)
     {
         CriticalBlock b(statscrit); // reuse statscrit to protect functionTimers - it will not be held concurrently
@@ -1352,30 +1367,30 @@ public:
         if (ctx)
             ctx->setCallerId(id);
     }
-    virtual const char *queryGlobalId() const
+    virtual const char *queryGlobalId() const override
     {
         return ctx ? ctx->queryGlobalId() : nullptr;
     }
-    virtual const char *queryCallerId() const override
+    virtual const char *queryCallerId() const override 
     {
         return ctx ? ctx->queryCallerId() : nullptr;
     }
-    virtual const char *queryLocalId() const
+    virtual const char *queryLocalId() const override
     {
         return ctx ? ctx->queryLocalId() : nullptr;
     }
-    virtual void setHttpIdHeaders(const char *global, const char *caller)
+    virtual void setHttpIdHeaderNames(const char *global, const char *caller) override
     {
         if (ctx)
-            ctx->setHttpIdHeaders(global, caller);
+            ctx->setHttpIdHeaderNames(global, caller);
     }
-    virtual const char *queryGlobalIdHttpHeader() const
+    virtual const char *queryGlobalIdHttpHeaderName() const override
     {
-        return ctx ? ctx->queryGlobalIdHttpHeader() : "HPCC-Global-Id";
+        return ctx ? ctx->queryGlobalIdHttpHeaderName() : "HPCC-Global-Id";
     }
-    virtual const char *queryCallerIdHttpHeader() const
+    virtual const char *queryCallerIdHttpHeaderName() const override
     {
-        return ctx ? ctx->queryCallerIdHttpHeader() : "HPCC-Caller-Id";
+        return ctx ? ctx->queryCallerIdHttpHeaderName() : "HPCC-Caller-Id";
     }
 
     virtual bool isPassThrough()
@@ -1437,11 +1452,8 @@ public:
         //This should only be called after onStart has been called on the helper
         assertex(!createPending);
         assertex(state==STATEstarted);
-        unsigned startlen = out.length();
         basehelper.serializeCreateContext(out);
         basehelper.serializeStartContext(out);
-        if (queryTraceLevel() > 10)
-            CTXLOG("serializeCreateStartContext for %d added %d bytes", activityId, out.length()-startlen);
     }
 
     virtual void serializeExtra(MemoryBuffer &out) {}
@@ -2510,16 +2522,12 @@ public:
         {
             if (preload && !paused && noThread)
             {
-                if (traceLevel > 4)
-                    DBGLOG("Preload fetching first %d records", preload);
                 if (groupAtOnce)
                     pullGroups(preload);
                 else
                     pullRecords(preload);
                 if (eof)
                 {
-                    if (traceLevel > 4)
-                        DBGLOG("No need to start puller after preload");
                     helper->processDone();
                 }
             }
@@ -3888,7 +3896,7 @@ class CRemoteResultAdaptor : implements IEngineRowStream, implements IFinalRoxie
             {
                 if (continuation->isDelayed() && canDefer)
                 {
-                    if (adaptor.activity.queryLogCtx().queryTraceLevel() > 10)
+                    if (doTrace(traceSmartStepping, TraceFlags::Max))
                         adaptor.activity.queryLogCtx().CTXLOG("Deferring continuation");
                     deferredContinuation = true;
                 }
@@ -3912,7 +3920,7 @@ class CRemoteResultAdaptor : implements IEngineRowStream, implements IFinalRoxie
                             topEntry.packet->Release();
                             topEntry.packet = continuation;
                             continuation->setDelayed(false);
-                            if (adaptor.activity.queryLogCtx().queryTraceLevel() > 10)
+                            if (doTrace(traceSmartStepping, TraceFlags::Max))
                                 adaptor.activity.queryLogCtx().CTXLOG("About to send continuation, from doContinuation");
                             ROQ->sendPacket(continuation->queryPacket(), adaptor.activity.queryLogCtx());
                             adaptor.sentsome.signal();
@@ -4045,8 +4053,6 @@ class CRemoteResultAdaptor : implements IEngineRowStream, implements IFinalRoxie
             }
             if (allDelayed && sendIdx != (unsigned) -1)
             {
-                if (activity.queryLogCtx().queryTraceLevel() > 10)
-                    activity.queryLogCtx().CTXLOG("About to send debug-deferred from next");
                 pending.item(sendIdx).setDelayed(false);
                 ROQ->sendPacket(pending.item(sendIdx).queryPacket(), activity.queryLogCtx());
                 sentsome.signal();
@@ -4060,8 +4066,6 @@ class CRemoteResultAdaptor : implements IEngineRowStream, implements IFinalRoxie
                 IRoxieServerQueryPacket &p = pending.item(idx);
                 if (p.isDelayed())
                 {
-                    if (activity.queryLogCtx().queryTraceLevel() > 10)
-                        activity.queryLogCtx().CTXLOG("About to send deferred start from next");
                     p.setDelayed(false);
                     ROQ->sendPacket(p.queryPacket(), activity.queryLogCtx());
                     sentsome.signal();
@@ -4764,7 +4768,7 @@ public:
 
     const void * nextRowGE(const void *seek, const void *rawSeek, unsigned numFields, unsigned seekLen, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
-        if (activity.queryLogCtx().queryTraceLevel() > 20)
+        if (doTrace(traceSmartStepping, TraceFlags::Max))
         {
             StringBuffer recstr;
             unsigned i;
@@ -4784,7 +4788,7 @@ public:
                 if (p.isDelayed())
                 {
                     p.setDelayed(false);
-                    if (activity.queryLogCtx().queryTraceLevel() > 10)
+                    if (doTrace(traceSmartStepping, TraceFlags::Max))
                         activity.queryLogCtx().CTXLOG("About to send deferred start from nextRowGE, setting requireExact to %d", !stepExtra.returnMismatches());
                     MemoryBuffer serializedSkip;
                     activity.serializeSkipInfo(serializedSkip, seekLen, rawSeek, numFields, seek, stepExtra);
@@ -4820,10 +4824,6 @@ public:
     {
         // If we are merging then we need to do a heapsort on all 
         SimpleActivityTimer t(totalCycles, timeActivities);
-        if (activity.queryLogCtx().queryTraceLevel() > 10)
-        {
-            activity.queryLogCtx().CTXLOG("CRemoteResultAdaptor::nextRow()");
-        }
         for (;;)
         {
             checkDelayed();
@@ -4876,7 +4876,7 @@ public:
             {
                 pending.remove(0);
                 allread = true;
-                if (activity.queryLogCtx().queryTraceLevel() > 5)
+                if (doTrace(traceRoxiePackets))
                     activity.queryLogCtx().CTXLOG("All read on ruid %x", ruid);
                 return false;
             }
@@ -9716,7 +9716,7 @@ protected:
     void openPipe(char const * cmd)
     {
         pipeCommand.setown(cmd);
-        pipe.setown(createPipeProcess());
+        pipe.setown(createPipeProcess(allowedPipePrograms));
         if(!pipe->run(NULL, cmd, ".", false, true, true, 0x10000))
         {
             // NB: pipe->run can't rely on the child process failing fast enough to return false here, failure picked up later with stderr context.
@@ -9945,7 +9945,7 @@ private:
     void openPipe(char const * cmd)
     {
         pipeCommand.setown(cmd);
-        pipe.setown(createPipeProcess());
+        pipe.setown(createPipeProcess(allowedPipePrograms));
         if(!pipe->run(NULL, cmd, ".", true, true, true, 0x10000))
         {
             // NB: pipe->run can't rely on the child process failing fast enough to return false here, failure picked up later with stderr context.
@@ -10089,7 +10089,7 @@ private:
     void openPipe(char const * cmd)
     {
         pipeCommand.setown(cmd);
-        pipe.setown(createPipeProcess());
+        pipe.setown(createPipeProcess(allowedPipePrograms));
         if(!pipe->run(NULL, cmd, ".", true, false, true, 0x10000))
         {
             // NB: pipe->run can't rely on the child process failing fast enough to return false here, failure picked up later with stderr context.
@@ -21978,8 +21978,6 @@ public:
     {
         if (isUnused && !CRoxieServerInternalSinkFactory::isSink())
         {
-            if (_ctx->queryTraceLevel() > 2)
-                DBGLOG("Workunit write %u is unused - create null activity", id);
             //Create a null sink activity that is always executed to ensure that stop() is called on the input.
             return createRoxieServerNullSinkActivity(_ctx, this, _probeManager);
         }
@@ -23578,7 +23576,7 @@ public:
                                     tlk->setLayoutTranslator(nullptr);
                             }
                             createSegmentMonitors(tlk);
-                            if (queryTraceLevel() > 3 || ctx->queryProbeManager())
+                            if (doTrace(traceFilters) || ctx->queryProbeManager())
                             {
                                 StringBuffer out;
                                 tlk->describeFilter(out);
@@ -24311,7 +24309,7 @@ public:
             }
             indexHelper.createSegmentMonitors(tlk);
             tlk->finishSegmentMonitors();
-            if (queryTraceLevel() > 3 || ctx->queryProbeManager())
+            if (doTrace(traceFilters) || ctx->queryProbeManager())
             {
                 StringBuffer out;
                 tlk->describeFilter(out);
@@ -27814,8 +27812,6 @@ protected:
         }
         virtual IActivityGraph * queryChildGraph(unsigned  id)
         {
-            if (queryTraceLevel() > 10)
-                CTXLOG("resolveChildGraph %d", id);
             IActivityGraph *childGraph = childGraphs.getValue(id);
             assertex(childGraph);
             return childGraph;

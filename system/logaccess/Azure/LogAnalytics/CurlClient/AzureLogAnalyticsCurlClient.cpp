@@ -44,6 +44,7 @@ static constexpr const char * logMapIndexPatternAtt = "@storeName";
 static constexpr const char * logMapSearchColAtt = "@searchColumn";
 static constexpr const char * logMapTimeStampColAtt = "@timeStampColumn";
 static constexpr const char * logMapKeyColAtt = "@keyColumn";
+static constexpr const char * logMapDisableJoinsAtt = "@disableJoins";
 
 
 static constexpr std::size_t  defaultMaxRecordsPerFetch = 100;
@@ -226,7 +227,7 @@ static void submitKQLQuery(std::string & readBuffer, const char * token, const c
             throw makeStringExceptionV(-1, "%s: Log query request: Could not set 'CURLOPT_USERAGENT' option!", COMPONENT_NAME);
 
         if (curl_easy_setopt(curlHandle, CURLOPT_ERRORBUFFER, curlErrBuffer) != CURLE_OK)
-            throw makeStringExceptionV(-1, "%s: Access token request: Could not set 'CURLOPT_ERRORBUFFER' option!", COMPONENT_NAME);
+            throw makeStringExceptionV(-1, "%s: Log query request: Could not set 'CURLOPT_ERRORBUFFER' option!", COMPONENT_NAME);
 
         if (curl_easy_setopt(curlHandle, CURLOPT_FAILONERROR, 1L) != CURLE_OK) // non HTTP Success treated as error
             throw makeStringExceptionV(-1, "%s: Log query request: Could not set 'CURLOPT_FAILONERROR'option!", COMPONENT_NAME);
@@ -245,26 +246,27 @@ static void submitKQLQuery(std::string & readBuffer, const char * token, const c
             long response_code;
             curl_easy_getinfo(curlHandle, CURLINFO_RESPONSE_CODE, &response_code);
 
+            StringBuffer message;
             switch (response_code)
             {
             case 400L:
-                throw makeStringExceptionV(-1, "%s KQL response: Error (400): Request is badly formed and failed (permanently)", COMPONENT_NAME);
+                throw makeStringExceptionV(-1,"%s KQL response: Error (400): Request is badly formed and failed (permanently): '%s'", COMPONENT_NAME, curlErrBuffer);
             case 401L:
-                throw makeStringExceptionV(-1, "%s KQL response: Error (401): Unauthorized - Client needs to authenticate first.", COMPONENT_NAME);
+                throw makeStringExceptionV(-1,"%s KQL response: Error (401): Unauthorized - Client needs to authenticate first: '%s'", COMPONENT_NAME, curlErrBuffer);
             case 403L:
-                throw makeStringExceptionV(-1, "%s KQL response: Error (403): Forbidden - Client request is denied.", COMPONENT_NAME);
+                throw makeStringExceptionV(-1,"%s KQL response: Error (403): Forbidden - Client request is denied: '%s'", COMPONENT_NAME, curlErrBuffer);
             case 404L:
-                throw makeStringExceptionV(-1, "%s KQL request: Error (404): NotFound - Request references a non-existing entity. Ensure configured WorkspaceID (%s) is valid!", COMPONENT_NAME, workspaceID);
+                throw makeStringExceptionV(-1,"%s KQL request: Error (404): NotFound - Request references a non-existing entity. Ensure configured WorkspaceID is valid!: '%s'", COMPONENT_NAME, curlErrBuffer);
             case 413:
-                throw makeStringExceptionV(-1, "%s KQL request: Error (413): PayloadTooLarge - Request payload exceeded limits.", COMPONENT_NAME);
+                throw makeStringExceptionV(-1,"%s KQL request: Error (413): PayloadTooLarge - Request payload exceeded limits: '%s'", COMPONENT_NAME, curlErrBuffer);
             case 429:
-                throw makeStringExceptionV(-1, "%s KQL request: Error (429): TooManyRequests - Request has been denied because of throttling.", COMPONENT_NAME);
+                throw makeStringExceptionV(-1,"%s KQL request: Error (429): TooManyRequests - Request has been denied because of throttling: '%s'", COMPONENT_NAME, curlErrBuffer);
             case 504:
-                throw makeStringExceptionV(-1, "%s KQL request: Error (504): Timeout - Request has timed out.", COMPONENT_NAME);
+                throw makeStringExceptionV(-1,"%s KQL request: Error (504): Timeout - Request has timed out: '%s'", COMPONENT_NAME, (curlErrBuffer[0] ? curlErrBuffer : "" ));
             case 520:
-                throw makeStringExceptionV(-1, "%s KQL request: Error (520): Azure ServiceError - Service found an error while processing the request.", COMPONENT_NAME);
+                throw makeStringExceptionV(-1,"%s KQL request: Error (520): Azure ServiceError - Service found an error while processing the request: '%s'", COMPONENT_NAME, curlErrBuffer);
             default:
-                throw makeStringExceptionV(-1, "%s KQL request: Error (%d): %s", COMPONENT_NAME, curlResponseCode, (curlErrBuffer[0] ? curlErrBuffer : "<unknown>"));
+                throw makeStringExceptionV(-1,"%s KQL request: Error (%d): '%s'", COMPONENT_NAME, curlResponseCode, (curlErrBuffer[0] ? curlErrBuffer : "Unknown Error"));
             }
         }
         else if (readBuffer.length() == 0)
@@ -367,6 +369,8 @@ AzureLogAnalyticsCurlClient::AzureLogAnalyticsCurlClient(IPropertyTree & logAcce
                 m_componentsTimestampField = logMap.queryProp(logMapTimeStampColAtt);
             else
                 m_componentsTimestampField = defaultHPCCLogComponentTSCol;
+
+            m_disableComponentNameJoins = logMap.getPropBool(logMapDisableJoinsAtt, false);
         }
         else if (streq(logMapType, "class"))
         {
@@ -405,16 +409,19 @@ AzureLogAnalyticsCurlClient::AzureLogAnalyticsCurlClient(IPropertyTree & logAcce
 
 void AzureLogAnalyticsCurlClient::getMinReturnColumns(StringBuffer & columns, bool & includeComponentName)
 {
-    includeComponentName = false;
-    //timestamp, message - Note: omponent information in default ALA format is expensive and therefore avoided
-    columns.appendf("\n| project %s, %s", m_globalIndexTimestampField.str(), defaultHPCCLogMessageCol);
+    columns.append("\n| project ");
+    if (includeComponentName)
+        columns.appendf("%s, ", defaultHPCCLogComponentCol);
+    columns.appendf("%s, %s", m_globalIndexTimestampField.str(), defaultHPCCLogMessageCol);
 }
 
 void AzureLogAnalyticsCurlClient::getDefaultReturnColumns(StringBuffer & columns, bool & includeComponentName)
 {
-    includeComponentName = false;
-    //timestamp, class, audience, jobid, seq, threadid - Note: component information in default ALA format is expensive and therefore avoided
-    columns.appendf("\n| project %s, %s, %s, %s, %s, %s, %s",
+    columns.append("\n| project ");
+    if (includeComponentName)
+        columns.appendf("%s, ", defaultHPCCLogComponentCol);
+
+    columns.appendf("%s, %s, %s, %s, %s, %s, %s",
     m_globalIndexTimestampField.str(), defaultHPCCLogMessageCol, m_classSearchColName.str(),
     m_audienceSearchColName.str(), m_workunitSearchColName.str(), defaultHPCCLogSeqCol, defaultHPCCLogThreadIDCol);
 }
@@ -679,7 +686,7 @@ void AzureLogAnalyticsCurlClient::populateKQLQueryString(StringBuffer & queryStr
         queryIndex.set(m_globalIndexSearchPattern.str());
 
         StringBuffer searchColumns;
-        bool includeComponentName = false;
+        bool includeComponentName = !m_disableComponentNameJoins;
         searchMetaData(searchColumns, options.getReturnColsMode(), options.getLogFieldNames(), includeComponentName, options.getLimit(), options.getStartFrom());
         if (includeComponentName)
             declareContainerIndexJoinTable(queryString, options);

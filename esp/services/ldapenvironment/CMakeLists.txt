@@ -44,7 +44,7 @@ include_directories(
     ${HPCC_SOURCE_DIR}/common/thorhelper
     )
 
-add_definitions(-D_USRDLL -Dldapenvironment_API_LOCAL )
+add_definitions(-D_USRDLL -Dldapenvironment_API_LOCAL -DESP_SERVICE_ldapenvironment)
 HPCC_ADD_LIBRARY(ldapenvironment SHARED ${SRCS})
 add_dependencies(ldapenvironment espscm)
 target_link_libraries(
@@ -53,8 +53,9 @@ target_link_libraries(
     xmllib
     esphttp
     LdapSecurity
+    ${COMMON_ESP_SERVICE_LIBS}
     )
-         
+
 install(
     TARGETS ldapenvironment
     RUNTIME DESTINATION ${EXEC_DIR}

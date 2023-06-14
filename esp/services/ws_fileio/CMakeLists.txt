@@ -15,67 +15,68 @@
 ################################################################################
 
 
-# Component: ws_fileio 
+# Component: ws_fileio
 #####################################################
 # Description:
 # ------------
 #    Cmake Input File for ws_fileio
 #####################################################
 
-project( ws_fileio ) 
+project( ws_fileio )
 
 include(${HPCC_SOURCE_DIR}/esp/scm/additional.cmake)
 
-set (    SRCS 
-         ${ESPSCM_GENERATED_DIR}/ws_fileio_esp.cpp 
-         ws_fileioplugin.cpp 
-         ws_fileioservice.cpp 
+set (    SRCS
+         ${ESPSCM_GENERATED_DIR}/ws_fileio_esp.cpp
+         ws_fileioplugin.cpp
+         ws_fileioservice.cpp
     )
 
-include_directories ( 
-         ./../../../dali/dfu 
-         ./../../../system/mp 
-         ./../../platform 
-         ./../../../system/jlib 
-         ./../../../common/environment 
-         ./../../services 
-         ./../../../dali/ft 
-         ./../common 
-         ./../../../system/xmllib 
-         ./../../../esp/bindings/http/platform 
-         ./../../../system/security/securesocket 
-         ./../../../system/security/shared 
-         ./../../../system/include 
-         ./../../../common/workunit 
-         ./../../../common/remote 
-         ./../../clients 
-         ./../../../esp/esplib 
-         ./../../../dali/base 
-         ./../../bindings/SOAP/scrubbed 
-         ./../../../rtl/include 
-         ./../../../common/dllserver 
-         ./../../bindings 
-         ./../../smc/SMCLib 
-         ./../../bindings/SOAP/xpp 
+include_directories (
+         ./../../../dali/dfu
+         ./../../../system/mp
+         ./../../platform
+         ./../../../system/jlib
+         ./../../../common/environment
+         ./../../services
+         ./../../../dali/ft
+         ./../common
+         ./../../../system/xmllib
+         ./../../../esp/bindings/http/platform
+         ./../../../system/security/securesocket
+         ./../../../system/security/shared
+         ./../../../system/include
+         ./../../../common/workunit
+         ./../../../common/remote
+         ./../../clients
+         ./../../../esp/esplib
+         ./../../../dali/base
+         ./../../bindings/SOAP/scrubbed
+         ./../../../rtl/include
+         ./../../../common/dllserver
+         ./../../bindings
+         ./../../smc/SMCLib
+         ./../../bindings/SOAP/xpp
          ${HPCC_SOURCE_DIR}/common/thorhelper
          ${HPCC_SOURCE_DIR}/dali/sasha
     )
 
-ADD_DEFINITIONS( -D_USRDLL -DWsFileIO_API_LOCAL )
+ADD_DEFINITIONS( -D_USRDLL -DWsFileIO_API_LOCAL -DESP_SERVICE_WsFileIO)
 
 HPCC_ADD_LIBRARY( ws_fileio SHARED ${SRCS} )
 install ( TARGETS ws_fileio RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
 add_dependencies (ws_fileio espscm)
-target_link_libraries ( ws_fileio 
+target_link_libraries ( ws_fileio
          jlib
-         mp 
-         hrpc 
-         remote 
-         dalibase 
+         mp
+         hrpc
+         remote
+         dalibase
          ${XALAN_LIBRARIES} ${XERCES_LIBRARIES}
-         xmllib 
-         esphttp 
+         xmllib
+         esphttp
          SMCLib
+         ${COMMON_ESP_SERVICE_LIBS}
     )
 
 if (NOT CONTAINERIZED)

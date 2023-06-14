@@ -43,13 +43,13 @@ include_directories (
          ${HPCC_SOURCE_DIR}/system/security/securesocket
          ${HPCC_SOURCE_DIR}/system/security/LdapSecurity
          ${HPCC_SOURCE_DIR}/system/security/shared
-         ${HPCC_SOURCE_DIR}/system/mp 
+         ${HPCC_SOURCE_DIR}/system/mp
          ${HPCC_SOURCE_DIR}/common/thorhelper
          ${HPCC_SOURCE_DIR}/dali/base
          ${HPCC_SOURCE_DIR}/dali/daliadmin
     )
 
-ADD_DEFINITIONS( -D_USRDLL -DWSDali_API_LOCAL )
+ADD_DEFINITIONS( -D_USRDLL -DWSDali_API_LOCAL -DESP_SERVICE_WSDali)
 
 HPCC_ADD_LIBRARY( ws_dali SHARED ${SRCS} )
 install ( TARGETS ws_dali RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
@@ -58,10 +58,11 @@ target_link_libraries ( ws_dali
          xmllib
          daliadminlib
          esphttp
+         ${COMMON_ESP_SERVICE_LIBS}
     )
-    
+
 IF (USE_OPENSSL)
-    target_link_libraries ( ws_dali 
+    target_link_libraries ( ws_dali
         securesocket
     )
 ENDIF()

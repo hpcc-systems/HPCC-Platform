@@ -228,6 +228,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   FIRST
   TOK_FIXED
   FLAT
+  FORMENCODED
   FORMAT_ATTR
   FORWARD
   FROM
@@ -3791,6 +3792,16 @@ soapFlag
                             HqlExprArray args;
                             $3.unwindCommaList(args);
                             $$.setExpr(createExprAttribute(xmlAtom, args), $1);
+                        }
+    | FORMENCODED       {
+                            $$.setExpr(createAttribute(formEncodedAtom));
+                            $$.setPosition($1);
+                        }
+    | FORMENCODED '(' expression ')'
+                        {
+                            parser->normalizeExpression($3, type_string, true);
+                            $$.setExpr(createExprAttribute(formEncodedAtom, $3.getExpr()));
+                            $$.setPosition($1);
                         }
     | JSON_TOKEN        {
                             $$.setExpr(createAttribute(jsonAtom));

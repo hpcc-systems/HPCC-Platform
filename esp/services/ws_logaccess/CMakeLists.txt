@@ -60,7 +60,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/common/thorhelper
     )
 
-ADD_DEFINITIONS( -D_USRDLL -Dws_logaccess_API_LOCAL )
+ADD_DEFINITIONS( -D_USRDLL -Dws_logaccess_API_LOCAL -DESP_SERVICE_ws_logaccess)
 
 HPCC_ADD_LIBRARY( ws_logaccess SHARED ${SRCS}  )
 add_dependencies (ws_logaccess espscm )
@@ -70,4 +70,5 @@ target_link_libraries ( ws_logaccess
          xmllib
          esphttp
          SMCLib
+         ${COMMON_ESP_SERVICE_LIBS}
     )

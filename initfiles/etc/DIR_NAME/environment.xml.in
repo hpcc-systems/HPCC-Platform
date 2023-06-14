@@ -32,6 +32,7 @@
             <ServerList name="ServerList" server="."/>
   </DropZone>
   <RoxieCluster allFilesDynamic="true"
+                allowedPipePrograms="*"
                 blindLogging="false"
                 blobCacheMem="0"
                 build="_"
@@ -910,7 +911,8 @@
              throttleCPULimit="75"
              throttleDelayMs="5000"/>
   </DafilesrvProcess>
-  <ThorCluster autoAffinity="true"
+  <ThorCluster allowedPipePrograms="*"
+               autoAffinity="true"
                autoCopyBackup="false"
                build="_"
                buildSet="thor"

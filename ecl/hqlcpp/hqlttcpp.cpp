@@ -7366,6 +7366,34 @@ void extractWorkflow(HqlCppTranslator & translator, HqlExprArray & exprs, Workfl
     if (translator.queryOptions().performWorkflowCse || translator.queryOptions().notifyWorkflowCse)
         transformer.analyseAll(exprs);
     transformer.transformRoot(exprs, out);
+
+    SCMStringBuffer traceWorkflows;
+    if (translator.wu()->getDebugValue("traceWorkflows", traceWorkflows).length())
+    {
+        StringArray workflows;
+        workflows.appendList(traceWorkflows.str(), ",", true);
+
+        UnsignedArray workflowIds;
+        ForEachItemIn(i1, workflows)
+            workflowIds.append(atoi(workflows.item(i1)));
+
+        HqlExprArray matches;
+        ForEachItemIn(i2, out)
+        {
+            WorkflowItem & cur = out.item(i2);
+            if (workflowIds.contains(cur.queryWfid()))
+            {
+                matches.append(*createCompound(cur.queryExprs()));
+                unsigned num = matches.ordinality();
+                DBGLOG("Match %u", cur.queryWfid());
+                if (num > 1)
+                {
+                    EclIR::dbglogIR(matches);
+                    traceFindFirstDifference(&matches.item(num-2), &matches.item(num-1));
+                }
+            }
+        }
+    }
 }
 
 

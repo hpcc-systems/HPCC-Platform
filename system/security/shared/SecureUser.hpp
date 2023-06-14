@@ -328,6 +328,11 @@ public:
     {
         return false;
     }
+
+    virtual bool isCanonicalMatch(const char* name) const override
+    {
+        return (name && strieq(m_name.str(), name));
+    }
 };
 
 #endif // SECUREUSER_INCL

@@ -41,7 +41,7 @@
       similarity to actual persons, living or dead, is purely
       coincidental.</para>
 
-      <para />
+      <para></para>
     </legalnotice>
 
     <xi:include href="common/Version.xml"
@@ -1136,8 +1136,7 @@
     using any xml or text editor however the file structure must remain
     valid.</para>
 
-    <para>
-      <figure>
+    <para><figure>
         <title>Sample Production Configuration</title>
 
         <mediaobject>
@@ -1145,8 +1144,7 @@
             <imagedata fileref="images/SA008.jpg" />
           </imageobject>
         </mediaobject>
-      </figure>
-    </para>
+      </figure></para>
 
     <!--/*Including special SysAdmin Config Module -paras- */-->
 
@@ -1179,10 +1177,16 @@
     <sect1 id="SysAdm_Env.conf">
       <title>Environment.conf</title>
 
-      <para>Another component of HPCC Systems configuration is the
+      <para>A component of HPCC Systems on bare-metal configuration is the
       environment.conf file. Environment.conf contains some global definitions
       that the configuration manager uses to configure the HPCC Systems. In
       most cases, the defaults are sufficient.</para>
+
+      <para>The environment.conf file only works for bare-metal deployments.
+      For container or cloud deployments the environment.conf is not valid,
+      instead there are environment settings which can be configured by
+      setting values in the Helm charts. See the Containerized HPCC Systems
+      documentation for containerized or cloud deployments.</para>
 
       <para><informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
@@ -1192,9 +1196,7 @@
 
             <tbody>
               <row>
-                <entry>
-                  <inlinegraphic fileref="images/caution.png" />
-                </entry>
+                <entry><inlinegraphic fileref="images/caution.png" /></entry>
 
                 <entry><emphasis role="bold">WARNING</emphasis>: These
                 settings are essential to proper system operation. Only expert
@@ -1225,8 +1227,7 @@
 
       <para>The default envrionment.conf:</para>
 
-      <para>
-        <programlisting>## Default environment configuration file for OpenHPCC
+      <para><programlisting>## Default environment configuration file for OpenHPCC
 
 [DEFAULT]
 configs=${CONFIG_DIR}
@@ -1297,8 +1298,7 @@ useDropZoneRestriction=true
 # NB: for now this only applies to the last cached server 
 #dafsConnectFailRetrySeconds=10
 
-</programlisting>
-      </para>
+</programlisting></para>
 
       <para>The default environment.conf file includes several comments and
       explanations for many of the values defined in it.</para>
@@ -1469,8 +1469,7 @@ lock=/var/lock/HPCCSystems</programlisting>
           <para>The following are logfield macros which provide a bundled
           group of columns:</para>
 
-          <para>
-            <informaltable>
+          <para><informaltable>
               <tgroup cols="2">
                 <tbody>
                   <row>
@@ -1487,8 +1486,7 @@ lock=/var/lock/HPCCSystems</programlisting>
                   </row>
                 </tbody>
               </tgroup>
-            </informaltable>
-          </para>
+            </informaltable></para>
         </sect3>
       </sect2>
 
@@ -1513,6 +1511,18 @@ lock=/var/lock/HPCCSystems</programlisting>
 
         <para>Some other items used by or referred to in
         environment.conf.<variablelist>
+            <varlistentry>
+              <term>deploymentName</term>
+
+              <listitem>
+                <para>Creates an environment variable in a bare-metal
+                deployment that can be retrieved using the ECL built-in
+                function--GETENV().</para>
+
+                <programlisting>deploymentName: myenv1</programlisting>
+              </listitem>
+            </varlistentry>
+
             <varlistentry>
               <term>Use_epoll</term>
 
@@ -1557,13 +1567,10 @@ lock=/var/lock/HPCCSystems</programlisting>
         JNI library (libjvm) or if you want an alternate libjvm. For
         example:</para>
 
-        <para>
-          <programlisting>JNI_PATH=/absolute/path/to/alternative/libjvm.so
-</programlisting>
-        </para>
+        <para><programlisting>JNI_PATH=/absolute/path/to/alternative/libjvm.so
+</programlisting></para>
 
-        <para>
-          <informaltable colsep="1" frame="all" rowsep="1">
+        <para><informaltable colsep="1" frame="all" rowsep="1">
             <?dbfo keep-together="always"?>
 
             <tgroup cols="2">
@@ -1573,36 +1580,23 @@ lock=/var/lock/HPCCSystems</programlisting>
 
               <tbody>
                 <row>
-                  <entry>
-                    <inlinegraphic fileref="images/OSSgr3.png" />
-                  </entry>
+                  <entry><inlinegraphic fileref="images/OSSgr3.png" /></entry>
 
-                  <entry>
-                    <para>When targeting custom classes, all dependencies must
-                    be accessible by declaring their location on the
-                    classpath, or including in the host jar file.</para>
-
-                    <para>Custom java classes should be built using compatible
-                    Java versions. To check the Java version used to build a
-                    given class use:</para>
-
-                    <para>
-                      <programlisting>javap: javap -verbose MyClass | grep "major" </programlisting>
-                    </para>
-
-                    <para>When targeting a given method, ensure the signature
-                    declared in the embedded Java section matches the actual
-                    method signature. To get the signature, use:</para>
-
-                    <para>
-                      <programlisting>javap: javap –s MyClass</programlisting>
-                    </para>
-                  </entry>
+                  <entry><para>When targeting custom classes, all dependencies
+                  must be accessible by declaring their location on the
+                  classpath, or including in the host jar file.</para>
+                  <para>Custom java classes should be built using compatible
+                  Java versions. To check the Java version used to build a
+                  given class use:</para> <para> <programlisting>javap: javap -verbose MyClass | grep "major" </programlisting>
+                  </para> <para>When targeting a given method, ensure the
+                  signature declared in the embedded Java section matches the
+                  actual method signature. To get the signature, use:</para>
+                  <para> <programlisting>javap: javap –s MyClass</programlisting>
+                  </para></entry>
                 </row>
               </tbody>
             </tgroup>
-          </informaltable>
-        </para>
+          </informaltable></para>
       </sect2>
 
       <sect2 id="ConfiguringRemoteAccessOverTLS">
@@ -1834,7 +1828,6 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
       </sect2>
     </sect1>
 
-   
     <sect1 id="SA-ControlsANDTools">
       <title>System Tools and Controls</title>
 
@@ -1868,7 +1861,7 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
          - <emphasis role="strong">memsize=5368709120</emphasis> base=0x7f904fe00000 alignment=262144 bitmapSize=640</programlisting></para>
 
           <para>Which is found in the environment.xml's RoxieCluster setting
-          or in the helm values.yaml Roxie section for <emphasis
+          or in the Helm chart -- values.yaml Roxie section for <emphasis
           role="strong">totalMemoryLimit</emphasis>:</para>
 
           <programlisting>    totalMemoryLimit="5368709120"</programlisting>
@@ -2347,7 +2340,7 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
         <sect3 id="SepClusterNodes">
           <title>Separate Worker Nodes</title>
 
-          <para>In a bare metal deployment, try as much as possible to keep
+          <para>In a bare-metal deployment, try as much as possible to keep
           system target cluster resources running on their own physical nodes
           or partitions. The idea being to avoid putting essential system
           components on the same partitions as resource intensive and

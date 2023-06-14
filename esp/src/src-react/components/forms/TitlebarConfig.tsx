@@ -103,14 +103,9 @@ export const TitlebarConfig: React.FunctionComponent<TitlebarConfigProps> = ({
             }) => <TextField
                     name={fieldName}
                     onChange={onChange}
-                    required={true}
                     label={nlsHPCC.NameOfEnvironment}
                     value={value}
-                    errorMessage={error && error?.message}
                 />}
-            rules={{
-                required: nlsHPCC.ValidationErrorRequired
-            }}
         />
         <Label>{nlsHPCC.BannerColor}</Label>
         <ColorPicker

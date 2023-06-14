@@ -527,6 +527,8 @@ public:
     {
         if (!EclCmdCommon::finalizeOptions(globals))
             return false;
+        if (!dfuOptions.finalizeOptions(*this, globals))
+            return false;
         if (optSourceQueryPath.isEmpty() && optTargetCluster.isEmpty())
         {
             fputs("source and target must both be specified.\n", stderr);
@@ -763,6 +765,8 @@ public:
     virtual bool finalizeOptions(IProperties *globals)
     {
         if (!EclCmdCommon::finalizeOptions(globals))
+            return false;
+        if (!dfuOptions.finalizeOptions(*this, globals))
             return false;
         if (optSourceQuerySet.isEmpty() || optDestQuerySet.isEmpty())
         {
@@ -1119,6 +1123,8 @@ public:
     virtual bool finalizeOptions(IProperties *globals)
     {
         if (!EclCmdCommon::finalizeOptions(globals))
+            return false;
+        if (!dfuOptions.finalizeOptions(*this, globals))
             return false;
         if (optTarget.isEmpty())
         {
@@ -1503,6 +1509,8 @@ public:
     }
     virtual bool finalizeOptions(IProperties *globals)
     {
+        if (!dfuOptions.finalizeOptions(*this, globals))
+            return false;
         if (!EclCmdCommon::finalizeOptions(globals))
             return false;
         if (optFilename.isEmpty() || optDestQuerySet.isEmpty())

@@ -2126,7 +2126,7 @@ void EclAgent::runProcess(IEclProcess *process)
     allocatorMetaCache.setown(createRowAllocatorCache(this));
 
     if (agentTopology->hasProp("@httpGlobalIdHeader"))
-        updateDummyContextLogger().setHttpIdHeaders(agentTopology->queryProp("@httpGlobalIdHeader"), agentTopology->queryProp("@httpCallerIdHeader"));
+        updateDummyContextLogger().setHttpIdHeaderNames(agentTopology->queryProp("@httpGlobalIdHeader"), agentTopology->queryProp("@httpCallerIdHeader"));
 
     if (queryWorkUnit()->hasDebugValue("GlobalId"))
     {
@@ -3821,8 +3821,10 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], Owned<ILocalWor
 
             if (w)
             {
+                StringBuffer allowedPipePrograms;
+                getAllowedPipePrograms(allowedPipePrograms, true);
                 EclAgent agent(w, wuid.str(), agentTopology->getPropBool("@ignoreVersion", false), agentTopology->getPropBool("@resetWorkflow", false), agentTopology->getPropBool("@noRetry", false), logfilespec.str(),
-                               agentTopology->queryProp("@allowedPipePrograms"), query.getClear(), logMsgHandler);
+                               allowedPipePrograms, query.getClear(), logMsgHandler);
                 const bool isRemoteWorkunit = !isEmptyString(daliServers);
                 const bool resolveFilesLocally = standAloneExe && (!isRemoteWorkunit || agentTopology->getPropBool("@useLocalFiles", false));
                 const bool writeResultsToStdout = standAloneExe && (!isRemoteWorkunit || agentTopology->getPropBool("@resultsToStdout", true));

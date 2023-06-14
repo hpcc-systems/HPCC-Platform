@@ -67,7 +67,6 @@
                 <xsl:apply-templates select="$espProcess"/>
                 <xsl:copy-of select="/Environment/Software/Directories"/>
             </Software>
-            <xsl:copy-of select="/Environment/Hardware/cost"/>
             <!--
             # Generated for configuration info. accessed by getGlobalConfig()
             -->
@@ -75,6 +74,7 @@
                 <expert>
                     <xsl:copy-of select="/Environment/Software/Globals/@* | /Environment/Software/Globals/*"/>
                 </expert>
+                <xsl:copy-of select="/Environment/Hardware/cost"/>
             </global>
         </xsl:copy>
     </xsl:template>

@@ -41,7 +41,7 @@ include_directories (
          ./../../../system/security/securesocket
          ./../../../system/security/LdapSecurity
          ./../../../system/security/shared
-         ./../../../system/mp 
+         ./../../../system/mp
          ./../../../dali/base
          ./../../clients
          ./../../bindings
@@ -51,7 +51,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/common/thorhelper
     )
 
-ADD_DEFINITIONS( -D_USRDLL -DWSESPControl_API_LOCAL )
+ADD_DEFINITIONS( -D_USRDLL -DWSESPControl_API_LOCAL -DESP_SERVICE_WSESPControl)
 
 HPCC_ADD_LIBRARY( ws_espcontrol SHARED ${SRCS} )
 install ( TARGETS ws_espcontrol RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
@@ -59,12 +59,11 @@ target_link_libraries ( ws_espcontrol
          jlib
          xmllib
          esphttp
+         ${COMMON_ESP_SERVICE_LIBS}
     )
-    
+
 IF (USE_OPENSSL)
-    target_link_libraries ( ws_espcontrol 
+    target_link_libraries ( ws_espcontrol
         securesocket
     )
 ENDIF()
-
-    

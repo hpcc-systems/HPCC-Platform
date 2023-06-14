@@ -156,6 +156,7 @@ public:
     IPropertyTree* getDataElement(const char* xpath = ".") const override { return nullptr; }
     IPropertyTreeIterator* getDataElements(const char* xpath = ".") const override { return nullptr; }
     bool setData(IPropertyTree* data) override { return false; }
+    virtual bool isCanonicalMatch(const char* name) const override { return (name && strieq(m_name.str(), name)); }
 
 //interface ISecCredentials
     bool setPassword(const char * pw);
@@ -283,15 +284,15 @@ public:
     virtual void addResource(ISecResource * resource);
     bool addCustomResource(const char * name, const char * config);
     ISecResource * getResource(const char * Resource);
-    virtual int count();
+    virtual unsigned count();
     virtual const char* getName();
     virtual ISecResource * queryResource(unsigned seq);
     virtual ISecPropertyIterator * getPropertyItr();
     virtual ISecProperty* findProperty(const char* name);
     virtual StringBuffer& toString(StringBuffer& s) 
     { 
-        s.appendf("name=%s, count=%d.", m_name.get(), count()); 
-        for (int i=0; i<count(); i++) 
+        s.appendf("name=%s, count=%u.", m_name.get(), count()); 
+        for (unsigned i=0; i<count(); i++) 
         { 
             s.appendf("\nItem %d: ",i+1); 
             queryResource(i)->toString(s); 

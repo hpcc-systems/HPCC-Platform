@@ -45,6 +45,12 @@
 #include "sacmd.hpp"
 #include "jsmartsock.ipp"
 
+enum OS_TYPE {
+    OS_WINDOWS,
+    OS_SOLARIS,
+    OS_LINUX
+};
+
 using std::set;
 using std::string;
 
@@ -124,11 +130,14 @@ using std::string;
 #define eqSparkThorProcess      "SparkThorProcess"
 #define eqRoxieServerProcess    "RoxieServerProcess"
 
+constexpr const char* wuArchiverType = "wu-archiver";
+constexpr const char* dfuwuArchiverType = "dfuwu-archiver";
+
 #define SDS_LOCK_TIMEOUT 30000
 
-class TPWRAPPER_API CTpWrapper : public CInterface  
+class TPWRAPPER_API CTpWrapper : public CInterface
 {
-    
+
 private:
     void setAttPath(StringBuffer& Path,const char* PathToAppend,const char* AttName,const char* AttValue,StringBuffer& returnStr);
     void getAttPath(const char* Path,StringBuffer& returnStr);
@@ -158,7 +167,7 @@ public:
     void getHthorClusterList(IArrayOf<IEspTpCluster>& clusterList);
     void getGroupList(double espVersion, const char* kindReq, IArrayOf<IEspTpGroup> &Groups);
     void getCluster(const char* ClusterType,IPropertyTree& returnRoot);
-    void getClusterMachineList(double clientVersion, const char* ClusterType,const char* ClusterPath, const char* ClusterDirectory, 
+    void getClusterMachineList(double clientVersion, const char* ClusterType,const char* ClusterPath, const char* ClusterDirectory,
                                         IArrayOf<IEspTpMachine> &MachineList, bool& hasThorSpareProcess, const char* ClusterName = NULL);
     void getMachineList(double clientVersion, const char* MachineType, const char* MachinePath, const char* Status,
         const char* Directory, IArrayOf<IEspTpMachine>& MachineList, set<string>* pMachineNames=nullptr);
@@ -230,11 +239,10 @@ extern TPWRAPPER_API StringArray & getRoxieDirectAccessPlanes(StringArray & plan
 extern TPWRAPPER_API bool validateDataPlaneName(const char *remoteDali, const char * name);
 extern TPWRAPPER_API bool matchNetAddressRequest(const char* netAddressReg, bool ipReq, IConstTpMachine& tpMachine);
 
-extern TPWRAPPER_API bool validateDropZonePath(const char* dropZoneName, const char* netAddr, const char* pathToCheck);
+extern TPWRAPPER_API bool validateDropZoneHostAndPath(const char* dropZoneName, const char* hostToCheck, const char* pathToCheck);
 extern TPWRAPPER_API SecAccessFlags getDZPathScopePermissions(IEspContext& context, const char* dropZoneName, const char* dropZonePath, const char* dropZoneHost);
 extern TPWRAPPER_API SecAccessFlags getDZFileScopePermissions(IEspContext& context, const char* dropZoneName, const char* dropZonePath, const char* dropZoneHost);
 extern TPWRAPPER_API void validateDropZoneAccess(IEspContext& context, const char* targetDZNameOrHost, const char* hostReq, SecAccessFlags permissionReq,
     const char* fileNameWithRelPath, CDfsLogicalFileName& dlfn);
 
 #endif //_ESPWIZ_TpWrapper_HPP__
-

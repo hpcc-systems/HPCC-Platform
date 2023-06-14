@@ -10,6 +10,10 @@ if [[ -z $2 ]] ; then
    exit 2
 fi
 
+if [[ -n $3 ]] ; then
+   all=$3
+fi
+
 if [[ -z $all ]]; then
    echo "List of repos not configured (environment variable 'all')"
    exit 2
@@ -24,7 +28,7 @@ scriptdir=$(dirname -- "$( readlink -f -- ""$0""; )")
 hpccdir=$scriptdir/../..
 gitroot="${gitroot/#\~/$HOME}"
 
-echo Upmerge changes from candidate-$1 to $2
+echo Upmerge changes from candidate-$1 to $2 for \'$all\'
 
 for f in $all ; do
    cd $gitroot/$f
@@ -65,15 +69,15 @@ for f in $all ; do
    $scriptdir/git-unupmerge
 
    if [[ -f "version.cmake" ]]; then
-       git co HEAD -- version.cmake
+       git checkout HEAD -- version.cmake
    fi
    if [[ -f "pom.xml" ]]; then
-       git co HEAD -- pom.xml
+       git checkout HEAD -- pom.xml
    fi
    if [[ -f "commons-hpcc/pom.xml" ]]; then
-       git co HEAD -- commons-hpcc/pom.xml
-       git co HEAD -- dfsclient/pom.xml
-       git co HEAD -- wsclient/pom.xml
+       git checkout HEAD -- commons-hpcc/pom.xml
+       git checkout HEAD -- dfsclient/pom.xml
+       git checkout HEAD -- wsclient/pom.xml
    fi
 
    CONFLICTS=$(git ls-files -u | wc -l)

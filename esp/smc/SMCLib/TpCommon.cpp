@@ -52,7 +52,7 @@ extern TPWRAPPER_API ISashaCommand* archiveOrRestoreWorkunits(StringArray& wuids
         sashaAddress.append(':').append(params->getPropInt("sashaServerPort", DEFAULT_SASHA_PORT));
     }
     else
-        getSashaService(sashaAddress, "sasha-wu-archiver", true);
+        getSashaService(sashaAddress, dfu ? dfuwuArchiverType : wuArchiverType, true);
 
     SocketEndpoint ep(sashaAddress);
     Owned<INode> node = createINode(ep);
@@ -119,41 +119,29 @@ extern TPWRAPPER_API bool matchNetAddressRequest(const char* netAddressReg, bool
     return streq(netAddressReg, tpMachine.getConfigNetaddress());
 }
 
-extern TPWRAPPER_API bool validateDropZonePath(const char* dropZoneName, const char* netAddr, const char* pathToCheck)
+extern TPWRAPPER_API bool validateDropZoneHostAndPath(const char* dropZoneName, const char* hostToCheck, const char* pathToCheck)
 {
-    if (isEmptyString(netAddr))
-        throw makeStringException(ECLWATCH_INVALID_INPUT, "NetworkAddress not defined.");
-
+    //Both hostToCheck and pathToCheck should not be empty. For backward compatibility, the dropZoneName may be empty.
+    if (isEmptyString(hostToCheck))
+        throw makeStringException(ECLWATCH_INVALID_INPUT, "Host not defined.");
     if (isEmptyString(pathToCheck))
         throw makeStringException(ECLWATCH_INVALID_INPUT, "Path not defined.");
 
     if (containsRelPaths(pathToCheck)) //Detect a path like: /home/lexis/runtime/var/lib/HPCCSystems/mydropzone/../../../
-        return false;
+        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Invalid path %s", pathToCheck);
 
-    bool isIPAddressReq = isIPAddress(netAddr);
-    IArrayOf<IConstTpDropZone> allTpDropZones;
-    CTpWrapper tpWrapper;
-    tpWrapper.getTpDropZones(9999, nullptr, false, allTpDropZones); //version 9999: get the latest information about dropzone
-    ForEachItemIn(i, allTpDropZones)
+    StringBuffer path(pathToCheck);
+    addPathSepChar(path);
+    if (isEmptyString(dropZoneName))
     {
-        IConstTpDropZone& dropZone = allTpDropZones.item(i);
-        if (!isEmptyString(dropZoneName) && !streq(dropZoneName, dropZone.getName()))
-            continue;
-
-        StringBuffer directory(dropZone.getPath());
-        addPathSepChar(directory);
-
-        if (!hasPrefix(pathToCheck, directory, true))
-            continue;
-
-        IArrayOf<IConstTpMachine>& tpMachines = dropZone.getTpMachines();
-        ForEachItemIn(ii, tpMachines)
-        {
-            if (matchNetAddressRequest(netAddr, isIPAddressReq, tpMachines.item(ii)))
-                return true;
-        }
+        Owned<IPropertyTree> plane = findDropZonePlane(path, hostToCheck, isIPAddress(hostToCheck), false);
+        return nullptr != plane;
     }
-    return false;
+
+    Owned<IPropertyTree> plane = getDropZonePlane(dropZoneName);
+    if (nullptr == plane)
+        return false;
+    return validateDropZone(plane, path, hostToCheck, isIPAddress(hostToCheck));
 }
 
 static SecAccessFlags getDropZoneScopePermissions(IEspContext& context, const IPropertyTree* dropZone, const char* dropZonePath)

@@ -1538,7 +1538,7 @@ StringBuffer &  StringBuffer::appendhex(unsigned char c, char lower)
     return *this;
 }
 
-void appendURL(StringBuffer *dest, const char *src, size32_t len, char lower)
+void appendURL(StringBuffer *dest, const char *src, size32_t len, char lower, bool keepUnderscore)
 {
   if (len == (size32_t)-1)
     len = (size32_t)strlen(src);
@@ -1548,6 +1548,8 @@ void appendURL(StringBuffer *dest, const char *src, size32_t len, char lower)
     unsigned char c = (unsigned char) *src;
     if (c == ' ')
       dest->append('+');
+    else if (c == '_' && keepUnderscore)
+      dest->append(c);
     else if ((c & 0x80) || !isalnum(*src))
     {
       dest->append('%');
@@ -1810,6 +1812,11 @@ int utf8CharLen(const unsigned char *ch, unsigned maxsize)
 
 const char *encodeXML(const char *x, StringBuffer &ret, unsigned flags, unsigned len, bool utf8)
 {
+    //Cost of strlen is small compared to benefits of ensureCapacity and the complexity of the rest of the function.
+    if (len == (unsigned)-1)
+        len = strlen(x);
+    // This is the minimum length that will get generated, and potentially saves large number of relocations for large strings
+    ret.ensureCapacity(len);
     while (len)
     {
         switch(*x)
@@ -1842,8 +1849,6 @@ const char *encodeXML(const char *x, StringBuffer &ret, unsigned flags, unsigned
             ret.append(flags & ENCODE_SPACES?"&#9;":"\t");
             break;
         case '\0':
-            if (len == (unsigned)-1)
-                return ret.str();
             ret.append("&#xe000;");   // hack!!! Characters below 0x20 are not legal in strict xml, even encoded.
             break;
         default:
@@ -1854,15 +1859,14 @@ const char *encodeXML(const char *x, StringBuffer &ret, unsigned flags, unsigned
             else if (utf8)
             {
                 unsigned chlen = utf8CharLen((const unsigned char *)x);     
-                if (chlen==0)
+                if (chlen==0 || (chlen > len)) // invalid utf8, or missing multi byte characters
                     ret.append("&#").append((unsigned int)*(unsigned char *) x).append(';');
                 else
                 {
                     ret.append(*x);
                     while(--chlen)
                     {
-                        if (len != (unsigned) -1)
-                            len--;
+                        len--;
                         ret.append(*(++x));
                     }
                 }
@@ -1872,8 +1876,7 @@ const char *encodeXML(const char *x, StringBuffer &ret, unsigned flags, unsigned
 
             break;
         }
-        if (len != (unsigned) -1)
-            len--;
+        len--;
         ++x;
     }
     return ret.str();
@@ -2351,6 +2354,7 @@ StringBuffer &encodeJSON(StringBuffer &s, unsigned size, const char *value)
 {
     if (!value)
         return s;
+    s.ensureCapacity(size); // Minimum size that will be written
     while (size)
         encodeJSONChar(s, value, size);
     return s;
@@ -2758,4 +2762,83 @@ StringBuffer& StringBuffer::operator=(StringBuffer&& value)
 {
     swapWith(value);
     return *this;
+}
+
+bool loadBinaryFile(StringBuffer & contents, const char *filename, bool throwOnError)
+{
+    int fd = open(filename, O_RDONLY);
+    bool ok = false;
+    if (fd != -1)
+    {
+        const unsigned chunkSize = 0x10000;
+        ssize_t bytes;
+        for (;;)
+        {
+            void * buffer = contents.reserve(chunkSize);
+            bytes = (size_t)read(fd, buffer, chunkSize);
+            if (bytes != chunkSize)
+                break;
+        }
+
+        if (bytes >= 0)
+            ok = true;
+        else
+            bytes = 0;
+        contents.setLength(contents.length() - (chunkSize - bytes));
+        close(fd);
+    }
+    else if (throwOnError)
+        throw MakeStringException(errno, "File %s could not be opened", filename);
+
+    return ok;
+}
+
+void processOptionString(const char * options, optionCallback callback)
+{
+    if (!options || !callback)
+        return;
+
+    StringBuffer option;
+    StringBuffer value;
+    while (true)
+    {
+        const char * comma = strchr(options, ',');
+        const char * eq = strchr(options, '=');
+        if (comma && eq)
+        {
+            if (comma < eq)
+                eq = nullptr;
+            else
+            {
+                //Could optionally see if the value is quoted, and if so scan for the terminator to allow quoted commas
+                //but then you may have problems with quoted quotes... so leave as-is for the moment
+            }
+        }
+        option.clear();
+        value.clear();
+        if (eq)
+        {
+            option.append(eq-options, options);
+            if (comma)
+                value.append(comma-(eq+1), eq+1);
+            else
+                value.append(eq+1);
+        }
+        else
+        {
+            value.append("1");
+            if (comma)
+                option.append(comma-options, options);
+            else
+                option.append(options);
+        }
+
+        if (option.length())
+            callback(option, value);
+
+        if (!comma)
+            break;
+
+        options = comma+1;
+    }
 }

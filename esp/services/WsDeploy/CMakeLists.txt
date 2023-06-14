@@ -15,69 +15,70 @@
 ################################################################################
 
 
-# Component: WsDeploy 
+# Component: WsDeploy
 #####################################################
 # Description:
 # ------------
 #    Cmake Input File for WsDeploy
 #####################################################
 
-project( WsDeploy ) 
+project( WsDeploy )
 
 include(${HPCC_SOURCE_DIR}/esp/scm/additional.cmake)
 
-set (    SRCS 
-         ${ESPSCM_GENERATED_DIR}/WsDeploy_esp.cpp 
-         WsDeployPlugin.cpp 
-         WsDeployEngine.cpp 
-         WsDeployBinding.cpp 
-         WsDeployService.cpp 
+set (    SRCS
+         ${ESPSCM_GENERATED_DIR}/WsDeploy_esp.cpp
+         WsDeployPlugin.cpp
+         WsDeployEngine.cpp
+         WsDeployBinding.cpp
+         WsDeployService.cpp
     )
 
-include_directories ( 
-         ./../../esplib 
-         ./../.. 
-         ./../../platform 
-         ./../../../system/jlib 
-         ./../../../common/environment 
-         ./../../services 
-         ./../common 
-         ./../../../system/xmllib 
-         ./../../../system/security/securesocket 
-         ./../../../system/security/shared 
-         ./../../../system/include 
-         ./../../../common/remote 
-         ./../../clients 
-         ./../../../dali/base 
-         ./../../../common/dllserver 
-         ./../../bindings 
-         ./../../bindings/SOAP/xpp 
+include_directories (
+         ./../../esplib
+         ./../..
+         ./../../platform
+         ./../../../system/jlib
+         ./../../../common/environment
+         ./../../services
+         ./../common
+         ./../../../system/xmllib
+         ./../../../system/security/securesocket
+         ./../../../system/security/shared
+         ./../../../system/include
+         ./../../../common/remote
+         ./../../clients
+         ./../../../dali/base
+         ./../../../common/dllserver
+         ./../../bindings
+         ./../../bindings/SOAP/xpp
          ./../../bindings/http/client
-         ./../../../system/mp 
-         ../../../deployment/deploy 
-         ../../../deployment/deployutils 
+         ./../../../system/mp
+         ../../../deployment/deploy
+         ../../../deployment/deployutils
          ${HPCC_SOURCE_DIR}/deployment/configutils
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
          ${HPCC_SOURCE_DIR}/common/thorhelper
     )
 
-ADD_DEFINITIONS( -D_USRDLL -DWsDeploy_API_LOCAL )
+ADD_DEFINITIONS( -D_USRDLL -DWsDeploy_API_LOCAL -DESP_SERVICE_WsDeploy)
 
 HPCC_ADD_LIBRARY( WsDeploy SHARED ${SRCS}  )
 add_dependencies (WsDeploy espscm)
 install ( TARGETS WsDeploy RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
-target_link_libraries ( WsDeploy  
+target_link_libraries ( WsDeploy
          jlib
-         xmllib 
-         esphttp 
-         dalibase 
-         dllserver 
-         eclrtl 
-         hql 
+         xmllib
+         esphttp
+         dalibase
+         dllserver
+         eclrtl
+         hql
          deploy
          deployutils
          configutils
+         ${COMMON_ESP_SERVICE_LIBS}
     )
 
 if (NOT CONTAINERIZED)

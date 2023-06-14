@@ -38,7 +38,7 @@ const defaultValues: BlobImportFormValues = {
     prefix: "",
     overwrite: false,
     replicate: false,
-    nosplit: false,
+    nosplit: true,
     noCommon: true,
     compress: false,
     failIfNoSourceFile: false,
@@ -79,6 +79,7 @@ export const BlobImportForm: React.FunctionComponent<BlobImportFormProps> = ({
                     request = data;
                     request["sourceIP"] = file.SourceIP;
                     request["sourcePath"] = file.SourceFile;
+                    request["fullPath"] = file.SourceFile;
                     FileSpray.SprayFixed({
                         request: request
                     }).then((response) => {
@@ -213,7 +214,7 @@ export const BlobImportForm: React.FunctionComponent<BlobImportFormProps> = ({
                                     rules={{
                                         required: nlsHPCC.ValidationErrorTargetNameRequired,
                                         pattern: {
-                                            value: /^(?:[\/\\]?[-a-z0-9_]+[\/\\])+([-a-z0-9 _\.]+)$/i,
+                                            value: /^(?:[\/\\]?[-a-z0-9\*_]+[\/\\])+([-a-z0-9 \*_\.]+)$/i,
                                             message: nlsHPCC.ValidationErrorTargetNameInvalid
                                         }
                                     }}
@@ -262,7 +263,7 @@ export const BlobImportForm: React.FunctionComponent<BlobImportFormProps> = ({
                             control={control} name="nosplit"
                             render={({
                                 field: { onChange, name: fieldName, value }
-                            }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.NoSplit} />}
+                            }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.NoSplit} disabled={true} />}
                         /></td>
                         <td><Controller
                             control={control} name="noCommon"

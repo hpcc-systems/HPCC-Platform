@@ -41,7 +41,7 @@ const defaultValues: JsonImportFormValues = {
     sourceMaxRecordSize: "",
     overwrite: false,
     replicate: false,
-    nosplit: false,
+    nosplit: true,
     noCommon: true,
     compress: false,
     failIfNoSourceFile: false,
@@ -318,7 +318,7 @@ export const JsonImportForm: React.FunctionComponent<JsonImportFormProps> = ({
                             control={control} name="nosplit"
                             render={({
                                 field: { onChange, name: fieldName, value }
-                            }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.NoSplit} />}
+                            }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.NoSplit} disabled={true} />}
                         /></td>
                         <td><Controller
                             control={control} name="noCommon"

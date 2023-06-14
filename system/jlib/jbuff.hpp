@@ -45,6 +45,7 @@ public:
     inline void *       mem() const         { return ptr; }
     void                set(size_t _len, const void * _ptr);
     void                setOwn(size_t _len, void * _ptr);
+    void                swapWith(MemoryAttr & other);
     
     static int          compare(const MemoryAttr & m1, const MemoryAttr & m2);
 

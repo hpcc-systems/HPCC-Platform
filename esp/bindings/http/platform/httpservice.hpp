@@ -87,6 +87,10 @@ protected:
     EspAuthState checkUserAuth();
     void readAuthRequest(EspAuthRequest& req);
     EspAuthState preCheckAuth(EspAuthRequest& authReq);
+    void readTempCookieToContext(IEspContext* ctx, bool setUserIDAsName);
+    void addTempCookie(IEspContext* ctx);
+    void readDomainAuthDataFromSecureContext(IEspContext* ctx, IPropertyTree* tree);
+    void setDomainAuthDataInSecureContext(IEspContext* ctx, IPropertyTree* tree);
     EspAuthState verifyCookies(EspAuthRequest& authReq);
     void verifyCookie(EspAuthRequest& authReq, CESPCookieVerification& cookie);
     bool verifyESPSessionIDCookie(EspAuthRequest& authReq);
@@ -106,7 +110,7 @@ protected:
     EspHttpBinding* getEspHttpBinding(EspAuthRequest& req);
     bool isAuthRequiredForBinding(EspAuthRequest& req);
     void authOptionalGroups(EspAuthRequest& req);
-    unsigned createHTTPSession(EspHttpBinding* authBinding, const char* userID, const char* loginURL);
+    unsigned createHTTPSession(IEspContext* ctx, EspHttpBinding* authBinding, const char* userID, const char* loginURL);
     void timeoutESPSessions(EspHttpBinding* authBinding, IPropertyTree* espSessions);
     void addCookie(const char* cookieName, const char *cookieValue, int maxAgeSec, bool httpOnly);
     void clearCookie(const char* cookieName);
@@ -124,6 +128,7 @@ protected:
     void sendSessionReloadHTMLPage(IEspContext* ctx, EspAuthRequest& authReq, const char* msg);
     bool isServiceMethodReq(EspAuthRequest& authReq, const char* serviceName, const char* methodName);
     IRemoteConnection* getSDSConnection(const char* xpath, unsigned mode, unsigned timeout);
+    bool isMalformedUserName(const char *userName);
 
 public:
     IMPLEMENT_IINTERFACE;

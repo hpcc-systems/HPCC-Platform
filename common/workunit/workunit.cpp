@@ -129,7 +129,7 @@ static bool checkWuScopeListSecAccess(const char *wuscope, ISecResourceList *sco
     }
     else
     {
-        for (int seq=0; ret && seq<scopes->count(); seq++)
+        for (unsigned seq=0; ret && seq<scopes->count(); seq++)
         {
             ISecResource *res=scopes->queryResource(seq);
             if (res && res->getAccessFlags()<required)
@@ -5448,6 +5448,7 @@ bool CWorkUnitFactory::restoreWorkUnit(const char *base, const char *wuid, bool 
     return true;
 }
 
+static constexpr const char *zapReportPrefix = "ZAPReport_";
 void CWorkUnitFactory::importWorkUnit(const char *zapReportFileName, const char *zapReportPassword,
     const char *importDir, const char *app, const char *user, ISecManager *secMgr, ISecUser *secUser)
 {
@@ -5471,8 +5472,7 @@ void CWorkUnitFactory::importWorkUnit(const char *zapReportFileName, const char 
                 throw MakeStringException(WUERR_InvalidUserInput, "Failed to find %s in %s.", mask, unzipDir.str());
             }
 
-            fileName.set(unzipDir).append(PATHSEPSTR);
-            di->getName(fileName);
+            fileName.set(di->query().queryFilename());
             if (di->next())
                 throw MakeStringException(WUERR_InvalidUserInput, "More than 1 %s files found in %s.", mask, unzipDir.str());
             return true;
@@ -5493,30 +5493,47 @@ void CWorkUnitFactory::importWorkUnit(const char *zapReportFileName, const char 
         }
         void updateWUQueryAssociatedFilesAttrs()
         {
-            ICopyArrayOf<IPropertyTree> fileTreesToRemove;
-            IPropertyTree *queryAssociatedTreeRoot = wuTree->queryPropTree("Query/Associated");
-            Owned<IPropertyTreeIterator> itr = queryAssociatedTreeRoot->getElements("File");
-            ForEach (*itr)
-            {
-                IPropertyTree &fileTree = itr->query();
-                const char *fileName = fileTree.queryProp("@filename");
+            IPropertyTree *queryTree = wuTree->queryPropTree("Query");
+            if (!queryTree)
+                return;
+            Owned<IPropertyTree> associatedTree = queryTree->getPropTree("Associated");
+            if (!associatedTree)
+                return;
+            verifyex(queryTree->removeTree(associatedTree));
+            IPropertyTree *newAssociatedTree = queryTree->addPropTree("Associated");
 
-                StringBuffer fileNameWithPath(unzipDir);
-                fileNameWithPath.append(PATHSEPSTR).append(pathTail(fileName));
-                if (checkFileExists(fileNameWithPath)) //Check if the ZAP report contains this file.
+            // exclude files created by ZAP report, find match for all others
+            // in existing associated file meta, and add updated versions.
+            Owned<IFile> dir = createIFile(unzipDir.str());
+            Owned<IDirectoryIterator> iter = dir->directoryFiles(nullptr, false, true);
+            ForEach(*iter)
+            {
+                const char *fileName = iter->query().queryFilename();
+                const char *fileNameTail = pathTail(fileName);
+                if (startsWith(fileNameTail, zapReportPrefix))
+                    continue;
+
+                VStringBuffer fileNameXPathMatch("File[@filename='*/%s", fileNameTail);
+
+                // bit of a kludge. If dir then may be an intermediate directory within the meta.
+                if (iter->isDir())
+                    fileNameXPathMatch.append("*");
+                fileNameXPathMatch.append("']");
+
+                // guard against ambiguous match, because old zaps would keep the tail directory only,
+                // which was likely to exist in multiple subdirectories in recorded in the meta (see HPCC-29541)
+                Owned<IPropertyTreeIterator> matches = associatedTree->getElements(fileNameXPathMatch);
+                if (matches->first())
                 {
-#ifdef _CONTAINERIZED
-                    fileTree.setProp("@ip", "localhost");
-#else
-                    fileTree.setProp("@ip", GetCachedHostName());
-#endif
-                    fileTree.setProp("@filename", fileNameWithPath);
+                    IPropertyTree *match = &matches->query();
+                    IPropertyTree *newFile = newAssociatedTree->addPropTree("File", createPTreeFromIPT(match));
+                    if (isContainerized())
+                        newFile->setProp("@ip", "localhost");
+                    else
+                        newFile->setProp("@ip", GetCachedHostName());
+                    newFile->setProp("@filename", fileName);
                 }
-                else
-                    fileTreesToRemove.append(fileTree);
             }
-            ForEachItemIn(r, fileTreesToRemove)
-                queryAssociatedTreeRoot->removeTree(&fileTreesToRemove.item(r));
         }
         void getWUAttributes(IWorkUnit *workunit)
         {
@@ -5533,7 +5550,8 @@ void CWorkUnitFactory::importWorkUnit(const char *zapReportFileName, const char 
         }
         void setUNZIPDir()
         {   //Set a unique unzip folder inside the component's data folder
-            unzipDir.append(importDir).append(PATHSEPSTR).append(wuid.get());
+            unzipDir.append(importDir);
+            addPathSepChar(unzipDir).append(wuid.get());
         }
         void unzipZAPReport()
         {
@@ -5558,14 +5576,16 @@ void CWorkUnitFactory::importWorkUnit(const char *zapReportFileName, const char 
         }
         void buildPTreesFromZAPReport()
         {
-            wuTree.setown(readWUXMLFile("ZAPReport_W*.xml", false));
+            VStringBuffer zapReportName("%sW*.xml", zapReportPrefix);
+            wuTree.setown(readWUXMLFile(zapReportName, false));
             fromWUID.set(wuTree->queryName());
             wuTree->setProp("@scope", scope);
 
             //update QueryAssociatedFiles in WU XML;
             updateWUQueryAssociatedFilesAttrs();
 
-            graphProgressTree.setown(readWUXMLFile("ZAPReport_*.graphprogress", true));
+            zapReportName.clear().append(zapReportPrefix).append("*.graphprogress");
+            graphProgressTree.setown(readWUXMLFile(zapReportName, true));
         }
         void updateJobName(IWorkUnit *workunit)
         {
@@ -5620,8 +5640,6 @@ void CWorkUnitFactory::importWorkUnit(const char *zapReportFileName, const char 
             workunit->import(queryWUPTree(), queryGraphProgressPTree());
             setImportDebugAttribute(workunit);
             updateJobName(workunit);
-
-            removeFileTraceIfFail(zapReportFileName);
         }
     };
 

@@ -21,11 +21,24 @@ fi
 scriptdir=$(dirname -- "$( readlink -f -- ""$0""; )")
 hpccdir=$scriptdir/../..
 gitroot="${gitroot/#\~/$HOME}"
+version=candidate-$1
+shift
 
-echo Go gold with candidate-$1
+echo Go gold with $version
 
-for f in $all ; do cd "${gitroot}/$f" ; git fetch origin ; git checkout candidate-$1 ; git su --force ; done
+for f in $all ; do
+   cd "${gitroot}/$f"
+   git fetch origin
+   git checkout $version
+   if [ $? -ne 0 ]; then
+      echo "Target branch $version failed to check out"
+      exit 1
+   fi
+
+   git submodule update --recursive --init --force
+done
+
 echo Press any key to go gold
 read -n 1 -s
 
-for f in $all ; do cd $gitroot/$f ; $hpccdir/cmake_modules/go_gold.sh ; done
+for f in $all ; do cd $gitroot/$f ; $hpccdir/cmake_modules/go_gold.sh $*; done

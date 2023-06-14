@@ -1529,7 +1529,7 @@ void CSoapValue::serialize(StringBuffer& outbuf, CMimeMultiPart* multipart)
         if(m_value.length() > 0)
         {
             if (m_encode_xml)
-                encodeUtf8XML(m_value.str(), outbuf);
+                encodeUtf8XML(m_value.str(), outbuf, 0, m_value.length());
             else
                 outbuf.append(m_value.str());
         }

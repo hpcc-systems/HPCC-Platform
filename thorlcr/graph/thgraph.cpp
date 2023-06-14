@@ -30,6 +30,7 @@
 #include "thorport.hpp"
 #include "roxiehelper.hpp"
 #include "hpccconfig.hpp"
+#include "jtrace.hpp"
 
 
 
@@ -2667,18 +2668,14 @@ public:
 class CThorContextLogger : implements IContextLogger, public CSimpleInterface
 {
     unsigned traceLevel = 1;
-    StringAttr globalIdHeader;
-    StringAttr callerIdHeader;
-    StringAttr globalId;
-    StringAttr callerId;
-    StringBuffer localId;
+    LogTrace logTrace;
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
     CThorContextLogger()
     {
         if (globals->hasProp("@httpGlobalIdHeader"))
-            setHttpIdHeaders(globals->queryProp("@httpGlobalIdHeader"), globals->queryProp("@httpCallerIdHeader"));
+            setHttpIdHeaderNames(globals->queryProp("@httpGlobalIdHeader"), globals->queryProp("@httpCallerIdHeader"));
     }
     virtual void CTXLOG(const char *format, ...) const override  __attribute__((format(printf,2,3))) 
     {
@@ -2721,41 +2718,36 @@ public:
     }
     virtual void setGlobalId(const char *id, SocketEndpoint &ep, unsigned pid) override
     {
-        globalId.set(id);
-        appendGloballyUniqueId(localId.clear());
+        logTrace.setGlobalId(id);
     }
     virtual void setCallerId(const char *id) override
     {
-        callerId.set(id);
+        logTrace.setCallerId(id);
     }
-    virtual const char *queryGlobalId() const
+    virtual const char *queryGlobalId() const override
     {
-        return globalId.get();
+        return logTrace.queryGlobalId();
     }
-    virtual const char *queryLocalId() const
+    virtual const char *queryLocalId() const override
     {
-        return localId.str();
+        return logTrace.queryLocalId();
     }
     virtual const char *queryCallerId() const override
     {
-        return callerId.str();
+        return logTrace.queryCallerId();
     }
-    virtual void setHttpIdHeaders(const char *global, const char *caller)
+    virtual void setHttpIdHeaderNames(const char *global, const char *caller) override
     {
-        if (global && *global)
-            globalIdHeader.set(global);
-        if (caller && *caller)
-            callerIdHeader.set(caller);
+        logTrace.setHttpIdHeaderNames(global, caller);
     }
-    virtual const char *queryGlobalIdHttpHeader() const
+    virtual const char *queryGlobalIdHttpHeaderName() const override
     {
-        return globalIdHeader.str();
+        return logTrace.queryGlobalIdHTTPHeaderName();
     }
-    virtual const char *queryCallerIdHttpHeader() const
+    virtual const char *queryCallerIdHttpHeaderName() const override
     {
-        return callerIdHeader.str();
+        return logTrace.queryCallerIdHTTPHeaderName();
     }
-
 };
 
 ////
@@ -2846,20 +2838,33 @@ void CJobBase::init()
 
     logctx.setown(new CThorContextLogger());
 
+    // helpers to preserve legacy behaviour of a few 'expert' properties that could be set as attributes directly under ThorCluster
+    auto getLegacyExpertSettingBool = [this](const char *property, bool dft)
+    {
+        VStringBuffer globalProp("@%s", property);
+        return getOptBool(property, globals->getPropBool(globalProp, dft));
+    };
+    auto getLegacyExpertSettingUInt = [this](const char *property, unsigned dft)
+    {
+        VStringBuffer globalProp("@%s", property);
+        return getOptUInt(property, (unsigned)globals->getPropInt(globalProp, dft));
+    };
+
     // global setting default on, can be overridden by #option
-    timeActivities = 0 != getWorkUnitValueInt("timeActivities", globals->getPropBool("@timeActivities", true));
-    maxActivityCores = (unsigned)getWorkUnitValueInt("maxActivityCores", 0); // NB: 0 means system decides
+    timeActivities = getLegacyExpertSettingBool(THOROPT_TIME_ACTIVITIES, true);
+    maxActivityCores = getOptUInt(THOROPT_MAX_ACTIVITY_CORES, 0); // NB: 0 means system decides
     if (0 == maxActivityCores)
         maxActivityCores = getAffinityCpus();
     pausing = false;
     resumed = false;
 
-    crcChecking = 0 != getWorkUnitValueInt("THOR_ROWCRC", globals->getPropBool("@THOR_ROWCRC", false));
-    usePackedAllocator = 0 != getWorkUnitValueInt("THOR_PACKEDALLOCATOR", globals->getPropBool("@THOR_PACKEDALLOCATOR", true));
-    memorySpillAtPercentage = (unsigned)getWorkUnitValueInt("memorySpillAt", globals->getPropInt("@memorySpillAt", 80));
-    failOnLeaks = getOptBool("failOnLeaks");
+    crcChecking = getLegacyExpertSettingBool(THOROPT_THOR_ROWCRC, false);
+    usePackedAllocator = getLegacyExpertSettingBool(THOROPT_THOR_PACKEDALLOCATOR, true);
+    memorySpillAtPercentage = getLegacyExpertSettingUInt(THOROPT_MEMORY_SPILL_AT, 80);
+
+    failOnLeaks = getOptBool(THOROPT_FAIL_ON_LEAKS);
     maxLfnBlockTimeMins = getOptInt(THOROPT_MAXLFN_BLOCKTIME_MINS, DEFAULT_MAXLFN_BLOCKTIME_MINS);
-    soapTraceLevel = getOptInt("soapTraceLevel", 1);
+    soapTraceLevel = getOptInt(THOROPT_SOAP_TRACE_LEVEL, 1);
 
     StringBuffer tracing("maxActivityCores = ");
     if (maxActivityCores)

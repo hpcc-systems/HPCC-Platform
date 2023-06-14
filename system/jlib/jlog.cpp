@@ -28,6 +28,8 @@
 #include "jmisc.hpp"
 #include "jprop.hpp"
 #include "lnuid.h"
+#include <sys/stat.h>
+#include "jtrace.hpp"
 
 using namespace ln_uid;
 
@@ -58,6 +60,38 @@ static FILE *getNullHandle()
 #else
     return fopen("/dev/null","w");
 #endif
+}
+
+static bool stdErrIsDevNull()
+{
+    bool result = false;
+
+#ifndef _WIN32
+    int fd2 = fileno(stderr);
+    if (fd2 >= 0)
+    {
+        struct stat stdErr;
+        struct stat devNull;
+        int srtn = fstat(fd2, &stdErr);
+        if (srtn == 0)
+        {
+            if (S_ISCHR(stdErr.st_mode))
+            {
+                srtn = stat("/dev/null", &devNull);
+                if (srtn == 0)
+                {
+                    if ( (stdErr.st_ino == devNull.st_ino) &&
+                         (stdErr.st_dev == devNull.st_dev) )
+                    {
+                        result = true;
+                    }
+                }
+            }
+        }
+    }
+#endif
+
+    return result;
 }
 
 LogMsgSysInfo::LogMsgSysInfo(LogMsgId _id, unsigned port, LogMsgSessionId session)
@@ -1795,7 +1829,11 @@ void CLogMsgManager::resetMonitors()
     suspendChildren();
     removeAllMonitors();
     Owned<ILogMsgFilter> defaultFilter = getDefaultLogMsgFilter();
-    addMonitor(theStderrHandler, defaultFilter);
+
+    // dont add stderr log handler if it has been redirected to /dev/null ...
+
+    if (!stdErrIsDevNull())
+        addMonitor(theStderrHandler, defaultFilter);
     unsuspendChildren();
 }
 
@@ -2786,11 +2824,7 @@ void IContextLogger::logOperatorException(IException *E, const char *file, unsig
 class DummyLogCtx : implements IContextLogger
 {
 private:
-    StringAttr globalId;
-    StringAttr callerId;
-    StringBuffer localId;
-    StringAttr globalIdHeader;
-    StringAttr callerIdHeader;
+    LogTrace logTrace;
 
 public:
     // It's a static object - we don't want to actually link-count it...
@@ -2830,39 +2864,35 @@ public:
     }
     virtual void setGlobalId(const char *id, SocketEndpoint &ep, unsigned pid) override
     {
-        globalId.set(id);
-        appendGloballyUniqueId(localId.clear());
+        logTrace.setGlobalId(id);
     }
     virtual void setCallerId(const char *id) override
     {
-        callerId.set(id);
+        logTrace.setCallerId(id);
     }
-    virtual const char *queryGlobalId() const
+    virtual const char *queryGlobalId() const override
     {
-        return globalId.get();
+        return logTrace.queryGlobalId();
     }
     virtual const char *queryCallerId() const override
     {
-        return callerId.str();
+        return logTrace.queryCallerId();
     }
-    virtual const char *queryLocalId() const
+    virtual const char *queryLocalId() const override
     {
-        return localId.str();
+        return logTrace.queryLocalId();
     }
-    virtual void setHttpIdHeaders(const char *global, const char *caller)
+    virtual void setHttpIdHeaderNames(const char *global, const char *caller) override
     {
-        if (global && *global)
-            globalIdHeader.set(global);
-        if (caller && *caller)
-            callerIdHeader.set(caller);
+        logTrace.setHttpIdHeaderNames(global, caller);
     }
-    virtual const char *queryGlobalIdHttpHeader() const
+    virtual const char *queryGlobalIdHttpHeaderName() const override
     {
-        return globalIdHeader.str();
+        return logTrace.queryGlobalIdHTTPHeaderName();
     }
-    virtual const char *queryCallerIdHttpHeader() const
+    virtual const char *queryCallerIdHttpHeaderName() const override
     {
-        return callerIdHeader.str();
+        return logTrace.queryCallerIdHTTPHeaderName();
     }
 } dummyContextLogger;
 

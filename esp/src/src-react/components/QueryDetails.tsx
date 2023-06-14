@@ -30,10 +30,23 @@ export const QueryDetails: React.FunctionComponent<QueryDetailsProps> = ({
 }) => {
 
     const [query, setQuery] = React.useState<any>();
+    const [logicalFileCount, setLogicalFileCount] = React.useState<number>(0);
+    const [superFileCount, setSuperFileCount] = React.useState<number>(0);
+    const [libsUsedCount, setLibsUsedCount] = React.useState<number>(0);
+    const [graphCount, setGraphCount] = React.useState<number>(0);
 
     React.useEffect(() => {
         setQuery(ESPQuery.Get(querySet, queryId));
     }, [setQuery, queryId, querySet]);
+
+    React.useEffect(() => {
+        query?.getDetails().then(({ WUQueryDetailsResponse }) => {
+            setLogicalFileCount(query.LogicalFiles.Item.length);
+            setSuperFileCount(query.SuperFiles.SuperFile.length);
+            setLibsUsedCount(query.LibrariesUsed.Item.length);
+            setGraphCount(query.WUGraphs.ECLGraph.length);
+        });
+    }, [query, setLogicalFileCount, setSuperFileCount, setLibsUsedCount, setGraphCount]);
 
     return <SizeMe monitorHeight>{({ size }) =>
         <Pivot
@@ -58,19 +71,19 @@ export const QueryDetails: React.FunctionComponent<QueryDetailsProps> = ({
             <PivotItem headerText={nlsHPCC.Errors} itemKey="errors" style={pivotItemStyle(size, 0)}>
                 <QueryErrors queryId={queryId} querySet={querySet} />
             </PivotItem>
-            <PivotItem headerText={nlsHPCC.LogicalFiles} itemKey="logicalFiles" itemCount={query?.LogicalFiles?.Item?.length || 0} style={pivotItemStyle(size, 0)}>
+            <PivotItem headerText={nlsHPCC.LogicalFiles} itemKey="logicalFiles" itemCount={logicalFileCount} style={pivotItemStyle(size, 0)}>
                 <QueryLogicalFiles queryId={queryId} querySet={querySet} />
             </PivotItem>
-            <PivotItem headerText={nlsHPCC.SuperFiles} itemKey="superfiles" itemCount={query?.SuperFiles?.SuperFile.length || 0} style={pivotItemStyle(size, 0)}>
+            <PivotItem headerText={nlsHPCC.SuperFiles} itemKey="superfiles" itemCount={superFileCount} style={pivotItemStyle(size, 0)}>
                 <QuerySuperFiles queryId={queryId} querySet={querySet} />
             </PivotItem>
-            <PivotItem headerText={nlsHPCC.LibrariesUsed} itemKey="librariesUsed" itemCount={query?.LibrariesUsed?.Item?.length || 0} style={pivotItemStyle(size, 0)}>
+            <PivotItem headerText={nlsHPCC.LibrariesUsed} itemKey="librariesUsed" itemCount={libsUsedCount} style={pivotItemStyle(size, 0)}>
                 <QueryLibrariesUsed queryId={queryId} querySet={querySet} />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.SummaryStatistics} itemKey="summaryStatistics" style={pivotItemStyle(size, 0)}>
                 <QuerySummaryStats queryId={queryId} querySet={querySet} />
             </PivotItem>
-            <PivotItem headerText={nlsHPCC.Graphs} itemKey="graphs" itemCount={query?.WUGraphs?.ECLGraph?.length || 0} style={pivotItemStyle(size, 0)}>
+            <PivotItem headerText={nlsHPCC.Graphs} itemKey="graphs" itemCount={graphCount} style={pivotItemStyle(size, 0)}>
                 <QueryGraphs queryId={queryId} querySet={querySet} />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.Resources} itemKey="resources" style={pivotItemStyle(size, 0)}>

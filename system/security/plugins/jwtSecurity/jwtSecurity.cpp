@@ -924,9 +924,9 @@ public:
     {
         // View scopes are not restricted by this plugin
 
-        int numResources = resources->count();
+        unsigned numResources = resources->count();
 
-        for (int x = 0; x < numResources; x++)
+        for (unsigned x = 0; x < numResources; x++)
         {
             ISecResource* res = resources->queryResource(x);
 

@@ -864,7 +864,6 @@ extern jlib_decl StringBuffer & formatStatistic(StringBuffer & out, unsigned __i
 extern jlib_decl void formatTimeStampAsLocalTime(StringBuffer & out, unsigned __int64 value);
 extern jlib_decl stat_type readStatisticValue(const char * cur, const char * * end, StatisticMeasure measure);
 
-extern jlib_decl unsigned __int64 mergeStatistic(StatisticMeasure measure, unsigned __int64 value, unsigned __int64 otherValue);
 extern jlib_decl unsigned __int64 mergeStatisticValue(unsigned __int64 prevValue, unsigned __int64 newValue, StatsMergeAction mergeAction);
 
 extern jlib_decl StatisticMeasure queryMeasure(StatisticKind kind);
@@ -923,9 +922,22 @@ interface IStatisticTarget
 class jlib_decl NullStatisticTarget : implements IStatisticTarget
 {
 public:
-    virtual void addStatistic(StatisticScopeType scopeType, const char * scope, StatisticKind kind, char * description, unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue, StatsMergeAction mergeAction)
+    virtual void addStatistic(StatisticScopeType scopeType, const char * scope, StatisticKind kind, char * description, unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue, StatsMergeAction mergeAction) override
     {
     }
+};
+
+class jlib_decl RuntimeStatisticTarget : implements IStatisticTarget
+{
+public:
+    RuntimeStatisticTarget(CRuntimeStatisticCollection & _target) : target(_target) {}
+
+    virtual void addStatistic(StatisticScopeType scopeType, const char * scope, StatisticKind kind, char * description, unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue, StatsMergeAction mergeAction) override
+    {
+        target.addStatistic(kind, value);
+    }
+protected:
+    CRuntimeStatisticCollection & target;
 };
 
 extern jlib_decl StringBuffer & formatMoney(StringBuffer &out, unsigned __int64 value);

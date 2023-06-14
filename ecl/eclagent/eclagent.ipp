@@ -512,6 +512,7 @@ public:
     virtual IUserDescriptor *queryUserDescriptor();
     virtual void selectCluster(const char * cluster);
     virtual void restoreCluster();
+    virtual unsigned getElapsedMs() const override {UNIMPLEMENTED;} //Implementing for roxie first, not sure what this means from an eclagent perspective.  ECL plugin implies elapsed time of entire query
 
     IRemoteConnection *startPersist(const char * name);
     bool alreadyLockedPersist(const char * persistName);
@@ -704,7 +705,6 @@ public:
     {
         return agentMachineCost;
     }
-
 };
 
 //---------------------------------------------------------------------------

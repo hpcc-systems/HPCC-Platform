@@ -131,14 +131,6 @@ ESPenum QuerySetQueryActionTypes : string
     ResetQueryStats("ResetQueryStats")
 };
 
-SCMenum WUINFOType
-{
-    WUGRAPHS,
-    WUTIMINGS,
-    WUACTIONS,
-    WURESULTS
-};
-
 ESPStruct [nil_remove] ECLException
 {
     string Source;

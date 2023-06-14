@@ -86,7 +86,7 @@ private:
 
     ESPSerializationFormat respSerializationFormat;
 
-    Owned<IEspSecureContext> m_secureContext;
+    Owned<IEspSecureContextEx> m_secureContext;
 
     StringAttr   m_transactionID;
     StringBuffer   m_globalId;
@@ -97,7 +97,7 @@ private:
 public:
     IMPLEMENT_IINTERFACE;
 
-    CEspContext(IEspSecureContext* secureContext)
+    CEspContext(IEspSecureContextEx* secureContext)
     : m_servPort(0)
     , m_bindingValue(0)
     , m_serviceValue(0)
@@ -609,6 +609,10 @@ public:
     {
         return m_secureContext.get();
     }
+    IEspSecureContextEx* querySecureContextEx() override
+    {
+        return m_secureContext.get();
+    }
 
     virtual void setTransactionID(const char * trxid)
     {
@@ -764,7 +768,7 @@ void CEspContext::updateTraceSummaryHeader()
     }
 }
 
-IEspContext* createEspContext(IEspSecureContext* secureContext)
+IEspContext* createEspContext(IEspSecureContextEx* secureContext)
 {
     return new CEspContext(secureContext);
 }

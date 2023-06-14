@@ -52,6 +52,7 @@
 #include "rtlformat.hpp"
 #include "rmtfile.hpp"
 #include "roxiestream.hpp"
+#include "hpccconfig.hpp"
 
 
 #define SDS_LOCK_TIMEOUT 30000
@@ -86,7 +87,7 @@ const StatisticsMapping joinActivityStatistics({StNumLeftRows, StNumRightRows}, 
 const StatisticsMapping diskReadActivityStatistics({StNumDiskRowsRead}, basicActivityStatistics, diskReadRemoteStatistics);
 const StatisticsMapping diskWriteActivityStatistics({StPerReplicated}, basicActivityStatistics, diskWriteRemoteStatistics);
 const StatisticsMapping sortActivityStatistics({}, basicActivityStatistics, spillStatistics);
-const StatisticsMapping graphStatistics({StNumExecutions, StSizeSpillFile, StSizePeakSpillFile}, basicActivityStatistics);
+const StatisticsMapping graphStatistics({StNumExecutions, StSizeSpillFile, StSizePeakSpillFile, StTimeUser, StTimeSystem, StNumContextSwitches, StSizeMemory, StSizePeakMemory, StSizeRowMemory, StSizePeakRowMemory }, basicActivityStatistics);
 const StatisticsMapping diskReadPartStatistics({StNumDiskRowsRead}, diskReadRemoteStatistics);
 
 
@@ -1587,6 +1588,8 @@ void checkAndDumpAbortInfo(const char *cmd)
 {
     try
     {
+        bool validateAllowedPrograms = true;
+        StringBuffer allowedPipePrograms;
         StringBuffer dumpInfoCmd(cmd);
         if (dumpInfoCmd.length())
         {
@@ -1603,11 +1606,17 @@ void checkAndDumpAbortInfo(const char *cmd)
                 exePath.append("process-name-unknown");
             unsigned pid = GetCurrentProcessId();
             dumpInfoCmd.appendf(" %s %u %s %u", myInstanceName, myBasePort, exePath.str(), pid);
+
+            // only allow custom command if listed as allowedPipeProgram. NB: default is "" (none) above.
+            getAllowedPipePrograms(allowedPipePrograms, false);
         }
         else
+        {
             getDebuggerGetStacksCmd(dumpInfoCmd);
+            validateAllowedPrograms = false; // explicitly allow default through
+        }
         StringBuffer cmdOutput;
-        unsigned retCode = getCommandOutput(cmdOutput, dumpInfoCmd, "slave dump info", globals->queryProp("@allowedPipePrograms"));
+        unsigned retCode = getCommandOutput(cmdOutput, dumpInfoCmd, "slave dump info", validateAllowedPrograms ? allowedPipePrograms.str() : nullptr);
         PROGLOG("\n%s, return code = %u\n%s\n", dumpInfoCmd.str(), retCode, cmdOutput.str());
     }
     catch (IException *e)

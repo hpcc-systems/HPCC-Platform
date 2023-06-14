@@ -52,6 +52,11 @@
   <programlisting>g1 := GETENV('namesTable');
 g2 := GETENV('myPort','25');
 
+OUTPUT(GETENV('HPCC_DEPLOYMENT', 'unknown'));
 OUTPUT(g1);
+OUTPUT(g2);
 </programlisting>
+
+  <para>See Also: <link linkend="EnvironmentVariables">Environment
+  Variables</link></para>
 </sect1>

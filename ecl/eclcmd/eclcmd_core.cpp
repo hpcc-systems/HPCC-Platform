@@ -396,6 +396,8 @@ public:
     {
         if (!EclCmdWithEclTarget::finalizeOptions(globals))
             return false;
+        if (!dfuOptions.finalizeOptions(*this, globals))
+            return false;
         if (!activateSet)
         {
             bool activate;

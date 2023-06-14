@@ -73,32 +73,41 @@
         <row>
           <entry><emphasis>keys</emphasis></entry>
 
-          <entry>The RECORD structure of the fields in the
-          <emphasis>indexfile</emphasis> that contains key and file position
-          information for referencing into the
-          <emphasis>baserecset</emphasis>. Field names and types must match
-          the <emphasis>baserecset</emphasis> fields (REAL and DECIMAL type
-          fields are not supported). This may also contain additional fields
-          not present in the <emphasis>baserecset</emphasis> (computed
-          fields). If omitted, all fields in the
-          <emphasis>baserecset</emphasis> are used.</entry>
+          <entry>The RECORD structure of key fields that reference into the
+          <emphasis>baserecset</emphasis> (the "search terms" for the INDEX).
+          Key fields may be <emphasis>baserecset</emphasis> fields or computed
+          fields. REAL and DECIMAL types are not supported as "search term"
+          fields. If omitted, all fields in the
+          <emphasis>baserecset</emphasis> are used. This RECORD structure is
+          typically defined inline within the INDEX using curly braces ({}),
+          but may also be a separately defined RECORD structure. If the RECORD
+          structure is separately defined it must meet the same requirements
+          as used by the TABLE() function (the RECORD structure must define
+          the type, name, and source of the data for each field), otherwise
+          the BUILD action will not syntax check. </entry>
         </row>
 
         <row>
           <entry><emphasis>payload</emphasis></entry>
 
           <entry>The RECORD structure of the <emphasis>indexfile</emphasis>
-          that contains additional fields not used as keys. If the name of the
-          <emphasis>baserecset</emphasis> is in the structure, it specifies
-          "all other fields not already named in the <emphasis>keys</emphasis>
-          parameter." This may contain fields not present in the
-          <emphasis>baserecordset</emphasis> (computed fields). The
-          <emphasis>payload</emphasis> fields do not take up space in the
-          non-leaf nodes of the index and cannot be referenced in a KEYED()
-          filter clause. Any field with the {BLOB} modifier (to allow more
-          than 32K of data per index entry) is stored within the
+          that contains additional fields not used as "search term" keys. This
+          may contain fields from the <emphasis>baserecordset</emphasis>
+          and/or computed fields. If the name of the
+          <emphasis>baserecset</emphasis> is in this structure, it specifies
+          "all other fields not already named in the keys parameter" are
+          added. The payload fields do not take up space in the non-leaf nodes
+          of the index and cannot be referenced in a KEYED() filter clause.
+          Any field with the {BLOB} modifier (to allow more than 32K of data
+          per index entry) is stored within the
           <emphasis>indexfile</emphasis>, but not with the rest of the record;
-          accessing the BLOB data requires an additional seek.</entry>
+          accessing the BLOB data requires an additional seek. This RECORD
+          structure is typically defined inline within the INDEX using curly
+          braces ({}), but may also be a separately defined RECORD structure.
+          If the RECORD structure is separately defined it must meet the same
+          requirements as used by the TABLE() function (the RECORD structure
+          must define the type, name, and source of the data for each field),
+          otherwise the BUILD action will not syntax check.</entry>
         </row>
 
         <row>
@@ -312,8 +321,19 @@ Bld := BUILDINDEX(AlphaInStateCity);</programlisting>
           {STRING2 st,STRING20 city,STRING20 lname,
           UNSIGNED8 fpos{VIRTUAL(fileposition)}},FLAT);
 
-VehicleKey := INDEX(Vehicles,{st,city},{lname,fpos},'vkey::st.city'); 
-BUILDINDEX(VehicleKey);</programlisting>
+VehicleKey1 := INDEX(Vehicles,{st,city},{lname,fpos},'vkey::st.city1');
+BUILD(VehicleKey1);
+
+SearchTerms := RECORD
+  Vehicles.st;
+  Vehicles.city;
+END; 
+Payload     := RECORD
+  Vehicles.lname;
+END; 
+VehicleKey2 := INDEX(Vehicles,SearchTerms,Payload,'vkey::st.city2');
+BUILD(VehicleKey2);
+</programlisting>
   </sect2>
 
   <sect2 id="Duplicate_INDEX">

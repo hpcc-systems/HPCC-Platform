@@ -1528,6 +1528,7 @@ class DummyContext: implements ICodeContext
     virtual ISectionTimer * registerTimer(unsigned activityId, const char * name) { throwUnexpected(); }
     virtual IEngineRowAllocator * getRowAllocatorEx(IOutputMetaData * meta, unsigned activityId, unsigned flags) const { throwUnexpected(); }
     virtual void addWuExceptionEx(const char*, unsigned int, unsigned int, unsigned int, const char*) override { throwUnexpected(); }
+    virtual unsigned getElapsedMs() const  override { throwUnexpected(); }
 
 };
 

@@ -152,9 +152,6 @@ public:
                 if (callback->wait(5000))
                     break;
             }
-            if (traceLevel > 6)
-                { StringBuffer s; DBGLOG("Processing information from Roxie server in response to %s", newHeader.toString(s).str()); }
-
             MemoryBuffer &serverData = callback->queryData();
             deserialize(serverData);
         }
@@ -1302,6 +1299,11 @@ public:
         return (workUnit != nullptr) || (statsWu != nullptr);
     }
 
+    virtual unsigned getElapsedMs() const override
+    {
+        return msTick() - startTime;
+    }
+
     virtual void noteStatistic(StatisticKind kind, unsigned __int64 value) const override
     {
         logctx.noteStatistic(kind, value);
@@ -1320,6 +1322,11 @@ public:
     virtual void gatherStats(CRuntimeStatisticCollection & merged) const override
     {
         logctx.gatherStats(merged);
+    }
+
+    virtual StringBuffer &getStats(StringBuffer &ret) const override
+    {
+        return logctx.getStats(ret);
     }
 
     virtual void CTXLOGa(TracingCategory category, const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char *prefix, const char *text) const override
@@ -1381,7 +1388,7 @@ public:
     {
         const_cast<IRoxieContextLogger&>(logctx).setCallerId(id);
     }
-    virtual const char *queryGlobalId() const
+    virtual const char *queryGlobalId() const override
     {
         return logctx.queryGlobalId();
     }
@@ -1389,21 +1396,21 @@ public:
     {
         return logctx.queryCallerId();
     }
-    virtual const char *queryLocalId() const
+    virtual const char *queryLocalId() const override
     {
         return logctx.queryLocalId();
     }
-    virtual void setHttpIdHeaders(const char *global, const char *caller)
+    virtual void setHttpIdHeaderNames(const char *global, const char *caller) override
     {
-        const_cast<IRoxieContextLogger&>(logctx).setHttpIdHeaders(global, caller);
+        const_cast<IRoxieContextLogger&>(logctx).setHttpIdHeaderNames(global, caller);
     }
-    virtual const char *queryGlobalIdHttpHeader() const
+    virtual const char *queryGlobalIdHttpHeaderName() const override
     {
-        return logctx.queryGlobalIdHttpHeader();
+        return logctx.queryGlobalIdHttpHeaderName();
     }
-    virtual const char *queryCallerIdHttpHeader() const
+    virtual const char *queryCallerIdHttpHeaderName() const override
     {
-        return logctx.queryCallerIdHttpHeader();
+        return logctx.queryCallerIdHttpHeaderName();
     }
 
     virtual void noteLibrary(IQueryFactory *library)
@@ -1520,8 +1527,6 @@ public:
 
     virtual void noteChildGraph(unsigned id, IActivityGraph *childGraph)
     {
-        if (queryTraceLevel() > 10)
-            CTXLOG("CAgentContext %p noteChildGraph %d=%p", this, id, childGraph);
         childGraphs.setValue(id, childGraph);
     }
 
@@ -1570,7 +1575,7 @@ public:
             return nullptr;
     }
 
-    virtual void endGraph(unsigned __int64 startTimeStamp, cycle_t startCycles, bool aborting)
+    virtual void endGraph(const ProcessInfo & startProcessInfo, unsigned __int64 startTimeStamp, cycle_t startCycles, bool aborting)
     {
         if (graph)
         {
@@ -1593,6 +1598,14 @@ public:
                     progressWorkUnit->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTgraph, graphScope, StWhenStarted, NULL, startTimeStamp, 1, 0, StatsMergeAppend);
                     updateWorkunitStat(progressWorkUnit, SSTgraph, graphScope, StTimeElapsed, graphDesc, elapsedTime);
                     addTimeStamp(progressWorkUnit, SSTgraph, graphName, StWhenFinished, graph->queryWorkflowId());
+
+                    ProcessInfo endProcessInfo(ReadAllInfo);
+                    SystemProcessInfo delta = endProcessInfo - startProcessInfo;
+                    updateWorkunitStat(progressWorkUnit, SSTgraph, graphScope, StTimeUser, graphDesc, delta.getUserNs());
+                    updateWorkunitStat(progressWorkUnit, SSTgraph, graphScope, StTimeSystem, graphDesc, delta.getSystemNs());
+                    updateWorkunitStat(progressWorkUnit, SSTgraph, graphScope, StNumContextSwitches, graphDesc, delta.getNumContextSwitches());
+                    updateWorkunitStat(progressWorkUnit, SSTgraph, graphScope, StSizeMemory, graphDesc, endProcessInfo.getActiveResidentMemory());
+                    updateWorkunitStat(progressWorkUnit, SSTgraph, graphScope, StSizePeakMemory, graphDesc, endProcessInfo.getPeakResidentMemory());
                 }
                 graph->reset();
             }
@@ -1628,9 +1641,6 @@ public:
     virtual void executeGraph(const char * name, bool realThor, size32_t parentExtractSize, const void * parentExtract)
     {
         assertex(parentExtractSize == 0);
-        if (queryTraceLevel() > 8)
-            CTXLOG("Executing graph %s", name);
-
         if (realThor)
         {
             Owned<IPropertyTree> compConfig = getComponentConfig();
@@ -1638,6 +1648,9 @@ public:
         }
         else
         {
+            ProcessInfo startProcessInfo;
+            if (workUnit || statsWu)
+                startProcessInfo.update(ReadAllInfo);
             bool created = false;
             cycle_t startCycles = get_cycles_now();
             unsigned __int64 startTimeStamp = getTimeStampNowValue();
@@ -1657,7 +1670,7 @@ public:
                     CTXLOG("Exception thrown in query - cleaning up: %d: %s", e->errorCode(), e->errorMessage(s).str());
                 }
                 if (created)  // Partially-created graphs are liable to crash if you call abort() on them...
-                    endGraph(startTimeStamp, startCycles, true);
+                    endGraph(startProcessInfo, startTimeStamp, startCycles, true);
                 else
                 {
                     // Bit of a hack... needed to avoid pure virtual calls if these are left to the CRoxieContextBase destructor
@@ -1670,7 +1683,7 @@ public:
             {
                 CTXLOG("Exception thrown in query - cleaning up");
                 if (created)
-                    endGraph(startTimeStamp, startCycles, true);
+                    endGraph(startProcessInfo, startTimeStamp, startCycles, true);
                 else
                 {
                     // Bit of a hack... needed to avoid pure virtual calls if these are left to the CRoxieContextBase destructor
@@ -1679,14 +1692,12 @@ public:
                 CTXLOG("Done cleaning up");
                 throw;
             }
-            endGraph(startTimeStamp, startCycles, false);
+            endGraph(startProcessInfo, startTimeStamp, startCycles, false);
         }
     }
 
     virtual IActivityGraph * queryChildGraph(unsigned  id)
     {
-        if (queryTraceLevel() > 10)
-            CTXLOG("CAgentContext %p resolveChildGraph %d", this, id);
         if (id == 0)
             return graph;
         IActivityGraph *childGraph = childGraphs.getValue(id);
@@ -3563,10 +3574,10 @@ public:
         return factory->queryPackage().createWriteHandler(filename, overwrite, extend, clusters, workUnit, isPrivilegedUser);
     }
 
-    virtual void endGraph(unsigned __int64 startTimeStamp, cycle_t startCycles, bool aborting) override
+    virtual void endGraph(const ProcessInfo & startProcessInfo, unsigned __int64 startTimeStamp, cycle_t startCycles, bool aborting) override
     {
         fileCache.kill();
-        CRoxieContextBase::endGraph(startTimeStamp, startCycles, aborting);
+        CRoxieContextBase::endGraph(startProcessInfo, startTimeStamp, startCycles, aborting);
     }
 
     virtual void onFileCallback(const RoxiePacketHeader &header, const char *lfn, bool isOpt, bool isLocal, bool isPrivilegedUser)

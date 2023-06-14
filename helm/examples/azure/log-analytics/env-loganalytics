@@ -4,7 +4,7 @@
 LOGANALYTICS_WORKSPACE_NAME=
 
 # Tags to properly annotate the Azure logAnalytics workspace to be created
-# For example: admin=MyName email=my.email@mycompany.com environment=myenv justification=testing
+# For example: "admin=MyName email=my.email@mycompany.com environment=myenv justification=testing"
 TAGS=
 
 # The Azure resource group associated with the LogAnalytics workspace
@@ -19,3 +19,6 @@ AKS_RESOURCE_GROUP=
 
 # The Azure subscription
 AZURE_SUBSCRIPTION=
+
+# Azure resource location
+AKS_RESOURCE_LOCATION=eastus

@@ -70,7 +70,7 @@ public:
             free(outbuf);
     }
 
-    virtual void open(void *buf,size32_t max)
+    virtual void open(void *buf,size32_t max) override
     {
         if (max<1024)
             throw MakeStringException(-1,"CFcmpCompressor::open - block size (%d) not large enough", max);
@@ -99,7 +99,7 @@ public:
         initCommon(max);
     }
 
-    virtual void open(MemoryBuffer &mb, size32_t initialSize)
+    virtual void open(MemoryBuffer &mb, size32_t initialSize) override
     {
         if (!initialSize)
             initialSize = FCMP_BUFFER_SIZE; // 1MB
@@ -119,7 +119,7 @@ public:
         initCommon(initialSize);
     }
 
-    virtual void close()
+    virtual void close() override
     {
         if (inlenblk!=COMMITTED)
         {
@@ -142,7 +142,7 @@ public:
         }
     }
 
-    size32_t write(const void *buf,size32_t len)
+    size32_t write(const void *buf,size32_t len) override
     {
         // no more than wrmax per write (unless dynamically sizing)
         size32_t lenb = wrmax;
@@ -184,18 +184,26 @@ public:
         return written;
     }
 
-    void * bufptr()
+    virtual bool supportsBlockCompression() const override { return false; }
+    virtual bool supportsIncrementalCompression() const override { return true; }
+
+    virtual size32_t compressBlock(size32_t destSize, void * dest, size32_t srcSize, const void * src) override
+    {
+        return 0;
+    }
+
+    virtual void * bufptr() override
     {
         assertex(!inbuf);  // i.e. closed
         return outbuf;
     }
 
-    void startblock()
+    virtual void startblock() override
     {
         inlenblk = inlen;
     }
 
-    void commitblock()
+    virtual void commitblock() override
     {
         inlenblk = COMMITTED;
     }

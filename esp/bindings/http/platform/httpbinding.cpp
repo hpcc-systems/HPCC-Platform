@@ -984,7 +984,7 @@ bool EspHttpBinding::basicAuth(IEspContext* ctx)
         return false;
     }
     bool authorized = true;
-    for(int i = 0; i < rlist->count(); i++)
+    for(unsigned i = 0; i < rlist->count(); i++)
     {
         ISecResource* curres = rlist->queryResource(i);
         if(curres != NULL)
@@ -1277,6 +1277,7 @@ static void filterXmlBySchema(IPTree* in, IXmlType* type, const char* tag, Strin
 
     if (type->isComplexType())
     {
+        const char *typeName = type->queryName();
         setStartTag(in,type,tag,out);
 
         int flds = type->getFieldCount();
@@ -1284,7 +1285,22 @@ static void filterXmlBySchema(IPTree* in, IXmlType* type, const char* tag, Strin
         {
             const char* fldName = type->queryFieldName(i);
             IPTree* fld = in ? in->queryBranch(fldName) : NULL;
-            filterXmlBySchema(fld,type->queryFieldType(i),fldName,out);
+            IXmlType* fldType = type->queryFieldType(i);
+
+            //For fields that aren't self referencing, if there is no child data in the xml continue to put empty tags / defaults in place
+            //  but if the field is self referencing, process recursively while there is data (fld), but stop when there is not (!fld).
+            if (!fld && fldType && typeName)
+            {
+                const char *fldTypeName = fldType->queryName();
+                if (fldTypeName)
+                {
+                    if (strncmp("ArrayOf", fldTypeName, 7)==0)
+                        fldTypeName+=7;
+                    if (streq(typeName, fldTypeName))
+                        continue;
+                }
+            }
+            filterXmlBySchema(fld,fldType,fldName,out);
         }
         if (flds==0)
         {

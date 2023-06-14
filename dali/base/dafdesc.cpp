@@ -2014,6 +2014,16 @@ public:
             parts.append(new CPartDescriptor(*this,parts.ordinality(),NULL));
         while (parts.ordinality()>numparts)
             delpart(parts.ordinality()-1);
+        if (::isMulti(partmask))
+        {
+            StringBuffer path;
+            for (unsigned p=0; p<parts.ordinality(); p++)
+            {
+                CPartDescriptor *pt = (CPartDescriptor *)parts.item(p);
+                pt->getPath(path.clear(), 0);
+                pt->setOverrideName(path); // NB: override = 1st copy, getPartDirectory handles manipulating for other copies
+            }
+        }
     }
 
     unsigned numClusters()
@@ -2160,6 +2170,11 @@ public:
     {
         queryProperties().setPropInt("@flags", static_cast<int>(flags));
         fileFlags = flags;
+    }
+
+    virtual FileDescriptorFlags getFlags() override
+    {
+        return static_cast<FileDescriptorFlags>(queryProperties().getPropInt("@flags"));
     }
 };
 
@@ -3553,6 +3568,7 @@ static void doInitializeStorageGroups(bool createPlanesFromGroups)
     if (createPlanesFromGroups && !storage->hasProp("planes"))
     {
         GroupInfoArray allGroups;
+        unsigned numDropZones = 0;
 
         //Create information about the storage planes from the groups published in dali
         //Use the Groups section directly, rather than queryNamedGroupStore(), so that hostnames are preserved
@@ -3563,40 +3579,22 @@ static void doInitializeStorageGroups(bool createPlanesFromGroups)
             {
                 IPropertyTree & group = groups->query();
                 Owned<GroupInformation> next = new GroupInformation(group.queryProp("@name"));
-                Owned<IPropertyTreeIterator> nodes = group.getElements("Node");
-                ForEach(*nodes)
-                {
-                    next->hosts.append(nodes->query().queryProp("@ip"));
-                }
                 next->groupType = translateGroupType(group.queryProp("@kind"));
-
-                appendGroup(allGroups, next.getClear());
-            }
-        }
-
-        //Walk the drop zones, and add them as storage groups if they have no servers configured, or "."
-        Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Software", myProcessSession(), 0, 2000);
-        if (conn)
-        {
-            unsigned numDropZones = 0;
-            Owned<IPropertyTreeIterator> dropzones = conn->queryRoot()->getElements("DropZone");
-            ForEach(*dropzones)
-            {
-                IPropertyTree & cur = dropzones->query();
-                unsigned numServers = cur.getCount("ServerList");
-
-                //Allow url style drop zones, and drop zones with a single node.  Not sure what >1 would mean in legacy.
-                if (numServers <= 1)
+                if (grp_dropzone == next->groupType)
                 {
-                    Owned<GroupInformation> next = new GroupInformation(cur.queryProp("@name"));
-                    const char * ip = cur.queryProp("ServerList[1]/@server");
-
-                    next->dir.set(cur.queryProp("@directory"));
+                    next->dir.set(group.queryProp("@dir"));
                     next->dropZoneIndex = ++numDropZones;
+                    const char *ip = group.queryProp("Node[1]/@ip");
                     if (ip && !strieq(ip, "localhost"))
                         next->hosts.append(ip);
-                    appendGroup(allGroups, next.getClear());
                 }
+                else
+                {
+                    Owned<IPropertyTreeIterator> nodes = group.getElements("Node");
+                    ForEach(*nodes)
+                        next->hosts.append(nodes->query().queryProp("@ip"));
+                }
+                appendGroup(allGroups, next.getClear());
             }
         }
 

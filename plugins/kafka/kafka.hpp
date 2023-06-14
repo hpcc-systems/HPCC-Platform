@@ -140,9 +140,8 @@ extern "C++"
                  *                          publishing to
                  * @param   _pollTimeout    The number of milliseconds to wait
                  *                          for events within librdkafka
-                 * @param   _traceLevel     Current logging level
                  */
-                Publisher(const std::string& _brokers, const std::string& _topic, __int32 _pollTimeout, int _traceLevel);
+                Publisher(const std::string& _brokers, const std::string& _topic, __int32 _pollTimeout);
 
                 virtual ~Publisher();
 
@@ -216,7 +215,6 @@ extern "C++"
                 Poller*                         pollerPtr;      //!< Pointer to the threaded Poller object that gives time to librdkafka
                 __int32                         pollTimeout;    //!< The amount of time (in ms) we give to librdkafka's poll() function
                 time_t                          timeCreated;    //!< The time at which this object was created
-                int                             traceLevel;     //!< The current logging level
         };
 
         //----------------------------------------------------------------------
@@ -237,9 +235,8 @@ extern "C++"
                  *                          consuming from
                  * @param   _partitionNum   The topic partition number we will be
                  *                          consuming from
-                 * @param   _traceLevel     Current logging level
                  */
-                Consumer(const std::string& _brokers, const std::string& _topic, const std::string& _consumerGroup, __int32 _partitionNum, int _traceLevel);
+                Consumer(const std::string& _brokers, const std::string& _topic, const std::string& _consumerGroup, __int32 _partitionNum);
 
                 virtual ~Consumer();
 
@@ -300,7 +297,6 @@ extern "C++"
                 std::atomic<RdKafka::Topic*>    topicPtr;       //!< Pointer to librdkafka topic object
                 CriticalSection                 lock;           //!< Mutex to ensure that only one thread creates the librdkafka object pointers or starts/stops the queue
                 __int32                         partitionNum;   //!< The partition within the topic from which we will be pulling messages
-                int                             traceLevel;     //!< The current logging level
         };
 
         //----------------------------------------------------------------------
@@ -319,12 +315,11 @@ extern "C++"
                  *                              the result rows; this is provided
                  *                              by the platform during the
                  *                              plugin call
-                 * @param   _traceLevel         The current logging level
                  * @param   _maxRecords         The maximum number of records
                  *                              to return; use 0 to return all
                  *                              available records
                  */
-                KafkaStreamedDataset(Consumer* _consumerPtr, IEngineRowAllocator* _resultAllocator, int _traceLevel, __int64 _maxRecords = -1);
+                KafkaStreamedDataset(Consumer* _consumerPtr, IEngineRowAllocator* _resultAllocator, __int64 _maxRecords = -1);
 
                 virtual ~KafkaStreamedDataset();
 
@@ -338,7 +333,6 @@ extern "C++"
 
                 Consumer*                       consumerPtr;        //!< Pointer to the Consumer object that we will read from
                 Linked<IEngineRowAllocator>     resultAllocator;    //!< Pointer to allocator used when building result rows
-                int                             traceLevel;         //!< The current logging level
                 bool                            shouldRead;         //!< If true, we should continue trying to read more messages
                 __int64                         maxRecords;         //!< The maximum number of messages to read
                 __int64                         consumedRecCount;   //!< The number of messages actually read

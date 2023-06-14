@@ -122,31 +122,43 @@ IPropertyTree * getDropZonePlane(const char * name)
     return getGlobalConfigSP()->getPropTree(xpath);
 }
 
-IPropertyTree * findDropZonePlane(const char * path, const char * host, bool ipMatch, bool mustMatch)
+bool validateDropZone(IPropertyTree * plane, const char * path, const char * host, bool ipMatch)
 {
-    const char * hostReq = host;
-    if (streq(host, "localhost"))
+    if (host)
+    {
+        if (!isHostInPlane(plane, host, ipMatch))
+            return false;
+    }
+    else if (plane->hasProp("@hostGroup") || plane->hasProp("hosts"))
+        return false;
+
+    //Match path
+    return isEmptyString(path) || startsWith(path, plane->queryProp("@prefix"));
+}
+
+IPropertyTree * findPlane(const char *category, const char * path, const char * host, bool ipMatch, bool mustMatch)
+{
+    if (strsame(host, "localhost"))
         host = nullptr;
-    Owned<IPropertyTreeIterator> iter = getDropZonePlanesIterator();
+    StringBuffer xpath("storage/planes");
+    if (!isEmptyString(category))
+        xpath.appendf("[@category='%s']", category);
+    Owned<IPropertyTreeIterator> iter = getGlobalConfigSP()->getElements(xpath);
     ForEach(*iter)
     {
         IPropertyTree & plane = iter->query();
-        if (host)
-        {
-            if (!isHostInPlane(&plane, host, ipMatch))
-                continue;
-        }
-        else if (plane.hasProp("@hostGroup") || plane.hasProp("hosts"))
-            continue;
-
-        //Match path
-        if (isEmptyString(path) || startsWith(path, plane.queryProp("@prefix")))
+        if (validateDropZone(&plane, path, host, ipMatch))
             return LINK(&plane);
     }
     if (mustMatch)
         throw makeStringExceptionV(-1, "DropZone not found for host '%s' path '%s'.",
-            isEmptyString(hostReq) ? "unspecified" : hostReq, isEmptyString(path) ? "unspecified" : path);
+            isEmptyString(host) ? "unspecified" : host, isEmptyString(path) ? "unspecified" : path);
     return nullptr;
+}
+
+IPropertyTree * findDropZonePlane(const char * path, const char * host, bool ipMatch, bool mustMatch)
+{
+    return findPlane("lz", path, host, ipMatch, mustMatch);
 }
 
 extern da_decl const char *queryDfsXmlBranchName(DfsXmlBranchKind kind)
@@ -3644,3 +3656,25 @@ void remapGroupsToDafilesrv(IPropertyTree *file, INamedGroupStore *resolver)
         }
     }
 }
+
+#ifdef NULL_DALIUSER_STACKTRACE
+static time_t lastNullUserLogEntry = (time_t)0;
+static CriticalSection nullUserLogCS;
+void logNullUser(IUserDescriptor * userDesc)
+{
+    StringBuffer userName;
+    if (userDesc)
+        userDesc->getUserName(userName);
+    if (nullptr == userDesc || userName.isEmpty())
+    {
+        CriticalBlock block(nullUserLogCS);
+        time_t timeNow = time(nullptr);
+        if (difftime(timeNow, lastNullUserLogEntry) >= 60)
+        {
+            IERRLOG("UNEXPECTED USER (NULL)");
+            PrintStackReport();
+            lastNullUserLogEntry = timeNow;
+        }
+    }
+}
+#endif

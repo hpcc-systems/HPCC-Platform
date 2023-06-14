@@ -26,9 +26,9 @@ ESPresponse [exceptions_inline, encode(0)] ConfigAccessResponse
 };
 
 
-ESPservice [auth_feature("DEFERRED"), exceptions_inline] ws_config
+ESPservice [auth_feature("DEFERRED"), exceptions_inline, disable_profile_execution] ws_config
 {
-    ESPmethod[description("Initial display"), help(""), noform] 
+    ESPmethod[description("Initial display"), help(""), noform]
         GetConfigAccess(ConfigAccessRequest, ConfigAccessResponse);
 };
 

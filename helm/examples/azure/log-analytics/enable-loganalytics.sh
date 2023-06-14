@@ -40,6 +40,29 @@ else
    echo "Tenant ID: ${tid}"
 fi
 
+echo "Confirming workspace resource group exists..."
+wsrgexist=$(az group exists -n $LOGANALYTICS_RESOURCE_GROUP)
+if [[ $? -ne 0 ]] || [[ $wsrgexist == false* ]]
+then
+   echo "creating $LOGANALYTICS_RESOURCE_GROUP resource group..."
+   if [[ -z "$AKS_RESOURCE_LOCATION" ]]
+   then
+     echo "Missing AKS_RESOURCE_LOCATION environment variable - this should be set to the desired Azure resource location"
+     exit 1
+   fi
+
+   azrgcreate=$(az group create -n $LOGANALYTICS_RESOURCE_GROUP -l $AKS_RESOURCE_LOCATION --tags $TAGS | awk '/id/ {print $2;}' | tr -d '"' | tr -d ',')
+   if [[ $? -ne 0 ]]
+   then
+     echo "Could not create desired Resource Group: $azrgcreate"
+     exit 1
+   fi
+
+   echo "Resource group id: $azrgcreate"
+else
+   echo "Resource group $LOGANALYTICS_RESOURCE_GROUP exists!"
+fi
+
 echo "Creating workspace..."
 wsid=$(az monitor log-analytics workspace create -g $LOGANALYTICS_RESOURCE_GROUP -n $LOGANALYTICS_WORKSPACE_NAME --query-access Enabled --tags $TAGS | awk '/id/ {print $2;}' | tr -d '"' | tr -d ',')
 if [[ $? -ne 0 ]] || [[ -z "$wsid" ]]

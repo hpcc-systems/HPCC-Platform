@@ -897,6 +897,7 @@ private:
     time_t               m_lastaccesstime;
     bool                 m_connected;
     bool                 m_useSSL;
+    StringBuffer         m_connectedHost;
 
 public:
     IMPLEMENT_IINTERFACE
@@ -924,6 +925,7 @@ private:
         if(!ldapserver || *ldapserver == '\0')
             return -1;
 
+        m_connectedHost.clear();
         m_ld = LdapUtils::LdapInit(protocol, ldapserver, m_ldapconfig->getLdapPort(), m_ldapconfig->getLdapSecurePort(), m_ldapconfig->getCipherSuite());
         int rc = LDAP_SUCCESS;
         if(m_ldapconfig->sysuserSpecified())
@@ -935,6 +937,7 @@ private:
         {
             time(&m_lastaccesstime);
             m_connected = true;
+            m_connectedHost.append(ldapserver);
             const char * ldap = NULL;
             switch (m_ldapconfig->getServerType())
             {
@@ -1027,12 +1030,27 @@ public:
 
     virtual bool validate()
     {
+        if(!m_connected)
+            return connect();
+
+        //Ensure we are not using a rejected LDAP AD host
+        StringBuffer hostbuf;
+        m_ldapconfig->getLdapHost(hostbuf);
+        if (strcmp(hostbuf.str(), m_connectedHost.str()))
+        {
+            if (m_ld)//different host, disconnect from previous and try to reconnect to new one
+            {
+                LDAP_UNBIND(m_ld);
+                m_ld = NULL;
+            }
+            m_connected = false;
+            return connect();
+        }
+
         time_t now;
         time(&now);
 
-        if(!m_connected)
-            return connect();
-        else if(now - m_lastaccesstime <= 300)
+        if(now - m_lastaccesstime <= 300)
             return true;
         else
         {
@@ -4576,9 +4594,8 @@ public:
 
         if ( rc != LDAP_SUCCESS )
         {
-            throw MakeStringException(-1, "Error deleting %s: %s", dn.str(), ldap_err2string(rc));
+            DBGLOG("error deleting %s: %s", dn.str(), ldap_err2string(rc));
         }
-        
     }
 
     virtual void renameResource(SecResourceType rtype, const char* oldname, const char* newname, const char* basedn)
@@ -5395,15 +5412,18 @@ private:
                     }
                     if(isleaf && (sd.getObjectClass() != NULL) && (stricmp(sd.getObjectClass(), "Volume") == 0))
                     {
-                        cn.append(curlen, curscope);
                         dn.append("cn=").append(curlen, curscope).append(",");
                     }
                     else
                     {
-                        cn.append(curlen, curscope);
                         dn.append("ou=").append(curlen, curscope).append(",");
                     }
                     
+                    if (cn.isEmpty())//only process leftmost part of ou, so "ou=s3,ou=s2,ou=s1" only specify ou=s3
+                    {
+                        cn.append("ou=").append(curlen, curscope);
+                    }
+
                     isleaf = false;
 
                     if (curptr == resourcename) //handle a single char as the top scope, such as x::abc
@@ -5429,7 +5449,7 @@ private:
                 }
                 else if(servertype == OPEN_LDAP)
                 {
-                    filter.append("(ou=").append(cn.str()).append(")");
+                    filter.append("(").append(cn.str()).append(")");
                 }
                 sd.setDn(dn.str());
             }

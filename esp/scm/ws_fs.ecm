@@ -227,6 +227,18 @@ CreateDFUWorkunitResponse
     ESPstruct DFUWorkunit result;
 };
 
+ESPrequest CreateDFUPublisherWorkunit
+{
+    string DFUServerQueue;
+};
+
+ESPresponse [exceptions_inline]
+
+CreateDFUPublisherWorkunitResponse
+{
+    ESPstruct DFUWorkunit result;
+};
+
 ESPrequest UpdateDFUWorkunit
 {
     ESPstruct DFUWorkunit wu;
@@ -715,6 +727,7 @@ ESPservice [
     ESPmethod [resp_xsl_default("/esp/xslt/dfu_progress.xslt")] GetDFUProgress(ProgressRequest, ProgressResponse);
 
     ESPmethod [resp_xsl_default("/esp/xslt/dfu_wuid.xslt")] CreateDFUWorkunit(CreateDFUWorkunit, CreateDFUWorkunitResponse);
+    ESPmethod CreateDFUPublisherWorkunit(CreateDFUPublisherWorkunit, CreateDFUPublisherWorkunitResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/dfu_wuid.xslt")] UpdateDFUWorkunit(UpdateDFUWorkunit, UpdateDFUWorkunitResponse);
     ESPmethod DeleteDFUWorkunit(DeleteDFUWorkunit, DeleteDFUWorkunitResponse);
     ESPmethod DeleteDFUWorkunits(DeleteDFUWorkunits, DeleteDFUWorkunitsResponse);

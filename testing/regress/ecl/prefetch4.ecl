@@ -18,6 +18,7 @@
 //class=file
 //nohthor        - does not execute anything in parallel
 //nothor         - actions are run as separate child queries, and dependencies may be in separate sub graphs
+//nokey
 
 rtl := SERVICE
  unsigned4 msTick() :       eclrtl,library='eclrtl',entrypoint='rtlTick',volatile;

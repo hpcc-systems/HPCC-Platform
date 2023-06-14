@@ -53,7 +53,7 @@ jobs:
         
             print("%s %s %s" % (title, user, comments_url))
             status = ''
-            issuem = re.search("(HPCC|HH|IDE|EPE|ML|ODBC)-[0-9]+", title)
+            issuem = re.search("(HPCC|HH|IDE|EPE|ML|JAPI)-[0-9]+", title)
             if issuem:
                 issue_name = issuem.group()
                 if user == 'dehilsterlexis':
@@ -68,6 +68,8 @@ jobs:
                     user = 'terrenceasselin'
                 if user == 'jeclrsg':
                     user = 'clemje01'
+                if user == 'jackdelv':
+                    user = 'delvecja'
                 options = {
                   'server': jira_url
                 }
@@ -77,7 +79,10 @@ jobs:
                 if False and issue.fields.status.name != 'Active' and issue.fields.status.name != 'Open' and issue.fields.status.name != 'New' and issue.fields.status.name != 'Discussing' and issue.fields.status.name != 'Awaiting Information':
                     status += 'Jira not updated (state was not active or new)'
                 elif issue.fields.customfield_10010 != None:
-                    status += 'Jira not updated (pull request already registered)'
+                    if issue.fields.customfield_10010 != pull_url:
+                        status += 'Jira not updated (pull request "%s" already registered)' % issue.fields.customfield_10010
+                    else:
+                        status += 'This pull request is already registered'
                 elif issue.fields.assignee is not None and issue.fields.assignee.name.lower() != user.lower():
                     status += 'Jira not updated (user does not match)'
                 else:

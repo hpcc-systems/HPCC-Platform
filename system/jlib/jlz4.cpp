@@ -30,6 +30,7 @@
 class CLZ4Compressor final : public CFcmpCompressor
 {
     bool hc;
+    int hcLevel = LZ4HC_CLEVEL_DEFAULT;
 protected:
     virtual void setinmax() override
     {
@@ -94,7 +95,7 @@ protected:
         byte *out = (byte *)(cmpsize+1);
 
         if (hc)
-            *cmpsize = LZ4_compress_HC((const char *)inbuf, (char *)out, toflush, LZ4_COMPRESSBOUND(toflush), LZ4HC_CLEVEL_DEFAULT);
+            *cmpsize = LZ4_compress_HC((const char *)inbuf, (char *)out, toflush, LZ4_COMPRESSBOUND(toflush), hcLevel);
         else
             *cmpsize = LZ4_compress_default((const char *)inbuf, (char *)out, toflush, LZ4_COMPRESSBOUND(toflush));
         if (*cmpsize && *cmpsize<toflush)
@@ -126,11 +127,50 @@ protected:
         return outlen;
     }
 
+    virtual bool supportsBlockCompression() const override { return true; }
+    virtual bool supportsIncrementalCompression() const override { return false; }
+
+    virtual size32_t compressBlock(size32_t destSize, void * dest, size32_t srcSize, const void * src) override
+    {
+        if (destSize <= 3 * sizeof(size32_t))
+            return 0;
+
+        //General format for lz4 compressed data is
+        //total-uncompressed-size, (compressed size, compressedData)* (trailing-uncompressed size, trailing data)
+        //This function will always store 0 as the trailing size.
+        size32_t * ptrUnSize = (size32_t *)dest;
+        size32_t * ptrCmpSize = ptrUnSize+1;
+        byte * remaining = (byte *)(ptrCmpSize+1);
+        size32_t remainingSize = destSize - 3 * sizeof(size32_t);
+        int compressedSize;
+        if (hc)
+            compressedSize = LZ4_compress_HC((const char *)src, (char *)remaining, srcSize, remainingSize, hcLevel);
+        else
+            compressedSize = LZ4_compress_default((const char *)src, (char *)remaining, srcSize, remainingSize);
+
+        if (compressedSize == 0)
+            return 0;
+
+        *ptrUnSize = srcSize;
+        *ptrCmpSize = compressedSize;
+
+        //Should be improved - currently appends a block of memcpy data.  Unnecessary if all data is
+        //compressed, or that is implemented elsewhere.
+        *(size32_t *)(remaining + compressedSize) = 0;
+
+        return compressedSize + 3 * sizeof(size32_t);
+    }
 
     virtual CompressionMethod getCompressionMethod() const override { return hc ? COMPRESS_METHOD_LZ4HC : COMPRESS_METHOD_LZ4; }
 public:
-    CLZ4Compressor(bool _hc) : hc(_hc)
-    {        
+    CLZ4Compressor(const char * options, bool _hc) : hc(_hc)
+    {
+        auto processOption = [this](const char * option, const char * value)
+        {
+            if (strieq(option, "hclevel"))
+                hcLevel = atoi(value);
+        };
+        processOptionString(options, processOption);
     }
 };
 
@@ -268,9 +308,9 @@ void LZ4DecompressToBuffer(MemoryAttr & out, MemoryBuffer & in)
 }
 
 
-ICompressor *createLZ4Compressor(bool hc)
+ICompressor *createLZ4Compressor(const char * options, bool hc)
 {
-    return new CLZ4Compressor(hc);
+    return new CLZ4Compressor(options, hc);
 }
 
 IExpander *createLZ4Expander()

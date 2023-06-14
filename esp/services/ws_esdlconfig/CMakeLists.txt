@@ -50,6 +50,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/rtl/include
          ${HPCC_SOURCE_DIR}/esp/platform
          ${HPCC_SOURCE_DIR}/esp/clients
+         ${HPCC_SOURCE_DIR}/esp/clients/wsecl
          ${HPCC_SOURCE_DIR}/esp/bindings
          ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/xpp
          ${HPCC_SOURCE_DIR}/esp/bindings/http/platform
@@ -61,7 +62,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/common/thorhelper
     )
 
-ADD_DEFINITIONS( -D_USRDLL -DWsESDLConfig_API_LOCAL )
+ADD_DEFINITIONS( -D_USRDLL -DWsESDLConfig_API_LOCAL -DESP_SERVICE_WsESDLConfig)
 
 HPCC_ADD_LIBRARY( ws_esdlconfig SHARED ${SRCS} )
 install ( TARGETS ws_esdlconfig RUNTIME DESTINATION bin LIBRARY DESTINATION lib )
@@ -72,6 +73,7 @@ target_link_libraries ( ws_esdlconfig
          SMCLib
          esdl_svc_engine
          dalibase
+         ${COMMON_ESP_SERVICE_LIBS}
     )
 
 if (NOT CONTAINERIZED)

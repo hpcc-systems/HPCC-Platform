@@ -43,6 +43,7 @@
 #include "ccdlistener.hpp"
 #include "ccdsnmp.hpp"
 #include "thorplugin.hpp"
+#include "hpccconfig.hpp"
 #include "udpsha.hpp"
 
 #if defined (__linux__)
@@ -129,6 +130,7 @@ bool doIbytiDelay = true;
 bool copyResources;
 bool chunkingHeap = true;
 bool logFullQueries;
+bool alwaysSendSummaryStats = false;
 bool blindLogging = false;
 bool debugPermitted = true;
 bool checkCompleted = true;
@@ -184,6 +186,7 @@ bool fastLaneQueue;
 unsigned mtu_size = 1400; // upper limit on outbound buffer size - allow some header room too
 StringBuffer fileNameServiceDali;
 StringBuffer roxieName;
+StringBuffer allowedPipePrograms;
 #ifdef _CONTAINERIZED
 StringBuffer defaultPlane;
 StringBuffer defaultIndexBuildPlane;
@@ -969,6 +972,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         chunkingHeap = topology->getPropBool("@chunkingHeap", true);
         readTimeout = topology->getPropInt("@readTimeout", 300);
         logFullQueries = topology->getPropBool("@logFullQueries", false);
+        alwaysSendSummaryStats = topology->getPropBool("expert/@alwaysSendSummaryStats", alwaysSendSummaryStats);
         debugPermitted = topology->getPropBool("@debugPermitted", true);
         blindLogging = topology->getPropBool("@blindLogging", false);
         preloadOnceData = topology->getPropBool("@preloadOnceData", true);
@@ -999,7 +1003,6 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         }
 #endif
         linuxYield = topology->getPropBool("@linuxYield", false);
-        traceSmartStepping = topology->getPropBool("@traceSmartStepping", false);
         traceStrands = topology->getPropBool("@traceStrands", false);
 
         useMemoryMappedIndexes = topology->getPropBool("@useMemoryMappedIndexes", false);
@@ -1179,6 +1182,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         dafilesrvLookupTimeout = topology->getPropInt("@dafilesrvLookupTimeout", 10000);
         setRemoteFileTimeouts(dafilesrvLookupTimeout, 0);
         topology->getProp("@daliServers", fileNameServiceDali);
+        getAllowedPipePrograms(allowedPipePrograms, true);
         trapTooManyActiveQueries = topology->getPropBool("@trapTooManyActiveQueries", true);
         maxEmptyLoopIterations = topology->getPropInt("@maxEmptyLoopIterations", 1000);
         maxGraphLoopIterations = topology->getPropInt("@maxGraphLoopIterations", 1000);
@@ -1231,6 +1235,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         setBlobCacheMem(blobCacheMB * 0x100000);
         if (topology->hasProp("@nodeFetchThresholdNs"))
             setNodeFetchThresholdNs(topology->getPropInt64("@nodeFetchThresholdNs"));
+        setIndexWarningThresholds(topology);
 
         unsigned __int64 affinity = topology->getPropInt64("@affinity", 0);
         updateAffinity(affinity);

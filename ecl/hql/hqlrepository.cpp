@@ -116,11 +116,11 @@ bool canReadPackageFrom(const char * urn)
 {
     if (queryExtractFilename(urn))
         return true;
+    if (endsWith(urn, ".tgz"))
+        return false;
     if (looksLikeGitPackage(urn))
         return true;
     if (!isalnum(*urn))
-        return false;
-    if (endsWith(urn, ".tgz"))
         return false;
     return true;
 }
@@ -516,7 +516,7 @@ IHqlExpression * CNewEclRepository::createSymbol(IHqlRemoteScope * rScope, IEclS
         {
             const char * defaultUrl = source->queryPath();
             Owned<IProperties> props = source->getProperties();
-            IEclRepository * repo = container->queryDependentRepository(eclId, defaultUrl);
+            IEclRepository * repo = container->queryDependentRepository(eclId, defaultUrl, nullptr);
             IHqlScope * childScope = repo->queryRootScope();
             body.set(queryExpression(childScope));
             break;
@@ -663,7 +663,7 @@ void EclRepositoryManager::processArchive(IPropertyTree * archiveTree)
     addRepository(archiveCollection, nullptr, true);
 }
 
-IEclPackage * EclRepositoryManager::queryDependentRepository(IIdAtom * name, const char * defaultUrl)
+IEclPackage * EclRepositoryManager::queryDependentRepository(IIdAtom * name, const char * defaultUrl, IEclSourceCollection * overrideSources)
 {
     //Check to see if the reference is to a filename.  Should possibly be disabled on a switch.
     const char * filename = queryExtractFilename(defaultUrl);
@@ -711,6 +711,11 @@ IEclPackage * EclRepositoryManager::queryDependentRepository(IIdAtom * name, con
     Owned<IErrorReceiver> errs = createThrowingErrorReceiver();
     ForEachItemIn(iShared, sharedSources)
         allSources.append(OLINK(sharedSources.item(iShared)));
+
+    //Explicitly provided sources take precedence over the contents of the repository
+    if (overrideSources)
+        addRepository(overrideSources, nullptr, true);
+
     unsigned flags = ESFdependencies;
     Owned<IEclRepository> repo;
     if (delayedUrn)
@@ -725,6 +730,16 @@ IEclPackage * EclRepositoryManager::queryDependentRepository(IIdAtom * name, con
 }
 
 
+static bool checkGitDirExists(const char * path)
+{
+    if (!checkDirExists(path))
+        return false;
+
+    StringBuffer gitPath;
+    addPathSepChar(gitPath.append(path)).append(".git");
+    return checkFileExists(gitPath);
+}
+
 IEclSourceCollection * EclRepositoryManager::resolveGitCollection(const char * repoPath, const char * defaultUrl)
 {
     if (options.optVerbose)
@@ -736,7 +751,7 @@ IEclSourceCollection * EclRepositoryManager::resolveGitCollection(const char * r
         throw makeStringExceptionV(99, "Unsupported repository link format '%s'", defaultUrl);
 
     bool ok = false;
-    if (checkDirExists(repoPath))
+    if (checkGitDirExists(repoPath))
     {
         if (options.updateRepos)
         {

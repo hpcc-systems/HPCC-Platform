@@ -1,0 +1,26 @@
+## ESP applications 'eclwatch' with HPA of 1 to 3 replicas based on 50% cpu utilization
+esp:
+- name: eclwatch
+  application: eclwatch
+  auth: none
+  replicas: 1
+  hpa:
+    minReplicas: 1
+    maxReplicas: 3
+    metrics:
+    - type: Resource
+      name: "cpu"
+      target: 
+        type: Utilization
+        value: "50"
+  service:
+    ## port can be used to change the local port used by the pod. If omitted, the default port (8880) is used
+    port: 8888
+    ## servicePort controls the port that this service will be exposed on, either internally to the cluster, or externally
+    servicePort: 8010
+    ## wsdlAddress should be set to the host and port which clients can use to hit this service.
+    #   This address is added to the service wsdl files which simplify setting up a SOAP client to hit this service.  There may be many external factors determining the address
+    #   that is accible to clients.
+    # wsdlAddress: clientfacingaddress:8010
+    ## Specify visibility: local (or global) if you want the service available from outside the cluster. Typically, eclwatch and wsecl are published externally, while eclservices is designed for internal use.
+    visibility: local

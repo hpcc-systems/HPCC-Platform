@@ -8,8 +8,8 @@
       <primary>SET</primary>
     </indexterm><indexterm>
       <primary>SET function</primary>
-    </indexterm>(</emphasis><emphasis>recordset, field</emphasis> <emphasis
-  role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool
+    </indexterm>(</emphasis><emphasis>recordset, expression</emphasis>
+  <emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool
   </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [
   (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [,
   ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ]
@@ -30,10 +30,10 @@
           </row>
 
           <row>
-            <entry><emphasis>field</emphasis></entry>
+            <entry><emphasis>expression</emphasis></entry>
 
-            <entry>The field in the recordset from which to obtain the
-            values.</entry>
+            <entry>The expression from which to obtain the values, typically
+            just a field in the recordset.</entry>
           </row>
 
           <row>
@@ -162,7 +162,11 @@ s2;         //results in   ['D','X','C','E','B']
 //sorted unique elements
 s3 := SET(SORT(t,Ltr),Ltr);
 COUNT(s3);  //results in 5
-s3;         //results in ['B','C','D','E','X']</programlisting>
+s3;         //results in ['B','C','D','E','X']
+
+//a SET of expression values:
+s4 := SET(ds,Ltr+Val);
+s4; // results in ['X1','B3','C2','B5','C4','D6','E2']</programlisting>
 
   <para>See Also: <link linkend="Recordset_Filtering">Sets and Filters</link>,
   <link linkend="SET_OF">SET OF</link>, <link linkend="Set_Operators">Set

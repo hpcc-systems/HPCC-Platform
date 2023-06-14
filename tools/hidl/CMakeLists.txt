@@ -23,6 +23,10 @@
 
 project( hidl )
 
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    add_definitions(-DENABLE_DEFAULT_EXECUTION_PROFILING)
+endif()
+
 add_custom_command ( OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/hidlgram.cpp ${CMAKE_CURRENT_BINARY_DIR}/hidlgram.h
     COMMAND ${bisoncmdprefix} ${bisoncmd} --defines=${CMAKE_CURRENT_BINARY_DIR}/hidlgram.h --output=${CMAKE_CURRENT_BINARY_DIR}/hidlgram.cpp ${CMAKE_CURRENT_SOURCE_DIR}/hidlgram.y
     DEPENDS hidlgram.y

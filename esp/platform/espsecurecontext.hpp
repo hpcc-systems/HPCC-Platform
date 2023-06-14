@@ -20,6 +20,7 @@
 
 #include "jiface.hpp"
 #include "tokenserialization.hpp"
+#include "esp.hpp"
 
 class CTxSummary;
 
@@ -72,6 +73,10 @@ interface IEspSecureContext : extends IInterface
     //           DeserializationResult (*pfn)(const char*, TValue&)
     template <typename TValue, typename TDefault = TValue, class TDeserializer = TokenDeserializer>
     bool getProp(int type, const char* name, TValue& value, const TDefault dflt = TDefault(), DeserializationResult* deserializationResult = NULL, TDeserializer& deserializer = TDeserializer());
+
+    virtual AuthType getDomainAuthType() = 0;
+    virtual bool setDomainAuthData(const char* data) = 0;
+    virtual StringBuffer& getDomainAuthData(StringBuffer& data) = 0;
 };
 
 template <typename TValue, typename TDefault, class TDeserializer>
@@ -99,6 +104,14 @@ inline bool IEspSecureContext::getProp(int type, const char* name, TValue& value
 
     return found;
 }
+
+//Where IEspSecureContext defines a security manager's interface to request
+//data, this extension defines the ESP's interface to setup the data for
+//the manager.
+interface IEspSecureContextEx : extends IEspSecureContext
+{
+    virtual void setDomainAuthType(AuthType type) = 0;
+};
 
 #endif // ESPSECURECONTEXT_HPP
 

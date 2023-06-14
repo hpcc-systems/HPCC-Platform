@@ -400,7 +400,7 @@ static Owned<KeptLowerCaseAtomTable> daliMisses;
 static void noteDaliMiss(const char *filename)
 {
     CriticalBlock b(daliMissesCrit);
-    if (traceLevel > 9)
+    if (doTrace(traceRoxieFiles, TraceFlags::Max))
         DBGLOG("noteDaliMiss %s", filename);
     daliMisses->addAtom(filename);
 }
@@ -461,7 +461,7 @@ protected:
         unsigned hash = hashcz((const unsigned char *) fileName, 0x811C9DC5);
         CriticalBlock b(daliLookupCrits[hash % NUM_DALI_CRITS]);
         // MORE - look at alwaysCreate... This may be useful to implement earlier locking semantics.
-        if (traceLevel > 9)
+        if (doTrace(traceRoxieFiles, TraceFlags::Max))
             DBGLOG("resolveLFNusingDaliOrLocal %s %d %d %x %d", fileName, useCache, cacheResult, (unsigned)accessMode, alwaysCreate);
         IResolvedFile* result = NULL;
         if (useCache)
@@ -520,7 +520,7 @@ protected:
         }
         if (cacheResult)
         {
-            if (traceLevel > 9)
+            if (doTrace(traceRoxieFiles, TraceFlags::Max))
                 DBGLOG("resolveLFNusingDaliOrLocal %s - cache add %d", fileName, result != NULL);
             if (result)
                 daliFiles.addCache(fileName, result);
@@ -1130,14 +1130,23 @@ public:
         }
     }
 
+    virtual void preloadOnce() const
+    {
+        HashIterator elems(queries);
+        for (elems.first(); elems.isValid(); elems.next())
+        {
+            IMapping &cur = elems.query();
+            IQueryFactory *query = queries.mapToValue(&cur);
+            query->preloadOnce();
+        }
+    }
+
     virtual IQueryFactory *getQuery(const char *id, StringBuffer *querySet, const IRoxieContextLogger &logctx) const
     {
         if (querySet && querySet->length() && !streq(querySet->str(), querySetName))
             return NULL;
         IQueryFactory *ret;
         ret = aliases.getValue(id);
-        if (ret && logctx.queryTraceLevel() > 5)
-            logctx.CTXLOG("Found query alias %s => %s", id, ret->queryQueryName());
         if (!ret)
             ret = queries.getValue(id);
         if (ret && querySet)
@@ -1224,6 +1233,13 @@ public:
         for (unsigned channel = 0; channel < numChannels; channel++)
             if (managers[channel])
                 managers[channel]->load(querySets, packages, hash, forceRetry); // MORE - this means the hash depends on the number of channels. Is that desirable?
+    }
+
+    virtual void preloadOnce() override
+    {
+        for (unsigned channel = 0; channel < numChannels; channel++)
+            if (managers[channel])
+                managers[channel]->preloadOnce();
     }
 
     virtual void getQueries(const char *id, IArrayOf<IQueryFactory> &queries, const IRoxieContextLogger &logctx) const
@@ -1754,6 +1770,20 @@ public:
         }
     }
 
+    void preloadOnce() const
+    {
+        ForEachItemIn(idx, allQueryPackages)
+        {
+            Owned<IRoxieQuerySetManager> serverManager = allQueryPackages.item(idx).getRoxieServerManager();
+            if (serverManager->isActive())
+            {
+                serverManager->preloadOnce();
+                Owned<IRoxieQuerySetManagerSet> agentManagers = allQueryPackages.item(idx).getRoxieAgentManagers();
+                agentManagers->preloadOnce();
+            }
+        }
+    }
+
     void getActivityMetrics(StringBuffer &reply) const
     {
         ForEachItemIn(idx, allQueryPackages)
@@ -2209,6 +2239,11 @@ private:
 
     void completeReload()
     {
+        if (preloadOnceData)
+        {
+            ReadLockBlock readBlock(packageCrit);
+            allQueryPackages->preloadOnce();
+        }
         // Avoid clearing keys and updating the cache file if we are just about to reload something
         if (autoPending.load() == 0)
         {
@@ -2975,11 +3010,6 @@ private:
                     traceLevel = MAXTRACELEVEL;
                 topology->setPropInt("@traceLevel", traceLevel);
             }
-            else if (stricmp(queryName, "control:traceSmartStepping")==0)
-            {
-                traceSmartStepping = control->getPropBool("@val", true);
-                topology->setPropInt("@traceSmartStepping", traceSmartStepping);
-            }
             else if (stricmp(queryName, "control:traceStartStop")==0)
             {
                 traceStartStop = control->getPropBool("@val", true);
@@ -3067,7 +3097,7 @@ extern void loadPlugins()
     DBGLOG("Preloading plugins from %s", pluginDirectory.str());
     if (pluginDirectory.length())
     {
-        plugins = new SafePluginMap(&PluginCtx, traceLevel >= 1);
+        plugins = new SafePluginMap(&PluginCtx, traceLevel);
         if (topology->hasProp("preload"))
         {
             Owned<IPropertyTreeIterator> preloads = topology->getElements("preload");

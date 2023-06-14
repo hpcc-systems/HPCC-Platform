@@ -287,6 +287,11 @@ public:
         return m_socket->getEndpoint(ep);
     }
 
+    virtual unsigned __int64 getStatistic(StatisticKind kind) const override
+    {
+        return m_socket->getStatistic(kind);
+    }
+
     //
     // Close socket
     //

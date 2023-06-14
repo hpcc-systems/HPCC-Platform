@@ -177,6 +177,10 @@ spec:
  {{- include "hpcc.addCertificateVolume" (dict "root" $ "component" $signingCertGenerator "name" "global" "issuerKeyName" "signing") | nindent 6 }}
 {{- end }}
 ---
+{{- if hasKey . "hpa" }}
+ {{- include "hpcc.addHorizontalPodAutoscaler" (dict "name" .name "kind" "Deployment" "hpa" .hpa) }}
+{{- end }}
+---
 kind: ConfigMap
 {{ include "hpcc.generateConfig" ($commonCtx | merge (dict "configMapHelper" "hpcc.espConfigMap")) }}
 ---
@@ -187,14 +191,13 @@ kind: ConfigMap
  {{- $_ := set $service "labels" dict -}}
 {{- end -}}
 {{- $_ := set $service "labels" (merge $service.labels (dict "server" $application)) -}}
-{{ include "hpcc.addService" ( dict "root" $ "name" .name "service" $service "selector" .name "defaultPort" 8880 ) }}
+{{ include "hpcc.addService" ( dict "root" $ "name" .name "service" $service "selector" .name "defaultPort" 8880 "remoteClients" .remoteClients) }}
 ---
 {{ include "hpcc.addEgress" $commonCtx }}
 {{- end }}
 {{- end }}
 
 {{ include "hpcc.addCertificate" (dict "root" $ "name" .name "service" .service "component" $application "visibility" .service.visibility "remoteClients" .remoteClients) }}
-
 {{- if $commonCtx.externalCert }}
  {{- include "hpcc.addCertificate" (dict "root" $ "name" .name "service" .service "component" $application "external" false) }}
 {{- end }}

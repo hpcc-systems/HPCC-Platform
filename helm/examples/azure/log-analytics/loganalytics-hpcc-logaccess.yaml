@@ -32,6 +32,8 @@ global:
       keyColumn: "ContainerID"
       columnMode: "MIN"
       columnType: "string"
+      timeStampColumn: "TimeGenerated"
+      disableJoins: false #Potentially expensive join operations needed to fetch a certain column can be disabled
     - type: "audience"
       searchColumn: "hpcc_log_audience"
       enumValues:
