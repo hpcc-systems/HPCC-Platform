@@ -129,6 +129,7 @@ constexpr TraceFlags traceMongoDB = TraceFlags::flag4;
 constexpr TraceFlags traceCouchbase = TraceFlags::flag5;
 constexpr TraceFlags traceFilters = TraceFlags::flag6;
 constexpr TraceFlags traceKafka = TraceFlags::flag7;
+constexpr TraceFlags traceJava = TraceFlags::flag8;
 
 // Specific to Roxie
 constexpr TraceFlags traceRoxieLock = TraceFlags::flag16;
@@ -164,6 +165,7 @@ constexpr std::initializer_list<TraceOption> roxieTraceOptions
     TRACEOPT(traceCouchbase),
     TRACEOPT(traceFilters),
     TRACEOPT(traceKafka),
+    TRACEOPT(traceJava),
     TRACEOPT(traceRoxieLock), 
     TRACEOPT(traceQueryHashes), 
     TRACEOPT(traceSubscriptions),

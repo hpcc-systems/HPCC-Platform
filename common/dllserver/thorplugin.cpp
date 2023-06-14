@@ -508,6 +508,7 @@ const StringArray &HelperDll::queryManifestFiles(const char *type, const char *w
         Owned<IPropertyTreeIterator> resourceFiles = queryManifest().getElements(xpath.str());
         ForEach(*resourceFiles)
         {
+            unsigned start = msTick();
             IPropertyTree &resourceFile = resourceFiles->query();
             unsigned id = resourceFile.getPropInt("@id", 0);
             size32_t len = 0;
@@ -541,6 +542,8 @@ const StringArray &HelperDll::queryManifestFiles(const char *type, const char *w
             assertex(o.get() != nullptr);
             o->write(0, len, data);
             list->append(extractName);
+            if (doTrace(traceJava) && streq(type, "jar"))
+                DBGLOG("Extracted jar resource %u size %u to %s in %u ms", id, len, extractName.str(), msTick() - start);
         }
         manifestFiles.replaceOwn(*list.getLink());
     }
