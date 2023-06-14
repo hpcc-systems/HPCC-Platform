@@ -617,6 +617,8 @@ public:
 
 class CNodeCacheEntry : public CInterface
 {
+public:
+    CriticalSection cs;
 private:
     std::atomic<const CJHTreeNode *> node = nullptr;
 public:
@@ -2539,10 +2541,8 @@ constexpr RelaxedAtomic<unsigned> * hitMetric[CacheMax] = { &nodeCacheHits, &lea
 constexpr RelaxedAtomic<unsigned> * addMetric[CacheMax] = { &nodeCacheAdds, &leafCacheAdds, &blobCacheAdds };
 constexpr RelaxedAtomic<unsigned> * dupMetric[CacheMax] = { &nodeCacheDups, &leafCacheDups, &blobCacheDups };
 
-//Rather than using a critical section in each node (which can be large and expensive) have an array which is indexed by a function
-//of the key id/file position
-constexpr unsigned numLoadCritSects = 64;
-static CriticalSection loadCs[numLoadCritSects];
+//Use a critical section in each node to prevent multiple threads loading the same node at the same time.
+//Critical sections are 40bytes on linux so < 0.5% overhead for an 8K page and trivial overhead when constructed (<10ns)
 static std::atomic<cycle_t> lastLockingReportCycles{0};
 static std::atomic<cycle_t> lastLoadReportCycles{0};
 static std::atomic<unsigned> countExcessiveLock_x1{0};
@@ -2573,8 +2573,6 @@ const CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, unsigned iD, offse
     //Now, it is coded as:
     //  Lock, add if missing, unlock.  Lock a page-dependent-cr load() release lock.
     //There will be the same number of critical section locks, but loading a page will contend on a different lock - so it should reduce contention.
-    //There will be a limit on the number of nodes concurrently being loaded from memory with the new code, where it was unlimited before, but
-    //nodes will only be loaded once.
     CKeyIdAndPos key(iD, pos);
     CriticalSection & cacheLock = lock[cacheType];
     Owned<CNodeCacheEntry> ownedCacheEntry; // ensure node gets cleaned up if it fails to load
@@ -2620,17 +2618,15 @@ const CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, unsigned iD, offse
             return ownedCacheEntry->getNode();
 
         //Shame that the hash code is recalculated - it might be possible to remove this.
-        unsigned hashcode = hashc(reinterpret_cast<const byte *>(&key), sizeof(key), 0x811C9DC5);
-        unsigned whichCs = hashcode % numLoadCritSects;
-
         cycle_t startCycles = get_cycles_now();
         cycle_t fetchCycles = 0;
         cycle_t startLoadCycles;
-        //Protect loading the node contants with a different critical section - so that the node will only be loaded by one thread.
+
+        //Protect loading the node contents with a critical section - so that the node will only be loaded by one thread.
         //MORE: If this was called by high and low priority threads then there is an outside possibility that it could take a
         //long time for the low priority thread to progress.  That might cause the cache to be temporarily unbounded.  Unlikely in practice.
         {
-            CriticalBlock loadBlock(loadCs[whichCs]);
+            CriticalBlock loadBlock(ownedCacheEntry->cs);
             startLoadCycles = get_cycles_now();
             if (!ownedCacheEntry->isReady())
             {
@@ -2657,7 +2653,7 @@ const CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, unsigned iD, offse
             if ((endLoadCycles - lastLockingReportCycles) >= traceCacheLockingFrequency)
             {
                 lastLockingReportCycles = endLoadCycles;
-                WARNLOG("CNodeCache::getNode lock(%s, %u) took %lluns  counts(>=%lluns, %u, %u, %u) (x1,x10,x100)", cacheTypeText[cacheType], whichCs, cycle_to_nanosec(lockingCycles),
+                WARNLOG("CNodeCache::getNode lock(%s) took %lluns  counts(>=%lluns, %u, %u, %u) (x1,x10,x100)", cacheTypeText[cacheType], cycle_to_nanosec(lockingCycles),
                          cycle_to_nanosec(traceCacheLockingThreshold),
                          countExcessiveLock_x1.load() + countExcessiveLock_x10.load() + countExcessiveLock_x100.load(),
                          countExcessiveLock_x10.load() + countExcessiveLock_x100.load(),
