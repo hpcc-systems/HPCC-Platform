@@ -1871,8 +1871,6 @@ bool CFileSprayEx::onGetDFUExceptions(IEspContext &context, IEspGetDFUExceptions
 
 static StringBuffer &getDropZoneHost(const char *planeName, IPropertyTree *plane, StringBuffer &host)
 {
-    if (isContainerized() && strsame("localhost", host.str())) //ECLWatch may send "localhost" for dropzones without hosts.
-        host.clear();
     if (!host.isEmpty())
     {
         if (!isHostInPlane(plane, host, true))
