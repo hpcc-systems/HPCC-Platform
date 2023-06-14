@@ -240,7 +240,10 @@ public:
     IFileIO *getCheckOpen(unsigned &activeIdx)
     {
         CriticalBlock b(crit);
-        _checkOpen();
+        //Duplicate the check on current here so that the fast path (where it is already open) minimizes the time
+        //the critical section is held by avoiding calling a function with relatively expensive prolog
+        if (current.get() == &failure)
+            _checkOpen();
         activeIdx = currentIdx;
         return LINK(current);
     }
