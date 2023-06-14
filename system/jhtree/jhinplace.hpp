@@ -185,7 +185,7 @@ protected:
 };
 
 
-class jhtree_decl CJHInplaceBranchNode : public CJHInplaceTreeNode
+class jhtree_decl CJHInplaceBranchNode final : public CJHInplaceTreeNode
 {
 public:
     virtual bool fetchPayload(unsigned int num, char *dest) const override;
@@ -194,7 +194,7 @@ public:
     virtual unsigned __int64 getSequence(unsigned int num) const override;
 };
 
-class jhtree_decl CJHInplaceLeafNode : public CJHInplaceTreeNode
+class jhtree_decl CJHInplaceLeafNode final : public CJHInplaceTreeNode
 {
 public:
     virtual bool fetchPayload(unsigned int num, char *dest) const override;
