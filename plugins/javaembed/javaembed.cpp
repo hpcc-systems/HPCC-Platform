@@ -3263,6 +3263,8 @@ public:
             engine->getManifestFiles("jar", manifestJars);
             ForEachItemIn(idx, manifestJars)
             {
+                if (doTrace(traceJava))
+                    DBGLOG("Adding manifest file %s to classpath", manifestJars.item(idx));
                 lclassPath.append(';').append(manifestJars.item(idx));
             }
         }
@@ -4398,7 +4400,10 @@ protected:
         JNIenv->ExceptionClear();
         jmethodID loadClassMethod = JNIenv->GetMethodID(JNIenv->GetObjectClass(classLoader), "loadClass","(Ljava/lang/String;)Ljava/lang/Class;");
         jstring classNameString = JNIenv->NewStringUTF(className);
+        CCycleTimer timer;
         jclass Class = (jclass) JNIenv->CallObjectMethod(classLoader, loadClassMethod, classNameString);
+        if (doTrace(traceJava, TraceFlags::Max))
+            DBGLOG("javaembed: loadClass(%s) took %u ms", className, timer.elapsedMs());
         return Class;
     }
 
@@ -4499,7 +4504,10 @@ protected:
                     jmethodID loadClassMethod = JNIenv->GetMethodID(JNIenv->GetObjectClass(classLoader), "loadClass","(Ljava/lang/String;)Ljava/lang/Class;");
                     try
                     {
+                        CCycleTimer timer;
                         javaClass = (jclass) JNIenv->CallObjectMethod(classLoader, loadClassMethod, JNIenv->NewStringUTF(classname));
+                        if (doTrace(traceJava))
+                            DBGLOG("javaembed: loading class %s took %u ms", classname.str(), timer.elapsedMs());
                     }
                     catch (IException *E)
                     {
@@ -4734,8 +4742,16 @@ public:
         jmethodID loadClassMethod = sharedCtx->JNIenv->GetMethodID(sharedCtx->JNIenv->GetObjectClass(classLoader), "loadClass","(Ljava/lang/String;)Ljava/lang/Class;");
         jstring methodString = sharedCtx->JNIenv->NewStringUTF(className);
 
+        CCycleTimer timer;
         Class = (jclass) sharedCtx->JNIenv->NewGlobalRef(sharedCtx->JNIenv->CallObjectMethod(classLoader, loadClassMethod, methodString), "Class");
+        if (doTrace(traceJava))
+        {
+            DBGLOG("javaembed: loading class %s took %u ms", className.str(), timer.elapsedMs());
+            timer.reset();
+        }
         jmethodID constructor = sharedCtx->JNIenv->GetMethodID(Class, "<init>", "()V");
+        if (doTrace(traceJava))
+            DBGLOG("javaembed: constructor for %s took %u ms", className.str(), timer.elapsedMs());
         object = sharedCtx->JNIenv->NewGlobalRef(sharedCtx->JNIenv->NewObject(Class, constructor), "constructed");
     }
     virtual IEmbedFunctionContext *createFunctionContext(const char *function)
