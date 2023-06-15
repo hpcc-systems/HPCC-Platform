@@ -1,0 +1,23 @@
+findstate	0:0:0:0:0:0:1:0
+loadcompiledkb	true
+treeoffsets	false
+treesemantics	false
+browsertoolbar	false
+tabtoolbar	false
+debugtoolbar	false
+kbtoolbar	false
+batchmode	false
+pagemode	true
+verbosemode	false
+loganalyzer	true
+highlighttext	true
+textstate	1:77
+textsel	41
+analyzerstate	
+analyzersel	14
+grammarstate	1
+grammarsel	4
+activetab	1
+processfile	Dev\Test2.txt
+doctabsel	0
+attributeeditor	false

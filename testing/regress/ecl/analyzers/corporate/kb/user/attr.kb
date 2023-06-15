@@ -1,0 +1,254 @@
+ind attr
+"concept"
+0
+"concept" "sys" "attrs" "common" "var"
+psym
+"cg_CONCEPT"
+end ind
+
+
+ind attr
+"concept" "gram"
+0
+"concept" "sys" "dict" "a" "x" "xu" "xwhite"
+pst
+"true"
+end ind
+
+
+ind attr
+"concept" "gram"
+0
+"concept" "sys" "dict" "a" "c" "co" "constrain"
+pst
+"true"
+end ind
+
+
+ind attr
+"concept" "gram"
+0
+"concept" "sys" "dict" "a" "c" "cl" "closed"
+pst
+"false"
+end ind
+
+
+ind attr
+"concept" "gram"
+0
+"concept" "sys" "dict" "a" "l" "li" "lit"
+pst
+"false"
+end ind
+
+
+ind attr
+"concept" "gram"
+0
+"concept" "sys" "dict" "a" "s" "sp" "split"
+pst
+"false"
+end ind
+
+
+ind attr
+"concept" "gram"
+0
+"concept" "sys" "dict" "a" "g" "ge" "gen"
+pst
+"false"
+end ind
+
+
+ind attr
+"concept" "gram"
+0
+"concept" "sys" "dict" "a" "l" "lo" "locked"
+pst
+"false"
+end ind
+
+
+ind attr
+"concept" "gram"
+0
+"concept" "sys" "dict" "a" "d" "di" "dirty"
+pst
+"true"
+end ind
+
+
+ind attr
+"concept" "gram"
+0
+"concept" "sys" "dict" "a" "q" "qu" "quicksem"
+pst
+"false"
+end ind
+
+
+ind attr
+"concept" "sys"
+0
+"concept" "sys" "attrs" "common" "var"
+psym
+"con_SYS"
+end ind
+
+
+ind attr
+"concept" "sys" "attrs"
+0
+"concept" "sys" "attrs" "common" "var"
+psym
+"sys_ATTRS"
+end ind
+
+
+ind attr
+"concept" "sys" "attrs" "proxy"
+0
+"concept" "sys" "attrs" "common" "var"
+psym
+"attrs_PROXY"
+end ind
+
+
+ind attr
+"concept" "sys" "attrs" "proxy" "atom"
+0
+"concept" "sys" "attrs" "common" "var"
+psym
+"cg_ATOM"
+end ind
+
+
+ind attr
+"concept" "sys" "attrs" "pproxy"
+0
+"concept" "sys" "attrs" "common" "var"
+psym
+"attrs_PPROXY"
+end ind
+
+
+ind attr
+"concept" "sys" "attrs" "pproxy" "phrase"
+0
+"concept" "sys" "attrs" "common" "var"
+psym
+"cg_PHRASE"
+end ind
+
+
+ind attr
+"concept" "sys" "attrs" "common"
+0
+"concept" "sys" "attrs" "common" "var"
+psym
+"attrs_COMMON"
+end ind
+
+
+ind attr
+"concept" "sys" "attrs" "common" "var"
+0
+"concept" "sys" "attrs" "common" "var"
+psym
+"cg_VAR"
+end ind
+
+
+ind attr
+"concept" "sys" "nlp"
+0
+"concept" "sys" "attrs" "common" "var"
+psym
+"sys_NLP"
+end ind
+
+
+ind attr
+"concept" "sys" "nlp" "lex" "slot" "cases"
+0
+"concept" "sys" "attrs" "common" "var"
+psym
+"id_CASES"
+end ind
+
+
+ind attr
+"concept" "sys" "mean" "slot" "case"
+0
+"concept" "sys" "attrs" "common" "var"
+psym
+"id_mslot_CASE"
+end ind
+
+
+ind attr
+"concept" "sys" "mean" "slot" "case" "cap"
+0
+"concept" "sys" "attrs" "common" "var"
+psym
+"id_CAP"
+end ind
+
+
+ind attr
+"concept" "sys" "mean" "slot" "case" "allcap"
+0
+"concept" "sys" "attrs" "common" "var"
+psym
+"id_ALLCAP"
+end ind
+
+
+ind attr
+"concept" "sys" "mean" "slot" "case" "mixed"
+0
+"concept" "sys" "attrs" "common" "var"
+psym
+"id_MIXED"
+end ind
+
+
+ind attr
+"concept" "sys" "mean" "slot" "mixed"
+0
+"concept" "sys" "attrs" "common" "var"
+psym
+"id_mslot_MIXED"
+end ind
+
+
+ind attr
+"concept" "sys" "dict"
+0
+"concept" "sys" "attrs" "common" "var"
+psym
+"sys_DICT"
+end ind
+
+
+ind attr
+"concept" "sys" "dict" "a"
+0
+"concept" "sys" "attrs" "common" "var"
+psym
+"dict_ALPHA"
+end ind
+
+
+ind attr
+"concept" "sys" "dict" "unknown"
+0
+"concept" "sys" "attrs" "common" "var"
+psym
+"dict_UNKNOWN"
+end ind
+
+
+quit
+

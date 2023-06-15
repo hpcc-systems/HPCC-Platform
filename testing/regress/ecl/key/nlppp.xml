@@ -530,7 +530,7 @@ Company: TAI
 &lt;/edge&gt;
 &lt;vertice&gt;
   &lt;id&gt;14&lt;/id&gt;
-  &lt;label&gt;_noun&lt;/label&gt;
+  &lt;label&gt;😀&lt;/label&gt;
 &lt;/vertice&gt;
 &lt;edge&gt;
   &lt;source&gt;12&lt;/source&gt;
@@ -538,27 +538,19 @@ Company: TAI
 &lt;/edge&gt;
 &lt;vertice&gt;
   &lt;id&gt;15&lt;/id&gt;
-  &lt;label&gt;😀&lt;/label&gt;
+  &lt;label&gt;🙁&lt;/label&gt;
 &lt;/vertice&gt;
 &lt;edge&gt;
-  &lt;source&gt;14&lt;/source&gt;
+  &lt;source&gt;12&lt;/source&gt;
   &lt;target&gt;15&lt;/target&gt;
 &lt;/edge&gt;
 &lt;vertice&gt;
   &lt;id&gt;16&lt;/id&gt;
-  &lt;label&gt;_noun&lt;/label&gt;
+  &lt;label&gt;👍&lt;/label&gt;
 &lt;/vertice&gt;
 &lt;edge&gt;
   &lt;source&gt;12&lt;/source&gt;
   &lt;target&gt;16&lt;/target&gt;
-&lt;/edge&gt;
-&lt;vertice&gt;
-  &lt;id&gt;17&lt;/id&gt;
-  &lt;label&gt;🙁&lt;/label&gt;
-&lt;/vertice&gt;
-&lt;edge&gt;
-  &lt;source&gt;16&lt;/source&gt;
-  &lt;target&gt;17&lt;/target&gt;
 &lt;/edge&gt;
 </Result_5></Row>
 </Dataset>

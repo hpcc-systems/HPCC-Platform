@@ -1,0 +1,30 @@
+# 
+tokenize	nil	# Gen:   Convert input to token list.
+lines	nil	# Gen:   Build a list of text lines.
+pat	initKB	# comment
+pat	join	# Copy of join
+pat	sentences	# comment here
+pat	paragraphs	# comment here
+pat	removeWhite	# comment here
+stub	words	# comment
+pat	city	# RUG file!
+pat	company	# RUG file!
+pat	state	# RUG file!
+end	words	# comment
+pat	lookup	# comment
+pat	vocabulary	# comment
+pat	phrases	# Copy of vocabulary
+pat	money	# comment here
+pat	moneyAttributes	# Copy of money
+pat	conjMoney	# Copy of conjCompany
+pat	companies	# comment here
+pat	companyAttributes	# Copy of companies
+pat	companyDet	# Copy of companyAttributes
+pat	anaphora	# comment here
+pat	anaphoraCompany	# Copy of anaphora
+pat	conjCompany	# comment
+pat	events	# Copy of phrases
+pat	eventAttributes	# Copy of events
+pat	anaphoraEvent	# Copy of anaphoraCompany
+pat	events2	# Copy of events
+pat	output	# comment
