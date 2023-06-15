@@ -119,6 +119,35 @@ extern TPWRAPPER_API bool matchNetAddressRequest(const char* netAddressReg, bool
     return streq(netAddressReg, tpMachine.getConfigNetaddress());
 }
 
+extern TPWRAPPER_API void throwOrLogDropZoneLookUpError(int code, char const* format, ...)
+{
+    va_list args;
+    va_start(args, format);
+#ifdef _CONTAINERIZED
+    throw makeStringExceptionVA(code, format, args);
+#else
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
+    Owned<IConstEnvironment> env = factory->openEnvironment();
+    if (env->isDropZoneRestrictionEnabled())
+        throw makeStringExceptionVA(code, format, args);
+
+    VALOG(MCdebugInfo, unknownJob, format, args);
+#endif
+    va_end(args);
+}
+
+StringBuffer &findDropZonePlaneName(const char *host, const char *path, StringBuffer &planeName)
+{
+    //Call findDropZonePlane() to resolve plane by hostname. Shouldn't resolve plane
+    //by hostname in containerized but kept for backward compatibility for now.
+    Owned<IPropertyTree> plane = findDropZonePlane(path, host, true, false);
+    if (plane)
+        planeName.append(plane->queryProp("@name"));
+    else
+        throwOrLogDropZoneLookUpError(ECLWATCH_INVALID_INPUT, "DropZone not found for host '%s' path '%s'.", host, path);
+    return planeName;
+}
+
 extern TPWRAPPER_API bool validateDropZonePath(const char* dropZoneName, const char* netAddr, const char* pathToCheck)
 {
     if (isEmptyString(netAddr))
@@ -186,7 +215,14 @@ extern TPWRAPPER_API SecAccessFlags getDZPathScopePermissions(IEspContext& conte
 
     Owned<IPropertyTree> dropZone;
     if (isEmptyString(dropZoneName))
-        dropZone.setown(findDropZonePlane(dropZonePath, dropZoneHost, true, true));
+    {
+        dropZone.setown(findDropZonePlane(dropZonePath, dropZoneHost, true, false));
+        if (!dropZone)
+        {
+            throwOrLogDropZoneLookUpError(ECLWATCH_INVALID_INPUT, "getDZPathScopePermissions(): DropZone %s not found.", dropZoneName);
+            return SecAccess_Full;
+        }
+    }
     else
     {
         dropZone.setown(getDropZonePlane(dropZoneName));
