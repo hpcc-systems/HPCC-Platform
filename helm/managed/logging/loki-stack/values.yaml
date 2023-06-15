@@ -1,0 +1,86 @@
+# Default values for a lightweight Loki Stack which can process HPCC component logs.
+
+##The loki component can be customized by modifying helm chart values here.
+loki:
+  enabled: true
+  isDefault: true
+  url: http://{{ .Release.Name }}:{{ .Values.loki.service.port }}
+  readinessProbe:
+    httpGet:
+      path: /ready
+      port: http-metrics
+    initialDelaySeconds: 45
+  livenessProbe:
+    httpGet:
+      path: /ready
+      port: http-metrics
+    initialDelaySeconds: 45
+  datasource:
+    jsonData: "{}"
+    uid: ""
+
+##The promtail component can be customized by modifying helm chart values here.
+promtail:
+  enabled: true
+  config:
+    logLevel: info
+    serverPort: 3101
+    clients:
+      - url: http://{{ .Release.Name }}:3100/loki/api/v1/push
+
+##The grafana component can be customized by modifying helm chart values here.
+grafana:
+  enabled: true
+  service:
+    enabled: true
+    type: LoadBalancer
+    port: 3000
+    annotations:
+      # This annotation delcares the Azure load balancer for the service as internal rather than internet-visible
+      service.beta.kubernetes.io/azure-load-balancer-internal: "true"
+
+      # Enable appropriate annotation for target cloud provider to ensure Grafana access is internal
+      #service.beta.kubernetes.io/cce-load-balancer-internal-vpc: "true"
+      #cloud.google.com/load-balancer-type: "Internal"
+      #service.beta.kubernetes.io/aws-load-balancer-internal: "true"
+      #service.beta.kubernetes.io/openstack-internal-load-balancer: "true"
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+      - name: Loki
+        type: loki
+        url: http://{{ .Release.Name }}:3100
+
+  sidecar:
+    datasources:
+      label: ""
+      labelValue: ""
+      enabled: true
+      maxLines: 1000
+  image:
+    tag: 8.3.5
+
+prometheus:
+  enabled: false
+
+fluent-bit:
+  enabled: false
+
+filebeat:
+  enabled: false
+
+logstash:
+  enabled: false
+
+test_pod:
+  enabled: false
+
+# proxy is currently only used by loki test pod
+# Note: If http_proxy/https_proxy are set, then no_proxy should include the
+# loki service name, so that tests are able to communicate with the loki
+# service.
+#proxy:
+#  http_proxy: ""
+#  https_proxy: ""
+#  no_proxy: ""

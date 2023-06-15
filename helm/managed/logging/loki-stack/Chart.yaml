@@ -1,0 +1,19 @@
+apiVersion: v1
+description: 'Loki Stack for HPCC logs'
+kubeVersion: ^1.10.0-0
+name: loki-stack4hpcclogs
+
+# This is the chart version. This version number should be incremented each time you make changes
+# to the chart and its templates, including the app version.
+version: 1.0.0
+
+# Grafana Loki Stack version
+appVersion: v2.6.1
+
+# Dependencies can be automatically updated via HELM dependancy update command:
+# > 'helm dependency update' command
+# or helm install parameter —dependency-update
+# > helm install myloki ./ —-dependency-update
+
+sources:
+- https://github.com/grafana/loki
