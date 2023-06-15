@@ -102,7 +102,7 @@ if [[ -z "$FORCE" ]] ; then
   # If not found above, look for latest tagged
   if [[ -z ${PREV} ]] ; then
     best=1000000
-    for candidate in `git branch -r -l ${UPSTREAM}/candidate-8* | sed 's/\*//' | sed s/.*candidate-// | egrep -v [.]x$ | sort | uniq` ; do
+    for candidate in `git branch -r -l ${UPSTREAM}/candidate-9* | sed 's/\*//' | sed s/.*candidate-// | egrep -v [.]x$ | sort | uniq` ; do
       delta=$(git rev-list --count --no-merges ${UPSTREAM}/candidate-$candidate...HEAD)
       # echo $candidate : $delta
       if [ $delta -lt $best ] ; then
