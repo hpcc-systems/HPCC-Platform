@@ -703,8 +703,6 @@ void traceSlowReadTms(const char *msg, ISocket *sock, void *dst, size32_t minSiz
     CCycleTimer readTmsTimer;
     unsigned intervalTimeoutMs = 500;
     CCycleTimer intvlTimer;
-    MemoryBuffer dstBufMb;
-    byte *dstBuf = (byte *)dstBufMb.ensureCapacity(maxSize);
 
     // legacy client sends minSize, recent client sends maxSize
     // if read < maxSize, keep trying for maxSize, but if its exactly minSize
@@ -713,23 +711,22 @@ void traceSlowReadTms(const char *msg, ISocket *sock, void *dst, size32_t minSiz
     if (intervalTimeoutMs > timeoutChkIntervalMs)
         intervalTimeoutMs = timeoutChkIntervalMs;
 
-    int numIters = 0;
-    size32_t nRead = 0;
-    size32_t mRead = maxSize;
+    unsigned minTimeIters = 5000 / intervalTimeoutMs;
+
+    sizeRead = 0;
+
+    unsigned numIters = 0;
+    size32_t maxRead = maxSize;
     for (;;)
     {
         try
         {
-            size32_t xRead = 0;
-            sock->readtms(&dstBuf[nRead], 0, mRead, xRead, intervalTimeoutMs);
-            nRead += xRead;
-            if (nRead == maxSize)
-            {
-                sizeRead = nRead;
-                memcpy(dst, dstBuf, sizeRead);
+            size32_t amtRead = 0;
+            sock->readtms((char *)dst+sizeRead, 0, maxRead, amtRead, intervalTimeoutMs);
+            sizeRead += amtRead;
+            if (sizeRead == maxSize)
                 break;
-            }
-            mRead -= xRead;
+            maxRead -= amtRead;
         }
         catch (IJSOCK_Exception *e)
         {
@@ -741,12 +738,10 @@ void traceSlowReadTms(const char *msg, ISocket *sock, void *dst, size32_t minSiz
             else if (JSOCKERR_timeout_expired != e->errorCode())
                 throw;
             // interval read timed out ...
-            if (nRead == minSize)
+            if (sizeRead == minSize)
             {
-                if (numIters++ >= 10) // 10 * 500 = 5 sec addl wait
+                if (numIters++ >= minTimeIters) // 10 * 500 = 5 sec addl wait
                 {
-                    sizeRead = nRead;
-                    memcpy(dst, dstBuf, sizeRead);
                     e->Release();
                     break;
                 }
@@ -754,10 +749,8 @@ void traceSlowReadTms(const char *msg, ISocket *sock, void *dst, size32_t minSiz
             unsigned elapsedMs = readTmsTimer.elapsedMs();
             if (elapsedMs >= timeoutMs)
             {
-                if (nRead == minSize)
+                if (sizeRead >= minSize)
                 {
-                    sizeRead = nRead;
-                    memcpy(dst, dstBuf, sizeRead);
                     e->Release();
                     break;
                 }
@@ -962,8 +955,8 @@ protected: friend class CMPPacketReader;
 #endif
                 rd = 0;
                 byte replyBuf[sizeof(rd)];
-                size32_t nRead = 0;
-                size32_t mRead = sizeof(rd);
+                size32_t totRead = 0;
+                size32_t maxRead = sizeof(rd);
                 while (loopCnt-- > 0)
                 {
                     {
@@ -989,15 +982,15 @@ protected: friend class CMPPacketReader;
                         // read 4 bytes, value should be sizeof(ConnectHdr.id) [12] or sizeof(connectHdr) [44] or larger (exception)
                         // if its an exception or legacy and not in allowlist the other side closes its socket after sending this msg ...
 
-                        size32_t xRead = 0;
-                        newsock->readtms(&replyBuf[nRead], 0, mRead, xRead, CONNECT_TIMEOUT_INTERVAL);
-                        nRead += xRead;
-                        if (nRead == sizeof(rd))
+                        size32_t amtRead = 0;
+                        newsock->readtms(&replyBuf[totRead], 0, maxRead, amtRead, CONNECT_TIMEOUT_INTERVAL);
+                        totRead += amtRead;
+                        if (totRead == sizeof(rd))
                         {
-                            rd = nRead;
+                            rd = totRead;
                             break;
                         }
-                        mRead -= xRead;
+                        maxRead -= amtRead;
                     }
                     catch (IException *e)
                     {
@@ -1059,18 +1052,18 @@ protected: friend class CMPPacketReader;
                  */
                 if (rd == sizeof(rd))
                 {
-                    int replyVal;
-                    memcpy(&replyVal, (int *)replyBuf, sizeof(int));
+                    size32_t replyVal;
+                    memcpy(&replyVal, (size32_t *)replyBuf, sizeof(rd));
                     if (replyVal > sizeof(ConnectHdr))
                     {
                         // read exception message ...
                         MemoryBuffer replyMb;
-                        void *replyMem = replyMb.ensureCapacity(replyVal+1);
+                        void *replyMem = replyMb.ensureCapacity(replyVal);
 
-                        size32_t xRead = 0;
+                        size32_t amtRead = 0;
                         try
                         {
-                            newsock->readtms(replyMem, replyVal, replyVal, xRead, CONNECT_READEXC_TIMEOUT);
+                            newsock->readtms(replyMem, replyVal, replyVal, amtRead, CONNECT_READEXC_TIMEOUT);
                         }
                         catch (IException *e)
                         {
@@ -1085,9 +1078,8 @@ protected: friend class CMPPacketReader;
                             e->Release();
                             throw exitException.getLink();
                         }
-                        MemoryBuffer mb;
-                        mb.setBuffer(xRead, replyMem, false);
-                        exitException.setown(deserializeException(mb));
+                        replyMb.setLength(amtRead);
+                        exitException.setown(deserializeException(replyMb));
                         throw exitException.getLink();
                     }
                 }
@@ -2242,7 +2234,7 @@ int CMPConnectThread::run()
 
                 sock->set_keep_alive(true);
 
-                size32_t rd;
+                size32_t rd = 0;
                 SocketEndpoint _remoteep;
                 SocketEndpoint hostep;
                 ConnectHdr connectHdr;
@@ -2286,9 +2278,11 @@ int CMPConnectThread::run()
                 {
                     StringBuffer ipStr;
                     peerEp.getIpText(ipStr);
-                    StringBuffer responseText; // filled if denied, NB: *MUST* be > sizeof(ConnectHdr) to differentiate exception from success
+                    StringBuffer responseText; // filled if denied, NB: if amount sent is > sizeof(ConnectHdr) we can differentiate exception from success
                     if (!allowListCallback->isAllowListed(ipStr, connectHdr.getRole(), &responseText))
                     {
+                        // mck - for non-legacy, should we check / ensure here responseText.length() >= sizeof(ConnectHdr) ?
+
                         Owned<IException> e = makeStringException(-1, responseText);
                         OWARNLOG(e, nullptr);
 
