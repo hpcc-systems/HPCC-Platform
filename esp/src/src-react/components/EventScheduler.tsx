@@ -95,7 +95,7 @@ export const EventScheduler: React.FunctionComponent<EventSchedulerProps> = ({
         items: selection.map(s => s.Wuid),
         onSubmit: () => {
             WsWorkunits.WUAction(selection, "Deschedule").then(function (response) {
-                refreshTable();
+                refreshTable(true);
             }).catch(err => logger.error(err));
         }
     });
