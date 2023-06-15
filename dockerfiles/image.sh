@@ -75,8 +75,7 @@ finalize_platform_core_image() {
     docker exec --user root $CONTAINER /bin/bash -c "$cmd"
     docker exec --user root $CONTAINER /bin/bash -c "eclcc -pch"
     docker commit $CONTAINER hpccsystems/platform-core:$GIT_BRANCH-$MODE-$crc
-    docker stop $CONTAINER
-    docker rm $CONTAINER
+    docker rm -f $CONTAINER
 
     if [ "$MODE" = "debug" ]; then
         # Add sources
@@ -93,11 +92,32 @@ finalize_platform_core_image() {
         docker exec --workdir /hpcc-dev/HPCC-Platform $CONTAINER /bin/bash -c "rm -rf ./.git"
         docker exec --user root --workdir /hpcc-dev $CONTAINER /bin/bash -c "find /hpcc-dev/HPCC-Platform -exec touch -r /hpcc-dev/build/CMakeCache.txt {} +"
         docker commit $CONTAINER hpccsystems/platform-core:$GIT_BRANCH-$MODE-$crc
-        docker stop $CONTAINER
-        docker rm $CONTAINER
+        docker rm -f $CONTAINER
     fi
 
     docker tag hpccsystems/platform-core:$GIT_BRANCH-$MODE-$crc incr-core:$MODE
+}
+
+finalize_platform_core_image_from_folder() {
+    echo "--- Creating 'hpccsystems/platform-core:build' image ---"
+    create_platform_core_image build-$BUILD_OS:$VCPKG_REF
+    local image_name=platform-core:$MODE
+
+    local build_folder=$(realpath "$DEB_FILE")
+    local source_folder=$(grep "CMAKE_HOME_DIRECTORY:INTERNAL" $build_folder/CMakeCache.txt | cut -d "=" -f 2)
+    echo "--- Finalize '$build_folder' image ---"
+    CONTAINER=$(docker run -d \
+        --mount source=$source_folder,target=$source_folder,type=bind \
+        --mount source=$build_folder,target=$build_folder,type=bind \
+        $image_name "tail -f /dev/null")
+    docker exec --user root $CONTAINER /bin/bash -c "cmake --install $build_folder --prefix /opt/HPCCSystems"
+    docker exec --user root $CONTAINER /bin/bash -c "eclcc -pch"
+    echo "--- Commit '$build_folder' image ---"
+    docker commit $CONTAINER hpccsystems/platform-core:build
+    echo "--- Remove '$CONTAINER' container ---"
+    docker rm -f $CONTAINER
+    echo "docker run --entrypoint /bin/bash -it platform-core:build"
+    echo "platform-core:build"
 }
 
 finalize_platform_core_image_from_deb() {
@@ -120,7 +140,7 @@ finalize_platform_core_image_from_deb() {
     docker exec --user root $CONTAINER /bin/bash -c "dpkg -i /tmp/hpcc.deb && apt-get install -f -y"
     docker exec --user root $CONTAINER /bin/bash -c "eclcc -pch"
     docker commit $CONTAINER hpccsystems/platform-core:$filename
-    docker stop $CONTAINER
+    docker rm -f $CONTAINER
 }
 
 clean() {
@@ -277,14 +297,18 @@ incr() {
 }
 
 install() {
-    if [ ! -e $DEB_FILE ]; then
+    if [ -d $DEB_FILE ]; then
+        MODE=debug
+        create_platform_core_image $RELEASE_BASE_IMAGE
+        finalize_platform_core_image_from_folder $DEB_FILE
+    elif [ -f $DEB_FILE ]; then
+        MODE=release
+        create_platform_core_image $RELEASE_BASE_IMAGE
+        finalize_platform_core_image_from_deb $DEB_FILE
+    else
         echo "File does not exist"
         exit 2
     fi
-    MODE=release
-    create_platform_core_image $RELEASE_BASE_IMAGE
-
-    finalize_platform_core_image_from_deb $DEB_FILE
 }
 
 function cleanup() {
@@ -310,17 +334,17 @@ status() {
 # Print usage information
 usage() {
     echo "Usage: $0 [-h] {clean|build|incr} [-m MODE] [-r] [OS]"
-    echo "  -h, --help     display this help message"
-    echo "  clean          remove all build artifacts"
-    echo "  build          build the project"
-    echo "  incr           perform an incremental build (faster version of 'build -m debug')"
-    echo "  install <file> install from a local deb file"
-    echo "  status         display environment variables"
-    echo "  -m, --mode     specify the build mode (debug or release)"
-    echo "                 default mode is release"
-    echo "  -t, --tag      tag the build volume with the current branch ref"
-    echo "                 will preserve build state per branch"
-    echo "  -r, --reconfigure reconfigure CMake before building"
+    echo "  -h, --help              display this help message"
+    echo "  clean                   remove all build artifacts"
+    echo "  build                   build the project"
+    echo "  incr                    perform an incremental build (faster version of 'build -m debug')"
+    echo "  install <file|folder>   install from a local deb file or build folder"
+    echo "  status                  display environment variables"
+    echo "  -m, --mode              specify the build mode (debug or release)"
+    echo "                          default mode is release"
+    echo "  -t, --tag               tag the build volume with the current branch ref"
+    echo "                          will preserve build state per branch"
+    echo "  -r, --reconfigure       reconfigure CMake before building"
 }
 
 # Set default values
