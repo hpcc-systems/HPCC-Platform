@@ -1000,7 +1000,7 @@ void PartialMatch::trace(unsigned indent)
 void PartialMatchBuilder::add(size32_t len, const void * data)
 {
     if (!root)
-        root.set(new PartialMatch(this, len, data, 0, true));
+        root.setown(new PartialMatch(this, len, data, 0, true));
     else
         root->combine(len, (const byte *)data);
 
