@@ -15,53 +15,31 @@
     limitations under the License.
 ############################################################################## */
 
-//version multiPart=false
-//version multiPart=true
 //version multiPart=false,variant='default'
 //version multiPart=false,variant='inplace'
 //version multiPart=false,variant='inplace_row'
 //version multiPart=false,variant='inplace_lzw'
 //version multiPart=false,variant='inplace_lz4hc'
+//version multiPart=true,variant='inplace'
+
+#onwarning (4523, ignore);
 
 import ^ as root;
 multiPart := #IFDEFINED(root.multiPart, true);
-variant := #IFDEFINED(root.variant, '');
+variant := #IFDEFINED(root.variant, 'inplace');
 
 //--- end of version configuration ---
 
 import $.setup;
 files := setup.files(multiPart, false);
 
-
-createSample(unsigned i, unsigned num, unsigned numRows) := FUNCTION
-
-    //Add a keyed filter to ensure that no splitter is generated.
-    //The splitter performs pathologically on roxie - it may be worth further investigation
-    filtered := files.getSearchSource()(HASH32(kind, word, doc, segment, wpos) % num = i, keyed(word != ''));
-    inputFile := choosen(filtered, numRows);
-    j := JOIN(inputFile, files.getSearchIndexVariant(variant),
-            (LEFT.kind = RIGHT.kind) AND
-            (LEFT.word = RIGHT.word) AND
-            (LEFT.doc = RIGHT.doc) AND
-            (LEFT.segment = RIGHT.segment) AND
-            (LEFT.wpos = RIGHT.wpos), ATMOST(10));
-    RETURN NOFOLD(j);
-END;
-
-createSamples(iters, numRows) := FUNCTIONMACRO
-    o := PARALLEL(
-    #DECLARE (count)
-    #SET (count, 0)
-    #LOOP
-        #IF (%count%>=iters)
-            #BREAK
-        #END
-        output(count(createSample(%count%, iters, numRows)) = numRows),
-        #SET (count, %count%+1)
-    #END
-        output('Done')
-    );
-    RETURN o;
+compareFiles(ds1, ds2) := FUNCTIONMACRO
+    c := COMBINE(ds1, ds2, transform({ boolean same, RECORDOF(LEFT) l, RECORDOF(RIGHT) r,  }, SELF.same := LEFT = RIGHT; SELF.l := LEFT; SELF.r := RIGHT ), LOCAL);
+    RETURN output(choosen(c(not same), 10));
 ENDMACRO;
 
-createSamples(40, 60000);
+other := files.getSearchIndexVariant(variant);
+
+original := files.getSearchIndex();
+
+compareFiles(original, other);

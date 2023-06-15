@@ -103,10 +103,16 @@ define([
                         WsMachine.GetMachineInfo({
                             request: request
                         }).then(function (response) {
+                            var params = { ...response.GetMachineInfoResponse };
+                            params.RequestInfo["Cluster"] = request.Cluster;
+                            params.RequestInfo["Path"] = request.Path;
+                            params.RequestInfo[MachineInformationClean] = filter[MachineInformationClean];
+                            params.RequestInfo["Addresses.itemcount"] = MachineInformationCount;
+                            params.route = "machines";
                             var pfTab = context.ensureMIPane(response.GetMachineInfoResponse.Machines.MachineInfoEx[0].Address, {
-                                params: response.GetMachineInfoResponse
+                                params
                             });
-                            pfTab.init(response.GetMachineInfoResponse, "machines");
+                            pfTab.init(params, "machines");
                         });
                     } else {
                         var TargetClustersClean = "TargetClusters." + i;
@@ -138,7 +144,11 @@ define([
                                 });
                                 context.detailsWidget.requestInformationWidget.set("disabled", false);
                                 context.detailsWidget.requestInformationWidget.init(response.GetTargetClusterInfoResponse);
-                                pfTab.init(response.GetTargetClusterInfoResponse, "cluster");
+                                var params = { ...response.GetTargetClusterInfoResponse };
+                                params.RequestInfo[TargetClustersClean] = filter[TargetClustersClean];
+                                params.RequestInfo["TargetClusters.itemcount"] = TargetClusterCount;
+                                params.route = "cluster";
+                                pfTab.init(params, "cluster");
                             }
                         });
                     }

@@ -843,6 +843,22 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                 });
                 break;
             case "datetime":
+                let dateStr;
+                // the html input "datetime-local" expects the value to be of the format "YYYY-MM-DDTHH:mm"
+                if (typeof field.value === "object") {
+                    // but comes from the Logs component's filter initally as a Date
+                    dateStr = field.value ? new Date(field.value).toISOString() : "";
+                    field.value = dateStr.substring(0, dateStr.lastIndexOf(":"));
+                } else {
+                    // if not a complete ISO string, the datetime-local will creep forward
+                    // in time with every subsequent new Date() (opening & closing
+                    // the filter multiple times, for example)
+                    if (field.value && field.value.indexOf("Z") < 0) {
+                        field.value += ":00.000Z";
+                    }
+                    dateStr = field.value ? new Date(field.value).toISOString() : "";
+                    field.value = dateStr.substring(0, dateStr.lastIndexOf(":"));
+                }
                 field.value = field.value !== undefined ? field.value : "";
                 retVal.push({
                     id: fieldID,

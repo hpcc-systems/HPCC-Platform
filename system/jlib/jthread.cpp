@@ -2194,7 +2194,7 @@ public:
                 envText.append(" ").append(cur);
             }
 
-            PROGLOG("%s: Creating PIPE program process : '%s' - hasinput=%d, hasoutput=%d stderrbufsize=%d [%s]", title.get(), prog.get(),(int)hasinput, (int)hasoutput, stderrbufsize, envText.str());
+            PROGLOG("%s: Creating PIPE program process : '%s' - hasinput=%d, hasoutput=%d stderrbufsize=%d [%s] in (%s)", title.get(), prog.get(),(int)hasinput, (int)hasoutput, stderrbufsize, envText.str(), _dir ? _dir : "<cwd>");
         }
         CheckAllowedProgram(prog,allowedprogs);
         retcode = 0;

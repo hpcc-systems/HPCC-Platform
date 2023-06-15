@@ -11782,7 +11782,7 @@ SecAccessFlags CDistributedFileDirectory::getFilePermissions(const char *lname,I
 {
     CDfsLogicalFileName dlfn;
     dlfn.set(lname);
-    return getScopePermissions(dlfn.get(),user,auditflags);
+    return getDLFNPermissions(dlfn,user,auditflags);
 }
 
 SecAccessFlags CDistributedFileDirectory::getNodePermissions(const IpAddress &ip,IUserDescriptor *user,unsigned auditflags)
@@ -11792,7 +11792,7 @@ SecAccessFlags CDistributedFileDirectory::getNodePermissions(const IpAddress &ip
     CDfsLogicalFileName dlfn;
     SocketEndpoint ep(0,ip);
     dlfn.setExternal(ep,"/x");
-    return getScopePermissions(dlfn.get(),user,auditflags);
+    return getDLFNPermissions(dlfn,user,auditflags);
 }
 
 SecAccessFlags CDistributedFileDirectory::getFDescPermissions(IFileDescriptor *fdesc,IUserDescriptor *user,unsigned auditflags)
@@ -11826,7 +11826,7 @@ SecAccessFlags CDistributedFileDirectory::getFDescPermissions(IFileDescriptor *f
                         localpath.setCharAt(k,'_');
                 CDfsLogicalFileName dlfn;
                 dlfn.setExternal(rfn.queryEndpoint(),localpath.str());
-                SecAccessFlags perm = getScopePermissions(dlfn.get(),user,auditflags);
+                SecAccessFlags perm = getDLFNPermissions(dlfn,user,auditflags);
                 if (perm < retPerms) {
                     retPerms = perm;
                     if (retPerms == SecAccess_None)
@@ -11840,7 +11840,9 @@ SecAccessFlags CDistributedFileDirectory::getFDescPermissions(IFileDescriptor *f
 
 SecAccessFlags CDistributedFileDirectory::getDLFNPermissions(CDfsLogicalFileName &dlfn,IUserDescriptor *user,unsigned auditflags)
 {
-    return getScopePermissions(dlfn.get(),user,auditflags);
+    StringBuffer scopes;
+    dlfn.getScopes(scopes);
+    return getScopePermissions(scopes,user,auditflags);
 }
 
 SecAccessFlags CDistributedFileDirectory::getDropZoneScopePermissions(const char *dropZoneName,const char *dropZonePath,IUserDescriptor *user,unsigned auditflags)

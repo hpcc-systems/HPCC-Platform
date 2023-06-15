@@ -80,6 +80,8 @@ const char * const helpText[] = {
     "!                 name depends on the input filename",
     "!   -checkVersion Enable/disable ecl version checking from archives",
     "?   -checkDirty   Report any modified attributes using git status",
+    "?   --cleanrepos  Unconditionally delete any cached repositories associated with dependencies",
+    "?   --cleaninvalidrepos Delete any incomplete cached repositories associated with dependencies",
     "!   --component   Set the name of the component this is executing on behalf of",
 #ifdef _WIN32
     "!   -brk <n>      Trigger a break point in eclcc after nth allocation",

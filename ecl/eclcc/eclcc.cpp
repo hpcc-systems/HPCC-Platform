@@ -444,6 +444,8 @@ protected:
     bool optPruneArchive = true;
     bool optFetchRepos = true;
     bool optUpdateRepos = true;
+    bool optCleanInvalidRepos = true;
+    bool optCleanRepos = false;
 
     mutable bool daliConnected = false;
     mutable bool disconnectReported = false;
@@ -2215,7 +2217,7 @@ bool EclCC::processFiles()
     {
         //Set up the default repository information.  This could be simplified to not use a localRepositoryManager later
         //if eclcc did not have a strange mode for running multiple queries as part of the regression suite testing on windows.
-        repositoryManager.setOptions(eclRepoPath, optGitUser, optGitPasswordPath, optDefaultGitPrefix, optFetchRepos, optUpdateRepos, logVerbose);
+        repositoryManager.setOptions(eclRepoPath, optGitUser, optGitPasswordPath, optDefaultGitPrefix, optFetchRepos, optUpdateRepos, optCleanRepos, optCleanInvalidRepos, logVerbose);
         ForEachItemIn(iMapping, repoMappings)
         {
             const char * cur = repoMappings.item(iMapping);
@@ -2682,6 +2684,12 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         else if (iter.matchFlag(optCheckDirty, "-checkDirty"))
         {
         }
+        else if (iter.matchFlag(optCleanRepos, "--cleanrepos"))
+        {
+        }
+        else if (iter.matchFlag(optCleanInvalidRepos, "--cleaninvalidrepos"))
+        {
+        }
         else if (iter.matchOption(optCluster, "-cluster"))
         {
         }
@@ -2951,6 +2959,9 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         {
         }
         else if (iter.matchFlag(optSaveQueryArchive, "-qa"))
+        {
+        }
+        else if (iter.matchOptionText(eclRepoPath, "--repocachepath", false, false))
         {
         }
         else if (iter.matchFlag(optNoCompile, "-S"))

@@ -6356,15 +6356,16 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
             }
         }
 
+        if (combineTrivialStored && isTrivialStored(setValue))
+            combine = true;
+
         if (info.persistOp == no_once)
         {
             //MORE: Error if refers to stored or persist - this test could be relaxed
             if (queryDirectDependencies(setValue).ordinality())
                 translator.ERRORAT(queryLocation(untransformed), HQLERR_OnceCannotAccessStored);
+            combine = false;
         }
-
-        if (combineTrivialStored && isTrivialStored(setValue))
-            combine = true;
 
         if (combine)
         {

@@ -305,7 +305,9 @@ export const routes: RoutesEx = [
             },
             {
                 path: "/logs", action: (ctx) => import("./components/Logs").then(_ => {
-                    return <_.Logs filter={parseSearch(ctx.search) as any} />;
+                    let filter = parseSearch(ctx.search) as any;
+                    filter = Object.keys(filter).length < 1 ? _.defaultFilter : filter;
+                    return <_.Logs filter={filter} />;
                 })
             },
             {

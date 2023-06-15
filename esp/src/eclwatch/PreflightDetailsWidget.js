@@ -11,9 +11,10 @@ define([
     "hpcc/GridDetailsWidget",
     "src/ESPUtil",
     "src/ESPPreflight",
+    "src/ws_machine",
 
 ], function (declare, lang, nlsHPCCMod, arrayUtil, domClass, domConstruct, domGeom, win,
-    GridDetailsWidget, ESPUtil, ESPPreflight
+    GridDetailsWidget, ESPUtil, ESPPreflight, WsMachine,
 ) {
 
     var nlsHPCC = nlsHPCCMod.default;
@@ -34,7 +35,30 @@ define([
         },
 
         refresh: function (params, route) {
-            route === "machines" ? this.refreshMachinesGrid(params) : this.refreshClusterGrid(params);
+            params = params ? params : this.params;
+            if (route === "machines" || params?.Machines?.MachineInfoEx) {
+                this.refreshMachinesGrid(params);
+            } else if (params?.TargetClusterInfoList?.TargetClusterInfo) {
+                this.refreshClusterGrid(params);
+            }
+        },
+
+        //  Hitched actions  ---
+        _onRefresh: function (event) {
+            var context = this;
+            if (this.params.route === "machines") {
+                WsMachine.GetMachineInfo({
+                    request: this.params.RequestInfo
+                }).then(function (response) {
+                    context.refresh(response.GetMachineInfoResponse);
+                });
+            } else {
+                WsMachine.GetTargetClusterInfo({
+                    request: this.params.RequestInfo
+                }).then(function (response) {
+                    context.refresh(response.GetTargetClusterInfoResponse);
+                });
+            }
         },
 
         createGrid: function (domID) {
@@ -164,7 +188,7 @@ define([
                             CPULoad: {
                                 label: this.i18n.CPULoad,
                                 renderCell: function (object, value, node, options) {
-                                    switch ( value > request) {
+                                    switch (value > request) {
                                         case true:
                                             domClass.add(node, "ErrorCell");
                                             break;
