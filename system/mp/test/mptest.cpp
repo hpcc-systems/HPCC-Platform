@@ -1451,9 +1451,36 @@ void runTest(const char *caption, const char *testname, IGroup* group, ICommunic
     comm->barrier();
 }
 
+static bool getSocketEndpoint(const char *inputStr, SocketEndpoint &ep, int lPort)
+{
+    if (inputStr)
+    {
+        char rank_ip[256];
+        if (strstr(inputStr, ":") != NULL)
+        {
+            int rank_port;
+            int srtn = sscanf(inputStr, "%255[^:]:%d", rank_ip, &rank_port);
+            if (srtn == 2)
+            {
+                if (ep.set(rank_ip, rank_port))
+                    return true;
+            }
+        }
+        else
+        {
+            int srtn = sscanf(inputStr, "%255s", rank_ip);
+            if (srtn == 1)
+            {
+                if (ep.set(rank_ip, lPort))
+                    return true;
+            }
+        }
+    }
+    return false;
+}
+
 bool createNodeList(IArrayOf<INode> &nodes, const char* hostfile, int my_port, rank_t max_ranks) {
     unsigned i = 1;
-    char hoststr[256] = { "" };
     FILE* fp = fopen(hostfile, "r");
     if (fp == NULL)
     {
@@ -1466,11 +1493,15 @@ bool createNodeList(IArrayOf<INode> &nodes, const char* hostfile, int my_port, r
         if ((max_ranks > 0) && ((i - 1) >= max_ranks))
             break;
 
-        int srtn = sscanf(line, "%s", hoststr);
-        if (srtn == 1 && line[0] != '#') {
-            INode* newNode = createINode(hoststr, my_port);
-            nodes.append(*newNode);
-            i++;
+        if (line[0] != '#')
+        {
+            SocketEndpoint hep;
+            if (getSocketEndpoint(line, hep, my_port))
+            {
+                INode *newNode = createINode(hep);
+                nodes.append(*newNode);
+                i++;
+            }
         }
     }
     fclose(fp);
@@ -1493,7 +1524,7 @@ void printHelp(char* executableName)
 int main(int argc, char* argv[])
 {
     int mpi_debug = 0;
-    const char * testname = "";
+    const char * testname = "Ring";
     rank_t max_ranks = 0;
     unsigned startupDelay = 0;
 
@@ -1646,9 +1677,13 @@ int main(int argc, char* argv[])
             unsigned i = 1;
             while (i+1 < argSize)
             {
-                PROGLOG("MPTEST: adding node %u, port = <%s>", i-1, argL[i+1]);
-                INode *newNode = createINode(argL[i+1], my_port);
-                nodes.append(*newNode);
+                PROGLOG("MPTEST: adding node %u, %s", i-1, argL[i+1]);
+                SocketEndpoint hep;
+                if (getSocketEndpoint(argL[i+1], hep, my_port))
+                {
+                    INode *newNode = createINode(hep);
+                    nodes.append(*newNode);
+                }
                 i++;
             }
         }
@@ -1679,7 +1714,7 @@ int main(int argc, char* argv[])
         if (die)
             return 0;
         PROGLOG("MPTEST: Starting, port = %d tot ranks = %u", my_port, tot_ranks);
-        startMPServer(my_port);
+        startMPServer(my_port, false, true);
 
         if (mpi_debug)
         {

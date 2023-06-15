@@ -222,12 +222,25 @@ public:
 // A threadpool is used to allow multiple compiles to be submitted at once. Threads are reused when compilation completes.
 //------------------------------------------------------------------------------------------------------------------
 
+static bool getHomeFolder(StringBuffer & homepath)
+{
+    if (!getHomeDir(homepath))
+        return false;
+    addPathSepChar(homepath);
+#ifndef WIN32
+    homepath.append('.');
+#endif
+    homepath.append(hpccBuildInfo.dirName);
+    return true;
+}
+
 class EclccCompileThread : implements IPooledThread, implements IErrorReporter, public CInterface
 {
     StringAttr wuid;
     Owned<IWorkUnit> workunit;
     StringBuffer idxStr;
     StringArray filesSeen;
+    StringBuffer repoRootPath;
     unsigned defaultMaxCompileThreads = 1;
     bool saveTemps = false;
 
@@ -625,6 +638,11 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
                 eclccCmd.appendf(" -wuid=%s -token=%s", workunit->queryWuid(), token.str());
         }
 
+        //Ensure that each child compile has a separate directory for the cloned git repositories.
+        //It means the caches are not shared, but avoids the clones/fetches from affecting each other
+        if (!repoRootPath.isEmpty())
+            eclccCmd.appendf(" --repocachepath=\"%s\"", repoRootPath.str());
+
         if (config->queryProp("@defaultRepo"))
             eclccCmd.appendf(" --defaultrepo=%s", config->queryProp("@defaultRepo"));
         if (config->queryProp("@defaultRepoVersion"))
@@ -799,6 +817,23 @@ public:
     EclccCompileThread(unsigned _idx)
     {
         idxStr.append(_idx);
+
+        const char * repoPathOption = getenv("ECLCC_ECLREPO_PATH");
+        if (repoPathOption)
+        {
+            repoRootPath.append(repoPathOption);
+        }
+        else
+        {
+            getHomeFolder(repoRootPath);
+        }
+        if (repoRootPath.length())
+        {
+            addPathSepChar(repoRootPath).append("repos_").append(idxStr);
+            recursiveCreateDirectory(repoRootPath.str());
+        }
+        else
+            OWARNLOG("Could not deduce the directory to store cached git repositories");
     }
 
     virtual void init(void *param) override
