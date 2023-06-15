@@ -730,14 +730,28 @@ IEclPackage * EclRepositoryManager::queryDependentRepository(IIdAtom * name, con
 }
 
 
-static bool checkGitDirExists(const char * path)
+static bool isEmptyDirectory(const char * path)
+{
+    Owned<IDirectoryIterator> iter = createDirectoryIterator(path);
+    return !iter->first();
+}
+
+static bool checkGitDirIsValid(const char * path)
 {
     if (!checkDirExists(path))
         return false;
 
+    //When a git clone happens the following are downloaded in .git/: HEAD, objects, refs
+    //If the refs/heads directory is empty then the clone has not completed.
     StringBuffer gitPath;
-    addPathSepChar(gitPath.append(path)).append(".git");
-    return checkFileExists(gitPath);
+    addPathSepChar(gitPath.append(path)).append(".git/refs/heads");
+    if (!checkDirExists(gitPath))
+        return false;
+
+    if (isEmptyDirectory(gitPath))
+        return false;
+
+    return true;
 }
 
 IEclSourceCollection * EclRepositoryManager::resolveGitCollection(const char * repoPath, const char * defaultUrl)
@@ -750,8 +764,36 @@ IEclSourceCollection * EclRepositoryManager::resolveGitCollection(const char * r
     if (!splitRepoVersion(repoUrn, repo, version, defaultUrl, options.defaultGitPrefix))
         throw makeStringExceptionV(99, "Unsupported repository link format '%s'", defaultUrl);
 
+    bool alreadyExists = false;
+    if (checkDirExists(repoPath))
+    {
+        if (options.cleanRepos)
+        {
+            PROGLOG("Forced removal of git repository cache at '%s' (--cleanrepos)", repoPath);
+            recursiveRemoveDirectory(repoPath);
+        }
+        if (checkGitDirIsValid(repoPath))
+        {
+            alreadyExists = true;
+        }
+        else
+        {
+            if (!isEmptyDirectory(repoPath))
+            {
+                if (options.cleanInvalidRepos)
+                {
+                    PROGLOG("Removing incomplete cache of git repository at '%s' (--cleaninvalidrepos)", repoPath);
+                    recursiveRemoveDirectory(repoPath);
+                }
+
+                if (!isEmptyDirectory(repoPath))
+                    throw makeStringExceptionV(99, "Cache of git repository %s exists, but is not valid", repoPath);
+            }
+        }
+    }
+
     bool ok = false;
-    if (checkGitDirExists(repoPath))
+    if (alreadyExists)
     {
         if (options.updateRepos)
         {
