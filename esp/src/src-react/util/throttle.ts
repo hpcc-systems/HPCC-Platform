@@ -11,10 +11,11 @@ export function singletonDebounce<T, M extends keyof T>(obj: T, method: M, timeo
     return obj[__lazy__];
 }
 
-export function debounce(func, timeout = 300) {
+export function debounce(func: (...args: any[]) => void, timeout = 300): (...args: any[]) => void {
     let timer;
-    return (...args) => {
+    const retVal = (...args: any[]) => {
         clearTimeout(timer);
         timer = setTimeout(() => { func.apply(this, args); }, timeout);
     };
+    return retVal;
 }

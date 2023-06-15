@@ -2,7 +2,7 @@ import * as React from "react";
 import { LogicalFile, WsDfu } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import { singletonDebounce } from "../util/throttle";
-import { useCounter } from "./workunit";
+import { useCounter } from "./util";
 
 const logger = scopedLogger("../hooks/file.ts");
 

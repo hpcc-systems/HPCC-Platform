@@ -30,11 +30,13 @@ const defaultUIState = {
 
 interface MetricsProps {
     wuid: string;
+    parentUrl?: string;
     selection?: string;
 }
 
 export const Metrics: React.FunctionComponent<MetricsProps> = ({
     wuid,
+    parentUrl = `/workunits/${wuid}/metrics`,
     selection = ""
 }) => {
     const [_uiState, _setUIState] = React.useState({ ...defaultUIState });
@@ -183,7 +185,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         .sortable(true)
         .on("click", debounce((row, col, sel) => {
             const selection = scopesTable.selection();
-            pushUrl(`/workunits/${wuid}/metrics/${selection.map(row => row.__lparam.id).join(",")}`);
+            pushUrl(`${parentUrl}/${selection.map(row => row.__lparam.id).join(",")}`);
         }, 100))
     );
 
@@ -223,7 +225,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         .zoomToFitLimit(1)
         .on("selectionChanged", () => {
             const selection = metricGraphWidget.selection().filter(id => metricGraph.item(id)).map(id => metricGraph.item(id).id);
-            pushUrl(`/workunits/${wuid}/metrics/${selection.join(",")}`);
+            pushUrl(`${parentUrl}/${selection.join(",")}`);
         })
     );
 
@@ -279,10 +281,10 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                 metricGraphWidget.reset();
                 setSelectedMetrics([]);
                 setSelectedMetricsPtr(0);
-                pushUrl(`/workunits/${wuid}/metrics`);
+                pushUrl(parentUrl);
             }
         }
-    ], [metricGraphWidget, selectedMetrics, selectedMetricsPtr, wuid]);
+    ], [metricGraphWidget, parentUrl, selectedMetrics, selectedMetricsPtr]);
 
     const graphRightButtons = React.useMemo((): ICommandBarItemProps[] => [
         {

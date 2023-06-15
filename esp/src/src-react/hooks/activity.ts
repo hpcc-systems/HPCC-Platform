@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Activity } from "@hpcc-js/comms";
-import { useCounter } from "./workunit";
+import { useCounter } from "./util";
 
 export function useActivity(): [Activity, number, () => void] {
 

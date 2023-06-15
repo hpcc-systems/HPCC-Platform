@@ -2,7 +2,7 @@ import * as React from "react";
 import { WsResources, ResourcesService } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import { containerized } from "src/BuildInfo";
-import { useCounter } from "./workunit";
+import { useCounter } from "./util";
 
 const logger = scopedLogger("../hooks/resources.ts");
 

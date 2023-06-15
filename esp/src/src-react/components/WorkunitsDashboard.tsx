@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Dropdown, IStackItemStyles, IStackStyles, IStackTokens, Overlay, Spinner, SpinnerSize, Stack, Text } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
-import { Card, CardHeader, CardPreview } from "@fluentui/react-components/unstable";
+import { Card, CardHeader, CardPreview } from "@fluentui/react-components";
 import { WorkunitsService, WUQuery } from "@hpcc-js/comms";
 import { Area, Column, Pie, Bar } from "@hpcc-js/chart";
 import { chain, filter, group, map, sort } from "@hpcc-js/dataflow";

@@ -8,6 +8,7 @@ import { ShortVerticalDivider } from "./Common";
 import * as ESPQuery from "src/ESPQuery";
 import * as WsWorkunits from "src/WsWorkunits";
 import nlsHPCC from "src/nlsHPCC";
+import { Divider } from "@fluentui/react-components";
 
 const logger = scopedLogger("../components/QuerySummary.tsx");
 
@@ -22,6 +23,7 @@ export const QuerySummary: React.FunctionComponent<QuerySummaryProps> = ({
 }) => {
 
     const [query, setQuery] = React.useState<any>();
+    const [wuid, setWuid] = React.useState<string>("");
     const [suspended, setSuspended] = React.useState(false);
     const [activated, setActivated] = React.useState(false);
 
@@ -52,14 +54,15 @@ export const QuerySummary: React.FunctionComponent<QuerySummaryProps> = ({
 
     React.useEffect(() => {
         setQuery(ESPQuery.Get(querySet, queryId));
-    }, [setQuery, queryId, querySet]);
+    }, [queryId, querySet]);
 
     React.useEffect(() => {
         query?.getDetails().then(({ WUQueryDetailsResponse }) => {
+            setWuid(query?.Wuid);
             setSuspended(query.Suspended);
             setActivated(query.Activated);
         });
-    }, [setActivated, setSuspended, query]);
+    }, [query]);
 
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
@@ -120,13 +123,12 @@ export const QuerySummary: React.FunctionComponent<QuerySummaryProps> = ({
                     console.log(id, value);
             }
         }} />
-        <hr />
+        <Divider>{nlsHPCC.Workunit}</Divider>
         <TableGroup fields={{
-            "wuid": { label: nlsHPCC.WUID, type: "string", value: query?.Wuid, readonly: true },
+            "wuid": { label: nlsHPCC.WUID, type: "link", value: wuid, href: `#/workunits/${wuid}`, readonly: true },
             "dll": { label: nlsHPCC.Dll, type: "string", value: query?.Dll, readonly: true },
-            "wuSnapShot": { label: nlsHPCC.WUSnapShot, type: "string", value: query?.WUSnapShot, readonly: true },
         }} />
-        <hr />
+        <Divider>{nlsHPCC.Other}</Divider>
         <TableGroup fields={{
             "isLibrary": { label: nlsHPCC.IsLibrary, type: "string", value: query?.IsLibrary ? "true" : "false", readonly: true },
         }} />

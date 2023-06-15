@@ -2,7 +2,8 @@ import * as React from "react";
 import { useConst, useForceUpdate } from "@fluentui/react-hooks";
 import { WUDetailsMeta, WorkunitsService } from "@hpcc-js/comms";
 import { userKeyValStore } from "src/KeyValStore";
-import { useCounter, useWorkunit } from "./workunit";
+import { useWorkunit } from "./workunit";
+import { useCounter } from "./util";
 
 const defaults = {
     scopeTypes: ["graph", "subgraph", "activity", "edge"],

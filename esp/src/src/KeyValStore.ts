@@ -320,7 +320,7 @@ export function fetchStats() {
         const browser = [];
         const os = [];
         try {
-            const stats = JSON.parse(statsStr);
+            const stats = JSON.parse(statsStr ?? "{}");
             for (const key in stats) {
                 if (key !== "since") {
                     const val = stats[key];
