@@ -35,10 +35,11 @@ void static usage(const char* programName)
     printf("Output:       (srcdir|<outdir>)/filename.xml\n\n");
 
     puts("Available options:");
-    puts(" -r|--recursive: process all includes");
+    puts(" -r|--recursive:                   Process all includes");
     puts(" -I|--include-path <include path>: Locations to look for included esdl files");
-    puts(" -v|--verbose:   display information");
-    puts(" -?/-h/--help:   show this usage page");
+    puts(" -v|--verbose:                     Display information");
+    puts("    --no-extended-attributes:      Do not generate extended attribute types matching HIDL output");
+    puts(" -?/-h/--help:                     Show this usage page");
     exit(1);
 }
 
@@ -72,6 +73,10 @@ void parseCommandLine(int argc, char* argv[], Esdl2Esxdl * cmd)
             else if (stricmp(argv[i], "-v")==0 || stricmp(argv[i], "--verbose")==0)
             {
                 cmd->setVerbose(true);
+            }
+            else if (stricmp(argv[i], "--no-extended-attributes")==0)
+            {
+                cmd->setNoExtendedAttributes(true);
             }
             else
             {

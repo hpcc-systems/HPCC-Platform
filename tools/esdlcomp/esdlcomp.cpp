@@ -45,6 +45,7 @@ extern char *esp_def_export_tag;
 
 // --- globals -----
 int gOutfile = -1;
+bool extendedAttributes = true;
 
 CriticalSection ESDLcompiler::m_critSect;
 //-------------------------------------------------------------------------------------------------------------
@@ -849,6 +850,74 @@ const char* ParamInfo::getArrayItemXsdType()
     }
 }
 
+void ParamInfo::toString(StringBuffer & out)
+{
+    const char *xsd_type = getMetaString("xsd_type", NULL);
+    if (xsd_type && *xsd_type=='\"')
+        xsd_type++;
+    unsigned pcl = strlen("tns:ArrayOf");
+    //purely for compatability with scapps ESDL processing... ESDL should never have relied on interpreting the xsd_type which is for external use
+    if (xsd_type && !strncmp("tns:ArrayOf", xsd_type, pcl))
+    {
+        out.appendf("\t\t<EsdlArray name='%s' ", name);
+        toStringXmlAttr(out);
+        for (MetaTagInfo *mtag=tags; mtag; mtag=mtag->next)
+        {
+            mtag->toStringXmlAttr(out);
+        }
+    }
+    else if (flags & PF_TEMPLATE && !strcmp(templ, "ESParray"))
+    {
+        out.appendf("\t\t<EsdlArray name='%s' ", name);
+        toStringXmlAttr(out);
+        for (MetaTagInfo *mtag=tags; mtag; mtag=mtag->next)
+        {
+            mtag->toStringXmlAttr(out);
+        }
+    }
+    else if (flags & PF_TEMPLATE && !strcmp(templ, "ESPlist"))
+    {
+        out.appendf("\t\t<EsdlList name='%s' ", name);
+        toStringXmlAttr(out);
+        for (MetaTagInfo *mtag=tags; mtag; mtag=mtag->next)
+        {
+            mtag->toStringXmlAttr(out);
+        }
+    }
+    else if (kind==TK_ENUM)
+    {
+        out.appendf("\t\t<EsdlEnumItem name='%s'", name);
+        for (MetaTagInfo *mtag=tags; mtag; mtag=mtag->next)
+        {
+            mtag->toStringXmlAttr(out);
+        }
+    }
+    else if (kind==TK_ESPENUM)
+    {
+        out.appendf("\t\t<EsdlEnum name='%s' enum_type='%s'", name, typname);
+        for (MetaTagInfo *mtag=tags; mtag; mtag=mtag->next)
+        {
+            mtag->toStringXmlAttr(out);
+        }
+    }
+    else
+    {
+        out.appendf("\t\t<EsdlElement name='%s'", name);
+        toStringXmlAttr(out);
+
+        if (xsdtype && *xsdtype && (strcmp(xsdtype, "string")!=0) && extendedAttributes)
+        {
+            out.appendf(" xsd_extended_type='%s'", xsdtype);
+        }
+
+        for (MetaTagInfo *mtag=tags; mtag; mtag=mtag->next)
+        {
+            mtag->toStringXmlAttr(out);
+        }
+    }
+    out.append("/>\n");
+};
+
 //-------------------------------------------------------------------------------------------------------------
 // class ProcInfo
 
@@ -1339,6 +1408,17 @@ void ESDLcompiler::write_esxdl()
         gOutfile = -1;
     }
 }
+
+const void ESDLcompiler::setExtendedAttributes(bool mode)
+{
+    extendedAttributes = mode;
+}
+
+const bool ESDLcompiler::getExtendedAttributes()
+{
+    return extendedAttributes;
+}
+
 
 // end
 //-------------------------------------------------------------------------------------------------------------
