@@ -5,20 +5,14 @@ import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import * as Utility from "src/Utility";
 import { singletonDebounce } from "../util/throttle";
+import { useCounter } from "./util";
 
 const logger = scopedLogger("../hooks/workunit.ts");
+type RefreshFunc = (full?: boolean) => Promise<Workunit>;
 
-export function useCounter(): [number, () => void] {
+export function useWorkunit(wuid: string, full: boolean = false): [Workunit, WUStateID, number, boolean, RefreshFunc] {
 
-    const [counter, setCounter] = React.useState(0);
-
-    return [counter, () => setCounter(counter + 1)];
-}
-
-export function useWorkunit(wuid: string, full: boolean = false): [Workunit, WUStateID, number, boolean, (full?: boolean) => Promise<Workunit>] {
-
-    // eslint-disable-next-line func-call-spacing
-    const [retVal, setRetVal] = React.useState<{ workunit: Workunit, state: number, lastUpdate: number, isComplete: boolean, refresh: (full?: boolean) => Promise<Workunit> }>();
+    const [retVal, setRetVal] = React.useState<{ workunit: Workunit, state: number, lastUpdate: number, isComplete: boolean, refresh: RefreshFunc }>();
 
     React.useEffect(() => {
         if (wuid === undefined || wuid === null) {

@@ -3,7 +3,7 @@ import { CloudService } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import type { V1Pod } from "@kubernetes/client-node";
 import nlsHPCC from "src/nlsHPCC";
-import { useCounter } from "./workunit";
+import { useCounter } from "./util";
 
 const logger = scopedLogger("../hooks/cloud.ts");
 

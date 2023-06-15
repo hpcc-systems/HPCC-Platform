@@ -8,6 +8,7 @@ import { MainNav, routes } from "../routes";
 import { pushUrl } from "../util/history";
 import { useFavorite, useFavorites, useHistory } from "../hooks/favorite";
 import { useUserTheme } from "../hooks/theme";
+import { usePivotItemDisable } from "../layouts/pivot";
 import { Breadcrumbs } from "./Breadcrumbs";
 
 //  Top Level Nav  ---
@@ -205,7 +206,7 @@ export const SubNavigation: React.FunctionComponent<SubNavigationProps> = ({
     hashPath,
 }) => {
 
-    const { theme, themeV9 } = useUserTheme();
+    const { theme } = useUserTheme();
 
     const [favorites] = useFavorites();
     const [favoriteCount, setFavoriteCount] = React.useState(0);
@@ -236,6 +237,7 @@ export const SubNavigation: React.FunctionComponent<SubNavigationProps> = ({
             setLogsDisabled(true);
         });
     }, []);
+    const logsDisabledStyle = usePivotItemDisable(logsDisabled);
 
     const favoriteMenu: IContextualMenuItem[] = React.useMemo(() => {
         const retVal: IContextualMenuItem[] = [];
@@ -255,7 +257,7 @@ export const SubNavigation: React.FunctionComponent<SubNavigationProps> = ({
                 <Stack horizontal >
                     <Stack.Item grow={0} >
                         <Pivot selectedKey={subNav || altSubNav} onLinkClick={handleLinkClick} headersOnly={true} linkFormat="tabs" styles={{ root: { marginLeft: 4 }, text: { lineHeight: 20 }, link: { maxHeight: 20, marginRight: 4 }, linkContent: { maxHeight: 20 } }} >
-                            {subMenuItems[mainNav]?.map(row => <PivotItem headerText={row.headerText} itemKey={row.itemKey} key={row.itemKey} headerButtonProps={row.itemKey === "/topology/logs" && logsDisabled ? { disabled: true, style: { background: themeV9.colorNeutralBackgroundDisabled, color: themeV9.colorNeutralForegroundDisabled } } : {}} />)}
+                            {subMenuItems[mainNav]?.map(row => <PivotItem headerText={row.headerText} itemKey={row.itemKey} key={row.itemKey} headerButtonProps={row.itemKey === "/topology/logs" ? logsDisabledStyle : undefined} />)}
                         </Pivot>
                     </Stack.Item>
                     {!subNav &&

@@ -133,8 +133,15 @@ class History<S extends object = object> {
         return str.replace(/\/+$/, "");
     }
 
+    fixHash(hashUrl: string): string {
+        if (hashUrl[0] !== "#") {
+            return `#${hashUrl}`;
+        }
+        return hashUrl;
+    }
+
     push(to: { pathname?: string, search?: string }, state?: S) {
-        const newHash = `#${this.trimRightSlash(to.pathname || this.location.pathname)}${to.search || ""}`;
+        const newHash = this.fixHash(`${this.trimRightSlash(to.pathname || this.location.pathname)}${to.search || ""}`);
         if (window.location.hash !== newHash) {
             globalHistory.pushState(state, "", newHash);
             this.location = parseHash(newHash);
@@ -143,7 +150,7 @@ class History<S extends object = object> {
     }
 
     replace(to: { pathname?: string, search?: string }, state?: S) {
-        const newHash = `#${this.trimRightSlash(to.pathname || this.location.pathname)}${to.search || ""}`;
+        const newHash = this.fixHash(`${this.trimRightSlash(to.pathname || this.location.pathname)}${to.search || ""}`);
         if (window.location.hash !== newHash) {
             globalHistory.replaceState(state, "", newHash);
             this.location = parseHash(newHash);

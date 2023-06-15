@@ -220,6 +220,16 @@ export const routes: RoutesEx = [
                 })
             },
             {
+                path: "/:QuerySetId/:Id/metrics/:Wuid", action: (ctx, params) => import("./components/QueryDetails").then(_ => {
+                    return <_.QueryDetails querySet={params.QuerySetId as string} queryId={params.Id as string} tab="metrics" metricsTab={params.Wuid as string} />;
+                })
+            },
+            {
+                path: "/:QuerySetId/:Id/metrics/:Wuid/:State", action: (ctx, params) => import("./components/QueryDetails").then(_ => {
+                    return <_.QueryDetails querySet={params.QuerySetId as string} queryId={params.Id as string} tab="metrics" metricsTab={params.Wuid as string} state={params.State as string} />;
+                })
+            },
+            {
                 path: "/:QuerySetId/:QueryId/graphs/:Wuid/:GraphName", action: (ctx, params) => import("./layouts/DojoAdapter").then(_ => {
                     return <_.DojoAdapter widgetClassID="GraphTree7Widget" params={params} />;
                 })

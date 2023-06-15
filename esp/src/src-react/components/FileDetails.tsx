@@ -6,8 +6,7 @@ import nlsHPCC from "src/nlsHPCC";
 import { QuerySortItem } from "src/store/Store";
 import { FileParts } from "./FileParts";
 import { useFile, useDefFile } from "../hooks/file";
-import { useUserTheme } from "../hooks/theme";
-import { pivotItemStyle } from "../layouts/pivot";
+import { pivotItemStyle, usePivotItemDisable } from "../layouts/pivot";
 import { pushUrl, replaceUrl } from "../util/history";
 import { FileBlooms } from "./FileBlooms";
 import { FileHistory } from "./FileHistory";
@@ -40,8 +39,6 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
     sort,
     queryParams = {}
 }) => {
-
-    const { themeV9 } = useUserTheme();
     const [file] = useFile(cluster, logicalFile);
     React.useEffect(() => {
         if (file?.NodeGroup && cluster === undefined) {
@@ -50,8 +47,7 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
     }, [cluster, file?.NodeGroup, logicalFile]);
     const [defFile] = useDefFile(cluster, logicalFile, WsDfu.DFUDefFileFormat.def);
     const [xmlFile] = useDefFile(cluster, logicalFile, WsDfu.DFUDefFileFormat.xml);
-
-    const isDFUWorkunit = file?.Wuid?.length && file?.Wuid[0] === "D";
+    const wuidDisable = usePivotItemDisable(file?.Wuid?.length && file?.Wuid[0] === "D");
 
     return <SizeMe monitorHeight>{({ size }) =>
         <Pivot overflowBehavior="menu" style={{ height: "100%" }} selectedKey={tab} onLinkClick={evt => pushUrl(`/files/${cluster}/${logicalFile}/${evt.props.itemKey}`)}>
@@ -92,7 +88,7 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
             <PivotItem headerText={nlsHPCC.Queries} itemKey="queries" style={pivotItemStyle(size, 0)}>
                 <Queries filter={{ FileName: logicalFile }} />
             </PivotItem>
-            <PivotItem headerText={nlsHPCC.Graphs} itemKey="graphs" itemCount={file?.Graphs?.ECLGraph?.length ?? 0} headerButtonProps={isDFUWorkunit ? { disabled: true, style: { background: themeV9.colorNeutralBackgroundDisabled, color: themeV9.colorNeutralForegroundDisabled } } : {}} style={pivotItemStyle(size, 0)}>
+            <PivotItem headerText={nlsHPCC.Graphs} itemKey="graphs" itemCount={file?.Graphs?.ECLGraph?.length ?? 0} headerButtonProps={wuidDisable} style={pivotItemStyle(size, 0)}>
                 <FileDetailsGraph cluster={cluster} logicalFile={logicalFile} sort={sort} />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.History} itemKey="history" style={pivotItemStyle(size, 0)}>
