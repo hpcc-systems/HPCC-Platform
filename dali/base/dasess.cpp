@@ -955,9 +955,14 @@ public:
             reqUTCTimestamp.serialize(mb);
         }
 
-
         if (!queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_SESSION_REQUEST,SESSIONREPLYTIMEOUT))
+        {
+            StringBuffer user;
+            udesc->getUserName(user);
+            OWARNLOG("Dali call unexpectedly timed out getting user '%s' '%s' permissions. Returning SecAccess_None for '%s')", user.str(), nullText(key), nullText(obj));
             return SecAccess_None;
+        }
+
         SecAccessFlags perms = SecAccess_Unavailable;
         if (mb.remaining()>=sizeof(perms)) {
             mb.read((int &)perms);
