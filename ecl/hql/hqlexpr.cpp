@@ -1323,7 +1323,7 @@ static IPropertyTree * querySelectPackage(IPropertyTree * archive, const char * 
     return archive;
 }
 
-//This function ensures that there is an iniitailised <Module> tag within the appropriate <Archive>
+//This function ensures that there is an initialised <Module> tag within the appropriate <Archive>
 IPropertyTree * queryEnsureArchiveModule(IPropertyTree * archive, const char * package, const char * name, IHqlScope * scope)
 {
     archive = querySelectPackage(archive, package);
