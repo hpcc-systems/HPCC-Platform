@@ -641,7 +641,7 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
         //Ensure that each child compile has a separate directory for the cloned git repositories.
         //It means the caches are not shared, but avoids the clones/fetches from affecting each other
         if (!repoRootPath.isEmpty())
-            eclccCmd.appendf(" --repocachepath=\"%s\"", repoRootPath.str());
+            eclccCmd.appendf(" \"--repocachepath=%s\"", repoRootPath.str());
 
         if (config->queryProp("@defaultRepo"))
             eclccCmd.appendf(" --defaultrepo=%s", config->queryProp("@defaultRepo"));
