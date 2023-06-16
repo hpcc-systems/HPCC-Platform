@@ -852,12 +852,9 @@ void EclCC::reportCompileErrors(IErrorReceiver & errorProcessor, const char * pr
 
 //=========================================================================================
 
-void gatherResourceManifestFilenames(EclCompileInstance & instance, StringArray &filenames)
+static void gatherResourceManifestFilenames(IPropertyTree * tree, const char * tag, StringArray &filenames)
 {
-    IPropertyTree *tree = (instance.archive) ? instance.archive.get() : instance.globalDependTree.get();
-    if (!tree)
-        return;
-    Owned<IPropertyTreeIterator> iter = tree->getElements((instance.archive) ? "Module/Attribute" : "Attribute");
+    Owned<IPropertyTreeIterator> iter = tree->getElements(tag);
     ForEach(*iter)
     {
         StringBuffer filename(iter->query().queryProp("@sourcePath"));
@@ -870,6 +867,24 @@ void gatherResourceManifestFilenames(EclCompileInstance & instance, StringArray 
             if (manifest->exists())
                 filenames.append(filename);
         }
+    }
+
+}
+
+void gatherResourceManifestFilenames(EclCompileInstance & instance, StringArray &filenames)
+{
+    if (instance.archive)
+    {
+        gatherResourceManifestFilenames(instance.archive, "Module/Attribute", filenames);
+
+        //Gather resources from dependent packages
+        Owned<IPropertyTreeIterator> packageIter = instance.archive->getElements("Archive");
+        ForEach(*packageIter)
+            gatherResourceManifestFilenames(&packageIter->query(), "Module/Attribute", filenames);
+    }
+    else if (instance.globalDependTree)
+    {
+        gatherResourceManifestFilenames(instance.globalDependTree, "Attribute", filenames);
     }
 }
 
@@ -2961,8 +2976,9 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         else if (iter.matchFlag(optSaveQueryArchive, "-qa"))
         {
         }
-        else if (iter.matchOptionText(eclRepoPath, "--repocachepath", false, false))
+        else if (iter.matchOption(tempArg, "--repocachepath"))
         {
+            eclRepoPath.set(tempArg);
         }
         else if (iter.matchFlag(optNoCompile, "-S"))
         {
