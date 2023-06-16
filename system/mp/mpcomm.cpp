@@ -927,7 +927,22 @@ protected: friend class CMPPacketReader;
                 PROGLOG("MP: connect addrval = %" I64F "u", addrval);
 #endif
 
+#if 0
                 newsock->write(&connectHdr,sizeof(connectHdr));
+#else
+                // TODO: write this in 2 chunks ...
+                int csiz = sizeof(connectHdr);
+                char chdr[1000];
+                memcpy(chdr, &connectHdr, csiz);
+                int csiz1 = 9;
+                int csiz2 = csiz - csiz1;
+                newsock->write(chdr, csiz1);
+                // DBGLOG("mck - write connectHdr: %d bytes part 1", 10);
+                Sleep(1200 + (random() % 900));
+                newsock->write(&chdr[csiz1], csiz2);
+                // DBGLOG("mck - write connectHdr: %d bytes part 2", clen - 10);
+                // ---------------------------
+#endif
 
 #ifdef _FULLTRACE
                 StringBuffer tmp1;
@@ -1892,7 +1907,22 @@ bool CMPChannel::attachSocket(ISocket *newsock,const SocketEndpoint &_remoteep,c
     }
 
     if (confirm)
+    {
+#if 0
         newsock->write(confirm,sizeof(*confirm)); // confirm while still in connectsect
+#else
+        // TODO: write this in 2 chunks ...
+        int clen = sizeof(*confirm);
+        char cbuf[500];
+        memcpy(cbuf, confirm, clen);
+        newsock->write(cbuf, 2);
+        // DBGLOG("mck - write confirm: %d bytes part 1", 2);
+        Sleep(1300 + (random() % 855));
+        newsock->write(&cbuf[2], clen-2);
+        // DBGLOG("mck - write confirm: %d bytes part 2", clen-2);
+        // ---------------------------
+#endif
+    }
 
     closed = false;
     reader->init(this);
@@ -2294,6 +2324,9 @@ int CMPConnectThread::run()
                              */
                             size32_t reply = sizeof(connectHdr.id);
                             sock->write(&reply, sizeof(reply));
+
+                            // TODO: write this in 2 chunks ...
+                            // ---------------------------
                         }
                         else
                         {
@@ -2301,7 +2334,20 @@ int CMPConnectThread::run()
                             DelayedSizeMarker marker(mb);
                             serializeException(e, mb);
                             marker.write();
+#if 0
                             sock->write(mb.toByteArray(), mb.length());
+#else
+                            // TODO: write this in 2 chunks ...
+                            int clen = mb.length();
+                            char cbuf[1000];
+                            memcpy(cbuf, mb.toByteArray(), clen);
+                            sock->write(cbuf, 2);
+                            // DBGLOG("mck - write allow exception %d bytes part 1", 2);
+                            Sleep(1400 + (random() % 756));
+                            sock->write(&cbuf[2], clen-2);
+                            // DBGLOG("mck - write allow exception %d bytes part 2", clen-2);
+                            // ---------------------------
+#endif
                         }
 
                         sock->close();
