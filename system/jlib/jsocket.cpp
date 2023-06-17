@@ -512,6 +512,7 @@ public:
     void        readtms(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read, unsigned timedelaysecs);
     void        read(void* buf, size32_t size);
     size32_t    write(void const* buf, size32_t size);
+    size32_t    writex(void const* buf, size32_t size);
     size32_t    writetms(void const* buf, size32_t size, unsigned timeoutms=WAIT_FOREVER);
     size32_t    write_multiple(unsigned num,void const**buf, size32_t *size);
     size32_t    udp_write_to(const SocketEndpoint &ep,void const* buf, size32_t size);
@@ -2161,7 +2162,7 @@ EintrRetry:
 
 
 
-size32_t CSocket::write(void const* buf, size32_t size)
+size32_t CSocket::writex(void const* buf, size32_t size)
 {
     if (size==0)
         return 0;
@@ -2237,6 +2238,20 @@ EintrRetry:
     stats.ioWriteBytes += size_writ;
     stats.ioWriteCycles += elapsedCycles;
     return res;
+}
+
+// MCK - test partial writes ...
+size32_t CSocket::write(void const* buf, size32_t size)
+{
+    if (size > 3)
+    {
+        int rc = writex(buf, 3);
+        Sleep(123);
+        rc += writex((char *)buf+rc, size-rc);
+        return rc;
+    }
+    else
+        return writex(buf, size);
 }
 
 size32_t CSocket::writetms(void const* buf, size32_t size, unsigned timeoutms)
