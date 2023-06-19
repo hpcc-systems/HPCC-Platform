@@ -5198,12 +5198,15 @@ void EspServInfo::write_esp_binding()
     {
         outf("#ifdef ESP_SERVICE_%s\n", name_);
 
+        outf("\tStringBuffer rootName;\n");
+        outf("\trootName.append(queryProcessName()).append(\".\").append(getPort());\n");
+
         // For each method with execution profiling enabled, add code to initialize the histogram metric
         for (mthi = methods; mthi != NULL; mthi = mthi->next)
         {
             if (mthi->isExecutionProfilingEnabled())
             {
-                outf("\t%s = registerServiceMethodProfilingMetric(queryProcessName(), \"%s\", \"%s\", \"\", \"%s\");\n",
+                outf("\t%s = registerServiceMethodProfilingMetric(rootName.str(), \"%s\", \"%s\", \"\", \"%s\");\n",
                      mthi->getExecutionProfilingMetricVariableName(), name_, mthi->getName(), mthi->getExecutionProfilingOptions().c_str());
             }
         }
