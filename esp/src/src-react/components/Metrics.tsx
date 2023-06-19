@@ -1,10 +1,9 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, IIconProps, SearchBox } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
-// Disable until ESP supports hotspot
-// import { WorkunitsServiceEx } from "@hpcc-js/comms";
+import { WorkunitsServiceEx } from "@hpcc-js/comms";
 import { Table } from "@hpcc-js/dgrid";
-import { compare } from "@hpcc-js/util";
+import { compare, scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import { WUTimelinePatched } from "src/Timings";
 import { useDeepEffect } from "../hooks/deepHooks";
@@ -19,8 +18,7 @@ import { ErrorBoundary } from "../util/errorBoundary";
 import { ShortVerticalDivider } from "./Common";
 import { MetricsOptions } from "./MetricsOptions";
 
-// Disable until ESP supports hotspot
-// const logger = scopedLogger("src-react/components/Metrics.tsx");
+const logger = scopedLogger("src-react/components/Metrics.tsx");
 
 const filterIcon: IIconProps = { iconName: "Filter" };
 
@@ -50,31 +48,34 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     const [showTimeline, setShowTimeline] = React.useState<boolean>(true);
     const [trackSelection, setTrackSelection] = React.useState<boolean>(true);
     const [fullscreen, setFullscreen] = React.useState<boolean>(false);
+    const [hotspots, setHotspots] = React.useState<string>("");
 
-    // Disable until ESP supports hotspot
-    // const onHotspot = React.useCallback(() => {
-    //     const service = new WorkunitsServiceEx({ baseUrl: "" });
-    //     service.WUAnalyseHotspot({
-    //         Wuid: wuid,
-    //         RootScope: "",
-    //         OptOnlyActive: false,
-    //         OnlyCriticalPath: false,
-    //         IncludeProperties: true,
-    //         IncludeStatistics: true,
-    //         ThresholdPercent: 1.0,
-    //         PropertyOptions: {
-    //             IncludeName: true,
-    //             IncludeRawValue: false,
-    //             IncludeFormatted: true,
-    //             IncludeMeasure: true,
-    //             IncludeCreator: false,
-    //             IncludeCreatorType: false
-    //         }
-    //     }).then(response => {
-    //         const selection: string = response.Activities.Activity.map(activity => activity.Id).join(",");
-    //         pushUrl(`/workunits/${wuid}/metrics/${selection}`);
-    //     }).catch(err => logger.error(err));
-    // }, [wuid]);
+    React.useEffect(() => {
+        const service = new WorkunitsServiceEx({ baseUrl: "" });
+        service.WUAnalyseHotspot({
+            Wuid: wuid,
+            RootScope: "",
+            OptOnlyActive: false,
+            OnlyCriticalPath: false,
+            IncludeProperties: true,
+            IncludeStatistics: true,
+            ThresholdPercent: 1.0,
+            PropertyOptions: {
+                IncludeName: true,
+                IncludeRawValue: false,
+                IncludeFormatted: true,
+                IncludeMeasure: true,
+                IncludeCreator: false,
+                IncludeCreatorType: false
+            }
+        }).then(response => {
+            setHotspots(response.Activities?.Activity?.map(activity => activity.Id).join(",") ?? "");
+        }).catch(err => logger.error(err));
+    }, [wuid]);
+
+    const onHotspot = React.useCallback(() => {
+        pushUrl(`/workunits/${wuid}/metrics/${selection}`);
+    }, [wuid, selection]);
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
@@ -84,8 +85,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         },
         {
             key: "hotspot", text: nlsHPCC.Hotspots, iconProps: { iconName: "SpeedHigh" },
-            // Disable until ESP supports hotspot
-            disabled: true  // , onClick: () => onHotspot()
+            disabled: !hotspots, onClick: () => onHotspot()
         },
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
@@ -101,7 +101,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                 setShowMetricOptions(true);
             }
         }
-    ], [dockpanel, options, refresh, setOptions, showTimeline]);
+    ], [dockpanel, hotspots, onHotspot, options, refresh, setOptions, showTimeline]);
 
     const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
         {
