@@ -271,23 +271,30 @@ ECLCC_PATH
               </tgroup>
             </informaltable></para>
         </sect3>
+      </sect2>
 
-        <sect3 id="CT-CLI-GIT-Support">
-          <title>Git Support</title>
+      <sect2 id="CT-CLI-GIT-Support" role="brk">
+        <title>Git Support</title>
 
-          <para>Starting with the HPCC Systems version 8.4, the
-          <emphasis>--main</emphasis> option has been extended to support
-          compiling a query directly from a Git repository. When invoked, It
-          retrieves the ECL code specified from the Git repository, compiles
-          the code, and runs the query. Only the checkout will be done on the
-          remote ECLCCServer rather than on the client machine. Here is the
-          syntax to reference a repository location:</para>
+        <para>HPCC Systems integrates native support for leveraging
+        Git.</para>
+
+        <para>The <emphasis>--main</emphasis> option has been extended to
+        support compiling a query directly from a Git repository. When
+        invoked, it retrieves the ECL code specified from the Git repository,
+        compiles the code, and runs the query. The checkout is done on the
+        remote ECLCCServer rather than on the client machine.</para>
+
+        <sect3 id="CT-GIT-Syntax">
+          <title>Syntax</title>
+
+          <para>The syntax to reference a repository location:</para>
 
           <programlisting>&lt;protocol:&gt;//&lt;urn&gt;/&lt;user&gt;/&lt;repository&gt;#version </programlisting>
 
           <para>The <emphasis>#version</emphasis> component can be either the
           name of a <emphasis>branch</emphasis>, <emphasis>tag</emphasis>, or
-          SHA (Secure Hash Algorithm) of the
+          the SHA (Secure Hash Algorithm) of a
           <emphasis>commit</emphasis>.</para>
 
           <para>For example:</para>
@@ -300,29 +307,132 @@ ECLCC_PATH
 
           <para>This feature is supported by both the ecl and eclcc command
           line tools.</para>
+        </sect3>
 
-          <sect4 id="CT-Main-Addl-Examples">
-            <title>Additional Examples</title>
+        <sect3 id="CT-Main-Addl-Examples">
+          <title>Additional Examples</title>
 
-            <para>The following examples all compile the attribute
-            <emphasis>demo.main</emphasis> from <emphasis>version3</emphasis>
-            branch of the GitHub repository gituser/gch-ecldemo-d:</para>
+          <para>The following examples all compile the attribute
+          <emphasis>demo.main</emphasis> from <emphasis>version3</emphasis>
+          branch of the GitHub repository gituser/gch-ecldemo-d:</para>
 
-            <programlisting>eclcc --main demo.main@gituser/gch-ecldemo-d#version3
+          <programlisting>eclcc --main demo.main@gituser/gch-ecldemo-d#version3
 eclcc --main demo.main@gituser/gch-ecldemo-d --mainrepoversion=version3 
 eclcc --main demo.main@gituser/gch-ecldemo-d --defaultrepoversion=version3 
 eclcc --main demo.main#version3 --defaultrepo=gituser/gch-ecldemo-d 
 eclcc --main demo.main --defaultrepo=gituser/gch-ecldemo-d --defaultrepoversion=version3</programlisting>
 
-            <para>If you are submitting a source file query.ecl, and you want
-            it to replace the definition of demo.main with the same repo, the
-            following will work:</para>
+          <para>If you are submitting a source file query.ecl, and you want it
+          to replace the definition of demo.main with the same repo, the
+          following will work:</para>
 
-            <programlisting>eclcc query.ecl --main demo.main@gituser/gch-ecldemo-d#version3 
+          <programlisting>eclcc query.ecl --main demo.main@gituser/gch-ecldemo-d#version3 
 eclcc query.ecl --main demo.main@gituser/gch-ecldemo-d --mainrepoversion=version3 
 eclcc query.ecl --main "demo.main#version3" --mainrepo=gituser/gch-ecldemo-d 
 eclcc query.ecl --main demo.main --defaultrepo=gituser/gch-ecldemo-d --defaultrepoversion=version3</programlisting>
+        </sect3>
+
+        <sect3 id="CT-GIT-MultiRepo">
+          <title>Multiple Repository Support</title>
+
+          <para>Queries can be compiled from multiple Git repositories. Each
+          Git repository is treated as a separate independent package.
+          Dependencies between the repositories are specified in a package
+          file which is checked into the repository and versioned along with
+          the ECL code. The package file indicates what the dependencies are
+          and which versions should be used.</para>
+
+          <programlisting>package.json: 
+{
+ "name": "demoRepoC",
+ "version": "1.0.0",
+ "dependencies": { 
+   "demoRepoD": "gituser/gch-ecldemo-d#version1" 
+  } 
+}</programlisting>
+
+          <para>In the above example, the package file gives a
+          <emphasis>name</emphasis> to the package and defines the
+          <emphasis>dependencies</emphasis>.</para>
+
+          <para>The dependencies property is a list of key-value pairs. The
+          key provides the name of the ECL module that is used to access the
+          external repository. The value is a repository reference using the
+          same syntax described in the previous section.</para>
+
+          <sect4 id="GIT-ExternlRepo">
+            <title>External Repositories in ECL</title>
+
+            <para>To use definitions from an external repository you would add
+            an import definition to your ECL code.</para>
+
+            <para>For example consider the following ECL:</para>
+
+            <programlisting>IMPORT layout; 
+IMPORT demoRepoD AS demoD; 
+EXPORT personAsText(layout.person input) :=
+ input.name + ': ' + demoD.format.maskPassword(input.password); </programlisting>
+
+            <para>The name demoRepoD in the second import matches the key
+            value in the package.json file.</para>
+
+            <para>This code uses the attribute
+            <emphasis>format.maskPassword</emphasis> from the repository
+            gituser/gch-ecldemo-d.</para>
+
+            <para>Each package is processed independently of any others. The
+            only connection is through explicit imports of the external
+            packages. This means that packages can have modules or attributes
+            with the same name and they will not clash.</para>
           </sect4>
+        </sect3>
+
+        <sect3>
+          <title>The NPM</title>
+
+          <para>You can use the NPM (node package manager) to ensure that
+          labels or branches are tied down to a specific SHA.</para>
+
+          <para>For example :</para>
+
+          <programlisting>npm install --package-lock-only </programlisting>
+
+          <para>This command creates a <emphasis>package-lock.json</emphasis>
+          file in the same location as package.json. The npm program then
+          resolves the references to branches and resolves them to the
+          corresponding SHAs. Using the --package-lock-only option indicates
+          that the npm should not clone the associated versions of the code to
+          node_modules directories.</para>
+
+          <para>The generated package-lock.json file will contain something
+          similar to the following:</para>
+
+          <programlisting>{
+ "packages": {
+   "node_modules/demoRepoD": {
+     "resolved": "https://github.com/gituser/gch-ecldemo-d.git#644c1f4dd80ca1e8f05974983455a244e5",
+   }
+  } 
+} </programlisting>
+
+          <para>If a package-lock.json file is present it will take precedence
+          over the package.json file. The ECL is compiled in the same way,
+          with ECLCC Server automatically downloading the dependencies.</para>
+
+          <para>The advantage of using package-lock.json over package.json is
+          that it allows you to use npm's semantic versioning syntax
+          (#semver). It also allows you to use a branch in your package.json
+          file as a logical dependency, but resolved to an actual dependency
+          or specific SHA. That way if the branch is updated the query will
+          not change.</para>
+
+          <para>You can also use npm without the --package-lock-only option.
+          This will check out the appropriate version of the code into the
+          node_modules subdirectory of the current project. The ECLCC Server
+          supports the node_module structure as a way of providing the source
+          for external packages. This is an alternative way to compile the
+          code using eclcc completely independently from the source control
+          system.</para>
         </sect3>
       </sect2>
 
