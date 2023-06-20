@@ -137,6 +137,13 @@
           </row>
 
           <row>
+            <entry><emphasis>dataset</emphasis></entry>
+
+            <entry>The name of the DATASET to use when you omit the base
+            dataset parameter from the INDEX definition.</entry>
+          </row>
+
+          <row>
             <entry><emphasis>library</emphasis></entry>
 
             <entry>The name of a MODULE attribute with the LIBRARY
@@ -695,28 +702,55 @@ BUILD(Vehicles,SearchTerms,Payload,'vkey::st.city2');
     <programlisting>nameKey := INDEX(mainTable,{surname,forename,filepos},'name.idx');
 BUILD(nameKey); //gets all info from the INDEX definition
 </programlisting>
+  </sect2>
+
+  <sect2 id="SepIndexFromDS" role="brk">
+    <title>Separating INDEX from DATASET</title>
 
     <para><emphasis role="bold">[</emphasis><emphasis>attrname</emphasis>
-    :=<emphasis role="bold"> ] BUILD(</emphasis><emphasis> indexdef, dataset
+    :=<emphasis role="bold"> ] BUILD(</emphasis><emphasis> indexdef, dataset,
     </emphasis><emphasis role="bold">[, </emphasis><emphasis>options
     </emphasis><emphasis role="bold">] );</emphasis></para>
 
-    <para>Form 4 creates an index file on a dataset using a previously defined
-    INDEX definition.</para>
+    <para>Form 4 allows you to separate the index from the dataset, making it
+    easy to use the INDEX form that does not require a dataset first
+    parameter.</para>
 
-    <para>This is used to build an index where the dataset definition is
-    complex. This allows the index to be logically separated from the dataset
-    from which it is created. This is especially useful when the dataset
-    definition is very complicated (Mb of source) because when the index is
-    subsequently used in a query, all the code to create it is also
-    parsed.</para>
+    <para>The usual way of defining and building an INDEX is in terms of the
+    dataset that is used to create it, using an INDEX declaration where the
+    dataset is named as the first parameter of the INDEX. This is fine when
+    the dataset is relatively simple, but there are downsides:</para>
 
-    <para>Example:</para>
+    <itemizedlist>
+      <listitem>
+        <para>The INDEX can't be logically separated from the dataset it was
+        created from.</para>
+      </listitem>
 
-    <programlisting>ds = DATASET(100, TRANSFORM({ unsigned id }, SELF.id := COUNTER));
-i := INDEX({ unsigned id }, 'myIndex');
-BUILD(i, ds);
-</programlisting>
+      <listitem>
+        <para>If the dataset is very complicated (Mb of source), when the
+        index is subsequently used in a query all the code to create it is
+        also parsed.</para>
+      </listitem>
+    </itemizedlist>
+
+    <para>This form of BUILD allows the two to be separated, so you can omit
+    the base dataset parameter from the INDEX definition and just specify the
+    dataset to use in the BUILD action. The fields are automatically mapped
+    (by field name) from the dataset to the index.</para>
+
+    <para>Examples:</para>
+
+    <para><programlisting>//usual way to BUILD an INDEX:
+ds1 = DATASET(100, TRANSFORM({ UNSIGNED id }, SELF.id := COUNTER));
+i1 := INDEX(ds1, { id }, 'myIndex'); //specifies the dataset to always use
+BUILD(i1);
+
+//Separated way to BUILD an INDEX:
+ds2 = DATASET(100, TRANSFORM({ UNSIGNED id }, SELF.id := COUNTER));
+i2 := INDEX({ UNSIGNED id }, 'myIndex');
+BUILD(i2, ds2);       //builds the i2 INDEX from the ds2 dataset
+</programlisting></para>
   </sect2>
 
   <sect2 id="BUILD_a_Query_Library">
