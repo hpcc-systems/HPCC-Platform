@@ -2283,9 +2283,13 @@ bool CInplaceLeafWriteNode::add(offset_t pos, const void * _data, size32_t size,
                 }
                 else
                 {
-                    compressor.open(compressed.mem(), maxPayloadSize, ctx.compressionHandler, ctx.compressionOptions, isVariable, fixedSize);
+                    //Need to open with limit of nodeSize and then reduce, because it is possible that adding a keyed
+                    //component can *reduce* the compressed keyed size (and so leave more room for the payload) -
+                    //because of the commoning up of identical trailing components
+                    compressor.open(compressed.mem(), nodeSize, ctx.compressionHandler, ctx.compressionOptions, isVariable, fixedSize);
                     openedCompressor = true;
-                    success = compressor.write(uncompressed.bytes(), uncompressedSize);
+                    if (compressor.adjustLimit(maxPayloadSize))
+                        success = compressor.write(uncompressed.bytes(), uncompressedSize);
                 }
 
                 if (success)
