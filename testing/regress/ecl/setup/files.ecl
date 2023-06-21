@@ -56,7 +56,9 @@ SHARED STRING _indexPrefix := '~regress::' +
 EXPORT filePrefix := #IFDEFINED(root.filePrefix, _filePrefix);
 EXPORT indexPrefix := #IFDEFINED(root.filePrefix, _indexPrefix);
 
-EXPORT QueryFilePrefixId := __TARGET_PLATFORM__ + '::' + Str.ToLowerCase(WORKUNIT) + '::';
+wuid := Str.ToLowerCase(WORKUNIT);
+wuidScope := IF(wuid <> '', wuid, 'WORKUNIT');
+EXPORT QueryFilePrefixId := __TARGET_PLATFORM__ + '::' + wuidScope + '::';
 EXPORT QueryFilePrefix := filePrefix + QueryFilePrefixId;
 
 EXPORT DG_FileOut              := filePrefix + 'DG_';
