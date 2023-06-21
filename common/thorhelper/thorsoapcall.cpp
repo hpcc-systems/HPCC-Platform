@@ -349,16 +349,23 @@ public:
     }
     void blacklist(DeblacklisterParams &p, const IContextLogger &logctx)
     {
-        CriticalBlock b(crit);
-        if (list.find(p.ep)==NotFound)
+        unsigned match;
+        {
+            CriticalBlock b(crit);
+            match = list.find(p.ep);
+            if (match == NotFound)
+            {
+                list.append(p.ep);
+                pool->start(&p);
+            }
+        }
+        if (match == NotFound)
         {
             if (soapTraceLevel > 0)
             {
                 StringBuffer s;
                 logctx.CTXLOG("Blacklisting endpoint %s", p.ep.getUrlStr(s).str());
             }
-            list.append(p.ep);
-            pool->start(&p);
         }
         else
         {
@@ -369,19 +376,21 @@ public:
             }
 
         }
+
     }
     void deblacklist(SocketEndpoint &ep)
     {
-        CriticalBlock b(crit);
-        unsigned idx = list.find(ep);
-        if (idx!=NotFound)
+        unsigned match;
         {
-            if (soapTraceLevel > 0)
-            {
-                StringBuffer s;
-                DBGLOG("De-blacklisting endpoint %s", ep.getUrlStr(s).str());
-            }
-            list.remove(idx);
+            CriticalBlock b(crit);
+            match = list.find(ep);
+            if (match != NotFound)
+                list.remove(match);
+        }
+        if ((match != NotFound) && (soapTraceLevel > 0))
+        {
+            StringBuffer s;
+            DBGLOG("De-blacklisting endpoint %s", ep.getUrlStr(s).str());
         }
     }
 
