@@ -17,9 +17,9 @@
   <emphasis>espserverIPport </emphasis> <emphasis role="bold">] </emphasis>
   ,<emphasis role="bold"> [</emphasis> <emphasis>maxConnections</emphasis>
   <emphasis role="bold">] </emphasis> ,<emphasis role="bold"> [</emphasis>
-  <emphasis>allowoverwrite</emphasis> <emphasis role="bold">] </emphasis> ,
-  <emphasis role="bold"> [</emphasis> <emphasis>destinationPlane</emphasis>
-  <emphasis role="bold">])</emphasis></para>
+  <emphasis>allowoverwrite</emphasis> <emphasis role="bold">],[</emphasis>
+  <emphasis>destinationPlane</emphasis> <emphasis
+  role="bold">])</emphasis></para>
 
   <para><emphasis>dfuwuid</emphasis> <emphasis role="bold"> :=
   STD.File.fDeSpray<indexterm>
@@ -35,13 +35,13 @@
   <emphasis>espserverIPport </emphasis> <emphasis role="bold">] </emphasis>
   ,<emphasis role="bold"> [</emphasis> <emphasis>maxConnections</emphasis>
   <emphasis role="bold">] </emphasis> ,<emphasis role="bold"> [</emphasis>
-  <emphasis>allowoverwrite</emphasis> <emphasis role="bold">] , [</emphasis>
+  <emphasis>allowoverwrite</emphasis> <emphasis role="bold">],[</emphasis>
   <emphasis>destinationPlane</emphasis> <emphasis
   role="bold">])</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
-      <colspec colwidth="105.50pt" />
+      <colspec colwidth="130.50pt" />
 
       <colspec />
 
