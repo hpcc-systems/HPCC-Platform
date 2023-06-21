@@ -266,6 +266,7 @@ public:
     virtual IStringVal & getXmlParams(IStringVal & params, bool hidePasswords) const;
     virtual const IPropertyTree *getXmlParams() const;
     virtual unsigned __int64 getHash() const;
+    virtual bool isAggregatesUptoDate() const;
     virtual IStringIterator *getLogs(const char *type, const char *component) const;
     virtual IStringIterator *getProcesses(const char *type) const;
     virtual IPropertyTreeIterator* getProcesses(const char *type, const char *instance) const;
@@ -346,7 +347,7 @@ public:
     void setXmlParams(const char *params);
     void setXmlParams(IPropertyTree *tree);
     void setHash(unsigned __int64 hash);
-
+    void setAggregatesUptoDate(bool b) override;
     IWorkflowItem* addWorkflowItem(unsigned wfid, WFType type, WFMode mode, unsigned success, unsigned failure, unsigned recovery, unsigned retriesAllowed, unsigned contingencyFor);
     IWorkflowItemIterator * updateWorkflowItems();
     void syncRuntimeWorkflow(IWorkflowItemArray * array);

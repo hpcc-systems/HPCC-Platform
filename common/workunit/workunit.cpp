@@ -2696,6 +2696,123 @@ cost_type aggregateDiskAccessCost(const IConstWorkUnit * wu, const char *scope)
     return totalCost;
 }
 
+class FixStatAggregates
+{
+    std::vector<StatisticKind> aggregateStatKinds;
+    Linked<IWorkUnit> wu;
+    WuScopeFilter filter;
+    Owned<IConstWUScopeIterator> it;
+
+    struct AggregateStatInfo
+    {
+        StatisticKind sk;
+        unsigned __int64 value;
+        AggregateStatInfo(StatisticKind _sk) : sk(_sk), value(0) {};
+        AggregateStatInfo(const AggregateStatInfo & _aggregateInfo) : sk(_aggregateInfo.sk), value(0) {};
+        void mergeValue(unsigned __int64 newvalue)
+        {
+            value = mergeStatisticValue(value, newvalue, sk);
+        }
+        void mergeValue(const AggregateStatInfo & newAggregateInfo)
+        {
+            value = mergeStatisticValue(value, newAggregateInfo.value, sk);
+        }
+    };
+
+    void setTotal(StatisticScopeType sumSst, const char *sumScope, std::vector<AggregateStatInfo> & sumKinds)
+    {
+        unsigned sumScopeDepth = queryScopeDepth(sumScope);
+
+        while(it->isValid())
+        {
+            const char * currentScope = it->queryScope();
+            StatisticScopeType currentScopeType = it->getScopeType();
+
+            if (!(compareScopes(sumScope, currentScope) & SCparent))
+                break;
+            unsigned currentScopeDepth = queryScopeDepth(currentScope);
+            if (currentScopeDepth!=sumScopeDepth+1)
+            {
+                StringBuffer childScope;
+                if (!getScopeDepth(childScope, currentScope, sumScopeDepth+1))
+                    return;
+                setTotal(getScopeType(childScope.str()), childScope.str(), sumKinds);
+                break;
+            }
+            else
+            {
+                std::vector<AggregateStatInfo> missingSums;
+                for (auto & sumKind: sumKinds)
+                {
+                    unsigned __int64 value;
+                    if (it->getStat(sumKind.sk, value))
+                        sumKind.mergeValue(value);
+                    else
+                        missingSums.push_back(AggregateStatInfo(sumKind));
+                }
+                if (!missingSums.empty())
+                {
+                    it->next();
+                    setTotal(currentScopeType, currentScope, missingSums);
+                    std::vector<AggregateStatInfo>::iterator sumKindIter = sumKinds.begin();
+                    for (auto ms: missingSums)
+                    {
+                        while (sumKindIter->sk!=ms.sk) sumKindIter++;
+                        sumKindIter->mergeValue(ms);
+                    }
+                }
+                else
+                {
+                    it->nextSibling();
+                }
+            }
+        }
+        for (auto sumKind: sumKinds)
+        {
+            if (sumKind.value!=0)
+                wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), sumSst, sumScope, sumKind.sk, nullptr, sumKind.value, 1, 0, StatsMergeMax);
+        }
+    }
+public:
+    FixStatAggregates(IWorkUnit * _wu, std::vector<StatisticKind> _aggregateStatKinds) : wu(_wu), aggregateStatKinds(_aggregateStatKinds) {};
+
+    void run()
+    {
+        filter.addScopeType(SSTglobal);
+        filter.addScopeType(SSTworkflow);
+        filter.addScopeType(SSTgraph);
+        filter.addScopeType(SSTsubgraph);
+        for(auto sk: aggregateStatKinds)
+            filter.addOutputStatistic(sk);
+        filter.finishedFilter();
+        it.setown(&wu->getScopeIterator(filter));
+        for (it->first(); it->isValid(); )
+        {
+            std::vector<AggregateStatInfo> missingSums;
+            StringBuffer scope(it->queryScope());
+            StatisticScopeType sst = it->getScopeType();
+            for (auto sk: aggregateStatKinds)
+            {
+                unsigned __int64 value;
+                if (!it->getStat(sk, value))
+                    missingSums.push_back(AggregateStatInfo(sk));
+            }
+            if (missingSums.empty())
+                it->nextSibling();
+            else
+            {
+                it->next();
+                setTotal(sst, scope.str(), missingSums);
+            }
+        }
+    }
+};
+void fixAggregates(IWorkUnit * wu)
+{
+    FixStatAggregates fixAggregates(wu, {StSizeGraphSpill, StCostExecute, StCostFileAccess, StSizeSpillFile});
+    fixAggregates.run();
+}
+
 //---------------------------------------------------------------------------------------------------------------------
 
 
@@ -4381,6 +4498,8 @@ public:
             { return c->getXmlParams(); }
     virtual unsigned __int64 getHash() const
             { return c->getHash(); }
+    virtual bool isAggregatesUptoDate() const
+            { return c->isAggregatesUptoDate(); }
     virtual IStringIterator *getLogs(const char *type, const char *instance) const
             { return c->getLogs(type, instance); }
     virtual IStringIterator *getProcesses(const char *type) const
@@ -4544,6 +4663,8 @@ public:
             { c->setXmlParams(tree); }
     virtual void setHash(unsigned __int64 hash)
             { c->setHash(hash); }
+    virtual void setAggregatesUptoDate(bool b) override
+            { c->setAggregatesUptoDate(b); }
 
 // ILocalWorkUnit - used for debugging etc
     virtual void serialize(MemoryBuffer &tgt)
@@ -10055,6 +10176,17 @@ void CLocalWorkUnit::setHash(unsigned __int64 hash)
 {
     CriticalBlock block(crit);
     p->setPropInt64("@hash", hash);
+}
+
+bool CLocalWorkUnit::isAggregatesUptoDate() const
+{
+    CriticalBlock block(crit);
+    return p->getPropBool("@isaggregatesuptodate");
+}
+void CLocalWorkUnit::setAggregatesUptoDate(bool b)
+{
+    CriticalBlock block(crit);
+    return p->setPropBool("@isaggregatesuptodate", b);
 }
 
 // getGraphs / getGraphsMeta

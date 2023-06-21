@@ -1232,6 +1232,21 @@ void WsWuInfo::getCommon(IEspECLWorkunit &info, unsigned long flags)
     SCMStringBuffer s;
     info.setSnapshot(cw->getSnapshot(s).str());
 
+    if ((cw->getState() == WUStateFailed || cw->getState()==WUStateAborted) && !cw->isAggregatesUptoDate())
+    {
+        try
+        {
+            Owned<IWorkUnit> w = &cw->lock();
+            fixAggregates(w);
+            w->setAggregatesUptoDate(true);
+        }
+        catch (IException *e)
+        {
+            StringBuffer eMsg;
+            IERRLOG("Update agregates failed: %s", e->errorMessage(eMsg).str());
+            e->Release();
+        }
+    }
     if ((cw->getState() == WUStateScheduled) && cw->aborting())
     {
         info.setStateID(WUStateAborting);

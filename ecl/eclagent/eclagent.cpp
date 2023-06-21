@@ -1973,6 +1973,7 @@ void EclAgent::doProcess()
     try
     {
         w.setown(updateWorkUnit());
+        fixAggregates(w);
         updateWULogfile(w);//Update workunit logfile name in case of date rollover
 
         addTimeStamp(w, SSTglobal, NULL, StWhenFinished);

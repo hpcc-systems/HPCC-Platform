@@ -865,7 +865,7 @@ extern jlib_decl void formatTimeStampAsLocalTime(StringBuffer & out, unsigned __
 extern jlib_decl stat_type readStatisticValue(const char * cur, const char * * end, StatisticMeasure measure);
 
 extern jlib_decl unsigned __int64 mergeStatisticValue(unsigned __int64 prevValue, unsigned __int64 newValue, StatsMergeAction mergeAction);
-
+extern jlib_decl unsigned __int64 mergeStatisticValue(unsigned __int64 prevValue, unsigned __int64 newValue, StatisticKind kind);
 extern jlib_decl StatisticMeasure queryMeasure(StatisticKind kind);
 extern jlib_decl const char * queryStatisticName(StatisticKind kind);
 extern jlib_decl void queryLongStatisticName(StringBuffer & out, StatisticKind kind);
@@ -911,6 +911,7 @@ extern jlib_decl unsigned queryScopeDepth(const char * text);
 extern jlib_decl const char * queryScopeTail(const char * scope);
 extern jlib_decl bool getParentScope(StringBuffer & parent, const char * scope);
 extern jlib_decl bool isParentScope(const char *parent, const char *scope);
+extern jlib_decl bool getScopeDepth(StringBuffer & resultScope, const char * scope, unsigned depth);
 extern jlib_decl void describeScope(StringBuffer & description, const char * scope);
 
 //This interface is primarily here to reduce the dependency between the different components.

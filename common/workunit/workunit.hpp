@@ -1291,6 +1291,7 @@ interface IConstWorkUnit : extends IConstWorkUnitInfo
     virtual IStringVal & getXmlParams(IStringVal & params, bool hidePasswords) const = 0;
     virtual const IPropertyTree * getXmlParams() const = 0;
     virtual unsigned __int64 getHash() const = 0;
+    virtual bool isAggregatesUptoDate() const = 0;
     virtual IStringIterator *getLogs(const char *type, const char *instance=NULL) const = 0;
     virtual IStringIterator *getProcesses(const char *type) const = 0;
     virtual IPropertyTreeIterator* getProcesses(const char *type, const char *instance) const = 0;
@@ -1381,7 +1382,7 @@ interface IWorkUnit : extends IConstWorkUnit
     virtual void setXmlParams(const char *xml) = 0;
     virtual void setXmlParams(IPropertyTree *tree) = 0;
     virtual void setHash(unsigned __int64 hash) = 0;
-
+    virtual void setAggregatesUptoDate(bool b) = 0;
     virtual void setResultInt(const char * name, unsigned sequence, __int64 val) = 0;
     virtual void setResultUInt(const char * name, unsigned sequence, unsigned __int64 val) = 0;
     virtual void setResultReal(const char *name, unsigned sequence, double val) = 0;
@@ -1722,6 +1723,7 @@ extern WORKUNIT_API void updateWorkunitTimings(IWorkUnit * wu, StatisticScopeTyp
 extern WORKUNIT_API void aggregateStatistic(StatsAggregation & result, IConstWorkUnit * wu, const WuScopeFilter & filter, StatisticKind search);
 extern WORKUNIT_API cost_type aggregateCost(const IConstWorkUnit * wu, const char *scope=nullptr, bool excludehThor=false);
 extern WORKUNIT_API cost_type aggregateDiskAccessCost(const IConstWorkUnit * wu, const char *scope);
+extern WORKUNIT_API void fixAggregates(IWorkUnit * wu);
 extern WORKUNIT_API const char *getTargetClusterComponentName(const char *clustname, const char *processType, StringBuffer &name);
 extern WORKUNIT_API void descheduleWorkunit(char const * wuid);
 #if 0

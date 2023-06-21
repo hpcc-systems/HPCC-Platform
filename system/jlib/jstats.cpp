@@ -609,6 +609,24 @@ bool getParentScope(StringBuffer & parent, const char * scope)
         return false;
 }
 
+bool getScopeDepth(StringBuffer & resultScope, const char * scope, unsigned depth)
+{
+    if (depth==0) return true;
+    const char * colon = strrchr(scope, ':');
+    while (--depth && colon)
+        colon = strrchr(colon+1, ':');
+    if (!colon)
+    {
+        if (depth==0)
+        {
+            resultScope.append(scope);
+            return true;
+        }
+        return false;
+    }
+    resultScope.append(colon-scope, scope);
+    return true;
+}
 
 void describeScope(StringBuffer & description, const char * scope)
 {
