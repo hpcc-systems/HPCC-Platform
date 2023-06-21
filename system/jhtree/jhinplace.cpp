@@ -428,17 +428,8 @@ bool PartialMatch::allNextAreIdentical(bool allowCache) const
     return true;
 }
 
-bool PartialMatch::matches(PartialMatch & other, bool ignoreLeadingByte, bool allowCache)
+bool PartialMatch::doMatches(PartialMatch & other, bool ignoreLeadingByte, bool allowCache)
 {
-#ifdef _DEBUG
-    //Always compare newer nodes with older nodes.
-    //This is because the cache of previous matches is invalidated when a new child node is added, and new items
-    //are always applied to the most recent entry at a given level.
-    assertex((int)(seq - other.seq) > 0);
-#endif
-    if (allowCache && prevMatch[ignoreLeadingByte] == &other)
-        return true;
-
     if (next.ordinality() != other.next.ordinality())
         return false;
 
@@ -465,11 +456,8 @@ bool PartialMatch::matches(PartialMatch & other, bool ignoreLeadingByte, bool al
     return true;
 }
 
-void PartialMatch::cacheSizes()
+void PartialMatch::doCacheSizes()
 {
-    if (!dirty)
-        return;
-
     squash();
     dirty = false;
     if (squashed && squashedData.length())
@@ -884,21 +872,6 @@ bool PartialMatch::squash()
 const byte * PartialMatch::queryNullRow() const
 {
     return builder->queryNullRow();
-}
-
-byte PartialMatch::queryFirstByte() const
-{
-    if (data.length())
-        return data.bytes()[0];
-    else if (rowOffset < builder->queryKeyLen())
-    {
-        assertex(queryNullRow());
-        return queryNullRow()[rowOffset];
-    }
-    else
-    {
-        throwUnexpected();
-    }
 }
 
 void PartialMatch::serializeFirst(MemoryBuffer & out)
@@ -2183,6 +2156,10 @@ bool CInplaceLeafWriteNode::add(offset_t pos, const void * _data, size32_t size,
     if (0xffff == hdr.numKeys)
         return false;
 
+    const size32_t prevUncompressedLen = uncompressed.length();
+    if ((prevUncompressedLen > maxBytes * ctx.options.maxCompressionFactor) && (firstUncompressed == prevUncompressedLen))
+        return false;
+
     if (0 == hdr.numKeys)
     {
         firstSequence = sequence;
@@ -2225,7 +2202,6 @@ bool CInplaceLeafWriteNode::add(offset_t pos, const void * _data, size32_t size,
     size32_t extraSize = size - keyCompareLen;
 
     //Save the uncompressed version in case it is smaller than the compressed version (or fits in the whole node)...
-    const size32_t prevUncompressedLen = uncompressed.length();
     if (gatherUncompressed)
         uncompressed.append(extraSize, extraData);
 
@@ -2559,6 +2535,8 @@ InplaceIndexCompressor::InplaceIndexCompressor(size32_t keyedSize, const CKeyHdr
                 useDefaultCompression = false;
             else if (strieq(option, "compressThresholdPercent")) // use uncompressed if compressed is > 95% uncompressed
                 ctx.options.minCompressionThreshold = strtod(value, nullptr) / 100.0;
+            else if (strieq(option, "maxCompressionFactor")) // don't compress any more than 100/maxCompressionFactor%
+                ctx.options.maxCompressionFactor = (unsigned)strtoul(value, nullptr, 10);
             else if (strieq(option, "compression"))
             {
                 useDefaultCompression = false;

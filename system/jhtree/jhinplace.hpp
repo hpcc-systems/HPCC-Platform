@@ -60,7 +60,11 @@ public:
     void serializeFirst(MemoryBuffer & out);
     bool squash();
     void trace(unsigned indent);
-    byte queryFirstByte() const;
+    byte queryFirstByte() const
+    {
+        dbgassertex(data.length());
+        return data.bytes()[0];
+    }
 
     size32_t getSize();
     size32_t getCount();
@@ -71,11 +75,29 @@ protected:
     bool allNextAreEnd() const;
     bool allNextAreIdentical(bool allowCache) const;
     unsigned appendRepeat(size32_t offset, size32_t copyOffset, byte repeatByte, size32_t repeatCount);
-    void cacheSizes();
+    inline void cacheSizes()
+    {
+        if (dirty)
+            doCacheSizes();
+    }
+
+    void doCacheSizes();
     void describeSquashed(StringBuffer & out);
     size32_t getMaxOffset();
     byte getSequentialOptionFlags() const;
-    bool matches(PartialMatch & other, bool ignoreLeadingByte, bool allowCache);
+    bool matches(PartialMatch & other, bool ignoreLeadingByte, bool allowCache)
+    {
+#ifdef _DEBUG
+        //Always compare newer nodes with older nodes.
+        //This is because the cache of previous matches is invalidated when a new child node is added, and new items
+        //are always applied to the most recent entry at a given level.
+        assertex((int)(seq - other.seq) > 0);
+#endif
+        if (allowCache && prevMatch[ignoreLeadingByte] == &other)
+            return true;
+        return doMatches(other, ignoreLeadingByte, allowCache);
+    }
+    bool doMatches(PartialMatch & other, bool ignoreLeadingByte, bool allowCache);
     void noteDirty();
 
 protected:
@@ -151,6 +173,7 @@ public:
     offset_t numBlockCompresses = 0;
     struct {
         double minCompressionThreshold = 0.95; // use uncompressed if compressed is > 95% uncompressed
+        unsigned maxCompressionFactor = 25;    // Don't compress payload to less than 4% of the original by default (beause when it is read it will use lots of memory)
         bool recompress = false;
     } options;
 };
