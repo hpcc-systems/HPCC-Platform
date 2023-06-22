@@ -41,7 +41,6 @@ define([
                 return;
 
             this._refreshActionState();
-            this.refreshGrid();
 
             this.machineFilter.disable(true);
 
@@ -69,14 +68,10 @@ define([
         initTab: function () {
             var currSel = this.getSelectedChild();
             if (currSel && !currSel.initalized) {
-                if (currSel.id === this.id + "_Grid") {
-                    this.refreshGrid();
-                } else if (currSel.id === this.systemServersQueryWidgetIframeWidget.id && !this.systemServersQueryWidgetIframeWidget.initalized) {
+                if (currSel.id === this.systemServersQueryWidgetIframeWidget.id && !this.systemServersQueryWidgetIframeWidget.initalized) {
                     this.systemServersQueryWidgetIframeWidget.init({
                         src: ESPRequest.getBaseURL("WsTopology") + "/TpServiceQuery?Type=ALLSERVICES"
                     });
-                } else {
-                    currSel.init(currSel.params);
                 }
             }
         },
@@ -144,7 +139,7 @@ define([
 
         createGrid: function (domID) {
             var context = this;
-            var retVal = new declare([ESPUtil.Grid(true, true, false, true, false)])({
+            var retVal = new declare([ESPUtil.Grid(true, true, undefined, true)])({
                 store: ESPPreflight.CreateSystemServersStore(),
                 columns: {
                     col1: selector({
