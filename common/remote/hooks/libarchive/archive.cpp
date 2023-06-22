@@ -410,8 +410,8 @@ public:
     virtual bool setCompression(bool set) { UNIMPLEMENTED; }
     virtual offset_t compressedSize() { UNIMPLEMENTED; }
     virtual unsigned getCRC() { UNIMPLEMENTED; }
-    virtual void setCreateFlags(unsigned short cflags) { UNIMPLEMENTED; }
-    virtual void setShareMode(IFSHmode shmode) { UNIMPLEMENTED; }
+    virtual void setCreateFlags(unsigned short cflags) { } // MORE: Should save and apply to any file that was created
+    virtual void setShareMode(IFSHmode shmode) { }         // MORE: Should save and use when the archive io is opened
     virtual bool createDirectory() { UNIMPLEMENTED; }
     virtual IDirectoryDifferenceIterator *monitorDirectory(
                                   IDirectoryIterator *prev=NULL,    // in (NULL means use current as baseline)
