@@ -1465,6 +1465,9 @@ void EclCC::processSingleQuery(const EclRepositoryManager & localRepositoryManag
             instance.stats.parseTime = (unsigned)nanoToMilli(parseTimeNs);
 
             updateWorkunitStat(instance.wu, SSTcompilestage, "compile:parse", StTimeElapsed, NULL, parseTimeNs);
+            stat_type sourceDownloadTime = localRepositoryManager.getStatistic(StTimeElapsed);
+            if (sourceDownloadTime)
+                updateWorkunitStat(instance.wu, SSTcompilestage, "compile:parse:download", StTimeElapsed, NULL, sourceDownloadTime);
 
             if (optExtraStats)
             {
