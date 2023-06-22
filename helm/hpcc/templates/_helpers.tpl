@@ -776,7 +776,7 @@ Specifically for now (but could be extended), this container generates sysctl co
   {{- $cmd = (printf "%ssysctl -w %s" $cmd $sysctl) -}}
  {{- end -}}
 - name: config-container
- {{- include "hpcc.addImageAttrs" . | nindent 2 }}
+  {{- include "hpcc.addImageAttrs" . | nindent 2 }}
   securityContext:
     privileged: true
     readOnlyRootFilesystem: false
@@ -787,6 +787,22 @@ Specifically for now (but could be extended), this container generates sysctl co
            ]
 {{- end -}}
 {{- end -}}
+
+
+{{/*
+A kludge to ensure until the mount of a PVC appears (this can happen with some types of host storage)
+*/}}
+{{- define "hpcc.waitForMount" -}}
+- name: wait-mount-container
+  {{- include "hpcc.addImageAttrs" . | nindent 2 }}
+  command: ["/bin/sh"]
+  args:
+  - "-c"
+  - {{ printf "until test -d %s; do sleep 5; done" .volumePath }}
+  volumeMounts:
+    - name: {{ .volumeName | quote}}
+      mountPath: {{ .volumePath | quote }}
+{{- end }}
 
 
 {{/*
@@ -825,14 +841,19 @@ NB: uid=10000 and gid=10001 are the uid/gid of the hpcc user, built into platfor
 {{- $includeCategories := .includeCategories | default list -}}
 {{- $includeNames := .includeNames | default list -}}
 {{- $component := .me -}}
+
 {{- range $plane := $planes -}}
  {{- if not $plane.disabled -}}
-  {{- if and ($plane.forcePermissions) (or ($plane.pvc) (hasKey $plane "storageClass")) -}}
-   {{- $mountpath := $plane.prefix -}}
+  {{- if (or ($plane.pvc) (hasKey $plane "storageClass")) -}}
    {{- $componentMatches := or (not (hasKey $plane "components")) (has $component.name $plane.components) -}}
    {{- if and (or (has $plane.category $includeCategories) (has $plane.name $includeNames)) $componentMatches }}
     {{- $volumeName := (printf "%s-pv" $plane.name) -}}
-   {{- include "hpcc.changeMountPerms" (dict "root" $root "uid" $uid "gid" $gid "volumeName" $volumeName "volumePath" $plane.prefix) | nindent 0 }}
+    {{- if $plane.waitForMount -}}
+     {{- include "hpcc.waitForMount" (dict "root" $root "me" $component "uid" $uid "gid" $gid "volumeName" $volumeName "volumePath" $plane.prefix) | nindent 0 }}
+    {{- end -}}
+    {{- if $plane.forcePermissions -}}
+     {{- include "hpcc.changeMountPerms" (dict "root" $root "uid" $uid "gid" $gid "volumeName" $volumeName "volumePath" $plane.prefix) | nindent 0 }}
+    {{- end -}}
    {{- end -}}
   {{- end -}}
  {{- end -}}
