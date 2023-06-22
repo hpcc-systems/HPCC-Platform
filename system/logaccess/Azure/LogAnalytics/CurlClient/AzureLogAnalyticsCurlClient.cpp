@@ -393,12 +393,25 @@ AzureLogAnalyticsCurlClient::AzureLogAnalyticsCurlClient(IPropertyTree & logAcce
             if (logMap.hasProp(logMapSearchColAtt))
                 m_instanceSearchColName = logMap.queryProp(logMapSearchColAtt);
         }
-        else if (streq(logMapType, "host") || streq(logMapType, "node"))
+        else if (streq(logMapType, "node"))
         {
             if (logMap.hasProp(logMapIndexPatternAtt))
                 m_hostIndexSearchPattern = logMap.queryProp(logMapIndexPatternAtt);
             if (logMap.hasProp(logMapSearchColAtt))
                 m_hostSearchColName = logMap.queryProp(logMapSearchColAtt);
+        }
+        else if (streq(logMapType, "host"))
+        {
+            OWARNLOG("%s: 'host' LogMap entry is deprecated and replaced by 'node'!", COMPONENT_NAME);
+            if (isEmptyString(m_hostIndexSearchPattern) && isEmptyString(m_hostSearchColName))
+            {
+                if (logMap.hasProp(logMapIndexPatternAtt))
+                    m_hostIndexSearchPattern = logMap.queryProp(logMapIndexPatternAtt);
+                if (logMap.hasProp(logMapSearchColAtt))
+                    m_hostSearchColName = logMap.queryProp(logMapSearchColAtt);
+            }
+            else
+                OERRLOG("%s: Possible LogMap collision detected, 'host' and 'node' refer to same log column!", COMPONENT_NAME); 
         }
         else
         {
