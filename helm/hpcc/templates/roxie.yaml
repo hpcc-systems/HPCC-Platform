@@ -262,7 +262,7 @@ spec:
       {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" $servername "target" $roxie.name "type" "roxie") | indent 6 }}
       serviceAccountName: "hpcc-default"
       initContainers:
-      {{- include "hpcc.changePlaneMountPerms" $commonCtx | indent 6 }}
+      {{- include "hpcc.createConfigInitContainers" $commonCtx | indent 6 }}
       {{- include "hpcc.addImagePullSecrets" $commonCtx | nindent 6 -}}
       terminationGracePeriodSeconds: {{ add ($roxie.agentQueryReleaseDelaySeconds | default 60) 30 }}
       containers:
@@ -364,7 +364,7 @@ spec:
       {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" $name "target" $roxie.name "type" "roxie") | indent 6 }}
       serviceAccountName: "hpcc-default"
       initContainers:
-      {{- include "hpcc.changePlaneMountPerms" $commonCtx | indent 6 }}
+      {{- include "hpcc.createConfigInitContainers" $commonCtx | indent 6 }}
       {{- include "hpcc.addImagePullSecrets" $commonCtx | nindent 6 -}}
       terminationGracePeriodSeconds: {{ add ($roxie.agentQueryReleaseDelaySeconds | default 60) 30 }}
       containers:

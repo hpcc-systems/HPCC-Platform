@@ -754,6 +754,42 @@ imagePullSecrets:
 {{- end -}}
 
 {{/*
+An optional initContainer to perform pre-startup operations that cannot be performed by the main HPCC runtime container
+Specifically for now (but could be extended), this container generates sysctl commands if there is an expert.sysctl section.
+*/}}
+{{- define "hpcc.configContainer" -}}
+{{- $root := .root -}}
+{{- $component := .me -}}
+{{- $cmd := "" -}}
+{{- $sysctls := list -}}
+{{- if and (hasKey $root.Values.global "expert") (hasKey $root.Values.global.expert "sysctl") -}}
+ {{- $sysctls = $root.Values.global.expert.sysctl -}}
+{{- end -}}
+{{- if and (hasKey $component "expert") (hasKey $component.expert "sysctl") -}}
+ {{- $sysctls = (concat $sysctls $component.expert.sysctl) | uniq -}}
+{{- end -}}
+{{- if $sysctls -}}
+ {{- range $sysctl := $sysctls -}}
+  {{- if $cmd -}}
+   {{- $cmd = (printf "%s && " $cmd) -}}
+  {{- end -}}
+  {{- $cmd = (printf "%ssysctl -w %s" $cmd $sysctl) -}}
+ {{- end -}}
+- name: config-container
+ {{- include "hpcc.addImageAttrs" . | nindent 2 }}
+  securityContext:
+    privileged: true
+    readOnlyRootFilesystem: false
+  command: [
+             "sh",
+             "-c",
+             "{{ $cmd }}"
+           ]
+{{- end -}}
+{{- end -}}
+
+
+{{/*
 A kludge to ensure mounted storage (e.g. for nfs, minikube or docker for desktop) has correct permissions for PV
 */}}
 {{- define "hpcc.changeMountPerms" -}}
@@ -779,7 +815,7 @@ A kludge to ensure mounted storage (e.g. for nfs, minikube or docker for desktop
 A kludge to ensure mounted storage (e.g. for nfs, minikube or docker for desktop) has correct permissions for PV
 NB: uid=10000 and gid=10001 are the uid/gid of the hpcc user, built into platform-core
 */}}
-{{- define "hpcc.changePlaneMountPerms" -}}
+{{- define "hpcc.createConfigInitContainers" -}}
 {{- $user := (.root.Values.global.user | default dict) -}}
 {{- $root := .root -}}
 {{- $uid := $user.uid | default 10000 -}}
@@ -801,6 +837,7 @@ NB: uid=10000 and gid=10001 are the uid/gid of the hpcc user, built into platfor
   {{- end -}}
  {{- end -}}
 {{- end -}}
+{{- include "hpcc.configContainer" . | nindent 0 -}}
 {{- end -}}
 
 {{/*
