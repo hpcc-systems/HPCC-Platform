@@ -650,9 +650,7 @@ int main( int argc, const char *argv[]  )
 #endif
     const char *thorname = NULL;
     StringBuffer nodeGroup, logUrl;
-#ifndef _CONTAINERIZED
     unsigned slavesPerNode = globals->getPropInt("@slavesPerNode", 1);
-#endif
     unsigned channelsPerWorker;
     if (globals->hasProp("@channelsPerWorker"))
         channelsPerWorker = globals->getPropInt("@channelsPerWorker", 1);
@@ -666,6 +664,9 @@ int main( int argc, const char *argv[]  )
     ILogMsgHandler *logHandler;
     const char *workunit = nullptr;
     const char *graphName = nullptr;
+    IPropertyTree *managerMemory = ensurePTree(globals, "managerMemory");
+    IPropertyTree *workerMemory = ensurePTree(globals, "workerMemory");
+
     try
     {
 #ifndef _CONTAINERIZED
@@ -751,9 +752,6 @@ int main( int argc, const char *argv[]  )
         }
 #endif
 
-        IPropertyTree *managerMemory = ensurePTree(globals, "managerMemory");
-        IPropertyTree *workerMemory = ensurePTree(globals, "workerMemory");
-
         HardwareInfo hdwInfo;
         getHardwareInfo(hdwInfo);
         globals->setPropInt("@masterTotalMem", hdwInfo.totalMemory);
@@ -793,25 +791,18 @@ int main( int argc, const char *argv[]  )
 #endif
             }
 
-#ifndef _CONTAINERIZED
-            // @localThor mode - 25% is used for manager and 50% is used for workers
-            // overrides recommended max percentage preferences if present
-            if (globals->getPropBool("@localThor") && (0 == mmemSize))
+            if (!isContainerized())
             {
-                managerMemory->setProp("@maxMemPercentage", "25.0");
-                workerMemory->setPropReal("@maxMemPercentage", 50.0 / slavesPerNode);
+                // @localThor mode - 25% is used for manager and 50% is used for workers
+                // overrides recommended max percentage preferences if present
+                if (globals->getPropBool("@localThor") && (0 == mmemSize))
+                {
+                    managerMemory->setProp("@maxMemPercentage", "25.0");
+                    workerMemory->setPropReal("@maxMemPercentage", 50.0 / slavesPerNode);
+                }
             }
-            else
-#endif
-                if (!workerMemory->hasProp("@maxMemPercentage"))
-                    workerMemory->setPropReal("@maxMemPercentage", defaultPctSysMemForRoxie);
         }
         workerMemory->setPropInt("@total", gmemSize);
-
-        // used by slaves in absence of specific workerMemory settings, to split available memory equally between workers
-        unsigned numWorkersPerPod = globals->getPropInt("@numWorkersPerPod");
-        if (numWorkersPerPod)
-            workerMemory->setPropInt("@sharedInstances", numWorkersPerPod);
 
         if (mmemSize)
         {
@@ -982,6 +973,8 @@ int main( int argc, const char *argv[]  )
                 throw makeStringException(0, "Number of workers per pod must be > 0 (numWorkersPerPod)");
             if ((numWorkers % numWorkersPerPod) != 0)
                 throw makeStringExceptionV(0, "numWorkersPerPod must be a factor of numWorkers. (numWorkers=%u, numWorkersPerPod=%u)", numWorkers, numWorkersPerPod);
+            if (!workerMemory->hasProp("@maxMemPercentage"))
+                workerMemory->setPropReal("@maxMemPercentage", defaultPctSysMemForRoxie / numWorkersPerPod);
         }
 
         cloudJobName.appendf("%s-%s", workunit, graphName);
@@ -1007,6 +1000,9 @@ int main( int argc, const char *argv[]  )
         setClusterGroup(queryMyNode(), rawGroup, slavesPerNode, channelsPerWorker, slaveBasePort, localThorPortInc);
         numWorkers = queryNodeClusterWidth();
         doWorkerRegistration = true;
+
+        if (!workerMemory->hasProp("@maxMemPercentage"))
+            workerMemory->setPropReal("@maxMemPercentage", defaultPctSysMemForRoxie / slavesPerNode);
 #endif
 
         if (doWorkerRegistration && registry->connect(numWorkers))
