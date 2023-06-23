@@ -56,7 +56,6 @@ define([
                 return;
 
             this.refreshActionState();
-            this.refreshGrid();
 
             this.machineFilter.on("apply", function (evt) {
                 var selection = context.grid.getSelected();
@@ -81,14 +80,10 @@ define([
         initTab: function () {
             var currSel = this.getSelectedChild();
             if (currSel && !currSel.initalized) {
-                if (currSel.id === this.id + "_Grid") {
-                    this.refreshGrid();
-                } else if (currSel.id === this.legacyClustersProcessesIframeWidget.id && !this.legacyClustersProcessesIframeWidget.initalized) {
+                if (currSel.id === this.legacyClustersProcessesIframeWidget.id && !this.legacyClustersProcessesIframeWidget.initalized) {
                     this.legacyClustersProcessesIframeWidget.init({
                         src: ESPRequest.getBaseURL("WsTopology") + "/TpClusterQuery?Type=ROOT"
                     });
-                } else {
-                    currSel.init(currSel.params);
                 }
             }
         },
@@ -107,7 +102,7 @@ define([
 
         createGrid: function (domID) {
             var context = this;
-            var retVal = new declare([ESPUtil.Grid(true, true, false, true)])({
+            var retVal = new declare([ESPUtil.Grid(true, true, undefined, true)])({
                 store: ESPPreflight.CreateClusterProcessStore(),
                 columns: {
                     col1: selector({

@@ -50,21 +50,16 @@ define([
             });
 
             dojo.destroy(this.id + "Open");
-            this.refreshGrid();
             this.refreshActionState();
         },
 
         initTab: function () {
             var currSel = this.getSelectedChild();
             if (currSel && !currSel.initalized) {
-                if (currSel.id === this.id + "_Grid") {
-                    this.refreshGrid();
-                } else if (currSel.id === this.legacyTargetClustersIframeWidget.id && !this.legacyTargetClustersIframeWidget.initalized) {
+                if (currSel.id === this.legacyTargetClustersIframeWidget.id && !this.legacyTargetClustersIframeWidget.initalized) {
                     this.legacyTargetClustersIframeWidget.init({
                         src: ESPRequest.getBaseURL("WsTopology") + "/TpTargetClusterQuery?Type=ROOT"
                     });
-                } else if (currSel.params.newPreflight || currSel.params.Usergenerated) { //prevents loop of pfTab.init above
-                    currSel.init(currSel.params);
                 }
             }
         },
@@ -92,7 +87,7 @@ define([
 
         createGrid: function (domID) {
             var context = this;
-            var retVal = new declare([ESPUtil.Grid(true, true, false, true)])({
+            var retVal = new declare([ESPUtil.Grid(true, true, undefined, true)])({
                 store: ESPPreflight.CreateTargetClusterStore(),
                 columns: {
                     col1: selector({
