@@ -108,7 +108,7 @@ export const DESDLBindings: React.FunctionComponent<ESDLBindingProps> = ({
         })
             .then(({ ListESDLBindingsResponse }) => {
                 const rows = [];
-                const processes = ListESDLBindingsResponse?.EspProcesses?.EspProcess;
+                const processes = ListESDLBindingsResponse?.EspProcesses?.EspProcess ?? [];
                 processes.forEach((row, idx) => {
                     row = {
                         ...row,
