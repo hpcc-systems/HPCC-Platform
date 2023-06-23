@@ -742,6 +742,7 @@ define([
             this.permissionsGrid = declare([ESPUtil.Grid(false, true)])({
                 allowSelectAll: true,
                 deselectOnRefresh: true,
+                selectionMode: "none",
                 sort: [{ attribute: "DisplayName" }],
                 store: this.permissionsStore,
                 columns: {
