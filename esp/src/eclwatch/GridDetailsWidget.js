@@ -224,6 +224,9 @@ define([
             if (openWidget) {
                 openWidget.set("disabled", !selection.length);
             }
-        }
+        },
+
+        _buildCSV: function () { },
+        _onDownloadToListCancelDialog: function () { }
     });
 });
