@@ -541,6 +541,9 @@
             "forcePermissions": {
               "type": "boolean"
             },
+            "waitForMount": {
+              "type": "boolean"
+            },
             "components": {},
             "prefix": {},
             "subPath": {},
