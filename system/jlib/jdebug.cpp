@@ -25,6 +25,7 @@
 #include "jfile.hpp"
 #include "jmutex.hpp"
 #include "jtime.hpp"
+#include "jutil.hpp"
 #include <stdio.h>
 #include <time.h>
 #include <atomic>
@@ -1568,11 +1569,39 @@ unsigned getAffinityCpus()
         cachedNumCpus.store(evalAffinityCpus(), std::memory_order_release);
     return cachedNumCpus.load(std::memory_order_acquire);
 }
+void setAffinityCpus(unsigned cpus)
+{
+    cachedNumCpus.store(cpus, std::memory_order_release);
+}
 void clearAffinityCache()
 {
     cachedNumCpus.store(0, std::memory_order_release);
 }
 
+void applyResourcedCPUAffinity(const IPropertyTree *resourceSection)
+{
+    if (nullptr == resourceSection)
+        return;
+    const char *cpusText = resourceSection->queryProp("@cpu");
+    if (isEmptyString(cpusText))
+        return;
+    double cpus = friendlyCPUToDecimal(cpusText);
+    if (0.0 == cpus)
+        throw makeStringExceptionV(0, "Invalid number of resources cpus: %s", cpusText);
+    unsigned __int64 cpusI = (unsigned __int64)cpus;
+    if (cpus != (double)cpusI)
+        OWARNLOG("Fractional number of CPUs '%s' specified can cause poor performance, rounding down to: %" I64F "u", cpusText, cpusI);
+    if (0 == cpusI) // if round down to 0
+        cpusI = 1;
+    unsigned realAffinityCpus = evalAffinityCpus();
+    if (cpusI > realAffinityCpus)
+        OWARNLOG("Attempting to set resourced cpu limit to %u, exceeds cpu affinity of %u", (unsigned)cpusI, realAffinityCpus);
+    else
+    {
+        // NB: if something were to clear affinity, then this setting would be lost
+        setAffinityCpus(cpusI);
+    }
+}
 
 #define RXMAX 1000000       // can be 10x bigger but this produces reasonable amounts
 

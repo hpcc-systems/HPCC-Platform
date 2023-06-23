@@ -13911,21 +13911,6 @@ extern WORKUNIT_API void addTimeStamp(IWorkUnit * wu, unsigned wfid, const char 
     addTimeStamp(wu, getScopeType(scope), scope, kind, wfid);
 }
 
-static double getCpuSize(const char *resourceName)
-{
-    Owned<IPropertyTree> compConfig = getComponentConfig();
-    const char * cpuRequestedStr = compConfig->queryProp(resourceName);
-    if (!cpuRequestedStr)
-        return 0.0;
-    char * endptr;
-    double cpuRequested = strtod(cpuRequestedStr, &endptr);
-    if (cpuRequested < 0.0)
-        return 0.0;
-    if (*endptr == 'm')
-        cpuRequested /= 1000;
-    return cpuRequested;
-}
-
 static double getCostCpuHour()
 {
     double costCpuHour = 0.0;
@@ -13940,20 +13925,20 @@ static double getCostCpuHour()
 
 extern WORKUNIT_API double getMachineCostRate()
 {
-    unsigned numCpus = isContainerized()  ? getCpuSize("resources/@cpu") : getAffinityCpus();
+    double numCpus = isContainerized() ? getResourcedCpus("resources") : getAffinityCpus();
     return getCostCpuHour() * numCpus;
 }
 
 extern WORKUNIT_API double getThorManagerRate()
 {
-    unsigned numCpus = isContainerized()  ? getCpuSize("managerResources/@cpu") : getAffinityCpus();
-    return getCostCpuHour() * numCpus ;
+    double numCpus = isContainerized() ? getResourcedCpus("managerResources") : getAffinityCpus();
+    return getCostCpuHour() * numCpus;
 }
 
 extern WORKUNIT_API double getThorWorkerRate()
 {
-    unsigned numCpus = isContainerized()  ? getCpuSize("workerResources/@cpu") : getAffinityCpus();
-    return getCostCpuHour() * numCpus ;
+    double numCpus = isContainerized() ? getResourcedCpus("workerResources") : getAffinityCpus();
+    return getCostCpuHour() * numCpus;
 }
 
 extern WORKUNIT_API double calculateThorCost(unsigned __int64 ms, unsigned numberOfMachines)
