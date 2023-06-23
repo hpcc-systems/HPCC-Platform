@@ -2056,9 +2056,9 @@ global.noResourceValidation flag.  This behavior can be overridden by the caller
 A template to output a merged environment. Pass in a list with global then local environments. Only the last specified value for each named environment variable will be output
 */}}
 {{- define "hpcc.mergeEnvironments" -}}
-{{- $result := dict -}}
+{{- $result := dict "MALLOC_ARENA_MAX" "8" -}}{{- /* HPCC arena default, can be overriden by component config */ -}}
 {{- range . -}}
-{{- $_ := set $result .name .value -}}
+ {{- $_ := set $result .name .value -}}
 {{- end -}}
 {{- range $key,$value := $result -}}
 - name: {{ $key | quote }}
