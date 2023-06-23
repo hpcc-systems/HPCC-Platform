@@ -78,7 +78,7 @@ spec:
       serviceAccountName: "hpcc-default"
       terminationGracePeriodSeconds: {{ .terminationGracePeriodSeconds | default 600 }}
       initContainers:
-      {{- include "hpcc.changePlaneMountPerms" $commonCtx | indent 6 }}
+      {{- include "hpcc.createConfigInitContainers" $commonCtx | indent 6 }}
       {{- include "hpcc.addImagePullSecrets" $commonCtx | nindent 6 -}}
       containers:
       - name: {{ .name | quote }}

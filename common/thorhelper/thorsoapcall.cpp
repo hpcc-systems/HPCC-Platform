@@ -295,15 +295,22 @@ private:
 
 //=================================================================================================
 
-#define BLACKLIST_RETRIES 10
 #define ROXIE_ABORT_EVENT  1407
 #define TIMELIMIT_EXCEEDED 1408
 
 class BlackLister : public CInterface, implements IThreadFactory
 {
-    SocketEndpointArray list;
+    SocketEndpointArray list;  // MORE - should match the options too? Should use a hash table?
     Owned<IThreadPool> pool;
     CriticalSection crit;
+
+    struct DeblacklisterParams
+    {
+        SocketEndpoint ep;
+        unsigned delay = DEBLACKLIST_RETRY_DELAY;
+        unsigned retries = DEBLACKLIST_RETRIES;
+        unsigned timeout = DEBLACKLIST_CONNECT_TIMEOUT;
+    };
 
 private:
     inline void checkRoxieAbortMonitor(IRoxieAbortMonitor * roxieAbortMonitor)
@@ -333,25 +340,34 @@ public:
             if (soapTraceLevel > 3)
             {
                 StringBuffer s;
-                logctx.CTXLOG("socket %s is blacklisted", ep.getUrlStr(s).str());
+                logctx.CTXLOG("endpoint %s is blacklisted", ep.getUrlStr(s).str());
             }
             return true;
         }
         return false;
 
     }
-    void blacklist(SocketEndpoint &ep, const IContextLogger &logctx)
+    void blacklist(DeblacklisterParams &p, const IContextLogger &logctx)
     {
         CriticalBlock b(crit);
-        if (list.find(ep)==NotFound)
+        if (list.find(p.ep)==NotFound)
         {
             if (soapTraceLevel > 0)
             {
                 StringBuffer s;
-                logctx.CTXLOG("Blacklisting socket %s", ep.getUrlStr(s).str());
+                logctx.CTXLOG("Blacklisting endpoint %s", p.ep.getUrlStr(s).str());
             }
-            list.append(ep);
-            pool->start(&ep);
+            list.append(p.ep);
+            pool->start(&p);
+        }
+        else
+        {
+            if (soapTraceLevel > 3)
+            {
+                StringBuffer s;
+                logctx.CTXLOG("Endpoint %s is already blacklisted", p.ep.getUrlStr(s).str());
+            }
+
         }
     }
     void deblacklist(SocketEndpoint &ep)
@@ -363,7 +379,7 @@ public:
             if (soapTraceLevel > 0)
             {
                 StringBuffer s;
-                DBGLOG("De-blacklisting socket %s", ep.getUrlStr(s).str());
+                DBGLOG("De-blacklisting endpoint %s", ep.getUrlStr(s).str());
             }
             list.remove(idx);
         }
@@ -381,13 +397,15 @@ public:
                      const IContextLogger &logctx,
                      unsigned retries,
                      unsigned timeoutMS,
-                     IRoxieAbortMonitor * roxieAbortMonitor)
+                     IRoxieAbortMonitor * roxieAbortMonitor,
+                     const IWSCRowProvider *blOptions)
     {
-        if (lookup(ep, logctx))
+        bool useBlacklister = blOptions->useBlacklister();
+        if (useBlacklister && lookup(ep, logctx))
         {
             StringBuffer s;
             ep.getUrlStr(s);
-            throw MakeStringException(-1, "blacklisted socket %s", s.str());
+            throw MakeStringException(JSOCKERR_connection_failed, "%s %s", blOptions->getBLerror(), s.str());
         }
         Owned<IException> exc;
 
@@ -432,7 +450,15 @@ public:
             }
         }
 
-        blacklist(ep, logctx);
+        if (useBlacklister)
+        {
+            DeblacklisterParams params;
+            params.ep = ep;
+            params.delay = blOptions->getBLDelay();
+            params.retries = blOptions->getBLRetries();
+            params.timeout = blOptions->getBLConnectTimeout();
+            blacklist(params, logctx);
+        }
         if (exc->errorCode()==JSOCKERR_connection_failed) {
             StringBuffer s;
             ep.getUrlStr(s);
@@ -445,6 +471,7 @@ public:
     bool blacklisted (unsigned short port, char const* host)
     {
         SocketEndpoint ep(host, port);
+        CriticalBlock b(crit);
         return (list.find(ep)!=NotFound);
     }
 
@@ -453,19 +480,20 @@ public:
                      const IContextLogger &logctx,
                      unsigned retries,
                      unsigned timeoutMS,
-                     IRoxieAbortMonitor * roxieAbortMonitor )
+                     IRoxieAbortMonitor * roxieAbortMonitor,
+                     const IWSCRowProvider *blOptions)
     {
         SocketEndpoint ep(host, port);
-        return connect(ep, logctx, retries, timeoutMS, roxieAbortMonitor);
+        return connect(ep, logctx, retries, timeoutMS, roxieAbortMonitor, blOptions);
     }
 
     virtual IPooledThread *createNew()
     {
         class SocketDeblacklister : public CInterface, implements IPooledThread
         {
-            SocketEndpoint ep;
             BlackLister &parent;
             Semaphore stopped;
+            DeblacklisterParams p;
         public:
             IMPLEMENT_IINTERFACE;
             SocketDeblacklister(BlackLister &_parent): parent(_parent)
@@ -477,29 +505,26 @@ public:
 
             virtual void init(void *param) override
             {
-                ep.set(*(SocketEndpoint *) param);
+                p = *(DeblacklisterParams *) param;
             }
             virtual void threadmain() override
             {
-                unsigned delay = 5000;
-                for (unsigned i = 0; i < BLACKLIST_RETRIES; i++)
+                for (unsigned i = 0; i < p.retries; i++)
                 {
-                    // DBGLOG("Trying to deblacklist");
                     try
                     {
-                        Owned<ISocket> s = ISocket::connect_timeout(ep, 10000);
+                        Owned<ISocket> s = ISocket::connect_timeout(p.ep, p.timeout);
                         s->close();
                         break;
                     }
                     catch (IJSOCK_Exception *E)
                     {
-                        // EXCLOG(E, "While updating socket blacklist");  // MORE - may need to downgrade if this fires traps
                         E->Release();
-                        if (stopped.wait(delay))
+                        if (stopped.wait(p.delay))
                             return;
                     }
                 }
-                parent.deblacklist(ep);
+                parent.deblacklist(p.ep);
             }
             virtual bool stop() override
             {
@@ -859,7 +884,8 @@ protected:
 public:
     IMPLEMENT_IINTERFACE;
 
-    CWSCHelper(IWSCRowProvider *_rowProvider, IEngineRowAllocator * _outputAllocator, const char *_authToken, WSCMode _wscMode, ClientCertificate *_clientCert, const IContextLogger &_logctx, IRoxieAbortMonitor *_roxieAbortMonitor, WSCType _wscType)
+    CWSCHelper(IWSCRowProvider *_rowProvider, IEngineRowAllocator * _outputAllocator, const char *_authToken, WSCMode _wscMode, ClientCertificate *_clientCert,
+               const IContextLogger &_logctx, IRoxieAbortMonitor *_roxieAbortMonitor, WSCType _wscType)
         : logctx(_logctx), outputAllocator(_outputAllocator), clientCert(_clientCert), roxieAbortMonitor(_roxieAbortMonitor)
     {
         wscMode = _wscMode;
@@ -2286,7 +2312,7 @@ public:
                     {
                         isReused = false;
                         keepAlive = true;
-                        socket.setown(blacklist->connect(connUrl.port, connUrl.host, master->logctx, (unsigned)master->maxRetries, master->timeoutMS, master->roxieAbortMonitor));
+                        socket.setown(blacklist->connect(connUrl.port, connUrl.host, master->logctx, (unsigned)master->maxRetries, master->timeoutMS, master->roxieAbortMonitor, master->rowProvider));
                         if (proto == PersistentProtocol::ProtoTLS)
                         {
 #ifdef _USE_OPENSSL

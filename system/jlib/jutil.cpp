@@ -3371,6 +3371,35 @@ extern jlib_decl offset_t friendlyStringToSize(const char *in)
     return result * scale;
 }
 
+extern jlib_decl double friendlyCPUToDecimal(const char *in)
+{
+    if (isEmptyString(in))
+        return 0.0;
+    size_t pos;
+    double num = std::stod(in, &pos);
+    if (num)
+    {
+        if ('\0' == in[pos])
+            return num;
+        else if ('m' == in[pos])
+        {
+            // invalid if fraction, check if same as truncated value
+            unsigned __int64 numI = (unsigned __int64)num;
+            if (num == (double)numI)
+                return num/1000.0;
+        }
+    }
+    throw makeStringExceptionV(0, "Invalid cpu string: '%s'", in);
+}
+
+extern jlib_decl double getResourcedCpus(const char *resourceName)
+{
+    Owned<IPropertyTree> resourceTree = getComponentConfigSP()->getPropTree(resourceName);
+    if (nullptr == resourceTree)
+        return 0.0;
+    return friendlyCPUToDecimal(resourceTree->queryProp("@cpu"));
+}
+
 void jlib_decl atomicWriteFile(const char *fileName, const char *output)
 {
     recursiveCreateDirectoryForFile(fileName);

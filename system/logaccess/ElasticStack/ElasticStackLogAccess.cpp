@@ -139,12 +139,25 @@ ElasticStackLogAccess::ElasticStackLogAccess(const std::vector<std::string> &hos
             if (logMap.hasProp(LOGMAP_SEARCHCOL_ATT))
                 m_instanceSearchColName = logMap.queryProp(LOGMAP_SEARCHCOL_ATT);
         }
-        else if (streq(logMapType, "host") || streq(logMapType, "node"))
+        else if (streq(logMapType, "node"))
         {
             if (logMap.hasProp(LOGMAP_INDEXPATTERN_ATT))
                 m_hostIndexSearchPattern = logMap.queryProp(LOGMAP_INDEXPATTERN_ATT);
             if (logMap.hasProp(LOGMAP_SEARCHCOL_ATT))
                 m_hostSearchColName = logMap.queryProp(LOGMAP_SEARCHCOL_ATT);
+        }
+        else if (streq(logMapType, "host"))
+        {
+            OWARNLOG("%s: 'host' LogMap entry is deprecated and replaced by 'node'!", COMPONENT_NAME);
+            if (isEmptyString(m_hostIndexSearchPattern) && isEmptyString(m_hostSearchColName))
+            {
+                if (logMap.hasProp(LOGMAP_INDEXPATTERN_ATT))
+                    m_hostIndexSearchPattern = logMap.queryProp(LOGMAP_INDEXPATTERN_ATT);
+                if (logMap.hasProp(LOGMAP_SEARCHCOL_ATT))
+                    m_hostSearchColName = logMap.queryProp(LOGMAP_SEARCHCOL_ATT);
+            }
+            else
+                OERRLOG("%s: Possible LogMap collision detected, 'host' and 'node' refer to same log column!", COMPONENT_NAME); 
         }
         else
         {

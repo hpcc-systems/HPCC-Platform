@@ -541,6 +541,9 @@
             "forcePermissions": {
               "type": "boolean"
             },
+            "waitForMount": {
+              "type": "boolean"
+            },
             "components": {},
             "prefix": {},
             "subPath": {},
@@ -2850,7 +2853,7 @@
         "type": {
           "type": "string",
           "description" : "The searchable HPCC log column to be mapped - 'global' applies to all known fields",
-          "enum": [ "global", "workunits", "components", "audience", "class", "instance", "node", "message", "logid", "processid", "threadid", "timestamp"]
+          "enum": [ "global", "workunits", "components", "audience", "class", "instance", "host", "node", "message", "logid", "processid", "threadid", "timestamp"]
         },
         "timeStampColumn": {
           "description" : "Name of timestamp column related to mapped field (only requried for 'global' mapping)",

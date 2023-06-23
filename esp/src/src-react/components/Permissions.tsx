@@ -217,7 +217,7 @@ export const Permissions: React.FunctionComponent<PermissionsProps> = ({
     return <>
         <HolyGrail
             header={<CommandBar items={buttons} overflowButtonProps={{}} />}
-            main={<DojoGrid store={gridStore} query={gridQuery} sort={gridSort} columns={gridColumns} setGrid={setGrid} setSelection={setSelection} />}
+            main={<DojoGrid store={gridStore} query={gridQuery} sort={gridSort} columns={gridColumns} setGrid={setGrid} setSelection={setSelection} overrides={{ selectionMode: "none" }} />}
         />
         <DeleteConfirm />
         <ClearPermissionsConfirm />

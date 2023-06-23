@@ -1,10 +1,9 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, IIconProps, SearchBox } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
-// Disable until ESP supports hotspot
-// import { WorkunitsServiceEx } from "@hpcc-js/comms";
+import { WorkunitsServiceEx } from "@hpcc-js/comms";
 import { Table } from "@hpcc-js/dgrid";
-import { compare } from "@hpcc-js/util";
+import { compare, scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import { WUTimelinePatched } from "src/Timings";
 import { useDeepEffect } from "../hooks/deepHooks";
@@ -19,14 +18,89 @@ import { ErrorBoundary } from "../util/errorBoundary";
 import { ShortVerticalDivider } from "./Common";
 import { MetricsOptions } from "./MetricsOptions";
 
-// Disable until ESP supports hotspot
-// const logger = scopedLogger("src-react/components/Metrics.tsx");
+const logger = scopedLogger("src-react/components/Metrics.tsx");
 
 const filterIcon: IIconProps = { iconName: "Filter" };
 
 const defaultUIState = {
     hasSelection: false
 };
+
+interface PropertyValue {
+    Key: string;
+    Value: string;
+    Avg: string;
+    Min: string;
+    Max: string;
+    Delta: string;
+    StdDev: string;
+    SkewMin: string;
+    SkewMax: string;
+    NodeMin: string;
+    NodeMax: string;
+}
+
+const regex = /[A-Z][a-z]*/g;
+function splitKey(key: string): [string, string, string] | null {
+
+    // Related properties  ---
+    const relatedProps = ["SkewMin", "SkewMax", "NodeMin", "NodeMax"];
+    for (const prop of relatedProps) {
+        const index = key.indexOf(prop);
+        if (index === 0) {
+            const before = "";
+            const after = key.slice(index + prop.length);
+            return [before, prop, after];
+        }
+    }
+
+    // Primary properties  ---
+    const keyParts = key.match(regex);
+    if (keyParts?.length) {
+        const before = keyParts.shift();
+        const newKey = keyParts.join("");
+        const props = ["Avg", "Min", "Max", "Delta", "StdDev"];
+        for (const keyword of props) {
+            const index = newKey.indexOf(keyword);
+            if (index === 0) {
+                const after = newKey.slice(index + keyword.length);
+                return [before, keyword, after];
+            }
+        }
+        // Not an aggregate property  ---
+        return [before, "", newKey];
+    }
+
+    // No match found  ---
+    return ["", "", key];
+}
+
+function formatValue(item: IScope, key: string): string {
+    return item.__formattedProps?.[key] ?? item[key] ?? "";
+}
+
+type DedupProperties = { [key: string]: boolean };
+
+function formatValues(item: IScope, key: string, dedup: DedupProperties): PropertyValue | null {
+    const keyParts = splitKey(key);
+    if (!dedup[keyParts[2]]) {
+        dedup[keyParts[2]] = true;
+        return {
+            Key: `${keyParts[0]}${keyParts[2]}`,
+            Value: formatValue(item, `${keyParts[0]}${keyParts[2]}`),
+            Avg: formatValue(item, `${keyParts[0]}Avg${keyParts[2]}`),
+            Min: formatValue(item, `${keyParts[0]}Min${keyParts[2]}`),
+            Max: formatValue(item, `${keyParts[0]}Max${keyParts[2]}`),
+            Delta: formatValue(item, `${keyParts[0]}Delta${keyParts[2]}`),
+            StdDev: formatValue(item, `${keyParts[0]}StdDev${keyParts[2]}`),
+            SkewMin: formatValue(item, `SkewMin${keyParts[2]}`),
+            SkewMax: formatValue(item, `SkewMax${keyParts[2]}`),
+            NodeMin: formatValue(item, `NodeMin${keyParts[2]}`),
+            NodeMax: formatValue(item, `NodeMax${keyParts[2]}`)
+        };
+    }
+    return null;
+}
 
 interface MetricsProps {
     wuid: string;
@@ -50,31 +124,34 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     const [showTimeline, setShowTimeline] = React.useState<boolean>(true);
     const [trackSelection, setTrackSelection] = React.useState<boolean>(true);
     const [fullscreen, setFullscreen] = React.useState<boolean>(false);
+    const [hotspots, setHotspots] = React.useState<string>("");
 
-    // Disable until ESP supports hotspot
-    // const onHotspot = React.useCallback(() => {
-    //     const service = new WorkunitsServiceEx({ baseUrl: "" });
-    //     service.WUAnalyseHotspot({
-    //         Wuid: wuid,
-    //         RootScope: "",
-    //         OptOnlyActive: false,
-    //         OnlyCriticalPath: false,
-    //         IncludeProperties: true,
-    //         IncludeStatistics: true,
-    //         ThresholdPercent: 1.0,
-    //         PropertyOptions: {
-    //             IncludeName: true,
-    //             IncludeRawValue: false,
-    //             IncludeFormatted: true,
-    //             IncludeMeasure: true,
-    //             IncludeCreator: false,
-    //             IncludeCreatorType: false
-    //         }
-    //     }).then(response => {
-    //         const selection: string = response.Activities.Activity.map(activity => activity.Id).join(",");
-    //         pushUrl(`/workunits/${wuid}/metrics/${selection}`);
-    //     }).catch(err => logger.error(err));
-    // }, [wuid]);
+    React.useEffect(() => {
+        const service = new WorkunitsServiceEx({ baseUrl: "" });
+        service.WUAnalyseHotspot({
+            Wuid: wuid,
+            RootScope: "",
+            OptOnlyActive: false,
+            OnlyCriticalPath: false,
+            IncludeProperties: true,
+            IncludeStatistics: true,
+            ThresholdPercent: 1.0,
+            PropertyOptions: {
+                IncludeName: true,
+                IncludeRawValue: false,
+                IncludeFormatted: true,
+                IncludeMeasure: true,
+                IncludeCreator: false,
+                IncludeCreatorType: false
+            }
+        }).then(response => {
+            setHotspots(response.Activities?.Activity?.map(activity => activity.Id).join(",") ?? "");
+        }).catch(err => logger.error(err));
+    }, [wuid]);
+
+    const onHotspot = React.useCallback(() => {
+        pushUrl(`/workunits/${wuid}/metrics/${selection}`);
+    }, [wuid, selection]);
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
@@ -84,8 +161,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         },
         {
             key: "hotspot", text: nlsHPCC.Hotspots, iconProps: { iconName: "SpeedHigh" },
-            // Disable until ESP supports hotspot
-            disabled: true  // , onClick: () => onHotspot()
+            disabled: !hotspots, onClick: () => onHotspot()
         },
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
@@ -101,7 +177,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                 setShowMetricOptions(true);
             }
         }
-    ], [dockpanel, options, refresh, setOptions, showTimeline]);
+    ], [dockpanel, hotspots, onHotspot, options, refresh, setOptions, showTimeline]);
 
     const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
         {
@@ -331,16 +407,20 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     //  Props Table  ---
     const propsTable = useConst(() => new Table()
         .id("propsTable")
-        .columns([nlsHPCC.Property, nlsHPCC.Value])
-        .columnWidth("none")
+        .columns([nlsHPCC.Property, nlsHPCC.Value, "Avg", "Min", "Max", "Delta", "StdDev", "SkewMin", "SkewMax", "NodeMin", "NodeMax"])
+        .columnWidth("auto")
     );
 
     const updatePropsTable = React.useCallback((selection: IScope[]) => {
         const props = [];
         selection.forEach((item, idx) => {
+            const dedup: DedupProperties = {};
             for (const key in item) {
                 if (key.indexOf("__") !== 0) {
-                    props.push([key, item[key]]);
+                    const row = formatValues(item, key, dedup);
+                    if (row) {
+                        props.push([row.Key, row.Value, row.Avg, row.Min, row.Max, row.Delta, row.StdDev, row.SkewMin, row.SkewMax, row.NodeMin, row.NodeMax]);
+                    }
                 }
             }
             if (idx < selection.length - 1) {
