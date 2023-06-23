@@ -1206,7 +1206,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         unsigned candidateCount;
         __int64 lastSeeks, lastScans;
         IConstPointerArrayOf<ITranslator> translators;
-        CThorContextLogger contextLogger;
+        CStatsContextLogger contextLogger;
 
         inline void updateJhTreeStats()
         {
@@ -1253,7 +1253,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
     public:
         IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-        CKeyLocalLookup(CKeyedJoinSlave &_owner, const RtlRecord &_keyRecInfo) : owner(_owner), keyRecInfo(_keyRecInfo), indexReadFieldsRow(_owner.indexInputAllocator), contextLogger(jhtreeCacheStatistics)
+        CKeyLocalLookup(CKeyedJoinSlave &_owner, const RtlRecord &_keyRecInfo) : owner(_owner), keyRecInfo(_keyRecInfo), indexReadFieldsRow(_owner.indexInputAllocator), contextLogger(jhtreeCacheStatistics, thorJob)
         {
             tlkManager.setown(owner.keyHasTlk ? createLocalKeyManager(keyRecInfo, nullptr, &contextLogger, owner.helper->hasNewSegmentMonitors(), false) : nullptr);
             reset();
@@ -1363,7 +1363,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                             ++candidateCount;
                             if (candidateCount > owner.atMost)
                                 break;
-                            KLBlobProviderAdapter adapter(partManager, & contextLogger);
+                            KLBlobProviderAdapter adapter(partManager, &contextLogger);
                             byte const * keyRow = partManager->queryKeyBuffer();
                             size_t fposOffset = partManager->queryRowSize() - sizeof(offset_t);
                             offset_t fpos = rtlReadBigUInt8(keyRow + fposOffset);

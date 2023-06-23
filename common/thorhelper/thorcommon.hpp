@@ -18,6 +18,7 @@
 #ifndef THORCOMMON_HPP
 #define THORCOMMON_HPP
 
+#include "jlog.hpp"
 #include "jiface.hpp"
 #include "jcrc.hpp"
 #include "jlzw.hpp"
@@ -671,6 +672,92 @@ public:
 
 protected:
     ICodeContext * ctx;
+};
+class CStatsContextLogger : public CSimpleInterfaceOf<IContextLogger>
+{
+protected:
+    const LogMsgJobInfo job;
+    unsigned traceLevel = 1;
+    Owned<ISpan> activeSpan;
+    mutable CRuntimeStatisticCollection stats;
+public:
+    CStatsContextLogger(const CRuntimeStatisticCollection  &_mapping, const LogMsgJobInfo & _job=unknownJob) : job(_job), stats(_mapping) {}
+
+    virtual void CTXLOGva(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char *format, va_list args) const override  __attribute__((format(printf,5,0)))
+    {
+        VALOG(cat, job, code, format, args);
+    }
+    virtual void logOperatorExceptionVA(IException *E, const char *file, unsigned line, const char *format, va_list args) const __attribute__((format(printf,5,0)))
+    {
+        StringBuffer ss;
+        ss.append("ERROR");
+        if (E)
+            ss.append(": ").append(E->errorCode());
+        if (file)
+            ss.appendf(": %s(%d) ", file, line);
+        if (E)
+            E->errorMessage(ss.append(": "));
+        if (format)
+            ss.append(": ").valist_appendf(format, args);
+        LOG(MCoperatorProgress, queryJob(), "%s", ss.str());
+    }
+    virtual void noteStatistic(StatisticKind kind, unsigned __int64 value) const override
+    {
+        stats.addStatisticAtomic(kind, value);
+    }
+    virtual void setStatistic(StatisticKind kind, unsigned __int64 value) const override
+    {
+        stats.setStatistic(kind, value);
+    }
+    virtual void mergeStats(const CRuntimeStatisticCollection &from) const override
+    {
+        stats.merge(from);
+    }
+    virtual unsigned queryTraceLevel() const override
+    {
+        return traceLevel;
+    }
+    virtual void setActiveSpan(ISpan * span) override
+    {
+        activeSpan.set(span);
+    }
+    virtual IProperties * getClientHeaders() const override
+    {
+        if (!activeSpan)
+            return nullptr;
+        return ::getClientHeaders(activeSpan);
+    }
+    virtual const char *queryGlobalId() const override
+    {
+        if (!activeSpan)
+            return nullptr;
+        return activeSpan->queryGlobalId();
+    }
+    virtual const char *queryLocalId() const override
+    {
+        if (!activeSpan)
+            return nullptr;
+        return activeSpan->queryLocalId();
+    }
+    virtual const char *queryCallerId() const override
+    {
+        if (!activeSpan)
+            return nullptr;
+        return activeSpan->queryCallerId();
+    }
+    virtual const CRuntimeStatisticCollection &queryStats() const override
+    {
+        return stats;
+    }
+    virtual void recordStatistics(IStatisticGatherer &progress) const override
+    {
+        stats.recordStatistics(progress, false);
+    }
+    void updateStatsDeltaTo(CRuntimeStatisticCollection &to, CRuntimeStatisticCollection &previous)
+    {
+        previous.updateDelta(to, stats);
+    }
+    virtual const LogMsgJobInfo & queryJob() const override { return job; }
 };
 
 extern THORHELPER_API bool isActivitySink(ThorActivityKind kind);

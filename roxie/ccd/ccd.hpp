@@ -774,6 +774,10 @@ public:
     {
         return stats;
     }
+    virtual void recordStatistics(IStatisticGatherer &progress) const override
+    {
+        stats.recordStatistics(progress, false);
+    }
 };
 
 class StringContextLogger : public ContextLogger

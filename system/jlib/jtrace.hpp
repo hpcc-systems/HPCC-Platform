@@ -213,7 +213,7 @@ extern jlib_decl TraceFlags queryDefaultTraceFlags();
 extern jlib_decl TraceFlags loadTraceFlags(const IPropertyTree * globals, const std::initializer_list<TraceOption> & y, TraceFlags dft);
 
 // Temporarily modify the trace context and/or flags for the current thread, for the lifetime of the LogContextScope object
-
+interface IContextLogger;
 class jlib_decl LogContextScope
 {
 public:

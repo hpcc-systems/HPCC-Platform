@@ -231,6 +231,10 @@ public:
     {
         ctx->gatherStats(merged);
     }
+    virtual void recordStatistics(IStatisticGatherer &progress) const override
+    {
+        ctx->recordStatistics(progress);
+    }
     virtual bool collectingDetailedStatistics() const
     {
         return ctx->collectingDetailedStatistics();
@@ -1373,6 +1377,10 @@ public:
     virtual const CRuntimeStatisticCollection & queryStats() const override
     {
         return stats;
+    }
+    virtual void recordStatistics(IStatisticGatherer &progress) const
+    {
+        stats.recordStatistics(progress, false);
     }
     virtual bool isPassThrough()
     {
