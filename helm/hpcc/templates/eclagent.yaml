@@ -73,7 +73,7 @@ data:
           shareProcessNamespace: true
 {{- end }}            
           initContainers:
-          {{- include "hpcc.changePlaneMountPerms" . | indent 10 }}
+          {{- include "hpcc.createConfigInitContainers" . | indent 10 }}
           {{- include "hpcc.addImagePullSecrets" . | nindent 10 -}}
           containers:
 {{- if $misc.postJobCommandViaSidecar }}
@@ -150,7 +150,7 @@ spec:
       {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" .name "target" .name "type" "eclagent") | indent 6 }}
       serviceAccountName: "hpcc-agent"
       initContainers:
-      {{- include "hpcc.changePlaneMountPerms" $commonCtx | indent 6 }}
+      {{- include "hpcc.createConfigInitContainers" $commonCtx | indent 6 }}
       {{- include "hpcc.addImagePullSecrets" $commonCtx | nindent 6 -}}
       containers:
       - name: {{ .name | quote }}

@@ -46,7 +46,10 @@
   </emphasis><emphasis role="bold">[</emphasis>
   <emphasis>noSplit</emphasis><emphasis role="bold">] , </emphasis> <emphasis
   role="bold">[</emphasis><emphasis>noCommon</emphasis> <emphasis
-  role="bold">])</emphasis></para>
+  role="bold">],[</emphasis> <emphasis>sourcePlane</emphasis> <emphasis
+  role="bold">]<emphasis role="bold">,[</emphasis>
+  <emphasis>destinationNumParts</emphasis> <emphasis
+  role="bold">]</emphasis>)</emphasis></para>
 
   <para><emphasis>dfuwuid</emphasis> <emphasis role="bold"> :=
   STD.File.fSprayDelimited<indexterm>
@@ -89,7 +92,10 @@
   </emphasis><emphasis role="bold">[</emphasis>
   <emphasis>noSplit</emphasis><emphasis role="bold">] , </emphasis><emphasis
   role="bold">[</emphasis><emphasis>noCommon</emphasis> <emphasis
-  role="bold">])</emphasis></para>
+  role="bold">],[</emphasis> <emphasis>sourcePlane</emphasis> <emphasis
+  role="bold">],<emphasis role="bold">[</emphasis>
+  <emphasis>destinationNumParts</emphasis> <emphasis
+  role="bold">]</emphasis>)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -281,6 +287,20 @@
           <link linkend="GetNoCommonDefault">GetNoCommonDefault</link> to
           retrieve default setting. The value of this parameter can have a
           significant impact on performance.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>sourcePlane</emphasis></entry>
+
+          <entry>The name of the landing zone containing the file</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>destinationNumParts</emphasis></entry>
+
+          <entry>Override the number of parts to be created when spraying. The
+          default is 0 which means it will create the same number of parts as
+          the target cluster. </entry>
         </row>
 
         <row>

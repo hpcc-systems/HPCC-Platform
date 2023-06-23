@@ -73,6 +73,11 @@ int jlib_decl numtostr(char *dst, unsigned __int64 _value);
 // Translate "human readable" size strings like 4G to numbers
 extern jlib_decl offset_t friendlyStringToSize(const char *in);
 
+// Translate "human readable" cpu amounts that can either be a decimal (e.g. 2.5), or a number of milli-cores (e.g. 1500m)
+extern jlib_decl double friendlyCPUToDecimal(const char *in);
+
+extern jlib_decl double getResourcedCpus(const char *resourceName);
+
 // Write a string as file contents, atomically
 extern void jlib_decl atomicWriteFile(const char *fileName, const char *output);
 

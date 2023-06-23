@@ -266,9 +266,14 @@
       <para><programlisting>code terraform-azurerm-hpcc/modules/virtual_network/examples/admin.tfvars </programlisting></para>
 
       <para>With the admin.tfvars file open, you can go through each object
-      block or argument and set it to your preferred values. More information
-      about the module files available in the <emphasis>README.md</emphasis>
-      in HPCC Systems terraform-azurerm-hpcc repository.</para>
+      block or argument and set it to your preferred values.</para>
+
+      <para>More information about the module files is available in the
+      <emphasis>README.md</emphasis> in the HPCC Systems
+      terraform-azurerm-hpcc repository:</para>
+
+      <para><ulink
+      url="https://github.com/hpcc-systems/terraform-azurerm-hpcc#readme">https://github.com/hpcc-systems/terraform-azurerm-hpcc#readme</ulink></para>
 
       <programlisting>admin = { 
   name  = "<emphasis role="bold">YourName</emphasis>" 

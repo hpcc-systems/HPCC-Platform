@@ -233,4 +233,51 @@ hot pages until the info is flushed, the appropriate size is not really the same
 We track all reads by page, and before writing also add all pages in the jhtree cache with info about the node type. Note that a hit in the
 jhtree page cache won't be noted as a read OTHER than via this last-minute add.
 
+## Blacklisting sockets
 
+This isn't really specific to Roxie, but was originally added for federated Roxie systems...
+
+When a Roxie query (or hthor/thor) makes a SOAPCALL, there is an option to specify a list of target gateway IPs, and failover to the next in
+the list if the first does not respond in a timely fashion. In order to avoid this "timely fashion" check adding an overhead to every query
+made when a listed gateway is unavailable, we maintain a "blacklist" of nodes that have been seen to fail, and do not attempt to connect to
+them. There is a "deblacklister" thread that checks periodically whether it is now possible to connect to a previously-blacklisted gateway,
+and removes it from the list if so.
+
+There are a number of potential questions and issues with this code:
+1. It would appear that a blacklist is applied even when there is only one gateway listed. In this case, the blacklist may be doing more harm than good?
+   I'm not sure that is true - it is still causing rapid failures in cases that are never going to work...
+2. Even when there is only one gateway listed, a blacklist MIGHT still be useful (you don't really want EVERY query to block trying to connect, if the
+   gateway is down - may prefer a fast failure). Also applies when there are multiple records, all being passed to a gateway, and with an ONFAIL.
+3. Is the blacklist shared between all queries? I'm pretty sure it is NOT shared across Roxie nodes... Looks like it is a global object, shared between
+   all queries and activities. However, connections that were started in parallel will all be reported as failed rather than blacklisted, which can
+   make it look like it is maintained per-activity.
+4. Is it only a failed connect that leads to blacklisting, or does a slow/error response also cause a gateway endpoint to be blacklisted? It's only a
+   failed connect.
+5. When deblacklisting, can we check any condition other than "Successfully connected"? If not, blacklisting for any reason other than "Did not connect"
+   feels like a recipe for problems. We only check for a connection (and correspondingly only blacklist for a failed connection).
+6. Are we ever using the functionality where there are more than one gateway listed? Most of the time a load-balancer is a preferable solution...
+7. The "deblacklister" thread seems to add an escalating delay between attempts. Is this delay ever reset? Is it configurable? Is it appropriate?
+8. There's a thread (in the blacklister's pool) for each blacklisted endpoint. These threads will never go away if the endpoint does not recover...
+9. There's a delay of up to 10 seconds in terminating caused by the deblacklister's connect having to timeout before it notices that we are stopping.
+    Can we close the socket as well as interrupting the semaphore?
+10. Does the "reconnect" attempt from the deblacklister cause any pain for the server it is connecting to? Lots of connect attempts without any data
+    could look like a DoS attack...
+11. Retries/timeout seems to translate to
+        Owned<ISocketConnectWait> scw = nonBlockingConnect(ep, timeoutMS == WAIT_FOREVER ? 60000 : timeoutMS*(retries+1));
+    I am not sure that is correct (a single attempt to connect with a long timeout doesn't feel like it is the same as multiple attempts with shorter
+    timeouts, for example if there is a load balancer in the mix).
+11. Perhaps an option to not use blacklister would solve the immediate issue?
+12. The blacklister uses an array of endpoints - If there were a lot blacklisted, a hash table would be better
+13. Hints to control behaviour of deblacklister would behave unpredictably if multiple activities connected to the same endpoint with different hints
+    unless we make the blacklist lookup match the hint values too.
+14. Deblacklister should use nonBlockingConnect too.
+
+Should the scope of the blacklist be different? Possible scopes are:
+1. Shared across all queries/activities (current behaviour)
+2. Specific to an activity, but shared across queries (i.e. owned by the activity factory)
+3. Specific to all activities in a deployed query (i.e. owned by the query factory)
+4. Specific to a particular activity instance (i.e. owned by the activity object)
+5. Specific to a particular query instance (i.e. owned by the query object)
+
+Options 2 and 4 above would allow all aspects of the blacklisting behaviour to be specified by options on the SOAPCALL. We could control whether or not the
+blacklister is to be used at all via a SOAPCALL option with any of the above...

@@ -3468,16 +3468,8 @@ static void appendGroup(GroupInfoArray & groups, GroupInformation * group)
     //Check for a duplicate group name.  This should never happen, but make sure it is caught if it did.
     ForEachItemIn(i, groups)
     {
-        GroupInformation &curGroup = groups.item(i);
-        if (strieq(curGroup.name, group->name))
+        if (strieq(groups.item(i).name, group->name))
         {
-            if (group->dropZoneIndex && (grp_unknown == curGroup.groupType))
-            {
-                // This could happen if dropzone group has been added by a newer (9.2+) build
-                // and the current build has been rolled back (see HPCC-29553).
-                groups.replace(*group, i);
-                return;
-            }
             DBGLOG("Unexpected duplicate group name %s", group->name.str());
             group->Release();
             return;

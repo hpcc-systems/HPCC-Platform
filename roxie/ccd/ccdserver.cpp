@@ -27220,6 +27220,30 @@ IRoxieServerActivityFactory *createRoxieServerKeyedJoinActivityFactory(unsigned 
 
 //=================================================================================
 
+class CRoxieServerSoapActivityBaseFactory : public CRoxieServerActivityFactory
+{ 
+    friend class CRoxieServerSoapActivityBase;
+protected:
+    bool useBlacklist = true;
+    unsigned blDelay = (unsigned) -1;
+    unsigned blRetries = (unsigned) -1;
+    unsigned blConnectTimeout = (unsigned) -1;
+    StringBuffer blError;
+
+public:
+    CRoxieServerSoapActivityBaseFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, soapStatistics)
+    {
+        if (_graphNode.getPropBool("hint[@name='noblacklist']/@value", false))
+            useBlacklist = false;
+        blDelay = _graphNode.getPropInt("hint[@name='blacklistdelay']/@value", (unsigned) -1);       
+        blRetries = _graphNode.getPropInt("hint[@name='blacklistretries']/@value", (unsigned) -1);       
+        blConnectTimeout = _graphNode.getPropInt("hint[@name='blacklistconnecttimeout']/@value", (unsigned) -1);
+        _graphNode.getProp("hint[@name='blacklisterror']/@value", blError);
+    }
+};
+
+
 class CRoxieServerSoapActivityBase : public CRoxieServerActivity, implements ISoapCallRowProvider, implements IRoxieAbortMonitor
 {
 protected:
@@ -27248,6 +27272,29 @@ public:
     virtual IHThorSoapCallArg * queryCallHelper() { return NULL; };
     virtual const void * getNextRow() { return NULL; };
     virtual void releaseRow(const void * r) { ReleaseRoxieRow(r); };
+    virtual bool useBlacklister() const { return static_cast<const CRoxieServerSoapActivityBaseFactory *>(factory)->useBlacklist; }
+    virtual unsigned getBLConnectTimeout() const override
+    {
+        unsigned blConnectTimeout =  static_cast<const CRoxieServerSoapActivityBaseFactory *>(factory)->blConnectTimeout; 
+        return blConnectTimeout==(unsigned)-1 ? IWSCRowProvider::getBLConnectTimeout() : blConnectTimeout;
+    }
+    virtual unsigned getBLRetries() const override
+    {
+        unsigned blRetries =  static_cast<const CRoxieServerSoapActivityBaseFactory *>(factory)->blRetries; 
+        return blRetries==(unsigned)-1 ? IWSCRowProvider::getBLRetries() : blRetries;
+    }
+    virtual unsigned getBLDelay() const override
+    {
+        unsigned blDelay =  static_cast<const CRoxieServerSoapActivityBaseFactory *>(factory)->blDelay; 
+        return blDelay==(unsigned)-1 ? IWSCRowProvider::getBLDelay() : blDelay;
+    }
+    virtual const char * getBLerror() const override
+    {
+        const char *error = static_cast<const CRoxieServerSoapActivityBaseFactory *>(factory)->blError.str();
+        if (error && *error)
+            return error;
+        return IWSCRowProvider::getBLerror();
+    }
 
     virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
@@ -27384,11 +27431,11 @@ public:
     }
 };
 
-class CRoxieServerSoapRowCallActivityFactory : public CRoxieServerActivityFactory
+class CRoxieServerSoapRowCallActivityFactory : public CRoxieServerSoapActivityBaseFactory
 {
 public:
     CRoxieServerSoapRowCallActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, soapStatistics)
+        : CRoxieServerSoapActivityBaseFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -27434,12 +27481,12 @@ public:
     }
 };
 
-class CRoxieServerSoapRowActionActivityFactory : public CRoxieServerActivityFactory
+class CRoxieServerSoapRowActionActivityFactory : public CRoxieServerSoapActivityBaseFactory
 {
     bool isRoot;
 public:
     CRoxieServerSoapRowActionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool _isRoot)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, soapStatistics), isRoot(_isRoot)
+        : CRoxieServerSoapActivityBaseFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode), isRoot(_isRoot)
     {
     }
 
@@ -27514,11 +27561,11 @@ public:
     }
 };
 
-class CRoxieServerSoapDatasetCallActivityFactory : public CRoxieServerActivityFactory
+class CRoxieServerSoapDatasetCallActivityFactory : public CRoxieServerSoapActivityBaseFactory
 {
 public:
     CRoxieServerSoapDatasetCallActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, soapStatistics)
+        : CRoxieServerSoapActivityBaseFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -27575,12 +27622,12 @@ public:
     }
 };
 
-class CRoxieServerSoapDatasetActionActivityFactory : public CRoxieServerActivityFactory
+class CRoxieServerSoapDatasetActionActivityFactory : public CRoxieServerSoapActivityBaseFactory
 {
     bool isRoot;
 public:
     CRoxieServerSoapDatasetActionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool _isRoot)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, soapStatistics), isRoot(_isRoot)
+        : CRoxieServerSoapActivityBaseFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode), isRoot(_isRoot)
     {
     }
 

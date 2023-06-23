@@ -394,7 +394,7 @@ extern bool ignoreFileSizeMismatches;
 extern int fileTimeFuzzySeconds;
 extern SinkMode defaultSinkMode;
 
-#ifdef _CONTAINERIZED
+#if defined(_CONTAINERIZED) || defined(SUBCHANNELS_IN_HEADER)
 static constexpr bool roxieMulticastEnabled = false;
 extern unsigned myChannel;
 #else
