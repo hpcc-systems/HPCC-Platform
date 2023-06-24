@@ -79,10 +79,6 @@ include_directories (
 
 ADD_DEFINITIONS( -D_USRDLL -DECLRTL_EXPORTS )
 
-if ((USE_BOOST_REGEX) AND (NOT WIN32))
-  ADD_DEFINITIONS( -DBOOST_DYN_LINK )
-endif ()
-
 if ((CMAKE_COMPILER_IS_GNUCXX AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 8.0.0))
   set_source_files_properties(eclrtl.cpp PROPERTIES COMPILE_FLAGS -fno-tree-vectorize)
 endif ()
@@ -92,8 +88,8 @@ HPCC_ADD_LIBRARY( eclrtl SHARED ${SRCS} )
 if(CENTOS_6_BOOST)
   add_dependencies(eclrtl boost-regex)
   target_link_libraries( eclrtl boost-regex)
-else()
-  target_link_libraries( eclrtl ${Boost_REGEX_LIBRARY} )
+elseif(USE_BOOST_REGEX)
+  target_link_libraries( eclrtl Boost::boost Boost::regex )
 endif()
 
 target_link_libraries ( eclrtl 
