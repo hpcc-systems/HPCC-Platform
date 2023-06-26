@@ -3836,7 +3836,8 @@ public:
         Owned<IFile> file = createIFile(name->text);
         switch ((compatIFSHmode)share) {
         case compatIFSHnone:
-            file->setCreateFlags(S_IRUSR|S_IWUSR);
+            if (mode != IFOread)
+                file->setCreateFlags(S_IRUSR|S_IWUSR);
             file->setShareMode(IFSHnone);
             break;
         case compatIFSHread:
@@ -3846,10 +3847,12 @@ public:
             file->setShareMode(IFSHfull);
             break;
         case compatIFSHexec:
-            file->setCreateFlags(S_IRUSR|S_IWUSR|S_IXUSR|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH);
+            if (mode != IFOread)
+                file->setCreateFlags(S_IRUSR|S_IWUSR|S_IXUSR|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH);
             break;
         case compatIFSHall:
-            file->setCreateFlags(S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH); // bit excessive
+            if (mode != IFOread)
+                file->setCreateFlags(S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH); // bit excessive
             file->setShareMode(IFSHfull);
             break;
         }
