@@ -4741,6 +4741,7 @@ public:
         {
             activity.noteStatistic(StSizeAgentReply, mc->queryBytesReceived());
             activity.noteStatistic(StTimeAgentWait, cycle_to_nanosec(unpackerWaitCycles));
+            unpackerWaitCycles = 0;
             if (ctx)
                 ctx->addAgentsReplyLen(mc->queryBytesReceived(), mc->queryDuplicates(), mc->queryResends());
         }
