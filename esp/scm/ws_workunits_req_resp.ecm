@@ -1024,12 +1024,12 @@ ESPresponse [exceptions_inline, nil_remove] WUGetNumFileToCopyResponse
 ESPRequest WUDetailsRequest
 {
     string WUID;
-    [optional] ESPstruct WUScopeFilter ScopeFilter;               // which scopes are matched
-    [optional] ESPstruct WUNestedFilter NestedFilter;             // what nested scopes are returned
-    [optional] ESPstruct WUPropertiesToReturn PropertiesToReturn; // List of properties to return
-    [optional] string    Filter;                                  // Filter as a string text
-    [optional] ESPstruct WUScopeOptions ScopeOptions;             // Which scope details are returned
-    [optional] ESPstruct WUPropertyOptions PropertyOptions;       // Which attribute details are returned
+    ESPstruct WUScopeFilter ScopeFilter;               // which scopes are matched
+    ESPstruct WUNestedFilter NestedFilter;             // what nested scopes are returned
+    ESPstruct WUPropertiesToReturn PropertiesToReturn; // List of properties to return
+    string    Filter;                                  // Filter as a string text
+    ESPstruct WUScopeOptions ScopeOptions;             // Which scope details are returned
+    ESPstruct WUPropertyOptions PropertyOptions;       // Which attribute details are returned
 };
 
 ESPResponse [exceptions_inline] WUDetailsResponse
@@ -1108,13 +1108,13 @@ ESPresponse [exceptions_inline] WUGetPluginsResponse
 ESPrequest [nil_remove] WUAnalyseHotspotRequest
 {
     string Wuid;
-    [optional] string RootScope;
+    string RootScope;
     bool OptOnlyActive(false);
     bool OnlyCriticalPath(false);
     bool IncludeProperties(true);
     bool IncludeStatistics(true);
     double ThresholdPercent(1.0);
-    [optional] ESPstruct WUPropertyOptions PropertyOptions;       // Which attribute details are returned
+    ESPstruct WUPropertyOptions PropertyOptions;       // Which attribute details are returned
 };
 
 ESPresponse [exceptions_inline] WUAnalyseHotspotResponse
