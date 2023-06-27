@@ -1684,6 +1684,7 @@ public:
                 return;
             }
 
+            CCycleTimer workerTimer;
             hash64_t queryHash = packet->queryHeader().queryHash;
             Owned<IQueryFactory> queryFactory = getQueryFactory(queryHash, channel);
             if (!queryFactory && logctx.queryWuid())
@@ -1711,6 +1712,8 @@ public:
             if (!debugging)
                 ROQ->sendIbyti(header, logctx, mySubChannel);
             Owned<IMessagePacker> output = activity->process();
+            stat_type elapsedNs = workerTimer.elapsedNs();
+            logctx.setStatistic(StTimeAgentProcess, elapsedNs);
             if (logctx.queryTraceLevel() > 5)
             {
                 StringBuffer x;
