@@ -4,6 +4,9 @@ import * as Deferred from "dojo/_base/Deferred";
 import * as lang from "dojo/_base/lang";
 import * as Observable from "dojo/store/Observable";
 import * as QueryResults from "dojo/store/util/QueryResults";
+
+import { DFUService, WsDfu as HPCCWsDfu } from "@hpcc-js/comms";
+
 import { DPWorkunit } from "./DataPatterns/DPWorkunit";
 import * as ESPRequest from "./ESPRequest";
 import * as ESPResult from "./ESPResult";
@@ -11,6 +14,9 @@ import * as ESPUtil from "./ESPUtil";
 import * as FileSpray from "./FileSpray";
 import * as Utility from "./Utility";
 import * as WsDfu from "./WsDfu";
+
+import { Paged } from "./store/Paged";
+import { BaseStore } from "./store/Store";
 
 const _logicalFiles = {};
 
@@ -484,5 +490,30 @@ export function CreateLFQueryStore(options) {
 
 export function CreateLFQueryTreeStore(options) {
     const store = new TreeStore(options);
+    return new Observable(store);
+}
+
+const service = new DFUService({ baseUrl: "" });
+
+export type DFUQueryStore = BaseStore<HPCCWsDfu.DFUQueryRequest, typeof LogicalFile>;
+
+export function CreateDFUQueryStore(): BaseStore<HPCCWsDfu.DFUQueryRequest, typeof LogicalFile> {
+    const store = new Paged<HPCCWsDfu.DFUQueryRequest, typeof LogicalFile>({
+        start: "PageStartFrom",
+        count: "PageSize",
+        sortBy: "Sortby",
+        descending: "Descending"
+    }, "Name", request => {
+        if (request.Sortby && request.Sortby === "TotalClusterTime") {
+            request.Sortby = "ClusterTime";
+        }
+        request.IncludeSuperOwner = true;
+        return service.DFUQuery(request).then(response => {
+            return {
+                data: response.DFULogicalFiles.DFULogicalFile,
+                total: response.NumFiles
+            };
+        });
+    });
     return new Observable(store);
 }
