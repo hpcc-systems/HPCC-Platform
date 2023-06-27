@@ -122,6 +122,11 @@ IPropertyTree * getDropZonePlane(const char * name)
     return getGlobalConfigSP()->getPropTree(xpath);
 }
 
+bool isPathInPlane(IPropertyTree *plane, const char *path)
+{
+    return isEmptyString(path) || startsWith(path, plane->queryProp("@prefix"));
+}
+
 bool validateDropZone(IPropertyTree * plane, const char * path, const char * host, bool ipMatch)
 {
     if (host)
@@ -133,7 +138,7 @@ bool validateDropZone(IPropertyTree * plane, const char * path, const char * hos
         return false;
 
     //Match path
-    return isEmptyString(path) || startsWith(path, plane->queryProp("@prefix"));
+    return isPathInPlane(plane, path);
 }
 
 IPropertyTree * findPlane(const char *category, const char * path, const char * host, bool ipMatch, bool mustMatch)
