@@ -522,11 +522,13 @@ Pass in dict with sinks
 {{- if hasKey . "sinks" }}
  {{ range $sink := .sinks -}}
   {{- if eq (get $sink "type") "prometheus" }}
-   {{- if and (hasKey $sink "settings") ( hasKey $sink.settings "autodiscovery") }}
-    {{- if (eq $sink.settings.autodiscovery true ) }}
+   {{- if hasKey $sink "settings" }}
+    {{- if hasKey $sink.settings "autodiscovery" }}
+     {{- if (eq $sink.settings.autodiscovery true ) }}
 prometheus.io/scrape: 'true'
 prometheus.io/path: {{ $sink.settings.path | default "/metrics" }}
 prometheus.io/port: {{ $sink.settings.port | default 8767 | quote }}
+     {{ end }}
     {{ end }}
    {{ end }}
   {{ end }}
@@ -1336,9 +1338,11 @@ Pass in dict with sinks
 {{- define "hpcc.generateMetricsReporterLabel" }}
  {{ range $sink := .sinks -}}
   {{- if eq (get $sink "type") "prometheus" }}
-   {{- if and (hasKey $sink "settings") ( hasKey $sink.settings "autodiscovery") }}
-    {{- if (eq $sink.settings.autodiscovery true ) }}
+   {{- if hasKey $sink "settings" }}
+    {{- if hasKey $sink.settings "autodiscovery" }}
+     {{- if (eq $sink.settings.autodiscovery true ) }}
 prometheusMetricsReporter: "yes"
+     {{ end }}
     {{ end }}
    {{ end }}
   {{ end }}
