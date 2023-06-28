@@ -402,6 +402,7 @@ extern bool defaultExecuteDependenciesSequentially;
 extern bool defaultStartInputsSequentially;
 extern bool oneShotRoxie;
 extern bool traceStrands;
+extern unsigned minPayloadSize;
 
 extern int backgroundCopyClass;
 extern int backgroundCopyPrio;

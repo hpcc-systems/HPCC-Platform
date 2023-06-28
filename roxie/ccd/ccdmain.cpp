@@ -102,6 +102,7 @@ bool mergeAgentStatistics = true;
 PTreeReaderOptions defaultXmlReadFlags = ptr_ignoreWhiteSpace;
 bool runOnce = false;
 bool oneShotRoxie = false;
+unsigned minPayloadSize = 800;
 
 unsigned udpMulticastBufferSize = 262142;
 #if !defined(_CONTAINERIZED) && !defined(SUBCHANNELS_IN_HEADER)
@@ -122,7 +123,7 @@ bool lockSuperFiles;
 bool useRemoteResources;
 bool checkFileDate;
 bool lazyOpen;
-bool localAgent;
+bool localAgent = false;
 bool encryptInTransit;
 bool useAeron;
 bool ignoreOrphans;
@@ -691,13 +692,43 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         useOldTopology = checkFileExists(topologyFile.str());
         topology = loadConfiguration(useOldTopology ? nullptr : defaultYaml, argv, "roxie", "ROXIE", topologyFile, nullptr, "@netAddress");
         saveTopology();
+
+        // Any settings we read from topology that must NOT be overridden in workunit debug fields should be read at this point, before the following section
+        getAllowedPipePrograms(allowedPipePrograms, true);
+
+        // Allow workunit debug fields to override most roxie configuration values, for testing/debug purposes.
+
+        topology->getProp("@daliServers", fileNameServiceDali);
+        const char *wuid = topology->queryProp("@workunit");
+        if (wuid)
+        {
+            Owned<IRoxieDaliHelper> daliHelper;
+            Owned<IConstWorkUnit> wu;
+            daliHelper.setown(connectToDali(ROXIE_DALI_CONNECT_TIMEOUT));
+            wu.setown(daliHelper->attachWorkunit(wuid));
+            Owned<IStringIterator> debugValues = &wu->getDebugValues();
+            ForEach (*debugValues)
+            {
+                StringBuffer debugStr;
+                SCMStringBuffer valueStr;
+                StringBufferAdaptor aDebugStr(debugStr);
+                debugValues->str(aDebugStr);
+                if (startsWith(debugStr, "roxie:"))
+                {
+                    wu->getDebugValue(debugStr.str(), valueStr);
+                    debugStr.replaceString("roxie:", "@");
+                    topology->setProp(debugStr.str(), valueStr.str());
+                }
+            }
+        }
+
         if (topology->getPropBool("expert/@profileStartup", false))
         {
             double interval = topology->getPropReal("expert/@profileStartupInterval", 0.2);
             startupTracer.setInterval(interval);
             startupTracer.start();
         }
-        localAgent = topology->getPropBool("@localAgent", topology->getPropBool("@localSlave", false));  // legacy name
+        localAgent = topology->getPropBool("@localAgent", topology->getPropBool("@localSlave", localAgent));  // legacy name
         encryptInTransit = topology->getPropBool("@encryptInTransit", false) && !localAgent;
         if (encryptInTransit)
             initSecretUdpKey();
@@ -770,7 +801,6 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         installDefaultFileHooks(topology);
 
         Owned<const IQueryDll> standAloneDll;
-        const char *wuid = topology->queryProp("@workunit");
         if (wuid)
             setDefaultJobId(wuid);
         if (topology->hasProp("@loadWorkunit"))
@@ -934,6 +964,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             }
         }
 
+        minPayloadSize = topology->getPropInt("@minPayloadSize", minPayloadSize);
         acknowledgeAllRequests = topology->getPropBool("@acknowledgeAllRequests", acknowledgeAllRequests);
         headRegionSize = topology->getPropInt("@headRegionSize", 0);
         ccdMulticastPort = topology->getPropInt("@multicastPort", CCD_MULTICAST_PORT);
@@ -1182,8 +1213,6 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         maxFilesOpen[true] = topology->getPropInt("@maxRemoteFilesOpen", 1000);
         dafilesrvLookupTimeout = topology->getPropInt("@dafilesrvLookupTimeout", 10000);
         setRemoteFileTimeouts(dafilesrvLookupTimeout, 0);
-        topology->getProp("@daliServers", fileNameServiceDali);
-        getAllowedPipePrograms(allowedPipePrograms, true);
         trapTooManyActiveQueries = topology->getPropBool("@trapTooManyActiveQueries", true);
         maxEmptyLoopIterations = topology->getPropInt("@maxEmptyLoopIterations", 1000);
         maxGraphLoopIterations = topology->getPropInt("@maxGraphLoopIterations", 1000);
