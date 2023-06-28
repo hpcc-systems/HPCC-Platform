@@ -263,7 +263,7 @@ There are a number of potential questions and issues with this code:
 10. Does the "reconnect" attempt from the deblacklister cause any pain for the server it is connecting to? Lots of connect attempts without any data
     could look like a DoS attack...
 11. Retries/timeout seems to translate to
-        Owned<ISocketConnectWait> scw = nonBlockingConnect(ep, timeoutMS == WAIT_FOREVER ? 60000 : timeoutMS*(retries+1));
+        `Owned<ISocketConnectWait> scw = nonBlockingConnect(ep, timeoutMS == WAIT_FOREVER ? 60000 : timeoutMS*(retries+1));`
     I am not sure that is correct (a single attempt to connect with a long timeout doesn't feel like it is the same as multiple attempts with shorter
     timeouts, for example if there is a load balancer in the mix).
 11. Perhaps an option to not use blacklister would solve the immediate issue?
