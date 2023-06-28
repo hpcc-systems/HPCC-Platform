@@ -32,6 +32,7 @@ set (    SRCS
 include_directories ( 
          ./../../include 
          ./../../jlib 
+         ./../cryptohelper
          ./../../security/shared
          ${OPENSSL_INCLUDE_DIR}
     )

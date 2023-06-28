@@ -181,12 +181,17 @@ public:
     void setMtlsSecretName(const char *name){mtls_secret_.set(name);}
     const char *getMtlsSecretName(){return mtls_secret_.str();}
 
-    void setCACertificates(const char *path) override {ca_certs_.set(path);}
+    void setCACertificates(const char *path) override
+    {
+        ca_certs_.set(path);
+    }
+
     virtual void setClientCertificate(const char *certPath, const char *privateKeyPath) override
     {
         client_cert_.set(certPath);
         client_priv_key_.set(privateKeyPath);
     }
+
     virtual void setAcceptSelfSigned(bool acceptSelfSigned) override {accept_self_signed_=acceptSelfSigned;}
 
     void post(const char *proxy, const char* url, IRpcResponseBinding& response, const char *action=NULL);
@@ -208,20 +213,25 @@ inline void setRpcSSLOptions(IEspClientRpcSettings &rpc, bool useSSL, const char
     {
         if (!isEmptyString(clientCert))
         {
-            if (!checkFileExists(clientCert))
-                throw makeStringExceptionV(-1,"Client certificate not found %s.", clientCert);
             if (isEmptyString(clientPrivateKey))
                 throw makeStringException(-1,"Client private key not provided.");
-            if (!checkFileExists(clientPrivateKey))
+
+            if (!containsEmbeddedKey(clientCert) && !checkFileExists(clientCert))
+                throw makeStringExceptionV(-1,"Client certificate not found %s.", clientCert);
+            if (!containsEmbeddedKey(clientPrivateKey) && !checkFileExists(clientPrivateKey))
                 throw makeStringExceptionV(-1,"Client private key not found %s.", clientPrivateKey);
+
             rpc.setClientCertificate(clientCert, clientPrivateKey);
         }
+
         if (!isEmptyString(caCert))
         {
-            if (!checkFileExists(caCert))
+            if (!containsEmbeddedKey(caCert) && !checkFileExists(caCert))
                 throw makeStringExceptionV(-1,"CA certificate not found %s.", caCert);
+
             rpc.setCACertificates(caCert);
         }
+
         rpc.setAcceptSelfSigned(acceptSelfSigned);
     }
 }
