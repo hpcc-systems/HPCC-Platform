@@ -1,7 +1,7 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Icon, Link } from "@fluentui/react";
 import * as WsDfu from "src/WsDfu";
-import * as ESPLogicalFile from "src/ESPLogicalFile";
+import { CreateDFUQueryStore } from "src/ESPLogicalFile";
 import { formatCost } from "src/Session";
 import * as Utility from "src/Utility";
 import { QuerySortItem } from "src/store/Store";
@@ -109,7 +109,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
 
     //  Grid ---
     const gridStore = React.useMemo(() => {
-        return store ? store : ESPLogicalFile.CreateLFQueryStore({});
+        return store ? store : CreateDFUQueryStore();
     }, [store]);
 
     const query = React.useMemo(() => {
@@ -283,12 +283,12 @@ export const Files: React.FunctionComponent<FilesProps> = ({
         },
         { key: "divider_5", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
-            key: "mine", text: nlsHPCC.Mine, disabled: !currentUser?.username, iconProps: { iconName: "Contact" }, canCheck: true, checked: filter.Owner === currentUser.username,
+            key: "mine", text: nlsHPCC.Mine, disabled: !currentUser?.username, iconProps: { iconName: "Contact" }, canCheck: true, checked: filter["Owner"] === currentUser.username,
             onClick: () => {
-                if (filter.Owner === currentUser.username) {
-                    filter.Owner = "";
+                if (filter["Owner"] === currentUser.username) {
+                    filter["Owner"] = "";
                 } else {
-                    filter.Owner = currentUser.username;
+                    filter["Owner"] = currentUser.username;
                 }
                 pushParams(filter);
             }

@@ -762,11 +762,15 @@ Specifically for now (but could be extended), this container generates sysctl co
 {{- $component := .me -}}
 {{- $cmd := "" -}}
 {{- $sysctls := list -}}
-{{- if and (hasKey $root.Values.global "expert") (hasKey $root.Values.global.expert "sysctl") -}}
- {{- $sysctls = $root.Values.global.expert.sysctl -}}
+{{- if (hasKey $root.Values.global "expert") -}}
+ {{- if (hasKey $root.Values.global.expert "sysctl") -}}
+  {{- $sysctls = $root.Values.global.expert.sysctl -}}
+ {{- end -}}
 {{- end -}}
-{{- if and (hasKey $component "expert") (hasKey $component.expert "sysctl") -}}
- {{- $sysctls = (concat $sysctls $component.expert.sysctl) | uniq -}}
+{{- if (hasKey $component "expert") -}}
+ {{- if (hasKey $component.expert "sysctl") -}}
+  {{- $sysctls = (concat $sysctls $component.expert.sysctl) | uniq -}}
+ {{- end -}}
 {{- end -}}
 {{- if $sysctls -}}
  {{- range $sysctl := $sysctls -}}
