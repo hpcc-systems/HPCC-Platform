@@ -293,6 +293,8 @@ enum StatisticKind
     StSizeAgentSend,
     StTimeIndexCacheBlocked,
     StCycleIndexCacheBlockedCycles,
+    StTimeAgentProcess,
+    StCycleAgentProcessCycles,
     StMax,
 
     //For any quantity there is potentially the following variants.
