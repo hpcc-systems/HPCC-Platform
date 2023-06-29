@@ -186,8 +186,8 @@ void CWsESDLConfigEx::init(IPropertyTree *cfg, const char *process, const char *
     if(servicecfg == NULL)
         throw MakeStringException(-1, "config not found for service %s/%s",process, service);
 
-    m_isDetachedFromDali = false;
     m_esdlStore.setown(createEsdlCentralStore());
+    m_isDetachedFromDali = (nullptr == m_esdlStore);
 }
 
 // Build two independent lists. First an array of IEspMethodConfig elements that lists
@@ -1117,22 +1117,6 @@ bool CWsESDLConfigEx::onConfigureESDLBindingLogTransform(IEspContext &context, I
     resp.updateStatus().setCode(success);
 
     return true;
-}
-
-int CWsESDLConfigEx::getBindingXML(const char * bindingId, StringBuffer & bindingXml, StringBuffer & msg)
-{
-    Owned<IPropertyTree> esdlBinding = m_esdlStore->getBindingTree(bindingId, msg);
-    if (esdlBinding)
-    {
-        toXML(esdlBinding, bindingXml, 0,0);
-        msg.setf("Successfully fetched binding %s", bindingId);
-        return 0;
-    }
-    else
-    {
-        msg.setf("Could not fetch binding %s", bindingId);
-        return -1;
-    }
 }
 
 bool CWsESDLConfigEx::onGetESDLBinding(IEspContext &context, IEspGetESDLBindingRequest &req, IEspGetESDLBindingResponse &resp)

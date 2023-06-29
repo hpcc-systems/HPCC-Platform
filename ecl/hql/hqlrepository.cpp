@@ -639,6 +639,16 @@ void EclRepositoryManager::gatherPackagesUsed(StringArray & used) const
     }
 }
 
+unsigned __int64 EclRepositoryManager::getStatistic(StatisticKind kind) const
+{
+    switch (kind)
+    {
+    case StTimeElapsed:
+        return cycle_to_nanosec(gitDownloadCycles);
+    }
+    return 0;
+}
+
 void EclRepositoryManager::processArchive(IPropertyTree * archiveTree)
 {
     IArrayOf<IEclRepository> savedSources;        // also includes -D options
@@ -793,6 +803,7 @@ IEclSourceCollection * EclRepositoryManager::resolveGitCollection(const char * r
     }
 
     bool ok = false;
+    CCycleTimer gitDownloadTimer;
     if (alreadyExists)
     {
         if (options.updateRepos)
@@ -819,6 +830,7 @@ IEclSourceCollection * EclRepositoryManager::resolveGitCollection(const char * r
             ok = true;
         }
     }
+    gitDownloadCycles += gitDownloadTimer.elapsedCycles();
 
     if (!ok)
         throw makeStringExceptionV(99, "Cannot locate the source code for dependency '%s'.  --fetchrepos not enabled", defaultUrl);

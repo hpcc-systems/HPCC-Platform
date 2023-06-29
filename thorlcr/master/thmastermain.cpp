@@ -876,9 +876,18 @@ int main( int argc, const char *argv[]  )
                 setBaseDirectory(overrideBaseDirectory, false);
             if (overrideReplicateDirectory&&*overrideBaseDirectory)
                 setBaseDirectory(overrideReplicateDirectory, true);
-
+        }
+        if (!hasExpertOpt("saveQueryDlls"))
+        {
+            // propagate default setting.
+            // Bare-metal - save dlls to local disk cache by default
+            // Containerized - load dlls directly
+            setExpertOpt("saveQueryDlls", boolToStr(!isContainerized()));
+        }
+        if (getExpertOptBool("saveQueryDlls"))
+        {
             StringBuffer soDir, soPath;
-            if (getConfigurationDirectory(globals->queryPropTree("Directories"),"query","thor",globals->queryProp("@name"),soDir))
+            if (!isContainerized() && getConfigurationDirectory(globals->queryPropTree("Directories"),"query","thor",globals->queryProp("@name"),soDir))
                 globals->setProp("@query_so_dir", soDir.str());
             else if (!globals->getProp("@query_so_dir", soDir)) {
                 globals->setProp("@query_so_dir", DEFAULT_QUERY_SO_DIR); 
@@ -896,7 +905,11 @@ int main( int argc, const char *argv[]  )
             globals->setProp("@query_so_dir", soPath.str());
             recursiveCreateDirectory(soPath.str());
         }
-
+        else
+        {
+            // meaningless if not saving dlls
+            globals->setPropBool("@dllsToSlaves", false);
+        }
         StringBuffer tempDirStr;
         if (!getConfigurationDirectory(globals->queryPropTree("Directories"),"spill","thor",globals->queryProp("@name"), tempDirStr))
         {

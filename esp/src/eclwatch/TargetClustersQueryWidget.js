@@ -81,7 +81,7 @@ define([
                 title: this.i18n.TargetClustersLegacy,
                 style: "border: 0; width: 100%; height: 100%"
             });
-            this.legacyTargetClustersIframeWidget.placeAt(this._tabContainer, "first");
+            this.legacyTargetClustersIframeWidget.placeAt(this._tabContainer, "last");
             this.machineFilter.disable();
         },
 

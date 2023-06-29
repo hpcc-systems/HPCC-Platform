@@ -904,7 +904,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     label: field.label,
                     field: <ProgressIndicator
                         key={fieldID}
-                        percentComplete={parseInt(field.value, 10)} />
+                        percentComplete={parseInt(field.value, 10) / 100} />
                 });
                 break;
             case "workunit-state":

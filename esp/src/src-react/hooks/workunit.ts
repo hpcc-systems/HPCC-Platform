@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useConst } from "@fluentui/react-hooks";
-import { Workunit, Result, WUDetails, WUStateID, WUInfo, WorkunitsService } from "@hpcc-js/comms";
+import { Workunit, DFUWorkunit, Result, WUDetails, WUStateID, WUInfo, WorkunitsService } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import * as Utility from "src/Utility";
@@ -328,4 +328,37 @@ export function useGlobalWorkunitNotes(): [WUDetails.Note[]] {
 
     return [notes];
 
+}
+
+export function useDfuWorkunit(wuid: string, full: boolean = false): [DFUWorkunit, WUStateID, number, boolean, (full?: boolean) => Promise<DFUWorkunit>] {
+
+    // eslint-disable-next-line func-call-spacing
+    const [retVal, setRetVal] = React.useState<{ workunit: DFUWorkunit, state: number, lastUpdate: number, isComplete: boolean, refresh: (full?: boolean) => Promise<DFUWorkunit> }>();
+
+    React.useEffect(() => {
+        if (wuid === undefined || wuid === null) {
+            setRetVal({ workunit: undefined, state: WUStateID.NotFound, lastUpdate: Date.now(), isComplete: undefined, refresh: () => Promise.resolve(undefined) });
+            return;
+        }
+        const wu = DFUWorkunit.attach({ baseUrl: "" }, wuid);
+        let active = true;
+        let handle;
+        const refresh = singletonDebounce(wu, "refresh");
+        refresh(full)
+            .then(() => {
+                if (active) {
+                    setRetVal({ workunit: wu, state: wu.State, lastUpdate: Date.now(), isComplete: wu.isComplete(), refresh });
+                    handle = wu.watch(() => {
+                        setRetVal({ workunit: wu, state: wu.State, lastUpdate: Date.now(), isComplete: wu.isComplete(), refresh });
+                    });
+                }
+            }).catch(err => logger.error(err));
+
+        return () => {
+            active = false;
+            handle?.release();
+        };
+    }, [wuid, full]);
+
+    return [retVal?.workunit, retVal?.state, retVal?.lastUpdate, retVal?.isComplete, retVal?.refresh];
 }
