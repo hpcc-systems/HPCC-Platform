@@ -44,5 +44,5 @@ install ( TARGETS gitfile DESTINATION filehooks CALC_DEPS)
 
 target_link_libraries ( gitfile
     jlib
-    unofficial::git2::git2
+    unofficial::git2::libgit2package
     )

@@ -27,8 +27,7 @@ project( zcrypt )
 
 SET(CMAKE_UNITY_BUILD FALSE)
 
-find_package(minizip CONFIG REQUIRED)
-find_path(MINIZIP_INCLUDE_DIRS "minizip/zip.h" HINTS "${VCPKG_INSTALLED_DIR}")
+find_package(unofficial-minizip CONFIG REQUIRED)
 
 set ( SRCS
       aes.cpp
@@ -38,9 +37,7 @@ set ( SRCS
     )
 
 include_directories ( 
-         ${ZLIB_INCLUDE_DIR}
          ${OPENSSL_INCLUDE_DIR}
-         ${MINIZIP_INCLUDE_DIRS}
          ./../../security/shared
          ./../../include 
          ./../../jlib
@@ -52,9 +49,6 @@ HPCC_ADD_LIBRARY( zcrypt SHARED ${SRCS} )
 install ( TARGETS zcrypt RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} CALC_DEPS )
 target_link_libraries ( zcrypt
          jlib
-         ${ZLIB_LIBRARIES} 
          ${OPENSSL_LIBRARIES} 
-         minizip::minizip
+         unofficial::minizip::minizip
     )
-
-
