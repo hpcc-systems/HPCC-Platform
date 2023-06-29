@@ -64,12 +64,16 @@ static const char *splitName(const char *fileName)
 static void splitArchivedFileName(const char *fullName, StringAttr &container, StringAttr &option, StringAttr &relPath)
 {
     const char *tail = splitName(fullName);
-    assertex(tail);
-    size_t containerLen = tail-fullName;
-    if (fullName[containerLen-1]==PATHSEPCHAR)
-        containerLen--;
-    container.set(fullName, containerLen);
-    if (*tail=='{')
+    if (tail)
+    {
+        size_t containerLen = tail-fullName;
+        if (fullName[containerLen-1]==PATHSEPCHAR)
+            containerLen--;
+        container.set(fullName, containerLen);
+    }
+    else
+        container.set(fullName);
+    if (tail && *tail=='{')
     {
         tail++;
         const char *end = strchr(tail, '}');
@@ -406,8 +410,8 @@ public:
     virtual bool setCompression(bool set) { UNIMPLEMENTED; }
     virtual offset_t compressedSize() { UNIMPLEMENTED; }
     virtual unsigned getCRC() { UNIMPLEMENTED; }
-    virtual void setCreateFlags(unsigned short cflags) { UNIMPLEMENTED; }
-    virtual void setShareMode(IFSHmode shmode) { UNIMPLEMENTED; }
+    virtual void setCreateFlags(unsigned short cflags) { } // MORE: Should save and apply to any file that was created
+    virtual void setShareMode(IFSHmode shmode) { }         // MORE: Should save and use when the archive io is opened
     virtual bool createDirectory() { UNIMPLEMENTED; }
     virtual IDirectoryDifferenceIterator *monitorDirectory(
                                   IDirectoryIterator *prev=NULL,    // in (NULL means use current as baseline)
@@ -517,7 +521,7 @@ public:
                 if (includeDirs || !isDir)
                 {
                     const char *filename = archive_entry_pathname(entry);
-                    if (memcmp(filename, relDir.get(), relDir.length())==0)
+                    if (memcmp_iflen(filename, relDir.get(), relDir.length())==0)
                     {
                         StringBuffer tail(filename + relDir.length());
                         if (tail.length())
