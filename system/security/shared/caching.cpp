@@ -556,6 +556,9 @@ bool CPermissionsCache::queryPermsManagedFileScope(ISecUser& sec_user, const cha
     if (!fullScope || !*fullScope)
     {
         *accessFlags = queryDefaultPermission(sec_user);
+#ifdef _DEBUG
+        DBGLOG("FileScope unspecified for %s, applying default permissions %d, took %dms", sec_user.getName(), *accessFlags,  msTick()-start);
+#endif
         return true;
     }
 
@@ -579,6 +582,9 @@ bool CPermissionsCache::queryPermsManagedFileScope(ISecUser& sec_user, const cha
     if (m_managedFileScopesMap.empty())
     {
         *accessFlags = queryDefaultPermission(sec_user);
+#ifdef _DEBUG
+        DBGLOG("FileScope %s for %s, applying default permissions2 %d, took %dms",fullScope, sec_user.getName(), *accessFlags, msTick()-start);
+#endif
         return true;
     }
 
@@ -653,7 +659,6 @@ bool CPermissionsCache::queryPermsManagedFileScope(ISecUser& sec_user, const cha
         else
         {
             managedScope.append(const_cast<char *>(res->getName()));//return deepest managed scope
-
 #ifdef _DEBUG
             DBGLOG("FileScope %s for %s(%s) managed but not cached, took %dms", fullScope, sec_user.getName(), res->getName(), msTick()-start);
 #endif
