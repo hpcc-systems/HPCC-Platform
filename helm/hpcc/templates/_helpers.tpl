@@ -782,7 +782,7 @@ Specifically for now (but could be extended), this container generates sysctl co
   {{- $cmd = (printf "%ssysctl -w %s" $cmd $sysctl) -}}
  {{- end -}}
 - name: config-container
-  {{- include "hpcc.addImageAttrs" . | nindent 2 }}
+  image: {{ $root.Values.global.busybox | default "busybox:stable" }}
   securityContext:
     privileged: true
     readOnlyRootFilesystem: false
