@@ -53,6 +53,7 @@ public:
     void gatherPackagesUsed(StringArray & used) const;
     void inherit(const EclRepositoryManager & other);
     void kill();
+    unsigned __int64 getStatistic(StatisticKind kind) const;
 
     void processArchive(IPropertyTree * archiveTree);
     IEclPackage * queryDependentRepository(IIdAtom * name, const char * defaultUrl, IEclSourceCollection * overrideSources);
@@ -86,6 +87,7 @@ private:
     std::vector<DependencyInfo> dependencies;
     IArrayOf<IEclRepository> sharedSources;     // plugins, std library, bundles
     IArrayOf<IEclRepository> allSources;        // also includes -D options
+    cycle_t gitDownloadCycles = 0;
 
     //Include all options in a nested struct to make it easy to ensure they are cloned
     struct {

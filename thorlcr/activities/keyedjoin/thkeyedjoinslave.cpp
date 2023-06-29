@@ -1283,16 +1283,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         }
         void processRows(CThorExpandingRowArray &processing, unsigned partNo, IKeyManager *keyManager)
         {
-            unsigned __int64 startSeeks = keyManager->querySeeks();
-            unsigned __int64 startScans = keyManager->queryScans();
-            unsigned __int64 startWildSeeks = keyManager->queryWildSeeks();
-            auto onScopeExitFunc = [&]()
-            {
-                activity.inactiveStats.sumStatistic(StNumIndexSeeks, keyManager->querySeeks()-startSeeks);
-                activity.inactiveStats.sumStatistic(StNumIndexScans, keyManager->queryScans()-startScans);
-                activity.inactiveStats.sumStatistic(StNumIndexWildSeeks, keyManager->queryWildSeeks()-startWildSeeks);
-            };
-            COnScopeExit scoped(onScopeExitFunc);
+            CStatsScopedThresholdDeltaUpdater scoped(activity.statsUpdater);
             for (unsigned r=0; r<processing.ordinality() && !stopped; r++)
             {
                 OwnedConstThorRow row = processing.getClear(r);
@@ -1317,8 +1308,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                         joinGroup->setAtMostLimitHit(); // also clears existing rows
                         break;
                     }
-                    IContextLogger * ctxLogger = nullptr;
-                    KLBlobProviderAdapter adapter(keyManager, ctxLogger);
+                    KLBlobProviderAdapter adapter(keyManager, &activity.contextLogger);
                     byte const * keyRow = keyManager->queryKeyBuffer();
                     size_t fposOffset = keyManager->queryRowSize() - sizeof(offset_t);
                     offset_t fpos = rtlReadBigUInt8(keyRow + fposOffset);
@@ -2000,7 +1990,6 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                 activity.inactiveStats.mergeStatistic(StNumDiskSeeks, diskSeeks);
             };
             COnScopeExit scoped(onScopeExitFunc);
-
             unsigned numRows = processing.ordinality();
             // read back results and feed in to appropriate join groups.
 
@@ -2233,6 +2222,8 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
     CPartDescriptorArray allIndexParts;
     std::vector<unsigned> localIndexParts, localFetchPartMap;
     IArrayOf<IKeyIndex> tlkKeyIndexes;
+    CThorContextLogger contextLogger;
+    CStatsCtxLoggerDeltaUpdater statsUpdater;
     Owned<IEngineRowAllocator> joinFieldsAllocator;
     OwnedConstThorRow defaultRight;
     unsigned joinFlags = 0;
@@ -2428,7 +2419,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         {
             IKeyIndex *tlkKeyIndex = &tlkKeyIndexes.item(i);
             const RtlRecord &keyRecInfo = helper->queryIndexRecordSize()->queryRecordAccessor(true);
-            Owned<IKeyManager> tlkManager = createLocalKeyManager(keyRecInfo, nullptr, nullptr, helper->hasNewSegmentMonitors(), false);
+            Owned<IKeyManager> tlkManager = createLocalKeyManager(keyRecInfo, nullptr, &contextLogger, helper->hasNewSegmentMonitors(), false);
             tlkManager->setKey(tlkKeyIndex);
             keyManagers.append(*tlkManager.getClear());
         }
@@ -2446,7 +2437,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
 
         if (delayed)
         {
-            Owned<IFileIO> lazyIFileIO = queryThor().queryFileCache().lookupIFileIO(*this, indexName, filePart, nullptr, indexReadStatistics);
+            Owned<IFileIO> lazyIFileIO = queryThor().queryFileCache().lookupIFileIO(*this, indexName, filePart, nullptr);
             Owned<IDelayedFile> delayedFile = createDelayedFile(lazyIFileIO);
             return createKeyIndex(filename, crc, *delayedFile, (unsigned) -1, false);
         }
@@ -2456,14 +2447,14 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
              * But that's okay, because we are only here on demand.
              * The underlying IFileIO can later be closed by fhe file caching mechanism.
              */
-            Owned<IFileIO> lazyIFileIO = queryThor().queryFileCache().lookupIFileIO(*this, indexName, filePart, nullptr, indexReadStatistics);
+            Owned<IFileIO> lazyIFileIO = queryThor().queryFileCache().lookupIFileIO(*this, indexName, filePart, nullptr);
             return createKeyIndex(filename, crc, *lazyIFileIO, (unsigned) -1, false);
         }
     }
     IKeyManager *createPartKeyManager(unsigned partNo, unsigned copy)
     {
         Owned<IKeyIndex> keyIndex = createPartKeyIndex(partNo, copy, false);
-        return createLocalKeyManager(helper->queryIndexRecordSize()->queryRecordAccessor(true), keyIndex, nullptr, helper->hasNewSegmentMonitors(), false);
+        return createLocalKeyManager(helper->queryIndexRecordSize()->queryRecordAccessor(true), keyIndex, &contextLogger, helper->hasNewSegmentMonitors(), false);
     }
     const void *preparePendingLookupRow(void *row, size32_t maxSz, const void *lhsRow, size32_t keySz)
     {
@@ -2625,6 +2616,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
     }
     void stopReadAhead()
     {
+        CStatsScopedThresholdDeltaUpdater scoped(statsUpdater);
         keyLookupHandlers.flush();
         keyLookupHandlers.join(); // wait for pending handling, there may be more fetch items as a result
         fetchLookupHandlers.flushTS();
@@ -2946,7 +2938,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
 public:
     IMPLEMENT_IINTERFACE_USING(PARENT);
 
-    CKeyedJoinSlave(CGraphElementBase *_container) : PARENT(_container, keyedJoinActivityStatistics), readAheadThread(*this)
+    CKeyedJoinSlave(CGraphElementBase *_container) : PARENT(_container, keyedJoinActivityStatistics), readAheadThread(*this), statsUpdater(jhtreeCacheStatistics, *this, contextLogger)
     {
         helper = static_cast <IHThorKeyedJoinArg *> (queryHelper());
         reInit = 0 != (helper->getFetchFlags() & (FFvarfilename|FFdynamicfilename)) || (helper->getJoinFlags() & JFvarindexfilename);
@@ -3376,6 +3368,7 @@ public:
     }
     virtual void stop() override
     {
+        CStatsScopedDeltaUpdater scoped(statsUpdater);
         endOfInput = true; // signals to readAhead which is reading input, that is should stop asap.
 
         // could be blocked in readAhead(), because CJoinGroup's are no longer being processed

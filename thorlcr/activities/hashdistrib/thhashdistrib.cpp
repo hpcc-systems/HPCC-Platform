@@ -89,7 +89,7 @@ class IndexDistributeActivityMaster : public HashDistributeMasterBase
     MemoryBuffer tlkMb;
 
 public:
-    IndexDistributeActivityMaster(CMasterGraphElement *info) : HashDistributeMasterBase(DM_index, info) { }
+    IndexDistributeActivityMaster(CMasterGraphElement *info) : HashDistributeMasterBase(DM_index, info, indexDistribActivityStatistics) { }
     virtual void init()
     {
         HashDistributeMasterBase::init();

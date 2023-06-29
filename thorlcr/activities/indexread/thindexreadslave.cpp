@@ -78,27 +78,8 @@ protected:
     Owned<IFileIO> lazyIFileIO;
     mutable CriticalSection ioStatsCS;
     unsigned fileTableStart = NotFound;
-
-    template<class StatProvider>
-    class CCaptureIndexStats
-    {
-        CRuntimeStatisticCollection &stats;
-        StatProvider &statProvider;
-        unsigned __int64 startSeeks = 0, startScans = 0, startWildSeeks = 0;
-    public:
-        inline CCaptureIndexStats(CRuntimeStatisticCollection &_stats, StatProvider &_statProvider) : stats(_stats), statProvider(_statProvider)
-        {
-            startSeeks = statProvider.querySeeks();
-            startScans = statProvider.queryScans();
-            startWildSeeks = statProvider.queryWildSeeks();
-        }
-        inline ~CCaptureIndexStats()
-        {
-            stats.mergeStatistic(StNumIndexSeeks, statProvider.querySeeks() - startSeeks);
-            stats.mergeStatistic(StNumIndexScans, statProvider.queryScans() - startScans);
-            stats.mergeStatistic(StNumIndexWildSeeks, statProvider.queryWildSeeks() - startWildSeeks);
-        }
-    };
+    CThorContextLogger contextLogger;
+    CStatsCtxLoggerDeltaUpdater statsUpdater;
 
     class TransformCallback : implements IThorIndexCallback , public CSimpleInterface
     {
@@ -112,13 +93,12 @@ protected:
 
     //IThorIndexCallback
         virtual const byte *lookupBlob(unsigned __int64 id) override
-        { 
+        {
             size32_t dummy;
             if (!keyManager)
                 throw MakeActivityException(&activity, 0, "Callback attempting to read blob with no key manager - index being read remotely?");
             needsBlobCleaning = true;
-            IContextLogger * ctxLogger = nullptr;
-            return (byte *) keyManager->loadBlob(id, dummy, ctxLogger); 
+            return (byte *) keyManager->loadBlob(id, dummy, &activity.contextLogger);
         }
         void prepareManager(IKeyManager *_keyManager)
         {
@@ -130,7 +110,7 @@ protected:
             if (needsBlobCleaning)
             {
                 needsBlobCleaning = false;
-                keyManager->releaseBlobs(); 
+                keyManager->releaseBlobs();
             }
         }
         void resetManager()
@@ -270,6 +250,7 @@ public:
 
                             StringBuffer lPath;
                             rfn.getLocalPath(lPath);
+                            // todo: track stats when using remote handler
                             Owned<IIndexLookup> indexLookup = createRemoteFilteredKey(ep, lPath, crc, actualFormat, projectedFormat, actualFilter, remoteLimit);
                             if (indexLookup)
                             {
@@ -316,7 +297,7 @@ public:
                 rfn.getPath(path); // NB: use for tracing only, IDelayedFile uses IPartDescriptor and any copy
 
                 Owned<IKeyIndex> keyIndex = createKeyIndex(path, crc, *lazyIFileIO, (unsigned) -1, false);
-                Owned<IKeyManager> klManager = createLocalKeyManager(helper->queryDiskRecordSize()->queryRecordAccessor(true), keyIndex, nullptr, helper->hasNewSegmentMonitors(), false);
+                Owned<IKeyManager> klManager = createLocalKeyManager(helper->queryDiskRecordSize()->queryRecordAccessor(true), keyIndex, &contextLogger, helper->hasNewSegmentMonitors(), false);
                 if (localMerge)
                 {
                     if (!keyIndexSet)
@@ -343,7 +324,7 @@ public:
                     return createIndexLookup(keyManager);
                 }
             }
-            keyMergerManager.setown(createKeyMerger(helper->queryDiskRecordSize()->queryRecordAccessor(true), keyIndexSet, seekGEOffset, nullptr, helper->hasNewSegmentMonitors(), false));
+            keyMergerManager.setown(createKeyMerger(helper->queryDiskRecordSize()->queryRecordAccessor(true), keyIndexSet, seekGEOffset, &contextLogger, helper->hasNewSegmentMonitors(), false));
             const ITranslator *translator = translators.item(0);
             if (translator)
                 keyMergerManager->setLayoutTranslator(&translator->queryTranslator());
@@ -445,15 +426,13 @@ public:
         if (eoi)
             return nullptr;
         dbgassertex(currentInput);
+        CStatsScopedThresholdDeltaUpdater scoped(statsUpdater);
         const void *ret = nullptr;
         while (true)
         {
-            {
-                CCaptureIndexStats<IIndexLookup> scoped(inactiveStats, *currentInput);
-                ret = currentInput->nextKey();
-                if (ret)
-                    break;
-            }
+            ret = currentInput->nextKey();
+            if (ret)
+                break;
             configureNextInput();
             if (!currentInput)
                 break;
@@ -542,7 +521,8 @@ public:
     }
 public:
     CIndexReadSlaveBase(CGraphElementBase *container)
-        : CSlaveActivity(container, indexReadActivityStatistics), callback(*this)
+        : CSlaveActivity(container, indexReadActivityStatistics), callback(*this),
+          statsUpdater(jhtreeCacheStatistics, *this, contextLogger)
     {
         helper = (IHThorIndexReadBaseArg *)container->queryHelper();
         limitTransformExtra = nullptr;
@@ -569,7 +549,7 @@ public:
                 break;
             if (keyManager)
                 prepareManager(keyManager);
-            CCaptureIndexStats<IIndexLookup> scoped(inactiveStats, *indexInput);
+            CStatsScopedThresholdDeltaUpdater scoped(statsUpdater);
             if (hard) // checkCount checks hard key count only.
                 count += indexInput->checkCount(keyedLimit-count); // part max, is total limit [keyedLimit] minus total so far [count]
             else
@@ -608,7 +588,7 @@ public:
         }
         else
             initialized = true;
-        
+
         unsigned parts;
         data.read(parts);
         if (parts)
@@ -833,7 +813,7 @@ class CIndexReadSlaveActivity : public CIndexReadSlaveBase
             helper->mapOutputToInput(tempBuilder, seek, numFields); // NOTE - weird interface to mapOutputToInput means that it STARTS writing at seekGEOffset...
             rawSeek = (byte *)temp;
         }
-        CCaptureIndexStats<IKeyManager> scoped(inactiveStats, *currentManager);
+        CStatsScopedThresholdDeltaUpdater scoped(statsUpdater);
         if (!currentManager->lookupSkip(rawSeek, seekGEOffset, seekSize))
             return NULL;
         const byte *row = currentManager->queryKeyBuffer();
@@ -986,6 +966,7 @@ public:
 // IRowStream
     virtual void stop() override
     {
+        CStatsScopedDeltaUpdater scoped(statsUpdater);
         if (RCMAX != keyedLimit) // NB: will not be true if nextRow() has handled
         {
             keyedLimitCount = sendGetCount(keyedProcessed);
@@ -1155,7 +1136,7 @@ public:
                     if (keyManager)
                         prepareManager(keyManager);
 
-                    CCaptureIndexStats<IIndexLookup> scoped(inactiveStats, *indexInput);
+                    CStatsScopedThresholdDeltaUpdater scoped(statsUpdater);
                     while (true)
                     {
                         const void *key = indexInput->nextKey();
@@ -1314,7 +1295,7 @@ public:
                         if (keyManager)
                             prepareManager(keyManager);
 
-                        CCaptureIndexStats<IIndexLookup> scoped(inactiveStats, *indexInput);
+                        CStatsScopedThresholdDeltaUpdater scoped(statsUpdater);
                         while (true)
                         {
                             const void *key = indexInput->nextKey();

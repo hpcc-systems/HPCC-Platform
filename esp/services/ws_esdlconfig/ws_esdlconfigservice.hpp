@@ -38,7 +38,6 @@ class CWsESDLConfigEx : public CWsESDLConfig
 private:
     Owned<IEsdlStore> m_esdlStore;
     IPropertyTree * getEspProcessRegistry(const char * espprocname, const char * espbingingport, const char * servicename);
-    int getBindingXML(const char * bindingId, StringBuffer & bindingXml, StringBuffer & msg);
     void buildServiceMethodsResponse(IEsdlDefinitionInfo* defInfo, IArrayOf<IEspMethodConfig>& methodList, StringArray& serviceList, const char* svc = nullptr);
     void buildServiceWithMethodsResponse(IEsdlDefinitionInfo* defInfo, IArrayOf<IEspESDLService>& serviceList, const char* svc = nullptr);
     void wrapWithDefinitionElement(IEsdlDefinitionInfo* defInfo, StringBuffer& def);
@@ -66,8 +65,14 @@ public:
 
     bool attachServiceToDali() override
     {
-        m_isDetachedFromDali = false;
-        return true;
+        if(nullptr == m_esdlStore)
+        {
+            m_esdlStore.setown(createEsdlCentralStore());
+            m_isDetachedFromDali = (nullptr == m_esdlStore);
+        }
+        else
+            m_isDetachedFromDali = false;
+        return !m_isDetachedFromDali;
     }
 
     bool detachServiceFromDali() override

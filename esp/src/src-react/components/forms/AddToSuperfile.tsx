@@ -56,7 +56,6 @@ export const AddToSuperfile: React.FunctionComponent<AddToSuperfileProps> = ({
     const onSubmit = React.useCallback(() => {
         handleSubmit(
             (data, evt) => {
-                console.log(data.names);
                 WsDfu.AddtoSuperfile(data.names, data.superFile, data.existingFile)
                     .then(response => {
                         closeForm();

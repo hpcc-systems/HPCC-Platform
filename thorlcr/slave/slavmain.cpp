@@ -115,7 +115,7 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
     unsigned maxCachedKJManagers = defaultMaxCachedKJManagers;
     unsigned maxCachedFetchContexts = defaultMaxCachedFetchContexts;
     unsigned keyLookupMaxProcessThreads = defaultKeyLookupMaxProcessThreads;
-
+    CThorContextLogger contextLogger;
     class CLookupKey
     {
         unsigned hashv = 0;
@@ -403,9 +403,9 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
         IEngineRowAllocator *queryFetchOutputAllocator() const { return activityCtx->queryFetchOutputAllocator(); }
         IOutputRowSerializer *queryFetchOutputSerializer() const { return activityCtx->queryFetchOutputSerializer(); }
 
-        IKeyManager *createKeyManager()
+        IKeyManager *createKeyManager(IContextLogger *ctxLogger)
         {
-            return createLocalKeyManager(queryHelper()->queryIndexRecordSize()->queryRecordAccessor(true), keyIndex, nullptr, queryHelper()->hasNewSegmentMonitors(), false);
+            return createLocalKeyManager(queryHelper()->queryIndexRecordSize()->queryRecordAccessor(true), keyIndex, ctxLogger, queryHelper()->hasNewSegmentMonitors(), false);
         }
         inline IHThorKeyedJoinArg *queryHelper() const { return activityCtx->queryHelper(); }
     };
@@ -451,7 +451,7 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
         CKMContainer(CKJService &_service, CKeyLookupContext *_ctx)
             : service(_service), ctx(_ctx)
         {
-            keyManager.setown(ctx->createKeyManager());
+            keyManager.setown(ctx->createKeyManager(&service.contextLogger));
             StringBuffer tracing;
             const IDynamicTransform *translator = ctx->queryTranslator(ctx->queryKey().getTracing(tracing));
             if (translator)
@@ -474,6 +474,7 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
             helper->onStart((const byte *)parentCtxMb.toByteArray(), startCtxMb.length() ? &startCtxMb : nullptr);
         }
         inline IHThorKeyedJoinArg *queryHelper() const { return helper; }
+        inline CKJService & queryService() const { return service; }
     };
     template<class KEY, class ITEM>
     class CKeyedCacheEntry : public CInterface
@@ -756,9 +757,10 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
                 unsigned rowCount = getRowCount();
                 unsigned rowNum = 0;
                 unsigned rowStart = 0;
-                unsigned __int64 startSeeks = kmc->queryKeyManager()->querySeeks();
-                unsigned __int64 startScans = kmc->queryKeyManager()->queryScans();
-                unsigned __int64 startWildSeeks = kmc->queryKeyManager()->queryWildSeeks();
+                const CRuntimeStatisticCollection & stats = kmc->queryService().contextLogger.queryStats();
+                unsigned __int64 startSeeks = stats.getStatisticValue(StNumIndexSeeks);
+                unsigned __int64 startScans = stats.getStatisticValue(StNumIndexScans);
+                unsigned __int64 startWildSeeks = stats.getStatisticValue(StNumIndexWildSeeks);
                 while (!abortSoon)
                 {
                     OwnedConstThorRow row = getRowClear(rowNum++);
@@ -768,9 +770,9 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
                     if (last || (replyMb.length() >= DEFAULT_KEYLOOKUP_MAXREPLYSZ))
                     {
                         countMarker.write(rowNum-rowStart);
-                        replyMb.append(kmc->queryKeyManager()->querySeeks()-startSeeks);
-                        replyMb.append(kmc->queryKeyManager()->queryScans()-startScans);
-                        replyMb.append(kmc->queryKeyManager()->queryWildSeeks()-startWildSeeks);
+                        replyMb.append(stats.getStatisticValue(StNumIndexSeeks)-startSeeks);
+                        replyMb.append(stats.getStatisticValue(StNumIndexScans)-startScans);
+                        replyMb.append(stats.getStatisticValue(StNumIndexWildSeeks)-startWildSeeks);
                         if (activityCtx->useMessageCompression())
                         {
                             fastLZCompressToBuffer(replyMsg, tmpMB.length(), tmpMB.toByteArray());
@@ -1597,9 +1599,7 @@ class CJobListener : public CSimpleInterface
     bool &stopped;
     CriticalSection crit;
     OwningStringSuperHashTableOf<CJobSlave> jobs;
-#ifndef _CONTAINERIZED
     CFifoFileCache querySoCache; // used to mirror master cache
-#endif
     IArrayOf<IMPServer> mpServers;
     unsigned channelsPerSlave;
 
@@ -1746,18 +1746,19 @@ public:
                 verifyThreads.append(*new CVerifyThread(*this, c));
         }
 
-#ifndef _CONTAINERIZED
-        StringBuffer soPath;
-        globals->getProp("@query_so_dir", soPath);
-        StringBuffer soPattern("*.");
-#ifdef _WIN32
-        soPattern.append("dll");
-#else
-        soPattern.append("so");
-#endif
         if (getExpertOptBool("dllsToSlaves", true))
-            querySoCache.init(soPath.str(), DEFAULT_QUERYSO_LIMIT, soPattern);
+        {
+            StringBuffer soPath;
+            globals->getProp("@query_so_dir", soPath);
+            StringBuffer soPattern("*.");
+#ifdef _WIN32
+            soPattern.append("dll");
+#else
+            soPattern.append("so");
 #endif
+            querySoCache.init(soPath.str(), DEFAULT_QUERYSO_LIMIT, soPattern);
+        }
+
         Owned<ISlaveWatchdog> watchdog;
         if (globals->getPropBool("@watchdogEnabled"))
             watchdog.setown(createProgressHandler(globals->getPropBool("@useUDPWatchdog")));
@@ -1788,87 +1789,90 @@ public:
                         msg.read(graphName);
 
                         Owned<ILoadedDllEntry> querySo;
-#ifdef _CONTAINERIZED
-                        StringAttr soName;
-                        msg.read(soName);
-                        querySo.setown(createDllEntry(soName.str(), false, NULL, false));
-                        soPath.append(soName);
-#else
-                        StringBuffer soPathTail;
-                        StringAttr remoteSoPath;
-                        msg.read(remoteSoPath);
-                        bool sendSo;
-                        msg.read(sendSo);
-
-                        RemoteFilename rfn;
-                        SocketEndpoint masterEp = queryMyNode()->endpoint();
-                        masterEp.port = 0;
-                        rfn.setPath(masterEp, remoteSoPath);
-                        rfn.getTail(soPathTail);
-                        if (sendSo)
+                        if (!getExpertOptBool("saveQueryDlls"))
                         {
-                            size32_t size;
-                            msg.read(size);
-                            globals->getProp("@query_so_dir", soPath);
-                            if (soPath.length())
-                                addPathSepChar(soPath);
-                            soPath.append(soPathTail);
-                            const byte *queryPtr = msg.readDirect(size);
-                            Owned<IFile> iFile = createIFile(soPath.str());
-                            try
-                            {
-                                iFile->setCreateFlags(S_IRWXU);
-                                Owned<IFileIO> iFileIO = iFile->open(IFOwrite);
-                                iFileIO->write(0, size, queryPtr);
-                            }
-                            catch (IException *e)
-                            {
-                                IException *e2 = ThorWrapException(e, "Failed to save dll: %s", soPath.str());
-                                e->Release();
-                                throw e2;
-                            }
-                            assertex(getExpertOptBool("dllsToSlaves", true));
-                            querySoCache.add(soPath.str());
+                            StringAttr soName;
+                            msg.read(soName);
+                            querySo.setown(createDllEntry(soName.str(), false, NULL, false));
+                            soPath.append(soName);
                         }
                         else
                         {
-                            if (!rfn.isLocal())
+                            StringBuffer soPathTail;
+                            StringAttr remoteSoPath;
+                            msg.read(remoteSoPath);
+                            bool sendSo;
+                            msg.read(sendSo);
+
+                            RemoteFilename rfn;
+                            SocketEndpoint masterEp = queryMyNode()->endpoint();
+                            masterEp.port = 0;
+                            rfn.setPath(masterEp, remoteSoPath);
+                            rfn.getTail(soPathTail);
+                            if (sendSo)
                             {
-                                StringBuffer _remoteSoPath;
-                                rfn.getRemotePath(_remoteSoPath);
-                                remoteSoPath.set(_remoteSoPath);
-                            }
-                            if (getExpertOptBool("dllsToSlaves", true))
-                            {
+                                size32_t size;
+                                msg.read(size);
                                 globals->getProp("@query_so_dir", soPath);
                                 if (soPath.length())
                                     addPathSepChar(soPath);
                                 soPath.append(soPathTail);
-                                OwnedIFile iFile = createIFile(soPath.str());
-                                if (!iFile->exists())
+                                const byte *queryPtr = msg.readDirect(size);
+                                Owned<IFile> iFile = createIFile(soPath.str());
+                                try
                                 {
-                                    IWARNLOG("Slave cached query dll missing: %s, will attempt to fetch from master", soPath.str());
-                                    copyFile(soPath.str(), remoteSoPath);
+                                    iFile->setCreateFlags(S_IRWXU);
+                                    Owned<IFileIO> iFileIO = iFile->open(IFOwrite);
+                                    iFileIO->write(0, size, queryPtr);
                                 }
+                                catch (IException *e)
+                                {
+                                    IException *e2 = ThorWrapException(e, "Failed to save dll: %s", soPath.str());
+                                    e->Release();
+                                    throw e2;
+                                }
+                                assertex(getExpertOptBool("dllsToSlaves", true));
                                 querySoCache.add(soPath.str());
                             }
                             else
-                                soPath.append(remoteSoPath);
+                            {
+                                if (!rfn.isLocal())
+                                {
+                                    StringBuffer _remoteSoPath;
+                                    rfn.getRemotePath(_remoteSoPath);
+                                    remoteSoPath.set(_remoteSoPath);
+                                }
+                                if (getExpertOptBool("dllsToSlaves", true))
+                                {
+                                    globals->getProp("@query_so_dir", soPath);
+                                    if (soPath.length())
+                                        addPathSepChar(soPath);
+                                    soPath.append(soPathTail);
+                                    OwnedIFile iFile = createIFile(soPath.str());
+                                    if (!iFile->exists())
+                                    {
+                                        IWARNLOG("Slave cached query dll missing: %s, will attempt to fetch from master", soPath.str());
+                                        copyFile(soPath.str(), remoteSoPath);
+                                    }
+                                    querySoCache.add(soPath.str());
+                                }
+                                else
+                                    soPath.append(remoteSoPath);
+                            }
+    #ifdef __linux__
+                        // only relevant if dllsToSlaves=false and query_so_dir was fully qualified remote path (e.g. //<ip>/path/file
+                            rfn.setRemotePath(soPath.str());
+                            StringBuffer tempSo;
+                            if (!rfn.isLocal())
+                            {
+                                IWARNLOG("Cannot load shared object directly from remote path, creating temporary local copy: %s", soPath.str());
+                                GetTempFilePath(tempSo,"so");
+                                copyFile(tempSo.str(), soPath.str());
+                                soPath.clear().append(tempSo.str());
+                            }
+    #endif
+                            querySo.setown(createDllEntry(soPath.str(), false, NULL, false));
                         }
-#ifdef __linux__
-                    // only relevant if dllsToSlaves=false and query_so_dir was fully qualified remote path (e.g. //<ip>/path/file
-                        rfn.setRemotePath(soPath.str());
-                        StringBuffer tempSo;
-                        if (!rfn.isLocal())
-                        {
-                            IWARNLOG("Cannot load shared object directly from remote path, creating temporary local copy: %s", soPath.str());
-                            GetTempFilePath(tempSo,"so");
-                            copyFile(tempSo.str(), soPath.str());
-                            soPath.clear().append(tempSo.str());
-                        }
-#endif
-                        querySo.setown(createDllEntry(soPath.str(), false, NULL, false));
-#endif
 
                         Owned<IPropertyTree> workUnitInfo = createPTree(msg);
                         StringBuffer user;

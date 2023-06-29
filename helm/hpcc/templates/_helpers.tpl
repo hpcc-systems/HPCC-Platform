@@ -522,11 +522,13 @@ Pass in dict with sinks
 {{- if hasKey . "sinks" }}
  {{ range $sink := .sinks -}}
   {{- if eq (get $sink "type") "prometheus" }}
-   {{- if and (hasKey $sink "settings") ( hasKey $sink.settings "autodiscovery") }}
-    {{- if (eq $sink.settings.autodiscovery true ) }}
+   {{- if hasKey $sink "settings" }}
+    {{- if hasKey $sink.settings "autodiscovery" }}
+     {{- if (eq $sink.settings.autodiscovery true ) }}
 prometheus.io/scrape: 'true'
 prometheus.io/path: {{ $sink.settings.path | default "/metrics" }}
 prometheus.io/port: {{ $sink.settings.port | default 8767 | quote }}
+     {{ end }}
     {{ end }}
    {{ end }}
   {{ end }}
@@ -762,11 +764,15 @@ Specifically for now (but could be extended), this container generates sysctl co
 {{- $component := .me -}}
 {{- $cmd := "" -}}
 {{- $sysctls := list -}}
-{{- if and (hasKey $root.Values.global "expert") (hasKey $root.Values.global.expert "sysctl") -}}
- {{- $sysctls = $root.Values.global.expert.sysctl -}}
+{{- if (hasKey $root.Values.global "expert") -}}
+ {{- if (hasKey $root.Values.global.expert "sysctl") -}}
+  {{- $sysctls = $root.Values.global.expert.sysctl -}}
+ {{- end -}}
 {{- end -}}
-{{- if and (hasKey $component "expert") (hasKey $component.expert "sysctl") -}}
- {{- $sysctls = (concat $sysctls $component.expert.sysctl) | uniq -}}
+{{- if (hasKey $component "expert") -}}
+ {{- if (hasKey $component.expert "sysctl") -}}
+  {{- $sysctls = (concat $sysctls $component.expert.sysctl) | uniq -}}
+ {{- end -}}
 {{- end -}}
 {{- if $sysctls -}}
  {{- range $sysctl := $sysctls -}}
@@ -776,7 +782,7 @@ Specifically for now (but could be extended), this container generates sysctl co
   {{- $cmd = (printf "%ssysctl -w %s" $cmd $sysctl) -}}
  {{- end -}}
 - name: config-container
-  {{- include "hpcc.addImageAttrs" . | nindent 2 }}
+  image: {{ $root.Values.global.busybox | default "busybox:stable" }}
   securityContext:
     privileged: true
     readOnlyRootFilesystem: false
@@ -798,7 +804,7 @@ A kludge to ensure until the mount of a PVC appears (this can happen with some t
   command: ["/bin/sh"]
   args:
   - "-c"
-  - {{ printf "until test -d %s; do sleep 5; done" .volumePath }}
+  - {{ printf "until mountpoint -q %s; do sleep 5; done" .volumePath }}
   volumeMounts:
     - name: {{ .volumeName | quote}}
       mountPath: {{ .volumePath | quote }}
@@ -1130,11 +1136,19 @@ Add resource object
 Pass in a dictionary with me defined
 */}}
 {{- define "hpcc.addResources" }}
-{{- if .me  }}
+{{- if .me }}
+ {{- $limits := omit .me "cpu" }}
+ {{- $requests := pick .me "cpu" }}
 resources:
+ {{- if $limits }}
   limits:
-{{ toYaml .me | indent 4 }}
-{{- end }}
+  {{- toYaml $limits | nindent 4 }}
+ {{- end -}}
+ {{- if $requests }}
+  requests:
+  {{- toYaml $requests | nindent 4 -}}
+ {{- end -}}
+{{- end -}}
 {{- end -}}
 
 {{/*
@@ -1150,8 +1164,9 @@ Pass in dict with root, me and instances defined
 {{- $totalBytes := mul .instances $bytes }}
 resources:
   limits:
-    cpu: {{ printf "%dm" (mul .instances $milliCPUs) | quote }}
     memory: {{ include "hpcc.bytesToK8sMemoryString" $totalBytes | quote }}
+  requests:
+    cpu: {{ printf "%dm" (mul .instances $milliCPUs) | quote }}
 {{- end -}}
 
 {{/*
@@ -1357,9 +1372,11 @@ Pass in dict with sinks
 {{- define "hpcc.generateMetricsReporterLabel" }}
  {{ range $sink := .sinks -}}
   {{- if eq (get $sink "type") "prometheus" }}
-   {{- if and (hasKey $sink "settings") ( hasKey $sink.settings "autodiscovery") }}
-    {{- if (eq $sink.settings.autodiscovery true ) }}
+   {{- if hasKey $sink "settings" }}
+    {{- if hasKey $sink.settings "autodiscovery" }}
+     {{- if (eq $sink.settings.autodiscovery true ) }}
 prometheusMetricsReporter: "yes"
+     {{ end }}
     {{ end }}
    {{ end }}
   {{ end }}

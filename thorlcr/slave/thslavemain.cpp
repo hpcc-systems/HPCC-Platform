@@ -471,8 +471,9 @@ int main( int argc, const char *argv[]  )
                 setBaseDirectory(overrideBaseDirectory, false);
             if (!isEmptyString(overrideReplicateDirectory))
                 setBaseDirectory(overrideReplicateDirectory, true);
+#endif
 
-            if (getConfigurationDirectory(globals->queryPropTree("Directories"),"query","thor",globals->queryProp("@name"),str.clear()))
+            if (!isContainerized() && getConfigurationDirectory(globals->queryPropTree("Directories"),"query","thor",globals->queryProp("@name"),str.clear()))
                 globals->setProp("@query_so_dir", str.str());
             else
                 globals->getProp("@query_so_dir", str.clear());
@@ -492,7 +493,6 @@ int main( int argc, const char *argv[]  )
                 PROGLOG("Using querySo directory: %s", str.str());
                 recursiveCreateDirectory(str.str());
             }
-#endif
 
             useMemoryMappedRead(globals->getPropBool("@useMemoryMappedRead"));
 

@@ -40,6 +40,7 @@ static const char* defaultRowSericeConfiguration = "RowSvc";
 #include "remoteerr.hpp"
 #include "dafscommon.hpp"
 #include "rmtclient.hpp"
+#include "rmtfile.hpp"
 #include "dafsserver.hpp"
 
 void usage()
@@ -674,6 +675,8 @@ int main(int argc, const char* argv[])
     dedicatedRowServicePort = dafileSrvInstance->getPropInt("@rowServicePort", dedicatedRowServicePort);
     dedicatedRowServiceSSL = dafileSrvInstance->getPropBool("@rowServiceSSL", dedicatedRowServiceSSL);
     rowServiceOnStdPort = dafileSrvInstance->getPropBool("@rowServiceOnStdPort", rowServiceOnStdPort);
+
+    installDefaultFileHooks(dafileSrvInstance);
 
 #ifndef _CONTAINERIZED
     if (isdaemon)

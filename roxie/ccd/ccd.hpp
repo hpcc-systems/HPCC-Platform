@@ -778,6 +778,10 @@ public:
     {
         return logTrace.queryCallerIdHTTPHeaderName();
     }
+    virtual const CRuntimeStatisticCollection & queryStats() const override
+    {
+        return stats;
+    }
 };
 
 class StringContextLogger : public ContextLogger
