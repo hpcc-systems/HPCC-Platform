@@ -1206,10 +1206,14 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         unsigned candidateCount;
         __int64 lastSeeks, lastScans;
         IConstPointerArrayOf<ITranslator> translators;
+        CThorContextLogger contextLogger;
 
-        inline void noteStats(unsigned seeks, unsigned scans)
+        inline void updateJhTreeStats()
         {
             CriticalBlock b(owner.statCrit);
+            const CRuntimeStatisticCollection & stats = contextLogger.queryStats();
+            unsigned __int64 seeks = stats.getStatisticValue(StNumIndexSeeks);
+            unsigned __int64 scans = stats.getStatisticValue(StNumIndexScans);
             owner.statsArr[AS_Seeks] += seeks-lastSeeks;
             owner.statsArr[AS_Scans] += scans-lastScans;
             lastSeeks = seeks;
@@ -1251,7 +1255,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
 
         CKeyLocalLookup(CKeyedJoinSlave &_owner, const RtlRecord &_keyRecInfo) : owner(_owner), keyRecInfo(_keyRecInfo), indexReadFieldsRow(_owner.indexInputAllocator)
         {
-            tlkManager.setown(owner.keyHasTlk ? createLocalKeyManager(keyRecInfo, nullptr, nullptr, owner.helper->hasNewSegmentMonitors(), false) : nullptr);
+            tlkManager.setown(owner.keyHasTlk ? createLocalKeyManager(keyRecInfo, nullptr, &contextLogger, owner.helper->hasNewSegmentMonitors(), false) : nullptr);
             reset();
             owner.getKeyIndexes(partKeyIndexes);
             RecordTranslationMode translationMode = getTranslationMode(owner);
@@ -1271,7 +1275,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             }
             else
             {
-                partManager.setown(createLocalKeyManager(owner.helper->queryIndexRecordSize()->queryRecordAccessor(true), nullptr, nullptr, owner.helper->hasNewSegmentMonitors(), false));
+                partManager.setown(createLocalKeyManager(owner.helper->queryIndexRecordSize()->queryRecordAccessor(true), nullptr, &contextLogger, owner.helper->hasNewSegmentMonitors(), false));
                 getLayoutTranslations(translators, owner.helper->getFileName(), owner.indexParts, translationMode, expectedFormatCrc, owner.helper->queryIndexRecordSize(), projectedFormatCrc, projectedFormat);
             }
         }
@@ -1359,8 +1363,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                             ++candidateCount;
                             if (candidateCount > owner.atMost)
                                 break;
-                            IContextLogger * ctxLogger = nullptr;
-                            KLBlobProviderAdapter adapter(partManager, ctxLogger);
+                            KLBlobProviderAdapter adapter(partManager, & contextLogger);
                             byte const * keyRow = partManager->queryKeyBuffer();
                             size_t fposOffset = partManager->queryRowSize() - sizeof(offset_t);
                             offset_t fpos = rtlReadBigUInt8(keyRow + fposOffset);
@@ -1389,7 +1392,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
 #ifdef TRACE_JOINGROUPS
                                 ::ActPrintLog(&owner, "CJoinGroup [result] %x from %d", currentJG, __LINE__);
 #endif
-                                noteStats(partManager->querySeeks(), partManager->queryScans());
+                                updateJhTreeStats();
                                 size32_t lorsz = owner.keyLookupAllocator->queryOutputMeta()->getRecordSize(lookupRow.getSelf());
                                 // must be easier way
                                 return lookupRow.finalizeRowClear(lorsz);
@@ -1401,7 +1404,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                             }
                         }
                         partManager->releaseSegmentMonitors();
-                        noteStats(partManager->querySeeks(), partManager->queryScans());
+                        updateJhTreeStats();
                         currentPart = nullptr;
                         if (owner.localKey)
                         { // merger done
@@ -1469,7 +1472,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                             ::ActPrintLog(&owner, "CJoinGroup [end marker returned] %x from %d", currentJG, __LINE__);
 #endif
                             if (currentPart)
-                                noteStats(partManager->querySeeks(), partManager->queryScans());
+                                updateJhTreeStats();
                             currentJG = NULL;
                             size32_t lorsz = owner.keyLookupAllocator->queryOutputMeta()->getRecordSize(lookupRow.getSelf());
                             // must be easier way
@@ -1513,7 +1516,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                 throw;
             }
             if (currentPart)
-                noteStats(partManager->querySeeks(), partManager->queryScans());
+                updateJhTreeStats();
             return NULL;
         }
 

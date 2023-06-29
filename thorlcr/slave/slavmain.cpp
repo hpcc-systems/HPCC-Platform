@@ -115,7 +115,7 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
     unsigned maxCachedKJManagers = defaultMaxCachedKJManagers;
     unsigned maxCachedFetchContexts = defaultMaxCachedFetchContexts;
     unsigned keyLookupMaxProcessThreads = defaultKeyLookupMaxProcessThreads;
-
+    CThorContextLogger contextLogger;
     class CLookupKey
     {
         unsigned hashv = 0;
@@ -403,9 +403,9 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
         IEngineRowAllocator *queryFetchOutputAllocator() const { return activityCtx->queryFetchOutputAllocator(); }
         IOutputRowSerializer *queryFetchOutputSerializer() const { return activityCtx->queryFetchOutputSerializer(); }
 
-        IKeyManager *createKeyManager()
+        IKeyManager *createKeyManager(IContextLogger *ctxLogger)
         {
-            return createLocalKeyManager(queryHelper()->queryIndexRecordSize()->queryRecordAccessor(true), keyIndex, nullptr, queryHelper()->hasNewSegmentMonitors(), false);
+            return createLocalKeyManager(queryHelper()->queryIndexRecordSize()->queryRecordAccessor(true), keyIndex, ctxLogger, queryHelper()->hasNewSegmentMonitors(), false);
         }
         inline IHThorKeyedJoinArg *queryHelper() const { return activityCtx->queryHelper(); }
     };
@@ -451,7 +451,7 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
         CKMContainer(CKJService &_service, CKeyLookupContext *_ctx)
             : service(_service), ctx(_ctx)
         {
-            keyManager.setown(ctx->createKeyManager());
+            keyManager.setown(ctx->createKeyManager(&service.contextLogger));
             StringBuffer tracing;
             const IDynamicTransform *translator = ctx->queryTranslator(ctx->queryKey().getTracing(tracing));
             if (translator)
@@ -474,6 +474,7 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
             helper->onStart((const byte *)parentCtxMb.toByteArray(), startCtxMb.length() ? &startCtxMb : nullptr);
         }
         inline IHThorKeyedJoinArg *queryHelper() const { return helper; }
+        inline CKJService & queryService() const { return service; }
     };
     template<class KEY, class ITEM>
     class CKeyedCacheEntry : public CInterface
@@ -756,9 +757,10 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
                 unsigned rowCount = getRowCount();
                 unsigned rowNum = 0;
                 unsigned rowStart = 0;
-                unsigned __int64 startSeeks = kmc->queryKeyManager()->querySeeks();
-                unsigned __int64 startScans = kmc->queryKeyManager()->queryScans();
-                unsigned __int64 startWildSeeks = kmc->queryKeyManager()->queryWildSeeks();
+                const CRuntimeStatisticCollection & stats = kmc->queryService().contextLogger.queryStats();
+                unsigned __int64 startSeeks = stats.getStatisticValue(StNumIndexSeeks);
+                unsigned __int64 startScans = stats.getStatisticValue(StNumIndexScans);
+                unsigned __int64 startWildSeeks = stats.getStatisticValue(StNumIndexWildSeeks);
                 while (!abortSoon)
                 {
                     OwnedConstThorRow row = getRowClear(rowNum++);
@@ -768,9 +770,9 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
                     if (last || (replyMb.length() >= DEFAULT_KEYLOOKUP_MAXREPLYSZ))
                     {
                         countMarker.write(rowNum-rowStart);
-                        replyMb.append(kmc->queryKeyManager()->querySeeks()-startSeeks);
-                        replyMb.append(kmc->queryKeyManager()->queryScans()-startScans);
-                        replyMb.append(kmc->queryKeyManager()->queryWildSeeks()-startWildSeeks);
+                        replyMb.append(stats.getStatisticValue(StNumIndexSeeks)-startSeeks);
+                        replyMb.append(stats.getStatisticValue(StNumIndexScans)-startScans);
+                        replyMb.append(stats.getStatisticValue(StNumIndexWildSeeks)-startWildSeeks);
                         if (activityCtx->useMessageCompression())
                         {
                             fastLZCompressToBuffer(replyMsg, tmpMB.length(), tmpMB.toByteArray());
