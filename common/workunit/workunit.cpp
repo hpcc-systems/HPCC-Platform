@@ -14183,7 +14183,7 @@ void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IP
     {
         CCycleTimer elapsedTimer;
 
-        bool multiJobLinger = config.getPropBool("@multiJobLinger");
+        bool multiJobLinger = config.getPropBool("@multiJobLinger", true);
 
         // NB: executeGraphOnLingeringThor looks for existing Thor instance that has been used for the same job,
         // and communicates with it directly

@@ -1328,7 +1328,7 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
             else
             {
                 unsigned lingerPeriod = globals->getPropInt("@lingerPeriod", DEFAULT_LINGER_SECS)*1000;
-                bool multiJobLinger = globals->getPropBool("@multiJobLinger");
+                bool multiJobLinger = globals->getPropBool("@multiJobLinger", true);
                 VStringBuffer multiJobLingerQueueName("%s_lingerqueue", globals->queryProp("@name"));
                 StringBuffer instance("thorinstance_");
 
