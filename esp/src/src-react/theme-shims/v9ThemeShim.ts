@@ -1,7 +1,13 @@
 //  See https://github.com/microsoft/fluentui/blob/master/apps/public-docsite-v9/src/shims/ThemeShim/v9ThemeShim.ts
 
 import { IEffects, IPalette, Theme as ThemeV8 } from "@fluentui/react";
-import { BorderRadiusTokens, ColorTokens, ShadowTokens, Theme as ThemeV9, webLightTheme } from "@fluentui/react-components";
+import {
+  BorderRadiusTokens,
+  ColorTokens,
+  ShadowTokens,
+  Theme as ThemeV9,
+  webLightTheme,
+} from "@fluentui/react-components";
 import { blackAlpha, whiteAlpha, grey, grey10Alpha, grey12Alpha } from "./themeDuplicates";
 
 /**
@@ -43,6 +49,8 @@ const mapAliasColors = (palette: IPalette, inverted: boolean): ColorTokens => {
     colorCompoundBrandForeground1Pressed: palette.themeDark,
     colorBrandForeground1: palette.themePrimary,
     colorBrandForeground2: palette.themeDarkAlt,
+    colorBrandForeground2Hover: palette.themeDarkAlt,
+    colorBrandForeground2Pressed: palette.themeDarkAlt,
     colorNeutralForeground1Static: palette.neutralPrimary,
     colorNeutralForegroundInverted: palette.white,
     colorNeutralForegroundInvertedHover: palette.white,
@@ -119,6 +127,8 @@ const mapAliasColors = (palette: IPalette, inverted: boolean): ColorTokens => {
     colorCompoundBrandBackgroundPressed: palette.themeDark,
     colorBrandBackgroundStatic: palette.themePrimary,
     colorBrandBackground2: palette.themeLighterAlt,
+    colorBrandBackground2Hover: palette.themeLighterAlt,
+    colorBrandBackground2Pressed: palette.themeLighterAlt,
     colorBrandBackgroundInverted: palette.white,
     colorBrandBackgroundInvertedHover: palette.themeLighterAlt,
     colorBrandBackgroundInvertedPressed: palette.themeLight,
@@ -133,6 +143,7 @@ const mapAliasColors = (palette: IPalette, inverted: boolean): ColorTokens => {
     colorNeutralStroke1Selected: palette.neutralTertiaryAlt,
     colorNeutralStroke2: palette.neutralQuaternaryAlt,
     colorNeutralStroke3: palette.neutralLighter,
+    colorNeutralStrokeSubtle: palette.neutralQuaternaryAlt,
     colorNeutralStrokeOnBrand: palette.white,
     colorNeutralStrokeOnBrand2: palette.white,
     colorNeutralStrokeOnBrand2Hover: palette.white,
@@ -140,6 +151,8 @@ const mapAliasColors = (palette: IPalette, inverted: boolean): ColorTokens => {
     colorNeutralStrokeOnBrand2Selected: palette.white,
     colorBrandStroke1: palette.themePrimary,
     colorBrandStroke2: palette.themeLight,
+    colorBrandStroke2Hover: palette.themeLight,
+    colorBrandStroke2Pressed: palette.themeLight,
     colorCompoundBrandStroke: palette.themePrimary,
     colorCompoundBrandStrokeHover: palette.themeDarkAlt,
     colorCompoundBrandStrokePressed: palette.themeDark,
