@@ -447,6 +447,28 @@ public:
         }
         numEntries++;
     }
+    void moveToHead(ELEMENT * element)
+    {
+        if (likely(pHead != element))
+        {
+            //Initial code from remove() - simplified since pHead != element, and no decrement of entries
+            ELEMENT * next = element->next;
+            ELEMENT * prev = element->prev;
+            assertex(prev || next);
+            if (element == pTail)   // would if (!next) avoid loading pTail?
+                pTail = prev;
+            if (next)
+                next->prev = prev;
+            if (prev)
+                prev->next = next;
+
+            //enqueueHead() - simplified since pHead must be set, and no increment of number of entries
+            pHead->prev = element;
+            element->next = pHead;
+            element->prev = nullptr;
+            pHead = element;
+        }
+    }
     ELEMENT *head() const { return pHead; }
     ELEMENT *tail() const { return pTail; }
     void remove(ELEMENT *element)
