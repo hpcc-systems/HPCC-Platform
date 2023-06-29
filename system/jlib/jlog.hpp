@@ -1261,6 +1261,7 @@ interface jlib_decl IContextLogger : extends IInterface
     virtual const char *queryCallerIdHttpHeaderName() const = 0;
     virtual void setCallerId(const char *id) = 0;
     virtual const char *queryCallerId() const = 0;
+    virtual const CRuntimeStatisticCollection & queryStats() const = 0;
 };
 
 extern jlib_decl StringBuffer &appendGloballyUniqueId(StringBuffer &s);

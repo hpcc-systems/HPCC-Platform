@@ -297,8 +297,88 @@ public:
     virtual void setInputStream(unsigned index, CThorInput &input, bool consumerOrdered) override;
     virtual void processDone(MemoryBuffer &mb) override { };
     virtual void reset() override;
+
+friend class CStatsCtxLoggerDeltaUpdater;
 };
 
+class CStatsDeltaUpdater
+{
+protected:
+    CRuntimeStatisticCollection startStats;
+    cycle_t timeThreshold = 0;
+    cycle_t lastUpdate = 0;
+
+public:
+    inline CStatsDeltaUpdater(const StatisticsMapping &mapping, unsigned timeThresholdSecs=0) : startStats(mapping)
+    {
+        constexpr unsigned defaultTimeThresholdSecs = 10;
+        if (0 == timeThresholdSecs)
+            timeThresholdSecs = defaultTimeThresholdSecs;
+        timeThreshold = timeThresholdSecs * queryOneSecCycles();
+    }
+    inline void timedUpdate()
+    {
+        dbgassertex(timeThreshold);
+        cycle_t now = get_cycles_now();
+        if ((now - lastUpdate) > timeThreshold) // NB: rollover is not problematic
+        {
+            update();
+            lastUpdate = now;
+        }
+    }
+    virtual void resetStart() = 0;
+    virtual void update() = 0; // NB: must perform reset of start also
+};
+
+class CStatsCtxLoggerDeltaUpdater : public CStatsDeltaUpdater
+{
+protected:
+    CSlaveActivity &activity;
+    CThorContextLogger &ctxLogger;
+
+public:
+    inline CStatsCtxLoggerDeltaUpdater(const StatisticsMapping &mapping, CSlaveActivity &_activity, CThorContextLogger &_ctxLogger, unsigned timeThresholdSecs=0)
+        : CStatsDeltaUpdater(mapping, timeThresholdSecs), activity(_activity), ctxLogger(_ctxLogger)
+    {
+        resetStart();
+    }
+    virtual void resetStart() override
+    {
+        CriticalBlock b(activity.statsCs); // probably unneeded, not likely to be contended at this point
+        startStats.set(ctxLogger.queryStats());
+    }
+    virtual void update() override
+    {
+        CriticalBlock b(activity.statsCs);
+        ctxLogger.updateStatsDeltaTo(activity.inactiveStats, startStats); // NB: updates startStats to new values
+    }
+};
+
+class CStatsScopedDeltaUpdater
+{
+     CStatsDeltaUpdater &updater;
+public:
+    inline CStatsScopedDeltaUpdater(CStatsDeltaUpdater &_updater) : updater(_updater)
+    {
+    }
+    inline ~CStatsScopedDeltaUpdater()
+    {
+        updater.update();
+    }
+};
+
+class CStatsScopedThresholdDeltaUpdater
+{
+    CStatsDeltaUpdater &updater;
+public:
+    inline CStatsScopedThresholdDeltaUpdater(CStatsDeltaUpdater &_updater) : updater(_updater)
+    {
+    }
+    inline ~CStatsScopedThresholdDeltaUpdater()
+    {
+        updater.timedUpdate();
+    }
+};
 
 class graphslave_decl CSlaveLateStartActivity : public CSlaveActivity
 {
