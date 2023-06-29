@@ -61,6 +61,11 @@ public:
             memmove(ptrs+headp+n, ptrs+headp, (num-tailp-1)*sizeof(BASE *));
             headp += n;
         }
+        else if (num==0)
+        {
+            headp = 0;
+            tailp = max-1;
+        }
     }
     inline BASE *head() const { return num?ptrs[headp]:NULL; }
     inline BASE *tail() const { return num?ptrs[tailp]:NULL; }
@@ -74,36 +79,26 @@ public:
     }
     inline void enqueue(BASE *e)
     {
-        if (ALLOWNULLS || e) {
-            if (num==max) 
+        if (ALLOWNULLS || e)
+        {
+            if (unlikely(num==max))
                 expand();
-            if (num==0) {
-                headp = 0;
-                tailp = 0;
-            }
-            else {
-                tailp++;
-                if (tailp==max)
-                    tailp=0;
-            }
+            tailp++;
+            if (tailp==max)
+                tailp=0;
             ptrs[tailp] = e;
             num++;
         }
     }
     void enqueueHead(BASE *e)
     {
-        if (ALLOWNULLS || e) {
-            if (num==max) 
+        if (ALLOWNULLS || e)
+        {
+            if (unlikely(num==max))
                 expand();
-            if (num==0) {
-                headp = 0;
-                tailp = 0;
-            }
-            else {
-                if (headp==0)
-                    headp=max;
-                headp--;
-            }
+            if (headp==0)
+                headp=max;
+            headp--;
             ptrs[headp] = e;
             num++;
         }
