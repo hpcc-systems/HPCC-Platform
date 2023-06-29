@@ -804,7 +804,7 @@ A kludge to ensure until the mount of a PVC appears (this can happen with some t
   command: ["/bin/sh"]
   args:
   - "-c"
-  - {{ printf "until test -d %s; do sleep 5; done" .volumePath }}
+  - {{ printf "until mountpoint -q %s; do sleep 5; done" .volumePath }}
   volumeMounts:
     - name: {{ .volumeName | quote}}
       mountPath: {{ .volumePath | quote }}
