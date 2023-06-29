@@ -60,9 +60,7 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
     Owned<IConversation> conversation;
     StringAttr queueName;
     CriticalSection replyCrit, jobCrit;
-#ifndef _CONTAINERIZED
     CFifoFileCache querySoCache;
-#endif
     Owned<IJobQueue> jobq;
     ICopyArrayOf<CJobMaster> jobs;
     Owned<IException> exitException;
@@ -255,9 +253,7 @@ public:
     virtual void setWuid(const char *wuid, const char *cluster=NULL);
     virtual IDeMonServer *queryDeMonServer() { return demonServer; }
     virtual void fatal(IException *e);
-#ifndef _CONTAINERIZED
     virtual void addCachedSo(const char *name);
-#endif
     virtual void updateWorkUnitLog(IWorkUnit &workunit);
 };
 
@@ -954,49 +950,50 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
     Owned<IConstWUQuery> query = workunit.getQuery();
     SCMStringBuffer soName;
     query->getQueryDllName(soName);
-#ifndef _CONTAINERIZED
     unsigned version = query->getQueryDllCrc();
-#endif
     query.clear();
 
     bool sendSo = false;
     Owned<ILoadedDllEntry> querySo;
     StringBuffer soPath;
-#ifdef _CONTAINERIZED
-    PROGLOG("Loading query name: %s", soName.str());
-    querySo.setown(queryDllServer().loadDll(soName.str(), DllLocationLocal));
-    soPath.append(querySo->queryName());
-#else
-    globals->getProp("@query_so_dir", soPath);
-    StringBuffer compoundPath;
-    compoundPath.append(soPath.str());
-    soPath.append(soName.str());
-    getCompoundQueryName(compoundPath, soName.str(), version);
-    if (querySoCache.isAvailable(compoundPath.str()))
-        PROGLOG("Using existing local dll: %s", compoundPath.str()); // It is assumed if present here then _still_ present on slaves from previous send.
+    if (!getExpertOptBool("saveQueryDlls"))
+    {
+        PROGLOG("Loading query name: %s", soName.str());
+        querySo.setown(queryDllServer().loadDll(soName.str(), DllLocationLocal));
+        soPath.append(querySo->queryName());
+    }
     else
     {
-        MemoryBuffer file;
-        queryDllServer().getDll(soName.str(), file);
-        PROGLOG("Saving dll: %s", compoundPath.str());
-        OwnedIFile out = createIFile(compoundPath.str());
-        try
+        globals->getProp("@query_so_dir", soPath);
+        StringBuffer compoundPath;
+        compoundPath.append(soPath.str());
+        soPath.append(soName.str());
+        getCompoundQueryName(compoundPath, soName.str(), version);
+        if (querySoCache.isAvailable(compoundPath.str()))
+            PROGLOG("Using existing local dll: %s", compoundPath.str()); // It is assumed if present here then _still_ present on slaves from previous send.
+        else
         {
-            out->setCreateFlags(S_IRWXU);
-            OwnedIFileIO io = out->open(IFOcreate);
-            io->write(0, file.length(), file.toByteArray());
-            io.clear();
+            MemoryBuffer file;
+            queryDllServer().getDll(soName.str(), file);
+            PROGLOG("Saving dll: %s", compoundPath.str());
+            OwnedIFile out = createIFile(compoundPath.str());
+            try
+            {
+                out->setCreateFlags(S_IRWXU);
+                OwnedIFileIO io = out->open(IFOcreate);
+                io->write(0, file.length(), file.toByteArray());
+                io.clear();
+            }
+            catch (IException *e)
+            {
+                FLLOG(MCexception(e), thorJob, e, "Failed to write query dll - ignoring!");
+                e->Release();
+            }
+            sendSo = getExpertOptBool("dllsToSlaves", true);
         }
-        catch (IException *e)
-        {
-            FLLOG(MCexception(e), thorJob, e, "Failed to write query dll - ignoring!");
-            e->Release();
-        }
-        sendSo = getExpertOptBool("dllsToSlaves", true);
+        querySo.setown(createDllEntry(compoundPath.str(), false, NULL, false));
+        soPath.swapWith(compoundPath);
     }
-    querySo.setown(createDllEntry(compoundPath.str(), false, NULL, false));
-    soPath.swapWith(compoundPath);
-#endif
 
     SCMStringBuffer eclstr;
     StringAttr user(workunit.queryUser());
@@ -1132,12 +1129,10 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
     return allDone;
 }
 
-#ifndef _CONTAINERIZED
 void CJobManager::addCachedSo(const char *name)
 {
     querySoCache.add(name);
 }
-#endif
 
 static int exitCode = -1;
 void setExitCode(int code) { exitCode = code; }

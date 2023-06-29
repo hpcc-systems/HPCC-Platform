@@ -48,9 +48,7 @@ interface IJobManager : extends IInterface
     virtual void setWuid(const char *wuid, const char *cluster=NULL) = 0;
     virtual IDeMonServer *queryDeMonServer() = 0;
     virtual void fatal(IException *e) = 0;
-#ifndef _CONTAINERIZED
     virtual void addCachedSo(const char *name) = 0;
-#endif
     virtual void updateWorkUnitLog(IWorkUnit &workunit) = 0;
 };
 
