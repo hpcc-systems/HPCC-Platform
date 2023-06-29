@@ -9067,6 +9067,8 @@ jlib_decl IPropertyTree * loadConfiguration(IPropertyTree *componentDefault, con
     configFileUpdater->init(std::get<0>(result).c_str(), componentDefault, argv, componentTag, envPrefix, legacyFilename, mapper, altNameAttribute);
     if (monitor)
         configFileUpdater->startMonitoring();
+
+    initTraceManager(componentTag, componentConfiguration.get());
     return componentConfiguration.getLink();
 }
 
