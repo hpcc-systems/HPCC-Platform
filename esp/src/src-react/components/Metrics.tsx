@@ -6,6 +6,7 @@ import { Table } from "@hpcc-js/dgrid";
 import { compare, scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import { WUTimelinePatched } from "src/Timings";
+import * as Utility from "src/Utility";
 import { useDeepEffect } from "../hooks/deepHooks";
 import { useMetricsOptions, useWorkunitMetrics } from "../hooks/metrics";
 import { HolyGrail } from "../layouts/HolyGrail";
@@ -117,7 +118,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     const [timelineFilter, setTimelineFilter] = React.useState("");
     const [selectedMetrics, setSelectedMetrics] = React.useState([]);
     const [selectedMetricsPtr, setSelectedMetricsPtr] = React.useState<number>(-1);
-    const [metrics, _columns, _activities, _properties, _measures, _scopeTypes, refresh] = useWorkunitMetrics(wuid);
+    const [metrics, columns, _activities, _properties, _measures, _scopeTypes, refresh] = useWorkunitMetrics(wuid);
     const [showMetricOptions, setShowMetricOptions] = React.useState(false);
     const [options, setOptions, saveOptions] = useMetricsOptions();
     const [dockpanel, setDockpanel] = React.useState<ResetableDockPanel>();
@@ -165,7 +166,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         },
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
-            key: "timeline", text: nlsHPCC.Timeline, canCheck: true, checked: showTimeline, iconProps: { iconName: "BarChartHorizontal" },
+            key: "timeline", text: nlsHPCC.Timeline, canCheck: true, checked: showTimeline, iconProps: { iconName: "TimelineProgress" },
             onClick: () => {
                 setShowTimeline(!showTimeline);
             }
@@ -179,12 +180,36 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         }
     ], [dockpanel, hotspots, onHotspot, options, refresh, setOptions, showTimeline]);
 
+    const formatColumns = React.useMemo((): Utility.ColumnMap => {
+        const copyColumns: Utility.ColumnMap = {};
+        for (const key in columns) {
+            copyColumns[key] = {
+                field: key,
+                label: key
+            };
+        }
+        return copyColumns;
+    }, [columns]);
+
     const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
         {
+            key: "copy", text: nlsHPCC.CopyToClipboard, disabled: !metrics.length || !navigator?.clipboard?.writeText, iconOnly: true, iconProps: { iconName: "Copy" },
+            onClick: () => {
+                const tsv = Utility.formatAsDelim(formatColumns, metrics, "\t");
+                navigator?.clipboard?.writeText(tsv);
+            }
+        },
+        {
+            key: "download", text: nlsHPCC.DownloadToCSV, disabled: !metrics.length, iconOnly: true, iconProps: { iconName: "Download" },
+            onClick: () => {
+                const csv = Utility.formatAsDelim(formatColumns, metrics, ",");
+                Utility.downloadText(csv, `metrics-${wuid}.csv`);
+            }
+        }, {
             key: "fullscreen", title: nlsHPCC.MaximizeRestore, iconProps: { iconName: fullscreen ? "ChromeRestore" : "FullScreen" },
             onClick: () => setFullscreen(!fullscreen)
         }
-    ], [fullscreen]);
+    ], [formatColumns, fullscreen, metrics, wuid]);
 
     //  Timeline ---
     const timeline = useConst(() => new WUTimelinePatched()
