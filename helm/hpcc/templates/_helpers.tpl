@@ -1136,11 +1136,19 @@ Add resource object
 Pass in a dictionary with me defined
 */}}
 {{- define "hpcc.addResources" }}
-{{- if .me  }}
+{{- if .me }}
+ {{- $limits := omit .me "cpu" }}
+ {{- $requests := pick .me "cpu" }}
 resources:
+ {{- if $limits }}
   limits:
-{{ toYaml .me | indent 4 }}
-{{- end }}
+  {{- toYaml $limits | nindent 4 }}
+ {{- end -}}
+ {{- if $requests }}
+  requests:
+  {{- toYaml $requests | nindent 4 -}}
+ {{- end -}}
+{{- end -}}
 {{- end -}}
 
 {{/*
@@ -1156,8 +1164,9 @@ Pass in dict with root, me and instances defined
 {{- $totalBytes := mul .instances $bytes }}
 resources:
   limits:
-    cpu: {{ printf "%dm" (mul .instances $milliCPUs) | quote }}
     memory: {{ include "hpcc.bytesToK8sMemoryString" $totalBytes | quote }}
+  requests:
+    cpu: {{ printf "%dm" (mul .instances $milliCPUs) | quote }}
 {{- end -}}
 
 {{/*
