@@ -164,8 +164,9 @@ spec:
 {{- if hasKey $metrics "sinks" }}
  {{ range $sink := $metrics.sinks -}}
   {{- if eq (get $sink "type") "prometheus" }}
-   {{- if and (hasKey $sink "settings") (hasKey $sink.settings "autodiscovery") }}
-    {{- if (eq $sink.settings.autodiscovery true ) }}
+   {{- if hasKey $sink "settings" }}
+    {{- if hasKey $sink.settings "autodiscovery" }}
+     {{- if (eq $sink.settings.autodiscovery true ) }}
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -177,6 +178,7 @@ spec:
   ingress:
   - ports:
     - port: {{ $sink.settings.port | default 8767 }}
+      {{ end }}
      {{ end }}
     {{ end }}
    {{ end }}

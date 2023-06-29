@@ -1597,9 +1597,7 @@ class CJobListener : public CSimpleInterface
     bool &stopped;
     CriticalSection crit;
     OwningStringSuperHashTableOf<CJobSlave> jobs;
-#ifndef _CONTAINERIZED
     CFifoFileCache querySoCache; // used to mirror master cache
-#endif
     IArrayOf<IMPServer> mpServers;
     unsigned channelsPerSlave;
 
@@ -1746,18 +1744,19 @@ public:
                 verifyThreads.append(*new CVerifyThread(*this, c));
         }
 
-#ifndef _CONTAINERIZED
-        StringBuffer soPath;
-        globals->getProp("@query_so_dir", soPath);
-        StringBuffer soPattern("*.");
-#ifdef _WIN32
-        soPattern.append("dll");
-#else
-        soPattern.append("so");
-#endif
         if (getExpertOptBool("dllsToSlaves", true))
-            querySoCache.init(soPath.str(), DEFAULT_QUERYSO_LIMIT, soPattern);
+        {
+            StringBuffer soPath;
+            globals->getProp("@query_so_dir", soPath);
+            StringBuffer soPattern("*.");
+#ifdef _WIN32
+            soPattern.append("dll");
+#else
+            soPattern.append("so");
 #endif
+            querySoCache.init(soPath.str(), DEFAULT_QUERYSO_LIMIT, soPattern);
+        }
+
         Owned<ISlaveWatchdog> watchdog;
         if (globals->getPropBool("@watchdogEnabled"))
             watchdog.setown(createProgressHandler(globals->getPropBool("@useUDPWatchdog")));
@@ -1788,87 +1787,90 @@ public:
                         msg.read(graphName);
 
                         Owned<ILoadedDllEntry> querySo;
-#ifdef _CONTAINERIZED
-                        StringAttr soName;
-                        msg.read(soName);
-                        querySo.setown(createDllEntry(soName.str(), false, NULL, false));
-                        soPath.append(soName);
-#else
-                        StringBuffer soPathTail;
-                        StringAttr remoteSoPath;
-                        msg.read(remoteSoPath);
-                        bool sendSo;
-                        msg.read(sendSo);
-
-                        RemoteFilename rfn;
-                        SocketEndpoint masterEp = queryMyNode()->endpoint();
-                        masterEp.port = 0;
-                        rfn.setPath(masterEp, remoteSoPath);
-                        rfn.getTail(soPathTail);
-                        if (sendSo)
+                        if (!getExpertOptBool("saveQueryDlls"))
                         {
-                            size32_t size;
-                            msg.read(size);
-                            globals->getProp("@query_so_dir", soPath);
-                            if (soPath.length())
-                                addPathSepChar(soPath);
-                            soPath.append(soPathTail);
-                            const byte *queryPtr = msg.readDirect(size);
-                            Owned<IFile> iFile = createIFile(soPath.str());
-                            try
-                            {
-                                iFile->setCreateFlags(S_IRWXU);
-                                Owned<IFileIO> iFileIO = iFile->open(IFOwrite);
-                                iFileIO->write(0, size, queryPtr);
-                            }
-                            catch (IException *e)
-                            {
-                                IException *e2 = ThorWrapException(e, "Failed to save dll: %s", soPath.str());
-                                e->Release();
-                                throw e2;
-                            }
-                            assertex(getExpertOptBool("dllsToSlaves", true));
-                            querySoCache.add(soPath.str());
+                            StringAttr soName;
+                            msg.read(soName);
+                            querySo.setown(createDllEntry(soName.str(), false, NULL, false));
+                            soPath.append(soName);
                         }
                         else
                         {
-                            if (!rfn.isLocal())
+                            StringBuffer soPathTail;
+                            StringAttr remoteSoPath;
+                            msg.read(remoteSoPath);
+                            bool sendSo;
+                            msg.read(sendSo);
+
+                            RemoteFilename rfn;
+                            SocketEndpoint masterEp = queryMyNode()->endpoint();
+                            masterEp.port = 0;
+                            rfn.setPath(masterEp, remoteSoPath);
+                            rfn.getTail(soPathTail);
+                            if (sendSo)
                             {
-                                StringBuffer _remoteSoPath;
-                                rfn.getRemotePath(_remoteSoPath);
-                                remoteSoPath.set(_remoteSoPath);
-                            }
-                            if (getExpertOptBool("dllsToSlaves", true))
-                            {
+                                size32_t size;
+                                msg.read(size);
                                 globals->getProp("@query_so_dir", soPath);
                                 if (soPath.length())
                                     addPathSepChar(soPath);
                                 soPath.append(soPathTail);
-                                OwnedIFile iFile = createIFile(soPath.str());
-                                if (!iFile->exists())
+                                const byte *queryPtr = msg.readDirect(size);
+                                Owned<IFile> iFile = createIFile(soPath.str());
+                                try
                                 {
-                                    IWARNLOG("Slave cached query dll missing: %s, will attempt to fetch from master", soPath.str());
-                                    copyFile(soPath.str(), remoteSoPath);
+                                    iFile->setCreateFlags(S_IRWXU);
+                                    Owned<IFileIO> iFileIO = iFile->open(IFOwrite);
+                                    iFileIO->write(0, size, queryPtr);
                                 }
+                                catch (IException *e)
+                                {
+                                    IException *e2 = ThorWrapException(e, "Failed to save dll: %s", soPath.str());
+                                    e->Release();
+                                    throw e2;
+                                }
+                                assertex(getExpertOptBool("dllsToSlaves", true));
                                 querySoCache.add(soPath.str());
                             }
                             else
-                                soPath.append(remoteSoPath);
+                            {
+                                if (!rfn.isLocal())
+                                {
+                                    StringBuffer _remoteSoPath;
+                                    rfn.getRemotePath(_remoteSoPath);
+                                    remoteSoPath.set(_remoteSoPath);
+                                }
+                                if (getExpertOptBool("dllsToSlaves", true))
+                                {
+                                    globals->getProp("@query_so_dir", soPath);
+                                    if (soPath.length())
+                                        addPathSepChar(soPath);
+                                    soPath.append(soPathTail);
+                                    OwnedIFile iFile = createIFile(soPath.str());
+                                    if (!iFile->exists())
+                                    {
+                                        IWARNLOG("Slave cached query dll missing: %s, will attempt to fetch from master", soPath.str());
+                                        copyFile(soPath.str(), remoteSoPath);
+                                    }
+                                    querySoCache.add(soPath.str());
+                                }
+                                else
+                                    soPath.append(remoteSoPath);
+                            }
+    #ifdef __linux__
+                        // only relevant if dllsToSlaves=false and query_so_dir was fully qualified remote path (e.g. //<ip>/path/file
+                            rfn.setRemotePath(soPath.str());
+                            StringBuffer tempSo;
+                            if (!rfn.isLocal())
+                            {
+                                IWARNLOG("Cannot load shared object directly from remote path, creating temporary local copy: %s", soPath.str());
+                                GetTempFilePath(tempSo,"so");
+                                copyFile(tempSo.str(), soPath.str());
+                                soPath.clear().append(tempSo.str());
+                            }
+    #endif
+                            querySo.setown(createDllEntry(soPath.str(), false, NULL, false));
                         }
-#ifdef __linux__
-                    // only relevant if dllsToSlaves=false and query_so_dir was fully qualified remote path (e.g. //<ip>/path/file
-                        rfn.setRemotePath(soPath.str());
-                        StringBuffer tempSo;
-                        if (!rfn.isLocal())
-                        {
-                            IWARNLOG("Cannot load shared object directly from remote path, creating temporary local copy: %s", soPath.str());
-                            GetTempFilePath(tempSo,"so");
-                            copyFile(tempSo.str(), soPath.str());
-                            soPath.clear().append(tempSo.str());
-                        }
-#endif
-                        querySo.setown(createDllEntry(soPath.str(), false, NULL, false));
-#endif
 
                         Owned<IPropertyTree> workUnitInfo = createPTree(msg);
                         StringBuffer user;
