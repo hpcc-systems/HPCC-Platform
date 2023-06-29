@@ -26,9 +26,7 @@ set(VCPKG_INCLUDE "(windows | osx | linux)")
 set(VCPKG_SUPPRESS "(!windows & !osx & !linux)")
 
 set(PLUGINS_LIST
-    CASSANDRAEMBED
     COUCHBASEEMBED
-    ECLBLAS
     H3
     JAVAEMBED
     KAFKA

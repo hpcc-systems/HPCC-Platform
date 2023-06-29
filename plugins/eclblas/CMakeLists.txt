@@ -26,9 +26,9 @@
 
 project(eclblas)
 
-if(ECLBLAS)
+if(ECLBLAS OR USE_ECLBLAS)
     ADD_PLUGIN(eclblas)
-    if(MAKE_ECLBLAS)
+    if(MAKE_ECLBLAS OR USE_ECLBLAS)
         find_package(OpenBLAS REQUIRED)
 
         add_definitions(-D_USE_CBLAS)
