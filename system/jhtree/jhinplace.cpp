@@ -2129,6 +2129,7 @@ void CInplaceBranchWriteNode::write(IFileIOStream *out, CRC32 *crc)
         assertex(inplaceSize == writtenSize);
 
         ctx.totalDataSize += data.length();
+        ctx.branchMemorySize += data.length();
         assertex(data.length() == getDataSize());
     }
 
@@ -2327,6 +2328,7 @@ bool CInplaceLeafWriteNode::add(offset_t pos, const void * _data, size32_t size,
 
     saveLastKey(data, size, sequence);
     hdr.numKeys++;
+    totalUncompressedSize += size;
     return true;
 }
 
@@ -2480,12 +2482,18 @@ void CInplaceLeafWriteNode::write(IFileIOStream *out, CRC32 *crc)
                         serializePacked(data, trailingSize);
                         data.append(trailingSize, uncompressed.bytes() + firstUncompressed);
                     }
+                    if (payloadCompression != COMPRESS_METHOD_RANDROW)
+                    {
+                        //Calculate the size of the payload when expanded, currently the compressed payload is kept in memory, so do not subtract that
+                        ctx.leafMemorySize += (totalUncompressedSize - (keyCompareLen * hdr.numKeys));
+                    }
                     break;
                 }
             }
         }
 
         ctx.totalDataSize += data.length();
+        ctx.leafMemorySize += data.length();
         assertex(data.length() == getDataSize(true));
     }
 

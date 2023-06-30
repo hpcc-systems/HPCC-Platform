@@ -85,6 +85,14 @@ class PocIndexCompressor : public CInterfaceOf<IIndexCompressor>
         else
             return new CLegacyWriteNode(_fpos, _keyHdr, isLeafNode);
     }
+    virtual offset_t queryBranchMemorySize() const override
+    {
+        return 0;
+    }
+    virtual offset_t queryLeafMemorySize() const override
+    {
+        return 0;
+    }
 };
 
 class LegacyIndexCompressor : public CInterfaceOf<IIndexCompressor>
@@ -93,6 +101,14 @@ class LegacyIndexCompressor : public CInterfaceOf<IIndexCompressor>
     virtual CWriteNode *createNode(offset_t _fpos, CKeyHdr *_keyHdr, bool isLeafNode) const override
     {
         return new CLegacyWriteNode(_fpos, _keyHdr, isLeafNode);
+    }
+    virtual offset_t queryBranchMemorySize() const override
+    {
+        return 0; // same as default calculation
+    }
+    virtual offset_t queryLeafMemorySize() const override
+    {
+        return 0; // MORE: Update for in-place row compression
     }
 };
 
@@ -601,6 +617,8 @@ protected:
     virtual unsigned __int64 getNumBranchNodes() const override { return numBranches; }
     virtual unsigned __int64 getNumBlobNodes() const override { return numBlobs; }
     virtual unsigned __int64 getOffsetBranches() const override { return offsetBranches; }
+    virtual unsigned __int64 getBranchMemorySize() const override { return indexCompressor->queryBranchMemorySize(); }
+    virtual unsigned __int64 getLeafMemorySize() const override { return indexCompressor->queryLeafMemorySize(); }
 
 protected:
     void writeMetadata(char const * data, size32_t size)
