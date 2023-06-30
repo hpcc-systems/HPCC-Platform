@@ -278,10 +278,10 @@ public:
     ActivityTimer(ActivityTimeAccumulator &_accumulator, const bool _enabled)
     : accumulator(_accumulator), enabled(_enabled), isFirstRow(false)
     {
-        if (enabled)
+        if (likely(enabled))
         {
             startCycles = get_cycles_now();
-            if (!accumulator.firstRow)
+            if (unlikely(!accumulator.firstRow))
             {
                 isFirstRow = true;
                 accumulator.startCycles = startCycles;
@@ -294,13 +294,13 @@ public:
 
     ~ActivityTimer()
     {
-        if (enabled)
+        if (likely(enabled))
         {
             cycle_t nowCycles = get_cycles_now();
             accumulator.endCycles = nowCycles;
             cycle_t elapsedCycles = nowCycles - startCycles;
             accumulator.totalCycles += elapsedCycles;
-            if (isFirstRow)
+            if (unlikely(isFirstRow))
                 accumulator.firstExitCycles = nowCycles;
         }
     }
@@ -316,7 +316,7 @@ public:
     inline SimpleActivityTimer(cycle_t &_accumulator, const bool _enabled)
     : accumulator(_accumulator), enabled(_enabled)
     {
-        if (enabled)
+        if (likely(enabled))
             startCycles = get_cycles_now();
         else
             startCycles = 0;
@@ -324,7 +324,7 @@ public:
 
     inline ~SimpleActivityTimer()
     {
-        if (enabled)
+        if (likely(enabled))
         {
             cycle_t nowCycles = get_cycles_now();
             cycle_t elapsedCycles = nowCycles - startCycles;
