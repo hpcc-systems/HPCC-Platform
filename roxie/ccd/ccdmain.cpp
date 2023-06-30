@@ -934,7 +934,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         }
 
         acknowledgeAllRequests = topology->getPropBool("@acknowledgeAllRequests", acknowledgeAllRequests);
-        headRegionSize = topology->getPropInt("@headRegionSize", 50);
+        headRegionSize = topology->getPropInt("@headRegionSize", 0);
         ccdMulticastPort = topology->getPropInt("@multicastPort", CCD_MULTICAST_PORT);
         statsExpiryTime = topology->getPropInt("@statsExpiryTime", 3600);
         roxiemem::setMemTraceSizeLimit((memsize_t) topology->getPropInt64("@memTraceSizeLimit", 0));
