@@ -549,6 +549,9 @@
               "type": "integer",
               "default": 0
             },
+            "eclwatchVisible": {
+              "type": "boolean"
+            },
             "components": {},
             "prefix": {},
             "subPath": {},
