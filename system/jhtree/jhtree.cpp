@@ -1271,7 +1271,7 @@ CJHTreeNode *CKeyIndex::_loadNode(char *nodeData, offset_t pos, bool needsCopy) 
 
 bool CKeyIndex::isTopLevelKey() const
 {
-    return (keyHdr->getKeyType() & HTREE_TOPLEVEL_KEY) != 0;
+    return isTLK();
 }
 
 bool CKeyIndex::isFullySorted()
@@ -1283,6 +1283,7 @@ __uint64 CKeyIndex::getPartitionFieldMask()
 {
     return keyHdr->getPartitionFieldMask();
 }
+
 unsigned CKeyIndex::numPartitions()
 {
     return keyHdr->numPartitions();
@@ -1297,9 +1298,8 @@ IKeyCursor *CKeyIndex::getCursor(const IIndexFilterList *filter, bool logExcessi
 const CJHSearchNode *CKeyIndex::getNode(offset_t offset, NodeType type, IContextLogger *ctx) const
 { 
     latestGetNodeOffset = offset;
-    const CJHTreeNode *node = cache->getNode(this, iD, offset, type, ctx, isTopLevelKey());
-    assertex(!node || type == node->getNodeType());
-    return (const CJHSearchNode *) node;
+    //Call isTLK() rather than isTopLevelKey() so the test is inlined (rather than a virtual)
+    return (CJHSearchNode *)cache->getNode(this, iD, offset, type, ctx, isTLK());
 }
 
 void CKeyIndex::dumpNode(FILE *out, offset_t pos, unsigned count, bool isRaw)
@@ -2668,6 +2668,7 @@ const CJHTreeNode *CNodeCache::getNode(const INodeLoader *keyIndex, unsigned iD,
             if (!ownedCacheEntry->isReady())
             {
                 const CJHTreeNode *node = keyIndex->loadNode(&fetchCycles, pos);
+                assertex(type == node->getNodeType());
 
                 //Update the associated size of the entry in the hash table before setting isReady (never evicted until isReady is set)
                 cache[cacheType].noteReady(*node);
