@@ -162,11 +162,13 @@ public:
 
 };
 
-// Macro to provide find method taking reference instead of pointer
+// Macro to provide find method taking reference instead of pointer (yuk!)
 
 #define IMPLEMENT_SUPERHASHTABLEOF_REF_FIND(ET, FP)                        \
     inline ET *      find(FP & fp) const                                   \
-      { return SuperHashTableOf<ET, FP>::find(&fp); }
+      { return SuperHashTableOf<ET, FP>::find(&fp); }                      \
+    inline ET *      find(unsigned hash, FP & fp) const                    \
+      { return SuperHashTableOf<ET, FP>::find(hash, &fp); }
 
 
 // simple type hashing HT impl.
