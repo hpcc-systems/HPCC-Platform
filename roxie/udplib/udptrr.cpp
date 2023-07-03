@@ -1329,14 +1329,12 @@ class CReceiveManager : implements IReceiveManager, public CInterface
             unsigned lastPacketsOOO = 0;
             unsigned lastUnwantedDiscarded = 0;
             unsigned timeout = 5000;
-            DataBuffer *b = nullptr;
+            roxiemem::IDataBufferManager * udpBufferManager = bufferManager;
+            DataBuffer *b = udpBufferManager->allocate();
             while (running) 
             {
                 try 
                 {
-                    if (!b)
-                        b = bufferManager->allocate();
-
                     unsigned int res;
                     while (true)
                     {
@@ -1374,7 +1372,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                         }
                     }
                     parent.input_queue->pushOwn(b);
-                    b = nullptr;
+                    b = udpBufferManager->allocate();
 
                     if (udpStatsReportInterval)
                     {
