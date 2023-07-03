@@ -69,12 +69,7 @@
 
 cmake_minimum_required(VERSION 3.22.1)
 
-set(HPCC_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-include(${HPCC_SOURCE_DIR}/version.cmake)
-include(${HPCC_SOURCE_DIR}/cmake_modules/options.cmake)
-include(${HPCC_SOURCE_DIR}/cmake_modules/plugins.cmake)
-include(${HPCC_SOURCE_DIR}/cmake_modules/vcpkg.cmake)
-
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules/projectSetup.cmake)
 project(hpccsystems-platform LANGUAGES C CXX
     VERSION ${HPCC_MAJOR}.${HPCC_MINOR}.${HPCC_POINT}.${HPCC_SEQUENCE}
 )
@@ -84,10 +79,30 @@ project(hpccsystems-platform LANGUAGES C CXX
 unset ( ENV{CC} )
 unset ( ENV{CXX} )
 
-set(TOP_LEVEL_PROJECT ON)
-if(NOT CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
-    set(TOP_LEVEL_PROJECT OFF)
-endif(NOT CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
+set(TOP_LEVEL_PROJECT PROJECT_IS_TOP_LEVEL)
+
+# Assemble a CPack package name, which will also be used to name the vcpkg catalog file.
+if (NOT PROJECT_IS_TOP_LEVEL)
+    # Where the top level project is a superset of the platform build, the superset must be
+    # allowed to override the platform version values.
+    if (EXISTS ${CMAKE_SOURCE_DIR}/version.cmake)
+        include(${CMAKE_SOURCE_DIR}/version.cmake)
+    endif()
+    # The top level project must be allowed to override default values used by packageSetup.cmake.
+    if (EXISTS ${CMAKE_SOURCE_DIR}/cmake_modules/prePackageSetup.cmake)
+        include(${CMAKE_SOURCE_DIR}/cmake_modules/prePackageSetup.cmake)
+    endif()
+endif()
+include(${HPCC_SOURCE_DIR}/cmake_modules/packageSetup.cmake)
+if (NOT PROJECT_IS_TOP_LEVEL)
+    # Allow top level projects to make any necessary adjustments to generated values.
+    if (EXISTS ${CMAKE_SOURCE_DIR}/cmake_modules/postPackageSetup.cmake)
+        include(${CMAKE_SOURCE_DIR}/cmake_modules/postPackageSetup.cmake)
+    endif()
+endif()
+
+# Build catalog file after the package file name so each package uses a unique name.
+include(${HPCC_SOURCE_DIR}/cmake_modules/vcpkg_catalog.cmake)
 
 include(CTest)
 enable_testing()
