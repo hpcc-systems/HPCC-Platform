@@ -25626,11 +25626,11 @@ protected:
 
 public:
 
-    void *operator new(size_t size, IRowManager *a, unsigned activityId)
+    void *operator new(size_t size, roxiemem::IFixedRowHeap * heap)
     {
-        return a->allocate(size, activityId);
+        return heap->allocate();
     }
-    void operator delete(void *ptr, IRowManager *a, unsigned activityId)
+    void operator delete(void *ptr, roxiemem::IFixedRowHeap * heap)
     {
         ReleaseRoxieRow(ptr);
     }
@@ -26312,6 +26312,7 @@ protected:
     Owned<IStrandJunction> indexReadJunction;
     IEngineRowStream *indexReadStream = NULL;  // Never actually pulled
     IIndexReadActivityInfo *rootIndex;
+    Owned<roxiemem::IFixedRowHeap> joinGroupAllocator;
 
     void createDefaultRight()
     {
@@ -26349,6 +26350,9 @@ public:
         indexReadInput = NULL;
         rootIndex = NULL;
         atmostsTriggered = 0;
+        // Allocate blocks of rows (if fixed size) to reduce overhead and potential contention between threads
+        unsigned allocatorFlags = roxiemem::RHFblocked;
+        joinGroupAllocator.setown(ctx->queryRowManager().createFixedRowHeap(sizeof(CJoinGroup), activityId, allocatorFlags));
         // MORE - code would be easier to read if I got more values from helper rather than passing from factory
     }
 
@@ -26445,6 +26449,7 @@ public:
     virtual void reset()
     {
         CRoxieServerActivity::reset();
+        joinGroupAllocator->emptyCache();
         defaultRight.clear();
         if (indexReadInput)
             indexReadInput->reset();
@@ -26475,10 +26480,10 @@ public:
         CriticalBlock c(groupsCrit);
         if (preserveGroups && !groupStart)
         {
-            groupStart = new (&ctx->queryRowManager(), activityId) CJoinGroup(NULL,  NULL);
+            groupStart = new (joinGroupAllocator) CJoinGroup(NULL,  NULL);
             groups.enqueue(groupStart);
         }
-        CJoinGroup *jg = new (&ctx->queryRowManager(), activityId) CJoinGroup(row, groupStart);
+        CJoinGroup *jg = new (joinGroupAllocator) CJoinGroup(row, groupStart);
         groups.enqueue(jg);
         return jg;
     }
