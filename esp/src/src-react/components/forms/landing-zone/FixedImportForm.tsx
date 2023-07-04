@@ -18,6 +18,7 @@ interface FixedImportFormValues {
     selectedFiles?: {
         TargetName: string,
         RecordSize: string,
+        NumParts: string,
         SourceFile: string,
         SourceIP: string,
     }[],
@@ -80,9 +81,10 @@ export const FixedImportForm: React.FunctionComponent<FixedImportFormProps> = ({
                     request["sourcePath"] = file.SourceFile;
                     request["sourceRecordSize"] = file.RecordSize;
                     request["destLogicalName"] = data.namePrefix + ((
-                        data.namePrefix && data.namePrefix.substr(-2) !== "::" &&
-                        file.TargetName && file.TargetName.substr(0, 2) !== "::"
+                        data.namePrefix && data.namePrefix.substring(-2) !== "::" &&
+                        file.TargetName && file.TargetName.substring(0, 2) !== "::"
                     ) ? "::" : "") + file.TargetName;
+                    request["destNumParts"] = file.NumParts;
                     FileSpray.SprayFixed({
                         request: request
                     }).then((response) => {
@@ -118,6 +120,7 @@ export const FixedImportForm: React.FunctionComponent<FixedImportFormProps> = ({
                 newValues.selectedFiles[idx] = {
                     TargetName: file["name"],
                     RecordSize: "",
+                    NumParts: "",
                     SourceFile: file["fullPath"],
                     SourceIP: file["NetAddress"]
                 };
@@ -199,6 +202,7 @@ export const FixedImportForm: React.FunctionComponent<FixedImportFormProps> = ({
                     <tr>
                         <th>{nlsHPCC.TargetName}</th>
                         <th>{nlsHPCC.RecordLength}</th>
+                        <th>{nlsHPCC.NumberofParts}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -242,6 +246,26 @@ export const FixedImportForm: React.FunctionComponent<FixedImportFormProps> = ({
                                         pattern: {
                                             value: /^[0-9]+$/i,
                                             message: nlsHPCC.ValidationErrorRecordSizeNumeric
+                                        }
+                                    }}
+                                />
+                            </td>
+                            <td>
+                                <Controller
+                                    control={control} name={`selectedFiles.${idx}.NumParts` as const}
+                                    render={({
+                                        field: { onChange, name: fieldName, value },
+                                        fieldState: { error }
+                                    }) => <TextField
+                                            name={fieldName}
+                                            onChange={onChange}
+                                            value={value}
+                                            errorMessage={error && error?.message}
+                                        />}
+                                    rules={{
+                                        pattern: {
+                                            value: /^[0-9]+$/i,
+                                            message: nlsHPCC.ValidationErrorEnterNumber
                                         }
                                     }}
                                 />

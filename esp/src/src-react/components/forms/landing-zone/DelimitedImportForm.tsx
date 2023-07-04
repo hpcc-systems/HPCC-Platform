@@ -17,6 +17,7 @@ interface DelimitedImportFormValues {
     namePrefix: string;
     selectedFiles?: {
         TargetName: string,
+        NumParts: string,
         SourceFile: string,
         SourceIP: string
     }[],
@@ -96,9 +97,10 @@ export const DelimitedImportForm: React.FunctionComponent<DelimitedImportFormPro
                     request["sourceIP"] = file.SourceIP;
                     request["sourcePath"] = file.SourceFile;
                     request["destLogicalName"] = data.namePrefix + ((
-                        data.namePrefix && data.namePrefix.substr(-2) !== "::" &&
-                        file.TargetName && file.TargetName.substr(0, 2) !== "::"
+                        data.namePrefix && data.namePrefix.substring(-2) !== "::" &&
+                        file.TargetName && file.TargetName.substring(0, 2) !== "::"
                     ) ? "::" : "") + file.TargetName;
+                    request["destNumParts"] = file.NumParts;
                     FileSpray.SprayVariable({
                         request: request
                     }).then((response) => {
@@ -133,6 +135,7 @@ export const DelimitedImportForm: React.FunctionComponent<DelimitedImportFormPro
             selection.forEach((file, idx) => {
                 newValues.selectedFiles[idx] = {
                     TargetName: file["name"],
+                    NumParts: file["NumParts"],
                     SourceFile: file["fullPath"],
                     SourceIP: file["NetAddress"]
                 };
@@ -213,6 +216,7 @@ export const DelimitedImportForm: React.FunctionComponent<DelimitedImportFormPro
                 <thead>
                     <tr>
                         <th>{nlsHPCC.TargetName}</th>
+                        <th>{nlsHPCC.NumberofParts}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -235,6 +239,26 @@ export const DelimitedImportForm: React.FunctionComponent<DelimitedImportFormPro
                                         pattern: {
                                             value: /^[-a-z0-9_]+[-a-z0-9 _\.]+$/i,
                                             message: nlsHPCC.ValidationErrorTargetNameInvalid
+                                        }
+                                    }}
+                                />
+                            </td>
+                            <td>
+                                <Controller
+                                    control={control} name={`selectedFiles.${idx}.NumParts` as const}
+                                    render={({
+                                        field: { onChange, name: fieldName, value },
+                                        fieldState: { error }
+                                    }) => <TextField
+                                            name={fieldName}
+                                            onChange={onChange}
+                                            value={value}
+                                            errorMessage={error && error?.message}
+                                        />}
+                                    rules={{
+                                        pattern: {
+                                            value: /^[0-9]+$/i,
+                                            message: nlsHPCC.ValidationErrorEnterNumber
                                         }
                                     }}
                                 />
