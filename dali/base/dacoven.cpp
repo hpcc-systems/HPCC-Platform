@@ -331,10 +331,10 @@ public:
         return comm->barrier();
     }
 
-    virtual bool verifyConnection(rank_t rank, unsigned timeout=1000*60*5)
+    virtual bool verifyConnection(rank_t rank, unsigned timeout=1000*60*5, bool allowConnect=true)
     {
         assertex(comm);
-        return comm->verifyConnection(rank,timeout);
+        return comm->verifyConnection(rank,timeout, allowConnect);
     }
 
 
