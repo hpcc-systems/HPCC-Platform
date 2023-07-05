@@ -211,7 +211,7 @@ public:
 };
 
 
-class jlib_decl CFcmpExpander : public CSimpleInterfaceOf<IExpander>
+class jlib_decl CFcmpExpander : public CExpanderBase
 {
 protected:
     byte *outbuf;
@@ -239,50 +239,6 @@ public:
         outlen = *expsz;
         in = (expsz+1);
         return outlen;
-    }
-
-    virtual void expand(void *buf)
-    {
-        if (!outlen)
-            return;
-        if (buf)
-        {
-            if (bufalloc)
-                free(outbuf);
-            bufalloc = 0;
-            outbuf = (unsigned char *)buf;
-        }
-        else if (outlen>bufalloc)
-        {
-            if (bufalloc)
-                free(outbuf);
-            bufalloc = outlen;
-            outbuf = (unsigned char *)malloc(bufalloc);
-            if (!outbuf)
-                throw MakeStringException(MSGAUD_operator,0, "Out of memory in FcmpExpander::expand, requesting %d bytes", bufalloc);
-        }
-        size32_t done = 0;
-        for (;;)
-        {
-            const size32_t szchunk = *in;
-            in++;
-            if (szchunk+done<outlen)
-            {
-                memcpy((byte *)buf+done, in, szchunk);
-                size32_t written = szchunk;
-                done += written;
-                if (!written||(done>outlen))
-                    throw MakeStringException(0, "FcmpExpander - corrupt data(1) %d %d",written,szchunk);
-            }
-            else
-            {
-                if (szchunk+done!=outlen)
-                    throw MakeStringException(0, "FcmpExpander - corrupt data(2) %d %d",szchunk,outlen);
-                memcpy((byte *)buf+done,in,szchunk);
-                break;
-            }
-            in = (const size32_t *)(((const byte *)in)+szchunk);
-        }
     }
 
     virtual void *bufptr() { return outbuf;}

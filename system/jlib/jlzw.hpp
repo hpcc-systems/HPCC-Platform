@@ -66,6 +66,8 @@ interface jlib_decl IExpander : public IInterface
     virtual void   expand(void *target)=0;
     virtual void * bufptr()=0;
     virtual size32_t buflen()=0;
+    virtual size32_t expandFirst(MemoryBuffer & target, const void * src) = 0;
+    virtual size32_t expandNext(MemoryBuffer & target) = 0;
 };
 
 
@@ -82,6 +84,13 @@ interface jlib_decl IRandRowExpander : public IInterface
 };
 
 
+class jlib_decl CExpanderBase : public CInterfaceOf<IExpander>
+{
+public:
+    //Provide default implementations
+    virtual size32_t expandFirst(MemoryBuffer & target, const void * src) override;
+    virtual size32_t expandNext(MemoryBuffer & target) override;
+};
 
 
 extern jlib_decl ICompressor *createLZWCompressor(bool supportbigendian=false); // bigendiansupport required for cross platform with solaris

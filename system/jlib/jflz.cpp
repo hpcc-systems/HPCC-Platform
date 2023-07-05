@@ -687,7 +687,7 @@ class CFastLZCompressor final : public CFcmpCompressor
 class jlib_decl CFastLZExpander : public CFcmpExpander
 {
 public:
-    virtual void expand(void *buf)
+    virtual void expand(void *buf) override
     {
         if (!outlen)
             return;
