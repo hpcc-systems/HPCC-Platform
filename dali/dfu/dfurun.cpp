@@ -593,12 +593,59 @@ public:
         unsigned auditflags = (DALI_LDAP_AUDIT_REPORT|DALI_LDAP_READ_WANTED);
         if (write)
             auditflags |= DALI_LDAP_WRITE_WANTED;
+
         SecAccessFlags perm = queryDistributedFileDirectory().getFDescPermissions(fd,user,auditflags);
-        IDFS_Exception *e = NULL;
-        if (!HASREADPERMISSION(perm))
-            throw MakeStringException(DFSERR_LookupAccessDenied,"Lookup permission denied for physical file(s)");
-        if (write&&!HASWRITEPERMISSION(perm))
-            throw MakeStringException(DFSERR_CreateAccessDenied,"Create permission denied for physical file(s)");
+        if ((write && !HASWRITEPERMISSION(perm)) || (!write && !HASREADPERMISSION(perm)))
+        {
+            StringBuffer traceName;
+            fd->getTraceName(traceName);
+            elideString(traceName, 255);
+            if (write)
+                throw makeStringExceptionV(DFSERR_CreateAccessDenied, "Create permission denied for physical file(s): %s",traceName.str());
+            else
+                throw makeStringExceptionV(DFSERR_LookupAccessDenied, "Lookup permission denied for physical file(s): %s",traceName.str());
+        }
+    }
+
+    void checkForeignFilePermissions(IConstDFUfileSpec *fSpec,IFileDescriptor *fd,IUserDescriptor *user,bool write)
+    {
+        unsigned auditflags = (DALI_LDAP_AUDIT_REPORT|DALI_LDAP_READ_WANTED);
+        if (write)
+            auditflags |= DALI_LDAP_WRITE_WANTED;
+
+        StringBuffer logicalName;
+        fSpec->getLogicalName(logicalName);
+
+        SocketEndpoint daliEP;
+        fSpec->getForeignDali(daliEP);
+
+        CDfsLogicalFileName dlfn;
+        dlfn.set(logicalName);
+        dlfn.setForeign(daliEP,false);
+
+        StringBuffer fu,fp;
+        Owned<IUserDescriptor> foreignuserdesc;
+        if (fSpec->getForeignUser(fu,fp))
+        {
+            foreignuserdesc.setown(createUserDescriptor());
+            foreignuserdesc->set(fu.str(),fp.str());
+        }
+        else
+            foreignuserdesc.set(user);
+
+        SecAccessFlags perm = queryDistributedFileDirectory().getDLFNPermissions(dlfn,foreignuserdesc,auditflags);
+
+        bool checkLegacyPhysicalPerms = getGlobalConfigSP()->getPropBool("expert/@failOverToLegacyPhysicalPerms",!isContainerized());
+        if (((!write&&!HASREADPERMISSION(perm)) || (write&&!HASWRITEPERMISSION(perm))) && checkLegacyPhysicalPerms)
+            perm = queryDistributedFileDirectory().getFDescPermissions(fd,user,auditflags);
+
+        if (write)
+        {
+            if (!HASWRITEPERMISSION(perm))
+                throw makeStringExceptionV(DFSERR_CreateAccessDenied,"Create permission denied for foreign file: %s",logicalName.str());
+        }
+        else if (!HASREADPERMISSION(perm))
+            throw makeStringExceptionV(DFSERR_LookupAccessDenied,"Lookup permission denied for foreign file: %s",logicalName.str());
     }
 
     void monitorCycle(bool &cancelling)
@@ -1526,7 +1573,7 @@ public:
                         if (needrep)
                             feedback.repmode=cProgressReporter::REPbefore;
                         if (foreigncopy)
-                            checkPhysicalFilePermissions(srcFdesc,userdesc,false);
+                            checkForeignFilePermissions(source,srcFdesc,userdesc,false);
                         if (patchf) { // patch assumes only 1 cluster
                             // need to create dstpatchf
                             StringBuffer gname;
