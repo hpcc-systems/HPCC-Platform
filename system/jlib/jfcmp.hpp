@@ -156,7 +156,10 @@ public:
             {
                 if (trailing)
                     return written;
-                flushcommitted();
+
+                if (inlen == inmax)
+                    flushcommitted();
+
                 if (lenb+inlen>inmax)
                 {
                     if (outBufMb) // sizing input buffer, but outBufMb!=NULL is condition of whether in use or not
