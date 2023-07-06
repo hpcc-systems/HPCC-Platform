@@ -61,8 +61,6 @@ static CriticalSection MTcritsect;  // held when blocked
 static Owned<ILargeMemLimitNotify> MTthresholdnotify;
 static bool MTlocked = false;
 
-#define DEFAULT_SORT_COMPBLKSZ 0x10000 // 64K
-
 void checkMultiThorMemoryThreshold(bool inc)
 {
     if (MTthresholdnotify.get()) {
