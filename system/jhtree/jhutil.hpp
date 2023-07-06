@@ -96,11 +96,7 @@ public:
     void kill() { clear(-1); }
     void promote(MAPPING *mapping)
     {
-        if (mruList.head() != mapping)
-        {
-            mruList.dequeue(mapping); // will still be linked in table
-            mruList.enqueueHead(mapping);
-        }
+        mruList.moveToHead(mapping);
     }
     CMRUIterator *getIterator()
     {
