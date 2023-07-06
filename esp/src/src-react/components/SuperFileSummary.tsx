@@ -46,7 +46,7 @@ export const SuperFileSummary: React.FunctionComponent<SuperFileSummaryProps> = 
                 action: "remove",
                 superfile: file.Name,
                 subfiles: { Item: subfiles.map(file => file.Name) },
-                delete: true
+                removeSuperfile: true
             })
                 .then(() => replaceUrl("/files"))
                 .catch(err => logger.error(err))

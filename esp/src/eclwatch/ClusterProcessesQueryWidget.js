@@ -80,10 +80,14 @@ define([
         initTab: function () {
             var currSel = this.getSelectedChild();
             if (currSel && !currSel.initalized) {
-                if (currSel.id === this.legacyClustersProcessesIframeWidget.id && !this.legacyClustersProcessesIframeWidget.initalized) {
+                if (currSel.id === this.id + "_Grid") {
+                    this.refreshGrid();
+                } else if (currSel.id === this.legacyClustersProcessesIframeWidget.id && !this.legacyClustersProcessesIframeWidget.initalized) {
                     this.legacyClustersProcessesIframeWidget.init({
                         src: ESPRequest.getBaseURL("WsTopology") + "/TpClusterQuery?Type=ROOT"
                     });
+                } else {
+                    currSel.init(currSel.params);
                 }
             }
         },

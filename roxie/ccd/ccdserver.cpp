@@ -12439,6 +12439,8 @@ class CRoxieServerIndexWriteActivity : public CRoxieServerInternalSinkActivity, 
     offset_t offsetBranches = 0;
     offset_t uncompressedSize = 0;
     offset_t originalBlobSize = 0;
+    offset_t branchMemorySize = 0;
+    offset_t leafMemorySize = 0;
     unsigned nodeSize = 0;
 
     void updateWorkUnitResult()
@@ -12650,6 +12652,8 @@ public:
             numBlobNodes = builder->getNumBlobNodes();
             offsetBranches = builder->getOffsetBranches();
             originalBlobSize = bc.queryTotalSize();
+            branchMemorySize = builder->getBranchMemorySize();
+            leafMemorySize = builder->getLeafMemorySize();
 
             noteStatistic(StNumLeafCacheAdds, numLeafNodes);
             noteStatistic(StNumNodeCacheAdds, numBranchNodes);
@@ -12739,6 +12743,10 @@ public:
         properties.setPropInt64("@numBlobNodes", numBlobNodes);
         if (numBlobNodes)
             properties.setPropInt64("@originalBlobSize", originalBlobSize);
+        if (branchMemorySize)
+            properties.setPropInt64("@branchMemorySize", branchMemorySize);
+        if (leafMemorySize)
+            properties.setPropInt64("@leafMemorySize", leafMemorySize);
 
         size32_t keyedSize = helper.getKeyedSize();
         if (keyedSize == (size32_t)-1)
@@ -25859,7 +25867,7 @@ public:
         ActivityTimer t(activityStats, timeActivities);
         for (;;)
         {
-            if (eof)
+            if (unlikely(eof))
                 return NULL;
             processAgentResults();
             if (ready.ordinality())

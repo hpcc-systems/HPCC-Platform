@@ -60,6 +60,8 @@ class IndexWriteSlaveActivity : public ProcessSlaveActivity, public ILookAheadSt
     offset_t offsetBranches = 0;
     offset_t uncompressedSize = 0;
     offset_t originalBlobSize = 0;
+    offset_t branchMemorySize = 0;
+    offset_t leafMemorySize = 0;
 
     MemoryBuffer rowBuff;
     OwnedConstThorRow lastRow, firstRow;
@@ -241,6 +243,8 @@ public:
                     numBranchNodes = builder->getNumBranchNodes();
                     numBlobNodes = builder->getNumBlobNodes();
                     offsetBranches = builder->getOffsetBranches();
+                    branchMemorySize = builder->getBranchMemorySize();
+                    leafMemorySize = builder->getLeafMemorySize();
                 }
             }
         }
@@ -633,6 +637,8 @@ public:
             mb.append(offsetBranches);
             mb.append(uncompressedSize);
             mb.append(originalBlobSize);
+            mb.append(branchMemorySize);
+            mb.append(leafMemorySize);
 
             if (!singlePartKey && firstNode() && buildTlk)
             {

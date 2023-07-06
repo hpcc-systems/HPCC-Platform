@@ -77,7 +77,10 @@ const StatisticsMapping spillStatistics({StTimeSpillElapsed, StTimeSortElapsed, 
 const StatisticsMapping jhtreeCacheStatistics({ StNumIndexSeeks, StNumIndexScans, StNumPostFiltered, StNumIndexWildSeeks,
                                                 StNumNodeCacheAdds, StNumLeafCacheAdds, StNumBlobCacheAdds, StNumNodeCacheHits, StNumLeafCacheHits, StNumBlobCacheHits, StCycleNodeLoadCycles, StCycleLeafLoadCycles,
                                                 StCycleBlobLoadCycles, StCycleNodeReadCycles, StCycleLeafReadCycles, StCycleBlobReadCycles, StNumNodeDiskFetches, StNumLeafDiskFetches, StNumBlobDiskFetches,
-                                                StCycleNodeFetchCycles, StCycleLeafFetchCycles, StCycleBlobFetchCycles});
+                                                StCycleNodeFetchCycles, StCycleLeafFetchCycles, StCycleBlobFetchCycles,
+                                                StCycleIndexCacheBlockedCycles, StNumIndexMerges, StNumIndexMergeCompares,
+                                                StNumIndexSkips, StNumIndexNullSkips});
+
 const StatisticsMapping basicActivityStatistics({StTimeLocalExecute, StTimeBlocked});
 const StatisticsMapping groupActivityStatistics({StNumGroups, StNumGroupMax}, basicActivityStatistics);
 const StatisticsMapping hashJoinActivityStatistics({StNumLeftRows, StNumRightRows}, basicActivityStatistics);
