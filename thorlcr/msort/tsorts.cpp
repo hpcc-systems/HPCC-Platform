@@ -33,6 +33,7 @@
 #include "tsortm.hpp"
 #include "tsortmp.hpp"
 #include "thbuf.hpp"
+#include "thbufdef.hpp"
 #include "thgraph.hpp"
 
 #ifdef _DEBUG
@@ -198,6 +199,7 @@ public:
         dataFile.setown(createIFile(tempname.str()));
 
         unsigned rwFlags = DEFAULT_RWFLAGS;
+        size32_t compBlkSz = 0;
         if (activity.getOptBool(THOROPT_COMPRESS_SPILLS, true) && activity.getOptBool(THOROPT_COMPRESS_SORTOVERFLOW, true))
         {
             StringBuffer compType;
@@ -209,11 +211,12 @@ public:
                 rwFlags |= rw_compress;
                 rwFlags |= spillCompInfo;
                 compressedOverflowFile = true;
-                ActPrintLog(&activity, "Creating compressed merged overflow file");
+                compBlkSz = activity.getOptUInt(THOROPT_SORT_COMPBLKSZ, DEFAULT_SORT_COMPBLKSZ);
+                ActPrintLog(&activity, "Creating compressed merged overflow file (block size = %u)", compBlkSz);
             }
         }
 
-        Owned<IExtRowWriter> output = createRowWriter(dataFile, rowIf, rwFlags);
+        Owned<IExtRowWriter> output = createRowWriter(dataFile, rowIf, rwFlags, nullptr, compBlkSz);
 
         bool overflowed = false;
         ActPrintLog(&activity, "Local Overflow Merge start");
