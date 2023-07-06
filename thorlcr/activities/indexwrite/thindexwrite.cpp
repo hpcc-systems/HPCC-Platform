@@ -38,6 +38,8 @@ class IndexWriteActivityMaster : public CMasterActivity
     offset_t compressedFileSize = 0;
     offset_t uncompressedSize = 0;
     offset_t originalBlobSize = 0;
+    offset_t branchMemorySize = 0;
+    offset_t leafMemorySize = 0;
     Owned<IFileDescriptor> fileDesc;
     bool buildTlk, isLocal, singlePartKey;
     StringArray clusters;
@@ -265,6 +267,10 @@ public:
             props.setPropInt64("@numBlobNodes", numBlobNodes);
             if (numBlobNodes)
                 props.setPropInt64("@originalBlobSize", originalBlobSize);
+            if (branchMemorySize)
+                props.setPropInt64("@branchMemorySize", branchMemorySize);
+            if (leafMemorySize)
+                props.setPropInt64("@leafMemorySize", leafMemorySize);
 
             Owned<IPropertyTree> metadata;
             buildUserMetadata(metadata, *helper);
@@ -345,12 +351,16 @@ public:
                 offset_t slaveOffsetBranches;
                 offset_t slaveUncompressedSize;
                 offset_t slaveOriginalBlobSize;
+                offset_t slaveBranchMemorySize;
+                offset_t slaveLeafMemorySize;
                 mb.read(slaveNumLeafNodes);
                 mb.read(slaveNumBlobNodes);
                 mb.read(slaveNumBranchNodes);
                 mb.read(slaveOffsetBranches);
                 mb.read(slaveUncompressedSize);
                 mb.read(slaveOriginalBlobSize);
+                mb.read(slaveBranchMemorySize);
+                mb.read(slaveLeafMemorySize);
 
                 compressedFileSize += size;
                 numLeafNodes += slaveNumLeafNodes;
@@ -358,6 +368,8 @@ public:
                 numBranchNodes += slaveNumBranchNodes;
                 uncompressedSize += slaveUncompressedSize;
                 originalBlobSize += slaveOriginalBlobSize;
+                branchMemorySize += slaveBranchMemorySize;
+                leafMemorySize += slaveLeafMemorySize;
 
                 props.setPropInt64("@uncompressedSize", slaveUncompressedSize);
                 props.setPropInt64("@offsetBranches", slaveOffsetBranches);

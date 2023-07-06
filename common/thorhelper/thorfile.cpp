@@ -242,6 +242,8 @@ static void gatherDerivedIndexInformation(DerivedIndexInformation & result, IDis
         result.sizeDiskLeaves = result.numLeafNodes * nodeSize;
         result.sizeDiskBlobs = result.numBlobNodes * nodeSize;
         result.sizeDiskBranches = result.numBranchNodes * nodeSize;
+        result.sizeMemoryBranches = attrs.getPropInt64("@branchMemorySize");
+        result.sizeMemoryLeaves = attrs.getPropInt64("@leafMemorySize");
     }
     else
     {
@@ -283,11 +285,12 @@ static void gatherDerivedIndexInformation(DerivedIndexInformation & result, IDis
         result.sizeOriginalData = attrs.getPropInt64("@uncompressedSize");
 
     //The following will depend on the compression format - e.g. if compressed searching is implemented
-    result.sizeMemoryBranches = result.sizeOriginalBranches;
+    if (result.sizeMemoryBranches == 0)
+        result.sizeMemoryBranches = result.sizeOriginalBranches;
 
     //NOTE: sizeOriginalData now includes the blob sizes that are removed before passing to the builder
     //      if the original blob size is recorded then use it, otherwise estimate it
-    if (result.sizeOriginalData)
+    if (result.sizeOriginalData && (result.sizeMemoryLeaves == 0))
     {
         offset_t originalBlobSize = attrs.getPropInt64("@originalBlobSize");
         if (result.numBlobNodes == 0)
