@@ -3,6 +3,7 @@ WORK_DIR=$(dirname $0)
 
 source ${WORK_DIR}/efs-env
 
-aws iam detach-role-policy --role-name ${EKS_NAME}_EFS_CSI_Role \
-  --policy-arn arn:aws:iam::${ACCOUNT_ID}:policy/AmazonEKS_EFS_CSI_Driver_Policy
-aws iam delete-role --role-name ${EKS_NAME}_EFS_CSI_Role
+echo "deleting iam role"
+echo "make sure you also uninstall the aws-efs-csi-driver helm chart"
+STACK_NAME=eksctl-${EKS_NAME}-addon-iamserviceaccount-kube-system-efs-csi-controller-sa
+aws cloudformation delete-stack --stack-name ${STACK_NAME}

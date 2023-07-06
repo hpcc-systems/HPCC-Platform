@@ -1,4 +1,5 @@
 #!/bin/bash
+#reference: https://docs.aws.amazon.com/eks/latest/userguide/efs-csi.html
 
 WORK_DIR=$(dirname $0)
 
@@ -6,58 +7,36 @@ source ${WORK_DIR}/efs-env
 echo "AWS_PROFILE:  $AWS_PROFILE"
 
 roleName=${EKS_NAME}_EFS_CSI_Role
+EFS_CSI_POLICY_NAME=EKS_EFS_CSI_Driver_Policy
 
 create_efs_csi_driver_policy()
 {
-  echo "create efs csi driver policy"
-  #aws iam list-policies | grep -q AmazonEKS_EFS_CSI_Driver_Policy # [Errno 32] Broken pipe on WSL
-  aws iam list-policies | awk '/AmazonEKS_EFS_CSI_Driver_Policy/{print $2}' | grep -q EFS
+  echo "creating efs csi driver policy"
+  #aws iam list-policies | grep -q $EFS_CSI_POLICY_NAME # [Errno 32] Broken pipe on WSL
+  aws iam list-policies | awk "/${EFS_CSI_POLICY_NAME}/{print $2}" | grep -q EFS
   [ $? -ne 0 ] && \
   aws iam create-policy \
-    --policy-name AmazonEKS_EFS_CSI_Driver_Policy \
+    --policy-name ${EFS_CSI_POLICY_NAME} \
     --policy-document file://${WORK_DIR}/iam-policy-example.json
 }
 
-create_iam_role()
+create_iam_role_and_kubernetes_service_account()
 {
-  echo "create efs csi driver iam role"
-  # Delete role
-  ${WORK_DIR}/delete-role.sh > /dev/null 2>&1
-
-  #aws iam list-roles | grep -q AmazonEKS_EFS_CSI_DriverRole
-  aws iam list-roles | awk '/${roleName}/{print $2}' | grep -q EFS
-  if [ $? -ne 0 ]
-  then
-    OIDC_URL=$(aws eks describe-cluster --name ${EKS_NAME} --region ${EFS_REGION} --query "cluster.identity.oidc.issuer" --output text)
-    OIDC_PROVIDER=${OIDC_URL##*/}
-    sed "s/<ACCOUNT_ID>/${ACCOUNT_ID}/g; \
-         s/<REGION_CODE>/${EFS_REGION}/g; \
-	 s/<OIDC_PROVIDER>/${OIDC_PROVIDER}/g" ${WORK_DIR}/trust-policy.json.template > ${WORK_DIR}/trust-policy.json
-    echo "aws iam create-role \
-      --role-name ${roleName} \
-      --assume-role-policy-document file://${WORK_DIR}/trust-policy.json"
-    aws iam create-role \
-      --role-name ${roleName} \
-      --assume-role-policy-document file://"${WORK_DIR}/trust-policy.json"
-    aws iam attach-role-policy \
-       --policy-arn arn:aws:iam::${ACCOUNT_ID}:policy/AmazonEKS_EFS_CSI_Driver_Policy \
-       --role-name ${roleName}
-    #rm -rf  ${WORK_DIR}/trust-policy.json
-  fi
-}
-
-create_efs_service_account()
-{
-    echo "create efs service account"
-    sed "s/<ACCOUNT_ID>/${ACCOUNT_ID}/g; \
-         s/<ROLE_NAME>/${roleName}/g"  ${WORK_DIR}/efs-service-account.yaml.template > ${WORK_DIR}/efs-service-account.yaml
-    kubectl apply -f ${WORK_DIR}/efs-service-account.yaml
-    #rm -rf ${WORK_DIR}/efs-service-account.yaml
+  echo "creating iam role and kubernetes service account"
+  eksctl utils associate-iam-oidc-provider --region=${EFS_REGION} --cluster=${EKS_NAME} --approve
+  eksctl create iamserviceaccount \
+    --cluster ${EKS_NAME} \
+    --namespace kube-system \
+    --name efs-csi-controller-sa \
+    --attach-policy-arn arn:aws:iam::${ACCOUNT_ID}:policy/${EFS_CSI_POLICY_NAME} \
+    --approve \
+    --override-existing-serviceaccounts \
+    --region ${EFS_REGION}
 }
 
 install_amazon_efs_driver()
 {
-  echo "install then amazon efs driver"
+  echo "installing the amazon efs driver helm chart"
   helm repo add aws-efs-csi-driver https://kubernetes-sigs.github.io/aws-efs-csi-driver/
   helm repo update
   helm upgrade -i aws-efs-csi-driver aws-efs-csi-driver/aws-efs-csi-driver \
@@ -70,7 +49,7 @@ install_amazon_efs_driver()
 create_storage_class_yaml()
 {
     echo ""
-    echo "create storageclass.yaml from storageclass.yaml.template"
+    echo "creating storageclass.yaml from storageclass.yaml.template"
     #echo "EFS_ID: ${EFS_ID}  EFS_BASE_PATH: $EFS_BASE_PATH"
     sed "s/<EFS_ID>/${EFS_ID}/g; \
 	 s/<EFS_BASE_PATH>/\\${EFS_BASE_PATH}/g"  ${WORK_DIR}/storageclass.yaml.template > ${WORK_DIR}/storageclass.yaml
@@ -80,8 +59,7 @@ helm list | grep -q ${EFS_NAME}
 if [[ $? -ne 0 ]]
 then
   create_efs_csi_driver_policy
-  create_iam_role
-  create_efs_service_account
+  create_iam_role_and_kubernetes_service_account
   ${WORK_DIR}/associate-oidc.sh
   install_amazon_efs_driver
   create_storage_class_yaml
