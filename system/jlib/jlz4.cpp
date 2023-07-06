@@ -177,8 +177,9 @@ public:
 
 class jlib_decl CLZ4Expander : public CFcmpExpander
 {
+    size32_t totalExpanded = 0;
 public:
-    virtual void expand(void *buf)
+    virtual void expand(void *buf) override
     {
         if (!outlen)
             return;
@@ -221,6 +222,66 @@ public:
         }
     }
 
+    virtual size32_t expandFirst(MemoryBuffer & target, const void * src) override
+    {
+        init(src);
+        totalExpanded = 0;
+        return expandNext(target);
+    }
+
+    virtual size32_t expandNext(MemoryBuffer & target) override
+    {
+        if (totalExpanded == outlen)
+            return 0;
+
+        const size32_t szchunk = *in;
+        in++;
+
+        target.clear();
+        size32_t written;
+        if (szchunk+totalExpanded<outlen)
+        {
+            //All but the last block are compressed (see expand() function above).
+            //Slightly concerning there always has to be one trailing byte for this to work!
+            size32_t maxOut = target.capacity();
+            size32_t maxEstimate = (outlen - totalExpanded);
+            size32_t estimate = szchunk; // start conservatively - likely to be preallocated to correct size already.
+            if (estimate > maxEstimate)
+                estimate = maxEstimate;
+            if (maxOut < estimate)
+                maxOut = estimate;
+
+            for (;;)
+            {
+                //Try and compress into the current target buffer.  If too small increase size and repeat
+                written = LZ4_decompress_safe((const char *)in, (char *)target.reserve(maxOut), szchunk, maxOut);
+                if ((int)written > 0)
+                {
+                    target.setLength(written);
+                    break;
+                }
+
+                //Sanity check to catch corrupt lz4 data that always returns an error.
+                if (maxOut > outlen)
+                    throwUnexpected();
+
+                maxOut += szchunk; // Likely to quickly approach the actual expanded size
+                target.clear();
+            }
+        }
+        else
+        {
+            void * buf = target.reserve(szchunk);
+            written = szchunk;
+            memcpy(buf,in,szchunk);
+        }
+
+        in = (const size32_t *)(((const byte *)in)+szchunk);
+        totalExpanded += written;
+        if (totalExpanded > outlen)
+            throw MakeStringException(0, "LZ4Expander - corrupt data(3) %d %d",written,szchunk);
+        return written;
+    }
 };
 
 void LZ4CompressToBuffer(MemoryBuffer & out, size32_t len, const void * src)

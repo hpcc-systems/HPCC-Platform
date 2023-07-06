@@ -38,7 +38,6 @@ public:
     unsigned char dictchar[LZW_HASH_TABLE_SIZE];
 };
 
-
 class CLZWCompressor final : public ICompressor, public CInterface
 {
 public:
@@ -88,12 +87,9 @@ protected:
     bool supportbigendian;
 };
 
-
-class jlib_decl CLZWExpander : public IExpander, public CInterface
+class  CLZWExpander : public CExpanderBase
 {
 public:
-    IMPLEMENT_IINTERFACE;
-
     CLZWExpander(bool _supportbigendian);
     ~CLZWExpander();
     virtual size32_t  init(const void *blk); // returns size required
