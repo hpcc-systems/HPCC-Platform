@@ -510,7 +510,7 @@ export function CreateDFUQueryStore(): BaseStore<HPCCWsDfu.DFUQueryRequest, type
         request.IncludeSuperOwner = true;
         return service.DFUQuery(request).then(response => {
             return {
-                data: response.DFULogicalFiles.DFULogicalFile,
+                data: response?.DFULogicalFiles?.DFULogicalFile ?? [],
                 total: response.NumFiles
             };
         });

@@ -2611,18 +2611,20 @@ const CJHTreeNode *CNodeCache::getNode(const INodeLoader *keyIndex, unsigned iD,
     //  Lock, add if missing, unlock.  Lock a page-dependent-cr load() release lock.
     //There will be the same number of critical section locks, but loading a page will contend on a different lock - so it should reduce contention.
     CKeyIdAndPos key(iD, pos);
+    CNodeMRUCache & curCache = cache[cacheType];
     CriticalSection & cacheLock = lock[cacheType];
     Owned<CNodeCacheEntry> ownedCacheEntry; // ensure node gets cleaned up if it fails to load
     bool alreadyExists = true;
     {
         CNodeCacheEntry * cacheEntry;
+        unsigned hashcode = curCache.getKeyHash(key);
         CriticalBlock block(cacheLock);
 
-        cacheEntry = cache[cacheType].query(key);
+        cacheEntry = curCache.query(hashcode, &key);
         if (unlikely(!cacheEntry))
         {
             cacheEntry = new CNodeCacheEntry;
-            cache[cacheType].replace(key, *cacheEntry);
+            curCache.replace(key, *cacheEntry);
             alreadyExists = false;
         }
 
@@ -2671,7 +2673,7 @@ const CJHTreeNode *CNodeCache::getNode(const INodeLoader *keyIndex, unsigned iD,
                 assertex(type == node->getNodeType());
 
                 //Update the associated size of the entry in the hash table before setting isReady (never evicted until isReady is set)
-                cache[cacheType].noteReady(*node);
+                curCache.noteReady(*node);
                 ownedCacheEntry->noteReady(node);
             }
             else
@@ -2731,7 +2733,7 @@ const CJHTreeNode *CNodeCache::getNode(const INodeLoader *keyIndex, unsigned iD,
         {
             CriticalBlock block(cacheLock);
             if (!ownedCacheEntry->isReady())
-                cache[cacheType].remove(key);
+                curCache.remove(key);
         }
         throw;
     }
