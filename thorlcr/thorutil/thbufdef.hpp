@@ -54,6 +54,7 @@
 #define EXCESSIVE_PARALLEL_THRESHHOLD           (0x500000)              // 5MB
 #define LOOP_SMART_BUFFER_SIZE                  (0x100000*12)           // 12MB
 #define LOCALRESULT_BUFFER_SIZE                 (0x100000*10)           // 10MB
+#define DEFAULT_SORT_COMPBLKSZ                  (0x10000)               // 64K
 
 #define DEFAULT_KEYNODECACHEMB                  10
 #define DEFAULT_KEYLEAFCACHEMB                  50

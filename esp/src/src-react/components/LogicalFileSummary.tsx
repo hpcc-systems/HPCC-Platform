@@ -59,6 +59,8 @@ export const LogicalFileSummary: React.FunctionComponent<LogicalFileSummaryProps
                 const actionInfo = ActionResults?.DFUActionInfo;
                 if (actionInfo && actionInfo.length && !actionInfo[0].Failed) {
                     replaceUrl("/files");
+                } else {
+                    logger.error(actionInfo[0].ActionResult);
                 }
             }).catch(err => logger.error(err));
         }, [file])

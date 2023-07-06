@@ -1,5 +1,6 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Icon, Link } from "@fluentui/react";
+import { scopedLogger } from "@hpcc-js/util";
 import * as WsDfu from "src/WsDfu";
 import { CreateDFUQueryStore } from "src/ESPLogicalFile";
 import { formatCost } from "src/Session";
@@ -20,6 +21,8 @@ import { RemoteCopy } from "./forms/RemoteCopy";
 import { RenameFile } from "./forms/RenameFile";
 import { ShortVerticalDivider } from "./Common";
 import { SizeMe } from "react-sizeme";
+
+const logger = scopedLogger("src-react/components/Files.tsx");
 
 const FilterFields: Fields = {
     "LogicalName": { type: "string", label: nlsHPCC.Name, placeholder: nlsHPCC.somefile },
@@ -218,7 +221,13 @@ export const Files: React.FunctionComponent<FilesProps> = ({
         message: nlsHPCC.DeleteSelectedFiles,
         items: selection.map(s => s.Name),
         onSubmit: React.useCallback(() => {
-            WsDfu.DFUArrayAction(selection, "Delete").then(() => refreshTable(true));
+            WsDfu.DFUArrayAction(selection, "Delete")
+                .then(({ DFUArrayActionResponse }) => {
+                    const ActionResults = DFUArrayActionResponse?.ActionResults?.DFUActionInfo ?? [];
+                    ActionResults.filter(action => action?.Failed).forEach(action => logger.error(action?.ActionResult));
+                    refreshTable(true);
+                })
+                .catch(err => logger.error(err));
         }, [refreshTable, selection])
     });
 
