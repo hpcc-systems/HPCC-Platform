@@ -1,6 +1,6 @@
 @echo off
 
-set "ECLCMD_VER=${majorver}.${minorver}"
+set "ECLCMD_VER=${PACKAGE_MAJOR_VERSION}.${PACKAGE_MINOR_VERSION}"
 call :print_eclcmd_header
 
 set ECLBIN=%~dp0bin

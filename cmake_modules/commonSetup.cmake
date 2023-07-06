@@ -523,25 +523,6 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
         endif()
     endmacro()
 
-  ##################################################################
-
-  # Build tag generation
-
-  set(projname ${HPCC_PROJECT})
-  set(majorver ${HPCC_MAJOR})
-  set(minorver ${HPCC_MINOR})
-  set(point ${HPCC_POINT})
-  if ( "${HPCC_MATURITY}" STREQUAL "release" )
-    set(stagever "${HPCC_SEQUENCE}")
-  else()
-    set(stagever "${HPCC_MATURITY}${HPCC_SEQUENCE}")
-  endif()
-  set(version ${majorver}.${minorver}.${point})
-
-  IF ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
-    set( stagever "${stagever}Debug" )
-  ENDIF ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
-
   ###########################################################################
 
     if(USE_OPTIONAL)
@@ -933,7 +914,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   if ( PLATFORM OR PLUGIN )
       set ( CMAKE_INSTALL_PREFIX "${INSTALL_DIR}" )
   else ( )
-    set ( CMAKE_INSTALL_PREFIX "${INSTALL_DIR}/${version}/clienttools" )
+    set ( CMAKE_INSTALL_PREFIX "${INSTALL_DIR}/${PACKAGE_VERSION}/clienttools" )
   endif ( PLATFORM OR PLUGIN )
   if(APPLE)
     set(CMAKE_MACOSX_RPATH ON)
