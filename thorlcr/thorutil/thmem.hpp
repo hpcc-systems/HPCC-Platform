@@ -281,6 +281,7 @@ protected:
     const void **rows = nullptr;
     void **stableTable = nullptr;
     bool throwOnOom = true; // tested during array expansion (resize())
+    bool useMergeSort = true;
     EmptyRowSemantics emptyRowSemantics = ers_forbidden;
     StableSortFlag stableSort = stableSort_none;
     rowidx_t maxRows = 0;  // Number of rows that can fit in the allocated memory.

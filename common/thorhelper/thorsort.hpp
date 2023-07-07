@@ -23,19 +23,8 @@
 #include "thorhelper.hpp"
 #include "jsort.hpp"
 
-//#define DEFAULT_MERGE_SORT
-
 extern THORHELPER_API void msortvecstableinplace(void ** rows, size_t n, const ICompare & compare, void ** temp);
 extern THORHELPER_API void parmsortvecstableinplace(void ** rows, size_t n, const ICompare & compare, void ** temp);
-
-inline void parsortvecstableinplace(void ** rows, size_t n, const ICompare & compare, void ** stableTablePtr, unsigned maxCores=0)
-{
-#ifdef DEFAULT_MERGE_SORT
-    parmsortvecstableinplace(rows, n, compare, stableTablePtr);
-#else
-    parqsortvecstableinplace(rows, n, compare, stableTablePtr, maxCores);
-#endif
-}
 
 extern THORHELPER_API void tbbqsortvec(void **a, size_t n, const ICompare & compare);
 extern THORHELPER_API void tbbqsortstable(void ** rows, size_t n, const ICompare & compare, void ** temp);

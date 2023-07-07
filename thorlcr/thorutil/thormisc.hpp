@@ -113,6 +113,7 @@
 #define THOROPT_MEMORY_SPILL_AT "memorySpillAt"                 // The threshold (%) that roxiemem will request memory to be reduced (default=80)
 #define THOROPT_FAIL_ON_LEAKS "failOnLeaks"                     // If any leaks are detected at the end of graph, fail the query (default=false)
 #define THOROPT_SOAP_TRACE_LEVEL "soapTraceLevel"               // The trace SOAP level (default=1)
+#define THOROPT_SORT_ALGORITHM "sortAlgorithm"                  // The algorithm used to sort records (quicksort/mergesort)
 
 
 #define INITIAL_SELFJOIN_MATCH_WARNING_LEVEL 20000  // max of row matches before selfjoin emits warning
