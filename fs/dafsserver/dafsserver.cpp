@@ -2410,7 +2410,7 @@ class CRemoteDiskWriteActivity : public CRemoteWriteBaseActivity
 {
     typedef CRemoteWriteBaseActivity PARENT;
 
-    unsigned compressionFormat = 0;
+    unsigned compressionFormat = COMPRESS_METHOD_NONE;
     bool eogPending = false;
     bool someInGroup = false;
     size32_t recordSize = 0;
@@ -2456,7 +2456,7 @@ public:
             if (strieq("true", compressed))
                 compressionFormat = translateToCompMethod(nullptr); // gets default
             else if (strieq("false", compressed))
-                compressionFormat = 0;
+                compressionFormat = COMPRESS_METHOD_NONE;
             else
                 compressionFormat = translateToCompMethod(compressed);
         }
