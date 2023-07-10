@@ -1364,8 +1364,9 @@ public:
 #ifdef TRACE_GLOBAL_GROUP
         ActPrintLog(activity, "%s", __func__);
 #endif
-        running = false;
-        comm.cancel(RANK_ALL, mpTag);
+        bool wanted = true;
+        if (running.compare_exchange_strong(wanted, false))
+            comm.cancel(RANK_ALL, mpTag);
     }
 };
 
