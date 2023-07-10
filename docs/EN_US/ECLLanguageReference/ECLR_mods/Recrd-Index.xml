@@ -32,8 +32,8 @@
   <para><emphasis> attr</emphasis><emphasis role="bold"> :=
   INDEX([</emphasis><emphasis> baserecset, </emphasis><emphasis
   role="bold">]</emphasis><emphasis> keys, payload, indexfile
-  </emphasis><emphasis role="bold">[,SORTED] [,OPT] [,COMPRESSED( LZW | ROW |
-  FIRST) ] [,DISTRIBUTED] [,FILEPOSITION( [
+  </emphasis><emphasis role="bold">[,SORTED] [,OPT]
+  [,COMPRESSED(<emphasis>option</emphasis>) ] [,DISTRIBUTED] [,FILEPOSITION( [
   </emphasis><emphasis>flag</emphasis><emphasis role="bold">] ) ] [,
   MAXLENGTH<indexterm>
       <primary>MAXLENGTH</primary>
@@ -84,7 +84,7 @@
           structure is separately defined it must meet the same requirements
           as used by the TABLE() function (the RECORD structure must define
           the type, name, and source of the data for each field), otherwise
-          the BUILD action will not syntax check. </entry>
+          the BUILD action will not syntax check.</entry>
         </row>
 
         <row>
@@ -137,16 +137,37 @@
         <row>
           <entry><emphasis role="bold">COMPRESSED</emphasis></entry>
 
-          <entry><para>Optional. Specifies the type of compression used. If
-          omitted, the default is <emphasis role="bold">LZW</emphasis>, a
-          variant of the Lempel-Ziv-Welch algorithm. Specifying <emphasis
-          role="bold">ROW</emphasis> compresses index entries based on
-          differences between contiguous rows (for use with fixed-length
-          records, only), and is recommended for use in circumstances where
-          speedier decompression time is more important than the amount of
-          compression achieved. <emphasis role="bold">FIRST</emphasis>
-          compresses common leading elements of the key (recommended only for
-          timing comparison use).</para></entry>
+          <entry><para>Optional. Specifies the index should be compressed
+          using the type of compression specified.</para></entry>
+        </row>
+
+        <row>
+          <entry><emphasis>option</emphasis></entry>
+
+          <entry>If omitted, the default is <emphasis
+          role="bold">LZW</emphasis>, a variant of the Lempel-Ziv-Welch
+          algorithm. Specifying <emphasis role="bold">ROW</emphasis>
+          compresses index entries based on differences between contiguous
+          rows (for use with fixed-length records, only), and is recommended
+          for use in circumstances where speedier decompression time is more
+          important than the amount of compression achieved. <emphasis
+          role="bold">FIRST</emphasis> compresses common leading elements of
+          the key (recommended only for timing comparison use). Specifying a
+          string constant value of <emphasis role="bold">'inplace'</emphasis>
+          or <emphasis role="bold">'inplace:lz4hc'</emphasis> causes the index
+          to be built using the new inplace compression format. Using
+          'inplace:lz4hc' uses inplace compression with lz4hc compression (a
+          high-compression variant of LZ4) of the payload. This can be
+          significantly smaller, but can take much longer to create the
+          indexes. Generally the new index improves compression of branch
+          nodes, and allows them to be searched without decompression. This
+          can significantly reduce disk access by increasing the number of
+          branch pages that can be held in memory. It also is significantly
+          faster at decompressing leaf pages. Whether performance is better
+          with lz4hc depends on the access characteristics of the data, and
+          how much of the index is cached in memory. If you attempt to read an
+          index with the new format on a system that does not support them, an
+          error message is returned.</entry>
         </row>
 
         <row>
