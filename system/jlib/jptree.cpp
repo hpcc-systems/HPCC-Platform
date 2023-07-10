@@ -8832,7 +8832,7 @@ void executeConfigUpdaterCallbacks()
     if (!configFileUpdater)
         WARNLOG("executeConfigUpdaterCallbacks(): configuration updater not installed");
     else
-        configFileUpdater->executeCallbacks(componentConfiguration.getLink(), globalConfiguration.getLink());
+        configFileUpdater->executeCallbacks(componentConfiguration, globalConfiguration);
 }
 #else
 unsigned installConfigUpdateHook(ConfigUpdateFunc notifyFunc)
