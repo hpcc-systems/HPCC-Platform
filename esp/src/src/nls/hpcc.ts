@@ -73,7 +73,7 @@ export = {
         BannerColor: "Banner Colour",
         BannerMessage: "Banner Message",
         BannerScroll: "Banner Scroll",
-        BannerSize: "Banner Size",
+        BannerSize: "Banner Size (in pixels)",
         Bind: "Bind",
         Binding: "Binding",
         BindingDeleted: "Binding Deleted",
