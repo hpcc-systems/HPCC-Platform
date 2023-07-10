@@ -1458,9 +1458,9 @@ private:
 
 Owned<IEsdlStore> gEsdlCentralStore;
 
-esdl_engine_decl IEsdlStore* createEsdlCentralStore()
+esdl_engine_decl IEsdlStore* getEsdlCentralStore(bool isForLoadingBindings)
 {
-    if (!getComponentConfigSP()->getPropBool("@loadDaliBindings", true))
+    if (isForLoadingBindings && !getComponentConfigSP()->getPropBool("@loadDaliBindings", true))
         return nullptr;
     if (!daliClientActive())
         return nullptr;
