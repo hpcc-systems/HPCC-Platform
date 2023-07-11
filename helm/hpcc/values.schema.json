@@ -544,6 +544,11 @@
             "waitForMount": {
               "type": "boolean"
             },
+            "blockedFileIOKB": {
+              "description": "Optimal block size for efficient reading from this plane. Implementations will use if they can",
+              "type": "integer",
+              "default": 0
+            },
             "components": {},
             "prefix": {},
             "subPath": {},
