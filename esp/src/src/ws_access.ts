@@ -151,15 +151,15 @@ class ResourcesStore extends Memory {
         if (!this.groupname && !this.username) {
             return [];
         }
-        return AccountPermissions({
+        return AccountPermissionsV2({
             request: {
                 AccountName: this.groupname ? this.groupname : this.username,
                 IsGroup: this.groupname ? true : false,
                 IncludeGroup: false
             }
         }).then(lang.hitch(this, function (response) {
-            if (lang.exists("AccountPermissionsResponse.Permissions.Permission", response)) {
-                return response.AccountPermissionsResponse.Permissions.Permission;
+            if (lang.exists("AccountPermissionsV2Response.Permissions.Permission", response)) {
+                return response.AccountPermissionsV2Response.Permissions.Permission;
             }
             return [];
         }));
@@ -228,7 +228,7 @@ class InheritedPermissionStore extends Memory {
         if (!this.AccountName) {
             return [];
         }
-        return AccountPermissions({
+        return AccountPermissionsV2({
             request: {
                 AccountName: this.AccountName,
                 IsGroup: false,
@@ -236,11 +236,11 @@ class InheritedPermissionStore extends Memory {
                 TabName: this.TabName
             }
         }).then(lang.hitch(this, function (response) {
-            if (lang.exists("AccountPermissionsResponse.GroupPermissions.GroupPermission", response)) {
-                const arr = response.AccountPermissionsResponse.GroupPermissions.GroupPermission;
+            if (lang.exists("AccountPermissionsV2Response.GroupPermissions.GroupPermission", response)) {
+                const arr = response.AccountPermissionsV2Response.GroupPermissions.GroupPermission;
                 for (const index in arr) {
                     if (arr[index].GroupName === this.TabName) {
-                        return response.AccountPermissionsResponse.GroupPermissions.GroupPermission[index].Permissions.Permission;
+                        return response.AccountPermissionsV2Response.GroupPermissions.GroupPermission[index].Permissions.Permission;
                     }
                 }
             }
@@ -567,6 +567,10 @@ export function Permissions(params?) {
 
 export function AccountPermissions(params) {
     return _doCall("AccountPermissions", params);
+}
+
+export function AccountPermissionsV2(params) {
+    return _doCall("AccountPermissionsV2", params);
 }
 
 export function ResourcePermissions(params) {
