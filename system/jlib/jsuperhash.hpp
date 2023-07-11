@@ -178,9 +178,9 @@ class SimpleHashTableOf : public SuperHashTableOf<ET, FP>
 {
     typedef SimpleHashTableOf<ET, FP> SELF;
 public:
-    SimpleHashTableOf<ET, FP>(void) : SuperHashTableOf<ET, FP>() { }
-    SimpleHashTableOf<ET, FP>(unsigned initsize) : SuperHashTableOf<ET, FP>(initsize) { }
-    ~SimpleHashTableOf<ET, FP>() { SELF::_releaseAll(); }
+    SimpleHashTableOf(void) : SuperHashTableOf<ET, FP>() { }
+    SimpleHashTableOf(unsigned initsize) : SuperHashTableOf<ET, FP>(initsize) { }
+    ~SimpleHashTableOf() { SELF::_releaseAll(); }
 
     IMPLEMENT_SUPERHASHTABLEOF_REF_FIND(ET, FP);
 
@@ -209,9 +209,9 @@ class OwningSimpleHashTableOf : public SimpleHashTableOf<ET, FP>
 {
     typedef OwningSimpleHashTableOf<ET, FP> SELF;
 public:
-    OwningSimpleHashTableOf<ET, FP>(void) : SimpleHashTableOf<ET, FP>() { }
-    OwningSimpleHashTableOf<ET, FP>(unsigned initsize) : SimpleHashTableOf<ET, FP>(initsize) { }
-    ~OwningSimpleHashTableOf<ET, FP>() { SELF::_releaseAll(); }
+    OwningSimpleHashTableOf(void) : SimpleHashTableOf<ET, FP>() { }
+    OwningSimpleHashTableOf(unsigned initsize) : SimpleHashTableOf<ET, FP>(initsize) { }
+    ~OwningSimpleHashTableOf() { SELF::_releaseAll(); }
 
     virtual void onRemove(void *et) { ((ET *)et)->Release(); }
 };
@@ -288,9 +288,9 @@ class StringSuperHashTableOf : public SuperHashTableOf<ET, const char>
 {
     typedef StringSuperHashTableOf<ET> SELF;
 public:
-    StringSuperHashTableOf<ET>(void) : SuperHashTableOf<ET, const char>() { }
-    StringSuperHashTableOf<ET>(unsigned initsize) : SuperHashTableOf<ET, const char>(initsize) { }
-    ~StringSuperHashTableOf<ET>() { SELF::_releaseAll(); }
+    StringSuperHashTableOf(void) : SuperHashTableOf<ET, const char>() { }
+    StringSuperHashTableOf(unsigned initsize) : SuperHashTableOf<ET, const char>(initsize) { }
+    ~StringSuperHashTableOf() { SELF::_releaseAll(); }
 
     virtual void onAdd(void *et __attribute__((unused))) { }
     virtual void onRemove(void *et __attribute__((unused))) { }
@@ -318,9 +318,9 @@ class OwningStringSuperHashTableOf : public StringSuperHashTableOf<ET>
 {
     typedef OwningStringSuperHashTableOf<ET> SELF;
 public:
-    OwningStringSuperHashTableOf<ET>(void) : StringSuperHashTableOf<ET>() { }
-    OwningStringSuperHashTableOf<ET>(unsigned initsize) : StringSuperHashTableOf<ET>(initsize) { }
-    ~OwningStringSuperHashTableOf<ET>() { SELF::_releaseAll(); }
+    OwningStringSuperHashTableOf(void) : StringSuperHashTableOf<ET>() { }
+    OwningStringSuperHashTableOf(unsigned initsize) : StringSuperHashTableOf<ET>(initsize) { }
+    ~OwningStringSuperHashTableOf() { SELF::_releaseAll(); }
 
     virtual void onRemove(void *et) { ((ET *)et)->Release(); }
 };
@@ -422,7 +422,7 @@ class ThreadSafeOwningSimpleHashTableOf : public ThreadSafeSimpleHashTableOf<ET,
 {
     typedef ThreadSafeOwningSimpleHashTableOf<ET, FP> SELF;
 public:
-    ~ThreadSafeOwningSimpleHashTableOf<ET, FP>() { SELF::_releaseAll(); }
+    ~ThreadSafeOwningSimpleHashTableOf() { SELF::_releaseAll(); }
     virtual void onRemove(void *et) { ((ET *)et)->Release(); }
 };
 

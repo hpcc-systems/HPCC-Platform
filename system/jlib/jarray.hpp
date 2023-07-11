@@ -153,7 +153,7 @@ protected:
     typedef int (*CompareFunc)(const MEMBER *, const MEMBER *);   // Should really be const, as should the original array functions
 
 public:
-    ~ArrayOf<MEMBER,PARAM,MAPPER>() { kill(); }
+    ~ArrayOf() { kill(); }
 
     MEMBER & operator[](size_t pos) { return element((aindex_t)pos); }
     const MEMBER & operator[](size_t pos) const { return element((aindex_t)pos); }

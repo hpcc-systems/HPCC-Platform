@@ -66,10 +66,10 @@ protected:
     CLASS *ptr = nullptr;
 
 public:
-    OwnedPtrCustomFree<CLASS, FREE_FUNC>() { }
-    OwnedPtrCustomFree<CLASS, FREE_FUNC>(CLASS *_ptr) : ptr(_ptr) { }
-    OwnedPtrCustomFree<CLASS, FREE_FUNC>(SELF &&_ptr) { ptr = _ptr.getClear(); }
-    ~OwnedPtrCustomFree<CLASS, FREE_FUNC>() { safeFree(ptr); }
+    OwnedPtrCustomFree() { }
+    OwnedPtrCustomFree(CLASS *_ptr) : ptr(_ptr) { }
+    OwnedPtrCustomFree(SELF &&_ptr) { ptr = _ptr.getClear(); }
+    ~OwnedPtrCustomFree() { safeFree(ptr); }
 
     void operator = (CLASS * _ptr)
     {

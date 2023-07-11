@@ -205,7 +205,7 @@ jobs:
           mkdir -p ${{ github.workspace }}/LN
           mkdir -p ${{ github.workspace }}/build
           declare -a plugins
-          plugins=(${{ inputs.single-package == true && '"PLATFORM"' || '"PLATFORM" "CASSANDRAEMBED" "COUCHBASEEMBED" "ECLBLAS" "H3" "JAVAEMBED" "KAFKA" "MEMCACHED" "MONGODBEMBED" "MYSQLEMBED" "NLP" "PARQUETEMBED" "REDIS" "REMBED" "SQLITE3EMBED" "SQS"' }})
+          plugins=(${{ inputs.single-package == true && '"PLATFORM"' || '"PLATFORM" "CASSANDRAEMBED" "COUCHBASEEMBED" "ECLBLAS" "H3" "JAVAEMBED" "KAFKA" "MEMCACHED" "MONGODBEMBED" "MYSQLEMBED" "NLP" "PARQUETEMBED" "REDIS" "REMBED" "SQLITE3EMBED" "SQS" "WASMEMBED"' }})
           for plugin in "${plugins[@]}"; do
             rm -f ./build/CMakeCache.txt
             rm -rf ./build/CMakeFiles

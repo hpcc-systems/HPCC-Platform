@@ -1,0 +1,10 @@
+EXPORT Language := SERVICE : plugin('wasmembed')
+  integer getEmbedContext() : cpp, pure, fold, namespace='wasmLanguageHelper', entrypoint='getEmbedContext', prototype='IEmbedContext* getEmbedContext()';
+  string syntaxCheck(const varstring funcname, UTF8 body, const varstring argnames, const varstring compileOptions, const varstring persistOptions) : cpp, pure, fold, namespace='wasmLanguageHelper', entrypoint='syntaxCheck';
+END;
+EXPORT getEmbedContext := Language.getEmbedContext;
+EXPORT syntaxCheck := Language.syntaxCheck;
+EXPORT boolean supportsImport := true;
+EXPORT boolean supportsScript := true;
+EXPORT boolean prebind := false;
+EXPORT boolean singletonEmbedContext := false;

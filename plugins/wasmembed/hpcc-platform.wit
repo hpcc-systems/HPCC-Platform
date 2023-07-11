@@ -1,0 +1,25 @@
+/* WebAssembly Component Interface
+
+  See:  https://component-model.bytecodealliance.org/design/wit.html
+
+  HPCC-Platform is the "host".
+  The WebAssembly module is the "guest".
+
+  Memory management rules:
+  * Guests calling host functions:
+    - Guests must dispose all params as needed
+    - Guests must dispose "results" as needed
+  * Hosts calling guest functions:
+    - Guests must dispose all params as needed
+    - Hosts must dispose "results" as needed by 
+      calling cabi_post_XXX for each function call
+ */
+
+package hpcc-systems:hpcc-platform
+
+world wasmembed {
+
+  import dbglog: func(msg: string)
+
+  //  export myfunc(params: string) -> string
+}
