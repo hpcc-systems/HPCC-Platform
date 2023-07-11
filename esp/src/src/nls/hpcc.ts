@@ -994,6 +994,8 @@ export = {
         TotalSize: "Total Size",
         TotalClusterTime: "Total Cluster Time",
         ToTime: "To Time",
+        TransferRate: "Transfer Rate",
+        TransferRateAvg: "Transfer Rate (Avg)",
         TransitionGuide: "Transition Guide",
         Text: "Text",
         Tree: "Tree",
