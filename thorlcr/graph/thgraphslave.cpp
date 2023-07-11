@@ -583,6 +583,7 @@ void CSlaveActivity::serializeStats(MemoryBuffer &mb)
 
     // JCS->GH - should these be serialized as cycles, and a different mapping used on master?
     serializedStats.setStatistic(StTimeLocalExecute, (unsigned __int64)cycle_to_nanosec(queryLocalCycles()));
+    serializedStats.setStatistic(StTimeTotalExecute, (unsigned __int64)cycle_to_nanosec(queryTotalCycles()));
     serializedStats.setStatistic(StTimeBlocked, (unsigned __int64)cycle_to_nanosec(queryBlockedCycles()));
     serializedStats.serialize(mb);
     ForEachItemIn(i, outputs)
