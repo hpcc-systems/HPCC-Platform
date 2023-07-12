@@ -447,7 +447,7 @@ export const TargetServerTextField: React.FunctionComponent<TargetServerTextFiel
     const [targetServers, setTargetServers] = React.useState<IDropdownOption[] | undefined>();
 
     React.useEffect(() => {
-        TpDropZoneQuery({ Name: "" }).then(response => {
+        TpDropZoneQuery({ request: { Name: "" } }).then(response => {
             const { TpDropZoneQueryResponse } = response;
             setTargetServers(TpDropZoneQueryResponse?.TpDropZones?.TpDropZone?.filter(row => row.Name === props.dropzone)[0]?.TpMachines?.TpMachine?.map(n => {
                 return {
