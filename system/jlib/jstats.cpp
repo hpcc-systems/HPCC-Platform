@@ -15,7 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
-
+#include <map>
+#include <stack>
 #include "jiface.hpp"
 #include "jstats.h"
 #include "jexcept.hpp"
@@ -33,6 +34,33 @@
 #ifdef _WIN32
 #include <sys/timeb.h>
 #endif
+
+static const char * scopePrefixMap []=
+{
+    "", // SSTnone
+    "", // SSTall
+    "", // SSTglobal
+    GraphScopePrefix, // SSTgraph
+    SubGraphScopePrefix, //SSTsubgraph,
+    ActivityScopePrefix, // SSTactivity,
+    "", // SSTallocator,
+    "", // SSTsection,
+    "", // SSTcompilestage,
+    "", // SSTdfuworkunit,
+    EdgeScopePrefix, // SSTedge,
+    FunctionScopePrefix, // SSTfunction,
+    WorkflowScopePrefix, // SSTworkflow,
+    ChildGraphScopePrefix, // SSTchildgraph,
+    FileScopePrefix, // SSTfile,
+    ChannelScopePrefix, //SSTchannel,
+    "", // SSTunknown,
+    "", // SSTmax
+};
+
+const char * queryScopePrefix(const StatisticScopeType sst)
+{
+    return scopePrefixMap[static_cast<int>(sst)];
+};
 
 static CriticalSection statsNameCs;
 static StringBuffer statisticsComponentName;
@@ -742,27 +770,28 @@ StatisticMeasure queryMeasure(const char * measure, StatisticMeasure dft)
     "@TimeDelta" # y, \
     "@TimeStdDev" # y,
 
-#define CORESTAT(x, y, m, mm)     St##x##y, m, mm, St##x##y, St##x##y, { NAMES(x, y) }, { TAGS(x, y) }
-#define STAT(x, y, m, mm)         CORESTAT(x, y, m, mm)
+#define CORESTAT(x, y, m, mm, aggregateflag)     St##x##y, m, mm, St##x##y, St##x##y, aggregateflag, { NAMES(x, y) }, { TAGS(x, y) }
+#define STAT(x, y, m, mm, aggregateflag)         CORESTAT(x, y, m, mm, aggregateflag)
 
 //--------------------------------------------------------------------------------------------------------------------
 
 //These are the macros to use to define the different entries in the stats meta table
 //#define TIMESTAT(y) STAT(Time, y, SMeasureTimeNs)
-#define TIMESTAT(y) St##Time##y, SMeasureTimeNs, StatsMergeSum, St##Time##y, St##Cycle##y##Cycles, { NAMES(Time, y) }, { TAGS(Time, y) }
-#define WHENFIRSTSTAT(y) St##When##y, SMeasureTimestampUs, StatsMergeFirst, St##When##y, St##When##y, { WHENNAMES(When, y) }, { WHENTAGS(When, y) }
-#define WHENLASTSTAT(y) St##When##y, SMeasureTimestampUs, StatsMergeLast, St##When##y, St##When##y, { WHENNAMES(When, y) }, { WHENTAGS(When, y) }
-#define NUMSTAT(y) STAT(Num, y, SMeasureCount, StatsMergeSum)
-#define SIZESTAT(y) STAT(Size, y, SMeasureSize, StatsMergeSum)
-#define LOADSTAT(y) STAT(Load, y, SMeasureLoad, StatsMergeMax)
-#define SKEWSTAT(y) STAT(Skew, y, SMeasureSkew, StatsMergeMax)
-#define NODESTAT(y) STAT(Node, y, SMeasureNode, StatsMergeKeepNonZero)
-#define PERSTAT(y) STAT(Per, y, SMeasurePercent, StatsMergeReplace)
-#define IPV4STAT(y) STAT(IPV4, y, SMeasureIPV4, StatsMergeKeepNonZero)
-#define CYCLESTAT(y) St##Cycle##y##Cycles, SMeasureCycle, StatsMergeSum, St##Time##y, St##Cycle##y##Cycles, { NAMES(Cycle, y##Cycles) }, { TAGS(Cycle, y##Cycles) }
-#define ENUMSTAT(y) STAT(Enum, y, SMeasureEnum, StatsMergeKeepNonZero)
-#define COSTSTAT(y) STAT(Cost, y, SMeasureCost, StatsMergeSum)
-#define PEAKSIZESTAT(y) STAT(Size, y, SMeasureSize, StatsMergeMax)
+#define TIMESTAT(y) St##Time##y, SMeasureTimeNs, StatsMergeSum, St##Time##y, St##Cycle##y##Cycles, false, { NAMES(Time, y) }, { TAGS(Time, y) }
+#define WHENFIRSTSTAT(y) St##When##y, SMeasureTimestampUs, StatsMergeFirst, St##When##y, St##When##y, false, { WHENNAMES(When, y) }, { WHENTAGS(When, y) }
+#define WHENLASTSTAT(y) St##When##y, SMeasureTimestampUs, StatsMergeLast, St##When##y, St##When##y, false, { WHENNAMES(When, y) }, { WHENTAGS(When, y) }
+#define NUMSTAT(y) STAT(Num, y,  SMeasureCount, StatsMergeSum, false)
+#define NUMSTATAGR(y) STAT(Num, y, SMeasureCount, StatsMergeSum, true)
+#define SIZESTAT(y) STAT(Size, y, SMeasureSize, StatsMergeSum, true)
+#define LOADSTAT(y) STAT(Load, y, SMeasureLoad, StatsMergeMax, false)
+#define SKEWSTAT(y) STAT(Skew, y, SMeasureSkew, StatsMergeMax, false)
+#define NODESTAT(y) STAT(Node, y, SMeasureNode, StatsMergeKeepNonZero, false)
+#define PERSTAT(y) STAT(Per, y, SMeasurePercent, StatsMergeReplace, false)
+#define IPV4STAT(y) STAT(IPV4, y, SMeasureIPV4, StatsMergeKeepNonZero, false)
+#define CYCLESTAT(y) St##Cycle##y##Cycles, SMeasureCycle, StatsMergeSum, St##Time##y, St##Cycle##y##Cycles, true, { NAMES(Cycle, y##Cycles) }, { TAGS(Cycle, y##Cycles) }
+#define ENUMSTAT(y) STAT(Enum, y, SMeasureEnum, StatsMergeKeepNonZero, false)
+#define COSTSTAT(y) STAT(Cost, y, SMeasureCost, StatsMergeSum, true)
+#define PEAKSIZESTAT(y) STAT(Size, y, SMeasureSize, StatsMergeMax, true)
 //--------------------------------------------------------------------------------------------------------------------
 
 class StatisticMeta
@@ -773,14 +802,15 @@ public:
     StatsMergeAction mergeAction;
     StatisticKind serializeKind;
     StatisticKind rawKind;
+    bool doAggregate;
     const char * names[StNextModifier/StVariantScale];
     const char * tags[StNextModifier/StVariantScale];
 };
 
 //The order of entries in this table must match the order in the enumeration
 static const constexpr StatisticMeta statsMetaData[StMax] = {
-    { StKindNone, SMeasureNone, StatsMergeSum, StKindNone, StKindNone, { "none" }, { "@none" } },
-    { StKindAll, SMeasureAll, StatsMergeSum, StKindAll, StKindAll, { "all" }, { "@all" } },
+    { StKindNone, SMeasureNone, StatsMergeSum, StKindNone, StKindNone, false, { "none" }, { "@none" } },
+    { StKindAll, SMeasureAll, StatsMergeSum, StKindAll, StKindAll, false, { "all" }, { "@all" } },
     { WHENFIRSTSTAT(GraphStarted) }, // Deprecated - use WhenStart
     { WHENLASTSTAT(GraphFinished) }, // Deprecated - use WhenFinished
     { WHENFIRSTSTAT(FirstRow) },
@@ -796,7 +826,7 @@ static const constexpr StatisticMeta statsMetaData[StMax] = {
     { SIZESTAT(GeneratedCpp) },
     { SIZESTAT(PeakMemory) },
     { SIZESTAT(MaxRowSize) },
-    { NUMSTAT(RowsProcessed) },
+    { NUMSTATAGR(RowsProcessed) },
     { NUMSTAT(Slaves) },
     { NUMSTAT(Starts) },
     { NUMSTAT(Stops) },
@@ -827,8 +857,8 @@ static const constexpr StatisticMeta statsMetaData[StMax] = {
     { NUMSTAT(LeftRows) },
     { NUMSTAT(RightRows) },
     { PERSTAT(Replicated) },
-    { NUMSTAT(DiskRowsRead) },
-    { NUMSTAT(IndexRowsRead) },
+    { NUMSTATAGR(DiskRowsRead) },
+    { NUMSTATAGR(IndexRowsRead) },
     { NUMSTAT(DiskAccepted) },
     { NUMSTAT(DiskRejected) },
     { TIMESTAT(Soapcall) },
@@ -839,9 +869,9 @@ static const constexpr StatisticMeta statsMetaData[StMax] = {
     { SIZESTAT(DiskWrite) },
     { CYCLESTAT(DiskReadIO) },
     { CYCLESTAT(DiskWriteIO) },
-    { NUMSTAT(DiskReads) },
-    { NUMSTAT(DiskWrites) },
-    { NUMSTAT(Spills) },
+    { NUMSTATAGR(DiskReads) },
+    { NUMSTATAGR(DiskWrites) },
+    { NUMSTATAGR(Spills) },
     { TIMESTAT(SpillElapsed) },
     { TIMESTAT(SortElapsed) },
     { NUMSTAT(Groups) },
@@ -1051,6 +1081,16 @@ StatisticMeasure queryMeasure(StatisticKind kind)
     if (rawkind >= StKindNone && rawkind < StMax)
         return statsMetaData[rawkind].measure;
     return SMeasureNone;
+}
+
+bool doAggregateStat(StatisticKind kind)
+{
+    StatisticKind rawkind = (StatisticKind)(kind & StKindMask);
+    if (rawkind >= StKindNone && rawkind < StMax)
+        // n.b. don't aggregate variants (may consider later)
+        return (kind==rawkind) && statsMetaData[rawkind].doAggregate;
+    else
+        return false;
 }
 
 const char * queryStatisticName(StatisticKind kind)
@@ -4011,6 +4051,277 @@ void verifyStatisticFunctions()
     }
 }
 
+class StatsAggregator : public CInterface
+{
+    class ScopeId: public StatsScopeId
+    {
+    public:
+        ScopeId(StatisticScopeType _scopeType=SSTglobal, unsigned _id=0) : StatsScopeId(_scopeType, _id) {}
+        ScopeId(const ScopeId & _id) : StatsScopeId(_id.scopeType, _id.id, _id.extra) {}
+        ScopeId(const StatsScopeId & other) : StatsScopeId(other) {}
+        size_t operator()(const ScopeId & _scopeId) const
+        {
+            return std::hash<unsigned>{}((unsigned)(_scopeId.id|(_scopeId.scopeType<<16)));
+        }
+        bool operator()(const ScopeId & lhs, const ScopeId & rhs) const
+        {
+            return (lhs.scopeType==rhs.scopeType) && (lhs.id==rhs.id);
+        }
+    };
+    struct StatisticKindFunc  // funcs required by unordered_map<StatisticKind,..>
+    {
+        std::size_t operator()(const StatisticKind & sk) const
+        {
+            return std::hash<unsigned>{}((unsigned)sk);
+        }
+        bool operator()(const StatisticKind & lhs, const StatisticKind & rhs) const
+        {
+            return lhs==rhs;
+        }
+    };
+    ScopeId id;
+    std::unordered_map<StatisticKind, unsigned __int64, StatisticKindFunc, StatisticKindFunc> values;
+    std::unordered_map<ScopeId, Owned<StatsAggregator>, ScopeId, ScopeId> children;
+
+    StatsAggregator * queryAggregator(const ScopeId & scopeId)
+    {
+        if (auto search = children.find(scopeId); search != children.end())
+            return search->second;
+        return nullptr;
+    }
+    void eraseAggregator(const ScopeId & scopeId)
+    {
+        if (auto search = children.find(scopeId); search != children.end())
+            children.erase(search);
+    }
+public:
+    StatsAggregator() {}
+    StatsAggregator(ScopeId _id) : id(_id) {}
+    StatsAggregator * ensureScopeAggregator(const StatsScopeId & statScopeId)
+    {
+        ScopeId searchScope(statScopeId);
+        return ensureScopeAggregator(searchScope);
+    }
+    StatsAggregator * ensureScopeAggregator(const ScopeId & scopeId)
+    {
+        StatsAggregator * aggregator = queryAggregator(scopeId);
+        if (!aggregator)
+            aggregator = insertScope(scopeId);
+        return aggregator;
+    }
+    StatsAggregator * insertScope(const ScopeId & scopeId)
+    {
+        Owned<StatsAggregator> newScopeAggregator = new StatsAggregator(scopeId);
+        children.insert({scopeId, newScopeAggregator.getLink()});
+        return newScopeAggregator.getClear();
+    }
+    unsigned __int64 setValue(StatisticKind kind, unsigned __int64 value)
+    {
+        unsigned __int64 prevValue = values[kind];
+        values[kind] = value;
+        return value - prevValue;
+    }
+    void addValue(StatisticKind kind, unsigned __int64 value)
+    {
+        values[kind] += value;
+    }
+    void mergeInto(unsigned wfid, unsigned graphId, IStatisticGatherer & statisticGatherer, bool erase)
+    {
+        ScopeId wfScope(SSTworkflow, wfid);
+        StatsAggregator * wfScopeAggregator = queryAggregator(wfScope);
+        if (!wfScopeAggregator) // may happen if called before gatherStats called
+            return;
+
+        ScopeId graphScope(SSTgraph, graphId);
+        StatsAggregator * graphScopeAggregator = wfScopeAggregator->queryAggregator(graphScope);
+        if (!graphScopeAggregator) // may happen if called before gatherStats called
+            return;
+
+        graphScopeAggregator->mergeInto(statisticGatherer);
+        if (erase)
+           wfScopeAggregator->eraseAggregator(graphScope);
+
+    }
+    void mergeInto(IStatisticGatherer & statisticGatherer)
+    {
+        switch(id.queryScopeType())
+        {
+            case SSTglobal:
+            case SSTworkflow:
+            case SSTgraph:
+                // this IStatisticGatherer already at sg scope
+                for (const auto & child: children)
+                {
+                    child.second->mergeInto(statisticGatherer);
+                }
+                break;
+            case SSTsubgraph:
+            case SSTchildgraph:
+            case SSTactivity:
+            case SSTedge:
+            case SSTchannel:
+            {
+                statisticGatherer.beginScope(id);
+                for (const auto & value: values)
+                    statisticGatherer.addStatistic(value.first, value.second);
+
+                for (const auto & child: children)
+                    child.second->mergeInto(statisticGatherer);
+                statisticGatherer.endScope();
+                break;
+            }
+            default:
+                // Everything else has been recorded already to statisticGatherer
+                break;
+        }
+    }
+};
+
+class StatisticsCache: implements CInterfaceOf<IStatisticsCache>
+{
+    Owned<StatsAggregator> stats;
+    std::vector<Linked<StatsAggregator>> statsStack;
+
+public:
+    StatisticsCache()
+    {
+        stats.setown(new StatsAggregator);
+        statsStack.push_back(stats.getLink());
+    }
+    virtual void resetCurrentScope()
+    {
+        if (statsStack.size()>1)
+            statsStack.erase(statsStack.begin()+1, statsStack.end());
+    }
+    virtual void beginScope(const StatsScopeId & scopeId)
+    {
+        Linked<StatsAggregator> currentStatsScopeAggregator = statsStack[statsStack.size()-1].getLink();
+        Linked<StatsAggregator> childScope = currentStatsScopeAggregator->ensureScopeAggregator(scopeId);
+        statsStack.push_back(childScope.getClear());
+    }
+    virtual void endScope()
+    {
+        if (statsStack.size()>1)
+            statsStack.erase(statsStack.end()-1);
+    }
+    virtual void setValue(StatisticKind kind, unsigned __int64 value)
+    {
+        unsigned diffValue = statsStack[statsStack.size()-1]->setValue(kind, value);
+        if (doAggregateStat(kind))
+        {
+            // Adjust all parent scope values
+            // Note that top most element skipped as that has already had setValue (see above)
+            for (unsigned i=0; i<statsStack.size()-1; i++)
+                statsStack[i]->addValue(kind, diffValue);
+        }
+    }
+    virtual void mergeInto(unsigned wfid, unsigned graphId, IStatisticGatherer & statisticGatherer, bool erase=false)
+    {
+        stats->mergeInto(wfid, graphId, statisticGatherer, erase);
+    }
+};
+
+IStatisticsCache * createStatisticsCache()
+{
+    return new StatisticsCache;
+}
+class StatsAggregatorGatherer : implements CInterfaceOf<IStatisticGatherer>
+{
+    Linked<IStatisticsCache> statisticsCache;
+    StringBuffer scope;
+    std::stack<unsigned> lenScopeStr;
+
+    void beginScopeEx(StatisticScopeType sst, unsigned id, unsigned extra=0)
+    {
+        StatsScopeId scopeId(sst, id, extra);
+
+        StringBuffer tscope;
+        tscope.append(queryScopePrefix(sst)).append(id);
+        if (extra)
+            tscope.appendf("_%u", extra);
+        beginScopeEx(scopeId, tscope);
+    }
+    void beginScopeEx(const StatsScopeId & scopeId, StringBuffer & _scope)
+    {
+        assertex(statisticsCache.get()!=nullptr);
+        statisticsCache->beginScope(scopeId);
+        if (!scope.isEmpty())
+            scope.append(':');
+        scope.append(_scope);
+        lenScopeStr.push(_scope.length());
+    }
+public:
+    StatsAggregatorGatherer(IStatisticsCache * _statisticsCache, unsigned wfid, unsigned graphId)
+    : statisticsCache(_statisticsCache)
+    {
+        beginScopeEx(SSTworkflow, wfid);
+        beginScopeEx(SSTgraph, graphId);
+    }
+    ~StatsAggregatorGatherer()
+    {
+        assertex(statisticsCache.get()!=nullptr);
+        statisticsCache->resetCurrentScope();
+    }
+    virtual void beginScope(const StatsScopeId & id)
+    {
+        StringBuffer tscope;
+        id.getScopeText(tscope);
+        beginScopeEx(id, tscope);
+    }
+    virtual void beginSubGraphScope(unsigned id)
+    {
+        beginScopeEx(SSTsubgraph, id);
+    }
+    virtual void beginActivityScope(unsigned id)
+    {
+        beginScopeEx(SSTactivity, id);
+    }
+    virtual void beginEdgeScope(unsigned id, unsigned oid)
+    {
+        beginScopeEx(SSTedge, id, oid);
+    }
+    virtual void beginChildGraphScope(unsigned id)
+    {
+        beginScopeEx(SSTchildgraph, id);
+    }
+    virtual void beginChannelScope(unsigned id)
+    {
+        beginScopeEx(SSTchannel, id);
+    }
+    virtual void endScope()
+    {
+        unsigned scopeStrLen = lenScopeStr.top();
+        lenScopeStr.pop();
+        //StringBuffer prev(scope);
+        if (scopeStrLen < scope.length())
+        {
+            unsigned newLength = ((unsigned)scope.length()) - scopeStrLen - 1;
+            scope.setLength(newLength);
+        }
+        else
+            scope.clear();
+        assertex(statisticsCache.get()!=nullptr);
+        statisticsCache->endScope();
+    }
+    virtual void addStatistic(StatisticKind kind, unsigned __int64 value)
+    {
+        assertex(statisticsCache.get()!=nullptr);
+        statisticsCache->setValue(kind, value);
+    }
+    virtual void updateStatistic(StatisticKind kind, unsigned __int64 value, StatsMergeAction mergeAction)
+    {
+        throwUnexpected(); /* will need to be implemented when used for caching roxie stats (not needed for thor) */
+    }
+    virtual IStatisticCollection * getResult()
+    {
+        throwUnexpected();
+    }
+};
+
+IStatisticGatherer * createStatsAggregatorGather(IStatisticsCache * _statisticsCache, unsigned wfid, unsigned graphId)
+{
+    return new StatsAggregatorGatherer(_statisticsCache, wfid, graphId);
+}
 #ifdef _DEBUG
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {

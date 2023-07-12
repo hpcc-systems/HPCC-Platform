@@ -14,7 +14,6 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 ############################################################################## */
-
 #include "thdemonserver.hpp"
 
 #include "jmutex.hpp"
@@ -28,8 +27,10 @@
 #include "thgraphmaster.ipp"
 #include "thgraphmanager.hpp"
 #include "thwatchdog.hpp"
+#include "jstats.h"
 
 
+extern graph_decl const StatisticsMapping graphStatistics;
 class DeMonServer : public CSimpleInterface, implements IDeMonServer
 {
 private:
@@ -43,20 +44,22 @@ private:
     unsigned numberOfMachines = 0;
     cost_type costLimit = 0;
     cost_type workunitCost = 0;
+    Owned<IStatisticsCache> statisticsCache;
+    std::vector<Linked<CGraphBase>> finishedGraphs;
 
-    void doReportGraph(IStatisticGatherer & stats, CGraphBase *graph)
+    void doGetStats(IStatisticGatherer & stats, CGraphBase *graph)
     {
         ((CMasterGraph *)graph)->getStats(stats);
     }
-    void reportGraphContents(IStatisticGatherer & stats, CGraphBase *graph)
+    void doGetGraphContents(IStatisticGatherer & stats, CGraphBase *graph)
     {
         if (graph->hasProgress()) // if there have ever been any progress, ensure they are republished
-            doReportGraph(stats, graph);
+            doGetStats(stats, graph);
         Owned<IThorGraphIterator> graphIter = graph->getChildGraphIterator();
         ForEach (*graphIter)
-            reportGraph(stats, &graphIter->query());
+            doGetGraphStats(stats, &graphIter->query());
     }
-    void reportGraph(IStatisticGatherer & stats, CGraphBase *graph)
+    void doGetGraphStats(IStatisticGatherer & stats, CGraphBase *graph)
     {
         try
         {
@@ -64,12 +67,12 @@ private:
             {
                 StatsActivityScope activity(stats, graph->queryParentActivityId());
                 StatsChildGraphScope subgraph(stats, graph->queryGraphId());
-                reportGraphContents(stats, graph);
+                doGetGraphContents(stats, graph);
             }
             else
             {
                 StatsSubgraphScope subgraph(stats, graph->queryGraphId());
-                reportGraphContents(stats, graph);
+                doGetGraphContents(stats, graph);
             }
         }
         catch (IException *e)
@@ -132,6 +135,17 @@ private:
         }
     }
 
+    void gatherActiveGraphStats(bool finished, bool success=true)
+    {
+        if (activeGraphs.ordinality())
+        {
+            ForEachItemIn (g, activeGraphs)
+            {
+                CGraphBase &graph = activeGraphs.item(g);
+                gatherGraphStats(&graph, finished);
+            }
+        }
+    }
     void reportActiveGraphs(bool finished, bool success=true)
     {
         if (activeGraphs.ordinality())
@@ -146,7 +160,7 @@ private:
                 {
                     CGraphBase &graph = activeGraphs.item(g);
                     Owned<IWUGraphStats> stats = currentWU.updateStats(graphName, SCTthor, queryStatisticsComponentName(), wfid, graph.queryGraphId(), false);
-                    reportGraph(stats->queryStatsBuilder(), &graph);
+                    statisticsCache->mergeInto(wfid, graph.queryGraphId(), stats->queryStatsBuilder());
                 }
                 Owned<IWorkUnit> wu = &currentWU.lock();
                 ForEachItemIn (g2, activeGraphs)
@@ -165,7 +179,47 @@ private:
             }
         }
     }
-    void reportGraph(CGraphBase *graph, bool finished, bool success, unsigned startTime, unsigned __int64 startTimeStamp)
+    void reportCompletedGraphs()
+    {
+        for (auto graph: finishedGraphs)
+        {
+            try
+            {
+                IConstWorkUnit &currentWU = graph->queryJob().queryWorkUnit();
+                const char *graphName = graph->queryJob().queryGraphName();
+                unsigned wfid = graph->queryJob().getWfid();
+                Owned<IWUGraphStats> stats = currentWU.updateStats(graphName, SCTthor, queryStatisticsComponentName(), wfid, graph->queryGraphId(), false);
+                statisticsCache->mergeInto(wfid, graph->queryGraphId(), stats->queryStatsBuilder(), true);
+                Owned<IWorkUnit> wu = &currentWU.lock();
+                queryServerStatus().commitProperties();
+            }
+            catch (IException *e)
+            {
+                StringBuffer s;
+                LOG(MCwarning, thorJob, "Failed to update graph stats information: %s", e->errorMessage(s).str());
+                e->Release();
+            }
+        }
+        finishedGraphs.clear();
+    }
+    void gatherGraphStats(CGraphBase *graph, bool finished)
+    {
+        try
+        {
+            unsigned wfid = graph->queryJob().getWfid();
+            if (finished)
+                finishedGraphs.push_back(LINK(graph));
+            Owned<IStatisticGatherer> gatherer = createStatsAggregatorGather(statisticsCache, wfid, graph->queryGraphId());
+            doGetGraphStats(*gatherer, graph);
+        }
+        catch (IException *e)
+        {
+            StringBuffer s;
+            LOG(MCwarning, thorJob, "Failed to update graph stats: %s", e->errorMessage(s).str());
+            e->Release();
+        }
+    }
+    void reportGraphStats(CGraphBase *graph)
     {
         try
         {
@@ -174,14 +228,29 @@ private:
             unsigned wfid = graph->queryJob().getWfid();
             {
                 Owned<IWUGraphStats> stats = currentWU.updateStats(graphName, SCTthor, queryStatisticsComponentName(), wfid, graph->queryGraphId(), false);
-                reportGraph(stats->queryStatsBuilder(), graph);
+                statisticsCache->mergeInto(wfid, graph->queryGraphId(), stats->queryStatsBuilder());
             }
-
+            Owned<IWorkUnit> wu = &currentWU.lock();
+            queryServerStatus().commitProperties();
+        }
+        catch (IException *e)
+        {
+            StringBuffer s;
+            LOG(MCwarning, thorJob, "Failed to update graph stats information: %s", e->errorMessage(s).str());
+            e->Release();
+        }
+    }
+    void reportGraphStatus(CGraphBase *graph, bool finished, bool success, unsigned startTime, unsigned __int64 startTimeStamp)
+    {
+        try
+        {
+            IConstWorkUnit &currentWU = graph->queryJob().queryWorkUnit();
             Owned<IWorkUnit> wu = &currentWU.lock();
             if (startTimeStamp)
             {
                 StringBuffer graphScope;
                 const char *graphname = graph->queryJob().queryGraphName();
+                unsigned wfid = graph->queryJob().getWfid();
                 formatGraphTimerScope(graphScope, wfid, graphname, 0, graph->queryGraphId());
                 wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTsubgraph, graphScope, StWhenStarted, NULL, getTimeStampNowValue(), 1, 0, StatsMergeAppend);
             }
@@ -205,6 +274,7 @@ public:
         reportRate = globals->getPropInt("@watchdogProgressInterval", 30);
         thorManagerRate = getThorManagerRate();
         thorWorkerRate = getThorWorkerRate();
+        statisticsCache.setown(createStatisticsCache());
     }
 
     virtual void takeHeartBeat(MemoryBuffer &progressMb)
@@ -245,7 +315,9 @@ public:
         unsigned now=msTick();
         if (now-lastReport > 1000*reportRate)
         {
+            gatherActiveGraphStats(false);
             reportActiveGraphs(false);
+            reportCompletedGraphs();
             lastReport = msTick();
         }
     }
@@ -272,7 +344,7 @@ public:
         activeGraphs.append(*LINK(graph));
         unsigned startTime = msTick();
         graphStarts.append(startTime);
-        reportGraph(graph, false, true, startTime, getTimeStampNowValue());
+        reportGraphStatus(graph, false, true, startTime, getTimeStampNowValue());
         const char *graphname = graph->queryJob().queryGraphName();
         if (memcmp(graphname,"graph",5)==0)
             graphname+=5;
@@ -289,7 +361,8 @@ public:
         if (NotFound != g)
         {
             unsigned startTime = graphStarts.item(g);
-            reportGraph(graph, true, success, startTime, 0);
+            gatherGraphStats(graph, false);
+            reportGraphStatus(graph, true, success, startTime, 0);
             activeGraphs.remove(g);
             graphStarts.remove(g);
         }
@@ -297,6 +370,7 @@ public:
     void endGraphs()
     {
         synchronized block(mutex);
+        gatherActiveGraphStats(true, false);
         reportActiveGraphs(true, false);
         activeGraphs.kill();
     }

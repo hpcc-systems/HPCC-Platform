@@ -316,4 +316,5 @@ enum StatisticKind
     //NOTE: Do not use 0x80000000 since wu attributes use those values, and they should not overlap
 };
 constexpr StatisticKind operator |(StatisticKind l, StatisticKind r) { return (StatisticKind)((unsigned)l | (unsigned)r); }
+
 #endif

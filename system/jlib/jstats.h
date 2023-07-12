@@ -44,6 +44,7 @@ inline constexpr stat_type statPercentageOf(stat_type value, stat_type per) { re
 inline StatisticKind queryStatsVariant(StatisticKind kind) { return (StatisticKind)(kind & ~StKindMask); }
 inline cost_type money2cost_type(double money) { return money * 1E6; }
 inline double cost_type2money(cost_type cost) { return ((double) cost) / 1E6; }
+extern jlib_decl const char * queryScopePrefix(const StatisticScopeType sst);
 //---------------------------------------------------------------------------------------------------------------------
 
 //Represents a single level of a scope
@@ -679,7 +680,7 @@ So although HPCC-26541 was opened to refactor these classes, none of the alterna
 
 
 //NB: Serialize and deserialize are not currently implemented.
-class jlib_decl CRuntimeSummaryStatisticCollection : public CRuntimeStatisticCollection
+class jlib_decl CRuntimeSummaryStatisticCollection : public CRuntimeStatisticCollection, CInterface
 {
 public:
     CRuntimeSummaryStatisticCollection(const StatisticsMapping & _mapping);
@@ -876,6 +877,7 @@ extern jlib_decl const char * queryMeasureName(StatisticMeasure measure);
 extern jlib_decl const char * queryMeasurePrefix(StatisticMeasure measure);
 extern jlib_decl StatsMergeAction queryMergeMode(StatisticKind kind);
 
+extern jlib_decl bool doAggregateStat(StatisticKind kind);
 extern jlib_decl StatisticMeasure queryMeasure(const char *  measure, StatisticMeasure dft);
 extern jlib_decl StatisticKind queryStatisticKind(const char *  kind, StatisticKind dft);
 extern jlib_decl StatisticCreatorType queryCreatorType(const char * sct, StatisticCreatorType dft);
@@ -940,7 +942,17 @@ protected:
     CRuntimeStatisticCollection & target;
 };
 
+interface jlib_decl IStatisticsCache: public IInterface
+{
+    virtual void resetCurrentScope() = 0;
+    virtual void beginScope(const StatsScopeId & scopeId) = 0;
+    virtual void endScope() = 0;
+    virtual void setValue(StatisticKind kind, unsigned __int64 value) = 0;
+    virtual void mergeInto(unsigned wfid, unsigned graphId, IStatisticGatherer & statisticGatherer, bool erase=false) = 0;
+};
+
 extern jlib_decl StringBuffer & formatMoney(StringBuffer &out, unsigned __int64 value);
 extern jlib_decl stat_type aggregateStatistic(StatisticKind kind, IStatisticCollection * statsCollection);
-
+extern jlib_decl IStatisticsCache * createStatisticsCache();
+extern jlib_decl IStatisticGatherer * createStatsAggregatorGather(IStatisticsCache * _statisticsCache, unsigned wfid, unsigned graphId);
 #endif
