@@ -3342,6 +3342,8 @@ int main(int argc, char* argv[])
         StringBuffer lf;
         openLogFile(lf, cmd.toLowerCase().append(".log").str());
 
+        PROGLOG("test");
+
 #if defined(TEST_MEMTHREADS)
         printf("start...\n");
         TestMemThread2 t("test");
