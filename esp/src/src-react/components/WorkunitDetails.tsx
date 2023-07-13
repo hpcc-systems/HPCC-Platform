@@ -103,7 +103,7 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
             </PivotItem>
             <PivotItem headerText={nlsHPCC.Helpers} itemKey="helpers" itemCount={workunit?.HelpersCount} style={pivotItemStyle(size, 0)}>
                 {state ?
-                    <FetchEditor mode={queryParams?.mode as any} url={queryParams?.src as string} /> :
+                    <FetchEditor mode={queryParams?.mode as any} url={queryParams?.src as string} wuid={queryParams?.mode?.toLowerCase() === "ecl" ? wuid : ""} /> :
                     <Helpers wuid={wuid} />
                 }
             </PivotItem>

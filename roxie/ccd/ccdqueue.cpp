@@ -1685,7 +1685,7 @@ public:
             }
 
             CCycleTimer workerTimer;
-            hash64_t queryHash = packet->queryHeader().queryHash;
+            hash64_t queryHash = header.queryHash;
             Owned<IQueryFactory> queryFactory = getQueryFactory(queryHash, channel);
             if (!queryFactory && logctx.queryWuid())
             {
@@ -1698,14 +1698,14 @@ public:
             if (!queryFactory)
             {
                 StringBuffer hdr;
-                IException *E = MakeStringException(MSGAUD_operator, ROXIE_UNKNOWN_QUERY, "Roxie agent received request for unregistered query: %s", packet->queryHeader().toString(hdr).str());
+                IException *E = MakeStringException(MSGAUD_operator, ROXIE_UNKNOWN_QUERY, "Roxie agent received request for unregistered query: %s", header.toString(hdr).str());
                 EXCLOG(E, "doActivity");
                 throwRemoteException(E, activity, packet, false);
                 return;
             }
 
             activitiesStarted++;
-            unsigned activityId = packet->queryHeader().activityId & ~ROXIE_PRIORITY_MASK;
+            unsigned activityId = header.activityId & ~ROXIE_PRIORITY_MASK;
             Owned <IAgentActivityFactory> factory = queryFactory->getAgentActivityFactory(activityId);
             assertex(factory);
             setActivity(factory->createActivity(logctx, packet));
@@ -3054,6 +3054,45 @@ public:
 
 
 //==================================================================================================
+
+void * CDummyMessagePacker::getBuffer(unsigned len, bool variable)
+{
+    if (variable)
+    {
+        char *ret = (char *) data.ensureCapacity(len + sizeof(RecordLengthType));
+        return ret + sizeof(RecordLengthType);
+    }
+    else
+    {
+        return data.ensureCapacity(len);
+    }
+}
+
+void CDummyMessagePacker::putBuffer(const void *buf, unsigned len, bool variable)
+{
+    if (variable)
+    {
+        buf = ((char *) buf) - sizeof(RecordLengthType);
+        *(RecordLengthType *) buf = len;
+        len += sizeof(RecordLengthType);
+    }
+    data.setWritePos(lastput + len);
+    lastput += len;
+}
+
+void CDummyMessagePacker::flush()
+{
+}
+
+void CDummyMessagePacker::sendMetaInfo(const void *buf, unsigned len)
+{
+    throwUnexpected();
+}
+
+unsigned CDummyMessagePacker::size() const
+{
+    return lastput;
+}
 
 interface ILocalMessageCollator : extends IMessageCollator
 {

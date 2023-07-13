@@ -81,7 +81,7 @@ const StatisticsMapping jhtreeCacheStatistics({ StNumIndexSeeks, StNumIndexScans
                                                 StCycleIndexCacheBlockedCycles, StNumIndexMerges, StNumIndexMergeCompares,
                                                 StNumIndexSkips, StNumIndexNullSkips});
 
-const StatisticsMapping basicActivityStatistics({StTimeLocalExecute, StTimeBlocked});
+const StatisticsMapping basicActivityStatistics({StTimeTotalExecute, StTimeLocalExecute, StTimeBlocked});
 const StatisticsMapping groupActivityStatistics({StNumGroups, StNumGroupMax}, basicActivityStatistics);
 const StatisticsMapping hashJoinActivityStatistics({StNumLeftRows, StNumRightRows}, basicActivityStatistics);
 const StatisticsMapping indexReadActivityStatistics({StNumRowsProcessed}, diskReadRemoteStatistics, basicActivityStatistics, jhtreeCacheStatistics);
@@ -1371,8 +1371,9 @@ public:
 #ifdef TRACE_GLOBAL_GROUP
         ActPrintLog(activity, "%s", __func__);
 #endif
-        running = false;
-        comm.cancel(RANK_ALL, mpTag);
+        bool wanted = true;
+        if (running.compare_exchange_strong(wanted, false))
+            comm.cancel(RANK_ALL, mpTag);
     }
 };
 

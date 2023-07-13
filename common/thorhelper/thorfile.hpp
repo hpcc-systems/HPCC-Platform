@@ -55,7 +55,7 @@ interface IKeyIndex;
 THORHELPER_API bool checkIndexMetaInformation(IDistributedFile * file, bool force);
 THORHELPER_API bool calculateDerivedIndexInformation(DerivedIndexInformation & result, IDistributedFile * file, bool force);
 THORHELPER_API void mergeDerivedInformation(DerivedIndexInformation & result, const DerivedIndexInformation & other);
-THORHELPER_API IKeyIndex *openKeyFile(IDistributedFilePart & keyFile);
+THORHELPER_API IKeyIndex *openKeyFile(IDistributedFilePart & keyFile, size32_t blockedIndexFileIOSize=0);
 
 
 #endif

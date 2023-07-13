@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 import { isExceptions } from "@hpcc-js/comms";
 import { Dispatch, Level, logger as utilLogger, scopedLogger, Writer, CallbackFunction, Message } from "@hpcc-js/util";
 import { CustomToaster } from "../components/controls/CustomToaster";
+import * as Utility from "src/Utility";
 
 const logger = scopedLogger("../util/logging.ts");
 
@@ -69,13 +70,16 @@ export class ECLWatchLogger implements Writer {
     rawWrite(dateTime: string, level: Level, id: string, _msg: string | object): void {
         if (isExceptions(_msg)) {
             _msg.Exception?.forEach(ex => {
-                this.doWrite(dateTime, level, id, `${ex.Code}: ${ex.Message}`);
+                const msg = Utility.decodeHTML(ex.Message);
+                this.doWrite(dateTime, level, id, `${ex.Code}: ${msg}`);
             });
-        } else if (_msg instanceof Error) {
-            this.doWrite(dateTime, level, id, _msg.message);
-        } else if (typeof _msg !== "string") {
-            this.doWrite(dateTime, level, id, JSON.stringify(_msg, undefined, 2));
-        } else if (typeof _msg === "string") {
+        } else {
+            if (_msg instanceof Error) {
+                _msg = _msg.message;
+            } else if (typeof _msg !== "string") {
+                _msg = JSON.stringify(_msg, undefined, 2);
+            }
+            _msg = Utility.decodeHTML(_msg);
             this.doWrite(dateTime, level, id, _msg);
         }
     }

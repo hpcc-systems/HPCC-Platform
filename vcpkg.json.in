@@ -132,7 +132,7 @@
         },
         {
             "name": "numactl",
-            "platform": "@VCPKG_NUMA@ & !windows & !osx"
+            "platform": "!windows & !osx"
         },
         {
             "name": "openblas",

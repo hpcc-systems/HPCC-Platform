@@ -101,16 +101,12 @@ export function useBanner({ showForm, setShowForm }: useBannerProps): [React.Fun
                         }) => <TextField
                                 name={fieldName}
                                 onChange={onChange}
-                                required={true}
                                 multiline
                                 autoAdjustHeight
                                 label={nlsHPCC.BannerMessage}
                                 value={value}
                                 errorMessage={error && error?.message}
                             />}
-                        rules={{
-                            required: nlsHPCC.ValidationErrorRequired
-                        }}
                     />
                     <Controller
                         control={control} name="BannerSize"

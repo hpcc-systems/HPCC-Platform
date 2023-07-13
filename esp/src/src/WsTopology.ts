@@ -225,7 +225,9 @@ export function TpGetServicePlugins(params) {
     return ESPRequest.send("WsTopology", "TpGetServicePlugins", params);
 }
 export function TpDropZoneQuery(params) {
-    return ESPRequest.send("WsTopology", "TpDropZoneQuery", params);
+    const _params = { request: {}, ...params };
+    _params.request = { ...{ ECLWatchVisibleOnly: true }, ...params.request };
+    return ESPRequest.send("WsTopology", "TpDropZoneQuery", _params);
 }
 export function TpGetComponentFile(params) {
     params.handleAs = "text";

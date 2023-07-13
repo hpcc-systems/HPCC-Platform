@@ -178,12 +178,12 @@ define([
                 this.bannerColor = activity.BannerColor;
                 this.bannerSize = activity.BannerSize;
                 if (this.showBanner) {
-                    var msg = "<marquee id='" + this.id + "Marquee' width='100%' direction='left' scrollamount='" + encodeHTML(activity.BannerScroll) + "' style='color:" + encodeHTML(activity.BannerColor) + ";font-size:" + encodeHTML((activity.BannerSize / 2) * 100) + "%'>" + encodeHTML(activity.BannerContent) + "</marquee>";
-                    this.upgradeBar.notify(msg);
                     var marquee = dom.byId(this.id + "Marquee");
-                    var height = domGeo.getContentBox(marquee).h;
+                    var height = activity.BannerSize * 2;
+                    var msg = "<marquee id='" + this.id + "Marquee' width='100%' direction='left' scrollamount='" + encodeHTML(activity.BannerScroll) + "' style='color:" + encodeHTML(activity.BannerColor) + ";font-size:" + activity.BannerSize + "px;line-height:" + height + "px'>" + encodeHTML(activity.BannerContent) + "</marquee>";
+                    this.upgradeBar.notify(msg);
                     domStyle.set(this.upgradeBar.domNode, "height", height + "px");
-                    domStyle.set(marquee.parentNode, { top: "auto", "margin-top": "auto" });
+                    domStyle.set(marquee.parentNode, { top: "auto", "margin-top": "auto", height: height + "px" });
                 } else {
                     this.upgradeBar.notify("");
                     domStyle.set(this.upgradeBar.domNode, "height", "0px");

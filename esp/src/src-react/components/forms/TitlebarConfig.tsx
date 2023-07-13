@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Checkbox, ColorPicker, DefaultButton, getColorFromString, IColor, Label, PrimaryButton, TextField } from "@fluentui/react";
+import { Checkbox, ColorPicker, DefaultButton, getColorFromString, IColor, Label, PrimaryButton, TextField, TooltipHost } from "@fluentui/react";
 import { useForm, Controller } from "react-hook-form";
 import { MessageBox } from "../../layouts/MessageBox";
 import { useGlobalStore } from "../../hooks/store";
@@ -95,23 +95,28 @@ export const TitlebarConfig: React.FunctionComponent<TitlebarConfigProps> = ({
                 />
             }
         />
-        <Controller
-            control={control} name="environmentTitle"
-            render={({
-                field: { onChange, name: fieldName, value },
-                fieldState: { error }
-            }) => <TextField
-                    name={fieldName}
-                    onChange={onChange}
-                    label={nlsHPCC.NameOfEnvironment}
-                    value={value}
-                />}
-        />
-        <Label>{nlsHPCC.BannerColor}</Label>
-        <ColorPicker
-            onChange={updateColor}
-            color={color}
-        />
+        <TooltipHost content={nlsHPCC.BannerMessageTooltip} id="bannerMessageTooltip">
+            <Controller
+                control={control} name="environmentTitle"
+                render={({
+                    field: { onChange, name: fieldName, value },
+                    fieldState: { error }
+                }) => <TextField
+                        name={fieldName}
+                        onChange={onChange}
+                        aria-describedby="bannerMessageTooltip"
+                        label={nlsHPCC.NameOfEnvironment}
+                        value={value}
+                    />}
+            />
+        </TooltipHost>
+        <TooltipHost content={nlsHPCC.BannerColorTooltip} id="bannerColorTooltip">
+            <Label aria-describedby="bannerColorTooltip">{nlsHPCC.BannerColor}</Label>
+            <ColorPicker
+                onChange={updateColor}
+                color={color}
+            />
+        </TooltipHost>
     </MessageBox>;
 
 };

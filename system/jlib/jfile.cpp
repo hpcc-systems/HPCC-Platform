@@ -7632,6 +7632,16 @@ IPropertyTree * getRemoteStorage(const char * name)
     return global->getPropTree(xpath);
 }
 
+IPropertyTreeIterator * getPlanesIterator(const char * category, const char *name)
+{
+    StringBuffer xpath("storage/planes");
+    if (!isEmptyString(category))
+        xpath.appendf("[@category='%s']", category);
+    if (!isEmptyString(name))
+        xpath.appendf("[@name='%s']", name);
+    return getGlobalConfigSP()->getElements(xpath);
+}
+
 IAPICopyClient * createApiCopyClient(IStorageApiInfo * source, IStorageApiInfo * target)
 {
     ReadLockBlock block(containedFileHookLock);
@@ -7642,4 +7652,102 @@ IAPICopyClient * createApiCopyClient(IStorageApiInfo * source, IStorageApiInfo *
             return copyClient;
     }
     return nullptr;
+}
+
+
+// NB: This implementation is not thread-safe.
+// Therefore it should only be used by use cases that are single threaded
+class CBlockedFileIO : public CSimpleInterfaceOf<IFileIO>
+{
+    Owned<IFileIO> io;
+    size32_t blockSize = 0;
+    size32_t readLen = 0;
+    void *buffer = nullptr;
+    offset_t lastReadPos = (offset_t)-1;
+    MemoryBuffer mb;
+public:
+    CBlockedFileIO(IFileIO *_io, size32_t _blockSize) : io(_io), blockSize(_blockSize)
+    {
+        buffer = mb.reserveTruncate(blockSize);
+    }
+    virtual size32_t read(offset_t pos, size32_t len, void *data) override
+    {
+        if (len > blockSize)
+            return io->read(pos, len, data);
+        size32_t totalCopied = 0;
+        byte *dest = (byte *) data;
+        while (len)
+        {
+            offset_t readPos = (pos / blockSize) * blockSize; // NB: could be beyond end of file
+            if (readPos != lastReadPos)
+            {
+                readLen = io->read(readPos, blockSize, buffer); // NB: can be less than blockSize (and 0 if beyodn end of file)
+                lastReadPos = readPos;
+            }
+            size32_t endPos = readPos+readLen;
+            size32_t copyNow;
+            if (pos+len <= endPos) // common case hopefully
+                copyNow = len;
+            else if (pos < endPos)
+                copyNow = endPos-pos;
+            else // nothing to copy
+                break;
+            memcpy(dest, ((byte *)buffer) + pos-readPos, copyNow);
+            len -= copyNow;
+            pos += copyNow;
+            dest += copyNow;
+            totalCopied += copyNow;
+        }
+        return totalCopied;
+    }
+    virtual offset_t size() override { return io->size(); }
+    virtual size32_t write(offset_t pos, size32_t len, const void * data) override { throwUnexpected(); }
+    virtual offset_t appendFile(IFile *file, offset_t pos=0, offset_t len=(offset_t)-1) override { throwUnexpected(); }
+    virtual void setSize(offset_t size) override { throwUnexpected(); }
+    virtual void flush() override { throwUnexpected(); }
+    virtual void close() override { io->close(); }
+    virtual unsigned __int64 getStatistic(StatisticKind kind) override { return io->getStatistic(kind); }
+};
+
+extern IFileIO *createBlockedIO(IFileIO *base, size32_t blockSize)
+{
+    return new CBlockedFileIO(base, blockSize);
+}
+
+// Cache/update plane index blocked IO settings
+static unsigned planeBlockIOMapCBId = 0;
+static std::unordered_map<std::string, size32_t> planeBlockedIOMap;
+static CriticalSection planeBlockedIOMapCrit;
+MODULE_INIT(INIT_PRIORITY_STANDARD)
+{
+    auto updateFunc = [&](const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
+    {
+        CriticalBlock b(planeBlockedIOMapCrit);
+        planeBlockedIOMap.clear();
+        Owned<IPropertyTreeIterator> planesIter = getPlanesIterator(nullptr, nullptr);
+        ForEach(*planesIter)
+        {
+            const IPropertyTree &plane = planesIter->query();
+            size32_t blockedFileIOSize = plane.getPropInt("@blockedFileIOKB") * 1024;
+            planeBlockedIOMap[plane.queryProp("@name")] = blockedFileIOSize;
+        }
+    };
+    planeBlockIOMapCBId = installConfigUpdateHook(updateFunc, true);
+    return true;
+}
+
+MODULE_EXIT()
+{
+    removeConfigUpdateHook(planeBlockIOMapCBId);
+}
+
+
+size32_t getBlockedFileIOSize(const char *planeName, size32_t defaultSize)
+{
+    CriticalBlock b(planeBlockedIOMapCrit);
+    auto it = planeBlockedIOMap.find(planeName);
+    if (it != planeBlockedIOMap.end())
+        return it->second;
+    else
+        return defaultSize;
 }

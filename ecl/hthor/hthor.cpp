@@ -575,7 +575,7 @@ void CHThorDiskWriteActivity::open()
         blockcompressed = true;
     }
     if(blockcompressed)
-        io.setown(createCompressedFileWriter(file, groupedMeta->getFixedSize(), extend, true, ecomp, COMPRESS_METHOD_LZW));
+        io.setown(createCompressedFileWriter(file, groupedMeta->getFixedSize(), extend, true, ecomp, COMPRESS_METHOD_LZ4));
     else
         io.setown(file->open(extend ? IFOwrite : IFOcreate));
     if(!io)
