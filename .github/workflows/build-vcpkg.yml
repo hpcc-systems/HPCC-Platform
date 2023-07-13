@@ -154,7 +154,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake .. -DSKIP_ECLWATCH=ON -DCONTAINERIZED=OFF -DUSE_OPTIONAL=OFF ${{ matrix.cmake_config_options }}
+          cmake .. -DSKIP_ECLWATCH=ON -DCONTAINERIZED=OFF -DUSE_OPTIONAL=OFF -DUSE_LIBMEMCACHED=Off ${{ matrix.cmake_config_options }}
 
       - name: "Remove vcpkg build files"
         if: ${{ github.event_name == matrix.event_name && needs.check-skip.outputs.platform }}
