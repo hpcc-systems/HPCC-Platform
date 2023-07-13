@@ -1822,7 +1822,7 @@ span.dijitReset.dijitInline.dijitIcon.fa.disabled {
 }
 
 .flat:has(.fui-FluentProvider) .dijitPopup {
-    background-color: var(--white);
+    background-color: var(--white, white);
 }
 
 .flat-dark:has(.fui-FluentProvider) .dijitPopup {
