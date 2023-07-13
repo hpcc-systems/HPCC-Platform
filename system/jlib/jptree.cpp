@@ -8878,7 +8878,7 @@ void executeConfigUpdaterCallbacks()
 {
     if (!configFileUpdater) // NB: executeConfigUpdaterCallbacks should always be called after configFileUpdater is initialized
         return;
-    configFileUpdater->executeCallbacks(componentConfiguration.getLink(), globalConfiguration.getLink());
+    configFileUpdater->executeCallbacks(componentConfiguration, globalConfiguration);
 }
 
 void CConfigUpdateHook::clear()
