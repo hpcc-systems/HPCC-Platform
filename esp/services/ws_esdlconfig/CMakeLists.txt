@@ -57,6 +57,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/esp/smc/SMCLib
          ${HPCC_SOURCE_DIR}/esp/services/esdl_svc_engine
          ${HPCC_SOURCE_DIR}/esp/esdllib
+         ${HPCC_SOURCE_DIR}/esp/esdlscriptlib
          ${HPCC_SOURCE_DIR}/esp/logging/logginglib
          ${HPCC_SOURCE_DIR}/esp/logging/loggingmanager
          ${HPCC_SOURCE_DIR}/common/thorhelper
