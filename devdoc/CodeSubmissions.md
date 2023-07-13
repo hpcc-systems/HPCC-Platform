@@ -37,40 +37,7 @@ Contributors should use the github reviewers section on the PR to request review
 
 Reviewers should check for PRs that are ready for their review via github's webpage (filter "review-requested:\<reviewer-id>") or via the github CLI (e.g. gh pr status).  Contributors should similarly ensure they stay up to date with any comments on requests for change on their submissions.
 
-## Target Version
+## Target branch
+The [Version support](VersionSupport.md) document contains details of the different versions that are supported, and which version should be targetted for different kinds of changes.  Occasionally earlier branches will be chosen, (e.g. security fixes to even older versions) but they should always be carefully discussed (and documented).
 
-We normally maintain 4 versions of the system - which means that each new major or minor release will typically be supported for a year.  Once a new major or minor version goes gold it becomes the current version, and should not have any changes that change the behavior of queries.  PRs should target the oldest appropriate branch, and once they are merged they will be automatically up-merged into later versions.  Which branch should changes target?  The following gives some examples and illustrates the version numbers assuming 8.12.x is the latest version.
-
-master:
-- New features.
-- Bug fixes that will change the semantics of existing queries or processes.
-- Refactoring.
-- Performance improvements (unless simple and safe)
-
-current(8.12.x):
-- Bug fixes that only change behavior where it previously crashes or had undefined behavior (If well defined but wrong need to have very strong justification to change.)
-- Fixes for race conditions (the behavior was previously indeterminate so less of an argument against it changing)
-- Data corruption fixes - on a case by case basis if they change existing query results.
-- Missing functionality that prevents features from working.
-- Changes for tech-preview work that only effect those who are using it.
-- Regressions.
-- Improvements to logging and error messages (possibly in "previous" if simple and added to help diagnose problems).
-- Occasional simple refactoring that makes up-merging simpler..
-- Changes to improve backward compatibility of new features. (E.g. adding an ignored syntax to the compiler.)
-- Performance improvements - if simple and safe
-
-previous(8.10.x):
-- Simple bug fixes that do not change behavior
-- Simple changes for missing functionality
-- Regressions with simple fixes (but care is needed if it caused a change in behavior)
-- Serious regressions
-- Complex security fixes
-
-security(8.8.x)
-- Simple security fixes
-- Complex security fixes if sufficiently serious
-
-deprecated(8.6.x)
-- Serious security fixes
-
-Occasionally earlier branches will be chosen, (e.g. security fixes to even older versions) but they should always be carefully discussed (and documented).
+Changes will always be upmerged into the next point release for all the more recent major and minor versions (and master).
