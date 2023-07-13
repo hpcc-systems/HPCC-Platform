@@ -15,57 +15,58 @@
 ############################################################################## */
 
 /*ELEMENT STYLES***************/
-html, body {
+html,
+body {
     background: white;
     width: 100%;
     height: 100%;
     margin: 0px;
     color: rgb(51, 51, 51);
-    font-family: Lucida Sans,Lucida Grande,Arial !important;
+    font-family: Lucida Sans, Lucida Grande, Arial !important;
     font-size: 13px !important;
     padding: 0;
 }
 
 button:hover {
-        color: rgb(0, 0, 0);
-        background-color: rgb(175, 217, 255);
-    }
+    color: rgb(0, 0, 0);
+    background-color: rgb(175, 217, 255);
+}
 
 h1 {
     font-size: 1.5em;
 }
 
 /*Use this when creating a small popup form*/
-.smallForm label{
-  float: left;
+.smallForm label {
+    float: left;
     width: 26%;
     margin: 0 15px 0 0;
     text-align: left;
     padding-top: 4px;
-    font-weight:bold;
-    height:20px;
+    font-weight: bold;
+    height: 20px;
 }
 
-form label{
+form label {
     margin: 0 8px 0 0;
-    font-weight:bold;
+    font-weight: bold;
 }
 
-form ul{
-    list-style:none;
-    margin:0;
-    padding:0;
+form ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
 }
 
-form li{
+form li {
     margin: 0;
     padding: 6px 1% 9px 1%;
     clear: both;
     position: relative;
-    height:20px;
+    height: 20px;
 }
 
-form li label{
+form li label {
     float: left;
     width: 14%;
     margin: 0 15px 0 0;
@@ -81,26 +82,26 @@ form li label{
     padding-top: 4px;
 }
 
-form li textarea{
+form li textarea {
     font-size: 13px;
     font-family: Arial;
-    width:auto;
-    height:auto;
-    float:left;
+    width: auto;
+    height: auto;
+    float: left;
 }
 
-form h1{
+form h1 {
     font-size: 1.5em;
-    margin-left:15px;
+    margin-left: 15px;
 }
 
-form h2{
-    padding:5px 0;
-    color:rgb(22, 22, 22);
+form h2 {
+    padding: 5px 0;
+    color: rgb(22, 22, 22);
 }
 
 /* Double-color dashed line */
-        
+
 hr.dashedLine {
     border: 0;
     border-bottom: 1px dashed #ccc;
@@ -108,15 +109,16 @@ hr.dashedLine {
     background: none;
 }
 
- h2 img:first-of-type{
-    margin-left:15px;
+h2 img:first-of-type {
+    margin-left: 15px;
 }
+
 /*IDs************************/
 .flat .hpccMainpage {
     margin: 0;
     padding: 0;
-    width: 100%; 
-    height: 100%; 
+    width: 100%;
+    height: 100%;
 }
 
 .flat .hpccTitlebar {
@@ -130,7 +132,7 @@ hr.dashedLine {
     justify-content: space-between;
 }
 
-.flat #stubStackController{
+.flat #stubStackController {
     height: 32px;
     margin-top: 6px;
 }
@@ -141,8 +143,8 @@ hr.dashedLine {
     flex-grow: 1;
 }
 
-.flat .glow :hover{
-    background-color:rgb(118, 157, 192);
+.flat .glow :hover {
+    background-color: rgb(118, 157, 192);
     border-radius: 4px;
     cursor: pointer;
 }
@@ -185,24 +187,24 @@ hr.dashedLine {
 
 .flat .glow .dijitToggleButton .dijitButtonNode {
     background: none;
-    border:none;
+    border: none;
     box-shadow: none;
-    margin:0;
-    align-content:center;
+    margin: 0;
+    align-content: center;
 }
 
 .flat .hpccTitlebar .dijitToggleButtonChecked .dijitButtonNode {
     border-width: 0px;
     margin: 0px;
-    align-content:center;
+    align-content: center;
 }
 
 .flat .hpccTitlebar .dijitDropDownButton .dijitButtonNode {
     background: none;
-    border:none;
+    border: none;
     box-shadow: none;
-    margin:0px;
-    align-content:center;
+    margin: 0px;
+    align-content: center;
 }
 
 .flat .miniTitlebar {
@@ -211,7 +213,7 @@ hr.dashedLine {
     padding: 0px;
     padding-left: 6px;
     padding-right: 6px;
-    width:100%;
+    width: 100%;
     overflow: hidden;
 }
 
@@ -245,29 +247,32 @@ hr.dashedLine {
     height: 0px;
 }
 
-.flat #stubTitlebar .dijitToggleButton, .dijitButton, .dijitDropDownButton, .dijitComboButton{
-    margin:0px;
+.flat #stubTitlebar .dijitToggleButton,
+.dijitButton,
+.dijitDropDownButton,
+.dijitComboButton {
+    margin: 0px;
     cursor: pointer;
 }
 
-.flat .dijitPopup .dijitMenuPopup{
-    top:56px !important;
+.flat .dijitPopup .dijitMenuPopup {
+    top: 56px !important;
 }
 
 .flat .dgridInfo {
-    background-position:left center;
+    background-position: left center;
     background-repeat: no-repeat;
-    padding-left:25px;
+    padding-left: 25px;
 }
 
-.flat .dgrid-cell { 
-    text-overflow: ellipsis; 
-    white-space: nowrap; 
+.flat .dgrid-cell {
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-.flat .wrap .dgrid-cell { 
-    text-overflow: initial; 
-    white-space: normal; 
+.flat .wrap .dgrid-cell {
+    text-overflow: initial;
+    white-space: normal;
 }
 
 .justify-right {
@@ -275,57 +280,58 @@ hr.dashedLine {
 }
 
 .centerInCell {
-    text-align: center !important; /*overwrite the default grid cell text-align */
+    text-align: center !important;
+    /*overwrite the default grid cell text-align */
 }
 
-.flat .hpccCentered { 
-    text-align: center; 
+.flat .hpccCentered {
+    text-align: center;
 }
 
 .layoutTable {
     vertical-align: left;
     border: solid 1px #B5BCC7;
-    width:100%;
+    width: 100%;
     border-collapse: collapse;
     border-spacing: 0;
- }
+}
 
- .layoutTable thead {
+.layoutTable thead {
     vertical-align: left;
     background-color: #e2e2e2;
     height: 5px;
-    padding:0;
-    border-spacing:0;
- }
+    padding: 0;
+    border-spacing: 0;
+}
 
 .layoutTable th {
     vertical-align: left;
-    text-align:left;
+    text-align: left;
     background-color: #e2e2e2;
-    width:33%;
+    width: 33%;
     height: 5px;
-    padding-left:10px;
-    border-spacing:0;
+    padding-left: 10px;
+    border-spacing: 0;
 }
 
 .layoutTable tr {
     vertical-align: left;
     height: 5px;
-    padding:0;
-    border-spacing:0;
+    padding: 0;
+    border-spacing: 0;
 }
 
 .layoutTable td {
     text-align: left;
-    padding:10px;
-    border-spacing:0;
+    padding: 10px;
+    border-spacing: 0;
 }
 
 #stubTitlebar :focus {
     outline: none;
 }
 
-#stubTitlebar .dijitStackController .dijitToggleButtonChecked *{
+#stubTitlebar .dijitStackController .dijitToggleButtonChecked * {
     cursor: pointer;
 }
 
@@ -338,10 +344,11 @@ hr.dashedLine {
     z-index: 950;
     background-color: #1A9BD7;
 }
-.lockLogo{
-    display:block;
-    margin:auto;
-    padding-bottom:10px;
+
+.lockLogo {
+    display: block;
+    margin: auto;
+    padding-bottom: 10px;
 }
 
 #teaser {
@@ -352,7 +359,7 @@ hr.dashedLine {
     display: inline;
 }
 
-@media screen and (max-width: 1100px){
+@media screen and (max-width: 1100px) {
     #MonitorStatus {
         display: none;
     }
@@ -362,7 +369,7 @@ hr.dashedLine {
     }
 }
 
-@media screen and (max-width: 1024px){
+@media screen and (max-width: 1024px) {
     #userAccount {
         display: none;
     }
@@ -373,7 +380,7 @@ hr.dashedLine {
 
 }
 
-@media screen and (max-width: 920px){
+@media screen and (max-width: 920px) {
     #teaser {
         display: none;
     }
@@ -383,248 +390,249 @@ hr.dashedLine {
     }
 }
 
-@media screen and (max-width: 790px){
+@media screen and (max-width: 790px) {
     #search-form {
         display: none;
     }
 }
 
-#search-form{
-    padding:0;
+#search-form {
+    padding: 0;
     margin: 10px 10px 0 0;
     min-width: 230px;
 }
 
-#search-form :focus{
+#search-form :focus {
     outline: none;
 }
 
-#search-form input{
-    color:#666;
+#search-form input {
+    color: #666;
 }
 
 .roundForm {
-    width:250px;
+    width: 250px;
     border-radius: 5px;
     padding: 1px 1px 1px 1px;
 }
 
-#userAccount{
-    float:left;
+#userAccount {
+    float: left;
     text-align: right;
-    padding:5px 5px 0 0;
-    padding-top:10px;
-    color:rgb(164, 220, 245);
+    padding: 5px 5px 0 0;
+    padding-top: 10px;
+    color: rgb(164, 220, 245);
 }
 
-#userAccount a{
-    color:rgb(164, 220, 245);
+#userAccount a {
+    color: rgb(164, 220, 245);
 }
 
-#userIcons{
-    float:left;
+#userIcons {
+    float: left;
     text-align: center;
 }
 
-#userIcons img{
-    border:none;
-    margin-top:8px;
+#userIcons img {
+    border: none;
+    margin-top: 8px;
 }
 
 #userIcons .dijitDropDownButton .dijitButtonNode {
-    border:none;
+    border: none;
     background: none;
 }
 
 #userIcons .holder span:nth-child(1) {
-    border:none;
-    margin:0 0 0 0;
-    padding:0;
+    border: none;
+    margin: 0 0 0 0;
+    padding: 0;
     outline: none;
 }
 
-#userIcons .dijitButtonText{
-    padding:0px;
+#userIcons .dijitButtonText {
+    padding: 0px;
 }
 
-#userIcons .dijitFocused{
-    float:left;
-    border:none;
+#userIcons .dijitFocused {
+    float: left;
+    border: none;
 }
 
-.flat #stubMore{
-    padding:0;
-    margin:0;
+.flat #stubMore {
+    padding: 0;
+    margin: 0;
     height: 32px;
     margin-top: 6px;
 }
 
-#myProgressBar{
-    width:200px;
+#myProgressBar {
+    width: 200px;
 }
 
 #borderContainer {
-    width:100%;
-    height:100%;
+    width: 100%;
+    height: 100%;
 }
 
-#helpAction, #helpScope{
-    width:12px; 
-    height:12px;
+#helpAction,
+#helpScope {
+    width: 12px;
+    height: 12px;
 }
 
-.iconLogo{
+.iconLogo {
     background-image: url("../img/hpcc_systems_logo.png");
     width: 175px;
     height: 32px;
     cursor: pointer;
 }
 
-.iconConfiguration{
+.iconConfiguration {
     background-image: url("../img/configuration.png");
     width: 16px;
     height: 16px;
     cursor: pointer;
 }
 
-.iconWu{
+.iconWu {
     background-image: url("../img/WUCog.png");
     width: 32px;
     height: 32px;
     cursor: pointer;
 }
 
-.iconDFU{
+.iconDFU {
     background-image: url("../img/FolderSmart.png");
     width: 32px;
     height: 32px;
     cursor: pointer;
 }
 
-.iconGetDFU{
+.iconGetDFU {
     background-image: url("../img/LZFolder.png");
     width: 32px;
     height: 32px;
     cursor: pointer;
 }
 
-.iconOperations{
+.iconOperations {
     background-image: url("../img/Operations.png");
     width: 32px;
     height: 32px;
     cursor: pointer;
 }
 
-.iconPlugins{
+.iconPlugins {
     background-image: url("../img/Plugins.png");
     width: 32px;
     height: 32px;
     cursor: pointer;
 }
 
-.iconLandingZone{
+.iconLandingZone {
     background-image: url("../img/LandingZone.png");
     width: 32px;
     height: 32px;
     cursor: pointer;
 }
 
-.iconTargets{
+.iconTargets {
     background-image: url("../img/Targets.png");
     width: 32px;
     height: 32px;
     cursor: pointer;
 }
 
-.iconFind{
+.iconFind {
     background-image: url("../img/search_icon.png");
     width: 32px;
     height: 32px;
     cursor: pointer;
 }
 
-.iconAdvanced{
+.iconAdvanced {
     background-image: url("../img/Info.png");
     width: 32px;
     height: 32px;
     cursor: pointer;
 }
 
-.iconZap{
-    background-image: url("../img/zap.png"); 
+.iconZap {
+    background-image: url("../img/zap.png");
     width: 16px;
     height: 16px;
     display: inline-block;
 }
 
-.iconChart{
-    background-image: url("../img/chart.png"); 
+.iconChart {
+    background-image: url("../img/chart.png");
     width: 16px;
     height: 16px;
 }
 
-.iconResult{
-    background-image: url("../img/result.png"); 
+.iconResult {
+    background-image: url("../img/result.png");
     width: 16px;
     height: 16px;
 }
 
-.iconErrWarn{
-    background-image: url("../img/errwarn.png"); 
+.iconErrWarn {
+    background-image: url("../img/errwarn.png");
     width: 16px;
     height: 16px;
 }
 
-.iconFolderTree{
-    background-image: url("../img/folderTree.png"); 
+.iconFolderTree {
+    background-image: url("../img/folderTree.png");
     width: 16px;
     height: 16px;
 }
 
-.iconFolderList{
-    background-image: url("../img/folderList.png"); 
+.iconFolderList {
+    background-image: url("../img/folderList.png");
     width: 16px;
     height: 16px;
 }
 
-.iconFileList{
-    background-image: url("../img/fileList.png"); 
+.iconFileList {
+    background-image: url("../img/fileList.png");
     width: 16px;
     height: 16px;
 }
 
-.iconEdgeList{
-    background-image: url("../img/edgeList.png"); 
+.iconEdgeList {
+    background-image: url("../img/edgeList.png");
     width: 16px;
     height: 16px;
 }
 
-.iconTreeMap{
-    background-image: url("../img/treeMap.png"); 
+.iconTreeMap {
+    background-image: url("../img/treeMap.png");
     width: 16px;
     height: 16px;
 }
 
-.iconPerson{
-    background-image: url("../img/person.png"); 
+.iconPerson {
+    background-image: url("../img/person.png");
     width: 16px;
     height: 16px;
 }
 
-.iconPeople{
-    background-image: url("../img/people.png"); 
+.iconPeople {
+    background-image: url("../img/people.png");
     width: 16px;
     height: 16px;
 }
 
-.iconKey{
+.iconKey {
     background-image: url("../img/key.png");
     width: 16px;
     height: 16px;
 }
 
-.None{
-    background: url("../img/nodata.png") no-repeat; 
+.None {
+    background: url("../img/nodata.png") no-repeat;
     width: 16px;
     height: 16px;
     display: block;
@@ -634,8 +642,8 @@ hr.dashedLine {
     cursor: pointer;
 }
 
-.Normal{
-    background: url("../img/normal.png") no-repeat; 
+.Normal {
+    background: url("../img/normal.png") no-repeat;
     width: 16px;
     height: 16px;
     display: block;
@@ -645,8 +653,8 @@ hr.dashedLine {
     cursor: pointer;
 }
 
-.Warning{
-    background: url("../img/warning.png") no-repeat; 
+.Warning {
+    background: url("../img/warning.png") no-repeat;
     width: 16px;
     height: 16px;
     display: block;
@@ -656,8 +664,8 @@ hr.dashedLine {
     cursor: pointer;
 }
 
-.Error{
-    background: url("../img/error.png") no-repeat; 
+.Error {
+    background: url("../img/error.png") no-repeat;
     width: 16px;
     height: 16px;
     display: block;
@@ -667,49 +675,50 @@ hr.dashedLine {
     cursor: pointer;
 }
 
-.bold{
-    font-weight:bold;
+.bold {
+    font-weight: bold;
 }
 
-.boldRed{
-    font-weight:bold;
+.boldRed {
+    font-weight: bold;
     color: rgb(237, 28, 36);
 }
 
-.unlockStatus{
-    font-weight:bold;
-    font-size:1em;
-    color:rgb(218, 4, 0);
+.unlockStatus {
+    font-weight: bold;
+    font-size: 1em;
+    color: rgb(218, 4, 0);
     text-align: center;
 }
 
-table.miniSelect span {  
-     width:20px;
+table.miniSelect span {
+    width: 20px;
 }
+
 /*###############################*/
 #appLayout {
     height: 100%;
 }
 
-#longList label{
+#longList label {
     float: left;
     width: 14%;
     margin: 0 15px 0 0;
     text-align: right;
     padding-top: 4px;
-    font-weight:bold;
-    height:20px;
+    font-weight: bold;
+    height: 20px;
 }
 
 #loadingOverlay {
     background: url("../img/loadingBar.gif") no-repeat 10px 23px;
     background-position: center center;
-    background-attachment:fixed;
+    background-attachment: fixed;
     font-family: Arial, Verdana, sans-serif;
     margin: 0;
     padding: 0;
-    z-index:999;
-    position:absolute;
+    z-index: 999;
+    position: absolute;
 }
 
 #loadingOverlay .loadingMessage {
@@ -717,48 +726,50 @@ table.miniSelect span {
     color: rgb(153, 153, 153);
 }
 
-#timings, #properties {
+#timings,
+#properties {
     padding: 0;
     overflow: hidden;
 }
 
-#container{
-    width:960px;
+#container {
+    width: 960px;
 }
 
-#mainMenu{
-    margin-bottom:10px;
+#mainMenu {
+    margin-bottom: 10px;
 }
 
-#widgetWUInfoResponse{
-    padding-left:10px;
+#widgetWUInfoResponse {
+    padding-left: 10px;
 }
 
-.unlockStatus{
-    font-weight:bold;
-    font-size:1em;
-    color:rgb(218, 4, 0);
+.unlockStatus {
+    font-weight: bold;
+    font-size: 1em;
+    color: rgb(218, 4, 0);
     text-align: center;
 }
+
 /*CLASSES******************/
-.flat #userIcons .dijitArrowButtonInner{
-    margin:5px auto 0 5px;
+.flat #userIcons .dijitArrowButtonInner {
+    margin: 5px auto 0 5px;
 }
 
-.holder :focus{
+.holder :focus {
     outline: none;
 }
 
-.holder{
-    width:40px;
-    height:60px;
-    float:left;
+.holder {
+    width: 40px;
+    height: 60px;
+    float: left;
 }
 
-.seperator{
-    width:1px;
-    height:32px;
-    float:left;
+.seperator {
+    width: 1px;
+    height: 32px;
+    float: left;
     margin-left: 4px;
     margin-top: 9px;
     margin-right: 12px;
@@ -781,6 +792,7 @@ table.miniSelect span {
 .hpccWhite {
     background-color: rgb(255, 255, 255);
 }
+
 /*  Secondart colour palette */
 .hpccGreyLight {
     background-color: rgb(188, 190, 192);
@@ -842,29 +854,29 @@ table.miniSelect span {
     background-color: rgb(221, 191, 221);
 }
 
-.grey{
+.grey {
     background-color: rgb(80, 80, 80);
 }
 
-.white{
-    background-color:rgb(255,255,255);
+.white {
+    background-color: rgb(255, 255, 255);
 }
 
-.left{
-    float:left;
+.left {
+    float: left;
 }
 
-.right{
-    float:right;
+.right {
+    float: right;
 }
 
-.hidden{
-    color:rgb(214, 214, 214);
+.hidden {
+    color: rgb(214, 214, 214);
     display: none !important;
 }
 
-.show{
-    display:block;
+.show {
+    display: block;
 }
 
 .hpccApp {
@@ -875,13 +887,13 @@ table.miniSelect span {
     background: #1A9BD7;
 }
 
-.searchUserMoreComponents{
+.searchUserMoreComponents {
     display: flex;
 }
 
-.navBarLoggedin{
+.navBarLoggedin {
     text-transform: uppercase;
-    color:rgb(255,255,255);
+    color: rgb(255, 255, 255);
     display: block;
 }
 
@@ -889,8 +901,8 @@ table.miniSelect span {
     background-color: #2196F3;
 }
 
-.hidden{
-    color:rgb(214, 214, 214);
+.hidden {
+    color: rgb(214, 214, 214);
     display: none !important;
 }
 
@@ -898,17 +910,17 @@ table.miniSelect span {
     height: 100%;
 }
 
-.toolTip{
-width:inherit;
+.toolTip {
+    width: inherit;
 }
 
-.toolTip img{
-vertical-align: middle;
-margin-left:-20px;
+.toolTip img {
+    vertical-align: middle;
+    margin-left: -20px;
 }
 
 
-.pageOverlay{
+.pageOverlay {
     left: 0;
     top: 0;
     width: 100%;
@@ -928,11 +940,11 @@ margin-left:-20px;
 }
 
 .TimingTreeMapWidget p {
-    padding-left:5px;
+    padding-left: 5px;
 }
 
 .dijitValidationTextBoxLabel {
-    width:170px;
+    width: 170px;
     text-align: left;
 }
 
@@ -948,25 +960,25 @@ margin-left:-20px;
     width: auto;
 }
 
-.iconAlign{
+.iconAlign {
     vertical-align: middle;
 }
 
-.iconFilter{
+.iconFilter {
     background-image: url("../img/filter.png");
     width: 16px;
     height: 16px;
-    border:none;
-    display:inline-block;
+    border: none;
+    display: inline-block;
     vertical-align: middle;
 }
 
-.iconNoFilter{
+.iconNoFilter {
     background-image: url("../img/noFilter.png");
     width: 16px;
     height: 16px;
-    border:none;
-    display:inline-block;
+    border: none;
+    display: inline-block;
     vertical-align: middle;
 }
 
@@ -994,18 +1006,33 @@ margin-left:-20px;
     height: 16px;
 }
 
-.iconAutoRefreshTrue{
+.iconAutoRefreshTrue {
     background-image: url("../img/autoRefresh.png");
     width: 16px;
     height: 16px;
-    -webkit-animation:spin 4s linear infinite;
-    -moz-animation:spin 4s linear infinite;
-    animation:spin 4s linear infinite;
+    -webkit-animation: spin 4s linear infinite;
+    -moz-animation: spin 4s linear infinite;
+    animation: spin 4s linear infinite;
 }
 
-@-webkit-keyframes spin { 100% { -webkit-transform: rotate(360deg); } }
-@-moz-keyframes spin { 100% { -moz-transform: rotate(360deg); } }
-@keyframes spin { 100% { -webkit-transform: rotate(360deg); transform:rotate(360deg); } }
+@-webkit-keyframes spin {
+    100% {
+        -webkit-transform: rotate(360deg);
+    }
+}
+
+@-moz-keyframes spin {
+    100% {
+        -moz-transform: rotate(360deg);
+    }
+}
+
+@keyframes spin {
+    100% {
+        -webkit-transform: rotate(360deg);
+        transform: rotate(360deg);
+    }
+}
 
 .iconAutoRefreshDisabled {
     background-image: url("../img/autoRefresh_disabled.png");
@@ -1014,19 +1041,19 @@ margin-left:-20px;
 }
 
 .iconNewPage {
-    background-image: url("../img/openNewPage.png"); 
+    background-image: url("../img/openNewPage.png");
     width: 16px;
     height: 16px;
 }
 
 .iconMaximize {
-    background-image: url("../img/maximize.png"); 
+    background-image: url("../img/maximize.png");
     width: 16px;
     height: 16px;
 }
 
 .iconNewPageNoFrame {
-    background-image: url("../img/openNewPageNoFrame.png"); 
+    background-image: url("../img/openNewPageNoFrame.png");
     width: 16px;
     height: 16px;
 }
@@ -1068,96 +1095,105 @@ margin-left:-20px;
 }
 
 .iconLogicalFile {
-    background-image: url("../img/logicalfile.png"); 
+    background-image: url("../img/logicalfile.png");
     width: 16px;
     height: 16px;
 }
 
 .iconLogicalFileDeleted {
-    background-image: url("../img/logicalfile_deleted.png"); 
+    background-image: url("../img/logicalfile_deleted.png");
     width: 16px;
     height: 16px;
 }
 
 .iconSuperFile {
-    background-image: url("../img/superfile.png"); 
+    background-image: url("../img/superfile.png");
     width: 16px;
     height: 16px;
 }
 
 .iconSuperFileDeleted {
-    background-image: url("../img/superfile_deleted.png"); 
+    background-image: url("../img/superfile_deleted.png");
     width: 16px;
     height: 16px;
 }
 
 /*WUSTATES*/
 .iconWorkunit {
-    background-image: url("../img/workunit.png"); 
+    background-image: url("../img/workunit.png");
     width: 16px;
     height: 16px;
     display: inline-block;
 }
 
-.iconCompiled, .iconCompleted{
-    background-image: url("../img/workunit_completed.png"); 
+.iconCompiled,
+.iconCompleted {
+    background-image: url("../img/workunit_completed.png");
     width: 16px;
     height: 16px;
     display: inline-block;
 }
 
-.iconRunning, .iconCompiling, .iconDebugRunning {
-    background-image: url("../img/workunit_running.png"); 
+.iconRunning,
+.iconCompiling,
+.iconDebugRunning {
+    background-image: url("../img/workunit_running.png");
     width: 16px;
-    height: 16px; 
+    height: 16px;
     display: inline-block;
 }
 
-.iconFailed, .iconStateAborted{
-    background-image: url("../img/workunit_failed.png"); 
+.iconFailed,
+.iconStateAborted {
+    background-image: url("../img/workunit_failed.png");
     width: 16px;
     height: 16px;
     display: inline-block;
 }
 
 
-.iconArchived, .iconBlocked, .iconScheduled, .iconWait, .iconUploadingFiles, .iconDebugPaused{
-    background-image: url("../img/workunit_warning.png"); 
+.iconArchived,
+.iconBlocked,
+.iconScheduled,
+.iconWait,
+.iconUploadingFiles,
+.iconDebugPaused {
+    background-image: url("../img/workunit_warning.png");
     width: 16px;
     height: 16px;
     display: inline-block;
 }
 
-.iconAborting{
-    background-image: url("../img/workunit_aborting.png"); 
+.iconAborting {
+    background-image: url("../img/workunit_aborting.png");
     width: 16px;
     height: 16px;
     display: inline-block;
 }
 
-.iconSubmitted{
-    background-image: url("../img/workunit_submitted.png"); 
+.iconSubmitted {
+    background-image: url("../img/workunit_submitted.png");
     width: 16px;
     height: 16px;
     display: inline-block;
 }
 
-.iconArchived{
-    background-image: url("../img/workunit_archived.png"); 
+.iconArchived {
+    background-image: url("../img/workunit_archived.png");
     width: 16px;
     height: 16px;
     display: inline-block;
 }
 
-.iconDeleted{
-    background-image: url("../img/workunit_deleted.png"); 
+.iconDeleted {
+    background-image: url("../img/workunit_deleted.png");
     width: 16px;
     height: 16px;
     display: inline-block;
 }
 
-.iconCluster{
-    background-image: url("../img/server.png"); 
+.iconCluster {
+    background-image: url("../img/server.png");
     width: 16px;
     height: 16px;
     display: inline-block;
@@ -1230,41 +1266,41 @@ margin-left:-20px;
 }
 
 .iconSync {
-    background-image: url("../img/sync.png"); 
+    background-image: url("../img/sync.png");
     width: 16px;
     height: 16px;
 }
 
 .iconSyncDisabled {
-    background-image: url("../img/sync_disabled.png"); 
+    background-image: url("../img/sync_disabled.png");
     width: 16px;
     height: 16px;
 }
 
-.ErrorCell{
+.ErrorCell {
     background: red;
     color: white;
 }
 
-.AlertCell{
+.AlertCell {
     background: #febe47;
 }
 
-.WarningCell{
+.WarningCell {
     background: yellow;
 }
 
-.NormalCell{
-    background: rgba(0,181,0,1);
+.NormalCell {
+    background: rgba(0, 181, 0, 1);
 }
 
-.Prompt{
-    font-weight:bold;
+.Prompt {
+    font-weight: bold;
     white-space: nowrap;
 }
 
 .resultGridCell {
-    vertical-align:text-top;
+    vertical-align: text-top;
     font-family: monospace;
 }
 
@@ -1287,31 +1323,31 @@ margin-left:-20px;
 }
 
 .flat .graph_Graph .graphVertex .common_Menu {
-    visibility:hidden;
+    visibility: hidden;
 }
 
-.flat .graph_Graph .graphVertex > .subgraph {
+.flat .graph_Graph .graphVertex>.subgraph {
     pointer-events: none;
 }
 
-.flat .graph_Graph .graphVertex > .graph_Vertex * {
+.flat .graph_Graph .graphVertex>.graph_Vertex * {
     cursor: pointer;
 }
 
-.flat .graph_Graph .graphEdge > .graph_Edge * {
+.flat .graph_Graph .graphEdge>.graph_Edge * {
     cursor: pointer;
 }
 
-.flat .graph_Graph .graphVertex > .subgraph .title rect {
+.flat .graph_Graph .graphVertex>.subgraph .title rect {
     fill: #dcf1ff;
-    border-bottom-width:0px;
+    border-bottom-width: 0px;
 }
 
-.flat .graph_Graph .graphVertex > .subgraph .title text {
+.flat .graph_Graph .graphVertex>.subgraph .title text {
     fill: black;
 }
 
-.flat .graph_Graph .graphVertex > .subgraph rect {
+.flat .graph_Graph .graphVertex>.subgraph rect {
     fill: none;
 }
 
@@ -1324,44 +1360,44 @@ margin-left:-20px;
     fill: white;
 }
 
-.flat .graph_Graph .graphVertex > .subgraph.selected rect {
-    stroke:red !important;
+.flat .graph_Graph .graphVertex>.subgraph.selected rect {
+    stroke: red !important;
 }
 
 .flat .graph_Graph .graphVertex .graph_Vertex.selected .common_Shape {
-    stroke:red !important;
+    stroke: red !important;
 }
 
 .flat .graph_Graph .graphEdge .graph_Edge {
-    stroke:lightgray;
+    stroke: lightgray;
 }
 
 .flat .graph_Graph .graphEdge .graph_Edge .common_Text {
-    fill:lightgray;
+    fill: lightgray;
 }
 
 .flat .graph_Graph .graphEdge .graph_Edge.active {
-    stroke:green;
+    stroke: green;
 }
 
 .flat .graph_Graph .graphEdge .graph_Edge.active .common_Text {
-    fill:green;
+    fill: green;
 }
 
 .flat .graph_Graph .graphEdge .graph_Edge.finished {
-    stroke:black;
+    stroke: black;
 }
 
 .flat .graph_Graph .graphEdge .graph_Edge.finished .common_Text {
-    fill:black;
+    fill: black;
 }
 
 .flat .graph_Graph .graphEdge .graph_Edge.selected {
-    stroke:red !important;
+    stroke: red !important;
 }
 
 .flat .graph_Graph .graphEdge .graph_Edge.selected .common_Text {
-    fill:red !important;
+    fill: red !important;
 }
 
 .smallSelect .dijitSelectLabel {
@@ -1371,18 +1407,18 @@ margin-left:-20px;
 }
 
 .dojoxUploaderFileListHeader th {
-    background-color:#eee;
-    padding:3px;
+    background-color: #eee;
+    padding: 3px;
     text-align: left;
 }
 
 .dojoxColorPicker {
-    padding:8px;
-    border-radius:4pt;
-    -moz-border-radius:4pt;
-    border-radius:5pt;
-    -webkit-border-radius:5pt;
-    -webkit-drop-shadow:3pt;
+    padding: 8px;
+    border-radius: 4pt;
+    -moz-border-radius: 4pt;
+    border-radius: 5pt;
+    -webkit-border-radius: 5pt;
+    -webkit-drop-shadow: 3pt;
 }
 
 .dojoxColorPickerRightPad {
@@ -1390,90 +1426,99 @@ margin-left:-20px;
 }
 
 .tundra .dojoxColorPicker {
-    background:#ededed;
-    border:1px solid #ccc;
+    background: #ededed;
+    border: 1px solid #ccc;
 }
 
 .dojoxColorPickerBox {
-    position:relative;
-    width:150px;    
-    height:150px;    
-    margin:0; 
-    padding:0;
+    position: relative;
+    width: 150px;
+    height: 150px;
+    margin: 0;
+    padding: 0;
 }
 
 .dojoxColorPickerUnderlay {
-    position:relative; 
-    top:0; left:0;
-    width:150px; 
-    height:150px;
-    z-index:1;
+    position: relative;
+    top: 0;
+    left: 0;
+    width: 150px;
+    height: 150px;
+    z-index: 1;
 }
 
 .tundra .dojoxColorPickerUnderlay {
-    border:1px solid #a0a0a0;
+    border: 1px solid #a0a0a0;
 }
 
 .claro .dojoxColorPicker {
-    background:#ededed;
-    border:1px solid #cdcdcd;
+    background: #ededed;
+    border: 1px solid #cdcdcd;
 }
 
 .claro .dojoxColorPickerUnderlay {
-    border:1px solid #cccccc;
+    border: 1px solid #cccccc;
 }
 
 .dojoxHuePickerUnderlay {
-    position:relative;
-    top:0; left:0;
-    height:150px;
-    width:20px;
-    z-index:1;
+    position: relative;
+    top: 0;
+    left: 0;
+    height: 150px;
+    width: 20px;
+    z-index: 1;
     text-align: center;
 }
 
-.dojoxHuePicker { position:relative; top: 0px; left: 0px; padding: 0px;}
+.dojoxHuePicker {
+    position: relative;
+    top: 0px;
+    left: 0px;
+    padding: 0px;
+}
 
 .dojoxHuePickerPoint {
-    position:absolute;
-    top:0; left:0;
-    width:20px;
-    height:8px;
-    z-index:3; 
-    cursor:move;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 20px;
+    height: 8px;
+    z-index: 3;
+    cursor: move;
 }
 
 .dojoxColorPickerPoint {
-    position:absolute;
-    width:10px; 
-    height:10px;
-    border:0;
-    z-index:3; 
-    cursor:move; 
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border: 0;
+    z-index: 3;
+    cursor: move;
 }
 
 .dojoxColorPickerPreview {
-    display:block;    
-    width:45px;    
-    height:45px;
-    border:1px solid #333;
-    background-color:#fff; 
-    position:relative;
+    display: block;
+    width: 45px;
+    height: 45px;
+    border: 1px solid #333;
+    background-color: #fff;
+    position: relative;
     top: 0px;
-    left: 0px; 
+    left: 0px;
 }
+
 .dojoxColorPickerWebSafePreview {
-    display:block;
-    width:25px; 
-    height:25px; 
-    position:relative;
+    display: block;
+    width: 25px;
+    height: 25px;
+    position: relative;
     top: 0px;
-    left: 0px; 
-    border:1px solid #333; 
+    left: 0px;
+    border: 1px solid #333;
 }
 
 .dojoxColorPickerOptional {
-    position:relative;
+    position: relative;
     top: 0px;
     left: 0px;
     height: 100%;
@@ -1488,57 +1533,50 @@ margin-left:-20px;
 }
 
 .dojoxColorPickerOptional input {
-    border:1px solid #a7a7a7;
-    width:25px;
-    padding:1px 3px 1px 3px;
-    line-height:1.1em;
+    border: 1px solid #a7a7a7;
+    width: 25px;
+    padding: 1px 3px 1px 3px;
+    line-height: 1.1em;
 }
 
 .dojoxColorPickerHex input {
-    width:55px;    
+    width: 55px;
 }
 
 .dojoxUpgradeBar {
-    position:absolute;
-    left:0;
-    top:0;
-    width:100%;
-    height:32px;
-    overflow:hidden;
-    z-index:100;
-    background:#f3f2af;
-    box-shadow:0 2px 6px #444;
-    -webkit-box-shadow:0 1px 6px #444;
-    -moz-box-shadow:0 1px 6px #444;
-    font-size:.8em;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    overflow: hidden;
+    z-index: 100;
+    background: #f3f2af;
+    box-shadow: 0 2px 6px #444;
+    -webkit-box-shadow: 0 1px 6px #444;
+    -moz-box-shadow: 0 1px 6px #444;
 }
 
 .dj_ie .dojoxUpgradeBar {
-    border-bottom:#665F48 2px solid;
+    border-bottom: #665F48 2px solid;
 }
-.dojoxUpgradeBarMessage {
-    position:absolute;
-    padding-left:10px;
-    top:50%;
-    margin-top:-.75em;
-    left:5px;
-    width:100%;
+
+.dojoxUpgradeBarMessage a {
+    margin-left: 10px;
 }
-.dojoxUpgradeBarMessage a{
-    margin-left:10px;
-}
+
 .dojoxUpgradeBarReminderButton {
-    position:absolute;
-    top:25%;
-    margin-right:50px;
-    font-size:11px;
-    text-decoration:underline;
-    text-align:right;
-    cursor:pointer;
-    right:-20px;
+    position: absolute;
+    top: 25%;
+    margin-right: 50px;
+    font-size: 11px;
+    text-decoration: underline;
+    text-align: right;
+    cursor: pointer;
+    right: -20px;
 }
+
 .dj_ie6 .dojoxUpgradeBarReminderButton {
-    margin-top:2px;
+    margin-top: 2px;
 }
 
 .dojoxUpgradeBarCloseIcon {
@@ -1551,14 +1589,17 @@ margin-left:-20px;
     width: 15px;
     cursor: pointer;
 }
+
 .dj_ie6 .dojoxUpgradeBarCloseIcon {
-    background : url("../../node_modules/dijit/themes/tundra/images/tabClose.gif") no-repeat right top;
+    background: url("../../node_modules/dijit/themes/tundra/images/tabClose.gif") no-repeat right top;
 }
+
 .dojoxUpgradeBarCloseIcon-hover {
     background: url("../../node_modules/dijit/themes/tundra/images/tabCloseHover.png") no-repeat right top;
 }
+
 .dj_ie6 .dojoxUpgradeBarCloseIcon-hover {
-    background : url("../../node_modules/dijit/themes/tundra/images/tabCloseHover.gif") no-repeat right top;
+    background: url("../../node_modules/dijit/themes/tundra/images/tabCloseHover.gif") no-repeat right top;
 }
 
 .dojoxTreeMap {
@@ -1623,65 +1664,65 @@ margin-left:-20px;
     z-index: 20;
 }
 
-.dojoxTreeMapGroup.dojoxTreeMapSelected{
-    border:2px dashed red;
+.dojoxTreeMapGroup.dojoxTreeMapSelected {
+    border: 2px dashed red;
 }
 
 .dj_iequircks .dojoxTreeMapIEHack.dojoxTreeMapSelected,
-.dj_ie7 .dojoxTreeMapIEHack.dojoxTreeMapSelected + div,
-.dj_ie8 .dojoxTreeMapIEHack.dojoxTreeMapSelected + div {
-    border:  1px solid red;
+.dj_ie7 .dojoxTreeMapIEHack.dojoxTreeMapSelected+div,
+.dj_ie8 .dojoxTreeMapIEHack.dojoxTreeMapSelected+div {
+    border: 1px solid red;
     z-index: 20;
 }
 
 /* main classes for dojox.widget.Toaster */
 
 .dijitToasterContent {
-	padding:1em;
-	padding-top:0.25em;
-	background:#73c74a;
+    padding: 1em;
+    padding-top: 0.25em;
+    background: #73c74a;
 }
 
-.dijitToasterMessage{ 
-	color:#fff;
+.dijitToasterMessage {
+    color: #fff;
 }
 
 .dijitToasterWarning,
 .dijitToasterError,
-.dijitToasterFatal{
-	font-weight:bold;
-	color:#fff;
+.dijitToasterFatal {
+    font-weight: bold;
+    color: #fff;
 }
 
-.dijitToasterWarning .dijitToasterContent{
-	background:#d4d943;
-} 
+.dijitToasterWarning .dijitToasterContent {
+    background: #d4d943;
+}
 
-.dijitToasterError .dijitToasterContent{
-	background:#c46600;
+.dijitToasterError .dijitToasterContent {
+    background: #c46600;
 }
 
 /* imported from dijit.css */
- 
+
 .dijitToasterClip {
-	position: absolute;
-	z-index: 949;
-	overflow: hidden;
+    position: absolute;
+    z-index: 949;
+    overflow: hidden;
 }
 
 .dijitToasterContainer {
-	display: block;
-	position: absolute;
-	width: 17.5em;
-	margin: 0px;
-	font:0.75em;
+    display: block;
+    position: absolute;
+    width: 17.5em;
+    margin: 0px;
+    font: 0.75em;
 }
 
 button.clippy img {
-    margin:0px 0 0;
-    padding:0px;
-    width:13px;
-    height:16px;
+    margin: 0px 0 0;
+    padding: 0px;
+    width: 13px;
+    height: 16px;
 }
 
 .eclwatch_WUGraph_Tooltip table {
@@ -1699,14 +1740,14 @@ button.clippy img {
 
 .dijitIcon.fa {
     font-family: "FontAwesome";
-    color:#2D97D6;
+    color: #2D97D6;
     min-width: 16px;
     min-height: 16px;
 }
 
 span.dijitReset.dijitInline.dijitIcon.fa.disabled {
     font-family: "FontAwesome";
-    color:darkgray;
+    color: darkgray;
     min-width: 16px;
     min-height: 16px;
 }
@@ -1756,8 +1797,8 @@ span.dijitReset.dijitInline.dijitIcon.fa.disabled {
 .flat .fui-FluentProvider .dijitToolbar,
 .flat .fui-FluentProvider .dijitContentPane,
 .flat .fui-FluentProvider .dijitToolbar .dijitToggleButtonChecked .dijitButtonNode,
-.flat .fui-FluentProvider .dgrid-header, 
-.flat .fui-FluentProvider .dgrid-header-row, 
+.flat .fui-FluentProvider .dgrid-header,
+.flat .fui-FluentProvider .dgrid-header-row,
 .flat .fui-FluentProvider .dgrid-footer {
     background-color: inherit;
 }
