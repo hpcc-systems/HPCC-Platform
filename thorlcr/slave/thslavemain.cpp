@@ -113,24 +113,22 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
         msg.read(vmajor);
         msg.read(vminor);
         Owned<IGroup> processGroup = deserializeIGroup(msg);
+        Owned<IPropertyTree> masterComponentConfig = createPTree(msg);
+        Owned<IPropertyTree> masterGlobalConfig = createPTree(msg);
         mySlaveNum = (unsigned)processGroup->rank(queryMyNode());
         assertex(NotFound != mySlaveNum);
         mySlaveNum++; // 1 based;
 
         unsigned configSlaveNum = globals->getPropInt("@slavenum", NotFound);
-        Owned<IPropertyTree> masterComponentConfig = createPTree(msg);
         if (NotFound == configSlaveNum)
             globals->setPropInt("@slavenum", mySlaveNum);
         else
             assertex(mySlaveNum == configSlaveNum);
 
-        Owned<IPropertyTree> mergedGlobals = createPTreeFromIPT(globals);
-        mergeConfiguration(*mergedGlobals, *masterComponentConfig);
-        replaceComponentConfig(mergedGlobals);
-        globals.set(mergedGlobals);
-        // The slave doesn't load configuration directly (it has been serialized from the master)
-        // manually invoke any installed config CB's
-        executeConfigUpdaterCallbacks();
+        Owned<IPropertyTree> mergedComponentConfig = createPTreeFromIPT(globals);
+        mergeConfiguration(*mergedComponentConfig, *masterComponentConfig);
+        replaceComponentConfig(mergedComponentConfig, masterGlobalConfig);
+        globals.set(mergedComponentConfig);
 #ifdef _DEBUG
         unsigned holdSlave = globals->getPropInt("@holdSlave", NotFound);
         if (mySlaveNum == holdSlave)

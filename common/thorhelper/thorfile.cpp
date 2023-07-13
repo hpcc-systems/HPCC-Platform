@@ -109,7 +109,7 @@ IHThorDiskReadArg * createWorkUnitReadArg(const char * filename, IHThorWorkunitR
 
 #define MAX_FILE_READ_FAIL_COUNT 3
 
-IKeyIndex *openKeyFile(IDistributedFilePart & keyFile)
+IKeyIndex *openKeyFile(IDistributedFilePart & keyFile, size32_t blockedIndexIOSize)
 {
     unsigned failcount = 0;
     unsigned numCopies = keyFile.numCopies();
@@ -128,7 +128,13 @@ IKeyIndex *openKeyFile(IDistributedFilePart & keyFile)
                 rfn.getPath(remotePath);
                 unsigned crc = 0;
                 keyFile.getCrc(crc);
-                return createKeyIndex(remotePath.str(), crc, false);
+                Owned<IFile> iFile = createIFile(remotePath.str());
+                Owned<IFileIO> iFileIO = iFile->open(IFOread);
+                if (nullptr == iFileIO)
+                    throw makeStringExceptionV(0, "Failed to open index file %s", remotePath.str());
+                if (blockedIndexIOSize)
+                    iFileIO.setown(createBlockedIO(iFileIO.getClear(), blockedIndexIOSize));
+                return createKeyIndex(remotePath.str(), crc, *iFileIO, (unsigned) -1, false);
             }
         }
         catch (IException *E)
