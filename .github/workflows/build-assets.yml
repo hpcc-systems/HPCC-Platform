@@ -55,7 +55,7 @@ jobs:
           echo "internal_tag=$(echo $community_tag | sed 's/community/internal/')" >> $GITHUB_OUTPUT
           community_base_ref=${{ github.event.base_ref || github.ref }}
           echo "community_branch=$(echo $community_base_ref | cut -d'/' -f3)" >> $GITHUB_OUTPUT
-          echo "cmake_docker_config=-DCMAKE_BUILD_TYPE=RelWithDebInfo -DVCPKG_FILES_DIR=/hpcc-dev -DCPACK_THREADS=0 -DUSE_OPTIONAL=OFF -DSIGN_MODULES=ON" >> $GITHUB_OUTPUT
+          echo "cmake_docker_config=-DCMAKE_BUILD_TYPE=RelWithDebInfo -DVCPKG_FILES_DIR=/hpcc-dev -DCPACK_THREADS=0 -DUSE_OPTIONAL=OFF -DSIGN_MODULES=${{ github.repository_owner == 'hpcc-systems' && 'ON' || 'OFF' }}" >> $GITHUB_OUTPUT
           echo 'gpg_import=gpg --batch --import /hpcc-dev/build/private.key' >> $GITHUB_OUTPUT
 
       - name: Print vars
@@ -150,7 +150,7 @@ jobs:
           builder: ${{ steps.buildx.outputs.name }}
           file: ${{ needs.preamble.outputs.folder_platform }}/dockerfiles/vcpkg/${{ matrix.os }}.dockerfile
           context: ${{ needs.preamble.outputs.folder_platform }}/dockerfiles/vcpkg
-          push: true
+          push: ${{ github.repository_owner == 'hpcc-systems' }}
           build-args: |
             VCPKG_REF=${{ steps.vars.outputs.vcpkg_sha_short }}
           tags: |
