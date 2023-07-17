@@ -661,5 +661,7 @@ extern jlib_decl const char * generatePassword(StringBuffer &pwd, int pwdLen);
 extern jlib_decl bool getDefaultPlane(StringBuffer &ret, const char * componentOption, const char * category);
 #endif
 
+extern jlib_decl void getResourceFromJfrog(StringBuffer &localPath, IPropertyTree &item);
+
 #endif
 

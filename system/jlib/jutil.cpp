@@ -30,6 +30,8 @@
 #include "jerror.hpp"
 #include "jencrypt.hpp"
 #include "jerror.hpp"
+#include "jsecrets.hpp"
+#include "jmd5.hpp"
 #ifdef _WIN32
 #include <mmsystem.h> // for timeGetTime
 #include <float.h> //for _isnan and _fpclass
@@ -3524,3 +3526,69 @@ static int doTests()
 
 int gDummy = doTests();
 #endif
+
+
+void addSecretToJfrog(StringBuffer &configPath, IPropertyTree &item)
+{
+    StringBuffer password;
+    const char *user = item.queryProp("@jfrogUser");
+    getSecretValue(password, "jfrog", user, "password", true);
+    password.stripChar('\n').stripChar(' ').str(); // Strip newlines/whitespaces in case the secret has been entered by hand.
+
+    StringBuffer fileContents;
+    const char *server = item.queryProp("@jfrogServer");
+    fileContents.setf("{\n\
+    \"servers\": [\n\
+        {\n\
+        \"url\": \"%s/\",\n\
+        \"artifactoryUrl\": \"%s/artifactory/\",\n\
+        \"distributionUrl\": \"%s/distribution/\",\n\
+        \"xrayUrl\": \"%s/xray/\",\n\
+        \"missionControlUrl\": \"%s/mc/\",\n\
+        \"pipelinesUrl\": \"%s/pipelines/\",\n\
+        \"user\": \"%s\",\n\
+        \"password\": \"%s\",\n\
+        \"serverId\": \"HPCC\",\n\
+        \"isDefault\": true\n\
+        }\n\
+    ],\n\
+    \"version\": \"6\"\n}\n", server, server, server, server, server, server, user, password.str());
+
+    getHomeDir(configPath);
+    atomicWriteFile(configPath.append(PATHSEPCHAR).append(".jfrog").append(PATHSEPCHAR).append("jfrog-cli.conf.v6"), fileContents);
+}
+
+extern jlib_decl void getResourceFromJfrog(StringBuffer &localPath, IPropertyTree &item)
+{
+    StringBuffer configPath;
+    addSecretToJfrog(configPath, item);
+
+    StringBuffer filename(localPath);
+    getFileNameOnly(filename, false);
+    recursiveCreateDirectoryForFile(localPath);
+
+    StringBuffer jfrogCmd("jf rt dl --flat --quiet ");
+    jfrogCmd.appendf("\"%s%s\" %s", item.queryProp("@repositoryPath"), filename.str(), localPath.str());
+
+    StringBuffer errOut;
+    StringBuffer jfrogOut;
+    EnvironmentVector env{std::pair<std::string, std::string>("CI", "true")};
+    int result = runExternalCommand("jfrog", jfrogOut, errOut, jfrogCmd.str(), nullptr, nullptr, &env);
+
+    OwnedIFile configFile = createIFile(configPath);
+    configFile->remove(); // Remove file with Jfrog credentials after call is made
+
+    if (result != 0)
+        throw makeStringExceptionV(0, "Error loading resource from jfrog: %s\n%s", errOut.str(), jfrogOut.str());
+
+    item.setProp("@resourcePath", localPath);
+
+    const char *md5 = item.queryProp("@md5");
+    if (md5)
+    {
+        StringBuffer calculated;
+        md5_filesum(localPath, calculated);
+        if (!strieq(calculated, md5))
+            throw makeStringExceptionV(0, "MD5 mismatch on file %s in manifest", filename.str());
+    }
+}
