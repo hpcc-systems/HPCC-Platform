@@ -5011,6 +5011,9 @@ EnumMapping workunitSortFields[] =
    { WUSFwildwuid, "@" },
    { WUSFappvalue, "Application" },
    { WUSFfilewritten, "Files/File/@name" },
+   { WUSFcostexecute, "@costExecute" },
+   { WUSFcostcompile, "@costCompile" },
+   { WUSFcostfileaccess, "@costFileAccess" },
    { WUSFterm, NULL }
 };
 
