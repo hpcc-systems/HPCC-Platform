@@ -882,3 +882,18 @@ ESPenum WUProtectFilter : string
     Protected("Protected"),
     NotProtected("NotProtected")
 };
+
+ESPStruct LogAccessFilter
+{
+    string WildcardFilter;
+    ESPStruct TimeRange AbsoluteTimeRange;
+    unsigned RelativeTimeRangeBuffer;
+    unsigned LineLimit(10000);
+    int64 LineStartFrom(0);
+    ESPenum LogSelectColumnMode SelectColumnMode(1);
+    ESParray<string> CustomColumns;
+    ESParray<string> ComponentsFilter;
+    LogAccessLogFormat Format("CSV");
+    ESPenum SortDirection sortByTimeDirection(1);
+    ESPenum LogEventClass LogEventType;
+};

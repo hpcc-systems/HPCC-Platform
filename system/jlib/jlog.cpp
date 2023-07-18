@@ -3151,6 +3151,11 @@ ILogAccessFilter * getLogAccessFilterFromPTree(IPropertyTree * xml)
         throwUnexpectedX("getLogAccessFilterFromPTree : unrecognized LogAccessFilter type");
 }
 
+ILogAccessFilter * getWildCardLogAccessFilter(const char * wildcardfilter)
+{
+    return new FieldLogAccessFilter(wildcardfilter, LOGACCESS_FILTER_wildcard);
+}
+
 ILogAccessFilter * getWildCardLogAccessFilter()
 {
     return new FieldLogAccessFilter("", LOGACCESS_FILTER_wildcard);

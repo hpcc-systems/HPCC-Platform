@@ -207,21 +207,9 @@ WsWUExceptions::WsWUExceptions(IConstWorkUnit& wu): numerr(0), numwrn(0), numinf
     }
 }
 
-void WsWuInfo::readWorkunitComponentLogs(const char* outFile, unsigned maxLogRecords, const LogAccessReturnColsMode retColsMode,
-                                         const LogAccessLogFormat logFormat, unsigned wuLogSearchTimeBuffSecs)
+void streamFilteredLogsToFile(const char* outFile, LogAccessConditions & logFetchOptions, const LogAccessLogFormat logFormat)
 {
-    if (!queryRemoteLogAccessor())
-        throw makeStringException(ECLWATCH_LOGACCESS_UNAVAILABLE, "WsWuInfo: Remote Log Access plug-in not available!");
-
-    if (isEmptyString(outFile))
-        throw makeStringException(ECLWATCH_INVALID_FILE_NAME, "WsWuInfo: Target filename not provided!");
-
-    LogAccessConditions logFetchOptions;
-    logFetchOptions.setFilter(getJobIDLogAccessFilter(wuid));
-    setLogTimeRange(logFetchOptions, wuLogSearchTimeBuffSecs);
-
-    logFetchOptions.setReturnColsMode(retColsMode);
-    logFetchOptions.setLimit(maxLogRecords);
+    unsigned maxLogRecords = logFetchOptions.getLimit();
 
     Owned<IFileIOStream> outIOS;
     outIOS.setown(createBufferedIOStreamFromFile(outFile, IFOcreate));
@@ -284,6 +272,42 @@ void WsWuInfo::readWorkunitComponentLogs(const char* outFile, unsigned maxLogRec
         else if (logFormat == LOGACCESS_LOGFORMAT_xml)
             writeStringToStream(*outIOS, "</lines>");
     }
+}
+
+void WsWuInfo::readWorkunitComponentLogs(const char* outFile, CWsWuZAPInfoReq& zapLogFilterOptions)
+{
+    if (!queryRemoteLogAccessor())
+        throw makeStringException(ECLWATCH_LOGACCESS_UNAVAILABLE, "WsWuInfo: Remote Log Access plug-in not available!");
+
+    if (isEmptyString(outFile))
+        throw makeStringException(ECLWATCH_INVALID_FILE_NAME, "WsWuInfo: Target filename not provided!");
+
+    const LogAccessTimeRange& trange = zapLogFilterOptions.logFilter.logFetchOptions.getTimeRange();
+
+    if (trange.getStartt().isNull())
+        setLogTimeRange(zapLogFilterOptions.logFilter.logFetchOptions, zapLogFilterOptions.logFilter.wuLogSearchTimeBuffSecs);
+
+    streamFilteredLogsToFile(outFile, zapLogFilterOptions.logFilter.logFetchOptions, zapLogFilterOptions.logFilter.logDataFormat);
+}
+
+void WsWuInfo::readWorkunitComponentLogs(const char* outFile, unsigned maxLogRecords, const LogAccessReturnColsMode retColsMode,
+                                         const LogAccessLogFormat logFormat, unsigned wuLogSearchTimeBuffSecs)
+{
+    if (!queryRemoteLogAccessor())
+        throw makeStringException(ECLWATCH_LOGACCESS_UNAVAILABLE, "WsWuInfo: Remote Log Access plug-in not available!");
+
+    if (isEmptyString(outFile))
+        throw makeStringException(ECLWATCH_INVALID_FILE_NAME, "WsWuInfo: Target filename not provided!");
+
+    LogAccessConditions logFetchOptions;
+
+    logFetchOptions.setFilter(getJobIDLogAccessFilter(wuid));
+    setLogTimeRange(logFetchOptions, wuLogSearchTimeBuffSecs);
+
+    logFetchOptions.setReturnColsMode(retColsMode);
+    logFetchOptions.setLimit(maxLogRecords);
+
+    streamFilteredLogsToFile(outFile, logFetchOptions, logFormat);
 }
 
 void WsWuInfo::setLogTimeRange(LogAccessConditions& logFetchOptions, unsigned wuLogSearchTimeBuffSecs)
@@ -4126,10 +4150,12 @@ void CWsWuFileHelper::createZAPECLQueryArchiveFiles(IConstWorkUnit* cwu, const c
     }
 }
 
-void CWsWuFileHelper::createWULogFile(IConstWorkUnit *cwu, WsWuInfo &winfo, const char *path, unsigned maxLogRecords, LogAccessReturnColsMode retColsMode, LogAccessLogFormat logFormat, unsigned wuLogSearchTimeBuffSecs)
+void CWsWuFileHelper::createWULogFile(IConstWorkUnit *cwu, WsWuInfo &winfo, const char *path, CWsWuZAPInfoReq & zapLogFilterOptions)
 {
     if (cwu->getWuidVersion() == 0)
         return;
+
+    LogAccessLogFormat logFormat = zapLogFilterOptions.logFilter.logDataFormat;
 
     StringBuffer logfileextension;
     if (logFormat == LOGACCESS_LOGFORMAT_csv)
@@ -4142,9 +4168,10 @@ void CWsWuFileHelper::createWULogFile(IConstWorkUnit *cwu, WsWuInfo &winfo, cons
         logfileextension.set("log");
 
     VStringBuffer fileName("%s%c%s-log.%s", path, PATHSEPCHAR, cwu->queryWuid(), logfileextension.str());
+
     try
     {
-        winfo.readWorkunitComponentLogs(fileName.str(), maxLogRecords, retColsMode, logFormat, wuLogSearchTimeBuffSecs);
+        winfo.readWorkunitComponentLogs(fileName.str(), zapLogFilterOptions);
     }
     catch(IException* e)
     {
@@ -4402,12 +4429,7 @@ void CWsWuFileHelper::createWUZAPFile(IEspContext& context, IConstWorkUnit* cwu,
     if (request.includeThorSlaveLog.isEmpty() || strieq(request.includeThorSlaveLog.str(), "on"))
         createThorSlaveLogfile(cwu, winfo, tempDirName);
 #else
-    //These options should ultimately be drawn from req
-    unsigned maxLogRecords = defaultMaxLogRecords;
-    LogAccessReturnColsMode retColsMode = RETURNCOLS_MODE_default;
-    LogAccessLogFormat logFormat = LOGACCESS_LOGFORMAT_csv;
-    unsigned wuLogSearchTimeBuffSecs = defaultWULogSearchTimeBufferSecs;
-    createWULogFile(cwu, winfo, tempDirName, maxLogRecords, retColsMode, LOGACCESS_LOGFORMAT_csv, wuLogSearchTimeBuffSecs);
+    createWULogFile(cwu, winfo, tempDirName, request);
 #endif
 
     //Write out to ZIP file
