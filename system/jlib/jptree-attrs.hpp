@@ -1,6 +1,7 @@
     "@accessed",
     "@activity",
     "@agentSession",
+    "@branchMemorySize"
     "@buildVersion",
     "@checkSum",
     "@cloneable",
@@ -38,6 +39,7 @@
     "@isScalar",
     "@jobName",
     "@keyedSize",
+    "@leafMemorySize"
     "@libCount",
     "@localValue",
     "@mapFlags",

@@ -232,7 +232,14 @@ export function espSkew2NumberTests() {
     }, this);
 }
 
-export function formatAsDelim(columns, rows: any, delim = ",") {
+export interface Column {
+    selectorType?: string;
+    id?: string;
+    field: string;
+    label: string;
+}
+export type ColumnMap = { [id: string]: Column };
+export function formatAsDelim(columns: ColumnMap, rows: any, delim = ",") {
     const container: string[] = [];
     const headerNames: string[] = [];
 

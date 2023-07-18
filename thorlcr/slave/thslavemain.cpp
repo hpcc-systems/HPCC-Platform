@@ -113,24 +113,22 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
         msg.read(vmajor);
         msg.read(vminor);
         Owned<IGroup> processGroup = deserializeIGroup(msg);
+        Owned<IPropertyTree> masterComponentConfig = createPTree(msg);
+        Owned<IPropertyTree> masterGlobalConfig = createPTree(msg);
         mySlaveNum = (unsigned)processGroup->rank(queryMyNode());
         assertex(NotFound != mySlaveNum);
         mySlaveNum++; // 1 based;
 
         unsigned configSlaveNum = globals->getPropInt("@slavenum", NotFound);
-        Owned<IPropertyTree> masterComponentConfig = createPTree(msg);
         if (NotFound == configSlaveNum)
             globals->setPropInt("@slavenum", mySlaveNum);
         else
             assertex(mySlaveNum == configSlaveNum);
 
-        Owned<IPropertyTree> mergedGlobals = createPTreeFromIPT(globals);
-        mergeConfiguration(*mergedGlobals, *masterComponentConfig);
-        replaceComponentConfig(mergedGlobals);
-        globals.set(mergedGlobals);
-        // The slave doesn't load configuration directly (it has been serialized from the master)
-        // manually invoke any installed config CB's
-        executeConfigUpdaterCallbacks();
+        Owned<IPropertyTree> mergedComponentConfig = createPTreeFromIPT(globals);
+        mergeConfiguration(*mergedComponentConfig, *masterComponentConfig);
+        replaceComponentConfig(mergedComponentConfig, masterGlobalConfig);
+        globals.set(mergedComponentConfig);
 #ifdef _DEBUG
         unsigned holdSlave = globals->getPropInt("@holdSlave", NotFound);
         if (mySlaveNum == holdSlave)
@@ -471,8 +469,9 @@ int main( int argc, const char *argv[]  )
                 setBaseDirectory(overrideBaseDirectory, false);
             if (!isEmptyString(overrideReplicateDirectory))
                 setBaseDirectory(overrideReplicateDirectory, true);
+#endif
 
-            if (getConfigurationDirectory(globals->queryPropTree("Directories"),"query","thor",globals->queryProp("@name"),str.clear()))
+            if (!isContainerized() && getConfigurationDirectory(globals->queryPropTree("Directories"),"query","thor",globals->queryProp("@name"),str.clear()))
                 globals->setProp("@query_so_dir", str.str());
             else
                 globals->getProp("@query_so_dir", str.clear());
@@ -492,7 +491,6 @@ int main( int argc, const char *argv[]  )
                 PROGLOG("Using querySo directory: %s", str.str());
                 recursiveCreateDirectory(str.str());
             }
-#endif
 
             useMemoryMappedRead(globals->getPropBool("@useMemoryMappedRead"));
 

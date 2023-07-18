@@ -63,9 +63,22 @@ public:
         table.replace(*mapping);
         mruList.enqueueHead(mapping);
     }
+    unsigned getKeyHash(KEY & key) const
+    {
+        return table.getHashFromFindParam(&key);
+    }
     ENTRY *query(KEY key, bool doPromote=true)
     {
         MAPPING *mapping = table.find(key);
+        if (!mapping) return NULL;
+
+        if (doPromote)
+            promote(mapping);
+        return &mapping->query(); // MAPPING must impl. query()
+    }
+    ENTRY *query(unsigned hashcode, KEY * key, bool doPromote=true)
+    {
+        MAPPING *mapping = table.find(hashcode, *key);
         if (!mapping) return NULL;
 
         if (doPromote)
@@ -96,11 +109,7 @@ public:
     void kill() { clear(-1); }
     void promote(MAPPING *mapping)
     {
-        if (mruList.head() != mapping)
-        {
-            mruList.dequeue(mapping); // will still be linked in table
-            mruList.enqueueHead(mapping);
-        }
+        mruList.moveToHead(mapping);
     }
     CMRUIterator *getIterator()
     {

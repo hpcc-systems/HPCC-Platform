@@ -2410,7 +2410,7 @@ class CRemoteDiskWriteActivity : public CRemoteWriteBaseActivity
 {
     typedef CRemoteWriteBaseActivity PARENT;
 
-    unsigned compressionFormat = 0;
+    unsigned compressionFormat = COMPRESS_METHOD_NONE;
     bool eogPending = false;
     bool someInGroup = false;
     size32_t recordSize = 0;
@@ -2456,7 +2456,7 @@ public:
             if (strieq("true", compressed))
                 compressionFormat = translateToCompMethod(nullptr); // gets default
             else if (strieq("false", compressed))
-                compressionFormat = 0;
+                compressionFormat = COMPRESS_METHOD_NONE;
             else
                 compressionFormat = translateToCompMethod(compressed);
         }
@@ -3841,7 +3841,8 @@ public:
         Owned<IFile> file = createIFile(name->text);
         switch ((compatIFSHmode)share) {
         case compatIFSHnone:
-            file->setCreateFlags(S_IRUSR|S_IWUSR);
+            if (mode != IFOread)
+                file->setCreateFlags(S_IRUSR|S_IWUSR);
             file->setShareMode(IFSHnone);
             break;
         case compatIFSHread:
@@ -3851,10 +3852,12 @@ public:
             file->setShareMode(IFSHfull);
             break;
         case compatIFSHexec:
-            file->setCreateFlags(S_IRUSR|S_IWUSR|S_IXUSR|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH);
+            if (mode != IFOread)
+                file->setCreateFlags(S_IRUSR|S_IWUSR|S_IXUSR|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH);
             break;
         case compatIFSHall:
-            file->setCreateFlags(S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH); // bit excessive
+            if (mode != IFOread)
+                file->setCreateFlags(S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH); // bit excessive
             file->setShareMode(IFSHfull);
             break;
         }

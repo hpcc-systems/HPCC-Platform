@@ -28,11 +28,11 @@
             "name": "azure-storage-files-shares-cpp",
             "platform": "@VCPKG_AZURE@"
         },
+        "boost-property-tree",
         {
             "name": "boost-regex",
             "platform": "@VCPKG_BOOST_REGEX@"
         },
-        "boost-property-tree",
         {
             "name": "cpp-driver",
             "platform": "@VCPKG_CASSANDRAEMBED@"
@@ -132,7 +132,7 @@
         },
         {
             "name": "numactl",
-            "platform": "@VCPKG_NUMA@ & !windows & !osx"
+            "platform": "!windows & !osx"
         },
         {
             "name": "openblas",

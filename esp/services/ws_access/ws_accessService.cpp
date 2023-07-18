@@ -1768,11 +1768,6 @@ bool Cws_accessEx::onResources(IEspContext &context, IEspResourcesRequest &req, 
                     oneresource->setIsSpecial(true);
                 }
             }
-            else if(rtype == RT_FILE_SCOPE && stricmp(rname, "file") == 0)
-            {
-                //oneresource->setIsSpecial(true); //33067
-                continue;
-            }
 
             oneresource->setName(rname);
             oneresource->setDescription(r.getDescription());

@@ -345,8 +345,15 @@ IHqlExpression * convertIndexPhysical2LogicalValue(IHqlExpression * cur, IHqlExp
     if (cur->hasAttribute(blobAtom))
     {
         if (cur->isDataset())
-            return createDataset(no_id2blob, LINK(physicalSelect), getSerializedForm(cur->queryRecord(), diskAtom));
-        else if (cur->isDatarow())
+        {
+            IHqlExpression * record = cur->queryRecord();
+            OwnedHqlExpr serializedRecord = getSerializedForm(record, diskAtom);
+            OwnedHqlExpr extracted = createDataset(no_id2blob, LINK(physicalSelect), LINK(serializedRecord));
+            if (record != serializedRecord)
+                return ensureDeserialized(extracted, cur->queryType(), diskAtom);
+            return extracted.getClear();
+        }
+        if (cur->isDatarow())
             return createRow(no_id2blob, LINK(physicalSelect), getSerializedForm(cur->queryRecord(), diskAtom));
         else
             return createValue(no_id2blob, cur->getType(), LINK(physicalSelect));

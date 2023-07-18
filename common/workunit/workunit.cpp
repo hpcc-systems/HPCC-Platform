@@ -2696,6 +2696,45 @@ cost_type aggregateDiskAccessCost(const IConstWorkUnit * wu, const char *scope)
     return totalCost;
 }
 
+void gatherSpillSize(const IConstWorkUnit * wu, const char *scope, stat_type & peakSizeSpill)
+{
+    WuScopeFilter filter;
+    if (!isEmptyString(scope))
+        filter.addScope(scope);
+    else
+    {
+        filter.addScope("");
+        filter.addSource("global");
+    }
+    filter.setIncludeNesting(1);
+    filter.addOutputStatistic(StSizeGraphSpill);
+    filter.addRequiredStat(StSizeGraphSpill);
+    filter.finishedFilter();
+    Owned<IConstWUScopeIterator> it = &wu->getScopeIterator(filter);
+    peakSizeSpill = 0;
+    for (it->first(); it->isValid(); )
+    {
+        stat_type value = 0;
+        if (it->getStat(StSizeGraphSpill, value))
+        {
+            if (value>peakSizeSpill)
+                peakSizeSpill = value;
+            it->nextSibling();
+        }
+        else
+        {
+            it->next();
+        }
+    }
+}
+
+void updateSpillSize(IWorkUnit * wu, const char * scope, StatisticScopeType scopeType)
+{
+    stat_type peakSizeSpill = 0;
+    gatherSpillSize(wu, scope, peakSizeSpill);
+    if (peakSizeSpill)
+        wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), scopeType, scope, StSizeGraphSpill, nullptr, peakSizeSpill, 1, 0, StatsMergeMax);
+}
 //---------------------------------------------------------------------------------------------------------------------
 
 
@@ -14139,7 +14178,7 @@ void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IP
     {
         CCycleTimer elapsedTimer;
 
-        bool multiJobLinger = config.getPropBool("@multiJobLinger");
+        bool multiJobLinger = config.getPropBool("@multiJobLinger", true);
 
         // NB: executeGraphOnLingeringThor looks for existing Thor instance that has been used for the same job,
         // and communicates with it directly

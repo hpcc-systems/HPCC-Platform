@@ -4995,6 +4995,9 @@ void EspServInfo::write_esp_binding_ipp()
     //method ==> processRequest
     outs("\tvirtual int processRequest(IRpcMessage* rpc_call, IRpcMessage* rpc_response);\n");
 
+    // method ===> getXmlFilename
+    outs("\tint getXmlFilename(StringBuffer &filename);\n");
+
     //method ==> getXsdDefinition
     outs("\tint getXsdDefinition(IEspContext &context, CHttpRequest* request, StringBuffer &content, const char *service, const char *method, bool mda);\n");
 
@@ -5049,7 +5052,7 @@ void EspServInfo::write_esp_binding_ipp()
     outs("\tvirtual int onGetInstantQuery(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method);\n");
 
     //Method ==> getDefaultClientVersion
-    outs("\tbool getDefaultClientVersion(double &ver);\n");
+    outs("\tvirtual bool getDefaultClientVersion(double &ver);\n");
 
     //Method ==> xslTransform
     if (needsXslt)
@@ -5116,7 +5119,7 @@ void EspServInfo::write_esp_binding_ipp()
     outs("};\n\n");
 }
 
-void EspServInfo::write_esp_binding()
+void EspServInfo::write_esp_binding(const char *packagename)
 {
     EspMethodInfo *mthi=NULL;
     int useMethodName = getMetaInt("use_method_name", 0);
@@ -5360,11 +5363,20 @@ void EspServInfo::write_esp_binding()
     outs("\treturn -1;\n");
     outs("}\n");
 
-    //method ==> getXsdDefinition
+
+    //method ==> getXmlFilename for xsd and wsdl transformations
+    outf("\nint C%sSoapBinding::getXmlFilename(StringBuffer &filename)\n", name_);
+    outs("{\n");
+    outf("\tfilename.append(\"%s.xml\");\n", packagename);
+    outs("\treturn 1;\n");
+    outs("}\n");
+
+    //method ==> getXsdDefinition  packagename is the base ecm filename
     outf("\nint C%sSoapBinding::getXsdDefinition(IEspContext &context, CHttpRequest* request, StringBuffer &content, const char *service, const char *method, bool mda)\n", name_);
     outs("{\n");
 
     outs("\tBoolHash added;\n");
+
 
     // version
     if (hasVersion)
@@ -5373,6 +5385,9 @@ void EspServInfo::write_esp_binding()
         outf("\t\tcontext.setClientVersion(%s);\n\n", wsdlVer.str());
     }
     outs("\tDBGLOG(\"Client version: %g\", context.getClientVersion());\n");
+
+    // getXSDDefinition(StringBuffer &content, const char *packageName, const char *serviceName, double version, const char *method);
+//    outf( "getXSDDefinition(content, \"%s\", \"%s\", context.getClientVersion(), method);\n\n", packagename, name_);
 
     indentReset(1);
     outf(1, "bool fullservice = (!Utils::strcasecmp(service, \"%s\"));\n", name_);
@@ -6626,7 +6641,7 @@ void HIDLcompiler::write_esp()
     EspServInfo *si;
     for (si=servs;si;si=si->next)
     {
-        si->write_esp_binding();
+        si->write_esp_binding(packagename);
         outs("\n\n");
         si->write_esp_service();
         outs("\n\n");

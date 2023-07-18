@@ -43,3 +43,9 @@ This may be useful in some scenarios if the connections would otherwise be close
 An example of this is that Azure instances will close sockets that have been idle for greater than 4 minutes that are connected
 outside of its networks.
 
+## saveQueryDlls (boolean)
+
+This is a Thor only setting. Default: false
+If false, query dlls are loaded directly from the default 'dll' plane by both the Thor manager and Thor workers.
+If true, query dlls will be saved and cached in local temporary storage and serialized to the workers.
+Saving and serializing the query dlls may speed up queries if the 'dll' plane is backed by slow storage (e.g. blob storage). 

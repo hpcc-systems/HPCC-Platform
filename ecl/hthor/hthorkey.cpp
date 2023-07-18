@@ -594,7 +594,15 @@ void CHThorIndexReadActivityBase::killPart()
 
 bool CHThorIndexReadActivityBase::setCurrentPart(unsigned whichPart)
 {
-    keyIndex.setown(openKeyFile(df->queryPart(whichPart)));
+    IDistributedFilePart &part = df->queryPart(whichPart);
+    size32_t blockedSize = 0;
+    if (!helper.hasSegmentMonitors()) // unfiltered
+    {
+        StringBuffer planeName;
+        df->getClusterName(part.copyClusterNum(0), planeName);
+        blockedSize = getBlockedFileIOSize(planeName);
+    }
+    keyIndex.setown(openKeyFile(part, blockedSize));
     if(df->numParts() == 1)
         verifyIndex(keyIndex);
     initPart();

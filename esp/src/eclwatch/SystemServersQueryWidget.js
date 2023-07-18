@@ -68,10 +68,14 @@ define([
         initTab: function () {
             var currSel = this.getSelectedChild();
             if (currSel && !currSel.initalized) {
-                if (currSel.id === this.systemServersQueryWidgetIframeWidget.id && !this.systemServersQueryWidgetIframeWidget.initalized) {
+                if (currSel.id === this.id + "_Grid") {
+                    this.refreshGrid();
+                } else if (currSel.id === this.systemServersQueryWidgetIframeWidget.id && !this.systemServersQueryWidgetIframeWidget.initalized) {
                     this.systemServersQueryWidgetIframeWidget.init({
                         src: ESPRequest.getBaseURL("WsTopology") + "/TpServiceQuery?Type=ALLSERVICES"
                     });
+                } else {
+                    currSel.init(currSel.params);
                 }
             }
         },
@@ -278,7 +282,7 @@ define([
             retVal.on(".dgrid-cell .gridClick:click", function (evt) {
                 var item = retVal.row(evt).data;
                 if (evt.target.title === "Audit Log" || evt.target.title === "Component Log") {
-                    context._onOpenLog(item);
+                    context._onOpenLog(item, evt.target.title);
                 } else {
                     context._onOpenConfiguration(item);
                 }
@@ -349,11 +353,11 @@ define([
             });
         },
 
-        _onOpenLog: function (item) {
+        _onOpenLog: function (item, type) {
             var nodeTab = this.ensureLogsPane(item.Name + ": " + item.Parent.LogDirectory, {
                 params: item,
                 ParentName: item.Parent.Name,
-                LogDirectory: item.Parent.LogDirectory,
+                LogDirectory: type === "Audit Log" ? item.Parent.AuditLogDirectory : item.Parent.LogDirectory,
                 NetAddress: item.Netaddress,
                 OS: item.OS,
                 newPreflight: true

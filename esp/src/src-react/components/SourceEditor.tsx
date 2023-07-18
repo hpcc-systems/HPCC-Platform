@@ -2,6 +2,7 @@ import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, useTheme } from "@fluentui/react";
 import { useConst, useOnEvent } from "@fluentui/react-hooks";
 import { Editor, ECLEditor, XMLEditor, JSONEditor } from "@hpcc-js/codemirror";
+import { Workunit } from "@hpcc-js/comms";
 import nlsHPCC from "src/nlsHPCC";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
@@ -219,12 +220,14 @@ export const ECLSourceEditor: React.FunctionComponent<ECLSourceEditorProps> = ({
 
 interface FetchEditor {
     url: string;
+    wuid?: string;
     readonly?: boolean;
     mode?: "ecl" | "xml" | "text";
 }
 
 export const FetchEditor: React.FunctionComponent<FetchEditor> = ({
     url,
+    wuid,
     readonly = true,
     mode = "text"
 }) => {
@@ -232,12 +235,19 @@ export const FetchEditor: React.FunctionComponent<FetchEditor> = ({
     const [text, setText] = React.useState("");
 
     React.useEffect(() => {
-        fetch(url).then(response => {
-            return response.text();
-        }).then(content => {
-            setText(content);
-        });
-    }, [url]);
+        if (wuid) {
+            const wu = Workunit.attach({ baseUrl: "" }, wuid);
+            wu.fetchQuery().then(function (query) {
+                setText(query?.Text ?? "");
+            });
+        } else {
+            fetch(url).then(response => {
+                return response.text();
+            }).then(content => {
+                setText(content);
+            });
+        }
+    }, [url, wuid]);
 
     return <SourceEditor text={text} readonly={readonly} mode={mode}></SourceEditor>;
 };

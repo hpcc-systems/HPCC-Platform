@@ -48,34 +48,11 @@ public:
         lastput = 0;
     }
 
-    virtual void *getBuffer(unsigned len, bool variable) override
-    {
-        if (variable)
-        {
-            char *ret = (char *) data.ensureCapacity(len + sizeof(RecordLengthType));
-            return ret + sizeof(RecordLengthType);
-        }
-        else
-        {
-            return data.ensureCapacity(len);
-        }
-    }
-
-    virtual void putBuffer(const void *buf, unsigned len, bool variable) override
-    {
-        if (variable)
-        {
-            buf = ((char *) buf) - sizeof(RecordLengthType);
-            *(RecordLengthType *) buf = len;
-            len += sizeof(RecordLengthType);
-        }
-        data.setWritePos(lastput + len);
-        lastput += len;
-    }
-
-    virtual void flush() override { }
-    virtual void sendMetaInfo(const void *buf, unsigned len) override { throwUnexpected(); }
-    virtual unsigned size() const override { return lastput; }
+    virtual void *getBuffer(unsigned len, bool variable) override;
+    virtual void putBuffer(const void *buf, unsigned len, bool variable) override;
+    virtual void flush() override;
+    virtual void sendMetaInfo(const void *buf, unsigned len) override;
+    virtual unsigned size() const override;
 };
 
 interface IPacketDiscarder : public IInterface

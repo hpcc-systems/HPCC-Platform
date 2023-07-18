@@ -56,10 +56,14 @@ define([
         initTab: function () {
             var currSel = this.getSelectedChild();
             if (currSel && !currSel.initalized) {
-                if (currSel.id === this.legacyTargetClustersIframeWidget.id && !this.legacyTargetClustersIframeWidget.initalized) {
+                if (currSel.id === this.id + "_Grid") {
+                    this.refreshGrid();
+                } else if (currSel.id === this.legacyTargetClustersIframeWidget.id && !this.legacyTargetClustersIframeWidget.initalized) {
                     this.legacyTargetClustersIframeWidget.init({
                         src: ESPRequest.getBaseURL("WsTopology") + "/TpTargetClusterQuery?Type=ROOT"
                     });
+                } else if (currSel.params.newPreflight || currSel.params.Usergenerated) { //prevents loop of pfTab.init above
+                    currSel.init(currSel.params);
                 }
             }
         },
@@ -81,7 +85,7 @@ define([
                 title: this.i18n.TargetClustersLegacy,
                 style: "border: 0; width: 100%; height: 100%"
             });
-            this.legacyTargetClustersIframeWidget.placeAt(this._tabContainer, "first");
+            this.legacyTargetClustersIframeWidget.placeAt(this._tabContainer, "last");
             this.machineFilter.disable();
         },
 

@@ -376,7 +376,10 @@ public:
     {
         ctx->noteLibrary(library);
     }
-
+    virtual const CRuntimeStatisticCollection & queryStats() const
+    {
+        return ctx->queryStats();
+    }
 protected:
     IRoxieAgentContext * ctx;
 };
@@ -414,7 +417,7 @@ static const StatisticsMapping keyedJoinStatistics({ StNumServerCacheHits, StNum
                                                     StCycleBlobFetchCycles, StCycleLeafFetchCycles, StCycleNodeFetchCycles, StTimeBlobFetch, StTimeLeafFetch, StTimeNodeFetch,
                                                     StCycleIndexCacheBlockedCycles, StTimeIndexCacheBlocked,
                                                     StNumNodeDiskFetches, StNumLeafDiskFetches, StNumBlobDiskFetches,
-                                                    StNumDiskRejected, StSizeAgentReply, StTimeAgentWait, StTimeAgentQueue, StTimeIBYTIDelay }, joinStatistics);
+                                                    StNumDiskRejected, StSizeAgentReply, StTimeAgentWait, StTimeAgentQueue, StTimeAgentProcess, StTimeIBYTIDelay }, joinStatistics);
 static const StatisticsMapping indexStatistics({StNumServerCacheHits, StNumIndexSeeks, StNumIndexScans, StNumIndexWildSeeks,
                                                 StNumIndexSkips, StNumIndexNullSkips, StNumIndexMerges, StNumIndexMergeCompares,
                                                 StNumPreFiltered, StNumPostFiltered, StNumIndexAccepted, StNumIndexRejected,
@@ -425,9 +428,9 @@ static const StatisticsMapping indexStatistics({StNumServerCacheHits, StNumIndex
                                                 StCycleBlobFetchCycles, StCycleLeafFetchCycles, StCycleNodeFetchCycles, StTimeBlobFetch, StTimeLeafFetch, StTimeNodeFetch,
                                                 StCycleIndexCacheBlockedCycles, StTimeIndexCacheBlocked,
                                                 StNumNodeDiskFetches, StNumLeafDiskFetches, StNumBlobDiskFetches,
-                                                StNumIndexRowsRead, StSizeAgentReply, StTimeAgentWait, StTimeAgentQueue, StTimeIBYTIDelay }, actStatistics);
+                                                StNumIndexRowsRead, StSizeAgentReply, StTimeAgentWait, StTimeAgentQueue, StTimeAgentProcess, StTimeIBYTIDelay }, actStatistics);
 static const StatisticsMapping diskStatistics({StNumServerCacheHits, StNumDiskRowsRead, StNumDiskSeeks, StNumDiskAccepted,
-                                               StNumDiskRejected, StSizeAgentReply, StTimeAgentWait, StTimeAgentQueue, StTimeIBYTIDelay }, actStatistics);
+                                               StNumDiskRejected, StSizeAgentReply, StTimeAgentWait, StTimeAgentQueue, StTimeAgentProcess, StTimeIBYTIDelay }, actStatistics);
 static const StatisticsMapping soapStatistics({ StTimeSoapcall }, actStatistics);
 static const StatisticsMapping groupStatistics({ StNumGroups, StNumGroupMax }, actStatistics);
 static const StatisticsMapping sortStatistics({ StTimeSortElapsed }, actStatistics);
@@ -455,7 +458,7 @@ extern const StatisticsMapping accumulatedStatistics({StWhenFirstRow, StTimeLoca
                                                       StNumGroups,
                                                       StTimeSortElapsed,
                                                       StNumDuplicateKeys,
-                                                      StTimeAgentQueue, StTimeIBYTIDelay,
+                                                      StTimeAgentQueue, StTimeAgentProcess, StTimeIBYTIDelay,
                                                       StNumSocketWrites, StSizeSocketWrite, StTimeSocketWriteIO,
                                                       StNumSocketReads, StSizeSocketRead, StTimeSocketReadIO,
                                                       StCycleIndexCacheBlockedCycles, StTimeIndexCacheBlocked,
@@ -1392,7 +1395,10 @@ public:
     {
         return ctx ? ctx->queryCallerIdHttpHeaderName() : "HPCC-Caller-Id";
     }
-
+    virtual const CRuntimeStatisticCollection & queryStats() const override
+    {
+        return stats;
+    }
     virtual bool isPassThrough()
     {
         return false;
@@ -4739,6 +4745,7 @@ public:
         {
             activity.noteStatistic(StSizeAgentReply, mc->queryBytesReceived());
             activity.noteStatistic(StTimeAgentWait, cycle_to_nanosec(unpackerWaitCycles));
+            unpackerWaitCycles = 0;
             if (ctx)
                 ctx->addAgentsReplyLen(mc->queryBytesReceived(), mc->queryDuplicates(), mc->queryResends());
         }
@@ -12034,7 +12041,7 @@ public:
             blockcompressed = true;
         }
         if (blockcompressed)
-            io.setown(createCompressedFileWriter(writer->queryFile(), (diskmeta->isFixedSize() ? diskmeta->getFixedSize() : 0), extend, true, ecomp, COMPRESS_METHOD_LZW));
+            io.setown(createCompressedFileWriter(writer->queryFile(), (diskmeta->isFixedSize() ? diskmeta->getFixedSize() : 0), extend, true, ecomp, COMPRESS_METHOD_LZ4));
         else
             io.setown(writer->queryFile()->open(extend ? IFOwrite : IFOcreate));
         if (!io)
@@ -12432,6 +12439,8 @@ class CRoxieServerIndexWriteActivity : public CRoxieServerInternalSinkActivity, 
     offset_t offsetBranches = 0;
     offset_t uncompressedSize = 0;
     offset_t originalBlobSize = 0;
+    offset_t branchMemorySize = 0;
+    offset_t leafMemorySize = 0;
     unsigned nodeSize = 0;
 
     void updateWorkUnitResult()
@@ -12643,6 +12652,8 @@ public:
             numBlobNodes = builder->getNumBlobNodes();
             offsetBranches = builder->getOffsetBranches();
             originalBlobSize = bc.queryTotalSize();
+            branchMemorySize = builder->getBranchMemorySize();
+            leafMemorySize = builder->getLeafMemorySize();
 
             noteStatistic(StNumLeafCacheAdds, numLeafNodes);
             noteStatistic(StNumNodeCacheAdds, numBranchNodes);
@@ -12732,6 +12743,10 @@ public:
         properties.setPropInt64("@numBlobNodes", numBlobNodes);
         if (numBlobNodes)
             properties.setPropInt64("@originalBlobSize", originalBlobSize);
+        if (branchMemorySize)
+            properties.setPropInt64("@branchMemorySize", branchMemorySize);
+        if (leafMemorySize)
+            properties.setPropInt64("@leafMemorySize", leafMemorySize);
 
         size32_t keyedSize = helper.getKeyedSize();
         if (keyedSize == (size32_t)-1)
@@ -25852,7 +25867,7 @@ public:
         ActivityTimer t(activityStats, timeActivities);
         for (;;)
         {
-            if (eof)
+            if (unlikely(eof))
                 return NULL;
             processAgentResults();
             if (ready.ordinality())

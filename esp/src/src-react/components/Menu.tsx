@@ -1,11 +1,10 @@
 import * as React from "react";
-import { IconButton, IContextualMenuItem, INavLink, INavLinkGroup, Nav, Pivot, PivotItem, Stack } from "@fluentui/react";
+import { IconButton, IContextualMenuItem, INavLink, INavLinkGroup, Link, mergeStyleSets, Nav, Stack } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
 import nlsHPCC from "src/nlsHPCC";
 import { hasLogAccess } from "src/ESPLog";
 import { containerized, bare_metal } from "src/BuildInfo";
 import { MainNav, routes } from "../routes";
-import { pushUrl } from "../util/history";
 import { useFavorite, useFavorites, useHistory } from "../hooks/favorite";
 import { useUserTheme } from "../hooks/theme";
 import { usePivotItemDisable } from "../layouts/pivot";
@@ -192,12 +191,6 @@ function subNavSelectedKey(hashPath) {
     return !!subNavIdx[hashCategory] ? hashCategory : null;
 }
 
-const handleLinkClick = (item?: PivotItem) => {
-    if (item?.props?.itemKey) {
-        pushUrl(item.props.itemKey);
-    }
-};
-
 interface SubNavigationProps {
     hashPath: string;
 }
@@ -229,6 +222,51 @@ export const SubNavigation: React.FunctionComponent<SubNavigationProps> = ({
         return `/${hashPath?.split("/")[1]}`;
     }, [hashPath]);
 
+    const navStyles = React.useMemo(() => mergeStyleSets({
+        wrapper: {
+            marginLeft: 4,
+        },
+        link: {
+            background: theme.semanticColors.buttonBackground,
+            color: theme.semanticColors.buttonText,
+            display: "inline-block",
+            margin: 2,
+            padding: "0 10px",
+            fontSize: 14,
+            textDecoration: "none",
+            selectors: {
+                ":hover": {
+                    background: theme.palette.themePrimary,
+                    color: theme.palette.white,
+                    textDecoration: "none",
+                },
+                ":focus": {
+                    color: theme.semanticColors.buttonText
+                },
+                ":active": {
+                    color: theme.semanticColors.buttonText,
+                    textDecoration: "none"
+                },
+                ":focus:hover": {
+                    color: theme.palette.white,
+                },
+                ":active:hover": {
+                    color: theme.palette.white,
+                    textDecoration: "none"
+                }
+            }
+        },
+        active: {
+            background: theme.palette.themePrimary,
+            color: theme.palette.white,
+            selectors: {
+                ":focus": {
+                    color: theme.palette.white
+                }
+            }
+        }
+    }), [theme]);
+
     const [logsDisabled, setLogsDisabled] = React.useState(true);
     React.useEffect(() => {
         hasLogAccess().then(response => {
@@ -254,14 +292,24 @@ export const SubNavigation: React.FunctionComponent<SubNavigationProps> = ({
     return <div style={{ backgroundColor: theme.palette.themeLighter }}>
         <Stack horizontal horizontalAlign="space-between">
             <Stack.Item align="center" grow={1}>
-                <Stack horizontal >
-                    <Stack.Item grow={0} >
-                        <Pivot selectedKey={subNav || altSubNav} onLinkClick={handleLinkClick} headersOnly={true} linkFormat="tabs" styles={{ root: { marginLeft: 4 }, text: { lineHeight: 20 }, link: { maxHeight: 20, marginRight: 4 }, linkContent: { maxHeight: 20 } }} >
-                            {subMenuItems[mainNav]?.map(row => <PivotItem headerText={row.headerText} itemKey={row.itemKey} key={row.itemKey} headerButtonProps={row.itemKey === "/topology/logs" ? logsDisabledStyle : undefined} />)}
-                        </Pivot>
+                <Stack horizontal>
+                    <Stack.Item grow={0} className={navStyles.wrapper}>
+                        {subMenuItems[mainNav]?.map(row => {
+                            return <Link
+                                disabled={row.itemKey === "/topology/logs" && logsDisabled}
+                                href={`#${row.itemKey}`}
+                                className={[
+                                    navStyles.link,
+                                    row.itemKey === "/topology/logs" && logsDisabled ? logsDisabledStyle : "",
+                                    row.itemKey === subNav || row.itemKey === altSubNav ? navStyles.active : ""
+                                ].join(" ")}
+                            >
+                                {row.headerText}
+                            </Link>;
+                        })}
                     </Stack.Item>
                     {!subNav &&
-                        <Stack.Item grow={1}>
+                        <Stack.Item grow={1} style={{ lineHeight: "24px" }}>
                             <Breadcrumbs hashPath={hashPath} ignoreN={1} />
                         </Stack.Item>
                     }

@@ -103,23 +103,22 @@ void getPlaneHosts(StringArray &hosts, IPropertyTree *plane)
     }
 }
 
-constexpr const char * lz_plane_path = "storage/planes[@category='lz']";
-
 IPropertyTreeIterator * getDropZonePlanesIterator(const char * name)
 {
-    StringBuffer xpath(lz_plane_path);
-    if (!isEmptyString(name))
-        xpath.appendf("[@name='%s']", name);
-    return getGlobalConfigSP()->getElements(xpath);
+    return getPlanesIterator("lz", name);
 }
 
 IPropertyTree * getDropZonePlane(const char * name)
 {
     if (isEmptyString(name))
         throw makeStringException(-1, "Drop zone name required");
-    StringBuffer xpath(lz_plane_path);
-    xpath.appendf("[@name='%s']", name);
-    return getGlobalConfigSP()->getPropTree(xpath);
+    Owned<IPropertyTreeIterator> iter = getDropZonePlanesIterator(name);
+    return iter->first() ? &iter->get() : nullptr;
+}
+
+bool isPathInPlane(IPropertyTree *plane, const char *path)
+{
+    return isEmptyString(path) || startsWith(path, plane->queryProp("@prefix"));
 }
 
 bool validateDropZone(IPropertyTree * plane, const char * path, const char * host, bool ipMatch)
@@ -133,7 +132,7 @@ bool validateDropZone(IPropertyTree * plane, const char * path, const char * hos
         return false;
 
     //Match path
-    return isEmptyString(path) || startsWith(path, plane->queryProp("@prefix"));
+    return isPathInPlane(plane, path);
 }
 
 IPropertyTree * findPlane(const char *category, const char * path, const char * host, bool ipMatch, bool mustMatch)

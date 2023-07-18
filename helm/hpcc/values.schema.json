@@ -544,6 +544,11 @@
             "waitForMount": {
               "type": "boolean"
             },
+            "blockedFileIOKB": {
+              "description": "Optimal block size for efficient reading from this plane. Implementations will use if they can",
+              "type": "integer",
+              "default": 0
+            },
             "components": {},
             "prefix": {},
             "subPath": {},
@@ -2317,7 +2322,8 @@
         },
         "multiJobLinger": {
           "type": "boolean",
-          "description": "[Optional] If lingerPeriod set, allows Thor to process more graphs from any job"
+          "description": "[Optional] If lingerPeriod set, allows Thor to process more graphs from any job",
+          "default": true
         },
         "maxGraphStartupTime": {
           "type": "integer",

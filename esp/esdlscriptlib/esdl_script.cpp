@@ -3133,7 +3133,7 @@ public:
         const char* locked = stag.getValue("locked");
         if (!isEmptyString(locked))
             m_locked.setown(compileXpath(locked));
-        
+
         if (!m_enabled && !m_locked)
             recordError(ESDL_SCRIPT_MissingOperationAttr, "missing all options");
     }
@@ -3911,11 +3911,11 @@ public:
     }
 };
 
-esdl_decl IEsdlScriptContext* createEsdlScriptContext(IEspContext* espCtx, IEsdlFunctionRegister* functionRegister, IDataMaskingEngine* engine)
+esdlscript_decl IEsdlScriptContext* createEsdlScriptContext(IEspContext* espCtx, IEsdlFunctionRegister* functionRegister, IDataMaskingEngine* engine)
 {
     return new CEsdlScriptContext(espCtx, functionRegister, engine);
 }
-esdl_decl IEsdlTransformMethodMap *createEsdlTransformMethodMap()
+esdlscript_decl IEsdlTransformMethodMap *createEsdlTransformMethodMap()
 {
     return new CEsdlTransformMethodMap();
 }

@@ -109,7 +109,7 @@ IHThorDiskReadArg * createWorkUnitReadArg(const char * filename, IHThorWorkunitR
 
 #define MAX_FILE_READ_FAIL_COUNT 3
 
-IKeyIndex *openKeyFile(IDistributedFilePart & keyFile)
+IKeyIndex *openKeyFile(IDistributedFilePart & keyFile, size32_t blockedIndexIOSize)
 {
     unsigned failcount = 0;
     unsigned numCopies = keyFile.numCopies();
@@ -128,7 +128,13 @@ IKeyIndex *openKeyFile(IDistributedFilePart & keyFile)
                 rfn.getPath(remotePath);
                 unsigned crc = 0;
                 keyFile.getCrc(crc);
-                return createKeyIndex(remotePath.str(), crc, false);
+                Owned<IFile> iFile = createIFile(remotePath.str());
+                Owned<IFileIO> iFileIO = iFile->open(IFOread);
+                if (nullptr == iFileIO)
+                    throw makeStringExceptionV(0, "Failed to open index file %s", remotePath.str());
+                if (blockedIndexIOSize)
+                    iFileIO.setown(createBlockedIO(iFileIO.getClear(), blockedIndexIOSize));
+                return createKeyIndex(remotePath.str(), crc, *iFileIO, (unsigned) -1, false);
             }
         }
         catch (IException *E)
@@ -242,6 +248,8 @@ static void gatherDerivedIndexInformation(DerivedIndexInformation & result, IDis
         result.sizeDiskLeaves = result.numLeafNodes * nodeSize;
         result.sizeDiskBlobs = result.numBlobNodes * nodeSize;
         result.sizeDiskBranches = result.numBranchNodes * nodeSize;
+        result.sizeMemoryBranches = attrs.getPropInt64("@branchMemorySize");
+        result.sizeMemoryLeaves = attrs.getPropInt64("@leafMemorySize");
     }
     else
     {
@@ -283,11 +291,12 @@ static void gatherDerivedIndexInformation(DerivedIndexInformation & result, IDis
         result.sizeOriginalData = attrs.getPropInt64("@uncompressedSize");
 
     //The following will depend on the compression format - e.g. if compressed searching is implemented
-    result.sizeMemoryBranches = result.sizeOriginalBranches;
+    if (result.sizeMemoryBranches == 0)
+        result.sizeMemoryBranches = result.sizeOriginalBranches;
 
     //NOTE: sizeOriginalData now includes the blob sizes that are removed before passing to the builder
     //      if the original blob size is recorded then use it, otherwise estimate it
-    if (result.sizeOriginalData)
+    if (result.sizeOriginalData && (result.sizeMemoryLeaves == 0))
     {
         offset_t originalBlobSize = attrs.getPropInt64("@originalBlobSize");
         if (result.numBlobNodes == 0)

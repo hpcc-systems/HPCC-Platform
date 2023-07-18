@@ -114,6 +114,8 @@ protected:
     void init(KeyHdr &hdr, bool isTLK);
     void loadBloomFilters();
     const CJHSearchNode *getRootNode() const;
+
+    inline bool isTLK() const { return (keyHdr->getKeyType() & HTREE_TOPLEVEL_KEY) != 0; }
  
 public:
     IMPLEMENT_IINTERFACE;
@@ -125,7 +127,7 @@ public:
     virtual size32_t keySize();
     virtual bool hasPayload();
     virtual size32_t keyedSize();
-    virtual bool isTopLevelKey() const override;
+    virtual bool isTopLevelKey() const override final;
     virtual bool isFullySorted() override;
     virtual __uint64 getPartitionFieldMask() override;
     virtual unsigned numPartitions() override;

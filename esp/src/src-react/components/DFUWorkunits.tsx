@@ -1,5 +1,6 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Icon, Image, Link } from "@fluentui/react";
+import { SizeMe } from "react-sizeme";
 import * as ESPDFUWorkunit from "src/ESPDFUWorkunit";
 import * as FileSpray from "src/FileSpray";
 import * as Utility from "src/Utility";
@@ -38,6 +39,8 @@ function formatQuery(_filter): { [id: string]: any } {
     if (filter.Type === true) {
         filter.Type = "archived workunits";
     }
+    filter.includeTimings = true;
+    filter.includeTransferRate = true;
     return filter;
 }
 
@@ -92,7 +95,7 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
             }),
             isProtected: {
                 headerIcon: "LockSolid",
-                width: 25,
+                width: 18,
                 sortable: false,
                 formatter: React.useCallback(function (_protected) {
                     if (_protected === true) {
@@ -103,7 +106,7 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
             },
             ID: {
                 label: nlsHPCC.ID,
-                width: 180,
+                width: 130,
                 formatter: React.useCallback(function (ID, idx) {
                     const wu = ESPDFUWorkunit.Get(ID);
                     return <>
@@ -115,7 +118,7 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
             },
             Command: {
                 label: nlsHPCC.Type,
-                width: 117,
+                width: 110,
                 formatter: React.useCallback(function (command) {
                     if (command in FileSpray.CommandMessages) {
                         return FileSpray.CommandMessages[command];
@@ -124,13 +127,27 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
                 }, [])
             },
             User: { label: nlsHPCC.Owner, width: 90 },
-            JobName: { label: nlsHPCC.JobName, width: 500 },
-            ClusterName: { label: nlsHPCC.Cluster, width: 126 },
-            StateMessage: { label: nlsHPCC.State, width: 72 },
+            JobName: { label: nlsHPCC.JobName, width: 220 },
+            ClusterName: { label: nlsHPCC.Cluster, width: 70 },
+            StateMessage: { label: nlsHPCC.State, width: 70 },
             PCTDone: {
-                label: nlsHPCC.PctComplete, width: 90, sortable: true,
+                label: nlsHPCC.PctComplete, width: 80, sortable: true,
                 formatter: React.useCallback(function (value, row) {
                     return Utility.valueCleanUp(row.PercentDone);
+                }, [])
+            },
+            TimeStarted: { label: nlsHPCC.TimeStarted, width: 100, sortable: true },
+            TimeStopped: { label: nlsHPCC.TimeStopped, width: 100, sortable: true },
+            KbPerSec: {
+                label: nlsHPCC.TransferRate, width: 90,
+                formatter: React.useCallback(function (value, row) {
+                    return Utility.convertedSize(row.KbPerSec * 1024) + " / sec";
+                }, [])
+            },
+            KbPerSecAve: { // KbPerSecAve seems to never be different than KbPerSec, see HPCC-29894
+                label: nlsHPCC.TransferRateAvg, width: 90,
+                formatter: React.useCallback(function (value, row) {
+                    return Utility.convertedSize(row.KbPerSecAve * 1024) + " / sec";
                 }, [])
             }
         }
@@ -232,7 +249,13 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
         header={<CommandBar items={buttons} farItems={copyButtons} />}
         main={
             <>
-                <Grid />
+                <SizeMe monitorHeight>{({ size }) =>
+                    <div style={{ width: "100%", height: "100%" }}>
+                        <div style={{ position: "absolute", width: "100%", height: `${size.height}px` }}>
+                            <Grid height={`${size.height}px`} />
+                        </div>
+                    </div>
+                }</SizeMe>
                 <Filter showFilter={showFilter} setShowFilter={setShowFilter} filterFields={filterFields} onApply={pushParams} />
                 <DeleteConfirm />
             </>

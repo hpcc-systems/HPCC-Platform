@@ -4,8 +4,8 @@ import { scopedLogger } from "@hpcc-js/util";
 import { SizeMe } from "react-sizeme";
 import nlsHPCC from "src/nlsHPCC";
 import * as FileSpray from "src/FileSpray";
-import * as ESPDFUWorkunit from "src/ESPDFUWorkunit";
 import { useConfirm } from "../hooks/confirm";
+import { useDfuWorkunit } from "../hooks/workunit";
 import { pivotItemStyle } from "../layouts/pivot";
 import { pushUrl, replaceUrl } from "../util/history";
 import { ShortVerticalDivider } from "./Common";
@@ -24,7 +24,7 @@ export const DFUWorkunitDetails: React.FunctionComponent<DFUWorkunitDetailsProps
     tab = "summary"
 }) => {
 
-    const [workunit, setWorkunit] = React.useState<any>(null);
+    const [workunit, , , , refresh] = useDfuWorkunit(wuid, true);
     const [wuXML, setWuXML] = React.useState("");
     const [jobname, setJobname] = React.useState("");
     const [_protected, setProtected] = React.useState(false);
@@ -36,27 +36,19 @@ export const DFUWorkunitDetails: React.FunctionComponent<DFUWorkunitDetailsProps
         title: nlsHPCC.Delete,
         message: nlsHPCC.YouAreAboutToDeleteThisWorkunit,
         onSubmit: React.useCallback(() => {
-            workunit?.doDelete().then(() => replaceUrl("/dfuworkunits"));
+            workunit?.delete()
+                .then(response => {
+                    replaceUrl("/dfuworkunits");
+                })
+                .catch(err => logger.error(err))
+                ;
         }, [workunit])
     });
 
     React.useEffect(() => {
-        const wu = ESPDFUWorkunit.Get(wuid);
-        setWorkunit(wu);
-        wu.watch((name, oldValue, newValue) => {
-            if (name === "JobName") {
-                setJobname(newValue);
-            } else if (name === "isProtected") {
-                setProtected(newValue);
-            }
-        });
-        wu.refresh();
-    }, [wuid]);
-
-    React.useEffect(() => {
         if (!workunit) return;
         workunit?.fetchXML().then(response => {
-            setWuXML(response);
+            setWuXML(response.file);
         }).catch(err => logger.error(err));
     }, [workunit]);
 
@@ -78,7 +70,7 @@ export const DFUWorkunitDetails: React.FunctionComponent<DFUWorkunitDetailsProps
     }, [workunit]);
 
     const saveWorkunit = React.useCallback(() => {
-        workunit?.update({ JobName: jobname, isProtected: _protected })
+        workunit?.update({ wu: { JobName: jobname, isProtected: _protected } })
             .then(_ => {
                 setShowMessageBar(true);
                 workunit.refresh();
@@ -93,11 +85,11 @@ export const DFUWorkunitDetails: React.FunctionComponent<DFUWorkunitDetailsProps
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
-            onClick: () => workunit?.refresh()
+            onClick: () => refresh()
         },
         {
             key: "copy", text: nlsHPCC.CopyWUID, iconProps: { iconName: "Copy" },
-            onClick: () => navigator?.clipboard?.writeText(wuid)
+            onClick: () => { navigator?.clipboard?.writeText(wuid); }
         },
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
@@ -111,9 +103,9 @@ export const DFUWorkunitDetails: React.FunctionComponent<DFUWorkunitDetailsProps
         { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
             key: "abort", text: nlsHPCC.Abort, disabled: canAbort,
-            onClick: () => workunit?.abort()
+            onClick: () => { workunit?.abort().catch(err => logger.error(err)); }
         },
-    ], [canAbort, canDelete, canSave, saveWorkunit, setShowDeleteConfirm, workunit, wuid]);
+    ], [canAbort, canDelete, canSave, refresh, saveWorkunit, setShowDeleteConfirm, workunit, wuid]);
 
     return <>
         <SizeMe monitorHeight>{({ size }) =>
@@ -151,8 +143,9 @@ export const DFUWorkunitDetails: React.FunctionComponent<DFUWorkunitDetailsProps
                         "command": { label: nlsHPCC.Command, type: "string", value: FileSpray.CommandMessages[workunit?.Command], readonly: true },
                         "state": { label: nlsHPCC.State, type: "string", value: FileSpray.States[workunit?.State], readonly: true },
                         "timeStarted": { label: nlsHPCC.TimeStarted, type: "string", value: workunit?.TimeStarted, readonly: true },
+                        "secondsLeft": { label: nlsHPCC.SecondsRemaining, type: "number", value: workunit?.SecsLeft, readonly: true },
                         "timeStopped": { label: nlsHPCC.TimeStopped, type: "string", value: workunit?.TimeStopped, readonly: true },
-                        "percentDone": { label: nlsHPCC.PercentDone, type: "progress", value: workunit?.PercentDone, readonly: true },
+                        "percentDone": { label: nlsHPCC.PercentDone, type: "progress", value: workunit?.PercentDone.toString(), readonly: true },
                         "progressMessage": { label: nlsHPCC.ProgressMessage, type: "string", value: workunit?.ProgressMessage, readonly: true },
                         "summaryMessage": { label: nlsHPCC.SummaryMessage, type: "string", value: workunit?.SummaryMessage, readonly: true },
                     }} onChange={(id, value) => {
@@ -173,9 +166,9 @@ export const DFUWorkunitDetails: React.FunctionComponent<DFUWorkunitDetailsProps
                         "ip": { label: nlsHPCC.IP, type: "string", value: workunit?.SourceIP, readonly: true },
                         "directory": { label: nlsHPCC.Directory, type: "string", value: workunit?.SourceDirectory, readonly: true },
                         "filePath": { label: nlsHPCC.FilePath, type: "string", value: workunit?.SourceFilePath, readonly: true },
-                        "numParts": { label: nlsHPCC.NumberofParts, type: "string", value: workunit?.SourceNumParts, readonly: true },
+                        "numParts": { label: nlsHPCC.NumberofParts, type: "number", value: workunit?.SourceNumParts, readonly: true },
                         "format": { label: nlsHPCC.Format, type: "string", value: FileSpray.FormatMessages[workunit?.SourceFormat], readonly: true },
-                        "recordSize": { label: nlsHPCC.RecordSize, type: "string", value: workunit?.SourceRecordSize, readonly: true },
+                        "recordSize": { label: nlsHPCC.RecordSize, type: "number", value: workunit?.SourceRecordSize, readonly: true },
                     }} />
                     <hr />
                     <h2>{nlsHPCC.Target}</h2>
@@ -183,7 +176,7 @@ export const DFUWorkunitDetails: React.FunctionComponent<DFUWorkunitDetailsProps
                         "directory": { label: nlsHPCC.Directory, type: "string", value: workunit?.DestDirectory, readonly: true },
                         "logicalName": { label: nlsHPCC.LogicalName, type: "string", value: workunit?.DestLogicalName, readonly: true },
                         "groupName": { label: nlsHPCC.GroupName, type: "string", value: workunit?.DestGroupName, readonly: true },
-                        "numParts": { label: nlsHPCC.NumberofParts, type: "string", value: workunit?.DestNumParts, readonly: true },
+                        "numParts": { label: nlsHPCC.NumberofParts, type: "number", value: workunit?.DestNumParts, readonly: true },
                     }} />
                     <hr />
                     <h2>{nlsHPCC.Other}</h2>

@@ -18,6 +18,7 @@ interface JsonImportFormValues {
     selectedFiles?: {
         TargetName: string,
         TargetRowPath: string,
+        NumParts: string,
         SourceFile: string,
         SourceIP: string
     }[],
@@ -83,10 +84,11 @@ export const JsonImportForm: React.FunctionComponent<JsonImportFormProps> = ({
                     request["sourcePath"] = file.SourceFile;
                     request["isJSON"] = true;
                     request["destLogicalName"] = data.namePrefix + ((
-                        data.namePrefix && data.namePrefix.substr(-2) !== "::" &&
-                        file.TargetName && file.TargetName.substr(0, 2) !== "::"
+                        data.namePrefix && data.namePrefix.substring(-2) !== "::" &&
+                        file.TargetName && file.TargetName.substring(0, 2) !== "::"
                     ) ? "::" : "") + file.TargetName;
                     request["sourceRowTag"] = file.TargetRowPath;
+                    request["destNumParts"] = file.NumParts;
                     FileSpray.SprayVariable({
                         request: request
                     }).then((response) => {
@@ -122,6 +124,7 @@ export const JsonImportForm: React.FunctionComponent<JsonImportFormProps> = ({
                 newValues.selectedFiles[idx] = {
                     TargetName: file["name"],
                     TargetRowPath: "/",
+                    NumParts: "",
                     SourceFile: file["fullPath"],
                     SourceIP: file["NetAddress"]
                 };
@@ -203,6 +206,7 @@ export const JsonImportForm: React.FunctionComponent<JsonImportFormProps> = ({
                     <tr>
                         <th>{nlsHPCC.TargetName}</th>
                         <th>{nlsHPCC.RowPath}</th>
+                        <th>{nlsHPCC.NumberofParts}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -239,6 +243,26 @@ export const JsonImportForm: React.FunctionComponent<JsonImportFormProps> = ({
                                             value={value}
                                             errorMessage={error && error?.message}
                                         />}
+                                />
+                            </td>
+                            <td>
+                                <Controller
+                                    control={control} name={`selectedFiles.${idx}.NumParts` as const}
+                                    render={({
+                                        field: { onChange, name: fieldName, value },
+                                        fieldState: { error }
+                                    }) => <TextField
+                                            name={fieldName}
+                                            onChange={onChange}
+                                            value={value}
+                                            errorMessage={error && error?.message}
+                                        />}
+                                    rules={{
+                                        pattern: {
+                                            value: /^[0-9]+$/i,
+                                            message: nlsHPCC.ValidationErrorEnterNumber
+                                        }
+                                    }}
                                 />
                                 <input type="hidden" name={`selectedFiles.${idx}.SourceFile` as const} value={file["fullPath"]} />
                                 <input type="hidden" name={`selectedFiles.${idx}.SourceIP` as const} value={file["NetAddress"]} />

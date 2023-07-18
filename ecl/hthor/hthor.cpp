@@ -575,7 +575,7 @@ void CHThorDiskWriteActivity::open()
         blockcompressed = true;
     }
     if(blockcompressed)
-        io.setown(createCompressedFileWriter(file, groupedMeta->getFixedSize(), extend, true, ecomp, COMPRESS_METHOD_LZW));
+        io.setown(createCompressedFileWriter(file, groupedMeta->getFixedSize(), extend, true, ecomp, COMPRESS_METHOD_LZ4));
     else
         io.setown(file->open(extend ? IFOwrite : IFOcreate));
     if(!io)
@@ -1161,6 +1161,8 @@ void CHThorIndexWriteActivity::execute()
     unsigned __int64 numBlobNodes = 0;
     unsigned __int64 numBranchNodes = 0;
     offset_t originalBlobSize = 0;
+    offset_t branchMemorySize = 0;
+    offset_t leafMemorySize = 0;
     unsigned nodeSize = 0;
 
     file.setown(createIFile(filename.get()));
@@ -1260,6 +1262,8 @@ void CHThorIndexWriteActivity::execute()
         numBranchNodes = builder->getNumBranchNodes();
         numBlobNodes = builder->getNumBlobNodes();
         originalBlobSize = bc.queryTotalSize();
+        branchMemorySize = builder->getBranchMemorySize();
+        leafMemorySize = builder->getLeafMemorySize();
 
         totalLeafNodes += numLeafNodes;
         totalBranchNodes += numBranchNodes;
@@ -1346,6 +1350,10 @@ void CHThorIndexWriteActivity::execute()
     properties.setPropInt64("@numBlobNodes", numBlobNodes);
     if (numBlobNodes)
         properties.setPropInt64("@originalBlobSize", originalBlobSize);
+    if (branchMemorySize)
+        properties.setPropInt64("@branchMemorySize", branchMemorySize);
+    if (leafMemorySize)
+        properties.setPropInt64("@leafMemorySize", leafMemorySize);
 
     size32_t keyedSize = helper.getKeyedSize();
     if (keyedSize == (size32_t)-1)

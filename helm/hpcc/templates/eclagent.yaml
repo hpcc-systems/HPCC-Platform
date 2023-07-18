@@ -85,10 +85,8 @@ data:
 {{- include "hpcc.addResources" (dict "me" .me.resources) | indent 12 }}
 {{- $appCmd := printf "%s %s %s _HPCC_ARGS_" $apptype (include "hpcc.configArg" .me) (include "hpcc.daliArg" (dict "root" .root "component" "ECL Agent" "optional" false )) }}
 {{ include "hpcc.addCommandAndLifecycle" (. | merge (dict "command" $appCmd)) | indent 12 }}
-{{- if .env }}
             env:
 {{ include "hpcc.mergeEnvironments" .env | indent 12 }}
-{{- end }}
             workingDir: /var/lib/HPCCSystems
             volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" .me | indent 12 }}

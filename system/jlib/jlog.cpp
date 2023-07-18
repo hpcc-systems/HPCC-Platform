@@ -2820,13 +2820,14 @@ void IContextLogger::logOperatorException(IException *E, const char *file, unsig
     logOperatorExceptionVA(E, file, line, format, args);
     va_end(args);
 }
+class CRuntimeStatisticCollection;
 
 class DummyLogCtx : implements IContextLogger
 {
 private:
     LogTrace logTrace;
-
 public:
+    DummyLogCtx() {}
     // It's a static object - we don't want to actually link-count it...
     virtual void Link() const {}
     virtual bool Release() const { return false; }
@@ -2893,6 +2894,10 @@ public:
     virtual const char *queryCallerIdHttpHeaderName() const override
     {
         return logTrace.queryCallerIdHTTPHeaderName();
+    }
+    virtual const CRuntimeStatisticCollection &queryStats() const override
+    {
+        throwUnexpected();
     }
 } dummyContextLogger;
 

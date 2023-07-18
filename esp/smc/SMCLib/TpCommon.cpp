@@ -155,6 +155,10 @@ extern TPWRAPPER_API bool validateDropZoneHostAndPath(const char* dropZoneName, 
         throw makeStringException(ECLWATCH_INVALID_INPUT, "Host not defined.");
     if (isEmptyString(pathToCheck))
         throw makeStringException(ECLWATCH_INVALID_INPUT, "Path not defined.");
+    if (isContainerized() && streq("localhost", hostToCheck))
+        hostToCheck = nullptr; // "localhost" is a placeholder for mounted dropzones that have no hosts.
+    if (isEmptyString(hostToCheck) && isEmptyString(dropZoneName))
+        throw makeStringException(ECLWATCH_INVALID_INPUT, "No dropzone or host provided.");
 
     if (containsRelPaths(pathToCheck)) //Detect a path like: /home/lexis/runtime/var/lib/HPCCSystems/mydropzone/../../../
         throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Invalid path %s", pathToCheck);

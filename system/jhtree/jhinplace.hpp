@@ -171,6 +171,8 @@ public:
     offset_t totalDataSize = 0;
     offset_t numLeafNodes = 0;
     offset_t numBlockCompresses = 0;
+    offset_t branchMemorySize = 0;
+    offset_t leafMemorySize = 0;
     struct {
         double minCompressionThreshold = 0.95; // use uncompressed if compressed is > 95% uncompressed
         unsigned maxCompressionFactor = 25;    // Don't compress payload to less than 4% of the original by default (beause when it is read it will use lots of memory)
@@ -296,6 +298,7 @@ protected:
     size32_t keyLen = 0;
     size32_t firstUncompressed = 0;
     size32_t sizeCompressedPayload = 0; // Set from closed compressor
+    offset_t totalUncompressedSize = 0;
     bool isVariable = false;
     bool rowCompression = false;
     bool useCompressedPayload = false;
@@ -315,6 +318,15 @@ public:
             return new CInplaceLeafWriteNode(_fpos, _keyHdr, ctx);
         else
             return new CInplaceBranchWriteNode(_fpos, _keyHdr, ctx);
+    }
+
+    virtual offset_t queryBranchMemorySize() const override
+    {
+        return ctx.branchMemorySize;
+    }
+    virtual offset_t queryLeafMemorySize() const override
+    {
+        return ctx.leafMemorySize;
     }
 
 protected:
