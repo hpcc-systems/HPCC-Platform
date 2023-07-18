@@ -3196,14 +3196,12 @@ bool CFileSprayEx::onDropZoneFileSearch(IEspContext &context, IEspDropZoneFileSe
         bool isIPAddressReq = isIPAddress(dropZoneServerReq);
         IArrayOf<IConstTpDropZone> allTpDropZones;
         CTpWrapper tpWrapper;
-        tpWrapper.getTpDropZones(9999, nullptr, false, allTpDropZones); //version 9999: get the latest information about dropzone
+        tpWrapper.getTpDropZones(9999, nullptr, req.getECLWatchVisibleOnly(), allTpDropZones); //version 9999: get the latest information about dropzone
         ForEachItemIn(i, allTpDropZones)
         {
             IConstTpDropZone& dropZone = allTpDropZones.item(i);
             const char* name = dropZone.getName();
             if (!streq(dropZoneName, name))
-                continue;
-            if (req.getECLWatchVisibleOnly() && !dropZone.getECLWatchVisible())
                 continue;
 
             IArrayOf<IConstTpMachine>& tpMachines = dropZone.getTpMachines();
@@ -3397,12 +3395,10 @@ bool CFileSprayEx::onDropZoneFiles(IEspContext &context, IEspDropZoneFilesReques
         bool isIPAddressReq = isIPAddress(netAddress);
         IArrayOf<IConstTpDropZone> allTpDropZones;
         CTpWrapper tpWrapper;
-        tpWrapper.getTpDropZones(9999, nullptr, false, allTpDropZones); //version 9999: get the latest information about dropzone
+        tpWrapper.getTpDropZones(9999, nullptr, ECLWatchVisibleOnly, allTpDropZones); //version 9999: get the latest information about dropzone
         ForEachItemIn(i, allTpDropZones)
         {
             IConstTpDropZone& dropZone = allTpDropZones.item(i);
-            if (ECLWatchVisibleOnly && !dropZone.getECLWatchVisible())
-                continue;
 
             const char* dropZoneName = dropZone.getName();
             const char* prefix = dropZone.getPath();
