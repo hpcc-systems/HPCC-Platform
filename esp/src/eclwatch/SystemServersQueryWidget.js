@@ -354,10 +354,11 @@ define([
         },
 
         _onOpenLog: function (item, type) {
-            var nodeTab = this.ensureLogsPane(item.Name + ": " + item.Parent.LogDirectory, {
+            var LogDirectory = type === "Audit Log" ? item.Parent.AuditLogDirectory : item.Parent.LogDirectory;
+            var nodeTab = this.ensureLogsPane(item.Name + ": " + LogDirectory, {
                 params: item,
                 ParentName: item.Parent.Name,
-                LogDirectory: type === "Audit Log" ? item.Parent.AuditLogDirectory : item.Parent.LogDirectory,
+                LogDirectory,
                 NetAddress: item.Netaddress,
                 OS: item.OS,
                 newPreflight: true
