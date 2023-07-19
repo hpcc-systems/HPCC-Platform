@@ -32,7 +32,7 @@ interface ILoadedDllEntry : extends IInterface
     virtual const byte * getResource(unsigned id) const = 0;
     virtual bool getResource(size32_t & len, const void * & data, const char * type, unsigned id, bool trace=true) const = 0;
     virtual IPropertyTree &queryManifest() const = 0;
-    virtual const StringArray &queryManifestFiles(const char *type, const char *tempDir) const = 0;
+    virtual const StringArray &queryManifestFiles(const char *type, const char *id, const char *tempRoot = nullptr) const = 0;
 };
 
 extern DLLSERVER_API ILoadedDllEntry * createDllEntry(const char *name, bool isGlobal, const IFileIO *dllFile, bool resourcesOnly);

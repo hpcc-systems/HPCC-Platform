@@ -19,6 +19,10 @@
 //nothor
 //The library is defined and built in aaalibraryjava.ecl
 
+IMPORT java;
+
+STRING cat(SET OF STRING s) := IMPORT(java, 'javaembed_ex7.cat:([Ljava/lang/String;)Ljava/lang/String;');
+
 namesRecord := 
             RECORD
 string20        surname;
@@ -50,3 +54,5 @@ integer init := appendDataset(namesTable).initialized : ONCE;
 output(init);
 appended := appendDataset(namesTable);
 output(appended.result);
+// Call java from both query and library
+output(cat(['Hello','World']));

@@ -203,6 +203,7 @@ StringBuffer logDirectory;
 StringBuffer pluginDirectory;
 StringBuffer queryDirectory;
 StringBuffer codeDirectory;
+StringBuffer spillDirectory;
 StringBuffer tempDirectory;
 
 ClientCertificate clientCert;
@@ -1253,7 +1254,8 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                 queryDirectory.append(codeDirectory).append("queries");
         }
         addNonEmptyPathSepChar(queryDirectory);
-        getSpillFilePath(tempDirectory, "roxie", topology);
+        getSpillFilePath(spillDirectory, "roxie", topology);
+        getTempFilePath(tempDirectory, "roxie", topology);
 
 #ifdef _WIN32
         topology->addPropBool("@linuxOS", false);
