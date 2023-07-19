@@ -3,7 +3,7 @@ EKS_NAME=
 
 EFS_ID=
 EFS_BASE_PATH=/hpcc-efs
-EFS_REGION=us-east-1
+EFS_REGION=
 EFS_SECURITY_GROUPS=
 # Need VPC_ID if want to add security inbound rule for NFS
 VPC_ID=
