@@ -181,6 +181,7 @@ storage:
   #   numDevices: 1                         # number of devices that are part of the plane
   #   secret: <secret-id>                   # what secret is required to access the files.  This could optionally become a list if required (or add secrets:).
   #   defaultSprayParts: 4                  # The number of partitions created when spraying (default: 1)
+  #   eclwatchVisible: true                 # Can the lz plane be visible from ECLWatch (default: true)
   #   cost:                                 # The storage cost
   #     storageAtRest: 0.0135               # Storage at rest cost: cost per GiB/month
   #   storageapi:                           # Optional information to allow access to storage api

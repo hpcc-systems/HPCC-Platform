@@ -92,7 +92,7 @@ interface IEsdlSubscription : public IInterface
     virtual void subscribe() = 0;
 };
 
-esdl_engine_decl IEsdlStore* createEsdlCentralStore();
+esdl_engine_decl IEsdlStore* getEsdlCentralStore(bool isForLoadingBindings);
 esdl_engine_decl IEsdlSubscription* createEsdlSubscription(IEsdlListener* listener);
 
 #endif // _ESDL_STORE_HPP__

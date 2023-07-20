@@ -84,7 +84,7 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
                 }
             </PivotItem>
             <PivotItem headerText={nlsHPCC.Inputs} itemKey="inputs" itemCount={workunit?.SourceFileCount} style={pivotItemStyle(size, 0)}>
-                <SourceFiles wuid={wuid} />
+                <SourceFiles wuid={wuid} filter={queryParams} />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.Metrics} itemKey="metrics" itemCount={workunit?.GraphCount} style={pivotItemStyle(size, 0)}>
                 <Metrics wuid={wuid} selection={state} />

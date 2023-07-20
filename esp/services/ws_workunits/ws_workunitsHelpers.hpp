@@ -154,7 +154,233 @@ struct WUComponentLogOptions
 {
     LogAccessConditions logFetchOptions;
     LogAccessLogFormat logFormat = LOGACCESS_LOGFORMAT_csv;
+    LogAccessLogFormat logDataFormat = LOGACCESS_LOGFORMAT_csv;
     unsigned wuLogSearchTimeBuffSecs = defaultWULogSearchTimeBufferSecs;
+
+    ILogAccessFilter * getOredComponentsLogFilter(StringArray & components, unsigned index = 0)
+    {
+        if (index + 1 == components.length())
+            return getComponentLogAccessFilter(components.item(index));
+        else
+            return getBinaryLogAccessFilter
+                (
+                    getComponentLogAccessFilter(components.item(index)),
+                    getOredComponentsLogFilter(components, index+1),
+                    LOGACCESS_FILTER_or
+                );
+    }
+
+    void populateTimeRange(const char * start, const char * end, unsigned relativeTimeBufferSecs)
+    {
+        if (!isEmptyString(start) && !isEmptyString(end))
+        {
+            struct LogAccessTimeRange absoluteTimeRange;
+            absoluteTimeRange.setStart(start);
+            absoluteTimeRange.setEnd(end);
+            logFetchOptions.setTimeRange(absoluteTimeRange);
+        }
+        else if (!isEmptyString(start))
+        {
+            if (isEmptyString(end))
+                throw makeStringException(ECLWATCH_INVALID_INPUT, "ZapLogFilter: Empty 'Absolute TimeRange End' detected!");
+        }
+        else if (!isEmptyString(end))
+        {
+            if (isEmptyString(end))
+                throw makeStringException(ECLWATCH_INVALID_INPUT, "ZapLogFilter: Empty 'Absolute TimeRange Start' detected!");
+        }
+        else
+        {
+            if (relativeTimeBufferSecs > 0 )
+                wuLogSearchTimeBuffSecs = relativeTimeBufferSecs;
+        }
+    }
+
+    void populateLogFilter(const char * wuid, CHttpRequest * zapHttpRequest)
+    {
+        ILogAccessFilter * logFetchFilter = getJobIDLogAccessFilter(wuid);
+
+        StringBuffer requestedLogDataFormat;
+        zapHttpRequest->getParameter("LogFilter_Format", requestedLogDataFormat);
+        if (!requestedLogDataFormat.isEmpty())
+            logDataFormat = logAccessFormatFromName(requestedLogDataFormat.str());
+
+        StringBuffer start; // Absolute query time range start in YYYY-DD-MMTHH:MM:SS
+        zapHttpRequest->getParameter("LogFilter_AbsoluteTimeRange_Start", start);
+        StringBuffer end; // Absolute query time range end in YYYY-DD-MMTHH:MM:SS
+        zapHttpRequest->getParameter("LogFilter_AbsoluteTimeRange_End", end);
+        // Query time range based on WU Time +- Buffer in seconds
+        unsigned bufferSecs = (unsigned)zapHttpRequest->getParameterInt("LogFilter_RelativeTimeRangeBuffer", 0);
+
+        populateTimeRange(start, end, bufferSecs);
+
+        //int  0 ==MIN, 1==DEFAULT, 2==ALL, 3==CUSTOM
+        int colMode = zapHttpRequest->getParameterInt("LogFilter_ColumnMode", -1);
+        if (colMode != -1)
+        {
+            StringArray customFields; //comma delimited list of available columns, only if ColumnMode==3
+            if (colMode == 3)
+            {
+                StringBuffer customFieldsList;
+                zapHttpRequest->getParameter("LogFilter_CustomColumns", customFieldsList);
+            
+                if(!customFieldsList.isEmpty())
+                    customFields.appendList(customFieldsList.str(), ",");
+            }
+
+            setReturnColumMode(colMode, customFields);
+        }
+
+        StringBuffer lineLimit;
+        zapHttpRequest->getParameter("LogFilter_LineLimit", lineLimit);
+        if (!lineLimit.isEmpty())
+        {
+            int limit = strtoll(lineLimit.str(), nullptr, 10);
+            if (limit < 0)
+                throw makeStringException(ECLWATCH_INVALID_INPUT, "Zap LogFilter encountered negative line limit!");
+
+            logFetchOptions.setLimit((unsigned)limit);
+        }
+
+        StringBuffer startFrom;
+        zapHttpRequest->getParameter("LogFilter_LineStartFrom", startFrom);
+        if (!startFrom.isEmpty())
+        {
+            int start = strtoll(startFrom.str(), nullptr, 10);
+            if (start < 0)
+                throw makeStringException(ECLWATCH_INVALID_INPUT, "Zap LogFilter encountered negative startFrom!");
+            logFetchOptions.setStartFrom((unsigned)start);
+        }
+
+        ILogAccessFilter * componentsFilterObj = nullptr;
+        StringBuffer componentsFilterList;
+        zapHttpRequest->getParameter("LogFilter_ComponentsFilter", componentsFilterList);
+        if (!componentsFilterList.isEmpty())
+        {
+            StringArray componentsFilter;
+            componentsFilter.appendList(componentsFilterList.str(), ",");
+            componentsFilterObj = getOredComponentsLogFilter(componentsFilter);
+        }
+
+        if (componentsFilterObj != nullptr)
+            logFetchFilter = getBinaryLogAccessFilter(logFetchFilter, componentsFilterObj, LOGACCESS_FILTER_and);
+
+        ILogAccessFilter * logEventTypeFilterObj = nullptr;
+        StringBuffer logType; //"DIS","ERR","WRN","INF","PRO","MET","ALL"
+        zapHttpRequest->getParameter("LogFilter_LogEventType", logType);
+        if (!logType.isEmpty() && strcmp(logType.str(), "ALL") != 0)
+            logEventTypeFilterObj = getClassLogAccessFilter(LogMsgClassFromAbbrev(logType.str()));
+
+        if (logEventTypeFilterObj != nullptr)
+            logFetchFilter = getBinaryLogAccessFilter(logFetchFilter, logEventTypeFilterObj, LOGACCESS_FILTER_and);
+
+        StringBuffer wildCharFilter;
+        zapHttpRequest->getParameter("LogFilter_WildcardFilter", wildCharFilter);
+        if (!wildCharFilter.isEmpty())
+            logFetchFilter = getBinaryLogAccessFilter(logFetchFilter, getWildCardLogAccessFilter(wildCharFilter.str()), LOGACCESS_FILTER_or);
+
+        logFetchOptions.setFilter(logFetchFilter);
+
+        //"ASC", "DSC"
+        StringBuffer sortByTimeDirection;
+        zapHttpRequest->getParameter("LogFilter_SortByTimeDirection", sortByTimeDirection);
+        logFetchOptions.addSortByCondition(LOGACCESS_MAPPEDFIELD_timestamp, "",
+                                           strcmp(sortByTimeDirection, "ASC")  == 0
+                                           ? SORTBY_DIRECTION_ascending : SORTBY_DIRECTION_descending);
+
+    }
+
+    void setReturnColumMode(int columnModeCode, const StringArray & customFields)
+    {
+        logFetchOptions.setReturnColsMode(RETURNCOLS_MODE_default);
+        switch (columnModeCode)
+        {
+        case 0:
+            logFetchOptions.setReturnColsMode(RETURNCOLS_MODE_min);
+            break;
+        case 1:
+            logFetchOptions.setReturnColsMode(RETURNCOLS_MODE_default);
+            break;
+        case 2:
+            logFetchOptions.setReturnColsMode(RETURNCOLS_MODE_all);
+            break;
+        case 3:
+            logFetchOptions.setReturnColsMode(RETURNCOLS_MODE_custom);
+            if (customFields.length() > 0 )
+                logFetchOptions.copyLogFieldNames(customFields);
+            else
+                throw makeStringException(ECLWATCH_LOGACCESS_UNAVAILABLE, "WsWuInfo: LogFilter empty custom colums detected!");
+            break;
+        default:
+            break;
+        }
+    }
+
+    void populateLogFilter(const char * wuid, IConstLogAccessFilter & logFilterReq)
+    {
+        ILogAccessFilter * logFetchFilter = getJobIDLogAccessFilter(wuid);
+
+        const char * requestedLogFormat = logFilterReq.getFormat();
+        if (!isEmptyString(requestedLogFormat))
+            logDataFormat = logAccessFormatFromName(requestedLogFormat);
+
+        struct LogAccessTimeRange absoluteTimeRange;
+        const char * start = logFilterReq.getAbsoluteTimeRange().getStartDate();
+        const char * end = logFilterReq.getAbsoluteTimeRange().getEndDate();
+
+        populateTimeRange(start, end, logFilterReq.getRelativeTimeRangeBuffer());
+
+        if (!isEmptyString(logFilterReq.getSelectColumnModeAsString()))
+            setReturnColumMode(logFilterReq.getSelectColumnMode(), logFilterReq.getCustomColumns());
+
+        logFetchOptions.setLimit(logFilterReq.getLineLimit());
+        logFetchOptions.setStartFrom(logFilterReq.getLineStartFrom());
+
+        ILogAccessFilter * componentsFilterObj = nullptr;
+        if (logFilterReq.getComponentsFilter().length() > 0)
+            componentsFilterObj = getOredComponentsLogFilter(logFilterReq.getComponentsFilter());
+
+        if (componentsFilterObj != nullptr)
+            logFetchFilter = getBinaryLogAccessFilter(logFetchFilter, componentsFilterObj, LOGACCESS_FILTER_and);
+
+        ILogAccessFilter * logEventTypeFilterObj = nullptr;
+        const char * logType = logFilterReq.getLogEventTypeAsString();
+        if (!isEmptyString(logType) && strcmp(logType,"ALL") != 0)
+            logEventTypeFilterObj = getClassLogAccessFilter(LogMsgClassFromAbbrev(logType));
+
+        if (logEventTypeFilterObj != nullptr)
+            logFetchFilter = getBinaryLogAccessFilter(logFetchFilter, logEventTypeFilterObj, LOGACCESS_FILTER_and);
+
+        const char * wildCharFilter = logFilterReq.getWildcardFilter();
+        if (!isEmptyString(wildCharFilter))
+            logFetchFilter = getBinaryLogAccessFilter(logFetchFilter, getWildCardLogAccessFilter(wildCharFilter), LOGACCESS_FILTER_or);
+
+        logFetchOptions.setFilter(logFetchFilter);
+        CSortDirection espSortDirection = logFilterReq.getSortByTimeDirection();
+        logFetchOptions.addSortByCondition(LOGACCESS_MAPPEDFIELD_timestamp, "", espSortDirection == CSortDirection_ASC 
+                                        ? SORTBY_DIRECTION_ascending : SORTBY_DIRECTION_descending);
+    }
+};
+
+struct CWsWuZAPInfoReq
+{
+    StringBuffer wuid, esp, url, thor, problemDesc, whatChanged, whereSlow, includeThorSlaveLog, zapFileName, password;
+    StringBuffer emailFrom, emailTo, emailServer, emailSubject, emailBody;
+
+    bool sendEmail, attachZAPReportToEmail;
+    unsigned maxAttachmentSize, port;
+
+    WUComponentLogOptions logFilter;
+
+    void populateLogFilter(IConstLogAccessFilter & logFilterReq)
+    {
+        logFilter.populateLogFilter(wuid.str(), logFilterReq);
+    }
+
+    void populateLogFilter(CHttpRequest * httpRequest)
+    {
+        logFilter.populateLogFilter(wuid.str(), httpRequest);
+    }
 };
 
 class WsWuInfo
@@ -169,6 +395,7 @@ class WsWuInfo
     void readWorkunitThorLog(const char* processName, const char* logSpec, const char* slaveIPAddress, unsigned slaveNum, MemoryBuffer& buf, const char* outFile);
     void readWorkunitThorLogOneDay(IFile* ios, unsigned& processID, MemoryBuffer& buf, IFileIOStream* outIOS);
 #endif
+    void setLogTimeRange(LogAccessConditions& logFetchOptions, unsigned wuLogSearchTimeBuffSecs);
     unsigned sendComponentLogContent(IEspContext* context, IRemoteLogAccessStream* logreader, IXmlStreamFlusher* flusher, const WUComponentLogOptions& options);
     void sendComponentLogCSV(IEspContext* context, IRemoteLogAccessStream* logreader, IXmlStreamFlusher* flusher, const WUComponentLogOptions& options);
     void sendComponentLogJSON(IEspContext* context, IRemoteLogAccessStream* logreader, IXmlStreamFlusher* flusher, const WUComponentLogOptions& options);
@@ -177,7 +404,6 @@ class WsWuInfo
         const char* sourceAlias, MemoryBuffer &mb, bool forDownload);
     void copyContentFromRemoteFile(const char* sourceFileName, const char* sourceIPAddress,
         const char* sourceAlias, const char *outFileName);
-    void setLogTimeRange(LogAccessConditions& logFetchOptions, unsigned wuLogSearchTimeBuffSecs);
     void getPostMortemFiles(IFile* file, unsigned& helpersCount, StringArray& postMortemFiles);
     void addPostMortemFiles(StringArray& postMortemFiles, IArrayOf<IEspECLHelpFile>& helpers);
     void validatePostMortemFile(IFile* file, const char* fileToBeValidated, bool& validated);
@@ -193,6 +419,8 @@ public:
     */
     void readWorkunitComponentLogs(const char* outFile, unsigned maxLogRecords, const LogAccessReturnColsMode retColsMode,
                                    const LogAccessLogFormat logFormat, unsigned wuLogSearchTimeBuffSecs);
+
+    void readWorkunitComponentLogs(const char* outFile, CWsWuZAPInfoReq & zapLogFilterOptions);
     void sendWorkunitComponentLogs(IEspContext* context, CHttpResponse* response, WUComponentLogOptions& options);
     void sendImportedWorkunitComponentLog(const char* logFile, CHttpResponse* response);
 
@@ -644,14 +872,6 @@ public:
     }
 };
 
-struct CWsWuZAPInfoReq
-{
-    StringBuffer wuid, esp, url, thor, problemDesc, whatChanged, whereSlow, includeThorSlaveLog, zapFileName, password;
-    StringBuffer emailFrom, emailTo, emailServer, emailSubject, emailBody;
-    bool sendEmail, attachZAPReportToEmail;
-    unsigned maxAttachmentSize, port;
-};
-
 class CWsWuFileHelper
 {
     IPropertyTree* directories;
@@ -680,7 +900,7 @@ class CWsWuFileHelper
     void createThorSlaveLogfile(IConstWorkUnit *cwu, WsWuInfo &winfo, const char *path);
 #endif
     LogAccessLogFormat getComponentLogFormatFromLogName(const char *log);
-    void createWULogFile(IConstWorkUnit *cwu, WsWuInfo &winfo, const char *path, unsigned maxLogRecords, LogAccessReturnColsMode retColsMode, LogAccessLogFormat logFormat, unsigned wuLogSearchTimeBuffSecs);
+    void createWULogFile(IConstWorkUnit *cwu, WsWuInfo &winfo, const char *path, CWsWuZAPInfoReq & zapLogFilterOptions);
     void writeZAPWUInfoToIOStream(IFileIOStream *outFile, const char *name, SCMStringBuffer &value);
     void writeZAPWUInfoToIOStream(IFileIOStream *outFile, const char *name, const char *value);
     void readWUIDRequest(CHttpRequest *request, StringBuffer &wuid);

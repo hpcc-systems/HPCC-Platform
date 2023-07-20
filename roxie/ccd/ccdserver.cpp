@@ -4117,10 +4117,7 @@ class CRemoteResultAdaptor : implements IEngineRowStream, implements IFinalRoxie
                         throw E;
                     }
                     if (!localAgent) 
-                    {
                         ROQ->sendPacket(i, activity.queryLogCtx());
-                        retriesSent++;
-                    }
                 }
             }
         }
@@ -5020,7 +5017,6 @@ public:
                 }
                 else 
                 {
-                    resultsReceived++;
                     switch (header.activityId)
                     {
                     case ROXIE_DEBUGCALLBACK:
@@ -5177,8 +5173,6 @@ public:
                         break;
 
                     default:
-                        if (header.retries & ROXIE_RETRIES_MASK)
-                            retriesNeeded++;
                         unsigned metaLen;
                         const void *metaData = mr->getMessageMetadata(metaLen);
                         if (metaLen)
@@ -6921,7 +6915,6 @@ public:
         if (next)
         {
             processed++;
-            rowsIn++;
         }
         return next;
     }
@@ -6984,7 +6977,6 @@ public:
         if (next)
         {
             processed++;
-            rowsIn++;
         }
         return next;
     }
@@ -7261,7 +7253,6 @@ public:
         if (next)
         {
             processed++;
-            rowsIn++;
         }
         return next;
     }
@@ -26175,12 +26166,9 @@ public:
                                 Owned<CRowArrayMessageResult> result = new CRowArrayMessageResult();
                                 jg->notePending();
                                 unsigned candidateCount = 0;
-                                ScopedAtomic<unsigned> indexRecordsRead(::indexRecordsRead);
-                                ScopedAtomic<unsigned> postFiltered(::postFiltered);
                                 while (tlk->lookup(true))
                                 {
                                     candidateCount++;
-                                    indexRecordsRead++;
                                     KLBlobProviderAdapter adapter(tlk, this);
                                     const byte *indexRow = tlk->queryKeyBuffer();
                                     size_t fposOffset = tlk->queryRowSize() - sizeof(offset_t);
@@ -26196,7 +26184,6 @@ public:
                                     else
                                     {
                                         rejected++;
-                                        postFiltered++;
                                     }
                                 }
                                 // output an end marker for the matches to this group
@@ -27027,12 +27014,9 @@ public:
                                 // MORE - This code seems to be duplicated in keyedJoinHead
                                 jg->notePending();
                                 unsigned candidateCount = 0;
-                                ScopedAtomic<unsigned> indexRecordsRead(::indexRecordsRead);
-                                ScopedAtomic<unsigned> postFiltered(::postFiltered);
                                 while (tlk->lookup(true))
                                 {
                                     candidateCount++;
-                                    indexRecordsRead++;
                                     KLBlobProviderAdapter adapter(tlk, this);
                                     const byte *indexRow = tlk->queryKeyBuffer();
                                     size_t fposOffset = tlk->queryRowSize() - sizeof(offset_t);
@@ -27056,7 +27040,6 @@ public:
                                     else
                                     {
                                         rejected++;
-                                        postFiltered++;
                                     }
                                 }
 

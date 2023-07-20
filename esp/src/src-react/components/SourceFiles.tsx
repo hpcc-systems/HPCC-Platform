@@ -6,7 +6,14 @@ import { QuerySortItem } from "src/store/Store";
 import nlsHPCC from "src/nlsHPCC";
 import { useFluentGrid } from "../hooks/grid";
 import { useWorkunitSourceFiles } from "../hooks/workunit";
+import { pushParams } from "../util/history";
+import { Fields } from "./forms/Fields";
+import { Filter } from "./forms/Filter";
 import { ShortVerticalDivider } from "./Common";
+
+const FilterFields: Fields = {
+    "Name": { type: "string", label: nlsHPCC.Name, placeholder: nlsHPCC.TargetNamePlaceholder },
+};
 
 const defaultUIState = {
     hasSelection: false
@@ -14,19 +21,25 @@ const defaultUIState = {
 
 interface SourceFilesProps {
     wuid: string;
+    filter?: { [id: string]: any };
     sort?: QuerySortItem
 }
 
+const emptyFilter: { [id: string]: any } = {};
 const defaultSort = { attribute: "Name", descending: false };
 
 export const SourceFiles: React.FunctionComponent<SourceFilesProps> = ({
     wuid,
+    filter = emptyFilter,
     sort = defaultSort
 }) => {
+
+    const hasFilter = React.useMemo(() => Object.keys(filter).length > 0, [filter]);
 
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
     const [sourceFiles, , , refreshData] = useWorkunitSourceFiles(wuid);
     const [data, setData] = React.useState<any[]>([]);
+    const [showFilter, setShowFilter] = React.useState(false);
 
     //  Grid ---
     const { Grid, selection, copyButtons } = useFluentGrid({
@@ -61,6 +74,12 @@ export const SourceFiles: React.FunctionComponent<SourceFilesProps> = ({
         }
     });
 
+    //  Filter  ---
+    const filterFields: Fields = {};
+    for (const fieldID in FilterFields) {
+        filterFields[fieldID] = { ...FilterFields[fieldID], value: filter[fieldID] };
+    }
+
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
@@ -80,7 +99,11 @@ export const SourceFiles: React.FunctionComponent<SourceFilesProps> = ({
                 }
             }
         },
-    ], [refreshData, selection, uiState.hasSelection]);
+        {
+            key: "filter", text: nlsHPCC.Filter, disabled: data?.length == 0, iconProps: { iconName: hasFilter ? "FilterSolid" : "Filter" },
+            onClick: () => { setShowFilter(true); }
+        },
+    ], [data.length, hasFilter, refreshData, selection, uiState.hasSelection]);
 
     //  Selection  ---
     React.useEffect(() => {
@@ -94,13 +117,19 @@ export const SourceFiles: React.FunctionComponent<SourceFilesProps> = ({
     }, [selection]);
 
     React.useEffect(() => {
-        setData(sourceFiles);
-    }, [sourceFiles]);
+        let files = sourceFiles;
+        const name = filter?.Name ?? "";
+        if (name) {
+            files = files.filter(file => file.Name.match(name.replace(/\*/g, ".*")));
+        }
+        setData(files);
+    }, [filter, sourceFiles]);
 
     return <ScrollablePane>
         <Sticky>
             <CommandBar items={buttons} farItems={copyButtons} />
         </Sticky>
         <Grid />
+        <Filter showFilter={showFilter} setShowFilter={setShowFilter} filterFields={filterFields} onApply={pushParams} />
     </ScrollablePane>;
 };

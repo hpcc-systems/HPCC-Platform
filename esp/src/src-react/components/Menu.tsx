@@ -294,9 +294,10 @@ export const SubNavigation: React.FunctionComponent<SubNavigationProps> = ({
             <Stack.Item align="center" grow={1}>
                 <Stack horizontal>
                     <Stack.Item grow={0} className={navStyles.wrapper}>
-                        {subMenuItems[mainNav]?.map(row => {
+                        {subMenuItems[mainNav]?.map((row, idx) => {
                             return <Link
                                 disabled={row.itemKey === "/topology/logs" && logsDisabled}
+                                key={`MenuLink_${idx}`}
                                 href={`#${row.itemKey}`}
                                 className={[
                                     navStyles.link,

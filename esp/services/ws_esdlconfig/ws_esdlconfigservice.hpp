@@ -67,7 +67,7 @@ public:
     {
         if(nullptr == m_esdlStore)
         {
-            m_esdlStore.setown(createEsdlCentralStore());
+            m_esdlStore.setown(getEsdlCentralStore(false));
             m_isDetachedFromDali = (nullptr == m_esdlStore);
         }
         else

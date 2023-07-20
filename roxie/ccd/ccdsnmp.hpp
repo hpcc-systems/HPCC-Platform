@@ -78,62 +78,11 @@ extern IQueryStatsAggregator *createQueryStatsAggregator(const char *queryName, 
 extern IPropertyTree *getAllQueryStats(bool includeQueries, bool rawStats, time_t from, time_t to);
 extern IPropertyTree *getQueryRawStats(const char *queryID, time_t from, time_t to);
 
-extern RelaxedAtomic<unsigned> queryCount;
 extern RoxieQueryStats unknownQueryStats;
 extern RoxieQueryStats loQueryStats;
 extern RoxieQueryStats hiQueryStats;
 extern RoxieQueryStats slaQueryStats;
 extern RoxieQueryStats combinedQueryStats;
-extern RelaxedAtomic<unsigned> retriesIgnoredPrm;
-extern RelaxedAtomic<unsigned> retriesIgnoredSec;
-extern RelaxedAtomic<unsigned> retriesNeeded;
-extern RelaxedAtomic<unsigned> retriesReceivedPrm;
-extern RelaxedAtomic<unsigned> retriesReceivedSec;
-extern RelaxedAtomic<unsigned> retriesSent;
-extern RelaxedAtomic<unsigned> rowsIn;
-extern RelaxedAtomic<unsigned> ibytiPacketsFromSelf;
-extern RelaxedAtomic<unsigned> ibytiPacketsSent;
-extern RelaxedAtomic<unsigned> ibytiPacketsWorked;
-extern RelaxedAtomic<unsigned> ibytiPacketsHalfWorked;
-extern RelaxedAtomic<unsigned> ibytiPacketsReceived;
-extern RelaxedAtomic<unsigned> ibytiPacketsTooLate;
-extern RelaxedAtomic<unsigned> ibytiPacketsTooEarly;
-extern RelaxedAtomic<unsigned> ibytiNoDelaysPrm;
-extern RelaxedAtomic<unsigned> ibytiNoDelaysSec;
-extern RelaxedAtomic<unsigned> packetsReceived;
-extern RelaxedAtomic<unsigned> packetsSent;
-extern RelaxedAtomic<unsigned> resultsReceived;
-extern RelaxedAtomic<unsigned> indexRecordsRead;
-extern RelaxedAtomic<unsigned> postFiltered;
-extern RelaxedAtomic<unsigned> abortsSent;
-extern RelaxedAtomic<unsigned> activitiesStarted;
-extern RelaxedAtomic<unsigned> activitiesCompleted;
-extern RelaxedAtomic<unsigned> diskReadStarted;
-extern RelaxedAtomic<unsigned> diskReadCompleted;
-extern RelaxedAtomic<unsigned> globalSignals;
-extern RelaxedAtomic<unsigned> globalLocks;
-
-extern RelaxedAtomic<unsigned> maxAgentsActive;
-extern RelaxedAtomic<unsigned> agentsActive;
-extern RelaxedAtomic<unsigned> rowsOut;
-extern RelaxedAtomic<unsigned> queueLength;
-extern RelaxedAtomic<unsigned> maxQueueLength;
-extern RelaxedAtomic<unsigned> maxScanLength;
-extern RelaxedAtomic<unsigned> totScanLength;
-extern RelaxedAtomic<unsigned> totScans;
-extern RelaxedAtomic<unsigned> numFilesToProcess;
-
-#ifdef TIME_PACKETS
-extern RelaxedAtomic<unsigned __int64> packetWaitElapsed;
-extern RelaxedAtomic<unsigned> packetWaitMax;
-extern RelaxedAtomic<unsigned> packetWaitCount;
-extern RelaxedAtomic<unsigned __int64> packetRunElapsed;
-extern RelaxedAtomic<unsigned> packetRunMax;
-extern RelaxedAtomic<unsigned> packetRunCount;
-#endif
-
-extern RelaxedAtomic<unsigned> lastQueryDate;
-extern RelaxedAtomic<unsigned> lastQueryTime;
 
 interface IRoxieMetricsManager : extends IInterface
 {

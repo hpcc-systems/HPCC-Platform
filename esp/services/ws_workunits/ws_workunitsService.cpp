@@ -4892,6 +4892,11 @@ bool CWsWorkunitsEx::onWUCreateZAPInfo(IEspContext &context, IEspWUCreateZAPInfo
             if (zapInfoReq.esp.isEmpty())
                 zapInfoReq.esp.set(espApplicationName.get());
             zapInfoReq.thor = req.getThorProcesses();
+
+            if (version >= 1.97)
+            {
+                zapInfoReq.populateLogFilter(req.getLogFilter());
+            }
         }
         else
         {
