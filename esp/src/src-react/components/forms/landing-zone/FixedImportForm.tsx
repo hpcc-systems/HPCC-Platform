@@ -5,6 +5,7 @@ import { useForm, Controller } from "react-hook-form";
 import * as FileSpray from "src/FileSpray";
 import { TargetDfuSprayQueueTextField, TargetGroupTextField } from "../Fields";
 import nlsHPCC from "src/nlsHPCC";
+import { useBuildInfo } from "../../../hooks/platform";
 import { MessageBox } from "../../../layouts/MessageBox";
 import { pushUrl } from "../../../util/history";
 import * as FormStyles from "./styles";
@@ -20,6 +21,7 @@ interface FixedImportFormValues {
         RecordSize: string,
         NumParts: string,
         SourceFile: string,
+        SourcePlane: string,
         SourceIP: string,
     }[],
     overwrite: boolean,
@@ -60,6 +62,8 @@ export const FixedImportForm: React.FunctionComponent<FixedImportFormProps> = ({
     setShowForm
 }) => {
 
+    const [, { isContainer }] = useBuildInfo();
+
     const { handleSubmit, control, reset } = useForm<FixedImportFormValues>({ defaultValues });
 
     const closeForm = React.useCallback(() => {
@@ -77,7 +81,11 @@ export const FixedImportForm: React.FunctionComponent<FixedImportFormProps> = ({
 
                 files.forEach(file => {
                     request = data;
-                    request["sourceIP"] = file.SourceIP;
+                    if (!isContainer) {
+                        request["sourceIP"] = file.SourceIP;
+                    } else {
+                        request["sourcePlane"] = file.SourcePlane;
+                    }
                     request["sourcePath"] = file.SourceFile;
                     request["sourceRecordSize"] = file.RecordSize;
                     request["destLogicalName"] = data.namePrefix + ((
@@ -101,7 +109,7 @@ export const FixedImportForm: React.FunctionComponent<FixedImportFormProps> = ({
                 logger.error(err);
             }
         )();
-    }, [handleSubmit]);
+    }, [handleSubmit, isContainer]);
 
     const componentStyles = mergeStyleSets(
         FormStyles.componentStyles,
@@ -116,12 +124,13 @@ export const FixedImportForm: React.FunctionComponent<FixedImportFormProps> = ({
         if (selection) {
             const newValues = defaultValues;
             newValues.selectedFiles = [];
-            selection.forEach((file, idx) => {
+            selection.forEach((file: { [id: string]: any }, idx) => {
                 newValues.selectedFiles[idx] = {
                     TargetName: file["name"],
                     RecordSize: "",
                     NumParts: "",
                     SourceFile: file["fullPath"],
+                    SourcePlane: file?.DropZone?.Name ?? "",
                     SourceIP: file["NetAddress"]
                 };
             });

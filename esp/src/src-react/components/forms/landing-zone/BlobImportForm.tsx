@@ -5,6 +5,7 @@ import { useForm, Controller } from "react-hook-form";
 import * as FileSpray from "src/FileSpray";
 import { TargetDfuSprayQueueTextField, TargetGroupTextField } from "../Fields";
 import nlsHPCC from "src/nlsHPCC";
+import { useBuildInfo } from "../../../hooks/platform";
 import { MessageBox } from "../../../layouts/MessageBox";
 import * as FormStyles from "./styles";
 import { pushUrl } from "../../../util/history";
@@ -18,6 +19,7 @@ interface BlobImportFormValues {
     selectedFiles?: {
         TargetName: string,
         SourceFile: string,
+        SourcePlane: string,
         SourceIP: string
     }[],
     prefix: string;
@@ -60,6 +62,8 @@ export const BlobImportForm: React.FunctionComponent<BlobImportFormProps> = ({
     setShowForm
 }) => {
 
+    const [, { isContainer }] = useBuildInfo();
+
     const { handleSubmit, control, reset } = useForm<BlobImportFormValues>({ defaultValues });
 
     const closeForm = React.useCallback(() => {
@@ -77,7 +81,11 @@ export const BlobImportForm: React.FunctionComponent<BlobImportFormProps> = ({
 
                 files.forEach(file => {
                     request = data;
-                    request["sourceIP"] = file.SourceIP;
+                    if (!isContainer) {
+                        request["sourceIP"] = file.SourceIP;
+                    } else {
+                        request["sourcePlane"] = file.SourcePlane;
+                    }
                     request["sourcePath"] = file.SourceFile;
                     request["fullPath"] = file.SourceFile;
                     FileSpray.SprayFixed({
@@ -96,7 +104,7 @@ export const BlobImportForm: React.FunctionComponent<BlobImportFormProps> = ({
                 logger.error(err);
             }
         )();
-    }, [handleSubmit]);
+    }, [handleSubmit, isContainer]);
 
     const componentStyles = mergeStyleSets(
         FormStyles.componentStyles,
@@ -111,10 +119,11 @@ export const BlobImportForm: React.FunctionComponent<BlobImportFormProps> = ({
         if (selection) {
             const newValues = defaultValues;
             newValues.selectedFiles = [];
-            selection.forEach((file, idx) => {
+            selection.forEach((file: { [id: string]: any }, idx) => {
                 newValues.selectedFiles[idx] = {
                     TargetName: "",
                     SourceFile: file["fullPath"],
+                    SourcePlane: file?.DropZone?.Name ?? "",
                     SourceIP: file["NetAddress"]
                 };
             });
