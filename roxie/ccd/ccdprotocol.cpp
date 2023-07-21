@@ -2150,35 +2150,37 @@ readAnother:
             {
                 if (client && !isHTTP && !isStatus)
                 {
-                    if (queryPT->getPropBool("@perf", false))
+                    if (queryPT)
                     {
-                        perf.stop();
-                        StringBuffer &perfInfo = perf.queryResult();
-                        FlushingStringBuffer response(client, (protocolFlags & HPCC_PROTOCOL_BLOCKED), mlResponseFmt, (protocolFlags & HPCC_PROTOCOL_NATIVE_RAW), false, logctx);
-                        response.startDataset("PerfTrace", NULL, (unsigned) -1);
-                        response.flushXML(perfInfo, true);
-                    }
-                    if (msgctx->getIntercept())
-                    {
-                        FlushingStringBuffer response(client, (protocolFlags & HPCC_PROTOCOL_BLOCKED), mlResponseFmt, (protocolFlags & HPCC_PROTOCOL_NATIVE_RAW), false, logctx);
-                        response.startDataset("Tracing", NULL, (unsigned) -1);
-                        msgctx->outputLogXML(response);
-                    }
-                    if (statsWuid.length())
-                    {
-                        FlushingStringBuffer response(client, (protocolFlags & HPCC_PROTOCOL_BLOCKED), mlResponseFmt, (protocolFlags & HPCC_PROTOCOL_NATIVE_RAW), false, logctx);
-                        response.startDataset("Statistics", NULL, (unsigned) -1);
-                        VStringBuffer xml(" <wuid>%s</wuid>\n", statsWuid.str());
-                        response.flushXML(xml, true);
-                    }
-                    if (queryPT->getPropBool("@summaryStats", alwaysSendSummaryStats))
-                    {
-                        FlushingStringBuffer response(client, (protocolFlags & HPCC_PROTOCOL_BLOCKED), mlResponseFmt, (protocolFlags & HPCC_PROTOCOL_NATIVE_RAW), false, logctx);
-                        response.startDataset("SummaryStats", NULL, (unsigned) -1);
-                        VStringBuffer s(" COMPLETE: %s %s complete in %u msecs memory=%u Mb agentsreply=%u duplicatePackets=%u resentPackets=%u resultsize=%u continue=%d", queryName.get(), uid, elapsed, memused, agentsReplyLen, agentsDuplicates, agentsResends, bytesOut, continuationNeeded);
-                        logctx.getStats(s).newline();
-                        response.flushXML(s, true);
-
+                        if (queryPT->getPropBool("@perf", false))
+                        {
+                            perf.stop();
+                            StringBuffer &perfInfo = perf.queryResult();
+                            FlushingStringBuffer response(client, (protocolFlags & HPCC_PROTOCOL_BLOCKED), mlResponseFmt, (protocolFlags & HPCC_PROTOCOL_NATIVE_RAW), false, logctx);
+                            response.startDataset("PerfTrace", NULL, (unsigned) -1);
+                            response.flushXML(perfInfo, true);
+                        }
+                        if (msgctx->getIntercept())
+                        {
+                            FlushingStringBuffer response(client, (protocolFlags & HPCC_PROTOCOL_BLOCKED), mlResponseFmt, (protocolFlags & HPCC_PROTOCOL_NATIVE_RAW), false, logctx);
+                            response.startDataset("Tracing", NULL, (unsigned) -1);
+                            msgctx->outputLogXML(response);
+                        }
+                        if (statsWuid.length())
+                        {
+                            FlushingStringBuffer response(client, (protocolFlags & HPCC_PROTOCOL_BLOCKED), mlResponseFmt, (protocolFlags & HPCC_PROTOCOL_NATIVE_RAW), false, logctx);
+                            response.startDataset("Statistics", NULL, (unsigned) -1);
+                            VStringBuffer xml(" <wuid>%s</wuid>\n", statsWuid.str());
+                            response.flushXML(xml, true);
+                        }
+                        if (queryPT->getPropBool("@summaryStats", alwaysSendSummaryStats))
+                        {
+                            FlushingStringBuffer response(client, (protocolFlags & HPCC_PROTOCOL_BLOCKED), mlResponseFmt, (protocolFlags & HPCC_PROTOCOL_NATIVE_RAW), false, logctx);
+                            response.startDataset("SummaryStats", NULL, (unsigned) -1);
+                            VStringBuffer s(" COMPLETE: %s %s complete in %u msecs memory=%u Mb agentsreply=%u duplicatePackets=%u resentPackets=%u resultsize=%u continue=%d", queryName.get(), uid, elapsed, memused, agentsReplyLen, agentsDuplicates, agentsResends, bytesOut, continuationNeeded);
+                            logctx.getStats(s).newline();
+                            response.flushXML(s, true);
+                        }
                     }
                     unsigned replyLen = 0;
                     client->write(&replyLen, sizeof(replyLen));
