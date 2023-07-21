@@ -127,6 +127,7 @@ void CWsSMCEx::init(IPropertyTree *cfg, const char *process, const char *service
         throw MakeStringException(-1, "No Dali Connection Active. Please Specify a Dali to connect to in you configuration file");
     }
 
+    espInstance.set(process);
     m_BannerAction = 0;
     m_EnableChatURL = false;
     m_BannerSize = "4";
@@ -1925,11 +1926,16 @@ bool CWsSMCEx::onBrowseResources(IEspContext &context, IEspBrowseResourcesReques
         double version = context.getClientVersion();
 
         //The resource files will be downloaded from the same box of ESP (not dali)
-        StringBuffer ipStr;
-        IpAddress ipaddr = queryHostIP();
-        ipaddr.getIpText(ipStr);
-        if (ipStr.length() > 0)
-            resp.setNetAddress(ipStr.str());
+        if (version >= 1.27)
+            resp.setESPInstance(espInstance);
+        else
+        {
+            StringBuffer ipStr;
+            IpAddress ipaddr = queryHostIP();
+            ipaddr.getIpText(ipStr);
+            if (!ipStr.isEmpty())
+                resp.setNetAddress(ipStr.str());
+        }
 #ifdef _WIN32
         resp.setOS(MachineOsW2K);
 #else

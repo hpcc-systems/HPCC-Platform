@@ -182,6 +182,7 @@ class CWsSMCEx : public CWsSMC
     StringBuffer m_BannerColor;
     StringBuffer m_BannerScroll;
     StringBuffer m_PortalURL;
+    StringAttr espInstance;
     int m_BannerAction;
     bool m_EnableChatURL;
     CriticalSection crit;
