@@ -34,7 +34,8 @@ jobs:
       internal_ref: ${{ steps.vars.outputs.internal_ref }}
       community_tag: ${{ steps.vars.outputs.community_tag }}
       internal_tag: ${{ steps.vars.outputs.internal_tag }}
-      community_branch: ${{ steps.vars.outputs.community_branch }}
+      candidate_base_branch: ${{ steps.vars.outputs.candidate_base_branch }}
+      candidate_branch: ${{ steps.vars.outputs.candidate_branch }}
       cmake_docker_config: ${{ steps.vars.outputs.cmake_docker_config }}
       gpg_import: ${{ steps.vars.outputs.gpg_import }}
     steps:
@@ -54,7 +55,9 @@ jobs:
           echo "community_tag=$community_tag" >> $GITHUB_OUTPUT
           echo "internal_tag=$(echo $community_tag | sed 's/community/internal/')" >> $GITHUB_OUTPUT
           community_base_ref=${{ github.event.base_ref || github.ref }}
-          echo "community_branch=$(echo $community_base_ref | cut -d'/' -f3)" >> $GITHUB_OUTPUT
+          candidate_branch=$(echo $community_base_ref | cut -d'/' -f3)
+          echo "candidate_branch=$candidate_branch" >> $GITHUB_OUTPUT
+          echo "candidate_base_branch=$(echo $candidate_branch | awk -F'.' -v OFS='.' '{ $3="x"; print }')" >> $GITHUB_OUTPUT
           echo "cmake_docker_config=-DCMAKE_BUILD_TYPE=RelWithDebInfo -DVCPKG_FILES_DIR=/hpcc-dev -DCPACK_THREADS=0 -DUSE_OPTIONAL=OFF -DSIGN_MODULES=${{ github.repository_owner == 'hpcc-systems' && 'ON' || 'OFF' }}" >> $GITHUB_OUTPUT
           echo 'gpg_import=gpg --batch --import /hpcc-dev/build/private.key' >> $GITHUB_OUTPUT
 
@@ -82,7 +85,6 @@ jobs:
 
   build-docker:
     name: Build Docker
-    # if: github.repository == 'hpcc-systems/HPCC-Platform'
     needs: preamble
     runs-on: ubuntu-22.04
     strategy:
@@ -90,17 +92,25 @@ jobs:
         include:
           - os: ubuntu-22.10
           - os: ubuntu-22.04
+          - os: ubuntu-22.04
+            name: k8s
             container: true
           - os: ubuntu-22.04
-          - os: ubuntu-22.04
+            name: docs
             documentation: true
           - os: ubuntu-20.04
           - os: centos-8
           - os: centos-7
           - os: amazonlinux
+          - os: ubuntu-22.04
+            name: LN k8s
+            ln: true
+            container: true
           - os: ubuntu-20.04
+            name: LN
             ln: true
           - os: centos-7
+            name: LN
             ln: true
       fail-fast: false
 
@@ -126,8 +136,20 @@ jobs:
         id: vars
         working-directory: ${{ needs.preamble.outputs.folder_platform }}/vcpkg
         run: |
-          echo "vcpkg_sha_short=$(git rev-parse --short=8 HEAD)" >> $GITHUB_OUTPUT
-          echo "docker_label=hpccsystems/platform-build-${{ matrix.os }}:$(git rev-parse --short=8 HEAD)" >> $GITHUB_OUTPUT
+          vcpkg_sha_short=$(git rev-parse --short=8 HEAD)
+          echo "vcpkg_sha_short=$vcpkg_sha_short" >> $GITHUB_OUTPUT
+          docker_build_label=hpccsystems/platform-build-${{ matrix.os }}
+          echo "docker_build_label=$docker_build_label" >> $GITHUB_OUTPUT
+          echo "docker_tag=$docker_build_label:$vcpkg_sha_short" >> $GITHUB_OUTPUT
+          echo "docker_tag_candidate_base=$docker_build_label:${{ needs.preamble.outputs.candidate_base_branch }}" >> $GITHUB_OUTPUT
+          echo "docker_tag_candidate=$docker_build_label:${{ needs.preamble.outputs.candidate_branch }}" >> $GITHUB_OUTPUT
+          docker_community_label=hpccsystems/platform-core-${{ matrix.os }}
+          echo "docker_tag_community_base=$docker_community_label:${{ needs.preamble.outputs.candidate_base_branch }}" >> $GITHUB_OUTPUT
+          echo "docker_tag_community=$docker_community_label:${{ needs.preamble.outputs.community_tag }}" >> $GITHUB_OUTPUT
+          docker_internal_label=ln/platform-core-${{ matrix.os }}
+          echo "docker_tag_internal_base=$docker_internal_label:${{ needs.preamble.outputs.candidate_base_branch }}" >> $GITHUB_OUTPUT
+          echo "docker_tag_internal=$docker_internal_label:${{ needs.preamble.outputs.internal_tag }}" >> $GITHUB_OUTPUT
+          echo "docker_tag_internal=$docker_core_label:${{ needs.preamble.outputs.internal_tag }}" >> $GITHUB_OUTPUT
 
       - name: Print vars
         run: |
@@ -151,15 +173,19 @@ jobs:
           file: ${{ needs.preamble.outputs.folder_platform }}/dockerfiles/vcpkg/${{ matrix.os }}.dockerfile
           context: ${{ needs.preamble.outputs.folder_platform }}/dockerfiles/vcpkg
           push: ${{ github.repository_owner == 'hpcc-systems' }}
+          load: ${{ github.repository_owner != 'hpcc-systems' }}
           build-args: |
             VCPKG_REF=${{ steps.vars.outputs.vcpkg_sha_short }}
           tags: |
-            ${{ steps.vars.outputs.docker_label }}
-          cache-from: type=registry,ref=${{ steps.vars.outputs.docker_label }}
+            ${{ steps.vars.outputs.docker_tag_candidate_base }}
+          cache-from: |
+            type=registry,ref=${{ steps.vars.outputs.docker_tag_candidate_base }}
+            type=registry,ref=${{ steps.vars.outputs.docker_tag }}
           cache-to: type=inline
 
-      - name: CMake Packages
-        if: ${{ !matrix.container && !matrix.ln && !matrix.documentation }}
+      # Communtiy Build 
+      - name: CMake Packages (community)
+        if: ${{ !matrix.ln && !matrix.container && !matrix.documentation }}
         run: |
           mkdir -p ${{ needs.preamble.outputs.folder_build }}
           echo "${{ secrets.SIGNING_SECRET }}" > ${{ needs.preamble.outputs.folder_build }}/private.key
@@ -167,63 +193,112 @@ jobs:
           for plugin in "${plugins[@]}"; do
             sudo rm -f ${{ needs.preamble.outputs.folder_build }}/CMakeCache.txt
             sudo rm -rf ${{ needs.preamble.outputs.folder_build }}/CMakeFiles
-            docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} ${{ steps.vars.outputs.docker_label }} "${{ needs.preamble.outputs.gpg_import }} && \
+            docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} ${{ steps.vars.outputs.docker_tag_candidate_base }} "${{ needs.preamble.outputs.gpg_import }} && \
               cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/build ${{ needs.preamble.outputs.cmake_docker_config }} -DSIGN_MODULES_PASSPHRASE=${{ secrets.SIGN_MODULES_PASSPHRASE }} -DSIGN_MODULES_KEYID=${{ secrets.SIGN_MODULES_KEYID }} -D$plugin=ON -DCONTAINERIZED=OFF -DCPACK_STRIP_FILES=OFF && \
               cmake --build /hpcc-dev/build --parallel $(nproc) --target package" 
             # Disabled as not currently needed ---
-            # docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} ${{ steps.vars.outputs.docker_label }} "cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/build ${{ needs.preamble.outputs.cmake_docker_config }} -D$plugin=ON -DCONTAINERIZED=OFF -DCPACK_STRIP_FILES=ON"
-            # docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} ${{ steps.vars.outputs.docker_label }} "cmake --build /hpcc-dev/build --parallel $(nproc) --target package" 
+            # docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} ${{ steps.vars.outputs.docker_tag_candidate_base }} "cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/build ${{ needs.preamble.outputs.cmake_docker_config }} -D$plugin=ON -DCONTAINERIZED=OFF -DCPACK_STRIP_FILES=ON"
+            # docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} ${{ steps.vars.outputs.docker_tag_candidate_base }} "cmake --build /hpcc-dev/build --parallel $(nproc) --target package" 
           done
 
-      - name: CMake Containerized Packages
-        if: ${{ matrix.container }}
+      - name: CMake Containerized Packages (community)
+        if: ${{ !matrix.ln && matrix.container && !matrix.documentation }}
         run: |
           mkdir -p ${{ needs.preamble.outputs.folder_build }}
           echo "${{ secrets.SIGNING_SECRET }}" > ${{ needs.preamble.outputs.folder_build }}/private.key
           sudo rm -f ${{ needs.preamble.outputs.folder_build }}/CMakeCache.txt
           sudo rm -rf ${{ needs.preamble.outputs.folder_build }}/CMakeFiles
-          docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} ${{ steps.vars.outputs.docker_label }} "${{ needs.preamble.outputs.gpg_import }} && \
+          docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} ${{ steps.vars.outputs.docker_tag_candidate_base }} "${{ needs.preamble.outputs.gpg_import }} && \
             cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/build ${{ needs.preamble.outputs.cmake_docker_config }} -DSIGN_MODULES_PASSPHRASE=${{ secrets.SIGN_MODULES_PASSPHRASE }} -DSIGN_MODULES_KEYID=${{ secrets.SIGN_MODULES_KEYID }} -DINCLUDE_PLUGINS=ON -DCONTAINERIZED=ON -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_SPARK=ON -DCPACK_STRIP_FILES=OFF && \
             cmake --build /hpcc-dev/build --parallel $(nproc) --target package"
-          docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} ${{ steps.vars.outputs.docker_label }} "${{ needs.preamble.outputs.gpg_import }} && \
+          docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} ${{ steps.vars.outputs.docker_tag_candidate_base }} "${{ needs.preamble.outputs.gpg_import }} && \
             cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/build ${{ needs.preamble.outputs.cmake_docker_config }} -DSIGN_MODULES_PASSPHRASE=${{ secrets.SIGN_MODULES_PASSPHRASE }} -DSIGN_MODULES_KEYID=${{ secrets.SIGN_MODULES_KEYID }} -DINCLUDE_PLUGINS=ON -DCONTAINERIZED=ON -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_SPARK=ON -DCPACK_STRIP_FILES=ON && \
             cmake --build /hpcc-dev/build --parallel $(nproc) --target package"
 
-      - name: CMake documentation
-        if: ${{ matrix.documentation }}
+      - name: CMake documentation (community)
+        if: ${{ !matrix.ln && !matrix.container && matrix.documentation }}
         run: |
           mkdir -p {${{needs.preamble.outputs.folder_build }},EN_US,PT_BR}
           sudo rm -f ${{ needs.preamble.outputs.folder_build }}/CMakeCache.txt
           sudo rm -rf ${{ needs.preamble.outputs.folder_build }}/CMakeFiles
-          docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} ${{ steps.vars.outputs.docker_label }} "\
+          docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} ${{ steps.vars.outputs.docker_tag_candidate_base }} "\
             cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/build -DMAKE_DOCS_ONLY=ON -DUSE_NATIVE_LIBRARIES=ON -DDOCS_AUTO=ON -DDOC_LANGS=ALL && \
             cmake --build /hpcc-dev/build --parallel $(nproc) --target all"
-          docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} ${{ steps.vars.outputs.docker_label }} "cd /hpcc-dev/build/Release/docs/EN_US && zip ALL_HPCC_DOCS_EN_US-${{ needs.preamble.outputs.community_tag }}.zip *.pdf"
-          docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} ${{ steps.vars.outputs.docker_label }} "cd /hpcc-dev/build/Release/docs/PT_BR && zip ALL_HPCC_DOCS_PT_BR-${{ needs.preamble.outputs.community_tag }}.zip *.pdf"
+          docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} ${{ steps.vars.outputs.docker_tag_candidate_base }} "cd /hpcc-dev/build/Release/docs/EN_US && zip ALL_HPCC_DOCS_EN_US-${{ needs.preamble.outputs.community_tag }}.zip *.pdf"
+          docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} ${{ steps.vars.outputs.docker_tag_candidate_base }} "cd /hpcc-dev/build/Release/docs/PT_BR && zip ALL_HPCC_DOCS_PT_BR-${{ needs.preamble.outputs.community_tag }}.zip *.pdf"
 
-      - name: Upload Assets
-        uses: ncipollo/release-action@v1.12.0
+      - name: Upload Assets (community)
         if: ${{ !matrix.ln }}
+        uses: ncipollo/release-action@v1.12.0
         with:
           allowUpdates: true
           generateReleaseNotes: false
           prerelease: ${{ contains(github.ref, '-rc') }}
           artifacts: "${{ needs.preamble.outputs.folder_build }}/*.deb,${{ needs.preamble.outputs.folder_build }}/*.rpm,${{ needs.preamble.outputs.folder_build }}/Release/docs/*.zip,${{ needs.preamble.outputs.folder_build }}/Release/docs/EN_US/*.zip,${{ needs.preamble.outputs.folder_build }}/Release/docs/PT_BR/*.zip,${{ needs.preamble.outputs.folder_build }}/docs/EN_US/EclipseHelp/*.zip,${{ needs.preamble.outputs.folder_build }}/docs/EN_US/HTMLHelp/*.zip,${{ needs.preamble.outputs.folder_build }}/docs/PT_BR/HTMLHelp/*.zip"
 
-      - name: CMake LN Packages
-        if: ${{ matrix.ln }}
+      - name: Locate k8s deb file (community)
+        if: ${{ !matrix.ln && matrix.container && !matrix.documentation }}
+        id: container
+        run: |
+          k8s_pkg_path=$(ls -t ${{ needs.preamble.outputs.folder_build }}/*64_k8s.deb 2>/dev/null | head -1)
+          k8s_pkg_file=$(basename "$k8s_pkg_path")
+          echo "k8s_pkg_file=$k8s_pkg_file" >> $GITHUB_OUTPUT
+          echo "$k8s_pkg_file"
+
+      - name: Create Docker Image (community)
+        uses: docker/build-push-action@v4
+        if: ${{ !matrix.ln && matrix.container && !matrix.documentation }}
+        with:
+          builder: ${{ steps.buildx.outputs.name }}
+          file: ${{ needs.preamble.outputs.folder_platform }}/dockerfiles/vcpkg/platform-core-${{ matrix.os }}/Dockerfile
+          context: ${{ needs.preamble.outputs.folder_build }}
+          push: ${{ github.repository_owner == 'hpcc-systems' }}
+          build-args: |
+            PKG_FILE=${{ steps.container.outputs.k8s_pkg_file }}
+          tags: |
+            ${{ steps.vars.outputs.docker_tag_community }}
+            ${{ steps.vars.outputs.docker_tag_community_base }}
+          cache-from: |
+            type=registry,ref=${{ steps.vars.outputs.docker_tag_community_base }}
+
+      #  Internal Build  ---
+      - name: Login to JFrog
+        if: ${{ matrix.ln && matrix.container }}
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ secrets.JFROG_REGISTRY }}
+          username: ${{ secrets.JFROG_USERNAME }}
+          password: ${{ secrets.JFROG_PASSWORD }}
+
+      - name: CMake Packages (internal)
+        if: ${{ matrix.ln && !matrix.container && !matrix.documentation }}
         run: |
           mkdir -p ${{ needs.preamble.outputs.folder_build }}
           echo "${{ secrets.SIGNING_SECRET }}" > ${{ needs.preamble.outputs.folder_build }}/private.key
           sudo rm -f ${{ needs.preamble.outputs.folder_build }}/CMakeCache.txt
           sudo rm -rf ${{ needs.preamble.outputs.folder_build }}/CMakeFiles
-          docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_ln }} --mount ${{ needs.preamble.outputs.mount_build }} ${{ steps.vars.outputs.docker_label }} "${{ needs.preamble.outputs.gpg_import }} && \
+          docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_ln }} --mount ${{ needs.preamble.outputs.mount_build }} ${{ steps.vars.outputs.docker_tag_candidate_base }} "${{ needs.preamble.outputs.gpg_import }} && \
             cmake -S /hpcc-dev/LN -B /hpcc-dev/build -DHPCC_SOURCE_DIR=/hpcc-dev/HPCC-Platform ${{ needs.preamble.outputs.cmake_docker_config }} -DSIGN_MODULES_PASSPHRASE=${{ secrets.SIGN_MODULES_PASSPHRASE }} -DSIGN_MODULES_KEYID=${{ secrets.SIGN_MODULES_KEYID }} -DINCLUDE_PLUGINS=ON -DCONTAINERIZED=OFF -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_SPARK=ON -DCPACK_STRIP_FILES=OFF && \
             cmake --build /hpcc-dev/build --parallel $(nproc) --target package" 
-          # docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_ln }} --mount ${{ needs.preamble.outputs.mount_build }} ${{ steps.vars.outputs.docker_label }} "cmake -S /hpcc-dev/LN -B /hpcc-dev/build -DHPCC_SOURCE_DIR=/hpcc-dev/HPCC-Platform ${{ needs.preamble.outputs.cmake_docker_config }} -DINCLUDE_PLUGINS=ON -DCONTAINERIZED=OFF -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_SPARK=ON -DCPACK_STRIP_FILES=ON" 
-          # docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_ln }} --mount ${{ needs.preamble.outputs.mount_build }} ${{ steps.vars.outputs.docker_label }} "cmake --build /hpcc-dev/build --parallel $(nproc) --target package"
+          # Disabled as not currently needed ---
+          # docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_ln }} --mount ${{ needs.preamble.outputs.mount_build }} ${{ steps.vars.outputs.docker_tag_candidate_base }} "cmake -S /hpcc-dev/LN -B /hpcc-dev/build -DHPCC_SOURCE_DIR=/hpcc-dev/HPCC-Platform ${{ needs.preamble.outputs.cmake_docker_config }} -DINCLUDE_PLUGINS=ON -DCONTAINERIZED=OFF -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_SPARK=ON -DCPACK_STRIP_FILES=ON" 
+          # docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_ln }} --mount ${{ needs.preamble.outputs.mount_build }} ${{ steps.vars.outputs.docker_tag_candidate_base }} "cmake --build /hpcc-dev/build --parallel $(nproc) --target package"
 
-      - name: Upload LN Assets
+      - name: CMake Containerized Packages (internal)
+        if: ${{ matrix.ln && matrix.container && !matrix.documentation }}
+        run: |
+          mkdir -p ${{ needs.preamble.outputs.folder_build }}
+          echo "${{ secrets.SIGNING_SECRET }}" > ${{ needs.preamble.outputs.folder_build }}/private.key
+          sudo rm -f ${{ needs.preamble.outputs.folder_build }}/CMakeCache.txt
+          sudo rm -rf ${{ needs.preamble.outputs.folder_build }}/CMakeFiles
+          docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_ln }} --mount ${{ needs.preamble.outputs.mount_build }} ${{ steps.vars.outputs.docker_tag_candidate_base }} "${{ needs.preamble.outputs.gpg_import }} && \
+            cmake -S /hpcc-dev/LN -B /hpcc-dev/build -DHPCC_SOURCE_DIR=/hpcc-dev/HPCC-Platform ${{ needs.preamble.outputs.cmake_docker_config }} -DSIGN_MODULES_PASSPHRASE=${{ secrets.SIGN_MODULES_PASSPHRASE }} -DSIGN_MODULES_KEYID=${{ secrets.SIGN_MODULES_KEYID }} -DINCLUDE_PLUGINS=ON -DCONTAINERIZED=ON -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_SPARK=ON -DCPACK_STRIP_FILES=OFF && \
+            cmake --build /hpcc-dev/build --parallel $(nproc) --target package" 
+          docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_ln }} --mount ${{ needs.preamble.outputs.mount_build }} ${{ steps.vars.outputs.docker_tag_candidate_base }} "${{ needs.preamble.outputs.gpg_import }} && \
+            cmake -S /hpcc-dev/LN -B /hpcc-dev/build -DHPCC_SOURCE_DIR=/hpcc-dev/HPCC-Platform ${{ needs.preamble.outputs.cmake_docker_config }} -DSIGN_MODULES_PASSPHRASE=${{ secrets.SIGN_MODULES_PASSPHRASE }} -DSIGN_MODULES_KEYID=${{ secrets.SIGN_MODULES_KEYID }} -DINCLUDE_PLUGINS=ON -DCONTAINERIZED=ON -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_SPARK=ON -DCPACK_STRIP_FILES=ON && \
+            cmake --build /hpcc-dev/build --parallel $(nproc) --target package" 
+
+      - name: Upload Assets (internal)
         if: ${{ matrix.ln }}
         uses: ncipollo/release-action@v1.12.0
         with:
@@ -236,6 +311,32 @@ jobs:
           tag: ${{ needs.preamble.outputs.internal_tag }}
           artifacts: "${{ needs.preamble.outputs.folder_build }}/hpccsystems-platform-internal*.deb,${{ needs.preamble.outputs.folder_build }}/hpccsystems-platform-internal*.rpm"
 
+      - name: Locate k8s deb file (internal)
+        if: ${{ matrix.ln && matrix.container && !matrix.documentation }}
+        id: ln-container
+        run: |
+          k8s_pkg_path=$(ls -t ${{ needs.preamble.outputs.folder_build }}/*64_k8s.deb 2>/dev/null | head -1)
+          k8s_pkg_file=$(basename "$k8s_pkg_path")
+          echo "k8s_pkg_file=$k8s_pkg_file" >> $GITHUB_OUTPUT
+          echo "$k8s_pkg_file"
+
+      - name: Create Docker Image (internal)
+        uses: docker/build-push-action@v4
+        if: ${{ matrix.ln && matrix.container && !matrix.documentation }}
+        with:
+          builder: ${{ steps.buildx.outputs.name }}
+          file: ${{ needs.preamble.outputs.folder_platform }}/dockerfiles/vcpkg/platform-core-${{ matrix.os }}/Dockerfile
+          context: ${{ needs.preamble.outputs.folder_build }}
+          push: ${{ github.repository_owner == 'hpcc-systems' }}
+          build-args: |
+            PKG_FILE=${{ steps.ln-container.outputs.k8s_pkg_file }}
+          tags: |
+            ${{ secrets.JFROG_REGISTRY }}/${{ steps.vars.outputs.docker_tag_internal }}
+            ${{ secrets.JFROG_REGISTRY }}/${{ steps.vars.outputs.docker_tag_internal_base }}
+          cache-from: |
+            type=registry,ref=${{ steps.vars.outputs.docker_tag_community_base }}
+
+      #  Common  ---
       - name: Cleanup Environment
         if: always()
         run: rm -f ${{ needs.preamble.outputs.folder_build }}/private.key
@@ -244,7 +345,7 @@ jobs:
         if: ${{ failure() || cancelled() }}
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.os }}-${{ matrix.package }}-logs
+          name: ${{ matrix.os }}-${{ matrix.ln }}-${{ matrix.container }}-${{ matrix.documentation }}-logs
           path: ${{ needs.preamble.outputs.folder_build }}/**/*.log
 
   build-bare-metal:
@@ -357,5 +458,5 @@ jobs:
         if: ${{ failure() || cancelled() }}
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.os }}-${{ matrix.package }}-logs
+          name: ${{ matrix.os }}-${{ matrix.ln }}-${{ matrix.container }}-${{ matrix.documentation }}-logs
           path: ./build/**/*.log
