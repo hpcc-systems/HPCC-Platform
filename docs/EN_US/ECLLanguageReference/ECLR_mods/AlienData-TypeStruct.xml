@@ -52,7 +52,7 @@
   <para>Alien data types (TYPE) should only be used when accessing external
   data files. It is much more efficient to use the native types for general
   processing. In particular, some optimizations to project and filter files
-  remotely are not supported on alien datatypes. </para>
+  remotely are not supported on alien datatypes.</para>
 
   <para>A TYPE structure may only contain function definitions from the the
   list of available Special Functions (see <emphasis role="bold">TYPE
@@ -60,7 +60,7 @@
 
   <para>Example:</para>
 
-  <programlisting>STRING4 Rev(STRING4 S) := S[4] + S[3] + S[2] + S[1];
+  <programlisting lang="ECL">STRING4 Rev(STRING4 S) := S[4] + S[3] + S[2] + S[1];
 EXPORT ReverseString4 := TYPE
         EXPORT STRING4 LOAD(STRING4 S) := Rev(S);
         EXPORT STRING4 STORE(STRING4 S) := Rev(S);

@@ -96,7 +96,7 @@
   <para>You can use EMBED instead of BEGINC++ to embed C++ code and specify
   additional options (for example, DISTRIBUTED) using this form:</para>
 
-  <para><programlisting>myFunction(string name) := EMBED(C++ [: options]) 
+  <para><programlisting lang="ECL">myFunction(string name) := EMBED(C++ [: options]) 
   ... text 
 ENDEMBED</programlisting></para>
 
@@ -106,8 +106,8 @@ ENDEMBED</programlisting></para>
 
   <para>Example:</para>
 
-  <programlisting>//First form: a structure
-IMPORT Python;  //make Python language available
+  <programlisting lang="ECL">//First form: a structure
+IMPORT Python3 AS Python;  //make Python language available
 
 INTEGER addone(INTEGER p) := EMBED(Python)
 # Python code that returns one more than the value passed to it

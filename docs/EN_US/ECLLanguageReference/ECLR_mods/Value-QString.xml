@@ -17,7 +17,7 @@
   set is limited to capital letters A-Z, the numbers 0-9, the blank space, and
   the following set of special characters:</para>
 
-  <programlisting>! " # $ % &amp; ' ( ) * + , - . / ; &lt; = &gt; ? @ [ \ ] ^ _</programlisting>
+  <programlisting lang="text">! " # $ % &amp; ' ( ) * + , - . / ; &lt; = &gt; ? @ [ \ ] ^ _</programlisting>
 
   <para>If <emphasis>n</emphasis> is omitted, the QSTRING is variable length
   to the size needed to contain the result of a cast or passed parameter. You
@@ -27,8 +27,10 @@
 
   <para>Example:</para>
 
-  <programlisting>QSTRING12 CompanyName := 'LEXISNEXIS';
-        // uses only 9 bytes of storage instead of 12</programlisting>
+  <programlisting lang="ECL" role="runnable">QSTRING12 CompanyName := 'LEXISNEXIS';
+        // uses only 9 bytes of storage instead of 12
+OUTPUT(CompanyName)
+</programlisting>
 
   <para>See Also: <link linkend="STRING">STRING</link>, <link
   linkend="LENGTH">LENGTH</link>, <link linkend="TRIM">TRIM</link>, <link

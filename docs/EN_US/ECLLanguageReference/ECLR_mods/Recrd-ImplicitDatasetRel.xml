@@ -24,7 +24,7 @@
   <para>Assuming that you have the following relational structure in your
   database:</para>
 
-  <programlisting>     Household           Parent 
+  <programlisting lang="text">     Household           Parent 
         Person           Child of Household 
           Accounts       Child of Person, Grandchild of Household</programlisting>
 
@@ -50,7 +50,7 @@
   primary dataset, it is evaluated in the enclosing scope. For example, the
   expression:</para>
 
-  <para><programlisting>Household(Person(personage &gt; AVE(Person,personage))</programlisting></para>
+  <para><programlisting lang="ECL">Household(Person(personage &gt; AVE(Person,personage))</programlisting></para>
 
   <para>means "households containing people whose age is above the average age
   for the household." It does <emphasis role="underline">not</emphasis> mean
@@ -64,13 +64,13 @@
   independently of other datasets. This can lead to some slightly strange
   behaviour:</para>
 
-  <programlisting>AveAge := AVE(Person,personage);
+  <programlisting lang="ECL">AveAge := AVE(Person,personage);
 MyHouses := Household(Person(personage &gt; aveAge));</programlisting>
 
   <para>means "households containing people whose age is above the average age
   for the household." However,</para>
 
-  <programlisting>AveAge := AVE(Person,personage) : STORED('AveAge');
+  <programlisting lang="ECL">AveAge := AVE(Person,personage) : STORED('AveAge');
 MyHouses := Household(Person(personage &gt; aveAge));</programlisting>
 
   <para>Means "households containing people whose age is above the average for

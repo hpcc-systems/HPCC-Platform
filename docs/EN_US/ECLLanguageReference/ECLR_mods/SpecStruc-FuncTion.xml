@@ -16,7 +16,7 @@
   <para><emphasis role="bold"></emphasis><emphasis>code</emphasis> <emphasis
   role="bold"></emphasis></para>
 
-  <para><emphasis role="bold"> RETURN</emphasis>
+  <para lang="ECL"><emphasis role="bold"> RETURN</emphasis>
   <emphasis>retval</emphasis>;</para>
 
   <para><emphasis role="bold">END;</emphasis></para>
@@ -88,7 +88,7 @@
 
   <para>Example:</para>
 
-  <programlisting>EXPORT doProjectChild(parentRecord l,UNSIGNED idAdjust2) := FUNCTION
+  <programlisting lang="ECL">EXPORT doProjectChild(parentRecord l,UNSIGNED idAdjust2) := FUNCTION
   newChildRecord copyChild(childRecord l) := TRANSFORM
      SELF.person_id := l.person_id + idAdjust2;
      SELF := l;
