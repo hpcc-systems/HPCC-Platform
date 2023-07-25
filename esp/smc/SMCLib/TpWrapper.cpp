@@ -2193,3 +2193,51 @@ StringArray & getRoxieDirectAccessPlanes(StringArray & planes, StringBuffer &def
         planes.append(defaultPlane);
     return planes;
 }
+
+void CTpWrapper::listLogFiles(const char * host, const char * path, IArrayOf<IConstLogFileStruct> & files)
+{
+    if (isEmptyString(host))
+        throw makeStringException(ECLWATCH_INVALID_INPUT, "Network Address must be specified.");
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
+    Owned<IConstEnvironment> env = factory->openEnvironment();
+    Owned<IConstMachineInfo> machine = env->getMachineByAddress(host);
+    if (!machine)
+        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Invalid Network Address %s", host);
+
+    if (isEmptyString(path))
+        throw makeStringException(ECLWATCH_INVALID_INPUT, "Path must be specified.");
+    if (containsRelPaths(path)) //Detect a path like: /var/log/HPCCSystems/myesp/../../../
+        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Invalid path %s", path);
+    if (!validateConfigurationDirectory(nullptr, "log", nullptr, nullptr, path))
+        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Invalid path %s", path);
+
+    RemoteFilename rfn;
+    SocketEndpoint ep(host);
+    rfn.setPath(ep, path);
+    Owned<IFile> f = createIFile(rfn);
+    if (f->isDirectory() != fileBool::foundYes)
+        throw makeStringExceptionV(ECLWATCH_INVALID_DIRECTORY, "%s is not a directory.", path);
+
+    Owned<IDirectoryIterator> di = f->directoryFiles("*.log", false, true);
+    ForEach(*di)
+    {
+        StringBuffer fileName;
+        di->getName(fileName);
+
+        Owned<IEspLogFileStruct> lfs = createLogFileStruct();
+        lfs->setName(fileName);
+        lfs->setPath(path);
+        lfs->setHost(host);
+        lfs->setIsDir(di->isDir());
+        lfs->setFileSize(di->getFileSize());
+
+        StringBuffer s;
+        CDateTime modtime;
+        di->getModifiedTime(modtime);
+        modtime.getString(s);
+        s.setCharAt(10, ' ');
+        lfs->setModifiedtime(s);
+
+        files.append(*lfs.getLink());
+    }
+}

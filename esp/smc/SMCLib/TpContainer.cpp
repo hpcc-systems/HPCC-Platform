@@ -315,6 +315,11 @@ void CTpWrapper::getMachineList(double clientVersion, const char* MachineType, c
     IWARNLOG("UNIMPLEMENTED: CONTAINERIZED(CTpWrapper::getMachineList)");
 }
 
+void CTpWrapper::listLogFiles(const char* host, const char* path, IArrayOf<IConstLogFileStruct>& files)
+{
+    IWARNLOG("UNIMPLEMENTED: CONTAINERIZED(CTpWrapper::listLogFiles)");
+}
+
 const char* CTpWrapper::getNodeNameTag(const char* MachineType)
 {
     if (strcmp(MachineType,"Computer")==0)
