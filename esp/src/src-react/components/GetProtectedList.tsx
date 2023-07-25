@@ -51,10 +51,10 @@ export const GetProtectedList: React.FunctionComponent<GetProtectedListProps> = 
             "CallerId": { label: nlsHPCC.CallerID, type: "string", value: callerId },
         }} onChange={(id, value) => {
             switch (id) {
-                case "fileName":
+                case "FileName":
                     setFileName(value);
                     break;
-                case "callerId":
+                case "CallerId":
                     setCallerId(value);
                     break;
                 default:
