@@ -3287,7 +3287,7 @@ public:
     {
         StringBuffer path("*");
         if (owner && *owner)
-            path.append("[@submitID=\"").append(owner).append("\"]");
+            path.append("[@submitID=?~\"").append(owner).append("\"]");
         return getWorkUnitsByXPath(path.str());
     }
     IConstDFUWorkUnitIterator * getWorkUnitsByState(DFUstate state)

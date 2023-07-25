@@ -138,19 +138,22 @@ static StringBuffer &normalizeFormat(StringBuffer &in)
     return in;
 }
 
-static StringBuffer &getAttrQueryStr(StringBuffer &str,const char *sub,const char *key,const char *name)
+static StringBuffer &getAttrQueryStr(StringBuffer &str,const char *sub,const char *key,const char *name, bool nameCaseInsensitive)
 {
     assertex(key[0]=='@');
-    str.appendf("%s[%s=\"%s\"]",sub,key,name);
+    if (nameCaseInsensitive)
+        str.appendf("%s[%s=?\"%s\"]",sub,key,name);
+    else
+        str.appendf("%s[%s=\"%s\"]",sub,key,name);
     return str;
 }
 
-static IPropertyTree *getNamedPropTree(const IPropertyTree *parent, const char *sub, const char *key, const char *name, bool preload)
+static IPropertyTree *getNamedPropTree(const IPropertyTree *parent, const char *sub, const char *key, const char *name, bool preload, bool nameCaseInsensitive)
 {  // no create
     if (!parent)
         return NULL;
     StringBuffer query;
-    getAttrQueryStr(query,sub,key,name);
+    getAttrQueryStr(query,sub,key,name,nameCaseInsensitive);
     if (preload)
         return parent->getBranch(query.str());
     return parent->getPropTree(query.str());
@@ -417,7 +420,7 @@ void ensureFileScope(const CDfsLogicalFileName &dlfn,unsigned timeout)
             query.append(e-s,s);
         else
             query.append(s);
-        nr = getNamedPropTree(r,queryDfsXmlBranchName(DXB_Scope),"@name",query.trim().toLowerCase().str(),false);
+        nr = getNamedPropTree(r,queryDfsXmlBranchName(DXB_Scope),"@name",query.trim().toLowerCase().str(),false,false);
         if (!nr)
             nr = addNamedPropTree(r,queryDfsXmlBranchName(DXB_Scope),"@name",query.str());
         r->Release();
@@ -754,12 +757,12 @@ public:
         StringBuffer tail;
         dlfn.getTail(tail);
         StringBuffer query;
-        getAttrQueryStr(query,queryDfsXmlBranchName(DXB_File),"@name",tail.str());
+        getAttrQueryStr(query,queryDfsXmlBranchName(DXB_File),"@name",tail.str(),false);
         IPropertyTree *froot = sroot->queryPropTree(query.str());
         bkind = DXB_File;
         if (!froot) {
             // check for super file
-            getAttrQueryStr(query.clear(),queryDfsXmlBranchName(DXB_SuperFile),"@name",tail.str());
+            getAttrQueryStr(query.clear(),queryDfsXmlBranchName(DXB_SuperFile),"@name",tail.str(),false);
             froot = sroot->queryPropTree(query.str());
             if (froot)
                 bkind = DXB_SuperFile;
@@ -2701,7 +2704,7 @@ static bool setFileProtectTree(IPropertyTree &p,const char *owner, bool protect)
     dt.setNow();
     if (owner&&*owner)
     {
-        Owned<IPropertyTree> t = getNamedPropTree(&p, "Protect", "@name", owner, false);
+        Owned<IPropertyTree> t = getNamedPropTree(&p, "Protect", "@name", owner, false, true);
         if (t)
         {
             if (protect)
@@ -3216,7 +3219,7 @@ public:
             CFileSuperOwnerLock attrLock;
             if (0 == proplockcount)
                 verifyex(attrLock.init(logicalName, conn, defaultTimeout, "CDistributedFile::linkSuperOwner"));
-            Owned<IPropertyTree> t = getNamedPropTree(root,"SuperOwner","@name",superfile,false);
+            Owned<IPropertyTree> t = getNamedPropTree(root,"SuperOwner","@name",superfile,false,false);
             if (t && !link)
                 root->removeTree(t);
             else if (!t && link)
@@ -7654,7 +7657,7 @@ public:
                         return nullptr;
                     }
                 }
-                Owned<IPropertyTree> groupTree = getNamedPropTree(conn->queryRoot(), "Group", "@name", gname.str(), true);
+                Owned<IPropertyTree> groupTree = getNamedPropTree(conn->queryRoot(), "Group", "@name", gname.str(), true, false);
                 if (!groupTree || !loadGroup(groupTree, epa, &type, &groupdir))
                     return nullptr;
             }
@@ -7892,7 +7895,7 @@ public:
         prop.appendf("Group[@name=\"%s\"]",name.str());
         CConnectLock connlock("CNamedGroup::add", SDS_GROUPSTORE_ROOT, true, false, false, defaultTimeout);
 
-        Owned<IPropertyTree> groupTree = getNamedPropTree(connlock.conn->queryRoot(), "Group", "@name", name, true);
+        Owned<IPropertyTree> groupTree = getNamedPropTree(connlock.conn->queryRoot(), "Group", "@name", name, true, false);
         if (!groupTree)
             return 0;
         SocketEndpointArray epa;
@@ -8981,9 +8984,9 @@ void CDistributedFileDirectory::addEntry(CDfsLogicalFileName &dlfn,IPropertyTree
     IPropertyTree* sroot =  sconnlock.conn()->queryRoot();
     StringBuffer tail;
     dlfn.getTail(tail);
-    IPropertyTree *prev = getNamedPropTree(sroot,superfile?queryDfsXmlBranchName(DXB_SuperFile):queryDfsXmlBranchName(DXB_File),"@name",tail.str(),false);
+    IPropertyTree *prev = getNamedPropTree(sroot,superfile?queryDfsXmlBranchName(DXB_SuperFile):queryDfsXmlBranchName(DXB_File),"@name",tail.str(),false,false);
     if (!prev) // check super/file doesn't exist
-        prev = getNamedPropTree(sroot,superfile?queryDfsXmlBranchName(DXB_File):queryDfsXmlBranchName(DXB_SuperFile),"@name",tail.str(),false);
+        prev = getNamedPropTree(sroot,superfile?queryDfsXmlBranchName(DXB_File):queryDfsXmlBranchName(DXB_SuperFile),"@name",tail.str(),false,false);
     if (prev!=nullptr)
     {
         prev->Release();
@@ -11005,7 +11008,7 @@ public:
         CScopeConnectLock sconnlock("setFileAccessed", dlfn, false, false, false, defaultTimeout);
         IPropertyTree* sroot = sconnlock.conn()?sconnlock.conn()->queryRoot():NULL;
         dlfn.getTail(tail);
-        Owned<IPropertyTree> tree = getNamedPropTree(sroot,queryDfsXmlBranchName(DXB_File),"@name",tail.str(),false);
+        Owned<IPropertyTree> tree = getNamedPropTree(sroot,queryDfsXmlBranchName(DXB_File),"@name",tail.str(),false,false);
         if (tree) {
             StringBuffer str;
             tree->setProp("@accessed",dt.getString(str).str());
@@ -11036,9 +11039,9 @@ public:
         CScopeConnectLock sconnlock("setFileProtect", dlfn, false, false, false, defaultTimeout);
         IPropertyTree* sroot = sconnlock.conn()?sconnlock.conn()->queryRoot():NULL;
         dlfn.getTail(tail);
-        Owned<IPropertyTree> tree = getNamedPropTree(sroot,queryDfsXmlBranchName(DXB_File),"@name",tail.str(),false);
+        Owned<IPropertyTree> tree = getNamedPropTree(sroot,queryDfsXmlBranchName(DXB_File),"@name",tail.str(),false,false);
         if (!tree)
-            tree.setown(getNamedPropTree(sroot,queryDfsXmlBranchName(DXB_SuperFile),"@name",tail.str(),false));
+            tree.setown(getNamedPropTree(sroot,queryDfsXmlBranchName(DXB_SuperFile),"@name",tail.str(),false,false));
         if (tree) {
             IPropertyTree *pt = tree->queryPropTree("Attr");
             if (pt)
@@ -11113,7 +11116,7 @@ public:
             logicalname->getTail(tail);
             if (version >= 2)
             {
-                Owned<IPropertyTree> tree = getNamedPropTree(sroot,queryDfsXmlBranchName(DXB_File),"@name",tail.str(),false);
+                Owned<IPropertyTree> tree = getNamedPropTree(sroot,queryDfsXmlBranchName(DXB_File),"@name",tail.str(),false,false);
                 if (tree)
                 {
 #ifdef _CONTAINERIZED
@@ -11138,7 +11141,7 @@ public:
                 }
                 else
                 {
-                    tree.setown(getNamedPropTree(sroot,queryDfsXmlBranchName(DXB_SuperFile),"@name",tail.str(),false));
+                    tree.setown(getNamedPropTree(sroot,queryDfsXmlBranchName(DXB_SuperFile),"@name",tail.str(),false,false));
                     if (tree)
                     {
                         mb.append((int)2); // 2 == super
@@ -11149,7 +11152,7 @@ public:
             }
             else
             {
-                Owned<IPropertyTree> tree = getNamedPropTree(sroot,queryDfsXmlBranchName(DXB_File),"@name",tail.str(),false);
+                Owned<IPropertyTree> tree = getNamedPropTree(sroot,queryDfsXmlBranchName(DXB_File),"@name",tail.str(),false,false);
                 if (tree)
                 {
                     if (version == MDFS_GET_FILE_TREE_V2)
@@ -11187,7 +11190,7 @@ public:
                 }
                 else
                 {
-                    tree.setown(getNamedPropTree(sroot,queryDfsXmlBranchName(DXB_SuperFile),"@name",tail.str(),false));
+                    tree.setown(getNamedPropTree(sroot,queryDfsXmlBranchName(DXB_SuperFile),"@name",tail.str(),false,false));
                     if (tree)
                     {
                         tree->serialize(mb);
@@ -11223,7 +11226,7 @@ public:
             transactionLog.log("%s", trc.str());
         byte ok;
         CConnectLock connlock("getGroupTree",SDS_GROUPSTORE_ROOT,false,false,false,defaultTimeout);
-        Owned<IPropertyTree> pt = getNamedPropTree(connlock.conn->queryRoot(),"Group","@name",gname.get(),true);
+        Owned<IPropertyTree> pt = getNamedPropTree(connlock.conn->queryRoot(),"Group","@name",gname.get(),true,false);
         if (pt) {
             ok = 1;
             mb.append(ok);

@@ -49,7 +49,7 @@ const char* zipFolder = "tempzipfiles" PATHSEPSTR;
 
 SecAccessFlags chooseWuAccessFlagsByOwnership(const char *user, const char *owner, SecAccessFlags accessOwn, SecAccessFlags accessOthers)
 {
-    return (isEmpty(owner) || (user && streq(user, owner))) ? accessOwn : accessOthers;
+    return (isEmpty(owner) || (user && strieq(user, owner))) ? accessOwn : accessOthers;
 }
 
 SecAccessFlags chooseWuAccessFlagsByOwnership(const char *user, IConstWorkUnitInfo& cw, SecAccessFlags accessOwn, SecAccessFlags accessOthers)
@@ -59,7 +59,7 @@ SecAccessFlags chooseWuAccessFlagsByOwnership(const char *user, IConstWorkUnitIn
 
 const char *getWuAccessType(const char *owner, const char *user)
 {
-    return (isEmpty(owner) || (user && streq(user, owner))) ? OWN_WU_ACCESS : OTHERS_WU_ACCESS;
+    return (isEmpty(owner) || (user && strieq(user, owner))) ? OWN_WU_ACCESS : OTHERS_WU_ACCESS;
 }
 
 const char *getWuAccessType(IConstWorkUnit& cw, const char *user)
