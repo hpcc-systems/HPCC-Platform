@@ -21,20 +21,17 @@
 #    Cmake Input File for jlib
 #####################################################
 
-project( tracing )
+project( instrumentedhttp )
 
 #For http exporter
-find_package(Protobuf REQUIRED)
+#find_package(Protobuf REQUIRED)
 #For http exporter
-find_package(CURL REQUIRED)
+#find_package(CURL REQUIRED)
 
-find_package(opentelemetry-cpp CONFIG REQUIRED)
+#find_package(opentelemetry-cpp CONFIG REQUIRED)
 
 if (opentelemetry-cpp_FOUND)
     MESSAGE(STATUS "Found Opentelemetry")
-    MESSAGE("^^^^^^^^^${OPENTELEMETRY_CPP_INCLUDE_DIRS}")
-    HPCC_ADD_SUBDIRECTORY (opentel/instrumented)
-
     include_directories (
          ${HPCC_SOURCE_DIR}/system/win32
          ${HPCC_SOURCE_DIR}/system/include
@@ -44,13 +41,26 @@ if (opentelemetry-cpp_FOUND)
          ${CMAKE_BINARY_DIR}/oss
          ${HPCC_SOURCE_DIR}/system/tracing
     )
-    #SET ( SRCS tracemanager.hpp opentel/instrumented/httpserver.cpp opentel/instrumented/httpclient.cpp)
-    SET ( SRCS tracemanager.hpp)
-    SET ( INCLUDES tracemanager.hpp )
-    SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${STRICT_CXX_FLAGS}")
-    HPCC_ADD_LIBRARY( tracing SHARED ${SRCS} ${INCLUDES} )
 
-    target_link_libraries ( tracing
+    SET ( SERVER_SRCS httpserver.cpp httpclient.cpp)
+    SET ( INCLUDES httpserver.hpp )
+    SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${STRICT_CXX_FLAGS}")
+
+    HPCC_ADD_EXECUTABLE(instrumented_http_client httpclient.cpp)
+    HPCC_ADD_EXECUTABLE(instrumented_http_server httpserver.cpp)
+    target_link_libraries(instrumented_http_server 
+        ${CMAKE_THREAD_LIBS_INIT}
+        opentelemetry-cpp::api
+        opentelemetry-cpp::ext
+        opentelemetry-cpp::sdk
+        opentelemetry-cpp::logs
+        opentelemetry-cpp::http_client_curl
+        opentelemetry-cpp::metrics
+        opentelemetry-cpp::otlp_http_exporter
+        opentelemetry-cpp::ostream_span_exporter
+        jlib)
+
+    target_link_libraries ( instrumented_http_client
         opentelemetry-cpp::api
         opentelemetry-cpp::ext
         opentelemetry-cpp::sdk
@@ -62,12 +72,7 @@ if (opentelemetry-cpp_FOUND)
         opentelemetry-cpp::metrics
         opentelemetry-cpp::otlp_http_exporter
         opentelemetry-cpp::http_client_curl
-        jlib
-    )
+        jlib)
 else()
     MESSAGE(STATUS "Opentelemetry libs/headers not found")
 endif()
-
-
-
-
