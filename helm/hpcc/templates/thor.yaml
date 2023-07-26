@@ -117,7 +117,7 @@ data:
 {{ include "hpcc.addConfigMapVolumeMount" .me | indent 12 }}
 {{ include "hpcc.addVolumeMounts" . | indent 12 }}
 {{ include "hpcc.addSecretVolumeMounts" . | indent 12 }}
-{{ include "hpcc.addCertificateVolumeMount" (dict "root" .root "name" .me.name "component" "eclagent") | indent 12 }}
+{{ include "hpcc.addCertificateVolumeMount" (dict "root" .root "name" .me.name "component" "eclagent" "includeRemote" true) | indent 12 }}
 {{- if $misc.postJobCommandViaSidecar }}
 {{ include "hpcc.addWaitAndRunVolumeMount" . | indent 12 }}
 {{- end }}
@@ -125,7 +125,7 @@ data:
 {{ include "hpcc.addConfigMapVolume" .me | indent 10 }}
 {{ include "hpcc.addVolumes" . | indent 10 }}
 {{ include "hpcc.addSecretVolumes" . | indent 10 }}
-{{ include "hpcc.addCertificateVolume" (dict "root" .root "name" .me.name "component" "eclagent") | indent 10 }}
+{{ include "hpcc.addCertificateVolume" (dict "root" .root "name" .me.name "component" "eclagent" "includeRemote" true) | indent 10 }}
 {{- if $misc.postJobCommandViaSidecar }}
 {{ include "hpcc.addWaitAndRunVolume" . | indent 10 }}
 {{- end }}
@@ -184,7 +184,7 @@ data:
 {{ include "hpcc.addConfigMapVolumeMount" .me | indent 12 }}
 {{ include "hpcc.addVolumeMounts" . | indent 12 }}
 {{ include "hpcc.addSecretVolumeMounts" . | indent 12 }}
-{{ include "hpcc.addCertificateVolumeMount" (dict "root" .root "name" .me.name "component" "thormanager") | indent 12 }}
+{{ include "hpcc.addCertificateVolumeMount" (dict "root" .root "name" .me.name "component" "thormanager" "includeRemote" true) | indent 12 }}
 {{- if $misc.postJobCommandViaSidecar }}
 {{ include "hpcc.addWaitAndRunVolumeMount" . | indent 12 }}
 {{- end }}
@@ -192,7 +192,7 @@ data:
 {{ include "hpcc.addConfigMapVolume" .me | indent 10 }}
 {{ include "hpcc.addVolumes" . | indent 10 }}
 {{ include "hpcc.addSecretVolumes" . | indent 10 }}
-{{ include "hpcc.addCertificateVolume" (dict "root" .root "name" .me.name "component" "thormanager") | indent 10 }}
+{{ include "hpcc.addCertificateVolume" (dict "root" .root "name" .me.name "component" "thormanager" "includeRemote" true) | indent 10 }}
 {{- if $misc.postJobCommandViaSidecar }}
 {{ include "hpcc.addWaitAndRunVolume" . | indent 10 }}
 {{- end }}
@@ -253,7 +253,7 @@ data:
 {{ include "hpcc.addConfigMapVolumeMount" $configCtx.me | indent 12 }}
 {{ include "hpcc.addVolumeMounts" $configCtx | indent 12 }}
 {{ include "hpcc.addSecretVolumeMounts" $configCtx | indent 12 }}
-{{ include "hpcc.addCertificateVolumeMount" (dict "root" $configCtx.root "name" $configCtx.me.name "component" "thorworker") | indent 12 }}
+{{ include "hpcc.addCertificateVolumeMount" (dict "root" $configCtx.root "name" $configCtx.me.name "component" "thorworker" "includeRemote" true) | indent 12 }}
 {{- if and ($misc.postJobCommandViaSidecar) (eq $containerNum 1) }}
 {{ include "hpcc.addWaitAndRunVolumeMount" $configCtx | indent 12 }}
 {{- end }}
@@ -262,7 +262,7 @@ data:
 {{ include "hpcc.addConfigMapVolume" .me | indent 10 }}
 {{ include "hpcc.addVolumes" . | indent 10 }}
 {{ include "hpcc.addSecretVolumes" . | indent 10 }}
-{{ include "hpcc.addCertificateVolume" (dict "root" .root "name" .me.name "component" "thorworker") | indent 10 }}
+{{ include "hpcc.addCertificateVolume" (dict "root" .root "name" .me.name "component" "thorworker" "includeRemote" true) | indent 10 }}
 {{- if $misc.postJobCommandViaSidecar }}
 {{ include "hpcc.addWaitAndRunVolume" . | indent 10 }}
 {{- end }}
@@ -389,12 +389,12 @@ spec:
 {{ include "hpcc.addConfigMapVolumeMount" . | indent 8 }}
 {{ include "hpcc.addVolumeMounts" $commonCtx | indent 8 }}
 {{ include "hpcc.addSecretVolumeMounts" $commonCtx | indent 8 }}
-{{ include "hpcc.addCertificateVolumeMount" (dict "root" $ "name" $commonCtx.eclAgentName "component" "eclagent") | indent 8 }}
+{{ include "hpcc.addCertificateVolumeMount" (dict "root" $ "name" $commonCtx.eclAgentName "component" "eclagent" "includeRemote" true) | indent 8 }}
       volumes:
 {{ include "hpcc.addConfigMapVolume" . | indent 6 }}
 {{ include "hpcc.addVolumes" $commonCtx | indent 6 }}
 {{ include "hpcc.addSecretVolumes" $commonCtx | indent 6 }}
-{{ include "hpcc.addCertificateVolume" (dict "root" $ "name" $commonCtx.eclAgentName "component" "eclagent") | indent 6 }}
+{{ include "hpcc.addCertificateVolume" (dict "root" $ "name" $commonCtx.eclAgentName "component" "eclagent" "includeRemote" true) | indent 6 }}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -450,27 +450,27 @@ spec:
 {{ include "hpcc.addConfigMapVolumeMount" . | indent 8 }}
 {{ include "hpcc.addVolumeMounts" $commonCtx | indent 8 }}
 {{ include "hpcc.addSecretVolumeMounts" $commonCtx | indent 8 }}
-{{ include "hpcc.addCertificateVolumeMount" (dict "root" $ "name" $commonCtx.thorAgentName "component" "thoragent") | indent 8 }}
+{{ include "hpcc.addCertificateVolumeMount" (dict "root" $ "name" $commonCtx.thorAgentName "component" "thoragent" "includeRemote" true) | indent 8 }}
       volumes:
 {{ include "hpcc.addConfigMapVolume" . | indent 6 }}
 {{ include "hpcc.addVolumes" $commonCtx | indent 6 }}
 {{ include "hpcc.addSecretVolumes" $commonCtx | indent 6 }}
-{{ include "hpcc.addCertificateVolume" (dict "root" $ "name" $commonCtx.thorAgentName "component" "thoragent") | indent 6 }}
+{{ include "hpcc.addCertificateVolume" (dict "root" $ "name" $commonCtx.thorAgentName "component" "thoragent" "includeRemote" true) | indent 6 }}
 ---
 kind: ConfigMap
 {{ include "hpcc.generateConfig" ($commonCtx | merge (dict "configMapHelper" "hpcc.thorConfigMap")) }}
 ---
-{{ include "hpcc.addCertificate" (dict "root" $ "name" $commonCtx.eclAgentName "component" "eclagent") }}
-{{ include "hpcc.addCertificate" (dict "root" $ "name" $commonCtx.thorAgentName "component" "thoragent") }}
+{{ include "hpcc.addCertificate" (dict "root" $ "name" $commonCtx.eclAgentName "component" "eclagent" "includeRemote" true) }}
+{{ include "hpcc.addCertificate" (dict "root" $ "name" $commonCtx.thorAgentName "component" "thoragent" "includeRemote" true) }}
 
 ## thorworker and thormanager jobs generate pods with names based on wuid, the corresponding certificates will be named based on cluster and component.
 ##   This wouldn't work for a service because the client couldn't identify the cert matched the fqdn used to connect, but will be good enough for our current purposes.
 
-{{ include "hpcc.addCertificate" (dict "root" $ "name" .name "component" "thormanager") }}
-{{ include "hpcc.addCertificate" (dict "root" $ "name" .name "component" "thorworker") }}
+{{ include "hpcc.addCertificate" (dict "root" $ "name" .name "component" "thormanager" "includeRemote" true) }}
+{{ include "hpcc.addCertificate" (dict "root" $ "name" .name "component" "thorworker" "includeRemote" true) }}
 
 {{- if $commonCtx.eclAgentUseChildProcesses }}
-{{ include "hpcc.addCertificate" (dict "root" $ "name" .name "component" "eclagent") }}
+{{ include "hpcc.addCertificate" (dict "root" $ "name" .name "component" "eclagent" "includeRemote" true) }}
 {{- end }}
 ---
 {{- $egressedPodLabels := list (printf "%s-thormanager-job" .name) (printf "%s-thorworker-job" .name) -}}

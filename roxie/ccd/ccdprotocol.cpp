@@ -29,7 +29,7 @@
 
 //================================================================================================================================
 
-IHpccProtocolListener *createProtocolListener(const char *protocol, IHpccProtocolMsgSink *sink, unsigned port, unsigned listenQueue, const char *certFile, const char *keyFile, const char *passPhrase);
+IHpccProtocolListener *createProtocolListener(const char *protocol, IHpccProtocolMsgSink *sink, unsigned port, unsigned listenQueue, const IPropertyTree *tlsConfig, const char *certFile, const char *keyFile, const char *passPhrase);
 
 class CHpccProtocolPlugin : implements IHpccProtocolPlugin, public CInterface
 {
@@ -60,9 +60,9 @@ public:
         maxHttpConnectionRequests = ctx.ctxGetPropInt("@maxHttpConnectionRequests", 0);
         maxHttpKeepAliveWait = ctx.ctxGetPropInt("@maxHttpKeepAliveWait", 5000); // In milliseconds
     }
-    IHpccProtocolListener *createListener(const char *protocol, IHpccProtocolMsgSink *sink, unsigned port, unsigned listenQueue, const char *config, const char *certFile=nullptr, const char *keyFile=nullptr, const char *passPhrase=nullptr)
+    IHpccProtocolListener *createListener(const char *protocol, IHpccProtocolMsgSink *sink, unsigned port, unsigned listenQueue, const char *config, const IPropertyTree *tlsConfig, const char *certFile, const char *keyFile, const char *passPhrase)
     {
-        return createProtocolListener(protocol, sink, port, listenQueue, certFile, keyFile, passPhrase);
+        return createProtocolListener(protocol, sink, port, listenQueue, tlsConfig, certFile, keyFile, passPhrase);
     }
 public:
     StringArray targetNames;
@@ -231,7 +231,7 @@ class ProtocolSocketListener : public ProtocolListener
     bool isSSL = false;
 
 public:
-    ProtocolSocketListener(IHpccProtocolMsgSink *_sink, unsigned _port, unsigned _listenQueue, const char *_protocol, const char *_certFile, const char *_keyFile, const char *_passPhrase)
+    ProtocolSocketListener(IHpccProtocolMsgSink *_sink, unsigned _port, unsigned _listenQueue, const char *_protocol, const IPropertyTree *_tlsConfig, const char *_certFile, const char *_keyFile, const char *_passPhrase)
       : ProtocolListener(_sink)
     {
         port = _port;
@@ -242,9 +242,15 @@ public:
         keyFile.set(_keyFile);
         passPhrase.set(_passPhrase);
         isSSL = streq(protocol.str(), "ssl");
+
 #ifdef _USE_OPENSSL
         if (isSSL)
-            secureContext.setown(createSecureSocketContextEx(certFile.get(), keyFile.get(), passPhrase.get(), ServerSocket));
+        {
+            if (_tlsConfig)
+                secureContext.setown(createSecureSocketContextEx2(_tlsConfig, ServerSocket));
+            else
+                secureContext.setown(createSecureSocketContextEx(certFile.get(), keyFile.get(), passPhrase.get(), ServerSocket));
+        }
 #endif
     }
 
@@ -2222,11 +2228,16 @@ void ProtocolSocketListener::runOnce(const char *query)
     p->runOnce(query);
 }
 
-IHpccProtocolListener *createProtocolListener(const char *protocol, IHpccProtocolMsgSink *sink, unsigned port, unsigned listenQueue, const char *certFile=nullptr, const char *keyFile=nullptr, const char *passPhrase=nullptr)
+IHpccProtocolListener *createProtocolListener(const char *protocol, IHpccProtocolMsgSink *sink, unsigned port, unsigned listenQueue, const IPropertyTree *tlsConfig, const char *certFile, const char *keyFile, const char *passPhrase)
 {
     if (traceLevel)
-        DBGLOG("Creating Roxie socket listener, protocol %s, pool size %d, listen queue %d%s", protocol, sink->getPoolSize(), listenQueue, sink->getIsSuspended() ? " SUSPENDED":"");
-    return new ProtocolSocketListener(sink, port, listenQueue, protocol, certFile, keyFile, passPhrase);
+    {
+        const char *certIssuer = "none";
+        if (tlsConfig && tlsConfig->hasProp("@issuer"))
+            certIssuer = tlsConfig->queryProp("@issuer");
+        DBGLOG("Creating Roxie socket listener, protocol %s, issuer=%s, pool size %d, listen queue %d%s", protocol, certIssuer, sink->getPoolSize(), listenQueue, sink->getIsSuspended() ? " SUSPENDED":"");
+    }
+    return new ProtocolSocketListener(sink, port, listenQueue, protocol, tlsConfig, certFile, keyFile, passPhrase);
 }
 
 extern IHpccProtocolPlugin *loadHpccProtocolPlugin(IHpccProtocolPluginContext *ctx, IActiveQueryLimiterFactory *_limiterFactory)

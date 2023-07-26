@@ -38,7 +38,7 @@ data:
 {{- include "hpcc.generateMetricsConfig" . | indent 6 }}
 {{- if and .root.Values.certificates .root.Values.certificates.enabled }}
  {{- $externalCert := (ne (include "hpcc.isVisibilityPublic" (dict "root" .root "visibility" .me.service.visibility)) "") -}}
- {{- $externalIssuerKeyName := ternary "remote" "public" (eq "true" ( include "hpcc.usesRemoteClientCertificates" .me )) -}}
+ {{- $externalIssuerKeyName := ternary "remote" "public" (eq "true" ( include "hpcc.usesRemoteIssuer" .me )) -}}
  {{- $issuerKeyName := ternary $externalIssuerKeyName "local" $externalCert -}}
  {{- if not (hasKey .me "tls" )}}
       tls: {{ include "hpcc.isIssuerEnabled" (dict "root" .root "issuerKeyName" $issuerKeyName) }}
@@ -47,12 +47,12 @@ data:
  {{- if $externalCert }}
         certificate: /opt/HPCCSystems/secrets/certificates/{{ $issuerKeyName }}/tls.crt
         privatekey: /opt/HPCCSystems/secrets/certificates/{{ $issuerKeyName }}/tls.key
-   {{- if (hasKey .me "remoteClients" )}}
+   {{- if or (hasKey .me "remoteClients" ) (hasKey .me "trustClients" )}}
         verify:
           enable: true
           address_match: false
           accept_selfsigned: false
-          trusted_peers: [ {{ include "hpcc.getTrustedPeerString" (dict "root" .root "remoteClients" .me.remoteClients "instance" .me.name "component" .me.application "visibility" .me.service.visibility) | quote }} ]
+          trusted_peers: [ {{ include "hpcc.getTrustedPeerString" (dict "root" .root "remoteClients" .me.remoteClients "trustClients" .me.trustClients "instance" .me.name "visibility" .me.service.visibility) | quote }} ]
           ca_certificates:
             path: /opt/HPCCSystems/secrets/certificates/{{ $issuerKeyName }}/ca.crt
    {{- end }}
@@ -158,7 +158,7 @@ spec:
 {{ include "hpcc.addConfigMapVolumeMount" . | indent 8 }}
 {{ include "hpcc.addVolumeMounts" $commonCtx | indent 8 }}
 {{ include "hpcc.addSecretVolumeMounts" $commonCtx | indent 8 }}
-{{ include "hpcc.addCertificateVolumeMount" (dict "root" $ "component" $application "name" .name "certificate" .certificate "visibility" .service.visibility "remoteClients" .remoteClients) | indent 8 }}
+{{ include "hpcc.addCertificateVolumeMount" (dict "root" $ "component" $application "name" .name "certificate" .certificate "visibility" .service.visibility "remoteClients" .remoteClients "trustClients" .trustClients "includeRemote" true) | indent 8 }}
 {{- if $commonCtx.externalCert }}
  {{- include "hpcc.addCertificateVolumeMount" (dict "root" $ "component" $application "name" .name "external" false) | nindent 8 }}
 {{- end }}
@@ -169,7 +169,7 @@ spec:
 {{ include "hpcc.addConfigMapVolume" . | indent 6 }}
 {{ include "hpcc.addVolumes" $commonCtx | indent 6 }}
 {{ include "hpcc.addSecretVolumes" $commonCtx | indent 6 }}
-{{ include "hpcc.addCertificateVolume" (dict "root" $ "component" $application "name" .name "certificate" .certificate "visibility" .service.visibility "remoteClients" .remoteClients) | indent 6 }}
+{{ include "hpcc.addCertificateVolume" (dict "root" $ "component" $application "name" .name "certificate" .certificate "visibility" .service.visibility "remoteClients" .remoteClients "trustClients" .trustClients "includeRemote" true) | indent 6 }}
 {{- if $commonCtx.externalCert }}
  {{- include "hpcc.addCertificateVolume" (dict "root" $ "component" $application "name" .name "external" false) | nindent 6 }}
 {{- end }}
@@ -191,13 +191,13 @@ kind: ConfigMap
  {{- $_ := set $service "labels" dict -}}
 {{- end -}}
 {{- $_ := set $service "labels" (merge $service.labels (dict "server" $application)) -}}
-{{ include "hpcc.addService" ( dict "root" $ "name" .name "service" $service "selector" .name "defaultPort" 8880 "remoteClients" .remoteClients) }}
+{{ include "hpcc.addService" ( dict "root" $ "name" .name "service" $service "selector" .name "defaultPort" 8880 "remoteClients" .remoteClients "trustClients" .trustClients) }}
 ---
 {{ include "hpcc.addEgress" $commonCtx }}
 {{- end }}
 {{- end }}
 
-{{ include "hpcc.addCertificate" (dict "root" $ "name" .name "service" .service "component" $application "visibility" .service.visibility "remoteClients" .remoteClients) }}
+{{ include "hpcc.addCertificate" (dict "root" $ "name" .name "service" .service "component" $application "visibility" .service.visibility "remoteClients" .remoteClients "trustClients" .trustClients "includeRemote" true) }}
 {{- if $commonCtx.externalCert }}
  {{- include "hpcc.addCertificate" (dict "root" $ "name" .name "service" .service "component" $application "external" false) }}
 {{- end }}
@@ -208,7 +208,7 @@ kind: ConfigMap
 {{- $instance := .name -}}
 {{- $visibility := .service.visibility -}}
 {{- range $remoteClient := .remoteClients }}
- {{ include "hpcc.addClientCertificate" (dict "root" $ "client" $remoteClient.name "organization" $remoteClient.organization "instance" $instance "component" $application "visibility" $visibility "secretTemplate" $remoteClient.secretTemplate) }}
+ {{ include "hpcc.addExternalRemoteClientCertificate" (dict "root" $ "client" $remoteClient.name "organization" $remoteClient.organization "instance" $instance "component" $application "visibility" $visibility "secretTemplate" $remoteClient.secretTemplate) }}
 {{- end }}
 {{- end }}
 {{- end }}

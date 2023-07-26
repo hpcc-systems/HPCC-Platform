@@ -315,7 +315,7 @@ public:
 #if defined(_USE_OPENSSL)
         if (slave.queryTLS())
         {
-            secureContextServer.setown(createSecureSocketContextSecretSrv("local"));
+            secureContextServer.setown(createSecureSocketContextSecretSrv("local", true));
             secureContextClients.setown(createSecureSocketContextSecret("local", ClientSocket));
         }
 #endif

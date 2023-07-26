@@ -38,8 +38,11 @@ extern jlib_decl const MemoryAttr &getSecretUdpKey(bool required);
 
 extern jlib_decl bool containsEmbeddedKey(const char *certificate);
 
-extern jlib_decl IPropertyTree *queryTlsSecretInfo(const char *issuer);
-extern jlib_decl IPropertyTree *createTlsClientSecretInfo(const char *issuer, bool mutual, bool acceptSelfSigned, bool addCACert=true);
+//getIssuerTlsServerConfig must return owned because the internal cache could be updated internally and the return will become invalid, so must be linked
+extern jlib_decl IPropertyTree *getIssuerTlsServerConfig(const char *issuer);
+extern jlib_decl IPropertyTree *getIssuerTlsServerConfigWithTrustedPeers(const char *issuer, const char *trusted_peers);
+
+extern jlib_decl IPropertyTree *createIssuerTlsClientConfig(const char *issuer, bool acceptSelfSigned, bool addCACert=true);
 
 extern jlib_decl  void splitFullUrl(const char *url, bool &https, StringBuffer &user, StringBuffer &password, StringBuffer &host, StringBuffer &port, StringBuffer &fullpath);
 extern jlib_decl void splitUrlSchemeHostPort(const char *url, StringBuffer &user, StringBuffer &password, StringBuffer &schemeHostPort, StringBuffer &path);

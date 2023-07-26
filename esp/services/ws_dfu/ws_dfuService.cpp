@@ -6112,7 +6112,7 @@ void CWsDfuEx::dFUFileAccessCommon(IEspContext &context, const CDfsLogicalFileNa
     StringBuffer dafilesrvHost;
 #ifdef _CONTAINERIZED
     keyPairName.set("signing");
-    IPropertyTree *info = queryTlsSecretInfo(keyPairName);
+    Owned<IPropertyTree> info = getIssuerTlsServerConfig(keyPairName);
     if (!info)
         throw makeStringExceptionV(-1, "dFUFileAccessCommon: file signing certificate ('%s') not defined in configuration.", keyPairName.str());
 
@@ -6489,7 +6489,7 @@ bool CWsDfuEx::onDFUFileCreateV2(IEspContext &context, IEspDFUFileCreateV2Reques
 
 #ifdef _CONTAINERIZED
         keyPairName.set("signing");
-        IPropertyTree *info = queryTlsSecretInfo(keyPairName);
+        Owned<IPropertyTree> info = getIssuerTlsServerConfig(keyPairName);
         if (!info)
             throw makeStringExceptionV(-1, "onDFUFileCreateV2: file signing certificate ('%s' ) not defined in configuration.", keyPairName.str());
 

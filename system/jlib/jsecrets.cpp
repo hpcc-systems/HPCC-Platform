@@ -1085,7 +1085,7 @@ jlib_decl bool containsEmbeddedKey(const char *certificate)
     return false;
 }
 
-IPropertyTree *createTlsClientSecretInfo(const char *issuer, bool mutual, bool acceptSelfSigned, bool addCACert)
+IPropertyTree *createIssuerTlsClientConfig(const char *issuer, bool acceptSelfSigned, bool addCACert)
 {
     if (isEmptyString(issuer))
         return nullptr;
@@ -1096,7 +1096,7 @@ IPropertyTree *createTlsClientSecretInfo(const char *issuer, bool mutual, bool a
 
     Owned<IPropertyTree> info = createPTree();
 
-    if (mutual)
+    if (strieq(issuer, "remote")||strieq(issuer, "local"))
     {
         filepath.set(secretpath).append("tls.crt");
         if (!checkFileExists(filepath))
@@ -1126,7 +1126,7 @@ IPropertyTree *createTlsClientSecretInfo(const char *issuer, bool mutual, bool a
     return info.getClear();
 }
 
-IPropertyTree *queryTlsSecretInfo(const char *name)
+IPropertyTree *getIssuerTlsServerConfig(const char *name)
 {
     if (isEmptyString(name))
         return nullptr;
@@ -1134,9 +1134,9 @@ IPropertyTree *queryTlsSecretInfo(const char *name)
     validateSecretName(name);
 
     CriticalBlock block(mtlsInfoCacheCS);
-    IPropertyTree *info = mtlsInfoCache->queryPropTree(name);
+    Owned<IPropertyTree> info = mtlsInfoCache->getPropTree(name);
     if (info)
-        return info;
+        return info.getClear();
 
     StringBuffer filepath;
     StringBuffer secretpath;
@@ -1147,7 +1147,8 @@ IPropertyTree *queryTlsSecretInfo(const char *name)
     if (!checkFileExists(filepath))
         return nullptr;
 
-    info = mtlsInfoCache->setPropTree(name);
+    info.set(mtlsInfoCache->setPropTree(name));
+    info->setProp("@issuer", name);
     info->setProp("certificate", filepath.str());
     filepath.set(secretpath).append("tls.key");
     if (checkFileExists(filepath))
@@ -1162,13 +1163,28 @@ IPropertyTree *queryTlsSecretInfo(const char *name)
             if (ca)
                 ca->setProp("@path", filepath.str());
         }
-        // TLS TODO: do we want to always require verify, even if no ca ?
-        verify->setPropBool("@enable", true);
+        //For now only the "public" issuer implies client certificates are not required
+        verify->setPropBool("@enable", !strieq(name, "public"));
         verify->setPropBool("@address_match", false);
         verify->setPropBool("@accept_selfsigned", false);
         verify->setProp("trusted_peers", "anyone");
     }
-    return info;
+    return info.getClear();
+}
+
+IPropertyTree *getIssuerTlsServerConfigWithTrustedPeers(const char *issuer, const char *trusted_peers)
+{
+    Owned<IPropertyTree> issuerConfig = getIssuerTlsServerConfig(issuer);
+    if (!issuerConfig || isEmptyString(trusted_peers))
+        return issuerConfig.getClear();
+    //TBD: might cache in the future, but needs thought, lookup must include trusted_peers, but will there be cases where trusted_peers can change dynamically?
+    Owned<IPropertyTree> tlsConfig = createPTreeFromIPT(issuerConfig);
+    if (!tlsConfig)
+        return nullptr;
+
+    IPropertyTree *verify = ensurePTree(tlsConfig, "verify");
+    verify->setProp("trusted_peers", trusted_peers);
+    return tlsConfig.getClear();
 }
 
 enum UseMTLS { UNINIT, DISABLED, ENABLED };
