@@ -133,7 +133,7 @@ static ISecureSocket *createSecureSocket(ISocket *sock, bool disableClientCertVe
              */
 
             const char *certScope = strsame("cluster", getComponentConfigSP()->queryProp("service/@visibility")) ? "local" : "public";
-            IPropertyTree *info = queryTlsSecretInfo(certScope);
+            IPropertyTree *info = queryIssuerTlsServerConfig(certScope);
             if (!info)
                 throw makeStringException(-1, "createSecureSocket() : missing MTLS configuration");
             Owned<IPropertyTree> cloneInfo;

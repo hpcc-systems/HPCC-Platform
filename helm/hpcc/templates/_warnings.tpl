@@ -145,7 +145,7 @@ Pass in dict with root and warnings
   {{- if not $espservice.tls -}}
    {{- if (and ($ctx.root.Values.certificates|default false) $ctx.root.Values.certificates.enabled) -}}
     {{- $externalCert := (ne (include "hpcc.isVisibilityPublic" (dict "root" $ctx.root "visibility" $espservice.service.visibility)) "") -}}
-    {{- $externalIssuerKeyName := ternary "remote" "public" (eq "true" ( include "hpcc.usesRemoteClientCertificates" $espservice )) -}}
+    {{- $externalIssuerKeyName := ternary "remote" "public" (eq "true" ( include "hpcc.usesRemoteIssuer" $espservice )) -}}
     {{- $issuerKeyName := ternary $externalIssuerKeyName "local" $externalCert -}}
     {{- if ne (include "hpcc.isIssuerEnabled" (dict "root" $ctx.root "issuerKeyName" "local")) "true" -}}
      {{- $_ := set $ctx "TLSdisabled" (append $ctx.TLSdisabled $espservice.name) -}}

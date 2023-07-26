@@ -1868,6 +1868,7 @@ SECURESOCKET_API ISecureSocketContext* createSecureSocketContextEx2(const IPrope
     if (config == NULL)
         return createSecureSocketContext(sockettype);
 
+    dbglogXML(config);
     return new securesocket::CSecureSocketContext(config, sockettype);
 }       
 
@@ -1879,9 +1880,9 @@ SECURESOCKET_API ISecureSocketContext* createSecureSocketContextSSF(ISmartSocket
     return new securesocket::CSecureSocketContext(ssf->queryTlsConfig(), ClientSocket);
 }
 
-SECURESOCKET_API ISecureSocketContext* createSecureSocketContextSecret(const char *mtlsSecretName, SecureSocketType sockettype)
+SECURESOCKET_API ISecureSocketContext* createSecureSocketContextSecret(const char *issuer, SecureSocketType sockettype)
 {
-    IPropertyTree *info = queryTlsSecretInfo(mtlsSecretName);
+    IPropertyTree *info = queryIssuerTlsServerConfig(issuer);
     //if the secret doesn't exist doesn't exist just go on without it. IF it is required the tls connection will fail. 
     //This is primarily for client side... server side would probably use the explict ptree config or explict cert param at least for now.
     if (info)
@@ -1890,16 +1891,16 @@ SECURESOCKET_API ISecureSocketContext* createSecureSocketContextSecret(const cha
         return createSecureSocketContext(sockettype);
 }
 
-SECURESOCKET_API ISecureSocketContext* createSecureSocketContextSecretSrv(const char *mtlsSecretName)
+SECURESOCKET_API ISecureSocketContext* createSecureSocketContextSecretSrv(const char *issuer, bool requireMtlsFlag)
 {
-    if (!queryMtls())
+    if (requireMtlsFlag && !queryMtls())
         throw makeStringException(-100, "TLS secure communication requested but not configured");
 
-    IPropertyTree *info = queryTlsSecretInfo(mtlsSecretName);
-    if (info)
-        return createSecureSocketContextEx2(info, ServerSocket);
-    else
+    IPropertyTree *info = queryIssuerTlsServerConfig(issuer);
+    if (!info)
         throw makeStringException(-101, "TLS secure communication requested but not configured (2)");
+
+    return createSecureSocketContextEx2(info, ServerSocket);
 }
 
 SECURESOCKET_API ICertificate *createCertificate()
@@ -2066,7 +2067,7 @@ public:
         state = Snone;
         cancelling = false;
         secureContextClient.setown(createSecureSocketContextSecret("local", ClientSocket));
-        secureContextServer.setown(createSecureSocketContextSecretSrv("local"));
+        secureContextServer.setown(createSecureSocketContextSecretSrv("local", true));
 #ifdef _CONTAINERIZED
         tlsLogLevel = getComponentConfigSP()->getPropInt("logging/@detail", SSLogMin);
         if (tlsLogLevel >= ExtraneousMsgThreshold) // or InfoMsgThreshold ?

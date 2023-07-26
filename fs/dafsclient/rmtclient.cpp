@@ -156,7 +156,7 @@ static ISecureSocket *createSecureSocket(ISocket *sock, const char *issuer)
             auto it = secureCtxClientIssuerMap.find(issuer);
             if (it == secureCtxClientIssuerMap.end())
             {
-                IPropertyTree *info = queryTlsSecretInfo(issuer);
+                IPropertyTree *info = queryIssuerTlsServerConfig(issuer);
                 if (!info)
                     throw makeStringExceptionV(-1, "createSecureSocket() : missing MTLS configuration for issuer: %s", issuer);
                 secureContext.setown(createSecureSocketContextEx2(info, ClientSocket));

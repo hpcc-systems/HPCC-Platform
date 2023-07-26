@@ -572,12 +572,20 @@ esp:
 
 # Add remote clients to generated client certificates and make the ESP require that one of the generated certificates is provided by a client in order to connect
 #   When setting up remote clients make sure that certificates.issuers.remote.enabled is set to true.
-# remoteClients:
-# - name: petfoodApplicationProd
-#   organization: petfoodDept
+#  remoteClients:
+#  - name: petfoodapplicationprod
+#    organization: petfoodDept
 #   secretTemplate:
 #     annotations:
 #       kubed.appscode.com/sync: "hpccenv=petfoodAppProd" # use kubed config-syncer to replicate certificate to namespace with matching annotation (also supports syncing with separate aks clusters)
+
+# trustClients and remoteClients can be combined.  Trust is far easier to manage and should now be the preferred mechanism.
+# Trust is similar to remoteClients, but unlike remoteClients, the client certificates are generated elsewhere.
+# If trust is present then esp will use mtls, with trust controlled by certificates.issuers.remote, which must be enabled.
+# When using trustClients the remote issuer of each environment should point to the same certifate authority.
+# Verification of identity is automatic if the CA matches, but only the clients listed here are actually allowed access
+#  trustClients:
+#  - commonName: rabc.example.com
 
   service:
     ## port can be used to change the local port used by the pod. If omitted, the default port (8880) is used
@@ -715,8 +723,20 @@ roxie:
     listenQueue: 200
     numThreads: 30
     visibility: local
+#    trustClients:
+#    - commonName: rabc.example.com
+#    - commonName: rbcd.example.com
     # Can override ingress rules for each service if desired - for example to add no additional ingress permissions you can use
     # ingress: []
+
+# Trust is similar to remoteClients, but unlike remoteClients, the client certificates are generated elsewhere.
+# If trust is present then roxie will use mtls with trust controlled by certificates.issuer.remote.
+# Using the trust section the remote issuer of each environment should point to the same certifate authority.
+# Verification of identity is automatic if the CA matches, but only the clients listed here are actually allowed access
+# trust:
+# - commonName: abc.example.com
+# - commonName: bcd.example.com
+
   ## replicas indicates the number of replicas per channel
   replicas: 2
   numChannels: 2
