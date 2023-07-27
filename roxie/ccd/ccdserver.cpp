@@ -8576,7 +8576,7 @@ public:
         if (sortAlgorithm==unknownSortAlgorithm)
             sorter.clear();
         else
-            sorter.setown(createSortAlgorithm(sortAlgorithm, compare, ctx->queryRowManager(), meta, ctx->queryCodeContext(), tempDirectory, activityId));
+            sorter.setown(createSortAlgorithm(sortAlgorithm, compare, ctx->queryRowManager(), meta, ctx->queryCodeContext(), spillDirectory, activityId));
     }
 
     virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -8662,7 +8662,7 @@ public:
                 sorter.clear();
                 OwnedRoxieString algorithmName(helper.getAlgorithm());
                 sortAlgorithm = useAlgorithm(algorithmName, sortFlags);
-                sorter.setown(createSortAlgorithm(sortAlgorithm, compare, ctx->queryRowManager(), meta, ctx->queryCodeContext(), tempDirectory, activityId));
+                sorter.setown(createSortAlgorithm(sortAlgorithm, compare, ctx->queryRowManager(), meta, ctx->queryCodeContext(), spillDirectory, activityId));
             }
             sorter->prepare(inputStream);
             noteStatistic(StTimeSortElapsed, cycle_to_nanosec(sorter->getElapsedCycles(true)));
@@ -12986,12 +12986,12 @@ public:
         if (helper.isLeftAlreadySorted())
             sortedLeft.setown(createDegroupedInputReader(inputStream));
         else
-            sortedLeft.setown(createSortedInputReader(inputStream, createSortAlgorithm(sortAlgorithm, helper.queryCompareLeft(), ctx->queryRowManager(), input->queryOutputMeta(), ctx->queryCodeContext(), tempDirectory, activityId)));
+            sortedLeft.setown(createSortedInputReader(inputStream, createSortAlgorithm(sortAlgorithm, helper.queryCompareLeft(), ctx->queryRowManager(), input->queryOutputMeta(), ctx->queryCodeContext(), spillDirectory, activityId)));
         ICompare *compareRight = helper.queryCompareRight();
         if (helper.isRightAlreadySorted())
             groupedSortedRight.setown(createGroupedInputReader(inputStream1, compareRight));
         else
-            groupedSortedRight.setown(createSortedGroupedInputReader(inputStream1, compareRight, createSortAlgorithm(sortAlgorithm, compareRight, ctx->queryRowManager(), input1->queryOutputMeta(), ctx->queryCodeContext(), tempDirectory, activityId)));
+            groupedSortedRight.setown(createSortedGroupedInputReader(inputStream1, compareRight, createSortAlgorithm(sortAlgorithm, compareRight, ctx->queryRowManager(), input1->queryOutputMeta(), ctx->queryCodeContext(), spillDirectory, activityId)));
         if ((helper.getJoinFlags() & JFlimitedprefixjoin) && helper.getJoinLimit())
         {   //limited match join (s[1..n])
             limitedhelper.setown(createRHLimitedCompareHelper());
@@ -18729,7 +18729,7 @@ public:
                 sortAlgorithm = isStable ? stableSpillingQuickSortAlgorithm : spillingQuickSortAlgorithm;
             else
                 sortAlgorithm = isStable ? stableQuickSortAlgorithm : quickSortAlgorithm;
-            groupedInput.setown(createSortedGroupedInputReader(inputStream, compareLeft, createSortAlgorithm(sortAlgorithm, compareLeft, ctx->queryRowManager(), input->queryOutputMeta(), ctx->queryCodeContext(), tempDirectory, activityId)));
+            groupedInput.setown(createSortedGroupedInputReader(inputStream, compareLeft, createSortAlgorithm(sortAlgorithm, compareLeft, ctx->queryRowManager(), input->queryOutputMeta(), ctx->queryCodeContext(), spillDirectory, activityId)));
         }
         if ((helper.getJoinFlags() & JFlimitedprefixjoin) && helper.getJoinLimit()) 
         {   //limited match join (s[1..n])

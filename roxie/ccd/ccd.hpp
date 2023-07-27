@@ -458,6 +458,7 @@ extern StringBuffer pluginsList;
 extern StringBuffer queryDirectory;
 extern StringBuffer codeDirectory;
 extern StringBuffer tempDirectory;
+extern StringBuffer spillDirectory;
 
 #undef UNIMPLEMENTED
 #undef throwUnexpected
