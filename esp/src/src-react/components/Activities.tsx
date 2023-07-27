@@ -112,7 +112,7 @@ export const Activities: React.FunctionComponent<ActivitiesProps> = ({
                 formatter: React.useCallback(function (_gid, row) {
                     if (activity.isInstanceOfWorkunit(row)) {
                         if (row.GraphName) {
-                            return `<a href='#/workunits/${row.Wuid}/metrics/${row.GraphName}/${row.GID}'>${row.GraphName}-${row.GID}</a>`;
+                            return `<a href='#/workunits/${row.Wuid}/metrics/${row.GraphName}'>${row.GraphName}-${row.GID}</a>`;
                         }
                     }
                     return "";
