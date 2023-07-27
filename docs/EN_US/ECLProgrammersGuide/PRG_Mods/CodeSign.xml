@@ -146,7 +146,7 @@
     Server machine, so if you want to use your own service definitions, they
     can be signed using a key that has been installed in this way:</para>
 
-    <para><programlisting>gpg --output &lt;signed-ecl&gt; --default-key &lt;key-id&gt; --clearsign &lt;ecl-file-to-sign&gt;</programlisting></para>
+    <para><programlisting lang="bash">gpg --output &lt;signed-ecl&gt; --default-key &lt;key-id&gt; --clearsign &lt;ecl-file-to-sign&gt;</programlisting></para>
 
     <para>Using this method, a trusted person can sign code to indicate that
     it is acceptable for untrusted people to use, without allowing the

@@ -42,9 +42,9 @@
   find an inclusion, resulting in a Boolean return. Using IN is much more
   efficient than the equivalent OR expression.</para>
 
-  <para>Example:</para>
+  <para>Examples:</para>
 
-  <programlisting>ABCset := ['A', 'B', 'C'];
+  <programlisting lang="ECL">ABCset := ['A', 'B', 'C'];
 IsABCStatus := Person.Status IN ABCset;
     //This code is directly equivalent to:
     // IsABCStatus := Person.Status = 'A' OR
@@ -63,8 +63,11 @@ SomeFile := DATASET([{'A'},{'B'},{'C'},{'D'},{'E'},
 x := SET(SomeFile(Letter &gt; 'C'),Letter);
 y := 'A' IN x;  //results in FALSE
 z := 'D' IN x;  //results in TRUE
+</programlisting>
 
-//DICTIONARY examples:
+  <para>DICTIONARY examples:</para>
+
+  <programlisting lang="ECL" role="runnable">//DICTIONARY examples:
 rec := {STRING color,UNSIGNED1 code};
 ColorCodes := DATASET([{'Black' ,0 },
                        {'Brown' ,1 },
@@ -75,8 +78,7 @@ CodeColorDCT  := DICTIONARY(ColorCodes,{Code =&gt; Color});
 OUTPUT(6 IN CodeColorDCT);     //false
 
 ColorCodesDCT := DICTIONARY(ColorCodes,{Color,Code});
-OUTPUT(ROW({'Red',2},rec) IN ColorCodesDCT);
-</programlisting>
+OUTPUT(ROW({'Red',2},rec) IN ColorCodesDCT);</programlisting>
 
   <para>See Also: <link linkend="Basic_Attribute_Types">Basic Definition
   Types</link>, <link linkend="Basic_Attribute_Types">Definition Types</link>

@@ -3074,15 +3074,19 @@ public:
     {
         ILoadedDllEntry *dll = factory->queryDll();
         StringBuffer id;
-        const StringArray &dllFiles = dll->queryManifestFiles(type, getQueryId(id, true).str());
+        const StringArray &dllFiles = dll->queryManifestFiles(type, getQueryId(id, true).str(), tempDirectory);
         ForEachItemIn(idx, dllFiles)
             files.append(dllFiles.item(idx));
         ForEachItemIn(lidx, loadedLibraries)
         {
             IQueryFactory &lfactory = loadedLibraries.item(lidx);
             ILoadedDllEntry *ldll = lfactory.queryDll();
+            // Libraries share the same copy of the jar (and the classloader) for all queries that use the library
             StringBuffer lid;
-            const StringArray &ldllFiles = ldll->queryManifestFiles(type, getQueryId(lid, true).str());
+            lid.append('Q').append(lfactory.queryHash());
+            const StringArray &ldllFiles = ldll->queryManifestFiles(type, lid.str(), tempDirectory);
+            if (ldllFiles.length())
+                files.append(nullptr);
             ForEachItemIn(ldidx, ldllFiles)
                 files.append(ldllFiles.item(ldidx));
         }

@@ -230,7 +230,7 @@
 
     <para>Example:</para>
 
-    <programlisting>EXPORT NeedC(INTEGER len) := TYPE
+    <programlisting lang="ECL">EXPORT NeedC(INTEGER len) := TYPE
   EXPORT STRING LOAD(STRING S) := 'C' + S[1..len];
   EXPORT STRING STORE(STRING S) := S[2..len+1];
   EXPORT INTEGER PHYSICALLENGTH(STRING S) := len;

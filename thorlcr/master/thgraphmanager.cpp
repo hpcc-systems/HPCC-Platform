@@ -862,8 +862,8 @@ void CJobManager::reply(IConstWorkUnit *workunit, const char *wuid, IException *
             we->setExceptionMessage(errStr);
             we->setExceptionSource("thormasterexception");
             we->setExceptionCode(e->errorCode());
-
-            w->setState(WUStateWait);
+            WUState newState = (WUStateRunning == w->getState()) ? WUStateWait : WUStateFailed;
+            w->setState(newState);
         }
         return;
     }
@@ -1346,9 +1346,10 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                         jobManager->execute(workunit, currentWuid, currentGraphName, dummyAgentEp);
                         IException *e = jobManager->queryExitException();
                         Owned<IWorkUnit> w = &workunit->lock();
+                        WUState newState = (WUStateRunning == w->getState()) ? WUStateWait : WUStateFailed;
                         if (e)
                         {
-                            if (WUStateWait != w->getState()) // if set already, can only mean exception has been set already (see CJobManager::reply)
+                            if (WUStateWait != w->getState()) // if set already, CJobManager::reply may have already set to WUStateWait
                             {
                                 Owned<IWUException> we = w->createException();
                                 we->setSeverity(SeverityInformation);
@@ -1358,7 +1359,7 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                                 we->setExceptionSource("thormasterexception");
                                 we->setExceptionCode(e->errorCode());
 
-                                w->setState(WUStateWait);
+                                w->setState(newState);
                             }
                             break;
                         }
@@ -1366,7 +1367,7 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                         if (!multiJobLinger && lingerPeriod)
                             w->setDebugValue(instance, "1", true);
 
-                        w->setState(WUStateWait);
+                        w->setState(newState);
                     }
                     currentGraphName.clear();
 

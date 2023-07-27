@@ -4,6 +4,7 @@ import { useForm, Controller } from "react-hook-form";
 import { FileSpray, FileSprayService } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
+import { useBuildInfo } from "../../hooks/platform";
 import { MessageBox } from "../../layouts/MessageBox";
 import { TargetDropzoneTextField, TargetFolderTextField, TargetServerTextField } from "./Fields";
 import * as FormStyles from "./landing-zone/styles";
@@ -15,6 +16,7 @@ const myFileSprayService = new FileSprayService({ baseUrl: "" });
 interface DesprayFileFormValues {
     destGroup: string;
     destIP: string;
+    destPlane: string;
     destPath: string;
     sourceLogicalName: string;
     targetName?: {
@@ -29,6 +31,7 @@ interface DesprayFileFormValues {
 const defaultValues: DesprayFileFormValues = {
     destGroup: "",
     destIP: "",
+    destPlane: "",
     destPath: "",
     sourceLogicalName: "",
     splitprefix: "",
@@ -55,6 +58,8 @@ export const DesprayFile: React.FunctionComponent<DesprayFileProps> = ({
     refreshGrid
 }) => {
 
+    const [, { isContainer }] = useBuildInfo();
+
     const [machine, setMachine] = React.useState<string>("");
     const [directory, setDirectory] = React.useState<string>("/");
     const [dropzone, setDropzone] = React.useState<string>("");
@@ -74,6 +79,7 @@ export const DesprayFile: React.FunctionComponent<DesprayFileProps> = ({
                     if (logicalFiles.length === 1) {
                         const request = {
                             ...data,
+                            destPlane: isContainer ? data.destGroup : "",
                             destPath: [data.destPath, data.sourceLogicalName].join(pathSep),
                             sourceLogicalName: logicalFiles[0]
                         } as FileSpray.Despray;
@@ -103,7 +109,7 @@ export const DesprayFile: React.FunctionComponent<DesprayFileProps> = ({
                 console.log(err);
             }
         )();
-    }, [closeForm, handleSubmit, logicalFiles, pathSep, refreshGrid, reset]);
+    }, [closeForm, handleSubmit, isContainer, logicalFiles, pathSep, refreshGrid, reset]);
 
     const componentStyles = mergeStyleSets(
         FormStyles.componentStyles,
@@ -151,6 +157,7 @@ export const DesprayFile: React.FunctionComponent<DesprayFileProps> = ({
                             if (option["path"].indexOf("\\") > -1) {
                                 setPathSep("\\");
                             }
+                            setOs(option["OS"] as number);
                             onChange(option.key);
                         }}
                         errorMessage={error && error.message}
@@ -159,29 +166,31 @@ export const DesprayFile: React.FunctionComponent<DesprayFileProps> = ({
                     required: `${nlsHPCC.SelectA} ${nlsHPCC.DropZone}`
                 }}
             />
-            <Controller
-                control={control} name="destIP"
-                render={({
-                    field: { onChange, name: fieldName, value },
-                    fieldState: { error }
-                }) => <TargetServerTextField
-                        key={fieldName}
-                        dropzone={dropzone}
-                        required={true}
-                        label={nlsHPCC.IPAddress}
-                        selectedKey={value}
-                        placeholder={nlsHPCC.SelectValue}
-                        onChange={(evt, option) => {
-                            setMachine(option.key as string);
-                            setOs(option["OS"] as number);
-                            onChange(option.key);
-                        }}
-                        errorMessage={error && error.message}
-                    />}
-                rules={{
-                    required: nlsHPCC.ValidationErrorRequired
-                }}
-            />
+            {!isContainer &&
+                <Controller
+                    control={control} name="destIP"
+                    render={({
+                        field: { onChange, name: fieldName, value },
+                        fieldState: { error }
+                    }) => <TargetServerTextField
+                            key={fieldName}
+                            dropzone={dropzone}
+                            required={true}
+                            label={nlsHPCC.IPAddress}
+                            selectedKey={value}
+                            placeholder={nlsHPCC.SelectValue}
+                            onChange={(evt, option) => {
+                                setMachine(option.key as string);
+                                setOs(option["OS"] as number);
+                                onChange(option.key);
+                            }}
+                            errorMessage={error && error.message}
+                        />}
+                    rules={{
+                        required: nlsHPCC.ValidationErrorRequired
+                    }}
+                />
+            }
             <Controller
                 control={control} name="destPath"
                 render={({
@@ -190,6 +199,7 @@ export const DesprayFile: React.FunctionComponent<DesprayFileProps> = ({
                 }) => <TargetFolderTextField
                         key={fieldName}
                         label={nlsHPCC.Path}
+                        dropzone={dropzone}
                         pathSepChar={pathSep}
                         machineAddress={machine}
                         machineDirectory={directory}

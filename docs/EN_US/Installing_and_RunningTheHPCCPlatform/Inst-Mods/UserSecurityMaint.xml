@@ -1626,7 +1626,7 @@
               </row>
 
               <row>
-                <entry>WsLogAccess </entry>
+                <entry>WsLogAccess</entry>
 
                 <entry>Allows ability to read component logs</entry>
 
@@ -1798,7 +1798,7 @@
   </sect2>
 
   <sect2 id="Adding_File_Scopes">
-    <title>Creating file scopes</title>
+    <title>Creating File Scopes</title>
 
     <para>To apply permissions to a file scope, you must first create the file
     scope(s).</para>
@@ -1976,6 +1976,127 @@
 
       <para><graphic fileref="../../images/Perm031.jpg"
       vendor="eclwatchSS" /></para>
+    </sect3>
+  </sect2>
+
+  <sect2 id="GS-LZ-Scopes">
+    <title>Landing Zone Security</title>
+
+    <para>You can set additional security options on Landing Zone(s). Feature
+    level security allows you to set permissions on access to your Landing
+    Zone and what users or groups can do there. Landing Zone Scope Security
+    allows you to set permissions on sub-folders in a Landing Zone. This
+    provides a means to grant and deny users permission to areas within a
+    Landing Zone.</para>
+
+    <sect3 id="GS_LandingZoneFeatureAuth">
+      <title>Landing Zone Feature Authorization</title>
+
+      <para>This lists the HPCC Systems Landing Zone using Feature Level
+      Authorization:</para>
+
+      <para><informaltable>
+          <tgroup cols="2">
+            <tbody>
+              <row>
+                <entry>List/search Dropzone files</entry>
+
+                <entry>FileSprayAccess - SecAccess_Read</entry>
+              </row>
+
+              <row>
+                <entry>Spray a file from a Dropzone</entry>
+
+                <entry>FileSprayAccess - SecAccess_Write</entry>
+              </row>
+
+              <row>
+                <entry>Despray a file to a Dropzone</entry>
+
+                <entry>FileDesprayAccess - SecAccess_Write</entry>
+              </row>
+
+              <row>
+                <entry>Read the content of a Dropzone file</entry>
+
+                <entry>FileIOAccess - SecAccess_Read</entry>
+              </row>
+
+              <row>
+                <entry>Write the content of a Dropzone file</entry>
+
+                <entry>FileIOAccess - SecAccess_Write</entry>
+              </row>
+
+              <row>
+                <entry>Upload a file to a Dropzone using ECLWatch:</entry>
+
+                <entry>FileUploadAccess - SecAccess_Full</entry>
+              </row>
+
+              <row>
+                <entry>Download a file from a Dropzone using ECLWatch</entry>
+
+                <entry>FileSprayAccess - SecAccess_Full</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable>To enable access to a feature, set the permission
+      accordingly.</para>
+
+      <para>This may be sufficient level security in some cases, however,
+      additional restrictions may be needed to secure certain files, from
+      certain users or groups. You can use Landing Zone File Scope security to
+      accomplish this. .</para>
+    </sect3>
+
+    <sect3 id="LZ_FileScopes">
+      <title>Landing Zone File Scopes</title>
+
+      <para>File Scope Level Authorization provides a means to secure access
+      to folders within a Landing Zone.</para>
+
+      <para>An HPCC Administrator can define the Landing Zone scopes for each
+      folder in an HPCC Landing Zone.</para>
+
+      <para>Each scope is a file folder of an HPCC Landing Zone. Each Landing
+      Zone scope is one HPCC file scope.</para>
+
+      <para>The Landing Zone file scopes can be defined using ECLWatch for
+      security enabled systems.</para>
+
+      <para><graphic fileref="../../images/LDAP_0058-1.jpg"
+      vendor="ECLWatchSecurity" />To create a new Landing Zone scope, go to
+      the Security page of ECL Watch, and click on Permissions.</para>
+
+      <para><graphic fileref="../../images/LDAP_0058-2.jpg"
+      vendor="ECLWatchSecurity" />On the Permissions tab press the Add
+      button.</para>
+
+      <para><graphic fileref="../../images/LDAP_0058-3.jpg"
+      vendor="ECLWatchSecurity" /></para>
+
+      <para>Choose File Scopes on the drop down option box, then provide a
+      name and optionally a description.</para>
+
+      <para><graphic fileref="../../images/LDAP_0058-4.jpg"
+      vendor="ECLWatchSecurity" /></para>
+    </sect3>
+
+    <sect3 id="SEC_LZFilePermissions">
+      <title>Landing Zone File Permissions</title>
+
+      <para>You can set the Landing Zone file permissions according to your
+      requirements. Access your new Landing Zone using the following
+      annotation:</para>
+
+      <programlisting> plane::{dropzone_name}::{folder_name}::{subfolder_name}::{subfolder_name}...</programlisting>
+
+      <para>Your HPCC Administrator can define access rights to each Landing
+      Zone scope for each HPCC user or user group.</para>
+
+      <para><graphic fileref="../../images/LDAP_0059-1.jpg"
+      vendor="ECLWatchSecurity" /></para>
     </sect3>
   </sect2>
 

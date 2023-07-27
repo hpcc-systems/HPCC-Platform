@@ -24,9 +24,14 @@
 
   <para>Example:</para>
 
-  <programlisting>A := TABLE(Person,{per_st,per_sex,COUNT(GROUP)},per_st,per_sex);
+  <programlisting lang="ECL">A := TABLE(Person,{per_st,per_sex,COUNT(GROUP)},per_st,per_sex);
              // create a crosstab report of each sex in each state</programlisting>
 
-  <para>See Also: <link linkend="TABLE">TABLE</link>, <link linkend="COUNT">COUNT</link>, <link linkend="AVE">AVE</link>, <link linkend="MAX">MAX</link>, <link linkend="MIN">MIN</link>, <link linkend="SUM">SUM</link>, <link linkend="VARIANCE">VARIANCE</link>, <link linkend="COVARIANCE">COVARIANCE</link>,
-  <link linkend="CORRELATION">CORRELATION</link>, <link linkend="COMBINE">COMBINE</link></para>
+  <para>See Also: <link linkend="TABLE">TABLE</link>, <link
+  linkend="COUNT">COUNT</link>, <link linkend="AVE">AVE</link>, <link
+  linkend="MAX">MAX</link>, <link linkend="MIN">MIN</link>, <link
+  linkend="SUM">SUM</link>, <link linkend="VARIANCE">VARIANCE</link>, <link
+  linkend="COVARIANCE">COVARIANCE</link>, <link
+  linkend="CORRELATION">CORRELATION</link>, <link
+  linkend="COMBINE">COMBINE</link></para>
 </sect1>

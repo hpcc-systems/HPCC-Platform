@@ -21,47 +21,60 @@ import java.net.*;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.Throwable;
+import com.HPCCSystems.HpccUtils;
+
 
 public class HpccClassLoader extends java.lang.ClassLoader
 {
     private long bytecode;
     private int bytecodeLen;
+    private Boolean trace = false;
     private native Class<?> defineClassForEmbed(int bytecodeLen, long bytecode, String name);
     private Hashtable<String, Class<?>> classes = new Hashtable<>();
-    static private Hashtable<String, java.net.URLClassLoader> pathLoaders = new Hashtable<>();
-    private java.net.URLClassLoader pathLoader;
+    static private Hashtable<String, java.net.URLClassLoader> sharedPathLoaders = new Hashtable<>();
+    private List<java.net.URLClassLoader> libraryPathLoaders = new ArrayList<>();
     private HpccClassLoader(String classPath, ClassLoader parent, int _bytecodeLen, long _bytecode, String dllname)
     {
         super(parent);
         if (classPath != null && !classPath.isEmpty())
         {
-            synchronized(pathLoaders)
+            String[] libraryPaths = classPath.split("\\|");  // Careful - the param is a regex so need to escape the |
+            synchronized(sharedPathLoaders)
             {
-                pathLoader = pathLoaders.get(classPath);
-                if (pathLoader == null)
+                for (String libraryPath : libraryPaths)
                 {
-                    List<URL> urls = new ArrayList<>();
-                    String[] paths = classPath.split(";");
-                    for (String path : paths)
+                    URLClassLoader libraryPathLoader = sharedPathLoaders.get(libraryPath);
+                    if (libraryPathLoader == null)
                     {
-                        try
+                        List<URL> urls = new ArrayList<>();
+                        String[] paths = libraryPath.split(";");
+                        for (String path : paths)
                         {
-                            if (path.contains(":"))
-                                urls.add(new URL(path));
-                            else
-                                urls.add(new URL("file:" + path));
+                            try
+                            {
+                                if (path.contains(":"))
+                                    urls.add(new URL(path));
+                                else
+                                    urls.add(new URL("file:" + path));
+                            }
+                            catch (MalformedURLException E)
+                            {
+                                // Ignore any that we don't recognize
+                                if (trace)
+                                    HpccUtils.log("Malformed URL: " + E.toString());
+                            }
                         }
-                        catch (MalformedURLException E)
-                        {
-                            // Ignore any that we don't recognize
-                            // System.out.print(E.toString());
-                        }
+                        libraryPathLoader = new URLClassLoader(urls.toArray(new URL[urls.size()]));
+                        if (trace)
+                            HpccUtils.log("Created new URLClassLoader " + libraryPath);
+                        sharedPathLoaders.put(libraryPath, libraryPathLoader);
                     }
-                    pathLoader = new URLClassLoader(urls.toArray(new URL[urls.size()]));
-                    pathLoaders.put(classPath, pathLoader);
+                    libraryPathLoaders.add(libraryPathLoader);
                 }
             }
         }
@@ -74,25 +87,55 @@ public class HpccClassLoader extends java.lang.ClassLoader
     {
         String luName = className.replace(".","/");
         Class<?> result = classes.get(luName);
-        if (result == null)
+        if (result != null)
+            return result;
+        if (trace)
+            HpccUtils.log("In findClass for " + className);
+        if (bytecodeLen != 0)
         {
-            if (bytecodeLen != 0)
-                result = defineClassForEmbed(bytecodeLen, bytecode, luName);
-            if ( result == null && pathLoader != null)
-                result = pathLoader.loadClass(className);
-            if (result == null)
-                return super.findClass(className);
-            classes.put(luName, result);
+            result = defineClassForEmbed(bytecodeLen, bytecode, luName);
+            if (result != null)
+                return result;
         }
-        return result; 
+        for (URLClassLoader libraryLoader: libraryPathLoaders)
+        {
+            try
+            {
+                if (trace)
+                    HpccUtils.log("Looking in loader " + 
+                        Arrays.stream(libraryLoader.getURLs())
+                            .map(URL::toString)
+                            .collect(Collectors.joining(";")));
+                result = libraryLoader.loadClass(className);
+                if (result != null)
+                {
+                    classes.put(luName, result);
+                    return result;
+                }
+            }
+            catch (Exception E)
+            {
+            }
+        }
+        throw new ClassNotFoundException();
     }
     @Override
     public URL getResource(String path)
     {
-        URL ret = pathLoader.getResource(path);
-        if (ret == null)
-            ret = super.getResource(path);
-        return ret;
+        URL ret = null;
+        for (URLClassLoader libraryLoader: libraryPathLoaders)
+        {
+            try
+            {
+                ret = libraryLoader.getResource(path);
+                if (ret != null)
+                    return ret;
+            }
+            catch (Exception E)
+            {
+            }
+        }
+        return super.getResource(path);
     }
     public static HpccClassLoader newInstance(String classPath, ClassLoader parent, int _bytecodeLen, long _bytecode, String dllname)
     {

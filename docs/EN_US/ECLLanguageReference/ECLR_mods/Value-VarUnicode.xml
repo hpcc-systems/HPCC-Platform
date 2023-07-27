@@ -26,13 +26,4 @@
   <para>The upper size limit for any VARUNICODE value is 4GB.</para>
 
   <para>Example:</para>
-
-  <programlisting>VARUNICODE16 MyUNIString := U'1234567890ABCDEF';
-        // utf-16-encoded string
-VARUNICODE4 MyUnicodeString := U'abcd';
-        // same as: (UNICODE)'abcd'
-VARUNICODE5 MyUnicodeString := U'abcd\353';
-        // becomes 'abcdë'
-VARUNICODE5 MyUnicodeString := U'abcdë';
-        // same as previous example</programlisting>
 </sect1>

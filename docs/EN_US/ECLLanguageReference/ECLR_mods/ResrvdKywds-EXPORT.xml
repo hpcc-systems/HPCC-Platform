@@ -44,7 +44,7 @@
   EXPORT or SHARED definitions within their boundaries (such as MODULE,
   INTERFACE, TYPE, etc.). The name of the .ecl file containing the code must
   exactly match the name of the single EXPORT (or SHARED) definition that it
-  contains. </para>
+  contains.</para>
 
   <para>Definitions without the EXPORT or SHARED keywords are local to the
   file within which they reside (see <link
@@ -55,7 +55,7 @@
 
   <para>Example:</para>
 
-  <programlisting>EXPORT MyDefinition := 5;
+  <programlisting lang="ECL">EXPORT MyDefinition := 5;
 // allows other definitions to use MyModule.MyDefinition if they import MyModule
 // the filename must be MyDefinition.ecl
 

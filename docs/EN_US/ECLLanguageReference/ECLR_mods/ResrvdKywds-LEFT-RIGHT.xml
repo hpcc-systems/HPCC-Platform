@@ -20,9 +20,10 @@
 
   <para>Example:</para>
 
-  <programlisting>dup_flags := JOIN(person,person,
+  <programlisting lang="ECL">dup_flags := JOIN(person,person,
                LEFT.current_address_key=RIGHT.current_address_key
                AND fuzzy_equal,req_output(LEFT,RIGHT));</programlisting>
 
-  <para>See Also: <link linkend="TRANSFORM_Structure">TRANSFORM Structure</link>, <link linkend="DEDUP">DEDUP</link></para>
+  <para>See Also: <link linkend="TRANSFORM_Structure">TRANSFORM
+  Structure</link>, <link linkend="DEDUP">DEDUP</link></para>
 </sect1>

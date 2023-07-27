@@ -55,6 +55,7 @@ endif()
 
 
 # Required directories to add.
+add_subdirectory(portal-js)
 add_subdirectory(common)
 add_subdirectory(BuildTools)
 add_subdirectory(resources)

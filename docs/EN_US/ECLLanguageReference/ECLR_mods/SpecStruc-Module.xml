@@ -152,7 +152,7 @@
     <emphasis>member</emphasis> named MyDefinition, you would reference that
     <emphasis>definition</emphasis> as:</para>
 
-    <para><programlisting>MyModule.MyModuleStructure.MyDefinition
+    <para><programlisting lang="ECL" role="runnable">//MyModule.MyModuleStructure.MyDefinition
 
 MyMod := MODULE
   SHARED x := 88;
@@ -163,8 +163,8 @@ MyMod := MODULE
   END;
 END;
 
-MyMod.InMod.Val1;
-MyMod.InMod.Val2;</programlisting></para>
+OUTPUT(MyMod.InMod.Val1);
+OUTPUT(MyMod.InMod.Val2);</programlisting></para>
   </sect2>
 
   <sect2 id="Side-Effect_Actions">
@@ -173,7 +173,7 @@ MyMod.InMod.Val2;</programlisting></para>
     <para>Side-effect Actions are allowed in the MODULE only by using the WHEN
     function, as in this example:</para>
 
-    <programlisting>//An Example with a side-effect action 
+    <programlisting lang="ECL" role="runnable">//An Example with a side-effect action 
 EXPORT customerNames := MODULE 
   EXPORT Layout := RECORD 
     STRING20 surname;  
@@ -290,7 +290,7 @@ IF (doIt, OUTPUT(customerNames.File));
 
     <para>Example:</para>
 
-    <programlisting>EXPORT filterDataset(STRING search, BOOLEAN onlyOldies) := MODULE
+    <programlisting lang="ECL">EXPORT filterDataset(STRING search, BOOLEAN onlyOldies) := MODULE
   f := namesTable; //local to the "g" definition
   SHARED g := IF (onlyOldies, f(age &gt;= 65), f);
           //SHARED = visible only within the structure

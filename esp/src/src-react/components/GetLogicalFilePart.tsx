@@ -51,10 +51,10 @@ export const GetLogicalFilePart: React.FunctionComponent<GetLogicalFilePartProps
             "PartNumber": { label: nlsHPCC.PartNumber, type: "number", value: partNumber },
         }} onChange={(id, value) => {
             switch (id) {
-                case "fileName":
+                case "FileName":
                     setFileName(value);
                     break;
-                case "partNumber":
+                case "PartNumber":
                     setPartNumber(value);
                     break;
                 default:
