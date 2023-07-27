@@ -1,0 +1,23 @@
+{
+  "name": "portal-js",
+  "private": true,
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "clean": "rimraf ./dist",
+    "build-dev": "esbuild ./src/index.ts --format=iife --bundle --outfile=./dist/index.js",
+    "build": "esbuild ./src/index.ts --format=iife --bundle --minify --outfile=./dist/index.js",
+    "watch": "esbuild ./src/index.ts --format=iife --bundle --watch --outfile=./dist/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@hpcc-js/common": "2.71.9",
+    "@hpcc-js/codemirror": "2.60.9",
+    "esbuild": "0.18.14",
+    "rimraf": "5.0.1"
+  }
+}
