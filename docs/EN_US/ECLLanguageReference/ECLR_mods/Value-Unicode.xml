@@ -28,12 +28,18 @@
 
   <para>Example:</para>
 
-  <programlisting>UNICODE16 MyUNIString := U'1234567890ABCDEF';
+  <programlisting lang="ECL" role="runnable">UNICODE16 MyUNIString := U'1234567890ABCDEF';
         // utf-16-encoded string
 UNICODE4 MyUnicodeString := U'abcd';
         // same as: (UNICODE)'abcd'
-UNICODE_de5 MyUnicodeString := U'abcd\353';
+UNICODE_de5 MyUnicodeString_de := U'abcd\353';
         // becomes 'abcdë' with a German locale
-UNICODE_de5 MyUnicodeString := U'abcdë';
-        // same as previous example</programlisting>
+UNICODE_de5 MyUnicodeString_de5 := U'abcdë';
+        // same as previous example
+
+OUTPUT(MyUNIString);
+OUTPUT(MyUnicodeString);
+OUTPUT(MyUnicodeString_de);
+OUTPUT(MyUnicodeString_de5);
+</programlisting>
 </sect1>

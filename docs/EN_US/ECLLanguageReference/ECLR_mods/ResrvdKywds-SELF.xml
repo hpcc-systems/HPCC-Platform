@@ -23,7 +23,7 @@
 
   <para>Example:</para>
 
-  <programlisting>Ages := RECORD
+  <programlisting lang="ECL">Ages := RECORD
         INTEGER8 Age; //a field named "Age"
 END;
 
@@ -32,5 +32,6 @@ Ages req_output(person l) := TRANSFORM
         SELF.Age := TodaysYear - l.birthdate[1..4];
 END;</programlisting>
 
-  <para>See Also: <link linkend="TRANSFORM_Structure">TRANSFORM Structure</link></para>
+  <para>See Also: <link linkend="TRANSFORM_Structure">TRANSFORM
+  Structure</link></para>
 </sect1>

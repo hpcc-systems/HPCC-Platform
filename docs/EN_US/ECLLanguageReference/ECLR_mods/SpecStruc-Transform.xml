@@ -172,13 +172,13 @@
     <emphasis>SELF.outfield</emphasis> := <emphasis>transformation;</emphasis>
     expression, or you can use one of these shortcuts:</para>
 
-    <programlisting>SELF := [ ];</programlisting>
+    <programlisting lang="ECL">SELF := [ ];</programlisting>
 
     <para>clears all fields in the <emphasis>resulttype</emphasis> output that
     have not previously been defined in the transform function, while this
     form:</para>
 
-    <programlisting>SELF.<emphasis>outfield</emphasis> := [];   //the <emphasis>outfield</emphasis> names a child DATASET in
+    <programlisting lang="ECL">SELF.<emphasis>outfield</emphasis> := [];   //the <emphasis>outfield</emphasis> names a child DATASET in
                        // the <emphasis>resulttype </emphasis>RECORD Structure</programlisting>
 
     <para>clears only the child fields in the <emphasis>outfield</emphasis>,
@@ -187,7 +187,7 @@
     <programlisting>SELF := <emphasis>label</emphasis>; //the <emphasis>label</emphasis> names a RECORD structure<indexterm>
         <primary>RECORD structure</primary>
       </indexterm> parameter
-// in the <emphasis>parameterlist</emphasis></programlisting>
+// in the <emphasis lang="ECL">parameterlist</emphasis></programlisting>
 
     <para>defines the output for each field in the
     <emphasis>resulttype</emphasis> output format that has not previously been
@@ -212,7 +212,7 @@
 
     <para>Example:</para>
 
-    <programlisting>Ages := RECORD
+    <programlisting lang="ECL">Ages := RECORD
   AgedRecs.id;
   AgedRecs.id1;
   AgedRecs.id2;
@@ -259,7 +259,7 @@ assignId2(namesRecord l) := assignId(l, 2);
 
     <para>Example:</para>
 
-    <programlisting>namesIdRecord assignId(namesRecord L) := TRANSFORM
+    <programlisting lang="ECL">namesIdRecord assignId(namesRecord L) := TRANSFORM
   SELF := L; //more like-named fields across
   SELF := []; //clear all other fields
 END;
@@ -279,15 +279,15 @@ projected2 := PROJECT(namesTable, TRANSFORM(namesIdRecord,
     <para>This form of TRANSFORM is a shorthand version of Inline TRANSFORMs.
     In this form,</para>
 
-    <programlisting>TRANSFORM(LEFT)</programlisting>
+    <programlisting lang="ECL">TRANSFORM(LEFT)</programlisting>
 
     <para>is directly equivalent to</para>
 
-    <programlisting>TRANSFORM(RECORDOF(LEFT), SELF := LEFT)</programlisting>
+    <programlisting lang="ECL">TRANSFORM(RECORDOF(LEFT), SELF := LEFT)</programlisting>
 
     <para>Example:</para>
 
-    <programlisting>namesIdRecord assignId(namesRecord L) := TRANSFORM
+    <programlisting lang="ECL">namesIdRecord assignId(namesRecord L) := TRANSFORM
   SELF := L; //move like-named fields across
 END;
 projected1 := PROJECT(namesTable, assignId(LEFT));

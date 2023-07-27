@@ -68,7 +68,7 @@
 
   <para>Example:</para>
 
-  <programlisting>PeopleYoungerThan100 := AllPeople( LIKELY(age &lt; 100, 0.999) );
+  <programlisting lang="ECL">PeopleYoungerThan100 := AllPeople( LIKELY(age &lt; 100, 0.999) );
 // Probably not worth spilling PeopleYoungerThan100
 
 PeopleOlderThan100 := AllPeople( UNLIKELY(age&gt;100) );

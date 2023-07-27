@@ -37,8 +37,8 @@
   <para>The <emphasis role="bold">SHARED </emphasis>keyword explicitly allows
   other definitions within the same folder to import the specified
   <emphasis>definition</emphasis> for use throughout the
-  module/folder/directory (i.e. module scope), but not outside that scope.
-  </para>
+  module/folder/directory (i.e. module scope), but not outside that
+  scope.</para>
 
   <para>ECL code is stored in .ecl text files which may only contain a single
   EXPORT or SHARED definition. This definition may be a structure that allows
@@ -56,7 +56,7 @@
 
   <para>Example:</para>
 
-  <programlisting>//this code is contained in the GoodHouses.ecl file
+  <programlisting lang="ECL">//this code is contained in the GoodHouses.ecl file
 BadPeople := Person(EXISTS(trades(EXISTS(phr(phr_rate &gt; '4'))));
         //local only to the GoodHouses definition
 SHARED GoodHouses := Household(~EXISTS(BadPeople));

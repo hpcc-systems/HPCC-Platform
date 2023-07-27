@@ -66,7 +66,7 @@
   <para>1. KEYED generates a segmonitor. The segmonitor may be a wild one if
   the <emphasis>expression</emphasis> can never be false, such as:</para>
 
-  <programlisting>   KEYED(inputval = '' OR field = inputval)</programlisting>
+  <programlisting lang="ECL">   KEYED(inputval = '' OR field = inputval)</programlisting>
 
   <para>2. WILD generates a wild segmonitor, unless there is also a KEYED()
   filter on the same field.</para>
@@ -90,7 +90,7 @@
 
   <para>Example:</para>
 
-  <programlisting>ds := DATASET('~local::rkc::person',
+  <programlisting lang="ECL">ds := DATASET('~LR::person',
         { STRING15 f1, STRING15 f2, STRING15 f3, STRING15 f4,
         UNSIGNED8 filepos{VIRTUAL(fileposition)} }, FLAT);
 ix := INDEX(ds, { ds },'\\lexis\\person.name_first.key');

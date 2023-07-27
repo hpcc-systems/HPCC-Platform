@@ -33,7 +33,7 @@
     operating on a cluster whose default scope name is "Training" then the
     following two OUTPUT actions result in the same scope:</para>
 
-    <programlisting>OUTPUT(SomeFile,,'SomeDir::SomeFileOut1');
+    <programlisting lang="ECL">OUTPUT(SomeFile,,'SomeDir::SomeFileOut1');
 OUTPUT(SomeFile,,'~Training::SomeDir::SomeFileOut2');</programlisting>
 
     <para>The presence of the leading tilde in the filename only defines the
@@ -45,7 +45,7 @@ OUTPUT(SomeFile,,'~Training::SomeDir::SomeFileOut2');</programlisting>
         <primary>DATASET declaration</primary>
       </indexterm>s for these files might look like this:</para>
 
-    <programlisting>RecStruct := {STRING line};
+    <programlisting lang="ECL">RecStruct := {STRING line};
 ds1 := DATASET('SomeDir::SomeFileOut1',RecStruct,THOR);
 ds2 := DATASET('~Training::SomeDir::SomeFileOut2',RecStruct,THOR);</programlisting>
 
@@ -59,7 +59,7 @@ ds2 := DATASET('~Training::SomeDir::SomeFileOut2',RecStruct,THOR);</programlisti
     you want to use the data in the above two files. Then the following two
     DATASET definitions allow you to access that data:</para>
 
-    <programlisting>FileX := DATASET('~Training::SomeDir::SomeFileOut1',RecStruct,THOR);
+    <programlisting lang="ECL">FileX := DATASET('~Training::SomeDir::SomeFileOut1',RecStruct,THOR);
 FileY := DATASET('~Training::SomeDir::SomeFileOut2',RecStruct,THOR);</programlisting>
 
     <para>Notice the presence of the scope name in both of these definitions.
@@ -102,7 +102,7 @@ FileY := DATASET('~Training::SomeDir::SomeFileOut2',RecStruct,THOR);</programlis
 
     <para>For example,</para>
 
-    <programlisting>MyFile :=DATASET('~foreign::10.150.50.11::training::thor::myfile',
+    <programlisting lang="ECL">MyFile :=DATASET('~foreign::10.150.50.11::training::thor::myfile',
                  RecStruct,FLAT);</programlisting>
 
     <para>gives read-only access to the remote
@@ -127,7 +127,7 @@ FileY := DATASET('~Training::SomeDir::SomeFileOut2',RecStruct,THOR);</programlis
 
     <para>For example,</para>
 
-    <programlisting>MyFile :=DATASET('~file::10.150.50.12::c$::training::import::myfile',RecStruct,FLAT);</programlisting>
+    <programlisting lang="ECL">MyFile :=DATASET('~file::10.150.50.12::c$::training::import::myfile',RecStruct,FLAT);</programlisting>
 
     <para>gives access to the remote
     <emphasis>c$/training/import/myfile</emphasis> file on the linux-based
@@ -139,7 +139,7 @@ FileY := DATASET('~Training::SomeDir::SomeFileOut2',RecStruct,THOR);</programlis
     explicitly uppercased by escaping them with a leading caret (^), as in
     this example:</para>
 
-    <programlisting>MyFile :=DATASET('~file::10.150.50.12::c$::^Advanced^E^C^L::myfile',RecStruct,FLAT);</programlisting>
+    <programlisting lang="ECL">MyFile :=DATASET('~file::10.150.50.12::c$::^Advanced^E^C^L::myfile',RecStruct,FLAT);</programlisting>
 
     <para>gives access to the remote
     <emphasis>c$/AdvancedECL/myfile</emphasis> file on the linux-based
@@ -161,7 +161,7 @@ FileY := DATASET('~Training::SomeDir::SomeFileOut2',RecStruct,THOR);</programlis
 
     <para>For example,</para>
 
-    <programlisting>MyFile :=DATASET(DYNAMIC('~training::import::myfile'),RecStruct,FLAT);</programlisting>
+    <programlisting lang="ECL">MyFile :=DATASET(DYNAMIC('~training::import::myfile'),RecStruct,FLAT);</programlisting>
 
     <para>This causes the file to be resolved when the query is executed
     instead of when it is deployed.</para>
@@ -197,7 +197,7 @@ FileY := DATASET('~Training::SomeDir::SomeFileOut2',RecStruct,THOR);</programlis
     <para>For example, assuming the default scope name is "thor," the
     following examples both define the same SuperFile:</para>
 
-    <programlisting>MyFile :=DATASET('{in::file1,
+    <programlisting lang="ECL">MyFile :=DATASET('{in::file1,
                    in::file2,
                   ~train::in::file3}'),
                  RecStruct,THOR);

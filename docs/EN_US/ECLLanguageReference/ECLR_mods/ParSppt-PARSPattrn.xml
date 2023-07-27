@@ -136,13 +136,13 @@
     <para>1. If there are no patterns, the default transform clears the row.
     For example:</para>
 
-    <programlisting>RULE(myRecord) := ; //empty expression = cleared row</programlisting>
+    <programlisting lang="ECL">RULE(myRecord) := ; //empty expression = cleared row</programlisting>
 
     <para>2. If there is only a single pattern with an associated record, and
     that record matches the type of the rule being defined. For
     example:</para>
 
-    <programlisting>RULE(myRecord) e0 := '(' USE(myRecord, 'expression') ')';</programlisting>
+    <programlisting lang="ECL">RULE(myRecord) e0 := '(' USE(myRecord, 'expression') ')';</programlisting>
   </blockquote>
 
   <sect2 id="ParsePattern_Definitions">
@@ -397,7 +397,7 @@
             <entry><emphasis role="bold">PATTERN</emphasis>('<emphasis>regular
             expression</emphasis>')</entry>
 
-            <entry><programlisting role="tab">Define a pattern using a <emphasis>regular expression </emphasis>built from
+            <entry><programlisting lang="text" role="tab">Define a pattern using a <emphasis>regular expression </emphasis>built from
 the following supported syntax elements:
  (x)                Grouping (not used for matching)
  x|y                Alteratives x or y
@@ -421,7 +421,7 @@ PATTERN AnyChar    := PATTERN(U'[\u0001-\u7fff]');
           <row>
             <entry></entry>
 
-            <entry><programlisting role="tab">The following character class expressions are supported
+            <entry><programlisting lang="text" role="tab">The following character class expressions are supported
 (inside sets):
 [:alnum:]  [:cntrl:]  [:lower:]  [:upper:]  [:space:]
 [:alpha:]  [:digit:]  [:print:]  [:blank:]  [:graph:]
@@ -431,7 +431,7 @@ PATTERN AnyChar    := PATTERN(U'[\u0001-\u7fff]');
           <row>
             <entry></entry>
 
-            <entry><programlisting role="tab"><emphasis>Regular expressions</emphasis> do <emphasis
+            <entry><programlisting lang="text" role="tab"><emphasis>Regular expressions</emphasis> do <emphasis
                   role="underline">not</emphasis> support:
     ^ $ to mark the beginning/end of the string 
     Collating symbols      [.ch.] 
@@ -468,11 +468,10 @@ PATTERN AnyChar    := PATTERN(U'[\u0001-\u7fff]');
 
     <para>Examples:</para>
 
-    <programlisting>rs := RECORD
+    <programlisting lang="ECL" role="runnable">rs := RECORD
 STRING100 line;
 END;
 ds := DATASET([{'the fox; and the hen'}], rs);
-
 
 PATTERN ws := PATTERN('[ \t\r\n]');
 PATTERN Alpha := PATTERN('[A-Za-z]');
