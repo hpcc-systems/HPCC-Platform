@@ -330,7 +330,7 @@ ESPStruct TpTargetCluster
 {
     string Name;
     string Prefix;
-    TpQueryType Type;
+    string Type;
 
     ESParray<ESPstruct TpCluster>   TpClusters;
     ESParray<ESPstruct TpEclServer> TpEclCCServers;
@@ -339,14 +339,9 @@ ESPStruct TpTargetCluster
     [min_ver("1.16")] ESParray<ESPstruct TpEclScheduler>  TpEclSchedulers;
 };
 
-ESPStruct TpQueryType
-{
-    TPCLUSTER;
-    TPNODE;
-};
 ESPrequest TpTargetClusterQueryRequest
 {
-    TpQueryType Type;
+    string Type;
     string Name;
     bool ShowDetails(false);
 };
