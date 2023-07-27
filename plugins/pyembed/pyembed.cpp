@@ -641,11 +641,14 @@ void PythonThreadContext::addManifestFiles(ICodeContext *codeCtx)
                 ForEachItemIn(idx, manifestModules)
                 {
                     const char *path = manifestModules.item(idx);
-                    DBGLOG("Manifest zip %s", path);
-                    OwnedPyObject newPath = PyString_FromString(path);
-                    PyList_Insert(sysPath, 0, newPath);
-                    checkPythonError();
-                    engine->onTermination(Python27GlobalState::removePath, manifestModules.item(idx), true);
+                    if (path)
+                    {
+                        DBGLOG("Manifest zip %s", path);
+                        OwnedPyObject newPath = PyString_FromString(path);
+                        PyList_Insert(sysPath, 0, newPath);
+                        checkPythonError();
+                        engine->onTermination(Python27GlobalState::removePath, manifestModules.item(idx), true);
+                    }
                 }
             }
         }

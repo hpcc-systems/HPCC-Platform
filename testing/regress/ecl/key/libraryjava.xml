@@ -8,3 +8,6 @@
  <Row><fullname>George     Smith              </fullname></Row>
  <Row><fullname>Baby       Smith              </fullname></Row>
 </Dataset>
+<Dataset name='Result 3'>
+ <Row><Result_3>Hello World</Result_3></Row>
+</Dataset>

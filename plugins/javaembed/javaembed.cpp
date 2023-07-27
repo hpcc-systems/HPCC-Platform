@@ -3257,13 +3257,29 @@ public:
             }
         }
         StringBuffer lclassPath;
+        bool needSep = false;
         if (engine)
         {
             StringArray manifestJars;
             engine->getManifestFiles("jar", manifestJars);
             ForEachItemIn(idx, manifestJars)
             {
-                lclassPath.append(';').append(manifestJars.item(idx));
+                const char *thisJar = manifestJars.item(idx);
+                if (thisJar)
+                {
+                    if (needSep)
+                        lclassPath.append(';');
+                    lclassPath.append(manifestJars.item(idx));
+                    needSep = true;
+                }
+                else
+                {
+                    if (needSep)
+                    {
+                        lclassPath.append('|');
+                        needSep = false;
+                    }
+                }
             }
         }
         ForEachItemIn(idx, opts)
@@ -3275,7 +3291,12 @@ public:
                 StringBuffer optName(val-opt, opt);
                 val++;
                 if (stricmp(optName, "classpath")==0)
-                    lclassPath.append(';').append(val);
+                {
+                    if (needSep)
+                        lclassPath.append('|');   // The | means we use a common classloader for the bit named by classpath
+                    lclassPath.append(val);
+                    needSep = true;
+                }
                 else if (strieq(optName, "globalscope"))
                     globalScopeKey.set(val);
                 else if (strieq(optName, "persist"))
@@ -3297,8 +3318,8 @@ public:
                     throw MakeStringException(0, "javaembed: Unknown option %s", optName.str());
             }
         }
-        if (lclassPath.length()>1)
-            classpath.set(lclassPath.str()+1);
+        if (lclassPath.length())
+            classpath.set(lclassPath);
         if (flags & EFthreadlocal)
             sharedCtx->registerContext(this);  // Do at end - otherwise an exception thrown during construction will leave this reference dangling
     }

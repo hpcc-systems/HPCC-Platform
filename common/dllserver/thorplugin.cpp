@@ -307,7 +307,7 @@ public:
     virtual const byte * getResource(unsigned id) const;
     virtual bool getResource(size32_t & len, const void * & data, const char * type, unsigned id, bool trace) const;
     virtual IPropertyTree &queryManifest() const override;
-    virtual const StringArray &queryManifestFiles(const char *type, const char *wuid) const override;
+    virtual const StringArray &queryManifestFiles(const char *type, const char *wuid, const char *tempRoot) const override;
     bool load(bool isGlobal, bool raiseOnError);
     bool loadCurrentExecutable();
     bool loadResources();
@@ -492,7 +492,7 @@ IPropertyTree &HelperDll::queryManifest() const
     return *querySingleton(manifest, manifestLock, [this]{ return getEmbeddedManifestPTree(this); });
 }
 
-const StringArray &HelperDll::queryManifestFiles(const char *type, const char *wuid) const
+const StringArray &HelperDll::queryManifestFiles(const char *type, const char *wuid, const char *tempRoot) const
 {
     CriticalBlock b(manifestLock);
     Linked<ManifestFileList> list = manifestFiles.find(type);
@@ -500,8 +500,18 @@ const StringArray &HelperDll::queryManifestFiles(const char *type, const char *w
     {
         // The temporary path we unpack to is based on so file's current location and workunit
         // MORE - this is good for deployed cases, may not be so good for standalone executables.
+        // Doesn't really work for cloud either - it needs to be in ephemeral there
         StringBuffer tempDir;
-        splitFilename(name, &tempDir, &tempDir, &tempDir, nullptr);
+        if (!isEmptyString(tempRoot))
+        {
+            tempDir.append(tempRoot);
+            addPathSepChar(tempDir);
+            splitFilename(name, nullptr, nullptr, &tempDir, nullptr);
+        }
+        else
+        {
+            splitFilename(name, &tempDir, &tempDir, &tempDir, nullptr);
+        }
         list.setown(new ManifestFileList(type, tempDir));
         tempDir.append(".tmp").append(PATHSEPCHAR).append(wuid);
         VStringBuffer xpath("Resource[@type='%s']", type);

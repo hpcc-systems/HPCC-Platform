@@ -99,6 +99,10 @@ jobs:
       fail-fast: false
 
     steps:
+      - name: Free additional disk space (remove Android SDK + Tools)
+        run: |
+          sudo rm -rf /usr/local/lib/android
+
       - name: Checkout HPCC-Platform
         if: ${{ contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
         uses: actions/checkout@v3
