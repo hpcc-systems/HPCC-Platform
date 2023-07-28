@@ -1,20 +1,24 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, mergeStyleSets } from "@fluentui/react";
-import { useConst, useOnEvent } from "@fluentui/react-hooks";
-import * as domClass from "dojo/dom-class";
+import { TreeItemValue, TreeOpenChangeData, TreeOpenChangeEvent } from "@fluentui/react-components";
+import { useOnEvent, useConst } from "@fluentui/react-hooks";
+import { FileSpray as HPCCFileSpray, FileSprayService, TopologyService, WsTopology } from "@hpcc-js/comms";
+import { scopedLogger } from "@hpcc-js/util";
 import * as iframe from "dojo/request/iframe";
-import * as put from "put-selector/put";
-import { TpDropZoneQuery } from "src/WsTopology";
 import * as FileSpray from "src/FileSpray";
 import * as ESPRequest from "src/ESPRequest";
 import * as Utility from "src/Utility";
+import { userKeyValStore } from "src/KeyValStore";
 import nlsHPCC from "src/nlsHPCC";
+import { BranchIcon, FlatItem, TreeView } from "./controls/TreeView";
+import { useBuildInfo } from "../hooks/platform";
 import { useConfirm } from "../hooks/confirm";
-import { useGrid } from "../hooks/grid";
+import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
+import { DockPanel, DockPanelItem, ResetableDockPanel } from "../layouts/DockPanel";
 import { HolyGrail } from "../layouts/HolyGrail";
-import { pushParams } from "../util/history";
+import { pushParams, pushUrl } from "../util/history";
 import { ShortVerticalDivider } from "./Common";
-import { selector, tree } from "./DojoGrid";
+import { selector } from "./DojoGrid";
 import { Fields } from "./forms/Fields";
 import { Filter } from "./forms/Filter";
 import { AddFileForm } from "./forms/landing-zone/AddFileForm";
@@ -25,25 +29,11 @@ import { JsonImportForm } from "./forms/landing-zone/JsonImportForm";
 import { VariableImportForm } from "./forms/landing-zone/VariableImportForm";
 import { XmlImportForm } from "./forms/landing-zone/XmlImportForm";
 import { FileListForm } from "./forms/landing-zone/FileListForm";
-import { QueryRequest } from "src/store/Memory";
 
-function formatQuery(targetDropzones, filter): QueryRequest {
-    const dropzones = targetDropzones.filter(row => row.Name === filter?.DropZoneName);
-    const machines = targetDropzones[0]?.TpMachines?.TpMachine?.filter(row => row.ConfigNetaddress === filter?.Server);
-    return {
-        id: "*",
-        filter: (filter?.DropZoneName && dropzones.length && machines.length) ? {
-            DropZoneName: filter.DropZoneName,
-            Server: filter.Server,
-            NameFilter: filter.NameFilter,
-            ECLWatchVisibleOnly: true,
-            __dropZone: {
-                ...targetDropzones.filter(row => row.Name === filter?.DropZoneName)[0],
-                machine: machines[0]
-            }
-        } : undefined
-    };
-}
+const logger = scopedLogger("src-react/components/LandingZone.tsx");
+
+const topologyService = new TopologyService({ baseUrl: "" });
+const fsService = new FileSprayService({ baseUrl: "" });
 
 const buttonStyles = mergeStyleSets({
     labelOnly: {
@@ -72,13 +62,15 @@ const emptyFilter: LandingZoneFilter = {};
 
 interface LandingZoneProps {
     filter?: LandingZoneFilter;
+    path?: string;
 }
 
-let dzExpanded = "";
-
 export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
-    filter = emptyFilter
+    filter = emptyFilter,
+    path = ""
 }) => {
+
+    const [, { isContainer }] = useBuildInfo();
 
     const hasFilter = React.useMemo(() => Object.keys(filter).length > 0, [filter]);
 
@@ -93,33 +85,169 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
     const [showDropZone, setShowDropzone] = React.useState(false);
     const [uploadFiles, setUploadFiles] = React.useState([]);
     const [showFileUpload, setShowFileUpload] = React.useState(false);
-    const [targetDropzones, setTargetDropzones] = React.useState([]);
+    const [layout, setLayout] = React.useState<object>();
+    const [dockpanel, setDockpanel] = React.useState<ResetableDockPanel>();
+    const [dropzones, setDropzones] = React.useState<WsTopology.TpDropZone[]>([]);
+    const [selectedDropzone, setSelectedDropzone] = React.useState<WsTopology.TpDropZone>();
+
+    const [data, setData] = React.useState<any[]>([]);
+    const {
+        selection, setSelection,
+        setTotal,
+        refreshTable } = useFluentStoreState({});
+
+    const [userAddedFiles, setUserAddedFiles] = React.useState<any[]>([]);
+    const [lzPath, setLzPath] = React.useState<string>("");
+    const [pathSep, setPathSep] = React.useState<string>("/");
+
+    const [treeItems, setTreeItems] = React.useState<FlatItem[]>([]);
+    const [openItems, setOpenItems] = React.useState<Iterable<TreeItemValue>>([]);
+
+    const store = useConst(() => userKeyValStore());
 
     React.useEffect(() => {
-        TpDropZoneQuery({}).then(({ TpDropZoneQueryResponse }) => {
-            setTargetDropzones(TpDropZoneQueryResponse?.TpDropZones?.TpDropZone || []);
+        if (dockpanel) {
+            //  Should only happen once on startup  ---
+            store.get("LzLayout").then(value => {
+                if (!value || value === "undefined") {
+                    const layout: any = dockpanel.layout();
+                    if (Array.isArray(layout?.main?.sizes) && layout.main.sizes.length === 2) {
+                        layout.main.sizes = [0.2, 0.8];
+                        dockpanel.layout(layout).lazyRender();
+                        setLayout(layout);
+                        store?.set("LzLayout", JSON.stringify(layout), true);
+                    }
+                } else {
+                    const layout = JSON.parse(value);
+                    dockpanel.layout(layout);
+                }
+            });
+        }
+    }, [dockpanel, store]);
+
+    React.useEffect(() => {
+        //  Update layout prior to unmount  ---
+        if (dockpanel && store) {
+            return () => {
+                const layout: any = dockpanel.getLayout();
+                store?.set("LzLayout", JSON.stringify(layout), true);
+            };
+        }
+    }, [dockpanel, store]);
+
+    React.useEffect(() => {
+        topologyService.TpDropZoneQuery({ ECLWatchVisibleOnly: true }).then(response => {
+            const dropzones = response?.TpDropZones?.TpDropZone || [];
+            if (dropzones[0]?.Path?.indexOf("\\") > -1) {
+                setPathSep("\\");
+            }
+            setDropzones(dropzones);
+            if (dropzones.length) {
+                setSelectedDropzone(dropzones[0]);
+            }
         });
     }, []);
 
+    const addUserFile = React.useCallback((file) => {
+        setData([...data, file]);
+        setUserAddedFiles([...userAddedFiles, file]);
+    }, [data, userAddedFiles]);
+
+    const removeUserFile = React.useCallback((name) => {
+        setData(data.filter(file => file.name !== name));
+        setUserAddedFiles(userAddedFiles.filter(file => file.name !== name));
+    }, [data, userAddedFiles]);
+
+    React.useEffect(() => {
+        if (!dropzones || !selectedDropzone?.Path) return;
+
+        const _path = path ? path.replace(/::/g, "/") : selectedDropzone.Path;
+        setLzPath(_path);
+
+        const paths = [];
+        const items = [];
+
+        dropzones.forEach(dz => {
+            items.push({
+                value: dz?.Name,
+                label: dz?.Name,
+                icon: BranchIcon.Dropzone,
+                data: {
+                    DropZoneName: dz?.Name,
+                    path: dz?.Path
+                }
+            });
+            dz?.TpMachines.TpMachine.forEach(machine => {
+                items.push({
+                    value: machine.Directory,
+                    parentValue: dz.Name,
+                    label: machine.Name,
+                    icon: BranchIcon.Network,
+                    data: {
+                        DropZoneName: dz.Name,
+                        path: machine.Directory
+                    }
+                });
+            });
+        });
+
+        const openItems = new Set<TreeItemValue>([selectedDropzone.Name, selectedDropzone.Path]);
+        const requests = [];
+
+        let pathParts = _path.split("/");
+        let tempPath = _path;
+
+        while (tempPath !== selectedDropzone?.Path) {
+            paths.push(tempPath);
+            pathParts = pathParts.slice(0, -1);
+            tempPath = pathParts.join("/");
+        }
+        paths.push(selectedDropzone.Path);
+
+        paths.reverse().forEach(path => {
+            requests.push(fsService.FileList({
+                DropZoneName: selectedDropzone.Name,
+                Netaddr: selectedDropzone?.TpMachines?.TpMachine[0].Netaddress ?? "",
+                Path: path,
+                DirectoryOnly: true
+            }));
+            openItems.add(path);
+        });
+
+        Promise.all(requests).then(responses => {
+            responses.forEach(response => {
+                const files = response?.files?.PhysicalFileStruct?.sort((a, b) => {
+                    if (a.name < b.name) return -1;
+                    if (a.name > b.name) return 1;
+                    return 0;
+                }) ?? [];
+                files?.forEach(file => {
+                    const parentPath = (file.Path ?? response.Path + "/");
+                    const itemPath = parentPath + file.name;
+                    if (items.filter(item => item.value === itemPath).length === 0) {
+                        items.push({
+                            value: itemPath,
+                            parentValue: parentPath.slice(0, -1),
+                            label: file.name,
+                            icon: file.isDir ? BranchIcon.Directory : BranchIcon.None,
+                            data: { path: itemPath }
+                        });
+                    }
+                    if (itemPath.length <= _path) {
+                        openItems.add(itemPath);
+                    }
+                });
+            });
+
+            setTreeItems(items);
+            setOpenItems(openItems);
+        });
+
+    }, [dropzones, path, selectedDropzone]);
+
     //  Grid ---
-    const store = useConst(() => FileSpray.CreateLandingZonesStore({}));
-
-    const query = React.useMemo(() => {
-        return formatQuery(targetDropzones, filter);
-    }, [filter, targetDropzones]);
-
-    const { Grid, selection, refreshTable, copyButtons } = useGrid({
-        store,
-        query,
-        sort: { attribute: "modifiedtime", descending: true },
-        filename: "landingZones",
-        getSelected: function () {
-            if (filter?.__dropZone) {
-                return this.inherited(arguments, [FileSpray.CreateLandingZonesFilterStore({ dropZone: filter.__dropZone })]);
-            }
-            return this.inherited(arguments, [FileSpray.CreateFileListStore({})]);
-        },
-        columns: {
+    const columns = React.useMemo((): FluentColumns => {
+        return {
             col1: selector({
                 width: 27,
                 disabled: function (item) {
@@ -135,53 +263,47 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
                 },
                 selectorType: "checkbox"
             }),
-            displayName: tree({
+            displayName: {
                 label: nlsHPCC.Name,
-                sortable: false,
-                shouldExpand: function (row, level) {
-                    if ((dzExpanded === "" || dzExpanded === row.data.DropZone?.Name) && level <= 1) {
-                        dzExpanded = row.data.DropZone.Name;
-                        return true;
-                    }
-                    return false;
-                },
                 formatter: function (_name, row) {
-                    let img = "";
-                    let name = row.displayName;
-                    if (row.isDir === undefined) {
-                        img = Utility.getImageHTML("server.png");
-                        name += " [" + row.Path + "]";
-                    } else if (row.isMachine) {
-                        img = Utility.getImageHTML("machine.png");
-                    } else if (row.isDir) {
-                        img = Utility.getImageHTML("folder.png");
-                    } else {
-                        img = Utility.getImageHTML("file.png");
-                    }
-                    return img + "&nbsp;" + name;
+                    return row.name;
                 },
-                renderExpando: function (level, hasChildren, expanded, object) {
-                    const dir = this.grid.isRTL ? "right" : "left";
-                    let cls = ".dgrid-expando-icon";
-                    if (hasChildren) {
-                        cls += ".ui-icon.ui-icon-triangle-1-" + (expanded ? "se" : "e");
-                    }
-                    //@ts-ignore
-                    const node = put("div" + cls + "[style=margin-" + dir + ": " + (level * (this.indentWidth || 9)) + "px; float: " + dir + ";" + (!hasChildren ? " width: 16px; height: 16px;" : "") + "]");
-                    node.innerHTML = "&nbsp;";
-                    return node;
-                }
-            }),
+            },
             filesize: {
                 label: nlsHPCC.Size, width: 100, sortable: false,
-                renderCell: React.useCallback(function (object, value, node, options) {
-                    domClass.add(node, "justify-right");
-                    node.innerText = Utility.convertedSize(value);
-                }, []),
+                justify: "right",
+                formatter: (value, row) => {
+                    return Utility.convertedSize(value);
+                },
             },
             modifiedtime: { label: nlsHPCC.Date, width: 162, sortable: false }
+        };
+    }, []);
+
+    const copyButtons = useCopyButtons(columns, selection, "landingZones");
+
+    const refreshData = React.useCallback(() => {
+        if (!lzPath || !selectedDropzone) return;
+        const request: Partial<HPCCFileSpray.FileListRequest> = { Path: lzPath, };
+        if (!isContainer) {
+            request.Netaddr = selectedDropzone?.TpMachines?.TpMachine[0].Netaddress;
+        } else {
+            request.DropZoneName = selectedDropzone?.Name;
         }
-    });
+        fsService.FileList(request).then(response => {
+            const files = response?.files?.PhysicalFileStruct.filter(file => !file.isDir).map(file => {
+                file["NetAddress"] = selectedDropzone?.TpMachines?.TpMachine[0].Netaddress ?? "";
+                file["SourcePlane"] = isContainer ? selectedDropzone?.Name : file["NetAddress"];
+                file["fullPath"] = [file.Path ?? response.Path, file.name].join(pathSep);
+                return file;
+            }) ?? [];
+            setData(files);
+        });
+    }, [isContainer, lzPath, pathSep, selectedDropzone]);
+
+    React.useEffect(() => {
+        refreshData();
+    }, [refreshData]);
 
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
@@ -190,38 +312,38 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
         onSubmit: React.useCallback(() => {
             selection.forEach((item, idx) => {
                 if (item._isUserFile) {
-                    store.removeUserFile(item);
-                    refreshTable(true);
+                    removeUserFile(item.name);
                 } else {
                     FileSpray.DeleteDropZoneFile({
                         request: {
-                            DropZoneName: item.DropZone.Name,
-                            NetAddress: item.NetAddress,
-                            Path: item.fullFolderPath,
-                            OS: item.OS,
-                            Names: item.name
+                            DropZoneName: selectedDropzone?.Name ?? "",
+                            NetAddress: item?.NetAddress ?? "",
+                            Path: item?.Path ?? "",
+                            OS: item?.OS ?? "",
+                            Names: item?.name ?? ""
                         },
                         load: function (response) {
-                            refreshTable(true);
+                            refreshData();
                         }
                     });
                 }
             });
-        }, [refreshTable, selection, store])
+        }, [refreshData, removeUserFile, selection, selectedDropzone])
     });
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
-            onClick: () => refreshTable()
+            onClick: () => refreshData()
         },
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
             key: "preview", text: nlsHPCC.Preview, disabled: !selection.length, iconProps: { iconName: "ComplianceAudit" },
             onClick: () => {
                 if (selection.length === 1) {
-                    window.location.href = `#/landingzone/preview/${selection[0].getLogicalFile()}`;
+                    const logicalFile = "~file::" + selection[0].NetAddress + FileSpray.lfEncode(selection[0].fullPath);
+                    window.location.href = `#/landingzone/preview/${logicalFile}`;
                 }
             }
         },
@@ -238,7 +360,7 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
                 selection.forEach(item => {
                     const downloadIframeName = "downloadIframe_" + item.calculatedID;
                     const frame = iframe.create(downloadIframeName);
-                    const url = `${ESPRequest.getBaseURL("FileSpray")}/DownloadFile?Name=${encodeURIComponent(item.name)}&NetAddress=${item.NetAddress}&Path=${encodeURIComponent(item.fullFolderPath)}&OS=${item.OS}&DropZoneName=${item.DropZone.Name}`;
+                    const url = `${ESPRequest.getBaseURL("FileSpray")}/DownloadFile?Name=${encodeURIComponent(item.name)}&NetAddress=${item.Server}&Path=${encodeURIComponent(item.Path)}&DropZoneName=${selectedDropzone.Name}`;
                     iframe.setSrc(frame, url, true);
                 });
             }
@@ -284,7 +406,7 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
             onClick: () => setShowBlob(true)
         },
         { key: "divider_6", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> }
-    ], [hasFilter, refreshTable, selection, setShowDeleteConfirm]);
+    ], [hasFilter, refreshData, selection, selectedDropzone?.Name, setShowDeleteConfirm]);
 
     //  Filter  ---
     const filterFields: Fields = {};
@@ -358,6 +480,58 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
         }
     }, [setShowFileUpload, setUploadFiles]);
 
+    const onOpenChange = React.useCallback((evt: TreeOpenChangeEvent, data: TreeOpenChangeData) => {
+        const branchData = JSON.parse(data?.target?.dataset?.tree ?? "") ?? {};
+        if (data.type === "Click" || data.type === "Enter") {
+            const path = branchData.path[0] === "/" ? branchData.path : selectedDropzone.Path + "/" + branchData.path;
+            if (path !== lzPath) {
+                pushUrl(`#/landingzone/${path.replace(/\//g, "::")}`);
+            }
+            return;
+        } else if (data.type === "ExpandIconClick" && data.open) {
+            let items = Array.from(treeItems);
+            if (branchData.path) {
+                fsService.FileList({
+                    DropZoneName: selectedDropzone.Name,
+                    Path: branchData.path,
+                    DirectoryOnly: true
+                }).then(response => {
+                    const files = response?.files?.PhysicalFileStruct?.sort((a, b) => {
+                        if (a.name < b.name) return -1;
+                        if (a.name > b.name) return 1;
+                        return 0;
+                    }) ?? [];
+                    files?.forEach(file => {
+                        const itemPath = file.Path + file.name;
+                        if (items.filter(item => item.value === itemPath).length === 0) {
+                            items.push({
+                                value: itemPath,
+                                parentValue: file.Path.slice(0, -1),
+                                label: file.name,
+                                icon: file.isDir ? BranchIcon.Directory : BranchIcon.None,
+                                data: { path: itemPath }
+                            });
+                            if (file.isDir) {
+                                items.push({
+                                    value: itemPath + "__temp",
+                                    parentValue: itemPath
+                                });
+                            }
+                        }
+                    });
+                    items = items.filter(item => item.value.toString() !== branchData.path + "__temp");
+                    setTreeItems(items);
+                }).catch(err => {
+                    logger.error(err);
+                });
+            } else {
+                items = items.filter(item => item.value.toString() !== branchData.path + "__temp");
+                setTreeItems(items);
+            }
+        }
+        setOpenItems(data.openItems);
+    }, [lzPath, selectedDropzone, treeItems]);
+
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}
         main={
@@ -371,7 +545,24 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
                         <p>Drop file(s) to upload.</p>
                     </div>
                 </div>
-                <Grid />
+                <DockPanel hideSingleTabs={true} layout={layout} onDockPanelCreate={setDockpanel}>
+                    <DockPanelItem key="lzDirectoryTree" title={nlsHPCC.Directories}>
+                        <div style={{ height: "100%", width: "100%", overflowY: "scroll" }}>
+                            <TreeView openItems={openItems} onOpenChange={onOpenChange} treeItems={treeItems} ariaLabel="Landing Zone directories" />
+                        </div>
+                    </DockPanelItem>
+                    <DockPanelItem key="lzFileList" title={nlsHPCC.Files} location="split-right" relativeTo="lzDirectoryTree" >
+                        <FluentGrid
+                            data={data}
+                            primaryID={"__hpcc_id"}
+                            sort={{ attribute: "displayName", descending: false }}
+                            columns={columns}
+                            setSelection={setSelection}
+                            setTotal={setTotal}
+                            refresh={refreshTable}
+                        ></FluentGrid>
+                    </DockPanelItem>
+                </DockPanel>
                 <Filter
                     showFilter={showFilter} setShowFilter={setShowFilter}
                     filterFields={filterFields} onApply={pushParams}
@@ -380,12 +571,12 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
                     <FileListForm
                         formMinWidth={360} selection={uploadFiles}
                         showForm={showFileUpload} setShowForm={setShowFileUpload}
-                        onSubmit={() => refreshTable()}
+                        onSubmit={() => refreshData()}
                     />
                 }
                 <AddFileForm
-                    formMinWidth={620} store={store} refreshGrid={refreshTable}
-                    showForm={showAddFile} setShowForm={setShowAddFile}
+                    formMinWidth={620} refreshGrid={refreshData} addUserFile={addUserFile}
+                    dropzone={selectedDropzone} showForm={showAddFile} setShowForm={setShowAddFile}
                 />
                 <FixedImportForm
                     formMinWidth={620} selection={selection}

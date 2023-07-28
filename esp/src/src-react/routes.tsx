@@ -165,6 +165,11 @@ export const routes: RoutesEx = [
                 })
             },
             {
+                path: "/:Path", action: (ctx, params) => import("./components/LandingZone").then(_ => {
+                    return <_.LandingZone filter={parseSearch(ctx.search) as any} path={params.Path as string} />;
+                })
+            },
+            {
                 path: "/preview/:logicalFile", action: (ctx, params) => import("./components/HexView").then(_ => {
                     return <_.HexView logicalFile={params.logicalFile as string} />;
                 })

@@ -153,7 +153,7 @@ export const XmlImportForm: React.FunctionComponent<XmlImportFormProps> = ({
                     TargetRowTag: "Row",
                     NumParts: "",
                     SourceFile: file["fullPath"],
-                    SourcePlane: file?.DropZone?.Name ?? "",
+                    SourcePlane: file["SourcePlane"] ?? "",
                     SourceIP: file["NetAddress"]
                 };
             });

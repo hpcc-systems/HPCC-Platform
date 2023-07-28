@@ -145,7 +145,7 @@ export const VariableImportForm: React.FunctionComponent<VariableImportFormProps
                 newValues.selectedFiles[idx] = {
                     TargetName: file["name"],
                     SourceFile: file["fullPath"],
-                    SourcePlane: file?.DropZone?.Name ?? "",
+                    SourcePlane: file["SourcePlane"] ?? "",
                     SourceIP: file["NetAddress"]
                 };
             });
