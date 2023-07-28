@@ -282,6 +282,22 @@ static inline bool checkSecretExpired(unsigned created)
 
 enum class VaultAuthType {unknown, k8s, appRole, token};
 
+static void setTimevalMS(timeval &tv, time_t ms)
+{
+    if (!ms)
+        tv = {0, 0};
+    else
+    {
+        tv.tv_sec = ms / 1000;
+        tv.tv_usec = (ms % 1000)*1000;
+    }
+}
+
+static bool isEmptyTimeval(const timeval &tv)
+{
+    return (tv.tv_sec==0 && tv.tv_usec==0);
+}
+
 class CVault
 {
 private:
@@ -306,6 +322,11 @@ private:
     time_t clientTokenExpiration = 0;
     bool clientTokenRenewable = false;
     bool verify_server = true;
+    unsigned retries = 3;
+    time_t retryWait = 1000;
+    timeval connectTimeout = {0, 0};
+    timeval readTimeout = {0, 0};
+    timeval writeTimeout = {0, 0};
 
 public:
     CVault(IPropertyTree *vault)
@@ -330,6 +351,13 @@ public:
             PROGLOG("vault: namespace %s", vaultNamespace.str());
         }
         verify_server = vault->getPropBool("@verify_server", true);
+        retries = (unsigned) vault->getPropInt("@retries", 3);
+        retryWait = (time_t) vault->getPropInt("@retryWait", 1000);
+
+        setTimevalMS(connectTimeout, (time_t) vault->getPropInt("@connectTimeout"));
+        setTimevalMS(readTimeout, (time_t) vault->getPropInt("@readTimeout"));
+        setTimevalMS(writeTimeout, (time_t) vault->getPropInt("@writeTimeout"));
+
         PROGLOG("Vault: httplib verify_server=%s", boolToStr(verify_server));
 
         //set up vault client auth [appRole, clientToken (aka "token from the sky"), or kubernetes auth]
@@ -396,7 +424,7 @@ public:
     void processClientTokenResponse(httplib::Result &res)
     {
         if (!res)
-            vaultAuthErrorV("missing login response, error %d", res.error());
+            vaultAuthErrorV("login communication error %d", res.error());
         if (res.error()!=0)
             OERRLOG("JSECRETS login calling HTTPLIB POST returned error %d", res.error());
         if (res->status != 200)
@@ -438,6 +466,22 @@ public:
 
     CVaultKind getVaultKind() const { return kind; }
 
+    void initClient(httplib::Client &cli, httplib::Headers &headers, unsigned &numRetries)
+    {
+        numRetries = retries;
+        cli.enable_server_certificate_verification(verify_server);
+        if (!isEmptyTimeval(connectTimeout))
+            cli.set_connection_timeout(connectTimeout.tv_sec, connectTimeout.tv_usec);
+        if (!isEmptyTimeval(readTimeout))
+            cli.set_read_timeout(readTimeout.tv_sec, readTimeout.tv_usec);
+        if (!isEmptyTimeval(writeTimeout))
+            cli.set_write_timeout(writeTimeout.tv_sec, writeTimeout.tv_usec);
+        if (username.length() && password.length())
+            cli.set_basic_auth(username, password);
+        if (vaultNamespace.length())
+            headers.emplace("X-Vault-Namespace", vaultNamespace.str());
+    }
+
     //if we tried to use our token and it returned access denied it could be that we need to login again, or
     //  perhaps it could be specific permissions about the secret that was being accessed, I don't think we can tell the difference
     void kubernetesLogin(bool permissionDenied)
@@ -454,14 +498,19 @@ public:
         std::string json;
         json.append("{\"jwt\": \"").append(login_token.str()).append("\", \"role\": \"").append(k8sAuthRole.str()).append("\"}");
         httplib::Client cli(schemeHostPort.str());
-        cli.enable_server_certificate_verification(verify_server);
-
-        if (username.length() && password.length())
-            cli.set_basic_auth(username, password);
         httplib::Headers headers;
-        if (vaultNamespace.length())
-            headers.emplace("X-Vault-Namespace", vaultNamespace.str());
+
+        unsigned numRetries = 0;
+        initClient(cli, headers, numRetries);
         httplib::Result res = cli.Post("/v1/auth/kubernetes/login", headers, json, "application/json");
+        while (!res && numRetries--)
+        {
+            OERRLOG("Retrying vault %s kubernetes auth, communication error %d", name.str(), res.error());
+            if (retryWait)
+                Sleep(retryWait);
+            res = cli.Post("/v1/auth/kubernetes/login", headers, json, "application/json");
+        }
+
         processClientTokenResponse(res);
     }
     //if we tried to use our token and it returned access denied it could be that we need to login again, or
@@ -485,15 +534,19 @@ public:
         json.append("{\"role_id\": \"").append(appRoleId).append("\", \"secret_id\": \"").append(appRoleSecretId).append("\"}");
 
         httplib::Client cli(schemeHostPort.str());
-        cli.enable_server_certificate_verification(verify_server);
-
-        if (username.length() && password.length())
-            cli.set_basic_auth(username, password);
         httplib::Headers headers;
-        if (vaultNamespace.length())
-            headers.emplace("X-Vault-Namespace", vaultNamespace.str());
 
+        unsigned numRetries = 0;
+        initClient(cli, headers, numRetries);
         httplib::Result res = cli.Post("/v1/auth/approle/login", headers, json, "application/json");
+        while (!res && numRetries--)
+        {
+            OERRLOG("Retrying vault %s appRole auth, communication error %d", name.str(), res.error());
+            if (retryWait)
+                Sleep(retryWait);
+            res = cli.Post("/v1/auth/approle/login", headers, json, "application/json");
+        }
+
         processClientTokenResponse(res);
     }
     void checkAuthentication(bool permissionDenied)
@@ -549,18 +602,20 @@ public:
         checkAuthentication(permissionDenied);
 
         httplib::Client cli(schemeHostPort.str());
-        cli.enable_server_certificate_verification(verify_server);
-
-        if (username.length() && password.length())
-            cli.set_basic_auth(username.str(), password.str());
-
         httplib::Headers headers = {
             { "X-Vault-Token", clientToken.str() }
         };
-        if (vaultNamespace.length())
-            headers.emplace("X-Vault-Namespace", vaultNamespace.str());
 
+        unsigned numRetries = 0;
+        initClient(cli, headers, numRetries);
         httplib::Result res = cli.Get(location, headers);
+        while (!res && numRetries--)
+        {
+            OERRLOG("Retrying vault %s get secret, communication error %d location %s", name.str(), res.error(), location ? location : "null");
+            if (retryWait)
+                Sleep(retryWait);
+            res = cli.Get(location, headers);
+        }
 
         if (res)
         {
@@ -577,6 +632,10 @@ public:
                 if (permissionDenied==false)
                     return requestSecretAtLocation(rkind, content, location, secret, version, true);
                 OERRLOG("Vault %s permission denied accessing secret (check namespace=%s?) %s.%s location %s [%d](%d) - response: %s", name.str(), vaultNamespace.str(), secret, version ? version : "", location ? location : "null", res->status, res.error(), res->body.c_str());
+            }
+            else if (res->status == 404)
+            {
+                OERRLOG("Vault %s secret not found %s.%s location %s", name.str(), secret, version ? version : "", location ? location : "null");
             }
             else
             {
