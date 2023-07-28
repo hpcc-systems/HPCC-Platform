@@ -143,7 +143,7 @@ export const BlobImportForm: React.FunctionComponent<BlobImportFormProps> = ({
                 newValues.selectedFiles[idx] = {
                     TargetName: "",
                     SourceFile: file["fullPath"],
-                    SourcePlane: file?.DropZone?.Name ?? "",
+                    SourcePlane: file["SourcePlane"] ?? "",
                     SourceIP: file["NetAddress"]
                 };
             });
