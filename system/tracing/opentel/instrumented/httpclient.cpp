@@ -19,7 +19,8 @@
 #include "opentelemetry/ext/http/common/url_parser.h"
 #include "opentelemetry/trace/semantic_conventions.h"
 
-#include "tracemanager.hpp"
+#include "jtrace.hpp"
+//#include "spanexporterfactory.hpp"
 
 namespace
 {
@@ -29,12 +30,33 @@ namespace http_client = opentelemetry::ext::http::client;
 namespace context     = opentelemetry::context;
 namespace nostd       = opentelemetry::nostd;
 
-//std::string MODULE_NAME = "SimulatedESPClient";
-std::string MODULE_NAME = "http_server";
+std::string MODULE_NAME = "SimulatedESPClient";
+//std::string MODULE_NAME = "http_server";
+/*
+void subTask(TraceManager * traceman)
+{
+    StartSpanOptions options;
+
+    auto span = traceman->getTracer()->StartSpan("subTask", options);
+    auto scope = traceman->getTracer()->WithActiveSpan(span);
+
+    span->End();
+}
+
+void compoundSubTask(TraceManager * traceman)
+{
+    StartSpanOptions options;
+    auto span = traceman->getTracer()->StartSpan("compoundSubTask", options);
+    auto scope = traceman->getTracer()->WithActiveSpan(span);
+    subTask(traceman);
+    span->End();
+}*/
 
 void sendRequest(const std::string &url)
 {
     auto http_client = http_client::HttpClientFactory::CreateSync();
+    //OStream exporter, useful for development and debugging tasks and simplest to set up.
+    //auto exporter = JLogSpanExporterFactory::Create();
 
     opentelemetry::ext::http::common::UrlParser espReqURL(url); //url parts used as sample span options/attributes
 
@@ -67,22 +89,24 @@ void sendRequest(const std::string &url)
     //activate the span
     Scope scope = tracer->WithActiveSpan(clientReqSpan);
 
-    const char * mytraceid = traceManager.queryTraceId();
-    fprintf(stdout, "mytraceid %s", mytraceid);
+    //simulate subtask with its own sub-span
+    //subTask(&traceManager);
 
-    // inject current context into http header
-    auto currentCtx = context::RuntimeContext::GetCurrent();
-    HttpTextMapCarrier<http_client::Headers> carrier1;
-    HPCCHttpTextMapCarrier<IProperties> carrier;
-    
-    auto propegator = context::propagation::GlobalTextMapPropagator::GetGlobalPropagator();
-    propegator->Inject(carrier, currentCtx); //injects current context as parent
-    auto a = carrier.httpHeaders->queryProp(HPCCSemanticConventions::kGLOBALIDHTTPHeader);
-    const char * callerId = traceManager.queryCallerId(carrier);
-    fprintf (stdout, "callerId %s and %s", callerId, a);
+    //std::string myLocalId;
+    //traceManager.queryCurrentSpanID(myLocalId);
+    //DBGLOG("myLocalId %s", myLocalId.c_str());
+
+    //std::string myTraceId;
+    //traceManager.queryTraceId(myTraceId);
+    //DBGLOG("mytraceid %s", myTraceId.c_str());
+
+    //HPCCHttpTextMapCarrier<IProperties> carrier;
+    HttpTextMapCarrier<http_client::Headers> carrier;
+    // inject current context into http or hpcchttp carrier
+    traceManager.injectCurretContext(carrier);
 
     // send http request
-    http_client::Result result = http_client->GetNoSsl(url, carrier1.httpHeaders);
+    http_client::Result result = http_client->GetNoSsl(url, carrier.httpHeaders);
 
     if (result)
     {
@@ -92,15 +116,15 @@ void sendRequest(const std::string &url)
         result.GetResponse().ForEachHeader(
             [&clientReqSpan](nostd::string_view header_name, nostd::string_view header_value)
             {
-              clientReqSpan->SetAttribute("http.header." + std::string(header_name.data()), header_value);
-              return true;
+                clientReqSpan->SetAttribute("http.header." + std::string(header_name.data()), header_value);
+                return true;
             });
 
         if (status_code >= 400)
         {
             clientReqSpan->SetStatus(StatusCode::kError); // kUnset(default),
-                                                       // kOk(Operation completed)
-                                                       // kError(peration encountered error)
+                                                          // kOk(Operation completed)
+                                                          // kError(peration encountered error)
         }
     }
     else
@@ -118,37 +142,10 @@ void sendRequest(const std::string &url)
 
 }  // namespace
 
-
-void subTask(TraceManager * traceman)
-{
-    StartSpanOptions options;
-
-    auto span = traceman->getTracer()->StartSpan("subTask", options);
-    auto scope = traceman->getTracer()->WithActiveSpan(span);
-
-    span->End();
-}
-
-void mainTask(TraceManager * traceman)
-{
-    StartSpanOptions options;
-    auto span = traceman->getTracer()->StartSpan("mainTask", options);
-    auto scope = traceman->getTracer()->WithActiveSpan(span);
-    subTask(traceman);
-    span->End();
-}
-
 int main(int argc, char *argv[])
 {
-    TraceManager traceManager(MODULE_NAME);
-    TraceManager::initTracer(); //@ init_module
-                                //sets up default provider and http propegator
-    mainTask(&traceManager);
-    const char * mytraceid = traceManager.queryTraceId();
-    if (isEmptyString(mytraceid))
-        fprintf(stderr, "Span is not active");
-    else
-        fprintf(stderr, "Span id: %s", mytraceid);
+    TraceManager traceManager(MODULE_NAME); //@ init_module
+                                            //sets up default provider and http propegator
 
     constexpr char default_host[]   = "localhost";
     constexpr char default_path[]   = "/helloworld";

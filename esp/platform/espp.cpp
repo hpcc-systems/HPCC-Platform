@@ -23,6 +23,7 @@
 #include "jliball.hpp"
 #include "jstats.h"
 #include "jutil.hpp"
+#include "jtrace.hpp"
 
 //CRT / OS
 #ifndef _WIN32
@@ -426,6 +427,11 @@ int init_main(int argc, const char* argv[])
     //save off generated config to register with container.  Legacy can always reference the config file, application based ESP needs generated config saved off
     Owned<IPropertyTree> appConfig;
 
+    TraceManager traceManager("esp");
+    auto espTracer = traceManager.getTracer();//All instances of this esp process can share the same tracer same as TraceManager::getTracer("esp")
+    auto rootEspProcspan = espTracer->StartSpan(__func__); //Dummy top level span for the esp process
+    auto scope = espTracer->WithActiveSpan(rootEspProcspan); //Set the active span. The span will remain active until the returned Scope object is destroyed.
+
     try
     {
         const char* cfgfile = NULL;
@@ -483,6 +489,16 @@ int init_main(int argc, const char* argv[])
         const char * processName = procpt->queryProp("@name");
         setStatisticsComponentName(SCTesp, processName, true);
 
+        rootEspProcspan->SetAttribute("procname", processName); //Span can be annotated with attributes
+        rootEspProcspan->SetAttribute("config", cfgfile);//Span can be annotated with attributes
+        //rootEspProcspan->SetAttribute("application", application);
+
+        std::string traceId;
+        traceManager.getCurrentTraceId(traceId);
+
+        std::string spanId;
+        traceManager.getCurrentSpanID(spanId);
+
         openEspLogFile(envpt.get(), procpt.get());
 
         DBGLOG("Esp starting %s", hpccBuildInfo.buildTag);
@@ -511,6 +527,8 @@ int init_main(int argc, const char* argv[])
             config.setown(cfg);
             abortHandler.setConfig(cfg);
         }
+
+        rootEspProcspan->End();
     }
     catch(IException* e)
     {

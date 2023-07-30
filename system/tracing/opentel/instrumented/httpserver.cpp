@@ -4,10 +4,12 @@
 #include "httpserver.hpp"
 #include "opentelemetry/trace/context.h"
 #include "opentelemetry/trace/semantic_conventions.h"
-#include "tracemanager.hpp"
+#include "jtrace.hpp"
 
 #include <iostream>
 #include <thread>
+
+std::string MODULE_NAME = "SimulatedESPServer";
 
 namespace
 {
@@ -25,11 +27,14 @@ public:
     virtual int onHttpRequest(HTTP_SERVER_NS::HttpRequest const &request,
                               HTTP_SERVER_NS::HttpResponse &response) override
     {
+        TraceManager traceManager(MODULE_NAME); //@ init_module, we need a getTraceManager()
+        auto tracer = traceManager.getTracer();
+
         StartSpanOptions options;
         options.kind = SpanKind::kServer;
 
         // extract parent(caller) context from http header, set as parent context for current span
-        TraceManager::setParentContextFromHeaders(const_cast<std::map<std::string, std::string> &>(request.headers), options);
+        TraceManager::getParentContext(const_cast<std::map<std::string, std::string> &>(request.headers), options);
         //Above call replaces the following code:
         //const HttpTextMapCarrier<std::map<std::string, std::string>> carrier(request_headers);
         //auto prop        = context::propagation::GlobalTextMapPropagator::GetGlobalPropagator();
@@ -37,16 +42,14 @@ public:
         //auto new_context = prop->Extract(carrier, current_ctx);
         //options.parent   = GetSpan(new_context)->GetContext();
 
-        std::string callerSpanID;
-        TraceManager::extractCallerSpanId(request.headers, callerSpanID);
-        DBGLOG("Caller Span ID: %s", callerSpanID.c_str());
+        //std::string callerSpanID;
+        //TraceManager::extractCallerSpanId(request.headers, callerSpanID);
+        //DBGLOG("Caller Span ID: %s", callerSpanID.c_str());
 
         std::string spanName = request.uri;
 
-        TraceManager traceManager(COMPONENT_NAME); 
-        auto tracer = traceManager.getTracer();
         //Declare current span with parent context extracted from http header
-        auto span = 
+        auto processingRequestSpan = 
           tracer->StartSpan(spanName,
             {{SemanticConventions::kNetHostName, server_name}, //span attributes
              {SemanticConventions::kNetHostPort, server_port},
@@ -57,26 +60,26 @@ public:
              {SemanticConventions::kHttpClientIp, request.client}},
              options); //options.parent is set as parent context for current span
 
-        auto scope = tracer->WithActiveSpan(span); 
+        auto scope = tracer->WithActiveSpan(processingRequestSpan); 
 
         for (auto &kv : request.headers)
         {
-            span->SetAttribute("http.header." + std::string(kv.first.data()), kv.second);
+            processingRequestSpan->SetAttribute("http.header." + std::string(kv.first.data()), kv.second);
         }
 
         if (request.uri == "/helloworld")
         {
-            span->AddEvent("Processing request");
-            span->AddEvent("Setting response headers");
+            processingRequestSpan->AddEvent("Processing request");
+            processingRequestSpan->AddEvent("Setting response headers");
             response.headers[HTTP_SERVER_NS::CONTENT_TYPE] = HTTP_SERVER_NS::CONTENT_TYPE_TEXT;
-            span->End();
+            processingRequestSpan->End();
             return 200;
         }
         else
         {
-            span->AddEvent("Processing Error request");
-            DBGLOG("Error request: %s", request.uri.c_str());
-            span->End();
+            processingRequestSpan->AddEvent("Processing Error request");
+            //DBGLOG("Error request: %s", request.uri.c_str());
+            processingRequestSpan->End();
             return 404;
         }
     }
@@ -85,8 +88,6 @@ public:
 
 int main(int argc, char *argv[])
 {
-    TraceManager::initTracer();
-
     // The port the validation service listens to can be specified via the command line.
     if (argc > 1)
     {
@@ -101,9 +102,10 @@ int main(int argc, char *argv[])
     Scope scope(root_span); //not active span? Just for scope?
     http_server.Start();
     std::cout << "Server is running..Press ctrl-c to exit...\n";
-    while (1)
+
+    //while (1)
     {
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        std::this_thread::sleep_for(std::chrono::seconds(60));
     }
     http_server.Stop();
     root_span->End();

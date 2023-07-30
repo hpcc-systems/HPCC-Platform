@@ -184,6 +184,34 @@ void checkSetCORSAllowOrigin(EspHttpBinding *binding, CHttpRequest *req, CHttpRe
 
 int CEspHttpServer::processRequest()
 {
+    TraceManager traceManager("esp"); //we'd use an appropriate module/lib name here
+    auto tracer = traceManager.getTracer();
+
+    //Extract parent(caller) context from http header, likely done earlier in the process
+    //We'd need a setParentContextFromHeaders version supporting httptransport's StringArray  m_headers;
+    //TraceManager::setParentContextFromHeaders(const_cast<std::map<std::string, std::string> &>(request.headers), options);
+    //or labda function to extract parent context from http header
+
+    //Options used to annotate span representing the processing of http requests
+    opentelemetry::trace::StartSpanOptions options;
+    options.kind = opentelemetry::trace::SpanKind::kServer;
+
+    //Declare the span, provide appropriate attributes, and options
+    //Trace ID generated if no parent context is provided
+    auto processingRequestSpan =
+         tracer->StartSpan("ProcessingHTTPRequest",
+            { //Declare whatever span attributes we have at this point
+              //More can be attached along the way
+              //{"stype", stype}, //span attributes
+              {opentelemetry::trace::SemanticConventions::kNetHostPort, "8010"},
+              //{opentelemetry::trace::SemanticConventions::kHttpMethod, methodName.str()},
+              //{opentelemetry::trace::SemanticConventions::kRpcService, serviceName.str()},
+              {opentelemetry::trace::SemanticConventions::kHttpScheme, "http"}},
+            options); //options.parent is set as parent context for current span
+
+    //activate the span
+    auto scope = tracer->WithActiveSpan(processingRequestSpan); 
+
     IEspContext* ctx = m_request->queryContext();
     StringBuffer errMessage;
     m_request->setPersistentEnabled(m_apport->queryProtocol()->persistentEnabled() && !shouldClose);
@@ -234,11 +262,14 @@ int CEspHttpServer::processRequest()
         StringBuffer serviceName;
         StringBuffer methodName;
         m_request->getEspPathInfo(stype, &pathEx, &serviceName, &methodName, false);
+
         ESPLOG(LogNormal,"sub service type: %s. parm: %s", getSubServiceDesc(stype), m_request->queryParamStr());
 
+//all thesee attributes could/should be tracked by opentel trace/spans
         m_request->updateContext();
         ctx->setServiceName(serviceName.str());
         ctx->setHTTPMethod(method.str());
+        processingRequestSpan->SetAttribute(opentelemetry::trace::SemanticConventions::kHttpMethod, method.str());
         ctx->setServiceMethod(methodName.str());
         ctx->addTraceSummaryValue(LogMin, "app.protocol", method.str(), TXSUMMARY_GRP_ENTERPRISE);
         ctx->addTraceSummaryValue(LogMin, "app.service", serviceName.str(), TXSUMMARY_GRP_ENTERPRISE);
@@ -257,6 +288,7 @@ int CEspHttpServer::processRequest()
         }
         ctx->addTraceSummaryValue(LogMin, "custom_fields.URL", url.str(), TXSUMMARY_GRP_ENTERPRISE);
 
+        //TraceManager::injectKeyValue(C & carrier, const char * key, const char * val)
         m_response->setHeader(HTTP_HEADER_HPCC_GLOBAL_ID, ctx->getGlobalId());
 
         if(strieq(method.str(), OPTIONS_METHOD))
@@ -268,7 +300,8 @@ int CEspHttpServer::processRequest()
             ESPLOG(LogMin, "%s %s, from %s", method.str(), m_request->getPath(pathStr).str(), m_request->getPeer(peerStr).str());
         else //user ID is in HTTP header
             ESPLOG(LogMin, "%s %s, from %s@%s", method.str(), m_request->getPath(pathStr).str(), userid, m_request->getPeer(peerStr).str());
-
+//checkUserAuth could declare nested span
+//and/or declare this as an event on the processingRequestSpan
         authState = checkUserAuth();
         if ((authState == authTaskDone) || (authState == authFailed))
             return 0;
@@ -449,6 +482,9 @@ int CEspHttpServer::processRequest()
         ctx->addTraceSummaryValue(LogMin, "msg", "Unknown exception caught in CEspHttpServer::processRequest", TXSUMMARY_GRP_ENTERPRISE);
         return 0;
     }
+
+    //need to ensure that the span is ended when out of scope Owend<ISpan> processingRequestSpan?
+    processingRequestSpan->End();
 
     return 0;
 }

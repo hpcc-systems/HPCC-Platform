@@ -42,6 +42,15 @@ endif(NOT TARGET libbase58)
 
 find_package(yaml CONFIG REQUIRED)
 
+#For http exporter
+find_package(Protobuf REQUIRED)
+#For http exporter
+find_package(CURL REQUIRED)
+
+find_package(opentelemetry-cpp CONFIG REQUIRED)
+
+#add_subdirectory(${HPCC_SOURCE_DIR}/system/tracing/opentel/exporters/jlog ${CMAKE_BINARY_DIR}/system/tracing/opentel/exporters/jlog)
+
 SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${STRICT_CXX_FLAGS}")
 
 set (    SRCS
@@ -184,6 +193,7 @@ set (    INCLUDES
         ${HPCC_SOURCE_DIR}/system/security/cryptohelper/digisign.cpp
         ${HPCC_SOURCE_DIR}/system/security/cryptohelper/pke.cpp
         ${HPCC_SOURCE_DIR}/system/security/cryptohelper/ske.cpp
+        #${HPCC_SOURCE_DIR}/system/tracing/tracemanager.hpp
         )
 
 set_source_files_properties(jmd5.cpp jsort.cpp PROPERTIES SKIP_UNITY_BUILD_INCLUSION ON)
@@ -207,6 +217,8 @@ include_directories (
          ${HPCC_SOURCE_DIR}/system/security/shared
          ${HPCC_SOURCE_DIR}/system/security/cryptohelper
          ${HPCC_SOURCE_DIR}/system/httplib
+         #${HPCC_SOURCE_DIR}/system/tracing
+         ${OPENTELEMETRY_CPP_INCLUDE_DIRS}
          ${CMAKE_CURRENT_BINARY_DIR}  # for generated jelog.h file
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
@@ -229,6 +241,17 @@ endif ( ${HAVE_LIBDL} )
 if ( ${HAVE_LIBCRYPT} )
 target_link_libraries ( jlib crypt)
 endif ( ${HAVE_LIBCRYPT} )
+
+target_link_libraries ( jlib
+        opentelemetry-cpp::api
+        opentelemetry-cpp::ext
+        opentelemetry-cpp::sdk
+        opentelemetry-cpp::logs #might not need
+        opentelemetry-cpp::ostream_span_exporter 
+        opentelemetry-cpp::metrics #might not need
+        opentelemetry-cpp::otlp_http_exporter #might not need 
+        opentelemetry-cpp::http_client_curl #might not need
+        )
 
 IF (USE_OPENSSL)
 target_link_libraries ( jlib ${OPENSSL_LIBRARIES})

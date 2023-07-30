@@ -14,14 +14,14 @@
 #    limitations under the License.
 ################################################################################
 
-# Component: jlib
+# Component: jlogspanexporter
 #####################################################
 # Description:
 # ------------
-#    Cmake Input File for jlib
+#    Cmake Input File for jlogspanexporter
 #####################################################
 
-project( instrumentedhttp )
+project( jlogspanexporter )
 
 #For http exporter
 find_package(Protobuf REQUIRED)
@@ -39,30 +39,15 @@ if (opentelemetry-cpp_FOUND)
          ${OPENTELEMETRY_CPP_INCLUDE_DIRS}
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
-         ${HPCC_SOURCE_DIR}/system/tracing/opentel/exporters/jlog 
     )
 
-    SET ( SERVER_SRCS httpserver.cpp)
-    SET ( SERVER_INCLUDES httpserver.hpp )
-    SET ( CLIENT_SRCS httpclient.cpp)
+    SET ( SRCS spanexporterfactory.cpp )
+    SET ( INCLUDES spanexporterfactory.hpp )
     SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${STRICT_CXX_FLAGS}")
 
-    HPCC_ADD_EXECUTABLE(instrumented_http_client ${CLIENT_SRCS})
-    HPCC_ADD_EXECUTABLE(instrumented_http_server ${SERVER_SRCS})
-    target_link_libraries(instrumented_http_server 
-        ${CMAKE_THREAD_LIBS_INIT}
-        opentelemetry-cpp::api
-        opentelemetry-cpp::ext
-        opentelemetry-cpp::sdk
-        opentelemetry-cpp::logs
-        opentelemetry-cpp::http_client_curl
-        opentelemetry-cpp::metrics
-        opentelemetry-cpp::otlp_http_exporter
-        opentelemetry-cpp::ostream_span_exporter
-        jlib
-        )
+    HPCC_ADD_LIBRARY( jlogspanexporter SHARED ${SRCS} ${INCLUDES} )
 
-    target_link_libraries ( instrumented_http_client
+    target_link_libraries ( jlogspanexporter
         opentelemetry-cpp::api
         opentelemetry-cpp::ext
         opentelemetry-cpp::sdk

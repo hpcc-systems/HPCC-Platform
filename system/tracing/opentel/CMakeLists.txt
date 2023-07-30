@@ -21,6 +21,7 @@
 #    Cmake Input File for openteltracing
 #####################################################
 
-#project( tracing )
+project( openteltracing )
 
-#HPCC_ADD_SUBDIRECTORY (opentel) #opentelemetry based tracing projects
+#HPCC_ADD_SUBDIRECTORY (instrumented) #sample instrumented HTTP client/server
+#HPCC_ADD_SUBDIRECTORY (exporters/jlog) #jlog exporter
