@@ -4785,6 +4785,7 @@ void HqlCppTranslator::buildTempExpr(BuildCtx & ctx, IHqlExpression * expr, CHql
             return;
         }
         break;
+    case no_regex_findset:
     case no_id2blob:
         buildExpr(ctx, expr, tgt);
         return;
