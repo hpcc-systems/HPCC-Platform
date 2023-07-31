@@ -920,7 +920,7 @@ public:
         }
         if (!onlylocal)
         {
-            if (lfn.isExternal() && !lfn.isRemote())
+            if (lfn.isExternalFile() || lfn.isExternalPlane())
             {
                 Owned<IFileDescriptor> fDesc = createExternalFileDescriptor(lfn.get());
                 dfile.setown(queryDistributedFileDirectory().createExternal(fDesc, lfn.get()));
@@ -1125,6 +1125,11 @@ public:
     virtual bool isExternal() const override
     {
         return lfn.isExternal();
+    }
+
+    virtual bool isExternalFile() const override
+    {
+        return lfn.isExternalFile() || lfn.isExternalPlane();
     }
 };
 

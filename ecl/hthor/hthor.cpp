@@ -490,7 +490,7 @@ void CHThorDiskWriteActivity::resolve()
                 else
                     throw MakeStringException(99, "Cannot write %s, file already exists (missing OVERWRITE attribute?)", lfn.str());
             }
-            else if (f->exists() || f->isExternal() || agent.queryResolveFilesLocally())
+            else if (f->exists() || f->isExternalFile() || agent.queryResolveFilesLocally())
             {
                 // special/local/external file
                 if (f->numParts()!=1)
@@ -8370,7 +8370,7 @@ void CHThorDiskReadBaseActivity::resolve()
             Owned<IFileDescriptor> fdesc;
             fdesc.setown(ldFile->getFileDescriptor());
             gatherInfo(fdesc);
-            if (ldFile->isExternal())
+            if (ldFile->isExternalFile())
                 compressed = checkWriteIsCompressed(helper.getFlags(), fixedDiskRecordSize, false);//grouped=FALSE because fixedDiskRecordSize already includes grouped
             IDistributedFile *dFile = ldFile->queryDistributedFile();
             if (dFile)  //only makes sense for distributed (non local) files
