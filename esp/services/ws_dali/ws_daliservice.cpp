@@ -28,9 +28,6 @@ using namespace daadmin;
 
 #define REQPATH_EXPORTSDSDATA "/WSDali/Export"
 
-const char* daliFolder = "tempdalifiles" PATHSEPSTR;
-const unsigned daliFolderLength = strlen(daliFolder);
-
 void CWSDaliEx::init(IPropertyTree* cfg, const char* process, const char* service)
 {
     espProcess.set(process);
@@ -74,29 +71,18 @@ void CWSDaliSoapBindingEx::exportSDSData(CHttpRequest* request, CHttpResponse* r
         throw makeStringException(ECLWATCH_CANNOT_CONNECT_DALI, "Failed to connect Dali.");
 
     Owned<IPropertyTree> root = conn->getRoot();
+    response->setContent(root);
 
-    Owned<IFile> workingDir = createIFile(daliFolder);
-    if (!workingDir->exists())
-        workingDir->createDirectory();
-
-    StringBuffer peer, outFileNameWithPath;
-    VStringBuffer prefix("sds_for_%s", request->getPeer(peer).str());
-    Owned<IFileIO> io = createUniqueFile(daliFolder, prefix, nullptr, outFileNameWithPath, IFOcreaterw);
-    { //Force the fios to finish
-        Owned<IFileIOStream> fios = createBufferedIOStream(io);
-        toXML(root, *fios);
-    }
-
-    VStringBuffer headerStr("attachment;filename=%s", outFileNameWithPath.str() + daliFolderLength);
+    //Set "Content-disposition" header
+    CDateTime dt;
+    dt.setNow();
+    StringBuffer headerStr;
+    headerStr.appendf("attachment;filename=sds_%u.%u.tmp", (unsigned)GetCurrentProcessId(), (unsigned)dt.getSimple());
     IEspContext* context = request->queryContext();
     context->addCustomerHeader("Content-disposition", headerStr.str());
 
-    response->setContent(createIOStream(io));
     response->setContentType(HTTP_TYPE_OCTET_STREAM);
     response->send();
-
-    io.clear();
-    removeFileTraceIfFail(outFileNameWithPath);
 }
 
 void CWSDaliEx::checkAccess(IEspContext& context)
