@@ -553,7 +553,91 @@ unsigned getThreadCount()
 }
 
 // CThreadedPersistent
+#ifdef NEW_THREADEDPERSISTENT
+class GlobalThreadPool : public CInterfaceOf<IThreadFactory>
+{
+private:
+    class GlobalThread : public CInterfaceOf<IPooledThread>
+    {
+    public:
+        virtual void init(void *param)
+        {
+            callback = (IThreaded *)param;
+        }
+        virtual void threadmain()
+        {
+            callback->threadmain();
+        }
+        virtual bool stop()
+        {
+            return false;
+        }
+        virtual bool canReuse() const
+        {
+            return true;
+        }
+    private:
+        IThreaded * callback;
+    };
+public:
+    GlobalThreadPool()
+    {
+        IExceptionHandler *exceptionHandler = nullptr;
+        unsigned defaultmax = 0;
+        unsigned delay = 0;
+        unsigned stacksize = 0; // i.e. default;
+        unsigned timeoutOnRelease = 0;
+        unsigned targetpoolsize = 0;
+        pool.setown(createThreadPool("GlobalThreadPool", this, exceptionHandler, defaultmax, delay, stacksize, timeoutOnRelease, targetpoolsize));
+    }
 
+//interface IThreadFactory
+    virtual IPooledThread *createNew() { return new GlobalThread; }
+
+    PooledThreadHandle start(IThreaded * callback)
+    {
+        return pool->start(callback);
+    }
+
+    bool join(PooledThreadHandle handle, unsigned timeout)
+    {
+        return pool->join(handle, timeout);
+    }
+
+private:
+    Owned<IThreadPool> pool;
+};
+
+
+static GlobalThreadPool globalThreadPool;
+
+CThreadedPersistent::CThreadedPersistent(const char *name, IThreaded *_owner) : owner(_owner)
+{
+}
+
+CThreadedPersistent::~CThreadedPersistent()
+{
+    join(INFINITE, false);
+}
+
+void CThreadedPersistent::start()
+{
+    //MORE: Pass this instead of owner and catch exceptions in this class for later reporting?
+    handle = globalThreadPool.start(owner);
+    joined = false;
+}
+
+bool CThreadedPersistent::join(unsigned timeout, bool throwException)
+{
+    if (!joined)
+    {
+        globalThreadPool.join(handle, timeout);
+        joined = true;
+    }
+    return true;
+}
+
+#else
 CThreadedPersistent::CThreadedPersistent(const char *name, IThreaded *_owner) : athread(*this, name), owner(_owner), state(s_ready)
 {
     halt = false;
@@ -639,6 +723,8 @@ bool CThreadedPersistent::join(unsigned timeout, bool throwException)
     }
     return true;
 }
+
+#endif
 
 //class CAsyncFor
 
