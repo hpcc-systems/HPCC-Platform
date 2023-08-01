@@ -39,8 +39,14 @@
 
   <para>Example:</para>
 
-  <programlisting>ArcCosine := ACOS(CosineAngle);
+  <programlisting lang="ECL" role="runnable">Deg2Rad := 0.0174532925199; //number of radians in a degree
+cosineAngle := 0.75;
+acos(cosineAngle) * Deg2Rad; 
 </programlisting>
 
-  <para>See Also: <link linkend="COS">COS</link>, <link linkend="SIN">SIN</link>, <link linkend="TAN">TAN</link>, <link linkend="ASIN">ASIN</link>, <link linkend="ATAN">ATAN</link>, <link linkend="COSH">COSH</link>, <link linkend="SINH">SINH</link>, <link linkend="TANH">TANH</link></para>
+  <para>See Also: <link linkend="COS">COS</link>, <link
+  linkend="SIN">SIN</link>, <link linkend="TAN">TAN</link>, <link
+  linkend="ASIN">ASIN</link>, <link linkend="ATAN">ATAN</link>, <link
+  linkend="COSH">COSH</link>, <link linkend="SINH">SINH</link>, <link
+  linkend="TANH">TANH</link></para>
 </sect1>

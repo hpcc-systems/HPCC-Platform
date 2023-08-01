@@ -38,7 +38,15 @@
 
   <para>Example:</para>
 
-  <para><programlisting>ArcSine := ASIN(SineAngle);</programlisting></para>
+  <para><programlisting lang="ECL" role="runnable">Rad2Deg := 57.295779513082; //number of degrees in a radian
+SineAngle := .25;
+ArcSine := ASIN(SineAngle)*Rad2Deg;
+OUTPUT(ArcSine); // degrees
+</programlisting></para>
 
-  <para>See Also: <link linkend="ACOS">ACOS</link>, <link linkend="COS">COS</link>, <link linkend="SIN">SIN</link>, <link linkend="TAN">TAN</link>, <link linkend="ATAN">ATAN</link>, <link linkend="COSH">COSH</link>, <link linkend="SINH">SINH</link>, <link linkend="TANH">TANH</link></para>
+  <para>See Also: <link linkend="ACOS">ACOS</link>, <link
+  linkend="COS">COS</link>, <link linkend="SIN">SIN</link>, <link
+  linkend="TAN">TAN</link>, <link linkend="ATAN">ATAN</link>, <link
+  linkend="COSH">COSH</link>, <link linkend="SINH">SINH</link>, <link
+  linkend="TANH">TANH</link></para>
 </sect1>

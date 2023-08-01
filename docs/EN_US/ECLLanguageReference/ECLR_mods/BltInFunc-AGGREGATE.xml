@@ -205,7 +205,7 @@
     <para>The <emphasis>mergetransform</emphasis> is generated for expressions
     of the form:</para>
 
-    <programlisting>  SELF.x := &lt;RIGHT.x &lt;op&gt; f(LEFT)
+    <programlisting lang="ECL">  SELF.x := &lt;RIGHT.x &lt;op&gt; f(LEFT)
   SELF.x := f(LEFT)  &lt;op&gt; RIGHT.x</programlisting>
 
     <para>where the &lt;op&gt; is: MAX, MIN, SUM, +, &amp;, |, ^, *</para>
@@ -240,7 +240,7 @@
     <emphasis>maintransform</emphasis>. If it can't, then the user will need
     to specify one.</para>
 
-    <programlisting>//Example 1: Produce a list of box contents by concatenating a string: 
+    <programlisting lang="ECL" role="runnable">//Example 1: Produce a list of box contents by concatenating a string: 
 IMPORT Std;
 inRec := RECORD 
   UNSIGNED box; 

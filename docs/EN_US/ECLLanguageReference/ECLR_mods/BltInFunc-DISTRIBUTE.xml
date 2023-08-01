@@ -270,7 +270,7 @@
 
     <para>Example:</para>
 
-    <programlisting>MySet1 := DISTRIBUTE(Person); //"random" distribution - no skew
+    <programlisting lang="ECL">MySet1 := DISTRIBUTE(Person); //"random" distribution - no skew
 MySet2 := DISTRIBUTE(Person,HASH32(Person.per_ssn));
  //all people with the same SSN end up on the same node
  //INDEX example:

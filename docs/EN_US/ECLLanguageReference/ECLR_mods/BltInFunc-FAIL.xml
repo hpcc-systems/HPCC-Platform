@@ -77,7 +77,7 @@
 
   <para>Example:</para>
 
-  <programlisting>IF(header.version &lt;&gt; doxie.header_version_new,
+  <programlisting lang="ECL">IF(header.version &lt;&gt; doxie.header_version_new,
    FAIL('Mismatch -- header.version vs. doxie.header_version_new.'));
 
 FailedJob := FAIL('ouch, it broke');

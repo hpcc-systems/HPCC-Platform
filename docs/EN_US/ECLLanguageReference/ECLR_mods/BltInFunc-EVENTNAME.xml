@@ -29,7 +29,7 @@
 
   <para>Example:</para>
 
-  <programlisting>doMyService := FUNCTION
+  <programlisting lang="ECL" role="NOTrunnable">doMyService := FUNCTION
   O := OUTPUT('Did a Service for: ' + 'EVENTNAME=' + EVENTNAME);
   N := NOTIFY(EVENT('MyServiceComplete',
                     '&lt;Event&gt;&lt;returnTo&gt;FRED&lt;/returnTo&gt;&lt;/Event&gt;'),

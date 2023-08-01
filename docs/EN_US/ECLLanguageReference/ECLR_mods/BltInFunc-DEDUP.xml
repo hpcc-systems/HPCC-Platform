@@ -103,7 +103,7 @@
 
             <entry>Optional. Specifies keeping n number of duplicate records.
             If omitted, the default behavior is to KEEP 1. Not valid with the
-            ALL option present. </entry>
+            ALL option present.</entry>
           </row>
 
           <row>
@@ -259,7 +259,7 @@
 
   <para>Example:</para>
 
-  <programlisting>SomeFile := DATASET([{'001','KC','G'}, 
+  <programlisting lang="ECL" role="runnable">SomeFile := DATASET([{'001','KC','G'}, 
                      {'002','KC','Z'}, 
                      {'003','KC','Z'}, 
                      {'004','KC','C'}, 
