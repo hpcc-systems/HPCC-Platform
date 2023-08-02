@@ -465,7 +465,7 @@ void readStaticTopology()
     std::vector<RoxieEndpointInfo> allRoles;
     IpAddressArray nodeTable;
     unsigned numNodes = topology->getCount("./RoxieServerProcess");
-    if (!numNodes && localAgent)
+    if (!numNodes && oneShotRoxie)
     {
         if (topology->getPropBool("expert/@addDummyNode", false))
         {
@@ -480,7 +480,7 @@ void readStaticTopology()
             topology->setPropInt("@channelsPerNode", 2);
             topology->setProp("@agentConfig", "cyclic");
         }
-        else if (localAgent)
+        else if (oneShotRoxie)
         {
             topology->addPropTree("RoxieServerProcess")->setProp("@netAddress", ".");
             numNodes = 1;
@@ -732,45 +732,6 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         encryptInTransit = topology->getPropBool("@encryptInTransit", false) && !localAgent;
         if (encryptInTransit)
             initSecretUdpKey();
-        numChannels = topology->getPropInt("@numChannels", 0);
-#ifdef _CONTAINERIZED
-        if (!numChannels)
-            throw makeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - numChannels not set");
-#endif
-        const char *channels = topology->queryProp("@channels");
-        if (channels)
-        {
-            StringArray channelSpecs;
-            channelSpecs.appendList(channels, ",", true);
-            ForEachItemIn(idx, channelSpecs)
-            {
-                char *tail = nullptr;
-                unsigned channel = strtoul(channelSpecs.item(idx), &tail, 10);
-                unsigned repl = 0;
-                if (*tail==':')
-                {
-                    tail++;
-                    repl = atoi(tail);
-                }
-                else if (*tail)
-                    throw makeStringExceptionV(ROXIE_INTERNAL_ERROR, "Invalid channel specification %s", channels);
-                agentChannels.push_back(std::pair<unsigned, unsigned>(channel, repl));
-            }
-#ifdef _CONTAINERIZED
-            if (agentChannels.size() != 1)
-                throw makeStringExceptionV(ROXIE_INTERNAL_ERROR, "Invalid channel specification %s - single channel expected", channels);
-            myChannel = agentChannels[0].first;
-            if (myChannel > numChannels)
-                throw makeStringExceptionV(ROXIE_INTERNAL_ERROR, "Invalid channel specification %s - value out of range", channels);
-#endif
-        }
-#ifdef _CONTAINERIZED
-        else if (localAgent)
-        {
-            for (unsigned channel = 1; channel <= numChannels; channel++)
-                agentChannels.push_back(std::pair<unsigned, unsigned>(channel, 0));
-        }
-#endif
         const char *topos = topology->queryProp("@topologyServers");
         StringArray topoValues;
         if (topos)
@@ -843,6 +804,46 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             else
                 runOnce = true;
         }
+
+        numChannels = topology->getPropInt("@numChannels", 0);
+#ifdef _CONTAINERIZED
+        if (!numChannels)
+            throw makeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - numChannels not set");
+#endif
+        const char *channels = topology->queryProp("@channels");
+        if (channels)
+        {
+            StringArray channelSpecs;
+            channelSpecs.appendList(channels, ",", true);
+            ForEachItemIn(idx, channelSpecs)
+            {
+                char *tail = nullptr;
+                unsigned channel = strtoul(channelSpecs.item(idx), &tail, 10);
+                unsigned repl = 0;
+                if (*tail==':')
+                {
+                    tail++;
+                    repl = atoi(tail);
+                }
+                else if (*tail)
+                    throw makeStringExceptionV(ROXIE_INTERNAL_ERROR, "Invalid channel specification %s", channels);
+                agentChannels.push_back(std::pair<unsigned, unsigned>(channel, repl));
+            }
+#ifdef _CONTAINERIZED
+            if (agentChannels.size() != 1)
+                throw makeStringExceptionV(ROXIE_INTERNAL_ERROR, "Invalid channel specification %s - single channel expected", channels);
+            myChannel = agentChannels[0].first;
+            if (myChannel > numChannels)
+                throw makeStringExceptionV(ROXIE_INTERNAL_ERROR, "Invalid channel specification %s - value out of range", channels);
+#endif
+        }
+#ifdef _CONTAINERIZED
+        else if (oneShotRoxie)
+        {
+            for (unsigned channel = 1; channel <= numChannels; channel++)
+                agentChannels.push_back(std::pair<unsigned, unsigned>(channel, 0));
+        }
+#endif
 
         if (!topology->hasProp("@resolveLocally"))
             topology->setPropBool("@resolveLocally", !topology->hasProp("@daliServers"));
