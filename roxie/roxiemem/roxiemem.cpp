@@ -6644,7 +6644,7 @@ public:
 
     DataBuffer *allocate()
     {
-        CriticalBlock b(crit);
+        CLeavableCriticalBlock block(crit);
 
         if (memTraceLevel >= 5)
             DBGLOG("RoxieMemMgr: CDataBufferManager::allocate() curBlock=%p nextAddr=%p:%x", curBlock, nextBase, nextOffset);
@@ -6681,8 +6681,12 @@ public:
                         memsize_t nextHeadId = createDataId(nextFree, nextSeqFromDataId(curHeadId));
                         if (likely(bottom->freeHeadId.compare_exchange_weak(curHeadId, nextHeadId, std::memory_order_acq_rel)))
                         {
-                            dataBuffersActive.fetch_add(1);
                             bottom->Link();
+
+                            //Leave the critical section before initialising the return result
+                            block.leave();
+
+                            dataBuffersActive.fetch_add(1);
                             curFree->nextDataId = 0;
                             curFree->changeState(DBState::freed, DBState::unowned, __func__); // sanity check - will be overriden by the following new
                             if (memTraceLevel >= 4)
@@ -6694,19 +6698,15 @@ public:
 
                 if (nextOffset < HEAP_ALIGNMENT_SIZE) // Is there any space in the current block (it must be a whole block)
                 {
-                    dataBuffersActive.fetch_add(1);
                     curBlock->Link();
-                    DataBuffer *x = ::new(nextBase+nextOffset) DataBuffer();
+                    char * result = nextBase+nextOffset;
                     nextOffset += DATA_ALIGNMENT_SIZE;
-                    if (nextOffset == HEAP_ALIGNMENT_SIZE)
-                    {
-                        // MORE: May want to delete this "if" logic !!
-                        //       and let it be handled in the similar logic of "else" part below.
-                        curBlock->Release();
-                        curBlock = NULL;
-                        nextBase = NULL;
-                        //nextOffset = 0 - not needed since only used if curBlock is set
-                    }
+
+                    //Leave the critical section before initialising the return result
+                    block.leave();
+
+                    dataBuffersActive.fetch_add(1);
+                    DataBuffer *x = ::new(result) DataBuffer();
                     if (memTraceLevel >= 4)
                         DBGLOG("RoxieMemMgr: CDataBufferManager::allocate() allocated DataBuffer - addr=%p", x);
                     return x;
@@ -6749,8 +6749,12 @@ public:
                                 memsize_t nextHeadId = createDataId(nextFree, nextSeqFromDataId(curHeadId));
                                 if (likely(finger->freeHeadId.compare_exchange_weak(curHeadId, nextHeadId, std::memory_order_acq_rel)))
                                 {
-                                    dataBuffersActive.fetch_add(1);
                                     finger->Link();
+
+                                    //Leave the critical section before initialising the return result
+                                    block.leave();
+
+                                    dataBuffersActive.fetch_add(1);
                                     curFree->nextDataId = 0;
                                     curFree->changeState(DBState::freed, DBState::unowned, __func__); // sanity check - will be overriden by the following new
                                     if (memTraceLevel >= 4)
