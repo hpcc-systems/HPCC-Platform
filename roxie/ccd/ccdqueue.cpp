@@ -3076,6 +3076,16 @@ public:
         return true;
     }
 
+    virtual RecordLengthType *getNextLength() override
+    {
+        if (pos==datalen)
+            return NULL;
+        assertex(pos + sizeof(RecordLengthType) <= datalen);
+        void * cur = ((char *) data) + pos;
+        pos += sizeof(RecordLengthType);
+        return (RecordLengthType *) cur;
+    }
+
     virtual const void * getNext(int length)
     {
         if (pos==datalen)
@@ -3456,10 +3466,9 @@ public:
                             case ROXIE_FILECALLBACK:
                             {
                                 Owned<IMessageUnpackCursor> callbackData = mr->getCursor(rowManager);
-                                OwnedConstRoxieRow len = callbackData->getNext(sizeof(RecordLengthType));
-                                if (len)
+                                RecordLengthType *rowlen = callbackData->getNextLength();
+                                if (rowlen)
                                 {
-                                    RecordLengthType *rowlen = (RecordLengthType *) len.get();
                                     OwnedConstRoxieRow row = callbackData->getNext(*rowlen);
                                     const char *rowdata = (const char *) row.get();
                                     // bool isOpt = * (bool *) rowdata;

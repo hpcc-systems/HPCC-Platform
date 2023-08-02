@@ -3479,8 +3479,13 @@ public:
         if (!data.length())
             return NULL;
         const void *ret = data.item(0);
-        data.remove(0);
+        data.remove(0); // yuk! What is this used for?
         return ret;
+    }
+
+    virtual RecordLengthType *getNextLength() override
+    {
+        throwUnexpected();
     }
 
 };
@@ -3532,11 +3537,10 @@ public:
 
 void throwRemoteException(IMessageUnpackCursor *extra)
 {
-    RecordLengthType *rowlen = (RecordLengthType *) extra->getNext(sizeof(RecordLengthType));
+    RecordLengthType *rowlen = extra->getNextLength();
     if (rowlen)
     {
         char *xml = (char *) extra->getNext(*rowlen);
-        ReleaseRoxieRow(rowlen);
         Owned<IPropertyTree> p = createPTreeFromXMLString(xml, ipt_fast);
         ReleaseRoxieRow(xml);
         unsigned code = p->getPropInt("Code", 0);
@@ -4295,11 +4299,10 @@ public:
             return mu->getNext(meta.getFixedSize());
         else
         {
-            RecordLengthType *rowlen = (RecordLengthType *) mu->getNext(sizeof(RecordLengthType));
+            RecordLengthType *rowlen = mu->getNextLength();
             if (rowlen)
             {
                 RecordLengthType len = *rowlen;
-                ReleaseRoxieRow(rowlen);
                 const void *agentRec = mu->getNext(len);
                 if (deserializer && mu->isSerialized())
                 {
@@ -4992,10 +4995,9 @@ public:
                                 activity.queryLogCtx().CTXLOG("Redundant callback on query %s", header.toString(s).str());
                             }
                             Owned<IMessageUnpackCursor> callbackData = mr->getCursor(rowManager);
-                            OwnedConstRoxieRow len = callbackData->getNext(sizeof(RecordLengthType));
-                            if (len)
+                            RecordLengthType *rowlen = callbackData->getNextLength();
+                            if (rowlen)
                             {
-                                RecordLengthType *rowlen = (RecordLengthType *) len.get();
                                 OwnedConstRoxieRow row = callbackData->getNext(*rowlen);
                                 const char *rowdata = (const char *) row.get();
                                 // bool isOpt = * (bool *) rowdata;
@@ -5022,10 +5024,9 @@ public:
                     case ROXIE_DEBUGCALLBACK:
                         {
                         Owned<IMessageUnpackCursor> callbackData = mr->getCursor(rowManager);
-                        OwnedConstRoxieRow len = callbackData->getNext(sizeof(RecordLengthType));
-                        if (len)
+                        RecordLengthType *rowlen = callbackData->getNextLength();
+                        if (rowlen)
                         {
-                            RecordLengthType *rowlen = (RecordLengthType *) len.get();
                             OwnedConstRoxieRow row = callbackData->getNext(*rowlen);
                             char *rowdata = (char *) row.get();
                             if (ctxTraceLevel > 5)
@@ -5058,10 +5059,9 @@ public:
                         {
                         // we need to send back to the agent a message containing the file info requested.
                         Owned<IMessageUnpackCursor> callbackData = mr->getCursor(rowManager);
-                        OwnedConstRoxieRow len = callbackData->getNext(sizeof(RecordLengthType));
-                        if (len)
+                        RecordLengthType *rowlen = callbackData->getNextLength();
+                        if (rowlen)
                         {
-                            RecordLengthType *rowlen = (RecordLengthType *) len.get();
                             OwnedConstRoxieRow row = callbackData->getNext(*rowlen);
                             const char *rowdata = (const char *) row.get();
                             bool isOpt = * (bool *) rowdata;
@@ -5095,7 +5095,7 @@ public:
                         Owned<IMessageUnpackCursor> extra = mr->getCursor(rowManager);
                         for (;;)
                         {
-                            RecordLengthType *rowlen = (RecordLengthType *) extra->getNext(sizeof(RecordLengthType));
+                            RecordLengthType *rowlen = extra->getNextLength();
                             if (rowlen)
                             {
                                 char *logInfo = (char *) extra->getNext(*rowlen);
@@ -5137,7 +5137,6 @@ public:
                                         activity.mergeStats(childStats);
                                     }
                                 }
-                                ReleaseRoxieRow(rowlen);
                                 ReleaseRoxieRow(logInfo);
                             }
                             else
@@ -23915,6 +23914,10 @@ public:
         virtual bool isSerialized() const
         {
             return false;
+        }
+        virtual RecordLengthType *getNextLength() override
+        {
+            throwUnexpected();
         }
     };
 
