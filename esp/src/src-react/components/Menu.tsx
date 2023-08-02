@@ -311,7 +311,10 @@ export const SubNavigation: React.FunctionComponent<SubNavigationProps> = ({
                     </Stack.Item>
                     {!subNav &&
                         <Stack.Item grow={1} style={{ lineHeight: "24px" }}>
-                            <Breadcrumbs hashPath={hashPath} ignoreN={1} />
+                            {hashPath.includes("/files/")
+                            ? <Breadcrumbs hashPath={hashPath} ignoreN={2} />
+                            : <Breadcrumbs hashPath={hashPath} ignoreN={1} />
+                            }                    
                         </Stack.Item>
                     }
                 </Stack>
