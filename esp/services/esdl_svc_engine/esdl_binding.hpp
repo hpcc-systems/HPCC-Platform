@@ -210,10 +210,108 @@ public:
     void getSoapBody(StringBuffer& out,StringBuffer& soapresp);
     void getSoapError(StringBuffer& out,StringBuffer& soapresp,const char *,const char *);
 
+    /**
+     * @brief Adjust the contents of the target configuration on a per-transaction basis.
+     *
+     * If changes to the shared method configuration are required on a per-transaction basis,
+     * replace the shared configuration with a copy that contains the updates. This must be
+     * invoked before `createTargetContext` or `checkCreateEsdlServceScriptContext`, both of which
+     * use the target configuration.
+     *
+     * Gateway elements may require updates on a per-transaction basis. Specifically, the use
+     * of local secret references must be updated with each transaction because the secret
+     * values may have changed since a previous use.
+     *
+     * @param tgtcfg the shared configuration on input; either the unchanged shared configuration
+     *               or modified copy on output
+     */
+    void adjustTargetConfig(Owned<IPTree>& tgtcfg) const;
+
     virtual bool unsubscribeServiceFromDali() override {return true;}
     virtual bool subscribeServiceToDali() override {return false;}
     virtual bool attachServiceToDali() override {return false;}
     virtual bool detachServiceFromDali() override {return false;}
+
+protected:
+    static constexpr const char* gwTargetSecretPrefix = "secret:";
+    static constexpr const size_t gwTargetSecretPrefixLength = strlen(gwTargetSecretPrefix);
+    static constexpr const char* gwLocalSecretPrefix = "local-secret:";
+    static constexpr const size_t gwLocalSecretPrefixLength = strlen(gwLocalSecretPrefix);
+    static constexpr const char* gwPassThroughPrefix = "pass-through:";
+    static constexpr const size_t gwPassThroughPrefixLength = strlen(gwPassThroughPrefix);
+
+    /**
+     * @brief Possibly construct a new gateway URL value by resolving a given connection secret
+     *        identifier.
+     *
+     * The gateway element is expected to contain a non-empty value for property `@url`. This value
+     * must begin with gwLocalSecretPrefix and be followed by a secret identification in the form
+     * of `[ vault-id ":" ] secret-name`. This is assumed to identify connection secret known only
+     * to the ESP, exceptions will be thrown on failure:
+     *
+     * - `gateway` must contain property `@url`; and
+     * - property '@url` must begin with gwLocalSecretPrefix; and
+     * - property `@url` must include a secret name, and may include a vault identifier; and
+     * - the optional vault identifier and required secret name combination must identify a secret
+     *   in the `esp` category; and
+     * - the secret must grant the requested `permission`, when given, by defining a Boolean
+     *   property with the permission name set to true; and
+     * - the secret must define a non-empty `url` property; and
+     * - the secret must define either a non-empty `username` property or a Boolean property
+     *   `insecure` set to to true; and
+     * - the secret may define a `password` property only if a non-empty `username` property is
+     *   also defined.
+     *
+     * Use of local secrets in gateway configurations is preferred to the use of inline URLs, but
+     * is not considered a best practice. Although it does remove user credentials from the
+     * configuration file, it increases exposure of the secret data and precludes the use of
+     * secret-defined tokens and certificates for connection security.
+     *
+     * @param gateway    property tree that must contain at least a `@url` property
+     * @param permission name of local secret property controlling use of the secret in a gateway
+     */
+    void resolveGatewayLocalSecret(IPTree& gateway, const char* permission) const;
+
+    /**
+     * @brief Possibly construct a new gateway URL value by removing embedded user credentials and
+     *        inserting separately configured values.
+     *
+     * The gateway element must contain an `@url` property, and may contain `@username` and
+     * `@password` properties. A password must not be specified in the absence of a username.
+     *
+     * Use of inline URLs is strongly discouraged. Secure connections are not possible without
+     * including user credentials in the configuration. Support is provided for backward
+     * compatibility purposes only.
+     *
+     * Support for a `@roxieClient` gateway property is obsolete. When used with gateway
+     * configurations, its effect would be to either require both username and password or prevent
+     * the use of inline credentials. DESDL configurations should define credentials when needed,
+     * and omit them when not. 
+     *
+     * @param gateway property tree that should contain at least a `@url` property
+     */
+    void resolveGatewayInlineURL(IPTree &gateway) const;
+
+    /**
+     * @brief Helper function to assemble a URL with optional inline user credentials.
+     * 
+     * @param url      a base URL on input; a possibly modified URL on output
+     * @param username optional user identifier
+     * @param password optional user password
+     */
+    void adjustURL(StringBuffer& url, const char* username, const char* password) const;
+
+    /**
+     * @brief Implementation of legacy gateway transformation invoked only during preparation of
+     *        published requests.
+     *
+     * This can be deprecated once scripts can access resolved URL values.
+     *
+     * @param srvcfg         the target configuration containing all gateways
+     * @param forRoxie       the transformed gateway structure
+     * @param altElementName configurable element name used in the transformed gateway structure
+     */
+    void transformGatewaysConfig( IPropertyTree* srvcfg, IPropertyTree* forRoxie, const char* altElementName = nullptr ) const;
 
 private:
     bool initMaskingEngineDirectory(const char* dir);
@@ -327,8 +425,6 @@ public:
 
     int onGetSampleXml(bool isRequest, IEspContext &ctx, CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method);
     static void splitURLList(const char* urlList, StringBuffer& protocol,StringBuffer& UserName,StringBuffer& Password, StringBuffer& ipportlistbody, StringBuffer& path, StringBuffer& options);
-    static void transformGatewaysConfig( IPropertyTree* srvcfg, IPropertyTree* forRoxie, const char* altElementName = nullptr );
-    static bool makeURL( StringBuffer& url, IPropertyTree& cfg );
 
     bool usesESDLDefinition(const char * name, int version);
     bool usesESDLDefinition(const char * id);

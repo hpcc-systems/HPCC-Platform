@@ -35,6 +35,7 @@
 #include "thorxmlwrite.hpp" //JSON WRITER
 #include "workunit.hpp"
 #include "wuwebview.hpp"
+#include "jsecrets.hpp"
 #include "jsmartsock.ipp"
 #include "esdl_monitor.hpp"
 #include "EsdlAccessMapGenerator.hpp"
@@ -734,6 +735,34 @@ void EsdlServiceImpl::configureTargets(IPropertyTree *cfg, const char *service)
                 DBGLOG("Purely scripted service method %s", method);
             else
                 configureUrlMethod(method, methodCfg);
+
+            // Relocate legacy gateway inline URL resolution from prepareFinalRequest. To deprecate
+            // that hard-coded logic, scripts need access to resolved URL values in the script
+            // context's 'target' section. Resolve once per method here, instead of per request in
+            // adjustTargetConfig.
+
+            IPTree* gateways = methodCfg.queryBranch("Gateways");
+            if (!gateways)
+                continue;
+            bool resolveInline = (gateways->getPropBool("resolveInlineURLs") || !isEmptyString(gateways->queryProp("@legacyTransformBranch")));
+            Owned<IPTreeIterator> gwIt(gateways->getElements("Gateway"));
+            ForEach(*gwIt)
+            {
+                IPTree& gw = gwIt->query();
+                const char* url = gw.queryProp("@url");
+                if (isEmptyString(url))
+                    continue;
+                if (strncmp(url, gwTargetSecretPrefix, gwTargetSecretPrefixLength) == 0)
+                    continue; // no change required
+                if (strncmp(url, gwLocalSecretPrefix, gwLocalSecretPrefixLength) == 0)
+                    continue; // change deferred until use
+                if (strncmp(url, gwPassThroughPrefix, gwPassThroughPrefixLength) == 0)
+                    gw.setProp("@url", url + gwPassThroughPrefixLength);
+                else if (!resolveInline)
+                    continue; // no change required
+                resolveGatewayInlineURL(gw);
+            }
+
             DBGLOG("Method %s configured", method);
         }
         m_transforms->bindFunctionCalls();
@@ -1113,6 +1142,8 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
         }
         else
         {
+            adjustTargetConfig(tgtcfg);
+
             //Future: support transforms for all transaction types by moving scripts and script processing up
             scriptContext.setown(checkCreateEsdlServiceScriptContext(context, srvdef, mthdef, tgtcfg, req));
 
@@ -1318,6 +1349,138 @@ void EsdlServiceImpl::getSoapError( StringBuffer& out,
         finger--;
 
     out.clear().append(finger-start,start);
+}
+
+void EsdlServiceImpl::adjustTargetConfig(Owned<IPTree>& tgtcfg) const
+{
+    static const VStringBuffer gwLocalSecretXPath("Gateways/Gateway[@url='%s*']", gwLocalSecretPrefix);
+
+    if (!tgtcfg)
+        return;
+
+    if (tgtcfg->hasProp(gwLocalSecretXPath))
+    {
+        tgtcfg.setown(createPTreeFromIPT(tgtcfg));
+        const char* qt = tgtcfg->queryProp("@querytype");
+        bool published = (qt && (strieq(qt, "roxie") || strieq(qt, "wsecl")));
+        const char* permission = (published ? "allowPublishedGatewayUsage" : "allowUnpublishedGatewayUsage");
+        Owned<IPTreeIterator> gwsToResolve(tgtcfg->getElements(gwLocalSecretXPath));
+        ForEach(*gwsToResolve)
+            resolveGatewayLocalSecret(gwsToResolve->query(), permission);
+    }
+}
+
+void EsdlServiceImpl::resolveGatewayLocalSecret(IPTree& gateway, const char* permission) const
+{
+    const char* name = gateway.queryProp("@name");
+    StringBuffer url(gateway.queryProp("@url"));
+    if (url.isEmpty())
+        throw makeStringExceptionV(-1, "gateway %s: missing url property", name);
+    if (strncmp(url, gwLocalSecretPrefix, gwLocalSecretPrefixLength))
+        throw makeStringExceptionV(-1, "gateway %s: expected '%s...'; got '%s'", name, gwLocalSecretPrefix, url.str());
+    const char* identification = url.str() + gwLocalSecretPrefixLength;
+    StringArray tokens;
+    tokens.appendList(identification, ":", true);
+    Owned<IPTree> secret;
+    switch (tokens.ordinality())
+    {
+    case 1:
+        secret.setown(getSecret("esp", tokens.item(0)));
+        break;
+    case 2:
+        secret.setown(getVaultSecret("esp", tokens.item(0), tokens.item(1)));
+        break;
+    default:
+        throw makeStringExceptionV(-1, "gateway %s: '%s' is not of the form \"[ vault-id ':' ] secret-name\"", name, identification);
+    }
+    if (!secret)
+        throw makeStringExceptionV(-1, "gateway %s: '%s' does not identify an 'esp' category secret", name, identification);
+    if (!isEmptyString(permission) && !secret->getPropBool(permission))
+        throw makeStringExceptionV(-1, "gateway %s: '%s' does not grant '%s' permission", name, identification, permission);
+    if (!secret->getProp("url", url.clear()) || url.isEmpty())
+        throw makeStringExceptionV(-1, "gateway %s: '%s' missing required 'url' property; credential-only secrets not supported", name, identification);
+    const char* username = secret->queryProp("username");
+    if (isEmptyString(username) && !secret->getPropBool("insecure"))
+        throw makeStringExceptionV(-1, "gateway %s: '%s' missing expected 'username' property; set 'insecure` property to 'true' if credentials are not required", name, identification);
+    const char* password = secret->queryProp("password");
+    if (isEmptyString(username) && password)
+        throw makeStringExceptionV(-1, "gateaay %s: '%s' invalid use of password without username", name, identification);
+    adjustURL(url, username, password);
+    gateway.setProp("@url", url);
+}
+
+void EsdlServiceImpl::resolveGatewayInlineURL(IPTree& gateway) const
+{
+    const char* name = gateway.queryProp("@name");
+    StringBuffer url(gateway.queryProp("@url"));
+    if (url.isEmpty())
+        throw makeStringExceptionV(-1, "gateway %s: missing  required '@url' property", name);
+    const char* username = gateway.queryProp("@username");
+    const char* password = gateway.queryProp("@password");
+    if (isEmptyString(username) && password)
+        throw makeStringExceptionV(-1, "gateway %s: invalid credentials - password without username", name);
+    StringBuffer decryptedPassword;
+    if (!isEmptyString(password))
+    {
+        decrypt(decryptedPassword, password);
+        password = decryptedPassword;
+    }
+    adjustURL(url, username, password);
+    gateway.setProp("@url", url);
+}
+
+void EsdlServiceImpl::adjustURL(StringBuffer& url, const char* username, const char* password) const
+{
+    StringBuffer scheme, usernameSink, passwordSink, host, port, path;
+    Utils::SplitURL(url, scheme, usernameSink, passwordSink, host, port, path);
+
+    if (scheme.length() > 0 && host.length() > 0)
+    {
+        StringBuffer userinfo;
+        if (!isEmptyString(username))
+        {
+            encodeUrlUseridPassword(userinfo, username);
+            if (password && *password) // TODO: remove '&& *password' to distinguish empty from omitted passwords
+            {
+                userinfo.append(':');
+                encodeUrlUseridPassword(userinfo, password);
+            }
+        }
+
+        url.clear();
+        url.append(scheme);
+        url.append("://");
+        if (userinfo.length()>0 )
+            url.appendf("%s@", userinfo.str());
+        url.append(host);
+        if (port.length() > 0)
+            url.appendf(":%s", port.str());
+        if (path.length() > 0)
+            url.append(path);
+    }
+}
+
+void EsdlServiceImpl::transformGatewaysConfig( IPropertyTree* srvcfg, IPropertyTree* forRoxie, const char* altElementName ) const
+{
+    // Do we need to handle 'local FQDN'? It doesn't appear to be in the
+    // Gateway element. Not sure where it's set but the RemoteNSClient
+    // references it in RemoteNSFactory.cpp translateGateway() and modifies
+    // resulting gateway URL if it's set.
+    if( srvcfg && forRoxie)
+    {
+        const char* treeName = (!isEmptyString(altElementName) ? altElementName : "Gateway");
+        Owned<IPropertyTreeIterator> cfgIter = srvcfg->getElements("Gateways/Gateway");
+        ForEach(*cfgIter)
+        {
+            IPropertyTree& cfgGateway = cfgIter->query();
+            StringBuffer url(cfgGateway.queryProp("@url"));
+            StringBuffer service(cfgGateway.queryProp("@name"));
+            Owned<IPropertyTree> gw = createPTree(treeName, false);
+            gw->addProp("ServiceName", service.toLowerCase().str());
+            gw->addProp("URL", url.str());
+            forRoxie->addPropTree(treeName, gw.getLink());
+        }
+    }
 }
 
 void EsdlServiceImpl::handleFinalRequest(IEspContext &context,
@@ -1693,7 +1856,7 @@ void EsdlServiceImpl::prepareFinalRequest(IEspContext &context,
 
                     if (rowName.isEmpty())
                         rowName.append("row");
-                    EsdlBindingImpl::transformGatewaysConfig(tgtcfg, gws, rowName);
+                    transformGatewaysConfig(tgtcfg, gws, rowName);
                     xpath.replaceString("{$query}", tgtQueryName);
                     xpath.replaceString("{$method}", mthName);
                     xpath.replaceString("{$service}", srvdef.queryName());
@@ -3845,6 +4008,7 @@ int EsdlBindingImpl::onGetRoxieBuilder(CHttpRequest* request, CHttpResponse* res
                     StringBuffer reqcontent;
                     getRequestContent(*context, reqcontent, request, srvname, mthname, ns, ROXIEREQ_FLAGS);
 
+                    m_pESDLService->adjustTargetConfig(tgtcfg);
                     tgtctx.setown( m_pESDLService->createTargetContext(*context, tgtcfg, *defsrv, *defmth, req_pt));
 
                     Owned<IEsdlScriptContext> scriptContext = m_pESDLService->checkCreateEsdlServiceScriptContext(*context, *defsrv, *defmth, tgtcfg.get(), req_pt);
@@ -4021,111 +4185,6 @@ int EsdlBindingImpl::onGetSampleXml(bool isRequest, IEspContext &ctx, CHttpReque
     EspHttpBinding::generateSampleXmlFromSchema(isRequest, ctx, request, response, serv, method, schema.str());
 
     return 0;
-}
-
-void EsdlBindingImpl::transformGatewaysConfig( IPropertyTree* srvcfg, IPropertyTree* forRoxie, const char* altElementName )
-{
-    // Do we need to handle 'local FQDN'? It doesn't appear to be in the
-    // Gateway element. Not sure where it's set but the RemoteNSClient
-    // references it in RemoteNSFactory.cpp translateGateway() and modifies
-    // resulting gateway URL if it's set.
-    if( srvcfg && forRoxie)
-    {
-        Owned<IPropertyTreeIterator> cfgIter = srvcfg->getElements("Gateways/Gateway");
-        cfgIter->first();
-        if( cfgIter->isValid() )
-        {
-            const char* treeName = (!isEmptyString(altElementName) ? altElementName : "Gateway");
-
-            while( cfgIter->isValid() )
-            {
-                IPropertyTree& cfgGateway = cfgIter->query();
-
-                StringBuffer url, service;
-                if( makeURL( url, cfgGateway ) )
-                {
-                    cfgGateway.getProp("@name", service);
-                    service.toLowerCase();
-
-                    Owned<IPropertyTree> gw = createPTree(treeName, false);
-                    gw->addProp("ServiceName", service.str());
-                    gw->addProp("URL", url.str());
-
-                    forRoxie->addPropTree(treeName, gw.getLink());
-                }
-                else
-                {
-                    DBGLOG( "transformGatewaysConfig: Gateways/Gateway url in config for service='%s'", service.str() );
-                }
-
-                cfgIter->next();
-            }
-        }
-    }
-}
-
-bool EsdlBindingImpl::makeURL( StringBuffer& url, IPropertyTree& cfg )
-{
-    bool result = false;
-
-    // decrypt password
-    // encode password
-    // construct gateway URL including password
-
-    StringBuffer decryptPass, password;
-    StringBuffer user;
-    const char* pw = NULL;
-    const char* usr = NULL;
-
-    pw = cfg.queryProp("@password");
-    if( pw )
-    {
-        decrypt( decryptPass, pw );
-        encodeUrlUseridPassword( password, decryptPass.str() );
-    }
-
-    usr = cfg.queryProp("@username");
-    if( usr )
-    {
-        encodeUrlUseridPassword( user, usr );
-    }
-
-    bool roxieClient = cfg.getPropBool("@roxieClient", true);
-    const char* cfgURL = cfg.queryProp("@url");
-
-    if( cfgURL && *cfgURL )
-    {
-        StringBuffer protocol, name, pw, host, port, path;
-        Utils::SplitURL( cfgURL, protocol, name, pw, host, port, path );
-
-        if( protocol.length()>0 && host.length()>0 )
-        {
-            StringBuffer roxieURL;
-            url.append( protocol );
-            url.append( "://" );
-
-            if( roxieClient && user.length()>0 && password.length()>0 )
-            {
-                url.appendf("%s:%s@", user.str(), password.str());
-            }
-
-            url.append(host);
-
-            if( port.length()>0 )
-            {
-                url.appendf(":%s", port.str());
-            }
-
-            if( path.length()>0 )
-            {
-                url.append(path);
-            }
-
-            result = true;
-        }
-    }
-
-    return result;
 }
 
 bool EsdlBindingImpl::usesESDLDefinition(const char * name, int version)
