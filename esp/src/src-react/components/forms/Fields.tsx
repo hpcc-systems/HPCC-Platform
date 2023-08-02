@@ -677,18 +677,18 @@ export interface GroupMembersProps extends Omit<AsyncDropdownProps, "options"> {
 
 export const GroupMembersField: React.FunctionComponent<GroupMembersProps> = (props) => {
 
-    const [users, setUsers] = React.useState<IDropdownOption[]>();
+    const [users, setUsers] = React.useState<IDropdownOption[]>([]);
 
     React.useEffect(() => {
         const request = { groupname: props.groupname };
         WsAccess.GroupMemberEditInput({ request: request }).then(({ GroupMemberEditInputResponse }) => {
-            const _users = GroupMemberEditInputResponse?.Users?.User
-                .map(user => {
-                    return {
-                        key: user.username,
-                        text: user.username
-                    };
-                }) || [];
+            const usersArray = GroupMemberEditInputResponse?.Users?.User || [];
+
+            const _users = usersArray.map(user => ({
+                key: user.username,
+                text: user.username
+            })).sort((a, b) => a.text.localeCompare(b.text));
+
             setUsers(_users);
         }).catch(err => logger.error(err));
     }, [props.groupname]);
