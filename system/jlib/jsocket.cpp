@@ -3530,6 +3530,9 @@ static bool lookupHostAddress(const char *name,unsigned *netaddr)
     struct addrinfo  *addrInfo = NULL;
     for (;;) {
         memset(&hints,0,sizeof(hints));
+        // dont wait for both A and AAAA records ...
+        if (IP4only || (!IP6preferred))
+            hints.ai_family = AF_INET;
         int ret = getaddrinfo(name, NULL , &hints, &addrInfo);
         if (!ret) 
             break;
