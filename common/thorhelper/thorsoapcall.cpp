@@ -2248,7 +2248,7 @@ public:
                     {
                         isReused = false;
                         keepAlive = true;
-                        socket.setown(blacklist->connect(connUrl.port, connUrl.host, master->logctx, (unsigned)master->maxRetries, master->timeoutMS, master->roxieAbortMonitor));
+                        socket.setown(blacklist->connect(ep, master->logctx, (unsigned)master->maxRetries, master->timeoutMS, master->roxieAbortMonitor));
                         if (proto == PersistentProtocol::ProtoTLS)
                         {
 #ifdef _USE_OPENSSL
