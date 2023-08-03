@@ -71,6 +71,125 @@ protected:
     }
 };
 
+enum EsdlMethodImplType
+{
+    EsdlMethodImplUnknown,
+    EsdlMethodImplRoxie,
+    EsdlMethodImplWsEcl,
+    EsdlMethodImplProxy,
+    EsdlMethodImplJava,
+    EsdlMethodImplCpp,
+    EsdlMethodImplScript
+};
+
+struct ServiceRequestInfo
+{
+    IEspContext& context;
+    IEsdlDefService& srvdef;
+    IEsdlDefMethod& mthdef;
+    const char* ns;
+    const char* schema_location;
+    IPropertyTree *req;
+    unsigned int flags;
+
+    Owned<IEsdlScriptContext> scriptContext;
+    Owned<IPTree> tgtcfg;
+    Owned<IPTree> tgtctx;
+    StringBuffer backendReq;
+    StringBuffer backendResp;
+    StringBuffer finalResp;
+    StringBuffer logdata;
+    bool suppressLogging = false;
+
+    IEsdlTransformSet* serviceIRTs = nullptr;
+    IEsdlTransformSet* methodIRTs = nullptr;
+
+    const char* srvName = nullptr;
+    const char* mthName = nullptr;
+    int txResultFlags = ESDL_TRANS_OUTPUT_ROOT;
+    bool isEchoTest = false;
+    bool isPing = false;
+    bool isStubbed = false;
+    EsdlMethodImplType implType = EsdlMethodImplUnknown;
+    bool isPublished = false;
+    bool isProxy = false;
+    bool logBeforeResponse = false;
+
+    ServiceRequestInfo(IEspContext &_context,
+                       IEsdlDefService &_srvdef,
+                       IEsdlDefMethod &_mthdef,
+                       const char *_ns,
+                       const char *_schema_location,
+                       IPropertyTree *_req,
+                       unsigned int _flags)
+        : context(_context)
+        , srvdef(_srvdef)
+        , mthdef(_mthdef)
+        , ns(_ns)
+        , schema_location(_schema_location)
+        , req(_req)
+        , flags(_flags)
+    {
+        srvName = srvdef.queryName();
+        mthName = mthdef.queryName();
+        if (srvdef.getPropBool("numeric_bool"))
+            txResultFlags |= ESDL_TRANS_NUMERIC_BOOLEAN;
+        isEchoTest = (strieq(mthName, "echotest") || mthdef.hasProp("EchoTest"));
+        isPing = (strieq(mthName, "ping") || mthdef.hasProp("Ping"));
+        if (isEchoTest || isPing)
+        {
+            isStubbed = true;
+            suppressLogging = !tgtcfg->getPropBool("@allowlogging");
+        }
+        else
+            suppressLogging = tgtcfg->getPropBool("@suppresslogging");
+        implType = getEsdlMethodImplType(tgtcfg->queryProp("@querytype"));
+        switch (implType)
+        {
+        case EsdlMethodImplRoxie:
+        case EsdlMethodImplWsEcl:
+            isPublished = true;
+            break;
+        case EsdlMethodImplProxy:
+            isProxy = true;
+            break;
+        default:
+            break;
+        }
+    }
+
+    inline EsdlMethodImplType getEsdlMethodImplType(const char *querytype)
+    {
+        if (querytype)
+        {
+            if (strieq(querytype, "roxie"))
+                return EsdlMethodImplRoxie;
+            if (strieq(querytype, "wsecl"))
+                return EsdlMethodImplWsEcl;
+            if (strieq(querytype, "proxy"))
+                return EsdlMethodImplProxy;
+            if (strieq(querytype, "java"))
+                return EsdlMethodImplJava;
+            if (strieq(querytype, "cpp"))
+                return EsdlMethodImplCpp;
+            if (strieq(querytype, "script"))
+                return EsdlMethodImplScript;
+        }
+        return EsdlMethodImplRoxie;
+    }
+
+    bool usesEntryPoint(IEsdlTransformMethodMap* transforms, const char* ep)
+    {
+        if (scriptContext && transforms && !isEmptyString(ep))
+        {
+            serviceIRTs = transforms->queryMethodEntryPoint("", ep);
+            methodIRTs = transforms->queryMethodEntryPoint(mthName, ep);
+            return ((serviceIRTs && serviceIRTs->length()) || (methodIRTs && methodIRTs->length()));
+        }
+        return false;
+    }
+};
+
 static const char* Scope_EsdlService = "EsdlService";
 static const char* Scope_EsdlMethod = "EsdlMethod";
 static const char* Scope_BindingService = "BindingService";
@@ -765,42 +884,6 @@ String* EsdlServiceImpl::getExplicitNamespace(const char* method) const
 #define ESDLREQ_FLAGS (ESDL_TRANS_START_AT_ROOT | ESDL_TRANS_TRIM | ESDL_TRANS_OUTPUT_XMLTAG)
 #define ESDLDEP_FLAGS (DEPFLAG_COLLAPSE | DEPFLAG_ARRAYOF)
 
-enum EsdlMethodImplType
-{
-    EsdlMethodImplUnknown,
-    EsdlMethodImplRoxie,
-    EsdlMethodImplWsEcl,
-    EsdlMethodImplProxy,
-    EsdlMethodImplJava,
-    EsdlMethodImplCpp,
-    EsdlMethodImplScript
-};
-
-inline EsdlMethodImplType getEsdlMethodImplType(const char *querytype)
-{
-    if (querytype)
-    {
-        if (strieq(querytype, "roxie"))
-            return EsdlMethodImplRoxie;
-        if (strieq(querytype, "wsecl"))
-            return EsdlMethodImplWsEcl;
-        if (strieq(querytype, "proxy"))
-            return EsdlMethodImplProxy;
-        if (strieq(querytype, "java"))
-            return EsdlMethodImplJava;
-        if (strieq(querytype, "cpp"))
-            return EsdlMethodImplCpp;
-        if (strieq(querytype, "script"))
-            return EsdlMethodImplScript;
-    }
-    return EsdlMethodImplRoxie;
-}
-
-static inline bool isPublishedQuery(EsdlMethodImplType implType)
-{
-    return (implType==EsdlMethodImplRoxie || implType==EsdlMethodImplWsEcl);
-}
-
 IEsdlScriptContext* EsdlServiceImpl::checkCreateEsdlServiceScriptContext(IEspContext &context, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, IPropertyTree *tgtcfg, IPropertyTree *originalRequest)
 {
     IEsdlTransformEntryPointMap *serviceEPm = m_transforms->queryMethod("");
@@ -826,99 +909,130 @@ IEsdlScriptContext* EsdlServiceImpl::checkCreateEsdlServiceScriptContext(IEspCon
     return scriptContext.getClear();
 }
 
-void EsdlServiceImpl::runPostEsdlScript(IEspContext &context,
-                                         IEsdlScriptContext *scriptContext,
-                                         IEsdlDefService &srvdef,
-                                         IEsdlDefMethod &mthdef,
-                                         StringBuffer &content,
-                                         unsigned txResultFlags,
-                                         const char *ns,
-                                         const char *schema_location)
+void EsdlServiceImpl::runPostEsdlScript(ServiceRequestInfo& sri, StringBuffer& io)
 {
-    if (scriptContext)
-    {
-        IEsdlTransformSet *serviceIRTs = m_transforms->queryMethodEntryPoint("", ESDLScriptEntryPoint_InitialEsdlResponse);
-        IEsdlTransformSet *methodIRTs = m_transforms->queryMethodEntryPoint(mthdef.queryName(), ESDLScriptEntryPoint_InitialEsdlResponse);
-
-        if (serviceIRTs || methodIRTs)
-        {
-            scriptContext->setContent(ESDLScriptCtxSection_InitialESDLResponse, content.str());
-
-            context.addTraceSummaryTimeStamp(LogNormal, "srt-modifytrans");
-            processServiceAndMethodTransforms(scriptContext, {serviceIRTs, methodIRTs}, ESDLScriptCtxSection_InitialESDLResponse, ESDLScriptCtxSection_ModifiedESDLResponse);
-            scriptContext->toXML(content.clear(), ESDLScriptCtxSection_ModifiedESDLResponse);
-            context.addTraceSummaryTimeStamp(LogNormal, "end-modifytrans");
-
-            //have to make a second ESDL pass (this stage is always a basic response format, never an HPCC/Roxie format)
-            StringBuffer out;
-            m_pEsdlTransformer->process(context, EsdlResponseMode, srvdef.queryName(), mthdef.queryName(), out, content.str(), txResultFlags, ns, schema_location);
-            content.swapWith(out);
-        }
-    }
-
+    // It is assumed that the caller has established the presence of scripts to be run.
+    sri.scriptContext->setContent(ESDLScriptCtxSection_InitialESDLResponse, io.str());
+    sri.context.addTraceSummaryTimeStamp(LogNormal, "srt-modifytrans");
+    processServiceAndMethodTransforms(sri.scriptContext, {sri.serviceIRTs, sri.methodIRTs}, ESDLScriptCtxSection_InitialESDLResponse, ESDLScriptCtxSection_ModifiedESDLResponse);
+    sri.scriptContext->toXML(io.clear(), ESDLScriptCtxSection_ModifiedESDLResponse);
+    sri.context.addTraceSummaryTimeStamp(LogNormal, "end-modifytrans");
+    //have to make a second ESDL pass (this stage is always a basic response format, never an HPCC/Roxie format)
+    int flags = sri.txResultFlags;
+    if (sri.flags & ESDL_BINDING_RESPONSE_JSON)
+        flags |= ESDL_TRANS_JSON_OUT;
+    m_pEsdlTransformer->process(sri.context, EsdlResponseMode, sri.srvName, sri.mthName, sri.finalResp, io, flags, sri.ns, sri.schema_location);
 }
 
-void EsdlServiceImpl::runServiceScript(IEspContext &context,
-                                         IEsdlScriptContext *scriptContext,
-                                         IEsdlDefService &srvdef,
-                                         IEsdlDefMethod &mthdef,
-                                         const char *reqcontent,
-                                         StringBuffer &respcontent,
-                                         unsigned txResultFlags,
-                                         const char *ns,
-                                         const char *schema_location)
+void EsdlServiceImpl::runServiceScript(ServiceRequestInfo& sri, const char* in, StringBuffer& out)
 {
-    if (scriptContext)
+    out.append("<").append(sri.mthdef.queryResponseType()).append("/>");
+    if (sri.usesEntryPoint(m_transforms, ESDLScriptEntryPoint_ScriptedService))
     {
-        IEsdlTransformSet *serviceSTs = m_transforms->queryMethodEntryPoint("", ESDLScriptEntryPoint_ScriptedService);
-        IEsdlTransformSet *methodSTs = m_transforms->queryMethodEntryPoint(mthdef.queryName(), ESDLScriptEntryPoint_ScriptedService);
-
-        if (serviceSTs || methodSTs)
-        {
-            scriptContext->setContent(ESDLScriptCtxSection_ScriptRequest, reqcontent);
-
-            context.addTraceSummaryTimeStamp(LogNormal, "srt-script-service");
-            VStringBuffer emptyResponse("<%s/>", mthdef.queryResponseType());
-            scriptContext->setContent(ESDLScriptCtxSection_ScriptResponse, emptyResponse.str());
-            processServiceAndMethodTransforms(scriptContext, {serviceSTs, methodSTs}, ESDLScriptCtxSection_ScriptRequest, ESDLScriptCtxSection_ScriptResponse);
-            scriptContext->toXML(respcontent.clear(), ESDLScriptCtxSection_ScriptResponse);
-            context.addTraceSummaryTimeStamp(LogNormal, "end-script-service");
-        }
+        sri.scriptContext->setContent(ESDLScriptCtxSection_ScriptRequest, in);
+        sri.context.addTraceSummaryTimeStamp(LogNormal, "srt-script-service");
+        sri.scriptContext->setContent(ESDLScriptCtxSection_ScriptResponse, out.str());
+        processServiceAndMethodTransforms(sri.scriptContext, {sri.serviceIRTs, sri.methodIRTs}, ESDLScriptCtxSection_ScriptRequest, ESDLScriptCtxSection_ScriptResponse);
+        sri.scriptContext->toXML(out.clear(), ESDLScriptCtxSection_ScriptResponse);
+        sri.context.addTraceSummaryTimeStamp(LogNormal, "end-script-service");
     }
-
+    else if (sri.scriptContext)
+    {
+        sri.scriptContext->setContent(ESDLScriptCtxSection_ScriptRequest, in);
+        sri.scriptContext->setContent(ESDLScriptCtxSection_ScriptResponse, out);
+    }
 }
 
-void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
-                                           Owned<IEsdlScriptContext> &scriptContext,
-                                           IEsdlDefService &srvdef,
-                                           IEsdlDefMethod &mthdef,
-                                           Owned<IPropertyTree> &tgtcfg,
-                                           Owned<IPropertyTree> &tgtctx,
-                                           const char *ns,
-                                           const char *schema_location,
-                                           IPropertyTree *req,
-                                           StringBuffer &out,
-                                           StringBuffer &logdata,
-                                           StringBuffer &origResp,
-                                           StringBuffer &soapmsg,
-                                           unsigned int flags)
+void EsdlServiceImpl::runBackendRequestScript(ServiceRequestInfo& sri,
+                                              StringBuffer& io)
 {
-    const char *mthName = mthdef.queryName();
-    context.addTraceSummaryValue(LogMin, "method", mthName, TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
-    const char* srvName = srvdef.queryName();
-
-    if (m_serviceScriptError.length()) //checked further along in shared code, but might as well avoid extra overhead
+    if (sri.usesEntryPoint(m_transforms, ESDLScriptEntryPoint_BackendRequest))
     {
-        VStringBuffer msg("%s::%s disabled due to ESDL Script error(s). [%s]. Review transform template in configuration.", srvdef.queryName(), mthName, m_serviceScriptError.str());
+        sri.context.addTraceSummaryTimeStamp(LogNormal, "srt-custreqtrans");
+        sri.scriptContext->setContent(ESDLScriptCtxSection_ESDLRequest, io);
+        processServiceAndMethodTransforms(sri.scriptContext, {sri.serviceIRTs, sri.methodIRTs}, ESDLScriptCtxSection_ESDLRequest, ESDLScriptCtxSection_FinalRequest);
+        sri.scriptContext->toXML(io.clear(), ESDLScriptCtxSection_FinalRequest);
+        sri.context.addTraceSummaryTimeStamp(LogNormal, "end-custreqtrans");
+    }
+    else if (sri.scriptContext)
+        sri.scriptContext->setContent(ESDLScriptCtxSection_FinalRequest, io);
+}
+
+void EsdlServiceImpl::runBackendResponseScript(ServiceRequestInfo& sri, StringBuffer& io)
+{
+    if (sri.usesEntryPoint(m_transforms, ESDLScriptEntryPoint_BackendResponse))
+    {
+        sri.context.addTraceSummaryTimeStamp(LogNormal, "srt-resptrans");
+        sri.scriptContext->setContent(ESDLScriptCtxSection_InitialResponse, io);
+        processServiceAndMethodTransforms(sri.scriptContext, {sri.serviceIRTs, sri.methodIRTs}, ESDLScriptCtxSection_InitialResponse, ESDLScriptCtxSection_PreESDLResponse);
+        sri.scriptContext->toXML(io.clear(), ESDLScriptCtxSection_PreESDLResponse);
+        sri.context.addTraceSummaryTimeStamp(LogNormal, "end-resptrans");
+    }
+    else if (sri.scriptContext)
+        sri.scriptContext->setContent(ESDLScriptCtxSection_PreESDLResponse, io);
+}
+
+void EsdlServiceImpl::runPreLoggingScript(ServiceRequestInfo& sri)
+{
+    if (sri.usesEntryPoint(m_transforms, ESDLScriptEntryPoint_PreLogging))
+    {
+        sri.context.addTraceSummaryTimeStamp(LogNormal, "custom_fields.srt-preLogScripts", TXSUMMARY_GRP_ENTERPRISE);
+        sri.scriptContext->appendContent(ESDLScriptCtxSection_LogData, "LogDatasets", sri.logdata);
+        processServiceAndMethodTransforms(sri.scriptContext, {sri.serviceIRTs, sri.methodIRTs}, ESDLScriptCtxSection_LogData, nullptr);
+        sri.scriptContext->toXML(sri.logdata.clear(), ESDLScriptCtxSection_LogData);
+        sri.context.addTraceSummaryTimeStamp(LogNormal, "custom_fields.end-preLogScripts", TXSUMMARY_GRP_ENTERPRISE);
+    }
+}
+
+void EsdlServiceImpl::checkRequestAvailability(ServiceRequestInfo& sri)
+{
+    if (sri.isStubbed)
+        return;
+    if (m_serviceScriptError.length())
+    {
+        VStringBuffer msg("%s::%s disabled due to ESDL Script error(s). [%s]. Review transform template in configuration.", sri.srvName, sri.mthName, m_serviceScriptError.str());
         throw makeWsException( ERR_ESDL_BINDING_INTERNERR, WSERR_CLIENT, "ESDL", "%s", msg.str());
-
     }
+    if (!m_pServiceMethodTargets)
+        throw makeWsException( ERR_ESDL_BINDING_INTERNERR, WSERR_CLIENT, "ESDL", "Service methods not configured!");
+    VStringBuffer xpath("Target[@name=\"%s\"]", sri.mthName);
+    sri.tgtcfg.setown(m_pServiceMethodTargets->getPropTree(xpath.str()));
+    if (!sri.tgtcfg)
+        throw makeWsException( ERR_ESDL_BINDING_BADREQUEST, WSERR_CLIENT, "ESDL", "Target not configured for method: %s", sri.mthName );
+    if (!sri.suppressLogging)
+    {
+        if (sri.tgtcfg->getPropBool("@logBeforeResponse"))
+            sri.logBeforeResponse = true;
+        ILoggingManager* lm = loggingManager();
+#ifndef _DEBUG
+        if (!lm)
+        {
+            VStringBuffer msg("%s::%s disabled due to invalid logging configuration - missing logging manager", sri.srvName, sri.mthName);
+            throw makeWsException( ERR_ESDL_BINDING_INTERNERR, WSERR_CLIENT, "ESDL", "%s", msg.str());
+        }
+#endif
+        if (lm && !lm->usesSafeLogging())
+        {
+            VStringBuffer msg("%s::%s disabled due to invalid logging configuration - requires safe logging", sri.srvName, sri.mthName);
+            throw makeWsException( ERR_ESDL_BINDING_INTERNERR, WSERR_CLIENT, "ESDL", "%s", msg.str());
+        }
+    }
+    StringAttr *crtErrorMessage = m_methodScriptErrors.getValue(sri.mthName);
+    if (crtErrorMessage && !crtErrorMessage->isEmpty())
+    {
+        VStringBuffer msg("%s::%s disabled due to ESDL Script error(s). [%s]. Review transform template in configuration.", sri.srvName, sri.mthName, crtErrorMessage->str());
+        throw makeWsException( ERR_ESDL_BINDING_INTERNERR, WSERR_CLIENT, "ESDL", "%s", msg.str());
+    }
+    sri.tgtctx.setown(createTargetContext(sri.context, sri.tgtcfg.get(), sri.srvdef, sri.mthdef, sri.req));
+}
 
-    Owned<MethodAccessMap>* authMap = m_methodAccessMaps.getValue(mthdef.queryMethodName());
+void EsdlServiceImpl::doFeatureAuthorization(ServiceRequestInfo& sri)
+{
+    Owned<MethodAccessMap>* authMap = m_methodAccessMaps.getValue(sri.mthdef.queryMethodName());
     if (authMap != nullptr && authMap->get() != nullptr)
     {
         MethodAccessMap& methaccessmap = *authMap->get();
-        if (methaccessmap.ordinality() > 0 && !context.validateFeaturesAccess(methaccessmap, false))
+        if (methaccessmap.ordinality() > 0 && !sri.context.validateFeaturesAccess(methaccessmap, false))
         {
             StringBuffer features;
             HashIterator iter(methaccessmap);
@@ -929,334 +1043,340 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
                 const char * key = (const char *)cur.getKey();
                 features.appendf("%s%s:%s", (index++ == 0 ? "" : ", "), key, getSecAccessFlagName(*methaccessmap.getValue(key)));
             }
-            const char * user = context.queryUserId();
-            throw MakeStringException(401, "Insufficient priviledge to run function (%s) access denied for user (%s) - %s", mthName, (user && *user) ? user : "Anonymous", features.str());
+            const char * user = sri.context.queryUserId();
+            throw MakeStringException(401, "Insufficient privilege to run function (%s) access denied for user (%s) - %s", sri.mthName, (user && *user) ? user : "Anonymous", features.str());
         }
     }
+}
 
+void EsdlServiceImpl::doAcquireTransactionId(ServiceRequestInfo& sri)
+{
     StringBuffer trxid;
     if (!m_bGenerateLocalTrxId)
     {
         if (loggingManager())
         {
-            context.addTraceSummaryTimeStamp(LogNormal, "srt-trxid");
+            sri.context.addTraceSummaryTimeStamp(LogNormal, "srt-trxid");
             StringBuffer wsaddress;
             short int port;
-            context.getServAddress(wsaddress, port);
+            sri.context.getServAddress(wsaddress, port);
             VStringBuffer uniqueId("%s:%d-%u", wsaddress.str(), port, (unsigned) (memsize_t) GetCurrentThreadId());
 
             StringAttrMapping trxidbasics;
             StringBuffer creationTime;
-            creationTime.setf("%u", context.queryCreationTime());
+            creationTime.setf("%u", sri.context.queryCreationTime());
 
             trxidbasics.setValue(sTransactionDateTime, creationTime.str());
-            trxidbasics.setValue(sTransactionMethod, mthName);
+            trxidbasics.setValue(sTransactionMethod, sri.mthName);
             trxidbasics.setValue(sTransactionIdentifier, uniqueId.str());
 
             StringBuffer trxidstatus;
-            if (!loggingManager()->getTransactionID(&trxidbasics,trxid, trxidstatus))
-                ESPLOG(LogMin,"DESDL: Logging Agent generated Transaction ID failed: %s", trxidstatus.str());
-            context.addTraceSummaryTimeStamp(LogNormal, "end-trxid");
+            bool gotTransactionId = false;
+            StringBuffer logProfile(sri.tgtcfg->queryProp("@transaction_id_profile"));
+            if (logProfile.isEmpty())
+                gotTransactionId = loggingManager()->getTransactionID(&trxidbasics, trxid, trxidstatus);
+            else
+            {
+                EspLogAgentIdFilter filter = [logProfile](const IEspLogAgentVariant& variant) {
+                    const char* group = variant.getGroup();
+                    return (group && strieq(logProfile, group));
+                };
+                gotTransactionId = loggingManager()->getFilteredTransactionID(&trxidbasics, trxid, trxidstatus, filter);
+            }
+            if (!gotTransactionId)
+                IERRLOG("DESDL: Logging Agent generated Transaction ID failed: %s", trxidstatus.str());
+            sri.context.addTraceSummaryTimeStamp(LogNormal, "end-trxid");
         }
-        else
-            ESPLOG(LogMin,"DESDL: Transaction ID could not be fetched from logging manager!");
     }
 
-    if (!trxid.length())                       //either there's no logging agent providing trxid, or it failed to generate an id
-        generateTransactionId(context, trxid); //in that case, the failure is logged and we generate a local trxid
+    if (trxid.isEmpty())                           //either there's no logging agent providing trxid, or it failed to generate an id
+        generateTransactionId(sri.context, trxid); //in that case, the failure is logged and we generate a local trxid
+    sri.context.setTransactionID(trxid.str());
+}
 
-    if (trxid.length())
-        context.setTransactionID(trxid.str());
+int EsdlServiceImpl::doProcessEsdlRequest(ServiceRequestInfo& sri, IXmlWriterExt* output, int flags)
+{
+    sri.context.addTraceSummaryTimeStamp(LogNormal, "srt-reqproc", TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
+    int recordCount = m_pEsdlTransformer->process(sri.context, EsdlRequestMode, sri.srvName, sri.mthName, *sri.req, output, flags, NULL);
+    sri.context.addTraceSummaryTimeStamp(LogNormal, "end-reqproc", TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
+    return recordCount;
+}
+
+int EsdlServiceImpl::doProcessEsdlRequest(ServiceRequestInfo& sri, int flags, StringBuffer& out)
+{
+    Owned<IXmlWriterExt> writer = createIXmlWriterExt(0, 0, NULL, WTStandard);
+    int rc = doProcessEsdlRequest(sri, writer, flags);
+    out.set(writer->str());
+    return rc;
+}
+
+int EsdlServiceImpl::doProcessHPCCResult(ServiceRequestInfo& sri, StringBuffer& in)
+{
+    bool usesPostEsdl = sri.usesEntryPoint(m_transforms, ESDLScriptEntryPoint_InitialEsdlResponse);
+    bool isJSON = (sri.flags & ESDL_BINDING_RESPONSE_JSON);
+
+    sri.context.addTraceSummaryTimeStamp(LogNormal, "srt-procres", TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
+    Owned<IXmlWriterExt> writer(createIXmlWriterExt(0, 0, NULL, (usesPostEsdl || !isJSON ? WTStandard : WTJSONRootless)));
+    // TODO: Modify processHPCCResult to return record count
+    m_pEsdlTransformer->processHPCCResult(sri.context, sri.mthdef, in, writer, sri.logdata, sri.txResultFlags, sri.ns, sri.schema_location);
+    sri.context.addTraceSummaryTimeStamp(LogNormal, "end-procres", TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
+    if (usesPostEsdl)
+    {
+        in.set(writer->str());
+        runPostEsdlScript(sri, in);
+    }
     else
-        ESPLOG(LogMin,"DESDL: Transaction ID could not be generated!");
+        sri.finalResp.append(writer->str());
+    return -1; // invalid until processHPCCResult returns record count
+}
 
+int EsdlServiceImpl::doProcessResponse(ServiceRequestInfo& sri, StringBuffer& io)
+{
+    bool usesPostEsdl = sri.usesEntryPoint(m_transforms, ESDLScriptEntryPoint_InitialEsdlResponse);
+    bool isJSON = (sri.flags & ESDL_BINDING_RESPONSE_JSON);
+
+    sri.context.addTraceSummaryTimeStamp(LogNormal, "srt-procres", TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
+    int flags = sri.txResultFlags;
+    if (isJSON && !usesPostEsdl)
+        flags |= ESDL_TRANS_JSON_OUT;
+    int recordCount;
+    if (usesPostEsdl)
+    {
+        StringBuffer tmp;
+        recordCount = m_pEsdlTransformer->process(sri.context, EsdlResponseMode, sri.srvName, sri.mthName, tmp, io, sri.txResultFlags, sri.ns, sri.schema_location);
+        sri.context.addTraceSummaryTimeStamp(LogNormal, "end-procres", TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
+        runPostEsdlScript(sri, tmp);
+    }
+    else
+    {
+        if (isJSON)
+            recordCount = m_pEsdlTransformer->process(sri.context, EsdlResponseMode, sri.srvName, sri.mthName, sri.finalResp, io, sri.txResultFlags | ESDL_TRANS_JSON_OUT, sri.ns, sri.schema_location);
+        else
+            recordCount = m_pEsdlTransformer->process(sri.context, EsdlResponseMode, sri.srvName, sri.mthName, sri.finalResp, io, sri.txResultFlags, sri.ns, sri.schema_location);
+        sri.context.addTraceSummaryTimeStamp(LogNormal, "end-procres", TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
+    }
+    sri.logdata.set("<LogDatasets/>");
+    return recordCount;
+}
+
+void EsdlServiceImpl::doStubbedWorkflow(ServiceRequestInfo& sri)
+{
+    doFeatureAuthorization(sri);
+    if (sri.isEchoTest)
+        handleEchoTest(sri.mthName, sri.req, sri.finalResp, sri.flags);
+    else if (sri.isPing)
+        handlePingRequest(sri.srvName, sri.finalResp, sri.flags);
+}
+
+void EsdlServiceImpl::doPublishedWorkflow(ServiceRequestInfo& sri)
+{
+    checkRequestAvailability(sri);
+    doFeatureAuthorization(sri);
+    doAcquireTransactionId(sri);
+
+    int recordCount = doProcessEsdlRequest(sri, ROXIEREQ_FLAGS, sri.backendReq);
+    sri.context.addTraceSummaryValue(LogNormal, "custom_fields.recCount", recordCount, TXSUMMARY_GRP_ENTERPRISE);
+    sri.context.addTraceSummaryTimeStamp(LogNormal, "serialized-xmlreq");
+    handleSoapRequest(sri);
+    sri.context.addTraceSummaryTimeStamp(LogNormal, "end-HFReq", TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
+    doProcessHPCCResult(sri, sri.backendResp);
+}
+
+void EsdlServiceImpl::doSoapWorkflow(ServiceRequestInfo& sri)
+{
+    checkRequestAvailability(sri);
+    doFeatureAuthorization(sri);
+    doAcquireTransactionId(sri);
+
+    int recordCount = doProcessEsdlRequest(sri, ESDLREQ_FLAGS, sri.backendReq);
+    sri.context.addTraceSummaryValue(LogNormal, "custom_fields.recCount", recordCount, TXSUMMARY_GRP_ENTERPRISE);
+    sri.context.addTraceSummaryTimeStamp(LogNormal, "serialized-xmlreq");
+    handleSoapRequest(sri);
+    sri.context.addTraceSummaryTimeStamp(LogNormal, "end-HFReq", TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
+    doProcessResponse(sri, sri.backendResp);
+}
+
+void EsdlServiceImpl::doJavaWorkflow(ServiceRequestInfo& sri)
+{
+    checkRequestAvailability(sri);
+    doFeatureAuthorization(sri);
+    doAcquireTransactionId(sri);
+
+    const char *javaPackage = sri.srvName;
+    const char *javaScopedClass = sri.tgtcfg->queryProp("@javaclass");
+    const char *javaScopedMethod = sri.tgtcfg->queryProp("@javamethod");
+
+    Linked<IEmbedServiceContext> srvctx = javaServiceMap.getValue(javaScopedClass);
+    if (!srvctx)
+    {
+        StringBuffer errmsg;
+        errmsg.appendf("Java class %s not loaded for method %s", javaScopedClass, sri.mthName);
+        Linked<IException> exception = javaExceptionMap.getValue(javaScopedClass);
+        if(exception)
+        {
+            errmsg.append(". Cause: ");
+            exception->errorMessage(errmsg);
+        }
+        throw makeWsException(ERR_ESDL_BINDING_BADREQUEST, WSERR_SERVER, "ESDL", "%s", errmsg.str());
+    }
+
+    // Note that at present all methods called are assumed to be non-static (this was all that was supported prior to 7.2.0)
+    // We could extend edsl with a flag to indicate a static method (and remove the '@' in the signature below if it was set)
+    // Or we could remove the entire signature (the : and following in the line below) and have the plugin deduce it automatically - this does
+    // have a small performance penalty though.
+
+    //"WsWorkunits.WsWorkunitsService.WUAbort:@(LWsWorkunits/EsdlContext;LWsWorkunits/WUAbortRequest;)LWsWorkunits/WUAbortResponse;";
+    VStringBuffer signature("%s:@(L%s/EsdlContext;L%s/%s;)L%s/%s;", javaScopedMethod, javaPackage, javaPackage, sri.mthdef.queryRequestType(), javaPackage, sri.mthdef.queryResponseType());
+
+    Owned<IEmbedFunctionContext> javactx;
+    javactx.setown(srvctx->createFunctionContext(signature));
+    if (!javactx)
+        throw makeWsException(ERR_ESDL_BINDING_BADREQUEST, WSERR_SERVER, "ESDL", "Java method %s could not be loaded from class %s in esdl method %s", sri.tgtcfg->queryProp("@javamethod"), javaScopedClass, sri.mthName);
+
+    Owned<IXmlWriterExt> writer = dynamic_cast<IXmlWriterExt *>(javactx->bindParamWriter(m_esdl, javaPackage, "EsdlContext", "context"));
+    if (writer)
+    {
+        if (sri.context.queryUserId())
+            writer->outputCString(sri.context.queryUserId(), "username");
+        javactx->paramWriterCommit(writer);
+    }
+
+    writer.setown(dynamic_cast<IXmlWriterExt *>(javactx->bindParamWriter(m_esdl, javaPackage, sri.mthdef.queryRequestType(), "request")));
+    doProcessEsdlRequest(sri, writer, 0);
+
+    javactx->paramWriterCommit(writer);
+    javactx->callFunction();
+
+    Owned<IXmlWriterExt> javaRespWriter = createIXmlWriterExt(0, 0, NULL, WTStandard);
+    javactx->writeResult(m_esdl, sri.srvdef.queryName(), sri.mthdef.queryResponseType(), javaRespWriter);
+    StringBuffer out(javaRespWriter->str());
+    sri.scriptContext->setContent(ESDLScriptCtxSection_PreESDLResponse, out);
+    doProcessHPCCResult(sri, out);
+    sri.scriptContext->setContent(ESDLScriptCtxSection_InitialESDLResponse, out);
+}
+
+void EsdlServiceImpl::doCppWorkflow(ServiceRequestInfo& sri)
+{
+    checkRequestAvailability(sri);
+    doFeatureAuthorization(sri);
+    doAcquireTransactionId(sri);
+
+    // Load the plugin first. The request doesn't matter if the load failes.
+    cpp_service_method_t xproc = nullptr;
+    cpp_service_method_t* xprocp = cppProcMap.getValue(sri.mthName);
+    if (xprocp)
+        xproc = *xprocp;
+    if (!xproc)
+        throw makeWsException(ERR_ESDL_BINDING_BADREQUEST, WSERR_SERVER, "ESDL", "C++ plugin or method not loaded for method %s", sri.mthName);
+
+    doProcessEsdlRequest(sri, ESDLREQ_FLAGS, sri.backendReq);
+    sri.context.addTraceSummaryTimeStamp(LogNormal, "serialized-xmlreq");
+    runBackendRequestScript(sri, sri.backendReq);
+
+    StringBuffer ctxbuf;
+    ctxbuf.append("<EsdlContext>");
+    if (sri.context.queryUserId())
+        ctxbuf.appendf("<username>%s</username>", sri.context.queryUserId());
+    ctxbuf.append("</EsdlContext>");
+
+    sri.context.addTraceSummaryTimeStamp(LogNormal, "srt-cppcall");
+    xproc(ctxbuf.str(), sri.backendReq.str(), sri.backendResp);
+    sri.context.addTraceSummaryTimeStamp(LogNormal, "end-cppcall");
+
+    runBackendResponseScript(sri, sri.backendResp);
+    doProcessHPCCResult(sri, sri.backendResp);
+}
+
+void EsdlServiceImpl::doScriptWorkflow(ServiceRequestInfo& sri)
+{
+    checkRequestAvailability(sri);
+    doFeatureAuthorization(sri);
+    doAcquireTransactionId(sri);
+
+    int recordCount = doProcessEsdlRequest(sri, ESDLREQ_FLAGS, sri.backendReq);
+    sri.context.addTraceSummaryValue(LogNormal, "custom_fields.recCount", recordCount, TXSUMMARY_GRP_ENTERPRISE);
+    sri.context.addTraceSummaryTimeStamp(LogNormal, "serialized-xmlreq");
+    runServiceScript(sri, sri.backendReq, sri.backendResp);
+    sri.context.addTraceSummaryTimeStamp(LogNormal, "end-HFReq", TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
+    doProcessResponse(sri, sri.backendResp);
+}
+
+void EsdlServiceImpl::handleServiceRequest(ServiceRequestInfo& sri)
+{
     // In the future we could instantiate a profile from the service configuration.
     // For now use a profile created on service initialization.
-    CTxSummary* txSummary = context.queryTxSummary();
+    CTxSummary* txSummary = sri.context.queryTxSummary();
     if(txSummary)
         txSummary->setProfile(m_txSummaryProfile);
+    sri.context.addTraceSummaryValue(LogMin, "method", sri.mthName, TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
 
-    EsdlMethodImplType implType = EsdlMethodImplUnknown;
-
-    if(stricmp(mthName, "echotest")==0 || mthdef.hasProp("EchoTest"))
+    if (sri.isStubbed)
     {
-        handleEchoTest(mthdef.queryName(),req,out,context.getResponseFormat());
+        doStubbedWorkflow(sri);
         return;
     }
-    else if
-    (stricmp(mthName, "ping")==0 || mthdef.hasProp("Ping"))
+
+    sri.scriptContext.setown(checkCreateEsdlServiceScriptContext(sri.context, sri.srvdef, sri.mthdef, sri.tgtcfg, sri.req));
+    switch (sri.implType)
     {
-        handlePingRequest(srvName, out, flags);
-        return;
-    }
-    else
-    {
-        if (!m_pServiceMethodTargets)
-            throw makeWsException( ERR_ESDL_BINDING_INTERNERR, WSERR_CLIENT, "ESDL", "Service methods not configured!");
-
-        VStringBuffer xpath("Target[@name=\"%s\"]", mthName);
-        tgtcfg.setown(m_pServiceMethodTargets->getPropTree(xpath.str()));
-
-        if (!tgtcfg)
-            throw makeWsException( ERR_ESDL_BINDING_BADREQUEST, WSERR_CLIENT, "ESDL", "Target not configured for method: %s", mthName );
-
-        StringAttr *crtErrorMessage = m_methodScriptErrors.getValue(mthName);
-        if (crtErrorMessage && !crtErrorMessage->isEmpty())
-        {
-            VStringBuffer msg("%s::%s disabled due to ESDL Script error(s). [%s]. Review transform template in configuration.", srvName, mthName, crtErrorMessage->str());
-            throw makeWsException( ERR_ESDL_BINDING_INTERNERR, WSERR_CLIENT, "ESDL", "%s", msg.str());
-        }
-
-        implType = getEsdlMethodImplType(tgtcfg->queryProp("@querytype"));
-
-        bool use_numeric_bool = srvdef.getPropBool("numeric_bool");
-        unsigned txResultFlags = ESDL_TRANS_OUTPUT_ROOT;
-        if (use_numeric_bool)
-            txResultFlags |= ESDL_TRANS_NUMERIC_BOOLEAN;
-
-        if (implType==EsdlMethodImplJava)
-        {
-            const char *javaPackage = srvdef.queryName();
-            const char *javaScopedClass = tgtcfg->queryProp("@javaclass");
-            const char *javaScopedMethod = tgtcfg->queryProp("@javamethod");
-
-            Linked<IEmbedServiceContext> srvctx = javaServiceMap.getValue(javaScopedClass);
-            if (!srvctx)
-            {
-                StringBuffer errmsg;
-                errmsg.appendf("Java class %s not loaded for method %s", javaScopedClass, mthName);
-                Linked<IException> exception = javaExceptionMap.getValue(javaScopedClass);
-                if(exception)
-                {
-                    errmsg.append(". Cause: ");
-                    exception->errorMessage(errmsg);
-                }
-                throw makeWsException(ERR_ESDL_BINDING_BADREQUEST, WSERR_SERVER, "ESDL", "%s", errmsg.str());
-            }
-
-            // Note that at present all methods called are assumed to be non-static (this was all that was supported prior to 7.2.0)
-            // We could extend edsl with a flag to indicate a static method (and remove the '@' in the signature below if it was set)
-            // Or we could remove the entire signature (the : and following in the line below) and have the plugin deduce it automatically - this does
-            // have a small performance penalty though.
-
-            //"WsWorkunits.WsWorkunitsService.WUAbort:@(LWsWorkunits/EsdlContext;LWsWorkunits/WUAbortRequest;)LWsWorkunits/WUAbortResponse;";
-            VStringBuffer signature("%s:@(L%s/EsdlContext;L%s/%s;)L%s/%s;", javaScopedMethod, javaPackage, javaPackage, mthdef.queryRequestType(), javaPackage, mthdef.queryResponseType());
-
-            Owned<IEmbedFunctionContext> javactx;
-            javactx.setown(srvctx->createFunctionContext(signature));
-            if (!javactx)
-                throw makeWsException(ERR_ESDL_BINDING_BADREQUEST, WSERR_SERVER, "ESDL", "Java method %s could not be loaded from class %s in esdl method %s", tgtcfg->queryProp("@javamethod"), javaScopedClass, mthName);
-
-            Owned<IXmlWriterExt> writer = dynamic_cast<IXmlWriterExt *>(javactx->bindParamWriter(m_esdl, javaPackage, "EsdlContext", "context"));
-             if (writer)
-             {
-                if (context.queryUserId())
-                    writer->outputCString(context.queryUserId(), "username");
-                javactx->paramWriterCommit(writer);
-             }
-
-             writer.setown(dynamic_cast<IXmlWriterExt *>(javactx->bindParamWriter(m_esdl, javaPackage, mthdef.queryRequestType(), "request")));
-             context.addTraceSummaryTimeStamp(LogNormal, "srt-reqproc", TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
-             m_pEsdlTransformer->process(context, EsdlRequestMode, srvdef.queryName(), mthdef.queryName(), *req, writer, 0, NULL);
-             context.addTraceSummaryTimeStamp(LogNormal, "end-reqproc", TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
-
-             javactx->paramWriterCommit(writer);
-             javactx->callFunction();
-
-             Owned<IXmlWriterExt> javaRespWriter = createIXmlWriterExt(0, 0, NULL, WTStandard);
-             javactx->writeResult(m_esdl, srvdef.queryName(), mthdef.queryResponseType(), javaRespWriter);
-             origResp.set(javaRespWriter->str());
-
-             Owned<IXmlWriterExt> finalRespWriter = createIXmlWriterExt(0, 0, NULL, (flags & ESDL_BINDING_RESPONSE_JSON) ? WTJSONRootless : WTStandard);
-             m_pEsdlTransformer->processHPCCResult(context, mthdef, origResp.str(), finalRespWriter, logdata, txResultFlags, ns, schema_location);
-             // TODO: Modify processHPCCResult to return record count
-             out.append(finalRespWriter->str());
-        }
-        else if (implType==EsdlMethodImplCpp)
-        {
-            Owned<IXmlWriterExt> reqWriter = createIXmlWriterExt(0, 0, NULL, WTStandard);
-
-            //Preprocess Request
-            StringBuffer reqcontent;
-            unsigned xflags = (isPublishedQuery(implType)) ? ROXIEREQ_FLAGS : ESDLREQ_FLAGS;
-            context.addTraceSummaryTimeStamp(LogNormal, "srt-reqproc", TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
-            m_pEsdlTransformer->process(context, EsdlRequestMode, srvdef.queryName(), mthdef.queryName(), *req, reqWriter.get(), xflags, NULL);
-            context.addTraceSummaryTimeStamp(LogNormal, "end-reqproc", TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
-
-            reqcontent.set(reqWriter->str());
-            context.addTraceSummaryTimeStamp(LogNormal, "serialized-xmlreq");
-
-            cpp_service_method_t xproc = nullptr;
-            cpp_service_method_t* xprocp = cppProcMap.getValue(mthName);
-            if (xprocp)
-                xproc = *xprocp;
-            if (!xproc)
-                throw makeWsException(ERR_ESDL_BINDING_BADREQUEST, WSERR_SERVER, "ESDL", "C++ plugin or method not loaded for method %s", mthName);
-
-            StringBuffer ctxbuf;
-            ctxbuf.append("<EsdlContext>");
-            if (context.queryUserId())
-                ctxbuf.appendf("<username>%s</username>", context.queryUserId());
-            ctxbuf.append("</EsdlContext>");
-
-            context.addTraceSummaryTimeStamp(LogNormal, "srt-cppcall");
-            xproc(ctxbuf.str(), reqcontent.str(), origResp);
-            context.addTraceSummaryTimeStamp(LogNormal, "end-cppcall");
-
-            context.addTraceSummaryTimeStamp(LogNormal, "srt-procres", TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
-            Owned<IXmlWriterExt> finalRespWriter = createIXmlWriterExt(0, 0, NULL, (flags & ESDL_BINDING_RESPONSE_JSON) ? WTJSONRootless : WTStandard);
-            m_pEsdlTransformer->processHPCCResult(context, mthdef, origResp.str(), finalRespWriter, logdata, txResultFlags, ns, schema_location);
-            // TODO: Modify processHPCCResult to return record count
-            context.addTraceSummaryTimeStamp(LogNormal, "end-procres", TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
-
-            out.append(finalRespWriter->str());
-        }
-        else
-        {
-            //Future: support transforms for all transaction types by moving scripts and script processing up
-            scriptContext.setown(checkCreateEsdlServiceScriptContext(context, srvdef, mthdef, tgtcfg, req));
-
-            Owned<IXmlWriterExt> reqWriter = createIXmlWriterExt(0, 0, NULL, WTStandard);
-
-            //Preprocess Request
-            StringBuffer reqcontent;
-            unsigned xflags = (isPublishedQuery(implType)) ? ROXIEREQ_FLAGS : ESDLREQ_FLAGS;
-            context.addTraceSummaryTimeStamp(LogNormal, "srt-reqproc", TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
-            int recordCount = m_pEsdlTransformer->process(context, EsdlRequestMode, srvdef.queryName(), mthdef.queryName(), *req, reqWriter.get(), xflags, NULL);
-            context.addTraceSummaryTimeStamp(LogNormal, "end-reqproc", TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
-            context.addTraceSummaryValue(LogNormal, "custom_fields.recCount", recordCount, TXSUMMARY_GRP_ENTERPRISE);
-
-            if(isPublishedQuery(implType) || implType==EsdlMethodImplScript)
-                tgtctx.setown(createTargetContext(context, tgtcfg.get(), srvdef, mthdef, req));
-
-            reqcontent.set(reqWriter->str());
-            context.addTraceSummaryTimeStamp(LogNormal, "serialized-xmlreq");
-
-            if (implType==EsdlMethodImplScript)
-                runServiceScript(context, scriptContext, srvdef, mthdef, reqcontent, origResp, txResultFlags, ns, schema_location);
-            else
-                handleFinalRequest(context, scriptContext, tgtcfg, tgtctx, srvdef, mthdef, ns, reqcontent, origResp, isPublishedQuery(implType), implType==EsdlMethodImplProxy, soapmsg);
-            context.addTraceSummaryTimeStamp(LogNormal, "end-HFReq", TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
-
-            if (isPublishedQuery(implType))
-            {
-                context.addTraceSummaryTimeStamp(LogNormal, "srt-procres", TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
-                Owned<IXmlWriterExt> respWriter = createIXmlWriterExt(0, 0, NULL, (flags & ESDL_BINDING_RESPONSE_JSON) ? WTJSONRootless : WTStandard);
-                m_pEsdlTransformer->processHPCCResult(context, mthdef, origResp.str(), respWriter.get(), logdata, txResultFlags, ns, schema_location);
-                context.addTraceSummaryTimeStamp(LogNormal, "end-procres", TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
-                out.append(respWriter->str());
-                runPostEsdlScript(context, scriptContext, srvdef, mthdef, out, txResultFlags, ns, schema_location);
-            }
-            else if(implType==EsdlMethodImplProxy)
-                getSoapBody(out, origResp);
-            else
-            {
-                m_pEsdlTransformer->process(context, EsdlResponseMode, srvdef.queryName(), mthdef.queryName(), out, origResp.str(), txResultFlags, ns, schema_location);
-                runPostEsdlScript(context, scriptContext, srvdef, mthdef, out, txResultFlags, ns, schema_location);
-                logdata.set("<LogDatasets/>");
-            }
-        }
+    case EsdlMethodImplRoxie:
+    case EsdlMethodImplWsEcl:
+        doPublishedWorkflow(sri);
+        break;
+    case EsdlMethodImplUnknown:
+    case EsdlMethodImplProxy:
+    default:
+        doSoapWorkflow(sri);
+        break;
+    case EsdlMethodImplJava:
+        doJavaWorkflow(sri);
+        break;
+    case EsdlMethodImplCpp:
+        doCppWorkflow(sri);
+        break;
+    case EsdlMethodImplScript:
+        doScriptWorkflow(sri);
+        break;
     }
 
-    ESPLOG(LogMax,"Customer Response: %s", out.str());
+    // TBD: Should the ESP assume that all non-stubbed responses should be dumped to trace output,
+    //      or should it be up to scripts to manage? Java plugins might not be able to manage...
+    // TODO: Apply masking before dumping any response.
+    //
+    //ESPLOG(LogMax,"Customer Response: %s", out.str());
 }
 
-bool EsdlServiceImpl::handleResultLogging(IEspContext &espcontext, IEsdlScriptContext *scriptContext, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, IPropertyTree * reqcontext, IPropertyTree * request,const char *rawreq, const char * rawresp, const char * finalresp, const char * logdata)
+bool EsdlServiceImpl::handleResultLogging(ServiceRequestInfo& sri)
 {
-    StringBuffer temp;
-    if (scriptContext)
-    {
-        espcontext.addTraceSummaryTimeStamp(LogNormal, "custom_fields.srt-preLogScripts", TXSUMMARY_GRP_ENTERPRISE);
-        IEsdlTransformSet *servicePLTs = m_transforms->queryMethodEntryPoint("", ESDLScriptEntryPoint_PreLogging);
-        IEsdlTransformSet *methodPLTs = m_transforms->queryMethodEntryPoint(mthdef.queryName(), ESDLScriptEntryPoint_PreLogging);
+#ifdef _DEBUG
+    // allow debug builds to always test scripts
+    runPreLoggingScript(sri);
+#endif
+    if (!loggingManager())
+        return true;
+#ifndef _DEBUG
+    // non-debug builds only process scripts with a logging manager
+    runPreLoggingScript(sri);
+#endif
 
-        scriptContext->appendContent(ESDLScriptCtxSection_LogData, "LogDatasets", logdata);
-
-        if (servicePLTs || methodPLTs)
-        {
-            processServiceAndMethodTransforms(scriptContext, {servicePLTs, methodPLTs}, ESDLScriptCtxSection_LogData, nullptr);
-            scriptContext->toXML(temp, ESDLScriptCtxSection_LogData);
-            logdata = temp.str();
-        }
-        espcontext.addTraceSummaryTimeStamp(LogNormal, "custom_fields.end-preLogScripts", TXSUMMARY_GRP_ENTERPRISE);
-    }
-
-    bool success = true;
-    espcontext.addTraceSummaryTimeStamp(LogNormal, "srt-resLogging", TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
-    if (loggingManager())
-    {
-        Owned<IEspLogEntry> entry = loggingManager()->createLogEntry();
-        entry->setOption(LOGGINGDBSINGLEINSERT);
-        entry->setOwnEspContext(LINK(&espcontext));
-        entry->setOwnUserContextTree(LINK(reqcontext));
-        entry->setOwnUserRequestTree(LINK(request));
-        entry->setUserResp(finalresp);
-        entry->setBackEndReq(rawreq);
-        entry->setBackEndResp(rawresp);
-        entry->setLogDatasets(logdata);
-        if (scriptContext)
-            entry->setOwnScriptValuesTree(scriptContext->createPTreeFromSection(ESDLScriptCtxSection_Logging));
-        StringBuffer logresp;
-        success = loggingManager()->updateLog(entry, logresp);
-        ESPLOG(LogMin,"ESDLService: Attempted to log ESP transaction: %s", logresp.str());
-    }
-    espcontext.addTraceSummaryTimeStamp(LogNormal, "end-resLogging", TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
+    sri.context.addTraceSummaryTimeStamp(LogNormal, "srt-resLogging", TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
+    Owned<IEspLogEntry> entry = loggingManager()->createLogEntry();
+    entry->setOption(LOGGINGDBSINGLEINSERT);
+    entry->setOwnEspContext(LINK(&sri.context));
+    entry->setOwnUserContextTree(LINK(sri.tgtctx));
+    entry->setOwnUserRequestTree(LINK(sri.req));
+    entry->setUserResp(sri.finalResp);
+    entry->setBackEndReq(sri.backendReq);
+    entry->setBackEndResp(sri.backendResp);
+    entry->setLogDatasets(sri.logdata);
+    if (sri.scriptContext)
+        entry->setOwnScriptValuesTree(sri.scriptContext->createPTreeFromSection(ESDLScriptCtxSection_Logging));
+    StringBuffer logresp;
+    bool success = loggingManager()->updateLog(entry, logresp);
+    sri.context.addTraceSummaryTimeStamp(LogNormal, "end-resLogging", TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
+    if (!success)
+        IERRLOG("ESDLService: Failed to log ESP transaction: %s", logresp.str());
     return success;
-}
-
-void EsdlServiceImpl::getSoapBody(StringBuffer& out,StringBuffer& soapresp)
-{
-    int len = soapresp.length();
-    if(len<=0)
-        return;
-
-    const char* begin = soapresp.str();
-    const char* end = begin+len;
-    const char* finger = begin;
-
-    //find the envelope
-    while(finger && finger<=end-9 && strnicmp(finger,":envelope",9)!=0)
-        finger++;
-
-    //no envelope so return as is
-    if(finger==end-9)
-    {
-        out.append(soapresp.str());
-        return;
-    }
-
-    //find the body
-    while(finger && finger<=end-5 && strnicmp(finger,":body",5)!=0)
-        finger++;
-
-    //if for some reason invalid soap, return
-    if(finger==end-5)
-    {
-        ESPLOG(LogMax,"EsdlServiceImpl - Invalid Soap Response: %s",soapresp.str());
-        return;
-    }
-
-    //find the end bracket incase there is namespace
-    while(finger && *finger!='>')
-        finger++;
-
-    const char* start=finger+1;
-
-    //now find the end of the body
-    finger = soapresp.str() + soapresp.length() - 6;
-    while(finger&& finger>=start && strnicmp(finger,":body>",6)!=0)
-        finger--;
-
-    if(finger==start)
-    {
-        ESPLOG(LogMax,"EsdlServiceImpl - Invalid Soap Response: %s",soapresp.str());
-        return;
-    }
-
-    while(finger>start && *finger!='<')
-        finger--;
-
-    out.clear().append(finger-start,start);
 }
 
 void EsdlServiceImpl::getSoapError( StringBuffer& out,
@@ -1320,149 +1440,125 @@ void EsdlServiceImpl::getSoapError( StringBuffer& out,
     out.clear().append(finger-start,start);
 }
 
-void EsdlServiceImpl::handleFinalRequest(IEspContext &context,
-                                         IEsdlScriptContext *scriptContext,
-                                         Owned<IPropertyTree> &tgtcfg,
-                                         Owned<IPropertyTree> &tgtctx,
-                                         IEsdlDefService &srvdef,
-                                         IEsdlDefMethod &mthdef,
-                                         const char *ns,
-                                         StringBuffer& req,
-                                         StringBuffer &out,
-                                         bool isroxie,
-                                         bool isproxy,
-                                         StringBuffer& soapmsg)
+void EsdlServiceImpl::handleSoapRequest(ServiceRequestInfo& sri)
 {
-    const char *tgtUrl = tgtcfg->queryProp("@url");
+    const char *tgtUrl = sri.tgtcfg->queryProp("@url");
     if (!isEmptyString(tgtUrl))
     {
-        prepareFinalRequest(context, scriptContext, tgtcfg, tgtctx, srvdef, mthdef, isroxie, ns, req, soapmsg);
-        sendTargetSOAP(context, tgtcfg.get(), soapmsg.str(), out, isproxy, NULL);
+        prepareSoapRequest(sri, sri.backendReq);
+        sendTargetSOAP(sri.context, sri.tgtcfg.get(), sri.backendReq.str(), sri.backendResp, sri.isProxy, NULL);
     }
     else
     {
-        ESPLOG(LogMax,"No target URL configured for %s",mthdef.queryMethodName());
+        ESPLOG(LogMax,"No target URL configured for %s",sri.mthdef.queryMethodName());
         throw makeWsException( ERR_ESDL_BINDING_BADREQUEST, WSERR_CLIENT, "ESP",
-                   "No target URL configured for %s!", mthdef.queryMethodName());
+                   "No target URL configured for %s!", sri.mthdef.queryMethodName());
     }
 
-    auto echoInsertionPoint = strstr(out, "</Result></Results>");
-
-    if (echoInsertionPoint)
+    if (sri.isPublished)
     {
-        try
+        const char* echoInsertionPoint = strstr(sri.backendResp, "</Result></Results>");
+        if (echoInsertionPoint)
         {
-            const char *queryname = (isroxie ? tgtcfg->queryProp("@queryname") : nullptr);
-            const char *requestname = mthdef.queryRequestType();
-            const char *qname = nullptr;
-            const char *content = nullptr;
-
-            StringBuffer encodedContent;
-            StringBuffer echoDataset;
-
-            XmlPullParser xpp(soapmsg.str(), soapmsg.length());
-            StartTag stag;
-            EndTag etag;
-            int type = XmlPullParser::END_DOCUMENT;
-
-            echoDataset.ensureCapacity(soapmsg.length());
-            xpp.setSupportNamespaces(false); // parser throws exceptions when it encounters undefined namespace prefixes, such as CRT's 'xsdl'
-            while ((type = xpp.next()) != XmlPullParser::END_DOCUMENT)
+            try
             {
-                switch (type)
+                const char *queryname = (sri.isPublished ? sri.tgtcfg->queryProp("@queryname") : nullptr);
+                const char *requestname = sri.mthdef.queryRequestType();
+                const char *qname = nullptr;
+                const char *content = nullptr;
+
+                StringBuffer encodedContent;
+                StringBuffer echoDataset;
+
+                XmlPullParser xpp(sri.backendResp.str(), sri.backendResp.length());
+                StartTag stag;
+                EndTag etag;
+                int type = XmlPullParser::END_DOCUMENT;
+
+                echoDataset.ensureCapacity(sri.backendReq.length());
+                xpp.setSupportNamespaces(false); // parser throws exceptions when it encounters undefined namespace prefixes, such as CRT's 'xsdl'
+                while ((type = xpp.next()) != XmlPullParser::END_DOCUMENT)
                 {
-                case XmlPullParser::START_TAG:
-                    xpp.readStartTag(stag);
-                    qname = stag.getQName();
-                    if (streq(qname, "soap:Envelope"))
-                        echoDataset << "<Dataset name=\"DesdlSoapRequestEcho\">";
-                    else if (streq(qname, "soap:Body"))
-                        echoDataset << "<Row>";
-                    else if (queryname && streq(qname, queryname))
-                        echoDataset << "<roxierequest name=\"" << queryname << "\">";
-                    else if (streq(qname, requestname))
-                        echoDataset << "<esprequest name=\"" << requestname << "\">";
-                    else
+                    switch (type)
                     {
-                        echoDataset << '<';
-                        if (strncmp(qname, "xsdl:", 5) == 0)
-                            echoDataset << "xsdl_" << qname + 5; // eliminate problematic namespace prefix
+                    case XmlPullParser::START_TAG:
+                        xpp.readStartTag(stag);
+                        qname = stag.getQName();
+                        if (streq(qname, "soap:Envelope"))
+                            echoDataset << "<Dataset name=\"DesdlSoapRequestEcho\">";
+                        else if (streq(qname, "soap:Body"))
+                            echoDataset << "<Row>";
+                        else if (queryname && streq(qname, queryname))
+                            echoDataset << "<roxierequest name=\"" << queryname << "\">";
+                        else if (streq(qname, requestname))
+                            echoDataset << "<esprequest name=\"" << requestname << "\">";
                         else
-                            echoDataset << qname;
-                        for (int idx = 0; idx < stag.getLength(); idx++)
                         {
-                            encodeXML(stag.getValue(idx), encodedContent.clear());
-                            echoDataset << ' ' << stag.getRawName(idx) << "=\"" << encodedContent << '"';
+                            echoDataset << '<';
+                            if (strncmp(qname, "xsdl:", 5) == 0)
+                                echoDataset << "xsdl_" << qname + 5; // eliminate problematic namespace prefix
+                            else
+                                echoDataset << qname;
+                            for (int idx = 0; idx < stag.getLength(); idx++)
+                            {
+                                encodeXML(stag.getValue(idx), encodedContent.clear());
+                                echoDataset << ' ' << stag.getRawName(idx) << "=\"" << encodedContent << '"';
+                            }
+                            echoDataset << '>';
                         }
-                        echoDataset << '>';
-                    }
-                    break;
+                        break;
 
-                case XmlPullParser::END_TAG:
-                    xpp.readEndTag(etag);
-                    qname = etag.getQName();
-                    if (streq(qname, "soap:Envelope"))
-                        echoDataset << "</Dataset>";
-                    else if (streq(qname, "soap:Body"))
-                        echoDataset << "</Row>";
-                    else if (queryname && streq(qname, queryname))
-                        echoDataset << "</roxierequest>";
-                    else if (streq(qname, requestname))
-                        echoDataset << "</esprequest>";
-                    else if (strncmp(qname, "xsdl:", 5) == 0)
-                        echoDataset << "</xsdl_" << qname + 5 << '>'; // eliminate problematic namespace prefix
-                    else
-                        echoDataset << "</" << qname << '>';
-                    break;
+                    case XmlPullParser::END_TAG:
+                        xpp.readEndTag(etag);
+                        qname = etag.getQName();
+                        if (streq(qname, "soap:Envelope"))
+                            echoDataset << "</Dataset>";
+                        else if (streq(qname, "soap:Body"))
+                            echoDataset << "</Row>";
+                        else if (queryname && streq(qname, queryname))
+                            echoDataset << "</roxierequest>";
+                        else if (streq(qname, requestname))
+                            echoDataset << "</esprequest>";
+                        else if (strncmp(qname, "xsdl:", 5) == 0)
+                            echoDataset << "</xsdl_" << qname + 5 << '>'; // eliminate problematic namespace prefix
+                        else
+                            echoDataset << "</" << qname << '>';
+                        break;
 
-                case XmlPullParser::CONTENT:
-                    content = xpp.readContent();
-                    if (!isEmptyString(content))
-                    {
-                        encodeXML(content, encodedContent.clear());
-                        echoDataset << encodedContent;
+                    case XmlPullParser::CONTENT:
+                        content = xpp.readContent();
+                        if (!isEmptyString(content))
+                        {
+                            encodeXML(content, encodedContent.clear());
+                            echoDataset << encodedContent;
+                        }
+                        break;
                     }
-                    break;
                 }
+                sri.backendResp.insert(echoInsertionPoint - sri.backendResp.str(), echoDataset);
             }
-            out.insert(echoInsertionPoint - out.str(), echoDataset);
-        }
-        catch (XmlPullParserException& xppe)
-        {
-            IERRLOG("Unable to echo transformed request to response: %s", xppe.what());
-        }
-        catch (...)
-        {
-            IERRLOG("Unable to echo transformed request to response");
+            catch (XmlPullParserException& xppe)
+            {
+                IERRLOG("Unable to echo transformed request to response: %s", xppe.what());
+            }
+            catch (...)
+            {
+                IERRLOG("Unable to echo transformed request to response");
+            }
         }
     }
 
-    if (scriptContext)
-    {
-        IEsdlTransformSet *serviceIRTs = m_transforms->queryMethodEntryPoint("", ESDLScriptEntryPoint_BackendResponse);
-        IEsdlTransformSet *methodIRTs = m_transforms->queryMethodEntryPoint(mthdef.queryName(), ESDLScriptEntryPoint_BackendResponse);
-
-        context.addTraceSummaryTimeStamp(LogNormal, "srt-resptrans");
-
-        scriptContext->setContent(ESDLScriptCtxSection_InitialResponse, out.str());
-        if (serviceIRTs || methodIRTs)
-        {
-            processServiceAndMethodTransforms(scriptContext, {serviceIRTs, methodIRTs}, ESDLScriptCtxSection_InitialResponse, ESDLScriptCtxSection_PreESDLResponse);
-            scriptContext->toXML(out.clear(), ESDLScriptCtxSection_PreESDLResponse);
-        }
-
-        context.addTraceSummaryTimeStamp(LogNormal, "end-resptrans");
-    }
+    runBackendResponseScript(sri, sri.backendResp);
 }
 
 void EsdlServiceImpl::handleEchoTest(const char *mthName,
                                      IPropertyTree *req,
                                      StringBuffer &out,
-                                     ESPSerializationFormat format)
+                                     unsigned flags)
 {
     const char* valueIn = req->queryProp("ValueIn");
     StringBuffer encoded;
-    if (format == ESPSerializationJSON)
+    if (flags & ESDL_BINDING_RESPONSE_JSON)
     {
         encodeJSON(encoded, valueIn);
         out.appendf("{\n\t\"%sResponse\":\n{\t\t\"ValueOut\": \"%s\"\n\t\t}\n}", mthName, encoded.str());
@@ -1647,39 +1743,29 @@ void EsdlServiceImpl::getTargetResponseFile(IEspContext & context,
     suitable for submission to back-end service.
  */
 
-void EsdlServiceImpl::prepareFinalRequest(IEspContext &context,
-                                        IEsdlScriptContext *scriptContext,
-                                        Owned<IPropertyTree> &tgtcfg,
-                                        Owned<IPropertyTree> &tgtctx,
-                                        IEsdlDefService &srvdef,
-                                        IEsdlDefMethod &mthdef,
-                                        bool isroxie,
-                                        const char* ns,
-                                        StringBuffer &reqcontent,
-                                        StringBuffer &reqProcessed)
+void EsdlServiceImpl::prepareSoapRequest(ServiceRequestInfo& sri,
+                                         StringBuffer& reqcontent)
 {
-    const char *mthName = mthdef.queryName();
-
-    reqProcessed.append(
+    sri.backendReq.append(
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
         "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">");
 
-    if(isroxie)
+    if(sri.isPublished)
     {
-        const char *tgtQueryName =  tgtcfg->queryProp("@queryname");
+        const char *tgtQueryName =  sri.tgtcfg->queryProp("@queryname");
         if (!isEmptyString(tgtQueryName))
         {
-            reqProcessed.append("<soap:Body><").append(tgtQueryName).append(">");
-            reqProcessed.appendf("<_TransactionId>%s</_TransactionId>", context.queryTransactionID());
+            sri.backendReq.append("<soap:Body><").append(tgtQueryName).append(">");
+            sri.backendReq.appendf("<_TransactionId>%s</_TransactionId>", sri.context.queryTransactionID());
 
-            if (tgtctx)
-                toXML(tgtctx.get(), reqProcessed);
+            if (sri.tgtctx)
+                toXML(sri.tgtctx.get(), sri.backendReq);
 
-            reqProcessed.append(reqcontent.str());
-            reqProcessed.append("</").append(tgtQueryName).append("></soap:Body>");
+            sri.backendReq.append(reqcontent.str());
+            sri.backendReq.append("</").append(tgtQueryName).append("></soap:Body>");
 
             // Transform gateways
-            auto cfgGateways = tgtcfg->queryBranch("Gateways");
+            auto cfgGateways = sri.tgtcfg->queryBranch("Gateways");
             if (cfgGateways)
             {
                 auto baseXpath = cfgGateways->queryProp("@legacyTransformTarget");
@@ -1688,23 +1774,23 @@ void EsdlServiceImpl::prepareFinalRequest(IEspContext &context,
                     Owned<IPTree> gws = createPTree("gateways", 0);
                     // Temporarily add the closing </soap:Envelope> tag so we have valid
                     // XML to transform the gateways
-                    Owned<IPTree> soapTree = createPTreeFromXMLString(reqProcessed.append("</soap:Envelope>"), ipt_ordered);
+                    Owned<IPTree> soapTree = createPTreeFromXMLString(sri.backendReq.append("</soap:Envelope>"), ipt_ordered);
                     StringBuffer xpath(baseXpath);
                     StringBuffer rowName(cfgGateways->queryProp("@legacyRowName"));
 
                     if (rowName.isEmpty())
                         rowName.append("row");
-                    EsdlBindingImpl::transformGatewaysConfig(tgtcfg, gws, rowName);
+                    EsdlBindingImpl::transformGatewaysConfig(sri.tgtcfg, gws, rowName);
                     xpath.replaceString("{$query}", tgtQueryName);
-                    xpath.replaceString("{$method}", mthName);
-                    xpath.replaceString("{$service}", srvdef.queryName());
-                    xpath.replaceString("{$request}", mthdef.queryRequestType());
+                    xpath.replaceString("{$method}", sri.mthName);
+                    xpath.replaceString("{$service}", sri.srvdef.queryName());
+                    xpath.replaceString("{$request}", sri.mthdef.queryRequestType());
                     mergePTree(ensurePTree(soapTree, xpath), gws);
-                    toXML(soapTree, reqProcessed.clear());
+                    toXML(soapTree, sri.backendReq.clear());
                     // Remove the </soap:Envelope> tag so it can be unconditionally added
                     // when the gateways don't require processing
-                    reqProcessed.setLength(strstr(reqProcessed, "</soap:Envelope>") - reqProcessed.str());
-                    reqProcessed.trim();
+                    sri.backendReq.setLength(strstr(sri.backendReq, "</soap:Envelope>") - sri.backendReq.str());
+                    sri.backendReq.trim();
                 }
             }
         }
@@ -1712,46 +1798,22 @@ void EsdlServiceImpl::prepareFinalRequest(IEspContext &context,
         {
             // Use WsException here because both callers throw this type of exception
             throw makeWsException( ERR_ESDL_BINDING_INTERNERR, WSERR_SERVER, "ESP",
-                        "EsdlServiceImpl::processFinalRequest() target query name missing");
+                        "EsdlServiceImpl::prepareSoapRequest() target query name missing");
         }
     }
     else
     {
         StringBuffer headers;
-        processHeaders(context, srvdef, mthdef, ns, reqcontent, headers);
+        processHeaders(sri.context, sri.srvdef, sri.mthdef, sri.ns, reqcontent, headers);
         if (headers.length() > 0 )
-            reqProcessed.append("<soap:Header>").append(headers).append("</soap:Header>");
+            sri.backendReq.append("<soap:Header>").append(headers).append("</soap:Header>");
 
-        processRequest(context, srvdef, mthdef, ns, reqcontent);
-        reqProcessed.append("<soap:Body>").append(reqcontent).append("</soap:Body>");
+        processRequest(sri.context, sri.srvdef, sri.mthdef, sri.ns, reqcontent);
+        sri.backendReq.append("<soap:Body>").append(reqcontent).append("</soap:Body>");
     }
 
-    reqProcessed.append("</soap:Envelope>");
-
-    // Process Custom Request Transforms
-
-    if (m_serviceScriptError.length())
-        throw makeWsException( ERR_ESDL_BINDING_INTERNERR, WSERR_CLIENT, "ESDL", "%s::%s disabled due to service-level Custom Transform errors. [%s]. Review transform template in configuration.", srvdef.queryName(), mthName, m_serviceScriptError.str());
-
-    StringAttr *crtErrorMessage = m_methodScriptErrors.getValue(mthName);
-    if (crtErrorMessage && !crtErrorMessage->isEmpty())
-        throw makeWsException( ERR_ESDL_BINDING_INTERNERR, WSERR_CLIENT, "ESDL", "%s::%s disabled due to ESDL Script error(s). [%s]. Review transform template in configuration.", srvdef.queryName(), mthName, crtErrorMessage->str());
-
-    if (scriptContext)
-    {
-        IEsdlTransformSet *serviceBRTs = m_transforms->queryMethodEntryPoint("", ESDLScriptEntryPoint_BackendRequest);
-        IEsdlTransformSet *methodBRTs = m_transforms->queryMethodEntryPoint(mthName, ESDLScriptEntryPoint_BackendRequest);
-
-        context.addTraceSummaryTimeStamp(LogNormal, "srt-custreqtrans");
-        scriptContext->setContent(ESDLScriptCtxSection_ESDLRequest, reqProcessed.str());
-        if (serviceBRTs || methodBRTs)
-        {
-            processServiceAndMethodTransforms(scriptContext, {serviceBRTs, methodBRTs}, ESDLScriptCtxSection_ESDLRequest, ESDLScriptCtxSection_FinalRequest);
-            scriptContext->toXML(reqProcessed.clear(), ESDLScriptCtxSection_FinalRequest);
-        }
-
-        context.addTraceSummaryTimeStamp(LogNormal, "end-custreqtrans");
-    }
+    sri.backendReq.append("</soap:Envelope>");
+    runBackendRequestScript(sri, sri.backendResp);
 }
 
 EsdlServiceImpl::~EsdlServiceImpl()
@@ -2308,6 +2370,36 @@ static void returnSocket(CHttpResponse *response)
         response->querySocketReturner()->returnSocket();
 }
 
+void EsdlBindingImpl::finishServiceRequest(ServiceRequestInfo& sri, CHttpResponse* response)
+{
+    response->setContent(sri.finalResp.str());
+    response->setStatus(HTTP_STATUS_OK);
+
+    if (sri.suppressLogging)
+        ; // do nothing
+    else if (sri.logBeforeResponse)
+    {
+        if (!m_pESDLService->handleResultLogging(sri))
+            throw makeStringException(-1, "Results are unavailable due to an internal error.");
+        sri.context.addTraceSummaryTimeStamp(LogMin, "respLogged");
+    }
+
+    sri.context.addTraceSummaryTimeStamp(LogMin, "custom_fields.RspSndSt", TXSUMMARY_GRP_ENTERPRISE);
+    response->send();
+    returnSocket(response);
+
+    unsigned timetaken = msTick() - sri.context.queryCreationTime();
+    sri.context.addTraceSummaryTimeStamp(LogMin, "respSent", TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
+
+    ESPLOG(LogMax,"EsdlBindingImpl:onGetInstantQuery response: %s", sri.finalResp.str());
+
+    if (!sri.suppressLogging && !sri.logBeforeResponse)
+    {
+        m_pESDLService->handleResultLogging(sri);
+        sri.context.addTraceSummaryTimeStamp(LogMin, "respLogged");
+    }
+}
+
 int EsdlBindingImpl::onGetInstantQuery(IEspContext &context,
                                        CHttpRequest* request,
                                        CHttpResponse* response,
@@ -2344,11 +2436,6 @@ int EsdlBindingImpl::onGetInstantQuery(IEspContext &context,
                     params2xml(m_esdl, srvdef->queryName(), mthdef->queryName(), EsdlTypeRequest, request->queryParameters(), xmlstr, 0, context.getClientVersion());
                     ESPLOG(LogMax,"params reqxml: %s", xmlstr.str());
 
-                    StringBuffer out;
-                    StringBuffer logdata;
-
-                    Owned<IPropertyTree> tgtcfg;
-                    Owned<IPropertyTree> tgtctx;
                     Owned<IPropertyTree> req_pt = createPTreeFromXMLString(xmlstr.length(), xmlstr.str(), false);
 
                     StringBuffer ns, schemaLocation;
@@ -2359,30 +2446,12 @@ int EsdlBindingImpl::onGetInstantQuery(IEspContext &context,
 
                     context.setESDLBindingID(m_bindingId.get());
 
-                    StringBuffer origResp;
-                    StringBuffer soapmsg;
-                    Owned<IEsdlScriptContext> scriptContext;
-                    m_pESDLService->handleServiceRequest(context, scriptContext, *srvdef, *mthdef, tgtcfg, tgtctx, ns.str(), schemaLocation.str(), req_pt.get(), out, logdata, origResp, soapmsg, 0);
+                    bool isJSON = (context.getResponseFormat() == ESPSerializationJSON);
+                    ServiceRequestInfo sri(context, *srvdef, *mthdef, ns, schemaLocation, req_pt, isJSON ? ESDL_BINDING_RESPONSE_JSON : 0);
+                    m_pESDLService->handleServiceRequest(sri);
 
-                    response->setContent(out.str());
-
-                    if (context.getResponseFormat() == ESPSerializationJSON)
-                        response->setContentType(HTTP_TYPE_JSON);
-                    else
-                      response->setContentType(HTTP_TYPE_TEXT_XML_UTF8);
-                    response->setStatus(HTTP_STATUS_OK);
-                    context.addTraceSummaryTimeStamp(LogMin, "custom_fields.RspSndSt", TXSUMMARY_GRP_ENTERPRISE);
-                    response->send();
-                    returnSocket(response);
-
-                    unsigned timetaken = msTick() - context.queryCreationTime();
-                    context.addTraceSummaryTimeStamp(LogMin, "respSent", TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
-
-                    ESPLOG(LogMax,"EsdlBindingImpl:onGetInstantQuery response: %s", out.str());
-
-                    m_pESDLService->handleResultLogging(context, scriptContext, *srvdef, *mthdef, tgtctx.get(), req_pt.get(), soapmsg.str(), origResp.str(), out.str(), logdata.str());
-                    context.addTraceSummaryTimeStamp(LogMin, "respLogged");
-
+                    response->setContentType(isJSON ? HTTP_TYPE_JSON : HTTP_TYPE_TEXT_XML_UTF8);
+                    finishServiceRequest(sri, response);
                     return 0;
                 }
                 catch (IMultiException* mex)
@@ -2567,7 +2636,6 @@ int EsdlBindingImpl::HandleSoapRequest(CHttpRequest* request,
     const char * reqtype = NULL;
 
     const char *in = NULL;
-    StringBuffer xmlout;
 
     try
     {
@@ -2669,47 +2737,24 @@ int EsdlBindingImpl::HandleSoapRequest(CHttpRequest* request,
             if (!pt)
                 throw makeWsException( ERR_ESDL_BINDING_BADREQUEST, WSERR_SERVER, request->queryServiceName(), "EsdlBindingImpl could not process SOAP request" );
 
-            StringBuffer baseout;
-            StringBuffer logdata;
-
-            Owned<IPropertyTree> tgtcfg;
-            Owned<IPropertyTree> tgtctx;
-
             // Echo back the reqeust namespace, don't generate it here
             if(m_pESDLService->m_returnSchemaLocationOnOK)
                 getSchemaLocation(*ctx, request, ns, schemaLocation);
 
             ctx->setESDLBindingID(m_bindingId.get());
 
-            StringBuffer origResp;
-            StringBuffer soapmsg;
-            Owned<IEsdlScriptContext> scriptContext;
-            m_pESDLService->handleServiceRequest(*ctx, scriptContext, *srvdef, *mthdef, tgtcfg, tgtctx, ns.str(), schemaLocation.str(), pt, baseout, logdata, origResp, soapmsg, 0);
-
-            StringBuffer out;
-            out.append(
+            ServiceRequestInfo sri(*ctx, *srvdef, *mthdef, ns, schemaLocation, pt, 0);
+            sri.finalResp.append(
                 "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
                 "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">"
                     "<soap:Body>");
-
-            out.append(baseout.str());
-            out.append(
+            m_pESDLService->handleServiceRequest(sri);
+            sri.finalResp.append(
                     "</soap:Body>"
                 "</soap:Envelope>");
 
-            response->setContent(out.str());
             response->setContentType(HTTP_TYPE_TEXT_XML_UTF8);
-            response->setStatus(HTTP_STATUS_OK);
-            ctx->addTraceSummaryTimeStamp(LogMin, "custom_fields.RspSndSt", TXSUMMARY_GRP_ENTERPRISE);
-            response->send();
-            returnSocket(response);
-
-            unsigned timetaken = msTick() - ctx->queryCreationTime();
-            ctx->addTraceSummaryTimeStamp(LogMin, "respSent", TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
-
-            m_pESDLService->handleResultLogging(*ctx, scriptContext, *srvdef, *mthdef, tgtctx.get(), pt, soapmsg.str(), origResp.str(), out.str(), logdata.str());
-
-            ESPLOG(LogMax,"EsdlBindingImpl:HandleSoapRequest response: %s", xmlout.str());
+            finishServiceRequest(sri, response);
         }
         else
             throw makeWsException( ERR_ESDL_BINDING_BADREQUEST, WSERR_SERVER, request->queryServiceName(), "EsdlBindingImpl could not process SOAP request" );
@@ -3408,11 +3453,11 @@ int EsdlBindingImpl::getJsonTestForm(IEspContext &context, CHttpRequest* request
     xform->loadXslFromFile(StringBuffer(getCFD()).append("./xslt/wsecl3_jsontest.xsl").str());
 
     StringBuffer encodedMsg;
-    StringBuffer srcxml;
-    srcxml.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?><srcxml><jsonreq><![CDATA[");
-    srcxml.append(encodeJSON(encodedMsg, jsonmsg.str())); //encode the whole thing for javascript embedding
-    srcxml.append("]]></jsonreq></srcxml>");
-    xform->setXmlSource(srcxml.str(), srcxml.length());
+    StringBuffer srixml;
+    srixml.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?><srixml><jsonreq><![CDATA[");
+    srixml.append(encodeJSON(encodedMsg, jsonmsg.str())); //encode the whole thing for javascript embedding
+    srixml.append("]]></jsonreq></srixml>");
+    xform->setXmlSource(srixml.str(), srixml.length());
     xform->setStringParameter("showhttp", "true()");
 
     // params
@@ -3445,7 +3490,7 @@ void EsdlBindingImpl::handleJSONPost(CHttpRequest *request, CHttpResponse *respo
     IEspContext *ctx = request->queryContext();
     ctx->addTraceSummaryValue(LogNormal, "Esdl Binding", "JSONPost");
 
-    StringBuffer jsonresp;
+    StringBuffer jsonresp("{");
 
     try
     {
@@ -3489,11 +3534,7 @@ void EsdlBindingImpl::handleJSONPost(CHttpRequest *request, CHttpResponse *respo
         IEsdlDefMethod *mthdef = srvdef->queryMethodByName(methodName);
         if (!mthdef)
             throw MakeStringException(-1, "EsdlBinding::%s::%s: Method definition not found", serviceName, methodName);
-        jsonresp.append("{");
         StringBuffer logdata; //RODRIGO: What are we doing w/ the logdata?
-
-        Owned<IPropertyTree> tgtcfg;
-        Owned<IPropertyTree> tgtctx;
 
         StringBuffer ns, schemaLocation;
         generateNamespace(*ctx, request, serviceName, methodName, ns);
@@ -3501,46 +3542,37 @@ void EsdlBindingImpl::handleJSONPost(CHttpRequest *request, CHttpResponse *respo
             getSchemaLocation(*ctx, request, ns, schemaLocation);
 
         ctx->setESDLBindingID(m_bindingId.get());
-        StringBuffer origResp;
-        StringBuffer soapmsg;
-        Owned<IEsdlScriptContext> scriptContext;
-        m_pESDLService->handleServiceRequest(*ctx, scriptContext, *srvdef, *mthdef, tgtcfg, tgtctx, ns.str(), schemaLocation.str(), reqTree.get(), jsonresp, logdata, origResp, soapmsg, ESDL_BINDING_RESPONSE_JSON);
 
-        jsonresp.append("}");
+        ServiceRequestInfo sri(*ctx, *srvdef, *mthdef, ns, schemaLocation, reqTree, ESDL_BINDING_RESPONSE_JSON);
+        sri.finalResp.append("{");
+        m_pESDLService->handleServiceRequest(sri);
+        sri.finalResp.append("}");
 
-        response->setContent(jsonresp.str());
-        response->setContentType("application/json");
-        response->setStatus("200 OK");
-        response->send();
-        returnSocket(response);
-
-        m_pESDLService->handleResultLogging(*ctx, scriptContext, *srvdef, *mthdef, tgtctx.get(), reqTree, soapmsg.str(), origResp.str(), jsonresp.str(), logdata.str());
-
-        if (getEspLogLevel()>LogNormal)
-            DBGLOG("json response: %s", jsonresp.str());
+        response->setContentType(HTTP_TYPE_JSON);
+        finishServiceRequest(sri, response);
         return;
     }
     catch (IWsException * iwse)
     {
-        JsonHelpers::appendJSONException(jsonresp.set("{"), iwse);
+        JsonHelpers::appendJSONException(jsonresp, iwse);
         jsonresp.append('}');
         iwse->Release();
     }
     catch (IException *e)
     {
-        JsonHelpers::appendJSONException(jsonresp.set("{"), e);
+        JsonHelpers::appendJSONException(jsonresp, e);
         jsonresp.append("\n}");
         e->Release();
     }
     catch (...)
     {
-        JsonHelpers::appendJSONExceptionItem(jsonresp.set("{"), -1, "Error Processing JSON request");
+        JsonHelpers::appendJSONExceptionItem(jsonresp, -1, "Error Processing JSON request");
         jsonresp.append("\n}");
     }
 
     response->setContent(jsonresp.str());
-    response->setContentType("application/json");
-    response->setStatus("200 OK");
+    response->setContentType(HTTP_TYPE_JSON);
+    response->setStatus(HTTP_STATUS_OK);
     response->send();
 }
 
@@ -3837,7 +3869,6 @@ int EsdlBindingImpl::onGetRoxieBuilder(CHttpRequest* request, CHttpResponse* res
                 {
                     m_pESDLService->generateTargetURL(*context,tgtcfg, roxieUrl, false);
 
-                    Owned<IPropertyTree> tgtctx;
                     Owned<IPropertyTree> req_pt = createPTreeFromXMLString(xmlstr.length(), xmlstr.str(), false);
 
                     StringBuffer ns,schema;
@@ -3846,10 +3877,11 @@ int EsdlBindingImpl::onGetRoxieBuilder(CHttpRequest* request, CHttpResponse* res
                     StringBuffer reqcontent;
                     getRequestContent(*context, reqcontent, request, srvname, mthname, ns, ROXIEREQ_FLAGS);
 
-                    tgtctx.setown( m_pESDLService->createTargetContext(*context, tgtcfg, *defsrv, *defmth, req_pt));
-
-                    Owned<IEsdlScriptContext> scriptContext = m_pESDLService->checkCreateEsdlServiceScriptContext(*context, *defsrv, *defmth, tgtcfg.get(), req_pt);
-                    m_pESDLService->prepareFinalRequest(*context, scriptContext, tgtcfg, tgtctx, *defsrv, *defmth, true, ns.str(), reqcontent, roxiemsg);
+                    ServiceRequestInfo sri(*context, *defsrv, *defmth, ns, schema, req_pt, 0);
+                    sri.scriptContext.setown(m_pESDLService->checkCreateEsdlServiceScriptContext(*context, *defsrv, *defmth, tgtcfg, req_pt));
+                    sri.tgtcfg.setown(tgtcfg.getLink());
+                    sri.tgtctx.setown(m_pESDLService->createTargetContext(*context, tgtcfg, *defsrv, *defmth, req_pt));
+                    m_pESDLService->prepareSoapRequest(sri, reqcontent);
                 }
                 else
                 {

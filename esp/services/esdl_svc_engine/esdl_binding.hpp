@@ -69,6 +69,7 @@ namespace javaembed { IEmbedContext* getEmbedContext(); }
 #endif
 
 typedef int (*cpp_service_method_t)(const char* CtxXML, const char* ReqXML, StringBuffer& RespXML);
+struct ServiceRequestInfo;
 
 class EsdlServiceImpl : public CInterface, implements IEspService
 {
@@ -188,10 +189,152 @@ public:
     void addTransforms(IPropertyTree *cfgParent, const char *service, const char *method, bool removeCfgIEntries);
 
     IEsdlScriptContext* checkCreateEsdlServiceScriptContext(IEspContext &context, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, IPropertyTree *tgtcfg, IPropertyTree *origReq);
-    void runPostEsdlScript(IEspContext &context, IEsdlScriptContext *scriptContext, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, StringBuffer &out, unsigned txResultFlags, const char *ns, const char *schema_location);
-    void runServiceScript(IEspContext &context, IEsdlScriptContext *scriptContext, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, const char *reqcontent, StringBuffer &out, unsigned txResultFlags, const char *ns, const char *schema_location);
+    void runPostEsdlScript(ServiceRequestInfo& sri, StringBuffer& io);
+    void runServiceScript(ServiceRequestInfo& sri, const char* in, StringBuffer& out);
 
-    virtual void handleServiceRequest(IEspContext &context, Owned<IEsdlScriptContext> &scriptContext, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, Owned<IPropertyTree> &tgtcfg, Owned<IPropertyTree> &tgtctx, const char *ns, const char *schema_location, IPropertyTree *req, StringBuffer &out, StringBuffer &logdata, StringBuffer &origResp, StringBuffer &soapmsg, unsigned int flags);
+    /**
+     * @brief Process scripts for the BackendRequest entry point.
+     *
+     * @param sri
+     * @param io
+     */
+    void runBackendRequestScript(ServiceRequestInfo& sri, StringBuffer &io);
+
+    /**
+     * @brief Process scripts for the BackendResponse entry point.
+     *
+     * @param sri
+     * @param io
+     */
+    void runBackendResponseScript(ServiceRequestInfo& sri, StringBuffer& io);
+
+    /**
+     * @brief Process scripts preparing for a logging manager update log request.
+     * 
+     * @param sri 
+     */
+    void runPreLoggingScript(ServiceRequestInfo& sri);
+
+    /**
+     * @brief Ensure service and method script integrity for the specified service and method.
+     *
+     * Use in all workflows that can involve scripting. Omit from workflows that do not process
+     * scripts.
+     *
+     * @param sri
+     */
+    void checkRequestAvailability(ServiceRequestInfo &sri);
+
+    /**
+     * @brief Ensure the authenticated user is authorized to run the specified method.
+     *
+     * Use in all workflows that require security checks.
+     *
+     * @param sri
+     */
+    void doFeatureAuthorization(ServiceRequestInfo &sri);
+
+    /**
+     * @brief Acquire a transaction ID when needed by the specified method.
+     *
+     * Use in all workflows that expect transaction IDs to be used. Omit from workflows, such as
+     * for stubbed functions like Ping and EchoTest, that do neither return nor record transaction
+     * identifiers.
+     *
+     * @param sri
+     */
+    void doAcquireTransactionId(ServiceRequestInfo &sri);
+
+    /**
+     * @brief Wrapper for the ESDL transformer request processing.
+     *
+     * Simplifies the calling signature by extracting parameters from the service request context.
+     * Standardizes service behavior with respect to TxSummary reporting.
+     *
+     * Used for all method requests.
+     *
+     * @param sri
+     * @param output
+     * @param flags
+     * @return int   the record count result of the wrapped method
+     */
+    int doProcessEsdlRequest(ServiceRequestInfo &sri, IXmlWriterExt *output, int flags);
+    int doProcessEsdlRequest(ServiceRequestInfo& sri, int flags, StringBuffer& out);
+
+    /**
+     * @brief Wrapper for the ESDL transformer response processing for published requests.
+     *
+     * Simplifies the calling signature by extracting parameters from the service request context.
+     * Standardizes service behavior with respect to TxSummary reporting.
+     *
+     * Used for all responses with formats expected to conform to a published query's response.
+     * This means responses containing Dataset elements for the response and additional logging
+     * requirements.
+     *
+     * @param sri
+     * @param io
+     * @return int   -1 until the wrapped method can return the record count
+     */
+    int doProcessHPCCResult(ServiceRequestInfo &sri, StringBuffer& io);
+
+    /**
+     * @brief Wrapper for the ESDL transformer response processing for non-published requests.
+     *
+     * Simplifies the calling signature by extracting parameters from the service request context.
+     * Standardizes service behavior with respect to TxSummary reporting.
+     *
+     * Used for all responses with formats expected to comform to the method WSDL.
+     *
+     * @param sri
+     * @param io
+     * @return int   the record count result of the wrapped method
+     */
+    int doProcessResponse(ServiceRequestInfo &sri, StringBuffer& io);
+
+    /**
+     * @brief Process requests for methods, like Ping, that are implemented natively by the service.
+     *
+     * @param sri
+     */
+    void doStubbedWorkflow(ServiceRequestInfo &sri);
+
+    /**
+     * @brief Process SOAP requests intended for roxie or WsEcl backend services.
+     *
+     * @param sri
+     */
+
+    void doPublishedWorkflow(ServiceRequestInfo &sri);
+
+    /**
+     * @brief Process SOAP requests intended for backend services other than roxie and WsEcl.
+     *
+     * @param sri
+     */
+    void doSoapWorkflow(ServiceRequestInfo &sri);
+
+    /**
+     * @brief Process requests for methods implemented by Java plugin.
+     *
+     * @param sri
+     */
+    void doJavaWorkflow(ServiceRequestInfo &sri);
+
+    /**
+     * @brief Process requests for methods implemented by C++ plugin.
+     *
+     * @param sri
+     */
+    void doCppWorkflow(ServiceRequestInfo &sri);
+
+    /**
+     * @brief Process requests for methods implemented entirely in ESDL script.
+     *
+     * @param sri
+     */
+    void doScriptWorkflow(ServiceRequestInfo &sri);
+
+    virtual void handleServiceRequest(ServiceRequestInfo& sri);
     virtual void generateTransactionId(IEspContext & context, StringBuffer & trxid)=0;
     void generateTargetURL(IEspContext & context, IPropertyTree *srvinfo, StringBuffer & url, bool isproxy);
     void sendTargetSOAP(IEspContext & context, IPropertyTree *srvinfo, const char * req, StringBuffer &resp, bool isproxy,const char * targeturl);
@@ -201,13 +344,28 @@ public:
     virtual void esdl_log(IEspContext &context, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, IPropertyTree *tgtcfg, IPropertyTree *tgtctx, IPropertyTree *req_pt, const char *xmlresp, const char *logdata, unsigned int timetaken){}
     virtual void processHeaders(IEspContext &context, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, const char *ns, StringBuffer &req, StringBuffer &headers){};
     virtual void processRequest(IEspContext &context, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, const char *ns, StringBuffer &req) {};
-    void prepareFinalRequest(IEspContext &context, IEsdlScriptContext *scriptContext, Owned<IPropertyTree> &tgtcfg, Owned<IPropertyTree> &tgtctx, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, bool isroxie, const char* ns, StringBuffer &reqcontent, StringBuffer &reqProcessed);
+    void prepareSoapRequest(ServiceRequestInfo &sri, StringBuffer &reqcontent);
     virtual void createServersList(IEspContext &context, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, StringBuffer &servers) {};
-    virtual bool handleResultLogging(IEspContext &espcontext, IEsdlScriptContext *scriptContext, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, IPropertyTree * reqcontext, IPropertyTree * request,  const char * rawreq, const char * rawresp, const char * finalresp, const char * logdata);
-    void handleEchoTest(const char *mthName, IPropertyTree *req, StringBuffer &soapResp, ESPSerializationFormat format);
+    virtual bool handleResultLogging(ServiceRequestInfo& sri);
+    void handleEchoTest(const char *mthName, IPropertyTree *req, StringBuffer &soapResp, unsigned flags);
     void handlePingRequest(const char *srvName, StringBuffer &out, unsigned int flags);
-    virtual void handleFinalRequest(IEspContext &context, IEsdlScriptContext *scriptContext, Owned<IPropertyTree> &tgtcfg, Owned<IPropertyTree> &tgtctx, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, const char *ns, StringBuffer& req, StringBuffer &out, bool isroxie, bool isproxy, StringBuffer &rawreq);
-    void getSoapBody(StringBuffer& out,StringBuffer& soapresp);
+    
+    /**
+     * @brief Converts the output of the ESDL request transformation into a SOAP request, sends
+     *        the request, receives the response, and prepares it to be the input for the ESDL
+     *        response transformation.
+     *
+     * `sri.backendReq` must contain a candidate SOAP request body on entry, most likely the output
+     * of the ESDL request transformation. It contains the actual SOAP message sent on exit. All
+     * requests may be modified by ESDL scripts, and published queries may be further modofied.
+     *
+     * `sri.backendResp` must be empty on entry. It contains a form of SOAP response received from
+     * the backend service on exit. All responses may be modified by ESDL scripts, and responses
+     * for published queries may be further modified.
+     *
+     * @param sri 
+     */
+    virtual void handleSoapRequest(ServiceRequestInfo& sri);
     void getSoapError(StringBuffer& out,StringBuffer& soapresp,const char *,const char *);
 
     virtual bool unsubscribeServiceFromDali() override {return true;}
@@ -404,6 +562,7 @@ private:
     bool loadStoredDefinitions(const char * espServiceName, Owned<IEsdlDefinition>& esdl, IPropertyTree * config, StringBuffer & loadedServiceName, const char * stateFileName);
     bool loadLocalDefinitions(IPropertyTree *esdlArchive, const char * espServiceName, Owned<IEsdlDefinition>& esdl, IPropertyTree * config, StringBuffer & loadedServiceName);
 
+    void finishServiceRequest(ServiceRequestInfo& sri, CHttpResponse* response);
 };
 
 #endif //_EsdlBinding_HPP__

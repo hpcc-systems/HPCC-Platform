@@ -112,6 +112,7 @@ interface IUpdateLogThread : extends IInterface
     virtual IEspLogAgent* getLogAgent() = 0;
 
     virtual bool hasService(LOGServiceType service) = 0;
+    virtual bool usesSafeLogging() = 0;
     virtual bool queueLog(IEspUpdateLogRequest* logRequest) = 0;
     virtual bool queueLog(IEspUpdateLogRequestWrap* logRequest) = 0;
     virtual void sendLog() = 0;
@@ -158,6 +159,10 @@ public:
     bool hasService(LOGServiceType service)
     {
         return logAgent->hasService(service);
+    }
+    virtual bool usesSafeLogging() override
+    {
+        return (ensureFailSafe && hasService(LGSTUpdateLOG));
     }
 
     int run();

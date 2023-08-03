@@ -90,6 +90,8 @@ bool CLoggingManager::init(IPropertyTree* cfg, const char* service)
         IUpdateLogThread* logThread = createUpdateLogThread(&loggingAgentTree, service, agentName, failSafeLogsDir.get(), loggingAgent);
         if(!logThread)
             throw MakeStringException(-1, "Failed to create update log thread for %s", agentName);
+        if (!safeAgents && logThread->usesSafeLogging())
+            safeAgents = true;
         loggingAgentThreads.push_back(logThread);
     }
 
@@ -122,6 +124,11 @@ IEspLogEntry* CLoggingManager::createLogEntry()
 bool CLoggingManager::hasService(LOGServiceType service) const
 {
     return ((serviceMask & (1 << service)) != 0);
+}
+
+bool CLoggingManager::usesSafeLogging() const
+{
+    return (initialized && (oneTankFile || decoupledLogging || safeAgents));
 }
 
 bool CLoggingManager::updateLog(IEspLogEntry* entry, StringBuffer& status)

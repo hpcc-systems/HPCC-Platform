@@ -1588,6 +1588,7 @@ static void updateTransformFlags(EsdlProcessMode mode, IEsdlDefMethod *mthdef, I
 int Esdl2Transformer::process(IEspContext &ctx, EsdlProcessMode mode, const char* service, const char *method, StringBuffer &out, const char *in, unsigned int flags, const char *ns, const char *schema_location)
 {
     int rc = 0;
+    XMLWriterType wtype = WTStandard;
     IEsdlMethodInfo *mi = queryMethodInfo(service,method);
     if (!mi)
         throw MakeStringException(-1, "Error processing ESDL - method '%s'not found", method);
@@ -1604,6 +1605,8 @@ int Esdl2Transformer::process(IEspContext &ctx, EsdlProcessMode mode, const char
     else if (mode==EsdlResponseMode)
     {
         root_type = mi->queryResponseType();
+        if (flags & ESDL_TRANS_JSON_OUT)
+            wtype = WTJSONRootless;
     }
 
     if (!root_type)
@@ -1620,7 +1623,7 @@ int Esdl2Transformer::process(IEspContext &ctx, EsdlProcessMode mode, const char
         XmlPullParser xppx(in, strlen(in)+1);
         if (gotoStartTag(xppx, root->queryName(), "Results"))
         {
-            Owned<IXmlWriterExt> respWriter = createIXmlWriterExt(0, 0, NULL, WTStandard);
+            Owned<IXmlWriterExt> respWriter = createIXmlWriterExt(0, 0, NULL, wtype);
             Esdl2TransformerContext tctx(*this, respWriter, xppx, ctx.getClientVersion(), param_groups, mode, 0, ns,schema_location);
 
             tctx.flags = flags;

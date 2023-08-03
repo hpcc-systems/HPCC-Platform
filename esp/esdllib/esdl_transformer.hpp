@@ -53,6 +53,7 @@ typedef void REQUEST_HOOK (IEspContext& ctx, IEspStruct& req, StringBuffer& quer
 #define ESDL_TRANS_OUTPUT_ROOT        0x0400
 
 #define ESDL_TRANS_START_AT_ROOT    0x1000
+#define ESDL_TRANS_JSON_OUT         0x2000
 
 interface IXmlWriterExt;
 interface IEsdlTransformer : extends IInterface
