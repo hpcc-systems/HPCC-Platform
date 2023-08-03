@@ -619,13 +619,7 @@ protected:
         return ((HashKeyElement *) e)->get();
     }
 
-    virtual bool matchesFindParam(const void *e, const void *fp, unsigned fphash __attribute__((unused))) const
-    {
-        if (nocase)
-            return (0 == stricmp(((HashKeyElement *)e)->get(), (const char *)fp));
-        else
-            return (0 == strcmp(((HashKeyElement *)e)->get(), (const char *)fp));
-    }
+    virtual bool matchesFindParam(const void *e, const void *fp, unsigned fphash __attribute__((unused))) const;
 };
 
 #endif
