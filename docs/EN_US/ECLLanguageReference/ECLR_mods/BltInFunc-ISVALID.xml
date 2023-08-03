@@ -42,8 +42,9 @@
 
   <para>Example:</para>
 
-  <programlisting>MyVal := IF(ISVALID(Infile.DecimalField),Infile.DecimalField,0);
+  <programlisting lang="ECL">MyVal := IF(ISVALID(Infile.DecimalField),Infile.DecimalField,0);
 //ISVALID returns TRUE if the value is legal</programlisting>
 
-  <para>See Also: <link linkend="TYPE_Structure">TYPE Structure</link>, <link linkend="DECIMAL">DECIMAL</link>, <link linkend="REAL">REAL</link></para>
+  <para>See Also: <link linkend="TYPE_Structure">TYPE Structure</link>, <link
+  linkend="DECIMAL">DECIMAL</link>, <link linkend="REAL">REAL</link></para>
 </sect1>

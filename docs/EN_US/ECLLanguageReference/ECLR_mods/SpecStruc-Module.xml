@@ -150,11 +150,10 @@
     the EXPORT MyModuleStructure MODULE structure is contained in an ECL
     Repository module named MyModule and that it contains an EXPORT
     <emphasis>member</emphasis> named MyDefinition, you would reference that
-    <emphasis>definition</emphasis> as:</para>
+    <emphasis>definition</emphasis> as
+    MyModule.MyModuleStructure.MyDefinition:</para>
 
-    <para><programlisting lang="ECL" role="runnable">//MyModule.MyModuleStructure.MyDefinition
-
-MyMod := MODULE
+    <para><programlisting lang="ECL" role="runnable">MyMod := MODULE
   SHARED x := 88;
   y := 42;
   EXPORT InMod := MODULE //nested MODULE
@@ -290,41 +289,49 @@ IF (doIt, OUTPUT(customerNames.File));
 
     <para>Example:</para>
 
-    <programlisting lang="ECL">EXPORT filterDataset(STRING search, BOOLEAN onlyOldies) := MODULE
+    <programlisting lang="ECL" role="runnable">namesRecord := RECORD
+  STRING20 surname;
+  STRING10 forename;
+  INTEGER2 age := 25;
+END;
+namesTable := DATASET([{'Smith','Sue',72},
+                       {'Jones','Joe',32},
+                       {'Jones','Fred',82}],namesRecord);
+
+filterDataset1(STRING search, BOOLEAN onlyOldies) := MODULE
   f := namesTable; //local to the "g" definition
   SHARED g := IF (onlyOldies, f(age &gt;= 65), f);
           //SHARED = visible only within the structure
-  EXPORT included := g(surname != search);
-  EXPORT excluded := g(surname = search);
+  EXPORT included := g(surname = search);
+  EXPORT excluded := g(surname &lt;&gt; search);
           //EXPORT = visible outside the structure
 END;
-filtered := filterDataset('Halliday', TRUE);
-OUTPUT(filtered.included,,NAMED('Included'));
-OUTPUT(filtered.excluded,,NAMED('Excluded'));
-       
+filtered1 := filterDataset1('Smith', TRUE);
+OUTPUT(filtered1.included,,NAMED('Included1'));
+OUTPUT(filtered1.excluded,,NAMED('Excluded1'));
+
 //same result, different coding style:
-EXPORT filterDataset(BOOLEAN onlyOldies) := MODULE
+filterDataset2(BOOLEAN onlyOldies) := MODULE
   f := namesTable;
   SHARED g := IF (onlyOldies, f(age &gt;= 65), f);
-  EXPORT included(STRING search) := g(surname &lt;&gt; search);
-  EXPORT excluded(STRING search) := g(surname = search);
+  EXPORT included(STRING search) := g(surname = search);
+  EXPORT excluded(STRING search) := g(surname &lt;&gt; search);
 END;
-filtered := filterDataset(TRUE);
-OUTPUT(filtered.included('Halliday'),,NAMED('Included'));
-OUTPUT(filterDataset(true).excluded('Halliday'),,NAMED('Excluded'));
-          
-          
+filtered2 := filterDataset2(TRUE);
+OUTPUT(filtered2.included('Smith'),,NAMED('Included2'));
+OUTPUT(filterDataset2(true).excluded('Smith'),,NAMED('Excluded2'));
+
 //VIRTUAL examples
 Mod1 := MODULE,VIRTUAL //a fully abstract module
   EXPORT val := 1;
   EXPORT func(INTEGER sc) := val * sc;
 END;
-         
+
 Mod2 := MODULE(Mod1) //instance
-  EXPORT val := 3; //a concete member, overriding default value
-                   //while func remains abstract
+  EXPORT val := 3;   //a concete member, overriding default value
+                     //while func remains abstract
 END;
-     
+
 Mod3 := MODULE(Mod1) //a fully concete instance
   EXPORT func(INTEGER sc) := val + sc; //overrides inherited func
 END;
@@ -332,13 +339,12 @@ OUTPUT(Mod2.func(5)); //result is 15
 OUTPUT(Mod3.func(5)); //result is 6
 
 //FORWARD example
-EXPORT MyModule := MODULE, FORWARD
-  EXPORT INTEGER foo := bar;
+MyModule := MODULE, FORWARD
+  EXPORT INTEGER foo := bar; //forward reference
   EXPORT INTEGER bar := 42;
 END;
 
-MyModule.foo;
-
+OUTPUT(MyModule.foo);
 </programlisting>
 
     <para>See Also: <link linkend="FUNCTION_Structure">FUNCTION

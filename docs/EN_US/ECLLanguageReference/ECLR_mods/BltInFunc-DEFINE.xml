@@ -50,7 +50,7 @@
 
   <para>Example:</para>
 
-  <programlisting>RULE a := USE('symbol');
+  <programlisting lang="ECL">RULE a := USE('symbol');
  //uses the 'symbol'pattern defined later - b
 RULE b := 'pattern';
  //defines a rule pattern
@@ -59,5 +59,6 @@ RULE s := DEFINE(b,'symbol');
  //'symbol' for forward reference by rule "a"
 </programlisting>
 
-  <para>See Also: <link linkend="PARSE">PARSE</link>, <link linkend="PARSE_Pattern_Value_Types">PARSE Pattern Value Types</link></para>
+  <para>See Also: <link linkend="PARSE">PARSE</link>, <link
+  linkend="PARSE_Pattern_Value_Types">PARSE Pattern Value Types</link></para>
 </sect1>

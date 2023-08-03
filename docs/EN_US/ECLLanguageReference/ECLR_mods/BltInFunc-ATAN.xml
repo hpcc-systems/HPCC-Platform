@@ -39,7 +39,14 @@
 
   <para>Example:</para>
 
-  <programlisting>ArcTangent := ATAN(TangentAngle); </programlisting>
+  <programlisting lang="ECL" role="runnable">Rad2Deg := 57.295779513082; //number of degrees in a radian
+TangentAngle := 57.74;
+ArcTangent := ATAN(TangentAngle) * Rad2Deg; 
+OUTPUT(ArcTangent);</programlisting>
 
-  <para>See Also: <link linkend="ATAN2">ATAN2</link>, <link linkend="ACOS">ACOS</link>, <link linkend="COS">COS</link>, <link linkend="ASIN">ASIN</link>, <link linkend="SIN">SIN</link>, <link linkend="TAN">TAN</link>, <link linkend="COSH">COSH</link>, <link linkend="SINH">SINH</link>, <link linkend="TANH">TANH</link></para>
+  <para>See Also: <link linkend="ATAN2">ATAN2</link>, <link
+  linkend="ACOS">ACOS</link>, <link linkend="COS">COS</link>, <link
+  linkend="ASIN">ASIN</link>, <link linkend="SIN">SIN</link>, <link
+  linkend="TAN">TAN</link>, <link linkend="COSH">COSH</link>, <link
+  linkend="SINH">SINH</link>, <link linkend="TANH">TANH</link></para>
 </sect1>

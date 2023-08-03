@@ -51,7 +51,7 @@
 
     <para>Example:</para>
 
-    <programlisting>IMPORT STD;
+    <programlisting lang="ECL" role="NOTrunnable">IMPORT STD;
 MyEventName := 'MyFileEvent';
 MyFileName  := 'test::myfile';
 

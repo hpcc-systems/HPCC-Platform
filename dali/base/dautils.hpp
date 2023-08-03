@@ -448,6 +448,7 @@ interface ILocalOrDistributedFile: extends IInterface
     virtual bool getPartCrc(unsigned partnum, unsigned &crc) = 0;
     virtual bool exists() const = 0;   // if created for writing, this may be false
     virtual bool isExternal() const = 0;
+    virtual bool isExternalFile() const = 0;
 };
 
 typedef __int64 ConnectionId;

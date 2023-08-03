@@ -54,8 +54,9 @@
 
   <para>Example:</para>
 
-  <programlisting>MySet := DISTRIBUTED(Person,HASH32(Person.per_ssn));
+  <programlisting lang="ECL">MySet := DISTRIBUTED(Person,HASH32(Person.per_ssn));
         //all people with the same SSN are already on the same node</programlisting>
 
-  <para>See Also: <link linkend="HASH32">HASH32</link>, <link linkend="DISTRIBUTE">DISTRIBUTE</link></para>
+  <para>See Also: <link linkend="HASH32">HASH32</link>, <link
+  linkend="DISTRIBUTE">DISTRIBUTE</link></para>
 </sect1>

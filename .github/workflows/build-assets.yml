@@ -146,14 +146,6 @@ jobs:
           echo "docker_build_label=$docker_build_label" >> $GITHUB_OUTPUT
           echo "docker_tag=$docker_build_label:$vcpkg_sha_short" >> $GITHUB_OUTPUT
           echo "docker_tag_candidate_base=$docker_build_label:${{ needs.preamble.outputs.candidate_base_branch }}" >> $GITHUB_OUTPUT
-          echo "docker_tag_candidate=$docker_build_label:${{ needs.preamble.outputs.candidate_branch }}" >> $GITHUB_OUTPUT
-          docker_community_label=hpccsystems/platform-core-${{ matrix.os }}
-          echo "docker_tag_community_base=$docker_community_label:${{ needs.preamble.outputs.candidate_base_branch }}" >> $GITHUB_OUTPUT
-          echo "docker_tag_community=$docker_community_label:${{ needs.preamble.outputs.community_tag }}" >> $GITHUB_OUTPUT
-          docker_internal_label=ln/platform-core-${{ matrix.os }}
-          echo "docker_tag_internal_base=$docker_internal_label:${{ needs.preamble.outputs.candidate_base_branch }}" >> $GITHUB_OUTPUT
-          echo "docker_tag_internal=$docker_internal_label:${{ needs.preamble.outputs.internal_tag }}" >> $GITHUB_OUTPUT
-          echo "docker_tag_internal=$docker_core_label:${{ needs.preamble.outputs.internal_tag }}" >> $GITHUB_OUTPUT
 
       - name: Print vars
         run: |
@@ -260,14 +252,14 @@ jobs:
           build-args: |
             PKG_FILE=${{ steps.container.outputs.k8s_pkg_file }}
           tags: |
-            ${{ steps.vars.outputs.docker_tag_community }}
-            ${{ steps.vars.outputs.docker_tag_community_base }}
+            hpccsystems/platform-core-${{ matrix.os }}:${{ needs.preamble.outputs.community_tag }}
+            hpccsystems/platform-core-${{ matrix.os }}:${{ needs.preamble.outputs.candidate_base_branch }}
           cache-from: |
-            type=registry,ref=${{ steps.vars.outputs.docker_tag_community_base }}
+            type=registry,ref=hpccsystems/platform-core-${{ matrix.os }}:${{ needs.preamble.outputs.candidate_base_branch }}
 
       #  Internal Build  ---
-      - name: Login to JFrog
-        if: ${{ matrix.ln && matrix.container }}
+      - name: Login to JFrog (internal)
+        if: ${{ matrix.ln && matrix.container && github.repository_owner == 'hpcc-systems' }}
         uses: docker/login-action@v2
         with:
           registry: ${{ secrets.JFROG_REGISTRY }}
@@ -335,10 +327,10 @@ jobs:
           build-args: |
             PKG_FILE=${{ steps.ln-container.outputs.k8s_pkg_file }}
           tags: |
-            ${{ secrets.JFROG_REGISTRY }}/${{ steps.vars.outputs.docker_tag_internal }}
-            ${{ secrets.JFROG_REGISTRY }}/${{ steps.vars.outputs.docker_tag_internal_base }}
+            ${{ secrets.JFROG_REGISTRY || 'dummy.io' }}/ln/platform-core-${{ matrix.os }}:${{ needs.preamble.outputs.internal_tag }}
+            ${{ secrets.JFROG_REGISTRY || 'dummy.io' }}/ln/platform-core-${{ matrix.os }}:${{ needs.preamble.outputs.candidate_base_branch }}
           cache-from: |
-            type=registry,ref=${{ steps.vars.outputs.docker_tag_community_base }}
+            type=registry,ref=hpccsystems/platform-core-${{ matrix.os }}:${{ needs.preamble.outputs.candidate_base_branch }}
 
       #  Common  ---
       - name: Cleanup Environment
@@ -462,5 +454,5 @@ jobs:
         if: ${{ failure() || cancelled() }}
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.os }}-${{ matrix.ln }}-${{ matrix.container }}-${{ matrix.documentation }}-logs
+          name: ${{ matrix.os }}-logs
           path: ./build/**/*.log
