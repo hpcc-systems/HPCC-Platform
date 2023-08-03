@@ -12,7 +12,11 @@
   role="bold">[ </emphasis><emphasis>, expression </emphasis><emphasis
   role="bold">] [, KEYED<indexterm>
       <primary>KEYED</primary>
-    </indexterm> ] [, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+    </indexterm> ] [, UNORDERED | ORDERED(</emphasis> <emphasis>bool
+  </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [
+  (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [,
+  ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ]
+  )</emphasis></para>
 
   <para><emphasis
   role="bold">AVE(</emphasis><emphasis>valuelist</emphasis><emphasis
@@ -57,50 +61,70 @@
             operation, which allows the optimizer to generate optimal code for
             the operation.</entry>
           </row>
+
           <row>
             <entry><emphasis role="bold">UNORDERED</emphasis></entry>
 
-            <entry>Optional. Specifies the output record order is not significant.</entry>
+            <entry>Optional. Specifies the output record order is not
+            significant.</entry>
           </row>
+
           <row>
             <entry><emphasis role="bold">ORDERED</emphasis></entry>
 
-            <entry>Specifies the significance of the output record order.</entry>
+            <entry>Specifies the significance of the output record
+            order.</entry>
           </row>
+
           <row>
             <entry><emphasis>bool</emphasis></entry>
 
-            <entry>When False, specifies the output record order is not significant. When True, specifies the default output record order.</entry>
+            <entry>When False, specifies the output record order is not
+            significant. When True, specifies the default output record
+            order.</entry>
           </row>
+
           <row>
             <entry><emphasis role="bold">STABLE</emphasis></entry>
 
-            <entry>Optional. Specifies the input record order is significant.</entry>
+            <entry>Optional. Specifies the input record order is
+            significant.</entry>
           </row>
+
           <row>
             <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
 
-            <entry>Optional. Specifies the input record order is not significant.</entry>
+            <entry>Optional. Specifies the input record order is not
+            significant.</entry>
           </row>
+
           <row>
             <entry><emphasis role="bold">PARALLEL</emphasis></entry>
 
-            <entry>Optional. Try to evaluate this activity in parallel.</entry>
+            <entry>Optional. Try to evaluate this activity in
+            parallel.</entry>
           </row>
+
           <row>
             <entry><emphasis>numthreads</emphasis></entry>
 
-            <entry>Optional. Try to evaluate this activity using <emphasis>numthreads</emphasis> threads.</entry>
+            <entry>Optional. Try to evaluate this activity using
+            <emphasis>numthreads</emphasis> threads.</entry>
           </row>
+
           <row>
             <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
 
-            <entry>Optional. Override the algorithm used for this activity.</entry>
+            <entry>Optional. Override the algorithm used for this
+            activity.</entry>
           </row>
+
           <row>
             <entry><emphasis>name</emphasis></entry>
 
-            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the SORT function's STABLE and UNSTABLE options.</entry>
+            <entry>The algorithm to use for this activity. Must be from the
+            list of supported algorithms for the SORT function's STABLE and
+            UNSTABLE options.</entry>
           </row>
 
           <row>
@@ -123,10 +147,11 @@
 
   <para>Example:</para>
 
-  <programlisting>AvgBal1 := AVE(Trades,Trades.trd_bal);
-AvgVal2 := AVE(4,8,16,2,1); //returns 6.2
+  <programlisting lang="ECL" role="runnable">AvgVal1 := AVE(4,8,16,2,1); //returns 6.2
 SetVals := [4,8,16,2,1];
-AvgVal3 := AVE(SetVals);    //returns 6.2
+AvgVal2 := AVE(SetVals);    //returns 6.2
+OUTPUT(AvgVal1);
+OUTPUT(AvgVal2);
 </programlisting>
 
   <para>See Also: <link linkend="MIN">MIN</link>, <link

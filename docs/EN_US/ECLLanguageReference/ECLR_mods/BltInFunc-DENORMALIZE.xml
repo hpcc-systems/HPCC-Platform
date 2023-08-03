@@ -184,10 +184,10 @@
   <para>Because DENORMALIZE is basically a specialized form of JOIN, the
   various join types (LEFT OUTER, RIGHT OUTER, FULL OUTER, LEFT ONLY, RIGHT
   ONLY, FULL ONLY) are also available for use on DENORMALIZE and act just as
-  they do with JOIN. </para>
+  they do with JOIN.</para>
 
   <para>All JOIN options are available for DENORMALIZE. See <link
-  linkend="JoinOptions">Join Options</link> for details. </para>
+  linkend="JoinOptions">Join Options</link> for details.</para>
 
   <sect2 id="TRANSFORM_Function_Requirements_Denormalize">
     <title>DENORMALIZE TRANSFORM Function Requirements</title>
@@ -221,7 +221,7 @@
 
     <para>Form 1 example:</para>
 
-    <programlisting>NormRec := RECORD
+    <programlisting lang="ECL" role="runnable">NormRec := RECORD
   STRING20  thename;
   STRING20  addr;
 END;
@@ -258,7 +258,7 @@ OUTPUT(DeNormedRecs);
 
     <para>Form 2 example:</para>
 
-    <programlisting>NormRec := RECORD
+    <programlisting lang="ECL" role="runnable">NormRec := RECORD
   STRING20  thename;
   STRING20  addr;
 END;
@@ -291,7 +291,7 @@ OUTPUT(DeNormedRecs);
 
     <para>NOSORT example:</para>
 
-    <programlisting>MyRec := RECORD
+    <programlisting lang="ECL" role="runnable">MyRec := RECORD
   STRING1 Value1;
   STRING1 Value2;
 END;

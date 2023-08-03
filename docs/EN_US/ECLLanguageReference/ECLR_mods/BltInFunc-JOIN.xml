@@ -658,7 +658,7 @@
     <para>If you get an error similar to this:</para>
 
     <para><programlisting>"error: 1301: Pool memory exhausted:<indexterm>
-          <primary>memory exhausted</primary>
+          <primary lang="text">memory exhausted</primary>
         </indexterm><indexterm>
           <primary>Pool memory exhausted</primary>
         </indexterm>..."</programlisting></para>
@@ -669,20 +669,20 @@
 
     <para>Example:</para>
 
-    <para><programlisting>//this example demos the implicit DEDUP of the lookup dataset
+    <para><programlisting lang="ECL" role="runnable">//this example demos the implicit DEDUP of the lookup dataset
 r1 := {INTEGER1 fred};
 r2 := {INTEGER1 fred,INTEGER1 sue};
 ds1 := DATASET([1,2,3,4],r1);
-ds2 := DATASET([{1,2},{2,2}, //these will be used
-                {1,1},{2,1}, //these will NOT
-                {3,1},{4,1}],r2);
+ds2 := DATASET([{1,2},{2,2},
+                {1,1},{2,1}, 
+                {3,1},{4,1}],r2);
 r2 XF(ds1 L, ds2 R) := TRANSFORM
-  SELF.fred := L.fred;
-  SELF.sue := R.sue;
-END; 
+  SELF.fred := L.fred;
+  SELF.sue := R.sue;
+END;
 JOIN(ds1,ds2,
-     LEFT.Fred = RIGHT.fred,
-     XF(LEFT,RIGHT),LOOKUP);
+     LEFT.Fred = RIGHT.fred,
+     XF(LEFT,RIGHT),LOOKUP);
 </programlisting></para>
   </sect2>
 
@@ -872,7 +872,7 @@ JOIN(ds1,ds2,
 
     <para>Examples:</para>
 
-    <programlisting>outrec := RECORD
+    <programlisting lang="ECL">outrec := RECORD
   people.id;
   people.firstname;
   people.lastname;
@@ -1101,7 +1101,7 @@ SEQUENTIAL(PtblOut,Bld1,Bld2,OUTPUT(FilledRecs1),OUTPUT(FilledRecs2))
 
     <para>Example:</para>
 
-    <programlisting>Rec := RECORD,MAXLENGTH(4096)
+    <programlisting id="ECL" role="runnable">Rec := RECORD,MAXLENGTH(4096)
   STRING1  Letter;
   UNSIGNED1    DS;
   UNSIGNED1    Matches   := 0;

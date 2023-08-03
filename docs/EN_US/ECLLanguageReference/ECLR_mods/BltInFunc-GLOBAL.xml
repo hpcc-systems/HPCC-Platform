@@ -63,7 +63,7 @@
 
   <para>Example:</para>
 
-  <programlisting>IMPORT doxie;
+  <programlisting lang="ECL">IMPORT doxie;
 besr := doxie.best_records;
 ssnr := doxie.ssn_records;
 

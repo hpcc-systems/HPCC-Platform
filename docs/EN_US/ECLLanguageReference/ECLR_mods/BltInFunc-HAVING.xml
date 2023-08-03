@@ -8,8 +8,12 @@
       <primary>HAVING</primary>
     </indexterm><indexterm>
       <primary>HAVING function</primary>
-    </indexterm>(</emphasis><emphasis> groupdataset, expression
-  </emphasis> <emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+    </indexterm>(</emphasis><emphasis> groupdataset, expression </emphasis>
+  <emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool
+  </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [
+  (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [,
+  ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ]
+  )</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
@@ -30,50 +34,70 @@
             <entry>The logical expression by which to filter the
             groups.</entry>
           </row>
+
           <row>
             <entry><emphasis role="bold">UNORDERED</emphasis></entry>
 
-            <entry>Optional. Specifies the output record order is not significant.</entry>
+            <entry>Optional. Specifies the output record order is not
+            significant.</entry>
           </row>
+
           <row>
             <entry><emphasis role="bold">ORDERED</emphasis></entry>
 
-            <entry>Specifies the significance of the output record order.</entry>
+            <entry>Specifies the significance of the output record
+            order.</entry>
           </row>
+
           <row>
             <entry><emphasis>bool</emphasis></entry>
 
-            <entry>When False, specifies the output record order is not significant. When True, specifies the default output record order.</entry>
+            <entry>When False, specifies the output record order is not
+            significant. When True, specifies the default output record
+            order.</entry>
           </row>
+
           <row>
             <entry><emphasis role="bold">STABLE</emphasis></entry>
 
-            <entry>Optional. Specifies the input record order is significant.</entry>
+            <entry>Optional. Specifies the input record order is
+            significant.</entry>
           </row>
+
           <row>
             <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
 
-            <entry>Optional. Specifies the input record order is not significant.</entry>
+            <entry>Optional. Specifies the input record order is not
+            significant.</entry>
           </row>
+
           <row>
             <entry><emphasis role="bold">PARALLEL</emphasis></entry>
 
-            <entry>Optional. Try to evaluate this activity in parallel.</entry>
+            <entry>Optional. Try to evaluate this activity in
+            parallel.</entry>
           </row>
+
           <row>
             <entry><emphasis>numthreads</emphasis></entry>
 
-            <entry>Optional. Try to evaluate this activity using <emphasis>numthreads</emphasis> threads.</entry>
+            <entry>Optional. Try to evaluate this activity using
+            <emphasis>numthreads</emphasis> threads.</entry>
           </row>
+
           <row>
             <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
 
-            <entry>Optional. Override the algorithm used for this activity.</entry>
+            <entry>Optional. Override the algorithm used for this
+            activity.</entry>
           </row>
+
           <row>
             <entry><emphasis>name</emphasis></entry>
 
-            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the SORT function's STABLE and UNSTABLE options.</entry>
+            <entry>The algorithm to use for this activity. Must be from the
+            list of supported algorithms for the SORT function's STABLE and
+            UNSTABLE options.</entry>
           </row>
 
           <row>
@@ -92,10 +116,29 @@
 
   <para>Example:</para>
 
-  <programlisting>MyGroups := GROUP(SORT(Person,lastname),lastname);
-     //group by last name
-Filtered := HAVING(MyGroups,COUNT(ROWS(LEFT)) &gt; 10);
-     //filter out the small groups</programlisting>
+  <programlisting lang="ECL" role="runnable">personRecord := RECORD
+STRING UID;
+STRING first_name;
+STRING last_name;
+STRING address;
+STRING city;
+STRING state;
+STRING zip;
+STRING SSN
+END;
+person := DATASET([{'923','James','Jones','123 Elm Street','Hollywood','FL','33022','000-423-6567'},
+{'924','Sally','Jones','22 Main Street','Tampa','FL','33604','000-123-4567'},
+{'925','Jose','Gomez','111 Biscaya Lane','Miami','FL','33101','000-123-3383'},
+{'926','Adam','Wesson','77 Sunset Blvd','Boston','MA','02108','000-123-4464'},
+{'927','Evelyn','Murray','740 SW 10th Street','Boston ','MA','02116','000-123-5556'},
+{'928','Joe','Yung','7511 Simson Avenue','Chicago','IL','60131','000-123-7890'}], personRecord);
+
+MyGroups := GROUP(SORT(Person,state),state);
+     //group by state
+Filtered := HAVING(MyGroups,COUNT(ROWS(LEFT)) &gt; 1);
+     //filter out the small groups
+OUTPUT(Filtered);
+</programlisting>
 
   <para>See Also: <link linkend="GROUP">GROUP</link></para>
 </sect1>

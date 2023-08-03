@@ -101,7 +101,7 @@
 
     <para>Example:</para>
 
-    <programlisting>EXPORT events := MODULE
+    <programlisting lang="ECL">EXPORT events := MODULE
   EXPORT dailyAtMidnight := CRON('0 0 * * *');
   EXPORT dailyAt( INTEGER hour,
    INTEGER minute=0) :=

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
-<sect1 id="CHOOSESETS">
+<sect1 id="CHOOSESETS" lang="ECL">
   <title>CHOOSESETS</title>
 
   <para><emphasis role="bold">CHOOSESETS<indexterm>
@@ -20,8 +20,11 @@
   role="bold">|</emphasis><emphasis> </emphasis><emphasis
   role="bold">ENTH<indexterm>
       <primary>ENTH</primary>
-    </indexterm></emphasis> <emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] ]
-  )</emphasis></para>
+    </indexterm></emphasis> <emphasis role="bold">[, UNORDERED |
+  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
+  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
+  </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
+  <emphasis>name </emphasis><emphasis role="bold">) ] ] )</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
@@ -88,50 +91,70 @@
             the condition instead of the first n. This option is implicitly
             EXCLUSIVE.</entry>
           </row>
+
           <row>
             <entry><emphasis role="bold">UNORDERED</emphasis></entry>
 
-            <entry>Optional. Specifies the output record order is not significant.</entry>
+            <entry>Optional. Specifies the output record order is not
+            significant.</entry>
           </row>
+
           <row>
             <entry><emphasis role="bold">ORDERED</emphasis></entry>
 
-            <entry>Specifies the significance of the output record order.</entry>
+            <entry>Specifies the significance of the output record
+            order.</entry>
           </row>
+
           <row>
             <entry><emphasis>bool</emphasis></entry>
 
-            <entry>When False, specifies the output record order is not significant. When True, specifies the default output record order.</entry>
+            <entry>When False, specifies the output record order is not
+            significant. When True, specifies the default output record
+            order.</entry>
           </row>
+
           <row>
             <entry><emphasis role="bold">STABLE</emphasis></entry>
 
-            <entry>Optional. Specifies the input record order is significant.</entry>
+            <entry>Optional. Specifies the input record order is
+            significant.</entry>
           </row>
+
           <row>
             <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
 
-            <entry>Optional. Specifies the input record order is not significant.</entry>
+            <entry>Optional. Specifies the input record order is not
+            significant.</entry>
           </row>
+
           <row>
             <entry><emphasis role="bold">PARALLEL</emphasis></entry>
 
-            <entry>Optional. Try to evaluate this activity in parallel.</entry>
+            <entry>Optional. Try to evaluate this activity in
+            parallel.</entry>
           </row>
+
           <row>
             <entry><emphasis>numthreads</emphasis></entry>
 
-            <entry>Optional. Try to evaluate this activity using <emphasis>numthreads</emphasis> threads.</entry>
+            <entry>Optional. Try to evaluate this activity using
+            <emphasis>numthreads</emphasis> threads.</entry>
           </row>
+
           <row>
             <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
 
-            <entry>Optional. Override the algorithm used for this activity.</entry>
+            <entry>Optional. Override the algorithm used for this
+            activity.</entry>
           </row>
+
           <row>
             <entry><emphasis>name</emphasis></entry>
 
-            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the SORT function's STABLE and UNSTABLE options.</entry>
+            <entry>The algorithm to use for this activity. Must be from the
+            list of supported algorithms for the SORT function's STABLE and
+            UNSTABLE options.</entry>
           </row>
 
           <row>
@@ -156,11 +179,12 @@
 
   <para>Example:</para>
 
-  <programlisting>MyResultSet := CHOOSESETS(Person,
+  <programlisting lang="ECL">MyResultSet := CHOOSESETS(Person,
       per_first_name = 'RICHARD' =&gt; 100,
       per_first_name = 'GWENDOLYN' =&gt; 200, 100)
 // returns a set containing 100 Richards, 200 Gwendolyns, 100 others
 </programlisting>
 
-  <para>See Also: <link linkend="CHOOSEN">CHOOSEN</link>, <link linkend="SAMPLE">SAMPLE</link></para>
+  <para>See Also: <link linkend="CHOOSEN">CHOOSEN</link>, <link
+  linkend="SAMPLE">SAMPLE</link></para>
 </sect1>
