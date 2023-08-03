@@ -2618,10 +2618,27 @@ const CJHTreeNode *CNodeCache::getNode(const INodeLoader *keyIndex, unsigned iD,
     {
         CNodeCacheEntry * cacheEntry;
         unsigned hashcode = curCache.getKeyHash(key);
-        CriticalBlock block(cacheLock);
 
+        CLeavableCriticalBlock block(cacheLock);
         cacheEntry = curCache.query(hashcode, &key);
-        if (unlikely(!cacheEntry))
+        if (likely(cacheEntry))
+        {
+            const CJHTreeNode * fastPathMatch = cacheEntry->queryNode();
+            if (likely(fastPathMatch))
+            {
+                //Avoid linking and releasing cacheEntry if the match is already loaded.  Link the node then leave
+                //the critical section asap
+                fastPathMatch->Link();
+                block.leave();
+
+                //Update any stats outside of the critical section.
+                cacheHits++;
+                (*hitMetric[cacheType])++;
+                if (ctx) ctx->noteStatistic(hitStatId[cacheType], 1);
+                return fastPathMatch;
+            }
+        }
+        else
         {
             cacheEntry = new CNodeCacheEntry;
             curCache.replace(key, *cacheEntry);
