@@ -2507,21 +2507,25 @@ void CInplaceLeafWriteNode::write(IFileIOStream *out, CRC32 *crc)
 InplaceIndexCompressor::InplaceIndexCompressor(size32_t keyedSize, const CKeyHdr * keyHdr, IHThorIndexWriteArg * helper, const char * _compressionName)
 : compressionName(_compressionName)
 {
-    IOutputMetaData * format = helper->queryDiskRecordSize();
-    if (format)
+    if (helper)
     {
-        //Create a representation of the null row - potentially used for the new compression algorithm
-        byte * nullRow = new byte[keyedSize];
-        RtlStaticRowBuilder rowBuilder(nullRow, keyedSize);
-
-        auto & meta = format->queryRecordAccessor(true);
-        size32_t offset = 0;
-        for (unsigned idx = 0; idx < meta.getNumFields() && offset < keyedSize; idx++)
+        //Nothing currently relies on the null row being created....
+        IOutputMetaData * format = helper->queryDiskRecordSize();
+        if (format)
         {
-            const RtlFieldInfo *field = meta.queryField(idx);
-            offset = field->type->buildNull(rowBuilder, offset, field);
+            //Create a representation of the null row - potentially used for the new compression algorithm
+            byte * nullRow = new byte[keyedSize];
+            RtlStaticRowBuilder rowBuilder(nullRow, keyedSize);
+
+            auto & meta = format->queryRecordAccessor(true);
+            size32_t offset = 0;
+            for (unsigned idx = 0; idx < meta.getNumFields() && offset < keyedSize; idx++)
+            {
+                const RtlFieldInfo *field = meta.queryField(idx);
+                offset = field->type->buildNull(rowBuilder, offset, field);
+            }
+            ctx.nullRow = nullRow;
         }
-        ctx.nullRow = nullRow;
     }
 
     //Process any options.  Currently supports the compression mode
