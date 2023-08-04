@@ -10063,7 +10063,31 @@ class CInitGroups
             addHostsToIPTFunc();
         return cluster.getClear();
     }
-
+    const char *getHostFromClusterEntry(const IPropertyTree &node, const char *clusterName)
+    {
+        const char *computer = node.queryProp("@computer");
+        if (!isEmptyString(computer))
+        {
+            auto it = machineMap.find(computer);
+            if (it == machineMap.end())
+            {
+                OERRLOG("Cannot construct %s, computer name %s not found\n", clusterName, computer);
+                return nullptr;
+            }
+            return it->second.c_str();
+        }
+        else
+        {
+            const char *host = node.queryProp("@netAddress");
+            if (isEmptyString(host))
+            {
+                OERRLOG("Cannot construct %s, missing computer spec on node\n", clusterName);
+                return nullptr;
+            }
+            else
+                return host;
+        }
+    }
     IPropertyTree *createClusterGroupFromEnvCluster(GroupType groupType, const IPropertyTree &cluster, const char *dir, bool realCluster, bool expand)
     {
         const char *processName=nullptr;
@@ -10086,50 +10110,43 @@ class CInitGroups
         }
         std::vector<std::string> hosts;
         Owned<IPropertyTreeIterator> nodes = cluster.getElements(processName);
-        ForEach(*nodes)
+        if (nodes->first())
         {
-            IPropertyTree &node = nodes->query();
-            const char *host = nullptr;
-            if (grp_dropzone == groupType)
-                host = node.queryProp("@server");
-            else
+            do
             {
-                const char *computer = node.queryProp("@computer");
-                if (!isEmptyString(computer))
-                {
-                    auto it = machineMap.find(computer);
-                    if (it == machineMap.end())
-                    {
-                        OERRLOG("Cannot construct %s, computer name %s not found\n", cluster.queryProp("@name"), computer);
-                        return nullptr;
-                    }
-                    host = it->second.c_str();
-                }
+                IPropertyTree &node = nodes->query();
+                const char *host = nullptr;
+                if (grp_dropzone == groupType)
+                    host = node.queryProp("@server");
                 else
+                    host = getHostFromClusterEntry(node, cluster.queryProp("@name"));
+                switch (groupType)
                 {
-                    host = node.queryProp("@netAddress");
-                    if (isEmptyString(host))
-                    {
-                        OERRLOG("Cannot construct %s, missing computer spec on node\n", cluster.queryProp("@name"));
-                        return nullptr;
-                    }
+                    case grp_roxie:
+                        // Redundant copies are located via the flags.
+                        // Old environments may contain duplicated sever information for multiple ports
+                        if (hosts.end() == std::find(hosts.begin(), hosts.end(), host)) // only add if not already there
+                            hosts.push_back(host);
+                        break;
+                    case grp_thor:
+                    case grp_thorspares:
+                    case grp_dropzone:
+                        hosts.push_back(host);
+                        break;
+                    default:
+                        throwUnexpected();
                 }
             }
-            switch (groupType)
+            while (nodes->next());
+        }
+        else if (grp_dropzone == groupType)
+        {
+            // legacy support for DropZone's without ServerList
+            if (cluster.hasProp("@computer") || cluster.hasProp("@netAddress"))
             {
-                case grp_roxie:
-                    // Redundant copies are located via the flags.
-                    // Old environments may contain duplicated sever information for multiple ports
-                    if (hosts.end() == std::find(hosts.begin(), hosts.end(), host)) // only add if not already there
-                        hosts.push_back(host);
-                    break;
-                case grp_thor:
-                case grp_thorspares:
-                case grp_dropzone:
+                const char *host = getHostFromClusterEntry(cluster, cluster.queryProp("@name"));
+                if (!isEmptyString(host))
                     hosts.push_back(host);
-                    break;
-                default:
-                    throwUnexpected();
             }
         }
         if (!hosts.size())
