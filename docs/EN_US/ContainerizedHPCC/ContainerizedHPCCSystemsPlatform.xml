@@ -130,7 +130,7 @@
       few fundamental changes to note.</para>
 
       <sect2 id="processesandpods">
-        <title>Processes and pods, not machines</title>
+        <title>Processes and Pods, not Machines</title>
 
         <para>Anyone familiar with the existing configuration system will know
         that part of the configuration involves creating instances of each
@@ -149,7 +149,7 @@
       </sect2>
 
       <sect2 id="helmcharts001">
-        <title>Helm charts</title>
+        <title>Helm Charts</title>
 
         <para>In the containerized world, the information that the operator
         needs to supply to configure an HPCC Systems environment is greatly
@@ -204,7 +204,7 @@
       </sect2>
 
       <sect2 id="topoclustersvsqueues">
-        <title>Topology settings – Clusters vs queues</title>
+        <title>Topology Settings – Clusters vs Queues</title>
 
         <para>In bare-metal deployments, there is a section called <emphasis
         role="strong">Topology</emphasis> where the various queues that
