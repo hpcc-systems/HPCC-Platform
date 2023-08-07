@@ -713,5 +713,15 @@ public:
     }
 };
 
+class graph_decl CThorPerfTracer : protected PerfTracer
+{
+    PerfTracer perf;
+    StringAttr workunit;
+    unsigned subGraphId;
+public:
+    void start(const char *workunit, unsigned subGraphId, double interval);
+    void stop();
+};
+
 #endif
 

@@ -1403,17 +1403,11 @@ void CGraphBase::executeSubGraph(size32_t parentExtractSz, const byte *parentExt
     CriticalBlock b(executeCrit);
     if (job.queryPausing())
         return;
-    PerfTracer perf;
     Owned<IException> exception;
     try
     {
         if (!queryOwner())
         {
-            if (job.getOptBool("perftrace"))
-            {
-                GraphPrintLog("Starting perf trace");
-                perf.start();
-            }
             if (!REJECTLOG(MCthorDetailedDebugInfo))
             {
                 StringBuffer s;
@@ -1438,32 +1432,6 @@ void CGraphBase::executeSubGraph(size32_t parentExtractSz, const byte *parentExt
             StringBuffer memStr;
             getSystemTraceInfo(memStr, PerfMonStandard | PerfMonExtended);
             ::GraphPrintLog(this, thorDetailedLogLevel, "%s", memStr.str());
-        }
-        if (job.getOptBool("perftrace"))
-        {
-            GraphPrintLog("Stopping perf trace");
-            perf.stop();
-            StringBuffer flameGraphName;
-            if (getConfigurationDirectory(globals->queryPropTree("Directories"),"debug","thor",globals->queryProp("@name"),flameGraphName))
-                addPathSepChar(flameGraphName);
-            flameGraphName.appendf("%s/%u/flame_%u.svg", job.queryWuid(), globals->getPropInt("@slavenum"), queryGraphId());
-            ensureDirectoryForFile(flameGraphName);
-            Owned<IFile> iFile = createIFile(flameGraphName);
-            try
-            {
-                Owned<IFileIO> iFileIO = iFile->open(IFOcreate);
-                if (iFileIO)
-                {
-                    StringBuffer &svg = perf.queryResult();
-                    iFileIO->write(0, svg.length(), svg.str());
-                    GraphPrintLog("Flame graph written to %s", flameGraphName.str());
-                }
-            }
-            catch (IException *E)
-            {
-                GraphPrintLog(E);
-                ::Release(E);
-            }
         }
     }
     if (exception)
