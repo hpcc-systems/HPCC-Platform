@@ -1686,6 +1686,13 @@ __int64 getExpertOptInt64(const char *opt, __int64 dft)
     return globals->getPropInt64(xpath, dft);
 }
 
+double getExpertOptReal(const char *opt, double dft)
+{
+    StringBuffer xpath;
+    getExpertOptPath(opt, xpath);
+    return globals->getPropReal(xpath, dft);
+}
+
 StringBuffer &getExpertOptString(const char *opt, StringBuffer &out)
 {
     StringBuffer xpath;

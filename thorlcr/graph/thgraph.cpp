@@ -473,6 +473,13 @@ __int64 CGraphElementBase::getOptInt64(const char *prop, __int64 defVal) const
     return queryXGMML().getPropInt64(path.toLowerCase().str(), def);
 }
 
+double CGraphElementBase::getOptReal(const char *prop, double defVal) const
+{
+    double def = queryJob().getOptReal(prop, defVal);
+    VStringBuffer path("hint[@name=\"%s\"]/@value", prop);
+    return queryXGMML().getPropReal(path.toLowerCase().str(), def);
+}
+
 IThorGraphDependencyIterator *CGraphElementBase::getDependsIterator() const
 {
     return new ArrayIIteratorOf<const CGraphDependencyArray, CGraphDependency, IThorGraphDependencyIterator>(dependsOn);
@@ -2973,6 +2980,13 @@ __int64 CJobBase::getOptInt64(const char *opt, __int64 dft)
     if (!opt || !*opt)
         return dft; // probably error
     return getWorkUnitValueInt(opt, getExpertOptInt64(opt, dft));
+}
+
+double CJobBase::getOptReal(const char *opt, double dft)
+{
+    if (!opt || !*opt)
+        return dft; // probably error
+    return getWorkUnitValueReal(opt, getExpertOptReal(opt, dft));
 }
 
 IThorAllocator *CJobBase::getThorAllocator(unsigned channel)

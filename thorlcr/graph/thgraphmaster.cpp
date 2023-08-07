@@ -2060,6 +2060,11 @@ bool CJobMaster::getWorkUnitValueBool(const char *prop, bool defVal) const
     return queryWorkUnit().getDebugValueBool(prop, defVal);
 }
 
+double CJobMaster::getWorkUnitValueReal(const char *prop, double defVal) const
+{
+    return queryWorkUnit().getDebugValueReal(prop, defVal);
+}
+
 StringBuffer &CJobMaster::getWorkUnitValue(const char *prop, StringBuffer &str) const
 {
     SCMStringBuffer scmStr;

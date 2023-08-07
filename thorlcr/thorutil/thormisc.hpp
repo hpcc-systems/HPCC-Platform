@@ -607,6 +607,7 @@ extern graph_decl bool hasExpertOpt(const char *opt);
 extern graph_decl StringBuffer &getExpertOptPath(const char *opt, StringBuffer &out);
 extern graph_decl bool getExpertOptBool(const char *opt, bool dft=false);
 extern graph_decl __int64 getExpertOptInt64(const char *opt, __int64 dft=0);
+extern graph_decl double getExpertOptReal(const char *opt, double dft);
 extern graph_decl StringBuffer &getExpertOptString(const char *opt, StringBuffer &out);
 extern graph_decl void setExpertOpt(const char *opt, const char *value);
 
