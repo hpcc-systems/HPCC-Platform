@@ -1182,3 +1182,13 @@ export function wrapStringWithTag(string, tag = "span") {
 export function isSpill(sourceKind: string, targetKind: string): boolean {
     return sourceKind === "2" || targetKind === "71";
 }
+
+export function convertToLocalTime(dateString) {
+    const modifiedDate = new Date(dateString);
+    return modifiedDate.toLocaleString();
+  }
+  
+  export function convertToUTCTime(dateString) {
+    const modifiedDate = new Date(dateString);
+    return modifiedDate.toUTCString();
+  }
