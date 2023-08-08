@@ -1308,3 +1308,12 @@ export function wuidToTime(wuid: string): string {
 export function wuidToDateTime(wuid: string): Date {
     return new Date(`${wuidToDate(wuid)}T${wuidToTime(wuid)}Z`);
 }
+export function convertToLocalTime(dateString) {
+    const modifiedDate = new Date(dateString);
+    return modifiedDate.toLocaleString();
+  }
+  
+  export function convertToUTCTime(dateString) {
+    const modifiedDate = new Date(dateString);
+    return modifiedDate.toUTCString();
+  }
