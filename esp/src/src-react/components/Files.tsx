@@ -79,6 +79,7 @@ function formatQuery(_filter): { [id: string]: any } {
 
 const defaultUIState = {
     hasSelection: false,
+    isUTC: false, 
 };
 
 interface FilesProps {
@@ -110,6 +111,24 @@ export const Files: React.FunctionComponent<FilesProps> = ({
     const [viewByScope, setViewByScope] = React.useState(false);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
 
+    const toggleTimezone = () => {
+        setUIState((prevState) => ({ ...prevState, isUTC: !prevState.isUTC }));
+      };
+    
+      React.useEffect(() => {
+        localStorage.setItem("isUTC", JSON.stringify(uiState.isUTC));
+      }, [uiState.isUTC]);
+    
+      React.useEffect(() => {
+        const storedIsUTC = JSON.parse(localStorage.getItem("isUTC"));
+        if (storedIsUTC !== null) {
+          setUIState((prevState) => ({ ...prevState, isUTC: storedIsUTC }));
+        }
+      }, []);
+    
+      const currentTime = React.useCallback(timestamp => {
+        return uiState.isUTC ? Utility.convertToUTCTime(timestamp) : Utility.convertToLocalTime(timestamp);
+    }, [uiState.isUTC]);
     //  Grid ---
     const gridStore = React.useMemo(() => {
         return store ? store : CreateDFUQueryStore();
@@ -201,7 +220,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
             MaxSkew: {
                 label: nlsHPCC.MaxSkew, width: 60, formatter: React.useCallback((value, row) => value ? `${Utility.formatDecimal(value / 100)}%` : "", [])
             },
-            Modified: { label: nlsHPCC.ModifiedUTCGMT },
+            Modified: { label: nlsHPCC.ModifiedUTCGMT, formatter: currentTime },
             AtRestCost: {
                 label: nlsHPCC.FileCostAtRest,
                 formatter: React.useCallback(function (cost, row) {
@@ -303,7 +322,14 @@ export const Files: React.FunctionComponent<FilesProps> = ({
                 pushParams(filter);
             }
         },
-    ], [currentUser, filter, hasFilter, refreshTable, selection, setShowDeleteConfirm, store, uiState.hasSelection, viewByScope]);
+        { key: "divider_6", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        {
+            key: "toggleTimezone",
+            text: uiState.isUTC ? nlsHPCC.SwitchToLocalTime : nlsHPCC.SwitchToUTCTime,
+            iconProps: { iconName: uiState.isUTC ? "Globe" : "Clock" },
+            onClick: toggleTimezone,
+          },
+    ], [currentUser, filter, hasFilter, refreshTable, selection, setShowDeleteConfirm, store, uiState.hasSelection, viewByScope, uiState.isUTC]);
 
     //  Filter  ---
     const filterFields: Fields = {};
