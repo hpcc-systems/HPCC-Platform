@@ -11,18 +11,14 @@ export function useActivity(): [Activity, number, () => void] {
     React.useEffect(() => {
         const activity = Activity.attach({ baseUrl: "" });
         let active = true;
-        let handle;
         activity.lazyRefresh().then(() => {
             if (active) {
                 setActivity(activity);
-                handle = activity.watch(() => {
-                    setLastUpdate(Date.now());
-                });
+                setLastUpdate(Date.now());
             }
         });
         return () => {
             active = false;
-            handle.release();
         };
     }, [count]);
 
