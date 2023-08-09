@@ -1761,6 +1761,12 @@
           "minimum": 0,
           "description": "Minimum number of remote files to keep open"
         },
+        "packetAcknowledgeTimeout": { 
+          "type": "integer",
+          "default": 100,
+          "minimum": 10,
+          "description": "Maximum time to wait for agent query packets to be acknowledged before resending"
+        },
         "parallelQueryLoadThreads": { 
           "type": "integer",
           "default": 0,

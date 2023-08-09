@@ -309,6 +309,7 @@ extern MapStringTo<int> *preferredClusters;
 extern StringArray allQuerySetNames;
 
 extern bool acknowledgeAllRequests;
+extern unsigned packetAcknowledgeTimeout;
 extern bool alwaysTrustFormatCrcs;
 extern bool allFilesDynamic;
 extern bool lockSuperFiles;

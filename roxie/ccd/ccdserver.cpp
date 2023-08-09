@@ -4938,6 +4938,8 @@ public:
         unsigned checkInterval = activity.queryContext()->checkInterval();
         if (checkInterval > timeout)
             checkInterval = timeout;
+        if (acknowledgeAllRequests && checkInterval > packetAcknowledgeTimeout)
+            checkInterval = packetAcknowledgeTimeout;
         unsigned lastActivity = msTick();
         for (;;)
         {
