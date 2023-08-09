@@ -1585,6 +1585,11 @@
           "default": 0,
           "description": "Specify an IONICE value for the background copy thread, if backgroundCopyClass set to best-effort."
         },
+        "blockedLocalAgent": { 
+          "type": "boolean",
+          "default": true,
+          "description": "Used DataBuffer blocks to return agent data in localAgent mode."
+        },
         "callbackRetries": { 
           "type": "integer",
           "default": 3,

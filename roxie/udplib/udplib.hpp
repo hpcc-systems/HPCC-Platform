@@ -81,6 +81,7 @@ public:
 };
 
 extern UDPLIB_API ServerIdentifier myNode;
+extern UDPLIB_API roxiemem::IDataBufferManager *bufferManager;
 
 interface IMessagePacker : extends IInterface
 {

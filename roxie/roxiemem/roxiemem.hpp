@@ -418,6 +418,30 @@ private:
     const char * ptr;
 };
 
+class OwnedDataBuffer
+{
+public:
+    inline OwnedDataBuffer()                              { ptr = NULL; }
+    inline OwnedDataBuffer(DataBuffer * _ptr)             { ptr = _ptr; }
+    inline OwnedDataBuffer(const OwnedDataBuffer & other) { ptr = other.getLink(); }
+
+    inline ~OwnedDataBuffer() { if (ptr) ptr->Release(); }
+
+    inline operator DataBuffer *() const { return ptr; }
+    inline DataBuffer * get() const { return ptr; }
+    inline DataBuffer * getLink() const { if (ptr) ptr->Link(); return ptr; }
+    inline DataBuffer * set(DataBuffer * _ptr) { DataBuffer * temp = ptr; if (_ptr) _ptr->Link(); ptr = _ptr; if (temp) temp->Release(); return ptr; }
+    inline DataBuffer * setown(DataBuffer * _ptr) { DataBuffer * temp = ptr; ptr = _ptr; if (temp) temp->Release(); return ptr; }
+    inline void clear() { DataBuffer * temp = ptr; ptr = NULL; if (temp) temp->Release();  }
+private:
+    /* Disable use of some constructs that often cause memory leaks by creating private members */
+    void operator = (const void * _ptr)              {  }
+    void operator = (const OwnedDataBuffer & other) { }
+    void setown(const OwnedDataBuffer &other) {  }
+
+private:
+    DataBuffer * ptr;
+};
 
 interface IRowHeap : extends IInterface
 {
