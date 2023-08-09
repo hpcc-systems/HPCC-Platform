@@ -21,6 +21,7 @@ const logger = scopedLogger("src-react/components/Workunits.tsx");
 
 const FilterFields: Fields = {
     "Type": { type: "checkbox", label: nlsHPCC.ArchivedOnly },
+    "Protected": { type: "checkbox", label: nlsHPCC.Protected},
     "Wuid": { type: "string", label: nlsHPCC.WUID, placeholder: "W20200824-060035" },
     "Owner": { type: "string", label: nlsHPCC.Owner, placeholder: nlsHPCC.jsmi },
     "Jobname": { type: "string", label: nlsHPCC.JobName, placeholder: nlsHPCC.log_analysis_1 },
@@ -56,6 +57,9 @@ function formatQuery(_filter): { [id: string]: any } {
     }
     if (filter.Type === true) {
         filter.Type = "archived workunits";
+    }
+    if (filter.Protected === true) {
+        filter.Protected = "Protected";
     }
     logger.debug(filter);
     return filter;
