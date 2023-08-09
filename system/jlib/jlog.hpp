@@ -1243,10 +1243,10 @@ extern jlib_decl void AuditSystemAccess(const char *userid, bool success, char c
 
 interface jlib_decl IContextLogger : extends IInterface
 {
-    virtual void CTXLOG(const char *format, ...) const  __attribute__((format(printf, 2, 3)));
-    virtual void mCTXLOG(const char *format, ...) const  __attribute__((format(printf, 2, 3)));
+    virtual void CTXLOG(const char *format, ...) const  __attribute__((format(printf, 2, 3))) = 0;
+    virtual void mCTXLOG(const char *format, ...) const  __attribute__((format(printf, 2, 3))) = 0;
     virtual void CTXLOGva(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char *format, va_list args) const __attribute__((format(printf,5,0))) = 0;
-    void logOperatorException(IException *E, const char *file, unsigned line, const char *format, ...) const  __attribute__((format(printf, 5, 6)));
+    virtual void logOperatorException(IException *E, const char *file, unsigned line, const char *format, ...) const __attribute__((format(printf, 5, 6))) = 0;
     virtual void logOperatorExceptionVA(IException *E, const char *file, unsigned line, const char *format, va_list args) const __attribute__((format(printf,5,0))) = 0;
     virtual void noteStatistic(StatisticKind kind, unsigned __int64 value) const = 0;
     virtual void setStatistic(StatisticKind kind, unsigned __int64 value) const = 0;
@@ -1262,6 +1262,67 @@ interface jlib_decl IContextLogger : extends IInterface
     virtual void setCallerId(const char *id) = 0;
     virtual const char *queryCallerId() const = 0;
     virtual const CRuntimeStatisticCollection & queryStats() const = 0;
+};
+
+template <class ContextLoggerInterface>
+class jlib_decl CContextLoggerBase : public CInterfaceOf<ContextLoggerInterface>
+{
+public:
+    typedef CInterfaceOf<ContextLoggerInterface> PARENT;
+    using PARENT::CTXLOGva;
+    using PARENT::logOperatorExceptionVA;
+
+    void mCTXLOGva(const char *format, va_list args) const
+    {
+        StringBuffer log;
+        log.limited_valist_appendf(1024*1024, format, args);
+
+        const char *cursor = log;
+        const char *lineStart = cursor;
+        while (true)
+        {
+            switch (*cursor)
+            {
+                case '\0':
+                    CTXLOG("%.*s", (int)(cursor-lineStart), lineStart);
+                    return;
+                case '\r':
+                    // NB: \r or \r\n translated into newline
+                    CTXLOG("%.*s", (int)(cursor-lineStart), lineStart);
+                    if ('\n' == *(cursor+1))
+                        cursor++;
+                    lineStart = cursor+1;
+                    break;
+                case '\n':
+                    CTXLOG("%.*s", (int)(cursor-lineStart), lineStart);
+                    lineStart = cursor+1;
+                    break;
+            }
+            ++cursor;
+        }
+    }
+// IContextLogger
+    virtual void CTXLOG(const char *format, ...) const override __attribute__((format(printf, 2, 3)))
+    {
+        va_list args;
+        va_start(args, format);
+        CTXLOGva(MCdebugInfo, unknownJob, NoLogMsgCode, format, args);
+        va_end(args);
+    }
+    virtual void mCTXLOG(const char *format, ...) const override __attribute__((format(printf, 2, 3)))
+    {
+        va_list args;
+        va_start(args, format);
+        mCTXLOGva(format, args);
+        va_end(args);
+    }
+    virtual void logOperatorException(IException *E, const char *file, unsigned line, const char *format, ...) const override __attribute__((format(printf, 5, 6)))
+    {
+        va_list args;
+        va_start(args, format);
+        logOperatorExceptionVA(E, file, line, format, args);
+        va_end(args);
+    }
 };
 
 extern jlib_decl StringBuffer &appendGloballyUniqueId(StringBuffer &s);

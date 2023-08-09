@@ -571,7 +571,7 @@ extern void putStatsValue(StringBuffer &reply, const char *statName, const char 
 
 extern const StatisticsMapping accumulatedStatistics;
 
-class ContextLogger : implements IRoxieContextLogger, public CInterface
+class ContextLogger : public CRoxieContextLogger<IRoxieContextLogger>
 {
 protected:
     mutable CriticalSection crit;
@@ -589,8 +589,6 @@ private:
     LogTrace logTrace;
     ContextLogger(const ContextLogger &);  // Disable copy constructor
 public:
-    IMPLEMENT_IINTERFACE;
-
     ContextLogger() : stats(accumulatedStatistics, true)
     {
         ctxTraceLevel = traceLevel;

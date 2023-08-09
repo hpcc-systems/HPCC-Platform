@@ -612,7 +612,7 @@ extern graph_decl void setExpertOpt(const char *opt, const char *value);
 
 ////
 // IContextLogger
-class CThorContextLogger : public CSimpleInterfaceOf<IContextLogger>
+class CThorContextLogger : public CContextLoggerBase<IContextLogger>
 {
     unsigned traceLevel = 1;
     LogTrace logTrace;

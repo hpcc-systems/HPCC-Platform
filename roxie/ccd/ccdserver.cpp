@@ -168,11 +168,10 @@ public:
 
 //The following don't link their arguments because that creates a circular reference
 //But I wish there was a better way
-class IndirectAgentContext : implements IRoxieAgentContext, public CInterface
+class IndirectAgentContext : public CRoxieContextLogger<IRoxieAgentContext>
 {
 public:
     IndirectAgentContext(IRoxieAgentContext * _ctx) : ctx(_ctx) {}
-    IMPLEMENT_IINTERFACE
 
 //    void set(IRoxieAgentContext * _ctx) { ctx = _ctx; }
 
@@ -1022,7 +1021,7 @@ extern IEngineRowStream *connectSingleStream(IRoxieAgentContext *ctx, IFinalRoxi
     return result;
 }
 
-class CRoxieServerActivity : implements CInterfaceOf<IRoxieServerActivity>, implements IFinalRoxieInput, implements IEngineRowStream, implements IRoxieContextLogger
+class CRoxieServerActivity : public CRoxieContextLogger<IRoxieContextLogger>, implements IRoxieServerActivity, implements IFinalRoxieInput, implements IEngineRowStream
 {
     friend class StrandProcessor;
 protected:
@@ -1079,7 +1078,7 @@ protected:
     mutable std::atomic<RoxieSourceCharacteristics> cachedSourceCharacteristics = { RSC::none };
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CInterfaceOf<IRoxieServerActivity>)
+    IMPLEMENT_IINTERFACE_USING(CRoxieContextLogger<IRoxieContextLogger>)
 
     CRoxieServerActivity(IRoxieAgentContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
         : basehelper(_factory->getHelper()),

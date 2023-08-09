@@ -2821,14 +2821,6 @@ StringBuffer & expandLogicalFilename(StringBuffer & logicalName, const char * fn
 
 //----------------------------------------------------------------------------------
 
-void IRoxieContextLogger::CTXLOGae(IException *E, const char *file, unsigned line, const char *prefix, const char *format, ...) const
-{
-    va_list args;
-    va_start(args, format);
-    CTXLOGaeva(E, file, line, prefix, format, args);
-    va_end(args);
-}
-
 void loadHttpHeaders(IProperties *p, const char *finger)
 {
     while (*finger)
