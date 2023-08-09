@@ -1766,6 +1766,8 @@ public:
         CMessageBuffer msg;
         stopped = false;
         bool doReply;
+
+        OwnedPtr<CThorPerfTracer> perf;
         while (!stopped && queryNodeComm().recv(msg, 0, masterSlaveMpTag))
         {
             doReply = true;
@@ -1967,6 +1969,13 @@ public:
                         msg.read(subGraphId);
                         unsigned graphInitDataPos = msg.getPos();
 
+                        double perfInterval = job->getOptReal("perfInterval");
+                        if (perfInterval)
+                        {
+                            perf.setown(new CThorPerfTracer);
+                            perf->start(job->queryWuid(), subGraphId, perfInterval);
+                        }
+
                         VStringBuffer xpath("node[@id='%" GIDPF "u']", subGraphId);
                         Owned<IPropertyTree> graphNode = job->queryGraphXGMML()->getPropTree(xpath.str());
                         job->addSubGraph(*graphNode);
@@ -2011,6 +2020,13 @@ public:
                         {
                             graph_id gid;
                             msg.read(gid);
+
+                            if (perf)
+                            {
+                                perf->stop();
+                                perf.clear();
+                            }
+
                             msg.clear();
                             msg.append(false);
                             for (unsigned c=0; c<job->queryJobChannels(); c++)
