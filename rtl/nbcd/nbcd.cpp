@@ -116,14 +116,14 @@ int Decimal::compare(const Decimal & other) const
         return negative ? -1 : +1;
 
     if (hi1 != hi2)
-        return (hi1 > hi2) ^ negative ? +1 : -1;
+        return ((hi1 > hi2) ^ negative) ? +1 : -1;
 
     int limit = lo1 < lo2 ? lo2 : lo1;
     for (;hi1 >= limit; hi1--)
     {
         int diff = digits[hi1] - other.digits[hi1];
         if (diff != 0)
-            return (diff > 0) ^ negative ? +1 : -1;
+            return ((diff > 0) ^ negative) ? +1 : -1;
     }
 
     if (lo1 == lo2)
