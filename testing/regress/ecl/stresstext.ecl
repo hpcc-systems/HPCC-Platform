@@ -23,6 +23,13 @@
 //version multiPart=false,variant='inplace_lzw'
 //version multiPart=false,variant='inplace_lz4hc'
 
+// The settings below may be useful when trying to analyse Roxie keyed join behaviour, as they will
+// eliminate some wait time for an agent queue to become available
+
+//#option('roxie:minPayloadSize', 10000)
+//#option('roxie:agentThreads', 400)
+//#option('roxie:prestartAgentThreads', true)
+
 import ^ as root;
 multiPart := #IFDEFINED(root.multiPart, true);
 variant := #IFDEFINED(root.variant, '');

@@ -102,6 +102,7 @@ bool mergeAgentStatistics = true;
 PTreeReaderOptions defaultXmlReadFlags = ptr_ignoreWhiteSpace;
 bool runOnce = false;
 bool oneShotRoxie = false;
+unsigned minPayloadSize = 800;
 
 unsigned udpMulticastBufferSize = 262142;
 #if !defined(_CONTAINERIZED) && !defined(SUBCHANNELS_IN_HEADER)
@@ -122,7 +123,7 @@ bool lockSuperFiles;
 bool useRemoteResources;
 bool checkFileDate;
 bool lazyOpen;
-bool localAgent;
+bool localAgent = false;
 bool encryptInTransit;
 bool useAeron;
 bool ignoreOrphans;
@@ -464,7 +465,7 @@ void readStaticTopology()
     std::vector<RoxieEndpointInfo> allRoles;
     IpAddressArray nodeTable;
     unsigned numNodes = topology->getCount("./RoxieServerProcess");
-    if (!numNodes && localAgent)
+    if (!numNodes && oneShotRoxie)
     {
         if (topology->getPropBool("expert/@addDummyNode", false))
         {
@@ -479,7 +480,7 @@ void readStaticTopology()
             topology->setPropInt("@channelsPerNode", 2);
             topology->setProp("@agentConfig", "cyclic");
         }
-        else if (localAgent)
+        else if (oneShotRoxie)
         {
             topology->addPropTree("RoxieServerProcess")->setProp("@netAddress", ".");
             numNodes = 1;
@@ -691,55 +692,46 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         useOldTopology = checkFileExists(topologyFile.str());
         topology = loadConfiguration(useOldTopology ? nullptr : defaultYaml, argv, "roxie", "ROXIE", topologyFile, nullptr, "@netAddress");
         saveTopology();
+
+        // Any settings we read from topology that must NOT be overridden in workunit debug fields should be read at this point, before the following section
+        getAllowedPipePrograms(allowedPipePrograms, true);
+
+        // Allow workunit debug fields to override most roxie configuration values, for testing/debug purposes.
+
+        topology->getProp("@daliServers", fileNameServiceDali);
+        const char *wuid = topology->queryProp("@workunit");
+        if (wuid)
+        {
+            Owned<IRoxieDaliHelper> daliHelper;
+            Owned<IConstWorkUnit> wu;
+            daliHelper.setown(connectToDali(ROXIE_DALI_CONNECT_TIMEOUT));
+            wu.setown(daliHelper->attachWorkunit(wuid));
+            Owned<IStringIterator> debugValues = &wu->getDebugValues();
+            ForEach (*debugValues)
+            {
+                StringBuffer debugStr;
+                SCMStringBuffer valueStr;
+                StringBufferAdaptor aDebugStr(debugStr);
+                debugValues->str(aDebugStr);
+                if (startsWith(debugStr, "roxie:"))
+                {
+                    wu->getDebugValue(debugStr.str(), valueStr);
+                    debugStr.replaceString("roxie:", "@");
+                    topology->setProp(debugStr.str(), valueStr.str());
+                }
+            }
+        }
+
         if (topology->getPropBool("expert/@profileStartup", false))
         {
             double interval = topology->getPropReal("expert/@profileStartupInterval", 0.2);
             startupTracer.setInterval(interval);
             startupTracer.start();
         }
-        localAgent = topology->getPropBool("@localAgent", topology->getPropBool("@localSlave", false));  // legacy name
+        localAgent = topology->getPropBool("@localAgent", topology->getPropBool("@localSlave", localAgent));  // legacy name
         encryptInTransit = topology->getPropBool("@encryptInTransit", false) && !localAgent;
         if (encryptInTransit)
             initSecretUdpKey();
-        numChannels = topology->getPropInt("@numChannels", 0);
-#ifdef _CONTAINERIZED
-        if (!numChannels)
-            throw makeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - numChannels not set");
-#endif
-        const char *channels = topology->queryProp("@channels");
-        if (channels)
-        {
-            StringArray channelSpecs;
-            channelSpecs.appendList(channels, ",", true);
-            ForEachItemIn(idx, channelSpecs)
-            {
-                char *tail = nullptr;
-                unsigned channel = strtoul(channelSpecs.item(idx), &tail, 10);
-                unsigned repl = 0;
-                if (*tail==':')
-                {
-                    tail++;
-                    repl = atoi(tail);
-                }
-                else if (*tail)
-                    throw makeStringExceptionV(ROXIE_INTERNAL_ERROR, "Invalid channel specification %s", channels);
-                agentChannels.push_back(std::pair<unsigned, unsigned>(channel, repl));
-            }
-#ifdef _CONTAINERIZED
-            if (agentChannels.size() != 1)
-                throw makeStringExceptionV(ROXIE_INTERNAL_ERROR, "Invalid channel specification %s - single channel expected", channels);
-            myChannel = agentChannels[0].first;
-            if (myChannel > numChannels)
-                throw makeStringExceptionV(ROXIE_INTERNAL_ERROR, "Invalid channel specification %s - value out of range", channels);
-#endif
-        }
-#ifdef _CONTAINERIZED
-        else if (localAgent)
-        {
-            for (unsigned channel = 1; channel <= numChannels; channel++)
-                agentChannels.push_back(std::pair<unsigned, unsigned>(channel, 0));
-        }
-#endif
         const char *topos = topology->queryProp("@topologyServers");
         StringArray topoValues;
         if (topos)
@@ -770,7 +762,6 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         installDefaultFileHooks(topology);
 
         Owned<const IQueryDll> standAloneDll;
-        const char *wuid = topology->queryProp("@workunit");
         if (wuid)
             setDefaultJobId(wuid);
         if (topology->hasProp("@loadWorkunit"))
@@ -813,6 +804,46 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             else
                 runOnce = true;
         }
+
+        numChannels = topology->getPropInt("@numChannels", 0);
+#ifdef _CONTAINERIZED
+        if (!numChannels)
+            throw makeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - numChannels not set");
+#endif
+        const char *channels = topology->queryProp("@channels");
+        if (channels)
+        {
+            StringArray channelSpecs;
+            channelSpecs.appendList(channels, ",", true);
+            ForEachItemIn(idx, channelSpecs)
+            {
+                char *tail = nullptr;
+                unsigned channel = strtoul(channelSpecs.item(idx), &tail, 10);
+                unsigned repl = 0;
+                if (*tail==':')
+                {
+                    tail++;
+                    repl = atoi(tail);
+                }
+                else if (*tail)
+                    throw makeStringExceptionV(ROXIE_INTERNAL_ERROR, "Invalid channel specification %s", channels);
+                agentChannels.push_back(std::pair<unsigned, unsigned>(channel, repl));
+            }
+#ifdef _CONTAINERIZED
+            if (agentChannels.size() != 1)
+                throw makeStringExceptionV(ROXIE_INTERNAL_ERROR, "Invalid channel specification %s - single channel expected", channels);
+            myChannel = agentChannels[0].first;
+            if (myChannel > numChannels)
+                throw makeStringExceptionV(ROXIE_INTERNAL_ERROR, "Invalid channel specification %s - value out of range", channels);
+#endif
+        }
+#ifdef _CONTAINERIZED
+        else if (oneShotRoxie)
+        {
+            for (unsigned channel = 1; channel <= numChannels; channel++)
+                agentChannels.push_back(std::pair<unsigned, unsigned>(channel, 0));
+        }
+#endif
 
         if (!topology->hasProp("@resolveLocally"))
             topology->setPropBool("@resolveLocally", !topology->hasProp("@daliServers"));
@@ -934,6 +965,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             }
         }
 
+        minPayloadSize = topology->getPropInt("@minPayloadSize", minPayloadSize);
         acknowledgeAllRequests = topology->getPropBool("@acknowledgeAllRequests", acknowledgeAllRequests);
         headRegionSize = topology->getPropInt("@headRegionSize", 0);
         ccdMulticastPort = topology->getPropInt("@multicastPort", CCD_MULTICAST_PORT);
@@ -1182,8 +1214,6 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         maxFilesOpen[true] = topology->getPropInt("@maxRemoteFilesOpen", 1000);
         dafilesrvLookupTimeout = topology->getPropInt("@dafilesrvLookupTimeout", 10000);
         setRemoteFileTimeouts(dafilesrvLookupTimeout, 0);
-        topology->getProp("@daliServers", fileNameServiceDali);
-        getAllowedPipePrograms(allowedPipePrograms, true);
         trapTooManyActiveQueries = topology->getPropBool("@trapTooManyActiveQueries", true);
         maxEmptyLoopIterations = topology->getPropInt("@maxEmptyLoopIterations", 1000);
         maxGraphLoopIterations = topology->getPropInt("@maxGraphLoopIterations", 1000);

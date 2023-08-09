@@ -8500,7 +8500,9 @@ void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached, bool copyStats, bool a
 bool CLocalWorkUnit::hasDebugValue(const char *propname) const
 {
     StringBuffer lower;
-    lower.append(propname).toLowerCase();
+    lower.append(propname);
+    if (!strchr(lower, ':'))
+        lower.toLowerCase();
     CriticalBlock block(crit);
     StringBuffer prop("Debug/");
     return p->hasProp(prop.append(lower));
@@ -8509,7 +8511,9 @@ bool CLocalWorkUnit::hasDebugValue(const char *propname) const
 IStringVal& CLocalWorkUnit::getDebugValue(const char *propname, IStringVal &str) const
 {
     StringBuffer lower;
-    lower.append(propname).toLowerCase();
+    lower.append(propname);
+    if (!strchr(lower, ':'))
+        lower.toLowerCase();
     CriticalBlock block(crit);
     StringBuffer prop("Debug/");
     str.set(p->queryProp(prop.append(lower).str()));
@@ -8528,7 +8532,9 @@ IStringIterator& CLocalWorkUnit::getDebugValues(const char *prop) const
     if (prop)
     {
         StringBuffer lower;
-        lower.append(prop).toLowerCase();
+        lower.append(prop);
+        if (!strchr(lower, ':'))
+            lower.toLowerCase();
         path.append(lower);
     }
     else
@@ -8539,7 +8545,9 @@ IStringIterator& CLocalWorkUnit::getDebugValues(const char *prop) const
 int CLocalWorkUnit::getDebugValueInt(const char *propname, int defVal) const
 {
     StringBuffer lower;
-    lower.append(propname).toLowerCase();
+    lower.append(propname);
+    if (!strchr(lower, ':'))
+        lower.toLowerCase();
     CriticalBlock block(crit);
     StringBuffer prop("Debug/");
     prop.append(lower);
@@ -8549,7 +8557,9 @@ int CLocalWorkUnit::getDebugValueInt(const char *propname, int defVal) const
 __int64 CLocalWorkUnit::getDebugValueInt64(const char *propname, __int64 defVal) const
 {
     StringBuffer lower;
-    lower.append(propname).toLowerCase();
+    lower.append(propname);
+    if (!strchr(lower, ':'))
+        lower.toLowerCase();
     CriticalBlock block(crit);
     StringBuffer prop("Debug/");
     prop.append(lower);
@@ -8559,7 +8569,9 @@ __int64 CLocalWorkUnit::getDebugValueInt64(const char *propname, __int64 defVal)
 double CLocalWorkUnit::getDebugValueReal(const char *propname, double defVal) const
 {
     StringBuffer lower;
-    lower.append(propname).toLowerCase();
+    lower.append(propname);
+    if (!strchr(lower, ':'))
+        lower.toLowerCase();
     CriticalBlock block(crit);
     StringBuffer prop("Debug/");
     prop.append(lower);
@@ -8569,7 +8581,9 @@ double CLocalWorkUnit::getDebugValueReal(const char *propname, double defVal) co
 bool CLocalWorkUnit::getDebugValueBool(const char * propname, bool defVal) const
 {
     StringBuffer lower;
-    lower.append(propname).toLowerCase();
+    lower.append(propname);
+    if (!strchr(lower, ':'))
+        lower.toLowerCase();
     CriticalBlock block(crit);
     StringBuffer prop("Debug/");
     prop.append(lower);
@@ -8642,7 +8656,9 @@ void CLocalWorkUnit::addProcess(const char *type, const char *instance, unsigned
 void CLocalWorkUnit::setDebugValue(const char *propname, const char *value, bool overwrite)
 {
     StringBuffer lower;
-    lower.append(propname).toLowerCase();
+    lower.append(propname);
+    if (!strchr(lower, ':'))
+        lower.toLowerCase();
     CriticalBlock block(crit);
     StringBuffer prop("Debug/");
     prop.append(lower);
@@ -8657,7 +8673,9 @@ void CLocalWorkUnit::setDebugValue(const char *propname, const char *value, bool
 void CLocalWorkUnit::setDebugValueInt(const char *propname, int value, bool overwrite)
 {
     StringBuffer lower;
-    lower.append(propname).toLowerCase();
+    lower.append(propname);
+    if (!strchr(lower, ':'))
+        lower.toLowerCase();
     CriticalBlock block(crit);
     StringBuffer prop("Debug/");
     prop.append(lower);

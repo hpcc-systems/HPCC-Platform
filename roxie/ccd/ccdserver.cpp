@@ -77,7 +77,6 @@
 #include "rtldynfield.hpp"
 
 #define MAX_HTTP_HEADERSIZE 8000
-#define MIN_PAYLOAD_SIZE 800
 
 #ifdef _WIN32
 #pragma warning(disable : 4355)
@@ -4152,8 +4151,8 @@ class CRemoteResultAdaptor : implements IEngineRowStream, implements IFinalRoxie
         void init(unsigned minSize)
         {
             assertex(!buffer.length());
-            if (minSize < MIN_PAYLOAD_SIZE)
-                minSize = MIN_PAYLOAD_SIZE;
+            if (minSize < minPayloadSize)
+                minSize = minPayloadSize;
             unsigned headerSize = sizeof(RoxiePacketHeader)+owner.headerLength();
             unsigned bufferSize = headerSize+minSize;
             if (bufferSize < mtu_size)

@@ -17,12 +17,18 @@
 
 //nohthor
 //nothor
+//version localAgent=true
+//version localAgent=false
+
 
 IMPORT Std.system.thorlib as thorlib;
 import ^ as root;
 multiPart := #IFDEFINED(root.multiPart, true);
 useLocal := #IFDEFINED(root.useLocal, false);
 useTranslation := #IFDEFINED(root.useTranslation, false);
+useLocalAgent := #IFDEFINED(root.localAgent, false);
+
+#option('roxie:localAgent', useLocalAgent);
 
 import $.setup;
 Files := setup.Files(multiPart, useLocal, useTranslation);
