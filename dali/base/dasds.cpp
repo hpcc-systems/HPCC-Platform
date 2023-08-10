@@ -15,6 +15,10 @@
     limitations under the License.
 ############################################################################## */
 
+#include <queue>
+#include <list>
+#include <unordered_map>
+
 #include "platform.h"
 #include "jhash.hpp"
 #include "jlib.hpp"
@@ -94,7 +98,9 @@ static auto pSdsRequestsPending = hpccMetrics::registerGaugeFromCountersMetric("
 #define SUBNTFY_POOL_SIZE 400
 #define SUBSCAN_POOL_SIZE 100
 #define RTM_INTERNAL        0x80000000 // marker for internal connection (performed within a transaction)
-#define DEFAULT_EXTERNAL_SIZE_THRESHOLD (10*1024)
+
+static constexpr memsize_t defaultExternalSizeThreshold = 10 * 1024; // 10k
+static constexpr memsize_t defaultExtCacheSizeMB = 10;
 
 #define NOTIFY_ATTR "@sds:notify"
 #define FETCH_ENTIRE      -1
@@ -948,6 +954,29 @@ void serializeVisibleAttributes(IPropertyTree &tree, MemoryBuffer &mb)
     mb.append(""); // attribute terminator. i.e. blank attr name.
 }
 
+bool filesMatch(IFile *file1, IFile *file2, bool compareTimes=true)
+{
+    if (file1->exists())
+    {
+        if (file2->exists())
+        {
+            if (file1->size() == file2->size())
+            {
+                if (!compareTimes) return true;
+                CDateTime modifiedTimeBackup;
+                file1->getTime(NULL, &modifiedTimeBackup, NULL);
+                CDateTime modifiedTime;
+                file2->getTime(NULL, &modifiedTime, NULL);
+                if (0 == modifiedTimeBackup.compare(modifiedTime, false))
+                    return true;
+            }
+        }
+    }
+    else
+        return !file2->exists();
+    return false;
+}
+
 void writeDelta(StringBuffer &xml, IFile &iFile, const char *msg="", unsigned retrySecs=0, unsigned retryAttempts=10)
 {
     Owned<IException> exception;
@@ -1015,72 +1044,163 @@ void writeDelta(StringBuffer &xml, IFile &iFile, const char *msg="", unsigned re
     }
 }
 
-struct BackupQueueItem
+void cleanChangeTree(IPropertyTree &tree)
 {
-    static unsigned typeMask;
-    enum flagt { f_delta=0x1, f_addext=0x2, f_delext=0x3, f_first=0x10 };
-    BackupQueueItem() : edition((unsigned)-1), flags(0) { text = new StringBuffer; dataLength = 0; data = NULL; }
-    ~BackupQueueItem()
+    tree.removeProp("@id");
+    Owned<IPropertyTreeIterator> iter = tree.getElements(RENAME_TAG);
+    ForEach (*iter)
+        iter->query().removeProp("@id");
+    iter.setown(tree.getElements(DELETE_TAG));
+    ForEach (*iter)
+        iter->query().removeProp("@id");
+    iter.setown(tree.getElements(RESERVED_CHANGE_NODE));
+    ForEach (*iter)
+        cleanChangeTree(iter->query());
+}
+
+class CTransactionItem : public CSimpleInterface
+{
+public:
+    enum flagt : byte { f_none, f_delta, f_addext, f_delext } type = f_none;
+    char *name;
+    union
     {
-        delete text;
-        if (data) free(data);
+        IPropertyTree *deltaTree;
+        struct
+        {       
+            void *data;
+            unsigned dataLength;
+        };
+    };
+
+    CTransactionItem(char *path, IPropertyTree *_deltaTree) : deltaTree(_deltaTree)
+    {
+        type = f_delta;
+        name = path;
     }
-    StringBuffer *text;
-    unsigned edition;
-    unsigned dataLength;
-    void *data;
-    byte flags;
+    CTransactionItem(char *_name, size32_t _dataLength, void *_data) : name(_name), dataLength(_dataLength), data(_data)
+    {
+        type = data ? f_addext : f_delext;
+    }
+    ~CTransactionItem()
+    {
+        free(name);
+        switch (type)
+        {
+            case f_delta:
+                ::Release(deltaTree);
+                break;
+            case f_addext:
+                free(data);
+                break;
+            case f_delext:
+            default:
+                break;
+        }
+    }
 };
-unsigned BackupQueueItem::typeMask = 0x0f;
-class CBackupHandler : public CInterface, implements IThreaded
+
+static constexpr unsigned defaultSaveThresholdSecs = 0; // disabled
+static constexpr unsigned defaultDeltaSaveTransactionThreshold = 0; // disabled
+static constexpr unsigned defaultDeltaMemMaxMB = 10;
+static constexpr unsigned defaultDeltaTransactionQueueLimit = 10000;
+class CDeltaWriter : implements IThreaded
 {
-    typedef QueueOf<BackupQueueItem, false> BackupQueue;
+    IStoreHelper *iStoreHelper = nullptr;
+    StringBuffer dataPath;
+    StringBuffer backupPath;
+    unsigned transactionQueueLimit = defaultDeltaTransactionQueueLimit; // absolute limit, will block if this far behind
+    memsize_t transactionMaxMem = defaultDeltaMemMaxMB * 0x100000; // 10MB
+    unsigned totalQueueLimitHits = 0;
+    unsigned addQueueWaiting = 0;
+    unsigned saveThresholdSecs = 0;
+    cycle_t lastSaveTime = 0;
+    cycle_t thresholdDuration = 0;
+
+    std::queue<Owned<CTransactionItem>> pending;
+    memsize_t pendingSz = 0;
+    CriticalSection pendingCrit;
+    CCycleTimer timer;
+    StringBuffer deltaXml;
     CThreaded threaded;
-    BackupQueue itemQueue, freeQueue;
-    Semaphore pending, softQueueLimitSem;
-    bool aborted, waiting, addWaiting, async;
-    unsigned currentEdition, throttleCounter;
-    CriticalSection queueCrit, freeQueueCrit;
-    StringAttr backupPath;
-    unsigned freeQueueLimit;  // how many BackupQueueItems to cache for reuse
-    unsigned largeWarningThreshold;    // point at which to start warning about large queue
-    unsigned softQueueLimit; // threshold over which primary transactions will be delay by small delay, to allow backup catchup.
-    unsigned softQueueLimitDelay; // delay for above
-    CTimeMon warningTime;
-    unsigned recentTimeThrottled;
-    unsigned lastNumWarnItems;
-    IPropertyTree &config;
+    Semaphore pendingTransactionsSem;
+    cycle_t timeThrottled = 0;
+    unsigned throttleCounter = 0;
+    bool writeRequested = false;
+    bool backupOutOfSync = false;
+    std::atomic<bool> aborted = false;
+    bool signalWhenAllWritten = false;
+    Semaphore allWrittenSem;
 
-    const unsigned defaultFreeQueueLimit = 50;
-    const unsigned defaultLargeWarningThreshold = 50;
-    const unsigned defaultSoftQueueLimit = 200;
-    const unsigned defaultSoftQueueLimitDelay = 200;
-
-    BackupQueueItem *getFreeItem()
+    void validateDeltaBackup()
     {
-        BackupQueueItem *item;
+        // check consistency of delta
+        StringBuffer deltaFilename(dataPath);
+        iStoreHelper->getCurrentDeltaFilename(deltaFilename);
+        OwnedIFile iFileDelta = createIFile(deltaFilename.str());
+        deltaFilename.clear().append(backupPath);
+        iStoreHelper->getCurrentDeltaFilename(deltaFilename);
+        OwnedIFile iFileDeltaBackup = createIFile(deltaFilename.str());
+        if (!filesMatch(iFileDeltaBackup, iFileDelta, false))
         {
-            CriticalBlock b(freeQueueCrit);
-            item = freeQueue.dequeue();
-        }
-        if (!item)
-            item = new BackupQueueItem;
-        return item;
-    }
-    void clearQueue(BackupQueue &queue)
-    {
-        for (;;)
-        {
-            BackupQueueItem *item = queue.dequeue();
-            if (!item) break;
-            delete item;
+            OWARNLOG("Delta file backup doesn't exist or differs, filename=%s", deltaFilename.str());
+            copyFile(iFileDeltaBackup, iFileDelta);
         }
     }
-    void writeExt(const char *name, const unsigned length, const void *data, unsigned retrySecs=0, unsigned retryAttempts=10)
+    void writeXml()
+    {
+        try
+        {
+            StringBuffer deltaFilename(dataPath);
+            iStoreHelper->getCurrentDeltaFilename(deltaFilename);
+            OwnedIFile iFile = createIFile(deltaFilename.str());
+            writeDelta(deltaXml, *iFile);
+        }
+        catch (IException *e)
+        {
+            // NB: writeDelta retries a few times before giving up.
+            VStringBuffer errMsg("writeXml: failed to save delta data, blockedDelta size=%d", deltaXml.length());
+            OWARNLOG(e, errMsg.str());
+            e->Release();
+            return;
+        }
+        if (backupPath.length())
+        {
+            try
+            {
+                if (backupOutOfSync) // true if there was previously an exception during synchronously writing delta to backup.
+                {
+                    OWARNLOG("Backup delta is out of sync due to a prior backup write error, attempting to resync");
+                    // catchup - check and copy primary delta to backup
+                    validateDeltaBackup();
+                    backupOutOfSync = false;
+                    OWARNLOG("Backup delta resynchronized");
+                }
+                else
+                {
+                    StringBuffer deltaFilename(backupPath);
+                    constructStoreName(DELTANAME, iStoreHelper->queryCurrentEdition(), deltaFilename);
+                    OwnedIFile iFile = createIFile(deltaFilename.str());
+                    ::writeDelta(deltaXml, *iFile, "backup - ", 60, 30);
+                }
+            }
+            catch (IException *e)
+            {
+                OERRLOG(e, "writeXml: failed to save backup delta data");
+                e->Release();
+                backupOutOfSync = true;
+            }
+        }
+        if (deltaXml.length() > (0x100000 * 10)) // >= 10MB
+            deltaXml.kill();
+        else
+            deltaXml.clear();
+    }
+    void writeExt(const char *basePath, const char *name, const unsigned length, const void *data, unsigned retrySecs=0, unsigned retryAttempts=10)
     {
         Owned<IException> exception;
         unsigned _retryAttempts = retryAttempts;
-        StringBuffer rL(remoteBackupLocation);
+        StringBuffer rL(basePath);
         for (;;)
         {
             try
@@ -1110,11 +1230,11 @@ class CBackupHandler : public CInterface, implements IThreaded
             MilliSleep(retrySecs*1000);
         }
     }
-    void deleteExt(const char *name, unsigned retrySecs=0, unsigned retryAttempts=10)
+    void deleteExt(const char *basePath, const char *name, unsigned retrySecs=0, unsigned retryAttempts=10)
     {
         Owned<IException> exception;
         unsigned _retryAttempts = retryAttempts;
-        StringBuffer rL(remoteBackupLocation);
+        StringBuffer rL(basePath);
         for (;;)
         {
             try
@@ -1143,251 +1263,263 @@ class CBackupHandler : public CInterface, implements IThreaded
             MilliSleep(retrySecs*1000);
         }
     }
-    bool writeDelta(StringBuffer &xml, unsigned edition, bool first)
+    bool save(std::queue<Owned<CTransactionItem>> &todo)
     {
-        StringBuffer deltaFilename(backupPath);
-        constructStoreName(DELTANAME, edition, deltaFilename);
-        OwnedIFile iFile = createIFile(deltaFilename.str());
-        if (!first && !iFile->exists())
-            return false; // discard
-        ::writeDelta(xml, *iFile, "CBackupHandler - ", 60, 30);
+        StringBuffer fname(dataPath);
+        OwnedIFile deltaIPIFile = createIFile(fname.append(DELTAINPROGRESS).str());
+        touchFile(deltaIPIFile);
+        struct RemoveDIPBlock
+        {
+            IFile &iFile;
+            bool done;
+            void doit() { done = true; iFile.remove(); }
+            RemoveDIPBlock(IFile &_iFile) : iFile(_iFile), done(false) { }
+            ~RemoveDIPBlock () { if (!done) doit(); }
+        } removeDIP(*deltaIPIFile);
+        StringBuffer detachIPStr(dataPath);
+        OwnedIFile detachIPIFile = createIFile(detachIPStr.append(DETACHINPROGRESS).str());
+        if (detachIPIFile->exists()) // very small window where this can happen.
+        {
+            // implies other operation about to access current delta
+            // CHECK session is really alive, otherwise it has been orphaned, so remove it.
+            try
+            {
+                SessionId sessId = 0;
+                OwnedIFileIO detachIPIO = detachIPIFile->open(IFOread);
+                if (detachIPIO)
+                {
+                    size_t s = detachIPIO->read(0, sizeof(sessId), &sessId);
+                    detachIPIO.clear();
+                    if (sizeof(sessId) == s)
+                    {
+                        // double check session is really alive
+                        if (querySessionManager().sessionStopped(sessId, 0))
+                            detachIPIFile->remove();
+                        else
+                        {
+                            // *cannot block* because other op (sasha) accessing remote dali files, can access dali.
+                            removeDIP.doit();
+                            PROGLOG("blocked");
+                            return false;
+                        }
+                    }
+                }
+            }
+            catch (IException *e) { EXCLOG(e, NULL); e->Release(); }
+        }
+
+        std::vector<std::string> pendingExtDeletes;
+        while (!todo.empty())
+        {
+            CTransactionItem *item = todo.front();
+            if (CTransactionItem::f_delta == item->type)
+            {
+                Owned<IPropertyTree> changeTree = item->deltaTree;
+                item->deltaTree = nullptr;
+                cleanChangeTree(*changeTree);
+
+                // write out with header details (i.e. path)
+                deltaXml.appendf("<Header path=\"%s\">\n  <Delta>\n", item->name);
+                toXML(changeTree, deltaXml, 4);
+                deltaXml.append("  </Delta>\n</Header>");
+            }
+            else
+            {
+                // external file
+
+                if (CTransactionItem::f_addext == item->type)
+                {
+                    // NB: the XML referring to these externals will not be written until the pending xml is built up and saved,
+                    // meaning if there's a cold restart at this point, there will be unreferenced ext files on disk (and ensuing warnings)
+                    // However, that is better than committing the xml that references externals, before they exist in the event of 
+                    // a cold restart between the two.
+                    // NB2: It is also important to ensure that these externals are committed to disk, in the event of a Dali saveStore
+                    // because the saved in-memory store has been altered at this point, i.e. it depends on the external file (see flush())
+                    writeExt(dataPath, item->name, item->dataLength, item->data);
+                    if (backupPath.length())
+                        writeExt(backupPath, item->name, item->dataLength, item->data, 60, 30);
+                }
+                else
+                {
+                    // track externals to delete / don't delete until xml is committed. See below.
+                    dbgassertex(CTransactionItem::f_delext == item->type);
+                    pendingExtDeletes.push_back(item->name);
+                }
+            }
+            todo.pop();
+        }
+        if (deltaXml.length())
+            writeXml();
+        for (auto &ext : pendingExtDeletes)
+        {
+            deleteExt(dataPath, ext.c_str());
+            if (backupPath.length())
+                deleteExt(backupPath, ext.c_str(), 60, 30);
+        }
+        if (thresholdDuration)
+            lastSaveTime = get_cycles_now();
         return true;
     }
-    void clearOld()
+    void requestAsyncWrite()
     {
-        CriticalBlock b(queueCrit);
-        for (;;)
+        // must be called whilst pendingCrit is held + writeRequested == false
+        writeRequested = true;
+        pendingTransactionsSem.signal();
+    }
+    void addToQueue(CTransactionItem *item);
+public:
+    CDeltaWriter() : threaded("CDeltaWriter")
+    {
+    }
+    ~CDeltaWriter()
+    {
+        stop();
+    }
+    void init(const IPropertyTree &config, IStoreHelper *_iStoreHelper)
+    {
+        iStoreHelper = _iStoreHelper;
+        iStoreHelper->getPrimaryLocation(dataPath);
+        iStoreHelper->getBackupLocation(backupPath);
+
+        saveThresholdSecs = config.getPropInt("@deltaSaveThresholdSecs", defaultSaveThresholdSecs);
+        transactionQueueLimit = config.getPropInt("@deltaTransactionQueueLimit", defaultDeltaTransactionQueueLimit);
+        unsigned deltaTransactionMaxMemMB = config.getPropInt("@deltaTransactionMaxMemMB", defaultDeltaMemMaxMB);
+        transactionMaxMem = (memsize_t)deltaTransactionMaxMemMB * 0x100000;
+        if (saveThresholdSecs)
         {
-            BackupQueueItem *item = itemQueue.dequeue();
-            if (!item) break;
-            if (BackupQueueItem::f_delta == (item->flags & BackupQueueItem::typeMask))
+            thresholdDuration = queryOneSecCycles() * saveThresholdSecs;
+            lastSaveTime = get_cycles_now();
+        }
+        if (0 == transactionQueueLimit) // treat 0 as disabled, meaning that the # pending transactions will not be considered
+            transactionQueueLimit = INFINITE;
+
+        aborted = false;
+        writeRequested = false;
+        VStringBuffer msg("CDeltaWriter started - deltaSaveThresholdSecs=%u, deltaTransactionMaxMemMB=%u", saveThresholdSecs, deltaTransactionMaxMemMB);
+        msg.append(", deltaTransactionQueueLimit=");
+        if (INFINITE == transactionQueueLimit)
+            msg.append("<DISABLED>");
+        else
+            msg.append(transactionQueueLimit);
+        PROGLOG("%s", msg.str());
+
+        if ((transactionQueueLimit > 1) && (transactionMaxMem > 0))
+            threaded.init(this);
+        else
+            PROGLOG("All transactions will be committed synchronously");
+    }
+    void addDelta(char *path, IPropertyTree *delta)
+    {
+        CTransactionItem *item = new CTransactionItem(path, delta);
+        CriticalBlock b(pendingCrit);
+        addToQueue(item);
+    }
+    CTransactionItem *addExt(char *name, size32_t length, void *content)
+    {
+        CTransactionItem *item = new CTransactionItem(name, length, content);
+        CriticalBlock b(pendingCrit);
+        addToQueue(LINK(item));
+        return item;
+    }
+    void removeExt(char *name)
+    {
+        CTransactionItem *item = new CTransactionItem(name, 0, nullptr);
+        CriticalBlock b(pendingCrit);
+        addToQueue(item);
+    }
+    void flush()
+    {
+        // ensure all pending transactions are written out
+        // if necessary wait until CDeltaWriter thread has finished
+        bool waitUntilAllWritten = false;
+        {
+            CriticalBlock b(pendingCrit);
+            if (!writeRequested)
             {
-                item->text->clear();
-                if (freeQueue.ordinality() < freeQueueLimit)
-                    freeQueue.enqueue(item);
-                else
-                    delete item;
+                if (pendingSz) // the writer thread is idle, but there are some transactions that the writer hasn't seen yet
+                    requestAsyncWrite();
+            }
+            // NB: this is not an else, because if called, requestAsyncWrite() above will set writeRequested=true
+            if (writeRequested)
+            {
+                signalWhenAllWritten = true; // will ensure writer thread signals (via allWrittenSem) when it is done (writeRequested reset to false)
+                waitUntilAllWritten = true;
             }
         }
-        if (addWaiting && itemQueue.ordinality()<softQueueLimit)
-            softQueueLimitSem.signal();
-    }
-
-public:
-    CBackupHandler(IPropertyTree &_config) : config(_config), threaded("CBackupHandler")
-    {
-        currentEdition = (unsigned)-1;
-        addWaiting = waiting = async = false;
-        aborted = true;
-        throttleCounter = 0;
-        recentTimeThrottled = 0;
-        lastNumWarnItems = 0;
-        freeQueueLimit = config.getPropInt("@backupFreeQueueLimit", defaultFreeQueueLimit);
-        largeWarningThreshold = config.getPropInt("@backupLargeWarningThreshold", defaultLargeWarningThreshold);
-        softQueueLimit = config.getPropInt("@backupSoftQueueLimit", defaultSoftQueueLimit);
-        softQueueLimitDelay = config.getPropInt("@backupSoftQueueLimitDelay", defaultSoftQueueLimitDelay);
-    }
-    ~CBackupHandler()
-    {
-        clearQueue(freeQueue);
-        clearQueue(itemQueue);
-    }
-    void init(const char *_backupPath, bool _async)
-    {
-        backupPath.set(_backupPath);
-        async = _async;
-        aborted = false;
-        PROGLOG("BackupHandler started, async=%s", async?"true":"false");
-        threaded.init(this);
+        if (waitUntilAllWritten)
+        {
+            // this should not be here long, but log just in case
+            while (!allWrittenSem.wait(10000))
+                WARNLOG("Waiting on CDeltaWriter to flush transactions");
+        }
     }
     void stop()
     {
         if (!aborted)
         {
             aborted = true;
-            pending.signal();
+            pendingTransactionsSem.signal();
+            allWrittenSem.signal();
             threaded.join();
         }
-    }
-    void removeExt(const char *fname)
-    {
-        if (aborted) return;
-        if (!async)
-        {
-            deleteExt(fname);
-            return;
-        }
-        BackupQueueItem *item = getFreeItem();
-        item->text->append(fname);
-        item->flags = BackupQueueItem::f_delext;
-        add(item);
-    }
-    void addExt(const char *fname, unsigned length, void *data)
-    {
-        if (aborted) return;
-        if (!async)
-        {
-            writeExt(fname, length, data);
-            free(data);
-            return;
-        }
-        BackupQueueItem *item = getFreeItem();
-        item->text->append(fname);
-        item->dataLength = length;
-        item->data = data; // take ownership
-        item->flags = BackupQueueItem::f_addext;
-        add(item);
-    }
-    void addDelta(StringBuffer &xml, unsigned edition, bool first)
-    {
-        if (aborted) return;
-        if (!async)
-        {
-            writeDelta(xml, edition, first);
-            if (xml.length() > 0x100000)
-                xml.kill();
-            else
-                xml.clear();
-            return;
-        }
-        if (edition != currentEdition)
-        {
-            clearOld();
-            currentEdition = edition;
-        }
-        BackupQueueItem *item = getFreeItem();
-        xml.swapWith(*item->text);
-        item->edition = edition;
-        item->flags = BackupQueueItem::f_delta | BackupQueueItem::f_first;
-        add(item);
-    }
-    void add(BackupQueueItem *item)
-    {
-        CriticalBlock b(queueCrit);
-        itemQueue.enqueue(item);
-        unsigned items=itemQueue.ordinality();
-        if (0==items%largeWarningThreshold)
-        {
-            if (items>lastNumWarnItems) // track as they go up
-            {
-                IWARNLOG("Backup thread has a high # (%d) of pending transaction queued to write", items);
-                lastNumWarnItems = items;
-            }
-            else if (warningTime.elapsed() >= 60000) // if falling, avoid logging too much
-            {
-                IWARNLOG("Backup thread has a high # (%d) of pending transaction queued to write", items);
-                lastNumWarnItems = 0;
-                warningTime.reset(0);
-            }
-        }
-        if (items>=softQueueLimit)
-        {
-            addWaiting = true;
-            unsigned ms = msTick();
-            {
-                CriticalUnblock b(queueCrit);
-                softQueueLimitSem.wait(softQueueLimitDelay);
-            }
-            addWaiting = false;
-            recentTimeThrottled += (msTick()-ms); // reset when queue < largeWarningThreshold
-            if (recentTimeThrottled >= softQueueLimitDelay && (0 == throttleCounter % 10)) // softQueueLimit exceeded - log every 10 transactions if recentTimeThrottled >= softQueueLimitDelay (1 unsignalled delay)
-                IWARNLOG("Primary transactions are being delayed by lagging backup, currently %d queued, recent total throttle delay=%d", items, recentTimeThrottled);
-            ++throttleCounter; // also reset when queue < largeWarningThreshold
-        }
-        if (waiting)
-            pending.signal();
-    }
-    bool doIt(BackupQueueItem &item)
-    {
-        try
-        {
-            switch (item.flags & BackupQueueItem::typeMask)
-            {
-                case BackupQueueItem::f_delta:
-                    return writeDelta(*item.text, item.edition, 0 != (item.flags & BackupQueueItem::f_first));
-                case BackupQueueItem::f_addext:
-                    writeExt(item.text->str(), item.dataLength, item.data, 60, 30);
-                    return true;
-                case BackupQueueItem::f_delext:
-                    deleteExt(item.text->str(), 60, 30);
-                    return true;
-            }
-        }
-        catch (IException *e)
-        {
-            IERRLOG(e, "BackupHandler(async) write operation failed, possible backup data loss");
-            e->Release();
-        }
-        return false;
     }
 // IThreaded
     virtual void threadmain() override
     {
-        for (;;)
+        while (!aborted)
         {
-            BackupQueueItem *item=NULL;
-            do
-            {
-                CriticalBlock b(queueCrit);
-                if (itemQueue.ordinality())
-                {
-                    item = itemQueue.dequeue();
-                    if (addWaiting && itemQueue.ordinality()<softQueueLimit)
-                        softQueueLimitSem.signal();
-                    if (itemQueue.ordinality() < largeWarningThreshold) // reset stats when falls below
-                    {
-                        recentTimeThrottled = 0;
-                        throttleCounter = 0;
-                    }
-                }
-                else
-                {
-                    waiting = true;
-                    {
-                        CriticalUnblock b(queueCrit);
-                        if (!aborted)
-                            pending.wait();
-                    }
-                    waiting = false;
-                }
-                if (aborted)
-                {
-                    if (item) delete item;
-                    PROGLOG("BackupHandler stopped");
-                    return;
-                }
-            }
-            while (!item);
-            if (!doIt(*item))
-                clearOld();
-            CriticalBlock b(freeQueueCrit);
-            if (freeQueue.ordinality() < freeQueueLimit)
-            {
-                if (item->text->length() > 0x100000)
-                    item->text->kill();
-                else
-                    item->text->clear();
-                if (item->data)
-                {
-                    free(item->data);
-                    item->data = NULL;
-                    item->dataLength = 0;
-                }
-                freeQueue.enqueue(item);
-            }
+            bool semTimedout = false;
+            if (saveThresholdSecs)
+                semTimedout = !pendingTransactionsSem.wait(saveThresholdSecs * 1000);
             else
-                delete item;
+                pendingTransactionsSem.wait();
+
+            if (aborted)
+                break;
+            // keep going whilst there's things pending
+            while (true)
+            {
+                CLeavableCriticalBlock b(pendingCrit);
+                std::queue<Owned<CTransactionItem>> todo = std::move(pending);
+                if (0 == todo.size())
+                {
+                    if (writeRequested)
+                    {
+                        // NB: if here, implies someone signalled via requestAsyncWrite()
+
+                        // if reason we're here is because sem timedout, consume the signal that was sent
+                        if (semTimedout)
+                            pendingTransactionsSem.wait();
+
+                        writeRequested = false;
+                    }
+                    if (signalWhenAllWritten)
+                    {
+                        signalWhenAllWritten = false;
+                        allWrittenSem.signal();
+                    }
+                    break;
+                }
+                pendingSz = 0;
+                // Hold blockedSaveCrit before releasing pendingCrit, because need to ensure this saves ahead
+                // of other transactions building up in addToQueue
+                CHECKEDCRITICALBLOCK(blockedSaveCrit, fakeCritTimeout); // because if Dali is saving state (::blockingSave), it will clear pending
+                b.leave();
+                while (!save(todo)) // if temporarily blocked, wait a bit (blocking window is short)
+                    MilliSleep(1000);
+            }
         }
     }
 };
 
+
 class CExternalFile : public CInterface
 {
-    StringAttr ext, dataPath;
 protected:
-    CBackupHandler &backupHandler;
+    CCovenSDSManager &manager;
+    StringAttr ext, dataPath;
 public:
-    CExternalFile(const char *_ext, const char *_dataPath, CBackupHandler &_backupHandler) : ext(_ext), dataPath(_dataPath), backupHandler(_backupHandler) { }
+    CExternalFile(const char *_ext, const char *_dataPath, CCovenSDSManager &_manager) : ext(_ext), dataPath(_dataPath), manager(_manager) { }
     const char *queryExt() { return ext; }
     StringBuffer &getName(StringBuffer &fName, const char *base)
     {
@@ -1404,61 +1536,28 @@ public:
         Owned<IFile> iFile = createIFile(filename.str());
         return iFile->exists();
     }
-    void remove(const char *name)
-    {
-        StringBuffer filename;
-        getFilename(filename, name);
-        Owned<IFile> iFile = createIFile(filename.str());
-        iFile->remove();
-        if (remoteBackupLocation.length())
-        {
-            StringBuffer fname(name);
-            backupHandler.removeExt(fname.append(queryExt()).str());
-        }
-    }
+    void remove(const char *name);
 };
 
+// deprecated, only used to convert if found on load
 class CLegacyBinaryFileExternal : public CExternalFile, implements IExternalHandler
 {
 public:
-    IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE_USING(CExternalFile);
 
-    CLegacyBinaryFileExternal(const char *dataPath, CBackupHandler &backupHandler) : CExternalFile("." EF_LegacyBinaryValue, dataPath, backupHandler) { }
+    CLegacyBinaryFileExternal(const char *dataPath, CCovenSDSManager &manager) : CExternalFile("." EF_LegacyBinaryValue, dataPath, manager) { }
     virtual void resetAsExternal(IPropertyTree &tree)
     {
-        tree.setProp(NULL, (char *)NULL);
+        throwUnexpected();
     }
     virtual void readValue(const char *name, MemoryBuffer &mb)
     {
-        StringBuffer filename;
-        getFilename(filename, name);
-
-        Owned<IFile> iFile = createIFile(filename.str());
-        size32_t sz = (size32_t)iFile->size();
-        if ((unsigned)-1 == sz)
-        {
-            StringBuffer s("Missing external file ");
-            Owned<IException> e = MakeSDSException(SDSExcpt_MissingExternalFile, "%s", filename.str());
-            LOG(MCoperatorWarning, unknownJob, e, s.str());
-            StringBuffer str("EXTERNAL BINARY FILE: \"");
-            str.append(filename.str()).append("\" MISSING");
-            CPTValue v(str.length()+1, str.str(), false);
-            v.serialize(mb);
-        }
-        else
-        {
-            Owned<IFileIO> fileIO = iFile->open(IFOread);
-            MemoryBuffer vmb;
-            verifyex(sz == ::read(fileIO, 0, sz, vmb));
-            CPTValue v(sz, vmb.toByteArray(), true);
-            v.serialize(mb);
-        }
+        throwUnexpected();
     }
     virtual void read(const char *name, IPropertyTree &owner, MemoryBuffer &mb, bool withValue)
     {
         StringBuffer filename;
         getFilename(filename, name);
-
         const char *_name = owner.queryName();
         if (!_name) _name = "";
         mb.append(_name);
@@ -1469,7 +1568,7 @@ public:
 
         Owned<IFile> iFile = createIFile(filename.str());
         size32_t sz = (size32_t)iFile->size();
-        if ((unsigned)-1 == sz)
+        if ((size32_t)-1 == sz)
         {
             StringBuffer s("Missing external file ");
             if (*_name)
@@ -1502,21 +1601,7 @@ public:
     }
     virtual void write(const char *name, IPropertyTree &tree)
     {
-        StringBuffer filename;
-        getFilename(filename, name);
-        Owned<IFile> iFile = createIFile(filename.str());
-        Owned<IFileIO> fileIO = iFile->open(IFOcreate);
-
-        MemoryBuffer out;
-        ((PTree &)tree).queryValue()->serialize(out);
-        const char *data = out.toByteArray();
-        unsigned length = out.length();
-        fileIO->write(0, length, data);
-        if (remoteBackupLocation.length())
-        {
-            StringBuffer fname(name);
-            backupHandler.addExt(fname.append(queryExt()).str(), length, out.detach());
-        }
+        throwUnexpected();
     }
     virtual void remove(const char *name) { CExternalFile::remove(name); }
     virtual bool isValid(const char *name) { return CExternalFile::isValid(name); }
@@ -1527,141 +1612,36 @@ public:
 class CBinaryFileExternal : public CExternalFile, implements IExternalHandler
 {
 public:
-    IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE_USING(CExternalFile);
 
-    CBinaryFileExternal(const char *dataPath, CBackupHandler &backupHandler) : CExternalFile("." EF_BinaryValue, dataPath, backupHandler) { }
+    CBinaryFileExternal(const char *dataPath, CCovenSDSManager &manager) : CExternalFile("." EF_BinaryValue, dataPath, manager) { }
     virtual void resetAsExternal(IPropertyTree &tree)
     {
         tree.setProp(NULL, (char *)NULL);
     }
-    virtual void readValue(const char *name, MemoryBuffer &mb)
-    {
-        StringBuffer filename;
-        getFilename(filename, name);
-
-        Owned<IFile> iFile = createIFile(filename.str());
-        size32_t sz = (size32_t)iFile->size();
-        if ((unsigned)-1 == sz)
-        {
-            StringBuffer s("Missing external file ");
-            Owned<IException> e = MakeSDSException(SDSExcpt_MissingExternalFile, "%s", filename.str());
-            LOG(MCoperatorWarning, unknownJob, e, s.str());
-            StringBuffer str("EXTERNAL BINARY FILE: \"");
-            str.append(filename.str()).append("\" MISSING");
-            CPTValue v(str.length()+1, str.str(), false);
-            v.serialize(mb);
-        }
-        else
-        {
-            Owned<IFileIO> fileIO = iFile->open(IFOread);
-            verifyex(sz == ::read(fileIO, 0, sz, mb));
-        }
-    }
-    virtual void read(const char *name, IPropertyTree &owner, MemoryBuffer &mb, bool withValue)
-    {
-        StringBuffer filename;
-        getFilename(filename, name);
-        const char *_name = owner.queryName();
-        if (!_name) _name = "";
-        mb.append(_name);
-
-        Owned<IFile> iFile = createIFile(filename.str());
-        size32_t sz = (size32_t)iFile->size();
-        if ((unsigned)-1 == sz)
-        {
-            byte flags = ((PTree &)owner).queryFlags();
-            IptFlagClr(flags, ipt_binary);
-            mb.append(flags);
-            serializeVisibleAttributes(owner, mb);
-            StringBuffer s("Missing external file ");
-            if (*_name)
-                s.append("in property ").append(_name);
-            Owned<IException> e = MakeSDSException(SDSExcpt_MissingExternalFile, "%s", filename.str());
-            LOG(MCoperatorWarning, unknownJob, e, s.str());
-            if (withValue)
-            {
-                StringBuffer str("EXTERNAL BINARY FILE: \"");
-                str.append(filename.str()).append("\" MISSING");
-                CPTValue v(str.length()+1, str.str(), false);
-                v.serialize(mb);
-            }
-            else
-                mb.append((size32_t)0);
-        }
-        else
-        {
-            byte flags = ((PTree &)owner).queryFlags();
-            mb.append(flags);
-            serializeVisibleAttributes(owner, mb);
-            if (withValue)
-            {
-                Owned<IFileIO> fileIO = iFile->open(IFOread);
-                verifyex(sz == ::read(fileIO, 0, sz, mb));
-            }
-            else
-                mb.append((size32_t)0);
-        }
-    }
-    virtual void write(const char *name, IPropertyTree &tree)
-    {
-        StringBuffer filename;
-        getFilename(filename, name);
-        Owned<IFile> iFile = createIFile(filename.str());
-        Owned<IFileIO> fileIO = iFile->open(IFOcreate);
-
-        MemoryBuffer out;
-        ((PTree &)tree).queryValue()->serialize(out);
-        const char *data = out.toByteArray();
-        unsigned length = out.length();
-        fileIO->write(0, length, data);
-        if (remoteBackupLocation.length())
-        {
-            StringBuffer fname(name);
-            backupHandler.addExt(fname.append(queryExt()).str(), length, out.detach());
-        }
-    }
+    virtual void readValue(const char *name, MemoryBuffer &mb);
+    virtual void read(const char *name, IPropertyTree &owner, MemoryBuffer &mb, bool withValue);
+    virtual void write(const char *name, IPropertyTree &tree);
     virtual void remove(const char *name) { CExternalFile::remove(name); }
     virtual bool isValid(const char *name) { return CExternalFile::isValid(name); }
     virtual StringBuffer &getName(StringBuffer &fName, const char *base) { return CExternalFile::getName(fName, base); }
     virtual StringBuffer &getFilename(StringBuffer &fName, const char *base) { return CExternalFile::getFilename(fName, base); }
 };
 
+// deprecated, only used to convert if found on load
 class CXMLFileExternal : public CExternalFile, implements IExternalHandler
 {
 public:
-    IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE_USING(CExternalFile);
 
-    CXMLFileExternal(const char *dataPath, CBackupHandler &backupHandler) : CExternalFile("." EF_XML, dataPath, backupHandler) { }
+    CXMLFileExternal(const char *dataPath, CCovenSDSManager &manager) : CExternalFile("." EF_XML, dataPath, manager) { }
     virtual void resetAsExternal(IPropertyTree &_tree)
     {
-        PTree &tree = *QUERYINTERFACE(&_tree, PTree);
-        ::Release(tree.detach());
+        throwUnexpected();
     }
     virtual void readValue(const char *name, MemoryBuffer &mb)
     {
-        StringBuffer filename;
-        getFilename(filename, name);
-        OwnedIFile ifile = createIFile(filename.str());
-        if (!ifile->exists())
-        {
-            StringBuffer s("Missing external file ");
-            Owned<IException> e = MakeSDSException(SDSExcpt_MissingExternalFile, "%s", filename.str());
-            LOG(MCoperatorWarning, unknownJob, e, s.str());
-            StringBuffer str("EXTERNAL XML FILE: \"");
-            str.append(filename.str()).append("\" MISSING");
-            CPTValue v(str.length()+1, str.str(), false);
-            v.serialize(mb);
-        }
-        else
-        {
-            Owned<IPropertyTree> tree;
-            tree.setown(createPTreeFromXMLFile(filename.str()));
-            IPTArrayValue *v = ((PTree *)tree.get())->queryValue();
-            if (v)
-                v->serialize(mb);
-            else
-                mb.append((size32_t)0);
-        }
+        throwUnexpected();
     }
     virtual void read(const char *name, IPropertyTree &owner, MemoryBuffer &mb, bool withValue)
     {
@@ -1693,20 +1673,7 @@ public:
     }
     virtual void write(const char *name, IPropertyTree &tree)
     {
-        StringBuffer filename;
-        getFilename(filename, name);
-        Owned<IFile> iFile = createIFile(filename.str());
-        Owned<IFileIO> fileIO = iFile->open(IFOcreate);
-        Owned<IFileIOStream> fstream = createBufferedIOStream(fileIO);
-        toXML(&tree, *fstream);
-        if (remoteBackupLocation.length())
-        {
-            StringBuffer fname(name);
-            StringBuffer str;
-            toXML(&tree, str);
-            unsigned l = str.length();
-            backupHandler.addExt(fname.append(queryExt()).str(), l, str.detach());
-        }
+        throwUnexpected();
     }
     virtual void remove(const char *name) { CExternalFile::remove(name); }
     virtual bool isValid(const char *name) { return CExternalFile::isValid(name); }
@@ -1921,6 +1888,94 @@ interface INodeSubscriptionManager : extends ISubscriptionManager
 
 //////////////////////
 
+
+class CExtCache
+{
+    CriticalSection crit;
+    std::list<Linked<CTransactionItem>> order;
+    std::unordered_map<std::string, std::list<Linked<CTransactionItem>>::iterator> extTable;
+    memsize_t cachedSz = 0;
+    memsize_t cacheSzLimit = 0;
+
+    void purge()
+    {
+        for (auto it = order.begin(); it != order.end();)
+        {
+            CTransactionItem *item = *it;
+            cachedSz -= item->dataLength;
+            extTable.erase(item->name);
+            it = order.erase(it);
+            if (cachedSz <= cacheSzLimit)
+                break;
+        }
+    }
+    void doAdd(CTransactionItem *item)
+    {
+        CriticalBlock b(crit);
+        auto it = extTable.find(item->name);
+        if (it != extTable.end())
+        {
+            Linked<CTransactionItem> &existingItem = *(it->second);
+            cachedSz -= existingItem->dataLength;
+            existingItem.set(item);
+            order.splice(order.end(), order, it->second); // move to front of FIFO list
+        }
+        else
+        {
+            auto listIt = order.insert(order.end(), item);
+            extTable[item->name] = listIt;
+        }
+        cachedSz += item->dataLength;
+        if (cachedSz > cacheSzLimit)
+            purge();
+    }
+public:
+    void init(memsize_t _cacheSzLimit)
+    {
+        cacheSzLimit = _cacheSzLimit;
+    }
+    void add(const char *name, size_t sz, const void *data) // will clone data
+    {
+        if (sz > cacheSzLimit)
+            return;
+        MemoryAttr ma;
+        ma.set(sz, data);
+        CTransactionItem *item = new CTransactionItem(strdup(name), sz, ma.detach());
+        doAdd(item);
+    }
+    void add(CTransactionItem *item)
+    {
+        if (item->dataLength > cacheSzLimit)
+            return;
+        doAdd(item);
+    }
+    void remove(const char *key)
+    {
+        CriticalBlock b(crit);
+        auto mapIt = extTable.find(key);
+        if (mapIt != extTable.end())
+        {
+            auto listIter = mapIt->second;
+            assertex(listIter != order.erase(listIter));
+            assertex(mapIt != extTable.erase(mapIt));
+        }
+    }
+    bool lookup(const char *key, MemoryBuffer &mb)
+    {
+        CLeavableCriticalBlock b(crit);
+        auto it = extTable.find(key);
+        if (it == extTable.end())
+            return false;
+        Linked<CTransactionItem> item = *(it->second);
+        b.leave();
+        mb.append(item->dataLength, item->data);
+        return true;
+    }
+};
+
+
+//////////////////////
+
 enum LockStatus { LockFailed, LockHeld, LockTimedOut, LockSucceeded };
 
 class CCovenSDSManager : public CSDSManagerBase, implements ISDSManagerServer, implements ISubscriptionManager, implements IExceptionHandler
@@ -1972,7 +2027,7 @@ public:
     CServerRemoteTree *queryRegisteredTree(__int64 uniqId);
     CServerRemoteTree *getRegisteredTree(__int64 uniqId);
     CServerRemoteTree *queryRoot();
-    void saveDelta(const char *path, IPropertyTree &changeTree);
+    void serializeDelta(const char *path, IPropertyTree *changeTree);
     CSubscriberContainerList *getSubscribers(const char *xpath, CPTStack &stack);
     void getExternalValue(__int64 index, MemoryBuffer &mb);
     IPropertyTree *getXPathsSortLimitMatchTree(const char *baseXPath, const char *matchXPath, const char *sortby, bool caseinsensitive, bool ascending, unsigned from, unsigned limit);
@@ -2083,8 +2138,12 @@ private:
     IStoreHelper *iStoreHelper;
     bool doTimeComparison;
     StringBuffer blockedDelta;
-    CBackupHandler backupHandler;
+    CDeltaWriter deltaWriter;
+    CExtCache extCache;
     bool backupOutOfSync = false;
+
+friend class CExternalFile;
+friend class CBinaryFileExternal;
 };
 
 ISDSManagerServer &querySDSServer()
@@ -2093,6 +2152,144 @@ ISDSManagerServer &querySDSServer()
     return *SDSManager;
 }
 
+/////////////////
+
+void CExternalFile::remove(const char *name)
+{
+    StringBuffer filename(name);
+    filename.append(ext);
+    manager.extCache.remove(filename);
+    manager.deltaWriter.removeExt(filename.detach());
+}
+
+void CBinaryFileExternal::readValue(const char *name, MemoryBuffer &mb)
+{
+    StringBuffer extName;
+    getName(extName, name);
+    if (manager.extCache.lookup(extName, mb))
+        return;
+
+    StringBuffer filename;
+    getFilename(filename, name);
+    Owned<IFile> iFile = createIFile(filename.str());
+    size32_t sz = (size32_t)iFile->size();
+    if ((size32_t)-1 == sz)
+    {
+        StringBuffer s("Missing external file ");
+        Owned<IException> e = MakeSDSException(SDSExcpt_MissingExternalFile, "%s", filename.str());
+        LOG(MCoperatorWarning, unknownJob, e, s.str());
+        StringBuffer str("EXTERNAL BINARY FILE: \"");
+        str.append(filename.str()).append("\" MISSING");
+        CPTValue v(str.length()+1, str.str(), false);
+        v.serialize(mb);
+    }
+    else
+    {
+        Owned<IFileIO> fileIO = iFile->open(IFOread);
+        verifyex(sz == ::read(fileIO, 0, sz, mb));
+        manager.extCache.add(extName, sz, mb.toByteArray());
+    }
+}
+
+void CBinaryFileExternal::read(const char *name, IPropertyTree &owner, MemoryBuffer &mb, bool withValue)
+{
+    const char *_name = owner.queryName();
+    if (!_name) _name = "";
+    mb.append(_name);
+
+    size32_t flagsPos = mb.length();
+    byte flags = ((PTree &)owner).queryFlags();
+    mb.append(flags);
+    serializeVisibleAttributes(owner, mb);
+
+    if (withValue)
+    {
+        StringBuffer extName;
+        getName(extName, name);
+        if (manager.extCache.lookup(extName, mb))
+            return;
+
+        StringBuffer filename;
+        getFilename(filename, name);
+        Owned<IFile> iFile = createIFile(filename.str());
+        size32_t sz = (size32_t)iFile->size();
+        if ((size32_t)-1 == sz)
+        {
+            IptFlagClr(flags, ipt_binary);
+            mb.writeDirect(flagsPos, sizeof(flags), &flags);
+
+            StringBuffer s("Missing external file ");
+            if (*_name)
+                s.append("in property ").append(_name);
+            Owned<IException> e = MakeSDSException(SDSExcpt_MissingExternalFile, "%s", filename.str());
+            LOG(MCoperatorWarning, unknownJob, e, s.str());
+            StringBuffer str("EXTERNAL BINARY FILE: \"");
+            str.append(filename.str()).append("\" MISSING");
+            CPTValue v(str.length()+1, str.str(), false);
+            v.serialize(mb);
+        }
+        else
+        {
+            Owned<IFileIO> fileIO = iFile->open(IFOread);
+            verifyex(sz == ::read(fileIO, 0, sz, mb));
+            manager.extCache.add(extName, sz, mb.toByteArray());
+        }
+    }
+    else
+        mb.append((size32_t)0);
+}
+
+void CBinaryFileExternal::write(const char *name, IPropertyTree &tree)
+{
+    StringBuffer filename(name);
+    filename.append(ext);
+
+    MemoryBuffer out;
+    ((PTree &)tree).queryValue()->serialize(out);
+    size32_t len = out.length();
+    Owned<CTransactionItem> item = manager.deltaWriter.addExt(filename.detach(), len, out.detach());
+    manager.extCache.add(item);
+}
+
+/////////////////
+
+void CDeltaWriter::addToQueue(CTransactionItem *item)
+{
+    pending.push(item);
+    // add actual size for externals, and nonimal '100 byte' value for delta transactions
+    // it will act. as a rough guide to appoaching size threshold. It is not worth
+    // synchronously preparing and serializing here (which will be done asynchronously later)
+    pendingSz += (CTransactionItem::f_addext == item->type) ? item->dataLength : 100;
+    size_t items = pending.size();
+    if ((pendingSz < transactionMaxMem) && (items < transactionQueueLimit))
+    {
+        if (lastSaveTime && ((get_cycles_now() - lastSaveTime) < thresholdDuration))
+            return;
+
+        if (!writeRequested)
+            requestAsyncWrite();
+    }
+    else // here if exceeded transationQueueLimit, transactionMaxMem or exceeded time threshold (deltaSaveThresholdSecs)
+    {
+        ++totalQueueLimitHits;
+        // force a synchronous save
+        CCycleTimer timer;
+        PROGLOG("Forcing synchronous save of %u transactions", (unsigned)pending.size());
+        CHECKEDCRITICALBLOCK(blockedSaveCrit, fakeCritTimeout); // because if Dali is saving state (::blockingSave), it will clear pending
+        if (save(pending)) // if temporarily blocked, continue, meaning queue limit will overrun a bit (blocking window is short)
+        {
+            pendingSz = 0;
+            timeThrottled += timer.elapsedCycles();
+            ++throttleCounter;
+            if (timeThrottled >= queryOneSecCycles())
+            {
+                IWARNLOG("Transactions throttled - current items = %u, since last message throttled-time/transactions = { %u ms, %u }, total hard limit hits = %u", (unsigned)items, (unsigned)cycle_to_millisec(timeThrottled), throttleCounter, totalQueueLimitHits);
+                timeThrottled = 0;
+                throttleCounter = 0;
+            }
+        }
+    }
+}
 /////////////////
 
 void CConnectionSubscriptionManager::add(ISubscription *sub, SubscriptionId id)
@@ -2669,6 +2866,7 @@ private:
     PDState processData(IPropertyTree &changeTree, Owned<CBranchChange> &parentBranchChange, MemoryBuffer &newIds);
     PDState checkChange(IPropertyTree &tree, CBranchChange &parentBranchChange);
 friend class COrphanHandler;
+friend class CDeltaWriter;
 };
 
 class CNodeSubscriberContainer : public CSubscriberContainerBase
@@ -4407,7 +4605,7 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
                         CheckTime block6("DAMP_SDSCMD_DATA.6");
                         StringBuffer path;
                         connection->queryPTreePath().getAbsolutePath(path);
-                        manager.saveDelta(path.str(), *changeTree);
+                        manager.serializeDelta(path.str(), changeTree.getClear());
                     }
                     mb.clear();
                     mb.append((int)DAMP_SDSREPLY_OK);
@@ -5248,7 +5446,7 @@ class CStoreHelper : implements IStoreHelper, public CInterface
             while (deltaIPIFile->exists())
             {
                 if (0 == d++ % 50)
-                    PROGLOG("Waiting for a saveDelta in progress");
+                    PROGLOG("Waiting for a writeXml in progress");
                 MilliSleep(100);
             }
         }
@@ -5741,7 +5939,7 @@ IStoreHelper *createStoreHelper(const char *storeName, const char *location, con
 #endif
 
 CCovenSDSManager::CCovenSDSManager(ICoven &_coven, IPropertyTree &_config, const char *_dataPath, const char *_daliName)
-    : coven(_coven), config(_config), server(*this), dataPath(_dataPath), daliName(_daliName), backupHandler(_config)
+    : coven(_coven), config(_config), server(*this), dataPath(_dataPath), daliName(_daliName)
 {
     config.Link();
     restartOnError = config.getPropBool("@restartOnUnhandled");
@@ -5751,7 +5949,7 @@ CCovenSDSManager::CCovenSDSManager(ICoven &_coven, IPropertyTree &_config, const
     ignoreExternals=false;
     unsigned initNodeTableSize = queryCoven().getInitSDSNodes();
     allNodes.ensure(initNodeTableSize?initNodeTableSize:INIT_NODETABLE_SIZE);
-    externalSizeThreshold = config.getPropInt("@externalSizeThreshold", DEFAULT_EXTERNAL_SIZE_THRESHOLD);
+    externalSizeThreshold = config.getPropInt("@externalSizeThreshold", defaultExternalSizeThreshold);
     remoteBackupLocation.set(config.queryProp("@remoteBackupLocation"));
     nextExternal = 1;
     if (0 == coven.getServerRank())
@@ -5796,11 +5994,11 @@ CCovenSDSManager::CCovenSDSManager(ICoven &_coven, IPropertyTree &_config, const
     registerSubscriptionManager(SDSNODE_PUBLISHER, nodeSubscriptionManager);
 
     // add external handlers
-    Owned<CXMLFileExternal> xmlExternalHandler = new CXMLFileExternal(dataPath, backupHandler);
+    Owned<CXMLFileExternal> xmlExternalHandler = new CXMLFileExternal(dataPath, *this);
     externalHandlers.replace(* new CExternalHandlerMapping(EF_XML, *xmlExternalHandler));
-    Owned<CLegacyBinaryFileExternal> legacyBinaryExternalHandler = new CLegacyBinaryFileExternal(dataPath, backupHandler);
+    Owned<CLegacyBinaryFileExternal> legacyBinaryExternalHandler = new CLegacyBinaryFileExternal(dataPath, *this);
     externalHandlers.replace(* new CExternalHandlerMapping(EF_LegacyBinaryValue, *legacyBinaryExternalHandler));
-    Owned<CBinaryFileExternal> binaryExternalHandler = new CBinaryFileExternal(dataPath, backupHandler);
+    Owned<CBinaryFileExternal> binaryExternalHandler = new CBinaryFileExternal(dataPath, *this);
     externalHandlers.replace(* new CExternalHandlerMapping(EF_BinaryValue, *binaryExternalHandler));
 
     properties.setown(createPTree("Properties"));
@@ -5830,10 +6028,7 @@ CCovenSDSManager::CCovenSDSManager(ICoven &_coven, IPropertyTree &_config, const
     properties->setProp("@dataPathUrl", path.str());
     properties->setPropInt("@keepStores", keepLastN);
     if (remoteBackupLocation.length())
-    {
         properties->setProp("@backupPathUrl", remoteBackupLocation.get());
-        backupHandler.init(remoteBackupLocation, config.getPropBool("@asyncBackup", true));
-    }
 
     const char *storeName = config.queryProp("@store");
     if (!storeName) storeName = "dalisds";
@@ -5858,6 +6053,8 @@ CCovenSDSManager::CCovenSDSManager(ICoven &_coven, IPropertyTree &_config, const
     doTimeComparison = false;
     if (config.getPropBool("@lightweightCoalesce", true))
         coalesce.setown(new CLightCoalesceThread(config, iStoreHelper));
+    size_t extCacheSize = config.getPropInt("@extCacheSizeMB", defaultExtCacheSizeMB) * 0x100000;
+    extCache.init(extCacheSize);
 }
 
 #ifdef _MSC_VER
@@ -5866,7 +6063,6 @@ CCovenSDSManager::CCovenSDSManager(ICoven &_coven, IPropertyTree &_config, const
 
 CCovenSDSManager::~CCovenSDSManager()
 {
-    backupHandler.stop();
     if (unhandledThread) unhandledThread->join();
     if (coalesce) coalesce->stop();
     scanNotifyPool.clear();
@@ -5880,29 +6076,6 @@ CCovenSDSManager::~CCovenSDSManager()
     config.Release();
 }
 
-bool compareFiles(IFile *file1, IFile *file2, bool compareTimes=true)
-{
-    if (file1->exists())
-    {
-        if (file2->exists())
-        {
-            if (file1->size() == file2->size())
-            {
-                if (!compareTimes) return true;
-                CDateTime modifiedTimeBackup;
-                file1->getTime(NULL, &modifiedTimeBackup, NULL);
-                CDateTime modifiedTime;
-                file2->getTime(NULL, &modifiedTime, NULL);
-                if (0 == modifiedTimeBackup.compare(modifiedTime, false))
-                    return true;
-            }
-        }
-    }
-    else
-        return !file2->exists();
-    return false;
-}
-
 void CCovenSDSManager::validateDeltaBackup()
 {
     // check consistency of delta
@@ -5912,7 +6085,7 @@ void CCovenSDSManager::validateDeltaBackup()
     deltaFilename.clear().append(remoteBackupLocation);
     iStoreHelper->getCurrentDeltaFilename(deltaFilename);
     OwnedIFile iFileDeltaBackup = createIFile(deltaFilename.str());
-    if (!compareFiles(iFileDeltaBackup, iFileDelta, false))
+    if (!filesMatch(iFileDeltaBackup, iFileDelta, false))
     {
         OWARNLOG("Delta file backup doesn't exist or differs, filename=%s", deltaFilename.str());
         copyFile(iFileDeltaBackup, iFileDelta);
@@ -5943,7 +6116,7 @@ void CCovenSDSManager::validateBackup()
     storeFilename.clear().append(remoteBackupLocation);
     iStoreHelper->getCurrentStoreFilename(storeFilename);
     OwnedIFile iFileBackupStore = createIFile(storeFilename.str());
-    if (!compareFiles(iFileBackupStore, iFileStore))
+    if (!filesMatch(iFileBackupStore, iFileStore))
     {
         OWARNLOG("Store backup file doesn't exist or differs, filename=%s", storeFilename.str());
         copyFile(iFileBackupStore, iFileStore);
@@ -6367,6 +6540,8 @@ void CCovenSDSManager::loadStore(const char *storeName, const bool *abort)
         throw;
     }
 
+    deltaWriter.init(config, iStoreHelper);
+
     if (!root)
     {
         root = (CServerRemoteTree *) createServerTree();
@@ -6408,6 +6583,9 @@ void CCovenSDSManager::saveStore(const char *storeName, bool currentEdition)
         CIgnore() { SDSManager->ignoreExternals=true; }
         ~CIgnore() { SDSManager->ignoreExternals=false; }
     } ignore;
+    // lock blockingaveCrit after flush, since deltaWriter itself blocks on blockedSaveCrit
+    deltaWriter.flush(); // transactions will be blocked at this stage, no new deltas will be added to writer
+    CHECKEDCRITICALBLOCK(blockedSaveCrit, fakeCritTimeout);
     iStoreHelper->saveStore(root, NULL, currentEdition);
     unsigned initNodeTableSize = allNodes.maxElements()+OVERFLOWSIZE;
     queryCoven().setInitSDSNodes(initNodeTableSize>INIT_NODETABLE_SIZE?initNodeTableSize:INIT_NODETABLE_SIZE);
@@ -6465,29 +6643,15 @@ StringBuffer &transformToAbsolute(StringBuffer &result, const char *xpath, unsig
     return result;
 }
 
-void cleanChangeTree(IPropertyTree &tree)
+void CCovenSDSManager::serializeDelta(const char *path, IPropertyTree *changeTree)
 {
-    tree.removeProp("@id");
-    Owned<IPropertyTreeIterator> iter = tree.getElements(RENAME_TAG);
-    ForEach (*iter)
-        iter->query().removeProp("@id");
-    iter.setown(tree.getElements(DELETE_TAG));
-    ForEach (*iter)
-        iter->query().removeProp("@id");
-    iter.setown(tree.getElements(RESERVED_CHANGE_NODE));
-    ForEach (*iter)
-        cleanChangeTree(iter->query());
-}
-
-void CCovenSDSManager::saveDelta(const char *path, IPropertyTree &changeTree)
-{
-    CHECKEDCRITICALBLOCK(saveIncCrit, fakeCritTimeout);
+    Owned<IPropertyTree> ownedChangeTree = changeTree;
     // translate changeTree to inc format (e.g. remove id's)
     if (externalEnvironment)
     {
         // don't save any changed to /Environment if external
 
-        if (startsWith(path, "/Environment") || (streq(path, "/") && changeTree.hasProp("*[@name=\"Environment\"]")))
+        if (startsWith(path, "/Environment") || (streq(path, "/") && changeTree->hasProp("*[@name=\"Environment\"]")))
         {
             Owned<IMPServer> mpServer = getMPServer();
             IAllowListHandler *allowListHandler = mpServer->queryAllowListCallback();
@@ -6497,101 +6661,7 @@ void CCovenSDSManager::saveDelta(const char *path, IPropertyTree &changeTree)
             return;
         }
     }
-    cleanChangeTree(changeTree);
-    // write out with header details (e.g. path)
-    Owned<IPropertyTree> header = createPTree("Header");
-    header->setProp("@path", path);
-    IPropertyTree *delta = header->addPropTree("Delta", createPTree());
-    delta->addPropTree(changeTree.queryName(), LINK(&changeTree));
-
-    StringBuffer fname(dataPath);
-    OwnedIFile deltaIPIFile = createIFile(fname.append(DELTAINPROGRESS).str());
-    OwnedIFileIO deltaIPIFileIO = deltaIPIFile->open(IFOcreate);
-    deltaIPIFileIO.clear();
-    struct RemoveDIPBlock
-    {
-        IFile &iFile;
-        bool done;
-        void doit() { done = true; iFile.remove(); }
-        RemoveDIPBlock(IFile &_iFile) : iFile(_iFile), done(false) { }
-        ~RemoveDIPBlock () { if (!done) doit(); }
-    } removeDIP(*deltaIPIFile);
-    StringBuffer detachIPStr(dataPath);
-    OwnedIFile detachIPIFile = createIFile(detachIPStr.append(DETACHINPROGRESS).str());
-    if (detachIPIFile->exists()) // very small window where this can happen.
-    {
-        // implies other operation about to access current delta
-        // CHECK session is really alive, otherwise it has been orphaned, so remove it.
-        try
-        {
-            SessionId sessId = 0;
-            OwnedIFileIO detachIPIO = detachIPIFile->open(IFOread);
-            if (detachIPIO)
-            {
-                size_t s = detachIPIO->read(0, sizeof(sessId), &sessId);
-                detachIPIO.clear();
-                if (sizeof(sessId) == s)
-                {
-                    // double check session is really alive
-                    if (querySessionManager().sessionStopped(sessId, 0))
-                        detachIPIFile->remove();
-                    else
-                    {
-                        // *cannot block* because other op (sasha) accessing remote dali files, can access dali.
-                        removeDIP.doit();
-                        PROGLOG("blocked");
-                        toXML(header, blockedDelta);
-                        return;
-                    }
-                }
-            }
-        }
-        catch (IException *e) { EXCLOG(e, NULL); e->Release(); }
-    }
-    bool first = false;
-    try
-    {
-        StringBuffer deltaFilename(dataPath);
-        iStoreHelper->getCurrentDeltaFilename(deltaFilename);
-        toXML(header, blockedDelta);
-        OwnedIFile iFile = createIFile(deltaFilename.str());
-        first = !iFile->exists() || 0 == iFile->size();
-        writeDelta(blockedDelta, *iFile);
-    }
-    catch (IException *e)
-    {
-        // NB: writeDelta retries a few times before giving up.
-        VStringBuffer errMsg("saveDelta: failed to save delta data, blockedDelta size=%d", blockedDelta.length());
-        OWARNLOG(e, errMsg.str());
-        e->Release();
-        return;
-    }
-    if (remoteBackupLocation.length())
-    {
-        try
-        {
-            if (backupOutOfSync) // true if there was previously an exception during synchronously writing delta to backup.
-            {
-                OWARNLOG("Backup delta is out of sync due to a prior backup write error, attempting to resync");
-                // catchup - check and copy primary delta to backup
-                validateDeltaBackup();
-                backupOutOfSync = false;
-                OWARNLOG("Backup delta resynchronized");
-            }
-            else
-                backupHandler.addDelta(blockedDelta, iStoreHelper->queryCurrentEdition(), first);
-        }
-        catch (IException *e)
-        {
-            OERRLOG(e, "saveDelta: failed to save backup delta data");
-            e->Release();
-            backupOutOfSync = true;
-        }
-    }
-    if (blockedDelta.length() > 0x100000)
-        blockedDelta.kill();
-    else
-        blockedDelta.clear();
+    deltaWriter.addDelta(strdup(path), ownedChangeTree.getClear());
 }
 
 CSubscriberContainerList *CCovenSDSManager::getSubscribers(const char *xpath, CPTStack &stack)
@@ -6900,7 +6970,7 @@ void CCovenSDSManager::commit(CRemoteConnection &connection, bool *disconnectDel
         { // something commited, if RTM_Create was used need to remember this.
             StringBuffer path;
             serverConnection->queryPTreePath().getAbsolutePath(path);
-            saveDelta(path.str(), *changeTree);
+            serializeDelta(path.str(), changeTree.getClear());
             bool lazyFetch = connection.setLazyFetch(false);
             tree->clearCommitChanges(&newIds);
             assertex(newIds.getPos() == newIds.length()); // must have read it all
@@ -7722,8 +7792,8 @@ void CCovenSDSManager::createConnection(SessionId sessionId, unsigned mode, unsi
         {
             if (deltaChange.get())
             {
-                PROGLOG("Exception on RTM_CREATE caused call to saveDelta, xpath=%s", xpath);
-                saveDelta(deltaPath, *deltaChange);
+                PROGLOG("Exception on RTM_CREATE caused call to serializeDelta, xpath=%s", xpath);
+                serializeDelta(deltaPath, deltaChange.getClear());
             }
             throw;
         }
@@ -7743,7 +7813,7 @@ void CCovenSDSManager::createConnection(SessionId sessionId, unsigned mode, unsi
             connection->notify();
             SDSManager->startNotification(*deltaChange, stack, *branchChange);
 
-            saveDelta(deltaPath, *deltaChange);
+            serializeDelta(deltaPath, deltaChange.getClear());
         }
 
         connectionId = connection->queryConnectionId();
@@ -7921,9 +7991,8 @@ void CCovenSDSManager::disconnect(ConnectionId id, bool deleteRoot, CLCLockBlock
 
                 StringBuffer head;
                 const char *tail = splitXPath(path.str(), head);
-                CHECKEDCRITICALBLOCK(blockedSaveCrit, fakeCritTimeout);
                 if (NotFound != index)
-                    saveDelta(head.str(), *changeTree);
+                    serializeDelta(head.str(), changeTree.getClear());
                 else
                 { // NB: don't believe this can happen, but last thing want to do is save duff delete delta.
                     IERRLOG("** CCovenSDSManager::disconnect - index position lost **");
@@ -8124,7 +8193,6 @@ MemoryBuffer &CCovenSDSManager::collectSubscribers(MemoryBuffer &out)
 void CCovenSDSManager::blockingSave(unsigned *writeTransactions)
 {
     CHECKEDDALIREADLOCKBLOCK(SDSManager->dataRWLock, readWriteTimeout); // block all write actions whilst saving
-    CHECKEDCRITICALBLOCK(blockedSaveCrit, fakeCritTimeout);
     if (writeTransactions)
         *writeTransactions = SDSManager->writeTransactions;
     // JCS - could in theory, not block, but abort save.

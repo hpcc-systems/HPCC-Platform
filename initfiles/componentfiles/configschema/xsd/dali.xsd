@@ -61,15 +61,15 @@
                                   hpcc:presetValue="true" hpcc:tooltip="Asynchronous backup of transactions"/>
                     <xs:attribute name="useNFSBackupMount" type="xs:boolean" hpcc:displayName="Use NFS Backup Mount"
                                   hpcc:presetValue="false" hpcc:tooltip="Create and use a NFS mount point for backups"/>
-                    <xs:attribute name="backupLargeWarningThreshold" type="xs:nonNegativeInteger"
-                                  hpcc:displayName="Backup Warning Threshold" hpcc:presetValue="50"
-                                  hpcc:tooltip="Transaction granularity of pending backups to begin issue warnings about backlog"/>
-                    <xs:attribute name="backupSoftQueueLimit" type="xs:nonNegativeInteger"
-                                  hpcc:displayName="Backup Soft Queue Limit" hpcc:presetValue="200"
-                                  hpcc:tooltip="Number of transactions above which the backup queue will start introducing delays until the backup queue decreases below this limit"/>
-                    <xs:attribute name="backupSoftQueueLimitDelay" type="xs:nonNegativeInteger"
-                                  hpcc:displayName="Backup Soft Queue Limit Delay (s)" hpcc:presetValue="200"
-                                  hpcc:tooltip="The maximum delay to introduce when the backupSoftQueueLimit has been introduced"/>
+                    <xs:attribute name="deltaSaveThresholdSecs" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Seconds between transactions being committed to disk" hpcc:presetValue="0"
+                                  hpcc:tooltip="The maximum time between commit pending transactions to disk (default=0, meaning commit immediately)"/>
+                    <xs:attribute name="deltaTransactionQueueLimit" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Maximum number of pending uncommitted transaction" hpcc:presetValue="10000"
+                                  hpcc:tooltip="If exceeded, a synchronous save will be forced"/>
+                    <xs:attribute name="deltaTransactionMaxMemMB" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="Maximum total pending transaction memory size" hpcc:presetValue="10"
+                                  hpcc:tooltip="If exceeded, a synchronous save will be forced"/>
                 </xs:attributeGroup>
                 <xs:attributeGroup name="dfs" hpcc:groupByName="DFS" hpcc:docid="da.t5">
                     <xs:attribute name="forceGroupUpdate" type="xs:boolean" hpcc:displayName="Force Group Update"
