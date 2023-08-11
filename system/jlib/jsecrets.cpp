@@ -350,7 +350,7 @@ public:
                 StringBuffer tokenText;
                 if (getSecretKeyValue(clientToken, clientSecret, "token"))
                 {
-                    authType = VaultAuthType::appRole;
+                    authType = VaultAuthType::token;
                     PROGLOG("using a client token for vault auth");
                 }
             }
