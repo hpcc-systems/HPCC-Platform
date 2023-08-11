@@ -119,7 +119,7 @@ IMPORT SomeFolder.SomeFile;    // make available a specific file
 
 IMPORT SomeReallyLongFolderName AS SN;  //alias the long name as "SN"
 
-IMPORT ^ as root;              //allows access to non-modules defined 
+IMPORT ^ AS root;              //allows access to non-modules defined 
                                //in the root of the repository
 
 IMPORT Def1,Def2 FROM Fred;    //makes Def1 and Def2 from Fred folder available, unqualified

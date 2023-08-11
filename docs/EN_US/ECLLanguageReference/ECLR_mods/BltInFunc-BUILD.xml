@@ -204,11 +204,11 @@
         <primary>DISTRIBUTED</primary>
       </indexterm>]</emphasis><emphasis role="bold">[, COMPRESSED<indexterm>
         <primary>COMPRESSION</primary>
-      </indexterm>( LZW<indexterm>
+      </indexterm>( <emphasis>option</emphasis><indexterm>
         <primary>LZW</primary>
-      </indexterm> | ROW<indexterm>
+      </indexterm><indexterm>
         <primary>ROW</primary>
-      </indexterm> | FIRST<indexterm>
+      </indexterm> <indexterm>
         <primary>FIRST</primary>
       </indexterm>) ] [, WIDTH<indexterm>
         <primary>WIDTH</primary>
@@ -411,14 +411,17 @@
             <row>
               <entry><emphasis role="bold">COMPRESSED</emphasis></entry>
 
-              <entry>Specifies the type of compression used. If omitted, the
-              default is LZW, a variant of the Lempel-Ziv-Welch algorithm.
-              Specifying ROW compresses index entries based on differences
-              between contiguous rows (for use with fixed-length records,
-              only), and is recommended for use in circumstances where
-              speedier decompression time is more important than the amount of
-              compression achieved. FIRST compresses common leading elements
-              of the key (recommended only for timing comparison use).</entry>
+              <entry><para>Optional. Specifies the index should be compressed
+              using the type of compression specified. If omitted, the default
+              is <emphasis role="bold">LZW</emphasis>, a variant of the
+              Lempel-Ziv-Welch algorithm. </para></entry>
+            </row>
+
+            <row>
+              <entry><emphasis>option</emphasis></entry>
+
+              <entry>See <link linkend="IDXCOMP2">Indexes and
+              Compression</link> for options.</entry>
             </row>
 
             <row>
@@ -605,8 +608,6 @@
           </tbody>
         </tgroup>
       </informaltable></para>
-
-    <para></para>
   </sect2>
 
   <sect2 id="BUILD_an_Access_Index">
@@ -807,6 +808,74 @@ END;
 #WORKUNIT('name','Ppass.FilterDsLib')
 BUILD(FilterDsLib1);
 </programlisting>
+  </sect2>
+
+  <sect2 id="IDXCOMP2" role="brk">
+    <title>Indexes and Compression</title>
+
+    <para><emphasis role="bold">Compression Options:</emphasis></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec align="left" colwidth="122.40pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis role="bold">LZW</emphasis></entry>
+
+            <entry>The default compression. It is a variant of the
+            Lempel-Ziv-Welch algorithm. It remains the default for backward
+            compatibility.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ROW</emphasis></entry>
+
+            <entry>Compresses index entries based on differences between rows
+            (<emphasis role="bold">for use with fixed-length records
+            only</emphasis>). It typically does not compress as well as LZW,
+            but takes up less space in memory because the rows are expanded on
+            demand.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">'inplace'</emphasis></entry>
+
+            <entry>Causes the index to be built using the inplace compression
+            format. The payload defaults to using lz4 compression.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold"><emphasis
+            role="bold">'inplace:lz4hc'</emphasis> </emphasis></entry>
+
+            <entry>Causes inplace compression on the key fields and lz4hc
+            compression on the payload. The resulting index can be smaller
+            than using lz4.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>The inplace index compression format (introduced in version 9.2.0)
+    improves compression of keyed fields and allows them to be searched
+    without decompression. The original index compression implementation
+    decompresses the rows when they are read from disk.</para>
+
+    <para>Because the branch nodes can be searched without decompression more
+    branch nodes fit into memory which can improve search performance. The lz4
+    compression used for the payload is significantly faster at decompressing
+    leaf pages than the previous LZW compression.</para>
+
+    <para>Whether performance is better with lz4hc (a high-compression variant
+    of lz4) on the payload fields depends on the access characteristics of the
+    data and how much of the index is cached in memory.</para>
+
+    <para>If you attempt to read an index with the inplace compression format
+    on a system that does not support them, you will receive an error
+    message.</para>
 
     <para>See Also: <link linkend="INDEX_record_structure">INDEX</link>, <link
     linkend="JOIN">JOIN</link>, <link linkend="FETCH">FETCH</link>, <link
