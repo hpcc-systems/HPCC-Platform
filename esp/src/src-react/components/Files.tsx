@@ -176,16 +176,16 @@ export const Files: React.FunctionComponent<FilesProps> = ({
             SuperOwners: { label: nlsHPCC.SuperOwner },
             Description: { label: nlsHPCC.Description },
             NodeGroup: { label: nlsHPCC.Cluster },
-            RecordCount: {
+            Records: {
                 label: nlsHPCC.Records,
                 formatter: React.useCallback(function (value, row) {
-                    return Utility.valueCleanUp(value);
+                    return Utility.formatNum(row.IntRecordCount);
                 }, []),
             },
-            IntSize: {
+            FileSize: {
                 label: nlsHPCC.Size,
                 formatter: React.useCallback(function (value, row) {
-                    return Utility.convertedSize(value);
+                    return Utility.convertedSize(row.IntSize);
                 }, []),
             },
             Parts: {
