@@ -2307,6 +2307,7 @@ public:
                     checkTimeLimitExceeded(&remainingMS);
                     Url &connUrl = master->proxyUrlArray.empty() ? url : master->proxyUrlArray.item(0);
                     ep.set(connUrl.host.get(), connUrl.port);
+                    checkTimeLimitExceeded(&remainingMS);  // after ep.set which might make a potentially long getaddrinfo lookup ...
                     if (strieq(url.method, "https"))
                         proto = PersistentProtocol::ProtoTLS;
                     bool shouldClose = false;

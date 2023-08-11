@@ -7948,7 +7948,7 @@ void HqlCppTranslator::doBuildStmtIf(BuildCtx & ctx, IHqlExpression * expr)
     {
         if (matchesConstValue(boundCond->queryExpr(), true))
             buildStmt(ctx, trueExpr);
-        else
+        else if (falseExpr)
             buildStmt(ctx, falseExpr);
         return;
     }
