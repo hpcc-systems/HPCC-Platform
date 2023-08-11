@@ -1138,13 +1138,12 @@ static void convertPosixPathToLfn(StringBuffer &str,const char *path)
 
 void CDfsLogicalFileName::setPlaneExternal(const char *plane,const char *path)
 {
-    if (isEmptyString(path))
-        return;
-    if (isPathSepChar(path[0])&&(path[0]==path[1]))
+    if (!isEmptyString(path)&&isPathSepChar(path[0])&&(path[0]==path[1]))
         throw makeStringExceptionV(-1,"Invalid path %s.",path);
     StringBuffer str(PLANE_SCOPE "::");
     str.append(plane);
-    convertPosixPathToLfn(str,path);
+    if (!isEmptyString(path))
+        convertPosixPathToLfn(str,path);
     set(str.str());
 }
 
