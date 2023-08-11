@@ -14,6 +14,7 @@ import { Filter } from "./forms/Filter";
 import { PushEventForm } from "./forms/PushEvent";
 import { ShortVerticalDivider } from "./Common";
 import { QuerySortItem } from "src/store/Store";
+import { useMyAccount } from "../hooks/user";
 
 const logger = scopedLogger("src-react/components/EventScheduler.tsx");
 
@@ -52,6 +53,7 @@ export const EventScheduler: React.FunctionComponent<EventSchedulerProps> = ({
 
     const [showFilter, setShowFilter] = React.useState(false);
     const [showPushEvent, setShowPushEvent] = React.useState(false);
+    const { currentUser } = useMyAccount();
 
     //  Grid ---
     const query = React.useMemo(() => {
@@ -138,7 +140,19 @@ export const EventScheduler: React.FunctionComponent<EventSchedulerProps> = ({
             key: "pushEvent", text: nlsHPCC.PushEvent,
             onClick: () => setShowPushEvent(true)
         },
-    ], [hasFilter, refreshTable, selection, setShowDescheduleConfirm, store]);
+        { key: "divider_3", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        {
+            key: "mine", text: nlsHPCC.Mine, disabled: !currentUser?.username, iconProps: { iconName: "Contact" }, canCheck: true, checked: filter["Owner"] === currentUser.username,
+            onClick: () => {
+                if (filter["Owner"] === currentUser.username) {
+                    filter["Owner"] = "";
+                } else {
+                    filter["Owner"] = currentUser.username;
+                }
+                pushParams(filter);
+            }
+        },
+    ], [currentUser, filter, hasFilter, refreshTable, selection, setShowDescheduleConfirm, store]);
 
     return <HolyGrail
         header={<CommandBar items={buttons} />}

@@ -323,6 +323,11 @@ public:
         heap->releaseAllRows();
     }
 
+    virtual void emptyCache() override
+    {
+        heap->emptyCache();
+    }
+
 protected:
     Owned<roxiemem::IFixedRowHeap> heap;
 };
@@ -386,6 +391,11 @@ public:
     {
         //It is not legal to call releaseAllRows on a variable size allocator - they are not allocated in a single heap
         throwUnexpected();
+    }
+
+    virtual void emptyCache() override
+    {
+        //Variable length rows do not support blocked/caching
     }
 
 protected:

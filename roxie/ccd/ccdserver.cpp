@@ -4937,6 +4937,8 @@ public:
         unsigned checkInterval = activity.queryContext()->checkInterval();
         if (checkInterval > timeout)
             checkInterval = timeout;
+        if (acknowledgeAllRequests && checkInterval > packetAcknowledgeTimeout)
+            checkInterval = packetAcknowledgeTimeout;
         unsigned lastActivity = msTick();
         for (;;)
         {
@@ -26897,7 +26899,8 @@ public:
     virtual void onCreate(IHThorArg *_colocalParent)
     {
         CRoxieServerKeyedJoinBase::onCreate(_colocalParent);
-        indexReadAllocator.setown(createRowAllocator(indexReadMeta));
+        //The index read allocator->allocate() is only ever called from a single thread => we can allocate rows in blocks
+        indexReadAllocator.setown(createRowAllocatorEx(indexReadMeta, roxiemem::RHFblocked));
 
         IOutputMetaData *joinFieldsMeta = helper.queryJoinFieldsRecordSize();
         joinPrefixedMeta.setown(new CPrefixedOutputMeta(KEYEDJOIN_RECORD_SIZE(0), joinFieldsMeta)); // MORE - not sure if we really need this
@@ -26937,6 +26940,8 @@ public:
     virtual void reset()
     {
         CRoxieServerKeyedJoinBase::reset();
+        if (indexReadAllocator)
+            indexReadAllocator->emptyCache();
         if (varFileInfo)
         {
             keySet.clear();

@@ -283,6 +283,7 @@ interface IEngineRowAllocator : extends IInterface
 
     virtual void gatherStats(CRuntimeStatisticCollection & stats) = 0;
     virtual void releaseAllRows() = 0; // Only valid on unique allocators, use with extreme care
+    virtual void emptyCache() = 0;      // Should be called on all blocked allocators.
 };
 
 interface IRowSerializerTarget

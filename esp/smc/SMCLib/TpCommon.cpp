@@ -183,21 +183,17 @@ static SecAccessFlags getDropZoneScopePermissions(IEspContext& context, const IP
         throw makeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "getDropZoneScopePermissions(): DropZone path must be specified.");
 
     //If the dropZonePath is an absolute path, change it to a relative path.
-    StringBuffer s;
-    const char* prefix = dropZone->queryProp("@prefix");
-    const char* name = dropZone->queryProp("@name");
-    if (hasPrefix(dropZonePath, prefix, true))
+    if (isAbsolutePath(dropZonePath))
     {
-        const char* p = dropZonePath + strlen(prefix);
-        if (!*p || !isPathSepChar(p[0]))
-            addPathSepChar(s);
-        s.append(p);
-        dropZonePath = s.str();
+        const char* relativePath = getRelativePath(dropZonePath, dropZone->queryProp("@prefix"));
+        if (nullptr == relativePath)
+            throw makeStringExceptionV(-1, "Invalid DropZone path %s.", dropZonePath);
+        dropZonePath = relativePath;
     }
 
     Owned<IUserDescriptor> userDesc = createUserDescriptor();
     userDesc->set(context.queryUserId(), context.queryPassword(), context.querySignature());
-    return queryDistributedFileDirectory().getDropZoneScopePermissions(name, dropZonePath, userDesc);
+    return queryDistributedFileDirectory().getDropZoneScopePermissions(dropZone->queryProp("@name"), dropZonePath, userDesc);
 }
 
 extern TPWRAPPER_API SecAccessFlags getDZPathScopePermissions(IEspContext& context, const char* dropZoneName, const char* dropZonePath, const char* dropZoneHost)
