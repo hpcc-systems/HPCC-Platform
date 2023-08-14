@@ -12,6 +12,8 @@ const logger = scopedLogger("src-react/components/XrefDirectories.tsx");
 
 interface XrefDirectoriesProps {
     name: string;
+    positiveSkew: number;
+    negativeSkew: number;
 }
 
 export const XrefDirectories: React.FunctionComponent<XrefDirectoriesProps> = ({
@@ -27,29 +29,29 @@ export const XrefDirectories: React.FunctionComponent<XrefDirectoriesProps> = ({
         sort: { attribute: "name", descending: false },
         filename: "xrefsDirectories",
         columns: {
-            name: { width: 100, label: nlsHPCC.Name },
-            num: { width: 30, label: nlsHPCC.Files },
-            size: { width: 30, label: nlsHPCC.TotalSize },
-            maxIP: { width: 30, label: nlsHPCC.MaxNode },
-            maxSize: { width: 30, label: nlsHPCC.MaxSize },
-            minIP: { width: 30, label: nlsHPCC.MinNode },
-            minSize: { width: 30, label: nlsHPCC.MinSize },
+            name: { width: 300, label: nlsHPCC.Name },
+            num: { width: 300, label: nlsHPCC.Files },
+            size: { width: 100, label: nlsHPCC.TotalSize },
+            maxIP: { width: 100, label: nlsHPCC.MaxNode },
+            maxSize: { width: 100, label: nlsHPCC.MaxSize },
+            minIP: { width: 100, label: nlsHPCC.MinNode },
+            minSize: { width: 100, label: nlsHPCC.MinSize },
             positiveSkew: {
-                width: 30,
+                width: 100,
                 label: nlsHPCC.SkewPositive,
                 renderCell: React.useCallback((object, value, node, options) => {
                     if (value === undefined) {
-                        return "";
+                        return "0";
                     }
                     node.innerText = value;
                 }, [])
             },
             negativeSkew: {
-                width: 30,
+                width: 100,
                 label: nlsHPCC.SkewNegative,
                 renderCell: React.useCallback((object, value, node, options) => {
                     if (value === undefined) {
-                        return "";
+                        return "0";
                     }
                     node.innerText = value;
                 }, [])
