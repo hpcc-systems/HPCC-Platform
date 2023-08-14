@@ -453,7 +453,6 @@ public:
         const char * ldapDomain = cfg->queryProp(".//@ldapDomain");
         for (int numHosts=0; numHosts < getHostCount(); numHosts++)
         {
-            getLdapHost(hostbuf);
             unsigned port = strieq("ldaps",m_protocol) ? m_ldap_secure_port : m_ldapport;
 
             //Guesstimate system user baseDN based on config settings. It will be used if anonymous bind fails
@@ -465,16 +464,14 @@ public:
 
             for(int retries = 0; retries <= LDAPSEC_MAX_RETRIES; retries++)
             {
+                getLdapHost(hostbuf);//get next available AD, as it may have changed
                 rc = LdapUtils::getServerInfo(hostbuf.str(), sysUserDN.str(), m_sysuser_password.str(), m_protocol, port, m_cipherSuite, dcbuf, m_serverType, ldapDomain, m_timeout);
-                if(!LdapServerDown(rc) || retries >= LDAPSEC_MAX_RETRIES)
+                if(rc != LDAP_TIMEOUT || retries >= LDAPSEC_MAX_RETRIES)
                     break;
                 sleep(LDAPSEC_RETRY_WAIT);
-                if(retries < LDAPSEC_MAX_RETRIES)
-                {
-                    DBGLOG("LDAP AD Server %s temporarily unreachable for user %s on port %d, retrying...", hostbuf.str(), sysUserDN.str(), port);
-                }
+                DBGLOG("LDAP AD Server %s temporarily unreachable for user %s on port %d, retrying...", hostbuf.str(), sysUserDN.str(), port);
             }
-            if (rc != LDAP_SUCCESS)
+            if(LdapServerDown(rc))
             {
                 rejectHost(hostbuf);
             }
@@ -986,41 +983,21 @@ public:
         StringBuffer hostbuf;
         for (int numHosts=0; numHosts < m_ldapconfig->getHostCount(); numHosts++)
         {
-            m_ldapconfig->getLdapHost(hostbuf);
-
             for(int retries = 0; retries <= LDAPSEC_MAX_RETRIES; retries++)
             {
+                m_ldapconfig->getLdapHost(hostbuf);//get next available AD, as it may have changed
                 rc = connect(hostbuf.str(), proto);
-                if(!LdapServerDown(rc) || retries > LDAPSEC_MAX_RETRIES)
+                if(rc == LDAP_SUCCESS)
+                    return true;
+                if(rc != LDAP_TIMEOUT || retries >= LDAPSEC_MAX_RETRIES)
                     break;
                 sleep(LDAPSEC_RETRY_WAIT);
-                if(retries < LDAPSEC_MAX_RETRIES)
-                    DBGLOG("Server temporarily unreachable, retrying ...");
+                DBGLOG("Server %s temporarily unreachable, retrying ...", hostbuf.str());
             }
-
-            if(rc == LDAP_SERVER_DOWN)
-            {
-                StringBuffer dc;
-                LdapUtils::getDcName(m_ldapconfig->getDomain(), dc);
-                if(dc.length() > 0)
-                {
-                    WARNLOG("Using automatically obtained LDAP Server %s", dc.str());
-                    rc = connect(dc.str(), proto);
-                }
-            }
-
-            if (rc != LDAP_SUCCESS)
-            {
-                m_ldapconfig->rejectHost(hostbuf);
-            }
-            else
-                break;
+            m_ldapconfig->rejectHost(hostbuf);
         }
 
-        if(rc == LDAP_SUCCESS)
-            return true;
-        else
-            return false;
+        return false;
     }
 
     virtual LDAP* getLd()
@@ -1953,13 +1930,12 @@ public:
             ldap_memfree(userdn);
 
             StringBuffer hostbuf;
-            m_ldapconfig->getLdapHost(hostbuf);
             int rc = LDAP_SERVER_DOWN;
             char *ldap_errstring=NULL;
-
             for(int retries = 0; retries <= LDAPSEC_MAX_RETRIES; retries++)
             {
-                DBGLOG("LdapBind for user %s (retries=%d).", username, retries);
+                m_ldapconfig->getLdapHost(hostbuf);//get next available AD, as it may have changed
+                DBGLOG("LdapBind for user %s (retries=%d) on host %s.", username, retries, hostbuf.str());
                 {
                     LDAP* user_ld = LdapUtils::LdapInit(m_ldapconfig->getProtocol(), hostbuf.str(), m_ldapconfig->getLdapPort(), m_ldapconfig->getLdapSecurePort(), m_ldapconfig->getCipherSuite());
                     rc = LdapUtils::LdapBind(user_ld, m_ldapconfig->getLdapTimeout(), m_ldapconfig->getDomain(), username, password, userdnbuf.str(), m_ldapconfig->getServerType(), m_ldapconfig->getAuthMethod());
@@ -1968,16 +1944,22 @@ public:
                     LDAP_UNBIND(user_ld);
                 }
                 DBGLOG("finished LdapBind for user %s, rc=%d", username, rc);
-                if(!LdapServerDown(rc) || retries > LDAPSEC_MAX_RETRIES)
+
+                if(rc==LDAP_SERVER_DOWN || rc==LDAP_UNAVAILABLE)
+                {
+                    m_ldapconfig->rejectHost(hostbuf);
+                    continue;//try again with next configured LDAP host
+                }
+                else if(rc==LDAP_TIMEOUT && retries < LDAPSEC_MAX_RETRIES)
+                {
+                    sleep(LDAPSEC_RETRY_WAIT);
+                    DBGLOG("Server %s temporarily unreachable, retrying ...", hostbuf.str());
+                }
+                else
                     break;
-                sleep(LDAPSEC_RETRY_WAIT);
-                if(retries < LDAPSEC_MAX_RETRIES)
-                    DBGLOG("Server temporarily unreachable, retrying ...");
-                // Retrying next ldap sever, might be the same server
-                m_ldapconfig->getLdapHost(hostbuf);
             }
 
-            if(rc == LDAP_SERVER_DOWN)
+            if(LdapServerDown(rc))
             {
                 StringBuffer dc;
                 LdapUtils::getDcName(NULL, dc);
