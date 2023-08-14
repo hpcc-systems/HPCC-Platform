@@ -604,6 +604,21 @@ vaults:
     {{- if index $vault "appRoleSecret" }}
       appRoleSecret: {{ index $vault "appRoleSecret" }}
     {{- end -}}
+    {{- if (hasKey $vault "retries") }}
+      retries: {{ $vault.retries }}
+    {{- end }}
+    {{- if (hasKey $vault "retryWait") }}
+      retryWait: {{ $vault.retryWait }}
+    {{- end }}
+    {{- if (hasKey $vault "connectTimeout") }}
+      connectTimeout: {{ $vault.connectTimeout }}
+    {{- end }}
+    {{- if (hasKey $vault "readTimeout") }}
+      readTimeout: {{ $vault.readTimeout }}
+    {{- end }}
+    {{- if (hasKey $vault "writeTimeout") }}
+      writeTimeout: {{ $vault.writeTimeout }}
+    {{- end }}
   {{- end -}}
  {{- end -}}
 {{- end -}}
