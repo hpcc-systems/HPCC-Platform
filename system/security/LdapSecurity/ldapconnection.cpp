@@ -4276,12 +4276,6 @@ public:
                 continue;
             changeUserGroup("delete", username, grp);
         }
-
-        //Remove tempfile scope for this user
-        StringBuffer resName(queryDfsXmlBranchName(DXB_Internal));
-        resName.append("::").append(username);
-        deleteResource(RT_FILE_SCOPE, resName.str(), m_ldapconfig->getResourceBasedn(RT_FILE_SCOPE));
-        
         return true;
     }
 
@@ -6299,28 +6293,7 @@ private:
                 throw;
             }
         }
-
-        //Add tempfile scope for this user (spill, paused and checkpoint
-        //will be created under this user specific scope)
-        StringBuffer resName(queryDfsXmlBranchName(DXB_Internal));
-        resName.append("::").append(username);
-        Owned<ISecResource> resource = new CLdapSecResource(resName.str());
-        if (!addResource(RT_FILE_SCOPE, user, resource, PT_ADMINISTRATORS_AND_USER, m_ldapconfig->getResourceBasedn(RT_FILE_SCOPE)))
-        {
-            throw MakeStringException(-1, "Error adding temp file scope %s",resName.str());
-        }
-
         return true;
-    }
-
-    bool createUserScope(ISecUser& user)
-    {
-        //Add tempfile scope for given user (spill, paused and checkpoint
-        //files will be created under this user specific scope)
-        StringBuffer resName(queryDfsXmlBranchName(DXB_Internal));
-        resName.append("::").append(user.getName());
-        Owned<ISecResource> resource = new CLdapSecResource(resName.str());
-        return addResource(RT_FILE_SCOPE, user, resource, PT_ADMINISTRATORS_AND_USER, m_ldapconfig->getResourceBasedn(RT_FILE_SCOPE));
     }
 
     virtual aindex_t getManagedScopeTree(LDAP* ld, SecResourceType rtype, const char * basedn, IArrayOf<ISecResource>& scopes)
