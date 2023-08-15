@@ -537,7 +537,7 @@ class CNestedRuntimeStatisticMap;
 //The CRuntimeStatisticCollection  used to gather statistics for an activity - it has no notion of its scope, but can contain nested scopes.
 //Some of the functions have node parameters which have no meaning for the base implementation, but are used by the derived class
 //CRuntimeSummaryStatisticCollection which is used fro summarising stats from multiple different worker nodes.
-class jlib_decl CRuntimeStatisticCollection
+class jlib_decl CRuntimeStatisticCollection: public CInterface
 {
 public:
     CRuntimeStatisticCollection(const StatisticsMapping & _mapping, bool _ignoreUnknown = false) : mapping(_mapping)
@@ -680,7 +680,7 @@ So although HPCC-26541 was opened to refactor these classes, none of the alterna
 
 
 //NB: Serialize and deserialize are not currently implemented.
-class jlib_decl CRuntimeSummaryStatisticCollection : public CRuntimeStatisticCollection, CInterface
+class jlib_decl CRuntimeSummaryStatisticCollection : public CRuntimeStatisticCollection
 {
 public:
     CRuntimeSummaryStatisticCollection(const StatisticsMapping & _mapping);

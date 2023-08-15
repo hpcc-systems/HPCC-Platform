@@ -4068,19 +4068,8 @@ class StatsAggregator : public CInterface
             return (lhs.scopeType==rhs.scopeType) && (lhs.id==rhs.id);
         }
     };
-    struct StatisticKindFunc  // funcs required by unordered_map<StatisticKind,..>
-    {
-        std::size_t operator()(const StatisticKind & sk) const
-        {
-            return std::hash<unsigned>{}((unsigned)sk);
-        }
-        bool operator()(const StatisticKind & lhs, const StatisticKind & rhs) const
-        {
-            return lhs==rhs;
-        }
-    };
     ScopeId id;
-    std::unordered_map<StatisticKind, unsigned __int64, StatisticKindFunc, StatisticKindFunc> values;
+    Owned<CRuntimeStatisticCollection> stats;
     std::unordered_map<ScopeId, Owned<StatsAggregator>, ScopeId, ScopeId> children;
 
     StatsAggregator * queryAggregator(const ScopeId & scopeId)
@@ -4095,8 +4084,31 @@ class StatsAggregator : public CInterface
             children.erase(search);
     }
 public:
-    StatsAggregator() {}
-    StatsAggregator(ScopeId _id) : id(_id) {}
+    StatsAggregator()
+    {
+        stats.setown(new CRuntimeStatisticCollection(allStatistics));
+    }
+    StatsAggregator(ScopeId _id) : id(_id)
+    {
+        const StatisticsMapping * statMapping = &allStatistics;
+        // TODO: set the required mapping for each scope type
+        // (for now, use allStatistics)
+        switch(_id.queryScopeType())
+        {
+            case SSTglobal:
+            case SSTworkflow:
+            case SSTgraph:
+            case SSTsubgraph:
+            case SSTchildgraph:
+            case SSTactivity:
+            case SSTedge:
+            case SSTchannel:
+            default:
+                statMapping = &allStatistics;
+                break;
+        }
+        stats.setown(new CRuntimeStatisticCollection(*statMapping));
+    }
     StatsAggregator * ensureScopeAggregator(const StatsScopeId & statScopeId)
     {
         ScopeId searchScope(statScopeId);
@@ -4117,13 +4129,13 @@ public:
     }
     unsigned __int64 setValue(StatisticKind kind, unsigned __int64 value)
     {
-        unsigned __int64 prevValue = values[kind];
-        values[kind] = value;
+        unsigned __int64 prevValue = stats->queryStatistic(kind).get();
+        stats->setStatistic(kind, value);
         return value - prevValue;
     }
     void addValue(StatisticKind kind, unsigned __int64 value)
     {
-        values[kind] += value;
+        stats->addStatistic(kind, value);
     }
     void mergeInto(unsigned wfid, unsigned graphId, IStatisticGatherer & statisticGatherer, bool erase)
     {
@@ -4161,12 +4173,13 @@ public:
             case SSTedge:
             case SSTchannel:
             {
+                DBGLOG("mergeInto(scopeType=%s)", queryScopeTypeName(id.queryScopeType()));
                 statisticGatherer.beginScope(id);
-                for (const auto & value: values)
-                    statisticGatherer.addStatistic(value.first, value.second);
+                stats->recordStatistics(statisticGatherer, false);
 
                 for (const auto & child: children)
                     child.second->mergeInto(statisticGatherer);
+                DBGLOG("mergeInto(scopeType=%s) END ", queryScopeTypeName(id.queryScopeType()));
                 statisticGatherer.endScope();
                 break;
             }
@@ -4206,6 +4219,12 @@ public:
     }
     virtual void setValue(StatisticKind kind, unsigned __int64 value)
     {
+        if (kind>StMax)
+        {
+             // CRuntimeStatisticCollection does not support variants
+             // TODO: fix this!!!
+            return;
+        }
         unsigned diffValue = statsStack[statsStack.size()-1]->setValue(kind, value);
         if (doAggregateStat(kind))
         {
