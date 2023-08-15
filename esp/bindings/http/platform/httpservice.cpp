@@ -184,33 +184,25 @@ void checkSetCORSAllowOrigin(EspHttpBinding *binding, CHttpRequest *req, CHttpRe
 
 int CEspHttpServer::processRequest()
 {
-    TraceManager traceManager("esp"); //we'd use an appropriate module/lib name here
-    auto tracer = traceManager.getTracer();
+    Owned<ITracer> tracer = queryTraceManager()->initTracing("esphttpserver"); //Initialize the trace manager, and ESP trace
 
-    //Extract parent(caller) context from http header, likely done earlier in the process
-    //We'd need a setParentContextFromHeaders version supporting httptransport's StringArray  m_headers;
-    //TraceManager::setParentContextFromHeaders(const_cast<std::map<std::string, std::string> &>(request.headers), options);
-    //or labda function to extract parent context from http header
+    Owned<IProperties> reqProcessSpanAttributes = createProperties();
+    reqProcessSpanAttributes->setProp("http.request_port", "8010");
+    reqProcessSpanAttributes->setProp("app.name", "esp");
+    reqProcessSpanAttributes->setProp("app.version", "1.0.0");
+    reqProcessSpanAttributes->setProp("app.instance", "esp1");
+    reqProcessSpanAttributes->setProp("http.method", m_request->queryMethod());
+    reqProcessSpanAttributes->setProp("http.url", m_request->queryPath());
+    reqProcessSpanAttributes->setProp("http.host", m_request->queryHost());
+    //reqProcessSpanAttributes->setProp("http.user_agent", m_request->queryUserAgent());
+    //reqProcessSpanAttributes->setProp("http.client_ip", m_request->queryPeer());
+    reqProcessSpanAttributes->setProp("http.request_content_length", m_request->getContentLength());
+    //reqProcessSpanAttributes->setProp("http.request_content_type", m_request->queryContentType());
+    reqProcessSpanAttributes->setProp("http.request_query_string", m_request->queryParamStr());
+    //reqProcessSpanAttributes->setProp("http.request_headers", m_request->queryHeaderStr());
 
-    //Options used to annotate span representing the processing of http requests
-    opentelemetry::trace::StartSpanOptions options;
-    options.kind = opentelemetry::trace::SpanKind::kServer;
-
-    //Declare the span, provide appropriate attributes, and options
-    //Trace ID generated if no parent context is provided
-    auto processingRequestSpan =
-         tracer->StartSpan("ProcessingHTTPRequest",
-            { //Declare whatever span attributes we have at this point
-              //More can be attached along the way
-              //{"stype", stype}, //span attributes
-              {opentelemetry::trace::SemanticConventions::kNetHostPort, "8010"},
-              //{opentelemetry::trace::SemanticConventions::kHttpMethod, methodName.str()},
-              //{opentelemetry::trace::SemanticConventions::kRpcService, serviceName.str()},
-              {opentelemetry::trace::SemanticConventions::kHttpScheme, "http"}},
-            options); //options.parent is set as parent context for current span
-
-    //activate the span
-    auto scope = tracer->WithActiveSpan(processingRequestSpan); 
+    //Owned<ISpan> reqProcessSpan = tracer->createTransactionSpan("ProcessingHTTPRequest", m_headers, reqProcessSpanAttributes);
+    Owned<ISpan> reqProcessSpan = tracer->createTransactionSpan("ProcessingHTTPRequest", createProperties(), reqProcessSpanAttributes);
 
     IEspContext* ctx = m_request->queryContext();
     StringBuffer errMessage;
@@ -269,7 +261,7 @@ int CEspHttpServer::processRequest()
         m_request->updateContext();
         ctx->setServiceName(serviceName.str());
         ctx->setHTTPMethod(method.str());
-        processingRequestSpan->SetAttribute(opentelemetry::trace::SemanticConventions::kHttpMethod, method.str());
+        reqProcessSpan->setAttribute("http.method", method.str());
         ctx->setServiceMethod(methodName.str());
         ctx->addTraceSummaryValue(LogMin, "app.protocol", method.str(), TXSUMMARY_GRP_ENTERPRISE);
         ctx->addTraceSummaryValue(LogMin, "app.service", serviceName.str(), TXSUMMARY_GRP_ENTERPRISE);
@@ -482,9 +474,6 @@ int CEspHttpServer::processRequest()
         ctx->addTraceSummaryValue(LogMin, "msg", "Unknown exception caught in CEspHttpServer::processRequest", TXSUMMARY_GRP_ENTERPRISE);
         return 0;
     }
-
-    //need to ensure that the span is ended when out of scope Owend<ISpan> processingRequestSpan?
-    processingRequestSpan->End();
 
     return 0;
 }

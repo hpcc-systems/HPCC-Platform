@@ -15,9 +15,9 @@ public:
 
   virtual ~JLogSpanExporter() {}
 
-  virtual std::unique_ptr<trace_sdk::Recordable> MakeRecordable() noexcept override
+  virtual std::unique_ptr<opentelemetry::sdk::trace::Recordable> MakeRecordable() noexcept override
   {
-      return std::unique_ptr<trace_sdk::Recordable>(new trace_sdk::SpanData);
+      return std::unique_ptr<opentelemetry::sdk::trace::Recordable>(new opentelemetry::sdk::trace::SpanData);
   }
 
     virtual sdkcommon::ExportResult Export(const nostd::span<std::unique_ptr<trace_sdk::Recordable>> &spans) noexcept override
@@ -34,7 +34,7 @@ public:
         for (auto &recordable : spans)
         {
             auto span = std::unique_ptr<trace_sdk::SpanData>(
-            static_cast<trace_sdk::SpanData *>(recordable.release()));s
+            static_cast<trace_sdk::SpanData *>(recordable.release()));
 /*
             if (span != nullptr)
             {

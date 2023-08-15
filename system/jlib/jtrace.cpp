@@ -21,6 +21,17 @@
 #include "jtrace.hpp"
 #include "lnuid.h"
 
+#include "opentelemetry/trace/semantic_conventions.h" //known span defines
+#include "opentelemetry/context/propagation/global_propagator.h" // context::propagation::GlobalTextMapPropagator::GetGlobalPropagator
+#include "opentelemetry/sdk/trace/tracer_provider_factory.h" //opentelemetry::sdk::trace::TracerProviderFactory::Create(context)
+#include "opentelemetry/sdk/trace/tracer_context_factory.h" //opentelemetry::sdk::trace::TracerContextFactory::Create(std::move(processors));
+#include "opentelemetry/sdk/trace/simple_processor_factory.h"
+#include "opentelemetry/exporters/ostream/span_exporter_factory.h"// auto exporter = opentelemetry::exporter::trace::OStreamSpanExporterFactory::Create();
+
+//#undef UNIMPLEMENTED //opentelemetry defines UNIMPLEMENTED
+#include "opentelemetry/trace/propagation/http_trace_context.h" //opentel_trace::propagation::kTraceParent
+//#define UNIMPLEMENTED throw makeStringExceptionV(-1, "UNIMPLEMENTED feature at %s(%d)", sanitizeSourceFile(__FILE__), __LINE__)
+
 using namespace ln_uid;
 
 /*
@@ -74,7 +85,158 @@ const char* LogTrace::queryLocalId() const
     return localId.get();
 }
 
-void TraceManager::initTracer()
+template <typename T>
+class HttpTextMapCarrier : public opentelemetry::context::propagation::TextMapCarrier
+{
+public:
+    HttpTextMapCarrier(T &headers) : httpHeaders(headers) {}
+    HttpTextMapCarrier() = default;
+
+    virtual opentelemetry::nostd::string_view Get(opentelemetry::nostd::string_view key) const noexcept override
+    {
+        std::string theKey = key.data();
+
+        // perform any key mapping needed...
+        {
+            //Instrumented http client/server Capitalizes the first letter of the header name
+            if (key == opentel_trace::propagation::kTraceParent || key == opentel_trace::propagation::kTraceState )
+                theKey[0] = toupper(theKey[0]);
+        }
+
+        //now search for the vaule
+        auto it = httpHeaders.find(theKey);
+        if (it != httpHeaders.end())
+            return it->second;
+
+        return "";
+    }
+
+  virtual void Set(opentelemetry::nostd::string_view key,
+                   opentelemetry::nostd::string_view value) noexcept override
+  {
+      httpHeaders.insert(std::pair<std::string, std::string>(std::string(key), std::string(value)));
+  }
+
+  T httpHeaders;
+};
+
+class CHPCCHttpTextMapCarrier : public opentelemetry::context::propagation::TextMapCarrier
+{
+public:
+    CHPCCHttpTextMapCarrier(const IProperties * httpHeaders)
+    {
+        if (httpHeaders)
+        {
+            this->httpHeaders.setown(createProperties());
+            Owned<IPropertyIterator> iter = httpHeaders->getIterator();
+            ForEach(*iter)
+            {
+                const char * key = iter->getPropKey();
+                const char * val = httpHeaders->queryProp(key);
+                this->httpHeaders->setProp(key, val);
+            }
+        }
+    }
+
+    CHPCCHttpTextMapCarrier()
+    {
+        httpHeaders.setown(createProperties());
+    };
+
+    virtual opentelemetry::nostd::string_view Get(opentelemetry::nostd::string_view key) const noexcept override
+    {
+        std::string theKey = key.data();
+
+        // perform any key mapping needed...
+        {
+            //Instrumented http client/server Capitalizes the first letter of the header name
+            if (key == opentel_trace::propagation::kTraceParent || key == opentel_trace::propagation::kTraceState )
+                theKey[0] = toupper(theKey[0]);
+        }
+
+        return httpHeaders->queryProp(theKey.c_str());
+    }
+
+      virtual void Set(opentelemetry::nostd::string_view key,
+                   opentelemetry::nostd::string_view value) noexcept override
+    {
+        httpHeaders->setProp(std::string(key).c_str(), std::string(value).c_str());        
+    }
+
+    Owned<IProperties> httpHeaders;
+};
+
+/*
+template <typename R>
+class HPCCStringArrayHttpTextMapCarrier : public opentelemetry::context::propagation::TextMapCarrier
+{
+public:
+    HPCCHttpTextMapCarrier(R &headers) : httpHeaders(headers) {}
+    HPCCHttpTextMapCarrier() = default;
+
+    virtual opentelemetry::nostd::string_view Get(opentelemetry::nostd::string_view key) const noexcept override
+    {
+        std::string theKey = key.data();
+        std::string headerval;
+
+        // perform any key mapping needed...
+        {
+            //Instrumented http client/server Capitalizes the first letter of the header name
+            if (key == opentel_trace::propagation::kTraceParent || key == opentel_trace::propagation::kTraceState )
+                theKey[0] = toupper(theKey[0]);
+        }
+
+        ForEachItemIn(x, httpHeaders)
+        {
+            const char* header = httpHeaders.item(x);
+            if(header == nullptr)
+                continue;
+
+            const char* colon = strchr(header, ':');
+            if(colon == nullptr)
+                continue;
+
+            unsigned len = colon - header;
+            if((strlen(headername) == len) && (strnicmp(headername, header, len) == 0))
+            {
+                headerval.append(colon + 2);
+                break;
+            }
+        }
+        return headerval;
+    }
+
+    virtual void Set(opentelemetry::nostd::string_view key,
+                    opentelemetry::nostd::string_view value) noexcept override
+    {
+        if(!key || !*key)
+        return;
+
+        StringBuffer kv;
+        kv.append(key).append(": ").append(value);
+        ForEachItemIn(x, m_headers)
+        {
+            const char* curst = m_headers.item(x);
+            if(!curst)
+                continue;
+            const char* colon = strchr(curst, ':');
+            if(!colon)
+                continue;
+            if(!strnicmp(headername, curst, colon - curst))
+            {
+                m_headers.replace(kv.str(), x);
+                return;
+            }
+        }
+
+        m_headers.append(kv.str());
+    }
+
+    StringArray httpHeaders;
+};
+*/
+
+void CTraceManager::initTracer()
 {
     //Handle HPCC specific tracing configuration here
     //Target exporter? exporter connection info?
@@ -101,10 +263,6 @@ void TraceManager::initTracer()
                 DBGLOG("Tracing to stdout/err");
             else if (exportConfig->getPropBool("OTLP", false))
                 DBGLOG("Tracing to OTLP");
-            else if (exportConfig->getPropBool("Jaeger", false))
-                DBGLOG("Tracing to Jaeger");
-            else if (exportConfig->getPropBool("Zipkin", false))
-                DBGLOG("Tracing to Zipkin");
             else if (exportConfig->getPropBool("Prometheus", false))
                 DBGLOG("Tracing to Prometheus");
             else if (exportConfig->getPropBool("HPCC", false)) 
@@ -143,106 +301,106 @@ void TraceManager::initTracer()
     }
 }
 
-void TraceManager::cleanupTracer()
+void CTraceManager::cleanupTracer()
 {
     std::shared_ptr<opentelemetry::trace::TracerProvider> none;
     opentelemetry::trace::Provider::SetTracerProvider(none);
 }
 
-//convenience non-static method to get the default tracer, uses stored tracer/module name
-opentelemetry::nostd::shared_ptr<opentelemetry::trace::Tracer> TraceManager::getTracer()
+void CSpan::setAttributes(const IProperties * attributes)
 {
-    auto provider = opentelemetry::trace::Provider::GetTracerProvider();
-    return provider->GetTracer(tracerName); // (library_name [,library_version][,schema_url])
-}
-
-//convenience Static method to get the default tracer, uses provided module name
-opentelemetry::nostd::shared_ptr<opentelemetry::trace::Tracer> TraceManager::getTracer(std::string moduleName)
-{
-    auto provider = opentelemetry::trace::Provider::GetTracerProvider();
-    return provider->GetTracer(moduleName); // (library_name [,library_version][,schema_url])
-}
-
-void TraceManager::getCallerSpanId(context::propagation::TextMapCarrier &carrier, std::string & callerSpanId)
-{
-    callerSpanId.clear();
-
-    // Inject current context into http header
-    auto currentCtx = context::RuntimeContext::GetCurrent();
-    auto propagator = context::propagation::GlobalTextMapPropagator::GetGlobalPropagator();
-    propagator->Inject(carrier, currentCtx);
-
-    // Extract parent span context from the TextMapCarrier
-    auto parentSpanContext = propagator->Extract(carrier,currentCtx);
-
-    // Get the value of the HPCC-Caller-Id header from the TextMapCarrier
-    auto callerIdHeader = carrier.Get("traceparent");
-
-    callerSpanId = callerIdHeader.data();
-}
-
-void TraceManager::getParentSpanId(std::map<std::string, std::string> requestHeaders, std::string & callerSpanId)
-{
-    const HttpTextMapCarrier<std::map<std::string, std::string>> carrier(requestHeaders);
-    TraceManager::getParentSpanId(carrier, callerSpanId);
-}
-
-void TraceManager::getParentSpanId(const HttpTextMapCarrier<std::map<std::string, std::string>> carrier, std::string & callerSpanId)
-{
-    callerSpanId.clear();
-
-    auto propagator = context::propagation::GlobalTextMapPropagator::GetGlobalPropagator();
-    auto current_ctx = context::RuntimeContext::GetCurrent();
-    auto new_context = propagator->Extract(carrier, current_ctx);
-    auto parentSpan = opentel_trace::GetSpan(new_context)->GetContext();
-
-    char span_id[16] = {0};
-    parentSpan.span_id().ToLowerBase16(span_id);
-    callerSpanId = std::string(span_id, 16).c_str();
-}
-
-void TraceManager::getCurrentTraceId(std::string & traceId) const
-{
-    traceId.clear();
-
-    nostd::shared_ptr<opentel_trace::Span> currntSpan =
-    TraceManager::getTracer(std::string(tracerName))->GetCurrentSpan();
-
-    if (currntSpan->IsRecording())
+    Owned<IPropertyIterator> iter = attributes->getIterator();
+    ForEach(*iter)
     {
-        auto spanCtx = currntSpan->GetContext();
-
-        char trace_id[32] = {0};
-        spanCtx.trace_id().ToLowerBase16(trace_id);
-        traceId = std::string(trace_id, 32);
-    }
-}
-void TraceManager::getParentContext(std::map<std::string, std::string>& request_headers, opentel_trace::StartSpanOptions & options)
-{
-    const HttpTextMapCarrier<std::map<std::string, std::string>> carrier(request_headers);
-    auto prop        = context::propagation::GlobalTextMapPropagator::GetGlobalPropagator();
-    auto current_ctx = context::RuntimeContext::GetCurrent();
-    auto new_context = prop->Extract(carrier, current_ctx);
-    options.parent   = opentelemetry::trace::GetSpan(new_context)->GetContext();
-}
-
-void TraceManager::getCurrentSpanID(std::string & spanId) const
-{
-    spanId.clear();
-    nostd::shared_ptr<opentel_trace::Span> currntSpan =
-    TraceManager::getTracer(std::string(tracerName))->GetCurrentSpan();
-
-    if (currntSpan->IsRecording())
-    {
-        char span_id[16] = {0};
-        currntSpan->GetContext().span_id().ToLowerBase16(span_id);
-
-        spanId = std::string(span_id, 16);
+        const char * key = iter->getPropKey();
+        const char * val = attributes->queryProp(key);
+        span->SetAttribute(key, val);
     }
 }
 
+void CTransactionSpan::setAttriburesFromHTTPHeaders(StringArray & httpHeaders)
+{
+    ForEachItemIn(currentHeaderIndex, httpHeaders)
+    {
+        const char* httHeader = httpHeaders.item(currentHeaderIndex);
+        if(!httHeader)
+            continue;
 
+        if(stricmp(httHeader, HPCCSemanticConventions::kGLOBALIDHTTPHeader) == 0)
+        {
+            hpccGlobalId.set(httpHeaders.item(currentHeaderIndex+1));
+            continue;
+        }
 
+        if(stricmp(httHeader, HPCCSemanticConventions::kCallerIdHTTPHeader) == 0)
+        {
+            hpccCallerId.set(httpHeaders.item(currentHeaderIndex+1));
+            continue;
+        }
+    }
+}
+
+void CTransactionSpan::setAttriburesFromHTTPHeaders(const IProperties * httpHeaders)
+{
+    if (httpHeaders)
+    {
+        // perform any key mapping needed...
+        //{
+            //Instrumented http client/server Capitalizes the first letter of the header name
+            //if (key == opentel_trace::propagation::kTraceParent || key == opentel_trace::propagation::kTraceState )
+            //    theKey[0] = toupper(theKey[0]);
+        //}
+
+        hpccGlobalId.set(httpHeaders->queryProp(HPCCSemanticConventions::kGLOBALIDHTTPHeader));
+        hpccCallerId.set(httpHeaders->queryProp(HPCCSemanticConventions::kCallerIdHTTPHeader));
+
+        const CHPCCHttpTextMapCarrier carrier(httpHeaders);
+        auto globalPropegator = context::propagation::GlobalTextMapPropagator::GetGlobalPropagator();
+        auto currentContext = context::RuntimeContext::GetCurrent();
+        auto newContext = globalPropegator->Extract(carrier, currentContext);
+        parentContext = opentelemetry::trace::GetSpan(newContext)->GetContext();
+        options.parent = parentContext;
+    }
+}
+
+CClientSpan::CClientSpan(const char * spanName, nostd::shared_ptr<opentelemetry::trace::Tracer> tracer, const IProperties * spanAttributes)
+: CSpan(spanName, tracer, spanAttributes)
+{
+    options.kind = opentelemetry::trace::SpanKind::kClient;
+}
+
+CTransactionSpan::CTransactionSpan(const char * spanName, nostd::shared_ptr<opentelemetry::trace::Tracer> tracer, StringArray & httpHeaders, const IProperties * spanAttributes)
+: CSpan(spanName, tracer, spanAttributes)
+{
+    options.kind = opentelemetry::trace::SpanKind::kServer;
+    setAttriburesFromHTTPHeaders(httpHeaders);
+}
+
+CTransactionSpan::CTransactionSpan(const char * spanName, nostd::shared_ptr<opentelemetry::trace::Tracer> tracer, const IProperties * httpHeaders, const IProperties * spanAttributes)
+: CSpan(spanName, tracer, spanAttributes)
+{
+    options.kind = opentelemetry::trace::SpanKind::kServer;
+    setAttriburesFromHTTPHeaders(httpHeaders);
+}
+
+CSpan::CSpan(const char * spanName, nostd::shared_ptr<opentelemetry::trace::Tracer> tracer, const IProperties * spanAttributes)
+{
+    options.kind = opentelemetry::trace::SpanKind::kInternal;
+    name.set(spanName);
+    span = tracer->StartSpan(spanName, {}, options); 
+
+    setAttributes(spanAttributes);
+
+    //do we need to track scope? right now not member
+    auto scope = tracer->WithActiveSpan(span);
+}
+/*
+CTransactionSpan::CTransactionSpan(const char * spanName, nostd::shared_ptr<opentelemetry::trace::Tracer> tracer, const IProperties * httpHeaders, const IProperties * spanAttributes)
+{
+    
+}
+*/
+/*
 static Singleton<TraceManager> traceManager;
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
@@ -259,4 +417,21 @@ MODULE_EXIT()
 TraceManager * queryTraceManager(const char * moduleName)
 {
     return new TraceManager(moduleName);
+}*/
+
+
+static Singleton<CTraceManager> theTraceManager;
+MODULE_INIT(INIT_PRIORITY_STANDARD)
+{
+    return true;
+}
+
+MODULE_EXIT()
+{
+    theTraceManager.destroy();
+}
+
+CTraceManager * queryTraceManager()
+{
+    return theTraceManager.query([] { return new CTraceManager; });
 }
