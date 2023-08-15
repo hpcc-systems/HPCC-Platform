@@ -23,7 +23,6 @@
 #include "jliball.hpp"
 #include "jstats.h"
 #include "jutil.hpp"
-#include "jtrace.hpp"
 
 //CRT / OS
 #ifndef _WIN32
@@ -428,9 +427,7 @@ int init_main(int argc, const char* argv[])
     Owned<IPropertyTree> appConfig;
 
     Owned<IHPCCTracer> tracer = queryTraceManager()->initTracing("espprocess"); //Initialize the trace manager, and ESP trace
-
     Owned<ISpan> espProcSpan = tracer->createInternalSpan(__func__, createProperties());
-
     espProcSpan->activate();
 
     try
@@ -492,12 +489,12 @@ int init_main(int argc, const char* argv[])
 
         espProcSpan->setAttribute("procname", processName); //Span can be annotated with attributes
         espProcSpan->setAttribute("config", cfgfile);//Span can be annotated with attributes
-        //rootEspProcspan->SetAttribute("application", application);
 
         //////NOT USED, ONLY FOR REFERENCE
         StringAttr traceId;
         espProcSpan->queryOTTraceID(traceId);
 
+        //////NOT USED, ONLY FOR REFERENCE
         StringAttr spanId;
         espProcSpan->queryOTSpanID(spanId);
 

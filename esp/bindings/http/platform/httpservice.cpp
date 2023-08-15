@@ -186,6 +186,7 @@ int CEspHttpServer::processRequest()
 {
     Owned<IHPCCTracer> tracer = queryTraceManager()->initTracing("esphttpserver"); //Initialize the trace manager, and ESP trace
 
+    //This is the span that will be used to track the processing of the request
     Owned<IProperties> reqProcessSpanAttributes = createProperties();
     reqProcessSpanAttributes->setProp("http.request_port", "8010");
     reqProcessSpanAttributes->setProp("app.name", "esp");
@@ -194,19 +195,13 @@ int CEspHttpServer::processRequest()
     reqProcessSpanAttributes->setProp("http.method", m_request->queryMethod());
     reqProcessSpanAttributes->setProp("http.url", m_request->queryPath());
     reqProcessSpanAttributes->setProp("http.host", m_request->queryHost());
-    //reqProcessSpanAttributes->setProp("http.user_agent", m_request->queryUserAgent());
-    //reqProcessSpanAttributes->setProp("http.client_ip", m_request->queryPeer());
     reqProcessSpanAttributes->setProp("http.request_content_length", m_request->getContentLength());
-    //reqProcessSpanAttributes->setProp("http.request_content_type", m_request->queryContentType());
     reqProcessSpanAttributes->setProp("http.request_query_string", m_request->queryParamStr());
-    //reqProcessSpanAttributes->setProp("http.request_headers", m_request->queryHeaderStr());
 
     Owned<IProperties> mockHTTPHeaders = createProperties();
-    //StringBuffer headers;
-    //m_request->constructHeaderBuffer(headers, true);
-    //m_request->getHeader("User-Agent", userAgent);
     Owned<ISpan> reqProcessSpan = tracer->createTransactionSpan("ProcessingHTTPRequest", mockHTTPHeaders, reqProcessSpanAttributes);
 
+    //ideally the span should be activated when created
     reqProcessSpan->activate();
 
     IEspContext* ctx = m_request->queryContext();
@@ -259,7 +254,6 @@ int CEspHttpServer::processRequest()
         StringBuffer serviceName;
         StringBuffer methodName;
         m_request->getEspPathInfo(stype, &pathEx, &serviceName, &methodName, false);
-
         ESPLOG(LogNormal,"sub service type: %s. parm: %s", getSubServiceDesc(stype), m_request->queryParamStr());
 
 //all thesee attributes could/should be tracked by opentel trace/spans
@@ -285,7 +279,6 @@ int CEspHttpServer::processRequest()
         }
         ctx->addTraceSummaryValue(LogMin, "custom_fields.URL", url.str(), TXSUMMARY_GRP_ENTERPRISE);
 
-        //TraceManager::injectKeyValue(C & carrier, const char * key, const char * val)
         m_response->setHeader(HTTP_HEADER_HPCC_GLOBAL_ID, ctx->getGlobalId());
 
         if(strieq(method.str(), OPTIONS_METHOD))
@@ -298,7 +291,7 @@ int CEspHttpServer::processRequest()
         else //user ID is in HTTP header
             ESPLOG(LogMin, "%s %s, from %s@%s", method.str(), m_request->getPath(pathStr).str(), userid, m_request->getPeer(peerStr).str());
 //checkUserAuth could declare nested span
-//and/or declare this as an event on the processingRequestSpan
+//and/or declare this as an event on reqProcessSpan
         authState = checkUserAuth();
         if ((authState == authTaskDone) || (authState == authFailed))
             return 0;

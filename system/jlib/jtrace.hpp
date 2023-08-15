@@ -413,6 +413,8 @@ constexpr std::initializer_list<TraceOption> roxieTraceOptions
     TRACEOPT(traceSmartStepping),
 };
 
+interface IPropertyTree;
+
 extern jlib_decl bool doTrace(TraceFlags featureFlag, TraceFlags level=TraceFlags::Standard);
 
 // Overwrites current trace flags for active thread (and optionally the global default for new threads)
@@ -426,7 +428,7 @@ extern jlib_decl TraceFlags queryDefaultTraceFlags();
 
 // Load trace flags from a property tree - typically the global config
 // See also the workunit-variant in workunit.hpp
-interface IPropertyTree;
+
 extern jlib_decl TraceFlags loadTraceFlags(const IPropertyTree * globals, const std::initializer_list<TraceOption> & y, TraceFlags dft);
 
 
