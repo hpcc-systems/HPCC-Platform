@@ -526,7 +526,7 @@ void CTxSummary::serialize(StringBuffer& buffer, const LogLevel logLevel, const 
         // For text serialization, we create a new entry if it has
         // a profile mapping it to a new name, then serialize it.
         // Otherwise, we just serialize the existing entry.
-        for(auto entry : m_entries)
+        for(auto& entry : m_entries)
         {
             StringBuffer effectiveName;
             bool mapped = false;
@@ -553,7 +553,7 @@ void CTxSummary::serialize(StringBuffer& buffer, const LogLevel logLevel, const 
         // Create a TxEntryObject as a kind of JSON 'DOM' with copies of the entries.
         // The root should be output for all Log Levels and all output styles.
         TxEntryObject root(nullptr, LogMin, TXSUMMARY_OUT_TEXT | TXSUMMARY_OUT_JSON);
-        for(auto entry : m_entries)
+        for(auto& entry : m_entries)
         {
             StringBuffer effectiveName(entry->fullname.str());
             if(m_profile)
@@ -655,7 +655,7 @@ CTxSummary::TxEntryBase* CTxSummary::queryEntry(const char* key)
     if(!validate(key))
         return nullptr;
 
-    for(auto entry : m_entries)
+    for(auto& entry : m_entries)
     {
         if(strieq(key, entry->fullname.str()))
             return entry.get();

@@ -42,11 +42,6 @@ class CWsLoggingServiceEx : public CWsLoggingService
     typedef std::vector<IUpdateLogThread*> LOGGING_AGENTTHREADS;
     LOGGING_AGENTTHREADS  loggingAgentThreads;
 
-    unsigned loggingServiceThreadPoolSize;
-    unsigned loggingServiceThreadWaitingTimeOut;
-    unsigned loggingServiceThreadPoolStackSize;
-    Owned<IThreadPool> loggingServiceThreadPool;
-
     IEspLogAgent* loadLoggingAgent(const char* name, const char* dll);
 
 public:

@@ -31,8 +31,8 @@ class CESPServerLoggingAgent : public CLogAgentBase
 {
     StringBuffer serviceName, loggingAgentName, defaultGroup;
     StringBuffer serverUrl, serverUserID, serverPassword;
-    unsigned maxServerWaitingSeconds; //time out value for HTTP connection to logging server
-    unsigned maxGTSRetries;
+    unsigned maxServerWaitingSeconds = 0; //time out value for HTTP connection to logging server
+    unsigned maxGTSRetries = unsigned(-1);
     CLogContentFilter logContentFilter;
     MapStringToMyClass<CTransIDBuilder> transIDMap;
     MapStringToMyClass<CLogSource> logSources;

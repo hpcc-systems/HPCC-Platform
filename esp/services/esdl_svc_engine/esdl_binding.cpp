@@ -3988,7 +3988,8 @@ int EsdlBindingImpl::onGetFile(IEspContext &context, CHttpRequest* request, CHtt
 
     StringBuffer filepath;
     getBaseFilePath(filepath);
-    if (strchr("\\/", filepath.charAt(filepath.length()-1))==NULL)
+    // Coverity scan issue #1527056 reports filepath could be empty after getBaseFilePath
+    if (!filepath.isEmpty() && strchr("\\/", filepath.charAt(filepath.length()-1))==NULL)
         filepath.append("/");
     filepath.append(pathex);
     response->httpContentFromFile(filepath.str());

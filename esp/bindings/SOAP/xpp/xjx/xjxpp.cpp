@@ -159,7 +159,7 @@ void CXJXPullParser::readStartTag(StartTag& tag)
         const char* name = m_event->queryName();
         if (name && *name=='@')
             name++;
-        tag.attArr[tag.attEnd].qName = name;
+        tag.attArr[tag.attEnd].qName = name ? name : "";
         tag.attArr[tag.attEnd].value = m_event->queryValue();
         tag.attEnd++;
     }

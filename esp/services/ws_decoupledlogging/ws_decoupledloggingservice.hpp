@@ -141,7 +141,7 @@ public:
 class CWSDecoupledLogEx : public CWSDecoupledLog
 {
     StringAttr espProcess;
-    IEspContainer* container;
+    IEspContainer* container = nullptr;
     std::map<std::string, Owned<WSDecoupledLogAgentGroup>> logGroups;
 
     IEspLogAgent* loadLoggingAgent(const char* name, const char* dll, const char* service, IPropertyTree* cfg);

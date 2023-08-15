@@ -117,7 +117,7 @@ private:
 
         CFragmentedXmlPullParser& m_parser;
         Owned<FragmentFrame>      m_frame;
-        XmlInternalFragmentRules  m_rules;
+        XmlInternalFragmentRules  m_rules = 0;
 
         CInjector(CFragmentedXmlPullParser& parser)
             : m_parser(parser)
