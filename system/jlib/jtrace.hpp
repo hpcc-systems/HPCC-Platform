@@ -81,7 +81,7 @@ interface ISpan : extends IInterface
     virtual void addEvent(const char * eventName) = 0;
 
     virtual nostd::shared_ptr<opentelemetry::trace::TraceState> getState() = 0;
-    //virtual bool queryAttribute(const char * key, StringAttr attribute) = 0;
+
     virtual const char * queryHPCCGlobalID() = 0;
     virtual const char * queryHPCCCallerID() = 0;
     virtual const char * queryOTSpanName() = 0;
@@ -89,23 +89,21 @@ interface ISpan : extends IInterface
     virtual bool queryOTTraceID(StringAttr & traceID) = 0;
 
     virtual void setAttributes(const IProperties * attributes) = 0;
-};
 
-//interface ITransactionSpan : extends ISpan
-//{
-//    virtual bool queryOTParentSpanID(StringAttr & parentSpanId) = 0;
-//};
+    virtual void activate() = 0;
+};
 
 class CSpan : public CInterfaceOf<ISpan>
 {
 public:
     CSpan() : span(nullptr) {};
-    CSpan(const char * spanName, nostd::shared_ptr<opentelemetry::trace::Tracer> tracer, const IProperties * spanAttributes);
+    CSpan(opentelemetry::trace::SpanKind spanKind, const char * spanName, const char * tracerName_, const IProperties * spanAttributes);
     ~CSpan()
     {
         span->End();
     }
 
+    void activate() override;
     void setAttributes(const IProperties * attributes) override;
     void setAttribute(const char * key, const char * val) override
     {
@@ -185,6 +183,7 @@ public:
 
 protected:
     StringAttr name;
+    StringAttr tracerName;
     StringAttr hpccGlobalId;
     StringAttr hpccCallerId;
     StringAttr opentelTraceParent;
@@ -202,8 +201,8 @@ private:
     void setAttriburesFromHTTPHeaders(StringArray & httpHeaders);
 
 public:
-    CTransactionSpan(const char * spanName, nostd::shared_ptr<opentelemetry::trace::Tracer> tracer, const IProperties * httpHeaders, const IProperties * spanAttributes);
-    CTransactionSpan(const char * spanName, nostd::shared_ptr<opentelemetry::trace::Tracer> tracer, StringArray & httpHeaders, const IProperties * spanAttributes);
+    CTransactionSpan(const char * spanName, const char * tracerName_, const IProperties * httpHeaders, const IProperties * spanAttributes);
+    CTransactionSpan(const char * spanName, const char * tracerName_, StringArray & httpHeaders, const IProperties * spanAttributes);
 
     bool queryOTParentSpanID(StringAttr & parentSpanId) //override
     {
@@ -224,17 +223,17 @@ public:
 class CClientSpan : public CSpan
 {
 public:
-    CClientSpan(const char * spanName, nostd::shared_ptr<opentelemetry::trace::Tracer> tracer, const IProperties * spanAttributes);
+    CClientSpan(const char * spanName, const char * tracerName_, const IProperties * spanAttributes);
 };
 
-interface ITracer : extends IInterface
+interface IHPCCTracer : extends IInterface
 {
     virtual ISpan * createTransactionSpan(const char * name, const IProperties * httpHeaders, const IProperties * spanAttributes) = 0;
     virtual ISpan * createClientSpan(const char * name, const IProperties * spanAttributes) = 0;
     virtual ISpan * createInternalSpan(const char * name, const IProperties * spanAttributes) = 0;
 };
 
-class CTracer : public CInterfaceOf<ITracer>
+class CTracer : public CInterfaceOf<IHPCCTracer>
 {
 private:
     StringAttr moduleName;
@@ -249,23 +248,23 @@ public:
 
     ISpan * createTransactionSpan(const char * name, const IProperties * httpHeaders, const IProperties * spanAttributes) override
     {
-        return new CTransactionSpan(name, tracer, httpHeaders, spanAttributes);
+        return new CTransactionSpan(name, moduleName.get(), httpHeaders, spanAttributes);
     }
 
     ISpan * createClientSpan(const char * name, const IProperties * spanAttributes) override
-    {   
-        return new CClientSpan(name, tracer, spanAttributes);
+    {
+        return new CClientSpan(name, moduleName.get(), spanAttributes);
     }
 
     ISpan * createInternalSpan(const char * name, const IProperties * spanAttributes) override
-    {   
-        return new CSpan(name, tracer, spanAttributes);
+    {
+        return new CSpan(opentelemetry::trace::SpanKind::kInternal, name, moduleName.get(), spanAttributes);
     }
 };
 
 interface ITraceManager : extends IInterface
 {
-    virtual ITracer * initTracing(const char * moduleName) = 0;
+    virtual IHPCCTracer * initTracing(const char * moduleName) = 0;
 };
 
 class CTraceManager : public CInterfaceOf<ITraceManager>
@@ -280,13 +279,12 @@ public:
         initTracer();
     }
 
-    virtual ITracer * initTracing(const char * tracedModuleName)
+    virtual IHPCCTracer * initTracing(const char * tracedModuleName)
     {
         return new CTracer(tracedModuleName);
     }
 };
 
-//extern jlib_decl TraceManager * queryTraceManager(const char * name);
 extern jlib_decl CTraceManager * queryTraceManager();
 
 /*

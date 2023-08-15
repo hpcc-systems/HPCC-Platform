@@ -184,7 +184,7 @@ void checkSetCORSAllowOrigin(EspHttpBinding *binding, CHttpRequest *req, CHttpRe
 
 int CEspHttpServer::processRequest()
 {
-    Owned<ITracer> tracer = queryTraceManager()->initTracing("esphttpserver"); //Initialize the trace manager, and ESP trace
+    Owned<IHPCCTracer> tracer = queryTraceManager()->initTracing("esphttpserver"); //Initialize the trace manager, and ESP trace
 
     Owned<IProperties> reqProcessSpanAttributes = createProperties();
     reqProcessSpanAttributes->setProp("http.request_port", "8010");
@@ -201,8 +201,13 @@ int CEspHttpServer::processRequest()
     reqProcessSpanAttributes->setProp("http.request_query_string", m_request->queryParamStr());
     //reqProcessSpanAttributes->setProp("http.request_headers", m_request->queryHeaderStr());
 
-    //Owned<ISpan> reqProcessSpan = tracer->createTransactionSpan("ProcessingHTTPRequest", m_headers, reqProcessSpanAttributes);
-    Owned<ISpan> reqProcessSpan = tracer->createTransactionSpan("ProcessingHTTPRequest", createProperties(), reqProcessSpanAttributes);
+    Owned<IProperties> mockHTTPHeaders = createProperties();
+    //StringBuffer headers;
+    //m_request->constructHeaderBuffer(headers, true);
+    //m_request->getHeader("User-Agent", userAgent);
+    Owned<ISpan> reqProcessSpan = tracer->createTransactionSpan("ProcessingHTTPRequest", mockHTTPHeaders, reqProcessSpanAttributes);
+
+    reqProcessSpan->activate();
 
     IEspContext* ctx = m_request->queryContext();
     StringBuffer errMessage;

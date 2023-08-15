@@ -427,9 +427,11 @@ int init_main(int argc, const char* argv[])
     //save off generated config to register with container.  Legacy can always reference the config file, application based ESP needs generated config saved off
     Owned<IPropertyTree> appConfig;
 
-    Owned<ITracer> tracer = queryTraceManager()->initTracing("espprocess"); //Initialize the trace manager, and ESP trace
+    Owned<IHPCCTracer> tracer = queryTraceManager()->initTracing("espprocess"); //Initialize the trace manager, and ESP trace
 
     Owned<ISpan> espProcSpan = tracer->createInternalSpan(__func__, createProperties());
+
+    espProcSpan->activate();
 
     try
     {
