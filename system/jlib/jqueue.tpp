@@ -535,6 +535,76 @@ public:
     }
 };
 
+template <class BASE, bool ALLOWNULLS>
+class ReallySimpleInterThreadQueueOf : protected SafeQueueOf<BASE, ALLOWNULLS>
+{
+    typedef ReallySimpleInterThreadQueueOf<BASE, ALLOWNULLS> SELF;
+    typedef SafeQueueOf<BASE, ALLOWNULLS> PARENT;
+protected:
+    Semaphore space;
+    Semaphore avail;
+    unsigned limit = 0;
+    std::atomic<bool> stopped{false};
+
+public:
+    ReallySimpleInterThreadQueueOf<BASE, ALLOWNULLS>()
+    {
+    }
+
+    ~ReallySimpleInterThreadQueueOf<BASE, ALLOWNULLS>()
+    {
+        stop();
+    }
+
+    void reset()
+    {
+        space.reinit(limit);
+        avail.reinit(0);
+        stopped = false;
+    }
+
+    bool enqueue(BASE *e)
+    {
+        space.wait();
+        if (stopped)
+            return false;
+        PARENT::enqueue(e);
+        avail.signal();
+        return true;
+    }
+
+    BASE *dequeue()
+    {
+        avail.wait();
+        if (stopped)
+            return nullptr;
+        BASE * result = PARENT::dequeue();
+        space.signal();
+        return result;
+    }
+
+    void setLimit(unsigned num)
+    {
+        limit = num;
+        space.reinit(limit);
+    }
+
+    void stop() // stops all waiting operations
+    {
+        //Assume maxreaders < limit, maxwriters < limit
+        stopped = true;
+        avail.signal(limit);
+        space.signal(limit);
+    }
+
+    BASE *dequeueNow()
+    {
+        return PARENT::dequeue();
+    }
+
+    using PARENT::ordinality;
+};
+
 #define ForEachQueueItemIn(x,y)     unsigned numItems##x = (y).ordinality();     \
                                     for (unsigned x = 0; x< numItems##x; ++x)
 
