@@ -125,6 +125,10 @@ public:
 
         if (secretsName.empty())
             throw makeStringException(-1, "CJwtSecurityManager: secretsName not found in configuration");
+
+        // Grab a copy of the name of the internal file scope
+        hpccInternalScope = queryDfsXmlBranchName(DXB_Internal);
+        hpccInternalScope += "::";
     }
 
     virtual ~CJwtSecurityManager()
@@ -794,10 +798,16 @@ public:
                     {
                         // Scope hpccinternal::<username> always has full access for their own scope, but
                         // explicitly denied when attempting to access someone else's
-                        // hpccinternal::<username> scope
-                        if (resourceName && strncmp(resourceName, "hpccinternal::", 14) == 0)
+                        // hpccinternal::<username> scope; note that resourceName may contain more
+                        // scope levels
+                        if (startsWithIgnoreCase(resourceName, hpccInternalScope.c_str()))
                         {
-                            if (strisame(&resourceName[14], user.getName()))
+                            // Extract the username provided in the resourceName
+                            StringBuffer rezUserName;
+                            for (const char * p = &resourceName[hpccInternalScope.length()]; *p && *p != ':'; p++)
+                                rezUserName.append(*p);
+
+                            if (strisame(rezUserName.str(), user.getName()))
                                 accessFlag = SecAccess_Full;
                             else
                                 accessFlag = SecAccess_None;
@@ -1059,6 +1069,7 @@ private:
     std::string                 keyContents;                //!< Contents of secret key; @see ensureKeyLoaded()
     bool                        keyIsPublicKey;             //!< True if keyContents contains a public key, false otherwise
     CDALIKVStore                daliStore;                  //!< Handle to Dali's key/value store (external token cache)
+    std::string                 hpccInternalScope;          //!< File scope used by the cluster for interim results
     static const SecFeatureSet  implementedFeaturesMask = SMF_Authorize
                                                             | SMF_AuthorizeEx_Named
                                                             | SMF_AuthorizeFileScope_List
