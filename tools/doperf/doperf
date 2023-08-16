@@ -73,6 +73,7 @@ EOF
 
 finish_perf()
 {
+  wait 2>/dev/null
   stackcollapse-elfutils.pl ${tmpdir}/stack.* > ${tmpdir}/folded
   grep -f ${tmpdir}/suppress -v ${tmpdir}/folded > ${tmpdir}/suppressed
   flamegraph.pl ${tmpdir}/suppressed
