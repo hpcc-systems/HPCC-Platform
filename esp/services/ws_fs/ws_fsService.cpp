@@ -2564,12 +2564,15 @@ bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDespray
 
             StringBuffer destfileWithPath, umask;
             if (!isEmptyString(destPlane))  // must be true, unless bare-metal and isDropZoneRestrictionEnabled()==false
+            {
                 getDropZoneInfoByDestPlane(version, destPlane, destfile, destfileWithPath, umask, destip);
-
-            SecAccessFlags permission = getDZFileScopePermissions(context, destPlane, destfileWithPath, destip);
-            if (permission < SecAccess_Write)
-                throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Access DropZone Scope %s %s not allowed for user %s (permission:%s). Write Access Required.",
-                    isEmptyString(destPlane) ? destip : destPlane, destfileWithPath.str(), context.queryUserId(), getSecAccessFlagName(permission));
+                SecAccessFlags permission = getDZFileScopePermissions(context, destPlane, destfileWithPath, destip);
+                if (permission < SecAccess_Write)
+                    throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Access DropZone Scope %s %s not allowed for user %s (permission:%s). Write Access Required.",
+                        destPlane, destfileWithPath.str(), context.queryUserId(), getSecAccessFlagName(permission));
+            }
+            else
+                destfileWithPath.append(destfile).trim();
 
             RemoteFilename rfn;
             SocketEndpoint ep(destip.str());

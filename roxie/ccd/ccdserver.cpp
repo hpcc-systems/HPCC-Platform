@@ -26551,15 +26551,15 @@ public:
         unsigned outSize;
         try
         {   
-            outSize = except ? helper.onFailTransform(rowBuilder, left, right, fpos_or_count, except) :
-                      (activityKind == TAKkeyeddenormalizegroup) ? helper.transform(rowBuilder, left, right, (unsigned)fpos_or_count, group) :
+            outSize = unlikely(except) ? helper.onFailTransform(rowBuilder, left, right, fpos_or_count, except) :
+                      unlikely(activityKind == TAKkeyeddenormalizegroup) ? helper.transform(rowBuilder, left, right, (unsigned)fpos_or_count, group) :
                       helper.transform(rowBuilder, left, right, fpos_or_count, counter);
         }
         catch (IException *E)
         {
             throw makeWrappedException(E);
         }
-        if (outSize)
+        if (likely(outSize))
         {
             const void *shrunk = rowBuilder.finalizeRowClear(outSize);
             remote.addResult(shrunk);

@@ -317,11 +317,6 @@ public:
         throwUnexpected();
     }
 
-    bool createUserScopes(IEspSecureContext* secureContext = nullptr) override
-    {
-        throwUnexpected();
-    }
-
     aindex_t getManagedScopeTree(SecResourceType rtype, const char * basedn, IArrayOf<ISecResource>& scopes, IEspSecureContext* secureContext = nullptr) override
     {
         throwUnexpected();
