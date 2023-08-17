@@ -617,11 +617,9 @@ public:
         ensureFilePermissions(getFDescName(fd,name),perm,write);
     }
 
-    void checkForeignFilePermissions(IConstDFUfileSpec *fSpec,IFileDescriptor *fd,IUserDescriptor *user,bool write)
+    void checkForeignFilePermissions(IConstDFUfileSpec *fSpec,IFileDescriptor *fd,IUserDescriptor *user)
     {
-        unsigned auditflags = (DALI_LDAP_AUDIT_REPORT|DALI_LDAP_READ_WANTED);
-        if (write)
-            auditflags |= DALI_LDAP_WRITE_WANTED;
+        // NB: write is not supported on foreign files.
 
         StringBuffer logicalName;
         fSpec->getLogicalName(logicalName);
@@ -643,12 +641,19 @@ public:
         else
             foreignuserdesc.set(user);
 
+        unsigned auditflags = DALI_LDAP_AUDIT_REPORT|DALI_LDAP_READ_WANTED;
         SecAccessFlags perm = queryDistributedFileDirectory().getDLFNPermissions(dlfn,foreignuserdesc,auditflags);
-
-        bool checkLegacyPhysicalPerms = getGlobalConfigSP()->getPropBool("expert/@failOverToLegacyPhysicalPerms",!isContainerized());
-        if (((!write&&!HASREADPERMISSION(perm)) || (write&&!HASWRITEPERMISSION(perm))) && checkLegacyPhysicalPerms)
-            perm = queryDistributedFileDirectory().getFDescPermissions(fd,user,auditflags);
-        ensureFilePermissions(logicalName,perm,write);
+        if (!HASREADPERMISSION(perm))
+        {
+            bool authorized = false;
+            if (getGlobalConfigSP()->getPropBool("expert/@failOverToLegacyPhysicalPerms",!isContainerized()))
+            {
+                perm = queryDistributedFileDirectory().getFDescPermissions(fd,user,auditflags);
+                authorized = HASREADPERMISSION(perm);
+            }
+            if (!authorized)
+                throw makeStringExceptionV(DFSERR_LookupAccessDenied,"Lookup permission denied for foreign file: %s",logicalName.str());
+        }
     }
 
     void checkPlaneFilePermissions(IFileDescriptor *fd,IUserDescriptor *user,bool write)
@@ -1624,7 +1629,7 @@ public:
                         if (needrep)
                             feedback.repmode=cProgressReporter::REPbefore;
                         if (foreigncopy)
-                            checkForeignFilePermissions(source,srcFdesc,userdesc,false);
+                            checkForeignFilePermissions(source,srcFdesc,userdesc);
                         if (patchf) { // patch assumes only 1 cluster
                             // need to create dstpatchf
                             StringBuffer gname;
