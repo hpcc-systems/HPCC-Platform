@@ -148,33 +148,38 @@ StringBuffer &findDropZonePlaneName(const char *host, const char *path, StringBu
     return planeName;
 }
 
-extern TPWRAPPER_API bool validateDropZoneHostAndPath(const char* dropZoneName, const char* hostToCheck, const char* pathToCheck)
+//If the dropZoneName is empty, find out the dropzone based on the host and path. In bare-metal and
+//isDropZoneRestrictionEnabled()==false, the dropzone may not be found.
+//If the dropZoneName is not empty, find out the dropzone based on the dropZoneName and validate the host and path.
+extern TPWRAPPER_API IPropertyTree* getDropZoneAndValidateHostAndPath(const char* dropZoneName, const char* host, const char* path)
 {
-    //Both hostToCheck and pathToCheck should not be empty. For backward compatibility, the dropZoneName may be empty.
-    if (isEmptyString(hostToCheck))
-        throw makeStringException(ECLWATCH_INVALID_INPUT, "Host not defined.");
-    if (isEmptyString(pathToCheck))
-        throw makeStringException(ECLWATCH_INVALID_INPUT, "Path not defined.");
-    if (isContainerized() && streq("localhost", hostToCheck))
+    StringBuffer pathToCheck(path);
+    addPathSepChar(pathToCheck);
+
+    const char* hostToCheck = nullptr;
+    if (isContainerized() && strsame(host, "localhost"))
         hostToCheck = nullptr; // "localhost" is a placeholder for mounted dropzones that have no hosts.
-    if (isEmptyString(hostToCheck) && isEmptyString(dropZoneName))
-        throw makeStringException(ECLWATCH_INVALID_INPUT, "No dropzone or host provided.");
+    else
+        hostToCheck = host;
 
-    if (containsRelPaths(pathToCheck)) //Detect a path like: /home/lexis/runtime/var/lib/HPCCSystems/mydropzone/../../../
-        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Invalid path %s", pathToCheck);
-
-    StringBuffer path(pathToCheck);
-    addPathSepChar(path);
+    Owned<IPropertyTree> dropZone;
     if (isEmptyString(dropZoneName))
     {
-        Owned<IPropertyTree> plane = findDropZonePlane(path, hostToCheck, isIPAddress(hostToCheck), false);
-        return nullptr != plane;
+        dropZone.setown(findDropZonePlane(pathToCheck, hostToCheck, isIPAddress(hostToCheck), false));
+        if (!dropZone)
+            throwOrLogDropZoneLookUpError(ECLWATCH_INVALID_INPUT, "DropZone not found for host '%s' path '%s'.",
+                isEmptyString(host) ? "unspecified" : host, isEmptyString(path) ? "unspecified" : path);
     }
-
-    Owned<IPropertyTree> plane = getDropZonePlane(dropZoneName);
-    if (nullptr == plane)
-        return false;
-    return validateDropZone(plane, path, hostToCheck, isIPAddress(hostToCheck));
+    else
+    {
+        dropZone.setown(getDropZonePlane(dropZoneName));
+        if (!dropZone)
+            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "DropZone '%s' not found.", dropZoneName);
+        if (!validateDropZone(dropZone, pathToCheck, hostToCheck, isIPAddress(hostToCheck)))
+            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "The host '%s' or path '%s' is not valid for dropzone %s.",
+                isEmptyString(host) ? "unspecified" : host, isEmptyString(path) ? "unspecified" : path, dropZoneName);
+    }
+    return dropZone.getClear();
 }
 
 static SecAccessFlags getDropZoneScopePermissions(IEspContext& context, const IPropertyTree* dropZone, const char* dropZonePath)
@@ -196,7 +201,7 @@ static SecAccessFlags getDropZoneScopePermissions(IEspContext& context, const IP
     return queryDistributedFileDirectory().getDropZoneScopePermissions(dropZone->queryProp("@name"), dropZonePath, userDesc);
 }
 
-extern TPWRAPPER_API SecAccessFlags getDZPathScopePermissions(IEspContext& context, const char* dropZoneName, const char* dropZonePath, const char* dropZoneHost)
+static SecAccessFlags getDZPathScopePermissions(IEspContext& context, const char* dropZoneName, const char* dropZonePath, const char* dropZoneHost)
 {
     if (isEmptyString(dropZonePath))
         throw makeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "getDZPathScopePermissions(): DropZone path must be specified.");
@@ -207,7 +212,8 @@ extern TPWRAPPER_API SecAccessFlags getDZPathScopePermissions(IEspContext& conte
         dropZone.setown(findDropZonePlane(dropZonePath, dropZoneHost, true, false));
         if (!dropZone)
         {
-            throwOrLogDropZoneLookUpError(ECLWATCH_INVALID_INPUT, "getDZPathScopePermissions(): DropZone %s not found.", dropZoneName);
+            throwOrLogDropZoneLookUpError(ECLWATCH_INVALID_INPUT, "getDZPathScopePermissions(): DropZone not found for host '%s' path '%s'.",
+                isEmptyString(dropZoneHost) ? "unspecified" : dropZoneHost, isEmptyString(dropZonePath) ? "unspecified" : dropZonePath);
             return SecAccess_Full;
         }
     }
@@ -221,7 +227,7 @@ extern TPWRAPPER_API SecAccessFlags getDZPathScopePermissions(IEspContext& conte
     return getDropZoneScopePermissions(context, dropZone, dropZonePath);
 }
 
-extern TPWRAPPER_API SecAccessFlags getDZFileScopePermissions(IEspContext& context, const char* dropZoneName, const char* dropZonePath,
+static SecAccessFlags getDZFileScopePermissions(IEspContext& context, const char* dropZoneName, const char* dropZonePath,
     const char* dropZoneHost)
 {
     StringBuffer dir, fileName;
@@ -230,6 +236,104 @@ extern TPWRAPPER_API SecAccessFlags getDZFileScopePermissions(IEspContext& conte
     return getDZPathScopePermissions(context, dropZoneName, dropZonePath, dropZoneHost);
 }
 
+static SecAccessFlags getLegacyDZPhysicalPerms(IEspContext& context, const char* dropZoneName, const char* dropZoneHost,
+    const char* dropZoneFile, bool isPath)
+{
+    if (isEmptyString(dropZoneHost) && isEmptyString(dropZoneName))
+        throw makeStringException(ECLWATCH_INVALID_INPUT, "Neither dropzone plane or host specified.");
+
+    Owned<IUserDescriptor> userDesc = createUserDescriptor();
+    userDesc->set(context.queryUserId(), context.queryPassword(), context.querySignature());
+
+    StringBuffer host;
+    if (isEmptyString(dropZoneHost))
+    {
+        Owned<IPropertyTree> plane = getDropZonePlane(dropZoneName);
+        if (getPlaneHost(host, plane, 0))
+            dropZoneHost = host.str();
+        else
+            dropZoneHost = "localhost";
+    }
+
+    CDfsLogicalFileName dlfn;
+    SocketEndpoint ep(dropZoneHost);
+    dlfn.setExternal(ep, dropZoneFile);
+
+    StringBuffer scopes;
+    const char *scopesToCheck = nullptr;
+    if (isPath)
+        scopesToCheck = dlfn.get();
+    else
+    {
+        dlfn.getScopes(scopes);
+        scopesToCheck = scopes;
+    }
+    return queryDistributedFileDirectory().getFScopePermissions(scopesToCheck, userDesc);
+}
+
+//Get dropzone file permission for a dropzone file path (the path does NOT contain a file name).
+//This function (and the validate functions below) calls the getDZPathScopePermissions(). In the
+//getDZPathScopePermissions(), the isDropZoneRestrictionEnabled() will be used for bare-metal if
+//a dropzone cannot be found based on host and path.
+extern TPWRAPPER_API SecAccessFlags getDZPathScopePermsAndLegacyPhysicalPerms(IEspContext &context, const char *dropZoneName, const char *path,
+    const char *host, SecAccessFlags permissionReq)
+{
+    SecAccessFlags permission = getDZPathScopePermissions(context, dropZoneName, path, host);
+    if ((permission < permissionReq) && getGlobalConfigSP()->getPropBool("expert/@failOverToLegacyPhysicalPerms", !isContainerized()))
+        permission = getLegacyDZPhysicalPerms(context, dropZoneName, host, path, true);
+    return permission;
+}
+
+//Validate dropzone file permission for a dropzone file path (the path does NOT contain a file name)
+extern TPWRAPPER_API void validateDZPathScopePermsAndLegacyPhysicalPerms(IEspContext &context, const char *dropZoneName, const char *path,
+    const char *host, SecAccessFlags permissionReq)
+{
+    SecAccessFlags permission = getDZPathScopePermsAndLegacyPhysicalPerms(context, dropZoneName, path, host, permissionReq);
+    if (permission < permissionReq)
+        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Access DropZone %s %s not allowed for user %s (permission:%s). Read Access Required.",
+            dropZoneName, path, context.queryUserId(), getSecAccessFlagName(permission));
+}
+
+//Validate dropzone file permission for a dropzone file path (the path DOES contain a file name)
+extern TPWRAPPER_API void validateDZFileScopePermsAndLegacyPhysicalPerms(IEspContext& context, const char* dropZoneName, const char* path,
+    const char* host, SecAccessFlags permissionReq)
+{
+    SecAccessFlags permission = getDZFileScopePermissions(context, dropZoneName, path, host);
+    if ((permission < permissionReq) && getGlobalConfigSP()->getPropBool("expert/@failOverToLegacyPhysicalPerms", !isContainerized()))
+        permission = getLegacyDZPhysicalPerms(context, dropZoneName, host, path, false);
+    if (permission < permissionReq)
+        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Access DropZone %s %s not allowed for user %s (permission:%s). %s permission Required.",
+            dropZoneName, path, context.queryUserId(), getSecAccessFlagName(permission), getSecAccessFlagName(permissionReq));
+}
+
+//This function is called when uploading a file to a dropzone or downloading a file to a dropzone.
+//1. both host and filePath should not be empty.
+//2. the filePath should not contain bad file path.
+//3. call the getDropZoneAndValidateHostAndPath().
+//4. if the dropzone name is available, validate dropzone file permission. Should be available unless bare-metal and isDropZoneRestrictionEnabled()==false.
+extern TPWRAPPER_API void validateDropZoneReq(IEspContext& ctx, const char* dropZoneName, const char* host, const char* filePath, SecAccessFlags permissionReq)
+{
+    if (isEmptyString(host) || isEmptyString(filePath)) //The host and filePath must be specified for accessing a DropZone file.
+        throw makeStringException(ECLWATCH_INVALID_INPUT, "Host or file path not defined.");
+
+    if (containsRelPaths(filePath)) //Detect a path like: /home/lexis/runtime/var/lib/HPCCSystems/mydropzone/../../../
+        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Invalid path %s", filePath);
+
+    Owned<IPropertyTree> dropZone = getDropZoneAndValidateHostAndPath(dropZoneName, host, filePath);
+    if (dropZone)
+        dropZoneName = dropZone->queryProp("@name");
+
+    if (!isEmptyString(dropZoneName))
+        validateDZPathScopePermsAndLegacyPhysicalPerms(ctx, dropZoneName, filePath, host, permissionReq);
+}
+
+//This function is called when accessing a dropzone file from the WsFileIO service (the fileNameWithRelPath is a relative path).
+//1. the targetDZNameOrHost could be a dropzone name or dropzone host. Find out the dropzone.
+//   If the targetDZNameOrHost is a dropzone name and the hostReq is not empty, validate the hostReq inside the dropzone.
+//   If the dropzone cannot be found based on the targetDZNameOrHost, throw an exception.
+//2. the fileNameWithRelPath should not contain bad file path.
+//3. validate dropzone file permission.
+//4. set the dlfn using dropzone name and fileNameWithRelPath.
 extern TPWRAPPER_API void validateDropZoneAccess(IEspContext& context, const char* targetDZNameOrHost, const char* hostReq, SecAccessFlags permissionReq,
     const char* fileNameWithRelPath, CDfsLogicalFileName& dlfn)
 {
@@ -246,8 +350,14 @@ extern TPWRAPPER_API void validateDropZoneAccess(IEspContext& context, const cha
     }
     const char *dropZoneName = dropZone->queryProp("@name");
     SecAccessFlags permission = getDZFileScopePermissions(context, dropZoneName, fileNameWithRelPath, hostReq);
+    if ((permission < permissionReq) && getGlobalConfigSP()->getPropBool("expert/@failOverToLegacyPhysicalPerms", !isContainerized()))
+    {
+        StringBuffer fullPath(dropZone->queryProp("@prefix"));
+        addNonEmptyPathSepChar(fullPath).append(fileNameWithRelPath);
+        permission = getLegacyDZPhysicalPerms(context, dropZoneName, hostReq, fullPath, false);
+    }
     if (permission < permissionReq)
-        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Access DropZone Scope %s %s not allowed for user %s (permission:%s). %s Access Required.",
+        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Access DropZone %s %s not allowed for user %s (permission:%s). %s Access Required.",
             dropZoneName, fileNameWithRelPath, context.queryUserId(), getSecAccessFlagName(permission), getSecAccessFlagName(permissionReq));
     dlfn.setPlaneExternal(dropZoneName, fileNameWithRelPath);
 }
