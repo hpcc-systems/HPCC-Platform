@@ -321,6 +321,7 @@ private:
     bool m_checkViewPermissions;
     static const SecFeatureSet s_safeFeatures = SMF_ALL_FEATURES;
     static const SecFeatureSet s_implementedFeatures = s_safeFeatures & ~(SMF_RetrieveUserData | SMF_RemoveResources);
+    StringBuffer m_hpccInternalScope;
 
 public:
     IMPLEMENT_IINTERFACE
@@ -434,7 +435,6 @@ public:
         return m_checkViewPermissions;
     }
 
-    bool createUserScopes(IEspSecureContext* secureContext = nullptr) override;
     aindex_t getManagedScopeTree(SecResourceType rtype, const char * basedn, IArrayOf<ISecResource>& scopes, IEspSecureContext* secureContext = nullptr) override;
     SecAccessFlags queryDefaultPermission(ISecUser& user, IEspSecureContext* secureContext = nullptr) override;
     bool clearPermissionsCache(ISecUser &user, IEspSecureContext* secureContext = nullptr) override;
