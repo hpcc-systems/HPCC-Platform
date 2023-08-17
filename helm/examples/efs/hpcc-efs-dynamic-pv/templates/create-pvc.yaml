@@ -6,7 +6,7 @@ metadata:
 spec:
   accessModes:
     - {{ $plane.rwmany | default false | ternary "ReadWriteMany" "ReadWriteOnce" }}
-  storageClassName: aws-efs
+  storageClassName: aws-efs-auto
   resources:
     requests:
       storage: {{ $plane.size }}
