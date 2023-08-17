@@ -753,13 +753,15 @@ roxie:
   #ldapUser: roxie_file_access    #add system username for accessing files
   #egress: engineEgress
 
-## The [manager/worker/eclAgent]Resources define the resource limits for each pod.
-## workerMemory defines the memory requirements for each individual worker.
-## If numWorkersPerPod is >1 (must be a factor of numWorkers) then the memory
-## is divided evenly between the workers.
-## In the absence of a workerMemory.query specification, the resourced pod memory
-## will be split evenly between the workers in each worker pod.
-## NB: numWorkersPerPod must be a factor of numWorkers
+## The [manager/worker/eclAgent]Resources define the resource limits for each container.
+## If numWorkersPerPod is >1 (must be a factor of numWorkers).
+## NB: Each worker corresponds to a container, that will be resourced according to
+## workerResources, meaning that if numWorkersPerPod>1, N * workerResources.cpu,
+## N * workerResources.memory etc., will be required in total for the pod.
+##
+## By default the available Thor memory will be based on the resourced container memory.
+## This can be overriden by setting [worker/manager]Memory.query and
+## [worker/manager]Memory.thirdParty.
 thor:
 - name: thor
   prefix: thor
