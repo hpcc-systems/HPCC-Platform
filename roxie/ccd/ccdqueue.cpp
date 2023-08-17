@@ -304,24 +304,31 @@ void openMulticastSocket()
     if (!multicastSocket)
     {
         multicastSocket.setown(ISocket::udp_create(ccdMulticastPort));
-        if (multicastTTL)
-        {
-            multicastSocket->set_ttl(multicastTTL);
-            DBGLOG("Roxie: multicastTTL: %u", multicastTTL);
-        }
-        else
-            DBGLOG("Roxie: multicastTTL not set");
         multicastSocket->set_receive_buffer_size(udpMulticastBufferSize);
         size32_t actualSize = multicastSocket->get_receive_buffer_size();
+
+        StringBuffer socketName;
+        if (roxieMulticastEnabled)
+            socketName.append("multicast");
+        else
+            socketName.append("udp-agent");
+
         if (actualSize < udpMulticastBufferSize)
         {
-            DBGLOG("Roxie: multicast socket buffer size could not be set (requested=%d actual %d", udpMulticastBufferSize, actualSize);
+            DBGLOG("Roxie: %s socket buffer size could not be set (requested=%d actual %d", socketName.str(), udpMulticastBufferSize, actualSize);
             throwUnexpected();
         }
         if (doTrace(TraceFlags::Always))
-            DBGLOG("Roxie: multicast socket created port=%d sockbuffsize=%d actual %d", ccdMulticastPort, udpMulticastBufferSize, actualSize);
+            DBGLOG("Roxie: %s socket created port=%d sockbuffsize=%d actual %d", socketName.str(), ccdMulticastPort, udpMulticastBufferSize, actualSize);
         if (roxieMulticastEnabled && !localAgent)
         {
+            if (multicastTTL)
+            {
+                multicastSocket->set_ttl(multicastTTL);
+                DBGLOG("Roxie: multicastTTL: %u", multicastTTL);
+            }
+            else
+                DBGLOG("Roxie: multicastTTL not set");
             Owned<const ITopologyServer> topology = getTopology();
             for (unsigned channel : topology->queryChannels())
             {
