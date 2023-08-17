@@ -242,6 +242,7 @@ template <class BASE, bool ALLOWNULLS>
 class SafeQueueOf : private QueueOf<BASE, ALLOWNULLS>
 {
     typedef SafeQueueOf<BASE, ALLOWNULLS> SELF;
+    typedef QueueOf<BASE, ALLOWNULLS> PARENT;
 protected:
     mutable CriticalSection crit;
     inline void unsafeenqueue(BASE *e) { QueueOf<BASE, ALLOWNULLS>::enqueue(e); }
@@ -267,6 +268,7 @@ public:
     void dequeue(BASE *e) { CriticalBlock b(crit); return QueueOf<BASE, ALLOWNULLS>::dequeue(e); }
     inline unsigned ordinality() const { return QueueOf<BASE, ALLOWNULLS>::ordinality(); }
     void set(unsigned idx, BASE *e) { CriticalBlock b(crit); return QueueOf<BASE, ALLOWNULLS>::set(idx, e); }
+    using PARENT::ensure;
 };
 
 
@@ -535,6 +537,8 @@ public:
     }
 };
 
+//A lighter-weight limited thread queue which does not allow timeouts.
+//Linux futexes mean that semaphores now perform very well...
 template <class BASE, bool ALLOWNULLS>
 class ReallySimpleInterThreadQueueOf : protected SafeQueueOf<BASE, ALLOWNULLS>
 {
@@ -587,14 +591,15 @@ public:
     {
         limit = num;
         space.reinit(limit);
+        PARENT::ensure(limit);
     }
 
-    void stop() // stops all waiting operations
+    void stop(unsigned maxReaders = 0, unsigned maxWriters = 0) // stops all waiting operations
     {
-        //Assume maxreaders < limit, maxwriters < limit
+        //Assume maxreaders < limit, maxwriters < limit if not provided
         stopped = true;
-        avail.signal(limit);
-        space.signal(limit);
+        avail.signal(maxReaders ? maxReaders : limit);
+        space.signal(maxWriters ? maxWriters : limit);
     }
 
     BASE *dequeueNow()
