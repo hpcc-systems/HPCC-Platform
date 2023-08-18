@@ -362,6 +362,7 @@ CDfsLogicalFileName::CDfsLogicalFileName()
 {
     allowospath = false;
     allowWild = false;
+    allowTrailingEmptyScope = false;
     multi = NULL;
     clear();
 }
@@ -522,7 +523,7 @@ void CDfsLogicalFileName::expand(IUserDescriptor *user)
     }
 }
 
-inline void normalizeScope(const char *name, const char *scope, unsigned len, StringBuffer &res, bool strict)
+inline void normalizeScope(const char *name, const char *scope, unsigned len, StringBuffer &res, bool strict, bool allowEmptyScope)
 {
     while (len && isspace(scope[len-1]))
     {
@@ -537,7 +538,7 @@ inline void normalizeScope(const char *name, const char *scope, unsigned len, St
         len--;
         scope++;
     }
-    if (!len)
+    if (!len && !allowEmptyScope)
         throw MakeStringException(-1, "Scope is blank in file name '%s'", name);
 
     res.append(len, scope);
@@ -723,7 +724,7 @@ void CDfsLogicalFileName::normalizeName(const char *name, StringAttr &res, bool 
                 str.append('.');
             else
             {
-                normalizeScope(name, name, s-name, str, strict);
+                normalizeScope(name, name, s-name, str, strict, false);
                 if (strieq(FOREIGN_SCOPE, str)) // normalize node
                 {
                     const char *s1 = s+2;
@@ -756,7 +757,7 @@ void CDfsLogicalFileName::normalizeName(const char *name, StringAttr &res, bool 
                 if (!ns)
                     break;
                 scopeStart = str.length();
-                normalizeScope(name, s, ns-s, str, strict);
+                normalizeScope(name, s, ns-s, str, strict, false);
                 unsigned scopeLen = str.length()-scopeStart;
                 if ((1 == scopeLen) && (*SELF_SCOPE == str.charAt(str.length()-1)) && selfScopeTranslation)
                     skipScope = true;
@@ -770,7 +771,7 @@ void CDfsLogicalFileName::normalizeName(const char *name, StringAttr &res, bool 
                 str.append(".::");
         }
         tailpos = str.length();
-        normalizeScope(name, s, strlen(name)-(s-name), str, strict);
+        normalizeScope(name, s, strlen(name)-(s-name), str, strict, allowTrailingEmptyScope);
         unsigned scopeLen = str.length()-tailpos;
         if ((1 == scopeLen) && (*SELF_SCOPE == str.charAt(str.length()-1)))
             throw MakeStringException(-1, "Logical filename cannot end with scope \".\"");
@@ -802,7 +803,7 @@ bool CDfsLogicalFileName::normalizeExternal(const char * name, StringAttr &res, 
     else
         return false;
 
-    normalizeScope(name, name, s-name, str, strict); // "file" or "plane" or "remote"
+    normalizeScope(name, name, s-name, str, strict, false); // "file" or "plane" or "remote"
     const char *s1 = s+2; // this will be the file host/ip, or plane name, or remote service name
     const char *ns1 = strstr(s1,"::");
     if (!ns1)
@@ -840,7 +841,7 @@ bool CDfsLogicalFileName::normalizeExternal(const char * name, StringAttr &res, 
             //Syntax plane::<plane>::<path>
 
             StringBuffer planeName;
-            normalizeScope(s1, s1, ns1-s1, planeName, strict);
+            normalizeScope(s1, s1, ns1-s1, planeName, strict, false);
 
             str.append("::").append(planeName);
             break;
@@ -850,7 +851,7 @@ bool CDfsLogicalFileName::normalizeExternal(const char * name, StringAttr &res, 
             //Syntax plane::<remote>::<path>
 
             StringBuffer remoteSvc;
-            normalizeScope(s1, s1, ns1-s1, remoteSvc, strict);
+            normalizeScope(s1, s1, ns1-s1, remoteSvc, strict, false);
 
             str.append("::").append(remoteSvc);
             break;
