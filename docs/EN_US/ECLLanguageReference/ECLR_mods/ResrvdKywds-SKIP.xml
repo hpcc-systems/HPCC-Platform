@@ -20,7 +20,7 @@
 
   <para>Example:</para>
 
-  <programlisting>SequencedAges := RECORD
+  <programlisting lang="ECL">SequencedAges := RECORD
         Ages;
         INTEGER8 Sequence := 0;
 END;
@@ -32,5 +32,6 @@ END;
 
 SequencedAgedRecs := PROJECT(AgedRecs, AddSequence(LEFT,COUNTER));</programlisting>
 
-  <para>See Also: <link linkend="TRANSFORM_Structure">TRANSFORM Structure</link></para>
+  <para>See Also: <link linkend="TRANSFORM_Structure">TRANSFORM
+  Structure</link></para>
 </sect1>

@@ -2,7 +2,7 @@ import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Icon, Link } from "@fluentui/react";
 import { scopedLogger } from "@hpcc-js/util";
 import * as WsDfu from "src/WsDfu";
-import { CreateDFUQueryStore } from "src/ESPLogicalFile";
+import { CreateDFUQueryStore, Get } from "src/ESPLogicalFile";
 import { formatCost } from "src/Session";
 import * as Utility from "src/Utility";
 import { QuerySortItem } from "src/store/Store";
@@ -32,7 +32,7 @@ const FilterFields: Fields = {
     "SuperFiles": { type: "checkbox", label: nlsHPCC.SuperFiles },
     "Indexes": { type: "checkbox", label: nlsHPCC.Indexes },
     "NotInSuperfiles": { type: "checkbox", label: nlsHPCC.NotInSuperfiles },
-    "NodeGroup": { type: "target-group", label: nlsHPCC.Group, placeholder: nlsHPCC.Cluster },
+    "NodeGroup": { type: "target-group", label: nlsHPCC.Cluster, placeholder: nlsHPCC.Cluster },
     "FileSizeFrom": { type: "string", label: nlsHPCC.FromSizes, placeholder: "4096" },
     "FileSizeTo": { type: "string", label: nlsHPCC.ToSizes, placeholder: "16777216" },
     "FileType": { type: "file-type", label: nlsHPCC.FileType },
@@ -161,12 +161,13 @@ export const Files: React.FunctionComponent<FilesProps> = ({
             Name: {
                 label: nlsHPCC.LogicalName,
                 formatter: React.useCallback(function (name, row) {
+                    const file = Get(row.NodeGroup, name, row);
                     if (row.__hpcc_isDir) {
                         return name;
                     }
                     const url = "#/files/" + (row.NodeGroup ? row.NodeGroup + "/" : "") + name;
                     return <>
-                        <Icon iconName={row.getStateIcon ? row.getStateIcon() : ""} />
+                        <Icon iconName={file.getStateIcon ? file.getStateIcon() : ""} />
                         &nbsp;
                         <Link href={url}>{name}</Link>
                     </>;

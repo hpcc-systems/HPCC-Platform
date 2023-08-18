@@ -113,7 +113,7 @@
       clusters in one resource group can cause confusion and difficulties to
       manage. Unless you or someone in your organization has already created a
       resource group and specified to work in that pre-existing resource
-      group, you will need to create one. </para>
+      group, you will need to create one.</para>
 
       <para>To create a new resource group, you must choose a name and an
       Azure location. Additionally, you may choose to use tags for ease of
@@ -202,7 +202,7 @@
         only for the core AKS services and workloads. You will need to use a
         node taint on the newly created system node pool. Since you can't add
         taints to any pre-existing node pool, swap the default system node
-        pool for the newly created one. </para>
+        pool for the newly created one.</para>
 
         <para>In order to do this, enter the following command (all on one
         line, if possible, and remove the connectors "\" as they are only
@@ -269,7 +269,7 @@
     </sect2>
 
     <sect2 id="AZ_Installing_TheHelmChrts">
-      <title>Installing the Helm charts</title>
+      <title>Installing the Helm Charts</title>
 
       <para>This section will demonstrate how to fetch, modify, and deploy the
       HPCC Systems charts. First we will need to access the HPCC Systems
@@ -288,7 +288,7 @@
       allows you to get the latest versions of the chart dependencies.</para>
 
       <sect3 id="AZ_INstalling-the-HPCCComponents">
-        <title>Installing the HPCC Systems components</title>
+        <title>Installing the HPCC Systems Components</title>
 
         <para>In order for a even a basic installation to succeed, it must
         have some type of storage enabled. The following steps will create
@@ -296,7 +296,7 @@
         that will allow the HPCC Systems to start and run but will not
         persist. To do this we will deploy the <emphasis>hpcc-azurefile
         </emphasis>chart which will set up Azure's ephemeral storage for the
-        HPCC Systems deployment. </para>
+        HPCC Systems deployment.</para>
 
         <para>To Install the hpcc-azurefile chart:</para>
 
@@ -353,7 +353,7 @@ sasha:
                 <para>The indentation, syntax, and characters are very
                 critical, please be sure those are an exact match to the above
                 sample. A single extra space in this file can cause
-                unnecessary headaches. </para>
+                unnecessary headaches.</para>
               </listitem>
             </varlistentry>
           </variablelist>We can now use this
@@ -397,7 +397,7 @@ sasha:
                   key-value pair are very critical. Please be sure these are
                   an exact match to the sample below. A single extra space, or
                   missing character in this file can cause unnecessary
-                  headaches. </entry>
+                  headaches.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -516,9 +516,12 @@ externally, while eclservices is designed for internal use.
 
         <para>In order to access the HPCC Systems services you must override
         these default settings to make them visible. We will now set the
-        visibility for eclwatch and eclqueries from local to global as in the
-        below example. Edit the <emphasis>myesp.yaml</emphasis> file and
-        change the two sections highlighted in the code examples below:</para>
+        visibility for <emphasis>eclwatch</emphasis> and
+        <emphasis>eclqueries</emphasis> from local to global as in the below
+        example.</para>
+
+        <para>Edit the <emphasis>myesp.yaml</emphasis> file and change the two
+        sections highlighted in the code examples below:</para>
 
         <programlisting>esp:
 - name: eclwatch
@@ -536,7 +539,7 @@ externally, while eclservices is designed for internal use.
     <emphasis role="bold">visibility: global</emphasis> 
     ## Annotations can be specified on a service - for example to specify provider-specific i</programlisting>
 
-        <para></para>
+        <para> </para>
 
         <programlisting>- name: eclqueries
   application: eclqueries
@@ -554,7 +557,7 @@ externally, while eclservices is designed for internal use.
       </sect3>
 
       <sect3 id="AZ-Install-theCustomizedHPCC-Chart">
-        <title>Install the customized HPCC Systems chart</title>
+        <title>Install the Customized HPCC Systems Chart</title>
 
         <para>This section will install the delivered HPCC Systems chart where
         we supply the <emphasis>myesp.yaml</emphasis> and
@@ -654,7 +657,7 @@ mydali      ClusterIP    10.0.195.229  &lt;none&gt;          7070/TCP        11m
       losing your data.</para>
 
       <para>The various storage options and strategies are discussed elsewhere
-      in addition to the HPCC Systems documentation. </para>
+      in addition to the HPCC Systems documentation.</para>
 
       <sect3>
         <title>Stopping Your HPCC Systems Cluster</title>
@@ -680,7 +683,7 @@ mydali      ClusterIP    10.0.195.229  &lt;none&gt;          7070/TCP        11m
         <programlisting>helm uninstall myhpcccluster</programlisting>
 
         <para>This will remove the HPCC Systems cluster named
-        &lt;myhpcccluster&gt; you had previously deployed. </para>
+        &lt;myhpcccluster&gt; you had previously deployed.</para>
       </sect3>
 
       <sect3>

@@ -200,6 +200,7 @@ public:
     void getTargetClusterList(IArrayOf<IEspTpLogicalCluster>& clusters, const char* clusterType = NULL, const char* clusterName = NULL);
     void queryTargetClusterProcess(double version, const char* processName, const char* clusterType, IArrayOf<IConstTpCluster>& list);
     void getServices(double version, const char* serviceType, const char* serviceName, IArrayOf<IConstHPCCService>& list);
+    void listLogFiles(const char* host, const char* path, IArrayOf<IConstLogFileStruct>& files);
 
 };
 

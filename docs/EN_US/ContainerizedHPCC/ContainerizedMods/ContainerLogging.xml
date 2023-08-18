@@ -485,7 +485,7 @@ global:
       </sect3>
 
       <sect3 id="ProvideAADRegisteredApplicationInformation">
-        <title>Provide AAD registered application information</title>
+        <title>Provide AAD Registered Application Information</title>
 
         <para>HPCC Systems logAccess requires access to the AAD tenant,
         client, token, and target workspace ID via secure secret object. The
@@ -688,7 +688,7 @@ ContainerLog
     </sect2>
 
     <sect2>
-      <title>Asychronous logging configuration</title>
+      <title>Asychronous Logging Configuration</title>
 
       <para>By default log entries will be created and logged asynchronously,
       so as not to block the client that is logging. Log entries will be held

@@ -2033,6 +2033,7 @@ void RealValue::toMem(void *target)
     RealUnion u;
 
     size32_t size = type->getSize();
+    u.r8 = 0;
     switch (size)
     {
     case 4:
@@ -2050,6 +2051,7 @@ unsigned RealValue::getHash(unsigned initval)
     RealUnion u;
 
     size32_t size = type->getSize();
+    u.r8 = 0;
     switch (size)
     {
     case 4:

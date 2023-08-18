@@ -1978,3 +1978,17 @@ bool CWsTopologyEx::onTpDropZoneQuery(IEspContext &context, IEspTpDropZoneQueryR
     }
     return false;
 }
+
+bool CWsTopologyEx::onTpListLogFiles(IEspContext &context, IEspTpListLogFilesRequest &req, IEspTpListLogFilesResponse &resp)
+{
+    try
+    {
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_TOPOLOGY_ACCESS_DENIED, "WsTopology::onTpListLogFile: Permission denied.");
+        m_TpWrapper.listLogFiles(req.getNetworkAddress(), req.getPath(), resp.getFiles());
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return false;
+}

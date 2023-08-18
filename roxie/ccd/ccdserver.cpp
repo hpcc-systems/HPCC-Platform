@@ -77,7 +77,6 @@
 #include "rtldynfield.hpp"
 
 #define MAX_HTTP_HEADERSIZE 8000
-#define MIN_PAYLOAD_SIZE 800
 
 #ifdef _WIN32
 #pragma warning(disable : 4355)
@@ -3479,8 +3478,13 @@ public:
         if (!data.length())
             return NULL;
         const void *ret = data.item(0);
-        data.remove(0);
+        data.remove(0); // yuk! What is this used for?
         return ret;
+    }
+
+    virtual RecordLengthType *getNextLength() override
+    {
+        throwUnexpected();
     }
 
 };
@@ -3532,11 +3536,10 @@ public:
 
 void throwRemoteException(IMessageUnpackCursor *extra)
 {
-    RecordLengthType *rowlen = (RecordLengthType *) extra->getNext(sizeof(RecordLengthType));
+    RecordLengthType *rowlen = extra->getNextLength();
     if (rowlen)
     {
         char *xml = (char *) extra->getNext(*rowlen);
-        ReleaseRoxieRow(rowlen);
         Owned<IPropertyTree> p = createPTreeFromXMLString(xml, ipt_fast);
         ReleaseRoxieRow(xml);
         unsigned code = p->getPropInt("Code", 0);
@@ -4117,10 +4120,7 @@ class CRemoteResultAdaptor : implements IEngineRowStream, implements IFinalRoxie
                         throw E;
                     }
                     if (!localAgent) 
-                    {
                         ROQ->sendPacket(i, activity.queryLogCtx());
-                        retriesSent++;
-                    }
                 }
             }
         }
@@ -4151,8 +4151,8 @@ class CRemoteResultAdaptor : implements IEngineRowStream, implements IFinalRoxie
         void init(unsigned minSize)
         {
             assertex(!buffer.length());
-            if (minSize < MIN_PAYLOAD_SIZE)
-                minSize = MIN_PAYLOAD_SIZE;
+            if (minSize < minPayloadSize)
+                minSize = minPayloadSize;
             unsigned headerSize = sizeof(RoxiePacketHeader)+owner.headerLength();
             unsigned bufferSize = headerSize+minSize;
             if (bufferSize < mtu_size)
@@ -4298,11 +4298,10 @@ public:
             return mu->getNext(meta.getFixedSize());
         else
         {
-            RecordLengthType *rowlen = (RecordLengthType *) mu->getNext(sizeof(RecordLengthType));
+            RecordLengthType *rowlen = mu->getNextLength();
             if (rowlen)
             {
                 RecordLengthType len = *rowlen;
-                ReleaseRoxieRow(rowlen);
                 const void *agentRec = mu->getNext(len);
                 if (deserializer && mu->isSerialized())
                 {
@@ -4938,6 +4937,8 @@ public:
         unsigned checkInterval = activity.queryContext()->checkInterval();
         if (checkInterval > timeout)
             checkInterval = timeout;
+        if (acknowledgeAllRequests && checkInterval > packetAcknowledgeTimeout)
+            checkInterval = packetAcknowledgeTimeout;
         unsigned lastActivity = msTick();
         for (;;)
         {
@@ -4995,10 +4996,9 @@ public:
                                 activity.queryLogCtx().CTXLOG("Redundant callback on query %s", header.toString(s).str());
                             }
                             Owned<IMessageUnpackCursor> callbackData = mr->getCursor(rowManager);
-                            OwnedConstRoxieRow len = callbackData->getNext(sizeof(RecordLengthType));
-                            if (len)
+                            RecordLengthType *rowlen = callbackData->getNextLength();
+                            if (rowlen)
                             {
-                                RecordLengthType *rowlen = (RecordLengthType *) len.get();
                                 OwnedConstRoxieRow row = callbackData->getNext(*rowlen);
                                 const char *rowdata = (const char *) row.get();
                                 // bool isOpt = * (bool *) rowdata;
@@ -5020,16 +5020,14 @@ public:
                 }
                 else 
                 {
-                    resultsReceived++;
                     switch (header.activityId)
                     {
                     case ROXIE_DEBUGCALLBACK:
                         {
                         Owned<IMessageUnpackCursor> callbackData = mr->getCursor(rowManager);
-                        OwnedConstRoxieRow len = callbackData->getNext(sizeof(RecordLengthType));
-                        if (len)
+                        RecordLengthType *rowlen = callbackData->getNextLength();
+                        if (rowlen)
                         {
-                            RecordLengthType *rowlen = (RecordLengthType *) len.get();
                             OwnedConstRoxieRow row = callbackData->getNext(*rowlen);
                             char *rowdata = (char *) row.get();
                             if (ctxTraceLevel > 5)
@@ -5062,10 +5060,9 @@ public:
                         {
                         // we need to send back to the agent a message containing the file info requested.
                         Owned<IMessageUnpackCursor> callbackData = mr->getCursor(rowManager);
-                        OwnedConstRoxieRow len = callbackData->getNext(sizeof(RecordLengthType));
-                        if (len)
+                        RecordLengthType *rowlen = callbackData->getNextLength();
+                        if (rowlen)
                         {
-                            RecordLengthType *rowlen = (RecordLengthType *) len.get();
                             OwnedConstRoxieRow row = callbackData->getNext(*rowlen);
                             const char *rowdata = (const char *) row.get();
                             bool isOpt = * (bool *) rowdata;
@@ -5099,7 +5096,7 @@ public:
                         Owned<IMessageUnpackCursor> extra = mr->getCursor(rowManager);
                         for (;;)
                         {
-                            RecordLengthType *rowlen = (RecordLengthType *) extra->getNext(sizeof(RecordLengthType));
+                            RecordLengthType *rowlen = extra->getNextLength();
                             if (rowlen)
                             {
                                 char *logInfo = (char *) extra->getNext(*rowlen);
@@ -5141,7 +5138,6 @@ public:
                                         activity.mergeStats(childStats);
                                     }
                                 }
-                                ReleaseRoxieRow(rowlen);
                                 ReleaseRoxieRow(logInfo);
                             }
                             else
@@ -5177,8 +5173,6 @@ public:
                         break;
 
                     default:
-                        if (header.retries & ROXIE_RETRIES_MASK)
-                            retriesNeeded++;
                         unsigned metaLen;
                         const void *metaData = mr->getMessageMetadata(metaLen);
                         if (metaLen)
@@ -6921,7 +6915,6 @@ public:
         if (next)
         {
             processed++;
-            rowsIn++;
         }
         return next;
     }
@@ -6984,7 +6977,6 @@ public:
         if (next)
         {
             processed++;
-            rowsIn++;
         }
         return next;
     }
@@ -7261,7 +7253,6 @@ public:
         if (next)
         {
             processed++;
-            rowsIn++;
         }
         return next;
     }
@@ -8576,7 +8567,7 @@ public:
         if (sortAlgorithm==unknownSortAlgorithm)
             sorter.clear();
         else
-            sorter.setown(createSortAlgorithm(sortAlgorithm, compare, ctx->queryRowManager(), meta, ctx->queryCodeContext(), tempDirectory, activityId));
+            sorter.setown(createSortAlgorithm(sortAlgorithm, compare, ctx->queryRowManager(), meta, ctx->queryCodeContext(), spillDirectory, activityId));
     }
 
     virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -8662,7 +8653,7 @@ public:
                 sorter.clear();
                 OwnedRoxieString algorithmName(helper.getAlgorithm());
                 sortAlgorithm = useAlgorithm(algorithmName, sortFlags);
-                sorter.setown(createSortAlgorithm(sortAlgorithm, compare, ctx->queryRowManager(), meta, ctx->queryCodeContext(), tempDirectory, activityId));
+                sorter.setown(createSortAlgorithm(sortAlgorithm, compare, ctx->queryRowManager(), meta, ctx->queryCodeContext(), spillDirectory, activityId));
             }
             sorter->prepare(inputStream);
             noteStatistic(StTimeSortElapsed, cycle_to_nanosec(sorter->getElapsedCycles(true)));
@@ -13003,12 +12994,12 @@ public:
         if (helper.isLeftAlreadySorted())
             sortedLeft.setown(createDegroupedInputReader(inputStream));
         else
-            sortedLeft.setown(createSortedInputReader(inputStream, createSortAlgorithm(sortAlgorithm, helper.queryCompareLeft(), ctx->queryRowManager(), input->queryOutputMeta(), ctx->queryCodeContext(), tempDirectory, activityId)));
+            sortedLeft.setown(createSortedInputReader(inputStream, createSortAlgorithm(sortAlgorithm, helper.queryCompareLeft(), ctx->queryRowManager(), input->queryOutputMeta(), ctx->queryCodeContext(), spillDirectory, activityId)));
         ICompare *compareRight = helper.queryCompareRight();
         if (helper.isRightAlreadySorted())
             groupedSortedRight.setown(createGroupedInputReader(inputStream1, compareRight));
         else
-            groupedSortedRight.setown(createSortedGroupedInputReader(inputStream1, compareRight, createSortAlgorithm(sortAlgorithm, compareRight, ctx->queryRowManager(), input1->queryOutputMeta(), ctx->queryCodeContext(), tempDirectory, activityId)));
+            groupedSortedRight.setown(createSortedGroupedInputReader(inputStream1, compareRight, createSortAlgorithm(sortAlgorithm, compareRight, ctx->queryRowManager(), input1->queryOutputMeta(), ctx->queryCodeContext(), spillDirectory, activityId)));
         if ((helper.getJoinFlags() & JFlimitedprefixjoin) && helper.getJoinLimit())
         {   //limited match join (s[1..n])
             limitedhelper.setown(createRHLimitedCompareHelper());
@@ -18746,7 +18737,7 @@ public:
                 sortAlgorithm = isStable ? stableSpillingQuickSortAlgorithm : spillingQuickSortAlgorithm;
             else
                 sortAlgorithm = isStable ? stableQuickSortAlgorithm : quickSortAlgorithm;
-            groupedInput.setown(createSortedGroupedInputReader(inputStream, compareLeft, createSortAlgorithm(sortAlgorithm, compareLeft, ctx->queryRowManager(), input->queryOutputMeta(), ctx->queryCodeContext(), tempDirectory, activityId)));
+            groupedInput.setown(createSortedGroupedInputReader(inputStream, compareLeft, createSortAlgorithm(sortAlgorithm, compareLeft, ctx->queryRowManager(), input->queryOutputMeta(), ctx->queryCodeContext(), spillDirectory, activityId)));
         }
         if ((helper.getJoinFlags() & JFlimitedprefixjoin) && helper.getJoinLimit()) 
         {   //limited match join (s[1..n])
@@ -23925,6 +23916,10 @@ public:
         {
             return false;
         }
+        virtual RecordLengthType *getNextLength() override
+        {
+            throwUnexpected();
+        }
     };
 
     virtual bool processSingleKey(IKeyIndex *key, const IDynamicTransform * trans) override
@@ -26175,12 +26170,9 @@ public:
                                 Owned<CRowArrayMessageResult> result = new CRowArrayMessageResult();
                                 jg->notePending();
                                 unsigned candidateCount = 0;
-                                ScopedAtomic<unsigned> indexRecordsRead(::indexRecordsRead);
-                                ScopedAtomic<unsigned> postFiltered(::postFiltered);
                                 while (tlk->lookup(true))
                                 {
                                     candidateCount++;
-                                    indexRecordsRead++;
                                     KLBlobProviderAdapter adapter(tlk, this);
                                     const byte *indexRow = tlk->queryKeyBuffer();
                                     size_t fposOffset = tlk->queryRowSize() - sizeof(offset_t);
@@ -26196,7 +26188,6 @@ public:
                                     else
                                     {
                                         rejected++;
-                                        postFiltered++;
                                     }
                                 }
                                 // output an end marker for the matches to this group
@@ -26560,15 +26551,15 @@ public:
         unsigned outSize;
         try
         {   
-            outSize = except ? helper.onFailTransform(rowBuilder, left, right, fpos_or_count, except) :
-                      (activityKind == TAKkeyeddenormalizegroup) ? helper.transform(rowBuilder, left, right, (unsigned)fpos_or_count, group) :
+            outSize = unlikely(except) ? helper.onFailTransform(rowBuilder, left, right, fpos_or_count, except) :
+                      unlikely(activityKind == TAKkeyeddenormalizegroup) ? helper.transform(rowBuilder, left, right, (unsigned)fpos_or_count, group) :
                       helper.transform(rowBuilder, left, right, fpos_or_count, counter);
         }
         catch (IException *E)
         {
             throw makeWrappedException(E);
         }
-        if (outSize)
+        if (likely(outSize))
         {
             const void *shrunk = rowBuilder.finalizeRowClear(outSize);
             remote.addResult(shrunk);
@@ -26908,7 +26899,8 @@ public:
     virtual void onCreate(IHThorArg *_colocalParent)
     {
         CRoxieServerKeyedJoinBase::onCreate(_colocalParent);
-        indexReadAllocator.setown(createRowAllocator(indexReadMeta));
+        //The index read allocator->allocate() is only ever called from a single thread => we can allocate rows in blocks
+        indexReadAllocator.setown(createRowAllocatorEx(indexReadMeta, roxiemem::RHFblocked));
 
         IOutputMetaData *joinFieldsMeta = helper.queryJoinFieldsRecordSize();
         joinPrefixedMeta.setown(new CPrefixedOutputMeta(KEYEDJOIN_RECORD_SIZE(0), joinFieldsMeta)); // MORE - not sure if we really need this
@@ -26948,6 +26940,8 @@ public:
     virtual void reset()
     {
         CRoxieServerKeyedJoinBase::reset();
+        if (indexReadAllocator)
+            indexReadAllocator->emptyCache();
         if (varFileInfo)
         {
             keySet.clear();
@@ -27027,12 +27021,9 @@ public:
                                 // MORE - This code seems to be duplicated in keyedJoinHead
                                 jg->notePending();
                                 unsigned candidateCount = 0;
-                                ScopedAtomic<unsigned> indexRecordsRead(::indexRecordsRead);
-                                ScopedAtomic<unsigned> postFiltered(::postFiltered);
                                 while (tlk->lookup(true))
                                 {
                                     candidateCount++;
-                                    indexRecordsRead++;
                                     KLBlobProviderAdapter adapter(tlk, this);
                                     const byte *indexRow = tlk->queryKeyBuffer();
                                     size_t fposOffset = tlk->queryRowSize() - sizeof(offset_t);
@@ -27056,7 +27047,6 @@ public:
                                     else
                                     {
                                         rejected++;
-                                        postFiltered++;
                                     }
                                 }
 

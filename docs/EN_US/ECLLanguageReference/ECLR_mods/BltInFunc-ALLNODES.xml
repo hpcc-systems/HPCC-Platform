@@ -2,11 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ALLNODES">
-  
-
   <title>ALLNODES</title>
-
-  
 
   <para><emphasis role="bold">ALLNODES<indexterm>
       <primary>ALLNODES</primary>
@@ -32,29 +28,21 @@
           <row>
             <entry>Return:</entry>
 
-            <entry>ALLNODES returns a record
-            set or index.</entry>
+            <entry>ALLNODES returns a record set or index.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">ALLNODES
-  </emphasis>function specifies that the <emphasis>operation</emphasis> is
-  performed on all nodes in parallel. <emphasis role="bold">Available for use
-  only in Roxie.</emphasis></para>
+  <para>The <emphasis role="bold">ALLNODES </emphasis>function specifies that
+  the <emphasis>operation</emphasis> is performed on all nodes in parallel.
+  <emphasis role="bold">Available for use only in Roxie.</emphasis></para>
 
   <para>Example:</para>
 
-  
-
-  <programlisting>ds := ALLNODES(JOIN(SomeData,LOCAL(SomeIndex), LEFT.ID = RIGHT.ID));
+  <programlisting lang="ECL">ds := ALLNODES(JOIN(SomeData,LOCAL(SomeIndex), LEFT.ID = RIGHT.ID));
 </programlisting>
 
-  
-
-  <para>See Also: <link
-  linkend="THISNODE">THISNODE</link>, <link
-  linkend="LOCAL">LOCAL</link>, <link
-  linkend="NOLOCAL">NOLOCAL</link></para>
+  <para>See Also: <link linkend="THISNODE">THISNODE</link>, <link
+  linkend="LOCAL">LOCAL</link>, <link linkend="NOLOCAL">NOLOCAL</link></para>
 </sect1>

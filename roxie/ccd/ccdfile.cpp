@@ -1516,7 +1516,6 @@ public:
                         {
                             next.setown(popped);
                         }
-                        numFilesToProcess--;    // must decrement counter for SNMP accuracy
                     }
                 }
                 if (next)
@@ -1712,7 +1711,6 @@ public:
             if (file == &todo.item(idx))
             {
                 todo.remove(idx);
-                numFilesToProcess--;    // must decrement counter for SNMP accuracy
             }
         }
 #ifdef _CONTAINERIZED
@@ -1841,7 +1839,6 @@ public:
                             }
 
                             todo.append(*ret);
-                            numFilesToProcess++;  // must increment counter for SNMP accuracy
                             toCopy.signal();
                         }
                         else
@@ -1871,7 +1868,6 @@ public:
                             todo.add(*ret, 0);
                         else
                             todo.append(*ret);
-                        numFilesToProcess++;  // must increment counter for SNMP accuracy
                         toCopy.signal();
 #endif
 

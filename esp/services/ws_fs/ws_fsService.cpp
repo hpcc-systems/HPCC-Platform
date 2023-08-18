@@ -2564,12 +2564,15 @@ bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDespray
 
             StringBuffer destfileWithPath, umask;
             if (!isEmptyString(destPlane))  // must be true, unless bare-metal and isDropZoneRestrictionEnabled()==false
+            {
                 getDropZoneInfoByDestPlane(version, destPlane, destfile, destfileWithPath, umask, destip);
-
-            SecAccessFlags permission = getDZFileScopePermissions(context, destPlane, destfileWithPath, destip);
-            if (permission < SecAccess_Write)
-                throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Access DropZone Scope %s %s not allowed for user %s (permission:%s). Write Access Required.",
-                    isEmptyString(destPlane) ? destip : destPlane, destfileWithPath.str(), context.queryUserId(), getSecAccessFlagName(permission));
+                SecAccessFlags permission = getDZFileScopePermissions(context, destPlane, destfileWithPath, destip);
+                if (permission < SecAccess_Write)
+                    throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Access DropZone Scope %s %s not allowed for user %s (permission:%s). Write Access Required.",
+                        destPlane, destfileWithPath.str(), context.queryUserId(), getSecAccessFlagName(permission));
+            }
+            else
+                destfileWithPath.append(destfile).trim();
 
             RemoteFilename rfn;
             SocketEndpoint ep(destip.str());
@@ -3196,14 +3199,12 @@ bool CFileSprayEx::onDropZoneFileSearch(IEspContext &context, IEspDropZoneFileSe
         bool isIPAddressReq = isIPAddress(dropZoneServerReq);
         IArrayOf<IConstTpDropZone> allTpDropZones;
         CTpWrapper tpWrapper;
-        tpWrapper.getTpDropZones(9999, nullptr, false, allTpDropZones); //version 9999: get the latest information about dropzone
+        tpWrapper.getTpDropZones(9999, nullptr, req.getECLWatchVisibleOnly(), allTpDropZones); //version 9999: get the latest information about dropzone
         ForEachItemIn(i, allTpDropZones)
         {
             IConstTpDropZone& dropZone = allTpDropZones.item(i);
             const char* name = dropZone.getName();
             if (!streq(dropZoneName, name))
-                continue;
-            if (req.getECLWatchVisibleOnly() && !dropZone.getECLWatchVisible())
                 continue;
 
             IArrayOf<IConstTpMachine>& tpMachines = dropZone.getTpMachines();
@@ -3397,12 +3398,10 @@ bool CFileSprayEx::onDropZoneFiles(IEspContext &context, IEspDropZoneFilesReques
         bool isIPAddressReq = isIPAddress(netAddress);
         IArrayOf<IConstTpDropZone> allTpDropZones;
         CTpWrapper tpWrapper;
-        tpWrapper.getTpDropZones(9999, nullptr, false, allTpDropZones); //version 9999: get the latest information about dropzone
+        tpWrapper.getTpDropZones(9999, nullptr, ECLWatchVisibleOnly, allTpDropZones); //version 9999: get the latest information about dropzone
         ForEachItemIn(i, allTpDropZones)
         {
             IConstTpDropZone& dropZone = allTpDropZones.item(i);
-            if (ECLWatchVisibleOnly && !dropZone.getECLWatchVisible())
-                continue;
 
             const char* dropZoneName = dropZone.getName();
             const char* prefix = dropZone.getPath();

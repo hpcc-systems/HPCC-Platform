@@ -5,6 +5,7 @@ import { useForm, Controller } from "react-hook-form";
 import * as FileSpray from "src/FileSpray";
 import { TargetDfuSprayQueueTextField, TargetGroupTextField } from "../Fields";
 import nlsHPCC from "src/nlsHPCC";
+import { useBuildInfo } from "../../../hooks/platform";
 import { MessageBox } from "../../../layouts/MessageBox";
 import { pushUrl } from "../../../util/history";
 import * as FormStyles from "./styles";
@@ -20,6 +21,7 @@ interface XmlImportFormValues {
         TargetRowTag: string,
         NumParts: string,
         SourceFile: string,
+        SourcePlane: string,
         SourceIP: string
     }[],
     sourceFormat: string;
@@ -64,6 +66,8 @@ export const XmlImportForm: React.FunctionComponent<XmlImportFormProps> = ({
     setShowForm
 }) => {
 
+    const [, { isContainer }] = useBuildInfo();
+
     const { handleSubmit, control, reset } = useForm<XmlImportFormValues>({ defaultValues });
 
     const closeForm = React.useCallback(() => {
@@ -80,7 +84,11 @@ export const XmlImportForm: React.FunctionComponent<XmlImportFormProps> = ({
 
                 files.forEach(file => {
                     request = data;
-                    request["sourceIP"] = file.SourceIP;
+                    if (!isContainer) {
+                        request["sourceIP"] = file.SourceIP;
+                    } else {
+                        request["sourcePlane"] = file.SourcePlane;
+                    }
                     request["sourcePath"] = file.SourceFile;
                     request["destLogicalName"] = data.namePrefix + ((
                         data.namePrefix && data.namePrefix.substring(-2) !== "::" &&
@@ -104,7 +112,7 @@ export const XmlImportForm: React.FunctionComponent<XmlImportFormProps> = ({
                 logger.error(err);
             }
         )();
-    }, [handleSubmit]);
+    }, [handleSubmit, isContainer]);
 
     const componentStyles = mergeStyleSets(
         FormStyles.componentStyles,
@@ -119,12 +127,13 @@ export const XmlImportForm: React.FunctionComponent<XmlImportFormProps> = ({
         if (selection) {
             const newValues = defaultValues;
             newValues.selectedFiles = [];
-            selection.forEach((file, idx) => {
+            selection.forEach((file: { [id: string]: any }, idx) => {
                 newValues.selectedFiles[idx] = {
                     TargetName: file["name"],
                     TargetRowTag: "Row",
                     NumParts: "",
                     SourceFile: file["fullPath"],
+                    SourcePlane: file?.DropZone?.Name ?? "",
                     SourceIP: file["NetAddress"]
                 };
             });

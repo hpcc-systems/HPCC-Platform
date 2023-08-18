@@ -161,6 +161,8 @@ public:
 
     bool onTpSwapNode(IEspContext &context,IEspTpSwapNodeRequest  &req, IEspTpSwapNodeResponse &resp);
 
+    bool onTpListLogFiles(IEspContext &context, IEspTpListLogFilesRequest &req, IEspTpListLogFilesResponse &resp);
+
     bool onTpXMLFile(IEspContext &context,IEspTpXMLFileRequest  &req, IEspTpXMLFileResponse &resp);
 
     bool onTpLogFile(IEspContext &context,IEspTpLogFileRequest  &req, IEspTpLogFileResponse &resp);

@@ -11,9 +11,14 @@
     </indexterm>(</emphasis><emphasis>recordset </emphasis><emphasis
   role="bold">[, KEYED<indexterm>
       <primary>KEYED</primary>
-    </indexterm> ] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+    </indexterm> ] </emphasis><emphasis role="bold">[, UNORDERED |
+  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
+  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
+  </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
+  <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
 
-  <para><emphasis role="bold">EXISTS(</emphasis><emphasis> valuelist</emphasis><emphasis role="bold"> )</emphasis></para>
+  <para><emphasis role="bold">EXISTS(</emphasis><emphasis>
+  valuelist</emphasis><emphasis role="bold"> )</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
@@ -45,50 +50,70 @@
             <entry>A comma-delimited list of expressions. This may also be a
             SET of values.</entry>
           </row>
+
           <row>
             <entry><emphasis role="bold">UNORDERED</emphasis></entry>
 
-            <entry>Optional. Specifies the output record order is not significant.</entry>
+            <entry>Optional. Specifies the output record order is not
+            significant.</entry>
           </row>
+
           <row>
             <entry><emphasis role="bold">ORDERED</emphasis></entry>
 
-            <entry>Specifies the significance of the output record order.</entry>
+            <entry>Specifies the significance of the output record
+            order.</entry>
           </row>
+
           <row>
             <entry><emphasis>bool</emphasis></entry>
 
-            <entry>When False, specifies the output record order is not significant. When True, specifies the default output record order.</entry>
+            <entry>When False, specifies the output record order is not
+            significant. When True, specifies the default output record
+            order.</entry>
           </row>
+
           <row>
             <entry><emphasis role="bold">STABLE</emphasis></entry>
 
-            <entry>Optional. Specifies the input record order is significant.</entry>
+            <entry>Optional. Specifies the input record order is
+            significant.</entry>
           </row>
+
           <row>
             <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
 
-            <entry>Optional. Specifies the input record order is not significant.</entry>
+            <entry>Optional. Specifies the input record order is not
+            significant.</entry>
           </row>
+
           <row>
             <entry><emphasis role="bold">PARALLEL</emphasis></entry>
 
-            <entry>Optional. Try to evaluate this activity in parallel.</entry>
+            <entry>Optional. Try to evaluate this activity in
+            parallel.</entry>
           </row>
+
           <row>
             <entry><emphasis>numthreads</emphasis></entry>
 
-            <entry>Optional. Try to evaluate this activity using <emphasis>numthreads</emphasis> threads.</entry>
+            <entry>Optional. Try to evaluate this activity using
+            <emphasis>numthreads</emphasis> threads.</entry>
           </row>
+
           <row>
             <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
 
-            <entry>Optional. Override the algorithm used for this activity.</entry>
+            <entry>Optional. Override the algorithm used for this
+            activity.</entry>
           </row>
+
           <row>
             <entry><emphasis>name</emphasis></entry>
 
-            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the SORT function's STABLE and UNSTABLE options.</entry>
+            <entry>The algorithm to use for this activity. Must be from the
+            list of supported algorithms for the SORT function's STABLE and
+            UNSTABLE options.</entry>
           </row>
 
           <row>
@@ -114,15 +139,44 @@
 
   <para>Example:</para>
 
-  <programlisting>MyBoolean := EXISTS(Publics(pub_type = 'B'));
-TradesExistPersons := Person(EXISTS(Trades));
-NoTradesPerson := Person(NOT EXISTS(Trades));
+  <programlisting lang="ECL" role="runnable">TrdRec := RECORD
+  UNSIGNED2 Trd_ID;
+  INTEGER4 Trd_bal;
+  INTEGER4 Trd_hc;
+END;
 
-MinVal2 := EXISTS(4,8,16,2,1); //returns TRUE
+PersonRec := RECORD
+  STRING20 FirstName;
+  STRING20 LastName;
+  DATASET(TrdRec) Trd;
+END;
+
+Person := DATASET([{'Noah','Brody',[]},
+                   {'Fred','Jones',[{1,2,3},{2,4,5}]},
+                   {'Sue','Smith',[{10,-2,60},{12,14,50}]},
+                   {'Joe','Johnson',[{11,200,3000},{22,140,350},{25,100,850}]},
+                   {'Susan','Stone',[{102,2,30},{125,14,50},{225,14000,50000}]}],PersonRec);
+Trades := Person.Trd;
+
+MyBoolean := EXISTS(Trades(Trd_ID = 15));
+OUTPUT(MyBoolean);            //returns FALSE
+
+TradesExistPersons := Person(EXISTS(Trades));
+OUTPUT(TradesExistPersons);   //returns 4 records
+
+NoTradesPerson := Person(NOT EXISTS(Trades));
+OUTPUT(NoTradesPerson);       //returns 1 record
+
+SetExists1 := EXISTS(4,8,16,2,1); 
+OUTPUT(SetExists1);            //returns TRUE
+
 SetVals := [4,8,16,2,1];
-MinVal3 := EXISTS(SetVals);  //returns TRUE
-NullSet := [];
-MinVal3 := EXISTS(NullSet);  //returns FALSE
+SetExists2 := EXISTS(SetVals); 
+OUTPUT(SetExists2);            //returns TRUE
+
+EmptySet := [];
+SetExists3 := EXISTS(EmptySet);
+OUTPUT(SetExists3);            //returns FALSE
 </programlisting>
 
   <para>See Also: <link linkend="DEDUP">DEDUP</link>, <link

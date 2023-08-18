@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Checkbox, ChoiceGroup, ComboBox, IChoiceGroupOption, Dropdown as DropdownBase, IDropdownOption, TextField, Link, ProgressIndicator, IComboBoxOption, IComboBoxProps } from "@fluentui/react";
 import { scopedLogger } from "@hpcc-js/util";
+import { FileSpray } from "@hpcc-js/comms";
 import { TpDropZoneQuery, TpGroupQuery, TpServiceQuery } from "src/WsTopology";
 import * as WsAccess from "src/ws_access";
 import * as WsESDLConfig from "src/WsESDLConfig";
@@ -8,7 +9,7 @@ import { States } from "src/WsWorkunits";
 import { FileList, States as DFUStates } from "src/FileSpray";
 import { joinPath } from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
-import { useLogicalClusters } from "../../hooks/platform";
+import { useBuildInfo, useLogicalClusters } from "../../hooks/platform";
 import { useContainerNames } from "../../hooks/cloud";
 
 const logger = scopedLogger("src-react/components/forms/Fields.tsx");
@@ -429,7 +430,8 @@ export const TargetDropzoneTextField: React.FunctionComponent<TargetDropzoneText
                 return {
                     key: row.Name,
                     text: row.Name,
-                    path: row.Path
+                    path: row.Path,
+                    OS: row?.TpMachines?.TpMachine[0].OS ?? ""
                 };
             }));
         }).catch(err => logger.error(err));
@@ -570,6 +572,7 @@ export const EsdlDefinitionsTextField: React.FunctionComponent<EsdlDefinitionsTe
 
 export interface TargetFolderTextFieldProps extends Omit<AsyncDropdownProps, "options"> {
     pathSepChar?: string;
+    dropzone?: string;
     machineAddress?: string;
     machineDirectory?: string;
     machineOS?: number;
@@ -577,8 +580,9 @@ export interface TargetFolderTextFieldProps extends Omit<AsyncDropdownProps, "op
 
 export const TargetFolderTextField: React.FunctionComponent<TargetFolderTextFieldProps> = (props) => {
 
+    const [, { isContainer }] = useBuildInfo();
     const [folders, setFolders] = React.useState<IDropdownOption[]>();
-    const { pathSepChar, machineAddress, machineDirectory, machineOS } = { ...props };
+    const { pathSepChar, dropzone, machineAddress, machineDirectory, machineOS } = { ...props };
 
     const fetchFolders = React.useCallback((pathSepChar: string, Netaddr: string, Path: string, OS: number, depth: number): Promise<IDropdownOption[]> => {
         depth = depth || 0;
@@ -594,12 +598,17 @@ export const TargetFolderTextField: React.FunctionComponent<TargetFolderTextFiel
             if (depth > 2) {
                 resolve(retVal);
             } else {
+                const request: Partial<FileSpray.FileListRequest> = {
+                    Path: Path,
+                    OS: OS?.toString() ?? ""
+                };
+                if (isContainer) {
+                    request.DropZoneName = dropzone;
+                } else {
+                    request.Netaddr = Netaddr;
+                }
                 FileList({
-                    request: {
-                        Netaddr: Netaddr,
-                        Path: Path,
-                        OS: OS
-                    },
+                    request,
                     suppressExceptionToaster: true
                 }).then(({ FileListResponse }) => {
                     const requests = [];
@@ -621,17 +630,16 @@ export const TargetFolderTextField: React.FunctionComponent<TargetFolderTextFiel
                 });
             }
         });
-    }, [machineDirectory, props.required]);
+    }, [dropzone, isContainer, machineDirectory, props.required]);
 
     React.useEffect(() => {
+        if ((!isContainer && !machineAddress) || !machineDirectory || !machineOS) return;
         const _fetchFolders = async () => {
             const folders = await fetchFolders(pathSepChar, machineAddress, machineDirectory, machineOS, 0);
             setFolders(folders);
         };
-        if (machineAddress && machineDirectory && machineOS) {
-            _fetchFolders();
-        }
-    }, [pathSepChar, machineAddress, machineDirectory, machineOS, fetchFolders]);
+        _fetchFolders();
+    }, [isContainer, pathSepChar, machineAddress, machineDirectory, machineOS, fetchFolders]);
 
     return <AsyncDropdown {...props} options={folders} />;
 };
@@ -669,18 +677,18 @@ export interface GroupMembersProps extends Omit<AsyncDropdownProps, "options"> {
 
 export const GroupMembersField: React.FunctionComponent<GroupMembersProps> = (props) => {
 
-    const [users, setUsers] = React.useState<IDropdownOption[]>();
+    const [users, setUsers] = React.useState<IDropdownOption[]>([]);
 
     React.useEffect(() => {
         const request = { groupname: props.groupname };
         WsAccess.GroupMemberEditInput({ request: request }).then(({ GroupMemberEditInputResponse }) => {
-            const _users = GroupMemberEditInputResponse?.Users?.User
-                .map(user => {
-                    return {
-                        key: user.username,
-                        text: user.username
-                    };
-                }) || [];
+            const usersArray = GroupMemberEditInputResponse?.Users?.User || [];
+
+            const _users = usersArray.map(user => ({
+                key: user.username,
+                text: user.username
+            })).sort((a, b) => a.text.localeCompare(b.text));
+
             setUsers(_users);
         }).catch(err => logger.error(err));
     }, [props.groupname]);

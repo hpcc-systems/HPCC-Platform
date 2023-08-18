@@ -30,5 +30,5 @@
 
   <para>Example:</para>
 
-  <programlisting>OUTPUT(CLUSTERSIZE)</programlisting>
+  <programlisting lang="ECL" role="runnable">OUTPUT(CLUSTERSIZE);</programlisting>
 </sect1>

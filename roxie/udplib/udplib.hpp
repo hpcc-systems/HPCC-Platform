@@ -105,6 +105,7 @@ interface IException;
 interface IMessageUnpackCursor : extends IInterface
 {
     virtual const void *getNext(int length) = 0;
+    virtual RecordLengthType *getNextLength() = 0;
     virtual bool atEOF() const = 0;
     virtual bool isSerialized() const = 0;
     //    if one tries to read past the last record then NULL will be returned, 

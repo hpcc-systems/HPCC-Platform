@@ -1837,6 +1837,12 @@ bool CJobSlave::getWorkUnitValueBool(const char *prop, bool defVal) const
     return workUnitInfo->queryPropTree("Debug")->getPropBool(propName.toLowerCase().str(), defVal);
 }
 
+double CJobSlave::getWorkUnitValueReal(const char *prop, double defVal) const
+{
+    StringBuffer propName(prop);
+    return workUnitInfo->queryPropTree("Debug")->getPropReal(propName.toLowerCase().str(), defVal);
+}
+
 void CJobSlave::debugRequest(MemoryBuffer &msg, const char *request) const
 {
     if (watchdog) watchdog->debugRequest(msg, request);

@@ -18617,6 +18617,9 @@ void HqlCppTranslator::doBuildExprRegexFindSet(BuildCtx & ctx, IHqlExpression * 
     IIdAtom * func = isUnicode ? regexUStrMatchSetId : regexMatchSetId;
     OwnedHqlExpr call = bindFunctionCall(func, args);
     buildExprOrAssign(ctx, NULL, call, &bound);
+    //REGEXFINDSET() can never return ALL - so explicitly clear it in the result.
+    bound.isAll.setown(createConstant(false));
+    ctx.associateExpr(expr, bound);
 }
 
 //---------------------------------------------------------------------------

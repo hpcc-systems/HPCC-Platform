@@ -31,62 +31,11 @@
 
 #define DEFAULT_PULSE_INTERVAL 30
 
-RelaxedAtomic<unsigned> queryCount;
 RoxieQueryStats unknownQueryStats;
 RoxieQueryStats loQueryStats;
 RoxieQueryStats hiQueryStats;
 RoxieQueryStats slaQueryStats;
 RoxieQueryStats combinedQueryStats;
-RelaxedAtomic<unsigned> retriesIgnoredPrm;
-RelaxedAtomic<unsigned> retriesIgnoredSec;
-RelaxedAtomic<unsigned> retriesNeeded;
-RelaxedAtomic<unsigned> retriesReceivedPrm;
-RelaxedAtomic<unsigned> retriesReceivedSec;
-RelaxedAtomic<unsigned> retriesSent;
-RelaxedAtomic<unsigned> rowsIn;
-RelaxedAtomic<unsigned> ibytiPacketsFromSelf;
-RelaxedAtomic<unsigned> ibytiPacketsSent;
-RelaxedAtomic<unsigned> ibytiPacketsWorked;
-RelaxedAtomic<unsigned> ibytiPacketsHalfWorked;
-RelaxedAtomic<unsigned> ibytiPacketsReceived;
-RelaxedAtomic<unsigned> ibytiPacketsTooLate;
-RelaxedAtomic<unsigned> ibytiPacketsTooEarly;
-RelaxedAtomic<unsigned> ibytiNoDelaysPrm;
-RelaxedAtomic<unsigned> ibytiNoDelaysSec;
-RelaxedAtomic<unsigned> packetsSent;
-RelaxedAtomic<unsigned> packetsReceived;
-RelaxedAtomic<unsigned> resultsReceived;
-RelaxedAtomic<unsigned> indexRecordsRead;
-RelaxedAtomic<unsigned> postFiltered;
-RelaxedAtomic<unsigned> abortsSent;
-RelaxedAtomic<unsigned> activitiesStarted;
-RelaxedAtomic<unsigned> activitiesCompleted;
-RelaxedAtomic<unsigned> diskReadStarted;
-RelaxedAtomic<unsigned> diskReadCompleted;
-RelaxedAtomic<unsigned> globalSignals;
-RelaxedAtomic<unsigned> globalLocks;
-RelaxedAtomic<unsigned> numFilesToProcess;
-
-RelaxedAtomic<unsigned> queueLength;
-RelaxedAtomic<unsigned> maxQueueLength;
-RelaxedAtomic<unsigned> rowsOut;
-RelaxedAtomic<unsigned> maxScanLength;
-RelaxedAtomic<unsigned> totScanLength;
-RelaxedAtomic<unsigned> totScans;
-
-#ifdef TIME_PACKETS
-RelaxedAtomic<unsigned __int64> packetWaitElapsed;
-RelaxedAtomic<unsigned> packetWaitMax;
-RelaxedAtomic<unsigned> packetWaitCount;
-RelaxedAtomic<unsigned __int64> packetRunElapsed;
-RelaxedAtomic<unsigned> packetRunMax;
-RelaxedAtomic<unsigned> packetRunCount;
-#endif
-
-RelaxedAtomic<unsigned> lastQueryDate;
-RelaxedAtomic<unsigned> lastQueryTime;
-RelaxedAtomic<unsigned> agentsActive;
-RelaxedAtomic<unsigned> maxAgentsActive;
 
 #define addMetric(a, b) doAddMetric(a, #a, b)
 
@@ -339,46 +288,11 @@ using roxiemem::getDataBuffersActive;
 CRoxieMetricsManager::CRoxieMetricsManager()
 {
     started = false;
-    addMetric(maxQueueLength, 0);
-    addMetric(queryCount, 1000);
     unknownQueryStats.addMetrics(this, "unknown", 1000);
     loQueryStats.addMetrics(this, "lo", 1000);
     hiQueryStats.addMetrics(this, "hi", 1000);
     slaQueryStats.addMetrics(this, "sla", 1000);
     combinedQueryStats.addMetrics(this, "all", 1000);
-    addMetric(retriesIgnoredPrm, 1000);
-    addMetric(retriesIgnoredSec, 1000);
-    addMetric(retriesNeeded, 1000);
-    addMetric(retriesReceivedPrm, 1000);
-    addMetric(retriesReceivedSec, 1000);
-    addMetric(retriesSent, 1000);
-    addMetric(rowsIn, 1000);
-    addMetric(rowsOut, 1000);
-    addMetric(ibytiPacketsFromSelf, 1000);
-    addMetric(ibytiPacketsSent, 1000);
-    addMetric(ibytiPacketsWorked, 1000);
-    addMetric(ibytiPacketsHalfWorked, 1000);
-    addMetric(ibytiPacketsReceived, 1000);
-    addMetric(ibytiPacketsTooLate, 1000);
-    addMetric(ibytiPacketsTooEarly, 1000);
-#ifndef NO_IBYTI_DELAYS_COUNT
-    addMetric(ibytiNoDelaysPrm, 1000);
-    addMetric(ibytiNoDelaysSec, 1000);
-#endif
-    addMetric(packetsReceived, 1000);
-    addMetric(packetsSent, 1000);
-    addMetric(resultsReceived, 1000);
-    addMetric(agentsActive, 0);
-    addMetric(maxAgentsActive, 0);
-    addMetric(indexRecordsRead, 1000);
-    addMetric(postFiltered, 1000);
-    addMetric(abortsSent, 0);
-    addMetric(activitiesStarted, 1000);
-    addMetric(activitiesCompleted, 1000);
-    addMetric(diskReadStarted, 0);
-    addMetric(diskReadCompleted, 0);
-    addMetric(globalSignals, 0);
-    addMetric(globalLocks, 0);
     addMetric(restarts, 0);
 
     addMetric(nodesLoaded, 1000);
@@ -402,12 +316,6 @@ CRoxieMetricsManager::CRoxieMetricsManager()
     addMetric(getDataBufferPages, 0);
     addMetric(getDataBuffersActive, 0);
     
-    addMetric(maxScanLength, 0);
-    addMetric(totScanLength, 0);
-    addMetric(totScans, 0);
-    addMetric(lastQueryDate, 0);
-    addMetric(lastQueryTime, 0);
-
     addMetric(packetsResent, 1000);
     addMetric(flowPermitsSent, 1000);
     addMetric(flowRequestsReceived, 1000);
@@ -415,14 +323,6 @@ CRoxieMetricsManager::CRoxieMetricsManager()
     addMetric(flowRequestsSent, 1000);
     addMetric(flowPermitsReceived, 1000);
     addMetric(dataPacketsSent, 1000);
-
-#ifdef TIME_PACKETS
-    addMetric(packetWaitMax, 0);
-    addMetric(packetRunMax, 0);
-    addRatioMetric(packetRunCount, "packetRunAverage", packetRunElapsed);
-    addRatioMetric(packetWaitCount, "packetWaitAverage", packetWaitElapsed);
-#endif
-    addMetric(numFilesToProcess, 0);
     ticker.start();
 }
 

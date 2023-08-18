@@ -68,7 +68,7 @@
   <para>You can use EMBED instead of BEGINC++ to embed C++ code and specify
   additional options (for example, DISTRIBUTED) using this form:</para>
 
-  <para><programlisting>myFunction(string name) := EMBED(C++ [: options]) 
+  <para><programlisting lang="ECL">myFunction(string name) := EMBED(C++ [: options]) 
   ... text 
 ENDEMBED</programlisting></para>
 
@@ -81,7 +81,7 @@ ENDEMBED</programlisting></para>
 
     <para>Types are passed as follows:</para>
 
-    <programlisting>//The following typedefs are used below:
+    <programlisting lang="CPP">//The following typedefs are used below:
 typedef unsigned size32_t;
 typedef wchar_t UChar; [ unsigned short in linux ]</programlisting>
 
@@ -89,7 +89,7 @@ typedef wchar_t UChar; [ unsigned short in linux ]</programlisting>
     embedded C++ the parameters are always converted to lower case, and
     capitalized in conjunctions (see below).</para>
 
-    <programlisting><emphasis role="bold">ECL                  C++ [Linux in brackets]</emphasis>
+    <programlisting lang="text"><emphasis role="bold">ECL                  C++ [Linux in brackets]</emphasis>
 BOOOLEAN xyz         bool xyz
 INTEGER1 xyz         signed char xyz
 INTEGER2 xyz         int16_t xyz
@@ -118,14 +118,14 @@ SET OF ... xyz       bool isAllXyz, size32_t lenXyz, void *  xyz</programlisting
     number of characters, not the size (i.e. qstring/unicode), followed by a
     pointer to the data, like this (size32_t is an UNSIGNED4):</para>
 
-    <programlisting>STRING  ABC -&gt; size32_t lenAbc, const char * abc;
+    <programlisting lang="CPP">STRING  ABC -&gt; size32_t lenAbc, const char * abc;
 UNICODE ABC -&gt; size32_t lenABC, const UChar * abc;</programlisting>
 
     <para>A dataset is passed as a size/pointer pair. The length gives the
     size of the following dataset in bytes. The same naming convention is
     used:</para>
 
-    <programlisting>DATASET(r)              ABC -&gt; size32_t lenAbc, const void * abc
+    <programlisting lang="text">DATASET(r)              ABC -&gt; size32_t lenAbc, const void * abc
   The rows are accessed as x+0, x + length(row1), x + length(row1) + length(row2)
 
 LINKCOUNTED DATASET(r)  ABC -&gt; size32_t countAbc, const byte * * abc
@@ -137,13 +137,13 @@ LINKCOUNTED DATASET(r)  ABC -&gt; size32_t countAbc, const byte * * abc
 
     <para>Sets are passed as a set of parameters (all, size, pointer):</para>
 
-    <programlisting>SET OF UNSIGNED4 ABC -&gt; bool isAllAbc, size32_t lenAbc, const void * abc</programlisting>
+    <programlisting lang="ECL">SET OF UNSIGNED4 ABC -&gt; bool isAllAbc, size32_t lenAbc, const void * abc</programlisting>
 
     <para>Return types are handled as C++ functions returning the same types
     with some exceptions. The exceptions have some extra initial parameters to
     return the results in:</para>
 
-    <programlisting><emphasis role="bold">ECL                C++ [Linux in brackets]</emphasis>
+    <programlisting lang="text"><emphasis role="bold">ECL                C++ [Linux in brackets]</emphasis>
 DATA xyz           size32_t &amp; __lenResult, void * &amp; __result
 STRING xyz         size32_t &amp; __lenResult, char * &amp; __result
 CONST STRING xyz   size32_t lenXyz, const char * xyz
@@ -167,11 +167,11 @@ STREAMED DATASET(r)
 
     <para>For example,</para>
 
-    <programlisting>STRING process(STRING value, INTEGER4 len)</programlisting>
+    <programlisting lang="ECL">STRING process(STRING value, INTEGER4 len)</programlisting>
 
     <para>has the prototype:</para>
 
-    <programlisting>void process(size32_t &amp; __lenResult, char * &amp; __result,
+    <programlisting lang="CPP">void process(size32_t &amp; __lenResult, char * &amp; __result,
              size32_t lenValue, char * value, int len);</programlisting>
 
     <para>A function that takes a string parameter should also have the type
@@ -179,7 +179,7 @@ STREAMED DATASET(r)
     modern compilers don't report errors when constant strings are passed to
     the function.</para>
 
-    <programlisting>BOOLEAN isUpper(const string mystring) := BEGINC++
+    <programlisting lang="ECL">BOOLEAN isUpper(const string mystring) := BEGINC++
   size_t i=0;
   while (i &lt; lenMystring)
   {
@@ -193,21 +193,21 @@ isUpper('JIM');
 
 </programlisting>
 
-    <para>Parameters can also include streamed datasets. </para>
+    <para>Parameters can also include streamed datasets.</para>
 
     <para>If stream is specified on the dataset then the parameter is passed
     as an IRowStream. The next row from the dataset is obtained by
     calling:</para>
 
-    <para><programlisting>dataset-&gt;nextRow(); </programlisting></para>
+    <para><programlisting lang="CPP">dataset-&gt;nextRow(); </programlisting></para>
 
-    <para>After it has been processed the row must be freed by calling </para>
+    <para>After it has been processed the row must be freed by calling</para>
 
-    <para><programlisting>rtlReleaseRow(next); </programlisting></para>
+    <para><programlisting lang="CPP">rtlReleaseRow(next); </programlisting></para>
 
-    <para>For example: </para>
+    <para>For example:</para>
 
-    <para><programlisting>traceDataset(STREAMED DATASET(r) ds, BOOLEAN isLocal = FALSE) := EMBED(C++)
+    <para><programlisting lang="ECL">traceDataset(STREAMED DATASET(r) ds, BOOLEAN isLocal = FALSE) := EMBED(C++)
 #include &lt;stdio.h&gt;
 #body
   for(;;)
@@ -227,14 +227,14 @@ ENDEMBED;</programlisting></para>
     to return an instance of an IRowStream interface. The function will also
     be passed an extra implicit parameter:</para>
 
-    <para><programlisting>IEngineRowAllocator * _resultAllocator</programlisting></para>
+    <para><programlisting lang="CPP">IEngineRowAllocator * _resultAllocator</programlisting></para>
 
     <para>which is used to allocate the rows that are returned from the
-    function. </para>
+    function.</para>
 
     <para>For example:</para>
 
-    <para><programlisting>// This function takes two streamed inputs and outputs the result of two values 
+    <para><programlisting lang="ECL">// This function takes two streamed inputs and outputs the result of two values 
 // from the left multiplied together and added to a row from the right.
 
 STREAMED DATASET(r) myDataset(STREAMED DATASET(r) ds1, STREAMED DATASET(r) ds2)
@@ -286,13 +286,13 @@ ENDEMBED;
 </programlisting></para>
 
     <para>Note: If the resulting row does not have a fixed size, you should
-    call: </para>
+    call:</para>
 
-    <para><programlisting>byte * row = rowBuilder.ensureCapacity(&lt;totalSize&gt;, nullptr); </programlisting></para>
+    <para><programlisting lang="CPP">byte * row = rowBuilder.ensureCapacity(&lt;totalSize&gt;, nullptr); </programlisting></para>
 
-    <para>instead of: </para>
+    <para>instead of:</para>
 
-    <para><programlisting>byte * row = rowBuilder.getSelf(); </programlisting></para>
+    <para><programlisting lang="CPP">byte * row = rowBuilder.getSelf(); </programlisting></para>
 
     <para>This code uses a RtlDynamicRowBuilder which is a class used by the
     code generator. Instead of using the RtlDynamicRowBuilder class, you could
@@ -302,7 +302,7 @@ ENDEMBED;
     passed as a parameter, the format is the same as the parameters, except
     that instead of having a pointer to the string etc., the string follows
     the 4-byte length. The data in the row is not aligned; that is, it has
-    packing of 1. </para>
+    packing of 1.</para>
   </sect2>
 
   <sect2 id="BeginCPP_Available_Options">
@@ -355,7 +355,7 @@ ENDEMBED;
 
     <para>Example:</para>
 
-    <programlisting>//static int add(int x,int y) {
+    <programlisting lang="ECL">//static int add(int x,int y) {
 INTEGER4 add(INTEGER4 x, INTEGER4 y) := BEGINC++
   #option pure
   return x + y;

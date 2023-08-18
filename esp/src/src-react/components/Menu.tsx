@@ -294,9 +294,10 @@ export const SubNavigation: React.FunctionComponent<SubNavigationProps> = ({
             <Stack.Item align="center" grow={1}>
                 <Stack horizontal>
                     <Stack.Item grow={0} className={navStyles.wrapper}>
-                        {subMenuItems[mainNav]?.map(row => {
+                        {subMenuItems[mainNav]?.map((row, idx) => {
                             return <Link
                                 disabled={row.itemKey === "/topology/logs" && logsDisabled}
+                                key={`MenuLink_${idx}`}
                                 href={`#${row.itemKey}`}
                                 className={[
                                     navStyles.link,
@@ -310,7 +311,10 @@ export const SubNavigation: React.FunctionComponent<SubNavigationProps> = ({
                     </Stack.Item>
                     {!subNav &&
                         <Stack.Item grow={1} style={{ lineHeight: "24px" }}>
-                            <Breadcrumbs hashPath={hashPath} ignoreN={1} />
+                            {hashPath.includes("/files/")
+                            ? <Breadcrumbs hashPath={hashPath} ignoreN={2} />
+                            : <Breadcrumbs hashPath={hashPath} ignoreN={1} />
+                            }                    
                         </Stack.Item>
                     }
                 </Stack>

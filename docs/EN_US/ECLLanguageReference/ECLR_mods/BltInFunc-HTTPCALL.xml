@@ -151,7 +151,7 @@
 
             <entry>Specifies header information to be passed to the service.
             HTTPCALL supports multiple instances of the HTTPHEADER option if
-            you need to specify multiple key/value header strings. </entry>
+            you need to specify multiple key/value header strings.</entry>
           </row>
         </tbody>
       </tgroup>
@@ -159,7 +159,7 @@
 
   <para>Example:</para>
 
-  <programlisting>worldBankSource := RECORD
+  <programlisting lang="ECL" role="NOTrunnable">worldBankSource := RECORD
   STRING name {XPATH('name')}
 END;
 

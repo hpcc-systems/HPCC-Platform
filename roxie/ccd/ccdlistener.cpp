@@ -115,7 +115,6 @@ class CascadeManager : public CInterface
             if (doTrace(traceRoxieLock))
                 DBGLOG("globalLock released");
             globalLock.signal();
-            globalSignals++;
         }
     }
 
@@ -284,7 +283,6 @@ private:
             DBGLOG("in getGlobalLock");
         if (!globalLock.wait(2000))  // since all lock in the same order it's ok to block for a bit here
             throw MakeStringException(ROXIE_LOCK_ERROR, "lock failed");
-        globalLocks++;
         entered = true;
         if (doTrace(traceRoxieLock))
             DBGLOG("globalLock locked");
@@ -303,7 +301,6 @@ private:
             assertex(entered);
             entered = false;
             globalLock.signal();
-            globalSignals++;
             if (doTrace(traceRoxieLock))
                 DBGLOG("globalLock released");
             throw;
@@ -1140,13 +1137,6 @@ class RoxieWorkUnitWorker : public RoxieQueryWorker
 {
     void noteQuery(bool failed, unsigned elapsedTime, unsigned priority)
     {
-        Owned <IJlibDateTime> now = createDateTimeNow();
-        unsigned y,mo,d,h,m,s,n;
-        now->getLocalTime(h, m, s, n);
-        now->getLocalDate(y, mo, d);
-        lastQueryTime = h*10000 + m * 100 + s;
-        lastQueryDate = y*10000 + mo * 100 + d;
-
         switch(priority)
         {
         case 0: loQueryStats.noteQuery(failed, elapsedTime); break;
@@ -1247,7 +1237,6 @@ public:
         unsigned priority = (unsigned) -2;
         try
         {
-            queryCount++;
             bool isBlind = wu->getDebugValueBool("blindLogging", false);
             if (pool)
             {
@@ -1385,7 +1374,6 @@ public:
     {
         ep.set(_ep);
         unknownQueryStats.noteActive();
-        queryCount++;
     }
     ~RoxieProtocolMsgContext()
     {
@@ -1582,12 +1570,6 @@ public:
     }
     void noteQueryStats(bool failed, unsigned elapsedTime)
     {
-        Owned <IJlibDateTime> now = createDateTimeNow();
-        unsigned y,mo,d,h,m,s,n;
-        now->getLocalTime(h, m, s, n);
-        now->getLocalDate(y, mo, d);
-        lastQueryTime = h*10000 + m * 100 + s;
-        lastQueryDate = y*10000 + mo * 100 + d;
         if (!notedActive)
         {
             unknownQueryStats.noteQuery(failed, elapsedTime);

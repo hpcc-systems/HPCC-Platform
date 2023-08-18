@@ -967,7 +967,6 @@ public:
     virtual IMessagePacker *process()
     {
         MTIME_SECTION(queryActiveTimer(), "CRoxieDiskReadBaseActivity::process");
-        diskReadStarted++;
         Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, logctx);
         doProcess(output);
         helper->setCallback(NULL);
@@ -975,7 +974,6 @@ public:
             return NULL;
         else
         {
-            diskReadCompleted++;
             return output.getClear();
         }
     }
@@ -1919,7 +1917,6 @@ public:
         else
         {
             MTIME_SECTION(queryActiveTimer(), "CParallelRoxieActivity::process");
-            diskReadStarted++;
             Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, logctx);
             class casyncfor: public CAsyncFor
             {
@@ -1955,7 +1952,6 @@ public:
             else
             {
                 doProcess(output);
-                diskReadCompleted++;
                 return output.getClear();
             }
         }
@@ -2887,8 +2883,6 @@ public:
         if (steppingRow)
             rawSeek = steppingRow;
         bool continuationNeeded = false;
-        ScopedAtomic<unsigned> indexRecordsRead(::indexRecordsRead);
-        ScopedAtomic<unsigned> postFiltered(::postFiltered);
         while (!aborted && inputsDone < inputCount)
         {
             if (!resent || !steppingOffset)     // Bit of a hack... In the resent case, we have already set up the tlk, and all keys are processed at once in the steppingOffset case (which makes checkPartChanged gives a false positive in this case)
@@ -2911,7 +2905,6 @@ public:
                             break;
                         }
 
-                        indexRecordsRead++;
                         size32_t transformedSize;
                         const byte * keyRow = tlk->queryKeyBuffer();
                         int diff = 0;
@@ -2996,7 +2989,6 @@ public:
                                 }                           
                                 else
                                 {
-                                    postFiltered++;
                                     skipped++;
                                 }
                             }
@@ -3155,8 +3147,6 @@ public:
         unsigned skipped = 0;
 
         unsigned processedBefore = processed;
-        ScopedAtomic<unsigned> indexRecordsRead(::indexRecordsRead);
-        ScopedAtomic<unsigned> postFiltered(::postFiltered);
         bool continuationFailed = false;
         while (!aborted && inputsDone < inputCount)
         {
@@ -3178,7 +3168,6 @@ public:
                         break;
                     }
 
-                    indexRecordsRead++;
                     bool firstMatch = normalizeHelper->first(tlk->queryKeyBuffer());
                     callback.finishedRow();
                     if (firstMatch) // first() can lookup blobs
@@ -3218,7 +3207,6 @@ public:
                     }
                     else
                     {
-                        postFiltered++;
                         skipped++;
                     }
                 }
@@ -3305,7 +3293,6 @@ public:
             }
 
         }
-        ScopedAtomic<unsigned> indexRecordsRead(::indexRecordsRead);
         while (!aborted && inputsDone < inputCount && count < choosenLimit)
         {
             checkPartChanged(inputData[inputsDone]);
@@ -3319,7 +3306,6 @@ public:
                     while (!aborted && (count < choosenLimit) && tlk->lookup(true))
                     {
                         keyprocessed++;
-                        indexRecordsRead++;
                         count += countHelper->numValid(tlk->queryKeyBuffer());
                         if (count > rowLimit)
                             limitExceeded(false);
@@ -3428,7 +3414,6 @@ public:
         unsigned skipped = 0;
 
         unsigned processedBefore = processed;
-        ScopedAtomic<unsigned> indexRecordsRead(::indexRecordsRead);
         while (!aborted && inputsDone < inputCount)
         {
             checkPartChanged(inputData[inputsDone]);
@@ -3440,7 +3425,6 @@ public:
                 while (!aborted && tlk->lookup(true))
                 {
                     keyprocessed++;
-                    indexRecordsRead++;
                     aggregateHelper->processRow(rowBuilder, tlk->queryKeyBuffer());
                     callback.finishedRow();
                 }
@@ -3549,7 +3533,6 @@ public:
         Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, logctx);
 
         unsigned processedBefore = processed;
-        ScopedAtomic<unsigned> indexRecordsRead(::indexRecordsRead);
         try
         {
             while (!aborted && inputsDone < inputCount)
@@ -3577,7 +3560,6 @@ public:
                         else
                         {
                             keyprocessed++;
-                            indexRecordsRead++;
                             aggregateHelper->processRow(tlk->queryKeyBuffer(), this);
                             callback.finishedRow();
                         }
@@ -4327,14 +4309,11 @@ IMessagePacker *CRoxieKeyedJoinIndexActivity::process()
             else
                 tlk->reset(resent);
             resent = false;
-            ScopedAtomic<unsigned> indexRecordsRead(::indexRecordsRead);
-            ScopedAtomic<unsigned> postFiltered(::postFiltered);
             while (candidateCount <= atmost)
             {
                 if (tlk->lookup(true))
                 {
                     candidateCount++;
-                    indexRecordsRead++;
                     KLBlobProviderAdapter adapter(tlk, &logctx);
                     const byte *indexRow = tlk->queryKeyBuffer();
                     size_t fposOffset = tlk->queryRowSize() - sizeof(offset_t);
@@ -4385,7 +4364,6 @@ IMessagePacker *CRoxieKeyedJoinIndexActivity::process()
                     else
                     {
                         rejected++;
-                        postFiltered++;
                     }
                 }
                 else

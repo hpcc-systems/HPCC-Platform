@@ -1219,10 +1219,9 @@ protected:
                 if (header->activityId == ROXIE_EXCEPTION)
                     throwRemoteException(mu);
                 assertex(header->activityId == ROXIE_DEBUGREQUEST);
-                RecordLengthType *rowlen = (RecordLengthType *) mu->getNext(sizeof(RecordLengthType));
+                RecordLengthType *rowlen = (RecordLengthType *) mu->getNextLength();
                 assertex(rowlen);
                 RecordLengthType len = *rowlen;
-                ReleaseRoxieRow(rowlen);
                 const char * reply = (const char *) mu->getNext(len);
                 if (output)
                 {

@@ -13,6 +13,10 @@ import { GetLogicalFile } from "./GetLogicalFile";
 import { GetLogicalFilePart } from "./GetLogicalFilePart";
 import { GetProtectedList } from "./GetProtectedList";
 import { GetValue } from "./GetValue";
+import { SetLogicalFilePartAttr } from "./SetLogicalFilePartAttr";
+import { SetProtected } from "./SetProtected";
+import { SetUnprotected } from "./SetUnprotected";
+import { SetValue } from "./SetValue";
 import nlsHPCC from "src/nlsHPCC";
 
 interface DaliAdminProps {
@@ -25,7 +29,7 @@ export const DaliAdmin: React.FunctionComponent<DaliAdminProps> = ({
 
     return <>
     <SizeMe monitorHeight>{({ size }) =>
-        <Pivot overflowBehavior="menu" style={{ height: "100%" }} selectedKey={tab} onLinkClick={evt => pushUrl(`/daliadmin/${evt.props.itemKey}`)}>
+        <Pivot overflowBehavior="menu" style={{ height: "100%" }} selectedKey={tab} onLinkClick={evt => pushUrl(`/topology/daliadmin/${evt.props.itemKey}`)}>
             <PivotItem headerText={nlsHPCC.GetDFSCSV} itemKey="getdfscsv" style={pivotItemStyle(size)} >
                 <GetDFSCSV />
             </PivotItem>
@@ -54,7 +58,19 @@ export const DaliAdmin: React.FunctionComponent<DaliAdminProps> = ({
                 <GetProtectedList />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.GetValue} itemKey="getvalue" style={pivotItemStyle(size)} >
-                <GetValue  />
+                <GetValue />
+            </PivotItem>
+            <PivotItem headerText={nlsHPCC.SetLogicalFileAttribute} itemKey="setlogicalfilepartattr" style={pivotItemStyle(size)} >
+                <SetLogicalFilePartAttr />
+            </PivotItem>
+            <PivotItem headerText={nlsHPCC.SetProtected} itemKey="setprotected" style={pivotItemStyle(size)} >
+                <SetProtected />
+            </PivotItem>
+            <PivotItem headerText={nlsHPCC.SetUnprotected} itemKey="setunprotected" style={pivotItemStyle(size)} >
+                <SetUnprotected />
+            </PivotItem>
+            <PivotItem headerText={nlsHPCC.SetValue} itemKey="setvalue" style={pivotItemStyle(size)} >
+                <SetValue />
             </PivotItem>
         </Pivot>
     }</SizeMe>;

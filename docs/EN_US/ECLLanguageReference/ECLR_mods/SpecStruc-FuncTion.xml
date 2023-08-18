@@ -16,7 +16,7 @@
   <para><emphasis role="bold"></emphasis><emphasis>code</emphasis> <emphasis
   role="bold"></emphasis></para>
 
-  <para><emphasis role="bold"> RETURN</emphasis>
+  <para lang="ECL"><emphasis role="bold"> RETURN</emphasis>
   <emphasis>retval</emphasis>;</para>
 
   <para><emphasis role="bold">END;</emphasis></para>
@@ -88,69 +88,27 @@
 
   <para>Example:</para>
 
-  <programlisting>EXPORT doProjectChild(parentRecord l,UNSIGNED idAdjust2) := FUNCTION
-  newChildRecord copyChild(childRecord l) := TRANSFORM
-     SELF.person_id := l.person_id + idAdjust2;
-     SELF := l;
-   END;
-
-   RETURN PROJECT(CHOOSEN(l.children, numChildren),copyChild(LEFT));
-END;
-     //And called from
-SELF.children := doProjectChild(l, 99);
-          
-//**********************************
-EXPORT isAnyRateGE(STRING1 rate) := FUNCTION
-   SetValidRates := ['0','1','2','3','4','5','6','7','8','9'];
-   IsValidTradeRate := ValidDate(Trades.trd_drpt) AND
-                       Trades.trd_rate &gt;= rate AND
-                       Trades.trd_rate IN SetValidRates;
-   ValidPHR := Prev_rate(phr_grid_flag = TRUE,
-                         phr_rate IN SetValidRates,
-                         ValidDate(phr_date));
-   IsPHRGridRate := EXISTS(ValidPHR(phr_rate &gt;= rate,
-                                    AgeOf(phr_date)&lt;=24));
-   IsMaxPHRRate := MAX(ValidPHR(AgeOf(phr_date) &gt; 24),
-                       Prev_rate.phr_rate) &gt;= rate;
-   RETURN IsValidTradeRate OR IsPHRGridRate OR IsMaxPHRRate;
-END;
-
-//*************************************************************
-//a FUNCTION with side-effect Action
-namesTable := FUNCTION
-   namesRecord := RECORD
-     STRING20 surname;
-     STRING10 forename;
-     INTEGER2 age := 25;
-   END;
-   o := OUTPUT('namesTable used by user &lt;x&gt;');
-   ds := DATASET([{'x','y',22}],namesRecord);
-   RETURN WHEN(ds,O);
-END;
-z := namesTable : PERSIST('z');
-  //the PERSIST causes the side-effect action to execute only when the PERSIST is re-built
-
-OUTPUT(z);
-
-//*************************************************************
-//a coordinated set of 3 examples
-
+  <programlisting lang="ECL" role="runnable">//a coordinated set of 3 examples
+IMPORT Std;
 NameRec := RECORD
-  STRING5 title;
-  STRING20 fname;
-  STRING20 mname;
-  STRING20 lname;
-  STRING5 name_suffix;
-  STRING3 name_score;
+  STRING5 title := '';
+  STRING20 fname := '';
+  STRING20 mname := '';
+  STRING20 lname := '';
+  STRING5 name_suffix := '';
+  STRING3 name_score := '';
 END;
 MyRecord := RECORD
   UNSIGNED id;
   STRING  uncleanedName;
   NameRec Name;
 END;
-ds := DATASET('RTTEST::RowFunctionData', MyRecord, THOR);
+ds := DATASET([{1,'Mr. John  Smith  JR'},
+               {2,'Mrs. Susie  Samantha Jones  3'},
+               {3,'Dr. Fred  Taylor  SR'}],MyRecord);
+
 STRING73 CleanPerson73(STRING inputName) := FUNCTION
-  suffix :=[ ' 0',' 1',' 2',' 3',' 4',' 5',' 6',' 7',' 8','  9', 
+  suffix :=[ ' 0',' 1',' 2',' 3',' 4',' 5',' 6',' 7',' 8','  9',
               ' J',' JR',' S',' SR'];
   InWords := Std.Str.CleanSpaces(inputName);
   HasSuffix := InWords[LENGTH(TRIM(InWords))-1 ..] IN suffix;
@@ -175,8 +133,8 @@ STRING73 CleanPerson73(STRING inputName) := FUNCTION
 END;
 
 //Example 1 - a transform to create a row from an uncleaned name
-NameRec createRow(string inputName) := TRANSFORM
-  cleanedText := LocalAddrCleanLib.CleanPerson73(inputName);
+NameRec createRow(STRING inputName) := TRANSFORM
+  cleanedText := CleanPerson73(inputName);
   SELF.title := cleanedText[1..5];
   SELF.fname := cleanedText[6..25];
   SELF.mname := cleanedText[26..45];
@@ -203,9 +161,9 @@ OUTPUT(y2);
 //Example 3 = Encapsulate the transform inside the attribute by
 // defining a FUNCTION.
 NameRec cleanedName2(STRING inputName) := FUNCTION
-          
+
   NameRec createRow := TRANSFORM
-     cleanedText := LocalAddrCleanLib.CleanPerson73(inputName);
+     cleanedText := CleanPerson73(inputName);
      SELF.title := cleanedText[1..5];
      SELF.fname := cleanedText[6..25];
      SELF.mname := cleanedText[26..45];
@@ -223,21 +181,39 @@ myRecord t3(myRecord l) := TRANSFORM
 END;
 
 y3 := PROJECT(ds, t3(LEFT));
-OUTPUT(y3);     
+OUTPUT(y3);    
 
+//*************************************************************
 //Example using MODULE structure to return multiple values from a FUNCTION
 OperateOnNumbers(Number1, Number2) := FUNCTION
   result := MODULE
     EXPORT Multiplied  := Number1 * Number2;
     EXPORT Differenced := Number1 - Number2;
-    EXPORT Summed      := Number1 + Number2;  
+    EXPORT Summed      := Number1 + Number2; 
   END;
   RETURN result;
 END;
 
-OperateOnNumbers(23,22).Multiplied;
-OperateOnNumbers(23,22).Differenced;
-OperateOnNumbers(23,22).Summed;   </programlisting>
+OUTPUT(OperateOnNumbers(23,22).Multiplied);  //506
+OUTPUT(OperateOnNumbers(23,22).Differenced); //1
+OUTPUT(OperateOnNumbers(23,22).Summed);      //45
+
+//*************************************************************
+//a FUNCTION with side-effect Action
+namesTable := FUNCTION
+  namesRecord := RECORD
+    STRING20 surname;
+    STRING10 forename;
+    INTEGER2 age := 25;
+  END;
+  o := OUTPUT('namesTable used by user &lt;x&gt;');
+  ds1 := DATASET([{'x','y',22}],namesRecord);
+  RETURN WHEN(ds1,o);
+END;
+z := namesTable : PERSIST('z');
+  //the PERSIST causes the side-effect action to execute only when the PERSIST is re-built
+OUTPUT(z);
+</programlisting>
 
   <para>See Also: <link linkend="MODULE_Structure">MODULE Structure</link>,
   <link linkend="TRANSFORM_Structure">TRANSFORM Structure</link>, <link

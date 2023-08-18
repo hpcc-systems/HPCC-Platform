@@ -5,6 +5,8 @@ define([
     "dojo/_base/array",
     "dojo/dom-class",
 
+    "dijit/registry",
+
     "dgrid/tree",
     "dgrid/selector",
 
@@ -14,18 +16,26 @@ define([
     "src/ESPUtil",
     "src/Utility",
 
+    "dojo/text!../templates/SourceFilesWidget.html",
+
 ], function (declare, lang, nlsHPCCMod, arrayUtil, domClass,
-    tree, selector,
-    GridDetailsWidget, ESPWorkunit, DelayLoadWidget, ESPUtil, Utility) {
+    registry, tree, selector,
+    GridDetailsWidget, ESPWorkunit, DelayLoadWidget, ESPUtil, Utility,
+    template) {
 
     var nlsHPCC = nlsHPCCMod.default;
     return declare("SourceFilesWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
-
+        templateString: template,
         gridTitle: nlsHPCC.title_Inputs,
         idProperty: "sequence",
 
         wu: null,
+
+        postCreate: function (args) {
+            this.inherited(arguments);
+            this.filter = registry.byId(this.id + "Filter");
+        },
 
         init: function (params) {
             if (this.inherited(arguments))
@@ -41,6 +51,18 @@ define([
                     }
                 });
             }
+
+            this.filter.init({
+                ws_key: "SourceFilesFilter",
+                widget: this.widget
+            });
+            this.filter.on("clear", function (evt) {
+                context.refreshGrid();
+            });
+            this.filter.on("apply", function (evt) {
+                context.refreshGrid();
+            });
+
             this._refreshActionState();
         },
 
@@ -54,6 +76,7 @@ define([
             };
             var retVal = new declare([ESPUtil.Grid(false, true)])({
                 store: this.store,
+                query: this.getFilter(),
                 columns: {
                     col1: selector({
                         width: 27,
@@ -82,6 +105,11 @@ define([
                     context._onRowDblClick(row);
                 }
             });
+            return retVal;
+        },
+
+        getFilter: function () {
+            var retVal = this.filter.toObject();
             return retVal;
         },
 
@@ -124,10 +152,16 @@ define([
             var context = this;
             this.wu.getInfo({
                 onGetSourceFiles: function (sourceFiles) {
+                    var filter = context.filter.toObject();
                     arrayUtil.forEach(sourceFiles, function (row, idx) {
                         row.sequence = idx;
                     });
-                    context.store.setData(sourceFiles);
+                    var files = sourceFiles;
+                    var name = filter?.LogicalName ?? "";
+                    if (name) {
+                        files = files.filter(file => file.Name.match(name.replace(/\*/g, ".*")));
+                    }
+                    context.store.setData(files);
                     context.grid.set("query", { __hpcc_parentName: "" });
                 }
             });

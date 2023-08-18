@@ -102,8 +102,6 @@ void setMulticastEndpoints(unsigned numChannels);
 #define SUBCHANNEL_BITS 2    // allows for up to 7-way redundancy in a 16-bit short retries flag, high bits used for indicators/flags
 #define MAX_SUBCHANNEL  7    // (16-2) / SUBCHANNEL_BITS
 
-//#define TIME_PACKETS
-
 #define ROXIE_FASTLANE      0x8000u         // mask in retries indicating agent reply goes on the fast queue
 #define ROXIE_BROADCAST     0x4000u         // mask in retries indicating original request was a broadcast
 #define ROXIE_RETRIES_MASK  (~(ROXIE_FASTLANE|ROXIE_BROADCAST)) // retries bits mask
@@ -166,11 +164,7 @@ public:
 #ifdef SUBCHANNELS_IN_HEADER
     ServerIdentifier subChannels[MAX_SUBCHANNEL];
 #endif
-#ifdef TIME_PACKETS
-    unsigned tick = 0;
-#else
     unsigned filler = 0; // keeps valgrind happy
-#endif
 
     RoxiePacketHeader() = default;
 
@@ -307,6 +301,7 @@ extern MapStringTo<int> *preferredClusters;
 extern StringArray allQuerySetNames;
 
 extern bool acknowledgeAllRequests;
+extern unsigned packetAcknowledgeTimeout;
 extern bool alwaysTrustFormatCrcs;
 extern bool allFilesDynamic;
 extern bool lockSuperFiles;
@@ -408,6 +403,7 @@ extern bool defaultExecuteDependenciesSequentially;
 extern bool defaultStartInputsSequentially;
 extern bool oneShotRoxie;
 extern bool traceStrands;
+extern unsigned minPayloadSize;
 
 extern int backgroundCopyClass;
 extern int backgroundCopyPrio;
@@ -462,6 +458,7 @@ extern StringBuffer pluginsList;
 extern StringBuffer queryDirectory;
 extern StringBuffer codeDirectory;
 extern StringBuffer tempDirectory;
+extern StringBuffer spillDirectory;
 
 #undef UNIMPLEMENTED
 #undef throwUnexpected

@@ -34,4 +34,11 @@
    <BR/>
  </xsl:template>
 
+<!-- Colourize ECL Code -->
+  <xsl:template name="user.head.content">
+  </xsl:template>
+  <xsl:template name="user.footer.content">
+      <script src="index.js" />
+  </xsl:template>
+
 </xsl:stylesheet>

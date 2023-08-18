@@ -2060,6 +2060,11 @@ bool CJobMaster::getWorkUnitValueBool(const char *prop, bool defVal) const
     return queryWorkUnit().getDebugValueBool(prop, defVal);
 }
 
+double CJobMaster::getWorkUnitValueReal(const char *prop, double defVal) const
+{
+    return queryWorkUnit().getDebugValueReal(prop, defVal);
+}
+
 StringBuffer &CJobMaster::getWorkUnitValue(const char *prop, StringBuffer &str) const
 {
     SCMStringBuffer scmStr;
@@ -2467,9 +2472,19 @@ void CMasterGraph::execute(size32_t _parentExtractSz, const byte *parentExtract,
 {
     if (isComplete())
         return;
+    CThorPerfTracer perf;
+    double perfinterval = 0.0;
     if (!queryOwner()) // owning graph sends query+child graphs
+    {
+        perfinterval = job.getOptReal("perfInterval");
+        if (perfinterval)
+            perf.start(job.queryWuid(), graphId, perfinterval);
+
         jobM->sendQuery(); // if not previously sent
+    }
     CGraphBase::execute(parentExtractSz, parentExtract, checkDependencies, async);
+    if (perfinterval)
+        perf.stop();
 }
 
 void CMasterGraph::start()

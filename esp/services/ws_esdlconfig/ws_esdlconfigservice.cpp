@@ -186,7 +186,7 @@ void CWsESDLConfigEx::init(IPropertyTree *cfg, const char *process, const char *
     if(servicecfg == NULL)
         throw MakeStringException(-1, "config not found for service %s/%s",process, service);
 
-    m_esdlStore.setown(createEsdlCentralStore());
+    m_esdlStore.setown(getEsdlCentralStore(false));
     m_isDetachedFromDali = (nullptr == m_esdlStore);
 }
 

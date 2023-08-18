@@ -1686,6 +1686,13 @@ __int64 getExpertOptInt64(const char *opt, __int64 dft)
     return globals->getPropInt64(xpath, dft);
 }
 
+double getExpertOptReal(const char *opt, double dft)
+{
+    StringBuffer xpath;
+    getExpertOptPath(opt, xpath);
+    return globals->getPropReal(xpath, dft);
+}
+
 StringBuffer &getExpertOptString(const char *opt, StringBuffer &out)
 {
     StringBuffer xpath;
@@ -1702,4 +1709,42 @@ void setExpertOpt(const char *opt, const char *value)
         globals->setPropTree(xpath);
     getExpertOptPath(opt, xpath.clear());
     globals->setProp(xpath, value);
+}
+
+
+void CThorPerfTracer::start(const char *_workunit, unsigned _subGraphId, double interval)
+{
+    workunit.set(_workunit);
+    subGraphId = _subGraphId;
+    PROGLOG("Starting perf trace of subgraph %u, with interval %.3g seconds", subGraphId, interval);
+    perf.setInterval(interval);
+    perf.start();    
+}
+
+
+void CThorPerfTracer::stop()
+{
+    PROGLOG("Stopping perf trace of subgraph %u", subGraphId);
+    perf.stop();
+    StringBuffer flameGraphName;
+    if (getConfigurationDirectory(globals->queryPropTree("Directories"), "debug", "thor", globals->queryProp("@name"), flameGraphName))
+        addPathSepChar(flameGraphName);
+    flameGraphName.appendf("%s/%u/flame_%u.svg", workunit.get(), globals->getPropInt("@slavenum"), subGraphId);
+    ensureDirectoryForFile(flameGraphName);
+    Owned<IFile> iFile = createIFile(flameGraphName);
+    try
+    {
+        Owned<IFileIO> iFileIO = iFile->open(IFOcreate);
+        if (iFileIO)
+        {
+            StringBuffer &svg = perf.queryResult();
+            iFileIO->write(0, svg.length(), svg.str());
+            PROGLOG("Flame graph for subgraph %u written to %s", subGraphId, flameGraphName.str());
+        }
+    }
+    catch (IException *E)
+    {
+        EXCLOG(E);
+        ::Release(E);
+    }
 }

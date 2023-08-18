@@ -315,6 +315,11 @@ void CTpWrapper::getMachineList(double clientVersion, const char* MachineType, c
     IWARNLOG("UNIMPLEMENTED: CONTAINERIZED(CTpWrapper::getMachineList)");
 }
 
+void CTpWrapper::listLogFiles(const char* host, const char* path, IArrayOf<IConstLogFileStruct>& files)
+{
+    IWARNLOG("UNIMPLEMENTED: CONTAINERIZED(CTpWrapper::listLogFiles)");
+}
+
 const char* CTpWrapper::getNodeNameTag(const char* MachineType)
 {
     if (strcmp(MachineType,"Computer")==0)
@@ -366,6 +371,9 @@ void CTpWrapper::getTpDropZones(double clientVersion, const char* name, bool ECL
     ForEach(*planes)
     {
         IPropertyTree & plane = planes->query();
+        bool eclwatchVisible = plane.getPropBool("@eclwatchVisible", true);
+        if (ECLWatchVisibleOnly && !eclwatchVisible)
+            continue;
         const char * dropzonename = plane.queryProp("@name");
         const char * path = plane.queryProp("@prefix");
         Owned<IEspTpDropZone> dropZone = createTpDropZone();
@@ -373,7 +381,7 @@ void CTpWrapper::getTpDropZones(double clientVersion, const char* name, bool ECL
         dropZone->setDescription("");
         dropZone->setPath(path);
         dropZone->setBuild("");
-        dropZone->setECLWatchVisible(true);
+        dropZone->setECLWatchVisible(eclwatchVisible);
         IArrayOf<IEspTpMachine> tpMachines;
         gatherDropZoneMachines(tpMachines, plane);
         dropZone->setTpMachines(tpMachines);

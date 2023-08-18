@@ -175,7 +175,7 @@
   <para>IFBLOCK and alien data types (TYPE) should only be used when accessing
   external data files. It is much more efficient to use the native types for
   general processing. In particular, some optimizations to project and filter
-  files remotely are not supported on IFBLOCKs and alien datatypes. </para>
+  files remotely are not supported on IFBLOCKs and alien datatypes.</para>
 
   <sect2 id="In-line_Record_Definitions">
     <title>In-line Record Definitions</title>
@@ -452,7 +452,7 @@
 
     <para><emphasis role="bold">Example:</emphasis></para>
 
-    <programlisting>R1 := {STRING1 F1,STRING1 F2,STRING1 F3,STRING1 F4,STRING1 F5};
+    <programlisting lang="ECL">R1 := {STRING1 F1,STRING1 F2,STRING1 F3,STRING1 F4,STRING1 F5};
 R2 := {STRING1 F4,STRING1 F5,STRING1 F6};
 R3 := {R1 AND R2}; //Intersection - fields F4 and F5  only
 R4 := {R1 OR R2}; //Union - all fields F1 - F6
@@ -723,20 +723,20 @@ END;</programlisting>
 
     <para>These operators are valid for comparisons:</para>
 
-    <programlisting>&lt;, &lt;=, &gt;, &gt;=, =, !=</programlisting>
+    <programlisting lang="text">&lt;, &lt;=, &gt;, &gt;=, =, !=</programlisting>
 
     <para>An example of a supported xpath:</para>
 
-    <programlisting>/a/*/c*/*d/e[@attr]/f[child]/g[@attr="x"]/h[child&gt;="5"]/i[@x!="2"]/j</programlisting>
+    <programlisting lang="text">/a/*/c*/*d/e[@attr]/f[child]/g[@attr="x"]/h[child&gt;="5"]/i[@x!="2"]/j</programlisting>
 
     <para>You can emulate AND conditions like this:</para>
 
-    <programlisting>/a/b[@x="1"][@y="2"]</programlisting>
+    <programlisting lang="text">/a/b[@x="1"][@y="2"]</programlisting>
 
     <para>Also, there is a non-standard XPATH convention for extracting the
     text of a match using empty angle brackets (&lt;&gt;):</para>
 
-    <programlisting>R := RECORD
+    <programlisting lang="ECL">R := RECORD
 STRING blah{xpath('a/b&lt;&gt;')};
 //contains all of b, including any child definitions and values
 END;</programlisting>
@@ -755,7 +755,7 @@ END;</programlisting>
     then it is used, otherwise the lower case <emphasis>identifier</emphasis>
     of the field is used.</para>
 
-    <programlisting>STRING name;                  //matches: &lt;name&gt;Kevin&lt;/name&gt;
+    <programlisting lang="ECL">STRING name;                  //matches: &lt;name&gt;Kevin&lt;/name&gt;
 STRING Fname{xpath('Fname')}; //matches: &lt;Fname&gt;Kevin&lt;/Fname&gt;</programlisting>
 
     <para>2) For a field whose type is a RECORD structure, the specified XPATH
@@ -764,7 +764,7 @@ STRING Fname{xpath('Fname')}; //matches: &lt;Fname&gt;Kevin&lt;/Fname&gt;</progr
     onto the fields it contains. Note that an XPATH of '' (empty single
     quotes) will prefix nothing.</para>
 
-    <programlisting>NameRec := RECORD
+    <programlisting lang="ECL">NameRec := RECORD
   STRING Fname{xpath('Fname')}; //matches: &lt;Fname&gt;Kevin&lt;/Fname&gt;
   STRING Mname{xpath('Mname')}; //matches: &lt;Mname&gt;Alfonso&lt;/Mname&gt;
   STRING Lname{xpath('Lname')}; //matches: &lt;Lname&gt;Jones&lt;/Lname&gt;
@@ -787,7 +787,7 @@ END;</programlisting>
     case field name, and the default value for Repeated is "Row." For example,
     this demonstrates "Container/Repeated":</para>
 
-    <programlisting>DATASET(PeopleNames) People{xpath('people/name')};
+    <programlisting lang="ECL">DATASET(PeopleNames) People{xpath('people/name')};
           /*matches: &lt;people&gt;
                         &lt;name&gt;Gavin&lt;/name&gt;
                         &lt;name&gt;Ricardo&lt;/name&gt;
@@ -795,14 +795,14 @@ END;</programlisting>
 
     <para>This demonstrates "/Repeated":</para>
 
-    <programlisting>DATASET(Names) Names{xpath('/name')};
+    <programlisting lang="ECL">DATASET(Names) Names{xpath('/name')};
           /*matches: &lt;name&gt;Gavin&lt;/name&gt;
                      &lt;name&gt;Ricardo&lt;/name&gt; */</programlisting>
 
     <para>"Container" and "Repeated" may also contain xpath filters, like
     this:</para>
 
-    <programlisting>DATASET(doctorRec) doctors{xpath('person[@job=\'doctor\']')};
+    <programlisting lang="ECL">DATASET(doctorRec) doctors{xpath('person[@job=\'doctor\']')};
           /*matches: &lt;person job='doctor'&gt;
                        &lt;FName&gt;Kevin&lt;/FName&gt;
                        &lt;LName&gt;Richards&lt;/LName&gt;
@@ -816,7 +816,7 @@ END;</programlisting>
     contains all possible values. The third form allows you to read XML
     attribute values.</para>
 
-    <programlisting>SET OF STRING people;
+    <programlisting lang="ECL">SET OF STRING people;
     //matches: &lt;people&gt;&lt;All/&gt;&lt;/people&gt;
     //or: &lt;people&gt;&lt;Item&gt;Kevin&lt;/Item&gt;&lt;Item&gt;Richard&lt;/Item&gt;&lt;/people&gt;
          
@@ -854,21 +854,19 @@ SET OF STRING Xpeople{xpath('/Name/@id')};
     <para>For DATASET or the result type of a TRANSFORM function, you need
     only specify the value type and name of each field in the layout:</para>
 
-    <programlisting>R1 := RECORD
+    <programlisting lang="ECL">R1 := RECORD
   UNSIGNED1 F1; //only value type and name required
   UNSIGNED4 F2;
   STRING100 F3;
 END;
           
-D1 := DATASET('RTTEMP::SomeFile',R1,THOR);
-
-      
+D1 := DATASET('~LR::SomeFile',R1,THOR);      
 </programlisting>
 
     <para>For "vertical slice" TABLE, you need to specify the value type,
     name, and data source for each field in the layout:</para>
 
-    <programlisting>R2 := RECORD
+    <programlisting lang="ECL">R2 := RECORD
   UNSIGNED1 F1 := D1.F1; //value type, name, data source all explicit
   D1.F2; //value type, name, data source all implicit
 END;
@@ -877,7 +875,7 @@ T1 := TABLE(D1,R2);</programlisting>
 
     <para>For "crosstab report" TABLE:</para>
 
-    <programlisting>R3 := RECORD
+    <programlisting lang="ECL">R3 := RECORD
   D1.F1;            //"group by" fields must come first 
   UNSIGNED4 GrpCount := COUNT(GROUP); 
                    //value type, column name, and aggregate
@@ -890,7 +888,7 @@ T2 := TABLE(D1,R3,F1);
 
     <para></para>
 
-    <programlisting>Form1 := RECORD
+    <programlisting lang="ECL">Form1 := RECORD
     Person.per_last_name; //field name is per_last_name - size
                          //is as declared in the person dataset
     STRING25 LocalID := Person.per_first_name;
@@ -938,14 +936,14 @@ END;
 
     <para>in-line record structures, demonstrating same field name use</para>
 
-    <programlisting>ds := DATASET('d', { STRING s; }, THOR);
+    <programlisting lang="ECL">ds := DATASET('d', { STRING s; }, THOR);
 t := TABLE(ds, { STRING60 s := ds.s; });
     // new "s" field is OK with value type explicitly defined
 </programlisting>
 
     <para>"Child dataset" RECORD structures</para>
 
-    <programlisting>ChildRec := RECORD
+    <programlisting lang="ECL">ChildRec := RECORD
     UNSIGNED4 person_id;
     STRING20 per_surname;
     STRING20 per_forename;
@@ -962,7 +960,7 @@ END;
 
     <para>an example using {XPATH('tag')}</para>
 
-    <programlisting>R := record
+    <programlisting lang="ECL" role="runnable">R := RECORD
      STRING10 fname;
      STRING12 lname;
      SET OF STRING1 MySet{XPATH('Set/Element')}; //define set tags
@@ -971,7 +969,7 @@ B := DATASET([{'Fred','Bell',['A','B']},
             {'George','Blanda',['C','D']},
             {'Sam','',['E','F'] } ], R);
          
-OUTPUT(B,,'~RTTEST::test.xml', XML);
+OUTPUT(B,,'~LR::test.xml', XML,OVERWRITE);
 
 /* this example produces XML output that looks like this:
 &lt;Dataset&gt;
@@ -987,7 +985,11 @@ OUTPUT(B,,'~RTTEST::test.xml', XML);
 
     <para>another XML example with a 1-field child dataset</para>
 
-    <programlisting>cr := RECORD,MAXLENGTH(1024)
+    <programlisting lang="ECL" role="runnable">cr := RECORD,MAXLENGTH(1024)
+  STRING phoneEx{XPATH('')};
+END;
+r := RECORD,MAXLENGTH(4096)
+  STRING id{XPATH('COMP-ID')};cr := RECORD,MAXLENGTH(1024)
   STRING phoneEx{XPATH('')};
 END;
 r := RECORD,MAXLENGTH(4096)
@@ -999,10 +1001,10 @@ END;
 DS := DATASET([{'1002','1352,9493',['1352','9493']},
             {'1003','4846,4582,0779',['4846','4582','0779']}],r);
 
-OUTPUT(ds,,'~RTTEST::XMLtest2',
+OUTPUT(ds,,'~LR::XMLtest2',
       XML('RECORD',
           HEADING('&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;RECORDS&gt;',
-                  '&lt;/RECORDS&gt;')));
+                  '&lt;/RECORDS&gt;')),OVERWRITE);
  
 /* this example produces XML output that looks like  this:
 &lt;?xml version="1.0" encoding="UTF-8"?&gt;
@@ -1025,7 +1027,7 @@ OUTPUT(ds,,'~RTTEST::XMLtest2',
 
     <para>XPATH can also be used to define a JSON file</para>
 
-    <programlisting>/* a JSON  file called "MyBooks.json" contains this data:
+    <programlisting lang="ECL">/* a JSON  file called "mybooks.json" contains this data:
 [
   {
     "id" : "978-0641723445",
@@ -1047,7 +1049,7 @@ BookRec := RECORD
   STRING author; //data from author tag, tag name is lowercase and matches field name  
 END;
 
-books := DATASET('~jd::mybooks.json',BookRec,JSON('/'));
+books := DATASET('~LR::mybooks.json',BookRec,JSON('/'));
 OUTPUT(books);</programlisting>
 
     <para>See Also: <link linkend="DATASET">DATASET</link>, <link

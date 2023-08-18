@@ -48,7 +48,18 @@
 
   <para>Example:</para>
 
-  <para>ArcTangent := ATAN2(TangentNumerator, TangentDenominator);</para>
+  <para><programlisting lang="ECL">// get the value of tan-1(5.0 / 2.0)
+TangentNumerator := 5.0;
+TangentDenominator:=2.0;
+ArcTangent := ATAN2(TangentNumerator, TangentDenominator); 
+OUTPUT(ArcTangent); //1.190289949682532
+</programlisting></para>
 
-  <para>See Also: <link linkend="ATAN">ATAN</link>, <link linkend="ACOS">ACOS</link>, <link linkend="COS">COS</link>, <link linkend="ASIN">ASIN</link>, <link linkend="SIN">SIN</link>, <link linkend="TAN">TAN</link>, <link linkend="COSH">COSH</link>, <link linkend="SINH">SINH</link>, <link linkend="TANH">TANH</link></para>
+  <para></para>
+
+  <para>See Also: <link linkend="ATAN">ATAN</link>, <link
+  linkend="ACOS">ACOS</link>, <link linkend="COS">COS</link>, <link
+  linkend="ASIN">ASIN</link>, <link linkend="SIN">SIN</link>, <link
+  linkend="TAN">TAN</link>, <link linkend="COSH">COSH</link>, <link
+  linkend="SINH">SINH</link>, <link linkend="TANH">TANH</link></para>
 </sect1>

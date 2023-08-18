@@ -44,7 +44,7 @@
             <entry><emphasis role="bold">NAMED</emphasis></entry>
 
             <entry>Optional. Specifies the result name that appears in the
-            workunit. </entry>
+            workunit.</entry>
           </row>
 
           <row>
@@ -131,7 +131,7 @@
   <para>When there is an excessively large number of distinct values, it
   returns an estimate in this form:</para>
 
-  <para><programlisting>&lt;XML&gt;
+  <para><programlisting lang="XML">&lt;XML&gt;
   &lt;Field name="seqnum" estimate="4000000"/&gt;
 &lt;/XML&gt;</programlisting></para>
 
@@ -140,7 +140,7 @@
 
   <para>Example:</para>
 
-  <programlisting>SomeFile := DATASET([{'C','G'},{'C','C'},{'A','X'},{'B','G'}],
+  <programlisting lang="ECL" role="runnable">SomeFile := DATASET([{'C','G'},{'C','C'},{'A','X'},{'B','G'}],
      {STRING1 Value1,STRING1 Value2});
 DISTRIBUTION(SomeFile);
 /* The result comes back looking like this:
@@ -171,7 +171,7 @@ namesTable := DATASET([
   {'Salter','Abi',10},
   {'X','Z',5}], namesRecord);
 
-DISTRIBUTION(namesTable, surname, forename, NAMED('Stats'));
+doFirst := DISTRIBUTION(namesTable, surname, forename, NAMED('Stats'));
 /* The result comes back looking like this:
 &lt;XML&gt;
 &lt;Field name="surname" distinct="3"&gt;
@@ -196,7 +196,7 @@ res := RECORD
   STRING Cnt := XMLTEXT('@distinct');
 END;
 
-out := PARSE(x, line, res, XML('XML/Field'));
-out;
+DoNext := PARSE(x, line, res, XML('XML/Field'));
+SEQUENTIAL(DoFirst,OUTPUT(DoNext));
 </programlisting>
 </sect1>

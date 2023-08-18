@@ -1447,8 +1447,11 @@ enum WUSortField
     WUSFwildwuid = 12,
     WUSFecl = 13,
     // WUSFcustom = 14, obsolete
-    WUSFappvalue=15,
+    WUSFappvalue = 15,
     WUSFfilewritten = 16,
+    WUSFcostexecute = 17,
+    WUSFcostcompile = 18,
+    WUSFcostfileaccess = 19,
     WUSFterm = 0,
     WUSFreverse = 256,
     WUSFnocase = 512,

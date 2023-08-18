@@ -382,7 +382,7 @@ public:
         return true;
     }
 
-    virtual const void *getNext(int length) 
+    const void *getNext(int length) 
     {
         // YUK horrid code! Though packer is even more horrid
         void        *res = 0;
@@ -451,6 +451,32 @@ public:
         }
         else
             res = NULL;
+        return res;
+    }
+
+    virtual RecordLengthType *getNextLength() override
+    {
+        if (!dataBuff) 
+            return nullptr;
+        UdpPacketHeader *pktHdr = (UdpPacketHeader*) dataBuff->data;
+        unsigned packetDataLimit = pktHdr->length - pktHdr->metalength;
+        assertex ((packetDataLimit  - current_pos) >= sizeof(RecordLengthType));
+        RecordLengthType *res = (RecordLengthType *) &dataBuff->data[current_pos];
+        current_pos += sizeof(RecordLengthType);
+        // Note that length is never separated from data... but length can be zero so still need to do this...
+        // MORE - could common up this code with getNext above
+        while (current_pos >= packetDataLimit)
+        {
+            dataBuff = pkSequencer->next(dataBuff);
+            current_pos = sizeof(UdpPacketHeader);
+            if (dataBuff)
+            {
+                pktHdr = (UdpPacketHeader*) dataBuff->data;
+                packetDataLimit = pktHdr->length - pktHdr->metalength;
+            }
+            else
+                break;
+        }
         return res;
     }
 

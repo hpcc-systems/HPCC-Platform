@@ -549,6 +549,9 @@
               "type": "integer",
               "default": 0
             },
+            "eclwatchVisible": {
+              "type": "boolean"
+            },
             "components": {},
             "prefix": {},
             "subPath": {},
@@ -845,6 +848,26 @@
         "verify_server": {
           "description": "optional relax server verification for trouble shooting",
           "type": "boolean"
+        },
+        "retries": {
+          "description": "optional number of times to retry vault request in case of connect / socker error",
+          "type": "number"
+        },
+        "retryWait": {
+          "description": "optional wait time (in ms) between socket retries",
+          "type": "number"
+        },
+        "connectTimeout": {
+          "description": "optional timeout (in ms) for socket connect to vault",
+          "type": "number"
+        },
+        "readTimeout": {
+          "description": "optional timeout (in ms) for socket reading from vault",
+          "type": "number"
+        },
+        "writeTimeout": {
+          "description": "optional timeout (in ms) for socket writing to vault",
+          "type": "number"
         }
       },
       "required": [ "name", "url" ],
@@ -1763,6 +1786,12 @@
           "default": 500,
           "minimum": 0,
           "description": "Minimum number of remote files to keep open"
+        },
+        "packetAcknowledgeTimeout": { 
+          "type": "integer",
+          "default": 100,
+          "minimum": 10,
+          "description": "Maximum time to wait for agent query packets to be acknowledged before resending"
         },
         "parallelQueryLoadThreads": { 
           "type": "integer",

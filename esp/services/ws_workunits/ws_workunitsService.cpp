@@ -1801,22 +1801,32 @@ void readWUQuerySortOrder(const char* sortBy, const bool descending, WUSortField
         return;
     }
 
-    if (strieq(sortBy, "Owner"))
-        sortOrder = WUSFuser;
-    else if (strieq(sortBy, "JobName"))
-        sortOrder = WUSFjob;
-    else if (strieq(sortBy, "Cluster"))
-        sortOrder = WUSFcluster;
-    else if (strieq(sortBy, "Protected"))
-        sortOrder = WUSFprotected;
-    else if (strieq(sortBy, "State"))
-        sortOrder = WUSFstate;
-    else if (strieq(sortBy, "ClusterTime"))
-        sortOrder = (WUSortField) (WUSFtotalthortime+WUSFnumeric);
+    if (strieq(sortBy, "Execution Cost")) //Match the column title on ECLWatch: 'Execution Cost'
+        sortOrder = (WUSortField) (WUSFcostexecute | WUSFnumeric);
+    else if (strieq(sortBy, "Compile Cost"))
+        sortOrder = (WUSortField) (WUSFcostcompile | WUSFnumeric);
+    else if (strieq(sortBy, "File Access Cost"))
+        sortOrder = (WUSortField) (WUSFcostfileaccess | WUSFnumeric);
     else
-        sortOrder = WUSFwuid;
+    {
+        if (strieq(sortBy, "Owner"))
+            sortOrder = WUSFuser;
+        else if (strieq(sortBy, "JobName"))
+            sortOrder = WUSFjob;
+        else if (strieq(sortBy, "Cluster"))
+            sortOrder = WUSFcluster;
+        else if (strieq(sortBy, "Protected"))
+            sortOrder = WUSFprotected;
+        else if (strieq(sortBy, "State"))
+            sortOrder = WUSFstate;
+        else if (strieq(sortBy, "ClusterTime"))
+            sortOrder = WUSFtotalthortime; //the ClusterTime is in the format of '  %3ud hh:mm:ss.ms' (ex. '    2d  7:33:20.000').
+        else
+            sortOrder = WUSFwuid;
 
-    sortOrder = (WUSortField) (sortOrder | WUSFnocase);
+        sortOrder = (WUSortField) (sortOrder | WUSFnocase);
+    }
+
     if (descending)
         sortOrder = (WUSortField) (sortOrder | WUSFreverse);
 }
@@ -4892,6 +4902,11 @@ bool CWsWorkunitsEx::onWUCreateZAPInfo(IEspContext &context, IEspWUCreateZAPInfo
             if (zapInfoReq.esp.isEmpty())
                 zapInfoReq.esp.set(espApplicationName.get());
             zapInfoReq.thor = req.getThorProcesses();
+
+            if (version >= 1.97)
+            {
+                zapInfoReq.populateLogFilter(req.getLogFilter());
+            }
         }
         else
         {
