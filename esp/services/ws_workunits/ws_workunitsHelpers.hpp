@@ -231,16 +231,11 @@ struct WUComponentLogOptions
             setReturnColumMode(colMode, customFields);
         }
 
-        StringBuffer lineLimit;
-        zapHttpRequest->getParameter("LogFilter_LineLimit", lineLimit);
-        if (!lineLimit.isEmpty())
-        {
-            int limit = strtoll(lineLimit.str(), nullptr, 10);
-            if (limit < 0)
-                throw makeStringException(ECLWATCH_INVALID_INPUT, "Zap LogFilter encountered negative line limit!");
+        int limit = zapHttpRequest->getParameterInt("LogFilter_LineLimit", defaultMaxLogRecords);
+        if (limit < 0)
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "Zap LogFilter encountered negative line limit!");
 
-            logFetchOptions.setLimit((unsigned)limit);
-        }
+        logFetchOptions.setLimit((unsigned)limit);
 
         StringBuffer startFrom;
         zapHttpRequest->getParameter("LogFilter_LineStartFrom", startFrom);
