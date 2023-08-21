@@ -194,7 +194,7 @@ export const DesprayFile: React.FunctionComponent<DesprayFileProps> = ({
             <Controller
                 control={control} name="destPath"
                 render={({
-                    field: { onChange, name: fieldName, value },
+                    field: { onChange, name: fieldName },
                     fieldState: { error }
                 }) => <TargetFolderTextField
                         key={fieldName}
@@ -206,8 +206,19 @@ export const DesprayFile: React.FunctionComponent<DesprayFileProps> = ({
                         machineOS={os}
                         required={true}
                         placeholder={nlsHPCC.SelectValue}
-                        onChange={(evt, option) => {
-                            onChange(option.key);
+                        onChange={(_evt, option, _idx, value) => {
+                            if (option?.key) {
+                                onChange(option.key);
+                            } else {
+                                value = value.replace(directory, "");
+                                if (value.startsWith(pathSep)) {
+                                    value = value.substring(1);
+                                }
+                                if (value.endsWith(pathSep)) {
+                                    value = value.substring(0, value.length);
+                                }
+                                onChange([directory, value].join(pathSep));
+                            }
                         }}
                         errorMessage={error && error.message}
                     />}
