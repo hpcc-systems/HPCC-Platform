@@ -32,7 +32,7 @@
     correctly.</para>
 
     <programlisting> WorkunitInfo wu=new WorkunitInfo();!
- wu.setECL("output('Hello World');"); // The ECL to execute.
+ wu.setECL("OUTPUT('Hello World');"); // The ECL to execute.
  wu.setCluster("mythor");             // This can be hardcoded to a known cluster, 
                                       // or can be selected from 
                                       // valid cluster names clusterGroups[0] (above)</programlisting>
