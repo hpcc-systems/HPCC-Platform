@@ -329,6 +329,19 @@ extern jlib_decl void setSecretMount(const char * path)
         secretDirectory.set(path);
 }
 
+static const char *ensureSecretDirectory()
+{
+    CriticalBlock block(secretCS);
+    if (secretDirectory.isEmpty())
+        setSecretMount(nullptr);
+    return secretDirectory;
+}
+
+static StringBuffer &buildSecretPath(StringBuffer &path, const char *category, const char * name)
+{
+    return addPathSepChar(path.append(ensureSecretDirectory())).append(category).append(PATHSEPCHAR).append(name).append(PATHSEPCHAR);
+}
+
 static bool checkSecretExpired(unsigned created)
 {
     if (!created)
@@ -342,7 +355,7 @@ static bool hasCacheExpired(const IPropertyTree * secret)
     return checkSecretExpired((unsigned)secret->getPropInt("@created"));
 }
 
-enum class VaultAuthType {unknown, k8s, appRole, token};
+enum class VaultAuthType {unknown, k8s, appRole, token, clientcert};
 
 static void setTimevalMS(timeval &tv, time_t ms)
 {
@@ -369,6 +382,10 @@ private:
     CriticalSection vaultCS;
     Owned<IPropertyTree> cache;
 
+    std::string clientCertPath;
+    std::string clientKeyPath;
+
+    StringBuffer category;
     StringBuffer schemeHostPort;
     StringBuffer path;
     StringBuffer vaultNamespace;
@@ -376,7 +393,7 @@ private:
     StringBuffer password;
     StringAttr name;
 
-    StringAttr k8sAuthRole;
+    StringAttr authRole; //authRole is used by kubernetes and client cert auth, it's not part of appRole auth
     StringAttr appRoleId;
     StringBuffer appRoleSecretName;
 
@@ -393,6 +410,19 @@ private:
 public:
     CVault(IPropertyTree *vault)
     {
+        category.appendLower(vault->queryName());
+
+        StringBuffer clientTlsPath;
+        buildSecretPath(clientTlsPath, "certificates", "vaultclient");
+
+        clientCertPath.append(clientTlsPath.str()).append(category.str()).append("/tls.crt");
+        clientKeyPath.append(clientTlsPath.str()).append(category.str()).append("/tls.key");
+
+        if (!checkFileExists(clientCertPath.c_str()))
+            WARNLOG("vault: client cert not found, %s", clientCertPath.c_str());
+        if (!checkFileExists(clientKeyPath.c_str()))
+            WARNLOG("vault: client key not found, %s", clientKeyPath.c_str());
+
         cache.setown(createPTree());
         StringBuffer url;
         replaceEnvVariables(url, vault->queryProp("@url"), false);
@@ -445,13 +475,19 @@ public:
                 }
             }
         }
+        else if (vault->getPropBool("@useTLSCertificateAuth", false))
+        {
+            authType = VaultAuthType::clientcert;
+            if (vault->hasProp("@role"))
+                authRole.set(vault->queryProp("@role"));
+        }
         else if (isContainerized())
         {
             authType = VaultAuthType::k8s;
             if (vault->hasProp("@role"))
-                k8sAuthRole.set(vault->queryProp("@role"));
+                authRole.set(vault->queryProp("@role"));
             else
-                k8sAuthRole.set("hpcc-vault-access");
+                authRole.set("hpcc-vault-access");
             PROGLOG("using kubernetes vault auth");
         }
     }
@@ -465,6 +501,8 @@ public:
                 return "kubernetes";
             case VaultAuthType::token:
                 return "token";
+            case VaultAuthType::clientcert:
+                return "clientcert";
         }
         return "unknown";
     }
@@ -558,7 +596,7 @@ public:
             vaultAuthError("missing k8s auth token");
 
         std::string json;
-        json.append("{\"jwt\": \"").append(login_token.str()).append("\", \"role\": \"").append(k8sAuthRole.str()).append("\"}");
+        json.append("{\"jwt\": \"").append(login_token.str()).append("\", \"role\": \"").append(authRole.str()).append("\"}");
         httplib::Client cli(schemeHostPort.str());
         httplib::Headers headers;
 
@@ -575,6 +613,34 @@ public:
 
         processClientTokenResponse(res);
     }
+
+    void clientCertLogin(bool permissionDenied)
+    {
+        CriticalBlock block(vaultCS);
+        if (!permissionDenied && (clientToken.length() && !isClientTokenExpired()))
+            return;
+        DBGLOG("clientCertLogin%s", permissionDenied ? " because existing token permission denied" : "");
+
+        std::string json;
+        json.append("{\"name\": \"").append(authRole.str()).append("\"}"); //name can be empty but that is inefficient because vault would have to search for the cert being used
+
+        httplib::Client cli(schemeHostPort.str(), clientCertPath, clientKeyPath);
+        httplib::Headers headers;
+
+        unsigned numRetries = 0;
+        initClient(cli, headers, numRetries);
+        httplib::Result res = cli.Post("/v1/auth/cert/login", headers, json, "application/json");
+        while (!res && numRetries--)
+        {
+            OERRLOG("Retrying vault %s client cert auth, communication error %d", name.str(), res.error());
+            if (retryWait)
+                Sleep(retryWait);
+            res = cli.Post("/v1/auth/cert/login", headers, json, "application/json");
+        }
+
+        processClientTokenResponse(res);
+    }
+
     //if we tried to use our token and it returned access denied it could be that we need to login again, or
     //  perhaps it could be specific permissions about the secret that was being accessed, I don't think we can tell the difference
     void appRoleLogin(bool permissionDenied)
@@ -617,6 +683,8 @@ public:
             appRoleLogin(permissionDenied);
         else if (authType == VaultAuthType::k8s)
             kubernetesLogin(permissionDenied);
+        else if (authType == VaultAuthType::clientcert)
+            clientCertLogin(permissionDenied);
         else if (permissionDenied && authType == VaultAuthType::token)
             vaultAuthError("token permission denied"); //don't permenently invalidate token. Try again next time because it could be permissions for a particular secret rather than invalid token
         if (clientToken.isEmpty())
@@ -902,19 +970,6 @@ static void addCachedLocalSecret(const char *category, const char *name, IProper
         IPropertyTree *tree = ensurePTree(secretCache, category);
         tree->setPropTree(name, LINK(secret));
     }
-}
-
-static const char *ensureSecretDirectory()
-{
-    CriticalBlock block(secretCS);
-    if (secretDirectory.isEmpty())
-        setSecretMount(nullptr);
-    return secretDirectory;
-}
-
-static StringBuffer &buildSecretPath(StringBuffer &path, const char *category, const char * name)
-{
-    return addPathSepChar(path.append(ensureSecretDirectory())).append(category).append(PATHSEPCHAR).append(name).append(PATHSEPCHAR);
 }
 
 static IPropertyTree *loadLocalSecret(const char *category, const char * name)

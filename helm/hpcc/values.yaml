@@ -268,6 +268,18 @@ certificates:
       ## for information on what spec should contain.
       spec:
         selfSigned: {}
+    vaultclient:
+      name: hpcc-vaultclient-issuer
+      enabled: false
+      ## domain: hpcc.example.com
+      rolePrefix: "hpcc-"
+      kind: Issuer
+      ## do not define spec (set spec: null), to reference an Issuer resource that already exists in the cluster
+      ## change spec if you'd like to change how certificates get issued... see ## https://cert-manager.io/docs/configuration/#supported-issuer-types
+      ## for information on what spec should contain.
+      spec:
+        ca:
+          secretName: hpcc-vaultclient-issuer-key-pair
     remote:
       name: hpcc-remote-issuer
       ## set enabled to true if adding remoteClients for any components
@@ -349,21 +361,23 @@ secrets:
 
 vaults:
   storage:
-
   git:
-
   authn:
-
   ecl:
-
-  eclUser:
-    ## Category for vaults accessible via ecl code.  These are vaults that users can access directly.  Be cautious
-    ## about what vaults you add to this category as they are easily accessed by ECL code.
-    #- name: ecl-user-vault
-    #  url: http://${env.VAULT_SERVICE_HOST}:${env.VAULT_SERVICE_PORT}/v1/secret/data/ecluser/${secret}
+    # vault using vault client certs or kubernetes auth depending on whether certificates.issuers.vaultclient.enabled is true
+    #   to use approle authentication specify appRoleId and appRoleSecret
+    # - name: my-ecl-vault
+      #Note the data node in the URL is there for the REST APIs use. The path inside the vault starts after /data
+    #  url: http://${env.VAULT_SERVICE_HOST}:${env.VAULT_SERVICE_PORT}/v1/secret/data/ecl/${secret}
     #  kind: kv-v2
-    #  namespace: mynamespace # for use with enterprise vaults segmented by namespaces
-
+    # namespace: <vault-namespace>
+  eclUser:
+    # vault using vault client certs or kubernetes auth depending on whether certificates.issuers.vaultclient.enabled is true
+    #   to use approle authentication specify appRoleId and appRoleSecret
+    # - name: my-eclUser-vault
+      #Note the data node in the URL is there for the REST APIs use. The path inside the vault starts after /data
+    #   url: http://${env.VAULT_SERVICE_HOST}:${env.VAULT_SERVICE_PORT}/v1/secret/data/eclUser/${secret}
+    #   kind: kv-v2
   esp:
 
   ## The keys for code signing may be imported from the vault.  Multiple keys may be imported.

@@ -101,10 +101,12 @@ spec:
         volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" . | indent 8 }}
 {{ include "hpcc.addSecretVolumeMounts" $commonCtx | indent 8 }}
+{{ include "hpcc.addVaultClientCertificateVolumeMounts" $commonCtx | indent 8 }}
 {{ include "hpcc.addCertificateVolumeMount" (dict "root" $ "name" .name "component" "eclscheduler") | indent 8 }}
       volumes:
 {{ include "hpcc.addConfigMapVolume" . | indent 6 }}
 {{ include "hpcc.addSecretVolumes" $commonCtx | indent 6 }}
+{{ include "hpcc.addVaultClientCertificateVolumes" $commonCtx | indent 6 }}
 {{ include "hpcc.addCertificateVolume" (dict "root" $ "name" .name "component" "eclscheduler") | indent 6 }}
 ---
 kind: ConfigMap
