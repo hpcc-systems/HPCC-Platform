@@ -596,7 +596,10 @@ void CThorExpandingRowArray::doSort(rowidx_t n, void **const rows, ICompare &com
             dbgassertex(NULL != stableTable);
             stableTablePtr = stableTable;
         }
-        parsortvecstableinplace(rows, n, compare, stableTablePtr, maxCores);
+        if (useMergeSort)
+            parmsortvecstableinplace(rows, n, compare, stableTablePtr);
+        else
+            parqsortvecstableinplace(rows, n, compare, stableTablePtr, maxCores);
     }
     else
         parqsortvec((void **)rows, n, compare, maxCores);
