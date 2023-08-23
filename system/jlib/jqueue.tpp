@@ -242,6 +242,7 @@ template <class BASE, bool ALLOWNULLS>
 class SafeQueueOf : private QueueOf<BASE, ALLOWNULLS>
 {
     typedef SafeQueueOf<BASE, ALLOWNULLS> SELF;
+    typedef QueueOf<BASE, ALLOWNULLS> PARENT;
 protected:
     mutable CriticalSection crit;
     inline void unsafeenqueue(BASE *e) { QueueOf<BASE, ALLOWNULLS>::enqueue(e); }
@@ -267,6 +268,7 @@ public:
     void dequeue(BASE *e) { CriticalBlock b(crit); return QueueOf<BASE, ALLOWNULLS>::dequeue(e); }
     inline unsigned ordinality() const { return QueueOf<BASE, ALLOWNULLS>::ordinality(); }
     void set(unsigned idx, BASE *e) { CriticalBlock b(crit); return QueueOf<BASE, ALLOWNULLS>::set(idx, e); }
+    using PARENT::ensure;
 };
 
 
@@ -533,6 +535,79 @@ public:
         }
         return ret;
     }
+};
+
+//A lighter-weight limited thread queue which does not allow timeouts.
+//Linux futexes mean that semaphores now perform very well...
+template <class BASE, bool ALLOWNULLS>
+class ReallySimpleInterThreadQueueOf : protected SafeQueueOf<BASE, ALLOWNULLS>
+{
+    typedef ReallySimpleInterThreadQueueOf<BASE, ALLOWNULLS> SELF;
+    typedef SafeQueueOf<BASE, ALLOWNULLS> PARENT;
+protected:
+    Semaphore space;
+    Semaphore avail;
+    unsigned limit = 0;
+    std::atomic<bool> stopped{false};
+
+public:
+    ReallySimpleInterThreadQueueOf<BASE, ALLOWNULLS>()
+    {
+    }
+
+    ~ReallySimpleInterThreadQueueOf<BASE, ALLOWNULLS>()
+    {
+        stop();
+    }
+
+    void reset()
+    {
+        space.reinit(limit);
+        avail.reinit(0);
+        stopped = false;
+    }
+
+    bool enqueue(BASE *e)
+    {
+        space.wait();
+        if (stopped)
+            return false;
+        PARENT::enqueue(e);
+        avail.signal();
+        return true;
+    }
+
+    BASE *dequeue()
+    {
+        avail.wait();
+        if (stopped)
+            return nullptr;
+        BASE * result = PARENT::dequeue();
+        space.signal();
+        return result;
+    }
+
+    void setLimit(unsigned num)
+    {
+        limit = num;
+        space.reinit(limit);
+        PARENT::ensure(limit);
+    }
+
+    void stop(unsigned maxReaders = 0, unsigned maxWriters = 0) // stops all waiting operations
+    {
+        //Assume maxreaders < limit, maxwriters < limit if not provided
+        stopped = true;
+        avail.signal(maxReaders ? maxReaders : limit);
+        space.signal(maxWriters ? maxWriters : limit);
+    }
+
+    BASE *dequeueNow()
+    {
+        return PARENT::dequeue();
+    }
+
+    using PARENT::ordinality;
 };
 
 #define ForEachQueueItemIn(x,y)     unsigned numItems##x = (y).ordinality();     \

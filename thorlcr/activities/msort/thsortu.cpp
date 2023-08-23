@@ -1834,7 +1834,7 @@ class CMultiCoreUnorderedJoinHelper: public CMultiCoreJoinHelperBase
         multiWriter->abort();
     }
 
-    SimpleInterThreadQueueOf<cWorkItem,false> workqueue;
+    ReallySimpleInterThreadQueueOf<cWorkItem,false> workqueue;
     Owned<IRowMultiWriterReader> multiWriter;
     Owned<IRowWriter> rowWriter;
 
