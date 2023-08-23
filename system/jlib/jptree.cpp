@@ -9067,6 +9067,11 @@ jlib_decl IPropertyTree * loadConfiguration(IPropertyTree *componentDefault, con
     configFileUpdater->init(std::get<0>(result).c_str(), componentDefault, argv, componentTag, envPrefix, legacyFilename, mapper, altNameAttribute);
     if (monitor)
         configFileUpdater->startMonitoring();
+
+    DBGLOG("Initializing OpenTel based tracing for component: '%s'", componentTag);
+    //Owned<CTraceManager> tracer = 
+    queryTraceManager(componentTag); //inits opentel singleton internals
+
     return componentConfiguration.getLink();
 }
 

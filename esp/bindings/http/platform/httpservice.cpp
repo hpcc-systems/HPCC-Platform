@@ -184,25 +184,35 @@ void checkSetCORSAllowOrigin(EspHttpBinding *binding, CHttpRequest *req, CHttpRe
 
 int CEspHttpServer::processRequest()
 {
-    Owned<IHPCCTracer> tracer = queryTraceManager()->initTracing("esphttpserver"); //Initialize the trace manager, and ESP trace
-
-    //This is the span that will be used to track the processing of the request
-    Owned<IProperties> reqProcessSpanAttributes = createProperties();
-    reqProcessSpanAttributes->setProp("http.request_port", "8010");
-    reqProcessSpanAttributes->setProp("app.name", "esp");
-    reqProcessSpanAttributes->setProp("app.version", "1.0.0");
-    reqProcessSpanAttributes->setProp("app.instance", "esp1");
-    reqProcessSpanAttributes->setProp("http.method", m_request->queryMethod());
-    reqProcessSpanAttributes->setProp("http.url", m_request->queryPath());
-    reqProcessSpanAttributes->setProp("http.host", m_request->queryHost());
-    reqProcessSpanAttributes->setProp("http.request_content_length", m_request->getContentLength());
-    reqProcessSpanAttributes->setProp("http.request_query_string", m_request->queryParamStr());
-
+    //Mock http headers from request
     Owned<IProperties> mockHTTPHeaders = createProperties();
-    Owned<ISpan> reqProcessSpan = tracer->createTransactionSpan("ProcessingHTTPRequest", mockHTTPHeaders, reqProcessSpanAttributes);
 
-    //ideally the span should be activated when created
-    reqProcessSpan->activate();
+    //The traceparent header uses the version-trace_id-parent_id-trace_flags format where:
+    //version is always 00. trace_id is a hex-encoded trace id. span_id is a hex-encoded span id. trace_flags is a hex-encoded 8-bit field that contains tracing flags such as sampling, trace level, etc.
+    mockHTTPHeaders->setProp(/*opentelemetry::trace::propagation::kTraceParent*/"traceparent", "00-beca49ca8f3138a2842e5cf21402bfff-4b960b3e4647da3f-01");
+    mockHTTPHeaders->setProp(/*opentelemetry::trace::propagation::kTraceState*/"tracestate", "IncomingUGID");  //opentelemetry::trace::propagation::kTraceState 
+    mockHTTPHeaders->setProp(HPCCSemanticConventions::kGLOBALIDHTTPHeader, "IncomingUGID");
+    mockHTTPHeaders->setProp(HPCCSemanticConventions::kCallerIdHTTPHeader, "IncomingCID");
+
+    StringArray mockHTTPHeadersSA;
+    //mock opentel traceparent context 
+    mockHTTPHeadersSA.append("traceparent:00-beca49ca8f3138a2842e5cf21402bfff-4b960b3e4647da3f-01");
+    //mock opentel tracestate https://www.w3.org/TR/trace-context/#trace-context-http-headers-format
+    mockHTTPHeadersSA.append("tracestate:hpcc=4b960b3e4647da3f");
+    mockHTTPHeadersSA.append("HPCC-Global-Id:someGlobalID");
+    mockHTTPHeadersSA.append("HPCC-Caller-Id:IncomingCID");
+
+    //This span tracks processing of httprequest
+    //Owned<ISpan> reqProcessSpan = queryTraceManager("esp")->createTransactionSpan("ProcessingHTTPRequest", mockHTTPHeaders);
+    Owned<ISpan> reqProcessSpan = queryTraceManager("esp")->createTransactionSpan("ProcessingHTTPRequest", mockHTTPHeadersSA);
+
+    reqProcessSpan->setAttribute("http.request_port", "8010");
+    reqProcessSpan->setAttribute("app.name", "esp");
+    reqProcessSpan->setAttribute("app.version", "1.0.0");
+    reqProcessSpan->setAttribute("app.instance", "esp1");
+    reqProcessSpan->setAttribute("http.method", m_request->queryMethod());
+    reqProcessSpan->setAttribute("http.url", m_request->queryPath());
+    reqProcessSpan->setAttribute("http.host", m_request->queryHost());
 
     IEspContext* ctx = m_request->queryContext();
     StringBuffer errMessage;
