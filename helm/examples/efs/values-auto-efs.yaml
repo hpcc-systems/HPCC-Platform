@@ -6,31 +6,31 @@ storage:
   planes:
   - name: dali
     storageSize: 1Gi
-    storageClass: "aws-efs"
+    storageClass: "aws-efs-auto"
     prefix: "/var/lib/HPCCSystems/dalistorage"
     category: dali
 
   - name: dll
     prefix: "/var/lib/HPCCSystems/queries"
     storageSize: 1Gi
-    storageClass: "aws-efs"
+    storageClass: "aws-efs-auto"
     category: dll
 
   - name: sasha
     storageSize: 1Gi
-    storageClass: "aws-efs"
+    storageClass: "aws-efs-auto"
     prefix: "/var/lib/HPCCSystems/sashastorage"
     category: sasha
 
   - name: data
     storageSize: 1Gi
-    storageClass: "aws-efs"
+    storageClass: "aws-efs-auto"
     prefix: "/var/lib/HPCCSystems/hpcc-data"
     category: data
 
   - name: mydropzone
     storageSize: 1Gi
-    storageClass: "aws-efs"
+    storageClass: "aws-efs-auto"
     prefix: "/var/lib/HPCCSystems/mydropzone"
     category: lz
 
