@@ -1437,7 +1437,7 @@ private:
     RInside &R;
     RInside::Proxy result;
     StringAttr func;
-    CriticalBlock block;
+    ICriticalBlock block;
     Owned<REnvironment> env;
 };
 

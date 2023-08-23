@@ -3465,7 +3465,7 @@ public:
         }
     }
 public:
-    CriticalBlock lock;
+    ICriticalBlock lock;
     unsigned numPagesEmptied;
     CHeap * heap;
     Heaplet * next; // which heaplet to try to compact into next.  Not so good if > 1 heaps in use.
@@ -3516,7 +3516,7 @@ protected:
     bool processHeap(unsigned low, unsigned max);
 
 protected:
-    CriticalBlock lock;
+    ICriticalBlock lock;
     PointerArrayOf<ChunkedHeaplet> heaplets;
 };
 

@@ -1795,7 +1795,7 @@ bool CSafeSocket::sendHeartBeat(const IContextLogger &logctx)
 class HttpResponseHandler
 {
 private:
-    CriticalBlock c; // should not be anyone writing but better to be safe
+    ICriticalBlock c; // should not be anyone writing but better to be safe
     StringBuffer header;
     StringBuffer content;
     ISocket *sock = nullptr;
