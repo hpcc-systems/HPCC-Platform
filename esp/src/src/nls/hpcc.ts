@@ -62,6 +62,7 @@ export = {
         ArchivedWarning: "Warning: please specify a small date range. If not, it may take some time to retrieve the workunits and the browser may be timed out.",
         Attach: "Attach",
         Audience: "Audience",
+        Audit: "Audit",
         AuditLogs: "Audit Log",
         BinaryInstalls: "Binary Installs",
         Attribute: "Attribute",
