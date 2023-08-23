@@ -1,0 +1,22 @@
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: aws-fsx-auto
+provisioner: fsx.csi.aws.com
+parameters:
+  subnetId: <SUBNET_ID>
+  securityGroupIds: <SG_ID>
+  #deploymentType: PERSISTENT_1 # optional
+  #kmsKeyId: # optional
+  #storageType: HDD # optional
+  #perUnitStorageThroughput: "200" # optional
+  #driveCacheType: "NONE" # optional
+  #automaticBackupRetentionDays: "1" # optional
+  #dailyAutomaticBackupStartTime: "00:00" # optional
+  #copyTagsToBackups: "true" # optional
+  #dataCompressionType: "NONE" # optional
+  #weeklyMaintenanceStartTime: "7:09:00" # optional
+  #fileSystemTypeVersion: "2.12" # optional
+  #extraTags: "Tag1=Value1,Tag2=Value2" # optional
+#mountOptions: # optional
+  #- flock # optional

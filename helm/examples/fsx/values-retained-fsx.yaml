@@ -1,0 +1,39 @@
+# Overrides for fsx storage in hpcc, using custom StorageClass
+# NB: The "hpcc-fsx-dynamic-pv" helm chart should be installed first
+# The "hpcc-fsx-dynamic-pv" helm chart provisions and creates the PVCs required by HPCC
+# The PVC names are dynamic based on the install name
+# In this example the install name was "awsstorage"
+# If the name is changed, the "pvc" should be changed as well
+
+storage:
+  planes:
+  - name: dali
+    pvc: dali-awsstorage-hpcc-fsx-pvc
+    prefix: "/var/lib/HPCCSystems/dalistorage"
+    category: dali
+
+  - name: dll
+    pvc: dll-awsstorage-hpcc-fsx-pvc
+    prefix: "/var/lib/HPCCSystems/queries"
+    category: dll
+
+  - name: sasha
+    pvc: sasha-awsstorage-hpcc-fsx-pvc
+    prefix: "/var/lib/HPCCSystems/sasha"
+    category: sasha
+
+  - name: data
+    pvc: data-awsstorage-hpcc-fsx-pvc
+    prefix: "/var/lib/HPCCSystems/hpcc-data"
+    category: data
+
+  - name: mydropzone
+    pvc: mydropzone-awsstorage-hpcc-fsx-pvc
+    prefix: "/var/lib/HPCCSystems/mydropzone"
+    category: lz
+
+sasha:
+  wu-archiver:
+    plane: sasha
+  dfuwu-archiver:
+    plane: sasha
