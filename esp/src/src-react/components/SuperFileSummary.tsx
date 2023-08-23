@@ -49,6 +49,7 @@ export const SuperFileSummary: React.FunctionComponent<SuperFileSummaryProps> = 
                 removeSuperfile: true
             })
                 .then(() => replaceUrl("/files"))
+                .then(() => {window.location.reload();})
                 .catch(err => logger.error(err))
                 ;
         }, [file?.Name, file?.subfiles])
