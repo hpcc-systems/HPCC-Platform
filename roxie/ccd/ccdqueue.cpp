@@ -1656,10 +1656,13 @@ public:
             CCycleTimer workerTimer;
             hash64_t queryHash = header.queryHash;
             Owned<IQueryFactory> queryFactory = getQueryFactory(queryHash, channel);
-            if (!queryFactory && logctx.queryWuid())
+            if (!queryFactory && (logctx.queryWuid() || topology->hasProp("@workunit")))
             {
                 Owned <IRoxieDaliHelper> daliHelper = connectToDali();
-                Owned<IConstWorkUnit> wu = daliHelper->attachWorkunit(logctx.queryWuid());
+                const char * wuid = logctx.queryWuid();
+                if (!wuid)
+                    wuid = topology->queryProp("@workunit");
+                Owned<IConstWorkUnit> wu = daliHelper->attachWorkunit(wuid);
                 queryFactory.setown(createAgentQueryFactoryFromWu(wu, channel));
                 if (queryFactory)
                     cacheOnDemandQuery(queryHash, channel, queryFactory);
