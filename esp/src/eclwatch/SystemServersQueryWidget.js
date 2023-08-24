@@ -157,59 +157,6 @@ define([
                             }
                         },
                     }),
-                    Configuration: {
-                        label: this.i18n.Configuration,
-                        renderHeaderCell: function (node) {
-                            domClass.add(node, "centerInCell");
-                            node.innerHTML = Utility.getImageHTML("configuration.png", context.i18n.Configuration);
-                        },
-                        width: 10,
-                        sortable: false,
-                        renderCell: function (object, value, node, options) {
-                            if (object.Directory && object.Type && object.Type !== "FTSlaveProcess") {
-                                domClass.add(node, "centerInCell");
-                                node.innerHTML = "<a href='#' onClick='return false;' class='gridClick'/>" + Utility.getImageHTML("configuration.png", context.i18n.Configuration) + "</a>";
-                            }
-                        },
-                    },
-                    Informational: {
-                        label: this.i18n.Informational,
-                        width: 60,
-                        renderCell: function (object, value, node, options) {
-                            if (object.Informational) {
-                                domClass.add(node, "centerInCell");
-                                node.innerHTML = "<a href='#' onClick='return false;' class='additionalSystemServersDialog' />" + Utility.getImageHTML("information.png", context.i18n.Informational) + "</a>";
-                            }
-                        }
-                    },
-                    Logs: {
-                        label: this.i18n.Logs,
-                        width: 90,
-                        children: [
-                            {
-                                label: this.i18n.AuditLogs,
-                                width: 40,
-                                id: "AuditLogs",
-                                renderCell: function (object, value, node, options) {
-                                    if (object.AuditLog) {
-                                        domClass.add(node, "centerInCell");
-                                        node.innerHTML = "<a href='#' onClick='return false;' class='gridClick'/>" + Utility.getImageHTML("base.gif", context.i18n.AuditLogs) + "</a>";
-                                    }
-                                },
-                            },
-                            {
-                                label: this.i18n.ComponentLogs,
-                                width: 60,
-                                id: "Logs",
-                                renderCell: function (object, value, node, options) {
-                                    if (object.Log) {
-                                        domClass.add(node, "centerInCell");
-                                        node.innerHTML = "<a href='#' onClick='return false;' class='gridClick'/>" + Utility.getImageHTML("base.gif", context.i18n.ComponentLogs) + "</a>";
-                                    }
-                                }
-                            }
-                        ]
-                    },
                     Name: tree({
                         formatter: function (_name, row) {
                             var img = "";
@@ -225,6 +172,63 @@ define([
                         sortable: true,
                         width: 150
                     }),
+                    Configuration: {
+                        label: this.i18n.Configuration,
+                        renderHeaderCell: function (node) {
+                            domClass.add(node, "centerInCell");
+                            node.innerHTML = Utility.getImageHTML("configuration.png", context.i18n.Configuration);
+                        },
+                        width: 30,
+                        sortable: false,
+                        renderCell: function (object, value, node, options) {
+                            if (object.Directory && object.Type && object.Type !== "FTSlaveProcess") {
+                                domClass.add(node, "centerInCell");
+                                node.innerHTML = "<a href='#' onClick='return false;' class='gridClick'/>" + Utility.getImageHTML("configuration.png", context.i18n.Configuration) + "</a>";
+                            }
+                        },
+                    },
+                    Informational: {
+                        label: this.i18n.Informational,
+                        renderHeaderCell: function (node) {
+                            domClass.add(node, "centerInCell");
+                            node.innerHTML = Utility.getImageHTML("information.png", context.i18n.Informational);
+                        },
+                        width: 30,
+                        renderCell: function (object, value, node, options) {
+                            if (object.Informational) {
+                                domClass.add(node, "centerInCell");
+                                node.innerHTML = "<a href='#' onClick='return false;' class='additionalSystemServersDialog' />" + Utility.getImageHTML("information.png", context.i18n.Informational) + "</a>";
+                            }
+                        }
+                    },
+                    Logs: {
+                        label: this.i18n.Logs,
+                        width: 130,
+                        children: [
+                            {
+                                label: this.i18n.Audit,
+                                width: 50,
+                                id: "AuditLogs",
+                                renderCell: function (object, value, node, options) {
+                                    if (object.AuditLog) {
+                                        domClass.add(node, "centerInCell");
+                                        node.innerHTML = "<a href='#' onClick='return false;' class='gridClick'/>" + Utility.getImageHTML("base.gif", context.i18n.AuditLogs) + "</a>";
+                                    }
+                                },
+                            },
+                            {
+                                label: this.i18n.Component,
+                                width: 80,
+                                id: "Logs",
+                                renderCell: function (object, value, node, options) {
+                                    if (object.Log) {
+                                        domClass.add(node, "centerInCell");
+                                        node.innerHTML = "<a href='#' onClick='return false;' class='gridClick'/>" + Utility.getImageHTML("base.gif", context.i18n.ComponentLogs) + "</a>";
+                                    }
+                                }
+                            }
+                        ]
+                    },
                     ChildQueue: {
                         label: this.i18n.Queue,
                         sortable: false,
