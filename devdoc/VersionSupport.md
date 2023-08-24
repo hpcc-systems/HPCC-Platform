@@ -2,11 +2,10 @@
 
 | name     | version |
 | -------- | ------- |
-| early    |  9.2.0  |
-| current  |  9.0.x  |
-| previous |  8.12.x |
-| critical |  8.10.x |
-| security |  8.8.x  |
+| current  |  9.2.x  |
+| previous |  9.0.x  |
+| critical |  8.12.x |
+| security |  8.10.x |
 
 ## Supported versions
 
@@ -20,7 +19,7 @@ Which versions should changes be applied to?  The following gives some examples 
 - Refactoring.
 - Performance improvements (unless simple and safe)
 
-"current":
+"\<current>":
 - Bug fixes that only change behavior where it previously crashes or had undefined behavior (If well defined but wrong need to have very strong justification to change.)
 - Fixes for race conditions (the behavior was previously indeterminate so less of an argument against it changing)
 - Data corruption fixes - on a case by case basis if they change existing query results.
@@ -32,22 +31,19 @@ Which versions should changes be applied to?  The following gives some examples 
 - Changes to improve backward compatibility of new features. (E.g. adding an ignored syntax to the compiler.)
 - Performance improvements - if simple and safe
 
-"previous":
+"\<previous>":
 - Simple bug fixes that do not change behavior
 - Simple changes for missing functionality
 - Regressions with simple fixes (but care is needed if it caused a change in behavior)
 - Serious regressions
 - Complex security fixes
 
-"critical" fixes only:
+"\<critical>" fixes only:
 - Simple security fixes
 - Complex security fixes if sufficiently serious
 
-"security" fixes only:
+"\<security>" fixes only:
 - Serious security fixes
-
-early:
-- The first few point release of a new major or minor version may be less stable than later point releases.  The security fix is still supported until any teething problems have been solved with the new version.
 
 Occasionally earlier branches will be chosen, (e.g. security fixes to even older versions) but they should always be carefully discussed (and documented).
 
