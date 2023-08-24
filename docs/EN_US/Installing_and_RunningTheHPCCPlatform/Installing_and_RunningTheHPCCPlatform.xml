@@ -542,12 +542,12 @@
           <orderedlist>
             <listitem>
               <para>Create a file called hello.ecl and type in the following
-              text (including the quotes): <programlisting>output('Hello world'); </programlisting></para>
+              text (including the quotes): <programlisting>OUTPUT('Hello world'); </programlisting></para>
 
               <para>You can either use your favorite editor, or you can use
               the command line by typing the following</para>
 
-              <para><programlisting>echo "Output('Hello world');" &gt; hello.ecl</programlisting></para>
+              <para><programlisting>echo "OUTPUT('Hello world');" &gt; hello.ecl</programlisting></para>
             </listitem>
 
             <listitem>

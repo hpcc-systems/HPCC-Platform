@@ -295,10 +295,10 @@ MyDec2  := 3.14159265358979323846d // value of MyDec2 is the DECIMAL
 // This will avoid syntax errors 
 prod_thor_dali := _Control.IPAddress.prod_thor_dali;
   #IF(_TARGET_PLATFORM_ in ['thorlcr'])
-    Output('thor');
+    OUTPUT('thor');
     prod_thor_dali;
   #ELSE
-    Output('not thor');
+    OUTPUT('not thor');
   #END
 
 //Second example
