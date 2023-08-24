@@ -875,14 +875,15 @@ int main( int argc, const char *argv[]  )
             if (overrideReplicateDirectory&&*overrideBaseDirectory)
                 setBaseDirectory(overrideReplicateDirectory, true);
         }
-        if (!hasExpertOpt("saveQueryDlls"))
+        bool saveQueryDlls = true;
+        if (hasExpertOpt("saveQueryDlls"))
+            saveQueryDlls = getExpertOptBool("saveQueryDlls");
+        else
         {
-            // propagate default setting.
-            // Bare-metal - save dlls to local disk cache by default
-            // Containerized - load dlls directly
-            setExpertOpt("saveQueryDlls", boolToStr(!isContainerized()));
+            // propagate default setting (so seen by workers)
+            setExpertOpt("saveQueryDlls", boolToStr(saveQueryDlls));
         }
-        if (getExpertOptBool("saveQueryDlls"))
+        if (saveQueryDlls)
         {
             StringBuffer soDir, soPath;
             if (!isContainerized() && getConfigurationDirectory(globals->queryPropTree("Directories"),"query","thor",globals->queryProp("@name"),soDir))
