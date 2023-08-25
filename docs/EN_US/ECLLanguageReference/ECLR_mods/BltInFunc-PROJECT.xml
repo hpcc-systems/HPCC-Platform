@@ -18,14 +18,22 @@
       <primary>KEYED</primary>
     </indexterm> ] [, LOCAL<indexterm>
       <primary>LOCAL</primary>
-    </indexterm> ] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+    </indexterm> ] </emphasis><emphasis role="bold">[, UNORDERED |
+  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
+  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
+  </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
+  <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
 
   <para><emphasis role="bold">PROJECT(</emphasis><emphasis> recordset, record
   </emphasis><emphasis role="bold">[, PREFETCH<indexterm>
       <primary>PREFETCH</primary>
     </indexterm> [ (</emphasis><emphasis>lookahead </emphasis><emphasis
   role="bold">[, PARALLEL]) ] ]</emphasis><emphasis role="bold"> [, KEYED ] [,
-  LOCAL ] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+  LOCAL ] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis>
+  <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ]
+  [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis
+  role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name
+  </emphasis><emphasis role="bold">) ] )</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
@@ -98,50 +106,70 @@
                 <primary>RECORD structure</primary>
               </indexterm> to use for each record in the recordset.</entry>
           </row>
+
           <row>
             <entry><emphasis role="bold">UNORDERED</emphasis></entry>
 
-            <entry>Optional. Specifies the output record order is not significant.</entry>
+            <entry>Optional. Specifies the output record order is not
+            significant.</entry>
           </row>
+
           <row>
             <entry><emphasis role="bold">ORDERED</emphasis></entry>
 
-            <entry>Specifies the significance of the output record order.</entry>
+            <entry>Specifies the significance of the output record
+            order.</entry>
           </row>
+
           <row>
             <entry><emphasis>bool</emphasis></entry>
 
-            <entry>When False, specifies the output record order is not significant. When True, specifies the default output record order.</entry>
+            <entry>When False, specifies the output record order is not
+            significant. When True, specifies the default output record
+            order.</entry>
           </row>
+
           <row>
             <entry><emphasis role="bold">STABLE</emphasis></entry>
 
-            <entry>Optional. Specifies the input record order is significant.</entry>
+            <entry>Optional. Specifies the input record order is
+            significant.</entry>
           </row>
+
           <row>
             <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
 
-            <entry>Optional. Specifies the input record order is not significant.</entry>
+            <entry>Optional. Specifies the input record order is not
+            significant.</entry>
           </row>
+
           <row>
             <entry><emphasis role="bold">PARALLEL</emphasis></entry>
 
-            <entry>Optional. Try to evaluate this activity in parallel.</entry>
+            <entry>Optional. Try to evaluate this activity in
+            parallel.</entry>
           </row>
+
           <row>
             <entry><emphasis>numthreads</emphasis></entry>
 
-            <entry>Optional. Try to evaluate this activity using <emphasis>numthreads</emphasis> threads.</entry>
+            <entry>Optional. Try to evaluate this activity using
+            <emphasis>numthreads</emphasis> threads.</entry>
           </row>
+
           <row>
             <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
 
-            <entry>Optional. Override the algorithm used for this activity.</entry>
+            <entry>Optional. Override the algorithm used for this
+            activity.</entry>
           </row>
+
           <row>
             <entry><emphasis>name</emphasis></entry>
 
-            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the SORT function's STABLE and UNSTABLE options.</entry>
+            <entry>The algorithm to use for this activity. Must be from the
+            list of supported algorithms for the SORT function's STABLE and
+            UNSTABLE options.</entry>
           </row>
 
           <row>
@@ -191,7 +219,7 @@
 
     <para>Example:</para>
 
-    <programlisting>//form one example **********************************
+    <programlisting lang="ECL" role="notrunnable">//form one example **********************************
 Ages := RECORD
   STRING15 per_first_name;
   STRING25 per_last_name;
@@ -271,7 +299,10 @@ Rec# Value1 Value2 CatValues
 */
 </programlisting>
 
-    <para>See Also: <link linkend="TRANSFORM_Structure">TRANSFORM Structure</link>, <link linkend="RECORD_Structure">RECORD Structure</link>, <link linkend="ROW">ROW</link>, <link linkend="DATASET">DATASET</link></para>
+    <para>See Also: <link linkend="TRANSFORM_Structure">TRANSFORM
+    Structure</link>, <link linkend="RECORD_Structure">RECORD
+    Structure</link>, <link linkend="ROW">ROW</link>, <link
+    linkend="DATASET">DATASET</link></para>
   </sect2>
 
   <sect2 id="BuiltinFunction_PROJECT">
@@ -365,6 +396,9 @@ myService(myInterface myArgs) := FUNCTION
 myService(myInterface myArgs) := childService(PROJECT(myArgs, childInterface));
 </programlisting>
 
-    <para>See Also: <link linkend="MODULE_Structure">MODULE Structure</link>, <link linkend="INTERFACE_Structure">INTERFACE Structure</link>, <link linkend="FUNCTION_Structure">FUNCTION Structure</link>, <link linkend="STORED">STORED</link></para>
+    <para>See Also: <link linkend="MODULE_Structure">MODULE Structure</link>,
+    <link linkend="INTERFACE_Structure">INTERFACE Structure</link>, <link
+    linkend="FUNCTION_Structure">FUNCTION Structure</link>, <link
+    linkend="STORED">STORED</link></para>
   </sect2>
 </sect1>

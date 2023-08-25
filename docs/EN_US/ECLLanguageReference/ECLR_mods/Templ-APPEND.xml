@@ -39,10 +39,12 @@
 
   <para>Example:</para>
 
-  <programlisting>  #DECLARE(MySymbol);         //declare a symbol named "MySymbol"
-  #SET(MySymbol,'Hello');     //initialize MySymbol to "Hello"
-  #APPEND(MySymbol,' World'); //make MySymbol's value "Hello World"
+  <programlisting lang="ECL" role="runnable">#DECLARE(MySymbol);         //declare a symbol named "MySymbol"
+#SET(MySymbol,'Hello');     //initialize MySymbol to "Hello"
+#APPEND(MySymbol,' World'); //make MySymbol's value "Hello World"
+OUTPUT(%'MySymbol'%);
 </programlisting>
 
-  <para>See Also: <link linkend="_DECLARE">#DECLARE</link>, <link linkend="_SET">#SET</link></para>
+  <para>See Also: <link linkend="_DECLARE">#DECLARE</link>, <link
+  linkend="_SET">#SET</link></para>
 </sect1>

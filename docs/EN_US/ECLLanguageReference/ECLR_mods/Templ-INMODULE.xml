@@ -39,26 +39,20 @@
 
   <para>Example:</para>
 
-  <programlisting>  #DECLARE (mod)
-  #DECLARE (attr)
-  #DECLARE (stg)
+  <programlisting lang="ECL" role="runnable">#DECLARE (mod)
+#DECLARE (attr)
+#DECLARE (stg)
   
-  #SET(mod, 'default')
-  #SET(attr, 'YearOf')
+#SET(mod, 'default')
+#SET(attr, 'YearOf')
   
-  #IF( #INMODULE(%mod%, %attr%) )
-     #SET(stg, %'attr'% + ' Exists In Module ' + %'mod'%);
-  #ELSE
-     #SET(stg, %'attr'% + ' Does Not Exist In Module ' + %'mod'%);
-  #END
+#IF(#INMODULE(%mod%, %attr%) )
+  #SET(stg, %'attr'% + ' Exists In Module ' + %'mod'%);
+#ELSE
+  #SET(stg, %'attr'% + ' Does Not Exist In Module ' + %'mod'%);
+#END
   
-  export res := %'stg'%;
-  res;
-  
-  // Output: (For 'default.YearOf')
-  // stg = 'YearOf Exists In Module default'
-  //
-  // Output: (For 'default.Fred')
-  // stg = 'Fred Does Not Exist In Module default'
+EXPORT res := %'stg'%;
+OUTPUT(res);
 </programlisting>
 </sect1>

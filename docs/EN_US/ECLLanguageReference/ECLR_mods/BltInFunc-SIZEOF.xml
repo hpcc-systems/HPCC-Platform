@@ -51,7 +51,7 @@
 
   <para>Example:</para>
 
-  <programlisting>MyRec := RECORD
+  <programlisting lang="ECL" role="runnable">MyRec := RECORD
 INTEGER1 F1;
 INTEGER5 F2;
 STRING1 F3;
@@ -59,41 +59,26 @@ STRING10 F4;
 QSTRING12 F5;
 VARSTRING12 F6;
 END;
-MyData :=
-        DATASET([{1,33333333333,'A','A','A',V'A'}],MyRec);
-SIZEOF(MyRec); //result is 39
-SIZEOF(MyData.F1); //result is 1
-SIZEOF(MyData.F2); //result is 5
-SIZEOF(MyData.F3); //result is 1
-SIZEOF(MyData.F4); //result is 10
-SIZEOF(MyData.F5); //result is 9 -12 chars stored in 9
-        bytes
-SIZEOF(MyData.F6); //result is 13 -12 chars plus null
-          terminator
-
-Layout_People := RECORD
-STRING15 first_name;
-STRING15 middle_name;
-STRING25 last_name;
-STRING2 suffix;
-STRING42 street;
-STRING20 city;
-STRING2 st;
-STRING5 zip;
-STRING1 sex;
-STRING3 age;
-STRING8 dob;
-BOOLEAN age_flag;
-UNSIGNED8 __filepos { VIRTUAL(fileposition)};
-END;
-File_People := DATASET('ecl_training::People', Layout_People,
-          FLAT);
-SIZEOF(File_People); //result is 147
-SIZEOF(File_People.street); //result is 42
-SIZEOF('abc' + '123'); //result is 6
-SIZEOF(person.per_cid); //result is 9 - Person.per_cid is
-        DATA9
+MyData := DATASET([{1,33333333333,'A','A','A',V'A'}],MyRec);
+size0 := SIZEOF(MyRec); //result is 39
+size1 := SIZEOF(MyData.F1); //result is 1
+size2 := SIZEOF(MyData.F2); //result is 5
+size3 := SIZEOF(MyData.F3); //result is 1
+size4 := SIZEOF(MyData.F4); //result is 10
+size5 := SIZEOF(MyData.F5); //result is 9 -12 chars stored in 9 bytes
+size6 := SIZEOF(MyData.F6); //result is 13 -12 chars plus null terminator
+size7 := SIZEOF('abc' + '123'); //result is 6
+OUTPUT(size0);
+OUTPUT(size1);
+OUTPUT(size2);
+OUTPUT(size3);
+OUTPUT(size4);
+OUTPUT(size5);
+OUTPUT(size6);
+OUTPUT(size7);
 </programlisting>
+
+  <para></para>
 
   <para>See Also: <link linkend="LENGTH">LENGTH</link></para>
 </sect1>

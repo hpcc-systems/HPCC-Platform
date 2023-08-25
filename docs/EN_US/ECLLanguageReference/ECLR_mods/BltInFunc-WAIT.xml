@@ -5,44 +5,44 @@
   <title>WAIT</title>
 
   <informalexample id="SchWAIT">
-   <para><emphasis role="bold">WAIT<indexterm>
-      <primary>WAIT</primary>
-    </indexterm><indexterm>
-      <primary>WAIT Function</primary>
-    </indexterm>(</emphasis><emphasis>event</emphasis><emphasis
-  role="bold">)</emphasis></para>
+    <para><emphasis role="bold">WAIT<indexterm>
+        <primary>WAIT</primary>
+      </indexterm><indexterm>
+        <primary>WAIT Function</primary>
+      </indexterm>(</emphasis><emphasis>event</emphasis><emphasis
+    role="bold">)</emphasis></para>
 
-  <para><informaltable colsep="1" frame="all" rowsep="1">
-      <tgroup cols="2">
-        <colspec colwidth="122.40pt" />
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec colwidth="122.40pt" />
 
-        <colspec />
+          <colspec />
 
-        <tbody>
-          <row>
-            <entry><emphasis>event</emphasis></entry>
+          <tbody>
+            <row>
+              <entry><emphasis>event</emphasis></entry>
 
-            <entry>A string constant containing the name of the event to wait
-            for.</entry>
-          </row>
-        </tbody>
-      </tgroup>
-    </informaltable></para>
+              <entry>A string constant containing the name of the event to
+              wait for.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
 
-  <para>The <emphasis role="bold">WAIT </emphasis>action is similar to the
-  WHEN workflow service, but may be used within conditional code.</para>
+    <para>The <emphasis role="bold">WAIT </emphasis>action is similar to the
+    WHEN workflow service, but may be used within conditional code.</para>
 
-  <para>Example:</para>
+    <para>Example:</para>
 
-  <programlisting>  //You can either do this:
-  action1;
-  action2 : WHEN('expectedEvent');
-  
-  //can also be written as:
-  SEQUENTIAL(action1,WAIT('expectedEvent'),action2);
+    <programlisting language="ECL" role="notrunnable">//You can either do this:
+action1;
+action2 : WHEN('expectedEvent');
+//can also be written as:
+SEQUENTIAL(action1,WAIT('expectedEvent'),action2);
 </programlisting>
+  </informalexample>
 
- </informalexample>
   <para>See Also: <link linkend="EVENT">EVENT</link>, <link
-  linkend="NOTIFY">NOTIFY</link>, <link linkend="WHEN">WHEN</link>, <link linkend="CRON">CRON</link></para>
+  linkend="NOTIFY">NOTIFY</link>, <link linkend="WHEN">WHEN</link>, <link
+  linkend="CRON">CRON</link></para>
 </sect1>

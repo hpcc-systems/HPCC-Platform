@@ -95,7 +95,7 @@
 
     <para>Example:</para>
 
-    <programlisting>AkaRec := {STRING20 forename,STRING20 surname};
+    <programlisting lang="ECL" role="runnable">AkaRec := {STRING20 forename,STRING20 surname};
 outputRec := RECORD
   UNSIGNED id;
   DATASET(AkaRec) kids;
@@ -113,6 +113,7 @@ outputRec makeChildren(outputRec L, outputRec R) := TRANSFORM
   SELF.kids := L.kids + ROW({R.kids[1].forename,R.kids[1].surname},AkaRec);
 END;
 r := ROLLUP(fatIn, id, makeChildren(LEFT, RIGHT));
+OUTPUT(r);
 </programlisting>
   </sect2>
 
@@ -128,7 +129,7 @@ r := ROLLUP(fatIn, id, makeChildren(LEFT, RIGHT));
 
     <para>Example:</para>
 
-    <programlisting>AkaRec := {STRING20 forename,STRING20 surname};
+    <programlisting lang="ECL" role="runnable">AkaRec := {STRING20 forename,STRING20 surname};
 outputRec := RECORD
 UNSIGNED id;
 DATASET(AkaRec) children;
@@ -149,6 +150,7 @@ outputRec makeChildren(outputRec L, outputRec R) := TRANSFORM
 
 END;
 r := ROLLUP(fatIn, id, makeChildren(LEFT, RIGHT));
+OUTPUT(r);
 </programlisting>
   </sect2>
 
@@ -163,7 +165,7 @@ r := ROLLUP(fatIn, id, makeChildren(LEFT, RIGHT));
 
     <para>Example:</para>
 
-    <programlisting>
+    <programlisting lang="ECL" role="notrunnable">IMPORT Std;
 NameRec := RECORD
   STRING5 title;
   STRING20 fname;
@@ -261,7 +263,6 @@ myRecord t3(myRecord L) := TRANSFORM
 END;
 
 y3 := PROJECT(x, t3(LEFT));
-
 OUTPUT(y3);
 </programlisting>
 
