@@ -20,6 +20,8 @@
 #ifndef __JEXCEPT__
 #define __JEXCEPT__
 
+#include <functional>
+
 #include "jiface.hpp"
 #include "jlib.hpp"
 #include "errno.h"
@@ -264,6 +266,23 @@ inline IError * createError(int errNo, const char *msg, const char *filename, in
 extern jlib_decl const char * querySeverityString(ErrorSeverity errorSeverity);
 class LogMsgCategory;
 extern jlib_decl const LogMsgCategory & mapToLogMsgCategory(ErrorSeverity severity, MessageAudience aud);
+
+enum ExceptionInterceptClass
+{
+    eString = 0x01,
+    eErrno  = 0x02,
+    eOs     = 0x04,
+    eSocket = 0x08
+};
+typedef std::function<void(IException *e)> InterceptHandler;
+interface IExceptionIntercept
+{
+    virtual void handle(ExceptionInterceptClass eClass, IException *e) const = 0;
+    virtual void clear() = 0;
+    virtual void setIntercept(ExceptionInterceptClass eClass, int code, InterceptHandler func) = 0;
+    virtual void addFromConfig(const IPropertyTree *exceptionHandlerTree) = 0;
+};
+extern jlib_decl IExceptionIntercept &queryExceptionIntercept();
 
 #endif
 

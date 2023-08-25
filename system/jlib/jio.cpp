@@ -183,7 +183,10 @@ extern jlib_decl size32_t checked_write( int handle, const void *buffer, size32_
     int ret=_write(handle,buffer,count);
     if ((size32_t)ret != count)
     {
-        throw makeErrnoException((ret==-1)?errno:DISK_FULL_EXCEPTION_CODE, "checked_write");
+        if (-1 != ret)
+            throw makeOsException(DISK_FULL_EXCEPTION_CODE, "checked_write");
+        else
+            throw makeErrnoException(errno, "checked_write");
     }
     return (size32_t)ret;
 }
