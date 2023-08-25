@@ -10108,7 +10108,7 @@ double getExpertOptReal(const char *opt, double dft)
 {
     StringBuffer xpath;
     getExpertOptPath(opt, xpath);
-    return globals->getPropReal(xpath, dft);
+    return getComponentConfigSP()->getPropReal(xpath, dft);
 }
 
 StringBuffer &getExpertOptString(const char *opt, StringBuffer &out)
