@@ -1,7 +1,6 @@
 import * as React from "react";
 import { Checkbox, CommandBar, ICommandBarItemProps, Link } from "@fluentui/react";
 import * as domClass from "dojo/dom-class";
-import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
 import { useFluentGrid } from "../hooks/grid";
 import { useWorkunitExceptions } from "../hooks/workunit";
@@ -82,8 +81,6 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
                             txt = `Graph ${info.graphID}[${info.subgraphID}], ${info.activityName} [${info.activityID}]`;
                         }
                         return <><span>{info?.prefix}<Link style={{ marginRight: 3 }} href={`#/workunits/${wuid}/metrics/sg${info.subgraphID}`}>{txt}</Link>{info?.message}</span></>;
-                    } else {
-                        Message = Utility.xmlEncode2(Message);
                     }
                     return Message;
                 }, [wuid])
