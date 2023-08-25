@@ -2759,41 +2759,15 @@ StringBuffer & mangleLocalTempFilename(StringBuffer & out, char const * in, cons
     return out;
 }
 
-static const char *skipLfnForeign(const char *lfn)
-{
-    // NOTE: The leading ~ and any leading spaces have already been stripped at this point
-    const char *finger = lfn;
-    if (strnicmp(finger, "foreign", 7)==0)
-    {
-        finger += 7;
-        while (*finger == ' ')
-            finger++;
-        if (finger[0] == ':' && finger[1] == ':')
-        {
-            // foreign scope - need to strip off the ip and port (i.e. from here to the next ::)
-            finger += 2;  // skip ::
-            finger = strstr(finger, "::");
-            if (finger)
-            {
-                finger += 2;
-                while (*finger == ' ')
-                    finger++;
-                return finger;
-            }
-        }
-    }
-    return lfn;
-}
-
 StringBuffer & expandLogicalFilename(StringBuffer & logicalName, const char * fname, IConstWorkUnit * wu, bool resolveLocally, bool ignoreForeignPrefix)
 {
     if (fname[0]=='~')
     {
-        while (*fname=='~' || *fname==' ')
-            fname++;
-        if (ignoreForeignPrefix)
-            fname = skipLfnForeign(fname);
-        logicalName.append(fname);
+        CDfsLogicalFileName dlfn;
+        dlfn.setAllowWild(true);
+        dlfn.setAllowTrailingEmptyScope(true);
+        dlfn.set(fname);
+        logicalName.append(dlfn.get(ignoreForeignPrefix));
     }
     else if (resolveLocally)
     {
@@ -2811,10 +2785,15 @@ StringBuffer & expandLogicalFilename(StringBuffer & logicalName, const char * fn
         if (wu)
         {
             wu->getScope(lfn);
-            if(lfn.length())
-                logicalName.append(lfn.s).append("::");
+            if (lfn.length())
+                lfn.s.append("::");
         }
-        logicalName.append(fname);
+        lfn.s.append(fname);
+        CDfsLogicalFileName dlfn;
+        dlfn.setAllowWild(true);
+        dlfn.setAllowTrailingEmptyScope(true);
+        dlfn.set(lfn.str());
+        logicalName.append(dlfn.get());
     }
     return logicalName;
 }

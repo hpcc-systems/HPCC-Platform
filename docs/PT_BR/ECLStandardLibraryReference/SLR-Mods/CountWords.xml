@@ -15,9 +15,9 @@
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
-      <colspec colwidth="80.50pt"/>
+      <colspec colwidth="80.50pt" />
 
-      <colspec/>
+      <colspec />
 
       <tbody>
         <row>
@@ -53,11 +53,11 @@
 str1 := 'a word a day keeps the doctor away';
 str2 := 'a|word|a|day|keeps|the|doctor|away';
 
-output(LENGTH(TRIM(Str1,LEFT,RIGHT)) - LENGTH(TRIM(Str1,ALL)) + 1);
+OUTPUT(LENGTH(TRIM(Str1,LEFT,RIGHT)) - LENGTH(TRIM(Str1,ALL)) + 1);
                                  //finds eight words by removing spaces
 STD.STr.CountWords(str1,' ');    //finds eight words based on space delimiter
 STD.STr.CountWords(str2,'|');    //finds eight words based on bar delimiter
 </programlisting>
 
-  <para/>
+  <para></para>
 </sect1>

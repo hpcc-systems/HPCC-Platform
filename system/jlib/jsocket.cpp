@@ -163,6 +163,7 @@ public:
             msg = strdup(_msg);
         else
             msg = NULL;
+        queryExceptionIntercept().handle(ExceptionInterceptClass::eSocket, this);
     };
     ~SocketException() { free(msg); }
     

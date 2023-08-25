@@ -1954,11 +1954,17 @@ bool registerClientProcess(ICommunicator *comm, IGroup *& retcoven,unsigned time
                 retcoven = deserializeIGroup(mb);
                 if (!mySessionId)
                     throw deserializeException(mb);
+                if (lastNextLog) // see below, true if has been round timeout loop. Only output confirmation, if have issued 'Failed to connect ..' messages
+                {
+                    StringBuffer str("Connected to Dali Server ");
+                    comm->queryGroup().queryNode(r).endpoint().getUrlStr(str);
+                    LOG(MCoperatorProgress, "%s", str.str());
+                }
                 return true;
             }
         }
         StringBuffer str;
-        OERRLOG("Failed to connect to Dali Server %s.", comm->queryGroup().queryNode(r).endpoint().getUrlStr(str).str());
+        OERRLOG("Waiting for Dali to be available - server: %s", comm->queryGroup().queryNode(r).endpoint().getUrlStr(str).str());
         if (tm.timedout())
         {
             PROGLOG("%s", str.append(" Timed out.").str());

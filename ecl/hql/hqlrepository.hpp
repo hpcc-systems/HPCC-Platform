@@ -56,7 +56,9 @@ public:
     unsigned __int64 getStatistic(StatisticKind kind) const;
 
     void processArchive(IPropertyTree * archiveTree);
-    IEclPackage * queryDependentRepository(IIdAtom * name, const char * defaultUrl, IEclSourceCollection * overrideSources);
+    IEclPackage * queryDependentRepository(IIdAtom * name, const char * defaultUrl);
+    IEclPackage * queryRepositoryAsRoot(const char * defaultUrl, IEclSourceCollection * overrideSources);
+
     void setOptions(const char * _eclRepoPath, const char * _gitUser, const char * _gitPasswordPath, const char * _defaultGitPrefix,
                     bool _fetchRepos, bool _updateRepos, bool _cleanRepos, bool _cleanInvalidRepos, bool _verbose)
     {
@@ -80,12 +82,14 @@ protected:
     IEclRepository * createRepository(IEclSourceCollection * source, const char * rootScopeFullName, bool includeInArchive);
 
     unsigned runGitCommand(StringBuffer * output, const char *args, const char * cwd, bool needCredentials);
+    IEclPackage * queryRepository(IIdAtom * name, const char * defaultUrl, IEclSourceCollection * overrideSource, bool includeDefinitions);
 
 private:
     using DependencyInfo = std::pair<std::string, Shared<IEclPackage>>;
     CIArrayOf<EclRepositoryMapping> repos;
     std::vector<DependencyInfo> dependencies;
     IArrayOf<IEclRepository> sharedSources;     // plugins, std library, bundles
+    IArrayOf<IEclRepository> overrideSources;   // -D options
     IArrayOf<IEclRepository> allSources;        // also includes -D options
     cycle_t gitDownloadCycles = 0;
 

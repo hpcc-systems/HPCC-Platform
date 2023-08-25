@@ -516,7 +516,7 @@ IHqlExpression * CNewEclRepository::createSymbol(IHqlRemoteScope * rScope, IEclS
         {
             const char * defaultUrl = source->queryPath();
             Owned<IProperties> props = source->getProperties();
-            IEclRepository * repo = container->queryDependentRepository(eclId, defaultUrl, nullptr);
+            IEclRepository * repo = container->queryDependentRepository(eclId, defaultUrl);
             IHqlScope * childScope = repo->queryRootScope();
             body.set(queryExpression(childScope));
             break;
@@ -604,6 +604,7 @@ void EclRepositoryManager::addQuerySourceFileEclRepository(IErrorReceiver *errs,
 void EclRepositoryManager::addSingleDefinitionEclRepository(const char * moduleName, const char * attrName, IFileContents * contents, bool includeInArchive)
 {
     Owned<IEclRepository> repo = createSingleDefinitionEclRepository(moduleName, attrName, contents, includeInArchive);
+    overrideSources.append(*repo.getLink());
     allSources.append(*repo.getClear());
 }
 
@@ -673,7 +674,7 @@ void EclRepositoryManager::processArchive(IPropertyTree * archiveTree)
     addRepository(archiveCollection, nullptr, true);
 }
 
-IEclPackage * EclRepositoryManager::queryDependentRepository(IIdAtom * name, const char * defaultUrl, IEclSourceCollection * overrideSources)
+IEclPackage * EclRepositoryManager::queryRepository(IIdAtom * name, const char * defaultUrl, IEclSourceCollection * overrideSource, bool includeDefinitions)
 {
     //Check to see if the reference is to a filename.  Should possibly be disabled on a switch.
     const char * filename = queryExtractFilename(defaultUrl);
@@ -719,12 +720,17 @@ IEclPackage * EclRepositoryManager::queryDependentRepository(IIdAtom * name, con
     //Create a new repository for the directory that contains the dependent package
     allSources.kill();
     Owned<IErrorReceiver> errs = createThrowingErrorReceiver();
+    if (includeDefinitions)
+    {
+        ForEachItemIn(iDefs, overrideSources)
+            allSources.append(OLINK(overrideSources.item(iDefs)));
+    }
     ForEachItemIn(iShared, sharedSources)
         allSources.append(OLINK(sharedSources.item(iShared)));
 
     //Explicitly provided sources take precedence over the contents of the repository
-    if (overrideSources)
-        addRepository(overrideSources, nullptr, true);
+    if (overrideSource)
+        addRepository(overrideSource, nullptr, true);
 
     unsigned flags = ESFdependencies;
     Owned<IEclRepository> repo;
@@ -737,6 +743,18 @@ IEclPackage * EclRepositoryManager::queryDependentRepository(IIdAtom * name, con
     Owned<IEclPackage> compound = createPackage(defaultUrl);
     dependencies.emplace_back(repoKey, compound);
     return compound;
+}
+
+
+IEclPackage * EclRepositoryManager::queryDependentRepository(IIdAtom * name, const char * defaultUrl)
+{
+    assertex(name);
+    return queryRepository(name, defaultUrl, nullptr, false);
+}
+
+IEclPackage * EclRepositoryManager::queryRepositoryAsRoot(const char * defaultUrl, IEclSourceCollection * overrideSources)
+{
+    return queryRepository(nullptr, defaultUrl, overrideSources, true);
 }
 
 

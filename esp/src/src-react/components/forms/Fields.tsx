@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Checkbox, ChoiceGroup, ComboBox, IChoiceGroupOption, Dropdown as DropdownBase, IDropdownOption, TextField, Link, ProgressIndicator, IComboBoxOption, IComboBoxProps } from "@fluentui/react";
+import { Checkbox, ChoiceGroup, ComboBox, IChoiceGroupOption, Dropdown as DropdownBase, IDropdownOption, TextField, Link, ProgressIndicator, IComboBoxOption, IComboBoxProps, IComboBox } from "@fluentui/react";
 import { scopedLogger } from "@hpcc-js/util";
 import { FileSpray } from "@hpcc-js/comms";
 import { TpDropZoneQuery, TpGroupQuery, TpServiceQuery } from "src/WsTopology";
@@ -570,7 +570,7 @@ export const EsdlDefinitionsTextField: React.FunctionComponent<EsdlDefinitionsTe
     return <AsyncDropdown {...props} options={definitions} />;
 };
 
-export interface TargetFolderTextFieldProps extends Omit<AsyncDropdownProps, "options"> {
+export interface TargetFolderTextFieldProps extends Omit<IComboBoxProps, "options"> {
     pathSepChar?: string;
     dropzone?: string;
     machineAddress?: string;
@@ -581,12 +581,17 @@ export interface TargetFolderTextFieldProps extends Omit<AsyncDropdownProps, "op
 export const TargetFolderTextField: React.FunctionComponent<TargetFolderTextFieldProps> = (props) => {
 
     const [, { isContainer }] = useBuildInfo();
-    const [folders, setFolders] = React.useState<IDropdownOption[]>();
-    const { pathSepChar, dropzone, machineAddress, machineDirectory, machineOS } = { ...props };
+    const [folders, setFolders] = React.useState<IComboBoxOption[]>();
+    const [selectedKey, setSelectedKey] = React.useState<string | number | undefined>();
+    const { pathSepChar, dropzone, machineAddress, machineDirectory, machineOS, onChange } = { ...props };
 
-    const fetchFolders = React.useCallback((pathSepChar: string, Netaddr: string, Path: string, OS: number, depth: number): Promise<IDropdownOption[]> => {
+    const styles = React.useMemo(() => {
+        return { root: { width: 320 }, optionsContainerWrapper: { width: 320 } };
+    }, []);
+
+    const fetchFolders = React.useCallback((pathSepChar: string, Netaddr: string, Path: string, OS: number, depth: number): Promise<IComboBoxOption[]> => {
         depth = depth || 0;
-        let retVal: IDropdownOption[] = [];
+        let retVal: IComboBoxOption[] = [];
         if (!props.required) {
             retVal.push({ key: "", text: "" });
         }
@@ -632,16 +637,30 @@ export const TargetFolderTextField: React.FunctionComponent<TargetFolderTextFiel
         });
     }, [dropzone, isContainer, machineDirectory, props.required]);
 
+    const onChanged = React.useCallback((event: React.FormEvent<IComboBox>, option?: IComboBoxOption, index?: number, value?: string): void => {
+        let key = option?.key;
+        if (!option && value) {
+            key = [machineDirectory, value].join(pathSepChar);
+            setFolders(prevOptions => [...prevOptions, { key: key!, text: value }]);
+        }
+        setSelectedKey(key);
+        onChange(event, option, index, value);
+    }, [machineDirectory, onChange, pathSepChar]);
+
     React.useEffect(() => {
         if ((!isContainer && !machineAddress) || !machineDirectory || !machineOS) return;
         const _fetchFolders = async () => {
             const folders = await fetchFolders(pathSepChar, machineAddress, machineDirectory, machineOS, 0);
-            setFolders(folders);
+            setFolders(folders.sort((a, b) => {
+                if (a.text < b.text) return -1;
+                if (a.text > b.text) return 1;
+                return 0;
+            }));
         };
         _fetchFolders();
     }, [isContainer, pathSepChar, machineAddress, machineDirectory, machineOS, fetchFolders]);
 
-    return <AsyncDropdown {...props} options={folders} />;
+    return <ComboBox {...props} allowFreeform={true} autoComplete={"on"} selectedKey={selectedKey} onChange={onChanged} options={folders} styles={styles} />;
 };
 
 export interface UserGroupsProps extends Omit<AsyncDropdownProps, "options"> {

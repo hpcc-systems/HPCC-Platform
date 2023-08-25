@@ -832,6 +832,27 @@ IDistributedFile *lookup(CDfsLogicalFileName &lfn, IUserDescriptor *user, Access
 {
     bool viaDali = false;
 
+    bool isForeign = false;
+    try { isForeign = lfn.isForeign(); }
+    catch(IException *e) { e->Release(); } // catch and ignore multi lfn case, will be checked later
+    if (isForeign)
+    {
+        // default denied in cloud, allowed in bare-metal
+        bool allow = isContainerized() ? false : true;
+        StringBuffer optValue;
+        // NB: component setting takes precedence over global
+        getComponentConfigSP()->getProp("expert/@allowForeign", optValue.clear());
+        if (optValue.length())
+            allow = strToBool(optValue);
+        else
+        {
+            getGlobalConfigSP()->getProp("expert/@allowForeign", optValue);
+            if (optValue.length())
+                allow = strToBool(optValue);
+        }
+        if (!allow)
+            throw makeStringExceptionV(0, "foreign access is not permitted from this system (file='%s')", lfn.get());
+    }
     // DFS service currently only supports remote files 
     if (isWrite(accessMode))
         viaDali = true;

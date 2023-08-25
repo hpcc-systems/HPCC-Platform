@@ -814,8 +814,6 @@ int main( int argc, const char *argv[]  )
                 if (!managerMemory->hasProp("@maxMemPercentage"))
                     managerMemory->setPropReal("@maxMemPercentage", localThor ? 25.0 : defaultPctSysMemForRoxie);
             }
-            // NB: if (cloud - numWorkersPerPod) or (bare-metal - slavesPerNode) is specified
-            // the percentage will be split based on numWorkersPerPod or slavesPerNode (see if (numWorkersPerPodOrNode > 1) code below)
         }
         workerMemory->setPropInt("@total", gmemSize);
 
@@ -875,14 +873,15 @@ int main( int argc, const char *argv[]  )
             if (overrideReplicateDirectory&&*overrideBaseDirectory)
                 setBaseDirectory(overrideReplicateDirectory, true);
         }
-        if (!hasExpertOpt("saveQueryDlls"))
+        bool saveQueryDlls = true;
+        if (hasExpertOpt("saveQueryDlls"))
+            saveQueryDlls = getExpertOptBool("saveQueryDlls");
+        else
         {
-            // propagate default setting.
-            // Bare-metal - save dlls to local disk cache by default
-            // Containerized - load dlls directly
-            setExpertOpt("saveQueryDlls", boolToStr(!isContainerized()));
+            // propagate default setting (so seen by workers)
+            setExpertOpt("saveQueryDlls", boolToStr(saveQueryDlls));
         }
-        if (getExpertOptBool("saveQueryDlls"))
+        if (saveQueryDlls)
         {
             StringBuffer soDir, soPath;
             if (!isContainerized() && getConfigurationDirectory(globals->queryPropTree("Directories"),"query","thor",globals->queryProp("@name"),soDir))
@@ -970,7 +969,6 @@ int main( int argc, const char *argv[]  )
         kjServiceMpTag = allocateClusterMPTag();
 
         unsigned numWorkers = 0;
-        unsigned numWorkersPerPodOrNode = 1; // pod in cloud, node in bare-metal
         bool doWorkerRegistration = false;
         if (isContainerized())
         {
@@ -1009,7 +1007,6 @@ int main( int argc, const char *argv[]  )
                 Owned<IWorkUnit> workunit = &wuRead->lock();
                 addTimeStamp(workunit, wfid, graphName, StWhenK8sStarted);
             }
-            numWorkersPerPodOrNode = numWorkersPerPod;
 
             cloudJobName.appendf("%s-%s", workunit, graphName);
 
@@ -1033,17 +1030,18 @@ int main( int argc, const char *argv[]  )
             unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_SLAVEPORTINC);
             unsigned slaveBasePort = globals->getPropInt("@slaveport", DEFAULT_THORSLAVEPORT);
             Owned<IGroup> rawGroup = getClusterNodeGroup(thorname, "ThorCluster");
-            numWorkersPerPodOrNode = globals->getPropInt("@slavesPerNode", 1);
-            setClusterGroup(queryMyNode(), rawGroup, numWorkersPerPodOrNode, channelsPerWorker, slaveBasePort, localThorPortInc);
+            unsigned numWorkersPerNode = globals->getPropInt("@slavesPerNode", 1);
+            setClusterGroup(queryMyNode(), rawGroup, numWorkersPerNode, channelsPerWorker, slaveBasePort, localThorPortInc);
             numWorkers = queryNodeClusterWidth();
             doWorkerRegistration = true;
-        }
-        if (numWorkersPerPodOrNode > 1)
-        {
-            // NB: maxMemPercentage only be set when memory amounts have not explicily been defined (e.g. globalMemorySize)
-            double pct = workerMemory->getPropReal("@maxMemPercentage");
-            if (pct)
-                workerMemory->setPropReal("@maxMemPercentage", pct / numWorkersPerPodOrNode);
+            if (numWorkersPerNode > 1)
+            {
+                // Split memory based on numWorkersPerNode
+                // NB: maxMemPercentage only set when memory amounts have not explicily been defined (e.g. globalMemorySize)
+                double pct = workerMemory->getPropReal("@maxMemPercentage");
+                if (pct)
+                    workerMemory->setPropReal("@maxMemPercentage", pct / numWorkersPerNode);
+            }
         }
 
         if (doWorkerRegistration && registry->connect(numWorkers))
