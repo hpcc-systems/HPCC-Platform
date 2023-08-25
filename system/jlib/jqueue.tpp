@@ -557,7 +557,6 @@ public:
 
     ~ReallySimpleInterThreadQueueOf<BASE, ALLOWNULLS>()
     {
-        stop();
     }
 
     void reset()
@@ -594,12 +593,12 @@ public:
         PARENT::ensure(limit);
     }
 
-    void stop(unsigned maxReaders = 0, unsigned maxWriters = 0) // stops all waiting operations
+    void stop(unsigned maxReaders, unsigned maxWriters) // stops all waiting operations
     {
-        //Assume maxreaders < limit, maxwriters < limit if not provided
+        assertex(maxReaders && maxWriters);
         stopped = true;
-        avail.signal(maxReaders ? maxReaders : limit);
-        space.signal(maxWriters ? maxWriters : limit);
+        avail.signal(maxReaders);
+        space.signal(maxWriters);
     }
 
     BASE *dequeueNow()
