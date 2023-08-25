@@ -4217,6 +4217,14 @@ public:
         try
         {
             calculateSkew();
+            // ensure lfnHash is present and published
+            if (queryAttributes().hasProp("@lfnHash"))
+                lfnHash = queryAttributes().getPropInt("@lfnHash");
+            else
+            {
+                lfnHash = getFilenameHash(logicalName.get());
+                queryAttributes().setPropInt("@lfnHash", lfnHash);
+            }
             parent->addEntry(logicalName,root.getClear(),false,false);
             killParts();
             clusters.kill();
@@ -4226,8 +4234,6 @@ public:
             root.setown(conn->getRoot());
             root->queryBranch(".");     // load branch
             Owned<IFileDescriptor> fdesc = deserializeFileDescriptorTree(root,&queryNamedGroupStore(),0);
-            // NB: if there is already an lfnHash, don't change it, because renames do not move parts over striped mounts
-            setLFNHash(fdesc);
             setFileAttrs(fdesc,false);
             setClusters(fdesc);
             setParts(fdesc,false);

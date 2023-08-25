@@ -22,7 +22,7 @@ data:
 {{- $env := concat ($.Values.global.env | default list) (.env | default list) -}}
 {{- $commonCtx := dict "root" $ "me" . "env" $env "exposure" "local" "visibility" .service.visibility "includeCategories" (list "data" "debug") -}}
 {{- if (eq "spray" .application) -}}
- {{- $_ := set $commonCtx "includeCategories" (append $commonCtx.includeCategories "lz") -}}
+ {{- $_ := set $commonCtx "includeCategories" (concat $commonCtx.includeCategories (list "lz" "remote")) -}}
 {{- end -}}
 {{- $_ := set $commonCtx "certificatesEnabled" (($.Values.certificates | default dict).enabled) -}}
 {{- if $commonCtx.certificatesEnabled -}}

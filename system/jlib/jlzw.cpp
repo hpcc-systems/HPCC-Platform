@@ -2096,7 +2096,7 @@ class CCompressedFile : implements ICompressedFileIO, public CInterface
     {
         size32_t ret = fileio->write(pos,len,data);
         if (ret!=len)
-            throw MakeStringException(DISK_FULL_EXCEPTION_CODE,"CCompressedFile::checkedwrite");        
+            throw makeOsException(DISK_FULL_EXCEPTION_CODE,"CCompressedFile::checkedwrite");
         if (setcrc) 
             trailer.crc = crc32((const char *)data,len,trailer.crc);
 

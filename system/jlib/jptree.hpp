@@ -420,4 +420,13 @@ jlib_decl StringBuffer &decodePtreeName(StringBuffer &s, const char *name);
 jlib_decl const char *findFirstInvalidPTreeNameChar(const char *ch, unsigned len);
 jlib_decl const char *findFirstInvalidPTreeNameChar(const char *ch);
 
+extern jlib_decl bool hasExpertOpt(const char *opt);
+extern jlib_decl StringBuffer &getExpertOptPath(const char *opt, StringBuffer &out);
+extern jlib_decl bool getExpertOptBool(const char *opt, bool dft=false);
+extern jlib_decl __int64 getExpertOptInt64(const char *opt, __int64 dft=0);
+extern jlib_decl double getExpertOptReal(const char *opt, double dft);
+extern jlib_decl StringBuffer &getExpertOptString(const char *opt, StringBuffer &out);
+extern jlib_decl void setExpertOpt(const char *opt, const char *value);
+
+
 #endif
