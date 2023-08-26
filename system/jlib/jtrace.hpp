@@ -18,13 +18,16 @@
 #ifndef JTRACE_HPP
 #define JTRACE_HPP
 
-#undef UNIMPLEMENTED //opentelemetry defines UNIMPLEMENTED
-#include "opentelemetry/trace/provider.h" //StartSpanOptions
-#define UNIMPLEMENTED throw makeStringExceptionV(-1, "UNIMPLEMENTED feature at %s(%d)", sanitizeSourceFile(__FILE__), __LINE__)
-
-namespace context     = opentelemetry::context;
-namespace nostd       = opentelemetry::nostd;
-namespace opentel_trace = opentelemetry::trace;
+/**
+ * @brief This follows open telemetry's span attribute naming conventions
+ *  Known HPCC span Keys could be added here
+ *  Specialized span keys can also be defined within the scope of a span 
+ */
+namespace HPCCSemanticConventions
+{
+static constexpr const char *kGLOBALIDHTTPHeader = "HPCC-Global-Id";
+static constexpr const char *kCallerIdHTTPHeader = "HPCC-Caller-Id";
+}
 
 class jlib_decl LogTrace
 {
@@ -33,8 +36,8 @@ private:
     StringAttr   callerId;
     StringAttr   localId;
 
-    StringAttr   globalIdHTTPHeaderName = "HPCC-Global-Id";
-    StringAttr   callerIdHTTPHeaderName = "HPCC-Caller-Id";
+    StringAttr   globalIdHTTPHeaderName = HPCCSemanticConventions::kGLOBALIDHTTPHeader;
+    StringAttr   callerIdHTTPHeaderName = HPCCSemanticConventions::kCallerIdHTTPHeader;
 
     const char* assignLocalId();
 
@@ -63,177 +66,32 @@ public:
     void setLocalId(const char* id);
 };
 
-/**
- * @brief This follows open telemetry's span attribute naming conventions
- *  Known HPCC span Keys could be added here
- *  Specialized span keys can also be defined within the scope of a span 
- */
-namespace HPCCSemanticConventions
-{
-static constexpr const char *kGLOBALIDHTTPHeader = "HPCC-Global-Id";
-static constexpr const char *kCallerIdHTTPHeader = "HPCC-Caller-Id";
-}
-
 interface ISpan : extends IInterface
 {
-    virtual void setAttribute(const char * key, const char * val) = 0;
-    virtual void setAttributes(const IProperties * attributes) = 0;
-    virtual void addEvent(const char * eventName) = 0;
+    virtual void setSpanAttribute(const char * key, const char * val) = 0;
+    virtual void setSpanAttributes(const IProperties * attributes) = 0;
+    virtual void addSpanEvent(const char * eventName) = 0;
+    virtual void setActive() = 0;
 
     virtual const char * queryHPCCGlobalID() = 0;
     virtual const char * queryHPCCCallerID() = 0;
-    virtual const char * queryOTSpanName() = 0;
-    virtual const char * queryOTTraceID() = 0;
-    virtual const char * queryOTSpanID() = 0;
-};
-
-class CNoOpSpan : public CInterfaceOf<ISpan>
-{
-    void setAttribute(const char * key, const char * val) override {};
-    void setAttributes(const IProperties * attributes) override {};
-    void addEvent(const char * eventName) override {};
-    const char * queryOTTraceID() override { return ""; };
-    const char * queryOTSpanID() override { return ""; };
-    const char * queryOTSpanName() override { return ""; };
-    const char * queryHPCCGlobalID() override { return ""; };
-    const char * queryHPCCCallerID() override { return ""; };
-};
-
-class CSpan : public CInterfaceOf<ISpan>
-{
-public:
-    CSpan();
-    CSpan(opentelemetry::trace::StartSpanOptions * options, const char * spanName, const char * tracerName_);
-    ~CSpan();
-
-    void setAttributes(const IProperties * attributes) override;
-    void setAttribute(const char * key, const char * val) override;
-    void addEvent(const char * eventName) override;
-    const char * queryOTTraceID() override { return openTelTraceID; };
-    const char * queryOTSpanID() override { return openTelSpanID; };
-
-    const char * queryOTSpanName() override { return name.get(); }
-    const char * queryHPCCGlobalID() override { return hpccGlobalId.get(); }
-    const char * queryHPCCCallerID() override { return hpccCallerId.get(); }
-
-protected:
-    void setOTTraceID();
-    void setOTSpanID();
-
-    StringAttr name;
-    StringAttr tracerName;
-    StringAttr openTelTraceID;
-    StringAttr openTelSpanID;
-    StringAttr hpccGlobalId;
-    StringAttr hpccCallerId;
-    StringAttr opentelTraceParent;
-    StringAttr opentelTraceState;
-
-    //opentelemetry::trace::StartSpanOptions options;
-    nostd::shared_ptr<opentelemetry::trace::Span> span;
-};
-
-class CTransactionSpan : public CSpan
-{
-private:
-    opentelemetry::v1::trace::SpanContext parentContext = opentelemetry::trace::SpanContext::GetInvalid();
-    void setAttributesFromHTTPHeaders(const IProperties * httpHeaders, opentelemetry::trace::StartSpanOptions * options);
-    void setAttributesFromHTTPHeaders(StringArray & httpHeaders, opentelemetry::trace::StartSpanOptions * options);
-
-public:
-    CTransactionSpan(const char * spanName, const char * tracerName_, const IProperties * httpHeaders);
-    CTransactionSpan(const char * spanName, const char * tracerName_, StringArray & httpHeaders);
-
-    bool queryOTParentSpanID(StringAttr & parentSpanId) //override
-    {
-        if (!parentContext.IsValid())
-            return false;
-
-        if (!parentContext.trace_id().IsValid())
-            return false;
-
-        char span_id[16] = {0};
-        parentContext.span_id().ToLowerBase16(span_id);
-        parentSpanId = std::string(span_id, 16).c_str();
-
-        return true;
-    }
-};
-
-class CHPCCHttpTextMapCarrier;
-
-class CClientSpan : public CSpan
-{
-public:
-    CClientSpan(const char * spanName, const char * tracerName_);
-    bool injectClientContext(IProperties * httpHeaders);
-    bool injectClientContext(CHPCCHttpTextMapCarrier * carrier);
+    virtual const char * querySpanName() = 0;
+    virtual const char * queryTraceID() = 0;
+    virtual const char * queryTraceFlags() = 0;
+    virtual const char * queryTraceName() = 0;
+    virtual const char * querySpanID() = 0;
 };
 
 interface ITraceManager : extends IInterface
 {
-    virtual ISpan * createTransactionSpan(const char * name, StringArray & httpHeaders) = 0;
-    virtual ISpan * createTransactionSpan(const char * name, const IProperties * httpHeaders) = 0;
-    virtual ISpan * createClientSpan(const char * name) = 0;
-    virtual ISpan * createInternalSpan(const char * name) = 0;
+    virtual ISpan * createServerSpan(const char * name, StringArray & httpHeaders, ISpan * parentSpan) = 0;
+    virtual ISpan * createServerSpan(const char * name, const IProperties * httpHeaders, ISpan * parentSpan) = 0;
+    virtual ISpan * createClientSpan(const char * name, ISpan * parentSpan) = 0;
+    virtual ISpan * createInternalSpan(const char * name, ISpan * parentSpan) = 0;
  };
 
-class CTraceManager : CInterfaceOf<ITraceManager>
-{
-private:
-    void initTracer();
-    void cleanupTracer();
-    bool enabled = true;
-
-    StringAttr moduleName;
-    nostd::shared_ptr<opentelemetry::trace::Tracer> tracer;
-
-public:
-    CTraceManager(const char * componentName)
-    {
-        moduleName.set(componentName);
-        initTracer();
-
-        auto provider = opentelemetry::trace::Provider::GetTracerProvider();
-        tracer = provider->GetTracer(moduleName.get());
-    }
-
-    ISpan * createTransactionSpan(const char * name, StringArray & httpHeaders) override
-    {
-        if (!enabled)
-            return new CNoOpSpan();
-
-        return new CTransactionSpan(name, moduleName.get(), httpHeaders);
-    }
-
-    ISpan * createTransactionSpan(const char * name, const IProperties * httpHeaders) override
-    {
-        if (!enabled)
-            return new CNoOpSpan();
-
-        return new CTransactionSpan(name, moduleName.get(), httpHeaders);
-    }
-
-    ISpan * createClientSpan(const char * name) override
-    {
-        if (!enabled)
-            return new CNoOpSpan();
-
-        return new CClientSpan(name, moduleName.get());
-    }
-
-    ISpan * createInternalSpan(const char * name) override
-    {
-        if (!enabled)
-            return new CNoOpSpan();
-
-        opentelemetry::trace::StartSpanOptions options;
-        options.kind = opentelemetry::trace::SpanKind::kInternal;
-        return new CSpan(&options, name, moduleName.get());
-    }
-};
-
-extern jlib_decl CTraceManager * queryTraceManager(const char * );
+extern jlib_decl void initTraceManager(const char * componentName, IPropertyTree * traceConfig);
+extern jlib_decl ITraceManager & queryTraceManager();
 
 /*
   To use feature-level tracing flags, protect the tracing with a test such as:

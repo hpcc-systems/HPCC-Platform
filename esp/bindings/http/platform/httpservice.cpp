@@ -203,16 +203,19 @@ int CEspHttpServer::processRequest()
     mockHTTPHeadersSA.append("HPCC-Caller-Id:IncomingCID");
 
     //This span tracks processing of httprequest
-    //Owned<ISpan> reqProcessSpan = queryTraceManager("esp")->createTransactionSpan("ProcessingHTTPRequest", mockHTTPHeaders);
-    Owned<ISpan> reqProcessSpan = queryTraceManager("esp")->createTransactionSpan("ProcessingHTTPRequest", mockHTTPHeadersSA);
+    //Owned<ISpan> reqProcessSpan = queryTraceManager("esp")->createServerSpan("ProcessingHTTPRequest", mockHTTPHeaders);
 
-    reqProcessSpan->setAttribute("http.request_port", "8010");
-    reqProcessSpan->setAttribute("app.name", "esp");
-    reqProcessSpan->setAttribute("app.version", "1.0.0");
-    reqProcessSpan->setAttribute("app.instance", "esp1");
-    reqProcessSpan->setAttribute("http.method", m_request->queryMethod());
-    reqProcessSpan->setAttribute("http.url", m_request->queryPath());
-    reqProcessSpan->setAttribute("http.host", m_request->queryHost());
+    StringArray mockEmptyHTTPHeaders;
+    Owned<ISpan> rootSpan = queryTraceManager().createServerSpan("rootProcessingHTTPRequest", mockEmptyHTTPHeaders, nullptr);
+    Owned<ISpan> reqProcessSpan = queryTraceManager().createServerSpan("childProcessingHTTPRequest", mockHTTPHeadersSA, rootSpan.get());
+
+    reqProcessSpan->setSpanAttribute("http.request_port", "8010");
+    reqProcessSpan->setSpanAttribute("app.name", "esp");
+    reqProcessSpan->setSpanAttribute("app.version", "1.0.0");
+    reqProcessSpan->setSpanAttribute("app.instance", "esp1");
+    reqProcessSpan->setSpanAttribute("http.method", m_request->queryMethod());
+    reqProcessSpan->setSpanAttribute("http.url", m_request->queryPath());
+    reqProcessSpan->setSpanAttribute("http.host", m_request->queryHost());
 
     IEspContext* ctx = m_request->queryContext();
     StringBuffer errMessage;
@@ -270,7 +273,7 @@ int CEspHttpServer::processRequest()
         m_request->updateContext();
         ctx->setServiceName(serviceName.str());
         ctx->setHTTPMethod(method.str());
-        reqProcessSpan->setAttribute("http.method", method.str());
+        reqProcessSpan->setSpanAttribute("http.method", method.str());
         ctx->setServiceMethod(methodName.str());
         ctx->addTraceSummaryValue(LogMin, "app.protocol", method.str(), TXSUMMARY_GRP_ENTERPRISE);
         ctx->addTraceSummaryValue(LogMin, "app.service", serviceName.str(), TXSUMMARY_GRP_ENTERPRISE);
