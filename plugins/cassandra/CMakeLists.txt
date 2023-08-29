@@ -73,7 +73,7 @@ if(CASSANDRAEMBED OR USE_CASSANDRA)
       workunit
       jlib
       ${CPP_DRIVER_LIBRARY}
-      $<IF:$<TARGET_EXISTS:uv_a>,uv_a,uv>)
+      $<IF:$<TARGET_EXISTS:libuv::uv_a>,libuv::uv_a,libuv::uv>)
 
   endif()
 endif()

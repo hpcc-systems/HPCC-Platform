@@ -33,9 +33,8 @@ function doBuild() {
         "$SCRIPT_DIR/." 
 
     docker run --rm --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached build-$1:$GITHUB_REF \
-        "cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/HPCC-Platform/build-$1 ${CMAKE_OPTIONS}"
-    docker run --rm --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached build-$1:$GITHUB_REF \
-        "cmake --build /hpcc-dev/HPCC-Platform/build-$1 --parallel $(nproc)"
+        "cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/HPCC-Platform/build-$1 ${CMAKE_OPTIONS} && \
+        cmake --build /hpcc-dev/HPCC-Platform/build-$1 --parallel $(nproc)"
 
 # docker run -it --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached build-ubuntu-22.04:latest bash
 }
@@ -45,7 +44,7 @@ CMAKE_OPTIONS="-G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DVCPKG_FILES_DIR=/hpc
 doBuild centos-7
 doBuild centos-8
 doBuild amazonlinux
-doBuild ubuntu-22.10 
+doBuild ubuntu-23.04 
 doBuild ubuntu-22.04 
 doBuild ubuntu-20.04
 
