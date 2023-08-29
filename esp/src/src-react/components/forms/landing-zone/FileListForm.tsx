@@ -4,7 +4,7 @@ import { ProgressRingDotsIcon } from "@fluentui/react-icons-mdl2";
 import { FileSprayService } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import { useForm, Controller } from "react-hook-form";
-import { TargetDropzoneTextField, TargetFolderTextField, TargetServerTextLinkedField } from "../Fields";
+import { TargetDropzoneTextField, TargetFolderTextField, TargetServerTextField } from "../Fields";
 import { joinPath } from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
 import { MessageBox } from "../../../layouts/MessageBox";
@@ -51,6 +51,7 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
 
     const [machine, setMachine] = React.useState<string>("");
     const [directory, setDirectory] = React.useState<string>("/");
+    const [dropzone, setDropzone] = React.useState("");
     const [pathSep, setPathSep] = React.useState<string>("/");
     const [os, setOs] = React.useState<number>();
 
@@ -152,8 +153,6 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
         }
     );
 
-    let setDropzone = React.useCallback((dropzone: string) => { }, []);
-
     return <MessageBox title={nlsHPCC.FileUploader} show={showForm} setShow={closeForm}
         footer={<>
             {submitDisabled &&
@@ -196,9 +195,10 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
                 render={({
                     field: { onChange, name: fieldName, value },
                     fieldState: { error }
-                }) => <TargetServerTextLinkedField
+                }) => <TargetServerTextField
                         key="machines"
                         label={nlsHPCC.Machines}
+                        dropzone={dropzone}
                         required={true}
                         placeholder={nlsHPCC.SelectValue}
                         onChange={(evt, option) => {
@@ -208,7 +208,6 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
                                 onChange(option.key);
                             }
                         }}
-                        setSetDropzone={_ => setDropzone = _}
                         errorMessage={error && error?.message}
                     />}
                 rules={{
@@ -224,6 +223,7 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
                         key="path"
                         label={nlsHPCC.Folder}
                         pathSepChar={pathSep}
+                        dropzone={dropzone}
                         machineAddress={machine}
                         machineDirectory={directory}
                         machineOS={os}
