@@ -202,20 +202,29 @@ int CEspHttpServer::processRequest()
     mockHTTPHeadersSA.append("HPCC-Global-Id:someGlobalID");
     mockHTTPHeadersSA.append("HPCC-Caller-Id:IncomingCID");
 
-    //This span tracks processing of httprequest
-    //Owned<ISpan> reqProcessSpan = queryTraceManager("esp")->createServerSpan("ProcessingHTTPRequest", mockHTTPHeaders);
+    Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("rootProcessingHTTPRequest", mockHTTPHeadersSA);
+    serverSpan->setSpanAttribute("http.request_port", "8010");
+    serverSpan->setSpanAttribute("app.name", "esp");
+    serverSpan->setSpanAttribute("app.version", "1.0.0");
+    serverSpan->setSpanAttribute("app.instance", "esp1");
+    serverSpan->setSpanAttribute("http.method", m_request->queryMethod());
+    serverSpan->setSpanAttribute("http.url", m_request->queryPath());
+    serverSpan->setSpanAttribute("http.host", m_request->queryHost());
 
-    StringArray mockEmptyHTTPHeaders;
-    Owned<ISpan> rootSpan = queryTraceManager().createServerSpan("rootProcessingHTTPRequest", mockEmptyHTTPHeaders, nullptr);
-    Owned<ISpan> reqProcessSpan = queryTraceManager().createServerSpan("childProcessingHTTPRequest", mockHTTPHeadersSA, rootSpan.get());
+    {
+        //Mock http headers from request
+        Owned<IProperties> mockClientContext = createProperties();
+        serverSpan->createClientSpan("MockExternalCall")->injectSpanContext(mockClientContext);
 
-    reqProcessSpan->setSpanAttribute("http.request_port", "8010");
-    reqProcessSpan->setSpanAttribute("app.name", "esp");
-    reqProcessSpan->setSpanAttribute("app.version", "1.0.0");
-    reqProcessSpan->setSpanAttribute("app.instance", "esp1");
-    reqProcessSpan->setSpanAttribute("http.method", m_request->queryMethod());
-    reqProcessSpan->setSpanAttribute("http.url", m_request->queryPath());
-    reqProcessSpan->setSpanAttribute("http.host", m_request->queryHost());
+        // Print out mockClientContext
+        Owned<IPropertyIterator> iter(mockClientContext->getIterator());
+        for(iter->first(); iter->isValid(); iter->next())
+        {
+            const char* key = iter->getPropKey();
+            const char* value = mockClientContext->queryProp(key);
+            DBGLOG("MockClientContext: %s=%s", key, value);
+        }
+    }
 
     IEspContext* ctx = m_request->queryContext();
     StringBuffer errMessage;
@@ -273,7 +282,8 @@ int CEspHttpServer::processRequest()
         m_request->updateContext();
         ctx->setServiceName(serviceName.str());
         ctx->setHTTPMethod(method.str());
-        reqProcessSpan->setSpanAttribute("http.method", method.str());
+//remove before checkin
+        serverSpan->setSpanAttribute("http.method", method.str());
         ctx->setServiceMethod(methodName.str());
         ctx->addTraceSummaryValue(LogMin, "app.protocol", method.str(), TXSUMMARY_GRP_ENTERPRISE);
         ctx->addTraceSummaryValue(LogMin, "app.service", serviceName.str(), TXSUMMARY_GRP_ENTERPRISE);
@@ -305,7 +315,14 @@ int CEspHttpServer::processRequest()
             ESPLOG(LogMin, "%s %s, from %s@%s", method.str(), m_request->getPath(pathStr).str(), userid, m_request->getPeer(peerStr).str());
 //checkUserAuth could declare nested span
 //and/or declare this as an event on reqProcessSpan
+{
+        Owned<ISpan> userAuthSpan = serverSpan->createInternalSpan("userAuthSpan");
         authState = checkUserAuth();
+
+        StringBuffer authStateStr;
+        userAuthSpan->toString(authStateStr);
+        fprintf(stdout, "%s\n", authStateStr.str());
+}
         if ((authState == authTaskDone) || (authState == authFailed))
             return 0;
 

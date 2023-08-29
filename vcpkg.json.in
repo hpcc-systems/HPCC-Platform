@@ -182,7 +182,8 @@
             "name": "opentelemetry-cpp",
             "features": [
                 "otlp",
-                "otlp-http"
+                "otlp-http",
+                "otlp-grpc"
             ]
         }
     ]

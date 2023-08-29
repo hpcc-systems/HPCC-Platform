@@ -237,11 +237,40 @@ if ( ${HAVE_LIBCRYPT} )
 target_link_libraries ( jlib crypt)
 endif ( ${HAVE_LIBCRYPT} )
 
+find_package(gRPC CONFIG REQUIRED)
+
 target_link_libraries ( jlib
         opentelemetry-cpp::api
         opentelemetry-cpp::ext
         opentelemetry-cpp::sdk
-        opentelemetry-cpp::ostream_span_exporter 
+        opentelemetry-cpp::ostream_span_exporter
+        #   opentelemetry-cpp::api                               - Imported target of opentelemetry-cpp::api
+        #   opentelemetry-cpp::sdk                               - Imported target of opentelemetry-cpp::sdk
+        #   opentelemetry-cpp::ext                               - Imported target of opentelemetry-cpp::ext
+        #   opentelemetry-cpp::version                           - Imported target of opentelemetry-cpp::version
+        #   opentelemetry-cpp::common                            - Imported target of opentelemetry-cpp::common
+        #   opentelemetry-cpp::trace                             - Imported target of opentelemetry-cpp::trace
+        #   opentelemetry-cpp::metrics                           - Imported target of opentelemetry-cpp::metrics
+        opentelemetry-cpp::logs #                             - Imported target of opentelemetry-cpp::logs
+        opentelemetry-cpp::in_memory_span_exporter #          - Imported target of opentelemetry-cpp::in_memory_span_exporter
+        opentelemetry-cpp::otlp_grpc_client #                 - Imported target of opentelemetry-cpp::otlp_grpc_client
+        #   opentelemetry-cpp::otlp_recordable                   - Imported target of opentelemetry-cpp::otlp_recordable
+        opentelemetry-cpp::otlp_grpc_exporter #               - Imported target of opentelemetry-cpp::otlp_grpc_exporter
+        #   opentelemetry-cpp::otlp_grpc_log_record_exporter     - Imported target of opentelemetry-cpp::otlp_grpc_log_record_exporter
+        #   opentelemetry-cpp::otlp_grpc_metrics_exporter        - Imported target of opentelemetry-cpp::otlp_grpc_metrics_exporter
+        #   opentelemetry-cpp::otlp_http_client                  - Imported target of opentelemetry-cpp::otlp_http_client
+        #   opentelemetry-cpp::otlp_http_exporter                - Imported target of opentelemetry-cpp::otlp_http_exporter
+        #   opentelemetry-cpp::otlp_http_log_record_exporter     - Imported target of opentelemetry-cpp::otlp_http_log_record_exporter
+        #   opentelemetry-cpp::otlp_http_metric_exporter         - Imported target of opentelemetry-cpp::otlp_http_metric_exporter
+        opentelemetry-cpp::ostream_log_record_exporter #      - Imported target of opentelemetry-cpp::ostream_log_record_exporter
+        #   opentelemetry-cpp::ostream_metrics_exporter          - Imported target of opentelemetry-cpp::ostream_metrics_exporter
+        #   opentelemetry-cpp::ostream_span_exporter             - Imported target of opentelemetry-cpp::ostream_span_exporter
+        #   opentelemetry-cpp::elasticsearch_log_record_exporter - Imported target of opentelemetry-cpp::elasticsearch_log_record_exporter
+        #   opentelemetry-cpp::etw_exporter                      - Imported target of opentelemetry-cpp::etw_exporter
+        #   opentelemetry-cpp::zpages                            - Imported target of opentelemetry-cpp::zpages
+        #   opentelemetry-cpp::http_client_curl                  - Imported target of opentelemetry-cpp::http_client_curl
+        #   opentelemetry-cpp::opentracing_shim                  - Imported target of opentelemetry-cpp::opentracing_shim
+
         )
 
 IF (USE_OPENSSL)

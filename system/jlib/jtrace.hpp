@@ -66,28 +66,28 @@ public:
     void setLocalId(const char* id);
 };
 
+//class CHPCCHttpTextMapCarrier;
+
 interface ISpan : extends IInterface
 {
     virtual void setSpanAttribute(const char * key, const char * val) = 0;
     virtual void setSpanAttributes(const IProperties * attributes) = 0;
     virtual void addSpanEvent(const char * eventName) = 0;
-    virtual void setActive() = 0;
 
-    virtual const char * queryHPCCGlobalID() = 0;
-    virtual const char * queryHPCCCallerID() = 0;
-    virtual const char * querySpanName() = 0;
-    virtual const char * queryTraceID() = 0;
-    virtual const char * queryTraceFlags() = 0;
-    virtual const char * queryTraceName() = 0;
-    virtual const char * querySpanID() = 0;
+    virtual void querySpanContextProperties(IProperties * contextProps) = 0;
+    //virtual bool injectSpanContext(CHPCCHttpTextMapCarrier * carrier) = 0;
+    virtual bool injectSpanContext(IProperties * contextProps) = 0;
+
+    virtual void toString(StringBuffer & out) = 0;
+
+    virtual ISpan * createClientSpan(const char * name) = 0;
+    virtual ISpan * createInternalSpan(const char * name) = 0;
 };
 
 interface ITraceManager : extends IInterface
 {
-    virtual ISpan * createServerSpan(const char * name, StringArray & httpHeaders, ISpan * parentSpan) = 0;
-    virtual ISpan * createServerSpan(const char * name, const IProperties * httpHeaders, ISpan * parentSpan) = 0;
-    virtual ISpan * createClientSpan(const char * name, ISpan * parentSpan) = 0;
-    virtual ISpan * createInternalSpan(const char * name, ISpan * parentSpan) = 0;
+    virtual ISpan * createServerSpan(const char * name, StringArray & httpHeaders) = 0;
+    virtual ISpan * createServerSpan(const char * name, const IProperties * httpHeaders) = 0;
  };
 
 extern jlib_decl void initTraceManager(const char * componentName, IPropertyTree * traceConfig);
