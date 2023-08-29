@@ -69,6 +69,12 @@ Go gold with each of the explicit versions
 
 If you have merged changes onto a point-release branch you would normally create a new rc before going gold.  If the change was trivial (e.g. removing an unwanted file) then you can use the --ignore option to skip that step.
 
+### Update the tags in Jira as "Released"
+
+1. Open https://track.hpccsystems.com/projects/HPCC?selectedItem=com.atlassian.jira.jira-projects-plugin:release-page (ensure `Unreleased` is selected)
+2. For each released build, select "..." and then select `Release`
+3. Ender "todays" date as the release date
+
 ## Creating a new rc for an existing point release:
 
 This normally happens after cherry-picking a late fix for a particular version, which has already been merged into the .x candidate branch.
