@@ -24,7 +24,7 @@ define([
     GridDetailsWidget, ESPPreflight, ESPRequest, WsTopology, Utility, ESPUtil, DelayLoadWidget, PreflightDetailsWidget, MachineInformationWidget, IFrameWidget) {
 
     var nlsHPCC = nlsHPCCMod.default;
-    return declare("CluserProcessesQueryWidget", [GridDetailsWidget, ESPUtil.FormHelper], {
+    return declare("ClusterProcessesQueryWidget", [GridDetailsWidget, ESPUtil.FormHelper], {
         i18n: nlsHPCC,
 
         gridTitle: nlsHPCC.title_Clusters,
