@@ -278,6 +278,7 @@ public:
             onceResultStore.setown(createDeserializedResultStore());
             Owned <IRoxieServerContext> ctx = createOnceServerContext(factory, logctx);
             onceManager.set(&ctx->queryRowManager());
+            onceAllocatorCache.set(&ctx->queryAllocatorCache());
             try
             {
                 ctx->process();
@@ -301,6 +302,7 @@ public:
 
 protected:
     mutable CriticalSection onceCrit;
+    mutable Owned<IRowAllocatorMetaActIdCache> onceAllocatorCache; // release AFTER row manager
     mutable Owned<roxiemem::IRowManager> onceManager; // release AFTER resultStore
     mutable Owned<IPropertyTree> onceContext;
     mutable Owned<IDeserializedResultStore> onceResultStore;
