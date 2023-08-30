@@ -2770,59 +2770,9 @@ void SysLogMsgHandler::addToPTree(IPropertyTree * tree) const
     tree->addPropTree("handler", handlerTree);
 }
 
-// Default implementations of the functions in IContextLogger interface
-
-void IContextLogger::CTXLOG(const char *format, ...) const
-{
-    va_list args;
-    va_start(args, format);
-    CTXLOGva(MCdebugInfo, unknownJob, NoLogMsgCode, format, args);
-    va_end(args);
-}
-
-void IContextLogger::mCTXLOG(const char *format, ...) const
-{
-    va_list args;
-    va_start(args, format);
-    StringBuffer log;
-    log.limited_valist_appendf(1024*1024, format, args);
-    va_end(args);
-
-    const char *cursor = log;
-    const char *lineStart = cursor;
-    while (true)
-    {
-        switch (*cursor)
-        {
-            case '\0':
-                CTXLOG("%.*s", (int)(cursor-lineStart), lineStart);
-                return;
-            case '\r':
-                // NB: \r or \r\n translated into newline
-                CTXLOG("%.*s", (int)(cursor-lineStart), lineStart);
-                if ('\n' == *(cursor+1))
-                    cursor++;
-                lineStart = cursor+1;
-                break;
-            case '\n':
-                CTXLOG("%.*s", (int)(cursor-lineStart), lineStart);
-                lineStart = cursor+1;
-                break;
-        }
-        ++cursor;
-    }
-}
-
-void IContextLogger::logOperatorException(IException *E, const char *file, unsigned line, const char *format, ...) const
-{
-    va_list args;
-    va_start(args, format);
-    logOperatorExceptionVA(E, file, line, format, args);
-    va_end(args);
-}
 class CRuntimeStatisticCollection;
 
-class DummyLogCtx : implements IContextLogger
+class DummyLogCtx : public CDefaultContextLogger<IContextLogger>
 {
 private:
     LogTrace logTrace;

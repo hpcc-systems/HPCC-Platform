@@ -603,9 +603,7 @@ inline void readUnderlyingType(MemoryBuffer &mb, T &v)
 constexpr unsigned thorDetailedLogLevel = 200;
 constexpr LogMsgCategory MCthorDetailedDebugInfo(MCdebugInfo(thorDetailedLogLevel));
 
-////
-// IContextLogger
-class CThorContextLogger : public CSimpleInterfaceOf<IContextLogger>
+class CThorContextLogger : public CDefaultContextLogger<IContextLogger>
 {
     unsigned traceLevel = 1;
     LogTrace logTrace;

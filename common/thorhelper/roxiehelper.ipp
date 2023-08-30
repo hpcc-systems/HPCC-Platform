@@ -59,32 +59,46 @@ enum TracingCategory
 class LogItem;
 interface IRoxieContextLogger : extends IContextLogger
 {
-    // Override base interface with versions that add prefix
-    // We could consider moving some or all of these down into IContextLogger
-    virtual void CTXLOGva(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char *format, va_list args) const override  __attribute__((format(printf,5,0))) 
-    {
-        StringBuffer text, prefix;
-        getLogPrefix(prefix);
-        text.valist_appendf(format, args);
-        CTXLOGa(LOG_TRACING, cat, job, code, prefix.str(), text.str());
-    }
-    virtual void logOperatorExceptionVA(IException *E, const char *file, unsigned line, const char *format, va_list args) const  __attribute__((format(printf,5,0)))
-    {
-        StringBuffer prefix;
-        getLogPrefix(prefix);
-        CTXLOGaeva(E, file, line, prefix.str(), format, args);
-    }
-
     virtual StringBuffer &getLogPrefix(StringBuffer &ret) const = 0;
     virtual bool isIntercepted() const = 0;
     virtual void CTXLOGa(TracingCategory category, const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char *prefix, const char *text) const = 0;
-    void CTXLOGae(IException *E, const char *file, unsigned line, const char *prefix, const char *format, ...) const __attribute__((format(printf, 6, 7)));
     virtual void CTXLOGaeva(IException *E, const char *file, unsigned line, const char *prefix, const char *format, va_list args) const = 0;
     virtual void CTXLOGl(LogItem *) const = 0;
     virtual bool isBlind() const = 0;
     virtual void gatherStats(CRuntimeStatisticCollection & merged) const = 0;
     virtual StringBuffer &getStats(StringBuffer &s) const = 0;
     virtual bool collectingDetailedStatistics() const = 0;
+};
+
+class CRoxieContextLoggerHelper
+{
+public:
+    static void CTXLOGva(const IRoxieContextLogger *contextLogger,  const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char *format, va_list args) __attribute__((format(printf,5,0)))
+    {
+        StringBuffer text, prefix;
+        contextLogger->getLogPrefix(prefix);
+        text.valist_appendf(format, args);
+        contextLogger->CTXLOGa(LOG_TRACING, cat, job, code, prefix.str(), text.str());
+    }
+    static void logOperatorExceptionVA(const IRoxieContextLogger *contextLogger, IException *E, const char *file, unsigned line, const char *format, va_list args) __attribute__((format(printf,5,0)))
+    {
+        StringBuffer prefix;
+        contextLogger->getLogPrefix(prefix);
+        contextLogger->CTXLOGaeva(E, file, line, prefix.str(), format, args);
+    }
+};
+
+class CRoxieContextLogger : public CDefaultContextLogger<IRoxieContextLogger>
+{
+public:
+    virtual void CTXLOGva(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char *format, va_list args) const override  __attribute__((format(printf,5,0)))
+    {
+        CRoxieContextLoggerHelper::CTXLOGva(this, cat, job, code, format, args);
+    }
+    virtual void logOperatorExceptionVA(IException *E, const char *file, unsigned line, const char *format, va_list args) const override  __attribute__((format(printf,5,0)))
+    {
+        CRoxieContextLoggerHelper::logOperatorExceptionVA(this, E, file, line, format, args);
+    }
 };
 
 //===================================================================================

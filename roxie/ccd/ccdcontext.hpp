@@ -74,6 +74,19 @@ interface IRoxieAgentContext : extends IRoxieContextLogger
     virtual void noteLibrary(IQueryFactory *library) = 0;
 };
 
+class CRoxieAgentContext : public CDefaultContextLogger<IRoxieAgentContext>
+{
+public:
+    virtual void CTXLOGva(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char *format, va_list args) const override __attribute__((format(printf,5,0)))
+    {
+        CRoxieContextLoggerHelper::CTXLOGva(this, cat, job, code, format, args);
+    }
+    virtual void logOperatorExceptionVA(IException *E, const char *file, unsigned line, const char *format, va_list args) const override __attribute__((format(printf,5,0)))
+    {
+        CRoxieContextLoggerHelper::logOperatorExceptionVA(this, E, file, line, format, args);
+    }
+};
+
 interface IRoxieServerContext : extends IInterface
 {
     virtual IGlobalCodeContext *queryGlobalCodeContext() = 0;

@@ -1179,7 +1179,7 @@ public:
 //---------------------------------------------------------------------------------------
 
 static const StatisticsMapping graphStatistics({});
-class CRoxieContextBase : implements IRoxieAgentContext, implements ICodeContext, implements roxiemem::ITimeLimiter, implements IRowAllocatorMetaActIdCacheCallback, public CInterface
+class CRoxieContextBase : public CRoxieAgentContext, implements ICodeContext, implements roxiemem::ITimeLimiter, implements IRowAllocatorMetaActIdCacheCallback
 {
 protected:
     Owned<IWUGraphStats> graphStats;   // This needs to be destroyed very late (particularly, after the childgraphs)
@@ -1263,7 +1263,6 @@ protected:
     }
 
 public:
-    IMPLEMENT_IINTERFACE;
     CRoxieContextBase(const IQueryFactory *_factory, const IRoxieContextLogger &_logctx)
         : factory(_factory), options(factory->queryOptions()), logctx(_logctx), globalStats(graphStatistics)
     {
@@ -2694,8 +2693,6 @@ protected:
     }
 
 public:
-    IMPLEMENT_IINTERFACE;
-
     CRoxieServerContext(const IQueryFactory *_factory, const IRoxieContextLogger &_logctx)
         : CRoxieContextBase(_factory, _logctx), serverQueryFactory(_factory), results(NULL)
     {
@@ -2770,6 +2767,8 @@ public:
 
         workflow.setown(_factory->createWorkflowMachine(workUnit, false, logctx, options));
     }
+
+    IMPLEMENT_IINTERFACE_USING(CRoxieContextBase)
 
     virtual roxiemem::IRowManager &queryRowManager()
     {
