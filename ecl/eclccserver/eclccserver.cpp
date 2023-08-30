@@ -757,6 +757,11 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
                         else
                             query->setQueryText(eclQuery.s.str());
                     }
+                    else
+                    {
+                        Owned<IWUQuery> query = workunit->updateQuery();
+                        query->setQueryText(nullptr);
+                    }
 
                     createUNCFilename(realdllfilename.str(), dllurl);
                     unsigned crc = crc_file(realdllfilename.str());
