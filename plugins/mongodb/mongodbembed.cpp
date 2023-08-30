@@ -1123,7 +1123,7 @@ namespace mongodbembed
         } 
         else if (ele.type() == bsoncxx::type::k_utf8) 
         {
-            builder << param << ele.get_utf8().value;
+            builder << param << ele.get_string().value;
         } 
         else 
         {
@@ -1159,7 +1159,7 @@ namespace mongodbembed
         } 
         else if (ele.type() == bsoncxx::type::k_utf8) 
         {
-            ctx << ele.get_utf8().value;
+            ctx << ele.get_string().value;
         } 
         else 
         {
@@ -1208,7 +1208,7 @@ namespace mongodbembed
             {
                 if (view[key].type() == bsoncxx::type::k_utf8) 
                 {
-                    insertValue(builder, std::string(view[key].get_utf8().value), view[value.substr(1)]);
+                    insertValue(builder, std::string(view[key].get_string().value), view[value.substr(1)]);
                 }
             }
         } 
@@ -1220,7 +1220,7 @@ namespace mongodbembed
             } 
             else 
             {
-                builder << view[key].get_utf8().value << value;
+                builder << view[key].get_string().value << value;
             }
         }
     }
@@ -1349,7 +1349,7 @@ namespace mongodbembed
             if (!isRsvd) 
             {
                 if (view[key].type() == bsoncxx::type::k_utf8)
-                    key = std::string{view[key].get_utf8().value};
+                    key = std::string{view[key].get_string().value};
                 else 
                     failx("Key must be type String.");
             }

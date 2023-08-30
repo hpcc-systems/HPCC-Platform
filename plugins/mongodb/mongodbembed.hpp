@@ -426,7 +426,7 @@ namespace mongodbembed
             // any connection objects
             hash64_t key = rtlHash64VStr(queryString, rtlHash64VStr(connectionString, 0));
 
-            std::shared_ptr<mongocxx::client> client_ptr = std::make_shared<mongocxx::client>(mongocxx::client{mongocxx::uri{connectionString}}); 
+            std::shared_ptr<mongocxx::client> client_ptr = std::make_shared<mongocxx::client>(mongocxx::uri{connectionString}); 
 
             {
                 CriticalBlock block(connLock);
