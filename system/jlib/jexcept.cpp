@@ -103,7 +103,7 @@ class CExceptionInterceptor : implements IExceptionIntercept
     }
     void unsafeSetIntercept(ExceptionInterceptClass eClass, int code, InterceptHandler handler)
     {
-        unsigned __int64 key = (unsigned __int64)eClass << 24 | code;
+        unsigned __int64 key = (unsigned __int64)eClass << 56 | (unsigned)code;
         handledExceptionClassMask |= (byte)eClass;
         interceptHandlers[key] = handler;
     }
@@ -112,7 +112,7 @@ public:
     {
         if (handledExceptionClassMask & ((byte)eClass))
         {
-            unsigned __int64 key = (unsigned __int64)eClass << 24 | e->errorCode();
+            unsigned __int64 key = (unsigned __int64)eClass << 56 | (unsigned)e->errorCode();
             CriticalBlock b(crit);
             auto it = interceptHandlers.find(key);
             if (it != interceptHandlers.end())
