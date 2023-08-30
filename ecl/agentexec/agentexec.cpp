@@ -14,7 +14,9 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 ############################################################################## */
+
 #include "jfile.hpp"
+#include "jcontainerized.hpp"
 #include "daclient.hpp"
 #include "wujobq.hpp"
 #include "jmisc.hpp"
@@ -268,10 +270,10 @@ public:
                     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
                     Owned<IWorkUnit> workunit = factory->updateWorkUnit(wuid);
                     if (isContainerized())
-                        workunit->setContainerizedProcessInfo("AgentExec", compConfig->queryProp("@name"), queryMyPodName(), nullptr);
+                        workunit->setContainerizedProcessInfo("AgentExec", compConfig->queryProp("@name"), k8s::queryMyPodName(), nullptr);
                     addTimeStamp(workunit, wfid, graphName, StWhenK8sLaunched);
                 }
-                runK8sJob(jobSpecName, wuid, jobName, params);
+                k8s::runJob(jobSpecName, wuid, jobName, params);
             }
             else
             {
@@ -279,7 +281,7 @@ public:
                 {
                     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
                     Owned<IWorkUnit> workunit = factory->updateWorkUnit(wuid.str());
-                    workunit->setContainerizedProcessInfo("AgentExec", compConfig->queryProp("@name"), queryMyPodName(), nullptr);
+                    workunit->setContainerizedProcessInfo("AgentExec", compConfig->queryProp("@name"), k8s::queryMyPodName(), nullptr);
                 }
                 bool useValgrind = compConfig->getPropBool("@valgrind", false);
                 VStringBuffer exec("%s%s --workunit=%s --daliServers=%s", useValgrind ? "valgrind " : "", processName.get(), wuid.str(), dali.str());
