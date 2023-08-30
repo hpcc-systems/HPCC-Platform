@@ -4462,6 +4462,8 @@ public:
             { return c->createException(); }
     virtual void addProcess(const char *type, const char *instance, unsigned pid, unsigned max, const char *pattern, bool singleLog, const char *log)
             { c->addProcess(type, instance, pid, max, pattern, singleLog, log); }
+    virtual bool setContainerizedProcessInfo(const char *type, const char *instance, const char *podName, const char *sequence)
+            { return c->setContainerizedProcessInfo(type, instance, podName, sequence); }
     virtual void protect(bool protectMode)
             { c->protect(protectMode); }
     virtual void setAction(WUAction action)
@@ -5944,8 +5946,26 @@ void CWorkUnitFactory::reportAbnormalTermination(const char *wuid, WUState &stat
 
 static CriticalSection deleteDllLock;
 static IWorkQueueThread *deleteDllWorkQ = nullptr;
+static unsigned podInfoInitCBId = 0;
+static StringBuffer myPodName;
+
+const char *queryMyPodName()
+{
+    return myPodName;
+}
+
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
+    auto updateFunc = [&](const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
+    {
+        if (myPodName.length()) // called at config load time, and never needs to be refreshed
+            return;
+        // process pod information from environment
+        getEnvVar("MY_POD_NAME", myPodName.clear());
+        PROGLOG("The podName = %s", myPodName.str());
+    };
+    if (isContainerized())
+        podInfoInitCBId = installConfigUpdateHook(updateFunc, true);
     return true;
 }
 MODULE_EXIT()
@@ -5954,6 +5974,8 @@ MODULE_EXIT()
     if (deleteDllWorkQ)
         ::Release(deleteDllWorkQ);
     deleteDllWorkQ = nullptr;
+
+    removeConfigUpdateHook(podInfoInitCBId);
 }
 static void asyncRemoveDll(const char * name)
 {
@@ -8637,6 +8659,33 @@ void CLocalWorkUnit::addProcess(const char *type, const char *instance, unsigned
         if (singleLog)
             node->setPropBool("@singleLog", true);
     }
+}
+
+bool CLocalWorkUnit::setContainerizedProcessInfo(const char *type, const char *instance, const char *podName, const char *sequence)
+{
+    VStringBuffer processType("Process/%s", type);
+    CriticalBlock block(crit);
+    IPropertyTree *node = p->queryPropTree(processType);
+    if (!node)
+        node = ensurePTree(p, processType);
+    StringBuffer instanceXPath(instance);
+    if (sequence)
+        instanceXPath.appendf("[@sequence='%s']", sequence);
+
+    VStringBuffer instancePodXPath("%s[@podName='%s']", instanceXPath.str(), podName);
+    IPropertyTree *instanceNode = node->queryPropTree(instancePodXPath);
+    if (instanceNode)
+        return false;
+
+    // NB: instanceNum represents separate instances of {type,instance,sequence}
+    // e.g. if there are multiple Thor instances, each will have a distinct "instanceNum"
+    unsigned instanceNum = node->getCount(instanceXPath)+1;
+    instanceNode = node->addPropTree(instance);
+    if (sequence)
+        instanceNode->setProp("@sequence", sequence); // instance specific, e.g. worker #
+    instanceNode->setPropInt("@instanceNum", instanceNum);
+    instanceNode->setProp("@podName", podName);
+    return true;
 }
 
 void CLocalWorkUnit::setDebugValue(const char *propname, const char *value, bool overwrite)

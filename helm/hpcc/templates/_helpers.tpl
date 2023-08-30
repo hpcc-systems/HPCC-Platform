@@ -1228,6 +1228,7 @@ Pass in dict with root, me and dali if container in dali pod
 {{- $serviceName := printf "sasha-%s" .me.name }}
 {{- $overrideDaliHost := .overrideDaliHost | default "" }}
 {{- $overrideDaliPort := .overrideDaliPort | default 0 }}
+{{- $env := concat (.root.Values.global.env | default list) (.env | default list) }}
 - name: {{ $serviceName | quote }}
   workingDir: /var/lib/HPCCSystems
   command: [ saserver ] 
@@ -1241,6 +1242,7 @@ Pass in dict with root, me and dali if container in dali pod
 {{- include "hpcc.addResources" (dict "me" .me.resources) | indent 2 }}
 {{- include "hpcc.addSecurityContext" . | indent 2 }}
   env:
+{{ include "hpcc.mergeEnvironments" $env | indent 2 -}}
   - name: "SENTINEL"
     value: "/tmp/{{ $serviceName }}.sentinel"
 {{- with (dict "name" $serviceName) }}
@@ -2138,7 +2140,27 @@ A template to output a merged environment. Pass in a list with global then local
 - name: {{ $key | quote }}
   value: {{ $value | quote }}
 {{ end -}}
-{{- end -}}
+- name: MY_NODE_NAME
+  valueFrom:
+    fieldRef:
+      fieldPath: spec.nodeName
+- name: MY_POD_NAME
+  valueFrom:
+    fieldRef:
+      fieldPath: metadata.name
+- name: MY_POD_NAMESPACE
+  valueFrom:
+    fieldRef:
+      fieldPath: metadata.namespace
+- name: MY_POD_IP
+  valueFrom:
+    fieldRef:
+      fieldPath: status.podIP
+- name: MY_POD_SERVICE_ACCOUNT
+  valueFrom:
+    fieldRef:
+      fieldPath: spec.serviceAccountName
+{{ end -}}
 
 
 {{/*
