@@ -2776,6 +2776,11 @@ public:
         return *rowManager;
     }
 
+    virtual IRowAllocatorMetaActIdCache & queryAllocatorCache() override
+    {
+        return *allocatorMetaCache;
+    }
+
     virtual IRoxieDaliHelper *checkDaliConnection()
     {
         CriticalBlock b(daliUpdateCrit);

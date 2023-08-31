@@ -40,16 +40,28 @@ define([
                 case "GraphsWUWidget":
                     window.location.replace(`/esp/files/index.html#/workunits/${params.Wuid}/metrics`);
                     break;
+                case "TopologyWidget":
+                case "DiskUsageWidget":
+                case "TargetClustersQueryWidget":
+                case "ClusterProcessesQueryWidget":
+                case "SystemServersQueryWidget":
+                case "LogWidget":
+                    loadUI();
+                    break;
                 default:
                     window.location.replace("/esp/files/index.html");
             }
         } else {
-            ready(function () {
-                parseUrl();
-                initUI();
-            });
+            loadUI();
         }
     });
+
+    function loadUI() {
+        ready(function () {
+            parseUrl();
+            initUI();
+        });
+    }
 
     function startLoading(targetNode) {
         domStyle.set(dom.byId("loadingOverlay"), "display", "block");

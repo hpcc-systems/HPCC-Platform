@@ -59,7 +59,7 @@ define([
             // 2. Let len be ? ToLength(? Get(O, "length")).
             var len = o.length >>> 0;
 
-            // Steps 3, 4, 5, 6, 7      
+            // Steps 3, 4, 5, 6, 7
             var k = 0;
             var value;
 
@@ -88,7 +88,7 @@ define([
                     value = callback(value, o[k], k, o);
                 }
 
-                // d. Increase k by 1.      
+                // d. Increase k by 1.
                 k++;
             }
 
@@ -131,7 +131,7 @@ define([
         },
 
         getURL: function () {
-            var baseUrl = document.URL.split("#")[0];
+            var baseUrl = document.URL.split("#")[0].replace("index.html", "stub.htm");
             var baseUrlParts = baseUrl.split("?");
             baseUrl = baseUrlParts[0];
             var args = baseUrlParts[1];
@@ -310,7 +310,7 @@ define([
             var lines = xml.split("\n");
             var indent = 0;
             var lastType = "other";
-            // 4 types of tags - single, closing, opening, other (text, doctype, comment) - 4*4 = 16 transitions 
+            // 4 types of tags - single, closing, opening, other (text, doctype, comment) - 4*4 = 16 transitions
             var transitions = {
                 "single->single": 0,
                 "single->closing": -1,
