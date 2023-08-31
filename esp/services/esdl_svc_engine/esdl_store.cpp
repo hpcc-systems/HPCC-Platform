@@ -1365,7 +1365,7 @@ public:
         }
         StringBuffer valuebuf;
         valuebuf.append(valueLen, (const char*)valueData);
-        DBGLOG("Flags = %d, valueLen = %d, valueData=%s", flags, valueLen, valueLen>0?valuebuf.str():"");
+        DBGLOG("Flags = %d, valueLen = %d, valueData=%s", flags, valueLen, valuebuf.str());
         Owned<IProperties> props = createProperties(false);
         valuebuf.replace(';', '\n');
         props->loadProps(valuebuf.str());

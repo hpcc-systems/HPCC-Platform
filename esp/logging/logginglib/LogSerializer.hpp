@@ -36,7 +36,7 @@ const char* const logRequestScriptValues = "ScriptValues";
 class CLogRequestInFile : public CSimpleInterface
 {
     StringAttr fileName;
-    offset_t pos;
+    offset_t pos = 0;
     unsigned size = 0;
     StringAttr GUID;
     StringAttr option;

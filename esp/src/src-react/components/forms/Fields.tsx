@@ -648,7 +648,7 @@ export const TargetFolderTextField: React.FunctionComponent<TargetFolderTextFiel
     }, [machineDirectory, onChange, pathSepChar]);
 
     React.useEffect(() => {
-        if ((!isContainer && !machineAddress) || !machineDirectory || !machineOS) return;
+        if ((!isContainer && !machineAddress) || !machineDirectory || !dropzone || !machineOS) return;
         const _fetchFolders = async () => {
             const folders = await fetchFolders(pathSepChar, machineAddress, machineDirectory, machineOS, 0);
             setFolders(folders.sort((a, b) => {
@@ -658,7 +658,7 @@ export const TargetFolderTextField: React.FunctionComponent<TargetFolderTextFiel
             }));
         };
         _fetchFolders();
-    }, [isContainer, pathSepChar, machineAddress, machineDirectory, machineOS, fetchFolders]);
+    }, [isContainer, pathSepChar, dropzone, machineAddress, machineDirectory, machineOS, fetchFolders]);
 
     return <ComboBox {...props} allowFreeform={true} autoComplete={"on"} selectedKey={selectedKey} onChange={onChanged} options={folders} styles={styles} />;
 };
@@ -739,6 +739,7 @@ export const PermissionTypeField: React.FunctionComponent<PermissionTypeProps> =
 };
 
 export interface CloudContainerNameFieldProps extends Omit<IComboBoxProps, "options"> {
+    name?: string;
 }
 
 export const CloudContainerNameField: React.FunctionComponent<CloudContainerNameFieldProps> = (props) => {

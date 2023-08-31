@@ -15,8 +15,10 @@
     limitations under the License.
 ############################################################################## */
 
-#include <future>
 #include <chrono>
+#include <future>
+#include <string>
+#include <unordered_set>
 
 #include "platform.h"
 #include <math.h>
@@ -1280,6 +1282,28 @@ static int recvNextGraph(unsigned timeoutMs, const char *wuid, StringBuffer &ret
     return 1; // success
 }
 
+
+static std::vector<std::string> connectedWorkerPods;
+void addConnectedWorkerPod(const char *podName)
+{
+    connectedWorkerPods.push_back(podName);
+}
+
+static bool podInfoPublished = false;
+void publishPodNames(IWorkUnit *workunit)
+{
+    // skip if Thor manager already published (implying worker pods already published too)
+    if (workunit->setContainerizedProcessInfo("Thor", globals->queryProp("@name"), queryMyPodName(), nullptr))
+    {
+        for (unsigned workerNum=0; workerNum<connectedWorkerPods.size(); workerNum++)
+        {
+            const char *workerPodName = connectedWorkerPods[workerNum].c_str();
+            workunit->setContainerizedProcessInfo("ThorWorker", globals->queryProp("@name"), workerPodName, std::to_string(workerNum+1).c_str());
+        }
+    }
+    podInfoPublished = true;
+}
+
 void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphName)
 {
     aborting = 0;
@@ -1308,6 +1332,7 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
 
         enableForceRemoteReads(); // forces file reads to be remote reads if they match environment setting 'forceRemotePattern' pattern.
 
+        std::unordered_set<std::string> publishedPodWuids;
         Owned<CJobManager> jobManager = new CJobManager(logHandler);
         try
         {
@@ -1342,6 +1367,11 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                         Owned<IConstWorkUnit> workunit;
                         factory.setown(getWorkUnitFactory());
                         workunit.setown(factory->openWorkUnit(currentWuid));
+                        if (!podInfoPublished)
+                        {
+                            Owned<IWorkUnit> wu = &workunit->lock();
+                            publishPodNames(wu);
+                        }
                         SocketEndpoint dummyAgentEp;
                         jobManager->execute(workunit, currentWuid, currentGraphName, dummyAgentEp);
                         IException *e = jobManager->queryExitException();
@@ -1383,6 +1413,24 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                             int ret = recvNextGraph(remaining, currentWuid.str(), wuid, currentGraphName);
                             if (ret > 0)
                             {
+                                if (!streq(currentWuid, wuid))
+                                {
+                                    // perhaps slightly overkill, but avoid checking/locking wuid to add pod info.
+                                    // if this instance has already done so.
+                                    auto it = publishedPodWuids.find(wuid.str());
+                                    if (it == publishedPodWuids.end())
+                                    {                                        
+                                        podInfoPublished = false;
+
+                                        // trivial safe-guard against growing too big
+                                        // but unlikely to ever grow this big
+                                        if (publishedPodWuids.size() > 10000)
+                                            publishedPodWuids.clear();
+
+                                        publishedPodWuids.insert(wuid.str());
+                                    }
+                                    // NB: this set of pods could still already be published, if so, publishPodNames will not re-add.
+                                }
                                 currentWuid.set(wuid); // NB: will always be same if !multiJobLinger
                                 break; // success
                             }

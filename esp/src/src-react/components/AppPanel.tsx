@@ -1,6 +1,5 @@
 import * as React from "react";
 import { DefaultButton, IconButton, IIconProps, IPanelProps, IRenderFunction, Panel, PanelType } from "@fluentui/react";
-import { Text } from "@fluentui/react-components";
 import nlsHPCC from "src/nlsHPCC";
 import { useWebLinks } from "../hooks/resources";
 
@@ -37,7 +36,11 @@ export const AppPanel: React.FunctionComponent<AppPanelProps> = ({
                 retVal.push(<DefaultButton text={`${webLink.ServiceName} - ${nv.Name}`} href={`/${nv.Value}`} target="_blank" />);
             });
         });
-        return retVal.length ? retVal : <Text>{nlsHPCC.Empty}</Text>;
+        // Include HPCC Systems link when there are no other web links available
+        if (retVal.length === 0) {
+            retVal.push(<a key="hpcc-link" href="https://www.hpccsystems.com" target="_blank" rel="noopener noreferrer">{nlsHPCC.HPCCSystems}</a>);
+        }
+        return retVal;
     }, [webLinks]);
 
     return <Panel type={PanelType.smallFixedNear}

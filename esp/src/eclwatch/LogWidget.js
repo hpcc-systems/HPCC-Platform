@@ -232,7 +232,7 @@ define([
         refreshGrid: function (clearSelection) {
             this.rawText.setText(this.i18n.loadingMessage);
             var filter = lang.mixin(this.getFilter(), {
-                Name: this.params.getNetaddress ? "//" + this.params.getNetaddress() + this.params.getLogDirectory() + "/" + this.logTargetSelect.get("value") : "//" + this.params.params.Netaddress + this.params.LogDirectory + "/" + this.logTargetSelect.get("value"),
+                Name: this.params.getNetaddress ? "//" + this.params.getNetaddress() + this.params.getLogDirectory() + "/" + this.logTargetSelect.get("value") : "//" + this.params.NetAddress + this.params.LogDirectory + "/" + this.logTargetSelect.get("value"),
                 Type: "tpcomp_log",
                 LoadData: 1
             });

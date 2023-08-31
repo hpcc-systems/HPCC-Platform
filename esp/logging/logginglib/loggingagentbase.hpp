@@ -453,7 +453,7 @@ protected:
     StringBuffer defaultDB, transactionTable, loggingTransactionSeed;
     StringAttr defaultLogGroup, defaultTransactionApp, loggingTransactionApp, logSourcePath;
 
-    unsigned logSourceCount, loggingTransactionCount, maxTriesGTS;
+    unsigned logSourceCount = 0, loggingTransactionCount = 0, maxTriesGTS = unsigned(-1);
     MapStringToMyClass<CLogGroup> logGroups;
     MapStringToMyClass<CLogSource> logSources;
 
