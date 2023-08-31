@@ -739,6 +739,7 @@ export const PermissionTypeField: React.FunctionComponent<PermissionTypeProps> =
 };
 
 export interface CloudContainerNameFieldProps extends Omit<IComboBoxProps, "options"> {
+    name?: string;
 }
 
 export const CloudContainerNameField: React.FunctionComponent<CloudContainerNameFieldProps> = (props) => {
