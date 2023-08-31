@@ -47,7 +47,9 @@ namespace xpp {
       exception::operator= (other);
 
       if (&other != this) {
-        message       = other.message; 
+        message       = other.message;
+        row           = other.row;
+        column        = other.column; 
       }
 
       return *this; 
@@ -70,8 +72,8 @@ namespace xpp {
           
 
     std::string message;
-    int row;
-    int column;    
+    int row = -1;
+    int column = -1;    
   };
 
 inline std::ostream& operator<<(std::ostream& output,

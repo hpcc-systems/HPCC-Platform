@@ -704,10 +704,12 @@ static void toXmlString(xmlXPathParserContextPtr ctxt, int nargs)
             continue;
         xmlOutputBufferPtr xmlOut = xmlAllocOutputBuffer(nullptr);
         xmlNodeDumpOutput(xmlOut, node->doc, node, 0, 1, nullptr);
-        xmlOutputBufferFlush(xmlOut);
-        xmlBufPtr buf = (xmlOut->conv != nullptr) ? xmlOut->conv : xmlOut->buffer;
-        if (xmlBufUse(buf))
-            xml.append(xmlBufUse(buf), (const char *)xmlBufContent(buf));
+        if (xmlOutputBufferFlush(xmlOut) >= 0)
+        {
+            xmlBufPtr buf = (xmlOut->conv != nullptr) ? xmlOut->conv : xmlOut->buffer;
+            if (xmlBufUse(buf))
+                xml.append(xmlBufUse(buf), (const char *)xmlBufContent(buf));
+        }
         xmlOutputBufferClose(xmlOut);
     }
     xmlXPathReturnString(ctxt, xmlStrdup((const xmlChar *)xml.str()));
@@ -750,7 +752,7 @@ static void getTxSummary(xmlXPathParserContextPtr ctxt, int nargs)
         {
             if (strieq((const char*)tmp, "core"))
                 group = TXSUMMARY_GRP_CORE;
-            else if (!streq((const char*)tmp, "enterprise"))
+            else if (!strieq((const char*)tmp, "enterprise"))
             {
                 xmlFree(tmp);
                 xmlXPathSetError((ctxt), XPATH_EXPR_ERROR);
