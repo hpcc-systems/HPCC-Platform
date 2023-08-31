@@ -67,9 +67,6 @@ void CInfoCacheReaderThread::threadmain()
 
         waiting = true;
         if (!sem.wait(autoRebuildMillSeconds))
-        {
-            bool expected = true;
-            waiting.compare_exchange_strong(expected, false);
-        }
+            waiting = false;
     }
 }
