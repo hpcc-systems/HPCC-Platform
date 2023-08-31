@@ -774,7 +774,7 @@ void CHThorIndexReadActivityBase::verifyIndex(IKeyIndex * idx)
             keySize = idx->keySize();
             //The index rows always have the filepositions appended, but the ecl may not include a field
             unsigned fileposSize = idx->hasSpecialFileposition() && !hasTrailingFileposition(eclKeySize.queryTypeInfo()) ? sizeof(offset_t) : 0;
-            if (keySize != eclKeySize.getFixedSize() + fileposSize)
+            if (keySize != eclKeySize.getFixedSize() + fileposSize && !idx->isTopLevelKey())
                 throw MakeStringException(0, "Key size mismatch reading index %s: index indicates size %u, ECL indicates size %u", df->queryLogicalName(), keySize, eclKeySize.getFixedSize() + fileposSize);
         }
     }
