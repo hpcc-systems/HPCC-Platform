@@ -2152,6 +2152,45 @@ extern bool WORKUNIT_API runWorkUnit(const char *wuid, const char *queueName)
     return true;
 }
 
+extern bool WORKUNIT_API queueJobIfQueueWaiting(IJobQueue *queue, IJobQueueItem *item, unsigned maxTimeMs, unsigned intervalMs)
+{
+    bool consumed = false;
+    if (queue->waiting())
+    {
+        StringAttr job = item->queryWUID();
+        queue->enqueue(LINK(item));
+        CTimeMon tm(maxTimeMs);
+        while (true)
+        {
+            unsigned remainingMs;
+            if (tm.timedout(&remainingMs))
+                break;
+
+            unsigned pauseMs = remainingMs > intervalMs ? intervalMs : remainingMs;
+            MilliSleep(pauseMs);
+
+            if (!queue->find(job))
+            {
+                consumed = true;
+                break;
+            }
+        }
+        if (!consumed)
+        {
+            // if now not there to be removed, implies dequeue
+            if (!queue->remove(job))
+                consumed = true;
+        }
+        if (!consumed)
+        {
+            // thought some were waiting, but still on queue, validate queue client sessions
+            queue->connect(true);
+            queue->disconnect();
+        }
+    }
+    return consumed;
+}
+
 extern bool WORKUNIT_API runWorkUnit(const char *wuid)
 {
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();

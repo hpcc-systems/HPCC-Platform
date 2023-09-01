@@ -40,16 +40,19 @@ public:
     virtual IPooledThread *createNew() override;
     virtual bool onAbort() override;
 private:
-    bool executeWorkunit(const char * wuid);
+    bool executeWorkunit(IJobQueueItem *item);
 
     const char *agentName;
     const char *daliServers;
     const char *apptype;
     Owned<IJobQueue> queue;
+    Owned<IJobQueue> lingerQueue; // used if thor agent for a thor configured with multiJobLinger=true
     Linked<IPropertyTree> config;
     Owned<IThreadPool> pool; // for containerized only
     std::atomic<bool> running = { false };
     bool isThorAgent = false;
+
+friend class WaitThread;
 };
 
 //---------------------------------------------------------------------------------
@@ -120,7 +123,15 @@ int CEclAgentExecutionServer::run()
         initClientProcess(serverGroup, DCR_AgentExec);
 #ifdef _CONTAINERIZED
         if (streq("thor", apptype))
+        {
             getClusterThorQueueName(queueNames, agentName);
+            if (config->getPropBool("@multiJobLinger", defaultThorMultiJobLinger))
+            {
+                StringBuffer lingerQueueName;
+                getClusterLingerThorQueueName(lingerQueueName, agentName);
+                lingerQueue.setown(createJobQueue(lingerQueueName));
+            }
+        }
         else
             getClusterEclAgentQueueName(queueNames, agentName);
 #else
@@ -166,12 +177,10 @@ int CEclAgentExecutionServer::run()
             Owned<IJobQueueItem> item = queue->dequeue();
             if (item.get())
             {
-                StringAttr wuid;
-                wuid.set(item->queryWUID());
-                PROGLOG("AgentExec: Dequeued workunit request '%s'", wuid.get());
+                PROGLOG("AgentExec: Dequeued workunit request '%s'", item->queryWUID());
                 try
                 {
-                    executeWorkunit(wuid);
+                    executeWorkunit(item);
                 }
                 catch(IException *e)
                 {
@@ -214,20 +223,21 @@ int CEclAgentExecutionServer::run()
 
 //---------------------------------------------------------------------------------
 
-typedef std::tuple<unsigned, const char *, const char *> ThreadCtx;
+typedef std::tuple<Linked<IJobQueueItem>, unsigned, const char *, const char *> ThreadCtx;
 
 // NB: WaitThread only used by if pool created (see CEclAgentExecutionServer ctor)
 class WaitThread : public CInterfaceOf<IPooledThread>
 {
 public:
-    WaitThread(const char *_dali, const char *_apptype, const char *_queue) : dali(_dali), apptype(_apptype), queue(_queue)
+    WaitThread(CEclAgentExecutionServer &_owner, const char *_dali, const char *_apptype, const char *_queue)
+        : owner(_owner), dali(_dali), apptype(_apptype), queue(_queue)
     {
         isThorAgent = streq("thor", apptype);
     }
     virtual void init(void *param) override
     {
         auto &context = *static_cast<ThreadCtx *>(param);
-        std::tie(wfid, wuid, graphName) = context;
+        std::tie(item, wfid, wuid, graphName) = context;
     }
     virtual bool stop() override
     {
@@ -255,25 +265,30 @@ public:
             bool useChildProcesses = compConfig->getPropBool("@useChildProcesses");
             if (isContainerized() && !useChildProcesses)
             {
-                std::list<std::pair<std::string, std::string>> params = { };
-                if (compConfig->getPropBool("@useThorQueue", true))
-                    params.push_back({ "queue", queue.get() });
-                StringBuffer jobName(wuid);
-                if (isThorAgent)
+                constexpr unsigned queueWaitingTimeoutMs = 10000;
+                constexpr unsigned queueWaitingCheckPeriodMs = 1000;
+                if (!owner.lingerQueue || !queueJobIfQueueWaiting(owner.lingerQueue, item, queueWaitingCheckPeriodMs, queueWaitingCheckPeriodMs))
                 {
-                    jobName.append('-').append(graphName);
-                    params.push_back({ "graphName", graphName.get() });
-                    params.push_back({ "wfid", std::to_string(wfid) });
-                }
+                    std::list<std::pair<std::string, std::string>> params = { };
+                    if (compConfig->getPropBool("@useThorQueue", true))
+                        params.push_back({ "queue", queue.get() });
+                    StringBuffer jobName(wuid);
+                    if (isThorAgent)
+                    {
+                        jobName.append('-').append(graphName);
+                        params.push_back({ "graphName", graphName.get() });
+                        params.push_back({ "wfid", std::to_string(wfid) });
+                    }
 
-                {
-                    Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-                    Owned<IWorkUnit> workunit = factory->updateWorkUnit(wuid);
-                    if (isContainerized())
-                        workunit->setContainerizedProcessInfo("AgentExec", compConfig->queryProp("@name"), k8s::queryMyPodName(), nullptr);
-                    addTimeStamp(workunit, wfid, graphName, StWhenK8sLaunched);
+                    {
+                        Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+                        Owned<IWorkUnit> workunit = factory->updateWorkUnit(wuid);
+                        if (isContainerized())
+                            workunit->setContainerizedProcessInfo("AgentExec", compConfig->queryProp("@name"), k8s::queryMyPodName(), nullptr);
+                        addTimeStamp(workunit, wfid, graphName, StWhenK8sLaunched);
+                    }
+                    k8s::runJob(jobSpecName, wuid, jobName, params);
                 }
-                k8s::runJob(jobSpecName, wuid, jobName, params);
             }
             else
             {
@@ -322,6 +337,7 @@ public:
         }
     }
 private:
+    CEclAgentExecutionServer &owner;
     unsigned wfid = 0;
     StringAttr wuid;
     StringAttr graphName;
@@ -329,6 +345,7 @@ private:
     StringAttr dali;
     StringAttr apptype;
     StringAttr queue;
+    Linked<IJobQueueItem> item;
     bool isThorAgent = false;
 };
 
@@ -336,7 +353,7 @@ IPooledThread *CEclAgentExecutionServer::createNew()
 {
     if (nullptr == pool)
         throwUnexpected();
-    return new WaitThread(daliServers, apptype, agentName);
+    return new WaitThread(*this, daliServers, apptype, agentName);
 }
 
 bool CEclAgentExecutionServer::onAbort()
@@ -348,12 +365,13 @@ bool CEclAgentExecutionServer::onAbort()
     return false;
 }
 
-bool CEclAgentExecutionServer::executeWorkunit(const char * wuid)
+bool CEclAgentExecutionServer::executeWorkunit(IJobQueueItem *item)
 {
     unsigned wfid = 0;
     StringArray sArray;
     const char *graphName = nullptr;
     ThreadCtx threadCtx;
+    const char *wuid = item->queryWUID();
     if (pool)
     {
         if (isThorAgent)
@@ -366,7 +384,7 @@ bool CEclAgentExecutionServer::executeWorkunit(const char * wuid)
             wuid = sArray.item(1);
             graphName = sArray.item(2);
         }
-        threadCtx = std::make_tuple(wfid, wuid, graphName);
+        threadCtx = std::make_tuple(item, wfid, wuid, graphName);
     }
 
     {

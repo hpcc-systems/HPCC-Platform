@@ -1341,8 +1341,8 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                 jobManager->run();
             else
             {
-                unsigned lingerPeriod = globals->getPropInt("@lingerPeriod", DEFAULT_LINGER_SECS)*1000;
-                bool multiJobLinger = globals->getPropBool("@multiJobLinger", true);
+                unsigned lingerPeriod = globals->getPropInt("@lingerPeriod", defaultThorLingerPeriod)*1000;
+                bool multiJobLinger = globals->getPropBool("@multiJobLinger", defaultThorMultiJobLinger);
                 VStringBuffer multiJobLingerQueueName("%s_lingerqueue", globals->queryProp("@name"));
                 StringBuffer instance("thorinstance_");
 
@@ -1350,8 +1350,12 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                 {
                     StringBuffer thorQueueName;
                     getClusterThorQueueName(thorQueueName, globals->queryProp("@name"));
-                    PROGLOG("multiJobLinger: on. Queue name: %s", thorQueueName.str());
-                    thorQueue.setown(createJobQueue(thorQueueName));
+                    StringBuffer queueNames(thorQueueName);
+                    queueNames.append(",");
+                    getClusterLingerThorQueueName(queueNames, globals->queryProp("@name"));
+
+                    PROGLOG("multiJobLinger: on. Queue names: %s", queueNames.str());
+                    thorQueue.setown(createJobQueue(queueNames));
                     thorQueue->connect(false);
                 }
 
