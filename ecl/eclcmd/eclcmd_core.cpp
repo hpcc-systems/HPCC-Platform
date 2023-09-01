@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include "jlog.hpp"
 #include "jfile.hpp"
+#include "jsecrets.hpp"
 #include "jargv.hpp"
 #include "jflz.hpp"
 #include "httpclient.hpp"
@@ -2115,6 +2116,90 @@ private:
 };
 
 
+
+class EclCmdUrlMapSecretName : public CInterfaceOf<IEclCommand>
+{
+public:
+    EclCmdUrlMapSecretName()
+    {
+
+    }
+
+    virtual eclCmdOptionMatchIndicator parseCommandLineOptions(ArgvIterator &iter) override
+    {
+        eclCmdOptionMatchIndicator retVal = EclCmdOptionNoMatch;
+        if (iter.done())
+            return EclCmdOptionNoMatch;
+
+        for (; !iter.done(); iter.next())
+        {
+            const char *arg = iter.query();
+            if (*arg != '-') //parameters don't start with '-'
+            {
+                if (optUrl.length())
+                {
+                    fprintf(stderr, "\nunrecognized argument %s\n", arg);
+                    return EclCmdOptionCompletion;
+                }
+                optUrl.set(arg);
+                retVal = EclCmdOptionMatch;
+                continue;
+            }
+            if (iter.matchOption(optUsername, ECLOPT_USERNAME))
+            {
+                retVal = EclCmdOptionMatch;
+                continue;
+            }
+        }
+        return retVal;
+    }
+    virtual bool finalizeOptions(IProperties *globals) override
+    {
+        if (optUrl.isEmpty())
+        {
+            fprintf(stdout, "\n URL parameter required.\n");
+            return false;
+        }
+        return true;
+    }
+    virtual int processCMD() override
+    {
+        StringBuffer secretName;
+        generateDynamicUrlSecretName(secretName, optUrl, optUsername);
+        if (secretName.isEmpty())
+        {
+            fputs("Error genenerating secret name.", stderr);
+            return 1;
+        }
+        fputs(secretName.str(), stdout);
+        fputs("\n", stdout);
+        return 0;
+    }
+    virtual void usage() override
+    {
+        fputs("\nUsage:\n"
+            "\n"
+            "The 'url-secret-name' command generates a secret name from a url that can be used to support\n"
+            "  ECL SOAPCALL/HTTPCALL automated url to secret mapping.\n"
+            "  Username can either be embedded in the url, such as https://username@example.com, or\n"
+            "  Passed in as a parameter --username=username\n"
+            "  Passwords embedded in the URL are not needed and will be ignored.\n"
+            "\n"
+            "When ECL SOAPCALL URL secret mapping is enabled SOAPCALL will convert the URL provided into a name of this format.\n"
+            "  ECL will then attempt to lookup the secret, and if found will use the contents of the secret, rather then the original url.\n"
+            "\n"
+            "ecl url-secret-name <URL> [--username=<username>]\n"
+            "\n"
+            "   URL            the URL to convert into a secret name\n"
+            " Options:\n"
+            "   --username     Username to associate with the URL.  Will override any username embedded in the URL.\n",
+            stdout);
+    }
+private:
+    StringAttr         optUrl;
+    StringAttr         optUsername;
+};
+
 //=========================================================================================
 
 IEclCommand *createCoreEclCommand(const char *cmdname)
@@ -2145,6 +2230,8 @@ IEclCommand *createCoreEclCommand(const char *cmdname)
         return new EclCmdStatus();
     if (strieq(cmdname, "zapgen"))
         return new EclCmdZapGen();
+    if (strieq(cmdname, "url-secret-name"))
+        return new EclCmdUrlMapSecretName();
     if (strieq(cmdname, "sign"))
         return createSignEclCommand();
     if (strieq(cmdname, "listkeyuid"))
