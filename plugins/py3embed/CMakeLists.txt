@@ -61,7 +61,7 @@ if (CREATE_STDLIB_ZIP)
     set(_py3_zip_temp_dir "${CMAKE_CURRENT_BINARY_DIR}/python_embeddable_zip_temp")
     set(_py3_zip_path "${_py3_zip_temp_dir}/python${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}$<$<CONFIG:Debug>:_d>.zip")
 
-    if (NOT "310" STREQUAL "${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}" )
+    if (NOT "311" STREQUAL "${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}" )
         message(FATAL_ERROR "Update the python${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}.zip exclusions below to match the ones from:  https://www.python.org/ftp/python/${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}.${Python3_VERSION_PATCH}/python-${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}.${Python3_VERSION_PATCH}-embed-amd64.zip")
     endif()
 
