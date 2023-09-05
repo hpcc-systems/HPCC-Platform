@@ -3081,7 +3081,7 @@ public:
 #endif
     }
 
-    bool verifyConnection(rank_t rank,  unsigned timeout)
+    bool verifyConnection(rank_t rank,  unsigned timeout, bool allowConnect=true)
     {
         CriticalBlock block(verifysect);
         assertex(rank!=RANK_RANDOM);
@@ -3091,7 +3091,7 @@ public:
         unsigned remaining;
         if (tm.timedout(&remaining))
             return false;
-        return channel->verifyConnection(tm,true);
+        return channel->verifyConnection(tm,allowConnect);
     }
 
     bool verifyAll(bool duplex, unsigned totalTimeout, unsigned perConnectionTimeout)
