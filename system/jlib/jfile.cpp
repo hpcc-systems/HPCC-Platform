@@ -4385,13 +4385,19 @@ IFile * createIFile(const char * filename)
 #endif
 }
 
+void touchFile(IFile *iFile)
+{
+    Owned<IFileIO> iFileIO = iFile->open(IFOcreate);
+    if (!iFileIO)
+        throw makeStringExceptionV(0, "touchFile: failed to create file %s", iFile->queryFilename());
+}
+
 void touchFile(const char *filename)
 {
     Owned<IFile> iFile = createIFile(filename);
-    Owned<IFileIO> iFileIO = iFile->open(IFOcreate);
-    if (!iFileIO)
-        throw makeStringExceptionV(0, "touchFile: failed to create file %s", filename);
+    touchFile(iFile);
 }
+
 
 IFileIOStream * createIOStream(IFileIO * file)
 {
