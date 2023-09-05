@@ -23,6 +23,7 @@
 #include "platform.h"
 #include <math.h>
 #include "jarray.hpp"
+#include "jcontainerized.hpp"
 #include "jfile.hpp"
 #include "jmutex.hpp"
 #include "jlog.hpp"
@@ -1034,7 +1035,7 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
             {
                 // collate pod distribution
                 VStringBuffer selector("thorworker-job-%s-%s", wuid.get(), graphName);
-                std::vector<std::vector<std::string>> pods = getPodNodes(selector.toLowerCase());
+                std::vector<std::vector<std::string>> pods = k8s::getPodNodes(selector.toLowerCase());
                 std::unordered_map<std::string, unsigned> podPerNodeCounts;
                 for (const auto &podNode: pods)
                 {
@@ -1293,7 +1294,7 @@ static bool podInfoPublished = false;
 void publishPodNames(IWorkUnit *workunit)
 {
     // skip if Thor manager already published (implying worker pods already published too)
-    if (workunit->setContainerizedProcessInfo("Thor", globals->queryProp("@name"), queryMyPodName(), nullptr))
+    if (workunit->setContainerizedProcessInfo("Thor", globals->queryProp("@name"), k8s::queryMyPodName(), nullptr))
     {
         for (unsigned workerNum=0; workerNum<connectedWorkerPods.size(); workerNum++)
         {

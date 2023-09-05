@@ -1775,22 +1775,8 @@ inline double calcCost(double ratePerHour, unsigned __int64 ms) { return ratePer
 
 extern WORKUNIT_API void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IPropertyTree &config);
 
-enum class KeepK8sJobs { none, podfailures, all };
-extern WORKUNIT_API KeepK8sJobs translateKeepJobs(const char *keepJobs);
-
-extern WORKUNIT_API bool isActiveK8sService(const char *serviceName);
-extern WORKUNIT_API bool executeGraphOnLingeringThor(IConstWorkUnit &workunit, unsigned wfid, const char *graphName);
-extern WORKUNIT_API void deleteK8sResource(const char *componentName, const char *job, const char *resource);
-extern WORKUNIT_API void waitK8sJob(const char *componentName, const char *job, unsigned pendingTimeoutSecs, KeepK8sJobs keepJob);
-extern WORKUNIT_API bool applyK8sYaml(const char *componentName, const char *wuid, const char *job, const char *resourceType, const std::list<std::pair<std::string, std::string>> &extraParams, bool optional, bool autoCleanup);
-extern WORKUNIT_API void runK8sJob(const char *componentName, const char *wuid, const char *job, const std::list<std::pair<std::string, std::string>> &extraParams={});
-
-// returns a vector of {pod-name, node-name} vectors,
-extern WORKUNIT_API std::vector<std::vector<std::string>> getPodNodes(const char *selector);
-
-extern WORKUNIT_API const char *queryMyPodName();
-
 extern WORKUNIT_API TraceFlags loadTraceFlags(IConstWorkUnit * wu, const std::initializer_list<TraceOption> & y, TraceFlags dft);
 
+extern WORKUNIT_API bool executeGraphOnLingeringThor(IConstWorkUnit &workunit, unsigned wfid, const char *graphName);
 
 #endif
