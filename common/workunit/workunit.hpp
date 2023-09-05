@@ -1773,6 +1773,8 @@ extern WORKUNIT_API bool isValidMemoryValue(const char * memoryUnit);
 
 inline double calcCost(double ratePerHour, unsigned __int64 ms) { return ratePerHour * ms / 1000 / 3600; }
 
+constexpr bool defaultThorMultiJobLinger = true;
+constexpr unsigned defaultThorLingerPeriod = 60;
 extern WORKUNIT_API void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IPropertyTree &config);
 
 extern WORKUNIT_API TraceFlags loadTraceFlags(IConstWorkUnit * wu, const std::initializer_list<TraceOption> & y, TraceFlags dft);
