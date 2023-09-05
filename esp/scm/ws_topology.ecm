@@ -364,7 +364,7 @@ ESPresponse [exceptions_inline]TpTargetClusterQueryResponse
 
 ESPrequest TpClusterQueryRequest
 {
-    TpQueryType Type;
+    string Type;
 };
 
 ESPresponse [exceptions_inline]TpClusterQueryResponse
