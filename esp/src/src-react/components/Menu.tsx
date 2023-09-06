@@ -296,10 +296,10 @@ export const SubNavigation: React.FunctionComponent<SubNavigationProps> = ({
                                 href={`#${row.itemKey}`}
                                 className={[
                                     navStyles.link,
-                                    row.itemKey === "/topology/logs" && logsDisabled ? logsDisabledStyle : "",
                                     row.itemKey === subNav ? navStyles.active : "",
                                     !subNav && row.itemKey === "/topology/configuration" ? navStyles.active : ""
                                 ].join(" ")}
+                                style={row.itemKey === "/topology/logs" && logsDisabled ? logsDisabledStyle?.style : {}}
                             >
                                 {row.headerText}
                             </Link>;
