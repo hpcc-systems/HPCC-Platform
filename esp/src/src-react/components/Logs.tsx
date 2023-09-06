@@ -6,9 +6,9 @@ import { Level } from "@hpcc-js/util";
 import { CreateLogsQueryStore } from "src/ESPLog";
 import nlsHPCC from "src/nlsHPCC";
 import { logColor } from "src/Utility";
-import { useFluentPagedGrid } from "../hooks/grid";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
+import { FluentPagedGrid, FluentPagedFooter, useCopyButtons, useFluentStoreState } from "./controls/Grid";
 import { Filter } from "./forms/Filter";
 import { Fields } from "./forms/Fields";
 import { ShortVerticalDivider } from "./Common";
@@ -62,6 +62,7 @@ function formatQuery(_request: any): Partial<GetLogsExRequest> {
 interface LogsProps {
     wuid?: string;
     filter?: Partial<GetLogsExRequest>;
+    page?: number
 }
 export const defaultFilter: Partial<GetLogsExRequest> = { StartDate: defaultStartDate };
 
@@ -82,10 +83,17 @@ const levelMap = (level) => {
 export const Logs: React.FunctionComponent<LogsProps> = ({
     wuid,
     filter = defaultFilter,
+    page
 }) => {
 
     const hasFilter = React.useMemo(() => Object.keys(filter).length > 0, [filter]);
     const [showFilter, setShowFilter] = React.useState(false);
+    const {
+        selection, setSelection,
+        pageNum, setPageNum,
+        pageSize, setPageSize,
+        total, setTotal,
+        refreshTable } = useFluentStoreState({ page });
 
     const now = React.useMemo(() => new Date(), []);
 
@@ -105,36 +113,34 @@ export const Logs: React.FunctionComponent<LogsProps> = ({
         return formatQuery(filter);
     }, [filter, now, wuid]);
 
-    const { Grid, GridPagination, refreshTable, copyButtons } = useFluentPagedGrid({
-        persistID: "cloudlogs",
-        store: gridStore,
-        query,
-        filename: "logaccess",
-        columns: {
+    const columns = React.useMemo(() => {
+        return {
             timestamp: { label: nlsHPCC.TimeStamp, width: 140, sortable: false, },
             message: { label: nlsHPCC.Message, sortable: false, },
             containerName: { label: nlsHPCC.ContainerName, width: 100, sortable: false },
             audience: { label: nlsHPCC.Audience, width: 60, sortable: false, },
             class: {
                 label: nlsHPCC.Class, width: 40, sortable: false,
-                formatter: React.useCallback(level => {
+                formatter: level => {
                     const colors = logColor(levelMap(level));
                     const styles = { backgroundColor: colors.background, padding: "2px 6px", color: colors.foreground };
                     return <span style={styles}>{level}</span>;
-                }, [])
+                }
             },
             jobId: { label: nlsHPCC.JobID, width: 140, sortable: false, hidden: wuid !== undefined, },
             procId: { label: nlsHPCC.ProcessID, width: 46, sortable: false, },
             sequence: { label: nlsHPCC.Sequence, width: 70, sortable: false, },
             threadId: { label: nlsHPCC.ThreadID, width: 60, sortable: false, },
-        }
-    });
+        };
+    }, [wuid]);
+
+    const copyButtons = useCopyButtons(columns, selection, "logaccess");
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
-            onClick: () => refreshTable()
+            onClick: () => refreshTable.call()
         },
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
@@ -161,11 +167,27 @@ export const Logs: React.FunctionComponent<LogsProps> = ({
         header={<CommandBar items={buttons} farItems={copyButtons} />}
         main={
             <>
-                <Grid />
+                <FluentPagedGrid
+                    store={gridStore}
+                    query={query}
+                    pageNum={pageNum}
+                    pageSize={pageSize}
+                    total={total}
+                    columns={columns}
+                    setSelection={setSelection}
+                    setTotal={setTotal}
+                    refresh={refreshTable}
+                ></FluentPagedGrid>
                 <Filter showFilter={showFilter} setShowFilter={setShowFilter} filterFields={filterFields} onApply={pushParams} />
             </>
         }
-        footer={<GridPagination />}
+        footer={<FluentPagedFooter
+            persistID={"cloudlogs"}
+            pageNum={pageNum}
+            setPageNum={setPageNum}
+            setPageSize={setPageSize}
+            total={total}
+        ></FluentPagedFooter>}
         footerStyles={{}}
     />;
 };

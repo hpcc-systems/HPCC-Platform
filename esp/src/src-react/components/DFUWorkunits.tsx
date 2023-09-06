@@ -7,10 +7,10 @@ import * as Utility from "src/Utility";
 import { QuerySortItem } from "src/store/Store";
 import nlsHPCC from "src/nlsHPCC";
 import { useConfirm } from "../hooks/confirm";
-import { useFluentPagedGrid } from "../hooks/grid";
 import { useMyAccount } from "../hooks/user";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
+import { FluentPagedGrid, FluentPagedFooter, useCopyButtons, useFluentStoreState } from "./controls/Grid";
 import { Filter } from "./forms/Filter";
 import { Fields } from "./forms/Fields";
 import { ShortVerticalDivider } from "./Common";
@@ -56,6 +56,7 @@ interface DFUWorkunitsProps {
     filter?: { [id: string]: any };
     sort?: QuerySortItem;
     store?: any;
+    page?: number;
 }
 
 const emptyFilter = {};
@@ -64,7 +65,8 @@ const defaultSort = { attribute: "Wuid", descending: true };
 export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
     filter = emptyFilter,
     sort = defaultSort,
-    store
+    store,
+    page
 }) => {
 
     const hasFilter = React.useMemo(() => Object.keys(filter).length > 0, [filter]);
@@ -72,6 +74,12 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
     const [showFilter, setShowFilter] = React.useState(false);
     const { currentUser } = useMyAccount();
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
+    const {
+        selection, setSelection,
+        pageNum, setPageNum,
+        pageSize, setPageSize,
+        total, setTotal,
+        refreshTable } = useFluentStoreState({ page });
 
     //  Grid ---
     const gridStore = React.useMemo(() => {
@@ -82,13 +90,8 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
         return formatQuery(filter);
     }, [filter]);
 
-    const { Grid, GridPagination, selection, refreshTable, copyButtons } = useFluentPagedGrid({
-        persistID: "dfuworkunits",
-        store: gridStore,
-        query,
-        sort,
-        filename: "dfuworkunits",
-        columns: {
+    const columns = React.useMemo(() => {
+        return {
             col1: selector({
                 width: 27,
                 selectorType: "checkbox"
@@ -97,34 +100,34 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
                 headerIcon: "LockSolid",
                 width: 18,
                 sortable: false,
-                formatter: React.useCallback(function (_protected) {
+                formatter: (_protected) => {
                     if (_protected === true) {
                         return <Icon iconName="LockSolid" />;
                     }
                     return "";
-                }, [])
+                }
             },
             ID: {
                 label: nlsHPCC.ID,
                 width: 130,
-                formatter: React.useCallback(function (ID, idx) {
+                formatter: (ID, idx) => {
                     const wu = ESPDFUWorkunit.Get(ID);
                     return <>
                         <Image src={wu.getStateImage()} styles={{ root: { minWidth: "16px" } }} />
                         &nbsp;
                         <Link href={`#/dfuworkunits/${ID}`}>{ID}</Link>
                     </>;
-                }, [])
+                }
             },
             Command: {
                 label: nlsHPCC.Type,
                 width: 110,
-                formatter: React.useCallback(function (command) {
+                formatter: (command) => {
                     if (command in FileSpray.CommandMessages) {
                         return FileSpray.CommandMessages[command];
                     }
                     return "Unknown";
-                }, [])
+                }
             },
             User: { label: nlsHPCC.Owner, width: 90 },
             JobName: { label: nlsHPCC.JobName, width: 220 },
@@ -132,33 +135,33 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
             StateMessage: { label: nlsHPCC.State, width: 70 },
             PCTDone: {
                 label: nlsHPCC.PctComplete, width: 80, sortable: true,
-                formatter: React.useCallback(function (value, row) {
+                formatter: (value, row) => {
                     return Utility.valueCleanUp(row.PercentDone);
-                }, [])
+                }
             },
             TimeStarted: { label: nlsHPCC.TimeStarted, width: 100, sortable: true },
             TimeStopped: { label: nlsHPCC.TimeStopped, width: 100, sortable: true },
             KbPerSec: {
                 label: nlsHPCC.TransferRate, width: 90,
-                formatter: React.useCallback(function (value, row) {
+                formatter: (value, row) => {
                     return Utility.convertedSize(row.KbPerSec * 1024) + " / sec";
-                }, [])
+                }
             },
             KbPerSecAve: { // KbPerSecAve seems to never be different than KbPerSec, see HPCC-29894
                 label: nlsHPCC.TransferRateAvg, width: 90,
-                formatter: React.useCallback(function (value, row) {
+                formatter: (value, row) => {
                     return Utility.convertedSize(row.KbPerSecAve * 1024) + " / sec";
-                }, [])
+                }
             }
-        }
-    });
+        };
+    }, []);
 
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
         message: nlsHPCC.DeleteSelectedWorkunits,
         items: selection.map(s => s.Wuid),
         onSubmit: React.useCallback(() => {
-            FileSpray.DFUWorkunitsAction(selection, nlsHPCC.Delete).then(() => refreshTable(true));
+            FileSpray.DFUWorkunitsAction(selection, nlsHPCC.Delete).then(() => refreshTable.call(true));
         }, [refreshTable, selection])
     });
 
@@ -166,7 +169,7 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
-            onClick: () => refreshTable()
+            onClick: () => refreshTable.call()
         },
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
@@ -193,11 +196,11 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
         { key: "divider_3", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
             key: "protect", text: nlsHPCC.Protect, disabled: !uiState.hasNotProtected,
-            onClick: () => { FileSpray.DFUWorkunitsAction(selection, "Protect").then(() => refreshTable()); }
+            onClick: () => { FileSpray.DFUWorkunitsAction(selection, "Protect").then(() => refreshTable.call()); }
         },
         {
             key: "unprotect", text: nlsHPCC.Unprotect, disabled: !uiState.hasProtected,
-            onClick: () => { FileSpray.DFUWorkunitsAction(selection, "Unprotect").then(() => refreshTable()); }
+            onClick: () => { FileSpray.DFUWorkunitsAction(selection, "Unprotect").then(() => refreshTable.call()); }
         },
         { key: "divider_4", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
@@ -207,17 +210,19 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
             }
         },
         {
-            key: "mine", text: nlsHPCC.Mine, disabled: !currentUser?.username, iconProps: { iconName: "Contact" }, canCheck: true, checked: filter.Owner === currentUser.username,
+            key: "mine", text: nlsHPCC.Mine, disabled: !currentUser?.username, iconProps: { iconName: "Contact" }, canCheck: true, checked: filter["Owner"] === currentUser.username,
             onClick: () => {
-                if (filter.Owner === currentUser.username) {
-                    filter.Owner = "";
+                if (filter["Owner"] === currentUser.username) {
+                    filter["Owner"] = "";
                 } else {
-                    filter.Owner = currentUser.username;
+                    filter["Owner"] = currentUser.username;
                 }
                 pushParams(filter);
             }
         },
     ], [currentUser, filter, hasFilter, refreshTable, selection, setShowDeleteConfirm, store, uiState.hasNotProtected, uiState.hasProtected, uiState.hasSelection]);
+
+    const copyButtons = useCopyButtons(columns, selection, "dfuworkunits");
 
     //  Filter  ---
     const filterFields: Fields = {};
@@ -252,7 +257,19 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
                 <SizeMe monitorHeight>{({ size }) =>
                     <div style={{ width: "100%", height: "100%" }}>
                         <div style={{ position: "absolute", width: "100%", height: `${size.height}px` }}>
-                            <Grid height={`${size.height}px`} />
+                            <FluentPagedGrid
+                                store={gridStore}
+                                query={query}
+                                sort={sort}
+                                pageNum={pageNum}
+                                pageSize={pageSize}
+                                total={total}
+                                columns={columns}
+                                height={`${size.height}px`}
+                                setSelection={setSelection}
+                                setTotal={setTotal}
+                                refresh={refreshTable}
+                            ></FluentPagedGrid>
                         </div>
                     </div>
                 }</SizeMe>
@@ -260,6 +277,12 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
                 <DeleteConfirm />
             </>
         }
-        footer={<GridPagination />}
+        footer={<FluentPagedFooter
+            persistID={"dfuworkunits"}
+            pageNum={pageNum}
+            setPageNum={setPageNum}
+            setPageSize={setPageSize}
+            total={total}
+        ></FluentPagedFooter>}
     />;
 };
