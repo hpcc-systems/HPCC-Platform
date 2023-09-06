@@ -194,6 +194,9 @@ public:
     virtual bool getKeyAt(unsigned int num, char *dest) const override;
 
 protected:
+    const byte * queryPayload(const byte * data) const;
+
+protected:
     InplaceNodeSearcher searcher;
     Owned<IRandRowExpander> rowexp;  // expander for rand rowdiff
     const byte * positionData = nullptr;
