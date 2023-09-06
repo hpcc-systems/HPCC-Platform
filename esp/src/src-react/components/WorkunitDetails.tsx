@@ -1,10 +1,12 @@
 import * as React from "react";
 import { IPivotItemProps, Pivot, PivotItem } from "@fluentui/react";
+import { scopedLogger } from "@hpcc-js/util";
 import { SizeMe } from "react-sizeme";
 import nlsHPCC from "src/nlsHPCC";
 import { service, hasLogAccess } from "src/ESPLog";
 import { useWorkunit } from "../hooks/workunit";
 import { useUserTheme } from "../hooks/theme";
+import { useDeepEffect } from "../hooks/deepHooks";
 import { DojoAdapter } from "../layouts/DojoAdapter";
 import { pivotItemStyle } from "../layouts/pivot";
 import { pushUrl } from "../util/history";
@@ -21,6 +23,8 @@ import { Metrics } from "./Metrics";
 import { WorkunitSummary } from "./WorkunitSummary";
 import { Result } from "./Result";
 import { Logs } from "./Logs";
+
+const logger = scopedLogger("src-react/components/WorkunitDetails.tsx");
 
 interface WorkunitDetailsProps {
     wuid: string;
@@ -54,7 +58,8 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
 
     const [logCount, setLogCount] = React.useState<number | string>("*");
     const [logsDisabled, setLogsDisabled] = React.useState(true);
-    React.useEffect(() => {
+
+    useDeepEffect(() => {
         hasLogAccess().then(response => {
             setLogsDisabled(!response);
             return response;
@@ -62,12 +67,12 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
             if (hasLogAccess) {
                 service.GetLogsEx({ ...queryParams, jobId: wuid, LogLineStartFrom: 0, LogLineLimit: 10 }).then(response => {    // HPCC-27711 - Requesting LogLineLimit=1 causes issues
                     setLogCount(response.total);
-                });
+                }).catch((err) => logger.error(err));
             }
         }).catch(() => {
             setLogsDisabled(true);
         });
-    }, [queryParams, wuid]);
+    }, [wuid], [queryParams]);
 
     return <SizeMe monitorHeight>{({ size }) =>
         <Pivot overflowBehavior="menu" style={{ height: "100%" }} selectedKey={tab} onLinkClick={evt => pushUrl(`/workunits/${wuid}/${evt.props.itemKey}`)}>
