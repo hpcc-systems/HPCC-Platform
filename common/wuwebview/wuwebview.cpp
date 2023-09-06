@@ -928,6 +928,8 @@ void WuWebView::addInputsFromXml(const char *xml)
 
 bool WuWebView::getEmbeddedArchive(StringBuffer &ret)
 {
+    if (cw->getDebugValueBool("obfuscateOutput", false))
+        return false;
     if (!loadDll())
         return false;
     if (getEmbeddedArchiveXML(dll, ret))

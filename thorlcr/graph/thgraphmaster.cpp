@@ -17,6 +17,9 @@
 
 #include <limits.h>
 #include <stdlib.h>
+#include <future>
+#include <vector>
+#include <iterator>
 #include "jprop.hpp"
 #include "jexcept.hpp"
 #include "jiter.ipp"
@@ -1599,7 +1602,7 @@ void CJobMaster::freeMPTag(mptag_t tag)
     }
 }
 
-void CJobMaster::broadcast(ICommunicator &comm, CMessageBuffer &msg, mptag_t mptag, unsigned timeout, const char *errorMsg, CReplyCancelHandler *msgHandler, bool sendOnly)
+void CJobMaster::broadcast(ICommunicator &comm, CMessageBuffer &msg, mptag_t mptag, unsigned timeout, const char *errorMsg, CReplyCancelHandler *msgHandler, bool sendOnly, bool aborting)
 {
     unsigned groupSizeExcludingMaster = comm.queryGroup().ordinality() - 1;
 
@@ -1609,44 +1612,40 @@ void CJobMaster::broadcast(ICommunicator &comm, CMessageBuffer &msg, mptag_t mpt
         replyTag = queryJobChannel(0).queryMPServer().createReplyTag();
         msg.setReplyTag(replyTag);
     }
-    if (globals->getPropBool("@broadcastSendAsync", true)) // only here in case of problems/debugging.
+    auto f = [&](unsigned r) -> bool
     {
-        class CSendAsyncfor : public CAsyncFor
+        if (!aborting || comm.verifyConnection(r, (unsigned)-1, false))
         {
-            CMessageBuffer &msg;
-            mptag_t mptag;
-            unsigned timeout;
-            StringAttr errorMsg;
-            ICommunicator &comm;
-        public:
-            CSendAsyncfor(ICommunicator &_comm, CMessageBuffer &_msg, mptag_t _mptag, unsigned _timeout, const char *_errorMsg)
-                : comm(_comm), msg(_msg), mptag(_mptag), timeout(_timeout), errorMsg(_errorMsg)
-            {
-            }
-            void Do(unsigned i)
-            {
-                if (!comm.send(msg, i+1, mptag, timeout))
-                    throw createBCastException(i+1, errorMsg);
-            }
-        } afor(comm, msg, mptag, timeout, errorMsg);
+            if (!comm.send(msg, r, mptag, timeout))
+                throw createBCastException(r, errorMsg);
+            return true;
+        }
+        return false;
+    };
+    std::vector<std::future<bool>> sendResultsFuture;
+    Owned<IException> sendExcept;
+    for (unsigned dstrank=1; dstrank<=groupSizeExcludingMaster; ++dstrank)
+        sendResultsFuture.push_back(std::async(f, dstrank));
+    unsigned numberMsgSent = 0;
+    for (auto & sendResultFuture: sendResultsFuture)
+    {
         try
         {
-            afor.For(groupSizeExcludingMaster, groupSizeExcludingMaster);
+            if (sendResultFuture.get())
+                ++numberMsgSent;
         }
         catch (IException *e)
         {
-            EXCLOG(e, "broadcastSendAsync");
-            abort(e);
-            throw;
+            sendExcept.setownIfNull(e);
         }
     }
-    else if (!comm.send(msg, RANK_ALL_OTHER, mptag, timeout))
+    if (sendExcept)
     {
-        Owned<IException> e = createBCastException(0, errorMsg);
-        EXCLOG(e, NULL);
-        abort(e);
-        throw e.getClear();
+        EXCLOG(sendExcept, "broadcastSendAsync");
+        abort(sendExcept);
+        throw sendExcept.getClear();
     }
+
     if (sendOnly) return;
     unsigned respondents = 0;
     Owned<IBitSet> bitSet = createThreadSafeBitSet();
@@ -1687,7 +1686,7 @@ void CJobMaster::broadcast(ICommunicator &comm, CMessageBuffer &msg, mptag_t mpt
         }
         ++respondents;
         bitSet->set((unsigned)sender-1);
-        if (respondents == groupSizeExcludingMaster)
+        if (respondents == numberMsgSent)
             break;
     }
 }
@@ -2373,6 +2372,7 @@ void CMasterGraph::reset()
 void CMasterGraph::abort(IException *e)
 {
     if (aborted) return;
+    getFinalProgress(true);
     bool _graphDone = graphDone; // aborting master activities can trigger master graphDone, but want to fire GraphAbort to slaves if graphDone=false at start.
     bool dumpInfo = TE_WorkUnitAbortingDumpInfo == e->errorCode() || job.getOptBool("dumpInfoOnAbort");
     if (dumpInfo)
@@ -2739,7 +2739,7 @@ void CMasterGraph::handleSlaveDone(unsigned node, MemoryBuffer &mb)
     }
 }
 
-void CMasterGraph::getFinalProgress()
+void CMasterGraph::getFinalProgress(bool aborting)
 {
     CMessageBuffer msg;
     mptag_t replyTag = queryJobChannel().queryMPServer().createReplyTag();
@@ -2747,14 +2747,16 @@ void CMasterGraph::getFinalProgress()
     msg.append((unsigned)GraphEnd);
     msg.append(job.queryKey());
     msg.append(queryGraphId());
-    jobM->broadcast(queryNodeComm(), msg, masterSlaveMpTag, LONGTIMEOUT, "graphEnd", NULL, true);
+    // If aborted, some slaves may have disconnnected/aborted so don't wait so long
+    unsigned timeOutPeriod = aborting ? SHORTTIMEOUT : LONGTIMEOUT;
+    jobM->broadcast(queryNodeComm(), msg, masterSlaveMpTag, timeOutPeriod, "graphEnd", NULL, true, aborting);
 
     Owned<IBitSet> respondedBitSet = createBitSet();
     unsigned n=queryJob().queryNodes();
     while (n--)
     {
         rank_t sender;
-        if (!queryNodeComm().recv(msg, RANK_ALL, replyTag, &sender, LONGTIMEOUT))
+        if (!queryNodeComm().recv(msg, RANK_ALL, replyTag, &sender, timeOutPeriod))
         {
             StringBuffer slaveList;
             n=queryJob().queryNodes();
@@ -2775,7 +2777,13 @@ void CMasterGraph::getFinalProgress()
                 if (s>=n)
                     break;
             }
-            throw MakeGraphException(this, 0, "Timeout receiving final progress from slaves - these slaves failed to respond: %s", slaveList.str());
+            if (aborting)
+            {
+                WARNLOG("Timeout receiving final progress from slaves - these slaves failed to respond: %s", slaveList.str());
+                return;
+            }
+            else
+                throw MakeGraphException(this, 0, "Timeout receiving final progress from slaves - these slaves failed to respond: %s", slaveList.str());
         }
         bool error;
         msg.read(error);

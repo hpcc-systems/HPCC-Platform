@@ -63,3 +63,10 @@ exceptionHandler:
 ```
 
 Handled exceptions will run the defined command and capture the output in a file in the debug plane with a filename of the following form: "exception-\<code\>-\<datestamp\>.log"
+
+## allowForeign (boolean)
+
+Foreign file reads (~foreign::) are forbidden by default since the official santioned secure route is to use the DFS
+service via remote file reads with the ~remote:: syntax.
+Setting expert.allowForeign to true, enables foreign access for compatibility with legacy bare-metal environments
+that have their Dali and Dafilesrv's open.

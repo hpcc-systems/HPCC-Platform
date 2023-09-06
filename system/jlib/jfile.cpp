@@ -3105,8 +3105,9 @@ void CIOStreamReadWriteSeq::reset()
 
 size32_t read(IFileIO * in, offset_t pos, size32_t len, MemoryBuffer & buffer)
 {
-    const size32_t checkLengthLimit = 0x1000;
-    if (len >= checkLengthLimit)
+    // it's assumed if len is specified the caller knows what they're doing,
+    // and we don't want to wastefully call size() to check otherwise.
+    if ((size32_t)-1 == len)
     {
         //Don't allocate a stupid amount of memory....
         offset_t fileLength = in->size();

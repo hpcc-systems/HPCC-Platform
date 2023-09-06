@@ -16,6 +16,7 @@
 ############################################################################## */
 
 #include "jlib.hpp"
+#include "jcontainerized.hpp"
 #include "jmisc.hpp"
 #include "jdebug.hpp"
 #include "jptree.hpp"
@@ -1875,7 +1876,7 @@ void EclAgent::doProcess()
             if (agentTopology->hasProp("@name"))
             {
                 if (isContainerized())
-                    w->setContainerizedProcessInfo("EclAgent", agentTopology->queryProp("@name"), queryMyPodName(), nullptr);
+                    w->setContainerizedProcessInfo("EclAgent", agentTopology->queryProp("@name"), k8s::queryMyPodName(), nullptr);
                 else
                     w->addProcess("EclAgent", agentTopology->queryProp("@name"), GetCurrentProcessId(), 0, nullptr, false, logname.str());
             }

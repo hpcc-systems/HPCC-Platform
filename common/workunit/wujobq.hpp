@@ -154,6 +154,8 @@ extern WORKUNIT_API IJobQueueItem *deserializeJobQueueItem(MemoryBuffer &mb);
 
 extern WORKUNIT_API IJobQueue *createJobQueue(const char *name);
 
+extern WORKUNIT_API bool queueJobIfQueueWaiting(IJobQueue *queue, IJobQueueItem *item, unsigned maxTimeMs, unsigned intervalMs);
+
 extern bool WORKUNIT_API runWorkUnit(const char *wuid, const char *queueName);
 extern bool WORKUNIT_API runWorkUnit(const char *wuid);
 extern WORKUNIT_API StringBuffer & getQueuesContainingWorkUnit(const char *wuid, StringBuffer &queueList);

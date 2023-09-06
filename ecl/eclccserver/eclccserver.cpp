@@ -16,6 +16,7 @@
 ############################################################################## */
 
 #include "jlib.hpp"
+#include "jcontainerized.hpp"
 #include "jmisc.hpp"
 #include "jisem.hpp"
 #include "jfile.hpp"
@@ -757,6 +758,11 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
                         else
                             query->setQueryText(eclQuery.s.str());
                     }
+                    else
+                    {
+                        Owned<IWUQuery> query = workunit->updateQuery();
+                        query->setQueryText(nullptr);
+                    }
 
                     createUNCFilename(realdllfilename.str(), dllurl);
                     unsigned crc = crc_file(realdllfilename.str());
@@ -854,7 +860,7 @@ public:
                     addTimeStamp(wu, SSTcompilestage, "compile", StWhenDequeued, 0);
                 addTimeStamp(wu, SSTcompilestage, "compile", StWhenK8sLaunched, 0);
             }
-            runK8sJob("compile", wuid, wuid);
+            k8s::runJob("compile", wuid, wuid);
         }
         catch (IException *E)
         {
@@ -896,7 +902,7 @@ public:
                 {
                     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
                     Owned<IWorkUnit> wu = factory->updateWorkUnit(wuid.get());
-                    wu->setContainerizedProcessInfo("EclCCServer", getComponentConfigSP()->queryProp("@name"), queryMyPodName(), nullptr);
+                    wu->setContainerizedProcessInfo("EclCCServer", getComponentConfigSP()->queryProp("@name"), k8s::queryMyPodName(), nullptr);
                 }
                 compileViaK8sJob(true);
                 return;
@@ -912,7 +918,7 @@ public:
         }
 
         if (isContainerized())
-            workunit->setContainerizedProcessInfo("EclCC", getComponentConfigSP()->queryProp("@name"), queryMyPodName(), nullptr);
+            workunit->setContainerizedProcessInfo("EclCC", getComponentConfigSP()->queryProp("@name"), k8s::queryMyPodName(), nullptr);
 
         if (workunit->aborting() || workunit->getState()==WUStateAborted)
         {

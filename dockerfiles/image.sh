@@ -323,7 +323,9 @@ install() {
 }
 
 function cleanup() {
-    rm $RSYNC_TMP_FILE 2> /dev/null || true
+    if [ -v RSYNC_TMP_FILE ]; then
+        rm $RSYNC_TMP_FILE 2> /dev/null || true
+    fi
 }
 
 trap cleanup EXIT

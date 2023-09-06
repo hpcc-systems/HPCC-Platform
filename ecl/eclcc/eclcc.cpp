@@ -929,7 +929,8 @@ void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char 
                     }
                     else
                     {
-                        generator->addArchiveAsResource(buf);
+                        if (!instance.wu->getDebugValueBool("obfuscateOutput", false))
+                            generator->addArchiveAsResource(buf);
                     }
                 }
                 bool generateOk = generator->processQuery(instance.query, target);  // NB: May clear instance.query
