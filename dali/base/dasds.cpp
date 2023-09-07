@@ -2186,8 +2186,9 @@ void CBinaryFileExternal::readValue(const char *name, MemoryBuffer &mb)
     else
     {
         Owned<IFileIO> fileIO = iFile->open(IFOread);
-        verifyex(sz == ::read(fileIO, 0, sz, mb));
-        manager.extCache.add(extName, sz, mb.toByteArray());
+        void *extData = mb.reserveTruncate(sz);
+        verifyex(sz == fileIO->read(0, sz, extData));
+        manager.extCache.add(extName, sz, extData);
     }
 }
 
@@ -2231,8 +2232,9 @@ void CBinaryFileExternal::read(const char *name, IPropertyTree &owner, MemoryBuf
         else
         {
             Owned<IFileIO> fileIO = iFile->open(IFOread);
-            verifyex(sz == ::read(fileIO, 0, sz, mb));
-            manager.extCache.add(extName, sz, mb.toByteArray());
+            void *extData = mb.reserveTruncate(sz);
+            verifyex(sz == fileIO->read(0, sz, extData));
+            manager.extCache.add(extName, sz, extData);
         }
     }
     else
