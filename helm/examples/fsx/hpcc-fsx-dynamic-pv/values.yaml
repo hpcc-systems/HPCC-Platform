@@ -1,0 +1,29 @@
+# Default values for hpcc-fsx-dynamic-pv.
+common:
+  mountPrefix: "/var/lib/HPCCSystems"
+
+planes:
+- name: dali
+  subPath: dalistorage
+  size: 1200Gi # 1200Gi is the minimum
+  category: dali
+- name: dll
+  subPath: queries # cannot currently be changed
+  size: 1200Gi
+  category: dll
+  rwmany: true
+- name: sasha
+  subPath: sasha
+  size: 1200Gi
+  rwmany: true
+  category: sasha
+- name: data
+  subPath: hpcc-data
+  size: 1200Gi
+  category: data # NB: all "data" planes will be auto mounted by engine components and others that require access to data
+  rwmany: true
+- name: mydropzone
+  subPath: dropzone
+  size: 1200Gi
+  rwmany: true
+  category: lz

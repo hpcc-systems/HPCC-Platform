@@ -1,0 +1,11 @@
+ACCOUNT_ID=
+EKS_NAME=
+
+# View branches here: https://github.com/kubernetes-sigs/aws-fsx-csi-driver/branches/active
+BRANCH_VERSION=
+SUBNET_ID=
+SG_ID=
+
+POLICY_NAME=AmazonFSxFullAccess
+ROLE_NAME=AmazonEKSFSxLustreCSIDriverFullAccess
+EKS_REGION=
