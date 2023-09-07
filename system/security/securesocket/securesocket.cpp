@@ -675,8 +675,21 @@ int CSecureSocket::secure_accept(int logLevel)
         // Since err < 0 we call ERR_get_error() for additional info
         // if ret == SSL_ERROR_SYSCALL and ERR_get_error() == 0 then
         // its most likely a port scan / load balancer check so do not log
-        if ( (logLevel <= SSLogNormal) && (ret == SSL_ERROR_SYSCALL) && (errnum == 0) )
-            return err;
+        // with SSL 1.1.1e and 3.0 if ret == SSL_ERROR_SSL and ERR_get_error reason is EOF
+        // its also most likely a port scan / load balancer check so do not log
+        if (logLevel <= SSLogNormal)
+        {
+            if ( (ret == SSL_ERROR_SYSCALL) && (errnum == 0) )
+                return err;
+            // if ctx option SSL_OP_IGNORE_UNEXPECTED_EOF is set then will get SSL_ERROR_ZERO_RETURN ...
+            if ( (ret == SSL_ERROR_ZERO_RETURN) && (errnum == 0) )
+                return err;
+            // otherwise will get SSL_ERROR_SSL and unexpected eof ...
+#if defined(SSL_R_UNEXPECTED_EOF_WHILE_READING)
+            if ( (ret == SSL_ERROR_SSL) && (ERR_GET_REASON(errnum) == SSL_R_UNEXPECTED_EOF_WHILE_READING) )
+                return err;
+#endif
+        }
         char errbuf[512];
         ERR_error_string_n(errnum, errbuf, 512);
         errbuf[511] = '\0';
