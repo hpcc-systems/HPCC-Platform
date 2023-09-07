@@ -1,15 +1,11 @@
 import * as React from "react";
-import { DetailsList, DetailsListLayoutMode, Dropdown, IColumn, ICommandBarItemProps, IDetailsHeaderProps, IDetailsListStyles, IStackProps, mergeStyleSets, Selection, Stack, TooltipHost, TooltipOverflowMode } from "@fluentui/react";
+import { DetailsList, DetailsListLayoutMode, IColumn, ICommandBarItemProps, IDetailsHeaderProps, IDetailsListStyles, Selection, TooltipHost, TooltipOverflowMode } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
-import { BaseStore, Memory, QueryRequest, QuerySortItem } from "src/store/Memory";
-import nlsHPCC from "src/nlsHPCC";
+import { Memory, QueryRequest, QuerySortItem } from "src/store/Memory";
 import { createCopyDownloadSelection } from "../components/Common";
-import { updatePage, updateSort } from "../util/history";
+import { updateSort } from "../util/history";
 import { DojoGrid } from "../components/DojoGrid";
 import { useDeepCallback, useDeepEffect, useDeepMemo } from "./deepHooks";
-import { Pagination } from "@fluentui/react-experiments/lib/Pagination";
-import { useUserStore } from "./store";
-import { useUserTheme } from "./theme";
 
 /*  ---  Debugging dependency changes  ---
  *
@@ -19,7 +15,7 @@ import { useUserTheme } from "./theme";
  *
  */
 
-interface DojoColumn {
+export interface DojoColumn {
     selectorType?: string;
     label?: string;
     field?: string;
@@ -34,7 +30,7 @@ interface DojoColumn {
     renderCell?: (object, value, node, options) => any;
 }
 
-type DojoColumns = { [key: string]: DojoColumn };
+export type DojoColumns = { [key: string]: DojoColumn };
 
 interface useGridProps {
     store: any,
@@ -109,9 +105,15 @@ function tooltipItemRenderer(item: any, index: number, column: IColumn) {
     </TooltipHost>;
 }
 
-function columnsAdapter(columns: DojoColumns, sorted?: QuerySortItem): IColumn[] {
-    const attr = sorted?.attribute;
-    const desc = sorted?.descending;
+export function updateColumnSorted(columns: IColumn[], attr: any, desc: boolean) {
+    for (const column of columns) {
+        const isSorted = column.key == attr;
+        column.isSorted = isSorted;
+        column.isSortedDescending = isSorted && desc;
+    }
+}
+
+export function columnsAdapter(columns: DojoColumns): IColumn[] {
     const retVal: IColumn[] = [];
     for (const key in columns) {
         const column = columns[key];
@@ -123,8 +125,8 @@ function columnsAdapter(columns: DojoColumns, sorted?: QuerySortItem): IColumn[]
                 minWidth: column.width ?? 70,
                 maxWidth: column.width,
                 isResizable: true,
-                isSorted: key == attr,
-                isSortedDescending: key == attr && desc,
+                isSorted: false,
+                isSortedDescending: false,
                 iconName: column.headerIcon,
                 isIconOnly: !!column.headerIcon,
                 data: column,
@@ -153,7 +155,7 @@ interface useFluentStoreGridResponse {
     refreshTable: (clearSelection?: boolean) => void
 }
 
-const gridStyles = (height: number): Partial<IDetailsListStyles> => {
+export const gridStyles = (height: string): Partial<IDetailsListStyles> => {
     return {
         root: {
             height,
@@ -215,8 +217,12 @@ function useFluentStoreGrid({
     }, [], [sort]);
 
     const fluentColumns: IColumn[] = React.useMemo(() => {
-        return columnsAdapter(memoizedColumns, sorted);
-    }, [memoizedColumns, sorted]);
+        return columnsAdapter(memoizedColumns);
+    }, [memoizedColumns]);
+
+    React.useEffect(() => {
+        updateColumnSorted(fluentColumns, sorted?.attribute as string, sorted?.descending);
+    }, [fluentColumns, sorted]);
 
     const onColumnClick = React.useCallback((event: React.MouseEvent<HTMLElement>, column: IColumn) => {
         if (memoizedColumns[column.key]?.sortable === false) return;
@@ -300,128 +306,3 @@ export function useFluentGrid({
     return { Grid, selection, copyButtons, total, refreshTable };
 }
 
-interface useFluentPagedGridProps {
-    persistID: string,
-    store: BaseStore<any, any>,
-    query?: QueryRequest,
-    sort?: QuerySortItem,
-    pageNum?: number,
-    columns: DojoColumns,
-    filename: string
-}
-
-interface useFluentPagedGridResponse {
-    Grid: React.FunctionComponent<{ height?: string }>,
-    GridPagination: React.FunctionComponent<Partial<IStackProps>>,
-    selection: any[],
-    refreshTable: (clearSelection?: boolean) => void,
-    copyButtons: ICommandBarItemProps[]
-}
-
-export function useFluentPagedGrid({
-    persistID,
-    store,
-    query,
-    sort,
-    pageNum = 1,
-    columns,
-    filename
-}: useFluentPagedGridProps): useFluentPagedGridResponse {
-
-    const [page, setPage] = React.useState(pageNum - 1);
-    const [sortBy, setSortBy] = React.useState(sort);
-    const [pageSize, setPersistedPageSize] = useUserStore(`${persistID}_pageSize`, 25);
-    const { Grid, selection, copyButtons, total, refreshTable } = useFluentStoreGrid({ store, query, sort: sortBy, start: page * pageSize, count: pageSize, columns, filename });
-    const { theme } = useUserTheme();
-
-    const paginationStyles = React.useMemo(() => mergeStyleSets({
-        root: {
-            padding: "10px 12px 10px 6px",
-            display: "grid",
-            gridTemplateColumns: "9fr 1fr",
-            gridColumnGap: "10px"
-        },
-        pageControls: {
-            ".ms-Pagination-container": {
-                flexDirection: "row-reverse",
-                justifyContent: "space-between"
-            },
-            ".ms-Pagination-container > :first-child": {
-                display: "flex"
-            },
-            ".ms-Pagination-container .ms-Button-icon": {
-                color: theme.palette.themePrimary
-            },
-            ".ms-Pagination-container .ms-Pagination-pageNumber": {
-                color: theme.palette.neutralDark
-            },
-            ".ms-Pagination-container button:hover": {
-                backgroundColor: theme.palette.neutralLighter
-            },
-            ".ms-Pagination-container .is-disabled .ms-Button-icon": {
-                color: theme.palette.neutralQuaternary
-            }
-        },
-        paginationLabel: {
-            fontWeight: 600,
-            marginLeft: "6px",
-            color: theme.palette.neutralDark,
-        }
-    }), [theme]);
-
-    const dropdownChange = React.useCallback((evt, option) => {
-        const newPageSize = option.key as number;
-        setPage(Math.floor((page * pageSize) / newPageSize));
-        setPersistedPageSize(newPageSize);
-    }, [page, pageSize, setPersistedPageSize]);
-
-    React.useEffect(() => {
-        const maxPage = Math.ceil(total / pageSize) - 1;
-        if (maxPage >= 0 && page > maxPage) {   //  maxPage can be -1 if total is 0
-            setPage(maxPage);
-        }
-    }, [page, pageSize, total]);
-
-    React.useEffect(() => {
-        setSortBy(sort);
-    }, [sort]);
-
-    React.useEffect(() => {
-        const _page = pageNum >= 1 ? pageNum - 1 : 0;
-        setPage(_page);
-    }, [pageNum]);
-
-    const GridPagination = React.useCallback(() => {
-        return <Stack horizontal className={paginationStyles.root}>
-            <Stack.Item className={paginationStyles.pageControls}>
-                <Pagination
-                    selectedPageIndex={page} itemsPerPage={pageSize} totalItemCount={total}
-                    pageCount={Math.ceil(total / pageSize)} format="buttons" onPageChange={index => {
-                        setPage(Math.round(index));
-                        updatePage(Math.round(index + 1).toString());
-                    }}
-                    onRenderVisibleItemLabel={props => {
-                        const start = props.selectedPageIndex === 0 ? 1 : (props.selectedPageIndex * props.itemsPerPage) + 1;
-                        const end = (props.itemsPerPage * (props.selectedPageIndex + 1)) > props.totalItemCount ? props.totalItemCount : props.itemsPerPage * (props.selectedPageIndex + 1);
-                        return <div className={paginationStyles.paginationLabel}>
-                            {start} {props.strings.divider} {end} {nlsHPCC.Of.toLowerCase()} {props.totalItemCount} {nlsHPCC.Rows}
-                        </div>;
-                    }}
-                />
-            </Stack.Item>
-            <Stack.Item align="center">
-                <Dropdown id="pageSize" options={[
-                    { key: 10, text: "10" },
-                    { key: 25, text: "25" },
-                    { key: 50, text: "50" },
-                    { key: 100, text: "100" },
-                    { key: 250, text: "250" },
-                    { key: 500, text: "500" },
-                    { key: 1000, text: "1000" }
-                ]} selectedKey={pageSize} onChange={dropdownChange} />
-            </Stack.Item>
-        </Stack>;
-    }, [dropdownChange, page, pageSize, paginationStyles.pageControls, paginationStyles.paginationLabel, paginationStyles.root, total]);
-
-    return { Grid, GridPagination, selection, refreshTable, copyButtons };
-}

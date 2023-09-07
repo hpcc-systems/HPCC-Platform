@@ -8,10 +8,10 @@ import * as WsWorkunits from "src/WsWorkunits";
 import { formatCost } from "src/Session";
 import nlsHPCC from "src/nlsHPCC";
 import { useConfirm } from "../hooks/confirm";
-import { useFluentPagedGrid } from "../hooks/grid";
 import { useMyAccount } from "../hooks/user";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
+import { FluentPagedGrid, FluentPagedFooter, useCopyButtons, useFluentStoreState } from "./controls/Grid";
 import { Fields } from "./forms/Fields";
 import { Filter } from "./forms/Filter";
 import { ShortVerticalDivider } from "./Common";
@@ -21,7 +21,7 @@ const logger = scopedLogger("src-react/components/Workunits.tsx");
 
 const FilterFields: Fields = {
     "Type": { type: "checkbox", label: nlsHPCC.ArchivedOnly },
-    "Protected": { type: "checkbox", label: nlsHPCC.Protected},
+    "Protected": { type: "checkbox", label: nlsHPCC.Protected },
     "Wuid": { type: "string", label: nlsHPCC.WUID, placeholder: "W20200824-060035" },
     "Owner": { type: "string", label: nlsHPCC.Owner, placeholder: nlsHPCC.jsmi },
     "Jobname": { type: "string", label: nlsHPCC.JobName, placeholder: nlsHPCC.log_analysis_1 },
@@ -97,6 +97,12 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
     const [showFilter, setShowFilter] = React.useState(false);
     const { currentUser } = useMyAccount();
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
+    const {
+        selection, setSelection,
+        pageNum, setPageNum,
+        pageSize, setPageSize,
+        total, setTotal,
+        refreshTable } = useFluentStoreState({ page });
 
     //  Grid ---
     const query = React.useMemo(() => {
@@ -107,14 +113,8 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
         return store ? store : CreateWUQueryStore();
     }, [store]);
 
-    const { Grid, GridPagination, selection, refreshTable, copyButtons } = useFluentPagedGrid({
-        persistID: "workunits",
-        store: gridStore,
-        query,
-        sort,
-        pageNum: page,
-        filename: "workunits",
-        columns: {
+    const columns = React.useMemo(() => {
+        return {
             col1: {
                 width: 16,
                 selectorType: "checkbox"
@@ -124,23 +124,23 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
                 headerTooltip: nlsHPCC.Protected,
                 width: 16,
                 sortable: true,
-                formatter: React.useCallback(function (_protected) {
+                formatter: (_protected) => {
                     if (_protected === true) {
                         return <Icon iconName="LockSolid" />;
                     }
                     return "";
-                }, [])
+                }
             },
             Wuid: {
                 label: nlsHPCC.WUID, width: 120,
-                formatter: React.useCallback(function (Wuid, row) {
+                formatter: (Wuid, row) => {
                     const wu = Get(Wuid);
                     return <>
                         <Image src={wu.getStateImage()} styles={{ root: { minWidth: "16px" } }} />
                         &nbsp;
                         <Link href={`#/workunits/${Wuid}`}>{Wuid}</Link>
                     </>;
-                }, [])
+                }
             },
             Owner: { label: nlsHPCC.Owner, width: 80 },
             Jobname: { label: nlsHPCC.JobName },
@@ -149,31 +149,33 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
             State: { label: nlsHPCC.State, width: 60 },
             TotalClusterTime: {
                 label: nlsHPCC.TotalClusterTime, width: 120,
-                renderCell: React.useCallback(function (object, value, node) {
+                renderCell: (object, value, node) => {
                     domClass.add(node, "justify-right");
                     node.innerText = value;
-                }, [])
+                }
             },
             CompileCost: {
                 label: nlsHPCC.CompileCost, width: 100,
-                formatter: React.useCallback(function (cost, row) {
+                formatter: (cost, row) => {
                     return `${formatCost(cost)}`;
-                }, [])
+                }
             },
             ExecuteCost: {
                 label: nlsHPCC.ExecuteCost, width: 100,
-                formatter: React.useCallback(function (cost, row) {
+                formatter: (cost, row) => {
                     return `${formatCost(cost)}`;
-                }, [])
+                }
             },
             FileAccessCost: {
                 label: nlsHPCC.FileAccessCost, width: 100,
-                formatter: React.useCallback(function (cost, row) {
+                formatter: (cost, row) => {
                     return `${formatCost(cost)}`;
-                }, [])
+                }
             }
-        }
-    });
+        };
+    }, []);
+
+    const copyButtons = useCopyButtons(columns, selection, "workunits");
 
     const doActionWithWorkunits = React.useCallback(async (action: "Delete" | "Abort") => {
         const unknownWUs = selection.filter(wu => wu.State === "unknown");
@@ -181,7 +183,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
             await WsWorkunits.WUAction(unknownWUs, "SetToFailed");
         }
         await WsWorkunits.WUAction(selection, action);
-        refreshTable(true);
+        refreshTable.call(true);
     }, [refreshTable, selection]);
 
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
@@ -208,7 +210,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
-            onClick: () => refreshTable()
+            onClick: () => refreshTable.call()
         },
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
@@ -240,13 +242,13 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
         {
             key: "protect", text: nlsHPCC.Protect, disabled: !uiState.hasNotProtected,
             onClick: () => {
-                WsWorkunits.WUAction(selection, "Protect").then(() => refreshTable());
+                WsWorkunits.WUAction(selection, "Protect").then(() => refreshTable.call());
             }
         },
         {
             key: "unprotect", text: nlsHPCC.Unprotect, disabled: !uiState.hasProtected,
             onClick: () => {
-                WsWorkunits.WUAction(selection, "Unprotect").then(() => refreshTable());
+                WsWorkunits.WUAction(selection, "Unprotect").then(() => refreshTable.call());
             }
         },
         { key: "divider_4", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
@@ -303,7 +305,19 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
                 <SizeMe monitorHeight>{({ size }) =>
                     <div style={{ width: "100%", height: "100%" }}>
                         <div style={{ position: "absolute", width: "100%", height: `${size.height}px` }}>
-                            <Grid height={`${size.height}px`} />
+                            <FluentPagedGrid
+                                store={gridStore}
+                                query={query}
+                                sort={sort}
+                                pageNum={pageNum}
+                                pageSize={pageSize}
+                                total={total}
+                                columns={columns}
+                                height={`${size.height}px`}
+                                setSelection={setSelection}
+                                setTotal={setTotal}
+                                refresh={refreshTable}
+                            ></FluentPagedGrid>
                         </div>
                     </div>
                 }</SizeMe>
@@ -312,7 +326,13 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
                 <AbortConfirm />
             </>
         }
-        footer={<GridPagination />}
+        footer={<FluentPagedFooter
+            persistID={"workunits"}
+            pageNum={pageNum}
+            setPageNum={setPageNum}
+            setPageSize={setPageSize}
+            total={total}
+        ></FluentPagedFooter>}
         footerStyles={{}}
     />;
 };

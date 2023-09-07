@@ -6,10 +6,10 @@ import nlsHPCC from "src/nlsHPCC";
 import { GroupMemberStore, CreateGroupMemberStore } from "src/ws_access";
 import { ShortVerticalDivider } from "./Common";
 import { useConfirm } from "../hooks/confirm";
-import { useFluentPagedGrid } from "../hooks/grid";
 import { useBuildInfo } from "../hooks/platform";
 import { pushUrl } from "../util/history";
 import { HolyGrail } from "../layouts/HolyGrail";
+import { FluentPagedGrid, FluentPagedFooter, useCopyButtons, useFluentStoreState } from "./controls/Grid";
 import { GroupAddUserForm } from "./forms/GroupAddUser";
 import { QuerySortItem } from "src/store/Store";
 
@@ -39,6 +39,12 @@ export const GroupMembers: React.FunctionComponent<GroupMembersProps> = ({
 
     const [showAdd, setShowAdd] = React.useState(false);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
+    const {
+        selection, setSelection,
+        pageNum, setPageNum,
+        pageSize, setPageSize,
+        total, setTotal,
+        refreshTable } = useFluentStoreState({ page });
 
     //  Grid ---
     const query = React.useMemo(() => {
@@ -49,26 +55,22 @@ export const GroupMembers: React.FunctionComponent<GroupMembersProps> = ({
         return store ? store : CreateGroupMemberStore();
     }, [store]);
 
-    const { Grid, GridPagination, selection, copyButtons, refreshTable } = useFluentPagedGrid({
-        persistID: "username",
-        store: gridStore,
-        query,
-        sort,
-        pageNum: page,
-        filename: "groupMembers",
-        columns: {
+    const columns = React.useMemo(() => {
+        return {
             username: {
                 label: nlsHPCC.UserName,
-                formatter: React.useCallback(function (_name, idx) {
+                formatter: (_name, idx) => {
                     return <Link href={`#/${opsCategory}/security/users/${_name}`}>{_name}</Link>;
-                }, [opsCategory])
+                }
             },
             employeeID: { label: nlsHPCC.EmployeeID },
             employeeNumber: { label: nlsHPCC.EmployeeNumber },
             fullname: { label: nlsHPCC.FullName },
             passwordexpiration: { label: nlsHPCC.PasswordExpiration }
-        }
-    });
+        };
+    }, [opsCategory]);
+
+    const copyButtons = useCopyButtons(columns, selection, "groupMembers");
 
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
@@ -84,7 +86,7 @@ export const GroupMembers: React.FunctionComponent<GroupMembersProps> = ({
                 requests.push(WsAccess.GroupMemberEdit({ request: request }));
             });
             Promise.all(requests)
-                .then(() => refreshTable(true))
+                .then(() => refreshTable.call(true))
                 .catch(err => logger.error(err));
         }, [groupname, refreshTable, selection])
     });
@@ -103,7 +105,7 @@ export const GroupMembers: React.FunctionComponent<GroupMembersProps> = ({
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
-            onClick: () => refreshTable()
+            onClick: () => refreshTable.call()
         },
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
@@ -132,10 +134,28 @@ export const GroupMembers: React.FunctionComponent<GroupMembersProps> = ({
     return <>
         <HolyGrail
             header={<CommandBar items={buttons} farItems={copyButtons} />}
-            main={<Grid />}
-            footer={<GridPagination />}
+            main={<FluentPagedGrid
+                store={gridStore}
+                query={query}
+                sort={sort}
+                pageNum={pageNum}
+                pageSize={pageSize}
+                total={total}
+                columns={columns}
+                setSelection={setSelection}
+                setTotal={setTotal}
+                refresh={refreshTable}
+            ></FluentPagedGrid>}
+            footer={<FluentPagedFooter
+                persistID={"username"}
+                pageNum={pageNum}
+                setPageNum={setPageNum}
+                setPageSize={setPageSize}
+                total={total}
+            >
+            </FluentPagedFooter>}
         />
-        <GroupAddUserForm showForm={showAdd} setShowForm={setShowAdd} refreshGrid={refreshTable} groupname={groupname} />
+        <GroupAddUserForm showForm={showAdd} setShowForm={setShowAdd} refreshGrid={refreshTable.call} groupname={groupname} />
         <DeleteConfirm />
     </>;
 

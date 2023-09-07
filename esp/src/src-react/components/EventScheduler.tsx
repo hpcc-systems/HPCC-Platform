@@ -6,8 +6,8 @@ import { CreateEventScheduleStore, EventScheduleStore } from "src/WsWorkunits";
 import nlsHPCC from "src/nlsHPCC";
 import * as WsWorkunits from "src/WsWorkunits";
 import { useConfirm } from "../hooks/confirm";
-import { useFluentPagedGrid } from "../hooks/grid";
 import { HolyGrail } from "../layouts/HolyGrail";
+import { FluentPagedGrid, FluentPagedFooter, useCopyButtons, useFluentStoreState } from "./controls/Grid";
 import { pushParams } from "../util/history";
 import { Fields } from "./forms/Fields";
 import { Filter } from "./forms/Filter";
@@ -54,6 +54,12 @@ export const EventScheduler: React.FunctionComponent<EventSchedulerProps> = ({
     const [showFilter, setShowFilter] = React.useState(false);
     const [showPushEvent, setShowPushEvent] = React.useState(false);
     const { currentUser } = useMyAccount();
+    const {
+        selection, setSelection,
+        pageNum, setPageNum,
+        pageSize, setPageSize,
+        total, setTotal,
+        refreshTable } = useFluentStoreState({ page });
 
     //  Grid ---
     const query = React.useMemo(() => {
@@ -64,23 +70,17 @@ export const EventScheduler: React.FunctionComponent<EventSchedulerProps> = ({
         return store ? store : CreateEventScheduleStore({});
     }, [store]);
 
-    const { Grid, GridPagination, selection, refreshTable } = useFluentPagedGrid({
-        persistID: "events",
-        store: gridStore,
-        query,
-        sort,
-        pageNum: page,
-        filename: "events",
-        columns: {
+    const columns = React.useMemo(() => {
+        return {
             col1: {
                 width: 16,
                 selectorType: "checkbox"
             },
             Wuid: {
                 label: nlsHPCC.Workunit, width: 120,
-                formatter: React.useCallback(function (Wuid, row) {
+                formatter: (Wuid, row) => {
                     return <Link href={`#/workunits/${Wuid}`}>{Wuid}</Link>;
-                }, [])
+                }
             },
             Cluster: { label: nlsHPCC.Cluster, width: 100 },
             JobName: { label: nlsHPCC.JobName, width: 160 },
@@ -88,8 +88,10 @@ export const EventScheduler: React.FunctionComponent<EventSchedulerProps> = ({
             EventText: { label: nlsHPCC.EventText, width: 120 },
             Owner: { label: nlsHPCC.Owner, width: 80 },
             State: { label: nlsHPCC.State, width: 60 }
-        }
-    });
+        };
+    }, []);
+
+    const copyButtons = useCopyButtons(columns, selection, "events");
 
     const [DescheduleConfirm, setShowDescheduleConfirm] = useConfirm({
         title: nlsHPCC.Deschedule,
@@ -97,7 +99,7 @@ export const EventScheduler: React.FunctionComponent<EventSchedulerProps> = ({
         items: selection.map(s => s.Wuid),
         onSubmit: () => {
             WsWorkunits.WUAction(selection, "Deschedule").then(function (response) {
-                refreshTable(true);
+                refreshTable.call(true);
             }).catch(err => logger.error(err));
         }
     });
@@ -112,7 +114,7 @@ export const EventScheduler: React.FunctionComponent<EventSchedulerProps> = ({
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
-            onClick: () => refreshTable()
+            onClick: () => refreshTable.call()
         },
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
@@ -155,13 +157,25 @@ export const EventScheduler: React.FunctionComponent<EventSchedulerProps> = ({
     ], [currentUser, filter, hasFilter, refreshTable, selection, setShowDescheduleConfirm, store]);
 
     return <HolyGrail
-        header={<CommandBar items={buttons} />}
+        header={<CommandBar items={buttons} farItems={copyButtons} />}
         main={
             <>
                 <SizeMe monitorHeight>{({ size }) =>
                     <div style={{ width: "100%", height: "100%" }}>
                         <div style={{ position: "absolute", width: "100%", height: `${size.height}px` }}>
-                            <Grid height={`${size.height}px`} />
+                            <FluentPagedGrid
+                                store={gridStore}
+                                query={query}
+                                sort={sort}
+                                pageNum={pageNum}
+                                pageSize={pageSize}
+                                total={total}
+                                columns={columns}
+                                height={`${size.height}px`}
+                                setSelection={setSelection}
+                                setTotal={setTotal}
+                                refresh={refreshTable}
+                            ></FluentPagedGrid>
                         </div>
                     </div>
                 }</SizeMe>
@@ -170,7 +184,13 @@ export const EventScheduler: React.FunctionComponent<EventSchedulerProps> = ({
                 <PushEventForm showForm={showPushEvent} setShowForm={setShowPushEvent} />
             </>
         }
-        footer={<GridPagination />}
+        footer={<FluentPagedFooter
+            persistID={"events"}
+            pageNum={pageNum}
+            setPageNum={setPageNum}
+            setPageSize={setPageSize}
+            total={total}
+        ></FluentPagedFooter>}
         footerStyles={{}}
     />;
 };
