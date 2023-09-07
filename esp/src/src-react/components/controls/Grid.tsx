@@ -1,17 +1,111 @@
 import * as React from "react";
-import { DetailsList, DetailsListLayoutMode, Dropdown, IColumn, ICommandBarItemProps, IDetailsHeaderProps, mergeStyleSets, Selection, Stack, TooltipHost } from "@fluentui/react";
+import { DetailsList, DetailsListLayoutMode, Dropdown, IColumn as _IColumn, ICommandBarItemProps, IDetailsHeaderProps, IDetailsListStyles, mergeStyleSets, Selection, Stack, TooltipHost, TooltipOverflowMode } from "@fluentui/react";
 import { Pagination } from "@fluentui/react-experiments/lib/Pagination";
 import { useConst } from "@fluentui/react-hooks";
-import { BaseStore, QueryRequest, QuerySortItem } from "src/store/Memory";
+import { BaseStore, Memory, QueryRequest, QuerySortItem } from "src/store/Memory";
 import nlsHPCC from "src/nlsHPCC";
 import { createCopyDownloadSelection } from "../Common";
 import { updatePage, updateSort } from "../../util/history";
-import { columnsAdapter, DojoColumns, gridStyles, updateColumnSorted } from "../../hooks/grid";
 import { useDeepCallback, useDeepEffect, useDeepMemo } from "../../hooks/deepHooks";
 import { useUserStore } from "../../hooks/store";
 import { useUserTheme } from "../../hooks/theme";
 
-export function useCopyButtons(columns: DojoColumns, selection: any[], filename: string): ICommandBarItemProps[] {
+/*  ---  Debugging dependency changes  ---
+ *
+ *  import { useWhatChanged } from "@simbathesailor/use-what-changed";
+ *
+ *  useWhatChanged([count, selectionHandler, sorted, start, store, query], "count, selectionHandler, sorted, start, store, query");
+ *
+ */
+
+type SelectorType = "checkbox";
+type JustifyType = "left" | "right";
+export interface FluentColumn {
+    selectorType?: SelectorType;
+    label?: string;
+    field?: string;
+    width?: number;
+    headerIcon?: string;
+    headerTooltip?: string;
+    sortable?: boolean;
+    disabled?: boolean | ((item: any) => boolean);
+    hidden?: boolean;
+    justify?: JustifyType;
+    formatter?: (value: any, row: any) => any;
+    className?: (value: any, row: any) => string;
+}
+
+export type FluentColumns = { [key: string]: FluentColumn };
+
+interface IColumn extends _IColumn {
+    data: FluentColumn;
+}
+
+function tooltipItemRenderer(item: any, index: number, column: IColumn) {
+    const id = `${column.key}-${index}`;
+    const value = item[column.fieldName || column.key] ?? "";
+    const className = column.data.className ? column.data.className(value, item) : "";
+    const style: React.CSSProperties = {
+        display: "flex",
+        justifyContent: column.data.justify === "right" ? "flex-end" : "flex-start"
+    };
+    return <TooltipHost id={id} content={value} overflowMode={TooltipOverflowMode.Parent}>
+        {column.data.formatter ?
+            <span style={style} className={className} aria-describedby={id}>{column.data.formatter(value, item)}</span> :
+            <span style={style} className={className} aria-describedby={id}>{value}</span>
+        }
+    </TooltipHost>;
+}
+
+function updateColumnSorted(columns: IColumn[], attr: any, desc: boolean) {
+    for (const column of columns) {
+        const isSorted = column.key == attr;
+        column.isSorted = isSorted;
+        column.isSortedDescending = isSorted && desc;
+    }
+}
+
+function columnsAdapter(columns: FluentColumns): IColumn[] {
+    const retVal: IColumn[] = [];
+    for (const key in columns) {
+        const column = columns[key];
+        if (column?.selectorType === undefined && column?.hidden !== true) {
+            retVal.push({
+                key,
+                name: column.label ?? key,
+                fieldName: column.field ?? key,
+                minWidth: column.width ?? 70,
+                maxWidth: column.width,
+                isResizable: true,
+                isSorted: false,
+                isSortedDescending: false,
+                iconName: column.headerIcon,
+                isIconOnly: !!column.headerIcon,
+                data: column,
+                onRender: tooltipItemRenderer
+            } as IColumn);
+        }
+    }
+    return retVal;
+}
+
+const gridStyles = (height: string): Partial<IDetailsListStyles> => {
+    return {
+        root: {
+            height,
+            minHeight: height,
+            maxHeight: height,
+            selectors: { ".ms-DetailsHeader-cellName": { fontSize: "13.5px" } }
+        },
+        headerWrapper: {
+            position: "sticky",
+            top: 0,
+            zIndex: 2,
+        }
+    };
+};
+
+export function useCopyButtons(columns: FluentColumns, selection: any[], filename: string): ICommandBarItemProps[] {
 
     const memoizedColumns = useDeepMemo(() => columns, [], [columns]);
 
@@ -40,7 +134,7 @@ function useRefreshTable(): RefreshTable {
 }
 
 export interface FluentStoreStateProps {
-    page: number
+    page?: number
 }
 
 export interface FluentStoreStateResponse {
@@ -71,14 +165,14 @@ interface FluentStoreGridProps {
     sort?: QuerySortItem,
     start: number,
     count: number,
-    columns: DojoColumns,
+    columns: FluentColumns,
     height: string,
     refresh: RefreshTable,
     setSelection: (selection: any[]) => void,
     setTotal: (total: number) => void,
 }
 
-export const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
+const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
     store,
     query,
     sort,
@@ -179,6 +273,42 @@ export const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
     />;
 };
 
+interface FluentGridProps {
+    data: any[],
+    primaryID: string,
+    alphaNumColumns?: { [id: string]: boolean },
+    sort?: QuerySortItem,
+    columns: FluentColumns,
+    height?: string,
+    setSelection: (selection: any[]) => void,
+    setTotal: (total: number) => void,
+    refresh: RefreshTable
+}
+
+export const FluentGrid: React.FunctionComponent<FluentGridProps> = ({
+    data,
+    primaryID,
+    alphaNumColumns,
+    sort,
+    columns,
+    height,
+    setSelection,
+    setTotal,
+    refresh
+}) => {
+
+    const constStore = useConst(new Memory(primaryID, alphaNumColumns));
+
+    React.useEffect(() => {
+        constStore.setData(data);
+        refresh.call();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [constStore, data, /*refresh*/]);
+
+    return <FluentStoreGrid store={constStore} columns={columns} sort={sort} start={0} count={data.length} height={height} setSelection={setSelection} setTotal={setTotal} refresh={refresh}>
+    </FluentStoreGrid>;
+};
+
 interface FluentPagedGridProps {
     store: BaseStore<any, any>,
     query?: QueryRequest,
@@ -186,7 +316,7 @@ interface FluentPagedGridProps {
     pageNum?: number,
     pageSize: number,
     total: number,
-    columns: DojoColumns,
+    columns: FluentColumns,
     height?: string,
     setSelection: (selection: any[]) => void,
     setTotal: (total: number) => void,

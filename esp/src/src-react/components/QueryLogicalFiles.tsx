@@ -4,10 +4,10 @@ import { scopedLogger } from "@hpcc-js/util";
 import * as ESPQuery from "src/ESPQuery";
 import nlsHPCC from "src/nlsHPCC";
 import { QuerySortItem } from "src/store/Store";
-import { useFluentGrid } from "../hooks/grid";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushUrl } from "../util/history";
 import { ShortVerticalDivider } from "./Common";
+import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 
 const logger = scopedLogger("../components/QueryLogicalFiles.tsx");
 
@@ -34,23 +34,23 @@ export const QueryLogicalFiles: React.FunctionComponent<QueryLogicalFilesProps> 
     }, [querySet, queryId]);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
     const [data, setData] = React.useState<any[]>([]);
+    const {
+        selection, setSelection,
+        setTotal,
+        refreshTable } = useFluentStoreState({});
 
     //  Grid ---
-    const { Grid, selection, copyButtons } = useFluentGrid({
-        data,
-        primaryID: "__hpcc_id",
-        sort,
-        filename: "queryLogicalFiles",
-        columns: {
+    const columns = React.useMemo((): FluentColumns => {
+        return {
             col1: { selectorType: "checkbox", width: 25 },
             File: {
                 label: nlsHPCC.File,
-                formatter: React.useCallback(function (item, row) {
+                formatter: (item, row) => {
                     return <Link href={`#/files/${item}`}>{item}</Link>;
-                }, [])
-            },
-        }
-    });
+                }
+            }
+        };
+    }, []);
 
     const refreshData = React.useCallback(() => {
         query?.getDetails()
@@ -94,6 +94,8 @@ export const QueryLogicalFiles: React.FunctionComponent<QueryLogicalFilesProps> 
         },
     ], [querySet, refreshData, selection, uiState.hasSelection]);
 
+    const copyButtons = useCopyButtons(columns, selection, "queryLogicalFiles");
+
     //  Selection  ---
     React.useEffect(() => {
         const state = { ...defaultUIState };
@@ -107,6 +109,14 @@ export const QueryLogicalFiles: React.FunctionComponent<QueryLogicalFilesProps> 
 
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}
-        main={<Grid />}
+        main={<FluentGrid
+            data={data}
+            primaryID={"__hpcc_id"}
+            sort={sort}
+            columns={columns}
+            setSelection={setSelection}
+            setTotal={setTotal}
+            refresh={refreshTable}
+        ></FluentGrid>}
     />;
 };

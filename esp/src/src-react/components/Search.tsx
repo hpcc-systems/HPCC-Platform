@@ -3,8 +3,8 @@ import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link, Pivot, 
 import { useConst } from "@fluentui/react-hooks";
 import { ESPSearch } from "src/ESPSearch";
 import nlsHPCC from "src/nlsHPCC";
-import { useFluentGrid } from "../hooks/grid";
 import { HolyGrail } from "../layouts/HolyGrail";
+import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { ShortVerticalDivider } from "./Common";
 import { Workunits } from "./Workunits";
 import { Files } from "./Files";
@@ -50,33 +50,33 @@ export const Search: React.FunctionComponent<SearchProps> = ({
     const [searchCount, setSearchCount] = React.useState(0);
 
     const [data, setData] = React.useState<any[]>([]);
+    const {
+        selection, setSelection,
+        setTotal,
+        refreshTable } = useFluentStoreState({});
 
     //  Search
     const search = useConst(new ESPSearch(() => { progress.value++; }));
 
     //  Grid ---
-    const { Grid, selection, copyButtons } = useFluentGrid({
-        data,
-        primaryID: "__hpcc_id",
-        sort: { attribute: "__hpcc_id", descending: false },
-        filename: "search",
-        columns: {
+    const columns = React.useMemo((): FluentColumns => {
+        return {
             col1: { width: 27, selectorType: "checkbox" },
             What: {
                 label: nlsHPCC.What, width: 108, sortable: true,
-                formatter: React.useCallback(function (_, row) {
+                formatter: (_, row) => {
                     return <Link href={`${searchResultUrl(row)}`}>{row.Type}</Link>;
-                }, [])
+                }
             },
             Reason: { label: nlsHPCC.Where, width: 108, sortable: true },
             Summary: {
                 label: nlsHPCC.Who, sortable: true,
-                formatter: React.useCallback(function (Summary, row) {
+                formatter: (Summary, row) => {
                     return <Link href={`${searchResultUrl(row)}`}>{Summary}</Link>;
-                }, [])
+                }
             }
-        }
-    });
+        };
+    }, []);
 
     const refreshData = React.useCallback(() => {
         search.searchAll(searchText).then(results => {
@@ -122,6 +122,8 @@ export const Search: React.FunctionComponent<SearchProps> = ({
         },
     ], [refreshData, selection, uiState.hasSelection]);
 
+    const copyButtons = useCopyButtons(columns, selection, "search");
+
     //  Selection  ---
     React.useEffect(() => {
         const state = { ...defaultUIState };
@@ -148,7 +150,15 @@ export const Search: React.FunctionComponent<SearchProps> = ({
                 <CommandBar items={buttons} farItems={copyButtons} />
                 <ProgressIndicator progressHidden={searchCount === 0} percentComplete={searchCount === 0 ? 0 : progress.value / searchCount} />
             </>}
-            main={<Grid />}
+            main={<FluentGrid
+                data={data}
+                primaryID={"__hpcc_id"}
+                sort={{ attribute: "__hpcc_id", descending: false }}
+                columns={columns}
+                setSelection={setSelection}
+                setTotal={setTotal}
+                refresh={refreshTable}
+            ></FluentGrid>}
         /> : selectedKey === "ecl" ?
             <Workunits store={search.eclStore} /> : selectedKey === "dfu" ?
                 <DFUWorkunits store={search.dfuStore} /> : selectedKey === "file" ?

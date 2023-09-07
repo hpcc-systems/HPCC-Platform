@@ -7,7 +7,7 @@ import nlsHPCC from "src/nlsHPCC";
 import * as WsWorkunits from "src/WsWorkunits";
 import { useConfirm } from "../hooks/confirm";
 import { HolyGrail } from "../layouts/HolyGrail";
-import { FluentPagedGrid, FluentPagedFooter, useCopyButtons, useFluentStoreState } from "./controls/Grid";
+import { FluentPagedGrid, FluentPagedFooter, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { pushParams } from "../util/history";
 import { Fields } from "./forms/Fields";
 import { Filter } from "./forms/Filter";
@@ -70,7 +70,7 @@ export const EventScheduler: React.FunctionComponent<EventSchedulerProps> = ({
         return store ? store : CreateEventScheduleStore({});
     }, [store]);
 
-    const columns = React.useMemo(() => {
+    const columns = React.useMemo((): FluentColumns => {
         return {
             col1: {
                 width: 16,

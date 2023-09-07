@@ -3,9 +3,9 @@ import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Image, Link }
 import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
 import { QuerySortItem } from "src/store/Store";
-import { useFluentGrid } from "../hooks/grid";
 import { useFile } from "../hooks/file";
 import { HolyGrail } from "../layouts/HolyGrail";
+import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { ShortVerticalDivider } from "./Common";
 
 function getStateImageName(row) {
@@ -40,30 +40,30 @@ export const FileDetailsGraph: React.FunctionComponent<FileDetailsGraphProps> = 
     const [file, , , refreshData] = useFile(cluster, logicalFile);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
     const [data, setData] = React.useState<any[]>([]);
+    const {
+        selection, setSelection,
+        setTotal,
+        refreshTable } = useFluentStoreState({});
 
     //  Grid ---
-    const { Grid, selection, copyButtons } = useFluentGrid({
-        data,
-        sort,
-        primaryID: "Name",
-        filename: "graphs",
-        columns: {
+    const columns = React.useMemo((): FluentColumns => {
+        return {
             col1: {
                 width: 27,
                 selectorType: "checkbox"
             },
             Name: {
                 label: nlsHPCC.Name, sortable: true,
-                formatter: React.useCallback(function (Name, row) {
+                formatter: (Name, row) => {
                     return <>
                         <Image src={Utility.getImageURL(getStateImageName(row))} />
                         &nbsp;
                         <Link href={`#/workunits/${row?.Wuid}/metrics/${Name}`}>{Name}</Link>
                     </>;
-                }, [])
+                }
             }
-        }
-    });
+        };
+    }, []);
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
@@ -106,10 +106,20 @@ export const FileDetailsGraph: React.FunctionComponent<FileDetailsGraphProps> = 
         }));
     }, [file?.Graphs?.ECLGraph, file?.Wuid]);
 
+    const copyButtons = useCopyButtons(columns, selection, "graphs");
+
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}
         main={
-            <Grid />
+            <FluentGrid
+                data={data}
+                primaryID={"Name"}
+                sort={sort}
+                columns={columns}
+                setSelection={setSelection}
+                setTotal={setTotal}
+                refresh={refreshTable}
+            ></FluentGrid>
         }
     />;
 };

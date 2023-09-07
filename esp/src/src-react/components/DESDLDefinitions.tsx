@@ -4,9 +4,9 @@ import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import * as WsESDLConfig from "src/WsESDLConfig";
 import { useConfirm } from "../hooks/confirm";
-import { useFluentGrid } from "../hooks/grid";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { ReflexContainer, ReflexElement, ReflexSplitter } from "../layouts/react-reflex";
+import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { ShortVerticalDivider } from "./Common";
 import { selector } from "./DojoGrid";
 import { XMLSourceEditor } from "./SourceEditor";
@@ -28,22 +28,22 @@ export const DESDLDefinitions: React.FunctionComponent<DESDLDefinitonsProps> = (
     const [showAddBinding, setShowAddBinding] = React.useState(false);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
     const [data, setData] = React.useState<any[]>([]);
+    const {
+        selection, setSelection,
+        setTotal,
+        refreshTable } = useFluentStoreState({});
 
     //  Grid ---
-    const { Grid, selection, copyButtons } = useFluentGrid({
-        data,
-        primaryID: "__hpcc_id",
-        sort: { attribute: "Name", descending: false },
-        filename: "esdlDefinitions",
-        columns: {
+    const columns = React.useMemo((): FluentColumns => {
+        return {
             col1: selector({ width: 30, selectorType: "radio", unhidable: true }),
             Name: { label: nlsHPCC.Process, width: 140 },
             PublishBy: { label: nlsHPCC.PublishedBy, width: 140 },
             CreatedTime: { label: nlsHPCC.CreatedTime, width: 140 },
             LastEditBy: { label: nlsHPCC.LastEditedBy, width: 140 },
             LastEditTime: { label: nlsHPCC.LastEditTime, width: 140 }
-        }
-    });
+        };
+    }, []);
 
     //  Selection  ---
     React.useEffect(() => {
@@ -125,6 +125,8 @@ export const DESDLDefinitions: React.FunctionComponent<DESDLDefinitonsProps> = (
         },
     ], [refreshData, setShowDeleteConfirm, uiState.hasSelection]);
 
+    const copyButtons = useCopyButtons(columns, selection, "esdlDefinitions");
+
     React.useEffect(() => {
         refreshData();
     }, [refreshData]);
@@ -135,7 +137,15 @@ export const DESDLDefinitions: React.FunctionComponent<DESDLDefinitonsProps> = (
             main={
                 <ReflexContainer orientation="vertical">
                     <ReflexElement>
-                        <Grid />
+                        <FluentGrid
+                            data={data}
+                            primaryID={"__hpcc_id"}
+                            sort={{ attribute: "Name", descending: false }}
+                            columns={columns}
+                            setSelection={setSelection}
+                            setTotal={setTotal}
+                            refresh={refreshTable}
+                        ></FluentGrid>
                     </ReflexElement>
                     <ReflexSplitter />
                     <ReflexElement>

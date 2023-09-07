@@ -1,15 +1,14 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, FontIcon, ICommandBarItemProps, Link, ScrollablePane, Sticky } from "@fluentui/react";
 import * as ESPLogicalFile from "src/ESPLogicalFile";
-import * as WsDfu from "src/WsDfu";
-import * as Utility from "src/Utility";
-import { useConfirm } from "../hooks/confirm";
-import { useFile } from "../hooks/file";
-import { useFluentGrid } from "../hooks/grid";
-import { ShortVerticalDivider } from "./Common";
-import { pushUrl } from "../util/history";
 import nlsHPCC from "src/nlsHPCC";
 import { QuerySortItem } from "src/store/Store";
+import * as WsDfu from "src/WsDfu";
+import { useConfirm } from "../hooks/confirm";
+import { useFile } from "../hooks/file";
+import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
+import { ShortVerticalDivider } from "./Common";
+import { pushUrl } from "../util/history";
 
 const defaultUIState = {
     hasSelection: false,
@@ -32,76 +31,70 @@ export const SubFiles: React.FunctionComponent<SubFilesProps> = ({
     const [file, , , refresh] = useFile(cluster, logicalFile);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
     const [data, setData] = React.useState<any[]>([]);
+    const {
+        selection, setSelection,
+        setTotal,
+        refreshTable } = useFluentStoreState({});
 
     //  Grid ---
-    const { Grid, selection, copyButtons } = useFluentGrid({
-        data,
-        primaryID: "Name",
-        alphaNumColumns: { RecordCount: true, Totalsize: true },
-        sort,
-        filename: "subfiles",
-        columns: {
+
+    const columns = React.useMemo((): FluentColumns => {
+        return {
             sel: { width: 27, selectorType: "checkbox" },
             IsCompressed: {
                 width: 25, sortable: false,
                 headerIcon: "ZipFolder",
                 headerTooltip: nlsHPCC.Compressed,
-                formatter: React.useCallback(function (compressed) {
+                formatter: (compressed) => {
                     if (compressed === true) {
                         return <FontIcon iconName="zipFolder" />;
                     }
                     return <></>;
-                }, [])
+                }
             },
             IsKeyFile: {
                 width: 25, sortable: false,
                 headerIcon: "Permissions",
                 headerTooltip: nlsHPCC.Index,
-                formatter: React.useCallback(function (keyfile, row) {
+                formatter: (keyfile, row) => {
                     if (row.ContentType === "key") {
                         return <FontIcon iconName="Permissions" />;
                     }
                     return <></>;
-                }, [])
+                }
             },
             isSuperfile: {
                 width: 25, sortable: false,
                 headerIcon: "Folder",
                 headerTooltip: nlsHPCC.Superfile,
-                formatter: React.useCallback(function (superfile) {
+                formatter: (superfile) => {
                     if (superfile === true) {
                         return <FontIcon iconName="Folder" />;
                     }
                     return <></>;
-                }, [])
+                }
             },
             Name: {
                 label: nlsHPCC.LogicalName,
-                formatter: React.useCallback(function (name, row) {
+                formatter: (name, row) => {
                     const url = "#/files/" + (row.NodeGroup ? row.NodeGroup + "/" : "") + name;
                     return <Link href={url}>{name}</Link>;
-                }, [])
+                }
             },
             Owner: { label: nlsHPCC.Owner, width: 72 },
             Description: { label: nlsHPCC.Description, width: 153 },
             RecordCount: {
                 label: nlsHPCC.Records, width: 72, sortable: false,
-                formatter: React.useCallback(function (recordCount, row) {
-                    return Utility.valueCleanUp(recordCount);
-                }, [])
             },
             Totalsize: {
                 label: nlsHPCC.Size, width: 72, sortable: false,
-                formatter: React.useCallback(function (totalSize, row) {
-                    return Utility.valueCleanUp(totalSize);
-                }, [])
             },
             Parts: {
                 label: nlsHPCC.Parts, width: 45, sortable: false,
             },
             Modified: { label: nlsHPCC.ModifiedUTCGMT, width: 155, sortable: false }
-        }
-    });
+        };
+    }, []);
 
     const [DeleteSubfilesConfirm, setShowDeleteSubfilesConfirm] = useConfirm({
         title: nlsHPCC.Delete,
@@ -149,6 +142,8 @@ export const SubFiles: React.FunctionComponent<SubFilesProps> = ({
         },
     ], [selection, setShowDeleteSubfilesConfirm, uiState.hasSelection]);
 
+    const copyButtons = useCopyButtons(columns, selection, "subfiles");
+
     //  Selection  ---
     React.useEffect(() => {
         const state = { ...defaultUIState };
@@ -164,8 +159,16 @@ export const SubFiles: React.FunctionComponent<SubFilesProps> = ({
             <Sticky>
                 <CommandBar items={buttons} farItems={copyButtons} />
             </Sticky>
-            <Grid />
-        </ScrollablePane>
+            <FluentGrid
+                data={data}
+                primaryID={"Name"}
+                columns={columns}
+                alphaNumColumns={{ RecordCount: true, Totalsize: true }}
+                setSelection={setSelection}
+                setTotal={setTotal}
+                refresh={refreshTable}
+            ></FluentGrid>
+        </ScrollablePane >
         <DeleteSubfilesConfirm />
     </>;
 };

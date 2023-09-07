@@ -4,8 +4,8 @@ import nlsHPCC from "src/nlsHPCC";
 import { QuerySortItem } from "src/store/Store";
 import { useConfirm } from "../hooks/confirm";
 import { useFileHistory } from "../hooks/file";
-import { useFluentGrid } from "../hooks/grid";
 import { HolyGrail } from "../layouts/HolyGrail";
+import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { ShortVerticalDivider } from "./Common";
 
 interface FileHistoryProps {
@@ -25,13 +25,13 @@ export const FileHistory: React.FunctionComponent<FileHistoryProps> = ({
     //  Grid ---
     const [history, eraseHistory, refreshData] = useFileHistory(cluster, logicalFile);
     const [data, setData] = React.useState<any[]>([]);
+    const {
+        selection, setSelection,
+        setTotal,
+        refreshTable } = useFluentStoreState({});
 
-    const { Grid, copyButtons } = useFluentGrid({
-        data,
-        primaryID: "__hpcc_id",
-        sort,
-        filename: "filehistory",
-        columns: {
+    const columns = React.useMemo((): FluentColumns => {
+        return {
             Name: { label: nlsHPCC.Name, sortable: false },
             IP: { label: nlsHPCC.IP, sortable: false },
             Operation: { label: nlsHPCC.Operation, sortable: false },
@@ -39,8 +39,8 @@ export const FileHistory: React.FunctionComponent<FileHistoryProps> = ({
             Path: { label: nlsHPCC.Path, sortable: false },
             Timestamp: { label: nlsHPCC.TimeStamp, sortable: false },
             Workunit: { label: nlsHPCC.Workunit, sortable: false }
-        }
-    });
+        };
+    }, []);
 
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.EraseHistory,
@@ -65,11 +65,21 @@ export const FileHistory: React.FunctionComponent<FileHistoryProps> = ({
         },
     ], [history?.length, refreshData, setShowDeleteConfirm]);
 
+    const copyButtons = useCopyButtons(columns, selection, "filehistory");
+
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}
         main={
             <>
-                <Grid />
+                <FluentGrid
+                    data={data}
+                    primaryID={"__hpcc_id"}
+                    sort={sort}
+                    columns={columns}
+                    setSelection={setSelection}
+                    setTotal={setTotal}
+                    refresh={refreshTable}
+                ></FluentGrid>
                 <DeleteConfirm />
             </>
         }

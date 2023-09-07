@@ -3,9 +3,9 @@ import { ICommandBarItemProps, CommandBar } from "@fluentui/react";
 import nlsHPCC from "src/nlsHPCC";
 import { QuerySortItem } from "src/store/Store";
 import * as Utility from "src/Utility";
-import { useFluentGrid } from "../hooks/grid";
 import { useFile } from "../hooks/file";
 import { HolyGrail } from "../layouts/HolyGrail";
+import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 
 interface FilePartsProps {
     cluster?: string;
@@ -23,32 +23,32 @@ export const FileParts: React.FunctionComponent<FilePartsProps> = ({
 
     const [file, , , refreshData] = useFile(cluster, logicalFile);
     const [data, setData] = React.useState<any[]>([]);
+    const {
+        selection, setSelection,
+        setTotal,
+        refreshTable } = useFluentStoreState({});
 
     //  Grid ---
-    const { Grid, copyButtons } = useFluentGrid({
-        data,
-        primaryID: "Id",
-        sort,
-        filename: "fileParts",
-        columns: {
+    const columns = React.useMemo((): FluentColumns => {
+        return {
             Id: { label: nlsHPCC.Part, sortable: true, width: 80 },
             Copy: { label: nlsHPCC.Copy, sortable: true, width: 80 },
             Ip: { label: nlsHPCC.IP, sortable: true, width: 80 },
             Cluster: { label: nlsHPCC.Cluster, sortable: true, width: 280 },
             PartsizeInt64: {
                 label: nlsHPCC.Size, sortable: true, width: 120,
-                formatter: React.useCallback(function (value, row) {
+                formatter: (value, row) => {
                     return Utility.safeFormatNum(value);
-                }, []),
+                }
             },
             CompressedSize: {
                 label: nlsHPCC.CompressedSize, sortable: true, width: 120,
-                formatter: React.useCallback(function (value, row) {
+                formatter: (value, row) => {
                     return Utility.safeFormatNum(value);
-                }, [])
+                }
             },
-        }
-    });
+        };
+    }, []);
 
     React.useEffect(() => {
         const fileParts = file?.fileParts() ?? [];
@@ -72,10 +72,20 @@ export const FileParts: React.FunctionComponent<FilePartsProps> = ({
         }
     ], [refreshData]);
 
+    const copyButtons = useCopyButtons(columns, selection, "fileParts");
+
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}
         main={
-            <Grid />
+            <FluentGrid
+                data={data}
+                primaryID={"Id"}
+                sort={sort}
+                columns={columns}
+                setSelection={setSelection}
+                setTotal={setTotal}
+                refresh={refreshTable}
+            ></FluentGrid>
         }
     />;
 };
