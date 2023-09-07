@@ -8,10 +8,10 @@ import * as Utility from "src/Utility";
 import { QuerySortItem } from "src/store/Store";
 import nlsHPCC from "src/nlsHPCC";
 import { useConfirm } from "../hooks/confirm";
-import { useFluentPagedGrid } from "../hooks/grid";
 import { useMyAccount } from "../hooks/user";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
+import { FluentPagedGrid, FluentPagedFooter, useCopyButtons, useFluentStoreState } from "./controls/Grid";
 import { AddToSuperfile } from "./forms/AddToSuperfile";
 import { CopyFile } from "./forms/CopyFile";
 import { DesprayFile } from "./forms/DesprayFile";
@@ -109,6 +109,12 @@ export const Files: React.FunctionComponent<FilesProps> = ({
     const { currentUser } = useMyAccount();
     const [viewByScope, setViewByScope] = React.useState(false);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
+    const {
+        selection, setSelection,
+        pageNum, setPageNum,
+        pageSize, setPageSize,
+        total, setTotal,
+        refreshTable } = useFluentStoreState({ page });
 
     //  Grid ---
     const gridStore = React.useMemo(() => {
@@ -119,19 +125,13 @@ export const Files: React.FunctionComponent<FilesProps> = ({
         return formatQuery(filter);
     }, [filter]);
 
-    const { Grid, GridPagination, selection, refreshTable, copyButtons } = useFluentPagedGrid({
-        persistID: "files",
-        store: gridStore,
-        query,
-        sort,
-        pageNum: page,
-        filename: "logicalfiles",
-        columns: {
+    const columns = React.useMemo(() => {
+        return {
             col1: {
                 width: 16,
-                disabled: React.useCallback(function (item) {
+                disabled: (item) => {
                     return item ? item.__hpcc_isDir : true;
-                }, []),
+                },
                 selectorType: "checkbox"
             },
             IsProtected: {
@@ -139,28 +139,28 @@ export const Files: React.FunctionComponent<FilesProps> = ({
                 headerTooltip: nlsHPCC.Protected,
                 width: 16,
                 sortable: false,
-                formatter: React.useCallback(function (_protected) {
+                formatter: (_protected) => {
                     if (_protected === true) {
                         return <Icon iconName="LockSolid" />;
                     }
                     return "";
-                }, [])
+                },
             },
             IsCompressed: {
                 headerIcon: "ZipFolder",
                 headerTooltip: nlsHPCC.Compressed,
                 width: 16,
                 sortable: false,
-                formatter: React.useCallback(function (compressed) {
+                formatter: (compressed) => {
                     if (compressed === true) {
                         return <Icon iconName="ZipFolder" />;
                     }
                     return "";
-                }, [])
+                },
             },
             Name: {
                 label: nlsHPCC.LogicalName,
-                formatter: React.useCallback(function (name, row) {
+                formatter: (name, row) => {
                     const file = Get(row.NodeGroup, name, row);
                     if (row.__hpcc_isDir) {
                         return name;
@@ -171,7 +171,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
                         &nbsp;
                         <Link href={url}>{name}</Link>
                     </>;
-                }, []),
+                },
             },
             Owner: { label: nlsHPCC.Owner },
             SuperOwners: { label: nlsHPCC.SuperOwner },
@@ -179,43 +179,45 @@ export const Files: React.FunctionComponent<FilesProps> = ({
             NodeGroup: { label: nlsHPCC.Cluster },
             Records: {
                 label: nlsHPCC.Records,
-                formatter: React.useCallback(function (value, row) {
+                formatter: (value, row) => {
                     return Utility.formatNum(row.IntRecordCount);
-                }, []),
+                },
             },
             FileSize: {
                 label: nlsHPCC.Size,
-                formatter: React.useCallback(function (value, row) {
+                formatter: (value, row) => {
                     return Utility.convertedSize(row.IntSize);
-                }, []),
+                },
             },
             Parts: {
                 label: nlsHPCC.Parts, width: 40,
-                formatter: React.useCallback(function (value, row) {
+                formatter: (value, row) => {
                     return Utility.valueCleanUp(value);
-                }, []),
+                },
             },
             MinSkew: {
-                label: nlsHPCC.MinSkew, width: 60, formatter: React.useCallback((value, row) => value ? `${Utility.formatDecimal(value / 100)}%` : "", [])
+                label: nlsHPCC.MinSkew, width: 60, formatter: (value, row) => value ? `${Utility.formatDecimal(value / 100)}%` : ""
             },
             MaxSkew: {
-                label: nlsHPCC.MaxSkew, width: 60, formatter: React.useCallback((value, row) => value ? `${Utility.formatDecimal(value / 100)}%` : "", [])
+                label: nlsHPCC.MaxSkew, width: 60, formatter: (value, row) => value ? `${Utility.formatDecimal(value / 100)}%` : ""
             },
             Modified: { label: nlsHPCC.ModifiedUTCGMT },
             AtRestCost: {
                 label: nlsHPCC.FileCostAtRest,
-                formatter: React.useCallback(function (cost, row) {
+                formatter: (cost, row) => {
                     return `${formatCost(cost)}`;
-                }, [])
+                },
             },
             AccessCost: {
                 label: nlsHPCC.FileAccessCost,
-                formatter: React.useCallback(function (cost, row) {
+                formatter: (cost, row) => {
                     return `${formatCost(cost)}`;
-                }, [])
+                },
             }
-        }
-    });
+        };
+    }, []);
+
+    const copyButtons = useCopyButtons(columns, selection, "files");
 
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
@@ -226,7 +228,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
                 .then(({ DFUArrayActionResponse }) => {
                     const ActionResults = DFUArrayActionResponse?.ActionResults?.DFUActionInfo ?? [];
                     ActionResults.filter(action => action?.Failed).forEach(action => logger.error(action?.ActionResult));
-                    refreshTable(true);
+                    refreshTable.call(true);
                 })
                 .catch(err => logger.error(err));
         }, [refreshTable, selection])
@@ -236,7 +238,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
-            onClick: () => refreshTable()
+            onClick: () => refreshTable.call()
         },
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
@@ -329,20 +331,38 @@ export const Files: React.FunctionComponent<FilesProps> = ({
                 <SizeMe monitorHeight>{({ size }) =>
                     <div style={{ position: "relative", width: "100%", height: "100%" }}>
                         <div style={{ position: "absolute", width: "100%", height: `${size.height}px` }}>
-                            <Grid height={`${size.height}px`} />
+                            <FluentPagedGrid
+                                store={gridStore}
+                                query={query}
+                                sort={sort}
+                                pageNum={pageNum}
+                                pageSize={pageSize}
+                                total={total}
+                                columns={columns}
+                                height={`${size.height}px`}
+                                setSelection={setSelection}
+                                setTotal={setTotal}
+                                refresh={refreshTable}
+                            ></FluentPagedGrid>
                         </div>
                     </div>
                 }</SizeMe>
                 <Filter showFilter={showFilter} setShowFilter={setShowFilter} filterFields={filterFields} onApply={pushParams} />
-                <RemoteCopy showForm={showRemoteCopy} setShowForm={setShowRemoteCopy} refreshGrid={refreshTable} />
-                <CopyFile logicalFiles={selection.map(s => s.Name)} showForm={showCopy} setShowForm={setShowCopy} refreshGrid={refreshTable} />
-                <RenameFile logicalFiles={selection.map(s => s.Name)} showForm={showRenameFile} setShowForm={setShowRenameFile} refreshGrid={refreshTable} />
-                <AddToSuperfile logicalFiles={selection.map(s => s.Name)} showForm={showAddToSuperfile} setShowForm={setShowAddToSuperfile} refreshGrid={refreshTable} />
+                <RemoteCopy showForm={showRemoteCopy} setShowForm={setShowRemoteCopy} refreshGrid={refreshTable.call} />
+                <CopyFile logicalFiles={selection.map(s => s.Name)} showForm={showCopy} setShowForm={setShowCopy} refreshGrid={refreshTable.call} />
+                <RenameFile logicalFiles={selection.map(s => s.Name)} showForm={showRenameFile} setShowForm={setShowRenameFile} refreshGrid={refreshTable.call} />
+                <AddToSuperfile logicalFiles={selection.map(s => s.Name)} showForm={showAddToSuperfile} setShowForm={setShowAddToSuperfile} refreshGrid={refreshTable.call} />
                 <DesprayFile logicalFiles={selection.map(s => s.Name)} showForm={showDesprayFile} setShowForm={setShowDesprayFile} />
                 <DeleteConfirm />
             </>
         }
-        footer={<GridPagination />}
+        footer={<FluentPagedFooter
+            persistID={"files"}
+            pageNum={pageNum}
+            setPageNum={setPageNum}
+            setPageSize={setPageSize}
+            total={total}
+        ></FluentPagedFooter>}
         footerStyles={{}}
     />;
 };

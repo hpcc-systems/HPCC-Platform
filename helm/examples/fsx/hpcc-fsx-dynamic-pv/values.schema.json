@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "common": {
+      "type": "object",
+      "properties": {
+        "commonPrefix": {
+          "type": "string"
+        }
+      }
+    },
+    "planes": {
+      "description": "List of planes to mount locally",
+      "oneOf": [
+        {
+          "type": "array",
+          "items": { "$ref": "#/definitions/plane" }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "title": "Values",
+  "type": "object",
+  "definitions": {
+    "plane": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "Prefix for the pvc name",
+          "type": "string"
+        },
+        "subPath": {
+          "description": "sub path from common.hostpath on host where the pvc is created",
+          "type": "string"
+        },
+        "size": {
+          "description": "Size that is required for the volume",
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            }
+          ]
+        },
+        "rwmany": {
+          "description": "Does the pvc require rw many access (data/dll currently)",
+          "type": "boolean"
+        },
+        "sku": {
+          "type": "string"
+        },
+        "category": {
+          "description": "the category this plane is usd for, e.g. lz, data",
+          "type": "string"
+        }
+      },
+      "required": [ "name", "subPath", "size" ],
+      "additionalProperties": false
+    }
+  }
+}

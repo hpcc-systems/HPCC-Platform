@@ -323,7 +323,7 @@ private:
     bool clientTokenRenewable = false;
     bool verify_server = true;
     unsigned retries = 3;
-    time_t retryWait = 1000;
+    unsigned retryWait = 1000;
     timeval connectTimeout = {0, 0};
     timeval readTimeout = {0, 0};
     timeval writeTimeout = {0, 0};
@@ -351,8 +351,8 @@ public:
             PROGLOG("vault: namespace %s", vaultNamespace.str());
         }
         verify_server = vault->getPropBool("@verify_server", true);
-        retries = (unsigned) vault->getPropInt("@retries", 3);
-        retryWait = (time_t) vault->getPropInt("@retryWait", 1000);
+        retries = (unsigned) vault->getPropInt("@retries", retries);
+        retryWait = (unsigned) vault->getPropInt("@retryWait", retryWait);
 
         setTimevalMS(connectTimeout, (time_t) vault->getPropInt("@connectTimeout"));
         setTimevalMS(readTimeout, (time_t) vault->getPropInt("@readTimeout"));
@@ -597,9 +597,14 @@ public:
             parent->setPropTree(vername, envelope.getClear());
         }
     }
-    bool requestSecretAtLocation(CVaultKind &rkind, StringBuffer &content, const char *location, const char *secret, const char *version, bool permissionDenied)
+    bool requestSecretAtLocation(CVaultKind &rkind, StringBuffer &content, const char *location, const char *secretCacheKey, const char *version, bool permissionDenied)
     {
         checkAuthentication(permissionDenied);
+        if (isEmptyString(location))
+        {
+            OERRLOG("Vault %s cannot get secret at location without a location", name.str());
+            return false;
+        }
 
         httplib::Client cli(schemeHostPort.str());
         httplib::Headers headers = {
@@ -611,7 +616,7 @@ public:
         httplib::Result res = cli.Get(location, headers);
         while (!res && numRetries--)
         {
-            OERRLOG("Retrying vault %s get secret, communication error %d location %s", name.str(), res.error(), location ? location : "null");
+            OERRLOG("Retrying vault %s get secret, communication error %d location %s", name.str(), res.error(), location);
             if (retryWait)
                 Sleep(retryWait);
             res = cli.Get(location, headers);
@@ -623,27 +628,27 @@ public:
             {
                 rkind = kind;
                 content.append(res->body.c_str());
-                addCachedSecret(content.str(), secret, version);
+                addCachedSecret(content.str(), secretCacheKey, version);
                 return true;
             }
             else if (res->status == 403)
             {
                  //try again forcing relogin, but only once.  Just in case the token was invalidated but hasn't passed expiration time (for example max usage count exceeded).
                 if (permissionDenied==false)
-                    return requestSecretAtLocation(rkind, content, location, secret, version, true);
-                OERRLOG("Vault %s permission denied accessing secret (check namespace=%s?) %s.%s location %s [%d](%d) - response: %s", name.str(), vaultNamespace.str(), secret, version ? version : "", location ? location : "null", res->status, res.error(), res->body.c_str());
+                    return requestSecretAtLocation(rkind, content, location, secretCacheKey, version, true);
+                OERRLOG("Vault %s permission denied accessing secret (check namespace=%s?) %s.%s location %s [%d](%d) - response: %s", name.str(), vaultNamespace.str(), secretCacheKey, version ? version : "", location, res->status, res.error(), res->body.c_str());
             }
             else if (res->status == 404)
             {
-                OERRLOG("Vault %s secret not found %s.%s location %s", name.str(), secret, version ? version : "", location ? location : "null");
+                OERRLOG("Vault %s secret not found %s.%s location %s", name.str(), secretCacheKey, version ? version : "", location);
             }
             else
             {
-                OERRLOG("Vault %s error accessing secret %s.%s location %s [%d](%d) - response: %s", name.str(), secret, version ? version : "", location ? location : "null", res->status, res.error(), res->body.c_str());
+                OERRLOG("Vault %s error accessing secret %s.%s location %s [%d](%d) - response: %s", name.str(), secretCacheKey, version ? version : "", location, res->status, res.error(), res->body.c_str());
             }
         }
         else
-            OERRLOG("Error: Vault %s http error (%d) accessing secret %s.%s location %s", name.str(), res.error(), secret, version ? version : "", location ? location : "null");
+            OERRLOG("Error: Vault %s http error (%d) accessing secret %s.%s location %s", name.str(), res.error(), secretCacheKey, version ? version : "", location);
         return false;
     }
     bool requestSecret(CVaultKind &rkind, StringBuffer &content, const char *secret, const char *version)

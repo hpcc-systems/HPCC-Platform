@@ -1,0 +1,14 @@
+{{- range $plane := .Values.planes -}}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ printf "%s-%s-pvc" $plane.name (include "hpcc-fsx.fullname" $) }}
+spec:
+  accessModes:
+    - {{ $plane.rwmany | default false | ternary "ReadWriteMany" "ReadWriteOnce" }}
+  storageClassName: aws-fsx-auto
+  resources:
+    requests:
+      storage: {{ $plane.size }}
+---
+{{ end }}

@@ -1,0 +1,99 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: dali-permissions
+spec:
+  securityContext:
+    fsGroup: 10001
+  volumes:
+  - name: dali
+    persistentVolumeClaim:
+      claimName: dali-awsstorage-hpcc-fsx-pvc
+  containers:
+  - name: app
+    image: amazonlinux:2
+    command: ["/bin/sh"]
+    args: ["-c", "while true; do sleep 60; done"]
+    volumeMounts:
+    - name: dali
+      mountPath: /data
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: dll-permissions
+spec:
+  securityContext:
+    fsGroup: 10001
+  volumes:
+  - name: dll
+    persistentVolumeClaim:
+      claimName: dll-awsstorage-hpcc-fsx-pvc
+  containers:
+  - name: app
+    image: amazonlinux:2
+    command: ["/bin/sh"]
+    args: ["-c", "while true; do sleep 60; done"]
+    volumeMounts:
+    - name: dll
+      mountPath: /data
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: sasha-permissions
+spec:
+  securityContext:
+    fsGroup: 10001
+  volumes:
+  - name: sasha
+    persistentVolumeClaim:
+      claimName: sasha-awsstorage-hpcc-fsx-pvc
+  containers:
+  - name: app
+    image: amazonlinux:2
+    command: ["/bin/sh"]
+    args: ["-c", "while true; do sleep 60; done"]
+    volumeMounts:
+    - name: sasha
+      mountPath: /data
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: data-permissions
+spec:
+  securityContext:
+    fsGroup: 10001
+  volumes:
+  - name: data
+    persistentVolumeClaim:
+      claimName: data-awsstorage-hpcc-fsx-pvc
+  containers:
+  - name: app
+    image: amazonlinux:2
+    command: ["/bin/sh"]
+    args: ["-c", "while true; do sleep 60; done"]
+    volumeMounts:
+    - name: data
+      mountPath: /data
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mydropzone-permissions
+spec:
+  securityContext:
+    fsGroup: 10001
+  volumes:
+  - name: mydropzone
+    persistentVolumeClaim:
+      claimName: mydropzone-awsstorage-hpcc-fsx-pvc
+  containers:
+  - name: app
+    image: amazonlinux:2
+    command: ["/bin/sh"]
+    args: ["-c", "while true; do sleep 60; done"]
+    volumeMounts:
+    - name: mydropzone
+      mountPath: /data

@@ -52,6 +52,10 @@
   #define USE_CUSTOM_NAMEDTUPLES
 #endif
 
+#if PY_VERSION_HEX < 0x03070000
+  #define INIT_PY_THREADS
+#endif
+
 static const char * compatibleVersions[] = {
     "Python3.x Embed Helper 1.0.0",
     NULL };
@@ -423,7 +427,9 @@ public:
         Py_Initialize();
         const wchar_t *argv[] = { nullptr };
         PySys_SetArgvEx(0, (wchar_t **) argv, 0);
+#ifdef INIT_PY_THREADS
         PyEval_InitThreads();
+#endif
         preservedScopes.setown(PyDict_New());
         tstate = PyEval_SaveThread();
         skipPythonCleanup = true;
