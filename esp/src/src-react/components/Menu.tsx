@@ -218,10 +218,6 @@ export const SubNavigation: React.FunctionComponent<SubNavigationProps> = ({
         return subNavSelectedKey(hashPath);
     }, [hashPath]);
 
-    const altSubNav = React.useMemo(() => {
-        return `/${hashPath?.split("/")[1]}`;
-    }, [hashPath]);
-
     const navStyles = React.useMemo(() => mergeStyleSets({
         wrapper: {
             marginLeft: 4,
@@ -301,7 +297,8 @@ export const SubNavigation: React.FunctionComponent<SubNavigationProps> = ({
                                 className={[
                                     navStyles.link,
                                     row.itemKey === "/topology/logs" && logsDisabled ? logsDisabledStyle : "",
-                                    row.itemKey === subNav || row.itemKey === altSubNav ? navStyles.active : ""
+                                    row.itemKey === subNav ? navStyles.active : "",
+                                    !subNav && row.itemKey === "/topology/configuration" ? navStyles.active : ""
                                 ].join(" ")}
                             >
                                 {row.headerText}
