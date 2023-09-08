@@ -223,7 +223,7 @@ int CEclAgentExecutionServer::run()
 
 //---------------------------------------------------------------------------------
 
-typedef std::tuple<Linked<IJobQueueItem>, unsigned, const char *, const char *> ThreadCtx;
+typedef std::tuple<IJobQueueItem *, unsigned, const char *, const char *> ThreadCtx;
 
 // NB: WaitThread only used by if pool created (see CEclAgentExecutionServer ctor)
 class WaitThread : public CInterfaceOf<IPooledThread>
@@ -237,7 +237,9 @@ public:
     virtual void init(void *param) override
     {
         auto &context = *static_cast<ThreadCtx *>(param);
-        std::tie(item, wfid, wuid, graphName) = context;
+        IJobQueueItem *tmpItem;
+        std::tie(tmpItem, wfid, wuid, graphName) = context;
+        item.set(tmpItem);
     }
     virtual bool stop() override
     {
