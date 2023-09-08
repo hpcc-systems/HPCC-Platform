@@ -233,12 +233,8 @@ public:
     virtual bool detachServiceFromDali() override {return false;}
 
 protected:
-    static constexpr const char* gwTargetSecretPrefix = "secret:";
-    static constexpr const size_t gwTargetSecretPrefixLength = strlen(gwTargetSecretPrefix);
     static constexpr const char* gwLocalSecretPrefix = "local-secret:";
     static constexpr const size_t gwLocalSecretPrefixLength = strlen(gwLocalSecretPrefix);
-    static constexpr const char* gwPassThroughPrefix = "pass-through:";
-    static constexpr const size_t gwPassThroughPrefixLength = strlen(gwPassThroughPrefix);
 
     /**
      * @brief Possibly construct a new gateway URL value by resolving a given connection secret
@@ -299,7 +295,7 @@ protected:
      * @param username optional user identifier
      * @param password optional user password
      */
-    void adjustURL(StringBuffer& url, const char* username, const char* password) const;
+    void updateURLCredentials(StringBuffer& url, const char* username, const char* password) const;
 
     /**
      * @brief Implementation of legacy gateway transformation invoked only during preparation of

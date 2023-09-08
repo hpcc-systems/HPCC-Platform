@@ -744,23 +744,20 @@ void EsdlServiceImpl::configureTargets(IPropertyTree *cfg, const char *service)
             IPTree* gateways = methodCfg.queryBranch("Gateways");
             if (!gateways)
                 continue;
-            bool resolveInline = (gateways->getPropBool("resolveInlineURLs") || !isEmptyString(gateways->queryProp("@legacyTransformBranch")));
-            Owned<IPTreeIterator> gwIt(gateways->getElements("Gateway"));
-            ForEach(*gwIt)
+            bool resolveInline = (gateways->getPropBool("@resolveInlineURLs") || !isEmptyString(gateways->queryProp("@legacyTransformBranch")));
+            if (resolveInline)
             {
-                IPTree& gw = gwIt->query();
-                const char* url = gw.queryProp("@url");
-                if (isEmptyString(url))
-                    continue;
-                if (strncmp(url, gwTargetSecretPrefix, gwTargetSecretPrefixLength) == 0)
-                    continue; // no change required
-                if (strncmp(url, gwLocalSecretPrefix, gwLocalSecretPrefixLength) == 0)
-                    continue; // change deferred until use
-                if (strncmp(url, gwPassThroughPrefix, gwPassThroughPrefixLength) == 0)
-                    gw.setProp("@url", url + gwPassThroughPrefixLength);
-                else if (!resolveInline)
-                    continue; // no change required
-                resolveGatewayInlineURL(gw);
+                Owned<IPTreeIterator> gwIt(gateways->getElements("Gateway"));
+                ForEach(*gwIt)
+                {
+                    IPTree& gw = gwIt->query();
+                    const char* url = gw.queryProp("@url");
+                    if (isEmptyString(url))
+                        continue;
+                    StringBuffer prefix(4, url);
+                    if (strieq(prefix, "http"))
+                        resolveGatewayInlineURL(gw);
+                }
             }
 
             DBGLOG("Method %s configured", method);
@@ -1363,10 +1360,10 @@ void EsdlServiceImpl::adjustTargetConfig(Owned<IPTree>& tgtcfg) const
         tgtcfg.setown(createPTreeFromIPT(tgtcfg));
         const char* qt = tgtcfg->queryProp("@querytype");
         bool published = (qt && (strieq(qt, "roxie") || strieq(qt, "wsecl")));
-        const char* permission = (published ? "allowPublishedGatewayUsage" : "allowUnpublishedGatewayUsage");
+        const char* requiredUsage = (published ? "allowPublishedGatewayUsage" : "allowUnpublishedGatewayUsage");
         Owned<IPTreeIterator> gwsToResolve(tgtcfg->getElements(gwLocalSecretXPath));
         ForEach(*gwsToResolve)
-            resolveGatewayLocalSecret(gwsToResolve->query(), permission);
+            resolveGatewayLocalSecret(gwsToResolve->query(), requiredUsage);
     }
 }
 
@@ -1385,27 +1382,33 @@ void EsdlServiceImpl::resolveGatewayLocalSecret(IPTree& gateway, const char* per
     switch (tokens.ordinality())
     {
     case 1:
-        secret.setown(getSecret("esp", tokens.item(0)));
+        if (strncmp(tokens.item(0), "http-connect-", 13) != 0)
+            secret.setown(getSecret("esp", VStringBuffer("http-connect-%s", tokens.item(0))));
+        else
+            secret.setown(getSecret("esp", tokens.item(0)));
         break;
     case 2:
-        secret.setown(getVaultSecret("esp", tokens.item(0), tokens.item(1)));
+        if (strncmp(tokens.item(1), "http-connect-", 13) != 0)
+            secret.setown(getVaultSecret("esp", tokens.item(0), VStringBuffer("http-connect-%s", tokens.item(1))));
+        else
+            secret.setown(getVaultSecret("esp", tokens.item(0), tokens.item(1)));
         break;
     default:
         throw makeStringExceptionV(-1, "gateway %s: '%s' is not of the form \"[ vault-id ':' ] secret-name\"", name, identification);
     }
     if (!secret)
-        throw makeStringExceptionV(-1, "gateway %s: '%s' does not identify an 'esp' category secret", name, identification);
+        throw makeStringExceptionV(-1, "gateway %s: 'esp' category secret '%s' not found", name, identification);
     if (!isEmptyString(permission) && !secret->getPropBool(permission))
         throw makeStringExceptionV(-1, "gateway %s: '%s' does not grant '%s' permission", name, identification, permission);
     if (!secret->getProp("url", url.clear()) || url.isEmpty())
         throw makeStringExceptionV(-1, "gateway %s: '%s' missing required 'url' property; credential-only secrets not supported", name, identification);
     const char* username = secret->queryProp("username");
-    if (isEmptyString(username) && !secret->getPropBool("insecure"))
-        throw makeStringExceptionV(-1, "gateway %s: '%s' missing expected 'username' property; set 'insecure` property to 'true' if credentials are not required", name, identification);
+    if (isEmptyString(username) && !secret->getPropBool("omitCredentials"))
+        throw makeStringExceptionV(-1, "gateway %s: '%s' missing expected 'username' property; set 'omitCredentials` property to 'true' if credentials are not required", name, identification);
     const char* password = secret->queryProp("password");
     if (isEmptyString(username) && password)
         throw makeStringExceptionV(-1, "gateaay %s: '%s' invalid use of password without username", name, identification);
-    adjustURL(url, username, password);
+    updateURLCredentials(url, username, password);
     gateway.setProp("@url", url);
 }
 
@@ -1425,16 +1428,16 @@ void EsdlServiceImpl::resolveGatewayInlineURL(IPTree& gateway) const
         decrypt(decryptedPassword, password);
         password = decryptedPassword;
     }
-    adjustURL(url, username, password);
+    updateURLCredentials(url, username, password);
     gateway.setProp("@url", url);
 }
 
-void EsdlServiceImpl::adjustURL(StringBuffer& url, const char* username, const char* password) const
+void EsdlServiceImpl::updateURLCredentials(StringBuffer& url, const char* username, const char* password) const
 {
     StringBuffer scheme, usernameSink, passwordSink, host, port, path;
     Utils::SplitURL(url, scheme, usernameSink, passwordSink, host, port, path);
 
-    if (scheme.length() > 0 && host.length() > 0)
+    if (scheme.length() && host.length())
     {
         StringBuffer userinfo;
         if (!isEmptyString(username))
@@ -1450,12 +1453,12 @@ void EsdlServiceImpl::adjustURL(StringBuffer& url, const char* username, const c
         url.clear();
         url.append(scheme);
         url.append("://");
-        if (userinfo.length()>0 )
-            url.appendf("%s@", userinfo.str());
+        if (userinfo.length())
+            url.append(userinfo).append('@');
         url.append(host);
-        if (port.length() > 0)
-            url.appendf(":%s", port.str());
-        if (path.length() > 0)
+        if (port.length())
+            url.append(':').append(port);
+        if (path.length())
             url.append(path);
     }
 }
