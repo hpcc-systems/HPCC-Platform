@@ -51,6 +51,14 @@ jobs:
       - name: Install additional tools
         working-directory: .
         run: wget https://github.com/zegl/kube-score/releases/download/v1.8.1/kube-score_1.8.1_linux_amd64 && sudo mv kube-score_1.8.1_linux_amd64 /usr/bin/kube-score && sudo chmod +x /usr/bin/kube-score
-      - name: Test
+      - name: Validate Helm Templates
         working-directory: ./testing/helm
         run: ./run.sh
+      - name: Check for changes in helm output for default values
+        working-directory: .
+        run: |
+          helm template helm/hpcc > ${{ runner.temp }}/newoutput.txt
+          git fetch --no-tags --prune --progress --no-recurse-submodules --depth=1 origin ${{ github.base_ref }}
+          git checkout ${{ github.base_ref }}
+          helm template helm/hpcc > ${{ runner.temp }}/oldoutput.txt
+          diff ${{ runner.temp }}/oldoutput.txt ${{ runner.temp }}/newoutput.txt
