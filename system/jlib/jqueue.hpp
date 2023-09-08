@@ -454,13 +454,17 @@ public:
             //Initial code from remove() - simplified since pHead != element, and no decrement of entries
             ELEMENT * next = element->next;
             ELEMENT * prev = element->prev;
-            assertex(prev || next);
-            if (element == pTail)   // would if (!next) avoid loading pTail?
-                pTail = prev;
-            if (next)
+            assertex(prev); // not at the head of the list, so must have a predecessor
+            if (likely(next))
+            {
                 next->prev = prev;
-            if (prev)
-                prev->next = next;
+            }
+            else
+            {
+                pTail = prev;
+            }
+
+            prev->next = next;
 
             //enqueueHead() - simplified since pHead must be set, and no increment of number of entries
             pHead->prev = element;
