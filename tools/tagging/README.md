@@ -82,5 +82,5 @@ This normally happens after cherry-picking a late fix for a particular version, 
 A new minor branch is created from the current master...
 
 ```
-./gorcminor.sh 8.12.x
+./gominor.sh
 ```
