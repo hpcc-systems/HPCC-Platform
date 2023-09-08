@@ -1181,7 +1181,6 @@ public:
     IDistributedSuperFile *lookupSuperFile(const char *logicalname, IUserDescriptor *user, AccessMode accessMode, IDistributedFileTransaction *transaction, unsigned timeout=INFINITE);
 
     SecAccessFlags getFilePermissions(const char *lname,IUserDescriptor *user,unsigned auditflags);
-    SecAccessFlags getNodePermissions(const IpAddress &ip,IUserDescriptor *user,unsigned auditflags);
     SecAccessFlags getFDescPermissions(IFileDescriptor *,IUserDescriptor *user,unsigned auditflags=0);
     SecAccessFlags getDLFNPermissions(CDfsLogicalFileName &dlfn,IUserDescriptor *user,unsigned auditflags=0);
     SecAccessFlags getDropZoneScopePermissions(const char *dropZoneName,const char *dropZonePath,IUserDescriptor *user,unsigned auditflags=0);
@@ -11805,16 +11804,6 @@ SecAccessFlags CDistributedFileDirectory::getFilePermissions(const char *lname,I
 {
     CDfsLogicalFileName dlfn;
     dlfn.set(lname);
-    return getDLFNPermissions(dlfn,user,auditflags);
-}
-
-SecAccessFlags CDistributedFileDirectory::getNodePermissions(const IpAddress &ip,IUserDescriptor *user,unsigned auditflags)
-{
-    if (ip.isNull())
-        return SecAccess_None;
-    CDfsLogicalFileName dlfn;
-    SocketEndpoint ep(0,ip);
-    dlfn.setExternal(ep,"/x");
     return getDLFNPermissions(dlfn,user,auditflags);
 }
 
