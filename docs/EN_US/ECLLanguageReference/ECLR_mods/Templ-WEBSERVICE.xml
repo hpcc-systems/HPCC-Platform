@@ -73,7 +73,7 @@
 
   <para>Example:</para>
 
-  <programlisting>#WEBSERVICE(FIELDS('Field1','AddThem','Field2'),
+  <programlisting lang="ECL" role="notrunnable">#WEBSERVICE(FIELDS('Field1','AddThem','Field2'),
             HELP('Enter Integer Values'),
             DESCRIPTION('If AddThem is TRUE, this adds the two integers')); 
 Field1 := 1 : Stored('Field1');

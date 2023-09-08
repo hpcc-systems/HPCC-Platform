@@ -999,12 +999,12 @@ SEQUENTIAL(PtblOut,Bld1,Bld2,OUTPUT(FilledRecs1),OUTPUT(FilledRecs2))
     <emphasis>joincondition</emphasis> is duplicated between adjacent pairs of
     datasets, which means that this <emphasis>joincondition</emphasis>:</para>
 
-    <programlisting>       LEFT.field = RIGHT.field</programlisting>
+    <programlisting lang="ECL" role="fragment">       LEFT.field = RIGHT.field</programlisting>
 
     <para>when applied against a <emphasis>setofdatasets </emphasis>containing
     three datasets, is logically equivalent to:</para>
 
-    <programlisting>       ds1.field = ds2.field AND ds2.field = ds3.field</programlisting>
+    <programlisting lang="ECL" role="fragment">       ds1.field = ds2.field AND ds2.field = ds3.field</programlisting>
   </sect2>
 
   <sect2 id="TRANSFORM_Function_Requirements_parameters">
@@ -1101,7 +1101,7 @@ SEQUENTIAL(PtblOut,Bld1,Bld2,OUTPUT(FilledRecs1),OUTPUT(FilledRecs2))
 
     <para>Example:</para>
 
-    <programlisting id="ECL" role="runnable">Rec := RECORD,MAXLENGTH(4096)
+    <programlisting lang="ECL" role="runnable">Rec := RECORD,MAXLENGTH(4096)
   STRING1  Letter;
   UNSIGNED1    DS;
   UNSIGNED1    Matches   := 0;

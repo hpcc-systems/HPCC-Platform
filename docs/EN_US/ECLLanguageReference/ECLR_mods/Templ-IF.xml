@@ -88,29 +88,28 @@
 
   <para>Example:</para>
 
-  <programlisting>  // This script creates a set attribute definition of the 1st 10
-  // natural numbers and defines an attribute named "Set10"
-  
-  #DECLARE (SetString);
-  #DECLARE (Ndx);
-  #SET (SetString, '[');   //initialize SetString to [
-  #SET (Ndx, 1);          //initialize Ndx to 1
-  #LOOP
-     #IF (%Ndx% &gt; 9)      //if we've iterated 9 times
-        #BREAK            // break out of the loop
-     #ELSE                //otherwise
-        #APPEND (SetString, %'Ndx'% + ',');
-                          //append Ndx and comma to SetString
-     #SET (Ndx, %Ndx% + 1);
-                          //and increment the value of Ndx
-     #END
+  <programlisting lang="ECL" role="runnable">// This script creates a set attribute definition of the 1st 10
+// natural numbers and defines an attribute named "Set10"
+
+#DECLARE (SetString);
+#DECLARE (Ndx);
+#SET (SetString, '[');   //initialize SetString to [
+#SET (Ndx, 1);          //initialize Ndx to 1
+#LOOP
+  #IF (%Ndx% &gt; 9)      //if we've iterated 9 times
+    #BREAK            // break out of the loop
+  #ELSE                //otherwise
+    #APPEND (SetString, %'Ndx'% + ',');
+                       //append Ndx and comma to SetString
+    #SET (Ndx, %Ndx% + 1);
+                       //and increment the value of Ndx
   #END
-  
-  #APPEND (SetString, %'Ndx'% + ']'); //add 10th element and closing ]
-  
-  EXPORT Set10 := %'SetString'%; //generate the ECL code
+#END
+#APPEND (SetString, %'Ndx'% + ']'); //add 10th element and closing ]
+EXPORT Set10 := %'SetString'%; //generate the ECL code
                          // This generates:
                          // EXPORT Set10 := [1,2,3,4,5,6,7,8,9,10];
+OUTPUT(Set10);	// [1,2,3,4,5,6,7,8,9,10]
 </programlisting>
 
   <para>See Also: <link linkend="_LOOP-_BREAK">#LOOP</link>, <link

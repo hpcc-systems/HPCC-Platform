@@ -46,9 +46,12 @@
 
   <para>Example:</para>
 
-  <programlisting>DATA5 x := FROMUNICODE(u'ABCDE','UTF-8');
-  //results in 4142434445
-y := TOUNICODE(x,'US-ASCII');</programlisting>
+  <programlisting lang="ECL" role="runnable">DATA5 x := FROMUNICODE(u'ABCDE','UTF-8');
+y := TOUNICODE(x,'US-ASCII');
 
-  <para>See Also: <link linkend="FROMUNICODE">FROMUNICODE</link>, <link linkend="UNICODEORDER">UNICODEORDER</link></para>
+OUTPUT(x); //results in 4142434445
+OUTPUT(y); //results in 'ABCDE'</programlisting>
+
+  <para>See Also: <link linkend="FROMUNICODE">FROMUNICODE</link>, <link
+  linkend="UNICODEORDER">UNICODEORDER</link></para>
 </sect1>

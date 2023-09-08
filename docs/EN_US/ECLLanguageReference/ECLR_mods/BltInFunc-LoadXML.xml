@@ -60,7 +60,7 @@
 
   <para>Example:</para>
 
-  <programlisting>LOADXML('&lt;section&gt;&lt;item type="count"&gt;&lt;set&gt;person&lt;/set&gt;&lt;/item&gt;&lt;/section&gt;')
+  <programlisting lang="ECL" role="notrunnable">LOADXML('&lt;section&gt;&lt;item type="count"&gt;&lt;set&gt;person&lt;/set&gt;&lt;/item&gt;&lt;/section&gt;');
 //this macro receives in-line XML as its parameter
 //and demonstrates the code for multiple row drilldown
 EXPORT id(xmlRow) :=   MACRO

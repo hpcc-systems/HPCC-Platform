@@ -267,7 +267,7 @@
 
   <para>Example:</para>
 
-  <programlisting>//"vertical slice" form:
+  <programlisting lang="ECL" role="notrunnable">//"vertical slice" form:
 MyFormat := RECORD
 STRING25 Lname := Person.per_last_name;
 Person.per_first_name;
@@ -283,8 +283,7 @@ Person.per_st;
 StCnt := COUNT(GROUP);
 END
 Mytable := TABLE(Person,rec,per_st,FEW);
-// group persons by state in Mytable to produce a
-        crosstab
+// group persons by state in Mytable to produce a crosstab
 </programlisting>
 
   <para>See Also: <link linkend="OUTPUT">OUTPUT</link>, <link

@@ -32,15 +32,15 @@
 
   <para>Example:</para>
 
-  <programlisting>  MAC_join(attrname, leftDS, rightDS, linkflags) := MACRO
-    attrname := JOIN(leftDS,rightDS,#EXPAND(linkflags));
-  ENDMACRO;
+  <programlisting lang="ECL" role="notrunnable">MAC_join(attrname, leftDS, rightDS, linkflags) := MACRO
+  attrname := JOIN(leftDS,rightDS,#EXPAND(linkflags));
+ENDMACRO;
   
-  MAC_join(J1,People,Property,'LEFT.ID=RIGHT.PeopleID,LEFT OUTER')
+MAC_join(J1,People,Property,'LEFT.ID=RIGHT.PeopleID,LEFT OUTER')
   //expands out to:
   // J1 := JOIN(People,Property,LEFT.ID=RIGHT.PeopleID,LEFT OUTER);
   
-  MAC_join(J2,People,Property,'LEFT.ID=RIGHT.PeopleID')
+MAC_join(J2,People,Property,'LEFT.ID=RIGHT.PeopleID')
   //expands out to:
   // J2 := JOIN(People,Property,LEFT.ID=RIGHT.PeopleID);
 </programlisting>

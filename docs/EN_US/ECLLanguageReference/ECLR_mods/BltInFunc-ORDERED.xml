@@ -51,17 +51,13 @@
 
   <para>Example:</para>
 
-  <programlisting>Act1 :=
-        OUTPUT(A_People,OutputFormat1,'//hold01/fred.out');
-Act2 :=
-        OUTPUT(Person,{Person.per_first_name,Person.per_last_name})
-Act2 := OUTPUT(Person,{Person.per_last_name})));
-//by naming these actions, they become inactive
-        attributes
-//that only execute when the attribute names are called as
-        actions
-ORDERED(Act1,PARALLEL(Act2,Act3));
-//executes Act1 alone, and then executes Act2 and Act3 together
+  <programlisting lang="ECL">Action1 := OUTPUT(A_People,OutputFormat1,'//hold01/fred.out');
+Action2 := OUTPUT(Person,{Person.per_first_name,Person.per_last_name})
+Action2 := OUTPUT(Person,{Person.per_last_name})));
+  //by naming these actions, they become inactive attributes
+  //that only execute when the attribute names are called as actions
+ORDERED(Action1,PARALLEL(Action2,Action3)); 
+  //executes Action1 alone, and then executes Action2 and Action3 together
 </programlisting>
 
   <para>See Also: <link linkend="PARALLEL_function">PARALLEL</link>, <link
