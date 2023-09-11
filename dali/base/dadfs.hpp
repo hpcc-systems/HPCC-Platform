@@ -644,7 +644,6 @@ interface IDistributedFileDirectory: extends IInterface
     virtual SecAccessFlags getFilePermissions(const char *lname,IUserDescriptor *user,unsigned auditflags=0)=0; // see dasess for auditflags values
     virtual void setDefaultUser(IUserDescriptor *user)=0;
     virtual IUserDescriptor* queryDefaultUser()=0;
-    virtual SecAccessFlags getNodePermissions(const IpAddress &ip,IUserDescriptor *user,unsigned auditflags=0)=0;
     virtual SecAccessFlags getFDescPermissions(IFileDescriptor *,IUserDescriptor *user,unsigned auditflags=0)=0;
     virtual SecAccessFlags getDLFNPermissions(CDfsLogicalFileName &dlfn,IUserDescriptor *user,unsigned auditflags=0)=0;
     virtual SecAccessFlags getDropZoneScopePermissions(const char *dropZoneName,const char *dropZonePath,IUserDescriptor *user,unsigned auditflags=0)=0;
