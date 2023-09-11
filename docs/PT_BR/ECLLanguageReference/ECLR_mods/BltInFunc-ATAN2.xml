@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ATAN2">
@@ -7,15 +7,15 @@
   <para><emphasis role="bold">ATAN2<indexterm>
       <primary>ATAN2</primary>
     </indexterm><indexterm>
-      <primary></primary>
-    </indexterm>(</emphasis><emphasis></emphasis><emphasis
+      <primary/>
+    </indexterm>(</emphasis><emphasis/><emphasis
   role="bold">)</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="78.95pt" />
+        <colspec colwidth="78.95pt"/>
 
-        <colspec colwidth="309.85pt" />
+        <colspec colwidth="309.85pt"/>
 
         <tbody>
           <row>
@@ -39,14 +39,26 @@
       </tgroup>
     </informaltable></para>
 
-  <para>A função  <emphasis role="bold">ATAN2 </emphasis> retorna o arco tangente (inverso) da tangente calculada, em radianos. Isso é semelhante à função ATAN <indexterm>
+  <para>A função <emphasis role="bold">ATAN2 </emphasis> retorna o arco
+  tangente (inverso) da tangente calculada, em radianos. Isso é semelhante à
+  função ATAN <indexterm>
       <primary>ATAN function</primary>
-    </indexterm> , porém mais preciso e lida com situações onde x ou y é igual a zero.
-  <emphasis>x</emphasis> ou <emphasis>y</emphasis> o padrão é zero.</para>
+    </indexterm> , porém mais preciso e lida com situações onde x ou y é igual
+  a zero. <emphasis>x</emphasis> ou <emphasis>y</emphasis> o padrão é
+  zero.</para>
 
   <para>Exemplo:</para>
 
-  <para>ArcTangent := ATAN2(TangentNumerator, TangentDenominator);</para>
+  <para><programlisting lang="ECL">// get the value of tan-1(5.0 / 2.0)
+TangentNumerator := 5.0;
+TangentDenominator:=2.0;
+ArcTangent := ATAN2(TangentNumerator, TangentDenominator); 
+OUTPUT(ArcTangent); //1.190289949682532
+</programlisting></para>
 
-  <para>Ver também: <link linkend="ATAN">ATAN</link>, <link linkend="ACOS">ACOS</link>, <link linkend="COS">COS</link>, <link linkend="ASIN">ASIN</link>, <link linkend="SIN">SIN</link>, <link linkend="TAN">TAN</link>, <link linkend="COSH">COSH</link>, <link linkend="SINH">SINH</link>, <link linkend="TANH">TANH</link></para>
+  <para>Ver também: <link linkend="ATAN">ATAN</link>, <link
+  linkend="ACOS">ACOS</link>, <link linkend="COS">COS</link>, <link
+  linkend="ASIN">ASIN</link>, <link linkend="SIN">SIN</link>, <link
+  linkend="TAN">TAN</link>, <link linkend="COSH">COSH</link>, <link
+  linkend="SINH">SINH</link>, <link linkend="TANH">TANH</link></para>
 </sect1>

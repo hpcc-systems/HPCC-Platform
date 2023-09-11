@@ -168,7 +168,7 @@
 
   <para>Exemplo:</para>
 
-  <programlisting>MyRec := RECORD
+  <programlisting lang="ECL" role="runnable">MyRec := RECORD
     STRING50 Value1;
     UNSIGNED Value2;
 END;
@@ -176,7 +176,7 @@ END;
 ds := DATASET([{'C',1},{'C',2},{'C',3},
                {'C',4},{'C',5},{'X',1},{'A',1}],MyRec);
 
-MyRec FailTransform := transform
+MyRec FailTransform := TRANSFORM
   self.value1 := FAILMESSAGE[1..17]; 
   self.value2 := FAILCODE
 END;
@@ -187,7 +187,7 @@ limited3 := LIMIT(ds, 4);
 
 recovered1 := CATCH(limited1, SKIP);
 recovered2 := CATCH(limited2, ONFAIL(FailTransform));
-recovered3 := CATCH(CATCH(limited3, FAIL(1, 'Failed, dude')), ONFAIL(FailTransform));
+recovered3 := CATCH(CATCH(limited3, FAIL(1, 'Failed, sorry')), ONFAIL(FailTransform));
 
 OUTPUT(recovered1);  //empty recordset 
 OUTPUT(recovered2);  //

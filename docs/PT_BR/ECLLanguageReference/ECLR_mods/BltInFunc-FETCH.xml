@@ -169,7 +169,7 @@
 
     <para>Exemplo:</para>
 
-    <programlisting>PtblRec := RECORD
+    <programlisting lang="ECL" role="NeedsFileToRun">PtblRec := RECORD
   STRING2  State := Person.per_st;
   STRING20 City  := Person.per_full_city;
   STRING25 Lname := Person.per_last_name;

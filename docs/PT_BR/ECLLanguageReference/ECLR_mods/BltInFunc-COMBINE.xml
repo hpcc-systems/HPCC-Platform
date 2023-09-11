@@ -177,7 +177,7 @@
 
     <para>Exemplo:</para>
 
-    <programlisting>inrec := RECORD
+    <programlisting lang="ECL" role="runnable">inrec := RECORD
   UNSIGNED6 uid;
 END;
 outrec := RECORD(inrec)
@@ -231,7 +231,7 @@ OUTPUT(combined2);
 
     <para>Exemplo:</para>
 
-    <programlisting>inrec := {UNSIGNED6 udid};
+    <programlisting lang="ECL" role="runnable">inrec := {UNSIGNED6 udid};
 outrec := RECORD(inrec)
   STRING20 name;
   UNSIGNED score;
@@ -284,7 +284,7 @@ resultRec t(inrec l, DATASET(RECORDOF(combined)) r) := TRANSFORM
  SELF := l;
  END;
 res1 := COMBINE(dsg,combined,GROUP,t(LEFT, ROWS(RIGHT)(score != 0)),LOCAL);
-OUPUT(res1);
+OUTPUT(res1);
 
 //A variation using rows in a child query.
 resultRec t2(inrec l, DATASET(RECORDOF(combined)) r) := TRANSFORM
@@ -293,7 +293,7 @@ resultRec t2(inrec l, DATASET(RECORDOF(combined)) r) := TRANSFORM
  SELF := l;
  END;
 res2 := COMBINE(dsg,combined,GROUP,t2(LEFT,ROWS(RIGHT)(score != 0)),LOCAL);
-OUPUT(res2);</programlisting>
+OUTPUT(res2);</programlisting>
 
     <para>Ver também: <link linkend="GROUP">GROUP</link>, <link
     linkend="REGROUP">REGROUP</link></para>

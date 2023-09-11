@@ -355,6 +355,71 @@ to
 /WsEcl/<emphasis role="bold">submit</emphasis>/query/RoxieTargetName/QueryName/expanded</programlisting></para>
     </sect2>
 
+    <sect2 id="RoxieLogging" role="brk">
+      <title>Log do Roxie e Níveis de Rastreamento</title>
+
+      <para>Quando você executa uma consulta Roxie utilizando o WsECL, você
+      pode marcar a opção para solicitar o logging de informações da Roxie
+      para esta consulta. Também é possível indicar o nível do que deverá ser
+      ajustadao para que os logs sejam gravados.</para>
+
+      <para><graphic fileref="../../images/RDDE_RoxieLogging.jpg"/></para>
+
+      <para>Marque a opção <emphasis role="bold">Capture Log Info.</emphasis>
+      para habilitar o rastreamneto no request.</para>
+
+      <para>Opcionalmente, você pode especificar o nível de detalhamento
+      inserindo um número entre 1-10 na caixa <emphasis role="bold">Trace
+      Level</emphasis>.</para>
+
+      <para>Além disso, a opção pode ser ativada nas propriedades da
+      Request:</para>
+
+      <para><programlisting>&lt;addthis.1Request xmlns="urn:hpccsystems:ecl:addthis.1" log="true" traceLevel="10"&gt;</programlisting></para>
+
+      <para>Log é retornado para a resposta SOAP:</para>
+
+      <para><programlisting>&lt;Tracing&gt; 
+  &lt;Log&gt; 
+    &lt;Category&gt;TRACE&lt;/Category&gt; 
+    &lt;Channel&gt;0&lt;/Channel&gt; 
+    &lt;Time&gt;0.001&lt;/Time&gt;  
+    &lt;Prefix&gt;10.239.20.60:9876 {7} &lt;/Prefix&gt; 
+    &lt;Text&gt;Executing graph graph1&lt;/Text&gt; 
+  &lt;/Log&gt; 
+&lt;/Tracing&gt;</programlisting></para>
+    </sect2>
+
+    <sect2 role="brk">
+      <title>Log Cego</title>
+
+      <para>Blind logging suppresses anything that might be potentially
+      sensitive or might contain Personally Identifiable Information (PII)
+      from being written to logs. This includes contents of rows, contents of
+      queries, and contents of fields.</para>
+
+      <para>Você pode usar uma consulta para um log cego ativando a opção
+      “&lt;_blind&gt;” no request, ou ajustando o atributo “blind” no topo da
+      request para 1 ou verdade.</para>
+
+      <para><programlisting>&lt;/soap:Envelope&gt;
+  &lt;soap:Body&gt;
+    &lt;exampleRequest xmlns="urn:hpccsystems:ecl:example"&gt;
+      &lt;_blind&gt;1&lt;/_blind&gt;
+      &lt;acctno&gt;1111111&lt;/acctno&gt;
+    &lt;/exampleRequest&gt;
+  &lt;/soap:Body&gt;
+&lt;/soap:Envelope&gt;</programlisting>ou</para>
+
+      <para><programlisting>&lt;soap:Envelope&gt; 
+  &lt;soap:Body&gt; 
+    &lt;exampleRequest xmlns="urn:hpccsystems:ecl:example" blind=’1’&gt; 
+      &lt;acctno&gt;1111111&lt;/acctno&gt; 
+    &lt;/exampleRequest&gt; 
+  &lt;/soap:Body&gt; 
+&lt;/soap:Envelope&gt;</programlisting></para>
+    </sect2>
+
     <sect2 id="RESTful_access" role="brk">
       <title>Acesso RESTful Direto ao Roxie</title>
 

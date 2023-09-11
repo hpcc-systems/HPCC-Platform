@@ -20,8 +20,12 @@
 
   <para>Exemplo:</para>
 
-  <programlisting>BooleanTrue := TRUE;
-Booleanfalse := FALSE;</programlisting>
+  <programlisting lang="ECL" role="runnable">BooleanTrue := TRUE;
+Booleanfalse := FALSE;
+
+OUTPUT(BooleanTrue);
+OUTPUT(BooleanFalse)
+</programlisting>
 
   <para>Ver também: <link linkend="BOOLEAN">BOOLEAN</link></para>
 </sect1>

@@ -1,0 +1,739 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter id="DPLib">
+  <title>Biblioteca de Data Patterns</title>
+
+  <para>Esta seção cobre os métodos de Data Patterns na Biblioteca
+  Padrão.</para>
+
+  <sect1 id="DPProfile">
+    <title>Perfil</title>
+
+    <para><emphasis role="bold">STD.DataPatterns.Profile<indexterm>
+        <primary>STD.DataPatterns.Profiles</primary>
+      </indexterm><indexterm>
+        <primary>DataPatterns.Profiles</primary>
+      </indexterm><indexterm>
+        <primary>Profile</primary>
+      </indexterm></emphasis></para>
+
+    <para>Macro de função para criação de perfil de todo ou parte de um
+    dataset. A saída é um dataset contendo as seguintes informações para cada
+    atributo com perfil:</para>
+
+    <para>A maioria das saídas de perfil pode ser desativada. Veja o argumento
+    'features' abaixo.</para>
+
+    <para>Os Data patterns podem dar uma ideia de como seus dados se parecem
+    quando são expressos como uma string (legível por humanos). A função
+    converte cada caractere da string em uma paleta de caracteres fixa para
+    produzir um "padrão de dados" e, em seguida, conta o número de padrões
+    exclusivos para esse atributo.</para>
+
+    <para>Os padrões mais e menos populares dos dados serão mostrados na
+    saída, junto com o número de vezes que esse padrão aparece e um exemplo
+    (escolhido aleatoriamente dos dados reais). A paleta de caracteres
+    utilizada é:</para>
+
+    <para>A Qualquer caractere em caixa-alta</para>
+
+    <para>a Qualquer caractere em caixa-baixa</para>
+
+    <para>9 Qualquer dígito númerico</para>
+
+    <para>B Um valor boleano (true ou false)</para>
+
+    <para>Todos os outros caracteres são deixados como estão no padrão.</para>
+
+    <para><emphasis role="bold">Parâmetros</emphasis></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <tbody>
+          <row>
+            <entry><emphasis>inFile</emphasis></entry>
+
+            <entry>O dataset a processar; pode ser um dataset filho (por
+            exemplo, inFile.childDS); OBRIGATÓRIO</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>fieldListStr</emphasis></entry>
+
+            <entry>Uma string contendo uma lista delimitada por vírgulas de
+            nomes de atributos a serem processados; use uma string vazia para
+            processar todos os atributos em inFile; OPCIONAL, o padrão é uma
+            string vazia</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>maxPatterns</emphasis></entry>
+
+            <entry>O número máximo de padrões (populares e raros) a serem
+            retornados para cada atributo; OPCIONAL, o padrão é 100</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>maxPatternLen</emphasis></entry>
+
+            <entry>O comprimento máximo de um padrão; padrões mais longos são
+            truncados na saída; esse valor também é usado para definir o
+            comprimento máximo dos dados a serem considerados ao encontrar
+            valores de cardinalidade e modo; deve ser 33 ou maior; OPTIONAL, o
+            padrão é 100The maximum length of a pattern; longer patterns are
+            truncated in the output; this value is also used to set the
+            maximum length of the data to consider when finding cardinality
+            and mode values; must be 33 or larger; OPTIONAL, defaults to
+            100</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>features</emphasis></entry>
+
+            <entry>Uma string delimitada por vírgula listando os elementos de
+            criação de perfil a serem incluídos na saída; OPCIONAL, o padrão é
+            uma string delimitada por vírgula contendo todas as palavras-chave
+            disponíveis mencionadas na tabela "palavras-chave". Para omitir a
+            saída associada a uma única palavra-chave, defina este argumento
+            como uma string delimitada por vírgula contendo todas as outras
+            palavras-chave; observe que a saída is_numeric aparecerá apenas se
+            os recursos min_max, mean, std_dev, quartis ou correlações
+            estiverem ativos; observe também que ativar o recurso
+            cardinality_breakdown também ativará o recurso cardinality, mesmo
+            que não esteja explicitamente ativado</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>sampleSize</emphasis></entry>
+
+            <entry>Um número inteiro positivo que representa uma porcentagem
+            de inFile para examinar, o que é útil ao analisar um conjunto de
+            dados muito grande e apenas um perfil de dados estimado é
+            suficiente; intervalo válido para este argumento é 1-100; valores
+            fora desta faixa serão fixados; OPCIONAL, o padrão é 100 (o que
+            indica que todo o conjunto de dados será analisado)</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>lcbLimit</emphasis></entry>
+
+            <entry>Um inteiro positivo (&lt;= 1000) que indica a cardinalidade
+            máxima permitida para um atributo para emitir um detalhamento dos
+            valores do atributo; este parâmetro será ignorado se
+            cardinality_breakdown não for incluído no argumento features;
+            OPCIONAL, o padrão é 64</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para><emphasis role="bold">Atributos Retornados</emphasis></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <tbody>
+          <row>
+            <entry><emphasis>attribute</emphasis></entry>
+
+            <entry>O nome do atributo</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>given_attribute_type</emphasis></entry>
+
+            <entry>O tipo ECL do atributo conforme foi definido no conjunto de
+            dataset</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>best_attribute_type</emphasis></entry>
+
+            <entry>Um tipo de dados ECL que permite todos os valores no
+            dataset de entrada e consome a menor quantidade de memória</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>rec_count</emphasis></entry>
+
+            <entry>O número de registros analisados no conjunto de dados; isso
+            pode ser menor que o número total de registros, se o argumento
+            sampleSize opcional for fornecido com um valor menor que
+            100</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>fill_count</emphasis></entry>
+
+            <entry>O número de registros rec_count contendo valores não nulos;
+            um 'valor nulo' é uma string vazia, um zero numérico ou um SET
+            vazio; observe que os atributos BOOLEANOS são sempre contados como
+            preenchidos, independentemente de seu valor; além disso, os
+            atributos DATA de comprimento fixo (por exemplo, DATA10) também
+            são contados como preenchidos, devido à sua função típica de
+            manter blobs de dados</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>cardinality</emphasis></entry>
+
+            <entry>O número de valores exclusivos não nulos dentro do
+            atributo</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>cardinality_breakdown</emphasis></entry>
+
+            <entry>Para esses atributos com um número baixo de valores
+            exclusivos não nulos, mostre cada valor e o número de registros
+            que contêm esse valor; o parâmetro lcbLimit determina o que
+            significa "número baixo"</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>modes</emphasis></entry>
+
+            <entry>Os valores mais comuns no atributo, após coagir todos os
+            valores para STRING, juntamente com o número de registros nos
+            quais os valores foram encontrados; se nenhum valor for repetido
+            mais de uma vez, nenhum modo será mostrado; até cinco (5) modos
+            serão mostrados; observe que os valores de string maiores que o
+            argumento maxPatternLen serão truncados</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>min_length</emphasis></entry>
+
+            <entry>Para datatype do tipo SET, o menor número de elementos
+            encontrados no conjunto; para outros tipos de dados, o menor
+            comprimento de um valor quando expresso como string; valores nulos
+            são ignorados</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>max_length</emphasis></entry>
+
+            <entry>Para datatype do tipo SET, o maior número de elementos
+            encontrados no conjunto; para outros tipos de dados, o maior
+            comprimento de um valor quando expresso como string; valores nulos
+            são ignorados</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>ave_length</emphasis></entry>
+
+            <entry>Para o datatype do tipo SET, o número médio de elementos
+            encontrados no conjunto; para outros tipos de dados, o comprimento
+            médio de um valor quando expresso como string; valores nulos são
+            ignorados</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>popular_patterns</emphasis></entry>
+
+            <entry>Os padrões de valores mais comuns; Veja abaixo</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>rare_patterns</emphasis></entry>
+
+            <entry>Os padrões menos comuns de valores; Veja abaixo</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>is_numeric</emphasis></entry>
+
+            <entry>Booleano indicando se o atributo original era um escalar
+            numérico ou se o valor best_attribute_type era um escalonador
+            numérico; se TRUE, os campos de saída numeric_xxxx serão
+            preenchidos com valores reais; se este valor for FALSE, todos os
+            valores de saída numeric_xxxx devem ser ignorados</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>numeric_min</emphasis></entry>
+
+            <entry>O menor valor não nulo encontrado no atributo como DECIMAL;
+            este valor é válido apenas se is_numeric for TRUE; se is_numeric
+            for FALSE, zero será exibido aqui</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>numeric_max </emphasis></entry>
+
+            <entry>O maior valor não nulo encontrado no atributo como DECIMAL;
+            este valor é válido apenas se is_numeric for TRUE; se is_numeric
+            for FALSE, zero será exibido aqui</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>numeric_mean</emphasis></entry>
+
+            <entry>O valor médio (médio) não nulo encontrado no atributo como
+            DECIMAL; este valor é válido apenas se is_numeric for TRUE; se
+            is_numeric for FALSE, zero será exibido aqui</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>numeric_std_dev</emphasis></entry>
+
+            <entry>O desvio padrão dos valores não nulos no atributo como
+            DECIMAL; este valor é válido apenas se is_numeric for TRUE; se
+            is_numeric for FALSE, zero será exibido aqui</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>numeric_lower_quartile</emphasis></entry>
+
+            <entry>O valor que separa o primeiro (inferior) e o segundo
+            trimestre de valores não nulos dentro do atributo como um DECIMAL;
+            este valor é válido apenas se is_numeric for TRUE; se is_numeric
+            for FALSE, zero será exibido aqui</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>numeric_median</emphasis></entry>
+
+            <entry>O valor mediano não nulo dentro do atributo como DECIMAL;
+            este valor é válido apenas se is_numeric for TRUE; se is_numeric
+            for FALSE, zero será exibido aqui</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>numeric_upper_quartile</emphasis></entry>
+
+            <entry>O valor que separa o terceiro e o quarto (superior)
+            trimestres de valores não nulos dentro do atributo como um
+            DECIMAL; este valor é válido apenas se is_numeric for TRUE; se
+            is_numeric for FALSE, zero será exibido aqui</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>correlations</emphasis></entry>
+
+            <entry>Um dataset filho contendo valores de correlação comparando
+            o atributo numérico atual com todos os outros atributos numéricos,
+            listados em ordem de valor de correlação decrescente; o atributo
+            deve ser um tipo de dados ECL numérico; atributos não numéricos
+            retornarão um dataset filho vazio; observe que esta pode ser uma
+            operação demorada, dependendo do número de atributos numéricos em
+            seu dataset e do número de linhas (se você tiver N atributos
+            numéricos, N (N - 1) / 2 cálculos serão executados, cada um
+            verificando todos linhas de dados)</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <tbody>
+            <row>
+              <entry><emphasis>PALAVRA-CHAVE</emphasis></entry>
+
+              <entry>OUTPUT AFETADO</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>fill_rate</emphasis></entry>
+
+              <entry>fill_rate, fill_count</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>cardinality</emphasis></entry>
+
+              <entry>cardinality</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>cardinality_breakdown</emphasis></entry>
+
+              <entry>cardinality_breakdown</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>best_ecl_types</emphasis></entry>
+
+              <entry>best_attribute_type</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>modes</emphasis></entry>
+
+              <entry>modes</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>lengths</emphasis></entry>
+
+              <entry>min_length, max_length, ave_length</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>patterns</emphasis></entry>
+
+              <entry>popular_patterns, rare_patterns</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>min_max</emphasis></entry>
+
+              <entry>numeric_min, numeric_max</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>mean</emphasis></entry>
+
+              <entry>numeric_mean</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>std_dev</emphasis></entry>
+
+              <entry>numeric_std_dev</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>quartiles</emphasis></entry>
+
+              <entry>numeric_lower_quartile, numeric_median,
+              numeric_upper_quartile</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>correlations</emphasis></entry>
+
+              <entry>correlations</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+
+    <para><emphasis role="bold">Example:</emphasis></para>
+
+    <programlisting>IMPORT Std;
+Profile(inFile,
+               fieldListStr = '\'\'',
+               maxPatterns = 100,
+               maxPatternLen = 100,
+               features = '\'fill_rate,best_ecl_types,cardinality,cardinality_breakdown,modes,lengths,patterns,min_max,mean,std_dev,quartiles,correlations\'',
+               sampleSize = 100,
+               lcbLimit = 64) := FUNCTIONMACRO</programlisting>
+  </sect1>
+
+  <sect1 id="DPBestRecord">
+    <title>Melhor Estrutura de Registro</title>
+
+    <para><emphasis role="bold">STD.DataPatterns.BestRecordStructure<indexterm>
+        <primary>STD.DataPatterns.BestRecordStructure</primary>
+      </indexterm><indexterm>
+        <primary>DataPatterns.BestRecordStructure</primary>
+      </indexterm><indexterm>
+        <primary>BestRecordStructure</primary>
+      </indexterm></emphasis></para>
+
+    <para>Macro de função que utiliza DataPatterns para retornar uma string
+    que define a melhor estrutura de registro ECL para os dados de
+    entrada.</para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <tbody>
+          <row>
+            <entry><emphasis>inFile</emphasis></entry>
+
+            <entry>O dataset a processar; OBRIGATÓRIO</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>sampling</emphasis></entry>
+
+            <entry>Um número inteiro positivo que representa uma porcentagem
+            de inFile a ser examinada, o que é útil ao analisar um dataset
+            muito grande e apenas uma estimativa é suficiente; intervalo
+            válido para este argumento é 1-100; valores fora desta faixa serão
+            fixados; OPCIONAL, o padrão é 100 (o que indica que todo o dataset
+            será analisado)</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>emitTransform</emphasis></entry>
+
+            <entry>Booleano que controla se a função emite uma função
+            TRANSFORM que pode ser usada para reescrever o dataset na 'melhor'
+            definição de registro; OPCIONAL, o padrão é FALSO.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>textOutput</emphasis></entry>
+
+            <entry>Booleano que rege o tipo de resultado que é entregue por
+            esta função; se for FALSE, um conjunto de registros de STRINGs
+            será retornado; se for TRUE então um dataset com um único campo
+            STRING, com o conteúdo formatado para HTML, será retornado (essa é
+            a saída ideal se a intenção for copiar a saída do ECL Watch);
+            OPCIONAL, o padrão é FALSO</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>A melhor estrutura de registro retorna um recordset que define a
+    melhor estrutura de registro ECL para os dados. Se textOutput for FALSE (o
+    padrão), cada registro conterá uma declaração de campo e a lista de
+    declarações será agrupada com as strings RECORD e END; se o argumento
+    emitTransform for TRUE, haverá também um recordset que compreendem uma
+    função TRANSFORM independente. Se textOutput for TRUE, apenas um registro
+    será retornado, contendo uma string formatada em HTML contendo as novas
+    declarações de campo (e opcionalmente o TRANSFORM); este é o formato ideal
+    se a intenção for copiar o resultado do ECL Watch.</para>
+
+    <para><emphasis role="bold">Exemplo:</emphasis></para>
+
+    <programlisting>BestRecordStructure(inFile, sampling = 100, emitTransform = FALSE, textOutput = FALSE) := FUNCTIONMACRO
+    LOADXML('&lt;xml/&gt;');
+    #EXPORTXML(bestInFileFields, RECORDOF(inFile));
+    #UNIQUENAME(bestFieldStack);
+    #UNIQUENAME(bestStructType);
+    #UNIQUENAME(bestLayoutType);
+    #UNIQUENAME(bestCapturedPos);
+    #UNIQUENAME(bestPrevCapturedPos);
+    #UNIQUENAME(bestLayoutName);
+    #UNIQUENAME(bestNeedsDelim);
+    #UNIQUENAME(bestNamePrefix);
+    #UNIQUENAME(recLevel);
+IMPORT Std;</programlisting>
+  </sect1>
+
+  <sect1 id="DPBenford">
+    <title>Benford</title>
+
+    <para><emphasis role="bold">STD.DataPatterns.Benford<indexterm>
+        <primary>STD.DataPatterns.Benford</primary>
+      </indexterm><indexterm>
+        <primary>DataPatterns.Benford</primary>
+      </indexterm><indexterm>
+        <primary>Benford</primary>
+      </indexterm></emphasis></para>
+
+    <para>A lei de Benford, também chamada de lei de Newcomb-Benford, ou lei
+    dos números anômalos, é uma observação sobre a distribuição de frequência
+    dos dígitos iniciais em muitos conjuntos de dados numéricos da vida
+    real.</para>
+
+    <para>A lei de Benford não se aplica a todos os conjuntos de números, mas
+    geralmente se aplica a grandes conjuntos de números que ocorrem
+    naturalmente com alguma conexão como:</para>
+
+    <para>* Valores de mercado de ações das empresas</para>
+
+    <para>* Dados encontrados em textos - como o Reader's Digest ou uma cópia
+    da Newsweek</para>
+
+    <para>* Dados demográficos, incluindo populações estaduais e
+    municipais</para>
+
+    <para>* Dados de imposto de renda</para>
+
+    <para>* Tabelas matemáticas, como logaritmos</para>
+
+    <para>* Taxas de drenagem do rio</para>
+
+    <para>* Dados científicos</para>
+
+    <para>A lei geralmente não se aplica a conjuntos de dados que têm um
+    mínimo e um máximo declarados, como taxas de juros ou salários por hora.
+    Se os números forem atribuídos, em vez de ocorrerem naturalmente, eles
+    também não seguirão a lei. Exemplos de números atribuídos incluem: códigos
+    postais, números de telefone e números de CPF.</para>
+
+    <para>Maiores informações:
+    https://en.wikipedia.org/wiki/Benford%27s_law</para>
+
+    <para>Esta função calcula a distribuição de dígitos em um ou mais
+    atributos em um conjunto de dados e exibe o resultado, um atributo por
+    linha, com uma linha "esperada" mostrando as distribuições esperadas.
+    Incluído em cada linha de dados está um cálculo qui-quadrado para essa
+    linha indicando o quão bem o resultado calculado corresponde ao resultado
+    esperado (se o valor qui-quadrado exceder o mostrado na linha --EXPECTED--
+    então a linha de dados NÃO SEGUE Lei de Benford).</para>
+
+    <para>Observe que ao calcular a distribuição do dígito mais significativo,
+    o dígito zero é ignorado. Assim, por exemplo, os valores 0100, 100, 1,0,
+    0,10 e 0,00001 têm um dígito mais significativo de '1'. O dígito zero é
+    considerado para todas as outras posições.</para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <tbody>
+          <row>
+            <entry><emphasis>inFile</emphasis></entry>
+
+            <entry>O conjunto de dados a processar; OBRIGATÓRIO</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>fieldListStr</emphasis></entry>
+
+            <entry>Uma string contendo uma lista delimitada por vírgulas de
+            nomes de atributos a serem processados; observe que os atributos
+            listados aqui devem ser atributos de nível superior (não registros
+            filhos ou datasets de dados filhos); use uma string vazia para
+            processar todos os atributos de nível superior em inFile;
+            OPCIONAL, o padrão é uma string vazia</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>digit</emphasis></entry>
+
+            <entry>O dígito baseado em 1 dentro do número a ser examinado; o
+            primeiro dígito significativo é '1' e só aumenta; OPCIONAL, o
+            padrão é 1, significando o dígito diferente de zero mais
+            significativo</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>sampleSize</emphasis></entry>
+
+            <entry>Um número inteiro positivo que representa uma porcentagem
+            de inFile a ser examinada, o que é útil ao analisar um conjunto de
+            dados muito grande e apenas uma análise de dados estimada é
+            suficiente; intervalo válido para este argumento é 1-100; valores
+            fora desta faixa serão fixados; OPCIONAL, o padrão é 100 (o que
+            indica que todas as linhas do conjunto de dados serão
+            usadas)</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>Benford retorna um novo dataset com a seguinte estrutura de
+    registro:</para>
+
+    <para>RECORD</para>
+
+    <para>STRING attribute; // Name of data attribute examined</para>
+
+    <para>DECIMAL4_1 zero; // Percentage of rows with digit of '0'</para>
+
+    <para>DECIMAL4_1 one; // Percentage of rows with digit of '1'</para>
+
+    <para>DECIMAL4_1 two; // Percentage of rows with digit of '2'</para>
+
+    <para>DECIMAL4_1 three; // Percentage of rows with digit of '3'</para>
+
+    <para>DECIMAL4_1 four; // Percentage of rows with digit of '4'</para>
+
+    <para>DECIMAL4_1 five; // Percentage of rows with digit of '5'</para>
+
+    <para>DECIMAL4_1 six; // Percentage of rows with digit of '6'</para>
+
+    <para>DECIMAL4_1 seven; // Percentage of rows with digit of '7'</para>
+
+    <para>DECIMAL4_1 eight; // Percentage of rows with digit of '8'</para>
+
+    <para>DECIMAL4_1 nine; // Percentage of rows with digit of '9'</para>
+
+    <para>DECIMAL7_3 chi_squared; // Chi-squared "fitness test" result</para>
+
+    <para>UNSIGNED8 num_values; // Number of rows with non-zero values for
+    this attribute</para>
+
+    <para>END;</para>
+
+    <para>Os campos de dígitos nomeados (por exemplo, "zero" e "um" e assim
+    por diante) representam o dígito * encontrado na posição 'dígito' do
+    atributo associado. Os valores * que aparecem ali são porcentagens.
+    num_values mostra o número * de valores diferentes de zero processados e
+    qui_quadrado mostra o resultado da aplicação * desse teste usando os
+    valores de distribuição observados versus esperados.</para>
+
+    <para>A primeira linha dos resultados mostrará os valores esperados para
+    os * dígitos nomeados, com "-- EXPECTED DIGIT n --" exibido como o nome do
+    atributo. 'n' será * substituído pelo valor de 'digit' que indica qual a
+    posição do dígito * foi examinada.</para>
+
+    <para>Observe que ao visualizar os resultados para o dígito mais
+    significativo (dígito = 1), * o campo 'zero' mostrará um valor -1,
+    indicando que foi ignorado.</para>
+
+    <para><emphasis role="bold">Exemplo:</emphasis></para>
+
+    <programlisting>Benford(inFile, fieldListStr = '\'\'', digit = 1, sampleSize = 100) := FUNCTIONMACRO
+
+    #UNIQUENAME(minDigit);
+    LOCAL %minDigit% := MAX((INTEGER)digit, 1);
+
+    #UNIQUENAME(clampedDigit);  
+    LOCAL %clampedDigit% := MIN(%minDigit%, 4);
+
+    // Chi-squared critical value table:
+    // https://www.itl.nist.gov/div898/handbook/eda/section3/eda3674.htm
+
+    // Chi-squared critical values for 8 degrees of freedom at various probabilities
+    // Probability:     0.90    0.95    0.975   0.99    0.999
+    // Critical value:  13.362  15.507  17.535  20.090  26.125
+    #UNIQUENAME(CHI_SQUARED_CRITICAL_VALUE_1);
+    #SET(CHI_SQUARED_CRITICAL_VALUE_1, 20.090); // 99% probability
+
+    // Chi-squared critical values for 9 degrees of freedom at various probabilities
+    // Probability:     0.90    0.95    0.975   0.99    0.999
+    // Critical value:  14.684  16.919  19.023  21.666  27.877
+    #UNIQUENAME(CHI_SQUARED_CRITICAL_VALUE_2);
+    #SET(CHI_SQUARED_CRITICAL_VALUE_2, 21.666); // 99% probability
+
+    #UNIQUENAME(CHI_SQUARED_CRITICAL_VALUE);
+    LOCAL %CHI_SQUARED_CRITICAL_VALUE% := IF(%clampedDigit% = 1, %CHI_SQUARED_CRITICAL_VALUE_1%, %CHI_SQUARED_CRITICAL_VALUE_2%);
+
+    #UNIQUENAME(expectedDistribution);
+    LOCAL %expectedDistribution% := DATASET
+        (
+            [
+                {1, -1, 30.1, 17.6, 12.5, 9.7, 7.9, 6.7, 5.8, 5.1, 4.6},
+                {2, 12.0, 11.4, 10.9, 10.4, 10.0, 9.7, 9.3, 9.0, 8.8, 8.5},
+                {3, 10.2, 10.1, 10.1, 10.1, 10.0, 10.0, 9.9, 9.9, 9.9, 9.8},
+                {4, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0}
+            ],
+            {
+                UNSIGNED1   pos,
+                DECIMAL4_1  zero,
+                DECIMAL4_1  one,
+                DECIMAL4_1  two,
+                DECIMAL4_1  three,
+                DECIMAL4_1  four,
+                DECIMAL4_1  five,
+                DECIMAL4_1  six,
+                DECIMAL4_1  seven,
+                DECIMAL4_1  eight,
+                DECIMAL4_1  nine
+            }
+        );
+
+    // Remove all spaces from field list so we can parse it more easily
+    #UNIQUENAME(trimmedFieldList);
+    LOCAL %trimmedFieldList% := TRIM((STRING)fieldListStr, ALL);
+
+    // Ungroup the given dataset, in case it was grouped
+    #UNIQUENAME(ungroupedInFile);
+    LOCAL %ungroupedInFile% := UNGROUP(inFile);
+
+    // Clamp the sample size to something reasonable
+    #UNIQUENAME(clampedSampleSize);
+    LOCAL %clampedSampleSize% := MAX(1, MIN(100, (INTEGER)sampleSize));
+
+    // Create a sample dataset if needed
+    #UNIQUENAME(sampledData);
+    LOCAL %sampledData% := IF
+        (
+            %clampedSampleSize% &lt; 100,
+            ENTH(%ungroupedInFile%, %clampedSampleSize%, 100, 1, LOCAL),
+            %ungroupedInFile%
+        );
+IMPORT Std;</programlisting>
+
+    <para/>
+
+    <para><emphasis role="bold"/></para>
+  </sect1>
+</chapter>

@@ -53,7 +53,7 @@
 
   <para>Exemplo:</para>
 
-  <programlisting>MySet := DISTRIBUTED(Person,HASH32(Person.per_ssn));
+  <programlisting lang="ECL">MySet := DISTRIBUTED(Person,HASH32(Person.per_ssn));
         //all people with the same SSN are already on the same node</programlisting>
 
   <para>Ver também: <link linkend="HASH32">HASH32</link>, <link

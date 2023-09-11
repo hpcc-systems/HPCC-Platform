@@ -491,5 +491,41 @@ ContainerLog
 
       <programlisting>helm install myhpcc ./hpcc --set -f ./examples/logging/esp-eclwatch-low-logging-values.yaml</programlisting>
     </sect2>
+
+    <sect2>
+      <title>Asychronous logging configuration</title>
+
+      <para>Por padrão, as entradas de log serão criadas e registradas de
+      forma assíncrona, para não bloquear o cliente que está registrando. As
+      entradas de log serão mantidas em uma fila e geradas em uma thread em
+      segundo plano. Esta fila tem um limite, uma vez atingido, o cliente
+      bloqueará aguardando capacidade. Como alternativa, o comportamento pode
+      ser configurado de forma que, quando esse limite for atingido, as
+      entradas de log sejam descartadas e perdidas para evitar qualquer
+      possível bloqueio.</para>
+
+      <para>By default log entries will be created and logged asynchronously,
+      so as not to block the client that is logging. Log entries will be held
+      in a queue and output on a background thread. This queue has a maximum
+      depth, once hit, the client will block waiting for capacity.
+      Alternatively, the behaviour can be be configured such that when this
+      limit is hit, logging entries are dropped and lost to avoid any
+      potential blocking.</para>
+
+      <para>NB: normalmente, espera-se que a pilha de registro continue e o
+      limite de fila padrão seja suficiente para evitar qualquer
+      bloqueio.</para>
+
+      <para>Os padrões podem ser configurados definindo o
+      &lt;section&gt;.logging.queueLen e/ou
+      &lt;section&gt;.logging.queueDrop.</para>
+
+      <para>Ajustar &lt;section&gt;.logging.queueLen para 0 desabilitará o log
+      assíncrono, ou seja, cada log será bloqueado até ser concluído.</para>
+
+      <para>Ajustar &lt;section&gt;.logging.queueDrop para um valor não-zero
+      (N) fará com que N entradas de log da fila sejam descartadas se o
+      queueLen for atingido.</para>
+    </sect2>
   </sect1>
 </chapter>

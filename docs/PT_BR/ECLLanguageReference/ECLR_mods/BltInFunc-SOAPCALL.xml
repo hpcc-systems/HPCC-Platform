@@ -186,7 +186,7 @@
             <entry><emphasis>numthreads</emphasis></entry>
 
             <entry>Opcional. Tenta avaliar essa atividade usando
-            <emphasis>numthreads</emphasis> threads</entry>
+            <emphasis>numthreads</emphasis> threads por nó.</entry>
           </row>
 
           <row>
@@ -296,9 +296,9 @@
                 <primary>PARALLEL</primary>
               </indexterm>(<emphasis>n</emphasis>)</entry>
 
-            <entry>Especifica o número de threads simultâneas – para processar
-            as consultas do Motor de entrega de dados – para no máximo 50 (o
-            padrão é 2). Isso busca limitar o número de sessões
+            <entry>Especifica o número de threads por nós simultâneos – para
+            processar as consultas do Motor de entrega de dados – para no
+            máximo 50 (o padrão é 2). Isso busca limitar o número de sessões
             simultâneas.</entry>
           </row>
 
@@ -384,10 +384,12 @@
 
           <row>
             <entry><emphasis role="bold">LOG
-            </emphasis>(<emphasis>expression</emphasis>)</entry>
+            </emphasis>(<emphasis>start_expression,
+            end_expression</emphasis>)</entry>
 
-            <entry>Especifica adicionar a expressão no log ao desempenhar um
-            SOAPCALL.</entry>
+            <entry>Especifica a inclusão de start_expression no log quando um
+            SOAPCALL começar e a inclusão de end_expression no log quando um
+            SOAPCALL terminar.</entry>
           </row>
 
           <row>

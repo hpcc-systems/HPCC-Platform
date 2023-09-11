@@ -484,34 +484,34 @@
     <sect1 id="SysAdm_ThorHW">
       <title>Hardware Thor</title>
 
-      <para>Nós escravos Thor exigem um equilíbrio adequado de CPU, memória
+      <para>Nós secundários Thor exigem um equilíbrio adequado de CPU, memória
       RAM, rede e E/S de disco para operar da maneira mais eficiente. Um único
-      nó escravo do Thor funciona de maneira ideal quando alocado em 4 núcleos
-      de CPU, 8GB de memória RAM, I/O de rede de 1Gb/segundo e
+      nó secundário do Thor funciona de maneira ideal quando alocado em 4
+      núcleos de CPU, 8GB de memória RAM, I/O de rede de 1Gb/segundo e
       leitura/gravação de disco sequencial de 200MB/segundo.</para>
 
       <para>A arquitetura de hardware pode oferecer valor superior dentro de
       um único servidor físico. Em tais casos, é possível usar múltiplos
-      escravos para configurar seus servidores físicos maiores de modo a
-      executar múltiplos nós de escravos Thor por servidor físico.</para>
+      secundários para configurar seus servidores físicos maiores de modo a
+      executar múltiplos nós de secundários Thor por servidor físico.</para>
 
       <para>É importante observar que HPCC, por natureza, é um sistema de
-      processamento paralelo e que todos os nós de escravos Thor serão
+      processamento paralelo e que todos os nós de secundários Thor serão
       executados precisamente ao mesmo tempo Desta forma, ao alocar mais de um
-      escravo HPCC Thor por máquina física, verifique se cada escravo atende
-      aos requisitos recomendados.</para>
+      secundário HPCC Thor por máquina física, verifique se cada secundário
+      atende aos requisitos recomendados.</para>
 
       <para>Por exemplo, em sua eficiência ideal, 1 servidor físico com 48
       núcleos, 96GB de memória RAM, I/O de rede de 10Gb/segundo e sequencial
-      de 2GB/segundo seria capaz de executar dez (10) escravos HPCC Thor . A
-      ordem para otimização do uso de recursos em um nó escravo Thor é I/O de
-      disco de 60%, rede de 30% e CPU de 10%. Qualquer aumento na I/O
+      de 2GB/segundo seria capaz de executar dez (10) secundários HPCC Thor .
+      A ordem para otimização do uso de recursos em um nó secundário Thor é
+      I/O de disco de 60%, rede de 30% e CPU de 10%. Qualquer aumento na I/O
       sequencial terá o maior impacto sobre a velocidade, seguido por
       melhorias na rede e, depois, por melhorias na CPU.</para>
 
       <para>A arquitetura de rede também é algo importante a ser considerado.
       Os nós HPCC Thor funcionam idealmente em uma arquitetura de rede
-      dinamizada entre todos os processos escravos Thor.</para>
+      dinamizada entre todos os processos secundários Thor.</para>
 
       <para>RAID é recomendado e todos os níveis de RAID adequados para
       operações de leitura/gravação sequencial e alta disponibilidade são
@@ -1115,10 +1115,17 @@
     <sect1 id="SysAdm_Env.conf">
       <title>Environment.conf</title>
 
-      <para>Outro componente da configuração do HPCC System é o arquivo
-      enviroment.conf. O environment.conf contém algumas definições globais
-      que o gerenciador de configuração usa para configurar o HPCC System. Na
-      maioria dos casos, os padrões são suficientes.</para>
+      <para>Um componente dos sistemas HPCC na configuração bare-metal é o
+      arquivo enviroment.conf. O environment.conf contém algumas definições
+      globais que o gerenciador de configuração usa para configurar o HPCC
+      System. Na maioria dos casos, os padrões são suficientes.</para>
+
+      <para>O arquivo environment.conf funciona apenas para implantações
+      bare-metal. Para implantações de contêiner ou nuvem, o environment.conf
+      não é válido; em vez disso, há configurações de ambiente que podem ser
+      definidas definindo valores nos gráficos do Helm. Consulte a
+      documentação HPCC Systems em contêineres para implantações em
+      contêineres ou em nuvem.</para>
 
       <para><informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
@@ -1162,27 +1169,27 @@
       <para><programlisting>## Default environment configuration file for OpenHPCC
 
 [DEFAULT]
-configs=/etc/HPCCSystems
-path=/opt/HPCCSystems
-classpath=/opt/HPCCSystems/classes
-runtime=/var/lib/HPCCSystems
-lock=/var/lock/HPCCSystems
-# Supported logging fields: 
-#   AUD,CLS,DET,MID,TIM,DAT,PID,TID,NOD,JOB,USE,SES,COD,MLT,MCT,NNT,COM,QUO,PFX,ALL,STD
-logfields=TIM+DAT+MLT+MID+PID+TID+COD+QUO+PFX
-pid=/var/run/HPCCSystems
-log=/var/log/HPCCSystems
-user=hpcc
-group=hpcc
+configs=${CONFIG_DIR}
+path=${INSTALL_DIR}
+classpath=${INSTALL_DIR}/classes
+runtime=${RUNTIME_PATH}
+lock=${LOCK_PATH}
+# Supported logging fields: AUD,CLS,DET,MID,TIM,DAT,PID,TID,NOD,JOB,USE,SES,COD,MLT,MCT,NNT,COM,QUO,PFX,ALL,STD
+logfields=TIM+DAT+MLT+MID+PID+TID+COD+QUO+PFX+AUD
+pid=${PID_PATH}
+log=${LOG_PATH}
+user=${RUNTIME_USER}
+group=${RUNTIME_GROUP}
 #umask=022
 #nice=0
-home=/home
-environment=environment.xml
-sourcedir=/etc/HPCCSystems/source
-blockname=HPCCSystems
+home=${HOME_DIR}
+environment=${ENV_XML_FILE}
+sourcedir=${CONFIG_SOURCE_PATH}
+blockname=${DIR_NAME}
 interface=*
 # enable epoll method for notification events (true/false)
 use_epoll=true
+#epoll_hdlperthrd=10
 # allow kernel pagecache flushing where enabled (true/false)
 allow_pgcache_flush=true
 # report UDP network stats
@@ -1191,34 +1198,28 @@ mpStart=7101
 mpEnd=7500
 mpSoMaxConn=128
 mpTraceLevel=0
-# enable SSL for dafilesrv remote file access 
-#     (SSLNone/false | SSLOnly/true | SSLFirst | UnsecureFirst)
+# enable SSL for dafilesrv remote file access (SSLNone/false | SSLOnly/true | SSLFirst | UnsecureFirst)
 # Enabling requires setting the HPCCPassPhrase, HPCCCertFile, and HPCCPrivateKeyFile values
 #dfsUseSSL=SSLNone
 
 #Specify location of HPCC PKI public/private key files
 # note: if HPCCPassPhrase specified it must be encrypted
 #HPCCPassPhrase=
-#HPCCCertificateFile=/home/hpcc/.ssh/cert.cer
-#HPCCPublicKeyFile=/home/hpcc/.ssh/id_rsa.pub
-#HPCCPrivateKeyFile=/home/hpcc/.ssh/id_rsa
+#HPCCCertificateFile=${HOME_DIR}/${RUNTIME_USER}/certificate/certificate.pem
+#HPCCPublicKeyFile=${HOME_DIR}/${RUNTIME_USER}/certificate/public.key.pem
+#HPCCPrivateKeyFile=${HOME_DIR}/${RUNTIME_USER}/certificate/key.pem
 
 jvmoptions=-XX:-UsePerfData
 #Options to enable remote debugging of Java service or application
 #jvmoptions=-XX:-UsePerfData -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=2000
 #JNI_PATH=/absolute/path/to/alternative/libjvm.so
 
-# Although HPCC platform includes plugins for both Python2 and Python3, 
-# only one may be safely enabled at a time
-# as the Python libraries export the same symbols for both versions. 
-# Enabling both may lead to unpredicatable results
-# including segfaults or undefined symbol errors.
-#
-# If you would prefer to use python 2 and disable python3, change the line below to read
-#  additionalPlugins=python2
+# Python plugins can call python cleanup code on exit, but this seems to cause lockups in some Tensorflow examples
+# In most cases, skipping the cleanup is harmless and avoids these lockups
+skipPythonCleanup=true 
 #
 # Multiple paths can be specified (separate with :, or ; on Windows).
-# Relative paths are assumed to be relative to /opt/HPCCSystems/versioned
+# Relative paths are assumed to be relative to ${INSTALL_DIR}/versioned
 additionalPlugins=python3
 
 # To en-/disable Drop Zone restriction.
@@ -1232,8 +1233,8 @@ useDropZoneRestriction=true
 #dafsConnectRetries=2
 #dafsMaxReceiveTimeSeconds=0
 
-# Dafilesrv: set to change number of seconds before retrying an unresponsive dafilesrv 
-#   (default 10 seconds)
+# Dafilesrv: set to change number of seconds before retrying an unresponsive dafilesrv (default 10 seconds)
+
 # NB: for now this only applies to the last cached server 
 #dafsConnectFailRetrySeconds=10
 
@@ -1271,6 +1272,18 @@ lock=/var/lock/HPCCSystems</programlisting>
 
         <para>Alguns outros itens usados ou indicados no
         environment.conf<variablelist>
+            <varlistentry>
+              <term>deploymentName</term>
+
+              <listitem>
+                <para>Cria uma variável de ambiente em uma implantação
+                bare-metal que pode ser recuperada usando a função integrada
+                ECL--GETENV().</para>
+
+                <programlisting>deploymentName: myenv1</programlisting>
+              </listitem>
+            </varlistentry>
+
             <varlistentry>
               <term>Use_epoll</term>
 
@@ -1322,18 +1335,49 @@ lock=/var/lock/HPCCSystems</programlisting>
         adequados para o seu sistema.</para>
 
         <para><programlisting>#enable SSL for dafilesrv remote file access
-dfsUseSSL=true
-dfsSSLCertFile=/certfilepath/certfile
-dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Defina o <emphasis
-        role="blue">dfsUseSSL=true</emphasis> e o valor dos caminhos para
-        indicar os caminhos do arquivo de certificado e do arquivo chave em
-        seu sistema. Em seguida, implemente o arquivo
+#HPCCPassPhrase=true
+HPCCCertFile=/certfilepath/certfile
+HPCCPrivateKeyFile=/keyfilepath/keyfile
+</programlisting> Defina o <emphasis role="blue">dfsUseSSL=true</emphasis> e o
+        valor dos caminhos para indicar os caminhos do arquivo de certificado
+        e do arquivo chave em seu sistema. Em seguida, implemente o arquivo
         <emphasis>environment.conf</emphasis> (e os arquivos de
         certificado/chave) em todos os nós conforme apropriado.</para>
+
+        <variablelist>
+          <varlistentry>
+            <term>Note:</term>
+
+            <listitem>
+              <para>HPCCPassPhrase deve ser deixado como comentário, a menos
+              que uma senha tenha sido usada para criar as chaves.</para>
+            </listitem>
+          </varlistentry>
+        </variablelist>
 
         <para>Quando o dafilesrv for ativado para TLS (porta 7600), ele ainda
         pode se conectar por uma conexão sem TLS (porta 7100) para permitir
         que clientes legados funcionem.</para>
+
+        <sect3>
+          <title id="SA-KeyFileAddlInfo">Key file Additional
+          Information</title>
+
+          <para>As chaves privada e pública precisam ser geradas no formato
+          PEM. Os mesmos pares de arquivos de chaves devem ser instalados no
+          cluster. Essas chaves <emphasis role="bold">devem</emphasis>.</para>
+
+          <para>Os valores HPCCCertFile e HPCCPublicKeyFile devem existir e
+          ser descomentados no arquivo environment.conf conforme indicado
+          acima. O HPCCPassPhrase é usado apenas quando uma senha for
+          utilizada na criação das chaves.</para>
+
+          <para>Uma boa maneira de garantir a implementação apropriada dos
+          arquivos de chave segura é, conforme documentado no manual <emphasis
+          role="bold">Installing &amp; Running the HPCC Systems
+          Platform</emphasis> e usar o script
+          <emphasis>install-cluster.sh</emphasis>.</para>
+        </sect3>
       </sect2>
     </sect1>
 
@@ -1412,14 +1456,6 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Defina o <emphasis
             </varlistentry>
 
             <varlistentry>
-              <term>sudoersBasedn</term>
-
-              <listitem>
-                <para>Obsoleto.</para>
-              </listitem>
-            </varlistentry>
-
-            <varlistentry>
               <term>workunitsBasedn</term>
 
               <listitem>
@@ -1430,9 +1466,78 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Defina o <emphasis
       </sect2>
     </sect1>
 
-    <xi:include href="HPCCSystemAdmin/SA-Mods/CassandraWUServer.xml"
-                xpointer="xpointer(//*[@id='CassandraWUStorage'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+    <sect1 id="SA-ControlsANDTools">
+      <title>Ferramentas de Sistema e Controles</title>
+
+      <sect2 id="SA-RoxieControlCmds">
+        <title>Comando de Controles</title>
+
+        <para>Existem comandos de controle que podem ser executados por meio
+        da CLI <emphasis role="bold">ecl</emphasis>, que passa pelo ESP para
+        encaminhar os comandos de controle aos componentes no back-end.</para>
+
+        <sect3 id="CT-CheckMemIndivNodes">
+          <title>Roxie Memlock Status em Nós Individuais</title>
+
+          <para>O comando <emphasis role="bold">ecl roxie
+          getmemlocked</emphasis> ecl CLI é uma maneira de verificar se a
+          memória Roxie está bloqueada. Se você quiser verificar bloqueios em
+          nós Roxie individuais e se puder acessar esses nós. Use o
+          comando:</para>
+
+          <programlisting>$ cat /proc/`pidof roxie`/status | grep VmLck</programlisting>
+
+          <para>Que retorna algo como:</para>
+
+          <programlisting>VmLck:   5242880 kB</programlisting>
+
+          <para>Se o valor VmLck for 0, a memória não está bloqueada.</para>
+
+          <para>O valor VmLck deve corresponder à linha de log
+          memsize=roxie:</para>
+
+          <para><programlisting>00000015 PRG 2022-07-07 12:10:35.754 77841 77841 "RoxieMemMgr: 20480 Pages successfully allocated  
+         - <emphasis role="strong">memsize=5368709120</emphasis> base=0x7f904fe00000 alignment=262144 bitmapSize=640</programlisting></para>
+
+          <para>Que é encontrado na configuração RoxieCluster do
+          environment.xml ou na seção Helm chart -- values.yaml Roxie para
+          <emphasis role="strong">totalMemoryLimit</emphasis>:</para>
+
+          <programlisting>    totalMemoryLimit="5368709120"</programlisting>
+        </sect3>
+
+        <sect3 id="CT-resource-limits">
+          <title>Resource Limits</title>
+
+          <para>Há também um limite de recursos definido por padrão no momento
+          da instalação que aumenta a quantidade de memória que pode ser
+          bloqueada:</para>
+
+          <programlisting>hpcc soft memlock unlimited</programlisting>
+
+          <para>e</para>
+
+          <programlisting>hpcc hard memlock unlimited</programlisting>
+
+          <para>Sem isso, o limite não será grande o suficiente para bloquear
+          os tamanhos de memória usados por um Roxie típico.</para>
+
+          <para>Você pode também verificar os limites com um comando
+          shell:</para>
+
+          <programlisting>ulimit -l</programlisting>
+
+          <para>Tenha certeza que executar esse comando como um
+          usuário<emphasis>hpcc</emphasis>.</para>
+        </sect3>
+
+        <!--ADD-ecl-Roxie-Control-CMD-HERE-IF-->
+      </sect2>
+
+      <xi:include href="HPCCSystemAdmin/SA-Mods/WUTool.xml"
+                  xpointer="xpointer(//*[@id='wutool'])"
+                  xmlns:xi="http://www.w3.org/2001/XInclude"/>
+    </sect1>
 
     <sect1 id="Redefining_Thor_Nodes">
       <title>Redefinindo nós em um Cluster Thor</title>
@@ -1774,46 +1879,149 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Defina o <emphasis
       <!--/*Further elaboration of both User permissions, and permission settings... also some hardware set up best practices. Suggested***/-->
 
       <sect2 id="SysAdm_BestPrac_MultiThor">
-        <title>Múltiplos Thor</title>
+        <title>Múltiplos Thors</title>
 
-        <para>É possível executar múltiplos Thors em um mesmo hardware físico.
-        Os múltiplos Thors em um mesmo hardware são independentes e não sabem
-        da existência do outro. Os Thors executam jobs à medida em que os
-        recebem, independentemente do que os outros estejam fazendo. A
-        velocidade de uma única tarefa nunca será superior com múltiplos
-        Thors, porém a produtividade poderá ser maior. É possível executar
-        duas tarefas de coleta de Thors a partir de duas filas diferentes ou
-        em uma mesma fila.</para>
+        <para>Você pode executar vários Thors no mesmo hardware físico.
+        Múltiplos Thors no mesmo hardware são independentes e desconhecem uns
+        aos outros. Os Thors executam os trabalhos conforme os recebem,
+        independentemente de o que o(s) outro(s) está(ão) fazendo. A
+        velocidade de um único job nunca será ser mais rápida com vários
+        Thors, mas a taxa de transferência pode ser. Você pode correr executar
+        dois Thors pegando jobs de duas filas diferentes ou da mesma
+        fila.</para>
 
-        <para>A desvantagem de executar múltiplos Thors no mesmo hardware é
-        que a memória física nos nós precisa ser compartilhada entre cada um
-        dos Thors. Isso precisa ser configurado segundo a definição de cluster
-        Thor.</para>
+        <para>A desvantagem de executar vários Thors no mesmo hardware é que a
+        memória física nos nós precisa ser compartilhada entre cada um os
+        Thors. Isto precisa ser configurado para cada cluster Thor.</para>
 
-        <para>Não é possível colocar múltiplos Thors em um hardware que não
-        possua núcleos de CPU suficientes para suportá-los. Você não deve ter
-        uma quantidade maior de Thors em relação ao número de núcleos. Uma boa
-        regra é usar uma fórmula na qual o número de núcleos divido por dois
-        equivale ao número máximo de clusters Thor a ser usado.</para>
+        <para>Vários Thors no mesmo cluster exigem que eles compartilhem a
+        mesma compilação e instalação. O ambiente define cada cluster Thor,
+        que pode compartilhar o mesmo conjunto de máquinas. Existem
+        configurações de porta primária e secundária que precisam ser
+        definidas para evitar conflitos. Há também considerações e
+        configurações de compartilhamento/divisão de memória que precisam ser
+        feitas.</para>
 
-        <sect3>
-          <title>Múltiplos nós</title>
+        <para><informaltable border="all" colsep="1" rowsep="1">
+            <tgroup cols="2">
+              <colspec colwidth="94.50pt"/>
 
-          <para>Se possível, tente manter os recursos em execução nos seus
-          próprios nós para um ou múltiplos clusters Thor. Se estiver
-          executando algum tipo de alta disponibilidade ativa/passiva, não
-          mantenha seu Master ativo e passivo no mesmo nó. Tente manter o Dali
-          e o ESP em nós separados. Mesmo que você não possa se dar ao luxo de
-          ter diversos nós, recomenda-se que o Thor Master e o Dali (no
-          mínimo) estejam em nós separados. A boa prática é manter o máximo de
-          componentes possível em seus próprios nós.</para>
+              <tbody>
+                <row>
+                  <entry><emphasis
+                  role="bold">Configurações</emphasis></entry>
 
-          <para>Outra consideração para um sistema de múltiplos nós é evitar
-          colocar qualquer um dos componentes em nós com escravos. Essa não é
-          uma boa prática por acarretar em um cluster desequilibrado,
-          resultando em escravos com menos memória/CPU que são mais lentos do
-          que os demais e, consequentemente, reduzindo o desempenho de todo o
-          cluster.</para>
+                  <entry><emphasis role="bold">Descrição</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry><emphasis
+                  role="bold">globalMemorySize</emphasis></entry>
+
+                  <entry>A memória máxima que um processo secundário pode
+                  usar. Normalmente, 85 por cento da memória do sistema
+                  dividido pelo número total de secundários em execução no
+                  hardware em todos os Thors.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis
+                  role="bold">localThorPortInc</emphasis></entry>
+
+                  <entry>Este valor é o incremento da porta base da
+                  secundária.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis
+                  role="bold">masterMemorySize</emphasis></entry>
+
+                  <entry>A memória máxima que um Thor master por usar. Se
+                  deixar será usado o valor de
+                  <emphasis>globalMemorySize</emphasis>.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">masterport</emphasis></entry>
+
+                  <entry>Este valor deve ser único entre instâncias Thor que
+                  são executadas no hardware.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">name</emphasis></entry>
+
+                  <entry>O nome de cada instância Thor deve ser único.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">nodeGroup</emphasis></entry>
+
+                  <entry>Este valor está associado com arquivos publicados por
+                  esta instância Thor. Normalmente é deixado em branco e o
+                  padrão é o mesmo do <emphasis>nome</emphasis> do atributo.
+                  Em ambientes com múltiplos Thors compartilhando o mesmo
+                  grupo de nós, o <emphasis>nome</emphasis> de cada Thor deve
+                  ser diferente. De qualquer maneira, o
+                  <emphasis>nodeGroup</emphasis> de todos os Thors que
+                  compartilham os mesmos físicos devem ter o mesmo nome. É
+                  muito importante manter o <emphasis>nodeGroup</emphasis>
+                  igual ao nome da instância Thor.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">slaveport</emphasis></entry>
+
+                  <entry>Este valor deve ser único entre instâncias Thor
+                  executadas no mesmo hardware.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis
+                  role="bold">SlavesPerNode</emphasis></entry>
+
+                  <entry>O número de nós secundários por instância
+                  Thor.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+
+        <para>Você não deve colocar vários Thors em hardware que não tenha
+        núcleos de CPU suficientes para suportá-lo. Você não deve ter mais
+        Thors do que o número de núcleos. Uma boa regra é usar uma fórmula em
+        que o número de núcleos dividido por dois é o número máximo de
+        clusters Thor a serem usados.</para>
+
+        <sect3 id="SepClusterNodes">
+          <title>Separate Worker Nodes</title>
+
+          <para>Em uma implantação bare-metal, tente o máximo possível para
+          manter os recursos de cluster de destino do sistema em execução em
+          seus próprios nós físicos ou partições. A ideia é evitar colocar
+          componentes essenciais do sistema nas mesmas partições que os dados
+          de cluster altamente variáveis e intensivos em recursos. Outra
+          condição de tipo semelhante pode ocorrer, se você estiver executando
+          algum tipo de alta disponibilidade ativa/passiva. Nesse caso, não
+          mantenha seus gerenciadores ativos e passivos no mesmo nó. Tente
+          manter Dali e ESP em odes separados. Mesmo que você não tenha o luxo
+          de muitos nós físicos, você ainda deseja separar os jobs Thor e o
+          Dali (no mínimo) para estar em discos separados ou partições dos nós
+          físicos. Thor pode ter tamanhos de dados variados e expansivos e não
+          é incomum que esses dados ocupem a maior parte da capacidade
+          disponível nessa partição, ou mesmo toda ela. Se o armazenamento de
+          metadados Dali estiver compartilhando a mesma partição de disco que
+          os dados do Thor do cluster e ocorrer uma condição de espaço em
+          disco insuficiente, como "sem espaço em disco", os metadados do Dali
+          poderão ser corrompidos.</para>
+
+          <para>Ao longo dessas mesmas linhas, tenha cuidado com os nós de
+          jobs Thor e tente evitar colocar quaisquer outros componentes do
+          sistema em nós com os jobs. Isso não seria ideal e levaria a um
+          cluster desequilibrado. O resultado é que os workers que
+          compartilham recursos com menos memória/cpu disponíveis levam mais
+          tempo do que os outros e, como resultado, arrastam todo o desempenho
+          do cluster para baixo.</para>
         </sect3>
 
         <sect3 id="Thor_TimesOut">
@@ -1823,8 +2031,8 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Defina o <emphasis
           causar um problema com os nós Thor. Se um cluster Thor travar na
           inicialização e o tempo-limite acabar expirando. Depois, se o seu
           log Thormaster mostrar que o Master não apresenta problemas, mas
-          indica que está aguardando se conectar aos escravos. Você pode então
-          ter problemas com a configuração do daemon SSH.</para>
+          indica que está aguardando se conectar aos secundários. Você pode
+          então ter problemas com a configuração do daemon SSH.</para>
 
           <para>Há um recurso de segurança chamado
           <emphasis>"AllowUsers"</emphasis> que cria uma lista de permissões
@@ -1888,13 +2096,14 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Defina o <emphasis
 
       <sect2 id="virtual-thor-slaves">
         <title><emphasis role="strong">Virtual Thor
-        escravos</emphasis></title>
+        secundários</emphasis></title>
 
         <para><indexterm>
-            <primary>Virtual Thor escravos</primary>
+            <primary>Virtual Thor secundários</primary>
           </indexterm>A partir da versão 6.0.0, os clusters Thor podem ser
         configurados de forma a obter todos os benefícios oferecidos pelos
-        recursos disponíveis por nó ao usar os escravos Thor virtuais.</para>
+        recursos disponíveis por nó ao usar os secundários Thor
+        virtuais.</para>
 
         <para>Nas versões do HPCC anteriores à 6.0.0, as configurações de
         cluster eram normalmente definidas para um número N de <emphasis
@@ -1903,7 +2112,7 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Defina o <emphasis
           </indexterm> <emphasis/> , onde N é igual ou próximo ao número de
         núcleos por máquina.</para>
 
-        <para>Isso resultou em N processos de escravo independentes por nó,
+        <para>Isso resultou em N processos de secundário independentes por nó,
         como visto abaixo:</para>
 
         <para/>
@@ -1915,41 +2124,42 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Defina o <emphasis
 
         <itemizedlist>
           <listitem>
-            <para>Cada processo de escravo nessa configuração tem uma mesma
+            <para>Cada processo de secundário nessa configuração tem uma mesma
             divisão fixa da memória física disponível ao nó.</para>
           </listitem>
 
           <listitem>
-            <para>Os escravos não compartilham memória RAM ou outros
+            <para>Os secundários não compartilham memória RAM ou outros
             recursos.</para>
           </listitem>
 
           <listitem>
-            <para>Os escravos transmitem mensagens através da interface de
+            <para>Os secundários transmitem mensagens através da interface de
             loopback para se comunicarem.</para>
           </listitem>
         </itemizedlist>
 
-        <para>Atualmente emprega-se uma nova abordagem, na qual os escravos
-        virtuais são criados com um único processo de escravo, como mostrado
-        abaixo:</para>
+        <para>Atualmente emprega-se uma nova abordagem, na qual os secundários
+        virtuais são criados com um único processo de secundário, como
+        mostrado abaixo:</para>
 
         <para><graphic fileref="images//SA010.jpg"/></para>
 
         <itemizedlist>
           <listitem>
             <para>Nesta configuração, cada nó físico possui um único processo
-            de escravo Thor.</para>
+            de secundário Thor.</para>
           </listitem>
 
           <listitem>
-            <para>Cada processo de escravo possui N escravos virtuais. Isso é
-            configurado através da opção de configuração do Thor denominada
-            <emphasis role="bold">channelsPerSlave</emphasis><indexterm>
+            <para>Cada processo de secundário possui N secundários virtuais.
+            Isso é configurado através da opção de configuração do Thor
+            denominada <emphasis
+            role="bold">channelsPerSlave</emphasis><indexterm>
                 <primary>channelsPerSlave</primary>
               </indexterm> <emphasis> <emphasis role="strong"/> </emphasis>.
-            Nessa arquitetura, escravos no mesmo processo podem se comunicar
-            diretamente entre si e compartilhar recursos.</para>
+            Nessa arquitetura, secundários no mesmo processo podem se
+            comunicar diretamente entre si e compartilhar recursos.</para>
           </listitem>
         </itemizedlist>
 
@@ -1961,12 +2171,12 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Defina o <emphasis
 
         <itemizedlist>
           <listitem>
-            <para>Cada escravo virtual compartilha recursos em cache, como
+            <para>Cada secundário virtual compartilha recursos em cache, como
             chaves de páginas de indexação, etc.</para>
           </listitem>
 
           <listitem>
-            <para>Os escravos podem solicitar e compartilhar toda a memória
+            <para>Os secundários podem solicitar e compartilhar toda a memória
             RAM disponível.</para>
           </listitem>
 
@@ -1993,12 +2203,12 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Defina o <emphasis
 
           <itemizedlist>
             <listitem>
-              <para>Transmite um dataset de RHS escravo local para todos os
-              outros escravos.</para>
+              <para>Transmite um dataset de RHS secundário local para todos os
+              outros secundários.</para>
             </listitem>
 
             <listitem>
-              <para>Todos os escravos reúnem o RHS global em uma única
+              <para>Todos os secundários reúnem o RHS global em uma única
               tabela.</para>
             </listitem>
 
@@ -2008,7 +2218,7 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Defina o <emphasis
             </listitem>
 
             <listitem>
-              <para>Depois que todos os escravos estão prontos, o LHS é
+              <para>Depois que todos os secundários estão prontos, o LHS é
               transmitido e avaliado em relação à tabela hash para produzir os
               resultados unidos.</para>
             </listitem>
@@ -2031,19 +2241,19 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Defina o <emphasis
           coleta e JOIN transmitida de um grande conjunto LHS sem a
           necessidade de coletar e classificar nada.</para>
 
-          <para>As vantagens de uma configuração do Thor com escravo virtual
-          para o código ECL usando o LOOKUP/SMART JOIN são que, na prática,
-          ele terá N vezes mais memória antes de falhar ou aplicar o fail over
-          no caso do SMART JOIN.</para>
+          <para>As vantagens de uma configuração do Thor com secundário
+          virtual para o código ECL usando o LOOKUP/SMART JOIN são que, na
+          prática, ele terá N vezes mais memória antes de falhar ou aplicar o
+          fail over no caso do SMART JOIN.</para>
 
           <para>Ele também é mais rápido: em vez de transmitir o RHS local
-          para o processo de N escravos por nó, ele precisa realizar esta
-          comunicação para apenas um. Esse único escravo pode compartilhar
-          diretamente a mesma tabela e o mesmo HT com os outros escravos
+          para o processo de N secundários por nó, ele precisa realizar esta
+          comunicação para apenas um. Esse único secundário pode compartilhar
+          diretamente a mesma tabela e o mesmo HT com os outros secundários
           virtuais.</para>
 
           <para><emphasis role="strong"> <emphasis>As principais vantagens de
-          um LOOKUP/SMART JOIN em uma configuração do Thor com escravo
+          um LOOKUP/SMART JOIN em uma configuração do Thor com secundário
           virtual:</emphasis> </emphasis></para>
 
           <itemizedlist>

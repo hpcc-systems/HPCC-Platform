@@ -145,7 +145,7 @@
 
   <para>Exemplo:</para>
 
-  <programlisting>MyCount := COUNT(Trades(Trades.trd_rate IN ['3', '4', '5']));
+  <programlisting lang="ECL" role="NotRunnable">MyCount := COUNT(Trades(Trades.trd_rate IN ['3', '4', '5']));
    // count the number of records in the Trades record
    // set whose trd_rate field contains 3, 4, or 5
 R1 := RECORD

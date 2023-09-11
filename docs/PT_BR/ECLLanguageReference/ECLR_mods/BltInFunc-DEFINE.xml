@@ -51,13 +51,13 @@
 
   <para>Exemplo:</para>
 
-  <programlisting>RULE a := USE('symbol');
+  <programlisting lang="ECL">RULE a := USE('symbol');
  //uses the 'symbol'pattern defined later - b
 RULE b := 'pattern';
  //defines a rule pattern
 RULE s := DEFINE(b,'symbol');
  //associate the "b" rule with the
- //'symbol' for forward reference by rule "a
+ //'symbol' for forward reference by rule "a"
 </programlisting>
 
   <para>Ver também: <link linkend="PARSE">PARSE</link>, <link

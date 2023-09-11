@@ -84,20 +84,38 @@
 
   <para>Exemplo:</para>
 
-  <programlisting>MyExp := 1+2;
+  <programlisting lang="ECL" role="runnable">//simple example
+MyExp := 1+2; 
 MyChoice := CASE(MyExp, 1 =&gt; 9, 2 =&gt; 8, 3 =&gt; 7, 4 =&gt; 6, 5);
-  // returns a value of 7 for the caseval of 3
-MyRecSet := CASE(MyExp, 1 =&gt; Person(per_st = 'FL'),
-    2 =&gt; Person(per_st = 'GA'),
-    3 =&gt; Person(per_st = 'AL'),
-    4 =&gt; Person(per_st = 'SC'),
-    Person);
-  // returns set of Alabama Persons for the caseval of 3
-MyAction := CASE(MyExp, 1 =&gt; FAIL('Failed for reason 1'),
-    2 =&gt; FAIL('Failed for reason 2'),
-    3 =&gt; FAIL('Failed for reason 3'),
-    4 =&gt; FAIL('Failed for reason 4'),    FAIL('Failed for unknown reason'));
-  // for the caseval of 3, Fails for reason 3</programlisting>
+  // returns a value of 7 for the value of MyExp=3
+OUTPUT(MyChoice);
+
+//example using a DATASET
+personRecord := RECORD
+  STRING UID;
+  STRING first_name;
+  STRING last_name;
+  STRING address;
+  STRING city;
+  STRING state;
+  STRING zip;
+END;
+person := DATASET([{'923','James','Jones','123 Elm Street','Hollywood','FL','33022'},
+                   {'924','Sally','Jones','22 Main Street','Tampa','FL','33604'},
+                   {'925','Jose','Gomez','111 Biscaya Lane','Miami','FL','33101'},
+                   {'926','Adam','Wesson','77 Sunset Blvd','Boston','MA','02108'},
+                   {'927','Evelyn','Murray','740 SW 10th Street','Boston ','MA','02116'},
+                   {'928','Joe','Yung','7511 Simson Avenue','Chicago','IL','60131'}], personRecord);
+
+MyRecSet := CASE(MyExp, 1 =&gt; Person(state = 'FL'),
+    2 =&gt; Person(state = 'GA'),
+    3 =&gt; Person(state = 'MA'),
+    4 =&gt; Person(state = 'IL'),
+    person);
+  // returns set of MA Persons for the value of MyExp=3
+  // set MyExp to a number &gt; 4 to get all records
+OUTPUT(MyRecSet);
+</programlisting>
 
   <para>Ver também: <link linkend="MAP">MAP</link>, <link
   linkend="CHOOSE">CHOOSE</link>, <link linkend="IF">IF</link>, <link

@@ -57,7 +57,7 @@
 
   <para>Exemplo:</para>
 
-  <programlisting>EXPORT MyDefinition := 5;
+  <programlisting lang="ECL">EXPORT MyDefinition := 5;
 // allows other definitions to use MyModule.MyDefinition if they import MyModule
 // the filename must be MyDefinition.ecl
 

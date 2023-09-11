@@ -32,8 +32,8 @@
       <para>LexisNexis e o logotipo Knowledge Burst são marcas comerciais
       registradas da Reed Elsevier Properties Inc., usadas sob licença.</para>
 
-      <para>SSystems<superscript>®</superscript> HPCC Systems® é uma marca
-      registrada da LexisNexis Risk Data Management Inc.</para>
+      <para>HPCC Systems<superscript>®</superscript> é uma marca registrada da
+      LexisNexis Risk Data Management Inc.</para>
 
       <para>Os demais produtos, logotipos e serviços podem ser marcas
       comerciais ou registradas de suas respectivas empresas. Todos os nomes e
@@ -205,11 +205,6 @@
             <listitem>
               <para>O <emphasis role="bold">Tutorial de dados do HPCC
               System:</emphasis></para>
-            </listitem>
-
-            <listitem>
-              <para><emphasis role="bold">Exemplo </emphasis> da Teoria dos
-              seis graus de Kevin Bacon</para>
             </listitem>
 
             <listitem>
@@ -1411,11 +1406,6 @@ sudo /opt/HPCCSystems/sbin/hpcc-push.sh \
         </listitem>
 
         <listitem>
-          <para><emphasis role="bold">O exemplo</emphasis> da Teoria dos seis
-          graus de separação de Kevin Bacon</para>
-        </listitem>
-
-        <listitem>
           <para>Ler <emphasis role="bold">Como usar o Gerenciador de
           Configurações</emphasis> para aprender como configurar uma
           plataforma do HPCC usando a Advanced View (Visão Avançada)</para>
@@ -1492,10 +1482,9 @@ sudo /opt/HPCCSystems/sbin/hpcc-push.sh \
       <sect2 id="ExampleScripts_install-cluster.sh">
         <title>install-cluster.sh</title>
 
-        <para><emphasis
-        role="bold">install-cluster.sh</emphasis><emphasis><emphasis> [-k | -p
-        &lt;directory&gt;] [-n &lt;value&gt;] &lt;package-name&gt;
-        </emphasis></emphasis></para>
+        <para><emphasis role="bold">install-cluster.sh</emphasis> <emphasis>
+        <emphasis>[-k | -p &lt;directory&gt;] [-n &lt;value&gt;]
+        &lt;package-name&gt;</emphasis> </emphasis></para>
 
         <para><informaltable colsep="0" frame="none" rowsep="0">
             <tgroup cols="2">
@@ -1545,7 +1534,7 @@ sudo /opt/HPCCSystems/sbin/hpcc-push.sh \
         qualquer usuário com permissões suficientes de execução. Porém, quando
         o nome do usuário e senha forem solicitados, você deve informar as
         credenciais de um usuário com direitos sudo suficientes para executar
-        comandos como administrador em todos os nós. </emphasis></para>
+        comandos como administrador em todos os nós.</emphasis></para>
 
         <para>Antes de usar esse script, você precisa ter criado e definido um
         arquivo environment.xml (usando o assistente ou o modo avançado do
@@ -1585,7 +1574,7 @@ sudo /opt/HPCCSystems/sbin/hpcc-push.sh \
           </listitem>
         </itemizedlist>
 
-        <para><?hard-pagebreak ?><emphasis
+        <para><?hard-pagebreak ?> <emphasis
         role="bold">Exemplos:</emphasis></para>
 
         <para>Este exemplo instala os pacotes da plataforma do HPCC nos nós
@@ -1621,10 +1610,10 @@ sudo /opt/HPCCSystems/sbin/hpcc-push.sh \
       <sect2 id="ExampleScripts_deploy-java-files.sh" role="brk">
         <title>deploy-java-files.sh</title>
 
-        <para><emphasis
-        role="bold">deploy-java-files.sh</emphasis><emphasis><emphasis> [-c]
-        [-e] [-H &lt;value&gt;] [-n &lt;value&gt;] [-r] [-s &lt;value&gt;] [-t
-        &lt;value&gt;] [-u &lt;value&gt;] [-x] </emphasis></emphasis></para>
+        <para><emphasis role="bold">deploy-java-files.sh</emphasis> <emphasis>
+        <emphasis>[-c] [-e] [-H &lt;value&gt;] [-n &lt;value&gt;] [-r] [-s
+        &lt;value&gt;] [-t &lt;value&gt;] [-u &lt;value&gt;] [-x]</emphasis>
+        </emphasis></para>
 
         <para><informaltable colsep="0" frame="none" rowsep="0">
             <tgroup cols="2">
@@ -1752,10 +1741,9 @@ sudo /opt/HPCCSystems/sbin/hpcc-push.sh \
       <sect2 id="ExampleScripts_hpcc-push.sh" role="brk">
         <title>hpcc-push.sh</title>
 
-        <para><emphasis
-        role="bold">hpcc-push.sh</emphasis><emphasis><emphasis> [-s
-        &lt;source&gt;] [-t &lt;target&gt;] [-n &lt;concurrent&gt;] [-x]
-        </emphasis></emphasis></para>
+        <para><emphasis role="bold">hpcc-push.sh</emphasis> <emphasis>
+        <emphasis>[-s &lt;source&gt;] [-t &lt;target&gt;] [-n
+        &lt;concurrent&gt;] [-x]</emphasis> </emphasis></para>
 
         <para><informaltable colsep="0" frame="none" rowsep="0">
             <tgroup cols="2">
@@ -1795,8 +1783,8 @@ sudo /opt/HPCCSystems/sbin/hpcc-push.sh \
 
         <para><emphasis role="bold">Esse script "envia" arquivos do nome do
         arquivo e do caminho de origem para o nome do arquivo e caminho de
-        destino de todos os endereços IP no ambiente.xml ativo.
-        </emphasis></para>
+        destino de todos os endereços IP no ambiente.xml
+        ativo.</emphasis></para>
 
         <para>Para usar esse script, as chaves ssh precisam estar configuradas
         de maneira adequada em todos os nós, sendo também necessário usar
@@ -1815,9 +1803,9 @@ sudo /opt/HPCCSystems/sbin/hpcc-push.sh \
       <sect2 id="ExampleScripts_hpcc-run.sh" role="brk">
         <title>hpcc-run.sh</title>
 
-        <para><emphasis role="bold">hpcc-run.sh
-        </emphasis><emphasis><emphasis>[-c component] [-n concurrent] [-s]
-        [-S] {start|stop|restart|status}</emphasis></emphasis></para>
+        <para><emphasis role="bold">hpcc-run.sh</emphasis> <emphasis>
+        <emphasis>[-c component] [-n concurrent] [-s] [-S]
+        {start|stop|restart|status}</emphasis> </emphasis></para>
 
         <para><informaltable colsep="0" frame="none" rowsep="0">
             <tgroup cols="2">
@@ -1863,7 +1851,7 @@ sudo /opt/HPCCSystems/sbin/hpcc-push.sh \
         como usuário do hpcc.</para>
 
         <para><emphasis role="bold">Esse script executa um comando em todos os
-        endereços IP no arquivo ativo environment.xml. </emphasis></para>
+        endereços IP no arquivo ativo environment.xml.</emphasis></para>
 
         <para>Os endereços IP foram definidos no momento da edição do ambiente
         no Gerenciador de Configurações. Esse script suporta todos os
@@ -1897,10 +1885,9 @@ sudo /opt/HPCCSystems/sbin/hpcc-push.sh \
       <sect2 id="update-keys" role="brk">
         <title>update-keys</title>
 
-        <para><emphasis role="bold">update-keys
-        </emphasis><emphasis><emphasis>[-s &lt;secret_key&gt; -p
-        &lt;public_key&gt;] [ -g ] [-n &lt;number of concurrent
-        threads&gt;]</emphasis></emphasis></para>
+        <para><emphasis role="bold">update-keys</emphasis> <emphasis>
+        <emphasis>[-s &lt;secret_key&gt; -p &lt;public_key&gt;] [ -g ] [-n
+        &lt;number of concurrent threads&gt;]</emphasis> </emphasis></para>
 
         <para><informaltable colsep="0" frame="none" rowsep="0">
             <tgroup cols="2">
@@ -1965,7 +1952,7 @@ sudo /opt/HPCCSystems/sbin/hpcc-push.sh \
 
       <programlisting>sudo yum remove hpccsystems-platform </programlisting>
 
-      <para><emphasis role="bold">Ubuntu/Debian </emphasis></para>
+      <para><emphasis role="bold">Ubuntu/Debian</emphasis></para>
 
       <programlisting>sudo apt-get remove hpccsystems-platform</programlisting>
     </sect1>
@@ -1988,11 +1975,12 @@ sudo /opt/HPCCSystems/sbin/hpcc-push.sh \
 
           <para><programlisting>sudo systemctl dafilesrv@dafilesrv.service stop 
 
-sudo systemctl dafilesrv@dafilesrv.service start</programlisting><property><!--*** not for publication
+sudo systemctl dafilesrv@dafilesrv.service start</programlisting> <property>
+          <!--*** not for publication
 cd /var/lib/HPCCSystems/mythor
 ...
 init_stop_thor
-init_start_thor--></property></para>
+init_start_thor--> </property></para>
         </listitem>
       </itemizedlist>
 
@@ -2006,8 +1994,8 @@ init_start_thor--></property></para>
       systemd utilizadas pelo HPCC Systems. Continuaremos a apoiar o antigo
       estilo de chamada System V. init.d.</para>
 
-      <para><emphasis role="bold">hpcc-init
-      </emphasis><emphasis><emphasis>[</emphasis>option<emphasis>]</emphasis>
+      <para><emphasis role="bold">hpcc-init</emphasis>
+      <emphasis><emphasis>[</emphasis>option<emphasis>]</emphasis>
       command</emphasis></para>
 
       <para><informaltable colsep="0" frame="none" rowsep="0">
@@ -2162,10 +2150,6 @@ sudo /etc/init.d/hpcc-init -c esp start
       </sect2>
     </sect1>
 
-    <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/UnityLauncher.xml"
-                xpointer="element(/1)"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
-
     <sect1 id="Running-HPCC-Tools-Under-WINE">
       <title>Executando o ECL IDE pela primeira vez</title>
 
@@ -2182,8 +2166,9 @@ sudo /etc/init.d/hpcc-init -c esp start
           <para>Faça o download do msxml3.msi da Microsoft (Pacote de Serviço
           7 ou mais recente).</para>
 
-          <para><emphasis role="underline"><ulink
-          url="http://www.microsoft.com/en-us/download/details.aspx?id=3988">http://www.microsoft.com/en-us/download/details.aspx?id=3988</ulink></emphasis></para>
+          <para><emphasis role="underline"> <ulink
+          url="http://www.microsoft.com/en-us/download/details.aspx?id=3988">http://www.microsoft.com/en-us/download/details.aspx?id=3988</ulink>
+          </emphasis></para>
         </listitem>
 
         <listitem>
@@ -2471,21 +2456,8 @@ add1(10);
       <sect2 id="Add_Python_support" role="brk">
         <title>Python</title>
 
-        <para>A plataforma HPCC Systems suporta Python3 por padrão. Isto
-        inclui plugins para Python2 e Python3, mas apenas um pode ser ativado
-        com segurança por vez, enquanto as bibliotecas Python exportam o mesmo
-        símbolos para ambas as versões. A ativação de ambos pode levar a
-        imprevisibilidade resultados, incluindo falhas de segmentação ou
-        símbolo indefinido erros.</para>
-
-        <para>Por padrão, o plugin Python2 está presente, mas desativado, e o
-        plugin Python3 está presente e ativado. Se você deseja usar o Python2
-        modifique seu arquivo environment.conf de acordo com o exemplo no
-        arquivo.</para>
-
-        <para>Um cluster atualizado a partir de uma versão mais antiga pode
-        não ter o entradas apropriadas no arquivo environment.conf que suporte
-        a versão do Python.</para>
+        <para>A plataforma HPCC Systems suporta Python3 e o plugin Python3
+        está presente e habilitado. Python2 não é mais suportado.</para>
 
         <orderedlist>
           <listitem>
@@ -2543,12 +2515,8 @@ split_words('Once upon a time');
         </orderedlist>
 
         <para>Para que o Python funcione corretamente, é importante que a
-                versão do Python e do HPCC Systems esteja configurada
-        corretamente para suportar         a versão instalada do Python. Se
-        você ver a mensagem de erro "ld: cannot find --lpy2embed", é provável
-        que seu sistema esteja configurado para Python3.         Da mesma
-        forma, se você ver "ld: cannot find --lpy3embed", seu sistema está
-                configurado para Python2.</para>
+        versão do Python e o HPCC Systems sejam configurados corretamente para
+        oferecer suporte ao uso da versão instalada correta do Python.</para>
 
         <sect3>
           <title>Opções de Escopo Python</title>

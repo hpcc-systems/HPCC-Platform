@@ -95,7 +95,7 @@
 
     <para>Exemplo:</para>
 
-    <programlisting>PATTERN ws := PATTERN('[ \t\r\n]');
+    <programlisting lang="ECL">PATTERN ws := PATTERN('[ \t\r\n]');
 PATTERN arb := PATTERN('[-!.,\t a-zA-Z0-9]')+;
 PATTERN number := PATTERN('[0-9]')+;
 PATTERN age := '(' number OPT('/I') ')';
@@ -111,8 +111,11 @@ NLP_layout_actor_movie := RECORD
   STRING20 movie_role := MATCHTEXT(role/arb); //arb within role
   UNSIGNED1 cast_rank := (UNSIGNED)MATCHTEXT(m_rank/number);
 END;
-          
-// This example demonstrates the use of productions in PARSE code
+</programlisting>
+
+    <para>Exemplo Tomita:</para>
+
+    <programlisting lang="ECL" role="runnable">// This example demonstrates the use of productions in PARSE code
 //(only supported in the tomita version of PARSE).
 PATTERN ws := [' ','\t'];
 TOKEN number := PATTERN('[0-9]+');

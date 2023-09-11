@@ -74,7 +74,7 @@
 
     <para>Exemplo da Form 1:</para>
 
-    <programlisting>myService := SERVICE
+    <programlisting lang="ECL">myService := SERVICE
   UNSIGNED4 doSomething(STRING text);
 END;
 
@@ -85,10 +85,10 @@ APPLY(ds, EVALUATE(doSomething(ds.text)));
  // dataset, ignoring the returned values from the function
 </programlisting>
 
-    <para>Exemplo de Form 2:</para>
+    <para>Form 2 example:</para>
 
-    <programlisting>M := MODULE
-  EXPORT a := 10;
+    <programlisting lang="ECL" role="runnable">M := MODULE
+  EXPORT a := OUTPUT(10);
   EXPORT b := OUTPUT('Hello');
 END;
  
@@ -169,33 +169,34 @@ EVALUATE(M2);
 
     <para>Exemplo:</para>
 
-    <programlisting>WorstCard := SORT(Cards,Std.Scoring);
-MyValue   := EVALUATE(WorstCard[1],Std.Utilization);
- // WorstCard[1] uses indexing to get the first record
- // in the sort order, then evaluates that record
- // returning the Std.Utilization value
-
+    <programlisting lang="ECL" role="runnable">TrdRec := RECORD
+  UNSIGNED2 Trd_ID;
+  INTEGER4 Trd_bal;
+  INTEGER4 Trd_hc;
+END;
+PersonRec := RECORD
+  STRING20 FirstName;
+  STRING20 LastName;
+  DATASET(TrdRec) Trd;
+END;
+Person := DATASET([{'Fred','Jones',[{1,2,3},{2,4,5}]},
+                   {'Sue','Smith',[{10,-2,60},{12,14,50}]},
+                   {'Joe','Johnson',[{11,200,3000},{22,140,350},{25,100,850}]},
+                   {'Susan','Stone',[{102,2,30},{125,14,50},{225,14000,50000}]}],PersonRec);
+Trades := Person.Trd;
+ValidMoney(n) := n &gt; 0;
 ValidBalTrades := trades(ValidMoney(trades.trd_bal));
 HighestBals := SORT(ValidBalTrades,-trades.trd_bal);
 Highest_HC := EVALUATE(HighestBals[1],trades.trd_hc);
- //return trd_hc field of the trade with the highest balance
- // could also be coded as (using indexing):
- // Highest_HC := HighestBals[1].trades.trd_hc;
+    //return trd_hc field of the trade with the highest balance
+    // could also be coded as (using indexing):
+    // Highest_HC := HighestBals[1].trades.trd_hc;
 
-OUTPUT(Person,{per_last_name,per_first_name,Highest_HC});
- //output that Highest_HC for each person
- //This output operates at the scope of the Person record
- // EVALUATE is needed to get the value from a Trades record
- // because Trades is a Child of Person
-
-IsValidInd := trades.trd_ind_code IN ['FM','RE'];
-IsMortgage := IsValidInd OR trades.trd_rate = 'G';
-SortedTrades := SORT(trades(ValidDate(trades.trd_dopn),isMortgage),
-      trades.trd_dopn_mos);
-CurrentRate := MAP(~EXISTS(SortedTrades) =&gt; ' ',
-                   EVALUATE(SortedTrades[1], trades.trd_rate));
-
-OUTPUT(person,{CurrentRate});
+OUTPUT(Person,{lastname,firstname,Highest_HC});
+    //output that Highest_HC for each person
+    //This output operates at the scope of the Person record
+    // EVALUATE is needed to get the value from a Trades record
+    // because Trades is a Child of Person
 </programlisting>
 
     <para>See Also: <link linkend="SORT">SORT</link></para>
