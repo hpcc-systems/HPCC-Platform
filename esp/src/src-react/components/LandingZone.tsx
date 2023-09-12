@@ -33,12 +33,9 @@ function formatQuery(targetDropzones, filter): QueryRequest {
     return {
         id: "*",
         filter: (filter?.DropZoneName && dropzones.length && machines.length) ? {
-            filter: {
-                DropZoneName: filter.DropZoneName,
-                Server: filter.Server,
-                NameFilter: filter.NameFilter,
-                ECLWatchVisibleOnly: true
-            },
+            DropZoneName: filter.DropZoneName,
+            Server: filter.Server,
+            NameFilter: filter.NameFilter,
             ECLWatchVisibleOnly: true,
             __dropZone: {
                 ...targetDropzones.filter(row => row.Name === filter?.DropZoneName)[0],
@@ -104,9 +101,14 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
 
     //  Grid ---
     const store = useConst(FileSpray.CreateLandingZonesStore({}));
+
+    const query = React.useMemo(() => {
+        return formatQuery(targetDropzones, filter);
+    }, [filter, targetDropzones]);
+
     const { Grid, selection, refreshTable, copyButtons } = useGrid({
         store,
-        query: formatQuery(targetDropzones, filter),
+        query,
         sort: { attribute: "modifiedtime", descending: true },
         filename: "landingZones",
         getSelected: function () {
