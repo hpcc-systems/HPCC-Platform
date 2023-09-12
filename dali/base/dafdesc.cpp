@@ -35,6 +35,8 @@
 #include "jsecrets.hpp"
 #include "rmtfile.hpp"
 
+#include <memory>
+
 #define INCLUDE_1_OF_1    // whether to use 1_of_1 for single part files
 
 #define SDS_CONNECT_TIMEOUT  (1000*60*60*2)     // better than infinite
@@ -944,35 +946,38 @@ void getClusterInfo(IPropertyTree &pt, INamedGroupStore *resolver, unsigned flag
                 cgroup.setown(resolver->lookup(grp));
             // get nodes from parts if complete (and group 0)
             if (gi==0) { // don't assume lookup name correct!
-                SocketEndpoint *eps = (SocketEndpoint *)calloc(np?np:1,sizeof(SocketEndpoint));
                 MemoryBuffer mb;
                 Owned<IPropertyTreeIterator> piter;
                 if (pt.getPropBin("Parts",mb))
                     piter.setown(deserializePartAttrIterator(mb));
                 else
                     piter.setown(pt.getElements("Part"));
+
                 ForEach(*piter) {
                     IPropertyTree &cpt = piter->query();
                     unsigned num = cpt.getPropInt("@num");
-                    if (num>np) {
-                        eps = (SocketEndpoint *)checked_realloc(eps,num*sizeof(SocketEndpoint),np*sizeof(SocketEndpoint),-21);
-                        memset(eps+np,0,(num-np)*sizeof(SocketEndpoint));
+                    if (num>np)
                         np = num;
-                    }
+                }
+
+                std::unique_ptr<SocketEndpoint[]> eps(new SocketEndpoint[np?np:1]);
+                ForEach(*piter) {
+                    IPropertyTree &cpt = piter->query();
+                    unsigned num = cpt.getPropInt("@num");
                     const char *node = cpt.queryProp("@node");
                     if (node&&*node)
-                        eps[num-1].set(node);
+                        eps.get()[num-1].set(node);
                 }
                 unsigned i=0;
                 for (i=0;i<np;i++)
                     if (eps[i].isNull())
                         break;
                 if (i==np) {
-                    Owned<IGroup> ngrp = createIGroup(np,eps);
+                    Owned<IGroup> ngrp = createIGroup(np,eps.get());
                     if (!cgroup.get()||(ngrp->compare(cgroup)!=GRbasesubset))
                         cgroup.setown(ngrp.getClear());
                 }
-                free(eps);
+
             }
             ClusterPartDiskMapSpec mspec;
             IClusterInfo *cluster = createClusterInfo(grp,cgroup,mspec,resolver);

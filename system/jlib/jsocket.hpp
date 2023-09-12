@@ -83,13 +83,13 @@ enum JSOCKET_ERROR_CODES {
 class jlib_decl IpAddress
 {
     unsigned netaddr[4] = { 0, 0, 0, 0 };
+    StringAttr hostname; // not currently serialized
 public:
     IpAddress() = default;
-    IpAddress(const IpAddress& other)                   { ipset(other); }
     explicit IpAddress(const char *text)                { ipset(text); }
     
     bool ipset(const char *text);                       // sets to NULL if fails or text=NULL   
-    void ipset(const IpAddress& other)                  { memcpy(&netaddr,&other.netaddr,sizeof(netaddr)); }
+    void ipset(const IpAddress& other) { *this = other; }
     bool ipequals(const IpAddress & other) const;       
     int  ipcompare(const IpAddress & other) const;      // depreciated 
     unsigned iphash(unsigned prev=0) const;
@@ -111,14 +111,9 @@ public:
 
     size32_t getNetAddress(size32_t maxsz,void *dst) const;     // for internal use - returns 0 if address doesn't fit
     void setNetAddress(size32_t sz,const void *src);            // for internal use
+    const char * queryHostname() const { return hostname.get(); }
 
     inline bool operator == ( const IpAddress & other) const { return ipequals(other); }
-    inline IpAddress & operator = ( const IpAddress &other )
-    {
-        ipset(other);
-        return *this;
-    }
-
 };
 
 struct IpComparator
