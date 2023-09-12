@@ -236,7 +236,7 @@ export const VariableImportForm: React.FunctionComponent<VariableImportFormProps
                     field: { onChange, name: fieldName, value },
                     fieldState: { error }
                 }) => <Dropdown
-                        key="sourceFormat"
+                        key={fieldName}
                         label={nlsHPCC.Format}
                         options={[
                             { key: "recfmv", text: "recfmv" },
@@ -244,10 +244,8 @@ export const VariableImportForm: React.FunctionComponent<VariableImportFormProps
                             { key: "variable", text: nlsHPCC.Variable },
                             { key: "variablebigendian", text: nlsHPCC.VariableBigendian },
                         ]}
-                        defaultSelectedKey="recfmv"
-                        onChange={(evt, option) => {
-                            onChange(option.key);
-                        }}
+                        selectedKey={value}
+                        onChange={(evt, option) => onChange(option.key)}
                         errorMessage={error && error?.message}
                     />}
                 rules={{
