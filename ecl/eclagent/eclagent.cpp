@@ -3129,7 +3129,7 @@ char * EclAgent::getGroupName()
 {
 #ifdef _CONTAINERIZED
     // in a containerized setup, the group is moving..
-    return strdup("unknown");
+    return strdup("");
 #else
     StringBuffer groupName;
     if (!isStandAloneExe)
