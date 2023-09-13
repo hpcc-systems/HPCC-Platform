@@ -57,10 +57,10 @@ public:
 
         originalIndexFile.setown(lookupReadFile(originalHelperName, AccessMode::readRandom, false, false, false));
         if (!isFileKey(originalIndexFile))
-            throw MakeActivityException(this, TE_FileTypeMismatch, "Attempting to read flat file as an index: %s", originalHelperName.get());
+            throw MakeActivityException(this, ENGINEERR_FILE_TYPE_MISMATCH, "Attempting to read flat file as an index: %s", originalHelperName.get());
         patchFile.setown(lookupReadFile(patchHelperName, AccessMode::readRandom, false, false, false));
         if (isFileKey(patchFile))
-            throw MakeActivityException(this, TE_FileTypeMismatch, "Attempting to read index as a patch file: %s", patchHelperName.get());
+            throw MakeActivityException(this, ENGINEERR_FILE_TYPE_MISMATCH, "Attempting to read index as a patch file: %s", patchHelperName.get());
         
         if (originalIndexFile->numParts() != patchFile->numParts())
             throw MakeActivityException(this, TE_KeyPatchIndexSizeMismatch, "Index %s and patch %s differ in width", originalName.get(), patchName.get());

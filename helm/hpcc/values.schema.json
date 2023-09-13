@@ -560,6 +560,11 @@
               "type": "integer",
               "default": 0
             },
+            "compressLogicalFiles" : {
+              "description": "Compress all logical file outputs on this plane.",
+              "type": "boolean",
+              "default": true
+            },
             "eclwatchVisible": {
               "type": "boolean"
             },

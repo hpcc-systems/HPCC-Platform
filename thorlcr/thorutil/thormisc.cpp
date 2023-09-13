@@ -1646,7 +1646,7 @@ void checkFileType(CActivityBase *activity, IDistributedFile *file, const char *
             return;
         if (!strieq(kind, expectedType))
         {
-            Owned<IThorException> e = MakeActivityException(activity, TE_FileTypeMismatch, "File format mismatch reading file: '%s'. Expected type '%s', but file is type '%s'", file->queryLogicalName(), expectedType, kind);
+            Owned<IThorException> e = MakeActivityException(activity, ENGINEERR_FILE_TYPE_MISMATCH, "File format mismatch reading file: '%s'. Expected type '%s', but file is type '%s'", file->queryLogicalName(), expectedType, kind);
             if (throwException)
                 throw e.getClear();
             e->setAction(tea_warning);

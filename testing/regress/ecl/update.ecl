@@ -18,7 +18,7 @@
 //noRoxie
 //nolocal
 
-#onwarning(10125, ignore); // ignore UPDATE 'up to date' messages, so that output is consistent across engines
+#onwarning(7104, ignore); // ignore UPDATE 'up to date' messages, so that output is consistent across engines
 
 import Std.File AS FileServices;
 import $.setup;

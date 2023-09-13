@@ -18,9 +18,9 @@
 import $.setup;
 prefix := setup.Files(false, false).QueryFilePrefix;
 
-#onwarning (4522, ignore);
-#onwarning (4523, ignore);
-#onwarning(10140, ignore);
+#onwarning(4522, ignore);
+#onwarning(4523, ignore);
+#onwarning(7103, ignore);
 
 d := dataset(DYNAMIC(prefix + 'no_such_file'), {string10 f}, FLAT, OPT);
 output(d);

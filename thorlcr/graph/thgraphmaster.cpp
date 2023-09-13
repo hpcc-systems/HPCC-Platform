@@ -770,7 +770,7 @@ bool CMasterGraphElement::checkUpdate()
             if ((eclCRC == (unsigned)props.getPropInt("@eclCRC")) && (totalCRC == (unsigned __int64)props.getPropInt64("@totalCRC")))
             {
                 // so this needs pruning
-                Owned<IThorException> e = MakeActivityWarning(this, TE_UpToDate, "output file = '%s' - is up to date - it will not be rebuilt", file->queryLogicalName());
+                Owned<IThorException> e = MakeActivityWarning(this, ENGINEERR_FILE_UPTODATE, "output file = '%s' - is up to date - it will not be rebuilt", file->queryLogicalName());
                 queryOwner().fireException(e);
                 return true;
             }

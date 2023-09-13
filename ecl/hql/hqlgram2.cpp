@@ -11763,6 +11763,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case TOK_TRUE: msg.append("TRUE"); break;
     case TYPE: msg.append("TYPE"); break;
     case TYPEOF: msg.append("TYPEOF"); break;
+    case UNCOMPRESSED: msg.append("UNCOMPRESSED"); break;
     case UNGROUP: msg.append("UNGROUP"); break;
     case UNICODEORDER: msg.append("UNICODEORDER"); break;
     case UNLIKELY: msg.append("UNLIKELY"); break;

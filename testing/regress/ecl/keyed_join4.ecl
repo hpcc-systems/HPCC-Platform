@@ -17,7 +17,7 @@
 
 #option('warnOnImplicitJoinLimit', false);
 
-#onwarning(10140, ignore);
+#onwarning(7103, ignore);
 
 import $.setup;
 prefix := setup.Files(false, false).QueryFilePrefix;

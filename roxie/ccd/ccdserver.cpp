@@ -75,6 +75,7 @@
 #include "keybuild.hpp"
 #include "thorstrand.hpp"
 #include "rtldynfield.hpp"
+#include "engineerr.hpp"
 
 #define MAX_HTTP_HEADERSIZE 8000
 
@@ -11902,6 +11903,7 @@ protected:
     bool overwrite;
     bool encrypted;
     bool grouped;
+    bool outputPlaneCompressed = false;
     IHThorDiskWriteArg &helper;
     Owned<IRecordSize> diskmeta;
     Owned<IRoxieWriteHandler> writer;
@@ -11959,6 +11961,7 @@ protected:
         assertex((helper.getFlags() & TDXtemporary) == 0);
         StringArray clusters;
         unsigned clusterIdx = 0;
+        bool outputCompressionDefault = isContainerized();
         while(true)
         {
             OwnedRoxieString cluster(helper.getCluster(clusterIdx));
@@ -11966,6 +11969,14 @@ protected:
                 break;
             clusters.append(cluster);
             clusterIdx++;
+
+            if (1 == clusterIdx)
+            {
+                // establish default compression from 1st plane, but ECL compression attributes take precedence
+                Owned<IPropertyTree> plane = getStoragePlane(cluster);
+                if (plane)
+                    outputPlaneCompressed = plane->getPropBool("@compressLogicalFiles", outputCompressionDefault);
+            }
         }
         if (clusters.length())
         {
@@ -11976,7 +11987,12 @@ protected:
         {
             StringBuffer defaultCluster;
             if (getDefaultStoragePlane(defaultCluster))
+            {
                 clusters.append(defaultCluster);
+                Owned<IPropertyTree> plane = getStoragePlane(defaultCluster);
+                if (plane)
+                    outputPlaneCompressed = plane->getPropBool("@compressLogicalFiles", outputCompressionDefault);
+            }
             else if (roxieName.length())
                 clusters.append(roxieName.str());
             else
@@ -11997,8 +12013,12 @@ public:
         diskmeta.set(helper.queryDiskRecordSize()->querySerializedDiskMeta());
         if (grouped)
             diskmeta.setown(createDeltaRecordSize(diskmeta, +1));
-        size32_t fixedSize = diskmeta->getFixedSize();
-        blockcompressed = (((helper.getFlags() & TDWnewcompress) != 0) || (((helper.getFlags() & TDXcompress) != 0) && ((0 == fixedSize) || (fixedSize >= MIN_ROWCOMPRESS_RECSIZE)))); //always use new compression
+        blockcompressed = false;
+        if (0 == (helper.getFlags() & TDWnocompress))
+        {
+            size32_t fixedSize = diskmeta->getFixedSize();
+            blockcompressed = (((helper.getFlags() & TDWnewcompress) != 0) || (((helper.getFlags() & TDXcompress) != 0) && ((0 == fixedSize) || (fixedSize >= MIN_ROWCOMPRESS_RECSIZE)))); //always use new compression
+        }
         encrypted = false; // set later
         tallycrc = true;
         uncompressedBytesWritten = 0;
@@ -12030,6 +12050,11 @@ public:
             rtlFree(ekey);
             encrypted = true;
             blockcompressed = true;
+        }
+        else
+        {
+            if ((0 == (helper.getFlags() & TDWnocompress)) && !blockcompressed)
+                blockcompressed = outputPlaneCompressed;
         }
         if (blockcompressed)
             io.setown(createCompressedFileWriter(writer->queryFile(), (diskmeta->isFixedSize() ? diskmeta->getFixedSize() : 0), extend, true, ecomp, COMPRESS_METHOD_LZ4));

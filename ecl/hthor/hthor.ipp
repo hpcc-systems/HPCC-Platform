@@ -292,6 +292,7 @@ protected:
     bool grouped;
     bool blockcompressed;
     bool encrypted;
+    bool outputPlaneCompressed = false;
     CachedOutputMetaData serializedOutputMeta;
     offset_t uncompressedBytesWritten;
     Owned<IExtRowWriter> outSeq;

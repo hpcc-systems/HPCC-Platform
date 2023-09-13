@@ -23,7 +23,7 @@ prefix := setup.Files(false, false).QueryFilePrefix;
 
 import Std;
 
-#onwarning(10125, ignore); // ignore UPDATE 'up to date' messages, so that output is consistent across engines
+#onwarning(7104, ignore); // ignore UPDATE 'up to date' messages, so that output is consistent across engines
 
 rec := RECORD
   unsigned4 id;

@@ -88,6 +88,14 @@
 #define FILEVIEW_ERROR_START    6700
 #define FILEVIEW_ERROR_END      6749
 
+//HThor
+#define HTHOR_ERROR_START       6800
+#define HTHOR_ERROR_END         7099
+
+//Common to engines
+#define ENGINE_ERROR_START      7100
+#define ENGINE_ERROR_END        7299
+
 #define REMOTE_ERROR_START      8000    // dafilesrv etc - see common/remote/remoteerr.hpp
 #define REMOTE_ERROR_END        8099
 
