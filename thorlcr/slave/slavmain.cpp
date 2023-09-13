@@ -1189,7 +1189,7 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterfaceOf<IKJService>);
 
-    CKJService(mptag_t _mpTag) : threaded("CKJService", this), keyLookupMpTag(_mpTag)
+    CKJService(mptag_t _mpTag) : threaded("CKJService", this), keyLookupMpTag(_mpTag), contextLogger(jhtreeCacheStatistics)
     {
         setupProcessorPool();
     }

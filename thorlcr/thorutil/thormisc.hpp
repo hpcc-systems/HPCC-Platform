@@ -134,6 +134,7 @@ enum RegistryCode:unsigned { rc_register, rc_deregister };
 //statistics gathered by the different activities
 extern graph_decl const StatisticsMapping spillStatistics;
 extern graph_decl const StatisticsMapping jhtreeCacheStatistics;
+extern graph_decl const StatisticsMapping soapcallStatistics;
 extern graph_decl const StatisticsMapping basicActivityStatistics;
 extern graph_decl const StatisticsMapping groupActivityStatistics;
 extern graph_decl const StatisticsMapping hashJoinActivityStatistics;
@@ -150,6 +151,7 @@ extern graph_decl const StatisticsMapping sortActivityStatistics;
 
 extern graph_decl const StatisticsMapping graphStatistics;
 extern graph_decl const StatisticsMapping indexDistribActivityStatistics;
+extern graph_decl const StatisticsMapping soapcallActivityStatistics;
 
 class BooleanOnOff
 {
@@ -611,7 +613,7 @@ class CThorContextLogger : public CSimpleInterfaceOf<IContextLogger>
     mutable CRuntimeStatisticCollection stats;
 
 public:
-    CThorContextLogger() : stats(jhtreeCacheStatistics)
+    CThorContextLogger(const StatisticsMapping & statsMapping) : stats(statsMapping)
     {
         if (globals->hasProp("@httpGlobalIdHeader"))
             setHttpIdHeaderNames(globals->queryProp("@httpGlobalIdHeader"), globals->queryProp("@httpCallerIdHeader"));

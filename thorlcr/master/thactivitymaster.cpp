@@ -205,15 +205,17 @@ public:
             case TAKnwayjoin:
             case TAKgraphloopresultread:
             case TAKstreamediterator:
+            case TAKdistributed:
+            case TAKtrace:
+            case TAKemptyaction:
+                ret = new CMasterActivity(this);
+                break;
             case TAKsoap_rowdataset:
             case TAKsoap_rowaction:
             case TAKsoap_datasetdataset:
             case TAKsoap_datasetaction:
             case TAKhttp_rowdataset:
-            case TAKdistributed:
-            case TAKtrace:
-            case TAKemptyaction:
-                ret = new CMasterActivity(this);
+                ret = new CMasterActivity(this, soapcallActivityStatistics);
                 break;
             case TAKskipcatch:
             case TAKcreaterowcatch:
