@@ -2083,15 +2083,24 @@ static void checkValidDfuQueue(const char * dfuQueue)
 #endif
 }
 
+static const char* getSprayDestGroup(const char* groupReq, StringBuffer& groupOut)
+{
+    if (!isEmptyString(groupReq))
+        groupOut.append(groupReq);
+    else if (isContainerized())
+        getDefaultStoragePlane(groupOut);
+    return groupOut.str();
+}
+
 bool CFileSprayEx::onSprayFixed(IEspContext &context, IEspSprayFixed &req, IEspSprayFixedResponse &resp)
 {
     try
     {
         context.ensureFeatureAccess(FILE_SPRAY_URL, SecAccess_Write, ECLWATCH_FILE_SPRAY_ACCESS_DENIED, "Failed to do Spray. Permission denied.");
 
-        StringBuffer destFolder, destTitle, defaultFolder, defaultReplicateFolder;
+        StringBuffer destFolder, destTitle, defaultFolder, defaultReplicateFolder, groupStr;
 
-        const char* destNodeGroup = req.getDestGroup();
+        const char* destNodeGroup = getSprayDestGroup(req.getDestGroup(), groupStr);
         if (isEmptyString(destNodeGroup))
             throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Destination node group not specified.");
 
@@ -2246,9 +2255,9 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
     {
         context.ensureFeatureAccess(FILE_SPRAY_URL, SecAccess_Write, ECLWATCH_FILE_SPRAY_ACCESS_DENIED, "Failed to do Spray. Permission denied.");
 
-        StringBuffer destFolder, destTitle, defaultFolder, defaultReplicateFolder;
+        StringBuffer destFolder, destTitle, defaultFolder, defaultReplicateFolder, groupStr;
 
-        const char* destNodeGroup = req.getDestGroup();
+        const char* destNodeGroup = getSprayDestGroup(req.getDestGroup(), groupStr);
         if (isEmptyString(destNodeGroup))
             throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Destination node group not specified.");
 
