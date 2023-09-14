@@ -164,13 +164,13 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
                 }
             }),
             filesize: {
-                label: nlsHPCC.Size, width: 100,
+                label: nlsHPCC.Size, width: 100, sortable: false,
                 renderCell: React.useCallback(function (object, value, node, options) {
                     domClass.add(node, "justify-right");
                     node.innerText = Utility.convertedSize(value);
                 }, []),
             },
-            modifiedtime: { label: nlsHPCC.Date, width: 162 }
+            modifiedtime: { label: nlsHPCC.Date, width: 162, sortable: false }
         }
     });
 
