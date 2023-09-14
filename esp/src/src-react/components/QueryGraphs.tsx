@@ -5,8 +5,8 @@ import * as ESPQuery from "src/ESPQuery";
 import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
 import { QuerySortItem } from "src/store/Store";
-import { useFluentGrid } from "../hooks/grid";
 import { HolyGrail } from "../layouts/HolyGrail";
+import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 
 const logger = scopedLogger("src-react/components/QueryGraphs.tsx");
 
@@ -39,28 +39,28 @@ export const QueryGraphs: React.FunctionComponent<QueryGraphsProps> = ({
         return ESPQuery.Get(querySet, queryId);
     }, [querySet, queryId]);
     const [data, setData] = React.useState<any[]>([]);
+    const {
+        selection, setSelection,
+        setTotal,
+        refreshTable } = useFluentStoreState({});
 
     //  Grid ---
-    const { Grid, copyButtons } = useFluentGrid({
-        data,
-        primaryID: "__hpcc_id",
-        sort,
-        filename: "queryGraphs",
-        columns: {
+    const columns = React.useMemo((): FluentColumns => {
+        return {
             col1: { width: 27, selectorType: "checkbox" },
             Name: {
                 label: nlsHPCC.Name,
-                formatter: React.useCallback(function (Name, row) {
+                formatter: (Name, row) => {
                     return <>
                         <Image src={Utility.getImageURL(getStateImageName(row))} />
                         &nbsp;
                         <Link href={`#/workunits/${row.Wuid}/metrics/${Name}`}>{Name}</Link>
                     </>;
-                }, [])
+                }
             },
             Type: { label: nlsHPCC.Type, width: 72 },
-        }
-    });
+        };
+    }, []);
 
     const refreshData = React.useCallback(() => {
         query?.getDetails()
@@ -96,8 +96,18 @@ export const QueryGraphs: React.FunctionComponent<QueryGraphsProps> = ({
         },
     ], [refreshData]);
 
+    const copyButtons = useCopyButtons(columns, selection, "queryGraphs");
+
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}
-        main={<Grid />}
+        main={<FluentGrid
+            data={data}
+            primaryID={"__hpcc_id"}
+            sort={sort}
+            columns={columns}
+            setSelection={setSelection}
+            setTotal={setTotal}
+            refresh={refreshTable}
+        ></FluentGrid>}
     />;
 };

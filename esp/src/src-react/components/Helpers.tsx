@@ -1,11 +1,9 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link, ScrollablePane, Sticky } from "@fluentui/react";
-import * as domClass from "dojo/dom-class";
 import * as ESPRequest from "src/ESPRequest";
-import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
-import { useFluentGrid } from "../hooks/grid";
 import { HelperRow, useWorkunitHelpers } from "../hooks/workunit";
+import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { ShortVerticalDivider } from "./Common";
 
 function canShowContent(type: string) {
@@ -118,13 +116,14 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
     const [helpers, refreshData] = useWorkunitHelpers(wuid);
     const [data, setData] = React.useState<any[]>([]);
+    const {
+        selection, setSelection,
+        setTotal,
+        refreshTable } = useFluentStoreState({});
 
     //  Grid ---
-    const { Grid, selection, copyButtons } = useFluentGrid({
-        data,
-        primaryID: "id",
-        filename: "helpers",
-        columns: {
+    const columns = React.useMemo((): FluentColumns => {
+        return {
             sel: {
                 width: 27,
                 selectorType: "checkbox"
@@ -132,14 +131,14 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
             Type: {
                 label: nlsHPCC.Type,
                 width: 160,
-                formatter: React.useCallback(function (Type, row) {
+                formatter: (Type, row) => {
                     const target = getTarget(row.id, row);
                     if (target) {
                         const linkText = Type.replace("Slave", "Worker") + (row?.Description ? " (" + row.Description + ")" : "");
                         return <Link href={`#/workunits/${row?.workunit?.Wuid}/helpers/${row.Type}?mode=${encodeURIComponent(target.sourceMode)}&src=${encodeURIComponent(target.url)}`}>{linkText}</Link>;
                     }
                     return Type;
-                }, [])
+                }
             },
             Description: {
                 label: nlsHPCC.Description
@@ -147,13 +146,10 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
             FileSize: {
                 label: nlsHPCC.FileSize,
                 width: 90,
-                renderCell: React.useCallback(function (object, value, node, options) {
-                    domClass.add(node, "justify-right");
-                    node.innerText = Utility.valueCleanUp(value);
-                }, []),
+                justify: "right"
             }
-        }
-    });
+        };
+    }, []);
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
@@ -208,6 +204,8 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
 
     ], [refreshData, selection, uiState.canShowContent, uiState.hasSelection]);
 
+    const copyButtons = useCopyButtons(columns, selection, "helpers");
+
     //  Selection  ---
     React.useEffect(() => {
         const state = { ...defaultUIState };
@@ -229,6 +227,14 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
         <Sticky>
             <CommandBar items={buttons} farItems={copyButtons} />
         </Sticky>
-        <Grid />
+        <FluentGrid
+            data={data}
+            primaryID={"id"}
+            alphaNumColumns={{ Name: true, Value: true }}
+            columns={columns}
+            setSelection={setSelection}
+            setTotal={setTotal}
+            refresh={refreshTable}
+        ></FluentGrid>
     </ScrollablePane>;
 };

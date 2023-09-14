@@ -2,7 +2,6 @@ import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Icon, Image, Link } from "@fluentui/react";
 import { SizeMe } from "react-sizeme";
 import { scopedLogger } from "@hpcc-js/util";
-import * as domClass from "dojo/dom-class";
 import { CreateWUQueryStore, Get, WUQueryStore } from "src/ESPWorkunit";
 import * as WsWorkunits from "src/WsWorkunits";
 import { formatCost } from "src/Session";
@@ -11,7 +10,7 @@ import { useConfirm } from "../hooks/confirm";
 import { useMyAccount } from "../hooks/user";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
-import { FluentPagedGrid, FluentPagedFooter, useCopyButtons, useFluentStoreState } from "./controls/Grid";
+import { FluentPagedGrid, FluentPagedFooter, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { Fields } from "./forms/Fields";
 import { Filter } from "./forms/Filter";
 import { ShortVerticalDivider } from "./Common";
@@ -113,7 +112,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
         return store ? store : CreateWUQueryStore();
     }, [store]);
 
-    const columns = React.useMemo(() => {
+    const columns = React.useMemo((): FluentColumns => {
         return {
             col1: {
                 width: 16,
@@ -149,25 +148,25 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
             State: { label: nlsHPCC.State, width: 60 },
             TotalClusterTime: {
                 label: nlsHPCC.TotalClusterTime, width: 120,
-                renderCell: (object, value, node) => {
-                    domClass.add(node, "justify-right");
-                    node.innerText = value;
-                }
+                justify: "right",
             },
             CompileCost: {
                 label: nlsHPCC.CompileCost, width: 100,
+                justify: "right",
                 formatter: (cost, row) => {
                     return `${formatCost(cost)}`;
                 }
             },
             ExecuteCost: {
                 label: nlsHPCC.ExecuteCost, width: 100,
+                justify: "right",
                 formatter: (cost, row) => {
                     return `${formatCost(cost)}`;
                 }
             },
             FileAccessCost: {
                 label: nlsHPCC.FileAccessCost, width: 100,
+                justify: "right",
                 formatter: (cost, row) => {
                     return `${formatCost(cost)}`;
                 }

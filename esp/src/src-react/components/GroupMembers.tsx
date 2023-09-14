@@ -9,7 +9,7 @@ import { useConfirm } from "../hooks/confirm";
 import { useBuildInfo } from "../hooks/platform";
 import { pushUrl } from "../util/history";
 import { HolyGrail } from "../layouts/HolyGrail";
-import { FluentPagedGrid, FluentPagedFooter, useCopyButtons, useFluentStoreState } from "./controls/Grid";
+import { FluentPagedGrid, FluentPagedFooter, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { GroupAddUserForm } from "./forms/GroupAddUser";
 import { QuerySortItem } from "src/store/Store";
 
@@ -55,7 +55,7 @@ export const GroupMembers: React.FunctionComponent<GroupMembersProps> = ({
         return store ? store : CreateGroupMemberStore();
     }, [store]);
 
-    const columns = React.useMemo(() => {
+    const columns = React.useMemo((): FluentColumns => {
         return {
             username: {
                 label: nlsHPCC.UserName,

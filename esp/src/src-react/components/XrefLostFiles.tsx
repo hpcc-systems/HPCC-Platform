@@ -2,11 +2,11 @@ import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
 import { scopedLogger } from "@hpcc-js/util";
 import { HolyGrail } from "../layouts/HolyGrail";
+import nlsHPCC from "src/nlsHPCC";
 import * as WsDFUXref from "src/WsDFUXref";
 import { useConfirm } from "../hooks/confirm";
-import { useFluentGrid } from "../hooks/grid";
+import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { ShortVerticalDivider } from "./Common";
-import nlsHPCC from "src/nlsHPCC";
 
 const logger = scopedLogger("src-react/components/XrefLostFiles.tsx");
 
@@ -23,14 +23,15 @@ export const XrefLostFiles: React.FunctionComponent<XrefLostFilesProps> = ({
 
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
     const [data, setData] = React.useState<any[]>([]);
+    const {
+        selection, setSelection,
+        setTotal,
+        refreshTable } = useFluentStoreState({});
 
     //  Grid ---
-    const { Grid, selection, copyButtons } = useFluentGrid({
-        data,
-        primaryID: "name",
-        sort: { attribute: "modified", descending: false },
-        filename: "xrefsLostFiles",
-        columns: {
+
+    const columns = React.useMemo((): FluentColumns => {
+        return {
             check: { width: 27, selectorType: "checkbox" },
             name: { width: 180, label: nlsHPCC.Name },
             modified: { width: 80, label: nlsHPCC.Modified },
@@ -39,8 +40,8 @@ export const XrefLostFiles: React.FunctionComponent<XrefLostFilesProps> = ({
             partsLost: { width: 80, label: nlsHPCC.PartsLost },
             primarylost: { width: 80, label: nlsHPCC.PrimaryLost },
             replicatedlost: { width: 80, label: nlsHPCC.ReplicatedLost }
-        }
-    });
+        };
+    }, []);
 
     //  Selection  ---
     React.useEffect(() => {
@@ -106,11 +107,21 @@ export const XrefLostFiles: React.FunctionComponent<XrefLostFilesProps> = ({
         { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
     ], [refreshData, setShowDeleteConfirm, uiState]);
 
+    const copyButtons = useCopyButtons(columns, selection, "xrefsLostFiles");
+
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}
         main={
             <>
-                <Grid />
+                <FluentGrid
+                    data={data}
+                    primaryID={"name"}
+                    sort={{ attribute: "modified", descending: false }}
+                    columns={columns}
+                    setSelection={setSelection}
+                    setTotal={setTotal}
+                    refresh={refreshTable}
+                ></FluentGrid>
                 <DeleteConfirm />
             </>
         }
