@@ -160,12 +160,26 @@ static ISecureSocket *createSecureSocket(ISocket *sock, bool disableClientCertVe
     return secureContextServer->createSecureSocket(sock, loglevel);
 }
 #else
-static ISecureSocket *createSecureSocket(ISocket *sock)
+static ISecureSocket *createSecureSocket(ISocket *sock, bool disableClientCertVerification)
 {
     throwUnexpected();
 }
 #endif
 
+static void reportFailedSecureAccepts(const char *context, IException *exception, unsigned &numFailedConn, unsigned &timeLastLog)
+{
+    numFailedConn++;
+    unsigned timeNow = msTick();
+    if ((timeNow - timeLastLog) >= 60000)
+    {
+        StringBuffer msg("CRemoteFileServer ");
+        if (context)
+            msg.append("(").append(context).append(") ");
+        msg.appendf("[failure count : %u]", numFailedConn);
+        EXCLOG(exception, msg.str());
+        timeLastLog = timeNow;
+    }
+}
 
 struct sRFTM
 {
@@ -5463,6 +5477,8 @@ public:
 
         selecthandler->start();
 
+        unsigned timeLastLog = 0;
+        unsigned numFailedConn = 0;
         Owned<IException> exception;
         for (;;)
         {
@@ -5565,7 +5581,12 @@ public:
                             ssock.setown(createSecureSocket(sockSSL.getClear(), disableClientCertVerification));
                             int status = ssock->secure_accept();
                             if (status < 0)
-                                throw createDafsException(DAFSERR_serveraccept_failed,"Failure to establish secure connection");
+                            {
+                                if (status == PORT_CHECK_SSL_ACCEPT_ERROR)
+                                    throw createDafsException(DAFSERR_serveraccept_fail_portcheck, "secure connection failure - port check");
+                                else
+                                    throw createDafsException(DAFSERR_serveraccept_failed, "Failure to establish secure connection");
+                            }
                             sockSSL.setown(ssock.getLink());
                         }
                     }
@@ -5575,7 +5596,10 @@ public:
                     }
                     if (exception)
                     {
-                        EXCLOG(exception, "CRemoteFileServer (secure)");
+                        if (exception->errorCode() != DAFSERR_serveraccept_fail_portcheck)
+                            EXCLOG(exception, "CRemoteFileServer (secure)");
+                        else
+                            reportFailedSecureAccepts("secure", exception, numFailedConn, timeLastLog);
                         cleanupDaFsSocket(sockSSL);
                         sockSSL.clear();
                         cleanupDaFsSocket(ssock);
@@ -5601,7 +5625,12 @@ public:
                             ssock.setown(createSecureSocket(acceptedRSSock.getClear(), true));
                             int status = ssock->secure_accept();
                             if (status < 0)
-                                throw createDafsException(DAFSERR_serveraccept_failed,"Failure to establish SSL row service connection");
+                            {
+                                if (status == PORT_CHECK_SSL_ACCEPT_ERROR)
+                                    throw createDafsException(DAFSERR_serveraccept_fail_portcheck, "secure connection failure - port check");
+                                else
+                                    throw createDafsException(DAFSERR_serveraccept_failed, "Failure to establish SSL row service connection");
+                            }
                             acceptedRSSock.setown(ssock.getLink());
                         }
                     }
@@ -5611,7 +5640,10 @@ public:
                     }
                     if (exception)
                     {
-                        EXCLOG(exception, "CRemoteFileServer (row service)");
+                        if (exception->errorCode() != DAFSERR_serveraccept_fail_portcheck)
+                            EXCLOG(exception, "CRemoteFileServer (row service)");
+                        else
+                            reportFailedSecureAccepts("row service", exception, numFailedConn, timeLastLog);
                         cleanupDaFsSocket(acceptedRSSock);
                         acceptedRSSock.clear();
                         cleanupDaFsSocket(ssock);
