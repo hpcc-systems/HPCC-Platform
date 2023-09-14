@@ -529,7 +529,7 @@ public:
 public:
     CIndexReadSlaveBase(CGraphElementBase *container)
         : CSlaveActivity(container, indexReadActivityStatistics), callback(*this),
-          statsUpdater(jhtreeCacheStatistics, *this, contextLogger)
+          contextLogger(jhtreeCacheStatistics), statsUpdater(jhtreeCacheStatistics, *this, contextLogger)
     {
         helper = (IHThorIndexReadBaseArg *)container->queryHelper();
         limitTransformExtra = nullptr;

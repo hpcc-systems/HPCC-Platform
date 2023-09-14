@@ -2718,7 +2718,7 @@ void CJobBase::init()
     forceLogGraphIdMin = (graph_id)getWorkUnitValueInt("forceLogGraphIdMin", 0);
     forceLogGraphIdMax = (graph_id)getWorkUnitValueInt("forceLogGraphIdMax", 0);
 
-    logctx.setown(new CThorContextLogger());
+    logctx.setown(new CThorContextLogger(noStatistics));
 
     // helpers to preserve legacy behaviour of a few 'expert' properties that could be set as attributes directly under ThorCluster
     auto getLegacyExpertSettingBool = [this](const char *property, bool dft)

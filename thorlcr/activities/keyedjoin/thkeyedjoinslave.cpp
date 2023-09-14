@@ -2938,7 +2938,8 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
 public:
     IMPLEMENT_IINTERFACE_USING(PARENT);
 
-    CKeyedJoinSlave(CGraphElementBase *_container) : PARENT(_container, keyedJoinActivityStatistics), readAheadThread(*this), statsUpdater(jhtreeCacheStatistics, *this, contextLogger)
+    CKeyedJoinSlave(CGraphElementBase *_container) : PARENT(_container, keyedJoinActivityStatistics),
+        readAheadThread(*this), contextLogger(jhtreeCacheStatistics), statsUpdater(jhtreeCacheStatistics, *this, contextLogger)
     {
         helper = static_cast <IHThorKeyedJoinArg *> (queryHelper());
         reInit = 0 != (helper->getFetchFlags() & (FFvarfilename|FFdynamicfilename)) || (helper->getJoinFlags() & JFvarindexfilename);
