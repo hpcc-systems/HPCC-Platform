@@ -70,7 +70,7 @@
 
   <para>Example:</para>
 
-  <programlisting>I := RANDOM() : INDEPENDENT;  //calculated once, period
+  <programlisting lang="ECL" role="runnable">I := RANDOM() : INDEPENDENT;  //calculated once, period
 G := RANDOM() : GLOBAL;       //calculated once in each graph
 
 ds := 
@@ -83,8 +83,8 @@ RECORDOF(ds) XF(ds L) := TRANSFORM
   SELF := L;
 END;
 
-P1 := PROJECT(ds,XF(left)) : PERSIST('~RTTEST::PERSIST::IndependentVsGlobal1');
-P2 := PROJECT(ds,XF(left)) : PERSIST('~RTTEST::PERSIST::IndependentVsGlobal2');
+P1 := PROJECT(ds,XF(left)) : PERSIST('~TEMP::PERSIST::IndependentVsGlobal1');
+P2 := PROJECT(ds,XF(left)) : PERSIST('~TEMP::PERSIST::IndependentVsGlobal2');
 
 OUTPUT(P1);    
 OUTPUT(P2);  //this gets the same Ival values as P1, but the Gval value is different than P1

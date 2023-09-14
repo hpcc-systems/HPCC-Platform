@@ -71,7 +71,7 @@
 
   <para>Example:</para>
 
-  <programlisting>InputRec := RECORD
+  <programlisting lang="ECL" role="notrunnable">InputRec := RECORD
 INTEGER4 Attr1;
 STRING20 Attr2;
 INTEGER8 Cid;

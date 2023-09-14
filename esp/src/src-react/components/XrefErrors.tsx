@@ -1,10 +1,10 @@
 import * as React from "react";
 import { CommandBar, ICommandBarItemProps } from "@fluentui/react";
 import { scopedLogger } from "@hpcc-js/util";
-import { HolyGrail } from "../layouts/HolyGrail";
-import * as WsDFUXref from "src/WsDFUXref";
-import { useFluentGrid } from "../hooks/grid";
 import nlsHPCC from "src/nlsHPCC";
+import * as WsDFUXref from "src/WsDFUXref";
+import { HolyGrail } from "../layouts/HolyGrail";
+import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 
 const logger = scopedLogger("src-react/components/XrefErrors.tsx");
 
@@ -17,35 +17,33 @@ export const XrefErrors: React.FunctionComponent<XrefErrorsProps> = ({
 }) => {
 
     const [data, setData] = React.useState<any[]>([]);
+    const {
+        selection, setSelection,
+        setTotal,
+        refreshTable } = useFluentStoreState({});
 
     //  Grid ---
-    const { Grid, copyButtons } = useFluentGrid({
-        data,
-        primaryID: "name",
-        sort: { attribute: "name", descending: false },
-        filename: "xrefsErrorsWarnings",
-        columns: {
+
+    const columns = React.useMemo((): FluentColumns => {
+        return {
             file: { width: 100, label: nlsHPCC.File },
             text: { width: 50, label: nlsHPCC.Message },
             status: {
                 label: nlsHPCC.Status, width: 10, sortable: true,
-                renderCell: React.useCallback((object, value, node, options) => {
+                className: (value, row) => {
                     switch (value) {
                         case "Error":
-                            node.classList.add("ErrorCell");
-                            break;
+                            return "ErrorCell";
                         case "Warning":
-                            node.classList.add("WarningCell");
-                            break;
+                            return "WarningCell";
                         case "Normal":
-                            node.classList.add("NormalCell");
-                            break;
+                            return "NormalCell";
                     }
-                    node.innerText = value;
-                }, [])
+                    return "";
+                }
             }
-        }
-    });
+        };
+    }, []);
 
     const refreshData = React.useCallback(() => {
         WsDFUXref.DFUXRefMessages({ request: { Cluster: name } })
@@ -86,9 +84,19 @@ export const XrefErrors: React.FunctionComponent<XrefErrorsProps> = ({
         },
     ], [refreshData]);
 
+    const copyButtons = useCopyButtons(columns, selection, "xrefsErrorsWarnings");
+
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}
-        main={<Grid />}
+        main={<FluentGrid
+            data={data}
+            primaryID={"name"}
+            sort={{ attribute: "name", descending: false }}
+            columns={columns}
+            setSelection={setSelection}
+            setTotal={setTotal}
+            refresh={refreshTable}
+        ></FluentGrid>}
     />;
 
 };

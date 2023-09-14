@@ -2487,7 +2487,7 @@ class IndexDistributeSlaveActivity : public HashDistributeSlaveBase
     } *lookup;
 
 public:
-    IndexDistributeSlaveActivity(CGraphElementBase *container) : PARENT(container, indexDistribActivityStatistics), lookup(NULL), statsUpdater(jhtreeCacheStatistics, *this, contextLogger)
+    IndexDistributeSlaveActivity(CGraphElementBase *container) : PARENT(container, indexDistribActivityStatistics), lookup(NULL), contextLogger(jhtreeCacheStatistics), statsUpdater(jhtreeCacheStatistics, *this, contextLogger)
     {
     }
     ~IndexDistributeSlaveActivity()

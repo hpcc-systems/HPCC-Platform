@@ -1253,7 +1253,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
     public:
         IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-        CKeyLocalLookup(CKeyedJoinSlave &_owner, const RtlRecord &_keyRecInfo) : owner(_owner), keyRecInfo(_keyRecInfo), indexReadFieldsRow(_owner.indexInputAllocator)
+        CKeyLocalLookup(CKeyedJoinSlave &_owner, const RtlRecord &_keyRecInfo) : owner(_owner), keyRecInfo(_keyRecInfo), indexReadFieldsRow(_owner.indexInputAllocator), contextLogger(jhtreeCacheStatistics)
         {
             tlkManager.setown(owner.keyHasTlk ? createLocalKeyManager(keyRecInfo, nullptr, &contextLogger, owner.helper->hasNewSegmentMonitors(), false) : nullptr);
             reset();

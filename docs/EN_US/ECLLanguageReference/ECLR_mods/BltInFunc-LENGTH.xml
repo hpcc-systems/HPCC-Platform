@@ -39,8 +39,9 @@
 
   <para>Example:</para>
 
-  <programlisting>INTEGER MyLength := LENGTH('XYZ' + 'ABC');
-      //MyLength is 6</programlisting>
+  <programlisting lang="ECL" role="runnable">INTEGER MyLength := LENGTH('XYZ' + 'ABC');
+OUTPUT(MyLength);   //MyLength is 6</programlisting>
 
-  <para>See Also: <link linkend="String_Operators">String Operators</link>, <link linkend="STRING">STRING</link></para>
+  <para>See Also: <link linkend="String_Operators">String Operators</link>,
+  <link linkend="STRING">STRING</link></para>
 </sect1>

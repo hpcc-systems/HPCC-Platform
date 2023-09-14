@@ -5935,6 +5935,24 @@ IStoreHelper *createStoreHelper(const char *storeName, const char *location, con
 
 ///////////////
 
+static CConfigUpdateHook configUpdateHook;
+static void initializeStorageGroups(IPropertyTree *oldEnvironment) // oldEnvironment always null in containerized
+{
+    bool forceGroupUpdate = getComponentConfigSP()->getPropBool("DFS/@forceGroupUpdate");
+    initClusterAndStoragePlaneGroups(forceGroupUpdate, oldEnvironment);
+    if (isContainerized())
+    {
+        auto updateFunc = [](const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
+        {
+            bool forceGroupUpdate = getComponentConfigSP()->getPropBool("DFS/@forceGroupUpdate");
+            initClusterAndStoragePlaneGroups(forceGroupUpdate, nullptr);
+        };
+        configUpdateHook.installOnce(updateFunc, false);
+    }
+}
+
+///////////////
+
 #ifdef _MSC_VER
 #pragma warning (push)
 #pragma warning (disable : 4355)  // 'this' : used in base member initializer list
@@ -6574,8 +6592,7 @@ void CCovenSDSManager::loadStore(const char *storeName, const bool *abort)
     Owned<IRemoteConnection> conn = connect("/", 0, RTM_INTERNAL, INFINITE);
     initializeInternals(conn->queryRoot());
     conn.clear();
-    bool forceGroupUpdate = config.getPropBool("DFS/@forceGroupUpdate");
-    initClusterAndStoragePlaneGroups(forceGroupUpdate, oldEnvironment);
+    initializeStorageGroups(oldEnvironment);
 }
 
 void CCovenSDSManager::saveStore(const char *storeName, bool currentEdition)

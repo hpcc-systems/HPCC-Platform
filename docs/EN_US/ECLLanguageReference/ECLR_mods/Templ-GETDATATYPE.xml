@@ -33,13 +33,13 @@
 
   <para>Example:</para>
 
-  <programlisting>  person := DATASET([{D'6789ABCDE6789ABCDE'}],{DATA9 per_cid});
-  #DECLARE(fieldtype);
-  #DECLARE(field);
-  #SET(field, 'person.per_cid');
-  #SET(fieldtype, #GETDATATYPE(%field%));
-  res := %'fieldtype'%;
-  res; // Output: res = 'data9'</programlisting>
+  <programlisting lang="ECL" role="runnnable">person := DATASET([{D'6789ABCDE6789ABCDE'}],{DATA9 per_cid});
+#DECLARE(fieldtype);
+#DECLARE(field);
+#SET(field, 'person.per_cid');
+#SET(fieldtype, #GETDATATYPE(%field%));
+res := %'fieldtype'%;
+OUTPUT(res); //  'data9'</programlisting>
 
   <para>See Also: <link linkend="Value_Types_Chapter">Value
   Types</link></para>

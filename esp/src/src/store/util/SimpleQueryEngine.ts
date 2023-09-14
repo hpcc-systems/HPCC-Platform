@@ -1,5 +1,29 @@
-import { BaseRow, QueryOptions, QueryRequest } from "../Store";
+import { alphanumCompare } from "../../Utility";
+import { BaseRow, QueryOptions, QueryRequest, QuerySort } from "../Store";
 
+function createSortFunc<T extends BaseRow>(sortSet: QuerySort<T>, alphanumColumns: { [id: string]: boolean }) {
+	return typeof sortSet == "function" ? sortSet : function (a, b) {
+		for (let i = 0; sortSet[i]; i++) {
+			const sort = sortSet[i];
+			if (alphanumColumns[sort.attribute as string]) {
+				const cmp = alphanumCompare(a[sort.attribute], b[sort.attribute], true, sort.descending);
+				if (cmp !== 0) {
+					return cmp;
+				}
+			} else {
+				let aValue = a[sort.attribute];
+				let bValue = b[sort.attribute];
+				// valueOf enables proper comparison of dates
+				aValue = aValue != null ? aValue.valueOf() : aValue;
+				bValue = bValue != null ? bValue.valueOf() : bValue;
+				if (aValue != bValue) {
+					return !!sort.descending == (aValue == null || aValue > bValue) ? -1 : 1;
+				}
+			}
+			return 0;
+		}
+	};
+}
 export function SimpleQueryEngine<R extends BaseRow, T extends BaseRow>(_query?: QueryRequest<R>, options?: QueryOptions<T>) {
 	// summary:
 	//		Simple query engine that matches using filter functions, named filter
@@ -84,20 +108,7 @@ export function SimpleQueryEngine<R extends BaseRow, T extends BaseRow>(_query?:
 		// next we sort
 		const sortSet = options && options.sort;
 		if (sortSet) {
-			results.sort(typeof sortSet == "function" ? sortSet : function (a, b) {
-				for (let i = 0; sortSet[i]; i++) {
-					const sort = sortSet[i];
-					let aValue = a[sort.attribute];
-					let bValue = b[sort.attribute];
-					// valueOf enables proper comparison of dates
-					aValue = aValue != null ? aValue.valueOf() : aValue;
-					bValue = bValue != null ? bValue.valueOf() : bValue;
-					if (aValue != bValue) {
-						return !!sort.descending == (aValue == null || aValue > bValue) ? -1 : 1;
-					}
-				}
-				return 0;
-			});
+			results.sort(createSortFunc(sortSet, options.alphanumColumns));
 		}
 		// now we paginate
 		if (options && (options.start || options.count)) {
@@ -111,3 +122,4 @@ export function SimpleQueryEngine<R extends BaseRow, T extends BaseRow>(_query?:
 	execute.matches = query;
 	return execute;
 }
+

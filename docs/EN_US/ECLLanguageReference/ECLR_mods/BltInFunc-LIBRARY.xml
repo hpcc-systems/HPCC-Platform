@@ -91,7 +91,7 @@
 
   <para>Example:</para>
 
-  <programlisting>NamesRec := RECORD
+  <programlisting lang="ECL" role="notrunnable">NamesRec := RECORD
     INTEGER1  NameID;
     STRING20  FName;
     STRING20  LName;

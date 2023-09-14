@@ -6,9 +6,9 @@ import nlsHPCC from "src/nlsHPCC";
 import { ShortVerticalDivider } from "./Common";
 import { pushUrl } from "../util/history";
 import { useConfirm } from "../hooks/confirm";
-import { useFluentGrid } from "../hooks/grid";
 import { useBuildInfo } from "../hooks/platform";
 import { HolyGrail } from "../layouts/HolyGrail";
+import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { UserAddGroupForm } from "./forms/UserAddGroup";
 
 const logger = scopedLogger("src-react/components/UserGroups.tsx");
@@ -31,24 +31,25 @@ export const UserGroups: React.FunctionComponent<UserGroupsProps> = ({
     const [showAdd, setShowAdd] = React.useState(false);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
     const [data, setData] = React.useState<any[]>([]);
+    const {
+        selection, setSelection,
+        setTotal,
+        refreshTable } = useFluentStoreState({});
 
     //  Grid ---
-    const { Grid, selection } = useFluentGrid({
-        data,
-        primaryID: "username",
-        sort: { attribute: "name", descending: false },
-        filename: "userGroups",
-        columns: {
+
+    const columns = React.useMemo((): FluentColumns => {
+        return {
             check: { width: 27, label: " ", selectorType: "checkbox" },
             name: {
                 label: nlsHPCC.GroupName,
-                formatter: function (_name, idx) {
+                formatter: (_name, idx) => {
                     _name = _name.replace(/[^-_a-zA-Z0-9\s]+/g, "");
                     return <Link href={`#/${opsCategory}/security/groups/${_name}`}>{_name}</Link>;
                 }
             }
-        }
-    });
+        };
+    }, [opsCategory]);
 
     const refreshData = React.useCallback(() => {
         wsAccess.UserEdit({ username: username })
@@ -117,12 +118,22 @@ export const UserGroups: React.FunctionComponent<UserGroupsProps> = ({
         },
     ], [opsCategory, refreshData, selection, setShowDeleteConfirm, uiState.hasSelection]);
 
+    const copyButtons = useCopyButtons(columns, selection, "userGroups");
+
     return <>
         <HolyGrail
-            header={<CommandBar items={buttons} />}
-            main={<Grid />}
+            header={<CommandBar items={buttons} farItems={copyButtons} />}
+            main={<FluentGrid
+                data={data}
+                primaryID={"username"}
+                sort={{ attribute: "name", descending: false }}
+                columns={columns}
+                setSelection={setSelection}
+                setTotal={setTotal}
+                refresh={refreshTable}
+            ></FluentGrid >}
         />
-        <UserAddGroupForm showForm={showAdd} setShowForm={setShowAdd} refreshGrid={refreshData} username={username} />
+        < UserAddGroupForm showForm={showAdd} setShowForm={setShowAdd} refreshGrid={refreshData} username={username} />
         <DeleteConfirm />
     </>;
 

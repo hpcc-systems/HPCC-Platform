@@ -181,31 +181,26 @@
   <para>Persisted attributes can still be subject to the ordering requirements
   of SEQUENTIAL. However, since PERSISTs are shared between workunits, there
   is no guarantee that the attribute will be evaluated within any given
-  evaluation order. </para>
+  evaluation order.</para>
 
   <para>You can use #OPTION to override the default settings, as shown in the
   example.</para>
 
   <para>Example:</para>
 
-  <programlisting>// #OPTION ('multiplePersistInstances', true|false); // if true retains MULTIPLE, if false SINGLE
+  <programlisting lang="ECL" role="notrunnable">// #OPTION ('multiplePersistInstances', true|false); // if true retains MULTIPLE, if false SINGLE
 // #OPTION ('defaultNumPersistInstances', &lt;n&gt;);      // the number to retain if MULTIPLE allowed. 
                                                      // Defaults to -1 (retain all)
 
-  CountPeople := COUNT(Person) : PERSIST('PeopleCount');
+CountPeople := COUNT(Person) : PERSIST('PeopleCount');
   //Makes CountPeople available for use in all subsequent work units
   
-  sPeople := SORT(Person,Person.per_first_name) :
-          PERSIST('SortPerson'),WHEN(Daily);
+sPeople := SORT(Person,first_name): PERSIST('SortPerson'),WHEN(Daily);
   //Makes sPeople available for use in all subsequent work units
   
-  s1 := SORT(Person,Person.per_first_name) :
-          PERSIST('SortPerson1','OtherThor');
+s1 := SORT(Person,first_name): PERSIST('SortPerson1','OtherThor');
       //run the code on the OtherThor cluster
-  s2 := SORT(Person,Person.per_first_name) :
-          PERSIST('SortPerson2',
-                  'OtherThor',
-                  CLUSTER('AnotherThor'));
+s2 := SORT(Person,first_name): PERSIST('SortPerson2','OtherThor',CLUSTER('AnotherThor'));
        //run the code on the OtherThor cluster
        // and write the file to the AnotherThor cluster
 </programlisting>

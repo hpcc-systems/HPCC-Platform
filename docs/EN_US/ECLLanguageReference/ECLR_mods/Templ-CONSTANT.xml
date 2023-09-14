@@ -41,9 +41,10 @@
 
   <para>Example:</para>
 
-  <programlisting>  PersonCount := 0 : STORED('myname');
-  #CONSTANT('myname',100);
-      //make stored PersonCount attribute value to 100
+  <programlisting lang="ECL" role="runnable">PersonCount := 0 : STORED('myCount');
+#CONSTANT('myCount',100);
+      //set the stored PersonCount attribute value to 100
+OUTPUT(PersonCount);
 </programlisting>
 
   <para>See Also: <link linkend="_STORED">#STORED</link></para>

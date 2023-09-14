@@ -67,7 +67,7 @@
 
     <para>Example:</para>
 
-    <programlisting>//a FUNCTION with side-effect Action
+    <programlisting lang="ECL" role="notrunnable">//a FUNCTION with side-effect Action
 namesTable := FUNCTION
    namesRecord := RECORD
      STRING20 surname;

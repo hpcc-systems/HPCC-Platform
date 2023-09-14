@@ -57,12 +57,16 @@
 
   <para>Example:</para>
 
-  <programlisting>Ranking := RANK(1,[20,30,10,40]);
+  <programlisting lang="ECL" role="runnable">Ranking1 := RANK(1,[20,30,10,40]);
 // returns 2 - 1st element (20) in unsorted set is
 // 2nd element after sorting to [10,20,30,40]
-Ranking := RANK(1,[20,30,10,40],DESCEND);
+
+Ranking2 := RANK(1,[20,30,10,40],DESCEND);
 // returns 3 - 1st element (20) in unsorted set is
 // 3rd element after sorting to [40,30,20,10]
+
+OUTPUT(Ranking1);
+OUTPUT(Ranking2);
 </programlisting>
 
   <para>See Also: <link linkend="RANKED">RANKED</link>, <link

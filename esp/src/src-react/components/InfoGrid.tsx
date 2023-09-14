@@ -1,9 +1,8 @@
 import * as React from "react";
 import { Checkbox, CommandBar, ICommandBarItemProps, Link } from "@fluentui/react";
-import * as domClass from "dojo/dom-class";
 import nlsHPCC from "src/nlsHPCC";
-import { useFluentGrid } from "../hooks/grid";
 import { useWorkunitExceptions } from "../hooks/workunit";
+import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { HolyGrail } from "../layouts/HolyGrail";
 
 function extractGraphInfo(msg) {
@@ -36,6 +35,10 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
     const [filterCounts, setFilterCounts] = React.useState<any>({});
     const [exceptions] = useWorkunitExceptions(wuid);
     const [data, setData] = React.useState<any[]>([]);
+    const {
+        selection, setSelection,
+        setTotal,
+        refreshTable } = useFluentStoreState({});
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
@@ -46,34 +49,28 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
     ], [filterCounts.error, filterCounts.info, filterCounts.other, filterCounts.warning]);
 
     //  Grid ---
-    const { Grid, copyButtons } = useFluentGrid({
-        data,
-        primaryID: "id",
-        filename: "errorwarnings",
-        columns: {
+    const columns = React.useMemo((): FluentColumns => {
+        return {
             Severity: {
                 label: nlsHPCC.Severity, field: "", width: 72, sortable: false,
-                renderCell: React.useCallback(function (object, value, node, options) {
+                className: (value, row) => {
                     switch (value) {
                         case "Error":
-                            domClass.add(node, "ErrorCell");
-                            break;
+                            return "ErrorCell";
                         case "Alert":
-                            domClass.add(node, "AlertCell");
-                            break;
+                            return "AlertCell";
                         case "Warning":
-                            domClass.add(node, "WarningCell");
-                            break;
+                            return "WarningCell";
                     }
-                    node.innerText = value;
-                }, [])
+                    return "";
+                }
             },
             Source: { label: nlsHPCC.Source, field: "", width: 144, sortable: false },
             Code: { label: nlsHPCC.Code, field: "", width: 45, sortable: false },
             Message: {
                 label: nlsHPCC.Message, field: "",
                 sortable: false,
-                formatter: React.useCallback(function (Message, idx) {
+                formatter: (Message, idx) => {
                     const info = extractGraphInfo(Message);
                     if (info.graphID && info.subgraphID) {
                         let txt = `Graph ${info.graphID}[${info.subgraphID}]`;
@@ -83,13 +80,15 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
                         return <><span>{info?.prefix}<Link style={{ marginRight: 3 }} href={`#/workunits/${wuid}/metrics/sg${info.subgraphID}`}>{txt}</Link>{info?.message}</span></>;
                     }
                     return Message;
-                }, [wuid])
+                }
             },
             Column: { label: nlsHPCC.Col, field: "", width: 36, sortable: false },
             LineNo: { label: nlsHPCC.Line, field: "", width: 36, sortable: false },
             FileName: { label: nlsHPCC.FileName, field: "", width: 360, sortable: false }
-        }
-    });
+        };
+    }, [wuid]);
+
+    const copyButtons = useCopyButtons(columns, selection, "errorwarnings");
 
     React.useEffect(() => {
         const filterCounts = {
@@ -153,7 +152,15 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}
         main={
-            <Grid />
+            <FluentGrid
+                data={data}
+                primaryID={"id"}
+                alphaNumColumns={{ Name: true, Value: true }}
+                columns={columns}
+                setSelection={setSelection}
+                setTotal={setTotal}
+                refresh={refreshTable}
+            ></FluentGrid>
         }
     />;
 };

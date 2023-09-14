@@ -75,11 +75,14 @@ static Owned<IMPtagAllocator> ClusterMPAllocator;
 // stat. mappings shared between master and slave activities
 const StatisticsMapping spillStatistics({StTimeSpillElapsed, StTimeSortElapsed, StNumSpills, StSizeSpillFile});
 const StatisticsMapping jhtreeCacheStatistics({ StNumIndexSeeks, StNumIndexScans, StNumPostFiltered, StNumIndexWildSeeks,
-                                                StNumNodeCacheAdds, StNumLeafCacheAdds, StNumBlobCacheAdds, StNumNodeCacheHits, StNumLeafCacheHits, StNumBlobCacheHits, StCycleNodeLoadCycles, StCycleLeafLoadCycles,
-                                                StCycleBlobLoadCycles, StCycleNodeReadCycles, StCycleLeafReadCycles, StCycleBlobReadCycles, StNumNodeDiskFetches, StNumLeafDiskFetches, StNumBlobDiskFetches,
-                                                StCycleNodeFetchCycles, StCycleLeafFetchCycles, StCycleBlobFetchCycles,
-                                                StCycleIndexCacheBlockedCycles, StNumIndexMerges, StNumIndexMergeCompares,
+                                                StNumNodeCacheAdds, StNumLeafCacheAdds, StNumBlobCacheAdds, StNumNodeCacheHits, StNumLeafCacheHits, StNumBlobCacheHits,
+                                                StNumNodeDiskFetches, StNumLeafDiskFetches, StNumBlobDiskFetches,
+                                                StTimeNodeRead, StCycleNodeReadCycles, StTimeLeafRead, StCycleLeafReadCycles, StTimeBlobRead, StCycleBlobReadCycles,
+                                                StTimeNodeFetch, StCycleNodeFetchCycles, StTimeLeafFetch, StCycleLeafFetchCycles, StTimeBlobFetch, StCycleBlobFetchCycles,
+                                                StTimeIndexCacheBlocked, StCycleIndexCacheBlockedCycles, StNumIndexMerges, StNumIndexMergeCompares,
+                                                StTimeBlobLoad, StCycleBlobLoadCycles, StTimeLeafLoad, StCycleLeafLoadCycles, StTimeNodeLoad, StCycleNodeLoadCycles,
                                                 StNumIndexSkips, StNumIndexNullSkips});
+const StatisticsMapping soapcallStatistics({StTimeSoapcall});
 
 const StatisticsMapping basicActivityStatistics({StTimeTotalExecute, StTimeLocalExecute, StTimeBlocked});
 const StatisticsMapping groupActivityStatistics({StNumGroups, StNumGroupMax}, basicActivityStatistics);
@@ -96,6 +99,7 @@ const StatisticsMapping sortActivityStatistics({}, basicActivityStatistics, spil
 const StatisticsMapping graphStatistics({StNumExecutions, StSizeSpillFile, StSizeGraphSpill, StTimeUser, StTimeSystem, StNumContextSwitches, StSizeMemory, StSizePeakMemory, StSizeRowMemory, StSizePeakRowMemory}, basicActivityStatistics);
 const StatisticsMapping diskReadPartStatistics({StNumDiskRowsRead}, diskReadRemoteStatistics);
 const StatisticsMapping indexDistribActivityStatistics({}, basicActivityStatistics, jhtreeCacheStatistics);
+const StatisticsMapping soapcallActivityStatistics({}, basicActivityStatistics, soapcallStatistics);
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {

@@ -61,16 +61,13 @@
 
   <para>Example:</para>
 
-  <programlisting>  DoSomethingToFixIt := TRUE; //some action to repair the input
-  
-  SPeople := SORT(Person,Person.per_first_name);
-  
-  nUniques := DEDUP(sPeople,Person.per_first_name AND Person.address)
-           :RECOVERY(DoSomethingToFixIt,2),
-            FAILURE(Email.simpleSend(SystemsPersonel,
-                    SystemsPersonel.email,
-                    'ouch.htm'));
+  <programlisting lang="ECL" role="notrunnable">DoSomethingToFixIt := TRUE; //some action to repair the input
+SPeople := SORT(Person,first_name);
+nUniques := DEDUP(sPeople,first_name)
+            : RECOVERY(DoSomethingToFixIt,2), 
+            FAILURE(Email.simpleSend(SystemsPersonel,SystemsPersonel.email,'ouch.htm'));
 </programlisting>
 
-  <para>See Also: <link linkend="SUCCESS">SUCCESS</link>, <link linkend="FAILURE">FAILURE</link></para>
+  <para>See Also: <link linkend="SUCCESS">SUCCESS</link>, <link
+  linkend="FAILURE">FAILURE</link></para>
 </sect1>

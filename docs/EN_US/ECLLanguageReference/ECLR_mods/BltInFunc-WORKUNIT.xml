@@ -56,21 +56,20 @@
 
   <para>Example:</para>
 
-  <programlisting>wuid := WORKUNIT; //get WUID
- 
+  <programlisting lang="ECL" role="runnable">wuid := WORKUNIT; //get WUID
 namesRecord := RECORD
   STRING20 surname;
   STRING10 forename;
   INTEGER2 age;
 END;
-
 namesTable := DATASET([{'Halligan','Kevin',31},
                        {'Halligan','Liz',30},
                        {'Salter','Abi',10},
                        {'X','Z',42}], namesRecord);
- 
+OUTPUT(wuid);
 DISTRIBUTION(namesTable, surname, forename,NAMED('Stats'));
-WORKUNIT('Stats',STRING);</programlisting>
+WORKUNIT('Stats',STRING);
+</programlisting>
 
   <para>See Also: <link linkend="_WORKUNIT">#WORKUNIT</link>, <link
   linkend="OUTPUT">OUTPUT</link>, <link

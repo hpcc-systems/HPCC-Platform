@@ -11,7 +11,7 @@ import { useConfirm } from "../hooks/confirm";
 import { useMyAccount } from "../hooks/user";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
-import { FluentPagedGrid, FluentPagedFooter, useCopyButtons, useFluentStoreState } from "./controls/Grid";
+import { FluentPagedGrid, FluentPagedFooter, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { AddToSuperfile } from "./forms/AddToSuperfile";
 import { CopyFile } from "./forms/CopyFile";
 import { DesprayFile } from "./forms/DesprayFile";
@@ -125,7 +125,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
         return formatQuery(filter);
     }, [filter]);
 
-    const columns = React.useMemo(() => {
+    const columns = React.useMemo((): FluentColumns => {
         return {
             col1: {
                 width: 16,
@@ -191,9 +191,6 @@ export const Files: React.FunctionComponent<FilesProps> = ({
             },
             Parts: {
                 label: nlsHPCC.Parts, width: 40,
-                formatter: (value, row) => {
-                    return Utility.valueCleanUp(value);
-                },
             },
             MinSkew: {
                 label: nlsHPCC.MinSkew, width: 60, formatter: (value, row) => value ? `${Utility.formatDecimal(value / 100)}%` : ""

@@ -84,7 +84,7 @@
 
   <para>Example:</para>
 
-  <programlisting>Attr01 := MAP(EXISTS(Person(Person.EyeColor = 'Blue')) =&gt; 1,
+  <programlisting lang="ECL" role="notrunnable">Attr01 := MAP(EXISTS(Person(Person.EyeColor = 'Blue')) =&gt; 1,
               EXISTS(Person(Person.Haircolor = 'Brown')) =&gt; 2,
               3);
  //If there are any blue-eyed people, Attr01 gets 1

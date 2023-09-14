@@ -2,9 +2,9 @@ import * as React from "react";
 import { CommandBar, ICommandBarItemProps } from "@fluentui/react";
 import nlsHPCC from "src/nlsHPCC";
 import { QuerySortItem } from "src/store/Store";
-import { useFluentGrid } from "../hooks/grid";
 import { useFile } from "../hooks/file";
 import { HolyGrail } from "../layouts/HolyGrail";
+import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 
 interface FileBloomsProps {
     cluster?: string;
@@ -22,19 +22,19 @@ export const FileBlooms: React.FunctionComponent<FileBloomsProps> = ({
 
     const [file, , , refreshData] = useFile(cluster, logicalFile);
     const [data, setData] = React.useState<any[]>([]);
+    const {
+        selection, setSelection,
+        setTotal,
+        refreshTable } = useFluentStoreState({});
 
     //  Grid ---
-    const { Grid, copyButtons } = useFluentGrid({
-        data,
-        primaryID: "FieldNames",
-        sort,
-        filename: "fileBlooms",
-        columns: {
+    const columns = React.useMemo((): FluentColumns => {
+        return {
             FieldNames: { label: nlsHPCC.FieldNames, sortable: true, width: 320 },
             Limit: { label: nlsHPCC.Limit, sortable: true, width: 180 },
             Probability: { label: nlsHPCC.Probability, sortable: true, width: 180 },
-        }
-    });
+        };
+    }, []);
 
     React.useEffect(() => {
         const fileBlooms = file?.Blooms?.DFUFileBloom;
@@ -56,10 +56,20 @@ export const FileBlooms: React.FunctionComponent<FileBloomsProps> = ({
         },
     ], [refreshData]);
 
+    const copyButtons = useCopyButtons(columns, selection, "fileBlooms");
+
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}
         main={
-            <Grid />
+            <FluentGrid
+                data={data}
+                primaryID={"FieldNames"}
+                sort={sort}
+                columns={columns}
+                setSelection={setSelection}
+                setTotal={setTotal}
+                refresh={refreshTable}
+            ></FluentGrid>
         }
     />;
 };

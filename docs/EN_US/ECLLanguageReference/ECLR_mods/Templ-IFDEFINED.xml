@@ -26,8 +26,8 @@
           <row>
             <entry><emphasis>defaultValue</emphasis></entry>
 
-            <entry>The default value to use if the definition does not exist.
-            </entry>
+            <entry>The default value to use if the definition does not
+            exist.</entry>
           </row>
         </tbody>
       </tgroup>
@@ -40,7 +40,7 @@
 
   <para>Example:</para>
 
-  <programlisting>definitions := MODULE
+  <programlisting lang="ECL" role="runnable">definitions := MODULE
   EXPORT val1 := 'hi';
 END;
 root := MODULE

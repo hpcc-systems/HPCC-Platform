@@ -20,7 +20,11 @@
     </indexterm></emphasis><emphasis> </emphasis><emphasis role="bold">] ]
   [</emphasis><emphasis>, </emphasis><emphasis role="bold">SKIP<indexterm>
       <primary>SKIP</primary>
-    </indexterm></emphasis> <emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+    </indexterm></emphasis> <emphasis role="bold">[, UNORDERED |
+  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
+  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
+  </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
+  <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
 
   <para><emphasis role="bold">LIMIT(</emphasis><emphasis>recset,
   maxrecs</emphasis><emphasis role="bold"> [</emphasis><emphasis>,
@@ -34,8 +38,12 @@
   role="bold">[</emphasis><emphasis>, </emphasis><emphasis
   role="bold">COUNT<indexterm>
       <primary>COUNT</primary>
-    </indexterm></emphasis><emphasis> </emphasis><emphasis role="bold">] ]
-  [, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ]</emphasis></para>
+    </indexterm></emphasis><emphasis> </emphasis><emphasis role="bold">] ] [,
+  UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis
+  role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis>
+  <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [,
+  ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">)
+  ]</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -99,52 +107,70 @@
           <entry>The TRANSFORM function to call to produce the single output
           record.</entry>
         </row>
-          <row>
-            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
 
-            <entry>Optional. Specifies the output record order is not significant.</entry>
-          </row>
-          <row>
-            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+        <row>
+          <entry><emphasis role="bold">UNORDERED</emphasis></entry>
 
-            <entry>Specifies the significance of the output record order.</entry>
-          </row>
-          <row>
-            <entry><emphasis>bool</emphasis></entry>
+          <entry>Optional. Specifies the output record order is not
+          significant.</entry>
+        </row>
 
-            <entry>When False, specifies the output record order is not significant. When True, specifies the default output record order.</entry>
-          </row>
-          <row>
-            <entry><emphasis role="bold">STABLE</emphasis></entry>
+        <row>
+          <entry><emphasis role="bold">ORDERED</emphasis></entry>
 
-            <entry>Optional. Specifies the input record order is significant.</entry>
-          </row>
-          <row>
-            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+          <entry>Specifies the significance of the output record
+          order.</entry>
+        </row>
 
-            <entry>Optional. Specifies the input record order is not significant.</entry>
-          </row>
-          <row>
-            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+        <row>
+          <entry><emphasis>bool</emphasis></entry>
 
-            <entry>Optional. Try to evaluate this activity in parallel.</entry>
-          </row>
-          <row>
-            <entry><emphasis>numthreads</emphasis></entry>
+          <entry>When False, specifies the output record order is not
+          significant. When True, specifies the default output record
+          order.</entry>
+        </row>
 
-            <entry>Optional. Try to evaluate this activity using <emphasis>numthreads</emphasis> threads.</entry>
-          </row>
-          <row>
-            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+        <row>
+          <entry><emphasis role="bold">STABLE</emphasis></entry>
 
-            <entry>Optional. Override the algorithm used for this activity.</entry>
-          </row>
-          <row>
-            <entry><emphasis>name</emphasis></entry>
+          <entry>Optional. Specifies the input record order is
+          significant.</entry>
+        </row>
 
-            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the SORT function's STABLE and UNSTABLE options.</entry>
-          </row>
-        
+        <row>
+          <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+
+          <entry>Optional. Specifies the input record order is not
+          significant.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+
+          <entry>Optional. Try to evaluate this activity in parallel.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>numthreads</emphasis></entry>
+
+          <entry>Optional. Try to evaluate this activity using
+          <emphasis>numthreads</emphasis> threads.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+
+          <entry>Optional. Override the algorithm used for this
+          activity.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>name</emphasis></entry>
+
+          <entry>The algorithm to use for this activity. Must be from the list
+          of supported algorithms for the SORT function's STABLE and UNSTABLE
+          options.</entry>
+        </row>
       </tbody>
     </tgroup>
   </informaltable>
@@ -160,7 +186,7 @@
 
   <para>Example:</para>
 
-  <programlisting>RecStruct := RECORD
+  <programlisting lang="ECL" role="runnable">RecStruct := RECORD
   INTEGER1 Number;
   STRING1  Letter;
 END;
@@ -178,6 +204,9 @@ Y := LIMIT(SomeFile,10,
         SELF := ROW({0,''},RecStruct))));
 //no exception, just no record
 Z := LIMIT(SomeFile,10,SKIP);
+// OUTPUT(X); //This one will throw an exception
+OUTPUT(Y);
+OUTPUT(Z);
 </programlisting>
 
   <para>See Also: <link linkend="FAIL">FAIL</link>, <link
