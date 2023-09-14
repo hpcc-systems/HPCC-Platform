@@ -32,26 +32,24 @@
 
   <para>Example:</para>
 
-  <programlisting>  extractFields(ds, outDs, f1, f2='?') := MACRO
+  <programlisting lang="ECL" role="notrunnable">extractFields(ds, outDs, f1, f2='?') := MACRO
   
   #UNIQUENAME(r);
   
   %r% := RECORD
     f1 := ds.f1;
-  #IF (#TEXT(f2)&lt;&gt;'?')
-    #TEXT(f2)+':';
-    f2 := ds.f2;
-  #END
-   END;
-  
+    #IF (#TEXT(f2)&lt;&gt;'?')
+      #TEXT(f2)+':';
+      f2 := ds.f2;
+    #END
+  END;
   outDs := TABLE(ds, %r%);
-  ENDMACRO;
-  
-  extractFields(people, justSurname, lastname);
-  OUTPUT(justSurname);
-  
-  extractFields(people, justName, lastname, firstname);
-  OUTPUT(justName);
+ENDMACRO;
+ 
+extractFields(people, justSurname, lastname);
+OUTPUT(justSurname);
+extractFields(people, justName, lastname, firstname);
+OUTPUT(justName);
 </programlisting>
 
   <para>See Also: <link linkend="MACRO_Structure">MACRO</link></para>

@@ -34,8 +34,8 @@
 
   <para>Example:</para>
 
-  <programlisting>Def1 := UNORDERED(MyDataset);
-//the order of MyDataset is not significant, 
-//so the code generator can perform optimizations based on that
+  <programlisting lang="ECL" role="fragment">Def1 := UNORDERED(MyDataset);
+            //indicates that the order of MyDataset is not significant, 
+            //so the code generator can perform optimizations based on that
 </programlisting>
 </sect1>

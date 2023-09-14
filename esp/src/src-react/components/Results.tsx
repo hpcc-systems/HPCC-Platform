@@ -3,9 +3,9 @@ import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link, Pivot, 
 import { SizeMe } from "react-sizeme";
 import nlsHPCC from "src/nlsHPCC";
 import { QuerySortItem } from "src/store/Store";
-import { useFluentGrid } from "../hooks/grid";
 import { useWorkunitResults } from "../hooks/workunit";
 import { pivotItemStyle } from "../layouts/pivot";
+import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { ShortVerticalDivider } from "./Common";
 import { Result } from "./Result";
 
@@ -28,30 +28,29 @@ export const Results: React.FunctionComponent<ResultsProps> = ({
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
     const [results, , , refreshData] = useWorkunitResults(wuid);
     const [data, setData] = React.useState<any[]>([]);
+    const {
+        selection, setSelection,
+        setTotal,
+        refreshTable } = useFluentStoreState({});
 
     //  Grid ---
-    const { Grid, selection, copyButtons } = useFluentGrid({
-        data,
-        primaryID: "__hpcc_id",
-        alphaNumColumns: { Name: true, Value: true },
-        sort,
-        filename: "results",
-        columns: {
+    const columns = React.useMemo((): FluentColumns => {
+        return {
             col1: {
                 width: 27,
                 selectorType: "checkbox"
             },
             Name: {
                 label: nlsHPCC.Name, width: 180, sortable: true,
-                formatter: React.useCallback(function (Name, row) {
+                formatter: (Name, row) => {
                     return <Link href={`#/workunits/${row.Wuid}/outputs/${Name}`}>{Name}</Link>;
-                }, [])
+                }
             },
             FileName: {
                 label: nlsHPCC.FileName, sortable: true,
-                formatter: React.useCallback(function (FileName, row) {
+                formatter: (FileName, row) => {
                     return <Link href={`#/files/${FileName}`}>{FileName}</Link>;
-                }, [])
+                }
             },
             Value: {
                 label: nlsHPCC.Value,
@@ -60,14 +59,14 @@ export const Results: React.FunctionComponent<ResultsProps> = ({
             },
             ResultViews: {
                 label: nlsHPCC.Views, sortable: true,
-                formatter: React.useCallback(function (ResultViews, idx) {
+                formatter: (ResultViews, idx) => {
                     return <>
                         {ResultViews?.map((item, idx) => <Link href='#' viewName={encodeURIComponent(item)}>{item}</Link>)}
                     </>;
-                }, [])
+                }
             }
-        }
-    });
+        };
+    }, []);
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
@@ -102,6 +101,8 @@ export const Results: React.FunctionComponent<ResultsProps> = ({
         },
     ], [refreshData, selection, uiState.hasSelection, wuid]);
 
+    const copyButtons = useCopyButtons(columns, selection, "results");
+
     //  Selection  ---
     React.useEffect(() => {
         const state = { ...defaultUIState };
@@ -132,8 +133,17 @@ export const Results: React.FunctionComponent<ResultsProps> = ({
         <Sticky>
             <CommandBar items={buttons} farItems={copyButtons} />
         </Sticky>
-        <Grid />
-    </ScrollablePane>;
+        <FluentGrid
+            data={data}
+            primaryID={"__hpcc_id"}
+            alphaNumColumns={{ Name: true, Value: true }}
+            sort={sort}
+            columns={columns}
+            setSelection={setSelection}
+            setTotal={setTotal}
+            refresh={refreshTable}
+        ></FluentGrid>
+    </ScrollablePane >;
 };
 
 interface TabbedResultsProps {

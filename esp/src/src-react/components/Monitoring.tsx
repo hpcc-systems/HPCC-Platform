@@ -2,11 +2,11 @@ import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Image, Link } from "@fluentui/react";
 import { MachineService } from "@hpcc-js/comms";
 import { ShortVerticalDivider } from "./Common";
-import { tree } from "./DojoGrid";
-import { useFluentGrid } from "../hooks/grid";
-import { HolyGrail } from "../layouts/HolyGrail";
 import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
+import { tree } from "./DojoGrid";
+import { HolyGrail } from "../layouts/HolyGrail";
+import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 
 function getStatusImageName(row) {
     switch (row.Status) {
@@ -36,53 +36,50 @@ export const Monitoring: React.FunctionComponent<MonitoringProps> = ({
 
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
     const [data, setData] = React.useState<any[]>([]);
+    const {
+        selection, setSelection,
+        setTotal,
+        refreshTable } = useFluentStoreState({});
 
     //  Grid ---
-    const { Grid, selection, copyButtons } = useFluentGrid({
-        data,
-        primaryID: "__hpcc_id",
-        sort: { attribute: "Name", "descending": false },
-        filename: "monitoring",
-        columns: {
+    const columns = React.useMemo((): FluentColumns => {
+        return {
             StatusID: { label: "", width: 0, sortable: false, hidden: true },
             ComponentType: tree({
                 label: "Name", sortable: true, width: 200,
-                formatter: function (Name, row) {
+                formatter: (Name, row) => {
                     return <Image src={Utility.getImageURL(getStatusImageName(row))} />;
                 }
             }),
             StatusDetails: { label: "Details", sortable: false },
             URL: {
                 label: "URL", width: 200, sortable: false,
-                formatter: React.useCallback(function (Name, row) {
+                formatter: (Name, row) => {
                     if (Name) {
                         return <Link href={`http://${Name}`} target="_blank">{Name}</Link>;
                     } else {
                         return "";
                     }
-                }, [])
+                }
             },
             EndPoint: { label: "IP", sortable: true, width: 140 },
             TimeReportedStr: { label: "Time Reported", width: 140, sortable: true },
             Status: {
                 label: nlsHPCC.Severity, width: 130, sortable: false,
-                formatter: React.useCallback(function (object, value, node, options) {
+                className: (value, row) => {
                     switch (value) {
                         case "Error":
-                            node.classList.add("ErrorCell");
-                            break;
+                            return "ErrorCell";
+                        case "Alert":
+                            return "AlertCell";
                         case "Warning":
-                            node.classList.add("WarningCell");
-                            break;
-                        case "Normal":
-                            node.classList.add("NormalCell");
-                            break;
+                            return "WarningCell";
                     }
-                    node.innerText = value;
-                }, [])
+                    return "";
+                }
             }
-        }
-    });
+        };
+    }, []);
 
     const refreshData = React.useCallback(() => {
         machine.GetComponentStatus({
@@ -127,6 +124,8 @@ export const Monitoring: React.FunctionComponent<MonitoringProps> = ({
         }
     ], [refreshData, selection, uiState.hasSelection]);
 
+    const copyButtons = useCopyButtons(columns, selection, "monitoring");
+
     //  Selection  ---
     React.useEffect(() => {
         const state = { ...defaultUIState };
@@ -137,7 +136,15 @@ export const Monitoring: React.FunctionComponent<MonitoringProps> = ({
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}
         main={
-            <Grid />
+            <FluentGrid
+                data={data}
+                primaryID={"__hpcc_id"}
+                sort={{ attribute: "Name", "descending": false }}
+                columns={columns}
+                setSelection={setSelection}
+                setTotal={setTotal}
+                refresh={refreshTable}
+            ></FluentGrid>
         }
     />;
 };

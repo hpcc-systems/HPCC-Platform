@@ -8,7 +8,7 @@ import { GroupStore, CreateGroupStore } from "src/ws_access";
 import { ShortVerticalDivider } from "./Common";
 import { useConfirm } from "../hooks/confirm";
 import { useBuildInfo } from "../hooks/platform";
-import { FluentPagedGrid, FluentPagedFooter, useCopyButtons, useFluentStoreState } from "./controls/Grid";
+import { FluentPagedGrid, FluentPagedFooter, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { AddGroupForm } from "./forms/AddGroup";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushUrl } from "../util/history";
@@ -51,7 +51,7 @@ export const Groups: React.FunctionComponent<GroupsProps> = ({
         return store ? store : CreateGroupStore();
     }, [store]);
 
-    const columns = React.useMemo(() => {
+    const columns = React.useMemo((): FluentColumns => {
         return {
             check: { width: 27, label: " ", selectorType: "checkbox" },
             name: {

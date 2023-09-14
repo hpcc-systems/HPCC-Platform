@@ -5,16 +5,16 @@ import { PackageProcessService } from "@hpcc-js/comms";
 import { SizeMe } from "react-sizeme";
 import nlsHPCC from "src/nlsHPCC";
 import { useConfirm } from "../hooks/confirm";
-import { useFluentGrid } from "../hooks/grid";
 import { pivotItemStyle } from "../layouts/pivot";
 import { pushParams, pushUrl } from "../util/history";
+import { HolyGrail } from "../layouts/HolyGrail";
+import { ReflexContainer, ReflexElement, ReflexSplitter } from "../layouts/react-reflex";
+import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { ShortVerticalDivider } from "./Common";
 import { Fields } from "./forms/Fields";
 import { Filter } from "./forms/Filter";
 import { AddPackageMap } from "./forms/AddPackageMap";
 import { selector } from "./DojoGrid";
-import { HolyGrail } from "../layouts/HolyGrail";
-import { ReflexContainer, ReflexElement, ReflexSplitter } from "../layouts/react-reflex";
 import { TextSourceEditor, XMLSourceEditor } from "./SourceEditor";
 
 const logger = scopedLogger("../components/PackageMaps.tsx");
@@ -108,6 +108,10 @@ export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
     const [activeMapValidationResult, setActiveMapValidationResult] = React.useState(nlsHPCC.ValidateResultHere);
     const [contentsXml, setContentsXml] = React.useState("");
     const [contentsValidationResult, setContentsValidationResult] = React.useState(nlsHPCC.ValidateResultHere);
+    const {
+        selection, setSelection,
+        setTotal,
+        refreshTable } = useFluentStoreState({});
 
     const changeActiveMapTarget = React.useCallback((evt, option) => {
         setActiveMapTarget(option.key.toString());
@@ -184,36 +188,32 @@ export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
     const [data, setData] = React.useState<any[]>([]);
 
     //  Grid ---
-    const { Grid, selection, copyButtons } = useFluentGrid({
-        data,
-        primaryID: "Id",
-        sort: { attribute: "Id", descending: true },
-        filename: "packageMaps",
-        columns: {
+    const columns = React.useMemo((): FluentColumns => {
+        return {
             col1: selector({
                 width: 27,
                 selectorType: "checkbox"
             }),
             Id: {
                 label: nlsHPCC.PackageMap,
-                formatter: React.useCallback(function (Id, row) {
+                formatter: (Id, row) => {
                     return <Link href={`#/packagemaps/${Id}`}>{Id}</Link>;
-                }, [])
+                }
             },
             Target: { label: nlsHPCC.Target },
             Process: { label: nlsHPCC.ProcessFilter },
             Active: {
                 label: nlsHPCC.Active,
-                formatter: React.useCallback(function (active) {
+                formatter: (active) => {
                     if (active === true) {
                         return "A";
                     }
                     return "";
-                }, [])
+                }
             },
             Description: { label: nlsHPCC.Description }
-        }
-    });
+        };
+    }, []);
 
     const refreshData = React.useCallback(() => {
         packageService.ListPackages({
@@ -338,6 +338,8 @@ export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
         },
     ], [hasFilter, refreshData, selection, setShowDeleteConfirm, store, uiState.hasSelection]);
 
+    const copyButtons = useCopyButtons(columns, selection, "packageMaps");
+
     //  Filter  ---
     const filterFields: Fields = {};
     for (const field in FilterFields) {
@@ -416,7 +418,15 @@ export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
                 <PivotItem headerText={nlsHPCC.PackageMaps} itemKey="list" style={pivotItemStyle(size)} >
                     <HolyGrail
                         header={<CommandBar items={buttons} farItems={copyButtons} />}
-                        main={<Grid />}
+                        main={<FluentGrid
+                            data={data}
+                            primaryID={"Id"}
+                            sort={{ attribute: "Id", descending: true }}
+                            columns={columns}
+                            setSelection={setSelection}
+                            setTotal={setTotal}
+                            refresh={refreshTable}
+                        ></FluentGrid>}
                     />
                     <Filter showFilter={showFilter} setShowFilter={setShowFilter} filterFields={filterFields} onApply={pushParams} />
                 </PivotItem>

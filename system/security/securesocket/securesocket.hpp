@@ -45,6 +45,8 @@ enum SecureSocketType
 #define SSLogNormal 5
 #define SSLogMax    10
 
+#define PORT_CHECK_SSL_ACCEPT_ERROR -9995
+
 // One instance per connection
 interface ISecureSocket : implements ISocket
 {

@@ -31,7 +31,10 @@
 
   <para>Example:</para>
 
-  <programlisting>MySet := DISTRIBUTE(Person,RANDOM()); //random distribution</programlisting>
+  <programlisting lang="ECL" role="runnable">INTEGER1 Random1 := (RANDOM() % 25) + 1; 
+OUTPUT(Random1); // results are random
+OUTPUT(Random1); 
+OUTPUT(Random1); </programlisting>
 
   <para>See Also: <link linkend="DISTRIBUTE">DISTRIBUTE</link></para>
 </sect1>

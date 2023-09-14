@@ -3014,7 +3014,8 @@ unsigned CDummyMessagePacker::size() const
 
 interface ILocalMessageCollator : extends IMessageCollator
 {
-    virtual void enqueueMessage(bool outOfBand, void *data, unsigned datalen, void *meta, unsigned metalen, void *header, unsigned headerlen) = 0;
+    virtual bool attachDataBuffers(const ArrayOf<roxiemem::OwnedDataBuffer> &buffers) = 0;
+    virtual void enqueueMessage(bool outOfBand, unsigned totalSize, IMessageResult *result) = 0;
 };
 
 interface ILocalReceiveManager : extends IReceiveManager
@@ -3022,10 +3023,11 @@ interface ILocalReceiveManager : extends IReceiveManager
     virtual ILocalMessageCollator *lookupCollator(ruid_t id) = 0;
 };
 
-
-
-class LocalMessagePacker : public CDummyMessagePacker
+class LocalMessagePacker : public CInterfaceOf<IMessagePacker>
 {
+protected:
+    unsigned lastput = 0;
+    MemoryBuffer data;
     MemoryBuffer meta;
     MemoryBuffer header;
     Linked<ILocalReceiveManager> rm;
@@ -3033,11 +3035,171 @@ class LocalMessagePacker : public CDummyMessagePacker
     bool outOfBand;
 
 public:
-    IMPLEMENT_IINTERFACE;
     LocalMessagePacker(RoxiePacketHeader &_header, bool _outOfBand, ILocalReceiveManager *_rm) : rm(_rm), outOfBand(_outOfBand)
     {
         id = _header.uid;
         header.append(sizeof(RoxiePacketHeader), &_header);
+    }
+
+    void * getBuffer(unsigned len, bool variable) override
+    {
+        if (variable)
+        {
+            char *ret = (char *) data.ensureCapacity(len + sizeof(RecordLengthType));
+            return ret + sizeof(RecordLengthType);
+        }
+        else
+        {
+            return data.ensureCapacity(len);
+        }
+    }
+
+    void putBuffer(const void *buf, unsigned len, bool variable) override
+    {
+        if (variable)
+        {
+            buf = ((char *) buf) - sizeof(RecordLengthType);
+            *(RecordLengthType *) buf = len;
+            len += sizeof(RecordLengthType);
+        }
+        data.setWritePos(lastput + len);
+        lastput += len;
+    }
+
+    unsigned size() const
+    {
+        return lastput;
+    }
+
+    virtual void flush() override;
+
+    virtual void sendMetaInfo(const void *buf, unsigned len) override
+    {
+        meta.append(len, buf);
+    }
+
+};
+
+class LocalBlockedMessagePacker : public CInterfaceOf<IMessagePacker>
+{
+protected:
+    unsigned lastput = 0;
+    MemoryBuffer meta;
+    MemoryBuffer header;
+    Linked<ILocalReceiveManager> rm;
+    ruid_t id;
+    bool outOfBand;
+    const unsigned dataBufferSize = DATA_PAYLOAD - sizeof(unsigned short);
+    bool packed = false;
+    unsigned tempBufferSize = 0;  // MORE - use a MemoryBuffer?
+    void *tempBuffer = nullptr;
+    unsigned dataPos = 0;
+    unsigned bufferRemaining = 0;
+    DataBuffer *currentBuffer = nullptr;
+    ArrayOf<roxiemem::OwnedDataBuffer> buffers;
+    unsigned totalDataLen = 0;
+public:
+    LocalBlockedMessagePacker(RoxiePacketHeader &_header, bool _outOfBand, ILocalReceiveManager *_rm) : rm(_rm), outOfBand(_outOfBand)
+    {
+        id = _header.uid;
+        header.append(sizeof(RoxiePacketHeader), &_header);
+    }
+    ~LocalBlockedMessagePacker()
+    {
+        free(tempBuffer);
+    }
+
+    void * getBuffer(unsigned len, bool variable) override
+    {
+        if (variable)
+            len += sizeof(RecordLengthType);
+        if (dataBufferSize < len)
+        {
+            // Won't fit in one, so allocate temp location
+            // This code stolen from UDP layer - we could redo using a MemoryBuffer...
+            packed = false;
+            if (tempBufferSize < len)
+            {
+                free(tempBuffer);
+                tempBuffer = checked_malloc(len, ROXIE_MEMORY_ERROR);
+                tempBufferSize = len;
+            }
+            if (variable)
+                return ((char *) tempBuffer) + sizeof(RecordLengthType);
+            else
+                return tempBuffer;
+        }
+        else
+        {
+            // Will fit in one, though not necessarily the current one...
+            packed = true;
+            if (currentBuffer && (bufferRemaining < len))
+            {
+                // Note that we never span records that are small enough to fit in one buffer - this can result in significant wastage if record just over DATA_PAYLOAD/2                
+                *(unsigned short *) &currentBuffer->data = dataPos - sizeof(unsigned short);
+                buffers.append(currentBuffer);
+                currentBuffer = nullptr;
+            }
+            if (!currentBuffer)
+            {
+                currentBuffer = bufferManager->allocate();
+                dataPos = sizeof (unsigned short);
+                bufferRemaining = dataBufferSize;
+            }
+            if (variable)
+                return &currentBuffer->data[dataPos + sizeof(RecordLengthType)];
+            else
+                return &currentBuffer->data[dataPos];
+        }
+    }
+
+    void putBuffer(const void *buf, unsigned len, bool variable) override
+    {
+        if (variable)
+        {
+            assertex(len < MAX_RECORD_LENGTH);
+            buf = ((char *) buf) - sizeof(RecordLengthType);
+            *(RecordLengthType *) buf = len;
+            len += sizeof(RecordLengthType);
+        }
+        totalDataLen += len;
+        if (packed)
+        {
+            assert(len <= bufferRemaining);
+            dataPos += len;
+            bufferRemaining -= len;
+        }
+        else
+        {
+            while (len)
+            {
+                if (!currentBuffer)
+                {
+                    currentBuffer = bufferManager->allocate();
+                    dataPos = sizeof (unsigned short);
+                    bufferRemaining = dataBufferSize;
+                }
+                unsigned chunkLen = bufferRemaining;
+                if (chunkLen > len)
+                    chunkLen = len;
+                memcpy(&currentBuffer->data[dataPos], buf, chunkLen);
+                dataPos += chunkLen;
+                len -= chunkLen;
+                buf = &(((char*)buf)[chunkLen]);
+                bufferRemaining -= chunkLen;
+                if (len)
+                {
+                    *(unsigned short *) &currentBuffer->data = dataPos - sizeof(unsigned short);
+                    buffers.append(currentBuffer);
+                    currentBuffer = nullptr;
+                }
+            }
+        }
+    }
+
+    unsigned size() const
+    {
+        return lastput;
     }
 
     virtual void flush() override;
@@ -3051,6 +3213,8 @@ public:
 
 class CLocalMessageUnpackCursor : implements IMessageUnpackCursor, public CInterface
 {
+    // Note that the data is owned by the CLocalMessageCursor that created me,
+    // and will be released by it when it dies
     void *data;
     unsigned datalen;
     unsigned pos;
@@ -3104,13 +3268,110 @@ public:
     }
 };
 
+class CLocalBlockedMessageUnpackCursor : implements IMessageUnpackCursor, public CInterface
+{
+    Linked<IRowManager> rowManager;
+    const ArrayOf<roxiemem::OwnedDataBuffer> &buffers; // Owned by the CLocalBlockedMessageCursor that created me
+    const byte *currentBuffer = nullptr;
+    unsigned currentBufferRemaining = 0;
+    unsigned bufferIdx = 0;
+public:
+    IMPLEMENT_IINTERFACE;
+    CLocalBlockedMessageUnpackCursor(IRowManager *_rowManager, const ArrayOf<roxiemem::OwnedDataBuffer> &_buffers) 
+        : rowManager(_rowManager), buffers(_buffers)
+    {
+        if (buffers.length())
+        {
+            currentBuffer = (const byte *) buffers.item(0).get()->data;
+            currentBufferRemaining = *(unsigned short *) currentBuffer;
+            currentBuffer += sizeof(unsigned short);
+        }
+    }
+
+    ~CLocalBlockedMessageUnpackCursor()
+    {
+    }
+
+    virtual bool atEOF() const
+    {
+        return currentBuffer != nullptr;
+    }
+
+    virtual bool isSerialized() const
+    {
+        // NOTE: tempting to think that we could avoid serializing in localAgent case, but have to be careful about the lifespan of the rowManager...
+        return true;
+    }
+
+    virtual const void * getNext(int length)
+    {
+        if (!currentBuffer) 
+            return nullptr;
+        if ((currentBufferRemaining) >= (unsigned) length)
+        {
+            // Simple case - no need to copy
+            const void *res = currentBuffer;
+            currentBuffer += length;
+            currentBufferRemaining -= length;
+            checkNext();
+            LinkRoxieRow(res);
+            return res;
+        }   
+        char *currResLoc = (char*)rowManager->allocate(length, 0);
+        const void *res = currResLoc;
+        while (length && currentBuffer) 
+        {
+            // Spans more than one block - allocate and copy
+            unsigned cpyLen = currentBufferRemaining;
+            if (cpyLen > (unsigned) length) cpyLen = length;
+            memcpy(currResLoc, currentBuffer, cpyLen);
+            length -= cpyLen;
+            currResLoc += cpyLen;
+            currentBuffer += cpyLen;
+            currentBufferRemaining -= cpyLen;
+            checkNext();
+        }
+        assertex(!length);  // fail if not enough data available
+        return res;
+    }
+
+    virtual RecordLengthType *getNextLength() override
+    {
+        if (!currentBuffer) 
+            return nullptr;
+        assertex (currentBufferRemaining >= sizeof(RecordLengthType));
+        RecordLengthType *res = (RecordLengthType *) currentBuffer;
+        currentBuffer += sizeof(RecordLengthType);
+        currentBufferRemaining -= sizeof(RecordLengthType);
+        checkNext(); // Note that length is never separated from data... but length can be zero so still need to do this...
+        return res;
+    }
+
+    void checkNext()
+    {
+        if (!currentBufferRemaining)
+        {
+            if (buffers.isItem(bufferIdx+1))
+            {
+                bufferIdx++;
+                currentBuffer = (const byte *) &buffers.item(bufferIdx).get()->data;
+                currentBufferRemaining = *(unsigned short *) currentBuffer;
+                currentBuffer += sizeof(unsigned short);
+            }
+            else
+            {
+                currentBuffer = nullptr;
+            }
+        }
+    }
+};
+
 class CLocalMessageResult : implements IMessageResult, public CInterface
 {
     void *data;
     void *meta;
     void *header;
     unsigned datalen, metalen, headerlen;
-    unsigned pos;
 public:
     IMPLEMENT_IINTERFACE;
     CLocalMessageResult(void *_data, unsigned _datalen, void *_meta, unsigned _metalen, void *_header, unsigned _headerlen)
@@ -3121,7 +3382,6 @@ public:
         data = _data;
         meta = _meta;
         header = _header;
-        pos = 0;
     }
 
     ~CLocalMessageResult()
@@ -3154,6 +3414,52 @@ public:
 
 };
 
+class CLocalBlockedMessageResult : implements IMessageResult, public CInterface
+{
+    ArrayOf<roxiemem::OwnedDataBuffer> buffers;
+    void *meta;
+    void *header;
+    unsigned metalen, headerlen;
+public:
+    IMPLEMENT_IINTERFACE;
+    CLocalBlockedMessageResult(ArrayOf<roxiemem::OwnedDataBuffer> &_buffers, void *_meta, unsigned _metalen, void *_header, unsigned _headerlen)
+    {
+        buffers.swapWith(_buffers);
+        metalen = _metalen;
+        headerlen = _headerlen;
+        meta = _meta;
+        header = _header;
+    }
+
+    ~CLocalBlockedMessageResult()
+    {
+        free(meta);
+        free(header);
+    }
+
+    virtual IMessageUnpackCursor *getCursor(IRowManager *rowMgr) const
+    {
+        return new CLocalBlockedMessageUnpackCursor(rowMgr, buffers);
+    }
+
+    virtual const void *getMessageHeader(unsigned &length) const
+    {
+        length = headerlen;
+        return header;
+    }
+
+    virtual const void *getMessageMetadata(unsigned &length) const
+    {
+        length = metalen;
+        return meta;
+    }
+
+    virtual void discard() const
+    {
+    }
+
+};
+
 class CLocalMessageCollator : implements ILocalMessageCollator, public CInterface
 {
     InterruptableSemaphore sem;
@@ -3163,6 +3469,7 @@ class CLocalMessageCollator : implements ILocalMessageCollator, public CInterfac
     Linked<ILocalReceiveManager> receiveManager;
     ruid_t id;
     unsigned totalBytesReceived;
+    bool memLimitExceeded = false;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -3176,6 +3483,11 @@ public:
 
     virtual IMessageResult* getNextResult(unsigned time_out, bool &anyActivity)
     {
+        if (memLimitExceeded)
+        {
+            DBGLOG("LocalCollator: CLocalMessageCollator::getNextResult() throwing memory limit exceeded exception");
+            throw MakeStringException(0, "memory limit exceeded");
+        }
         anyActivity = false;
         if (!sem.wait(time_out))
             return NULL;
@@ -3189,15 +3501,32 @@ public:
         sem.interrupt(E);
     }
 
-    virtual void enqueueMessage(bool outOfBand, void *data, unsigned datalen, void *meta, unsigned metalen, void *header, unsigned headerlen)
+    virtual void enqueueMessage(bool outOfBand, unsigned totalSize, IMessageResult *result) override
     {
         CriticalBlock c(crit);
         if (outOfBand)
-            pending.enqueueHead(new CLocalMessageResult(data, datalen, meta, metalen, header, headerlen));
+            pending.enqueueHead(result);
         else
-            pending.enqueue(new CLocalMessageResult(data, datalen, meta, metalen, header, headerlen));
+            pending.enqueue(result);
         sem.signal();
-        totalBytesReceived += datalen + metalen + headerlen;
+        totalBytesReceived += totalSize;
+    }
+
+    virtual bool attachDataBuffers(const ArrayOf<roxiemem::OwnedDataBuffer> &buffers) override
+    {
+        if (memLimitExceeded)
+            return false;
+        ForEachItemIn(idx, buffers)
+        {
+            roxiemem::OwnedDataBuffer dataBuffer = buffers.item(idx);
+            if (!dataBuffer.get()->attachToRowMgr(rowManager))
+            {
+                memLimitExceeded = true;
+                interrupt(MakeStringException(0, "memory limit exceeded"));
+                return(false);
+            }
+        }
+        return true;
     }
 
     virtual unsigned queryBytesReceived() const
@@ -3263,7 +3592,27 @@ void LocalMessagePacker::flush()
         unsigned datalen = data.length();
         unsigned metalen = meta.length();
         unsigned headerlen = header.length();
-        collator->enqueueMessage(outOfBand, data.detach(), datalen, meta.detach(), metalen, header.detach(), headerlen);
+        collator->enqueueMessage(outOfBand, datalen+metalen+headerlen, new CLocalMessageResult(data.detach(), datalen, meta.detach(), metalen, header.detach(), headerlen));
+    }
+    // otherwise Roxie server is no longer interested and we can simply discard
+}
+
+void LocalBlockedMessagePacker::flush()
+{
+    if (currentBuffer && (dataPos > sizeof(unsigned short)))
+    {
+        *(unsigned short *) &currentBuffer->data = dataPos - sizeof(unsigned short);
+        buffers.append(currentBuffer);
+        currentBuffer = nullptr;
+    }
+    Owned<ILocalMessageCollator> collator = rm->lookupCollator(id);
+    if (collator)
+    {
+        unsigned metalen = meta.length();
+        unsigned headerlen = header.length();
+        // NOTE - takes ownership of buffers and leaves it empty
+        if (collator->attachDataBuffers(buffers))
+            collator->enqueueMessage(outOfBand, totalDataLen+metalen+headerlen, new CLocalBlockedMessageResult(buffers, meta.detach(), metalen, header.detach(), headerlen));
     }
     // otherwise Roxie server is no longer interested and we can simply discard
 }
@@ -3384,7 +3733,10 @@ public:
 
     virtual IMessagePacker *createOutputStream(RoxiePacketHeader &header, bool outOfBand, const IRoxieContextLogger &logctx) override
     {
-        return new LocalMessagePacker(header, outOfBand, receiveManager);
+        if (blockedLocalAgent)
+            return new LocalBlockedMessagePacker(header, outOfBand, receiveManager);
+        else
+            return new LocalMessagePacker(header, outOfBand, receiveManager);
     }
 
     virtual IReceiveManager *queryReceiveManager() override

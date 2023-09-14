@@ -66,17 +66,18 @@
 
   <para>Example:</para>
 
-  <programlisting>  STRING20 SomeStringValue := 'ABC';
-  //contains 17 trailing spaces
-  
-  VARSTRING MyVal := TRIM(SomeStringValue);
-  // MyVal is "ABC" with no trailing spaces
-  
-  STRING20 SomeStringValue := ' ABC DEF';
-  //contains 2 leading and 11 trailing spaces
-  
-  VARSTRING MyVal := TRIM(SomeStringValue,LEFT,RIGHT);
-  // MyVal is "ABC DEF" with no trailing spaces
+  <programlisting lang="ECL" role="runnable">STRING20 MyString1 := 'ABC';
+                    //contains 17 trailing spaces
+VARSTRING MyTrimmedVarString1 := TRIM(MyString1);
+                   // MyVal is "ABC" with no trailing spaces
+STRING20 MyString2 := ' ABC DEF';
+                   //contains 2 leading and 11 trailing spaces
+VARSTRING MyTrimmedVarString2 := TRIM(MyString2,LEFT,RIGHT);
+                   // MyVal is "ABC DEF" with no trailing spaces
+OUTPUT(MyString1);
+OUTPUT(MyTrimmedVarString1);
+OUTPUT(MyString2);
+OUTPUT(MyTrimmedVarString2);
 </programlisting>
 
   <para>See Also: <link linkend="STRING">STRING</link>, <link

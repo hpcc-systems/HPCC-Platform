@@ -38,9 +38,11 @@
 
   <para>Example:</para>
 
-  <programlisting>SomeRealValue := 3.75;
-INTEGER4 MyVal := TRUNCATE(SomeRealValue); // MyVal is 3
+  <programlisting lang="ECL" role="runnable">MyRealValue := 3.75;
+INTEGER4 MyValue := TRUNCATE(MyRealValue); 
+OUTPUT(MyValue); // MyValue is 3
 </programlisting>
 
-  <para>See Also: <link linkend="ROUND">ROUND</link>, <link linkend="ROUNDUP">ROUNDUP</link></para>
+  <para>See Also: <link linkend="ROUND">ROUND</link>, <link
+  linkend="ROUNDUP">ROUNDUP</link></para>
 </sect1>

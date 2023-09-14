@@ -2837,7 +2837,7 @@ void loadHttpHeaders(IProperties *p, const char *finger)
 void HttpHelper::parseRequestHeaders(const char *headers)
 {
     if (!reqHeaders)
-        reqHeaders.setown(createProperties());
+        reqHeaders.setown(createProperties(true));
     loadHttpHeaders(reqHeaders, headers);
     const char *val = queryRequestHeader("Content-Type");
     if (val)

@@ -58,7 +58,7 @@
 
   <para>Example:</para>
 
-  <programlisting>rec := { STRING x } : ONWARNING(1041, ignore);
+  <programlisting lang="ECL" role="fragment">rec := { STRING x } : ONWARNING(1041, ignore);
      //ignore "Record doesn't have an explicit maximum record size" warning
 </programlisting>
 

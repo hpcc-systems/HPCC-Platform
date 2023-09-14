@@ -40,7 +40,9 @@
 
   <para>Example:</para>
 
-  <programlisting>ds := JOIN(SomeData,NOLOCAL(SomeIndex), LEFT.ID = RIGHT.ID);</programlisting>
+  <programlisting lang="ECL" role="fragment">ds := JOIN(SomeData,NOLOCAL(SomeIndex), LEFT.ID = RIGHT.ID);</programlisting>
 
-  <para>See Also: <link linkend="ALLNODES">ALLNODES</link>, <link linkend="THISNODE">THISNODE</link>, <link linkend="LOCAL">LOCAL</link></para>
+  <para>See Also: <link linkend="ALLNODES">ALLNODES</link>, <link
+  linkend="THISNODE">THISNODE</link>, <link
+  linkend="LOCAL">LOCAL</link></para>
 </sect1>

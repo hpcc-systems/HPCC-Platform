@@ -40,9 +40,20 @@
 
   <para>Example:</para>
 
-  <programlisting>  ds := NONEMPTY(SomeData(SomeFilter),
-                 SomeData(SomeOtherFilter),
-                 SomeOtherData(YetAnotherFilter));</programlisting>
+  <programlisting lang="ECL" role="runnable">SalesRecord := RECORD
+  INTEGER OrderNumber;
+  INTEGER SaleAmount;
+END;
+Sales := DATASET([{923,1001},
+                  {924,23},
+                  {925,3000},
+                  {926,3423},
+                  {927,9999},
+                  {931,113}], SalesRecord);
+ds := NONEMPTY(Sales(SaleAmount&gt;20000),
+                 Sales(SaleAmount&gt;10000),
+                 Sales(SaleAmount&gt;3000));
+OUTPUT(ds);</programlisting>
 
   <para>See Also: <link linkend="EXISTS">EXISTS</link></para>
 </sect1>

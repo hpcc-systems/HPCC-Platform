@@ -8,7 +8,7 @@ import nlsHPCC from "src/nlsHPCC";
 import { logColor } from "src/Utility";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
-import { FluentPagedGrid, FluentPagedFooter, useCopyButtons, useFluentStoreState } from "./controls/Grid";
+import { FluentPagedGrid, FluentPagedFooter, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { Filter } from "./forms/Filter";
 import { Fields } from "./forms/Fields";
 import { ShortVerticalDivider } from "./Common";
@@ -113,7 +113,7 @@ export const Logs: React.FunctionComponent<LogsProps> = ({
         return formatQuery(filter);
     }, [filter, now, wuid]);
 
-    const columns = React.useMemo(() => {
+    const columns = React.useMemo((): FluentColumns => {
         return {
             timestamp: { label: nlsHPCC.TimeStamp, width: 140, sortable: false, },
             message: { label: nlsHPCC.Message, sortable: false, },

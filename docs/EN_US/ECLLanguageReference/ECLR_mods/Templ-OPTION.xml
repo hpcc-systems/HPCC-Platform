@@ -1564,59 +1564,57 @@
       </tgroup>
     </informaltable>
 
-    <para>Example:</para>
+    <para>Examples:</para>
 
-    <programlisting>  #OPTION('traceRowXml', TRUE);
-  #OPTION('_Probe', TRUE);
+    <para><programlisting lang="ECL" role="runnable">#OPTION('traceRowXml', TRUE);
+#OPTION('_Probe', TRUE);
+
+my_rec := RECORD
+  STRING20 lname;
+  STRING20 fname;
+  STRING2 age;
+END;
   
-  my_rec := RECORD
-    STRING20 lname;
-    STRING20 fname;
-    STRING2 age;
-  END;
-  
-  d := DATASET([{ 'PORTLY', 'STUART' , '39'},
+d := DATASET([{ 'PORTLY', 'STUART' , '39'},
               { 'PORTLY', 'STACIE' , '36'},
               { 'PORTLY', 'DARA' , ' 1'},
               { 'PORTLY', 'GARRETT', ' 4'}], my_rec);
   
-  OUTPUT(d(d.age &gt; ' 1'), {lname, fname, age} );
-  
-  //************************************
-  //This example demonstrates Logical Graphs and
-  // Javadoc-style comment blocks
-  #OPTION('generateLogicalGraphOnly',TRUE);
-  #OPTION('logicalGraphDisplayJavadocParameters',TRUE);
-  
-  /**
-  * Defines a record that contains information about a person
-  */
-  namesRecord :=
-       RECORD
+OUTPUT(d(d.age &gt; ' 1'), {lname, fname, age} );
+</programlisting></para>
+
+    <para></para>
+
+    <para><programlisting lang="ECL" role="notrunnable">//************************************
+//This example demonstrates Logical Graphs and
+// Javadoc-style comment blocks
+#OPTION('generateLogicalGraphOnly',TRUE);
+#OPTION('logicalGraphDisplayJavadocParameters',TRUE);
+/**
+ * Defines a record that contains information about a person
+*/
+namesRecord := RECORD
   string20    surname;
   string10    forename;
   integer2    age := 25;
-       END;
+END;
   
-  /**
-  Defines a table that can be used to read the information from the file
-  and then do something with it.
-  */
-  namesTable := DATASET('x',namesRecord,FLAT);
+/**
+Defines a table that can be used to read the information from the file
+and then do something with it.
+*/
+namesTable := DATASET('x',namesRecord,FLAT);
   
   
-  /**
-       Allows the name table to be filtered.
-  
-       @param ages The ages that are allowed to be processed.
-            badForename Forname to avoid.
-  
-       @return the filtered dataset.
-  */
-  namesTable filtered(SET OF INTEGER2 ages, STRING badForename) :=
-       namesTable(age in ages, forename != badForename);
-  
-  OUTPUT(filtered([10,20,33], ''));
-</programlisting>
+/**
+ Allows the name table to be filtered.
+ @param ages        The ages that are allowed to be processed.
+ @param badForename Forname to avoid.
+ @return the filtered dataset.
+*/
+namesTable filtered(SET OF INTEGER2 ages, STRING badForename) :=
+                    namesTable(age in ages, forename != badForename);
+OUTPUT(filtered([10,20,33], ''));
+</programlisting></para>
   </sect2>
 </sect1>

@@ -46,7 +46,7 @@
 
   <para>Example:</para>
 
-  <programlisting>Act1 :=
+  <programlisting lang="ECL" role="notrunnable">Act1 :=
 OUTPUT(A_People,OutputFormat1,'//hold01/fred.out');
 Act2 :=
 OUTPUT(Person,{Person.per_first_name,Person.per_last_name});

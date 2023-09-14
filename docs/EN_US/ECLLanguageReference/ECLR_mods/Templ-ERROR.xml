@@ -34,13 +34,15 @@
 
   <para>Example:</para>
 
-  <programlisting>  #IF(TRUE)
-    #ERROR('broken');
-    OUTPUT('broken');
-  #ELSE
-    #WARNING('maybe broken');
-    OUTPUT('maybe broken');
-  #END;
+  <programlisting lang="ECL" role="runnable">a := TRUE; // pick one of these
+//a := FALSE;
+#IF(a)
+  #ERROR('broken');
+  OUTPUT('broken');
+#ELSE
+  #WARNING('maybe broken');
+  OUTPUT('maybe broken');
+#END;
 </programlisting>
 
   <para>See Also: <link linkend="_WARNING">#WARNING</link></para>

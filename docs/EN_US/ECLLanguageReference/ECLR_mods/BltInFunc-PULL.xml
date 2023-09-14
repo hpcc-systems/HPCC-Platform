@@ -37,11 +37,11 @@
   <para>The <emphasis role="bold">PULL </emphasis>function is a meta-operation
   intended only to hint that the <emphasis>dataset</emphasis> should be fully
   loaded into the Data Refinery before continuing the operation in Data
-  Refinery. </para>
+  Refinery.</para>
 
   <para>Example:</para>
 
-  <programlisting>MySet := PULL(Person);
+  <programlisting lang="ECL" role="fragment">MySet := PULL(Person);
      //load Person into Data Refinery before continuing</programlisting>
 
   <para>See Also:</para>

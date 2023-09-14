@@ -11,7 +11,11 @@
     </indexterm>(</emphasis><emphasis>recordset, value </emphasis><emphasis
   role="bold">[, KEYED<indexterm>
       <primary>KEYED</primary>
-    </indexterm> ] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+    </indexterm> ] </emphasis><emphasis role="bold">[, UNORDERED |
+  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
+  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
+  </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
+  <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
 
   <para><emphasis
   role="bold">MIN(</emphasis><emphasis>valuelist</emphasis><emphasis
@@ -55,51 +59,70 @@
           <entry>A comma-delimited list of expressions to find the minimum
           value of. This may also be a SET of values.</entry>
         </row>
-          <row>
-            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
 
-            <entry>Optional. Specifies the output record order is not significant.</entry>
-          </row>
-          <row>
-            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+        <row>
+          <entry><emphasis role="bold">UNORDERED</emphasis></entry>
 
-            <entry>Specifies the significance of the output record order.</entry>
-          </row>
-          <row>
-            <entry><emphasis>bool</emphasis></entry>
+          <entry>Optional. Specifies the output record order is not
+          significant.</entry>
+        </row>
 
-            <entry>When False, specifies the output record order is not significant. When True, specifies the default output record order.</entry>
-          </row>
-          <row>
-            <entry><emphasis role="bold">STABLE</emphasis></entry>
+        <row>
+          <entry><emphasis role="bold">ORDERED</emphasis></entry>
 
-            <entry>Optional. Specifies the input record order is significant.</entry>
-          </row>
-          <row>
-            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+          <entry>Specifies the significance of the output record
+          order.</entry>
+        </row>
 
-            <entry>Optional. Specifies the input record order is not significant.</entry>
-          </row>
-          <row>
-            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+        <row>
+          <entry><emphasis>bool</emphasis></entry>
 
-            <entry>Optional. Try to evaluate this activity in parallel.</entry>
-          </row>
-          <row>
-            <entry><emphasis>numthreads</emphasis></entry>
+          <entry>When False, specifies the output record order is not
+          significant. When True, specifies the default output record
+          order.</entry>
+        </row>
 
-            <entry>Optional. Try to evaluate this activity using <emphasis>numthreads</emphasis> threads.</entry>
-          </row>
-          <row>
-            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+        <row>
+          <entry><emphasis role="bold">STABLE</emphasis></entry>
 
-            <entry>Optional. Override the algorithm used for this activity.</entry>
-          </row>
-          <row>
-            <entry><emphasis>name</emphasis></entry>
+          <entry>Optional. Specifies the input record order is
+          significant.</entry>
+        </row>
 
-            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the SORT function's STABLE and UNSTABLE options.</entry>
-          </row>
+        <row>
+          <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+
+          <entry>Optional. Specifies the input record order is not
+          significant.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+
+          <entry>Optional. Try to evaluate this activity in parallel.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>numthreads</emphasis></entry>
+
+          <entry>Optional. Try to evaluate this activity using
+          <emphasis>numthreads</emphasis> threads.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+
+          <entry>Optional. Override the algorithm used for this
+          activity.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>name</emphasis></entry>
+
+          <entry>The algorithm to use for this activity. Must be from the list
+          of supported algorithms for the SORT function's STABLE and UNSTABLE
+          options.</entry>
+        </row>
 
         <row>
           <entry>Return:</entry>
@@ -117,11 +140,28 @@
 
   <para>Example:</para>
 
-  <programlisting>MinVal1 := MIN(Trades,Trades.trd_rate);
-MinVal2 := MIN(4,8,16,2,1); //returns 1
+  <programlisting lang="ECL" role="runnable">MinVal2 := MIN(4,8,16,2,1); 
 SetVals := [4,8,16,2,1];
-MinVal3 := MIN(SetVals); //returns 1
+MinVal3 := MIN(SetVals); 
+
+OUTPUT(MinVal2); //returns 1
+OUTPUT(MinVal3); //returns 1
+
+//example using a DATASET
+SalesRecord := RECORD
+  INTEGER OrderNumber;
+  INTEGER SaleAmount;
+END;
+Sales := DATASET([{923,1001},
+                  {924,23},
+                  {925,3000},
+                  {926,3423},
+                  {927,9999},
+                  {931,113}], SalesRecord);
+
+OUTPUT(MIN(Sales,Sales.SaleAmount)); //returns 23
 </programlisting>
 
-  <para>See Also: <link linkend="MAX">MAX</link>, <link linkend="AVE">AVE</link></para>
+  <para>See Also: <link linkend="MAX">MAX</link>, <link
+  linkend="AVE">AVE</link></para>
 </sect1>

@@ -43,10 +43,11 @@
 
   <para>Example:</para>
 
-  <programlisting>Rejects := REJECTED(Person.first_name &lt;&gt; 'Fred',
-Person.first_name &lt;&gt; 'Sue');
+  <programlisting lang="ECL" role="fragment">Rejects := REJECTED(Person.first_name &lt;&gt; 'Fred',Person.first_name &lt;&gt; 'Sue');
 // Rejects receives 0 for everyone except those named Fred or Sue
 </programlisting>
 
-  <para>See Also: <link linkend="WHICH">WHICH</link>, <link linkend="MAP">MAP</link>, <link linkend="CHOOSE">CHOOSE</link>, <link linkend="IF">IF</link>, <link linkend="CASE">CASE</link></para>
+  <para>See Also: <link linkend="WHICH">WHICH</link>, <link
+  linkend="MAP">MAP</link>, <link linkend="CHOOSE">CHOOSE</link>, <link
+  linkend="IF">IF</link>, <link linkend="CASE">CASE</link></para>
 </sect1>
