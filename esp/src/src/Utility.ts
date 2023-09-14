@@ -458,14 +458,30 @@ export function onDomMutate(domNode, callback, observerOpts) {
     observer.observe(domNode, observerOpts);
 }
 
+export function alphanumCompare(l, r, caseInsensitive: boolean = true, reverse: boolean = true): number {
+    const cmp = caseInsensitive ? alphanumCase(l, r) : alphanum(l, r);
+    if (cmp !== 0) {
+        return cmp * (reverse ? -1 : 1);
+    }
+    return 0;
+}
+
+export function createAlphanumSortFunc(cols: string[], caseInsensitive: boolean, reverse: boolean = false) {
+    return function (l, r) {
+        for (let i = 0; i < cols.length; ++i) {
+            const col = cols[i];
+            const cmp = alphanumCompare(l[col], r[col], caseInsensitive, reverse);
+            if (cmp !== 0) {
+                return cmp;
+            }
+        }
+        return 0;
+    };
+}
+
 export function alphanumSort(arr, col, caseInsensitive, reverse: boolean = false) {
     if (arr && arr instanceof Array) {
-        arr.sort(function (l, r) {
-            if (caseInsensitive) {
-                return alphanumCase(r[col], l[col]) * (reverse ? -1 : 1);
-            }
-            return alphanum(l[col], r[col]) * (reverse ? -1 : 1);
-        });
+        arr.sort(createAlphanumSortFunc(col, caseInsensitive, reverse));
     }
 }
 
