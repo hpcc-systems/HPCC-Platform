@@ -587,27 +587,25 @@ define([
         loadLogs: function (params) {
             var context = this;
             this.set("options", []);
-            FileSpray.FileList({
+            WsTopology.TpListLogFiles({
                 request: {
-                    Mask: "*.log",
-                    Netaddr: params.treeNode.newPreflight ? params.treeNode.NetAddress : params.treeNode.getNetaddress(),
-                    OS: params.treeNode.newPreflight ? params.treeNode.OS : params.treeNode.getOS(),
+                    NetworkAddress: params.treeNode.newPreflight ? params.treeNode.NetAddress : params.treeNode.getNetaddress(),
                     Path: params.treeNode.newPreflight ? params.treeNode.LogDirectory : params.treeNode.getLogDirectory()
                 }
             }).then(function (response) {
-                if (lang.exists("FileListResponse.files.PhysicalFileStruct", response)) {
+                if (lang.exists("TpListLogFilesResponse.Files.LogFileStruct", response)) {
                     var options = [];
-                    var targetData = response.FileListResponse.files.PhysicalFileStruct;
+                    var targetData = response.TpListLogFilesResponse.Files.LogFileStruct;
                     var shortestLabelLen = 9999;
                     var shortestLabel = "";
                     for (var i = 0; i < targetData.length; ++i) {
                         options.push({
-                            label: targetData[i].name, // + " " + targetData[i].filesize + " " + targetData[i].modifiedtime,
-                            value: targetData[i].name
+                            label: targetData[i].Name, // + " " + targetData[i].filesize + " " + targetData[i].modifiedtime,
+                            value: targetData[i].Name
                         });
-                        if (shortestLabelLen > targetData[i].name.length) {
-                            shortestLabelLen = targetData[i].name.length;
-                            shortestLabel = targetData[i].name;
+                        if (shortestLabelLen > targetData[i].Name.length) {
+                            shortestLabelLen = targetData[i].Name.length;
+                            shortestLabel = targetData[i].Name;
                         }
                     }
                     options.sort(function (l, r) {
