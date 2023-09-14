@@ -10,7 +10,7 @@ import { useConfirm } from "../hooks/confirm";
 import { useMyAccount } from "../hooks/user";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
-import { FluentPagedGrid, FluentPagedFooter, useCopyButtons, useFluentStoreState } from "./controls/Grid";
+import { FluentPagedGrid, FluentPagedFooter, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { Filter } from "./forms/Filter";
 import { Fields } from "./forms/Fields";
 import { ShortVerticalDivider } from "./Common";
@@ -90,7 +90,7 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
         return formatQuery(filter);
     }, [filter]);
 
-    const columns = React.useMemo(() => {
+    const columns = React.useMemo((): FluentColumns => {
         return {
             col1: selector({
                 width: 27,
@@ -135,9 +135,6 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
             StateMessage: { label: nlsHPCC.State, width: 70 },
             PCTDone: {
                 label: nlsHPCC.PctComplete, width: 80, sortable: true,
-                formatter: (value, row) => {
-                    return Utility.valueCleanUp(row.PercentDone);
-                }
             },
             TimeStarted: { label: nlsHPCC.TimeStarted, width: 100, sortable: true },
             TimeStopped: { label: nlsHPCC.TimeStopped, width: 100, sortable: true },

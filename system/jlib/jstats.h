@@ -485,6 +485,7 @@ private:
     StatisticsMapping& operator=(const StatisticsMapping&) =delete;
 };
 
+extern const jlib_decl StatisticsMapping noStatistics;
 extern const jlib_decl StatisticsMapping allStatistics;
 extern const jlib_decl StatisticsMapping heapStatistics;
 extern const jlib_decl StatisticsMapping diskLocalStatistics;

@@ -28,8 +28,6 @@
 typedef unsigned sequence_t;
 #define SEQF
 
-extern roxiemem::IDataBufferManager *bufferManager;
-
 typedef bool (*PKT_CMP_FUN) (const void *pkData, const void *key);
 
 

@@ -202,17 +202,17 @@
               compiler matches each server you need to access. Check the
               <emphasis role="bold">Override Automatic Compiler
               Selection</emphasis> checkbox and specify the Complier you want
-              to use. </para>
+              to use.</para>
 
               <para>For <emphasis role="bold">Compiler</emphasis>, it is
               usually best to let the system select the best match for you.
               You can see the available compilers in the <emphasis
-              role="bold">Best Compiler Match</emphasis> drop list. </para>
+              role="bold">Best Compiler Match</emphasis> drop list.</para>
 
               <para>Use the <emphasis role="bold">Scan</emphasis> button to
               update the list of available compilers. Use the <emphasis
-              role="bold">Match</emphasis> button to find the best match.
-              </para>
+              role="bold">Match</emphasis> button to find the best
+              match.</para>
 
               <para><graphic
               fileref="../../images/CT03a.jpg" /><parameter></parameter></para>
@@ -713,14 +713,6 @@
                 </row>
 
                 <row>
-                  <entry><emphasis role="bold">Graph Search Includes
-                  Tooltips</emphasis></entry>
-
-                  <entry>Check this box to ensure that tooltips are also
-                  included in your search.</entry>
-                </row>
-
-                <row>
                   <entry><emphasis role="bold">Ignore Whitespace on
                   Compare</emphasis></entry>
 
@@ -751,6 +743,30 @@
                   <entry>The maximum number of WUs that can be fetched, for
                   example, when looking for workunits sent during a specific
                   year/month etc.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">WU Persist
+                  Limit</emphasis></entry>
+
+                  <entry>The maximum number of days WUs are allowed to
+                  persist. </entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Disable Update Checking
+                  </emphasis></entry>
+
+                  <entry>Check this box to disable checking for available
+                  updates. </entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Disable Meta Processing
+                  </emphasis></entry>
+
+                  <entry>Check this box to disable metadata
+                  processing.</entry>
                 </row>
               </tbody>
             </tgroup>

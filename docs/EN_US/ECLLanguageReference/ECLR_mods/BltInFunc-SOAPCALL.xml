@@ -68,7 +68,8 @@
             the target systems in the list. These URLs may contain standard
             form usernames and passwords, if required. If calling an ESP Web
             service, you can append the ver_=n.nn parameter to specify the
-            version of the service. For example: <programlisting>SOAPCALL('http://127.0.0.1:8010/Wsdfu/?ver_=1.22', 
+            version of the service. For example: <programlisting
+            language="ECL" role="notrunnable">SOAPCALL('http://127.0.0.1:8010/Wsdfu/?ver_=1.22', 
          'DFUSearchData', 
          instructure,DATASET(outsructure));</programlisting></entry>
           </row>
@@ -439,7 +440,7 @@
 
     <para>Example:</para>
 
-    <programlisting>OutRec1 := RECORD
+    <programlisting lang="ECL" role="notrunnable">OutRec1 := RECORD
   STRING500 OutData{XPATH('OutData')};
   UNSIGNED4 Latency{XPATH('_call_latency')};
 END;
@@ -522,7 +523,7 @@ OUTPUT(SOAPCALL(ds, ip, svc, inRecord, t(LEFT),DATASET(outRecord), ONFAIL(SKIP),
 
     <para>Example:</para>
 
-    <programlisting>//1 rec in, no result
+    <programlisting lang="ECL" role="notrunnable">//1 rec in, no result
 SOAPCALL( 'https://127.0.0.1:8022/','MyModule.SomeService',
            {STRING500 InData := 'Some Input Data'});
 

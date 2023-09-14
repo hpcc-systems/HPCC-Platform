@@ -51,7 +51,7 @@
 
   <para>Tracing is written to log files, in the form:</para>
 
-  <para><programlisting>TRACE: &lt;name&gt;&lt;fieldname&gt;value&lt;/fieldname&gt;...&lt;/name&gt; </programlisting></para>
+  <para><programlisting lang="text">TRACE: &lt;name&gt;&lt;fieldname&gt;value&lt;/fieldname&gt;...&lt;/name&gt; </programlisting></para>
 
   <para>Tracing is not output by default even if TRACE statements are present;
   tracing is only output when the workunit debug value traceEnabled is set or
@@ -62,14 +62,14 @@
   <para>It is therefore possible to leave TRACE statements in the ECL without
   any detectable overhead until tracing is enabled. To enable tracing:</para>
 
-  <para><programlisting>#OPTION ('traceEnabled'<indexterm>
+  <para><programlisting lang="ECL" role="fragment">#OPTION ('traceEnabled'<indexterm>
         <primary>traceEnabled</primary>
       </indexterm>, 1) // trace statements enabled </programlisting></para>
 
   <para>It is also possible to override the default value for KEEP at a
   global, per-workunit, or per-query level.</para>
 
-  <para><programlisting>#OPTION ('traceLimit'<indexterm>
+  <para><programlisting lang="ECL" role="fragment">#OPTION ('traceLimit'<indexterm>
         <primary>traceLimit</primary>
       </indexterm>, 100) // overrides the default KEEP value (10) </programlisting></para>
 
@@ -135,7 +135,7 @@
 
     <para>Example:</para>
 
-    <para><programlisting>#OPTION ('traceEnabled', TRUE); //TRACE writes to log only if TRUE
+    <para><programlisting lang="ECL" role="runnable">#OPTION ('traceEnabled', TRUE); //TRACE writes to log only if TRUE
 FilterValue := 4;
 myRec := { STRING Name, REAL x, REAL y };
 ds := DATASET([ {'Jim' , 1, 1.00039},

@@ -83,7 +83,7 @@
             <entry>The value parameter is a string constant containing the
             scope value to use to override the workunit's default scope (the
             user ID of the submitting person). This is a Workunit Security
-            feature and requires a system which is LDAP-enabled. </entry>
+            feature and requires a system which is LDAP-enabled.</entry>
           </row>
         </tbody>
       </tgroup>
@@ -91,7 +91,7 @@
 
   <para>Example:</para>
 
-  <programlisting>#WORKUNIT('cluster','400way'); //run the job on the 400-way target cluster
+  <programlisting lang="ECL" role="notrunnable">#WORKUNIT('cluster','400way'); //run the job on the 400-way target cluster
 #WORKUNIT('protect',true);     //disallow deletion or archiving by Sasha 
 #WORKUNIT('name','My Job');    //name it "My Job"
 #WORKUNIT('priority','high');  //run before other lower-priority jobs

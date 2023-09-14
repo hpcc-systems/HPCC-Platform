@@ -43,10 +43,10 @@
 
   <para>Example:</para>
 
-  <programlisting>  #ONWARNING(1041, error);
+  <programlisting lang="ECL" role="noturnnable">#ONWARNING(1041, error);
        //globally promote "Record doesn't have an explicit
        // maximum record size" warnings to errors
-  rec := { STRING x } : ONWARNING(1041, ignore);
+rec := { STRING x } : ONWARNING(1041, ignore);
        //ignore "Record doesn't have an explicit maximum
        // record size" warning on this attribute, only
 </programlisting>

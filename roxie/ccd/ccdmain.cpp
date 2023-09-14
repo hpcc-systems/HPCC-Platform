@@ -68,6 +68,7 @@ unsigned numServerThreads = 30;
 unsigned numAgentThreads = 30;
 bool prestartAgentThreads = false;
 unsigned numRequestArrayThreads = 5;
+bool blockedLocalAgent = true;
 bool acknowledgeAllRequests = true;
 unsigned packetAcknowledgeTimeout = 100;
 unsigned headRegionSize;
@@ -757,8 +758,19 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         else
             setStatisticsComponentName(SCTroxie, "roxie", true);
 #ifdef _CONTAINERIZED
-        getDefaultStoragePlane(defaultPlane);
-        getDefaultIndexBuildStoragePlane(defaultIndexBuildPlane);
+        try
+        {
+            getDefaultStoragePlane(defaultPlane);
+            getDefaultIndexBuildStoragePlane(defaultIndexBuildPlane);
+        }
+        catch (IException *E)
+        {
+#ifdef _DEBUG            
+            E->Release();   // Useful for some local testing to be able to ignore these configuration errors
+#else
+            throw;
+#endif
+        }
 #endif
         installDefaultFileHooks(topology);
 
@@ -967,6 +979,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         }
 
         minPayloadSize = topology->getPropInt("@minPayloadSize", minPayloadSize);
+        blockedLocalAgent = topology->getPropBool("@blockedLocalAgent", blockedLocalAgent);
         acknowledgeAllRequests = topology->getPropBool("@acknowledgeAllRequests", acknowledgeAllRequests);
         headRegionSize = topology->getPropInt("@headRegionSize", 0);
         packetAcknowledgeTimeout = topology->getPropInt("@packetAcknowledgeTimeout", packetAcknowledgeTimeout);

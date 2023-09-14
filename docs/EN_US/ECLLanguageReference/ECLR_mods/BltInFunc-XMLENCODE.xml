@@ -50,8 +50,11 @@
 
   <para>Example:</para>
 
-  <programlisting>  d := XMLENCODE('&lt;xml version 1&gt;&lt;tag&gt;data&lt;/tag&gt;');
-  e := XMLDECODE(d);
+  <programlisting lang="ECL" role="runnable">encoded := XMLENCODE('&lt;xml version 1&gt;&lt;tag&gt;data&lt;/tag&gt;');
+decoded := XMLDECODE(encoded);
+
+OUTPUT(encoded); //results in '&amp;lt;xml version 1&amp;gt;&amp;lt;tag&amp;gt;data&amp;lt;/tag&amp;gt;'
+OUTPUT(decoded); // results in '&lt;xml version 1&gt;&lt;tag&gt;data&lt;/tag&gt;'
 </programlisting>
 
   <para>See Also: <link linkend="XMLDECODE">XMLDECODE</link></para>

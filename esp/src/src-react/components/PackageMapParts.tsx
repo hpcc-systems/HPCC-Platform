@@ -6,12 +6,12 @@ import * as parser from "dojox/xml/parser";
 import * as WsPackageMaps from "src/WsPackageMaps";
 import nlsHPCC from "src/nlsHPCC";
 import { useConfirm } from "../hooks/confirm";
-import { useFluentGrid } from "../hooks/grid";
 import { pushUrl } from "../util/history";
+import { HolyGrail } from "../layouts/HolyGrail";
+import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { ShortVerticalDivider } from "./Common";
 import { AddPackageMapPart } from "./forms/AddPackageMapPart";
 import { selector } from "./DojoGrid";
-import { HolyGrail } from "../layouts/HolyGrail";
 
 const logger = scopedLogger("../components/PackageMapParts.tsx");
 
@@ -31,23 +31,23 @@ export const PackageMapParts: React.FunctionComponent<PackageMapPartsProps> = ({
     const [showAddPartForm, setShowAddPartForm] = React.useState(false);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
     const [data, setData] = React.useState<any[]>([]);
+    const {
+        selection, setSelection,
+        setTotal,
+        refreshTable } = useFluentStoreState({});
 
     //  Grid ---
-    const { Grid, selection, copyButtons } = useFluentGrid({
-        data,
-        primaryID: "Part",
-        sort: { attribute: "Part", descending: false },
-        filename: "packageMapParts",
-        columns: {
+    const columns = React.useMemo((): FluentColumns => {
+        return {
             col1: selector({ width: 27, selectorType: "checkbox" }),
             Part: {
                 label: nlsHPCC.Parts,
-                formatter: React.useCallback(function (part, row) {
+                formatter: (part, row) => {
                     return <Link href={`#/packagemaps/${name}/parts/${part}`}>{part}</Link>;
-                }, [name])
+                }
             },
-        }
-    });
+        };
+    }, [name]);
 
     const refreshData = React.useCallback(() => {
         WsPackageMaps.getPackageMapById({ packageMap: name })
@@ -122,6 +122,8 @@ export const PackageMapParts: React.FunctionComponent<PackageMapPartsProps> = ({
         },
     ], [name, refreshData, selection, setShowDeleteConfirm, uiState.hasSelection]);
 
+    const copyButtons = useCopyButtons(columns, selection, "packageMapParts");
+
     React.useEffect(() => {
         WsPackageMaps.PackageMapQuery({})
             .then(({ ListPackagesResponse }) => {
@@ -147,8 +149,15 @@ export const PackageMapParts: React.FunctionComponent<PackageMapPartsProps> = ({
             <HolyGrail
                 header={<CommandBar items={buttons} farItems={copyButtons} />}
                 main={
-                    <Grid />
-                }
+                    <FluentGrid
+                        data={data}
+                        primaryID={"Part"}
+                        sort={{ attribute: "Part", descending: false }}
+                        columns={columns}
+                        setSelection={setSelection}
+                        setTotal={setTotal}
+                        refresh={refreshTable}
+                    ></FluentGrid>}
             />
         }</SizeMe>
         <AddPackageMapPart

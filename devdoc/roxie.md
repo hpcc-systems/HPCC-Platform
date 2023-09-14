@@ -281,3 +281,17 @@ Should the scope of the blacklist be different? Possible scopes are:
 
 Options 2 and 4 above would allow all aspects of the blacklisting behaviour to be specified by options on the SOAPCALL. We could control whether or not the
 blacklister is to be used at all via a SOAPCALL option with any of the above...
+
+Some notes on LocalAgent mode
+=============================
+
+In localAgent mode, the global queueManager object (normally a RoxieUdpSocketQueueManager) is replaced by a RoxieLocalQueueManager. Outbound packets are added directly to target queue, inbound are packed into DataBuffers.
+
+There is also "local optimizations" mode where any index operation reading a one-part file (does the same apply to one-part disk files?) just reads it directly on the server (regardless of localAgent setting). Typically still injected into receiver code though as otherwise handling exception cases, limits etc would all be duplicated/messy. Rows created in localOptimization mode are created directly in the caller's row manager, and are injected in serialized format.
+
+Why are inbound not created directly in the desired destination's allocator and then marked as serialized? Some lifespan issues... are they insurmountable?
+We do pack into dataBuffers rather than MemoryBuffers, which avoids a need to copy the data before the receiver can use it. Large rows get split and will require copying again, but we could set dataBufferSize to be bigger in localAgent mode to mitigate this somewhat.
+
+What is the lifespan issue? In-flight queries may be abandoned when a server-side query fails, times out, or no longer needs the data. Using DataBuffer does not have this issue as they are attached to the query's memory manager/allocation once read. Or we could bypass the agent queue altogether, but rather more refactoring needed for that (might almost be easier to extent the "local optimization" mode to use multiple threads at that point)
+
+abortPending, replyPending, and abortPendingData methods are unimplemented, which may lead to some inefficiencies?

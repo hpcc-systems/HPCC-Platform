@@ -154,7 +154,7 @@
 
   <para>Example:</para>
 
-  <programlisting>Vehicles := DATASET('vehicles',
+  <programlisting lang="ECL">Vehicles := DATASET('vehicles',
      {STRING2 st,
       STRING20 city,
       STRING20 lname,

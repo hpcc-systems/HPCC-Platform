@@ -34,19 +34,21 @@
     </informaltable></para>
 
   <para>The <emphasis role="bold">ROUNDUP </emphasis>function returns the
-  rounded integer of the <emphasis>realvalue</emphasis><indexterm>
-      <primary>realvalue</primary>
-    </indexterm> by rounding any decimal portion to the next larger integer
-  value, regardless of sign.</para>
+  rounded integer of the <emphasis>realvalue </emphasis>by rounding any
+  decimal portion to the next larger integer value, regardless of sign.</para>
 
-  <para>Example:</para>
+  <para lang="ECL" role="runnable">Example:</para>
 
   <programlisting>SomeRealValue := 3.14159;
-INTEGER4 MyVal := ROUNDUP(SomeRealValue); // MyVal is 4
+INTEGER4 MyVal1 := ROUNDUP(SomeRealValue); // MyVal is 4
 
-SomeRealValue := -3.9;
-INTEGER4 MyVal := ROUNDUP(SomeRealValue); // MyVal is -4
+SomeRealValue2 := -3.9;
+INTEGER4 MyVal2 := ROUNDUP(SomeRealValue2); // MyVal is -4
+
+OUTPUT(MyVal1);
+OUTPUT(MyVal2);
 </programlisting>
 
-  <para>See Also: <link linkend="ROUND">ROUND</link>, <link linkend="TRUNCATE">TRUNCATE</link></para>
+  <para>See Also: <link linkend="ROUND">ROUND</link>, <link
+  linkend="TRUNCATE">TRUNCATE</link></para>
 </sect1>

@@ -38,7 +38,11 @@
 
   <para>Example:</para>
 
-  <programlisting>MyRoot := SQRT(16.0);</programlisting>
+  <programlisting lang="ECL" role="runnable">MyRoot := SQRT(16.0);
+OUTPUT(MyRoot); // result is 4.0
+</programlisting>
 
-  <para>See Also: <link linkend="POWER">POWER</link>, <link linkend="EXP">EXP</link>, <link linkend="LN">LN</link>, <link linkend="LOG">LOG</link></para>
+  <para>See Also: <link linkend="POWER">POWER</link>, <link
+  linkend="EXP">EXP</link>, <link linkend="LN">LN</link>, <link
+  linkend="LOG">LOG</link></para>
 </sect1>

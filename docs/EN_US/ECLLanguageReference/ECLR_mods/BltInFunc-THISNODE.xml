@@ -41,9 +41,10 @@
 
   <para>Example:</para>
 
-  <programlisting>ds := ALLNODES(JOIN(THISNODE(GetData(SomeData)),
+  <programlisting lang="ECL" role="roxieonly">ds := ALLNODES(JOIN(THISNODE(GetData(SomeData)),
       THISNODE(GetIDX(SomeIndex)),
       LEFT.ID = RIGHT.ID));</programlisting>
 
-  <para>See Also: <link linkend="ALLNODES">ALLNODES</link>, <link linkend="LOCAL">LOCAL</link>, <link linkend="NOLOCAL">NOLOCAL</link></para>
+  <para>See Also: <link linkend="ALLNODES">ALLNODES</link>, <link
+  linkend="LOCAL">LOCAL</link>, <link linkend="NOLOCAL">NOLOCAL</link></para>
 </sect1>

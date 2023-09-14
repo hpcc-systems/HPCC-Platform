@@ -7,7 +7,7 @@ import nlsHPCC from "src/nlsHPCC";
 import { UserStore, CreateUserStore } from "src/ws_access";
 import { useConfirm } from "../hooks/confirm";
 import { useBuildInfo } from "../hooks/platform";
-import { FluentPagedGrid, FluentPagedFooter, useCopyButtons, useFluentStoreState } from "./controls/Grid";
+import { FluentPagedGrid, FluentPagedFooter, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { ShortVerticalDivider } from "./Common";
 import { AddUserForm } from "./forms/AddUser";
 import { Filter } from "./forms/Filter";
@@ -65,7 +65,7 @@ export const Users: React.FunctionComponent<UsersProps> = ({
         return store ? store : CreateUserStore();
     }, [store]);
 
-    const columns = React.useMemo(() => {
+    const columns = React.useMemo((): FluentColumns => {
         return {
             check: { width: 27, selectorType: "checkbox" },
             username: {

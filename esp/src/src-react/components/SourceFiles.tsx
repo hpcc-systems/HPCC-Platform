@@ -1,12 +1,11 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Image, Link, ScrollablePane, Sticky } from "@fluentui/react";
-import * as domClass from "dojo/dom-class";
 import * as Utility from "src/Utility";
 import { QuerySortItem } from "src/store/Store";
 import nlsHPCC from "src/nlsHPCC";
-import { useFluentGrid } from "../hooks/grid";
 import { useWorkunitSourceFiles } from "../hooks/workunit";
 import { pushParams } from "../util/history";
+import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { Fields } from "./forms/Fields";
 import { Filter } from "./forms/Filter";
 import { ShortVerticalDivider } from "./Common";
@@ -40,39 +39,35 @@ export const SourceFiles: React.FunctionComponent<SourceFilesProps> = ({
     const [sourceFiles, , , refreshData] = useWorkunitSourceFiles(wuid);
     const [data, setData] = React.useState<any[]>([]);
     const [showFilter, setShowFilter] = React.useState(false);
+    const {
+        selection, setSelection,
+        setTotal,
+        refreshTable } = useFluentStoreState({});
 
     //  Grid ---
-    const { Grid, selection, copyButtons } = useFluentGrid({
-        data,
-        primaryID: "Name",
-        alphaNumColumns: { Name: true, Value: true },
-        sort,
-        filename: "sourceFiles",
-        columns: {
+    const columns = React.useMemo((): FluentColumns => {
+        return {
             col1: {
                 width: 27,
                 selectorType: "checkbox"
             },
             Name: {
                 label: "Name", sortable: true,
-                formatter: React.useCallback(function (Name, row) {
+                formatter: (Name, row) => {
                     return <>
                         <Image src={Utility.getImageURL(row.IsSuperFile ? "folder_table.png" : "file.png")} />
                         &nbsp;
                         <Link href={`#/files/${row.FileCluster}/${Name}`}>{Name}</Link>
                     </>;
-                }, [])
+                }
             },
             FileCluster: { label: nlsHPCC.FileCluster, width: 300, sortable: false },
             Count: {
                 label: nlsHPCC.Usage, width: 72, sortable: true,
-                renderCell: React.useCallback(function (object, value, node, options) {
-                    domClass.add(node, "justify-right");
-                    node.innerText = Utility.valueCleanUp(value);
-                }, [])
+                justify: "right"
             }
-        }
-    });
+        };
+    }, []);
 
     //  Filter  ---
     const filterFields: Fields = {};
@@ -105,6 +100,8 @@ export const SourceFiles: React.FunctionComponent<SourceFilesProps> = ({
         },
     ], [data.length, hasFilter, refreshData, selection, uiState.hasSelection]);
 
+    const copyButtons = useCopyButtons(columns, selection, "sourceFiles");
+
     //  Selection  ---
     React.useEffect(() => {
         const state = { ...defaultUIState };
@@ -129,7 +126,16 @@ export const SourceFiles: React.FunctionComponent<SourceFilesProps> = ({
         <Sticky>
             <CommandBar items={buttons} farItems={copyButtons} />
         </Sticky>
-        <Grid />
+        <FluentGrid
+            data={data}
+            primaryID={"Name"}
+            alphaNumColumns={{ Name: true, Value: true }}
+            sort={sort}
+            columns={columns}
+            setSelection={setSelection}
+            setTotal={setTotal}
+            refresh={refreshTable}
+        ></FluentGrid>
         <Filter showFilter={showFilter} setShowFilter={setShowFilter} filterFields={filterFields} onApply={pushParams} />
     </ScrollablePane>;
 };

@@ -409,7 +409,7 @@
     <para>Field names in an "on the fly" record format {...} must be unique or
     a syntax error results. For example:</para>
 
-    <programlisting>          OUTPUT(person(), {module1.attr1, module2.attr1});</programlisting>
+    <programlisting lang="ECL" role="fragment">OUTPUT(person(), {module1.attr1, module2.attr1});</programlisting>
 
     <para>will result in a syntax error. Output Field Names are assumed from
     the definition names.</para>
@@ -417,7 +417,7 @@
     <para>To get around this situation, you can specify a unique name for the
     output field in the on-the-fly record format, like this:</para>
 
-    <programlisting>          OUTPUT(person(), {module1.attr1, name := module2.attr1});</programlisting>
+    <programlisting lang="ECL" role="fragment">OUTPUT(person(), {module1.attr1, name := module2.attr1});</programlisting>
   </sect2>
 
   <sect2 id="OUTPUT_Thor-Flat_Files">
@@ -552,7 +552,7 @@
 
     <para>Example:</para>
 
-    <programlisting>OutputFormat1 := RECORD
+    <programlisting lang="ECL" role="notrunnable">OutputFormat1 := RECORD
   People.firstname;
   People.lastname;
 END;
@@ -848,11 +848,12 @@ OUTPUT(People(Attr1=FALSE));
 
     <para>If none of the ASCII, EBCDIC, or UNICODE options are specified, the
     default output is in ASCII format with any UNICODE fields in UTF8 format.
-    The other default <emphasis>csvoptions</emphasis> are: <programlisting>           CSV(HEADING('',''), SEPARATOR(','), TERMINATOR('\n'), QUOTE())</programlisting></para>
+    The other default <emphasis>csvoptions</emphasis> are: <programlisting
+    lang="ECL" role="fragment">  CSV(HEADING('',''), SEPARATOR(','), TERMINATOR('\n'), QUOTE())</programlisting></para>
 
     <para>Example:</para>
 
-    <programlisting>//SINGLE option writes the header only to the first file part:
+    <programlisting lang="ECL" role="notrunnable">//SINGLE option writes the header only to the first file part:
 OUTPUT(ds,,'~thor::outdata.csv',CSV(HEADING(SINGLE)));
 
 //This example writes the header and footer to every file part:
@@ -1055,11 +1056,11 @@ OUTPUT(ds,,'~thor::outdata.csv',CSV(HEADING(FORMAT(STD.Str.ToUpperCase))));
     <para>If no <emphasis>xmloptions</emphasis> are specified, the defaults
     are:</para>
 
-    <programlisting>         XML('Row',HEADING('&lt;Dataset&gt;\n','&lt;/Dataset&gt;\n'))</programlisting>
+    <programlisting lang="ECL" role="fragment">  XML('Row',HEADING('&lt;Dataset&gt;\n','&lt;/Dataset&gt;\n'))</programlisting>
 
     <para>Example:</para>
 
-    <programlisting>R := {STRING10 fname,STRING12 lname};
+    <programlisting lang="ECL" role="notrunnable">R := {STRING10 fname,STRING12 lname};
 B := DATASET([{'Fred','Bell'},{'George','Blanda'},{'Sam',''}],R);
 
 OUTPUT(B,,'fred1.xml', XML); // writes B to the fred1.xml file
@@ -1281,11 +1282,11 @@ OUTPUT(B,,'fred3.xml',XML('MyRow',TRIM,OPT));
     <para>If no <emphasis>jsonoptions</emphasis> are specified, the defaults
     are:</para>
 
-    <programlisting>         JSON('Row',HEADING('[',']'))</programlisting>
+    <programlisting lang="ECL" role="fragment">         JSON('Row',HEADING('[',']'))</programlisting>
 
     <para>Example:</para>
 
-    <programlisting>R := {STRING10 fname,STRING12 lname};
+    <programlisting lang="ECL" role="notrunnable">R := {STRING10 fname,STRING12 lname};
 B := DATASET([{'Fred','Bell'},{'George','Blanda'},{'Sam',''}],R);
 
 OUTPUT(B,,'fred1.json', JSON); // writes B to the fred1.json file
@@ -1380,7 +1381,7 @@ OUTPUT(B,,'fred2.json',JSON('MyResult', HEADING('[', ']')));
 
     <para>Example:</para>
 
-    <programlisting>OUTPUT(A_People,,PIPE('MyCommandLIneProgram'),OVERWRITE);
+    <programlisting lang="ECL" role="PipeRestricted">OUTPUT(A_People,,PIPE('MyCommandLIneProgram'),OVERWRITE);
    // sends the A_People to MyCommandLIneProgram as
    // standard in</programlisting>
   </sect2>
@@ -1420,10 +1421,10 @@ OUTPUT(B,,'fred2.json',JSON('MyResult', HEADING('[', ']')));
 
     <para>Example:</para>
 
-    <programlisting>OUTPUT(CHOOSEN(people(firstname[1]='A'),10));
-  // writes the A People to the query builder
+    <programlisting lang="ECL" role="notrunnable">OUTPUT(CHOOSEN(people(firstname[1]='A'),10));
+  // writes the A People to the workunit
 OUTPUT(CHOOSEN(people(firstname[1]='A'),10),ALL);
-  // writes all the A People to the query builder
+  // writes all the A People to the workunit
 OUTPUT(CHOOSEN(people(firstname[1]='A'),10),NAMED('fred'));
   // writes the A People to the fred named output
   
@@ -1471,7 +1472,7 @@ rptErrMsg(102, 'And again');
 
     <para>Example:</para>
 
-    <programlisting>OUTPUT(10) // scalar value output
+    <programlisting lang="ECL" role="runnable">OUTPUT(10) // scalar value output
 OUTPUT('Fred') // scalar value output
 </programlisting>
   </sect2>
@@ -1499,7 +1500,7 @@ OUTPUT('Fred') // scalar value output
 
     <para>Example:</para>
 
-    <programlisting>OUTPUT(Person(per_st='FL'), THOR)
+    <programlisting lang="ECL" role="notrunnable">OUTPUT(Person(per_st='FL'), THOR)
   // output records to screen, but store the 
   // result on disk instead of in the workunit</programlisting>
 

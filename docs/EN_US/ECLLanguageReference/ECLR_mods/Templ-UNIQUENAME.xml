@@ -52,18 +52,16 @@
 
   <para>Example:</para>
 
-  <programlisting>  IMPORT Training_Compare;
-  EXPORT MAC_Compare_Result(module_name, attribute_name) := MACRO
-  
+  <programlisting lang="ECL" role="notrunnable">IMPORT Training_Compare;
+EXPORT MAC_Compare_Result(module_name, attribute_name) := MACRO
   #UNIQUENAME(compare_file);
   %compare_file% := Training_Compare.File_Compare_Master;
-  
   #UNIQUENAME(layout_per_attr);
   #UNIQUENAME(compare_attr, _MyField_$_);
        //the compare_attr fieldname is generated like: _MyField_1_
   %layout_per_attr% := RECORD
-       person.per_cid;
-       %compare_attr% := module_name.attribute_name;
+    person.per_cid;
+    %compare_attr% := module_name.attribute_name;
   END;
   
   #UNIQUENAME(person_attr_out);
@@ -74,16 +72,16 @@
   
   #UNIQUENAME(layout_match_out);
   %layout_match_out% := RECORD
-       data9 per_cid;
-       boolean ValuesMatchFlag;
-       TYPEOF(module_name.attribute_name) MyValue;
-       TYPEOF(%compare_file%.attribute_name) CompareValue;
+    data9 per_cid;
+    boolean ValuesMatchFlag;
+    TYPEOF(module_name.attribute_name) MyValue;
+    TYPEOF(%compare_file%.attribute_name) CompareValue;
   END;
   
   #UNIQUENAME(layout_compare);
   %layout_compare% := RECORD
-       %compare_file%.per_cid;
-       %compare_file%.attribute_name;
+    %compare_file%.per_cid;
+    %compare_file%.attribute_name;
   END;
   
   #UNIQUENAME(compare_table);
@@ -93,18 +91,17 @@
   #UNIQUENAME(compare_attr_to_field);
   %layout_match_out% %compare_attr_to_field%(%person_attr_out% L,
   %compare_table% R) := TRANSFORM
-       SELF.ValuesMatchFlag := (L.%compare_attr% = R.attribute_name);
-       SELF.MyValue := L.%compare_attr%;
-       SELF.CompareValue := R.attribute_name;
-       SELF := L;
+    SELF.ValuesMatchFlag := (L.%compare_attr% = R.attribute_name);
+    SELF.MyValue := L.%compare_attr%;
+    SELF.CompareValue := R.attribute_name;
+    SELF := L;
   END;
   
   #UNIQUENAME(compare_out);
   %compare_out% := JOIN(%person_attr_out_dist%,
-            %compare_table_dist%,
-            LEFT.per_cid = RIGHT.per_cid,
-            %compare_attr_to_field%(LEFT, RIGHT),
-            LOCAL);
+                        %compare_table_dist%,
+                        LEFT.per_cid = RIGHT.per_cid,
+                        %compare_attr_to_field%(LEFT, RIGHT),LOCAL);
   
   #UNIQUENAME(match_out);
   #UNIQUENAME(nomatch_out);
@@ -115,8 +112,7 @@
   OUTPUT(CHOOSEN(%match_out%, 50));
   COUNT(%nomatch_out%);
   OUTPUT(CHOOSEN(%nomatch_out%, 50));
-  
-  ENDMACRO;
+ENDMACRO;
 </programlisting>
 
   <para>See Also: <link linkend="MACRO_Structure">MACRO</link></para>

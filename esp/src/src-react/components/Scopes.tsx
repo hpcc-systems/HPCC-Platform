@@ -7,12 +7,12 @@ import { formatCost } from "src/Session";
 import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
 import { useConfirm } from "../hooks/confirm";
-import { useFluentGrid } from "../hooks/grid";
 import { useBuildInfo } from "../hooks/platform";
 import { useUserTheme } from "../hooks/theme";
 import { useMyAccount } from "../hooks/user";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushUrl } from "../util/history";
+import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { AddToSuperfile } from "./forms/AddToSuperfile";
 import { CopyFile } from "./forms/CopyFile";
 import { DesprayFile } from "./forms/DesprayFile";
@@ -102,6 +102,10 @@ export const Scopes: React.FunctionComponent<ScopesProps> = ({
     const [viewByScope, setViewByScope] = React.useState(true);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
     const [, { currencyCode }] = useBuildInfo();
+    const {
+        selection, setSelection,
+        setTotal,
+        refreshTable } = useFluentStoreState({});
 
     const refreshData = React.useCallback(() => {
         if (!scope) return;
@@ -129,11 +133,8 @@ export const Scopes: React.FunctionComponent<ScopesProps> = ({
     }, [refreshData]);
 
     //  Grid ---
-    const { Grid, selection, copyButtons } = useFluentGrid({
-        data,
-        primaryID: "__hpcc_id",
-        filename: "logicalfiles",
-        columns: {
+    const columns = React.useMemo((): FluentColumns => {
+        return {
             col1: {
                 width: 27,
                 disabled: (item) => item ? item.__hpcc_isDir : true,
@@ -143,27 +144,27 @@ export const Scopes: React.FunctionComponent<ScopesProps> = ({
                 headerIcon: "LockSolid",
                 width: 25,
                 sortable: false,
-                formatter: React.useCallback((_protected) => {
+                formatter: (_protected) => {
                     if (_protected === true) {
                         return <Icon iconName="LockSolid" />;
                     }
                     return "";
-                }, [])
+                }
             },
             IsCompressed: {
                 headerIcon: "ZipFolder",
                 width: 25,
                 sortable: false,
-                formatter: React.useCallback((compressed) => {
+                formatter: (compressed) => {
                     if (compressed === true) {
                         return <Icon iconName="ZipFolder" />;
                     }
                     return "";
-                }, [])
+                }
             },
             Name: {
                 label: nlsHPCC.LogicalName, width: 600,
-                formatter: React.useCallback((_, row) => {
+                formatter: (_, row) => {
                     let name = row.Name?.split("::").pop();
                     let url = `#/files/${row.NodeGroup ? row.NodeGroup + "/" : ""}${[].concat(".", scopePath, name).join("::")}`;
                     if (row.isDirectory) {
@@ -177,7 +178,7 @@ export const Scopes: React.FunctionComponent<ScopesProps> = ({
                         </div>;
                     }
                     return <Link data-selection-disabled={true} href={url}>{name}</Link>;
-                }, [scopePath])
+                }
             },
             Owner: { label: nlsHPCC.Owner, width: 75 },
             SuperOwners: { label: nlsHPCC.SuperOwner, width: 150 },
@@ -185,27 +186,25 @@ export const Scopes: React.FunctionComponent<ScopesProps> = ({
             NodeGroup: { label: nlsHPCC.Cluster, width: 108 },
             RecordCount: {
                 label: nlsHPCC.Records, width: 85,
-                formatter: React.useCallback((value, row) => Utility.valueCleanUp(value), []),
             },
             IntSize: {
                 label: nlsHPCC.Size, width: 100,
-                formatter: React.useCallback((value, row) => Utility.convertedSize(value), []),
+                formatter: (value, row) => Utility.convertedSize(value)
             },
             Parts: {
                 label: nlsHPCC.Parts, width: 60,
-                formatter: React.useCallback((value, row) => Utility.valueCleanUp(value), []),
             },
             Modified: { label: nlsHPCC.ModifiedUTCGMT, width: 162 },
             AtRestCost: {
                 label: nlsHPCC.FileCostAtRest, width: 100,
-                formatter: React.useCallback((cost, row) => `${formatCost(cost ?? 0)} (${currencyCode || "$"})`, [currencyCode]),
+                formatter: (cost, row) => `${formatCost(cost ?? 0)} (${currencyCode || "$"})`
             },
             AccessCost: {
                 label: nlsHPCC.FileAccessCost, width: 100,
-                formatter: React.useCallback((cost, row) => `${formatCost(cost ?? 0)} (${currencyCode || "$"})`, [currencyCode]),
+                formatter: (cost, row) => `${formatCost(cost ?? 0)} (${currencyCode || "$"})`
             }
-        }
-    });
+        };
+    }, [currencyCode, scopePath]);
 
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
@@ -317,6 +316,8 @@ export const Scopes: React.FunctionComponent<ScopesProps> = ({
         setFilterFields(_filterFields);
     }, [filter, scope]);
 
+    const copyButtons = useCopyButtons(columns, selection, "logicalfiles");
+
     //  Selection  ---
     React.useEffect(() => {
         const state = { ...defaultUIState };
@@ -341,7 +342,15 @@ export const Scopes: React.FunctionComponent<ScopesProps> = ({
                 <SizeMe monitorHeight>{({ size }) =>
                     <div style={{ position: "relative", width: "100%", height: "100%" }}>
                         <div style={{ position: "absolute", width: "100%", height: `${size.height}px` }}>
-                            <Grid height={`${size.height}px`} />
+                            <FluentGrid
+                                data={data}
+                                primaryID={"__hpcc_id"}
+                                columns={columns}
+                                height={`${size.height}px`}
+                                setSelection={setSelection}
+                                setTotal={setTotal}
+                                refresh={refreshTable}
+                            ></FluentGrid>
                         </div>
                     </div>
                 }</SizeMe>

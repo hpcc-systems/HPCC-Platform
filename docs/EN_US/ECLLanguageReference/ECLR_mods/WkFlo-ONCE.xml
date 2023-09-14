@@ -42,14 +42,13 @@
 
   <para>Example:</para>
 
-  <programlisting role="run">InlineDCT := DICTIONARY([{0 =&gt; 'Black' , 'Greys'},
+  <programlisting lang="ECL" role="runnable">InlineDCT := DICTIONARY([{0 =&gt; 'Black' , 'Greys'},
                          {1 =&gt; 'Brown' , 'Earth'},
                          {2 =&gt; 'Red'   , 'Reds'},
                          {3 =&gt; 'White' , 'Greys'} ], 
                         {UNSIGNED code =&gt; STRING10 color ,STRING10 Tone}) : ONCE;
 
 UNSIGNED v := 0 : STORED('v');
-
 OUTPUT(InlineDCT[v].color);</programlisting>
 
   <para>See Also: <link linkend="INDEPENDENT">INDEPENDENT</link></para>

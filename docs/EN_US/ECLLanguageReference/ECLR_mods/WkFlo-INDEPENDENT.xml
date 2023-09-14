@@ -53,34 +53,30 @@
   it should be executed the first time it is used). It will not share any code
   with any other workflow items.</para>
 
-  <para>One use would be to provide a mechanism for commoning up code that is
+  <para>One use would be to provide a mechanism to common up code that is
   shared between different arguments to a SEQUENTIAL action--normally they are
   evaluated completely independently.</para>
 
   <para>Example:</para>
 
-  <programlisting>  IMPORT STD;
-  File1 := 'names1.txt';
-  File2 := 'names2.txt';
-  
-  SrcIP := '10.239.219.2';
-  SrcPath := '/var/lib/HPCCSystems/mydropzone/';
-  DestPath := '~THOR::IN::';
-  ESPportIP := 'http://192.168.56.120:8010/FileSpray';
-  
-  DeleteOldFiles :=
-     PARALLEL(STD.File.DeleteLogicalFile(DestPath+File1),
-              STD.File.DeleteLogicalFile(DestPath+File2))
-                           : INDEPENDENT;
-  SprayNewFiles :=
-     PARALLEL(STD.File.SprayFixed(SrcIP,SrcPath+File1,11,
-                                      'mythor',DestPath+File1,
-                                      -1,ESPportIP),
-              STD.File.SprayFixed(SrcIP,SrcPath+File2,11,
-                                     'mythor',DestPath+File2,
-                                     -1,ESPportIP))
-                           : INDEPENDENT;
-    SEQUENTIAL(DeleteOldFiles,SprayNewFiles);
+  <programlisting lang="ECL" role="runnable">I := RANDOM() : INDEPENDENT;  //calculated once, period
+G := RANDOM() : GLOBAL;       //calculated once in each graph
+
+ds := 
+  DATASET([{1,0,0,0},{2,0,0,0}],{UNSIGNED1 rec,UNSIGNED Ival, UNSIGNED Gval , UNSIGNED Aval });
+
+RECORDOF(ds) XF(ds L) := TRANSFORM
+  SELF.Ival := I;
+  SELF.Gval := G;
+  SELF.Aval := RANDOM();     //calculated each time used
+  SELF := L;
+END;
+
+P1 := PROJECT(ds,XF(left)) : PERSIST('~TEMP::PERSIST::IndependentVsGlobal1');
+P2 := PROJECT(ds,XF(left)) : PERSIST('~TEMP::PERSIST::IndependentVsGlobal2');
+
+OUTPUT(P1);    
+OUTPUT(P2);  //this gets the same Ival values as P1, but the Gval value is different than P1
 </programlisting>
 
   <para>See Also: <link linkend="GLOBAL">GLOBAL</link></para>

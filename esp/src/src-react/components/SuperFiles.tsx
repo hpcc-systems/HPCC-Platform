@@ -2,8 +2,8 @@ import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link, ScrollablePane, Sticky } from "@fluentui/react";
 import nlsHPCC from "src/nlsHPCC";
 import { QuerySortItem } from "src/store/Store";
-import { useFluentGrid } from "../hooks/grid";
 import { useFile } from "../hooks/file";
+import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { ShortVerticalDivider } from "./Common";
 
 const defaultUIState = {
@@ -27,14 +27,14 @@ export const SuperFiles: React.FunctionComponent<SuperFilesProps> = ({
     const [file, , , refreshData] = useFile(cluster, logicalFile);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
     const [data, setData] = React.useState<any[]>([]);
+    const {
+        selection, setSelection,
+        setTotal,
+        refreshTable } = useFluentStoreState({});
 
     //  Grid ---
-    const { Grid, selection, copyButtons } = useFluentGrid({
-        data,
-        primaryID: "Name",
-        sort,
-        filename: "superFiles",
-        columns: {
+    const columns = React.useMemo((): FluentColumns => {
+        return {
             col1: {
                 width: 27,
                 selectorType: "checkbox"
@@ -42,12 +42,12 @@ export const SuperFiles: React.FunctionComponent<SuperFilesProps> = ({
             Name: {
                 label: nlsHPCC.Name,
                 sortable: true,
-                formatter: React.useCallback(function (name, row) {
+                formatter: (name, row) => {
                     return <Link href={`#/files/${cluster}/${name}`}>{name}</Link>;
-                }, [cluster])
-            },
-        }
-    });
+                }
+            }
+        };
+    }, [cluster]);
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
@@ -70,6 +70,8 @@ export const SuperFiles: React.FunctionComponent<SuperFilesProps> = ({
         },
     ], [cluster, refreshData, selection, uiState.hasSelection]);
 
+    const copyButtons = useCopyButtons(columns, selection, "superFiles");
+
     //  Selection  ---
     React.useEffect(() => {
         const state = { ...defaultUIState };
@@ -90,6 +92,14 @@ export const SuperFiles: React.FunctionComponent<SuperFilesProps> = ({
         <Sticky>
             <CommandBar items={buttons} farItems={copyButtons} />
         </Sticky>
-        <Grid />
+        <FluentGrid
+            data={data}
+            primaryID={"Name"}
+            sort={sort}
+            columns={columns}
+            setSelection={setSelection}
+            setTotal={setTotal}
+            refresh={refreshTable}
+        ></FluentGrid>
     </ScrollablePane>;
 };
