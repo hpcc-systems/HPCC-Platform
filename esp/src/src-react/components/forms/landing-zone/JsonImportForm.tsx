@@ -257,7 +257,7 @@ export const JsonImportForm: React.FunctionComponent<JsonImportFormProps> = ({
                             field: { onChange, name: fieldName, value },
                             fieldState: { error }
                         }) => <Dropdown
-                                key="sourceFormat"
+                                key={fieldName}
                                 label={nlsHPCC.Format}
                                 options={[
                                     { key: "1", text: "ASCII" },
@@ -270,10 +270,8 @@ export const JsonImportForm: React.FunctionComponent<JsonImportFormProps> = ({
                                     { key: "8", text: "UTF-32LE" },
                                     { key: "9", text: "UTF-32BE" }
                                 ]}
-                                defaultSelectedKey="1"
-                                onChange={(evt, option) => {
-                                    onChange(option.key);
-                                }}
+                                selectedKey={value}
+                                onChange={(evt, option) => onChange(option.key)}
                                 errorMessage={error && error?.message}
                             />}
                         rules={{
