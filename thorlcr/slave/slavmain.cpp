@@ -2040,7 +2040,9 @@ public:
                                 }
                                 else
                                 {
-                                    msg.append((rank_t)0); // JCSMORE - not sure why this would ever happen
+                                    // implies graph started on master, but aborted, wound-up and was removed from channel
+                                    // before GraphEnd/getFinalProgress was issued to this worker.
+                                    msg.append(RANK_NULL); // signal to manager there is no info.
                                 }
                             }
                             job->reportGraphEnd(gid);

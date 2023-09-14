@@ -2802,6 +2802,8 @@ void CMasterGraph::getFinalProgress(bool aborting)
         {
             unsigned slave;
             msg.read(slave);
+            if (RANK_NULL == slave) // worker no longer had graph registered
+                continue;
             handleSlaveDone(slave, msg);
             if (!queryOwner())
             {
