@@ -249,7 +249,15 @@ public:
     virtual double queryAgentMachineCost() const override
     {
         return ctx->queryAgentMachineCost();
-    };
+    }
+    virtual void updateAggregates(IWorkUnit* lockedwu) override
+    {
+        ctx->updateAggregates(lockedwu);
+    }
+    virtual void mergeAggregatorStats(IStatisticCollection & stats, unsigned wfid, const char *graphname, unsigned sgId) override
+    {
+        ctx->mergeAggregatorStats(stats, wfid, graphname, sgId);
+    }
 
 protected:
     IAgentContext * ctx;
@@ -392,6 +400,7 @@ private:
     Owned<IOrderedOutputSerializer> outputSerializer;
     int retcode;
     double agentMachineCost = 0;
+    StatisticsAggregator statsAggregator;
 
 private:
     void doSetResultString(type_t type, const char * stepname, unsigned sequence, int len, const char *val);
@@ -704,6 +713,14 @@ public:
     virtual double queryAgentMachineCost() const
     {
         return agentMachineCost;
+    }
+    virtual void updateAggregates(IWorkUnit* lockedwu) override
+    {
+        statsAggregator.updateAggregates(lockedwu);
+    }
+    virtual void mergeAggregatorStats(IStatisticCollection & stats, unsigned wfid, const char *graphname, unsigned sgId) override
+    {
+        statsAggregator.recordStats(&stats, wfid, graphname, sgId);
     }
 };
 
@@ -1055,7 +1072,7 @@ public:
     void executeLibrary(const byte * parentExtract, IHThorGraphResults * results);
     IWUGraphStats *updateStats(StatisticCreatorType creatorType, const char * creator, unsigned wfid, unsigned subgraph);
     void updateWUStatistic(IWorkUnit* lockedwu, StatisticScopeType scopeType, const char* scope, StatisticKind kind, const char* descr, long long unsigned int value);
-
+    void updateAggregates(IWorkUnit* lockedwu);
     EclSubGraph * idToGraph(unsigned id);
     EclGraphElement * idToActivity(unsigned id);
     const char *queryGraphName() { return graphName; }

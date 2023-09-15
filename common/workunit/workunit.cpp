@@ -188,9 +188,9 @@ CWuGraphStats::CWuGraphStats(StatisticCreatorType _creatorType, const char * _cr
 {
     StatsScopeId graphScopeId;
     verifyex(graphScopeId.setScopeText(_rootScope));
+    StatsScopeId wfScopeId(SSTworkflow,wfid);
 
-    StatsScopeId rootScopeId(SSTworkflow,wfid);
-    collector.setown(createStatisticsGatherer(_creatorType, _creator, rootScopeId));
+    collector.setown(createStatisticsGatherer(_creatorType, _creator, wfScopeId));
     collector->beginScope(graphScopeId);
 }
 
@@ -2659,83 +2659,67 @@ cost_type aggregateCost(const IConstWorkUnit * wu, const char *scope, bool exclu
     }
 }
 
-//aggregate disk costs from top-level subgraphs (when scope specified) or workflows (scope not specified)
-cost_type aggregateDiskAccessCost(const IConstWorkUnit * wu, const char *scope)
+void StatisticsAggregator::loadExistingAggregates(const IConstWorkUnit &workunit)
 {
-    WuScopeFilter filter;
-    if (!isEmptyString(scope))
-        filter.addScope(scope);
-    else
-        filter.addScope("");      // Needed to match scope
-    // when scope is a workflow, sum graph costs (or subgraph cost when no graph cost) to get workflow cost
-    // (Costs from child graphs and activities should have been summed up to graph/subgraph level already)
-    // when isEmptyString(scope), sum workflow costs (or graph cost when no workflow cost) to get global cost
-    // (Costs from all levels below graph should be summed upto at least graph level already)
-    // i.e. need 2 levels of nesting
-    filter.setIncludeNesting(2);
-    // includeNesting(2) needs just source "global". However, WuScopeFilter is incorrectly inferring the source as "global,stats",
-    // causing too many of the stats to be pulled in and inefficiency.  Here, explicitly set source to "global"
-    filter.addSource("global");
-    filter.addOutputStatistic(StCostFileAccess);
-    filter.addRequiredStat(StCostFileAccess);
-    filter.finishedFilter();
-    Owned<IConstWUScopeIterator> it = &wu->getScopeIterator(filter);
-    cost_type totalCost = 0;
-    for (it->first(); it->isValid(); )
+    StatsScopeId globalScopeId(SSTglobal, (unsigned)0);
+    statsCollection.setown(createStatisticCollection(globalScopeId));
+
+    class StatsCollectionAggregatesLoader : public IWuScopeVisitor
     {
-        cost_type value = 0;
-        if (it->getStat(StCostFileAccess, value))
+    public:
+        StatsCollectionAggregatesLoader(IStatisticCollection * _statsCollection) : statsCollection(_statsCollection) {}
+
+        virtual void noteStatistic(StatisticKind kind, unsigned __int64 value, IConstWUStatistic & extra) override
         {
-            totalCost += value;
-            it->nextSibling();
+            statsCollection->setStatistic(extra.queryScope(), kind, value);
         }
-        else
-        {
-            it->next();
-        }
-    }
-    return totalCost;
+        virtual void noteAttribute(WuAttr attr, const char * value) override { throwUnexpected(); }
+        virtual void noteHint(const char * kind, const char * value) override { throwUnexpected(); }
+        virtual void noteException(IConstWUException & exception) override { throwUnexpected(); }
+    private:
+        Linked<IStatisticCollection> statsCollection;
+    };
+
+    WuScopeFilter filter;
+    filter.addScopeType(SSTglobal).addScopeType(SSTworkflow).addScopeType(SSTgraph);
+    const unsigned numStats = mapping.numStatistics();
+    for (unsigned i=0; i<numStats; ++i)
+        filter.addOutputStatistic(mapping.getKind(i));
+    filter.setDepth(1,3); // 1=global, 2=workflow, 3=graph
+    filter.setSources(SSFsearchGlobalStats);
+    filter.setIncludeNesting(0);
+    filter.finishedFilter();
+
+    StatsCollectionAggregatesLoader aggregatesLoader(statsCollection);
+    Owned<IConstWUScopeIterator> iter = &workunit.getScopeIterator(filter);
+    ForEach(*iter)
+        iter->playProperties(aggregatesLoader);
 }
 
-void gatherSpillSize(const IConstWorkUnit * wu, const char *scope, stat_type & peakSizeSpill)
+// Replace the stats at the specified scope level
+void StatisticsAggregator::recordStats(IStatisticCollection * sourceStats, unsigned wfid, const char * graphName, unsigned sgId)
 {
-    WuScopeFilter filter;
-    if (!isEmptyString(scope))
-        filter.addScope(scope);
-    else
-    {
-        filter.addScope("");
-        filter.addSource("global");
-    }
-    filter.setIncludeNesting(1);
-    filter.addOutputStatistic(StSizeGraphSpill);
-    filter.addRequiredStat(StSizeGraphSpill);
-    filter.finishedFilter();
-    Owned<IConstWUScopeIterator> it = &wu->getScopeIterator(filter);
-    peakSizeSpill = 0;
-    for (it->first(); it->isValid(); )
-    {
-        stat_type value = 0;
-        if (it->getStat(StSizeGraphSpill, value))
-        {
-            if (value>peakSizeSpill)
-                peakSizeSpill = value;
-            it->nextSibling();
-        }
-        else
-        {
-            it->next();
-        }
-    }
+    StatsScopeId graphScopeId;
+    verifyex(graphScopeId.setScopeText(graphName));
+    StatsScopeId wfScopeId(SSTworkflow, wfid);
+    StatsScopeId sgScopeId(SSTsubgraph, sgId);
+    statsCollection->recordStats(mapping, sourceStats, {wfScopeId, graphScopeId, sgScopeId});
 }
 
-void updateSpillSize(IWorkUnit * wu, const char * scope, StatisticScopeType scopeType)
+// Recalculate aggregates and then write the aggregates to global stats (dali)
+void StatisticsAggregator::updateAggregates(IWorkUnit *wu)
 {
-    stat_type peakSizeSpill = 0;
-    gatherSpillSize(wu, scope, peakSizeSpill);
-    if (peakSizeSpill)
-        wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), scopeType, scope, StSizeGraphSpill, nullptr, peakSizeSpill, 1, 0, StatsMergeMax);
+    if (!statsCollection)
+        return;
+
+    AggregateUpdatedCallBackFunc f = [&](const char * scope, StatisticScopeType sst, StatisticKind kind, stat_type value)
+    {
+        wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), sst, scope, kind, nullptr, value, 1, 0, StatsMergeReplace);
+    };
+
+    statsCollection->refreshAggregates(mapping, f);
 }
+
 //---------------------------------------------------------------------------------------------------------------------
 
 

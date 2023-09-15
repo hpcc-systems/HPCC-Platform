@@ -1174,7 +1174,6 @@ interface IConstWUScopeIterator : extends IScmIterator
 };
 
 //---------------------------------------------------------------------------------------------------------------------
-
 //! IWorkUnit
 //! Provides high level access to WorkUnit "header" data.
 interface IWorkUnit;
@@ -1725,8 +1724,6 @@ extern WORKUNIT_API void updateWorkunitTimings(IWorkUnit * wu, ITimeReporter *ti
 extern WORKUNIT_API void updateWorkunitTimings(IWorkUnit * wu, StatisticScopeType scopeType, StatisticKind kind, ITimeReporter *timer);
 extern WORKUNIT_API void aggregateStatistic(StatsAggregation & result, IConstWorkUnit * wu, const WuScopeFilter & filter, StatisticKind search);
 extern WORKUNIT_API cost_type aggregateCost(const IConstWorkUnit * wu, const char *scope=nullptr, bool excludehThor=false);
-extern WORKUNIT_API cost_type aggregateDiskAccessCost(const IConstWorkUnit * wu, const char *scope);
-extern WORKUNIT_API void updateSpillSize(IWorkUnit * wu, const char * scope, StatisticScopeType scopeType);
 extern WORKUNIT_API const char *getTargetClusterComponentName(const char *clustname, const char *processType, StringBuffer &name);
 extern WORKUNIT_API void descheduleWorkunit(char const * wuid);
 #if 0
@@ -1784,5 +1781,18 @@ extern WORKUNIT_API void executeThorGraph(const char * graphName, IConstWorkUnit
 extern WORKUNIT_API TraceFlags loadTraceFlags(IConstWorkUnit * wu, const std::initializer_list<TraceOption> & y, TraceFlags dft);
 
 extern WORKUNIT_API bool executeGraphOnLingeringThor(IConstWorkUnit &workunit, unsigned wfid, const char *graphName);
+
+
+class WORKUNIT_API StatisticsAggregator : public CInterface
+{
+public:
+    StatisticsAggregator(const StatisticsMapping & _mapping) : mapping(_mapping) {}
+    void loadExistingAggregates(const IConstWorkUnit &workunit);
+    void recordStats(IStatisticCollection * sourceStats, unsigned wfid, const char * graphName, unsigned graphId);
+    void updateAggregates(IWorkUnit *wu);
+private:
+    Owned<IStatisticCollection> statsCollection;
+    const StatisticsMapping & mapping;
+};
 
 #endif

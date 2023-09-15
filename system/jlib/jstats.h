@@ -104,6 +104,9 @@ interface IStatisticCollectionIterator;
 interface IStatisticGatherer;
 interface IStatisticVisitor;
 
+class jlib_decl StatisticsMapping;
+typedef std::function<void(const char * scope, StatisticScopeType sst, StatisticKind kind, stat_type value)> AggregateUpdatedCallBackFunc;
+
 interface IStatisticCollection : public IInterface
 {
 public:
@@ -117,12 +120,16 @@ public:
     virtual IStatisticCollectionIterator & getScopes(const char * filter, bool sorted) = 0;
     virtual void getMinMaxScope(IStringVal & minValue, IStringVal & maxValue, StatisticScopeType searchScopeType) const = 0;
     virtual void getMinMaxActivity(unsigned & minValue, unsigned & maxValue) const = 0;
+    virtual bool setStatistic(const char *scope, StatisticKind kind, unsigned __int64 value) = 0;
     virtual void serialize(MemoryBuffer & out) const = 0;
     virtual unsigned __int64 queryWhenCreated() const = 0;
     virtual void mergeInto(IStatisticGatherer & target) const = 0;
     virtual StringBuffer &toXML(StringBuffer &out) const = 0;
     virtual void visit(IStatisticVisitor & target) const = 0;
     virtual void visitChildren(IStatisticVisitor & target) const = 0;
+    virtual void refreshAggregates(const StatisticsMapping & mapping, AggregateUpdatedCallBackFunc & fWhenAggregateUpdated) = 0;
+    virtual stat_type aggregateStatistic(StatisticKind kind) const = 0;
+    virtual void recordStats(const StatisticsMapping & mapping, IStatisticCollection * statsCollection, std::initializer_list<const StatsScopeId> path) = 0;
 };
 
 interface IStatisticCollectionIterator : public IIteratorOf<IStatisticCollection>
@@ -456,6 +463,10 @@ public:
         dbgassertex(kind >= StKindNone && kind < StMax);
         return kindToIndex.item(kind);
     }
+    inline bool hasKind(StatisticKind kind) const
+    {
+        return kindToIndex.item(kind) != numStatistics();
+    }
     inline StatisticKind getKind(unsigned index) const { return (StatisticKind)indexToKind.item(index); }
     inline unsigned numStatistics() const { return indexToKind.ordinality(); }
     inline unsigned getUniqueHash() const { return hashcode; }
@@ -493,6 +504,7 @@ extern const jlib_decl StatisticsMapping diskRemoteStatistics;
 extern const jlib_decl StatisticsMapping diskReadRemoteStatistics;
 extern const jlib_decl StatisticsMapping diskWriteRemoteStatistics;
 extern const jlib_decl StatisticsMapping jhtreeCacheStatistics;
+extern const jlib_decl StatisticsMapping stdAggregateKindStatistics;
 
 //---------------------------------------------------------------------------------------------------------------------
 
@@ -886,6 +898,7 @@ extern jlib_decl IStatisticGatherer * createStatisticsGatherer(StatisticCreatorT
 extern jlib_decl void serializeStatisticCollection(MemoryBuffer & out, IStatisticCollection * collection);
 extern jlib_decl IStatisticCollection * createStatisticCollection(MemoryBuffer & in);
 
+extern jlib_decl IStatisticCollection * createStatisticCollection(const StatsScopeId & scopeId);
 inline unsigned __int64 milliToNano(unsigned __int64 value) { return value * 1000000; } // call avoids need to upcast values
 inline unsigned __int64 nanoToMilli(unsigned __int64 value) { return value / 1000000; }
 
@@ -942,6 +955,5 @@ protected:
 };
 
 extern jlib_decl StringBuffer & formatMoney(StringBuffer &out, unsigned __int64 value);
-extern jlib_decl stat_type aggregateStatistic(StatisticKind kind, IStatisticCollection * statsCollection);
 
 #endif
