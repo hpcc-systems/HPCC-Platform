@@ -43,16 +43,16 @@ interface IColumn extends _IColumn {
 
 function tooltipItemRenderer(item: any, index: number, column: IColumn) {
     const id = `${column.key}-${index}`;
-    const value = item[column.fieldName || column.key] ?? "";
+    const value = item[column.fieldName || column.key];
     const className = column.data.className ? column.data.className(value, item) : "";
     const style: React.CSSProperties = {
         display: "flex",
         justifyContent: column.data.justify === "right" ? "flex-end" : "flex-start"
     };
-    return <TooltipHost id={id} content={value} overflowMode={TooltipOverflowMode.Parent}>
+    return <TooltipHost id={id} content={value ?? ""} overflowMode={TooltipOverflowMode.Parent}>
         {column.data.formatter ?
-            <span style={style} className={className} aria-describedby={id}>{column.data.formatter(value, item)}</span> :
-            <span style={style} className={className} aria-describedby={id}>{value}</span>
+            <span style={style} className={className} aria-describedby={id}>{column.data.formatter(value, item) ?? ""}</span> :
+            <span style={style} className={className} aria-describedby={id}>{value ?? ""}</span>
         }
     </TooltipHost>;
 }
