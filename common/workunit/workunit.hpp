@@ -1174,7 +1174,6 @@ interface IConstWUScopeIterator : extends IScmIterator
 };
 
 //---------------------------------------------------------------------------------------------------------------------
-
 //! IWorkUnit
 //! Provides high level access to WorkUnit "header" data.
 interface IWorkUnit;
@@ -1302,7 +1301,7 @@ interface IConstWorkUnit : extends IConstWorkUnitInfo
     virtual WUGraphState queryNodeState(const char *graphName, WUGraphIDType nodeId) const = 0;
     virtual void setGraphState(const char *graphName, unsigned wfid, WUGraphState state) const = 0;
     virtual void setNodeState(const char *graphName, WUGraphIDType nodeId, WUGraphState state) const = 0;
-    virtual IWUGraphStats *updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned _wfid, unsigned subgraph, bool merge) const = 0;
+    virtual IWUGraphStats *updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned _wfid, unsigned subgraph, bool merge, IStatisticCollection * stats=nullptr) const = 0;
     virtual void clearGraphProgress() const = 0;
     virtual IStringVal & getAbortBy(IStringVal & str) const = 0;
     virtual unsigned __int64 getAbortTimeStamp() const = 0;
@@ -1725,8 +1724,6 @@ extern WORKUNIT_API void updateWorkunitTimings(IWorkUnit * wu, ITimeReporter *ti
 extern WORKUNIT_API void updateWorkunitTimings(IWorkUnit * wu, StatisticScopeType scopeType, StatisticKind kind, ITimeReporter *timer);
 extern WORKUNIT_API void aggregateStatistic(StatsAggregation & result, IConstWorkUnit * wu, const WuScopeFilter & filter, StatisticKind search);
 extern WORKUNIT_API cost_type aggregateCost(const IConstWorkUnit * wu, const char *scope=nullptr, bool excludehThor=false);
-extern WORKUNIT_API cost_type aggregateDiskAccessCost(const IConstWorkUnit * wu, const char *scope);
-extern WORKUNIT_API void updateSpillSize(IWorkUnit * wu, const char * scope, StatisticScopeType scopeType);
 extern WORKUNIT_API const char *getTargetClusterComponentName(const char *clustname, const char *processType, StringBuffer &name);
 extern WORKUNIT_API void descheduleWorkunit(char const * wuid);
 #if 0
@@ -1784,5 +1781,24 @@ extern WORKUNIT_API void executeThorGraph(const char * graphName, IConstWorkUnit
 extern WORKUNIT_API TraceFlags loadTraceFlags(IConstWorkUnit * wu, const std::initializer_list<TraceOption> & y, TraceFlags dft);
 
 extern WORKUNIT_API bool executeGraphOnLingeringThor(IConstWorkUnit &workunit, unsigned wfid, const char *graphName);
+
+
+class WORKUNIT_API GlobalStatisticCollection : public CInterface
+{
+public:
+    GlobalStatisticCollection();
+
+    void load(IConstWorkUnit &workunit, const char * graphName, bool aggregatesOnly);
+    void loadGlobalAggregates(IConstWorkUnit &workunit);
+    IStatisticCollection * getCollectionForUpdate(StatisticCreatorType creatorType, const char * creator, unsigned wfid, const char *graphName, unsigned sgId, bool clearStats);
+    bool refreshAggregates();
+    IStatisticCollection * queryCollection() { return statsCollection; }
+    void updateAggregates(IWorkUnit *wu);
+    void pruneSubGraphDescendants(unsigned wfid, const char *graphName, unsigned sgId);
+private:
+    Owned<IStatisticCollection> statsCollection;
+    const StatisticsMapping & aggregateKindsMapping;
+    StringBuffer wuid;
+};
 
 #endif

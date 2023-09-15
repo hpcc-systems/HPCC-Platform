@@ -879,10 +879,10 @@ void EclSubGraph::updateProgress()
         Owned<IWUGraphStats> progress = parent.updateStats(queryStatisticsComponentType(), queryStatisticsComponentName(), parent.queryWfid(), id);
         IStatisticGatherer & stats = progress->queryStatsBuilder();
         updateProgress(stats);
-
         if (startGraphTime || elapsedGraphCycles)
         {
             WorkunitUpdate lockedwu(agent->updateWorkUnit());
+            parent.updateAggregates(lockedwu);
             StringBuffer subgraphid;
             subgraphid.append(parent.queryGraphName()).append(":").append(SubGraphScopePrefix).append(id);
             if (startGraphTime)
@@ -897,10 +897,6 @@ void EclSubGraph::updateProgress()
                 if (cost)
                     lockedwu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTsubgraph, scope, StCostExecute, NULL, cost, 1, 0, StatsMergeReplace);
             }
-            Owned<IStatisticCollection> statsCollection = stats.getResult();
-            const cost_type costDiskAccess = aggregateStatistic(StCostFileAccess, statsCollection) ;
-            if (costDiskAccess)
-                lockedwu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTsubgraph, scope, StCostFileAccess, NULL, costDiskAccess, 1, 0, StatsMergeReplace);
         }
     }
 }
@@ -927,6 +923,11 @@ void EclSubGraph::updateProgress(IStatisticGatherer &progress)
     }
     ForEachItemIn(i2, subgraphs)
         subgraphs.item(i2).updateProgress(progress);
+
+    Owned<IStatisticCollection> statsCollection = progress.getResult();
+    const cost_type costDiskAccess = aggregateStatistic(StCostFileAccess, statsCollection);
+    if (costDiskAccess)
+        progress.addStatistic(StCostFileAccess, costDiskAccess);
 }
 
 bool EclSubGraph::prepare(const byte * parentExtract, bool checkDependencies)
@@ -1277,10 +1278,6 @@ void EclGraph::execute(const byte * parentExtract)
             const cost_type cost = money2cost_type(calcCost(agent->queryAgentMachineCost(), elapsed));
             if (cost)
                 wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTgraph, scope, StCostExecute, NULL, cost, 1, 0, StatsMergeReplace);
-
-            const cost_type costDiskAccess = aggregateDiskAccessCost(wu, scope);
-            if (costDiskAccess)
-                wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTgraph, scope, StCostFileAccess, NULL, costDiskAccess, 1, 0, StatsMergeReplace);
         }
 
         if (agent->queryRemoteWorkunit())
@@ -1349,7 +1346,8 @@ void EclGraph::updateLibraryProgress()
     {
         EclSubGraph & cur = graphs.item(idx);
         unsigned wfid = cur.parent.queryWfid();
-        Owned<IWUGraphStats> progress = wu->updateStats(queryGraphName(), queryStatisticsComponentType(), queryStatisticsComponentName(), wfid, cur.id, false);
+
+        Owned<IWUGraphStats> progress = agent->updateStats(queryStatisticsComponentType(), queryStatisticsComponentName(), wfid, queryGraphName(), cur.id);
         cur.updateProgress(progress->queryStatsBuilder());
     }
 }
@@ -1492,7 +1490,12 @@ void GraphResults::setResult(unsigned id, IHThorGraphResult * result)
 
 IWUGraphStats *EclGraph::updateStats(StatisticCreatorType creatorType, const char * creator, unsigned activeWfid, unsigned subgraph)
 {
-    return wu->updateStats (queryGraphName(), creatorType, creator, activeWfid, subgraph, false);
+    return agent->updateStats(creatorType, creator, activeWfid, queryGraphName(), subgraph);
+}
+
+void EclGraph::updateAggregates(IWorkUnit* lockedwu)
+{
+    agent->updateAggregates(lockedwu);
 }
 
 void EclGraph::updateWUStatistic(IWorkUnit *lockedwu, StatisticScopeType scopeType, const char * scope, StatisticKind kind, const char * descr, unsigned __int64 value)
@@ -1544,6 +1547,7 @@ EclGraph * EclAgent::loadGraph(const char * graphName, IConstWorkUnit * wu, ILoa
 
     Owned<EclGraph> eclGraph = new EclGraph(*this, graphName, wu, isLibrary, debugContext, probeManager, wuGraph->getWfid());
     eclGraph->createFromXGMML(dll, xgmml);
+    globalStats.load(*wu, nullptr, true);
     return eclGraph.getClear();
 }
 

@@ -43,6 +43,7 @@ private:
     unsigned numberOfMachines = 0;
     cost_type costLimit = 0;
     cost_type workunitCost = 0;
+    GlobalStatisticCollection globalStatsCollection;
 
     void doReportGraph(IStatisticGatherer & stats, CGraphBase *graph)
     {
@@ -91,16 +92,13 @@ private:
         if (costLimit || finished)
         {
             const cost_type sgCost = money2cost_type(calcCost(thorManagerRate, duration) + calcCost(thorWorkerRate, duration) * numberOfMachines);
-            cost_type costDiskAccess = graph.getDiskAccessCost();
             if (finished)
             {
                 if (sgCost)
                     wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTsubgraph, graphScope, StCostExecute, NULL, sgCost, 1, 0, StatsMergeReplace);
-                if (costDiskAccess)
-                    wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTsubgraph, graphScope, StCostFileAccess, NULL, costDiskAccess, 1, 0, StatsMergeReplace);
             }
 
-            const cost_type totalCost = workunitCost + sgCost + costDiskAccess;
+            const cost_type totalCost = workunitCost + sgCost + graph.getDiskAccessCost();
             if (costLimit>0 && totalCost > costLimit)
             {
                 LOG(MCwarning, thorJob, "ABORT job cost exceeds limit");
@@ -145,7 +143,8 @@ private:
                 ForEachItemIn (g, activeGraphs)
                 {
                     CGraphBase &graph = activeGraphs.item(g);
-                    Owned<IWUGraphStats> stats = currentWU.updateStats(graphName, SCTthor, queryStatisticsComponentName(), wfid, graph.queryGraphId(), false);
+                    Owned<IStatisticCollection> sgCollection = globalStatsCollection.getCollectionForUpdate(SCTthor, queryStatisticsComponentName(), wfid, graphName, graph.queryGraphId(), true); // true=>clear existing stats
+                    Owned<IWUGraphStats> stats = currentWU.updateStats(graphName, SCTthor, queryStatisticsComponentName(), wfid, graph.queryGraphId(), false, sgCollection);
                     reportGraph(stats->queryStatsBuilder(), &graph);
                 }
                 Owned<IWorkUnit> wu = &currentWU.lock();
@@ -155,6 +154,7 @@ private:
                     unsigned startTime = graphStarts.item(g2);
                     reportStatus(wu, graph, startTime, finished, success);
                 }
+                updateAggregates(wu);
                 queryServerStatus().commitProperties();
             }
             catch (IException *E)
@@ -173,10 +173,10 @@ private:
             const char *graphName = ((CJobMaster &)activeGraphs.item(0).queryJob()).queryGraphName();
             unsigned wfid = graph->queryJob().getWfid();
             {
-                Owned<IWUGraphStats> stats = currentWU.updateStats(graphName, SCTthor, queryStatisticsComponentName(), wfid, graph->queryGraphId(), false);
+                Owned<IStatisticCollection> sgCollection = globalStatsCollection.getCollectionForUpdate(SCTthor, queryStatisticsComponentName(), wfid, graphName, graph->queryGraphId(), true); // true=>clear existing stats
+                Owned<IWUGraphStats> stats = currentWU.updateStats(graphName, SCTthor, queryStatisticsComponentName(), wfid, graph->queryGraphId(), false, sgCollection);
                 reportGraph(stats->queryStatsBuilder(), graph);
             }
-
             Owned<IWorkUnit> wu = &currentWU.lock();
             if (startTimeStamp)
             {
@@ -186,7 +186,6 @@ private:
                 wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTsubgraph, graphScope, StWhenStarted, NULL, getTimeStampNowValue(), 1, 0, StatsMergeAppend);
             }
             reportStatus(wu, *graph, startTime, finished, success);
-
             queryServerStatus().commitProperties();
         }
         catch (IException *e)
@@ -290,6 +289,10 @@ public:
         {
             unsigned startTime = graphStarts.item(g);
             reportGraph(graph, true, success, startTime, 0);
+            // Prune subgraph descendant stats as they have been serialized and no longer needed.
+            const char *graphName = ((CJobMaster &)graph->queryJob()).queryGraphName();
+            unsigned wfid = graph->queryJob().getWfid();
+            globalStatsCollection.pruneSubGraphDescendants(wfid, graphName, graph->queryGraphId());
             activeGraphs.remove(g);
             graphStarts.remove(g);
         }
@@ -298,7 +301,26 @@ public:
     {
         synchronized block(mutex);
         reportActiveGraphs(true, false);
+        if (activeGraphs.ordinality())
+        {
+            CJobBase & activeJob = activeGraphs.item(0).queryJob();
+            const char *graphName = ((CJobMaster &)activeJob).queryGraphName();
+            unsigned wfid = activeJob.getWfid();
+            ForEachItemIn (g, activeGraphs)
+            {
+                CGraphBase &graph = activeGraphs.item(g);
+                globalStatsCollection.pruneSubGraphDescendants(wfid, graphName, graph.queryGraphId());
+            }
+        }
         activeGraphs.kill();
+    }
+    virtual void updateAggregates(IWorkUnit * lockedWu) override
+    {
+        globalStatsCollection.updateAggregates(lockedWu);
+    }
+    virtual void loadStats(IConstWorkUnit &workunit, const char * graphName, bool aggregatesOnly) override
+    {
+        globalStatsCollection.load(workunit, graphName, aggregatesOnly);
     }
 };
 

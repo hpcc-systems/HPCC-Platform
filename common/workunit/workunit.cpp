@@ -183,14 +183,17 @@ void doDescheduleWorkkunit(char const * wuid)
  * Graph progress support
  */
 
-CWuGraphStats::CWuGraphStats(StatisticCreatorType _creatorType, const char * _creator, unsigned wfid, const char * _rootScope, unsigned _id, bool _merge)
+CWuGraphStats::CWuGraphStats(StatisticCreatorType _creatorType, const char * _creator, unsigned wfid, const char * _rootScope, unsigned _id, bool _merge, IStatisticCollection * statsCollection)
     : creatorType(_creatorType), creator(_creator), id(_id), merge(_merge)
 {
     StatsScopeId graphScopeId;
     verifyex(graphScopeId.setScopeText(_rootScope));
+    StatsScopeId wfScopeId(SSTworkflow,wfid);
 
-    StatsScopeId rootScopeId(SSTworkflow,wfid);
-    collector.setown(createStatisticsGatherer(_creatorType, _creator, rootScopeId));
+    if (statsCollection)
+        collector.setown(createStatisticsGatherer(statsCollection));
+    else
+        collector.setown(createStatisticsGatherer(_creatorType, _creator, wfScopeId));
     collector->beginScope(graphScopeId);
 }
 
@@ -2657,85 +2660,192 @@ cost_type aggregateCost(const IConstWorkUnit * wu, const char *scope, bool exclu
         }
         return totalCost;
     }
+};
+
+GlobalStatisticCollection::GlobalStatisticCollection() : aggregateKindsMapping(aggregateKindStatistics)
+{
+    // Construct statsCollection here as GlobalStatisticCollection::load() is optional
+    StatsScopeId globalScopeId(SSTglobal, (unsigned)0);
+    statsCollection.setown(createStatisticCollection(nullptr, globalScopeId));
 }
 
-//aggregate disk costs from top-level subgraphs (when scope specified) or workflows (scope not specified)
-cost_type aggregateDiskAccessCost(const IConstWorkUnit * wu, const char *scope)
+void GlobalStatisticCollection::load(IConstWorkUnit &workunit, const char * graphName, bool aggregatesOnly)
 {
+    const char * _wuid = workunit.queryWuid();
+    if (!streq(_wuid, wuid.str())) // New statsCollection if collection for different workunit
+    {
+        StatsScopeId globalScopeId(SSTglobal, (unsigned)0);
+        statsCollection.setown(createStatisticCollection(nullptr, globalScopeId));
+        wuid.set(_wuid);
+    }
+
+    loadGlobalAggregates(workunit);
+    if (isEmptyString(graphName))
+    {
+        Owned<IPropertyTree> root = getWUGraphProgress(wuid, true);
+        if (root)
+        {
+            Owned<IPropertyTree> graphPT = root->getPropTree(graphName);
+            if (!graphPT)
+                return;
+
+            StatsScopeId wfScopeId(SSTworkflow, graphPT->getPropInt("@wfid", 0));
+            StatsScopeId graphScopeId(SSTgraph, graphName);
+
+            Owned<IPropertyTreeIterator> iter = graphPT->getElements("*");
+            ForEach(*iter)
+            {
+                StatsScopeId sgScopeId;
+                IPropertyTree * sgPT = & iter->query();
+                const char * sgName = sgPT->queryName();
+                if (strcmp(sgName, "node")==0)
+                    continue;
+                verifyex(sgScopeId.setScopeText(sgName));
+                MemoryBuffer compressed;
+                sgPT->getPropBin("Stats", compressed);
+                if (!compressed.length())
+                    break;
+                MemoryBuffer serialized;
+                decompressToBuffer(serialized, compressed);
+
+                unsigned version;
+                serialized.read(version);
+                byte kind;
+                serialized.read(kind);
+
+                StatsScopeId childId;
+                childId.deserialize(serialized, version);
+                int statsMinDepth = 0, statsMaxDepth = INT_MAX;
+                if (aggregatesOnly)
+                {
+                    // Only store stats for subgraph level
+                    statsMinDepth = 3;  // this is subgraph level
+                    statsMaxDepth = 3;
+                }
+                statsCollection->deserializeChild(childId, serialized, version, statsMinDepth, statsMaxDepth);
+            }
+        }
+    }
+}
+
+void GlobalStatisticCollection::loadGlobalAggregates(IConstWorkUnit &workunit)
+{
+    class StatsCollectionAggregatesLoader : public IWuScopeVisitor
+    {
+    public:
+        StatsCollectionAggregatesLoader(IStatisticCollection * _statsCollection) : statsCollection(_statsCollection) {}
+
+        virtual void noteStatistic(StatisticKind kind, unsigned __int64 value, IConstWUStatistic & extra) override
+        {
+            statsCollection->setStatistic(extra.queryScope(), kind, value);
+        }
+        virtual void noteAttribute(WuAttr attr, const char * value) override { throwUnexpected(); }
+        virtual void noteHint(const char * kind, const char * value) override { throwUnexpected(); }
+        virtual void noteException(IConstWUException & exception) override { throwUnexpected(); }
+    private:
+        Linked<IStatisticCollection> statsCollection;
+    };
+
     WuScopeFilter filter;
-    if (!isEmptyString(scope))
-        filter.addScope(scope);
-    else
-        filter.addScope("");      // Needed to match scope
-    // when scope is a workflow, sum graph costs (or subgraph cost when no graph cost) to get workflow cost
-    // (Costs from child graphs and activities should have been summed up to graph/subgraph level already)
-    // when isEmptyString(scope), sum workflow costs (or graph cost when no workflow cost) to get global cost
-    // (Costs from all levels below graph should be summed upto at least graph level already)
-    // i.e. need 2 levels of nesting
-    filter.setIncludeNesting(2);
-    // includeNesting(2) needs just source "global". However, WuScopeFilter is incorrectly inferring the source as "global,stats",
-    // causing too many of the stats to be pulled in and inefficiency.  Here, explicitly set source to "global"
-    filter.addSource("global");
-    filter.addOutputStatistic(StCostFileAccess);
-    filter.addRequiredStat(StCostFileAccess);
+    filter.addScopeType(SSTglobal).addScopeType(SSTworkflow).addScopeType(SSTgraph);
+    const unsigned numStats = aggregateKindsMapping.numStatistics();
+    for (unsigned i=0; i<numStats; ++i)
+        filter.addOutputStatistic(aggregateKindsMapping.getKind(i));
+    filter.setDepth(1,3); // 1=global, 2=workflow, 3=graph
+    filter.setSources(SSFsearchGlobalStats);
+    filter.setIncludeNesting(0);
     filter.finishedFilter();
-    Owned<IConstWUScopeIterator> it = &wu->getScopeIterator(filter);
-    cost_type totalCost = 0;
-    for (it->first(); it->isValid(); )
-    {
-        cost_type value = 0;
-        if (it->getStat(StCostFileAccess, value))
-        {
-            totalCost += value;
-            it->nextSibling();
-        }
-        else
-        {
-            it->next();
-        }
-    }
-    return totalCost;
+
+    StatsCollectionAggregatesLoader aggregatesLoader(statsCollection);
+    Owned<IConstWUScopeIterator> iter = &workunit.getScopeIterator(filter);
+    ForEach(*iter)
+        iter->playProperties(aggregatesLoader);
 }
 
-void gatherSpillSize(const IConstWorkUnit * wu, const char *scope, stat_type & peakSizeSpill)
+// getCollectionForUpdate() returns IStatisticCollection for the given subgraph
+// if clearStats==true then the existing stats are cleared for the given scope and descendants
+IStatisticCollection * GlobalStatisticCollection::getCollectionForUpdate(StatisticCreatorType creatorType, const char * creator, unsigned wfid, const char *graphName, unsigned sgId, bool clearStats)
 {
-    WuScopeFilter filter;
-    if (!isEmptyString(scope))
-        filter.addScope(scope);
-    else
+    StatsScopeId graphScopeId;
+    verifyex(graphScopeId.setScopeText(graphName));
+    StatsScopeId wfScopeId(SSTworkflow, wfid);
+    StatsScopeId sgScopeId(SSTsubgraph, sgId);
+
+    bool wasCreated;
+    IStatisticCollection * sgScopeCollection = statsCollection->ensureSubScopePath({wfScopeId,graphScopeId, sgScopeId}, wasCreated);
+    if (clearStats && !wasCreated)
+        sgScopeCollection->clearStats();
+    // Marking the collection dirty here is not ideal.  It would be better to have a call to IStatisticCollection::setStatistic mark the scope as dirty.
+    // However, this would be inefficient as each call to IStatisticCollection::setStatistic would require the dirty flag to be set for all parent scopes.
+    sgScopeCollection->markDirty();
+    return createRootStatisticCollection(creatorType, creator, wfScopeId, graphScopeId, sgScopeCollection);
+}
+
+// Recalculate aggregates for global, workflow and graph scopes
+bool GlobalStatisticCollection::refreshAggregates()
+{
+    return statsCollection->refreshAggregates(aggregateKindsMapping);
+}
+
+// Recalculate aggregates and then write the aggregates to global stats (dali)
+void GlobalStatisticCollection::updateAggregates(IWorkUnit *wu)
+{
+    class StatisticsAggregatesWriter : implements IStatisticVisitor
     {
-        filter.addScope("");
-        filter.addSource("global");
-    }
-    filter.setIncludeNesting(1);
-    filter.addOutputStatistic(StSizeGraphSpill);
-    filter.addRequiredStat(StSizeGraphSpill);
-    filter.finishedFilter();
-    Owned<IConstWUScopeIterator> it = &wu->getScopeIterator(filter);
-    peakSizeSpill = 0;
-    for (it->first(); it->isValid(); )
+        const StatisticsMapping & aggregateKindsMapping;
+        const unsigned numStats;
+        Linked<IWorkUnit> wu;
+    public:
+        StatisticsAggregatesWriter(IWorkUnit * _wu, const StatisticsMapping & _aggregateKindsMapping): wu(_wu), aggregateKindsMapping(_aggregateKindsMapping), numStats(aggregateKindsMapping.numStatistics()) {}
+
+        virtual bool visitScope(const IStatisticCollection & cur)
+        {
+            switch (cur.queryScopeType())
+            {
+            case SSTglobal:
+            case SSTworkflow:
+            case SSTgraph:
+                for (unsigned i=0; i<numStats; ++i)
+                {
+                    StatisticKind kind = aggregateKindsMapping.getKind(i);
+                    stat_type value;
+                    if (cur.getStatistic(kind, value))
+                    {
+                        if (value || includeStatisticIfZero(kind))
+                        {
+                            StringBuffer s;
+                            wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), cur.queryScopeType(), cur.getFullScope(s).str(), kind, nullptr, value, 1, 0, StatsMergeReplace);
+                        }
+                    }
+                }
+                if (cur.queryScopeType()==SSTgraph)
+                    return false;
+                else
+                    return true;
+            default:
+                return false;
+            }
+        }
+    };
+    if (refreshAggregates()) // Only serialize if the aggregates have changed
     {
-        stat_type value = 0;
-        if (it->getStat(StSizeGraphSpill, value))
-        {
-            if (value>peakSizeSpill)
-                peakSizeSpill = value;
-            it->nextSibling();
-        }
-        else
-        {
-            it->next();
-        }
+        StatisticsAggregatesWriter statsAggregatorWriter(wu, aggregateKindsMapping);
+        statsCollection->visit(statsAggregatorWriter);
     }
 }
 
-void updateSpillSize(IWorkUnit * wu, const char * scope, StatisticScopeType scopeType)
+// Prune all subgraph descendent stats (leaving subgraph stats for future aggregation)
+void GlobalStatisticCollection::pruneSubGraphDescendants(unsigned wfid, const char *graphName, unsigned sgId)
 {
-    stat_type peakSizeSpill = 0;
-    gatherSpillSize(wu, scope, peakSizeSpill);
-    if (peakSizeSpill)
-        wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), scopeType, scope, StSizeGraphSpill, nullptr, peakSizeSpill, 1, 0, StatsMergeMax);
+    StatsScopeId graphScopeId;
+    verifyex(graphScopeId.setScopeText(graphName));
+    StatsScopeId wfScopeId(SSTworkflow, wfid);
+    StatsScopeId sgScopeId(SSTsubgraph, sgId);
+    IStatisticCollection * sgScopeCollection = statsCollection->querySubScopePath({wfScopeId,graphScopeId, sgScopeId});
+    if (sgScopeCollection)
+        sgScopeCollection->pruneChildStats();
 }
+
 //---------------------------------------------------------------------------------------------------------------------
 
 
@@ -3805,8 +3915,8 @@ class CDaliWorkUnit;
 class CDaliWuGraphStats : public CWuGraphStats
 {
 public:
-    CDaliWuGraphStats(const CDaliWorkUnit* _owner, StatisticCreatorType _creatorType, const char * _creator, unsigned _wfid, const char * _rootScope, unsigned _id, bool _merge)
-        : CWuGraphStats(_creatorType, _creator, _wfid, _rootScope, _id, _merge), owner(_owner), graphName(_rootScope), wfid(_wfid)
+    CDaliWuGraphStats(const CDaliWorkUnit* _owner, StatisticCreatorType _creatorType, const char * _creator, unsigned _wfid, const char * _rootScope, unsigned _id, bool _merge, IStatisticCollection * stats)
+        : CWuGraphStats(_creatorType, _creator, _wfid, _rootScope, _id, _merge, stats), owner(_owner), graphName(_rootScope), wfid(_wfid)
     {
     }
 protected:
@@ -3820,8 +3930,8 @@ protected:
 class CLocalWuGraphStats : public CWuGraphStats
 {
 public:
-    CLocalWuGraphStats(IPropertyTree *_p, StatisticCreatorType _creatorType, const char * _creator, unsigned _wfid, const char * _rootScope, unsigned _id, bool _merge)
-        : CWuGraphStats(_creatorType, _creator, _wfid, _rootScope, _id, _merge), graphName(_rootScope), p(_p)
+    CLocalWuGraphStats(IPropertyTree *_p, StatisticCreatorType _creatorType, const char * _creator, unsigned _wfid, const char * _rootScope, unsigned _id, bool _merge, IStatisticCollection * stats)
+        : CWuGraphStats(_creatorType, _creator, _wfid, _rootScope, _id, _merge, stats), graphName(_rootScope), p(_p)
     {
     }
 protected:
@@ -4125,9 +4235,9 @@ public:
             }
         }
     }
-    virtual IWUGraphStats *updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned _wfid, unsigned subgraph, bool merge) const override
+    virtual IWUGraphStats *updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned _wfid, unsigned subgraph, bool merge, IStatisticCollection * stats) const override
     {
-        return new CDaliWuGraphStats(this, creatorType, creator, _wfid, graphName, subgraph, merge);
+        return new CDaliWuGraphStats(this, creatorType, creator, _wfid, graphName, subgraph, merge, stats);
     }
     virtual void import(IPropertyTree *wuTree, IPropertyTree *graphProgressTree)
     {
@@ -4437,8 +4547,8 @@ public:
             { c->setGraphState(graphName, wfid, state); }
     virtual void setNodeState(const char *graphName, WUGraphIDType nodeId, WUGraphState state) const
             { c->setNodeState(graphName, nodeId, state); }
-    virtual IWUGraphStats *updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned _wfid, unsigned subgraph, bool merge) const override
-            { return c->updateStats(graphName, creatorType, creator, _wfid, subgraph, merge); }
+    virtual IWUGraphStats *updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned _wfid, unsigned subgraph, bool merge, IStatisticCollection * stats=nullptr) const override
+            { return c->updateStats(graphName, creatorType, creator, _wfid, subgraph, merge, stats); }
     virtual void clearGraphProgress() const
             { c->clearGraphProgress(); }
     virtual IStringVal & getAbortBy(IStringVal & str) const
@@ -10268,9 +10378,9 @@ void CLocalWorkUnit::setNodeState(const char *graphName, WUGraphIDType nodeId, W
 {
     throwUnexpected();   // Should only be used for persisted workunits
 }
-IWUGraphStats *CLocalWorkUnit::updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned _wfid, unsigned subgraph, bool merge) const
+IWUGraphStats *CLocalWorkUnit::updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned _wfid, unsigned subgraph, bool merge, IStatisticCollection * stats) const
 {
-    return new CLocalWuGraphStats(LINK(p), creatorType, creator, _wfid, graphName, subgraph, merge);
+    return new CLocalWuGraphStats(LINK(p), creatorType, creator, _wfid, graphName, subgraph, merge, stats);
 }
 
 void CLocalWUGraph::setName(const char *str)

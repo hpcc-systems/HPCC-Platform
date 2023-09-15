@@ -2743,8 +2743,8 @@ public:
     class CCassandraWuGraphStats : public CWuGraphStats
     {
     public:
-        CCassandraWuGraphStats(const CCassandraWorkUnit *_parent, StatisticCreatorType _creatorType, const char * _creator, unsigned _wfid, const char * _rootScope, unsigned _id, bool _merge)
-        : CWuGraphStats(_creatorType, _creator, _wfid, _rootScope, _id, _merge),
+        CCassandraWuGraphStats(const CCassandraWorkUnit *_parent, StatisticCreatorType _creatorType, const char * _creator, unsigned _wfid, const char * _rootScope, unsigned _id, bool _merge, IStatisticCollection * stats)
+        : CWuGraphStats(_creatorType, _creator, _wfid, _rootScope, _id, _merge, stats),
           progress(createPTree(_rootScope)), parent(_parent)
         {
         }
@@ -2764,9 +2764,9 @@ public:
         StringAttr wuid;
     };
 
-    IWUGraphStats *updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned wfid, unsigned subgraph, bool merge) const override
+    IWUGraphStats *updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned wfid, unsigned subgraph, bool merge, IStatisticCollection * stats) const override
     {
-        return new CCassandraWuGraphStats(this, creatorType, creator, wfid, graphName, subgraph, merge);
+        return new CCassandraWuGraphStats(this, creatorType, creator, wfid, graphName, subgraph, merge, stats);
     }
 
 

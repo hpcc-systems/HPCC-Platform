@@ -25,6 +25,7 @@
 #include <initializer_list>
 
 #include "jstatcodes.h"
+#include "jset.hpp"
 
 typedef unsigned __int64 stat_type;
 typedef unsigned __int64 cost_type; // Decimal currency amount multiplied by 10^6
@@ -104,36 +105,6 @@ interface IStatisticCollectionIterator;
 interface IStatisticGatherer;
 interface IStatisticVisitor;
 
-interface IStatisticCollection : public IInterface
-{
-public:
-    virtual StatisticScopeType queryScopeType() const = 0;
-    virtual StringBuffer & getFullScope(StringBuffer & str) const = 0;
-    virtual StringBuffer & getScope(StringBuffer & str) const = 0;
-    virtual unsigned __int64 queryStatistic(StatisticKind kind) const = 0;
-    virtual unsigned getNumStatistics() const = 0;
-    virtual bool getStatistic(StatisticKind kind, unsigned __int64 & value) const = 0;
-    virtual void getStatistic(StatisticKind & kind, unsigned __int64 & value, unsigned idx) const = 0;
-    virtual IStatisticCollectionIterator & getScopes(const char * filter, bool sorted) = 0;
-    virtual void getMinMaxScope(IStringVal & minValue, IStringVal & maxValue, StatisticScopeType searchScopeType) const = 0;
-    virtual void getMinMaxActivity(unsigned & minValue, unsigned & maxValue) const = 0;
-    virtual void serialize(MemoryBuffer & out) const = 0;
-    virtual unsigned __int64 queryWhenCreated() const = 0;
-    virtual void mergeInto(IStatisticGatherer & target) const = 0;
-    virtual StringBuffer &toXML(StringBuffer &out) const = 0;
-    virtual void visit(IStatisticVisitor & target) const = 0;
-    virtual void visitChildren(IStatisticVisitor & target) const = 0;
-};
-
-interface IStatisticCollectionIterator : public IIteratorOf<IStatisticCollection>
-{
-};
-
-interface IStatisticVisitor
-{
-    virtual bool visitScope(const IStatisticCollection & cur) = 0;        // return true to iterate through children
-};
-
 enum StatsMergeAction
 {
     StatsMergeKeepNonZero,
@@ -145,6 +116,55 @@ enum StatsMergeAction
     StatsMergeFirst,
     StatsMergeLast,
 };
+
+class StatisticsMapping;
+class CRuntimeStatisticCollection;
+interface IStatisticCollection : public IInterface
+{
+public:
+    virtual StatisticScopeType queryScopeType() const = 0;
+    virtual StringBuffer & getFullScope(StringBuffer & str) const = 0;
+    virtual StringBuffer & getScope(StringBuffer & str) const = 0;
+    virtual unsigned __int64 queryStatistic(StatisticKind kind) const = 0;
+    virtual unsigned getNumStatistics() const = 0;
+    virtual bool getStatistic(StatisticKind kind, unsigned __int64 & value) const = 0;
+    virtual void getStatistic(StatisticKind & kind, unsigned __int64 & value, unsigned idx) const = 0;
+    virtual bool setStatistic(const char *scope, StatisticKind kind, unsigned __int64 & value) = 0;
+    virtual IStatisticCollectionIterator & getScopes(const char * filter, bool sorted) = 0;
+    virtual void getMinMaxScope(IStringVal & minValue, IStringVal & maxValue, StatisticScopeType searchScopeType) const = 0;
+    virtual void getMinMaxActivity(unsigned & minValue, unsigned & maxValue) const = 0;
+    virtual void serialize(MemoryBuffer & out) const = 0;
+    virtual unsigned __int64 queryWhenCreated() const = 0;
+    virtual void mergeInto(IStatisticGatherer & target) const = 0;
+    virtual StringBuffer &toXML(StringBuffer &out) const = 0;
+    virtual void visit(IStatisticVisitor & target) const = 0;
+    virtual void visitChildren(IStatisticVisitor & target) const = 0;
+    virtual IStatisticCollection * ensureSubScope(const StatsScopeId & search, bool hasChildren) = 0;
+    virtual IStatisticCollection * ensureSubScope(const StatsScopeId & search, bool hasChildren, bool & wasCreated) = 0;
+    virtual IStatisticCollection * ensureSubScopePath(std::initializer_list<const StatsScopeId> path, bool & wasCreated) = 0;
+    virtual IStatisticCollection * querySubScope(const StatsScopeId & search) const = 0;
+    virtual IStatisticCollection * querySubScopePath(std::initializer_list<const StatsScopeId> path) = 0;
+    virtual void pruneChildStats() = 0;
+    virtual void addStatistic(StatisticKind kind, unsigned __int64 value) = 0;
+    virtual bool updateStatistic(StatisticKind kind, unsigned __int64 value, StatsMergeAction mergeAction) = 0;
+    virtual bool refreshAggregates(const StatisticsMapping & mapping) = 0;
+    virtual bool refreshAggregates(CRuntimeStatisticCollection & totals, IBitSet & isTotalUpdated) = 0;
+    virtual void deserialize(MemoryBuffer & in, unsigned version, int minDepth, int maxDepth) = 0;
+    virtual void deserializeChild(const StatsScopeId & scopeId, MemoryBuffer & in, unsigned version, int minDepth, int maxDepth) = 0;
+    virtual void clearStats() = 0;
+    virtual void addChild(IStatisticCollection *stats) = 0;
+    virtual void markDirty() = 0;
+};
+
+interface IStatisticCollectionIterator : public IIteratorOf<IStatisticCollection>
+{
+};
+
+interface IStatisticVisitor
+{
+    virtual bool visitScope(const IStatisticCollection & cur) = 0;        // return true to iterate through children
+};
+
 
 interface IStatisticGatherer : public IInterface
 {
@@ -493,6 +513,7 @@ extern const jlib_decl StatisticsMapping diskRemoteStatistics;
 extern const jlib_decl StatisticsMapping diskReadRemoteStatistics;
 extern const jlib_decl StatisticsMapping diskWriteRemoteStatistics;
 extern const jlib_decl StatisticsMapping jhtreeCacheStatistics;
+extern const jlib_decl StatisticsMapping aggregateKindStatistics;
 
 //---------------------------------------------------------------------------------------------------------------------
 
@@ -867,6 +888,7 @@ extern jlib_decl stat_type readStatisticValue(const char * cur, const char * * e
 
 extern jlib_decl unsigned __int64 mergeStatisticValue(unsigned __int64 prevValue, unsigned __int64 newValue, StatsMergeAction mergeAction);
 
+extern jlib_decl bool includeStatisticIfZero(StatisticKind kind);
 extern jlib_decl StatisticMeasure queryMeasure(StatisticKind kind);
 extern jlib_decl const char * queryStatisticName(StatisticKind kind);
 extern jlib_decl void queryLongStatisticName(StringBuffer & out, StatisticKind kind);
@@ -883,8 +905,11 @@ extern jlib_decl StatisticCreatorType queryCreatorType(const char * sct, Statist
 extern jlib_decl StatisticScopeType queryScopeType(const char * sst, StatisticScopeType dft);
 
 extern jlib_decl IStatisticGatherer * createStatisticsGatherer(StatisticCreatorType creatorType, const char * creator, const StatsScopeId & rootScope);
+extern jlib_decl IStatisticGatherer * createStatisticsGatherer(IStatisticCollection * stats);
+extern jlib_decl IStatisticCollection * createRootStatisticCollection(StatisticCreatorType creatorType, const char * creator, const StatsScopeId & rootScope, const StatsScopeId & graphScope, IStatisticCollection * sgCollection=nullptr);
 extern jlib_decl void serializeStatisticCollection(MemoryBuffer & out, IStatisticCollection * collection);
 extern jlib_decl IStatisticCollection * createStatisticCollection(MemoryBuffer & in);
+extern jlib_decl IStatisticCollection * createStatisticCollection(IStatisticCollection * parent, const StatsScopeId & scopeId);
 
 inline unsigned __int64 milliToNano(unsigned __int64 value) { return value * 1000000; } // call avoids need to upcast values
 inline unsigned __int64 nanoToMilli(unsigned __int64 value) { return value / 1000000; }
@@ -943,5 +968,5 @@ protected:
 
 extern jlib_decl StringBuffer & formatMoney(StringBuffer &out, unsigned __int64 value);
 extern jlib_decl stat_type aggregateStatistic(StatisticKind kind, IStatisticCollection * statsCollection);
-
+extern jlib_decl IStatisticCollection * createGlobalStatisticCollection(IPropertyTree * root);
 #endif

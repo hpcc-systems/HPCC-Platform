@@ -24,12 +24,15 @@
 
 interface IWUGraphProgress;
 class CGraphBase;
+interface IConstWorkUnit;
 interface IDeMonServer : extends IInterface
 {
     virtual void takeHeartBeat(MemoryBuffer &progressMbb) = 0;
     virtual void startGraph(CGraphBase *graph) = 0;
     virtual void endGraph(CGraphBase *graph, bool success) = 0;
     virtual void endGraphs() = 0;
+    virtual void updateAggregates(IWorkUnit * lockedWu) = 0;
+    virtual void loadStats(IConstWorkUnit &workunit, const char * graphName, bool aggregatesOnly) = 0;
 };
 
 

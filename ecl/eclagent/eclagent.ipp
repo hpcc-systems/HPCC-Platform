@@ -250,6 +250,14 @@ public:
     {
         return ctx->queryAgentMachineCost();
     };
+    virtual IWUGraphStats *updateStats(StatisticCreatorType creatorType, const char * creator, unsigned activeWfid, const char *graphName, unsigned subgraph) override
+    {
+        return ctx->updateStats(creatorType, creator, activeWfid, graphName, subgraph);
+    };
+    virtual void updateAggregates(IWorkUnit* lockedwu) override
+    {
+        ctx->updateAggregates(lockedwu);
+    }
 
 protected:
     IAgentContext * ctx;
@@ -392,6 +400,7 @@ private:
     Owned<IOrderedOutputSerializer> outputSerializer;
     int retcode;
     double agentMachineCost = 0;
+    GlobalStatisticCollection globalStats;
 
 private:
     void doSetResultString(type_t type, const char * stepname, unsigned sequence, int len, const char *val);
@@ -704,6 +713,15 @@ public:
     virtual double queryAgentMachineCost() const
     {
         return agentMachineCost;
+    }
+    virtual IWUGraphStats *updateStats(StatisticCreatorType creatorType, const char * creator, unsigned activeWfid, const char *graphName, unsigned subgraph) override
+    {
+        Owned<IStatisticCollection> sgCollection = globalStats.getCollectionForUpdate(creatorType, creator, activeWfid, graphName, subgraph, true); // true=>clear existing stats
+        return wuRead->updateStats(graphName, creatorType, creator, activeWfid, subgraph, false, sgCollection);
+    }
+    virtual void updateAggregates(IWorkUnit* lockedwu) override
+    {
+        globalStats.updateAggregates(lockedwu);
     }
 };
 
@@ -1055,7 +1073,7 @@ public:
     void executeLibrary(const byte * parentExtract, IHThorGraphResults * results);
     IWUGraphStats *updateStats(StatisticCreatorType creatorType, const char * creator, unsigned wfid, unsigned subgraph);
     void updateWUStatistic(IWorkUnit* lockedwu, StatisticScopeType scopeType, const char* scope, StatisticKind kind, const char* descr, long long unsigned int value);
-
+    void updateAggregates(IWorkUnit* lockedwu);
     EclSubGraph * idToGraph(unsigned id);
     EclGraphElement * idToActivity(unsigned id);
     const char *queryGraphName() { return graphName; }

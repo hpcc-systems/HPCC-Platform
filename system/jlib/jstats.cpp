@@ -1330,6 +1330,7 @@ const StatisticsMapping diskLocalStatistics({StCycleDiskReadIOCycles, StSizeDisk
 const StatisticsMapping diskRemoteStatistics({StTimeDiskReadIO, StSizeDiskRead, StNumDiskReads, StTimeDiskWriteIO, StSizeDiskWrite, StNumDiskWrites, StNumDiskRetries});
 const StatisticsMapping diskReadRemoteStatistics({StTimeDiskReadIO, StSizeDiskRead, StNumDiskReads, StNumDiskRetries, StCycleDiskReadIOCycles});
 const StatisticsMapping diskWriteRemoteStatistics({StTimeDiskWriteIO, StSizeDiskWrite, StNumDiskWrites, StNumDiskRetries, StCycleDiskWriteIOCycles});
+const StatisticsMapping aggregateKindStatistics({StCostExecute, StCostFileAccess, StSizeGraphSpill, StSizeSpillFile});
 
 const StatisticsMapping * queryStatsMapping(const StatsScopeId & scope, unsigned hashcode)
 {
@@ -1429,6 +1430,8 @@ StringBuffer & StatsScopeId::getScopeText(StringBuffer & out) const
         return out.append(ChannelScopePrefix).append(id);
     case SSTunknown:
         return out.append(name);
+    case SSTglobal:
+        return out;
     default:
 #ifdef _DEBUG
         throwUnexpected();
@@ -1747,11 +1750,11 @@ enum
 };
 
 class CStatisticCollection;
-static CStatisticCollection * deserializeCollection(CStatisticCollection * parent, MemoryBuffer & in, unsigned version);
+static IStatisticCollection * deserializeCollection(IStatisticCollection * parent, MemoryBuffer & in, unsigned version);
 
 //MORE: Create an implementation with no children
 typedef StructArrayOf<Statistic> StatsArray;
-class CollectionHashTable : public SuperHashTableOf<CStatisticCollection, StatsScopeId>
+class CollectionHashTable : public SuperHashTableOf<IStatisticCollection, StatsScopeId>
 {
 public:
     ~CollectionHashTable() { _releaseAll(); }
@@ -1782,32 +1785,34 @@ public:
 class CStatisticCollection : public CInterfaceOf<IStatisticCollection>
 {
     friend class CollectionHashTable;
+
+    // deserialize without storing the stats
+    void deserializeNoStats(MemoryBuffer & in, unsigned version)
+    {
+        unsigned numStats;
+        in.read(numStats);
+        while (numStats-- > 0)
+            Statistic next (in, version);
+        unsigned numChildren;
+        in.read(numChildren);
+        while (numChildren-- > 0)
+        {
+            byte kind;
+            in.read(kind);
+            StatsScopeId childId;
+            childId.deserialize(in, version);
+            deserializeNoStats(in, version);
+        }
+    }
 public:
-    CStatisticCollection(CStatisticCollection * _parent, const StatsScopeId & _id) : id(_id), parent(_parent)
+    CStatisticCollection(IStatisticCollection * _parent, const StatsScopeId & _id) : id(_id), parent(_parent)
     {
     }
 
-    CStatisticCollection(CStatisticCollection * _parent, MemoryBuffer & in, unsigned version) : parent(_parent)
+    CStatisticCollection(IStatisticCollection * _parent, MemoryBuffer & in, unsigned version) : parent(_parent)
     {
         id.deserialize(in, version);
-
-        unsigned numStats;
-        in.read(numStats);
-        stats.ensureCapacity(numStats);
-        while (numStats-- > 0)
-        {
-            Statistic next (in, version);
-            stats.append(next);
-        }
-
-        unsigned numChildren;
-        in.read(numChildren);
-        children.ensure(numChildren);
-        while (numChildren-- > 0)
-        {
-            CStatisticCollection * next = deserializeCollection(this, in, version);
-            children.add(*next);
-        }
+        deserialize(in, version, 0, INT_MAX);
     }
 
     virtual byte getCollectionType() const { return SCintermediate; }
@@ -1831,10 +1836,11 @@ public:
     }
     virtual StringBuffer & getFullScope(StringBuffer & str) const override
     {
-        if (parent)
+        if (parent && queryScopeType()!=SSTglobal)
         {
             parent->getFullScope(str);
-            str.append(':');
+            if (!str.isEmpty())
+                str.append(':');
         }
         id.getScopeText(str);
         return str;
@@ -1861,6 +1867,24 @@ public:
             }
         }
         return false;
+    }
+    virtual bool setStatistic(const char *scope, StatisticKind kind, unsigned __int64 & value) override
+    {
+        if (*scope=='\0')
+        {
+            return updateStatistic(kind, value, StatsMergeReplace);
+        }
+        else
+        {
+            StatsScopeId childScopeId;
+            if (!childScopeId.setScopeText(scope, &scope) || (*scope!=':' && *scope!='\0'))
+                throw makeStringExceptionV(JLIBERR_UnexpectedValue, "'%s' does not appear to be a valid scope id", scope);
+            IStatisticCollection * child = ensureSubScope(childScopeId, true);
+
+            if (*scope==':')
+                scope++;
+            return child->setStatistic(scope, kind, value);
+        }
     }
     virtual unsigned getNumStatistics() const override
     {
@@ -1916,13 +1940,13 @@ public:
     }
 
 //other public interface functions
-    void addStatistic(StatisticKind kind, unsigned __int64 value)
+    virtual void addStatistic(StatisticKind kind, unsigned __int64 value) override
     {
         Statistic s(kind, value);
         stats.append(s);
     }
 
-    void updateStatistic(StatisticKind kind, unsigned __int64 value, StatsMergeAction mergeAction)
+    virtual bool updateStatistic(StatisticKind kind, unsigned __int64 value, StatsMergeAction mergeAction) override
     {
         if (mergeAction != StatsMergeAppend)
         {
@@ -1931,28 +1955,71 @@ public:
                 Statistic & cur = stats.element(i);
                 if (cur.kind == kind)
                 {
+                    if (mergeAction==StatsMergeReplace)
+                    {
+                        if (cur.value==value)
+                            return false;
+                    }
                     cur.value = mergeStatisticValue(cur.value, value, mergeAction);
-                    return;
+                    return true;
                 }
             }
         }
         Statistic s(kind, value);
         stats.append(s);
+        return true;
     }
-
-    CStatisticCollection * ensureSubScope(const StatsScopeId & search, bool hasChildren)
+    virtual IStatisticCollection * ensureSubScope(const StatsScopeId & search, bool hasChildren) override
+    {
+        bool wasCreated;
+        return ensureSubScope(search, hasChildren, wasCreated);
+    }
+    virtual IStatisticCollection * ensureSubScope(const StatsScopeId & search, bool hasChildren, bool & wasCreated) override
     {
         //Once the CStatisticCollection is created it should not be replaced - so that returned pointers remain valid.
-        CStatisticCollection * match = children.find(&search);
+        wasCreated = false;
+        IStatisticCollection * match = children.find(&search);
         if (match)
             return match;
 
-        CStatisticCollection * ret = new CStatisticCollection(this, search);
+        IStatisticCollection * ret = new CStatisticCollection(this, search);
         children.add(*ret);
+        wasCreated = true;
         return ret;
     }
 
-    virtual void serialize(MemoryBuffer & out) const
+    virtual IStatisticCollection * querySubScope(const StatsScopeId & search) const override
+    {
+        return children.find(&search);
+    }
+
+    virtual IStatisticCollection * ensureSubScopePath(std::initializer_list<const StatsScopeId> path, bool & wasCreated) override
+    {
+        IStatisticCollection * curScope = this;
+        for (const auto & scopeItem: path)
+            curScope = curScope->ensureSubScope(scopeItem, true, wasCreated); // n.b. this will always return a valid pointer
+        return curScope;
+    }
+
+    virtual IStatisticCollection * querySubScopePath(std::initializer_list<const StatsScopeId> path) override
+    {
+        IStatisticCollection * curScope = this;
+        for (const auto & scopeItem: path)
+        {
+            curScope = curScope->querySubScope(scopeItem);
+            if (!curScope)
+                return nullptr;
+        }
+        return curScope;
+    }
+
+    // Note, once this is called child scope pointers will be invalid
+    virtual void pruneChildStats() override
+    {
+        children.kill();
+    }
+
+    virtual void serialize(MemoryBuffer & out) const override
     {
         out.append(getCollectionType());
         id.serialize(out);
@@ -1965,6 +2032,43 @@ public:
         SuperHashIteratorOf<CStatisticCollection> iter(children, false);
         for (iter.first(); iter.isValid(); iter.next())
             iter.query().serialize(out);
+    }
+
+    virtual void deserialize(MemoryBuffer & in, unsigned version, int minDepth, int maxDepth) override
+    {
+        unsigned numStats;
+        in.read(numStats);
+        stats.ensureCapacity(numStats);
+        while (numStats-- > 0)
+        {
+            Statistic next(in, version);
+            if (minDepth <= 0)
+                stats.append(next);
+        }
+        unsigned numChildren;
+        in.read(numChildren);
+        children.ensure(numChildren);
+        while (numChildren-- > 0)
+        {
+            byte kind;
+            in.read(kind);
+            StatsScopeId childId;
+            childId.deserialize(in, version);
+            deserializeChild(childId, in, version, minDepth, maxDepth);
+        }
+    }
+
+    virtual void deserializeChild(const StatsScopeId & childId, MemoryBuffer & in, unsigned version, int minDepth, int maxDepth) override
+    {
+        if (maxDepth > 0)
+        {
+            IStatisticCollection * childCollection = ensureSubScope(childId, true);
+            childCollection->deserialize(in, version, (minDepth-1), (maxDepth-1));
+        }
+        else
+        {
+            deserializeNoStats(in, version);
+        }
     }
 
     inline const StatsScopeId & queryScopeId() const { return id; }
@@ -1994,12 +2098,95 @@ public:
             cur.visit(visitor);
     }
 
+    virtual bool refreshAggregates(const StatisticsMapping & mapping) override
+    {
+        if (isDirty==false)
+            return false;
+        CRuntimeStatisticCollection totals(mapping);
+        Owned<IBitSet> totalUpdated = createBitSet(mapping.numStatistics());
+        return refreshAggregates(totals, *totalUpdated);
+    }
+
+    virtual bool refreshAggregates(CRuntimeStatisticCollection & totals, IBitSet & isTotalUpdated) override
+    {
+        const StatisticsMapping & mapping = totals.queryMapping();
+        bool updated = false;
+        // if this scope is not dirty, the aggregates are accurate at this level so return totals (no need to descend)
+        // Also if at sg scope, do not descend as aggregates does not need to be generated from below sg level
+        // (if aggregates should be calculated from descendants of sg scope, then remove the second test)
+        if (isDirty==false || id.queryScopeType()==SSTsubgraph)
+        {
+            // return the aggregates at this scope level
+            ForEachItemIn(i, stats)
+            {
+                Statistic & stat = stats.element(i);
+                StatisticKind kind = stat.queryKind();
+                if (kind != (StatisticKind)(kind & StKindMask))
+                    continue; // ignore variants->not supported by CRuntimeStatisticCollection
+                unsigned index = mapping.getIndex(kind);
+                if (index!=mapping.numStatistics())
+                {
+                    totals.mergeStatistic(kind, stat.queryValue());
+                    isTotalUpdated.set(index);
+                    updated = true;
+                }
+            }
+        }
+        else
+        {
+            // descend down to lower level to obtain totals required for aggregates and then aggregate
+            CRuntimeStatisticCollection childTotals(mapping);
+            Owned<IBitSet> childTotalUpdated = createBitSet(mapping.numStatistics());
+            for (auto & child : children)
+            {
+                if (child.refreshAggregates(childTotals, *childTotalUpdated))
+                    updated = true;
+            }
+            if (updated)
+            {
+                unsigned i = childTotalUpdated->scan(0, true);
+                while (NotFound != i)
+                {
+                    StatisticKind kind = childTotals.getKind(i);
+                    unsigned __int64 value = childTotals.queryStatisticByIndex(i).get();
+                    updateStatistic(kind, value, StatsMergeReplace);
+                    totals.mergeStatistic(kind, value);
+                    isTotalUpdated.set(i);
+                    i = childTotalUpdated->scan(i+1, true);
+                }
+            }
+        }
+        isDirty=false;
+        return updated;
+    }
+
+    virtual void clearStats() override
+    {
+        stats.clear(true);
+        // Note: Children should NOT be deleted as all pointers return by ensureSubScope must still be valid
+        SuperHashIteratorOf<CStatisticCollection> iter(children, false);
+        for (iter.first(); iter.isValid(); iter.next())
+            iter.query().clearStats();
+    }
+
+    virtual void addChild(IStatisticCollection *stats) override
+    {
+        children.add(*LINK(stats));
+    }
+
+    virtual void markDirty() override
+    {
+        isDirty=true;
+        if (parent) parent->markDirty();
+    }
+
 private:
     StatsScopeId id;
-    CStatisticCollection * parent;
+    IStatisticCollection * parent;
 protected:
     CollectionHashTable children;
     StatsArray stats;
+    bool isDirty = false; // used to track which scope has changed (used to workout what aggregates to recalculate)
 };
 
 StringBuffer &CStatisticCollection::toXML(StringBuffer &out) const
@@ -2017,7 +2204,8 @@ StringBuffer &CStatisticCollection::toXML(StringBuffer &out) const
     SuperHashIteratorOf<CStatisticCollection> iter(children, false);
     for (iter.first(); iter.isValid(); iter.next())
         iter.query().toXML(out);
-    out.append("</Scope>\n");
+    out.append("</Scope> // Scope id=\"");
+    id.getScopeText(out).append("\"\n");
     return out;
 }
 
@@ -2071,12 +2259,18 @@ bool CollectionHashTable::matchesElement(const void *et, const void *searchET) c
 class CRootStatisticCollection : public CStatisticCollection
 {
 public:
-    CRootStatisticCollection(StatisticCreatorType _creatorType, const char * _creator, const StatsScopeId & _id)
-        : CStatisticCollection(NULL, _id), creatorType(_creatorType), creator(_creator)
+    CRootStatisticCollection(StatisticCreatorType _creatorType, const char * _creator, const StatsScopeId & rootScopeId, const StatsScopeId & graphScopeId, IStatisticCollection * sgCollection)
+        : CStatisticCollection(nullptr, rootScopeId), creatorType(_creatorType), creator(_creator)
+    {
+        whenCreated = getTimeStampNowValue();
+        IStatisticCollection * child = ensureSubScope(graphScopeId, true);
+        child->addChild(sgCollection);
+    }
+    CRootStatisticCollection(StatisticCreatorType _creatorType, const char * _creator, const StatsScopeId & rootScopeId) : CStatisticCollection(nullptr, rootScopeId), creatorType(_creatorType), creator(_creator)
     {
         whenCreated = getTimeStampNowValue();
     }
-    CRootStatisticCollection(MemoryBuffer & in, unsigned version) : CStatisticCollection(NULL, in, version)
+    CRootStatisticCollection(MemoryBuffer & in, unsigned version) : CStatisticCollection(nullptr, in, version)
     {
         byte creatorTypeByte;
         in.read(creatorTypeByte);
@@ -2085,13 +2279,13 @@ public:
         in.read(whenCreated);
     }
 
-    virtual byte getCollectionType() const { return SCroot; }
+    virtual byte getCollectionType() const override { return SCroot; }
 
-    virtual unsigned __int64 queryWhenCreated() const
+    virtual unsigned __int64 queryWhenCreated() const override
     {
         return whenCreated;
     }
-    virtual void serialize(MemoryBuffer & out) const
+    virtual void serialize(MemoryBuffer & out) const override
     {
         CStatisticCollection::serialize(out);
         out.append((byte)creatorType);
@@ -2112,7 +2306,6 @@ public:
     StringAttr creator;
     unsigned __int64 whenCreated;
 };
-
 
 class StatAggregator : implements IStatisticVisitor
 {
@@ -2167,14 +2360,13 @@ void serializeStatisticCollection(MemoryBuffer & out, IStatisticCollection * col
     collection->serialize(out);
 }
 
-static CStatisticCollection * deserializeCollection(CStatisticCollection * parent, MemoryBuffer & in, unsigned version)
+static IStatisticCollection * deserializeCollection(IStatisticCollection * parent, MemoryBuffer & in, unsigned version)
 {
     byte kind;
     in.read(kind);
     switch (kind)
     {
     case SCroot:
-        assertex(!parent);
         return new CRootStatisticCollection(in, version);
     case SCintermediate:
         return new CStatisticCollection(parent, in, version);
@@ -2190,49 +2382,59 @@ IStatisticCollection * createStatisticCollection(MemoryBuffer & in)
     return deserializeCollection(NULL, in, version);
 }
 
+IStatisticCollection * createStatisticCollection(IStatisticCollection * parent, const StatsScopeId & scopeId)
+{
+    return new CStatisticCollection(parent, scopeId);
+}
+
+IStatisticCollection * createRootStatisticCollection(StatisticCreatorType creatorType, const char * creator, const StatsScopeId & rootScope, const StatsScopeId & graphScopeId, IStatisticCollection * sgCollection)
+{
+    //creator unused at the moment.
+    return new CRootStatisticCollection(creatorType, creator, rootScope, graphScopeId, sgCollection);
+}
 
 //--------------------------------------------------------------------------------------------------------------------
 
 class StatisticGatherer : implements CInterfaceOf<IStatisticGatherer>
 {
 public:
-    StatisticGatherer(CStatisticCollection * scope) : rootScope(scope)
+    StatisticGatherer(IStatisticCollection * scope) : rootScope(scope)
     {
         scopes.append(*scope);
     }
     virtual void beginScope(const StatsScopeId & id) override
     {
-        CStatisticCollection & tos = scopes.tos();
+        IStatisticCollection & tos = scopes.tos();
         scopes.append(*tos.ensureSubScope(id, true));
     }
     virtual void beginActivityScope(unsigned id) override
     {
         StatsScopeId scopeId(SSTactivity, id);
-        CStatisticCollection & tos = scopes.tos();
+        IStatisticCollection & tos = scopes.tos();
         scopes.append(*tos.ensureSubScope(scopeId, false));
     }
     virtual void beginSubGraphScope(unsigned id) override
     {
         StatsScopeId scopeId(SSTsubgraph, id);
-        CStatisticCollection & tos = scopes.tos();
+        IStatisticCollection & tos = scopes.tos();
         scopes.append(*tos.ensureSubScope(scopeId, true));
     }
     virtual void beginEdgeScope(unsigned id, unsigned oid) override
     {
         StatsScopeId scopeId(SSTedge, id, oid);
-        CStatisticCollection & tos = scopes.tos();
+        IStatisticCollection & tos = scopes.tos();
         scopes.append(*tos.ensureSubScope(scopeId, false));
     }
     virtual void beginChildGraphScope(unsigned id) override
     {
         StatsScopeId scopeId(SSTchildgraph, id);
-        CStatisticCollection & tos = scopes.tos();
+        IStatisticCollection & tos = scopes.tos();
         scopes.append(*tos.ensureSubScope(scopeId, true));
     }
     virtual void beginChannelScope(unsigned id) override
     {
         StatsScopeId scopeId(SSTchannel, id);
-        CStatisticCollection & tos = scopes.tos();
+        IStatisticCollection & tos = scopes.tos();
         scopes.append(*tos.ensureSubScope(scopeId, true));
     }
     virtual void endScope() override
@@ -2241,12 +2443,12 @@ public:
     }
     virtual void addStatistic(StatisticKind kind, unsigned __int64 value) override
     {
-        CStatisticCollection & tos = scopes.tos();
+        IStatisticCollection & tos = scopes.tos();
         tos.addStatistic(kind, value);
     }
     virtual void updateStatistic(StatisticKind kind, unsigned __int64 value, StatsMergeAction mergeAction) override
     {
-        CStatisticCollection & tos = scopes.tos();
+        IStatisticCollection & tos = scopes.tos();
         tos.updateStatistic(kind, value, mergeAction);
     }
     virtual IStatisticCollection * getResult() override
@@ -2255,15 +2457,18 @@ public:
     }
 
 protected:
-    ICopyArrayOf<CStatisticCollection> scopes;
-    Linked<CStatisticCollection> rootScope;
+    ICopyArrayOf<IStatisticCollection> scopes;
+    Linked<IStatisticCollection> rootScope;
 };
 
 extern IStatisticGatherer * createStatisticsGatherer(StatisticCreatorType creatorType, const char * creator, const StatsScopeId & rootScope)
 {
-    //creator unused at the moment.
-    Owned<CStatisticCollection> rootCollection = new CRootStatisticCollection(creatorType, creator, rootScope);
-    return new StatisticGatherer(rootCollection);
+    return new StatisticGatherer(new CRootStatisticCollection(creatorType, creator, rootScope));
+}
+
+extern IStatisticGatherer * createStatisticsGatherer(IStatisticCollection * stats)
+{
+    return new StatisticGatherer(stats);
 }
 
 //--------------------------------------------------------------------------------------------------------------------
@@ -2609,7 +2814,7 @@ StringBuffer & CRuntimeStatisticCollection::toStr(StringBuffer &str) const
             unsigned __int64 rawValue = getStatisticValue(rawKind);
             if (rawValue)
                 value += convertMeasure(rawKind, kind, rawValue);
-        }                
+        }
         if (value)
         {
             const char * name = queryStatisticName(serialKind);

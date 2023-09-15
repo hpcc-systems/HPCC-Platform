@@ -1988,10 +1988,6 @@ void EclAgent::doProcess()
         const cost_type cost = aggregateCost(w, nullptr, false);
         if (cost)
             w->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTglobal, "", StCostExecute, NULL, cost, 1, 0, StatsMergeReplace);
-        const cost_type diskAccessCost = aggregateDiskAccessCost(w, nullptr);
-        if (diskAccessCost)
-            w->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTglobal, "", StCostFileAccess, NULL, diskAccessCost, 1, 0, StatsMergeReplace);
-        updateSpillSize(w, nullptr, SSTglobal);
         addTimings(w);
 
         switch (w->getState())
@@ -2513,10 +2509,6 @@ void EclAgentWorkflowMachine::noteTiming(unsigned wfid, timestamp_type startTime
     const cost_type cost = money2cost_type(calcCost(agent.queryAgentMachineCost(), nanoToMilli(elapsedNs))) + aggregateCost(wu, scope, true);
     if (cost)
         wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTworkflow, scope, StCostExecute, NULL, cost, 1, 0, StatsMergeReplace);
-    const cost_type diskAccessCost = aggregateDiskAccessCost(wu, scope);
-    if (diskAccessCost)
-        wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTworkflow, scope, StCostFileAccess, NULL, diskAccessCost, 1, 0, StatsMergeReplace);
-    updateSpillSize(wu, scope, SSTworkflow);
 }
 
 void EclAgentWorkflowMachine::doExecutePersistItem(IRuntimeWorkflowItem & item)
