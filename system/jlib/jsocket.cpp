@@ -476,7 +476,7 @@ protected:
     friend class CSocketConnectWait;
     enum { ss_open, ss_shutdown, ss_close, ss_pre_open } state;
     T_SOCKET        sock;
-    char*           hostname;   // host address
+//    char*           hostname;   // host address
     unsigned short  hostport;   // host port
     unsigned short  localPort;
     SOCKETMODE      sockmode;
@@ -968,7 +968,7 @@ size32_t CSocket::avail_read()
 
 int CSocket::pre_connect (bool block)
 {
-    if (NULL == hostname || '\0' == (*hostname))
+    if (targetip.isNull())
     {
         StringBuffer err;
         err.appendf("CSocket::pre_connect - Invalid/missing host IP address raised in : %s, line %d",sanitizeSourceFile(__FILE__), __LINE__);
@@ -977,10 +977,6 @@ int CSocket::pre_connect (bool block)
     }
 
     DEFINE_SOCKADDR(u);
-    if (targetip.isNull()) {
-        set_return_addr(hostport,hostname);
-        targetip.ipset(returnep);
-    }
     socklen_t ul = setSockAddr(u,targetip,hostport);
     sock = ::socket(u.sa.sa_family, SOCK_STREAM, targetip.isIp4()?0:PF_INET6);
     owned = true;
@@ -1082,11 +1078,7 @@ void CSocket::open(int listen_queue_size,bool reuseports)
 
     DEFINE_SOCKADDR(u);
     socklen_t  ul;
-    if (hostname) {
-        if (targetip.isNull()) {
-            set_return_addr(hostport,hostname);
-            targetip.ipset(returnep);
-        }
+    if (!targetip.isNull()) {
         ul = setSockAddr(u,targetip,hostport);
     }
     else 
@@ -1705,6 +1697,8 @@ void CSocket::setTraceName(const char * prefix, const char * name)
 void CSocket::setTraceName()
 {
 #ifdef _TRACE
+    StringBuffer hostname;
+    targetip.getIpText(hostname);
     setTraceName("C!", hostname);
 #endif
 }
@@ -1724,10 +1718,6 @@ ISocket*  ISocket::connect_wait( const SocketEndpoint &ep, unsigned timems)
 void CSocket::udpconnect()
 {
     DEFINE_SOCKADDR(u);
-    if (targetip.isNull()) {
-        set_return_addr(hostport,hostname);
-        targetip.ipset(returnep);
-    }
     socklen_t  ul = setSockAddr(u,targetip,hostport);
     sock = ::socket(u.sa.sa_family, SOCK_DGRAM, targetip.isIp4()?0:PF_INET6);
 #ifdef SOCKTRACE
@@ -1759,7 +1749,9 @@ int CSocket::logPollError(unsigned revents, const char *rwstr)
     if (revents & POLLERR)
     {
         StringBuffer errStr;
-        errStr.appendf("%s POLLERR %u l:%d r:%s:%d", rwstr, sock, localPort, (hostname?hostname:"NULL"), hostport);
+        StringBuffer hostname;
+        targetip.getIpText(hostname);
+        errStr.appendf("%s POLLERR %u l:%d r:%s:%d", rwstr, sock, localPort, hostname.str(), hostport);
         int serror = 0;
         socklen_t serrlen = sizeof(serror);
         int srtn = getsockopt(sock, SOL_SOCKET, SO_ERROR, (char *)&serror, &serrlen);
@@ -2874,7 +2866,9 @@ void CSocket::set_ttl(unsigned _ttl)
 
 void CSocket::logConnectionInfo(unsigned timeoutms, unsigned conn_mstime)
 {
-    PROGLOG("SOCKTRACE: connect(%u) - time:%u ms fd:%d l:%d r:%s:%d", timeoutms, conn_mstime, sock, localPort, (hostname?hostname:"NULL"), hostport);
+    StringBuffer hostname;
+    targetip.getIpText(hostname);
+    PROGLOG("SOCKTRACE: connect(%u) - time:%u ms fd:%d l:%d r:%s:%d", timeoutms, conn_mstime, sock, localPort, hostname.str(), hostport);
     // PrintStackReport();
 }
 
@@ -2921,8 +2915,6 @@ CSocket::~CSocket()
             e->Release();
         }
     }
-    free(hostname);
-    hostname = NULL;
 #ifdef _TRACE
     free(tracename);
     tracename = NULL;
@@ -2939,8 +2931,8 @@ CSocket::CSocket(const SocketEndpoint &ep,SOCKETMODE smode,const char *name)
 #endif
     nagling = true; // until turned off
     hostport = ep.port;
+    targetip.ipset(ep);
     localPort = 0;
-    hostname = NULL;
     mcastreq = NULL;
 #ifdef _TRACE
     tracename = NULL;
@@ -2950,9 +2942,9 @@ CSocket::CSocket(const SocketEndpoint &ep,SOCKETMODE smode,const char *name)
         mcastreq = new MCASTREQ(name);
     }
     else {
-        if (!name&&!ep.isNull())
-            name = ep.getIpText(tmp).str();
-        hostname = name?strdup(name):NULL;
+        //MORE: I don't think the name parameter is needed anymore
+        if (name && ep.isNull())
+            targetip.ipset(name);
     }
     sock = INVALID_SOCKET;
     sockmode = smode;
@@ -2966,9 +2958,7 @@ CSocket::CSocket(const SocketEndpoint &ep,SOCKETMODE smode,const char *name)
     else
     {
         StringBuffer hostname;
-        SocketEndpoint self;
-        self.setLocalHost(0);
-        self.getUrlStr(hostname);
+        targetip.getIpText(hostname);
         setTraceName("S>", hostname.str());
     }
 #endif
@@ -2998,7 +2988,7 @@ CSocket::CSocket(T_SOCKET new_sock,SOCKETMODE smode,bool _owned)
     //set_linger(DEFAULT_LINGER_TIME); -- experiment with removing this as closesocket should still endevour to send outstanding data
     char peer[256];
     hostport = peer_name(peer,sizeof(peer));
-    hostname = strdup(peer);
+    targetip.ipset(peer);
     SocketEndpoint ep;
     localPort = getEndpoint(ep).port;
 #ifdef _TRACE
@@ -3608,9 +3598,11 @@ bool IpAddress::ipset(const char *text)
 {
     if (text&&*text) {
         if ((text[0]=='.')&&(text[1]==0)) {
+            hostname.set(GetCachedHostName()); // Is this better than '.'?
             ipset(queryHostIP());
             return true;
         }
+        hostname.set(text);
         if (decodeNumericIP(text,netaddr))
             return true;
         const char *s;
@@ -3623,6 +3615,7 @@ bool IpAddress::ipset(const char *text)
             return true;
     }
     memset(&netaddr,0,sizeof(netaddr));
+    hostname.clear();
     return false;
 }
 
@@ -3646,6 +3639,8 @@ inline char * addbyte(char *s,byte b)
 
 StringBuffer & IpAddress::getIpText(StringBuffer & out) const
 {
+    if (hostname)
+        return out.append(hostname);
     if (::isIp4(netaddr)) {
         const byte *ip = (const byte *)&netaddr[3];
         char ips[16]; 
@@ -7333,6 +7328,3 @@ extern jlib_decl void shutdownAndCloseNoThrow(ISocket * optSocket)
         e->Release();
     }
 }
-
-static_assert(sizeof(IpAddress) == 16, "check size of IpAddress");
-static_assert(sizeof(SocketEndpoint) == 20, "check size of SocketEndpoint");
