@@ -160,6 +160,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
             },
             Name: {
                 label: nlsHPCC.LogicalName,
+                width: 360,
                 formatter: (name, row) => {
                     const file = Get(row.NodeGroup, name, row);
                     if (row.__hpcc_isDir) {
