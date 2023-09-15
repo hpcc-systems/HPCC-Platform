@@ -121,6 +121,12 @@ BITMASK_ENUM(TraceFlags);
 
 // Feature trace flags for hthor, thor and Roxie engines
 
+// Detail levels
+constexpr TraceFlags traceNone = TraceFlags::None;
+constexpr TraceFlags traceStandard = TraceFlags::Standard;
+constexpr TraceFlags traceDetailed = TraceFlags::Detailed;
+constexpr TraceFlags traceMax = TraceFlags::Max;
+
 // Common to several engines
 constexpr TraceFlags traceHttp = TraceFlags::flag1;
 constexpr TraceFlags traceSockets = TraceFlags::flag2;
@@ -158,6 +164,10 @@ struct TraceOption { const char * name; TraceFlags value; };
 
 constexpr std::initializer_list<TraceOption> roxieTraceOptions
 { 
+    TRACEOPT(traceNone),
+    TRACEOPT(traceStandard),
+    TRACEOPT(traceDetailed),
+    TRACEOPT(traceMax),
     TRACEOPT(traceHttp),
     TRACEOPT(traceSockets),
     TRACEOPT(traceCassandra),

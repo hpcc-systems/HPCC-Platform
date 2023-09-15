@@ -3383,10 +3383,18 @@ TraceFlags loadTraceFlags(const IPropertyTree *ptree, const std::initializer_lis
             attrName.clear().appendf("_%s", o.name);
         if (ptree->hasProp(attrName))
         {
-            if (ptree->getPropBool(attrName, false))
+            if (o.value <= TraceFlags::LevelMask)
+            {
+                dft &= ~TraceFlags::LevelMask;
                 dft |= o.value;
+            }
             else
-                dft &= ~o.value;
+            {
+                if (ptree->getPropBool(attrName, false))
+                    dft |= o.value;
+                else
+                    dft &= ~o.value;
+            }
         }
 
     }
