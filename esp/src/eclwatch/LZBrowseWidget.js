@@ -72,6 +72,8 @@ define([
         serverFilterSelect: null,
         replicateEnabled: null,
 
+        dzExpanded: "",
+
         postCreate: function (args) {
             this.inherited(arguments);
             this.sprayFixedForm = registry.byId(this.id + "SprayFixedForm");
@@ -708,6 +710,13 @@ define([
                     displayName: tree({
                         label: this.i18n.Name,
                         sortable: false,
+                        shouldExpand: function (row, level) {
+                            if ((context.dzExpanded === "" || context.dzExpanded === row.data.DropZone?.Name) && level <= 1) {
+                                context.dzExpanded = row.data.DropZone.Name;
+                                return true;
+                            }
+                            return false;
+                        },
                         formatter: function (_name, row) {
                             var img = "";
                             var name = _name;
