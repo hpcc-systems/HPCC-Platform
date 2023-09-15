@@ -309,7 +309,6 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
     Owned<IPropertyTree> bnd_cfg = getBindingConfig(tree, bindname, procname);
     m_wsdlVer=0.0;
     processName.set(procname);
-    getServiceXmlFilename(serviceXmlFilename);
 
     // get the config default version
     const char* defVersion = bnd_cfg->queryProp("@defaultServiceVersion");
