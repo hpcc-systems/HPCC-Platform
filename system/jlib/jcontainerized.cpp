@@ -19,7 +19,6 @@
 
 namespace k8s {
 
-#ifdef _CONTAINERIZED
 static StringBuffer myPodName;
 
 const char *queryMyPodName()
@@ -63,13 +62,45 @@ void deleteResource(const char *componentName, const char *resourceType, const c
     remove(k8sResourcesFilename);
 }
 
+bool checkExitCodes(StringBuffer &output, const char *podStatuses)
+{
+    const char *startOfPodStatus = podStatuses;
+    while (*startOfPodStatus)
+    {
+        const char *endOfPodStatus = strchr(startOfPodStatus, '|');
+        StringBuffer podStatus;
+        if (endOfPodStatus)
+            podStatus.append((size_t)(endOfPodStatus-startOfPodStatus), startOfPodStatus);
+        else
+            podStatus.append(startOfPodStatus);
+        StringArray fields;
+        fields.appendList(podStatus, ",");
+        if (3 == fields.length()) // should be 3 fields {<exitCode>,<"initContainer"|"container">,<name>}
+        {
+            const char *exitCodeStr = fields.item(0);
+            if (strlen(exitCodeStr))
+            {
+                unsigned exitCode = atoi(exitCodeStr);
+                if (exitCode) // non-zero = failure
+                {
+                    output.appendf(" %s '%s' failed with exitCode = %u", fields.item(1), fields.item(2), exitCode);
+                    return true;
+                }
+            }
+        }
+        if (!endOfPodStatus)
+            break;
+        startOfPodStatus = endOfPodStatus+1;
+    }
+    return false;
+}
+
 void waitJob(const char *componentName, const char *resourceType, const char *job, unsigned pendingTimeoutSecs, KeepJobs keepJob)
 {
     VStringBuffer jobName("%s-%s-%s", componentName, resourceType, job);
     jobName.toLowerCase();
     VStringBuffer waitJob("kubectl get jobs %s -o jsonpath={.status.active}", jobName.str());
     VStringBuffer getScheduleStatus("kubectl get pods --selector=job-name=%s --output=jsonpath={.items[*].status.conditions[?(@.type=='PodScheduled')].status}", jobName.str());
-    VStringBuffer checkJobExitCode("kubectl get pods --selector=job-name=%s --output=jsonpath={.items[*].status.containerStatuses[?(@.name==\"%s\")].state.terminated.exitCode}", jobName.str(), jobName.str());
 
     unsigned delay = 100;
     unsigned start = msTick();
@@ -82,14 +113,30 @@ void waitJob(const char *componentName, const char *resourceType, const char *jo
         {
             StringBuffer output;
             runKubectlCommand(componentName, waitJob, nullptr, &output);
-            if (!streq(output, "1"))  // status.active value
+            if ((0 == output.length()) || streq(output, "0"))  // status.active value
             {
                 // Job is no longer active - we can terminate
                 DBGLOG("kubectl jobs output: %s", output.str());
-                runKubectlCommand(componentName, checkJobExitCode, nullptr, &output.clear());
-                if (output.length() && !streq(output, "0"))  // state.terminated.exitCode
-                    throw makeStringExceptionV(0, "Failed to run %s: pod exited with error: %s", jobName.str(), output.str());
-                break;
+                VStringBuffer checkJobExitStatus("kubectl get jobs %s '-o=jsonpath={range .status.conditions[*]}{.type}: {.status} - {.message}|{end}'", jobName.str());
+                runKubectlCommand(componentName, checkJobExitStatus, nullptr, &output.clear());
+                if (strstr(output.str(), "Failed: "))
+                {
+                    VStringBuffer errMsg("Job %s failed [%s].", jobName.str(), output.str());
+                    VStringBuffer checkInitContainerExitCodes("kubectl get pods --selector=job-name=%s '-o=jsonpath={range .items[*].status.initContainerStatuses[*]}{.state.terminated.exitCode},{\"initContainer\"},{.name}{\"|\"}{end}'", jobName.str());
+                    runKubectlCommand(componentName, checkInitContainerExitCodes, nullptr, &output.clear());
+                    DBGLOG("checkInitContainerExitCodes - output = %s", output.str());
+                    if (!checkExitCodes(errMsg, output))
+                    {
+                        // no init container failures, check regular containers
+                        VStringBuffer checkContainerExitCodes("kubectl get pods --selector=job-name=%s '-o=jsonpath={range .items[*].status.containerStatuses[*]}{.state.terminated.exitCode},{\"container\"},{.name}{\"|\"}{end}'", jobName.str());
+                        runKubectlCommand(componentName, checkContainerExitCodes, nullptr, &output.clear());
+                        DBGLOG("checkContainerExitCodes - output = %s", output.str());
+                        checkExitCodes(errMsg, output);
+                    }
+                    throw makeStringException(0, errMsg);
+                }
+                else // assume success, either .status.conditions type of "Complete" or "Succeeded"
+                    break;
             }
             runKubectlCommand(nullptr, getScheduleStatus, nullptr, &output.clear());
 
@@ -261,51 +308,8 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
 }
 MODULE_EXIT()
 {
-    removeConfigUpdateHook(podInfoInitCBId);
+    if (isContainerized())
+        removeConfigUpdateHook(podInfoInitCBId);
 }
-
-#else
-
-const char *queryMyPodName()
-{
-    throwUnexpected();
-}
-
-KeepJobs translateKeepJobs(const char *keepJobs)
-{
-    throwUnexpected();
-}
-
-bool isActiveService(const char *serviceName)
-{
-    throwUnexpected();
-}
-
-void deleteResource(const char *componentName, const char *job, const char *resource)
-{
-    throwUnexpected();
-}
-
-void waitJob(const char *componentName, const char *resourceType, const char *job, unsigned pendingTimeoutSecs, KeepJobs keepJob)
-{
-    throwUnexpected();
-}
-
-bool applyYaml(const char *componentName, const char *wuid, const char *job, const char *resourceType, const std::list<std::pair<std::string, std::string>> &extraParams, bool optional, bool autoCleanup)
-{
-    throwUnexpected();
-}
-
-void runJob(const char *componentName, const char *wuid, const char *job, const std::list<std::pair<std::string, std::string>> &extraParams)
-{
-    throwUnexpected();
-}
-
-std::vector<std::vector<std::string>> getPodNodes(const char *selector)
-{
-    throwUnexpected();
-}
-
-#endif // _CONTAINERIZED
 
 } // end of k8s namespace

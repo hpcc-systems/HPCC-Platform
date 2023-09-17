@@ -1633,12 +1633,14 @@ args:
 {{- end }}
 - >-
     {{ $check_cmd.command }};
+    exitCode=$?;
     k8s_postjob_clearup.sh;
-{{- if $misc.postJobCommandViaSidecar -}} ;
-    touch /wait-and-run/{{ .me.name }}.jobdone
-{{- else if $postJobCommand -}} ;
-    {{ $postJobCommand }}
+{{- if $misc.postJobCommandViaSidecar -}}
+    touch /wait-and-run/{{ .me.name }}.jobdone;
+{{- else if $postJobCommand -}}
+    {{ $postJobCommand }} ;
 {{- end }}
+    exit $exitCode;
 {{- end -}}
 
 {{/*
