@@ -814,12 +814,31 @@ Specifically for now (but could be extended), this container generates sysctl co
 A kludge to ensure until the mount of a PVC appears (this can happen with some types of host storage)
 */}}
 {{- define "hpcc.waitForMount" -}}
-- name: wait-mount-container
+- name: {{ printf "wait-mount-container-%s" .volumeName }}
   {{- include "hpcc.addImageAttrs" . | nindent 2 }}
-  command: ["/bin/sh"]
+  command: ["/bin/bash"]
   args:
   - "-c"
   - {{ printf "until mountpoint -q %s; do sleep 5; done" .volumePath }}
+  volumeMounts:
+    - name: {{ .volumeName | quote}}
+      mountPath: {{ .volumePath | quote }}
+{{- end }}
+
+{{/*
+Inject container to perform any post plane initialization validation
+Pass in dict with volumeName, volumePath and cmds
+*/}}
+{{- define "hpcc.validatePlaneScript" -}}
+- name: {{ printf "validate-plane-script-container-%s" .volumeName }}
+  {{- include "hpcc.addImageAttrs" . | nindent 2 }}
+  command: ["/bin/bash"]
+  args:
+  - -c
+  - |
+{{- range $cmd := .cmds }}
+    {{ $cmd }}
+{{- end }}
   volumeMounts:
     - name: {{ .volumeName | quote}}
       mountPath: {{ .volumePath | quote }}
@@ -887,6 +906,12 @@ NB: uid=10000 and gid=10001 are the uid/gid of the hpcc user, built into platfor
     {{- if $plane.waitForMount -}}
      {{- $volumeName := (printf "%s-pv" $plane.name) -}}
      {{- include "hpcc.waitForMount" (dict "root" $root "me" $component "uid" $uid "gid" $gid "volumeName" $volumeName "volumePath" $plane.prefix) | nindent 0 }}
+    {{- end -}}
+    {{- if hasKey $plane "expert" -}}
+     {{- if $plane.expert.validatePlaneScript -}}
+      {{- $volumeName := (printf "%s-pv" $plane.name) -}}
+      {{- include "hpcc.validatePlaneScript" (dict "root" $root "me" $component "uid" $uid "gid" $gid "volumeName" $volumeName "volumePath" $plane.prefix "cmds" $plane.expert.validatePlaneScript) | nindent 0 }}
+     {{- end -}}
     {{- end -}}
    {{- end -}}
   {{- end -}}

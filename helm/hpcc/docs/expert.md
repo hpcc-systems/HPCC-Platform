@@ -18,6 +18,8 @@ global:
 NB: Some components (e.g. DfuServer and Thor) also have an 'expert' settings area (see values schema) that can be used for relavent settings
 on a per component instance basis, rather than setting them globally.
 
+Planes can also have an expert section (see Plane Expert Settings section)
+
 
 The following options are currently available:
 
@@ -70,3 +72,12 @@ Foreign file reads (~foreign::) are forbidden by default since the official sant
 service via remote file reads with the ~remote:: syntax.
 Setting expert.allowForeign to true, enables foreign access for compatibility with legacy bare-metal environments
 that have their Dali and Dafilesrv's open.
+
+
+# Plane Expert Settings
+
+## validatePlaneScript (list of { string })
+
+Optional list of bash commands to execute within an init container in pods that use this plane.
+This can be used to validate that the plane is healthy, e.g. that it is mounted as expected.
+If the script returns a non-zero result, the init container and therefore the pod will fail.
