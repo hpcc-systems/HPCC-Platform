@@ -544,6 +544,9 @@
             "waitForMount": {
               "type": "boolean"
             },
+            "validatePlaneScript": {
+              "type": "array"
+            },
             "blockedFileIOKB": {
               "description": "Optimal block size for efficient reading from this plane. Implementations will use if they can",
               "type": "integer",
