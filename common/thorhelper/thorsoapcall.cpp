@@ -1040,7 +1040,7 @@ public:
             }
             StringBuffer secretName("http-connect-");
             secretName.append(finger);
-            Owned<IPropertyTree> secret = (vaultId.isEmpty()) ? getSecret("ecl", secretName) : getVaultSecret("ecl", vaultId, secretName, nullptr);
+            Owned<IPropertyTree> secret = getSecret("ecl", secretName, vaultId, nullptr);
             if (!secret)
                 throw MakeStringException(0, "%sCALL %s SECRET not found", wscType == STsoap ? "SOAP" : "HTTP", secretName.str());
 

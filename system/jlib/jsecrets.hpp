@@ -22,15 +22,25 @@
 #include "jlib.hpp"
 #include "jstring.hpp"
 
+interface ISecret : extends IInterface
+{
+    virtual const IPropertyTree * getTree() const = 0;
+    virtual bool getKeyValue(MemoryBuffer & result, const char * key) const = 0;
+    virtual bool getKeyValue(StringBuffer & result, const char * key) const = 0;
+    virtual bool isStale() const = 0;
+    //Return a sequence number which changes whenever the secret actually changes - so that a caller can determine
+    //whether it needs to reload the certificates.
+    virtual unsigned getVersion() const = 0;
+};
+
 extern jlib_decl void setSecretMount(const char * path);
 extern jlib_decl void setSecretTimeout(unsigned timeoutMs);
 
-extern jlib_decl IPropertyTree *getLocalSecret(const char *category, const char * name);
-extern jlib_decl IPropertyTree *getVaultSecret(const char *category, const char *vaultId, const char * name, const char *version=nullptr);
-extern jlib_decl IPropertyTree *getSecret(const char *category, const char * name);
+extern jlib_decl IPropertyTree *getSecret(const char *category, const char * name, const char * optVaultId = nullptr, const char * optVersion = nullptr);
+extern jlib_decl ISecret * resolveSecret(const char *category, const char * name, const char * optRequiredVault);
 
-extern jlib_decl bool getSecretKeyValue(MemoryBuffer & result, IPropertyTree *secret, const char * key);
-extern jlib_decl bool getSecretKeyValue(StringBuffer & result, IPropertyTree *secret, const char * key);
+extern jlib_decl bool getSecretKeyValue(MemoryBuffer & result, const IPropertyTree *secret, const char * key);
+extern jlib_decl bool getSecretKeyValue(StringBuffer & result, const IPropertyTree *secret, const char * key);
 extern jlib_decl bool getSecretValue(StringBuffer & result, const char *category, const char * name, const char * key, bool required);
 
 extern jlib_decl void initSecretUdpKey();
