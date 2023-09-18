@@ -3128,8 +3128,11 @@ char * EclAgent::getClusterName()
 char * EclAgent::getGroupName()
 {
 #ifdef _CONTAINERIZED
-    // in a containerized setup, the group is moving..
-    return strdup("unknown");
+    // In containerized there is no associated cluster group.
+    // Return an empty result instead, which if used for destinationGroup
+    // via Thorlib.group() as part of a fileservices call, will be interpreted
+    // as targeting the default data plane
+    return strdup("");
 #else
     StringBuffer groupName;
     if (!isStandAloneExe)
