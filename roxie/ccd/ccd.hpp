@@ -602,8 +602,6 @@ public:
         start = msTick();
         channel = 0;
         aborted = false;
-        if ( topology && topology->hasProp("@httpGlobalIdHeader"))
-            setHttpIdHeaderNames(topology->queryProp("@httpGlobalIdHeader"), topology->queryProp("@httpCallerIdHeader"));
     }
 
     void outputXML(IXmlStreamFlusher &out)
@@ -763,18 +761,6 @@ public:
     virtual const char *queryLocalId() const override
     {
         return logTrace.queryLocalId();
-    }
-    virtual void setHttpIdHeaderNames(const char *global, const char *caller) override
-    {
-        logTrace.setHttpIdHeaderNames(global, caller);
-    }
-    virtual const char *queryGlobalIdHttpHeaderName() const override
-    {
-        return logTrace.queryGlobalIdHTTPHeaderName();
-    }
-    virtual const char *queryCallerIdHttpHeaderName() const override
-    {
-        return logTrace.queryCallerIdHTTPHeaderName();
     }
     virtual const CRuntimeStatisticCollection & queryStats() const override
     {

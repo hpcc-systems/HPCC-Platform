@@ -23,11 +23,10 @@
  *  Known HPCC span Keys could be added here
  *  Specialized span keys can also be defined within the scope of a span 
  */
-namespace HPCCSemanticConventions
-{
-static constexpr const char *kGLOBALIDHTTPHeader = "HPCC-Global-Id";
-static constexpr const char *kCallerIdHTTPHeader = "HPCC-Caller-Id";
-}
+static constexpr const char *kGlobalIdHttpHeaderName = "Global-Id";
+static constexpr const char *kCallerIdHttpHeaderName = "Caller-Id";
+static constexpr const char *kLegacyGlobalIdHttpHeaderName = "HPCC-Global-Id";
+static constexpr const char *kLegacyCallerIdHttpHeaderName = "HPCC-Caller-Id";
 
 class jlib_decl LogTrace
 {
@@ -35,9 +34,6 @@ private:
     StringAttr   globalId;
     StringAttr   callerId;
     StringAttr   localId;
-
-    StringAttr   globalIdHTTPHeaderName = HPCCSemanticConventions::kGLOBALIDHTTPHeader;
-    StringAttr   callerIdHTTPHeaderName = HPCCSemanticConventions::kCallerIdHTTPHeader;
 
     const char* assignLocalId();
 
@@ -49,16 +45,6 @@ public:
     const char* queryGlobalId() const;
     const char* queryCallerId() const;
     const char* queryLocalId() const;
-    const char* queryGlobalIdHTTPHeaderName() const { return globalIdHTTPHeaderName.get(); }
-    const char* queryCallerIdHTTPHeaderName() const { return callerIdHTTPHeaderName.get(); }
-
-    void setHttpIdHeaderNames(const char *global, const char *caller)
-    {
-        if (!isEmptyString(global))
-            globalIdHTTPHeaderName.set(global);
-        if (!isEmptyString(caller))
-            callerIdHTTPHeaderName.set(caller);
-    }
 
     //can these be private with abstract methods exposed to create/set these values?
     void setGlobalId(const char* id);

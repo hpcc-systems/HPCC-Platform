@@ -1399,18 +1399,6 @@ public:
     {
         return logctx.queryLocalId();
     }
-    virtual void setHttpIdHeaderNames(const char *global, const char *caller) override
-    {
-        const_cast<IRoxieContextLogger&>(logctx).setHttpIdHeaderNames(global, caller);
-    }
-    virtual const char *queryGlobalIdHttpHeaderName() const override
-    {
-        return logctx.queryGlobalIdHttpHeaderName();
-    }
-    virtual const char *queryCallerIdHttpHeaderName() const override
-    {
-        return logctx.queryCallerIdHttpHeaderName();
-    }
     virtual const CRuntimeStatisticCollection & queryStats() const override
     {
         return logctx.queryStats();

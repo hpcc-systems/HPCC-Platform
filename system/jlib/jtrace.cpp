@@ -264,10 +264,10 @@ public:
         propagator->Inject(*carrier, spanCtx);
 
         if (!isEmptyString(hpccGlobalId.get()))
-            carrier->Set(HPCCSemanticConventions::kGLOBALIDHTTPHeader, hpccGlobalId.get());
+            carrier->Set(kGlobalIdHttpHeaderName, hpccGlobalId.get());
 
         if (!isEmptyString(hpccCallerId.get()))
-            carrier->Set(HPCCSemanticConventions::kCallerIdHTTPHeader, hpccCallerId.get());
+            carrier->Set(kCallerIdHttpHeaderName, hpccCallerId.get());
 
         return true;
     }
@@ -287,10 +287,10 @@ public:
             return false;
 
         if (!isEmptyString(hpccGlobalId.get()))
-            ctxProps->setProp(HPCCSemanticConventions::kGLOBALIDHTTPHeader, hpccGlobalId.get());
+            ctxProps->setProp(kGlobalIdHttpHeaderName, hpccGlobalId.get());
 
         if (!isEmptyString(hpccCallerId.get()))
-            ctxProps->setProp(HPCCSemanticConventions::kCallerIdHTTPHeader, hpccCallerId.get());
+            ctxProps->setProp(kCallerIdHttpHeaderName, hpccCallerId.get());
 
         if (span == nullptr)
             return false;
@@ -539,7 +539,7 @@ private:
 
     void setSpanContext(StringArray & httpHeaders, const char kvDelineator = ':')
     {
-        Owned<IProperties> contextProps = createProperties();
+        Owned<IProperties> contextProps = createProperties(true);
         ForEachItemIn(currentHeaderIndex, httpHeaders)
         {
             const char* httpHeader = httpHeaders.item(currentHeaderIndex);
@@ -568,13 +568,17 @@ private:
             //if (key == opentel_trace::propagation::kTraceParent || key == opentel_trace::propagation::kTraceState )
             //    theKey[0] = toupper(theKey[0]);
 
-            if (httpHeaders->hasProp(HPCCSemanticConventions::kGLOBALIDHTTPHeader))
-                hpccGlobalId.set(httpHeaders->queryProp(HPCCSemanticConventions::kGLOBALIDHTTPHeader));
+            if (httpHeaders->hasProp(kGlobalIdHttpHeaderName))
+                hpccGlobalId.set(httpHeaders->queryProp(kGlobalIdHttpHeaderName));
+            else if (httpHeaders->hasProp(kLegacyGlobalIdHttpHeaderName))
+                hpccGlobalId.set(httpHeaders->queryProp(kLegacyGlobalIdHttpHeaderName));
             else
                 DBGLOG("ServerSpan: HPCCGlobalID not found in http headers");
 
-            if (httpHeaders->hasProp(HPCCSemanticConventions::kCallerIdHTTPHeader))
-                hpccCallerId.set(httpHeaders->queryProp(HPCCSemanticConventions::kCallerIdHTTPHeader));
+            if (httpHeaders->hasProp(kCallerIdHttpHeaderName))
+                hpccCallerId.set(httpHeaders->queryProp(kCallerIdHttpHeaderName));
+            else if (httpHeaders->hasProp(kLegacyCallerIdHttpHeaderName))
+                hpccCallerId.set(httpHeaders->queryProp(kLegacyCallerIdHttpHeaderName));
             else
             {
                 DBGLOG("ServerSpan: HPCCCallerID not provied");

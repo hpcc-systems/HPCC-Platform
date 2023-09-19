@@ -291,18 +291,6 @@ public:
     {
         return ctx->queryLocalId();
     }
-    virtual void setHttpIdHeaderNames(const char *global, const char *caller)
-    {
-        ctx->setHttpIdHeaderNames(global, caller);
-    }
-    virtual const char *queryGlobalIdHttpHeaderName() const
-    {
-        return ctx->queryGlobalIdHttpHeaderName();
-    }
-    virtual const char *queryCallerIdHttpHeaderName() const override
-    {
-        return ctx->queryCallerIdHttpHeaderName();
-    }
     virtual const QueryOptions &queryOptions() const
     {
         return ctx->queryOptions();
@@ -1380,19 +1368,6 @@ public:
     virtual const char *queryLocalId() const override
     {
         return ctx ? ctx->queryLocalId() : nullptr;
-    }
-    virtual void setHttpIdHeaderNames(const char *global, const char *caller) override
-    {
-        if (ctx)
-            ctx->setHttpIdHeaderNames(global, caller);
-    }
-    virtual const char *queryGlobalIdHttpHeaderName() const override
-    {
-        return ctx ? ctx->queryGlobalIdHttpHeaderName() : "HPCC-Global-Id";
-    }
-    virtual const char *queryCallerIdHttpHeaderName() const override
-    {
-        return ctx ? ctx->queryCallerIdHttpHeaderName() : "HPCC-Caller-Id";
     }
     virtual const CRuntimeStatisticCollection & queryStats() const override
     {

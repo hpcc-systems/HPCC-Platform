@@ -616,8 +616,6 @@ class CThorContextLogger : public CSimpleInterfaceOf<IContextLogger>
 public:
     CThorContextLogger(const StatisticsMapping & statsMapping) : stats(statsMapping)
     {
-        if (globals->hasProp("@httpGlobalIdHeader"))
-            setHttpIdHeaderNames(globals->queryProp("@httpGlobalIdHeader"), globals->queryProp("@httpCallerIdHeader"));
     }
     virtual void CTXLOG(const char *format, ...) const override  __attribute__((format(printf,2,3)))
     {
@@ -680,18 +678,6 @@ public:
     virtual const char *queryCallerId() const override
     {
         return logTrace.queryCallerId();
-    }
-    virtual void setHttpIdHeaderNames(const char *global, const char *caller) override
-    {
-        logTrace.setHttpIdHeaderNames(global, caller);
-    }
-    virtual const char *queryGlobalIdHttpHeaderName() const override
-    {
-        return logTrace.queryGlobalIdHTTPHeaderName();
-    }
-    virtual const char *queryCallerIdHttpHeaderName() const override
-    {
-        return logTrace.queryCallerIdHTTPHeaderName();
     }
     virtual const CRuntimeStatisticCollection &queryStats() const override
     {

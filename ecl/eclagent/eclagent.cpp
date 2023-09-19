@@ -2130,9 +2130,6 @@ void EclAgent::runProcess(IEclProcess *process)
     assertex(rowManager==NULL);
     allocatorMetaCache.setown(createRowAllocatorCache(this));
 
-    if (agentTopology->hasProp("@httpGlobalIdHeader"))
-        updateDummyContextLogger().setHttpIdHeaderNames(agentTopology->queryProp("@httpGlobalIdHeader"), agentTopology->queryProp("@httpCallerIdHeader"));
-
     if (queryWorkUnit()->hasDebugValue("GlobalId"))
     {
         SCMStringBuffer globalId;

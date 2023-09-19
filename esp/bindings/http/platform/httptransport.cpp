@@ -1942,9 +1942,13 @@ void CHttpRequest::updateContext()
         m_context->setAcceptLanguage(acceptLanguage.str());
         StringBuffer callerId, globalId;
         getHeader(HTTP_HEADER_HPCC_GLOBAL_ID, globalId);
+        if (globalId.isEmpty())
+            getHeader("hpcc-global-id", globalId);
         if(globalId.length())
             m_context->setGlobalId(globalId);
         getHeader(HTTP_HEADER_HPCC_CALLER_ID, callerId);
+        if (callerId.isEmpty())
+            getHeader("hpcc-caller-id", callerId);
         if(callerId.length())
             m_context->setCallerId(callerId);
     }
