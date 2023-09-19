@@ -175,8 +175,8 @@ export const Files: React.FunctionComponent<FilesProps> = ({
                 },
             },
             Owner: { label: nlsHPCC.Owner },
-            SuperOwners: { label: nlsHPCC.SuperOwner },
-            Description: { label: nlsHPCC.Description },
+            SuperOwners: { label: nlsHPCC.SuperOwner, sortable: false },
+            Description: { label: nlsHPCC.Description, sortable: false },
             NodeGroup: { label: nlsHPCC.Cluster },
             Records: {
                 label: nlsHPCC.Records,
