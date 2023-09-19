@@ -471,7 +471,7 @@ public:
         if (!legacyDFSSuperFile->existsPhysicalPartFiles(0))
         {
             const char * logicalName = queryLogicalName();
-            throw MakeStringException(-1, "Some physical parts do not exists, for logical file : %s",(isEmptyString(logicalName) ? "[unattached]" : logicalName));
+            throw makeStringExceptionV(-1, "Some physical parts do not exists, for logical file : %s",(isEmptyString(logicalName) ? "[unattached]" : logicalName));
         }
     }
 
@@ -573,68 +573,22 @@ IClientWsDfs *getDfsClient(const char *serviceUrl, IUserDescriptor *userDesc)
     return dfsClient.getClear();
 }
 
-static CriticalSection localSecretCrit;
-static constexpr unsigned cachedSecretTimeoutSecs = 120; // 2 mins
 static void configureClientSSL(IEspClientRpcSettings &rpc, const char *secretName)
 {
-    /*
-     * This is a bit of a kludge, it gets the certificates from secrets, and writes them to local temp strorage.
-     * It does this so that it can pass the filename paths to rpc ssl / secure socket layer, which currently only
-     * accepts filenames, not binary blobs from memory.
-     */
-    StringBuffer clientCertFilename, clientPrivateKeyFilename, caCertFilename;
+    Owned<IPropertyTree> secretPTree = getSecret("storage", secretName);
+    if (!secretPTree)
+        throw makeStringExceptionV(-1, "secret %s.%s not found", "storage", secretName);
 
-    StringBuffer tempDirStr;
-    verifyex(getConfigurationDirectory(getGlobalConfigSP()->queryPropTree("Directories"), "temp", "ssl", "ssl", tempDirStr));
-    addPathSepChar(tempDirStr);
-    tempDirStr.append(secretName);
-    addPathSepChar(tempDirStr);
+    StringBuffer certSecretBuf;
+    getSecretKeyValue(certSecretBuf, secretPTree, "tls.crt");
 
-    clientCertFilename.append(tempDirStr).append("tls.crt");
-    clientPrivateKeyFilename.append(tempDirStr).append("tls.key");
-    caCertFilename.append(tempDirStr).append("ca.crt");
+    StringBuffer privKeySecretBuf;
+    getSecretKeyValue(privKeySecretBuf, secretPTree, "tls.key");
 
-    bool cacheEntryValid = false;
-    CriticalBlock b(localSecretCrit);
-    Owned<IFile> tempDir = createIFile(tempDirStr);
-    CDateTime timeOutTime, nowTime;
-    bool dirExists = false;
-    if (tempDir->getTime(&timeOutTime, nullptr, nullptr))
-    {
-        dirExists = true;
-        timeOutTime.adjustTimeSecs(cachedSecretTimeoutSecs);
-        nowTime.setNow();
-        if (nowTime.compare(timeOutTime, false) < 0)
-            cacheEntryValid = true;
-    }
+    StringBuffer caCertFileBuf;
+    getSecretKeyValue(caCertFileBuf, secretPTree, "ca.crt");
 
-    if (!cacheEntryValid)
-    {
-        if (dirExists)
-            verifyex(tempDir->setTime(&nowTime, &nowTime, nullptr));
-        else
-            verifyex(tempDir->createDirectory());
-        StringBuffer secretValue;
-
-        Owned<IFile> file = createIFile(clientCertFilename);
-        Owned<IFileIO> io = file->open(IFOcreate);
-        getSecretValue(secretValue, "storage", secretName, "tls.crt", true);
-        io->write(0, secretValue.length(), secretValue.str());
-        io->close();
-
-        file.setown(createIFile(clientPrivateKeyFilename));
-        io.setown(file->open(IFOcreate));
-        getSecretValue(secretValue.clear(), "storage", secretName, "tls.key", true);
-        io->write(0, secretValue.length(), secretValue.str());
-        io->close();
-
-        file.setown(createIFile(caCertFilename));
-        io.setown(file->open(IFOcreate));
-        getSecretValue(secretValue.clear(), "storage", secretName, "ca.crt", true);
-        io->write(0, secretValue.length(), secretValue.str());
-        io->close();
-    }
-    setRpcSSLOptions(rpc, true, clientCertFilename, clientPrivateKeyFilename, caCertFilename, false);
+    setRpcSSLOptions(rpc, true, certSecretBuf.str(), privKeySecretBuf.str(), caCertFileBuf.str(), false);
 }
 
 static CriticalSection serviceLeaseMapCS;

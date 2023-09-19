@@ -81,14 +81,14 @@ interface ICertificate : implements IInterface
 };
 
 typedef ISecureSocketContext* (*createSecureSocketContext_t)(SecureSocketType);
-typedef ISecureSocketContext* (*createSecureSocketContextEx_t)(const char* certfile, const char* privkeyfile, const char* passphrase, SecureSocketType);
+typedef ISecureSocketContext* (*createSecureSocketContextEx_t)(const char* certFileOrBuf, const char* privKeyFileOrBuf, const char* passphrase, SecureSocketType);
 typedef ISecureSocketContext* (*createSecureSocketContextEx2_t)(IPropertyTree* config, SecureSocketType);
 typedef ISecureSocketContext* (*createSecureSocketContextSecret_t)(const char *mtlsSecretName, SecureSocketType);
 
 extern "C" {
 
 SECURESOCKET_API ISecureSocketContext* createSecureSocketContext(SecureSocketType);
-SECURESOCKET_API ISecureSocketContext* createSecureSocketContextEx(const char* certfile, const char* privkeyfile, const char* passphrase, SecureSocketType);
+SECURESOCKET_API ISecureSocketContext* createSecureSocketContextEx(const char* certFileOrBuf, const char* privKeyFileOrBuf, const char* passphrase, SecureSocketType);
 SECURESOCKET_API ISecureSocketContext* createSecureSocketContextEx2(const IPropertyTree* config, SecureSocketType);
 SECURESOCKET_API ISecureSocketContext* createSecureSocketContextSSF(ISmartSocketFactory* ssf);
 SECURESOCKET_API ISecureSocketContext* createSecureSocketContextSecret(const char *mtlsSecretName, SecureSocketType);
