@@ -108,6 +108,8 @@ struct ReporterHelper
 };
 static ReporterHelper g_reporterHelper;
 
+static bool hasHttpPrefix(const char *addr);
+
 /*
  * trim xpath at first instance of element
  */
@@ -674,6 +676,7 @@ void EsdlServiceImpl::configureTargets(IPropertyTree *cfg, const char *service)
         m_methodAccessMaps.kill();
 
         m_returnSchemaLocationOnOK = definition_cfg->getPropBool("@" ANNOTATION_RETURNSCHEMALOCATION_ONOK);
+        m_methodGatewaysCache.clear();
 
         Owned<IPropertyTreeIterator> iter = m_pServiceMethodTargets->getElements("Target");
         ForEach(*iter)
@@ -736,28 +739,56 @@ void EsdlServiceImpl::configureTargets(IPropertyTree *cfg, const char *service)
             else
                 configureUrlMethod(method, methodCfg);
 
-            // Relocate legacy gateway inline URL resolution from prepareFinalRequest. To deprecate
-            // that hard-coded logic, scripts need access to resolved URL values in the script
-            // context's 'target' section. Resolve once per method here, instead of per request in
-            // adjustTargetConfig.
+            // Analyze defined gateways to identify use of local secrets and/or inline URLs. Cache
+            // relevant data for reuse on a per-transaction basis.
 
             IPTree* gateways = methodCfg.queryBranch("Gateways");
             if (!gateways)
                 continue;
-            bool resolveInline = (gateways->getPropBool("@resolveInlineURLs") || !isEmptyString(gateways->queryProp("@legacyTransformBranch")));
-            if (resolveInline)
+            GatewaysCacheEntry& gce = m_methodGatewaysCache[method];
+            std::set<std::string> uniqueNames;
+            bool updateInlines = gateways->getPropBool("@updateInlineUrls");
+            bool doLegacyTransform = !isEmptyString(gateways->queryProp("@legacyTransformTarget"));
+            Secrets secrets;
+            Owned<IPTreeIterator> gwIt(gateways->getElements("Gateway"));
+            ForEach(*gwIt)
             {
-                Owned<IPTreeIterator> gwIt(gateways->getElements("Gateway"));
-                ForEach(*gwIt)
+                IPTree& gw = gwIt->query();
+                StringBuffer name(gw.queryProp("@name"));
+                if (name.trim().isEmpty())
                 {
-                    IPTree& gw = gwIt->query();
-                    const char* url = gw.queryProp("@url");
-                    if (isEmptyString(url))
-                        continue;
-                    StringBuffer prefix(4, url);
-                    if (strieq(prefix, "http"))
-                        resolveGatewayInlineURL(gw);
+                    IWARNLOG("Ignoring method '%s' gateway missing or empty name", method);
+                    continue;
                 }
+                std::string key(name.str());
+                if (uniqueNames.count(key))
+                    throw makeStringExceptionV(-1, "method '%s' duplicates gateway name '%s'", method, name.str());
+                uniqueNames.insert(key);
+                const char* url = gw.queryProp("@url");
+                if (isEmptyString(url))
+                {
+                    DBGLOG("Ignoring method '%s' gateway '%s' missing url", method, name.str());
+                    continue;
+                }
+                Owned<IUpdatableGateway> handler;
+                if (strncmp(url, gwLocalSecretPrefix, gwLocalSecretPrefixLength) == 0)
+                {
+                    handler.setown(createLocalSecretGateway(gw, name, url));
+                    GatewayUpdaters updaters;
+                    Owned<IGatewayUpdater> updater(handler->getUpdater(updaters, secrets));
+                    updater.clear();
+                    gce.targetContext[key].set(handler.get());
+                }
+                else if (hasHttpPrefix(url))
+                {
+                    handler.setown(createInlineGateway(gw, name, url));
+                    if (updateInlines)
+                        gce.targetContext[key].set(handler.get());
+                }
+                else
+                    continue;
+                if (doLegacyTransform)
+                    gce.legacyTransform[key].set(handler.get());
             }
 
             DBGLOG("Method %s configured", method);
@@ -1139,8 +1170,6 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
         }
         else
         {
-            adjustTargetConfig(tgtcfg);
-
             //Future: support transforms for all transaction types by moving scripts and script processing up
             scriptContext.setown(checkCreateEsdlServiceScriptContext(context, srvdef, mthdef, tgtcfg, req));
 
@@ -1348,134 +1377,46 @@ void EsdlServiceImpl::getSoapError( StringBuffer& out,
     out.clear().append(finger-start,start);
 }
 
-void EsdlServiceImpl::adjustTargetConfig(Owned<IPTree>& tgtcfg) const
+EsdlServiceImpl::IUpdatableGateway* EsdlServiceImpl::createLocalSecretGateway(const IPTree& gw, const char* gwName, const char* gwUrl) const
 {
-    static const VStringBuffer gwLocalSecretXPath("Gateways/Gateway[@url='%s*']", gwLocalSecretPrefix);
-
-    if (!tgtcfg)
-        return;
-
-    if (tgtcfg->hasProp(gwLocalSecretXPath))
-    {
-        tgtcfg.setown(createPTreeFromIPT(tgtcfg));
-        const char* qt = tgtcfg->queryProp("@querytype");
-        bool published = (qt && (strieq(qt, "roxie") || strieq(qt, "wsecl")));
-        const char* requiredUsage = (published ? "allowPublishedGatewayUsage" : "allowUnpublishedGatewayUsage");
-        Owned<IPTreeIterator> gwsToResolve(tgtcfg->getElements(gwLocalSecretXPath));
-        ForEach(*gwsToResolve)
-            resolveGatewayLocalSecret(gwsToResolve->query(), requiredUsage);
-    }
+    const char* secretUsage = gw.queryProp("@secretUsage");
+    if (isEmptyString(secretUsage) || strieq(secretUsage, "http"))
+        return new CHttpConnectGateway(gw, gwName, gwUrl);
+    // TODO: add support for additional updaters as needed
+    else
+        throw makeStringExceptionV(-1, "gateway %s: unexpected secretUsage '%s'", gw.queryProp("@name"), secretUsage);
 }
 
-void EsdlServiceImpl::resolveGatewayLocalSecret(IPTree& gateway, const char* permission) const
+EsdlServiceImpl::IUpdatableGateway* EsdlServiceImpl::createInlineGateway(const IPTree& gw, const char* gwName, const char* gwUrl) const
 {
-    const char* name = gateway.queryProp("@name");
-    StringBuffer url(gateway.queryProp("@url"));
-    if (url.isEmpty())
-        throw makeStringExceptionV(-1, "gateway %s: missing url property", name);
-    if (strncmp(url, gwLocalSecretPrefix, gwLocalSecretPrefixLength))
-        throw makeStringExceptionV(-1, "gateway %s: expected '%s...'; got '%s'", name, gwLocalSecretPrefix, url.str());
-    const char* identification = url.str() + gwLocalSecretPrefixLength;
-    StringArray tokens;
-    tokens.appendList(identification, ":", true);
-    Owned<IPTree> secret;
-    switch (tokens.ordinality())
-    {
-    case 1:
-        if (strncmp(tokens.item(0), "http-connect-", 13) != 0)
-            secret.setown(getSecret("esp", VStringBuffer("http-connect-%s", tokens.item(0))));
-        else
-            secret.setown(getSecret("esp", tokens.item(0)));
-        break;
-    case 2:
-        if (strncmp(tokens.item(1), "http-connect-", 13) != 0)
-            secret.setown(getVaultSecret("esp", tokens.item(0), VStringBuffer("http-connect-%s", tokens.item(1))));
-        else
-            secret.setown(getVaultSecret("esp", tokens.item(0), tokens.item(1)));
-        break;
-    default:
-        throw makeStringExceptionV(-1, "gateway %s: '%s' is not of the form \"[ vault-id ':' ] secret-name\"", name, identification);
-    }
-    if (!secret)
-        throw makeStringExceptionV(-1, "gateway %s: 'esp' category secret '%s' not found", name, identification);
-    if (!isEmptyString(permission) && !secret->getPropBool(permission))
-        throw makeStringExceptionV(-1, "gateway %s: '%s' does not grant '%s' permission", name, identification, permission);
-    if (!secret->getProp("url", url.clear()) || url.isEmpty())
-        throw makeStringExceptionV(-1, "gateway %s: '%s' missing required 'url' property; credential-only secrets not supported", name, identification);
-    const char* username = secret->queryProp("username");
-    if (isEmptyString(username) && !secret->getPropBool("omitCredentials"))
-        throw makeStringExceptionV(-1, "gateway %s: '%s' missing expected 'username' property; set 'omitCredentials` property to 'true' if credentials are not required", name, identification);
-    const char* password = secret->queryProp("password");
-    if (isEmptyString(username) && password)
-        throw makeStringExceptionV(-1, "gateaay %s: '%s' invalid use of password without username", name, identification);
-    updateURLCredentials(url, username, password);
-    gateway.setProp("@url", url);
+    // TODO: add support for addiitional URL options if needed
+    return new CLegacyUrlGateway(gw, gwName, gwUrl);
 }
 
-void EsdlServiceImpl::resolveGatewayInlineURL(IPTree& gateway) const
+EsdlServiceImpl::IGatewayUpdater* EsdlServiceImpl::getGatewayUpdater(IPTree& gw, const UpdatableGateways& updatables, GatewayUpdaters& updaters, Secrets& secrets) const
 {
-    const char* name = gateway.queryProp("@name");
-    StringBuffer url(gateway.queryProp("@url"));
-    if (url.isEmpty())
-        throw makeStringExceptionV(-1, "gateway %s: missing  required '@url' property", name);
-    const char* username = gateway.queryProp("@username");
-    const char* password = gateway.queryProp("@password");
-    if (isEmptyString(username) && password)
-        throw makeStringExceptionV(-1, "gateway %s: invalid credentials - password without username", name);
-    StringBuffer decryptedPassword;
-    if (!isEmptyString(password))
-    {
-        decrypt(decryptedPassword, password);
-        password = decryptedPassword;
-    }
-    updateURLCredentials(url, username, password);
-    gateway.setProp("@url", url);
+    const char* name = gw.queryProp("@name");
+    if (isEmptyString(name))
+        return nullptr;
+    std::string key(name);
+    UpdatableGateways::const_iterator it = updatables.find(key);
+    if (updatables.end() == it)
+        return nullptr;
+    return it->second->getUpdater(updaters, secrets);
 }
 
-void EsdlServiceImpl::updateURLCredentials(StringBuffer& url, const char* username, const char* password) const
-{
-    StringBuffer scheme, usernameSink, passwordSink, host, port, path;
-    Utils::SplitURL(url, scheme, usernameSink, passwordSink, host, port, path);
-
-    if (scheme.length() && host.length())
-    {
-        StringBuffer userinfo;
-        if (!isEmptyString(username))
-        {
-            encodeUrlUseridPassword(userinfo, username);
-            if (password && *password) // TODO: remove '&& *password' to distinguish empty from omitted passwords
-            {
-                userinfo.append(':');
-                encodeUrlUseridPassword(userinfo, password);
-            }
-        }
-
-        url.clear();
-        url.append(scheme);
-        url.append("://");
-        if (userinfo.length())
-            url.append(userinfo).append('@');
-        url.append(host);
-        if (port.length())
-            url.append(':').append(port);
-        if (path.length())
-            url.append(path);
-    }
-}
-
-void EsdlServiceImpl::transformGatewaysConfig( IPropertyTree* srvcfg, IPropertyTree* forRoxie, const char* altElementName ) const
+void EsdlServiceImpl::transformGatewaysConfig( IPTreeIterator* inputs, IPropertyTree* forRoxie, const char* altElementName ) const
 {
     // Do we need to handle 'local FQDN'? It doesn't appear to be in the
     // Gateway element. Not sure where it's set but the RemoteNSClient
     // references it in RemoteNSFactory.cpp translateGateway() and modifies
     // resulting gateway URL if it's set.
-    if( srvcfg && forRoxie)
+    if (forRoxie)
     {
         const char* treeName = (!isEmptyString(altElementName) ? altElementName : "Gateway");
-        Owned<IPropertyTreeIterator> cfgIter = srvcfg->getElements("Gateways/Gateway");
-        ForEach(*cfgIter)
+        ForEach(*inputs)
         {
-            IPropertyTree& cfgGateway = cfgIter->query();
+            IPropertyTree& cfgGateway = inputs->query();
             StringBuffer url(cfgGateway.queryProp("@url"));
             StringBuffer service(cfgGateway.queryProp("@name"));
             Owned<IPropertyTree> gw = createPTree(treeName, false);
@@ -1837,29 +1778,70 @@ void EsdlServiceImpl::prepareFinalRequest(IEspContext &context,
             reqProcessed.append("<soap:Body><").append(tgtQueryName).append(">");
             reqProcessed.appendf("<_TransactionId>%s</_TransactionId>", context.queryTransactionID());
 
+            GatewaysCache::const_iterator mit = m_methodGatewaysCache.find(mthName);
+            GatewayUpdaters updaters;
+            Secrets secrets;
             if (tgtctx)
+            {
+                // The target context is based on a copy of the target configuration. One copy per
+                // transaction. It will have already been copied into the script context, so local
+                // secret and inline URL resolutions can be made in the given property tree.
+                if (mit != m_methodGatewaysCache.end() && !mit->second.targetContext.empty())
+                {
+                    IPTree* ctxGateways = tgtctx->queryBranch("Gateways");
+                    if (ctxGateways)
+                    {
+                        Owned<IPTreeIterator> it(ctxGateways->getElements("Gateway"));
+                        ForEach(*it)
+                        {
+                            IPTree& gw = it->query();
+                            Owned<IGatewayUpdater> updater(getGatewayUpdater(gw, mit->second.targetContext, updaters, secrets));
+                            if (updater)
+                                updater->updateGateway(gw, "allowPublishedGatewayUsage");
+                        }
+                    }
+                }
                 toXML(tgtctx.get(), reqProcessed);
+            }
 
             reqProcessed.append(reqcontent.str());
             reqProcessed.append("</").append(tgtQueryName).append("></soap:Body>");
 
             // Transform gateways
-            auto cfgGateways = tgtcfg->queryBranch("Gateways");
+            IPTree* cfgGateways = tgtcfg->queryBranch("Gateways");
             if (cfgGateways)
             {
-                auto baseXpath = cfgGateways->queryProp("@legacyTransformTarget");
-                if (!isEmptyString(baseXpath))
+                StringBuffer xpath(cfgGateways->queryProp("@legacyTransformTarget"));
+                if (!xpath.isEmpty())
                 {
+                    Owned<IPTreeIterator> it;
+                    if (mit != m_methodGatewaysCache.end() && !mit->second.legacyTransform.empty())
+                    {
+                        // The target configuration is shared by all transactions. Local secret and
+                        // inline URL resolutions must be made to a copy of the gateways, to avoid
+                        // contaminating values used in subsequent transactions.
+                        Owned<IPTree> copy(createPTreeFromIPT(cfgGateways));
+                        it.setown(copy->getElements("Gateway"));
+                        ForEach(*it)
+                        {
+                            IPTree& gw = it->query();
+                            Owned<IGatewayUpdater> updater(getGatewayUpdater(gw, mit->second.legacyTransform, updaters, secrets));
+                            if (updater)
+                                updater->updateGateway(gw, "allowPublishedGatewayUsage");
+                        }
+                    }
+                    else
+                        it.setown(cfgGateways->getElements("Gateway"));
+                    
                     Owned<IPTree> gws = createPTree("gateways", 0);
                     // Temporarily add the closing </soap:Envelope> tag so we have valid
                     // XML to transform the gateways
                     Owned<IPTree> soapTree = createPTreeFromXMLString(reqProcessed.append("</soap:Envelope>"), ipt_ordered);
-                    StringBuffer xpath(baseXpath);
                     StringBuffer rowName(cfgGateways->queryProp("@legacyRowName"));
 
                     if (rowName.isEmpty())
                         rowName.append("row");
-                    transformGatewaysConfig(tgtcfg, gws, rowName);
+                    transformGatewaysConfig(it, gws, rowName);
                     xpath.replaceString("{$query}", tgtQueryName);
                     xpath.replaceString("{$method}", mthName);
                     xpath.replaceString("{$service}", srvdef.queryName());
@@ -1927,6 +1909,194 @@ EsdlServiceImpl::~EsdlServiceImpl()
         if(sf)
             sf->stop();
     }
+}
+
+IPTree* EsdlServiceImpl::Secrets::getVaultSecret(const char* category, const char* vaultId, const char* name)
+{
+    Owned<IPTree> secret(lookup(category, vaultId, name));
+    if (!secret)
+    {
+        secret.setown(::getVaultSecret(category, vaultId, name));
+        if (secret)
+            store(*secret, category, vaultId, name);
+    }
+    return secret.getClear();
+}
+
+IPTree* EsdlServiceImpl::Secrets::getSecret(const char* category, const char* name)
+{
+    Owned<IPTree> secret(lookup(category, "", name));
+    if (!secret)
+    {
+        secret.setown(::getVaultSecret(category, "", name));
+        if (secret)
+            store(*secret, category, "", name);
+    }
+    return secret;
+}
+
+IPTree* EsdlServiceImpl::Secrets::lookup(const char* category, const char* vaultId, const char* name) const
+{
+    Key key = std::make_tuple<std::string, std::string, std::string>(category ? category : "", vaultId ? vaultId : "", name ? name : "");
+    Cache::const_iterator it = cache.find(key);
+    if (it != cache.end())
+        return it->second.getLink();
+    return nullptr;
+}
+
+void EsdlServiceImpl::Secrets::store(IPTree& secret, const char* category, const char* vaultId, const char* name)
+{
+    Key key = std::make_tuple<std::string, std::string, std::string>(category ? category : "", vaultId ? vaultId : "", name ? name : "");
+    cache[key].set(&secret);
+}
+
+EsdlServiceImpl::IGatewayUpdater* EsdlServiceImpl::CUpdatableGateway::getUpdater(GatewayUpdaters& updaters, Secrets& secrets) const
+{
+    GatewayUpdaters::iterator it = updaters.find(updatersKey);
+    if (it != updaters.end())
+        return it->second.getLink();
+    Owned<IGatewayUpdater> spawned(getUpdater(secrets));
+    updaters[updatersKey].setown(spawned.getLink());
+    return spawned.getClear();
+}
+
+EsdlServiceImpl::CUpdatableGateway::CUpdatableGateway(const char* gwName)
+{
+    updatersKey.assign(gwName);
+}
+
+bool EsdlServiceImpl::CUpdatableGateway::updateURLCredentials(StringBuffer& url, const char* username, const char* password) const
+{
+    StringBuffer original(url), scheme, usernameSink, passwordSink, host, port, path;
+    Utils::SplitURL(original, scheme, usernameSink, passwordSink, host, port, path);
+
+    if (scheme.length() && host.length())
+    {
+        StringBuffer userinfo;
+        if (!isEmptyString(username))
+        {
+            encodeUrlUseridPassword(userinfo, username);
+            if (password && *password) // TODO: remove '&& *password' to distinguish empty from omitted passwords
+            {
+                userinfo.append(':');
+                encodeUrlUseridPassword(userinfo, password);
+            }
+        }
+
+        url.clear();
+        url.append(scheme);
+        url.append("://");
+        if (userinfo.length())
+            url.append(userinfo).append('@');
+        url.append(host);
+        if (port.length())
+            url.append(':').append(port);
+        if (path.length())
+            url.append(path);
+        return !streq(original, url);
+    }
+    return false;
+}
+
+EsdlServiceImpl::CLegacyUrlGateway* EsdlServiceImpl::CLegacyUrlGateway::getUpdater(Secrets&) const
+{
+    return LINK(const_cast<CLegacyUrlGateway*>(this));
+}
+
+void EsdlServiceImpl::CLegacyUrlGateway::updateGateway(IPTree& gw, const char*)
+{
+    gw.setProp("@url", url);
+}
+
+EsdlServiceImpl::CLegacyUrlGateway::CLegacyUrlGateway(const IPTree& gw, const char* gwName, const char* gwUrl)
+    : CUpdatableGateway(gwName)
+    , url(gwUrl)
+{
+    const char* username = gw.queryProp("@username");
+    const char* password = gw.queryProp("@password");
+    if (isEmptyString(username) && password)
+        throw makeStringExceptionV(-1, "gateway %s: invalid credentials - password without username", gwName);
+    StringBuffer decrypted;
+    if (!isEmptyString(password))
+    {
+        decrypt(decrypted, password);
+        password = decrypted;
+    }
+    updateURLCredentials(url, username, password);
+}
+    
+void EsdlServiceImpl::CLocalSecretGateway::CUpdater::updateGateway(IPTree& gw, const char* requiredUsage)
+{
+    if (!secret)
+        throw makeStringExceptionV(-1, "gateway %s: 'esp' category secret '%s' not found", "?", entry->secretId.str());
+    entry->doUpdate(gw, *secret, requiredUsage);
+}
+
+EsdlServiceImpl::CLocalSecretGateway::CUpdater::CUpdater(const CLocalSecretGateway& _entry, Secrets& secrets)
+{
+    entry.set(&_entry);
+    if (entry->vaultId.isEmpty())
+        secret.setown(secrets.getSecret("esp", entry->secretName));
+    else
+        secret.setown(secrets.getVaultSecret("esp", entry->vaultId.str(), entry->secretName));
+}
+
+EsdlServiceImpl::IGatewayUpdater* EsdlServiceImpl::CLocalSecretGateway::getUpdater(Secrets& secrets) const
+{
+    return new CUpdater(*this, secrets);
+}
+
+EsdlServiceImpl::CLocalSecretGateway::CLocalSecretGateway(const IPTree& gw, const char* gwName, const char* gwUrl, const char* classPrefix)
+    : CUpdatableGateway(gwName)
+{
+    secretId.append(gwUrl + gwLocalSecretPrefixLength);
+    StringArray tokens;
+    tokens.appendList(secretId, ":", true);
+    const char* vaultToken = nullptr;
+    const char* secretToken = nullptr;
+    switch (tokens.ordinality())
+    {
+    case 1: // secret name without vault name
+        secretToken = tokens.item(0);
+        break;
+    case 2: // secret name after vault name
+        vaultToken = tokens.item(0);
+        secretToken = tokens.item(1);
+        break;
+    default:
+        throw makeStringExceptionV(-1, "gateway %s: '%s' is not of the form \"[ vault-id ':' ] secret-name\"", gwName, secretId.str());
+    }
+
+    if (!isEmptyString(vaultToken))
+        vaultId.set(vaultToken);
+    secretName.append(classPrefix).append(secretToken);
+}
+
+void EsdlServiceImpl::CLocalSecretGateway::doUpdate(IPTree& gw, const IPTree& secret, const char* requiredUsage) const
+{
+    if (!isEmptyString(requiredUsage) && !secret.getPropBool(requiredUsage))
+        throw makeStringExceptionV(-1, "gateway %s: '%s' does not allow '%s' usage", updatersKey.c_str(), secretId.str(), requiredUsage);
+}
+
+void EsdlServiceImpl::CHttpConnectGateway::doUpdate(IPTree& gw, const IPTree& secret, const char* requiredUsage) const
+{
+    CLocalSecretGateway::doUpdate(gw, secret, requiredUsage);
+    StringBuffer url;
+    if (!secret.getProp("url", url.clear()) || url.isEmpty())
+        throw makeStringExceptionV(-1, "gateway %s: '%s' missing required 'url' property; credential-only secrets not supported", gw.queryProp("@name"), secretId.str());
+    const char* username = secret.queryProp("username");
+    if (isEmptyString(username) && !secret.getPropBool("omitCredentials"))
+        throw makeStringExceptionV(-1, "gateway %s: '%s' missing expected 'username' property; set 'omitCredentials` property to 'true' if credentials are not required", gw.queryProp("@name"), secretId.str());
+    const char* password = secret.queryProp("password");
+    if (isEmptyString(username) && password)
+        throw makeStringExceptionV(-1, "gateway %s: '%s' invalid use of password without username", gw.queryProp("@name"), secretId.str());
+    updateURLCredentials(url, username, password);
+    gw.setProp("@url", url);
+}
+
+EsdlServiceImpl::CHttpConnectGateway::CHttpConnectGateway(const IPTree& gw, const char* gwName, const char* gwUrl)
+    : CLocalSecretGateway(gw, gwName, gwUrl, "http-connect-")
+{
 }
 
 EsdlBindingImpl::EsdlBindingImpl()
@@ -4011,7 +4181,6 @@ int EsdlBindingImpl::onGetRoxieBuilder(CHttpRequest* request, CHttpResponse* res
                     StringBuffer reqcontent;
                     getRequestContent(*context, reqcontent, request, srvname, mthname, ns, ROXIEREQ_FLAGS);
 
-                    m_pESDLService->adjustTargetConfig(tgtcfg);
                     tgtctx.setown( m_pESDLService->createTargetContext(*context, tgtcfg, *defsrv, *defmth, req_pt));
 
                     Owned<IEsdlScriptContext> scriptContext = m_pESDLService->checkCreateEsdlServiceScriptContext(*context, *defsrv, *defmth, tgtcfg.get(), req_pt);

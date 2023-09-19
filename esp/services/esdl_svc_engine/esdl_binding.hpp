@@ -73,6 +73,205 @@ typedef int (*cpp_service_method_t)(const char* CtxXML, const char* ReqXML, Stri
 class EsdlServiceImpl : public CInterface, implements IEspService
 {
 private:
+    /**
+     * @brief Cache of secrets accessed as part of transaction processing.
+     *
+     * In the context of a single transaction, multiple requests for the same secret should always
+     * return the same secret data for each request. Cached data does not expire and there is no
+     * option to reload data.
+     *
+     * TODO: Refactor to support additional use cases
+     *       - Provide ESDL script operation support so mysql (now) and http-post-xml (eventually)
+     *         can benefit secret reuse.
+     *       - Encapsulate non-jsecrets access to support non-standard secret sources, unless
+     *         jsecrets is changed to provide this encapsulation.
+     */
+    class Secrets
+    {
+    private:
+        using Key = std::tuple<std::string, std::string, std::string>;
+        using Cache = std::map<Key, Owned<IPTree>>;
+        Cache cache;
+    public:
+        IPTree* getVaultSecret(const char* category, const char* vaultId, const char* name);
+        IPTree* getSecret(const char* category, const char* name);
+    protected:
+        IPTree* lookup(const char* category, const char* vaultId, const char* name) const;
+        void store(IPTree& secret, const char* category, const char* vaultId, const char* name);
+    };
+
+private:
+    /**
+     * @brief Abstraction of a per-transaction gateway updater.
+     *
+     * During service load, the method configurations are parsed for Gateways/Gateway elements.
+     * Matching elements containing both `@name` and `@url` properties may be updated when
+     * preparing backend service requests. Updates may inject user credentials into a configured
+     * URL or assemble a new URL from a secret.
+     *
+     * Each instance contains the information and logic to update a single Gateway property tree
+     * as needed. Only one instance per gateay should be created per transaction. No instance
+     * should be created for gateways that do not require updates.
+     */
+    interface IGatewayUpdater : public IInterface
+    {
+        virtual void updateGateway(IPTree& gw, const char* requiredUsage) = 0;
+    };
+    using GatewayUpdaters = std::map<std::string, Owned<IGatewayUpdater>>;
+
+    /**
+     * @brief Abstraction of a per-service-method gateway update handler.
+     *
+     * During service load, the method configurations are parsed for Gateways/Gateway elements.
+     * Matching elements containing both `@name` and `@url` properties may be updated when
+     * preparing backend service requests. Updates may inject user credentials into a configured
+     * URL or assemble a new URL from a secret.
+     *
+     * Implementations are expected to retain all gateway configuration values at load time to
+     * enable an `IGatewayUpdater` instance to update a copy of the gateway element during
+     * backend request preparation.
+     *
+     * - If the `Gateway` element is a self-contained gateway specification, the retained data
+     *   may be the updated values. Inline URLs fit this description.
+     * - If the `Gateway` element refers to external data that could change between service load
+     *   and a transaction, the retained data must be sufficient to retrieve current values on
+     *   demand. Local secrets fit this description.
+     *
+     * Implementations may assume that each gateway configuration will include both `@name` and
+     *  `@url` properties. No other assumptions are valid.
+     */
+    interface IUpdatableGateway : public IInterface
+    {
+        virtual IGatewayUpdater* getUpdater(GatewayUpdaters& updaters, Secrets& secrets) const = 0;
+    };
+    using UpdatableGateways = std::map<std::string, Owned<IUpdatableGateway>>;
+
+    /**
+     * @brief Abstract extension of `IUpdatableGateway` with some standardized behaviors.
+     *
+     * - Subclasses supply the updater map key used to locate an existing updater or store a new
+     *   updater. It is assumed the key given is the value of `Gateway/@name`. This value must not
+     *   be null.
+     * - An existing updater in a given map of updaters will always be reused before creating a
+     *   new updater.
+     * - Insertion (or replacement) of user credentials in a URL string is available to any
+     *   subclass that needs it..
+     *
+     * All extensions must implement `getUpdater(Secrets&)`. In some cases this may entail creation
+     * of a new updater instance. In other cases a single instance may be reused.
+     */
+    class CUpdatableGateway : public CInterfaceOf<IUpdatableGateway>
+    {
+    public:
+        virtual IGatewayUpdater* getUpdater(GatewayUpdaters& updaters, Secrets& secrets) const override;
+    protected:
+        std::string updatersKey;
+    protected:
+        CUpdatableGateway(const char* gwName);
+        virtual IGatewayUpdater* getUpdater(Secrets& secrets) const = 0;
+        bool updateURLCredentials(StringBuffer& url, const char* username, const char* password) const;
+    };
+    
+    /**
+     * @brief Concrete extension of both `CUpdatableGateway` and `IGatewayUpdater` for handling
+     *        legecy URL gateways
+     *
+     * - User credentials embedded in `Gateway/@url` are dropped.
+     * - `Gateway/@username` may specify a user name to embed in an updated URL.
+     * - If `Gateway/@username` is given, `Gateway/@password` may specify an exncrypted password
+     *   value to be decrypted and embedded in an updated URL.
+     * - It is an error to specify `Gateway/@password` without `Gateway/@username`.
+     */
+    class CLegacyUrlGateway : public CUpdatableGateway, public IGatewayUpdater
+    {
+    protected: // CUpdatableGateway
+        virtual CLegacyUrlGateway* getUpdater(Secrets&) const override;
+    public: // IGatewayUpdater
+        virtual void updateGateway(IPTree& gw, const char*) override;
+    protected:
+        StringBuffer url;
+    public:
+        IMPLEMENT_IINTERFACE_USING(CUpdatableGateway);
+        CLegacyUrlGateway(const IPTree& gw, const char* gwName, const char* gwUrl);
+    };
+    
+    /**
+     * @brief Concrete extension of `CUpdatableGateway` for handling local secrets that is always
+     *        extended with secret usage-specific logic.
+     *
+     * - Ensures `Gateway/@url` matches the pattern `"local-secret:" [ vault-id ":" ] secret-name".`
+     * - Defines a standard updater separating dynamically changing secrets from the configuration.
+     * - Enforces a requirement for a local secret to explicitly allow its data to be shared with
+     *   a backend roxie service.
+     */
+    class CLocalSecretGateway : public CUpdatableGateway
+    {
+    protected:
+        class CUpdater : public CInterfaceOf<IGatewayUpdater>
+        {
+            friend class CLocalSecretGateway;
+        public: // IGatewayUpdater
+            virtual void updateGateway(IPTree& gw, const char* requiredUsage) override;
+        protected:
+            Linked<const CLocalSecretGateway> entry;
+            Owned<IPTree> secret;
+        public:
+            CUpdater(const CLocalSecretGateway& _entry, Secrets& secrets);
+        };
+    protected: // CUpdatableGateway
+        virtual IGatewayUpdater* getUpdater(Secrets& secrets) const override;
+    protected:
+        StringBuffer secretId;
+        StringAttr   vaultId;
+        StringBuffer secretName;
+    public:
+        CLocalSecretGateway(const IPTree& gw, const char* gwName, const char* gwUrl, const char* classPrefix);
+    protected:
+        virtual void doUpdate(IPTree& gw, const IPTree& secret, const char* requiredUsage) const;
+    };
+
+    /**
+     * @brief Concete extension of `CLocalSecretGateway` to construct a new `Gateway/@url` value
+     *        from secret-defined values.
+     *
+     * - A secret name must begin with "http-connect-". Configurations should omit this prefix,
+     *   but its presence is acceptable.
+     * - A secret must satisfy the requirements defined in `CLocalSecretGateway`.
+     * - A secret must define a non-empty `url` property.
+     * - A secret must define either a non-empty `username` property or set the `omitCredentials`
+     *   property to true.
+     * - A secret may define a `password` property if `username` is also defined.
+     * - A secret must not define a `password` property if `username` is not defined.
+     */
+    class CHttpConnectGateway : public CLocalSecretGateway
+    {
+    protected: // CLocalSecretGateway
+        void doUpdate(IPTree& gw, const IPTree& secret, const char* requiredUsage) const override;
+    public:
+        CHttpConnectGateway(const IPTree& gw, const char* gwName, const char* gwUrl);
+    };
+
+    /**
+     * @brief Storage of updateable gateway handlers for a single method.
+     *
+     * Gateway updates may occur in either or both of two locations within a backend
+     * service request. The storage layout must enable support for both locations.
+     *
+     * 1. The optional inclusion of a methods binding definition that does not exclude defined
+     *    gateways, also known as the target context. Target context inclusion must update all
+     *    gateways referring to local secrets. Target context inclusion must not, for backward
+     *    compatibility, update any gateways referring to inline URLs.
+     * 2. The optional request for "legacy gateway transformation". Legacy transformations must
+     *    update all gateways referring to local secrets and inline URLs.
+     */
+    struct GatewaysCacheEntry
+    {
+        UpdatableGateways targetContext;
+        UpdatableGateways legacyTransform;
+    };
+    using GatewaysCache = std::map<std::string, GatewaysCacheEntry>;
+
+private:
     inline Owned<ILoggingManager>& loggingManager() { return m_oDynamicLoggingManager ? m_oDynamicLoggingManager : m_oStaticLoggingManager; }
     inline Owned<IDataMaskingEngine>& maskingEngine() { return m_oDynamicMaskingEngine ? m_oDynamicMaskingEngine : m_oStaticMaskingEngine; }
     IEspContainer *container = nullptr;
@@ -101,6 +300,7 @@ private:
     Owned<ILoadedDllEntry> javaPluginDll;
 #endif
     Owned<IEmbedContext> javaplugin;
+    GatewaysCache m_methodGatewaysCache;
 
 public:
     StringBuffer                m_espServiceType;
@@ -201,6 +401,59 @@ public:
     virtual void esdl_log(IEspContext &context, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, IPropertyTree *tgtcfg, IPropertyTree *tgtctx, IPropertyTree *req_pt, const char *xmlresp, const char *logdata, unsigned int timetaken){}
     virtual void processHeaders(IEspContext &context, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, const char *ns, StringBuffer &req, StringBuffer &headers){};
     virtual void processRequest(IEspContext &context, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, const char *ns, StringBuffer &req) {};
+    
+    /**
+     * @brief Assemble a SOAP request to be sent to a backend service.
+     *
+     * Assembly includes construction of an initial SOAP request and processing backend request
+     * ESDL script entry point transforms, if any exist.
+     *
+     * Initial request construction of all backend requests wraps the given request content in a
+     * SOAP envelope and SOAP body. For published requests, where `isroxie` is true, special
+     * handling for gateways is provided:
+     *
+     * - For `Gateways/Gateway` elements found in `tgtctx`:
+     *   - Elements with local secret references are updated to replace `@url` with secret-
+     *     defined data.
+     *   - Elements with inline URL data are updated to insert user credentials into the URL, but
+     *     only if `Gateways/@updateInlineUrls` is true.
+     * - For `Gateways/Gateway1 elements found in `tgtctx` when `Gateways/@legacyTransformTarget`
+     *   is not empty:
+     *   - Elements with local secret references are updated to replace `@url` with secret-
+     *     defined data.
+     *   - Elements with inline URL data are updated to insert user credentials into the URL.
+     *   - `<Gateways><Gateway name="foo" url="bar"/></Gateways>` becomes
+     *     `<gateways><row ServiceName="foo" URL="bar"/></gateways>`, with `Gateways/@legacyRowName`
+     *     allowing an alternate name for element `row`.
+     *   - The new `gateways` element is placed in the request at the location referred to by
+     *     `Gateways/@legacyTransformTarget`. This XPath supports multiple variable substitutions
+     *     such as:
+     *     - {$query} becomes the value of `Method/@queryname`
+     *     - {$method} becomes the ESDL definition's method name
+     *     - {$service} becomes the ESDL definition's service name
+     *     - {$request} becomes the ESDL definition's method request type
+     *
+     * Support for inline URLs in the target configuration, and context which is a subset of the
+     * configuration, is provided for backward compatibility. Use is strongly discouraged.
+     *
+     * Support for local secrets in the target configuration is offered for use cases where the
+     * ESP cannot identify a connection secret known to the target service. It is an improvement
+     * on inline URLs, but still involves risk by disclosing secret data.
+     *
+     * It is a best practice for all Gateay URLs to be defined in terms of secrets known to the
+     * target service, eliminating the need for any additional data disclosures in the request.
+     *
+     * @param context 
+     * @param scriptContext 
+     * @param tgtcfg 
+     * @param tgtctx 
+     * @param srvdef 
+     * @param mthdef 
+     * @param isroxie 
+     * @param ns 
+     * @param reqcontent 
+     * @param reqProcessed 
+     */
     void prepareFinalRequest(IEspContext &context, IEsdlScriptContext *scriptContext, Owned<IPropertyTree> &tgtcfg, Owned<IPropertyTree> &tgtctx, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, bool isroxie, const char* ns, StringBuffer &reqcontent, StringBuffer &reqProcessed);
     virtual void createServersList(IEspContext &context, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, StringBuffer &servers) {};
     virtual bool handleResultLogging(IEspContext &espcontext, IEsdlScriptContext *scriptContext, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, IPropertyTree * reqcontext, IPropertyTree * request,  const char * rawreq, const char * rawresp, const char * finalresp, const char * logdata);
@@ -209,23 +462,6 @@ public:
     virtual void handleFinalRequest(IEspContext &context, IEsdlScriptContext *scriptContext, Owned<IPropertyTree> &tgtcfg, Owned<IPropertyTree> &tgtctx, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, const char *ns, StringBuffer& req, StringBuffer &out, bool isroxie, bool isproxy, StringBuffer &rawreq);
     void getSoapBody(StringBuffer& out,StringBuffer& soapresp);
     void getSoapError(StringBuffer& out,StringBuffer& soapresp,const char *,const char *);
-
-    /**
-     * @brief Adjust the contents of the target configuration on a per-transaction basis.
-     *
-     * If changes to the shared method configuration are required on a per-transaction basis,
-     * replace the shared configuration with a copy that contains the updates. This must be
-     * invoked before `createTargetContext` or `checkCreateEsdlServceScriptContext`, both of which
-     * use the target configuration.
-     *
-     * Gateway elements may require updates on a per-transaction basis. Specifically, the use
-     * of local secret references must be updated with each transaction because the secret
-     * values may have changed since a previous use.
-     *
-     * @param tgtcfg the shared configuration on input; either the unchanged shared configuration
-     *               or modified copy on output
-     */
-    void adjustTargetConfig(Owned<IPTree>& tgtcfg) const;
 
     virtual bool unsubscribeServiceFromDali() override {return true;}
     virtual bool subscribeServiceToDali() override {return false;}
@@ -237,77 +473,54 @@ protected:
     static constexpr const size_t gwLocalSecretPrefixLength = strlen(gwLocalSecretPrefix);
 
     /**
-     * @brief Possibly construct a new gateway URL value by resolving a given connection secret
-     *        identifier.
-     *
-     * The gateway element is expected to contain a non-empty value for property `@url`. This value
-     * must begin with gwLocalSecretPrefix and be followed by a secret identification in the form
-     * of `[ vault-id ":" ] secret-name`. This is assumed to identify connection secret known only
-     * to the ESP, exceptions will be thrown on failure:
-     *
-     * - `gateway` must contain property `@url`; and
-     * - property '@url` must begin with gwLocalSecretPrefix; and
-     * - property `@url` must include a secret name, and may include a vault identifier; and
-     * - the optional vault identifier and required secret name combination must identify a secret
-     *   in the `esp` category; and
-     * - the secret must grant the requested `permission`, when given, by defining a Boolean
-     *   property with the permission name set to true; and
-     * - the secret must define a non-empty `url` property; and
-     * - the secret must define either a non-empty `username` property or a Boolean property
-     *   `insecure` set to to true; and
-     * - the secret may define a `password` property only if a non-empty `username` property is
-     *   also defined.
-     *
-     * Use of local secrets in gateway configurations is preferred to the use of inline URLs, but
-     * is not considered a best practice. Although it does remove user credentials from the
-     * configuration file, it increases exposure of the secret data and precludes the use of
-     * secret-defined tokens and certificates for connection security.
-     *
-     * @param gateway    property tree that must contain at least a `@url` property
-     * @param permission name of local secret property controlling use of the secret in a gateway
-     */
-    void resolveGatewayLocalSecret(IPTree& gateway, const char* permission) const;
-
-    /**
-     * @brief Possibly construct a new gateway URL value by removing embedded user credentials and
-     *        inserting separately configured values.
-     *
-     * The gateway element must contain an `@url` property, and may contain `@username` and
-     * `@password` properties. A password must not be specified in the absence of a username.
-     *
-     * Use of inline URLs is strongly discouraged. Secure connections are not possible without
-     * including user credentials in the configuration. Support is provided for backward
-     * compatibility purposes only.
-     *
-     * Support for a `@roxieClient` gateway property is obsolete. When used with gateway
-     * configurations, its effect would be to either require both username and password or prevent
-     * the use of inline credentials. DESDL configurations should define credentials when needed,
-     * and omit them when not. 
-     *
-     * @param gateway property tree that should contain at least a `@url` property
-     */
-    void resolveGatewayInlineURL(IPTree &gateway) const;
-
-    /**
-     * @brief Helper function to assemble a URL with optional inline user credentials.
+     * @brief Factory method to create an updatable gateway handler for a gateway referencing a
+     *        local secret.
      * 
-     * @param url      a base URL on input; a possibly modified URL on output
-     * @param username optional user identifier
-     * @param password optional user password
+     * @param gw 
+     * @param gwName 
+     * @param gwUrl 
+     * @return IUpdatableGateway* 
      */
-    void updateURLCredentials(StringBuffer& url, const char* username, const char* password) const;
+    IUpdatableGateway* createLocalSecretGateway(const IPTree& gw, const char* gwName, const char* gwUrl) const;
+
+    /**
+     * @brief Factory method to create an updatable gateway handler for a gateway defined inline.
+     * 
+     * @param gw 
+     * @param gwName 
+     * @param gwUrl 
+     * @return IUpdatableGateway* 
+     */
+    IUpdatableGateway* createInlineGateway(const IPTree& gw, const char* gwName, const char* gwUrl) const;
+
+    /**
+     * @brief Obtain an updater instance for use with a specific gateway.
+     *
+     * - Null is returned if the gateway does not contain `@name` or `updatables` does not include
+     *   this key.
+     * - A new link to an existing updater (in `updaters`) is returned if the updatable handler
+     *   (from `updatables`) can find a match. Matching logic is an imlementation detail of the
+     *   updatable handler.
+     * - A new updater is created, cached in `updaters`, and returned the first time the gateway
+     *   is evaluated.
+     * 
+     * @param gw 
+     * @param updatables 
+     * @param updaters 
+     * @param secrets 
+     * @return IGatewayUpdater* 
+     */
+    IGatewayUpdater* getGatewayUpdater(IPTree& gw, const UpdatableGateways& updatables, GatewayUpdaters& updaters, Secrets& secrets) const;
 
     /**
      * @brief Implementation of legacy gateway transformation invoked only during preparation of
      *        published requests.
      *
-     * This can be deprecated once scripts can access resolved URL values.
-     *
-     * @param srvcfg         the target configuration containing all gateways
+     * @param inputs         iterator of all gateways
      * @param forRoxie       the transformed gateway structure
      * @param altElementName configurable element name used in the transformed gateway structure
      */
-    void transformGatewaysConfig( IPropertyTree* srvcfg, IPropertyTree* forRoxie, const char* altElementName = nullptr ) const;
+    void transformGatewaysConfig( IPTreeIterator* inputs, IPropertyTree* forRoxie, const char* altElementName = nullptr ) const;
 
 private:
     bool initMaskingEngineDirectory(const char* dir);
