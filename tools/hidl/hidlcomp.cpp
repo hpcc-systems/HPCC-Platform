@@ -4995,9 +4995,6 @@ void EspServInfo::write_esp_binding_ipp()
     //method ==> processRequest
     outs("\tvirtual int processRequest(IRpcMessage* rpc_call, IRpcMessage* rpc_response);\n");
 
-    // method ===> getServiceXmlFilename
-    outs("\tint getServiceXmlFilename(StringBuffer &filename);\n");
-
     //method ==> getXsdDefinition
     outs("\tint getXsdDefinition(IEspContext &context, CHttpRequest* request, StringBuffer &content, const char *service, const char *method, bool mda);\n");
 
@@ -5141,6 +5138,7 @@ void EspServInfo::write_esp_binding(const char *packagename)
     outf("{\n");
     outf("\tinit_strings();\n");
     outf("\tsetWsdlVersion(%s);\n", wsdlVer.str());
+    outf("\tserviceXmlFilename.append(\"%s.xml\");\n", packagename);
     outf("}\n");
 
     outf("\nC%sSoapBinding::C%sSoapBinding(IPropertyTree* cfg, const char *bindname, const char *procname, http_soap_log_level level):CHttpSoapBinding(cfg, bindname, procname, level)\n", name_, name_);
@@ -5148,6 +5146,7 @@ void EspServInfo::write_esp_binding(const char *packagename)
     outf("\tinit_strings();\n");
     outf("\tinit_metrics();\n");
     outf("\tsetWsdlVersion(%s);\n", wsdlVer.str());
+    outf("\tserviceXmlFilename.append(\"%s.xml\");\n", packagename);
     outf("}\n");
 
     outf("\nvoid C%sSoapBinding::init_strings()\n", name_);
@@ -5361,14 +5360,6 @@ void EspServInfo::write_esp_binding(const char *packagename)
     outs("\tERRLOG(\"%s\", msg.str());\n");
     outs("\tresponse->set_err(msg);\n");
     outs("\treturn -1;\n");
-    outs("}\n");
-
-
-    //method ==> getServiceXmlFilename for xsd and wsdl transformations
-    outf("\nint C%sSoapBinding::getServiceXmlFilename(StringBuffer &filename)\n", name_);
-    outs("{\n");
-    outf("\tfilename.append(\"%s.xml\");\n", packagename);
-    outs("\treturn 1;\n");
     outs("}\n");
 
     //method ==> getXsdDefinition  packagename is the base ecm filename
