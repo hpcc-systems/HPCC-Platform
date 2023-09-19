@@ -74,6 +74,12 @@ const playgroundStyles = mergeStyleSets({
                     borderLeft: borderStyle,
                     borderRight: borderStyle
                 }
+            },
+            ".ms-Label": {
+                marginRight: "12px"
+            },
+            ".ms-Label::after": {
+                paddingRight: 0
             }
         },
     },
@@ -121,9 +127,6 @@ const playgroundStyles = mergeStyleSets({
         ".ms-TextField-wrapper": {
             display: "flex",
             marginLeft: "18px"
-        },
-        ".is-disabled .ms-Label": {
-            paddingRight: "12px"
         },
         ".ms-TextField-errorMessage": {
             display: "none"
@@ -231,11 +234,11 @@ const ECLEditorToolbar: React.FunctionComponent<ECLEditorToolbarProps> = ({
     const submitWU = React.useCallback(async () => {
         const wu = await Workunit.create({ baseUrl: "" });
 
-        await wu.update({ QueryText: editor.ecl() });
+        await wu.update({ Jobname: queryName, QueryText: editor.ecl() });
         await wu.submit(cluster);
 
         wu.watchUntilComplete(changes => playgroundResults(wu));
-    }, [cluster, editor, playgroundResults]);
+    }, [cluster, editor, playgroundResults, queryName]);
 
     const publishWU = React.useCallback(async () => {
         if (queryName === "") {
@@ -246,7 +249,7 @@ const ECLEditorToolbar: React.FunctionComponent<ECLEditorToolbarProps> = ({
 
             const wu = await Workunit.create({ baseUrl: "" });
 
-            await wu.update({ QueryText: editor.ecl() });
+            await wu.update({ Jobname: queryName, QueryText: editor.ecl() });
             await wu.submit(cluster, WUUpdate.Action.Compile);
 
             wu.watchUntilComplete(changes => playgroundResults(wu, "publish"));
@@ -302,7 +305,6 @@ const ECLEditorToolbar: React.FunctionComponent<ECLEditorToolbarProps> = ({
                 <TextField
                     label={nlsHPCC.Name}
                     name="jobName"
-                    disabled={showSubmitBtn}
                     componentRef={queryNameRef}
                     required={!showSubmitBtn}
                     errorMessage={queryNameErrorMsg}
