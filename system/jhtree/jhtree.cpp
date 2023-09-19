@@ -2632,7 +2632,6 @@ const CJHTreeNode *CNodeCache::getNode(const INodeLoader *keyIndex, unsigned iD,
                 block.leave();
 
                 //Update any stats outside of the critical section.
-                cacheHits++;
                 (*hitMetric[cacheType])++;
                 if (ctx) ctx->noteStatistic(hitStatId[cacheType], 1);
                 return fastPathMatch;
@@ -2658,13 +2657,11 @@ const CJHTreeNode *CNodeCache::getNode(const INodeLoader *keyIndex, unsigned iD,
         //Move the atomic increments out of the critical section - they can be relatively expensive
         if (likely(alreadyExists))
         {
-            cacheHits++;
             if (ctx) ctx->noteStatistic(hitStatId[cacheType], 1);
             (*hitMetric[cacheType])++;
         }
         else
         {
-            cacheAdds++;
             if (ctx) ctx->noteStatistic(addStatId[cacheType], 1);
             (*addMetric[cacheType])++;
         }
@@ -2756,8 +2753,6 @@ const CJHTreeNode *CNodeCache::getNode(const INodeLoader *keyIndex, unsigned iD,
     }
 }
 
-RelaxedAtomic<unsigned> cacheAdds;
-RelaxedAtomic<unsigned> cacheHits;
 RelaxedAtomic<unsigned> nodesLoaded;
 RelaxedAtomic<unsigned> blobCacheHits;
 RelaxedAtomic<unsigned> blobCacheAdds;
@@ -2771,8 +2766,6 @@ RelaxedAtomic<unsigned> nodeCacheDups;
 
 void clearNodeStats()
 {
-    cacheAdds.store(0);
-    cacheHits.store(0);
     nodesLoaded.store(0);
     blobCacheHits.store(0);
     blobCacheAdds.store(0);
