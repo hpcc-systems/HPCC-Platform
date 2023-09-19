@@ -109,7 +109,7 @@ export const Login: React.FunctionComponent<LoginProps> = ({
                 } else {
                     createUserSession(cookies).then(() => {
                         setErrorMessage("");
-                        replaceUrl("/", null, true);
+                        replaceUrl("/", true);
                     }).catch(err => logger.error("Unable to create user session."));
                 }
             }
