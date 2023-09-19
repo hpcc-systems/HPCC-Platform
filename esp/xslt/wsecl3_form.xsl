@@ -320,6 +320,14 @@ function switchInputForm()
                   </span>
                </td>
             </tr>
+            <tr>
+               <td class='input' align='left'>
+                  <span>
+                     <hr/>
+                     <input type='checkbox' name='@statsToWorkunit'/> Save stats to workunit.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type='checkbox' name='@summaryStats'/> Get summary stats.<br/>
+                  </span>
+               </td>
+            </tr>
             </xsl:if>
             <tr><td bgcolor="#030303" height="1"></td></tr>
                 <tr><td height="6"></td></tr>
