@@ -92,6 +92,7 @@ interface IEspHttpBinding
     virtual int onGetSoapBuilder(IEspContext &context, CHttpRequest* request, CHttpResponse* response,  const char *serv, const char *method)=0;
     virtual int onGetJsonBuilder(IEspContext &context, CHttpRequest* request, CHttpResponse* response,  const char *serv, const char *method)=0;
     virtual int onGetReqSampleXml(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method)=0;
+    virtual int onGetUnrestricted(CHttpRequest* request, CHttpResponse* response, const char *serviceName, const char *methodName, sub_service sstype)=0;
     virtual int onGetRespSampleXml(IEspContext &context, CHttpRequest* request, CHttpResponse* response,    const char *serv, const char *method)=0;
     virtual int onGetRespSampleJson(IEspContext &context, CHttpRequest* request, CHttpResponse* response,    const char *serv, const char *method)=0;
     virtual int onGetReqSampleJson(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method)=0;
@@ -325,6 +326,7 @@ public:
         return onGet(request, response);
     }
 
+    virtual int onGetUnrestricted(CHttpRequest* request, CHttpResponse* response, const char *serviceName, const char *methodName, sub_service sstype);
     virtual int onGetReqSampleXml(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method);
     virtual int onGetRespSampleXml(IEspContext &context, CHttpRequest* request, CHttpResponse* response,    const char *serv, const char *method);
     virtual int onGetRespSampleJson(IEspContext &context, CHttpRequest* request, CHttpResponse* response,    const char *serv, const char *method);
