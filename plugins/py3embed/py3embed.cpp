@@ -48,11 +48,8 @@
   #define Py_TPFLAGS_HAVE_ITER 0
 #endif
 
-#if PY_MINOR_VERSION < 7
-  #define USE_CUSTOM_NAMEDTUPLES
-#endif
-
 #if PY_VERSION_HEX < 0x03070000
+  #define USE_CUSTOM_NAMEDTUPLES
   #define INIT_PY_THREADS
 #endif
 
