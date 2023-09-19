@@ -115,7 +115,7 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
         filename: "landingZones",
         getSelected: function () {
             if (filter?.__dropZone) {
-                return this.inherited(arguments, [FileSpray.CreateLandingZonesFilterStore({})]);
+                return this.inherited(arguments, [FileSpray.CreateLandingZonesFilterStore({ dropZone: filter.__dropZone })]);
             }
             return this.inherited(arguments, [FileSpray.CreateFileListStore({})]);
         },
@@ -139,7 +139,7 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
                 label: nlsHPCC.Name,
                 sortable: false,
                 shouldExpand: function (row, level) {
-                    if ((dzExpanded === "" || dzExpanded === row.data.DropZone.Name) && level <= 1) {
+                    if ((dzExpanded === "" || dzExpanded === row.data.DropZone?.Name) && level <= 1) {
                         dzExpanded = row.data.DropZone.Name;
                         return true;
                     }
