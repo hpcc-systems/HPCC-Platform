@@ -150,32 +150,79 @@ public:
     ~CSpan()
     {
         if (span != nullptr)
-        {
-            StringBuffer out;
-            toString(out);
-            DBGLOG("Span end: (%s)", out.str());
             span->End();
-        }
+    }
+
+    virtual void beforeDispose() override
+    {
+        StringBuffer out;
+        toLog(out);
+        DBGLOG("Span end: {%s}", out.str());
+    }
+
+    const char * getSpanID() const
+    {
+        return spanID.get();
     }
 
     ISpan * createClientSpan(const char * name) override;
     ISpan * createInternalSpan(const char * name) override;
 
-    void toString(StringBuffer & out) const override
+    void toLog(StringBuffer & out) const override
     {
+        out.append(",\"Name\":\"").append(name.get()).append("\"");
+
+        if (!isEmptyString(hpccGlobalId.get()))
+            out.append(",\"HPCCGlobalID\":\"").append(hpccGlobalId.get()).append("\"");
+        if (!isEmptyString(hpccCallerId.get()))
+            out.append(",\"HPCCCallerID\":\"").append(hpccCallerId.get()).append("\"");
+
         if (span != nullptr)
         {
-            out.append(" Name: ").append(name.get())
-            .append(" SpanID: ").append(spanID.get())
-            .append(" TraceID: ").append(traceID.get())
-            .append(" TraceFlags: ").append(traceFlags.get())
-            .append(" HPCCGlobalID: ").append(hpccGlobalId.get())
-            .append(" HPCCCallerID: ").append(hpccCallerId.get());
+            out.append(",\"SpanID\":\"").append(spanID.get()).append("\"");
+
+            out.append(",\"TraceID\":\"").append(traceID.get()).append("\"");
 
             if (localParentSpan != nullptr)
             {
-                out.append(" localParentSpan: ");
-                localParentSpan->toString(out);
+                out.append(",\"ParentSpanID\": \"");
+                out.append(localParentSpan->getSpanID());
+                out.append("\"");
+            }
+        }
+    }
+
+    virtual void toString(StringBuffer & out) const
+    {
+        toString(out, true);
+    }
+
+    virtual void toString(StringBuffer & out, bool isLeaf) const
+    {
+        out.append(",\"Name\":\"").append(name.get()).append("\"");
+        if (isLeaf)
+        {
+            if (!isEmptyString(hpccGlobalId.get()))
+                out.append(",\"HPCCGlobalID\":\"").append(hpccGlobalId.get()).append("\"");
+            if (!isEmptyString(hpccCallerId.get()))
+                out.append(",\"HPCCCallerID\":\"").append(hpccCallerId.get()).append("\"");
+        }
+
+        if (span != nullptr)
+        {
+            out.append(",\"SpanID\":\"").append(spanID.get()).append("\"");
+
+            if (isLeaf)
+            {
+                out.append(",\"TraceID\":\"").append(traceID.get()).append("\"")
+                 .append(",\"TraceFlags\":\"").append(traceFlags.get()).append("\"");
+            }
+
+            if (localParentSpan != nullptr)
+            {
+                out.append(",\"ParentSpan\":{ ");
+                localParentSpan->toString(out, false);
+                out.append(" }");
             }
         }
     };
@@ -316,9 +363,6 @@ protected:
         localParentSpan = parent;
         if (localParentSpan != nullptr)
             tracerName.set(parent->queryTraceName());
-        //type = spanType;
-
-       // init();
     }
 
     CSpan(const char * spanName, const char * nameOfTracer)
@@ -326,8 +370,6 @@ protected:
         name.set(spanName);
         localParentSpan = nullptr;
         tracerName.set(nameOfTracer);
-        //type = spanType;
-        
     }
 
     void init()
@@ -347,8 +389,8 @@ protected:
             storeSpanContext();
 
             StringBuffer out;
-            toString(out);
-            DBGLOG("Span start: (%s)", out.str());
+            toLog(out);
+            DBGLOG("Span start: {%s}", out.str());
         }
     }
 
@@ -443,10 +485,16 @@ public:
         init();
     }
 
-    void toString(StringBuffer & out) const override
+    void toLog(StringBuffer & out) const override
     {
-        out.append("Type: Internal");
-        CSpan::toString(out);
+        out.append("\"Type\":\"Internal\"");
+        CSpan::toLog(out);
+    }
+
+    void toString(StringBuffer & out, bool isLeaf) const override
+    {
+        out.append("\"Type\":\"Internal\"");
+        CSpan::toString(out, isLeaf);
     }
 };
 
@@ -460,10 +508,16 @@ public:
         init();
     }
 
-    void toString(StringBuffer & out) const override
+    void toLog(StringBuffer & out) const override
     {
-        out.append("Type: Client");
-        CSpan::toString(out);
+        out.append("\"Type\":\"Client\"");
+        CSpan::toLog(out);
+    }
+
+    void toString(StringBuffer & out, bool isLeaf) const override
+    {
+        out.append("\"Type\":\"Client\"");
+        CSpan::toString(out, isLeaf);
     }
 };
 
@@ -579,17 +633,32 @@ public:
         init();
     }
 
-    void toString(StringBuffer & out) const override
+    void toLog(StringBuffer & out) const override
     {
-        out.append("Type: Server");
-        CSpan::toString(out);
+        out.append("\"Type\":\"Server\"");
+        CSpan::toLog(out);
 
         if (remoteParentSpanCtx.IsValid())
         {
-            out.append(" remoteParentSpanID: ");
+            out.append(",\"ParentSpanID\":\"");
             char spanId[16] = {0};
             remoteParentSpanCtx.span_id().ToLowerBase16(spanId);
-            out.append(16, spanId);
+            out.append(16, spanId)
+            .append("\"");
+        }
+    }
+    void toString(StringBuffer & out, bool isLeaf) const override
+    {
+        out.append("\"Type\":\"Server\"");
+        CSpan::toString(out, isLeaf);
+
+        if (remoteParentSpanCtx.IsValid())
+        {
+            out.append(",\"ParentSpanID\":\"");
+            char spanId[16] = {0};
+            remoteParentSpanCtx.span_id().ToLowerBase16(spanId);
+            out.append(16, spanId)
+            .append("\"");
         }
     }
 };

@@ -73,6 +73,7 @@ interface ISpan : extends IInterface
     virtual void addSpanEvent(const char * eventName) = 0;
     virtual bool getSpanContext(IProperties * ctxProps, bool otelFormatted) const = 0;
     virtual void toString(StringBuffer & out) const = 0;
+    virtual void toLog(StringBuffer & out) const = 0;
 
     virtual ISpan * createClientSpan(const char * name) = 0;
     virtual ISpan * createInternalSpan(const char * name) = 0;
