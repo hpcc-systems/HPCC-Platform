@@ -667,7 +667,7 @@ void clientAddSocketToCache(SocketEndpoint &ep,ISocket *socket)
 
 //---------------------------------------------------------------------------
 
-void CRemoteBase::connectSocket(SocketEndpoint &ep, unsigned connectTimeoutMs, unsigned connectRetries)
+void CRemoteBase::connectSocket(SocketEndpoint &ep, unsigned connectTimeoutMs, unsigned connectRetries, bool secure)
 {
     if (!connectTimeoutMs)
         connectTimeoutMs = dafsConnectTimeoutMs;
@@ -696,10 +696,7 @@ void CRemoteBase::connectSocket(SocketEndpoint &ep, unsigned connectTimeoutMs, u
         if (TF_TRACE_CLIENT_CONN)
         {
             ep.getEndpointHostText(eps);
-            if (ep.port == securitySettings.queryDaFileSrvSSLPort())
-                PROGLOG("Connecting SECURE to %s", eps.str());
-            else
-                PROGLOG("Connecting to %s", eps.str());
+            PROGLOG("Connecting %sto %s", secure?"SECURE ":"", eps.str());
             //PrintStackReport();
         }
         bool ok = true;
@@ -714,13 +711,36 @@ void CRemoteBase::connectSocket(SocketEndpoint &ep, unsigned connectTimeoutMs, u
             }
             else
                 socket.setown(ISocket::connect(ep));
-            if (ep.port == securitySettings.queryDaFileSrvSSLPort())
+            if (secure)
             {
 #ifdef _USE_OPENSSL
                 Owned<ISecureSocket> ssock;
                 try
                 {
-                    ssock.setown(createSecureSocket(socket.getClear(), nullptr));
+                    // instead of creating CRemoteFile/CRemoteBase with a secret, it could instead lookup, and create the ISecureSocketContext and pass that
+                    // into the ctor. That would avoid having to look the secret up, extract the certs and recreate the context on each connection.
+                    // The context would be 'owned' by the hook, and would expire when the mappings are removed (when removeMappedDafileSrvSecrets is called).
+                    if (storageSecret)
+                    {
+                        Owned<IPropertyTree> secretPTree = getSecret("storage", storageSecret);
+                        if (!secretPTree)
+                            throw makeStringExceptionV(-1, "secret %s.%s not found", "storage", storageSecret.str());
+
+                        StringBuffer certSecretBuf;
+                        getSecretKeyValue(certSecretBuf, secretPTree, "tls.crt");
+
+                        StringBuffer privKeySecretBuf;
+                        getSecretKeyValue(privKeySecretBuf, secretPTree, "tls.key");
+
+                        Owned<ISecureSocketContext> secureContext = createSecureSocketContextEx(certSecretBuf, privKeySecretBuf, nullptr, ClientSocket);
+                        int loglevel = SSLogNormal;
+#ifdef _DEBUG
+                        loglevel = SSLogMax;
+#endif
+                        ssock.setown(secureContext->createSecureSocket(socket.getClear(), loglevel));
+                    }
+                    else
+                        ssock.setown(createSecureSocket(socket.getClear(), nullptr));
                     int status = ssock->secure_connect();
                     if (status < 0)
                         throw createDafsException(DAFSERR_connection_failed, "Failure to establish secure connection");
@@ -787,10 +807,7 @@ void CRemoteBase::connectSocket(SocketEndpoint &ep, unsigned connectTimeoutMs, u
         if (!timeExpired)
         {
             Sleep(sleeptime);       // prevent multiple retries beating
-            if (ep.port == securitySettings.queryDaFileSrvSSLPort())
-                PROGLOG("Retrying SECURE connect");
-            else
-                PROGLOG("Retrying connect");
+            PROGLOG("Retrying %sconnect", secure?"SECURE ":"");
         }
     }
 
@@ -879,35 +896,41 @@ void CRemoteBase::sendRemoteCommand(MemoryBuffer & src, MemoryBuffer & reply, bo
 
         if (!socket)
         {
-            bool doConnect = true;
-            if (connectMethod == SSLFirst || connectMethod == UnsecureFirst)
+            if (storageSecret)
+                connectSocket(tep, 0, INFINITE, true);
+            else
             {
-                // MCK - could maintain a list of 100 or so previous endpoints and if connection failed
-                // then mark port down for a delay (like 15 min above) to avoid having to try every time ...
-                try
+                bool doConnect = true;
+                if (connectMethod == SSLFirst || connectMethod == UnsecureFirst)
                 {
-                    connectSocket(tep, 5000, 0);
-                    doConnect = false;
-                }
-                catch (IDAFS_Exception *e)
-                {
-                    if (e->errorCode() == DAFSERR_connection_failed)
+                    bool secure = tep.port == securitySettings.queryDaFileSrvSSLPort();
+                    // MCK - could maintain a list of 100 or so previous endpoints and if connection failed
+                    // then mark port down for a delay (like 15 min above) to avoid having to try every time ...
+                    try
                     {
-                        unsigned prevPort = tep.port;
-                        if (prevPort == securitySettings.queryDaFileSrvSSLPort())
-                            tep.port = securitySettings.queryDaFileSrvPort();
-                        else
-                            tep.port = securitySettings.queryDaFileSrvSSLPort();
-                        WARNLOG("Connect failed on port %d, retrying on port %d", prevPort, tep.port);
-                        doConnect = true;
-                        e->Release();
+                        connectSocket(tep, 5000, 0);
+                        doConnect = false;
                     }
-                    else
-                        throw e;
+                    catch (IDAFS_Exception *e)
+                    {
+                        if (e->errorCode() == DAFSERR_connection_failed)
+                        {
+                            unsigned prevPort = tep.port;
+                            if (secure)
+                                tep.port = securitySettings.queryDaFileSrvPort();
+                            else
+                                tep.port = securitySettings.queryDaFileSrvSSLPort();
+                            WARNLOG("Connect failed on port %d, retrying on port %d", prevPort, tep.port);
+                            doConnect = true;
+                            e->Release();
+                        }
+                        else
+                            throw e;
+                    }
                 }
+                if (doConnect)
+                    connectSocket(tep, 0, INFINITE, tep.port == securitySettings.queryDaFileSrvSSLPort());
             }
-            if (doConnect)
-                connectSocket(tep);
         }
     }
 
@@ -969,6 +992,10 @@ CRemoteBase::CRemoteBase(const SocketEndpoint &_ep, const char * _filename)
     : filename(_filename)
 {
     ep = _ep;
+
+    StringBuffer endpointStr;
+    ep.getEndpointHostText(endpointStr);
+
     connectMethod = securitySettings.queryConnectMethod();
 }
 
@@ -977,6 +1004,11 @@ CRemoteBase::CRemoteBase(const SocketEndpoint &_ep, DAFSConnectCfg _connectMetho
 {
     ep = _ep;
     connectMethod = _connectMethod;
+}
+
+CRemoteBase::CRemoteBase(const SocketEndpoint &_ep, const char *_storageSecret, const char * _filename)
+    : ep(_ep), storageSecret(_storageSecret), filename(_filename)
+{
 }
 
 void CRemoteBase::disconnect()
