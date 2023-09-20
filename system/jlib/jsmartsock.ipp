@@ -105,7 +105,7 @@ public:
     virtual StringBuffer & getUrlStr(StringBuffer &str, bool useHostName);
     virtual bool isTlsService() const override { return tlsService; }
     virtual const IPropertyTree *queryTlsConfig() const { return tlsConfig; };
-    const char *queryTlsIssuer(){return issuer.str();}
+    const char *queryTlsIssuer() const { return issuer.str(); }
 };
 
 

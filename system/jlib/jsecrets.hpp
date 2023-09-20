@@ -36,7 +36,8 @@ extern jlib_decl bool getSecretValue(StringBuffer & result, const char *category
 extern jlib_decl void initSecretUdpKey();
 extern jlib_decl const MemoryAttr &getSecretUdpKey(bool required);
 
-extern jlib_decl IPropertyTree *queryIssuerTlsServerConfig(const char *issuer);
+//getIssuerTlsServerConfig must return owned because the internal cache could be updated internally and the return will become invalid, so must be linked
+extern jlib_decl IPropertyTree *getIssuerTlsServerConfig(const char *issuer);
 extern jlib_decl IPropertyTree *getIssuerTlsServerConfigWithTrustedPeers(const char *issuer, const char *trusted_peers);
 
 extern jlib_decl IPropertyTree *createIssuerTlsClientConfig(const char *issuer, bool acceptSelfSigned, bool addCACert=true);

@@ -1882,7 +1882,7 @@ SECURESOCKET_API ISecureSocketContext* createSecureSocketContextSSF(ISmartSocket
 
 SECURESOCKET_API ISecureSocketContext* createSecureSocketContextSecret(const char *issuer, SecureSocketType sockettype)
 {
-    IPropertyTree *info = queryIssuerTlsServerConfig(issuer);
+    Owned<IPropertyTree> info = getIssuerTlsServerConfig(issuer);
     //if the secret doesn't exist doesn't exist just go on without it. IF it is required the tls connection will fail. 
     //This is primarily for client side... server side would probably use the explict ptree config or explict cert param at least for now.
     if (info)
@@ -1896,7 +1896,7 @@ SECURESOCKET_API ISecureSocketContext* createSecureSocketContextSecretSrv(const 
     if (requireMtlsFlag && !queryMtls())
         throw makeStringException(-100, "TLS secure communication requested but not configured");
 
-    IPropertyTree *info = queryIssuerTlsServerConfig(issuer);
+    Owned<IPropertyTree> info = getIssuerTlsServerConfig(issuer);
     if (!info)
         throw makeStringException(-101, "TLS secure communication requested but not configured (2)");
 

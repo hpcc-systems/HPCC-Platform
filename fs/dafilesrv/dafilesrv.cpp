@@ -395,7 +395,7 @@ int main(int argc, const char* argv[])
     // Use the "public" certificate issuer, unless it's visibility is "cluster" (meaning internal only)
     const char *visibility = getComponentConfigSP()->queryProp("service/@visibility");
     const char *certScope = strsame("cluster", visibility) ? "local" : "public";
-    IPropertyTree *info = queryIssuerTlsServerConfig(certScope);
+    Owned<IPropertyTree> info = getIssuerTlsServerConfig(certScope);
     connectMethod = info ? SSLOnly : SSLNone;
     // NB: connectMethod will direct the CRemoteFileServer on accept to create a secure socket based on the same issuer certificates
 

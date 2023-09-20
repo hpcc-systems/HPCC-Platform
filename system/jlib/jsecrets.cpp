@@ -1102,7 +1102,7 @@ IPropertyTree *createIssuerTlsClientConfig(const char *issuer, bool acceptSelfSi
     return info.getClear();
 }
 
-IPropertyTree *queryIssuerTlsServerConfig(const char *name)
+IPropertyTree *getIssuerTlsServerConfig(const char *name)
 {
     if (isEmptyString(name))
         return nullptr;
@@ -1110,9 +1110,9 @@ IPropertyTree *queryIssuerTlsServerConfig(const char *name)
     validateSecretName(name);
 
     CriticalBlock block(mtlsInfoCacheCS);
-    IPropertyTree *info = mtlsInfoCache->queryPropTree(name);
+    Owned<IPropertyTree> info = mtlsInfoCache->getPropTree(name);
     if (info)
-        return info;
+        return info.getClear();
 
     StringBuffer filepath;
     StringBuffer secretpath;
@@ -1123,7 +1123,7 @@ IPropertyTree *queryIssuerTlsServerConfig(const char *name)
     if (!checkFileExists(filepath))
         return nullptr;
 
-    info = mtlsInfoCache->setPropTree(name);
+    info.set(mtlsInfoCache->setPropTree(name));
     info->setProp("@issuer", name);
     info->setProp("certificate", filepath.str());
     filepath.set(secretpath).append("tls.key");
@@ -1145,16 +1145,14 @@ IPropertyTree *queryIssuerTlsServerConfig(const char *name)
         verify->setPropBool("@accept_selfsigned", false);
         verify->setProp("trusted_peers", "anyone");
     }
-    return info;
+    return info.getClear();
 }
 
 IPropertyTree *getIssuerTlsServerConfigWithTrustedPeers(const char *issuer, const char *trusted_peers)
 {
-    IPropertyTree *issuerConfig = queryIssuerTlsServerConfig(issuer);
-    if (!issuerConfig)
-        return nullptr;
-    if (isEmptyString(trusted_peers))
-        return LINK(issuerConfig);
+    Owned<IPropertyTree> issuerConfig = getIssuerTlsServerConfig(issuer);
+    if (!issuerConfig || isEmptyString(trusted_peers))
+        return issuerConfig.getClear();
     //TBD: might cache in the future, but needs thought, lookup must include trusted_peers, but will there be cases where trusted_peers can change dynamically?
     Owned<IPropertyTree> tlsConfig = createPTreeFromIPT(issuerConfig);
     if (!tlsConfig)
