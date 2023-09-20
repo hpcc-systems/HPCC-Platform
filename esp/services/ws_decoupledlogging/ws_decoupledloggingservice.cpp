@@ -185,7 +185,7 @@ void WSDecoupledLogAction::doAction(IEspContext& context, std::map<std::string, 
         }
         else
         {
-            for (auto ml : allGroups)
+            for (auto& ml : allGroups)
             {
                 doActionInGroup(ml.second, nullptr);
             }
@@ -229,7 +229,7 @@ void WSDecoupledLogAction::doActionInGroup(WSDecoupledLogAgentGroup* group, Stri
     if (!agentNames || !agentNames->ordinality())
     {
         std::map<std::string, Owned<IUpdateLogThread>>& agentThreadMap = group->getLoggingAgentThreads();
-        for (auto mt : agentThreadMap)
+        for (auto& mt : agentThreadMap)
         {
             if (!doActionForAgent(mt.first.c_str(), mt.second))
                 break;

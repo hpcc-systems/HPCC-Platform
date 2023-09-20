@@ -26,6 +26,7 @@
 #include <stdlib.h> 
 
 #include "jlib.hpp"
+#include "jcontainerized.hpp"
 #include "jdebug.hpp"
 #include "jexcept.hpp"
 #include "jfile.hpp"
@@ -105,6 +106,8 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
         Owned<INode> masterNode = createINode(ep);
         CMessageBuffer msg;
         msg.append(mySlaveNum);
+        if (isContainerized())
+            msg.append(k8s::queryMyPodName());
         queryWorldCommunicator().send(msg, masterNode, MPTAG_THORREGISTRATION);
         if (!queryWorldCommunicator().recv(msg, masterNode, MPTAG_THORREGISTRATION))
             return false;

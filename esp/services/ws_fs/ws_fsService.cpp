@@ -1945,15 +1945,8 @@ void CFileSprayEx::readAndCheckSpraySourceReq(IEspContext& context, MemoryBuffer
             if (!sourceIPReq.isEmpty() && !isHostInPlane(dropZone, sourceIPReq, true))
                 throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "SourceIP '%s' is not defined within the dropzone %s.", sourceIPReq.str(), dropZone->queryProp("@name"));
         }
-        else
-        {
-            if (sourceIPReq.isEmpty())
-                throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Source network IP not specified.");
-            dropZone.setown(findDropZonePlane(nullptr, sourceIPReq, true, isContainerized()));
-            if (dropZone)
-                sourcePlaneReq.append(dropZone->queryProp("@name"));
-            // else - only possible if bare-metal and isDropZoneRestrictionEnabled()==false
-        }
+        else if (sourceIPReq.isEmpty())
+            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Source network IP not specified.");
 
         SocketEndpoint sourceHostEp(sourceIPReq);
 
@@ -1978,7 +1971,16 @@ void CFileSprayEx::readAndCheckSpraySourceReq(IEspContext& context, MemoryBuffer
                 SocketEndpoint hostInPathEp(hostInPath);
                 if (!sourceIPReq.isEmpty() && !sourceHostEp.ipequals(hostInPathEp))
                     throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "The host '%s' defined in the SourcePath '%s' does not match with the host '%s' defined in SourceIP.", hostInPath.str(), file, sourceIPReq.str());
-                if (dropZone)
+                if (!dropZone)
+                {
+                    if (i == 0)
+                    {
+                        dropZone.setown(getAndValidateDropZone(localPath, hostInPath));
+                        if (dropZone)
+                            sourcePlaneReq.append(dropZone->queryProp("@name"));
+                    }
+                }
+                else
                 {
                     // don't re-check if sourceIPReq specified and therefore already checked valid previously.
                     if (sourceIPReq.isEmpty())
@@ -1989,7 +1991,6 @@ void CFileSprayEx::readAndCheckSpraySourceReq(IEspContext& context, MemoryBuffer
                     if (!isPathInPlane(dropZone, localPath))
                         throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Path '%s' in '%s' is not valid for dropzone '%s'", localPath.str(), file, dropZone->queryProp("@name"));
                 }
-                // else implies bare-metal+restrictions off - sourceIPReq cannot be empty, if no dropzone.
 
                 path = localPath.str();
             }
@@ -1998,11 +1999,29 @@ void CFileSprayEx::readAndCheckSpraySourceReq(IEspContext& context, MemoryBuffer
                 path = file;
                 if (isAbsolutePath(path))
                 {
-                    if (dropZone && !isPathInPlane(dropZone, path))
+                    if (!dropZone)
+                    {
+                        if (i == 0)
+                        {
+                            dropZone.setown(getAndValidateDropZone(path, sourceIPReq));
+                            if (dropZone)
+                                sourcePlaneReq.append(dropZone->queryProp("@name"));
+                        }
+                    }
+                    else if (!isPathInPlane(dropZone, path))
                         throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Path '%s' is not valid for dropzone '%s'", path, sourcePlaneReq.str());
                 }
                 else
                 {
+                    if (!dropZone && (i == 0))
+                    {
+                        //The sourceIPReq should must have been supplied here. This has been verified if
+                        //the sourcePlaneReq is empty. When the sourcePlaneReq is not empty, the dropZone
+                        //should not be null. Otherwise, an exception should already be thrown. 
+                        dropZone.setown(getAndValidateDropZone(nullptr, sourceIPReq));
+                        if (dropZone)
+                            sourcePlaneReq.append(dropZone->queryProp("@name"));
+                    }
                     if (dropZone) // force paths to absolute, for LDAP checking below
                     {
                         absPath.set(dropZone->queryProp("@prefix"));
@@ -2564,12 +2583,15 @@ bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDespray
 
             StringBuffer destfileWithPath, umask;
             if (!isEmptyString(destPlane))  // must be true, unless bare-metal and isDropZoneRestrictionEnabled()==false
+            {
                 getDropZoneInfoByDestPlane(version, destPlane, destfile, destfileWithPath, umask, destip);
-
-            SecAccessFlags permission = getDZFileScopePermissions(context, destPlane, destfileWithPath, destip);
-            if (permission < SecAccess_Write)
-                throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Access DropZone Scope %s %s not allowed for user %s (permission:%s). Write Access Required.",
-                    isEmptyString(destPlane) ? destip : destPlane, destfileWithPath.str(), context.queryUserId(), getSecAccessFlagName(permission));
+                SecAccessFlags permission = getDZFileScopePermissions(context, destPlane, destfileWithPath, destip);
+                if (permission < SecAccess_Write)
+                    throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Access DropZone Scope %s %s not allowed for user %s (permission:%s). Write Access Required.",
+                        destPlane, destfileWithPath.str(), context.queryUserId(), getSecAccessFlagName(permission));
+            }
+            else
+                destfileWithPath.append(destfile).trim();
 
             RemoteFilename rfn;
             SocketEndpoint ep(destip.str());

@@ -266,6 +266,7 @@ class AccountResourcesStore extends Memory {
             BasednName: row.BasednName,
             rname: row.ResourceName,
             account_name: row.account_name,
+            account_type: this.IsGroup ? 1 : 0,
             action: "update"
         };
         lang.mixin(request, row);

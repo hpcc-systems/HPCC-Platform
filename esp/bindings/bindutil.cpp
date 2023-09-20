@@ -604,8 +604,7 @@ void Utils::SplitURL(const char* url, StringBuffer& protocol,StringBuffer& UserN
         UserName.append(username);
     }
 
-    if(hostptr)
-        host.append(hostptr);
+    host.append(hostptr);
 
     if(portptr)
         port.append(portptr);

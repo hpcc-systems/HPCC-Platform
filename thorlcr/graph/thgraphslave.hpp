@@ -578,11 +578,12 @@ public:
     void reportGraphEnd(graph_id gid);
 
     virtual mptag_t deserializeMPTag(MemoryBuffer &mb);
-    virtual __int64 getWorkUnitValueInt(const char *prop, __int64 defVal) const;
-    virtual StringBuffer &getWorkUnitValue(const char *prop, StringBuffer &str) const;
-    virtual bool getWorkUnitValueBool(const char *prop, bool defVal) const;
-    virtual IThorAllocator *getThorAllocator(unsigned channel);
-    virtual void debugRequest(MemoryBuffer &msg, const char *request) const;
+    virtual __int64 getWorkUnitValueInt(const char *prop, __int64 defVal) const override;
+    virtual StringBuffer &getWorkUnitValue(const char *prop, StringBuffer &str) const override;
+    virtual bool getWorkUnitValueBool(const char *prop, bool defVal) const override;
+    virtual double getWorkUnitValueReal(const char *prop, double defVal) const override;
+    virtual IThorAllocator *getThorAllocator(unsigned channel) override;
+    virtual void debugRequest(MemoryBuffer &msg, const char *request) const override;
 
 // IExceptionHandler
     virtual bool fireException(IException *e)

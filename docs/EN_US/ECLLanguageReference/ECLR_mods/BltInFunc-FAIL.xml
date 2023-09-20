@@ -77,16 +77,30 @@
 
   <para>Example:</para>
 
-  <programlisting lang="ECL">IF(header.version &lt;&gt; doxie.header_version_new,
-   FAIL('Mismatch -- header.version vs. doxie.header_version_new.'));
+  <programlisting lang="ECL" role="runnable">MyRec := RECORD
+    STRING50 Value1;
+    UNSIGNED Value2;
+END;
 
-FailedJob := FAIL('ouch, it broke');
-sPeople   := SORT(Person,Person.per_first_name);
-nUniques  := COUNT(DEDUP(sPeople,Person.per_first_name AND
-                   Person.address))
-          : FAILURE(FailedJob);
-MyRecSet  := IF(EXISTS(Person),Person,
-             FAIL(Person,99,'Person does not exist!!'));
+ds := DATASET([{'C',1},{'C',2},{'C',3},
+               {'C',4},{'C',5},{'X',1},{'A',1}],MyRec);
+
+MyRec FailTransform := TRANSFORM
+  self.value1 := FAILMESSAGE[1..17]; 
+  self.value2 := FAILCODE
+END;
+
+limited1 := LIMIT(ds, 2);
+limited2 := LIMIT(ds, 3);
+limited3 := LIMIT(ds, 4);
+
+recovered1 := CATCH(limited1, SKIP);
+recovered2 := CATCH(limited2, ONFAIL(FailTransform));
+recovered3 := CATCH(CATCH(limited3, FAIL(1, 'Failed, sorry')), ONFAIL(FailTransform));
+
+OUTPUT(recovered1);  //empty recordset 
+OUTPUT(recovered2);  //
+OUTPUT(recovered3);  //
 </programlisting>
 
   <para>See Also: <link linkend="FAILURE">FAILURE</link>, <link

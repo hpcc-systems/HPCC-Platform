@@ -691,6 +691,9 @@ void AzureLogAnalyticsCurlClient::declareContainerIndexJoinTable(StringBuffer & 
     queryString.append("\n| where ").append(range.str());
     queryString.append("\n| extend ").append(defaultHPCCLogComponentCol).append(" = extract(\"k8s_([0-9A-Za-z-]+)\", 1, ").append(m_componentsSearchColName).append(", typeof(string))");
     queryString.append("\n| project ").append(defaultHPCCLogComponentCol).append(", ").append(m_componentsLookupKeyColumn).append(";\n");
+    
+    queryString.append(m_componentsIndexSearchPattern).append("Table");
+    queryString.append("\n| join\n( ");
 }
 
 void AzureLogAnalyticsCurlClient::populateKQLQueryString(StringBuffer & queryString, StringBuffer & queryIndex, const LogAccessConditions & options)
@@ -728,7 +731,7 @@ void AzureLogAnalyticsCurlClient::populateKQLQueryString(StringBuffer & queryStr
         azureLogAnalyticsTimestampQueryRangeString(range, m_globalIndexTimestampField.str(), trange.getStartt().getSimple(),trange.getEndt().isNull() ? -1 : trange.getEndt().getSimple());
         queryString.append("\n| where ").append(range.str());
         if (includeComponentName)
-            queryString.append("\n| join kind=innerunique ").append(m_componentsIndexSearchPattern).append("Table on ").append(m_componentsLookupKeyColumn);
+            queryString.append("\n) on ").append(m_componentsLookupKeyColumn);
 
         queryString.append(searchColumns);
 

@@ -57,23 +57,6 @@ class CDaliLdapConnection: implements IDaliLdapConnection, public CInterface
     unsigned                ldapflags;
     IDigitalSignatureManager * pDSM = nullptr;
 
-    void createDefaultScopes()
-    {
-        try {
-            Owned<ISecUser> user = ldapsecurity->createUser(nullptr);
-            StringBuffer userTempFileScope(queryDfsXmlBranchName(DXB_Internal));
-            if (ldapsecurity->addResourceEx(RT_FILE_SCOPE, *user, userTempFileScope.str(),PT_ADMINISTRATORS_ONLY, NULL))
-                PROGLOG("LDAP: Created default '%s' scope", userTempFileScope.str());
-            else
-                throw MakeStringException(-1, "Error adding LDAP resource '%s'",userTempFileScope.str());
-        }
-        catch (IException *e) {
-            EXCLOG(e,"LDAP createDefaultScopes");
-            throw;
-        }
-    }
-
-
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -113,7 +96,6 @@ public:
                     EXCLOG(e,"LDAP server");
                     throw;
                 }
-                createDefaultScopes();
             }
         }
     }

@@ -666,6 +666,8 @@ int CSecureSocket::secure_accept(int logLevel)
             ERR_error_string_n(ERR_get_error(), errbuf, 512);
             DBGLOG("SSL_accept returned 0, error - %s", errbuf);
         }
+        if (ret == SSL_ERROR_SYSCALL)
+            return PORT_CHECK_SSL_ACCEPT_ERROR;
         return -1;
     }
     else if(err < 0)
@@ -675,8 +677,21 @@ int CSecureSocket::secure_accept(int logLevel)
         // Since err < 0 we call ERR_get_error() for additional info
         // if ret == SSL_ERROR_SYSCALL and ERR_get_error() == 0 then
         // its most likely a port scan / load balancer check so do not log
-        if ( (logLevel <= SSLogNormal) && (ret == SSL_ERROR_SYSCALL) && (errnum == 0) )
-            return err;
+        // with SSL 1.1.1e and 3.0 if ret == SSL_ERROR_SSL and ERR_get_error reason is EOF
+        // its also most likely a port scan / load balancer check so do not log
+        int srtn = err;
+        if ( (ret == SSL_ERROR_SYSCALL) && (errnum == 0) )
+            srtn = PORT_CHECK_SSL_ACCEPT_ERROR;
+        // if ctx option SSL_OP_IGNORE_UNEXPECTED_EOF is set then will get SSL_ERROR_ZERO_RETURN ...
+        if ( (ret == SSL_ERROR_ZERO_RETURN) && (errnum == 0) )
+            srtn = PORT_CHECK_SSL_ACCEPT_ERROR;
+        // otherwise will get SSL_ERROR_SSL and unexpected eof ...
+#if defined(SSL_R_UNEXPECTED_EOF_WHILE_READING)
+        if ( (ret == SSL_ERROR_SSL) && (ERR_GET_REASON(errnum) == SSL_R_UNEXPECTED_EOF_WHILE_READING) )
+            srtn = PORT_CHECK_SSL_ACCEPT_ERROR;
+#endif
+        if ((logLevel <= SSLogNormal) && (srtn == PORT_CHECK_SSL_ACCEPT_ERROR))
+            return srtn;
         char errbuf[512];
         ERR_error_string_n(errnum, errbuf, 512);
         errbuf[511] = '\0';
@@ -686,7 +701,7 @@ int CSecureSocket::secure_accept(int logLevel)
             DBGLOG("Unrecoverable SSL library error.");
             _exit(0);
         }
-        return err;
+        return srtn;
     }
 
     if (logLevel > SSLogNormal)

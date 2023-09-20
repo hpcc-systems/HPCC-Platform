@@ -22,6 +22,7 @@
 #include "authmap.ipp"
 #include "digisign.hpp"
 #include "caching.hpp"
+#include "dautils.hpp"
 
 using namespace cryptohelper;
 
@@ -631,6 +632,7 @@ void CLdapSecManager::init(const char *serviceName, IPropertyTree* cfg)
     m_permissionsCache->setSecManager(this);
     m_passwordExpirationWarningDays = cfg->getPropInt(".//@passwordExpirationWarningDays", 10); //Default to 10 days
     m_checkViewPermissions = cfg->getPropBool(".//@checkViewPermissions", false);
+    m_hpccInternalScope.set(queryDfsXmlBranchName(DXB_Internal)).append("::");//HpccInternal::
 };
 
 
@@ -1013,6 +1015,19 @@ SecAccessFlags CLdapSecManager::authorizeFileScope(ISecUser & user, const char *
 {
     if(filescope == 0 || filescope[0] == '\0')
         return SecAccess_Full;
+
+    //Preprocess "HpccInternal::" scopes, since they are not managed by LDAP
+    //Grant user access to their own hpccinternal::<user> scope, deny if anything else
+    if(startsWithIgnoreCase(filescope, m_hpccInternalScope.str()))
+    {
+        StringBuffer userName;
+        for (const char * p = &filescope[m_hpccInternalScope.length()]; *p && *p != ':'; p++)//extract scope username
+            userName.append(*p);
+        if(strieq(userName.str(), user.getName()) || isSuperUser(&user))
+            return SecAccess_Full;
+        PROGLOG("Access denied to scope %s for user %s", filescope, user.getName());
+        return SecAccess_None;
+    }
 
     StringBuffer managedFilescope;
     if(m_permissionsCache->isCacheEnabled() && !m_usercache_off)
@@ -1509,25 +1524,6 @@ bool CLdapSecManager::getUserInfo(ISecUser& user, const char* infotype)
 {
     return m_ldap_client->getUserInfo(user, infotype);
 }
-
-bool CLdapSecManager::createUserScopes(IEspSecureContext* secureContext)
-{
-    Owned<ISecUserIterator> it = getAllUsers(secureContext);
-    it->first();
-    bool rc = true;
-    while(it->isValid())
-    {
-        ISecUser &user = it->get();
-        if (!m_ldap_client->createUserScope(user))
-        {
-            PROGLOG("CLdapSecManager::createUserScopes Error creating user scope for user '%s'", user.getName());
-            rc = false;
-        }
-        it->next();
-    }
-    return rc;
-}
-
 
 aindex_t CLdapSecManager::getManagedScopeTree(SecResourceType rtype, const char * basedn, IArrayOf<ISecResource>& scopes, IEspSecureContext* secureContext)
 {

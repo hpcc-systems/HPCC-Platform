@@ -75,11 +75,14 @@ static Owned<IMPtagAllocator> ClusterMPAllocator;
 // stat. mappings shared between master and slave activities
 const StatisticsMapping spillStatistics({StTimeSpillElapsed, StTimeSortElapsed, StNumSpills, StSizeSpillFile});
 const StatisticsMapping jhtreeCacheStatistics({ StNumIndexSeeks, StNumIndexScans, StNumPostFiltered, StNumIndexWildSeeks,
-                                                StNumNodeCacheAdds, StNumLeafCacheAdds, StNumBlobCacheAdds, StNumNodeCacheHits, StNumLeafCacheHits, StNumBlobCacheHits, StCycleNodeLoadCycles, StCycleLeafLoadCycles,
-                                                StCycleBlobLoadCycles, StCycleNodeReadCycles, StCycleLeafReadCycles, StCycleBlobReadCycles, StNumNodeDiskFetches, StNumLeafDiskFetches, StNumBlobDiskFetches,
-                                                StCycleNodeFetchCycles, StCycleLeafFetchCycles, StCycleBlobFetchCycles,
-                                                StCycleIndexCacheBlockedCycles, StNumIndexMerges, StNumIndexMergeCompares,
+                                                StNumNodeCacheAdds, StNumLeafCacheAdds, StNumBlobCacheAdds, StNumNodeCacheHits, StNumLeafCacheHits, StNumBlobCacheHits,
+                                                StNumNodeDiskFetches, StNumLeafDiskFetches, StNumBlobDiskFetches,
+                                                StTimeNodeRead, StCycleNodeReadCycles, StTimeLeafRead, StCycleLeafReadCycles, StTimeBlobRead, StCycleBlobReadCycles,
+                                                StTimeNodeFetch, StCycleNodeFetchCycles, StTimeLeafFetch, StCycleLeafFetchCycles, StTimeBlobFetch, StCycleBlobFetchCycles,
+                                                StTimeIndexCacheBlocked, StCycleIndexCacheBlockedCycles, StNumIndexMerges, StNumIndexMergeCompares,
+                                                StTimeBlobLoad, StCycleBlobLoadCycles, StTimeLeafLoad, StCycleLeafLoadCycles, StTimeNodeLoad, StCycleNodeLoadCycles,
                                                 StNumIndexSkips, StNumIndexNullSkips});
+const StatisticsMapping soapcallStatistics({StTimeSoapcall});
 
 const StatisticsMapping basicActivityStatistics({StTimeTotalExecute, StTimeLocalExecute, StTimeBlocked});
 const StatisticsMapping groupActivityStatistics({StNumGroups, StNumGroupMax}, basicActivityStatistics);
@@ -96,6 +99,7 @@ const StatisticsMapping sortActivityStatistics({}, basicActivityStatistics, spil
 const StatisticsMapping graphStatistics({StNumExecutions, StSizeSpillFile, StSizeGraphSpill, StTimeUser, StTimeSystem, StNumContextSwitches, StSizeMemory, StSizePeakMemory, StSizeRowMemory, StSizePeakRowMemory}, basicActivityStatistics);
 const StatisticsMapping diskReadPartStatistics({StNumDiskRowsRead}, diskReadRemoteStatistics);
 const StatisticsMapping indexDistribActivityStatistics({}, basicActivityStatistics, jhtreeCacheStatistics);
+const StatisticsMapping soapcallActivityStatistics({}, basicActivityStatistics, soapcallStatistics);
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
@@ -1652,54 +1656,38 @@ void checkFileType(CActivityBase *activity, IDistributedFile *file, const char *
     }
 }
 
-StringBuffer &getExpertOptPath(const char *opt, StringBuffer &out)
+void CThorPerfTracer::start(const char *_workunit, unsigned _subGraphId, double interval)
 {
-#ifdef _CONTAINERIZED
-    if (opt)
-        return out.append("expert/@").append(opt);
-    return out.append("expert");
-#else
-    if (opt)
-        return out.append("Debug/@").append(opt);
-    return out.append("Debug");
-#endif
+    workunit.set(_workunit);
+    subGraphId = _subGraphId;
+    PROGLOG("Starting perf trace of subgraph %u, with interval %.3g seconds", subGraphId, interval);
+    perf.setInterval(interval);
+    perf.start();    
 }
 
-bool hasExpertOpt(const char *opt)
+void CThorPerfTracer::stop()
 {
-    StringBuffer xpath;
-    getExpertOptPath(opt, xpath);
-    return globals->hasProp(xpath);
-}
-
-bool getExpertOptBool(const char *opt, bool dft)
-{
-    StringBuffer xpath;
-    getExpertOptPath(opt, xpath);
-    return globals->getPropBool(xpath, dft);
-}
-
-__int64 getExpertOptInt64(const char *opt, __int64 dft)
-{
-    StringBuffer xpath;
-    getExpertOptPath(opt, xpath);
-    return globals->getPropInt64(xpath, dft);
-}
-
-StringBuffer &getExpertOptString(const char *opt, StringBuffer &out)
-{
-    StringBuffer xpath;
-    getExpertOptPath(opt, xpath);
-    globals->getProp(xpath, out);
-    return out;
-}
-
-void setExpertOpt(const char *opt, const char *value)
-{
-    StringBuffer xpath;
-    getExpertOptPath(nullptr, xpath);
-    if (!globals->hasProp(xpath))
-        globals->setPropTree(xpath);
-    getExpertOptPath(opt, xpath.clear());
-    globals->setProp(xpath, value);
+    PROGLOG("Stopping perf trace of subgraph %u", subGraphId);
+    perf.stop();
+    StringBuffer flameGraphName;
+    if (getConfigurationDirectory(globals->queryPropTree("Directories"), "debug", "thor", globals->queryProp("@name"), flameGraphName))
+        addPathSepChar(flameGraphName);
+    flameGraphName.appendf("%s/%u/flame_%u.svg", workunit.get(), globals->getPropInt("@slavenum"), subGraphId);
+    ensureDirectoryForFile(flameGraphName);
+    Owned<IFile> iFile = createIFile(flameGraphName);
+    try
+    {
+        Owned<IFileIO> iFileIO = iFile->open(IFOcreate);
+        if (iFileIO)
+        {
+            StringBuffer &svg = perf.queryResult();
+            iFileIO->write(0, svg.length(), svg.str());
+            PROGLOG("Flame graph for subgraph %u written to %s", subGraphId, flameGraphName.str());
+        }
+    }
+    catch (IException *E)
+    {
+        EXCLOG(E);
+        ::Release(E);
+    }
 }

@@ -886,8 +886,13 @@ public:
         if (isEmptyString(xpath) || isEmptyString(name))
             return;
         xmlXPathObjectPtr obj = xmlXPathEval((const xmlChar*) xpath, m_xpathContext);
-        if (!obj || obj->type!=xmlXPathObjectType::XPATH_NODESET || obj->nodesetval->nodeNr==0)
+        if (!obj)
             return;
+        if (obj->type!=xmlXPathObjectType::XPATH_NODESET || obj->nodesetval->nodeNr==0)
+        {
+            xmlXPathFreeObject(obj);
+            return;
+        }
         if (obj->nodesetval->nodeNr>1 && !all)
         {
             xmlXPathFreeObject(obj);
@@ -904,8 +909,13 @@ public:
         if (isEmptyString(xpath))
             return;
         xmlXPathObjectPtr obj = xmlXPathEval((const xmlChar*) xpath, m_xpathContext);
-        if (!obj || obj->type!=xmlXPathObjectType::XPATH_NODESET || !obj->nodesetval || obj->nodesetval->nodeNr==0)
+        if (!obj)
             return;
+        if (obj->type!=xmlXPathObjectType::XPATH_NODESET || !obj->nodesetval || obj->nodesetval->nodeNr==0)
+        {
+            xmlXPathFreeObject(obj);
+            return;
+        }
         if (obj->nodesetval->nodeNr>1 && !all)
         {
             xmlXPathFreeObject(obj);
@@ -957,10 +967,12 @@ public:
 
         xmlOutputBufferPtr xmlOut = xmlAllocOutputBuffer(nullptr);
         xmlNodeDumpOutput(xmlOut, node->doc, node, 0, 1, nullptr);
-        xmlOutputBufferFlush(xmlOut);
-        xmlBufPtr buf = (xmlOut->conv != nullptr) ? xmlOut->conv : xmlOut->buffer;
-        if (xmlBufUse(buf))
-            xml.append(xmlBufUse(buf), (const char *)xmlBufContent(buf));
+        if (xmlOutputBufferFlush(xmlOut) >= 0)
+        {
+            xmlBufPtr buf = (xmlOut->conv != nullptr) ? xmlOut->conv : xmlOut->buffer;
+            if (xmlBufUse(buf))
+                xml.append(xmlBufUse(buf), (const char *)xmlBufContent(buf));
+        }
         xmlOutputBufferClose(xmlOut);
         return xml;
     }
@@ -1063,7 +1075,7 @@ public:
     bool addCompiledVariable(const char * name, ICompiledXpath * compiled, CLibXpathScope *scope)
     {
         if (!compiled)
-            addVariable(name, "");
+            return addVariable(name, "");
         if (m_xpathContext)
         {
             CLibCompiledXpath * ccXpath = static_cast<CLibCompiledXpath *>(compiled);
@@ -1214,10 +1226,12 @@ public:
 
         xmlOutputBufferPtr xmlOut = xmlAllocOutputBuffer(nullptr);
         xmlNodeDumpOutput(xmlOut, node->doc, node, 0, 1, nullptr);
-        xmlOutputBufferFlush(xmlOut);
-        xmlBufPtr buf = (xmlOut->conv != nullptr) ? xmlOut->conv : xmlOut->buffer;
-        if (xmlBufUse(buf))
-            xml.append(xmlBufUse(buf), (const char *)xmlBufContent(buf));
+        if (xmlOutputBufferFlush(xmlOut) >= 0)
+        {
+            xmlBufPtr buf = (xmlOut->conv != nullptr) ? xmlOut->conv : xmlOut->buffer;
+            if (xmlBufUse(buf))
+                xml.append(xmlBufUse(buf), (const char *)xmlBufContent(buf));
+        }
         xmlOutputBufferClose(xmlOut);
         xmlXPathFreeObject(obj);
         return xml;
@@ -1952,10 +1966,12 @@ private:
 
         xmlOutputBufferPtr xmlOut = xmlAllocOutputBuffer(nullptr);
         xmlNodeDumpOutput(xmlOut, sect->doc, sect, 0, 1, nullptr);
-        xmlOutputBufferFlush(xmlOut);
-        xmlBufPtr buf = (xmlOut->conv != nullptr) ? xmlOut->conv : xmlOut->buffer;
-        if (xmlBufUse(buf))
-            xml.append(xmlBufUse(buf), (const char *)xmlBufContent(buf));
+        if (xmlOutputBufferFlush(xmlOut) >= 0)
+        {
+            xmlBufPtr buf = (xmlOut->conv != nullptr) ? xmlOut->conv : xmlOut->buffer;
+            if (xmlBufUse(buf))
+                xml.append(xmlBufUse(buf), (const char *)xmlBufContent(buf));
+        }
         xmlOutputBufferClose(xmlOut);
     }
     virtual IPropertyTree *createPTreeFromSection(const char *section) override

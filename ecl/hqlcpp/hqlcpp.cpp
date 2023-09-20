@@ -5755,13 +5755,13 @@ void HqlCppTranslator::doBuildExprRound(BuildCtx & ctx, IHqlExpression * expr, C
                 if (places)
                 {
                     args.append(*LINK(places));
-                    callProcedure(ctx, DecRoundToId, args);
+                    buildFunctionCall(ctx, DecRoundToId, args);
                 }
                 else
-                    callProcedure(ctx, DecRoundId, args);
+                    buildFunctionCall(ctx, DecRoundId, args);
             }
             else
-                callProcedure(ctx, DecRoundUpId, args);
+                buildFunctionCall(ctx, DecRoundUpId, args);
             assertex(expr->queryType()->getTypeCode() == type_decimal);
             tgt.expr.setown(createValue(no_decimalstack, expr->getType()));
         }
@@ -7948,7 +7948,7 @@ void HqlCppTranslator::doBuildStmtIf(BuildCtx & ctx, IHqlExpression * expr)
     {
         if (matchesConstValue(boundCond->queryExpr(), true))
             buildStmt(ctx, trueExpr);
-        else
+        else if (falseExpr)
             buildStmt(ctx, falseExpr);
         return;
     }

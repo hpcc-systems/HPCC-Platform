@@ -17,6 +17,10 @@ import { SetLogicalFilePartAttr } from "./SetLogicalFilePartAttr";
 import { SetProtected } from "./SetProtected";
 import { SetUnprotected } from "./SetUnprotected";
 import { SetValue } from "./SetValue";
+import { DaliAdd } from "./DaliAdd";
+import { DaliDelete } from "./DaliDelete";
+import { DaliCount } from "./DaliCount";
+import { DaliImport } from "./DaliImport";
 import nlsHPCC from "src/nlsHPCC";
 
 interface DaliAdminProps {
@@ -71,6 +75,18 @@ export const DaliAdmin: React.FunctionComponent<DaliAdminProps> = ({
             </PivotItem>
             <PivotItem headerText={nlsHPCC.SetValue} itemKey="setvalue" style={pivotItemStyle(size)} >
                 <SetValue />
+            </PivotItem>
+            <PivotItem headerText={nlsHPCC.Add} itemKey="daliadd" style={pivotItemStyle(size)} >
+                <DaliAdd />
+            </PivotItem>
+            <PivotItem headerText={nlsHPCC.Delete} itemKey="dalidelete" style={pivotItemStyle(size)} >
+                <DaliDelete />
+            </PivotItem>
+            <PivotItem headerText={nlsHPCC.Count} itemKey="dalicount" style={pivotItemStyle(size)} >
+                <DaliCount />
+            </PivotItem>
+            <PivotItem headerText={nlsHPCC.Import} itemKey="daliimport" style={pivotItemStyle(size)} >
+                <DaliImport />
             </PivotItem>
         </Pivot>
     }</SizeMe>;

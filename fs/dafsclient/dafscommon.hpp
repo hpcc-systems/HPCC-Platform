@@ -111,7 +111,8 @@ enum DAFS_ERROR_CODES {
     DAFSERR_cmdstream_protocol_failure      = -10,
     DAFSERR_cmd_unauthorized                = -11,
     DAFSERR_cmdstream_unknownwritehandle    = -12,
-    DAFSERR_cmdstream_generalwritefailure   = -13
+    DAFSERR_cmdstream_generalwritefailure   = -13,
+    DAFSERR_serveraccept_fail_portcheck     = -14
 };
 
 

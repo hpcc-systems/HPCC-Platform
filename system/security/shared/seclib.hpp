@@ -474,7 +474,7 @@ static const SecFeatureBit SMF_AuthorizeWorkUnitScope_List    = 0x0100000000;
 static const SecFeatureBit SMF_AuthorizeWorkUnitScope_Named   = 0x0200000000;
 static const SecFeatureBit SMF_GetDescription                 = 0x0400000000;
 static const SecFeatureBit SMF_GetPasswordExpirationDays      = 0x0800000000;
-static const SecFeatureBit SMF_CreateUserScopes               = 0x1000000000;
+//static const SecFeatureBit SMF_CreateUserScopes               = 0x1000000000;//feature removed in 9.x
 static const SecFeatureBit SMF_GetManagedScopeTree            = 0x2000000000;
 static const SecFeatureBit SMF_QueryDefaultPermission         = 0x4000000000;
 static const SecFeatureBit SMF_ClearPermissionsCache          = 0x8000000000;
@@ -524,7 +524,6 @@ interface ISecManager : extends ISecObject
     virtual bool authorizeWorkunitScope(ISecUser & user, ISecResourceList * resources, IEspSecureContext* secureContext = nullptr) = 0;
     virtual const char * getDescription() = 0;
     virtual unsigned getPasswordExpirationWarningDays(IEspSecureContext* secureContext = nullptr) = 0;
-    virtual bool createUserScopes(IEspSecureContext* secureContext = nullptr) = 0;
     virtual aindex_t getManagedScopeTree(SecResourceType rtype, const char * basedn, IArrayOf<ISecResource>& scopes, IEspSecureContext* secureContext = nullptr) = 0;
     virtual SecAccessFlags queryDefaultPermission(ISecUser& user, IEspSecureContext* secureContext = nullptr) = 0;
     virtual bool clearPermissionsCache(ISecUser & user, IEspSecureContext* secureContext = nullptr) = 0;

@@ -15,15 +15,18 @@
     limitations under the License.
 ############################################################################## */
 
+#include <algorithm>
+#include <functional>
+#include <unordered_map>
 
 #include "platform.h"
-#include <algorithm>
 
 #include "jexcept.hpp"
 #include <assert.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <errno.h>
+#include "jfile.hpp"
 #include "jptree.hpp"
 
 #ifdef _WIN32
@@ -66,11 +69,160 @@ const char * querySeverityString(ErrorSeverity errorSeverity)
         return errorSeverityString[SeverityUnknown];
 }
 
+
+static std::unordered_map<std::string, ExceptionInterceptClass> eClassTypes = {
+    { "string", ExceptionInterceptClass::eString },
+    { "errno", ExceptionInterceptClass::eErrno},
+    { "os", ExceptionInterceptClass::eOs},
+    { "socket", ExceptionInterceptClass::eSocket}
+};
+class CExceptionInterceptor : implements IExceptionIntercept
+{
+    std::unordered_map<unsigned __int64, InterceptHandler> interceptHandlers;
+    mutable CriticalSection crit;
+    StringBuffer debugDir;
+    unsigned handledExceptionClassMask = 0;
+    void ensureDebugDir()
+    {
+        if (debugDir.length())
+            return;
+#ifdef _CONTAINERIZED
+        StringBuffer planeName;
+        if (!getDefaultPlane(planeName, "@debugPlane", "debug"))
+        {
+            WARNLOG("Exception handlers configured, but debug plane is missing");
+            return;
+        }
+        Owned<IPropertyTree> plane = getStoragePlane(planeName);
+        assertex(plane);
+        verifyex(plane->getProp("@prefix", debugDir));
+#else
+        verifyex(getConfigurationDirectory(nullptr, "temp", nullptr, "debug", debugDir));
+#endif
+        recursiveCreateDirectory(debugDir);
+    }
+    void unsafeSetIntercept(ExceptionInterceptClass eClass, int code, InterceptHandler handler)
+    {
+        unsigned __int64 key = (unsigned __int64)eClass << 56 | (unsigned)code;
+        handledExceptionClassMask |= (byte)eClass;
+        interceptHandlers[key] = handler;
+    }
+public:
+    virtual void handle(ExceptionInterceptClass eClass, IException *e) const override
+    {
+        if (handledExceptionClassMask & ((byte)eClass))
+        {
+            unsigned __int64 key = (unsigned __int64)eClass << 56 | (unsigned)e->errorCode();
+            CriticalBlock b(crit);
+            auto it = interceptHandlers.find(key);
+            if (it != interceptHandlers.end())
+                it->second(e);
+        }
+    }
+    virtual void clear() override
+    {
+        CriticalBlock b(crit);
+        handledExceptionClassMask = 0;
+        interceptHandlers.clear();
+    }
+    virtual void setIntercept(ExceptionInterceptClass eClass, int code, InterceptHandler handler) override
+    {
+        CriticalBlock b(crit);
+        unsafeSetIntercept(eClass, code, handler);
+    }
+    virtual void addFromConfig(const IPropertyTree *exceptionHandlerTree) override
+    {
+        Owned<IPropertyTreeIterator> iter = exceptionHandlerTree->getElements("exceptionHandler");
+        if (iter->first())
+        {
+            ensureDebugDir();
+            do
+            {
+                IPropertyTree &handler = iter->query();
+                StringBuffer eClassStr;
+                handler.getProp("@class", eClassStr);
+                eClassStr.toLowerCase();
+                int code = handler.getPropInt("@code");
+                StringBuffer cmd;
+                handler.getProp("@cmd", cmd);
+
+                auto it = eClassTypes.find(eClassStr.str());
+                if ((0 == code) || (0 == cmd.length()) || (it == eClassTypes.end()))
+                    WARNLOG("Invalid exception handler configuration ['%s', %d, '%s']", eClassStr.str(), code, cmd.str());
+                else
+                {
+                    ExceptionInterceptClass eClass = it->second;
+                    InterceptHandler f = [capturedDebugDir = std::string(debugDir), capturedCmds = std::string(cmd)](IException *e)
+                    {
+                        try
+                        {
+                            StringBuffer debugFilePath(capturedDebugDir.c_str());
+                            addPathSepChar(debugFilePath);
+                            debugFilePath.append("exception-").append(e->errorCode()).append("-");
+                            CDateTime dt;
+                            dt.setNow();
+                            dt.getString(debugFilePath).append(".log");
+                            DWORD runcode;
+                            if (!invoke_program(capturedCmds.c_str(), runcode, true, debugFilePath))
+                                WARNLOG("Intercept handler for exception code '%d', failed to excute cmd '%s'", e->errorCode(), capturedCmds.c_str());
+                        }
+                        catch (IException *e)
+                        {
+                            EXCLOG(e);
+                            e->Release();
+                        }
+                    };
+                    unsafeSetIntercept(eClass, code, f);
+                }
+            }
+            while (iter->next());
+        }
+    }
+};
+
+static CExceptionInterceptor exceptionInterceptor;
+
+IExceptionIntercept &queryExceptionIntercept()
+{
+    return exceptionInterceptor;
+}
+
+
+// Install exception intercept handlers from configuration
+static unsigned exceptionHandlerCBId = 0;
+MODULE_INIT(INIT_PRIORITY_STANDARD)
+{
+    auto updateFunc = [&](const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
+    {
+        exceptionInterceptor.clear();
+        StringBuffer xpath;
+        getExpertOptPath(nullptr, xpath);
+        Owned<IPropertyTree> expertSettings = getGlobalConfigSP()->getPropTree(xpath);
+        if (expertSettings)
+            exceptionInterceptor.addFromConfig(expertSettings);
+        expertSettings.setown(getComponentConfigSP()->getPropTree(xpath));
+        if (expertSettings)
+            exceptionInterceptor.addFromConfig(expertSettings);
+    };
+    exceptionHandlerCBId = installConfigUpdateHook(updateFunc, true);
+    return true;
+}
+
+MODULE_EXIT()
+{
+    removeConfigUpdateHook(exceptionHandlerCBId);
+}
+
+
+
 class jlib_thrown_decl StringException: public IException, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
-    StringException(int code, const char *str, MessageAudience aud = MSGAUD_user) : errcode(code), msg(str), audience(aud) {};
+    StringException(int code, const char *str, MessageAudience aud = MSGAUD_user) : errcode(code), msg(str), audience(aud)
+    {
+        queryExceptionIntercept().handle(ExceptionInterceptClass::eString, this);
+    }
     
     int             errorCode() const { return errcode; }
     StringBuffer &  errorMessage(StringBuffer &str) const { str.append(msg); return str;}   
@@ -173,8 +325,14 @@ class jlib_thrown_decl OsException: public IOSException, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
-    OsException(int code) : errcode(code) {};
-    OsException(int code, const char *_msg) : msg(_msg), errcode(code) {};
+    OsException(int code) : errcode(code)
+    {
+        exceptionInterceptor.handle(ExceptionInterceptClass::eOs, this);
+    };
+    OsException(int code, const char *_msg) : msg(_msg), errcode(code)
+    {
+        exceptionInterceptor.handle(ExceptionInterceptClass::eOs, this);
+    };
     ~OsException() {}
     
     int             errorCode() const { return errcode; }
@@ -216,8 +374,16 @@ class jlib_thrown_decl ErrnoException: public IErrnoException, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
-    ErrnoException(int errn) : audience(MSGAUD_user) { errcode = errn==-1?errno:errn; }
-    ErrnoException(int errn, const char *_msg, MessageAudience aud = MSGAUD_user) : msg(_msg), audience(aud) { errcode = errn==-1?errno:errn; }
+    ErrnoException(int errn) : audience(MSGAUD_user)
+    {
+        errcode = errn==-1?errno:errn;
+        exceptionInterceptor.handle(ExceptionInterceptClass::eErrno, this);
+    }
+    ErrnoException(int errn, const char *_msg, MessageAudience aud = MSGAUD_user) : msg(_msg), audience(aud)
+    {
+        errcode = errn==-1?errno:errn;
+        exceptionInterceptor.handle(ExceptionInterceptClass::eErrno, this);
+    }
     ~ErrnoException() { }
     
     int             errorCode() const { return errcode; }
@@ -225,10 +391,7 @@ public:
     {
         if (msg)
             str.append(msg).append(", ");
-        if (errcode==DISK_FULL_EXCEPTION_CODE)
-            str.append("Disk full");
-        else
-            str.append(strerror(errcode));
+        str.append(strerror(errcode));
         return str;
     }
     MessageAudience errorAudience() const { return audience; }

@@ -45,12 +45,12 @@
 
   <para>Example:</para>
 
-  <programlisting>INTEGER1 MyInt := 65; //MyInt is an integer whose value is 65
-  
-STRING1 MyVal := TRANSFER(MyInt,STRING1); //MyVal is "A" (ASCII 65)
-  
-INTEGER1 MyVal2 := (INTEGER)MyVal; //MyVal2 is 0 (zero) because
-          "A" is not a numeric character
+  <programlisting lang="ECL" role="runnable">INTEGER1 MyInt := 65; //MyInt is an integer whose value is 65
+STRING1 MyVal1 := TRANSFER(MyInt,STRING1); //MyVal is "A" (ASCII 65)
+INTEGER1 MyVal2 := (INTEGER)MyVal1; //MyVal2 is 0 (zero) because
+                                   // "A" is not a numeric character
+OUTPUT(MyVal1); // returns A 
+OUTPUT(MyVal2); // returns 0 (zero)
 </programlisting>
 
   <para>See Also: <link linkend="Type_Casting">Type Casting</link></para>

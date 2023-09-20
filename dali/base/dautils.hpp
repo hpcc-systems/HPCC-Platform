@@ -62,6 +62,7 @@ class da_decl CDfsLogicalFileName
     bool external;
     bool allowospath;
     bool allowWild;
+    bool allowTrailingEmptyScope;
     SocketEndpoint foreignep;
     bool selfScopeTranslation = true; // default behaviour is to translate self scopes, e.g. .::.::scope::.::name -> scope::name
 
@@ -149,6 +150,7 @@ public:
     IPropertyTree *createSuperTree() const;
     void allowOsPath(bool allow=true) { allowospath = allow; } // allow local OS path to be specified
     void setAllowWild(bool b=true) { allowWild = b; } // allow wildcards
+    void setAllowTrailingEmptyScope(bool b=true) { allowTrailingEmptyScope = b; }
     bool isExpanded() const;
     void expand(IUserDescriptor *user);
 

@@ -39,13 +39,11 @@
 
   <para>Example:</para>
 
-  <programlisting>Rad2Deg := 57.295779513082; //number of degrees in a radian
-
+  <programlisting lang="ECL" role="runnable">Rad2Deg := 57.295779513082; //number of degrees in a radian
 Deg2Rad := 0.0174532925199; //number of radians in a degree
-
 Angle45 := 45 * Deg2Rad;    //translate 45 degrees into radians
-
 HyperbolicSine45 := SINH(Angle45); //get hyperbolic sine of the angle
+OUTPUT(HyperbolicSine45);
 </programlisting>
 
   <para>See Also: <link linkend="ACOS">ACOS</link>, <link

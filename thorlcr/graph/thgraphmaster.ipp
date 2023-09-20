@@ -98,7 +98,7 @@ class graphmaster_decl CMasterGraph : public CGraphBase
     void sendQuery();
     void jobDone();
     void sendGraph();
-    void getFinalProgress();
+    void getFinalProgress(bool aborting=false);
     void configure();
     void sendActivityInitData();
     void recvSlaveInitResp();
@@ -173,7 +173,7 @@ public:
     void registerFile(const char *logicalName, StringArray &clusters, unsigned usageCount=0, WUFileKind fileKind=WUFileStandard, bool temp=false);
     void deregisterFile(const char *logicalName, bool kept=false);
     const SocketEndpoint &queryAgentEp() const { return agentEp; }
-    void broadcast(ICommunicator &comm, CMessageBuffer &msg, mptag_t mptag, unsigned timeout, const char *errorMsg, CReplyCancelHandler *msgHandler=NULL, bool sendOnly=false);
+    void broadcast(ICommunicator &comm, CMessageBuffer &msg, mptag_t mptag, unsigned timeout, const char *errorMsg, CReplyCancelHandler *msgHandler=NULL, bool sendOnly=false, bool aborting=false);
     IPropertyTree *prepareWorkUnitInfo();
     void sendQuery();
     void jobDone();
@@ -204,9 +204,11 @@ public:
     CGraphTableCopy executed;
     CriticalSection exceptCrit;
 
-    virtual __int64 getWorkUnitValueInt(const char *prop, __int64 defVal) const;
-    virtual StringBuffer &getWorkUnitValue(const char *prop, StringBuffer &str) const;
-    virtual bool getWorkUnitValueBool(const char *prop, bool defVal) const;
+    virtual __int64 getWorkUnitValueInt(const char *prop, __int64 defVal) const override;
+    virtual StringBuffer &getWorkUnitValue(const char *prop, StringBuffer &str) const override;
+    virtual bool getWorkUnitValueBool(const char *prop, bool defVal) const override;
+    virtual double getWorkUnitValueReal(const char *prop, double defVal) const override;
+
 
 // IExceptionHandler
     virtual bool fireException(IException *e);

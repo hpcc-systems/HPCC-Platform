@@ -31,4 +31,8 @@ void abortThor(IException *e, unsigned errCode, bool abortCurrentJob=true);
 void setExitCode(int code);
 int queryExitCode();
 
+void addConnectedWorkerPod(const char *podName);
+void publishPodNames(IWorkUnit *workunit);
+
+
 #endif

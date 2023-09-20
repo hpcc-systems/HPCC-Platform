@@ -77,10 +77,28 @@
     
     <xsl:template match="Results">
         <xsl:apply-templates select="Exception"/>
+        <xsl:apply-templates select="Result/SummaryStats">
+            <xsl:with-param name="wsecl" select="true()"/>
+        </xsl:apply-templates>
+        <xsl:apply-templates select="Result/StatsWorkUnit">
+            <xsl:with-param name="wsecl" select="true()"/>
+        </xsl:apply-templates>
         <xsl:apply-templates select="Result">
             <xsl:with-param name="wsecl" select="true()"/>
         </xsl:apply-templates>
         <xsl:apply-templates select="Result/Tracing"/>
+    </xsl:template>
+    <xsl:template match="SummaryStats">
+        <xsl:param name="wsecl" select="false()"/>
+        <b><xsl:text>SummaryStats: </xsl:text></b><xsl:value-of select="."/>
+        <br/>
+        <br/>
+    </xsl:template>
+    <xsl:template match="StatsWorkUnit">
+        <xsl:param name="wsecl" select="false()"/>
+        <b><xsl:text>Stats WorkUnit: </xsl:text></b><xsl:value-of select="wuid"/>
+        <br/>
+        <br/>
     </xsl:template>
     <xsl:template match="Exception">
         <b>Exception</b>

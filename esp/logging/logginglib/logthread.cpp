@@ -527,7 +527,7 @@ void CLogThread::checkPendingLogs(bool bOneRecOnly)
 //checkAndReadLogRequestFromSharedTankFile().
 IEspUpdateLogRequestWrap* CLogThread::unserializeLogRequestContent(const char* logData, bool decompress)
 {
-    if (!logData && *logData)
+    if (isEmptyString(logData))
         return NULL;
 
     Owned<IPropertyTree> pLogTree = createPTreeFromXMLString(logData);
@@ -648,7 +648,7 @@ void CLogRequestReader::threadmain()
 void CLogRequestReader::reportAckedLogFiles(StringArray& ackedLogFiles)
 {
     CriticalBlock b(crit);
-    for (auto r : ackedLogFileCheckList)
+    for (auto& r : ackedLogFileCheckList)
         ackedLogFiles.append(r.c_str());
     ESPLOG(LogMax, "#### The reportAckedLogFiles() done.");
 }
@@ -704,7 +704,7 @@ void CLogRequestReader::cleanAckedLogFiles(StringArray& fileNames)
 
     //Find which file should not be removed from ackedLogFileCheckList.
     StringArray fileNamesToKeep;
-    for (auto r : ackedLogFileCheckList)
+    for (auto& r : ackedLogFileCheckList)
     {
         if (!fileNames.contains(r.c_str()))
             fileNamesToKeep.append(r.c_str());
@@ -838,7 +838,7 @@ StringBuffer& CLogRequestReader::getTankFileTimeString(const char* fileName, Str
         return timeString;
 
     ptr += sendLogKeywordLen;
-    if (!ptr)
+    if (!*ptr)
         return timeString;
 
     ptr = strchr(ptr, '.');
@@ -1048,7 +1048,7 @@ void CLogRequestReader::updateAckedFileList()
         CLogSerializer ackedLog(fileNameWithPath);
         ackedLog.loadAckedLogs(logRequestsToRemove);
 
-        for (auto r : logRequestsToRemove)
+        for (auto& r : logRequestsToRemove)
             ackedLogRequests.erase(r.c_str());
 
         fileName.append("\r\n");
@@ -1079,7 +1079,7 @@ void CLogRequestReader::updateAckedLogRequestList()
         return; //Should never happen
 
     offset_t pos = 0;
-    for (auto r : ackedLogRequests)
+    for (auto& r : ackedLogRequests)
     {
         StringBuffer line(r.c_str());
         line.append("\r\n");

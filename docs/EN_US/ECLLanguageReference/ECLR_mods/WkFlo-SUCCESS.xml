@@ -50,12 +50,12 @@
 
   <para>Example:</para>
 
-  <programlisting>  SPeople  := SORT(Person,Person.first_name);
-  nUniques := COUNT(DEDUP(sPeople,Person.per_first_name AND
-                   Person.address))
+  <programlisting lang="ECL" role="notrunnable">SPeople  := SORT(Person,Person.first_name);
+nUniques := COUNT(DEDUP(sPeople,Person.per_first_name AND Person.address))
            : SUCCESS(Email.simpleSend(SystemsPersonel,
                     SystemsPersonel.email,'yeah.htm'));
 </programlisting>
 
-  <para>See Also: <link linkend="FAILURE">FAILURE</link>, <link linkend="RECOVERY">RECOVERY</link></para>
+  <para>See Also: <link linkend="FAILURE">FAILURE</link>, <link
+  linkend="RECOVERY">RECOVERY</link></para>
 </sect1>

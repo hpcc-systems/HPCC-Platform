@@ -48,8 +48,9 @@
   #define Py_TPFLAGS_HAVE_ITER 0
 #endif
 
-#if PY_MINOR_VERSION < 7
+#if PY_VERSION_HEX < 0x03070000
   #define USE_CUSTOM_NAMEDTUPLES
+  #define INIT_PY_THREADS
 #endif
 
 static const char * compatibleVersions[] = {
@@ -423,7 +424,9 @@ public:
         Py_Initialize();
         const wchar_t *argv[] = { nullptr };
         PySys_SetArgvEx(0, (wchar_t **) argv, 0);
+#ifdef INIT_PY_THREADS
         PyEval_InitThreads();
+#endif
         preservedScopes.setown(PyDict_New());
         tstate = PyEval_SaveThread();
         skipPythonCleanup = true;

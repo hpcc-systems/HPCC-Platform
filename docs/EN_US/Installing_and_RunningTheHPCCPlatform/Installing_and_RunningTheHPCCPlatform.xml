@@ -278,15 +278,18 @@
         <sect3 id="Installing_CentOS-RedHat-Suse">
           <title>CentOS/Red Hat</title>
 
-          <para>To install the Platform you should have the appropriate
-          permissions to install packages. If you have sudo rights, then you
-          can install the platform using yum.</para>
+          <para>To install the HPCC Systems Platform you should have the
+          appropriate rights and permissions to install packages on your
+          system.</para>
 
-          <programlisting>sudo yum install &lt;hpccsystems platform rpm package&gt;</programlisting>
+          <para>One way to install the platform is using yum.</para>
 
-          <para>Optionally you can install the package with rpm (recommended
-          using the -Uvh options), however then you would have to negotiate
-          installing any additional dependencies.</para>
+          <programlisting lang="bash">sudo yum install -y epel-release 
+sudo yum install -y &lt;hpccsystems platform rpm package&gt;</programlisting>
+
+          <para>Optionally you can install packages with rpm (recommended
+          using the -Uvh options), however you would then have to negotiate
+          installing any dependencies.</para>
         </sect3>
 
         <sect3 id="Installing_Ubuntu-Debian">
@@ -542,12 +545,12 @@
           <orderedlist>
             <listitem>
               <para>Create a file called hello.ecl and type in the following
-              text (including the quotes): <programlisting>output('Hello world'); </programlisting></para>
+              text (including the quotes): <programlisting>OUTPUT('Hello world'); </programlisting></para>
 
               <para>You can either use your favorite editor, or you can use
               the command line by typing the following</para>
 
-              <para><programlisting>echo "Output('Hello world');" &gt; hello.ecl</programlisting></para>
+              <para><programlisting>echo "OUTPUT('Hello world');" &gt; hello.ecl</programlisting></para>
             </listitem>
 
             <listitem>

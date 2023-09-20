@@ -929,7 +929,8 @@ void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char 
                     }
                     else
                     {
-                        generator->addArchiveAsResource(buf);
+                        if (!instance.wu->getDebugValueBool("obfuscateOutput", false))
+                            generator->addArchiveAsResource(buf);
                     }
                 }
                 bool generateOk = generator->processQuery(instance.query, target);  // NB: May clear instance.query
@@ -1748,7 +1749,7 @@ void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML
     localRepositoryManager.processArchive(archiveTree);
 
     if (queryAttributePackage)
-        instance.dataServer.set(localRepositoryManager.queryDependentRepository(nullptr, queryAttributePackage, nullptr));
+        instance.dataServer.set(localRepositoryManager.queryRepositoryAsRoot(queryAttributePackage, nullptr));
     else
         instance.dataServer.setown(localRepositoryManager.createPackage(nullptr));
 
@@ -1874,7 +1875,7 @@ void EclCC::processFile(EclCompileInstance & instance)
         if (attributePackage)
         {
             //If attribute package is specified, resolve that package as the source for the query
-            instance.dataServer.set(localRepositoryManager.queryDependentRepository(nullptr, attributePackage, inputFileCollection));
+            instance.dataServer.set(localRepositoryManager.queryRepositoryAsRoot(attributePackage, inputFileCollection));
         }
         else
         {
@@ -2064,7 +2065,7 @@ void EclCC::processReference(EclCompileInstance & instance, const char * queryAt
 
     if (!isEmptyString(queryAttributePackage))
     {
-        instance.dataServer.set(localRepositoryManager.queryDependentRepository(nullptr, queryAttributePackage, nullptr));
+        instance.dataServer.set(localRepositoryManager.queryRepositoryAsRoot(queryAttributePackage, nullptr));
     }
     else
     {
@@ -2074,7 +2075,7 @@ void EclCC::processReference(EclCompileInstance & instance, const char * queryAt
 
         if (looksLikeGitPackage(searchPath))
         {
-            instance.dataServer.set(localRepositoryManager.queryDependentRepository(nullptr, searchPath, nullptr));
+            instance.dataServer.set(localRepositoryManager.queryRepositoryAsRoot(searchPath, nullptr));
         }
         else
         {

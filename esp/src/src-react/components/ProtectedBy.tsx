@@ -2,9 +2,9 @@ import * as React from "react";
 import { CommandBar, ICommandBarItemProps } from "@fluentui/react";
 import nlsHPCC from "src/nlsHPCC";
 import { QuerySortItem } from "src/store/Store";
-import { useFluentGrid } from "../hooks/grid";
 import { useFile } from "../hooks/file";
 import { HolyGrail } from "../layouts/HolyGrail";
+import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 
 interface ProtectedByProps {
     cluster: string;
@@ -22,18 +22,18 @@ export const ProtectedBy: React.FunctionComponent<ProtectedByProps> = ({
 
     const [file, , , refreshData] = useFile(cluster, logicalFile);
     const [data, setData] = React.useState<any[]>([]);
+    const {
+        selection, setSelection,
+        setTotal,
+        refreshTable } = useFluentStoreState({});
 
     //  Grid ---
-    const { Grid, copyButtons } = useFluentGrid({
-        data,
-        primaryID: "Owner",
-        sort,
-        filename: "protectedBy",
-        columns: {
+    const columns = React.useMemo((): FluentColumns => {
+        return {
             Owner: { label: nlsHPCC.Owner, width: 320 },
             Modified: { label: nlsHPCC.Modified, width: 320 },
-        }
-    });
+        };
+    }, []);
 
     React.useEffect(() => {
         const results = file?.ProtectList?.DFUFileProtect;
@@ -56,10 +56,19 @@ export const ProtectedBy: React.FunctionComponent<ProtectedByProps> = ({
         },
     ], [refreshData]);
 
+    const copyButtons = useCopyButtons(columns, selection, "protectedBy");
+
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}
         main={
-            <Grid />
-        }
+            <FluentGrid
+                data={data}
+                primaryID={"Owner"}
+                sort={sort}
+                columns={columns}
+                setSelection={setSelection}
+                setTotal={setTotal}
+                refresh={refreshTable}
+            ></FluentGrid>}
     />;
 };

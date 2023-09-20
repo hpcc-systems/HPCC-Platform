@@ -45,8 +45,12 @@
 
   <para>Example:</para>
 
-  <programlisting>MyCube := POWER(2.0,3.0); // = 8
-MySquare := POWER(3.0,2.0); // = 9</programlisting>
+  <programlisting lang="ECL" role="runnable">MyCube := POWER(2.0,3.0); // = 8.0
+MySquare := POWER(3.0,2.0); // = 9.0
+OUTPUT(MyCube);
+OUTPUT(MySquare);
+</programlisting>
 
-  <para>See Also: <link linkend="SQRT">SQRT</link>, <link linkend="EXP">EXP</link>, <link linkend="LN">LN</link></para>
+  <para>See Also: <link linkend="SQRT">SQRT</link>, <link
+  linkend="EXP">EXP</link>, <link linkend="LN">LN</link></para>
 </sect1>

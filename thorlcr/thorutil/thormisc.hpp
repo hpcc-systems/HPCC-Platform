@@ -134,6 +134,7 @@ enum RegistryCode:unsigned { rc_register, rc_deregister };
 //statistics gathered by the different activities
 extern graph_decl const StatisticsMapping spillStatistics;
 extern graph_decl const StatisticsMapping jhtreeCacheStatistics;
+extern graph_decl const StatisticsMapping soapcallStatistics;
 extern graph_decl const StatisticsMapping basicActivityStatistics;
 extern graph_decl const StatisticsMapping groupActivityStatistics;
 extern graph_decl const StatisticsMapping hashJoinActivityStatistics;
@@ -150,6 +151,7 @@ extern graph_decl const StatisticsMapping sortActivityStatistics;
 
 extern graph_decl const StatisticsMapping graphStatistics;
 extern graph_decl const StatisticsMapping indexDistribActivityStatistics;
+extern graph_decl const StatisticsMapping soapcallActivityStatistics;
 
 class BooleanOnOff
 {
@@ -360,7 +362,6 @@ public:
 #define DEFAULT_THORSLAVEPORT 20100
 #define DEFAULT_SLAVEPORTINC 20
 #define DEFAULT_QUERYSO_LIMIT 10
-#define DEFAULT_LINGER_SECS 60
 
 class graph_decl CFifoFileCache : public CSimpleInterface
 {
@@ -603,13 +604,6 @@ inline void readUnderlyingType(MemoryBuffer &mb, T &v)
 constexpr unsigned thorDetailedLogLevel = 200;
 constexpr LogMsgCategory MCthorDetailedDebugInfo(MCdebugInfo(thorDetailedLogLevel));
 
-extern graph_decl bool hasExpertOpt(const char *opt);
-extern graph_decl StringBuffer &getExpertOptPath(const char *opt, StringBuffer &out);
-extern graph_decl bool getExpertOptBool(const char *opt, bool dft=false);
-extern graph_decl __int64 getExpertOptInt64(const char *opt, __int64 dft=0);
-extern graph_decl StringBuffer &getExpertOptString(const char *opt, StringBuffer &out);
-extern graph_decl void setExpertOpt(const char *opt, const char *value);
-
 ////
 // IContextLogger
 class CThorContextLogger : public CSimpleInterfaceOf<IContextLogger>
@@ -619,7 +613,7 @@ class CThorContextLogger : public CSimpleInterfaceOf<IContextLogger>
     mutable CRuntimeStatisticCollection stats;
 
 public:
-    CThorContextLogger() : stats(jhtreeCacheStatistics)
+    CThorContextLogger(const StatisticsMapping & statsMapping) : stats(statsMapping)
     {
         if (globals->hasProp("@httpGlobalIdHeader"))
             setHttpIdHeaderNames(globals->queryProp("@httpGlobalIdHeader"), globals->queryProp("@httpCallerIdHeader"));
@@ -710,6 +704,16 @@ public:
     {
         stats.reset();
     }
+};
+
+class graph_decl CThorPerfTracer : protected PerfTracer
+{
+    PerfTracer perf;
+    StringAttr workunit;
+    unsigned subGraphId;
+public:
+    void start(const char *workunit, unsigned subGraphId, double interval);
+    void stop();
 };
 
 #endif

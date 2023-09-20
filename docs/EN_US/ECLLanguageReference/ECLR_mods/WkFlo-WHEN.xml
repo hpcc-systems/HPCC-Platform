@@ -63,33 +63,33 @@
 
   <para>Example:</para>
 
-  <programlisting>IMPORT STD;
+  <programlisting lang="ECL" role="notrunnable">IMPORT STD;
 IF (STD.File.FileExists('test::myfile'),
      STD.File.DeleteLogicalFile('test::myfile'));
      //deletes the file if it already exists
-  STD.File.MonitorLogicalFileName('MyFileEvent','test::myfile');
+STD.File.MonitorLogicalFileName('MyFileEvent','test::myfile');
      //sets up monitoring and the event name
      //to fire when the file is found
-  OUTPUT('File Created') : WHEN(EVENT('MyFileEvent','*'));
+OUTPUT('File Created') : WHEN(EVENT('MyFileEvent','*'));
      //this OUTPUT occurs only after the event has fired
      //may also be coded in this shorthand form:
      // OUTPUT('File Created') : WHEN('MyFileEvent');
-  afile := DATASET([{ 'A', '0'}], {STRING10 key,STRING10 val});
-  OUTPUT(afile,,'test::myfile');
+afile := DATASET([{ 'A', '0'}], {STRING10 key,STRING10 val});
+OUTPUT(afile,,'test::myfile');
      //this creates a file that the DFU file monitor will find
      //when it periodically polls
      //**********************************
-  EXPORT events := MODULE
+EXPORT events := MODULE
     EXPORT dailyAtMidnight := CRON('0 0 * * *');
     EXPORT dailyAt( INTEGER hour,
                     INTEGER minute=0) :=
           EVENT('CRON',
                (STRING)minute + ' ' + (STRING)hour + ' * * *');
     EXPORT dailyAtMidday := dailyAt(12, 0);
-  END;
-  BUILD(teenagers) : WHEN(events.dailyAtMidnight);
-  BUILD(oldies) : WHEN(events.dailyAt(6));
-  BUILD(oldies) : WHEN(EVENT('FileDropped', 'x'));
+END;
+BUILD(teenagers) : WHEN(events.dailyAtMidnight);
+BUILD(oldies) : WHEN(events.dailyAt(6));
+BUILD(oldies) : WHEN(EVENT('FileDropped', 'x'));
 </programlisting>
 
   <para>See Also: <link linkend="EVENT">EVENT</link>, <link

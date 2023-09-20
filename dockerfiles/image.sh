@@ -1,11 +1,22 @@
 #!/bin/bash
-set -e
+
+set -eEuo pipefail
+
+trapFunc() {
+  local lineno="$1"
+  local code="$2"
+  local command="$3"
+  echo "error exit status $code, at file $0 on or near line $lineno: $command"
+}
+trap 'trapFunc "${LINENO}/${BASH_LINENO}" "$?" "$BASH_COMMAND"' ERR
 
 globals() {
     SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]:-$0}"; )" &> /dev/null && pwd 2> /dev/null; )"
     ROOT_DIR=$(git rev-parse --show-toplevel)
 
+    set +e
     export $(grep -v '^#' $ROOT_DIR/.env | sed -e 's/\r$//' | xargs) > /dev/null
+    set -e
 
     GIT_REF=$(git rev-parse --short=8 HEAD)
     GIT_BRANCH=$(git branch --show-current)
@@ -312,7 +323,9 @@ install() {
 }
 
 function cleanup() {
-    rm $RSYNC_TMP_FILE 2> /dev/null || true
+    if [ -v RSYNC_TMP_FILE ]; then
+        rm $RSYNC_TMP_FILE 2> /dev/null || true
+    fi
 }
 
 trap cleanup EXIT

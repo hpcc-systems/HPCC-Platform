@@ -55,7 +55,7 @@
 
   <para>Example:</para>
 
-  <programlisting>CountPeople := COUNT(Person) : CHECKPOINT('PeopleCount');
+  <programlisting lang="ECL" role="notrunnable">CountPeople := COUNT(Person) : CHECKPOINT('PeopleCount');
        //Makes CountPeople available for reuse if
        // the job does not complete
 </programlisting>

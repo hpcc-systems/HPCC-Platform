@@ -68,7 +68,8 @@
             the target systems in the list. These URLs may contain standard
             form usernames and passwords, if required. If calling an ESP Web
             service, you can append the ver_=n.nn parameter to specify the
-            version of the service. For example: <programlisting>SOAPCALL('http://127.0.0.1:8010/Wsdfu/?ver_=1.22', 
+            version of the service. For example: <programlisting
+            language="ECL" role="notrunnable">SOAPCALL('https://eclwatch.example.com:8010/Wsdfu/?ver_=1.22', 
          'DFUSearchData', 
          instructure,DATASET(outsructure));</programlisting></entry>
           </row>
@@ -439,14 +440,22 @@
 
     <para>Example:</para>
 
-    <programlisting>OutRec1 := RECORD
+    <programlisting lang="ECL" role="notrunnable">OutRec1 := RECORD
   STRING500 OutData{XPATH('OutData')};
   UNSIGNED4 Latency{XPATH('_call_latency')};
 END;
-ip := 'http://127.0.0.1:8022/';
-ips := 'https://127.0.0.1:8022/';
-ipspw := 'https://username:password@127.0.0.1:8022/';
+ip := 'http://service.example.com:8022/';
+ips := 'https://service.example.com:8022/';
 svc := 'MyModule.SomeService';
+ips_secret := 'secret:myConnectSecret';
+        /* assumes a secret named http-connect-myConnectSecret exists &amp; contains:
+        /*
+         {
+          "url": "https://service.example.com:8022/",
+          "username": "username",
+          "password": "password"
+         }
+        */ 
 
 //1 rec in, 1 rec out
 OneRec1 := SOAPCALL(ips,svc,{STRING500 InData := 'Some Input Data'},OutRec1);
@@ -459,7 +468,7 @@ OneRec2 := SOAPCALL(InputDataset,ip,svc,{STRING500 InData},OutRec1);
 
 //recordset in, recordset out
 ManyRec2 := 
- SOAPCALL(InputDataset,ipspw,svc,{STRING500 InData := 'Some In Data'},DATASET(OutRec1));
+ SOAPCALL(InputDataset,ips_secret,svc,{STRING500 InData := 'Some In Data'},DATASET(OutRec1));
 
 //TRANSFORM function usage example
 namesRecord := RECORD
@@ -493,20 +502,17 @@ outRecord genDefault2(namesRecord l) := TRANSFORM
   SELF.score := 0;
 END;
 
-ip := 'http://127.0.0.1:8022/';
-svc:= 'MyModule.SomeService';
 OUTPUT(SOAPCALL(ip, svc,{ STRING20 surname := 'Halligan',STRING20 forename := 'Kevin';},
+
 DATASET(outRecord), ONFAIL(genDefault1())));
 
 OUTPUT(SOAPCALL(ds, ip, svc, inRecord, t(LEFT),DATASET(outRecord), ONFAIL(genDefault2(LEFT))));
-
 OUTPUT(SOAPCALL(ds, ip, svc, inRecord, t(LEFT),DATASET(outRecord), ONFAIL(SKIP)));
 
 //Using HTTPHEADER to pass Authorization info
 OUTPUT(SOAPCALL(ds, ip, svc, inRecord, t(LEFT),DATASET(outRecord), ONFAIL(SKIP),
                 HTTPHEADER('Authorization','Basic dXNlcm5hbWU6cGFzc3dvcmQ='),
                 HTTPHEADER('MyLiteral','FOO')));
-
 </programlisting>
   </sect2>
 
@@ -522,12 +528,12 @@ OUTPUT(SOAPCALL(ds, ip, svc, inRecord, t(LEFT),DATASET(outRecord), ONFAIL(SKIP),
 
     <para>Example:</para>
 
-    <programlisting>//1 rec in, no result
-SOAPCALL( 'https://127.0.0.1:8022/','MyModule.SomeService',
+    <programlisting lang="ECL" role="notrunnable">//1 rec in, no result
+SOAPCALL( 'https://service.example.com:8022/','MyModule.SomeService',
            {STRING500 InData := 'Some Input Data'});
 
 //recordset in, no result
-SOAPCALL( InputDataset,'https://127.0.0.1:8022/','MyModule.SomeService',{STRING500 InData});
+SOAPCALL( InputDataset,'https://service.example.com:8022/','MyModule.SomeService',{STRING500 InData});
 </programlisting>
 
     <para>See Also: <link linkend="RECORD_Structure">RECORD Structure</link>,

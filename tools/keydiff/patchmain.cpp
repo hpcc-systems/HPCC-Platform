@@ -92,15 +92,15 @@ public:
     StringBuffer oldIndex;
     StringBuffer newIndex;
     StringBuffer newTLK;
-    bool overwrite;
-    KeyPatchMode mode;
-    bool xmitTLK;
-    bool recvTLK;
+    bool overwrite = false;
+    KeyPatchMode mode = KEYPATCH_implicit;
+    bool xmitTLK = false;
+    bool recvTLK = false;
     SocketEndpoint xmitEp;
-    unsigned recvNum;
-    unsigned tlkPort;
-    bool ignoreTLK;
-    offset_t progressFrequency;
+    unsigned recvNum = 0;
+    unsigned tlkPort = 0;
+    bool ignoreTLK = false;
+    offset_t progressFrequency = 0;
 };
 
 void getParams(unsigned argc, char * const * argv, KeyPatchParams & params)

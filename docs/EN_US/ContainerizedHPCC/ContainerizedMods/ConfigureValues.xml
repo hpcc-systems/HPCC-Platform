@@ -164,7 +164,7 @@
       a manner that corresponds best to your operational strategy.</para>
 
       <sect3 id="YML_HPCCSystemsServices">
-        <title>The Systems services</title>
+        <title>The Systems Services</title>
 
         <para>Most of the HPCC Systems components have a service definition
         entry, similar to the resources entry. All the components that have
@@ -798,8 +798,7 @@
 
         <para>You can configure your HPCC Systems cloud deployment to access
         logical files from other remote environments. You configure this
-        remote storage by adding a "remote" section to your helm chart.
-        </para>
+        remote storage by adding a "remote" section to your helm chart.</para>
 
         <para>The <emphasis>storage.remote</emphasis> section is a list of
         named remote environments that define the remote service url and a
@@ -1237,7 +1236,7 @@ thor:
             </informaltable></para>
 
           <para>The following example sets the environment variable to skip
-          Python cleanup on the Thor component: </para>
+          Python cleanup on the Thor component:</para>
 
           <para><programlisting>thor: 
   env: 
@@ -1300,7 +1299,7 @@ thor:
     containerized version of the HPCC Systems platform.</para>
 
     <sect2 id="TheValuesYamlFileStruct">
-      <title>The <emphasis>values.yaml</emphasis> file structure</title>
+      <title>The <emphasis>values.yaml</emphasis> File Structure</title>
 
       <para>The <emphasis>values.yaml</emphasis> file is a YAML file which is
       a format frequently used for configuration files. The construct that
@@ -1416,7 +1415,7 @@ global:
     </sect2>
 
     <sect2 id="HPCCSystems_YAML_Usage">
-      <title>HPCC Systems Values.yaml File Usage</title>
+      <title>HPCC Systems values.yaml File Usage</title>
 
       <para>The HPCC Systems <emphasis>values.yaml</emphasis> file is used by
       the Helm chart to control how HPCC Systems is deployed. The stock
@@ -1462,7 +1461,7 @@ global:
         any properties defined for bundles.</para>
 
         <sect4 id="GenerallyApplicable">
-          <title>Generally applicable</title>
+          <title>Generally Applicable</title>
 
           <para>These items are generally applicable for our HPCC Systems Helm
           YAML files.</para>

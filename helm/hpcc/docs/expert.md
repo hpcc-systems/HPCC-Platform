@@ -48,4 +48,25 @@ outside of its networks.
 This is a Thor only setting. Default: false
 If false, query dlls are loaded directly from the default 'dll' plane by both the Thor manager and Thor workers.
 If true, query dlls will be saved and cached in local temporary storage and serialized to the workers.
-Saving and serializing the query dlls may speed up queries if the 'dll' plane is backed by slow storage (e.g. blob storage). 
+Saving and serializing the query dlls may speed up queries if the 'dll' plane is backed by slow storage (e.g. blob storage).
+
+## exceptionHandler (list of { class: string, code: unsigned, cmd: string })
+
+Exception handlers can be added at a global or per component level.
+Each exception handler must define the 'class' (one of "string", "errno", "os", "socket") and 'code' number of the exception to handle, and the command to run ('cmd').
+Example exception handler configured for a disk full exception :
+```
+exceptionHandler:
+- class: "os"
+  code: 28
+  cmd: "bash -c 'ls -lt /var/lib/HPCCSystems; echo next; ls -lt /var/lib/HPCCSystems/hpcc-spill'"
+```
+
+Handled exceptions will run the defined command and capture the output in a file in the debug plane with a filename of the following form: "exception-\<code\>-\<datestamp\>.log"
+
+## allowForeign (boolean)
+
+Foreign file reads (~foreign::) are forbidden by default since the official santioned secure route is to use the DFS
+service via remote file reads with the ~remote:: syntax.
+Setting expert.allowForeign to true, enables foreign access for compatibility with legacy bare-metal environments
+that have their Dali and Dafilesrv's open.

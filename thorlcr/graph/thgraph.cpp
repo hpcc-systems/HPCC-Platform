@@ -473,6 +473,13 @@ __int64 CGraphElementBase::getOptInt64(const char *prop, __int64 defVal) const
     return queryXGMML().getPropInt64(path.toLowerCase().str(), def);
 }
 
+double CGraphElementBase::getOptReal(const char *prop, double defVal) const
+{
+    double def = queryJob().getOptReal(prop, defVal);
+    VStringBuffer path("hint[@name=\"%s\"]/@value", prop);
+    return queryXGMML().getPropReal(path.toLowerCase().str(), def);
+}
+
 IThorGraphDependencyIterator *CGraphElementBase::getDependsIterator() const
 {
     return new ArrayIIteratorOf<const CGraphDependencyArray, CGraphDependency, IThorGraphDependencyIterator>(dependsOn);
@@ -1396,17 +1403,11 @@ void CGraphBase::executeSubGraph(size32_t parentExtractSz, const byte *parentExt
     CriticalBlock b(executeCrit);
     if (job.queryPausing())
         return;
-    PerfTracer perf;
     Owned<IException> exception;
     try
     {
         if (!queryOwner())
         {
-            if (job.getOptBool("perftrace"))
-            {
-                GraphPrintLog("Starting perf trace");
-                perf.start();
-            }
             if (!REJECTLOG(MCthorDetailedDebugInfo))
             {
                 StringBuffer s;
@@ -1431,32 +1432,6 @@ void CGraphBase::executeSubGraph(size32_t parentExtractSz, const byte *parentExt
             StringBuffer memStr;
             getSystemTraceInfo(memStr, PerfMonStandard | PerfMonExtended);
             ::GraphPrintLog(this, thorDetailedLogLevel, "%s", memStr.str());
-        }
-        if (job.getOptBool("perftrace"))
-        {
-            GraphPrintLog("Stopping perf trace");
-            perf.stop();
-            StringBuffer flameGraphName;
-            if (getConfigurationDirectory(globals->queryPropTree("Directories"),"debug","thor",globals->queryProp("@name"),flameGraphName))
-                addPathSepChar(flameGraphName);
-            flameGraphName.appendf("%s/%u/flame_%u.svg", job.queryWuid(), globals->getPropInt("@slavenum"), queryGraphId());
-            ensureDirectoryForFile(flameGraphName);
-            Owned<IFile> iFile = createIFile(flameGraphName);
-            try
-            {
-                Owned<IFileIO> iFileIO = iFile->open(IFOcreate);
-                if (iFileIO)
-                {
-                    StringBuffer &svg = perf.queryResult();
-                    iFileIO->write(0, svg.length(), svg.str());
-                    GraphPrintLog("Flame graph written to %s", flameGraphName.str());
-                }
-            }
-            catch (IException *E)
-            {
-                GraphPrintLog(E);
-                ::Release(E);
-            }
         }
     }
     if (exception)
@@ -2743,7 +2718,7 @@ void CJobBase::init()
     forceLogGraphIdMin = (graph_id)getWorkUnitValueInt("forceLogGraphIdMin", 0);
     forceLogGraphIdMax = (graph_id)getWorkUnitValueInt("forceLogGraphIdMax", 0);
 
-    logctx.setown(new CThorContextLogger());
+    logctx.setown(new CThorContextLogger(noStatistics));
 
     // helpers to preserve legacy behaviour of a few 'expert' properties that could be set as attributes directly under ThorCluster
     auto getLegacyExpertSettingBool = [this](const char *property, bool dft)
@@ -2973,6 +2948,13 @@ __int64 CJobBase::getOptInt64(const char *opt, __int64 dft)
     if (!opt || !*opt)
         return dft; // probably error
     return getWorkUnitValueInt(opt, getExpertOptInt64(opt, dft));
+}
+
+double CJobBase::getOptReal(const char *opt, double dft)
+{
+    if (!opt || !*opt)
+        return dft; // probably error
+    return getWorkUnitValueReal(opt, getExpertOptReal(opt, dft));
 }
 
 IThorAllocator *CJobBase::getThorAllocator(unsigned channel)

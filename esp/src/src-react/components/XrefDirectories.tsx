@@ -2,11 +2,11 @@ import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
 import { scopedLogger } from "@hpcc-js/util";
 import { HolyGrail } from "../layouts/HolyGrail";
+import nlsHPCC from "src/nlsHPCC";
 import * as WsDFUXref from "src/WsDFUXref";
 import { useConfirm } from "../hooks/confirm";
-import { useFluentGrid } from "../hooks/grid";
+import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { ShortVerticalDivider } from "./Common";
-import nlsHPCC from "src/nlsHPCC";
 
 const logger = scopedLogger("src-react/components/XrefDirectories.tsx");
 
@@ -19,43 +19,31 @@ export const XrefDirectories: React.FunctionComponent<XrefDirectoriesProps> = ({
 }) => {
 
     const [data, setData] = React.useState<any[]>([]);
+    const {
+        selection, setSelection,
+        setTotal,
+        refreshTable } = useFluentStoreState({});
 
     //  Grid ---
-    const { Grid, copyButtons } = useFluentGrid({
-        data,
-        primaryID: "name",
-        sort: { attribute: "name", descending: false },
-        filename: "xrefsDirectories",
-        columns: {
-            name: { width: 100, label: nlsHPCC.Name },
-            num: { width: 30, label: nlsHPCC.Files },
-            size: { width: 30, label: nlsHPCC.TotalSize },
-            maxIP: { width: 30, label: nlsHPCC.MaxNode },
-            maxSize: { width: 30, label: nlsHPCC.MaxSize },
-            minIP: { width: 30, label: nlsHPCC.MinNode },
-            minSize: { width: 30, label: nlsHPCC.MinSize },
+    const columns = React.useMemo((): FluentColumns => {
+        return {
+            name: { width: 600, label: nlsHPCC.Name },
+            num: { width: 100, label: nlsHPCC.Files },
+            size: { width: 100, label: nlsHPCC.TotalSize },
+            maxIP: { width: 100, label: nlsHPCC.MaxNode },
+            maxSize: { width: 100, label: nlsHPCC.MaxSize },
+            minIP: { width: 100, label: nlsHPCC.MinNode },
+            minSize: { width: 100, label: nlsHPCC.MinSize },
             positiveSkew: {
-                width: 30,
-                label: nlsHPCC.SkewPositive,
-                renderCell: React.useCallback((object, value, node, options) => {
-                    if (value === undefined) {
-                        return "";
-                    }
-                    node.innerText = value;
-                }, [])
+                width: 100,
+                label: nlsHPCC.SkewPositive
             },
             negativeSkew: {
-                width: 30,
-                label: nlsHPCC.SkewNegative,
-                renderCell: React.useCallback((object, value, node, options) => {
-                    if (value === undefined) {
-                        return "";
-                    }
-                    node.innerText = value;
-                }, [])
+                width: 100,
+                label: nlsHPCC.SkewNegative
             }
-        }
-    });
+        };
+    }, []);
 
     const refreshData = React.useCallback(() => {
         WsDFUXref.DFUXRefDirectories({ request: { Cluster: name } })
@@ -112,11 +100,21 @@ export const XrefDirectories: React.FunctionComponent<XrefDirectoriesProps> = ({
         { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
     ], [refreshData, setShowDeleteConfirm]);
 
+    const copyButtons = useCopyButtons(columns, selection, "xrefsDirectories");
+
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}
         main={
             <>
-                <Grid />
+                <FluentGrid
+                    data={data}
+                    primaryID={"name"}
+                    sort={{ attribute: "name", descending: false }}
+                    columns={columns}
+                    setSelection={setSelection}
+                    setTotal={setTotal}
+                    refresh={refreshTable}
+                ></FluentGrid>
                 <DeleteConfirm />
             </>
         }

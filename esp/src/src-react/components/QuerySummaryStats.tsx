@@ -2,8 +2,8 @@ import * as React from "react";
 import { CommandBar, ICommandBarItemProps } from "@fluentui/react";
 import { Query } from "@hpcc-js/comms";
 import nlsHPCC from "src/nlsHPCC";
-import { useFluentGrid } from "../hooks/grid";
 import { HolyGrail } from "../layouts/HolyGrail";
+import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 
 interface QuerySummaryStatsProps {
     querySet: string;
@@ -19,14 +19,14 @@ export const QuerySummaryStats: React.FunctionComponent<QuerySummaryStatsProps> 
         return Query.attach({ baseUrl: "" }, querySet, queryId);
     }, [querySet, queryId]);
     const [data, setData] = React.useState<any[]>([]);
+    const {
+        selection, setSelection,
+        setTotal,
+        refreshTable } = useFluentStoreState({});
 
     //  Grid ---
-    const { Grid, copyButtons } = useFluentGrid({
-        data,
-        primaryID: "__hpcc_id",
-        sort: { attribute: "__hpcc_id", descending: false },
-        filename: "querySummaryStats",
-        columns: {
+    const columns = React.useMemo((): FluentColumns => {
+        return {
             Endpoint: { label: nlsHPCC.EndPoint, width: 72, sortable: true },
             Status: { label: nlsHPCC.Status, width: 72, sortable: true },
             StartTime: { label: nlsHPCC.StartTime, width: 160, sortable: true },
@@ -40,8 +40,8 @@ export const QuerySummaryStats: React.FunctionComponent<QuerySummaryStatsProps> 
             TimeMaxTotalExecuteMinutes: { label: nlsHPCC.TimeMaxTotalExecuteMinutes, width: 88, sortable: true },
             Percentile97: { label: nlsHPCC.Percentile97, width: 80, sortable: true },
             Percentile97Estimate: { label: nlsHPCC.Percentile97Estimate, sortable: true }
-        }
-    });
+        };
+    }, []);
 
     const refreshData = React.useCallback(() => {
         query?.fetchSummaryStats().then(({ StatsList }) => {
@@ -80,8 +80,18 @@ export const QuerySummaryStats: React.FunctionComponent<QuerySummaryStatsProps> 
         },
     ], [refreshData]);
 
+    const copyButtons = useCopyButtons(columns, selection, "querySummaryStats");
+
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}
-        main={<Grid />}
+        main={<FluentGrid
+            data={data}
+            primaryID={"__hpcc_id"}
+            sort={{ attribute: "__hpcc_id", descending: false }}
+            columns={columns}
+            setSelection={setSelection}
+            setTotal={setTotal}
+            refresh={refreshTable}
+        ></FluentGrid>}
     />;
 };

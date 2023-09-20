@@ -851,7 +851,7 @@ void CFileTarget::updateTarget(IEsdlScriptContext& scriptContext, IXpathContext&
     {
         StringBuffer debugContent;
         scriptContext.toXML(debugContent);
-        if (debugContent.charAt(debugContent.length() - 1) != '\n')
+        if (!debugContent.isEmpty() && debugContent.charAt(debugContent.length() - 1) != '\n')
             debugContent.append('\n');
         if (!isEmptyString(finalContent))
         {
@@ -909,16 +909,6 @@ bool CFileTarget::appendProperties(StringBuffer& str) const
 void CFileTarget::updateFile(const char* content, const Variables& variables, IEspUpdateLogResponse& response) const
 {
     size_t contentLength = strlen(content);
-    if (contentLength > std::numeric_limits<offset_t>::max())
-    {
-        VStringBuffer body("update content length (%zu bytes) exceeds supported capacity", contentLength);
-        ierrlog(Major, "%s", body.str());
-        VStringBuffer msg("%s: %s", traceId(), body.str());
-        response.setStatusCode(-1);
-        response.setStatusMessage(msg);
-        return;
-    }
-
     StringBuffer failureTarget;
     bool updated = false;
     Owned<Pattern> pattern(m_pattern->resolve(variables));
@@ -1212,7 +1202,7 @@ void CFileTarget::resolveVariable(const char* name, const char* option, const ch
         const char* format = nullptr;
         if (isEmptyString(option))
             format = creationVarDefaultOption;
-        if (streq(option, creationVarDateTimeOption))
+        else if (streq(option, creationVarDateTimeOption))
             format = m_creationDateTimeFormat;
         else if (streq(option, creationVarDateOption))
             format = m_creationDateFormat;

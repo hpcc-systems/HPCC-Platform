@@ -32,6 +32,7 @@
 #undef barrier
 
 #define LONGTIMEOUT (25*60*1000)
+#define SHORTTIMEOUT (60*1000)
 #define MEDIUMTIMEOUT 30000
 #define DEFAULT_MAX_ACTINITWAITTIME_MINS (2*60) // 2hrs
 #define DEFAULT_MAXLFN_BLOCKTIME_MINS 25 // 25 mins
@@ -461,6 +462,7 @@ public:
     int getOptInt(const char *prop, int defVal=0) const;
     unsigned getOptUInt(const char *prop, unsigned defVal=0) const { return (unsigned)getOptInt(prop, defVal); }
     __int64 getOptInt64(const char *prop, __int64 defVal=0) const;
+    double getOptReal(const char *prop, double defVal) const;
     unsigned __int64 getOptUInt64(const char *prop, unsigned __int64 defVal=0) const { return (unsigned __int64)getOptInt64(prop, defVal); }
     void ActPrintLog(const char *format, ...)  __attribute__((format(printf, 2, 3)));
     void ActPrintLog(IException *e, const char *format, ...) __attribute__((format(printf, 3, 4)));
@@ -943,6 +945,7 @@ public:
     virtual __int64 getWorkUnitValueInt(const char *prop, __int64 defVal) const = 0;
     virtual StringBuffer &getWorkUnitValue(const char *prop, StringBuffer &str) const = 0;
     virtual bool getWorkUnitValueBool(const char *prop, bool defVal) const = 0;
+    virtual double getWorkUnitValueReal(const char *prop, double defVal) const = 0;
     const char *queryWuid() const { return wuid.str(); }
     const char *queryUser() const { return user.str(); }
     const char *queryScope() const { return scope.str(); }
@@ -962,6 +965,7 @@ public:
     unsigned getOptUInt(const char *opt, unsigned dft=0) { return (unsigned)getOptInt(opt, dft); }
     __int64 getOptInt64(const char *opt, __int64 dft=0);
     unsigned __int64 getOptUInt64(const char *opt, unsigned __int64 dft=0) { return (unsigned __int64)getOptInt64(opt, dft); }
+    double getOptReal(const char *prop, double defValue=0);
     IThorAllocator *querySharedAllocator() const { return sharedAllocator; }
     unsigned getWfid() const { return graphXGMML->getPropInt("@wfid"); }
     virtual IThorAllocator *getThorAllocator(unsigned channel);
@@ -1184,6 +1188,7 @@ public:
     int getOptInt(const char *prop, int defVal=0) const { return container.getOptInt(prop, defVal); }
     unsigned getOptUInt(const char *prop, unsigned defVal=0) const { return container.getOptUInt(prop, defVal); }
     __int64 getOptInt64(const char *prop, __int64 defVal=0) const { return container.getOptInt64(prop, defVal); }
+    double getOptReal(const char *prop, double defVal=0) const { return container.getOptReal(prop, defVal); }
     unsigned __int64 getOptUInt64(const char *prop, unsigned __int64 defVal=0) const { return container.getOptUInt64(prop, defVal); }
 };
 

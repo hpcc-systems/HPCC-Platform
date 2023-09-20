@@ -57,7 +57,7 @@
 
   <para>Example:</para>
 
-  <programlisting>FullName := RECORD
+  <programlisting lang="ECL" role="runnable">FullName := RECORD
   STRING30 forename;
   STRING20 surname;
   IFBLOCK(SELF.surname &lt;&gt; 'Windsor')

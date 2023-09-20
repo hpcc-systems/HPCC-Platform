@@ -39,7 +39,7 @@
 
   <para>The XML output is generated with the following format:</para>
 
-  <programlisting>  &lt;Data&gt;
+  <programlisting lang="XML" role="notrunnable">  &lt;Data&gt;
     &lt;Field label="&lt;label-of-field&gt;"
            name="&lt;name-of-field&gt;"
            position="&lt;n&gt;"
@@ -59,27 +59,27 @@
 
   <para>Example:</para>
 
-  <programlisting>  NamesRecord := RECORD
-    STRING10 first;
-    STRING20 last;
+  <programlisting lang="ECL" role="runnable">NamesRecord := RECORD
+  STRING10 first;
+  STRING20 last;
+END;
+r := RECORD
+  UNSIGNED4 dg_parentid;
+  STRING10 dg_firstname;
+  STRING dg_lastname;
+  UNSIGNED1 dg_prange;
+  IFBLOCK(SELF.dg_prange % 2 = 0)
+    STRING20 extrafield;
   END;
-  r := RECORD
-    UNSIGNED4 dg_parentid;
-    STRING10 dg_firstname;
-    STRING dg_lastname;
-    UNSIGNED1 dg_prange;
-    IFBLOCK(SELF.dg_prange % 2 = 0)
-      STRING20 extrafield;
-    END;
-    NamesRecord namerec;
-    DATASET(NamesRecord) childNames;
-  END;
+  NamesRecord namerec;
+  DATASET(NamesRecord) childNames;
+END;
   
-  ds := DATASET('~RTTEST::OUT::ds', r, thor);
+ds := DATASET('~RTTEST::OUT::ds', r, thor);
   
-  #DECLARE(out);
-  #EXPORT(out, r);
-  OUTPUT(%'out'%);
+#DECLARE(out);
+#EXPORT(out, r);
+OUTPUT(%'out'%);
   /* produces this result:
   &lt;Data&gt;
     &lt;Field label="DG_ParentID"
@@ -156,23 +156,23 @@
   */
   
   //which you can then process ;ike this:
-  LOADXML(%'out'%, 'Fred');
-  #FOR (Fred)
-   #FOR (Field)
+LOADXML(%'out'%, 'Fred');
+#FOR (Fred)
+  #FOR (Field)
     #IF (%'{@isEnd}'% &lt;&gt; '')
-  OUTPUT('END');
+      OUTPUT('END');
     #ELSE
-  OUTPUT(%'{@type}'%
-    #IF (%'{@size}'% &lt;&gt; '-15' AND
-         %'{@isRecord}'%='' AND
-         %'{@isDataset}'%='')
-  + %'{@size}'%
-     #END
-  + ' ' + %'{@label}'% + ';');
+      OUTPUT(%'{@type}'%
+      #IF (%'{@size}'% &lt;&gt; '-15' AND
+           %'{@isRecord}'%='' AND
+           %'{@isDataset}'%='')
+           + %'{@size}'%
+      #END
+        + ' ' + %'{@label}'% + ';');
     #END
-   #END
   #END
-  OUTPUT('Done');
+#END
+OUTPUT('Done');
 </programlisting>
 
   <para>See Also: <link linkend="LOADXML">LOADXML</link>, <link

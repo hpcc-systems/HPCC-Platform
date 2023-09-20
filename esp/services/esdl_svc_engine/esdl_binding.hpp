@@ -75,7 +75,7 @@ class EsdlServiceImpl : public CInterface, implements IEspService
 private:
     inline Owned<ILoggingManager>& loggingManager() { return m_oDynamicLoggingManager ? m_oDynamicLoggingManager : m_oStaticLoggingManager; }
     inline Owned<IDataMaskingEngine>& maskingEngine() { return m_oDynamicMaskingEngine ? m_oDynamicMaskingEngine : m_oStaticMaskingEngine; }
-    IEspContainer *container;
+    IEspContainer *container = nullptr;
     Owned<IEsdlTransformMethodMap> m_transforms = createEsdlTransformMethodMap();
     bool nonLegacyTransforms = false;
 
@@ -86,7 +86,7 @@ private:
     MapStringTo<cpp_service_method_t, cpp_service_method_t> cppProcMap;
     Owned<ILoggingManager> m_oDynamicLoggingManager;
     Owned<ILoggingManager> m_oStaticLoggingManager;
-    bool m_bGenerateLocalTrxId;
+    bool m_bGenerateLocalTrxId = false;
     StringAttr m_serviceScriptError;
     using MethodAccessMap = MapStringTo<SecAccessFlags>;
     using MethodAccessMaps = MapStringTo<Owned<MethodAccessMap> >;
@@ -112,7 +112,7 @@ public:
     Owned<IEsdlDefinition>      m_esdl;
     StringBuffer                m_serviceNameSpaceBase;
     StringAttr                  m_namespaceScheme;
-    bool                        m_usesURLNameSpace;
+    bool                        m_usesURLNameSpace{false};
     bool                        m_returnSchemaLocationOnOK{false};
 
     using TransformErrorMap = MapStringTo<StringAttr, const char *>;

@@ -607,6 +607,21 @@ vaults:
     {{- if index $vault "appRoleSecret" }}
       appRoleSecret: {{ index $vault "appRoleSecret" }}
     {{- end -}}
+    {{- if (hasKey $vault "retries") }}
+      retries: {{ $vault.retries }}
+    {{- end }}
+    {{- if (hasKey $vault "retryWait") }}
+      retryWait: {{ $vault.retryWait }}
+    {{- end }}
+    {{- if (hasKey $vault "connectTimeout") }}
+      connectTimeout: {{ $vault.connectTimeout }}
+    {{- end }}
+    {{- if (hasKey $vault "readTimeout") }}
+      readTimeout: {{ $vault.readTimeout }}
+    {{- end }}
+    {{- if (hasKey $vault "writeTimeout") }}
+      writeTimeout: {{ $vault.writeTimeout }}
+    {{- end }}
   {{- end -}}
  {{- end -}}
 {{- end -}}
@@ -1213,6 +1228,7 @@ Pass in dict with root, me and dali if container in dali pod
 {{- $serviceName := printf "sasha-%s" .me.name }}
 {{- $overrideDaliHost := .overrideDaliHost | default "" }}
 {{- $overrideDaliPort := .overrideDaliPort | default 0 }}
+{{- $env := concat (.root.Values.global.env | default list) (.env | default list) }}
 - name: {{ $serviceName | quote }}
   workingDir: /var/lib/HPCCSystems
   command: [ saserver ] 
@@ -1226,6 +1242,7 @@ Pass in dict with root, me and dali if container in dali pod
 {{- include "hpcc.addResources" (dict "me" .me.resources) | indent 2 }}
 {{- include "hpcc.addSecurityContext" . | indent 2 }}
   env:
+{{ include "hpcc.mergeEnvironments" $env | indent 2 -}}
   - name: "SENTINEL"
     value: "/tmp/{{ $serviceName }}.sentinel"
 {{- with (dict "name" $serviceName) }}
@@ -1320,7 +1337,7 @@ kind: Service
 metadata:
   name: {{ $lvars.serviceName | quote }}
   labels:
-    helmVersion: 9.2.11-closedown0
+    helmVersion: 9.2.23-closedown0
     {{- include "hpcc.addStandardLabels" (dict "root" $.root "instance" $lvars.serviceName ) | indent 4 }}
 {{- if $lvars.labels }}
 {{ toYaml $lvars.labels | indent 4 }}
@@ -2123,7 +2140,27 @@ A template to output a merged environment. Pass in a list with global then local
 - name: {{ $key | quote }}
   value: {{ $value | quote }}
 {{ end -}}
-{{- end -}}
+- name: MY_NODE_NAME
+  valueFrom:
+    fieldRef:
+      fieldPath: spec.nodeName
+- name: MY_POD_NAME
+  valueFrom:
+    fieldRef:
+      fieldPath: metadata.name
+- name: MY_POD_NAMESPACE
+  valueFrom:
+    fieldRef:
+      fieldPath: metadata.namespace
+- name: MY_POD_IP
+  valueFrom:
+    fieldRef:
+      fieldPath: status.podIP
+- name: MY_POD_SERVICE_ACCOUNT
+  valueFrom:
+    fieldRef:
+      fieldPath: spec.serviceAccountName
+{{ end -}}
 
 
 {{/*

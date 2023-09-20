@@ -32,18 +32,16 @@
 
   <para>Example:</para>
 
-  <programlisting>  #DECLARE (mstg);
-  #DECLARE (dmstg);
-  #SET (mstg, #MANGLE('SECTION_STATES/AREACODES'));
-  
-  export res1 := %'mstg'%;
-  res1;      //res1 = 'SECTION_5fSTATES_2fAREACODES'
-  
+  <programlisting lang="ECL" role="runnable">#DECLARE (mstg);
+#DECLARE (dmstg);
+#SET (mstg, #MANGLE('SECTION_STATES/AREACODES'));
+EXPORT res1 := %'mstg'%;
+OUTPUT(res1);      //res1 = 'SECTION_5fSTATES_2fAREACODES'
+
   // Do some processing with ECL Valid Label name "mstg"
-  
-  #SET (dmstg, #DEMANGLE(%'mstg'%));
-  export res2 := %'dmstg'%;
-  res2; //res2 = 'SECTION_STATES/AREACODES'
+#SET (dmstg, #DEMANGLE(%'mstg'%));
+EXPORT res2 := %'dmstg'%;
+OUTPUT(res2); //res2 = 'SECTION_STATES/AREACODES'
 </programlisting>
 
   <para>See Also: <link linkend="_MANGLE">#MANGLE</link>, <link

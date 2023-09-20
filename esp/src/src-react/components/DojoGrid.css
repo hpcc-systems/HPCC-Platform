@@ -8,8 +8,9 @@
     --grid-selectionBackground: rgb(235, 235, 235);
     --grid-selectionBackgroundDark: rgb(47, 47, 47);
     --grid-hoverBackground: rgb(215, 237, 248);
-    --grid-hoverBackgroundDark: rgb(176, 176, 176);
+    --grid-hoverBackgroundDark: rgb(49, 49, 49);
     --grid-selectionHoverBackground: rgb(227, 225, 223);
+    --grid-selectionHoverBackgroundDark: rgb(176, 176, 176);
 }
 
 .flat .dojo-component.dgrid.dgrid-grid {
@@ -51,17 +52,17 @@
     background-color: var(--grid-selectionHoverBackground);
 }
 
-.flat-dark .dojo-component.dgrid .dgrid-row.dgrid-selected:hover {
-    background-color: var(--grid-hoverBackgroundDark);
+.flat-dark .dgrid-row.dgrid-selected:hover {
+    background-color: var(--grid-selectionHoverBackgroundDark);
 }
 
-.flat .dgrid-row .dgrid-selected {
+.flat .dgrid-row.dgrid-selected {
     background-color: var(--grid-selectionBackground);
     color: var(--grid-selectionForeground);
     border-color: var(--grid-background);
 }
 
-.flat-dark .dgrid-row .dgrid-selected {
+.flat-dark .dgrid-row.dgrid-selected {
     background-color: var(--grid-selectionBackgroundDark);
     color: var(--grid-selectionForegroundDark);
 }

@@ -533,6 +533,24 @@ class CDFUengine: public CInterface, implements IDFUengine
         }
     }
 
+    StringBuffer & getFDescName(IFileDescriptor * fd, StringBuffer & result)
+    {
+        fd->getTraceName(result);
+        elideString(result, 255);
+        return result;
+    }
+
+    void ensureFilePermissions(const char * fileName, SecAccessFlags perm, bool write)
+    {
+        if ((write && !HASWRITEPERMISSION(perm)) || (!write && !HASREADPERMISSION(perm)))
+        {
+            if (write)
+                throw makeStringExceptionV(DFSERR_CreateAccessDenied, "Create permission denied for physical file(s): %s", fileName);
+            else
+                throw makeStringExceptionV(DFSERR_LookupAccessDenied, "Lookup permission denied for physical file(s): %s", fileName);
+        }
+    }
+
     Linked<const IPropertyTree> config;
     Owned<IScheduleEventPusher> eventpusher;
     IArrayOf<cDFUlistener> listeners;
@@ -595,23 +613,13 @@ public:
             auditflags |= DALI_LDAP_WRITE_WANTED;
 
         SecAccessFlags perm = queryDistributedFileDirectory().getFDescPermissions(fd,user,auditflags);
-        if ((write && !HASWRITEPERMISSION(perm)) || (!write && !HASREADPERMISSION(perm)))
-        {
-            StringBuffer traceName;
-            fd->getTraceName(traceName);
-            elideString(traceName, 255);
-            if (write)
-                throw makeStringExceptionV(DFSERR_CreateAccessDenied, "Create permission denied for physical file(s): %s",traceName.str());
-            else
-                throw makeStringExceptionV(DFSERR_LookupAccessDenied, "Lookup permission denied for physical file(s): %s",traceName.str());
-        }
+        StringBuffer name;
+        ensureFilePermissions(getFDescName(fd,name),perm,write);
     }
 
-    void checkForeignFilePermissions(IConstDFUfileSpec *fSpec,IFileDescriptor *fd,IUserDescriptor *user,bool write)
+    void checkForeignFilePermissions(IConstDFUfileSpec *fSpec,IFileDescriptor *fd,IUserDescriptor *user)
     {
-        unsigned auditflags = (DALI_LDAP_AUDIT_REPORT|DALI_LDAP_READ_WANTED);
-        if (write)
-            auditflags |= DALI_LDAP_WRITE_WANTED;
+        // NB: write is not supported on foreign files.
 
         StringBuffer logicalName;
         fSpec->getLogicalName(logicalName);
@@ -633,19 +641,67 @@ public:
         else
             foreignuserdesc.set(user);
 
+        unsigned auditflags = DALI_LDAP_AUDIT_REPORT|DALI_LDAP_READ_WANTED;
         SecAccessFlags perm = queryDistributedFileDirectory().getDLFNPermissions(dlfn,foreignuserdesc,auditflags);
-
-        bool checkLegacyPhysicalPerms = getGlobalConfigSP()->getPropBool("expert/@failOverToLegacyPhysicalPerms",!isContainerized());
-        if (((!write&&!HASREADPERMISSION(perm)) || (write&&!HASWRITEPERMISSION(perm))) && checkLegacyPhysicalPerms)
-            perm = queryDistributedFileDirectory().getFDescPermissions(fd,user,auditflags);
-
-        if (write)
+        if (!HASREADPERMISSION(perm))
         {
-            if (!HASWRITEPERMISSION(perm))
-                throw makeStringExceptionV(DFSERR_CreateAccessDenied,"Create permission denied for foreign file: %s",logicalName.str());
+            bool authorized = false;
+            if (getGlobalConfigSP()->getPropBool("expert/@failOverToLegacyPhysicalPerms",!isContainerized()))
+            {
+                perm = queryDistributedFileDirectory().getFDescPermissions(fd,user,auditflags);
+                authorized = HASREADPERMISSION(perm);
+            }
+            if (!authorized)
+                throw makeStringExceptionV(DFSERR_LookupAccessDenied,"Lookup permission denied for foreign file: %s",logicalName.str());
         }
-        else if (!HASREADPERMISSION(perm))
-            throw makeStringExceptionV(DFSERR_LookupAccessDenied,"Lookup permission denied for foreign file: %s",logicalName.str());
+    }
+
+    void checkPlaneFilePermissions(IFileDescriptor *fd,IUserDescriptor *user,bool write)
+    {
+        //This function checks the scope permissions for a file or files that reside in a single directory on a single plane.
+        //The IFileDescriptor is used to discover the plane and directory.
+        //If the plane is not present, it implies that it is a bare-metal system and useDropZoneRestriction is off, and there
+        //is no matching dropzone in the environment. If this is the case, or the plane permissions are not found
+        //and @failOverToLegacyPhysicalPerms is configured, then the legacy physical file permissions will be checked.
+        unsigned auditflags = (DALI_LDAP_AUDIT_REPORT|DALI_LDAP_READ_WANTED);
+        if (write)
+            auditflags |= DALI_LDAP_WRITE_WANTED;
+
+        SecAccessFlags perm;
+        bool checkLegacyPhysicalPerms = getGlobalConfigSP()->getPropBool("expert/@failOverToLegacyPhysicalPerms",!isContainerized());
+        IClusterInfo *iClusterInfo = fd->queryClusterNum(0);
+        const char *planeName = iClusterInfo->queryGroupName();
+        if (!isEmptyString(planeName))
+        {
+            const char *dir = fd->queryDefaultDir();
+            if (isEmptyString(dir))
+                throw makeStringException(-1,"Empty default directory.");
+
+            Owned<IPropertyTree> dropZonePlane = getDropZonePlane(planeName);
+            if (!dropZonePlane)
+                throw makeStringExceptionV(-1,"DropZone %s not found.",planeName);
+            const char *relativePath = getRelativePath(dir,dropZonePlane->queryProp("@prefix"));
+            if (nullptr == relativePath)
+                throw makeStringExceptionV(-1,"Invalid DropZone directory %s.",dir);
+
+            perm = queryDistributedFileDirectory().getDropZoneScopePermissions(planeName,relativePath,user,auditflags);
+            if (((!write&&!HASREADPERMISSION(perm))||(write&&!HASWRITEPERMISSION(perm)))&&checkLegacyPhysicalPerms)
+                perm = queryDistributedFileDirectory().getFDescPermissions(fd,user,auditflags);
+        }
+        else
+        {
+#ifndef _CONTAINERIZED
+            Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
+            Owned<IConstEnvironment> env = factory->openEnvironment();
+            if (env->isDropZoneRestrictionEnabled()||!checkLegacyPhysicalPerms)
+                throw makeStringException(-1,"Empty plane name.");
+            perm = queryDistributedFileDirectory().getFDescPermissions(fd,user,auditflags);
+#else
+            throw makeStringException(-1,"Unexpected empty plane name."); // should never be the case in containerized setups
+#endif
+        }
+        StringBuffer name;
+        ensureFilePermissions(getFDescName(fd,name),perm,write);
     }
 
     void monitorCycle(bool &cancelling)
@@ -1573,7 +1629,7 @@ public:
                         if (needrep)
                             feedback.repmode=cProgressReporter::REPbefore;
                         if (foreigncopy)
-                            checkForeignFilePermissions(source,srcFdesc,userdesc,false);
+                            checkForeignFilePermissions(source,srcFdesc,userdesc);
                         if (patchf) { // patch assumes only 1 cluster
                             // need to create dstpatchf
                             StringBuffer gname;
@@ -1741,7 +1797,7 @@ public:
                     if (!replicating) {
                         runningconn.setown(setRunning(runningpath.str()));
                         Owned<IFileDescriptor> fdesc = source->getFileDescriptor();
-                        checkPhysicalFilePermissions(fdesc,userdesc,false);
+                        checkPlaneFilePermissions(fdesc,userdesc,false);
                         checkSourceTarget(fdesc);
                         bool needrep = options->getReplicate();
                         ClusterPartDiskMapSpec mspec;
@@ -1777,7 +1833,7 @@ public:
                 {
                     runningconn.setown(setRunning(runningpath.str()));
                     Owned<IFileDescriptor> fdesc = destination->getFileDescriptor(iskey);
-                    checkPhysicalFilePermissions(fdesc,userdesc,true);
+                    checkPlaneFilePermissions(fdesc,userdesc,true);
                     checkSourceTarget(fdesc);
                     fsys.exportFile(srcFile, fdesc, recovery, recoveryconn, filter, opttree, &feedback, &abortnotify, dfuwuid);
                     if (!abortnotify.abortRequested()) {

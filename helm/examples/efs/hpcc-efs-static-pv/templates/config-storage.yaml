@@ -1,0 +1,40 @@
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: aws-efs-static
+provisioner: efs.csi.aws.com
+---
+{{- range $plane := .Values.planes -}}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ printf "%s-%s-pv" $plane.name (include "hpcc-efs.fullname" $) }}
+spec:
+  capacity:
+    storage: {{ $plane.size }}
+  volumeMode: Filesystem
+  accessModes:
+    - {{ $plane.rwmany | default false | ternary "ReadWriteMany" "ReadWriteOnce" }}
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: aws-efs-static
+  csi:
+    driver: efs.csi.aws.com
+    volumeHandle: {{ printf "%s::%s" $.Values.common.efsID $plane.apID }}
+---
+{{ end }}
+
+{{- range $plane := .Values.planes -}}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ printf "%s-%s-pvc" $plane.name (include "hpcc-efs.fullname" $) }}
+spec:
+  volumeName: {{ printf "%s-%s-pv" $plane.name (include "hpcc-efs.fullname" $) }}
+  accessModes:
+    - {{ $plane.rwmany | default false | ternary "ReadWriteMany" "ReadWriteOnce" }}
+  storageClassName: aws-efs-static
+  resources:
+    requests:
+      storage: {{ $plane.size }}
+---
+{{ end }}

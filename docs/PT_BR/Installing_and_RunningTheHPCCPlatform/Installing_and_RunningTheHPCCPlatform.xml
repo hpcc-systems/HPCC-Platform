@@ -11,7 +11,7 @@
 
     <mediaobject>
       <imageobject>
-        <imagedata fileref="images/redswooshWithLogo3.jpg"/>
+        <imagedata fileref="images/redswooshWithLogo3.jpg" />
       </imageobject>
     </mediaobject>
 
@@ -40,26 +40,26 @@
       dados de exemplo usados neste manual são fictícios. Qualquer semelhança
       com pessoas reais, vivas ou mortas, é mera coincidência.</para>
 
-      <para/>
+      <para></para>
     </legalnotice>
 
     <xi:include href="common/Version.xml"
                 xpointer="xpointer(//*[@id='FooterInfo'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="common/Version.xml"
                 xpointer="xpointer(//*[@id='DateVer'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
     <xi:include href="common/Version.xml"
                 xpointer="xpointer(//*[@id='Copyright'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <mediaobject role="logo">
       <imageobject>
-        <imagedata fileref="images/LN_Rightjustified.jpg"/>
+        <imagedata fileref="images/LN_Rightjustified.jpg" />
       </imageobject>
     </mediaobject>
   </bookinfo>
@@ -102,13 +102,13 @@
         <?dbfo keep-together="always"?>
 
         <tgroup cols="2">
-          <colspec colwidth="49.50pt"/>
+          <colspec colwidth="49.50pt" />
 
-          <colspec/>
+          <colspec />
 
           <tbody>
             <row>
-              <entry><inlinegraphic fileref="images/OSSgr3.png"/></entry>
+              <entry><inlinegraphic fileref="images/OSSgr3.png" /></entry>
 
               <entry>Sugerimos a leitura completa deste documento antes de
               começar. O processo deve levar de uma a duas horas para ser
@@ -153,7 +153,7 @@
 
           <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/SysDStart.xml"
                       xpointer="element(/1)"
-                      xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                      xmlns:xi="http://www.w3.org/2001/XInclude" />
 
           <para><emphasis role="bold">NOTA</emphasis>: Nós fornecemos script
           de exemplos (veja <link linkend="Example-Scripts">Anexo:Script de
@@ -237,7 +237,7 @@
 
         <mediaobject>
           <imageobject>
-            <imagedata fileref="images/GS-Thor01.jpg"/>
+            <imagedata fileref="images/GS-Thor01.jpg" />
           </imageobject>
         </mediaobject>
       </figure><figure>
@@ -245,7 +245,7 @@
 
         <mediaobject>
           <imageobject>
-            <imagedata fileref="images/GS-Roxie01.jpg"/>
+            <imagedata fileref="images/GS-Roxie01.jpg" />
           </imageobject>
         </mediaobject>
       </figure></para>
@@ -384,20 +384,20 @@
 
             <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/SysDStart.xml"
                         xpointer="element(/1)"
-                        xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
 
             <para><informaltable colsep="1" frame="all" rowsep="1">
                 <?dbfo keep-together="always"?>
 
                 <tgroup cols="2">
-                  <colspec colwidth="49.50pt"/>
+                  <colspec colwidth="49.50pt" />
 
-                  <colspec/>
+                  <colspec />
 
                   <tbody>
                     <row>
                       <entry><inlinegraphic
-                      fileref="images/OSSgr3.png"/></entry>
+                      fileref="images/OSSgr3.png" /></entry>
 
                       <entry>Há arquivos de log para cada componente nos
                       diretórios abaixo <emphasis
@@ -452,14 +452,14 @@
                     <?dbfo keep-together="always"?>
 
                     <tgroup cols="2">
-                      <colspec colwidth="49.50pt"/>
+                      <colspec colwidth="49.50pt" />
 
-                      <colspec/>
+                      <colspec />
 
                       <tbody>
                         <row>
                           <entry><inlinegraphic
-                          fileref="images/caution.png"/></entry>
+                          fileref="images/caution.png" /></entry>
 
                           <entry>Poderá ser diferente dos endereços fornecidos
                           nas imagens de exemplo. Favor usar o endereço IP do
@@ -482,7 +482,7 @@
                     <mediaobject>
                       <imageobject>
                         <imagedata fileref="images/GS_1311.jpg"
-                                   vendor="eclwatchSS"/>
+                                   vendor="eclwatchSS" />
                       </imageobject>
                     </mediaobject>
                   </figure></para>
@@ -551,7 +551,7 @@
           <orderedlist>
             <listitem>
               <para>Crie um arquivo denominado hello.ecl e digite o texto a
-              seguir (incluindo as aspas): <programlisting>output('Hello world'); </programlisting></para>
+              seguir (incluindo as aspas): <programlisting>OUTPUT('Hello world'); </programlisting></para>
 
               <para>Você pode usar o editor de sua preferência ou a linha de
               comando digitando o seguinte</para>
@@ -648,14 +648,14 @@
                   <?dbfo keep-together="always"?>
 
                   <tgroup cols="2">
-                    <colspec colwidth="49.50pt"/>
+                    <colspec colwidth="49.50pt" />
 
-                    <colspec/>
+                    <colspec />
 
                     <tbody>
                       <row>
                         <entry><inlinegraphic
-                        fileref="images/OSSgr3.png"/></entry>
+                        fileref="images/OSSgr3.png" /></entry>
 
                         <entry>Você pode criar um atalho em sua área de
                         trabalho para acessar rapidamente o ECL IDE.</entry>
@@ -677,7 +677,7 @@
 
                   <mediaobject>
                     <imageobject>
-                      <imagedata fileref="images/vmimg06a.JPG"/>
+                      <imagedata fileref="images/vmimg06a.JPG" />
                     </imageobject>
                   </mediaobject>
                 </figure>
@@ -716,7 +716,7 @@
 
                     <mediaobject>
                       <imageobject>
-                        <imagedata fileref="images/vmimg10.JPG"/>
+                        <imagedata fileref="images/vmimg10.JPG" />
                       </imageobject>
                     </mediaobject>
                   </figure></para>
@@ -733,7 +733,7 @@
 
                     <mediaobject>
                       <imageobject>
-                        <imagedata fileref="images/vmimg09.JPG"/>
+                        <imagedata fileref="images/vmimg09.JPG" />
                       </imageobject>
                     </mediaobject>
                   </figure>Uma verificação se sintaxe bem-sucedida exibe a
@@ -751,7 +751,7 @@
 
                     <mediaobject>
                       <imageobject>
-                        <imagedata fileref="images/vmimg11.JPG"/>
+                        <imagedata fileref="images/vmimg11.JPG" />
                       </imageobject>
                     </mediaobject>
                   </figure>A marcação na cor verde indica uma conclusão
@@ -769,7 +769,7 @@
 
                     <mediaobject>
                       <imageobject>
-                        <imagedata fileref="images/vmimg12.JPG"/>
+                        <imagedata fileref="images/vmimg12.JPG" />
                       </imageobject>
                     </mediaobject>
                   </figure></para>
@@ -810,20 +810,20 @@
 
             <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/SysDStop.xml"
                         xpointer="element(/1)"
-                        xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
 
             <para><informaltable colsep="1" frame="all" rowsep="1">
                 <?dbfo keep-together="always"?>
 
                 <tgroup cols="2">
-                  <colspec colwidth="49.50pt"/>
+                  <colspec colwidth="49.50pt" />
 
-                  <colspec/>
+                  <colspec />
 
                   <tbody>
                     <row>
                       <entry><inlinegraphic
-                      fileref="images/OSSgr3.png"/></entry>
+                      fileref="images/OSSgr3.png" /></entry>
 
                       <entry>Este comando pode ser usado para confirmar que os
                       processos do HPCC foram
@@ -839,7 +839,8 @@
             Configurações.<programlisting>sudo /opt/HPCCSystems/sbin/configmgr
 </programlisting></para>
 
-            <para><graphic fileref="images/gs_img_configmgrStart.jpg"/></para>
+            <para><graphic
+            fileref="images/gs_img_configmgrStart.jpg" /></para>
           </listitem>
 
           <listitem>
@@ -859,7 +860,7 @@
             Configurações é exibido. Para usar o assistente, selecione o botão
             Generate novo ambiente usando o assistente.</para>
 
-            <para><graphic fileref="images/GS_ConfigMgrWizStart.jpg"/></para>
+            <para><graphic fileref="images/GS_ConfigMgrWizStart.jpg" /></para>
           </listitem>
 
           <listitem>
@@ -892,7 +893,7 @@
             (p.ex.,192.168.55.1-125). Os endereços IP podem ser especificados
             individualmente usando ponto e vírgula como separadores.</para>
 
-            <para><graphic fileref="images/GS_ConfigMgrWiz002.jpg"/></para>
+            <para><graphic fileref="images/GS_ConfigMgrWiz002.jpg" /></para>
           </listitem>
 
           <listitem>
@@ -908,7 +909,7 @@
 
             <para>Insira os valores adequados conforme indicado.</para>
 
-            <para><graphic fileref="images/GS_CMWiz003.jpg"/></para>
+            <para><graphic fileref="images/GS_CMWiz003.jpg" /></para>
 
             <variablelist>
               <varlistentry>
@@ -978,14 +979,14 @@
                 <?dbfo keep-together="always"?>
 
                 <tgroup cols="2">
-                  <colspec colwidth="49.50pt"/>
+                  <colspec colwidth="49.50pt" />
 
-                  <colspec/>
+                  <colspec />
 
                   <tbody>
                     <row>
                       <entry><inlinegraphic
-                      fileref="images/OSSgr3.png"/></entry>
+                      fileref="images/OSSgr3.png" /></entry>
 
                       <entry>Lembre-se de que as configurações do HPCC podem
                       variar de acordo com as suas necessidades. Por exemplo,
@@ -1002,20 +1003,20 @@
                 </tgroup>
               </informaltable></para>
 
-            <graphic fileref="images/GS_ConfigMgrWiz004.jpg"/>
+            <graphic fileref="images/GS_ConfigMgrWiz004.jpg" />
 
             <para><informaltable colsep="1" frame="all" rowsep="1">
                 <?dbfo keep-together="always"?>
 
                 <tgroup cols="2">
-                  <colspec colwidth="49.50pt"/>
+                  <colspec colwidth="49.50pt" />
 
-                  <colspec/>
+                  <colspec />
 
                   <tbody>
                     <row>
                       <entry><inlinegraphic
-                      fileref="images/OSSgr3.png"/></entry>
+                      fileref="images/OSSgr3.png" /></entry>
 
                       <entry>É possível redimensionar o Environment Summary
                       clicando e arrastando o canto inferior direito.</entry>
@@ -1029,7 +1030,7 @@
             <para>Você agora será notificado de que concluiu o
             procedimento.</para>
 
-            <para><graphic fileref="images/GS_ConfigMgrWiz005.jpg"/></para>
+            <para><graphic fileref="images/GS_ConfigMgrWiz005.jpg" /></para>
 
             <para>Neste ponto, o sistema criou um arquivo com o nome
             NewEnvironment.xml no diretório <emphasis
@@ -1046,14 +1047,14 @@
                 <?dbfo keep-together="always"?>
 
                 <tgroup cols="2">
-                  <colspec colwidth="49.50pt"/>
+                  <colspec colwidth="49.50pt" />
 
-                  <colspec/>
+                  <colspec />
 
                   <tbody>
                     <row>
                       <entry><inlinegraphic
-                      fileref="images/caution.png"/></entry>
+                      fileref="images/caution.png" /></entry>
 
                       <entry>Certifique-se de que o sistema não esteja em
                       execução antes de tentar mover o arquivo
@@ -1075,14 +1076,14 @@
                 <?dbfo keep-together="always"?>
 
                 <tgroup cols="2">
-                  <colspec colwidth="49.50pt"/>
+                  <colspec colwidth="49.50pt" />
 
-                  <colspec/>
+                  <colspec />
 
                   <tbody>
                     <row>
                       <entry><inlinegraphic
-                      fileref="images/caution.png"/></entry>
+                      fileref="images/caution.png" /></entry>
 
                       <entry>Certifique-se de que você possua direitos
                       suficientes para gravar arquivo(s) no diretório de
@@ -1142,20 +1143,20 @@
 
             <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/SysDStart.xml"
                         xpointer="element(/1)"
-                        xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
 
             <informaltable colsep="1" frame="all" rowsep="1">
               <?dbfo keep-together="always"?>
 
               <tgroup cols="2">
-                <colspec colwidth="49.50pt"/>
+                <colspec colwidth="49.50pt" />
 
-                <colspec/>
+                <colspec />
 
                 <tbody>
                   <row>
                     <entry><inlinegraphic
-                    fileref="images/OSSgr3.png"/></entry>
+                    fileref="images/OSSgr3.png" /></entry>
 
                     <entry><para>Você pode usar um script para lançar esse
                     comando para todos os nós. Um script de amostra é
@@ -1233,7 +1234,7 @@ sudo /opt/HPCCSystems/sbin/hpcc-push.sh \
 
           <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/SysDStart.xml"
                       xpointer="element(/1)"
-                      xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                      xmlns:xi="http://www.w3.org/2001/XInclude" />
 
           <para>Para CentOS 6 ou outro sistema baseado em System V veja <link
           linkend="hpcc-init">Anexo: hpcc-init</link>.</para>
@@ -1247,7 +1248,7 @@ sudo /opt/HPCCSystems/sbin/hpcc-push.sh \
 
           <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/SysDStop.xml"
                       xpointer="element(/1)"
-                      xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                      xmlns:xi="http://www.w3.org/2001/XInclude" />
 
           <para>Para CentOS 6 ou outro sistema baseado em System V veja <link
           linkend="hpcc-init">Anexo: hpcc-init</link>.</para>
@@ -1256,14 +1257,14 @@ sudo /opt/HPCCSystems/sbin/hpcc-push.sh \
               <?dbfo keep-together="always"?>
 
               <tgroup cols="2">
-                <colspec colwidth="49.50pt"/>
+                <colspec colwidth="49.50pt" />
 
-                <colspec/>
+                <colspec />
 
                 <tbody>
                   <row>
                     <entry><inlinegraphic
-                    fileref="images/OSSgr3.png"/></entry>
+                    fileref="images/OSSgr3.png" /></entry>
 
                     <entry>Você pode usar um script para iniciar o parar
                     multíplos nós no sistema. Veja <emphasis><link
@@ -1306,7 +1307,7 @@ sudo /opt/HPCCSystems/sbin/hpcc-push.sh \
 
             <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/SysDStop.xml"
                         xpointer="element(/1)"
-                        xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
           </listitem>
 
           <listitem>
@@ -1329,11 +1330,11 @@ sudo /opt/HPCCSystems/sbin/hpcc-push.sh \
 
     <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/hpcc_ldap.xml"
                 xpointer="element(/1)"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/UserSecurityMaint.xml"
                 xpointer="element(/1)"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <!-- <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/ssl-esp.xml"
                 xpointer="element(/1)"
@@ -1341,11 +1342,11 @@ sudo /opt/HPCCSystems/sbin/hpcc-push.sh \
 
     <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/ssl-esp.xml"
                 xpointer="xpointer(//*[@id='ssl4esp'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/ssl-esp.xml"
                 xpointer="xpointer(//*[@id='ssl4Roxie'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
   </chapter>
 
   <chapter id="Installing_MoreECLExamples">
@@ -1364,11 +1365,11 @@ sudo /opt/HPCCSystems/sbin/hpcc-push.sh \
 
       <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/anagram1.xml"
                   xpointer="xpointer(//*[@id='ECLExample_Anagram1'])"
-                  xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
 
       <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/anagram2.xml"
                   xpointer="xpointer(//*[@id='ECLRoxieExample_Anagram2'])"
-                  xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
     </sect1>
   </chapter>
 
@@ -1386,7 +1387,7 @@ sudo /opt/HPCCSystems/sbin/hpcc-push.sh \
 
         <mediaobject>
           <imageobject>
-            <imagedata fileref="images/vmimg07.JPG"/>
+            <imagedata fileref="images/vmimg07.JPG" />
           </imageobject>
         </mediaobject>
       </figure></para>
@@ -1461,13 +1462,13 @@ sudo /opt/HPCCSystems/sbin/hpcc-push.sh \
           <?dbfo keep-together="always"?>
 
           <tgroup cols="2">
-            <colspec colwidth="49.50pt"/>
+            <colspec colwidth="49.50pt" />
 
-            <colspec/>
+            <colspec />
 
             <tbody>
               <row>
-                <entry><inlinegraphic fileref="images/caution.png"/></entry>
+                <entry><inlinegraphic fileref="images/caution.png" /></entry>
 
                 <entry>Lembre-se de que você deve ter privilégios suficientes
                 para usar sudo como administrador, a fim de usar o script
@@ -1488,9 +1489,9 @@ sudo /opt/HPCCSystems/sbin/hpcc-push.sh \
 
         <para><informaltable colsep="0" frame="none" rowsep="0">
             <tgroup cols="2">
-              <colspec colwidth="150pt"/>
+              <colspec colwidth="150pt" />
 
-              <colspec/>
+              <colspec />
 
               <tbody>
                 <row>
@@ -1617,9 +1618,9 @@ sudo /opt/HPCCSystems/sbin/hpcc-push.sh \
 
         <para><informaltable colsep="0" frame="none" rowsep="0">
             <tgroup cols="2">
-              <colspec colwidth="100.50pt"/>
+              <colspec colwidth="100.50pt" />
 
-              <colspec/>
+              <colspec />
 
               <tbody>
                 <row>
@@ -1747,9 +1748,9 @@ sudo /opt/HPCCSystems/sbin/hpcc-push.sh \
 
         <para><informaltable colsep="0" frame="none" rowsep="0">
             <tgroup cols="2">
-              <colspec colwidth="150pt"/>
+              <colspec colwidth="150pt" />
 
-              <colspec/>
+              <colspec />
 
               <tbody>
                 <row>
@@ -1809,9 +1810,9 @@ sudo /opt/HPCCSystems/sbin/hpcc-push.sh \
 
         <para><informaltable colsep="0" frame="none" rowsep="0">
             <tgroup cols="2">
-              <colspec colwidth="100.50pt"/>
+              <colspec colwidth="100.50pt" />
 
-              <colspec/>
+              <colspec />
 
               <tbody>
                 <row>
@@ -1891,9 +1892,9 @@ sudo /opt/HPCCSystems/sbin/hpcc-push.sh \
 
         <para><informaltable colsep="0" frame="none" rowsep="0">
             <tgroup cols="2">
-              <colspec colwidth="100.50pt"/>
+              <colspec colwidth="100.50pt" />
 
-              <colspec/>
+              <colspec />
 
               <tbody>
                 <row>
@@ -2000,9 +2001,9 @@ init_start_thor--> </property></para>
 
       <para><informaltable colsep="0" frame="none" rowsep="0">
           <tgroup cols="2">
-            <colspec colwidth="80.50pt"/>
+            <colspec colwidth="80.50pt" />
 
-            <colspec/>
+            <colspec />
 
             <tbody>
               <row>
@@ -2138,10 +2139,10 @@ sudo /etc/init.d/hpcc-init -c esp start
         <programlisting>/etc/init.d/hpcc-init status</programlisting>
 
         <para>Os serviços HPCC Systems iniciados no systemd serão listados
-        como         ativo no systemd. Eles podem ser listados como "sudo
-        systemctl list-units         [PATTERN ...]". Para removê-los da lista
-        de serviços ativos do systemd,         você deve executar o serviço de
-        parada a partir de "service" ou "systemctl"         (como mostrado
+        como ativo no systemd. Eles podem ser listados como "sudo
+        systemctl list-units [PATTERN ...]". Para removê-los da lista
+        de serviços ativos do systemd, você deve executar o serviço de
+        parada a partir de "service" ou "systemctl" (como mostrado
         acima), mesmo que já esteja parado diretamente pelo comando stop
         /etc/init.d/&lt;hpcc-init|dafilesrv&gt; .</para>
 
@@ -2149,6 +2150,12 @@ sudo /etc/init.d/hpcc-init -c esp start
         ativos e do diretório /etc/systemd/system/.</para>
       </sect2>
     </sect1>
+
+
+    <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/UnityLauncher.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
 
     <sect1 id="Running-HPCC-Tools-Under-WINE">
       <title>Executando o ECL IDE pela primeira vez</title>
@@ -2344,7 +2351,7 @@ sudo /etc/init.d/hpcc-init -c esp start
 
             <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/SysDStart.xml"
                         xpointer="element(/1)"
-                        xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
 
             <para>Para obter mais informações, consulte <link
             linkend="Starting-and-stopping">a seção Iniciar e parar </link> o
@@ -2716,7 +2723,7 @@ SUM(NOFOLD(s1b + s2b), a);
           </listitem>
         </orderedlist>
 
-        <para/>
+        <para></para>
 
         <sect3 id="R_DataTypes">
           <title>Mapeando Datatypes</title>
@@ -2741,7 +2748,7 @@ SUM(NOFOLD(s1b + s2b), a);
           <para><ulink
           url="https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/ecl/regress/embedR2.ecl">https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/regress/ecl/embedR2.ecl</ulink></para>
 
-          <para/>
+          <para></para>
         </sect3>
 
         <sect3>

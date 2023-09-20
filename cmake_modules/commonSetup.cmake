@@ -257,6 +257,9 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
       endif()
     endif()
   endif ()
+  if (PROFILING AND (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANGXX))
+    add_definitions (-fno-omit-frame-pointer)
+  endif ()
 
   if (WIN32)
     # On windows, the vcproj generator generates both windows and debug build capabilities, and the release mode is appended to the directory later

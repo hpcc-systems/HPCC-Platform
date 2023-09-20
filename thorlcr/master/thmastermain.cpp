@@ -30,6 +30,7 @@
 #endif
 
 #include "jlib.hpp"
+#include "jcontainerized.hpp"
 #include "jdebug.hpp"
 #include "jfile.hpp"
 #include "jmisc.hpp"
@@ -293,10 +294,16 @@ public:
              */
             unsigned slaveNum;
             msg.read(slaveNum);
+            StringBuffer slavePodName;
             if (NotFound == slaveNum)
             {
                 connectedSlaves.append(sender.getLink());
                 slaveNum = connectedSlaves.ordinality();
+                if (isContainerized())
+                {
+                    msg.read(slavePodName);
+                    addConnectedWorkerPod(slavePodName); // NB: these are added in worker # order
+                }
             }
             else
             {
@@ -313,7 +320,7 @@ public:
             --remaining;
         }
         assertex(slaves == connectedSlaves.ordinality());
-        
+
         if (isContainerized())
         {
             unsigned wfid = globals->getPropInt("@wfid");
@@ -322,6 +329,7 @@ public:
             Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
             Owned<IWorkUnit> workunit = factory->updateWorkUnit(wuid);
             addTimeStamp(workunit, wfid, graphName, StWhenK8sReady);
+            publishPodNames(workunit);
         }
 
         unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_SLAVEPORTINC);
@@ -814,8 +822,6 @@ int main( int argc, const char *argv[]  )
                 if (!managerMemory->hasProp("@maxMemPercentage"))
                     managerMemory->setPropReal("@maxMemPercentage", localThor ? 25.0 : defaultPctSysMemForRoxie);
             }
-            // NB: if (cloud - numWorkersPerPod) or (bare-metal - slavesPerNode) is specified
-            // the percentage will be split based on numWorkersPerPod or slavesPerNode (see if (numWorkersPerPodOrNode > 1) code below)
         }
         workerMemory->setPropInt("@total", gmemSize);
 
@@ -875,14 +881,15 @@ int main( int argc, const char *argv[]  )
             if (overrideReplicateDirectory&&*overrideBaseDirectory)
                 setBaseDirectory(overrideReplicateDirectory, true);
         }
-        if (!hasExpertOpt("saveQueryDlls"))
+        bool saveQueryDlls = true;
+        if (hasExpertOpt("saveQueryDlls"))
+            saveQueryDlls = getExpertOptBool("saveQueryDlls");
+        else
         {
-            // propagate default setting.
-            // Bare-metal - save dlls to local disk cache by default
-            // Containerized - load dlls directly
-            setExpertOpt("saveQueryDlls", boolToStr(!isContainerized()));
+            // propagate default setting (so seen by workers)
+            setExpertOpt("saveQueryDlls", boolToStr(saveQueryDlls));
         }
-        if (getExpertOptBool("saveQueryDlls"))
+        if (saveQueryDlls)
         {
             StringBuffer soDir, soPath;
             if (!isContainerized() && getConfigurationDirectory(globals->queryPropTree("Directories"),"query","thor",globals->queryProp("@name"),soDir))
@@ -970,7 +977,6 @@ int main( int argc, const char *argv[]  )
         kjServiceMpTag = allocateClusterMPTag();
 
         unsigned numWorkers = 0;
-        unsigned numWorkersPerPodOrNode = 1; // pod in cloud, node in bare-metal
         bool doWorkerRegistration = false;
         if (isContainerized())
         {
@@ -1009,18 +1015,17 @@ int main( int argc, const char *argv[]  )
                 Owned<IWorkUnit> workunit = &wuRead->lock();
                 addTimeStamp(workunit, wfid, graphName, StWhenK8sStarted);
             }
-            numWorkersPerPodOrNode = numWorkersPerPod;
 
             cloudJobName.appendf("%s-%s", workunit, graphName);
 
             StringBuffer myEp;
             queryMyNode()->endpoint().getUrlStr(myEp);
 
-            workerNSInstalled = applyK8sYaml("thorworker", workunit, cloudJobName, "networkpolicy", { }, false, true);
+            workerNSInstalled = k8s::applyYaml("thorworker", workunit, cloudJobName, "networkpolicy", { }, false, true);
             if (workerNSInstalled)
             {
-                KeepK8sJobs keepJob = translateKeepJobs(globals->queryProp("@keepJobs"));
-                workerJobInstalled = applyK8sYaml("thorworker", workunit, cloudJobName, "job", { { "graphName", graphName}, { "master", myEp.str() }, { "_HPCC_NUM_WORKERS_", std::to_string(numWorkers/numWorkersPerPod)} }, false, KeepK8sJobs::none == keepJob);
+                k8s::KeepJobs keepJob = k8s::translateKeepJobs(globals->queryProp("@keepJobs"));
+                workerJobInstalled = k8s::applyYaml("thorworker", workunit, cloudJobName, "job", { { "graphName", graphName}, { "master", myEp.str() }, { "_HPCC_NUM_WORKERS_", std::to_string(numWorkers/numWorkersPerPod)} }, false, k8s::KeepJobs::none == keepJob);
                 if (workerJobInstalled)
                     doWorkerRegistration = true;
             }
@@ -1033,17 +1038,18 @@ int main( int argc, const char *argv[]  )
             unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_SLAVEPORTINC);
             unsigned slaveBasePort = globals->getPropInt("@slaveport", DEFAULT_THORSLAVEPORT);
             Owned<IGroup> rawGroup = getClusterNodeGroup(thorname, "ThorCluster");
-            numWorkersPerPodOrNode = globals->getPropInt("@slavesPerNode", 1);
-            setClusterGroup(queryMyNode(), rawGroup, numWorkersPerPodOrNode, channelsPerWorker, slaveBasePort, localThorPortInc);
+            unsigned numWorkersPerNode = globals->getPropInt("@slavesPerNode", 1);
+            setClusterGroup(queryMyNode(), rawGroup, numWorkersPerNode, channelsPerWorker, slaveBasePort, localThorPortInc);
             numWorkers = queryNodeClusterWidth();
             doWorkerRegistration = true;
-        }
-        if (numWorkersPerPodOrNode > 1)
-        {
-            // NB: maxMemPercentage only be set when memory amounts have not explicily been defined (e.g. globalMemorySize)
-            double pct = workerMemory->getPropReal("@maxMemPercentage");
-            if (pct)
-                workerMemory->setPropReal("@maxMemPercentage", pct / numWorkersPerPodOrNode);
+            if (numWorkersPerNode > 1)
+            {
+                // Split memory based on numWorkersPerNode
+                // NB: maxMemPercentage only set when memory amounts have not explicily been defined (e.g. globalMemorySize)
+                double pct = workerMemory->getPropReal("@maxMemPercentage");
+                if (pct)
+                    workerMemory->setPropReal("@maxMemPercentage", pct / numWorkersPerNode);
+            }
         }
 
         if (doWorkerRegistration && registry->connect(numWorkers))
@@ -1140,18 +1146,18 @@ int main( int argc, const char *argv[]  )
             {
                 try
                 {
-                    KeepK8sJobs keepJob = translateKeepJobs(globals->queryProp("@keepJobs"));
+                    k8s::KeepJobs keepJob = k8s::translateKeepJobs(globals->queryProp("@keepJobs"));
                     switch (keepJob)
                     {
-                        case KeepK8sJobs::all:
+                        case k8s::KeepJobs::all:
                             // do nothing
                             break;
-                        case KeepK8sJobs::podfailures:
+                        case k8s::KeepJobs::podfailures:
                             if (nullptr == exception)
-                                deleteK8sResource("thorworker", "job", cloudJobName);
+                                k8s::deleteResource("thorworker", "job", cloudJobName);
                             break;
-                        case KeepK8sJobs::none:
-                            deleteK8sResource("thorworker", "job", cloudJobName);
+                        case k8s::KeepJobs::none:
+                            k8s::deleteResource("thorworker", "job", cloudJobName);
                             break;
                     }
                 }
@@ -1165,7 +1171,7 @@ int main( int argc, const char *argv[]  )
             {
                 try
                 {
-                    deleteK8sResource("thorworker", "networkpolicy", cloudJobName);
+                    k8s::deleteResource("thorworker", "networkpolicy", cloudJobName);
                 }
                 catch (IException *e)
                 {

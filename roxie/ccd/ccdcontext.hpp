@@ -81,7 +81,6 @@ interface IRoxieServerContext : extends IInterface
     virtual void appendResultDeserialized(const char *name, unsigned sequence, size32_t count, const byte **data, bool extend, IOutputMetaData *meta) = 0;
     virtual void appendResultRawContext(const char *name, unsigned sequence, int len, const void * data, int numRows, bool extend, bool saveInContext) = 0;
     virtual roxiemem::IRowManager &queryRowManager() = 0;
-
     virtual void process() = 0;
     virtual void done(bool failed) = 0;
     virtual void finalize(unsigned seqNo) = 0;
@@ -100,6 +99,7 @@ interface IRoxieServerContext : extends IInterface
     virtual const IProperties *queryXmlns(unsigned seqNo) = 0;
     virtual IHpccProtocolResponse *queryProtocol() = 0;
     virtual const char *queryStatsWuid() const = 0;
+    virtual IRowAllocatorMetaActIdCache & queryAllocatorCache() = 0;
 };
 
 interface IDeserializedResultStore : public IInterface

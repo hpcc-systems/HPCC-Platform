@@ -5,10 +5,10 @@ import * as ESPQuery from "src/ESPQuery";
 import nlsHPCC from "src/nlsHPCC";
 import { QuerySortItem } from "src/store/Store";
 import { useConfirm } from "../hooks/confirm";
-import { useFluentPagedGrid } from "../hooks/grid";
 import { useMyAccount } from "../hooks/user";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
+import { FluentPagedGrid, FluentPagedFooter, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { Fields } from "./forms/Fields";
 import { Filter } from "./forms/Filter";
 import { ShortVerticalDivider } from "./Common";
@@ -67,6 +67,12 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
     const [showFilter, setShowFilter] = React.useState(false);
     const { currentUser } = useMyAccount();
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
+    const {
+        selection, setSelection,
+        pageNum, setPageNum,
+        pageSize, setPageSize,
+        total, setTotal,
+        refreshTable } = useFluentStoreState({ page });
 
     const hasFilter = React.useMemo(() => Object.keys(filter).length > 0, [filter]);
 
@@ -79,14 +85,8 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
         return formatQuery(filter);
     }, [filter]);
 
-    const { Grid, GridPagination, selection, refreshTable, copyButtons } = useFluentPagedGrid({
-        persistID: "queries",
-        store: gridStore,
-        query,
-        sort,
-        pageNum: page,
-        filename: "roxiequeries",
-        columns: {
+    const columns = React.useMemo((): FluentColumns => {
+        return {
             col1: {
                 width: 16,
                 selectorType: "checkbox"
@@ -96,81 +96,83 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
                 headerTooltip: nlsHPCC.Suspended,
                 width: 16,
                 sortable: false,
-                formatter: React.useCallback(function (suspended) {
+                formatter: (suspended) => {
                     if (suspended === true) {
                         return <Icon iconName="Pause" />;
                     }
                     return "";
-                }, [])
+                }
             },
             ErrorCount: {
                 headerIcon: "Warning",
                 headerTooltip: nlsHPCC.ErrorWarnings,
                 width: 16,
                 sortable: false,
-                formatter: React.useCallback(function (error) {
+                formatter: (error) => {
                     if (error > 0) {
                         return <Icon iconName="Warning" />;
                     }
                     return "";
-                }, [])
+                }
             },
             MixedNodeStates: {
                 headerIcon: "Error",
                 headerTooltip: nlsHPCC.MixedNodeStates,
                 width: 16,
                 sortable: false,
-                formatter: React.useCallback(function (mixed) {
+                formatter: (mixed) => {
                     if (mixed === true) {
                         return <Icon iconName="Error" />;
                     }
                     return "";
-                }, [])
+                }
             },
             Activated: {
                 headerIcon: "SkypeCircleCheck",
                 headerTooltip: nlsHPCC.Active,
                 width: 16,
-                formatter: React.useCallback(function (activated) {
+                formatter: (activated) => {
                     if (activated === true) {
                         return <Icon iconName="SkypeCircleCheck" />;
                     }
                     return "";
-                }, [])
+                }
             },
             Id: {
                 label: nlsHPCC.ID,
-                formatter: React.useCallback(function (Id, row) {
+                formatter: (Id, row) => {
                     return <Link href={`#/queries/${row.QuerySetId}/${Id}`} >{Id}</Link>;
-                }, [])
+                }
             },
             priority: {
                 label: nlsHPCC.Priority,
                 width: 80,
-                formatter: React.useCallback(function (priority, row) {
+                formatter: (priority, row) => {
                     return priority === undefined ? "" : priority;
-                }, [])
+                }
             },
             Name: { label: nlsHPCC.Name },
             QuerySetId: { label: nlsHPCC.Target, sortable: true },
             Wuid: {
                 label: nlsHPCC.WUID, width: 100,
-                formatter: React.useCallback(function (Wuid, idx) {
+                formatter: (Wuid, idx) => {
                     return <Link href={`#/workunits/${Wuid}`}>{Wuid}</Link>;
-                }, [])
+                }
             },
             Dll: { label: nlsHPCC.Dll },
             PublishedBy: { label: nlsHPCC.PublishedBy, sortable: false },
             Status: { label: nlsHPCC.Status, sortable: false }
-        }
-    });
+        };
+    }, []);
+
+    const copyButtons = useCopyButtons(columns, selection, "roxiequeries");
 
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
         message: nlsHPCC.DeleteSelectedWorkunits,
         items: selection.map(s => s.Id),
         onSubmit: React.useCallback(() => {
-            WsWorkunits.WUQuerysetQueryAction(selection, "Delete").then(() => refreshTable(true));
+            WsWorkunits.WUQuerysetQueryAction(selection, "Delete").then(() => refreshTable.call(true));
         }, [refreshTable, selection])
     });
 
@@ -178,7 +180,7 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
-            onClick: () => refreshTable()
+            onClick: () => refreshTable.call()
         },
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
@@ -201,25 +203,25 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
         {
             key: "Suspend", text: nlsHPCC.Suspend, disabled: !uiState.isSuspended,
             onClick: () => {
-                WsWorkunits.WUQuerysetQueryAction(selection, "Suspend").then(() => refreshTable());
+                WsWorkunits.WUQuerysetQueryAction(selection, "Suspend").then(() => refreshTable.call());
             }
         },
         {
             key: "Unsuspend", text: nlsHPCC.Unsuspend, disabled: !uiState.isNotSuspended,
             onClick: () => {
-                WsWorkunits.WUQuerysetQueryAction(selection, "Unsuspend").then(() => refreshTable());
+                WsWorkunits.WUQuerysetQueryAction(selection, "Unsuspend").then(() => refreshTable.call());
             }
         },
         {
             key: "Activate", text: nlsHPCC.Activate, disabled: !uiState.isActive,
             onClick: () => {
-                WsWorkunits.WUQuerysetQueryAction(selection, "Activate").then(() => refreshTable());
+                WsWorkunits.WUQuerysetQueryAction(selection, "Activate").then(() => refreshTable.call());
             }
         },
         {
             key: "Deactivate", text: nlsHPCC.Deactivate, disabled: !uiState.isNotActive,
             onClick: () => {
-                WsWorkunits.WUQuerysetQueryAction(selection, "Deactivate").then(() => refreshTable());
+                WsWorkunits.WUQuerysetQueryAction(selection, "Deactivate").then(() => refreshTable.call());
             }
         },
         { key: "divider_3", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
@@ -230,17 +232,17 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
             }
         },
         {
-            key: "mine", text: nlsHPCC.Mine, disabled: !currentUser?.username, iconProps: { iconName: "Contact" }, canCheck: true, checked: filter.PublishedBy === currentUser.username,
+            key: "mine", text: nlsHPCC.Mine, disabled: !currentUser?.username, iconProps: { iconName: "Contact" }, canCheck: true, checked: filter["PublishedBy"] === currentUser.username,
             onClick: () => {
-                if (filter.PublishedBy === currentUser.username) {
-                    filter.PublishedBy = "";
+                if (filter["PublishedBy"] === currentUser.username) {
+                    filter["PublishedBy"] = "";
                 } else {
-                    filter.PublishedBy = currentUser.username;
+                    filter["PublishedBy"] = currentUser.username;
                 }
                 pushParams(filter);
             }
         },
-    ], [currentUser, filter, hasFilter, refreshTable, selection, setShowDeleteConfirm, store, uiState.hasSelection, uiState.isActive, uiState.isNotActive, uiState.isNotSuspended, uiState.isSuspended, wuid]);
+    ], [currentUser.username, filter, hasFilter, refreshTable, selection, setShowDeleteConfirm, store, uiState.hasSelection, uiState.isActive, uiState.isNotActive, uiState.isNotSuspended, uiState.isSuspended, wuid]);
 
     //  Filter  ---
     const filterFields: Fields = {};
@@ -276,7 +278,19 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
                 <SizeMe monitorHeight>{({ size }) =>
                     <div style={{ position: "relative", width: "100%", height: "100%" }}>
                         <div style={{ position: "absolute", width: "100%", height: `${size.height}px` }}>
-                            <Grid height={`${size.height}px`} />
+                            <FluentPagedGrid
+                                store={gridStore}
+                                query={query}
+                                sort={sort}
+                                pageNum={pageNum}
+                                pageSize={pageSize}
+                                total={total}
+                                columns={columns}
+                                height={`${size.height}px`}
+                                setSelection={setSelection}
+                                setTotal={setTotal}
+                                refresh={refreshTable}
+                            ></FluentPagedGrid>
                         </div>
                     </div>
                 }</SizeMe>
@@ -284,7 +298,13 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
                 <DeleteConfirm />
             </>
         }
-        footer={<GridPagination />}
+        footer={<FluentPagedFooter
+            persistID={"queries"}
+            pageNum={pageNum}
+            setPageNum={setPageNum}
+            setPageSize={setPageSize}
+            total={total}
+        ></FluentPagedFooter>}
         footerStyles={{}}
     />;
 };

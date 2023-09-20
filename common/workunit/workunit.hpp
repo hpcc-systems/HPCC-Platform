@@ -1320,6 +1320,7 @@ interface IWorkUnit : extends IConstWorkUnit
     virtual void commit() = 0;
     virtual IWUException * createException() = 0;
     virtual void addProcess(const char *type, const char *instance, unsigned pid, unsigned max, const char *pattern, bool singleLog, const char *log=nullptr) = 0;
+    virtual bool setContainerizedProcessInfo(const char *type, const char *instance, const char *podName, const char *sequence) = 0;
     virtual void setAction(WUAction action) = 0;
     virtual void setApplicationValue(const char * application, const char * propname, const char * value, bool overwrite) = 0;
     virtual void setApplicationValueInt(const char * application, const char * propname, int value, bool overwrite) = 0;
@@ -1772,22 +1773,12 @@ extern WORKUNIT_API bool isValidMemoryValue(const char * memoryUnit);
 
 inline double calcCost(double ratePerHour, unsigned __int64 ms) { return ratePerHour * ms / 1000 / 3600; }
 
+constexpr bool defaultThorMultiJobLinger = true;
+constexpr unsigned defaultThorLingerPeriod = 60;
 extern WORKUNIT_API void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IPropertyTree &config);
-
-enum class KeepK8sJobs { none, podfailures, all };
-extern WORKUNIT_API KeepK8sJobs translateKeepJobs(const char *keepJobs);
-
-extern WORKUNIT_API bool isActiveK8sService(const char *serviceName);
-extern WORKUNIT_API bool executeGraphOnLingeringThor(IConstWorkUnit &workunit, unsigned wfid, const char *graphName);
-extern WORKUNIT_API void deleteK8sResource(const char *componentName, const char *job, const char *resource);
-extern WORKUNIT_API void waitK8sJob(const char *componentName, const char *job, unsigned pendingTimeoutSecs, KeepK8sJobs keepJob);
-extern WORKUNIT_API bool applyK8sYaml(const char *componentName, const char *wuid, const char *job, const char *resourceType, const std::list<std::pair<std::string, std::string>> &extraParams, bool optional, bool autoCleanup);
-extern WORKUNIT_API void runK8sJob(const char *componentName, const char *wuid, const char *job, const std::list<std::pair<std::string, std::string>> &extraParams={});
-
-// returns a vector of {pod-name, node-name} vectors,
-extern WORKUNIT_API std::vector<std::vector<std::string>> getPodNodes(const char *selector);
 
 extern WORKUNIT_API TraceFlags loadTraceFlags(IConstWorkUnit * wu, const std::initializer_list<TraceOption> & y, TraceFlags dft);
 
+extern WORKUNIT_API bool executeGraphOnLingeringThor(IConstWorkUnit &workunit, unsigned wfid, const char *graphName);
 
 #endif

@@ -1834,7 +1834,7 @@ class CMultiCoreUnorderedJoinHelper: public CMultiCoreJoinHelperBase
         multiWriter->abort();
     }
 
-    SimpleInterThreadQueueOf<cWorkItem,false> workqueue;
+    ReallySimpleInterThreadQueueOf<cWorkItem,false> workqueue;
     Owned<IRowMultiWriterReader> multiWriter;
     Owned<IRowWriter> rowWriter;
 
@@ -1971,7 +1971,7 @@ public:
     virtual void stop()
     {
         CMultiCoreJoinHelperBase::stop();
-        workqueue.stop();
+        workqueue.stop(numworkers, 1);
         multiWriter->abort();
         if (!reader.join(1000*60))
             IERRLOG("~CMulticoreUnorderedJoinHelper reader join timed out");

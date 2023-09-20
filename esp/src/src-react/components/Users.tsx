@@ -6,8 +6,8 @@ import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import { UserStore, CreateUserStore } from "src/ws_access";
 import { useConfirm } from "../hooks/confirm";
-import { useFluentPagedGrid } from "../hooks/grid";
 import { useBuildInfo } from "../hooks/platform";
+import { FluentPagedGrid, FluentPagedFooter, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { ShortVerticalDivider } from "./Common";
 import { AddUserForm } from "./forms/AddUser";
 import { Filter } from "./forms/Filter";
@@ -49,6 +49,12 @@ export const Users: React.FunctionComponent<UsersProps> = ({
     const [showAddUser, setShowAddUser] = React.useState(false);
     const [showFilter, setShowFilter] = React.useState(false);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
+    const {
+        selection, setSelection,
+        pageNum, setPageNum,
+        pageSize, setPageSize,
+        total, setTotal,
+        refreshTable } = useFluentStoreState({ page });
 
     //  Grid ---
     const query = React.useMemo(() => {
@@ -59,28 +65,24 @@ export const Users: React.FunctionComponent<UsersProps> = ({
         return store ? store : CreateUserStore();
     }, [store]);
 
-    const { Grid, GridPagination, selection, copyButtons, refreshTable } = useFluentPagedGrid({
-        persistID: "username",
-        store: gridStore,
-        sort,
-        query,
-        pageNum: page,
-        filename: "users",
-        columns: {
+    const columns = React.useMemo((): FluentColumns => {
+        return {
             check: { width: 27, selectorType: "checkbox" },
             username: {
                 width: 180,
                 label: nlsHPCC.Username,
-                formatter: React.useCallback(function (_name, idx) {
+                formatter: (_name, idx) => {
                     return <Link href={`#/${opsCategory}/security/users/${_name}`}>{_name}</Link>;
-                }, [opsCategory])
+                }
             },
             employeeID: { width: 180, label: nlsHPCC.EmployeeID },
             employeeNumber: { width: 180, label: nlsHPCC.EmployeeNumber },
             fullname: { label: nlsHPCC.FullName },
             passwordexpiration: { width: 180, label: nlsHPCC.PasswordExpiration }
-        }
-    });
+        };
+    }, [opsCategory]);
+
+    const copyButtons = useCopyButtons(columns, selection, "users");
 
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
@@ -94,7 +96,7 @@ export const Users: React.FunctionComponent<UsersProps> = ({
                 request["usernames_i" + idx] = item.username;
             });
             wsAccess.UserAction(request)
-                .then(response => refreshTable())
+                .then(response => refreshTable.call())
                 .catch(err => logger.error(err));
         }, [refreshTable, selection])
     });
@@ -125,7 +127,7 @@ export const Users: React.FunctionComponent<UsersProps> = ({
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
-            onClick: () => refreshTable()
+            onClick: () => refreshTable.call()
         },
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
@@ -173,16 +175,34 @@ export const Users: React.FunctionComponent<UsersProps> = ({
                 <SizeMe monitorHeight>{({ size }) =>
                     <div style={{ width: "100%", height: "100%" }}>
                         <div style={{ position: "absolute", width: "100%", height: `${size.height}px` }}>
-                            <Grid height={`${size.height}px`} />
+                            <FluentPagedGrid
+                                store={gridStore}
+                                query={query}
+                                sort={sort}
+                                pageNum={pageNum}
+                                pageSize={pageSize}
+                                total={total}
+                                columns={columns}
+                                height={`${size.height}px`}
+                                setSelection={setSelection}
+                                setTotal={setTotal}
+                                refresh={refreshTable}
+                            ></FluentPagedGrid>
                         </div>
                     </div>
                 }</SizeMe>
                 <Filter showFilter={showFilter} setShowFilter={setShowFilter} filterFields={filterFields} onApply={pushParams} />
-                <AddUserForm showForm={showAddUser} setShowForm={setShowAddUser} refreshGrid={refreshTable} />
+                <AddUserForm showForm={showAddUser} setShowForm={setShowAddUser} refreshGrid={refreshTable.call} />
                 <DeleteConfirm />
             </>
         }
-        footer={<GridPagination />}
+        footer={<FluentPagedFooter
+            persistID={"username"}
+            pageNum={pageNum}
+            setPageNum={setPageNum}
+            setPageSize={setPageSize}
+            total={total}
+        ></FluentPagedFooter>}
     />;
 
 };

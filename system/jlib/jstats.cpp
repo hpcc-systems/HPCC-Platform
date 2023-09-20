@@ -1318,6 +1318,7 @@ bool StatisticsMapping::equals(const StatisticsMapping & other)
     return true;
 }
 
+const StatisticsMapping noStatistics({});
 const StatisticsMapping allStatistics(StKindAll);
 const StatisticsMapping heapStatistics({StNumAllocations, StNumAllocationScans});
 const StatisticsMapping diskLocalStatistics({StCycleDiskReadIOCycles, StSizeDiskRead, StNumDiskReads, StCycleDiskWriteIOCycles, StSizeDiskWrite, StNumDiskWrites, StNumDiskRetries});

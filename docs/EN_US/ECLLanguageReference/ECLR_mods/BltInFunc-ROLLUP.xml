@@ -11,16 +11,27 @@
     </indexterm>(</emphasis><emphasis>recordset, condition, transform
   </emphasis><emphasis role="bold">[, LOCAL<indexterm>
       <primary>LOCAL</primary>
-    </indexterm>] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+    </indexterm>] </emphasis><emphasis role="bold">[, UNORDERED |
+  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
+  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
+  </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
+  <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
 
   <para><emphasis role="bold">ROLLUP(</emphasis><emphasis>recordset,
-  transform, fieldlist </emphasis><emphasis role="bold">[, LOCAL]
-  [, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+  transform, fieldlist </emphasis><emphasis role="bold">[, LOCAL] [, UNORDERED
+  | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
+  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
+  </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
+  <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
 
   <para><emphasis role="bold">ROLLUP(</emphasis><emphasis>recordset,
   </emphasis><emphasis role="bold">GROUP</emphasis><emphasis><indexterm>
       <primary>GROUP</primary>
-    </indexterm>, transform </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+    </indexterm>, transform </emphasis><emphasis role="bold">[, UNORDERED |
+  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
+  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
+  </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
+  <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
@@ -78,50 +89,70 @@
             the ROLLUP operation will produce a single output record for each
             group. If this is not the case, an error occurs.</entry>
           </row>
+
           <row>
             <entry><emphasis role="bold">UNORDERED</emphasis></entry>
 
-            <entry>Optional. Specifies the output record order is not significant.</entry>
+            <entry>Optional. Specifies the output record order is not
+            significant.</entry>
           </row>
+
           <row>
             <entry><emphasis role="bold">ORDERED</emphasis></entry>
 
-            <entry>Specifies the significance of the output record order.</entry>
+            <entry>Specifies the significance of the output record
+            order.</entry>
           </row>
+
           <row>
             <entry><emphasis>bool</emphasis></entry>
 
-            <entry>When False, specifies the output record order is not significant. When True, specifies the default output record order.</entry>
+            <entry>When False, specifies the output record order is not
+            significant. When True, specifies the default output record
+            order.</entry>
           </row>
+
           <row>
             <entry><emphasis role="bold">STABLE</emphasis></entry>
 
-            <entry>Optional. Specifies the input record order is significant.</entry>
+            <entry>Optional. Specifies the input record order is
+            significant.</entry>
           </row>
+
           <row>
             <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
 
-            <entry>Optional. Specifies the input record order is not significant.</entry>
+            <entry>Optional. Specifies the input record order is not
+            significant.</entry>
           </row>
+
           <row>
             <entry><emphasis role="bold">PARALLEL</emphasis></entry>
 
-            <entry>Optional. Try to evaluate this activity in parallel.</entry>
+            <entry>Optional. Try to evaluate this activity in
+            parallel.</entry>
           </row>
+
           <row>
             <entry><emphasis>numthreads</emphasis></entry>
 
-            <entry>Optional. Try to evaluate this activity using <emphasis>numthreads</emphasis> threads.</entry>
+            <entry>Optional. Try to evaluate this activity using
+            <emphasis>numthreads</emphasis> threads.</entry>
           </row>
+
           <row>
             <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
 
-            <entry>Optional. Override the algorithm used for this activity.</entry>
+            <entry>Optional. Override the algorithm used for this
+            activity.</entry>
           </row>
+
           <row>
             <entry><emphasis>name</emphasis></entry>
 
-            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the SORT function's STABLE and UNSTABLE options.</entry>
+            <entry>The algorithm to use for this activity. Must be from the
+            list of supported algorithms for the SORT function's STABLE and
+            UNSTABLE options.</entry>
           </row>
 
           <row>
@@ -143,24 +174,23 @@
   <emphasis>transform </emphasis>function, ROLLUP can keep the LEFT or RIGHT
   record, or any mixture of data from both.</para>
 
-  <para>
-  The first form of ROLLUP tests a condition using values from the records that
-  would be passed as LEFT and RIGHT to the <emphasis>transform</emphasis>.  
-  The records are combined if the condition is true.
-  The second form of ROLLUP compares values from adjacent records in the input
-  <emphasis>recordset</emphasis>, and combines them if they are the same.  
-  These two forms will behave differently if the <emphasis>transform</emphasis>
-  modifies some of the fields used in the matching condition (see example below).
-  </para>
-  
-  <para>For the first pair of candidate records, the LEFT record passed to the transform
-  is the first record of the pair, and the RIGHT record is the second.
-  For subsequent matches of the same values,
-  the LEFT record passed is the result record from the previous call to the
+  <para>The first form of ROLLUP tests a condition using values from the
+  records that would be passed as LEFT and RIGHT to the
+  <emphasis>transform</emphasis>. The records are combined if the condition is
+  true. The second form of ROLLUP compares values from adjacent records in the
+  input <emphasis>recordset</emphasis>, and combines them if they are the
+  same. These two forms will behave differently if the
+  <emphasis>transform</emphasis> modifies some of the fields used in the
+  matching condition (see example below).</para>
+
+  <para>For the first pair of candidate records, the LEFT record passed to the
+  transform is the first record of the pair, and the RIGHT record is the
+  second. For subsequent matches of the same values, the LEFT record passed is
+  the result record from the previous call to the
   <emphasis>transform</emphasis> and the RIGHT record is the next record in
   the <emphasis>recordset</emphasis>, as in this example:</para>
 
-  <programlisting>ds := DATASET([{1,10},{1,20},{1,30},{3,40},{4,50}], 
+  <programlisting lang="ECL" role="notrunnable">ds := DATASET([{1,10},{1,20},{1,30},{3,40},{4,50}], 
               {UNSIGNED r, UNSIGNED n});
 d t(ds L, ds R) := TRANSFORM
   SELF.r := L.r + R.r;
@@ -209,7 +239,7 @@ ROLLUP(ds, LEFT.r = RIGHT.r,t(LEFT, RIGHT));
 
     <para>Example:</para>
 
-    <programlisting>//a crosstab table of last names and the number of times they occur
+    <programlisting lang="ECL" role="notrunnable">//a crosstab table of last names and the number of times they occur
 MyRec := RECORD
   Person.per_last_name;
   INTEGER4 PersonCount := 1;
@@ -241,7 +271,7 @@ XtabOut := ROLLUP(SortedTable,
 
     <para>Example:</para>
 
-    <programlisting>rec := {STRING1 str1,STRING1 str2,STRING1 str3};
+    <programlisting lang="ECL" role="runnable">rec := {STRING1 str1,STRING1 str2,STRING1 str3};
 ds := DATASET([{'a', 'b', 'c'},{'a', 'b', 'c'},
                {'a', 'c', 'c'},{'a', 'c', 'd'}], rec);
 rec tr(rec L, rec R) := TRANSFORM
@@ -268,6 +298,13 @@ r6 := ROLLUP(ds, tr(LEFT, RIGHT), str1 + str2);
 r7 := ROLLUP(ds, tr(LEFT, RIGHT), Cat(str1,str2));
   //equivalent to Cat(LEFT.str1,LEFT.str2) =
   // Cat(RIGHT.str1,RIGHT.str2 )
+OUTPUT(r1);
+OUTPUT(r2);
+OUTPUT(r3);
+OUTPUT(r4);
+OUTPUT(r5);
+OUTPUT(r6);
+OUTPUT(r7);
 </programlisting>
   </sect2>
 
@@ -285,7 +322,7 @@ r7 := ROLLUP(ds, tr(LEFT, RIGHT), Cat(str1,str2));
 
     <para>Example:</para>
 
-    <programlisting>inrec := RECORD
+    <programlisting lang="ECL" role="runnable">inrec := RECORD
   UNSIGNED6 did;
 END;
 
@@ -354,6 +391,7 @@ finalRec doRollup(outRec l, DATASET(outRec) allRows) :=
 END;
 
 results := ROLLUP(combined, GROUP, doRollup(LEFT,ROWS(LEFT)));
+OUTPUT(results);
 </programlisting>
 
     <para>See Also: <link linkend="TRANSFORM_Structure">TRANSFORM

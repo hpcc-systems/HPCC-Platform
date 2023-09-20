@@ -2,9 +2,9 @@ import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link, ScrollablePane, Sticky } from "@fluentui/react";
 import nlsHPCC from "src/nlsHPCC";
 import { QuerySortItem } from "src/store/Store";
-import { useFluentGrid } from "../hooks/grid";
 import { useWorkunitResources } from "../hooks/workunit";
 import { updateParam } from "../util/history";
+import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { ShortVerticalDivider } from "./Common";
 import { IFrame } from "./IFrame";
 
@@ -33,27 +33,26 @@ export const Resources: React.FunctionComponent<ResourcesProps> = ({
     const [resources, , , refreshData] = useWorkunitResources(wuid);
     const [data, setData] = React.useState<any[]>([]);
     const [webUrl, setWebUrl] = React.useState("");
+    const {
+        selection, setSelection,
+        setTotal,
+        refreshTable } = useFluentStoreState({});
 
     //  Grid ---
-    const { Grid, selection, copyButtons } = useFluentGrid({
-        data,
-        primaryID: "DisplayPath",
-        alphaNumColumns: { Name: true, Value: true },
-        sort,
-        filename: "resources",
-        columns: {
+    const columns = React.useMemo((): FluentColumns => {
+        return {
             col1: {
                 width: 27,
                 selectorType: "checkbox"
             },
             DisplayPath: {
                 label: nlsHPCC.Name, sortable: true,
-                formatter: React.useCallback(function (url, row) {
+                formatter: (url, row) => {
                     return <Link href={formatUrl(wuid, row.URL)}>{url}</Link>;
-                }, [wuid])
+                }
             }
-        }
-    });
+        };
+    }, [wuid]);
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
@@ -81,6 +80,8 @@ export const Resources: React.FunctionComponent<ResourcesProps> = ({
             }
         },
     ], [refreshData, selection, uiState.hasSelection, wuid, preview]);
+
+    const copyButtons = useCopyButtons(columns, selection, "resources");
 
     //  Selection  ---
     React.useEffect(() => {
@@ -113,6 +114,15 @@ export const Resources: React.FunctionComponent<ResourcesProps> = ({
         </Sticky>
         {preview && webUrl ?
             <IFrame src={webUrl} /> :
-            <Grid />}
+            <FluentGrid
+                data={data}
+                primaryID={"DisplayPath"}
+                alphaNumColumns={{ Name: true, Value: true }}
+                sort={sort}
+                columns={columns}
+                setSelection={setSelection}
+                setTotal={setTotal}
+                refresh={refreshTable}
+            ></FluentGrid>}
     </ScrollablePane>;
 };

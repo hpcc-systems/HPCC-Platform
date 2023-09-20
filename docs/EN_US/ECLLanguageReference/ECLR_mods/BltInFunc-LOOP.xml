@@ -165,7 +165,7 @@
 
   <para>Example:</para>
 
-  <para><programlisting>namesRec := RECORD  
+  <para><programlisting lang="ECL" role="runnable">namesRec := RECORD  
   STRING20 lname;
   STRING10 fname;
   UNSIGNED2 age := 25;
