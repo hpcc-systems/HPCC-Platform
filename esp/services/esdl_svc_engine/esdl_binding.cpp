@@ -1393,16 +1393,21 @@ EsdlServiceImpl::IUpdatableGateway* EsdlServiceImpl::createInlineGateway(const I
     return new CLegacyUrlGateway(gw, gwName, gwUrl);
 }
 
-EsdlServiceImpl::IGatewayUpdater* EsdlServiceImpl::getGatewayUpdater(IPTree& gw, const UpdatableGateways& updatables, GatewayUpdaters& updaters, Secrets& secrets) const
+void EsdlServiceImpl::applyGatewayUpdates(IPTreeIterator& gwIt, const UpdatableGateways& updatables, GatewayUpdaters& updaters, Secrets& secrets) const
 {
-    const char* name = gw.queryProp("@name");
-    if (isEmptyString(name))
-        return nullptr;
-    std::string key(name);
-    UpdatableGateways::const_iterator it = updatables.find(key);
-    if (updatables.end() == it)
-        return nullptr;
-    return it->second->getUpdater(updaters, secrets);
+    ForEach(gwIt)
+    {
+        IPTree& gw = gwIt.query();
+        const char* name = gw.queryProp("@name");
+        if (isEmptyString(name))
+            continue;
+        UpdatableGateways::const_iterator ugIt = updatables.find(name);
+        if (updatables.end() == ugIt)
+            continue;
+        Owned<IGatewayUpdater> updater(ugIt->second->getUpdater(updaters, secrets));
+        if (updater)
+            updater->updateGateway(gw, "allowPublishedGatewayUsage");
+    }
 }
 
 void EsdlServiceImpl::transformGatewaysConfig( IPTreeIterator* inputs, IPropertyTree* forRoxie, const char* altElementName ) const
@@ -1778,27 +1783,22 @@ void EsdlServiceImpl::prepareFinalRequest(IEspContext &context,
             reqProcessed.append("<soap:Body><").append(tgtQueryName).append(">");
             reqProcessed.appendf("<_TransactionId>%s</_TransactionId>", context.queryTransactionID());
 
-            GatewaysCache::const_iterator mit = m_methodGatewaysCache.find(mthName);
+            GatewaysCache::const_iterator mgcIt = m_methodGatewaysCache.find(mthName);
+            Owned<IPTreeIterator> gwIt;
             GatewayUpdaters updaters;
             Secrets secrets;
             if (tgtctx)
             {
-                // The target context is based on a copy of the target configuration. One copy per
-                // transaction. It will have already been copied into the script context, so local
-                // secret and inline URL resolutions can be made in the given property tree.
-                if (mit != m_methodGatewaysCache.end() && !mit->second.targetContext.empty())
+                if (mgcIt != m_methodGatewaysCache.end() && !mgcIt->second.targetContext.empty())
                 {
+                    // The target context is based on a copy of the target configuration. One copy
+                    // per transaction. It will have already been copied into the script context,
+                    // so gateway updates can be made in the given property tree.
                     IPTree* ctxGateways = tgtctx->queryBranch("Gateways");
                     if (ctxGateways)
                     {
-                        Owned<IPTreeIterator> it(ctxGateways->getElements("Gateway"));
-                        ForEach(*it)
-                        {
-                            IPTree& gw = it->query();
-                            Owned<IGatewayUpdater> updater(getGatewayUpdater(gw, mit->second.targetContext, updaters, secrets));
-                            if (updater)
-                                updater->updateGateway(gw, "allowPublishedGatewayUsage");
-                        }
+                        gwIt.setown(ctxGateways->getElements("Gateway"));
+                        applyGatewayUpdates(*gwIt, mgcIt->second.targetContext, updaters, secrets);
                     }
                 }
                 toXML(tgtctx.get(), reqProcessed);
@@ -1814,34 +1814,28 @@ void EsdlServiceImpl::prepareFinalRequest(IEspContext &context,
                 StringBuffer xpath(cfgGateways->queryProp("@legacyTransformTarget"));
                 if (!xpath.isEmpty())
                 {
-                    Owned<IPTreeIterator> it;
-                    if (mit != m_methodGatewaysCache.end() && !mit->second.legacyTransform.empty())
+                    if (mgcIt != m_methodGatewaysCache.end() && !mgcIt->second.legacyTransform.empty())
                     {
-                        // The target configuration is shared by all transactions. Local secret and
-                        // inline URL resolutions must be made to a copy of the gateways, to avoid
-                        // contaminating values used in subsequent transactions.
+                        // The target configuration is shared by all transactions.gateway updates
+                        // must be made to a copy of the gateways, to avoid  contaminating values
+                        // used in subsequent transactions.
                         Owned<IPTree> copy(createPTreeFromIPT(cfgGateways));
-                        it.setown(copy->getElements("Gateway"));
-                        ForEach(*it)
-                        {
-                            IPTree& gw = it->query();
-                            Owned<IGatewayUpdater> updater(getGatewayUpdater(gw, mit->second.legacyTransform, updaters, secrets));
-                            if (updater)
-                                updater->updateGateway(gw, "allowPublishedGatewayUsage");
-                        }
+                        gwIt.setown(copy->getElements("Gateway"));
+                        applyGatewayUpdates(*gwIt, mgcIt->second.legacyTransform, updaters, secrets);
                     }
                     else
-                        it.setown(cfgGateways->getElements("Gateway"));
-                    
+                        gwIt.setown(cfgGateways->getElements("Gateway"));
+
                     Owned<IPTree> gws = createPTree("gateways", 0);
+                    StringBuffer rowName(cfgGateways->queryProp("@legacyRowName"));
+                    if (rowName.isEmpty())
+                        rowName.append("row");
+                    transformGatewaysConfig(gwIt, gws, rowName);
+
                     // Temporarily add the closing </soap:Envelope> tag so we have valid
                     // XML to transform the gateways
                     Owned<IPTree> soapTree = createPTreeFromXMLString(reqProcessed.append("</soap:Envelope>"), ipt_ordered);
-                    StringBuffer rowName(cfgGateways->queryProp("@legacyRowName"));
 
-                    if (rowName.isEmpty())
-                        rowName.append("row");
-                    transformGatewaysConfig(it, gws, rowName);
                     xpath.replaceString("{$query}", tgtQueryName);
                     xpath.replaceString("{$method}", mthName);
                     xpath.replaceString("{$service}", srvdef.queryName());

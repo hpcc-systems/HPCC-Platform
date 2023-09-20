@@ -494,23 +494,14 @@ protected:
     IUpdatableGateway* createInlineGateway(const IPTree& gw, const char* gwName, const char* gwUrl) const;
 
     /**
-     * @brief Obtain an updater instance for use with a specific gateway.
-     *
-     * - Null is returned if the gateway does not contain `@name` or `updatables` does not include
-     *   this key.
-     * - A new link to an existing updater (in `updaters`) is returned if the updatable handler
-     *   (from `updatables`) can find a match. Matching logic is an imlementation detail of the
-     *   updatable handler.
-     * - A new updater is created, cached in `updaters`, and returned the first time the gateway
-     *   is evaluated.
+     * @brief Update all iterated nodes, as needed.
      * 
-     * @param gw 
-     * @param updatables 
-     * @param updaters 
-     * @param secrets 
-     * @return IGatewayUpdater* 
+     * @param gwIt       property tree nodes, presumed to be `Gateway` nodes, for possible updates
+     * @param updatables set of update handlers to be applied to nodes
+     * @param updaters   cache of updaters used in the current transaction
+     * @param secrets    cache of secrets used in the current transaction
      */
-    IGatewayUpdater* getGatewayUpdater(IPTree& gw, const UpdatableGateways& updatables, GatewayUpdaters& updaters, Secrets& secrets) const;
+    void applyGatewayUpdates(IPTreeIterator& gwIt, const UpdatableGateways& updatables, GatewayUpdaters& updaters, Secrets& secrets) const;
 
     /**
      * @brief Implementation of legacy gateway transformation invoked only during preparation of
