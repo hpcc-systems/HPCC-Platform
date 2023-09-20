@@ -31,7 +31,7 @@ const FilterFields: Fields = {
     "LogicalFiles": { type: "checkbox", label: nlsHPCC.LogicalFiles },
     "SuperFiles": { type: "checkbox", label: nlsHPCC.SuperFiles },
     "Indexes": { type: "checkbox", label: nlsHPCC.Indexes },
-    "NotInSuperfiles": { type: "checkbox", label: nlsHPCC.NotInSuperfiles },
+    "NotInSuperfiles": { type: "checkbox", label: nlsHPCC.NotInSuperfiles, disabled: (params: Fields) => !!params?.SuperFiles?.value || !!params?.LogicalFiles?.value },
     "NodeGroup": { type: "target-group", label: nlsHPCC.Cluster, placeholder: nlsHPCC.Cluster },
     "FileSizeFrom": { type: "string", label: nlsHPCC.FromSizes, placeholder: "4096" },
     "FileSizeTo": { type: "string", label: nlsHPCC.ToSizes, placeholder: "16777216" },

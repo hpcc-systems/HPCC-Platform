@@ -780,6 +780,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     label: field.label,
                     field: <TextField
                         key={fieldID}
+                        id={fieldID}
                         type={field.type}
                         name={fieldID}
                         value={field.value}
@@ -803,6 +804,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     label: field.label,
                     field: <TextField
                         key={fieldID}
+                        id={fieldID}
                         type={field.type}
                         name={fieldID}
                         value={`${field.value}`}
@@ -821,8 +823,9 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     label: field.label,
                     field: <Checkbox
                         key={fieldID}
+                        id={fieldID}
                         name={fieldID}
-                        disabled={field.disabled("") ? true : false}
+                        disabled={field.disabled(fields) ? true : false}
                         checked={field.value === true ? true : false}
                         onChange={(evt, newValue) => onChange(fieldID, newValue)}
                     />
