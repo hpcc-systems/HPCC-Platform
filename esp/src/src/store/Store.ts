@@ -21,7 +21,7 @@ export interface QueryOptions<T> {
     start?: number;
     count?: number;
     sort?: QuerySort<T>;
-    alphanumColumns: { [id: string]: boolean };
+    alphanumColumns?: { [id: string]: boolean };
 }
 
 export abstract class BaseStore<R extends BaseRow, T extends BaseRow> {
