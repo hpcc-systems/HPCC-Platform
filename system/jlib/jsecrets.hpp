@@ -36,6 +36,8 @@ extern jlib_decl bool getSecretValue(StringBuffer & result, const char *category
 extern jlib_decl void initSecretUdpKey();
 extern jlib_decl const MemoryAttr &getSecretUdpKey(bool required);
 
+extern jlib_decl bool containsEmbeddedKey(const char *certificate);
+
 extern jlib_decl IPropertyTree *queryTlsSecretInfo(const char *issuer);
 extern jlib_decl IPropertyTree *createTlsClientSecretInfo(const char *issuer, bool mutual, bool acceptSelfSigned, bool addCACert=true);
 

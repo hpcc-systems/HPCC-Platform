@@ -176,8 +176,8 @@ unsigned CMasterWatchdogBase::readPacket(HeartBeatPacketHeader &hb, MemoryBuffer
             IWARNLOG("Receive Monitor Packet: wrong size, got %d, less than HeartBeatPacketHeader size", read);
             return 0;
         }
-        //Cast is to avoid warning about writing to an object with non trivial copy assignment
-        memcpy(reinterpret_cast<void *>(&hb), mb.readDirect(sizeof(HeartBeatPacketHeader)), sizeof(HeartBeatPacketHeader));
+
+        hb.deserialize(mb);
         if (read != hb.packetSize)  // check for corrupt packets
         {
             IWARNLOG("Receive Monitor Packet: wrong size, expected %d, got %d", hb.packetSize, read);

@@ -177,6 +177,14 @@
         {
             "name": "zlib",
             "platform": "@VCPKG_ZLIB@"
+        },
+        {
+            "name": "opentelemetry-cpp",
+            "features": [
+                "otlp",
+                "otlp-http",
+                "otlp-grpc"
+            ]
         }
     ]
 }

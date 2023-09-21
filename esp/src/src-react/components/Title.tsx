@@ -135,7 +135,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
                             method: "post"
                         }).then(() => {
                             setUserSession({ ...userSession, Status: "Locked" });
-                            replaceUrl("/login", null, true);
+                            replaceUrl("/login", true);
                         });
                     }
                 },

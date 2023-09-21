@@ -271,24 +271,37 @@ int CHttpSoapBinding::HandleSoapRequest(CHttpRequest* request, CHttpResponse* re
     return 0;
 }
 
-
-static IPropertyTree *createSecClientConfig(const char *clientCertPath, const char *clientPrivateKey, const char *caCertsPath, bool acceptSelfSigned)
+static IPropertyTree *createSecClientConfig(const char *clientCertFileOrBuf, const char *clientPrivKeyFileOrBuf, const char *caCertsPathOrBuf, bool acceptSelfSigned)
 {
     Owned<IPropertyTree> info = createPTree();
 
-    if (!isEmptyString(clientCertPath))
+    if (!isEmptyString(clientCertFileOrBuf))
     {
-        info->setProp("certificate", clientCertPath);
-        if (!isEmptyString(clientPrivateKey))
-            info->setProp("privatekey", clientPrivateKey);
+        if (containsEmbeddedKey(clientCertFileOrBuf))
+            info->setProp("certificate_pem", clientCertFileOrBuf);
+        else
+            info->setProp("certificate", clientCertFileOrBuf);
+
+        if (!isEmptyString(clientPrivKeyFileOrBuf))
+        {
+            if (containsEmbeddedKey(clientPrivKeyFileOrBuf))
+                info->setProp("privatekey_pem", clientPrivKeyFileOrBuf);
+            else
+                info->setProp("privatekey", clientPrivKeyFileOrBuf);
+        }
     }
 
     IPropertyTree *verify = ensurePTree(info, "verify");
-    if (!isEmptyString(caCertsPath))
+
+    if (!isEmptyString(caCertsPathOrBuf))
     {
         IPropertyTree *ca = ensurePTree(verify, "ca_certificates");
-        ca->setProp("@path", caCertsPath);
+        if (containsEmbeddedKey(caCertsPathOrBuf))
+            ca->setProp("pem", caCertsPathOrBuf);
+        else
+            ca->setProp("@path", caCertsPathOrBuf);
     }
+
     verify->setPropBool("@enable", true);
     verify->setPropBool("@accept_selfsigned", acceptSelfSigned);
     verify->setProp("trusted_peers", "anyone");
@@ -313,6 +326,7 @@ void CSoapRequestBinding::post(const char *proxy, const char* url, IRpcResponseB
         soapclient.setReadTimeoutSecs(readTimeoutSecs_);
     if (mtls_secret_.length())
         soapclient.setMtlsSecretName(mtls_secret_);
+
     if (client_cert_.length() || ca_certs_.length() || accept_self_signed_)
         soapclient.setSecureSocketConfig(createSecClientConfig(client_cert_, client_priv_key_, ca_certs_, accept_self_signed_));
 

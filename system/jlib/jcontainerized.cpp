@@ -254,7 +254,6 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
             return;
         // process pod information from environment
         getEnvVar("MY_POD_NAME", myPodName.clear());
-        PROGLOG("The podName = %s", myPodName.str());
     };
     if (isContainerized())
         podInfoInitCBId = installConfigUpdateHook(updateFunc, true);

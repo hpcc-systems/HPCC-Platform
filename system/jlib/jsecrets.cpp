@@ -1066,6 +1066,25 @@ const MemoryAttr &getSecretUdpKey(bool required)
     return udpKey;
 }
 
+jlib_decl bool containsEmbeddedKey(const char *certificate)
+{
+    // look for any of:
+    // -----BEGIN PRIVATE KEY-----
+    // -----BEGIN RSA PRIVATE KEY-----
+    // -----BEGIN CERTIFICATE-----
+    // -----BEGIN PUBLIC KEY-----
+    // or maybe just:
+    // -----BEGIN
+
+    if ( (strstr(certificate, "-----BEGIN PRIVATE KEY-----")) ||
+         (strstr(certificate, "-----BEGIN RSA PRIVATE KEY-----")) ||
+         (strstr(certificate, "-----BEGIN PUBLIC KEY-----")) ||
+         (strstr(certificate, "-----BEGIN CERTIFICATE-----")) )
+        return true;
+
+    return false;
+}
+
 IPropertyTree *createTlsClientSecretInfo(const char *issuer, bool mutual, bool acceptSelfSigned, bool addCACert)
 {
     if (isEmptyString(issuer))

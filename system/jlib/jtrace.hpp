@@ -18,6 +18,17 @@
 #ifndef JTRACE_HPP
 #define JTRACE_HPP
 
+/**
+ * @brief This follows open telemetry's span attribute naming conventions
+ *  Known HPCC span Keys could be added here
+ *  Specialized span keys can also be defined within the scope of a span 
+ */
+namespace HPCCSemanticConventions
+{
+static constexpr const char *kGLOBALIDHTTPHeader = "HPCC-Global-Id";
+static constexpr const char *kCallerIdHTTPHeader = "HPCC-Caller-Id";
+}
+
 class jlib_decl LogTrace
 {
 private:
@@ -25,14 +36,14 @@ private:
     StringAttr   callerId;
     StringAttr   localId;
 
-    StringAttr   globalIdHTTPHeaderName = "HPCC-Global-Id";
-    StringAttr   callerIdHTTPHeaderName = "HPCC-Caller-Id";
+    StringAttr   globalIdHTTPHeaderName = HPCCSemanticConventions::kGLOBALIDHTTPHeader;
+    StringAttr   callerIdHTTPHeaderName = HPCCSemanticConventions::kCallerIdHTTPHeader;
 
     const char* assignLocalId();
 
 public:
 
-    LogTrace() {};
+    LogTrace();
     LogTrace(const char * globalId);
 
     const char* queryGlobalId() const;
@@ -54,6 +65,29 @@ public:
     void setCallerId(const char* id);
     void setLocalId(const char* id);
 };
+
+interface ISpan : extends IInterface
+{
+    virtual void setSpanAttribute(const char * key, const char * val) = 0;
+    virtual void setSpanAttributes(const IProperties * attributes) = 0;
+    virtual void addSpanEvent(const char * eventName) = 0;
+    virtual bool getSpanContext(IProperties * ctxProps, bool otelFormatted) const = 0;
+    virtual void toString(StringBuffer & out) const = 0;
+
+    virtual ISpan * createClientSpan(const char * name) = 0;
+    virtual ISpan * createInternalSpan(const char * name) = 0;
+};
+
+interface ITraceManager : extends IInterface
+{
+    virtual ISpan * createServerSpan(const char * name, StringArray & httpHeaders) = 0;
+    virtual ISpan * createServerSpan(const char * name, const IProperties * httpHeaders) = 0;
+    virtual bool isTracingEnabled() const = 0;
+    virtual const char * getTracedComponentName() const = 0;
+ };
+
+extern jlib_decl void initTraceManager(const char * componentName, IPropertyTree * traceConfig);
+extern jlib_decl ITraceManager & queryTraceManager();
 
 /*
   To use feature-level tracing flags, protect the tracing with a test such as:

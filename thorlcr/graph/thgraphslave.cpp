@@ -1232,8 +1232,16 @@ void CSlaveGraph::done()
     GraphPrintLog("End of sub-graph");
     progressActive.store(false);
     setProgressUpdated(); // NB: ensure collected after end of graph
-    if (!aborted && graphDone && (!queryOwner() || isGlobal()))
-        getDoneSem.wait(); // must wait on master
+    if (!queryOwner() || isGlobal())
+    {
+        if (aborted || !graphDone)
+        {
+            if (!getDoneSem.wait(SHORTTIMEOUT)) // wait on master to clear up, gather info from slaves
+                WARNLOG("CSlaveGraph::done - timedout waiting for master to signal done()");
+        }
+        else
+            getDoneSem.wait();
+    }
     if (!queryOwner())
     {
         if (globals->getPropBool("@watchdogProgressEnabled"))
@@ -1484,7 +1492,6 @@ IThorResult *CSlaveGraph::getGlobalResult(CActivityBase &activity, IThorRowInter
     }
     return result.getClear();
 }
-
 
 ///////////////////////////
 
