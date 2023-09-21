@@ -568,6 +568,7 @@
             "subPath": {},
             "secret": {},
             "pvc": {},
+            "hostPath": {},
             "hostGroup": {},
             "hosts": {},
             "umask": {},
@@ -593,6 +594,10 @@
         },
         "secret": {
           "description": "optional name of any secret required to access this storage plane",
+          "type": "string"
+        },
+        "hostPath": {
+          "description": "optional, this will create a hostPath volume (mutually exclusive with using pvc)",
           "type": "string"
         },
         "pvc": {
@@ -700,6 +705,7 @@
             "subPath": {},
             "secret": {},
             "pvc": {},
+            "hostPath": {},
             "hostGroup": {},
             "hosts": {},
             "umask": {},
