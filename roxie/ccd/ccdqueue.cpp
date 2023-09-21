@@ -165,7 +165,7 @@ StringBuffer &RoxiePacketHeader::toString(StringBuffer &ret) const
         default: ret.append("???"); break;
     }
     ret.appendf(" queryHash=%" I64F "x ch=%u seq=%d cont=%d server=", queryHash, channel, overflowSequence, continueSequence);
-    serverIP.getIpText(ret);
+    serverIP.getHostText(ret);
     if (retries)
     {
         if (retries==QUERY_ABORTED)
@@ -269,7 +269,7 @@ void joinMulticastChannel(unsigned channel)
     getChannelIp(multicastIp, channel);
     SocketEndpoint ep(ccdMulticastPort, multicastIp);
     StringBuffer epStr;
-    ep.getUrlStr(epStr);
+    ep.getEndpointHostText(epStr);
     if (!multicastSocket->join_multicast_group(ep))
         throw MakeStringException(ROXIE_MULTICAST_ERROR, "Failed to join multicast channel %d (%s)", channel, epStr.str());
     if (traceLevel)
@@ -908,7 +908,7 @@ void AgentContextLogger::set(ISerializedRoxieQueryPacket *packet)
             s.append("|");
         }
         channel = header.channel;
-        ip.getIpText(s);
+        ip.getHostText(s);
         s.append(':').append(channel);
         StringContextLogger::set(s.str());
         if (intercept || mergeAgentStatistics)

@@ -382,7 +382,7 @@ void testCDfsLogicalFileName()
     lfn=cdlfn.get(); assertex(strcmp(lfn,"file::10.150.10.75::c$::test::file.xyz")==0);
     lfn=cdlfn.get(true); assertex(strcmp(lfn,"file::10.150.10.75::c$::test::file.xyz")==0);
     verifyex(cdlfn.getEp(ep)); 
-    ep.getUrlStr(eps.clear()); assertex(strcmp(eps.str(),"10.150.10.75")==0);
+    ep.getEndpointHostText(eps.clear()); assertex(strcmp(eps.str(),"10.150.10.75")==0);
     verifyex(cdlfn.getExternalPath(path.clear(),path,true)); assertex(strcmp(path.str(),"c:\\test\\file.xyz")==0);
     verifyex(cdlfn.getExternalPath(dir.clear(),path.clear(),true)); assertex(strcmp(path.str(),"file.xyz")==0);
     verifyex(cdlfn.getExternalPath(path.clear(),path,false)); assertex(strcmp(path.str(),"/c$/test/file.xyz")==0);
@@ -393,7 +393,7 @@ void testCDfsLogicalFileName()
     assertex(cdlfn.isExternal());
     lfn=cdlfn.get(); assertex(strcmp(lfn,"file::10.150.10.75:7100::c$::test::file.xyz")==0);
     verifyex(cdlfn.getEp(ep)); 
-    ep.getUrlStr(eps.clear()); assertex(strcmp(eps.str(),"10.150.10.75:7100")==0);
+    ep.getEndpointHostText(eps.clear()); assertex(strcmp(eps.str(),"10.150.10.75:7100")==0);
     verifyex(cdlfn.getExternalPath(path.clear(),path,true)); assertex(strcmp(path.str(),"c:\\test\\file.xyz")==0);
     verifyex(cdlfn.getExternalPath(dir.clear(),path.clear(),true)); assertex(strcmp(path.str(),"file.xyz")==0);
     verifyex(cdlfn.getExternalPath(path.clear(),path,false)); assertex(strcmp(path.str(),"/c$/test/file.xyz")==0);
@@ -403,7 +403,7 @@ void testCDfsLogicalFileName()
     assertex(cdlfn.isForeign());
     assertex(!cdlfn.isExternal());
     verifyex(cdlfn.getEp(ep)); 
-    ep.getUrlStr(eps.clear()); assertex(strcmp(eps.str(),"10.150.10.75")==0);
+    ep.getEndpointHostText(eps.clear()); assertex(strcmp(eps.str(),"10.150.10.75")==0);
     lfn=cdlfn.get(); assertex(strcmp(lfn,"foreign::10.150.10.75::test::file.xyz")==0);
     lfn=cdlfn.get(true); assertex(strcmp(lfn,"test::file.xyz")==0);
     cdlfn.getScopes(scopes.clear()); assertex(strcmp(scopes.str(),"foreign::10.150.10.75::test")==0);
@@ -1021,7 +1021,7 @@ void QTest(bool testput)
 #if 1
                     StringBuffer eps;
                     if (i%100==99) {
-                        PROGLOG("Got %s - %d from %s",str.get(),n,node->endpoint().getUrlStr(eps).str());
+                        PROGLOG("Got %s - %d from %s",str.get(),n,node->endpoint().getEndpointHostText(eps).str());
                         PROGLOG("time taken = %d",msTick()-t1);
                         t1 = msTick();
                     }
@@ -3292,13 +3292,13 @@ void testMultiConnect()
         void connected(unsigned idx,const SocketEndpoint &ep,ISocket *socket)
         {
             StringBuffer epstr;
-            ep.getUrlStr(epstr);
+            ep.getEndpointHostText(epstr);
             printf("%s suceeded\n",epstr.str());
         }
         void failed(unsigned idx,const SocketEndpoint &ep,int err)
         {
             StringBuffer epstr;
-            ep.getUrlStr(epstr);
+            ep.getEndpointHostText(epstr);
             printf("%s failed (%d)\n",epstr.str(),err);
         }
     } notify;

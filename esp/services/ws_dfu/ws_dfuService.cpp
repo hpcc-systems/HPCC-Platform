@@ -2090,7 +2090,7 @@ void CWsDfuEx::getFilePartsOnClusters(IEspContext &context, const char *clusterR
             for (unsigned i=0; i<part.numCopies(); i++)
             {
                 StringBuffer url;
-                part.queryNode(i)->endpoint().getUrlStr(url);
+                part.queryNode(i)->endpoint().getEndpointHostText(url);
 
                 Owned<IEspDFUPart> FilePart = createDFUPart();
                 FilePart->setId(partIndex+1);
@@ -2538,7 +2538,7 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, co
                 Owned<IEspDFUPart> FilePart = createDFUPart();
 
                 StringBuffer url;
-                part->queryNode(i)->endpoint().getUrlStr(url);
+                part->queryNode(i)->endpoint().getEndpointHostText(url);
 
                 FilePart->setId(part->getPartIndex()+1);
                 FilePart->setCopy(i+1);
@@ -5970,7 +5970,7 @@ void CWsDfuEx::getFilePartsInfo(IEspContext &context, const char *dafilesrvHost,
              * In bare metal the host names from the group will be used.
              */
             if (!dafilesrvHost)
-                part.queryNode(i)->endpoint().getUrlStr(host.clear());
+                part.queryNode(i)->endpoint().getEndpointHostText(host.clear());
             unsigned *locationIndex = partLocationMap.getValue(host.str());
             if (locationIndex)
                 fileCopy->setLocationIndex(*locationIndex);

@@ -91,7 +91,7 @@ public:
                 // Kludge to avoid locking SDS on blocked client
                 hasaborted = true;
                 StringBuffer tmp;
-                throw MakeStringException(-1,"Subscription notification to %s timed out",dst->endpoint().getUrlStr(tmp).str());
+                throw MakeStringException(-1,"Subscription notification to %s timed out",dst->endpoint().getEndpointHostText(tmp).str());
                 return;
             }
 
@@ -123,7 +123,7 @@ public:
     StringBuffer &getDetails(StringBuffer &buf)
     {
         StringBuffer ep;
-        return buf.appendf("%16" I64F "X: %s %s",sid,dst->endpoint().getUrlStr(ep).str(),hasaborted?"aborted":"");
+        return buf.appendf("%16" I64F "X: %s %s",sid,dst->endpoint().getEndpointHostText(ep).str(),hasaborted?"aborted":"");
     }
 };
 
@@ -275,7 +275,7 @@ public:
                     serializeException(exception, mb);
                 while (!coven.reply(mb,60000)) {
                         StringBuffer eps;
-                        DBGLOG("MSR_ADD_SUBSCRIPTION_PRIMARY reply timed out to %s try %d",mb.getSender().getUrlStr(eps).str(),retry+1);
+                        DBGLOG("MSR_ADD_SUBSCRIPTION_PRIMARY reply timed out to %s try %d",mb.getSender().getEndpointHostText(eps).str(),retry+1);
                         if (retry++==3)
                             return;
                 }

@@ -122,7 +122,7 @@ public:
         m_addr->sin_port = htons(port);
 
         IpAddress ip(host);
-        ip.getIpText(m_ip);
+        ip.getHostText(m_ip);
         m_port = port;
         m_fqdn.set(host);
 

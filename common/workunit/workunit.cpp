@@ -13885,7 +13885,7 @@ extern WORKUNIT_API void associateLocalFile(IWUQuery * query, WUFileType type, c
     else
     {
         StringBuffer hostname;
-        queryHostIP().getIpText(hostname);
+        queryHostIP().getHostText(hostname);
         query->addAssociatedFile(type, fullPathName, hostname, description, crc, minActivity, maxActivity);
     }
 }
@@ -14451,7 +14451,7 @@ void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IP
         myep.serialize(msg);  // only used for tracing
         if (!conversation->send(msg)) {
             StringBuffer s("Failed to send query to Thor on ");
-            thorMaster.getUrlStr(s);
+            thorMaster.getEndpointHostText(s);
             throw MakeStringExceptionDirect(-1, s.str()); // maybe retry?
         }
         unsigned __int64 blockedTime = elapsedTimer.elapsedNs();
@@ -14461,21 +14461,21 @@ void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IP
         }
 
         StringBuffer eps;
-        PROGLOG("Thor on %s running %s", thorMaster.getUrlStr(eps).str(), jobName.str());
+        PROGLOG("Thor on %s running %s", thorMaster.getEndpointHostText(eps).str(), jobName.str());
         MemoryBuffer reply;
         try
         {
             if (!conversation->recv(reply,INFINITE))
             {
                 StringBuffer s("Failed to receive reply from thor ");
-                thorMaster.getUrlStr(s);
+                thorMaster.getEndpointHostText(s);
                 throw MakeStringExceptionDirect(-1, s.str());
             }
         }
         catch (IException *e)
         {
             StringBuffer s("Failed to receive reply from thor ");
-            thorMaster.getUrlStr(s);
+            thorMaster.getEndpointHostText(s);
             s.append("; (").append(e->errorCode()).append(", ");
             e->errorMessage(s).append(")");
             e->Release();

@@ -815,7 +815,7 @@ void Cws_machineEx::getThorProcesses(IConstEnvironment* constEnv, IPropertyTree*
     ForEach(*gi)
     {
         StringBuffer addressRead;
-        gi->query().endpoint().getIpText(addressRead);
+        gi->query().endpoint().getHostText(addressRead);
         if (addressRead.length() == 0)
         {
             OWARNLOG("Network address not found for a node in node group %s", groupName.str());
@@ -831,7 +831,7 @@ void Cws_machineEx::getThorProcesses(IConstEnvironment* constEnv, IPropertyTree*
         else
         {
             IpAddress ipaddr = queryHostIP();
-            ipaddr.getIpText(netAddress);
+            ipaddr.getHostText(netAddress);
         }
 
         if (netAddress.length() == 0)

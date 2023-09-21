@@ -203,7 +203,7 @@ public:
         if (host != NULL)
             strIP.append(host);
         else
-            m_address.getIpText(strIP);
+            m_address.getHostText(strIP);
 
         LOG(MCprogress, "binding %s, on %s:%d", name, strIP.str(), port);
 

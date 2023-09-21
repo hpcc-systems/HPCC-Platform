@@ -1795,7 +1795,7 @@ void CJobSlave::startJob()
             SocketEndpoint ep;
             ep.setLocalHost(0);
             StringBuffer s;
-            throw MakeThorException(TE_NotEnoughFreeSpace, "Node %s has %u MB(s) of available disk space, specified minimum for this job: %u MB(s)", ep.getUrlStr(s).str(), (unsigned) freeSpace / 0x100000, minFreeSpace);
+            throw MakeThorException(TE_NotEnoughFreeSpace, "Node %s has %u MB(s) of available disk space, specified minimum for this job: %u MB(s)", ep.getEndpointHostText(s).str(), (unsigned) freeSpace / 0x100000, minFreeSpace);
         }
     }
     queryThor().queryKeyedJoinService().setCurrentJob(*this);

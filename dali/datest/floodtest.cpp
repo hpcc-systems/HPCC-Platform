@@ -845,7 +845,7 @@ void floodtestServer(const char *exename,const char *daliserver,const char *grpn
             StringAttr msg;
             mb.read(msg);
             StringBuffer url;
-            IERRLOG("%3d (%s): %s\n",r+1,group->queryNode(r).endpoint().getUrlStr(url).str(),msg.get());
+            IERRLOG("%3d (%s): %s\n",r+1,group->queryNode(r).endpoint().getEndpointHostText(url).str(),msg.get());
         }
         else if (fn==FLOODTEST_CONNECTED) {
             if (setState(group,"Connected",r,connected)) {

@@ -3078,7 +3078,7 @@ IPropertyTree* getNewRange(const IPropertyTree* pEnv, const char* prefix, const 
    
    while (count--)
    {
-     range.getIpText(sIP.clear());
+     range.getHostText(sIP.clear());
 
      unsigned x;
      range.getNetAddress(sizeof(x),&x);

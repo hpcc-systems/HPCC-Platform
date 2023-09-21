@@ -301,7 +301,7 @@ struct ReplicateFileItem: extends CInterface
         IPropertyTree &root = *conn->queryRoot();
         root.setProp("@name",lfn);
         StringBuffer node;
-        queryMyNode()->endpoint().getIpText(node);
+        queryMyNode()->endpoint().getHostText(node);
         root.setProp("@node",node.str());
         root.setPropInt("@mpport",queryMyNode()->endpoint().port);
         dt.setNow();

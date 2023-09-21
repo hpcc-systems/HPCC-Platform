@@ -155,11 +155,11 @@ void testEnqueue(unsigned nthreads,const char *qname)
                 {
                     unsigned start = msTick();
                     if (!partfile->remove()&&(copy==0)) // only warn about missing primary files
-                        LOG(MCwarning, unknownJob, "Failed to remove file part %s from %s", partfile->queryFilename(),rfn.queryEndpoint().getUrlStr(eps).str());
+                        LOG(MCwarning, unknownJob, "Failed to remove file part %s from %s", partfile->queryFilename(),rfn.queryEndpoint().getEndpointHostText(eps).str());
                     else {
                         unsigned t = msTick()-start;
                         if (t>5*1000) 
-                            LOG(MCwarning, unknownJob, "Removing %s from %s took %ds", partfile->queryFilename(), rfn.queryEndpoint().getUrlStr(eps).str(), t/1000);
+                            LOG(MCwarning, unknownJob, "Removing %s from %s took %ds", partfile->queryFilename(), rfn.queryEndpoint().getEndpointHostText(eps).str(), t/1000);
                     }
 
                 }
@@ -171,7 +171,7 @@ void testEnqueue(unsigned nthreads,const char *qname)
                     else {
                         StringBuffer s("Failed to remove file part ");
                         s.append(partfile->queryFilename()).append(" from ");
-                        rfn.queryEndpoint().getUrlStr(s);
+                        rfn.queryEndpoint().getUrgetEndpointHostTextlStr(s);
                         EXCLOG(e, s.str());
                         e->Release();
                     }
@@ -258,7 +258,7 @@ void testEnqueue(unsigned nthreads,const char *qname)
     myep.serialize(msg);  // only used for tracing
     if (!conversation->send(msg)) {
         StringBuffer s("Failed to send query to Thor on ");
-        thorMaster.getUrlStr(s);
+        thorMaster.getEndpointHostText(s);
         throw MakeStringException(-1, s.str()); // maybe retry?
     }
 
@@ -275,7 +275,7 @@ static void cmd_list(IJobQueue *queue)
         IJobQueueItem &item = iter->query();
         StringBuffer eps;
         StringBuffer dts;
-        printf("%3d: %s owner=%s priority=%d session=%" I64F "x ep=%s port=%d enqueuedt=%s\n",n,item.queryWUID(),item.queryOwner(),item.getPriority(),item.getSessionId(),item.queryEndpoint().getUrlStr(eps).str(),item.getPort(),item.queryEnqueuedTime().getString(dts).str());
+        printf("%3d: %s owner=%s priority=%d session=%" I64F "x ep=%s port=%d enqueuedt=%s\n",n,item.queryWUID(),item.queryOwner(),item.getPriority(),item.getSessionId(),item.queryEndpoint().getEndpointHostText(eps).str(),item.getPort(),item.queryEnqueuedTime().getString(dts).str());
     }
 }
 
@@ -420,7 +420,7 @@ static void cmd_dequeue(IJobQueue *queue)
         return;
     }
     StringBuffer eps;
-    printf("%s owner=%s priority=%d session=%" I64F "x ep=%s port=%d\n",item->queryWUID(),item->queryOwner(),item->getPriority(),item->getSessionId(),item->queryEndpoint().getUrlStr(eps).str(),item->getPort());
+    printf("%s owner=%s priority=%d session=%" I64F "x ep=%s port=%d\n",item->queryWUID(),item->queryOwner(),item->getPriority(),item->getSessionId(),item->queryEndpoint().getEndpointHostText(eps).str(),item->getPort());
     queue->disconnect();
 }
 

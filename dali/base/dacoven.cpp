@@ -163,7 +163,7 @@ static void checkDaliVersionInfo(ICommunicator *comm, CDaliVersion &serverVersio
     mb.append(ClientVersion);
     mb.append(MinServerVersion);
     StringBuffer daliEpStr;
-    comm->queryGroup().queryNode(0).endpoint().getUrlStr(daliEpStr); // NB: there's always exactly 1 node
+    comm->queryGroup().queryNode(0).endpoint().getEndpointHostText(daliEpStr); // NB: there's always exactly 1 node
     if (!comm->sendRecv(mb, RANK_RANDOM, MPTAG_DALI_COVEN_REQUEST, VERSION_REQUEST_TIMEOUT))
         throw makeStringExceptionV(-1, "Failed retrieving version information from server [%s], legacy server?", daliEpStr.str());
     if (!mb.length())
@@ -206,7 +206,7 @@ static CriticalSection foreignDaliVersionCacheCrit;
 void checkForeignDaliVersionInfo(const INode *foreignDali, CDaliVersion &serverVersion, CDaliVersion &minClientVersion)
 {
     StringBuffer foreignDaliStr;
-    foreignDali->endpoint().getUrlStr(foreignDaliStr);
+    foreignDali->endpoint().getEndpointHostText(foreignDaliStr);
 
     CriticalBlock b(foreignDaliVersionCacheCrit);
     std::pair<CDaliVersion, CDaliVersion> result;
@@ -395,7 +395,7 @@ CDaliUidAllocator &CDaliUidAllocator::find(CIArrayOf<CDaliUidAllocator> &uidallo
         uidallocators.append(*ret);
     }
     StringBuffer eps;
-    DBGLOG("Added foreign UID allocator for %s", ret->node.getUrlStr(eps).str());
+    DBGLOG("Added foreign UID allocator for %s", ret->node.getEndpointHostText(eps).str());
     return *ret;
 }
 
@@ -498,7 +498,7 @@ public:
                 store->serialize(mb.clear());
                 if (!sendRecv(mb,r,MPTAG_DALI_COVEN_REQUEST, COVEN_SERVER_TIMEOUT)) {
                     StringBuffer str;
-                    throw MakeStringException(-1,"Could not connect to %s",grp->queryNode(r).endpoint().getUrlStr(str).str());
+                    throw MakeStringException(-1,"Could not connect to %s",grp->queryNode(r).endpoint().getEndpointHostText(str).str());
                 }   
                 mergeStore(store,mb,true);
             }
@@ -508,7 +508,7 @@ public:
                 for (;;)
                 {
                     if (!recv(mb,r,MPTAG_DALI_COVEN_REQUEST,&sender,COVEN_SERVER_TIMEOUT)) {
-                        throw MakeStringException(-1,"Could not connect to %s",grp->queryNode(r).endpoint().getUrlStr(str).str());
+                        throw MakeStringException(-1,"Could not connect to %s",grp->queryNode(r).endpoint().getEndpointHostText(str).str());
                     }
                     if (RANK_NULL==sender)
                         processMessage(mb);

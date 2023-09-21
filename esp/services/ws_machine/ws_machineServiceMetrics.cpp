@@ -518,7 +518,7 @@ bool Cws_machineEx::onGetMetrics(IEspContext &context, IEspMetricsRequest &req,
         {
             IpAddress ip;
             ip.setNetAddress(sizeof(unsigned),lptr++);
-            ip.getIpText(ipBuf.clear());
+            ip.getHostText(ipBuf.clear());
             
             CMetricsThreadParam* pThreadReq = 
                     new CMetricsThreadParam(ipBuf.str(), req.getSecurityString(), 
@@ -620,7 +620,7 @@ bool Cws_machineEx::onGetMetrics(IEspContext &context, IEspMetricsRequest &req,
         {
             IpAddress ip;
             ip.setNetAddress(sizeof(unsigned),lptr++);
-            ip.getIpText(ipBuf.clear());
+            ip.getHostText(ipBuf.clear());
             ipList.append(ipBuf.str());
         }
 

@@ -301,7 +301,7 @@ bool SortSlaveMP::marshall(ISortSlaveMP &slave, ICommunicator* comm, mptag_t tag
     mbout.append(okout);
 #ifdef FULLTRACE
     StringBuffer tmp1;
-    LOG(MCthorDetailedDebugInfo, thorJob, ">SortSlaveMP::marshall(%d) got %d from %s tag %d replytag %d",(int)fn, mb.length(), mb.getSender().getUrlStr(tmp1).str(),tag,mb.getReplyTag());
+    LOG(MCthorDetailedDebugInfo, thorJob, ">SortSlaveMP::marshall(%d) got %d from %s tag %d replytag %d",(int)fn, mb.length(), mb.getSender().getEndpointHostText(tmp1).str(),tag,mb.getReplyTag());
 #endif
     bool replydone = false;
     Owned<IException> err;
@@ -531,7 +531,7 @@ bool SortSlaveMP::marshall(ISortSlaveMP &slave, ICommunicator* comm, mptag_t tag
     if (!replydone) {
 #ifdef FULLTRACE
         StringBuffer tmp1;
-        LOG(MCthorDetailedDebugInfo, thorJob, "<SortSlaveMP::marshall(%d) send %d to %s tag %d",(int)fn, mbout.length(), mbout.getSender().getUrlStr(tmp1).str(),mbout.getReplyTag());
+        LOG(MCthorDetailedDebugInfo, thorJob, "<SortSlaveMP::marshall(%d) send %d to %s tag %d",(int)fn, mbout.length(), mbout.getSender().getEndpointHostText(tmp1).str(),mbout.getReplyTag());
 #endif
         comm->reply(mbout);
     }

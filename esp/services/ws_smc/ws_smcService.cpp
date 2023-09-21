@@ -1933,7 +1933,7 @@ bool CWsSMCEx::onBrowseResources(IEspContext &context, IEspBrowseResourcesReques
         {
             StringBuffer ipStr;
             IpAddress ipaddr = queryHostIP();
-            ipaddr.getIpText(ipStr);
+            ipaddr.getHostText(ipStr);
             if (!ipStr.isEmpty())
                 resp.setNetAddress(ipStr.str());
         }

@@ -406,7 +406,7 @@ WORKUNITSERVICES_API void wsWorkunitList(
             }
             if (i+1>=sashaeps.ordinality()) {
                StringBuffer ips;
-               sashaeps.item(0).getIpText(ips);
+               sashaeps.item(0).getHostText(ips);
                throw MakeStringException(-1,"Time out to Sasha server on %s (server not running or query too complex)",ips.str());
             }
         }

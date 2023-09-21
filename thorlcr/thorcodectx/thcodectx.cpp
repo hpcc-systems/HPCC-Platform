@@ -84,7 +84,7 @@ char *CThorCodeContextBase::getDaliServers()
             first = false;
         else
             dali.append(',');
-        coven->query().endpoint().getUrlStr(dali);
+        coven->query().endpoint().getEndpointHostText(dali);
     }
     return dali.detach();
 }

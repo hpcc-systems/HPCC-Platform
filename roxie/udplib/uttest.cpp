@@ -735,7 +735,7 @@ int main(int argc, char * argv[] )
                 ipstr.append(startrange - ip, ip).append(firstnum).append(endptr);
                 const IpAddress nodeIP(ipstr);
                 allNodes.append(nodeIP);
-                nodeIP.getIpText(ipstr.clear());
+                nodeIP.getHostText(ipstr.clear());
                 printf("Added node %s\n", ipstr.str());
                 firstnum++;
             }

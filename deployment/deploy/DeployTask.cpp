@@ -1696,7 +1696,7 @@ public:
          throw MakeStringException(-1, "Cannot resolve %s", remoteNameOrIp);
 
        StringBuffer remoteIP;
-       ip.getIpText(remoteIP);
+       ip.getHostText(remoteIP);
 
 
       HANDLE hEnum;
@@ -1734,7 +1734,7 @@ public:
                   }
 
                    StringBuffer ipAddr;
-                   ip.getIpText(ipAddr);
+                   ip.getHostText(ipAddr);
 
                   if (!stricmp(remoteIP.str(), ipAddr.str()))
                   {

@@ -503,7 +503,7 @@ void DllServer::doRegisterDll(const char * name, const char * kind, const char *
     RemoteFilename dllRemote;
     StringBuffer ipText, dllText;
     dllRemote.setRemotePath(dllPath);
-    dllRemote.queryIP().getIpText(ipText);
+    dllRemote.queryIP().getHostText(ipText);
     dllRemote.getLocalPath(dllText);
 
     Owned<IRemoteConnection> conn = getEntryConnection(name, RTM_LOCK_WRITE);

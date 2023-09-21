@@ -443,7 +443,7 @@ int main(int argc, const char* argv[])
 #endif
 
                 StringBuffer eps;
-                PROGLOG("SASERVER starting on %s",queryMyNode()->endpoint().getUrlStr(eps).str());
+                PROGLOG("SASERVER starting on %s",queryMyNode()->endpoint().getEndpointHostText(eps).str());
 
                 ForEachItemIn(i1,servers)
                 {

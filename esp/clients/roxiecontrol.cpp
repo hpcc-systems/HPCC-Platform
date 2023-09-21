@@ -142,7 +142,7 @@ static ISocket *createRoxieControlSocket(ISmartSocketFactory *conn, unsigned wai
         {
             StringBuffer err;
             err.append("Failure to establish secure connection to ");
-            ep.getUrlStr(err);
+            ep.getEndpointHostText(err);
             err.append(": returned ").append(status);
             throw makeStringException(SECURE_CONNECTION_FAILURE, err.str());
         }

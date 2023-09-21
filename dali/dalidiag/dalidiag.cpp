@@ -119,7 +119,7 @@ void timeQorSDS(bool timeq)
 
     if (timeq) {
         StringBuffer qname("TESTINGQ_");
-        ep.getUrlStr(qname);
+        ep.getEndpointHostText(qname);
         qconn.setown(createNamedQueueConnection(0));
         channel.setown(qconn->open(qname.str()));
         while (channel->probe()) {
@@ -132,7 +132,7 @@ void timeQorSDS(bool timeq)
     }
     else {
         subname.append("TESTSDS_");
-        ep.getUrlStr(subname);
+        ep.getEndpointHostText(subname);
         StringBuffer fullname("TESTING/");
         fullname.append(subname);
         sdssubid = querySDS().subscribe(fullname.str(), testsdssub);
@@ -379,9 +379,9 @@ void backupList(const char *cluster)
         rank_t r;
         StringBuffer str;
         for (r=0;r<n;r++) {
-            group->queryNode(r).endpoint().getUrlStr(str.clear());
+            group->queryNode(r).endpoint().getEndpointHostText(str.clear());
             str.append(' ');
-            group->queryNode((r+1)%n).endpoint().getUrlStr(str);
+            group->queryNode((r+1)%n).endpoint().getEndpointHostText(str);
             printf("%s\n",str.str());
         }
     }

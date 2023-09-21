@@ -1820,7 +1820,7 @@ readAnother:
         Owned<IPropertyTree> queryPT;
         StringBuffer sanitizedText;
         StringBuffer peerStr;
-        peer.getIpText(peerStr);
+        peer.getHostText(peerStr);
         const char *uid = "-";
 
         StringAttr queryName;

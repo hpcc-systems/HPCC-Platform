@@ -59,7 +59,7 @@ public:
     {
         endpoint = targetep;
         char url[100];
-        targetep.getUrlStr(url,sizeof(url));
+        targetep.getEndpointHostText(url,sizeof(url));
         LOG(MCthorDetailedDebugInfo, thorJob, "SORT Merge READ: Stream(%u) %s, pos=%" RCPF "d len=%" RCPF "u",streamno,url,startrec,numrecs);
         SocketEndpoint mergeep = targetep;
         mergeep.port+=SOCKETSERVERINC; 
@@ -92,7 +92,7 @@ public:
     {
         if (stream) {
             char url[100];
-            endpoint.getUrlStr(url,sizeof(url));
+            endpoint.getEndpointHostText(url,sizeof(url));
             DBGLOG("SORT Merge READ: EOS via destructor for %s",url);
             stream->stop();
         }
@@ -107,7 +107,7 @@ public:
                 return row.getClear();
 #ifdef _FULL_TRACE
             char url[100];
-            endpoint.getUrlStr(url,sizeof(url));
+            endpoint.getEndpointHostText(url,sizeof(url));
             LOG(MCthorDetailedDebugInfo, thorJob, "SORT Merge READ: EOS for %s",url);
 #endif
             eos();
@@ -120,7 +120,7 @@ public:
         if (stream) {
 #ifdef _FULL_TRACE
             char url[100];
-            endpoint.getUrlStr(url,sizeof(url));
+            endpoint.getEndpointHostText(url,sizeof(url));
             LOG(MCthorDetailedDebugInfo, thorJob, "SORT Merge READ: stop for %s",url);
 #endif
             stream->stop();
@@ -492,7 +492,7 @@ public:
         unsigned k = 0;
         for (i=0;i<numnodes;i++) {
             char url[100];
-            endpoints[i].getUrlStr(url,sizeof(url));
+            endpoints[i].getEndpointHostText(url,sizeof(url));
             DBGLOG("  %s",url);
             for (j=0;j<numnodes;j++) {
                 DBGLOG("  %u,",map[k]);

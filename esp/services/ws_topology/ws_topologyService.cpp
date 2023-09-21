@@ -1725,7 +1725,7 @@ bool CWsTopologyEx::onTpGetComponentFile(IEspContext &context, IEspTpGetComponen
                     {
                         StringBuffer ipStr;
                         IpAddress ipaddr = queryHostIP();
-                        ipaddr.getIpText(ipStr);
+                        ipaddr.getHostText(ipStr);
                         if (ipStr.length() > 0)
                         {
                             netAddressStr = ipStr.str();

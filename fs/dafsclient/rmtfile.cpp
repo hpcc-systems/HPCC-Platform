@@ -1304,7 +1304,7 @@ public:
     bool reopen()
     {
         StringBuffer s;
-        PROGLOG("Attempting reopen of %s on %s",parent->queryLocalName(),parent->queryEp().getUrlStr(s).str());
+        PROGLOG("Attempting reopen of %s on %s",parent->queryLocalName(),parent->queryEp().getEndpointHostText(s).str());
         if (open(mode,compatmode,extraFlags))
             return true;
         return false;
@@ -1401,7 +1401,7 @@ public:
                     if (errCode)
                     {
                         StringBuffer msg;
-                        parent->ep.getUrlStr(msg.append('[')).append("] ");
+                        parent->ep.getEndpointHostText(msg.append('[')).append("] ");
                         if (replyBuffer.getPos()<replyBuffer.length())
                         {
                             StringAttr s;
@@ -1968,7 +1968,7 @@ public:
                         size32_t rd = fileio->read(0,sizeof(buf)-1,buf);
                         if ((rd!=sz)||(memcmp(buf,ds.str(),sz)!=0)) {
                             StringBuffer s;
-                            ep.getIpText(s);
+                            ep.getHostText(s);
                             throw MakeStringException(-1,"Data discrepancy on disk read of %s of %s",path.str(),s.str());
                         }
                     }

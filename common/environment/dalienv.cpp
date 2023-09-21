@@ -113,7 +113,7 @@ EnvMachineOS queryOS(const IpAddress & ip)
         Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
         Owned<IConstEnvironment> env = factory->openEnvironment();
         StringBuffer ipText;
-        ip.getIpText(ipText);
+        ip.getHostText(ipText);
         Owned<IConstMachineInfo> machine = env->getMachineByAddress(ipText.str());
         if (machine)
             ret = machine->getOS();
@@ -226,7 +226,7 @@ const char * querySlaveExecutable(const char * keyName, const char * exeName, co
     Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> env = factory->openEnvironment();
     StringBuffer addr;
-    ip.getIpText(addr);
+    ip.getHostText(addr);
 
     StringBufferAdaptor spp(progpath);
     StringBufferAdaptor swd(workdir);
@@ -264,10 +264,10 @@ bool getRemoteRunInfo(const char * keyName, const char * exeName, const char * v
     // use dafilesrv to work out OS
     StringBuffer dalis;
     if (remotedali)
-        remotedali->endpoint().getUrlStr(dalis);
+        remotedali->endpoint().getEndpointHostText(dalis);
     // first get machine by IP
     StringBuffer ips;
-    ip.getIpText(ips);
+    ip.getHostText(ips);
 
     //Cannot use getEnvironmentFactory() since it is using a remotedali
     StringBuffer xpath;

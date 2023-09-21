@@ -639,7 +639,7 @@ protected:
 
         basePath.append("//");
         SocketEndpoint ep(serverPort);
-        ep.getUrlStr(basePath);
+        ep.getEndpointHostText(basePath);
 
         char cpath[_MAX_DIR];
         if (!GetCurrentDirectory(_MAX_DIR, cpath))

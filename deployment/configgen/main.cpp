@@ -206,7 +206,7 @@ void getTempPath(char* tempPath, unsigned int bufsize, const char* subdir/*=NULL
 void replaceDotWithHostIp(IPropertyTree* pTree, bool verbose)
 {
     StringBuffer ip;
-    queryHostIP().getIpText(ip);
+    queryHostIP().getHostText(ip);
     const char* attrs[] = {"@netAddress", "@roxieAddress", "@daliAddress"};
     StringBuffer xPath;
 
@@ -827,7 +827,7 @@ int main(int argc, char** argv)
         if (ip.isLoopBack())                // assume they meant any local ip... not sure this is a good idea
           ipAddr.append('.');
         else
-          ip.getIpText(ipAddr);
+          ip.getHostText(ipAddr);
       }
     }
     else if(stricmp(argv[i], "-od") == 0)

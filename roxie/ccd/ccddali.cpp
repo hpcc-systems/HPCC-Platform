@@ -734,7 +734,7 @@ public:
                 first = false;
             else
                 ret.append(',');
-            coven->query().endpoint().getUrlStr(ret);
+            coven->query().endpoint().getEndpointHostText(ret);
         }
         return ret;
     }

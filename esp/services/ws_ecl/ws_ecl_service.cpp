@@ -2091,7 +2091,7 @@ void CWsEclBinding::sendRoxieRequest(const char *target, StringBuffer &req, Stri
         Owned<IHttpClientContext> httpctx = getHttpClientContext();
         WsEclSocketFactory *roxieConn = static_cast<WsEclSocketFactory*>(conn);
         StringBuffer url(roxieConn->isTlsService() ? "https://" : "http://");
-        ep.getIpText(url).append(':').append(ep.port ? ep.port : 9876).append('/');
+        ep.getHostText(url).append(':').append(ep.port ? ep.port : 9876).append('/');
         if (roxieConn->includeTargetInURL)
             url.append(roxieConn->alias.isEmpty() ? target : roxieConn->alias.str());
         if (!trim)
