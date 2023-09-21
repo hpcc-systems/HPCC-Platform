@@ -623,12 +623,12 @@ private:
 
                 if (!exportType.isEmpty())
                 {
-                    if (strcasecmp(exportType.str(), "OS")==0) //To stdout/err
+                    if (stricmp(exportType.str(), "OS")==0) //To stdout/err
                     {
                         exporter = opentelemetry::exporter::trace::OStreamSpanExporterFactory::Create();
                         DBGLOG("Tracing to stdout/err...");
                     }
-                    else if (strcasecmp(exportType.str(), "OTLP")==0)
+                    else if (stricmp(exportType.str(), "OTLP")==0)
                     {
                         namespace otlp = opentelemetry::exporter::otlp;
 
@@ -649,9 +649,9 @@ private:
                         exporter = otlp::OtlpGrpcExporterFactory::Create(opts);
                         DBGLOG("Tracing to OTLP (%s)", endPoint.str());
                     }
-                    else if (strcasecmp(exportType.str(), "Prometheus")==0)
+                    else if (stricmp(exportType.str(), "Prometheus")==0)
                         DBGLOG("Tracing to Prometheus currently not supported");
-                    else if (strcasecmp(exportType.str(), "HPCC")==0)
+                    else if (stricmp(exportType.str(), "HPCC")==0)
                         DBGLOG("Tracing to HPCC JLog currently not supported");
                 }
                 else
