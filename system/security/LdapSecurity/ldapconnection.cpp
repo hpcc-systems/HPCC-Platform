@@ -408,11 +408,8 @@ public:
             cfg->getProp(".//@ldapAdminVaultId", vaultId);//optional HashiCorp vault ID
 
             DBGLOG("Retrieving LDAP Admin username/password from secrets repo: %s %s", !vaultId.isEmpty() ? vaultId.str() : "", adminUserSecretKey.str());
-            Owned<IPropertyTree> secretTree;
-            if (!vaultId.isEmpty())
-                secretTree.setown(getVaultSecret("authn", vaultId, adminUserSecretKey.str(), nullptr));
-            else
-                secretTree.setown(getSecret("authn", adminUserSecretKey.str()));
+
+            Owned<IPropertyTree> secretTree(getSecret("authn", adminUserSecretKey.str(), vaultId, nullptr));
             if (!secretTree)
                 throw MakeStringException(-1, "Error retrieving LDAP Admin username/password");
 
@@ -497,11 +494,7 @@ public:
             cfg->getProp(".//@hpccAdminVaultId", vaultId);//optional HashiCorp vault ID
 
             DBGLOG("Retrieving optional HPCC Admin username/password from secrets repo: %s %s", !vaultId.isEmpty() ? vaultId.str() : "", adminUserSecretKey.str());
-            Owned<IPropertyTree> secretTree;
-            if (!vaultId.isEmpty())
-                secretTree.setown(getVaultSecret("authn", vaultId, adminUserSecretKey.str(), nullptr));
-            else
-                secretTree.setown(getSecret("authn", adminUserSecretKey.str()));
+            Owned<IPropertyTree> secretTree(getSecret("authn", adminUserSecretKey.str(), vaultId, nullptr));
             if (secretTree)
             {
                 getSecretKeyValue(m_HPCCAdminUser_username, secretTree, "username");

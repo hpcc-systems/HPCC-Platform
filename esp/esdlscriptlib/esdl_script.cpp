@@ -929,9 +929,7 @@ public:
         StringBuffer vault;
         if (m_vaultName)
             sourceContext->evaluateAsString(m_vaultName, vault);
-        if (vault.isEmpty())
-            return getSecret("esp", name);
-        return getVaultSecret("esp", vault, name);
+        return getSecret("esp", name, vault);
     }
     void appendOption(StringBuffer &options, const char *name, const char *value, bool required)
     {
