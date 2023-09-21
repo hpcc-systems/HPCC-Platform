@@ -20,7 +20,7 @@ export function resolve(pathnameOrContext: string | ResolveContext) {
     return g_router.resolve(pathnameOrContext);
 }
 
-function parseHash(hash: string): HistoryLocation {
+export function parseHash(hash: string): HistoryLocation {
     if (hash[0] !== "#") {
         return {
             pathname: "/",
@@ -82,6 +82,7 @@ interface HistoryLocation {
     pathname: string;
     search: string;
     id: string;
+    state?: { [key: string]: any }
 }
 
 export type ListenerCallback<S extends object = object> = (location: HistoryLocation, action: string) => void;
@@ -140,19 +141,19 @@ class History<S extends object = object> {
         return hashUrl;
     }
 
-    push(to: { pathname?: string, search?: string }, state?: S) {
+    push(to: { pathname?: string, search?: string }) {
         const newHash = this.fixHash(`${this.trimRightSlash(to.pathname || this.location.pathname)}${to.search || ""}`);
         if (window.location.hash !== newHash) {
-            globalHistory.pushState(state, "", newHash);
+            globalHistory.pushState(undefined, "", newHash);
             this.location = parseHash(newHash);
             this.broadcast("PUSH");
         }
     }
 
-    replace(to: { pathname?: string, search?: string }, state?: S) {
+    replace(to: { pathname?: string, search?: string }) {
         const newHash = this.fixHash(`${this.trimRightSlash(to.pathname || this.location.pathname)}${to.search || ""}`);
         if (window.location.hash !== newHash) {
-            globalHistory.replaceState(state, "", newHash);
+            globalHistory.replaceState(globalHistory.state, "", newHash);
             this.location = parseHash(newHash);
             this.broadcast("REPLACE");
         }
@@ -188,49 +189,49 @@ class History<S extends object = object> {
         this.updateRecent();
         for (const key in this._listeners) {
             const listener = this._listeners[key];
-            listener(this.location, action);
+            listener({ ...this.location, state: { ...globalHistory.state } }, action);
         }
     }
 }
 
 export const hashHistory = new History<any>();
 
-export function pushSearch(_: object, state?: any) {
+export function pushSearch(_: object) {
     const search = stringify(_ as any);
     hashHistory.push({
         search: search ? "?" + search : ""
-    }, state);
+    });
 }
 
-export function updateSearch(_: object, state?: any) {
+export function updateSearch(_: object) {
     const search = stringify(_ as any);
     hashHistory.replace({
         search: search ? "?" + search : ""
-    }, state);
+    });
 }
 
-export function pushUrl(_: string, state?: any) {
+export function pushUrl(_: string) {
     hashHistory.push({
         pathname: _
-    }, state);
+    });
 }
 
-export function replaceUrl(_: string, state?: any, refresh: boolean = false) {
+export function replaceUrl(_: string, refresh: boolean = false) {
     hashHistory.replace({
         pathname: _
-    }, state);
+    });
     if (refresh) window.location.reload();
 }
 
-export function pushParam(key: string, val?: string | string[] | number | boolean, state?: any) {
-    pushParams({ [key]: val }, state);
+export function pushParam(key: string, val?: string | string[] | number | boolean) {
+    pushParams({ [key]: val });
 }
 
-export function pushParamExact(key: string, val?: string | string[] | number | boolean, state?: any) {
-    pushParams({ [key]: val }, state, true);
+export function pushParamExact(key: string, val?: string | string[] | number | boolean) {
+    pushParams({ [key]: val }, true);
 }
 
-export function pushParams(search: { [key: string]: string | string[] | number | boolean }, state?: any, keepEmpty: boolean = false) {
+export function pushParams(search: { [key: string]: string | string[] | number | boolean }, keepEmpty: boolean = false) {
     const params = parseQuery(hashHistory.location.search);
     for (const key in search) {
         const val = search[key];
@@ -241,15 +242,25 @@ export function pushParams(search: { [key: string]: string | string[] | number |
             params[key] = val;
         }
     }
-    pushSearch(params, state);
+    pushSearch(params);
 }
 
-export function updateParam(key: string, val?: string | string[] | number | boolean, state?: any) {
+export function updateParam(key: string, val?: string | string[] | number | boolean) {
     const params = parseQuery(hashHistory.location.search);
     if (val === undefined) {
         delete params[key];
     } else {
         params[key] = val;
     }
-    updateSearch(params, state);
+    updateSearch(params);
+}
+
+export function updateState(key: string, val?: string | string[] | number | boolean) {
+    const state = { ...globalHistory.state };
+    if (val === undefined) {
+        delete state[key];
+    } else {
+        state[key] = val;
+    }
+    globalHistory.replaceState(state, "");
 }

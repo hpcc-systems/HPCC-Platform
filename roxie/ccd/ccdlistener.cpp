@@ -1768,12 +1768,26 @@ public:
                 Owned<IXmlWriter> logwriter = protocol->writeAppendContent(nullptr);
                 msgctx->writeLogXML(*logwriter);
             }
-            if (statsWuid.length())
+
+            bool summaryStats = msg->getPropBool("@summaryStats", false);
+            if (!statsWuid.isEmpty() || summaryStats)
             {
                 Owned<IXmlWriter> wuwriter = protocol->writeAppendContent(nullptr);
-                wuwriter->outputBeginNested("StatsWorkUnit", true);
-                wuwriter->outputCString(statsWuid.str(), "wuid");
-                wuwriter->outputEndNested("StatsWorkUnit");
+                if (!statsWuid.isEmpty())
+                {
+                    wuwriter->outputBeginNested("StatsWorkUnit", true);
+                    wuwriter->outputCString(statsWuid.str(), "wuid");
+                    wuwriter->outputEndNested("StatsWorkUnit");
+                }
+                if (summaryStats)
+                {
+                    //The query completion time needs discussion and is unavailable for now.
+                    VStringBuffer s(" COMPLETE: %s %s memory=%u Mb agentsreply=%u duplicatePackets=%u resentPackets=%u",
+                        target, roxieMsgCtx->uid.str(), memused, agentsReplyLen, agentsDuplicates, agentsResends);
+                    IRoxieContextLogger &logctx = static_cast<IRoxieContextLogger&>(*msgctx->queryLogContext());
+                    logctx.getStats(s).newline();
+                    wuwriter->outputCString(s.str(), "SummaryStats");
+                }
             }
 
             protocol->finalize(idx);

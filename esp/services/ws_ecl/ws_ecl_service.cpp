@@ -660,6 +660,12 @@ static void buildReqXml(StringArray& parentTypes, IXmlType* type, StringBuffer& 
             bool log = reqTree->getPropBool("@log", false);
             if (log)
                 appendXMLAttr(out, "log", "true", nullptr, true);
+            bool statsToWorkunit = reqTree->getPropBool("@statsToWorkunit", false);
+            if (statsToWorkunit)
+                appendXMLAttr(out, "statsToWorkunit", "true", nullptr, true);
+            bool summaryStats = reqTree->getPropBool("@summaryStats", false);
+            if (summaryStats)
+                appendXMLAttr(out, "summaryStats", "true", nullptr, true);
             int tracelevel = reqTree->getPropInt("@traceLevel", -1);
             if (tracelevel >= 0)
                 out.appendf(" traceLevel=\"%d\"", tracelevel);

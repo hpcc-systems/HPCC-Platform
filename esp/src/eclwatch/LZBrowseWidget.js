@@ -723,7 +723,7 @@ define([
                         label: this.i18n.Name,
                         sortable: false,
                         shouldExpand: function (row, level) {
-                            if ((context.dzExpanded === "" || context.dzExpanded === row.data.DropZone.Name) && level <= 1) {
+                            if ((context.dzExpanded === "" || context.dzExpanded === row.data.DropZone?.Name) && level <= 1) {
                                 context.dzExpanded = row.data.DropZone.Name;
                                 return true;
                             }
