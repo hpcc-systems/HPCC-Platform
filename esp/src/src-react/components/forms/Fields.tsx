@@ -490,12 +490,18 @@ export const TargetGroupTextField: React.FunctionComponent<TargetGroupTextFieldP
 
     React.useEffect(() => {
         TpGroupQuery({}).then(({ TpGroupQueryResponse }) => {
-            setTargetGroups(TpGroupQueryResponse.TpGroups.TpGroup.map(n => {
-                return {
-                    key: n.Name,
-                    text: n.Name + (n.Name !== n.Kind ? ` (${n.Kind})` : "")
-                };
-            }));
+            setTargetGroups(TpGroupQueryResponse.TpGroups.TpGroup.map(group => {
+                switch (group?.Kind) {
+                    case "Thor":
+                    case "hthor":
+                    case "Roxie":
+                    case "Plane":
+                        return {
+                            key: group.Name,
+                            text: group.Name + (group.Name !== group.Kind ? ` (${group.Kind})` : "")
+                        };
+                }
+            }).filter(group => group));
         }).catch(err => logger.error(err));
     }, []);
 
