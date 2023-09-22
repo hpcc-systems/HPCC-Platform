@@ -876,6 +876,7 @@ private:
     static CriticalSection secureContextCrit;
     static Owned<ISecureSocketContext> tlsSecureContext;
     static Owned<ISecureSocketContext> localMtlsSecureContext;
+    static Owned<ISecureSocketContext> remoteMtlsSecureContext;
 
     Owned<ISecureSocketContext> customSecureContext;
 
@@ -883,7 +884,7 @@ private:
     bool complete;
     std::atomic_bool timeLimitExceeded{false};
     bool customClientCert = false;
-    bool localClientCert = false;
+    StringAttr clientCertIssuer;
     IRoxieAbortMonitor * roxieAbortMonitor;
 
 protected:
@@ -1021,8 +1022,13 @@ public:
             throw MakeStringException(0, "%sCALL specified no URLs",wscType == STsoap ? "SOAP" : "HTTP");
         if (0==strncmp(hosts, "mtls:", 5))
         {
-            localClientCert = true;
+            clientCertIssuer.set("local");
             hosts += 5;
+        }
+        else if (0==strncmp(hosts, "remote-mtls:", 12))
+        {
+            clientCertIssuer.set("remote");
+            hosts += 12;
         }
         if (0==strncmp(hosts, "secret:", 7))
         {
@@ -1184,8 +1190,8 @@ public:
         {
             if (clientCert != NULL)
                 ownedSC.setown(createSecureSocketContextEx(clientCert->certificate, clientCert->privateKey, clientCert->passphrase, ClientSocket));
-            else if (localClientCert)
-                ownedSC.setown(createSecureSocketContextSecret("local", ClientSocket));
+            else if (clientCertIssuer.length())
+                ownedSC.setown(createSecureSocketContextSecret(clientCertIssuer.str(), ClientSocket));
             else
                 ownedSC.setown(createSecureSocketContext(ClientSocket));
         }
@@ -1194,8 +1200,13 @@ public:
     ISecureSocketContext *ensureStaticSecureContext()
     {
         CriticalBlock b(secureContextCrit);
-        if (localClientCert)
-            return ensureSecureContext(localMtlsSecureContext);
+        if (clientCertIssuer.length())
+        {
+            if (strieq(clientCertIssuer.str(), "local"))
+                return ensureSecureContext(localMtlsSecureContext);
+            if (strieq(clientCertIssuer.str(), "remote"))
+                return ensureSecureContext(remoteMtlsSecureContext);
+        }
         return ensureSecureContext(tlsSecureContext);
     }
     ISecureSocket *createSecureSocket(ISocket *sock, const char *fqdn = nullptr)
@@ -1333,6 +1344,7 @@ protected:
 CriticalSection CWSCHelper::secureContextCrit;
 Owned<ISecureSocketContext> CWSCHelper::tlsSecureContext; // created on first use
 Owned<ISecureSocketContext> CWSCHelper::localMtlsSecureContext; // created on first use
+Owned<ISecureSocketContext> CWSCHelper::remoteMtlsSecureContext; // created on first use
 
 
 //=================================================================================================

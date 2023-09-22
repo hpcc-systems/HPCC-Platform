@@ -135,7 +135,7 @@ interface IActiveQueryLimiterFactory : extends IInterface
 
 interface IHpccProtocolPlugin : extends IInterface
 {
-    virtual IHpccProtocolListener *createListener(const char *protocol, IHpccProtocolMsgSink *sink, unsigned port, unsigned listenQueue, const char *config, const char *certFile=nullptr, const char *keyFile=nullptr, const char *passPhrase=nullptr)=0;
+    virtual IHpccProtocolListener *createListener(const char *protocol, IHpccProtocolMsgSink *sink, unsigned port, unsigned listenQueue, const char *config, const IPropertyTree *tlsConfig, const char *certFile, const char *keyFile, const char *passPhrase)=0;
 };
 
 extern IHpccProtocolPlugin *loadHpccProtocolPlugin(IHpccProtocolPluginContext *ctx, IActiveQueryLimiterFactory *limiterFactory);

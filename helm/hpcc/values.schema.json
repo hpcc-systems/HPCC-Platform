@@ -1428,6 +1428,9 @@
         "remoteClients": {
           "$ref": "#/definitions/remoteClients"
         },
+        "trustClients": {
+          "$ref": "#/definitions/trustClients"
+        },
         "corsAllowed": {
           "$ref": "#/definitions/corsAllowed"
         },
@@ -2277,6 +2280,12 @@
         "tls": {
           "type": "boolean",
           "description": "Whether the roxie service uses tls.  Requires cert-manager or custom certificate."
+        },
+        "remoteClients": {
+          "$ref": "#/definitions/remoteClients"
+        },
+        "trustClients": {
+          "$ref": "#/definitions/trustClients"
         }
       },
       "required": [ "name", "servicePort" ],
@@ -2992,6 +3001,18 @@
                 "additionalProperties": { "type": "string" }
               }
             }
+          }
+        }
+      }
+    },
+    "trustClients": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "commonName": {
+            "type": "string",
+            "description": "Trusted client common name"
           }
         }
       }

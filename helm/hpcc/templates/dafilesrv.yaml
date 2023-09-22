@@ -105,7 +105,7 @@ kind: ConfigMap
 {{- $_ := set $service "labels" (merge $service.labels (dict "server" .name)) -}}
 {{ include "hpcc.addService" ( dict "root" $ "name" .name "service" $service "selector" .name "defaultPort" 7600 ) }}
 ---
-{{ include "hpcc.addCertificate" (dict "root" $ "name" .name "service" .service "component" "dafilesrv" "visibility" .service.visibility) }}
+{{ include "hpcc.addCertificate" (dict "root" $ "name" .name "service" .service "component" "dafilesrv" "visibility" .service.visibility "trustClients" .trustClients) }}
 {{/*
 Generate network policies for spray services to allow ingress from dfuservers
 */}}
