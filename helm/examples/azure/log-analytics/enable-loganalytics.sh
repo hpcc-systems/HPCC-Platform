@@ -83,6 +83,10 @@ else
 fi
 
 echo "Enabling workspace on target AKS cluster '$AKS_CLUSTER_NAME'..."
+
+if $ENABLE_CONTAINER_LOG_V2 ; then DATA_COLLECTION_SETTINGS="--workspace-resource-id $wsid --data-collection-settings dataCollectionSettings.json"; fi
+
+echo "aks enable-addons -g $AKS_RESOURCE_GROUP -n $AKS_CLUSTER_NAME -a monitoring $DATA_COLLECTION_SETTINGS"
 az aks enable-addons -g $AKS_RESOURCE_GROUP -n $AKS_CLUSTER_NAME -a monitoring --workspace-resource-id $wsid
 if [[ $? -ne 0 ]]
 then
@@ -90,4 +94,9 @@ then
   exit 1
 else
   echo "Success, workspace id: '$wsid' enabled on AKS $AKS_CLUSTER_NAME"
+fi
+
+if $ENABLE_CONTAINER_LOG_V2 ; then
+ echo "Setting ContainerLogV2 schema via container-azm-ms-agentconfig" 
+ kubectl apply -f ${WORK_DIR}/container-azm-ms-agentconfig.yaml;
 fi

@@ -22,3 +22,6 @@ AZURE_SUBSCRIPTION=
 
 # Azure resource location
 AKS_RESOURCE_LOCATION=eastus
+
+# Enable enableContainerLogV2
+ENABLE_CONTAINER_LOG_V2=true

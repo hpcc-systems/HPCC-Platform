@@ -65,12 +65,14 @@ private:
     StringBuffer m_aadClientSecret;
 
     StringBuffer m_componentsLookupKeyColumn;
+    StringBuffer m_instanceLookupKeyColumn;
+    bool targetIsContainerLogV2 = false;
 
 public:
     AzureLogAnalyticsCurlClient(IPropertyTree & logAccessPluginConfig);
 
-    void getMinReturnColumns(StringBuffer & columns, bool & includeComponentName);
-    void getDefaultReturnColumns(StringBuffer & columns, bool & includeComponentName);
+    void getMinReturnColumns(StringBuffer & columns, const bool includeComponentName);
+    void getDefaultReturnColumns(StringBuffer & columns, const bool includeComponentName);
     void searchMetaData(StringBuffer & search, const LogAccessReturnColsMode retcolmode, const  StringArray & selectcols, bool & includeComponentName, unsigned size = defaultEntryLimit, offset_t from = defaultEntryStart);
     void populateKQLQueryString(StringBuffer & queryString, StringBuffer& queryIndex, const LogAccessConditions & options);
     void populateKQLQueryString(StringBuffer & queryString, StringBuffer& queryIndex, const ILogAccessFilter * filter);
