@@ -34,11 +34,27 @@ if(SQS AND USE_AWS)
             set_target_properties(sqs PROPERTIES NO_SONAME 1)
         endif()
 
-        install(
-            TARGETS sqs
-            DESTINATION plugins
-            CALC_DEPS
-        )
+        if(WIN32 OR APPLE)
+            install(
+                TARGETS sqs
+                DESTINATION plugins
+                CALC_DEPS
+            )
+        else()
+            install(
+                RUNTIME_DEPENDENCY_SET sqs_deps
+                DIRECTORIES "${VCPKG_FILES_DIR}/vcpkg_installed"
+                PRE_EXCLUDE_REGEXES "libaws-c-auth|libaws-c-cal|libaws-c-common|libaws-c-compression|libaws-c-event-stream|libaws-c-http|libaws-c-io|libaws-c-mqtt|libaws-c-s3|libaws-c-sdkutils|libaws-checksums|libaws-cpp-sdk-core|libaws-cpp-sdk-core|libaws-crt-cpp"
+                POST_INCLUDE_REGEXES "^${VCPKG_FILES_DIR}\/vcpkg_installed\/.*"
+                POST_EXCLUDE_REGEXES ".*"
+            )
+            install(
+                TARGETS sqs
+                RUNTIME_DEPENDENCY_SET sqs_deps
+                DESTINATION plugins
+            )
+        endif()
+
 
         target_link_libraries(
             sqs

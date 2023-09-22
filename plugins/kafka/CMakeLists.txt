@@ -52,21 +52,23 @@ if(KAFKA)
         elseif(NOT APPLE)
             set_target_properties(kafka PROPERTIES NO_SONAME 1)
         endif()
-
-        install(
-            TARGETS kafka
-            DESTINATION plugins CALC_DEPS)
-
-        install(
-            FILES ${LIBRDKAFKA_LIB_REAL} ${LIBRDKAFKACPP_LIB_REAL}
-            DESTINATION ${LIB_DIR}
-            PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
-            COMPONENT Runtime)
-
-        install(
-            FILES ${LIBRDKAFKA_LIB} ${LIBRDKAFKACPP_LIB}
-            DESTINATION ${LIB_DIR}
-            COMPONENT Runtime)
+        if(WIN32 OR APPLE)
+            install(
+                TARGETS kafka
+                DESTINATION plugins CALC_DEPS)
+        else()
+            install(
+                RUNTIME_DEPENDENCY_SET kafka_deps
+                DESTINATION ${LIB_DIR}
+                DIRECTORIES "${VCPKG_FILES_DIR}/vcpkg_installed"
+                PRE_EXCLUDE_REGEXES "liblz4"
+                POST_INCLUDE_REGEXES "^${VCPKG_FILES_DIR}\/vcpkg_installed\/.*"
+                POST_EXCLUDE_REGEXES ".*")
+            install(
+                TARGETS kafka
+                RUNTIME_DEPENDENCY_SET kafka_deps
+                DESTINATION plugins)
+        endif()
 
         target_link_libraries(kafka
             eclrtl

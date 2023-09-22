@@ -60,10 +60,23 @@ IF(NLP)
 
         target_compile_definitions(nlp PUBLIC NLP_HAVE_ALLOCA)
 
-        install(
-            TARGETS nlp
-            DESTINATION plugins
-            CALC_DEPS)
+        if(WIN32 OR APPLE)
+            install(
+                TARGETS nlp
+                DESTINATION plugins
+                CALC_DEPS)
+        else()
+            install(
+                RUNTIME_DEPENDENCY_SET nlp_deps
+                DIRECTORIES "${VCPKG_FILES_DIR}/vcpkg_installed"
+                PRE_EXCLUDE_REGEXES "libicudata|libicui18n|libicuuc"
+                POST_INCLUDE_REGEXES "^${VCPKG_FILES_DIR}\/vcpkg_installed\/.*"
+                POST_EXCLUDE_REGEXES ".*")
+            install(
+                TARGETS nlp
+                RUNTIME_DEPENDENCY_SET nlp_deps
+                DESTINATION plugins)
+        endif()
 
         target_link_libraries(nlp PRIVATE
             dllserver

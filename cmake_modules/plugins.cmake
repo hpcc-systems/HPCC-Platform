@@ -26,9 +26,7 @@ set(VCPKG_INCLUDE "(windows | osx | linux)")
 set(VCPKG_SUPPRESS "(!windows & !osx & !linux)")
 
 set(PLUGINS_LIST
-    CASSANDRAEMBED
     COUCHBASEEMBED
-    ECLBLAS
     H3
     JAVAEMBED
     KAFKA
@@ -68,6 +66,10 @@ endif()
 
 if (USE_CASSANDRA)
     set(VCPKG_CASSANDRAEMBED "${VCPKG_INCLUDE}")
+endif()
+
+if (USE_ECLBLAS)
+    set(VCPKG_ECLBLAS "${VCPKG_INCLUDE}")
 endif()
 
 if (USE_LIBMEMCACHED)

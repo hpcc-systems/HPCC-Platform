@@ -48,7 +48,13 @@ include_directories (
 ADD_DEFINITIONS( -D_USRDLL -DDAFSCLIENT_EXPORTS )
 
 HPCC_ADD_LIBRARY( dafsclient SHARED ${SRCS}  )
-install ( TARGETS dafsclient RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
+
+if(NOT PLUGIN)
+    install(
+        TARGETS dafsclient
+        RUNTIME DESTINATION ${EXEC_DIR}
+        LIBRARY DESTINATION ${LIB_DIR})
+endif()
 
 target_link_libraries ( dafsclient 
     jlib

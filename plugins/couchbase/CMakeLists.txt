@@ -50,10 +50,25 @@ IF ( COUCHBASEEMBED )
         ADD_DEFINITIONS(-D_USRDLL -DCOUCHBASEEMBED_EXPORTS)
         HPCC_ADD_LIBRARY(couchbaseembed SHARED ${SRCS})
         install(CODE "set(ENV{LD_LIBRARY_PATH} \"\$ENV{LD_LIBRARY_PATH}:${PROJECT_BINARY_DIR}:${PROJECT_BINARY_DIR}/libcouchbase-build/lib\")")
-        install(
-            TARGETS couchbaseembed
-            DESTINATION plugins
-            CALC_DEPS)
+        
+        if(WIN32 OR APPLE)
+            install(
+                TARGETS couchbaseembed
+                DESTINATION plugins
+                CALC_DEPS)
+        else()
+            install(
+                RUNTIME_DEPENDENCY_SET couchbaseembed_deps
+                DIRECTORIES "${VCPKG_FILES_DIR}/vcpkg_installed"
+                PRE_EXCLUDE_REGEXES "libcrypto|libssl"
+                POST_INCLUDE_REGEXES "^${VCPKG_FILES_DIR}\/vcpkg_installed\/.*"
+                POST_EXCLUDE_REGEXES ".*")
+            install(
+                TARGETS couchbaseembed
+                RUNTIME_DEPENDENCY_SET couchbaseembed_deps
+                DESTINATION plugins)
+        endif()
+
 
         target_link_libraries(
             couchbaseembed

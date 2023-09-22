@@ -25,46 +25,44 @@
 
 
 project(eclblas)
+# Added as default library, no longer 'plugin'
 
-if(ECLBLAS)
+
+if(USE_ECLBLAS)
     ADD_PLUGIN(eclblas)
-    if(MAKE_ECLBLAS)
-        find_package(OpenBLAS REQUIRED)
+    find_package(OpenBLAS REQUIRED)
 
-        add_definitions(-D_USE_CBLAS)
+    add_definitions(-D_USE_CBLAS)
    
-        set(SRCS
-            dasum.cpp
-            daxpy.cpp
-            dgemm.cpp
-            dgetf2.cpp
-            dpotf2.cpp
-            dscal.cpp
-            dsyrk.cpp
-            dtrsm.cpp
-            eclblas.cpp
-            extract_tri.cpp
-            make_diag.cpp)
+    set(SRCS
+        dasum.cpp
+        daxpy.cpp
+        dgemm.cpp
+        dgetf2.cpp
+        dpotf2.cpp
+        dscal.cpp
+        dsyrk.cpp
+        dtrsm.cpp
+        eclblas.cpp
+        extract_tri.cpp
+        make_diag.cpp)
 
-        include_directories(
-            ./../../system/include
-            ./../../rtl/eclrtl
-            ./../../rtl/include
-            ./../../common/deftype
-            ./../../system/jlib
-            ${OpenBLAS_DIR})
+    include_directories(
+        ./../../system/include
+        ./../../rtl/eclrtl
+        ./../../rtl/include
+        ./../../common/deftype
+        ./../../system/jlib
+        ${OpenBLAS_DIR})
 
-        ADD_DEFINITIONS(-D_USRDLL -DECLBLAS_EXPORTS)
+    ADD_DEFINITIONS(-D_USRDLL -DECLBLAS_EXPORTS)
 
-        HPCC_ADD_LIBRARY(eclblas SHARED ${SRCS})
-        install ( TARGETS eclblas RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} CALC_DEPS)  # No need to put in plugins dir
-        target_link_libraries(eclblas
-            eclrtl
-            OpenBLAS::OpenBLAS)
-    else()
-        message(AUTHOR_WARNING "Not building eclblas library for standard library due to lacking libcblas")
-    endif()
-endif()
+    HPCC_ADD_LIBRARY(eclblas SHARED ${SRCS})
+    install ( TARGETS eclblas RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} CALC_DEPS)  # No need to put in plugins dir
+    target_link_libraries(eclblas
+        eclrtl
+        OpenBLAS::OpenBLAS)
+endif(USE_ECLBLAS)
 
 if(PLATFORM OR CLIENTTOOLS_ONLY)
     install(

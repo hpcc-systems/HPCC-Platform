@@ -22,7 +22,7 @@ foreach(VCPKG_PACKAGE ${VCPKG_PACKAGES})
     list(APPEND VCPKG_PACKAGE_LIST "-----------------\n")
 endforeach()
 file(WRITE ${CMAKE_BINARY_DIR}/vcpkg-catalog.txt ${VCPKG_PACKAGE_LIST})
-if (INSTALL_VCPKG_CATALOG)
+if (INSTALL_VCPKG_CATALOG AND PLATFORM)
     install(FILES ${CMAKE_BINARY_DIR}/vcpkg-catalog.txt DESTINATION "." COMPONENT Runtime)
 endif()
 

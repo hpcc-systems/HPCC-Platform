@@ -55,7 +55,14 @@ ENDIF()
 ADD_DEFINITIONS( -D_USRDLL -DDLLSERVER_EXPORTS )
 
 HPCC_ADD_LIBRARY( dllserver SHARED ${SRCS} )
-install ( TARGETS dllserver RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
+
+if(NOT PLUGIN)
+  install(
+    TARGETS dllserver
+    RUNTIME DESTINATION ${EXEC_DIR}
+    LIBRARY DESTINATION ${LIB_DIR})
+endif()
+
 target_link_libraries ( dllserver
          ${ZLIB_LIBRARIES}
          jlib 

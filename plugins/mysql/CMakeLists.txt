@@ -52,10 +52,24 @@ if(MYSQLEMBED)
             set_target_properties(mysqlembed PROPERTIES NO_SONAME 1)
         endif()
 
-        install(
-            TARGETS mysqlembed
-            DESTINATION plugins
-            CALC_DEPS)
+        if(WIN32 OR APPLE)
+            install(
+                TARGETS mysqlembed
+                DESTINATION plugins
+                CALC_DEPS)
+        else()
+            install(
+                RUNTIME_DEPENDENCY_SET mysqlembed_deps
+                DIRECTORIES "${VCPKG_FILES_DIR}/vcpkg_installed"
+                PRE_EXCLUDE_REGEXES "libcrypto|libssl|libz"
+                POST_INCLUDE_REGEXES "^${VCPKG_FILES_DIR}\/vcpkg_installed\/.*"
+                POST_EXCLUDE_REGEXES ".*")
+            install(
+                TARGETS mysqlembed
+                RUNTIME_DEPENDENCY_SET mysqlembed_deps
+                DESTINATION plugins)
+        endif()
+
         target_link_libraries(
             mysqlembed
             ${MYSQL_LIBRARIES}

@@ -40,7 +40,13 @@ include_directories (
 ADD_DEFINITIONS( -D_USRDLL -DGITFILE_EXPORTS )
 
 HPCC_ADD_LIBRARY( gitfile SHARED ${SRCS}  )
-install ( TARGETS gitfile DESTINATION filehooks CALC_DEPS)
+
+if(NOT PLUGIN)
+    install(
+        TARGETS gitfile
+        DESTINATION filehooks
+        CALC_DEPS)
+endif()
 
 target_link_libraries ( gitfile
     jlib
