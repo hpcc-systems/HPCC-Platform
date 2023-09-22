@@ -50,10 +50,14 @@
         ],
         "Params":[
             "PassTest.ecl:bla='A value'",
-            "httpcall_multiheader.ecl:TargetIP=40.88.243.151",
-            "httpcall_jsonpost.ecl:targetIP=52.226.177.210",
-            "httpcall_xmlpost.ecl:targetIP=52.226.177.210",
-            "soapcall_multihttpheader.ecl:TargetIP=40.88.243.151"
+            "httpcall_multiheader.ecl:TargetIP=eclwatch",
+            "httpcall_jsonpost.ecl:targetIP=roxie",
+            "httpcall_xmlpost.ecl:targetIP=roxie",
+            "soapcall_multihttpheader.ecl:TargetIP=eclwatch",
+            "soapcall.ecl:targetIP=roxie",
+            "roxiegzip.ecl:TargetIP=roxie",
+            "roxiewhitespace.ecl:TargetIP=roxie",
+            "roxiepipe.ecl:TargetIP=roxie"
         ],
         "engineParams":[
             "failOnLeaks",
