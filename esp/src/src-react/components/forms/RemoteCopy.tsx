@@ -4,6 +4,7 @@ import { Controller, useForm } from "react-hook-form";
 import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import * as FileSpray from "src/FileSpray";
+import * as WsTopology from "src/WsTopology";
 import * as FormStyles from "./landing-zone/styles";
 import { TargetGroupTextField } from "./Fields";
 import { MessageBox } from "../../layouts/MessageBox";
@@ -58,6 +59,9 @@ export const RemoteCopy: React.FunctionComponent<RemoteCopyProps> = ({
     const [showError, setShowError] = React.useState(false);
     const [errorMessage, setErrorMessage] = React.useState("");
 
+    const [selectedDestGroup, setSelectedDestGroup] = React.useState("");
+    const [replicateDisabled, setReplicateDisabled] = React.useState(true);
+
     const onSubmit = React.useCallback(() => {
         handleSubmit(
             (data, evt) => {
@@ -88,6 +92,24 @@ export const RemoteCopy: React.FunctionComponent<RemoteCopyProps> = ({
             }
         }
     );
+
+    React.useEffect(() => {
+        WsTopology.TpGroupQuery({
+            request: {}
+        }).then(response => {
+            const groups = response.TpGroupQueryResponse.TpGroups?.TpGroup ?? [];
+            for (const index in groups) {
+                if (groups[index].Name === selectedDestGroup) {
+                    if (groups[index].ReplicateOutputs === true) {
+                        setReplicateDisabled(false);
+                        break;
+                    }
+                    setReplicateDisabled(true);
+                    break;
+                }
+            }
+        }).catch(err => logger.error(err));
+    }, [selectedDestGroup]);
 
     return <MessageBox title={nlsHPCC.RemoteCopy} show={showForm} setShow={setShowForm}
         footer={<>
@@ -164,13 +186,14 @@ export const RemoteCopy: React.FunctionComponent<RemoteCopyProps> = ({
             <Controller
                 control={control} name="destGroup"
                 render={({
-                    field: { onChange, name: fieldName, value },
+                    field: { onChange, name: fieldName },
                     fieldState: { error }
                 }) => <TargetGroupTextField
                         key={fieldName}
                         label={nlsHPCC.Group}
                         required={true}
                         onChange={(evt, option) => {
+                            setSelectedDestGroup(option.key.toString());
                             onChange(option.key);
                         }}
                         errorMessage={error && error.message}
@@ -233,7 +256,7 @@ export const RemoteCopy: React.FunctionComponent<RemoteCopyProps> = ({
                             control={control} name="replicate"
                             render={({
                                 field: { onChange, name: fieldName, value }
-                            }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.Replicate} disabled={true} />}
+                            }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.Replicate} disabled={replicateDisabled} />}
                         /></td>
                         <td><Controller
                             control={control} name="superCopy"
