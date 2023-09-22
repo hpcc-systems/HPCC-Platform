@@ -300,12 +300,12 @@ public:
                     if (sub.isForeign())
                     {
                         tmp.append(FOREIGN_SCOPE "::");
-                        foreignEp.getUrlStr(tmp).append("::");
+                        foreignEp.getEndpointHostText(tmp).append("::");
                     }
                     else if (sub.isRemote())
                     {
                         tmp.append(REMOTE_SCOPE "::");
-                        foreignEp.getUrlStr(tmp).append("::");
+                        foreignEp.getEndpointHostText(tmp).append("::");
                     }
                     tmp.append(name);
                     lfnExpanded.append(tmp.str());
@@ -744,7 +744,7 @@ void CDfsLogicalFileName::normalizeName(const char *name, StringAttr &res, bool 
                         normalizeNodeName(s1, ns1-s1, foreignep, strict);
                         if (!foreignep.isNull())
                         {
-                            foreignep.getUrlStr(str.append("::"));
+                            foreignep.getEndpointHostText(str.append("::"));
                             s = ns1;
                             localpos = str.length()+2;
                         }
@@ -830,7 +830,7 @@ bool CDfsLogicalFileName::normalizeExternal(const char * name, StringAttr &res, 
             if (ep.isNull())
                 return false;
 
-            ep.getUrlStr(str.append("::"));
+            ep.getEndpointHostText(str.append("::"));
             if (ns1[2] == '>')
             {
                 str.append("::");
@@ -984,7 +984,7 @@ void CDfsLogicalFileName::setForeign(const SocketEndpoint &daliep,bool checkloca
     if (isExternal()||(checklocal&&isForeign()))
         return;
     StringBuffer str(FOREIGN_SCOPE "::");
-    daliep.getUrlStr(str);
+    daliep.getEndpointHostText(str);
     str.append("::");
     str.append(get(true));
     set(str);
@@ -1167,7 +1167,7 @@ void CDfsLogicalFileName::setExternal(const char *location,const char *path)
 void CDfsLogicalFileName::setExternal(const SocketEndpoint &dafsip,const char *path)
 {
     StringBuffer str;
-    dafsip.getUrlStr(str);
+    dafsip.getEndpointHostText(str);
     setExternal(str.str(),path);
 }
 
@@ -1198,7 +1198,7 @@ void CDfsLogicalFileName::setQuery(const char *location,const char *query)
 void CDfsLogicalFileName::setQuery(const SocketEndpoint &rfsep,const char *query)
 {
     StringBuffer str;
-    rfsep.getUrlStr(str);
+    rfsep.getEndpointHostText(str);
     setQuery(str.str(),query);
 }
 
@@ -1992,7 +1992,7 @@ void expandFileTree(IPropertyTree *file,bool expandnodes,const char *cluster)
                         done.replace(true,num);
                         INode *node = clusterinfo?clusterinfo->queryNode(num,max,0):&grp->queryNode(num%grp->ordinality());
                         if (node) {
-                            node->endpoint().getIpText(ips.clear());
+                            node->endpoint().getHostText(ips.clear());
                             iter->query().setProp("@node",ips.str());
                         }
                     }
@@ -3423,7 +3423,7 @@ public:
         {
             CLockMetaData &lD = *ldInfo.item(c);
             SocketEndpoint ep(lD.queryEp());
-            ep.getIpText(ipStr.clear());
+            ep.getHostText(ipStr.clear());
             if (!WildMatch(ipStr, ipPattern))
                 ldInfo.zap(&lD);
         }

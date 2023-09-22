@@ -395,7 +395,7 @@ int main(int argc, const char* argv[])
     // Use the "public" certificate issuer, unless it's visibility is "cluster" (meaning internal only)
     const char *visibility = getComponentConfigSP()->queryProp("service/@visibility");
     const char *certScope = strsame("cluster", visibility) ? "local" : "public";
-    IPropertyTree *info = queryTlsSecretInfo(certScope);
+    Owned<IPropertyTree> info = getIssuerTlsServerConfig(certScope);
     connectMethod = info ? SSLOnly : SSLNone;
     // NB: connectMethod will direct the CRemoteFileServer on accept to create a secure socket based on the same issuer certificates
 
@@ -780,7 +780,7 @@ int main(int argc, const char* argv[])
                 if (listenep.isNull())
                     eps.append(listenep.port);
                 else
-                    listenep.getUrlStr(eps);
+                    listenep.getEndpointHostText(eps);
 
                 if (connectMethod != SSLOnly)
                     PROGLOG("Opening " DAFS_SERVICE_DISPLAY_NAME " on %s", eps.str());
@@ -792,7 +792,7 @@ int main(int argc, const char* argv[])
                     if (sslep.isNull())
                         eps.append(sslep.port);
                     else
-                        sslep.getUrlStr(eps);
+                        sslep.getEndpointHostText(eps);
                     PROGLOG("Opening " DAFS_SERVICE_DISPLAY_NAME " on SECURE %s", eps.str());
                 }
 
@@ -849,7 +849,7 @@ int main(int argc, const char* argv[])
     if (listenep.isNull())
         eps.append(listenep.port);
     else
-        listenep.getUrlStr(eps);
+        listenep.getEndpointHostText(eps);
     if (connectMethod != SSLOnly)
         PROGLOG("Opening Dali File Server on %s", eps.str());
     if (connectMethod == SSLOnly || connectMethod == SSLFirst || connectMethod == UnsecureFirst)
@@ -860,7 +860,7 @@ int main(int argc, const char* argv[])
         if (sslep.isNull())
             eps.append(sslep.port);
         else
-            sslep.getUrlStr(eps);
+            sslep.getEndpointHostText(eps);
         PROGLOG("Opening Dali File Server on SECURE %s", eps.str());
     }
 

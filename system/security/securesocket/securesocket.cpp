@@ -62,7 +62,10 @@
 #include <openssl/x509.h>
 
 #include "jsmartsock.ipp"
+#include "cryptocommon.hpp"
 #include "securesocket.hpp"
+
+using namespace cryptohelper;
 
 static JSocketStatistics *SSTATS;
 
@@ -75,7 +78,6 @@ static JSocketStatistics *SSTATS;
         VStringBuffer msg("SecureSocket Exception Raised in: %s, line %d - %s", sanitizeSourceFile(__FILE__), __LINE__, errMsg); \
         throw createJSocketException(err, msg); \
     }
-
 
 static int pem_passwd_cb(char* buf, int size, int rwflag, void* password)
 {
@@ -627,10 +629,10 @@ bool CSecureSocket::verify_cert(X509* cert)
         SocketEndpoint ep;
         m_socket->getPeerEndpoint(ep);
         StringBuffer iptxt;
-        ep.getIpText(iptxt);
+        ep.getHostText(iptxt);
         SocketEndpoint cnep(cn.str());
         StringBuffer cniptxt;
-        cnep.getIpText(cniptxt);
+        cnep.getHostText(cniptxt);
         DBGLOG("peer ip=%s, certificate ip=%s", iptxt.str(), cniptxt.str());
         if(!(cniptxt.length() > 0 && stricmp(iptxt.str(), cniptxt.str()) == 0))
         {
@@ -1157,10 +1159,119 @@ const char* strtok__(const char* s, const char* d, StringBuffer& tok)
     return s;
 }
 
-class CSecureSocketContext : implements ISecureSocketContext, public CInterface
+static bool usePrivateKeyPEMBuffer(SSL_CTX *ctx, const char *privKeyBuf, int privKeyLen=-1)
+{
+    // single RSA key in buffer
+
+    OwnedEVPBio cbio(BIO_new_mem_buf(privKeyBuf, privKeyLen));
+    if (!cbio)
+        return false;
+
+    OwnedEVPRSA rsa(PEM_read_bio_RSAPrivateKey(cbio, NULL, 0, NULL));
+    if (!rsa)
+        return false;
+
+    if (!SSL_CTX_use_RSAPrivateKey(ctx, rsa))
+        return false;
+
+    return true;
+}
+
+static bool useCertificateChainPEMBuffer(SSL_CTX *ctx, const char *certBuf, int certLen=-1)
+{
+    // this routine based on code originally from:
+    // https://stackoverflow.com/questions/3810058/read-certificate-files-from-memory-instead-of-a-file-using-openssl
+
+    // can have multiple certs in buffer
+
+    OwnedEVPBio cbio(BIO_new_mem_buf(certBuf, certLen));
+    if (!cbio)
+        return false;
+
+    OwnedX509StkPtr infoStk(PEM_X509_INFO_read_bio(cbio, NULL, NULL, NULL));
+    if (!infoStk)
+        return false;
+
+    bool first = true;
+    X509_INFO *infoVal;
+    for (int i=0; i<sk_X509_INFO_num(infoStk); i++)
+    {
+        infoVal = sk_X509_INFO_value(infoStk, i);
+        if (infoVal->x509)
+        {
+            // First cert is server/main cert. Remaining, if any, are intermediate certs.
+            if (first)
+            {
+                first = false;
+
+                // Set server certificate. Note that this operation increments the
+                // reference count, which means that it is okay for cleanup to free it.
+                if (!SSL_CTX_use_certificate(ctx, infoVal->x509))
+                    return false;
+
+                if (ERR_peek_last_error() != 0)
+                    return false;
+
+                // Get ready to store intermediate certs, if any.
+                SSL_CTX_clear_chain_certs(ctx);
+            }
+            else
+            {
+                // Add intermediate cert to chain.
+                if (!SSL_CTX_add0_chain_cert(ctx, infoVal->x509))
+                    return false;
+
+                // Above function doesn't increment cert reference count. NULL the
+                // reference to it in order to prevent it from being freed during cleanup.
+                infoVal->x509 = NULL;
+            }
+        }
+    }
+
+    return true;
+}
+
+static bool setVerifyCertsPEMBuffer(SSL_CTX *ctx, const char *caCertBuf, int caCertLen=-1)
+{
+    // this routine based on code originally from:
+    // https://stackoverflow.com/questions/5052563/c-openssl-use-root-ca-from-buffer-rather-than-file-ssl-ctx-load-verify-locat
+
+    // can have multiple certs in buffer
+
+    OwnedEVPBio cbio(BIO_new_mem_buf(caCertBuf, caCertLen));
+    if (!cbio)
+        return false;
+
+    OwnedX509Store store(X509_STORE_new());
+    if (!store)
+        return false;
+
+    OwnedX509StkPtr infoStk(PEM_X509_INFO_read_bio(cbio, NULL, NULL, NULL));
+    if (!infoStk)
+        return false;
+
+    X509_INFO *infoVal;
+    for (int i = 0; i < sk_X509_INFO_num(infoStk); i++)
+    {
+        infoVal = sk_X509_INFO_value(infoStk, i);
+        if (infoVal->x509)
+        {
+            if (!X509_STORE_add_cert(store, infoVal->x509))
+                return false;
+
+            infoVal->x509 = NULL;
+        }
+    }
+
+    SSL_CTX_set_cert_store(ctx, store.getClear());
+
+    return true;
+}
+
+class CSecureSocketContext : public CInterfaceOf<ISecureSocketContext>
 {
 private:
-    SSL_CTX*    m_ctx = nullptr;
+    OwnedSSLCTX m_ctx;
 #if (OPENSSL_VERSION_NUMBER > 0x00909000L) 
     const SSL_METHOD* m_meth = nullptr;
 #else
@@ -1177,97 +1288,99 @@ private:
         SSL_CTX_set_session_id_context(m_ctx, (const unsigned char*)"hpccsystems", 11);
     }
 
-public:
-    IMPLEMENT_IINTERFACE;
-    CSecureSocketContext(SecureSocketType sockettype)
+    void initContext(SecureSocketType sockettype)
     {
-        m_verify = false;
-        m_address_match = false;
-
         if(sockettype == ClientSocket)
             m_meth = SSLv23_client_method();
         else
             m_meth = SSLv23_server_method();
 
-        m_ctx = SSL_CTX_new(m_meth);
+        m_ctx.setown(SSL_CTX_new(m_meth));
 
         if(!m_ctx)
-        {
-            throw MakeStringException(-1, "ctx can't be created");
-        }
+            throw makeStringException(-1, "ctx can't be created");
 
         if (sockettype == ServerSocket)
             setSessionIdContext();
+    }
+
+    void setCertificate(const char *certFileOrBuf)
+    {
+        if (isEmptyString(certFileOrBuf))
+            return;
+
+        if (containsEmbeddedKey(certFileOrBuf))
+        {
+            // can have multiple certs in buffer
+            if (!useCertificateChainPEMBuffer(m_ctx, certFileOrBuf))
+                throw makeEVPException(-1, "error loading certificate chain");
+        }
+        else if (SSL_CTX_use_certificate_chain_file(m_ctx, certFileOrBuf) <= 0)
+            throw makeEVPExceptionV(-1, "error loading certificate chain file %s", certFileOrBuf);
+    }
+
+    void setPrivateKey(const char *privKeyFileOrBuf)
+    {
+        if (isEmptyString(privKeyFileOrBuf))
+            return;
+
+        if (containsEmbeddedKey(privKeyFileOrBuf))
+        {
+            // single RSA key in buffer
+            if (!usePrivateKeyPEMBuffer(m_ctx, privKeyFileOrBuf))
+                throw makeEVPException(-1, "error loading private key");
+        }
+        else if (SSL_CTX_use_PrivateKey_file(m_ctx, privKeyFileOrBuf, SSL_FILETYPE_PEM) <= 0)
+            throw makeEVPExceptionV(-1, "error loading private key file %s", privKeyFileOrBuf);
+
+        if (!SSL_CTX_check_private_key(m_ctx))
+            throw makeStringException(-1, "Private key does not match the certificate public key");
+    }
+
+    void setVerifyCerts(const char *caCertsPathOrBuf)
+    {
+        if (isEmptyString(caCertsPathOrBuf))
+            return;
+
+        if (containsEmbeddedKey(caCertsPathOrBuf))
+        {
+            // can have multiple certs in buffer
+            if (!setVerifyCertsPEMBuffer(m_ctx, caCertsPathOrBuf))
+                throw makeStringException(-1, "Error loading CA certificates");
+        }
+        else if (SSL_CTX_load_verify_locations(m_ctx, caCertsPathOrBuf, NULL) != 1)
+            throw makeStringExceptionV(-1, "Error loading CA certificates from %s", caCertsPathOrBuf);
+    }
+
+public:
+    CSecureSocketContext(SecureSocketType sockettype)
+    {
+        initContext(sockettype);
 
         SSL_CTX_set_mode(m_ctx, SSL_CTX_get_mode(m_ctx) | SSL_MODE_AUTO_RETRY);
     }
 
-    CSecureSocketContext(const char* certfile, const char* privkeyfile, const char* passphrase, SecureSocketType sockettype)
+    CSecureSocketContext(const char* certFileOrBuf, const char* privKeyFileOrBuf, const char* passphrase, SecureSocketType sockettype)
     {
-        m_verify = false;
-        m_address_match = false;
+        initContext(sockettype);
 
-        if(sockettype == ClientSocket)
-            m_meth = SSLv23_client_method();
-        else
-            m_meth = SSLv23_server_method();
-
-        m_ctx = SSL_CTX_new(m_meth);
-
-        if(!m_ctx)
-        {
-            throw MakeStringException(-1, "ctx can't be created");
-        }
-
-        if (sockettype == ServerSocket)
-            setSessionIdContext();
+        // MCK TODO: should we set a default cipherList, as is done in other ctor (below) ?
 
         password.set(passphrase);
         SSL_CTX_set_default_passwd_cb_userdata(m_ctx, (void*)password.str());
         SSL_CTX_set_default_passwd_cb(m_ctx, pem_passwd_cb);
 
-        if (SSL_CTX_use_certificate_chain_file(m_ctx, certfile)<=0)
-        {
-            char errbuf[512];
-            ERR_error_string_n(ERR_get_error(), errbuf, 512);
-            throw MakeStringException(-1, "error loading certificate chain file %s - %s", certfile, errbuf);
-        }
+        setCertificate(certFileOrBuf);
+        setPrivateKey(privKeyFileOrBuf);
 
-        if(SSL_CTX_use_PrivateKey_file(m_ctx, privkeyfile, SSL_FILETYPE_PEM) <= 0)
-        {
-            char errbuf[512];
-            ERR_error_string_n(ERR_get_error(), errbuf, 512);
-            throw MakeStringException(-1, "error loading private key file %s - %s", privkeyfile, errbuf);
-        }
-
-        if(!SSL_CTX_check_private_key(m_ctx))
-        {
-            throw MakeStringException(-1, "Private key does not match the certificate public key");
-        }
-        
         SSL_CTX_set_mode(m_ctx, SSL_CTX_get_mode(m_ctx) | SSL_MODE_AUTO_RETRY);
     }
 
     CSecureSocketContext(const IPropertyTree* config, SecureSocketType sockettype)
     {
         assertex(config);
-        m_verify = false;
-        m_address_match = false;
 
-        if(sockettype == ClientSocket)
-            m_meth = SSLv23_client_method();
-        else
-            m_meth = SSLv23_server_method();
-
-        m_ctx = SSL_CTX_new(m_meth);
-
-        if(!m_ctx)
-        {
-            throw MakeStringException(-1, "ctx can't be created");
-        }
-
-        if (sockettype == ServerSocket)
-            setSessionIdContext();
+        initContext(sockettype);
 
         const char *cipherList = config->queryProp("cipherList");
         if (!cipherList || !*cipherList)
@@ -1275,7 +1388,7 @@ public:
         SSL_CTX_set_cipher_list(m_ctx, cipherList);
 
         const char* passphrase = config->queryProp("passphrase");
-        if(passphrase && *passphrase)
+        if (passphrase && *passphrase)
         {
             StringBuffer pwd;
             decrypt(pwd, passphrase);
@@ -1284,32 +1397,18 @@ public:
             SSL_CTX_set_default_passwd_cb(m_ctx, pem_passwd_cb);
         }
 
-        const char* certfile = config->queryProp("certificate");
-        if(certfile && *certfile)
-        {
-            if (SSL_CTX_use_certificate_chain_file(m_ctx, certfile) <= 0)
-            {
-                char errbuf[512];
-                ERR_error_string_n(ERR_get_error(), errbuf, 512);
-                throw MakeStringException(-1, "error loading certificate chain file %s - %s", certfile, errbuf);
-            }
-        }
+        const char *certFileOrBuf = config->queryProp("certificate_pem");
+        if (!certFileOrBuf)
+            certFileOrBuf = config->queryProp("certificate");
+        if (certFileOrBuf && *certFileOrBuf)
+            setCertificate(certFileOrBuf);
 
-        const char* privkeyfile = config->queryProp("privatekey");
-        if(privkeyfile && *privkeyfile)
-        {
-            if(SSL_CTX_use_PrivateKey_file(m_ctx, privkeyfile, SSL_FILETYPE_PEM) <= 0)
-            {
-                char errbuf[512];
-                ERR_error_string_n(ERR_get_error(), errbuf, 512);
-                throw MakeStringException(-1, "error loading private key file %s - %s", privkeyfile, errbuf);
-            }
-            if(!SSL_CTX_check_private_key(m_ctx))
-            {
-                throw MakeStringException(-1, "Private key does not match the certificate public key");
-            }
-        }
-    
+        const char *privKeyFileOrBuf = config->queryProp("privatekey_pem");
+        if (!privKeyFileOrBuf)
+            privKeyFileOrBuf = config->queryProp("privatekey");
+        if (privKeyFileOrBuf && *privKeyFileOrBuf)
+            setPrivateKey(privKeyFileOrBuf);
+
         SSL_CTX_set_mode(m_ctx, SSL_CTX_get_mode(m_ctx) | SSL_MODE_AUTO_RETRY);
 
         m_verify = config->getPropBool("verify/@enable");
@@ -1317,14 +1416,11 @@ public:
 
         if(m_verify)
         {
-            const char* capath = config->queryProp("verify/ca_certificates/@path");
-            if(capath && *capath)
-            {
-                if(SSL_CTX_load_verify_locations(m_ctx, capath, NULL) != 1)
-                {
-                    throw MakeStringException(-1, "Error loading CA certificates from %s", capath);
-                }
-            }
+            const char *caCertPathOrBuf = config->queryProp("verify/ca_certificates/pem");
+            if (!caCertPathOrBuf)
+                caCertPathOrBuf = config->queryProp("verify/ca_certificates/@path");
+            if (caCertPathOrBuf && *caCertPathOrBuf)
+                setVerifyCerts(caCertPathOrBuf);
 
             bool acceptSelfSigned = config->getPropBool("verify/@accept_selfsigned");
             SSL_CTX_set_verify(m_ctx, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT | SSL_VERIFY_CLIENT_ONCE, (acceptSelfSigned) ? verify_callback_allow_selfSigned : verify_callback_reject_selfSigned);
@@ -1368,11 +1464,6 @@ public:
                 free(onepeer);
             }
         }
-    }
-
-    ~CSecureSocketContext()
-    {
-        SSL_CTX_free(m_ctx);
     }
 
     ISecureSocket* createSecureSocket(ISocket* sock, int loglevel, const char *fqdn)
@@ -1873,9 +1964,9 @@ SECURESOCKET_API ISecureSocketContext* createSecureSocketContext(SecureSocketTyp
     return new securesocket::CSecureSocketContext(sockettype);
 }
 
-SECURESOCKET_API ISecureSocketContext* createSecureSocketContextEx(const char* certfile, const char* privkeyfile, const char* passphrase, SecureSocketType sockettype)
+SECURESOCKET_API ISecureSocketContext* createSecureSocketContextEx(const char* certFileOrBuf, const char* privKeyFileOrBuf, const char* passphrase, SecureSocketType sockettype)
 {
-    return new securesocket::CSecureSocketContext(certfile, privkeyfile, passphrase, sockettype);
+    return new securesocket::CSecureSocketContext(certFileOrBuf, privKeyFileOrBuf, passphrase, sockettype);
 }
 
 SECURESOCKET_API ISecureSocketContext* createSecureSocketContextEx2(const IPropertyTree* config, SecureSocketType sockettype)
@@ -1894,9 +1985,9 @@ SECURESOCKET_API ISecureSocketContext* createSecureSocketContextSSF(ISmartSocket
     return new securesocket::CSecureSocketContext(ssf->queryTlsConfig(), ClientSocket);
 }
 
-SECURESOCKET_API ISecureSocketContext* createSecureSocketContextSecret(const char *mtlsSecretName, SecureSocketType sockettype)
+SECURESOCKET_API ISecureSocketContext* createSecureSocketContextSecret(const char *issuer, SecureSocketType sockettype)
 {
-    IPropertyTree *info = queryTlsSecretInfo(mtlsSecretName);
+    Owned<IPropertyTree> info = getIssuerTlsServerConfig(issuer);
     //if the secret doesn't exist doesn't exist just go on without it. IF it is required the tls connection will fail. 
     //This is primarily for client side... server side would probably use the explict ptree config or explict cert param at least for now.
     if (info)
@@ -1905,16 +1996,16 @@ SECURESOCKET_API ISecureSocketContext* createSecureSocketContextSecret(const cha
         return createSecureSocketContext(sockettype);
 }
 
-SECURESOCKET_API ISecureSocketContext* createSecureSocketContextSecretSrv(const char *mtlsSecretName)
+SECURESOCKET_API ISecureSocketContext* createSecureSocketContextSecretSrv(const char *issuer, bool requireMtlsFlag)
 {
-    if (!queryMtls())
+    if (requireMtlsFlag && !queryMtls())
         throw makeStringException(-100, "TLS secure communication requested but not configured");
 
-    IPropertyTree *info = queryTlsSecretInfo(mtlsSecretName);
-    if (info)
-        return createSecureSocketContextEx2(info, ServerSocket);
-    else
+    Owned<IPropertyTree> info = getIssuerTlsServerConfig(issuer);
+    if (!info)
         throw makeStringException(-101, "TLS secure communication requested but not configured (2)");
+
+    return createSecureSocketContextEx2(info, ServerSocket);
 }
 
 SECURESOCKET_API ICertificate *createCertificate()
@@ -2081,7 +2172,7 @@ public:
         state = Snone;
         cancelling = false;
         secureContextClient.setown(createSecureSocketContextSecret("local", ClientSocket));
-        secureContextServer.setown(createSecureSocketContextSecretSrv("local"));
+        secureContextServer.setown(createSecureSocketContextSecretSrv("local", true));
 #ifdef _CONTAINERIZED
         tlsLogLevel = getComponentConfigSP()->getPropInt("logging/@detail", SSLogMin);
         if (tlsLogLevel >= ExtraneousMsgThreshold) // or InfoMsgThreshold ?

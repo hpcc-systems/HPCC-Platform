@@ -109,7 +109,7 @@ public:
         item->setProp("@wuid",qi->queryWUID());
         item->setProp("@owner",qi->queryOwner());
         StringBuffer eps;
-        qi->queryEndpoint().getUrlStr(eps);
+        getRemoteAccessibleHostText(eps, qi->queryEndpoint());
         item->setProp("@node",eps.str());
         StringBuffer dts;
         qi->queryEnqueuedTime().getString(dts);
@@ -1092,7 +1092,7 @@ public:
             ret = qd.root->addPropTree("Client");
             ret->setPropInt64("@session",sessionid);
             StringBuffer eps;
-            ret->setProp("@node",queryMyNode()->endpoint().getUrlStr(eps).str());
+            ret->setProp("@node",queryMyNode()->endpoint().getEndpointHostText(eps).str());
         }
         return ret;
     }

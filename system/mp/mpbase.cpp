@@ -542,7 +542,7 @@ public:
         if (!count)
             return text;
         if (count==1)
-            return nodes[0]->endpoint().getUrlStr(text);
+            return nodes[0]->endpoint().getEndpointHostText(text);
         // following is rather slow maybe could do with more direct method with pointers TBD
         SocketEndpointArray epa;
         for(unsigned i=0;i<count;i++) {

@@ -290,7 +290,7 @@ void CSlaveMessageHandler::threadmain()
                         Owned<IThorException> e = deserializeThorException(msg);
                         e->setSlave(slave);
                         StringBuffer tmpStr("Slave ");
-                        job.queryJobGroup().queryNode(slave).endpoint().getUrlStr(tmpStr);
+                        job.queryJobGroup().queryNode(slave).endpoint().getEndpointHostText(tmpStr);
                         GraphPrintLog(graph, e, "%s", tmpStr.append(": slave initialization error").str());
                         throw e.getClear();
                     }
@@ -2530,7 +2530,7 @@ void CMasterGraph::sendActivityInitData()
             if (!queryJobChannel().queryJobComm().send(msg, w+1, mpTag, LONGTIMEOUT))
             {
                 StringBuffer epStr;
-                throw MakeStringException(0, "Timeout sending to slave %s", job.querySlaveGroup().queryNode(w).endpoint().getUrlStr(epStr).str());
+                throw MakeStringException(0, "Timeout sending to slave %s", job.querySlaveGroup().queryNode(w).endpoint().getEndpointHostText(epStr).str());
             }
             ++sentTo;
         }
@@ -2557,7 +2557,7 @@ void CMasterGraph::sendActivityInitData()
                 if (!e.get())
                 {
                     StringBuffer tmpStr("Slave ");
-                    queryJob().queryJobGroup().queryNode(sender).endpoint().getUrlStr(tmpStr);
+                    queryJob().queryJobGroup().queryNode(sender).endpoint().getEndpointHostText(tmpStr);
                     GraphPrintLog(se, "%s", tmpStr.append(": slave initialization error").str());
                     e.setown(se.getClear());
                 }
@@ -2802,6 +2802,8 @@ void CMasterGraph::getFinalProgress(bool aborting)
         {
             unsigned slave;
             msg.read(slave);
+            if (RANK_NULL == slave) // worker no longer had graph registered
+                continue;
             handleSlaveDone(slave, msg);
             if (!queryOwner())
             {

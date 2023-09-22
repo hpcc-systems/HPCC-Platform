@@ -35,6 +35,8 @@
 #include "jsecrets.hpp"
 #include "rmtfile.hpp"
 
+#include <memory>
+
 #define INCLUDE_1_OF_1    // whether to use 1_of_1 for single part files
 
 #define SDS_CONNECT_TIMEOUT  (1000*60*60*2)     // better than infinite
@@ -867,7 +869,7 @@ public:
             SocketEndpoint ep = queryNode(0)->endpoint();
             StringBuffer tmp;
             if (!ep.isNull())
-                pt->setProp("@node",ep.getUrlStr(tmp).str());
+                pt->setProp("@node",ep.getEndpointHostText(tmp).str());
             if (overridename.isEmpty()&&!parent.partmask.isEmpty()) {
                 expandMask(tmp.clear(), parent.partmask, 0, 1);
                 pt->setProp("@name",tmp.str());
@@ -944,35 +946,38 @@ void getClusterInfo(IPropertyTree &pt, INamedGroupStore *resolver, unsigned flag
                 cgroup.setown(resolver->lookup(grp));
             // get nodes from parts if complete (and group 0)
             if (gi==0) { // don't assume lookup name correct!
-                SocketEndpoint *eps = (SocketEndpoint *)calloc(np?np:1,sizeof(SocketEndpoint));
                 MemoryBuffer mb;
                 Owned<IPropertyTreeIterator> piter;
                 if (pt.getPropBin("Parts",mb))
                     piter.setown(deserializePartAttrIterator(mb));
                 else
                     piter.setown(pt.getElements("Part"));
+
                 ForEach(*piter) {
                     IPropertyTree &cpt = piter->query();
                     unsigned num = cpt.getPropInt("@num");
-                    if (num>np) {
-                        eps = (SocketEndpoint *)checked_realloc(eps,num*sizeof(SocketEndpoint),np*sizeof(SocketEndpoint),-21);
-                        memset(eps+np,0,(num-np)*sizeof(SocketEndpoint));
+                    if (num>np)
                         np = num;
-                    }
+                }
+
+                std::unique_ptr<SocketEndpoint[]> eps(new SocketEndpoint[np?np:1]);
+                ForEach(*piter) {
+                    IPropertyTree &cpt = piter->query();
+                    unsigned num = cpt.getPropInt("@num");
                     const char *node = cpt.queryProp("@node");
                     if (node&&*node)
-                        eps[num-1].set(node);
+                        eps.get()[num-1].set(node);
                 }
                 unsigned i=0;
                 for (i=0;i<np;i++)
                     if (eps[i].isNull())
                         break;
                 if (i==np) {
-                    Owned<IGroup> ngrp = createIGroup(np,eps);
+                    Owned<IGroup> ngrp = createIGroup(np,eps.get());
                     if (!cgroup.get()||(ngrp->compare(cgroup)!=GRbasesubset))
                         cgroup.setown(ngrp.getClear());
                 }
-                free(eps);
+
             }
             ClusterPartDiskMapSpec mspec;
             IClusterInfo *cluster = createClusterInfo(grp,cgroup,mspec,resolver);
@@ -3034,10 +3039,10 @@ void removePartFiles(IFileDescriptor *desc,IMultiException *mexcept)
 //                          PROGLOG("Removed '%s'",partfile->queryFilename());
                         unsigned t = msTick()-start;
                         if (t>60*1000)
-                            OWARNLOG("Removing %s from %s took %ds", partfile->queryFilename(), rfn.queryEndpoint().getUrlStr(eps).str(), t/1000);
+                            OWARNLOG("Removing %s from %s took %ds", partfile->queryFilename(), rfn.queryEndpoint().getEndpointHostText(eps).str(), t/1000);
                     }
 //                      else
-//                          OWARNLOG("Failed to remove file part %s from %s", partfile->queryFilename(),rfn.queryEndpoint().getUrlStr(eps).str());
+//                          OWARNLOG("Failed to remove file part %s from %s", partfile->queryFilename(),rfn.queryEndpoint().getEndpointHostText(eps).str());
                 }
                 catch (IException *e)
                 {
@@ -3046,7 +3051,7 @@ void removePartFiles(IFileDescriptor *desc,IMultiException *mexcept)
                     else {
                         StringBuffer s("Failed to remove file part ");
                         s.append(partfile->queryFilename()).append(" from ");
-                        rfn.queryEndpoint().getUrlStr(s);
+                        rfn.queryEndpoint().getEndpointHostText(s);
                         EXCLOG(e, s.str());
                         e->Release();
                     }
@@ -3318,7 +3323,7 @@ void extractFilePartInfo(IPropertyTree &info, IFileDescriptor &file)
 
             IPropertyTree *copyTree = partTree->addPropTree("Copy", createPTree());
             copyTree->setProp("@filePath", rfn.getLocalPath(path.clear()));
-            copyTree->setProp("@host", rfn.queryEndpoint().getUrlStr(host.clear()));
+            copyTree->setProp("@host", rfn.queryEndpoint().getEndpointHostText(host.clear()));
         }
     }
 }

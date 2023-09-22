@@ -44,7 +44,7 @@ class CGraphProgressHandlerBase : public CInterfaceOf<ISlaveWatchdog>, implement
         hb.sender = self;
         hb.tick++;
         size32_t progressSizePos = (byte *)&hb.progressSize - (byte *)&hb;
-        sendMb.append(sizeof(HeartBeatPacketHeader), &hb);
+        hb.serialize(sendMb);
 
         hb.progressSize = gatherData(progressMb);
         sendMb.writeDirect(progressSizePos, sizeof(hb.progressSize), &hb.progressSize);
@@ -194,7 +194,7 @@ public:
     CGraphProgressUDPHandler()
     {
         StringBuffer ipStr;
-        queryMasterNode().endpoint().getIpText(ipStr);
+        queryMasterNode().endpoint().getHostText(ipStr);
         sock.setown(ISocket::udp_connect(getFixedPort(getMasterPortBase(), TPORT_watchdog),ipStr.str()));
         start();
     }

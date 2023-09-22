@@ -217,14 +217,14 @@ private:
             {
                 StringBuffer s, s2;
                 DBGLOG("UdpSender[%s]: sending flowType::%s msg %" SEQF "u flowSeq %" SEQF "u size=%u to node=%s %s",
-                       msg.sourceNode.getTraceText(s2).str(), flowType::name(msg.cmd), msg.sendSeq, msg.flowSeq, msg.packets, ip.getIpText(s).str(), sendWithData ? "<data>" : "<flow>");
+                       msg.sourceNode.getTraceText(s2).str(), flowType::name(msg.cmd), msg.sendSeq, msg.flowSeq, msg.packets, ip.getHostText(s).str(), sendWithData ? "<data>" : "<flow>");
             }
 #ifdef TEST_DROPPED_PACKETS
             flowPacketsSent[msg.cmd]++;
             if (udpDropFlowPackets[msg.cmd] && flowPacketsSent[msg.cmd]%udpDropFlowPackets[msg.cmd] == 0)
             {
                 StringBuffer s, s2;
-                DBGLOG("UdpSender[%s]: deliberately dropping flowType::%s msg %" SEQF "u flowSeq %" SEQF "u to node=%s", msg.sourceNode.getTraceText(s2).str(), flowType::name(msg.cmd), msg.sendSeq, msg.flowSeq, ip.getIpText(s).str());
+                DBGLOG("UdpSender[%s]: deliberately dropping flowType::%s msg %" SEQF "u flowSeq %" SEQF "u to node=%s", msg.sourceNode.getTraceText(s2).str(), flowType::name(msg.cmd), msg.sendSeq, msg.flowSeq, ip.getHostText(s).str());
             }
             else
 #endif
@@ -385,7 +385,7 @@ public:
                 int timeExpired = msTick()-requestExpiryTime;
                 StringBuffer s;
                 EXCLOG(MCoperatorError,"ERROR: UdpSender: timed out %i times (flow=%u, max=%i, timeout=%u, expiryTime=%u[%u] ack(%u)) waiting ok_to_send msg from node=%s",
-                    timeouts.load(), activeFlowSequence.load(), maxRequestDeadTimeouts, udpFlowAckTimeout, requestExpiryTime.load(), timeExpired, (int)hadAcknowledgement, ip.getIpText(s).str());
+                    timeouts.load(), activeFlowSequence.load(), maxRequestDeadTimeouts, udpFlowAckTimeout, requestExpiryTime.load(), timeExpired, (int)hadAcknowledgement, ip.getHostText(s).str());
             }
         }
 
@@ -455,7 +455,7 @@ public:
         if (permit.destNode.getIpAddress().ipcompare(ip) != 0)
         {
             StringBuffer p, s;
-            DBGLOG("UdpFlow: permit ip %s does not match receiver table ip %s", permit.destNode.getTraceText(p).str(), ip.getIpText(s).str());
+            DBGLOG("UdpFlow: permit ip %s does not match receiver table ip %s", permit.destNode.getTraceText(p).str(), ip.getHostText(s).str());
             printStackReport();
         }
 #endif
@@ -652,7 +652,7 @@ public:
         if (udpTraceLevel > 3)
         {
             StringBuffer s;
-            DBGLOG("UdpSender: abort sending queued data to node=%s", ip.getIpText(s).str());
+            DBGLOG("UdpSender: abort sending queued data to node=%s", ip.getHostText(s).str());
         }
         timeouts = 0;
         requestExpiryTime = 0;
@@ -753,13 +753,13 @@ public:
             catch(IException *e) 
             {
                 StringBuffer error, ipstr;
-                DBGLOG("UdpSender: udp_connect failed %s %s", ip.getIpText(ipstr).str(), e->errorMessage(error).str());
+                DBGLOG("UdpSender: udp_connect failed %s %s", ip.getHostText(ipstr).str(), e->errorMessage(error).str());
                 throw;
             }
             catch(...) 
             {
                 StringBuffer ipstr;
-                DBGLOG("UdpSender: udp_connect failed %s %s", ip.getIpText(ipstr).str(), "Unknown error");
+                DBGLOG("UdpSender: udp_connect failed %s %s", ip.getHostText(ipstr).str(), "Unknown error");
                 throw;
             }
             output_queue = new queue_t[numQueues];
@@ -773,7 +773,7 @@ public:
             if (udpTraceLevel > 0)
             {
                 StringBuffer ipStr, myIpStr;
-                DBGLOG("UdpSender[%s]: added entry for ip=%s to receivers table - send_flow_port=%d", _myIP.getIpText(myIpStr).str(), ip.getIpText(ipStr).str(), _sendFlowPort);
+                DBGLOG("UdpSender[%s]: added entry for ip=%s to receivers table - send_flow_port=%d", _myIP.getHostText(myIpStr).str(), ip.getHostText(ipStr).str(), _sendFlowPort);
             }
         }
         if (udpResendLostPackets)
@@ -860,7 +860,7 @@ class CSendManager : implements ISendManager, public CInterface
                     if (&receiverInfo != &dest)
                     {
                         StringBuffer s;
-                        DBGLOG("UdpSender[%s]: table entry %s does not find itself", parent.myId, dest.ip.getIpText(s).str());
+                        DBGLOG("UdpSender[%s]: table entry %s does not find itself", parent.myId, dest.ip.getHostText(s).str());
                         printStackReport();
 
                     }
@@ -881,7 +881,7 @@ class CSendManager : implements ISendManager, public CInterface
                         else if (udpTraceFlow && (timeToGo < 0))
                         {
                             StringBuffer s;
-                            DBGLOG("UdpSender[%s]: entry %s timeout waiting to send with active permit", parent.myId, dest.ip.getIpText(s).str());
+                            DBGLOG("UdpSender[%s]: entry %s timeout waiting to send with active permit", parent.myId, dest.ip.getHostText(s).str());
                         }
                     }
                 }
@@ -1161,7 +1161,7 @@ public:
           receiversTable([_numQueues, q_size, server_flow_port, data_port, _encrypted, this](const ServerIdentifier ip) { return new UdpReceiverEntry(ip.getIpAddress(), myIP, _numQueues, q_size, server_flow_port, data_port, _encrypted);}),
           encrypted(_encrypted)
     {
-        myId = myIP.getIpText(myIdStr).str();
+        myId = myIP.getHostText(myIdStr).str();
 #ifndef _WIN32
         if (udpAdjustThreadPriorities)
             setpriority(PRIO_PROCESS, 0, -3);

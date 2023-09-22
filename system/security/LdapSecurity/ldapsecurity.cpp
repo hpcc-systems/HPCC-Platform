@@ -1023,7 +1023,7 @@ SecAccessFlags CLdapSecManager::authorizeFileScope(ISecUser & user, const char *
         StringBuffer userName;
         for (const char * p = &filescope[m_hpccInternalScope.length()]; *p && *p != ':'; p++)//extract scope username
             userName.append(*p);
-        if(strieq(userName.str(), user.getName()))
+        if(strieq(userName.str(), user.getName()) || isSuperUser(&user))
             return SecAccess_Full;
         PROGLOG("Access denied to scope %s for user %s", filescope, user.getName());
         return SecAccess_None;

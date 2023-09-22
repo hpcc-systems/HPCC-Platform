@@ -75,7 +75,7 @@ public:
     {
         IpAddress serverIp;
         serverIp.setIP4(netAddress);
-        return serverIp.getIpText(s);
+        return serverIp.getHostText(s);
     }
     bool isMe() const;
 };

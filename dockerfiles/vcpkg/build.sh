@@ -11,6 +11,7 @@ GITHUB_REF=$(git rev-parse --short=8 HEAD)
 cd vcpkg
 VCPKG_REF=$(git rev-parse --short=8 HEAD)
 cd ..
+GITHUB_BRANCH=$(git log -50 --pretty=format:"%D" | tr ',' '\n' | grep 'upstream/' | awk 'NR==1 {sub("upstream/", ""); print}')
 DOCKER_USERNAME="${DOCKER_USERNAME:-hpccbuilds}"
 DOCKER_PASSWORD="${DOCKER_PASSWORD:-none}"
 
@@ -19,34 +20,42 @@ echo "GITHUB_ACTOR: $GITHUB_ACTOR"
 echo "GITHUB_TOKEN: $GITHUB_TOKEN"
 echo "GITHUB_REF: $GITHUB_REF"
 echo "VCPKG_REF: $VCPKG_REF"
+echo "GITHUB_BRANCH: $GITHUB_BRANCH"
 echo "DOCKER_USERNAME: $DOCKER_USERNAME"
 echo "DOCKER_PASSWORD: $DOCKER_PASSWORD"
 
-# docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+
+CMAKE_OPTIONS="-G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DVCPKG_FILES_DIR=/hpcc-dev -DCPACK_THREADS=0 -DUSE_OPTIONAL=OFF -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON"
 
 function doBuild() {
     docker build --progress plain --pull --rm -f "$SCRIPT_DIR/$1.dockerfile" \
-        -t build-$1:$GITHUB_REF \
-        -t build-$1:latest \
         --build-arg DOCKER_NAMESPACE=$DOCKER_USERNAME \
         --build-arg VCPKG_REF=$VCPKG_REF \
-        "$SCRIPT_DIR/." 
+        -t hpccsystems/platform-build-$1:$VCPKG_REF \
+        -t hpccsystems/platform-build-$1:$GITHUB_BRANCH \
+        --cache-from hpccsystems/platform-build-$1:$VCPKG_REF \
+        --cache-from hpccsystems/platform-build-$1:$GITHUB_BRANCH \
+        "$SCRIPT_DIR/."
 
-    docker run --rm --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached build-$1:$GITHUB_REF \
+    docker push hpccsystems/platform-build-$1:$VCPKG_REF &
+    docker push hpccsystems/platform-build-$1:$GITHUB_BRANCH &
+
+    docker run --rm --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached hpccsystems/platform-build-$1:$VCPKG_REF \
         "cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/HPCC-Platform/build-$1 ${CMAKE_OPTIONS} && \
-        cmake --build /hpcc-dev/HPCC-Platform/build-$1 --parallel $(nproc)"
+        cmake --build /hpcc-dev/HPCC-Platform/build-$1 --target package --parallel $(nproc)"
 
 # docker run -it --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached build-ubuntu-22.04:latest bash
 }
 
-CMAKE_OPTIONS="-G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DVCPKG_FILES_DIR=/hpcc-dev -DCPACK_THREADS=0 -DUSE_OPTIONAL=OFF -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON"
-
-doBuild centos-7
-doBuild centos-8
-doBuild amazonlinux
-doBuild ubuntu-23.04 
-doBuild ubuntu-22.04 
+doBuild ubuntu-23.04
 doBuild ubuntu-20.04
+doBuild amazonlinux
+doBuild ubuntu-22.04
+doBuild centos-8
+doBuild centos-7
+
+wait
 
 # docker build --progress plain --pull --rm -f "$SCRIPT_DIR/core.dockerfile" \
 #     -t $DOCKER_USERNAME/core:$GITHUB_REF \

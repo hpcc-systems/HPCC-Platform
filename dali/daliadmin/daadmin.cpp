@@ -628,7 +628,7 @@ static void writeGroup(IGroup *group, const char *name, const char *outputFilena
     StringBuffer eps;
     for (unsigned i=0;i<group->ordinality();i++)
     {
-        group->queryNode(i).endpoint().getUrlStr(eps.clear());
+        group->queryNode(i).endpoint().getEndpointHostText(eps.clear());
         if (io)
         {
             eps.newline();
@@ -1014,7 +1014,7 @@ int dfsverify(const char *name,CDateTime *cutoff, IUserDescriptor *user)
                 SocketEndpoint ep(part->queryNode()->endpoint());
                 if (!dafilesrvips.verifyDaliFileServer(ep)) {
                     StringBuffer ips;
-                    ep.getIpText(ips);
+                    ep.getHostText(ips);
                     UERRLOG("VERIFY: file %s, cannot run DAFILESRV on %s",name,ips.str());
                     return 4;
                 }
@@ -1059,13 +1059,13 @@ int dfsverify(const char *name,CDateTime *cutoff, IUserDescriptor *user)
             try
             {
                 partfile.setown(createIFile(rfn));
-                // OUTLOG("VERIFY: part %s on %s",partfile->queryFilename(),rfn.queryEndpoint().getUrlStr(eps).str());
+                // OUTLOG("VERIFY: part %s on %s",partfile->queryFilename(),rfn.queryEndpoint().getEndpointHostText(eps).str());
                 if (partfile) {
                     CriticalUnblock unblock(crit);
                     item.crc = partfile->getCRC();
                     partfile->getTime(NULL,&item.dt,NULL);
                     if ((item.crc==0)&&!partfile->exists()) {
-                        UERRLOG("VERIFY: does not exist part %s on %s",partfile->queryFilename(),rfn.queryEndpoint().getUrlStr(eps).str());
+                        UERRLOG("VERIFY: does not exist part %s on %s",partfile->queryFilename(),rfn.queryEndpoint().getEndpointHostText(eps).str());
                         ok = false;
                     }
                 }
@@ -1076,7 +1076,7 @@ int dfsverify(const char *name,CDateTime *cutoff, IUserDescriptor *user)
             catch (IException *e)
             {
                 StringBuffer s;
-                s.appendf("VERIFY: part %s on %s",partfile->queryFilename(),rfn.queryEndpoint().getUrlStr(eps).str());
+                s.appendf("VERIFY: part %s on %s",partfile->queryFilename(),rfn.queryEndpoint().getEndpointHostText(eps).str());
                 EXCLOG(e, s.str());
                 e->Release();
                 ok = false;
@@ -2192,7 +2192,7 @@ void daliping(const char *dalis,unsigned connecttime,unsigned n)
     StringBuffer qname("TESTINGQ_");
     SocketEndpoint ep;
     ep.setLocalHost(0);
-    ep.getUrlStr(qname);
+    ep.getEndpointHostText(qname);
     Owned<INamedQueueConnection> qconn;
     qconn.setown(createNamedQueueConnection(0));
     Owned<IQueueChannel> channel;
@@ -3058,9 +3058,9 @@ void migrateFiles(const char *srcGroup, const char *tgtGroup, const char *filema
                                     Owned<IFileIOStream> iFileIOStream = getFileIOStream(relPos+1);
 
                                     StringBuffer outputLine;
-                                    srcEp.getIpText(outputLine);
+                                    srcEp.getHostText(outputLine);
                                     outputLine.append(",");
-                                    tgtEp.getIpText(outputLine);
+                                    tgtEp.getHostText(outputLine);
                                     outputLine.append(",");
 
                                     IPartDescriptor *part = fileDesc->queryPart(partNum);

@@ -378,7 +378,7 @@ public:
         StringBuffer sanitizedText;
         StringAttr queryName;
         StringBuffer peerStr;
-        peer.getIpText(peerStr);
+        peer.getHostText(peerStr);
         const char *uid = "-";
         StringBuffer ctxstr;
         try
@@ -1917,7 +1917,7 @@ void EclAgent::doProcess()
                 w->setDebugAgentListenerPort(debugContext->queryPort());
 
                 StringBuffer sb;
-                queryHostIP().getIpText(sb);
+                queryHostIP().getHostText(sb);
                 w->setDebugAgentListenerIP(sb);
             }
             if(resetWorkflow)
@@ -3128,8 +3128,11 @@ char * EclAgent::getClusterName()
 char * EclAgent::getGroupName()
 {
 #ifdef _CONTAINERIZED
-    // in a containerized setup, the group is moving..
-    return strdup("unknown");
+    // In containerized there is no associated cluster group.
+    // Return an empty result instead, which if used for destinationGroup
+    // via Thorlib.group() as part of a fileservices call, will be interpreted
+    // as targeting the default data plane
+    return strdup("");
 #else
     StringBuffer groupName;
     if (!isStandAloneExe)
@@ -3338,7 +3341,7 @@ char * EclAgent::getDaliServers()
             first = false;
         else
             dali.append(',');
-        coven->query().endpoint().getUrlStr(dali);
+        coven->query().endpoint().getEndpointHostText(dali);
     }
     return dali.detach();
 }

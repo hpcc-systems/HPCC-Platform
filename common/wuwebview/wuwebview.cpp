@@ -80,6 +80,8 @@ public:
         resultChildTags.setValue("Warning", true);
         resultChildTags.setValue("Alert", true);
         resultChildTags.setValue("Info", true);
+        resultChildTags.setValue("StatsWorkUnit", true);
+        resultChildTags.setValue("SummaryStats", true);
     }
 
     void appendResults(IConstWorkUnit *wu, const char *username, const char *pw)

@@ -7,7 +7,7 @@ import nlsHPCC from "src/nlsHPCC";
 import { createCopyDownloadSelection } from "../Common";
 import { updatePage, updateSort } from "../../util/history";
 import { useDeepCallback, useDeepEffect, useDeepMemo } from "../../hooks/deepHooks";
-import { useUserStore } from "../../hooks/store";
+import { useUserStore, useNonReactiveEphemeralPageStore } from "../../hooks/store";
 import { useUserTheme } from "../../hooks/theme";
 
 /*  ---  Debugging dependency changes  ---
@@ -65,24 +65,30 @@ function updateColumnSorted(columns: IColumn[], attr: any, desc: boolean) {
     }
 }
 
-function columnsAdapter(columns: FluentColumns): IColumn[] {
+function columnsAdapter(columns: FluentColumns, columnWidths: Map<string, any>): IColumn[] {
     const retVal: IColumn[] = [];
     for (const key in columns) {
         const column = columns[key];
+        const width = columnWidths.get(key) ?? column.width;
         if (column?.selectorType === undefined && column?.hidden !== true) {
             retVal.push({
                 key,
                 name: column.label ?? key,
                 fieldName: column.field ?? key,
-                minWidth: column.width ?? 70,
-                maxWidth: column.width,
+                minWidth: width ?? 70,
+                maxWidth: width,
                 isResizable: true,
                 isSorted: false,
                 isSortedDescending: false,
                 iconName: column.headerIcon,
                 isIconOnly: !!column.headerIcon,
                 data: column,
-                onRender: tooltipItemRenderer
+                styles: { root: { width } },
+                onRender: (item: any, index: number, col: IColumn) => {
+                    col.minWidth = column.width ?? 70;
+                    col.maxWidth = column.width;
+                    return tooltipItemRenderer(item, index, col);
+                }
             } as IColumn);
         }
     }
@@ -187,6 +193,7 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
     const memoizedColumns = useDeepMemo(() => columns, [], [columns]);
     const [sorted, setSorted] = React.useState<QuerySortItem>(sort);
     const [items, setItems] = React.useState<any[]>([]);
+    const [columnWidths] = useNonReactiveEphemeralPageStore("columnWidths");
 
     const selectionHandler = useConst(new Selection({
         onSelectionChanged: () => {
@@ -220,8 +227,8 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
     }, [], [sort]);
 
     const fluentColumns: IColumn[] = React.useMemo(() => {
-        return columnsAdapter(memoizedColumns);
-    }, [memoizedColumns]);
+        return columnsAdapter(memoizedColumns, columnWidths);
+    }, [columnWidths, memoizedColumns]);
 
     React.useEffect(() => {
         updateColumnSorted(fluentColumns, sorted?.attribute as string, sorted?.descending);
@@ -258,6 +265,10 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
         });
     }, []);
 
+    const columnResize = React.useCallback((column: IColumn, newWidth: number, columnIndex?: number) => {
+        columnWidths.set(column.key, newWidth);
+    }, [columnWidths]);
+
     return <DetailsList
         compact={true}
         items={items}
@@ -269,6 +280,7 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
         selectionPreservedOnEmptyClick={true}
         onColumnHeaderClick={onColumnClick}
         onRenderDetailsHeader={renderDetailsHeader}
+        onColumnResize={columnResize}
         styles={gridStyles(height)}
     />;
 };

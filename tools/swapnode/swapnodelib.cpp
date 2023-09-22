@@ -281,11 +281,11 @@ public:
             }
             SocketEndpoint ep(smtpserver.str(),25);
             StringBuffer sender("swapnode@");
-            queryHostIP().getIpText(sender);
+            queryHostIP().getHostText(sender);
             // add tbd
             StringBuffer ips;
             StringArray warnings;
-            sendEmail(emailtarget.str(),subject,out.str(),ep.getIpText(ips).str(),ep.port,sender.str(),&warnings);
+            sendEmail(emailtarget.str(),subject,out.str(),ep.getHostText(ips).str(),ep.port,sender.str(),&warnings);
             ForEachItemIn(i,warnings)
                 WARNLOG("SWAPNODE: %s",warnings.item(i));
         }
@@ -430,7 +430,7 @@ public:
                         SocketEndpoint ep(failures.item(i));
                         ep.port = 0;
                         StringBuffer ips;
-                        ep.getIpText(ips);
+                        ep.getHostText(ips);
                         int r = (int)grp->rank(ep);
                         if (r<0) {  // shouldn't occur
                             ERRLOG("SWAPNODE node %s not found in group %s",ips.str(),groupName.get());
@@ -601,7 +601,7 @@ class CAutoSwapNode : public CSwapNode
             SocketEndpoint ep(badepa.item(i1));
             ep.port = 0;    // should be no ports in group
             StringBuffer ips;
-            ep.getIpText(ips);
+            ep.getHostText(ips);
             xpath.clear().appendf("BadNode[@netAddress=\"%s\"]",ips.str());
             IPropertyTree *bnt = info->queryPropTree(xpath.str());
             if (!bnt) {
@@ -622,7 +622,7 @@ class CAutoSwapNode : public CSwapNode
                 if ((r==(r1+1)%grp->ordinality())||
                     (r1==(r+1)%grp->ordinality())) {
                     StringBuffer ips1;
-                    ep1.getIpText(ips1);
+                    ep1.getHostText(ips1);
                     ERRLOG("SWAPNODE adjacent nodes %d (%s) and %d (%s) are bad!",r+1,ips.str(),r1+1,ips1.str());
                     abort = true;
                 }
@@ -660,7 +660,7 @@ class CAutoSwapNode : public CSwapNode
                 else if ((badr==(r1+1)%grp->ordinality())||
                     (r1==(badr+1)%grp->ordinality())) {
                     StringBuffer bs;
-                    ERRLOG("SWAPNODE adjacent node to bad node %d (%s), %d (%s) was swapped on %s (too recent) !",badr+1,badep.getIpText(bs).str(),r1+1,ips,dt1s);
+                    ERRLOG("SWAPNODE adjacent node to bad node %d (%s), %d (%s) was swapped on %s (too recent) !",badr+1,badep.getHostText(bs).str(),r1+1,ips,dt1s);
                     abort = true;
                 }
             }
@@ -682,10 +682,10 @@ class CAutoSwapNode : public CSwapNode
                 spareGroup->getSocketEndpoints(spareepa);
                 ForEachItemIn(i3,badepa) {
                     StringBuffer from;
-                    badepa.item(i3).getIpText(from);
+                    badepa.item(i3).getHostText(from);
                     if (i3<spareepa.ordinality()) {
                         StringBuffer to;
-                        spareepa.item(i3).getIpText(to);
+                        spareepa.item(i3).getHostText(to);
                         PROGLOG("SWAPNODE %s swap node %d from %s to %s",intent,badrank.item(i3)+1,from.str(),to.str());
                     }
                     else {
@@ -707,10 +707,10 @@ class CAutoSwapNode : public CSwapNode
         ensureThorIsDown(clusterName,true,true);
         ForEachItemIn(i4,badepa) {
             StringBuffer from;
-            badepa.item(i4).getIpText(from);
+            badepa.item(i4).getHostText(from);
             const SocketEndpoint &spareEp = spareepa.item(i4);
             StringBuffer to;
-            spareEp.getIpText(to);
+            spareEp.getHostText(to);
             rank_t r = spareGroup->rank(spareEp);
             dbgassertex(RANK_NULL != r);
             spareGroup.setown(spareGroup->remove(r));

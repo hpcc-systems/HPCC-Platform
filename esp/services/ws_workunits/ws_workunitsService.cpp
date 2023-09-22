@@ -128,7 +128,7 @@ IPropertyTree *getArchivedWorkUnitProperties(const char *wuid, bool dfuWU)
     if (!cmd->send(node, 1*60*1000))
         throw MakeStringException(ECLWATCH_CANNOT_CONNECT_ARCHIVE_SERVER,
             "Sasha (%s) took too long to respond from: Get workUnit properties for %s.",
-            ep.getUrlStr(tmp).str(), wuid);
+            ep.getEndpointHostText(tmp).str(), wuid);
 
     if ((cmd->numIds() < 1) || (cmd->numResults() < 1))
         return nullptr;
@@ -400,7 +400,7 @@ void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *s
     daliServers.set(cfg->queryProp("Software/EspProcess/@daliServers"));
     const char *computer = cfg->queryProp("Software/EspProcess/@computer");
     if (daliServers.isEmpty() || !computer || streq(computer, "localhost")) //otherwise can't assume environment "." netAddresses are the same as my address
-        queryHostIP().getIpText(envLocalAddress);
+        queryHostIP().getHostText(envLocalAddress);
     else
     {
         //a bit weird, but other netAddresses in the environment are not the same localhost as this server
@@ -1478,7 +1478,7 @@ bool getWsWuInfoFromSasha(IEspContext &context, SocketEndpoint &ep, const char* 
         StringBuffer url;
         throw MakeStringException(ECLWATCH_CANNOT_CONNECT_ARCHIVE_SERVER,
             "Sasha (%s) took too long to respond from: Get information for %s.",
-            ep.getUrlStr(url).str(), wuid);
+            ep.getEndpointHostText(url).str(), wuid);
     }
 
     if (cmd->numIds()==0)
@@ -2482,7 +2482,7 @@ public:
             StringBuffer url;
             throw MakeStringException(ECLWATCH_CANNOT_CONNECT_ARCHIVE_SERVER,
                 "Sasha (%s) took too long to respond from: Get archived workUnits.",
-                ep.getUrlStr(url).str());
+                ep.getEndpointHostText(url).str());
         }
 
         numberOfWUsReturned = cmd->numIds();
@@ -4914,7 +4914,7 @@ bool CWsWorkunitsEx::onWUCreateZAPInfo(IEspContext &context, IEspWUCreateZAPInfo
             if (zapInfoReq.esp.isEmpty())
             {
                 IpAddress ipaddr = queryHostIP();
-                ipaddr.getIpText(zapInfoReq.esp);
+                ipaddr.getHostText(zapInfoReq.esp);
             }
             zapInfoReq.thor = req.getThorIPAddress();
         }
@@ -4982,7 +4982,7 @@ bool CWsWorkunitsEx::onWUGetZAPInfo(IEspContext &context, IEspWUGetZAPInfoReques
         else
         {
             IpAddress ipaddr = queryHostIP();
-            ipaddr.getIpText(EspIP);
+            ipaddr.getHostText(EspIP);
             resp.setESPIPAddress(EspIP.str());
         }
         if ((version >= 1.96) && !queryRemoteLogAccessor())

@@ -414,7 +414,7 @@ public:
         else
         {
             StringBuffer s;
-            attrs.setProp("@cloneFrom", srcdali->endpoint().getUrlStr(s).str());
+            attrs.setProp("@cloneFrom", srcdali->endpoint().getEndpointHostText(s).str());
             attrs.setProp("@cloneFromDir", srcfdesc->queryDefaultDir());
             if (srcCluster && *srcCluster) //where to copy from has been explicity set to a remote location, don't copy from local sources
                 attrs.setProp("@cloneFromPeerCluster", "-");
@@ -642,7 +642,7 @@ public:
         Owned<IPropertyTree> ftree = fdir->getFileTree(slfn.get(),foreignuserdesc,srcdali, FOREIGN_DALI_TIMEOUT, GetFileTreeOpts::appendForeign);
         if (!ftree.get()) {
             StringBuffer s;
-            throw MakeStringException(-1,"Source file %s could not be found in Dali %s",slfn.get(),srcdali?srcdali->endpoint().getUrlStr(s).str():"(local)");
+            throw MakeStringException(-1,"Source file %s could not be found in Dali %s",slfn.get(),srcdali?srcdali->endpoint().getEndpointHostText(s).str():"(local)");
         }
 
         const char *dstlfn = slfn.get();
@@ -713,7 +713,7 @@ public:
         }
         else {
             StringBuffer s;
-            throw MakeStringException(-1,"Source file %s in Dali %s is not a file or superfile",filename,srcdali?srcdali->endpoint().getUrlStr(s).str():"(local)");
+            throw MakeStringException(-1,"Source file %s in Dali %s is not a file or superfile",filename,srcdali?srcdali->endpoint().getEndpointHostText(s).str():"(local)");
         }
         level--;
     }
@@ -734,18 +734,18 @@ public:
         Owned<IPropertyTree> ftree = fdir->getFileTree(slfn.get(), foreignuserdesc, srcdali, FOREIGN_DALI_TIMEOUT, GetFileTreeOpts::appendForeign);
         if (!ftree.get()) {
             StringBuffer s;
-            throw MakeStringException(-1,"Source file %s could not be found in Dali %s",slfn.get(),srcdali?srcdali->endpoint().getUrlStr(s).str():"(local)");
+            throw MakeStringException(-1,"Source file %s could not be found in Dali %s",slfn.get(),srcdali?srcdali->endpoint().getEndpointHostText(s).str():"(local)");
         }
         IPropertyTree *attsrc = ftree->queryPropTree("Attr");
         if (!attsrc) {
             StringBuffer s;
-            throw MakeStringException(-1,"Attributes for source file %s could not be found in Dali %s",slfn.get(),srcdali?srcdali->endpoint().getUrlStr(s).str():"(local)");
+            throw MakeStringException(-1,"Attributes for source file %s could not be found in Dali %s",slfn.get(),srcdali?srcdali->endpoint().getEndpointHostText(s).str():"(local)");
         }
         CDfsLogicalFileName dlfn;
         dlfn.set(destfilename);
         if (strcmp(ftree->queryName(),queryDfsXmlBranchName(DXB_File))!=0) {
             StringBuffer s;
-            throw MakeStringException(-1,"Source file %s in Dali %s is not a simple file",filename,srcdali?srcdali->endpoint().getUrlStr(s).str():"(local)");
+            throw MakeStringException(-1,"Source file %s in Dali %s is not a simple file",filename,srcdali?srcdali->endpoint().getEndpointHostText(s).str():"(local)");
         }
         if (!srcdali.get()||queryCoven().inCoven(srcdali)) {
             // if dali is local and filenames same
@@ -787,7 +787,7 @@ public:
     {
         if (!daliNode)
             return "(local)";
-        return daliNode->endpoint().getUrlStr(s).str();
+        return daliNode->endpoint().getEndpointHostText(s).str();
     }
     inline bool checkHasCluster(IDistributedFile *dfile)
     {
@@ -833,7 +833,7 @@ public:
         else
         {
             StringBuffer s;
-            if (checkValueChanged(dfile->queryAttributes().queryProp("@cloneFrom"), srcdali->endpoint().getUrlStr(s).str()))
+            if (checkValueChanged(dfile->queryAttributes().queryProp("@cloneFrom"), srcdali->endpoint().getEndpointHostText(s).str()))
                 return true;
             if (checkValueChanged(dfile->queryAttributes().queryProp("@cloneFromDir"), srcfdesc->queryDefaultDir()))
                 return true;
@@ -1046,7 +1046,7 @@ public:
                 out.append("<Group name=\"").append(lfn).append("\">\n");
                 ForEachNodeInGroup(i, *grp) {
                     StringBuffer ip;
-                    grp->getNode(i)->endpoint().getIpText(ip);
+                    grp->getNode(i)->endpoint().getHostText(ip);
                     out.append("  <Node ip=\"").append(ip).append("\">\n");
                 }
                 out.append("</Group>\n");
@@ -1133,7 +1133,7 @@ public:
         Owned<IFileDescriptor> fdesc = queryDistributedFileDirectory().getFileDescriptor(srclfn, AccessMode::tbdRead, srcuser, node);
         if (!fdesc) {
             StringBuffer s;
-            throw MakeStringException(-1,"Source file %s could not be found in Dali %s",srclfn,daliep.getUrlStr(s).str());
+            throw MakeStringException(-1,"Source file %s could not be found in Dali %s",srclfn,daliep.getEndpointHostText(s).str());
         }
         Owned<IDistributedFile> file = queryDistributedFileDirectory().createNew(fdesc);
         if (file)
@@ -1169,7 +1169,7 @@ public:
         if (!ftree.get())
         {
             StringBuffer s;
-            throw MakeStringException(-1,"Source file %s could not be found in Dali %s",srclfn,daliep.getUrlStr(s).str());
+            throw MakeStringException(-1,"Source file %s could not be found in Dali %s",srclfn,daliep.getEndpointHostText(s).str());
         }
         // first see if target exists (and remove if does and overwrite specified)
         Owned<IDistributedFile> dfile = queryDistributedFileDirectory().lookup(lfn,user,AccessMode::tbdWrite,false,false,nullptr,defaultPrivilegedUser);
@@ -1222,7 +1222,7 @@ public:
         else
         {
             StringBuffer s;
-            throw MakeStringException(-1,"Source file %s in Dali %s is not a file or superfile",srclfn,daliep.getUrlStr(s).str());
+            throw MakeStringException(-1,"Source file %s in Dali %s is not a file or superfile",srclfn,daliep.getEndpointHostText(s).str());
         }
     }
 

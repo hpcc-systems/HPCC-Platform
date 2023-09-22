@@ -214,7 +214,7 @@ static void runKDPNodes(const char *title,CIArrayOf<CDKDPitem> &nodes)
                     if (msTick()-start>15*60*1000) {
                         StringBuffer err;
                         err.append(title).append(" failed to start on node ");
-                        it.queryEP().getUrlStr(err);
+                        it.queryEP().getEndpointHostText(err);
                         throw MakeStringException(-1, "%s", err.str());
                     }
                     Sleep(5000); // no point in rushing when some left
@@ -235,7 +235,7 @@ static void runKDPNodes(const char *title,CIArrayOf<CDKDPitem> &nodes)
                     if (msTick()-start>6*60*60*1000) {
                         StringBuffer err;
                         err.append(title).append(" failed to finish on node ");
-                        it.queryEP().getUrlStr(err);
+                        it.queryEP().getEndpointHostText(err);
                         throw MakeStringException(-1, "%s", err.str());
                     }
                     Sleep(5000); // no point in rushing when some left

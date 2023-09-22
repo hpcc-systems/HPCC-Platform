@@ -263,7 +263,7 @@ void CTpWrapper::appendThorMachineList(double clientVersion, IConstEnvironment* 
     const char* machineType, unsigned& processNumber, unsigned channels, const char* directory, IArrayOf<IEspTpMachine>& machineList)
 {
     StringBuffer netAddress;
-    node.endpoint().getIpText(netAddress);
+    node.endpoint().getHostText(netAddress);
     if (netAddress.length() == 0)
     {
         OWARNLOG("Net address not found for a node of %s", clusterName);
@@ -418,7 +418,7 @@ IEspTpMachine* CTpWrapper::createTpMachineEx(const char* name, const char* type,
         StringBuffer networkAddress;
         IpAddress ipAddr;
         ipAddr.ipset(netAddr.str());
-        ipAddr.getIpText(networkAddress);
+        ipAddr.getHostText(networkAddress);
         machine->setNetaddress(networkAddress.str());
     }
 

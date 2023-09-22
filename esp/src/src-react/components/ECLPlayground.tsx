@@ -234,11 +234,11 @@ const ECLEditorToolbar: React.FunctionComponent<ECLEditorToolbarProps> = ({
     const submitWU = React.useCallback(async () => {
         const wu = await Workunit.create({ baseUrl: "" });
 
-        await wu.update({ QueryText: editor.ecl() });
+        await wu.update({ Jobname: queryName, QueryText: editor.ecl() });
         await wu.submit(cluster);
 
         wu.watchUntilComplete(changes => playgroundResults(wu));
-    }, [cluster, editor, playgroundResults]);
+    }, [cluster, editor, playgroundResults, queryName]);
 
     const publishWU = React.useCallback(async () => {
         if (queryName === "") {
@@ -249,7 +249,7 @@ const ECLEditorToolbar: React.FunctionComponent<ECLEditorToolbarProps> = ({
 
             const wu = await Workunit.create({ baseUrl: "" });
 
-            await wu.update({ QueryText: editor.ecl() });
+            await wu.update({ Jobname: queryName, QueryText: editor.ecl() });
             await wu.submit(cluster, WUUpdate.Action.Compile);
 
             wu.watchUntilComplete(changes => playgroundResults(wu, "publish"));

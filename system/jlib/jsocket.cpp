@@ -476,7 +476,7 @@ protected:
     friend class CSocketConnectWait;
     enum { ss_open, ss_shutdown, ss_close, ss_pre_open } state;
     T_SOCKET        sock;
-    char*           hostname;   // host address
+//    char*           hostname;   // host address
     unsigned short  hostport;   // host port
     unsigned short  localPort;
     SOCKETMODE      sockmode;
@@ -968,7 +968,7 @@ size32_t CSocket::avail_read()
 
 int CSocket::pre_connect (bool block)
 {
-    if (NULL == hostname || '\0' == (*hostname))
+    if (targetip.isNull())
     {
         StringBuffer err;
         err.appendf("CSocket::pre_connect - Invalid/missing host IP address raised in : %s, line %d",sanitizeSourceFile(__FILE__), __LINE__);
@@ -977,10 +977,6 @@ int CSocket::pre_connect (bool block)
     }
 
     DEFINE_SOCKADDR(u);
-    if (targetip.isNull()) {
-        set_return_addr(hostport,hostname);
-        targetip.ipset(returnep);
-    }
     socklen_t ul = setSockAddr(u,targetip,hostport);
     sock = ::socket(u.sa.sa_family, SOCK_STREAM, targetip.isIp4()?0:PF_INET6);
     owned = true;
@@ -1082,11 +1078,7 @@ void CSocket::open(int listen_queue_size,bool reuseports)
 
     DEFINE_SOCKADDR(u);
     socklen_t  ul;
-    if (hostname) {
-        if (targetip.isNull()) {
-            set_return_addr(hostport,hostname);
-            targetip.ipset(returnep);
-        }
+    if (!targetip.isNull()) {
         ul = setSockAddr(u,targetip,hostport);
     }
     else 
@@ -1276,7 +1268,7 @@ int CSocket::name(char *retname,size32_t namemax)
     if (retname && namemax)
     {
         StringBuffer s;
-        ep.getIpText(s);
+        ep.getHostText(s);
         if (namemax-1<s.length())
             s.setLength(namemax-1);
         memcpy(retname,s.str(),s.length()+1);
@@ -1297,7 +1289,7 @@ int CSocket::peer_name(char *retname,size32_t namemax)
     }
     StringBuffer s;
     if (sockmode==sm_udp_server) { // udp server
-        returnep.getIpText(s);
+        returnep.getHostText(s);
         ret =  returnep.port;
     }   
     else {
@@ -1307,7 +1299,7 @@ int CSocket::peer_name(char *retname,size32_t namemax)
             return -1;      // don't log as used to test socket
         SocketEndpoint ep;
         getSockAddrEndpoint(u,ul,ep);
-        ep.getIpText(s);
+        ep.getHostText(s);
         ret = ep.port;
     }
     if (namemax>1) {
@@ -1553,7 +1545,7 @@ void CSocket::connect_wait(unsigned timems)
             if (ep.ipequals(targetip)) {
                 unsigned sleeptime = getRandom() % 1000;
                 StringBuffer s;
-                ep.getIpText(s);
+                ep.getHostText(s);
                 DBGLOG("Connection to central node %s - sleeping %d milliseconds", s.str(), sleeptime);
                 Sleep(sleeptime);           
                 break;
@@ -1705,6 +1697,8 @@ void CSocket::setTraceName(const char * prefix, const char * name)
 void CSocket::setTraceName()
 {
 #ifdef _TRACE
+    StringBuffer hostname;
+    targetip.getHostText(hostname);
     setTraceName("C!", hostname);
 #endif
 }
@@ -1724,10 +1718,6 @@ ISocket*  ISocket::connect_wait( const SocketEndpoint &ep, unsigned timems)
 void CSocket::udpconnect()
 {
     DEFINE_SOCKADDR(u);
-    if (targetip.isNull()) {
-        set_return_addr(hostport,hostname);
-        targetip.ipset(returnep);
-    }
     socklen_t  ul = setSockAddr(u,targetip,hostport);
     sock = ::socket(u.sa.sa_family, SOCK_DGRAM, targetip.isIp4()?0:PF_INET6);
 #ifdef SOCKTRACE
@@ -1759,7 +1749,9 @@ int CSocket::logPollError(unsigned revents, const char *rwstr)
     if (revents & POLLERR)
     {
         StringBuffer errStr;
-        errStr.appendf("%s POLLERR %u l:%d r:%s:%d", rwstr, sock, localPort, (hostname?hostname:"NULL"), hostport);
+        StringBuffer hostname;
+        targetip.getHostText(hostname);
+        errStr.appendf("%s POLLERR %u l:%d r:%s:%d", rwstr, sock, localPort, hostname.str(), hostport);
         int serror = 0;
         socklen_t serrlen = sizeof(serror);
         int srtn = getsockopt(sock, SOL_SOCKET, SO_ERROR, (char *)&serror, &serrlen);
@@ -2835,7 +2827,7 @@ void CSocket::set_receive_buffer_size(size32_t max)
 bool CSocket::join_multicast_group(SocketEndpoint &ep) 
 {
     StringBuffer s;
-    ep.getIpText(s);    // will improve later
+    ep.getHostText(s);    // will improve later
     MCASTREQ req(s.str());
     if (setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP,(char*)&req, sizeof(req))!=0) {
         return false;
@@ -2847,7 +2839,7 @@ bool CSocket::join_multicast_group(SocketEndpoint &ep)
 bool CSocket::leave_multicast_group(SocketEndpoint &ep) 
 {
     StringBuffer s;
-    ep.getIpText(s);    // will improve later
+    ep.getHostText(s);    // will improve later
     MCASTREQ req(s.str());
     if (setsockopt(sock, IPPROTO_IP, IP_DROP_MEMBERSHIP,(char*)&req, sizeof(req))!=0) {
         return false;
@@ -2874,7 +2866,9 @@ void CSocket::set_ttl(unsigned _ttl)
 
 void CSocket::logConnectionInfo(unsigned timeoutms, unsigned conn_mstime)
 {
-    PROGLOG("SOCKTRACE: connect(%u) - time:%u ms fd:%d l:%d r:%s:%d", timeoutms, conn_mstime, sock, localPort, (hostname?hostname:"NULL"), hostport);
+    StringBuffer hostname;
+    targetip.getHostText(hostname);
+    PROGLOG("SOCKTRACE: connect(%u) - time:%u ms fd:%d l:%d r:%s:%d", timeoutms, conn_mstime, sock, localPort, hostname.str(), hostport);
     // PrintStackReport();
 }
 
@@ -2921,8 +2915,6 @@ CSocket::~CSocket()
             e->Release();
         }
     }
-    free(hostname);
-    hostname = NULL;
 #ifdef _TRACE
     free(tracename);
     tracename = NULL;
@@ -2939,8 +2931,8 @@ CSocket::CSocket(const SocketEndpoint &ep,SOCKETMODE smode,const char *name)
 #endif
     nagling = true; // until turned off
     hostport = ep.port;
+    targetip.ipset(ep);
     localPort = 0;
-    hostname = NULL;
     mcastreq = NULL;
 #ifdef _TRACE
     tracename = NULL;
@@ -2950,9 +2942,9 @@ CSocket::CSocket(const SocketEndpoint &ep,SOCKETMODE smode,const char *name)
         mcastreq = new MCASTREQ(name);
     }
     else {
-        if (!name&&!ep.isNull())
-            name = ep.getIpText(tmp).str();
-        hostname = name?strdup(name):NULL;
+        //MORE: I don't think the name parameter is needed anymore
+        if (name && ep.isNull())
+            targetip.ipset(name);
     }
     sock = INVALID_SOCKET;
     sockmode = smode;
@@ -2966,9 +2958,7 @@ CSocket::CSocket(const SocketEndpoint &ep,SOCKETMODE smode,const char *name)
     else
     {
         StringBuffer hostname;
-        SocketEndpoint self;
-        self.setLocalHost(0);
-        self.getUrlStr(hostname);
+        targetip.getHostText(hostname);
         setTraceName("S>", hostname.str());
     }
 #endif
@@ -2998,7 +2988,7 @@ CSocket::CSocket(T_SOCKET new_sock,SOCKETMODE smode,bool _owned)
     //set_linger(DEFAULT_LINGER_TIME); -- experiment with removing this as closesocket should still endevour to send outstanding data
     char peer[256];
     hostport = peer_name(peer,sizeof(peer));
-    hostname = strdup(peer);
+    targetip.ipset(peer);
     SocketEndpoint ep;
     localPort = getEndpoint(ep).port;
 #ifdef _TRACE
@@ -3056,7 +3046,7 @@ ISocket* ISocket::multicast_create(unsigned short p, const IpAddress &ip, unsign
         THROWJSOCKEXCEPTION2(JSOCKERR_bad_address);
     SocketEndpoint ep(p, ip);
     StringBuffer tmp;
-    Owned<CSocket> sock = new CSocket(ep,sm_multicast_server,ip.getIpText(tmp).str());
+    Owned<CSocket> sock = new CSocket(ep,sm_multicast_server,ip.getHostText(tmp).str());
     sock->open(0,true);
     if (_ttl)
         sock->set_ttl(_ttl);
@@ -3248,7 +3238,7 @@ const char * GetCachedHostName()
         if (getInterfaceIp(ip, ifs))
         {
             StringBuffer ips;
-            ip.getIpText(ips);
+            ip.getHostText(ips);
             if (ips.length())
             {
                 cachehostname.set(ips.str());
@@ -3608,9 +3598,11 @@ bool IpAddress::ipset(const char *text)
 {
     if (text&&*text) {
         if ((text[0]=='.')&&(text[1]==0)) {
+            hostname.set(GetCachedHostName()); // Is this better than '.'?
             ipset(queryHostIP());
             return true;
         }
+        hostname.set(text);
         if (decodeNumericIP(text,netaddr))
             return true;
         const char *s;
@@ -3623,6 +3615,7 @@ bool IpAddress::ipset(const char *text)
             return true;
     }
     memset(&netaddr,0,sizeof(netaddr));
+    hostname.clear();
     return false;
 }
 
@@ -3641,27 +3634,32 @@ inline char * addbyte(char *s,byte b)
     *(s++) = b+'0';
     return s;
 }
-        
-
 
 StringBuffer & IpAddress::getIpText(StringBuffer & out) const
 {
     if (::isIp4(netaddr)) {
         const byte *ip = (const byte *)&netaddr[3];
-        char ips[16]; 
+        char ips[16];
         char *s = ips;
         for (unsigned i=0;i<4;i++) {
             if (i)
                 *(s++) = '.';
             s = addbyte(s,ip[i]);
         }
-        return out.append(s-ips,ips); 
+        return out.append(s-ips,ips);
     }
     char tmp[INET6_ADDRSTRLEN];
     const char *res = _inet_ntop(AF_INET6, &netaddr, tmp, sizeof(tmp));
     if (!res) 
         throw makeOsException(errno);
     return out.append(res);
+}
+
+StringBuffer & IpAddress::getHostText(StringBuffer & out) const
+{
+    if (hostname)
+        return out.append(hostname);
+    return getIpText(out);
 }
 
 void IpAddress::ipserialize(MemoryBuffer & out) const
@@ -3854,12 +3852,28 @@ bool SocketEndpoint::set(const char *name,unsigned short _port)
     return false;
 }
 
-void SocketEndpoint::getUrlStr(char * str, size32_t len) const
+StringBuffer &SocketEndpoint::getEndpointIpText(StringBuffer &str) const
+{
+    getIpText(str);
+    if (port)
+        str.append(':').append((unsigned)port);         // TBD IPv6 put [] on
+    return str;
+}
+
+StringBuffer &SocketEndpoint::getEndpointHostText(StringBuffer &str) const
+{
+    getHostText(str);
+    if (port)
+        str.append(':').append((unsigned)port);         // TBD IPv6 put [] on
+    return str;
+}
+
+void SocketEndpoint::getEndpointHostText(char * str, size32_t len) const
 {
     if (len==0)
         return;
     StringBuffer _str;
-    getUrlStr(_str);
+    getEndpointHostText(_str);
     size32_t l = _str.length()+1;
     if (l>len)
     { 
@@ -3869,20 +3883,19 @@ void SocketEndpoint::getUrlStr(char * str, size32_t len) const
     memcpy(str,_str.str(),l);
 }
 
-StringBuffer &SocketEndpoint::getUrlStr(StringBuffer &str) const
-{
-    getIpText(str);
-    if (port) 
-        str.append(':').append((unsigned)port);         // TBD IPv6 put [] on
-    return str;
-}
-
-
 unsigned SocketEndpoint::hash(unsigned prev) const
 {
     return hashc((const byte *)&port,sizeof(port),iphash(prev));
 }
 
+
+StringBuffer &getRemoteAccessibleHostText(StringBuffer &str, const SocketEndpoint &ep)
+{
+    if (isContainerized())
+        return ep.getEndpointIpText(str);
+    else
+        return ep.getEndpointHostText(str);
+}
 
 
 
@@ -3896,7 +3909,7 @@ SocketListCreator::SocketListCreator()
 void SocketListCreator::addSocket(const SocketEndpoint &ep)
 {
     StringBuffer ipstr;
-    ep.getIpText(ipstr);
+    ep.getHostText(ipstr);
     addSocket(ipstr.str(), ep.port);
 }
 
@@ -3952,7 +3965,7 @@ void SocketListCreator::addSockets(SocketEndpointArray &array)
     ForEachItemIn(i,array) {
         const SocketEndpoint &sockep=array.item(i);
         StringBuffer ipstr;
-        sockep.getIpText(ipstr);
+        sockep.getHostText(ipstr);
         addSocket(ipstr.str(),sockep.port);
     }
 }
@@ -6349,7 +6362,7 @@ void multiConnect(const SocketEndpointArray &eps, IPointerArrayOf<ISocket> &rets
         void failed(unsigned idx,const SocketEndpoint &ep,int err)
         {
             StringBuffer s;
-            PROGLOG("multiConnect failed to %s with %d",ep.getUrlStr(s).str(),err);
+            PROGLOG("multiConnect failed to %s with %d",ep.getEndpointHostText(s).str(),err);
         }
     } notify(retsockets,sect);
     multiConnect(eps,notify,timeout);
@@ -6378,12 +6391,12 @@ StringBuffer &SocketEndpointArray::getText(StringBuffer &text) const
     if (!count)
         return text;
     if (count==1)
-        return item(0).getUrlStr(text);
+        return item(0).getEndpointHostText(text);
     byte lastip[4];
     const SocketEndpoint &first = item(0);
     bool lastis4 = first.getNetAddress(sizeof(lastip),&lastip)==sizeof(lastip);
     unsigned short lastport = first.port;
-    first.getIpText(text);
+    first.getHostText(text);
     unsigned rep=0;
     unsigned range=0;
     for (unsigned i=1;i<count;i++) {
@@ -6393,7 +6406,7 @@ StringBuffer &SocketEndpointArray::getText(StringBuffer &text) const
         if (!lastis4||!is4) {
             flushText(text,lastport,rep,range);
             text.append(',');
-            ep.getIpText(text);
+            ep.getHostText(text);
         }
         else { // try and shorten
             unsigned j;
@@ -6491,7 +6504,7 @@ inline bool appendv4range(SocketEndpointArray *array,char *str,SocketEndpoint &e
                 return false;
             }
             StringBuffer tmp;
-            ep.getIpText(tmp);
+            ep.getHostText(tmp);
             dc++;
             for (;;) {
                 if (tmp.length()==0)
@@ -6593,7 +6606,7 @@ bool SocketEndpointArray::fromName(const char *name, unsigned defport)
                         ep.port = defport;
                         append(ep);
                         // StringBuffer s;
-                        // DBGLOG("Lookup %s found %s", name, ep.getUrlStr(s).str());
+                        // DBGLOG("Lookup %s found %s", name, ep.getEndpointHostText(s).str());
                         break;
                     }
                 case AF_INET6:
@@ -6778,10 +6791,10 @@ StringBuffer &lookupHostName(const IpAddress &ip,StringBuffer &ret)
         if (phostent)
             ret.append(phostent->h_name);
         else
-            ip.getIpText(ret);
+            ip.getHostText(ret);
     }
     else
-        ip.getIpText(ret);
+        ip.getHostText(ret);
     return ret;
 }
 
@@ -7249,7 +7262,7 @@ public:
         if (responseText)
         {
             responseText->append("Access denied! [server ip=");
-            queryHostIP().getIpText(*responseText);
+            queryHostIP().getHostText(*responseText);
             responseText->append(", client ip=");
             responseText->append(ip);
             if (role)
@@ -7333,6 +7346,3 @@ extern jlib_decl void shutdownAndCloseNoThrow(ISocket * optSocket)
         e->Release();
     }
 }
-
-static_assert(sizeof(IpAddress) == 16, "check size of IpAddress");
-static_assert(sizeof(SocketEndpoint) == 20, "check size of SocketEndpoint");

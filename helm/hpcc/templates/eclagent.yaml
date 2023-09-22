@@ -92,7 +92,7 @@ data:
 {{ include "hpcc.addConfigMapVolumeMount" .me | indent 12 }}
 {{ include "hpcc.addVolumeMounts" . | indent 12 }}
 {{ include "hpcc.addSecretVolumeMounts" . | indent 12 }}
-{{ include "hpcc.addCertificateVolumeMount" (dict "root" .root "name" .me.name "component" $apptype) | indent 12 }}
+{{ include "hpcc.addCertificateVolumeMount" (dict "root" .root "name" .me.name "component" $apptype "includeRemote" true) | indent 12 }}
 {{- if $misc.postJobCommandViaSidecar }}
 {{ include "hpcc.addWaitAndRunVolumeMount" . | indent 12 }}
 {{- end }}
@@ -100,7 +100,7 @@ data:
 {{ include "hpcc.addConfigMapVolume" .me | indent 10 }}
 {{ include "hpcc.addVolumes" . | indent 10 }}
 {{ include "hpcc.addSecretVolumes" . | indent 10 }}
-{{ include "hpcc.addCertificateVolume" (dict "root" .root "name" .me.name "component" $apptype) | indent 10 }}
+{{ include "hpcc.addCertificateVolume" (dict "root" .root "name" .me.name "component" $apptype "includeRemote" true) | indent 10 }}
 {{- if $misc.postJobCommandViaSidecar }}
 {{ include "hpcc.addWaitAndRunVolume" . | indent 10 }}
 {{- end }}
@@ -174,12 +174,13 @@ spec:
 {{ include "hpcc.addConfigMapVolumeMount" . | indent 8 }}
 {{ include "hpcc.addVolumeMounts" $commonCtx | indent 8 }}
 {{ include "hpcc.addSecretVolumeMounts" $commonCtx | indent 8 }}
-{{ include "hpcc.addCertificateVolumeMount" (dict "root" $ "name" .name "component" "eclagent") | indent 8 }}
+{{ include "hpcc.addCertificateVolumeMount" (dict "root" $ "name" .name "component" $apptype "includeRemote" true) | indent 8 }}
       volumes:
 {{ include "hpcc.addConfigMapVolume" . | indent 6 }}
 {{ include "hpcc.addVolumes" $commonCtx | indent 6 }}
 {{ include "hpcc.addSecretVolumes" $commonCtx | indent 6 }}
-{{ include "hpcc.addCertificateVolume" (dict "root" $ "name" .name "component" "eclagent") | indent 6 }}
+{{ include "hpcc.addCertificateVolume" (dict "root" $ "name" .name "component" $apptype "includeRemote" true) | indent 6 }}
+
 ---
 {{- if and (hasKey . "hpa") .useChildProcesses }}
  {{- include "hpcc.addHorizontalPodAutoscaler" (dict "name" .name "kind" "Deployment" "hpa" .hpa) }}
@@ -188,8 +189,7 @@ spec:
 kind: ConfigMap 
 {{ include "hpcc.generateConfig" ($commonCtx | merge (dict "configMapHelper" "hpcc.agentConfigMap")) }}
 ---
-{{ include "hpcc.addCertificate" (dict "root" $ "name" .name "component" "eclagent") }}
-{{ include "hpcc.addCertificate" (dict "root" $ "name" .name "component" $apptype) }}
+{{ include "hpcc.addCertificate" (dict "root" $ "name" .name "component" $apptype "includeRemote" true) }}
 ---
 {{- $egressedPodLabels := list (ternary .name (printf "%s-job" .name) (.useChildProcesses | default false)) -}}
 {{- include "hpcc.addEgress" (dict "root" $ "me" . "labels" $egressedPodLabels) | nindent 0 -}}

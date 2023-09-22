@@ -339,7 +339,7 @@ static unsigned short getDafsPort(const SocketEndpoint &ep,unsigned &numfails,Cr
     if (nPort)
         return nPort;
     StringBuffer err("Failed to connect to DaFileSrv on ");
-    ep.getIpText(err);
+    ep.getHostText(err);
 #ifdef _WIN32
     OERRLOG("%s",err.str());
     if (sect) {
@@ -565,7 +565,7 @@ public:
         ForEachItemIn(i,inprogress) {
             if (i)
                 msg.append(", ");
-            inprogress.item(i).getIpText(msg);
+            inprogress.item(i).getHostText(msg);
         }
         if (msgcallback) 
             msgcallback->progress(msg.str());
@@ -1096,7 +1096,7 @@ public:
                 out.append(", ");
             const SocketEndpoint &item = epa.item(sorted[i2]);
             StringBuffer cur;
-            item.getUrlStr(cur);
+            item.getEndpointHostText(cur);
             const char *s1 = prefix.str();
             const char *s2 = cur.str();
             if (prefix.length()&&(memcmp(s1,s2,prefix.length())==0))
@@ -1186,11 +1186,11 @@ public:
                                 ForEachItemIn(i3,parts[i]) {
                                     unsigned p = parts[i].item(i3);
                                     if (copy) {
-                                        replicateepa.item(p).getUrlStr(buf.clear());    
+                                        replicateepa.item(p).getEndpointHostText(buf.clear());    
                                         b->addProp("RNode",buf.str());
                                     }
                                     else {
-                                        primaryepa.item(p).getUrlStr(buf.clear());  
+                                        primaryepa.item(p).getEndpointHostText(buf.clear());  
                                         b->addProp("Node",buf.str());
                                     }
                                 }
@@ -1314,7 +1314,7 @@ IPropertyTree *CLogicalNameEntry::addFileBranch(IPropertyTree *dst,unsigned flag
                     continue;
                 IPropertyTree *part = addBranch(out,"Part");
                 if (flags&CFBpartnode) {
-                    grp->queryNode((i+rep)%grp->ordinality()).endpoint().getUrlStr(buf.clear());    // TBD check grp==cluster TBD
+                    grp->queryNode((i+rep)%grp->ordinality()).endpoint().getEndpointHostText(buf.clear());    // TBD check grp==cluster TBD
                     part->setProp("Node",buf.str());
                 }
                 if (flags&CFBpartnum) {
@@ -1861,7 +1861,7 @@ class CXRefManager: public CXRefManagerBase
                 try {
                     StringBuffer msg;
                     INode &node = g->queryNode(idx);
-                    node.endpoint().getUrlStr(msg);
+                    node.endpoint().getEndpointHostText(msg);
                     manager.log("Getting directories for %s",msg.str());
                     manager.addNodeInProgress(node);
                     Owned<IPropertyTree> results;
@@ -2298,10 +2298,10 @@ class CXRefManager: public CXRefManagerBase
                     item.minsize = 0;
                 StringBuffer s1;
                 if (!item.minip.isNull())
-                    item.minip.getIpText(s1);
+                    item.minip.getHostText(s1);
                 StringBuffer s2;
                 if (!item.maxip.isNull())
-                    item.maxip.getIpText(s2);
+                    item.maxip.getHostText(s2);
                 StringBuffer skew;
                 item.getskew(skew);
                 outf("%s numfiles=%u totalsize=%" CF "d minsize=%" CF "d(%s) maxsize=%" CF "d(%s), skew=%s\n",item.name.get(),item.num,item.size,
@@ -2567,12 +2567,12 @@ class CXRefManager: public CXRefManagerBase
                         t->addPropInt64("MaxSize",item.maxsize);
                         StringBuffer s1;
                         if (!item.maxip.isNull())
-                            item.maxip.getIpText(s1);
+                            item.maxip.getHostText(s1);
                         t->addProp("MaxIP",s1.str());
                         t->addPropInt64("MinSize",item.minsize);
                         s1.clear();
                         if (!item.minip.isNull())
-                            item.minip.getIpText(s1);
+                            item.minip.getHostText(s1);
                         t->addProp("MinIP",s1.str());
                         item.getskew(s1.clear());
                         if (s1.length())

@@ -216,8 +216,9 @@ CSmartSocketFactory::CSmartSocketFactory(IPropertyTree &service, bool _retry, un
         throw createSmartSocketException(0, "CSmartSocket factory both name and port required for service configuration");
 
     tlsService  = service.getPropBool("@tls");
+    issuer.set(service.queryProp("@issuer"));
     if (tlsService)
-        tlsConfig.setown(createTlsClientSecretInfo(service.queryProp("@issuer"), !service.getPropBool("@public"), service.getPropBool("@selfSigned"), service.getPropBool("@caCert")));
+        tlsConfig.setown(createIssuerTlsClientConfig(issuer, service.getPropBool("@selfSigned"), service.getPropBool("@caCert")));
 
     StringBuffer s;
     s.append(name).append(':').append(port);
@@ -353,7 +354,7 @@ ISocket *CSmartSocketFactory::connect_sock(unsigned timeoutms, SmartSocketEndpoi
     catch (IException *e)
     {
         StringBuffer s("CSmartSocketFactory::connect_sock ");
-        ep.getUrlStr(s);
+        ep.getEndpointHostText(s);
         EXCLOG(e,s.str());
         ss->status=false;
         if (sock)
@@ -477,7 +478,7 @@ StringBuffer & CSmartSocketFactory::getUrlStr(StringBuffer &url, bool useHostNam
         {
             sep->checkHost(dnsInterval);
             SocketEndpoint ep = sep->ep;
-            ep.getUrlStr(url);
+            ep.getEndpointHostText(url);
         }
     }
     return url;

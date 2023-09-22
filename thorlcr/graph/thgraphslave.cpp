@@ -1232,8 +1232,16 @@ void CSlaveGraph::done()
     GraphPrintLog("End of sub-graph");
     progressActive.store(false);
     setProgressUpdated(); // NB: ensure collected after end of graph
-    if (!aborted && graphDone && (!queryOwner() || isGlobal()))
-        getDoneSem.wait(); // must wait on master
+    if (!queryOwner() || isGlobal())
+    {
+        if (aborted || !graphDone)
+        {
+            if (!getDoneSem.wait(SHORTTIMEOUT)) // wait on master to clear up, gather info from slaves
+                WARNLOG("CSlaveGraph::done - timedout waiting for master to signal done()");
+        }
+        else
+            getDoneSem.wait();
+    }
     if (!queryOwner())
     {
         if (globals->getPropBool("@watchdogProgressEnabled"))
@@ -1484,7 +1492,6 @@ IThorResult *CSlaveGraph::getGlobalResult(CActivityBase &activity, IThorRowInter
     }
     return result.getClear();
 }
-
 
 ///////////////////////////
 
@@ -1788,7 +1795,7 @@ void CJobSlave::startJob()
             SocketEndpoint ep;
             ep.setLocalHost(0);
             StringBuffer s;
-            throw MakeThorException(TE_NotEnoughFreeSpace, "Node %s has %u MB(s) of available disk space, specified minimum for this job: %u MB(s)", ep.getUrlStr(s).str(), (unsigned) freeSpace / 0x100000, minFreeSpace);
+            throw MakeThorException(TE_NotEnoughFreeSpace, "Node %s has %u MB(s) of available disk space, specified minimum for this job: %u MB(s)", ep.getEndpointHostText(s).str(), (unsigned) freeSpace / 0x100000, minFreeSpace);
         }
     }
     queryThor().queryKeyedJoinService().setCurrentJob(*this);

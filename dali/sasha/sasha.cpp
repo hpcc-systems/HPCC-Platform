@@ -379,7 +379,7 @@ bool getVersion(INode *node)
     Owned<ISashaCommand> cmd = createSashaCommand();
     cmd->setAction(SCA_GETVERSION);
     StringBuffer ips;
-    node->endpoint().getIpText(ips);
+    node->endpoint().getHostText(ips);
     if (!cmd->send(node,1*60*1000)) {
         OERRLOG("Could not connect to Sasha server on %s",ips.str());
         return false;

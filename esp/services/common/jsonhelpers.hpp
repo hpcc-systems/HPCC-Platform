@@ -329,6 +329,12 @@ namespace JsonHelpers
                         bool log = reqTree->getPropBool("@log", false); //not in schema
                         if (log)
                             appendJSONValue(out, "@log", true);
+                        bool statsToWorkunit = reqTree->getPropBool("@statsToWorkunit", false); //not in schema
+                        if (statsToWorkunit)
+                            appendJSONValue(out, "@statsToWorkunit", true);
+                        bool summaryStats = reqTree->getPropBool("@summaryStats", false); //not in schema
+                        if (summaryStats)
+                            appendJSONValue(out, "@summaryStats", true);
                         int tracelevel = reqTree->getPropInt("@traceLevel", -1);
                         if (tracelevel>=0)
                             appendJSONValue(out, "@traceLevel", tracelevel);

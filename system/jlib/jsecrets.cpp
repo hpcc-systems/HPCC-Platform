@@ -92,6 +92,8 @@ MODULE_EXIT()
     udpKey.clear();
 }
 
+static IPropertyTree *getLocalSecret(const char *category, const char * name);
+
 //based on kubernetes secret / key names. Even if some vault backends support additional characters we'll restrict to this subset for now
 
 static const char *validSecretNameChrs = ".-";
@@ -240,6 +242,61 @@ extern jlib_decl void splitUrlIsolateScheme(const char *url, StringBuffer &user,
     splitUrlAuthority(authority, authorityLen, user, password, hostPort, nullptr);
 }
 
+
+static StringBuffer &replaceExtraHostAndPortChars(StringBuffer &s)
+{
+    size_t l = s.length();
+    for (size_t i = 0; i < l; i++)
+    {
+        if (s.charAt(i) == '.' || s.charAt(i) == ':')
+            s.setCharAt(i, '-');
+    }
+    return s;
+}
+
+
+extern jlib_decl StringBuffer &generateDynamicUrlSecretName(StringBuffer &secretName, const char *scheme, const char *userPasswordPair, const char *host, unsigned port, const char *path)
+{
+    secretName.set("http-connect-");
+    //Having the host and port visible will help with manageability wherever the secret is stored
+    if (scheme && !strnicmp("https", scheme, 5))
+        secretName.append("ssl-");
+    secretName.append(host);
+    //port is optionally already part of host
+    replaceExtraHostAndPortChars(secretName);
+    if (port)
+        secretName.append('-').append(port);
+    //Path and username are both sensitive and shouldn't be accessible in the name, include both in the hash to give us the uniqueness we need
+    unsigned hashvalue = 0;
+    if (!isEmptyString(path))
+        hashvalue = hashcz((const unsigned char *)path, hashvalue);
+    if (!isEmptyString(userPasswordPair))
+    {
+        const char *delim = strchr(userPasswordPair, ':');
+        //Make unique for a given username, but not the current password.  The pw provided could change but what's in the secret (if there is one) wins
+        if (delim)
+            hashvalue = hashc((const unsigned char *)userPasswordPair, delim-userPasswordPair, hashvalue);
+        else
+            hashvalue = hashcz((const unsigned char *)userPasswordPair, hashvalue);
+    }
+    if (hashvalue)
+        secretName.appendf("-%x", hashvalue);
+    return secretName;
+}
+
+extern jlib_decl StringBuffer &generateDynamicUrlSecretName(StringBuffer &secretName, const char *url, const char *inputUsername)
+{
+    StringBuffer username;
+    StringBuffer urlPassword;
+    StringBuffer scheme;
+    StringBuffer hostPort;
+    StringBuffer path;
+    splitUrlIsolateScheme(url, username, urlPassword, scheme, hostPort, path);
+    if (!isEmptyString(inputUsername))
+        username.set(inputUsername);
+
+    return generateDynamicUrlSecretName(secretName, scheme, username, hostPort, 0, path);
+}
 //---------------------------------------------------------------------------------------------------------------------
 
 
@@ -272,12 +329,17 @@ extern jlib_decl void setSecretMount(const char * path)
         secretDirectory.set(path);
 }
 
-static inline bool checkSecretExpired(unsigned created)
+static bool checkSecretExpired(unsigned created)
 {
     if (!created)
         return false;
     unsigned age = msTick() - created;
     return age > getSecretTimeout();
+}
+
+static bool hasCacheExpired(const IPropertyTree * secret)
+{
+    return checkSecretExpired((unsigned)secret->getPropInt("@created"));
 }
 
 enum class VaultAuthType {unknown, k8s, appRole, token};
@@ -570,18 +632,16 @@ public:
             IPropertyTree *envelope = tree->queryPropTree(vername);
             if (!envelope)
                 return false;
-            if (checkSecretExpired((unsigned) envelope->getPropInt("@created")))
+            if (hasCacheExpired(envelope))
             {
                 tree->removeTree(envelope);
                 return false;
             }
             const char *s = envelope->queryProp("");
+            rkind = kind;
             if (!isEmptyString(s))
-            {
-                rkind = kind;
                 content.append(s);
-                return true;
-            }
+            return true;
         }
         return false;
     }
@@ -590,7 +650,8 @@ public:
         VStringBuffer vername("v.%s", isEmptyString(version) ? "latest" : version);
         Owned<IPropertyTree> envelope = createPTree(vername);
         envelope->setPropInt("@created", (int) msTick());
-        envelope->setProp("", content);
+        if (!isEmptyString(content))
+            envelope->setProp("", content);
         {
             CriticalBlock block(vaultCS);
             IPropertyTree *parent = ensurePTree(cache, secret);
@@ -649,6 +710,8 @@ public:
         }
         else
             OERRLOG("Error: Vault %s http error (%d) accessing secret %s.%s location %s", name.str(), res.error(), secretCacheKey, version ? version : "", location);
+
+        addCachedSecret("", secretCacheKey, version); //cache misses so we don't keep calling the vault
         return false;
     }
     bool requestSecret(CVaultKind &rkind, StringBuffer &content, const char *secret, const char *version)
@@ -800,7 +863,7 @@ IVaultManager *ensureVaultManager()
     return vaultManager;
 }
 
-static IPropertyTree *getCachedLocalSecret(const char *category, const char *name)
+static IPropertyTree *getCachedLocalSecret(const char *category, const char *name, bool &cachedMiss)
 {
     if (isEmptyString(name))
         return nullptr;
@@ -813,9 +876,14 @@ static IPropertyTree *getCachedLocalSecret(const char *category, const char *nam
         secret.setown(tree->getPropTree(name));
         if (secret)
         {
-            if (checkSecretExpired((unsigned) secret->getPropInt("@created")))
+            if (hasCacheExpired(secret))
             {
                 secretCache->removeProp(name);
+                return nullptr;
+            }
+            if (secret->hasProp("@miss"))
+            {
+                cachedMiss = true;
                 return nullptr;
             }
             return secret.getClear();
@@ -877,12 +945,15 @@ static IPropertyTree *loadLocalSecret(const char *category, const char * name)
     return tree.getClear();
 }
 
-extern jlib_decl IPropertyTree *getLocalSecret(const char *category, const char * name)
+static IPropertyTree *getLocalSecret(const char *category, const char * name)
 {
     validateCategoryName(category);
     validateSecretName(name);
 
-    Owned<IPropertyTree> tree = getCachedLocalSecret(category, name);
+    bool skipLocalFetch = false;
+    Owned<IPropertyTree> tree = getCachedLocalSecret(category, name, skipLocalFetch);
+    if (skipLocalFetch)
+        return nullptr;
     if (tree)
         return tree.getClear();
     return loadLocalSecret(category, name);
@@ -908,7 +979,7 @@ static IPropertyTree *createPTreeFromVaultSecret(const char *content, CVaultKind
     }
     return tree.getClear();
 }
-static IPropertyTree *getCachedVaultSecret(const char *category, const char *vaultId, const char * name, const char *version)
+static IPropertyTree *getCachedVaultSecret(const char *category, const char *vaultId, const char * name, const char *version, bool &cachedMiss)
 {
     CVaultKind kind;
     StringBuffer json;
@@ -922,6 +993,11 @@ static IPropertyTree *getCachedVaultSecret(const char *category, const char *vau
     {
         if (!vaultmgr->getCachedSecretFromVault(category, vaultId, kind, json, name, version))
             return nullptr;
+    }
+    if (json.isEmpty())
+    {
+        cachedMiss = true;
+        return nullptr;
     }
     return createPTreeFromVaultSecret(json.str(), kind);
 }
@@ -944,47 +1020,69 @@ static IPropertyTree *requestVaultSecret(const char *category, const char *vault
     return createPTreeFromVaultSecret(json.str(), kind);
 }
 
-extern jlib_decl IPropertyTree *getVaultSecret(const char *category, const char *vaultId, const char * name, const char *version)
+static IPropertyTree *getVaultSecret(const char *category, const char * name, const char *vaultId, const char *version)
 {
-    validateCategoryName(category);
-    validateSecretName(name);
-
     CVaultKind kind;
     StringBuffer json;
     IVaultManager *vaultmgr = ensureVaultManager();
+
+    bool cachedMiss = false;
+
     if (isEmptyString(vaultId))
     {
-        if (!vaultmgr->getCachedSecretByCategory(category, kind, json, name, version))
+        if (vaultmgr->getCachedSecretByCategory(category, kind, json, name, version))
+            cachedMiss = json.isEmpty();
+        else
             vaultmgr->requestSecretByCategory(category, kind, json, name, version);
     }
     else
     {
         if (!vaultmgr->getCachedSecretFromVault(category, vaultId, kind, json, name, version))
+            cachedMiss = json.isEmpty();
+        else
             vaultmgr->requestSecretFromVault(category, vaultId, kind, json, name, version);
     }
+    if (cachedMiss)
+        return nullptr;
     return createPTreeFromVaultSecret(json.str(), kind);
 }
 
-extern jlib_decl IPropertyTree *getSecret(const char *category, const char * name)
+IPropertyTree *getSecretTree(const char *category, const char * name, const char * optVaultId, const char * optVersion)
 {
-    validateCategoryName(category);
-    validateSecretName(name);
+    if (!isEmptyString(optVaultId))
+        return getVaultSecret(category, name, optVaultId, optVersion);
+
+    //if we get back a null secret, it might be a cached miss, so don't go to the source if flag gets set
+    bool skipVaultFetch = false;
+    bool skipLocalFetch = false;
 
     //check for any chached first
-    Owned<IPropertyTree> secret = getCachedLocalSecret(category, name);
+    Owned<IPropertyTree> secret = getCachedLocalSecret(category, name, skipLocalFetch);
     if (!secret)
-        secret.setown(getCachedVaultSecret(category, nullptr, name, nullptr));
+        secret.setown(getCachedVaultSecret(category, nullptr, name, nullptr, skipVaultFetch));
     //now check local, then vaults
-    if (!secret)
+    if (!secret && !skipLocalFetch)
         secret.setown(loadLocalSecret(category, name));
-    if (!secret)
+    if (!secret && !skipVaultFetch)
         secret.setown(requestVaultSecret(category, nullptr, name, nullptr));
     return secret.getClear();
 }
 
-extern jlib_decl bool getSecretKeyValue(MemoryBuffer & result, IPropertyTree *secret, const char * key)
+IPropertyTree *getSecret(const char *category, const char * name, const char * optVaultId, const char * optVersion)
+{
+    validateCategoryName(category);
+    validateSecretName(name);
+
+    return getSecretTree(category,  name, optVaultId, optVersion);
+}
+
+
+bool getSecretKeyValue(MemoryBuffer & result, const IPropertyTree *secret, const char * key)
 {
     validateKeyName(key);
+
+    if (!secret)
+        return false;
 
     IPropertyTree *tree = secret->queryPropTree(key);
     if (tree)
@@ -992,9 +1090,12 @@ extern jlib_decl bool getSecretKeyValue(MemoryBuffer & result, IPropertyTree *se
     return false;
 }
 
-extern jlib_decl bool getSecretKeyValue(StringBuffer & result, IPropertyTree *secret, const char * key)
+bool getSecretKeyValue(StringBuffer & result, const IPropertyTree *secret, const char * key)
 {
     validateKeyName(key);
+
+    if (!secret)
+        return false;
 
     IPropertyTree *tree = secret->queryPropTree(key);
     if (!tree)
@@ -1018,8 +1119,6 @@ extern jlib_decl bool getSecretKeyValue(StringBuffer & result, IPropertyTree *se
 
 extern jlib_decl bool getSecretValue(StringBuffer & result, const char *category, const char * name, const char * key, bool required)
 {
-    validateKeyName(key); //name and category validated in getSecret
-
     Owned<IPropertyTree> secret = getSecret(category, name);
     if (required && !secret)
         throw MakeStringException(-1, "secret %s.%s not found", category, name);
@@ -1028,6 +1127,130 @@ extern jlib_decl bool getSecretValue(StringBuffer & result, const char *category
         throw MakeStringException(-1, "secret %s.%s missing key %s", category, name, key);
     return true;
 }
+
+//---------------------------------------------------------------------------------------------------------------------
+
+class CSecret final : public CInterfaceOf<ISecret>
+{
+public:
+    CSecret(const char *_category, const char * _name, const char * _vaultId, const char * _version, const IPropertyTree * _secret)
+    : category(_category), name(_name), vaultId(_vaultId), version(_version), secret(_secret)
+    {
+        updateHash();
+    }
+
+    virtual const IPropertyTree * getTree() const;
+
+    virtual bool getKeyValue(MemoryBuffer & result, const char * key) const
+    {
+        CriticalBlock block(secretCs);
+        checkStale();
+        return getSecretKeyValue(result, secret, key);
+    }
+    virtual bool getKeyValue(StringBuffer & result, const char * key) const
+    {
+        CriticalBlock block(secretCs);
+        checkStale();
+        return getSecretKeyValue(result, secret, key);
+    }
+    virtual bool isStale() const
+    {
+        return secret && hasCacheExpired(secret);
+    }
+    virtual unsigned getVersion() const
+    {
+        return secretHash;
+    }
+
+protected:
+    void checkStale() const;
+    void updateHash() const;
+
+protected:
+    StringAttr category;
+    StringAttr name;
+    StringAttr vaultId;
+    StringAttr version;
+    mutable CriticalSection secretCs;
+    mutable Linked<const IPropertyTree> secret;
+    mutable unsigned secretHash = 0;
+};
+
+
+const IPropertyTree * CSecret::getTree() const
+{
+    CriticalBlock block(secretCs);
+    checkStale();
+    return LINK(secret);
+}
+
+void CSecret::checkStale() const
+{
+    if (isStale())
+    {
+        //MORE: This could block or fail - in roxie especially it would be better to return the old value
+        try
+        {
+            secret.setown(getSecretTree(category, name, vaultId, version));
+            updateHash();
+        }
+        catch (IException * e)
+        {
+            VStringBuffer msg("Failed to update secret %s.%s", category.str(), name.str());
+            EXCLOG(e, msg.str());
+            e->Release();
+        }
+    }
+}
+
+//This should probably move to jptree.?pp as a generally useful function
+static unsigned calculateTreeHash(const IPropertyTree & source, unsigned hashcode)
+{
+    if (source.isBinary())
+    {
+        MemoryBuffer mb;
+        source.getPropBin(nullptr, mb);
+        hashcode = hashc((const byte *)mb.bufferBase(), mb.length(), hashcode);
+    }
+    else
+    {
+        const char * value = source.queryProp(nullptr);
+        if (value)
+            hashcode = hashcz((const byte *)value, hashcode);
+    }
+
+    Owned<IAttributeIterator> aiter = source.getAttributes();
+    ForEach(*aiter)
+    {
+        hashcode = hashcz((const byte *)aiter->queryName(), hashcode);
+        hashcode = hashcz((const byte *)aiter->queryValue(), hashcode);
+    }
+
+    Owned<IPropertyTreeIterator> iter = source.getElements("*");
+    ForEach(*iter)
+    {
+        IPropertyTree & child = iter->query();
+        hashcode = hashcz((const byte *)child.queryName(), hashcode);
+        hashcode = calculateTreeHash(child, hashcode);
+    }
+    return hashcode;
+}
+
+void CSecret::updateHash() const
+{
+    if (secret)
+        secretHash = calculateTreeHash(*secret.get(), 0x811C9DC5);
+    else
+        secretHash = 0;
+}
+
+ISecret * resolveSecret(const char *category, const char * name, const char * optVaultId, const char * optVersion)
+{
+    Owned<IPropertyTree> resolved = getSecret(category, name, optVaultId, optVersion);
+    return new CSecret(category, name, optVaultId, optVersion, resolved);
+}
+
+//---------------------------------------------------------------------------------------------------------------------
 
 void initSecretUdpKey()
 {
@@ -1066,7 +1289,26 @@ const MemoryAttr &getSecretUdpKey(bool required)
     return udpKey;
 }
 
-IPropertyTree *createTlsClientSecretInfo(const char *issuer, bool mutual, bool acceptSelfSigned, bool addCACert)
+jlib_decl bool containsEmbeddedKey(const char *certificate)
+{
+    // look for any of:
+    // -----BEGIN PRIVATE KEY-----
+    // -----BEGIN RSA PRIVATE KEY-----
+    // -----BEGIN CERTIFICATE-----
+    // -----BEGIN PUBLIC KEY-----
+    // or maybe just:
+    // -----BEGIN
+
+    if ( (strstr(certificate, "-----BEGIN PRIVATE KEY-----")) ||
+         (strstr(certificate, "-----BEGIN RSA PRIVATE KEY-----")) ||
+         (strstr(certificate, "-----BEGIN PUBLIC KEY-----")) ||
+         (strstr(certificate, "-----BEGIN CERTIFICATE-----")) )
+        return true;
+
+    return false;
+}
+
+IPropertyTree *createIssuerTlsClientConfig(const char *issuer, bool acceptSelfSigned, bool addCACert)
 {
     if (isEmptyString(issuer))
         return nullptr;
@@ -1077,7 +1319,7 @@ IPropertyTree *createTlsClientSecretInfo(const char *issuer, bool mutual, bool a
 
     Owned<IPropertyTree> info = createPTree();
 
-    if (mutual)
+    if (strieq(issuer, "remote")||strieq(issuer, "local"))
     {
         filepath.set(secretpath).append("tls.crt");
         if (!checkFileExists(filepath))
@@ -1107,7 +1349,7 @@ IPropertyTree *createTlsClientSecretInfo(const char *issuer, bool mutual, bool a
     return info.getClear();
 }
 
-IPropertyTree *queryTlsSecretInfo(const char *name)
+IPropertyTree *getIssuerTlsServerConfig(const char *name)
 {
     if (isEmptyString(name))
         return nullptr;
@@ -1115,9 +1357,9 @@ IPropertyTree *queryTlsSecretInfo(const char *name)
     validateSecretName(name);
 
     CriticalBlock block(mtlsInfoCacheCS);
-    IPropertyTree *info = mtlsInfoCache->queryPropTree(name);
+    Owned<IPropertyTree> info = mtlsInfoCache->getPropTree(name);
     if (info)
-        return info;
+        return info.getClear();
 
     StringBuffer filepath;
     StringBuffer secretpath;
@@ -1128,7 +1370,8 @@ IPropertyTree *queryTlsSecretInfo(const char *name)
     if (!checkFileExists(filepath))
         return nullptr;
 
-    info = mtlsInfoCache->setPropTree(name);
+    info.set(mtlsInfoCache->setPropTree(name));
+    info->setProp("@issuer", name);
     info->setProp("certificate", filepath.str());
     filepath.set(secretpath).append("tls.key");
     if (checkFileExists(filepath))
@@ -1143,13 +1386,28 @@ IPropertyTree *queryTlsSecretInfo(const char *name)
             if (ca)
                 ca->setProp("@path", filepath.str());
         }
-        // TLS TODO: do we want to always require verify, even if no ca ?
-        verify->setPropBool("@enable", true);
+        //For now only the "public" issuer implies client certificates are not required
+        verify->setPropBool("@enable", !strieq(name, "public"));
         verify->setPropBool("@address_match", false);
         verify->setPropBool("@accept_selfsigned", false);
         verify->setProp("trusted_peers", "anyone");
     }
-    return info;
+    return info.getClear();
+}
+
+IPropertyTree *getIssuerTlsServerConfigWithTrustedPeers(const char *issuer, const char *trusted_peers)
+{
+    Owned<IPropertyTree> issuerConfig = getIssuerTlsServerConfig(issuer);
+    if (!issuerConfig || isEmptyString(trusted_peers))
+        return issuerConfig.getClear();
+    //TBD: might cache in the future, but needs thought, lookup must include trusted_peers, but will there be cases where trusted_peers can change dynamically?
+    Owned<IPropertyTree> tlsConfig = createPTreeFromIPT(issuerConfig);
+    if (!tlsConfig)
+        return nullptr;
+
+    IPropertyTree *verify = ensurePTree(tlsConfig, "verify");
+    verify->setProp("trusted_peers", trusted_peers);
+    return tlsConfig.getClear();
 }
 
 enum UseMTLS { UNINIT, DISABLED, ENABLED };

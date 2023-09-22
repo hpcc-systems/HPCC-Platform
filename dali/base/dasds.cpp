@@ -3459,7 +3459,7 @@ class CLock : implements IInterface, public CInterface
                         else
                         {
                             StringBuffer nodeStr;
-                            node->endpoint().getUrlStr(nodeStr);
+                            node->endpoint().getEndpointHostText(nodeStr);
                             PROGLOG("Validating connection to %s", nodeStr.str());
                             if (!queryWorldCommunicator().verifyConnection(node, LOCKSESSCHECK))
                             {
@@ -4056,7 +4056,7 @@ int CSDSTransactionServer::run()
                     StringBuffer s;
                     mb.append(e->errorMessage(s).str());
                     StringBuffer clientUrl("EXCEPTION in reply to client ");
-                    mb.getSender().getUrlStr(clientUrl);
+                    mb.getSender().getEndpointHostText(clientUrl);
                     EXCLOG(e, clientUrl.str(), MSGCLS_warning);
                     e->Release();
                 }
@@ -4081,7 +4081,7 @@ int CSDSTransactionServer::run()
         catch (IException *e)
         {
             StringBuffer s("Failure receiving message from client ");
-            mb.getSender().getUrlStr(s);
+            mb.getSender().getEndpointHostText(s);
             IWARNLOG(e, s.str());
             e->Release();
         }
@@ -4784,7 +4784,7 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
         mb.append(e->errorCode());
         mb.append(e->errorMessage(s.clear()));
         StringBuffer clientUrl("EXCEPTION in reply to client ");
-        mb.getSender().getUrlStr(clientUrl);
+        mb.getSender().getEndpointHostText(clientUrl);
         EXCLOG(e, clientUrl.str(), MSGCLS_warning);
         e->Release();
     }
@@ -4797,7 +4797,7 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
         mb.append(e->errorCode());
         mb.append(e->errorMessage(s).str());
         StringBuffer clientUrl("EXCEPTION in reply to client ");
-        mb.getSender().getUrlStr(clientUrl);
+        mb.getSender().getEndpointHostText(clientUrl);
         LOG(MCoperatorError, unknownJob, e);
     }
     try {
@@ -4818,7 +4818,7 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
         StringBuffer s;
         mb.append(e->errorMessage(s).str());
         StringBuffer clientUrl("EXCEPTION in reply to client ");
-        mb.getSender().getUrlStr(clientUrl);
+        mb.getSender().getEndpointHostText(clientUrl);
         EXCLOG(e, clientUrl.str(), MSGCLS_warning);
         e->Release();
         try

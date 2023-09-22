@@ -286,6 +286,27 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="mapHttpCallUrlsToSecrets" type="xs:boolean" use="optional" default="false">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>In SOAPCALL and HTTPCALL check if URLs have been mapped to secrets</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="warnIfUrlNotMappedToSecret" type="xs:boolean" use="optional" default="false">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>In SOAPCALL and HTTPCALL warn if URLs not mapped to secrets</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="requireUrlsMappedToSecrets" type="xs:boolean" use="optional" default="false">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Require SOAPCALL and HTTPCALL URLs are secrets or mapped to secrets</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
   </xs:attributeGroup>
 
 </xs:schema>

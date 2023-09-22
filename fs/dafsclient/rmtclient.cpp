@@ -156,7 +156,7 @@ static ISecureSocket *createSecureSocket(ISocket *sock, const char *issuer)
             auto it = secureCtxClientIssuerMap.find(issuer);
             if (it == secureCtxClientIssuerMap.end())
             {
-                IPropertyTree *info = queryTlsSecretInfo(issuer);
+                Owned<IPropertyTree> info = getIssuerTlsServerConfig(issuer);
                 if (!info)
                     throw makeStringExceptionV(-1, "createSecureSocket() : missing MTLS configuration for issuer: %s", issuer);
                 secureContext.setown(createSecureSocketContextEx2(info, ClientSocket));
@@ -683,7 +683,7 @@ void CRemoteBase::connectSocket(SocketEndpoint &ep, unsigned connectTimeoutMs, u
             if (msTick()-lastfailtime<dafsConnectFailRetryTimeMs)
             {
                 StringBuffer msg("Failed to connect (host marked down) to dafilesrv/daliservix on ");
-                ep.getUrlStr(msg);
+                ep.getEndpointHostText(msg);
                 throw createDafsException(DAFSERR_connection_failed,msg.str());
             }
             lastfailep.set(NULL);
@@ -695,7 +695,7 @@ void CRemoteBase::connectSocket(SocketEndpoint &ep, unsigned connectTimeoutMs, u
         StringBuffer eps;
         if (TF_TRACE_CLIENT_CONN)
         {
-            ep.getUrlStr(eps);
+            ep.getEndpointHostText(eps);
             if (ep.port == securitySettings.queryDaFileSrvSSLPort())
                 PROGLOG("Connecting SECURE to %s", eps.str());
             else
@@ -756,7 +756,7 @@ void CRemoteBase::connectSocket(SocketEndpoint &ep, unsigned connectTimeoutMs, u
                     }
                     e->Release();
                     StringBuffer msg("Failed to connect (setting host down) to dafilesrv/daliservix on ");
-                    ep.getUrlStr(msg);
+                    ep.getEndpointHostText(msg);
                     throw createDafsException(DAFSERR_connection_failed,msg.str());
                 }
                 throw;
@@ -923,7 +923,7 @@ void CRemoteBase::sendRemoteCommand(MemoryBuffer & src, MemoryBuffer & reply, bo
         StringBuffer msg;
         if (filename.get())
             msg.append(filename);
-        ep.getUrlStr(msg.append('[')).append("] ");
+        ep.getEndpointHostText(msg.append('[')).append("] ");
         size32_t pos = reply.getPos();
         if (pos<reply.length())
         {

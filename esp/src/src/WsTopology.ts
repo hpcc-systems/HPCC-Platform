@@ -233,6 +233,9 @@ export function TpGetComponentFile(params) {
     params.handleAs = "text";
     return ESPRequest.send("WsTopology", "TpGetComponentFile", params);
 }
+export function TpListLogFiles(params) {
+    return ESPRequest.send("WsTopology", "TpListLogFiles", params);
+}
 export function TpLogFile(params) {
     return ESPRequest.send("WsTopology", "TpLogFile", params);
 }

@@ -54,7 +54,7 @@ public:
         {
             markdead = false;
             StringBuffer epstr;
-            ep.getUrlStr(epstr);
+            ep.getEndpointHostText(epstr);
             LOG(MCdebugProgress, thorJob, "Watchdog : Marking Machine as Up! [%s]", epstr.str());
         }
     }   
@@ -149,7 +149,7 @@ void CMasterWatchdogBase::checkMachineStatus()
         if (!mstate->alive)
         {
             StringBuffer epstr;
-            mstate->ep.getUrlStr(epstr);
+            mstate->ep.getEndpointHostText(epstr);
             if (mstate->markdead)
                 abortThor(MakeThorOperatorException(TE_AbortException, "Watchdog has lost contact with Thor slave: %s (Process terminated or node down?)", epstr.str()), TEC_Watchdog);
             else
@@ -176,8 +176,8 @@ unsigned CMasterWatchdogBase::readPacket(HeartBeatPacketHeader &hb, MemoryBuffer
             IWARNLOG("Receive Monitor Packet: wrong size, got %d, less than HeartBeatPacketHeader size", read);
             return 0;
         }
-        //Cast is to avoid warning about writing to an object with non trivial copy assignment
-        memcpy(reinterpret_cast<void *>(&hb), mb.readDirect(sizeof(HeartBeatPacketHeader)), sizeof(HeartBeatPacketHeader));
+
+        hb.deserialize(mb);
         if (read != hb.packetSize)  // check for corrupt packets
         {
             IWARNLOG("Receive Monitor Packet: wrong size, expected %d, got %d", hb.packetSize, read);
@@ -224,7 +224,7 @@ void CMasterWatchdogBase::threadmain()
                 else
                 {
                     StringBuffer epstr;
-                    hb.sender.getUrlStr(epstr);
+                    hb.sender.getEndpointHostText(epstr);
                     LOG(MCdebugProgress, thorJob, "Watchdog : Unknown Machine! [%s]", epstr.str()); //TBD
                 }
             }
@@ -251,7 +251,7 @@ void CMasterWatchdogBase::threadmain()
             {
                 const SocketEndpoint &ep = e->queryEndpoint();
                 StringBuffer epStr;
-                ep.getUrlStr(epStr);
+                ep.getEndpointHostText(epStr);
                 abortThor(MakeThorOperatorException(TE_AbortException, "Watchdog has lost connectivity with Thor slave: %s (Process terminated or node down?)", epStr.str()), TEC_Watchdog);
             }
         }
@@ -301,7 +301,7 @@ public:
         {
             SocketEndpoint masterEp(getMasterPortBase());
             StringBuffer ipStr;
-            masterEp.getIpText(ipStr);
+            masterEp.getHostText(ipStr);
             Owned<ISocket> sock = ISocket::udp_connect(getFixedPort(masterEp.port, TPORT_watchdog), ipStr.str());
             // send empty packet, stopped set, will cease reading
             HeartBeatPacketHeader hb;

@@ -120,7 +120,7 @@ public:
         try {
 
             StringBuffer epstr;
-            ActPrintLog(activity, thorDetailedLogLevel, "Connect to %s:%d",endpoint.getIpText(epstr).str(),(unsigned)mpport);
+            ActPrintLog(activity, thorDetailedLogLevel, "Connect to %s:%d",endpoint.getHostText(epstr).str(),(unsigned)mpport);
             SocketEndpoint ep = endpoint;
             ep.port = mpport;
             Owned<INode> node = createINode(ep);
@@ -179,27 +179,18 @@ inline byte *dupb(byte *b,size32_t l)
 
 struct PartitionInfo
 {
-    size32_t guard;
-    Linked<IThorRowInterfaces> prowif;
     PartitionInfo(CActivityBase *_activity, IThorRowInterfaces *rowif)
         : splitkeys(*_activity, rowif, ers_allow), prowif(rowif)
     {
-        nodes = NULL;
-        mpports = NULL;
         guard = rowif?rowif->queryRowMetaData()->getMinRecordSize():(size32_t)-1;
     }
 
     ~PartitionInfo()
     {
-        free(nodes);
+        delete [] nodes;
         free(mpports);
     }
 
-    unsigned        numnodes;
-    SocketEndpoint  *nodes;
-    unsigned short  *mpports;
-    mptag_t mpTagRPC;
-    CThorExpandingRowArray splitkeys;
     void init() 
     {
         nodes = NULL;
@@ -209,7 +200,7 @@ struct PartitionInfo
     }
     void kill()
     {
-        free(nodes);
+        delete [] nodes;
         free(mpports);
         init();
     }
@@ -218,6 +209,15 @@ struct PartitionInfo
         // should be more defensive here
         return (numnodes!=0)&&(splitkeys.ordinality()!=0);
     }
+
+
+    Linked<IThorRowInterfaces> prowif;
+    size32_t guard;
+    unsigned        numnodes;
+    SocketEndpoint  *nodes = nullptr;
+    unsigned short  *mpports = nullptr;
+    mptag_t mpTagRPC;
+    CThorExpandingRowArray splitkeys;
 };
 
 
@@ -268,7 +268,7 @@ public:
                 CSortNode &slave = slaves.item(i);
                 if (!slave.doConnect(i,slaves.ordinality())) {
                     char url[100];
-                    slave.endpoint.getUrlStr(url,sizeof(url));
+                    slave.endpoint.getEndpointHostText(url,sizeof(url));
                     throw MakeActivityException(owner.activity,TE_CannotConnectToSlave,"CSortMaster::ConnectSlaves: Could not connect to %s",url);
                 }
             }
@@ -353,10 +353,10 @@ public:
         estrecsize = 100;
         if (!partitioninfo)
             partitioninfo = new PartitionInfo(activity, keyIf);
-        free(partitioninfo->nodes);
+        delete [] partitioninfo->nodes;
         free(partitioninfo->mpports);
         partitioninfo->numnodes=numnodes;
-        partitioninfo->nodes=(SocketEndpoint *)malloc(numnodes*sizeof(SocketEndpoint));
+        partitioninfo->nodes = new SocketEndpoint[numnodes];
         partitioninfo->mpports=(unsigned short *)malloc(numnodes*sizeof(unsigned short));
         partitioninfo->mpTagRPC = slaves.item(0).mpTagRPC;  // NB all same
 
@@ -1191,8 +1191,8 @@ public:
                 }
                 timer.stop("Calculating split map");
             }
-            OwnedMalloc<SocketEndpoint> endpoints(numnodes);
-            SocketEndpoint *epp = endpoints;
+            std::unique_ptr<SocketEndpoint[]> endpoints(new SocketEndpoint[numnodes]);
+            SocketEndpoint *epp = endpoints.get();
             for (i=0;i<numnodes;i++)
             {
                 CSortNode &slave = slaves.item(i);
@@ -1235,7 +1235,7 @@ public:
                         if (slave.scale!=mostspilt+1)
                         {
                             char url[100];
-                            slave.endpoint.getUrlStr(url,sizeof(url));
+                            slave.endpoint.getEndpointHostText(url,sizeof(url));
                             ActPrintLog(activity, "Gather - node %s spilled %d times to disk",url,slave.scale-1);
                         }
                     }
@@ -1305,7 +1305,7 @@ public:
                     {
                         CSortNode &slave = slaves.item(i);
                         char url[100];
-                        slave.endpoint.getUrlStr(url,sizeof(url));
+                        slave.endpoint.getEndpointHostText(url,sizeof(url));
                         ActPrintLog(activity, thorDetailedLogLevel, "Split point %d: %" RCPF "d rows on %s", i, tot[i], url);
                     }
                 }
@@ -1331,11 +1331,11 @@ public:
                 {
                     CSortNode &slave = slaves.item(i);
                     char url[100];
-                    slave.endpoint.getUrlStr(url,sizeof(url));
+                    slave.endpoint.getEndpointHostText(url,sizeof(url));
                     if (splitMapUpper)
-                        slave.MultiMergeBetween(total, numnodes*numnodes,splitMap,splitMapUpper,numnodes,endpoints);
+                        slave.MultiMergeBetween(total, numnodes*numnodes,splitMap,splitMapUpper,numnodes,endpoints.get());
                     else
-                        slave.MultiMerge(total, numnodes*numnodes,splitMap,numnodes,endpoints);
+                        slave.MultiMerge(total, numnodes*numnodes,splitMap,numnodes,endpoints.get());
     //              ActPrintLog(activity, "Merge %d started: %d rows on %s",i,tot[i],url);
                 }
             }

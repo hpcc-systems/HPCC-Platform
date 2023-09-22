@@ -646,7 +646,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                 if (udpTraceLevel || udpTraceFlow)
                 {
                     StringBuffer s;
-                    DBGLOG("UdpFlow: Duplicate requestToSend %" SEQF "u from node %s", _flowSeq, dest.getIpText(s).str());
+                    DBGLOG("UdpFlow: Duplicate requestToSend %" SEQF "u from node %s", _flowSeq, dest.getHostText(s).str());
                 }
             }
 
@@ -670,14 +670,14 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                 if (udpTraceLevel > 3 || udpTraceFlow)
                 {
                     StringBuffer ipStr;
-                    DBGLOG("UdpReceiver: sending request_received msg seq %" SEQF "u to node=%s", _flowSeq, dest.getIpText(ipStr).str());
+                    DBGLOG("UdpReceiver: sending request_received msg seq %" SEQF "u to node=%s", _flowSeq, dest.getHostText(ipStr).str());
                 }
 #ifdef TEST_DROPPED_PACKETS
                 flowPacketsSent[msg.cmd]++;
                 if (udpDropFlowPackets[msg.cmd] && flowPacketsSent[msg.cmd]%udpDropFlowPackets[msg.cmd]==0)
                 {
                     StringBuffer ipStr;
-                    DBGLOG("UdpReceiver: deliberately dropping request_received msg seq %" SEQF "u to node=%s", _flowSeq, dest.getIpText(ipStr).str());
+                    DBGLOG("UdpReceiver: deliberately dropping request_received msg seq %" SEQF "u to node=%s", _flowSeq, dest.getHostText(ipStr).str());
                 }
                 else
 #endif
@@ -688,7 +688,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
             catch(IException *e)
             {
                 StringBuffer d, s;
-                DBGLOG("UdpReceiver: acknowledgeRequest failed node=%s %s", dest.getIpText(d).str(), e->errorMessage(s).str());
+                DBGLOG("UdpReceiver: acknowledgeRequest failed node=%s %s", dest.getHostText(d).str(), e->errorMessage(s).str());
                 e->Release();
             }
         }
@@ -710,14 +710,14 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                 if (udpTraceLevel > 3 || udpTraceFlow)
                 {
                     StringBuffer ipStr;
-                    DBGLOG("UdpReceiver: sending ok_to_send %u msg seq %" SEQF "u to node=%s", maxTransfer, flowSeq, dest.getIpText(ipStr).str());
+                    DBGLOG("UdpReceiver: sending ok_to_send %u msg seq %" SEQF "u to node=%s", maxTransfer, flowSeq, dest.getHostText(ipStr).str());
                 }
 #ifdef TEST_DROPPED_PACKETS
                 flowPacketsSent[msg.cmd]++;
                 if (udpDropFlowPackets[msg.cmd] && flowPacketsSent[msg.cmd]%udpDropFlowPackets[msg.cmd]==0)
                 {
                     StringBuffer ipStr;
-                    DBGLOG("UdpReceiver: deliberately dropping ok_to_send %u msg seq %" SEQF "u to node=%s", maxTransfer, flowSeq, dest.getIpText(ipStr).str());
+                    DBGLOG("UdpReceiver: deliberately dropping ok_to_send %u msg seq %" SEQF "u to node=%s", maxTransfer, flowSeq, dest.getHostText(ipStr).str());
                 }
                 else
 #endif
@@ -727,7 +727,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
             catch(IException *e)
             {
                 StringBuffer d, s;
-                DBGLOG("UdpReceiver: requestToSend failed node=%s %s", dest.getIpText(d).str(), e->errorMessage(s).str());
+                DBGLOG("UdpReceiver: requestToSend failed node=%s %s", dest.getHostText(d).str(), e->errorMessage(s).str());
                 e->Release();
             }
         }
@@ -1057,7 +1057,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                         if (udpTraceLevel || udpTraceFlow || udpTraceTimeouts)
                         {
                             StringBuffer s;
-                            DBGLOG("permit %" SEQF "u to node %s (%u packets) timed out after %u ms, rescheduling", sender->flowSeq, sender->dest.getIpText(s).str(), sender->getTotalReserved(), elapsed);
+                            DBGLOG("permit %" SEQF "u to node %s (%u packets) timed out after %u ms, rescheduling", sender->flowSeq, sender->dest.getHostText(s).str(), sender->getTotalReserved(), elapsed);
                         }
 
                         SendPermit *next = finger->next;
@@ -1069,7 +1069,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                             if (udpTraceLevel || udpTraceFlow || udpTraceTimeouts)
                             {
                                 StringBuffer s;
-                                DBGLOG("permit to send %" SEQF "u to node %s timed out %u times - abandoning", sender->flowSeq, sender->dest.getIpText(s).str(), sender->timeouts);
+                                DBGLOG("permit to send %" SEQF "u to node %s timed out %u times - abandoning", sender->flowSeq, sender->dest.getHostText(s).str(), sender->timeouts);
                             }
 
                             //Currently this is benign.  If the sender really is alive it will send another request.
@@ -1158,7 +1158,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                         if (udpTraceFlow)
                         {
                             StringBuffer s;
-                            DBGLOG("Sender %s can't be given permission to send yet as all permits active", finger->dest.getIpText(s).str());
+                            DBGLOG("Sender %s can't be given permission to send yet as all permits active", finger->dest.getHostText(s).str());
                         }
                     }
                 }
@@ -1168,7 +1168,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                     if (udpTraceFlow)
                     {
                         StringBuffer s;
-                        DBGLOG("Sender %s can't be given permission to send yet as resend buffer full", finger->dest.getIpText(s).str());
+                        DBGLOG("Sender %s can't be given permission to send yet as resend buffer full", finger->dest.getHostText(s).str());
                     }
                 }
             }

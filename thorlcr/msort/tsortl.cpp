@@ -285,7 +285,7 @@ IRowStream *ConnectMergeRead(unsigned id, IThorRowInterfaces *rowif,SocketEndpoi
     TransferStreamHeader hdr(startrec, numrecs, id);
 #ifdef _FULL_TRACE
     StringBuffer s;
-    nodeaddr.getUrlStr(s);
+    nodeaddr.getEndpointHostText(s);
     LOG(MCthorDetailedDebugInfo, thorJob, "ConnectMergeRead(%d,%s,%x,%" RCPF "d,%" RCPF "u)",id,s.str(),(unsigned)(memsize_t)socket.get(),startrec,numrecs);
 #endif
     hdr.winrev();

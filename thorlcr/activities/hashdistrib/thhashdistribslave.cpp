@@ -1247,7 +1247,7 @@ public:
                     catch (IException *e)
                     {
                         StringBuffer senderStr;
-                        activity->queryContainer().queryJob().queryJobGroup().queryNode(n+1).endpoint().getUrlStr(senderStr);
+                        activity->queryContainer().queryJob().queryJobGroup().queryNode(n+1).endpoint().getEndpointHostText(senderStr);
                         IException *e2 = MakeActivityException(activity, e, "Received from node: %s", senderStr.str());
                         e->Release();
                         throw e2;

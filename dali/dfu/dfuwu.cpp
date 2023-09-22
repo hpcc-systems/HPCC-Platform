@@ -885,7 +885,7 @@ public:
             queryRoot()->removeProp("@handler");
         else {
             StringBuffer s;
-            queryRoot()->setProp("@handler",ep.getUrlStr(s).str());
+            queryRoot()->setProp("@handler",ep.getEndpointHostText(s).str());
         }
     }
 
@@ -932,9 +932,9 @@ static void printDesc(IFileDescriptor *desc)
 //      PROGLOG("  groupWidth = %d",desc->queryClusterGroup(0)->ordinality());
 //      PROGLOG("  numSubFiles = %d",desc->getNumSubFiles());
 //      Owned<IGroup> group = desc->getGroup(0);
-//      PROGLOG("  group(0) = %d,%s,...,%s",group->ordinality(),group->queryNode(0).endpoint().getUrlStr(tmp1.clear()).str(),group->queryNode(group->ordinality()-1).endpoint().getUrlStr(tmp2.clear()).str());
+//      PROGLOG("  group(0) = %d,%s,...,%s",group->ordinality(),group->queryNode(0).endpoint().getEndpointHostText(tmp1.clear()).str(),group->queryNode(group->ordinality()-1).endpoint().getEndpointHostText(tmp2.clear()).str());
 //      group.setown(desc->getGroup(1));
-//      PROGLOG("  group(1) = %d,%s,...,%s",group->ordinality(),group->queryNode(0).endpoint().getUrlStr(tmp1.clear()).str(),group->queryNode(group->ordinality()-1).endpoint().getUrlStr(tmp2.clear()).str());
+//      PROGLOG("  group(1) = %d,%s,...,%s",group->ordinality(),group->queryNode(0).endpoint().getEndpointHostText(tmp1.clear()).str(),group->queryNode(group->ordinality()-1).endpoint().getEndpointHostText(tmp2.clear()).str());
         unsigned copy;
         for (copy = 0;copy<2;copy++) {
             unsigned i;
@@ -1491,7 +1491,7 @@ public:
         IPropertyTree * part = queryRoot()->setPropTree("Part",createPTree("Part"));
         part->setPropInt("@num",1);
         StringBuffer url;
-        rmfn.queryEndpoint().getUrlStr(url);
+        rmfn.queryEndpoint().getEndpointHostText(url);
         part->setProp("@node",url.str());
     }
 
@@ -1590,7 +1590,7 @@ public:
         // only used for source of copy
         IPropertyTree *t = queryUpdateProperties();
         StringBuffer s;
-        t->setProp("@foreignDali",ep.getUrlStr(s).str());
+        t->setProp("@foreignDali",ep.getEndpointHostText(s).str());
     }
 
     bool getForeignDali(SocketEndpoint &ep) const
@@ -3523,7 +3523,7 @@ IDfuFileCopier *createRemoteFileCopier(const char *qname,const char *clustername
             // should be no need for overwrite
             const char *wuid = wu->queryId();
             StringBuffer eps;
-            PROGLOG("%s: Copy %s from %s to %s",wuid,srclfn,srcdali.getUrlStr(eps).str(),lfn);
+            PROGLOG("%s: Copy %s from %s to %s",wuid,srclfn,srcdali.getEndpointHostText(eps).str(),lfn);
             wuids.append(wuid);
             submitDFUWorkUnit(wu.getClear());
             return true;

@@ -309,7 +309,6 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
     Owned<IPropertyTree> bnd_cfg = getBindingConfig(tree, bindname, procname);
     m_wsdlVer=0.0;
     processName.set(procname);
-    getServiceXmlFilename(serviceXmlFilename);
 
     // get the config default version
     const char* defVersion = bnd_cfg->queryProp("@defaultServiceVersion");
@@ -370,7 +369,7 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
         {
             const char *host=getHost();
             if (!host || !(*host) || !strcmp(host, ".") || !strcmp(host, "0.0.0.0"))
-                queryHostIP().getIpText(m_wsdlAddress);
+                queryHostIP().getHostText(m_wsdlAddress);
             else
                 m_wsdlAddress.append(host);
             if (!strchr(m_wsdlAddress.str(), ':') && m_port!=80 && m_port!=443)

@@ -905,7 +905,7 @@ unsigned CSimulatedQueueWriteSocket::writeDelayed(unsigned now)
             free((void *) packets.front());
             if (jitteredBuff)
                 free((void *) jitteredBuff);
-            DBGLOG("Write to disconnected socket %s", destEp.getUrlStr(s).str());
+            DBGLOG("Write to disconnected socket %s", destEp.getEndpointHostText(s).str());
         }
         dueTimes.pop();
         packets.pop();
@@ -932,7 +932,7 @@ size32_t CSimulatedQueueWriteSocket::write(void const* buf, size32_t size)
         else
         {
             StringBuffer s;
-            DBGLOG("Write to disconnected socket %s", destEp.getUrlStr(s).str());
+            DBGLOG("Write to disconnected socket %s", destEp.getEndpointHostText(s).str());
         }
     }
     return size;
@@ -944,7 +944,7 @@ CriticalSection CSimulatedQueueReadSocket::allReadersCrit;
 CSimulatedQueueReadSocket::CSimulatedQueueReadSocket(const SocketEndpoint &_me) : me(_me)
 {
     StringBuffer s;
-    DBGLOG("Creating fake socket %s", me.getUrlStr(s).str());
+    DBGLOG("Creating fake socket %s", me.getEndpointHostText(s).str());
     CriticalBlock b(allReadersCrit);
     allReaders[me] = this;
 }
@@ -952,7 +952,7 @@ CSimulatedQueueReadSocket::CSimulatedQueueReadSocket(const SocketEndpoint &_me) 
 CSimulatedQueueReadSocket::~CSimulatedQueueReadSocket()
 {
     StringBuffer s;
-    DBGLOG("Closing fake socket %s", me.getUrlStr(s).str());
+    DBGLOG("Closing fake socket %s", me.getEndpointHostText(s).str());
     CriticalBlock b(allReadersCrit);
     allReaders.erase(me);
 }
@@ -981,7 +981,7 @@ void CSimulatedQueueReadSocket::writeSimulatedPacket(void const* buf, size32_t s
         packets.push(memcpy(malloc(size), buf, size));
         used += size;
     }
-//    StringBuffer s; DBGLOG("Signalling available data on %s", me.getUrlStr(s).str());
+//    StringBuffer s; DBGLOG("Signalling available data on %s", me.getEndpointHostText(s).str());
     avail.signal();
 }
 
@@ -999,7 +999,7 @@ void CSimulatedQueueReadSocket::writeOwnSimulatedPacket(void const* buf, size32_
         packets.push(buf);
         used += size;
     }
-//    StringBuffer s; DBGLOG("Signalling available data on %s", me.getUrlStr(s).str());
+//    StringBuffer s; DBGLOG("Signalling available data on %s", me.getEndpointHostText(s).str());
     avail.signal();
 }
 

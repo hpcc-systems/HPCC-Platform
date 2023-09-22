@@ -159,7 +159,7 @@ int main(int argc, const char* argv[])
             (memcmp(param,"timeout=",8)==0))
             props->loadProp(param);
         else if ((i==1)&&(isdigit(*param)||(*param=='.'))&&ep.set(((*param=='.')&&param[1])?(param+1):param,DALI_SERVER_PORT))
-            props->setProp("server",ep.getUrlStr(tmps.clear()).str());
+            props->setProp("server",ep.getEndpointHostText(tmps.clear()).str());
         else {
             if ((strieq(param,"help")) || (strieq(param,"-help")) || (strieq(param,"--help"))) {
                 usage(argv[0]);

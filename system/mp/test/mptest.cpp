@@ -309,7 +309,7 @@ void Test6(IGroup *group,ICommunicator *comm)
         StringAttr str;
         mb.read(str);
         StringBuffer url;
-        PROGLOG("(6) Received '%s' from %s",str.get(),mb.getSender().getUrlStr(url).str());
+        PROGLOG("(6) Received '%s' from %s",str.get(),mb.getSender().getEndpointHostText(url).str());
     }
     else if (group->rank()==0)
     {
@@ -452,7 +452,7 @@ void MultiTest(ICommunicator *_comm)
                         break;
                     PROGLOG("MPTEST: MultiTest server Received from %u, len = %u",rr, mb.length());
                     StringBuffer str;
-                    comm->queryGroup().queryNode(rr).endpoint().getUrlStr(str);
+                    comm->queryGroup().queryNode(rr).endpoint().getEndpointHostText(str);
                     // PROGLOG("MPTEST: MultiTest server Received from %s",str.str());
 
                     buff->deserialize(mb);
@@ -524,7 +524,7 @@ void MultiTest(ICommunicator *_comm)
 
 #if 0
             StringBuffer str;
-            comm->queryGroup().queryNode(targets[n]).endpoint().getUrlStr(str);
+            comm->queryGroup().queryNode(targets[n]).endpoint().getEndpointHostText(str);
             PROGLOG("MPTEST: Multitest client Sending to %s, length=%u",str.str(), mb.length());
 #endif
 
@@ -1721,7 +1721,7 @@ int main(int argc, char* argv[])
             for (rank_t k=0;k<tot_ranks;k++)
             {
                 StringBuffer urlStr;
-                nodes.item(k).endpoint().getUrlStr(urlStr);
+                nodes.item(k).endpoint().getEndpointHostText(urlStr);
                 PROGLOG("MPTEST: adding node %u, %s", k, urlStr.str());
             }
         }

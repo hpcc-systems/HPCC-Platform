@@ -279,9 +279,9 @@ protected:
                 CPPUNIT_ASSERT(stricmp(s.str(),t.str())==0);
                 StringBuffer eps;
                 if (isrep)
-                    rep.getUrlStr(eps);
+                    rep.getEndpointHostText(eps);
                 else
-                    ep.getUrlStr(eps);
+                    ep.getEndpointHostText(eps);
                 t.insert(0,eps.str());
                 t.insert(0,"//");
                 t.appendf("/testfile3._%d_of_8",pi+1);
@@ -340,9 +340,9 @@ protected:
                 CPPUNIT_ASSERT(stricmp(s.str(),t.str())==0);
                 StringBuffer eps;
                 if (isrep)
-                    rep.getUrlStr(eps);
+                    rep.getEndpointHostText(eps);
                 else
-                    ep.getUrlStr(eps);
+                    ep.getEndpointHostText(eps);
                 t.insert(0,eps.str());
                 t.insert(0,"//");
                 t.appendf("/testfile4._%d_of_8",pi+1);
