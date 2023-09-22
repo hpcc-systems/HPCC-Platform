@@ -57,7 +57,7 @@ public:
             CMessageBuffer mb;
             if (abortSoon || !receiveMsg(mb, RANK_ALL, replyTag, NULL)) break;
             StringBuffer str;
-            mb.getSender().getUrlStr(str);
+            mb.getSender().getEndpointHostText(str);
             size32_t sz;
             mb.read(sz);
             if (sz)

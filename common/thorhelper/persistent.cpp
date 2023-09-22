@@ -56,7 +56,7 @@ public:
     {
         if(_ep)
         {
-            _ep->getUrlStr(epstr);
+            _ep->getEndpointHostText(epstr);
             keystr.set(epstr);
             addKeySuffix(proto, keystr);
         }
@@ -121,7 +121,7 @@ public:
 private:
     inline StringBuffer& calcKey(SocketEndpoint& ep, PersistentProtocol proto, StringBuffer& keystr)
     {
-        ep.getUrlStr(keystr);
+        ep.getEndpointHostText(keystr);
         return addKeySuffix(proto, keystr);
     }
     SocketSet* findSet(CPersistentInfo* info, bool create = false)
@@ -214,7 +214,7 @@ public:
         if (m_enableDoNotReuseList && ep != nullptr)
         {
             StringBuffer epstr;
-            ep->getUrlStr(epstr);
+            ep->getEndpointHostText(epstr);
             if(m_doNotReuseList.getValue(epstr.str()) != nullptr)
             {
                 PERSILOG(PersistentLogLevel::PLogNormal, "PERSISTENT: socket %d's target endpoint %s is in DoNotReuseList, will not add it.", sock->OShandle(), epstr.str());
@@ -434,7 +434,7 @@ public:
         if(!ep)
             return false;
         StringBuffer epstr;
-        ep->getUrlStr(epstr);
+        ep->getEndpointHostText(epstr);
         if(epstr.length()> 0 && m_doNotReuseList.getValue(epstr.str()) != nullptr)
             return true;
         return false;

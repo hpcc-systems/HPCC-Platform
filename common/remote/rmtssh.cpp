@@ -136,7 +136,7 @@ class CFRunSSH: public CInterface, implements IFRunSSH
                 if (sa.ordinality()) {
                     StringBuffer ns;
                     ForEachItemIn(i,sa) {
-                        sa.item(i).getIpText(ns.clear());
+                        sa.item(i).getHostText(ns.clear());
                         slaves.append(ns.str());
                     }
                     return;
@@ -548,7 +548,7 @@ public:
         strict = false;
         verbose = false;
         StringBuffer ips;
-        ip.getIpText(ips);
+        ip.getHostText(ips);
         slaves.kill();
         slaves.append(ips.str());
         numthreads = 1;

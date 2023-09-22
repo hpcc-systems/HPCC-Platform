@@ -544,6 +544,17 @@
             "waitForMount": {
               "type": "boolean"
             },
+            "expert": {
+              "type": "object",
+              "description": "Custom internal options usually reserved for internal testing",
+              "properties": {
+                "validatePlaneScript": {
+                  "description": "a list of bash commands to run to validate the plane is healthy",
+                  "type": "array",
+                  "items": { "type": "string" }
+                }
+              }
+            },
             "blockedFileIOKB": {
               "description": "Optimal block size for efficient reading from this plane. Implementations will use if they can",
               "type": "integer",
@@ -557,6 +568,7 @@
             "subPath": {},
             "secret": {},
             "pvc": {},
+            "hostPath": {},
             "hostGroup": {},
             "hosts": {},
             "umask": {},
@@ -582,6 +594,10 @@
         },
         "secret": {
           "description": "optional name of any secret required to access this storage plane",
+          "type": "string"
+        },
+        "hostPath": {
+          "description": "optional, this will create a hostPath volume (mutually exclusive with using pvc)",
           "type": "string"
         },
         "pvc": {
@@ -689,6 +705,7 @@
             "subPath": {},
             "secret": {},
             "pvc": {},
+            "hostPath": {},
             "hostGroup": {},
             "hosts": {},
             "umask": {},
@@ -1428,6 +1445,9 @@
         "remoteClients": {
           "$ref": "#/definitions/remoteClients"
         },
+        "trustClients": {
+          "$ref": "#/definitions/trustClients"
+        },
         "corsAllowed": {
           "$ref": "#/definitions/corsAllowed"
         },
@@ -1507,6 +1527,21 @@
         },
         "hpa": {
           "$ref": "#/definitions/hpa"
+        },
+        "mapHttpCallUrlsToSecrets": {
+          "type": "boolean",
+          "default": false,
+          "description": "In SOAPCALL and HTTPCALL check if URLs have been mapped to secrets"
+        },
+        "warnIfUrlNotMappedToSecret": {
+          "type": "boolean",
+          "default": false,
+          "description": "In SOAPCALL and HTTPCALL warn if URLs not mapped to secrets"
+        },
+        "requireUrlsMappedToSecrets": {
+          "type": "boolean",
+          "default": false,
+          "description": "Require SOAPCALL and HTTPCALL URLs are secrets or mapped to secrets"
         }
       }
     },
@@ -2189,6 +2224,21 @@
           "minimum": 0,
           "description": "Interval (in milliseconds) between checks that client socket is still open"
         },
+        "mapHttpCallUrlsToSecrets": {
+          "type": "boolean",
+          "default": false,
+          "description": "In SOAPCALL and HTTPCALL check if URLs have been mapped to secrets"
+        },
+        "warnIfUrlNotMappedToSecret": {
+          "type": "boolean",
+          "default": false,
+          "description": "In SOAPCALL and HTTPCALL warn if URLs not mapped to secrets"
+        },
+        "requireUrlsMappedToSecrets": {
+          "type": "boolean",
+          "default": false,
+          "description": "Require SOAPCALL and HTTPCALL URLs are secrets or mapped to secrets"
+        },
         "expert": {
           "description": "Custom internal options usually reserved for internal testing",
           "type": "object"
@@ -2277,6 +2327,12 @@
         "tls": {
           "type": "boolean",
           "description": "Whether the roxie service uses tls.  Requires cert-manager or custom certificate."
+        },
+        "remoteClients": {
+          "$ref": "#/definitions/remoteClients"
+        },
+        "trustClients": {
+          "$ref": "#/definitions/trustClients"
         }
       },
       "required": [ "name", "servicePort" ],
@@ -2426,6 +2482,21 @@
         },
         "allowedPipePrograms": {
           "$ref" : "#/definitions/allowedPipePrograms"
+        },
+        "mapHttpCallUrlsToSecrets": {
+          "type": "boolean",
+          "default": false,
+          "description": "In SOAPCALL and HTTPCALL check if URLs have been mapped to secrets"
+        },
+        "warnIfUrlNotMappedToSecret": {
+          "type": "boolean",
+          "default": false,
+          "description": "In SOAPCALL and HTTPCALL warn if URLs not mapped to secrets"
+        },
+        "requireUrlsMappedToSecrets": {
+          "type": "boolean",
+          "default": false,
+          "description": "Require SOAPCALL and HTTPCALL URLs are secrets or mapped to secrets"
         }
       }
     },
@@ -2992,6 +3063,18 @@
                 "additionalProperties": { "type": "string" }
               }
             }
+          }
+        }
+      }
+    },
+    "trustClients": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "commonName": {
+            "type": "string",
+            "description": "Trusted client common name"
           }
         }
       }

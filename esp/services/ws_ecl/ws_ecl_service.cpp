@@ -2088,10 +2088,10 @@ void CWsEclBinding::sendRoxieRequest(const char *target, StringBuffer &req, Stri
             throw MakeStringException(-1, "roxie target cluster not mapped: %s", target);
         ep = conn->nextEndpoint();
 
-        Owned<IHttpClientContext> httpctx = getHttpClientContext();
         WsEclSocketFactory *roxieConn = static_cast<WsEclSocketFactory*>(conn);
+        Owned<IHttpClientContext> httpctx = getHttpClientSecretContext(roxieConn->queryTlsIssuer());
         StringBuffer url(roxieConn->isTlsService() ? "https://" : "http://");
-        ep.getIpText(url).append(':').append(ep.port ? ep.port : 9876).append('/');
+        ep.getHostText(url).append(':').append(ep.port ? ep.port : 9876).append('/');
         if (roxieConn->includeTargetInURL)
             url.append(roxieConn->alias.isEmpty() ? target : roxieConn->alias.str());
         if (!trim)

@@ -368,7 +368,7 @@ void LinkToParentLogMsgHandler::addToPTree(IPropertyTree * tree) const
     IPropertyTree * handlerTree = createPTree(ipt_caseInsensitive);
     handlerTree->setProp("@type", "linktoparent");
     StringBuffer buff;
-    parentNode->endpoint().getUrlStr(buff);
+    parentNode->endpoint().getEndpointHostText(buff);
     handlerTree->setProp("@url", buff.str());
     tree->addPropTree("handler", handlerTree);
 }

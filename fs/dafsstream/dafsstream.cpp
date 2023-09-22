@@ -262,7 +262,7 @@ public:
             for (unsigned c=0; c<numCopies; c++)
             {
                 StringBuffer host;
-                fileDesc->queryNode(p, c)->endpoint().getUrlStr(host);
+                fileDesc->queryNode(p, c)->endpoint().getEndpointHostText(host);
                 unsigned pos = p*maxCopiesPerPart+c;
                 if (hosts.size() <= pos)
                     hosts.resize(pos+1); // ensure big enough
@@ -562,13 +562,13 @@ protected:
         if (0 == serverVersion)
         {
             StringBuffer str;
-            throwDsFsClientExceptionV(DaFsClient_ConnectionFailure, "CDaFileSrvClientBase: Failed to connect to %s", daFsConnection->queryEp().getUrlStr(str).str());
+            throwDsFsClientExceptionV(DaFsClient_ConnectionFailure, "CDaFileSrvClientBase: Failed to connect to %s", daFsConnection->queryEp().getEndpointHostText(str).str());
         }
 
         if (serverVersion < DAFILESRV_STREAMREAD_MINVERSION)
         {
             StringBuffer str;
-            throwDsFsClientExceptionV(DaFsClient_TooOld, "CDaFileSrvClientBase: server ersion(%u), too old connect to %s", serverVersion, daFsConnection->queryEp().getUrlStr(str).str());
+            throwDsFsClientExceptionV(DaFsClient_TooOld, "CDaFileSrvClientBase: server ersion(%u), too old connect to %s", serverVersion, daFsConnection->queryEp().getEndpointHostText(str).str());
         }
     }
     void start()
@@ -1314,7 +1314,7 @@ public:
             e->Release();
         }
         StringBuffer msg;
-        daFsConnection->queryEp().getUrlStr(msg);
+        daFsConnection->queryEp().getEndpointHostText(msg);
         WARNLOG("Stream writing not supported by dafilesrv(%s), attempting unsecured direct connection", msg.str());
         RemoteFilename rfn;
         file->queryFileDescriptor().getFilename(part, 0, rfn);

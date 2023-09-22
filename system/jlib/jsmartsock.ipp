@@ -35,7 +35,7 @@ struct SmartSocketEndpoint
         if (ep.isNull()) 
             throw MakeStringException(-1,"SmartSocketEndpoint resolution failed for '%s' %d",_name,port);
         StringBuffer ipStr;
-        ep.getIpText(ipStr);
+        ep.getHostText(ipStr);
         if (strcmp(ipStr.str(), _name)!=0)
             name.append(_name);
         lastHostUpdate=msTick();
@@ -69,6 +69,7 @@ protected:
     bool retry;
     bool tlsService = false;
     Owned<IPropertyTree> tlsConfig;
+    StringAttr issuer;
 
     unsigned retryInterval;
     unsigned dnsInterval;
@@ -104,6 +105,7 @@ public:
     virtual StringBuffer & getUrlStr(StringBuffer &str, bool useHostName);
     virtual bool isTlsService() const override { return tlsService; }
     virtual const IPropertyTree *queryTlsConfig() const { return tlsConfig; };
+    const char *queryTlsIssuer() const { return issuer.str(); }
 };
 
 

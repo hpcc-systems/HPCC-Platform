@@ -588,8 +588,8 @@ void TransferServer::deserializeAction(MemoryBuffer & msg, unsigned action)
     if (!isContainerized() && !ep.isLocal())
     {
         StringBuffer host, expected;
-        queryHostIP().getIpText(host);
-        ep.getIpText(expected);
+        queryHostIP().getHostText(host);
+        ep.getHostText(expected);
         throwError2(DFTERR_WrongComputer, expected.str(), host.str());
     }
 

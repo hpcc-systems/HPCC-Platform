@@ -662,7 +662,7 @@ public:
 
             Owned<IPropertyTreeIterator> iter = pComputers->getElements(XML_TAG_COMPUTER);
             StringBuffer localip;
-            queryHostIP().getIpText(localip);
+            queryHostIP().getHostText(localip);
 
             ForEach(*iter)
             {
@@ -775,7 +775,7 @@ public:
     const char* getUser() {return m_user.str();}
     const char* getNewEnv() {return m_newEnv.str();}
     const char* getNewEnvId() {return m_newEnvId.str();}
-    const char* getCurIp(){ if (m_curIp.length() == 0) queryHostIP().getIpText(m_curIp); return m_curIp.str(); }
+    const char* getCurIp(){ if (m_curIp.length() == 0) queryHostIP().getHostText(m_curIp); return m_curIp.str(); }
 
 private:
     CWsDeployFileInfo* m_pFileInfo;

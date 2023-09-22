@@ -341,7 +341,7 @@ void CFileSpraySoapBindingEx::appendDropZones(double clientVersion, IConstEnviro
 
             IpAddress ipAddr;
             ipAddr.ipset(server.str());
-            ipAddr.getIpText(networkAddress);
+            ipAddr.getHostText(networkAddress);
             if (!ipAddr.isNull())
             {
                 dropZone->addProp("@netAddress", networkAddress);

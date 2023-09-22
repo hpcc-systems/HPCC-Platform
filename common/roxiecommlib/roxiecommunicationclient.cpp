@@ -232,7 +232,7 @@ protected:
             if (remoteIP)
                 buf.append(remoteIP);
             else
-                ep.getUrlStr(buf);
+                ep.getEndpointHostText(buf);
 
             throw MakeStringException(ROXIECOMM_SOCKET_ERROR, "%s", buf.str());
         }

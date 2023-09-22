@@ -91,7 +91,7 @@ class CDFUengine: public CInterface, implements IDFUengine
         ep.setLocalHost(0);
         StringBuffer aln;
         aln.append(",FileAccess,DfuPlus,").append(func).append(',');
-        ep.getUrlStr(aln);
+        ep.getEndpointHostText(aln);
         aln.append(',');
         if (userdesc)
             userdesc->getUserName(aln);
@@ -466,7 +466,7 @@ class CDFUengine: public CInterface, implements IDFUengine
             throwError3(DFTERR_InvalidFilePath, pfilePath, dotDotString, dotString);
 
         StringBuffer netaddress;
-        filename.queryIP().getIpText(netaddress);
+        filename.queryIP().getHostText(netaddress);
 #ifdef _CONTAINERIZED
         Owned<IPropertyTreeIterator> planes = getDropZonePlanesIterator();
         ForEach(*planes)
@@ -1020,7 +1020,7 @@ public:
         if (wuid.isEmpty())
             return false;
         StringBuffer eps;
-        PROGLOG("%s: Copy %s from %s to %s",wuid.get(),srclfn,srcdali?srcdali->endpoint().getUrlStr(eps).str():"(local)",dstlfn);
+        PROGLOG("%s: Copy %s from %s to %s",wuid.get(),srclfn,srcdali?srcdali->endpoint().getEndpointHostText(eps).str():"(local)",dstlfn);
         DFUstate state = runWU(wuid);
         StringBuffer tmp;
         PROGLOG("%s: Done: %s",wuid.get(),encodeDFUstate(state,tmp).str());
@@ -1049,7 +1049,7 @@ public:
         Owned<IPropertyTree> ftree = queryDistributedFileDirectory().getFileTree(srclfn,ctx.srcuser,srcdali, FOREIGN_DALI_TIMEOUT, GetFileTreeOpts::appendForeign);
         if (!ftree.get()) {
             StringBuffer s;
-            throw MakeStringException(-1,"Source file %s could not be found in Dali %s",slfn.get(),srcdali?srcdali->endpoint().getUrlStr(s).str():"(local)");
+            throw MakeStringException(-1,"Source file %s could not be found in Dali %s",slfn.get(),srcdali?srcdali->endpoint().getEndpointHostText(s).str():"(local)");
         }
         // now we can create name
         StringBuffer newroxieprefix;
@@ -1124,7 +1124,7 @@ public:
         }
         else {
             StringBuffer s;
-            throw MakeStringException(-1,"Source file %s in Dali %s is not a file or superfile",srclfn,srcdali?srcdali->endpoint().getUrlStr(s).str():"(local)");
+            throw MakeStringException(-1,"Source file %s in Dali %s is not a file or superfile",srclfn,srcdali?srcdali->endpoint().getEndpointHostText(s).str():"(local)");
         }
         if ((ctx.level==1)&&ctx.feedback)
             ctx.feedback->displaySummary("0",0);

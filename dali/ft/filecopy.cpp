@@ -203,7 +203,7 @@ FileTransferThread::FileTransferThread(FileSprayer & _sprayer, byte _action, con
     if (isContainerized())
         url.set(sprayer.sprayServiceHost);
     else
-        ep.getUrlStr(url);
+        ep.getEndpointHostText(url);
 //  progressInfo = _progressInfo;
     sem = NULL;
     ok = false;
@@ -1034,7 +1034,7 @@ void FileSprayer::beforeTransfer()
         Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
         Owned<IConstEnvironment> env = factory->openEnvironment();
         StringBuffer ipText;
-        targets.item(0).filename.queryIP().getIpText(ipText);
+        targets.item(0).filename.queryIP().getHostText(ipText);
         Owned<IConstMachineInfo> machine = env->getMachineByAddress(ipText.str());
         if (machine)
         {
@@ -3786,7 +3786,7 @@ void FileSprayer::splitAndCollectFileInfo(IPropertyTree * newRecord, RemoteFilen
 
     if (drive.isEmpty())
     {
-        remoteFileName.queryIP().getIpText(drive.clear());
+        remoteFileName.queryIP().getHostText(drive.clear());
         newRecord->setProp("@ip", drive.str());
     }
     else
@@ -3902,7 +3902,7 @@ bool FileSprayer::calcUsePull() const
         if (!sources.item(idx2).canPush())
         {
             StringBuffer s;
-            sources.item(idx2).filename.queryIP().getIpText(s);
+            sources.item(idx2).filename.queryIP().getHostText(s);
             LOG(MCdebugInfo, job, "Use pull operation because %s cannot push", s.str());
             return true;
         }
@@ -3910,7 +3910,7 @@ bool FileSprayer::calcUsePull() const
     if (!canLocateSlaveForNode(sources.item(0).filename.queryIP()))
     {
         StringBuffer s;
-        sources.item(0).filename.queryIP().getIpText(s);
+        sources.item(0).filename.queryIP().getHostText(s);
         LOG(MCdebugInfo, job, "Use pull operation because %s doesn't appear to have an ftslave", s.str());
         return true;
     }
@@ -3920,7 +3920,7 @@ bool FileSprayer::calcUsePull() const
         if (!targets.item(idx).canPull())
         {
             StringBuffer s;
-            targets.item(idx).queryIP().getIpText(s);
+            targets.item(idx).queryIP().getHostText(s);
             LOG(MCdebugInfo, job, "Use push operation because %s cannot pull", s.str());
             return false;
         }
@@ -3929,7 +3929,7 @@ bool FileSprayer::calcUsePull() const
     if (!canLocateSlaveForNode(targets.item(0).queryIP()))
     {
         StringBuffer s;
-        targets.item(0).queryIP().getIpText(s);
+        targets.item(0).queryIP().getHostText(s);
         LOG(MCdebugInfo, job, "Use push operation because %s doesn't appear to have an ftslave", s.str());
         return false;
     }

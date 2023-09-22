@@ -106,6 +106,11 @@ public:
         return url.append(method).append("://").append(host).append(":").append(port).append(path);
     }
 
+    StringBuffer &getDynamicUrlSecretName(StringBuffer &secretName) const
+    {
+        return generateDynamicUrlSecretName(secretName, method, userPasswordPair, host, port, path);
+    }
+
     IException *getUrlException(IException *e) const
     {
         StringBuffer url;
@@ -340,7 +345,7 @@ public:
             if (soapTraceLevel > 3)
             {
                 StringBuffer s;
-                logctx.CTXLOG("endpoint %s is blacklisted", ep.getUrlStr(s).str());
+                logctx.CTXLOG("endpoint %s is blacklisted", ep.getEndpointHostText(s).str());
             }
             return true;
         }
@@ -364,7 +369,7 @@ public:
             if (soapTraceLevel > 0)
             {
                 StringBuffer s;
-                logctx.CTXLOG("Blacklisting endpoint %s", p.ep.getUrlStr(s).str());
+                logctx.CTXLOG("Blacklisting endpoint %s", p.ep.getEndpointHostText(s).str());
             }
         }
         else
@@ -372,7 +377,7 @@ public:
             if (soapTraceLevel > 3)
             {
                 StringBuffer s;
-                logctx.CTXLOG("Endpoint %s is already blacklisted", p.ep.getUrlStr(s).str());
+                logctx.CTXLOG("Endpoint %s is already blacklisted", p.ep.getEndpointHostText(s).str());
             }
 
         }
@@ -390,7 +395,7 @@ public:
         if ((match != NotFound) && (soapTraceLevel > 0))
         {
             StringBuffer s;
-            DBGLOG("De-blacklisting endpoint %s", ep.getUrlStr(s).str());
+            DBGLOG("De-blacklisting endpoint %s", ep.getEndpointHostText(s).str());
         }
     }
 
@@ -413,7 +418,7 @@ public:
         if (useBlacklister && lookup(ep, logctx))
         {
             StringBuffer s;
-            ep.getUrlStr(s);
+            ep.getEndpointHostText(s);
             throw MakeStringException(JSOCKERR_connection_failed, "%s %s", blOptions->getBLerror(), s.str());
         }
         Owned<IException> exc;
@@ -470,7 +475,7 @@ public:
         }
         if (exc->errorCode()==JSOCKERR_connection_failed) {
             StringBuffer s;
-            ep.getUrlStr(s);
+            ep.getEndpointHostText(s);
             throw MakeStringException(JSOCKERR_connection_failed, "connection failed %s", s.str());
         }
         throw exc.getClear();
@@ -552,23 +557,31 @@ public:
 } *blacklist;
 
 static IPersistentHandler* persistentHandler = nullptr;
-static CriticalSection persistentCrit;
-static std::atomic<bool> persistentInitDone{false};
+static CriticalSection globalFeatureCrit;
+static std::atomic<bool> globalFeaturesInitDone{false};
+static std::atomic<bool> mapUrlsToSecrets{false};
+static std::atomic<bool> warnIfUrlNotMappedToSecret{false};
+static std::atomic<bool> requireUrlsMappedToSecrets{false};
 
-void initPersistentHandler()
+void initGlobalFeatures()
 {
-    CriticalBlock block(persistentCrit);
-    if (!persistentInitDone)
+    CriticalBlock block(globalFeatureCrit);
+    if (!globalFeaturesInitDone)
     {
-#ifndef _CONTAINERIZED
-        int maxPersistentRequests = queryEnvironmentConf().getPropInt("maxHttpCallPersistentRequests", 0);
-#else
+        int maxPersistentRequests = 0;
+        if (!isContainerized())
+            maxPersistentRequests = queryEnvironmentConf().getPropInt("maxHttpCallPersistentRequests", maxPersistentRequests); //global (backward compatible)
+
         Owned<IPropertyTree> conf = getComponentConfig();
-        int maxPersistentRequests = conf->getPropInt("@maxHttpCallPersistentRequests", 0);
-#endif
+        maxPersistentRequests = conf->getPropInt("@maxHttpCallPersistentRequests", maxPersistentRequests); //component config wins
+        mapUrlsToSecrets = conf->getPropBool("@mapHttpCallUrlsToSecrets", false);
+        warnIfUrlNotMappedToSecret = conf->getPropBool("@warnIfUrlNotMappedToSecret", mapUrlsToSecrets);
+        requireUrlsMappedToSecrets = conf->getPropBool("@requireUrlsMappedToSecrets", false);
+
         if (maxPersistentRequests != 0)
             persistentHandler = createPersistentHandler(nullptr, DEFAULT_MAX_PERSISTENT_IDLE_TIME, maxPersistentRequests, PersistentLogLevel::PLogMin, true);
-        persistentInitDone = true;
+
+        globalFeaturesInitDone = true;
     }
 }
 
@@ -706,6 +719,8 @@ IColumnProvider * CreateColumnProvider(unsigned _callLatencyMs, bool _encoding)
 
 
 enum WSCType{STsoap, SThttp} ;  //web service call type
+
+static const char * getWsCallTypeName(WSCType wscType) { return wscType == STsoap ? "SOAPCALL" : "HTTPCALL"; }
 
 //Web Services Call Asynchronous For
 interface IWSCAsyncFor: public IInterface
@@ -861,6 +876,41 @@ public:
     }
 };
 
+bool loadConnectSecret(const char *vaultId, const char *secretName, UrlArray &urlArray, StringBuffer &issuer, StringBuffer &proxyAddress, bool required, WSCType wscType)
+{
+    Owned<IPropertyTree> secret;
+    if (!isEmptyString(secretName))
+        secret.setown(getSecret("ecl", secretName, vaultId, nullptr));
+    if (!secret)
+    {
+        if (required)
+            throw MakeStringException(0, "%s %s SECRET not found", getWsCallTypeName(wscType), secretName);
+        return false;
+    }
+
+    StringBuffer url;
+    getSecretKeyValue(url, secret, "url");
+    if (url.isEmpty())
+        throw MakeStringException(0, "%s %s HTTP SECRET must contain url", getWsCallTypeName(wscType), secretName);
+    UrlListParser urlListParser(url);
+    StringBuffer usernamePasswordPair;
+    getSecretKeyValue(usernamePasswordPair, secret, "username");
+    if (usernamePasswordPair.length())
+    {
+        if (strchr(usernamePasswordPair, ':'))
+            throw MakeStringException(0, "%s HTTP-CONNECT SECRET username contains illegal colon", getWsCallTypeName(wscType));
+        StringBuffer password;
+        getSecretKeyValue(password, secret, "password");
+        if (password.length())
+            usernamePasswordPair.append(':').append(password);
+    }
+    urlListParser.getUrls(urlArray, usernamePasswordPair);
+    getSecretKeyValue(proxyAddress.clear(), secret, "proxy");
+    getSecretKeyValue(issuer, secret, "issuer");
+    return true;
+}
+
+
 //=================================================================================================
 
 class CWSCHelper : implements IWSCHelper, public CInterface
@@ -876,6 +926,7 @@ private:
     static CriticalSection secureContextCrit;
     static Owned<ISecureSocketContext> tlsSecureContext;
     static Owned<ISecureSocketContext> localMtlsSecureContext;
+    static Owned<ISecureSocketContext> remoteMtlsSecureContext;
 
     Owned<ISecureSocketContext> customSecureContext;
 
@@ -883,8 +934,9 @@ private:
     bool complete;
     std::atomic_bool timeLimitExceeded{false};
     bool customClientCert = false;
-    bool localClientCert = false;
+    StringAttr clientCertIssuer;
     IRoxieAbortMonitor * roxieAbortMonitor;
+    StringBuffer issuer; //TBD sync up with other PR, it will benefit from this being able to come from the secret
 
 protected:
     IArrayOf<CWSCHelperThread> threads;
@@ -1018,19 +1070,24 @@ public:
         const char *hosts = hostsString.get();
 
         if (isEmptyString(hosts))
-            throw MakeStringException(0, "%sCALL specified no URLs",wscType == STsoap ? "SOAP" : "HTTP");
+            throw MakeStringException(0, "%s specified no URLs", getWsCallTypeName(wscType));
         if (0==strncmp(hosts, "mtls:", 5))
         {
-            localClientCert = true;
+            clientCertIssuer.set("local");
             hosts += 5;
+        }
+        else if (0==strncmp(hosts, "remote-mtls:", 12))
+        {
+            clientCertIssuer.set("remote");
+            hosts += 12;
         }
         if (0==strncmp(hosts, "secret:", 7))
         {
             const char *finger = hosts+7;
             if (isEmptyString(finger))
-                throw MakeStringException(0, "%sCALL HTTP-CONNECT SECRET specified with no name", wscType == STsoap ? "SOAP" : "HTTP");
+                throw MakeStringException(0, "%s HTTP-CONNECT SECRET specified with no name", getWsCallTypeName(wscType));
             if (!proxyAddress.isEmpty())
-                throw MakeStringException(0, "%sCALL PROXYADDRESS can't be used with HTTP-CONNECT secrets", wscType == STsoap ? "SOAP" : "HTTP");
+                throw MakeStringException(0, "%s PROXYADDRESS can't be used with HTTP-CONNECT secrets", getWsCallTypeName(wscType));
             StringAttr vaultId;
             const char *thumb = strchr(finger, ':');
             if (thumb)
@@ -1040,43 +1097,45 @@ public:
             }
             StringBuffer secretName("http-connect-");
             secretName.append(finger);
-            Owned<IPropertyTree> secret = (vaultId.isEmpty()) ? getSecret("ecl", secretName) : getVaultSecret("ecl", vaultId, secretName, nullptr);
-            if (!secret)
-                throw MakeStringException(0, "%sCALL %s SECRET not found", wscType == STsoap ? "SOAP" : "HTTP", secretName.str());
-
-            StringBuffer url;
-            getSecretKeyValue(url, secret, "url");
-            if (url.isEmpty())
-                throw MakeStringException(0, "%sCALL %s HTTP SECRET must contain url", wscType == STsoap ? "SOAP" : "HTTP", secretName.str());
-            UrlListParser urlListParser(url);
-            StringBuffer auth;
-            getSecretKeyValue(auth, secret, "username");
-            if (auth.length())
-            {
-                if (strchr(auth, ':'))
-                    throw MakeStringException(0, "%sCALL HTTP-CONNECT SECRET username contains illegal colon", wscType == STsoap ? "SOAP" : "HTTP");
-                auth.append(':');
-                getSecretKeyValue(auth, secret, "password");
-            }
-            urlListParser.getUrls(urlArray, auth);
-            proxyAddress.set(secret->queryProp("proxy"));
-            getSecretKeyValue(proxyAddress.clear(), secret, "proxy");
+            loadConnectSecret(vaultId, secretName, urlArray, issuer, proxyAddress, true, wscType);
         }
         else
         {
             UrlListParser urlListParser(hosts);
             urlListParser.getUrls(urlArray);
+            if (mapUrlsToSecrets && urlArray.length())
+            {
+                StringBuffer secretName;
+                UrlArray tempArray;
+                //TBD: If this is a list of URLs do we A. not check for a mapped secret, B. check the first one, C. Use long secret name including entire list
+                Url &url = urlArray.tos();
+                url.getDynamicUrlSecretName(secretName);
+                if (secretName.length())
+                {
+                    if (loadConnectSecret(nullptr, secretName, tempArray, issuer, proxyAddress, requireUrlsMappedToSecrets, wscType))
+                    {
+                        logctx.CTXLOG("Mapped %s URL!", wscCallTypeText());
+                        if (tempArray.length())
+                            urlArray.swapWith(tempArray);
+                    }
+                    else if (warnIfUrlNotMappedToSecret)
+                    {
+                        //should we warn even if the url doesn't have credentials embedded?  If HTTPHEADER is being used to pass credentials, we still prefer connect secrets be used instead.
+                        logctx.CTXLOG("Security Warning: %s not using a connection secret (auto secret = %s)", wscCallTypeText(), secretName.str());
+                    }
+                }
+            }
         }
 
         numUrls = urlArray.ordinality();
         if (numUrls == 0)
-            throw MakeStringException(0, "%sCALL specified no URLs",wscType == STsoap ? "SOAP" : "HTTP");
+            throw MakeStringException(0, "%s specified no URLs", getWsCallTypeName(wscType));
 
         if (!proxyAddress.isEmpty())
         {
             UrlListParser proxyUrlListParser(proxyAddress);
             if (0 == proxyUrlListParser.getUrls(proxyUrlArray))
-                throw MakeStringException(0, "%sCALL proxy address specified no URLs",wscType == STsoap ? "SOAP" : "HTTP");
+                throw MakeStringException(0, "%s proxy address specified no URLs", getWsCallTypeName(wscType));
         }
 
         if (wscMode == SCrow)
@@ -1184,8 +1243,8 @@ public:
         {
             if (clientCert != NULL)
                 ownedSC.setown(createSecureSocketContextEx(clientCert->certificate, clientCert->privateKey, clientCert->passphrase, ClientSocket));
-            else if (localClientCert)
-                ownedSC.setown(createSecureSocketContextSecret("local", ClientSocket));
+            else if (clientCertIssuer.length())
+                ownedSC.setown(createSecureSocketContextSecret(clientCertIssuer.str(), ClientSocket));
             else
                 ownedSC.setown(createSecureSocketContext(ClientSocket));
         }
@@ -1194,8 +1253,13 @@ public:
     ISecureSocketContext *ensureStaticSecureContext()
     {
         CriticalBlock b(secureContextCrit);
-        if (localClientCert)
-            return ensureSecureContext(localMtlsSecureContext);
+        if (clientCertIssuer.length())
+        {
+            if (strieq(clientCertIssuer.str(), "local"))
+                return ensureSecureContext(localMtlsSecureContext);
+            if (strieq(clientCertIssuer.str(), "remote"))
+                return ensureSecureContext(remoteMtlsSecureContext);
+        }
         return ensureSecureContext(tlsSecureContext);
     }
     ISecureSocket *createSecureSocket(ISocket *sock, const char *fqdn = nullptr)
@@ -1248,7 +1312,7 @@ public:
         }
     }
     inline IXmlToRowTransformer * getRowTransformer() { return rowTransformer; }
-    inline const char * wscCallTypeText() const { return wscType == STsoap ? "SOAPCALL" : "HTTPCALL"; }
+    inline const char * wscCallTypeText() const { return getWsCallTypeName(wscType); }
 
 protected:
     friend class CWSCHelperThread;
@@ -1333,6 +1397,7 @@ protected:
 CriticalSection CWSCHelper::secureContextCrit;
 Owned<ISecureSocketContext> CWSCHelper::tlsSecureContext; // created on first use
 Owned<ISecureSocketContext> CWSCHelper::localMtlsSecureContext; // created on first use
+Owned<ISecureSocketContext> CWSCHelper::remoteMtlsSecureContext; // created on first use
 
 
 //=================================================================================================
@@ -1594,11 +1659,15 @@ int CWSCHelperThread::run()
 
 IWSCHelper * createSoapCallHelper(IWSCRowProvider *r, IEngineRowAllocator * outputAllocator, const char *authToken, WSCMode wscMode, ClientCertificate *clientCert, const IContextLogger &logctx, IRoxieAbortMonitor * roxieAbortMonitor)
 {
+    if (!globalFeaturesInitDone)
+        initGlobalFeatures();
     return new CWSCHelper(r, outputAllocator, authToken, wscMode, clientCert, logctx, roxieAbortMonitor, STsoap);
 }
 
 IWSCHelper * createHttpCallHelper(IWSCRowProvider *r, IEngineRowAllocator * outputAllocator, const char *authToken, WSCMode wscMode, ClientCertificate *clientCert, const IContextLogger &logctx, IRoxieAbortMonitor * roxieAbortMonitor)
 {
+    if (!globalFeaturesInitDone)
+        initGlobalFeatures();
     return new CWSCHelper(r, outputAllocator, authToken, wscMode, clientCert, logctx, roxieAbortMonitor, SThttp);
 }
 
@@ -2060,7 +2129,7 @@ private:
                     read += bytesRead;
                     response.setLength(read);
                     if (bytesRead==0) {
-                        master->logctx.CTXLOG("%sCALL: Warning %sHTTP response terminated prematurely",master->wscType == STsoap ? "SOAP" : "HTTP",chunked?"CHUNKED ":"");
+                        master->logctx.CTXLOG("%s: Warning %sHTTP response terminated prematurely", getWsCallTypeName(master->wscType),chunked?"CHUNKED ":"");
                         break; // oops  looks likesocket closed early
                     }
                 }
@@ -2087,9 +2156,9 @@ private:
         if (checkContentDecoding(dbgheader, response, contentEncoding))
             decodeContent(contentEncoding.str(), response);
         if (soapTraceLevel > 6 || master->logXML)
-            master->logctx.mCTXLOG("%sCALL: LEN=%d %sresponse(%s%s)", master->wscType == STsoap ? "SOAP" : "HTTP",response.length(),chunked?"CHUNKED ":"", dbgheader.str(), response.str());
+            master->logctx.mCTXLOG("%s: LEN=%d %sresponse(%s%s)", getWsCallTypeName(master->wscType),response.length(),chunked?"CHUNKED ":"", dbgheader.str(), response.str());
         else if (soapTraceLevel > 8)
-            master->logctx.mCTXLOG("%sCALL: LEN=%d %sresponse(%s)", master->wscType == STsoap ? "SOAP" : "HTTP",response.length(),chunked?"CHUNKED ":"", response.str()); // not sure this is that useful but...
+            master->logctx.mCTXLOG("%s: LEN=%d %sresponse(%s)", getWsCallTypeName(master->wscType),response.length(),chunked?"CHUNKED ":"", response.str()); // not sure this is that useful but...
         return rval;
     }
 
@@ -2236,7 +2305,7 @@ private:
     inline void checkTimeLimitExceeded(unsigned * remainingMS)
     {
         if (master->isTimeLimitExceeded(remainingMS))
-            throw MakeStringException(TIMELIMIT_EXCEEDED, "%sCALL TIMELIMIT(%ums) exceeded", master->wscType == STsoap ? "SOAP" : "HTTP", master->timeLimitMS);
+            throw MakeStringException(TIMELIMIT_EXCEEDED, "%s TIMELIMIT(%ums) exceeded", getWsCallTypeName(master->wscType), master->timeLimitMS);
     }
 
     inline bool checkKeepAlive(StringBuffer& headers)
@@ -2357,7 +2426,7 @@ public:
                 {
                     if (master->timeLimitExceeded)
                     {
-                        master->logctx.CTXLOG("%sCALL exiting: time limit (%ums) exceeded",master->wscType == STsoap ? "SOAP" : "HTTP", master->timeLimitMS);
+                        master->logctx.CTXLOG("%s exiting: time limit (%ums) exceeded", getWsCallTypeName(master->wscType), master->timeLimitMS);
                         processException(url, inputRows, e);
                         return;
                     }
@@ -2365,7 +2434,7 @@ public:
                     if (e->errorCode() == ROXIE_ABORT_EVENT)
                     {
                         StringBuffer s;
-                        master->logctx.CTXLOG("%sCALL exiting: Roxie Abort : %s",master->wscType == STsoap ? "SOAP" : "HTTP",e->errorMessage(s).str());
+                        master->logctx.CTXLOG("%s exiting: Roxie Abort : %s", getWsCallTypeName(master->wscType),e->errorMessage(s).str());
                         throw;
                     }
 
@@ -2390,7 +2459,7 @@ public:
                 checkRoxieAbortMonitor(master->roxieAbortMonitor);
                 socket->write(request.str(), request.length());
                 if (soapTraceLevel > 4)
-                    master->logctx.CTXLOG("%sCALL: sent request (%s) to %s:%d", master->wscType == STsoap ? "SOAP" : "HTTP",master->service.str(), url.host.str(), url.port);
+                    master->logctx.CTXLOG("%s: sent request (%s) to %s:%d", getWsCallTypeName(master->wscType),master->service.str(), url.host.str(), url.port);
                 checkTimeLimitExceeded(&remainingMS);
                 checkRoxieAbortMonitor(master->roxieAbortMonitor);
 
@@ -2400,7 +2469,7 @@ public:
                 keepAlive = keepAlive && keepAlive2;
 
                 if (soapTraceLevel > 4)
-                    master->logctx.CTXLOG("%sCALL: received response (%s) from %s:%d", master->wscType == STsoap ? "SOAP" : "HTTP",master->service.str(), url.host.str(), url.port);
+                    master->logctx.CTXLOG("%s: received response (%s) from %s:%d", getWsCallTypeName(master->wscType),master->service.str(), url.host.str(), url.port);
 
                 if (rval != 200)
                 {
@@ -2469,14 +2538,14 @@ public:
                 if (master->timeLimitExceeded)
                 {
                     processException(url, inputRows, e);
-                    master->logctx.CTXLOG("%sCALL exiting: time limit (%ums) exceeded", master->wscType == STsoap ? "SOAP" : "HTTP", master->timeLimitMS);
+                    master->logctx.CTXLOG("%s exiting: time limit (%ums) exceeded", getWsCallTypeName(master->wscType), master->timeLimitMS);
                     break;
                 }
 
                 if (e->errorCode() == ROXIE_ABORT_EVENT)
                 {
                     StringBuffer s;
-                    master->logctx.CTXLOG("%sCALL exiting: Roxie Abort : %s",master->wscType == STsoap ? "SOAP" : "HTTP",e->errorMessage(s).str());
+                    master->logctx.CTXLOG("%s exiting: Roxie Abort : %s", getWsCallTypeName(master->wscType),e->errorMessage(s).str());
                     throw;
                 }
 
@@ -2519,7 +2588,5 @@ public:
 
 IWSCAsyncFor * createWSCAsyncFor(CWSCHelper * _master, IXmlWriterExt &_xmlWriter, ConstPointerArray &_inputRows, PTreeReaderOptions _options)
 {
-    if (!persistentInitDone)
-        initPersistentHandler();
     return new CWSCAsyncFor(_master, _xmlWriter, _inputRows, _options);
 }

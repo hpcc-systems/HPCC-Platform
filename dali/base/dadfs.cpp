@@ -289,7 +289,7 @@ public:
         case DFSERR_LookupAccessDenied:
         {
             StringBuffer ip;
-            queryCoven().queryGroup().queryNode(0).endpoint().getIpText(ip);
+            queryCoven().queryGroup().queryNode(0).endpoint().getHostText(ip);
             return str.appendf(" Lookup access denied for scope %s at Dali %s", errstr.str(), ip.str());
         }
         case DFSERR_CreateAccessDenied:
@@ -811,7 +811,7 @@ static void foreignDaliSendRecv(const INode *foreigndali,CMessageBuffer &mb, uns
     Owned<ICommunicator> comm = createCommunicator(grp,true);
     if (!comm->verifyConnection(0,foreigndalitimeout)) {
         StringBuffer tmp;
-        IDFS_Exception *e = new CDFS_Exception(DFSERR_ForeignDaliTimeout, foreigndali->endpoint().getUrlStr(tmp).str());
+        IDFS_Exception *e = new CDFS_Exception(DFSERR_ForeignDaliTimeout, foreigndali->endpoint().getEndpointHostText(tmp).str());
         throw e;
     }
     comm->sendRecv(mb,0,MPTAG_DFS_REQUEST);
@@ -3394,7 +3394,7 @@ protected:
                 const char *grp = root->queryProp("@group");
                 if (!grp||!*grp) {
                     StringBuffer eps;
-                    pt->addProp("@node",part.queryNode(0)->endpoint().getUrlStr(eps).str()); // legacy
+                    pt->addProp("@node",part.queryNode(0)->endpoint().getEndpointHostText(eps).str()); // legacy
                 }
                 const char *override = part.queryOverrideName();
                 if (override&&*override)
@@ -4319,7 +4319,7 @@ public:
                         CriticalBlock block(errcrit);
                         StringBuffer s("Failed to find file part ");
                         s.append(partfile->queryFilename()).append(" on ");
-                        rfn.queryEndpoint().getUrlStr(s);
+                        rfn.queryEndpoint().getEndpointHostText(s);
                         EXCLOG(e, s.str());
                         e->Release();
                     }
@@ -7748,7 +7748,7 @@ public:
                 ForEachItemIn(e, epa)
                 {
                     StringBuffer ipStr;
-                    epa.item(e).getIpText(ipStr);
+                    epa.item(e).getHostText(ipStr);
                     IPropertyTree *n = val->addPropTree("Node");
                     n->setProp("@ip", ipStr);
                 }
@@ -7774,7 +7774,7 @@ public:
             std::vector<std::string> ips;
             while (true)
             {
-                gi->query().endpoint().getIpText(ipStr.clear());
+                gi->query().endpoint().getHostText(ipStr.clear());
                 ips.push_back(ipStr.str());
                 if (!gi->next())
                     break;
@@ -8957,7 +8957,7 @@ void CDistributedFileDirectory::fixDates(IDistributedFile *file)
                     CriticalBlock block(crit);
                     StringBuffer s("Failed to find file part ");
                     s.append(partfile->queryFilename()).append(" on ");
-                    rfn.queryEndpoint().getUrlStr(s);
+                    rfn.queryEndpoint().getEndpointHostText(s);
                     EXCLOG(e, s.str());
                     e->Release();
                 }
@@ -11334,7 +11334,7 @@ public:
         if (block0.slow())
         {
             SocketEndpoint ep = mb.getSender();
-            ep.getUrlStr(block0.appendMsg(trc).append(" from "));
+            ep.getEndpointHostText(block0.appendMsg(trc).append(" from "));
         }
     }
 
@@ -11939,10 +11939,10 @@ bool removePhysicalFiles(IGroup *grp,const char *_filemask,unsigned short port,C
                         PROGLOG("Removed '%s'",partfile->queryFilename());
                         unsigned t = msTick()-start;
                         if (t>5*1000)
-                            DBGLOG("Removing %s from %s took %ds", partfile->queryFilename(), rfn.queryEndpoint().getUrlStr(eps).str(), t/1000);
+                            DBGLOG("Removing %s from %s took %ds", partfile->queryFilename(), rfn.queryEndpoint().getEndpointHostText(eps).str(), t/1000);
                     }
                     else
-                        IWARNLOG("Failed to remove file part %s from %s", partfile->queryFilename(),rfn.queryEndpoint().getUrlStr(eps).str());
+                        IWARNLOG("Failed to remove file part %s from %s", partfile->queryFilename(),rfn.queryEndpoint().getEndpointHostText(eps).str());
 #else
                     if (partfile->exists())
                         PROGLOG("Would remove '%s'",partfile->queryFilename());
@@ -11957,7 +11957,7 @@ bool removePhysicalFiles(IGroup *grp,const char *_filemask,unsigned short port,C
                     else {
                         StringBuffer s("Failed to remove file part ");
                         s.append(partfile->queryFilename()).append(" from ");
-                        rfn.queryEndpoint().getUrlStr(s);
+                        rfn.queryEndpoint().getEndpointHostText(s);
                         EXCLOG(e, s.str());
                         e->Release();
                     }
@@ -13651,12 +13651,12 @@ bool CDistributedFileDirectory::removePhysicalPartFiles(const char *logicalName,
                 {
                     unsigned start = msTick();
                     if (!partfile->remove()&&(copy==0)&&!islazy) // only warn about missing primary files
-                        LOG(MCwarning, unknownJob, "Failed to remove file part %s from %s", partfile->queryFilename(),rfn.queryEndpoint().getUrlStr(eps).str());
+                        LOG(MCwarning, unknownJob, "Failed to remove file part %s from %s", partfile->queryFilename(),rfn.queryEndpoint().getEndpointHostText(eps).str());
                     else
                     {
                         unsigned t = msTick()-start;
                         if (t>5*1000)
-                            LOG(MCwarning, unknownJob, "Removing %s from %s took %ds", partfile->queryFilename(), rfn.queryEndpoint().getUrlStr(eps).str(), t/1000);
+                            LOG(MCwarning, unknownJob, "Removing %s from %s took %ds", partfile->queryFilename(), rfn.queryEndpoint().getEndpointHostText(eps).str(), t/1000);
                     }
                 }
                 catch (IException *e)
@@ -13668,7 +13668,7 @@ bool CDistributedFileDirectory::removePhysicalPartFiles(const char *logicalName,
                     {
                         StringBuffer s("Failed to remove file part ");
                         s.append(partfile->queryFilename()).append(" from ");
-                        rfn.queryEndpoint().getUrlStr(s);
+                        rfn.queryEndpoint().getEndpointHostText(s);
                         EXCLOG(e, s.str());
                         e->Release();
                     }

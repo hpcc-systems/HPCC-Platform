@@ -1889,7 +1889,7 @@ void CRemotePartitioner::callRemote()
     {
         LogMsgJobInfo job(unknownJob);
         StringBuffer url, tmp;
-        ep.getUrlStr(url);
+        ep.getEndpointHostText(url);
 
         MemoryBuffer msg;
         msg.setEndian(__BIG_ENDIAN);

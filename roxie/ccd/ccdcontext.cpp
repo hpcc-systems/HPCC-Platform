@@ -2686,7 +2686,7 @@ protected:
             WorkunitUpdate wu(&workUnit->lock());
             wu->setDebugAgentListenerPort(debugEndpoint.port); //tells debugger what port to write commands to
             StringBuffer sb;
-            debugEndpoint.getIpText(sb);
+            debugEndpoint.getHostText(sb);
             wu->setDebugAgentListenerIP(sb); //tells debugger what IP to write commands to
         }
         options.timeLimit = 0;

@@ -217,7 +217,7 @@ static bool populateAllowListFromEnvironment(IAllowListWriter &writer)
         IpAddress ip(it->second.c_str());
         if (ip.isNull())
             return defaultValue;
-        return ip.getIpText(result);
+        return ip.getHostText(result);
     };
     auto addRoles = [&writer, &resolveComputer](const IPropertyTree &component, const std::initializer_list<unsigned __int64> &roles)
     {
@@ -361,7 +361,7 @@ static bool populateAllowListFromEnvironment(IAllowListWriter &writer)
                 if (!ip.isNull())
                 {
                     StringBuffer ipStr;
-                    ip.getIpText(ipStr);
+                    ip.getHostText(ipStr);
                     ForEachItemIn(r, roles)
                     {
                         const char *roleStr = roles.item(r);

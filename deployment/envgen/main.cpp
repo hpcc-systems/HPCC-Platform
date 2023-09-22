@@ -391,7 +391,7 @@ int main(int argc, char** argv)
 
       StringBuffer env;
       StringBuffer thisip;
-      queryHostIP().getIpText(thisip);
+      queryHostIP().getHostText(thisip);
       env.appendf("<" XML_HEADER ">\n<!-- Generated with envgen on ip %s -->\n", thisip.str());
       env.append(envXml);
       

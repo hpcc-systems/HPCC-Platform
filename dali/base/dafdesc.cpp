@@ -869,7 +869,7 @@ public:
             SocketEndpoint ep = queryNode(0)->endpoint();
             StringBuffer tmp;
             if (!ep.isNull())
-                pt->setProp("@node",ep.getUrlStr(tmp).str());
+                pt->setProp("@node",ep.getEndpointHostText(tmp).str());
             if (overridename.isEmpty()&&!parent.partmask.isEmpty()) {
                 expandMask(tmp.clear(), parent.partmask, 0, 1);
                 pt->setProp("@name",tmp.str());
@@ -3039,10 +3039,10 @@ void removePartFiles(IFileDescriptor *desc,IMultiException *mexcept)
 //                          PROGLOG("Removed '%s'",partfile->queryFilename());
                         unsigned t = msTick()-start;
                         if (t>60*1000)
-                            OWARNLOG("Removing %s from %s took %ds", partfile->queryFilename(), rfn.queryEndpoint().getUrlStr(eps).str(), t/1000);
+                            OWARNLOG("Removing %s from %s took %ds", partfile->queryFilename(), rfn.queryEndpoint().getEndpointHostText(eps).str(), t/1000);
                     }
 //                      else
-//                          OWARNLOG("Failed to remove file part %s from %s", partfile->queryFilename(),rfn.queryEndpoint().getUrlStr(eps).str());
+//                          OWARNLOG("Failed to remove file part %s from %s", partfile->queryFilename(),rfn.queryEndpoint().getEndpointHostText(eps).str());
                 }
                 catch (IException *e)
                 {
@@ -3051,7 +3051,7 @@ void removePartFiles(IFileDescriptor *desc,IMultiException *mexcept)
                     else {
                         StringBuffer s("Failed to remove file part ");
                         s.append(partfile->queryFilename()).append(" from ");
-                        rfn.queryEndpoint().getUrlStr(s);
+                        rfn.queryEndpoint().getEndpointHostText(s);
                         EXCLOG(e, s.str());
                         e->Release();
                     }
@@ -3323,7 +3323,7 @@ void extractFilePartInfo(IPropertyTree &info, IFileDescriptor &file)
 
             IPropertyTree *copyTree = partTree->addPropTree("Copy", createPTree());
             copyTree->setProp("@filePath", rfn.getLocalPath(path.clear()));
-            copyTree->setProp("@host", rfn.queryEndpoint().getUrlStr(host.clear()));
+            copyTree->setProp("@host", rfn.queryEndpoint().getEndpointHostText(host.clear()));
         }
     }
 }

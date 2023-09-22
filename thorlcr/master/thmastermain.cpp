@@ -181,7 +181,7 @@ class CRegistryServer : public CSimpleInterface
                 rank_t sender = queryNodeGroup().rank(senderNode);
                 SocketEndpoint ep = senderNode->endpoint();
                 StringBuffer url;
-                ep.getUrlStr(url);
+                ep.getEndpointHostText(url);
                 if (RANK_NULL == sender)
                 {
                     PROGLOG("Node %s trying to deregister is not part of this cluster", url.str());
@@ -235,7 +235,7 @@ public:
     {
         const SocketEndpoint &ep = queryNodeGroup().queryNode(slave+1).endpoint();
         StringBuffer url;
-        ep.getUrlStr(url);
+        ep.getEndpointHostText(url);
         if (!status->test(slave))
         {
             PROGLOG("Slave %d (%s) trying to unregister, but not currently registered", slave+1, url.str());
@@ -252,7 +252,7 @@ public:
     {
         SocketEndpoint ep = queryNodeGroup().queryNode(slave+1).endpoint();
         StringBuffer url;
-        ep.getUrlStr(url);
+        ep.getEndpointHostText(url);
         if (status->test(slave))
         {
             PROGLOG("Slave %d (%s) already registered, rejecting", slave+1, url.str());
@@ -285,7 +285,7 @@ public:
             if (NotFound != connectedSlaves.find(sender))
             {
                 StringBuffer epStr;
-                PROGLOG("Same slave registered twice!! : %s", sender->endpoint().getUrlStr(epStr).str());
+                PROGLOG("Same slave registered twice!! : %s", sender->endpoint().getEndpointHostText(epStr).str());
                 return false;
             }
 
@@ -316,7 +316,7 @@ public:
                     connectedSlaves.replace(sender.getLink(), pos);
             }
             StringBuffer epStr;
-            PROGLOG("Slave %u connected from %s", slaveNum, sender->endpoint().getUrlStr(epStr).str());
+            PROGLOG("Slave %u connected from %s", slaveNum, sender->endpoint().getEndpointHostText(epStr).str());
             --remaining;
         }
         assertex(slaves == connectedSlaves.ordinality());
@@ -396,12 +396,12 @@ public:
                             break;
                         s = ns+1;
                         StringBuffer str;
-                        PROGLOG("Slave %d (%s)", s, queryNodeGroup().queryNode(s).endpoint().getUrlStr(str.clear()).str());
+                        PROGLOG("Slave %d (%s)", s, queryNodeGroup().queryNode(s).endpoint().getEndpointHostText(str.clear()).str());
                     }
                     throw MakeThorException(TE_AbortException, "Slaves failed to respond to cluster initialization");
                 }
                 StringBuffer str;
-                PROGLOG("Registration confirmation from %s", queryNodeGroup().queryNode(sender).endpoint().getUrlStr(str).str());
+                PROGLOG("Registration confirmation from %s", queryNodeGroup().queryNode(sender).endpoint().getEndpointHostText(str).str());
                 if (msg.length())
                 {
                     Owned<IException> e = deserializeException(msg);
@@ -543,7 +543,7 @@ bool checkClusterRelicateDAFS(IGroup &grp)
         SocketEndpoint ep(failures.item(i));
         ep.port = 0;
         StringBuffer ips;
-        ep.getIpText(ips);
+        ep.getHostText(ips);
         FLLOG(MCoperatorError, thorJob, "VALIDATE FAILED(%d) %s : %s",failedcodes.item(i),ips.str(),failedmessages.item(i));
     }
     PROGLOG("Cluster replicate nodes check completed in %dms",msTick()-start);
@@ -984,7 +984,7 @@ int main( int argc, const char *argv[]  )
             thorJob.setJobID(thorJobId);
             setDefaultJobId(thorJobId);
             StringBuffer thorEpStr;
-            LOG(MCdebugProgress, thorJob, "ThorMaster version %d.%d, Started on %s", THOR_VERSION_MAJOR,THOR_VERSION_MINOR,thorEp.getUrlStr(thorEpStr).str());
+            LOG(MCdebugProgress, thorJob, "ThorMaster version %d.%d, Started on %s", THOR_VERSION_MAJOR,THOR_VERSION_MINOR,thorEp.getEndpointHostText(thorEpStr).str());
             LOG(MCdebugProgress, thorJob, "Thor name = %s, queue = %s, nodeGroup = %s",thorname,queueName.str(),nodeGroup.str());
 
             unsigned numWorkersPerPod = 1;
@@ -1019,7 +1019,7 @@ int main( int argc, const char *argv[]  )
             cloudJobName.appendf("%s-%s", workunit, graphName);
 
             StringBuffer myEp;
-            queryMyNode()->endpoint().getUrlStr(myEp);
+            getRemoteAccessibleHostText(myEp, queryMyNode()->endpoint());
 
             workerNSInstalled = k8s::applyYaml("thorworker", workunit, cloudJobName, "networkpolicy", { }, false, true);
             if (workerNSInstalled)
@@ -1033,7 +1033,7 @@ int main( int argc, const char *argv[]  )
         else
         {
             StringBuffer thorEpStr;
-            LOG(MCdebugProgress, thorJob, "ThorMaster version %d.%d, Started on %s", THOR_VERSION_MAJOR,THOR_VERSION_MINOR,thorEp.getUrlStr(thorEpStr).str());
+            LOG(MCdebugProgress, thorJob, "ThorMaster version %d.%d, Started on %s", THOR_VERSION_MAJOR,THOR_VERSION_MINOR,thorEp.getEndpointHostText(thorEpStr).str());
             LOG(MCdebugProgress, thorJob, "Thor name = %s, queue = %s, nodeGroup = %s",thorname,queueName.str(),nodeGroup.str());
             unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_SLAVEPORTINC);
             unsigned slaveBasePort = globals->getPropInt("@slaveport", DEFAULT_THORSLAVEPORT);

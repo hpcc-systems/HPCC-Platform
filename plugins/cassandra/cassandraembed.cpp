@@ -127,7 +127,7 @@ void CassandraClusterSession::setOptions(const StringArray &options)
                 if (contact_points[0]=='.')
                 {
                     SocketEndpoint ep(contact_points);
-                    ep.getIpText(epText.clear());
+                    ep.getHostText(epText.clear());
                     contact_points = epText.str();
                 }
             }

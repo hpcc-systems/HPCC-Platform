@@ -1972,7 +1972,7 @@ IConstDropZoneInfo * CLocalEnvironment::getDropZoneByAddressPath(const char * ne
 
 #ifdef _DEBUG
                 StringBuffer serverIpString;
-                serverIP.getIpText(serverIpString);
+                serverIP.getHostText(serverIpString);
                 LOG(MCdebugInfo, unknownJob, "Listed server: '%s', IP: '%s'", dropzoneServer.str(), serverIpString.str());
 #endif
                 if (strisame(netaddress, dropzoneServer) || targetIp.ipequals(serverIP))

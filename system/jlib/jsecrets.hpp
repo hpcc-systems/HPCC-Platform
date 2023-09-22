@@ -22,15 +22,25 @@
 #include "jlib.hpp"
 #include "jstring.hpp"
 
+interface ISecret : extends IInterface
+{
+    virtual const IPropertyTree * getTree() const = 0;
+    virtual bool getKeyValue(MemoryBuffer & result, const char * key) const = 0;
+    virtual bool getKeyValue(StringBuffer & result, const char * key) const = 0;
+    virtual bool isStale() const = 0;
+    //Return a sequence number which changes whenever the secret actually changes - so that a caller can determine
+    //whether it needs to reload the certificates.
+    virtual unsigned getVersion() const = 0;
+};
+
 extern jlib_decl void setSecretMount(const char * path);
 extern jlib_decl void setSecretTimeout(unsigned timeoutMs);
 
-extern jlib_decl IPropertyTree *getLocalSecret(const char *category, const char * name);
-extern jlib_decl IPropertyTree *getVaultSecret(const char *category, const char *vaultId, const char * name, const char *version=nullptr);
-extern jlib_decl IPropertyTree *getSecret(const char *category, const char * name);
+extern jlib_decl IPropertyTree *getSecret(const char *category, const char * name, const char * optVaultId = nullptr, const char * optVersion = nullptr);
+extern jlib_decl ISecret * resolveSecret(const char *category, const char * name, const char * optRequiredVault);
 
-extern jlib_decl bool getSecretKeyValue(MemoryBuffer & result, IPropertyTree *secret, const char * key);
-extern jlib_decl bool getSecretKeyValue(StringBuffer & result, IPropertyTree *secret, const char * key);
+extern jlib_decl bool getSecretKeyValue(MemoryBuffer & result, const IPropertyTree *secret, const char * key);
+extern jlib_decl bool getSecretKeyValue(StringBuffer & result, const IPropertyTree *secret, const char * key);
 extern jlib_decl bool getSecretValue(StringBuffer & result, const char *category, const char * name, const char * key, bool required);
 
 extern jlib_decl void initSecretUdpKey();
@@ -38,12 +48,17 @@ extern jlib_decl const MemoryAttr &getSecretUdpKey(bool required);
 
 extern jlib_decl bool containsEmbeddedKey(const char *certificate);
 
-extern jlib_decl IPropertyTree *queryTlsSecretInfo(const char *issuer);
-extern jlib_decl IPropertyTree *createTlsClientSecretInfo(const char *issuer, bool mutual, bool acceptSelfSigned, bool addCACert=true);
+//getIssuerTlsServerConfig must return owned because the internal cache could be updated internally and the return will become invalid, so must be linked
+extern jlib_decl IPropertyTree *getIssuerTlsServerConfig(const char *issuer);
+extern jlib_decl IPropertyTree *getIssuerTlsServerConfigWithTrustedPeers(const char *issuer, const char *trusted_peers);
+
+extern jlib_decl IPropertyTree *createIssuerTlsClientConfig(const char *issuer, bool acceptSelfSigned, bool addCACert=true);
 
 extern jlib_decl  void splitFullUrl(const char *url, bool &https, StringBuffer &user, StringBuffer &password, StringBuffer &host, StringBuffer &port, StringBuffer &fullpath);
 extern jlib_decl void splitUrlSchemeHostPort(const char *url, StringBuffer &user, StringBuffer &password, StringBuffer &schemeHostPort, StringBuffer &path);
 extern jlib_decl void splitUrlIsolateScheme(const char *url, StringBuffer &user, StringBuffer &password, StringBuffer &scheme, StringBuffer &hostPort, StringBuffer &path);
+extern jlib_decl StringBuffer &generateDynamicUrlSecretName(StringBuffer &secretName, const char *scheme, const char *userPasswordPair, const char *host, unsigned port, const char *path);
+extern jlib_decl StringBuffer &generateDynamicUrlSecretName(StringBuffer &secretName, const char *url, const char *username);
 
 extern jlib_decl bool queryMtls();
 

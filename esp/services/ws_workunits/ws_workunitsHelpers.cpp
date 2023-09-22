@@ -2370,7 +2370,7 @@ void WsWuInfo::getWorkunitThorSlaveLog(IGroup *nodeGroup, const char *ipAddress,
     StringBuffer slaveIPAddress;
     if (slaveNum > 0)
     {
-        nodeGroup->queryNode(slaveNum-1).endpoint().getIpText(slaveIPAddress);
+        nodeGroup->queryNode(slaveNum-1).endpoint().getHostText(slaveIPAddress);
         if (slaveIPAddress.length() < 1)
             throw makeStringException(ECLWATCH_INVALID_INPUT, "ThorSlave log network address not found.");
 

@@ -650,8 +650,8 @@ int main(int argc, const char *argv[])
                 if (!myip.ipequals(myipfromSlaves))
                 {
                     StringBuffer ips1, ips2;
-                    myipfromSlaves.getIpText(ips1);
-                    myip.getIpText(ips2);
+                    myipfromSlaves.getHostText(ips1);
+                    myip.getHostText(ips2);
                     printerr("IP address %d in slaves file %s does not match this machine %s", slaveNum, ips1.str(), ips2.str());
                     throw MakeStringException(-1, "IP address %d in slaves file %s does not match this machine %s", slaveNum, ips1.str(), ips2.str());
                 }

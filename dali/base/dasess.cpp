@@ -320,7 +320,7 @@ public:
     StringBuffer &getDetails(StringBuffer &buf)
     {
         StringBuffer ep;
-        return buf.appendf("%16" I64F "X: %s, role=%s",CSessionState::id,node->endpoint().getUrlStr(ep).str(),queryRoleName(role));
+        return buf.appendf("%16" I64F "X: %s, role=%s",CSessionState::id,node->endpoint().getEndpointHostText(ep).str(),queryRoleName(role));
     }
     void addSessionIds(CProcessSessionState &other, bool prevOnly)
     {
@@ -1101,7 +1101,7 @@ public:
         Owned<INode> node = createINode(ep);
         if (queryCoven().inCoven(node)) {
             StringBuffer str;
-            PROGLOG("Coven Session Stopping (%s)",ep.getUrlStr(str).str());
+            PROGLOG("Coven Session Stopping (%s)",ep.getEndpointHostText(str).str());
             if (queryCoven().size()==1)
                 notifyServerStopped(true); 
         }
@@ -1325,7 +1325,7 @@ public:
     void addProcessSession(SessionId id,INode *client,DaliClientRole role)
     {
         StringBuffer str;
-        PROGLOG("Session starting %" I64F "x (%s) : role=%s",id,client->endpoint().getUrlStr(str).str(),queryRoleName(role));
+        PROGLOG("Session starting %" I64F "x (%s) : role=%s",id,client->endpoint().getEndpointHostText(str).str(),queryRoleName(role));
         CHECKEDCRITICALBLOCK(sessmanagersect,60000);
         CProcessSessionState *s = new CProcessSessionState(id,client,role);
         while (!sessionstates.add(s)) // takes ownership
@@ -1737,7 +1737,7 @@ protected:
     void onClose(SocketEndpoint &ep)
     {
         StringBuffer clientStr;
-        PROGLOG("Client closed (%s)", ep.getUrlStr(clientStr).str());
+        PROGLOG("Client closed (%s)", ep.getEndpointHostText(clientStr).str());
 
         SessionId idtostop;
         {
@@ -1787,7 +1787,7 @@ protected:
         if (state) {
             const CProcessSessionState *pstate = QUERYINTERFACE(state,const CProcessSessionState);
             if (pstate) 
-                return pstate->queryNode().endpoint().getUrlStr(buf);
+                return pstate->queryNode().endpoint().getEndpointHostText(buf);
         }
         return buf;
     }
@@ -1957,14 +1957,14 @@ bool registerClientProcess(ICommunicator *comm, IGroup *& retcoven,unsigned time
                 if (lastNextLog) // see below, true if has been round timeout loop. Only output confirmation, if have issued 'Failed to connect ..' messages
                 {
                     StringBuffer str("Connected to Dali Server ");
-                    comm->queryGroup().queryNode(r).endpoint().getUrlStr(str);
+                    comm->queryGroup().queryNode(r).endpoint().getEndpointHostText(str);
                     LOG(MCoperatorProgress, "%s", str.str());
                 }
                 return true;
             }
         }
         StringBuffer str;
-        OERRLOG("Waiting for Dali to be available - server: %s", comm->queryGroup().queryNode(r).endpoint().getUrlStr(str).str());
+        OERRLOG("Waiting for Dali to be available - server: %s", comm->queryGroup().queryNode(r).endpoint().getEndpointHostText(str).str());
         if (tm.timedout())
         {
             PROGLOG("%s", str.append(" Timed out.").str());

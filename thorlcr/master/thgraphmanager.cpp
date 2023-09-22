@@ -456,7 +456,7 @@ bool CJobManager::execute(IConstWorkUnit *workunit, const char *wuid, const char
         {
             WorkunitUpdate wu(&workunit->lock());
             StringBuffer sb;
-            queryHostIP().getIpText(sb);
+            queryHostIP().getHostText(sb);
             wu->setDebugAgentListenerIP(sb); //tells debugger what IP to write commands to
             wu->setDebugAgentListenerPort(debugListener->getPort());
         }
@@ -587,7 +587,7 @@ void CJobManager::run()
         conversation.clear();
         SocketEndpoint masterEp(getMasterPortBase());
         StringBuffer url;
-        PROGLOG("ThorLCR(%s) available, waiting on queue %s",masterEp.getUrlStr(url).str(),queueName.get());
+        PROGLOG("ThorLCR(%s) available, waiting on queue %s",masterEp.getEndpointHostText(url).str(),queueName.get());
 
         struct CLock
         {
@@ -787,7 +787,7 @@ bool CJobManager::doit(IConstWorkUnit *workunit, const char *graphName, const So
     StringAttr wuid(workunit->queryWuid());
     StringAttr user(workunit->queryUser());
 
-    LOG(MCdebugInfo, thorJob, "Processing wuid=%s, graph=%s from agent: %s", wuid.str(), graphName, agentep.getUrlStr(s).str());
+    LOG(MCdebugInfo, thorJob, "Processing wuid=%s, graph=%s from agent: %s", wuid.str(), graphName, agentep.getEndpointHostText(s).str());
     LOG(MCauditInfo,",Progress,Thor,Start,%s,%s,%s,%s,%s,%s",
             queryServerStatus().queryProperties()->queryProp("@thorname"),
             wuid.str(),
@@ -882,7 +882,7 @@ void CJobManager::reply(IConstWorkUnit *workunit, const char *wuid, IException *
     else
         s.append("Posting OK");
     s.append(" to agent ");
-    agentep.getUrlStr(s);
+    agentep.getEndpointHostText(s);
     s.append(" for workunit(").append(wuid).append(")");
     PROGLOG("%s", s.str());
     MemoryBuffer replyMb;
@@ -924,7 +924,7 @@ void CJobManager::reply(IConstWorkUnit *workunit, const char *wuid, IException *
         replyMb.append((unsigned)DAMP_THOR_REPLY_GOOD);
     if (!conversation->send(replyMb)) {
         s.clear();
-        IERRLOG("Failed to reply to agent %s",agentep.getUrlStr(s).str());
+        IERRLOG("Failed to reply to agent %s",agentep.getEndpointHostText(s).str());
     }
     conversation.clear();
     handlingConversation = false;
@@ -1359,7 +1359,7 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                     thorQueue->connect(false);
                 }
 
-                queryMyNode()->endpoint().getUrlStr(instance);
+                queryMyNode()->endpoint().getEndpointHostText(instance);
                 StringBuffer currentGraphName(graphName);
                 StringBuffer currentWuid(wuid);
 

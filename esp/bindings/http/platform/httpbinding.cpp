@@ -369,7 +369,7 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
         {
             const char *host=getHost();
             if (!host || !(*host) || !strcmp(host, ".") || !strcmp(host, "0.0.0.0"))
-                queryHostIP().getIpText(m_wsdlAddress);
+                queryHostIP().getHostText(m_wsdlAddress);
             else
                 m_wsdlAddress.append(host);
             if (!strchr(m_wsdlAddress.str(), ':') && m_port!=80 && m_port!=443)

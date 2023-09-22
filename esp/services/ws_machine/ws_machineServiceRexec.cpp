@@ -275,7 +275,7 @@ public:
             {
                 StringBuffer ipStr;
                 IpAddress ipaddr = queryHostIP();
-                ipaddr.getIpText(ipStr);
+                ipaddr.getHostText(ipStr);
                 if (ipStr.length() > 0)
                 {
 #ifdef MACHINE_IP
@@ -473,7 +473,7 @@ void Cws_machineEx::ConvertAddress( const char* originalAddress, StringBuffer& n
         {
             StringBuffer ipStr;
             IpAddress ipaddr = queryHostIP();
-            ipaddr.getIpText(ipStr);
+            ipaddr.getHostText(ipStr);
             if (ipStr.length() > 0)
             {
 #ifdef MACHINE_IP

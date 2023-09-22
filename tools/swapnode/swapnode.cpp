@@ -279,7 +279,7 @@ int main(int argc, const char *argv[])
                                 ForEachItemIn(e, epa)
                                 {
                                     StringBuffer ipStr;
-                                    epa.item(e).getIpText(ipStr);
+                                    epa.item(e).getHostText(ipStr);
                                     hosts.push_back(ipStr.str());
                                 }
                             }

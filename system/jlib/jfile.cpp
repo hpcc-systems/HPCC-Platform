@@ -3396,7 +3396,7 @@ StringBuffer &createUNCFilename(const char * filename, StringBuffer &UNC, bool u
         if (useHostNames)
             UNC.append(GetCachedHostName());
         else
-            queryHostIP().getIpText(UNC);
+            queryHostIP().getHostText(UNC);
         UNC.append("\\").append((char)tolower(buf[0])).append(getShareChar()).append(buf+2);
     }
     else 
@@ -3414,7 +3414,7 @@ StringBuffer &createUNCFilename(const char * filename, StringBuffer &UNC, bool u
         if (useHostNames)
             UNC.append(GetCachedHostName());
         else
-            queryHostIP().getIpText(UNC);
+            queryHostIP().getHostText(UNC);
 
         if (*filename != '/')
         {
@@ -4794,7 +4794,7 @@ StringBuffer & RemoteFilename::getRemotePath(StringBuffer & out) const
 
     char c=getPathSeparator();
     out.append(c).append(c);
-    ep.getUrlStr(out);
+    ep.getEndpointHostText(out);
     const char *fn;
     StringBuffer loc;
     if (sharehead.length()) 
@@ -4964,7 +4964,7 @@ void RemoteFilename::setPath(const SocketEndpoint & _ep, const char * _filename)
         tailpath.clear();
 #ifdef _TRACERFN
     StringBuffer eps;
-    PROGLOG("setPath (%s,%s) -> '%s' '%s' '%s'",ep.getUrlStr(eps).str(),_filename?_filename:"NULL",sharehead.get()?sharehead.get():"NULL",localhead.get()?localhead.get():"NULL",tailpath.get()?tailpath.get():"NULL");
+    PROGLOG("setPath (%s,%s) -> '%s' '%s' '%s'",ep.getEndpointHostText(eps).str(),_filename?_filename:"NULL",sharehead.get()?sharehead.get():"NULL",localhead.get()?localhead.get():"NULL",tailpath.get()?tailpath.get():"NULL");
 #endif
 }
 
@@ -5962,7 +5962,7 @@ bool mountDrive(const char *drv,const RemoteFilename &rfn)
     for (unsigned vtry=0;vtry<2;vtry++) {
         StringBuffer cmd;
         cmd.append("mount ");
-        rfn.queryIP().getIpText(cmd);
+        rfn.queryIP().getHostText(cmd);
         cmd.append(':');
         rfn.getLocalPath(cmd);
         cmd.append(' ').append(drv).append(" -t nfs ");

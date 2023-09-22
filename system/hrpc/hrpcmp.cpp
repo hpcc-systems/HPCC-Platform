@@ -481,7 +481,7 @@ public:
             return false;
         }
         StringBuffer str;
-        ep.getUrlStr(str).appendf("{%d}",(int)tag); // we'll use proper tag name when available
+        ep.getEndpointHostText(str).appendf("{%d}",(int)tag); // we'll use proper tag name when available
         size32_t l = str.length();
         if (l>=namemax)
             l = namemax-1;

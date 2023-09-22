@@ -285,7 +285,7 @@ private:
     std::shared_ptr<aeron::Subscription> addSubscription(const SocketEndpoint &myEndpoint, int queue)
     {
         StringBuffer channel("aeron:udp?endpoint=");
-        myEndpoint.getUrlStr(channel);
+        myEndpoint.getEndpointHostText(channel);
         std::int64_t id = aeron->addSubscription(channel.str(), queue);
         std::shared_ptr<aeron::Subscription> subscription = aeron->findSubscription(id);
         while (!subscription)
@@ -310,7 +310,7 @@ public:
     : dest(_ip), aeron(_aeron), numQueues(_numQueues)
     {
         StringBuffer channel("aeron:udp?endpoint=");
-        dest.getIpText(channel);
+        dest.getHostText(channel);
         channel.append(':').append(_dataPort);
         for (unsigned queue = 0; queue < numQueues; queue++)
         {
@@ -358,7 +358,7 @@ public:
                     continue;
                 }
                 StringBuffer target;
-                dest.getIpText(target);
+                dest.getHostText(target);
                 if (aeron::NOT_CONNECTED == result)
                     throw makeStringExceptionV(ROXIE_PUBLICATION_NOT_CONNECTED, "AeronSender: Offer failed because publisher is not connected to subscriber %s", target.str());
                 else if (aeron::PUBLICATION_CLOSED == result)

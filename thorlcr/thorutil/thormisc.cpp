@@ -347,13 +347,13 @@ public:
                 {
                     unsigned node = (unsigned)-slave;
                     str.appendf("NODE #%d [", node);
-                    queryNodeGroup().queryNode(node).endpoint().getUrlStr(str);
+                    queryNodeGroup().queryNode(node).endpoint().getEndpointHostText(str);
                     str.append("]: ");
                 }
                 else
                 {
                     str.appendf("SLAVE #%d [", slave);
-                    queryClusterGroup().queryNode(slave).endpoint().getUrlStr(str);
+                    queryClusterGroup().queryNode(slave).endpoint().getEndpointHostText(str);
                     str.append("]: ");
                 }
             }

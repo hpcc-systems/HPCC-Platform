@@ -84,7 +84,7 @@ static void replyError(unsigned errorCode, const char *errorMsg)
 {
     SocketEndpoint myEp = queryMyNode()->endpoint();
     StringBuffer str("Node '");
-    myEp.getUrlStr(str);
+    myEp.getEndpointHostText(str);
     str.append("' exception: ").append(errorMsg);
     Owned<IException> e = MakeStringException(errorCode, "%s", str.str());
     CMessageBuffer msg;
@@ -98,7 +98,7 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
 {
     StringBuffer slfStr;
     StringBuffer masterStr;
-    LOG(MCdebugProgress, thorJob, "registering %s - master %s",slfEp.getUrlStr(slfStr).str(),masterEp.getUrlStr(masterStr).str());
+    LOG(MCdebugProgress, thorJob, "registering %s - master %s",slfEp.getEndpointHostText(slfStr).str(),masterEp.getEndpointHostText(masterStr).str());
     try
     {
         SocketEndpoint ep = masterEp;
@@ -233,7 +233,7 @@ bool UnregisterSelf(IException *e)
         return false;
 
     StringBuffer slfStr;
-    slfEp.getUrlStr(slfStr);
+    slfEp.getEndpointHostText(slfStr);
     LOG(MCdebugProgress, thorJob, "Unregistering slave : %s", slfStr.str());
     try
     {

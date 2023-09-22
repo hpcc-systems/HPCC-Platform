@@ -212,7 +212,7 @@ int COneServerHttpProxyThread::start()
         if(socket2.get() == NULL)
         {
             StringBuffer urlstr;
-            OERRLOG("Can't connect to %s", ep.getUrlStr(urlstr).str());
+            OERRLOG("Can't connect to %s", ep.getEndpointHostText(urlstr).str());
             return -1;
         }
         
@@ -676,7 +676,7 @@ public:
             ip.setNetAddress(4,inbuf+4);
 
             StringBuffer ipstr;
-            ip.getIpText(ipstr);
+            ip.getHostText(ipstr);
 
             char inbuf2[16];
             m_client->read(inbuf2, 0, 16, lenread);

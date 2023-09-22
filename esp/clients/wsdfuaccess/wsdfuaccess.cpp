@@ -543,7 +543,7 @@ StringBuffer &encodeDFUFileMeta(StringBuffer &metaInfoBlob, IPropertyTree *metaI
          * If the size of this initial request was ever a concern, we could consider other ways to ensure a one-off
          * delivery of this esp public signing cert. to dafilesrv, e.g. by dafilesrv reaching out to esp to request it.
          */
-        IPropertyTree *info = queryTlsSecretInfo(keyPairName);
+        Owned<IPropertyTree> info = getIssuerTlsServerConfig(keyPairName);
         if (!info)
             throw makeStringExceptionV(-1, "encodeDFUFileMeta: No '%s' MTLS certificate detected.", keyPairName);
         privateKeyFName = info->queryProp("privatekey");
@@ -639,7 +639,7 @@ protected:
 
         basePath.append("//");
         SocketEndpoint ep(serverPort);
-        ep.getUrlStr(basePath);
+        ep.getEndpointHostText(basePath);
 
         char cpath[_MAX_DIR];
         if (!GetCurrentDirectory(_MAX_DIR, cpath))

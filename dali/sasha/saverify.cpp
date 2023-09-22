@@ -252,7 +252,7 @@ public:
             SocketEndpoint ep(testpart->queryNode()->endpoint()); 
             if (!dafilesrvips.verifyDaliFileServer(ep)) {
                 StringBuffer ips;
-                ep.getIpText(ips);
+                ep.getHostText(ips);
                 PROGLOG("VERIFY: file %s, cannot run DAFILESRV on %s",name,ips.str());
                 return;
             }
@@ -276,7 +276,7 @@ public:
                 SocketEndpoint ep(part->queryNode()->endpoint());
                 if (!dafilesrvips.verifyDaliFileServer(ep)) {
                     StringBuffer ips;
-                    ep.getIpText(ips);
+                    ep.getHostText(ips);
                     PROGLOG("VERIFY: file %s, cannot run DAFILESRV on %s",name,ips.str());
                     continue;
                 }
@@ -315,7 +315,7 @@ public:
                 try
                 {
                     partfile.setown(createIFile(rfn));
-                    // PROGLOG("VERIFY: part %s on %s",partfile->queryFilename(),rfn.queryEndpoint().getUrlStr(eps).str());
+                    // PROGLOG("VERIFY: part %s on %s",partfile->queryFilename(),rfn.queryEndpoint().getEndpointHostText(eps).str());
                     if (partfile) {
                         if (parent->stopped)
                             return;
@@ -329,7 +329,7 @@ public:
                 catch (IException *e)
                 {
                     StringBuffer s;
-                    s.appendf("VERIFY: part %s on %s",partfile->queryFilename(),rfn.queryEndpoint().getUrlStr(eps).str());
+                    s.appendf("VERIFY: part %s on %s",partfile->queryFilename(),rfn.queryEndpoint().getEndpointHostText(eps).str());
                     EXCLOG(e, s.str());
                     e->Release();
                     ok = false;
@@ -540,7 +540,7 @@ public:
                     if (rver==0) {
                         StringBuffer epstr;
                         SocketEndpoint ep = eps.item(i);
-                        ep.getUrlStr(epstr);
+                        ep.getEndpointHostText(epstr);
                         CriticalBlock block(sect);
                         if (failurelimit) {
                             LOG(MCoperatorError, unknownJob,"DAFSMON: dafilesrv on %s cannot be contacted",epstr.str());
@@ -554,7 +554,7 @@ public:
                     CriticalBlock block(sect);
                     StringBuffer epstr;
                     SocketEndpoint ep = eps.item(i);
-                    ep.getUrlStr(epstr);
+                    ep.getEndpointHostText(epstr);
                     StringBuffer s;
                     s.appendf("DAFSMON: dafilesrv %s",epstr.str());
                     LOG(MCoperatorError, unknownJob, e, s.str());
@@ -599,7 +599,7 @@ public:
                 if (!ep.isNull()) {
                     if (trc.length())
                         trc.append(", ");
-                    ep.getUrlStr(trc);
+                    ep.getEndpointHostText(trc);
                     if (ep.port==0)
                         ep.port = getDaliServixPort();
                     eps.append(ep);
