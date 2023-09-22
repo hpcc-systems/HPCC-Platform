@@ -99,6 +99,15 @@
       <xsl:attribute name="analyzeWorkunit">
         <xsl:value-of select="@analyzeWorkunit"/>
       </xsl:attribute>
+      <xsl:attribute name="mapHttpCallUrlsToSecrets">
+        <xsl:value-of select="@mapHttpCallUrlsToSecrets"/>
+      </xsl:attribute>
+      <xsl:attribute name="warnIfUrlNotMappedToSecret">
+        <xsl:value-of select="@warnIfUrlNotMappedToSecret"/>
+      </xsl:attribute>
+      <xsl:attribute name="requireUrlsMappedToSecrets">
+        <xsl:value-of select="@requireUrlsMappedToSecrets"/>
+      </xsl:attribute>
 
       <xsl:attribute name="thorConnectTimeout">
         <xsl:value-of select="@thorConnectTimeout"/>

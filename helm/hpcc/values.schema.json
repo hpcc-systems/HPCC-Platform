@@ -1510,6 +1510,21 @@
         },
         "hpa": {
           "$ref": "#/definitions/hpa"
+        },
+        "mapHttpCallUrlsToSecrets": {
+          "type": "boolean",
+          "default": false,
+          "description": "In SOAPCALL and HTTPCALL check if URLs have been mapped to secrets"
+        },
+        "warnIfUrlNotMappedToSecret": {
+          "type": "boolean",
+          "default": false,
+          "description": "In SOAPCALL and HTTPCALL warn if URLs not mapped to secrets"
+        },
+        "requireUrlsMappedToSecrets": {
+          "type": "boolean",
+          "default": false,
+          "description": "Require SOAPCALL and HTTPCALL URLs are secrets or mapped to secrets"
         }
       }
     },
@@ -2192,6 +2207,21 @@
           "minimum": 0,
           "description": "Interval (in milliseconds) between checks that client socket is still open"
         },
+        "mapHttpCallUrlsToSecrets": {
+          "type": "boolean",
+          "default": false,
+          "description": "In SOAPCALL and HTTPCALL check if URLs have been mapped to secrets"
+        },
+        "warnIfUrlNotMappedToSecret": {
+          "type": "boolean",
+          "default": false,
+          "description": "In SOAPCALL and HTTPCALL warn if URLs not mapped to secrets"
+        },
+        "requireUrlsMappedToSecrets": {
+          "type": "boolean",
+          "default": false,
+          "description": "Require SOAPCALL and HTTPCALL URLs are secrets or mapped to secrets"
+        },
         "expert": {
           "description": "Custom internal options usually reserved for internal testing",
           "type": "object"
@@ -2435,6 +2465,21 @@
         },
         "allowedPipePrograms": {
           "$ref" : "#/definitions/allowedPipePrograms"
+        },
+        "mapHttpCallUrlsToSecrets": {
+          "type": "boolean",
+          "default": false,
+          "description": "In SOAPCALL and HTTPCALL check if URLs have been mapped to secrets"
+        },
+        "warnIfUrlNotMappedToSecret": {
+          "type": "boolean",
+          "default": false,
+          "description": "In SOAPCALL and HTTPCALL warn if URLs not mapped to secrets"
+        },
+        "requireUrlsMappedToSecrets": {
+          "type": "boolean",
+          "default": false,
+          "description": "Require SOAPCALL and HTTPCALL URLs are secrets or mapped to secrets"
         }
       }
     },
