@@ -327,7 +327,7 @@ Add ConfigMap volume for a component
 
 {{/*
 Add volume mounts
-Pass in root, me (the component), includeCategories (optional) and/or includeNames (optional)
+Pass in root, me (the component), includeCategories (optional) and/or includeNames (optional), container identifier (optional)
 Note: if there are multiple planes (other than dll, dali and spill planes), they should be all called with a single call
 to addVolumeMounts so that if a plane can be used for multiple purposes then duplicate volume mounts are not created.
 */}}
@@ -339,6 +339,7 @@ to addVolumeMounts so that if a plane can be used for multiple purposes then dup
 {{- $includeNames := .includeNames | default list -}}
 {{- $component := .me -}}
 {{- $previousMounts := dict -}}
+{{- $id := .id | default "" -}}
 {{- range $plane := $planes -}}
  {{- if not $plane.disabled }}
   {{- $componentMatches := or (not (hasKey $plane "components")) (has $component.name $plane.components) -}}
@@ -349,16 +350,24 @@ to addVolumeMounts so that if a plane can be used for multiple purposes then dup
      {{- $mountPath := $plane.prefix }}
      {{- $numMounts := int ( $plane.numMounts | default $plane.numDevices | default 1 ) }}
      {{- if le $numMounts 1 }}
-- name: {{ lower $plane.name }}-pv
+- name: {{ lower $plane.name }}-volume
   mountPath: {{ $mountPath | quote }}
      {{- else }}
       {{- range $elem := untilStep 1 (int (add $numMounts 1)) 1 }}
-- name: {{ lower $plane.name }}-pv-many-{{ $elem }}
+- name: {{ lower $plane.name }}-volume-many-{{ $elem }}
   mountPath: {{ printf "%s/d%d" $mountPath $elem | quote }}
       {{- end }}
      {{- end }}
     {{- end }}
     {{- $_ := set $previousMounts $plane.prefix true -}}
+   {{- else if $plane.hostPath }}
+    {{- if not (hasKey $previousMounts $plane.prefix) }}
+- name: {{ lower $plane.name }}-volume
+  mountPath: {{ $plane.prefix | quote }}
+     {{- if $id }}
+  subPath: {{ printf "%s-%s" $component.name $id }}
+     {{- end }}
+    {{- end }}
    {{- end }}
 
    {{- /*Generate entries for each alias of the plane*/ -}}
@@ -370,11 +379,11 @@ to addVolumeMounts so that if a plane can be used for multiple purposes then dup
       {{- $mountPath := $alias.prefix }}
       {{- $numMounts := int ( $alias.numMounts | default $plane.numDevices | default 1 ) }}
       {{- if le $numMounts 1 }}
-- name: {{ lower $plane.name }}-pv-alias-{{ $curAlias.num }}
+- name: {{ lower $plane.name }}-volume-alias-{{ $curAlias.num }}
   mountPath: {{ $mountPath | quote }}
       {{- else }}
        {{- range $elem := untilStep 1 (int (add $numMounts 1)) 1 }}
-- name: {{ lower $plane.name }}-pv-alias-{{ $curAlias.num }}-many-{{ $elem }}
+- name: {{ lower $plane.name }}-volume-alias-{{ $curAlias.num }}-many-{{ $elem }}
   mountPath: {{ printf "%s/d%d" $mountPath $elem | quote }}
        {{- end }}
       {{- end }}
@@ -411,17 +420,24 @@ The plane will generate a volume if it matches either an includeLabel or an incl
      {{- $pvc := hasKey $plane "pvc" | ternary $plane.pvc (printf "%s-%s-pvc" (include "hpcc.fullname" $) $plane.name) }}
      {{- $numMounts := int ( $plane.numMounts | default $plane.numDevices | default 1 ) }}
      {{- if le $numMounts 1 }}
-- name: {{ lower $plane.name }}-pv
+- name: {{ lower $plane.name }}-volume
   persistentVolumeClaim:
     claimName: {{ $pvc }}
      {{- else }}
       {{- range $elem := until $numMounts }}
-- name: {{ lower $plane.name }}-pv-many-{{ add $elem 1 }}
+- name: {{ lower $plane.name }}-volume-many-{{ add $elem 1 }}
   persistentVolumeClaim:
     claimName: {{ $pvc }}-{{ add $elem 1 }}
       {{- end }}
      {{- end }}
      {{- $_ := set $previousMounts $plane.prefix true }}
+    {{- end }}
+   {{- else if $plane.hostPath }}
+    {{- if not (hasKey $previousMounts $plane.prefix) }}
+- name: {{ lower $plane.name }}-volume
+  hostPath:
+    path: {{ $plane.hostPath }}
+    type: Directory
     {{- end }}
    {{- end }}
 
@@ -434,12 +450,12 @@ The plane will generate a volume if it matches either an includeLabel or an incl
       {{- $pvc := $alias.pvc }}
       {{- $numMounts := int ( $alias.numMounts | default $plane.numDevices | default 1 ) }}
       {{- if le $numMounts 1 }}
-- name: {{ lower $plane.name }}-pv-alias-{{ $curAlias.num }}
+- name: {{ lower $plane.name }}-volume-alias-{{ $curAlias.num }}
   persistentVolumeClaim:
     claimName: {{ $pvc }}
       {{- else }}
        {{- range $elem := until $numMounts }}
-- name: {{ lower $plane.name }}-pv-alias-{{ $curAlias.num }}-many-{{ add $elem 1 }}
+- name: {{ lower $plane.name }}-volume-alias-{{ $curAlias.num }}-many-{{ add $elem 1 }}
   persistentVolumeClaim:
     claimName: {{ $pvc }}-{{ add $elem 1 }}
        {{- end }}
@@ -897,19 +913,19 @@ NB: uid=10000 and gid=10001 are the uid/gid of the hpcc user, built into platfor
 {{- $component := .me -}}
 {{- range $plane := $planes -}}
  {{- if not $plane.disabled -}}
-  {{- if (or ($plane.pvc) (hasKey $plane "storageClass")) -}}
+  {{- if (or ($plane.pvc) (or (hasKey $plane "storageClass") (hasKey $plane "hostPath"))) -}}
    {{- $componentMatches := or (not (hasKey $plane "components")) (has $component.name $plane.components) -}}
    {{- if and (or (has $plane.category $includeCategories) (has $plane.name $includeNames)) $componentMatches }}
     {{- if $plane.forcePermissions -}}
      {{- $planesToChown = append $planesToChown $plane -}}
     {{- end -}}
     {{- if $plane.waitForMount -}}
-     {{- $volumeName := (printf "%s-pv" $plane.name) -}}
+     {{- $volumeName := (printf "%s-volume" $plane.name) -}}
      {{- include "hpcc.waitForMount" (dict "root" $root "me" $component "uid" $uid "gid" $gid "volumeName" $volumeName "volumePath" $plane.prefix) | nindent 0 }}
     {{- end -}}
     {{- if hasKey $plane "expert" -}}
      {{- if $plane.expert.validatePlaneScript -}}
-      {{- $volumeName := (printf "%s-pv" $plane.name) -}}
+      {{- $volumeName := (printf "%s-volume" $plane.name) -}}
       {{- include "hpcc.validatePlaneScript" (dict "root" $root "me" $component "uid" $uid "gid" $gid "volumeName" $volumeName "volumePath" $plane.prefix "cmds" $plane.expert.validatePlaneScript) | nindent 0 }}
      {{- end -}}
     {{- end -}}
@@ -920,7 +936,7 @@ NB: uid=10000 and gid=10001 are the uid/gid of the hpcc user, built into platfor
 {{- $volumes := list -}}
 {{- if len $planesToChown -}}
  {{- range $plane := $planesToChown -}}
-  {{- $volumeName := (printf "%s-pv" $plane.name) -}}
+  {{- $volumeName := (printf "%s-volume" $plane.name) -}}
   {{- $volumes = append $volumes (dict "name" $volumeName "path" $plane.prefix) -}}
  {{- end -}}
  {{- include "hpcc.changeMountPerms" (dict "root" $root "uid" $uid "gid" $gid "volumes" $volumes) | nindent 0 }}
