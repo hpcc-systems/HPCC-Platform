@@ -150,25 +150,25 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
                 label: nlsHPCC.TotalClusterTime, width: 120,
                 justify: "right",
             },
-            CompileCost: {
+            "Compile Cost": {
                 label: nlsHPCC.CompileCost, width: 100,
                 justify: "right",
                 formatter: (cost, row) => {
-                    return `${formatCost(cost)}`;
+                    return `${formatCost(row.CompileCost)}`;
                 }
             },
-            ExecuteCost: {
+            "Execute Cost": {
                 label: nlsHPCC.ExecuteCost, width: 100,
                 justify: "right",
                 formatter: (cost, row) => {
-                    return `${formatCost(cost)}`;
+                    return `${formatCost(row.ExecuteCost)}`;
                 }
             },
-            FileAccessCost: {
+            "File Access Cost": {
                 label: nlsHPCC.FileAccessCost, width: 100,
                 justify: "right",
                 formatter: (cost, row) => {
-                    return `${formatCost(cost)}`;
+                    return `${formatCost(row.FileAccessCost)}`;
                 }
             }
         };

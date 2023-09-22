@@ -490,12 +490,18 @@ export const TargetGroupTextField: React.FunctionComponent<TargetGroupTextFieldP
 
     React.useEffect(() => {
         TpGroupQuery({}).then(({ TpGroupQueryResponse }) => {
-            setTargetGroups(TpGroupQueryResponse.TpGroups.TpGroup.map(n => {
-                return {
-                    key: n.Name,
-                    text: n.Name + (n.Name !== n.Kind ? ` (${n.Kind})` : "")
-                };
-            }));
+            setTargetGroups(TpGroupQueryResponse.TpGroups.TpGroup.map(group => {
+                switch (group?.Kind) {
+                    case "Thor":
+                    case "hthor":
+                    case "Roxie":
+                    case "Plane":
+                        return {
+                            key: group.Name,
+                            text: group.Name + (group.Name !== group.Kind ? ` (${group.Kind})` : "")
+                        };
+                }
+            }).filter(group => group));
         }).catch(err => logger.error(err));
     }, []);
 
@@ -780,6 +786,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     label: field.label,
                     field: <TextField
                         key={fieldID}
+                        id={fieldID}
                         type={field.type}
                         name={fieldID}
                         value={field.value}
@@ -803,6 +810,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     label: field.label,
                     field: <TextField
                         key={fieldID}
+                        id={fieldID}
                         type={field.type}
                         name={fieldID}
                         value={`${field.value}`}
@@ -821,8 +829,9 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     label: field.label,
                     field: <Checkbox
                         key={fieldID}
+                        id={fieldID}
                         name={fieldID}
-                        disabled={field.disabled("") ? true : false}
+                        disabled={field.disabled(fields) ? true : false}
                         checked={field.value === true ? true : false}
                         onChange={(evt, newValue) => onChange(fieldID, newValue)}
                     />

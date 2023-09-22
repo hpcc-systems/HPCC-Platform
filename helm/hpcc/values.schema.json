@@ -544,6 +544,17 @@
             "waitForMount": {
               "type": "boolean"
             },
+            "expert": {
+              "type": "object",
+              "description": "Custom internal options usually reserved for internal testing",
+              "properties": {
+                "validatePlaneScript": {
+                  "description": "a list of bash commands to run to validate the plane is healthy",
+                  "type": "array",
+                  "items": { "type": "string" }
+                }
+              }
+            },
             "blockedFileIOKB": {
               "description": "Optimal block size for efficient reading from this plane. Implementations will use if they can",
               "type": "integer",
@@ -557,6 +568,7 @@
             "subPath": {},
             "secret": {},
             "pvc": {},
+            "hostPath": {},
             "hostGroup": {},
             "hosts": {},
             "umask": {},
@@ -582,6 +594,10 @@
         },
         "secret": {
           "description": "optional name of any secret required to access this storage plane",
+          "type": "string"
+        },
+        "hostPath": {
+          "description": "optional, this will create a hostPath volume (mutually exclusive with using pvc)",
           "type": "string"
         },
         "pvc": {
@@ -689,6 +705,7 @@
             "subPath": {},
             "secret": {},
             "pvc": {},
+            "hostPath": {},
             "hostGroup": {},
             "hosts": {},
             "umask": {},
