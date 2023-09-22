@@ -123,7 +123,7 @@ export const AddToSuperfile: React.FunctionComponent<AddToSuperfileProps> = ({
                     <table className={`${componentStyles.twoColumnTable} ${componentStyles.selectionTable}`}>
                         <thead>
                             <tr>
-                                <th>{nlsHPCC.TargetName}</th>
+                                <th>{nlsHPCC.LogicalName}</th>
                             </tr>
                         </thead>
                         <tbody>
