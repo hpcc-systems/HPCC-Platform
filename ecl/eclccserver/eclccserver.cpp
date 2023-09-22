@@ -825,7 +825,9 @@ public:
         }
         else
         {
-            getHomeFolder(repoRootPath);
+            char dir[_MAX_PATH];
+            if (GetCurrentDirectory(sizeof(dir), dir))
+                repoRootPath.append(dir);
         }
         if (repoRootPath.length())
         {
