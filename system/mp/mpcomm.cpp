@@ -115,11 +115,11 @@ struct SocketEndpointV4
         val.setNetAddress(sizeof(ip),&ip);
         val.port = port;
     }
-    StringBuffer & getUrlStr(StringBuffer &val)
+    StringBuffer & getEndpointHostText(StringBuffer &val)
     {
         SocketEndpoint s;
         this->get(s);
-        return s.getUrlStr(val);
+        return s.getEndpointHostText(val);
     }
 };
 
@@ -231,12 +231,12 @@ public:
         StringBuffer tmp;
         switch (error) {
         case MPERR_ok:                          str.append("OK"); break;
-        case MPERR_connection_failed:           str.appendf("MP connect failed (%s)",endpoint.getUrlStr(tmp).str()); break;
+        case MPERR_connection_failed:           str.appendf("MP connect failed (%s)",endpoint.getEndpointHostText(tmp).str()); break;
         case MPERR_process_not_in_group:        str.appendf("Current process not in Communicator group"); break;
-        case MPERR_protocol_version_mismatch:   str.appendf("Protocol version mismatch (%s)",endpoint.getUrlStr(tmp).str()); break;
+        case MPERR_protocol_version_mismatch:   str.appendf("Protocol version mismatch (%s)",endpoint.getEndpointHostText(tmp).str()); break;
         // process crashes (segv, etc.) often cause this exception which is logged and can be misleading
         // change it from "MP link closed" to something more helpful
-        case MPERR_link_closed:                 str.appendf("Unexpected process termination (ep:%s)",endpoint.getUrlStr(tmp).str()); break;
+        case MPERR_link_closed:                 str.appendf("Unexpected process termination (ep:%s)",endpoint.getEndpointHostText(tmp).str()); break;
         }
         return str;
     }
@@ -766,7 +766,7 @@ void traceSlowReadTms(const char *msg, ISocket *sock, void *dst, size32_t minSiz
                 {
                     SocketEndpoint ep;
                     sock->getPeerEndpoint(ep);
-                    ep.getUrlStr(epStr);
+                    ep.getEndpointHostText(epStr);
                 }
                 WARNLOG("%s %s, stalled for %d ms so far", msg, epStr.str(), elapsedMs);
             }
@@ -779,7 +779,7 @@ void traceSlowReadTms(const char *msg, ISocket *sock, void *dst, size32_t minSiz
         {
             SocketEndpoint ep;
             sock->getPeerEndpoint(ep);
-            ep.getUrlStr(epStr);
+            ep.getEndpointHostText(epStr);
         }
         WARNLOG("%s %s, took: %d ms", msg, epStr.str(), readTmsTimer.elapsedMs());
     }
@@ -879,7 +879,7 @@ protected: friend class CMPPacketReader;
             {
                 StringBuffer str;
 #ifdef _TRACE
-                LOG(MCdebugInfo, unknownJob, "MP: connecting to %s role: %" I64F "u", remoteep.getUrlStr(str).str(), parent->getRole());
+                LOG(MCdebugInfo, unknownJob, "MP: connecting to %s role: %" I64F "u", remoteep.getEndpointHostText(str).str(), parent->getRole());
 #endif
                 if (((int)tm.timeout)<0)
                     remaining = CONNECT_TIMEOUT;
@@ -931,9 +931,9 @@ protected: friend class CMPPacketReader;
 
 #ifdef _FULLTRACE
                 StringBuffer tmp1;
-                connectHdr.id[0].getUrlStr(tmp1);
+                connectHdr.id[0].getEndpointHostText(tmp1);
                 tmp1.append(' ');
-                connectHdr.id[1].getUrlStr(tmp1);
+                connectHdr.id[1].getEndpointHostText(tmp1);
                 LOG(MCdebugInfo, unknownJob, "MP: connect after socket write %s",tmp1.str());
 #endif
 
@@ -1028,7 +1028,7 @@ protected: friend class CMPPacketReader;
                             e->Release();
 
 #ifdef _TRACE
-                            LOG(MCdebugInfo, unknownJob, "MP: Retrying connection to %s, %d attempts left",remoteep.getUrlStr(str).str(),retrycount+1);
+                            LOG(MCdebugInfo, unknownJob, "MP: Retrying connection to %s, %d attempts left",remoteep.getEndpointHostText(str).str(),retrycount+1);
 #endif
                         }
                         else
@@ -1038,7 +1038,7 @@ protected: friend class CMPPacketReader;
                             {
                                 SocketEndpoint ep;
                                 newsock->getPeerEndpoint(ep);
-                                ep.getUrlStr(epStr);
+                                ep.getEndpointHostText(epStr);
                             }
                             WARNLOG("MP: connect to: %s, stalled for %d ms so far", epStr.str(), msTick()-startMs);
                             e->Release();
@@ -1074,7 +1074,7 @@ protected: friend class CMPPacketReader;
                             {
                                 SocketEndpoint ep;
                                 newsock->getPeerEndpoint(ep);
-                                ep.getUrlStr(epStr);
+                                ep.getEndpointHostText(epStr);
                             }
                             StringBuffer allowExcStr;
                             exitException.setown(makeStringExceptionV(-99, "Error '%s' reading Allowlist exception from: %s", e->errorMessage(allowExcStr).str(), epStr.str()));
@@ -1093,7 +1093,7 @@ protected: friend class CMPPacketReader;
                         {
                             SocketEndpoint ep;
                             newsock->getPeerEndpoint(ep);
-                            ep.getUrlStr(epStr);
+                            ep.getEndpointHostText(epStr);
                         }
                         WARNLOG("MP: connect to: %s, took: %d ms", epStr.str(), elapsedMs);
                     }
@@ -1132,7 +1132,7 @@ protected: friend class CMPPacketReader;
 #ifdef _TRACE
                 StringBuffer str;
                 str.clear();
-                LOG(MCdebugInfo, unknownJob, "MP: Retrying connection to %s, %d attempts left",remoteep.getUrlStr(str).str(),retrycount+1);
+                LOG(MCdebugInfo, unknownJob, "MP: Retrying connection to %s, %d attempts left",remoteep.getEndpointHostText(str).str(),retrycount+1);
 #endif
             }
 
@@ -1221,7 +1221,7 @@ public:
 #ifdef _FULLTRACE
             StringBuffer ep1;
             StringBuffer ep2;
-            LOG(MCdebugInfo, unknownJob, "WritePacket(target=%s,(%d,%d,%d))",remoteep.getUrlStr(ep1).str(),hdrsize,hdr2size,bodysize);
+            LOG(MCdebugInfo, unknownJob, "WritePacket(target=%s,(%d,%d,%d))",remoteep.getEndpointHostText(ep1).str(),hdrsize,hdr2size,bodysize);
             unsigned t2 = msTick();
 #endif
             unsigned n = 0;
@@ -1282,7 +1282,7 @@ public:
                 return true;
         }
         StringBuffer ep;
-        remoteep.getUrlStr(ep); 
+        remoteep.getEndpointHostText(ep); 
         for (;;) {
             CTimeMon pingtm(1000*60);
             if (sendPing(pingtm)) 
@@ -1375,7 +1375,7 @@ public:
 
     StringBuffer & queryEpStr(StringBuffer &s)
     {
-        return remoteep.getUrlStr(s);
+        return remoteep.getEndpointHostText(s);
     }
 
     bool isClosed()
@@ -1411,7 +1411,7 @@ public:
 #ifdef _FULLTRACE
         StringBuffer ep1;
         StringBuffer ep2;
-        LOG(MCdebugInfo, unknownJob, "MP: send(target=%s,sender=%s,tag=%d,replytag=%d,size=%d)",hdr.target.getUrlStr(ep1).str(),hdr.sender.getUrlStr(ep2).str(),hdr.tag,hdr.replytag,hdr.size);
+        LOG(MCdebugInfo, unknownJob, "MP: send(target=%s,sender=%s,tag=%d,replytag=%d,size=%d)",hdr.target.getEndpointHostText(ep1).str(),hdr.sender.getEndpointHostText(ep2).str(),hdr.tag,hdr.replytag,hdr.size);
 #endif
         return channel->writepacket(&hdr,sizeof(hdr),mb.toByteArray(),mb.length(),tm);
     }
@@ -1466,7 +1466,7 @@ class MultiPacketHandler // TAG_SYS_MULTI
         if ((ms-lastErrMs) > 1000) // avoid logging too much
         {
             StringBuffer errorMsg("sender=");
-            msg.getSender().getUrlStr(errorMsg).newline();
+            msg.getSender().getEndpointHostText(errorMsg).newline();
             errorMsg.append("This header: ");
             mhdr.getDetails(errorMsg).newline();
             if (otherMhdr)
@@ -1543,7 +1543,7 @@ public:
 #ifdef _FULLTRACE
         StringBuffer ep1;
         StringBuffer ep2;
-        LOG(MCdebugInfo, unknownJob, "MP: multi-send(target=%s,sender=%s,tag=%d,replytag=%d,size=%d)",hdr.target.getUrlStr(ep1).str(),hdr.sender.getUrlStr(ep2).str(),hdr.tag,hdr.replytag,hdr.size);
+        LOG(MCdebugInfo, unknownJob, "MP: multi-send(target=%s,sender=%s,tag=%d,replytag=%d,size=%d)",hdr.target.getEndpointHostText(ep1).str(),hdr.sender.getEndpointHostText(ep2).str(),hdr.tag,hdr.replytag,hdr.size);
 #endif
         PacketHeader outhdr;
         outhdr = hdr;
@@ -1697,7 +1697,7 @@ public:
 #ifdef _FULLTRACE
                     StringBuffer ep1;
                     StringBuffer ep2;
-                    LOG(MCdebugInfo, unknownJob, "MP: ReadPacket(sender=%s,target=%s,tag=%d,replytag=%d,size=%d)",hdr.sender.getUrlStr(ep1).str(),hdr.target.getUrlStr(ep2).str(),hdr.tag,hdr.replytag,hdr.size);
+                    LOG(MCdebugInfo, unknownJob, "MP: ReadPacket(sender=%s,target=%s,tag=%d,replytag=%d,size=%d)",hdr.sender.getEndpointHostText(ep1).str(),hdr.target.getEndpointHostText(ep2).str(),hdr.tag,hdr.replytag,hdr.size);
 #endif
                     remaining = hdr.size-sizeof(hdr);
                     activemsg = new CMessageBuffer(remaining); // will get from low level IO at some stage
@@ -1847,8 +1847,8 @@ bool CMPChannel::attachSocket(ISocket *newsock,const SocketEndpoint &_remoteep,c
 
         StringBuffer ep1;
         StringBuffer ep2;
-        _localep.getUrlStr(ep1);
-        _remoteep.getUrlStr(ep2);
+        _localep.getEndpointHostText(ep1);
+        _remoteep.getEndpointHostText(ep2);
         LOG(MCdebugInfo, unknownJob, "MP: Possible clash between %s->%s %d(%d)",ep1.str(),ep2.str(),(int)ismaster,(int)master);
 
         try {
@@ -2225,7 +2225,7 @@ int CMPConnectThread::run()
                 StringBuffer s;
                 SocketEndpoint ep1;
                 sock->getPeerEndpoint(ep1);
-                PROGLOG("MP: Connect Thread: socket accepted from %s",ep1.getUrlStr(s).str());
+                PROGLOG("MP: Connect Thread: socket accepted from %s",ep1.getEndpointHostText(s).str());
 #endif
 
                 sock->set_keep_alive(true);
@@ -2263,7 +2263,7 @@ int CMPConnectThread::run()
                     {
                         // not sure how to get here as this is not one of the possible outcomes of above: rd == 0 or rd == sizeof(id) or an exception
                         StringBuffer errMsg("MP Connect Thread: invalid number of connection bytes serialized from ");
-                        peerEp.getUrlStr(errMsg);
+                        peerEp.getEndpointHostText(errMsg);
                         FLLOG(MCoperatorWarning, unknownJob, "%s", errMsg.str());
                         sock->close();
                         continue;
@@ -2273,7 +2273,7 @@ int CMPConnectThread::run()
                 if (allowListCallback)
                 {
                     StringBuffer ipStr;
-                    peerEp.getIpText(ipStr);
+                    peerEp.getHostText(ipStr);
                     StringBuffer responseText; // filled if denied, NB: if amount sent is > sizeof(ConnectHdr) we can differentiate exception from success
                     if (!allowListCallback->isAllowListed(ipStr, connectHdr.getRole(), &responseText))
                     {
@@ -2320,14 +2320,14 @@ int CMPConnectThread::run()
                     {
                         // JCSMORE, I think _remoteep really must/should match a IP of this local host
                         errMsg.append("MP Connect Thread: invalid remote and/or host ep serialized from ");
-                        peerEp.getUrlStr(errMsg);
+                        peerEp.getEndpointHostText(errMsg);
                         FLLOG(MCoperatorWarning, unknownJob, "%s", errMsg.str());
                     }
                     else if (parent->mpTraceLevel >= MPVerboseMsgThreshold)
                     {
                         // all zeros msg received
                         errMsg.append("MP Connect Thread: connect with empty msg received, assumed port monitor check from ");
-                        peerEp.getUrlStr(errMsg);
+                        peerEp.getEndpointHostText(errMsg);
                         PROGLOG("%s", errMsg.str());
                     }
                     sock->close();
@@ -2335,9 +2335,9 @@ int CMPConnectThread::run()
                 }
 #ifdef _FULLTRACE       
                 StringBuffer tmp1;
-                _remoteep.getUrlStr(tmp1);
+                _remoteep.getEndpointHostText(tmp1);
                 tmp1.append(' ');
-                hostep.getUrlStr(tmp1);
+                hostep.getEndpointHostText(tmp1);
                 PROGLOG("MP: Connect Thread: after read %s",tmp1.str());
 #endif
                 checkSelfDestruct(&connectHdr.id[0],sizeof(connectHdr.id));
@@ -2353,7 +2353,7 @@ int CMPConnectThread::run()
 #ifdef _TRACE
                     StringBuffer str1;
                     StringBuffer str2;
-                    LOG(MCdebugInfo, unknownJob, "MP Connect Thread: connected to %s",_remoteep.getUrlStr(str1).str());
+                    LOG(MCdebugInfo, unknownJob, "MP Connect Thread: connected to %s",_remoteep.getEndpointHostText(str1).str());
 #endif
                 }
 #ifdef _FULLTRACE       
@@ -2738,7 +2738,7 @@ void CMPServer::notifyClosed(SocketEndpoint &ep, bool trace)
     if (trace)
     {
         StringBuffer url;
-        LOG(MCdebugInfo, unknownJob, "MP: CMPServer::notifyClosed %s",ep.getUrlStr(url).str());
+        LOG(MCdebugInfo, unknownJob, "MP: CMPServer::notifyClosed %s",ep.getEndpointHostText(url).str());
         PrintStackReport();
     }
 #endif

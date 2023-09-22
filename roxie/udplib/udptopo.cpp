@@ -229,7 +229,7 @@ CTopologyServer::CTopologyServer(const char *topologyInfo, const ITopologyServer
                 if (!isActive(instance) || (isActive(oldInstance) && oldInstance != instance))
                 {
                     StringBuffer s;
-                    DBGLOG("Deleting pending data for server %s which has terminated or restarted", ep.getUrlStr(s).str());
+                    DBGLOG("Deleting pending data for server %s which has terminated or restarted", ep.getEndpointHostText(s).str());
                     ROQ->abortPendingData(ep);
                 }
                 if (isActive(instance))
@@ -545,7 +545,7 @@ void TopologyManager::_setRoles(const std::vector<RoxieEndpointInfo> &myRoles, b
         default: throwUnexpected();
         }
         topoBuf.append(role.channel).append('|');
-        role.ep.getUrlStr(topoBuf);
+        getRemoteAccessibleHostText(topoBuf, role.ep);
         topoBuf.append('|').append(role.replicationLevel);
         topoBuf.append('\t').append((__uint64) myInstance);
         topoBuf.append('\n');

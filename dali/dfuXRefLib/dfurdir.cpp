@@ -182,7 +182,7 @@ IPropertyTree *getDirectory(const char * directory, INode * node, unsigned short
         try {
             Owned<IPropertyTree> dirTree = createPTree("machine");
             StringBuffer url;
-            node->endpoint().getIpText(url);
+            node->endpoint().getHostText(url);
             dirTree->setProp("@ip", url.str());
 
             XREFDirectoryBuilder builder;
@@ -215,7 +215,7 @@ IPropertyTree *getDirectory(const char * directory, INode * node, unsigned short
                 s.append(directory);
             if (node) {
                 s.append(" on ");
-                node->endpoint().getUrlStr(s);
+                node->endpoint().getEndpointHostText(s);
             }
             if (port) 
                 s.append(" port ").append(port);

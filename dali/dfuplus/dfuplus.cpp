@@ -68,7 +68,7 @@ public:
         if (listenep.isNull())
             eps.append(listenep.port);
         else
-            listenep.getUrlStr(eps);
+            listenep.getEndpointHostText(eps);
 #endif
         server.setown(createRemoteFileServer());
         server->setThrottle(ThrottleStd, 0); // disable throttling
@@ -152,7 +152,7 @@ bool CDfuPlusHelper::runLocalDaFileSvr(SocketEndpoint &listenep,bool requireauth
             addlPort.appendf(":%u", sslport);
         }
         StringBuffer eps;
-        progress("Started local Dali file server on %s%s\n", printep.getUrlStr(eps).str(), addlPort.str());
+        progress("Started local Dali file server on %s%s\n", printep.getEndpointHostText(eps).str(), addlPort.str());
     }
 
     thr->start();
@@ -663,7 +663,7 @@ int CDfuPlusHelper::spray()
     {
         SocketEndpoint localep;
         if (checkLocalDaFileSvr(srcip,localep))
-            srcip = localep.getUrlStr(localeps).str();
+            srcip = localep.getEndpointHostText(localeps).str();
     }
     StringBuffer wuid;
     StringBuffer errmsg;
@@ -832,7 +832,7 @@ int CDfuPlusHelper::despray()
     SocketEndpoint localep;
     StringBuffer localeps;
     if (isEmptyString(dstplane) && checkLocalDaFileSvr(dstip,localep))
-        dstip = localep.getUrlStr(localeps).str();
+        dstip = localep.getEndpointHostText(localeps).str();
     Owned<IClientDesprayResponse> result = sprayclient->Despray(req);
     const char* wuid = result->getWuid();
     if(isEmptyString(wuid))

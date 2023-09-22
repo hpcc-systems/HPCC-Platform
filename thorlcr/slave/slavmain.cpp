@@ -2392,7 +2392,7 @@ void slaveMain(bool &jobListenerStopped, ILogMsgHandler *logHandler)
         rank_t next = queryNodeGroup().rank()%slaves;  // note 0 = master
         const IpAddress &ip = queryNodeGroup().queryNode(next+1).endpoint();
         StringBuffer ipStr;
-        ip.getIpText(ipStr);
+        ip.getHostText(ipStr);
         PROGLOG("Redirecting local mount to %s", ipStr.str());
         const char *replicateDirectory = queryBaseDirectory(grp_unknown, 1); // default directories configured at start up (see thslavemain.cpp)
         setLocalMountRedirect(ip, replicateDirectory, "/mnt/mirror");

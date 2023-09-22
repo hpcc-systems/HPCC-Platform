@@ -111,7 +111,7 @@ ISocket *spawnRemoteChild(SpawnKind kind, const char * exe, const SocketEndpoint
     unsigned port = SLAVE_CONNECT_PORT + ((unsigned)kind * NUM_SLAVE_CONNECT_PORT) + getRandom() % NUM_SLAVE_CONNECT_PORT;
     StringBuffer args;
 
-    myEP.getUrlStr(args);
+    myEP.getEndpointHostText(args);
     args.append(' ').append(replyTag).append(' ').append((unsigned)kind).append(" ").append(port);
     if (extra)
         args.append(' ').append(extra);
@@ -177,7 +177,7 @@ ISocket *spawnRemoteChild(SpawnKind kind, const char * exe, const SocketEndpoint
         try
         {
             StringBuffer tmp;
-            connectEP.getUrlStr(tmp);
+            connectEP.getEndpointHostText(tmp);
             LOG(MCdetailDebugInfo, unknownJob, "Try to connect to slave %s",tmp.str());
             Owned<ISocket> socket = ISocket::connect_wait(connectEP,MASTER_CONNECT_SLAVE_TIMEOUT);
             if (socket)
@@ -288,7 +288,7 @@ bool CRemoteParentInfo::processCommandLine(int argc, const char * * argv, String
 void CRemoteParentInfo::log()
 {
     StringBuffer temp;
-    LOG(MCdebugProgress, unknownJob, "Starting remote slave.  Master=%s reply=%d port=%d", parent.getUrlStr(temp).str(), replyTag, port);
+    LOG(MCdebugProgress, unknownJob, "Starting remote slave.  Master=%s reply=%d port=%d", parent.getEndpointHostText(temp).str(), replyTag, port);
 }
 
 bool CRemoteParentInfo::sendReply(unsigned version)
@@ -331,7 +331,7 @@ bool CRemoteParentInfo::sendReply(unsigned version)
                         if (version == connectVersion)
                         {
                             buffer.read(connectTag);
-                            masterIP.getIpText(masterIPtext.clear());
+                            masterIP.getHostText(masterIPtext.clear());
 
                             LOG(MCdetailDebugInfo, unknownJob, "Process incoming connection. reply=%d got(%d,%s)", replyTag,connectTag,masterIPtext.str());
 

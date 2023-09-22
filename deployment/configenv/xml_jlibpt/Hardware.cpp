@@ -117,7 +117,7 @@ IPropertyTree* Hardware::addComputer(IPropertyTree *params)
     else
     {
       ipAddr.ipset(computerName);
-      ipAddr.getIpText(sbIp);
+      ipAddr.getHostText(sbIp);
     }
   }
   else

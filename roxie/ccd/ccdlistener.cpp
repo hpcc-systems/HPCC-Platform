@@ -128,7 +128,7 @@ class CascadeManager : public CInterface
                 if (traceLevel)
                 {
                     StringBuffer epStr;
-                    ep.getUrlStr(epStr);
+                    ep.getEndpointHostText(epStr);
                     DBGLOG("connectChild connecting to %s", epStr.str());
                 }
                 Owned<ISocket> sock = ISocket::connect_timeout(ep, 2000);
@@ -147,7 +147,7 @@ class CascadeManager : public CInterface
                     {
                         StringBuffer err;
                         err.append("Roxie CascadeManager failed to establish secure connection to ");
-                        ep.getUrlStr(err);
+                        ep.getEndpointHostText(err);
                         err.append(": returned ").append(status);
                         throw makeStringException(ROXIE_TLS_ERROR, err.str());
                     }
@@ -158,7 +158,7 @@ class CascadeManager : public CInterface
                 if (traceLevel)
                 {
                     StringBuffer epStr;
-                    ep.getUrlStr(epStr);
+                    ep.getEndpointHostText(epStr);
                     DBGLOG("connectChild connected to %s", epStr.str());
                 }
             }
@@ -168,7 +168,7 @@ class CascadeManager : public CInterface
                 connectChild((idx+1) * 2 - 1);
                 connectChild((idx+1) * 2);
                 errors.append("<Endpoint ep='");
-                ep.getUrlStr(errors);
+                ep.getEndpointHostText(errors);
                 errors.append("'><Exception><Code>").append(E->errorCode()).append("</Code><Message>");
                 E->errorMessage(errors).append("</Message></Exception></Endpoint>");
                 logctx.CTXLOG("Connection failed - %s", errors.str());
@@ -491,7 +491,7 @@ public:
             {
                 StringBuffer myReply;
                 myReply.append("<Endpoint ep='");
-                ep.getUrlStr(myReply);
+                ep.getEndpointHostText(myReply);
                 myReply.append("'>\n");
                 unsigned savedLength = myReply.length();
                 try
@@ -802,7 +802,7 @@ public:
         if (!allowed)
         {
             StringBuffer peerStr;
-            peer.getIpText(peerStr);
+            peer.getHostText(peerStr);
             StringBuffer qText;
             if (queryText && *queryText)
                 decodeXML(queryText, qText);
@@ -1387,7 +1387,7 @@ public:
         {
             unsigned instanceId = getNextInstanceId();
             StringBuffer ctxstr;
-            logctx.setown(new StringContextLogger(ep.getIpText(ctxstr).appendf(":%u{%u}", ep.port, instanceId).str()));
+            logctx.setown(new StringContextLogger(ep.getHostText(ctxstr).appendf(":%u{%u}", ep.port, instanceId).str()));
         }
         return *logctx;
     }
@@ -1454,7 +1454,7 @@ public:
         if (!global && !isEmptyString(logctx->queryGlobalId())) //globalId wins
             return;
         StringBuffer s;
-        ep.getIpText(s).appendf(":%u{%s}", ep.port, uid.str()); //keep no matter what for existing log parsers
+        ep.getHostText(s).appendf(":%u{%s}", ep.port, uid.str()); //keep no matter what for existing log parsers
         if (global)
         {
             s.append('[');
@@ -1696,7 +1696,7 @@ public:
         if (!allowed)
         {
             StringBuffer peerStr;
-            peer.getIpText(peerStr);
+            peer.getHostText(peerStr);
             StringBuffer qText;
             if (queryText && *queryText)
                 decodeXML(queryText, qText);
@@ -1875,7 +1875,7 @@ public:
             else if (strieq(name, "control:queryaclinfo"))
             {
                 reply.append("<Endpoint ep='");
-                ep.getUrlStr(reply);
+                ep.getEndpointHostText(reply);
                 reply.append("'>\n");
 
                 queryAccessInfo(reply);

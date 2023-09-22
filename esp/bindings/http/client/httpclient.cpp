@@ -329,7 +329,7 @@ int CHttpClient::connect(StringBuffer& errmsg, bool forceNewConnection)
         catch(IException *e)
         {
             StringBuffer url;
-            UERRLOG("Error connecting to %s", ep.getUrlStr(url).str());
+            UERRLOG("Error connecting to %s", ep.getEndpointHostText(url).str());
             DBGLOG(e);
             e->Release();
             m_socket = nullptr;
@@ -338,7 +338,7 @@ int CHttpClient::connect(StringBuffer& errmsg, bool forceNewConnection)
         catch(...)
         {
             StringBuffer url;
-            UERRLOG("Unknown exception connecting to %s", ep.getUrlStr(url).str());
+            UERRLOG("Unknown exception connecting to %s", ep.getEndpointHostText(url).str());
             m_socket = nullptr;
             return -1;
         }
@@ -346,7 +346,7 @@ int CHttpClient::connect(StringBuffer& errmsg, bool forceNewConnection)
     if(m_socket == nullptr)
     {
         StringBuffer urlstr;
-        DBGLOG(">>Can't connect to %s", ep.getUrlStr(urlstr).str());
+        DBGLOG(">>Can't connect to %s", ep.getEndpointHostText(urlstr).str());
         return -1;
     }
 
@@ -484,7 +484,7 @@ bool appendProxyPeerAddress(CHttpMessage &copyTo, ISocket *sock, const char *src
     StringBuffer s(src);
     if (s.length())
         s.append(", ");
-    ip.getIpText(s);
+    ip.getHostText(s);
     copyTo.setHeader("X-Forwarded-For", s);
     return true;
 }

@@ -279,7 +279,7 @@ public:
                         int code = ep->getPropInt("./Code", 0);
                         SocketEndpoint peerEp;
                         StringBuffer peerStr;
-                        OERRLOG("Connected to %s", roxieSock->querySocket()->getPeerEndpoint(peerEp).getUrlStr(peerStr).str());
+                        OERRLOG("Connected to %s", roxieSock->querySocket()->getPeerEndpoint(peerEp).getEndpointHostText(peerStr).str());
                         OERRLOG("Roxie exception: %s", body.str());
                         throw new ReceivedRoxieException(code, body.str());
                     }
@@ -305,7 +305,7 @@ public:
                     delete x;
                     SocketEndpoint peerEp;
                     StringBuffer peerStr;
-                    OERRLOG("Connected to %s", roxieSock->querySocket()->getPeerEndpoint(peerEp).getUrlStr(peerStr).str());
+                    OERRLOG("Connected to %s", roxieSock->querySocket()->getPeerEndpoint(peerEp).getEndpointHostText(peerStr).str());
                     OERRLOG("Roxie exception: %s", xml.str());
                     int code = 0;
                     try
@@ -354,7 +354,7 @@ public:
 
                             SocketEndpoint peerEp;
                             StringBuffer peerStr;
-                            PROGLOG("Connected to %s", roxieSock->querySocket()->getPeerEndpoint(peerEp).getUrlStr(peerStr).str());
+                            PROGLOG("Connected to %s", roxieSock->querySocket()->getPeerEndpoint(peerEp).getEndpointHostText(peerStr).str());
 
                             sendQuery();
 

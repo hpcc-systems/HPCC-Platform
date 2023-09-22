@@ -340,7 +340,7 @@ public:
             if (soapTraceLevel > 3)
             {
                 StringBuffer s;
-                logctx.CTXLOG("endpoint %s is blacklisted", ep.getUrlStr(s).str());
+                logctx.CTXLOG("endpoint %s is blacklisted", ep.getEndpointHostText(s).str());
             }
             return true;
         }
@@ -364,7 +364,7 @@ public:
             if (soapTraceLevel > 0)
             {
                 StringBuffer s;
-                logctx.CTXLOG("Blacklisting endpoint %s", p.ep.getUrlStr(s).str());
+                logctx.CTXLOG("Blacklisting endpoint %s", p.ep.getEndpointHostText(s).str());
             }
         }
         else
@@ -372,7 +372,7 @@ public:
             if (soapTraceLevel > 3)
             {
                 StringBuffer s;
-                logctx.CTXLOG("Endpoint %s is already blacklisted", p.ep.getUrlStr(s).str());
+                logctx.CTXLOG("Endpoint %s is already blacklisted", p.ep.getEndpointHostText(s).str());
             }
 
         }
@@ -390,7 +390,7 @@ public:
         if ((match != NotFound) && (soapTraceLevel > 0))
         {
             StringBuffer s;
-            DBGLOG("De-blacklisting endpoint %s", ep.getUrlStr(s).str());
+            DBGLOG("De-blacklisting endpoint %s", ep.getEndpointHostText(s).str());
         }
     }
 
@@ -413,7 +413,7 @@ public:
         if (useBlacklister && lookup(ep, logctx))
         {
             StringBuffer s;
-            ep.getUrlStr(s);
+            ep.getEndpointHostText(s);
             throw MakeStringException(JSOCKERR_connection_failed, "%s %s", blOptions->getBLerror(), s.str());
         }
         Owned<IException> exc;
@@ -470,7 +470,7 @@ public:
         }
         if (exc->errorCode()==JSOCKERR_connection_failed) {
             StringBuffer s;
-            ep.getUrlStr(s);
+            ep.getEndpointHostText(s);
             throw MakeStringException(JSOCKERR_connection_failed, "connection failed %s", s.str());
         }
         throw exc.getClear();

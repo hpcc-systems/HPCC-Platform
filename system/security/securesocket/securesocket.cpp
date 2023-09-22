@@ -629,10 +629,10 @@ bool CSecureSocket::verify_cert(X509* cert)
         SocketEndpoint ep;
         m_socket->getPeerEndpoint(ep);
         StringBuffer iptxt;
-        ep.getIpText(iptxt);
+        ep.getHostText(iptxt);
         SocketEndpoint cnep(cn.str());
         StringBuffer cniptxt;
-        cnep.getIpText(cniptxt);
+        cnep.getHostText(cniptxt);
         DBGLOG("peer ip=%s, certificate ip=%s", iptxt.str(), cniptxt.str());
         if(!(cniptxt.length() > 0 && stricmp(iptxt.str(), cniptxt.str()) == 0))
         {

@@ -130,8 +130,8 @@ static bool checkPartsInCluster(const char *title,const char *clustername, IProp
                 if (group->rank(ep)==RANK_NULL)
                 {
                     StringBuffer eps;
-                    OERRLOG("%s %s Part %d on %s is not in cluster %s",title,rep?"Replicate":"Primary",pn,ep.getUrlStr(eps).str(),clustername);
-                    errstr.appendf("ERROR: %s %s part %d on %s is not in cluster %s",title,rep?"Replicate":"Primary",pn,ep.getUrlStr(eps).str(),clustername);
+                    OERRLOG("%s %s Part %d on %s is not in cluster %s",title,rep?"Replicate":"Primary",pn,ep.getEndpointHostText(eps).str(),clustername);
+                    errstr.appendf("ERROR: %s %s part %d on %s is not in cluster %s",title,rep?"Replicate":"Primary",pn,ep.getEndpointHostText(eps).str(),clustername);
                     return false;
                 }
                 if (exists)

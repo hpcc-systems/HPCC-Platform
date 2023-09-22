@@ -2320,7 +2320,7 @@ FILESERVICES_API char * FILESERVICES_CALL fsfRemotePull_impl(ICodeContext *ctx,
     if (wrap)
         req->setWrap(true);
     StringBuffer sourceDali;
-    queryCoven().queryComm().queryGroup().queryNode(0).endpoint().getUrlStr(sourceDali);
+    queryCoven().queryComm().queryGroup().queryNode(0).endpoint().getEndpointHostText(sourceDali);
     req->setSourceDali(sourceDali);
     req->setOverwrite(overwrite);
     req->setReplicate(replicate);
@@ -2687,7 +2687,7 @@ FILESERVICES_API char *  FILESERVICES_CALL fsfResolveHostName(const char *hostna
 {
     StringBuffer ret;
     SocketEndpoint ep(hostname);
-    ep.getIpText(ret);
+    ep.getHostText(ret);
     return ret.detach();
 }
 
@@ -3044,7 +3044,7 @@ FILESERVICES_API char * FILESERVICES_CALL fsGetEspURL(const char *username, cons
                                         if (streq(instanceAddress.str(),"."))
                                         {
                                             SocketEndpoint ep(instanceAddress.str());
-                                            ep.getIpText(instanceAddress.clear());
+                                            ep.getHostText(instanceAddress.clear());
                                         }
 
                                         espURL.setf("%s://%s%s:%d", bindingProtocol.str(), credentials.str(), instanceAddress.str(), espBindingIter->query().getPropInt("@port",8010));

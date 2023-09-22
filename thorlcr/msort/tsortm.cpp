@@ -120,7 +120,7 @@ public:
         try {
 
             StringBuffer epstr;
-            ActPrintLog(activity, thorDetailedLogLevel, "Connect to %s:%d",endpoint.getIpText(epstr).str(),(unsigned)mpport);
+            ActPrintLog(activity, thorDetailedLogLevel, "Connect to %s:%d",endpoint.getHostText(epstr).str(),(unsigned)mpport);
             SocketEndpoint ep = endpoint;
             ep.port = mpport;
             Owned<INode> node = createINode(ep);
@@ -268,7 +268,7 @@ public:
                 CSortNode &slave = slaves.item(i);
                 if (!slave.doConnect(i,slaves.ordinality())) {
                     char url[100];
-                    slave.endpoint.getUrlStr(url,sizeof(url));
+                    slave.endpoint.getEndpointHostText(url,sizeof(url));
                     throw MakeActivityException(owner.activity,TE_CannotConnectToSlave,"CSortMaster::ConnectSlaves: Could not connect to %s",url);
                 }
             }
@@ -1235,7 +1235,7 @@ public:
                         if (slave.scale!=mostspilt+1)
                         {
                             char url[100];
-                            slave.endpoint.getUrlStr(url,sizeof(url));
+                            slave.endpoint.getEndpointHostText(url,sizeof(url));
                             ActPrintLog(activity, "Gather - node %s spilled %d times to disk",url,slave.scale-1);
                         }
                     }
@@ -1305,7 +1305,7 @@ public:
                     {
                         CSortNode &slave = slaves.item(i);
                         char url[100];
-                        slave.endpoint.getUrlStr(url,sizeof(url));
+                        slave.endpoint.getEndpointHostText(url,sizeof(url));
                         ActPrintLog(activity, thorDetailedLogLevel, "Split point %d: %" RCPF "d rows on %s", i, tot[i], url);
                     }
                 }
@@ -1331,7 +1331,7 @@ public:
                 {
                     CSortNode &slave = slaves.item(i);
                     char url[100];
-                    slave.endpoint.getUrlStr(url,sizeof(url));
+                    slave.endpoint.getEndpointHostText(url,sizeof(url));
                     if (splitMapUpper)
                         slave.MultiMergeBetween(total, numnodes*numnodes,splitMap,splitMapUpper,numnodes,endpoints.get());
                     else

@@ -1789,7 +1789,7 @@ int HttpClient::sendRequest(StringBuffer& req, IFileIO* request_output, IFileIO*
     if(socket.get() == NULL)
     {
         StringBuffer urlstr;
-        OERRLOG("Can't connect to %s", ep.getUrlStr(urlstr).str());
+        OERRLOG("Can't connect to %s", ep.getEndpointHostText(urlstr).str());
         return -1;
     }
 

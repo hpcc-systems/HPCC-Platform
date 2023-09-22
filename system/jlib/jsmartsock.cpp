@@ -354,7 +354,7 @@ ISocket *CSmartSocketFactory::connect_sock(unsigned timeoutms, SmartSocketEndpoi
     catch (IException *e)
     {
         StringBuffer s("CSmartSocketFactory::connect_sock ");
-        ep.getUrlStr(s);
+        ep.getEndpointHostText(s);
         EXCLOG(e,s.str());
         ss->status=false;
         if (sock)
@@ -478,7 +478,7 @@ StringBuffer & CSmartSocketFactory::getUrlStr(StringBuffer &url, bool useHostNam
         {
             sep->checkHost(dnsInterval);
             SocketEndpoint ep = sep->ep;
-            ep.getUrlStr(url);
+            ep.getEndpointHostText(url);
         }
     }
     return url;

@@ -1419,7 +1419,7 @@ void CWsWorkunitsSoapBindingEx::createAndDownloadWUZAPFile(IEspContext& context,
         if (zapInfoReq.esp.isEmpty())
         {
             IpAddress ipaddr = queryHostIP();
-            ipaddr.getIpText(zapInfoReq.esp);
+            ipaddr.getHostText(zapInfoReq.esp);
         }
         request->getParameter("ThorIPAddress", zapInfoReq.thor);
     }

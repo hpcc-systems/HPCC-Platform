@@ -126,7 +126,7 @@ void fetchRemoteWorkunit(IClientWsWorkunits *_ws, IEspContext *ctx, const char *
     SocketEndpoint ep;
     checkUseEspOrDaliIP(ep, resp->getDaliServer(), netAddress);
     if (!ep.isNull())
-        ep.getUrlStr(daliServer);
+        ep.getEndpointHostText(daliServer);
 }
 
 void fetchRemoteWorkunitAndQueryDetails(IClientWsWorkunits *_ws, IEspContext *ctx, const char *netAddress, const char *queryset, const char *query, const char *wuid, StringBuffer &name, StringBuffer &xml, StringBuffer &dllname, MemoryBuffer &dll, StringBuffer &daliServer, Owned<IClientWUQuerySetDetailsResponse> &respQueryInfo, bool useSSL)

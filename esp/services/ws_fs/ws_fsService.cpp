@@ -382,7 +382,7 @@ static void DeepAssign(IEspContext &context, IConstDFUWorkUnit *src, IEspDFUWork
         SocketEndpoint srcdali;
         StringBuffer srcdaliip;
         file->getForeignDali(srcdali);
-        srcdali.getIpText(srcdaliip);
+        srcdali.getHostText(srcdaliip);
         if(srcdaliip.length() > 0 && strcmp(srcdaliip.str(), "0.0.0.0") != 0)
             dest.setSourceDali(srcdaliip.str());
         StringBuffer diffkeyname;
@@ -404,7 +404,7 @@ static void DeepAssign(IEspContext &context, IConstDFUWorkUnit *src, IEspDFUWork
                         Owned<INode> node = info->getNode(0);
                         if (node)
                         {
-                            node->endpoint().getIpText(socket);
+                            node->endpoint().getHostText(socket);
                             dest.setSourceIP(socket.str());
                         }
                         const char *defaultdir = info->queryDefaultDir();
@@ -484,7 +484,7 @@ static void DeepAssign(IEspContext &context, IConstDFUWorkUnit *src, IEspDFUWork
                         Owned<INode> node = info->getNode(0);
                         if (node)
                         {
-                            node->endpoint().getIpText(socket);
+                            node->endpoint().getHostText(socket);
                             dest.setDestIP(socket.str());
                         }
                         const char *defaultdir = info->queryDefaultDir();
@@ -804,7 +804,7 @@ bool CFileSprayEx::GetArchivedDFUWorkunits(IEspContext &context, IEspGetDFUWorku
         StringBuffer url;
         throw MakeStringException(ECLWATCH_CANNOT_CONNECT_ARCHIVE_SERVER,
             "Sasha (%s) took too long to respond from: Get archived workUnits.",
-            ep.getUrlStr(url).str());
+            ep.getEndpointHostText(url).str());
     }
 
     IArrayOf<IEspDFUWorkunit> results;
@@ -1293,7 +1293,7 @@ void CFileSprayEx::getInfoFromSasha(IEspContext &context, const char *sashaServe
         StringBuffer url;
         throw MakeStringException(ECLWATCH_CANNOT_CONNECT_ARCHIVE_SERVER,
             "Sasha (%s) took too long to respond from: Get information for %s.",
-            ep.getUrlStr(url).str(), wuid);
+            ep.getEndpointHostText(url).str(), wuid);
     }
     if (cmd->numIds()==0)
     {

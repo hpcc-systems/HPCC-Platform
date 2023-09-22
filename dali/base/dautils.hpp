@@ -210,7 +210,7 @@ struct da_decl TransactionLog
             owner.startTransaction(cmd);
             owner.getCmdText(cmd, msg);
             msg.append(", endpoint=");
-            ep.getUrlStr(msg);
+            ep.getEndpointHostText(msg);
             startCycles = get_cycles_now();
         }
         else

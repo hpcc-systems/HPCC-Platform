@@ -84,6 +84,9 @@ class jlib_decl IpAddress
 {
     unsigned netaddr[4] = { 0, 0, 0, 0 };
     StringAttr hostname; // not currently serialized
+
+protected:
+    StringBuffer &getHostText(StringBuffer & out, bool ip) const;
 public:
     IpAddress() = default;
     explicit IpAddress(const char *text)                { ipset(text); }
@@ -99,7 +102,8 @@ public:
     bool isLoopBack() const;                            // is loopback (localhost: 127.0.0.1 or ::1)
     bool isLocal() const;                               // matches local interface 
     bool isIp4() const;
-    StringBuffer &getIpText(StringBuffer & out) const;
+    StringBuffer &getIpText(StringBuffer &out) const;
+    StringBuffer &getHostText(StringBuffer & out) const;
     void ipserialize(MemoryBuffer & out) const;         
     void ipdeserialize(MemoryBuffer & in);          
     unsigned ipdistance(const IpAddress &ip,unsigned offset=0) const;       // network order distance (offset: 0-3 word (leat sig.), 0=Ipv4)
@@ -159,8 +163,9 @@ public:
     inline void setLocalHost(unsigned short _port)              { port = _port; GetHostIp(*this); } // NB *not* localhost(127.0.0.1)
     inline void set(unsigned short _port, const IpAddress & _ip) { ipset(_ip); port = _port; };
     inline bool equals(const SocketEndpoint &ep) const          { return ((port==ep.port)&&ipequals(ep)); }
-    void getUrlStr(char * str, size32_t len) const;             // in form ip4:port or [ip6]:port
-    StringBuffer &getUrlStr(StringBuffer &str) const;           // in form ip4:port or [ip6]:port
+    StringBuffer &getEndpointIpText(StringBuffer &str) const;
+    void getEndpointHostText(char * str, size32_t len) const;             // in form ip4:port or [ip6]:port
+    StringBuffer &getEndpointHostText(StringBuffer &str) const;           // in form ip4:port or [ip6]:port
 
     inline SocketEndpoint & operator = ( const SocketEndpoint &other )
     {
@@ -177,6 +182,10 @@ public:
     // Ensure that all the bytes in the data structure are initialised to avoid complains from valgrind when it is written to a socket
     unsigned short portPadding = 0;
 };
+
+// Conditionally return endpoint hostname or resolved IP (may want condition to differ in future, e.g. depending on dns configuration)
+// In k8s by default pod hostnames are not resolvable from other pods, use this function when serializing the text of a host to another host
+extern jlib_decl StringBuffer &getRemoteAccessibleHostText(StringBuffer &str, const SocketEndpoint &ep);
 
 class jlib_decl SocketEndpointArray : public StructArrayOf<SocketEndpoint>
 { 

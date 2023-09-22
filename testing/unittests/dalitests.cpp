@@ -107,7 +107,7 @@ void checkFilePart(IChecker *checker,IDistributedFilePart *part,bool blocked)
     for (unsigned copy=0;copy<n;copy++) {
         INode *node = part->queryNode(copy);
         if (node)
-            checker->add(copy,"queryNode",node->endpoint().getUrlStr(tmp.clear()).str());
+            checker->add(copy,"queryNode",node->endpoint().getEndpointHostText(tmp.clear()).str());
         else
             checker->error("missing node");
         checker->add(copy,"getFilename",part->getFilename(rfn,copy).getRemotePath(tmp.clear()).str());
@@ -1773,7 +1773,7 @@ static IFileDescriptor *createDescriptor(const char* dir, const char* name, unsi
     SocketEndpoint ep;
     ep.setLocalHost(0);
     StringBuffer ip;
-    ep.getIpText(ip);
+    ep.getHostText(ip);
     for (unsigned k=0;k<parts;k++) {
         s.clear().append(ip);
         Owned<INode> node = createINode(s.str());

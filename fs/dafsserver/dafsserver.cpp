@@ -5367,7 +5367,7 @@ public:
             else
             {
                 StringBuffer ips;
-                listenep.getIpText(ips);
+                listenep.getHostText(ips);
                 acceptSock.setown(ISocket::create_ip(listenep.port,ips.str()));
             }
         }
@@ -5404,7 +5404,7 @@ public:
             else
             {
                 StringBuffer ips;
-                sslep.getIpText(ips);
+                sslep.getHostText(ips);
                 secureSock.setown(ISocket::create_ip(sslep.port,ips.str()));
             }
         }
@@ -5419,7 +5419,7 @@ public:
             else
             {
                 StringBuffer ips;
-                rowServiceEp->getIpText(ips);
+                rowServiceEp->getHostText(ips);
                 rowServiceSock.setown(ISocket::create_ip(rowServiceEp->port, ips.str()));
             }
 
@@ -5662,7 +5662,7 @@ public:
                 {
 #ifdef _DEBUG
                     sock->getPeerEndpoint(eps);
-                    eps.getUrlStr(peerURL);
+                    eps.getEndpointHostText(peerURL);
                     PROGLOG("Server accepting from %s", peerURL.str());
 #endif
                     /* NB: if it hits the thread pool limit, it will start throttling (introducing delays),
@@ -5676,7 +5676,7 @@ public:
                 {
 #ifdef _DEBUG
                     sockSSL->getPeerEndpoint(eps);
-                    eps.getUrlStr(peerURL.clear());
+                    eps.getEndpointHostText(peerURL.clear());
                     PROGLOG("Server accepting SECURE from %s", peerURL.str());
 #endif
                     runClient(sockSSL.getClear(), false);
@@ -5686,7 +5686,7 @@ public:
                 {
 #ifdef _DEBUG
                     acceptedRSSock->getPeerEndpoint(eps);
-                    eps.getUrlStr(peerURL.clear());
+                    eps.getEndpointHostText(peerURL.clear());
                     PROGLOG("Server accepting row service socket from %s", peerURL.str());
 #endif
                     runClient(acceptedRSSock.getClear(), true);
@@ -5987,7 +5987,7 @@ protected:
 
         basePath.append("//");
         SocketEndpoint ep(serverPort);
-        ep.getUrlStr(basePath);
+        ep.getEndpointHostText(basePath);
 
         char cpath[_MAX_DIR];
         if (!GetCurrentDirectory(_MAX_DIR, cpath))

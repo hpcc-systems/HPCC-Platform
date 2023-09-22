@@ -416,7 +416,7 @@ public:
         CriticalBlock block(sect);
         if (doremove(sender,transactionid)) {
             StringBuffer s;
-            IERRLOG("Warning: duplicate transaction detected from %s", sender.getUrlStr(s).str());
+            IERRLOG("Warning: duplicate transaction detected from %s", sender.getEndpointHostText(s).str());
             exit(0);
         }
         p->setTransactionId(sender,transactionid);

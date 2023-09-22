@@ -177,7 +177,7 @@ public:
         }
         try {
             StringBuffer ipname;
-            endpoint.getIpText(ipname);
+            endpoint.getHostText(ipname);
             serversock = ISocket::create_ip(endpoint.port,ipname.str(),qsize);
         }
         catch (IJSOCK_Exception *e) {
@@ -314,7 +314,7 @@ public:
     {
         free(hostname);
         StringBuffer ipname;
-        endpoint.getIpText(ipname);
+        endpoint.getHostText(ipname);
         hostname = strdup(ipname.str());
         hostport = endpoint.port;
     }

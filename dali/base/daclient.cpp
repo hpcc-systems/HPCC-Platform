@@ -231,7 +231,7 @@ CSDSServerStatus::CSDSServerStatus(const char *servername)
         IPropertyTree &root = *conn->queryRoot();
         root.setProp("@name",servername);
         StringBuffer node;
-        queryMyNode()->endpoint().getIpText(node);
+        queryMyNode()->endpoint().getHostText(node);
         root.setProp("@node",node.str());
         root.setPropInt("@mpport",queryMyNode()->endpoint().port);
         CDateTime dt;
@@ -336,7 +336,7 @@ bool updateDaliEnv(IPropertyTree *env, bool forceGroupUpdate, const char *daliIp
     if (querySDS().updateEnvironment(env, forceGroupUpdate, response))
     {
         StringBuffer tmp;
-        PROGLOG("Environment and node groups updated in dali at %s",daliep.getUrlStr(tmp).str());
+        PROGLOG("Environment and node groups updated in dali at %s",daliep.getEndpointHostText(tmp).str());
     }
     else
         ret = false;

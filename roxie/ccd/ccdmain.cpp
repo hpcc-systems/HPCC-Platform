@@ -1353,7 +1353,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         if (traceLevel)
         {
             StringBuffer s;
-            DBGLOG("My node ip=%s", myIP.getIpText(s).str());
+            DBGLOG("My node ip=%s", myIP.getHostText(s).str());
         }
         if (topology->getPropBool("@server", true))
         {

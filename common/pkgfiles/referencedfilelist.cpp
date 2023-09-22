@@ -423,7 +423,7 @@ IPropertyTree *ReferencedFile::getSpecifiedOrRemoteFileTree(IUserDescriptor *use
     if (!fileTree)
         return NULL;
     StringAttrBuilder daliipText(daliip);
-    remote->endpoint().getUrlStr(daliipText);
+    remote->endpoint().getEndpointHostText(daliipText);
     filePrefix.set(remotePrefix);
     return fileTree.getClear();
 }
@@ -471,7 +471,7 @@ void ReferencedFile::resolveRemote(IUserDescriptor *user, INode *remote, const c
     flags |= RefFileNotFound;
 
     StringBuffer dest;
-    DBGLOG("Remote ReferencedFile not found %s [dali=%s, remote=%s, prefix=%s]", logicalName.str(), daliip.get(), remote ? remote->endpoint().getUrlStr(dest).str() : nullptr, remotePrefix);
+    DBGLOG("Remote ReferencedFile not found %s [dali=%s, remote=%s, prefix=%s]", logicalName.str(), daliip.get(), remote ? remote->endpoint().getEndpointHostText(dest).str() : nullptr, remotePrefix);
 }
 
 void ReferencedFile::resolve(const StringArray &locations, const char *srcCluster, IUserDescriptor *user, INode *remote, const char *remotePrefix, bool checkLocalFirst, StringArray *subfiles, bool _trackSubFiles, bool resolveForeign)
@@ -1025,7 +1025,7 @@ void ReferencedFileList::cloneRelationships()
         return;
 
     StringBuffer addr;
-    remote->endpoint().getUrlStr(addr);
+    remote->endpoint().getEndpointHostText(addr);
     IDistributedFileDirectory &dir = queryDistributedFileDirectory();
     ReferencedFileIterator files(this);
     ForEach(files)

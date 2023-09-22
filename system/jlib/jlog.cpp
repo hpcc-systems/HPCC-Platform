@@ -413,7 +413,7 @@ StringBuffer & LogMsg::toStringPlain(StringBuffer & out, unsigned fields) const
     }
     if(fields & MSGFIELD_node)
     {
-        sysInfo.queryNode()->getUrlStr(out);
+        sysInfo.queryNode()->getEndpointHostText(out);
         out.append(" ");
     }
     if(fields & MSGFIELD_job)
@@ -494,7 +494,7 @@ StringBuffer & LogMsg::toStringXML(StringBuffer & out, unsigned fields) const
     if(fields & MSGFIELD_node)
     {
         out.append("Node=\"");
-        sysInfo.queryNode()->getUrlStr(out);
+        sysInfo.queryNode()->getEndpointHostText(out);
         out.append("\" ");
     }
 #ifdef LOG_MSG_NEWLINE
@@ -572,7 +572,7 @@ StringBuffer & LogMsg::toStringJSON(StringBuffer & out, unsigned fields) const
     if(fields & MSGFIELD_node)
     {
         out.append(", \"NODE\": \"");
-        sysInfo.queryNode()->getUrlStr(out);
+        sysInfo.queryNode()->getEndpointHostText(out);
         out.append("\"");
     }
     if(fields & MSGFIELD_job)
@@ -643,7 +643,7 @@ StringBuffer & LogMsg::toStringTable(StringBuffer & out, unsigned fields) const
     if(fields & MSGFIELD_node)
     {
         size32_t len = out.length();
-        sysInfo.queryNode()->getUrlStr(out);
+        sysInfo.queryNode()->getEndpointHostText(out);
         out.appendN(20 + len - out.length(), ' ');
     }
     if(fields & MSGFIELD_job)
@@ -781,7 +781,7 @@ void NodeLogMsgFilter::addToPTree(IPropertyTree * tree) const
     IPropertyTree * filterTree = createPTree(ipt_caseInsensitive);
     filterTree->setProp("@type", "node");
     StringBuffer buff;
-    node.getIpText(buff);
+    node.getHostText(buff);
     filterTree->setProp("@ip", buff.str());
     filterTree->setPropInt("@port", node.port);
     if(localFlag) filterTree->setPropInt("@local", 1);
@@ -793,7 +793,7 @@ void IpLogMsgFilter::addToPTree(IPropertyTree * tree) const
     IPropertyTree * filterTree = createPTree(ipt_caseInsensitive);
     filterTree->setProp("@type", "ip");
     StringBuffer buff;
-    ip.getIpText(buff);
+    ip.getHostText(buff);
     filterTree->setProp("@ip", buff.str());
     if(localFlag) filterTree->setPropInt("@local", 1);
     tree->addPropTree("filter", filterTree);

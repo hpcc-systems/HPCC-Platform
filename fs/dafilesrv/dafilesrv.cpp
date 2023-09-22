@@ -780,7 +780,7 @@ int main(int argc, const char* argv[])
                 if (listenep.isNull())
                     eps.append(listenep.port);
                 else
-                    listenep.getUrlStr(eps);
+                    listenep.getEndpointHostText(eps);
 
                 if (connectMethod != SSLOnly)
                     PROGLOG("Opening " DAFS_SERVICE_DISPLAY_NAME " on %s", eps.str());
@@ -792,7 +792,7 @@ int main(int argc, const char* argv[])
                     if (sslep.isNull())
                         eps.append(sslep.port);
                     else
-                        sslep.getUrlStr(eps);
+                        sslep.getEndpointHostText(eps);
                     PROGLOG("Opening " DAFS_SERVICE_DISPLAY_NAME " on SECURE %s", eps.str());
                 }
 
@@ -849,7 +849,7 @@ int main(int argc, const char* argv[])
     if (listenep.isNull())
         eps.append(listenep.port);
     else
-        listenep.getUrlStr(eps);
+        listenep.getEndpointHostText(eps);
     if (connectMethod != SSLOnly)
         PROGLOG("Opening Dali File Server on %s", eps.str());
     if (connectMethod == SSLOnly || connectMethod == SSLFirst || connectMethod == UnsecureFirst)
@@ -860,7 +860,7 @@ int main(int argc, const char* argv[])
         if (sslep.isNull())
             eps.append(sslep.port);
         else
-            sslep.getUrlStr(eps);
+            sslep.getEndpointHostText(eps);
         PROGLOG("Opening Dali File Server on SECURE %s", eps.str());
     }
 

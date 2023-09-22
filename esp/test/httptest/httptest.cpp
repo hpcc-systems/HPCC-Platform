@@ -539,7 +539,7 @@ int HttpClient::sendRequest(int times, HttpStat& stat, StringBuffer& req)
         if(socket.get() == NULL)
         {
             StringBuffer urlstr;
-            OERRLOG("Can't connect to %s", ep.getUrlStr(urlstr).str());
+            OERRLOG("Can't connect to %s", ep.getEndpointHostText(urlstr).str());
             continue;
         }
 
@@ -857,7 +857,7 @@ int COneServerHttpProxyThread::start()
         if(socket2.get() == NULL)
         {
             StringBuffer urlstr;
-            OERRLOG("Can't connect to %s", ep.getUrlStr(urlstr).str());
+            OERRLOG("Can't connect to %s", ep.getEndpointHostText(urlstr).str());
             return -1;
         }
 

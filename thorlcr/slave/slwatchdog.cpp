@@ -194,7 +194,7 @@ public:
     CGraphProgressUDPHandler()
     {
         StringBuffer ipStr;
-        queryMasterNode().endpoint().getIpText(ipStr);
+        queryMasterNode().endpoint().getHostText(ipStr);
         sock.setown(ISocket::udp_connect(getFixedPort(getMasterPortBase(), TPORT_watchdog),ipStr.str()));
         start();
     }
