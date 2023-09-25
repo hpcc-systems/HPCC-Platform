@@ -2822,10 +2822,15 @@ void IContextLogger::logOperatorException(IException *E, const char *file, unsig
 }
 class CRuntimeStatisticCollection;
 
+/*
+  This class is used to implement the default log context - especially used for engines that only support a single query at a time
+  */
+
 class DummyLogCtx : implements IContextLogger
 {
 private:
-    LogTrace logTrace;
+    Owned<ISpan> activeSpan;
+
 public:
     DummyLogCtx() {}
     // It's a static object - we don't want to actually link-count it...
@@ -2863,25 +2868,33 @@ public:
     {
         return 0;
     }
-    virtual void setGlobalId(const char *id, SocketEndpoint &ep, unsigned pid) override
+    virtual void setActiveSpan(ISpan * span) override
     {
-        logTrace.setGlobalId(id);
+        activeSpan.set(span);
     }
-    virtual void setCallerId(const char *id) override
+    virtual IProperties * getClientHeaders() const override
     {
-        logTrace.setCallerId(id);
+        if (!activeSpan)
+            return nullptr;
+        return ::getClientHeaders(activeSpan);
     }
     virtual const char *queryGlobalId() const override
     {
-        return logTrace.queryGlobalId();
+        if (!activeSpan)
+            return nullptr;
+        return activeSpan->queryGlobalId();
     }
     virtual const char *queryCallerId() const override
     {
-        return logTrace.queryCallerId();
+        if (!activeSpan)
+            return nullptr;
+        return activeSpan->queryCallerId();
     }
     virtual const char *queryLocalId() const override
     {
-        return logTrace.queryLocalId();
+        if (!activeSpan)
+            return nullptr;
+        return activeSpan->queryLocalId();
     }
     virtual const CRuntimeStatisticCollection &queryStats() const override
     {

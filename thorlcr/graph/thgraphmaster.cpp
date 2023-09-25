@@ -1484,31 +1484,10 @@ CJobMaster::CJobMaster(IConstWorkUnit &_workunit, const char *graphName, ILoaded
     numChannels = 1;
     init();
 
-    if (workunit->hasDebugValue("GlobalId"))
-    {
-        SCMStringBuffer txId;
-        workunit->getDebugValue("GlobalId", txId);
-        if (txId.length())
-        {
-            SocketEndpoint thorEp;
-            thorEp.setLocalHost(getMachinePortBase());
-            logctx->setGlobalId(txId.str(), thorEp, 0);
+    Owned<IProperties> traceHeaders = extractTraceDebugOptions(workunit);
+    Owned<ISpan> requestSpan = queryTraceManager().createServerSpan(workunit->queryWuid(), traceHeaders);
+    logctx->setActiveSpan(requestSpan);
 
-            SCMStringBuffer callerId;
-            workunit->getDebugValue("CallerId", callerId);
-            if (callerId.length())
-                logctx->setCallerId(callerId.str());
-
-            VStringBuffer msg("GlobalId: %s", txId.str());
-            workunit->getDebugValue("CallerId", txId);
-            if (txId.length())
-                msg.append(", CallerId: ").append(txId.str());
-            txId.set(logctx->queryLocalId());
-            if (txId.length())
-                msg.append(", LocalId: ").append(txId.str());
-            logctx->CTXLOG("%s", msg.str());
-        }
-    }
     resumed = WUActionResume == workunit->getAction();
     fatalHandler.setown(new CFatalHandler(globals->getPropInt("@fatal_timeout", FATAL_TIMEOUT)));
     querySent = spillsSaved = false;

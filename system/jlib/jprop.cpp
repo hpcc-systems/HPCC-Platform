@@ -386,6 +386,22 @@ extern jlib_decl IProperties *createProperties(const char *filename, bool nocase
     else
         return new CProperties(nocase);
 }
+
+IProperties *cloneProperties(const IProperties * source, bool nocase)
+{
+    Owned<IProperties> clone = createProperties(nocase);
+    if (source)
+    {
+        Owned<IPropertyIterator> iter = source->getIterator();
+        ForEach(*iter)
+        {
+            const char * key = iter->getPropKey();
+            clone->setProp(key, source->queryProp(key));
+        }
+    }
+    return clone.getClear();
+}
+
 static CProperties *sysProps = NULL;
 
 extern jlib_decl IProperties *querySystemProperties()

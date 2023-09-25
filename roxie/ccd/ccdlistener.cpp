@@ -1177,17 +1177,11 @@ public:
             wu.setown(daliHelper->attachWorkunit(wuid.get()));
         }
         Owned<StringContextLogger> logctx = new StringContextLogger(wuid.get());
-        if (wu->hasDebugValue("GlobalId"))
-        {
-            SCMStringBuffer globalId;
-            SocketEndpoint ep;
-            ep.setLocalHost(0);
-            SCMStringBuffer callerId;
-            logctx->setGlobalId(wu->getDebugValue("GlobalId", globalId).str(), ep, GetCurrentProcessId());
-            wu->getDebugValue("CallerId", callerId);
-            if (callerId.length())
-                logctx->setCallerId(callerId.str());
-        }
+
+        Owned<IProperties> traceHeaders = extractTraceDebugOptions(wu);
+        Owned<ISpan> requestSpan = queryTraceManager().createServerSpan(wu->queryWuid(), traceHeaders);
+        logctx->setActiveSpan(requestSpan);
+
         Owned<IQueryFactory> queryFactory;
         try
         {
@@ -1308,6 +1302,7 @@ public:
             StringBuffer s;
             logctx.getStats(s);
 
+            //MORE: logctx.queryActiveSpan()->getLogPrefix() or similar.
             StringBuffer txidInfo;
             const char *globalId = logctx.queryGlobalId();
             if (globalId && *globalId)
@@ -1357,7 +1352,6 @@ class RoxieProtocolMsgContext : implements IHpccProtocolMsgContext, public CInte
 public:
     StringAttr queryName;
     StringAttr uid = "-";
-    StringAttr callerId;
     Owned<CascadeManager> cascade;
     Owned<IDebuggerContext> debuggerContext;
     Owned<CDebugCommandHandler> debugCmdHandler;
@@ -1367,6 +1361,7 @@ public:
     SocketEndpoint ep;
     time_t startTime;
     bool notedActive = false;
+    bool ensureGlobalIdExists = false;
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -1415,9 +1410,7 @@ public:
         IConstWorkUnit *workunit = queryFactory->queryWorkUnit();
         if (workunit && workunit->getDebugValueBool("generateGlobalId", false) && isEmptyString(logctx->queryGlobalId()))
         {
-            StringBuffer gen_id;
-            appendGloballyUniqueId(gen_id);
-            setTransactionId(gen_id.str(), nullptr, true);
+            ensureGlobalIdExists = true;
         }
     }
     virtual void noteQueryActive()
@@ -1445,44 +1438,38 @@ public:
         return *cascade;
     }
 
-    virtual void setTransactionId(const char *id, const char *caller, bool global) override
+    virtual void startSpan(const char * id, const IProperties * headers) override
     {
-        if (!id || !*id)
-            return;
-        uid.set(id);
-        ensureContextLogger();
-        if (!global && !isEmptyString(logctx->queryGlobalId())) //globalId wins
-            return;
-        StringBuffer s;
-        ep.getHostText(s).appendf(":%u{%s}", ep.port, uid.str()); //keep no matter what for existing log parsers
-        if (global)
+        Linked<const IProperties> allHeaders = headers;
+        SpanFlags flags = (ensureGlobalIdExists) ? SpanFlags::EnsureGlobalId : SpanFlags::None;
+        if (headers && !headers->queryProp("global-id"))
         {
-            s.append('[');
-            logctx->setGlobalId(id, ep, 0);
-            if (caller && *caller)
+            //If an id is provided, and we are not automatically creating global ids, use the id as the global-id
+            if ((id && *id) && !ensureGlobalIdExists)
             {
-                setCallerId(caller);
-                logctx->setCallerId(caller);
+                Owned<IProperties> clonedHeaders = cloneProperties(headers, true);
+                clonedHeaders->setProp("global-id", id);
+                allHeaders.setown(clonedHeaders.getClear());
             }
-            if (callerId.length())
-                s.appendf("caller:%s", callerId.str());
-
-            const char *local = logctx->queryLocalId(); //generated in setGlobalId above
-            if (local && *local)
-            {
-                if (callerId.length())
-                    s.append(',');
-                s.appendf("local:%s", local);
-            }
-            s.append("]");
         }
-        logctx->set(s.str());
-    }
-    virtual void setCallerId(const char *id)
-    {
-        if (!id || !*id)
-            return;
-        callerId.set(id);
+
+        ensureContextLogger();
+
+        Owned<ISpan> requestSpan = queryTraceManager().createServerSpan("request", allHeaders, flags);
+        logctx->setActiveSpan(requestSpan);
+
+        const char * globalId = requestSpan->queryGlobalId();
+        if (globalId)
+            id = globalId;
+
+        uid.set(id);
+        if (id)
+        {
+            StringBuffer s;
+            ep.getHostText(s).appendf(":%u{%s}", ep.port, id); //keep no matter what for existing log parsers
+            requestSpan->getLogPrefix(s);
+            logctx->set(s.str());
+        }
     }
     inline IDebuggerContext &ensureDebuggerContext(const char *id)
     {
@@ -1602,9 +1589,10 @@ public:
                 StringBuffer s;
                 logctx->getStats(s);
 
+                const char * callerId = logctx->queryCallerId();
                 StringBuffer txIds;
-                if (callerId.length())
-                    txIds.appendf("caller: %s", callerId.str());
+                if (!isEmptyString(callerId))
+                    txIds.appendf("caller: %s", callerId);
                 const char *localId = logctx->queryLocalId();
                 if (localId && *localId)
                 {
