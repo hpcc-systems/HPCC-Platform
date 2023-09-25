@@ -11,7 +11,7 @@
   <sect1 id="prereq" role="nobrk">
     <title>Pré-requisitos</title>
 
-    <para><graphic fileref="../../images/WhatYouNeed.jpg"/></para>
+    <para><graphic fileref="../../images/WhatYouNeed.jpg" /></para>
 
     <para>Todas ferramentas de terceiros devem ser 64-bits.</para>
   </sect1>
@@ -269,7 +269,11 @@ mkdir c:\hpccdata\dropzone</programlisting></para>
           </varlistentry>
         </variablelist>
       </listitem>
+    </orderedlist>
 
+    <?hard-pagebreak ?>
+
+    <orderedlist continuation="continues">
       <listitem>
         <para>Instale o hpcc-localfile Helm chart.</para>
 
@@ -367,9 +371,9 @@ sasha:
         <para>Isto <emphasis role="bold">não</emphasis> é necessário em
         ambientes MacOS ou WSL 2.</para>
 
-        <graphic fileref="../../images/dockerFileShare.jpg"/>
+        <graphic fileref="../../images/dockerFileShare.jpg" />
 
-        <para/>
+        <para></para>
       </listitem>
 
       <listitem>
@@ -422,7 +426,7 @@ OUTPUT(allPeople,,'MyData::allPeople',THOR,OVERWRITE);
       </listitem>
     </orderedlist>
 
-    <para/>
+    <para></para>
   </sect1>
 
   <sect1 id="StoragePlanes">
@@ -481,10 +485,10 @@ OUTPUT(allPeople,,'MyData::allPeople',THOR,OVERWRITE);
         </varlistentry>
       </variablelist></para>
 
-    <para/>
+    <para></para>
 
-    <para/>
+    <para></para>
 
-    <para/>
+    <para></para>
   </sect1>
 </chapter>
