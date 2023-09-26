@@ -30,10 +30,12 @@
 struct HeartBeatPacketHeader
 {
 public:
+    // NB: packetSize and progressSize are back-patched and must remain at fixed offsets from the start of this struct
     size32_t packetSize = 0;   // used as validity check must be first
-    SocketEndpoint sender;
-    unsigned tick = 0;         // sequence check
     size32_t progressSize = 0; // size of progress data (following performance data)
+
+    unsigned tick = 0;         // sequence check
+    SocketEndpoint sender;
 
 public:
     void serialize(MemoryBuffer & out) const
