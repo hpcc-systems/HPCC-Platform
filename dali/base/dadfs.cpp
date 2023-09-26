@@ -1378,9 +1378,23 @@ static void checkLogicalScope(const char *scopename,IUserDescriptor *user,bool r
     SecAccessFlags perm = getScopePermissions(scopename,user,auditflags);
     IDFS_Exception *e = NULL;
     if (readreq&&!HASREADPERMISSION(perm))
-        e = new CDFS_Exception(DFSERR_LookupAccessDenied,scopename);
+    {
+        StringBuffer scopeDescription;
+        StringBuffer username("");
+        if (user)
+            user->getUserName(username);
+        scopeDescription.appendf("%s user '%s', assigned access %s (%d)", scopename, username.str(), getSecAccessFlagName(perm), perm);
+        e = new CDFS_Exception(DFSERR_LookupAccessDenied,scopeDescription);
+    }
     else if (createreq&&!HASWRITEPERMISSION(perm))
-        e = new CDFS_Exception(DFSERR_CreateAccessDenied,scopename);
+    {
+        StringBuffer scopeDescription;
+        StringBuffer username("");
+        if (user)
+            user->getUserName(username);
+        scopeDescription.appendf("%s user '%s', assigned access %s (%d)", scopename, username.str(), getSecAccessFlagName(perm), perm);
+        e = new CDFS_Exception(DFSERR_CreateAccessDenied,scopeDescription);
+    }
     if (e)
         throw e;
 }
