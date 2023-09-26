@@ -11,7 +11,7 @@ GITHUB_REF=$(git rev-parse --short=8 HEAD)
 cd vcpkg
 VCPKG_REF=$(git rev-parse --short=8 HEAD)
 cd ..
-GITHUB_BRANCH=$(git log -50 --pretty=format:"%D" | tr ',' '\n' | grep 'upstream/' | awk 'NR==1 {sub("upstream/", ""); print}')
+GITHUB_BRANCH=$(git log -50 --pretty=format:"%D" | tr ',' '\n' | grep 'upstream/' | awk 'NR==1 {sub("upstream/", ""); print}' | xargs)
 DOCKER_USERNAME="${DOCKER_USERNAME:-hpccbuilds}"
 DOCKER_PASSWORD="${DOCKER_PASSWORD:-none}"
 
@@ -29,30 +29,34 @@ docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
 CMAKE_OPTIONS="-G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DVCPKG_FILES_DIR=/hpcc-dev -DCPACK_THREADS=0 -DUSE_OPTIONAL=OFF -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON"
 
 function doBuild() {
+    docker pull "hpccsystems/platform-build-$1:$VCPKG_REF" || true
+    docker pull "hpccsystems/platform-build-$1:$GITHUB_BRANCH" || true
+
     docker build --progress plain --pull --rm -f "$SCRIPT_DIR/$1.dockerfile" \
         --build-arg DOCKER_NAMESPACE=$DOCKER_USERNAME \
         --build-arg VCPKG_REF=$VCPKG_REF \
-        -t hpccsystems/platform-build-$1:$VCPKG_REF \
-        -t hpccsystems/platform-build-$1:$GITHUB_BRANCH \
         --cache-from hpccsystems/platform-build-$1:$VCPKG_REF \
         --cache-from hpccsystems/platform-build-$1:$GITHUB_BRANCH \
+        -t hpccsystems/platform-build-$1:$VCPKG_REF \
+        -t hpccsystems/platform-build-$1:$GITHUB_BRANCH \
         "$SCRIPT_DIR/."
 
-    docker push hpccsystems/platform-build-$1:$VCPKG_REF &
-    docker push hpccsystems/platform-build-$1:$GITHUB_BRANCH &
+    # docker push hpccsystems/platform-build-$1:$VCPKG_REF
+    # docker push hpccsystems/platform-build-$1:$GITHUB_BRANCH
 
     docker run --rm --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached hpccsystems/platform-build-$1:$VCPKG_REF \
         "cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/HPCC-Platform/build-$1 ${CMAKE_OPTIONS} && \
         cmake --build /hpcc-dev/HPCC-Platform/build-$1 --target package --parallel $(nproc)"
 
+    sudo chown -R $(id -u):$(id -g) ./build-$1
 # docker run -it --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached build-ubuntu-22.04:latest bash
 }
 
-doBuild ubuntu-23.04
-doBuild ubuntu-20.04
-doBuild amazonlinux
-doBuild ubuntu-22.04
-doBuild centos-8
+# doBuild ubuntu-23.04
+# doBuild ubuntu-20.04
+# doBuild amazonlinux
+# doBuild ubuntu-22.04
+# doBuild centos-8
 doBuild centos-7
 
 wait
