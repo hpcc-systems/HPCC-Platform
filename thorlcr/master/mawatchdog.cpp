@@ -171,12 +171,6 @@ unsigned CMasterWatchdogBase::readPacket(HeartBeatPacketHeader &hb, MemoryBuffer
     unsigned read = readData(mb);
     if (read)
     {
-        if (read < sizeof(HeartBeatPacketHeader))
-        {
-            IWARNLOG("Receive Monitor Packet: wrong size, got %d, less than HeartBeatPacketHeader size", read);
-            return 0;
-        }
-
         hb.deserialize(mb);
         if (read != hb.packetSize)  // check for corrupt packets
         {
