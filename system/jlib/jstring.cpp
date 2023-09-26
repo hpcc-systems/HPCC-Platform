@@ -1434,7 +1434,7 @@ StringAttr& StringAttr::operator = (StringAttr && from)
 
 StringAttr& StringAttr::operator = (const StringAttr & from)
 {
-    set(from.str());
+    set(from.get());
     return *this;
 }
 
