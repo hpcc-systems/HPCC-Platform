@@ -92,6 +92,27 @@ static void replyError(unsigned errorCode, const char *errorMsg)
     queryNodeComm().send(msg, 0, MPTAG_THORREGISTRATION);
 }
 
+static void setSlaveAffinity(unsigned processOnNode)
+{
+    const char * affinity = globals->queryProp("@affinity");
+    if (affinity)
+        setProcessAffinity(affinity);
+    else if (globals->getPropBool("@autoAffinity", true))
+    {
+        const char * nodes = globals->queryProp("@autoNodeAffinityNodes");
+        unsigned slavesPerNode = globals->getPropInt("@slavesPerNode", 1);
+        setAutoAffinity(processOnNode, slavesPerNode, nodes);
+    }
+
+    //The default policy is to allocate from the local node, so restricting allocations to the current sockets
+    //may not buy much once the affinity is set up.  It also means it will fail if there is no memory left on
+    //this socket - even if there is on others.
+    //Therefore it is not recommended unless you have maybe several independent thors running on the same machines
+    //with exclusive access to memory.
+    if (globals->getPropBool("@numaBindLocal", false))
+        bindMemoryToLocalNodes();
+}
+
 static std::atomic<bool> isRegistered {false};
 
 static bool RegisterSelf(SocketEndpoint &masterEp)
@@ -153,8 +174,11 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
             return false;
         }
 
-        // NB: if any resource cpu restriction, this superceeds any affinity that setSlaveAffinity may have applied
-        applyResourcedCPUAffinity(globals->queryPropTree("workerResources"));
+        if (!applyResourcedCPUAffinity(globals->queryPropTree("workerResources")))
+        {
+            // NB: autoAffinity/affinity only applicable in the absence of workerResources.cpu
+            setSlaveAffinity(globals->getPropInt("@slaveprocessnum"));
+        }
 
         StringBuffer xpath;
         getExpertOptPath(nullptr, xpath); // 'expert' in container world, or 'Debug' in bare-metal
@@ -315,27 +339,6 @@ ILogMsgHandler *startSlaveLog()
     return logHandler;
 }
 
-void setSlaveAffinity(unsigned processOnNode)
-{
-    const char * affinity = globals->queryProp("@affinity");
-    if (affinity)
-        setProcessAffinity(affinity);
-    else if (globals->getPropBool("@autoAffinity", true))
-    {
-        const char * nodes = globals->queryProp("@autoNodeAffinityNodes");
-        unsigned slavesPerNode = globals->getPropInt("@slavesPerNode", 1);
-        setAutoAffinity(processOnNode, slavesPerNode, nodes);
-    }
-
-    //The default policy is to allocate from the local node, so restricting allocations to the current sockets
-    //may not buy much once the affinity is set up.  It also means it will fail if there is no memory left on
-    //this socket - even if there is on others.
-    //Therefore it is not recommended unless you have maybe several independent thors running on the same machines
-    //with exclusive access to memory.
-    if (globals->getPropBool("@numaBindLocal", false))
-        bindMemoryToLocalNodes();
-}
-
 int main( int argc, const char *argv[]  )
 {
     if (!checkCreateDaemon(argc, argv))
@@ -380,6 +383,9 @@ int main( int argc, const char *argv[]  )
         globals.setown(loadConfiguration(globals, argv, "thor", "THOR", nullptr, nullptr, nullptr, false));
 #endif
 
+        // NB: the thor configuration is serialized from the manager and only available after RegisterSelf
+        // Until that point, only properties on the command line are available.
+
         const char *master = globals->queryProp("@master");
         if (!master)
             usage();
@@ -411,10 +417,6 @@ int main( int argc, const char *argv[]  )
             slfEp.port = queryMyNode()->endpoint().port;
         setMachinePortBase(slfEp.port);
 
-        setSlaveAffinity(globals->getPropInt("@slaveprocessnum"));
-
-        if (globals->getPropBool("@MPChannelReconnect"))
-            getMPServer()->setOpt(mpsopt_channelreopen, "true");
 #ifdef USE_MP_LOG
         startLogMsgParentReceiver();
         LOG(MCdebugProgress, thorJob, "MPServer started on port %d", getFixedPort(TPORT_mp));
@@ -429,6 +431,9 @@ int main( int argc, const char *argv[]  )
         {
             if (!slaveLogHandler)
                 slaveLogHandler = startSlaveLog();
+
+            if (globals->getPropBool("@MPChannelReconnect"))
+                getMPServer()->setOpt(mpsopt_channelreopen, "true");
 
             if (getExpertOptBool("slaveDaliClient"))
                 enableThorSlaveAsDaliClient();

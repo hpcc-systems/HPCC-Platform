@@ -606,7 +606,7 @@ extern jlib_decl void getCpuInfo(unsigned &numCPUs, unsigned &CPUSpeed);
 extern jlib_decl unsigned getAffinityCpus();
 extern jlib_decl void setAffinityCpus(unsigned cpus);
 extern jlib_decl void clearAffinityCache(); // should be called whenever the process affinity is changed to reset the cache
-extern jlib_decl void applyResourcedCPUAffinity(const IPropertyTree *resourceSection);
+extern jlib_decl bool applyResourcedCPUAffinity(const IPropertyTree *resourceSection);
 
 extern jlib_decl void printProcMap(const char *fn, bool printbody, bool printsummary, StringBuffer *lnout, MemoryBuffer *mb, bool useprintf);
 extern jlib_decl void PrintMemoryReport(bool full=true);
