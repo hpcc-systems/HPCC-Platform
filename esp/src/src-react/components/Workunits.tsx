@@ -144,7 +144,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
             Owner: { label: nlsHPCC.Owner, width: 80 },
             Jobname: { label: nlsHPCC.JobName },
             Cluster: { label: nlsHPCC.Cluster },
-            RoxieCluster: { label: nlsHPCC.RoxieCluster },
+            RoxieCluster: { label: nlsHPCC.RoxieCluster, sortable: false },
             State: { label: nlsHPCC.State, width: 60 },
             TotalClusterTime: {
                 label: nlsHPCC.TotalClusterTime, width: 120,

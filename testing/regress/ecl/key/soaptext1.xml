@@ -1,0 +1,7 @@
+<Dataset name='Result 1'>
+ <Row><doc>562949953421345</doc><words><Item>king</Item><Item>sheep</Item><Item>richard</Item></words><counts><Item>3</Item><Item>2</Item><Item>1</Item></counts></Row>
+ <Row><doc>562949953421587</doc><words><Item>king</Item><Item>sheep</Item><Item>richard</Item></words><counts><Item>3</Item><Item>2</Item><Item>1</Item></counts></Row>
+ <Row><doc>562949953421614</doc><words><Item>king</Item><Item>richard</Item><Item>sheep</Item></words><counts><Item>65</Item><Item>2</Item><Item>2</Item></counts></Row>
+ <Row><doc>562949953421651</doc><words><Item>sheep</Item><Item>richard</Item><Item>king</Item></words><counts><Item>130</Item><Item>4</Item><Item>2</Item></counts></Row>
+ <Row><doc>562949953421681</doc><words><Item>king</Item><Item>richard</Item><Item>sheep</Item></words><counts><Item>2</Item><Item>1</Item><Item>1</Item></counts></Row>
+</Dataset>

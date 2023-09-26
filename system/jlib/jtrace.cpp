@@ -658,8 +658,6 @@ private:
                     DBGLOG("Tracing exporter type not specified");
             }
         }
-        else
-            DBGLOG("Tracing exporter type 'InMemory'");
 
         //Administrator can choose to process spans in batches or one at a time
         std::unique_ptr<opentelemetry::v1::sdk::trace::SpanProcessor> processor;
@@ -756,7 +754,6 @@ private:
             else
             {
                 initTracerProviderAndGlobalInternals(traceConfig);
-                DBGLOG("OpenTel tracing enabled!!");
             }
 
             // The global propagator should be set regardless of whether tracing is enabled or not.

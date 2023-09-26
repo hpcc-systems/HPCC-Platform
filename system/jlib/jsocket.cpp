@@ -3598,7 +3598,6 @@ bool IpAddress::ipset(const char *text)
 {
     if (text&&*text) {
         if ((text[0]=='.')&&(text[1]==0)) {
-            hostname.set(GetCachedHostName()); // Is this better than '.'?
             ipset(queryHostIP());
             return true;
         }
