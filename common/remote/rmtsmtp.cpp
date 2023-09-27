@@ -476,14 +476,15 @@ class CMailInfo
     char inbuff[200];
     unsigned inlen;
     bool highPriority;
+    bool termJobOnFail;
 
     static char const * toHeader;
     static char const * ccHeader;
     static char const * subjectHeader;
     static char const * senderHeader;
 public:
-    CMailInfo(char const * _to, char const * _cc, char const * _bcc, char const * _subject, char const * _mailServer, unsigned _port, char const * _sender, StringArray *_warnings, bool _highPriority)
-        : subject(_subject), mailServer(_mailServer), port(_port), sender(_sender), lastAction("process initialization"), inlen(0), highPriority(_highPriority)
+    CMailInfo(char const * _to, char const * _cc, char const * _bcc, char const * _subject, char const * _mailServer, unsigned _port, char const * _sender, StringArray *_warnings, bool _highPriority, bool _termJobOnFail)
+        : subject(_subject), mailServer(_mailServer), port(_port), sender(_sender), lastAction("process initialization"), inlen(0), highPriority(_highPriority), termJobOnFail(_termJobOnFail)
     {
         warnings = _warnings;
         CSMTPValidator validator;
@@ -528,6 +529,7 @@ public:
             lastAction.clear().append(action);
         else
             lastAction.clear().append(len, out).clip();
+
         try
         {
             socket->write(out, len);
@@ -545,36 +547,68 @@ public:
         }
     }
 
-    void read()
+    bool read(int numRetriesRemaining)
     {
         try
         {
-            socket->read(inbuff,1,sizeof(inbuff),inlen);
+            socket->readtms(inbuff, 1, sizeof(inbuff), inlen, 30000);
+
             //MORE: the following is somewhat primitive and not RFC compliant (see bug 25951) - but it is a lot better than nothing
-            if((*inbuff == '4') || (*inbuff == '5'))
+            if ( (*inbuff == '5') || ((*inbuff == '4') && (!numRetriesRemaining)) )
             {
                 StringBuffer b;
-                b.append("Negative reply from mail server at ").append(mailServer.get()).append(":").append(port).append(" after writing ").append(lastAction.str()).append(" in SendEmail*: ").append(inlen, inbuff).clip();
-                WARNLOG("%s", b.str());
-                if (warnings)
-                    warnings->append(b.str());
+                b.append("negative reply after writing ").append(inlen, inbuff).clip();
+                // don't continue on after these responses ...
+                throw makeStringException(MSGAUD_operator, 0, b.str());
             }
-#ifdef SMTP_TRACE
             else
             {
+#ifdef SMTP_TRACE
                 StringBuffer b(inlen, inbuff);
                 b.clip();
                 DBGLOG("SMTP read: [%s]", b.str());
-            }
 #endif
+                if (*inbuff == '4')
+                    return false;
+                else
+                    return true;
+            }
         }
-        catch(IException * e)
+        catch (IException * e)
         {
             int code = e->errorCode();
             StringBuffer buff;
             e->errorMessage(buff);
             e->Release();
             throw MakeStringException(MSGAUD_operator, 0, "Exception %d (%s) in SendEmail* while reading from mail server %s:%u following %s", code, buff.str(), mailServer.get(), port, lastAction.str());
+        }
+    }
+
+    void readRemainingData()
+    {
+        // read any remaining bytes ...
+        try
+        {
+            socket->readtms(inbuff, 0, sizeof(inbuff), inlen, 0);
+        }
+        catch(IException * e)
+        {
+            e->Release();
+        }
+    }
+
+    void writeAndAck(char const * out, size32_t len, char const * action = NULL)
+    {
+        bool ok;
+        int retries = 2;
+        while (retries >= 0)
+        {
+            readRemainingData();
+            write(out, len, action);
+            ok = read(retries);
+            if (ok)
+                break;
+            retries--;
         }
     }
 
@@ -613,6 +647,17 @@ public:
     {
         char const * rcpt = recipients.item(i);
         out.append("RCPT TO:<").append(rcpt).append(">\r\n");
+    }
+
+    bool getTermJobOnFail() const
+    {
+        return termJobOnFail;
+    }
+
+    void addToWarnings(const char *warnStr) const
+    {
+        if (warnings && (warnStr && *warnStr))
+            warnings->append(warnStr);
     }
 
 private:
@@ -773,77 +818,98 @@ static const char *quit="QUIT\r\n";
 
 static void doSendEmail(CMailInfo & info, CMailPart const & part)
 {
-    info.open();
-    StringBuffer outbuff;
-
-    info.read();
-    info.getHelo(outbuff);
-    info.write(outbuff.str(), outbuff.length());
-    info.read();
-
-    info.getMailFrom(outbuff.clear());
-    info.write(outbuff.str(), outbuff.length());
-    info.read();
-
-    unsigned numRcpt = info.numRecipients();
-    for(unsigned i=0; i<numRcpt; ++i)
+    try
     {
-        info.getRecipient(i, outbuff.clear());
-        info.write(outbuff.str(), outbuff.length());
-        info.read();
+        info.open();
+        StringBuffer outbuff;
+
+        info.read(0);
+        info.getHelo(outbuff);
+
+        info.writeAndAck(outbuff.str(), outbuff.length());
+
+        info.getMailFrom(outbuff.clear());
+
+        info.writeAndAck(outbuff.str(), outbuff.length());
+
+        unsigned numRcpt = info.numRecipients();
+        for(unsigned i=0; i<numRcpt; ++i)
+        {
+            info.getRecipient(i, outbuff.clear());
+            info.writeAndAck(outbuff.str(), outbuff.length());
+        }
+
+        info.writeAndAck(data, strlen(data));
+
+        info.getHeader(outbuff.clear());
+        part.getHeader(outbuff);
+        outbuff.append("\r\n");
+
+        bool ok;
+        int retries = 2;
+        while (retries >= 0)
+        {
+            info.readRemainingData();
+            info.write(outbuff.str(), outbuff.length(), "mail header");
+            part.write(info);
+            info.write(endMail, strlen(endMail), "end of mail body");
+            ok = info.read(retries);
+            if (ok)
+                break;
+            retries--;
+        }
+
+        info.writeAndAck(quit, strlen(quit));
     }
+    catch(IException * e)
+    {
+        if (info.getTermJobOnFail())
+            throw e;
 
-    info.write(data, strlen(data));
-    info.read();
-    info.getHeader(outbuff.clear());
-    part.getHeader(outbuff);
-    outbuff.append("\r\n");
-    info.write(outbuff.str(), outbuff.length(), "mail header");
-    part.write(info);
-    info.write(endMail, strlen(endMail), "end of mail body");
-    info.read();
-
-    info.write(quit, strlen(quit));
-    info.read();
+        StringBuffer msg;
+        info.addToWarnings(e->errorMessage(msg).str());
+        EXCLOG(MCoperatorError, e, "WARNING");
+        e->Release();
+    }
 }
 
-void sendEmail(const char * to, const char * cc, const char * bcc, const char * subject, const char * body, const char * mailServer, unsigned port, const char * sender, StringArray *warnings, bool highPriority)
+void sendEmail(const char * to, const char * cc, const char * bcc, const char * subject, const char * body, const char * mailServer, unsigned port, const char * sender, StringArray *warnings, bool highPriority, bool termJobOnFail)
 {
-    CMailInfo info(to, cc, bcc, subject, mailServer, port, sender, warnings, highPriority);
+    CMailInfo info(to, cc, bcc, subject, mailServer, port, sender, warnings, highPriority, termJobOnFail);
     CTextMailPart bodyPart(body, "text/plain; charset=ISO-8859-1", NULL);
     doSendEmail(info, bodyPart);
 }
 
-void sendEmail(const char * to, const char * subject, const char * body, const char * mailServer, unsigned port, const char * sender, StringArray *warnings, bool highPriority)
+void sendEmail(const char * to, const char * subject, const char * body, const char * mailServer, unsigned port, const char * sender, StringArray *warnings, bool highPriority, bool termJobOnFail)
 {
-    sendEmail(to, nullptr, nullptr, subject, body, mailServer, port, sender, warnings, highPriority);
+    sendEmail(to, nullptr, nullptr, subject, body, mailServer, port, sender, warnings, highPriority, termJobOnFail);
 }
 
-void sendEmailAttachText(const char * to, const char * cc, const char * bcc, const char * subject, const char * body, const char * attachment, const char * mimeType, const char * attachmentName, const char * mailServer, unsigned int port, const char * sender, StringArray *warnings, bool highPriority)
+void sendEmailAttachText(const char * to, const char * cc, const char * bcc, const char * subject, const char * body, const char * attachment, const char * mimeType, const char * attachmentName, const char * mailServer, unsigned int port, const char * sender, StringArray *warnings, bool highPriority, bool termJobOnFail)
 {
-    CMailInfo info(to, cc, bcc, subject, mailServer, port, sender, warnings, highPriority);
+    CMailInfo info(to, cc, bcc, subject, mailServer, port, sender, warnings, highPriority, termJobOnFail);
     CTextMailPart inlinedPart(body, "text/plain; charset=ISO-8859-1", NULL);
     CTextMailPart attachmentPart(attachment, mimeType, attachmentName);
     CMultiMailPart multiPart(inlinedPart, attachmentPart);
     doSendEmail(info, multiPart);
 }
 
-void sendEmailAttachText(const char * to, const char * subject, const char * body, const char * attachment, const char * mimeType, const char * attachmentName, const char * mailServer, unsigned int port, const char * sender, StringArray *warnings, bool highPriority)
+void sendEmailAttachText(const char * to, const char * subject, const char * body, const char * attachment, const char * mimeType, const char * attachmentName, const char * mailServer, unsigned int port, const char * sender, StringArray *warnings, bool highPriority, bool termJobOnFail)
 {
-    sendEmailAttachText(to, nullptr, nullptr, subject, body, attachment, mimeType, attachmentName, mailServer, port, sender, warnings, highPriority);
+    sendEmailAttachText(to, nullptr, nullptr, subject, body, attachment, mimeType, attachmentName, mailServer, port, sender, warnings, highPriority, termJobOnFail);
 }
 
-void sendEmailAttachData(const char * to, const char * cc, const char * bcc, const char * subject, const char * body, size32_t lenAttachment, const void * attachment, const char * mimeType, const char * attachmentName, const char * mailServer, unsigned int port, const char * sender, StringArray *warnings, bool highPriority)
+void sendEmailAttachData(const char * to, const char * cc, const char * bcc, const char * subject, const char * body, size32_t lenAttachment, const void * attachment, const char * mimeType, const char * attachmentName, const char * mailServer, unsigned int port, const char * sender, StringArray *warnings, bool highPriority, bool termJobOnFail)
 {
-    CMailInfo info(to, cc, bcc, subject, mailServer, port, sender, warnings, highPriority);
+    CMailInfo info(to, cc, bcc, subject, mailServer, port, sender, warnings, highPriority, termJobOnFail);
     CTextMailPart inlinedPart(body, "text/plain; charset=ISO-8859-1", NULL);
     CDataMailPart attachmentPart(lenAttachment, attachment, mimeType, attachmentName);
     CMultiMailPart multiPart(inlinedPart, attachmentPart);
     doSendEmail(info, multiPart);
 }
 
-void sendEmailAttachData(const char * to, const char * subject, const char * body, size32_t lenAttachment, const void * attachment, const char * mimeType, const char * attachmentName, const char * mailServer, unsigned int port, const char * sender, StringArray *warnings, bool highPriority)
+void sendEmailAttachData(const char * to, const char * subject, const char * body, size32_t lenAttachment, const void * attachment, const char * mimeType, const char * attachmentName, const char * mailServer, unsigned int port, const char * sender, StringArray *warnings, bool highPriority, bool termJobOnFail)
 {
-    sendEmailAttachData(to, nullptr, nullptr, subject, body, lenAttachment, attachment, mimeType, attachmentName, mailServer, port, sender, warnings, highPriority);
+    sendEmailAttachData(to, nullptr, nullptr, subject, body, lenAttachment, attachment, mimeType, attachmentName, mailServer, port, sender, warnings, highPriority, termJobOnFail);
 }
 
