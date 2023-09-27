@@ -154,7 +154,8 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
         }
 
         // NB: if any resource cpu restriction, this superceeds any affinity that setSlaveAffinity may have applied
-        applyResourcedCPUAffinity(globals->queryPropTree("workerResources"));
+        if (globals->getPropBool("@applyCpuResourceAffinity", true))
+            applyResourcedCPUAffinity(globals->queryPropTree("workerResources"));
 
         StringBuffer xpath;
         getExpertOptPath(nullptr, xpath); // 'expert' in container world, or 'Debug' in bare-metal

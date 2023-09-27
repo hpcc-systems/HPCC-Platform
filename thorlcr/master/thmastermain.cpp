@@ -844,7 +844,8 @@ int main( int argc, const char *argv[]  )
         }
         managerMemory->setPropInt("@total", mmemSize);
 
-        applyResourcedCPUAffinity(globals->queryPropTree("managerResources"));
+        if (globals->getPropBool("@applyCpuResourceAffinity", true))
+            applyResourcedCPUAffinity(globals->queryPropTree("managerResources"));
 
         char thorPath[1024];
         if (!GetCurrentDirectory(1024, thorPath))

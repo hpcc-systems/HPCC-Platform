@@ -2467,6 +2467,11 @@
         "eclAgentResources": {
           "$ref": "#/definitions/resources"
         },
+        "applyCpuResourceAffinity": {
+          "description": "Bind the resourced cpus to cores using affinity",
+          "type": "boolean",
+          "default": true
+        },
         "cost": {
           "$ref" : "#/definitions/componentCost"
         },
