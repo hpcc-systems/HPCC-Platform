@@ -1,0 +1,3 @@
+<Manifest>
+    <Resource filename="wasmembed.wasm" type="wasm" />
+</Manifest>

@@ -1,0 +1,34 @@
+import wasm;
+
+boolean boolTest (boolean a, boolean b) := IMPORT(wasm, 'wasmembed.bool-test');
+real4 float32Test (real4 a, real4 b) := IMPORT(wasm, 'wasmembed.float32-test');
+real8 float64Test (real8 a, real8 b) := IMPORT(wasm, 'wasmembed.float64-test');
+unsigned1 u8Test (unsigned1 a, unsigned1 b) := IMPORT(wasm, 'wasmembed.u8-test');
+unsigned2 u16Test (unsigned2 a, unsigned2 b) := IMPORT(wasm, 'wasmembed.u16-test');
+unsigned4 u32Test (unsigned4 a, unsigned4 b) := IMPORT(wasm, 'wasmembed.u32-test');
+unsigned8 u64Test (unsigned8 a, unsigned8 b) := IMPORT(wasm, 'wasmembed.u64-test');
+integer1 s8Test (integer1 a, integer1 b) := IMPORT(wasm, 'wasmembed.s8-test');
+integer2 s16Test (integer2 a, integer2 b) := IMPORT(wasm, 'wasmembed.s16-test');
+integer4 s32Test (integer4 a, integer4 b) := IMPORT(wasm, 'wasmembed.s32-test');
+integer8 s64Test (integer8 a, integer8 b) := IMPORT(wasm, 'wasmembed.s64-test');
+string stringTest (string a, string b) := IMPORT(wasm, 'wasmembed.string-test');
+string7 string5Test (string5 a, string5 b) := IMPORT(wasm, 'wasmembed.string-test');
+varstring varstringTest (varstring a, varstring b) := IMPORT(wasm, 'wasmembed.string-test');
+
+boolTest(false, false) = (false AND false);
+boolTest(false, true) = (false AND true);
+boolTest(true, false) = (true AND false);
+boolTest(true, true) = (true AND true);
+float32Test(1.0, 2.0) = (1.0 + 2.0);
+float64Test(1.0, 2.0) = (1.0 + 2.0);
+u8Test(1, 2) = (1 + 2);
+u16Test(1, 2) = (1 + 2);
+u32Test(1, 2) = (1 + 2);
+u64Test(1, 2) = (1 + 2);
+s8Test(1, 2) = (1 + 2);
+s16Test(1, 2) = (1 + 2);
+s32Test(1, 2) = (1 + 2);
+s64Test(1, 2) = (1 + 2);
+stringTest('aaa', 'bbbb') = ('aaa' + 'bbbb');
+string5Test('aaa', 'bbbb') = (string7)((string5)'aaa' + (string5)'bbbb');
+varstringTest('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb') = ('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' + 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb');

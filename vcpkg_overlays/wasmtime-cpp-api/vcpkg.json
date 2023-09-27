@@ -1,0 +1,10 @@
+{
+  "name": "wasmtime-cpp-api",
+  "version-string": "9.0.0",
+  "description": "Wasmtime is a standalone runtime for WebAssembly, using Cranelift to JIT-compile from WebAssembly to native code.",
+  "homepage": "https://wasmtime.dev/",
+  "license": "Apache-2.0",
+  "dependencies": [
+    "wasmtime-c-api"
+  ]
+}

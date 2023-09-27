@@ -171,6 +171,10 @@
             "platform": "@VCPKG_TBB@"
         },
         {
+            "name": "wasmtime-cpp-api",
+            "platform": "@VCPKG_WASMEMBED@"
+        },
+        {
             "name": "winflexbison",
             "platform": "windows"
         },

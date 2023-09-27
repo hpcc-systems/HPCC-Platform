@@ -1,0 +1,11 @@
+package hpcc-systems:hpcc-platform
+
+world wasmembed {
+  //  guests dispose all params as needed
+  //  guests should dispose "results" as needed
+  import dbglog: func(msg: string)
+
+  //  guests dispose all params as needed
+  //  hosts call cabi_post_XXX to dispose "results" as needed
+  //  export myfunc(params: string) -> string
+}
