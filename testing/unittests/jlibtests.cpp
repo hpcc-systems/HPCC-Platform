@@ -53,6 +53,7 @@ public:
         CPPUNIT_TEST(testPropegatedServerSpan);
         CPPUNIT_TEST(testInvalidPropegatedServerSpan);
         CPPUNIT_TEST(testInternalSpan);
+        CPPUNIT_TEST(testMultiNestedSpanTraceOutput);
     CPPUNIT_TEST_SUITE_END();
 
     const char * simulatedGlobalYaml = R"!!(global:
@@ -298,8 +299,6 @@ protected:
         CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected getSpanContext failure detected", true, getSpanCtxSuccess);
         const char * traceParent = retrievedSpanCtxAttributes->queryProp("remoteParentSpanID");
         DBGLOG("testInvalidPropegatedServerSpan: traceparent: %s", traceParent);
-        //CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected Otel traceparent header len detected", (size_t)55,
-        // strlen(retrievedSpanCtxAttributes->queryProp("traceparent")));
     }
 
     void testDisabledTracePropegatedValues()
@@ -330,6 +329,70 @@ protected:
 
         CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected Declared Parent SpanID detected", 0,
             strcmp("4b960b3e4647da3f", retrievedSpanCtxAttributes->queryProp("remoteParentSpanID")));
+    }
+
+    void testMultiNestedSpanTraceOutput()
+    {
+        Owned<IProperties> mockHTTPHeaders = createProperties();
+        createMockHTTPHeaders(mockHTTPHeaders, true);
+
+        Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("propegatedServerSpan", mockHTTPHeaders);
+        Owned<ISpan> clientSpan = serverSpan->createClientSpan("clientSpan");
+        Owned<ISpan> internalSpan = clientSpan->createInternalSpan("internalSpan");
+        Owned<ISpan> internalSpan2 = internalSpan->createInternalSpan("internalSpan2");
+
+        StringBuffer out;
+        out.set("{");
+        internalSpan2->toLog(out);
+        out.append("}");
+        {
+            Owned<IPropertyTree> jtraceAsTree;
+            try
+            {
+                jtraceAsTree.setown(createPTreeFromJSONString(out.str()));
+            }
+            catch (IException *e)
+            {
+                StringBuffer msg;
+                msg.append("Unexpected toLog format failure detected: ");
+                e->errorMessage(msg);
+                e->Release();
+                CPPUNIT_ASSERT_MESSAGE(msg.str(), false);
+            }
+
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected toLog format failure detected", true, jtraceAsTree != nullptr);
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing 'TraceID' entry in toLog output", true, jtraceAsTree->hasProp("TraceID"));
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing 'SpanID' entry in toLog output", true, jtraceAsTree->hasProp("SpanID"));
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing 'Name' entry in toLog output", true, jtraceAsTree->hasProp("Name"));
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing 'Type' entry in toLog output", true, jtraceAsTree->hasProp("Type"));
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing 'ParentSpanID' entry in toLog output", true, jtraceAsTree->hasProp("ParentSpanID"));
+        }
+
+        out.set("{");
+        internalSpan2->toString(out);
+        out.append("}");
+        {
+            Owned<IPropertyTree> jtraceAsTree;
+            try
+            {
+                jtraceAsTree.setown(createPTreeFromJSONString(out.str()));
+            }
+            catch (IException *e)
+            {
+                StringBuffer msg;
+                msg.append("Unexpected toString format failure detected: ");
+                e->errorMessage(msg);
+                e->Release();
+                CPPUNIT_ASSERT_MESSAGE(msg.str(), false);
+            }
+
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected toString format failure detected", true, jtraceAsTree != nullptr);
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing 'TraceID' entry in toString output", true, jtraceAsTree->hasProp("TraceID"));
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing 'SpanID' entry in toString output", true, jtraceAsTree->hasProp("SpanID"));
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing 'Name' entry in toString output", true, jtraceAsTree->hasProp("Name"));
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing 'Type' entry in toString output", true, jtraceAsTree->hasProp("Type"));
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing 'ParentSpan/SpanID' entry in toString output", true, jtraceAsTree->hasProp("ParentSpan/SpanID"));
+        }
     }
 
     void testPropegatedServerSpan()
