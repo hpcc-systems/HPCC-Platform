@@ -2883,18 +2883,6 @@ public:
     {
         return logTrace.queryLocalId();
     }
-    virtual void setHttpIdHeaderNames(const char *global, const char *caller) override
-    {
-        logTrace.setHttpIdHeaderNames(global, caller);
-    }
-    virtual const char *queryGlobalIdHttpHeaderName() const override
-    {
-        return logTrace.queryGlobalIdHTTPHeaderName();
-    }
-    virtual const char *queryCallerIdHttpHeaderName() const override
-    {
-        return logTrace.queryCallerIdHTTPHeaderName();
-    }
     virtual const CRuntimeStatisticCollection &queryStats() const override
     {
         throwUnexpected();

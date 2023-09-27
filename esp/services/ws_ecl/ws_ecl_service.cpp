@@ -349,13 +349,6 @@ bool CWsEclService::init(const char * name, const char * type, IPropertyTree * c
     else
         workunitTimeout = WAIT_FOREVER;
 
-    const char *headerName = serviceTree->queryProp("HttpGlobalIdHeader");
-    if (headerName && *headerName && !streq(headerName, "Global-Id") && !streq(headerName, "HPCC-Global-Id")) //defaults will be checked anyway
-        globalIdHttpHeader.set(headerName);
-    headerName = serviceTree->queryProp("HttpCallerIdHeader");
-    if (headerName && *headerName && !streq(headerName, "Caller-Id") && !streq(headerName, "HPCC-Caller-Id")) //defaults will be checked anyway
-        callerIdHttpHeader.set(headerName);
-
     Owned<IPropertyTreeIterator> cfgTargets = serviceTree->getElements("Targets/Target");
     ForEach(*cfgTargets)
         targets.append(cfgTargets->query().queryProp(NULL));
@@ -2003,18 +1996,15 @@ int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinf
     if (httpreq)
     {
         StringBuffer globalId, callerId;
-        StringAttr globalIdHeader, callerIdHeader;
-        wsecl->getHttpGlobalIdHeader(httpreq, globalId, globalIdHeader);
-        wsecl->getHttpCallerIdHeader(httpreq, callerId, callerIdHeader);
+        wsecl->getHttpGlobalIdHeader(httpreq, globalId);
+        wsecl->getHttpCallerIdHeader(httpreq, callerId);
         if (globalId.length())
         {
             workunit->setDebugValue("GlobalId", globalId.str(), true);
-            workunit->setDebugValue("GlobalIdHeader", globalIdHeader.str(), true);  //use same header received
 
             StringBuffer localId;
             appendGloballyUniqueId(localId);
             workunit->setDebugValue("CallerId", localId.str(), true); //our localId becomes caller id for the next hop
-            workunit->setDebugValue("CallerIdHeader", callerIdHeader.str(), true); //use same header received
             DBGLOG("GlobalId: %s, CallerId: %s, LocalId: %s, Wuid: %s", globalId.str(), callerId.str(), localId.str(), wuid.str());
         }
         IProperties *params = httpreq->queryParameters();
@@ -2103,19 +2093,18 @@ void CWsEclBinding::sendRoxieRequest(const char *target, StringBuffer &req, Stri
         if (httpreq)
         {
             StringBuffer globalId, callerId;
-            StringAttr globalIdHeader, callerIdHeader;
-            wsecl->getHttpGlobalIdHeader(httpreq, globalId, globalIdHeader);
-            wsecl->getHttpCallerIdHeader(httpreq, callerId, callerIdHeader);
+            wsecl->getHttpGlobalIdHeader(httpreq, globalId);
+            wsecl->getHttpCallerIdHeader(httpreq, callerId);
 
             if (globalId.length())
             {
                 headers.setown(createProperties());
-                headers->setProp(globalIdHeader, globalId);
+                headers->setProp(kGlobalIdHttpHeaderName, globalId);
 
                 StringBuffer localId;
                 appendGloballyUniqueId(localId);
                 if (localId.length())
-                    headers->setProp(callerIdHeader, localId);
+                    headers->setProp(kCallerIdHttpHeaderName, localId);
                 DBGLOG("GlobalId: %s, CallerId: %s, LocalId: %s", globalId.str(), callerId.str(), localId.str());
             }
 

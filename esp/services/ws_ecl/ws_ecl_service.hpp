@@ -96,8 +96,6 @@ public:
     StringArray targets;
     StringAttr auth_method;
     StringAttr portal_URL;
-    StringAttr globalIdHttpHeader;
-    StringAttr callerIdHttpHeader;
     unsigned roxieTimeout;
     unsigned workunitTimeout;
 
@@ -111,49 +109,28 @@ public:
     virtual bool init(const char * name, const char * type, IPropertyTree * cfg, const char * process);
     virtual void setContainer(IEspContainer * container){}
 
-    inline bool getHttpIdHeader(CHttpRequest *request, const char *header, StringBuffer &value, StringAttr &nameused)
+    inline bool getHttpIdHeader(CHttpRequest *request, const char *header, StringBuffer &value)
     {
         if (!header || !*header)
             return false;
 
         request->getHeader(header, value.clear());
         if (value.length())
-        {
-            nameused.set(header);
             return true;
-        }
         return false;
     }
 
-    StringBuffer &getHttpGlobalIdHeader(CHttpRequest *request, StringBuffer &value, StringAttr &nameused)
+    StringBuffer &getHttpGlobalIdHeader(CHttpRequest *request, StringBuffer &value)
     {
-        if (!getHttpIdHeader(request, globalIdHttpHeader, value, nameused))
-        {
-            if (!getHttpIdHeader(request, "Global-Id", value, nameused))
-                getHttpIdHeader(request, "HPCC-Global-Id", value, nameused);
-        }
+        if (!getHttpIdHeader(request, kGlobalIdHttpHeaderName, value))
+            getHttpIdHeader(request, kLegacyGlobalIdHttpHeaderName, value);
         return value;
     }
-    StringBuffer &getHttpCallerIdHeader(CHttpRequest *request, StringBuffer &value, StringAttr &nameused)
+    StringBuffer &getHttpCallerIdHeader(CHttpRequest *request, StringBuffer &value)
     {
-        if (!getHttpIdHeader(request, callerIdHttpHeader, value, nameused))
-        {
-            if (!getHttpIdHeader(request, "Caller-Id", value, nameused))
-                getHttpIdHeader(request, "HPCC-Caller-Id", value, nameused);
-        }
+        if (!getHttpIdHeader(request, kCallerIdHttpHeaderName, value))
+            getHttpIdHeader(request, kLegacyCallerIdHttpHeaderName, value);
         return value;
-    }
-    const char *queryGlobalIdHeaderName()
-    {
-        if (!globalIdHttpHeader.isEmpty())
-            return globalIdHttpHeader;
-        return "HPCC-Global-Id"; //HPCC default
-    }
-    const char *queryCallerIdHeaderName()
-    {
-        if (!callerIdHttpHeader.isEmpty())
-            return callerIdHttpHeader;
-        return "HPCC-Caller-Id"; //HPCC default
     }
 
     bool unsubscribeServiceFromDali() override {return true;}
