@@ -29,6 +29,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <atomic>
+#include <cmath>
 
 #ifdef _WIN32
 #define DPSAPI_VERSION 1
@@ -1588,11 +1589,9 @@ void applyResourcedCPUAffinity(const IPropertyTree *resourceSection)
     double cpus = friendlyCPUToDecimal(cpusText);
     if (0.0 == cpus)
         throw makeStringExceptionV(0, "Invalid number of resources cpus: %s", cpusText);
-    unsigned __int64 cpusI = (unsigned __int64)cpus;
+    unsigned __int64 cpusI = (unsigned __int64)std::ceil(cpus);
     if (cpus != (double)cpusI)
-        OWARNLOG("Fractional number of CPUs '%s' specified can cause poor performance, rounding down to: %" I64F "u", cpusText, cpusI);
-    if (0 == cpusI) // if round down to 0
-        cpusI = 1;
+        OWARNLOG("Fractional number of CPUs '%s' specified can cause poor performance, rounding up to: %" I64F "u", cpusText, cpusI);
     unsigned realAffinityCpus = evalAffinityCpus();
     if (cpusI > realAffinityCpus)
         OWARNLOG("Attempting to set resourced cpu limit to %u, exceeds cpu affinity of %u", (unsigned)cpusI, realAffinityCpus);
