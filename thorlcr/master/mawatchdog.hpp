@@ -26,7 +26,7 @@
 class CMachineStatus;
 struct HeartBeatPacketHeader;
 
-class CMasterWatchdogBase : public CSimpleInterface, implements IThreaded
+class CMasterWatchdog : public CSimpleInterface, implements IThreaded
 {
     PointerArray state;
     SocketEndpoint master;
@@ -37,8 +37,8 @@ protected:
     bool stopped;
     unsigned watchdogMachineTimeout;
 public:
-    CMasterWatchdogBase();
-    ~CMasterWatchdogBase();
+    CMasterWatchdog(bool startNow);
+    ~CMasterWatchdog();
     void addSlave(const SocketEndpoint &slave);
     void removeSlave(const SocketEndpoint &slave);
     CMachineStatus *findSlave(const SocketEndpoint &ep);
@@ -46,13 +46,13 @@ public:
     unsigned readPacket(HeartBeatPacketHeader &hb, MemoryBuffer &mb);
     void start();
     void stop();
+    unsigned readData(MemoryBuffer &mb);
+    void stopReading();
+// IThredaed
     virtual void threadmain() override;
-
-    virtual unsigned readData(MemoryBuffer &mb) = 0;
-    virtual void stopReading() = 0;
 };
 
-CMasterWatchdogBase *createMasterWatchdog(bool udp=false, bool startNow=false);
+CMasterWatchdog *createMasterWatchdog(bool startNow=false);
 
 #endif
 
