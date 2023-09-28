@@ -462,7 +462,7 @@ export const FluentPagedFooter: React.FunctionComponent<FluentPagedFooterProps> 
                     updatePage(Math.round(index + 1).toString());
                 }}
                 onRenderVisibleItemLabel={props => {
-                    const start = props.selectedPageIndex === 0 ? 1 : (props.selectedPageIndex * props.itemsPerPage) + 1;
+                    const start = props.totalItemCount === 0 ? 0 : props.selectedPageIndex === 0 ? 1 : (props.selectedPageIndex * props.itemsPerPage) + 1;
                     const end = (props.itemsPerPage * (props.selectedPageIndex + 1)) > props.totalItemCount ? props.totalItemCount : props.itemsPerPage * (props.selectedPageIndex + 1);
                     return <div className={paginationStyles.paginationLabel}>
                         {start} {props.strings.divider} {end} {nlsHPCC.Of.toLowerCase()} {props.totalItemCount} {nlsHPCC.Rows} {selectionCount ? `(${selectionCount} ${nlsHPCC.Selected})` : ""}
