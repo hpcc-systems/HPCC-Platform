@@ -1217,7 +1217,7 @@ void CTpWrapper::getGroupList(double espVersion, const char* kindReq, IArrayOf<I
             {
                 IPropertyTree &group = groups->query();
                 const char* kind = group.queryProp("@kind");
-                if (kindReq && *kindReq && !strieq(kindReq, kind))
+                if (!isEmptyString(kindReq) && !strisame(kindReq, kind))
                     continue;
 
                 IEspTpGroup* pGroup = createTpGroup("","");
