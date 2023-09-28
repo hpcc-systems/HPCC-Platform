@@ -19,6 +19,7 @@
 
 #include <math.h>
 
+#include "jcontainerized.hpp"
 #include "daclient.hpp"
 #include "daft.hpp"
 #include "daftcfg.hpp"
@@ -6116,7 +6117,7 @@ void CWsDfuEx::dFUFileAccessCommon(IEspContext &context, const CDfsLogicalFileNa
     if (!info)
         throw makeStringExceptionV(-1, "dFUFileAccessCommon: file signing certificate ('%s') not defined in configuration.", keyPairName.str());
 
-    auto externalService = getDafileServiceFromConfig("stream");
+    auto externalService = k8s::getDafileServiceFromConfig("stream");
     dafilesrvHost.set(externalService.first.c_str());
     port = externalService.second;
     secure = true;
@@ -6498,7 +6499,7 @@ bool CWsDfuEx::onDFUFileCreateV2(IEspContext &context, IEspDFUFileCreateV2Reques
         fileDesc.setown(createFileDescriptor(tempFileName, planeName, numParts));
         numParts = fileDesc->numParts();
 
-        auto externalService = getDafileServiceFromConfig("stream");
+        auto externalService = k8s::getDafileServiceFromConfig("stream");
         dafilesrvHost.set(externalService.first.c_str());
         port = externalService.second;
         secure = true;

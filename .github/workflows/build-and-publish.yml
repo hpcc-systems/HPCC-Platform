@@ -18,6 +18,9 @@ jobs:
     runs-on: ubuntu-20.04
     if: github.repository == 'hpcc-systems/HPCC-Platform'
     steps:
+      - name: Free additional disk space (remove Android SDK + Tools)
+        run: |
+          sudo rm -rf /usr/local/lib/android
       - name: Checkout
         uses: actions/checkout@v2
       - name: Build
@@ -41,6 +44,9 @@ jobs:
       matrix:
         engine: ['ml', 'gnn', 'gnn-gpu']
     steps:
+    - name: Free additional disk space (remove Android SDK + Tools)
+      run: |
+        sudo rm -rf /usr/local/lib/android
     - name: Checkout
       uses: actions/checkout@v2
     - name: Build
@@ -58,6 +64,9 @@ jobs:
     runs-on: ubuntu-20.04
     if: github.repository == 'hpcc-systems/HPCC-Platform'
     steps:
+    - name: Free additional disk space (remove Android SDK + Tools)
+      run: |
+        sudo rm -rf /usr/local/lib/android
     - name: Checkout
       uses: actions/checkout@v2
     - name: Build

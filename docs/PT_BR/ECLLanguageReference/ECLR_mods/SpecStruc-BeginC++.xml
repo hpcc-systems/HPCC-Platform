@@ -70,7 +70,7 @@
   incorporar código C++ e especificar opções adicionais (por exemplo,
   DISTRIBUTED):</para>
 
-  <para><programlisting>myFunction(string name) := EMBED(C++ [: options]) 
+  <para><programlisting lang="ECL">myFunction(string name) := EMBED(C++ [: options]) 
   ... text 
 ENDEMBED</programlisting></para>
 
@@ -84,7 +84,7 @@ ENDEMBED</programlisting></para>
 
     <para>Os tipos são passados da seguinte forma:</para>
 
-    <programlisting>//The following typedefs are used below:
+    <programlisting lang="CPP">//The following typedefs are used below:
 typedef unsigned size32_t;
 typedef wchar_t UChar; [ unsigned short in linux ]</programlisting>
 
@@ -92,7 +92,7 @@ typedef wchar_t UChar; [ unsigned short in linux ]</programlisting>
     incorporado, os parâmetros são sempre convertidos em minúsculas, com
     maiúsculas nas conjunções (veja abaixo).</para>
 
-    <programlisting><emphasis role="bold">ECL                  C++ [Linux in brackets]</emphasis>
+    <programlisting lang="text"><emphasis role="bold">ECL                  C++ [Linux in brackets]</emphasis>
 BOOOLEAN xyz         bool xyz
 INTEGER1 xyz         signed char xyz
 INTEGER2 xyz         int16_t xyz
@@ -122,14 +122,14 @@ SET OF ... xyz       bool isAllXyz, size32_t lenXyz, void *  xyz</programlisting
     seja, qstring/unicode), seguido por um pointer para os dados, desta forma
     (size32_t é um UNSIGNED4):</para>
 
-    <programlisting>STRING  ABC -&gt; size32_t lenAbc, const char * abc;
+    <programlisting lang="CPP">STRING  ABC -&gt; size32_t lenAbc, const char * abc;
 UNICODE ABC -&gt; size32_t lenABC, const UChar * abc;</programlisting>
 
     <para>Um dataset é passado como um par tamanho/pointer. O comprimento
     determina o tamanho do seguinte dataset em bytes. A mesma convenção de
     nomenclatura é usada:</para>
 
-    <programlisting>DATASET(r)              ABC -&gt; size32_t lenAbc, const void * abc
+    <programlisting lang="text">DATASET(r)              ABC -&gt; size32_t lenAbc, const void * abc
   The rows are accessed as x+0, x + length(row1), x + length(row1) + length(row2)
 
 LINKCOUNTED DATASET(r)  ABC -&gt; size32_t countAbc, const byte * * abc
@@ -143,13 +143,13 @@ LINKCOUNTED DATASET(r)  ABC -&gt; size32_t countAbc, const byte * * abc
     <para>Os conjuntos são passados como um conjunto de parâmetros (all, size,
     pointer):</para>
 
-    <programlisting>SET OF UNSIGNED4 ABC -&gt; bool isAllAbc, size32_t lenAbc, const void * abc</programlisting>
+    <programlisting lang="ECL">SET OF UNSIGNED4 ABC -&gt; bool isAllAbc, size32_t lenAbc, const void * abc</programlisting>
 
     <para>Os tipos de retorno são processados como funções C++ retornando os
     mesmos tipos, com algumas exceções. As exceções têm alguns parâmetros
     iniciais adicionais onde os resultados serão retornados:</para>
 
-    <programlisting><emphasis role="bold">ECL                C++ [Linux in brackets]</emphasis>
+    <programlisting lang="text"><emphasis role="bold">ECL                C++ [Linux in brackets]</emphasis>
 DATA xyz           size32_t &amp; __lenResult, void * &amp; __result
 STRING xyz         size32_t &amp; __lenResult, char * &amp; __result
 CONST STRING xyz   size32_t lenXyz, const char * xyz
@@ -173,11 +173,11 @@ STREAMED DATASET(r)
 
     <para>Por exemplo,</para>
 
-    <programlisting>STRING process(STRING value, INTEGER4 len)</programlisting>
+    <programlisting lang="ECL">STRING process(STRING value, INTEGER4 len)</programlisting>
 
     <para>tem o protótipo:</para>
 
-    <programlisting>void process(size32_t &amp; __lenResult, char * &amp; __result,
+    <programlisting lang="CPP">void process(size32_t &amp; __lenResult, char * &amp; __result,
              size32_t lenValue, char * value, int len);</programlisting>
 
     <para>Uma função que recebe parâmetros de string também deve ter o tipo
@@ -185,7 +185,7 @@ STREAMED DATASET(r)
     que compiladores modernos não relatem erros quando strings constantes são
     passadas à função.</para>
 
-    <programlisting>BOOLEAN isUpper(const string mystring) := BEGINC++
+    <programlisting lang="ECL">BOOLEAN isUpper(const string mystring) := BEGINC++
   size_t i=0;
   while (i &lt; lenMystring)
   {
@@ -198,6 +198,116 @@ ENDC++;
 isUpper('JIM');
 
 </programlisting>
+
+    <para>Os parâmetros também podem incluir datasets transmitidos.</para>
+
+    <para>Se stream for especificado no conjunto de dados, o parâmetro será
+    passado como IRowStream. A próxima linha do dataset é obtida
+    chamando:</para>
+
+    <para><programlisting lang="CPP">dataset-&gt;nextRow(); </programlisting></para>
+
+    <para>Depois de processada, a linha deve ser liberada chamando</para>
+
+    <para><programlisting lang="CPP">rtlReleaseRow(next); </programlisting></para>
+
+    <para>Por exemplo:</para>
+
+    <para><programlisting lang="ECL">traceDataset(STREAMED DATASET(r) ds, BOOLEAN isLocal = FALSE) := EMBED(C++)
+#include &lt;stdio.h&gt;
+#body
+  for(;;)
+  {
+    const byte * next = (const byte *)ds-&gt;nextRow();
+    if (!next)
+      return;
+    unsigned __int64 id = *(__uint64 *)(next);
+    size32_t lenName = *(size32_t *)(next + sizeof(__uint64));
+    const char * name = (char *)(next + sizeof(__uint64) + sizeof(size32_t));
+    printf("id(%u) name(%.*s)\n", (unsigned)id, lenName, name);
+    rtlReleaseRow(next);
+  }
+ENDEMBED;</programlisting></para>
+
+    <para>Se o resultado de uma função c++ for um dataset transmitido, ele
+    precisará retornar uma instância de uma interface IRowStream. A função
+    também receberá um parâmetro implícito extra:</para>
+
+    <para><programlisting lang="CPP">IEngineRowAllocator * _resultAllocator</programlisting></para>
+
+    <para>que é usado para alocar as linhas retornadas da função.</para>
+
+    <para>Por exemplo:</para>
+
+    <para><programlisting lang="ECL">// This function takes two streamed inputs and outputs the result of two values 
+// from the left multiplied together and added to a row from the right.
+
+STREAMED DATASET(r) myDataset(STREAMED DATASET(r) ds1, STREAMED DATASET(r) ds2)
+  := EMBED(C++ : activity)
+#include &lt;stdio.h&gt;
+#body
+    class MyStreamInlineDataset : public RtlCInterface, implements IRowStream
+    {
+    public:
+
+        MyStreamInlineDataset(IEngineRowAllocator * _resultAllocator, IRowStream * _ds1, 
+                              IRowStream * _ds2)
+          : resultAllocator(_resultAllocator), ds1(_ds1), ds2(_ds2)
+        {
+        }
+        RTLIMPLEMENT_IINTERFACE        virtual const void *nextRow() override
+        {
+            const byte * next1a = (const byte *)ds1-&gt;nextRow();
+            if (!next1a)
+                return nullptr;
+            const byte * next1b = (const byte *)ds1-&gt;nextRow();
+            const byte * next2 = (const byte *)ds2-&gt;nextRow();
+            if (!next1b || !next2)
+                rtlFailUnexpected();
+            unsigned __int64 value1a = *(const unsigned __int64 *)next1a;
+            unsigned __int64 value1b = *(const unsigned __int64 *)next1b;
+            unsigned __int64 value2 = *(const unsigned __int64 *)next2;
+            rtlReleaseRow(next1a);
+            rtlReleaseRow(next1b);
+            rtlReleaseRow(next2);
+            
+            unsigned __int64 result = value1a * value1b + value2;
+            RtlDynamicRowBuilder rowBuilder(resultAllocator);
+            byte * row = rowBuilder.getSelf();
+            *(__uint64 *)(row) = result;
+            return rowBuilder.finalizeRowClear(sizeof(unsigned __int64));
+        }
+        virtual void stop() override
+        {
+            ds1-&gt;stop();
+            ds2-&gt;stop();
+        }
+    protected:
+        Linked&lt;IEngineRowAllocator&gt; resultAllocator;
+        IRowStream * ds1;
+        IRowStream * ds2;
+    };    return new MyStreamInlineDataset(_resultAllocator, ds1, ds2);
+ENDEMBED;
+</programlisting></para>
+
+    <para>Nota: Se a linha resultante não tiver um tamanho fixo, você deverá
+    chamar:</para>
+
+    <para><programlisting lang="CPP">byte * row = rowBuilder.ensureCapacity(&lt;totalSize&gt;, nullptr); </programlisting></para>
+
+    <para>ao invés de:</para>
+
+    <para><programlisting lang="CPP">byte * row = rowBuilder.getSelf(); </programlisting></para>
+
+    <para>Este código usa um RtlDynamicRowBuilder que é uma classe usada pelo
+    gerador de código. Em vez de usar a classe RtlDynamicRowBuilder, você pode
+    chamar diretamente resultAllocator-&gt;createRow().</para>
+
+    <para>Quando um tipo de dados é incluído em uma linha de entrada, em vez
+    de ser passado como parâmetro, o formato é o mesmo dos parâmetros, exceto
+    que, em vez de ter um ponteiro para a string, etc., a string segue o
+    comprimento de 4 bytes. Os dados na linha não estão alinhados; isto é, tem
+    embalagem de 1.</para>
   </sect2>
 
   <sect2 id="BeginCPP_Available_Options">
@@ -252,7 +362,7 @@ isUpper('JIM');
 
     <para>Exemplo:</para>
 
-    <programlisting>//static int add(int x,int y) {
+    <programlisting lang="ECL">//static int add(int x,int y) {
 INTEGER4 add(INTEGER4 x, INTEGER4 y) := BEGINC++
   #option pure
   return x + y;

@@ -113,7 +113,10 @@
           <row>
             <entry><emphasis>n</emphasis></entry>
 
-            <entry>O número de registros duplicados a serem mantidos.</entry>
+            <entry>O número de registros duplicados a serem mantidos. Se
+            <emphasis>keeper</emphasis> estiver definido como RIGHT, o único
+            número válido de registros duplicados a serem mantidos é
+            1.</entry>
           </row>
 
           <row>
@@ -266,7 +269,7 @@
 
   <para>Exemplo:</para>
 
-  <programlisting>SomeFile := DATASET([{'001','KC','G'}, 
+  <programlisting lang="ECL" role="runnable">SomeFile := DATASET([{'001','KC','G'}, 
                      {'002','KC','Z'}, 
                      {'003','KC','Z'}, 
                      {'004','KC','C'}, 

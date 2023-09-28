@@ -57,6 +57,8 @@
 #include "securesocket.hpp"
 #include "environment.hpp"
 
+static const StatisticsMapping podStatistics({StNumPods});
+
 class CJobManager : public CSimpleInterface, implements IJobManager, implements IExceptionHandler
 {
     bool stopped, handlingConversation;
@@ -67,7 +69,81 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
     Owned<IJobQueue> jobq;
     ICopyArrayOf<CJobMaster> jobs;
     Owned<IException> exitException;
+    class CPodInfo
+    {
+        unsigned wfid = 0;
+        StringAttr wuid, graphName;
 
+        unsigned __int64 min = 0;
+        unsigned __int64 max = 0;
+        unsigned minNode = 0;
+        unsigned maxNode = 0;
+        double stdDev = 0;
+        CRuntimeSummaryStatisticCollection podStats;
+        std::vector<std::string> nodeNames; // ordered list of the unique node names
+        bool collectAttempted = false;
+        
+    public:
+        CPodInfo() : podStats(podStatistics)
+        {
+        }
+        void setContext(unsigned _wfid, const char *_wuid, const char *_graphName)
+        {
+            wfid = _wfid;
+            wuid.set(_wuid);
+            graphName.set(_graphName);
+        }
+        bool hasStdDev() const
+        {
+            return 0 != stdDev;
+        }
+        void ensureCollected()
+        {
+            // collate pod distribution
+            if (collectAttempted)
+                return;
+            collectAttempted = true;
+            try
+            {
+                VStringBuffer selector("thorworker-job-%s-%s", wuid.get(), graphName.get());
+                std::vector<std::vector<std::string>> pods = k8s::getPodNodes(selector.toLowerCase());
+                std::unordered_map<std::string, unsigned> podPerNodeCounts;
+                for (const auto &podNode: pods)
+                {
+                    const std::string &node = podNode[1]; // pod is 1st item, node is 2nd
+                    podPerNodeCounts[node]++; // NB: if doesn't exist is created with default value of 0 1st
+                }
+                for (const auto &node: podPerNodeCounts)
+                {
+                    podStats.mergeStatistic(StNumPods, node.second, nodeNames.size());
+                    nodeNames.push_back(node.first);
+                }
+                stdDev = podStats.queryStdDevInfo(StNumPods, min, max, minNode, maxNode);
+            }
+            catch (IException *e)
+            {
+                EXCLOG(e);
+                e->Release();
+            }
+        }
+        void report(IWorkUnit *wu)
+        {
+            // issue warning and publish pod distribution stats
+            Owned<IStatisticGatherer> collector = createGlobalStatisticGatherer(wu);
+            StatsScopeId wfidScopeId(SSTworkflow, wfid);
+            StatsScopeId graphScopeId(graphName);
+            collector->beginScope(wfidScopeId);
+            collector->beginScope(graphScopeId);
+            podStats.recordStatistics(*collector, false);
+
+            StringBuffer scopeStr;
+            wfidScopeId.getScopeText(scopeStr).append(':');
+            graphScopeId.getScopeText(scopeStr);
+            Owned<IException> e = makeStringExceptionV(-1, "%s: Degraded performance. Worker pods are unevenly distributed over nodes. StdDev=%.2f. min node(%s) has %" I64F "u pods, max node(%s) has %" I64F "u pods", scopeStr.str(), stdDev, nodeNames[minNode].c_str(), min, nodeNames[maxNode].c_str(), max);
+            reportExceptionToWorkunit(*wu, e);
+        }
+    } podInfo;
+    
     Owned<IDeMonServer> demonServer;
     std::atomic<unsigned> activeTasks;
     StringAttr          currentWuid;
@@ -259,6 +335,7 @@ public:
     virtual void addCachedSo(const char *name);
     virtual void updateWorkUnitLog(IWorkUnit &workunit);
 };
+
 
 // CJobManager impl.
 
@@ -1023,41 +1100,13 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
             ~CounterBlock() { --counter; }
         } cBlock(activeTasks);
 
+        if (isContainerized())
         {
-#ifdef _CONTAINERIZED
-            double stdDev = 0.0;
-            unsigned __int64 min, max;
-            unsigned minNode, maxNode;
-            const StatisticsMapping podStatistics({StNumPods});
-            CRuntimeSummaryStatisticCollection podStats(podStatistics);
-            std::vector<std::string> nodeNames; // ordered list of the unique node names
-            try
-            {
-                // collate pod distribution
-                VStringBuffer selector("thorworker-job-%s-%s", wuid.get(), graphName);
-                std::vector<std::vector<std::string>> pods = k8s::getPodNodes(selector.toLowerCase());
-                std::unordered_map<std::string, unsigned> podPerNodeCounts;
-                for (const auto &podNode: pods)
-                {
-                    const std::string &node = podNode[1]; // pod is 1st item, node is 2nd
-                    podPerNodeCounts[node]++; // NB: if doesn't exist is created with default value of 0 1st
-                }
-                for (const auto &node: podPerNodeCounts)
-                {
-                    podStats.mergeStatistic(StNumPods, node.second, nodeNames.size());
-                    nodeNames.push_back(node.first);
-                }
-                stdDev = podStats.queryStdDevInfo(StNumPods, min, max, minNode, maxNode);
-            }
-            catch (IException *e)
-            {
-                EXCLOG(e);
-                e->Release();
-            }
+            podInfo.setContext(wfid, wuid, graphName);
+            podInfo.ensureCollected(); // will collect pod info the 1st run only, since they remain the same for subsequent jobs this Thor runs
+        }
 
-            // calculate the above, before locking the workunit below to avoid holding lock whilst issuing getPodNodes call
-#endif
-
+        {
             Owned<IWorkUnit> wu = &workunit.lock();
             wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTgraph, graphScope, StWhenStarted, NULL, startTs, 1, 0, StatsMergeAppend);
             //Could use addTimeStamp(wu, SSTgraph, graphName, StWhenStarted, wfid) if start time could be this point
@@ -1065,24 +1114,8 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
             VStringBuffer version("%d.%d", THOR_VERSION_MAJOR, THOR_VERSION_MINOR);
             wu->setDebugValue("ThorVersion", version.str(), true);
 
-#ifdef _CONTAINERIZED
-            // issue warning and publish pod distribution stats, if any stddev
-            if (stdDev)
-            {
-                Owned<IStatisticGatherer> collector = createGlobalStatisticGatherer(wu);
-                StatsScopeId wfidScopeId(SSTworkflow, wfid);
-                StatsScopeId graphScopeId(graphName);
-                collector->beginScope(wfidScopeId);
-                collector->beginScope(graphScopeId);
-                podStats.recordStatistics(*collector, false);
-
-                StringBuffer scopeStr;
-                wfidScopeId.getScopeText(scopeStr).append(':');
-                graphScopeId.getScopeText(scopeStr);
-                Owned<IException> e = makeStringExceptionV(-1, "%s: Degraded performance. Worker pods are unevenly distributed over nodes. StdDev=%.2f. min node(%s) has %" I64F "u pods, max node(%s) has %" I64F "u pods", scopeStr.str(), stdDev, nodeNames[minNode].c_str(), min, nodeNames[maxNode].c_str(), max);
-                reportExceptionToWorkunit(*wu, e);
-            }
-#endif
+            if (isContainerized() && podInfo.hasStdDev())
+                podInfo.report(wu);
         }
 
         setWuid(workunit.queryWuid(), workunit.queryClusterName());

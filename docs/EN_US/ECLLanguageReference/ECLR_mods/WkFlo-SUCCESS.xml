@@ -8,9 +8,10 @@
   </emphasis><emphasis role="bold">: SUCCESS<indexterm>
       <primary>SUCCESS</primary>
     </indexterm>(</emphasis><emphasis>handler</emphasis><emphasis
-  role="bold">) </emphasis><indexterm>
+  role="bold">) [,LABEL(</emphasis><emphasis>text</emphasis><emphasis
+  role="bold">)]</emphasis>; <indexterm>
       <primary>SUCCESS workflow service</primary>
-    </indexterm>;</para>
+    </indexterm></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
@@ -35,6 +36,21 @@
             <entry><emphasis>handler</emphasis></entry>
 
             <entry>The action to run if the expression succeeds.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">LABEL</emphasis></entry>
+
+            <entry>Optional. Defines the <emphasis>Text</emphasis> to display
+            for the workflow item in the Graph for the workunit. If omitted,
+            the code generator will deduce a label from the identifier being
+            defined.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>text</emphasis></entry>
+
+            <entry>A string constant containing the text to display.</entry>
           </row>
         </tbody>
       </tgroup>

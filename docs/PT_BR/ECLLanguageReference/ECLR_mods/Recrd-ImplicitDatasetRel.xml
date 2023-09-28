@@ -24,7 +24,7 @@
   <para>Vamos supor que você tem a seguinte estrutura relacional no banco de
   dados:</para>
 
-  <programlisting>     Household           Parent 
+  <programlisting lang="text">     Household           Parent 
         Person           Child of Household 
           Accounts       Child of Person, Grandchild of Household</programlisting>
 
@@ -51,7 +51,7 @@
   dataset pai, será avaliado no escopo que abrange o dataset. Por exemplo, a
   expressão:</para>
 
-  <para><programlisting>Household(Person(personage &gt; AVE(Person,personage))</programlisting></para>
+  <para><programlisting lang="ECL">Household(Person(personage &gt; AVE(Person,personage))</programlisting></para>
 
   <para>significa "residências que contêm pessoas com idade acima da idade
   média da residência". Isso <emphasis role="underline">não</emphasis>
@@ -65,13 +65,13 @@
   independentemente de outros datasets. Isso pode levar a alguns
   comportamentos um pouco estranhos:</para>
 
-  <programlisting>AveAge := AVE(Person,personage);
+  <programlisting lang="ECL">AveAge := AVE(Person,personage);
 MyHouses := Household(Person(personage &gt; aveAge));</programlisting>
 
   <para>significa "residências que contêm pessoas com idade acima da idade
   média da residência". No entanto,</para>
 
-  <programlisting>AveAge := AVE(Person,personage) : STORED('AveAge');
+  <programlisting lang="ECL">AveAge := AVE(Person,personage) : STORED('AveAge');
 MyHouses := Household(Person(personage &gt; aveAge));</programlisting>
 
   <para>Significa "residências que contêm pessoas com idade acima da idade

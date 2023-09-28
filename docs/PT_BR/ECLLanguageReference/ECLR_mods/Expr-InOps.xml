@@ -42,9 +42,9 @@
   conjunto, resultando em um retorno booleano. O uso de IN é muito mais
   eficiente do que sua expressão equivalente OR .</para>
 
-  <para>Exemplo:</para>
+  <para>Exemplos:</para>
 
-  <programlisting>ABCset := ['A', 'B', 'C'];
+  <programlisting lang="ECL">ABCset := ['A', 'B', 'C'];
 IsABCStatus := Person.Status IN ABCset;
     //This code is directly equivalent to:
     // IsABCStatus := Person.Status = 'A' OR
@@ -63,6 +63,11 @@ SomeFile := DATASET([{'A'},{'B'},{'C'},{'D'},{'E'},
 x := SET(SomeFile(Letter &gt; 'C'),Letter);
 y := 'A' IN x;  //results in FALSE
 z := 'D' IN x;  //results in TRUE
+</programlisting>
+
+  <para>DICTIONARY examples:</para>
+
+  <programlisting lang="ECL" role="runnable">//DICTIONARY examples:
 
 //DICTIONARY examples:
 rec := {STRING color,UNSIGNED1 code};

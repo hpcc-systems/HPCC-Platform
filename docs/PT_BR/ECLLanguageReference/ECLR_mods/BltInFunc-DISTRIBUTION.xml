@@ -140,7 +140,16 @@
 
   <para>Exemplo:</para>
 
-  <programlisting>SomeFile := DATASET([{'C','G'},{'C','C'},{'A','X'},{'B','G'}],
+  <para><programlisting lang="XML">&lt;XML&gt;
+  &lt;Field name="seqnum" estimate="4000000"/&gt;
+&lt;/XML&gt;</programlisting></para>
+
+  <para>The DECIMAL data type is not supported by this action. You can use a
+  REAL data type instead.</para>
+
+  <para>Example:</para>
+
+  <programlisting lang="ECL" role="runnable">SomeFile := DATASET([{'C','G'},{'C','C'},{'A','X'},{'B','G'}],
      {STRING1 Value1,STRING1 Value2});
 DISTRIBUTION(SomeFile);
 /* The result comes back looking like this:
@@ -171,7 +180,7 @@ namesTable := DATASET([
   {'Salter','Abi',10},
   {'X','Z',5}], namesRecord);
 
-DISTRIBUTION(namesTable, surname, forename, NAMED('Stats'));
+doFirst := DISTRIBUTION(namesTable, surname, forename, NAMED('Stats'));
 /* The result comes back looking like this:
 &lt;XML&gt;
 &lt;Field name="surname" distinct="3"&gt;
@@ -196,7 +205,7 @@ res := RECORD
   STRING Cnt := XMLTEXT('@distinct');
 END;
 
-out := PARSE(x, line, res, XML('XML/Field'));
-out;
+DoNext := PARSE(x, line, res, XML('XML/Field'));
+SEQUENTIAL(DoFirst,OUTPUT(DoNext));
 </programlisting>
 </sect1>

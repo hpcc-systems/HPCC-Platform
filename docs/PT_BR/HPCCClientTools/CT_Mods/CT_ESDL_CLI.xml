@@ -165,6 +165,19 @@
               </row>
 
               <row>
+                <entry>-I, --include-path</entry>
+
+                <entry>Locais para procurar arquivos ESDL incluídos. Eles
+                podem ser caminhos absolutos ou relativos. Se precisar
+                especificar vários diretórios, você pode usar várias opções -I
+                ou usar uma única entrada com os diretórios separados pelo
+                caractere separador de ambiente. Para Linux, use dois pontos
+                (:) e para Windows, use ponto e vírgula (;). Os caminhos
+                também podem ser definidos usando uma variável de
+                ambiente--ESDL_INCLUDE_PATH.</entry>
+              </row>
+
+              <row>
                 <entry><emphasis>-v|--verbose</emphasis></entry>
 
                 <entry>Exibe informações detalhadas</entry>
@@ -204,7 +217,7 @@
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
-            <colspec colwidth="80.50pt"/>
+            <colspec colwidth="105.50pt"/>
 
             <colspec/>
 
@@ -263,6 +276,19 @@
 
                 <entry>Texto a ser incluído no cabeçalho ou no arquivo de
                 destino (gerado) – deve ser um ECL válido.</entry>
+              </row>
+
+              <row>
+                <entry>-I, --include-path</entry>
+
+                <entry>Locais para procurar arquivos ESDL incluídos. Eles
+                podem ser caminhos absolutos ou relativos. Se precisar
+                especificar vários diretórios, você pode usar várias opções -I
+                ou usar uma única entrada com os diretórios separados pelo
+                caractere separador de ambiente. Para Linux, use dois pontos
+                (:) e para Windows, use ponto e vírgula (;). Os caminhos
+                também podem ser definidos usando uma variável de
+                ambiente--ESDL_INCLUDE_PATH.</entry>
               </row>
 
               <row>
@@ -636,6 +662,19 @@
 
                   <entry>Substitui a última versão desta definição
                   ESDL</entry>
+                </row>
+
+                <entry>-I, --include-path</entry>
+
+                <row>
+                  <entry>Locais para procurar arquivos ESDL incluídos. Eles
+                  podem ser caminhos absolutos ou relativos. Se precisar
+                  especificar vários diretórios, você pode usar várias opções
+                  -I ou usar uma única entrada com os diretórios separados
+                  pelo caractere separador de ambiente. Para Linux, use dois
+                  pontos (:) e para Windows, use ponto e vírgula (;). Os
+                  caminhos também podem ser definidos usando uma variável de
+                  ambiente--ESDL_INCLUDE_PATH.</entry>
                 </row>
 
                 <row>

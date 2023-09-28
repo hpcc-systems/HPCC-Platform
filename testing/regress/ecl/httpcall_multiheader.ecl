@@ -32,13 +32,19 @@ string TargetURL := 'http://' + TargetIP + ':8010/WsSmc/HttpEcho?name=doe,joe&nu
 
 string constHeader := 'constHeaderValue';
 
-httpcallResult := HTTPCALL(TargetURL,'GET', 'text/xml', httpEchoServiceResponseRecord, xpath('Envelope/Body/HttpEchoResponse'),httpheader('literalHeader','literalValue'), httpheader('constHeader','constHeaderValue'), httpheader('storedHeader', storedHeader), httpheader('HPCC-Global-Id','9876543210'), httpheader('HPCC-Caller-Id','http111'));
+httpcallResult := HTTPCALL(TargetURL,'GET', 'text/xml', httpEchoServiceResponseRecord, xpath('Envelope/Body/HttpEchoResponse'),
+                httpheader('literalHeader','literalValue'), httpheader('constHeader','constHeaderValue'),
+                httpheader('storedHeader', storedHeader), httpheader('HPCC-Global-Id','9876543210'),
+                httpheader('HPCC-Caller-Id','http111'), httpheader('traceparent', '00-0123456789abcdef0123456789abcdef-0123456789abcdef-01'));
 output(httpcallResult, named('httpcallResult'));
 
 //test proxyaddress functionality by using an invalid targetUrl, but a valid proxyaddress.  HTTP Host header will be wrong, but should still work fine as it's ignored by ESP.
 string hostURL := 'http://1.1.1.1:9999/WsSmc/HttpEcho?name=doe,joe&number=1';
 string targetProxy := 'http://' + TargetIP + ':8010';
 
-proxyResult := HTTPCALL(hostURL,'GET', 'text/xml', httpEchoServiceResponseRecord, xpath('Envelope/Body/HttpEchoResponse'), proxyaddress(targetProxy), httpheader('literalHeader','literalValue'), httpheader('constHeader','constHeaderValue'), httpheader('storedHeader', storedHeader), httpheader('HPCC-Global-Id','9876543210'), httpheader('HPCC-Caller-Id','http222'));
+proxyResult := HTTPCALL(hostURL,'GET', 'text/xml', httpEchoServiceResponseRecord, xpath('Envelope/Body/HttpEchoResponse'), proxyaddress(targetProxy),
+                httpheader('literalHeader','literalValue'), httpheader('constHeader','constHeaderValue'),
+                httpheader('storedHeader', storedHeader), httpheader('HPCC-Global-Id','9876543210'),
+                httpheader('HPCC-Caller-Id','http222'), httpheader('traceparent', '00-0123456789abcdef0123456789abcdef-f123456789abcdef-01'));
 
 output(proxyResult, named('proxyResult'));

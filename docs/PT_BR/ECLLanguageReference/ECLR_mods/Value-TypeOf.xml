@@ -42,8 +42,10 @@
 
   <para>Exemplo:</para>
 
-  <programlisting>STRING3 Fred := 'ABC'; //declare Fred as a 3-byte string
-TYPEOF(Fred) Sue := Fred; //declare Sue as "just like" Fred</programlisting>
+  <programlisting lang="ECL" role="runnable">STRING3 Fred := 'ABC'; //declare Fred as a 3-byte string
+TYPEOF(Fred) Sue := Fred; //declare Sue as "just like" Fred
+OUTPUT(Fred);
+OUTPUT(Sue);</programlisting>
 
   <para>Ver também: <link linkend="TRANSFORM_Structure">Estrutura
   TRANSFORM</link></para>

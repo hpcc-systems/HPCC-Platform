@@ -159,7 +159,7 @@
 
   <para>Exemplo:</para>
 
-  <programlisting>worldBankSource := RECORD
+  <programlisting lang="ECL" role="NOTrunnable">worldBankSource := RECORD
   STRING name {XPATH('name')}
 END;
 

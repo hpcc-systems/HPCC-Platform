@@ -49,13 +49,19 @@
   parâmetros, basta anexá-los ao <emphasis>TypeName</emphasis> usado na
   estrutura RECORD para definir o tipo de valor para o campo.</para>
 
+  <para>Tipos de dados alienígenas (TYPE) só devem ser usados ao acessar dados
+  externos arquivos de dados. É muito mais eficiente usar os tipos nativos
+  para fins gerais. em processamento. Em particular, algumas otimizações para
+  projetar e filtrar arquivos remotamente não são suportados em tipos de dados
+  estranhos.</para>
+
   <para>Uma estrutura TYPE pode conter apenas definições de função contidas na
   lista de Funções especiais disponíveis (consulte <emphasis
   role="bold">Funções especiais da estrutura TYPE </emphasis>).</para>
 
   <para>Exemplo:</para>
 
-  <programlisting>STRING4 Rev(STRING4 S) := S[4] + S[3] + S[2] + S[1];
+  <programlisting lang="ECL">STRING4 Rev(STRING4 S) := S[4] + S[3] + S[2] + S[1];
 EXPORT ReverseString4 := TYPE
         EXPORT STRING4 LOAD(STRING4 S) := Rev(S);
         EXPORT STRING4 STORE(STRING4 S) := Rev(S);

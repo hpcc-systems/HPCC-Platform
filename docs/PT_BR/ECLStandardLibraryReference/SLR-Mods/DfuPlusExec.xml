@@ -23,10 +23,10 @@
         <row>
           <entry><emphasis>commandline</emphasis></entry>
 
-          <entry>Uma string terminada por nulo que contém a linha de comando
-          do DFUPlus.exe a ser executada. Os argumentos válidos estão
-          documentados no manual das Ferramentas de cliente, na seção que
-          descreve o programa DfuPlus.exe.</entry>
+          <entry>Uma string terminada em nulo contendo a linha de comando do
+          DFUPlus a ser executada. Os argumentos válidos estão documentados no
+          manual Client Tools, na seção que descreve o programa Command Line
+          DFU.</entry>
         </row>
       </tbody>
     </tgroup>
@@ -34,25 +34,32 @@
 
   <para>A ação <emphasis role="bold">DfuPlusExec</emphasis> executa a
   <emphasis>linha de comando</emphasis> especificada da mesma forma que o
-  programa DfuPLus.exe. Essa ação simplesmente disponibiliza toda a
-  funcionalidade do programa DfuPLus.exe no código ECL.</para>
+  programa executável DfuPlus faria. Isso permite que você tenha todas as
+  funcionalidades do DfuPlus disponíveis em seu código ECL.</para>
+
+  <para>A menos que você precise acessar uma instância externa da plataforma,
+  o server= parâmetro para DfuPlus deve ser omitido, que então assume como
+  padrão o valor contido na configuração do ambiente. Em um sistema
+  conteinerizado, o padrão é o serviço eclservices local. Se por algum motivo
+  isso não funcionar, o padrão pode ser substituído pelo valor definido em
+  global.defaultEsp. Em um sistema bare-metal, esse é o serviço denominado
+  WsSMC (interno ao ECLWatch).</para>
 
   <para>Exemplo:</para>
 
   <programlisting format="linespecific">IMPORT STD;
-
-serv := 'server=http://10.150.50.12:8010 ';
-user := 'username=rlor ';
-pswd := 'password=password ';
-over := 'overwrite=1 ';
+usr := 'username=emilyd ';
+pwd := 'password=password ';
+ovr := 'overwrite=1 ';
 repl := 'replicate=1 ';
-
-action  := 'action=despray ';
-dstip   := 'dstip=10.150.50.14 ';
-dstfile := 'dstfile=c:\\import\\despray\\timezones.txt ';
-srcname := 'srcname=RTTEMP::timezones.txt ';
-
-cmd := serv + user + pswd + over + repl + action + dstip + dstfile + srcname;
-STD.File.DfuPlusExec(cmd);
-</programlisting>
+action := 'action=spray ';
+srcplane := 'srcplane=mydropzone ';
+srcfile := 'srcfile=originalperson ';
+dstname := 'dstname=EmilyTutorial::originalperson ';
+dstcluster := 'dstcluster=data '; 
+fmt := 'format=fixed ';
+recsize := 'recordsize=124 ';
+cmd := usr + pwd + ovr + repl + action + srcplane 
+       + srcfile + dstname + dstcluster + fmt + recsize;
+STD.File.DfuPlusExec(cmd); </programlisting>
 </sect1>

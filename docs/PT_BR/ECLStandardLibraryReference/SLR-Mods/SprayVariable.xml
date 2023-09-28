@@ -44,7 +44,12 @@
   </emphasis><emphasis role="bold">[</emphasis>
   <emphasis>dfuServerQueue</emphasis><emphasis role="bold">] ,
   </emphasis><emphasis role="bold">[</emphasis>
-  <emphasis>noSplit</emphasis><emphasis role="bold">])</emphasis></para>
+  <emphasis>noSplit</emphasis><emphasis role="bold">] , </emphasis> <emphasis
+  role="bold">[</emphasis><emphasis>noCommon</emphasis> <emphasis
+  role="bold">],[</emphasis> <emphasis>sourcePlane</emphasis> <emphasis
+  role="bold">]<emphasis role="bold">,[</emphasis>
+  <emphasis>destinationNumParts</emphasis> <emphasis
+  role="bold">]</emphasis>)</emphasis></para>
 
   <para><emphasis>dfuwuid</emphasis> <emphasis role="bold"> :=
   STD.File.fSprayDelimited<indexterm>
@@ -85,7 +90,12 @@
   role="bold">] , </emphasis><emphasis role="bold">[</emphasis>
   <emphasis>dfuServerQueue</emphasis><emphasis role="bold">] ,
   </emphasis><emphasis role="bold">[</emphasis>
-  <emphasis>noSplit</emphasis><emphasis role="bold">])</emphasis></para>
+  <emphasis>noSplit</emphasis><emphasis role="bold">] , </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>noCommon</emphasis> <emphasis
+  role="bold">],[</emphasis> <emphasis>sourcePlane</emphasis> <emphasis
+  role="bold">],<emphasis role="bold">[</emphasis>
+  <emphasis>destinationNumParts</emphasis> <emphasis
+  role="bold">]</emphasis>)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -164,18 +174,20 @@
         <row>
           <entry><emphasis>espserverIPport</emphasis></entry>
 
-          <entry>Opcional. Uma string terminada por nulo que contém o
-          protocolo, o IP, a porta e o diretório ou DNS equivalente do
-          programa do servidor' ESP. Normalmente são os mesmos IP e porta do
-          ECL Watch, com "/FileSpray" anexado. Se omitida, o padrão é o valor
-          no atributo lib_system.ws_fs_server.</entry>
+          <entry>Opcional. Isso quase sempre deve ser omitido, o que, por
+          padrão, é o valor contido no atributo lib_system.ws_fs_server.
+          Quando não omitido, deve ser uma string terminada em nulo contendo o
+          protocolo, IP, porta e diretório, ou o DNS equivalente, do programa
+          do servidor ESP. Geralmente, é o mesmo IP e porta do ECL Watch, com
+          "/FileSpray" anexado.</entry>
         </row>
 
         <row>
           <entry><emphasis>maxConnections</emphasis></entry>
 
-          <entry>Opcional. Um inteiro que especifica o número máximo de
-          conexões. Se omitido, o padrão é um (1).</entry>
+          <entry>Opcional. Um inteiro especificando o número máximo de
+          conexões. Se omitido, o padrão é -1, que indica o sistema escolhe um
+          padrão adequado com base no tamanho do cluster.</entry>
         </row>
 
         <row>
@@ -264,6 +276,32 @@
 
           <entry>Nome do Servidor DFU de destino. O padrão é '' (empty) para o
           primeiro na fila de DFU no ambiente.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>noCommon</emphasis></entry>
+
+          <entry>Opcional. Uma flag booleana VERDADEIRO ou FALSO para
+          "combinar" processos pull ou push no mesmo host. Defina como FALSE
+          para "comunizar" a operação no mesmo host. O padrão pode ser
+          definido na configuração. Use <link
+          linkend="GetNoCommonDefault">GetNoCommonDefault</link> para
+          recuperar a configuração padrão. O valor desse parâmetro pode ter um
+          impacto significativo no desempenho.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>sourcePlane</emphasis></entry>
+
+          <entry>O nome da Landing Zone que contêm o arquivo</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>destinationNumParts</emphasis></entry>
+
+          <entry>Substitua o número de peças a serem criadas ao fazer o spray.
+          O padrão é 0, o que significa que ele criará o mesmo número de peças
+          que o cluster de destino.</entry>
         </row>
 
         <row>

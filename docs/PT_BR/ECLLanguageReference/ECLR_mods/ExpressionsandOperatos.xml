@@ -313,8 +313,10 @@
     <para>O operador “Maior ou igual a” <emphasis
     role="underline">deve</emphasis> primeiramente apresentar o sinal “Maior
     que” (&gt;). Para a expressão a &lt;=&gt; b, o operador de comparação de
-    equivalência retorna -1 se a&lt;b, 0 se a=b, e 1 se a&gt;b. Quando as
-    STRINGs são comparadas quanto à equivalência, os espaços atrás são
-    ignorados.</para>
+    equivalência retorna -1 se a&lt;b, 0 se a=b, e 1 se a&gt;b. Quando STRINGs
+    são comparadas, os espaços finais geralmente são ignorados. Funções de
+    biblioteca padrão, como Std.Str.Find(), podem considerar espaços finais.
+    Consulte a Referência da Biblioteca Padrão para obter detalhes
+    específicos</para>
   </sect2>
 </sect1>

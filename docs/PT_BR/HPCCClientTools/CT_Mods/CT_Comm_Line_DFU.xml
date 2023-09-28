@@ -214,6 +214,14 @@
                 </row>
 
                 <row>
+                  <entry><emphasis><emphasis>nocommon</emphasis></emphasis></entry>
+
+                  <entry>Opcional. Um sinalizador booleano (0 | 1, padrão=1).
+                  Defina como 0 para habilitar a "comunização" de processos
+                  pull ou push no mesmo host.</entry>
+                </row>
+
+                <row>
                   <entry><emphasis><emphasis>throttle</emphasis></emphasis></entry>
 
                   <entry>Opcional. A velocidade de transferência (em
@@ -639,8 +647,8 @@ dfuplus action=spray srcplane=lzstorageplane
 
                   <entry>Opcional. O endereço IP do nó do servidor. Se
                   omitido, as informações devem ser fornecidas pelo parâmetro
-                  <emphasis>dstxml</emphasis> ou pelo parâmetro
-                  <emphasis>dstplane</emphasis> .</entry>
+                  <emphasis>dstxml</emphasis>. Obsoleto, você deve usar
+                  <emphasis>dstplane</emphasis> em seu lugar.</entry>
                 </row>
 
                 <row>
@@ -648,7 +656,9 @@ dfuplus action=spray srcplane=lzstorageplane
 
                   <entry>Opcional. O plano de armazenamento do destino.
                   Observação: <emphasis>dstplane</emphasis> não deve ser usado
-                  ao mesmo tempo que <emphasis>dstip</emphasis>.</entry>
+                  ao mesmo tempo que <emphasis>dstip</emphasis>. Em uma
+                  implantação em contêiner, o <emphasis>dstplane</emphasis> é
+                  necessário se você tiver mais de uma landinz zone.</entry>
                 </row>
 
                 <row>
@@ -1232,16 +1242,38 @@ dfuplus action=add srcxml=exportedMysuper.xml dstname=Mysuper
 
                 <tbody>
                   <row>
-                    <entry><emphasis><emphasis><emphasis>wuid</emphasis>
-                    </emphasis></emphasis></entry>
+                    <entry>
+                      <emphasis>
+                        <emphasis>
+                          <emphasis>wuid</emphasis>
+                        </emphasis>
+                      </emphasis>
+                    </entry>
 
                     <entry>O identificador de uma workunit</entry>
+
+                    <row>
+                      <entry>
+                        <emphasis>
+                          <emphasis>
+                            <emphasis>limit</emphasis>
+                          </emphasis>
+                        </emphasis>
+                      </entry>
+
+                      <entry>Para workunits do publicador, isso limita o
+                      número de workunit filhas a serem listadas. Se definido
+                      como 0, somente o status pai será retornado. O padrão é
+                      1000.</entry>
+                    </row>
                   </row>
                 </tbody>
               </tgroup>
             </informaltable>Exemplo:</para>
 
-          <programlisting>dfuplus action=status wuid=W20050309-093020</programlisting>
+          <programlisting>dfuplus action=status wuid=D20220816-135243
+dfuplus action=status limit=300 wuid=P20230301-123456
+dfuplus action=status limit=0 wuid=P20230301-987654</programlisting>
 
           <para/>
         </sect3>

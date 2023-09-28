@@ -36,7 +36,7 @@
         <para>A segunda maneira é modificando os valores padrão e salvando por
         meio da seguinte linha de comando:</para>
 
-        <programlisting>helm show values hpcc/hpcc &gt; myvalues.yaml</programlisting>
+        <programlisting>helm show values hpcc/hpcc &gt; myvalues.yamlj</programlisting>
 
         <para>Isso pode estar em conformidade com as diretrizes do CaC, se
         você colocar esse arquivo sob controle de versão, mas dificulta a
@@ -129,8 +129,8 @@
           <para>O arquivo tworoxies.yaml file deve se parecer com este
           aqui:</para>
 
-          <para><emphasis role="bold">Nota:</emphasis> Os comentários foram
-          removidos para simplificar o examplo:</para>
+          <para><emphasis role="bold">Observação:</emphasis> Os comentários
+          foram removidos para simplificar o examplo:</para>
 
           <para><programlisting>roxie:
 - name: roxie
@@ -314,6 +314,387 @@ helm upgrade mycluster hpcc/hpcc -f tworoxies.yaml -f twothors.yaml
           thor and thor10.</para>
         </listitem>
       </orderedlist>
+    </sect2>
+  </sect1>
+
+  <sect1 id="CostTracking1">
+    <title>Rastreamento de Custos de Contêineres</title>
+
+    <para>Com o advento da plataforma de sistemas HPCC em contêineres,
+    introduzimos informações de rastreamento de custos. Isso é particularmente
+    útil ao usar instâncias de plataforma HPCC Systems nativas da nuvem em uma
+    configuração de nuvem em que algum planejamento e configuração podem
+    ajudar a reduzir as despesas.</para>
+
+    <para>Duas novas colunas foram adicionadas à página de workunits no ECL
+    Watch. As colunas podem ser classificadas por qualquer coluna de custo,
+    assim como as outras colunas no ECL Watch, clicando no topo da
+    coluna.</para>
+
+    <sect2 id="TypesOfCosts">
+      <title>Tipos de custos</title>
+
+      <para>Existem três tipos de custos que são rastreados.</para>
+
+      <para><itemizedlist>
+          <listitem>
+            <para>Custos de Execução</para>
+          </listitem>
+
+          <listitem>
+            <para>Custos de Armazenamento</para>
+          </listitem>
+
+          <listitem>
+            <para>Custo de Acesso a Arquivo</para>
+          </listitem>
+        </itemizedlist></para>
+
+      <variablelist>
+        <varlistentry>
+          <term>OBSERVAÇÃO:</term>
+
+          <listitem>
+            <para>Todos os valores de custo calculados e exibidos são
+            aproximados. Existem muitas variáveis que podem resultar em
+            imprecisões. Esses valores de custo devem ser usados apenas como
+            um guia.</para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+
+      <sect3 id="ExecutionCost">
+        <title>Custos de Execução</title>
+
+        <para>Custo de execução é o valor referente a custo de execução da
+        workunit, do graph e subgraphs no cluster Thor. Inclui o custo de
+        todos os nós diretamente necessários para executar o trabalho e inclui
+        o custo de:</para>
+
+        <para><itemizedlist>
+            <listitem>
+              <para>Nós do executor</para>
+            </listitem>
+
+            <listitem>
+              <para>Nós do Compilador</para>
+            </listitem>
+
+            <listitem>
+              <para>Nós do agente e do gereciador</para>
+            </listitem>
+          </itemizedlist></para>
+
+        <para>O valor do custo de execução de uma workunit é exibido no ECL
+        Watch em sua página de resumo e é organizado em grap, subgraph e nível
+        de atividade. Os valores de custo do graphh e do subgraph estão
+        disponíveis no visualizador de métricas e graph.</para>
+
+        <para><variablelist>
+            <varlistentry>
+              <term>Observação:</term>
+
+              <listitem>
+                <para>O custo de execução das workunits ROXIE não está
+                implementado atualmente.</para>
+              </listitem>
+            </varlistentry>
+          </variablelist></para>
+
+        <sect4 id="JobGuillotine">
+          <title>Job Guilhotina</title>
+
+          <para>O de risco de custos descontrolados é uma preocupação para
+          cobrança baseada em uso potencialmente ilimitada. Assim, o recurso
+          job guilhotina é fornecido para gerenciar esse cenário, limitando os
+          custos por meio dos valores limite e do limite rígido. Quando o
+          custo de um job atinge um valor definido, ele pode ser encerrado,
+          controlando os custos que podem incorrer.</para>
+
+          <variablelist>
+            <varlistentry>
+              <term>Observação:</term>
+
+              <listitem>
+                <para>Esta funcionalidade atualmente é suportada somente para
+                os jobs do Thor.</para>
+              </listitem>
+            </varlistentry>
+          </variablelist>
+
+          <graphic fileref="../../images/SCOST_img3_1.jpg"><!--ADD-IMAGE--></graphic>
+        </sect4>
+      </sect3>
+
+      <sect3 id="StorageCOsts">
+        <title>Custo de armazenamento</title>
+
+        <para>Esse é o custo de hospedar os dados no plano de armazenamento.
+        Não inclui os custos das operações de dados, como custos de leitura ou
+        gravação.</para>
+
+        <para><variablelist>
+            <varlistentry>
+              <term>Observação:</term>
+
+              <listitem>
+                <para>Os custos não são registrados para arquivos temporários
+                ou de derramamento, porque o armazenamento local está incluído
+                no preço da VM usada para calcular os custos de
+                execução.</para>
+              </listitem>
+            </varlistentry>
+          </variablelist></para>
+
+        <para>Os custos de armazenamento não podem ser vistos como um valor
+        separado no ECL Watch. Eles só podem ser visualizados como parte de um
+        campo de custo na página de resumo de um arquivo lógico. </para>
+      </sect3>
+
+      <sect3 id="FileAccessCosts">
+        <title>Custo de acesso aos arquivos</title>
+
+        <para>Os custos de leitura e gravação em arquivos são referidos como
+        custos de acesso a arquivos. Vários planos de armazenamento cobram por
+        operações de dados separadamente. O valor do custo de acesso ao
+        arquivo incluirá o custo de leitura e gravação. Neste momento,
+        quaisquer outros custos relacionados com ações de arquivo (como
+        excluir ou copiar) não serão registrados ou incluídos como parte dos
+        custos.</para>
+
+        <para>Na página de resumo Logical File no ECL Watch, o custo de acesso
+        ao arquivo aparece como parte do campo de custo.</para>
+
+        <para>As despesas de uma workunit para acessar arquivos lógicos também
+        são incluídas nas estatísticas e atributos da workunit. O custo de
+        leitura/gravação é relatado no registro da atividade e somado nos
+        níveis de graph, subgraph e escopo do fluxo de trabalho.</para>
+
+        <para>O custo geral de acesso a arquivos para uma workunit é rastreado
+        e relatado na página de resumo.</para>
+
+        <para>Na página de resumo Logical File, você pode ver o novo campo de
+        custo. É o custo total de armazenamento e acesso aos dados.
+        Atualmente, as informações de custo são geradas apenas para jobs Thor
+        e hThor.</para>
+      </sect3>
+    </sect2>
+
+    <sect2 id="CostsConfigurations">
+      <title>Custo de Configuração</title>
+
+      <para>Esta seção detalha a configuração dos parâmetros de configuração
+      dos jobst. A configuração dos custos do jobs trabalho em uma instância
+      HPCC Systems sistemas HPCC nativos da nuvem é feita usando o chart helm.
+      Por padrão, o arquivo <emphasis>values.yaml</emphasis> fornecido contém
+      uma seção para configurar custos.</para>
+
+      <para>Por exemplo:</para>
+
+      <orderedlist>
+        <listitem>
+          <para>Crie um novo arquivo de texto e o nomeie <emphasis
+          role="bold">mycosts.yaml</emphasis> e abra em um editor de
+          texto.</para>
+
+          <para>Você pode usar um editor de texto.</para>
+        </listitem>
+
+        <listitem>
+          <para>Salve os valores padrão em um arquivo de texto:</para>
+
+          <para><programlisting>helm show values hpcc/hpcc &gt; myvalues.yaml</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Abra o arquivo salvo (myvalues.yaml) em um editor de
+          texto.</para>
+        </listitem>
+
+        <listitem>
+          <para>Copie a sessão <emphasis role="bold">cost:</emphasis> e cole
+          em outro novo arquivo mycosts.yaml.</para>
+        </listitem>
+
+        <listitem>
+          <para>Altere quaisquer valores relacionados a custos desejados,
+          conforme apropriado.</para>
+        </listitem>
+
+        <listitem>
+          <para>Salve o arquivo e feche o editor de texto.</para>
+        </listitem>
+
+        <listitem>
+          <para>Implante sua plataforma HPCC Systems, adicionando a nova
+          configuração ao seu comando:</para>
+
+          <para><programlisting>helm install mycluster hpcc/hpcc -f mycosts.yaml</programlisting></para>
+        </listitem>
+      </orderedlist>
+
+      <para>Os valores de configuração fornecem as informações de preços e
+      informações de formatação de moeda. Os seguintes parâmetros de
+      configuração de custo são suportados:The configuration values provide
+      the pricing information and currency formatting information. The
+      following cost configuration parameters are supported:</para>
+
+      <para><informaltable colsep="1" frame="all" rowsep="1">
+          <tgroup cols="2">
+            <colspec align="left" colwidth="122.40pt"/>
+
+            <colspec/>
+
+            <tbody>
+              <row>
+                <entry><emphasis>currencyCode</emphasis></entry>
+
+                <entry>Usado para formatação de moeda de valores de
+                custo.</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>perCpu</emphasis></entry>
+
+                <entry>Custo por hora de uma única CPU.</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>storageAtRest</emphasis></entry>
+
+                <entry>Custo de armazenamento por gigabyte por mês.</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>storageReads</emphasis></entry>
+
+                <entry>Custo por 10.000 operações de leitura.</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>storageWrites</emphasis></entry>
+
+                <entry>Custo por 10.000 operações de gravação.</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+
+      <sect3 id="ConfiguringCloudCosts">
+        <title>Configurando custos da Nuvem</title>
+
+        <para>O arquivo de configuração <emphasis>values.yaml</emphasis>
+        padrão é configurado com os seguintes parâmetros de custo na seção
+        global/cost:</para>
+
+        <programlisting>  cost:
+    currencyCode: USD
+    perCpu: 0.126
+    storageAtRest: 0.0135
+    storageReads: 0.0485
+    storageWrites: 0.0038
+</programlisting>
+
+        <para>O atributo <emphasis role="bold">currencyCode</emphasis> deve
+        ser configurado com o código de país ISO 4217. (O padrão da plataforma
+        HPCC Systems é USD se o código da moeda estiver faltando).</para>
+
+        <para>O <emphasis role="bold">perCpu</emphasis> da seção global/cost
+        se aplica a todos os componentes que não foram configurados com seu
+        próprio valor perCpu.</para>
+
+        <para>Um valor perCpu específico para um componente pode ser definido
+        adicionando um atributo cost/perCPU na seção desse componente.</para>
+
+        <para>Para componentes Dali:</para>
+
+        <programlisting>  dali:
+    - name: mydali
+      <emphasis role="bold">cost:
+        perCpu: </emphasis>0.24</programlisting>
+      </sect3>
+
+      <sect3 id="ThorCostsConfiguration">
+        <title>Configuração dos Custos do Thor</title>
+
+        <para>Os componentes Thor suportam parâmetros de custo adicionais que
+        são usados para o recurso de "guilhotina" de trabalho:</para>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="122.40pt"/>
+
+              <colspec/>
+
+              <tbody>
+                <row>
+                  <entry><emphasis>limit </emphasis></entry>
+
+                  <entry>Define o limite de custo “flexível” que uma unidade
+                  de trabalho pode incorrer. O limite é “suave” no sentido de
+                  que pode ser substituído pela opção do ECL <emphasis
+                  role="bold">maxCost</emphasis>. Um nó será encerrado se
+                  exceder seu <emphasis role="bold">maxCost</emphasis> (se
+                  definido) ou o valor do atributo limite (se o <emphasis
+                  role="bold">maxCost</emphasis> não for definido).</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>hardlimit</emphasis></entry>
+
+                  <entry>Define o limite de custo máximo absoluto, um limite
+                  que não pode ser substituído pela configuração da opção ECL.
+                  O valor <emphasis role="bold">maxCost</emphasis> que exceder
+                  o hardlimit será ignorado.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+
+        <para>O exemplo a seguir define os limites de custo dos trabalhos,
+        adicionando os atributos à seção Thor do yaml de configuração.</para>
+
+        <programlisting>thor:
+- name: thor
+  prefix: thor
+  numWorkers: 2
+  maxJobs: 4
+  maxGraphs: 2
+  <emphasis role="bold">cost:
+    limit: 10.00   </emphasis>   # maximum cost is $10, overridable with maxCost option
+    <emphasis role="bold">hardlimit: 20.00</emphasis>  # maximum cost is $20, cannot be overridden</programlisting>
+      </sect3>
+
+      <sect3 id="StorageCostParameters">
+        <title>Parâmetros dos Custos de Armazenamentos</title>
+
+        <para>Os parâmetros de custos de armazenamentos (<emphasis
+        role="bold">storageAtRest</emphasis>, <emphasis
+        role="bold">storageReads</emphasis> e <emphasis
+        role="bold">storageWrites</emphasis>) podem ser adicionados na seção
+        de custo do plano de armazenamento para definir parâmetros de custo
+        específicos para o plano de armazenamento.</para>
+
+        <para>Por exemplo:</para>
+
+        <programlisting>storage:
+  planes:
+  - name: dali
+    storageClass: ""
+    storageSize: 1Gi
+    prefix: "/var/lib/HPCCSystems/dalistorage"
+    pvc: mycluster-hpcc-dalistorage-pvc
+    category: dali
+    <emphasis role="bold">cost:
+      storageAtRest:</emphasis> 0.01
+      <emphasis role="bold">storageReads:</emphasis> 0.001
+      <emphasis role="bold">storageWrites:</emphasis> 0.04
+</programlisting>
+
+        <para>Os parâmetros de custo de armazenamento na seção global são
+        usados apenas se nenhum parâmetro de custo for especificado no plano
+        de armazenamento.</para>
+      </sect3>
     </sect2>
   </sect1>
 </chapter>

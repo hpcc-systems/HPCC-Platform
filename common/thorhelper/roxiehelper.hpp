@@ -210,6 +210,7 @@ public:
         return getContentTypeMlFormat();
     }
     IProperties *queryUrlParameters(){return parameters;}
+    const IProperties * queryRequestHeaders() const { return reqHeaders; }
     bool validateHttpGetTarget(const char *target)
     {
         if (!target)

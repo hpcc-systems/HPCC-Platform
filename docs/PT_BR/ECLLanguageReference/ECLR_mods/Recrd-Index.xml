@@ -73,34 +73,43 @@
         <row>
           <entry><emphasis>keys</emphasis></entry>
 
-          <entry>A estrutura RECORD dos campos no
-          <emphasis>indexfile</emphasis> que contém informações-chave e de
-          posição do arquivo a serem mencionadas no
-          <emphasis>baserecset</emphasis>. Os nomes e tipos de campos devem
-          corresponder aos campos de <emphasis>baserecset</emphasis> (os tipos
-          de campos REAL e DECIMAL não são permitidos). Isso também pode
-          conter campos adicionais que não estão presentes no
-          <emphasis>baserecset</emphasis> (campos calculados). Se omitido,
-          todos os campos em <emphasis>baserecset</emphasis> serão
-          usados.</entry>
+          <entry>Estrutura RECORD de campos-chave que fazem referência ao
+          <emphasis>baserecset</emphasis> (os "termos de pesquisa" para o
+          INDEX). Os campos-chave podem ser campos
+          <emphasis>baserecset</emphasis> ou campos computados. Os tipos REAL
+          e DECIMAL não são suportados como campos de "termo de pesquisa". Se
+          omitido, todos os campos do <emphasis>baserecset</emphasis> serão
+          usados. Essa estrutura RECORD normalmente é definida in-line dentro
+          do INDEX usando chaves ({}), mas também pode ser uma estrutura
+          RECORD definida separadamente. Se a estrutura RECORD for definida
+          separadamente, ela deverá atender aos mesmos requisitos usados pela
+          função TABLE() (a estrutura RECORD deve definir o tipo, nome e fonte
+          dos dados para cada campo), caso contrário, a ação BUILD não
+          verificará a sintaxe.</entry>
         </row>
 
         <row>
           <entry><emphasis>payload</emphasis></entry>
 
-          <entry>A estrutura RECORD do <emphasis>indexfile</emphasis> que
-          contém campos adicionais não usados como chaves. O nome do atributo.
-          <emphasis>baserecset</emphasis> se o nome do baserecset estiver na
-          estrutura, especificará "todos os outros campos ainda não nomeados
-          no parâmetro <emphasis>keys</emphasis> ". Isso pode conter campos
-          que não estão presentes no <emphasis>baserecset</emphasis> (campos
-          calculados). A <emphasis>payload</emphasis> esses campos não ocupam
-          espaço nos nós non-leaf do índice e não podem ser citados em uma
-          cláusula de filtro KEYED() Todos os campos com o modificador {BLOB}
-          (para permitir mais de 32 K de dados por entrada de índice) são
-          armazenados no <emphasis>indexfile</emphasis>, mas não com o resto
-          do registro. O acesso aos dados do BLOB exige uma procura
-          adicional.</entry>
+          <entry>A estrutura RECORD do <emphasis>indexfile</emphasis> que que
+          contém campos adicionais não usados como chaves de "termo de
+          pesquisa". Isso pode conter campos do
+          <emphasis>baserecordset</emphasis> e/ou campos computados. Se o nome
+          do <emphasis>baserecset</emphasis> estiver nesta estrutura, ele
+          especifica que "todos os outros campos ainda não nomeados no
+          parâmetro de chaves" serão adicionados. Os campos de carga útil não
+          ocupam espaço nos nós não-folha do índice e não podem ser
+          referenciados em uma cláusula de filtro KEYED(). Qualquer campo com
+          o modificador {BLOB} (para permitir mais de 32K de dados por entrada
+          de índice) é armazenado no arquivo de <emphasis>índice</emphasis>,
+          mas não com o restante do registro; acessar os dados BLOB requer uma
+          busca adicional. Essa estrutura RECORD normalmente é definida
+          in-line dentro do INDEX usando chaves ({}), mas também pode ser uma
+          estrutura RECORD definida separadamente. Se a estrutura RECORD for
+          definida separadamente, ela deverá atender aos mesmos requisitos
+          usados pela função TABLE() (a estrutura RECORD deve definir o tipo,
+          nome e fonte dos dados para cada campo), caso contrário, a ação
+          BUILD não verificará a sintaxe.</entry>
         </row>
 
         <row>
@@ -316,8 +325,19 @@ Bld := BUILDINDEX(AlphaInStateCity);</programlisting>
           {STRING2 st,STRING20 city,STRING20 lname,
           UNSIGNED8 fpos{VIRTUAL(fileposition)}},FLAT);
 
-VehicleKey := INDEX(Vehicles,{st,city},{lname,fpos},'vkey::st.city'); 
-BUILDINDEX(VehicleKey);</programlisting>
+VehicleKey1 := INDEX(Vehicles,{st,city},{lname,fpos},'vkey::st.city1');
+BUILD(VehicleKey1);
+
+SearchTerms := RECORD
+  Vehicles.st;
+  Vehicles.city;
+END; 
+Payload     := RECORD
+  Vehicles.lname;
+END; 
+VehicleKey2 := INDEX(Vehicles,SearchTerms,Payload,'vkey::st.city2');
+BUILD(VehicleKey2);
+</programlisting>
   </sect2>
 
   <sect2 id="Duplicate_INDEX">

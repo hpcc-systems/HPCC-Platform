@@ -349,13 +349,6 @@ bool CWsEclService::init(const char * name, const char * type, IPropertyTree * c
     else
         workunitTimeout = WAIT_FOREVER;
 
-    const char *headerName = serviceTree->queryProp("HttpGlobalIdHeader");
-    if (headerName && *headerName && !streq(headerName, "Global-Id") && !streq(headerName, "HPCC-Global-Id")) //defaults will be checked anyway
-        globalIdHttpHeader.set(headerName);
-    headerName = serviceTree->queryProp("HttpCallerIdHeader");
-    if (headerName && *headerName && !streq(headerName, "Caller-Id") && !streq(headerName, "HPCC-Caller-Id")) //defaults will be checked anyway
-        callerIdHttpHeader.set(headerName);
-
     Owned<IPropertyTreeIterator> cfgTargets = serviceTree->getElements("Targets/Target");
     ForEach(*cfgTargets)
         targets.append(cfgTargets->query().queryProp(NULL));
@@ -2000,23 +1993,18 @@ int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinf
     StringAttr wuid(workunit->queryWuid());  // NB queryWuid() not valid after workunit,clear()
 
     bool noTimeout = false;
+
+    Owned<ISpan> clientSpan;
+    ISpan * activeSpan = context.queryActiveSpan();
+    if (activeSpan)
+    {
+        clientSpan.setown(activeSpan->createClientSpan("wsecl/SubmitWorkunit"));
+        Owned<IProperties> httpHeaders = ::getClientHeaders(clientSpan);
+        recordTraceDebugOptions(workunit, httpHeaders);
+    }
+
     if (httpreq)
     {
-        StringBuffer globalId, callerId;
-        StringAttr globalIdHeader, callerIdHeader;
-        wsecl->getHttpGlobalIdHeader(httpreq, globalId, globalIdHeader);
-        wsecl->getHttpCallerIdHeader(httpreq, callerId, callerIdHeader);
-        if (globalId.length())
-        {
-            workunit->setDebugValue("GlobalId", globalId.str(), true);
-            workunit->setDebugValue("GlobalIdHeader", globalIdHeader.str(), true);  //use same header received
-
-            StringBuffer localId;
-            appendGloballyUniqueId(localId);
-            workunit->setDebugValue("CallerId", localId.str(), true); //our localId becomes caller id for the next hop
-            workunit->setDebugValue("CallerIdHeader", callerIdHeader.str(), true); //use same header received
-            DBGLOG("GlobalId: %s, CallerId: %s, LocalId: %s, Wuid: %s", globalId.str(), callerId.str(), localId.str(), wuid.str());
-        }
         IProperties *params = httpreq->queryParameters();
         if (params)
             noTimeout = params->getPropBool(".noTimeout", false);
@@ -2097,28 +2085,12 @@ void CWsEclBinding::sendRoxieRequest(const char *target, StringBuffer &req, Stri
         if (!trim)
             url.append("?.trim=0");
 
-        Owned<IProperties> headers;
+        IEspContext * ctx = httpreq->queryContext();
+        Owned<IProperties> headers = ctx->getClientSpanHeaders();
         Owned<IHttpClient> httpclient = httpctx->createHttpClient(NULL, url);
         bool noTimeout = false;
         if (httpreq)
         {
-            StringBuffer globalId, callerId;
-            StringAttr globalIdHeader, callerIdHeader;
-            wsecl->getHttpGlobalIdHeader(httpreq, globalId, globalIdHeader);
-            wsecl->getHttpCallerIdHeader(httpreq, callerId, callerIdHeader);
-
-            if (globalId.length())
-            {
-                headers.setown(createProperties());
-                headers->setProp(globalIdHeader, globalId);
-
-                StringBuffer localId;
-                appendGloballyUniqueId(localId);
-                if (localId.length())
-                    headers->setProp(callerIdHeader, localId);
-                DBGLOG("GlobalId: %s, CallerId: %s, LocalId: %s", globalId.str(), callerId.str(), localId.str());
-            }
-
             IProperties *params = httpreq->queryParameters();
             if (params)
                 noTimeout = params->getPropBool(".noTimeout", false);

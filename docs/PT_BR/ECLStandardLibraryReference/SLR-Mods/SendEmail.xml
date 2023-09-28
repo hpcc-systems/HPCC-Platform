@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="SendEmail">
@@ -12,55 +12,94 @@
       <primary>Email.SendEmail</primary>
     </indexterm> <indexterm>
       <primary>SendEmail</primary>
-    </indexterm>( </emphasis> <emphasis>sendto, subject, body, server, port, sender</emphasis> <emphasis role="bold"> )</emphasis></para>
+    </indexterm>( </emphasis> <emphasis>to, subject, body, attachment,
+  mimietype, filename, mailServer, port, sender, cc, bcc,
+  highPriority</emphasis> <emphasis role="bold"> )</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
-      <colspec colwidth="80.50pt" />
+      <colspec colwidth="80.50pt"/>
 
-      <colspec />
+      <colspec/>
 
       <tbody>
         <row>
-          <entry><emphasis>sendto</emphasis></entry>
+          <entry><emphasis>to</emphasis></entry>
 
-          <entry>Uma string terminada por nulo que contém uma lista delimitada por vírgulas dos endereços dos destinatários. A validade dos endereços não é verificada. Portanto, é responsabilidade do programador garantir essa validade.</entry>
+          <entry>Uma string terminada por nulo que contém uma lista delimitada
+          por vírgulas dos endereços dos destinatários. A validade dos
+          endereços não é verificada. Portanto, é responsabilidade do
+          programador garantir essa validade.</entry>
         </row>
 
         <row>
           <entry><emphasis>subject</emphasis></entry>
 
-          <entry>Uma string terminada por nulo que contém a linha de assunto.</entry>
+          <entry>Uma string terminada por nulo que contém a linha de
+          assunto.</entry>
         </row>
 
         <row>
           <entry><emphasis>body</emphasis></entry>
 
-          <entry>Uma string terminada por nulo que contém o texto do e-mail a ser enviado. Essa string deve ter a codificação de caracteres "ISO-8859-1 (latin1)" (o conjunto de caracteres padrão do ECL). Texto em qualquer outro conjunto de caracteres deve ser enviado como anexo (consulte a função STD.System.Email.SendEmailAttachText()).</entry>
+          <entry>Uma string terminada por nulo que contém o texto do e-mail a
+          ser enviado. Essa string deve ter a codificação de caracteres
+          "ISO-8859-1 (latin1)" (o conjunto de caracteres padrão do ECL).
+          Texto em qualquer outro conjunto de caracteres deve ser enviado como
+          anexo (consulte a função
+          STD.System.Email.SendEmailAttachText()).</entry>
         </row>
 
         <row>
           <entry><emphasis>server</emphasis></entry>
 
-          <entry>Opcional. Uma string terminada por nulo que contém o nome do servidor de e-mail. Se omitida, assume o valor padrão da variável de ambiente SMTPserver.</entry>
+          <entry>Opcional. Uma string terminada por nulo que contém o nome do
+          servidor de e-mail. Se omitida, assume o valor padrão da variável de
+          ambiente SMTPserver.</entry>
         </row>
 
         <row>
           <entry><emphasis>port</emphasis></entry>
 
-          <entry>Opcional. Um valor inteiro UNSIGNED4 que contém o número da porta. Se omitido, assume o valor padrão da variável de ambiente SMTPport.</entry>
+          <entry>Opcional. Um valor inteiro UNSIGNED4 que contém o número da
+          porta. Se omitido, assume o valor padrão da variável de ambiente
+          SMTPport.</entry>
         </row>
 
         <row>
           <entry><emphasis>sender</emphasis></entry>
 
-          <entry>Opcional. Uma string terminada por nulo que contém o endereço do remetente. Se omitida, assume o valor padrão da variável de ambiente emailSenderAddress.</entry>
+          <entry>Opcional. Uma string terminada por nulo que contém o endereço
+          do remetente. Se omitida, assume o valor padrão da variável de
+          ambiente emailSenderAddress.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>cc</emphasis></entry>
+
+          <entry>Optional. comma-delimited addresses of carbon-copy
+          recipients. Defaults to an empty string (none).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>bcc</emphasis></entry>
+
+          <entry>Optional. comma-delimited addresses of blind-carbon-copy
+          recipients. Defaults to an empty string (none).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>highPriority</emphasis></entry>
+
+          <entry>Optional. If true, the message is sent with high priority.
+          Defaults to false (normal priority).</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>A função  <emphasis role="bold">SendEmail </emphasis> envia uma mensagem de e-mail.</para>
+  <para>A função <emphasis role="bold">SendEmail </emphasis> envia uma
+  mensagem de e-mail.</para>
 
   <para>Exemplo:</para>
 

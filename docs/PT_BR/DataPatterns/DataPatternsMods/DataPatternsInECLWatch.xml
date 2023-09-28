@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter id="DPinECLWatch">
+  <title><emphasis>Padrões de Dados no ECL Watch </emphasis></title>
+
+  <para>Neste exemplo, usaremos um arquivo criado por GenData.ecl no Guia do
+  Programador.</para>
+
+  <orderedlist>
+    <listitem>
+      <para>Tenha uma plataforma HPCC em execução. Esta pode ser uma
+      implantação de plataforma de HPCC Systems de nó único ou de vários
+      nós.</para>
+    </listitem>
+
+    <listitem>
+      <para>Abra o ECL Watch em seu navegador usando o seguinte URL:
+      http://nnn.nnn.nnn.nnn:pppp (onde nnn.nnn.nnn.nnn é o endereço IP do seu
+      servidor ESP e pppp é a porta. A porta padrão é 8010 ).</para>
+    </listitem>
+
+    <listitem>
+      <para>Abra a lista de arquivos lógicos clicando no terceiro ícone do
+      lado esquerdo.</para>
+
+      <graphic fileref="../../images/DP007.jpg"/>
+    </listitem>
+
+    <listitem>
+      <para>Encontre o arquivo desejado e clique nele para abrir a página
+      Detalhes dos arquivos lógicos.</para>
+
+      <graphic fileref="../../images/DP005.jpg"/>
+
+      <para><emphasis role="bold">Nota</emphasis>: No ECL Watch, apenas
+      dataset com definições de registro conhecidas são suportados. Esta é
+      apenas uma limitação do ECL Watch. Você pode invocar
+      DataPatterns.Profile() programaticamente em qualquer tipo de conjunto de
+      dados válido, incluindo um arquivo de índice.</para>
+    </listitem>
+
+    <listitem>
+      <para>Na primeira vez que você abre a guia Data Patterns, uma
+      notificação informa que uma análise não está disponível. Pressione o
+      botão Analyze para gerar uma análise de perfil. Depois de concluída, a
+      análise é exibida.</para>
+
+      <graphic fileref="../../images/DP003.jpg"/>
+    </listitem>
+
+    <listitem>
+      <para>Clique no título “Padrões de dados” na barra localizada próxima ao
+      topo da página. Clicar no título Data Patterns gerará um relatório do
+      arquivo de dados.</para>
+    </listitem>
+  </orderedlist>
+
+  <para>Clique no título “Padrões de dados” na barra localizada próxima ao
+  topo da página. Clicar no título Data Patterns gerará um relatório do
+  arquivo de dados.</para>
+
+  <para>Aqui está uma breve descrição de cada coluna:</para>
+
+  <itemizedlist>
+    <listitem>
+      <para>Digite informações, contagem de cardinalidade e &amp; Contagem
+      preenchida.</para>
+    </listitem>
+
+    <listitem>
+      <para>Min, Avg, Max Length (para atributos de string) ou Mean, Std.
+      Desvio, Quartis (para atributos numéricos).</para>
+    </listitem>
+
+    <listitem>
+      <para>Curva de sino quartil e castiçal</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>mostrado apenas para atributos numéricos.</para>
+        </listitem>
+
+        <listitem>
+          <para>esta coluna não é exibida se não houver valores numéricos
+          atributos.</para>
+        </listitem>
+      </itemizedlist>
+    </listitem>
+
+    <listitem>
+      <para>Divisão de cardinalidade listada por contagem decrescente</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>Esta coluna é mostrada para todos os tipos de dados escalares
+          de dados.</para>
+        </listitem>
+
+        <listitem>
+          <para>esta coluna não é exibida se não houver valores numéricos
+          atributos.</para>
+        </listitem>
+      </itemizedlist>
+    </listitem>
+
+    <listitem>
+      <para>Padrões Populares</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>Esta coluna é mostrada para todos os tipos de dados escalares
+          de dados.</para>
+        </listitem>
+
+        <listitem>
+          <para>esta coluna não é exibida se não houver valores numéricos
+          atributos.</para>
+        </listitem>
+      </itemizedlist>
+    </listitem>
+  </itemizedlist>
+
+  <para>For example:</para>
+
+  <graphic fileref="../../images/DP004.jpg"/>
+
+  <para>Conforme visto na seção “state”, a cardinalidade de cada estado é
+  exibida. O detalhamento da cardinalidade é mostrado para atributos com baixo
+  número de valores exclusivos e não nulos, mostrando cada valor e o número de
+  registros que contêm o valor.</para>
+
+  <para><emphasis role="bold">Nota</emphasis>: O parâmetro lcbLimit rege o que
+  significa “número baixo”</para>
+
+  <para>Neste exemplo, a cardinalidade para “NY” é 7%, o que significa que 7%
+  de registros contêm o valor “NY”.</para>
+
+  <para>O “Min Length" exibe o comprimento mais curto de um valor, onde nulo
+  os valores são ignorados. Em tipos de dados SET, entretanto, “Min Length''
+  pode exibir o menor número de elementos do conjunto.</para>
+
+  <para>O “Max Length” exibe o maior comprimento de um valor, onde null
+  valores também são ignorados. Os tipos de dados SET exibem o maior número de
+  elementos do conjunto.</para>
+
+  <para>Para a seção “state”, os comprimentos mínimo e máximo têm o valor “2”,
+  uma vez que todas as abreviações de estado consistem em 2 letras na
+  string.</para>
+
+  <para>O “Avg Length” exibe o comprimento médio de um valor quando expresso.
+  Nos tipos de dados SET, é o número médio de elementos encontrados no
+  conjunto.</para>
+
+  <para><emphasis role="bold">Optimize Results</emphasis></para>
+
+  <para>A otimização dos resultados atribui à string o valor mais eficiente
+  com base no comprimento máximo contido na seção específica do dataset,
+  reescrevendo o código ECL. O resultado é um tamanho de arquivo
+  reduzido.</para>
+
+  <para>Para otimizar os resultados, siga as etapas abaixo:</para>
+
+  <orderedlist>
+    <listitem>
+      <para>Escolha um arquivo para executar os Padrões de Dados.</para>
+    </listitem>
+
+    <listitem>
+      <para>Clique no botão “Optimize” localizado próximo ao topo da página.
+      Clicar no botão otimizar fará com que um pop-up apareça.</para>
+
+      <graphic fileref="../../images/DP009.jpg"/>
+    </listitem>
+
+    <listitem>
+      <para>Selecione um alvo no menu suspenso.</para>
+
+      <graphic fileref="../../images/DP006.jpg"/>
+    </listitem>
+
+    <listitem>
+      <para>Clique no botão "Optimize".</para>
+    </listitem>
+
+    <listitem>
+      <para>Verifique o arquivo de dados otimizado, o nome do arquivo original
+      com o sufixo " :optimized ". Observe que o tamanho do arquivo é
+      menor.</para>
+    </listitem>
+
+    <listitem>
+      <para>Clique a aba "Data Patterns". A string agora tem um valor novo e
+      otimizado.</para>
+    </listitem>
+  </orderedlist>
+</chapter>

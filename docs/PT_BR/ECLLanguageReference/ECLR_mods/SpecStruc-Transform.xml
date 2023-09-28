@@ -172,7 +172,7 @@
     <emphasis>transformation;</emphasis> , ou pode usar um destes
     atalhos:</para>
 
-    <programlisting>SELF := [ ];</programlisting>
+    <programlisting lang="ECL">SELF := [ ];</programlisting>
 
     <para>limpa campos nos resultados de <emphasis>resulttype </emphasis> que
     não foram definidos previamente na função de transformação, ao passo que
@@ -184,7 +184,7 @@
     <para>limpa apenas os campos secundários em <emphasis>outfield</emphasis>,
     e este formato:</para>
 
-    <programlisting>SELF := <emphasis>label</emphasis>; //the <emphasis>label</emphasis> names a RECORD structure<indexterm>
+    <programlisting lang="ECL">SELF := <emphasis>label</emphasis>; //the <emphasis>label</emphasis> names a RECORD structure<indexterm>
         <primary>RECORD structure</primary>
       </indexterm> parameter
 // in the <emphasis>parameterlist</emphasis></programlisting>
@@ -212,7 +212,7 @@
 
     <para>Exemplo:</para>
 
-    <programlisting>Ages := RECORD
+    <programlisting lang="ECL">Ages := RECORD
   AgedRecs.id;
   AgedRecs.id1;
   AgedRecs.id2;
@@ -259,7 +259,7 @@ assignId2(namesRecord l) := assignId(l, 2);
 
     <para>Exemplo:</para>
 
-    <programlisting>namesIdRecord assignId(namesRecord L) := TRANSFORM
+    <programlisting lang="ECL">namesIdRecord assignId(namesRecord L) := TRANSFORM
   SELF := L; //more like-named fields across
   SELF := []; //clear all other fields
 END;
@@ -279,15 +279,15 @@ projected2 := PROJECT(namesTable, TRANSFORM(namesIdRecord,
     <para>Este formato de TRANSFORM é uma versão abreviada de TRANSFORMs em
     linha. Neste formato,</para>
 
-    <programlisting>TRANSFORM(LEFT)</programlisting>
+    <programlisting lang="ECL">TRANSFORM(LEFT)</programlisting>
 
     <para>é diretamente equivalente a</para>
 
-    <programlisting>TRANSFORM(RECORDOF(LEFT), SELF := LEFT)</programlisting>
+    <programlisting lang="ECL">TRANSFORM(RECORDOF(LEFT), SELF := LEFT)</programlisting>
 
     <para>Exemplo:</para>
 
-    <programlisting>namesIdRecord assignId(namesRecord L) := TRANSFORM
+    <programlisting lang="ECL">namesIdRecord assignId(namesRecord L) := TRANSFORM
   SELF := L; //move like-named fields across
 END;
 projected1 := PROJECT(namesTable, assignId(LEFT));

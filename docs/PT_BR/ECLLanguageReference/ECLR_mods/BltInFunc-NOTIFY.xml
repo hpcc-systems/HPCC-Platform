@@ -67,30 +67,24 @@
 
     <para>Exemplo:</para>
 
-    <programlisting>NOTIFY('testevent', 'foobar');
-  
-receivedFileEvent(STRING name) := EVENT('ReceivedFile', name);
-NOTIFY(receivedFileEvent('myfile'));
-
-//as a service
-doMyService := FUNCTION
-OUTPUT('Did a Service for: ' + 'EVENTNAME=' + EVENTNAME);
-NOTIFY(EVENT('MyServiceComplete',
-'&lt;Event&gt;&lt;returnTo&gt;FRED&lt;/returnTo&gt;&lt;/Event&gt;'),
-EVENTEXTRA('returnTo'));
-RETURN EVENTEXTRA('returnTo');
+    <programlisting>doMyService := FUNCTION
+  O := OUTPUT('Did a Service for: ' + 'EVENTNAME=' + EVENTNAME);
+  N := NOTIFY(EVENT('MyServiceComplete',
+                    '&lt;Event&gt;&lt;returnTo&gt;FRED&lt;/returnTo&gt;&lt;/Event&gt;'),
+                    EVENTEXTRA('returnTo'));
+  RETURN WHEN(EVENTEXTRA('returnTo'),ORDERED(O,N));
 END;
-     
-doMyService : WHEN('MyService');
-// and a call to the service
+OUTPUT(doMyService) : WHEN('MyService');
+
+// and a call (in a separate workunit):
 NOTIFY('MyService',
-'&lt;Event&gt;&lt;returnTo&gt;'+WORKUNIT+'&lt;/returnTo&gt;....&lt;/Event&gt;');
+       '&lt;Event&gt;&lt;returnTo&gt;'+ WORKUNIT + '&lt;/returnTo&gt;&lt;/Event&gt;');
 WAIT('MyServiceComplete');
 OUTPUT('WORKUNIT DONE')
 </programlisting>
   </informalexample>
 
-  <para>Ver também: <link linkend="EVENT">EVENT</link>, <link
+  <para>See Also: <link linkend="EVENT">EVENT</link>, <link
   linkend="EVENTNAME">EVENTNAME</link>, <link
   linkend="EVENTEXTRA">EVENTEXTRA</link>, <link linkend="CRON">CRON</link>,
   <link linkend="WHEN">WHEN</link>, <link linkend="WAIT">WAIT</link></para>

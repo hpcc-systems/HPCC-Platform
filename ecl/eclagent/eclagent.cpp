@@ -2130,33 +2130,9 @@ void EclAgent::runProcess(IEclProcess *process)
     assertex(rowManager==NULL);
     allocatorMetaCache.setown(createRowAllocatorCache(this));
 
-    if (agentTopology->hasProp("@httpGlobalIdHeader"))
-        updateDummyContextLogger().setHttpIdHeaderNames(agentTopology->queryProp("@httpGlobalIdHeader"), agentTopology->queryProp("@httpCallerIdHeader"));
-
-    if (queryWorkUnit()->hasDebugValue("GlobalId"))
-    {
-        SCMStringBuffer globalId;
-        queryWorkUnit()->getDebugValue("GlobalId", globalId);
-        if (globalId.length())
-        {
-            SocketEndpoint thorEp;
-            thorEp.setLocalHost(0);
-            updateDummyContextLogger().setGlobalId(globalId.str(), thorEp, GetCurrentProcessId());
-
-            VStringBuffer msg("GlobalId: %s", globalId.str());
-            SCMStringBuffer txId;
-            queryWorkUnit()->getDebugValue("CallerId", txId);
-            if (txId.length())
-            {
-                updateDummyContextLogger().setCallerId(txId.str());
-                msg.append(", CallerId: ").append(txId.str());
-            }
-            txId.set(updateDummyContextLogger().queryLocalId());
-            if (txId.length())
-                msg.append(", LocalId: ").append(txId.str());
-            updateDummyContextLogger().CTXLOG("%s", msg.str());
-        }
-    }
+    Owned<IProperties> traceHeaders = extractTraceDebugOptions(queryWorkUnit());
+    Owned<ISpan> requestSpan = queryTraceManager().createServerSpan(queryWorkUnit()->queryWuid(), traceHeaders);
+    updateDummyContextLogger().setActiveSpan(requestSpan);
 
     // a component may specify an alternate name for the agent/workflow memory area,
     // e.g. Thor specifies in "eclAgentMemory"

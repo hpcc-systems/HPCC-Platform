@@ -104,7 +104,7 @@
 
   <para>Exemplos:</para>
 
-  <programlisting>IMPORT $;                      //makes all definitions from the same folder available
+  <programlisting lang="ECL">IMPORT $;                      //makes all definitions from the same folder available
 
 IMPORT $, Std;                 //makes the standard library functions available, also
 

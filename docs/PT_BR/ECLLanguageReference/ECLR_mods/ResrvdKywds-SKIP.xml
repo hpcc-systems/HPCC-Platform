@@ -20,7 +20,7 @@
 
   <para>Exemplo:</para>
 
-  <programlisting>SequencedAges := RECORD
+  <programlisting lang="ECL">SequencedAges := RECORD
         Ages;
         INTEGER8 Sequence := 0;
 END;
