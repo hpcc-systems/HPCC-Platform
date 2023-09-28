@@ -14,7 +14,6 @@ const espTimeoutSeconds = cookie("ESPSessionTimeoutSeconds") || 600; // 10 minun
 const IDLE_TIMEOUT = espTimeoutSeconds * 1000;
 const SESSION_RESET_FREQ = 30 * 1000;
 const idleWatcher = new ESPUtil.IdleWatcher(IDLE_TIMEOUT);
-const monitorLockClick = new ESPUtil.MonitorLockClick();
 const sessionIsActive = espTimeoutSeconds;
 
 let _prevReset = Date.now();
@@ -73,7 +72,9 @@ export function initSession() {
         });
 
         idleWatcher.start();
-        monitorLockClick.unlocked();
+        if (!cookie("Status")) {
+            document.cookie = "Status=Unlocked;Path=/";
+        }
     } else if (cookie("ECLWatchUser")) {
         window.location.replace(dojoConfig.urlInfo.basePath + "/Login.html");
     }

@@ -37,6 +37,15 @@ export const Login: React.FunctionComponent<LoginProps> = ({
     const [showError, setShowError] = React.useState(false);
     const [errorMessage, setErrorMessage] = React.useState("");
 
+    React.useEffect(() => {
+        const cookies = Utility.parseCookies();
+        if (cookies["ESPSessionState"] === "true") {
+            const lastUrl = window.localStorage.getItem("pageOnLock") ?? "/";
+            window.localStorage.removeItem("pageOnLock");
+            replaceUrl(lastUrl);
+        }
+    }, []);
+
     const loginStyles = React.useMemo(() => mergeStyleSets({
         root: {
             height: "100%",
@@ -107,6 +116,8 @@ export const Login: React.FunctionComponent<LoginProps> = ({
                     setErrorMessage(cookies.ESPAuthenticationMSG);
                     setShowError(true);
                 } else {
+                    cookies["Status"] = "Unlocked";
+                    cookies["ESPAuthenticated"] = "true";
                     createUserSession(cookies).then(() => {
                         setErrorMessage("");
                         replaceUrl("/", null, true);
