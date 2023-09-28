@@ -28,29 +28,12 @@ static constexpr const char *kCallerIdHttpHeaderName = "Caller-Id";
 static constexpr const char *kLegacyGlobalIdHttpHeaderName = "HPCC-Global-Id";
 static constexpr const char *kLegacyCallerIdHttpHeaderName = "HPCC-Caller-Id";
 
-class jlib_decl LogTrace
+enum class SpanFlags : unsigned
 {
-private:
-    StringAttr   globalId;
-    StringAttr   callerId;
-    StringAttr   localId;
-
-    const char* assignLocalId();
-
-public:
-
-    LogTrace();
-    LogTrace(const char * globalId);
-
-    const char* queryGlobalId() const;
-    const char* queryCallerId() const;
-    const char* queryLocalId() const;
-
-    //can these be private with abstract methods exposed to create/set these values?
-    void setGlobalId(const char* id);
-    void setCallerId(const char* id);
-    void setLocalId(const char* id);
+    None            = 0x000000000,
+    EnsureGlobalId  = 0x000000001,
 };
+BITMASK_ENUM(SpanFlags);
 
 interface ISpan : extends IInterface
 {
@@ -60,16 +43,25 @@ interface ISpan : extends IInterface
     virtual bool getSpanContext(IProperties * ctxProps, bool otelFormatted) const = 0;
     virtual void toString(StringBuffer & out) const = 0;
     virtual void toLog(StringBuffer & out) const = 0;
+    virtual void getLogPrefix(StringBuffer & out) const = 0;
 
     virtual ISpan * createClientSpan(const char * name) = 0;
     virtual ISpan * createInternalSpan(const char * name) = 0;
+
+//Old-style global/caller/local id interface functions
+    virtual const char* queryGlobalId() const = 0;
+    virtual const char* queryCallerId() const = 0;
+    virtual const char* queryLocalId() const = 0;
 };
+
+extern jlib_decl IProperties * getClientHeaders(const ISpan * span);
 
 interface ITraceManager : extends IInterface
 {
-    virtual ISpan * createServerSpan(const char * name, StringArray & httpHeaders) = 0;
-    virtual ISpan * createServerSpan(const char * name, const IProperties * httpHeaders) = 0;
+    virtual ISpan * createServerSpan(const char * name, StringArray & httpHeaders, SpanFlags flags = SpanFlags::None) = 0;
+    virtual ISpan * createServerSpan(const char * name, const IProperties * httpHeaders, SpanFlags flags = SpanFlags::None) = 0;
     virtual bool isTracingEnabled() const = 0;
+    virtual bool alwaysCreateGlobalIds() const = 0;
     virtual const char * getTracedComponentName() const = 0;
  };
 
@@ -219,7 +211,6 @@ extern jlib_decl TraceFlags queryDefaultTraceFlags();
 // See also the workunit-variant in workunit.hpp
 
 extern jlib_decl TraceFlags loadTraceFlags(const IPropertyTree * globals, const std::initializer_list<TraceOption> & y, TraceFlags dft);
-
 
 // Temporarily modify the trace context and/or flags for the current thread, for the lifetime of the LogContextScope object
 

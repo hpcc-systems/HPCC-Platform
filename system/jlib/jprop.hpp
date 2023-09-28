@@ -72,6 +72,7 @@ interface IProperties : public IPropertiesOf<char_ptr, IPropertyIterator> { };
 
 extern jlib_decl IProperties *createProperties(bool nocase = false);
 extern jlib_decl IProperties *createProperties(const char *filename, bool nocase = false);
+extern jlib_decl IProperties *cloneProperties(const IProperties * properties, bool nocase = false);
 extern jlib_decl IProperties *querySystemProperties();
 extern jlib_decl IProperties *getSystemProperties();
 

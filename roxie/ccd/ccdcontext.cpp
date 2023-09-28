@@ -1379,13 +1379,13 @@ public:
     {
         return logctx.queryTraceLevel();
     }
-    virtual void setGlobalId(const char *id, SocketEndpoint &ep, unsigned pid) override
+    virtual void setActiveSpan(ISpan * span) override
     {
-        const_cast<IRoxieContextLogger&>(logctx).setGlobalId(id, ep, pid);
+        const_cast<IRoxieContextLogger&>(logctx).setActiveSpan(span);
     }
-    virtual void setCallerId(const char *id) override
+    virtual IProperties * getClientHeaders() const override
     {
-        const_cast<IRoxieContextLogger&>(logctx).setCallerId(id);
+        return logctx.getClientHeaders();
     }
     virtual const char *queryGlobalId() const override
     {

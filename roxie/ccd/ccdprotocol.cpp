@@ -1795,13 +1795,6 @@ readAnother:
             {
                 mlResponseFmt = httpHelper.queryResponseMlFormat();
                 mlRequestFmt = httpHelper.queryRequestMlFormat();
-
-                const char *globalId = queryRequestGlobalIdHeader(httpHelper, logctx);
-                const char *callerId = queryRequestCallerIdHeader(httpHelper, logctx);
-                if (globalId && *globalId)
-                    msgctx->setTransactionId(globalId, callerId, true);  //logged and forwarded through SOAPCALL/HTTPCALL
-                else if (callerId && *callerId)
-                    msgctx->setCallerId(callerId); //may not matter, but maintain old behavior
             }
         }
 
@@ -1906,9 +1899,10 @@ readAnother:
 
                 uid = NULL;
                 sanitizeQuery(queryPT, queryName, sanitizedText, httpHelper, uid, isBlind, isDebug);
-                if (uid)
-                    msgctx->setTransactionId(uid, nullptr, false);
-                else
+
+                msgctx->startSpan(uid, httpHelper.queryRequestHeaders());
+
+                if (!uid)
                     uid = "-";
 
                 sink->checkAccess(peer, queryName, sanitizedText, isBlind);

@@ -1253,12 +1253,12 @@ interface jlib_decl IContextLogger : extends IInterface
     virtual void mergeStats(const CRuntimeStatisticCollection &from) const = 0;
     virtual unsigned queryTraceLevel() const = 0;
 
-    virtual void setGlobalId(const char *id, SocketEndpoint &ep, unsigned pid) = 0;
     virtual const char *queryGlobalId() const = 0;
     virtual const char *queryLocalId() const = 0;
-    virtual void setCallerId(const char *id) = 0;
     virtual const char *queryCallerId() const = 0;
     virtual const CRuntimeStatisticCollection & queryStats() const = 0;
+    virtual void setActiveSpan(ISpan * span) = 0;
+    virtual IProperties * getClientHeaders() const = 0;
 };
 
 extern jlib_decl StringBuffer &appendGloballyUniqueId(StringBuffer &s);

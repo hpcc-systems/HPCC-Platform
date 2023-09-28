@@ -271,13 +271,13 @@ public:
     {
         return ctx->isBlind();
     }
-    virtual void setGlobalId(const char *id, SocketEndpoint &ep, unsigned pid) override
+    virtual void setActiveSpan(ISpan * span) override
     {
-        ctx->setGlobalId(id, ep, pid);
+        ctx->setActiveSpan(span);
     }
-    virtual void setCallerId(const char *id) override
+    virtual IProperties * getClientHeaders() const override
     {
-        ctx->setCallerId(id);
+        return ctx->getClientHeaders();
     }
     virtual const char *queryGlobalId() const
     {
@@ -1347,15 +1347,16 @@ public:
             return traceLevel;
     }
 
-    virtual void setGlobalId(const char *id, SocketEndpoint&ep, unsigned pid) override
+    virtual void setActiveSpan(ISpan * span) override
     {
         if (ctx)
-            ctx->setGlobalId(id, ep, pid);
+            ctx->setActiveSpan(span);
     }
-    virtual void setCallerId(const char *id) override
+    virtual IProperties * getClientHeaders() const override
     {
         if (ctx)
-            ctx->setCallerId(id);
+            return ctx->getClientHeaders();
+        return nullptr;
     }
     virtual const char *queryGlobalId() const override
     {
