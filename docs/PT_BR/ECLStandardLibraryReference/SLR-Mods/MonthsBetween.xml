@@ -13,7 +13,7 @@
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
-      <colspec colwidth="80.50pt"/>
+      <colspec colwidth="90.50pt"/>
 
       <colspec/>
 
@@ -28,6 +28,16 @@
           <entry><emphasis>toDate</emphasis></entry>
 
           <entry>O valor da última data, no formato Date_t.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>month_ends_equal</emphasis></entry>
+
+          <entry>Opcional. Se TRUE e ambas as datas caírem no último dia de
+          seus respectivos meses, a diferença entre as datas será tratada como
+          meses inteiros, independentemente dos valores reais dos dias. Se for
+          FALSE então o valor do dia de cada data é considerado no cálculo da
+          diferença. O padrão é FALSE</entry>
         </row>
 
         <row>

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ACOS">
@@ -13,15 +13,16 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="79.35pt" />
+        <colspec colwidth="79.35pt"/>
 
-        <colspec colwidth="309.45pt" />
+        <colspec colwidth="309.45pt"/>
 
         <tbody>
           <row>
             <entry><emphasis>cosine</emphasis></entry>
 
-            <entry>O valor coseno REAL para o qual o arco coseno deve ser localizado.</entry>
+            <entry>O valor coseno REAL para o qual o arco coseno deve ser
+            localizado.</entry>
           </row>
 
           <row>
@@ -33,12 +34,19 @@
       </tgroup>
     </informaltable></para>
 
-  <para>A função  <emphasis role="bold">ACOS </emphasis> retorna o arco coseno (inverso) do  <emphasis>coseno</emphasis>, em radianos.</para>
+  <para>A função <emphasis role="bold">ACOS </emphasis> retorna o arco coseno
+  (inverso) do <emphasis>coseno</emphasis>, em radianos.</para>
 
   <para>Exemplo:</para>
 
-  <programlisting>ArcCosine := ACOS(CosineAngle);
+  <programlisting lang="ECL" role="runnable">Deg2Rad := 0.0174532925199; //number of radians in a degree
+cosineAngle := 0.75;
+acos(cosineAngle) * Deg2Rad; 
 </programlisting>
 
-  <para>Ver também: <link linkend="COS">COS</link>, <link linkend="SIN">SIN</link>, <link linkend="TAN">TAN</link>, <link linkend="ASIN">ASIN</link>, <link linkend="ATAN">ATAN</link>, <link linkend="COSH">COSH</link>, <link linkend="SINH">SINH</link>, <link linkend="TANH">TANH</link></para>
+  <para>Ver também: <link linkend="COS">COS</link>, <link
+  linkend="SIN">SIN</link>, <link linkend="TAN">TAN</link>, <link
+  linkend="ASIN">ASIN</link>, <link linkend="ATAN">ATAN</link>, <link
+  linkend="COSH">COSH</link>, <link linkend="SINH">SINH</link>, <link
+  linkend="TANH">TANH</link></para>
 </sect1>

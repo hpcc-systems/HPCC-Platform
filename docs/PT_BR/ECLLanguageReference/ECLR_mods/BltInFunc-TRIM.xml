@@ -28,11 +28,19 @@
           <row>
             <entry><emphasis>flag</emphasis></entry>
 
-            <entry>Opcional. Especifica quais espaços serão removidos. Os
-            valores válidos do indicador são: RIGHT (remove espaços à direita
-            – este é o padrão), LEFT (remove espaços à esquerda), LEFT, RIGHT
-            (remove espaços à direita e à esquerda), e ALL (remove todos os
-            espaços, até mesmo aqueles dentro de string_value).</entry>
+            <entry>Opcional. Especifique quais espaços serão removidos. Os
+            valores das flags válidos são:<para/><para><emphasis
+            role="bold">RIGHT</emphasis> (remover espaços à direita - este é o
+            padrão</para><para><emphasis role="bold">LEFT</emphasis> (remover
+            espaços à esquerda)</para><para><emphasis role="bold">LEFT,
+            RIGHT</emphasis> (remover espaços à esquerda e à
+            direita)</para><para><emphasis role="bold">ALL</emphasis> (remover
+            espaços à esquerda e à direita)todos os espaços, mesmo aqueles
+            dentro de string_value)</para><para><emphasis
+            role="bold">WHITESPACE</emphasis> Usado em conjunto com qualquer
+            um dos outros sinalizadores, remove TODOS os caracteres de espaço
+            em branco da área especificada. Se omitido, apenas o caractere de
+            espaço (0x20) será removido.</para></entry>
           </row>
 
           <row>

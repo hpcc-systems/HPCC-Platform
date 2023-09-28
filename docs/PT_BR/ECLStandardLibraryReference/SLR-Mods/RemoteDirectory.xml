@@ -10,8 +10,8 @@
       <primary>File.RemoteDirectory</primary>
     </indexterm><indexterm>
       <primary>RemoteDirectory</primary>
-    </indexterm>(</emphasis> <emphasis> machineIP, directory </emphasis>
-  <emphasis role="bold">[</emphasis> <emphasis>, mask </emphasis> <emphasis
+    </indexterm>(</emphasis> <emphasis> machineIP, dir </emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis>, mask </emphasis> <emphasis
   role="bold">][</emphasis> <emphasis>, recurse </emphasis> <emphasis
   role="bold">]</emphasis> <emphasis> </emphasis> <emphasis
   role="bold">)</emphasis></para>
@@ -31,7 +31,7 @@
         </row>
 
         <row>
-          <entry><emphasis>directory</emphasis></entry>
+          <entry><emphasis>dir</emphasis></entry>
 
           <entry>Uma string terminada por nulo que contém a path para os
           diretório para leitura. A string deve estar no formato adequado para

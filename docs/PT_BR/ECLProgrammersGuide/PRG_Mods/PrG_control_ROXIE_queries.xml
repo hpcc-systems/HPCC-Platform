@@ -40,7 +40,7 @@
             <row>
               <entry><emphasis role="bold">Thor</emphasis></entry>
 
-              <entry>Os grafos são executados em múltiplos nós filhos em
+              <entry>Os grafos são executados em múltiplos nós secundários em
               paralelo.</entry>
             </row>
 
@@ -48,7 +48,7 @@
               <entry/>
 
               <entry>As leituras de índice/disco são feitas localmente por
-              cada nó filho.</entry>
+              cada nó secundário.</entry>
             </row>
 
             <row>

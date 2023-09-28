@@ -21,7 +21,7 @@
 
   <para>Exemplo:</para>
 
-  <programlisting>dup_flags := JOIN(person,person,
+  <programlisting lang="ECL">dup_flags := JOIN(person,person,
                LEFT.current_address_key=RIGHT.current_address_key
                AND fuzzy_equal,req_output(LEFT,RIGHT));</programlisting>
 

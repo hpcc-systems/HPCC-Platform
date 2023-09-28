@@ -88,11 +88,12 @@
         <row>
           <entry><emphasis>espserverIPport</emphasis></entry>
 
-          <entry>Opcional. Uma string terminada por nulo que contém o
-          protocolo, o IP, a porta e o diretório ou DNS equivalente do
-          programa do servidor' ESP. Normalmente são os mesmos IP e porta do
-          ECL Watch, com "/FileSpray" anexado. Se omitida, o padrão é o valor
-          contido no atributo lib_system.ws_fs_server.</entry>
+          <entry>Opcional. Isso quase sempre deve ser omitido, o que, por
+          padrão, é o valor contido no atributo lib_system.ws_fs_server.
+          Quando não omitido, deve ser uma string terminada em nulo contendo o
+          protocolo, IP, porta e diretório, ou o DNS equivalente, do programa
+          do servidor ESP. Geralmente, é o mesmo IP e porta do ECL Watch, com
+          "/FileSpray" anexado.</entry>
         </row>
 
         <row>

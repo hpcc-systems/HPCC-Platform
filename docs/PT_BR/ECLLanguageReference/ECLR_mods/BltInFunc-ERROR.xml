@@ -65,7 +65,7 @@
 
   <para>Exemplo:</para>
 
-  <programlisting>outrec Xform(inrec L, inrec R) := TRANSFORM
+  <programlisting lang="ECL">outrec Xform(inrec L, inrec R) := TRANSFORM
   SELF.key := IF(L.key &lt;= R.key, R.key,ERROR('Recs not in order'));
 END;
 </programlisting>
