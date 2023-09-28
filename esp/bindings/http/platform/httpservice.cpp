@@ -379,6 +379,13 @@ int CEspHttpServer::processRequest()
 
             if (thebinding!=NULL)
             {
+                if (thebinding->isUnrestrictedSSType(stype))
+                {
+                    thebinding->onGetUnrestricted(m_request.get(), m_response.get(), serviceName.str(), methodName.str(), stype);
+                    ctx->addTraceSummaryTimeStamp(LogMin, "handleHttp");
+                    return 0;
+                }
+
                 if(stricmp(method.str(), POST_METHOD)==0)
                     thebinding->handleHttpPost(m_request.get(), m_response.get());
                 else if(!stricmp(method.str(), GET_METHOD))
