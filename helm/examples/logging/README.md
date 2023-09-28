@@ -73,7 +73,7 @@ The logs can be filtered by TargetAudience, Category or Detail Level, and the ou
 
 ### Target Audience Filtering
 
-The availble target audiences include operator(OPR), user(USR), programmer(PRO), audit(ADT), or all. The filter is controlled by the
+The availble target audiences include operator(OPR), user(USR), programmer(PRO), monitor(MON), audit(ADT), or all. The filter is controlled by the
 `<section>`.logging.audiences value. The string value is comprised of 3 letter codes delimited by the aggregation operator (+) or the removal operator (-).
     
     For example, all component log output to include Programmer and User messages only:
@@ -81,7 +81,7 @@ The availble target audiences include operator(OPR), user(USR), programmer(PRO),
     
 ### Target Category Filtering
 
-The available target categories include disaster(DIS), error(ERR), warning(WRN),information(INF),progress(PRO),metrics(MET). The category (or class) filter is controlled by the `<section>`.logging.classes value, comprised of 3 letter codes delimited by the aggregation operator (+) or the removal operator (-).
+The available target categories include disaster(DIS), error(ERR), warning(WRN),information(INF),progress(PRO),metrics(MET),event(EVT). The category (or class) filter is controlled by the `<section>`.logging.classes value, comprised of 3 letter codes delimited by the aggregation operator (+) or the removal operator (-).
     
     For example, the mydali instance's log output to include all classes except for progress:
     helm install myhpcc ./hpcc --set dali[0].logging.classes="ALL-PRO" --set dali[0].name="mydali"
