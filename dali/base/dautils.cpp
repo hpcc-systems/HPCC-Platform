@@ -17,6 +17,7 @@
 
 #include "platform.h"
 #include "jlib.hpp"
+#include "jcontainerized.hpp"
 #include "jstring.hpp"
 #include "jfile.hpp"
 #include "jmisc.hpp"
@@ -3628,7 +3629,7 @@ void remapGroupsToDafilesrv(IPropertyTree *file, INamedGroupStore *resolver)
                 CriticalBlock b(dafileSrvNodeCS);
                 if (nullptr == dafileSrvNode)
                 {
-                    auto externalService = getDafileServiceFromConfig("directio");
+                    auto externalService = k8s::getDafileServiceFromConfig("directio");
                     VStringBuffer dafilesrvEpStr("%s:%u", externalService.first.c_str(), externalService.second);
                     dafileSrvNode.setown(createINode(dafilesrvEpStr));
                 }
