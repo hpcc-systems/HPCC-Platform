@@ -1940,17 +1940,11 @@ void CHttpRequest::updateContext()
         m_context->setUseragent(useragent.str());
         getHeader("Accept-Language", acceptLanguage);
         m_context->setAcceptLanguage(acceptLanguage.str());
-        StringBuffer callerId, globalId;
-        getHeader(HTTP_HEADER_HPCC_GLOBAL_ID, globalId);
-        if (globalId.isEmpty())
-            getHeader("hpcc-global-id", globalId);
-        if(globalId.length())
-            m_context->setGlobalId(globalId);
-        getHeader(HTTP_HEADER_HPCC_CALLER_ID, callerId);
-        if (callerId.isEmpty())
-            getHeader("hpcc-caller-id", callerId);
-        if(callerId.length())
-            m_context->setCallerId(callerId);
+
+        //MORE: The previous code would be better off querying httpHeaders...
+        Owned<IProperties> httpHeaders = getHeadersAsProperties(m_headers);
+        Owned<ISpan> requestSpan = queryTraceManager().createServerSpan("request", httpHeaders, SpanFlags::EnsureGlobalId);
+        m_context->setActiveSpan(requestSpan);
     }
 }
 

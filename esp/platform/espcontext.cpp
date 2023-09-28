@@ -89,9 +89,7 @@ private:
     Owned<IEspSecureContextEx> m_secureContext;
 
     StringAttr   m_transactionID;
-    StringBuffer   m_globalId;
-    StringBuffer   m_localId;
-    StringBuffer   m_callerId;
+    Owned<ISpan> m_activeSpan;
     IHttpMessage* m_request;
 
 public:
@@ -116,9 +114,6 @@ public:
         updateTraceSummaryHeader();
         m_secureContext.setown(secureContext);
         m_SecurityHandler.setSecureContext(secureContext);
-        appendGloballyUniqueId(m_localId);
-        // use localId as globalId unless we receive another
-        m_globalId.set(m_localId);
     }
 
     ~CEspContext()
@@ -630,27 +625,38 @@ public:
     {
         return m_request;
     }
-
-    virtual void setGlobalId(const char* id)
+    virtual void setActiveSpan(ISpan * span) override
     {
-        m_globalId.set(id);
+        m_activeSpan.set(span);
     }
-    virtual const char* getGlobalId()
+    virtual ISpan * queryActiveSpan() const override
     {
-        return m_globalId.str();
+        return m_activeSpan;
     }
-    virtual void setCallerId(const char* id)
+    //GH Can these be deleted?
+    virtual const char* getGlobalId() const override
     {
-        m_callerId.set(id);
+        if (!m_activeSpan)
+            return nullptr;
+        return m_activeSpan->queryGlobalId();
     }
-    virtual const char* getCallerId()
+    virtual const char* getCallerId() const override
     {
-        return m_callerId.str();
+        if (!m_activeSpan)
+            return nullptr;
+        return m_activeSpan->queryCallerId();
     }
-    // No setLocalId() - it should be set once only when constructed
-    virtual const char* getLocalId()
+    virtual const char* getLocalId() const override
     {
-        return m_localId.str();
+        if (!m_activeSpan)
+            return nullptr;
+        return m_activeSpan->queryLocalId();
+    }
+    virtual IProperties * getClientSpanHeaders() const override
+    {
+        if (!m_activeSpan)
+            return nullptr;
+        return ::getClientHeaders(m_activeSpan);
     }
 };
 

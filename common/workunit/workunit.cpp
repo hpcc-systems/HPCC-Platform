@@ -14644,6 +14644,9 @@ static_assert(_elements_in(traceDebugOptions) == _elements_in(traceHeaderNames),
 
 IProperties * extractTraceDebugOptions(IConstWorkUnit * source)
 {
+    if (!source)
+        return nullptr;
+
     Owned<IProperties> target = createProperties(true);
     SCMStringBuffer temp;
     for (unsigned i=0; i < _elements_in(traceDebugOptions); i++)
@@ -14662,6 +14665,9 @@ IProperties * extractTraceDebugOptions(IConstWorkUnit * source)
 
 IProperties * deserializeTraceDebugOptions(const IPropertyTree * debugOptions)
 {
+    if (!debugOptions)
+        return nullptr;
+
     Owned<IProperties> target = createProperties(true);
     if (debugOptions)
     {
@@ -14681,6 +14687,9 @@ IProperties * deserializeTraceDebugOptions(const IPropertyTree * debugOptions)
 
 void recordTraceDebugOptions(IWorkUnit * target, const IProperties * source)
 {
+    if (!source)
+        return;
+
     for (unsigned i=0; i < _elements_in(traceDebugOptions); i++)
     {
         const char * headerName = traceHeaderNames[i];
