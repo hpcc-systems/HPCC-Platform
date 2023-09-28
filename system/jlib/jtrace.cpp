@@ -235,19 +235,16 @@ public:
         if (ctxProps == nullptr)
             return false;
 
-        if (!isEmptyString(hpccGlobalId.get()))
-            ctxProps->setProp(kGlobalIdHttpHeaderName, hpccGlobalId.get());
+        ctxProps->setNonEmptyProp(kGlobalIdHttpHeaderName, queryGlobalId());
 
         if (otelFormatted)
         {
             //The localid is passed as the callerid for the client request....
-            if (!isEmptyString(hpccLocalId.get()))
-                ctxProps->setProp(kCallerIdHttpHeaderName, hpccLocalId.get());
+            ctxProps->setNonEmptyProp(kCallerIdHttpHeaderName, queryLocalId());
         }
         else
         {
-            if (!isEmptyString(hpccCallerId.get()))
-                ctxProps->setProp(kCallerIdHttpHeaderName, hpccCallerId.get());
+            ctxProps->setNonEmptyProp(kCallerIdHttpHeaderName, queryCallerId());
         }
 
         if (span == nullptr)
@@ -275,16 +272,13 @@ public:
             //StringBuffer traceStateHTTPHeader;
             //traceStateHTTPHeader.append("hpcc=").append(spanID.get());
 
-            ctxProps->setProp(opentelemetry::trace::propagation::kTraceState.data(), span->GetContext().trace_state()->ToHeader().c_str());
+            ctxProps->setNonEmptyProp(opentelemetry::trace::propagation::kTraceState.data(), span->GetContext().trace_state()->ToHeader().c_str());
         }
         else
         {
-            if (!isEmptyString(traceID.get()))
-                ctxProps->setProp("traceID", traceID.get());
-            if (!isEmptyString(spanID.get()))
-                ctxProps->setProp("spanID", spanID.get());
-            if (!isEmptyString(traceFlags.get()))
-                ctxProps->setProp("traceFlags", traceFlags.get());
+            ctxProps->setNonEmptyProp("traceID", traceID.get());
+            ctxProps->setNonEmptyProp("spanID", spanID.get());
+            ctxProps->setNonEmptyProp("traceFlags", traceFlags.get());
 
             if (localParentSpan != nullptr)
             {
@@ -292,8 +286,7 @@ public:
                 localParentSpan->getSpanContext(localParentSpanCtxProps, false);
                 if (localParentSpanCtxProps)
                 {
-                    if (localParentSpanCtxProps->hasProp("spanID"))
-                        ctxProps->setProp("localParentSpanID", localParentSpanCtxProps->queryProp("spanID"));
+                    ctxProps->setNonEmptyProp("localParentSpanID", localParentSpanCtxProps->queryProp("spanID"));
                 }
             }
         }
@@ -547,28 +540,6 @@ private:
     //Remote parent is declared via http headers from client call
     opentelemetry::v1::trace::SpanContext remoteParentSpanCtx = opentelemetry::trace::SpanContext::GetInvalid();
 
-    void setSpanContext(StringArray & httpHeaders, const char kvDelineator, SpanFlags flags)
-    {
-        Owned<IProperties> contextProps = createProperties(true);
-        ForEachItemIn(currentHeaderIndex, httpHeaders)
-        {
-            const char* httpHeader = httpHeaders.item(currentHeaderIndex);
-            if(!httpHeader)
-                continue;
-
-            const char* delineator = strchr(httpHeader, kvDelineator);
-            if(delineator == nullptr)
-                continue;
-
-            StringBuffer key;
-            key.append(delineator - httpHeader, httpHeader);
-
-            contextProps->setProp(key, delineator + 1);
-        }
-
-        setSpanContext(contextProps, flags);
-    }
-
     void setSpanContext(const IProperties * httpHeaders, SpanFlags flags)
     {
         if (httpHeaders)
@@ -608,8 +579,6 @@ private:
                 opts.parent = remoteParentSpanCtx;
             }
         }
-
-        //Generate new HPCCGlobalID if not provided
     }
 
     bool getSpanContext(IProperties * ctxProps, bool otelFormatted) const override
@@ -629,14 +598,6 @@ private:
     }
 
 public:
-    CServerSpan(const char * spanName, const char * tracerName_, StringArray & httpHeaders, SpanFlags flags)
-    : CSpan(spanName, tracerName_)
-    {
-        opts.kind = opentelemetry::trace::SpanKind::kServer;
-        setSpanContext(httpHeaders, ':', flags);
-        init();
-    }
-
     CServerSpan(const char * spanName, const char * tracerName_, const IProperties * httpHeaders, SpanFlags flags)
     : CSpan(spanName, tracerName_)
     {
@@ -898,7 +859,8 @@ public:
 
     ISpan * createServerSpan(const char * name, StringArray & httpHeaders, SpanFlags flags) override
     {
-        return new CServerSpan(name, moduleName.get(), httpHeaders, flags);
+        Owned<IProperties> headerProperties = getHeadersAsProperties(httpHeaders);
+        return new CServerSpan(name, moduleName.get(), headerProperties, flags);
     }
 
     ISpan * createServerSpan(const char * name, const IProperties * httpHeaders, SpanFlags flags) override

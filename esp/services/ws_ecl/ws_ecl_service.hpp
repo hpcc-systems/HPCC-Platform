@@ -120,19 +120,6 @@ public:
         return false;
     }
 
-    StringBuffer &getHttpGlobalIdHeader(CHttpRequest *request, StringBuffer &value)
-    {
-        if (!getHttpIdHeader(request, kGlobalIdHttpHeaderName, value))
-            getHttpIdHeader(request, kLegacyGlobalIdHttpHeaderName, value);
-        return value;
-    }
-    StringBuffer &getHttpCallerIdHeader(CHttpRequest *request, StringBuffer &value)
-    {
-        if (!getHttpIdHeader(request, kCallerIdHttpHeaderName, value))
-            getHttpIdHeader(request, kLegacyCallerIdHttpHeaderName, value);
-        return value;
-    }
-
     bool unsubscribeServiceFromDali() override {return true;}
     bool subscribeServiceToDali() override {return false;}
     bool detachServiceFromDali() override

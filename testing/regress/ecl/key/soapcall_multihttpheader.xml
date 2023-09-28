@@ -1,5 +1,5 @@
 <Dataset name='soapcallResult'>
- <Row><Method>POST</Method><UrlPath>/WsSmc/HttpEcho</UrlPath><UrlParameters>name=doe,joe&amp;number=1</UrlParameters><Headers><Header>Accept-Encoding: gzip, deflate</Header><Header>StoredHeader: StoredHeaderDefault</Header><Header>constHeader: constHeaderValue</Header><Header>literalHeader: literalHeaderValue</Header></Headers><Content>&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;&lt;soap:Envelope xmlns:soap=&quot;http://schemas.xmlsoap.org/soap/envelope/&quot;&gt;
+ <Row><Method>POST</Method><UrlPath>/WsSmc/HttpEcho</UrlPath><UrlParameters>name=doe,joe&amp;number=1</UrlParameters><Headers><Header>Accept-Encoding: gzip, deflate</Header><Header>StoredHeader: StoredHeaderDefault</Header><Header>constHeader: constHeaderValue</Header><Header>literalHeader: literalHeaderValue</Header><Header>traceparent: 00-0123456789abcdef0123456789abcdef-0123456789abcdef-01</Header></Headers><Content>&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;&lt;soap:Envelope xmlns:soap=&quot;http://schemas.xmlsoap.org/soap/envelope/&quot;&gt;
  &lt;soap:Body&gt;
   &lt;HttpEcho&gt;
    &lt;Name&gt;Doe, Joe&lt;/Name&gt;
@@ -10,7 +10,7 @@
 &lt;/soap:Envelope&gt;</Content></Row>
 </Dataset>
 <Dataset name='proxyResult'>
- <Row><Method>POST</Method><UrlPath>/WsSmc/HttpEcho</UrlPath><UrlParameters>name=doe,joe&amp;number=1</UrlParameters><Headers><Header>Accept-Encoding: gzip, deflate</Header><Header>StoredHeader: StoredHeaderDefault</Header><Header>constHeader: constHeaderValue</Header><Header>literalHeader: literalHeaderValue</Header></Headers><Content>&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;&lt;soap:Envelope xmlns:soap=&quot;http://schemas.xmlsoap.org/soap/envelope/&quot;&gt;
+ <Row><Method>POST</Method><UrlPath>/WsSmc/HttpEcho</UrlPath><UrlParameters>name=doe,joe&amp;number=1</UrlParameters><Headers><Header>Accept-Encoding: gzip, deflate</Header><Header>StoredHeader: StoredHeaderDefault</Header><Header>constHeader: constHeaderValue</Header><Header>literalHeader: literalHeaderValue</Header><Header>traceparent: 00-0123456789abcdef0123456789abcdef-f123456789abcdef-01</Header></Headers><Content>&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;&lt;soap:Envelope xmlns:soap=&quot;http://schemas.xmlsoap.org/soap/envelope/&quot;&gt;
  &lt;soap:Body&gt;
   &lt;HttpEcho&gt;
    &lt;Name&gt;Doe, Joe&lt;/Name&gt;

@@ -257,7 +257,7 @@ int CEspHttpServer::processRequest()
         }
         ctx->addTraceSummaryValue(LogMin, "custom_fields.URL", url.str(), TXSUMMARY_GRP_ENTERPRISE);
 
-        m_response->setHeader(HTTP_HEADER_HPCC_GLOBAL_ID, ctx->getGlobalId());
+        m_response->setHeader(kGlobalIdHttpHeaderName, ctx->getGlobalId());
 
         if(strieq(method.str(), OPTIONS_METHOD))
             return onOptions();

@@ -280,6 +280,16 @@ public:
                 properties.remove(propname);
         }
     }
+    virtual void setNonEmptyProp(PTYPE propname, const char *val)
+    {
+        if (propname)
+        {
+            if (!isEmptyString(val))
+                properties.setValue(propname, val);
+            else
+                properties.remove(propname);
+        }
+    }
     virtual void appendProp(PTYPE propname, const char *val)
     {
         if (propname && val)
@@ -401,6 +411,40 @@ IProperties *cloneProperties(const IProperties * source, bool nocase)
     }
     return clone.getClear();
 }
+
+//This works on arrays of string of the form x=y and x: y
+void extractHeaders(IProperties * target, const StringArray & httpHeaders, char separator)
+{
+    StringBuffer key;
+    ForEachItemIn(currentHeaderIndex, httpHeaders)
+    {
+        const char* httpHeader = httpHeaders.item(currentHeaderIndex);
+        if(isEmptyString(httpHeader))
+            continue;
+
+        const char* delineator = strchr(httpHeader, separator);
+        if ((delineator == nullptr) || (delineator == httpHeader))
+            continue;
+
+        const char * value = delineator + 1;
+        while (isspace(*value))
+            value++;
+
+        if (*value)
+        {
+            key.clear().append(delineator - httpHeader, httpHeader);
+            target->setProp(key, value);
+        }
+    }
+}
+
+IProperties * getHeadersAsProperties(const StringArray & httpHeaders, char separator)
+{
+    Owned<IProperties> properties = createProperties(true);
+    extractHeaders(properties, httpHeaders, separator);
+    return properties.getClear();
+}
+
 
 static CProperties *sysProps = NULL;
 
