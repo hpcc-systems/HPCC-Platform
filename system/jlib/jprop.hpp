@@ -43,6 +43,7 @@ interface jlib_decl IPropertiesOf : extends serializable
     virtual const char *queryProp(PTYPE propname) const = 0;
     virtual void setProp(PTYPE propname, int val) = 0;
     virtual void setProp(PTYPE propname, const char *val) = 0;
+    virtual void setNonEmptyProp(PTYPE propname, const char *val) = 0;
     virtual void appendProp(PTYPE propname, const char *val) = 0;
     virtual bool hasProp(PTYPE propname) const = 0;
     virtual PITER *getIterator() const = 0;
@@ -72,8 +73,11 @@ interface IProperties : public IPropertiesOf<char_ptr, IPropertyIterator> { };
 
 extern jlib_decl IProperties *createProperties(bool nocase = false);
 extern jlib_decl IProperties *createProperties(const char *filename, bool nocase = false);
+extern jlib_decl IProperties *cloneProperties(const IProperties * properties, bool nocase = false);
 extern jlib_decl IProperties *querySystemProperties();
 extern jlib_decl IProperties *getSystemProperties();
+extern jlib_decl void extractHeaders(IProperties * target, const StringArray & httpHeaders, char separator = ':');
+extern jlib_decl IProperties * getHeadersAsProperties(const StringArray & httpHeaders, char separator = ':');
 
 #endif
 

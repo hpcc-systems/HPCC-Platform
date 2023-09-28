@@ -6,12 +6,13 @@
 
   <para><emphasis>attribute </emphasis>:= <emphasis>expression
   </emphasis><emphasis role="bold">: INDEPENDENT
-  [</emphasis><emphasis>(cluster)</emphasis><emphasis role="bold">]</emphasis>
-  <indexterm>
-      <primary>INDEPENDENT</primary>
-    </indexterm><indexterm>
+  [</emphasis><emphasis>(cluster </emphasis><emphasis
+  role="bold">[,LABEL(</emphasis><emphasis>text</emphasis><emphasis
+  role="bold">)]</emphasis>)<emphasis role="bold">]</emphasis>; <indexterm>
       <primary>INDEPENDENT workflow service</primary>
-    </indexterm>;</para>
+    </indexterm><indexterm>
+      <primary>INDEPENDENT</primary>
+    </indexterm></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
@@ -40,6 +41,21 @@
             <emphasis>attribute</emphasis> is run on the currently executing
             cluster.</entry>
           </row>
+
+          <row>
+            <entry><emphasis role="bold">LABEL</emphasis></entry>
+
+            <entry>Optional. Defines the <emphasis>Text</emphasis> to display
+            for the workflow item in the Graph for the workunit. If omitted,
+            the code generator will deduce a label from the identifier being
+            defined.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>text</emphasis></entry>
+
+            <entry>A string constant containing the text to display.</entry>
+          </row>
         </tbody>
       </tgroup>
     </informaltable></para>
@@ -59,7 +75,7 @@
 
   <para>Example:</para>
 
-  <programlisting lang="ECL" role="runnable">I := RANDOM() : INDEPENDENT;  //calculated once, period
+  <programlisting lang="ECL" role="runnable">I := RANDOM() : INDEPENDENT(LABEL('CalcRandom'));  //calculated once, period
 G := RANDOM() : GLOBAL;       //calculated once in each graph
 
 ds := 

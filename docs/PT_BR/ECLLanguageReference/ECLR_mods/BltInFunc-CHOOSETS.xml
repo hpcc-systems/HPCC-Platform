@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
-<sect1 id="CHOOSESETS">
+<sect1 id="CHOOSESETS" lang="ECL">
   <title>CHOOSESETS</title>
 
   <para><emphasis role="bold">CHOOSESETS<indexterm>
@@ -182,7 +182,7 @@
 
   <para>Exemplo:</para>
 
-  <programlisting>MyResultSet := CHOOSESETS(Person,
+  <programlisting lang="ECL">MyResultSet := CHOOSESETS(Person,
       per_first_name = 'RICHARD' =&gt; 100,
       per_first_name = 'GWENDOLYN' =&gt; 200, 100)
 // returns a set containing 100 Richards, 200 Gwendolyns, 100 others

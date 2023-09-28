@@ -39,8 +39,25 @@
 
   <para>Exemplo:</para>
 
-  <programlisting>OUTPUT(Person,{per_ssn,HASHCRC(per_ssn)});
-    //output SSN and its CRC hash value</programlisting>
+  <programlisting lang="ECL" role="runnable">personRecord := RECORD
+STRING UID;
+STRING first_name;
+STRING last_name;
+STRING address;
+STRING city;
+STRING state;
+STRING zip;
+STRING SSN
+END;
+person := DATASET([{'923','James','Jones','123 Elm Street','Hollywood','FL','33022','000-423-6567'},
+{'924','Sally','Jones','22 Main Street','Tampa','FL','33604','000-123-4567'},
+{'925','Jose','Gomez','111 Biscaya Lane','Miami','FL','33101','000-123-3383'},
+{'926','Adam','Wesson','77 Sunset Blvd','Boston','MA','02108','000-123-4464'},
+{'927','Evelyn','Murray','740 SW 10th Street','Boston ','MA','02116','000-123-5556'},
+{'928','Joe','Yung','7511 Simson Avenue','Chicago','IL','60131','000-123-7890'}], personRecord);
+
+OUTPUT(Person,{SSN,HASH64(SSN)});
+    //output SSN and its 64-bit hash value</programlisting>
 
   <para>Ver também: <link linkend="DISTRIBUTE">DISTRIBUTE</link>, <link
   linkend="HASH">HASH</link>, <link linkend="HASH32">HASH32</link>, <link

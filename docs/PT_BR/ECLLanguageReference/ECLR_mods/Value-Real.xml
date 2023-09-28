@@ -26,8 +26,8 @@
     Value</emphasis><emphasis role="bold"/><emphasis role="bold">Smallest
     Value</emphasis></para>
 
-    <programlisting><emphasis role="bold">Type</emphasis><emphasis role="bold">    </emphasis><emphasis
-        role="bold">Significant Digits     Largest Value</emphasis><emphasis
+    <programlisting lang="text"><emphasis role="bold">Type</emphasis><emphasis
+        role="bold">    </emphasis><emphasis role="bold">Significant Digits     Largest Value</emphasis><emphasis
         role="bold"> </emphasis><emphasis role="bold">  Smallest Value
 </emphasis>REAL4    7 (9999999)           3.402823e+038   1.175494e-038
 REAL8   15 (999999999999999)   1.797693e+308   2.225074e-308

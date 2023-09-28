@@ -1571,9 +1571,12 @@ void EsdlServiceImpl::sendTargetSOAP(IEspContext & context,
         httpclient->setPassword(password.str());
     }
 
-    Owned<IProperties> headers = createProperties();
-    headers->setProp(HTTP_HEADER_HPCC_GLOBAL_ID, context.getGlobalId());
-    headers->setProp(HTTP_HEADER_HPCC_CALLER_ID, context.getLocalId());
+    Owned<ISpan> clientSpan;
+    ISpan * activeSpan = context.queryActiveSpan();
+    if (activeSpan)
+        clientSpan.setown(activeSpan->createClientSpan("soapcall"));
+
+    Owned<IProperties> headers = ::getClientHeaders(clientSpan);
     StringBuffer status;
     StringBuffer clreq(req);
 

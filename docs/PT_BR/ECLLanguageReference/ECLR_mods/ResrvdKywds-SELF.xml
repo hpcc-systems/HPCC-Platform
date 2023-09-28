@@ -23,7 +23,7 @@
 
   <para>Exemplo:</para>
 
-  <programlisting>Ages := RECORD
+  <programlisting lang="ECL">Ages := RECORD
         INTEGER8 Age; //a field named "Age"
 END;
 

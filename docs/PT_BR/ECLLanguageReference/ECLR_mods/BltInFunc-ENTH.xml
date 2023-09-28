@@ -156,11 +156,7 @@
 
   <para>Exemplo:</para>
 
-  <programlisting>MySample1 := ENTH(Person,1,10,1); // 10% (1 out of every 10)
-MySample2 := ENTH(Person,15,100,1); // 15% (15 out of every 100)
-MySample3 := ENTH(Person,3,4,1); // 75% (3 out of every 4)
-
-SomeFile := DATASET([{'A'},{'B'},{'C'},{'D'},{'E'},
+  <programlisting lang="ECL" role="runnable">SomeFile := DATASET([{'A'},{'B'},{'C'},{'D'},{'E'},
                      {'F'},{'G'},{'H'},{'I'},{'J'},
                      {'K'},{'L'},{'M'},{'N'},{'O'},
                      {'P'},{'Q'},{'R'},{'S'},{'T'},
@@ -168,6 +164,10 @@ SomeFile := DATASET([{'A'},{'B'},{'C'},{'D'},{'E'},
      {STRING1 Letter});
 Set1 := ENTH(SomeFile,2,10,1); // returns E, J, O, T, Y
 
+// other examples
+// MySample1 := ENTH(Person,1,10,1); // 10% (1 out of every 10)
+// MySample2 := ENTH(Person,15,100,1); // 15% (15 out of every 100)
+// MySample3 := ENTH(Person,3,4,1); // 75% (3 out of every 4)
 </programlisting>
 
   <para>See Also: <link linkend="CHOOSEN">CHOOSEN</link>, <link

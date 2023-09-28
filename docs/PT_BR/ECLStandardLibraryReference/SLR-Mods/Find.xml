@@ -78,7 +78,8 @@
   </emphasis>. Se <emphasis>target</emphasis> não for encontrado ou a
   <emphasis>instance</emphasis> especificada for maior que o número de
   ocorrências do <emphasis>target</emphasis> em <emphasis>source</emphasis>,
-  <emphasis role="bold">Find</emphasis> retornará zero (0).</para>
+  <emphasis role="bold">Find</emphasis> retornará zero (0). Os espaços à
+  direita são considerados significativos quando comparados.</para>
 
   <para>Exemplo:</para>
 

@@ -155,9 +155,10 @@
     MyModuleStructure MODULE esteja contida em um Módulo de repositório do ECL
     denominado MyModule, e que ele contém um <emphasis>membro</emphasis> de
     EXPORT denominado MyDefinition, você referenciaria essa
-    <emphasis>definição</emphasis> como:</para>
+    <emphasis>definition</emphasis> as
+    MyModule.MyModuleStructure.MyDefinition:</para>
 
-    <para><programlisting>MyModule.MyModuleStructure.MyDefinition
+    <para><programlisting lang="ECL" role="runnable">MyMod := MODULE
 
 MyMod := MODULE
   SHARED x := 88;
@@ -168,8 +169,8 @@ MyMod := MODULE
   END;
 END;
 
-MyMod.InMod.Val1;
-MyMod.InMod.Val2;</programlisting></para>
+OUTPUT(MyMod.InMod.Val1);
+OUTPUT(MyMod.InMod.Val2);</programlisting></para>
   </sect2>
 
   <sect2 id="Side-Effect_Actions">
@@ -294,28 +295,37 @@ IF (doIt, OUTPUT(customerNames.File));
 
     <para>Exemplo:</para>
 
-    <programlisting>EXPORT filterDataset(STRING search, BOOLEAN onlyOldies) := MODULE
+    <programlisting lang="ECL" role="runnable">namesRecord := RECORD
+  STRING20 surname;
+  STRING10 forename;
+  INTEGER2 age := 25;
+END;
+namesTable := DATASET([{'Smith','Sue',72},
+                       {'Jones','Joe',32},
+                       {'Jones','Fred',82}],namesRecord);
+
+filterDataset1(STRING search, BOOLEAN onlyOldies) := MODULE
   f := namesTable; //local to the "g" definition
   SHARED g := IF (onlyOldies, f(age &gt;= 65), f);
           //SHARED = visible only within the structure
-  EXPORT included := g(surname != search);
-  EXPORT excluded := g(surname = search);
+  EXPORT included := g(surname = search);
+  EXPORT excluded := g(surname &lt;&gt; search);
           //EXPORT = visible outside the structure
 END;
-filtered := filterDataset('Halliday', TRUE);
-OUTPUT(filtered.included,,NAMED('Included'));
-OUTPUT(filtered.excluded,,NAMED('Excluded'));
-       
+filtered1 := filterDataset1('Smith', TRUE);
+OUTPUT(filtered1.included,,NAMED('Included1'));
+OUTPUT(filtered1.excluded,,NAMED('Excluded1'));
+
 //same result, different coding style:
-EXPORT filterDataset(BOOLEAN onlyOldies) := MODULE
+filterDataset2(BOOLEAN onlyOldies) := MODULE
   f := namesTable;
   SHARED g := IF (onlyOldies, f(age &gt;= 65), f);
-  EXPORT included(STRING search) := g(surname &lt;&gt; search);
-  EXPORT excluded(STRING search) := g(surname = search);
+  EXPORT included(STRING search) := g(surname = search);
+  EXPORT excluded(STRING search) := g(surname &lt;&gt; search);
 END;
-filtered := filterDataset(TRUE);
-OUTPUT(filtered.included('Halliday'),,NAMED('Included'));
-OUTPUT(filterDataset(true).excluded('Halliday'),,NAMED('Excluded'));
+filtered2 := filterDataset2(TRUE);
+OUTPUT(filtered2.included('Smith'),,NAMED('Included2'));
+OUTPUT(filterDataset2(true).excluded('Smith'),,NAMED('Excluded2'));
           
           
 //VIRTUAL examples
@@ -336,12 +346,12 @@ OUTPUT(Mod2.func(5)); //result is 15
 OUTPUT(Mod3.func(5)); //result is 6
 
 //FORWARD example
-EXPORT MyModule := MODULE, FORWARD
-  EXPORT INTEGER foo := bar;
+MyModule := MODULE, FORWARD
+  EXPORT INTEGER foo := bar; //forward reference
   EXPORT INTEGER bar := 42;
 END;
 
-MyModule.foo;
+OUTPUT(MyModule.foo);
 
 </programlisting>
 

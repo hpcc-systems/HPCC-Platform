@@ -14634,3 +14634,70 @@ bool executeGraphOnLingeringThor(IConstWorkUnit &workunit, unsigned wfid, const 
     throwUnexpected();
 }
 #endif
+
+
+//The names of the debug options used to serialize trace info - lower case to ensure they also work on the property tree (in thor slaves)
+static constexpr const char * traceDebugOptions[] = { "globalid", "callerid", "ottraceparent", "ottracestate" };
+//The names of the headers containing the trace info
+static constexpr const char * traceHeaderNames[] = { "global-id", "caller-id", "traceparent", "tracestate" };
+static_assert(_elements_in(traceDebugOptions) == _elements_in(traceHeaderNames), "Inconsistent tracePropertyNames, traceHeaderNames arrays");
+
+IProperties * extractTraceDebugOptions(IConstWorkUnit * source)
+{
+    if (!source)
+        return nullptr;
+
+    Owned<IProperties> target = createProperties(true);
+    SCMStringBuffer temp;
+    for (unsigned i=0; i < _elements_in(traceDebugOptions); i++)
+    {
+        const char * debugOption = traceDebugOptions[i];
+        const char * headerName = traceHeaderNames[i];
+        if (source->hasDebugValue(debugOption))
+        {
+            temp.clear();
+            source->getDebugValue(debugOption, temp);
+            target->setProp(headerName, temp.str());
+        }
+    }
+    return target.getClear();
+}
+
+IProperties * deserializeTraceDebugOptions(const IPropertyTree * debugOptions)
+{
+    if (!debugOptions)
+        return nullptr;
+
+    Owned<IProperties> target = createProperties(true);
+    if (debugOptions)
+    {
+        for (unsigned i=0; i < _elements_in(traceDebugOptions); i++)
+        {
+            const char * debugOption = traceDebugOptions[i];
+            const char * headerName = traceHeaderNames[i];
+            if (debugOptions->hasProp(debugOption))
+            {
+                const char * value = debugOptions->queryProp(debugOption);
+                target->setProp(headerName, value);
+            }
+        }
+    }
+    return target.getClear();
+}
+
+void recordTraceDebugOptions(IWorkUnit * target, const IProperties * source)
+{
+    if (!source)
+        return;
+
+    for (unsigned i=0; i < _elements_in(traceDebugOptions); i++)
+    {
+        const char * headerName = traceHeaderNames[i];
+        const char * debugOption = traceDebugOptions[i];
+        if (source->hasProp(headerName))
+        {
+            const char * value = source->queryProp(headerName);
+            target->setDebugValue(debugOption, value, true);
+        }
+    }
+}

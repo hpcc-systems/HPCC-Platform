@@ -42,8 +42,8 @@
     </informaltable></para>
 
   <para>A expressão <emphasis role="bold"> TRACE </emphasis> define o
-  rastreamento para os arquivos de log (logs escravos do Thor, logs do hThor
-  logs, ou logs do Roxie).</para>
+  rastreamento para os arquivos de log (logs secundários do Thor, logs do
+  hThor logs, ou logs do Roxie).</para>
 
   <para>Você pode adicionar TRACE ao seu código em pontos críticos sem que o
   desempenho sofra nenhum impacto. Posteriormente, se precisar investigar o

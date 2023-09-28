@@ -22,7 +22,8 @@
     (para manter o mesmo padrão de bits, consulte a função incorporada
     <emphasis role="bold">TRANSFER</emphasis> ).</para>
 
-    <programlisting>MyBoolean := (BOOLEAN) IF(SomeAttribute &gt; 10,1,0);
+    <programlisting lang="ECL" role="runnable">SomeAttribute :=11;
+MyBoolean := (BOOLEAN) IF(SomeAttribute &gt; 10,1,0);
           // casts the INTEGER values 1 and 0 to a BOOLEAN TRUE or FALSE
 MyString := (STRING1) IF(SomeAttribute &gt; 10,1,0);
           // casts the INTEGER values 1 and 0 to a 1-character string
@@ -30,7 +31,13 @@ MyString := (STRING1) IF(SomeAttribute &gt; 10,1,0);
 MyValue := (INTEGER) MAP(MyString = '1' =&gt; MyString, '0');
           // casts the STRING values '1' and '0' to an INTEGER 1 or 0
 MySet := (SET OF INTEGER1) [1,2,3,4,5,6,7,8,9,10];
-          //casts from a SET OF INTEGER8 (the default) to SET OF INTEGER1</programlisting>
+          //casts from a SET OF INTEGER8 (the default) to SET OF INTEGER1
+
+UTPUT(MyBoolean);
+OUTPUT(MyString);
+OUTPUT(MyValue);
+OUTPUT(MySet);
+</programlisting>
   </sect2>
 
   <sect2 id="Implicit_Casting">
@@ -82,8 +89,11 @@ MySet := (SET OF INTEGER1) [1,2,3,4,5,6,7,8,9,10];
     com a adição de colchetes angulares
     (&gt;<emphasis>valuetype</emphasis>&lt;).</para>
 
-    <programlisting>INTEGER1 MyInt := 65; //MyInt is an integer value 65
-STRING1 MyVal := (&gt;STRING1&lt;) MyInt; //MyVal is "A" (ASCII 65)</programlisting>
+    <programlisting lang="ECL" role="runnable">INTEGER1 MyInt := 65; //MyInt is an integer value 65
+STRING1 MyVal := (&gt;STRING1&lt;) MyInt; //MyVal is "A" (ASCII 65)
+OUTPUT(MyInt);
+OUTPUT(MyVal);
+</programlisting>
   </sect2>
 
   <sect2 id="Casting_Rules">

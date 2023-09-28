@@ -95,7 +95,7 @@ MyString2 := U'abcd\353';    // becomes 'abcdë''
     <para><emphasis role="bold">As constantes de string <indexterm>
         <primary>Unicode</primary>
       </indexterm> Unicode string </emphasis> devem começar com um caractere
-    "U". Os caracteres entre aspas são codificados em utf8 e o tipo de
+    "U". Os caracteres entre aspas são codificados em utf16 e o tipo de
     constante é UNICODE.</para>
 
     <programlisting>MyUnicodeString1 := U'abcd';        // same as: (UNICODE)'abcd'
@@ -115,14 +115,40 @@ MyUnicodeString3 := U'abcd\u00EB'; // becomes 'abcdë'</programlisting>
       </indexterm> </emphasis> devem começar com um caractere "V". O byte nulo
     de finalização é implícito e o tipo da constante é VARSTRING.</para>
 
-    <programlisting>MyVarString := V'abcd'; // same as: (VARSTRING)'abcd'</programlisting>
+    <sect3>
+      <title>String Multilinha</title>
 
-    <para><emphasis role="bold">As constantes de string QSTRING <indexterm>
-        <primary>QSTRING string constants</primary>
-      </indexterm> </emphasis> devem começar com um caractere "Q". O byte nulo
-    de finalização é implícito e o tipo da constante é VARSTRING.</para>
+      <para>A multiline string begins and ends with three single quotes
+      (''').</para>
 
-    <programlisting>MyQString := Q'ABCD'; // same as: (QSTRING)'ABCD'</programlisting>
+      <para>Quaisquer aspas, tabulações ou novas linhas entre aspas triplas
+      são parte da string. Embora você possa usar o caractere \ escape dentro
+      de um string multilinha, o escape não é necessário (exceto para o \
+      personagem). O caractere \ no final de uma linha em uma string
+      multilinha remove o fim da linha e une as duas linhas.</para>
+
+      <para><emphasis role="bold">Examplos:</emphasis></para>
+
+      <programlisting>'Single\n quotes'; 
+u'Can\'t be multiline and must escape embedded single quotes'; 
+u8'€'; 
+v'Can use various prefixes'; 
+d'7172737475'; 
+Q'ABCDE'; 
+
+'''Triple 
+quotes can have embedded newlines, but also \
+support \n escape sequence'''; 
+'''Single quotes inside a multiline string don't need escaping''';
+u'''Unicode triple quotes 
+should be the same, and also  \
+support \n escape sequence'''; 
+u'''Don't have to be multiline and need not escape embedded quotes (but \'can' if they want)'''; 
+u8'''€'''; 
+v'''Can use same prefixes as single'''; 
+d'''7172737475'''; 
+Q'''ABCDE''';</programlisting>
+    </sect3>
   </sect2>
 
   <sect2 id="Numeric">
@@ -263,12 +289,22 @@ MyDec2  := 3.14159265358979323846d // value of MyDec2 is the DECIMAL
             </row>
           </tbody>
         </tgroup>
-      </informaltable>Exemplo:</para>
+      </informaltable>Exemplos:</para>
 
-    <para><programlisting>IMPORT STD;
+    <para><programlisting>// Any modules referenced inside the condition must be declared outside of the condition
+// This will avoid syntax errors 
+prod_thor_dali := _Control.IPAddress.prod_thor_dali;
+  #IF(_TARGET_PLATFORM_ in ['thorlcr'])
+    Output('thor');
+    prod_thor_dali;
+  #ELSE
+    Output('not thor');
+  #END
+
+//Second example
+IMPORT STD;
   STRING14 fGetDateTimeString() :=
-  #IF(__ECL_VERSION_MAJOR__ &gt; 5) or ((__ECL_VERSION_MAJOR__ = 5) 
-      AND (__ECL_VERSION_MINOR__ &gt;= 2))
+  #IF(__ECL_VERSION_MAJOR__ &gt; 5) or ((__ECL_VERSION_MAJOR__ = 5) AND (__ECL_VERSION_MINOR__ &gt;= 2))
     STD.Date.SecondsToString(STD.Date.CurrentSeconds(true), '%Y%m%d%H%M%S');
   #ELSE
     FUNCTION
@@ -280,13 +316,59 @@ MyDec2  := 3.14159265358979323846d // value of MyDec2 is the DECIMAL
       time(&amp;timeinsecs);  
       localtime_r(&amp;timeinsecs,&amp;localt);
       char temp[15];
-      strftime(temp , 15, "%Y%m%d%H%M%S", &amp;localt); 
-      // Formats the localtime to YYYYMMDDhhmmss 
+      strftime(temp , 15, "%Y%m%d%H%M%S", &amp;localt); // Formats the localtime to YYYYMMDDhhmmss 
       strncpy(__result, temp, 14);
       ENDC++;
       RETURN fGetDimeTime();
     END;
   #END;
+
+// Example using __CONTAINERIZED__
+over := 'overwrite=1 ';
+repl := 'replicate=1 ';
+action  := 'action=spray ';
+srcplane :='srcplane=mydropzone ';
+srcfile := 'srcfile=originalperson ';
+dstname:='dstname=JD::originalperson ' ;
+//dstcluster:= 'dstcluster=data '; // for containerized
+//dstcluster:= 'dstcluster=mythor '; // for bare-metal
+dstcluster := IF(__CONTAINERIZED__, 'dstcluster=data ','dstcluster=mythor '); 
+fmt:= 'format=fixed ';
+recsize:='recordsize=124 ';
+cmd := over + repl + action + srcplane + srcfile + dstname 
+       + dstcluster + fmt + recsize;
+STD.File.DfuPlusExec(cmd);
 </programlisting></para>
+
+    <para><emphasis role="bold">Expressões Runtime</emphasis></para>
+
+    <para>As seguintes constantes do sistema <indexterm>
+        <primary>runtime</primary>
+      </indexterm>são avaliados em tempo de execução. Tecnicamente, estes são
+    tempos de execução expressões, não constantes. Portanto, eles não podem
+    ser usados em condições condicionais. código que requer uma constante.
+    <indexterm>
+        <primary>expressões runtime</primary>
+      </indexterm></para>
+
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec colwidth="150pt"/>
+
+          <colspec/>
+
+          <tbody>
+            <row>
+              <entry><emphasis> __PLATFORM__<indexterm>
+                  <primary>__PLATFORM__</primary>
+                </indexterm></emphasis></entry>
+
+              <entry>Uma STRING que representa o tipo de mecanismo onde o a
+              consulta está sendo executada. Os valores possíveis são:
+              'roxie', 'hthor' ou 'thorlcr'.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
   </sect2>
 </sect1>

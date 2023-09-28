@@ -49,9 +49,14 @@
 
   <para>Exemplo:</para>
 
-  <programlisting>g1 := GETENV('namesTable');
+  <programlisting lang="ECL" role="runnable">g1 := GETENV('namesTable');
 g2 := GETENV('myPort','25');
 
+OUTPUT(GETENV('HPCC_DEPLOYMENT', 'unknown'));
 OUTPUT(g1);
+OUTPUT(g2);
 </programlisting>
+
+  <para>Veja também: <link linkend="EnvironmentVariables">Variáveis de
+  Ambiente</link></para>
 </sect1>

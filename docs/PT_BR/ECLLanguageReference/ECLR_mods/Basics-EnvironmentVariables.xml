@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="EnvironmentVariables">
+  <title>Variáveis de Ambiente</title>
+
+  <para>Variáveis de ambiente armazenam dados sobre a plataforma atual
+  ambiente. Você pode recuperar o valor de uma variável de ambiente usando o
+  função integrada GETENV().</para>
+
+  <sect2>
+    <title>HPCC_DEPLOYMENT</title>
+
+    <para>Em uma implantação do Kubernetes, essa variável é preenchida
+    automaticamente com o nome do gráfico Helm. Por exemplo, se implantado
+    usando:</para>
+
+    <para><programlisting>helm install myenv1 hpcc/hpcc</programlisting></para>
+
+    <para>então a variável HPCC_DEPLOYMENT conterá o valor: meuenv1.</para>
+
+    <para>Para um ambiente bare-metal, esse valor pode ser definido em
+    Environment.conf, adicionando:</para>
+
+    <para><programlisting>deploymentName=myenv1</programlisting></para>
+
+    <para>Você pode recuperar esse valor usando:</para>
+
+    <para><programlisting>OUTPUT(GETENV('HPCC_DEPLOYMENT', 'unknown'));</programlisting></para>
+
+    <para>Veja também: <link linkend="GETENV">GETENV</link></para>
+  </sect2>
+</sect1>

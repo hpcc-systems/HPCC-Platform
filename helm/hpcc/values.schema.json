@@ -1740,16 +1740,6 @@
           "minimum": 0,
           "description": "Timeout (in ms) before high priority requests are resent to agents"
         },
-        "httpCallerIdHeader": { 
-          "type": "string",
-          "default": "HPCC-Caller-Id",
-          "description": "HTTP Header field to use for sending and receiving CallerId"
-        },
-        "httpGlobalIdHeader": { 
-          "type": "string",
-          "default": "HPCC-Global-Id",
-          "description": "HTTP Header field to use for sending and receiving GlobalId"
-        },
         "ignoreOrphans": { 
           "type": "boolean",
           "default": true,

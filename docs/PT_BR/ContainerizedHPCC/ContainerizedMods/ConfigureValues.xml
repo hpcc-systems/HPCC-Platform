@@ -21,24 +21,24 @@
     comunidade, aproveitando os recursos do contêiner sem sacrificar o
     desempenho.</para>
 
-    <para>Toda a configuração do HPCC Systems no espaço do contêiner é
-    governada por um único arquivo, um arquivo
-    <emphasis>values.yaml</emphasis> e seu arquivo de esquema
-    associado.</para>
+    <para>Toda a configuração do HPCC Systems no contêiner é gerida por um
+    único arquivo, um arquivo <emphasis>values.yaml</emphasis> e associado ao
+    schema (<emphasis>values-schema.json</emphasis>) file.</para>
 
     <sect2 id="WhatIsValues.Yaml">
       <title>O <emphasis>values.yaml</emphasis> e como é utilizado</title>
 
-      <para>O arquivo <emphasis>values.yaml</emphasis> são os valores de
-      configuração fornecidos para um chart do Helm. O arquivo
-      <emphasis>values.yaml</emphasis> é usado pelo chart do Helm para
-      controlar como o HPCC Systems é implantado na nuvem. Esse arquivo de
-      valores é usado para configurar e obter uma instância do HPCC Systems em
-      execução no Kubernetes. O arquivo<emphasis> values.yaml
-      </emphasis>define tudo o que acontece para configurar e/ou definir seu
-      sistema para uma implantação em contêiner. Você deve usar o arquivo de
-      valores fornecido como base para modelar as personalizações específicas
-      para sua implantação de acordo com seus requisitos.</para>
+      <para>O arquivo de estoque <emphasis>values.yaml</emphasis>, fornecido
+      no repositório HPCC Systems, são os valores de configuração fornecidos
+      para o Helm chart "hpcc". O arquivo <emphasis>values.yaml</emphasis> é
+      usado pelo Helm chart para controlar como HPCC systems é implantado na
+      nuvem. Este arquivo <emphasis>values.yaml</emphasis> é um único arquivo
+      usado para configurar e obter uma instância do HPCC Systems em execução
+      no Kubernetes. O arquivo <emphasis>values.yaml</emphasis> define tudo o
+      que acontece para configurar e/ou definir seu sistema para implantação
+      em contêiner. Você deve usar o arquivo de valores fornecido como base
+      para personalizações da modelagem do seus requisitos para sua
+      implantação específica.</para>
 
       <para>O arquivo <emphasis>values.yaml</emphasis> do HPCC Systems pode
       ser encontrado no repositório github do HPCC Systems. Para usar o chart
@@ -122,7 +122,7 @@
   </sect1>
 
   <sect1 id="TheValuesYaml_FileAndRelated" role="nobrk">
-    <title>Componentes HPCC Systems no Arquivo
+    <title>Componentes HPCC Systems e o Arquivo
     <emphasis>values.yaml</emphasis></title>
 
     <para>Os chart do Helm do HPCC Systems são enviados com valores de
@@ -186,7 +186,7 @@
         pode ter várias definições de "roxieservice". (ver esquema).</para>
       </sect3>
 
-      <sect3 id="DALI_ValueYAML">
+      <sect3 id="DALI_ValueYAML" role="brk">
         <title>Dali</title>
 
         <para>Ao configurar o Dali, que também possui uma seção de recursos,
@@ -202,8 +202,8 @@
         <title>Componentes: dafilesvrs, dfuserver</title>
 
         <para>Os componentes do HPCC Systems de dafilesvrs, eclccservers,
-        dfuserver, são declarados como listas no yaml, assim como o ECL
-        Agent.</para>
+        dfuserver, são declarados como listas no arquivo YAML, assim como o
+        ECL Agent.</para>
 
         <para>Considere o dfuserver que está nos
         <emphasis>values.yaml</emphasis> entregues do HPCC Systems
@@ -893,42 +893,48 @@
         <title>Secrets</title>
 
         <para>A seção Secrets contém um conjunto de categorias, cada uma
-        contendo uma lista de secrets. A seção Secrets é onde obter
-        informações no sistema se você não as quiser na fonte. Como código
-        incorporado, você pode definir isso nas seções de sinal de código. Se
-        você tiver informações que não deseja que sejam públicas, mas precisa
-        executá-las, poderá usar segredos.</para>
+        contendo uma lista de secrets. A seção Secrects é o local onde é
+        possível obter informações no sistema, caso não as queira na fonte.
+        Tal como código embarcado, você pode definir isso nas seções de sign
+        do código. Se você tiver informações que não deseja publicar, mas
+        precisa executá-las, poderá usar secrets. Existe uma categoria chamada
+        "eclUser", onde você colocaria o conteúdo que deseja ler diretamente
+        do código ECL. Outras categorias de secrects, incluindo a categoria
+        "ecl", são lidas internamente pelos componentes do sistema e não
+        expostas diretamente ao código ECL.</para>
       </sect3>
 
       <sect3>
         <title>Vaults</title>
 
-        <para>Vaults é outra maneira de fazer Secrets. A seção de vaults
-        espelha a seção secrets, mas aproveita o HashiCorp Vault para o
-        armazenamento de secrets. Há uma categoria adicional para vaults
-        chamada "ecl-user". A intenção dos secrets do vaults do usuário ecl é
-        ser legível diretamente do código ECL. Outras categorias vaults são
-        lidas internamente pelos componentes do sistema e não expostas
-        diretamente ao código ECL.</para>
+        <para>Vaults é outra maneira de esconder informações. A seção de
+        Vaults espelha a seção Secrects, mas aproveita
+        <emphasis>HashiCorpVault</emphasis> para o armazenamento dos secrects.
+        Existe uma categoria para vaults chamada "eclUser". A intenção da
+        categoria de vault eclUser é ser legível diretamente do código ECL.
+        Adicione apenas configurações de vault à categoria "eclUser" que você
+        deseja que os usuários ECL possam acessar. Outras categorias de vault,
+        incluindo a categoria "ecl", são lidas internamente pelos componentes
+        do sistema e não expostas diretamente ao código ECL.</para>
       </sect3>
     </sect2>
 
     <sect2>
-      <title>Visibilidades</title>
+      <title>Visibilities</title>
 
-      <para>A seção de visibilidades pode ser usada para definir rótulos,
+      <para>A seção Visibilities pode ser usada para definir rótulos,
       anotações e tipos de serviço para qualquer serviço com a visibilidade
       especificada.</para>
     </sect2>
 
     <sect2>
-      <title>Réplicas e Resources</title>
+      <title>Replicas e Resources</title>
 
       <para>Outros valores dignos de nota nos charts que têm relação com a
       instalação e configuração do HPCC Systems.</para>
 
       <sect3 id="REPLICAS_">
-        <title>Réplicas</title>
+        <title>Replicas</title>
 
         <para>replicas: define quantos nós de réplica surgem, quantos pods são
         executados para equilibrar uma carga. Para ilustrar, se você tiver um
@@ -937,7 +943,7 @@
       </sect3>
 
       <sect3 id="RESOURCES_ValuesYAML">
-        <title>Recursos</title>
+        <title>Resources</title>
 
         <para>A maioria dos componentes tem uma seção de recursos que define
         quantos recursos são atribuídos a esse componente. Nos arquivos de
@@ -965,7 +971,7 @@
       </sect3>
 
       <sect3 id="TAINTS_TOLERATIONS_PLACEMENTS">
-        <title>Taints, Tolerations, e placements</title>
+        <title>Taints, Tolerations e Placements</title>
 
         <para>Esta é uma consideração importante para sistemas em contêineres.
         Taints e Tolerations são tipos de restrições de nó do Kubernetes
@@ -1055,40 +1061,74 @@
           sejam colocados nos nós apropriados.</para>
         </sect4>
       </sect3>
+
+      <sect3 id="ENV_values_yaml">
+        <title>Environment Values</title>
+
+        <para>Você pode definir variáveis de ambiente em um arquivo YAML. Os
+        valores do ambiente são definidos na parte <emphasis>global.env
+        </emphasis> do arquivo HPCC Systems values.yaml fornecido. Esses
+        valores são especificados como uma lista de pares de valor de nome
+        conforme ilustrado abaixo.</para>
+
+        <programlisting>global:
+  env:
+  - name: SMTPserver 
+    value: mysmtpserver</programlisting>
+
+        <para>A seção global.env do arquivo values.yaml fornecido adiciona
+        variáveis de ambiente padrão para todos os componentes. Você também
+        pode especificar variáveis de ambiente para os componentes
+        individuais. Consulte o schema para definir esse valor para
+        componentes individuais.</para>
+
+        <para>Para adicionar valores de ambiente, você pode inseri-los em seu
+        arquivo YAML de configuração de personalização ao implantar seu HPCC
+        Systems em contêineres.</para>
+      </sect3>
     </sect2>
   </sect1>
 
   <sect1 id="MoreHelmANDYAML" role="nobrk">
-    <title>Mais Helm e Yaml</title>
+    <title>Básico sobre Helm e Yaml</title>
 
-    <para>Esta seção destina-se a fornecer algumas informações úteis para
-    começar com uma implantação em contêiner. Existem vários recursos para
-    usar arquivos Kubernetes, Helm e Yaml. Anteriormente, abordamos o arquivo
-    <emphasis>values.yaml</emphasis> e o arquivo values-schema.json. Esta
-    seção expande alguns desses conceitos e como eles podem ser aplicados ao
-    usar a versão em contêiner da plataforma HPCC Systems. Para obter mais
-    informações sobre como usar arquivos Kubernetes, Helm ou YAML, ou para
-    implantações de nuvem ou contêiner, consulte a respectiva
+    <para>Esta seção destina-se a fornecer algumas informações básicas para
+    ajudá-lo a começar a implantação em contêineres do HPCC Systems. Existem
+    vários recursos disponíveis para aprender sobre arquivos Kubernetes, Helm
+    e YAML. Para obter mais informações sobre como usar essas ferramentas ou
+    para implantações em nuvem ou contêiner, consulte a respectiva
     documentação.</para>
+
+    <para>In the previous section, we touched on the
+    <emphasis>values.yaml</emphasis> file and the
+    <emphasis>values-schema.json</emphasis> file. This section expands on some
+    of those concepts and how they might be applied when using the
+    containerized version of the HPCC Systems platform.</para>
+
+    <para>Anteriormente, abordamos o arquivo <emphasis>values.yaml</emphasis>
+    e o arquivo values-schema.json. Esta seção expande alguns desses conceitos
+    e como eles podem ser aplicados ao usar a versão em contêiner da
+    plataforma HPCC Systems.</para>
 
     <sect2 id="TheValuesYamlFileStruct">
       <title>Estrutura do arquivo <emphasis>values.yaml</emphasis></title>
 
-      <para>O arquivo <emphasis>values.yaml</emphasis> é um arquivo yaml. Yaml
-      é uma linguagem de serialização de dados frequentemente usada como
-      formato para arquivos de configuração. A construção que compõe a maior
-      parte de um arquivo yaml é o par chave-valor, às vezes chamado de hash
-      ou dicionário. A construção do par chave-valor consiste em uma chave que
-      aponta para algum(s) valor(es). Os valores podem ser strings, números,
-      booleanos, inteiros, arrays ou dicionários e listas. Esses valores são
-      definidos pelo esquema.</para>
+      <para>O arquivo <emphasis>values.yaml</emphasis> é um arquivo YAML que é
+      um formato frequentemente usado para arquivos de configuração. A
+      construção que compõe a maior parte de um arquivo YAML é o par
+      key-value, às vezes chamado de dicionário. A construção do par key-value
+      consiste em uma chave que aponta para alguns valores. Esses valores são
+      definidos pelo schema.</para>
 
-      <para>Em arquivos yaml, o recuo é usado para representar a estrutura e o
-      aninhamento do documento. Espaços à esquerda são significativos e
-      tabulações não são permitidas.</para>
+      <para>Nesses arquivos de configuração, o recuo usado para representar o
+      relacionamento da estrutura do documento é muito importante. Os espaços
+      iniciais são significativos e as tabulações não são permitidas.</para>
+
+      <para>Arquivos YAML são criados principalmente para dois tipos de
+      elementos: dictionários e listas.</para>
 
       <sect3 id="YAML_Dictionary">
-        <title>Dicionário</title>
+        <title>Dicitionary</title>
 
         <para>Dicionários são coleções de mapeamentos de valores-chave. Todas
         as chaves diferenciam maiúsculas de minúsculas e, como mencionamos
@@ -1096,8 +1136,7 @@
         seguidas por dois pontos (:) e um espaço. Os dicionários também podem
         ser aninhados.</para>
 
-        <para>Dictionary is a key: value, followed by another key: value:, for
-        example:</para>
+        <para>Por examplo:</para>
 
         <programlisting>    logging: 
        detail: 80 
@@ -1112,12 +1151,9 @@
 
         <para><programlisting>helm install myhpcc hpcc/hpcc -f myoverrides.yaml</programlisting></para>
 
-        <para>Observe que você pode passar quantos arquivos yaml desejar, eles
-        serão mesclados na ordem em que aparecem na linha de comando.</para>
-
         <para>Quaisquer valores pré-existentes em um dicionário que não sejam
         substituídos continuarão presentes no resultado mesclado. No entanto,
-        você pode excluir o conteúdo de um dicionário definindo-o como
+        você pode sobrepor o conteúdo de um dicionário definindo-o como
         nulo.</para>
       </sect3>
 
@@ -1125,10 +1161,10 @@
         <title>Listas</title>
 
         <para>Listas são grupos de elementos começando no mesmo nível de recuo
-        começando com um - (um traço e um espaço). Cada elemento da lista é
-        recuado no mesmo nível e começa com um traço e um espaço. As listas
+        começando com um - (um hifen e um espaço). Cada elemento da lista é
+        recuado no mesmo nível e começa com um hífen e um espaço. As listas
         também podem ser aninhadas e podem ser listas de dicionários, que por
-        sua vez também podem ter propriedades de lista.</para>
+        sua vez também podem ter propriedades de uma lista.</para>
 
         <para>Um exemplo de uma lista de dicionários, com
         placement.tolerations como uma lista aninhada.:</para>
@@ -1140,87 +1176,42 @@
     - key: "kubernetes.azure.com/scalesetpriority"
 </programlisting></para>
 
-        <para>Uma chave é denotada usando um sinal de menos, que é um item de
-        entrada na lista, que é um dicionário com atributos aninhados. Em
-        seguida, o próximo sinal de menos (no mesmo nível de recuo) é a
-        próxima entrada nessa lista.</para>
+        <para>A entrada da lista aqui é indicada usando o hífen, que é um item
+        de entrada na lista, que é um dicionário com atributos aninhados. Em
+        seguida, o próximo hífen (no mesmo nível de indentação) é a próxima
+        entrada nessa lista. Uma lista pode ser uma lista de elementos de
+        valor simples ou os próprios elementos podem ser listas ou
+        dicionários.</para>
       </sect3>
-    </sect2>
 
-    <sect2 id="Global_Image">
-      <title>Global</title>
+      <sect3 id="sections_OfHPCCValues">
+        <title>Seções do arquivo Values.yaml</title>
 
-      <para>A primeira seção do arquivo <emphasis>values.yaml</emphasis>
-      descreve os valores globais. O global.image.root é uma string que indica
-      qual versão extrair. Global se aplica geralmente a tudo.</para>
+        <para>Primeira seção do arquivo <emphasis>values.yaml</emphasis>
+        descreve valores globais. Global normalmente se aplica a tudo.</para>
 
-      <programlisting># Default values for hpcc.
+        <para><programlisting># Default values for hpcc.
 
 global:
   # Settings in the global section apply to all HPCC components in all subcharts
 
-  image:
-    ## It is recommended to name a specific version rather than latest, for any non-trivial 
-    ## For best results, the helm chart version and platform version should match - default if version
-    ## not specified. Do not override without good reason as undefined behavior may result. 
-    ## version: x.y.z
-    root: "hpccsystems"    # change this to pull from somewhere other than DockerHub hpccsystems
-    pullPolicy: IfNotPresent
+</programlisting>No trecho de arquivo <emphasis>values.yaml</emphasis>
+        fornecido pelo HPCC Systems, <emphasis>global:</emphasis>(acima), é o
+        dicionário de nível superior. Conforme observado nos comentários, as
+        configurações na seção global se aplicam a todos os componentes do
+        HPCC Systems. Observe no nível de indentação que os outros valores
+        estão aninhados nesse dicionário global.</para>
 
-  # logging sets the default logging information for all components. Can be overridden locally
-  logging:
-    detail: 80
-</programlisting>
+        <para>Os itens definidos na seção global são compartilhados entre
+        todos os componentes.</para>
 
-      <para>No trecho do arquivo <emphasis>value.yaml</emphasis> entregue do
-      HPCC Systems (acima) <emphasis>global</emphasis>: é um dicionário de
-      nível superior. Conforme observado nos comentários, as configurações na
-      seção global se aplicam a todos os componentes do HPCC Systems. Observe
-      a partir do recuo que os outros valores estão aninhados nesse dicionário
-      global.</para>
-
-      <sect3>
-        <title>Imagem</title>
-
-        <para>Em nosso arquivo <emphasis>values.yaml</emphasis> entregue, o
-        valor imediatamente após global: é <emphasis>image</emphasis>: você
-        deve usar uma versão nomeada específica em vez de usar o "latest",
-        como também indicado nos comentários no arquivo de valores. A versão
-        do chart do Helm e a versão da plataforma devem corresponder.
-        Idealmente, você não deveria ter que definir o image.version. Por
-        padrão, ele corresponderá à versão do chart do helm.</para>
-      </sect3>
-
-      <sect3 id="YAMLGlobal_RootValue">
-        <title>O valor root</title>
-
-        <para>A entrada de nível de definição/dicionário global é root. Por
-        exemplo</para>
-
-        <para><programlisting>  root: "hpccsystems" # change to pull your images somewhere other than DockerHub hpccsystems
-</programlisting></para>
-
-        <para>No arquivo <emphasis>values.yaml</emphasis>, isso usa nosso
-        repositório específico do HPCC Systems. É possível que você queira
-        extrair de algum outro repositório, então é onde definir esse
-        valor.</para>
-
-        <para><emphasis role="bold">root:</emphasis> SomeValue</para>
-      </sect3>
-
-      <sect3 id="Global_Chart_Values">
-        <title>Outros valores de chart</title>
-
-        <para>Itens definidos na seção global são compartilhados entre
-        componentes.</para>
-
-        <para>Examplos de valores global são seções de armazenamento e
-        segurança.</para>
+        <para>Alguns exemplos de valores globais no arquivo values.yaml
+        fornecido são as seções de armazenamento e segurança.</para>
 
         <programlisting>storage:
   planes:</programlisting>
 
-        <para>e também</para>
+        <para>and also</para>
 
         <para><programlisting>security:
   eclSecurity:
@@ -1231,13 +1222,14 @@ global:
     embedded: "allow"
     pipe:  "allow"
     extern: "allow"
-    datafile: "allow"</programlisting>Nos exemplos acima, storage: e security:
-        são valores globais do chart.</para>
+    datafile: "allow"</programlisting>No exemplo acima,
+        <emphasis>storage:</emphasis> e <emphasis>security:</emphasis> são
+        valores globais.</para>
       </sect3>
     </sect2>
 
-    <sect2 id="YAML_Usage">
-      <title>Usage</title>
+    <sect2 id="HPCCSystems_YAML_Usage">
+      <title>Uso do arquivo HPCC Systems Values.yaml</title>
 
       <para>O arquivo <emphasis>values.yaml</emphasis> do HPCC Systems é usado
       pelo chart Helm para controlar como o HPCC Systems é implantado. O
@@ -1246,72 +1238,35 @@ global:
       <emphasis>values.yaml</emphasis> destina-se a ser um guia de instalação
       de demonstração de início rápido que não é apropriado para uso prático
       não trivial. Você deve personalizar sua implantação para uma que seja
-      mais adequada às suas necessidades específicas. Para personalizar sua
-      implantação, substitua os valores de estoque no arquivo
-      <emphasis>values.yaml</emphasis>, como no exemplo a seguir:</para>
-
-      <programlisting>helm install myhpcc hpcc/hpcc -f myoverrides.yaml</programlisting>
-
-      <para>O exemplo acima usa o arquivo
-      <emphasis>myoverrides.yaml</emphasis> por meio do parâmetro -f, que
-      substitui quaisquer valores especificados no arquivo
-      <emphasis>values.yaml</emphasis> do HPCC Systems. É importante observar
-      que isso mescla as substituições de myoverrides.yaml. Qualquer coisa que
-      esteja nos valores no próprio chart do helm que não seja substituído
-      pelos valores passados permanecerá ativo. Quando houver 2 arquivos yaml
-      como este exemplo (as pilhas <emphasis>values.yaml</emphasis> e
-      myoverrides.yaml), se houver uma entrada correspondente (qualquer coisa
-      que não seja um dicionário), o valor do segundo arquivo substituirá o
-      primeiro. Os dicionários, no entanto, sempre serão mesclados.</para>
+      mais adequada às suas necessidades específicas.</para>
 
       <para>Mais informações sobre implantações personalizadas são abordadas
-      em outras seções, bem como na documentação do Kubernetes Helm. Consultar
-      a documentação do Helm fornece detalhes completos para todos os aspectos
-      do uso do gráfico do Helm, e não apenas para alguns casos selecionados
-      descritos.</para>
-
-      <sect3 id="SampYaml-UseCase">
-        <title>Caso de Uso</title>
-
-        <para>Por exemplo, você deseja atualizar os detalhes do log. Você pode
-        ter outro arquivo yaml para atualizar esse valor ou qualquer outro
-        valor de lista usando um arquivo yaml de substituição.</para>
-
-        <para>Como veremos mais adiante, os componentes são definidos como
-        listas, portanto, qualquer definição de um componente em um arquivo de
-        valores do usuário substituirá todas as instâncias do componente no
-        chart padrão. Você pode remover todos os componentes definidos em uma
-        lista, substituindo a lista por uma lista nula, por exemplo,</para>
-
-        <programlisting> thor: []</programlisting>
-
-        <para>Isso removerá todo os componentes Thor.</para>
-
-        <para>Outras opções (por exemplo, configurar os custos para cpu ou
-        acesso a arquivos) são implementadas como um dicionário, de modo que
-        as opções podem ser definidas seletivamente em um arquivo de valores
-        de usuários, e as outras opções serão mantidas.</para>
-      </sect3>
+      nas seções anteriores, bem como na documentação do Kubernetes e do
+      Helm.</para>
 
       <sect3 id="merging_AND_Overrides">
         <title>Mesclando e Sobrescrevendo</title>
 
-        <para>Tendo vários arquivos yaml, como um para registro, outro para
-        armazenamento, outro para segredos e assim por diante, os arquivos
-        podem estar no controle de versão. Eles podem ser versionados,
-        verificados, etc. e têm o benefício de apenas definir/alterar a área
-        específica necessária, garantindo que todas as áreas não alteradas
-        sejam deixadas intocadas. A regra aqui para manter em mente onde
-        vários arquivos yaml são aplicados, os mais recentes sempre
-        substituirão os valores dos anteriores. Eles são mesclados em
-        sequência.</para>
+        <para>Tendo vários arquivos YAML, como um para registro, outro para
+        armazenamento, outro para secrects e assim por diante, permite uma
+        configuração granular. Esses arquivos de configuração podem estar
+        todos sob controle de versão. Podem ser versionados, verificados, etc.
+        e têm o benefício de apenas definir/alterar a área específica
+        necessária, garantindo que todas as áreas não alteradas sejam deixadas
+        intocadas.</para>
+
+        <para>A regra aqui é ter em mente onde vários arquivos YAML são
+        aplicados, os últimos sempre substituirão os valores dos anteriores.
+        Eles são sempre mesclados em sequência. Os valores são sempre
+        mesclados na ordem em que são fornecidos na linha de comando do
+        Helm.</para>
 
         <para>Outro ponto a considerar, onde existe um dicionário global como
         root: e seu valor é redefinido no 2º arquivo (como um dicionário) ele
         não seria sobrescrito. Você não pode simplesmente substituir um
         dicionário. Você pode redefinir um dicionário e defini-lo como nulo
         (como o exemplo Thor na seção anterior), o que efetivamente o
-        eliminará.</para>
+        eliminará o primeiro.</para>
 
         <para><emphasis role="bold">ATENÇÃO</emphasis>: Se você tivesse uma
         definição global (como storage.planes) e a mesclasse onde ela fosse
@@ -1327,7 +1282,7 @@ global:
           <title>Geralmente aplicável</title>
 
           <para>Esses itens são geralmente aplicáveis para nossos arquivos
-          yaml do HPCC Systems Helm.</para>
+          YALM do HPCC Systems Helm.</para>
 
           <itemizedlist>
             <listitem>
@@ -1343,36 +1298,44 @@ global:
             </listitem>
 
             <listitem>
-              <para>yaml são mesclados em sequência.</para>
+              <para>YAML são mesclados em sequência.</para>
             </listitem>
           </itemizedlist>
 
           <para>Geralmente em relação aos componentes do HPCC Systems, os
-          componentes são listas. Como dito anteriormente, se você tiver uma
-          lista de valores vazia [ ], isso invalidaria essa lista em outro
+          componentes primeiramente são listas. Se você tiver uma lista de
+          valores vazia [ ], isso invalidaria essa lista em outro
           lugar.</para>
         </sect4>
       </sect3>
     </sect2>
 
     <sect2 id="Additional_YMLUSage">
-      <title>Uso adicional</title>
+      <title>Additional Usage</title>
 
-      <para>Os componentes são adicionados ou modificados passando
-      sobreposições. Os valores do chart são substituídos apenas, passando no
-      arquivo de valores de substituição usando -f, (para arquivo de
-      substituição) ou via --set, onde você pode substituir um único valor. Os
-      valores passados são sempre mesclados na ordem em que são fornecidos na
-      linha de comando do helm.</para>
+      <para>Os componentes do HPCC Systems são adicionados ou modificados
+      passando valores de substituição. Os valores do gráfico do Helm são
+      substituídos, seja passando o(s) arquivo(s) de valores de usando -f,
+      (para o arquivo de substituição) ou via --set onde você pode substituir
+      um único valor. Os valores passados são sempre mesclados na mesma ordem
+      em que são fornecidos na linha de comando do helm.</para>
 
       <para>Por exemplo, você pode</para>
 
       <para><programlisting>helm install myhpcc hpcc/hpcc -f myoverrides.yaml</programlisting>Para
-      sobrepor quaisquer valores entregues no
-      <emphasis>values.yaml</emphasis>. Ou você pode usar --set conforme o
-      exemplo:</para>
+      sobrepor quaisquer valores entregues no <emphasis>values.yaml</emphasis>
+      passando por valores definidos em
+      <emphasis>myoverrides.yaml</emphasis></para>
+
+      <para>Você também pode utilizar --set conforme o exemplo a
+      seguir:</para>
 
       <programlisting>helm install myhpcc hpcc/hpcc --set storage.daliStorage.plane=dali-plane</programlisting>
+
+      <para>Para sobrepor somente um arquivo em específico.</para>
+
+      <para>É até possível combinar substituições de arquivo e valor único,
+      por exemplo:</para>
 
       <para>Para substituir apenas o valor global.image.version. Novamente, a
       ordem em que os valores são mesclados é a mesma em que são emitidos na
@@ -1380,28 +1343,19 @@ global:
 
       <programlisting>helm install myhpcc hpcc/hpcc -f myoverrides.yaml --set storage.daliStorage.plane=dali-plane</programlisting>
 
-      <para>No exemplo anterior, a flag --set no comando acima substitui o
-      valor de storage.daliStorage.plane (if) definido em myoverrides.yaml,
-      que substitui qualquer configuração de arquivo
-      <emphasis>values.yaml</emphasis> e resulta em defini-lo como dali-plane.
-      Portanto, independentemente do valor no arquivo yaml para essa
-      configuração específica, a ordem especificada na linha de comando o
-      substitui na ordem fornecida na linha de comando.</para>
+      <para>No exemplo anterior, a flag --set substitui o valor para
+      storage.daliStorage.plane (if) definido no
+      <emphasis>myoverrides.yaml</emphasis>, que substituiria qualquer
+      configuração do arquivo <emphasis>values.yaml</emphasis> e resultaria na
+      configuração de seu valor como <emphasis>dali-plane</emphasis>.</para>
 
-      <sect3 id="using_the_set_flag">
-        <title>Opções de linha de comando</title>
+      <para>Se a flag <emphasis>--set</emphasis> for usada na instalação do
+      helm ou na atualização do helm, esses valores serão simplesmente
+      convertidos em YAML no lado do cliente.</para>
 
-        <para>Se a flag <emphasis>--set</emphasis> for usada na instalação do
-        helm ou na atualização do helm, esses valores serão simplesmente
-        convertidos em YAML no lado do cliente.</para>
-
-        <para>Você pode especificar a flag -f várias vezes. A prioridade será
-        dada ao último arquivo (mais à direita) especificado.<programlisting>$ helm install myhpcc hpcc/hpcc -f myvalues.yaml -f override.yaml</programlisting></para>
-
-        <para>Para o exemplo acima, se myvalues.yaml e override.yaml
-        contivessem uma chave chamada 'Test', o valor definido em
-        override.yaml teria precedência.</para>
-      </sect3>
+      <para>Você pode especificar as flags de substituição várias vezes. A
+      prioridade será dada ao último arquivo (mais à direita)
+      especificado.</para>
     </sect2>
   </sect1>
 </chapter>

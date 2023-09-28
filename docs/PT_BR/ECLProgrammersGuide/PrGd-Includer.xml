@@ -193,4 +193,12 @@
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
   </chapter>
+
+  <chapter id="SourceCodeWithGit">
+    <title>Managing Source Code</title>
+
+    <xi:include href="ECLProgrammersGuide/PRG_Mods/PrGit_Source_Code.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+  </chapter>
 </book>

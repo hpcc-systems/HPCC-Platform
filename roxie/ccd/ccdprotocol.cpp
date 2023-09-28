@@ -1687,27 +1687,19 @@ private:
         return id;
     }
 
-    const char *queryRequestGlobalIdHeader(HttpHelper &httpHelper, IContextLogger &logctx, StringAttr &headerused)
+    const char *queryRequestGlobalIdHeader(HttpHelper &httpHelper, IContextLogger &logctx)
     {
-        const char *id = queryRequestIdHeader(httpHelper, logctx.queryGlobalIdHttpHeaderName(), headerused);
+        const char *id = httpHelper.queryRequestHeader(kGlobalIdHttpHeaderName);
         if (!id || !*id)
-        {
-            id = queryRequestIdHeader(httpHelper, "Global-Id", headerused);
-            if (!id || !*id)
-                id = queryRequestIdHeader(httpHelper, "HPCC-Global-Id", headerused);
-        }
+            id = httpHelper.queryRequestHeader(kLegacyGlobalIdHttpHeaderName);        // Backward compatibility - passed on as global-id
         return id;
     }
 
-    const char *queryRequestCallerIdHeader(HttpHelper &httpHelper, IContextLogger &logctx, StringAttr &headerused)
+    const char *queryRequestCallerIdHeader(HttpHelper &httpHelper, IContextLogger &logctxheaderused)
     {
-        const char *id = queryRequestIdHeader(httpHelper, logctx.queryCallerIdHttpHeaderName(), headerused);
+        const char *id = httpHelper.queryRequestHeader(kCallerIdHttpHeaderName);
         if (!id || !*id)
-        {
-            id = queryRequestIdHeader(httpHelper, "Caller-Id", headerused);
-            if (!id || !*id)
-                id = queryRequestIdHeader(httpHelper, "HPCC-Caller-Id", headerused);
-        }
+            id = httpHelper.queryRequestHeader(kLegacyCallerIdHttpHeaderName);        // Backward compatibility - passed on as caller-id
         return id;
     }
 
@@ -1803,15 +1795,6 @@ readAnother:
             {
                 mlResponseFmt = httpHelper.queryResponseMlFormat();
                 mlRequestFmt = httpHelper.queryRequestMlFormat();
-
-                StringAttr globalIdHeader, callerIdHeader;
-                const char *globalId = queryRequestGlobalIdHeader(httpHelper, logctx, globalIdHeader);
-                const char *callerId = queryRequestCallerIdHeader(httpHelper, logctx, callerIdHeader);
-                logctx.setHttpIdHeaderNames(globalIdHeader, callerIdHeader);
-                if (globalId && *globalId)
-                    msgctx->setTransactionId(globalId, callerId, true);  //logged and forwarded through SOAPCALL/HTTPCALL
-                else if (callerId && *callerId)
-                    msgctx->setCallerId(callerId); //may not matter, but maintain old behavior
             }
         }
 
@@ -1916,9 +1899,10 @@ readAnother:
 
                 uid = NULL;
                 sanitizeQuery(queryPT, queryName, sanitizedText, httpHelper, uid, isBlind, isDebug);
-                if (uid)
-                    msgctx->setTransactionId(uid, nullptr, false);
-                else
+
+                msgctx->startSpan(uid, httpHelper.queryRequestHeaders());
+
+                if (!uid)
                     uid = "-";
 
                 sink->checkAccess(peer, queryName, sanitizedText, isBlind);

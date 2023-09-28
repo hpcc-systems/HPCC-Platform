@@ -195,20 +195,26 @@
               <para>Selecione a aba <emphasis role="bold">Compile</emphasis>
               .</para>
 
-              <para>Os detalhes do compilador são especificados
-              automaticamente. Caso queira substituir os valores padrão,
-              marque a caixa de seleção <emphasis role="bold">Override
-              Automatic Compiler Selection</emphasis> .</para>
+              <para><emphasis role="bold">Nota:</emphasis> Você pode ter
+              várias versões do compilador e das ferramentas do cliente
+              instaladas. Isso permite que você tenha várias configurações em
+              que o compilador corresponda a cada servidor que você precisa
+              acessar. Marque a caixa de seleção <emphasis
+              role="bold">Override Automatic Compiler Selection</emphasis> e
+              especifique o Complier que deseja usar.</para>
 
-              <para><emphasis role="bold">Observação:</emphasis> Você pode ter
-              várias versões do compilador e das ferramentas cliente
-              instaladas. Isso permite ter várias configurações em que o
-              compilador corresponda a cada servidor que você precisa acessar.
-              Marque a caixa <emphasis role="bold">Override Automatic Compiler
-              Selection</emphasis> e especifique o compilador correspondente à
-              sua instância do HPCC .</para>
+              <para>Para o Compiler, geralmente é melhor deixar o sistema
+              selecionar a melhor correspondência para você. Você pode ver os
+              compiladores disponíveis na lista suspensa <emphasis
+              role="bold">Best Compiler Match</emphasis>.</para>
 
-              <para><graphic fileref="../../images/CT03a.jpg"/></para>
+              <para>Use o botão <emphasis role="bold">Scan</emphasis> para
+              atualizar a lista de compiladores disponíveis. Use o botão
+              <emphasis role="bold">Match</emphasis> para encontrar a melhor
+              correspondência.</para>
+
+              <para><graphic
+              fileref="../../images/CT03a.jpg"/><parameter/></para>
             </listitem>
 
             <listitem>
@@ -1321,6 +1327,26 @@
             </informaltable></para>
 
           <para/>
+
+          <para/>
+        </sect3>
+
+        <sect3 id="CT_ECLIDE_statusbar" role="brk">
+          <title>Status Bar</title>
+
+          <para>A barra de status exibe informações úteis sobre o arquivo
+          atual, servidor atual, compilador e destino.</para>
+
+          <para><graphic fileref="../../images/CT_statusbar.jpg"/></para>
+
+          <para/>
+
+          <para>Você pode selecionar os itens que deseja exibir clicando com o
+          botão direito do mouse na barra de status. Marque as caixas dos
+          itens que você deseja exibir.</para>
+
+          <para><graphic
+          fileref="../../images/CT_statusbarConfig.jpg"/></para>
 
           <para/>
         </sect3>

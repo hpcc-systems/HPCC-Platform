@@ -37,5 +37,12 @@ jlib_decl void waitJob(const char *componentName, const char *job, unsigned pend
 jlib_decl bool applyYaml(const char *componentName, const char *wuid, const char *job, const char *resourceType, const std::list<std::pair<std::string, std::string>> &extraParams, bool optional, bool autoCleanup);
 jlib_decl void runJob(const char *componentName, const char *wuid, const char *job, const std::list<std::pair<std::string, std::string>> &extraParams={});
 
+extern jlib_decl void runKubectlCommand(const char *title, const char *cmd, const char *input, StringBuffer *output);
+
+// return the k8s external host and port for serviceName
+extern jlib_decl std::pair<std::string, unsigned> getExternalService(const char *serviceName);
+
+extern jlib_decl std::pair<std::string, unsigned> getDafileServiceFromConfig(const char *application);
+
 
 }

@@ -48,59 +48,6 @@ namespace context     = opentelemetry::context;
 namespace nostd       = opentelemetry::nostd;
 namespace opentel_trace = opentelemetry::trace;
 
-using namespace ln_uid;
-
-/*
-* Sets global id if provided, and assign a localId
-*/
-void LogTrace::setGlobalId(const char* id)
-{
-    if (!isEmptyString(id))
-    {
-        globalId.set(id);
-        assignLocalId();
-    }
-}
-
-/*
-* Sets global id if provided, assigns new localID
-*/
-LogTrace::LogTrace(const char * globalId)
-{
-    setGlobalId(globalId);
-}
-
-LogTrace::LogTrace()
-{
-    assignLocalId();
-}
-
-const char* LogTrace::assignLocalId()
-{
-    localId.set(createUniqueIdString().c_str());
-    return localId.get();
-}
-
-const char* LogTrace::queryGlobalId() const
-{
-    return globalId.get();
-}
-
-void LogTrace::setCallerId(const char* id)
-{
-    callerId.set(id);
-}
-
-const char* LogTrace::queryCallerId() const
-{
-    return callerId.get();
-}
-
-const char* LogTrace::queryLocalId() const
-{
-    return localId.get();
-}
-
 class CHPCCHttpTextMapCarrier : public opentelemetry::context::propagation::TextMapCarrier
 {
 public:
@@ -150,32 +97,81 @@ public:
     ~CSpan()
     {
         if (span != nullptr)
-        {
-            StringBuffer out;
-            toString(out);
-            DBGLOG("Span end: (%s)", out.str());
             span->End();
-        }
+    }
+
+    virtual void beforeDispose() override
+    {
+        StringBuffer out;
+        toLog(out);
+        DBGLOG("Span end: {%s}", out.str());
+    }
+
+    const char * getSpanID() const
+    {
+        return spanID.get();
     }
 
     ISpan * createClientSpan(const char * name) override;
     ISpan * createInternalSpan(const char * name) override;
 
-    void toString(StringBuffer & out) const override
+    void toLog(StringBuffer & out) const override
     {
+        out.append(",\"Name\":\"").append(name.get()).append("\"");
+
+        if (!isEmptyString(hpccGlobalId.get()))
+            out.append(",\"GlobalID\":\"").append(hpccGlobalId.get()).append("\"");
+        if (!isEmptyString(hpccCallerId.get()))
+            out.append(",\"CallerID\":\"").append(hpccCallerId.get()).append("\"");
+        if (!isEmptyString(hpccLocalId.get()))
+            out.append(",\"LocalID\":\"").append(hpccLocalId.get()).append("\"");
+
         if (span != nullptr)
         {
-            out.append(" Name: ").append(name.get())
-            .append(" SpanID: ").append(spanID.get())
-            .append(" TraceID: ").append(traceID.get())
-            .append(" TraceFlags: ").append(traceFlags.get())
-            .append(" HPCCGlobalID: ").append(hpccGlobalId.get())
-            .append(" HPCCCallerID: ").append(hpccCallerId.get());
+            out.append(",\"SpanID\":\"").append(spanID.get()).append("\"");
+
+            out.append(",\"TraceID\":\"").append(traceID.get()).append("\"");
 
             if (localParentSpan != nullptr)
             {
-                out.append(" localParentSpan: ");
-                localParentSpan->toString(out);
+                out.append(",\"ParentSpanID\": \"");
+                out.append(localParentSpan->getSpanID());
+                out.append("\"");
+            }
+        }
+    }
+
+    virtual void toString(StringBuffer & out) const
+    {
+        toString(out, true);
+    }
+
+    virtual void toString(StringBuffer & out, bool isLeaf) const
+    {
+        out.append(",\"Name\":\"").append(name.get()).append("\"");
+        if (isLeaf)
+        {
+            if (!isEmptyString(hpccGlobalId.get()))
+                out.append(",\"HPCCGlobalID\":\"").append(hpccGlobalId.get()).append("\"");
+            if (!isEmptyString(hpccCallerId.get()))
+                out.append(",\"HPCCCallerID\":\"").append(hpccCallerId.get()).append("\"");
+        }
+
+        if (span != nullptr)
+        {
+            out.append(",\"SpanID\":\"").append(spanID.get()).append("\"");
+
+            if (isLeaf)
+            {
+                out.append(",\"TraceID\":\"").append(traceID.get()).append("\"")
+                 .append(",\"TraceFlags\":\"").append(traceFlags.get()).append("\"");
+            }
+
+            if (localParentSpan != nullptr)
+            {
+                out.append(",\"ParentSpan\":{ ");
+                localParentSpan->toString(out, false);
+                out.append(" }");
             }
         }
     };
@@ -217,10 +213,10 @@ public:
         propagator->Inject(*carrier, spanCtx);
 
         if (!isEmptyString(hpccGlobalId.get()))
-            carrier->Set(HPCCSemanticConventions::kGLOBALIDHTTPHeader, hpccGlobalId.get());
+            carrier->Set(kGlobalIdHttpHeaderName, hpccGlobalId.get());
 
         if (!isEmptyString(hpccCallerId.get()))
-            carrier->Set(HPCCSemanticConventions::kCallerIdHTTPHeader, hpccCallerId.get());
+            carrier->Set(kCallerIdHttpHeaderName, hpccCallerId.get());
 
         return true;
     }
@@ -239,11 +235,17 @@ public:
         if (ctxProps == nullptr)
             return false;
 
-        if (!isEmptyString(hpccGlobalId.get()))
-            ctxProps->setProp(HPCCSemanticConventions::kGLOBALIDHTTPHeader, hpccGlobalId.get());
+        ctxProps->setNonEmptyProp(kGlobalIdHttpHeaderName, queryGlobalId());
 
-        if (!isEmptyString(hpccCallerId.get()))
-            ctxProps->setProp(HPCCSemanticConventions::kCallerIdHTTPHeader, hpccCallerId.get());
+        if (otelFormatted)
+        {
+            //The localid is passed as the callerid for the client request....
+            ctxProps->setNonEmptyProp(kCallerIdHttpHeaderName, queryLocalId());
+        }
+        else
+        {
+            ctxProps->setNonEmptyProp(kCallerIdHttpHeaderName, queryCallerId());
+        }
 
         if (span == nullptr)
             return false;
@@ -270,16 +272,13 @@ public:
             //StringBuffer traceStateHTTPHeader;
             //traceStateHTTPHeader.append("hpcc=").append(spanID.get());
 
-            ctxProps->setProp(opentelemetry::trace::propagation::kTraceState.data(), span->GetContext().trace_state()->ToHeader().c_str());
+            ctxProps->setNonEmptyProp(opentelemetry::trace::propagation::kTraceState.data(), span->GetContext().trace_state()->ToHeader().c_str());
         }
         else
         {
-            if (!isEmptyString(traceID.get()))
-                ctxProps->setProp("traceID", traceID.get());
-            if (!isEmptyString(spanID.get()))
-                ctxProps->setProp("spanID", spanID.get());
-            if (!isEmptyString(traceFlags.get()))
-                ctxProps->setProp("traceFlags", traceFlags.get());
+            ctxProps->setNonEmptyProp("traceID", traceID.get());
+            ctxProps->setNonEmptyProp("spanID", spanID.get());
+            ctxProps->setNonEmptyProp("traceFlags", traceFlags.get());
 
             if (localParentSpan != nullptr)
             {
@@ -287,8 +286,7 @@ public:
                 localParentSpan->getSpanContext(localParentSpanCtxProps, false);
                 if (localParentSpanCtxProps)
                 {
-                    if (localParentSpanCtxProps->hasProp("spanID"))
-                        ctxProps->setProp("localParentSpanID", localParentSpanCtxProps->queryProp("spanID"));
+                    ctxProps->setNonEmptyProp("localParentSpanID", localParentSpanCtxProps->queryProp("spanID"));
                 }
             }
         }
@@ -304,9 +302,55 @@ public:
         return opentelemetry::trace::SpanContext::GetInvalid();
     }
 
+    virtual void getLogPrefix(StringBuffer & out) const override
+    {
+        const char * caller = queryCallerId();
+        const char * local = queryLocalId();
+        bool hasCaller = !isEmptyString(caller);
+        bool hasLocal = !isEmptyString(local);
+        if (hasCaller || hasLocal)
+        {
+            out.append('[');
+            if (hasCaller)
+                out.appendf("caller:%s", caller);
+
+            if (hasLocal)
+            {
+                if (hasCaller)
+                    out.append(',');
+                out.appendf("local:%s", local);
+            }
+            out.append("]");
+        }
+    }
+
     const char * queryTraceName() const
     {
         return tracerName.get();
+    }
+
+    virtual const char* queryGlobalId() const override
+    {
+        //MORE: This should probably only be stored in the server context....
+        if (localParentSpan && isEmptyString(hpccGlobalId))
+            return localParentSpan->queryGlobalId();
+        return hpccGlobalId.get();
+    }
+
+    virtual const char* queryCallerId() const override
+    {
+        //MORE: This should probably only be stored in the server context....
+        if (localParentSpan && isEmptyString(hpccCallerId))
+            return localParentSpan->queryCallerId();
+        return hpccCallerId.get();
+    }
+
+    virtual const char* queryLocalId() const override
+    {
+        //MORE: This should probably only be stored in the server context....
+        if (localParentSpan && isEmptyString(hpccLocalId))
+            return localParentSpan->queryLocalId();
+        return hpccLocalId.get();
     }
 
 protected:
@@ -316,9 +360,6 @@ protected:
         localParentSpan = parent;
         if (localParentSpan != nullptr)
             tracerName.set(parent->queryTraceName());
-        //type = spanType;
-
-       // init();
     }
 
     CSpan(const char * spanName, const char * nameOfTracer)
@@ -326,12 +367,14 @@ protected:
         name.set(spanName);
         localParentSpan = nullptr;
         tracerName.set(nameOfTracer);
-        //type = spanType;
-        
     }
 
     void init()
     {
+        bool createLocalId = !isEmptyString(hpccGlobalId);
+        if (createLocalId)
+            hpccLocalId.set(ln_uid::createUniqueIdString().c_str());
+
         auto provider = opentelemetry::trace::Provider::GetTracerProvider();
 
         //what if tracerName is empty?
@@ -347,9 +390,10 @@ protected:
             storeSpanContext();
 
             StringBuffer out;
-            toString(out);
-            DBGLOG("Span start: (%s)", out.str());
+            toLog(out);
+            DBGLOG("Span start: {%s}", out.str());
         }
+
     }
 
     void storeSpanContext()
@@ -425,6 +469,7 @@ protected:
     StringAttr spanID;
     StringAttr hpccGlobalId;
     StringAttr hpccCallerId;
+    StringAttr hpccLocalId;
 
     opentelemetry::trace::StartSpanOptions opts;
     nostd::shared_ptr<opentelemetry::trace::Span> span;
@@ -443,10 +488,16 @@ public:
         init();
     }
 
-    void toString(StringBuffer & out) const override
+    void toLog(StringBuffer & out) const override
     {
-        out.append("Type: Internal");
-        CSpan::toString(out);
+        out.append("\"Type\":\"Internal\"");
+        CSpan::toLog(out);
+    }
+
+    void toString(StringBuffer & out, bool isLeaf) const override
+    {
+        out.append("\"Type\":\"Internal\"");
+        CSpan::toString(out, isLeaf);
     }
 };
 
@@ -460,10 +511,16 @@ public:
         init();
     }
 
-    void toString(StringBuffer & out) const override
+    void toLog(StringBuffer & out) const override
     {
-        out.append("Type: Client");
-        CSpan::toString(out);
+        out.append("\"Type\":\"Client\"");
+        CSpan::toLog(out);
+    }
+
+    void toString(StringBuffer & out, bool isLeaf) const override
+    {
+        out.append("\"Type\":\"Client\"");
+        CSpan::toString(out, isLeaf);
     }
 };
 
@@ -483,29 +540,7 @@ private:
     //Remote parent is declared via http headers from client call
     opentelemetry::v1::trace::SpanContext remoteParentSpanCtx = opentelemetry::trace::SpanContext::GetInvalid();
 
-    void setSpanContext(StringArray & httpHeaders, const char kvDelineator = ':')
-    {
-        Owned<IProperties> contextProps = createProperties();
-        ForEachItemIn(currentHeaderIndex, httpHeaders)
-        {
-            const char* httpHeader = httpHeaders.item(currentHeaderIndex);
-            if(!httpHeader)
-                continue;
-
-            const char* delineator = strchr(httpHeader, kvDelineator);
-            if(delineator == nullptr)
-                continue;
-
-            StringBuffer key;
-            key.append(delineator - httpHeader, httpHeader);
-
-            contextProps->setProp(key, delineator + 1);
-        }
-
-        setSpanContext(contextProps);
-    }
-
-    void setSpanContext(const IProperties * httpHeaders)
+    void setSpanContext(const IProperties * httpHeaders, SpanFlags flags)
     {
         if (httpHeaders)
         {
@@ -514,17 +549,21 @@ private:
             //if (key == opentel_trace::propagation::kTraceParent || key == opentel_trace::propagation::kTraceState )
             //    theKey[0] = toupper(theKey[0]);
 
-            if (httpHeaders->hasProp(HPCCSemanticConventions::kGLOBALIDHTTPHeader))
-                hpccGlobalId.set(httpHeaders->queryProp(HPCCSemanticConventions::kGLOBALIDHTTPHeader));
-            else
-                DBGLOG("ServerSpan: HPCCGlobalID not found in http headers");
-
-            if (httpHeaders->hasProp(HPCCSemanticConventions::kCallerIdHTTPHeader))
-                hpccCallerId.set(httpHeaders->queryProp(HPCCSemanticConventions::kCallerIdHTTPHeader));
-            else
+            if (httpHeaders->hasProp(kGlobalIdHttpHeaderName))
+                hpccGlobalId.set(httpHeaders->queryProp(kGlobalIdHttpHeaderName));
+            else if (httpHeaders->hasProp(kLegacyGlobalIdHttpHeaderName))
+                hpccGlobalId.set(httpHeaders->queryProp(kLegacyGlobalIdHttpHeaderName));
+            else if (hasMask(flags, SpanFlags::EnsureGlobalId) || queryTraceManager().alwaysCreateGlobalIds())
             {
-                DBGLOG("ServerSpan: HPCCCallerID not provied");
+                StringBuffer generatedId;
+                appendGloballyUniqueId(generatedId);
+                hpccGlobalId.set(generatedId.str());
             }
+
+            if (httpHeaders->hasProp(kCallerIdHttpHeaderName))
+                hpccCallerId.set(httpHeaders->queryProp(kCallerIdHttpHeaderName));
+            else if (httpHeaders->hasProp(kLegacyCallerIdHttpHeaderName))
+                hpccCallerId.set(httpHeaders->queryProp(kLegacyCallerIdHttpHeaderName));
 
             const CHPCCHttpTextMapCarrier carrier(httpHeaders);
             auto globalPropegator = context::propagation::GlobalTextMapPropagator::GetGlobalPropagator();
@@ -539,11 +578,7 @@ private:
                 remoteParentSpanCtx = remoteParentSpan->GetContext();
                 opts.parent = remoteParentSpanCtx;
             }
-            else
-                WARNLOG("ServerSpan: Could not create remote parent span based on OTel parenttrace/tracestate headers");
         }
-
-        //Generate new HPCCGlobalID if not provided
     }
 
     bool getSpanContext(IProperties * ctxProps, bool otelFormatted) const override
@@ -563,41 +598,60 @@ private:
     }
 
 public:
-    CServerSpan(const char * spanName, const char * tracerName_, StringArray & httpHeaders)
+    CServerSpan(const char * spanName, const char * tracerName_, const IProperties * httpHeaders, SpanFlags flags)
     : CSpan(spanName, tracerName_)
     {
         opts.kind = opentelemetry::trace::SpanKind::kServer;
-        setSpanContext(httpHeaders);
+        setSpanContext(httpHeaders, flags);
         init();
     }
 
-    CServerSpan(const char * spanName, const char * tracerName_, const IProperties * httpHeaders)
-    : CSpan(spanName, tracerName_)
+    void toLog(StringBuffer & out) const override
     {
-        opts.kind = opentelemetry::trace::SpanKind::kServer;
-        setSpanContext(httpHeaders);
-        init();
-    }
-
-    void toString(StringBuffer & out) const override
-    {
-        out.append("Type: Server");
-        CSpan::toString(out);
+        out.append("\"Type\":\"Server\"");
+        CSpan::toLog(out);
 
         if (remoteParentSpanCtx.IsValid())
         {
-            out.append(" remoteParentSpanID: ");
+            out.append(",\"ParentSpanID\":\"");
             char spanId[16] = {0};
             remoteParentSpanCtx.span_id().ToLowerBase16(spanId);
-            out.append(16, spanId);
+            out.append(16, spanId)
+            .append("\"");
+        }
+    }
+    void toString(StringBuffer & out, bool isLeaf) const override
+    {
+        out.append("\"Type\":\"Server\"");
+        CSpan::toString(out, isLeaf);
+
+        if (remoteParentSpanCtx.IsValid())
+        {
+            out.append(",\"ParentSpanID\":\"");
+            char spanId[16] = {0};
+            remoteParentSpanCtx.span_id().ToLowerBase16(spanId);
+            out.append(16, spanId)
+            .append("\"");
         }
     }
 };
+
+//---------------------------------------------------------------------------------------------------------------------
+
+IProperties * getClientHeaders(const ISpan * span)
+{
+    Owned<IProperties> headers = createProperties(true);
+    span->getSpanContext(headers, true);      // Return value is not helpful
+    return headers.getClear();
+}
+
+//---------------------------------------------------------------------------------------------------------------------
 
 class CTraceManager : implements ITraceManager, public CInterface
 {
 private:
     bool enabled = true;
+    bool optAlwaysCreateGlobalIds = false;
     StringAttr moduleName;
 
     //Initializes the global trace provider which is required for all Otel based tracing operations.
@@ -705,20 +759,21 @@ private:
     global:
         tracing:                            #optional - tracing enabled by default
             disable: true                   #optional - disable OTel tracing
+            alwaysCreateGlobalIds : false   #optional - should global ids always be created?
             exporter:                       #optional - Controls how trace data is exported/reported
-            type: OTLP                    #OS|OTLP|Prometheus|HPCC (default: no export, jlog entry)
-            endpoint: "localhost:4317"    #exporter specific key/value pairs
-            useSslCredentials: true
-            sslCredentialsCACcert: "ssl-certificate"
+              type: OTLP                    #OS|OTLP|Prometheus|HPCC (default: no export, jlog entry)
+              endpoint: "localhost:4317"    #exporter specific key/value pairs
+              useSslCredentials: true
+              sslCredentialsCACcert: "ssl-certificate"
             processor:                      #optional - Controls span processing style
-            type: batch                   #simple|batch (default: simple)
+              type: batch                   #simple|batch (default: simple)
     */
     void initTracer(IPropertyTree * traceConfig)
     {
         try
         {
-            Owned<IPropertyTree> testTree;
 #ifdef TRACECONFIGDEBUG
+            Owned<IPropertyTree> testTree;
             if (!traceConfig || !traceConfig->hasProp("tracing"))
             {
                 const char * simulatedGlobalYaml = R"!!(global:
@@ -749,11 +804,16 @@ private:
                 static nostd::shared_ptr<TracerProvider> noopProvider(new NoopTracerProvider);
                 opentelemetry::trace::Provider::SetTracerProvider(noopProvider);
                 enabled = false;
-                DBGLOG("OpenTel tracing diabled!!");
             }
             else
             {
                 initTracerProviderAndGlobalInternals(traceConfig);
+            }
+
+            //Non open-telemetry tracing configuration
+            if (traceConfig)
+            {
+                optAlwaysCreateGlobalIds = traceConfig->getPropBool("@alwaysCreateGlobalIds", optAlwaysCreateGlobalIds);
             }
 
             // The global propagator should be set regardless of whether tracing is enabled or not.
@@ -797,14 +857,15 @@ public:
         throw makeStringExceptionV(-1, "TraceManager must be intialized!");
     }
 
-    ISpan * createServerSpan(const char * name, StringArray & httpHeaders) override
+    ISpan * createServerSpan(const char * name, StringArray & httpHeaders, SpanFlags flags) override
     {
-        return new CServerSpan(name, moduleName.get(), httpHeaders);
+        Owned<IProperties> headerProperties = getHeadersAsProperties(httpHeaders);
+        return new CServerSpan(name, moduleName.get(), headerProperties, flags);
     }
 
-    ISpan * createServerSpan(const char * name, const IProperties * httpHeaders) override
+    ISpan * createServerSpan(const char * name, const IProperties * httpHeaders, SpanFlags flags) override
     {
-        return new CServerSpan(name, moduleName.get(), httpHeaders);
+        return new CServerSpan(name, moduleName.get(), httpHeaders, flags);
     }
 
     const char * getTracedComponentName() const override
@@ -815,6 +876,11 @@ public:
     bool isTracingEnabled() const override
     {
         return enabled;
+    }
+
+    virtual bool alwaysCreateGlobalIds() const
+    {
+        return optAlwaysCreateGlobalIds;
     }
 };
 

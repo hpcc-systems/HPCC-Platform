@@ -478,7 +478,7 @@
 
     <para><emphasis role="bold">Exemplo:</emphasis></para>
 
-    <programlisting>PtblRec := RECORD
+    <programlisting lang="ECL">PtblRec := RECORD
   STRING2 State := Person.per_st;
   STRING20 City := Person.per_full_city;
   STRING25 Lname := Person.per_last_name;
@@ -498,7 +498,7 @@ Ptbl := DATASET('~Thor400::RTTEMP::TestFile',
              // directory in which TestFile is located
              //using ENCRYPT
 OUTPUT(Tbl,,'~Thor400::RTTEMP::TestFileEncrypted',ENCRYPT('mykey'));
-PtblE := DATASET('~Thor400::RTTEMP::TestFileEncrypted',
+PtblE := DATASET('~LR::TestFileEncrypted',
                  PtblRec,
                  THOR,OPT,ENCRYPT('mykey'));</programlisting>
   </sect2>
@@ -722,7 +722,7 @@ PtblE := DATASET('~Thor400::RTTEMP::TestFileEncrypted',
 
     <para><emphasis role="bold">Exemplo:</emphasis></para>
 
-    <programlisting>CSVRecord := RECORD
+    <programlisting lang="ECL">CSVRecord := RECORD
   UNSIGNED4 person_id;
   STRING20 per_surname;
   STRING20 per_forename;
@@ -834,7 +834,7 @@ file3 := DATASET('MyFile.CSV',
 
     <para><emphasis role="bold">Exemplo:</emphasis></para>
 
-    <programlisting>/* an XML file called "MyFile" contains this XML data:
+    <programlisting lang="ECL">/* an XML file called "MyFile" contains this XML data:
 &lt;library&gt;
   &lt;book isbn="123456789X"&gt;
     &lt;author&gt;Bayliss&lt;/author&gt;
@@ -951,7 +951,7 @@ books := DATASET('MyFile',rform,XML('library/book'));</programlisting>
 
     <para><emphasis role="bold">Exemplo:</emphasis></para>
 
-    <programlisting>/* a JSON  file called "MyBooks.json" contains this data:
+    <programlisting lang="ECL">/* a JSON  file called "MyBooks.json" contains this data:
 [
   {
     "id" : "978-0641723445",
@@ -973,7 +973,7 @@ BookRec := RECORD
   STRING author; //data from author tag -- tag name is lowercase and matches field name  
 END;
 
-books := DATASET('~jd::mybooks.json',BookRec,JSON('/'));
+books := DATASET('~LR::mybooks.json',BookRec,JSON('/'));
 OUTPUT(books);</programlisting>
   </sect2>
 
@@ -1043,14 +1043,14 @@ OUTPUT(books);</programlisting>
 
     <para><emphasis role="bold">Exemplo:</emphasis></para>
 
-    <programlisting>PtblRec := RECORD
+    <programlisting lang="ECL">PtblRec := RECORD
   STRING2 State;
   STRING20 City;
   STRING25 Lname;
   STRING15 Fname;
 END;
          
-Ptbl := DATASET('~Thor50::RTTEMP::TestFile',
+Ptbl := DATASET('~LR::RTTEMP::TestFile',
                 PtblRec,
                 PIPE('ProcessFile'));
           // ProcessFile is the input pipe</programlisting>
@@ -1076,7 +1076,7 @@ Ptbl := DATASET('~Thor50::RTTEMP::TestFile',
 
     <para><emphasis role="bold">Exemplo:</emphasis></para>
 
-    <programlisting>//Named Output DATASET in the same workunit:
+    <programlisting lang="ECL">//Named Output DATASET in the same workunit:
 a := OUTPUT(Person(per_st='FL') ,NAMED('FloridaFolk'));
 x := DATASET(WORKUNIT('FloridaFolk'),
              RECORDOF(Person));
@@ -1129,7 +1129,7 @@ OUTPUT(ds);</programlisting>
 
     <para><emphasis role="bold">Exemplo:</emphasis></para>
 
-    <programlisting>//Inline DATASET using definition values
+    <programlisting lang="ECL">//Inline DATASET using definition values
 myrec := {REAL diff, INTEGER1 reason};
 rms5008 := 10.0;
 rms5009 := 11.0;
@@ -1219,7 +1219,7 @@ DATASET(s,{STRING txt});
 
     <para><emphasis role="bold">Exemplo:</emphasis></para>
 
-    <programlisting>//the following examples demonstrate 4 ways to do the same thing:
+    <programlisting lang="ECL">//the following examples demonstrate 4 ways to do the same thing:
 personRecord := RECORD
   STRING20 surname;
   STRING10 forename;
@@ -1231,7 +1231,7 @@ namesRecord := RECORD
   personRecord;
 END;
           
-namesTable := DATASET('RTTEST::TestRow',namesRecord,THOR);
+namesTable := DATASET('~LR::TestRow',namesRecord,THOR);
 //simple dataset file declaration form
          
 addressRecord := RECORD
@@ -1343,7 +1343,7 @@ OUTPUT(p3);</programlisting>
 
     <para>3) Vários agregados podem ser calculados de uma vez só usando</para>
 
-    <programlisting>          summary := TABLE(x.children,{ f1 := COUNT(GROUP),
+    <programlisting lang="ECL">          summary := TABLE(x.children,{ f1 := COUNT(GROUP),
                                         f2 := SUM(GROUP,x),
                                         f3 := MAX(GROUP,y)});
           summary.f1;</programlisting>
@@ -1366,17 +1366,17 @@ OUTPUT(p3);</programlisting>
 
     <para>Observe que,</para>
 
-    <programlisting>TABLE(ds, { ds.id, ds.children(age != 10) });</programlisting>
+    <programlisting lang="ECL">TABLE(ds, { ds.id, ds.children(age != 10) });</programlisting>
 
     <para>não é suportado porque um dataset em uma definição de registro
     significa “expandir todos os campos do dataset no resultado.” Porém, a
     adição de um identificador cria uma forma que é suportada:</para>
 
-    <programlisting>TABLE(ds, { ds.id, newChildren := ds.children(age != 10); });</programlisting>
+    <programlisting lang="ECL">TABLE(ds, { ds.id, newChildren := ds.children(age != 10); });</programlisting>
 
     <para><emphasis role="bold">Exemplo:</emphasis></para>
 
-    <programlisting>ParentRec := {INTEGER1 NameID, STRING20 Name};
+    <programlisting lang="ECL">ParentRec := {INTEGER1 NameID, STRING20 Name};
 ParentTable := DATASET([{1,'Kevin'},{2,'Liz'},
                         {3,'Mr Nobody'},{4,'Anywhere'}], ParentRec);
 ChildRec := {INTEGER1 NameID, STRING20 Addr};
@@ -1467,7 +1467,7 @@ r := ROLLUP(fatIn, id, makeChildren(LEFT, RIGHT));</programlisting>
 
     <para><emphasis role="bold">Exemplo:</emphasis></para>
 
-    <programlisting>MyRec := {STRING1 Letter};
+    <programlisting lang="ECL" role="runnable">MyRec := {STRING1 Letter};
 SomeFile := DATASET([{'A'},{'B'},{'C'},{'D'},{'E'}],MyRec);
          
 //Passing a DATASET parameter
@@ -1573,7 +1573,7 @@ OUTPUT(b_Name);</programlisting>
 
     <para><emphasis role="bold">Exemplo:</emphasis></para>
 
-    <programlisting>rec := {STRING color,UNSIGNED1 code, STRING name};
+    <programlisting lang="ECL" role="runnable">rec := {STRING color,UNSIGNED1 code, STRING name};
 ColorCodes := DATASET([{'Black' ,0 , 'Fred'},
                        {'Brown' ,1 , 'Sam'},
                        {'Red'   ,2 , 'Sue'},
@@ -1609,7 +1609,7 @@ OUTPUT(ds);   </programlisting>
 
     <para><emphasis role="bold">Exemplo:</emphasis></para>
 
-    <programlisting>IMPORT STD;
+    <programlisting lang="ECL" role="runnable">IMPORT STD;
 msg(UNSIGNED c) := 'Rec ' + (STRING)c + ' on node ' + (STRING)(STD.system.Thorlib.Node()+1);
 
 // DISTRIBUTED example
@@ -1617,7 +1617,7 @@ DS := DATASET(CLUSTERSIZE * 2,
               TRANSFORM({STRING line}, 
                         SELF.line := msg(COUNTER)), 
               DISTRIBUTED);
-DS;
+OUTPUT(DS);
 /* creates a result like this:
    Rec 1 on node 1
    Rec 2 on node 1
@@ -1633,7 +1633,7 @@ DS2 := DATASET(2,
               TRANSFORM({STRING line},
                         SELF.line := msg(COUNTER)),
               LOCAL);
-DS2;
+OUTPUT(DS2);
 
 /* An alternative (and clearer) way
 creates a result like this:
@@ -1645,8 +1645,7 @@ creates a result like this:
    Rec 2 on node 3
 */</programlisting>
 
-    <para>Ver também: <link linkend="RECORD_Structure">Estrutura
-    RECORD</link>, <link linkend="TRANSFORM_Structure">Estrutura
-    TRANSFORM</link></para>
+    <para>See Also: <link linkend="RECORD_Structure">RECORD Structure</link>,
+    <link linkend="TRANSFORM_Structure">TRANSFORM Structure</link></para>
   </sect2>
 </sect1>

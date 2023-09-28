@@ -145,8 +145,8 @@
 
   <para>Exemplo:</para>
 
-  <programlisting>pointRec := { REAL x, REAL y };
-analyse( ds) := MACRO
+  <programlisting lang="ECL" role="runnable">pointRec := { REAL x, REAL y };
+analyze( ds) := MACRO
 #uniquename(stats)
 %stats% := TABLE(ds, { c     := COUNT(GROUP),
     sx    := SUM(GROUP, x),
@@ -189,9 +189,9 @@ ds3 := DATASET([ {1, 1.00039},
    {5, 5.12417},
    {6, 6.20283} ], pointRec);
 
-analyse(ds1);
-analyse(ds2);
-analyse(ds3);
+analyze(ds1);
+analyze(ds2);
+analyze(ds3);
 </programlisting>
 
   <para>Ver também: <link linkend="VARIANCE">VARIANCE</link>, <link

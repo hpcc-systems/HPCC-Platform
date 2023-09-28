@@ -271,13 +271,13 @@ public:
     {
         return ctx->isBlind();
     }
-    virtual void setGlobalId(const char *id, SocketEndpoint &ep, unsigned pid) override
+    virtual void setActiveSpan(ISpan * span) override
     {
-        ctx->setGlobalId(id, ep, pid);
+        ctx->setActiveSpan(span);
     }
-    virtual void setCallerId(const char *id) override
+    virtual IProperties * getClientHeaders() const override
     {
-        ctx->setCallerId(id);
+        return ctx->getClientHeaders();
     }
     virtual const char *queryGlobalId() const
     {
@@ -290,18 +290,6 @@ public:
     virtual const char *queryLocalId() const
     {
         return ctx->queryLocalId();
-    }
-    virtual void setHttpIdHeaderNames(const char *global, const char *caller)
-    {
-        ctx->setHttpIdHeaderNames(global, caller);
-    }
-    virtual const char *queryGlobalIdHttpHeaderName() const
-    {
-        return ctx->queryGlobalIdHttpHeaderName();
-    }
-    virtual const char *queryCallerIdHttpHeaderName() const override
-    {
-        return ctx->queryCallerIdHttpHeaderName();
     }
     virtual const QueryOptions &queryOptions() const
     {
@@ -1359,15 +1347,16 @@ public:
             return traceLevel;
     }
 
-    virtual void setGlobalId(const char *id, SocketEndpoint&ep, unsigned pid) override
+    virtual void setActiveSpan(ISpan * span) override
     {
         if (ctx)
-            ctx->setGlobalId(id, ep, pid);
+            ctx->setActiveSpan(span);
     }
-    virtual void setCallerId(const char *id) override
+    virtual IProperties * getClientHeaders() const override
     {
         if (ctx)
-            ctx->setCallerId(id);
+            return ctx->getClientHeaders();
+        return nullptr;
     }
     virtual const char *queryGlobalId() const override
     {
@@ -1380,19 +1369,6 @@ public:
     virtual const char *queryLocalId() const override
     {
         return ctx ? ctx->queryLocalId() : nullptr;
-    }
-    virtual void setHttpIdHeaderNames(const char *global, const char *caller) override
-    {
-        if (ctx)
-            ctx->setHttpIdHeaderNames(global, caller);
-    }
-    virtual const char *queryGlobalIdHttpHeaderName() const override
-    {
-        return ctx ? ctx->queryGlobalIdHttpHeaderName() : "HPCC-Global-Id";
-    }
-    virtual const char *queryCallerIdHttpHeaderName() const override
-    {
-        return ctx ? ctx->queryCallerIdHttpHeaderName() : "HPCC-Caller-Id";
     }
     virtual const CRuntimeStatisticCollection & queryStats() const override
     {

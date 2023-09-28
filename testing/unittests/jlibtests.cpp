@@ -53,6 +53,7 @@ public:
         CPPUNIT_TEST(testPropegatedServerSpan);
         CPPUNIT_TEST(testInvalidPropegatedServerSpan);
         CPPUNIT_TEST(testInternalSpan);
+        CPPUNIT_TEST(testMultiNestedSpanTraceOutput);
     CPPUNIT_TEST_SUITE_END();
 
     const char * simulatedGlobalYaml = R"!!(global:
@@ -91,8 +92,8 @@ public:
         }
 
         //HPCC specific headers to be propagated
-        mockHTTPHeaders->setProp(HPCCSemanticConventions::kGLOBALIDHTTPHeader, "IncomingUGID");
-        mockHTTPHeaders->setProp(HPCCSemanticConventions::kCallerIdHTTPHeader, "IncomingCID");
+        mockHTTPHeaders->setProp(kGlobalIdHttpHeaderName, "IncomingUGID");
+        mockHTTPHeaders->setProp(kCallerIdHttpHeaderName, "IncomingCID");
     }
 
 protected:
@@ -122,12 +123,12 @@ protected:
 
             CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected getSpanContext failure detected", true, getSpanCtxSuccess);
 
-            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected GlobalID detected", 0,
-             strcmp("IncomingUGID", retrievedSpanCtxAttributes->queryProp(HPCCSemanticConventions::kGLOBALIDHTTPHeader)));
-            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected CallerID detected", 0,
-             strcmp("IncomingCID", retrievedSpanCtxAttributes->queryProp(HPCCSemanticConventions::kCallerIdHTTPHeader)));
-            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected Declared Parent SpanID detected", 0,
-             strcmp("4b960b3e4647da3f", retrievedSpanCtxAttributes->queryProp("remoteParentSpanID")));
+            CPPUNIT_ASSERT_MESSAGE("Unexpected GlobalID detected",
+             strsame("IncomingUGID", retrievedSpanCtxAttributes->queryProp(kGlobalIdHttpHeaderName)));
+            CPPUNIT_ASSERT_MESSAGE("Unexpected CallerID detected",
+             strsame("IncomingCID", retrievedSpanCtxAttributes->queryProp(kCallerIdHttpHeaderName)));
+            CPPUNIT_ASSERT_MESSAGE("Unexpected Declared Parent SpanID detected",
+             strsame("4b960b3e4647da3f", retrievedSpanCtxAttributes->queryProp("remoteParentSpanID")));
 
             CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected empty TraceID detected", false, isEmptyString(retrievedSpanCtxAttributes->queryProp("traceID")));
             CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected empty SpanID detected", false, isEmptyString(retrievedSpanCtxAttributes->queryProp("spanID")));
@@ -178,19 +179,19 @@ protected:
                 CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing localParentSpanID detected", true,
                  retrievedSpanCtxAttributes->hasProp("localParentSpanID"));
 
-                CPPUNIT_ASSERT_EQUAL_MESSAGE("Mismatched localParentSpanID detected", 0,
-                 strcmp(serverSpanID, retrievedSpanCtxAttributes->queryProp("localParentSpanID")));
+                CPPUNIT_ASSERT_MESSAGE("Mismatched localParentSpanID detected",
+                 strsame(serverSpanID, retrievedSpanCtxAttributes->queryProp("localParentSpanID")));
 
                 CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing remoteParentID detected", true,
                  retrievedSpanCtxAttributes->hasProp("remoteParentID"));
 
-                CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected CallerID detected", 0,
-                 strcmp(serverTraceID, retrievedSpanCtxAttributes->queryProp("remoteParentID")));
+                CPPUNIT_ASSERT_MESSAGE("Unexpected CallerID detected",
+                 strsame(serverTraceID, retrievedSpanCtxAttributes->queryProp("remoteParentID")));
 
                 CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected GlobalID detected", false,
-                retrievedSpanCtxAttributes->hasProp(HPCCSemanticConventions::kGLOBALIDHTTPHeader));
+                retrievedSpanCtxAttributes->hasProp(kGlobalIdHttpHeaderName));
                 CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected CallerID detected", false,
-                retrievedSpanCtxAttributes->hasProp(HPCCSemanticConventions::kCallerIdHTTPHeader));
+                retrievedSpanCtxAttributes->hasProp(kCallerIdHttpHeaderName));
 
                 CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected Declared Parent SpanID detected", false,
                 retrievedSpanCtxAttributes->hasProp("remoteParentSpanID"));
@@ -227,16 +228,16 @@ protected:
                 CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing localParentSpanID detected", true,
                  retrievedSpanCtxAttributes->hasProp("localParentSpanID"));
 
-                CPPUNIT_ASSERT_EQUAL_MESSAGE("Mismatched localParentSpanID detected", 0,
-                 strcmp(serverSpanID, retrievedSpanCtxAttributes->queryProp("localParentSpanID")));
+                CPPUNIT_ASSERT_MESSAGE("Mismatched localParentSpanID detected",
+                 strsame(serverSpanID, retrievedSpanCtxAttributes->queryProp("localParentSpanID")));
 
                 CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected remoteParentSpanID detected", false,
                  retrievedSpanCtxAttributes->hasProp("remoteParentSpanID"));
 
                 CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected GlobalID detected", false,
-                 retrievedSpanCtxAttributes->hasProp(HPCCSemanticConventions::kGLOBALIDHTTPHeader));
+                 retrievedSpanCtxAttributes->hasProp(kGlobalIdHttpHeaderName));
                 CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected CallerID detected", false,
-                 retrievedSpanCtxAttributes->hasProp(HPCCSemanticConventions::kCallerIdHTTPHeader));
+                 retrievedSpanCtxAttributes->hasProp(kCallerIdHttpHeaderName));
 
 
                 CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected Declared Parent SpanID detected", false,
@@ -274,9 +275,9 @@ protected:
             CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected getSpanContext failure detected", true, getSpanCtxSuccess);
 
             CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected GlobalID detected", false,
-             retrievedSpanCtxAttributes->hasProp(HPCCSemanticConventions::kGLOBALIDHTTPHeader));
+             retrievedSpanCtxAttributes->hasProp(kGlobalIdHttpHeaderName));
             CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected CallerID detected", false,
-             retrievedSpanCtxAttributes->hasProp(HPCCSemanticConventions::kCallerIdHTTPHeader));
+             retrievedSpanCtxAttributes->hasProp(kCallerIdHttpHeaderName));
 
             CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected Declared Parent SpanID detected", false,
              retrievedSpanCtxAttributes->hasProp("remoteParentSpanID"));
@@ -298,8 +299,6 @@ protected:
         CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected getSpanContext failure detected", true, getSpanCtxSuccess);
         const char * traceParent = retrievedSpanCtxAttributes->queryProp("remoteParentSpanID");
         DBGLOG("testInvalidPropegatedServerSpan: traceparent: %s", traceParent);
-        //CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected Otel traceparent header len detected", (size_t)55,
-        // strlen(retrievedSpanCtxAttributes->queryProp("traceparent")));
     }
 
     void testDisabledTracePropegatedValues()
@@ -323,13 +322,77 @@ protected:
 
         CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected getSpanContext failure detected", true, getSpanCtxSuccess);
 
-        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected GlobalID detected", 0,
-            strcmp("IncomingUGID", retrievedSpanCtxAttributes->queryProp(HPCCSemanticConventions::kGLOBALIDHTTPHeader)));
-        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected CallerID detected", 0,
-            strcmp("IncomingCID", retrievedSpanCtxAttributes->queryProp(HPCCSemanticConventions::kCallerIdHTTPHeader)));
+        CPPUNIT_ASSERT_MESSAGE("Unexpected GlobalID detected",
+            strsame("IncomingUGID", retrievedSpanCtxAttributes->queryProp(kGlobalIdHttpHeaderName)));
+        CPPUNIT_ASSERT_MESSAGE("Unexpected CallerID detected",
+            strsame("IncomingCID", retrievedSpanCtxAttributes->queryProp(kCallerIdHttpHeaderName)));
 
-        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected Declared Parent SpanID detected", 0,
-            strcmp("4b960b3e4647da3f", retrievedSpanCtxAttributes->queryProp("remoteParentSpanID")));
+        CPPUNIT_ASSERT_MESSAGE("Unexpected Declared Parent SpanID detected",
+            strsame("4b960b3e4647da3f", retrievedSpanCtxAttributes->queryProp("remoteParentSpanID")));
+    }
+
+    void testMultiNestedSpanTraceOutput()
+    {
+        Owned<IProperties> mockHTTPHeaders = createProperties();
+        createMockHTTPHeaders(mockHTTPHeaders, true);
+
+        Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("propegatedServerSpan", mockHTTPHeaders);
+        Owned<ISpan> clientSpan = serverSpan->createClientSpan("clientSpan");
+        Owned<ISpan> internalSpan = clientSpan->createInternalSpan("internalSpan");
+        Owned<ISpan> internalSpan2 = internalSpan->createInternalSpan("internalSpan2");
+
+        StringBuffer out;
+        out.set("{");
+        internalSpan2->toLog(out);
+        out.append("}");
+        {
+            Owned<IPropertyTree> jtraceAsTree;
+            try
+            {
+                jtraceAsTree.setown(createPTreeFromJSONString(out.str()));
+            }
+            catch (IException *e)
+            {
+                StringBuffer msg;
+                msg.append("Unexpected toLog format failure detected: ");
+                e->errorMessage(msg);
+                e->Release();
+                CPPUNIT_ASSERT_MESSAGE(msg.str(), false);
+            }
+
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected toLog format failure detected", true, jtraceAsTree != nullptr);
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing 'TraceID' entry in toLog output", true, jtraceAsTree->hasProp("TraceID"));
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing 'SpanID' entry in toLog output", true, jtraceAsTree->hasProp("SpanID"));
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing 'Name' entry in toLog output", true, jtraceAsTree->hasProp("Name"));
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing 'Type' entry in toLog output", true, jtraceAsTree->hasProp("Type"));
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing 'ParentSpanID' entry in toLog output", true, jtraceAsTree->hasProp("ParentSpanID"));
+        }
+
+        out.set("{");
+        internalSpan2->toString(out);
+        out.append("}");
+        {
+            Owned<IPropertyTree> jtraceAsTree;
+            try
+            {
+                jtraceAsTree.setown(createPTreeFromJSONString(out.str()));
+            }
+            catch (IException *e)
+            {
+                StringBuffer msg;
+                msg.append("Unexpected toString format failure detected: ");
+                e->errorMessage(msg);
+                e->Release();
+                CPPUNIT_ASSERT_MESSAGE(msg.str(), false);
+            }
+
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected toString format failure detected", true, jtraceAsTree != nullptr);
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing 'TraceID' entry in toString output", true, jtraceAsTree->hasProp("TraceID"));
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing 'SpanID' entry in toString output", true, jtraceAsTree->hasProp("SpanID"));
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing 'Name' entry in toString output", true, jtraceAsTree->hasProp("Name"));
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing 'Type' entry in toString output", true, jtraceAsTree->hasProp("Type"));
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing 'ParentSpan/SpanID' entry in toString output", true, jtraceAsTree->hasProp("ParentSpan/SpanID"));
+        }
     }
 
     void testPropegatedServerSpan()
@@ -348,13 +411,13 @@ protected:
 
             CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected getSpanContext failure detected", true, getSpanCtxSuccess);
 
-            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected GlobalID detected", 0,
-             strcmp("IncomingUGID", retrievedSpanCtxAttributes->queryProp(HPCCSemanticConventions::kGLOBALIDHTTPHeader)));
-            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected CallerID detected", 0,
-             strcmp("IncomingCID", retrievedSpanCtxAttributes->queryProp(HPCCSemanticConventions::kCallerIdHTTPHeader)));
+            CPPUNIT_ASSERT_MESSAGE("Unexpected GlobalID detected",
+             strsame("IncomingUGID", retrievedSpanCtxAttributes->queryProp(kGlobalIdHttpHeaderName)));
+            CPPUNIT_ASSERT_MESSAGE("Unexpected CallerID detected",
+             strsame("IncomingCID", retrievedSpanCtxAttributes->queryProp(kCallerIdHttpHeaderName)));
 
-            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected Declared Parent SpanID detected", 0,
-             strcmp("4b960b3e4647da3f", retrievedSpanCtxAttributes->queryProp("remoteParentSpanID")));
+            CPPUNIT_ASSERT_MESSAGE("Unexpected Declared Parent SpanID detected",
+             strsame("4b960b3e4647da3f", retrievedSpanCtxAttributes->queryProp("remoteParentSpanID")));
 
             CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected empty TraceID detected", false, isEmptyString(retrievedSpanCtxAttributes->queryProp("traceID")));
             CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected empty SpanID detected", false, isEmptyString(retrievedSpanCtxAttributes->queryProp("spanID")));
@@ -394,13 +457,13 @@ protected:
 
             CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected getSpanContext failure detected", true, getSpanCtxSuccess);
 
-            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected GlobalID detected", 0,
-             strcmp("someGlobalID", retrievedSpanCtxAttributes->queryProp(HPCCSemanticConventions::kGLOBALIDHTTPHeader)));
-            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected CallerID detected", 0,
-             strcmp("IncomingCID", retrievedSpanCtxAttributes->queryProp(HPCCSemanticConventions::kCallerIdHTTPHeader)));
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected GlobalID detected", true,
+             strsame("someGlobalID", retrievedSpanCtxAttributes->queryProp(kGlobalIdHttpHeaderName)));
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected CallerID detected", true,
+             strsame("IncomingCID", retrievedSpanCtxAttributes->queryProp(kCallerIdHttpHeaderName)));
 
-            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected Declared Parent SpanID detected", 0,
-             strcmp("4b960b3e4647da3f", retrievedSpanCtxAttributes->queryProp("remoteParentSpanID")));
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected Declared Parent SpanID detected", true,
+             strsame("4b960b3e4647da3f", retrievedSpanCtxAttributes->queryProp("remoteParentSpanID")));
         }
     }
 };

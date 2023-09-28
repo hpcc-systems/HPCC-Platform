@@ -17,7 +17,7 @@
   conjunto de caracteres é limitado às letras A-Z, aos números 0-9, ao espaço
   em branco, e ao seguinte conjunto de caracteres especiais:</para>
 
-  <programlisting>! " # $ % &amp; ' ( ) * + , - . / ; &lt; = &gt; ? @ [ \ ] ^ _</programlisting>
+  <programlisting lang="text">! " # $ % &amp; ' ( ) * + , - . / ; &lt; = &gt; ? @ [ \ ] ^ _</programlisting>
 
   <para>Se <emphasis>n</emphasis> for omitido, a QSTRING terá comprimento
   variável para o tamanho necessário para conter o resultado de um parâmetro
@@ -28,8 +28,10 @@
 
   <para>Exemplo:</para>
 
-  <programlisting>QSTRING12 CompanyName := 'LEXISNEXIS';
-        // uses only 9 bytes of storage instead of 12</programlisting>
+  <programlisting lang="ECL" role="runnable">QSTRING12 CompanyName := 'LEXISNEXIS';
+        // uses only 9 bytes of storage instead of 12
+OUTPUT(CompanyName)
+</programlisting>
 
   <para>Ver também: <link linkend="STRING">STRING</link>, <link
   linkend="LENGTH">LENGTH</link>, <link linkend="TRIM">TRIM</link>, <link

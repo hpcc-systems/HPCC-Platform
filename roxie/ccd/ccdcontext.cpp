@@ -1379,13 +1379,13 @@ public:
     {
         return logctx.queryTraceLevel();
     }
-    virtual void setGlobalId(const char *id, SocketEndpoint &ep, unsigned pid) override
+    virtual void setActiveSpan(ISpan * span) override
     {
-        const_cast<IRoxieContextLogger&>(logctx).setGlobalId(id, ep, pid);
+        const_cast<IRoxieContextLogger&>(logctx).setActiveSpan(span);
     }
-    virtual void setCallerId(const char *id) override
+    virtual IProperties * getClientHeaders() const override
     {
-        const_cast<IRoxieContextLogger&>(logctx).setCallerId(id);
+        return logctx.getClientHeaders();
     }
     virtual const char *queryGlobalId() const override
     {
@@ -1398,18 +1398,6 @@ public:
     virtual const char *queryLocalId() const override
     {
         return logctx.queryLocalId();
-    }
-    virtual void setHttpIdHeaderNames(const char *global, const char *caller) override
-    {
-        const_cast<IRoxieContextLogger&>(logctx).setHttpIdHeaderNames(global, caller);
-    }
-    virtual const char *queryGlobalIdHttpHeaderName() const override
-    {
-        return logctx.queryGlobalIdHttpHeaderName();
-    }
-    virtual const char *queryCallerIdHttpHeaderName() const override
-    {
-        return logctx.queryCallerIdHttpHeaderName();
     }
     virtual const CRuntimeStatisticCollection & queryStats() const override
     {

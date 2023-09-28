@@ -12,9 +12,9 @@
       <primary>Email.SendEmailAttachData</primary>
     </indexterm> <indexterm>
       <primary>SendEmailAttachData</primary>
-    </indexterm>( </emphasis> <emphasis>sendto, subject, body, attachment,
-  mimietype, filename, server, port, sender</emphasis> <emphasis role="bold">
-  )</emphasis></para>
+    </indexterm>( </emphasis> <emphasis>to, subject, body, attachment,
+  mimietype, filename, mailServer, port, sender, cc, bcc,
+  highPriority</emphasis> <emphasis role="bold"> )</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -75,7 +75,7 @@
         </row>
 
         <row>
-          <entry><emphasis>server</emphasis></entry>
+          <entry><emphasis>mailserver</emphasis></entry>
 
           <entry>Opcional. Uma string terminada por nulo que contém o nome do
           servidor de e-mail. Se omitida, assume o valor padrão da variável de
@@ -96,6 +96,28 @@
           <entry>Opcional. Uma string terminada por nulo que contém o endereço
           do remetente. Se omitida, assume o valor padrão da variável de
           ambiente emailSenderAddress.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>cc</emphasis></entry>
+
+          <entry>Opcional. Endereços de destinatários em cópia delimitados por
+          vírgulas. O padrão é uma string vazia (nenhuma).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>bcc</emphasis></entry>
+
+          <entry>Opcional. Endereços de destinatários em cópia oculta
+          delimitados por vírgulas. O padrão é uma string vazia
+          (nenhuma).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>highPriority</emphasis></entry>
+
+          <entry>Opcional. Se verdadeiro, a mensagem é enviada com alta
+          prioridade. O padrão é false (prioridade normal)</entry>
         </row>
       </tbody>
     </tgroup>

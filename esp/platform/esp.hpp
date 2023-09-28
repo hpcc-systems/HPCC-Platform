@@ -235,11 +235,12 @@ interface IEspContext : extends IInterface
     virtual void setRequest(IHttpMessage* req) = 0;
     virtual IHttpMessage* queryRequest() = 0;
 
-    virtual void setGlobalId(const char* id)=0;
-    virtual const char* getGlobalId()=0;
-    virtual void setCallerId(const char* id)=0;
-    virtual const char* getCallerId()=0;
-    virtual const char* getLocalId()=0;
+    virtual void setActiveSpan(ISpan * span)=0;
+    virtual ISpan * queryActiveSpan() const = 0;
+    virtual IProperties * getClientSpanHeaders() const = 0;
+    virtual const char* getGlobalId() const = 0;
+    virtual const char* getCallerId() const = 0;
+    virtual const char* getLocalId() const = 0;
 };
 
 

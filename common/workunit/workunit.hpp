@@ -1764,6 +1764,10 @@ private:
     bool removeTimeStamp;
 };
 
+extern WORKUNIT_API IProperties * extractTraceDebugOptions(IConstWorkUnit * source);
+extern WORKUNIT_API IProperties * deserializeTraceDebugOptions(const IPropertyTree * debugOptions);
+extern WORKUNIT_API void recordTraceDebugOptions(IWorkUnit * target, const IProperties * source);
+
 extern WORKUNIT_API void addWorkunitException(IWorkUnit * wu, IError * error, bool removeTimeStamp);
 
 inline bool isGlobalScope(const char * scope) { return scope && (streq(scope, GLOBAL_SCOPE) || streq(scope, LEGACY_GLOBAL_SCOPE)); }

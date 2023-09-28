@@ -138,7 +138,7 @@
 
             <entry>Um valor entre zero (0) e um (1,0 = 100%) indicando a
             porcentagem máxima de distorção a ser permitida antes que a tarefa
-            falhe (a distorção padrão é 1,0 / &lt;número de escravos no
+            falhe (a distorção padrão é 1,0 / &lt;número de secundários no
             cluster&gt;).</entry>
           </row>
 
@@ -147,7 +147,7 @@
 
             <entry>Opcional. Um valor entre zero (0) e um (1,0 = 100%)
             indicando a porcentagem máxima de distorção desejada a ser
-            permitida (a distorção padrão é 1,0 / &lt;número de escravos no
+            permitida (a distorção padrão é 1,0 / &lt;número de secundários no
             cluster&gt;).</entry>
           </row>
 

@@ -1911,13 +1911,20 @@ private:
         if (!httpHeaderBlockContainsHeader(httpheaders, ACCEPT_ENCODING))
             request.appendf("%s: gzip, deflate\r\n", ACCEPT_ENCODING);
 #endif
-        if (!isEmptyString(master->logctx.queryGlobalId()))
+        Owned<IProperties> traceHeaders = master->logctx.getClientHeaders();
+        if (traceHeaders)
         {
-            if (!httpHeaderBlockContainsHeader(httpheaders, master->logctx.queryGlobalIdHttpHeaderName()))
-                request.append(master->logctx.queryGlobalIdHttpHeaderName()).append(": ").append(master->logctx.queryGlobalId()).append("\r\n");
-
-            if (!isEmptyString(master->logctx.queryLocalId()) && !httpHeaderBlockContainsHeader(httpheaders, master->logctx.queryCallerIdHttpHeaderName()))
-                request.append(master->logctx.queryCallerIdHttpHeaderName()).append(": ").append(master->logctx.queryLocalId()).append("\r\n");  //our localId is reciever's callerId
+            Owned<IPropertyIterator> iter = traceHeaders->getIterator();
+            ForEach(*iter)
+            {
+                const char * key = iter->getPropKey();
+                if (!httpHeaderBlockContainsHeader(httpheaders, key))
+                {
+                    const char * value = traceHeaders->queryProp(key);
+                    if (!isEmptyString(value))
+                        request.append(key).append(": ").append(value).append("\r\n");
+                }
+            }
         }
 
         if (master->wscType == STsoap)

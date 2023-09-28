@@ -1,0 +1,573 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Src-code-git">
+  <title>Repositório Git</title>
+
+  <para>Git é um software de código aberto gratuito para controle de versão
+  distribuído. O Git rastreia alterações em qualquer conjunto de arquivos. Com
+  o Git, cada diretório Git em cada computador é um repositório completo com
+  histórico completo e recursos completos de rastreamento de versão.</para>
+
+  <para>Consulte <ulink
+  url="https://git-scm.com/">https://git-scm.com/</ulink> para obter mais
+  informações.</para>
+
+  <para>HPCC Systems tem suporte para o servidor ECLCC para compilar código
+  ECL diretamente de repositórios Git. Os repositórios (e
+  ramificações/usuários opcionais) são configurados usando variáveis de
+  ambiente no servidor. Você pode enviar uma consulta de uma ramificação do
+  repositório e o servidor ECLCC extrairá o código-fonte de um repositório Git
+  e o compilará. Isso permite implantar uma versão específica de uma consulta
+  sem a necessidade de realizar qualquer trabalho no cliente.</para>
+
+  <sect2 id="TheGitImprovements">
+    <title>Melhorias do Git</title>
+
+    <para>A partir da versão 8.4, o código da plataforma para suporte ao Git
+    melhorou significativamente. Algumas dessas melhorias foram transportadas
+    para versões de suporte mais antigas, como 7.12. No entanto, você ainda
+    precisa atualizar para uma versão pontual recente para garantir que obterá
+    qualquer uma dessas melhorias. Embora as versões posteriores, como a 8.6,
+    incluam todas essas melhorias.</para>
+
+    <sect3 id="TheSpeedImprovements">
+      <title>Melhoria na velocidade</title>
+
+      <para>O código da plataforma foi atualizado para melhorias
+      significativas na velocidade. Apresentando compilação mais rápida a
+      partir de repositórios Git sem sobrecarga adicional quando comparado com
+      a compilação a partir de fontes verificadas.</para>
+    </sect3>
+
+    <sect3 id="GitResourcesAndManifests">
+      <title>Recursos e manifestos Git</title>
+
+      <para>A plataforma HPCC Systems agora oferece suporte a manifestos e
+      recursos Git durante a compilação.</para>
+    </sect3>
+
+    <sect3 id="GitLFs_Support">
+      <title>Suporte a Git-lfs</title>
+
+      <para>Git-lfs é uma extensão do Git que melhora o suporte para arquivos
+      grandes e é compatível com GitHub e GitLab. Esta extensão é
+      particularmente útil para grandes recursos. Por exemplo, se você tiver
+      pacotes Java incluídos como parte do manifest.</para>
+    </sect3>
+
+    <sect3 id="MultipleRepositorySupprt">
+      <title>Suporte a Múltiplos Repositórios</title>
+
+      <para>O código da plataforma HPCC Systems inclui suporte para o uso de
+      vários repositórios Git. Com esse suporte a múltiplos repositórios, a
+      plataforma HPCC Systems agora permite que cada repositório Git seja
+      tratado como um pacote independente e separado. As dependências entre os
+      repositórios são especificadas em um arquivo de pacote que é verificado
+      no repositório e versionado junto com o código ECL. O arquivo do pacote
+      indica quais são as dependências e quais versões devem ser
+      usadas.</para>
+
+      <para>Essa abordagem resolve problemas como ao mesclar alterações de
+      diversas fontes em um único repositório. Nesse contexto resolve
+      problemas com alterações incompatíveis, dependências ou conflitos caso
+      existam módulos com o mesmo nome e garante que as dependências entre
+      repositórios sejam versionadas..</para>
+    </sect3>
+  </sect2>
+
+  <sect2 id="UsingGitWithHPCC">
+    <title>Utilizando Git com HPCC</title>
+
+    <para>A sintaxe --main foi estendida para permitir a compilação
+    diretamente do repositório. A sintaxe --main foi estendida para permitir a
+    compilação diretamente do repositório.</para>
+
+    <para>Considere o seguinte comando:</para>
+
+    <programlisting>ecl run thor --main demo.main@https://github.com/gituser/gch-demo-d#version1 --server=... </programlisting>
+
+    <para>Este comando envia uma consulta ao Thor via ESP. Ele recupera o
+    código ECL da branch 'version1' no repositório
+    https://hithub.com/gituser/gch-demo-d. Compila o código no arquivo
+    demo/main.ecl e então executa a consulta no Thor. A verificação será feita
+    no servidor ECLCC remoto e não na máquina cliente.</para>
+
+    <sect3 id="RepoReferenceSyntax">
+      <title>Sintaxe de Referência do Repositório</title>
+
+      <para>A sintaxe para a referência ao repositório é a seguinte:</para>
+
+      <programlisting>&lt;protocol:&gt;//&lt;urn&gt;/&lt;user&gt;/&lt;repository&gt;#version</programlisting>
+
+      <para>O protocolo e a urna podem ser omitidos e um padrão será usado.
+      Como no exemplo a seguir:</para>
+
+      <programlisting>ecl run thor --main demo.main@gituser/gch-ecldemo-d#version1 --server=...</programlisting>
+
+      <para>Este comando também envia uma consulta ao Thor, recupera o código
+      ECL da branch 'versão1' no repositório gch-demo-d. Compila o código no
+      arquivo demo.main.ecl e depois executa a consulta no Thor.</para>
+    </sect3>
+
+    <sect3 id="HashVersionText">
+      <title>Versão-Texto</title>
+
+      <para>O texto da versão que segue o hash (#) na referência do
+      repositório pode assumir qualquer um dos seguintes formatos:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>Nome da branch</para>
+        </listitem>
+
+        <listitem>
+          <para>O nome da tag</para>
+
+          <para><emphasis role="bold">Atenção:</emphasis> Atualmente, apenas
+          tags leves são suportadas. Tags anotadas ainda não são
+          suportadas.</para>
+        </listitem>
+
+        <listitem>
+          <para>O algoritmo de hash seguro (SHA) de um commit</para>
+        </listitem>
+      </itemizedlist>
+
+      <para>Para ilustrar, considere os seguintes comandos:</para>
+
+      <programlisting>ecl run thor --main demo.main@gituser/gch-ecldemo-d#version1 --server=...</programlisting>
+
+      <para>Este comando recuperará o código ECL demo.main da branch
+      'version1' do repositório gch-ecldemo-d.</para>
+
+      <programlisting>ecl run thor --main demo.main@gituser/gch-ecldemo-d#3c23ca0 --server=...</programlisting>
+
+      <para>Este comando irá recuperar o código ECL demo.main do commit com o
+      SHA de '3c23ca0'.</para>
+
+      <para>Você também pode especificar o nome de uma tag utilizando a mesma
+      sintaxe.</para>
+    </sect3>
+
+    <sect3>
+      <title>Verificando Sintaxe ECL</title>
+
+      <para>Você pode usar a opção --syntax para verificar a sintaxe do seu
+      código.</para>
+
+      <para>O comando a seguir verifica a sintaxe do código no commit com o
+      SHA de '3c23ca0' do repositório gch-ecldemo-d.</para>
+
+      <programlisting>ecl run thor --main demo.main@ghalliday/gch-ecldemo-d#3c23ca0 --syntax </programlisting>
+
+      <para>Embora o comando a seguir verifique a sintaxe do código na branch
+      'versão1' do repositório gch-ecldemo-d.</para>
+
+      <programlisting>ecl run thor --main demo.main@ghalliday/gch-ecldemo-d#version1 --syntax </programlisting>
+
+      <para>Como o código em uma branch pode ser atualizado e alterado, é uma
+      boa ideia sempre verificar a sintaxe.</para>
+    </sect3>
+
+    <sect3 id="PrGIT-ThePkgJSON">
+      <title>O Pacote JSON</title>
+
+      <para>Considere o arquivo package.json:</para>
+
+      <programlisting>{
+ "name": "demoRepoC",
+ "version": "1.0.0", 
+ "dependencies": { 
+      "demoRepoD": "gituser/gch-ecldemo-d#version1" 
+ } 
+} </programlisting>
+
+      <para>O packagefile dá um nome ao pacote e define as dependências. A
+      propriedade dependências é uma lista de pares chave-valor. A chave
+      (demoRepoD) fornece o nome do módulo ECL usado para acessar o
+      repositório externo. O valor é uma referência de repositório que usa o
+      mesmo formato dos exemplos anteriores usando a sintaxe --main.</para>
+    </sect3>
+
+    <sect3 id="ExternalGitRepoInECLCode">
+      <title>Utiliza o Repositório Externo em seu Código ECL</title>
+
+      <para>Para usar o repositório externo em seu código ECL, você precisa
+      adicionar uma definição de <emphasis>import.</emphasis></para>
+
+      <programlisting>IMPORT layout;
+IMPORT demoRepoD AS demoD;
+ 
+EXPORT personAsText(layout.person input) :=
+    input.name + ': ‘ +
+ demoD.format.maskPassword(input.password);
+</programlisting>
+
+      <para>No exemplo acima, o nome demoRepoD no segundo IMPORT corresponde
+      ao valor da chave no arquivo package.json. Este código usa o atributo
+      format.maskPassword da ramificação version1 do
+      gituser/gch-ecldemo-d.</para>
+
+      <para>Cada pacote é processado independentemente de quaisquer outros. A
+      única conexão é através de importações explícitas de pacotes externos. É
+      por isso que os pacotes podem ter módulos ou atributos com o mesmo nome
+      e não entrarão em conflito.</para>
+    </sect3>
+
+    <sect3 id="MultipleGitRepositoryExample">
+      <title>Exemplos de Múltiplos Repositórios</title>
+
+      <para>A seguir está um exemplo de um arquivo package.json usando vários
+      repositórios.</para>
+
+      <para><programlisting>IMPORT layout;
+IMPORT demoRepoD_V1 AS demo1;
+IMPORT demoRepoD_V2 AS demo2;
+ 
+EXPORT personAsText(layout.person input) :=
+'Was: ' + demo1.format.maskPassword(input.password) +
+    ' Now: ' + demo2.format.maskPassword(input.password);
+</programlisting>Observe que os repositórios demoRepoD _V1 e _V2 são
+      processados de forma independente.</para>
+
+      <para>Da mesma forma, considere o exemplo a seguir usando Query
+      ECL</para>
+
+      <programlisting>{
+  "name": "demoRepoC",
+  "version": "1.0.0",
+  "dependencies": {
+    "demoRepoD_V1": "gituser/gch-ecldemo-d#version1"
+    "demoRepoD_V2": "gituser/gch-ecldemo-d#version2"
+  }
+}
+</programlisting>
+
+      <para>Observando as dependências das branchs 'versão1' e 'versão2' do
+      repositório gch-ecldemo-d.</para>
+    </sect3>
+  </sect2>
+
+  <sect2 lang="PrG_GitCommandLineOptions">
+    <title>Opções de linha de comando</title>
+
+    <para>As opções de linha de comando foram adicionadas aos comandos ECL e
+    ECLCC para aproveitar essas melhorias no trabalho com repositórios
+    Git.</para>
+
+    <sect3 id="GitLocalDevelopOptions">
+      <title>Opções de Desenvolvimento Local</title>
+
+      <para>A opção -R foi adicionada aos comandos eclcc e ecl. Defina a opção
+      -R para instruir o compilador a usar a fonte de um diretório local em
+      vez de usar a fonte de um repositório externo.</para>
+
+      <para>Sintaxe:</para>
+
+      <para><programlisting>-R&lt;repo&gt;[#version]=path </programlisting>Por
+      exemplo:</para>
+
+      <programlisting>ecl run examples/main.ecl -Rgituser/gch-ecldemo-d=/home/myuser/source/demod </programlisting>
+
+      <para>Este comando usa o código ECL para DemoRepoD de
+      /home/myuser/source/demoD em vez de
+      https://github.com/gituser/gch-ecldemo-d#version1.</para>
+    </sect3>
+
+    <sect3 id="PrGTheVerboseOption">
+      <title>A opção detalhada</title>
+
+      <para>A opção -v foi aprimorada para fornecer uma saída mais detalhada,
+      incluindo os detalhes das solicitações do Git..</para>
+
+      <para>Você pode usar a opção -v para depuração. Por exemplo, se você
+      tiver algum problema de repositórios não resolvido. Emita o comando a
+      seguir com a opção -v para analisar os detalhes das solicitações do
+      Git.</para>
+
+      <para><programlisting>ecl run examples/main.ecl -v -Rgituser/gch-ecldemo-d=/home/myuser/source/demod </programlisting></para>
+    </sect3>
+
+    <sect3 id="ECLandECLCCGitOptions">
+      <title>Opções Git de ECL e ECLCC</title>
+
+      <para>Essas opções de linha de comando foram adicionadas aos comandos
+      ECL e ECLCC.</para>
+
+      <para>--<emphasis role="bold">defaultgitprefix</emphasis> Esta opção de
+      linha de comando altera o prefixo padrão que é adicionado às referências
+      de pacotes relativos. O padrão também pode ser configurado usando a
+      variável de ambiente ECLCC_DEFAULT_GITPREFIX. Caso contrário, o padrão é
+      "https://github.com/".</para>
+
+      <para>--<emphasis role="bold">fetchrepos</emphasis> Definir esta opção
+      informa se os repositórios externos que não foram clonados localmente
+      devem ser buscados. O padrão é true em 8.6.x. Pode ser útil definir esta
+      opção como false se todos os repositórios externos forem mapeados para
+      diretórios locais para verificar se estão sendo redirecionados
+      corretamente.</para>
+
+      <para>--<emphasis role="bold">updaterepos</emphasis> Atualiza
+      repositórios externos que foram buscados localmente anteriormente. Esta
+      opção tem como padrão true. É útil definir essa opção como false se você
+      estiver trabalhando em uma situação sem acesso aos repositórios externos
+      ou para evitar a sobrecarga de verificar se há alterações, se você
+      souber que não há nenhuma.</para>
+
+      <para><emphasis role="bold">ECLCC_ECLREPO_PATH</emphasis> O diretório
+      para o qual os repositórios externos são clonados. Em uma máquina
+      cliente, o padrão é: &lt;home&gt;/.HPCCSystems/repos (ou
+      %APPDATA%\HPCCSystems\repos no Windows). Você pode excluir o conteúdo
+      desse diretório para forçar um download limpo de todos os
+      repositórios.T</para>
+    </sect3>
+
+    <sect3 id="GitHelmChartConfigurationOptions">
+      <title>Opções de configuração do Chart Helm</title>
+
+      <para>Estas são opções de gráfico do Helm para configurar valores Git
+      para implantações em nuvem. Os valores a seguir agora são suportados
+      para configurar o uso do Git nos gráficos do Helm para implementações em
+      nuvem do HPCC Systems.</para>
+
+      <para><emphasis role="bold">eclccserver.gitUsername</emphasis> - Fornece
+      o nome do usuário Git</para>
+
+      <para><emphasis role="bold">secrets.git </emphasis>- Define secrets.git
+      para permitir que repositórios sejam compartilhados entre consultas,
+      para poder armazenar em cache e compartilhar os pacotes clonados entre
+      instâncias.</para>
+
+      <para><emphasis role="bold">eclccserver.gitPlane</emphasis> - Esta opção
+      define o plano de armazenamento para o qual os pacotes externos são
+      retirados e clonados..</para>
+
+      <para>Por exemplo:</para>
+
+      <programlisting>eclccserver:
+- name: myeclccserver
+  #...
+- gitPlane: git/sample/storage</programlisting>
+
+      <para>Se a opção gitPlane não for fornecida, o padrão é o primeiro plano
+      de armazenamento com uma categoria de Git - caso contrário, o ECLCC
+      Server usará o primeiro plano de armazenamento com uma categoria de
+      dll.</para>
+    </sect3>
+  </sect2>
+
+  <sect2 id="PrGSecurityAndAuthentication">
+    <title>Autenticação e Segurança</title>
+
+    <para>Se os repositórios externos forem públicos, como bundles, não haverá
+    mais requisitos. Os repositórios privados têm a complicação adicional de
+    exigir informações de autenticação - no cliente ou no servidor ECLCC,
+    dependendo de onde a fonte está reunida. O Git fornece vários métodos para
+    fornecer essas credenciais.If external repositories are public, such as
+    bundles, then there are no further requirements. Private repositories have
+    the additional complication of requiring authentication information -
+    either on the client or on the ECLCC Server depending on where the source
+    is gathered. Git provides various methods for providing these
+    credentials.</para>
+
+    <sect3 id="PrG_ClientMachinesAuth">
+      <title>Autenticação da Máquina Clente</title>
+
+      <para>Estas são as abordagens recomendadas para configurar as
+      credenciais em um sistema local que está interagindo com um GitHub
+      remoto.</para>
+
+      <itemizedlist>
+        <listitem>
+          <para><emphasis role="bold">Auntenticação github</emphasis> Baixe o
+          kit de ferramentas de linha de comando do GitHub. Você pode usá-lo
+          para autenticar todo o acesso Git com o seguinte comando:</para>
+
+          <programlisting>gh auth login </programlisting>
+
+          <para>Esta é provavelmente sua melhor opção se você estiver usando o
+          GitHub. Mais detalhes podem ser encontrados em:</para>
+
+          <para><ulink
+          url="https://cli.github.com/manual/gh_auth_login">https://cli.github.com/manual/gh_auth_login</ulink></para>
+        </listitem>
+
+        <listitem>
+          <para><emphasis role="bold">ssh key</emphasis> Nesse cenário, a
+          chave ssh associada a uma máquina de desenvolvedores locais é
+          registrada na conta do GitHub. Isso é usado quando a referência do
+          GitHub está no formato ssh://github.com.</para>
+
+          <para>A sshkey pode ser protegida com uma senha e existem várias
+          opções para evitar a necessidade de inserir a senha todas as vezes.
+          Para mais informações, veja:</para>
+
+          <para><ulink
+          url="https://docs.github.com/en/authentication/connecting-to-github-with-ssh/about-ssh ">https://docs.github.com/en/authentication/connecting-to-github-with-ssh/about-ssh</ulink></para>
+        </listitem>
+
+        <listitem>
+          <para><emphasis role="bold">Use um token de acesso
+          pessoal</emphasis> Estes são semelhantes a uma senha, mas com
+          restrições adicionais em seu tempo de vida e os recursos que podem
+          ser acessados. Aqui estão os detalhes sobre como criá-los. Eles
+          podem então ser usados com as várias opções de cache de credenciais
+          git.</para>
+
+          <para>Um exemplo pode ser encontrado aqui:</para>
+
+          <para><ulink
+          url="https://git-scm.com/book/en/v2/Git-Tools-Credential-Storage">https://git-scm.com/book/en/v2/Git-Tools-Credential-Storage</ulink></para>
+        </listitem>
+      </itemizedlist>
+
+      <para>Geralmente, para autenticação, é preferível usar o protocolo
+      https:// em vez do protocolo ssh:// para links em arquivos
+      package-lock.json. Se o ssh:// for usado, ele requer que qualquer
+      máquina que processe a dependência tenha acesso a uma chave ssh
+      registrada. Às vezes, isso pode causar problemas evitáveis.</para>
+
+      <para>É provável que todas essas opções de autenticação envolvam alguma
+      interação do usuário, como senhas para chaves ssh, interação da Web com
+      autenticação do GitHub e entrada inicial para tokens de acesso em cache.
+      Isso é problemático para o servidor ECLCC, que não oferece suporte à
+      interação do usuário e, portanto, é preferível não passar credenciais. A
+      solução, portanto, é usar um token de acesso pessoal armazenado com
+      segurança como um segredo. Esse token poderia então ser associado a uma
+      conta de serviço especial, que iniciaria essas transações com segurança.
+      O segredo evita a necessidade de passar credenciais e permite que as
+      chaves sejam rotacionadas.</para>
+    </sect3>
+
+    <sect3 id="PrgKubernetesSecrets">
+      <title>Kubernetes Secrets</title>
+
+      <para>Essa seção descreve o suporte a secrets em Kubernetes (e bare
+      metal) versions of the HPCC Systems platform.</para>
+
+      <para>Para adicionar suporte a secrets:</para>
+
+      <orderedlist>
+        <listitem>
+          <para>. Adicione um secrets ao arquivo yaml de personalização, com
+          uma chave que corresponda ao gitUsername:</para>
+
+          <programlisting>   eclccserver:
+   - name: myeclccserver
+     gitUsername: <emphasis role="bold">gituser</emphasis>
+</programlisting>
+
+          <para>Nota: o valor eclccserver.gitUsername deve corresponder ao seu
+          nome de usuário git.</para>
+        </listitem>
+
+        <listitem>
+          <para>Adicione um secret ao arquivo yaml de personalização, com uma
+          chave que corresponda ao gitUsername</para>
+
+          <programlisting>secrets:
+     git: 
+       gituser: <emphasis role="bold">my-git-secret</emphasis>
+</programlisting>
+        </listitem>
+
+        <listitem>
+          <para>Adicione o secret ao Kubernetes contendo o token de acesso
+          pessoal:</para>
+
+          <programlisting>apiVersion: v1
+kind: Secret
+metadata:
+  name: <emphasis role="bold">my-git-secret</emphasis>
+type: Opaque
+stringData:
+  password: ghp_eZLHeuoHxxxxxxxxxxxxxxxxxxxxol3986sS=
+</programlisting>
+
+          <para>Note password contains the personal access token.</para>
+        </listitem>
+
+        <listitem>
+          <para>Aplique o secretao seu Kubernetes usando o comando
+          kubectl:Apply the secret to your Kubernetes using the kubectl
+          command:</para>
+
+          <programlisting>kubectl apply -f ~/dev/hpcc/helm/secrets/my-git-secret</programlisting>
+
+          <para>Quando uma consulta é enviada ao servidor ECLCC, todos os
+          repositórios git são acessados usando esse nome de usuário e senha
+          configurados.</para>
+        </listitem>
+
+        <listitem>
+          <para>Armazene o segredo em um cofre. Você também pode armazenar o
+          PAT (token de acesso pessoal) dentro de um cofre.Store the secret in
+          a vault. You can also store the PAT (personal access token) inside a
+          vault.</para>
+        </listitem>
+      </orderedlist>
+    </sect3>
+
+    <sect3 id="CredentialsInBareMetal">
+      <title>Credenciais Bare Metal</title>
+
+      <para>Esta seção descreve credenciais para sistemas bare metal. Os
+      sistemas bare metal requerem algumas etapas de configuração
+      semelhantes.</para>
+
+      <orderedlist>
+        <listitem>
+          <para>Inclua a propriedade gitUsername na entrada EclCCServerProcess
+          no arquivo environment.xml.</para>
+
+          <programlisting>&lt;EclCCServerProcess daliServers="mydali"
+                      ...
+                      gitUsername="gitguser“
+</programlisting>
+        </listitem>
+
+        <listitem>
+          <para>Envie o Environment.xml para todos os nós.</para>
+        </listitem>
+
+        <listitem>
+          <para>Armazene as credenciais como secrets ou armazene em um
+          vault.</para>
+
+          <para>Como <emphasis role="bold">secrets</emphasis>:</para>
+
+          <para>Armazene o token de acesso em:</para>
+
+          <para>/opt/HPCCSystems/secrets/git/&lt;user-name&gt;/password</para>
+
+          <para>Por exemplo:</para>
+
+          <programlisting>cat /opt/HPCCSystems/secrets/git/gitusr/password
+ghp_eZLHeuoHxxxxxxxxxxxxxxxxxxxxol3986sS=
+</programlisting>
+
+          <para>Ou para o <emphasis role="bold">vault</emphasis>:</para>
+
+          <para>Você pode armazenar dentro de um vault. Agora você pode
+          definir um vault seção Software do ambiente. Por exemplo:</para>
+
+          <programlisting>&lt;Environment&gt;
+ &lt;Software&gt;
+   ...
+   &lt;vaults&gt;
+    &lt;git name='my-storage-vault' url="http://127.0.0.1:8200/v1/secret/data/git/${secret}" 
+kind="kv-v2" client-secret="myVaultSecret"/&gt;
+    ...
+   &lt;/vaults&gt;
+   ...
+</programlisting>
+
+          <para>Observe que as entradas acima têm exatamente o mesmo conteúdo
+          que as entradas correspondentes no arquivo kubernetes
+          values.yaml.</para>
+        </listitem>
+      </orderedlist>
+    </sect3>
+  </sect2>
+</sect1>

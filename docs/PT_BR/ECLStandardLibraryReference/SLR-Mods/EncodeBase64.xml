@@ -12,8 +12,8 @@
       <primary>EncodeBase64</primary>
     </indexterm>(</emphasis> <emphasis>value</emphasis> <emphasis
   role="bold">[</emphasis> <emphasis>, insertLF </emphasis> <emphasis
-  role="bold">]</emphasis> <emphasis
-  role="bold">)</emphasis> <emphasis role="bold"/></para>
+  role="bold">]</emphasis> <emphasis role="bold">)</emphasis> <emphasis
+  role="bold"/></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -32,10 +32,19 @@
         <row>
           <entry><emphasis>insertLF</emphasis></entry>
 
+          <entry>Opcional. Uma flag booleano TRUE/FALSE indicando que, quando
+          TRUE, faz com que feeds de linha sejam inseridos periodicamente na
+          saída, possivelmente resultando em uma string de várias linhas. Se
+          omitido, o padrão é TRUE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>insertLF</emphasis></entry>
+
           <entry>Opcional. Um parâmetro booleano TRUE/FALSE indicando que
           quando TRUE uma nova linha será adicionada periodicamente à saída,
-          potencialmente resultando em uma string com múltiplas linhas.
-          Caso omitido, o valor padrão é TRUE.</entry>
+          potencialmente resultando em uma string com múltiplas linhas. Caso
+          omitido, o valor padrão é TRUE.</entry>
         </row>
 
         <row>

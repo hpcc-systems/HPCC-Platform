@@ -57,7 +57,7 @@
 
   <para>Exemplo:</para>
 
-  <programlisting>//this code is contained in the GoodHouses.ecl file
+  <programlisting lang="ECL">//this code is contained in the GoodHouses.ecl file
 BadPeople := Person(EXISTS(trades(EXISTS(phr(phr_rate &gt; '4'))));
         //local only to the GoodHouses definition
 SHARED GoodHouses := Household(~EXISTS(BadPeople));

@@ -153,9 +153,9 @@ class CRemoteBase : public CSimpleInterfaceOf<IDaFsConnection>
     static SocketEndpoint   lastfailep;
     static unsigned         lastfailtime;
     static CriticalSection  lastFailEpCrit;
-    DAFSConnectCfg          connectMethod;
+    DAFSConnectCfg          connectMethod = SSLNone;
 
-    void connectSocket(SocketEndpoint &ep, unsigned connectTimeoutMs=0, unsigned connectRetries=INFINITE);
+    void connectSocket(SocketEndpoint &ep, unsigned connectTimeoutMs=0, unsigned connectRetries=INFINITE, bool secure=false);
     void killSocket(SocketEndpoint &tep);
 
 protected: friend class CRemoteFileIO;
@@ -163,12 +163,15 @@ protected: friend class CRemoteFileIO;
     StringAttr          filename;
     CriticalSection     crit;
     SocketEndpoint      ep;
+    StringBuffer        storageSecret;
 
     void sendRemoteCommand(MemoryBuffer & src, MemoryBuffer & reply, bool retry=true, bool lengthy=false, bool handleErrCode=true);
     void sendRemoteCommand(MemoryBuffer & src, bool retry);
 public:
     CRemoteBase(const SocketEndpoint &_ep, const char * _filename);
     CRemoteBase(const SocketEndpoint &_ep, DAFSConnectCfg _connectMethod, const char * _filename);
+    CRemoteBase(const SocketEndpoint &_ep, const char *_storageSecret, const char * _filename);
+
     void disconnect();
     const char *queryLocalName()
     {
