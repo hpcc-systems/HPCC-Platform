@@ -321,9 +321,9 @@ public:
         IPropertyTree *file = dfsFile->queryFileMeta()->queryPropTree("File");
 
         const char *remoteName = dfsFile->queryRemoteName(); // NB: null if local
-        IPropertyTree *dafileSrvRemoteFilePlane = nullptr;
         if (!isEmptyString(remoteName))
         {
+            IPropertyTree *dafileSrvRemoteFilePlane = nullptr;
             Owned<IPropertyTree> remoteStorage = getRemoteStorage(remoteName);
             if (!remoteStorage)
                 throw makeStringExceptionV(0, "Remote storage '%s' not found", remoteName);
@@ -394,10 +394,19 @@ public:
                     file->setProp("@directory", newPath.str());
                 }
             }
+            if (dafileSrvRemoteFilePlane)
+            {
+                file->setPropTree("Attr/_remoteStoragePlane", createPTreeFromIPT(dafileSrvRemoteFilePlane));
+                if (remoteStorage->hasProp("@secret"))
+                {
+                    // if remote storage service is secure, dafilesrv connections must be also.
+                    // this flag is used by consumers of this IFleDescriptor to tell whether they need to make
+                    // secure secret based connections to the dafilesrv's
+                    file->setPropBool("Attr/@_remoteSecure", true);
+                }
+            }
         }
         AccessMode accessMode = static_cast<AccessMode>(dfsFile->queryCommonMeta()->getPropInt("@accessMode"));
-        if (dafileSrvRemoteFilePlane)
-            file->setPropTree("Attr/_remoteStoragePlane", createPTreeFromIPT(dafileSrvRemoteFilePlane));
         fileDesc.setown(deserializeFileDescriptorTree(file));
         fileDesc->setTraceName(logicalName);
         // NB: the accessMode is being defined by the client call, and has been stored in the IDFSFile common meta

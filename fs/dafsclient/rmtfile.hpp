@@ -40,12 +40,17 @@ interface IDaFileSrvHook : extends IRemoteFileCreateHook
     virtual IPropertyTree *addFilters(IPropertyTree *filters, const SocketEndpoint *ipAddress) = 0;
     virtual IPropertyTree *addMyFilters(IPropertyTree *filters, SocketEndpoint *myEp=NULL) = 0;
     virtual void clearFilters() = 0;
+    virtual StringBuffer &getSecretBased(StringBuffer &storageSecret, const RemoteFilename & filename) = 0;
+    virtual void addSecretUrl(const char *url) = 0;
+    virtual void removeSecretUrl(const char *url) = 0;
 };
 extern DAFSCLIENT_API IDaFileSrvHook *queryDaFileSrvHook();
 
 extern DAFSCLIENT_API void setDaliServixSocketCaching(bool set);
 extern DAFSCLIENT_API bool canAccessDirectly(const RemoteFilename & file);
 extern DAFSCLIENT_API IFile *createDaliServixFile(const RemoteFilename & file);
+extern DAFSCLIENT_API IFile *createDaliServixFile(const RemoteFilename & file, const char *storageSecret);
+
 extern DAFSCLIENT_API void enableForceRemoteReads(); // forces file reads to be remote reads if they match environment setting 'forceRemotePattern' pattern.
 extern DAFSCLIENT_API bool testForceRemote(const char *path); // return true if forceRemote setup/pattern will make this path a remote read.
 
