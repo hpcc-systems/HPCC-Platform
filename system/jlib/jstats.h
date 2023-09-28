@@ -544,7 +544,7 @@ public:
 #ifdef _DEBUG
     ,ignoreUnknown(_ignoreUnknown)
 #endif
-{
+    {
         unsigned num = mapping.numStatistics();
         values = new CRuntimeStatistic[num+1]; // extra entry is to gather unexpected stats and avoid tests when accumulating
     }
