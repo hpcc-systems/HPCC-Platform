@@ -1084,17 +1084,17 @@ std::pair<std::string, unsigned> getDafileServiceFromConfig(const char *applicat
     VStringBuffer serviceXPath("services[@type='%s']", application);
     Owned<IPropertyTreeIterator> dafilesrvServices = getGlobalConfigSP()->getElements(serviceXPath);
     if (!dafilesrvServices->first())
-        throw makeStringException(-1, "dafilesrv service not defined");
+        throw makeStringExceptionV(JLIBERR_K8sServiceError, "dafilesrv service '%s' not defined or disabled", application);
     const IPropertyTree &dafilesrv = dafilesrvServices->query();
     if (!dafilesrv.getPropBool("@public"))
-        throw makeStringException(-1, "dafilesrv service has no public service defined");
+        throw makeStringExceptionV(JLIBERR_K8sServiceError, "dafilesrv service '%s' has no public service defined", application);
     StringBuffer dafilesrvName;
     dafilesrv.getProp("@name", dafilesrvName);
     auto externalService = getExternalService(dafilesrvName);
     if (externalService.first.empty())
-        throw makeStringExceptionV(-1, "dafilesrv '%s': external service not found", dafilesrvName.str());
+        throw makeStringExceptionV(JLIBERR_K8sServiceError, "dafilesrv service '%s' - external service '%s' not found", application, dafilesrvName.str());
     if (0 == externalService.second)
-        throw makeStringExceptionV(-1, "dafilesrv '%s': external service port not defined", dafilesrvName.str());
+        throw makeStringExceptionV(JLIBERR_K8sServiceError, "dafilesrv service '%s' - external service '%s' port not defined", application, dafilesrvName.str());
     return externalService;
 }
 
