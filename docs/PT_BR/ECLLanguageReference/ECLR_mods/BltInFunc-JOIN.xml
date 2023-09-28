@@ -4,15 +4,29 @@
 <sect1 id="JOIN">
   <title>JOIN</title>
 
-  <para><emphasis role="bold">JOIN<indexterm>
-      <primary>JOIN</primary>
-    </indexterm><indexterm>
-      <primary>JOIN function</primary>
-    </indexterm>(</emphasis><emphasis>leftrecset, rightrecset, joincondition
-  </emphasis><emphasis role="bold">[</emphasis><emphasis>,
-  transform</emphasis><emphasis role="bold">] [</emphasis><emphasis>,
-  jointype</emphasis><emphasis role="bold">] [</emphasis><emphasis>,
-  joinflags</emphasis><emphasis role="bold">] )</emphasis></para>
+  <para>
+    <emphasis role="bold">JOIN<indexterm>
+        <primary>JOIN</primary>
+      </indexterm><indexterm>
+        <primary>JOIN function</primary>
+      </indexterm>(</emphasis>
+
+    <emphasis>leftrecset, rightrecset, joincondition</emphasis>
+
+    <emphasis role="bold">[</emphasis>
+
+    <emphasis>, transform</emphasis>
+
+    <emphasis role="bold">] [</emphasis>
+
+    <emphasis>, jointype</emphasis>
+
+    <emphasis role="bold">] [</emphasis>
+
+    <emphasis>, joinflags</emphasis>
+
+    <emphasis role="bold">] )</emphasis>
+  </para>
 
   <para><emphasis role="bold">JOIN(</emphasis><emphasis>setofdatasets,
   joincondition, transform</emphasis>,<emphasis role="bold"> SORTED<indexterm>
@@ -29,20 +43,26 @@
 
       <tbody>
         <row>
-          <entry><emphasis>leftrecset</emphasis></entry>
+          <entry>
+            <emphasis>leftrecset</emphasis>
+          </entry>
 
           <entry>O conjunto esquerdo dos registros para processamento.</entry>
         </row>
 
         <row>
-          <entry><emphasis>rightrecset</emphasis></entry>
+          <entry>
+            <emphasis>rightrecset</emphasis>
+          </entry>
 
           <entry>O conjunto direito dos registros para processamento. Esse
           pode ser um INDEX.</entry>
         </row>
 
         <row>
-          <entry><emphasis>joincondition</emphasis></entry>
+          <entry>
+            <emphasis>joincondition</emphasis>
+          </entry>
 
           <entry>Uma expressão que especifica como combinar registros em
           <emphasis>leftrecset </emphasis> e <emphasis>rightrecset</emphasis>
@@ -55,7 +75,9 @@
         </row>
 
         <row>
-          <entry><emphasis>transform</emphasis></entry>
+          <entry>
+            <emphasis>transform</emphasis>
+          </entry>
 
           <entry>Opcional. A função TRANSFORM para acionar cada par de
           registros para processamento. Se omitida, JOIN retorna todos os
@@ -65,7 +87,9 @@
         </row>
 
         <row>
-          <entry><emphasis>jointype</emphasis></entry>
+          <entry>
+            <emphasis>jointype</emphasis>
+          </entry>
 
           <entry>Opcional. Se omitida, uma operação de junção interna; caso
           contrário, um dos tipos listados na seção Tipos de JOIN
@@ -73,7 +97,9 @@
         </row>
 
         <row>
-          <entry><emphasis>joinflags</emphasis></entry>
+          <entry>
+            <emphasis>joinflags</emphasis>
+          </entry>
 
           <entry>Opcional. Qualquer opção (consulte a seção JOIN Options
           [OPÇÕES DE JOIN] abaixo) para especificar exatamente como a operação
@@ -81,7 +107,9 @@
         </row>
 
         <row>
-          <entry><emphasis>setofdatasets</emphasis></entry>
+          <entry>
+            <emphasis>setofdatasets</emphasis>
+          </entry>
 
           <entry>O SET de conjuntos de registro para processamento
           ([idx1,idx2,idx3]), normalmente INDEXes (ÍNDiCES), em que todos
@@ -89,7 +117,9 @@
         </row>
 
         <row>
-          <entry><emphasis role="bold">SORTED</emphasis></entry>
+          <entry>
+            <emphasis role="bold">SORTED</emphasis>
+          </entry>
 
           <entry>Especifica a ordem de classificação de registros no
           <emphasis>setofdatasets </emphasis> de entrada, além da ordem de
@@ -97,7 +127,9 @@
         </row>
 
         <row>
-          <entry><emphasis>fields</emphasis></entry>
+          <entry>
+            <emphasis>fields</emphasis>
+          </entry>
 
           <entry>Uma lista delimitada por vírgulas dos campos no
           <emphasis>setofdatasets</emphasis>, que precisa ser um subconjunto
@@ -123,12 +155,25 @@
   <sect2 id="JOIN_Two_Datasets">
     <title>JOIN em Dois Datasets</title>
 
-    <para><emphasis role="bold">JOIN(</emphasis><emphasis>leftrecset,
-    rightrecset, joincondition </emphasis><emphasis
-    role="bold">[</emphasis><emphasis>, transform</emphasis><emphasis
-    role="bold">] [</emphasis><emphasis>, jointype</emphasis><emphasis
-    role="bold">] [</emphasis><emphasis>, joinflags</emphasis><emphasis
-    role="bold">] )</emphasis></para>
+    <para>
+      <emphasis role="bold">JOIN(</emphasis>
+
+      <emphasis>leftrecset, rightrecset, joincondition</emphasis>
+
+      <emphasis role="bold">[</emphasis>
+
+      <emphasis>, transform</emphasis>
+
+      <emphasis role="bold">] [</emphasis>
+
+      <emphasis>, jointype</emphasis>
+
+      <emphasis role="bold">] [</emphasis>
+
+      <emphasis>, joinflags</emphasis>
+
+      <emphasis role="bold">] )</emphasis>
+    </para>
 
     <para><emphasis role="bold">A primeira forma de JOIN processa todos os
     pares de registros em </emphasis><emphasis>leftrecset </emphasis>e
@@ -245,7 +290,7 @@
       </indexterm>(</emphasis><emphasis>n</emphasis><emphasis role="bold">) ]
     [</emphasis><emphasis>, </emphasis><emphasis role="bold">ATMOST<indexterm>
         <primary>ATMOST</primary>
-      </indexterm>(</emphasis><emphasis> </emphasis><emphasis
+      </indexterm>(</emphasis><emphasis/><emphasis
     role="bold">[</emphasis><emphasis> condition, </emphasis><emphasis
     role="bold">]</emphasis><emphasis> n </emphasis><emphasis role="bold">) ]
     [</emphasis><emphasis>, </emphasis><emphasis role="bold">LIMIT<indexterm>
@@ -278,8 +323,9 @@
 
         <tbody>
           <row>
-            <entry><emphasis role="bold">PARTITION LEFT |
-            RIGHT</emphasis></entry>
+            <entry>
+              <emphasis role="bold">PARTITION LEFT | RIGHT</emphasis>
+            </entry>
 
             <entry>Especifica qual recordset proporciona os pontos de partição
             que determinam como os registros são classificados e distribuídos
@@ -290,28 +336,37 @@
           </row>
 
           <row>
-            <entry><emphasis role="bold">[MANY] LOOKUP</emphasis></entry>
+            <entry>
+              <emphasis role="bold">[MANY] LOOKUP</emphasis>
+            </entry>
 
-            <entry>Especifica o <emphasis>rightrecset</emphasis> , sendo um
-            arquivo relativamente pequeno de registros de consulta que podem
-            ser copiados completamente para cada nó. MANY não estiver
-            presente, os registros <emphasis>rightrecset</emphasis> têm uma
-            relação de muitos para 0/1 com os registros em
-            <emphasis>leftrecset</emphasis> (para cada registro em
-            <emphasis>leftrecset</emphasis> há no máximo 1 registro em
-            <emphasis>rightrecset</emphasis>. Se MANY estiver presente, os
-            registros <emphasis>rightrecset</emphasis> têm uma relação de
-            muitos para 0/muitos com os registros em
-            <emphasis>leftrecset</emphasis>. Essa opção permite que o
+            <entry>Especifica que o <emphasis>rightrecsetis</emphasis> é um
+            arquivo relativamente pequeno de registros de pesquisa. Se a opção
+            LOCAL não estiver presente, uma tabela hash de todo o
+            <emphasis>rightrecset</emphasis> será totalmente copiada para cada
+            nó, mas se a opção LOCAL estiver presente, a tabela hash será
+            criada localmente em cada nó. Se MANY não estiver presente, os
+            registros <emphasis>rightrecset</emphasis> terão um relacionamento
+            Many to 0/1 com os registros no <emphasis>leftrecset</emphasis>
+            (para cada registro no <emphasis>rightrecset</emphasis> há no
+            máximo 1 registro no <emphasis>rightrecset</emphasis>, imposto por
+            uma desduplicação implícita se houver registros duplicados na
+            tabela de pesquisa com base nos campos-chave usados na
+            <emphasis>joincondition</emphasis>). Se MANY estiver presente, os
+            registros do <emphasis>rightrecset</emphasis> terão um
+            relacionamento Muitos para 0/Muitos com os registros no
+            <emphasis>leftrecset</emphasis>. Esta opção permite que o
             otimizador evite a classificação desnecessária do
             <emphasis>leftrecset</emphasis>. Válido apenas para os
-            <emphasis>jointypes</emphasis> internos, LEFT OUTER ou LEFT ONLY.
-            As opções ATMOST, LIMIT e KEEP são suportadas em conjunto com
-            MANYLOOKUP.</entry>
+            <emphasis>jointypes</emphasis> inner, LEFT OUTER ou LEFT ONLY. As
+            opções ATMOST, LIMIT e KEEP são suportadas em conjunto com MANY
+            LOOKUP.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">SMART</emphasis></entry>
+            <entry>
+              <emphasis role="bold">SMART</emphasis>
+            </entry>
 
             <entry>Especifica para usar uma consulta na memória quando
             possível, mas usa uma operação de junção distribuída se o dataset
@@ -319,7 +374,9 @@
           </row>
 
           <row>
-            <entry><emphasis role="bold">FEW</emphasis></entry>
+            <entry>
+              <emphasis role="bold">FEW</emphasis>
+            </entry>
 
             <entry>Especifica que o LOOKUP <emphasis>rightrecset</emphasis>
             possui poucos registros, de forma que pouca memória é utilizada,
@@ -328,7 +385,9 @@
           </row>
 
           <row>
-            <entry><emphasis role="bold">GROUPED</emphasis></entry>
+            <entry>
+              <emphasis role="bold">GROUPED</emphasis>
+            </entry>
 
             <entry>Especifica a mesma ação de MANY LOOKUP, mas preserva o
             agrupamento Usado principalmente no motor de entrega rápida de
@@ -338,7 +397,9 @@
           </row>
 
           <row>
-            <entry><emphasis role="bold">ALL</emphasis></entry>
+            <entry>
+              <emphasis role="bold">ALL</emphasis>
+            </entry>
 
             <entry>Especifica que o <emphasis>rightrecset</emphasis> é um
             arquivo pequeno que pode ser copiado completamente para cada nó, o
@@ -351,7 +412,9 @@
           </row>
 
           <row>
-            <entry><emphasis role="bold">NOSORT</emphasis></entry>
+            <entry>
+              <emphasis role="bold">NOSORT</emphasis>
+            </entry>
 
             <entry>Realiza o JOIN sem classificar dinamicamente as tabelas.
             Isso implica que <emphasis>leftrecset</emphasis> e/ou
@@ -362,7 +425,9 @@
           </row>
 
           <row>
-            <entry><emphasis>which</emphasis></entry>
+            <entry>
+              <emphasis>which</emphasis>
+            </entry>
 
             <entry>Opcional. As palavras-chave LEFT ou RIGHT para indicar que
             <emphasis>leftrecset</emphasis> ou
@@ -373,14 +438,18 @@
           </row>
 
           <row>
-            <entry><emphasis role="bold">KEYED</emphasis></entry>
+            <entry>
+              <emphasis role="bold">KEYED</emphasis>
+            </entry>
 
             <entry>Especifica o uso de acesso indexado em
             <emphasis>rightrecset</emphasis> (consulte INDEX).</entry>
           </row>
 
           <row>
-            <entry><emphasis>index</emphasis></entry>
+            <entry>
+              <emphasis>index</emphasis>
+            </entry>
 
             <entry>Opcional. O nome de um INDEX no
             <emphasis>rightrecset</emphasis> para um JOIN full-keyed (consulte
@@ -390,7 +459,9 @@
           </row>
 
           <row>
-            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+            <entry>
+              <emphasis role="bold">UNORDERED</emphasis>
+            </entry>
 
             <entry>Opcional. Especifica que a operação KEYED JOIN não preserva
             a ordem de classificação do
@@ -398,7 +469,9 @@
           </row>
 
           <row>
-            <entry><emphasis role="bold">LOCAL</emphasis></entry>
+            <entry>
+              <emphasis role="bold">LOCAL</emphasis>
+            </entry>
 
             <entry>Especifica que a operação é realizada em cada nó de
             supercomputador de forma independente, sem exigir interação com
@@ -407,7 +480,9 @@
           </row>
 
           <row>
-            <entry><emphasis role="bold">HASH</emphasis></entry>
+            <entry>
+              <emphasis role="bold">HASH</emphasis>
+            </entry>
 
             <entry>Especifica um DISTRIBUTE implícito do
             <emphasis>leftrecset</emphasis> e <emphasis>rightrecset</emphasis>
@@ -417,7 +492,9 @@
           </row>
 
           <row>
-            <entry><emphasis role="bold">KEEP(n)</emphasis></entry>
+            <entry>
+              <emphasis role="bold">KEEP(n)</emphasis>
+            </entry>
 
             <entry>Especifica o número máximo de registros correspondentes(n)
             a serem gerados no conjunto de resultados de cada registro
@@ -430,7 +507,9 @@
           </row>
 
           <row>
-            <entry><emphasis role="bold">ATMOST</emphasis></entry>
+            <entry>
+              <emphasis role="bold">ATMOST</emphasis>
+            </entry>
 
             <entry>Especifica o número máximo de registros correspondentes
             que, se excedido, elimina todas essas correspondências do conjunto
@@ -456,21 +535,27 @@
           </row>
 
           <row>
-            <entry><emphasis>condition</emphasis></entry>
+            <entry>
+              <emphasis>condition</emphasis>
+            </entry>
 
             <entry>Uma parte da expressão <emphasis>joincondition</emphasis>
             .</entry>
           </row>
 
           <row>
-            <entry><emphasis>n</emphasis></entry>
+            <entry>
+              <emphasis>n</emphasis>
+            </entry>
 
             <entry>Especifica o número máximo de correspondências
             permitidas.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">LIMIT</emphasis></entry>
+            <entry>
+              <emphasis role="bold">LIMIT</emphasis>
+            </entry>
 
             <entry>Especifica o número máximo de registros correspondentes
             que, se excedido, ocasiona a falha da workunit ou elimina todas
@@ -486,31 +571,39 @@
             <emphasis>rightrecset</emphasis> correspondentes), enquanto LIMIT
             faria com que toda a workunit falhasse ou executaria o SKIP no
             registro (eliminando o registro <emphasis>leftrecset</emphasis>
-            totalmente do resultado). Se omitido, o padrão é LIMIT(10000). O
-            LIMIT é aplicado ao record set que atende à parte de
-            correspondência rígida ("equality") da
-            <emphasis>joincondition</emphasis> , porém antes de a
-            correspondência suave ("desigualdade") da
-            <emphasis>joincondition</emphasis> ser avaliada.</entry>
+            totalmente do resultado). O LIMIT é aplicado ao conjunto de
+            registros que atendem à parte de correspondência difícil
+            ("igualdade") do <emphasis>joinconditio</emphasis>, mas antes da
+            parte de correspondência suave ("não igualdade") da
+            <emphasis>joincondition</emphasis> é avaliado. Se omitido, o
+            padrão é LIMIT(10000). O limite implícito só é adicionado se não
+            houver LIMIT explícito, ATMOST e KEEP, ou se tiver um filtro sem
+            chave e não para um JOIN somente esquerdo.</entry>
           </row>
 
           <row>
-            <entry><emphasis>value</emphasis></entry>
+            <entry>
+              <emphasis>value</emphasis>
+            </entry>
 
             <entry>O número máximo de correspondências permitido; LIMIT(0) é
             ilimitado.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">SKIP</emphasis></entry>
+            <entry>
+              <emphasis role="bold">SKIP</emphasis>
+            </entry>
 
-            <entry>Opcional. Especifica a eliminação de registros
-            correspondentes que ultrapassam o valor máximo do resultado LIMIT,
-            em vez da falha da workunit.</entry>
+            <entry>Opcional. Especifica a eliminação de todos os registros
+            correspondentes cujo número total excede o valor máximo do
+            resultado LIMIT em vez de falhar no job.</entry>
           </row>
 
           <row>
-            <entry><emphasis>transform</emphasis></entry>
+            <entry>
+              <emphasis>transform</emphasis>
+            </entry>
 
             <entry>Opcional. Especifica a emissão de um registro único
             produzido por <emphasis>transform</emphasis> em vez da falha da
@@ -518,14 +611,18 @@
           </row>
 
           <row>
-            <entry><emphasis role="bold">FAIL</emphasis></entry>
+            <entry>
+              <emphasis role="bold">FAIL</emphasis>
+            </entry>
 
             <entry>Opcional. Especifica o uso do FAIL ação para configurar a
             mensagem de erro quando a workunit falha.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">SKEW</emphasis></entry>
+            <entry>
+              <emphasis role="bold">SKEW</emphasis>
+            </entry>
 
             <entry>Indica que você sabe que os dados para essa junção não
             serão espalhados uniformemente entre os nós (serão distorcidos
@@ -538,7 +635,9 @@
           </row>
 
           <row>
-            <entry><emphasis>limit</emphasis></entry>
+            <entry>
+              <emphasis>limit</emphasis>
+            </entry>
 
             <entry>Um valor entre zero (0) e um (1,0 = 100%) indicando a
             porcentagem máxima da distorção a ser permitida antes que a
@@ -546,7 +645,9 @@
           </row>
 
           <row>
-            <entry><emphasis>target</emphasis></entry>
+            <entry>
+              <emphasis>target</emphasis>
+            </entry>
 
             <entry>Opcional. Um valor entre zero (0) e um (1,0 = 100%)
             indicando a porcentagem máxima desejada da distorção a ser
@@ -554,7 +655,9 @@
           </row>
 
           <row>
-            <entry><emphasis role="bold">THRESHOLD</emphasis></entry>
+            <entry>
+              <emphasis role="bold">THRESHOLD</emphasis>
+            </entry>
 
             <entry>Indica o tamanho mínimo de uma parte única do
             <emphasis>leftrecset</emphasis> ou
@@ -565,28 +668,36 @@
           </row>
 
           <row>
-            <entry><emphasis>size</emphasis></entry>
+            <entry>
+              <emphasis>size</emphasis>
+            </entry>
 
             <entry>Um valor inteiro indicando o número mínimo de bytes para
             uma parte única.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+            <entry>
+              <emphasis role="bold">UNORDERED</emphasis>
+            </entry>
 
             <entry>Opcional. Especifica que a ordem do registro de resultado
             não é importante.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+            <entry>
+              <emphasis role="bold">ORDERED</emphasis>
+            </entry>
 
             <entry>Especifica a importância da ordem do registro de
             resultado.</entry>
           </row>
 
           <row>
-            <entry><emphasis>bool</emphasis></entry>
+            <entry>
+              <emphasis>bool</emphasis>
+            </entry>
 
             <entry>Quando for False, especifica que a ordem do registro de
             resultado não é importante. Quando for True, especifica a ordem
@@ -594,41 +705,53 @@
           </row>
 
           <row>
-            <entry><emphasis role="bold">STABLE</emphasis></entry>
+            <entry>
+              <emphasis role="bold">STABLE</emphasis>
+            </entry>
 
             <entry>Opcional. Especifica que a ordem do registro de entrada é
             importante.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+            <entry>
+              <emphasis role="bold">UNSTABLE</emphasis>
+            </entry>
 
             <entry>Opcional. Especifica que a ordem do registro de entrada não
             é importante.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+            <entry>
+              <emphasis role="bold">PARALLEL</emphasis>
+            </entry>
 
             <entry>Opcional. Tenta avaliar essa atividade em paralelo.</entry>
           </row>
 
           <row>
-            <entry><emphasis>numthreads</emphasis></entry>
+            <entry>
+              <emphasis>numthreads</emphasis>
+            </entry>
 
             <entry>Opcional. Tenta avaliar essa atividade usando os threads
             <emphasis>numthreads</emphasis> .</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+            <entry>
+              <emphasis role="bold">ALGORITHM</emphasis>
+            </entry>
 
             <entry>Opcional. Substitui o algoritmo usado para essa
             atividade.</entry>
           </row>
 
           <row>
-            <entry><emphasis>name</emphasis></entry>
+            <entry>
+              <emphasis>name</emphasis>
+            </entry>
 
             <entry>O algoritmo a ser usado para essa atividade. Precisa fazer
             parte da lista de algoritmos compatíveis com as opções STABLE e
@@ -664,16 +787,38 @@
 
     <para>Se aparecer um erro similar a esse:</para>
 
-    <para><programlisting>“error: 1301: Pool memory exhausted:<indexterm>
-          <primary>memory exhausted</primary>
+    <para>
+      <programlisting>“error: 1301: Pool memory exhausted:<indexterm>
+          <primary lang="text">memory exhausted</primary>
         </indexterm><indexterm>
           <primary>Pool memory exhausted</primary>
-        </indexterm>..."</programlisting></para>
+        </indexterm>..."</programlisting>
+    </para>
 
     <para>significa que o <emphasis>rightrecset</emphasis> é muito grande e
     uma operação LOOKUP JOIN não deve ser usada. Uma operação SMART JOIN pode
     ser uma boa opção neste caso.</para>
   </sect2>
+
+  <para>Examplo:</para>
+
+  <para>
+    <programlisting lang="ECL" role="runnable">//this example demos the implicit DEDUP of the lookup dataset
+r1 := {INTEGER1 fred};
+r2 := {INTEGER1 fred,INTEGER1 sue};
+ds1 := DATASET([1,2,3,4],r1);
+ds2 := DATASET([{1,2},{2,2},
+                {1,1},{2,1}, 
+                {3,1},{4,1}],r2);
+r2 XF(ds1 L, ds2 R) := TRANSFORM
+  SELF.fred := L.fred;
+  SELF.sue := R.sue;
+END;
+JOIN(ds1,ds2,
+     LEFT.Fred = RIGHT.fred,
+     XF(LEFT,RIGHT),LOOKUP);
+</programlisting>
+  </para>
 
   <sect2 id="Keyed_Joins">
     <title>JOINS KEYED<indexterm>
@@ -711,8 +856,10 @@
 
     <para>A operação JOIN segue a seguinte lógica:</para>
 
-    <para><emphasis role="bold">1. Classificação/distribuição de registro para
-    obter possíveis correspondências nos mesmos nós.</emphasis></para>
+    <para>
+      <emphasis role="bold">1. Classificação/distribuição de registro para
+      obter possíveis correspondências nos mesmos nós.</emphasis>
+    </para>
 
     <para>As opções PARTITION LEFT, PARTITION RIGHT, LOOKUP, ALL, NOSORT,
     KEYED, HASH e LOCAL indicam como isso acontece. Essas opções são
@@ -722,8 +869,9 @@
     <emphasis>rightrecset</emphasis> pela
     <emphasis>joincondition</emphasis>.</para>
 
-    <para><emphasis role="bold">2. Correspondência de
-    registros.</emphasis></para>
+    <para>
+      <emphasis role="bold">2. Correspondência de registros.</emphasis>
+    </para>
 
     <para>A <emphasis>joincondition</emphasis>, LIMIT e ATMOST determinam como
     isso é feito.</para>
@@ -738,27 +886,38 @@
     limite KEEP especificado OU o JOIN que tem um postfilter<emphasis
     role="bold">)</emphasis>.</para>
 
-    <para><emphasis role="bold">3. Determina quais correspondências devem ser
-    especificadas para </emphasis><emphasis
-    role="bold">transform</emphasis><emphasis role="bold">.</emphasis></para>
+    <para>
+      <emphasis role="bold">3. Determina quais correspondências devem ser
+      especificadas para</emphasis>
+
+      <emphasis role="bold">transform</emphasis>
+
+      <emphasis role="bold">.</emphasis>
+    </para>
 
     <para>O <emphasis>jointype</emphasis> determina isso.</para>
 
-    <para><emphasis role="bold">4. Gera registros de resultados através da
-    função TRANSFORM.</emphasis></para>
+    <para>
+      <emphasis role="bold">4. Gera registros de resultados através da função
+      TRANSFORM.</emphasis>
+    </para>
 
     <para>O parâmetro <emphasis>transform</emphasis> implícito ou explícito
     determina isso.</para>
 
-    <para><emphasis role="bold">5. Filtrar registros de resultados com
-    SKIP.</emphasis></para>
+    <para>
+      <emphasis role="bold">5. Filtrar registros de resultados com
+      SKIP.</emphasis>
+    </para>
 
     <para>Se <emphasis>transform</emphasis> para um par de registros resultar
     em SKIP, então o registro de resultado não é contado em nenhum total da
     opção KEEP.</para>
 
-    <para><emphasis role="bold">6. Limitar registros de resultados com
-    KEEP.</emphasis></para>
+    <para>
+      <emphasis role="bold">6. Limitar registros de resultados com
+      KEEP.</emphasis>
+    </para>
 
     <para>Quaisquer registros de resultados para um determinado registro
     <emphasis>leftrecset</emphasis> acima e além do valor KEEP permitido são
@@ -865,9 +1024,9 @@
       </tgroup>
     </informaltable>
 
-    <para>Exemplo:</para>
+    <para>Exemplos:</para>
 
-    <programlisting>outrec := RECORD
+    <programlisting lang="ECL">outrec := RECORD
   people.id;
   people.firstname;
   people.lastname;
@@ -965,14 +1124,18 @@ SEQUENTIAL(PtblOut,Bld1,Bld2,OUTPUT(FilledRecs1),OUTPUT(FilledRecs2))
     </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
     <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
 
-    <para><emphasis role="bold"><emphasis>A segunda forma de JOIN é similar à
-    função MERGEJOIN <indexterm>
-        <primary>MERGEJOIN function</primary>
-      </indexterm><indexterm>
-        <primary>JOIN</primary>
-      </indexterm> no sentido de que usa um SET OF DATASETs como o seu
-    primeiro parâmetro. Isso oferece a possibilidade de unir mais de dois
-    datasets em uma única operação.</emphasis></emphasis></para>
+    <para>
+      <emphasis role="bold">
+        <emphasis>A segunda forma de JOIN é similar à função MERGEJOIN
+        <indexterm>
+            <primary>MERGEJOIN function</primary>
+          </indexterm><indexterm>
+            <primary>JOIN</primary>
+          </indexterm> no sentido de que usa um SET OF DATASETs como o seu
+        primeiro parâmetro. Isso oferece a possibilidade de unir mais de dois
+        datasets em uma única operação.</emphasis>
+      </emphasis>
+    </para>
   </sect2>
 
   <sect2 id="Matching_Logic_joincondition">
@@ -1096,7 +1259,7 @@ SEQUENTIAL(PtblOut,Bld1,Bld2,OUTPUT(FilledRecs1),OUTPUT(FilledRecs2))
 
     <para>Exemplo:</para>
 
-    <programlisting>Rec := RECORD,MAXLENGTH(4096)
+    <programlisting id="ECL" role="runnable">Rec := RECORD,MAXLENGTH(4096)
   STRING1  Letter;
   UNSIGNED1    DS;
   UNSIGNED1    Matches   := 0;

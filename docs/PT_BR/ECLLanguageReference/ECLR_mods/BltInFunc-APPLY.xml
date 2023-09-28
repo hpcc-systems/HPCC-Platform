@@ -149,7 +149,7 @@
 
   <para>Exemplo:</para>
 
-  <programlisting>EXPORT x :=  SERVICE
+  <programlisting lang="ECL" role="notRunnable">EXPORT x :=  SERVICE
   echo(const string src):library='myfuncs',entrypoint='rtlEcho';
 END;
 APPLY(person,x.echo(last_name + ':' + first_name));

@@ -90,7 +90,7 @@
 
   <para>Exemplo:</para>
 
-  <programlisting>// This is a DATASET Value macro that results in a crosstab
+  <programlisting lang="ECL">// This is a DATASET Value macro that results in a crosstab
 DATASET CrossTab(File,X,Y) := MACRO
         TABLE(File,{X, Y, COUNT(GROUP)},X,Y)
 ENDMACRO;

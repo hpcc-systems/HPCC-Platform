@@ -45,10 +45,13 @@
                 xpointer="xpointer(//*[@id='DateVer'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
-    <releaseinfo>© 2021 HPCC Systems<superscript>®</superscript>. Todos os
-    direitos reservados. Exceto onde indicado de outra forma, o conteúdo do
-    ECL Language Reference (Referência a Linguagem ECL) é licenciado sob
-    licença pública da Creative Commons.</releaseinfo>
+    <releaseinfo>© <xi:include href="common/Version.xml"
+    xpointer="xpointer(//*[@id='YrVer'])"
+    xmlns:xi="http://www.w3.org/2001/XInclude"/> HPCC
+    Systems<superscript>®</superscript>. Todos os direitos reservados. Exceto
+    onde indicado de outra forma, o conteúdo do ECL Language Reference
+    (Referência a Linguagem ECL) é licenciado sob licença pública da Creative
+    Commons.</releaseinfo>
 
     <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
@@ -72,13 +75,19 @@
   </chapter>
 
   <chapter id="ECL_Basics">
-    <title><emphasis role="bold">ECL Básico</emphasis></title>
+    <title>
+      <emphasis role="bold">ECL Básico</emphasis>
+    </title>
 
     <xi:include href="ECLLanguageReference/ECLR_mods/Basics-Overview.xml"
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
     <xi:include href="ECLLanguageReference/ECLR_mods/Basics-Constants.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Basics-EnvironmentVariables.xml"
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
 

@@ -1978,6 +1978,129 @@
     </sect3>
   </sect2>
 
+  <sect2 id="GS-LZ-Scopes">
+    <title>Segurança da Landing Zone</title>
+
+    <para>Você pode definir opções de segurança adicionais na(s) Landing
+    Zone(s). A segurança no nível do recurso permite que você defina
+    permissões de acesso e o que os usuários ou grupos podem fazer lá. Landing
+    Zone Scope Security permite que você defina permissões em subpastas em uma
+    Landing Zone. Isso fornece um meio de conceder e negar permissão aos
+    usuários para áreas dentro de uma Landing Zone.</para>
+
+    <sect3 id="GS_LandingZoneFeatureAuth">
+      <title>Autorização de Recurso da Landing Zone</title>
+
+      <para>Lista a Landing Zone do HPCC System usando autorização de nível de
+      recurso:</para>
+
+      <para><informaltable>
+          <tgroup cols="2">
+            <tbody>
+              <row>
+                <entry>Lista/pesquisa arquivos de Dropzone</entry>
+
+                <entry>FileSprayAccess - SecAccess_Read</entry>
+              </row>
+
+              <row>
+                <entry>Spray de um arquivo de uma Dropzone</entry>
+
+                <entry>FileSprayAccess - SecAccess_Write</entry>
+              </row>
+
+              <row>
+                <entry>Despray de um arquivo para uma Dropzone</entry>
+
+                <entry>FileDesprayAccess - SecAccess_Write</entry>
+              </row>
+
+              <row>
+                <entry>Lê o conteúdo do arquivo de uma Dropzone</entry>
+
+                <entry>FileIOAccess - SecAccess_Read</entry>
+              </row>
+
+              <row>
+                <entry>Grava o conteúdo de um arquivo de uma Dropzone</entry>
+
+                <entry>FileIOAccess - SecAccess_Write</entry>
+              </row>
+
+              <row>
+                <entry>Upload de um arquivo para uma Dropzone utilizando o
+                ECLWatch:</entry>
+
+                <entry>FileUploadAccess - SecAccess_Full</entry>
+              </row>
+
+              <row>
+                <entry>Download de um arquivo de uma Dropzone utilizando o
+                ECLWatch</entry>
+
+                <entry>FileSprayAccess - SecAccess_Full</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable>Para habilitar o acesso a um recurso, defina a
+      permissão de acordo.</para>
+
+      <para>Isso pode ser um nível de segurança suficiente em alguns casos; no
+      entanto, restrições adicionais podem ser necessárias para proteger
+      determinados arquivos de determinados usuários ou grupos. Você pode usar
+      a segurança Landing Zone File Scope para fazer isso.</para>
+    </sect3>
+
+    <sect3 id="LZ_FileScopes">
+      <title>Arquivo de Escopos da Landing Zone</title>
+
+      <para>A autorização de nível de escopo de arquivo fornece um meio de
+      proteger o acesso a pastas dentro de uma Landing Zone.</para>
+
+      <para>Um administrador de HPCC pode definir os escopos da landing zone
+      para cada pasta.</para>
+
+      <para>Cada escopo é uma pasta de arquivo de uma Landing Zone
+      HPCC.</para>
+
+      <para>Os escopos do arquivo Landing Zone podem ser definidos usando
+      ECLWatch para sistemas habilitados para segurança.</para>
+
+      <para><graphic fileref="../../images/LDAP_0058-1.jpg"
+      vendor="ECLWatchSecurity"/>Para criar uma novo escopo de Landing Zone,
+      vá para a página Security do ECL Watch, e clique em Permissões.</para>
+
+      <para><graphic fileref="../../images/LDAP_0058-2.jpg"
+      vendor="ECLWatchSecurity"/>Na aba Permissões, pressione o botão
+      Add.</para>
+
+      <para><graphic fileref="../../images/LDAP_0058-3.jpg"
+      vendor="ECLWatchSecurity"/></para>
+
+      <para>Escolha Escopos de arquivo na caixa de opção suspensa e, em
+      seguida, forneça um nome e, opcionalmente, uma descrição.</para>
+
+      <para><graphic fileref="../../images/LDAP_0058-4.jpg"
+      vendor="ECLWatchSecurity"/></para>
+    </sect3>
+
+    <sect3 id="SEC_LZFilePermissions">
+      <title>Arquivo de Permissões da Landing Zone</title>
+
+      <para>You can set the Landing Zone file permissions according to your
+      requirements. Access your new Landing Zone using the following
+      annotation:</para>
+
+      <programlisting> plane::{dropzone_name}::{folder_name}::{subfolder_name}::{subfolder_name}...</programlisting>
+
+      <para>Seu Administrador HPCC pode definir os direitos de acesso para
+      cada escopo para cada usuário HPCC ou grupo de usuários.</para>
+
+      <para><graphic fileref="../../images/LDAP_0059-1.jpg"
+      vendor="ECLWatchSecurity"/></para>
+    </sect3>
+  </sect2>
+
   <sect2 id="Security_WorkunitAccessControl">
     <title>Controle de Acesso a Workunit</title>
 

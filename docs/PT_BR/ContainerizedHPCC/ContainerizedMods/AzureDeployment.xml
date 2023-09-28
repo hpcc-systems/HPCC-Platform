@@ -1,0 +1,710 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter id="HPCC_Azure_deployment">
+  <title>Implantação do Azure (Desenvolvimento, Teste e Produção)</title>
+
+  <para>Esta seção deve se aplicar à maioria das instâncias do Azure. Pode ser
+  necessário ajustar alguns comandos ou instruções de acordo com os requisitos
+  da sua instância.</para>
+
+  <sect1 id="Using_Azure_SECT1" role="nobrk">
+    <title>Utilizando Azure</title>
+
+    <para>Embora existam muitas maneiras de interagir com o Azure, esta seção
+    usará a interface de linha de comando do shell de nuvem do Azure.</para>
+
+    <para>A principal vantagem de usar o cloud shell é que ele também terá os
+    outros pré-requisitos instalados para você.</para>
+
+    <sect2 id="UsingAZ_Prerequisites">
+      <title>Pré-Requisitos</title>
+
+      <para>Para implantar uma instância de plataforma em contêiner do HPCC
+      Systems no Azure, você deve ter:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>Um computador que suporta Linux, MacOS, ou Windows.</para>
+        </listitem>
+
+        <listitem>
+          <para>Um navegador, como Chrome ou Firefox.</para>
+        </listitem>
+
+        <listitem>
+          <para>Uma conta do Azure com permissões, direitos e credenciais
+          suficientes. Para obtê-lo, acesse www.azure.com ou fale com seu
+          gerente se acreditar que seu empregador pode ter uma conta
+          corporativa.</para>
+        </listitem>
+
+        <listitem>
+          <para>Um editor de texto. Você pode usar um dos editores disponíveis
+          no shell de nuvem do Azure (code, vi ou nano) ou qualquer outro
+          editor de texto de sua preferência.</para>
+        </listitem>
+
+        <listitem>
+          <para>No mínimo, usando o Helm 3.5 de 64 bits ou superior - mesmo se
+          estiver usando o shell de nuvem do Azure.</para>
+        </listitem>
+      </itemizedlist>
+
+      <para>Supondo que você tenha uma conta do Azure com créditos adequados,
+      você pode usar o shell baseado em navegador do Azure, conhecido como
+      shell de nuvem do Azure, para implantar e gerenciar seus recursos. O
+      shell de nuvem do Azure vem com ferramentas pré-instaladas, como Helm,
+      Kubectl, Python, Terraform, etc.</para>
+
+      <programlisting>https://portal.azure.com/</programlisting>
+
+      <para>Se esta for a primeira vez que você acessa o shell de nuvem, o
+      Azure provavelmente o notificará sobre a necessidade de armazenamento
+      para salvar as configurações e os arquivos da máquina virtual.</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>Clique através dos prompts para criar sua conta de
+          armazenamento.</para>
+        </listitem>
+      </itemizedlist>
+
+      <para>Agora você deve ter um shell de nuvem do Azure que está pronto
+      para uso. Agora você pode prosseguir para a próxima seção.</para>
+
+      <sect3 id="AZ_ThirdPartyTools">
+        <title>Ferramentas de Terceiros</title>
+
+        <para>Caso decida não usar o shell de nuvem do Azure, você precisará
+        instalar e configurar a CLI do Azure em seu computador host para
+        implantar e gerenciar os recursos do Azure. Além disso, você também
+        precisará instalar o Helm e o Kubectl para gerenciar seus pacotes e
+        clusters do Kubernetes, respectivamente.</para>
+
+        <para><itemizedlist>
+            <listitem>
+              <para>Azure Client Interface (CLI)</para>
+            </listitem>
+
+            <listitem>
+              <para>Kubectl</para>
+            </listitem>
+
+            <listitem>
+              <para>Helm 3.5 ou maior</para>
+            </listitem>
+          </itemizedlist>Todas as ferramentas de terceiros listadas acima
+        devem usar a arquitetura de 64 bits.</para>
+
+        <para>A documentação e as instruções sobre como instalar e configurar
+        as ferramentas de terceiros estão disponíveis nos respectivos sites
+        dos respectivos fornecedores.</para>
+      </sect3>
+    </sect2>
+
+    <sect2>
+      <title>Azure Resource Group</title>
+
+      <para>Um resource group do Azure é semelhante a uma pasta onde um grupo
+      de recursos relacionados é armazenado. Geralmente, você deve usar apenas
+      um resource group por implantação. Por exemplo, implantar dois clusters
+      Kubernetes em um resource group pode causar confusão e dificuldades de
+      gerenciamento. A menos que você ou alguém em sua organização já tenha
+      criado um resource group e especificado para trabalhar nesse resource
+      group pré-existente, você precisará criar um.</para>
+
+      <para>Para criar um novo resource group, você deve escolher um nome e um
+      local do Azure. Além disso, você pode optar por usar tags para facilitar
+      o gerenciamento de seus resource groups. Alguns dos detalhes sobre isso
+      podem estar sujeitos a você ou às assinaturas, cotas, restrições ou
+      políticas de sua organização. Certifique-se de ter uma assinatura do
+      Azure configurada corretamente com um nível de acesso e créditos
+      suficientes para uma implantação bem-sucedida.</para>
+
+      <para>Execute o seguinte comando para criar um novo resource group
+      chamado rg-hpcc no Azure:</para>
+
+      <programlisting>az group create --name rg-hpcc --location eastus</programlisting>
+
+      <para>A seguinte mensagem indica que o grupo de recursos foi criado com
+      sucesso.</para>
+
+      <programlisting>{
+  "id": "/subscriptions/&lt;my_subscription_id&gt;/resourceGroups/rsg-hpcc",
+  "location": "eastus",
+  "managedBy": null,
+  "name": "rg-hpcc",
+  "properties": {
+    "provisioningState": "<emphasis role="bold">Succeeded</emphasis>"
+  },
+
+ "tags": null,
+ "type": "Microsoft.Resources/resourceGroups"
+ }</programlisting>
+
+      <para>Observe que a lista de regiões disponíveis para você pode variar
+      de acordo com as políticas e/ou localização de sua empresa.</para>
+
+      <sect3>
+        <title>Cluster de serviço do Azure Kubernetes</title>
+
+        <para>Em seguida, criaremos um cluster do Azure Kubernetes Service
+        (AKS). É um serviço fornecido pelo Azure que oferece Kubernetes sem
+        servidor, que promove entrega rápida, dimensionamento etc.</para>
+
+        <para>Você pode escolher qualquer nome para seu cluster Kubernetes.
+        Nós utilizaremos aks-hpcc. Para criar um cluster Kubernetes, execute o
+        seguinte comando:</para>
+
+        <programlisting>az aks create --resource-group rg-hpcc --name aks-hpcc --location &lt;location&gt;</programlisting>
+
+        <variablelist>
+          <varlistentry>
+            <term>NOTA</term>
+
+            <listitem>
+              <para>Existem alguns paramêtros opcionais, incluindo <emphasis
+              role="code">--node-vm-size</emphasis> e <emphasis
+              role="code">--node-count.</emphasis> O tamanho do nó refere-se
+              às especificações da VM de sua escolha, enquanto a contagem de
+              nós refere-se ao número de VMs que você deseja usar. Para mais
+              sobre tamanho de node, por favor visite <ulink
+              url="https://docs.microsoft.com/en-us/azure/virtual-machines/sizes">https://docs.microsoft.com/en-us/azure/virtual-machines/sizes</ulink></para>
+            </listitem>
+          </varlistentry>
+        </variablelist>
+
+        <para>Esta etapa pode levar alguns minutos. O tempo que leva para o
+        Azure criar e provisionar os recursos solicitados pode variar.
+        Enquanto espera pela conclusão da implantação, você pode visualizar o
+        progresso no portal do Azure. Para visualizar o progresso, abra outra
+        guia do navegador e digite:2</para>
+
+        <programlisting>https://portal.azure.com/#blade/HubsExtension/BrowseAll</programlisting>
+      </sect3>
+
+      <sect3>
+        <title id="Azure_NodePools">Azure Node Pools</title>
+
+        <para>O Azure Kubernetes Service (AKS) cria automaticamente um pool de
+        nós. É um pool de nós do sistema, por padrão. Existem dois tipos de
+        pool de nós: pools de <emphasis>nós do sistema</emphasis> e
+        <emphasis>pools de nós do usuário</emphasis>. O pool de nós do sistema
+        é reservado para os principais serviços e cargas de trabalho do
+        Kubernetes, como kubelets, kube-proxies etc. Um pool de nós do usuário
+        deve ser usado para hospedar seus serviços de aplicativos e cargas de
+        trabalho. Pools de nós adicionais podem ser adicionados após a
+        implantação do cluster AKS.</para>
+
+        <para>Para seguir as recomendações para reservar o pool de nós do
+        sistema apenas para os principais serviços AKS e cargas de trabalho.
+        Você precisará usar uma mancha de nó no pool de nós do sistema
+        recém-criado. Como você não pode adicionar taints a nenhum pool de nós
+        pré-existente, troque o pool de nós do sistema padrão pelo
+        recém-criado.</para>
+
+        <para>Para fazer isso, digite o seguinte comando (todos em uma linha,
+        se possível, e remova os conectores "\", pois eles são incluídos aqui
+        apenas para que o código caiba em uma única página):</para>
+
+        <programlisting>az aks nodepool add \ 
+--name sysnodepool \ 
+--cluster-name aks-hpcc \ 
+--resource-group rg-hpcc \ 
+--mode System \ 
+--enable-cluster-autoscaler \ 
+--node-count=2 \ 
+--min-count=1 \ 
+--max-count=2 \
+--node-vm-size \ 
+--node-taints CriticalAddonsOnly=true:NoSchedule 
+</programlisting>
+
+        <para>Exclua o pool padrão criado automaticamente, que chamamos de
+        "nodepool1" como exemplo, o nome real pode variar.</para>
+
+        <para>Mais uma vez, digite o comando em uma única linha, (sem
+        conectores "\" se possível).</para>
+
+        <programlisting>az aks nodepool delete \ 
+--name nodepool1 \ 
+--cluster-name aks-hpcc \ 
+--resource-group rg-hpcc 
+</programlisting>
+
+        <para>Recomendamos ter pelo menos um pool de nós de usuário.</para>
+
+        <para>Em seguida, adicione um<emphasis> pool de nós de
+        usuário</emphasis> que agendará os pods do HPCC Systems. Lembre-se
+        também de inserir o comando em uma única linha, sem os conectores, se
+        possível:</para>
+
+        <programlisting>az aks nodepool add \ 
+--name usrnodepool1 \ 
+--cluster-name aks-hpcc \ 
+--resource-group rg-hpcc \ 
+--enable-cluster-autoscaler \ 
+--node-count=2 \ 
+--min-count=1 \ 
+--max-count=2 \ 
+--mode User 
+</programlisting>
+
+        <para>Para maiores informações sobre preços e modelos de Azure virtual
+        machine, por favor visite: <ulink
+        url="https://azure.microsoft.com/en-us/pricing/details/virtual-machines/">https://azure.microsoft.com/en-us/pricing/details/virtual-machines/linux/</ulink></para>
+      </sect3>
+
+      <sect3 id="AZ_Configure_Credentials">
+        <title>Configurando Credenciais</title>
+
+        <para>Para gerenciar seu cluster AKS de sua máquina host e usar o
+        <emphasis>kubectl</emphasis>, você precisa se autenticar no cluster.
+        Além disso, isso também permitirá que você implante sua instância HPCC
+        Systems usando o Helm. Para configurar as credenciais do cliente
+        Kubernetes, insira o seguinte comando:</para>
+
+        <programlisting>az aks get-credentials --resource-group rg-hpcc --name aks-hpcc --admin</programlisting>
+      </sect3>
+    </sect2>
+
+    <sect2 id="AZ_Installing_TheHelmChrts">
+      <title>Instale o charts Helm</title>
+
+      <para>Esta seção demonstrará como buscar, modificar e implantar os
+      charts do HPCC Systems. Primeiro, precisamos acessar o repositório HPCC
+      Systems. </para>
+
+      <para>Para adicionar, ou atualizar, caso já tenha instalado, o
+      repositório do chart do HPCC Systems:</para>
+
+      <programlisting>helm repo add hpcc https://hpcc-systems.github.io/helm-chart/</programlisting>
+
+      <para>Para atualizar o repositório:</para>
+
+      <programlisting>helm repo update</programlisting>
+
+      <para>Você deve sempre atualizar o repositório antes de implantar. Isso
+      permite que você obtenha as versões mais recentes das dependências do
+      chart.</para>
+
+      <sect3 id="AZ_INstalling-the-HPCCComponents">
+        <title>Instalando os componente do HPCC Systems</title>
+
+        <para>Para que uma instalação básica seja bem-sucedida, ela deve ter
+        algum tipo de armazenamento ativado. As etapas a seguir criarão
+        armazenamento efêmero usando o utilitário
+        <emphasis>azstorage</emphasis> que permitirá que o HPCC Systems sejam
+        iniciados e executados, mas não persistirão. Para fazer isso,
+        implantaremos o chart <emphasis>hpcc-azurefile</emphasis> que
+        configurará o armazenamento efêmero do Azure para a implantação do
+        HPCC Systems.</para>
+
+        <para>Para instalar o chart hpcc-azurefile:</para>
+
+        <programlisting>helm install azstorage hpcc/hpcc-azurefile</programlisting>
+
+        <para>O objetivo aqui é obter os valores padrão do chart
+        <emphasis>azstorage</emphasis> e criar um arquivo de personalização
+        que passará os valores apropriados para a instância do HPCC
+        Systems.</para>
+
+        <para>Copie a saída do comando helm install que você emitiu na etapa
+        anterior, do parâmetro <emphasis role="bold">storage:</emphasis> até o
+        final do arquivo e salve o arquivo como
+        <emphasis>mystorage.yaml</emphasis>. O arquivo
+        <emphasis>mystorage.yaml </emphasis>deve ser muito semelhante ao
+        seguinte:</para>
+
+        <programlisting>storage:
+  planes:
+  - name: dali
+    pvc: dali-azstorage-hpcc-azurefile-pvc
+    prefix: "/var/lib/HPCCSystems/dalistorage"
+    category: dali
+  - name: dll
+    pvc: dll-azstorage-hpcc-azurefile-pvc
+    prefix: "/var/lib/HPCCSystems/queries"
+    category: dll
+  - name: sasha
+    pvc: sasha-azstorage-hpcc-azurefile-pvc
+    prefix: "/var/lib/HPCCSystems/sasha"
+    category: sasha
+  - name: data
+    pvc: data-azstorage-hpcc-azurefile-pvc
+    prefix: "/var/lib/HPCCSystems/hpcc-data"
+    category: data
+  - name: mydropzone
+    pvc: mydropzone-azstorage-hpcc-azurefile-pvc
+    prefix: "/var/lib/HPCCSystems/dropzone"
+    category: lz
+
+
+sasha:
+  wu-archiver:
+    plane: sasha
+  dfuwu-archiver:
+    plane: sasha
+</programlisting>
+
+        <para><variablelist>
+            <varlistentry>
+              <term>Nota:</term>
+
+              <listitem>
+                <para>A indentação, a sintaxe e os caracteres são muito
+                críticos. Certifique-se de que eles correspondam exatamente ao
+                exemplo acima. Um único espaço extra neste arquivo pode causar
+                dores de cabeça desnecessárias.</para>
+              </listitem>
+            </varlistentry>
+          </variablelist>Agora podemos usar este arquivo
+        <emphasis>mystorage.yaml</emphasis> para passar esses valores quando
+        iniciarmos nosso cluster HPCC Systems.</para>
+      </sect3>
+
+      <sect3>
+        <title>Habilitar acesso ao Serviços ESP</title>
+
+        <para>Para acessar sua instância de nuvem HPCC Systems, você deve
+        habilitar a visibilidade dos serviços ESP. Conforme entregues, os
+        serviços ESP são privados com visibilidade apenas local. Para permitir
+        a visibilidade global, instalaremos o cluster HPCC Systems usando um
+        arquivo de personalização para substituir o dicionário ESP. Há mais
+        informações sobre como personalizar sua implantação na documentação de
+        <emphasis>Containerized HPCC Systems.</emphasis></para>
+
+        <para>O objetivo aqui é obter os valores do chart entregue e criar um
+        arquivo de personalização que passará os valores que você deseja para
+        a instância do HPCC Systems. Para obter os valores desse gráfico,
+        digite o seguinte comando:</para>
+
+        <programlisting>helm show values hpcc/hpcc &gt; defaultvalues.yaml</programlisting>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <?dbfo keep-together="always"?>
+
+            <tgroup cols="2">
+              <colspec colwidth="49.50pt"/>
+
+              <colspec/>
+
+              <tbody>
+                <row>
+                  <entry><inlinegraphic
+                  fileref="../../images/caution.png"/></entry>
+
+                  <entry><emphasis role="bold">IMPORTANTE:</emphasis> A
+                  indentação, a sintaxe, os caracteres, bem como cada par de
+                  key-value são muito críticos. Certifique-se de que eles
+                  correspondem exatamente ao exemplo abaixo. Um único espaço
+                  extra ou caractere ausente neste arquivo pode causar dores
+                  de cabeça desnecessárias.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+
+        <para>Utilizando o editor de texto, abra o arquivo
+        <emphasis>defaultvalues.yaml</emphasis> e copie a parte do <emphasis
+        role="bold">esp:</emphasis> arquivo, conforme a seguir:</para>
+
+        <programlisting>esp:
+- name: eclwatch
+  ## Pre-configured esp applications include eclwatch, eclservices, and eclqueries
+  application: eclwatch
+  auth: none
+  replicas: 1
+# Add remote clients to generated client certificates and make the ESP require that one of 
+r to connect
+#   When setting up remote clients make sure that certificates.issuers.remote.enabled is set
+# remoteClients:
+# - name: myclient
+#   organization: mycompany
+  service:
+    ## port can be used to change the local port used by the pod. If omitted, the default por
+    port: 8888
+    ## servicePort controls the port that this service will be exposed on, either internally 
+    servicePort: 8010
+    ## Specify visibility: local (or global) if you want the service available from outside  
+externally, while eclservices is designed for internal use.
+    visibility: local
+    ## Annotations can be specified on a service - for example to specify provider-specific i
+-balancer-internal-subnet
+    #annotations:
+    #  service.beta.kubernetes.io/azure-load-balancer-internal-subnet: "mysubnet"
+    #  The service.annotations prefixed with hpcc.eclwatch.io should not be declared here. T
+    #  in other services in order to be exposed in the ECLWatch interface. Similar function c
+    #  applications. For other applications, the "eclwatch" inside the service.annotations sh
+    #  their application names. 
+    #  hpcc.eclwatch.io/enabled: "true"
+    #  hpcc.eclwatch.io/description: "some description"
+    ## You can also specify labels on a service
+    #labels:
+    #  mylabel: "3"
+    ## Links specify the web links for a service. The web links may be shown on ECLWatch.
+    #links:
+    #- name: linkname
+    #  description: "some description"
+    #  url: "http://abc.com/def?g=1"
+    ## CIDRS allowed to access this service.
+    #loadBalancerSourceRanges: [1.2.3.4/32, 5.6.7.8/32]
+  #resources:
+  #  cpu: "1"
+  #  memory: "2G"
+- name: eclservices
+  application: eclservices
+  auth: none
+  replicas: 1
+  service:
+    servicePort: 8010
+    visibility: cluster
+  #resources:
+  #  cpu: "250m"
+  #  memory: "1G"
+- name: eclqueries
+  application: eclqueries
+  auth: none
+  replicas: 1
+  service:
+    visibility: local
+    servicePort: 8002
+    #annotations:
+    #  hpcc.eclwatch.io/enabled: "true"
+    #  hpcc.eclwatch.io/description: "Roxie Test page"
+    #  hpcc.eclwatch.io/port: "8002"
+  #resources:
+  #  cpu: "250m"
+  #  memory: "1G"
+- name: esdl-sandbox
+  application: esdl-sandbox
+  auth: none
+  replicas: 1
+  service:
+    visibility: local
+    servicePort: 8899
+  #resources:
+  #  cpu: "250m"
+  #  memory: "1G"
+- name: sql2ecl
+  application: sql2ecl
+  auth: none
+  replicas: 1
+# remoteClients:
+# - name: sqlclient111
+  service:
+    visibility: local
+    servicePort: 8510
+  #domain: hpccsql.com
+  #resources:
+  #  cpu: "250m"
+  #  memory: "1G"
+- name: dfs
+  application: dfs
+  auth: none
+  replicas: 1
+  service:
+    visibility: local
+    servicePort: 8520
+  #resources:
+  #  cpu: "250m"
+  #  memory: "1G"
+</programlisting>
+
+        <para>Salve essa parte do ESP em um novo arquivo chamado
+        <emphasis>myesp.yaml</emphasis>. Você precisa modificar esse arquivo e
+        usá-lo para substituir esses valores padrão em sua implantação.</para>
+
+        <para>Para acessar os serviços HPCC Systems, você deve substituir
+        essas configurações padrão para torná-las visíveis. Agora vamos
+        definir a visibilidade para eclwatch e eclqueries de local para global
+        como no exemplo abaixo. Edite o arquivo
+        <emphasis>myesp.yaml</emphasis> e altere as duas seções destacadas nos
+        exemplos de código abaixo:</para>
+
+        <programlisting>esp:
+- name: eclwatch
+  ## Pre-configured esp applications include eclwatch, eclservices, and eclqueries
+  application: eclwatch
+  auth: none
+  replicas: 1
+  service:
+    ## port can be used to change the local port used by the pod. If omitted, the default por
+    port: 8888
+    ## servicePort controls the port that thi cesps service will be exposed on, either intern
+    servicePort: 8010
+    ## Specify visibility: local (or global) if you want the service available from outside t
+externally, while eclservices is designed for internal use.
+    <emphasis role="bold">visibility: global</emphasis> 
+    ## Annotations can be specified on a service - for example to specify provider-specific i</programlisting>
+
+        <para/>
+
+        <programlisting>- name: eclqueries
+  application: eclqueries
+  auth: none
+  replicas: 1
+  service:
+    <emphasis role="bold">visibility: global</emphasis>
+    servicePort: 8002</programlisting>
+
+        <para>Salve o arquivo customizado <emphasis>myesp.yaml</emphasis>
+        modificado.</para>
+
+        <para>Agora, podemos usar o arquivo <emphasis>myesp.yaml</emphasis>
+        para informar os valores quando iniciarmos nosso cluster HPCC
+        Systems.</para>
+      </sect3>
+
+      <sect3 id="AZ-Install-theCustomizedHPCC-Chart">
+        <title>Instalar um chart customizado do HPCC Systems</title>
+
+        <para>Esta seção instalará o chart HPCC Systems onde fornecemos os
+        arquivos de customização do <emphasis>myesp.yaml</emphasis> e
+        <emphasis>mystorage.yaml</emphasis> criados na seção anterior. Você
+        deve criar ou adicionar suas próprias personalizações adicionais em um
+        desses ou até mesmo em outro arquivo <emphasis>yaml</emphasis> de
+        personalização específico para seus requisitos. A criação e o uso de
+        versões personalizadas do arquivo <emphasis>values.yaml</emphasis> do
+        HPCC Systems são descritos na seção <emphasis>Customizing
+        Configurations</emphasis> do documento <emphasis>Containerized HPCC
+        Systems</emphasis>. Para instalar seus charts personalizados do HPCC
+        Systems:</para>
+
+        <programlisting>helm install myhpcccluster hpcc/hpcc -f myesp.yaml -f mystorage.yaml</programlisting>
+
+        <para>Onde a opção -f força o sistema a mesclar os valores informados
+        nos arquivos <emphasis>myesp.yaml</emphasis> e
+        <emphasis>mystorage.yaml</emphasis>.</para>
+
+        <para><variablelist>
+            <varlistentry>
+              <term>Nota:</term>
+
+              <listitem>
+                <para>Você pode também usar a opção <emphasis
+                role="code">--values</emphasis> como substituto para <emphasis
+                role="code">-f</emphasis></para>
+              </listitem>
+            </varlistentry>
+          </variablelist></para>
+
+        <para>Se tudo estiver certo, seu output será similar ao exemplo a
+        seguir:</para>
+
+        <programlisting>NAME: myhpcccluster
+LAST DEPLOYED: Wed Dec 15 09:41:38 2021
+NAMESPACE: default
+STATUS: deployed
+REVISION: 1
+TEST SUITE: None
+</programlisting>
+
+        <para>Neste ponto, o Kubernetes deve começar a provisionar os pods do
+        HPCC Systems. Para verificar o status, execute:</para>
+
+        <programlisting>kubectl get pods </programlisting>
+
+        <variablelist>
+          <varlistentry>
+            <term>Nota:</term>
+
+            <listitem>
+              <para>Se esta for a primeira vez que a instalação do helm é
+              executada, levará algum tempo para que os pods cheguem ao estado
+              Running, pois o Azure precisará extrair as imagens do contêiner
+              do Docker. Depois que todos os pods estiverem em execução, o
+              HPCC Systems Cluster estará pronto para ser usado.</para>
+            </listitem>
+          </varlistentry>
+        </variablelist>
+
+        <para/>
+      </sect3>
+    </sect2>
+
+    <sect2 id="Az-AccessECLWatch">
+      <title>Acessando o ECLWatch</title>
+
+      <para>Para acessar o ECLWatch, é necessário um IP externo para o serviço
+      ESP executar o ECLWatch. Se você implantou seu cluster com êxito com as
+      configurações de visibilidade adequadas, ele será listado como um
+      serviço <emphasis>eclwatch</emphasis>. O endereço IP pode ser obtido
+      executando o seguinte comando:</para>
+
+      <programlisting>kubectl get svc </programlisting>
+
+      <para>Seu output deve ser similiar ao exemplo a seguir:</para>
+
+      <programlisting>NAME        TYPE         CLUSTER-IP    EXTERNAL-IP     PORT(S)         AGE
+eclservices ClusterIP    10.0.44.11    &lt;none&gt;          8010/TCP        11m
+<emphasis role="bold">eclwatch    LoadBalancer 10.0.21.16    12.87.156.228   8010:30190/TCP  11m</emphasis>
+kubernetes  ClusterIP    10.0.0.1      &lt;none&gt;          443/TCP         4h28m
+mydali      ClusterIP    10.0.195.229  &lt;none&gt;          7070/TCP        11m</programlisting>
+
+      <para>Use o endereço de IP-EXTERNO listado para o serviço ECLWatch. Abra
+      o navegador e digite http://&lt;ip-externo&gt;:8010/. Por exemplo,
+      digite http://12.87.156.228:8010. Se tudo funcionar conforme esperado, a
+      página inicial do ECLWatch será exibida.</para>
+    </sect2>
+
+    <sect2 id="AZUninstall_YourCluster">
+      <title>Desinstalando seu Cluster</title>
+
+      <para>Quando terminar de usar o cluster HPCC Systems, você poderá
+      destruí-lo para evitar cobranças por recursos não utilizados. Uma conta
+      de armazenamento é recomendada para salvar seus dados HPCC Systems fora
+      do Serviço Azure Kubernetes. Isso permite que você destrua o serviço sem
+      perder seus dados.</para>
+
+      <para>As várias opções e estratégias de armazenamento são discutidas em
+      outro lugar, além da documentação do HPCC Systems.</para>
+
+      <sect3>
+        <title>Parando seu cluster HPCC Systems</title>
+
+        <para>Isso simplesmente interromperá sua instância do HPCC Systems. Se
+        você estiver excluindo o grupo de recursos, conforme detalhado na
+        seção a seguir, isso destruirá tudo nele, incluindo o cluster HPCC
+        Systems. A desinstalação da implantação do HPCC Systems nesse caso é
+        redundante. Você ainda será cobrado pelo AKS. Se, por qualquer motivo,
+        você não puder destruir o Resource Group, siga as etapas nesta seção
+        para desligar o cluster HPCC Systems.</para>
+
+        <para>Para desligar seu cluster HPCC Systems, você deve utilizar o
+        comando de desistalação do helm.</para>
+
+        <para>Utilizando o Azure cloud shell, digita:</para>
+
+        <programlisting>helm list</programlisting>
+
+        <para>Digite o comando de desinstalação do helm usando o nome do
+        cluster como argumento, por exemplo:</para>
+
+        <programlisting>helm uninstall myhpcccluster</programlisting>
+
+        <para>Isto irá remover o cluster HPCC Systems &lt;myhpcccluster&gt;
+        que você implantou previamente.</para>
+      </sect3>
+
+      <sect3>
+        <title>Removendo o Resource Group</title>
+
+        <para>A remoção do Resource Group destruirá irreversivelmente
+        quaisquer pods, clusters, conteúdos ou qualquer outro trabalho
+        armazenado nele. Considere cuidadosamente essas ações antes de
+        remover. Uma vez removido, não pode ser desfeito.</para>
+
+        <para>Para remover todo o grupo de recursos
+        <emphasis>rg-hpcc</emphasis> que criamos anteriormente e todo o seu
+        conteúdo, envie o seguinte comando:</para>
+
+        <programlisting>az group delete --name rg-hpcc</programlisting>
+
+        <para>Ele perguntará se você tem certeza de que deseja fazer isso e,
+        se confirmar, excluirá todo o Resource Group.</para>
+      </sect3>
+    </sect2>
+  </sect1>
+</chapter>

@@ -75,16 +75,13 @@
 
   <para>Exemplo:</para>
 
-  <programlisting>IMPORT Python;
-
-INTEGER addthree(INTEGER p) := IMPORT(Python, 'python_mod_name.addThree');
-
-//Java Example setting the classpath
-IMPORT java;
-STRING jcat(STRING a, STRING b) := 
-        IMPORT(java, 'JavaCat.cat:(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;'
-        : classpath('/opt/HPCCSystems/classes/'));
-jcat('I',' concatenate');</programlisting>
+  <programlisting lang="mixed" role="NOTrunnable">IMPORT Python3 AS Python;
+// This example illustrates scalar parameters and resuls
+integer add1(integer val) := EMBED(Python)
+  val+1
+ENDEMBED;
+add1(27); //returns 28
+</programlisting>
 
   <para>Ver também: <link linkend="IMPORT">IMPORT</link>, <link
   linkend="EMBED_Structure">Estrutura EMBED</link></para>

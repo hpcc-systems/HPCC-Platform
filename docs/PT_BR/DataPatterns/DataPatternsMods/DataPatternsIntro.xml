@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter id="DPIntro">
+  <title><emphasis>Introdução ao Padrão de Dados</emphasis></title>
+
+  <para>Data Patterns é um pacote de biblioteca e ECL que serve principalmente
+  como uma ferramenta de criação de perfil de dados para fornecer uma análise
+  de um dataset no HPCC.</para>
+
+  <para>Em muitos lugares deste documento, "Padrões de Dados" é usado para
+  significar "perfil de dados".</para>
+
+  <para>Os Padrões de Dados permitem ver se os valores nos campos do dataset
+  são representados de maneira ideal por seu tipo de dados e outras
+  informações gerais, como valores extremos, médias e outras constantes
+  numéricas. Um registro é fornecido para cada campo analisado.</para>
+
+  <para>A análise fornecida pela ferramenta permite compreender o sentido
+  geral de um dataset.</para>
+
+  <para>Os padrões de dados podem ser invocados de três maneiras:</para>
+
+  <itemizedlist>
+    <listitem>
+      <para>Dentro do ECL Watch</para>
+    </listitem>
+
+    <listitem>
+      <para>Usando o módulo Std.DataPatterns no ECL</para>
+    </listitem>
+
+    <listitem>
+      <para>Usando o pacote de padrões de dados.</para>
+    </listitem>
+  </itemizedlist>
+
+  <para>As instalações têm diferenças. O uso de padrões de dados no ECL watch
+  oferece suporte apenas à criação de perfil e otimização de dados, mas inclui
+  visualizações automaticamente. A Biblioteca Padrão ECL não oferece suporte a
+  visualizações.</para>
+
+  <para>Existem numerosos parâmetros para controlar a saída e análise:</para>
+
+  <itemizedlist>
+    <listitem>
+      <para>Analisa todas as linhas de um conjunto de dados ou apenas uma
+      amostra</para>
+    </listitem>
+
+    <listitem>
+      <para>Analisa todos os campos ou apenas alguns campos</para>
+    </listitem>
+
+    <listitem>
+      <para>Habilitar apenas verificações de perfil especificadas</para>
+    </listitem>
+
+    <listitem>
+      <para>Especifique contagens de valores retornados.</para>
+    </listitem>
+  </itemizedlist>
+</chapter>

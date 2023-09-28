@@ -1149,6 +1149,40 @@ void EspHttpBinding::handleHttpPost(CHttpRequest *request, CHttpResponse *respon
         addToESPCache(cacheClient, request, response, cacheID.str(), cacheSeconds);
 }
 
+int EspHttpBinding::onGetUnrestricted(CHttpRequest* request, CHttpResponse* response,
+    const char *serviceName, const char *methodName, sub_service sstype)
+{
+    IEspContext& context = *request->queryContext();
+    LogLevel level = getEspLogLevel(&context);
+    if (level >= LogNormal)
+        DBGLOG("EspHttpBinding::onGetUnrestricted");
+
+    response->setVersion(HTTP_VERSION);
+    response->addHeader("Expires", "0");
+    response->setStatus(HTTP_STATUS_OK);
+
+    // adjust version if necessary
+    if (m_defaultSvcVersion.get() && !context.queryRequestParameters()->queryProp("ver_"))
+        context.setClientVersion(atof(m_defaultSvcVersion));
+
+    switch (sstype)
+    {
+        case sub_serv_xsd:
+            return onGetXsd(context, request, response, serviceName, methodName);
+        case sub_serv_wsdl:
+            return onGetWsdl(context, request, response, serviceName, methodName);
+        case sub_serv_reqsamplexml:
+            return onGetReqSampleXml(context, request, response, serviceName, methodName);
+        case sub_serv_respsamplexml:
+            return onGetRespSampleXml(context, request, response, serviceName, methodName);
+        case sub_serv_respsamplejson:
+            return onGetRespSampleJson(context, request, response, serviceName, methodName);
+        case sub_serv_reqsamplejson:
+            return onGetReqSampleJson(context, request, response, serviceName, methodName);
+    }
+    return 0;
+}
+
 int EspHttpBinding::onGet(CHttpRequest* request, CHttpResponse* response)
 {
     IEspContext& context = *request->queryContext();
@@ -1182,13 +1216,7 @@ int EspHttpBinding::onGet(CHttpRequest* request, CHttpResponse* response)
         case sub_serv_main:
         case sub_serv_index:
         case sub_serv_xform:
-        case sub_serv_xsd:
-        case sub_serv_wsdl:
         case sub_serv_soap_builder:
-        case sub_serv_reqsamplexml:
-        case sub_serv_respsamplexml:
-        case sub_serv_respsamplejson:
-        case sub_serv_reqsamplejson:
             context.setClientVersion(atof(m_defaultSvcVersion));
 
         default:
@@ -1224,24 +1252,12 @@ int EspHttpBinding::onGet(CHttpRequest* request, CHttpResponse* response)
             return onGetXForm(context, request, response, serviceName.str(), methodName.str());
         case sub_serv_result:
             return onGetResult(context, request, response, serviceName.str(), methodName.str(), pathEx.str());
-        case sub_serv_wsdl:
-            return onGetWsdl(context, request, response, serviceName.str(), methodName.str());
-        case sub_serv_xsd:
-            return onGetXsd(context, request, response, serviceName.str(), methodName.str());
         case sub_serv_instant_query:
             return onGetInstantQuery(context, request, response, serviceName.str(), methodName.str());
         case sub_serv_soap_builder:
             return onGetSoapBuilder(context, request, response, serviceName.str(), methodName.str());
         case sub_serv_json_builder:
             return onGetJsonBuilder(context, request, response, serviceName.str(), methodName.str());
-        case sub_serv_reqsamplexml:
-            return onGetReqSampleXml(context, request, response, serviceName.str(), methodName.str());
-        case sub_serv_respsamplexml:
-            return onGetRespSampleXml(context, request, response, serviceName.str(), methodName.str());
-        case sub_serv_respsamplejson:
-            return onGetRespSampleJson(context, request, response, serviceName.str(), methodName.str());
-        case sub_serv_reqsamplejson:
-            return onGetReqSampleJson(context, request, response, serviceName.str(), methodName.str());
         case sub_serv_query:
             return onGetQuery(context, request, response, serviceName.str(), methodName.str());
         case sub_serv_file_upload:

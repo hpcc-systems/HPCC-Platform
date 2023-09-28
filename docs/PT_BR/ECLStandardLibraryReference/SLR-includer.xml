@@ -63,12 +63,17 @@
   </bookinfo>
 
   <chapter id="Logical_Files">
-    <title><emphasis>Arquivos lógicos</emphasis></title>
+    <title>
+      <emphasis>Arquivos lógicos</emphasis>
+    </title>
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/CompareFiles.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/DeleteLogicalFile.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/GetNoCommonDefault.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/LogicalFileList.xml"

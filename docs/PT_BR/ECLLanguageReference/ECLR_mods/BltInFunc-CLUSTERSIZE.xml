@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="CLUSTERSIZE">
@@ -10,9 +10,9 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="78.40pt" />
+        <colspec colwidth="78.40pt"/>
 
-        <colspec colwidth="310.40pt" />
+        <colspec colwidth="310.40pt"/>
 
         <tbody>
           <row>
@@ -24,9 +24,12 @@
       </tgroup>
     </informaltable></para>
 
-  <para>A constante de tempo de compilaçã  <emphasis role="bold">CLUSTERSIZE  </emphasis>retorna o número de nós em um cluster. Este é o mesmo valor retornado pela função Std.System.ThorLib.Nodes(). Este é o mesmo valor retornado pela função Std.System.ThorLib.Nodes() .</para>
+  <para>A constante de tempo de compilaçã <emphasis role="bold">CLUSTERSIZE
+  </emphasis>retorna o número de nós em um cluster. Este é o mesmo valor
+  retornado pela função Std.System.ThorLib.Nodes(). Este é o mesmo valor
+  retornado pela função Std.System.ThorLib.Nodes() .</para>
 
   <para>Exemplo:</para>
 
-  <programlisting>OUTPUT(CLUSTERSIZE)</programlisting>
+  <programlisting lang="ECL" role="runnable">OUTPUT(CLUSTERSIZE)</programlisting>
 </sect1>

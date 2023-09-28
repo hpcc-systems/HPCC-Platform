@@ -40,6 +40,12 @@
   <para>A ação <emphasis role="bold">dbglog </emphasis> grava a string de
   <emphasis> text</emphasis> no arquivo eclagent.log da tarefa.</para>
 
+  <para>Em uma implantação de plataforma em contêiner, essa ação grava a
+  string de <emphasis>texto</emphasis> no log do pod eclagent, acessível
+  usando este comando:</para>
+
+  <para><programlisting>kubectl logs &lt;podname&gt;</programlisting></para>
+
   <para>Exemplo:</para>
 
   <programlisting format="linespecific">IMPORT STD;

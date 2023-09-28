@@ -461,7 +461,7 @@ results := RECORD
   STRING30 RelationPhrase := MatchText(relationtype);
 END;
 outfile1 := PARSE(datafile,line,progeny,results,SCAN ALL);
-</programlisting>
+OUTPUT(outfile1);</programlisting>
   </sect2>
 
   <sect2 id="PARSE_XML_Data">
@@ -541,7 +541,7 @@ outrec t(lineRec L) := TRANSFORM
 END;
 
 textout := PARSE(in1, line, t(LEFT), XML('/ENTITY[@type="PERSON"]'));
-</programlisting>
+OUTPUT(textout);</programlisting>
 
     <para>Ver também: <link linkend="DATASET">DATASET</link>, <link
     linkend="OUTPUT">OUTPUT</link>, <link
@@ -611,11 +611,11 @@ outfile :=
 OUTPUT(outfile);
 </programlisting>
 
-    <para>Este exemplo analisa um subconjunto pequeno de dados não processados
-    de filmes (disponíveis gratuitamente em IMDB.com) em campos de base de
-    dados padrão:</para>
+    <para>Este exemplo analisa um pequeno subconjunto de dados brutos de
+    filmes em campos padrão do banco de dados:</para>
 
-    <programlisting>Layout_Actors_Raw := RECORD
+    <programlisting>IMPORT Std;
+Layout_Actors_Raw := RECORD
 STRING120 IMDB_Actor_Desc;
 END;
 
@@ -709,5 +709,63 @@ NLP_Actor_Movie := ITERATE(Actor_Movie_Init,IterNames(LEFT,RIGHT));
 // and output the result set
 OUTPUT(NLP_Actor_Movie);
 </programlisting>
+
+    <para>An example of Tomita Parsing (using SELF):</para>
+
+    <para><programlisting>//an example of Tomita Parsing (using SELF):
+
+r1 := RECORD 
+ STRING value;
+END;
+ds := DATASET([{'1'},{'222+33*(1+2+(1))'}], r1);
+
+TOKEN val  := PATTERN('[0-9]')+;
+RULE  expr := SELF '*' SELF | SELF '+' SELF | SELF '(' SELF ')' | val;
+
+parsed_record := RECORD 
+ STRING result := MATCHTEXT(expr);
+END;
+
+PARSE(ds, value, expr, parsed_record,PARSE);
+</programlisting></para>
+
+    <para>Outro exemplo de análise do Tomita:</para>
+
+    <para><programlisting>// This example demonstrates the use of productions in PARSE code
+//(only supported in the Tomita version of PARSE)
+
+PATTERN ws := ['','\t'];
+TOKEN number := PATTERN('[0-9]+');
+TOKEN plus := '+';
+TOKEN minus := '-';
+attrRec := RECORD  //record structure for Tomita parsing
+  INTEGER val;
+END;
+RULE(attrRec) e0 :=  '(' USE(attrRec,expr)? ')'    //USE = forward reference to "expr" definition
+                   | number                   TRANSFORM(attrRec, SELF.val := (INTEGER)$1;)
+                   | minus SELF               TRANSFORM(attrRec, SELF.val := -$2.val;);
+
+RULE(attrRec) e1 :=  e0
+                   | SELF '*' e0              TRANSFORM(attrRec, SELF.val := $1.val * $3.val;)
+                   | SELF '/' e0              TRANSFORM(attrRec, SELF.val := $1.val / $3.val;);
+RULE(attrRec) e2 :=  e1
+                   | SELF plus e1             TRANSFORM(attrRec, SELF.val := $1.val + $3.val;)
+                   | SELF minus e1            TRANSFORM(attrRec, SELF.val := $1.val - $3.val;);
+RULE(attrRec) expr := e2;
+infile := DATASET([{'1+2*3'},{'1+2*100'},{'1+2+(3+4)*4/2'},{'-4*5'}], { STRING line });
+resultsRec := RECORD
+    RECORDOF(infile);
+    attrRec;
+    STRING exprText;
+    INTEGER value3;
+END;
+resultsRec extractResults(infile L, attrRec attr) := TRANSFORM
+   SELF := L;
+   SELF := attr;
+   SELF.exprText := MATCHTEXT;
+   SELF.value3 := MATCHROW(e0[3]).val;
+END;
+OUTPUT(PARSE(infile,line,expr,extractResults(LEFT, $1),FIRST,WHOLE,PARSE,SKIP(ws+)));
+</programlisting></para>
   </sect2>
 </sect1>

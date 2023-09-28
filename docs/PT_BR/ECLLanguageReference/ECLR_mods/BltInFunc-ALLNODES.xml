@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ALLNODES">
@@ -13,33 +13,38 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="78.70pt" />
+        <colspec colwidth="78.70pt"/>
 
-        <colspec colwidth="310.10pt" />
+        <colspec colwidth="310.10pt"/>
 
         <tbody>
           <row>
             <entry><emphasis>operation</emphasis></entry>
 
-            <entry>O nome de um atributo ou código em linha que resulta em um DATASET ou INDEX.</entry>
+            <entry>O nome de um atributo ou código em linha que resulta em um
+            DATASET ou INDEX.</entry>
           </row>
 
           <row>
             <entry>Return:</entry>
 
-            <entry>ALLNODES retorna um conjunto de registros ou índice.</entry>
+            <entry>ALLNODES retorna um conjunto de registros ou
+            índice.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>A função  <emphasis role="bold">ALLNODES </emphasis> especifica que a  <emphasis>operação</emphasis>  é realizada em paralelo em todos os nós.
-  <emphasis role="bold">Essa função está disponível para uso apenas no Roxie.</emphasis></para>
+  <para>A função <emphasis role="bold">ALLNODES </emphasis> especifica que a
+  <emphasis>operação</emphasis> é realizada em paralelo em todos os nós.
+  <emphasis role="bold">Essa função está disponível para uso apenas no
+  Roxie.</emphasis></para>
 
   <para>Exemplo:</para>
 
   <programlisting>ds := ALLNODES(JOIN(SomeData,LOCAL(SomeIndex), LEFT.ID = RIGHT.ID));
 </programlisting>
 
-  <para>Ver também: THISNODE, LOCAL, NOLOCAL</para>
+  <para>Ver também: <link linkend="THISNODE">THISNODE</link>, <link
+  linkend="LOCAL">LOCAL</link>, <link linkend="NOLOCAL">NOLOCAL</link></para>
 </sect1>

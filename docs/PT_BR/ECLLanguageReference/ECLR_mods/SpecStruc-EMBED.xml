@@ -101,7 +101,7 @@
   incorporar código C++ e especificar opções adicionais (por exemplo,
   DISTRIBUTED):</para>
 
-  <para><programlisting>myFunction(string name) := EMBED(C++ [: options]) 
+  <para><programlisting lang="ECL">myFunction(string name) := EMBED(C++ [: options]) 
   ... text 
 ENDEMBED</programlisting></para>
 
@@ -112,8 +112,8 @@ ENDEMBED</programlisting></para>
 
   <para>Exemplo:</para>
 
-  <programlisting>//First form: a structure
-IMPORT Python;  //make Python language available
+  <programlisting lang="ECL">//First form: a structure
+IMPORT Python3 AS Python;  //make Python language available
 
 INTEGER addone(INTEGER p) := EMBED(Python)
 # Python code that returns one more than the value passed to it

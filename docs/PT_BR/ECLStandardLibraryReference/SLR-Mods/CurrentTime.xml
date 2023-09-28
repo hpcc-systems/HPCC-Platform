@@ -41,6 +41,9 @@
   locais do cluster que calcula a hora. Se FALSE, será retornada a hora
   UTC.</para>
 
+  <para>Em sistemas conteinerizados, os servidores geralmente são configurados
+  para UTC, tornando a hora local e o UTC idênticos.</para>
+
   <para>Exemplo:</para>
 
   <programlisting format="linespecific">IMPORT STD;

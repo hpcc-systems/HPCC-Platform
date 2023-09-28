@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="DeleteSuperFile">
@@ -10,28 +10,32 @@
       <primary>File.DeleteSuperFile</primary>
     </indexterm><indexterm>
       <primary>DeleteSuperFile</primary>
-    </indexterm>(</emphasis> <emphasis> superfile </emphasis> <emphasis
-  role="bold">[</emphasis> <emphasis>, subdeleteflag </emphasis> <emphasis
+    </indexterm>(</emphasis> <emphasis> superName </emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis>, deletesub </emphasis> <emphasis
   role="bold">]</emphasis> <emphasis> </emphasis> <emphasis
   role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
-      <colspec colwidth="80.50pt" />
+      <colspec colwidth="80.50pt"/>
 
-      <colspec />
+      <colspec/>
 
       <tbody>
         <row>
-          <entry><emphasis>superfile</emphasis></entry>
+          <entry><emphasis>superName</emphasis></entry>
 
-          <entry>Uma string terminada por nulo que contém o nome lógico do superarquivo.</entry>
+          <entry>Uma string terminada por nulo que contém o nome lógico do
+          superarquivo.</entry>
         </row>
 
         <row>
-          <entry><emphasis>subdeleteflag</emphasis></entry>
+          <entry><emphasis>deletesub</emphasis></entry>
 
-          <entry>Um valor booleano que indica se os subarquivos devem ser excluídos. Se omitido, o padrão é FALSE. <emphasis role="bold">Essa opção não deverá ser usada se o superarquivo contiver qualquer arquivo ou superarquivo estrangeiro.</emphasis></entry>
+          <entry>Um valor booleano que indica se os subarquivos devem ser
+          excluídos. Se omitido, o padrão é FALSE. <emphasis role="bold">Essa
+          opção não deverá ser usada se o superarquivo contiver qualquer
+          arquivo ou superarquivo estrangeiro.</emphasis></entry>
         </row>
 
         <row>
@@ -43,7 +47,8 @@
     </tgroup>
   </informaltable>
 
-  <para>A função  <emphasis role="bold">DeleteSuperFile </emphasis>remove o  <emphasis>superarquivo</emphasis>.</para>
+  <para>A função <emphasis role="bold">DeleteSuperFile </emphasis>remove o
+  <emphasis>superarName</emphasis> superfile.</para>
 
   <para>Essa função não é incluída em uma transação do superarquivo.</para>
 

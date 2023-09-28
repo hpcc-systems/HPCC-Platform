@@ -1023,6 +1023,41 @@ thor:
         categories, including the "ecl" category, are read internally by
         system components and not exposed directly to ECL code.</para>
       </sect3>
+
+      <sect3 id="CV_CrossOriginRes">
+        <title>Cross Origin Resource Handling</title>
+
+        <para>Cross-origin resource sharing (CORS) is a mechanism for
+        integrating applications in different domains. CORS defines how client
+        web applications in one domain can interact with resources in another
+        domain. You can configure CORS support settings in the ESP section of
+        the values.yaml file as illustrated below: </para>
+
+        <programlisting>esp:
+- name: eclwatch
+  application: eclwatch
+  auth: ldap
+  replicas: 1
+  # The following 'corsAllowed' section is used to configure CORS support
+  #   origin - the origin to support CORS requests from
+  #   headers - the headers to allow for the given origin via CORS
+  #   methods - the HTTP methods to allow for the given origin via CORS
+  #
+  corsAllowed:
+  # origin starting with https will only allow https CORS
+  - origin: https://*.example2.com
+    headers:
+    - "X-Custom-Header"
+    methods:
+    - "GET"
+  # origin starting with http will allow http or https CORS
+  - origin: http://www.example.com
+    headers:
+    - "*"
+    methods:
+    - "GET"
+    - "POST" </programlisting>
+      </sect3>
     </sect2>
 
     <sect2>

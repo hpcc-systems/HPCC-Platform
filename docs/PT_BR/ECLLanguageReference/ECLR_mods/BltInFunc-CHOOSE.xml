@@ -62,12 +62,18 @@
 
   <para>Exemplo:</para>
 
-  <programlisting>MyExp := 1+2;
+  <programlisting lang="ECL" role="runnable">MyExp := 1+2;
 MyChoice := CHOOSE(MyExp,9,8,7,6,5); // returns 7
-MyChoice := CHOOSE(MyExp,1,2,3,4,5);  // returns 3
-MyChoice := CHOOSE(MyExp,15,14,13,12,11);  // returns 13
-WorstRate := CHOOSE(IntRate,1,2,3,4,5,6,6,6,6,0);
- // WorstRate receives 6 if the IntRate is 7, 8, or 9
+MyChoice2 := CHOOSE(MyExp,1,2,3,4,5);  // returns 3
+MyChoice3 := CHOOSE(MyExp,15,14,13,12,11);  // returns 13
+OUTPUT(MyChoice); 
+OUTPUT(MyChoice2);
+OUTPUT(MyChoice3); 
+
+IntRate:= 6.5;
+RateRating := CHOOSE(IntRate,'Great','Good','Pretty Good','Fair','Fair','High','High','High','High','Invalid');
+ // RateRating receives 'High' if the IntRate is between 6 and 9
+OUTPUT(RateRating);
 </programlisting>
 
   <para>Ver também: <link linkend="CASE">CASE</link>, <link

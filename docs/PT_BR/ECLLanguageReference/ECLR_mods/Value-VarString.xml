@@ -22,8 +22,10 @@
 
   <para>Exemplo:</para>
 
-  <programlisting>VARSTRING3 MyString := 'ABC';
-       // declares MyString a 3-byte null-terminated string</programlisting>
+  <programlisting lang="ECL" role="runnable">VARSTRING3 MyString := 'ABC';
+       // declares MyString a 3-byte null-terminated string
+OUTPUT(MyString);
+</programlisting>
 
   <para>Ver também: <link linkend="LENGTH">LENGTH</link>, <link
   linkend="TRIM">TRIM</link>, <link

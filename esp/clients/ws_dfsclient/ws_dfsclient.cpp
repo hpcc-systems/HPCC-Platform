@@ -18,6 +18,7 @@
 #include <vector>
 
 #include "jliball.hpp"
+#include "jcontainerized.hpp"
 #include "jflz.hpp"
 #include "jsecrets.hpp"
 #include "seclib.hpp"
@@ -689,7 +690,7 @@ IDFSFile *lookupDFSFile(const char *logicalName, AccessMode accessMode, unsigned
         const IPropertyTree &eclWatch = eclWatchServices->query();
         StringBuffer eclWatchName;
         eclWatch.getProp("@name", eclWatchName);
-        auto result = getExternalService(eclWatchName);
+        auto result = k8s::getExternalService(eclWatchName);
         if (result.first.empty())
             throw makeStringExceptionV(-1, "dfs '%s': service not found", eclWatchName.str());
         if (0 == result.second)

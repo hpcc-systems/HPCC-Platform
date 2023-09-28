@@ -138,13 +138,13 @@
     <para>1. Se não houver padrão, a transform padrão limpará a linha. Por
     exemplo:</para>
 
-    <programlisting>RULE(myRecord) := ; //empty expression = cleared row</programlisting>
+    <programlisting lang="ECL">RULE(myRecord) := ; //empty expression = cleared row</programlisting>
 
     <para>2. Se houver apenas um único padrão com um registro associado, e
     esse registro corresponder com o tipo de regra que está sendo definido.
     Por exemplo:</para>
 
-    <programlisting>RULE(myRecord) e0 := '(' USE(myRecord, 'expression') ')';</programlisting>
+    <programlisting lang="ECL">RULE(myRecord) e0 := '(' USE(myRecord, 'expression') ')';</programlisting>
   </blockquote>
 
   <sect2 id="ParsePattern_Definitions">
@@ -404,7 +404,7 @@
             <entry><emphasis role="bold">PATTERN</emphasis>('<emphasis>regular
             expression</emphasis></entry>
 
-            <entry><programlisting role="tab">Define um padrão usando a <emphasis>expressão regular </emphasis>constituída a partir
+            <entry><programlisting lang="text" role="tab">Define um padrão usando a <emphasis>expressão regular </emphasis>constituída a partir
 dos seguintes elementos de sintaxe suportados:
  (x)                Agrupamento (não deve ser usado para correpondência)
  x|y                Alterativos x ou y xy
@@ -429,7 +429,7 @@ PATTERN AnyChar    := PATTERN(U'[\u0001-\u7fff]');
           <row>
             <entry/>
 
-            <entry><programlisting role="tab">As seguintes expressões de classes de caractere são suportadas
+            <entry><programlisting lang="text" role="tab">As seguintes expressões de classes de caractere são suportadas
 (dentro dos conjuntos): 
 [:alnum:] [:cntrl:] [:lower:] [:upper:] [:space:] 
 [:alpha:] [:digit:] [:print:] [:blank:] [:graph:] 
@@ -439,7 +439,7 @@ PATTERN AnyChar    := PATTERN(U'[\u0001-\u7fff]');
           <row>
             <entry/>
 
-            <entry><programlisting role="tab"><emphasis>Expressões regulares</emphasis> não suportam
+            <entry><programlisting lang="text" role="tab"><emphasis>Expressões regulares</emphasis> não suportam
      ^ $ para marcar o início/fim dos símbolos
      de agrupamento da string [.ch.]
      Equivalence<indexterm>
@@ -475,7 +475,7 @@ PATTERN AnyChar    := PATTERN(U'[\u0001-\u7fff]');
 
     <para>Exemplos:</para>
 
-    <programlisting>rs := RECORD
+    <programlisting lang="ECL" role="runnable">rs := RECORD
 STRING100 line;
 END;
 ds := DATASET([{'the fox; and the hen'}], rs);

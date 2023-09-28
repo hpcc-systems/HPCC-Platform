@@ -532,6 +532,20 @@
             </row>
 
             <row>
+              <entry><emphasis>validateFileType</emphasis></entry>
+
+              <entry>Padrão: True</entry>
+
+              <entry>Se for falso, os mecanismos usam a definição na workunit
+              ECL e ignoram o tipo de arquivo dos metadados do arquivo lógico.
+              Se verdadeiro, esta verificação será sempre ignorada se a ECL
+              estiver lendo um CSV ou um arquivo simples com largura de
+              registro fixa. Além disso, quando verdadeiro, se a ECL estiver
+              lendo XML ou JSON e houver uma incompatibilidade, ela emitirá um
+              aviso e não um erro.</entry>
+            </row>
+
+            <row>
               <entry><emphasis>compressInternalSpills</emphasis></entry>
 
               <entry>Padrão True</entry>
@@ -657,13 +671,24 @@
               <entry/>
 
               <entry>Substitui a configuração no ECL Agent para analisar as
-              workunits               depois que as consultas ECL são
-              executadas (somente Thor). Isso permite que a workunit seja
-              analisada para identificar e exibir potenciais
-                            problemas. Estes possíveis problemas são exibidos
-              na área do ECL Watch               "Warnings &amp; Errors". A
-              configuração global é padronizada para               TRUE, mas
-              pode ser alterado usando o Configuration Manager.</entry>
+              workunits depois que as consultas ECL são executadas (somente
+              Thor). Isso permite que a workunit seja analisada para
+              identificar e exibir potenciais problemas. Estes possíveis
+              problemas são exibidos na área do ECL Watch "Warnings &amp;
+              Errors". A configuração global é padronizada para TRUE, mas pode
+              ser alterado usando o Configuration Manager.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>maxCost</emphasis></entry>
+
+              <entry>Padrão: nenhum</entry>
+
+              <entry>Substitui a configuração de limite na configuração do
+              Thor. Se o limite <emphasis>maxCost</emphasis> for atingido, a
+              guilhotina do job será aplicada e o job será interrompido. Isso
+              não substitui a configuração do <emphasis>hardlimit</emphasis>.
+              Isso é válido apenas para jobs Thor.</entry>
             </row>
           </tbody>
         </tgroup>

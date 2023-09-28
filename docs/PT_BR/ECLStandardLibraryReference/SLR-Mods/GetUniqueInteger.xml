@@ -41,8 +41,8 @@
   </informaltable>
 
   <para>A função <emphasis role="bold">GetUniqueInteger </emphasis> retorna um
-  número que é único entre todos os nós escravos do <emphasis>dali</emphasis>
-  especificado.</para>
+  número que é único entre todos os nós secundários do
+  <emphasis>dali</emphasis> especificado.</para>
 
   <para>Exemplo:</para>
 

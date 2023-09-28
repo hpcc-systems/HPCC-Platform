@@ -33,6 +33,7 @@
 #define JLIBERR_InternalError                   6002
 #define JLIBERR_CppCompileError                 6003
 #define JLIBERR_UnexpectedValue                 6004
+#define JLIBERR_K8sServiceError                 6005
 
 //---- Text for all errors (make it easy to internationalise) ---------------------------
 
