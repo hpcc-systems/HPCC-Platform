@@ -582,10 +582,7 @@ HttpProxy::HttpProxy(int localport, const char* host, int port, FILE* ofile, boo
     if(use_ssl)
     {
 #ifdef _USE_OPENSSL
-        if(sslconfig != NULL)
-            m_ssctx.setown(createSecureSocketContextEx2(sslconfig, ClientSocket));
-        else
-            m_ssctx.setown(createSecureSocketContext(ClientSocket));
+        m_ssctx.setown(createSecureSocketContextEx2(sslconfig, ClientSocket));
 #else
         throw MakeStringException(-1, "HttpProxy: failure to create SSL socket - OpenSSL not enabled in build");
 #endif

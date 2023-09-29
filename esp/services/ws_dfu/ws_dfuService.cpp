@@ -6113,8 +6113,7 @@ void CWsDfuEx::dFUFileAccessCommon(IEspContext &context, const CDfsLogicalFileNa
     StringBuffer dafilesrvHost;
 #ifdef _CONTAINERIZED
     keyPairName.set("signing");
-    Owned<IPropertyTree> info = getIssuerTlsServerConfig(keyPairName);
-    if (!info)
+    if (!hasIssuerTlsConfig(keyPairName))
         throw makeStringExceptionV(-1, "dFUFileAccessCommon: file signing certificate ('%s') not defined in configuration.", keyPairName.str());
 
     auto externalService = k8s::getDafileServiceFromConfig("stream");
@@ -6490,8 +6489,7 @@ bool CWsDfuEx::onDFUFileCreateV2(IEspContext &context, IEspDFUFileCreateV2Reques
 
 #ifdef _CONTAINERIZED
         keyPairName.set("signing");
-        Owned<IPropertyTree> info = getIssuerTlsServerConfig(keyPairName);
-        if (!info)
+        if (!hasIssuerTlsConfig(keyPairName))
             throw makeStringExceptionV(-1, "onDFUFileCreateV2: file signing certificate ('%s' ) not defined in configuration.", keyPairName.str());
 
         const char *planeName = clusterName;

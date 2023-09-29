@@ -534,7 +534,6 @@ StringBuffer &encodeDFUFileMeta(StringBuffer &metaInfoBlob, IPropertyTree *metaI
         metaInfo->serialize(metaInfoBlob);
         const char *keyPairName = metaInfo->queryProp("keyPairName"); // NB: in container mode, this is the name of the secret containing the cert.
 
-        const char *privateKeyFName = nullptr;
         Owned<IPropertyTree> metaInfoEnvelope = createPTree();
 #ifdef _CONTAINERIZED
         /* Encode the public certificate in the request. NB: this is an approach used for JWT token delegation.
@@ -543,24 +542,24 @@ StringBuffer &encodeDFUFileMeta(StringBuffer &metaInfoBlob, IPropertyTree *metaI
          * If the size of this initial request was ever a concern, we could consider other ways to ensure a one-off
          * delivery of this esp public signing cert. to dafilesrv, e.g. by dafilesrv reaching out to esp to request it.
          */
-        Owned<IPropertyTree> info = getIssuerTlsServerConfig(keyPairName);
-        if (!info)
+        Owned<const ISyncedPropertyTree> config = getIssuerTlsSyncedConfig(keyPairName);
+        if (!config || !config->isValid())
             throw makeStringExceptionV(-1, "encodeDFUFileMeta: No '%s' MTLS certificate detected.", keyPairName);
-        privateKeyFName = info->queryProp("privatekey");
-        if (isEmptyString(privateKeyFName))
-            throw makeStringException(-1, "encodeDFUFileMeta: MTLS - private path missing");
-        const char *certPath = info->queryProp("certificate");
-        verifyex(certPath);
-        StringBuffer certificate;
-        certificate.loadFile(certPath);
-        verifyex(certificate.length());
+
+        Owned<const IPropertyTree> info = config->getTree();
+        const char *privateKeyText = info->queryProp("privatekey");
+        if (isEmptyString(privateKeyText))
+            throw makeStringException(-1, "encodeDFUFileMeta: MTLS - private key missing");
+        const char *certificate = info->queryProp("certificate");
+        verifyex(certificate);
         metaInfoEnvelope->setProp("certificate", certificate);
+        Owned<CLoadedKey> privateKey = loadPrivateKeyFromMemory(privateKeyText, nullptr);
 #else
-        privateKeyFName = environment->getPrivateKeyPath(keyPairName);
+        const char *privateKeyFName = environment->getPrivateKeyPath(keyPairName);
         if (isEmptyString(privateKeyFName))
             throw makeStringExceptionV(-1, "Key name '%s' is not found in environment settings: /EnvSettings/Keys/KeyPair.", keyPairName);
-#endif
         Owned<CLoadedKey> privateKey = loadPrivateKeyFromFile(privateKeyFName, nullptr);
+#endif
         StringBuffer metaInfoSignature;
         digiSign(metaInfoSignature, metaInfoBlob.length(), metaInfoBlob.bytes(), *privateKey);
 

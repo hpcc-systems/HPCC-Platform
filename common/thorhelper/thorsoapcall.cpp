@@ -1242,7 +1242,10 @@ public:
         if (!ownedSC)
         {
             if (clientCert != NULL)
-                ownedSC.setown(createSecureSocketContextEx(clientCert->certificate, clientCert->privateKey, clientCert->passphrase, ClientSocket));
+            {
+                Owned<IPropertyTree> config = createSecureSocketConfig(clientCert->certificate, clientCert->privateKey, clientCert->passphrase);
+                ownedSC.setown(createSecureSocketContextEx2(config, ClientSocket));
+            }
             else if (clientCertIssuer.length())
                 ownedSC.setown(createSecureSocketContextSecret(clientCertIssuer.str(), ClientSocket));
             else

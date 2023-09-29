@@ -87,12 +87,18 @@ typedef ISecureSocketContext* (*createSecureSocketContextSecret_t)(const char *m
 
 extern "C" {
 
-SECURESOCKET_API ISecureSocketContext* createSecureSocketContext(SecureSocketType);
-SECURESOCKET_API ISecureSocketContext* createSecureSocketContextEx(const char* certFileOrBuf, const char* privKeyFileOrBuf, const char* passphrase, SecureSocketType);
-SECURESOCKET_API ISecureSocketContext* createSecureSocketContextEx2(const IPropertyTree* config, SecureSocketType);
-SECURESOCKET_API ISecureSocketContext* createSecureSocketContextSSF(ISmartSocketFactory* ssf);
+//The following allow the creation of a secure socket context where the certificates will automatically be updated when they expire.
+SECURESOCKET_API ISecureSocketContext* createSecureSocketContextSynced(const ISyncedPropertyTree * config, SecureSocketType sockettype); // Will become the primary (only) factory method
 SECURESOCKET_API ISecureSocketContext* createSecureSocketContextSecret(const char *mtlsSecretName, SecureSocketType);
 SECURESOCKET_API ISecureSocketContext* createSecureSocketContextSecretSrv(const char *mtlsSecretName, bool requireMtlsConfig);
+SECURESOCKET_API ISecureSocketContext* createSecureSocketContextSSF(ISmartSocketFactory* ssf);
+
+//Helper function to aid migration to the functions above.  This should eventually be removed.
+SECURESOCKET_API IPropertyTree * createSecureSocketConfig(const char* certFileOrBuf, const char* privKeyFileOrBuf, const char* passphrase);
+
+//Legacy factory methods - should be phased out.
+SECURESOCKET_API ISecureSocketContext* createSecureSocketContext(SecureSocketType);
+SECURESOCKET_API ISecureSocketContext* createSecureSocketContextEx2(const IPropertyTree* config, SecureSocketType);
 SECURESOCKET_API ICertificate *createCertificate();
 SECURESOCKET_API int signCertificate(const char* csr, const char* ca_certificate, const char* ca_privkey, const char* ca_passphrase, int days, StringBuffer& certificate);
 };

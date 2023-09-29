@@ -152,10 +152,7 @@ HttpClient::HttpClient(int threads, int times, const char* host, int port, FILE*
     if(use_ssl)
     {
 #ifdef _USE_OPENSSL
-        if(sslconfig != NULL)
-            m_ssctx.setown(createSecureSocketContextEx2(sslconfig, ClientSocket));
-        else
-            m_ssctx.setown(createSecureSocketContext(ClientSocket));
+        m_ssctx.setown(createSecureSocketContextEx2(sslconfig, ClientSocket));
 #else
         throw MakeStringException(-1, "HttpClient: failure to create SSL connection to host '%s': OpenSSL not enabled in build", host);
 #endif
@@ -614,10 +611,7 @@ HttpServer::HttpServer(int port, const char* in, FILE* ofile, bool use_ssl, IPro
     if(use_ssl)
     {
 #ifdef _USE_OPENSSL
-        if(sslconfig != NULL)
-            m_ssctx.setown(createSecureSocketContextEx2(sslconfig, ServerSocket));
-        else
-            m_ssctx.setown(createSecureSocketContext(ServerSocket));
+        m_ssctx.setown(createSecureSocketContextEx2(sslconfig, ServerSocket));
 #else
         throw MakeStringException(-1, "HttpServer: failure to create SSL socket - OpenSSL not enabled in build");
 #endif
@@ -1180,10 +1174,7 @@ HttpProxy::HttpProxy(int localport, const char* host, int port, FILE* ofile, boo
     if(use_ssl)
     {
 #if _USE_OPENSSL
-        if(sslconfig != NULL)
-            m_ssctx.setown(createSecureSocketContextEx2(sslconfig, ClientSocket));
-        else
-            m_ssctx.setown(createSecureSocketContext(ClientSocket));
+        m_ssctx.setown(createSecureSocketContextEx2(sslconfig, ClientSocket));
 #else
         throw MakeStringException(-1, "HttpProxy: failure to create SSL connection to host '%s': OpenSSL not enabled in build", host);
 #endif

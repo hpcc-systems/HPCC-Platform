@@ -22,22 +22,17 @@
 #include "jlib.hpp"
 #include "jstring.hpp"
 
-interface ISecret : extends IInterface
-{
-    virtual const IPropertyTree * getTree() const = 0;
-    virtual bool getKeyValue(MemoryBuffer & result, const char * key) const = 0;
-    virtual bool getKeyValue(StringBuffer & result, const char * key) const = 0;
-    virtual bool isStale() const = 0;
-    //Return a sequence number which changes whenever the secret actually changes - so that a caller can determine
-    //whether it needs to reload the certificates.
-    virtual unsigned getVersion() const = 0;
-};
+interface ISyncedPropertyTree;
 
 extern jlib_decl void setSecretMount(const char * path);
 extern jlib_decl void setSecretTimeout(unsigned timeoutMs);
 
+//Return the current (cached) value of a secret.  If the secret is not defined, return nullptr.
 extern jlib_decl IPropertyTree *getSecret(const char *category, const char * name, const char * optVaultId = nullptr, const char * optVersion = nullptr);
-extern jlib_decl ISecret * resolveSecret(const char *category, const char * name, const char * optRequiredVault, const char* optVersion);
+// resolveSecret() always returns an object, which will potentially be updated behind the scenes.  If no secret is originally
+// defined, but it then configured in a vault or Kubernetes secret, it will be bicked up when the cache entry is
+// refreshed - allowing missing configuration to be updated for a live system.
+extern jlib_decl ISyncedPropertyTree * resolveSecret(const char *category, const char * name, const char * optRequiredVault, const char* optVersion);
 
 extern jlib_decl bool getSecretKeyValue(MemoryBuffer & result, const IPropertyTree *secret, const char * key);
 extern jlib_decl bool getSecretKeyValue(StringBuffer & result, const IPropertyTree *secret, const char * key);
@@ -48,11 +43,14 @@ extern jlib_decl const MemoryAttr &getSecretUdpKey(bool required);
 
 extern jlib_decl bool containsEmbeddedKey(const char *certificate);
 
-//getIssuerTlsServerConfig must return owned because the internal cache could be updated internally and the return will become invalid, so must be linked
-extern jlib_decl IPropertyTree *getIssuerTlsServerConfig(const char *issuer);
-extern jlib_decl IPropertyTree *getIssuerTlsServerConfigWithTrustedPeers(const char *issuer, const char *trusted_peers);
+//getIssuerTlsConfig must return owned because the internal cache could be updated internally and the return will become invalid, so must be linked
+extern jlib_decl const ISyncedPropertyTree * getIssuerTlsSyncedConfig(const char * issuer, const char * optTrustedPeers, bool disableMTLS);
+inline const ISyncedPropertyTree * getIssuerTlsSyncedConfig(const char * issuer) { return getIssuerTlsSyncedConfig(issuer, nullptr, false); }
 
-extern jlib_decl IPropertyTree *createIssuerTlsClientConfig(const char *issuer, bool acceptSelfSigned, bool addCACert=true);
+extern jlib_decl bool hasIssuerTlsConfig(const char *issuer);
+
+extern jlib_decl ISyncedPropertyTree * createIssuerTlsConfig(const char * issuer, const char * optTrustedPeers, bool isClientConnection, bool acceptSelfSigned, bool addCACert, bool disableMTLS);
+extern jlib_decl ISyncedPropertyTree * createStorageTlsConfig(const char * secretName, bool addCACert);
 
 extern jlib_decl  void splitFullUrl(const char *url, bool &https, StringBuffer &user, StringBuffer &password, StringBuffer &host, StringBuffer &port, StringBuffer &fullpath);
 extern jlib_decl void splitUrlSchemeHostPort(const char *url, StringBuffer &user, StringBuffer &password, StringBuffer &schemeHostPort, StringBuffer &path);

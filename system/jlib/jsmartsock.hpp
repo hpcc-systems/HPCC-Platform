@@ -37,7 +37,7 @@ interface jlib_decl ISmartSocket : extends IInterface
     virtual void close() = 0;
 };
 
-
+interface ISyncedPropertyTree;
 interface jlib_decl ISmartSocketFactory : extends IInterface
 {
     virtual int run()=0;
@@ -59,7 +59,7 @@ interface jlib_decl ISmartSocketFactory : extends IInterface
 
     virtual StringBuffer & getUrlStr(StringBuffer &str, bool useHostName) = 0;
     virtual bool isTlsService() const = 0;
-    virtual const IPropertyTree *queryTlsConfig() const = 0;
+    virtual const ISyncedPropertyTree *queryTlsConfig() const = 0;
 };
 
 

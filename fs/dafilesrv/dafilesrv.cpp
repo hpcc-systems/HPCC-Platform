@@ -397,8 +397,7 @@ int main(int argc, const char* argv[])
     // Use the "public" certificate issuer, unless it's visibility is "cluster" (meaning internal only)
     const char *visibility = getComponentConfigSP()->queryProp("service/@visibility");
     const char *certScope = strsame("cluster", visibility) ? "local" : "public";
-    Owned<IPropertyTree> info = getIssuerTlsServerConfig(certScope);
-    connectMethod = info ? SSLOnly : SSLNone;
+    connectMethod = hasIssuerTlsConfig(certScope) ? SSLOnly : SSLNone;
     // NB: connectMethod will direct the CRemoteFileServer on accept to create a secure socket based on the same issuer certificates
 
     dedicatedRowServicePort = 0; // row service always runs on same secure ssl port in containerized mode
