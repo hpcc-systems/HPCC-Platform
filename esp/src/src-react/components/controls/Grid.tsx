@@ -375,6 +375,7 @@ interface FluentPagedFooterProps {
     persistID: string,
     pageNum?: number,
     total: number,
+    selectionCount?: number,
     setPageNum: (pageNum: number) => void,
     setPageSize: (pageNum: number) => void
 }
@@ -383,6 +384,7 @@ export const FluentPagedFooter: React.FunctionComponent<FluentPagedFooterProps> 
     persistID,
     pageNum = 1,
     total,
+    selectionCount = 0,
     setPageNum,
     setPageSize
 }) => {
@@ -463,7 +465,7 @@ export const FluentPagedFooter: React.FunctionComponent<FluentPagedFooterProps> 
                     const start = props.selectedPageIndex === 0 ? 1 : (props.selectedPageIndex * props.itemsPerPage) + 1;
                     const end = (props.itemsPerPage * (props.selectedPageIndex + 1)) > props.totalItemCount ? props.totalItemCount : props.itemsPerPage * (props.selectedPageIndex + 1);
                     return <div className={paginationStyles.paginationLabel}>
-                        {start} {props.strings.divider} {end} {nlsHPCC.Of.toLowerCase()} {props.totalItemCount} {nlsHPCC.Rows}
+                        {start} {props.strings.divider} {end} {nlsHPCC.Of.toLowerCase()} {props.totalItemCount} {nlsHPCC.Rows} {selectionCount ? `(${selectionCount} ${nlsHPCC.Selected})` : ""}
                     </div>;
                 }}
             />

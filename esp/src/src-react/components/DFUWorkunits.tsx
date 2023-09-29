@@ -277,6 +277,7 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
         footer={<FluentPagedFooter
             persistID={"dfuworkunits"}
             pageNum={pageNum}
+            selectionCount={selection.length}
             setPageNum={setPageNum}
             setPageSize={setPageSize}
             total={total}
