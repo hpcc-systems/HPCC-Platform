@@ -265,7 +265,7 @@ void CWsESDLConfigEx::wrapWithDefinitionElement(IEsdlDefinitionInfo* defInfo, St
     ForEach(*iter)
     {
         const char* name = iter->getPropKey();
-        const char* val = metadata.queryProp(name);
+        const char* val = iter->queryPropValue();
         // skip the leading @ in the property name
         definitionElement.appendf(" %s=\"%s\"", &name[1], val);
     }

@@ -32,7 +32,8 @@ interface jlib_decl IPropertyIteratorOf : extends IInterface
     virtual bool first() = 0;
     virtual bool next() = 0;
     virtual bool isValid() = 0;
-    virtual PTYPE getPropKey() = 0;
+    virtual PTYPE getPropKey() const = 0;
+    virtual const char * queryPropValue() const = 0;
 };
 
 template <class PTYPE, class PITER>
@@ -64,7 +65,6 @@ interface jlib_decl IPropertiesOf : extends serializable
 #endif
 
 interface IPropertyIterator : public IPropertyIteratorOf<char_ptr> { };
-interface IAtomPropertyIterator : public IPropertyIteratorOf<IAtom *> { };
 interface IProperties : public IPropertiesOf<char_ptr, IPropertyIterator> { };
 
 #ifdef _MSC_VER

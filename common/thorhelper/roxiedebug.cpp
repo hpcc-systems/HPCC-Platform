@@ -898,7 +898,7 @@ void DebugActivityRecord::outputProperties(IXmlWriter *output)
         while (iterator->isValid())
         {
             const char *propName = iterator->getPropKey();
-            const char *propValue = properties->queryProp(propName);
+            const char *propValue = iterator->queryPropValue();
             output->outputBeginNested("att", false); output->outputCString(propName, "@name"); output->outputCString(propValue, "@value"); output->outputEndNested("att");
             iterator->next();
         }
@@ -1900,7 +1900,7 @@ void CBaseServerDebugContext::getCurrentGraphXGMML(IXmlWriter *output, bool orig
             while (iterator->isValid())
             {
                 const char *graphName = iterator->getPropKey();
-                const char *graphXML = completedGraphs->queryProp(graphName);
+                const char *graphXML = iterator->queryPropValue();
                 output->outputString(0, 0, NULL);
                 output->outputQuoted(graphXML);
                 iterator->next();

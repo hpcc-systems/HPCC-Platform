@@ -685,7 +685,7 @@ IHttpMessage *CHttpClient::sendRequestEx(const char* method, const char* content
             {
                 if (strieq(key, HTTP_HEADER_CONTENT_ENCODING) || strieq(key, HTTP_HEADER_TRANSFER_ENCODING))
                     alreadyEncoded = true;
-                const char *value = headers->queryProp(key);
+                const char *value = iter->queryPropValue();
                 if (value && *value)
                     httprequest->addHeader(key, value);
             }

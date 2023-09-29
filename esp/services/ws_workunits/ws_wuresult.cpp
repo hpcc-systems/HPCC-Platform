@@ -223,7 +223,7 @@ void CWsWuResultOutHelper::readFilterByReq()
     ForEach(*iter)
     {
         const char* keyname = iter->getPropKey();
-        const char* keyValue = reqParams->queryProp(iter->getPropKey());
+        const char* keyValue = iter->queryPropValue();
         if (isEmptyString(keyname) || isEmptyString(keyValue) || strncmp(keyname, "FilterBys", 9))
             continue;
 

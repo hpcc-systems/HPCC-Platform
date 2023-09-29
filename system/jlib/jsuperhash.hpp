@@ -229,7 +229,7 @@ public:
       { if (cur) cur = table.next(cur); return (cur != NULL); }
  
 protected:
-    void *           queryPointer() { assertex(cur); return cur; }
+    void *           queryPointer() const { assertex(cur); return cur; }
 
 private:
     bool linkTable;
@@ -242,7 +242,7 @@ class SuperHashIteratorOf : public SuperHashIterator
 {
   public:
     SuperHashIteratorOf(const SuperHashTable & _table, bool linkTable=true) : SuperHashIterator(_table, linkTable) {}
-    ET &             query()
+    ET &             query() const
       { return *(static_cast<ET *>(queryPointer())); }
 };
 

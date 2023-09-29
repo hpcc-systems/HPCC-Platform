@@ -346,7 +346,7 @@ void EsdlDefinitionHelper::loadTransformParams( EsdlXslTypeId xslId, IProperties
             const char *key = it->getPropKey();
             //set parameter in the XSL transform skipping over the @ prefix, if any
             const char* paramName = *key == '@' ? key+1 : key;
-            trans->setParameter(paramName, params->queryProp(key));
+            trans->setParameter(paramName, it->queryPropValue());
         }
     }
 
@@ -360,7 +360,7 @@ void EsdlDefinitionHelper::loadTransformParams( EsdlXslTypeId xslId, IProperties
             const char *key = it->getPropKey();
             //set parameter in the XSL transform skipping over the @ prefix, if any
             const char* paramName = *key == '@' ? key+1 : key;
-            trans->setParameter(paramName, overrideParams->queryProp(key));
+            trans->setParameter(paramName, it->queryPropValue());
         }
     }
 }

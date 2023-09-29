@@ -6405,7 +6405,7 @@ void CWsDeployFileInfo::initFileInfo(bool createOrOverwrite, bool bClearEnv)
     {
       StringBuffer prop;
       pParams->getProp(iter->getPropKey(), prop);
-      const char* val = pSettings->queryProp(iter->getPropKey());
+      const char* val = iter->queryPropValue();
 
       if (!val || strcmp(val, prop.str()))
       {

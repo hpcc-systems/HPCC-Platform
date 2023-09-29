@@ -60,7 +60,7 @@ public:
             ForEach(*iter)
             {
                 const char * key = iter->getPropKey();
-                const char * val = httpHeaders->queryProp(key);
+                const char * val = iter->queryPropValue();
                 this->httpHeaders->setProp(key, val);
             }
         }
@@ -182,8 +182,7 @@ public:
         ForEach(*iter)
         {
             const char * key = iter->getPropKey();
-            if (!isEmptyString(key))
-                setSpanAttribute(key, attributes->queryProp(key));
+            setSpanAttribute(key, iter->queryPropValue());
         }
     }
 
