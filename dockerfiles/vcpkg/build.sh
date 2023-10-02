@@ -29,6 +29,7 @@ docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
 CMAKE_OPTIONS="-G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DVCPKG_FILES_DIR=/hpcc-dev -DCPACK_THREADS=0 -DUSE_OPTIONAL=OFF -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON"
 
 function doBuild() {
+    docker pull "hpccsystems/platform-build-base-$1:$VCPKG_REF" || true
     docker pull "hpccsystems/platform-build-$1:$VCPKG_REF" || true
     docker pull "hpccsystems/platform-build-$1:$GITHUB_BRANCH" || true
 
@@ -44,8 +45,14 @@ function doBuild() {
     # docker push hpccsystems/platform-build-$1:$VCPKG_REF
     # docker push hpccsystems/platform-build-$1:$GITHUB_BRANCH
 
+    CMAKE_OPTIONS_EXTRA=""
+    if [ "$1" == "centos-7" ]; then
+        CMAKE_OPTIONS_EXTRA="-DVCPKG_TARGET_TRIPLET=x64-centos-7-dynamic"
+    elif [ "$1" == "amazonlinux" ]; then
+        CMAKE_OPTIONS_EXTRA="-DVCPKG_TARGET_TRIPLET=x64-amazonlinux-dynamic"
+    fi
     docker run --rm --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached hpccsystems/platform-build-$1:$VCPKG_REF \
-        "cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/HPCC-Platform/build-$1 ${CMAKE_OPTIONS} && \
+        "cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/HPCC-Platform/build-$1 ${CMAKE_OPTIONS} ${CMAKE_OPTIONS_EXTRA} && \
         cmake --build /hpcc-dev/HPCC-Platform/build-$1 --target package --parallel $(nproc)"
 
     sudo chown -R $(id -u):$(id -g) ./build-$1
