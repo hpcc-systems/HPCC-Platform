@@ -9068,7 +9068,7 @@ jlib_decl IPropertyTree * loadConfiguration(IPropertyTree *componentDefault, con
     if (monitor)
         configFileUpdater->startMonitoring();
 
-    initTraceManager(componentTag, componentConfiguration.get());
+    initTraceManager(componentTag, componentConfiguration.get(), globalConfiguration.get());
     return componentConfiguration.getLink();
 }
 
