@@ -160,7 +160,7 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
                 }
             },
             Dll: { label: nlsHPCC.Dll },
-            PublishedBy: { label: nlsHPCC.PublishedBy, sortable: false },
+            PublishedBy: { label: nlsHPCC.PublishedBy },
             Status: { label: nlsHPCC.Status, sortable: false }
         };
     }, []);
