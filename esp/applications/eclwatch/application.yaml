@@ -17,5 +17,6 @@ application:
    - ws_codesign
    - ws_resources
    - WSDali
+   - WSSasha
    - ws_logaccess
    - WsCloud
