@@ -43,6 +43,7 @@ set ( ESPSCM_SRCS
       ws_codesign.ecm
       ws_decoupledlogging.ecm
       ws_dali.ecm
+      ws_sasha.ecm
       ws_resources.ecm
       ws_logaccess.ecm
     )
