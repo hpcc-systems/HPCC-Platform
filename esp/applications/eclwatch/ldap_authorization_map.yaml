@@ -163,3 +163,8 @@ ldap:
          -  path: WsLogAccess
             resource: WsLogAccess
             description: Access to HPCC component log
+      WSSasha:
+         Feature:
+         -  path: SashaAccess
+            resource: SashaAccess
+            description: Access to HPCC Archive
