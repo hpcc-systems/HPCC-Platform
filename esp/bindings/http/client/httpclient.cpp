@@ -516,6 +516,7 @@ void copyHeaders(CHttpMessage &copyTo, CHttpMessage &copyFrom, bool resetForward
                 }
                 break;
             case 'X':
+            case 'x':
                 if (strieq(name, "X-Forwarded-For"))
                 {
                     if (resetForwardedFor)
