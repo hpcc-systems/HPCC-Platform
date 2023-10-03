@@ -19,11 +19,11 @@ layout := RECORD
 END;
 
 #IF(0)
-github_dataset := Read(layout, '/datadrive/dev/test_data/ghtorrent-2019-01-07.parquet');
+github_dataset := ParquetIO.Read(layout, '/datadrive/dev/test_data/ghtorrent-2019-01-07.parquet');
 Write(DISTRIBUTE(github_dataset, SKEW(.05)), '/datadrive/dev/test_data/hpcc_gh_partition/data.parquet');
 #END
 
 #IF(1)
-github_dataset := ReadPartition(layout, '/datadrive/dev/test_data/hpcc_gh_partition');
-OUTPUT(COUNT(github_dataset), NAMED('GITHUB_PARTITION'));
+github_dataset := ParquetIO.ReadPartition(layout, '/datadrive/dev/test_data/hpcc_gh_partition');
+OUTPUT(CHOOSEN(github_dataset, 10000), NAMED('GITHUB_PARTITION'));
 #END

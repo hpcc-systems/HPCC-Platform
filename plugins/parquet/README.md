@@ -33,7 +33,7 @@ The Parquet Plugin offers the following main functions:
 The Read function allows ECL programmers to create an ECL dataset from both regular and partitioned Parquet files. It leverages the Apache Arrow interface for Parquet to efficiently stream data from ECL to the plugin, ensuring optimized data transfer.
 
 ```
-dataset := Read(layout, '/source/directory/data.parquet');
+dataset := ParquetIO.Read(layout, '/source/directory/data.parquet');
 ```
 
 #### 2. Writing Parquet Files
@@ -41,7 +41,7 @@ dataset := Read(layout, '/source/directory/data.parquet');
 The Write function empowers ECL programmers to write ECL datasets to Parquet files. By leveraging the Parquet format's columnar storage capabilities, this function provides efficient compression and optimized storage for data.
 
 ```
-Write(inDataset, '/output/directory/data.parquet');
+ParquetIO.Write(inDataset, '/output/directory/data.parquet');
 ```
 
 ### Partitioned Files (Tabular Datasets)
@@ -51,7 +51,7 @@ Write(inDataset, '/output/directory/data.parquet');
 The Read Partition function extends the Read functionality by enabling ECL programmers to read from partitioned Parquet files. 
 
 ```
-github_dataset := ReadPartition(layout, '/source/directory/partioned_dataset');
+github_dataset := ParquetIO.ReadPartition(layout, '/source/directory/partioned_dataset');
 ```
 
 #### 2. Writing Partitioned Files

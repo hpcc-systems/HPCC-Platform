@@ -20,10 +20,10 @@ END;
 
 #IF(0)
 csv_data := DATASET('~parquet::large::ghtorrent-2019-02-04.csv', layout, CSV(HEADING(1)));
-Write(csv_data, '/datadrive/dev/test_data/ghtorrent-2019-02-04.parquet');
+ParquetIO.Write(csv_data, '/datadrive/dev/test_data/ghtorrent-2019-02-04.parquet');
 #END
 
 #IF(1)
-parquet_data := Read(layout, '/datadrive/dev/test_data/hpcc_gh_partition/data.parquet');
+parquet_data := ParquetIO.Read(layout, '/datadrive/dev/test_data/hpcc_gh_partition/data.parquet');
 OUTPUT(COUNT(parquet_data), NAMED('ghtorrent_2019_01_07'));
 #END
