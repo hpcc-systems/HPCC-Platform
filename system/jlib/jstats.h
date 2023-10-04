@@ -492,6 +492,7 @@ extern const jlib_decl StatisticsMapping diskLocalStatistics;
 extern const jlib_decl StatisticsMapping diskRemoteStatistics;
 extern const jlib_decl StatisticsMapping diskReadRemoteStatistics;
 extern const jlib_decl StatisticsMapping diskWriteRemoteStatistics;
+extern const jlib_decl StatisticsMapping jhtreeCacheStatistics;
 
 //---------------------------------------------------------------------------------------------------------------------
 
@@ -531,7 +532,6 @@ protected:
     RelaxedAtomic<unsigned __int64> value;
 };
 
-interface IContextLogger;
 class CNestedRuntimeStatisticMap;
 
 //The CRuntimeStatisticCollection  used to gather statistics for an activity - it has no notion of its scope, but can contain nested scopes.

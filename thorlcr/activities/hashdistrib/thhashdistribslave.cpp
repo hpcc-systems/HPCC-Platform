@@ -2454,7 +2454,7 @@ public:
 class IndexDistributeSlaveActivity : public HashDistributeSlaveBase
 {
     typedef HashDistributeSlaveBase PARENT;
-    CThorContextLogger contextLogger;
+    CStatsContextLogger contextLogger;
     CStatsCtxLoggerDeltaUpdater statsUpdater;
 
     class CKeyLookup : implements IHash
@@ -2487,7 +2487,7 @@ class IndexDistributeSlaveActivity : public HashDistributeSlaveBase
     } *lookup;
 
 public:
-    IndexDistributeSlaveActivity(CGraphElementBase *container) : PARENT(container, indexDistribActivityStatistics), lookup(NULL), contextLogger(jhtreeCacheStatistics), statsUpdater(jhtreeCacheStatistics, *this, contextLogger)
+    IndexDistributeSlaveActivity(CGraphElementBase *container) : PARENT(container, indexDistribActivityStatistics), lookup(NULL), contextLogger(jhtreeCacheStatistics, thorJob), statsUpdater(jhtreeCacheStatistics, *this, contextLogger)
     {
     }
     ~IndexDistributeSlaveActivity()

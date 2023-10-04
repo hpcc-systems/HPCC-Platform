@@ -74,16 +74,7 @@ static Owned<IMPtagAllocator> ClusterMPAllocator;
 
 // stat. mappings shared between master and slave activities
 const StatisticsMapping spillStatistics({StTimeSpillElapsed, StTimeSortElapsed, StNumSpills, StSizeSpillFile});
-const StatisticsMapping jhtreeCacheStatistics({ StNumIndexSeeks, StNumIndexScans, StNumPostFiltered, StNumIndexWildSeeks,
-                                                StNumNodeCacheAdds, StNumLeafCacheAdds, StNumBlobCacheAdds, StNumNodeCacheHits, StNumLeafCacheHits, StNumBlobCacheHits,
-                                                StNumNodeDiskFetches, StNumLeafDiskFetches, StNumBlobDiskFetches,
-                                                StTimeNodeRead, StCycleNodeReadCycles, StTimeLeafRead, StCycleLeafReadCycles, StTimeBlobRead, StCycleBlobReadCycles,
-                                                StTimeNodeFetch, StCycleNodeFetchCycles, StTimeLeafFetch, StCycleLeafFetchCycles, StTimeBlobFetch, StCycleBlobFetchCycles,
-                                                StTimeIndexCacheBlocked, StCycleIndexCacheBlockedCycles, StNumIndexMerges, StNumIndexMergeCompares,
-                                                StTimeBlobLoad, StCycleBlobLoadCycles, StTimeLeafLoad, StCycleLeafLoadCycles, StTimeNodeLoad, StCycleNodeLoadCycles,
-                                                StNumIndexSkips, StNumIndexNullSkips});
 const StatisticsMapping soapcallStatistics({StTimeSoapcall});
-
 const StatisticsMapping basicActivityStatistics({StTimeTotalExecute, StTimeLocalExecute, StTimeBlocked});
 const StatisticsMapping groupActivityStatistics({StNumGroups, StNumGroupMax}, basicActivityStatistics);
 const StatisticsMapping hashJoinActivityStatistics({StNumLeftRows, StNumRightRows}, basicActivityStatistics);

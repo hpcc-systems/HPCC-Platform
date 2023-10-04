@@ -2776,7 +2776,7 @@ void IContextLogger::CTXLOG(const char *format, ...) const
 {
     va_list args;
     va_start(args, format);
-    CTXLOGva(MCdebugInfo, unknownJob, NoLogMsgCode, format, args);
+    CTXLOGva(MCdebugInfo, queryJob(), NoLogMsgCode, format, args);
     va_end(args);
 }
 
@@ -2853,7 +2853,7 @@ public:
             E->errorMessage(ss.append(": "));
         if (format)
             ss.append(": ").valist_appendf(format, args);
-        LOG(MCoperatorProgress, unknownJob, "%s", ss.str());
+        LOG(MCoperatorProgress, queryJob(), "%s", ss.str());
     }
     virtual void noteStatistic(StatisticKind kind, unsigned __int64 value) const
     {
@@ -2897,6 +2897,10 @@ public:
         return activeSpan->queryLocalId();
     }
     virtual const CRuntimeStatisticCollection &queryStats() const override
+    {
+        throwUnexpected();
+    }
+    virtual void recordStatistics(IStatisticGatherer &progress) const override
     {
         throwUnexpected();
     }

@@ -115,7 +115,7 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
     unsigned maxCachedKJManagers = defaultMaxCachedKJManagers;
     unsigned maxCachedFetchContexts = defaultMaxCachedFetchContexts;
     unsigned keyLookupMaxProcessThreads = defaultKeyLookupMaxProcessThreads;
-    CThorContextLogger contextLogger;
+    CStatsContextLogger contextLogger;
     class CLookupKey
     {
         unsigned hashv = 0;
@@ -1189,7 +1189,7 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterfaceOf<IKJService>);
 
-    CKJService(mptag_t _mpTag) : threaded("CKJService", this), keyLookupMpTag(_mpTag), contextLogger(jhtreeCacheStatistics)
+    CKJService(mptag_t _mpTag) : threaded("CKJService", this), keyLookupMpTag(_mpTag), contextLogger(jhtreeCacheStatistics, thorJob)
     {
         setupProcessorPool();
     }
