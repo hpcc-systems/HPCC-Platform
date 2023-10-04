@@ -184,6 +184,7 @@ export const Logs: React.FunctionComponent<LogsProps> = ({
         footer={<FluentPagedFooter
             persistID={"cloudlogs"}
             pageNum={pageNum}
+            selectionCount={selection.length}
             setPageNum={setPageNum}
             setPageSize={setPageSize}
             total={total}

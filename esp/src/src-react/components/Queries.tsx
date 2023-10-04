@@ -301,6 +301,7 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
         footer={<FluentPagedFooter
             persistID={"queries"}
             pageNum={pageNum}
+            selectionCount={selection.length}
             setPageNum={setPageNum}
             setPageSize={setPageSize}
             total={total}
