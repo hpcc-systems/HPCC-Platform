@@ -89,6 +89,8 @@ if [ $retVal -ne 0 ]; then
     wutool postmortem ${PMD_WORKUNIT} DALISERVER=${PMD_DALISERVER} PMD=${POST_MORTEM_DIR}
     echo Updated workunit ${PMD_WORKUNIT}
   fi
+else
+  echo "Process exited cleanly (code=0)"
 fi
 trap - EXIT
 exit $retVal
