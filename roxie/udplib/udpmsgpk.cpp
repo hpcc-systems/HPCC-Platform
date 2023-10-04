@@ -670,7 +670,7 @@ IMessageResult *CMessageCollator::getNextResult(unsigned time_out, bool &anyActi
     }
     anyActivity = activity;
     activity = false;
-    if (!anyActivity && ruid>=RUID_FIRST && checkTraceLevel(TRACE_MSGPACK, 1)) // suppress the tracing for pings where we expect the timeout...
+    if (!anyActivity && ruid>=RUID_FIRST && checkTraceLevel(TRACE_MSGPACK, 2)) // suppress the tracing for pings where we expect the timeout...
     {
 #ifdef _DEBUG
         DBGLOG("GetNextResult timeout: mapping has %d partial results", mapping.ordinality());
