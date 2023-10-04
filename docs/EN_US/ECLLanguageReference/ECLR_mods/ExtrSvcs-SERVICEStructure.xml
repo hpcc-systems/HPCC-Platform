@@ -8,7 +8,8 @@
 
   <para><emphasis>servicename </emphasis><emphasis role="bold">:= SERVICE [ :
   </emphasis><emphasis>defaultkeywords</emphasis><emphasis role="bold">
-  ]</emphasis><emphasis role="bold"> </emphasis><emphasis></emphasis></para>
+  [,TIME[(</emphasis><emphasis>label<emphasis
+  role="bold">)]]]</emphasis></emphasis></para>
 
   <para><emphasis> prototype </emphasis>:
   <emphasis>keywordlist</emphasis>;<emphasis role="bold"> </emphasis></para>
@@ -38,6 +39,20 @@
           </row>
 
           <row>
+            <entry><emphasis role="bold">TIME</emphasis></entry>
+
+            <entry>Tracks timing of all function calls in the SERVICE
+            structure and reports them back as metrics to the user. </entry>
+          </row>
+
+          <row>
+            <entry><emphasis>label</emphasis></entry>
+
+            <entry>Optional. A string constant containing the name to
+            associate with the timer. If omitted, the default is used.</entry>
+          </row>
+
+          <row>
             <entry><emphasis>prototype</emphasis></entry>
 
             <entry>The ECL name and prototype of a specific function.</entry>
@@ -62,7 +77,7 @@
 
   <para>Example:</para>
 
-  <programlisting>  email := SERVICE
+  <programlisting>  email := SERVICE :TIME('MyTime')
     simpleSend( STRING address,
             STRING template,
             STRING subject) : LIBRARY='ecl2cw',
@@ -122,5 +137,6 @@
   END;
 </programlisting>
 
-  <para>See Also: <link linkend="External_Service_Implementation">External Service Implementation</link>, <link linkend="CONST">CONST</link></para>
+  <para>See Also: <link linkend="External_Service_Implementation">External
+  Service Implementation</link>, <link linkend="CONST">CONST</link></para>
 </sect1>

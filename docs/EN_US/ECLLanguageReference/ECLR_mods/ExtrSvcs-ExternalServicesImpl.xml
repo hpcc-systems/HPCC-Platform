@@ -222,6 +222,21 @@
               <entry>Internal use, only. Indicates the function is actually a
               method of the internal code context.</entry>
             </row>
+
+            <row>
+              <entry>TIME</entry>
+
+              <entry>Tracks timing of the external function call and reports
+              them back as metrics to the user.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>label</emphasis></entry>
+
+              <entry>Optional. A string constant containing the name to
+              associate with the timer. If omitted, the default is
+              used.</entry>
+            </row>
           </tbody>
         </tgroup>
       </informaltable></para>
