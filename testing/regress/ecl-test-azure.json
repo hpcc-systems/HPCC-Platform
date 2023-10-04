@@ -57,7 +57,8 @@
             "soapcall.ecl:targetIP=roxie",
             "roxiegzip.ecl:TargetIP=roxie",
             "roxiewhitespace.ecl:TargetIP=roxie",
-            "roxiepipe.ecl:TargetIP=roxie"
+            "roxiepipe.ecl:TargetIP=roxie",
+            "soaptext1.ecl:TargetIP=roxie"
         ],
         "engineParams":[
             "failOnLeaks",
