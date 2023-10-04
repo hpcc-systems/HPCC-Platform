@@ -668,7 +668,6 @@ public:
             auditflags |= DALI_LDAP_WRITE_WANTED;
 
         SecAccessFlags perm;
-        bool checkLegacyPhysicalPerms = getGlobalConfigSP()->getPropBool("expert/@failOverToLegacyPhysicalPerms",!isContainerized());
         IClusterInfo *iClusterInfo = fd->queryClusterNum(0);
         const char *planeName = iClusterInfo->queryGroupName();
         if (!isEmptyString(planeName))
@@ -685,17 +684,19 @@ public:
                 throw makeStringExceptionV(-1,"Invalid DropZone directory %s.",dir);
 
             perm = queryDistributedFileDirectory().getDropZoneScopePermissions(planeName,relativePath,user,auditflags);
-            if (((!write&&!HASREADPERMISSION(perm))||(write&&!HASWRITEPERMISSION(perm)))&&checkLegacyPhysicalPerms)
-                perm = queryDistributedFileDirectory().getFDescPermissions(fd,user,auditflags);
+            if (((!write&&!HASREADPERMISSION(perm))||(write&&!HASWRITEPERMISSION(perm))))
+            {
+                if (getGlobalConfigSP()->getPropBool("expert/@failOverToLegacyPhysicalPerms",!isContainerized()))
+                    perm = queryDistributedFileDirectory().getFDescPermissions(fd,user,auditflags);
+            }
         }
         else
         {
 #ifndef _CONTAINERIZED
             Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
             Owned<IConstEnvironment> env = factory->openEnvironment();
-            if (env->isDropZoneRestrictionEnabled()||!checkLegacyPhysicalPerms)
+            if (env->isDropZoneRestrictionEnabled())
                 throw makeStringException(-1,"Empty plane name.");
-            perm = queryDistributedFileDirectory().getFDescPermissions(fd,user,auditflags);
 #else
             throw makeStringException(-1,"Unexpected empty plane name."); // should never be the case in containerized setups
 #endif
