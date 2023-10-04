@@ -80,9 +80,14 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
                 .then(response => response.json())
                 .then(response => {
                     setSubmitDisabled(false);
-                    const DFUActionResult = response?.UploadFilesResponse?.UploadFileResults?.DFUActionResult;
+                    const exceptions = response?.Exceptions?.Exception ?? [];
+                    if (exceptions.length > 0) {
+                        logger.error(exceptions[0]?.Message ?? nlsHPCC.ErrorUploadingFile);
+                        return;
+                    }
+                    const DFUActionResult = response?.UploadFilesResponse?.UploadFileResults?.DFUActionResult ?? [];
                     if (DFUActionResult.filter(result => result.Result !== "Success").length > 0) {
-                        console.log("upload failed");
+                        logger.error(nlsHPCC.ErrorUploadingFile);
                     } else {
                         closeForm();
                         if (typeof onSubmit === "function") {
@@ -90,7 +95,8 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
                         }
                         reset(defaultValues);
                     }
-                });
+                })
+                .catch(err => logger.error(err));
         };
 
         handleSubmit(
