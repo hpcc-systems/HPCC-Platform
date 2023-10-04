@@ -344,7 +344,7 @@ public:
                 ForEach(*piter)
                 {
                     const char *propkey = piter->getPropKey();
-                    rpcMsg.add_value(path, "", propkey, "", m_params->queryProp(propkey), false);
+                    rpcMsg.add_value(path, "", propkey, "", piter->queryPropValue(), false);
                 }       
             }
 

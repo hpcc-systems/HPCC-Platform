@@ -201,7 +201,7 @@ public:
         ForEach(*it)
         {
             const char *name = it->getPropKey();
-            const char *val = props->queryProp(name);
+            const char *val = it->queryPropValue();
             xml.appendf(" %s=\"", name);
             encodeUtf8XML(val, xml);
             xml.append('\"');

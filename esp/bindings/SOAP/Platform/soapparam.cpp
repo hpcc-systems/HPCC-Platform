@@ -576,7 +576,7 @@ bool EspBaseArrayParam::unmarshall(IEspContext* ctx, IProperties &params, MapStr
             {
                 if (strlen(keyname)==taglen || !strncmp(keyname+taglen, "_rd_", 4))
                 {
-                    const char *finger = params.queryProp(iter->getPropKey());
+                    const char *finger = iter->queryPropValue();
                     StringBuffer itemval;
                     while (*finger)
                     {
@@ -610,7 +610,7 @@ bool EspBaseArrayParam::unmarshall(IEspContext* ctx, IProperties &params, MapStr
                 }
                 else if (strncmp(keyname+taglen, "_i", 2)==0)
                 {
-                    append(params.queryProp(iter->getPropKey()));
+                    append(iter->queryPropValue());
                     hasValue = true;
                 }
             }

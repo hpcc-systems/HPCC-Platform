@@ -3479,8 +3479,8 @@ public:
             const char *prefix = ns->getPropKey();
             const char *existing = sourceContext->queryNamespace(prefix);
             savedNamespaces->setProp(prefix, isEmptyString(existing) ? "" : existing);
-            sourceContext->registerNamespace(prefix, namespaces->queryProp(prefix));
-            targetXpath->registerNamespace(prefix, namespaces->queryProp(prefix));
+            sourceContext->registerNamespace(prefix, ns->queryPropValue());
+            targetXpath->registerNamespace(prefix, ns->queryPropValue());
         }
         CXpathContextScope scope(sourceContext, "transform", XpathVariableScopeType::simple, savedNamespaces);
         if (!isEmptyString(target) && !streq(target, "."))
@@ -3607,7 +3607,7 @@ void processServiceAndMethodTransforms(IEsdlScriptContext * scriptCtx, std::init
         {
             const char *name = userPropIt->getPropKey();
             if (name && *name)
-                sourceContext->addInputValue(name, user->getProperty(name));
+                sourceContext->addInputValue(name, userPropIt->queryPropValue());
         }
 
         auto it = statusLabels.find(user->getStatus());

@@ -378,7 +378,7 @@ void CFileSpraySoapBindingEx::xsltTransform(const char* xml, const char* sheet, 
             const char *key = it->getPropKey();
             //set parameter in the XSL transform skipping over the @ prefix, if any
             const char* paramName = *key == '@' ? key+1 : key;
-            trans->setParameter(paramName, StringBuffer().append('\'').append(params->queryProp(key)).append('\'').str());
+            trans->setParameter(paramName, StringBuffer().append('\'').append(it->queryPropValue()).append('\'').str());
         }
     }
 

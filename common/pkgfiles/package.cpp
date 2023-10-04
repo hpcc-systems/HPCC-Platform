@@ -52,7 +52,7 @@ void CPackageNode::mergeEnvironment(const CPackageNode *base)
     ForEach(*envIterator)
     {
         const char *id = envIterator->getPropKey();
-        const char *val = base->mergedEnvironment->queryProp(id);
+        const char *val = envIterator->queryPropValue();
         if (id && val && !mergedEnvironment->hasProp(id))
             mergedEnvironment->setProp(id, val);
     }
