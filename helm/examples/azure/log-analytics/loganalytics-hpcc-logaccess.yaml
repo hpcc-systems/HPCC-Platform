@@ -40,6 +40,7 @@ global:
       - code: OPR
       - code: USR
       - code: PRO
+      - code: MON
       - code: ADT
       columnMode: "DEFAULT"
       columnType: "enum"
@@ -51,6 +52,7 @@ global:
       - code: WRN
       - code: INF
       - code: PRO
+      - code: EVT
       - code: MET
       columnMode: "DEFAULT"
       columnType: "enum"
