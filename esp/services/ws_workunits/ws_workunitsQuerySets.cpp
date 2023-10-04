@@ -366,7 +366,7 @@ void QueryFilesInUse::loadTarget(IPropertyTree *t, const char *target, unsigned 
             return;
         StringArray locations;
         locations.append(process.str());
-        wufiles->resolveFiles(locations, NULL, NULL, NULL, true, true, true, false);
+        wufiles->resolveFiles(locations, NULL, NULL, NULL, true, true, true, false, false);
 
         Owned<IReferencedFileIterator> files = wufiles->getFiles();
         ForEach(*files)
@@ -793,7 +793,7 @@ public:
         const char * targetPlaneOrGroup = process;
         locations.append(targetPlaneOrGroup);
 #endif
-        files->resolveFiles(locations, remoteIP, remotePrefix, srcCluster, !(updateFlags & (DALI_UPDATEF_REPLACE_FILE | DALI_UPDATEF_CLONE_FROM | DALI_UPDATEF_SUPERFILES)), true, false, true);
+        files->resolveFiles(locations, remoteLocation, remotePrefix, srcCluster, !(updateFlags & (DALI_UPDATEF_REPLACE_FILE | DALI_UPDATEF_CLONE_FROM | DALI_UPDATEF_SUPERFILES)), true, false, true, (updateFlags & DFU_UPDATEF_REMOTESTORAGE));
         Owned<IDFUhelper> helper = createIDFUhelper();
         files->setDfuQueue(dfu_queue);
 #ifdef _CONTAINERIZED
@@ -822,7 +822,7 @@ public:
     Owned<IReferencedFileList> files;
 
     StringBuffer process;
-    StringAttr remoteIP;
+    StringAttr remoteLocation;
     StringAttr remotePrefix;
     StringAttr srcCluster;
     StringAttr queryname;
@@ -978,9 +978,40 @@ bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWork
     StringBuffer publisherWuid(req.getDfuPublisherWuid());
     if (!req.getDontCopyFiles())
     {
+        StringBuffer remoteLocation;
+        StringBuffer srcCluster;
+        StringBuffer srcPrefix;
+
+        unsigned updateFlags = 0;
+        const char *remoteStr = req.getRemoteStorage();
+        if (!isEmptyString(remoteStr))
+            updateFlags = DFU_UPDATEF_REMOTESTORAGE;
+        else
+            remoteStr = req.getRemoteDali();
+
+        splitDerivedDfsLocation(remoteStr, srcCluster, remoteLocation, srcPrefix, req.getSourceProcess(),req.getSourceProcess(), NULL, NULL);
+
+        if (srcCluster.length())
+        {
+            if (!validateDataPlaneName(remoteLocation, srcCluster))
+                throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Process cluster %s not found on %s remote", srcCluster.str(), remoteLocation.length() ? remoteLocation.str() : "local");
+        }
+        if (req.getUpdateDfs())
+            updateFlags |= (DALI_UPDATEF_SUPERFILES | DALI_UPDATEF_REPLACE_FILE | DALI_UPDATEF_CLONE_FROM);
+        if (req.getUpdateCloneFrom())
+            updateFlags |= DALI_UPDATEF_CLONE_FROM;
+        if (req.getUpdateSuperFiles())
+            updateFlags |= DALI_UPDATEF_SUPERFILES;
+        if (req.getAppendCluster())
+            updateFlags |= DALI_UPDATEF_APPEND_CLUSTER;
+        if (req.getDfuCopyFiles())
+            updateFlags |= DFU_UPDATEF_COPY;
+        if (req.getDfuOverwrite())
+            updateFlags |= DFU_UPDATEF_OVERWRITE;
+
         QueryFileCopier cpr(target);
         cpr.init(context, req.getAllowForeignFiles(), queryName);
-        cpr.remoteIP.set(daliIP);
+        cpr.remoteLocation.set(remoteLocation);
         cpr.remotePrefix.set(srcPrefix);
         cpr.srcCluster.set(srcCluster);
         cpr.queryname.set(queryName);
@@ -2130,17 +2161,25 @@ bool CWsWorkunitsEx::onWURecreateQuery(IEspContext &context, IEspWURecreateQuery
             StringBuffer publisherWuid(req.getDfuPublisherWuid());
             if (!req.getDontCopyFiles())
             {
-                StringBuffer daliIP;
+                StringBuffer remoteLocation;
                 StringBuffer srcCluster;
                 StringBuffer srcPrefix;
-                splitDerivedDfsLocation(req.getRemoteDali(), srcCluster, daliIP, srcPrefix, req.getSourceProcess(),req.getSourceProcess(), NULL, NULL);
+
+                unsigned updateFlags = 0;
+                const char *remoteStr = req.getRemoteStorage();
+                if (!isEmptyString(remoteStr))
+                    updateFlags = DFU_UPDATEF_REMOTESTORAGE;
+                else
+                    remoteStr = req.getRemoteDali();
+
+                splitDerivedDfsLocation(remoteStr, srcCluster, remoteLocation, srcPrefix, req.getSourceProcess(),req.getSourceProcess(), NULL, NULL);
 
                 if (srcCluster.length())
                 {
-                    if (!validateDataPlaneName(daliIP, srcCluster))
-                        throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Process cluster %s not found on %s DALI", srcCluster.str(), daliIP.length() ? daliIP.str() : "local");
+                    if (!validateDataPlaneName(remoteLocation, srcCluster))
+                        throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Process cluster %s not found on %s remote", srcCluster.str(), remoteLocation.length() ? remoteLocation.str() : "local");
                 }
-                unsigned updateFlags = 0;
+
                 if (req.getUpdateDfs())
                     updateFlags |= (DALI_UPDATEF_SUPERFILES | DALI_UPDATEF_REPLACE_FILE | DALI_UPDATEF_CLONE_FROM);
                 if (req.getUpdateCloneFrom())
@@ -2156,7 +2195,7 @@ bool CWsWorkunitsEx::onWURecreateQuery(IEspContext &context, IEspWURecreateQuery
 
                 QueryFileCopier cpr(target);
                 cpr.init(context, req.getAllowForeignFiles(), srcQueryName);
-                cpr.remoteIP.set(daliIP);
+                cpr.remoteLocation.set(remoteLocation);
                 cpr.remotePrefix.set(srcPrefix);
                 cpr.srcCluster.set(srcCluster);
                 cpr.queryname.set(srcQueryName);
@@ -2568,7 +2607,7 @@ bool CWsWorkunitsEx::getQueryFiles(IEspContext &context, const char* wuid, const
         wufiles->addFilesFromQuery(cw, (ps) ? ps->queryActiveMap(target) : NULL, query);
         StringArray locations;
         locations.append(process.str());
-        wufiles->resolveFiles(locations, NULL, NULL, NULL, true, true, true, true);
+        wufiles->resolveFiles(locations, NULL, NULL, NULL, true, true, true, true, false);
         Owned<IReferencedFileIterator> refFileItr = wufiles->getFiles();
         ForEach(*refFileItr)
         {
@@ -3241,7 +3280,7 @@ public:
     {
         if (cloneFilesEnabled)
         {
-            wufiles->resolveFiles(locations, dfsIP, srcPrefix, srcCluster, !(updateFlags & (DALI_UPDATEF_REPLACE_FILE | DALI_UPDATEF_CLONE_FROM)), true, false, true);
+            wufiles->resolveFiles(locations, dfsIP, srcPrefix, srcCluster, !(updateFlags & (DALI_UPDATEF_REPLACE_FILE | DALI_UPDATEF_CLONE_FROM)), true, false, true, false);
             Owned<IDFUhelper> helper = createIDFUhelper();
             Owned <IConstWUClusterInfo> cl = getWUClusterInfoByName(target);
             if (cl)
@@ -3437,11 +3476,25 @@ bool CWsWorkunitsEx::onWUQuerysetCopyQuery(IEspContext &context, IEspWUQuerySetC
     StringBuffer publisherWuid(req.getDfuPublisherWuid());
     if (!req.getDontCopyFiles())
     {
-        StringBuffer daliIP;
+        StringBuffer remoteLocation;
         StringBuffer srcCluster;
         StringBuffer srcPrefix;
-        splitDerivedDfsLocation(req.getDaliServer(), srcCluster, daliIP, srcPrefix, req.getSourceProcess(), req.getSourceProcess(), remoteIP.str(), NULL);
+
         unsigned updateFlags = 0;
+        const char *remoteStr = req.getRemoteStorage();
+        if (!isEmptyString(remoteStr))
+            updateFlags = DFU_UPDATEF_REMOTESTORAGE;
+        else
+            remoteStr = req.getDaliServer();
+
+        splitDerivedDfsLocation(remoteStr, srcCluster, remoteLocation, srcPrefix, req.getSourceProcess(),req.getSourceProcess(), remoteIP.str(), NULL);
+
+        if (srcCluster.length())
+        {
+            if (!validateDataPlaneName(remoteLocation, srcCluster))
+                throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Process cluster %s not found on %s remote", srcCluster.str(), remoteLocation.length() ? remoteLocation.str() : "local");
+        }
+
         if (req.getOverwrite())
             updateFlags |= (DALI_UPDATEF_REPLACE_FILE | DALI_UPDATEF_CLONE_FROM | DALI_UPDATEF_SUPERFILES);
         if (req.getUpdateCloneFrom())
@@ -3457,7 +3510,7 @@ bool CWsWorkunitsEx::onWUQuerysetCopyQuery(IEspContext &context, IEspWUQuerySetC
 
         QueryFileCopier cpr(target);
         cpr.init(context, req.getAllowForeignFiles(), targetQueryName);
-        cpr.remoteIP.set(daliIP);
+        cpr.remoteLocation.set(remoteLocation);
         cpr.remotePrefix.set(srcPrefix);
         cpr.srcCluster.set(srcCluster);
         cpr.queryname.set(targetQueryName);

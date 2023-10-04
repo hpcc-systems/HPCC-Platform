@@ -1456,6 +1456,10 @@
         },
         "hpa": {
           "$ref": "#/definitions/hpa"
+        },
+        "expert": {
+          "description": "Custom internal options usually reserved for internal testing",
+          "type": "object"
         }
       }
     },

@@ -354,7 +354,7 @@ private:
         return localTree.getClear();
     }
 
-    IFileDescriptor *recreateCloneSource(IFileDescriptor *srcfdesc, const char *destfilename)
+    IFileDescriptor *recreateCloneForeignSource(const char *cloneFrom, IFileDescriptor *srcfdesc, const char *destfilename)
     {
         Owned<IFileDescriptor> dstfdesc = createFileDescriptor(srcfdesc->getProperties());
         // calculate dest dir
@@ -379,7 +379,6 @@ private:
                 dstfdesc->queryPart(pn)->queryProperties().setProp("@modified",dates.str());
         }
 
-        const char *cloneFrom = srcfdesc->queryProperties().queryProp("@cloneFrom");
         Owned<IPropertyTreeIterator> groups = srcfdesc->queryProperties().getElements("cloneFromGroup");
         ForEach(*groups)
         {
@@ -576,29 +575,61 @@ public:
         return ret.getClear();
     }
 
-    IFileDescriptor *checkClonedFromRemote(const char *_lfn, IFileDescriptor *fdesc, bool cacheIt, bool isPrivilegedUser)
+    IFileDescriptor *checkClonedFromRemoteStorage(const char *cloneRemote, const char *_lfn, IFileDescriptor *fdesc, bool cacheIt, bool isPrivilegedUser)
     {
-        // NOTE - we rely on the fact that  queryNamedGroupStore().lookup caches results,to avoid excessive load on remote dali
-        if (_lfn && !strnicmp(_lfn, "foreign", 7)) //if need to support dali hopping should add each remote location
-            return NULL;
-        if (!fdesc)
-            return NULL;
-        const char *cloneFrom = fdesc->queryProperties().queryProp("@cloneFrom");
-        if (!cloneFrom)
-            return NULL;
-        StringBuffer foreignLfn("foreign::");
-        foreignLfn.append(cloneFrom);
+        StringBuffer remoteLfn;
+        remoteLfn.append("remote::").append(cloneRemote);
+        const char *cloneFromPrefix = fdesc->queryProperties().queryProp("@cloneFromPrefix");
+        if (cloneFromPrefix && *cloneFromPrefix)
+            remoteLfn.append("::").append(cloneFromPrefix);
+        remoteLfn.append("::").append(_lfn);
+        const char *cloneRemoteCluster = fdesc->queryProperties().queryProp("@cloneRemoteCluster");
+        if (!isEmptyString(cloneRemoteCluster))
+            remoteLfn.append("@").append(cloneRemoteCluster);
+
+        try
+        {
+            //Treat remote storage files a bit differently then foreign DALI files for now.  For foreign DALI, we try to recreate the DistributedFile without contacting DALI.
+            //  This is to prevent DALI traffic. We may want to optimize remote storage access differently over time.  For example improved caching in the DFS service which may
+            //  scale better than DALI.  Anyway, just go through DFS for now, and we can optimize once you understand the usage pattern better
+
+            if (traceLevel > 1)
+                DBGLOG("checkClonedFromRemoteStorage: Resolving %s from remote storage", _lfn);
+            Owned<IDistributedFile> cloneFile = resolveLFN(remoteLfn, cacheIt, AccessMode::readRandom, isPrivilegedUser);
+            if (cloneFile)
+            {
+                Owned<IFileDescriptor> cloneFDesc = cloneFile->getFileDescriptor();
+                if (cloneFDesc->numParts()==fdesc->numParts())
+                    return cloneFDesc.getClear();
+
+                DBGLOG(ROXIE_MISMATCH, "File local metadata (%s numParts %d) vs cloneRemote(%s numParts %d) mismatch", _lfn, fdesc->numParts(), cloneRemote, cloneFDesc->numParts());
+            }
+        }
+        catch (IException *E)
+        {
+            if (traceLevel > 3)
+                EXCLOG(E);
+            E->Release();  // Any failure means act as if no remote info
+        }
+        return NULL;
+    }
+
+    IFileDescriptor *checkClonedFromForeignDali(const char *cloneFrom, const char *_lfn, IFileDescriptor *fdesc, bool cacheIt, bool isPrivilegedUser)
+    {
+        StringBuffer foreignLfn;
+        foreignLfn.append("foreign::").append(cloneFrom);
         const char *cloneFromPrefix = fdesc->queryProperties().queryProp("@cloneFromPrefix");
         if (cloneFromPrefix && *cloneFromPrefix)
             foreignLfn.append("::").append(cloneFromPrefix);
         foreignLfn.append("::").append(_lfn);
+
         if (!connected())
             return resolveCachedLFN(foreignLfn);  // Note - cache only used when no dali connection available
         try
         {
             if (fdesc->queryProperties().hasProp("cloneFromGroup") && fdesc->queryProperties().hasProp("@cloneFromDir"))
             {
-                Owned<IFileDescriptor> ret = recreateCloneSource(fdesc, _lfn);
+                Owned<IFileDescriptor> ret = recreateCloneForeignSource(cloneFrom, fdesc, _lfn);
                 if (cacheIt)
                     cacheFileDescriptor(foreignLfn, ret);
                 return ret.getClear();
@@ -606,7 +637,7 @@ public:
             else // Legacy mode - recently cloned files should have the extra info
             {
                 if (doTrace(traceRoxieFiles))
-                    DBGLOG("checkClonedFromRemote: Resolving %s in legacy mode", _lfn);
+                    DBGLOG("checkClonedFromForeignDali: Resolving %s in legacy mode", _lfn);
                 Owned<IDistributedFile> cloneFile = resolveLFN(foreignLfn, cacheIt, AccessMode::readRandom, isPrivilegedUser);
                 if (cloneFile)
                 {
@@ -625,6 +656,22 @@ public:
             E->Release();  // Any failure means act as if no remote info
         }
         return NULL;
+    }
+
+    IFileDescriptor *checkClonedFromRemote(const char *_lfn, IFileDescriptor *fdesc, bool cacheIt, bool isPrivilegedUser)
+    {
+        if (!fdesc)
+            return NULL;
+        if (_lfn && (strnicmp(_lfn, "foreign", 7)==0 || strnicmp(_lfn, "remote", 6)==0)) //if need to support dali hopping should add each remote location
+            return NULL;
+
+        const char *cloneRemote = fdesc->queryProperties().queryProp("@cloneRemote");
+        if (!isEmptyString(cloneRemote))
+            return checkClonedFromRemoteStorage(cloneRemote, _lfn, fdesc, cacheIt, isPrivilegedUser);
+        const char *cloneFrom = fdesc->queryProperties().queryProp("@cloneFrom");
+        if (!isEmptyString(cloneFrom))
+           return checkClonedFromForeignDali(cloneFrom, _lfn, fdesc, cacheIt, isPrivilegedUser);
+        return nullptr;
     }
 
     virtual IDistributedFile *resolveLFN(const char *logicalName, bool cacheIt, AccessMode accessMode, bool isPrivilegedUser)

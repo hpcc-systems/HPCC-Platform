@@ -33,16 +33,18 @@
 #define RefFileIndex          0x0001
 #define RefFileNotOnCluster   0x0002
 #define RefFileNotFound       0x0004
-#define RefFileRemote         0x0008
-#define RefFileForeign        0x0010
-#define RefFileSuper          0x0020
-#define RefSubFile            0x0040
-#define RefFileCopyInfoFailed 0x0080
-#define RefFileCloned         0x0100
-#define RefFileInPackage      0x0200
-#define RefFileNotOnSource    0x0400
-#define RefFileOptional       0x0800 //File referenced in more than one place can be both optional and not optional
-#define RefFileNotOptional    0x1000
+#define RefFileResolvedForeign 0x0008
+#define RefFileResolvedRemote 0x0010
+#define RefFileLFNForeign     0x0020 //LFN was Foreign
+#define RefFileLFNRemote      0x0040 //LFN was remote
+#define RefFileSuper          0x0080
+#define RefSubFile            0x0100
+#define RefFileCopyInfoFailed 0x0200
+#define RefFileCloned         0x0400
+#define RefFileInPackage      0x0800
+#define RefFileNotOnSource    0x1000
+#define RefFileOptional       0x2000 //File referenced in more than one place can be both optional and not optional
+#define RefFileNotOptional    0x4000
 
 
 interface IReferencedFile : extends IInterface
@@ -70,14 +72,14 @@ interface IReferencedFileList : extends IInterface
     virtual void addFiles(StringArray &files)=0;
 
     virtual IReferencedFileIterator *getFiles()=0;
-    virtual void resolveFiles(const StringArray &locations, const char *remoteIP, const char * remotePrefix, const char *srcCluster, bool checkLocalFirst, bool addSubFiles, bool trackSubFiles, bool resolveForeign=false)=0;
+    virtual void resolveFiles(const StringArray &locations, const char *remoteIP, const char * remotePrefix, const char *srcCluster, bool checkLocalFirst, bool addSubFiles, bool trackSubFiles, bool resolveLFNForeign, bool useRemoteStorage)=0;
     virtual void cloneAllInfo(StringBuffer &publisherWuid, const char *dstCluster, unsigned updateFlags, IDFUhelper *helper, bool cloneSuperInfo, bool cloneForeign, unsigned redundancy, unsigned channelsPerNode, int replicateOffset, const char *defRepFolder)=0;
     virtual void cloneFileInfo(StringBuffer &publisherWuid, const char *dstCluster, unsigned updateFlags, IDFUhelper *helper, bool cloneSuperInfo, bool cloneForeign, unsigned redundancy, unsigned channelsPerNode, int replicateOffset, const char *defRepFolder)=0;
     virtual void cloneRelationships()=0;
     virtual void setDfuQueue(const char *dfu_queue) = 0;
 };
 
-extern REFFILES_API const char *skipForeign(const char *name, StringBuffer *ip=NULL);
+extern REFFILES_API const char *skipForeignOrRemote(const char *name, StringBuffer *ip=nullptr, StringBuffer *remote=nullptr);
 
 extern REFFILES_API IReferencedFileList *createReferencedFileList(const char *user, const char *pw, bool allowForeignFiles, bool allowFileSizeCalc, const char *jobname = nullptr);
 extern REFFILES_API IReferencedFileList *createReferencedFileList(IUserDescriptor *userDesc, bool allowForeignFiles, bool allowFileSizeCalc, const char *jobname = nullptr);

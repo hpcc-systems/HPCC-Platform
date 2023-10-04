@@ -33,6 +33,8 @@
 #include "rmtfile.hpp"
 #include "dfuutil.hpp"
 
+#include "ws_dfsclient.hpp"
+
 // savemap
 // superkey functions
 // (logical) directory functions
@@ -129,6 +131,7 @@ class CFileCloner
 {
 public:
     StringAttr nameprefix;
+    StringAttr remoteStorage;
     Owned<INode> foreigndalinode;
     Linked<IUserDescriptor> userdesc;
     Linked<IUserDescriptor> foreignuserdesc;
@@ -409,33 +412,41 @@ public:
     void updateCloneFrom(const char *lfn, IPropertyTree &attrs, IFileDescriptor *srcfdesc, INode *srcdali, const char *srcCluster)
     {
         DBGLOG("updateCloneFrom %s", lfn);
-        if (!srcdali || srcdali->endpoint().isNull())
+        if (remoteStorage.isEmpty() && (!srcdali || srcdali->endpoint().isNull()))
             attrs.setProp("@cloneFromPeerCluster", srcCluster);
         else
         {
+            while(attrs.removeProp("cloneFromGroup"));
+
             StringBuffer s;
-            attrs.setProp("@cloneFrom", srcdali->endpoint().getEndpointHostText(s).str());
+            if (!remoteStorage.isEmpty())
+            {
+                attrs.setProp("@cloneRemote", remoteStorage.str());
+                if (!isEmptyString(srcCluster))
+                    attrs.setProp("@cloneRemoteCluster", srcCluster);
+            }
+            else
+            {
+                attrs.setProp("@cloneFrom", srcdali->endpoint().getEndpointHostText(s).str());
+                unsigned numClusters = srcfdesc->numClusters();
+                for (unsigned clusterNum = 0; clusterNum < numClusters; clusterNum++)
+                {
+                    StringBuffer sourceGroup;
+                    srcfdesc->getClusterGroupName(clusterNum, sourceGroup, NULL);
+                    if (srcCluster && *srcCluster && !streq(sourceGroup, srcCluster))
+                        continue;
+                    Owned<IPropertyTree> groupInfo = createPTree("cloneFromGroup");
+                    groupInfo->setProp("@groupName", sourceGroup);
+                    ClusterPartDiskMapSpec &spec = srcfdesc->queryPartDiskMapping(clusterNum);
+                    spec.toProp(groupInfo);
+                    attrs.addPropTree("cloneFromGroup", groupInfo.getClear());
+                }
+            }
             attrs.setProp("@cloneFromDir", srcfdesc->queryDefaultDir());
             if (srcCluster && *srcCluster) //where to copy from has been explicity set to a remote location, don't copy from local sources
                 attrs.setProp("@cloneFromPeerCluster", "-");
             if (prefix.length())
                 attrs.setProp("@cloneFromPrefix", prefix.get());
-
-            while(attrs.removeProp("cloneFromGroup"));
-
-            unsigned numClusters = srcfdesc->numClusters();
-            for (unsigned clusterNum = 0; clusterNum < numClusters; clusterNum++)
-            {
-                StringBuffer sourceGroup;
-                srcfdesc->getClusterGroupName(clusterNum, sourceGroup, NULL);
-                if (srcCluster && *srcCluster && !streq(sourceGroup, srcCluster))
-                    continue;
-                Owned<IPropertyTree> groupInfo = createPTree("cloneFromGroup");
-                groupInfo->setProp("@groupName", sourceGroup);
-                ClusterPartDiskMapSpec &spec = srcfdesc->queryPartDiskMapping(clusterNum);
-                spec.toProp(groupInfo);
-                attrs.addPropTree("cloneFromGroup", groupInfo.getClear());
-            }
         }
     }
     void updateCloneFrom(IDistributedFile *dfile, IFileDescriptor *srcfdesc, INode *srcdali, const char *srcCluster)
@@ -570,6 +581,7 @@ public:
                 const char *_cluster2,
                 IUserDescriptor *_userdesc,
                 const char *_foreigndali,
+                const char *_remoteStorage,
                 IUserDescriptor *_foreignuserdesc,
                 const char *_nameprefix,
                 bool _overwrite,
@@ -590,6 +602,8 @@ public:
         level = 0;
         if (_foreigndali&&*_foreigndali)
             foreigndalinode.setown(createINode(_foreigndali,DALI_SERVER_PORT));
+        if (_remoteStorage && *_remoteStorage)
+            remoteStorage.set(_remoteStorage);
         fdir = &queryDistributedFileDirectory();
         switch(_clustmap) {
         case DFUcpdm_c_replicated_by_d:
@@ -833,6 +847,8 @@ public:
         else
         {
             StringBuffer s;
+            if (checkValueChanged(dfile->queryAttributes().queryProp("@cloneRemote"), remoteStorage.str()))
+                return true;
             if (checkValueChanged(dfile->queryAttributes().queryProp("@cloneFrom"), srcdali->endpoint().getEndpointHostText(s).str()))
                 return true;
             if (checkValueChanged(dfile->queryAttributes().queryProp("@cloneFromDir"), srcfdesc->queryDefaultDir()))
@@ -876,20 +892,38 @@ public:
             srcLFN.clearForeign();
             srcdali.setown(createINode(ep));
         }
+
         StringBuffer s;
-        Owned<IPropertyTree> ftree = fdir->getFileTree(srcLFN.get(), foreignuserdesc, srcdali, FOREIGN_DALI_TIMEOUT, GetFileTreeOpts::appendForeign);
-        if (!ftree.get())
-            throw MakeStringException(-1,"Source file %s could not be found in Dali %s",srcLFN.get(), getDaliEndPointStr(srcdali, s));
-        IPropertyTree *attsrc = ftree->queryPropTree("Attr");
-        if (!attsrc)
-            throw MakeStringException(-1,"Attributes for source file %s could not be found in Dali %s",srcLFN.get(), getDaliEndPointStr(srcdali, s));
+        Owned<IPropertyTree> ftree;
+        IPropertyTree *attsrc = nullptr;
+        if (remoteStorage || srcLFN.isRemote())
+        {
+            StringBuffer remoteLFN;
+            if (!srcLFN.isRemote())
+                remoteLFN.append("remote::").append(remoteStorage).append("::");
+            srcLFN.get(remoteLFN);
+
+            Owned<wsdfs::IDFSFile> dfsFile = wsdfs::lookupDFSFile(remoteLFN.str(), AccessMode::readSequential, INFINITE, wsdfs::keepAliveExpiryFrequency, foreignuserdesc);
+            if (!dfsFile)
+                throw makeStringExceptionV(-1,"Source file %s could not be found in Remote Storage", remoteLFN.str()); //remote scope already included in remoteLFN
+            ftree.setown(dfsFile->queryFileMeta()->getPropTree("File"));
+        }
+        else
+        {
+            ftree.setown(fdir->getFileTree(srcLFN.get(), foreignuserdesc, srcdali, FOREIGN_DALI_TIMEOUT, GetFileTreeOpts::appendForeign));
+            if (!ftree.get())
+                throw MakeStringException(-1,"Source file %s could not be found in Dali %s",srcLFN.get(), getDaliEndPointStr(srcdali, s));
+            attsrc = ftree->queryPropTree("Attr");
+            if (!attsrc)
+                throw MakeStringException(-1,"Attributes for source file %s could not be found in Dali %s",srcLFN.get(), getDaliEndPointStr(srcdali, s));
+        }
 
         CDfsLogicalFileName dlfn;
         dlfn.set(destfilename);
         if (!streq(ftree->queryName(),queryDfsXmlBranchName(DXB_File)))
             throw MakeStringException(-1,"Source file %s in Dali %s is not a simple file",filename, getDaliEndPointStr(srcdali, s));
 
-        if (!srcdali.get()||queryCoven().inCoven(srcdali))
+        if (!remoteStorage.length() && (!srcdali.get() || queryCoven().inCoven(srcdali)))
         {
             // if dali is local and filenames same
             if (streq(srcLFN.get(), dlfn.get()))
@@ -1241,7 +1275,7 @@ public:
                          )
     {
         CFileCloner cloner;
-        cloner.init(cluster1,clustmap,repeattlk,cluster2,userdesc,foreigndali,foreignuserdesc,nameprefix,overwrite,dophysicalcopy);
+        cloner.init(cluster1,clustmap,repeattlk,cluster2,userdesc,foreigndali,nullptr,foreignuserdesc,nameprefix,overwrite,dophysicalcopy);
         CDfsLogicalFileName dlfn;
         cloner.cloneSuperFile(srcname,dlfn);
     }
@@ -1263,7 +1297,7 @@ public:
     {
         DBGLOG("createSingleFileClone src=%s@%s, dst=%s@%s, prefix=%s, ow=%d, docopy=%d", srcname, srcCluster, dstname, cluster1, prefix, overwrite, dophysicalcopy);
         CFileCloner cloner;
-        cloner.init(cluster1,clustmap,repeattlk,cluster2,userdesc,foreigndali,foreignuserdesc,NULL,overwrite,dophysicalcopy);
+        cloner.init(cluster1,clustmap,repeattlk,cluster2,userdesc,foreigndali,nullptr,foreignuserdesc,NULL,overwrite,dophysicalcopy);
         cloner.srcCluster.set(srcCluster);
         cloner.prefix.set(prefix);
         cloner.cloneFile(srcname,dstname);
@@ -1280,6 +1314,7 @@ public:
                          const char *defReplicateFolder,
                          IUserDescriptor *userdesc,                // user desc for local dali
                          const char *foreigndali,                  // can be omitted if srcname foreign or local
+                         const char *remoteStorage,                 // can be omitted if srcname remote or local
                          unsigned overwriteFlags,                  // overwrite destination if exists
                          bool dophysicalcopy
                          )
@@ -1288,7 +1323,7 @@ public:
         CFileCloner cloner;
         // MORE: Would the following be better to ensure files are copied when queries are deployed?
         // bool copyPhysical = isContainerized() && (foreigndali != nullptr);
-        cloner.init(dstCluster, DFUcpdm_c_replicated_by_d, true, NULL, userdesc, foreigndali, NULL, NULL, false, dophysicalcopy);
+        cloner.init(dstCluster, DFUcpdm_c_replicated_by_d, true, NULL, userdesc, foreigndali, remoteStorage, NULL, NULL, false, dophysicalcopy);
         cloner.overwriteFlags = overwriteFlags;
 #ifndef _CONTAINERIZED
         //In containerized mode there is no need to replicate files to the local disks of the roxie cluster - so don't set the special flag

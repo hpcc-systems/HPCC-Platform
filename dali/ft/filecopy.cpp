@@ -1488,6 +1488,9 @@ void FileSprayer::calibrateProgress()
 
 void FileSprayer::checkForOverlap()
 {
+    if (distributedSource && distributedSource->isExternal())
+        return;
+
     unsigned num = std::min(sources.ordinality(), targets.ordinality());
 
     for (unsigned idx = 0; idx < num; idx++)
