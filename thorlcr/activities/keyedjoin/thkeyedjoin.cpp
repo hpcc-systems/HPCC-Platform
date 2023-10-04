@@ -308,7 +308,7 @@ public:
         if (indexFile)
         {
             if (!isFileKey(indexFile))
-                throw MakeActivityException(this, TE_FileTypeMismatch, "Attempting to read flat file as an index: %s", indexFileName.get());
+                throw MakeActivityException(this, ENGINEERR_FILE_TYPE_MISMATCH, "Attempting to read flat file as an index: %s", indexFileName.get());
             IDistributedSuperFile *superIndex = indexFile->querySuperFile();
 
             unsigned numSuperIndexSubs = superIndex?superIndex->numSubFiles(true):1;
@@ -321,7 +321,7 @@ public:
                     if (dataFile)
                     {
                         if (isFileKey(dataFile))
-                            throw MakeActivityException(this, TE_FileTypeMismatch, "Full-Keyed-Join: Attempting to read index as a flat file (fetch file): %s", fetchFilename.get());
+                            throw MakeActivityException(this, ENGINEERR_FILE_TYPE_MISMATCH, "Full-Keyed-Join: Attempting to read index as a flat file (fetch file): %s", fetchFilename.get());
                         if (superIndex)
                             throw MakeActivityException(this, 0, "Full-Keyed-Join: Superkeys with full keyed joins are not supported");
 

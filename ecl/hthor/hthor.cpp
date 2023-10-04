@@ -59,6 +59,7 @@
 #include "thorread.hpp"
 
 #include "ws_dfsclient.hpp"
+#include "hthorerr.hpp"
 
 
 #define EMPTY_LOOP_LIMIT 1000
@@ -361,6 +362,7 @@ ClusterWriteHandler *createClusterWriteHandler(IAgentContext &agent, IHThorIndex
         getDefaultStoragePlane(defaultCluster);
     Owned<CHThorClusterWriteHandler> clusterHandler;
     unsigned clusterIdx = 0;
+
     while(true)
     {
         OwnedRoxieString helperCluster(iwHelper ? iwHelper->getCluster(clusterIdx++) : dwHelper->getCluster(clusterIdx++));
@@ -372,10 +374,10 @@ ClusterWriteHandler *createClusterWriteHandler(IAgentContext &agent, IHThorIndex
         }
         if (!cluster)
             break;
-        if(!clusterHandler)
+        if (!clusterHandler)
         {
-            if(extend)
-                throw MakeStringException(0, "Cannot combine EXTEND and CLUSTER flags on disk write of file %s", lfn);
+            if (extend)
+                throw makeStringExceptionV(ENGINEERR_EXTEND_CLUSTER_WRITE, "Cannot combine EXTEND and CLUSTER flags on disk write of file %s", lfn);
             clusterHandler.setown(new CHThorClusterWriteHandler(lfn, "OUTPUT", agent));
         }
         clusterHandler->addCluster(cluster);
@@ -540,6 +542,20 @@ void CHThorDiskWriteActivity::resolve()
             }
 
             clusterHandler.setown(createClusterWriteHandler(agent, NULL, &helper, dfsLogicalName.get(), filename, extend, false));
+            StringBuffer planeName;
+            if (clusterHandler)
+            {
+                StringArray clusterNames;
+                clusterHandler->getClusters(clusterNames);
+                planeName.set(clusterNames.item(0)); // NB: only bother with 1st, if multiple createClusterWriteHandler validates if same
+            }
+            else
+                getDefaultStoragePlane(planeName);
+            bool outputCompressionDefault = agent.queryWorkUnit()->getDebugValueBool("compressAllOutputs", isContainerized());
+            outputPlaneCompressed = outputCompressionDefault;
+            Owned<IPropertyTree> plane = getStoragePlane(planeName);
+            if (plane)
+                outputPlaneCompressed = plane->getPropBool("@compressLogicalFiles", outputCompressionDefault);
         }
     }
     else
@@ -560,7 +576,13 @@ void CHThorDiskWriteActivity::open()
     Linked<IRecordSize> groupedMeta = input->queryOutputMeta()->querySerializedDiskMeta();
     if (grouped)
         groupedMeta.setown(createDeltaRecordSize(groupedMeta, +1));
-    blockcompressed = checkWriteIsCompressed(helper.getFlags(), serializedOutputMeta.getFixedSize(), grouped);//TDWnewcompress for new compression, else check for row compression
+    blockcompressed=false;
+    if (0 == (helper.getFlags() & TDWnocompress))
+    {
+        blockcompressed = checkWriteIsCompressed(helper.getFlags(), serializedOutputMeta.getFixedSize(), grouped);//TDWnewcompress for new compression, else check for row compression
+        if (!blockcompressed) // if ECL doesn't specify, default to plane definition
+            blockcompressed = outputPlaneCompressed;
+    }
     void *ekey;
     size32_t ekeylen;
     helper.getEncryptKey(ekeylen,ekey);
@@ -8314,7 +8336,6 @@ void CHThorDiskReadBaseActivity::stop()
     CHThorActivityBase::stop();
 }
 
-#define TE_FileTypeMismatch 10138 // NB: duplicated from thorlcr/shared/thexception.hpp, but be moved to common header
 void CHThorDiskReadBaseActivity::checkFileType(IDistributedFile *file)
 {
     if (rt_csv == readType)
@@ -8346,7 +8367,7 @@ void CHThorDiskReadBaseActivity::checkFileType(IDistributedFile *file)
         return;
     if (!strieq(kind, expectedType))
     {        
-        Owned<IException> e = makeStringExceptionV(TE_FileTypeMismatch, "File format mismatch reading file: '%s'. Expected type '%s', but file is type '%s'", file->queryLogicalName(), expectedType, kind);
+        Owned<IException> e = makeStringExceptionV(ENGINEERR_FILE_TYPE_MISMATCH, "File format mismatch reading file: '%s'. Expected type '%s', but file is type '%s'", file->queryLogicalName(), expectedType, kind);
         if (!warningOnly)
             throw e.getClear();
         StringBuffer tmp;

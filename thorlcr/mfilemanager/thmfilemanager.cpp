@@ -367,7 +367,7 @@ public:
                 throw MakeStringException(TE_MachineOrderNotFound, "Missing logical file %s\n", scopedName.str());
             if (reportOptional)
             {
-                Owned<IThorException> e = MakeThorException(TE_MissingOptionalFile, "Input file '%s' was missing but declared optional", scopedName.str());
+                Owned<IThorException> e = MakeThorException(ENGINEERR_MISSING_OPTIONAL_FILE, "Input file '%s' was missing but declared optional", scopedName.str());
                 e->setAction(tea_warning);
                 e->setSeverity(SeverityWarning);
                 reportExceptionToWorkunitCheckIgnore(job.queryWorkUnit(), e);

@@ -18,7 +18,7 @@
 //class=file
 //version multiPart=true
 
-#onwarning(10138, ignore);
+#onwarning(7102, ignore);
 
 import ^ as root;
 multiPart := #IFDEFINED(root.multiPart, true);

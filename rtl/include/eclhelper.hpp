@@ -1155,6 +1155,7 @@ enum
     TDWupdatecrc        = 0x80000,      // has format crc
     TDWexpires          = 0x100000,
     TDWrestricted       = 0x200000,
+    TDWnocompress       = 0x400000,
 };
 
 //flags for thor index read
