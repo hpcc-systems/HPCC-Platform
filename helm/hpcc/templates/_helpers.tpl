@@ -599,7 +599,9 @@ readinessProbe:
 Generate vault info
 */}}
 {{- define "hpcc.generateVaultConfig" -}}
+{{- $root := .root -}}
 {{- $secretsCategories := .secretsCategories -}}
+{{- $vaultClientIssuerEnabled := eq (include "hpcc.isIssuerEnabled" (dict "root" .root "issuerKeyName" "vaultclient")) "true" -}}
 vaults:
 {{- range  $categoryname, $category := .root.Values.vaults -}}
  {{- if (has $categoryname $secretsCategories) }}
@@ -623,6 +625,21 @@ vaults:
     {{- if index $vault "appRoleSecret" }}
       appRoleSecret: {{ index $vault "appRoleSecret" }}
     {{- end -}}
+    {{- if $vaultClientIssuerEnabled }}
+     {{- if not (index $vault "client-secret") }}
+      {{- if not (index $vault "appRoleId") }}
+      useTLSCertificateAuth: true
+       {{- $issuer := $root.Values.certificates.issuers.vaultclient }}
+       {{- if index $vault "authRole" }}
+      role: {{ $vault.authRole }}
+       {{- else if index $issuer "rolePrefix" }}
+      role: {{ (printf "%s%s" $issuer.rolePrefix (lower $categoryname)) | quote }}
+       {{- else }}
+      role: {{ (printf "hpcc-%s" (lower $categoryname)) | quote }}
+       {{- end }}
+      {{- end }}
+     {{- end }}
+    {{- end }}
     {{- if (hasKey $vault "retries") }}
       retries: {{ $vault.retries }}
     {{- end }}
@@ -1959,7 +1976,110 @@ spec:
 {{- end }}
 
 {{/*
-Experimental: Use certmanager to generate a key for roxie udp encryption.
+*/}}
+
+{{/* When the cert-manager vaultclient issuer is enabled, a client certificate will be issued for each secret category.
+     These will be used to authenticate against a vault with granular category specific permissions.
+     Pass in root and category
+*/}}
+{{- define "hpcc.addVaultClientCertificate" }}
+ {{- if (.root.Values.certificates | default dict).enabled -}}
+  {{- $issuerKeyName := "vaultclient" -}}
+  {{- if eq (include "hpcc.isIssuerEnabled" (dict "root" .root "issuerKeyName" $issuerKeyName)) "true" -}}
+   {{- $issuer := get .root.Values.certificates.issuers $issuerKeyName -}}
+   {{- if not $issuer -}}
+    {{- $_ := fail (printf "Issuer %s for vault access client certificates not found." $issuerKeyName) -}}
+   {{- else -}}
+    {{- if not $issuer.enabled -}}
+     {{- $_ := fail (printf "Issuer %s for vault access client certificates not enabled." $issuerKeyName) -}}
+    {{- end }}
+    {{- if not $issuer.domain -}}
+     {{- $_ := fail (printf "Domain required for Issuer %s for vault access client certificates." $issuerKeyName) -}}
+    {{- end }}
+    {{- $namespace := .root.Release.Namespace -}}
+    {{- $category := .category -}}
+    {{- $secretTemplate := $issuer.secretTemplate -}}
+
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: vaultclient-{{ lower $category }}-cert
+  namespace: {{ $namespace }}
+spec:
+  secretName: vaultclient-{{ lower $category }}-tls
+    {{- if $secretTemplate }}
+  secretTemplate:
+{{ toYaml $secretTemplate | indent 4 }}
+    {{- end }}
+  duration: 2160h # 90d
+  renewBefore: 360h # 15d
+  subject:
+    organizations:
+    - HPCC Vault Client
+  commonName: {{ $category }}.vaultclient.{{ $issuer.domain }}
+  isCA: false
+  privateKey:
+    algorithm: RSA
+    encoding: PKCS1
+    size: 2048
+  usages:
+    - client auth
+  issuerRef:
+    name: {{ $issuer.name }}
+    kind: {{ $issuer.kind }}
+    group: cert-manager.io
+---
+   {{- end }}
+  {{- end }}
+ {{- end }}
+{{- end }}
+
+
+{{/* When the cert-manager vaultclient issuer is enabled, generates the volume mounts for vault client certificate secrets.
+     Secrets are mounted for each category supported by the current component.
+     Pass in root and secretsCategories
+*/}}
+{{- define "hpcc.addVaultClientCertificateVolumeMounts" -}}
+ {{- if (.root.Values.certificates | default dict).enabled -}}
+  {{- $issuerKeyName := "vaultclient" -}}
+  {{- if eq (include "hpcc.isIssuerEnabled" (dict "root" .root "issuerKeyName" $issuerKeyName)) "true" -}}
+   {{- $issuer := get .root.Values.certificates.issuers $issuerKeyName -}}
+   {{- if $issuer -}}
+    {{- if $issuer.enabled -}}
+     {{- range $category := .secretsCategories }}
+- name: certificate-{{ $issuerKeyName }}-{{ lower $category }}
+  mountPath: /opt/HPCCSystems/secrets/certificates/{{ $issuerKeyName }}/{{ lower $category }}
+     {{- end -}}
+    {{- end -}}
+   {{ end -}}
+  {{- end -}}
+ {{- end -}}
+{{- end -}}
+
+{{/* When the cert-manager vaultclient issuer is enabled, generates the volumes for vault client certificate secrets.
+     Secrets are mounted for each category supported by the current component.
+     Pass in root and secretsCategories
+*/}}
+{{- define "hpcc.addVaultClientCertificateVolumes" -}}
+ {{- if (.root.Values.certificates | default dict).enabled -}}
+  {{- $issuerKeyName := "vaultclient" -}}
+  {{- if eq (include "hpcc.isIssuerEnabled" (dict "root" .root "issuerKeyName" $issuerKeyName)) "true" -}}
+   {{- $issuer := get .root.Values.certificates.issuers $issuerKeyName -}}
+   {{- if $issuer -}}
+    {{- if $issuer.enabled -}}
+     {{- range $category := .secretsCategories }}
+- name: certificate-{{ $issuerKeyName }}-{{ lower $category }}
+  secret:
+    secretName: {{ $issuerKeyName }}-{{ lower $category }}-tls
+     {{- end -}}
+    {{- end -}}
+   {{ end -}}
+  {{- end -}}
+ {{- end -}}
+{{- end -}}
+
+{{/*
+Use certmanager to generate a key for roxie udp encryption.
 A public certificate and private key are generated under /opt/HPCCSystems/secrets/certificates/udp.
 Current udp encryption design would only use the private key.
 Key is in pem format and the private key would need to be extracted.

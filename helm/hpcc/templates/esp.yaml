@@ -158,6 +158,7 @@ spec:
 {{ include "hpcc.addConfigMapVolumeMount" . | indent 8 }}
 {{ include "hpcc.addVolumeMounts" $commonCtx | indent 8 }}
 {{ include "hpcc.addSecretVolumeMounts" $commonCtx | indent 8 }}
+{{ include "hpcc.addVaultClientCertificateVolumeMounts" $commonCtx | indent 8 }}
 {{ include "hpcc.addCertificateVolumeMount" (dict "root" $ "component" $application "name" .name "certificate" .certificate "visibility" .service.visibility "remoteClients" .remoteClients "trustClients" .trustClients "includeRemote" true) | indent 8 }}
 {{- if $commonCtx.externalCert }}
  {{- include "hpcc.addCertificateVolumeMount" (dict "root" $ "component" $application "name" .name "external" false) | nindent 8 }}
@@ -169,6 +170,7 @@ spec:
 {{ include "hpcc.addConfigMapVolume" . | indent 6 }}
 {{ include "hpcc.addVolumes" $commonCtx | indent 6 }}
 {{ include "hpcc.addSecretVolumes" $commonCtx | indent 6 }}
+{{ include "hpcc.addVaultClientCertificateVolumes" $commonCtx | indent 6 }}
 {{ include "hpcc.addCertificateVolume" (dict "root" $ "component" $application "name" .name "certificate" .certificate "visibility" .service.visibility "remoteClients" .remoteClients "trustClients" .trustClients "includeRemote" true) | indent 6 }}
 {{- if $commonCtx.externalCert }}
  {{- include "hpcc.addCertificateVolume" (dict "root" $ "component" $application "name" .name "external" false) | nindent 6 }}
