@@ -1579,13 +1579,13 @@ void clearAffinityCache()
     cachedNumCpus.store(0, std::memory_order_release);
 }
 
-void applyResourcedCPUAffinity(const IPropertyTree *resourceSection)
+bool applyResourcedCPUAffinity(const IPropertyTree *resourceSection)
 {
     if (nullptr == resourceSection)
-        return;
+        return false;
     const char *cpusText = resourceSection->queryProp("@cpu");
     if (isEmptyString(cpusText))
-        return;
+        return false;
     double cpus = friendlyCPUToDecimal(cpusText);
     if (0.0 == cpus)
         throw makeStringExceptionV(0, "Invalid number of resources cpus: %s", cpusText);
@@ -1600,6 +1600,7 @@ void applyResourcedCPUAffinity(const IPropertyTree *resourceSection)
         // NB: if something were to clear affinity, then this setting would be lost
         setAffinityCpus(cpusI);
     }
+    return true; // signifies there was a cpu resource setting of some kind
 }
 
 #define RXMAX 1000000       // can be 10x bigger but this produces reasonable amounts
