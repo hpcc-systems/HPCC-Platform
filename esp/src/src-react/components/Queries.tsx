@@ -160,7 +160,7 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
                 }
             },
             Dll: { label: nlsHPCC.Dll },
-            PublishedBy: { label: nlsHPCC.PublishedBy, sortable: false },
+            PublishedBy: { label: nlsHPCC.PublishedBy },
             Status: { label: nlsHPCC.Status, sortable: false }
         };
     }, []);
@@ -301,6 +301,7 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
         footer={<FluentPagedFooter
             persistID={"queries"}
             pageNum={pageNum}
+            selectionCount={selection.length}
             setPageNum={setPageNum}
             setPageSize={setPageSize}
             total={total}

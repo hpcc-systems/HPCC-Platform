@@ -68,6 +68,7 @@ spec:
       initContainers:
         {{- include "hpcc.createConfigInitContainers" $commonCtx | indent 6 }}
       {{- end }}
+      {{- include "hpcc.addImagePullSecrets" $commonCtx | nindent 6 -}}
       containers:
 {{- include "hpcc.addSashaContainer" $commonCtx | indent 6 }}
         volumeMounts:

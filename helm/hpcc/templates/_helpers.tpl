@@ -730,6 +730,12 @@ Add extra args for a component
  {{- $debugPlane := .me.debugPlane | default (include "hpcc.getFirstPlaneForCategory"  (dict "root" .root "category" "debug")) -}}
  {{- include "hpcc.checkPlaneExists" (dict "root" .root "planeName" $debugPlane) -}}
  {{- $prefix := include "hpcc.getPlanePrefix" (dict "root" .root "planeName" $debugPlane) -}}
+ {{- $meExpert := .me.expert | default dict -}}
+ {{- $globalExpert := .root.Values.global.expert | default dict -}}
+ {{- $alwaysPostMortem := (hasKey $meExpert "alwaysPostMortem") | ternary $meExpert.alwaysPostMortem ($globalExpert.alwaysPostMortem | default false) -}}
+ {{- if $alwaysPostMortem -}}
+"-a",{{ "\n" }}
+ {{- end -}}
 "-d", {{ $prefix }},
 "--",
 {{ .process | quote }},
@@ -1690,7 +1696,14 @@ args:
  {{- $debugPlane := .me.debugPlane | default (include "hpcc.getFirstPlaneForCategory"  (dict "root" .root "category" "debug")) -}}
  {{- include "hpcc.checkPlaneExists" (dict "root" .root "planeName" $debugPlane) -}}
  {{- $prefix := include "hpcc.getPlanePrefix" (dict "root" .root "planeName" $debugPlane) -}}
- {{- $_ := set $check_cmd "command" (printf "check_executes -d %s -- %s" $prefix .command) -}}
+ {{- $pmd_always_opt := "" -}}
+ {{- $globalExpert := .root.Values.global.expert | default dict -}}
+ {{- $meExpert := .me.expert | default dict -}}
+ {{- $alwaysPostMortem := (hasKey $meExpert "alwaysPostMortem") | ternary $meExpert.alwaysPostMortem ($globalExpert.alwaysPostMortem | default false) -}}
+ {{- if $alwaysPostMortem -}}
+  {{- $pmd_always_opt = "-a " -}}
+ {{- end -}}
+ {{- $_ := set $check_cmd "command" (printf "check_executes %s-d %s -- %s" $pmd_always_opt $prefix .command) -}}
 {{- end }}
 - >-
     {{ $check_cmd.command }};

@@ -425,8 +425,7 @@ define([
                     },
                     PublishedBy: {
                         width: 100,
-                        label: this.i18n.PublishedBy,
-                        sortable: false
+                        label: this.i18n.PublishedBy
                     },
                     Status: {
                         width: 100,

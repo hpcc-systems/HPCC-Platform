@@ -96,6 +96,8 @@ export const DelimitedImportForm: React.FunctionComponent<DelimitedImportFormPro
 
                 delete data.selectedFiles;
 
+                const requests = [];
+
                 files.forEach(file => {
                     request = data;
                     if (!isContainer) {
@@ -109,23 +111,42 @@ export const DelimitedImportForm: React.FunctionComponent<DelimitedImportFormPro
                         file.TargetName && file.TargetName.substring(0, 2) !== "::"
                     ) ? "::" : "") + file.TargetName;
                     request["destNumParts"] = file.NumParts;
-                    FileSpray.SprayVariable({
+                    requests.push(FileSpray.SprayVariable({
                         request: request
-                    }).then((response) => {
+                    }));
+                });
+
+                Promise.all(requests).then(responses => {
+                    if (responses.length === 1) {
+                        const response = responses[0];
                         if (response?.Exceptions) {
                             const err = response.Exceptions.Exception[0].Message;
                             logger.error(err);
                         } else if (response.SprayResponse?.wuid) {
-                            pushUrl(`/dfuworkunits/${response.SprayResponse.wuid}`);
+                            pushUrl(`#/dfuworkunits/${response.SprayResponse.wuid}`);
                         }
-                    });
-                });
+                    } else {
+                        const errors = [];
+                        responses.forEach(response => {
+                            if (response?.Exceptions) {
+                                const err = response.Exceptions.Exception[0].Message;
+                                errors.push(err);
+                                logger.error(err);
+                            } else if (response.SprayResponse?.wuid) {
+                                window.open(`#/dfuworkunits/${response.SprayResponse.wuid}`);
+                            }
+                        });
+                        if (errors.length === 0) {
+                            closeForm();
+                        }
+                    }
+                }).catch(err => logger.error(err));
             },
             err => {
                 logger.error(err);
             }
         )();
-    }, [handleSubmit, isContainer]);
+    }, [closeForm, handleSubmit, isContainer]);
 
     const componentStyles = mergeStyleSets(
         FormStyles.componentStyles,
