@@ -1,0 +1,108 @@
+/*##############################################################################
+
+    HPCC SYSTEMS software Copyright (C) 2023 HPCC Systems.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+############################################################################## */
+
+EspInclude(common);
+
+EspInclude(ws_workunits_struct);
+
+ESPenum WUTypes : string
+{
+    ECL("ECL"),
+    DFU("DFU"),
+};
+
+ESPrequest [nil_remove] GetVersionRequest
+{
+};
+
+ESPresponse [exceptions_inline, nil_remove] ResultResponse
+{
+    string Result;
+};
+
+ESPrequest [nil_remove] ListWURequest
+{
+    ESPenum WUTypes WUType;
+    string Wuid;
+    string Cluster;
+    string Owner;
+    string JobName;
+    string State;
+    string AfterDate; //YYYYMMDD
+    string BeforeDate; //YYYYMMDD
+
+    bool Archived(true);
+    bool Online(true);
+
+    bool IncludeDT(false);
+    string OutputFields;
+    int64 PageSize(0);
+    int64 PageStartFrom(0);
+};
+
+ESPrequest [nil_remove] ArchiveWURequest
+{
+    string Wuid;
+    ESPenum WUTypes WUType;
+};
+
+ESPrequest [nil_remove] RestoreWURequest
+{
+    string Wuid;
+    ESPenum WUTypes WUType;
+};
+
+ESPrequest [nil_remove] XREFRequest
+{
+    string Cluster;
+};
+
+ESPservice [auth_feature("DEFERRED"), //This declares that the method logic handles feature level authorization
+    version("1.00"), default_client_version("1.00"), exceptions_inline("./smc_xslt/exceptions.xslt")] WSSasha
+{
+    ESPmethod [auth_feature("SashaAccess:Access")] GetVersion(GetVersionRequest, ResultResponse);
+    ESPmethod [auth_feature("SashaAccess:READ")] ListWU(ListWURequest, ResultResponse); //list ECL WUs or DFU WUs in Archive server.
+    //In a separate PR, new method DownloadWU will be added to output to file.
+
+    //ESPmethod [auth_feature("SashaAccess:READ")] Get(GetRequest, ResultResponse);
+        // By reading the code, looks like that it lists ECL WUs or DFU WUs in Archive server in XML format.
+        // When I tested using the existing Sasha CLI, it does not work. ?
+        // If works, should it be merged into the ListWU as an option (Format:XML?)?
+
+    //ESPmethod [auth_feature("SashaAccess:READ")] ListDT(ListDTRequest, ResultResponse);
+        // By reading the code, looks like: it lists ECL WUs or DFU WUs with date time (when?) in Archive server.
+        // Should it be merged into the ListWU as an option (IncludeDateTime)?
+
+    ESPmethod [auth_feature("SashaAccess:FULL")] ArchiveWU(ArchiveWURequest, ResultResponse); //archive ECL WUs or DFU WUs
+    ESPmethod [auth_feature("SashaAccess:FULL")] RestoreWU(RestoreWURequest, ResultResponse); //restore ECL WUs or DFU WUs
+
+    //ESPmethod [auth_feature("SashaAccess:FULL")] BackupWU(BackupWURequest, ResultResponse); //backup one ECL WU
+    // Only backup an ECL WU (not DFU WU). How does it work? How to test? How about implementing in separate PR?
+
+    ESPmethod [auth_feature("SashaAccess:FULL")] XREF(XREFRequest, ResultResponse); //generate XREF for clusters
+
+    //ESPmethod [auth_feature("SashaAccess:FULL")] Stop(StopRequest, ResultResponse);
+    // Stop what? How does it work? How to test? How about implementing in separate PR?
+
+    //Do we need the following methods? They are not in the Sasha Usage, but, in Sasha code. If yes, how about implementing in separate PRs?
+        //SCA_WORKUNIT_SERVICES_GET ?
+        //coalesce_suspend ?
+        //coalesce_resume ?
+};
+
+SCMexportdef(WSSasha);
+SCMapi(WSSasha) IClientWSSasha *createWSSashaClient();

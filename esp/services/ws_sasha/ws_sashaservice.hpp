@@ -20,13 +20,24 @@
 
 #include "ws_sasha_esp.ipp"
 #include "exception_util.hpp"
+#include "jlib.hpp"
+#include "TpWrapper.hpp"
+#include "sacmd.hpp"
 
 class CWSSashaEx : public CWSSasha
 {
+    ISashaCommand* setSashaCommand(SashaCommandAction action, bool dfu, SocketEndpoint& serverep);
+
 public:
     IMPLEMENT_IINTERFACE;
 
     virtual void init(IPropertyTree* cfg, const char* process, const char* service) override;
+
+    virtual bool onGetVersion(IEspContext& context, IEspGetVersionRequest& req, IEspResultResponse& resp) override;
+    virtual bool onListWU(IEspContext& context, IEspListWURequest& req, IEspResultResponse& resp) override;
+    virtual bool onArchiveWU(IEspContext& context, IEspArchiveWURequest& req, IEspResultResponse& resp) override;
+    virtual bool onRestoreWU(IEspContext& context, IEspRestoreWURequest& req, IEspResultResponse& resp) override;
+    virtual bool onXREF(IEspContext& context, IEspXREFRequest& req, IEspResultResponse& resp) override;
 };
 
 #endif //_ESPWIZ_ws_sasha_HPP__

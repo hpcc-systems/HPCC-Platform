@@ -16,6 +16,7 @@
 #endif
 
 #include "sacmd.hpp"
+#include "sashacli.hpp"
 
 bool restoreWU(const char * sashaserver,const char *wuid)
 {
@@ -107,7 +108,6 @@ void usage()
 }
 
 static Owned<IFileIOStream> outfile;
-static bool extractTimings=true;
 
 bool getResponse()
 {
@@ -124,84 +124,6 @@ bool confirm(const char * msg)
 {
     printf("%s",msg);
     return getResponse();
-}
-
-static const char *getNum(const char *s,unsigned &num)
-{
-    while (*s&&!isdigit(*s))
-        s++;
-    num = 0;
-    while (isdigit(*s)) {
-        num = num*10+*s-'0';
-        s++;
-    }
-    return s;
-}
-
-
-void DumpWorkunitTimings(IPropertyTree *wu)
-{
-    Owned<IFile> file;
-    Owned<IFileIO> fileio;
-    offset_t filepos = 0;
-    const char *basename = "DaAudit.";
-    StringBuffer curfilename;
-    StringBuffer wuid;
-    wu->getName(wuid);
-    StringBuffer query;
-    StringBuffer sdate;
-    StringBuffer name;
-    CDateTime dt;
-    StringBuffer line;
-    const char *submitid = wu->queryProp("@submitID");
-    if (!submitid)
-        submitid = "";
-    Owned<IPropertyTreeIterator> iter = wu->getElements("Timings/Timing");
-    ForEach(*iter) {
-        if (iter->query().getProp("@name",name.clear())) {
-            if ((name.length()>11)&&(memcmp("Graph graph",name.str(),11)==0)) {
-                unsigned gn;
-                const char *s = getNum(name.str(),gn);
-                unsigned sn;
-                s = getNum(s,sn);
-                if (gn&&sn) {
-                    query.clear().appendf("TimeStamps/TimeStamp[@application=\"Thor - graph%d\"]/Started[1]",gn);
-                    if (wu->getProp(query.str(),sdate.clear())) {
-                        dt.setString(sdate.str());
-                        unsigned year;
-                        unsigned month;
-                        unsigned day;
-                        dt.getDate(year,month,day);
-                        StringBuffer logname(basename);
-                        logname.appendf("%04d_%02d_%02d.log",year,month,day);
-//                      printf("**%s\n",logname.str());
-                        if (strcmp(logname.str(),curfilename.str())!=0) {
-                            fileio.clear();
-                            file.setown(createIFile(logname.str()));
-                            if (!file) 
-                                throw MakeStringException(-1,"Could not create file %s",logname.str());
-                            fileio.setown(file->open(IFOwrite));
-                            if (!fileio) 
-                                throw MakeStringException(-1,"Could not open file %s",logname.str());
-                            filepos = fileio->size();
-                            curfilename.clear().append(logname);
-                        }
-                        dt.getDateString(line.clear());
-                        line.append(' ');
-                        dt.getTimeString(line);
-                        line.append(" ,Timing,").append(wuid.str()).append(',').append(submitid).append(',');
-                        iter->query().getProp("@duration",line);
-                        line.append(',');
-                        if (iter->query().getProp("@count",line))
-                            line.append(',');
-                        line.append("ThorGraph").append(',').append(gn).append(',').append(sn).append('\n');
-                        fileio->write(filepos,line.length(),line.str());
-                        filepos += line.length();
-                    }
-                }
-            }
-        }
-    }
 }
 
 ISashaCommand *createCommand(unsigned argc, char* argv[], SocketEndpoint &serverep)
@@ -374,25 +296,6 @@ ISashaCommand *createCommand(unsigned argc, char* argv[], SocketEndpoint &server
     return cmd.getClear();
 }
 
-bool getVersion(INode *node)
-{
-    Owned<ISashaCommand> cmd = createSashaCommand();
-    cmd->setAction(SCA_GETVERSION);
-    StringBuffer ips;
-    node->endpoint().getHostText(ips);
-    if (!cmd->send(node,1*60*1000)) {
-        OERRLOG("Could not connect to Sasha server on %s",ips.str());
-        return false;
-    }
-    StringBuffer id;
-    if (cmd->getId(0,id)) {
-        PROGLOG("Sasha server[%s]: Version %s",ips.str(),id.str());
-        return true;
-    }
-    IERRLOG("Sasha server[%s]: Protocol error",ips.str());
-    return false;
-}
-
 struct ReleaseAtomBlock { ~ReleaseAtomBlock() { releaseAtoms(); } };
 int main(int argc, char* argv[])
 {   
@@ -414,117 +317,9 @@ int main(int argc, char* argv[])
 
         SocketEndpoint ep;
         Owned<ISashaCommand> cmd = createCommand(argc,argv,ep);
-        if (cmd.get()) {
-            SashaCommandAction action = cmd->getAction();
-            Owned<INode> node = createINode(ep);
-            if (getVersion(node)&&(action!=SCA_GETVERSION)) {
-                if (action==SCA_RESTORE) {
-                    cmd->setAction(SCA_LIST);
-                    cmd->setArchived(true);
-                    cmd->setOnline(false);
-                }
-                else if (action==SCA_ARCHIVE) {
-                    cmd->setAction(SCA_LIST);
-                    cmd->setArchived(false);
-                    cmd->setOnline(true);
-                }
-                else if (action==SCA_BACKUP) {
-                    cmd->setAction(SCA_LIST);
-                    cmd->setArchived(false);
-                    cmd->setOnline(true);
-                    cmd->setDFU(false);     // can only backup WUs currently
-                }
-                if (cmd->send(node)) {
-                    if ((cmd->getAction()==SCA_LIST)||(cmd->getAction()==SCA_GET)||(action==SCA_LISTDT)) {
-                        cmd->setAction(action); // restore orig action
-                        cmd->setArchived(false);
-                        cmd->setOnline(false);
-                        unsigned n = cmd->numIds();
-                        StringBuffer s;
-                        if ((action==SCA_LIST)||(action==SCA_GET)||(action==SCA_LISTDT)) {
-                            for (unsigned i=0;i<n;i++) {
-                                cmd->getId(i,s.clear());
-                                if (action==SCA_LISTDT) {
-                                    StringBuffer dts;
-                                    CDateTime dt;
-                                    cmd->getDT(dt,i);
-                                    dt.getString(dts);
-                                    PROGLOG("%s,%s",s.str(),dts.str());
-                                    if (outfile) {
-                                        outfile->write(s.length(),s.str());
-                                        outfile->write(1,",");
-                                        outfile->write(dts.length(),dts.str());
-                                        outfile->write(1,"\n");
-                                    }
-                                }
-                                else {
-                                    PROGLOG("%s",s.str());
-                                    if (outfile) {
-                                        outfile->write(s.length(),s.str());
-                                        outfile->write(1,"\n");
-                                    }
-                                }
-                                if (action==SCA_GET) {
-                                    StringBuffer res;
-                                    if (cmd->getResult(i,res)) {
-                                        if (extractTimings) {
-                                            Owned<IPropertyTree> pt = createPTreeFromXMLString(res.str());
-                                            if (pt) 
-                                                DumpWorkunitTimings(pt);
-                                        }
-                                        else {
-                                            PROGLOG("----------------");
-                                            PROGLOG("%s",res.str());
-                                            PROGLOG("================");
-                                            if (outfile) {
-                                                outfile->write(17,"----------------\n");
-                                                outfile->write(res.length(),res.str());
-                                                outfile->write(1,"\n");
-                                                outfile->write(17,"================\n");
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        if ((action==SCA_LIST)||(action==SCA_GET)||(n==0)||(action==SCA_LISTDT))
-                            PROGLOG("%d WUID%s returned",n,(n==1)?"":"s");
-                        else {
-                            bool ok = true;
-                            StringBuffer msg;
-                            if (n>1) {
-                                msg.append(n).append(" workunits will be ");
-                                if (action==SCA_RESTORE)
-                                    msg.append("restored");
-                                else
-                                    msg.append("archived");
-                                msg.append(", Continue (Y/N)");
-                                ok = confirm(msg.str());
-                            }
-                            if (ok) {
-                                if (cmd->send(node)) {
-                                    n = cmd->numIds();;
-                                    for (unsigned i=0;i<n;i++) {
-                                        if ((action==SCA_ARCHIVE)||(action==SCA_RESTORE)||(action==SCA_BACKUP)) {
-                                            cmd->getId(i,s.clear());
-                                            PROGLOG("%s",s.str());
-                                            if (outfile) {
-                                                outfile->write(s.length(),s.str());
-                                                outfile->write(1,"\n");
-                                            }
-                                        }
-                                    }
-                                    if (action==SCA_RESTORE)
-                                        PROGLOG("Restore complete");
-                                    else
-                                        PROGLOG("Archive complete");
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        StringBuffer outBuffer;
+        if (cmd.get())
+            runSashaCommand(ep, cmd, outfile, outBuffer, false);
     }
     catch (IException *e) {
         EXCLOG(e, "SASHA");
