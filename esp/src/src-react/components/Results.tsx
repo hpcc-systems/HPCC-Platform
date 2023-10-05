@@ -91,10 +91,22 @@ export const Results: React.FunctionComponent<ResultsProps> = ({
             key: "open legacy", text: nlsHPCC.OpenLegacyMode, disabled: !uiState.hasSelection, iconProps: { iconName: "WindowEdit" },
             onClick: () => {
                 if (selection.length === 1) {
-                    window.location.href = `#/workunits/${wuid}/outputs/${selection[0].Name}/legacy`;
+                    window.location.href = `#/workunits/${wuid}/outputs/${selection[0].Name}?__legacy`;
                 } else {
                     for (let i = selection.length - 1; i >= 0; --i) {
-                        window.open(`#/workunits/${wuid}/outputs/${selection[i].Name}/legacy`, "_blank");
+                        window.open(`#/workunits/${wuid}/outputs/${selection[i].Name}?__legacy`, "_blank");
+                    }
+                }
+            }
+        },
+        {
+            key: "visualize", text: nlsHPCC.Visualize, disabled: !uiState.hasSelection, iconProps: { iconName: "BarChartVertical" },
+            onClick: () => {
+                if (selection.length === 1) {
+                    window.location.href = `#/workunits/${wuid}/outputs/${selection[0].Sequence}?__visualize`;
+                } else {
+                    for (let i = selection.length - 1; i >= 0; --i) {
+                        window.open(`#/workunits/${wuid}/outputs/${selection[i].Sequence}?__visualize`, "_blank");
                     }
                 }
             }

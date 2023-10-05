@@ -391,7 +391,7 @@ define([
 
         refreshData: function () {
             if (this.limit.get("value") > this.rows.length) {
-                var result = this.wu.results[this.params.Sequence];
+                var result = this.wu.results.filter(r => r.Sequence == this.params.Sequence)[0];
                 var context = this;
                 result.fetchNRows(this.rows.length, this.limit.get("value")).then(function (response) {
                     context.rows = context.rows.concat(response);
