@@ -125,7 +125,7 @@ empty_record :=
   end;
 empty_dataset := dataset([{-2, '          ', '-2         ', 'NA                              ', 0, 0, '         ', '                                ', 0, '  ', '         ', 0, 0, 0, '          ', '                  ', 0, '     ', '         ', 0, 0, 0, '          ', '                        ', 0, 0, 0, '     ', '          ', 0, 0, 0, 0, ' ', 'N', ' ', 20151105, 20151105, '          ', '          ', 0, 5, 0, '0', '0', '0', 0, 'N', 0, '          ', '          ', '          ', '          ', '          ', '          ', 0, 0, '          ', '0', '\123\000\000\000\123'}], empty_record);
 
-Write(empty_dataset, '/datadrive/dev/test_data/empty_parquet.parquet');
+ParquetIO.Write(empty_dataset, '/datadrive/dev/test_data/empty_parquet.parquet');
 
-empty_data_in := Read(empty_record, '/datadrive/dev/test_data/empty_parquet.parquet');
+empty_data_in := ParquetIO.Read(empty_record, '/datadrive/dev/test_data/empty_parquet.parquet');
 OUTPUT(empty_data_in);

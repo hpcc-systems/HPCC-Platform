@@ -21,10 +21,10 @@ nested_dataset := DATASET([{U'J\353ck', U'\353ackson', { {22, 2, ['James', 'Jona
                                 {'Amy', U'Amy\353on', { {59, 1, ['Andy']}, 3.9, 59}}, {'Grace', U'Graceso\353', { {11, 3, ['Grayson', 'Gina', 'George']}, 7.9, 100}}], parentRec);
 
 #IF(1)
-Write(nested_dataset, '/datadrive/dev/test_data/nested.parquet');
+ParquetIO.Write(nested_dataset, '/datadrive/dev/test_data/nested.parquet');
 #END
 
 #IF(1)
-read_in := Read(parentRec, '/datadrive/dev/test_data/nested.parquet');
+read_in := ParquetIO.Read(parentRec, '/datadrive/dev/test_data/nested.parquet');
 OUTPUT(read_in, NAMED('NESTED_PARQUET_IO'));
 #END
