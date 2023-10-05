@@ -291,6 +291,9 @@
         "logging": {
           "$ref": "#/definitions/logging"
         },
+        "tracing": {
+          "$ref": "#/definitions/tracing"
+        },
         "logAccess": {
           "$ref": "#/definitions/logAccess"
         },
@@ -559,6 +562,11 @@
               "description": "Optimal block size for efficient reading from this plane. Implementations will use if they can",
               "type": "integer",
               "default": 0
+            },
+            "compressLogicalFiles" : {
+              "description": "Compress all logical file outputs on this plane.",
+              "type": "boolean",
+              "default": true
             },
             "eclwatchVisible": {
               "type": "boolean"
@@ -1088,6 +1096,16 @@
       },
       "additionalProperties": { "type": ["integer", "string", "boolean"] }
     },
+    "tracing": {
+      "type": "object",
+      "properties": {
+        "alwaysCreateGlobalIds": {
+          "type": "boolean",
+          "description": "If true, allocate global ids to any requests that do not supply one"
+        }
+      },
+      "additionalProperties": { "type": ["integer", "string", "boolean"] }
+    },
     "compileOption": {
       "type": "object",
       "properties": {
@@ -1238,6 +1256,9 @@
         "logging": {
           "$ref": "#/definitions/logging"
         },
+        "tracing": {
+          "$ref": "#/definitions/tracing"
+        },
         "auth": {
           "$ref": "#/definitions/auth"
         },
@@ -1318,6 +1339,9 @@
         "logging": {
           "$ref": "#/definitions/logging"
         },
+        "tracing": {
+          "$ref": "#/definitions/tracing"
+        },
         "annotations": {
           "type": "object",
           "additionalProperties": { "type": "string" }
@@ -1374,6 +1398,9 @@
         "logging": {
           "$ref": "#/definitions/logging"
         },
+        "tracing": {
+          "$ref": "#/definitions/tracing"
+        },
         "annotations": {
           "type": "object",
           "additionalProperties": { "type": "string" }
@@ -1407,6 +1434,9 @@
         },
         "logging": {
           "$ref": "#/definitions/logging"
+        },
+        "tracing": {
+          "$ref": "#/definitions/tracing"
         },
         "resources": {
           "$ref": "#/definitions/resources"
@@ -1456,6 +1486,10 @@
         },
         "hpa": {
           "$ref": "#/definitions/hpa"
+        },
+        "expert": {
+          "description": "Custom internal options usually reserved for internal testing",
+          "type": "object"
         }
       }
     },
@@ -1490,6 +1524,9 @@
         },
         "logging": {
           "$ref": "#/definitions/logging"
+        },
+        "tracing": {
+          "$ref": "#/definitions/tracing"
         },
         "dataPlane": {
           "description": "The default storage plane to write data files to",
@@ -1575,6 +1612,9 @@
         },
         "logging": {
           "$ref": "#/definitions/logging"
+        },
+        "tracing": {
+          "$ref": "#/definitions/tracing"
         },
         "preload": {
           "description": "Preloaded plugins",
@@ -2266,6 +2306,9 @@
         "logging": {
           "$ref": "#/definitions/logging"
         },
+        "tracing": {
+          "$ref": "#/definitions/tracing"
+        },
         "annotations": {
           "type": "object",
           "additionalProperties": { "type": "string" }
@@ -2418,6 +2461,9 @@
         },
         "logging": {
           "$ref": "#/definitions/logging"
+        },
+        "tracing": {
+          "$ref": "#/definitions/tracing"
         },
         "dataPlane": {
           "description": "The default storage plane to write data files to",
@@ -2795,6 +2841,9 @@
         },
         "logging": {
           "$ref": "#/definitions/logging"
+        },
+        "tracing": {
+          "$ref": "#/definitions/tracing"
         },
         "resources": {
           "$ref": "#/definitions/resources"

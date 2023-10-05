@@ -1327,7 +1327,10 @@ public:
     {
         return logctx.getStats(ret);
     }
-
+    virtual void recordStatistics(IStatisticGatherer &progress) const override
+    {
+        globalStats.recordStatistics(progress, false);
+    }
     virtual void CTXLOGa(TracingCategory category, const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char *prefix, const char *text) const override
     {
         logctx.CTXLOGa(category, cat, job, code, prefix, text);
@@ -2599,7 +2602,6 @@ protected:
             factory->mergeStats(logctx);
         }
         globalStats.reset();
-        logCacheState();
         if (!protocol)
             return;
 

@@ -305,7 +305,6 @@ public:
     }
     bool onAbort()
     {
-        logCacheState();
         aborted.signal();
         roxieMetrics.clear();
 #ifdef _DEBUG

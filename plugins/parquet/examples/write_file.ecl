@@ -11,4 +11,4 @@ ds := DATASET
         DISTRIBUTED
     );
 
-Parquet.Write(ds, '/var/lib/HPCCSystems/mydropzone/sample.parquet');
+ParquetIO.Write(ds, '/var/lib/HPCCSystems/mydropzone/sample.parquet');

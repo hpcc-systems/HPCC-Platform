@@ -33,6 +33,8 @@
 #include "wujobq.hpp"
 #include "dfuutil.hpp"
 
+#include "ws_dfsclient.hpp"
+
 #include "dfuwu.hpp"
 
 #define COPY_WAIT_SECONDS 30
@@ -981,7 +983,7 @@ public:
                     parent->getPassword(password);
                 }
                 userdesc->set(username.str(),password.str());
-                Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lfn,userdesc,AccessMode::tbdRead,false,false,nullptr,defaultPrivilegedUser);
+                Owned<IDistributedFile> file = wsdfs::lookup(lfn,userdesc,AccessMode::tbdRead,false,false,nullptr,defaultPrivilegedUser,INFINITE);
                 if (file)
                     return file->getFileDescriptor();
             }

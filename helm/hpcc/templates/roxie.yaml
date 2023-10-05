@@ -303,6 +303,7 @@ spec:
 {{ include "hpcc.addConfigMapVolumeMount" $roxie | indent 8 }}
 {{ include "hpcc.addVolumeMounts" $commonCtx | indent 8 }}
 {{ include "hpcc.addSecretVolumeMounts" $commonCtx | indent 8 }}
+{{ include "hpcc.addVaultClientCertificateVolumeMounts" $commonCtx | indent 8 }}
 {{ include "hpcc.addCertificateVolumeMount" (dict "root" $ "component" "roxie-server" "name" $servername "external" false) | indent 8 }}
 {{ include "hpcc.addCertificateVolumeMount" (dict "root" $ "component" "roxie-server" "name" $servername "certificate" $roxie.certificate "external" true "includeRemote" true) | indent 8 }}
 {{ include "hpcc.addUDPCertificateVolumeMount" (dict "root" $ "component" "udpkey" "name" $udpkeyname ) | indent 8 }}
@@ -310,6 +311,7 @@ spec:
 {{ include "hpcc.addConfigMapVolume" $roxie | indent 6 }}
 {{ include "hpcc.addVolumes" $commonCtx | indent 6 }}
 {{ include "hpcc.addSecretVolumes" $commonCtx | indent 6 }}
+{{ include "hpcc.addVaultClientCertificateVolumes" $commonCtx | indent 6 }}
 {{ include "hpcc.addCertificateVolume" (dict "root" $ "component" "roxie-server" "name" $servername "external" false) | indent 6 }}
 {{ include "hpcc.addCertificateVolume" (dict "root" $ "component" "roxie-server" "name" $servername "certificate" $roxie.certificate "external" true "includeRemote" true) | indent 6 }}
 {{ include "hpcc.addUDPCertificateVolume" (dict "root" $ "component" "udpkey" "name" $udpkeyname) | indent 6 }}
@@ -411,6 +413,7 @@ spec:
 {{ include "hpcc.addConfigMapVolumeMount" $roxie | indent 8 }}
 {{ include "hpcc.addVolumeMounts" $commonCtx | indent 8 }}
 {{ include "hpcc.addSecretVolumeMounts" $commonCtx | indent 8 }}
+{{ include "hpcc.addVaultClientCertificateVolumeMounts" $commonCtx | indent 8 }}
 {{- if not $roxie.serverReplicas }}
 
 {{ include "hpcc.addCertificateVolumeMount" (dict "root" $ "component" "roxie-agent" "name" $name "external" false) | indent 8 }}
@@ -422,6 +425,7 @@ spec:
 {{ include "hpcc.addConfigMapVolume" $roxie | indent 6 }}
 {{ include "hpcc.addVolumes" $commonCtx | indent 6 }}
 {{ include "hpcc.addSecretVolumes" $commonCtx | indent 6 }}
+{{ include "hpcc.addVaultClientCertificateVolumes" $commonCtx | indent 6 }}
 {{- if not $roxie.serverReplicas }}
 {{ include "hpcc.addCertificateVolume" (dict "root" $ "component" "roxie-agent" "name" $name "external" false) | indent 6 }}
 {{ include "hpcc.addCertificateVolume" (dict "root" $ "component" "roxie-agent" "name" $agentPublicCertName "certificate" $roxie.certificate "external" true "includeRemote" true) | indent 6 }}

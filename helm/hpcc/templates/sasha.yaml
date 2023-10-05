@@ -68,6 +68,7 @@ spec:
       initContainers:
         {{- include "hpcc.createConfigInitContainers" $commonCtx | indent 6 }}
       {{- end }}
+      {{- include "hpcc.addImagePullSecrets" $commonCtx | nindent 6 -}}
       containers:
 {{- include "hpcc.addSashaContainer" $commonCtx | indent 6 }}
         volumeMounts:
@@ -76,6 +77,7 @@ spec:
 {{ end -}}
 {{- include "hpcc.addVolumeMounts" $commonCtx | indent 8 }}
 {{ include "hpcc.addSecretVolumeMounts" $commonCtx | indent 8 }}
+{{ include "hpcc.addVaultClientCertificateVolumeMounts" $commonCtx | indent 8 }}
 {{ include "hpcc.addCertificateVolumeMount" (dict "root" $ "name" $sashaName "component" "sasha" "external" false) | indent 8 }}
       volumes:
 {{- with (dict "name" $serviceName) }}
@@ -83,6 +85,7 @@ spec:
 {{ end -}}
 {{- include "hpcc.addVolumes" $commonCtx | indent 6 }}
 {{- include "hpcc.addSecretVolumes"  $commonCtx | indent 6 }}
+{{ include "hpcc.addVaultClientCertificateVolumes" $commonCtx | indent 6 }}
 {{ include "hpcc.addCertificateVolume" (dict "root" $ "name" $sashaName "component" "sasha" "external" false) | indent 6 }}
 ---
 {{- if (hasKey $sasha "service") -}}

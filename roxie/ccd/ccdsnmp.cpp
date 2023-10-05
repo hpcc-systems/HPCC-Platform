@@ -296,8 +296,6 @@ CRoxieMetricsManager::CRoxieMetricsManager()
     addMetric(restarts, 0);
 
     addMetric(nodesLoaded, 1000);
-    addMetric(cacheHits, 1000);
-    addMetric(cacheAdds, 1000);
 
     addMetric(blobCacheHits, 1000);
     addMetric(blobCacheAdds, 1000);

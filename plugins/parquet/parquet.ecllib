@@ -19,29 +19,32 @@ SHARED ParquetService := SERVICE : plugin('parquetembed')
   BOOLEAN getEmbedContext():cpp, pure, namespace='parquetembed', entrypoint='getEmbedContext', prototype='IEmbedContext* getEmbedContext()';
 END;
 
-EXPORT Read(resultLayout, filePath) := FUNCTIONMACRO
-    STREAMED DATASET(resultLayout) _DoParquetRead() := EMBED(parquet : activity, option('read'), location(filePath))
-    ENDEMBED;
-    RETURN _DoParquetRead();
-ENDMACRO;
+EXPORT ParquetIO := MODULE
 
-EXPORT ReadPartition(resultLayout, basePath) := FUNCTIONMACRO
-    STREAMED DATASET(resultLayout) _DoParquetReadPartition() := EMBED(parquet: activity, option('readpartition'), location(basePath))
-    ENDEMBED;
-    RETURN _DoParquetReadPartition();
-ENDMACRO;
+    EXPORT Read(resultLayout, filePath) := FUNCTIONMACRO
+        LOCAL STREAMED DATASET(resultLayout) _DoParquetRead() := EMBED(parquet : activity, option('read'), location(filePath))
+        ENDEMBED;
+        RETURN _DoParquetRead();
+    ENDMACRO;
 
-EXPORT Write(outDS, filePath) := MACRO
-    _DoParquetWrite(STREAMED DATASET(RECORDOF(outDS)) _ds) := EMBED(parquet : activity, option('write'), destination(filePath))
-    ENDEMBED;
-    _doParquetWrite(outDS);
-ENDMACRO;
+    EXPORT ReadPartition(resultLayout, basePath) := FUNCTIONMACRO
+        LOCAL STREAMED DATASET(resultLayout) _DoParquetReadPartition() := EMBED(parquet: activity, option('readpartition'), location(basePath))
+        ENDEMBED;
+        RETURN _DoParquetReadPartition();
+    ENDMACRO;
 
-EXPORT WritePartition(outDS, outRows = 100000, basePath) := MACRO
-    _DoParquetWritePartition(STREAMED DATASET(RECORDOF(outDS)) _ds) := EMBED(parquet : activity, option('writepartition'), destination(basePath), MaxRowSize(outRows))
-    ENDEMBED;
-    _DoParquetWritePartition(outDS)
-ENDMACRO;
+    EXPORT Write(outDS, filePath) := MACRO
+        LOCAL _DoParquetWrite(STREAMED DATASET(RECORDOF(outDS)) _ds) := EMBED(parquet : activity, option('write'), destination(filePath))
+        ENDEMBED;
+        _doParquetWrite(outDS);
+    ENDMACRO;
+
+    EXPORT WritePartition(outDS, outRows = 100000, basePath) := MACRO
+        LOCAL _DoParquetWritePartition(STREAMED DATASET(RECORDOF(outDS)) _ds) := EMBED(parquet : activity, option('writepartition'), destination(basePath), MaxRowSize(outRows))
+        ENDEMBED;
+        _DoParquetWritePartition(outDS)
+    ENDMACRO;
+END;
 
 EXPORT getEmbedContext := ParquetService.getEmbedContext;
 EXPORT BOOLEAN supportsImport := FALSE;

@@ -38,6 +38,7 @@ include_directories (
          ./../../system/jlib 
          ./../../common/workunit 
          ../../common/environment 
+         ${HPCC_SOURCE_DIR}/esp/clients/ws_dfsclient
     )
 
 HPCC_ADD_EXECUTABLE ( dfuwutest ${SRCS} )
@@ -50,6 +51,7 @@ target_link_libraries ( dfuwutest
          dafsclient 
          dalibase 
          dfuwu 
+         ws_dfsclient
     )
 
 if (NOT CONTAINERIZED)

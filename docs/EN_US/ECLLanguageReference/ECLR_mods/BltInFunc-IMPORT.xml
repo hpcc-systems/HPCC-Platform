@@ -6,10 +6,10 @@
 
   <para><emphasis>resulttype funcname</emphasis> <emphasis
   role="bold">(</emphasis> <emphasis>parameterlist</emphasis> <emphasis
-  role="bold">) := IMPORT(<indexterm>
-      <primary>IMPORT function</primary>
-    </indexterm></emphasis> <emphasis>language, function </emphasis><emphasis
-  role="bold">);</emphasis></para>
+  role="bold">) := IMPORT(</emphasis> <emphasis>language, function</emphasis>
+  <emphasis role="bold">[:TIME</emphasis>
+  [(<emphasis>label</emphasis>)]<emphasis role="bold"> ]</emphasis><emphasis
+  role="bold">)</emphasis>;</para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -55,6 +55,20 @@
           <entry>A string constant containing the name of the function to
           include.</entry>
         </row>
+
+        <row>
+          <entry><emphasis role="bold">TIME</emphasis></entry>
+
+          <entry>Tracks timing of an external function call or embedded source
+          code and reports them back as metrics to the user.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>label</emphasis></entry>
+
+          <entry>Optional. A string constant containing the name to associate
+          with the timer. If omitted, the default is used.</entry>
+        </row>
       </tbody>
     </tgroup>
   </informaltable>
@@ -72,12 +86,9 @@
 
   <para>Example:</para>
 
-  <programlisting lang="mixed" role="NOTrunnable">IMPORT Python3 AS Python;
-// This example illustrates scalar parameters and resuls
-integer add1(integer val) := EMBED(Python)
-  val+1
-ENDEMBED;
-add1(27); //returns 28
+  <programlisting lang="mixed" role="NOTrunnable">IMPORT JAVA;
+INTEGER jadd(INTEGER a, INTEGER b) := IMPORT(java, 'JavaCat.add:(II)I': TIME('MyTime'));
+jadd (22,23);
 </programlisting>
 
   <para>See Also: <link linkend="IMPORT">IMPORT</link>, <link

@@ -11,18 +11,24 @@
   role="bold">) := EMBED(<indexterm>
       <primary>EMBED</primary>
     </indexterm></emphasis> <emphasis>language</emphasis> <emphasis
-  role="bold">)</emphasis></para>
+  role="bold">[:TIME</emphasis> [(<emphasis>label</emphasis>)]<emphasis
+  role="bold">]</emphasis></para>
 
-  <para><emphasis>code</emphasis></para>
+  <para><emphasis> code</emphasis></para>
 
   <para><emphasis role="bold">ENDEMBED<indexterm>
       <primary>ENDEMBED</primary>
     </indexterm>;</emphasis></para>
 
+  <para><emphasis role="bold"></emphasis></para>
+
   <para><emphasis>resulttype funcname</emphasis> <emphasis
   role="bold">(</emphasis> <emphasis>parameterlist</emphasis> <emphasis
   role="bold">) := EMBED(</emphasis> <emphasis>language, code</emphasis>
-  <emphasis role="bold">);</emphasis></para>
+  <emphasis role="bold">[: TIME</emphasis>
+  [(<emphasis>label</emphasis>)]<emphasis role="bold">]); </emphasis></para>
+
+  <para><emphasis role="bold"></emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -66,6 +72,20 @@
 
           <entry>The source code to embed.</entry>
         </row>
+
+        <row>
+          <entry><emphasis role="bold">TIME</emphasis></entry>
+
+          <entry>Tracks timing of an external function call or embedded source
+          code and reports them back as metrics to the user.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>label</emphasis></entry>
+
+          <entry>Optional. A string constant containing the name to associate
+          with the timer. If omitted, the default is used.</entry>
+        </row>
       </tbody>
     </tgroup>
   </informaltable>
@@ -104,21 +124,28 @@ ENDEMBED</programlisting></para>
   corruption and/or security issues, so great care and forethought are
   advised--consult with Technical Support before using.</emphasis></para>
 
-  <para>Example:</para>
+  <para>Examples:</para>
 
   <programlisting lang="ECL">//First form: a structure
 IMPORT Python3 AS Python;  //make Python language available
 
-INTEGER addone(INTEGER p) := EMBED(Python)
+INTEGER addone(INTEGER p) := EMBED(Python :TIME('MyTime'))
 # Python code that returns one more than the value passed to it
 if p &lt; 10:
   return p+1
 else:
   return 0
 ENDEMBED;
+addone(3);
+addone(11);
+</programlisting>
 
-//Second form: a function
-INTEGER addtwo(INTEGER p) := EMBED(Python, 'p+2');  </programlisting>
+  <para></para>
+
+  <programlisting>//Second form: a function
+IMPORT Python3 as Python;
+INTEGER addtwo(INTEGER p) := EMBED(Python, 'p+2' : TIME('MyTime'));  
+addtwo(27);</programlisting>
 
   <para>See Also: <link linkend="BEGINCplus_Structure">BEGINC++
   Structure</link>, <link linkend="IMPORT">IMPORT</link>, <link

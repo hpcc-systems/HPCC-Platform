@@ -390,29 +390,9 @@ public:
         return keyCursor ? 1 : 0;
     }
 
-    virtual unsigned querySeeks() const
-    {
-        return stats.seeks;
-    }
-
-    virtual unsigned queryScans() const
-    {
-        return stats.scans;
-    }
-
-    virtual unsigned querySkips() const
-    {
-        return stats.skips;
-    }
-
     virtual void resetCounts()
     {
         stats.reset();
-    }
-
-    virtual unsigned queryWildSeeks() const
-    {
-        return stats.wildseeks;
     }
 
     void setKey(IKeyIndexBase * _key)
@@ -1525,7 +1505,6 @@ bool CKeyIndex::prewarmPage(offset_t offset, NodeType type)
 const CJHSearchNode *CKeyIndex::locateFirstLeafNode(KeyStatsCollector &stats) const
 {
     keySeeks++;
-    stats.seeks++;
 
     offset_t leafOffset = keyHdr->getFirstLeafPos();
     if (leafOffset != (offset_t)-1)
@@ -1556,7 +1535,7 @@ const CJHSearchNode *CKeyIndex::locateFirstLeafNode(KeyStatsCollector &stats) co
 const CJHSearchNode *CKeyIndex::locateLastLeafNode(KeyStatsCollector &stats) const
 {
     keySeeks++;
-    stats.seeks++;
+    stats.noteSeeks(1, 0, 0);
 
     //Unusual - an index with no elements
     if (keyHdr->getNumRecords() == 0)
@@ -1588,9 +1567,6 @@ const CJHSearchNode *CKeyIndex::locateLastLeafNode(KeyStatsCollector &stats) con
 
 void KeyStatsCollector::noteSeeks(unsigned lseeks, unsigned lscans, unsigned lwildseeks)
 {
-    seeks += lseeks;
-    scans += lscans;
-    wildseeks += lwildseeks;
     if (ctx)
     {
         if (lseeks) ctx->noteStatistic(StNumIndexSeeks, lseeks);
@@ -1601,7 +1577,6 @@ void KeyStatsCollector::noteSeeks(unsigned lseeks, unsigned lscans, unsigned lwi
 
 void KeyStatsCollector::noteSkips(unsigned lskips, unsigned lnullSkips)
 {
-    skips += lskips;
     if (ctx)
     {
         if (lskips) ctx->noteStatistic(StNumIndexSkips, lskips);
@@ -1611,11 +1586,6 @@ void KeyStatsCollector::noteSkips(unsigned lskips, unsigned lnullSkips)
 
 void KeyStatsCollector::reset()
 {
-    seeks = 0;
-    scans = 0;
-    wildseeks = 0;
-    skips = 0;
-    nullskips = 0;
 }
 
 CKeyCursor::CKeyCursor(CKeyIndex &_key, const IIndexFilterList *_filter, bool _logExcessiveSeeks)
@@ -2016,7 +1986,18 @@ bool CKeyCursor::lookupSkip(const void *seek, size32_t seekOffset, size32_t seek
         {
             recstr.appendf("%02x ", ((unsigned char *) recordBuffer)[i]);
         }
-        DBGLOG("SKIP: Got skips=%02d seeks=%02d scans=%02d : %s", stats.skips, stats.seeks, stats.scans, recstr.str());
+        if (stats.ctx)
+        {
+            const CRuntimeStatisticCollection &statsCollection = stats.ctx->queryStats();
+            unsigned __int64 seeks = statsCollection.getStatisticValue(StNumIndexSeeks);
+            unsigned __int64 scans = statsCollection.getStatisticValue(StNumIndexScans);
+            unsigned __int64 skips = statsCollection.getStatisticValue(StNumIndexSkips);
+            DBGLOG("SKIP: Got skips=%" I64F "u seeks=%" I64F "u scans=%" I64F "u : %s", skips, seeks, scans, recstr.str());
+        }
+        else
+        {
+            DBGLOG("SKIP: (no ContextLogger - not tracking stats) : %s", recstr.str());
+        }
     }
 #endif
     return ret;
@@ -2632,7 +2613,6 @@ const CJHTreeNode *CNodeCache::getNode(const INodeLoader *keyIndex, unsigned iD,
                 block.leave();
 
                 //Update any stats outside of the critical section.
-                cacheHits++;
                 (*hitMetric[cacheType])++;
                 if (ctx) ctx->noteStatistic(hitStatId[cacheType], 1);
                 return fastPathMatch;
@@ -2658,13 +2638,11 @@ const CJHTreeNode *CNodeCache::getNode(const INodeLoader *keyIndex, unsigned iD,
         //Move the atomic increments out of the critical section - they can be relatively expensive
         if (likely(alreadyExists))
         {
-            cacheHits++;
             if (ctx) ctx->noteStatistic(hitStatId[cacheType], 1);
             (*hitMetric[cacheType])++;
         }
         else
         {
-            cacheAdds++;
             if (ctx) ctx->noteStatistic(addStatId[cacheType], 1);
             (*addMetric[cacheType])++;
         }
@@ -2756,8 +2734,6 @@ const CJHTreeNode *CNodeCache::getNode(const INodeLoader *keyIndex, unsigned iD,
     }
 }
 
-RelaxedAtomic<unsigned> cacheAdds;
-RelaxedAtomic<unsigned> cacheHits;
 RelaxedAtomic<unsigned> nodesLoaded;
 RelaxedAtomic<unsigned> blobCacheHits;
 RelaxedAtomic<unsigned> blobCacheAdds;
@@ -2771,8 +2747,6 @@ RelaxedAtomic<unsigned> nodeCacheDups;
 
 void clearNodeStats()
 {
-    cacheAdds.store(0);
-    cacheHits.store(0);
     nodesLoaded.store(0);
     blobCacheHits.store(0);
     blobCacheAdds.store(0);
@@ -2980,7 +2954,18 @@ public:
                         {
                             recstr.appendf("%02x ", ((unsigned char *) keyBuffer)[i]);
                         }
-                        DBGLOG("SKIP: Out skips=%02d seeks=%02d scans=%02d : %s", stats.skips, stats.seeks, stats.scans, recstr.str());
+                        if (stats.ctx)
+                        {
+                            const CRuntimeStatisticCollection &statsCollection = stats.ctx->queryStats();
+                            unsigned __int64 seeks = statsCollection.getStatisticValue(StNumIndexSeeks);
+                            unsigned __int64 scans = statsCollection.getStatisticValue(StNumIndexScans);
+                            unsigned __int64 skips = statsCollection.getStatisticValue(StNumIndexSkips);
+                            DBGLOG("SKIP: Out skips=%" I64F "u seeks=%" I64F "u scans=%" I64F "u : %s", skips, seeks, scans, recstr.str());
+                        }
+                        else
+                        {
+                            DBGLOG("SKIP: (no ContextLogger - not tracking stats) : %s", recstr.str());
+                        }
                     }
 #endif
                     if (stats.ctx)
@@ -3352,10 +3337,6 @@ extern jhtree_decl IIndexLookup *createIndexLookup(IKeyManager *keyManager)
             else
                 return nullptr;
         }
-        virtual unsigned querySeeks() const override { return keyManager->querySeeks(); }
-        virtual unsigned queryScans() const override { return keyManager->queryScans(); }
-        virtual unsigned querySkips() const override { return keyManager->querySkips(); }
-        virtual unsigned queryWildSeeks() const override { return keyManager->queryWildSeeks(); }
     };
     return new CIndexLookup(keyManager);
 }

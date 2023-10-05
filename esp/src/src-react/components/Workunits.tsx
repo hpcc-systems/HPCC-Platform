@@ -328,6 +328,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
         footer={<FluentPagedFooter
             persistID={"workunits"}
             pageNum={pageNum}
+            selectionCount={selection.length}
             setPageNum={setPageNum}
             setPageSize={setPageSize}
             total={total}

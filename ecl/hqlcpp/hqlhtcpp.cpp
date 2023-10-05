@@ -11068,6 +11068,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
             if (expr->hasAttribute(groupedAtom)) flags.append("|TDXgrouped");
             if (expr->hasAttribute(compressedAtom)) flags.append("|TDWnewcompress");
             if (expr->hasAttribute(__compressed__Atom)) flags.append("|TDXcompress");
+            if (expr->hasAttribute(noCompressAtom)) flags.append("|TDWnocompress");
             if (expr->hasAttribute(extendAtom)) flags.append("|TDWextend");
             if (expr->hasAttribute(overwriteAtom)) flags.append("|TDWoverwrite");
             if (expr->hasAttribute(noOverwriteAtom)) flags.append("|TDWnooverwrite");

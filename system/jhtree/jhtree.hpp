@@ -45,11 +45,6 @@ class KeyStatsCollector
 {
 public:
     IContextLogger *ctx;
-    unsigned seeks = 0;
-    unsigned scans = 0;
-    unsigned wildseeks = 0;
-    unsigned skips = 0;
-    unsigned nullskips = 0;
 
     KeyStatsCollector(IContextLogger *_ctx) : ctx(_ctx) {}
     void reset();
@@ -258,10 +253,6 @@ interface IIndexLookup : extends IInterface // similar to a small subset of IKey
     virtual const void *nextKey() = 0;
     virtual unsigned __int64 getCount() = 0;
     virtual unsigned __int64 checkCount(unsigned __int64 limit) = 0;
-    virtual unsigned querySeeks() const = 0;
-    virtual unsigned queryScans() const = 0;
-    virtual unsigned querySkips() const = 0;
-    virtual unsigned queryWildSeeks() const = 0;
 };
 
 interface IKeyManager : public IInterface, extends IIndexReadContext
@@ -283,10 +274,6 @@ interface IKeyManager : public IInterface, extends IIndexReadContext
     virtual unsigned __int64 checkCount(unsigned __int64 limit) = 0;
     virtual void serializeCursorPos(MemoryBuffer &mb) = 0;
     virtual void deserializeCursorPos(MemoryBuffer &mb) = 0;
-    virtual unsigned querySeeks() const = 0;
-    virtual unsigned queryScans() const = 0;
-    virtual unsigned querySkips() const = 0;
-    virtual unsigned queryWildSeeks() const = 0;
     virtual const byte *loadBlob(unsigned __int64 blobid, size32_t &blobsize, IContextLogger *ctx) = 0;
     virtual void releaseBlobs() = 0;
     virtual void resetCounts() = 0;

@@ -59,9 +59,9 @@ public:
         originalIndexFile.setown(lookupReadFile(originalHelperName, AccessMode::readRandom, false, false, false));
         newIndexFile.setown(lookupReadFile(updatedHelperName, AccessMode::readRandom, false, false, false));
         if (!isFileKey(originalIndexFile))
-            throw MakeActivityException(this, TE_FileTypeMismatch, "Attempting to read flat file as an index: %s", originalHelperName.get());
+            throw MakeActivityException(this, ENGINEERR_FILE_TYPE_MISMATCH, "Attempting to read flat file as an index: %s", originalHelperName.get());
         if (!isFileKey(newIndexFile))
-            throw MakeActivityException(this, TE_FileTypeMismatch, "Attempting to read flat file as an index: %s", updatedHelperName.get());
+            throw MakeActivityException(this, ENGINEERR_FILE_TYPE_MISMATCH, "Attempting to read flat file as an index: %s", updatedHelperName.get());
         if (originalIndexFile->numParts() != newIndexFile->numParts())
             throw MakeActivityException(this, TE_KeyDiffIndexSizeMismatch, "Index %s and %s differ in width", originalName.get(), updatedName.get());
         if (originalIndexFile->querySuperFile() || newIndexFile->querySuperFile())

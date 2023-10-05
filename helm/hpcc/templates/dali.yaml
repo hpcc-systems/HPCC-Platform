@@ -123,7 +123,8 @@ spec:
 {{ include "hpcc.addConfigMapVolumeMount" $dali | indent 8 }}
 {{ include "hpcc.addVolumeMounts" $commonCtx | indent 8 }}
 {{- include "hpcc.addSecretVolumeMounts" (dict "root" $ "secretsCategories" $daliSecretsCategories) | nindent 8 }}
-{{- include "hpcc.addCertificateVolumeMount" (dict "root" $ "name" .name "component" "dali" "external" false) | nindent 8 }}
+{{ include "hpcc.addVaultClientCertificateVolumeMounts" (dict "root" $ "secretsCategories" $daliSecretsCategories) | indent 8 }}
+{{ include "hpcc.addCertificateVolumeMount" (dict "root" $ "name" .name "component" "dali" "external" false) | nindent 8 }}
 {{- range $sashaName, $_sasha := $daliSashaServicesCtx.services -}}
  {{- $sasha := deepCopy ($_sasha | default dict) -}}
  {{- $_ := set $sasha "name" $sashaName -}}
@@ -143,7 +144,8 @@ spec:
   {{- $sashaPlaneCategories := splitList " " (include "hpcc.getSashaPlanesFromAccess" .) -}}
   {{- include "hpcc.addVolumeMounts" (dict "root" $ "includeCategories" $sashaPlaneCategories "includeNames" (list $thisServiceCtx.sashaStoragePlane)) | indent 8 }}
   {{- include "hpcc.addSecretVolumeMounts" (dict "root" $ "secretsCategories" $sashaServiceSecretsCategories) | nindent 8 }}
-  {{- include "hpcc.addCertificateVolumeMount" (dict "root" $ "name" $dali.name "component" "dali" "external" false) | nindent 8 }}
+  {{ include "hpcc.addVaultClientCertificateVolumeMounts" (dict "root" $ "secretsCategories" $sashaServiceSecretsCategories) | indent 8 }}
+  {{ include "hpcc.addCertificateVolumeMount" (dict "root" $ "name" $dali.name "component" "dali" "external" false) | nindent 8 }}
  {{- end }}
 {{- end }}
       volumes:
@@ -157,6 +159,7 @@ spec:
 {{- end -}}
 {{- include "hpcc.addVolumes" (dict "root" $ "me" $dali "includeNames" $tmpDaliScope.aggregateSashaNamedPlanes "includeCategories" $tmpDaliScope.aggregatePlaneCategories) | indent 6 }}
 {{- include "hpcc.addSecretVolumes" (dict "root" $ "secretsCategories" $tmpDaliScope.aggregateSashaSecretsCategories) | indent 6 }}
+{{ include "hpcc.addVaultClientCertificateVolumes" (dict "root" $ "secretsCategories" $tmpDaliScope.aggregateSashaSecretsCategories) | indent 6 }}
 {{ include "hpcc.addCertificateVolume" (dict "root" $ "name" .name "component" "dali" "external" false) | indent 6 }}
 ---
 {{- $daliStoragePlane := $dali.daliPlane | default (include "hpcc.getFirstPlaneForCategory" (dict "root" $ "category" "dali")) }}

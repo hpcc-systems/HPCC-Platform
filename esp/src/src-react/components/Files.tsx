@@ -357,6 +357,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
         footer={<FluentPagedFooter
             persistID={"files"}
             pageNum={pageNum}
+            selectionCount={selection.length}
             setPageNum={setPageNum}
             setPageSize={setPageSize}
             total={total}

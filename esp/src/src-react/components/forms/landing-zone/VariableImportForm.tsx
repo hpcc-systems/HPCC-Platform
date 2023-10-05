@@ -78,6 +78,8 @@ export const VariableImportForm: React.FunctionComponent<VariableImportFormProps
 
                 delete data.selectedFiles;
 
+                const requests = [];
+
                 files.forEach(file => {
                     request = data;
                     if (!isContainer) {
@@ -87,26 +89,45 @@ export const VariableImportForm: React.FunctionComponent<VariableImportFormProps
                     }
                     request["sourcePath"] = file.SourceFile;
                     request["destLogicalName"] = data.namePrefix + ((
-                        data.namePrefix && data.namePrefix.substr(-2) !== "::" &&
-                        file.TargetName && file.TargetName.substr(0, 2) !== "::"
+                        data.namePrefix && data.namePrefix.substring(-2) !== "::" &&
+                        file.TargetName && file.TargetName.substring(0, 2) !== "::"
                     ) ? "::" : "") + file.TargetName;
-                    FileSpray.SprayFixed({
+                    requests.push(FileSpray.SprayFixed({
                         request: request
-                    }).then((response) => {
+                    }));
+                });
+
+                Promise.all(requests).then(responses => {
+                    if (responses.length === 1) {
+                        const response = responses[0];
                         if (response?.Exceptions) {
                             const err = response.Exceptions.Exception[0].Message;
                             logger.error(err);
                         } else if (response.SprayFixedResponse?.wuid) {
-                            pushUrl(`/dfuworkunits/${response.SprayFixedResponse.wuid}`);
+                            pushUrl(`#/dfuworkunits/${response.SprayFixedResponse.wuid}`);
                         }
-                    });
-                });
+                    } else {
+                        const errors = [];
+                        responses.forEach(response => {
+                            if (response?.Exceptions) {
+                                const err = response.Exceptions.Exception[0].Message;
+                                errors.push(err);
+                                logger.error(err);
+                            } else if (response.SprayFixedResponse?.wuid) {
+                                window.open(`#/dfuworkunits/${response.SprayFixedResponse.wuid}`);
+                            }
+                        });
+                        if (errors.length === 0) {
+                            closeForm();
+                        }
+                    }
+                }).catch(err => logger.error(err));
             },
             err => {
                 logger.error(err);
             }
         )();
-    }, [handleSubmit, isContainer]);
+    }, [closeForm, handleSubmit, isContainer]);
 
     const componentStyles = mergeStyleSets(
         FormStyles.componentStyles,

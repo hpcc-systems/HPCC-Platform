@@ -78,7 +78,7 @@ protected:
     Owned<IFileIO> lazyIFileIO;
     mutable CriticalSection ioStatsCS;
     unsigned fileTableStart = NotFound;
-    CThorContextLogger contextLogger;
+    CStatsContextLogger contextLogger;
     CStatsCtxLoggerDeltaUpdater statsUpdater;
 
     class TransformCallback : implements IThorIndexCallback , public CSimpleInterface
@@ -528,8 +528,7 @@ public:
     }
 public:
     CIndexReadSlaveBase(CGraphElementBase *container)
-        : CSlaveActivity(container, indexReadActivityStatistics), callback(*this),
-          contextLogger(jhtreeCacheStatistics), statsUpdater(jhtreeCacheStatistics, *this, contextLogger)
+        : CSlaveActivity(container, indexReadActivityStatistics), callback(*this), contextLogger(jhtreeCacheStatistics, thorJob), statsUpdater(jhtreeCacheStatistics, *this, contextLogger)
     {
         helper = (IHThorIndexReadBaseArg *)container->queryHelper();
         limitTransformExtra = nullptr;

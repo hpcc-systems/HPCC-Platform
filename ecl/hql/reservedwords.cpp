@@ -476,6 +476,7 @@ static const char * eclReserved14[] = { //Attribute functions (some might actual
     "timelimit",
     "timeout",
     "token",
+    "uncompressed",
     "unstable",
     "update",
     "use",

@@ -85,7 +85,7 @@ protected:
 
     inline StringBuffer &makeSuperFileXPath(StringBuffer &xpath, const char *superFileName) const
     {
-        superFileName = skipForeign(superFileName);
+        superFileName = skipForeignOrRemote(superFileName);
         return xpath.append("SuperFile[@id='").appendLower(strlen(superFileName), superFileName).append("']");
     }
 

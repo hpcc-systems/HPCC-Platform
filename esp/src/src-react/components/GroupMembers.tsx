@@ -149,6 +149,7 @@ export const GroupMembers: React.FunctionComponent<GroupMembersProps> = ({
             footer={<FluentPagedFooter
                 persistID={"username"}
                 pageNum={pageNum}
+                selectionCount={selection.length}
                 setPageNum={setPageNum}
                 setPageSize={setPageSize}
                 total={total}

@@ -39,6 +39,7 @@ include_directories (
         ${HPCC_SOURCE_DIR}/rtl/include
         ${HPCC_SOURCE_DIR}/rtl/eclrtl
         ${HPCC_SOURCE_DIR}/common/workunit
+        ${HPCC_SOURCE_DIR}/esp/clients/ws_dfsclient
     )
 
 if (NOT CONTAINERIZED)
@@ -58,6 +59,7 @@ if(NOT PLUGIN)
     target_link_libraries(
         pkgfiles
         dfuwu
+        ws_dfsclient
         )
     if (NOT CONTAINERIZED)
         target_link_libraries(pkgfiles environment)

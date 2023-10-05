@@ -8302,7 +8302,7 @@ IPropertyTree *createPTreeFromHttpParameters(const char *nameWithAttrs, IPropert
             continue;
         if (skipLeadingDotParameters && key.charAt(0)=='.')
             continue;
-        const char *value = parameters->queryProp(key);
+        const char *value = iter->queryPropValue();
         if (!value || !*value)
             continue;
         ensureHttpParameter(content, key, value);
@@ -8525,10 +8525,9 @@ void applyProperties(IPropertyTree * target, const IProperties * source)
     Owned<IPropertyIterator> iter = source->getIterator();
     ForEach(*iter)
     {
-        StringBuffer value;
         const char * name = iter->getPropKey();
-        source->getProp(name, value);
-        target->setProp(name, value.str());
+        const char * value = iter->queryPropValue();
+        target->setProp(name, value);
     }
 }
 
@@ -9068,7 +9067,7 @@ jlib_decl IPropertyTree * loadConfiguration(IPropertyTree *componentDefault, con
     if (monitor)
         configFileUpdater->startMonitoring();
 
-    initTraceManager(componentTag, componentConfiguration.get());
+    initTraceManager(componentTag, componentConfiguration.get(), globalConfiguration.get());
     return componentConfiguration.getLink();
 }
 

@@ -306,6 +306,7 @@ extern HQL_API IAtom * newSetAtom;
 extern HQL_API IAtom * _nlpParse_Atom;
 extern HQL_API IAtom * noBoundCheckAtom;
 extern HQL_API IAtom * noCaseAtom;
+extern HQL_API IAtom * noCompressAtom;
 extern HQL_API IAtom * noConstAtom;
 extern HQL_API IAtom * _noDuplicate_Atom;
 extern HQL_API IAtom * nofoldAtom;

@@ -79,6 +79,7 @@ include_directories (
          ./../../../common/fileview2
          ./../../bindings/SOAP/xpp
          ${HPCC_SOURCE_DIR}/esp/clients
+         ${HPCC_SOURCE_DIR}/esp/clients/ws_dfsclient
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DWS_DFU_EXPORTS -DWSDFU_API_LOCAL -DWSDFUXREF_API_LOCAL -DESP_SERVICE_WsDfu)

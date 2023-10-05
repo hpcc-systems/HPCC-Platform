@@ -35,35 +35,32 @@ template <class PTYPE, class PITER>
 class PropertyIteratorOf : implements PITER, public CInterface
 {
 protected:
-    HashIterator *piter;
     const HashTable &properties;
+    HashIterator piter;
 
 public:
     IMPLEMENT_IINTERFACE; 
 
-    PropertyIteratorOf(const HashTable &_properties) : properties(_properties)
+    PropertyIteratorOf(const HashTable &_properties) : properties(_properties), piter(properties)
     {
         properties.Link();
-        piter = new HashIterator(properties);
     }
     ~PropertyIteratorOf()
     {
         properties.Release();
-        piter->Release();
     }
-    virtual bool first()
+    virtual bool first() override
     {
-        return piter->first();
+        return piter.first();
     }
-    virtual bool next()
+    virtual bool next() override
     {
-        return piter->next();
+        return piter.next();
     }
-    virtual bool isValid()
+    virtual bool isValid() override
     {
-        return piter->isValid();
+        return piter.isValid();
     }
-    virtual PTYPE getPropKey() = 0;
 };
 
 typedef IPropertyIterator char_ptrIPropertyIterator;
@@ -71,11 +68,16 @@ class char_ptrPropertyIterator : public PropertyIteratorOf<const char *, char_pt
 {
 public:
     char_ptrPropertyIterator(const HashTable &_properties) : PropertyIteratorOf<const char *, char_ptrIPropertyIterator>(_properties) { }
-    virtual const char *getPropKey()
+    virtual const char *getPropKey() const override
     {
-        IMapping &cur = piter->query();
+        IMapping &cur = piter.query();
         const char *key = (const char *) (cur.getKey());
         return key;
+    }
+    virtual const char *queryPropValue() const override
+    {
+        IMapping &cur = piter.query();
+        return StringAttrMapping::mapToValue(&cur)->str();
     }
 };
 

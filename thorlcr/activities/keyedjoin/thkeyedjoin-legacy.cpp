@@ -80,12 +80,12 @@ public:
         if (indexFile)
         {
             if (!isFileKey(indexFile))
-                throw MakeActivityException(this, TE_FileTypeMismatch, "Attempting to read flat file as an index: %s", indexFileName.get());
+                throw MakeActivityException(this, ENGINEERR_FILE_TYPE_MISMATCH, "Attempting to read flat file as an index: %s", indexFileName.get());
             unsigned numParts = 0;
             localKey = indexFile->queryAttributes().getPropBool("@local");
 
             if (container.queryLocalData() && !localKey)
-                throw MakeActivityException(this, TE_FileTypeMismatch, "Keyed Join cannot be LOCAL unless supplied index is local");
+                throw MakeActivityException(this, ENGINEERR_FILE_TYPE_MISMATCH, "Keyed Join cannot be LOCAL unless supplied index is local");
 
             checkFormatCrc(this, indexFile, helper->getIndexFormatCrc(), helper->queryIndexRecordSize(), helper->getProjectedIndexFormatCrc(), helper->queryProjectedIndexRecordSize(), true);
             Owned<IFileDescriptor> indexFileDesc = indexFile->getFileDescriptor();

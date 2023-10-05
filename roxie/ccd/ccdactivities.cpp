@@ -2996,7 +2996,13 @@ public:
                         if (continuationNeeded && !continuationFailed)
                         {
                             if (doTrace(traceSmartStepping, TraceFlags::Detailed))
-                                logctx.CTXLOG("Indexread returning partial result set %d rows from %d seeks, %d scans, %d skips", processed-processedBefore, tlk->querySeeks(), tlk->queryScans(), tlk->querySkips());
+                            {
+                                const CRuntimeStatisticCollection & stats = logctx.queryStats();
+                                unsigned __int64 seeks = stats.getStatisticValue(StNumIndexSeeks);
+                                unsigned __int64 scans = stats.getStatisticValue(StNumIndexScans);
+                                unsigned __int64 skips = stats.getStatisticValue(StNumIndexSkips);
+                                logctx.CTXLOG("Indexread returning partial result set %d rows from %" I64F"u seeks, %" I64F"u scans, %" I64F"u skips", processed-processedBefore, seeks, scans, skips);
+                            }
                             if (sendContinuation(output))
                             {
                                 noteStats(keyprocessed-keyprocessedBefore, skipped);
@@ -3023,7 +3029,11 @@ public:
         {
             if (doTrace(traceSmartStepping, TraceFlags::Max) && !aborted)
             {
-                logctx.CTXLOG("Indexread returning result set %d rows from %d seeks, %d scans, %d skips", processed-processedBefore, tlk->querySeeks(), tlk->queryScans(), tlk->querySkips());
+                const CRuntimeStatisticCollection & stats = logctx.queryStats();
+                unsigned __int64 seeks = stats.getStatisticValue(StNumIndexSeeks);
+                unsigned __int64 scans = stats.getStatisticValue(StNumIndexScans);
+                unsigned __int64 skips = stats.getStatisticValue(StNumIndexSkips);
+                logctx.CTXLOG("Indexread returning result set %d rows from %" I64F"u seeks, %" I64F"u scans, %" I64F"u skips", processed-processedBefore, seeks, scans, skips);
                 if (steppingOffset)
                     logctx.CTXLOG("Indexread return: steppingOffset %d, steppingRow %p, stepExtra.returnMismatches() %d",steppingOffset, steppingRow, (int) stepExtra.returnMismatches());
             }

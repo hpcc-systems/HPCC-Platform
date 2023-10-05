@@ -93,7 +93,7 @@ protected:
         {
             Owned<IDistributedFile> coSortFile = lookupReadFile(cosortlogname, AccessMode::readSequential, false, false, false);
             if (isFileKey(coSortFile))
-                throw MakeActivityException(this, TE_FileTypeMismatch, "Attempting to read index as a flat file: %s", cosortlogname.get());
+                throw MakeActivityException(this, ENGINEERR_FILE_TYPE_MISMATCH, "Attempting to read index as a flat file: %s", cosortlogname.get());
             Owned<IFileDescriptor> fileDesc = coSortFile->getFileDescriptor();
             unsigned o;
             for (o=0; o<fileDesc->numParts(); o++)

@@ -11,6 +11,7 @@ PMD_PROGNAME=
 PMD_COPYFILES=()
 PMD_DALISERVER=
 PMD_WORKUNIT=
+PMD_ALWAYS=false
 
 while [ "$#" -gt 0 ]; do
   arg=$1
@@ -26,6 +27,8 @@ while [ "$#" -gt 0 ]; do
          ;;
       f) shift;
          PMD_COPYFILES+=($1)
+         ;;
+      a) PMD_ALWAYS=true
          ;;
       *) usage
          exit
@@ -66,7 +69,7 @@ ${PMD_PROGNAME} --logging.postMortem=1000 "$@"
 
 # If it did not exit cleanly, copy some post-mortem info
 retVal=$?
-if [ $retVal -ne 0 ]; then
+if [ $PMD_ALWAYS = true ] || [ $retVal -ne 0 ]; then
   POST_MORTEM_DIR=${PMD_DIRECTORYBASE}/$(hostname)/$(date -Iseconds)
   mkdir -p ${POST_MORTEM_DIR}
   echo "Post-mortem info gathered in $POST_MORTEM_DIR"
@@ -89,6 +92,8 @@ if [ $retVal -ne 0 ]; then
     wutool postmortem ${PMD_WORKUNIT} DALISERVER=${PMD_DALISERVER} PMD=${POST_MORTEM_DIR}
     echo Updated workunit ${PMD_WORKUNIT}
   fi
+else
+  echo "Process exited cleanly (code=0)"
 fi
 trap - EXIT
 exit $retVal

@@ -163,6 +163,8 @@ void CWriteMasterBase::init()
     }
     if (dlfn.isExternal())
         mpTag = container.queryJob().allocateMPTag(); // used
+    bool outputCompressionDefault = getOptBool(THOROPT_COMPRESS_ALLFILES, isContainerized());
+    bool outputPlaneCompressed = outputCompressionDefault;
     if (NULL == fileDesc.get())
     {
         bool overwriteok = 0!=(TDWoverwrite & diskHelperBase->getFlags());
@@ -175,6 +177,14 @@ void CWriteMasterBase::init()
                 break;
             clusters.append(cluster);
             idx++;
+
+            if (1 == idx)
+            {
+                // establish default compression from 1st plane, but ECL compression attributes take precedence
+                Owned<IPropertyTree> plane = getStoragePlane(cluster);
+                if (plane)
+                    outputPlaneCompressed = plane->getPropBool("@compressLogicalFiles", outputCompressionDefault);
+            }
         }
 
         IArrayOf<IGroup> groups;
@@ -196,7 +206,12 @@ void CWriteMasterBase::init()
             {
                 StringBuffer defaultCluster;
                 if (getDefaultStoragePlane(defaultCluster))
+                {
                     clusters.append(defaultCluster);
+                    Owned<IPropertyTree> plane = getStoragePlane(defaultCluster);
+                    if (plane)
+                        outputPlaneCompressed = plane->getPropBool("@compressLogicalFiles", outputCompressionDefault);
+                }
             }
         }
         if (0 == groups.ordinality()) // may be filled if temp (see above)
@@ -225,8 +240,15 @@ void CWriteMasterBase::init()
             props.setPropBool("@encrypted", true);
             blockCompressed = true;
         }
-        else if (0 != (diskHelperBase->getFlags() & TDWnewcompress) || 0 != (diskHelperBase->getFlags() & TDXcompress))
-            blockCompressed = true;
+        else
+        {
+            if (0 == (diskHelperBase->getFlags() & TDWnocompress))
+            {
+                blockCompressed = (0 != (diskHelperBase->getFlags() & TDWnewcompress) || 0 != (diskHelperBase->getFlags() & TDXcompress));
+                if (!blockCompressed) // if ECL doesn't specify, default to plane definition
+                    blockCompressed = outputPlaneCompressed;
+            }
+        }
         if (blockCompressed)
             props.setPropBool("@blockCompressed", true);
         props.setProp("@kind", "flat");

@@ -224,7 +224,7 @@ void Esdl2Base::serialize_attributes(StringBuffer &out)
         {
             if (stricmp(key, "base_type") != 0)
             {
-                const char *value = m_def->queryProp(key);
+                const char *value = piter->queryPropValue();
                 if (value && *value)
                     out.appendf(" %s=\"%s\"", key, value);
             }
@@ -1311,7 +1311,7 @@ void Esdl2Request::addDefaults(IPropertyTree *req)
         const char *path = iter->getPropKey();
         if (!req->hasProp(path))
         {
-            const char *value = defvals->queryProp(path);
+            const char *value = iter->queryPropValue();
             ensurePTree(req, path);
             req->setProp(path, value);
         }

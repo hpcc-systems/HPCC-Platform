@@ -199,6 +199,7 @@ export const Users: React.FunctionComponent<UsersProps> = ({
         footer={<FluentPagedFooter
             persistID={"username"}
             pageNum={pageNum}
+            selectionCount={selection.length}
             setPageNum={setPageNum}
             setPageSize={setPageSize}
             total={total}

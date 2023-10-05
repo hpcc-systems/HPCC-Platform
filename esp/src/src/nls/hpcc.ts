@@ -818,6 +818,7 @@ export = {
         SecurityMessageHTML: "Only view HTML from trusted users.  This workunit was created by \"{__placeholder__}\".  \nRender HTML?",
         SeeConfigurationManager: "See Configuration Manager",
         SelectA: "Select a",
+        Selected: "Selected",
         SelectValue: "Select a value",
         SelectEllipsis: "Select...",
         SelectPackageFile: "Select Package File",

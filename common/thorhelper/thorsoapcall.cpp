@@ -1920,7 +1920,7 @@ private:
                 const char * key = iter->getPropKey();
                 if (!httpHeaderBlockContainsHeader(httpheaders, key))
                 {
-                    const char * value = traceHeaders->queryProp(key);
+                    const char * value = iter->queryPropValue();
                     if (!isEmptyString(value))
                         request.append(key).append(": ").append(value).append("\r\n");
                 }

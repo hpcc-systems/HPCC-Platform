@@ -77,6 +77,7 @@ spec:
         volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" . | indent 8 }}
 {{ include "hpcc.addVolumeMounts" $commonCtx | indent 8 }}
+{{ include "hpcc.addVaultClientCertificateVolumeMounts" $commonCtx | indent 8 }}
 {{- if $commonCtx.certificatesEnabled }}
 {{ include "hpcc.addCertificateVolumeMount" (dict "root" $ "name" .name "component" "dafilesrv" "certificate" .certificate "visibility" .service.visibility) | indent 8 }}
 {{- else }}
@@ -87,6 +88,7 @@ spec:
       volumes:
 {{ include "hpcc.addConfigMapVolume" . | indent 6 }}
 {{ include "hpcc.addVolumes" $commonCtx | indent 6 }}
+{{ include "hpcc.addVaultClientCertificateVolumes" $commonCtx | indent 6 }}
 {{- if $commonCtx.certificatesEnabled }}
 {{ include "hpcc.addCertificateVolume" (dict "root" $ "name" .name "component" "dafilesrv" "certificate" .certificate "visibility" .service.visibility) | indent 6 }}
 {{- end }}

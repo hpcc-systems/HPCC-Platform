@@ -70,6 +70,14 @@
    <EclSchedulerProcess>
       <xsl:apply-templates select="@*[string(.) != '']"/>
       <xsl:copy-of select="/Environment/Software/Directories"/>
+      <xsl:choose>
+            <xsl:when test="tracing">
+               <xsl:copy-of select="./tracing"/>
+            </xsl:when>
+            <xsl:otherwise>
+               <xsl:copy-of select="/Environment/Software/tracing"/>
+            </xsl:otherwise>
+      </xsl:choose>
       <!--
       # Generated for configuration info. accessed by getGlobalConfig()
       -->

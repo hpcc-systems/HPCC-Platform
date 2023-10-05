@@ -37,6 +37,7 @@ include_directories (
          ./../../system/include 
          ./../../system/jlib 
          ./../../common/workunit 
+         ./../../esp/clients/ws_dfsclient
          ${HPCC_SOURCE_DIR}/system/security/shared       #seclib.hpp
          )
 
@@ -53,5 +54,6 @@ target_link_libraries ( dfuwu
          hrpc 
          remote 
          dalibase 
+         ws_dfsclient
     )
 

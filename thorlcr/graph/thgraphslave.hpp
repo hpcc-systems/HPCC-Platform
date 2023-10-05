@@ -334,10 +334,10 @@ class CStatsCtxLoggerDeltaUpdater : public CStatsDeltaUpdater
 {
 protected:
     CSlaveActivity &activity;
-    CThorContextLogger &ctxLogger;
+    CStatsContextLogger &ctxLogger;
 
 public:
-    inline CStatsCtxLoggerDeltaUpdater(const StatisticsMapping &mapping, CSlaveActivity &_activity, CThorContextLogger &_ctxLogger, unsigned timeThresholdSecs=0)
+    inline CStatsCtxLoggerDeltaUpdater(const StatisticsMapping &mapping, CSlaveActivity &_activity, CStatsContextLogger &_ctxLogger, unsigned timeThresholdSecs=0)
         : CStatsDeltaUpdater(mapping, timeThresholdSecs), activity(_activity), ctxLogger(_ctxLogger)
     {
         resetStart();

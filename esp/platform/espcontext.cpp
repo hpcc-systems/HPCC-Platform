@@ -795,7 +795,7 @@ bool getUrlParams(IProperties *props, StringBuffer& params)
             params.append(key);
             if (stricmp(key,"ver_")==0)
                 hasVersion = true;
-            const char* v = props->queryProp(key);
+            const char* v = it->queryPropValue();
             if (v && *v)
                 params.appendf("=%s",v);
         }

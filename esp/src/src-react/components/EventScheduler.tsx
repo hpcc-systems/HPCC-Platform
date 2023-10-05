@@ -187,6 +187,7 @@ export const EventScheduler: React.FunctionComponent<EventSchedulerProps> = ({
         footer={<FluentPagedFooter
             persistID={"events"}
             pageNum={pageNum}
+            selectionCount={selection.length}
             setPageNum={setPageNum}
             setPageSize={setPageSize}
             total={total}

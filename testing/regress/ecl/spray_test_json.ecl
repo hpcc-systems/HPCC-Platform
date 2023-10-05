@@ -19,7 +19,7 @@
 //nohthor
 //nothor
 
-#onwarning(10138, ignore);
+#onwarning(7102, ignore);
 
 //version isSmallFile=true,isUnBallanced=false
 //version isSmallFile=true,isUnBallanced=true

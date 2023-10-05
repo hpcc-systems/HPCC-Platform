@@ -2587,10 +2587,6 @@ public:
         pending = true;
         return prefetchBuffer.queryRow();
     }
-    virtual unsigned querySeeks() const override { return 0; } // not sure how best to handle these, perhaps should log/record somewhere on server-side
-    virtual unsigned queryScans() const override { return 0; }
-    virtual unsigned querySkips() const override { return 0; }
-    virtual unsigned queryWildSeeks() const override { return 0; }
 };
 
 

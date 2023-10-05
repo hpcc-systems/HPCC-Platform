@@ -3613,7 +3613,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], Owned<ILocalWor
             {
                 if (!query)
                     query.setown(createPTree("Query"));
-                const char *val = cmdLineArgs->queryProp(key);
+                const char *val = it->queryPropValue();
                 if (val[0]=='<')
                 {
                     Owned<IPropertyTree> valtree = createPTreeFromXMLString(val);

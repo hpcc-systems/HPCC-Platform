@@ -2253,15 +2253,16 @@ void FlushingStringBuffer::startDataset(const char *elementName, const char *res
                             s.append("result_").append(sequence+1).append('\'');
                         if (xmlns)
                         {
-                            Owned<IPropertyIterator> it = const_cast<IProperties*>(xmlns)->getIterator(); //should fix IProperties to be const friendly
+                            Owned<IPropertyIterator> it = xmlns->getIterator();
                             ForEach(*it)
                             {
                                 const char *name = it->getPropKey();
+                                const char *value = it->queryPropValue();
                                 s.append(' ');
                                 if (!streq(name, "xmlns"))
                                     s.append("xmlns:");
                                 s.append(name).append("='");
-                                encodeUtf8XML(const_cast<IProperties*>(xmlns)->queryProp(name), s);
+                                encodeUtf8XML(value, s);
                                 s.append("'");
                             }
                         }

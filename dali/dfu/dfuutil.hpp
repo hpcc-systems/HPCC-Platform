@@ -36,6 +36,7 @@ interface IDfuFileCopier: extends IInterface
 #define DALI_UPDATEF_PACKAGEMAP     0x0100
 #define DFU_UPDATEF_COPY            0x1000
 #define DFU_UPDATEF_OVERWRITE       0x2000
+#define DFU_UPDATEF_REMOTESTORAGE   0x4000
 
 
 #define DALI_UPDATEF_SUBFILE_MASK (DALI_UPDATEF_REPLACE_FILE | DALI_UPDATEF_CLONE_FROM | DALI_UPDATEF_APPEND_CLUSTER)
@@ -93,6 +94,7 @@ interface IDFUhelper: extends IInterface
                          const char *defReplicateFolder,
                          IUserDescriptor *userdesc,                // user desc for local dali
                          const char *foreigndali,                  // can be omitted if srcname foreign or local
+                         const char *remoteStorage,                  // can be omitted if srcname foreign or local
                          unsigned overwriteFlags,                   // overwrite destination options
                          bool dophysicalcopy
                          ) = 0;

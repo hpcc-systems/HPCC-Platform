@@ -101,10 +101,10 @@ protected:
     void testTraceDisableConfig()
     {
         Owned<IPropertyTree> testTree = createPTreeFromYAMLString(disableTracingYaml, ipt_none, ptr_ignoreWhiteSpace, nullptr);
-        Owned<IPropertyTree> traceConfig = testTree->getPropTree("global/tracing");
+        Owned<IPropertyTree> traceConfig = testTree->getPropTree("global");
 
         //Not valid, due to tracemanager initialized at component load time
-        initTraceManager("somecomponent", traceConfig);
+        initTraceManager("somecomponent", traceConfig, nullptr);
     }
 
     void testIDPropegation()
@@ -148,9 +148,9 @@ protected:
     void testTraceConfig()
     {
         Owned<IPropertyTree> testTree = createPTreeFromYAMLString(simulatedGlobalYaml, ipt_none, ptr_ignoreWhiteSpace, nullptr);
-        Owned<IPropertyTree> traceConfig = testTree->getPropTree("global/tracing");
+        Owned<IPropertyTree> traceConfig = testTree->getPropTree("global");
 
-         initTraceManager("somecomponent", traceConfig);
+         initTraceManager("somecomponent", traceConfig, nullptr);
     }
 
     void testClientSpan()

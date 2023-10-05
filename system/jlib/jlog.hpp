@@ -1259,6 +1259,8 @@ interface jlib_decl IContextLogger : extends IInterface
     virtual const CRuntimeStatisticCollection & queryStats() const = 0;
     virtual void setActiveSpan(ISpan * span) = 0;
     virtual IProperties * getClientHeaders() const = 0;
+    virtual void recordStatistics(IStatisticGatherer &progress) const = 0;
+    virtual const LogMsgJobInfo & queryJob() const { return unknownJob; }
 };
 
 extern jlib_decl StringBuffer &appendGloballyUniqueId(StringBuffer &s);

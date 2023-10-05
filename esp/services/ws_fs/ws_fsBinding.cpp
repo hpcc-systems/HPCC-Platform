@@ -378,7 +378,7 @@ void CFileSpraySoapBindingEx::xsltTransform(const char* xml, const char* sheet, 
             const char *key = it->getPropKey();
             //set parameter in the XSL transform skipping over the @ prefix, if any
             const char* paramName = *key == '@' ? key+1 : key;
-            trans->setParameter(paramName, StringBuffer().append('\'').append(params->queryProp(key)).append('\'').str());
+            trans->setParameter(paramName, StringBuffer().append('\'').append(it->queryPropValue()).append('\'').str());
         }
     }
 
@@ -410,16 +410,11 @@ int CFileSpraySoapBindingEx::downloadFile(IEspContext &context, CHttpRequest* re
         if (!osStr.isEmpty() && (atoi(osStr.str())== OS_WINDOWS))
             pathSep = '\\';
         pathStr.replace(pathSep=='\\'?'/':'\\', pathSep);
-        addPathSepChar(pathStr);
 
-        if (!validateDropZoneHostAndPath(dropZoneName, netAddressStr, pathStr)) //The pathStr should be the absolute path for the dropzone.
-            throw makeStringException(ECLWATCH_INVALID_INPUT, "Invalid DropZoneName, NetAddress or Path.");
-        SecAccessFlags permission = getDZPathScopePermissions(context, dropZoneName, pathStr, netAddressStr);
-        if (permission < SecAccess_Read)
-            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Access DropZone Scope %s %s %s not allowed for user %s (permission:%s). Read Access Required.",
-                dropZoneName.str(), netAddressStr.str(), pathStr.str(), context.queryUserId(), getSecAccessFlagName(permission));
+        validateDropZoneReq(context, dropZoneName, netAddressStr, pathStr, SecAccess_Read);
 
         StringBuffer fullName;
+        addPathSepChar(pathStr);
         fullName.appendf("%s%s", pathStr.str(), nameStr.str());
 
         StringBuffer headerStr("attachment;");
@@ -463,13 +458,7 @@ int CFileSpraySoapBindingEx::onStartUpload(IEspContext& ctx, CHttpRequest* reque
     request->getParameter("NetAddress", netAddress);
     request->getParameter("Path", path);
     request->getParameter("DropZoneName", dropZoneName);
-    if (!validateDropZoneHostAndPath(dropZoneName, netAddress, path)) //The path should be the absolute path for the dropzone.
-        throw makeStringException(ECLWATCH_INVALID_INPUT, "Invalid DropZoneName, NetAddress or Path.");
-    SecAccessFlags permission = getDZPathScopePermissions(ctx, dropZoneName, path, netAddress);
-    if (permission < SecAccess_Full)
-        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Access DropZone Scope %s %s %s not allowed for user %s (permission:%s). Full Access Required.",
-            dropZoneName.str(), netAddress.str(), path.str(), ctx.queryUserId(), getSecAccessFlagName(permission));
-
+    validateDropZoneReq(ctx, dropZoneName, netAddress, path, SecAccess_Full);
     return EspHttpBinding::onStartUpload(ctx, request, response, serv, method);
 }
 

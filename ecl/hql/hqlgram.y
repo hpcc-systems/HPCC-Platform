@@ -472,6 +472,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   TOK_TRUE
   TYPE
   TYPEOF
+  UNCOMPRESSED
   UNICODEORDER
   UNGROUP
   UNLIKELY
@@ -3490,6 +3491,21 @@ outputFlags
                         { $$.setExpr(createComma($1.getExpr(), $3.getExpr())); $$.setPosition($1); }
     ;
 
+compressionOptions
+    : COMPRESSED        {
+                            $$.setExpr(createAttribute(compressedAtom));
+                            $$.setPosition($1);
+                        }
+    | UNCOMPRESSED
+                        {
+                            $$.setExpr(createAttribute(noCompressAtom));
+                            $$.setPosition($1);
+                        }
+    | __COMPRESSED__    {
+                            $$.setExpr(createAttribute(__compressed__Atom));
+                            $$.setPosition($1);
+                        }
+
 outputFlag
     : EXTEND            {
                             $$.setExpr(createAttribute(extendAtom));
@@ -3505,14 +3521,7 @@ outputFlag
                             $$.setExpr(createExprAttribute(csvAtom, args));
                             $$.setPosition($1);
                         }
-    | COMPRESSED        {
-                            $$.setExpr(createAttribute(compressedAtom));
-                            $$.setPosition($1);
-                        }
-    | __COMPRESSED__    {
-                            $$.setExpr(createAttribute(__compressed__Atom));
-                            $$.setPosition($1);
-                        }
+    | compressionOptions
     | __GROUPED__       {
                             $$.setExpr(createAttribute(groupedAtom));
                             $$.setPosition($1);

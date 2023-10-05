@@ -91,6 +91,7 @@ data:
 {{ include "hpcc.addConfigMapVolumeMount" .me | indent 12 }}
 {{ include "hpcc.addVolumeMounts" . | indent 12 }}
 {{ include "hpcc.addSecretVolumeMounts" . | indent 12 }}
+{{ include "hpcc.addVaultClientCertificateVolumeMounts" . | indent 12 }}
 {{ include "hpcc.addCertificateVolumeMount" (dict "root" .root "name" .me.name "component" "compile" "includeRemote" true) | indent 12 }}
 {{- if $misc.postJobCommandViaSidecar }}
 {{ include "hpcc.addWaitAndRunVolumeMount" . | indent 12 }}
@@ -99,6 +100,7 @@ data:
 {{ include "hpcc.addConfigMapVolume" .me | indent 10 }}
 {{ include "hpcc.addVolumes" . | indent 10 }}
 {{ include "hpcc.addSecretVolumes" . | indent 10 }}
+{{ include "hpcc.addVaultClientCertificateVolumes" . | indent 10 }}
 {{ include "hpcc.addCertificateVolume" (dict "root" .root "name" .me.name "component" "compile" "includeRemote" true) | indent 10 }}
 {{- if $misc.postJobCommandViaSidecar }}
 {{ include "hpcc.addWaitAndRunVolume" . | indent 10 }}
@@ -183,6 +185,7 @@ spec:
 {{ include "hpcc.addConfigMapVolumeMount" . | indent 8 }}
 {{ include "hpcc.addVolumeMounts" $commonCtx | indent 8 -}}
 {{ include "hpcc.addSecretVolumeMounts" $commonCtx | indent 8 }}
+{{ include "hpcc.addVaultClientCertificateVolumeMounts" $commonCtx | indent 8 }}
 {{ include "hpcc.addCertificateVolumeMount" (dict "root" $ "name" .name "component" "eclccserver" "includeRemote" true) | indent 8 }}
         - name: "hpccbundles"
           mountPath: "/home/hpcc/.HPCCSystems"
@@ -190,6 +193,7 @@ spec:
 {{ include "hpcc.addConfigMapVolume" . | indent 6 }}
 {{ include "hpcc.addVolumes" $commonCtx | indent 6 }}
 {{ include "hpcc.addSecretVolumes" $commonCtx | indent 6 }}
+{{ include "hpcc.addVaultClientCertificateVolumes" $commonCtx | indent 6 }}
 {{ include "hpcc.addCertificateVolume" (dict "root" $ "name" .name "component" "eclccserver" "includeRemote" true) | indent 6 }}
       - name: hpccbundles
         emptyDir: {}

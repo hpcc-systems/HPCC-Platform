@@ -241,10 +241,14 @@ extern TPWRAPPER_API bool validateDataPlaneName(const char *remoteDali, const ch
 extern TPWRAPPER_API bool matchNetAddressRequest(const char* netAddressReg, bool ipReq, IConstTpMachine& tpMachine);
 
 extern TPWRAPPER_API StringBuffer &findDropZonePlaneName(const char* host, const char* path, StringBuffer& planeName);
-extern TPWRAPPER_API bool validateDropZoneHostAndPath(const char* dropZoneName, const char* hostToCheck, const char* pathToCheck);
-extern TPWRAPPER_API SecAccessFlags getDZPathScopePermissions(IEspContext& context, const char* dropZoneName, const char* dropZonePath, const char* dropZoneHost);
-extern TPWRAPPER_API SecAccessFlags getDZFileScopePermissions(IEspContext& context, const char* dropZoneName, const char* dropZonePath, const char* dropZoneHost);
+extern TPWRAPPER_API IPropertyTree* getDropZoneAndValidateHostAndPath(const char* dropZoneName, const char* host, const char* path);
 extern TPWRAPPER_API void validateDropZoneAccess(IEspContext& context, const char* targetDZNameOrHost, const char* hostReq, SecAccessFlags permissionReq,
     const char* fileNameWithRelPath, CDfsLogicalFileName& dlfn);
+extern TPWRAPPER_API SecAccessFlags getDZPathScopePermsAndLegacyPhysicalPerms(IEspContext &context, const char *dropZoneName, const char *path,
+    const char *host, SecAccessFlags permissionReq);
+extern TPWRAPPER_API void validateDZPathScopePermsAndLegacyPhysicalPerms(IEspContext &context, const char *dropZoneName, const char *path,
+    const char *host, SecAccessFlags permissionReq);
+extern TPWRAPPER_API void validateDropZoneReq(IEspContext& ctx, const char* dropZoneName, const char* host, const char* path, SecAccessFlags permissionReq);
+extern TPWRAPPER_API void validateDZFileScopePermsAndLegacyPhysicalPerms(IEspContext& context, const char* dropZoneName, const char* path, const char* host, SecAccessFlags permissionReq);
 
 #endif //_ESPWIZ_TpWrapper_HPP__

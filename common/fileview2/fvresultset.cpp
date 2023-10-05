@@ -2342,11 +2342,12 @@ extern FILEVIEW_API unsigned writeResultCursorXml(IXmlWriterExt & writer, IResul
         writer.outputCString(schemaName, "@xmlSchema");
     if (xmlns)
     {
-        Owned<IPropertyIterator> it = const_cast<IProperties*>(xmlns)->getIterator();
+        Owned<IPropertyIterator> it = xmlns->getIterator();
         ForEach(*it)
         {
             const char *name = it->getPropKey();
-            writer.outputXmlns(name,const_cast<IProperties*>(xmlns)->queryProp(name));
+            const char *value = it->queryPropValue();
+            writer.outputXmlns(name,value);
         }
     }
     cursor->beginWriteXmlRows(writer);

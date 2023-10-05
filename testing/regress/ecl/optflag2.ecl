@@ -18,7 +18,7 @@
 import $.setup;
 import Std.File;
 
-#onwarning(10140, ignore);
+#onwarning(7103, ignore);
 
 //version optRemoteRead=false
 //version optRemoteRead=true
