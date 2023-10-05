@@ -658,7 +658,7 @@ private:
     //and an exporter which is responsible for exporting the processed spans.
     //By default, an InMemorySpan exporter is used in the absence of a proper noop exporter.
     //Also, a SimpleSpanProcessor is used in the absence of a configuration directive to process spans in batches
-    void initTracerProviderAndGlobalInternals(IPropertyTree * traceConfig)
+    void initTracerProviderAndGlobalInternals(const IPropertyTree * traceConfig)
     {
         //Currently using InMemorySpanExporter as default, until a noop exporter is available
         std::shared_ptr<opentelemetry::exporter::memory::InMemorySpanData> data;
@@ -767,13 +767,13 @@ private:
             processor:                      #optional - Controls span processing style
               type: batch                   #simple|batch (default: simple)
     */
-    void initTracer(IPropertyTree * traceConfig)
+    void initTracer(const IPropertyTree * traceConfig)
     {
         try
         {
 #ifdef TRACECONFIGDEBUG
             Owned<IPropertyTree> testTree;
-            if (!traceConfig || !traceConfig->hasProp("tracing"))
+            if (!traceConfig)
             {
                 const char * simulatedGlobalYaml = R"!!(global:
     tracing:
@@ -842,9 +842,13 @@ private:
 
 public:
     IMPLEMENT_IINTERFACE;
-    CTraceManager(const char * componentName, IPropertyTree * traceConfig)
+    CTraceManager(const char * componentName, const IPropertyTree * componentConfig, const IPropertyTree * globalConfig)
     {
+        assertex(componentConfig);
         moduleName.set(componentName);
+        const IPropertyTree * traceConfig = componentConfig->queryPropTree("tracing");
+        if (!traceConfig && globalConfig)
+            traceConfig = globalConfig->queryPropTree("tracing");
         initTracer(traceConfig);
 
         auto provider = opentelemetry::trace::Provider::GetTracerProvider();
@@ -895,9 +899,9 @@ MODULE_EXIT()
     theTraceManager.destroy();
 }
 
-void initTraceManager(const char * componentName, IPropertyTree * config)
+void initTraceManager(const char * componentName, const IPropertyTree * componentConfig, const IPropertyTree * globalConfig)
 {
-    theTraceManager.query([=] () { return new CTraceManager(componentName, config); });
+    theTraceManager.query([=] () { return new CTraceManager(componentName, componentConfig, globalConfig); });
 }
 
 ITraceManager & queryTraceManager()

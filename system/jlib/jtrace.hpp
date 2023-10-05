@@ -65,7 +65,7 @@ interface ITraceManager : extends IInterface
     virtual const char * getTracedComponentName() const = 0;
  };
 
-extern jlib_decl void initTraceManager(const char * componentName, IPropertyTree * traceConfig);
+extern jlib_decl void initTraceManager(const char * componentName, const IPropertyTree * componentConfig, const IPropertyTree * globalConfig);
 extern jlib_decl ITraceManager & queryTraceManager();
 
 /*
