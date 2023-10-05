@@ -19,9 +19,8 @@
 //nothor
 //nohthor
 
-import ^ as root;
-
-serviceUrl := #IFDEFINED(root.url, 'http://.:9876');
+TargetIP := '.' : STORED('TargetIP');
+serviceUrl := 'http://'+TargetIP+':9876';
 
 //--- end of version configuration ---
 
