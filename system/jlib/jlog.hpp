@@ -68,7 +68,8 @@ typedef enum
     MSGCLS_metric      = 0x20, // A metric line
     MSGCLS_addid       = 0x40, // Internal use within log system
     MSGCLS_removeid    = 0x80, // Internal use within log system
-    MSGCLS_all         = 0xFF  // Use as a filter to select all messages
+    MSGCLS_event       = 0x100, // A timestamp or event where the time it occurs is significant
+    MSGCLS_all         = 0xFFFF  // Use as a filter to select all messages
 } LogMsgClass;
 /* ------------------------------------------------------------------------------------ *
  * NOTES:                                                                               *
@@ -141,6 +142,8 @@ inline const char * LogMsgAudienceToVarString(LogMsgAudience audience)
         return("User");
     case MSGAUD_programmer:
         return("Programmer");
+    case MSGAUD_monitor:
+        return("Monitor");
     case MSGAUD_audit:
         return("Audit");
     default:
@@ -158,6 +161,8 @@ inline const char * LogMsgAudienceToFixString(LogMsgAudience audience)
         return("USR");
     case MSGAUD_programmer:
         return("PRG");
+    case MSGAUD_monitor:
+        return("MON");
     case MSGAUD_audit:
         return("AUD");
     default:
@@ -172,6 +177,8 @@ inline MessageAudience LogMsgAudFromAbbrev(char const * abbrev)
         return MSGAUD_user;
     if(strnicmp(abbrev, "PRO", 3)==0)
         return MSGAUD_programmer;
+    if(strnicmp(abbrev, "MON", 3)==0)
+        return MSGAUD_monitor;
     if(strnicmp(abbrev, "ADT", 3)==0)
         return MSGAUD_audit;
     if(strnicmp(abbrev, "ALL", 3)==0)
@@ -195,6 +202,8 @@ inline const char * LogMsgClassToVarString(LogMsgClass msgClass)
         return("Progress");
     case MSGCLS_metric:
         return("Metric");
+    case MSGCLS_event:
+        return("Event");
     default:
         return("UNKNOWN");
     }
@@ -216,6 +225,8 @@ inline const char * LogMsgClassToFixString(LogMsgClass msgClass)
         return("PRO");
     case MSGCLS_metric:
         return("MET");
+    case MSGCLS_event:
+        return("EVT");
     default:
         return("UNK");
     }
@@ -235,6 +246,8 @@ inline LogMsgClass LogMsgClassFromAbbrev(char const * abbrev)
         return MSGCLS_progress;
     if(strnicmp(abbrev, "MET", 3)==0)
         return MSGCLS_metric;
+    if(strnicmp(abbrev, "EVT", 3)==0)
+        return MSGCLS_event;
     if(strnicmp(abbrev, "ALL", 3)==0)
         return MSGCLS_all;
     return MSGCLS_unknown;
