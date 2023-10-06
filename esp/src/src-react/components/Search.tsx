@@ -29,6 +29,9 @@ const searchResultUrl = (result) => {
         case "Logical File":
             url = "#/files/" + result._nodeGroup + "/" + result._name;
             break;
+        case "Super File":
+            url = "#/files/" + result._name;
+            break;
         case "Query":
             url = "#/queries/" + result._querySetId + "/" + result._id;
             break;
@@ -112,7 +115,7 @@ export const Search: React.FunctionComponent<SearchProps> = ({
             key: "open", text: nlsHPCC.Open, disabled: !uiState.hasSelection, iconProps: { iconName: "WindowEdit" },
             onClick: () => {
                 if (selection.length === 1) {
-                    window.location.href = `#/workunits/${selection[0].Wuid}`;
+                    window.location.href = searchResultUrl(selection[0]);
                 } else {
                     for (let i = selection.length - 1; i >= 0; --i) {
                         window.open(searchResultUrl(selection[i]), "_blank");
