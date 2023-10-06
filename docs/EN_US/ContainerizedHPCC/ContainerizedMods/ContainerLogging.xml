@@ -619,7 +619,7 @@ ContainerLog
       <title>Target Audience Filtering</title>
 
       <para>The availble target audiences include operator(OPR), user(USR),
-      programmer(PRO), audit(ADT), or all. The filter is controlled by the
+      programmer(PRO), monitor(MON), audit(ADT), or all. The filter is controlled by the
       &lt;section&gt;.logging.audiences value. The string value is comprised
       of 3 letter codes delimited by the aggregation operator (+) or the
       removal operator (-).</para>
@@ -634,7 +634,7 @@ ContainerLog
       <title>Target Category Filtering</title>
 
       <para>The available target categories include disaster(DIS), error(ERR),
-      information(INF), warning(WRN), progress(PRO), metrics(MET). The
+      information(INF), warning(WRN), progress(PRO), event(EVT), metrics(MET). The
       category (or class) filter is controlled by the
       &lt;section&gt;.logging.classes value, comprised of 3 letter codes
       delimited by the aggregation operator (+) or the removal operator

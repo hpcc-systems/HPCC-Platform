@@ -261,7 +261,7 @@ struct WUComponentLogOptions
             logFetchFilter = getBinaryLogAccessFilter(logFetchFilter, componentsFilterObj, LOGACCESS_FILTER_and);
 
         ILogAccessFilter * logEventTypeFilterObj = nullptr;
-        StringBuffer logType; //"DIS","ERR","WRN","INF","PRO","MET","ALL"
+        StringBuffer logType; //"DIS","ERR","WRN","INF","PRO","MET","EVT","ALL"
         zapHttpRequest->getParameter("LogFilter_LogEventType", logType);
         if (!logType.isEmpty() && strcmp(logType.str(), "ALL") != 0)
             logEventTypeFilterObj = getClassLogAccessFilter(LogMsgClassFromAbbrev(logType.str()));

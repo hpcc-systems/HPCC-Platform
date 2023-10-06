@@ -108,7 +108,8 @@ ESPenum LogEventClass : string
     Warning("WRN"),
     Info("INF"),
     Progress("PRO"),
-    Metric("MET")
+    Metric("MET"),
+    Event("EVT")
 };
 
 /*
