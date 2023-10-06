@@ -310,7 +310,8 @@ typedef enum
     //          would not be resolvable by sysadmin or ECL developers. Additional information that may
     //          be useful for improving the platform.
     MSGAUD_programmer  = 0x20,
-    // MSGAUD_legacy      = 0x40, REMOVED - may be reused later
+    // Target audience: Automatic monitoring tools
+    MSGAUD_monitor     = 0x40,
     // Target audience: persons involved in accounting and security audits
     MSGAUD_audit       = 0x80,
     // MSGAUD_all is to be used for filtering or specifying which messages are to be logged
