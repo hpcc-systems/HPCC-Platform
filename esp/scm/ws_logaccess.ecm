@@ -122,12 +122,14 @@ ESPenum LogAccessFilterOperator : int
 *    INF - Information
 *    PRO - Progress
 *    MET - Metric
+*    EVT - Event
 *
 *If searching by "ByTargetAudience", the SearchByValue should contain the 3 letter code associated with the target audience of interest.
 * valid values at time of writing are:
 *    OPR - Operator
 *    USR - User
 *    PRO - Programmer
+*    MON - Monitor
 *    ADT - Audit
 *If searching by "BySourceInstance", the SearchByValue should contain the instance of interest
 *If searching by "BySourceNode", the SearchByValue should contain the node of interest
