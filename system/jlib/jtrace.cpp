@@ -38,6 +38,9 @@
 #include "opentelemetry/exporters/otlp/otlp_http_exporter_options.h"
 #include "opentelemetry/exporters/memory/in_memory_span_data.h"
 
+#include "opentelemetry/sdk/trace/exporter.h"
+#include "opentelemetry/sdk/trace/span_data.h"
+
 #include "platform.h"
 #include "jlib.hpp"
 #include "jmisc.hpp"
@@ -47,6 +50,62 @@
 namespace context     = opentelemetry::context;
 namespace nostd       = opentelemetry::nostd;
 namespace opentel_trace = opentelemetry::trace;
+
+using namespace ln_uid;
+
+/*
+NoopSpanExporter is a SpanExporter that does not do anything.
+Use when trace/span data is not needed, or if tracing data is handled outside of Otel framework
+*/
+class NoopSpanExporter final : public opentelemetry::sdk::trace::SpanExporter
+{
+public:
+    NoopSpanExporter() {}
+
+    /**
+    * @return Returns a unique pointer to an empty recordable object
+    */
+    std::unique_ptr<opentelemetry::sdk::trace::Recordable> MakeRecordable() noexcept override
+    {
+        return std::unique_ptr<opentelemetry::sdk::trace::Recordable>(new opentelemetry::sdk::trace::SpanData());
+    }
+
+    /**
+    * NoopSpanExporter does not need to do anything here.
+    *
+    * @param recordables Ignored
+    * @return Always returns success
+    */
+    opentelemetry::sdk::common::ExportResult Export(
+      const nostd::span<std::unique_ptr<opentelemetry::sdk::trace::Recordable>> &recordables) noexcept override
+    {
+        return opentelemetry::sdk::common::ExportResult::kSuccess;
+    }
+
+   /**
+   * Shut down the exporter. NoopSpanExporter does not need to do anything here.
+   * @param timeout an optional timeout.
+   * @return return the status of the operation.
+   */
+    virtual bool Shutdown(
+      std::chrono::microseconds timeout = std::chrono::microseconds::max()) noexcept override
+    {
+        return true;
+    }
+};
+
+class NoopSpanExporterFactory
+{
+public:
+    /**
+    * Create a NoopSpanExporter.
+    */
+    static std::unique_ptr<opentelemetry::sdk::trace::SpanExporter> Create()
+    {
+        return std::unique_ptr<opentelemetry::sdk::trace::SpanExporter>(
+            new NoopSpanExporter());
+    }
+};
 
 class CHPCCHttpTextMapCarrier : public opentelemetry::context::propagation::TextMapCarrier
 {
@@ -660,9 +719,7 @@ private:
     //Also, a SimpleSpanProcessor is used in the absence of a configuration directive to process spans in batches
     void initTracerProviderAndGlobalInternals(const IPropertyTree * traceConfig)
     {
-        //Currently using InMemorySpanExporter as default, until a noop exporter is available
-        std::shared_ptr<opentelemetry::exporter::memory::InMemorySpanData> data;
-        std::unique_ptr<opentelemetry::sdk::trace::SpanExporter> exporter = opentelemetry::exporter::memory::InMemorySpanExporterFactory::Create(data);
+        std::unique_ptr<opentelemetry::sdk::trace::SpanExporter> exporter = NoopSpanExporterFactory::Create();
 
         //Administrators can choose to export trace data to a different backend by specifying the exporter type
         if (traceConfig && traceConfig->hasProp("exporter"))
