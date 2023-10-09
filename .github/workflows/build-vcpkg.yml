@@ -175,7 +175,7 @@ jobs:
           mkdir -p ${{ needs.preamble.outputs.folder_build }}
           declare -a plugins
           if [ ${{ needs.preamble.outputs.include_plugins }} == "ON" ]; then
-              plugins=("CASSANDRAEMBED" "COUCHBASEEMBED" "ECLBLAS" "H3" "JAVAEMBED" "KAFKA" "MEMCACHED" "MONGODBEMBED" "MYSQLEMBED" "NLP" "REDIS" "REMBED" "SQLITE3EMBED" "SQS" "PLATFORM")
+              plugins=("CASSANDRAEMBED" "COUCHBASEEMBED" "ECLBLAS" "H3" "JAVAEMBED" "KAFKA" "MEMCACHED" "MONGODBEMBED" "MYSQLEMBED" "NLP" "PARQUETEMBED" "REDIS" "REMBED" "SQLITE3EMBED" "SQS" "PLATFORM")
           else
               plugins=("PLATFORM")
           fi
