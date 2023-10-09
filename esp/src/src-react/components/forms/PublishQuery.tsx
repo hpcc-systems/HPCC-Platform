@@ -51,7 +51,7 @@ export const PublishQueryForm: React.FunctionComponent<PublishFormProps> = ({
 
     const onSubmit = React.useCallback(() => {
         handleSubmit(
-            (data, evt) => {
+            (data: PublishFormValues, evt) => {
                 workunit.publish(data.jobName).then(() => {
                     return workunit.update({ Jobname: data.jobName });
                 }).then(() => {

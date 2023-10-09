@@ -73,7 +73,7 @@ export const FixedImportForm: React.FunctionComponent<FixedImportFormProps> = ({
 
     const onSubmit = React.useCallback(() => {
         handleSubmit(
-            (data, evt) => {
+            (data: FixedImportFormValues, evt) => {
                 let request = {};
                 const files = data.selectedFiles;
 

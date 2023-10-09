@@ -47,7 +47,7 @@ const validateMapStyles = mergeStyleSets({
     displayNone: { display: "none" }
 });
 
-const emptyFilter = {};
+const emptyFilter: { [key: string]: any } = {};
 
 const addArrayToText = (title, items, text): string => {
     if ((items.Item !== undefined) && (items.Item.length > 0)) {

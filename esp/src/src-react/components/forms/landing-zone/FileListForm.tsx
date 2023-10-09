@@ -94,7 +94,7 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
         };
 
         handleSubmit(
-            (data, evt) => {
+            (data: FileListFormValues, evt) => {
                 const folderPath = joinPath(data.path, pathSep);
                 if (data.overwrite) {
                     uploadFiles(folderPath, selection);

@@ -44,7 +44,7 @@ export const RenameFile: React.FunctionComponent<RenameFileProps> = ({
 
     const onSubmit = React.useCallback(() => {
         handleSubmit(
-            (data, evt) => {
+            (data: RenameFileFormValues, evt) => {
                 if (logicalFiles?.length > 0) {
                     if (logicalFiles?.length === 1) {
                         const request = { ...data, srcname: logicalFiles[0] };

@@ -38,7 +38,7 @@ export const AddFileForm: React.FunctionComponent<AddFileFormProps> = ({
 
     const onSubmit = React.useCallback(() => {
         handleSubmit(
-            (data, evt) => {
+            (data: AddFileFormValues, evt) => {
                 const dropZone = {
                     ...store.get(data.NetAddress),
                     NetAddress: data.NetAddress

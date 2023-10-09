@@ -179,7 +179,7 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
 
     const onSubmit = React.useCallback(() => {
         handleSubmit(
-            (data, evt) => {
+            (data: ZAPDialogValues, evt) => {
                 const formData = new FormData();
                 const logFilter = data.LogFilter;
 

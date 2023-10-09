@@ -57,7 +57,7 @@ export const AddPackageMapPart: React.FunctionComponent<AddPackageMapPartProps> 
 
     const onSubmit = React.useCallback(() => {
         handleSubmit(
-            (data, evt) => {
+            (data: AddPackageMapPartValues, evt) => {
                 WsPackageMaps.AddPartToPackageMap({
                     request: { ...data, Target: target, PackageMap: packageMap }
                 })

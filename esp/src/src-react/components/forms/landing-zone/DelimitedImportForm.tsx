@@ -90,7 +90,7 @@ export const DelimitedImportForm: React.FunctionComponent<DelimitedImportFormPro
 
     const onSubmit = React.useCallback(() => {
         handleSubmit(
-            (data, evt) => {
+            (data: DelimitedImportFormValues, evt) => {
                 let request = {};
                 const files = data.selectedFiles;
 

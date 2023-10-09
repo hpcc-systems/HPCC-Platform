@@ -47,7 +47,7 @@ export const Optimize: React.FunctionComponent<OptimizeProps> = ({
 
     const onSubmit = React.useCallback(() => {
         handleSubmit(
-            (data, evt) => {
+            (data: PublishFormValues, evt) => {
                 dpWu.optimize(data.target, data.logicalFile, data.overwrite).then(wu => {
                     pushUrl(`/workunits/${wu.Wuid}`);
                 }).catch(err => logger.error(err));

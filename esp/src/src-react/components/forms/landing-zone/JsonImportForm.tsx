@@ -76,7 +76,7 @@ export const JsonImportForm: React.FunctionComponent<JsonImportFormProps> = ({
 
     const onSubmit = React.useCallback(() => {
         handleSubmit(
-            (data, evt) => {
+            (data: JsonImportFormValues, evt) => {
                 let request = {};
                 const files = data.selectedFiles;
 

@@ -1,5 +1,4 @@
 //  See https://github.com/microsoft/fluentui/blob/master/apps/public-docsite-v9/src/shims/ThemeShim/v9ThemeShim.ts
-
 import { IEffects, IPalette, Theme as ThemeV8 } from "@fluentui/react";
 import {
   BorderRadiusTokens,
@@ -34,7 +33,7 @@ const mapAliasColors = (palette: IPalette, inverted: boolean): ColorTokens => {
     colorNeutralForeground3BrandPressed: palette.themeDarkAlt,
     colorNeutralForeground3BrandSelected: palette.themePrimary,
     colorNeutralForeground4: palette.neutralQuaternary,
-    colorNeutralForegroundDisabled: palette.neutralQuaternaryAlt,
+    colorNeutralForegroundDisabled: palette.neutralTertiaryAlt,
     colorNeutralForegroundInvertedDisabled: whiteAlpha[40],
     colorBrandForegroundLink: palette.themeDarkAlt,
     colorBrandForegroundLinkHover: palette.themeDark,
@@ -110,7 +109,7 @@ const mapAliasColors = (palette: IPalette, inverted: boolean): ColorTokens => {
     colorTransparentBackgroundHover: "transparent",
     colorTransparentBackgroundPressed: "transparent",
     colorTransparentBackgroundSelected: "transparent",
-    colorNeutralBackgroundDisabled: palette.neutralLight,
+    colorNeutralBackgroundDisabled: palette.neutralLighter,
     colorNeutralBackgroundInvertedDisabled: whiteAlpha[10],
     colorNeutralStencil1: palette.neutralLight,
     colorNeutralStencil2: palette.neutralLighterAlt,
@@ -153,6 +152,7 @@ const mapAliasColors = (palette: IPalette, inverted: boolean): ColorTokens => {
     colorBrandStroke2: palette.themeLight,
     colorBrandStroke2Hover: palette.themeLight,
     colorBrandStroke2Pressed: palette.themeLight,
+    colorBrandStroke2Contrast: palette.themeLight,
     colorCompoundBrandStroke: palette.themePrimary,
     colorCompoundBrandStrokeHover: palette.themeDarkAlt,
     colorCompoundBrandStrokePressed: palette.themeDark,
@@ -162,6 +162,7 @@ const mapAliasColors = (palette: IPalette, inverted: boolean): ColorTokens => {
     colorTransparentStrokeInteractive: "transparent",
     colorTransparentStrokeDisabled: "transparent",
     colorNeutralStrokeAlpha: inverted ? whiteAlpha[10] : blackAlpha[5],
+    colorNeutralStrokeAlpha2: whiteAlpha[20],
     colorStrokeFocus1: palette.white,
     colorStrokeFocus2: palette.black,
     colorNeutralShadowAmbient: "rgba(0,0,0,0.12)",

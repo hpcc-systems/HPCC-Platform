@@ -44,7 +44,7 @@ export const ReplicateFile: React.FunctionComponent<ReplicateFileProps> = ({
 
     const onSubmit = React.useCallback(() => {
         handleSubmit(
-            (data, evt) => {
+            (data: ReplicateFileFormValues, evt) => {
                 const request = { ...data, srcname: logicalFile };
                 FileSpray.Replicate({ request: request }).then(response => {
                     closeForm();

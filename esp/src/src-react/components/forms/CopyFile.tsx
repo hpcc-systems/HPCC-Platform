@@ -63,7 +63,7 @@ export const CopyFile: React.FunctionComponent<CopyFileProps> = ({
 
     const onSubmit = React.useCallback(() => {
         handleSubmit(
-            (data, evt) => {
+            (data: CopyFileFormValues, evt) => {
                 if (logicalFiles.length > 0) {
                     if (logicalFiles.length === 1) {
                         const request = { ...data, sourceLogicalName: logicalFiles[0] };

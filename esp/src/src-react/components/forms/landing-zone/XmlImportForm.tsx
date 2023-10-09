@@ -76,7 +76,7 @@ export const XmlImportForm: React.FunctionComponent<XmlImportFormProps> = ({
 
     const onSubmit = React.useCallback(() => {
         handleSubmit(
-            (data, evt) => {
+            (data: XmlImportFormValues, evt) => {
                 let request = {};
                 const files = data.selectedFiles;
 

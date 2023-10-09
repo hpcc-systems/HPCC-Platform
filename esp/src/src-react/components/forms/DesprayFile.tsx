@@ -74,7 +74,7 @@ export const DesprayFile: React.FunctionComponent<DesprayFileProps> = ({
 
     const onSubmit = React.useCallback(() => {
         handleSubmit(
-            (data, evt) => {
+            (data: DesprayFileFormValues, evt) => {
                 if (logicalFiles.length > 0) {
                     if (logicalFiles.length === 1) {
                         const request = {

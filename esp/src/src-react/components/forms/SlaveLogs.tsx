@@ -48,7 +48,7 @@ export const SlaveLogs: React.FunctionComponent<SlaveLogsProps> = ({
 
     const onSubmit = React.useCallback(() => {
         handleSubmit(
-            (data, evt) => {
+            (data: SlaveLogsValues, evt) => {
                 const url = `/WsWorkunits/WUFile?Wuid=${wuid}&Type=ThorSlaveLog&Process=${data.ThorProcess}` +
                     `&ClusterGroup=${clusterGroup}&LogDate=${thorLogDate}&SlaveNumber=${data.SlaveNumber}&Option=${data.FileFormat}`;
                 window.open(url);

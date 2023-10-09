@@ -89,7 +89,7 @@ export const Login: React.FunctionComponent<LoginProps> = ({
 
     const onSubmit = React.useCallback(() => {
         handleSubmit(
-            async (data, evt) => {
+            async (data: LoginFormValues, evt) => {
                 const formData = new FormData();
 
                 for (const key in data) {

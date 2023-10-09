@@ -73,7 +73,7 @@ export const BlobImportForm: React.FunctionComponent<BlobImportFormProps> = ({
 
     const onSubmit = React.useCallback(() => {
         handleSubmit(
-            (data, evt) => {
+            (data: BlobImportFormValues, evt) => {
                 let request = {};
                 const files = data.selectedFiles;
 
