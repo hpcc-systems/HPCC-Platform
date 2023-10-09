@@ -1,0 +1,174 @@
+version: 2
+updates:
+  # Maintain dependencies for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "[actions]"
+    open-pull-requests-limit: 0
+
+  # Maintain dependencies for Git Submodules
+  - package-ecosystem: "gitsubmodule"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "[submodule]"
+    open-pull-requests-limit: 0
+
+  # Maintain dependencies for online document support (npm)
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "[npm]"
+    open-pull-requests-limit: 0
+
+  # Maintain dependencies for ECL Watch (npm)
+  - package-ecosystem: "npm"
+    directory: "/esp/src"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "[npm]"
+    open-pull-requests-limit: 0
+
+  # Maintain dependencies for docker images (docker)
+  - package-ecosystem: "docker"
+    directory: "/dockerfiles"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "[docker]"
+    open-pull-requests-limit: 0
+
+  - package-ecosystem: "docker"
+    directory: "/dockerfiles/platform-build"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "[docker]"
+    open-pull-requests-limit: 0
+
+  - package-ecosystem: "docker"
+    directory: "/dockerfiles/platform-build-base"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "[docker]"
+    open-pull-requests-limit: 0
+
+  - package-ecosystem: "docker"
+    directory: "/dockerfiles/platform-build-centos-7"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "[docker]"
+    open-pull-requests-limit: 0
+
+  - package-ecosystem: "docker"
+    directory: "/dockerfiles/platform-build-centos-8"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "[docker]"
+    open-pull-requests-limit: 0
+
+  - package-ecosystem: "docker"
+    directory: "/dockerfiles/platform-build-incremental"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "[docker]"
+    open-pull-requests-limit: 0
+
+  - package-ecosystem: "docker"
+    directory: "/dockerfiles/platform-build-incremental-container"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "[docker]"
+    open-pull-requests-limit: 0
+
+  - package-ecosystem: "docker"
+    directory: "/dockerfiles/platform-build-ln"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "[docker]"
+    open-pull-requests-limit: 0
+
+  - package-ecosystem: "docker"
+    directory: "/dockerfiles/platform-core"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "[docker]"
+    open-pull-requests-limit: 0
+
+  - package-ecosystem: "docker"
+    directory: "/dockerfiles/platform-core-debug"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "[docker]"
+    open-pull-requests-limit: 0
+
+  - package-ecosystem: "docker"
+    directory: "/dockerfiles/platform-core-ln"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "[docker]"
+    open-pull-requests-limit: 0
+
+  - package-ecosystem: "docker"
+    directory: "/dockerfiles/platform-gnn"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "[docker]"
+    open-pull-requests-limit: 0
+
+  - package-ecosystem: "docker"
+    directory: "/dockerfiles/platform-gnn-gpu"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "[docker]"
+    open-pull-requests-limit: 0
+
+  - package-ecosystem: "docker"
+    directory: "/dockerfiles/platform-ml"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "[docker]"
+    open-pull-requests-limit: 0
+
+  - package-ecosystem: "docker"
+    directory: "/dockerfiles"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "[docker]"
+    open-pull-requests-limit: 0
+
+  - package-ecosystem: "docker"
+    directory: "/dockerfiles/vcpkg"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "[docker]"
+    open-pull-requests-limit: 0
+
+  - package-ecosystem: "docker"
+    directory: "/dockerfiles/vcpkg/platform-core-ubuntu-22.04"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "[docker]"
+    open-pull-requests-limit: 0
