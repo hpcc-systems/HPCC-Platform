@@ -1568,12 +1568,17 @@ int CWsEclBinding::getGenForm(IEspContext &context, CHttpRequest* request, CHttp
     xform->setParameter("useTextareaForStringArray", "1");
 
 #ifdef _CONTAINERIZED
-    bool isRoxie = wsecl->connMap.getValue(wuinfo.qsetname) != nullptr;
-#else
+    VStringBuffer xpath("queues[@name='%s']", wuinfo.qsetname.get());
+    IPropertyTree *queue = getComponentConfigSP()->queryPropTree(xpath.str());
+    if (queue && strieq(queue->queryProp("@type"), "roxie"))
+        xform->setParameter("includeRoxieOptions", queue->getPropBool("@queriesOnly") ? "2" : "3");
+    else
+        xform->setParameter("includeRoxieOptions", "0");
+ #else
     Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(wuinfo.qsetname);
     bool isRoxie = clusterInfo && (clusterInfo->getPlatform() == RoxieCluster);
-#endif
     xform->setParameter("includeRoxieOptions", isRoxie ? "1" : "0");
+#endif
 
     // set the prop noDefaultValue param
     IProperties* props = context.queryRequestParameters();
@@ -2134,8 +2139,18 @@ void CWsEclBinding::sendRoxieRequest(const char *target, StringBuffer &req, Stri
     }
 }
 
+static void checkForceCreateWorkunit(IEspContext &context, bool forceCreateWorkunit)
+{
+    bool statsToWorkunit = context.queryRequestParameters()->getPropBool("@statsToWorkunit", false);
+    bool summaryStats = context.queryRequestParameters()->getPropBool("@summaryStats", false);
+    if (forceCreateWorkunit && (statsToWorkunit || summaryStats))
+        throw makeStringException(-1, "Both 'Save stats to workunit' and 'Get summary stats' are not supported for the 'Create Workunit' option");
+}
+
 int CWsEclBinding::onSubmitQueryOutput(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsEclWuInfo &wsinfo, const char *format, bool forceCreateWorkunit)
 {
+    checkForceCreateWorkunit(context, forceCreateWorkunit);
+
     StringBuffer status;
     StringBuffer output;
 
@@ -2200,6 +2215,8 @@ int CWsEclBinding::onSubmitQueryOutput(IEspContext &context, CHttpRequest* reque
 
 int CWsEclBinding::onSubmitQueryOutputView(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsEclWuInfo &wsinfo, bool forceCreateWorkunit)
 {
+    checkForceCreateWorkunit(context, forceCreateWorkunit);
+
     IConstWorkUnit *wu = wsinfo.ensureWorkUnit();
 
     StringBuffer soapmsg;
