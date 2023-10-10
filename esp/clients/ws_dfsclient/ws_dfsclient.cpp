@@ -398,7 +398,9 @@ public:
             if (dafileSrvRemoteFilePlane)
             {
                 file->setPropTree("Attr/_remoteStoragePlane", createPTreeFromIPT(dafileSrvRemoteFilePlane));
-                if (remoteStorage->hasProp("@secret"))
+
+                const char *serviceUrl = remoteStorage->queryProp("@service");
+                if (serviceUrl && startsWith(serviceUrl, "https"))
                 {
                     // if remote storage service is secure, dafilesrv connections must be also.
                     // this flag is used by consumers of this IFleDescriptor to tell whether they need to make
@@ -673,7 +675,10 @@ IDFSFile *lookupDFSFile(const char *logicalName, AccessMode accessMode, unsigned
             if (!remoteStorage)
                 throw makeStringExceptionV(0, "Remote storage '%s' not found", remoteName.str());
             serviceUrl.set(remoteStorage->queryProp("@service"));
+
+            // NB: for legacy support only, if the service url is secure, a secret name will be auto-generated
             serviceSecret.set(remoteStorage->queryProp("@secret"));
+
             logicalName = remoteLogicalFileName;
             useDafilesrv = remoteStorage->getPropBool("@useDafilesrv");
         }
@@ -683,20 +688,18 @@ IDFSFile *lookupDFSFile(const char *logicalName, AccessMode accessMode, unsigned
         // auto-discover local environment dfs service.
 #ifdef _CONTAINERIZED
         // NB: only expected to be here if experimental option #option('dfsesp-localfiles', true); is in use.
-        // This finds and uses local dfs service for local read lookukup.
+        // This finds and uses local dfs service for local read lookups.
         Owned<IPropertyTreeIterator> eclWatchServices = getGlobalConfigSP()->getElements("services[@type='dfs']");
         if (!eclWatchServices->first())
             throw makeStringException(-1, "Dfs service not defined in esp services");
         const IPropertyTree &eclWatch = eclWatchServices->query();
         StringBuffer eclWatchName;
         eclWatch.getProp("@name", eclWatchName);
-        auto result = k8s::getExternalService(eclWatchName);
-        if (result.first.empty())
-            throw makeStringExceptionV(-1, "dfs '%s': service not found", eclWatchName.str());
-        if (0 == result.second)
-            throw makeStringExceptionV(-1, "dfs '%s': service port not defined", eclWatchName.str());
         const char *protocol = eclWatch.getPropBool("@tls") ? "https" : "http";
-        serviceUrl.appendf("%s://%s:%u", protocol, result.first.c_str(), result.second);
+        unsigned port = (unsigned)eclWatch.getPropInt("@port", NotFound);
+        if (NotFound == port)
+            throw makeStringExceptionV(-1, "dfs '%s': service port not defined", eclWatchName.str());
+        serviceUrl.appendf("%s://%s:%u", protocol, eclWatchName.str(), port);
 #else
         {
             CriticalBlock b(dfsServiceUrlCrit);
@@ -714,7 +717,12 @@ IDFSFile *lookupDFSFile(const char *logicalName, AccessMode accessMode, unsigned
 #endif
     }
     bool useSSL = startsWith(serviceUrl, "https");
-    if (!useSSL)
+    if (useSSL)
+    {
+        if (0 == serviceSecret.length())
+            generateDynamicUrlSecretName(serviceSecret, serviceUrl, nullptr);
+    }
+    else
         serviceSecret.clear();
 
     DBGLOG("Looking up file '%s' on '%s'", logicalName, serviceUrl.str());
