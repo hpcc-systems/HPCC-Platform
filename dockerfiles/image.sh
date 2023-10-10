@@ -26,7 +26,7 @@ globals() {
     popd
     DOCKER_USERNAME="${DOCKER_USERNAME:-hpccbuilds}"
 
-    CMAKE_OPTIONS="-G Ninja -DVCPKG_FILES_DIR=/hpcc-dev -DCPACK_THREADS=$(docker info --format '{{.NCPU}}') -DUSE_OPTIONAL=OFF -DCONTAINERIZED=ON -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON"
+    CMAKE_OPTIONS="-G Ninja -DCPACK_THREADS=$(docker info --format '{{.NCPU}}') -DUSE_OPTIONAL=OFF -DCONTAINERIZED=ON -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON"
 
     if [ "$TAG_BUILD" -eq 1 ]; then
         HPCC_BUILD="hpcc_build_$MODE-$GIT_BRANCH"
@@ -189,6 +189,7 @@ reconfigure() {
 configure() {
     local options=$1
     echo "--- cmake config $options ---"
+    run "cp -r -n /hpcc-dev/vcpkg_installed /hpcc-dev/build/vcpkg_installed"
     run "cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/build $options"
 }
 
