@@ -451,7 +451,6 @@ protected:
             toLog(out);
             DBGLOG("Span start: {%s}", out.str());
         }
-
     }
 
     void storeSpanContext()
@@ -534,6 +533,40 @@ protected:
 
     //local nested span parent
     CSpan * localParentSpan = nullptr;
+};
+
+static Owned<ISpan> noopSpan;
+class CNoopSpan : public CInterfaceOf<ISpan>
+{
+public:
+    virtual void setSpanAttribute(const char * key, const char * val) override {};
+    virtual void setSpanAttributes(const IProperties * attributes) override {};
+    virtual void addSpanEvent(const char * eventName) override {};
+    virtual bool getSpanContext(IProperties * ctxProps, bool otelFormatted) const override { return false; };
+
+    virtual void toString(StringBuffer & out) const override {};
+    virtual void toLog(StringBuffer & out) const override {};
+    virtual void getLogPrefix(StringBuffer & out) const override {};
+
+    virtual const char* queryGlobalId() const override { return nullptr; };
+    virtual const char* queryCallerId() const override { return nullptr; };
+    virtual const char* queryLocalId() const override { return nullptr; };
+
+    virtual ISpan * createClientSpan(const char * name) override { return getInstance(); };
+    virtual ISpan * createInternalSpan(const char * name) override { return getInstance(); };
+
+    static ISpan * getInstance()
+    {
+        if(!noopSpan.get())
+            noopSpan.setown(new CNoopSpan());
+
+        return noopSpan.getLink();
+    }
+
+private:
+    CNoopSpan() = default;
+    CNoopSpan(const CNoopSpan&) = delete;
+    CNoopSpan& operator=(const CNoopSpan&) = delete;
 };
 
 class CInternalSpan : public CSpan
@@ -919,13 +952,21 @@ public:
 
     ISpan * createServerSpan(const char * name, StringArray & httpHeaders, SpanFlags flags) override
     {
-        Owned<IProperties> headerProperties = getHeadersAsProperties(httpHeaders);
-        return new CServerSpan(name, moduleName.get(), headerProperties, flags);
+        if (isTracingEnabled())
+        {
+            Owned<IProperties> headerProperties = getHeadersAsProperties(httpHeaders);
+            return new CServerSpan(name, moduleName.get(), headerProperties, flags);
+        }
+        else
+            return CNoopSpan::getInstance();
     }
 
     ISpan * createServerSpan(const char * name, const IProperties * httpHeaders, SpanFlags flags) override
     {
-        return new CServerSpan(name, moduleName.get(), httpHeaders, flags);
+        if (isTracingEnabled())
+            return new CServerSpan(name, moduleName.get(), httpHeaders, flags);
+        else
+            return CNoopSpan::getInstance();
     }
 
     const char * getTracedComponentName() const override

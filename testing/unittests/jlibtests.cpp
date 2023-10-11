@@ -109,6 +109,13 @@ protected:
 
     void testIDPropegation()
     {
+        if (!queryTraceManager().isTracingEnabled())
+        {
+            //CPPUNIT_SKIP_MESSAGE("Skipping testIDPropegation, tracing is enabled");
+            DBGLOG("Skipping testIDPropegation, tracing is not enabled");
+            return;
+        }
+
         Owned<IProperties> mockHTTPHeaders = createProperties();
         createMockHTTPHeaders(mockHTTPHeaders, true);
 
@@ -155,6 +162,13 @@ protected:
 
     void testClientSpan()
     {
+        if (!queryTraceManager().isTracingEnabled())
+        {
+            //CPPUNIT_SKIP_MESSAGE("Skipping testIDPropegation, tracing is enabled");
+            DBGLOG("Skipping testClientSpan, tracing is not enabled");
+            return;
+        }
+
         Owned<IProperties> emptyMockHTTPHeaders = createProperties();
         Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("propegatedServerSpan", emptyMockHTTPHeaders);
 
@@ -204,6 +218,13 @@ protected:
 
     void testInternalSpan()
     {
+        if (!queryTraceManager().isTracingEnabled())
+        {
+            //CPPUNIT_SKIP_MESSAGE("Skipping testIDPropegation, tracing is enabled");
+            DBGLOG("Skipping testInternalSpan, tracing is not enabled");
+            return;
+        }
+
         Owned<IProperties> emptyMockHTTPHeaders = createProperties();
         Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("propegatedServerSpan", emptyMockHTTPHeaders);
 
@@ -251,6 +272,13 @@ protected:
 
     void testRootServerSpan()
     {
+        if (!queryTraceManager().isTracingEnabled())
+        {
+            //CPPUNIT_SKIP_MESSAGE("Skipping testIDPropegation, tracing is enabled");
+            DBGLOG("Skipping testRootServerSpan, tracing is not enabled");
+            return;
+        }
+
         Owned<IProperties> emptyMockHTTPHeaders = createProperties();
         Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("propegatedServerSpan", emptyMockHTTPHeaders);
 
@@ -289,6 +317,13 @@ protected:
 
     void testInvalidPropegatedServerSpan()
     {
+        if (!queryTraceManager().isTracingEnabled())
+        {
+            //CPPUNIT_SKIP_MESSAGE("Skipping testIDPropegation, tracing is enabled");
+            DBGLOG("Skipping testInvalidPropegatedServerSpan, tracing is not enabled");
+            return;
+        }
+
         Owned<IProperties> mockHTTPHeaders = createProperties();
         createMockHTTPHeaders(mockHTTPHeaders, false);
         Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("invalidPropegatedServerSpan", mockHTTPHeaders);
@@ -305,10 +340,12 @@ protected:
     {
         //only interested in propegated values, no local trace/span
         //usefull if tracemanager.istraceenabled() is false
-        bool isTraceEnabled = queryTraceManager().isTracingEnabled();
-
-        if (isTraceEnabled)
+        if (!queryTraceManager().isTracingEnabled())
+        {
+            //CPPUNIT_SKIP_MESSAGE("Skipping testIDPropegation, tracing is enabled");
+            DBGLOG("Skipping testStringArrayPropegatedServerSpan, tracing is not enabled");
             return;
+        }
 
         Owned<IProperties> mockHTTPHeaders = createProperties();
         createMockHTTPHeaders(mockHTTPHeaders, true);
@@ -333,6 +370,13 @@ protected:
 
     void testMultiNestedSpanTraceOutput()
     {
+        if (!queryTraceManager().isTracingEnabled())
+        {
+            //CPPUNIT_SKIP_MESSAGE("Skipping testIDPropegation, tracing is enabled");
+            DBGLOG("Skipping testMultiNestedSpanTraceOutput, tracing is not enabled");
+            return;
+        }
+
         Owned<IProperties> mockHTTPHeaders = createProperties();
         createMockHTTPHeaders(mockHTTPHeaders, true);
 
@@ -397,6 +441,13 @@ protected:
 
     void testPropegatedServerSpan()
     {
+        if (!queryTraceManager().isTracingEnabled())
+        {
+            //CPPUNIT_SKIP_MESSAGE("Skipping testIDPropegation, tracing is enabled");
+            DBGLOG("Skipping testPropegatedServerSpan, tracing is not enabled");
+            return;
+        }
+
         Owned<IProperties> mockHTTPHeaders = createProperties();
         createMockHTTPHeaders(mockHTTPHeaders, true);
 
@@ -436,6 +487,13 @@ protected:
 
     void testStringArrayPropegatedServerSpan()
     {
+        if (!queryTraceManager().isTracingEnabled())
+        {
+            //CPPUNIT_SKIP_MESSAGE("Skipping testIDPropegation, tracing is enabled");
+            DBGLOG("Skipping testStringArrayPropegatedServerSpan, tracing is not enabled");
+            return;
+        }
+
          StringArray mockHTTPHeadersSA;
         //mock opentel traceparent context 
         mockHTTPHeadersSA.append("traceparent:00-beca49ca8f3138a2842e5cf21402bfff-4b960b3e4647da3f-01");
