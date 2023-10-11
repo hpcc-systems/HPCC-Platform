@@ -2353,6 +2353,7 @@ class CFileIOArray : implements IFileIOArray, public CInterface
     UnsignedArray subfiles;
     StringArray filenames;
     Int64Array bases;
+    mutable Int64Array sizes;     // Lazy-evaluated and cached
     int actualCrc = 0;
     unsigned valid = 0;
     bool multipleFormatsSeen = false;
@@ -2418,6 +2419,7 @@ public:
             valid++;
         files.append(f);
         bases.append(base);
+        sizes.append(-1);    // Calculated if/when needed
         if (_actualCrc)
         {
             if (actualCrc && actualCrc != _actualCrc)
@@ -2468,12 +2470,26 @@ public:
             totalSize = 0;
             ForEachItemIn(idx, files)
             {
-                IFileIO *file = files.item(idx);
-                if (file)
-                    totalSize += file->size();
+                totalSize += partSize(idx);
             }
         }
         return totalSize;
+    }
+
+    virtual unsigned __int64 partSize(unsigned idx) const override
+    {
+        CriticalBlock b(crit);
+        __int64 fsize = sizes.item(idx);
+        if (fsize == -1)
+        {
+            IFileIO *file = files.item(idx);
+            if (file)
+                fsize = file->size();
+            else
+                fsize = 0;
+            sizes.replace(fsize, idx);
+        }
+        return (unsigned __int64) fsize;
     }
 
     virtual StringBuffer &getId(StringBuffer &ret) const override

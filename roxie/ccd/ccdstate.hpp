@@ -93,6 +93,7 @@ interface IFileIOArray : extends IInterface
     virtual unsigned numValid() const = 0;
     virtual bool isValid(unsigned partNo) const = 0;
     virtual unsigned __int64 size() const = 0;
+    virtual unsigned __int64 partSize(unsigned partNo) const = 0;
     virtual StringBuffer &getId(StringBuffer &) const = 0;
     virtual const char *queryLogicalFilename(unsigned partNo) const = 0;
     virtual int queryActualFormatCrc() const = 0;    // Actual format on disk
