@@ -244,8 +244,7 @@ arrow::Status ParquetHelper::openReadFile()
             else
             {
                 // There was a single file so check for partitioned files
-                Owned<IDirectoryIterator> multItr = createDirectoryIterator(path.str(), filename.insert(filename.length() - 8, '*'));
-                multItr->next();
+                Owned<IDirectoryIterator> multItr = createDirectoryIterator(path.str(), filename.insert(filename.length() - 8, "[0-9]*"));
                 if (!multItr || !multItr->isValid())
                     fileItr = singleItr; // If there aren't any partitioned files read the single file with Thor
                 else
