@@ -227,13 +227,49 @@ arrow::Status ParquetHelper::openReadFile()
         StringBuffer filename;
         StringBuffer path;
         splitFilename(location.c_str(), nullptr, &path, &filename, nullptr, false);
-        Owned<IDirectoryIterator> itr = createDirectoryIterator(path.str(), filename.append("*.parquet"));
+        Owned<IDirectoryIterator> fileItr;
+
+        // hThor and Thor files that were written with parquet have diffent naming schemes
+        // Thor files are tagged with a worker ID while hThor files are single non-tagged files
+        if (activityCtx->numSlaves() > 1)
+        {
+            // Executing on Thor: Check for single files that were written by hThor or from external source
+            Owned<IDirectoryIterator> singleItr = createDirectoryIterator(path.str(), filename.append(".parquet"));
+            if (!singleItr || !singleItr->first())
+            {
+                // Check for partitioned files which will have indexes prefixed to the filename
+                Owned<IDirectoryIterator> multItr = createDirectoryIterator(path.str(), filename.insert(filename.length() - 8, '*'));
+                fileItr = multItr;
+            }
+            else
+            {
+                // There was a single file so check for partitioned files
+                Owned<IDirectoryIterator> multItr = createDirectoryIterator(path.str(), filename.insert(filename.length() - 8, '*'));
+                multItr->next();
+                if (!multItr || !multItr->isValid())
+                    fileItr = singleItr; // If there aren't any partitioned files read the single file with Thor
+                else
+                    fileItr = multItr;
+            }
+        }
+        else
+        {
+            // When reading on hThor check for single file and only if there isn't a single file check for partitioned files to read
+            Owned<IDirectoryIterator> singleItr = createDirectoryIterator(path.str(), filename.append(".parquet"));
+            if (!singleItr || !singleItr->first())
+            {
+                Owned<IDirectoryIterator> multItr = createDirectoryIterator(path.str(), filename.insert(filename.length() - 8, '*'));
+                fileItr = multItr;
+            }
+            else
+                fileItr = singleItr;
+        }
 
         auto reader_properties = parquet::ReaderProperties(pool);
         auto arrow_reader_props = parquet::ArrowReaderProperties();
-        ForEach (*itr)
+        ForEach (*fileItr)
         {
-            IFile &file = itr->query();
+            IFile &file = fileItr->query();
             parquet::arrow::FileReaderBuilder reader_builder;
             reportIfFailure(reader_builder.OpenFile(file.queryFilename(), false, reader_properties));
             reader_builder.memory_pool(pool);
