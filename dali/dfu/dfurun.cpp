@@ -667,7 +667,7 @@ public:
         if (write)
             auditflags |= DALI_LDAP_WRITE_WANTED;
 
-        SecAccessFlags perm;
+        SecAccessFlags perm = SecAccess_None;
         IClusterInfo *iClusterInfo = fd->queryClusterNum(0);
         const char *planeName = iClusterInfo->queryGroupName();
         if (!isEmptyString(planeName))
@@ -697,6 +697,7 @@ public:
             Owned<IConstEnvironment> env = factory->openEnvironment();
             if (env->isDropZoneRestrictionEnabled())
                 throw makeStringException(-1,"Empty plane name.");
+            perm = SecAccess_Full; //Not able to check DropZone permissions without a plane name
 #else
             throw makeStringException(-1,"Unexpected empty plane name."); // should never be the case in containerized setups
 #endif
