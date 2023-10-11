@@ -17,7 +17,6 @@
 
 #ifndef JTRACE_HPP
 #define JTRACE_HPP
-
 /**
  * @brief This follows open telemetry's span attribute naming conventions
  *  Known HPCC span Keys could be added here
@@ -29,6 +28,22 @@ static constexpr const char *kLegacyGlobalIdHttpHeaderName = "HPCC-Global-Id";
 static constexpr const char *kLegacyCallerIdHttpHeaderName = "HPCC-Caller-Id";
 static constexpr const char *kGlobalIdOtelAttributeName = "hpcc.globalid";
 static constexpr const char *kCallerIdOtelAttributeName = "hpcc.callerid";
+static constexpr const char *kLocalIdIdOtelAttributeName = "hpcc.localid";
+
+enum class SpanLogFlags : unsigned
+{
+    LogNone            = 0x00000000,
+    LogSpanDetails     = 0x00000001,
+    LogParentInfo      = 0x00000002,
+    LogAttributes      = 0x00000004,
+    LogEvents          = 0x00000008,
+    LogLinks           = 0x00000010,
+    LogResources       = 0x00000020,
+};
+BITMASK_ENUM(SpanLogFlags);
+
+static constexpr SpanLogFlags DEFAULT_SPAN_LOG_FLAGS = SpanLogFlags::LogAttributes | SpanLogFlags::LogParentInfo;
+
 
 enum class SpanFlags : unsigned
 {
@@ -43,9 +58,9 @@ interface ISpan : extends IInterface
     virtual void setSpanAttribute(const char * key, const char * val) = 0;
     virtual void setSpanAttributes(const IProperties * attributes) = 0;
     virtual void addSpanEvent(const char * eventName) = 0;
+    virtual void addSpanEvent(const char * eventName, IProperties * attributes) = 0;
     virtual bool getSpanContext(IProperties * ctxProps, bool otelFormatted) const = 0;
     virtual void toString(StringBuffer & out) const = 0;
-    virtual void toLog(StringBuffer & out) const = 0;
     virtual void getLogPrefix(StringBuffer & out) const = 0;
 
     virtual ISpan * createClientSpan(const char * name) = 0;
@@ -69,6 +84,17 @@ interface ITraceManager : extends IInterface
 extern jlib_decl ISpan * getNullSpan();
 extern jlib_decl void initTraceManager(const char * componentName, const IPropertyTree * componentConfig, const IPropertyTree * globalConfig);
 extern jlib_decl ITraceManager & queryTraceManager();
+/*
+Temporarily disabled due to build issues in certain environments
+#ifdef _USE_CPPUNIT
+#include "opentelemetry/sdk/common/attribute_utils.h"
+#include "opentelemetry/sdk/resource/resource.h"
+
+extern jlib_decl void testJLogExporterPrintResources(StringBuffer & out, const opentelemetry::sdk::resource::Resource &resources);
+extern jlib_decl void testJLogExporterPrintAttributes(StringBuffer & out, const std::unordered_map<std::string, opentelemetry::sdk::common::OwnedAttributeValue> & map, const char * attsContainerName);
+#endif
+*/
+
 
 //The following class is responsible for ensuring that the active span is restored in a context when the scope is exited
 //Use a template class so it can be reused for IContextLogger and IEspContext

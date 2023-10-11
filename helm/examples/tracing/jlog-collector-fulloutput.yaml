@@ -1,0 +1,10 @@
+global:
+  tracing:
+    exporter:
+      type: JLog
+      logSpanDetails: true
+      logParentInfo: true
+      logAttributes: true
+      logEvents: true
+      logLinks: true
+      logResources: true
