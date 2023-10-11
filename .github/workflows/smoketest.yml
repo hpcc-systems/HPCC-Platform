@@ -74,6 +74,11 @@ jobs:
       cache-state: ${{ steps.check-cache.outputs.state }}
 
     steps:
+
+    - name: Free additional disk space (remove Android SDK + Tools)
+      run: |
+        sudo rm -rf /usr/local/lib/android
+
     - name: Setup and git clone
       id: vars
       run: |
