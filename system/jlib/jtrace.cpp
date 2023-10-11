@@ -24,6 +24,7 @@
 #include "opentelemetry/sdk/trace/simple_processor_factory.h"
 #include "opentelemetry/sdk/trace/batch_span_processor_factory.h"
 #include "opentelemetry/exporters/ostream/span_exporter_factory.h"// auto exporter = opentelemetry::exporter::trace::OStreamSpanExporterFactory::Create();
+#include "opentelemetry/exporters/ostream/common_utils.h"
 //#define oldForEach ForEach // error: ‘ForEach’ was not declared in this scope
 #undef ForEach //opentelemetry defines ForEach
 #include "opentelemetry/exporters/memory/in_memory_span_exporter_factory.h"
@@ -107,6 +108,236 @@ public:
     }
 };
 
+/**
+ * Converts an OpenTelemetry span kind to its string representation.
+ * These are OTel span kinds defined in api/include/opentelemetry/trace/span.h,
+ * not HPCC JLib CSpan kinds
+ *
+ * @param spanKind The OpenTelemetry span kind to convert.
+ * @return The string representation of the OpenTelemetry span kind.
+ */
+const char * spanKindToString(opentelemetry::trace::SpanKind spanKind)
+{
+    switch (spanKind)
+    {
+        case opentelemetry::trace::SpanKind::kClient:
+            return "Client";
+        case opentelemetry::trace::SpanKind::kServer:
+            return "Server";
+        case opentelemetry::trace::SpanKind::kProducer:
+            return "Producer";
+        case opentelemetry::trace::SpanKind::kConsumer:
+            return "Consumer";
+        case opentelemetry::trace::SpanKind::kInternal:
+            return "Internal";
+        default:
+            return "Unknown";
+    }
+}
+
+class JLogSpanExporter final : public opentelemetry::sdk::trace::SpanExporter
+{
+public:
+    JLogSpanExporter() {}
+
+    /**
+    * @return Returns a unique pointer to an empty recordable object
+    */
+    std::unique_ptr<opentelemetry::sdk::trace::Recordable> MakeRecordable() noexcept override
+    {
+        return std::unique_ptr<opentelemetry::sdk::trace::Recordable>(new opentelemetry::sdk::trace::SpanData());
+    }
+
+    /**
+    * Export - Formats recordable spans in HPCC Jlog format and reports to JLog
+    *
+    * @param recordables
+    * @return Always returns success
+    */
+    opentelemetry::sdk::common::ExportResult Export(
+      const nostd::span<std::unique_ptr<opentelemetry::sdk::trace::Recordable>> &recordables) noexcept override
+    {
+        if (isShutDown())
+        {
+            ERRLOG("JLog Trace Exporter: Export failed, exporter is shutdown");
+            return opentelemetry::sdk::common::ExportResult::kFailure;
+        }
+
+        for (auto &recordable : recordables)
+        {
+            auto span = std::unique_ptr<opentelemetry::sdk::trace::SpanData>(
+             static_cast<opentelemetry::sdk::trace::SpanData *>(recordable.release()));
+
+            if (span != nullptr)
+            {
+                char trace_id[32]       = {0};
+                char span_id[16]        = {0};
+                char parent_span_id[16] = {0};
+
+                span->GetTraceId().ToLowerBase16(trace_id);
+                span->GetSpanId().ToLowerBase16(span_id);
+                span->GetParentSpanId().ToLowerBase16(parent_span_id);
+
+            sout << "{"
+            << " \"Name\": \"" << span->GetName() << "\","
+            << " \"TraceId\": \"" << std::string(trace_id, 32) << "\","
+            << " \"SpanId\": \"" << std::string(span_id, 16) << "\","
+            << " \"kind\": \"" << spanKindToString(span->GetSpanKind()) << "\","
+            << " \"ParentSpanId\": \"" << std::string(parent_span_id, 16) << "\","
+            << " \"Start\": " << span->GetStartTime().time_since_epoch().count() << ","
+            << " \"Duration\": " << span->GetDuration().count() << ","
+            << " \"Description\": \"" << span->GetDescription() << "\","
+            << " \"Status\": \"" << statusMap[int(span->GetStatus())] << "\","
+            << " \"TraceState\": \"" << span->GetSpanContext().trace_state()->ToHeader() << "\","
+            << " \"Attributes\": ";
+            printAttributes(span->GetAttributes());
+            sout << ",";
+            sout << " \"Events\": ";
+            printEvents(span->GetEvents());
+            sout << ",";
+            sout << " \"Links\": ";
+            printLinks(span->GetLinks());
+            sout << ",";
+            sout << " \"Resources\": ";
+            printResources(span->GetResource());
+            sout << ",";
+            sout << " \"InstrumentedLibrary\": \"";
+            printInstrumentationScope(span->GetInstrumentationScope());
+            sout << "\" }";
+            }
+            LOG(MCoperatorTrace, "TraceSpan '%s': %s", span->GetName().data() , sout.str().c_str());
+            sout.str("");
+            sout.clear();
+        }
+        return opentelemetry::sdk::common::ExportResult::kSuccess;
+    }
+
+   /**
+   * Shut down the exporter.
+   * @param timeout an optional timeout.
+   * @return return the status of the operation.
+   */
+    virtual bool Shutdown(
+      std::chrono::microseconds timeout = std::chrono::microseconds::max()) noexcept override
+    {
+        const std::lock_guard<opentelemetry::common::SpinLockMutex> locked(lock);
+        shutDown = true;
+        return true;
+    }
+
+private:
+    bool isShutDown() const noexcept
+    {
+        const std::lock_guard<opentelemetry::common::SpinLockMutex> locked(lock);
+        return shutDown;
+    }
+
+    void printAttributes(const std::unordered_map<std::string, opentelemetry::sdk::common::OwnedAttributeValue> &map)
+    {
+        sout << "{ ";
+        bool first = true;
+        for (const auto &kv : map)
+        {
+            if (!first)
+                sout << ",";
+            else
+                first = false;
+
+            sout << "\"" << kv.first << "\": \"";
+            opentelemetry::exporter::ostream_common::print_value(kv.second, sout);
+            sout << "\"";
+        }
+        sout << " }";
+    }
+
+    void printEvents(const std::vector<opentelemetry::sdk::trace::SpanDataEvent> &events)
+    {
+        sout << "{ ";
+        bool first = true;
+        for (const auto &event : events)
+        {
+            if (!first)
+                sout << ",";
+            else
+                first = false;
+
+            sout << "{ ";
+            sout << " \"Name\": " << event.GetName() << "\","
+                << " \"Timestamp\": " << event.GetTimestamp().time_since_epoch().count() << "\","
+                << " \"Attributes\": ";
+            printAttributes(event.GetAttributes());
+            sout << " }";
+        }
+
+        sout << " }";
+    }
+
+    void printLinks(const std::vector<opentelemetry::sdk::trace::SpanDataLink> &links)
+    {
+        bool first = true;
+
+        sout << "{ ";
+        for (const auto &link : links)
+        {
+            if (!first)
+                sout << ",";
+            else
+                first = false;
+
+            char trace_id[32] = {0};
+            char span_id[16]  = {0};
+            link.GetSpanContext().trace_id().ToLowerBase16(trace_id);
+            link.GetSpanContext().span_id().ToLowerBase16(span_id);
+            sout << " {"
+                << " \"TraceId\": \"" << std::string(trace_id, 32) << "\","
+                << " \"SpanId\": \"" << std::string(span_id, 16) << "\","
+                << " \"TraceState\": \"" << link.GetSpanContext().trace_state()->ToHeader() << "\","
+                << " \"Attributes\": ";
+            printAttributes(link.GetAttributes());
+            sout << " }";
+        }
+        sout << " }";
+    }
+
+    void printResources(const opentelemetry::sdk::resource::Resource &resources)
+    {
+        auto attributes = resources.GetAttributes();
+        if (attributes.size())
+            printAttributes(attributes);
+    }
+
+    void printInstrumentationScope(
+        const opentelemetry::sdk::instrumentationscope::InstrumentationScope &instrumentation_scope)
+    {
+        auto version = instrumentation_scope.GetVersion();
+        if (version.size())
+        {
+            sout << " \"" << instrumentation_scope.GetName() << "\": ";
+            sout << version;
+        }
+    }
+
+    bool shutDown = false;
+    std::ostringstream sout;
+    mutable opentelemetry::common::SpinLockMutex lock;
+
+    // Mapping status number to the string from api/include/opentelemetry/trace/canonical_code.h
+    std::map<int, std::string> statusMap{{0, "Unset"}, {1, "Ok"}, {2, "Error"}};
+};
+
+class JLogSpanExporterFactory
+{
+public:
+    /**
+    * Create a NoopSpanExporter.
+    */
+    static std::unique_ptr<opentelemetry::sdk::trace::SpanExporter> Create()
+    {
+        return std::unique_ptr<opentelemetry::sdk::trace::SpanExporter>(
+            new JLogSpanExporter());
+    }
+};
+
 class CHPCCHttpTextMapCarrier : public opentelemetry::context::propagation::TextMapCarrier
 {
 public:
@@ -163,7 +394,7 @@ public:
     {
         StringBuffer out;
         toLog(out);
-        DBGLOG("Span end: {%s}", out.str());
+        //DBGLOG("Span end: {%s}", out.str());
     }
 
     const char * getSpanID() const
@@ -449,7 +680,7 @@ protected:
 
             StringBuffer out;
             toLog(out);
-            DBGLOG("Span start: {%s}", out.str());
+            //DBGLOG("Span start: {%s}", out.str());
         }
 
     }
@@ -655,6 +886,14 @@ private:
         return success;
     }
 
+    void setContextAttributes()
+    {
+        if (!isEmptyString(hpccGlobalId))
+            setSpanAttribute(kGlobalIdHttpHeaderName, hpccGlobalId.get());
+
+        if (!isEmptyString(hpccCallerId))
+            setSpanAttribute(kCallerIdHttpHeaderName, hpccCallerId.get());
+    }
 public:
     CServerSpan(const char * spanName, const char * tracerName_, const IProperties * httpHeaders, SpanFlags flags)
     : CSpan(spanName, tracerName_)
@@ -662,6 +901,7 @@ public:
         opts.kind = opentelemetry::trace::SpanKind::kServer;
         setSpanContext(httpHeaders, flags);
         init();
+        setContextAttributes();
     }
 
     void toLog(StringBuffer & out) const override
@@ -719,7 +959,8 @@ private:
     //Also, a SimpleSpanProcessor is used in the absence of a configuration directive to process spans in batches
     void initTracerProviderAndGlobalInternals(const IPropertyTree * traceConfig)
     {
-        std::unique_ptr<opentelemetry::sdk::trace::SpanExporter> exporter = NoopSpanExporterFactory::Create();
+        //std::unique_ptr<opentelemetry::sdk::trace::SpanExporter> exporter = NoopSpanExporterFactory::Create();
+        std::unique_ptr<opentelemetry::sdk::trace::SpanExporter> exporter = JLogSpanExporterFactory::Create();
 
         //Administrators can choose to export trace data to a different backend by specifying the exporter type
         if (traceConfig && traceConfig->hasProp("exporter"))
@@ -770,7 +1011,8 @@ private:
         }
 
         //Administrator can choose to process spans in batches or one at a time
-        std::unique_ptr<opentelemetry::v1::sdk::trace::SpanProcessor> processor;
+        //Default: SimpleSpanProcesser sends spans one by one to an exporter.
+        std::unique_ptr<opentelemetry::v1::sdk::trace::SpanProcessor> processor = opentelemetry::sdk::trace::SimpleSpanProcessorFactory::Create(std::move(exporter));;
         if (traceConfig && traceConfig->hasProp("processor/@type"))
         {
             StringBuffer processorType;
@@ -789,11 +1031,13 @@ private:
                 processor = opentelemetry::sdk::trace::BatchSpanProcessorFactory::Create(std::move(exporter), options);
                 DBGLOG("OpenTel tracing using batch Span Processor");
             }
+            else if (foundProcessorType &&  strcmp("simple", processorType.str())==0)
+            {
+                DBGLOG("OpenTel tracing using batch simple Processor");
+            }
             else
             {
-                //SimpleSpanProcesser sends spans one by one to an exporter.
-                processor = opentelemetry::sdk::trace::SimpleSpanProcessorFactory::Create(std::move(exporter));
-                DBGLOG("OpenTel tracing using Simple Span Processor");
+                DBGLOG("OpenTel tracing detected invalid processor type: '%s'", processorType.str());
             }
         }
 

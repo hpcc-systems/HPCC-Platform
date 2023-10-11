@@ -836,6 +836,7 @@ constexpr LogMsgCategory MCdebugInfo(MSGAUD_programmer, MSGCLS_information, Debu
 constexpr LogMsgCategory MCauditInfo(MSGAUD_audit, MSGCLS_information, AudMsgThreshold);
 constexpr LogMsgCategory MCoperatorInfo(MSGAUD_operator, MSGCLS_information, InfoMsgThreshold);
 constexpr LogMsgCategory MCoperatorMetric(MSGAUD_operator, MSGCLS_metric, ErrMsgThreshold);
+constexpr LogMsgCategory MCoperatorTrace(MSGAUD_monitor, MSGCLS_event, ProgressMsgThreshold);
 
 /*
  * Function to determine log level (detail) for exceptions, based on log message class
