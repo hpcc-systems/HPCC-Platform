@@ -2218,7 +2218,7 @@ public:
         if (tail)
         {
             tail->next = newEntry;
-            for (DelayedPacketEntry *finger = tail; finger != nullptr; finger = finger->prev)
+            for (DelayedPacketEntry *finger = tail; finger != nullptr;)
             {
                 if ((int) (finger->waitExpires - expires) <= 0)
                     break;
