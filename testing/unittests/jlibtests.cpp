@@ -47,6 +47,9 @@ public:
         //CPPUNIT_TEST(testTraceDisableConfig);
         CPPUNIT_TEST(testStringArrayPropegatedServerSpan);
         CPPUNIT_TEST(testDisabledTracePropegatedValues);
+        CPPUNIT_TEST(testDisabledTraceToStringFormat);
+        CPPUNIT_TEST(testDisabledTraceNOPropegatedValues);
+        CPPUNIT_TEST(testMultiNestedPassthroughSpanTraceOutput);
         CPPUNIT_TEST(testIDPropegation);
         CPPUNIT_TEST(testTraceConfig);
         CPPUNIT_TEST(testRootServerSpan);
@@ -317,13 +320,6 @@ protected:
 
     void testInvalidPropegatedServerSpan()
     {
-        if (!queryTraceManager().isTracingEnabled())
-        {
-            //CPPUNIT_SKIP_MESSAGE("Skipping testIDPropegation, tracing is enabled");
-            DBGLOG("Skipping testInvalidPropegatedServerSpan, tracing is not enabled");
-            return;
-        }
-
         Owned<IProperties> mockHTTPHeaders = createProperties();
         createMockHTTPHeaders(mockHTTPHeaders, false);
         Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("invalidPropegatedServerSpan", mockHTTPHeaders);
@@ -340,10 +336,10 @@ protected:
     {
         //only interested in propegated values, no local trace/span
         //usefull if tracemanager.istraceenabled() is false
-        if (!queryTraceManager().isTracingEnabled())
+        if (queryTraceManager().isTracingEnabled())
         {
             //CPPUNIT_SKIP_MESSAGE("Skipping testIDPropegation, tracing is enabled");
-            DBGLOG("Skipping testStringArrayPropegatedServerSpan, tracing is not enabled");
+            DBGLOG("Skipping testDisabledTracePropegatedValues, tracing is enabled");
             return;
         }
 
@@ -351,11 +347,12 @@ protected:
         createMockHTTPHeaders(mockHTTPHeaders, true);
 
         Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("propegatedServerSpan", mockHTTPHeaders);
-        //at this point the serverSpan should have the following context attributes
-        //remoteParentSpanID, globalID, callerID
+        //at this point the nootel serverSpan should have the following context attributes
+        //traceState, globalID, callerID, localID, "traceparent", "tracestate"
 
+        //retrieve serverSpan context with the intent to interrogate pass through attributes
         Owned<IProperties> retrievedSpanCtxAttributes = createProperties();
-        bool getSpanCtxSuccess = serverSpan->getSpanContext(retrievedSpanCtxAttributes.get(), false);
+        bool getSpanCtxSuccess = serverSpan->getSpanContext(retrievedSpanCtxAttributes.get(), false); //false/true shouldn't matter
 
         CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected getSpanContext failure detected", true, getSpanCtxSuccess);
 
@@ -364,8 +361,137 @@ protected:
         CPPUNIT_ASSERT_MESSAGE("Unexpected CallerID detected",
             strsame("IncomingCID", retrievedSpanCtxAttributes->queryProp(kCallerIdHttpHeaderName)));
 
-        CPPUNIT_ASSERT_MESSAGE("Unexpected Declared Parent SpanID detected",
-            strsame("4b960b3e4647da3f", retrievedSpanCtxAttributes->queryProp("remoteParentSpanID")));
+        CPPUNIT_ASSERT_MESSAGE("Unexpected propogated OTel parenttrace detected",
+            strsame("00-beca49ca8f3138a2842e5cf21402bfff-4b960b3e4647da3f-01", retrievedSpanCtxAttributes->queryProp("traceparent")));
+
+        CPPUNIT_ASSERT_MESSAGE("Unexpected propogated OTel tracestate detected",
+            strsame("hpcc=4b960b3e4647da3f", retrievedSpanCtxAttributes->queryProp("tracestate")));
+    }
+
+    void testDisabledTraceNOPropegatedValues()
+    {
+        if (queryTraceManager().isTracingEnabled())
+        {
+            //CPPUNIT_SKIP_MESSAGE("Skipping testDisabledTraceNOPropegatedValues, tracing is enabled");
+            DBGLOG("Skipping testDisabledTraceNOPropegatedValues, tracing is enabled");
+            return;
+        }
+
+        Owned<IProperties> mockHTTPHeaders = createProperties();
+
+        Owned<ISpan> passthrough = queryTraceManager().createServerSpan("propegatedServerSpan", mockHTTPHeaders);
+
+        Owned<IProperties> retrievedSpanCtxAttributes = createProperties();
+        bool getSpanCtxSuccess = passthrough->getSpanContext(retrievedSpanCtxAttributes.get(), false); //false/true shouldn't matter
+
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected getSpanContext failure detected", true, getSpanCtxSuccess);
+        StringBuffer str;
+        passthrough->toString(str);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected noneempty tostring detected", true, isEmptyString(str.str()));
+    }
+
+    void testMultiNestedPassthroughSpanTraceOutput()
+    {
+        if (queryTraceManager().isTracingEnabled())
+        {
+            //CPPUNIT_SKIP_MESSAGE("Skipping testIDPropegation, tracing is enabled");
+            DBGLOG("Skipping testMultiNestedPassthroughSpanTraceOutput, tracing is not disabled");
+            return;
+        }
+
+        Owned<IProperties> mockHTTPHeaders = createProperties();
+        createMockHTTPHeaders(mockHTTPHeaders, true);
+
+        Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("propegatedServerSpan", mockHTTPHeaders);
+        Owned<ISpan> clientSpan = serverSpan->createClientSpan("clientSpan");
+        Owned<ISpan> internalSpan = clientSpan->createInternalSpan("internalSpan");
+        Owned<ISpan> internalSpan2 = internalSpan->createInternalSpan("internalSpan2");
+
+        StringBuffer out;
+        out.set("{");
+        internalSpan2->toString(out);
+        out.append("}");
+        {
+            Owned<IPropertyTree> jtraceAsTree;
+            try
+            {
+                jtraceAsTree.setown(createPTreeFromJSONString(out.str()));
+            }
+            catch (IException *e)
+            {
+                StringBuffer msg;
+                msg.append("Unexpected toLog format failure detected: ");
+                e->errorMessage(msg);
+                e->Release();
+                CPPUNIT_ASSERT_MESSAGE(msg.str(), false);
+            }
+
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected toLog format failure detected", true, jtraceAsTree != nullptr);
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing 'Type' entry in toLog output", true, jtraceAsTree->hasProp("Type"));
+        }
+
+        out.set("{");
+        internalSpan2->toString(out);
+        out.append("}");
+        {
+            Owned<IPropertyTree> jtraceAsTree;
+            try
+            {
+                jtraceAsTree.setown(createPTreeFromJSONString(out.str()));
+            }
+            catch (IException *e)
+            {
+                StringBuffer msg;
+                msg.append("Unexpected toString format failure detected: ");
+                e->errorMessage(msg);
+                e->Release();
+                CPPUNIT_ASSERT_MESSAGE(msg.str(), false);
+            }
+
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected toString format failure detected", true, jtraceAsTree != nullptr);
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing 'Type' entry in toString output", true, jtraceAsTree->hasProp("Type"));
+        }
+    }
+
+    void testDisabledTraceToStringFormat()
+    {
+        //only interested in propegated values, no local trace/span
+        //usefull if tracemanager.istraceenabled() is false
+        if (queryTraceManager().isTracingEnabled())
+        {
+            //CPPUNIT_SKIP_MESSAGE("Skipping testDisabledTraceToStringFormat, tracing is enabled");
+            DBGLOG("Skipping testDisabledTraceToStringFormat, tracing is enabled");
+            return;
+        }
+
+        Owned<IProperties> mockHTTPHeaders = createProperties();
+        createMockHTTPHeaders(mockHTTPHeaders, true);
+
+        Owned<ISpan> passThroughSpan = queryTraceManager().createServerSpan("propegatedServerSpan", mockHTTPHeaders);
+
+        StringBuffer passThroughSpanStr;
+        passThroughSpan->toString(passThroughSpanStr);
+
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected passthroughspan empty toString", false, isEmptyString(passThroughSpanStr.str()));
+
+        StringBuffer passThroughSpanJSONStr;
+        passThroughSpanJSONStr.setf("{%s}", passThroughSpanStr.str());
+        {
+            DBGLOG("PassthrughSpan JSON: %s", passThroughSpanJSONStr.str());
+            Owned<IPropertyTree> jtraceAsTree;
+            try
+            {
+                jtraceAsTree.setown(createPTreeFromJSONString(passThroughSpanJSONStr.str()));
+            }
+            catch (IException *e)
+            {
+                StringBuffer msg;
+                msg.append("Unexpected toString format failure detected: ");
+                e->errorMessage(msg);
+                e->Release();
+                CPPUNIT_ASSERT_MESSAGE(msg.str(), false);
+            }
+        }
     }
 
     void testMultiNestedSpanTraceOutput()

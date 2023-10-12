@@ -535,38 +535,128 @@ protected:
     CSpan * localParentSpan = nullptr;
 };
 
-static Owned<ISpan> noopSpan;
-class CNoopSpan : public CInterfaceOf<ISpan>
+class CPassThroughSpan : public CInterfaceOf<ISpan> //extend CSpan and override methods to do nothing?
 {
 public:
     virtual void setSpanAttribute(const char * key, const char * val) override {};
     virtual void setSpanAttributes(const IProperties * attributes) override {};
     virtual void addSpanEvent(const char * eventName) override {};
-    virtual bool getSpanContext(IProperties * ctxProps, bool otelFormatted) const override { return false; };
 
-    virtual void toString(StringBuffer & out) const override {};
-    virtual void toLog(StringBuffer & out) const override {};
-    virtual void getLogPrefix(StringBuffer & out) const override {};
-
-    virtual const char* queryGlobalId() const override { return nullptr; };
-    virtual const char* queryCallerId() const override { return nullptr; };
-    virtual const char* queryLocalId() const override { return nullptr; };
-
-    virtual ISpan * createClientSpan(const char * name) override { return getInstance(); };
-    virtual ISpan * createInternalSpan(const char * name) override { return getInstance(); };
-
-    static ISpan * getInstance()
+    void setSpanContext(const IProperties * httpHeaders, SpanFlags flags)
     {
-        if(!noopSpan.get())
-            noopSpan.setown(new CNoopSpan());
+        if (httpHeaders)
+        {
+            if (httpHeaders->hasProp(kGlobalIdHttpHeaderName))
+                hpccGlobalId.set(httpHeaders->queryProp(kGlobalIdHttpHeaderName));
+            else if (httpHeaders->hasProp(kLegacyGlobalIdHttpHeaderName))
+                hpccGlobalId.set(httpHeaders->queryProp(kLegacyGlobalIdHttpHeaderName));
+            else if (hasMask(flags, SpanFlags::EnsureGlobalId) || queryTraceManager().alwaysCreateGlobalIds())
+            {
+                StringBuffer generatedId;
+                appendGloballyUniqueId(generatedId);
+                hpccGlobalId.set(generatedId.str());
+            }
 
-        return noopSpan.getLink();
+            if (httpHeaders->hasProp(kCallerIdHttpHeaderName))
+                hpccCallerId.set(httpHeaders->queryProp(kCallerIdHttpHeaderName));
+            else if (httpHeaders->hasProp(kLegacyCallerIdHttpHeaderName))
+                hpccCallerId.set(httpHeaders->queryProp(kLegacyCallerIdHttpHeaderName));
+
+            if (httpHeaders->hasProp(opentelemetry::trace::propagation::kTraceParent.data()))
+            {
+                otelParent.set(httpHeaders->queryProp(opentelemetry::trace::propagation::kTraceParent.data()));
+            }
+
+            if (httpHeaders->hasProp(opentelemetry::trace::propagation::kTraceState.data()))
+            {
+                otelState.set(httpHeaders->queryProp(opentelemetry::trace::propagation::kTraceState.data()));
+            }
+        }
     }
 
+    virtual bool getSpanContext(IProperties * ctxProps, bool otelFormatted) const override
+    {
+        if (ctxProps == nullptr)
+            return false;
+
+        ctxProps->setNonEmptyProp(kGlobalIdHttpHeaderName, queryGlobalId());
+        ctxProps->setNonEmptyProp(kCallerIdHttpHeaderName, queryCallerId());
+        ctxProps->setNonEmptyProp(opentelemetry::trace::propagation::kTraceParent.data(), otelParent.get());
+        ctxProps->setNonEmptyProp(opentelemetry::trace::propagation::kTraceState.data(), otelState.get());
+
+        return true;
+    };
+
+    virtual void toString(StringBuffer & out) const override
+    {
+        Owned<IProperties> retrievedSpanCtxAttributes = createProperties();
+        bool getSpanCtxSuccess = getSpanContext(retrievedSpanCtxAttributes.get(), true);
+
+        if (!getSpanCtxSuccess)
+            return;
+        {
+            Owned<IPropertyIterator> it = retrievedSpanCtxAttributes->getIterator();
+            for (it->first(); it->isValid(); it->next())
+            {
+                out.appendf("\"%s\":\"%s\",", it->getPropKey(), it->queryPropValue());
+            }
+        }
+        if (!isEmptyString(out.str()))
+            out.append("\"Type\":\"PassThrough\"");
+        //passthrough spans are nameless?
+        //out.append(",\"Name\":\"").append(name.get()).append("\"");
+    }
+
+    //this span will not be logged by any exporter!
+    virtual void toLog(StringBuffer & out) const override 
+    {
+        toString(out);
+    }
+
+    virtual void getLogPrefix(StringBuffer & out) const override {}
+
+    virtual const char* queryGlobalId() const override { return hpccGlobalId.get(); }
+    virtual const char* queryCallerId() const override { return hpccCallerId.get(); }
+    virtual const char* queryLocalId() const override { return hpccLocalId.get(); }
+
+    virtual ISpan * createClientSpan(const char * name) override { return getPassthrough(); }
+    virtual ISpan * createInternalSpan(const char * name) override { return getPassthrough(); }
+
+    ISpan * getPassthrough()
+    {
+        return LINK(this);
+    }
+
+    CPassThroughSpan(const IProperties * httpHeaders, SpanFlags flags = SpanFlags::None)
+    {
+        setSpanContext(httpHeaders, flags);
+        bool createLocalId = !isEmptyString(hpccGlobalId);
+        if (createLocalId)
+            hpccLocalId.set(ln_uid::createUniqueIdString().c_str());
+    }
+
+    virtual void beforeDispose() override
+    {
+        StringBuffer out;
+        toLog(out);
+        if (isEmptyString(out.str())) //if no passthrough attributes, no need to log anything
+            return;
+
+        //MCoperatorTrace not yet available
+        //LOG(MCoperatorTrace, "TraceSpan: %s", out.str());
+        DBGLOG("TraceSpan: {%s}", out.str());
+    }
 private:
-    CNoopSpan() = default;
-    CNoopSpan(const CNoopSpan&) = delete;
-    CNoopSpan& operator=(const CNoopSpan&) = delete;
+    //Why not a ptree instead of all these StringAttrs? or extend CSpan and override methods to do nothing?
+    StringAttr hpccGlobalId;
+    StringAttr hpccCallerId;
+    StringAttr hpccLocalId;
+    StringAttr otelParent;
+    StringAttr otelState;
+
+    CPassThroughSpan() = default;
+    CPassThroughSpan(const CPassThroughSpan&) = delete;
+    CPassThroughSpan& operator=(const CPassThroughSpan&) = delete;
 };
 
 class CInternalSpan : public CSpan
@@ -885,7 +975,7 @@ private:
             DBGLOG("traceConfig tree: %s", xml.str());
 #endif
             bool disableTracing = traceConfig && traceConfig->getPropBool("@disable", false);
-
+disableTracing = true;
             using namespace opentelemetry::trace;
             if (disableTracing)
             {
@@ -952,13 +1042,14 @@ public:
 
     ISpan * createServerSpan(const char * name, StringArray & httpHeaders, SpanFlags flags) override
     {
+        Owned<IProperties> headerProperties = getHeadersAsProperties(httpHeaders);
         if (isTracingEnabled())
         {
-            Owned<IProperties> headerProperties = getHeadersAsProperties(httpHeaders);
             return new CServerSpan(name, moduleName.get(), headerProperties, flags);
         }
         else
-            return CNoopSpan::getInstance();
+            return new CPassThroughSpan(headerProperties, flags);
+            //return CNoOTelSpan::getInstance();
     }
 
     ISpan * createServerSpan(const char * name, const IProperties * httpHeaders, SpanFlags flags) override
@@ -966,7 +1057,8 @@ public:
         if (isTracingEnabled())
             return new CServerSpan(name, moduleName.get(), httpHeaders, flags);
         else
-            return CNoopSpan::getInstance();
+            return new CPassThroughSpan(httpHeaders, flags);
+            //return CNoOTelSpan::getInstance();
     }
 
     const char * getTracedComponentName() const override
