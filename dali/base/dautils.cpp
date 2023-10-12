@@ -3612,8 +3612,10 @@ void addStripeDirectory(StringBuffer &out, const char *directory, const char *pl
     }
 }
 
+static CConfigUpdateHook directIOUpdateHook;
 static CriticalSection dafileSrvNodeCS;
 static Owned<INode> dafileSrvNode;
+
 void remapGroupsToDafilesrv(IPropertyTree *file, INamedGroupStore *resolver)
 {
     FileDescriptorFlags fileFlags = static_cast<FileDescriptorFlags>(file->getPropInt("Attr/@flags"));
@@ -3625,15 +3627,14 @@ void remapGroupsToDafilesrv(IPropertyTree *file, INamedGroupStore *resolver)
         Owned<IStoragePlane> plane = getDataStoragePlane(planeName, true);
         if ((0 == plane->queryHosts().size()) && isAbsolutePath(plane->queryPrefix())) // if hosts group, or url, don't touch
         {
+            auto updateFunc = [&](const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
             {
                 CriticalBlock b(dafileSrvNodeCS);
-                if (nullptr == dafileSrvNode)
-                {
-                    auto externalService = k8s::getDafileServiceFromConfig("directio");
-                    VStringBuffer dafilesrvEpStr("%s:%u", externalService.first.c_str(), externalService.second);
-                    dafileSrvNode.setown(createINode(dafilesrvEpStr));
-                }
-            }
+                auto externalService = k8s::getDafileServiceFromConfig("directio");
+                VStringBuffer dafilesrvEpStr("%s:%u", externalService.first.c_str(), externalService.second);
+                dafileSrvNode.setown(createINode(dafilesrvEpStr));
+            };
+            directIOUpdateHook.installOnce(updateFunc, true);
 
             Owned<IGroup> group;
             if (cluster.hasProp("Group"))
@@ -3646,9 +3647,15 @@ void remapGroupsToDafilesrv(IPropertyTree *file, INamedGroupStore *resolver)
                 group.setown(resolver->lookup(planeName, defaultDir, groupType));
             }
 
+            Linked<INode> dafileSrvNodeCopy;
+            {
+                // in case config hook above changes dafileSrvNode
+                CriticalBlock b(dafileSrvNodeCS);
+                dafileSrvNodeCopy.set(dafileSrvNode);
+            }
             std::vector<INode *> nodes;
             for (unsigned n=0; n<group->ordinality(); n++)
-                nodes.push_back(dafileSrvNode);
+                nodes.push_back(dafileSrvNodeCopy);
             Owned<IGroup> newGroup = createIGroup((rank_t)group->ordinality(), &nodes[0]);
             StringBuffer groupText;
             newGroup->getText(groupText);

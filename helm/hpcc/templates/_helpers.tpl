@@ -1141,6 +1141,16 @@ Generate service entries for TLS
 {{- end }}
 
 {{/*
+Conditionally generate annotated k8s hostname
+*/}}
+{{- define "hpcc.outputHostname" -}}
+{{- $annotations := .annotations | default dict -}}
+{{- if hasKey $annotations "external-dns.alpha.kubernetes.io/hostname" -}}
+hostname: {{ index $annotations "external-dns.alpha.kubernetes.io/hostname" }}
+{{- end -}}
+{{- end -}}
+
+{{/*
 Generate list of available services
 */}}
 {{- define "hpcc.generateConfigMapServices" -}}
@@ -1209,6 +1219,7 @@ Generate list of available services
   port: {{ .service.servicePort | default 7600 }}
   public: {{ (ne ( include "hpcc.isVisibilityPublic" (dict "root" $ "visibility" .service.visibility))  "") | ternary "true" "false" }}
   {{- include "hpcc.addTLSServiceEntries" (dict "root" $ "service" $dafilesrv.service "component" $dafilesrv "visibility" $dafilesrv.service.visibility) }}
+  {{- include "hpcc.outputHostname" .service | nindent 2 }}
  {{ end -}}
 {{ end -}}
 {{- end -}}

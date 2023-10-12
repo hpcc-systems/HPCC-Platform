@@ -11,18 +11,19 @@ import { DojoAdapter } from "../layouts/DojoAdapter";
 import { pivotItemStyle } from "../layouts/pivot";
 import { pushUrl } from "../util/history";
 import { WorkunitPersona } from "./controls/StateIcon";
-import { Results } from "./Results";
-import { Variables } from "./Variables";
-import { SourceFiles } from "./SourceFiles";
 import { Helpers } from "./Helpers";
+import { IFrame } from "./IFrame";
+import { Logs } from "./Logs";
+import { Metrics } from "./Metrics";
 import { Queries } from "./Queries";
 import { Resources } from "./Resources";
-import { FetchEditor, WUXMLSourceEditor } from "./SourceEditor";
-import { Workflows } from "./Workflows";
-import { Metrics } from "./Metrics";
-import { WorkunitSummary } from "./WorkunitSummary";
 import { Result } from "./Result";
-import { Logs } from "./Logs";
+import { Results } from "./Results";
+import { FetchEditor, WUXMLSourceEditor } from "./SourceEditor";
+import { SourceFiles } from "./SourceFiles";
+import { Variables } from "./Variables";
+import { Workflows } from "./Workflows";
+import { WorkunitSummary } from "./WorkunitSummary";
 
 const logger = scopedLogger("src-react/components/WorkunitDetails.tsx");
 
@@ -84,7 +85,9 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
             </PivotItem>
             <PivotItem headerText={nlsHPCC.Outputs} itemKey="outputs" itemCount={workunit?.ResultCount} style={pivotItemStyle(size, 0)}>
                 {state ?
-                    <Result wuid={wuid} resultName={state} filter={queryParams} /> :
+                    queryParams.hasOwnProperty("__legacy") ? <IFrame src={`/WsWorkunits/WUResult?Wuid=${wuid}&ResultName=${state}`} height="99%" /> :
+                        queryParams.hasOwnProperty("__visualize") ? <DojoAdapter widgetClassID="VizWidget" params={{ Wuid: wuid, Sequence: state }} /> :
+                            <Result wuid={wuid} resultName={state} filter={queryParams} /> :
                     <Results wuid={wuid} />
                 }
             </PivotItem>
