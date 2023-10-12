@@ -691,10 +691,11 @@ public:
         while (!_partNo && !thisPart && ++thisPartIdx < maxParts) // MORE
         {
             thisPart.setown(f->getFilePart(thisPartIdx, thisFileStartPos));
-            if (thisPart && _startPos >= thisPart->size())
+            offset_t thisPartSize = f->partSize(thisPartIdx);
+            if (thisPart && _startPos >= thisPartSize)
             {
-                _startPos -= thisPart->size();
-                completedStreamsSize += thisPart->size();
+                _startPos -= thisPartSize;
+                completedStreamsSize += thisPartSize;
                 thisPart.clear();
             }
         }
