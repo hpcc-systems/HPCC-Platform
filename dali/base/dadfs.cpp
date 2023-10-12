@@ -5873,6 +5873,13 @@ public:
                 const char *ecl = file.queryAttributes().queryProp("ECL");
                 if (!isEmptyString(ecl))
                     addPropIfCommon(*at, "ECL", ecl);
+                IPropertyTree *_remoteStoragePlane = file.queryAttributes().queryPropTree("_remoteStoragePlane");
+                if (_remoteStoragePlane)
+                {
+                    // NB: CDistributedSuperFile sub-files in different environments are not permitted
+                    if (!at->hasProp("_remoteStoragePlane"))
+                       at->setPropTree("_remoteStoragePlane", LINK(_remoteStoragePlane));
+                }
             }
             unsigned np = file.numParts();
             if (0 == width)
