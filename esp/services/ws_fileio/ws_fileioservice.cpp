@@ -97,6 +97,7 @@ bool CWsFileIOEx::onReadFileData(IEspContext &context, IEspReadFileDataRequest &
         return true;
     }
 
+    //Despite the "DestRelativePath" saying it's relative for legacy reason, it also supports absolute paths.
     const char* destRelativePath = req.getDestRelativePath();
     if (!destRelativePath || (destRelativePath[0] == 0))
     {

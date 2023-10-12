@@ -256,6 +256,16 @@ extern TPWRAPPER_API void validateDropZoneAccess(IEspContext& context, const cha
         if (!isHostInPlane(dropZone, hostReq, true))
             throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Host %s is not valid DropZone plane %s", hostReq, targetDZNameOrHost);
     }
+
+    //If the dropZonePath is an absolute path, change it to a relative path.
+    if (isAbsolutePath(fileNameWithRelPath))
+    {
+        const char* relativePath = getRelativePath(fileNameWithRelPath, dropZone->queryProp("@prefix"));
+        if (nullptr == relativePath)
+            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Invalid DropZone path %s.", fileNameWithRelPath);
+        fileNameWithRelPath = relativePath;
+    }
+
     const char *dropZoneName = dropZone->queryProp("@name");
     SecAccessFlags permission = getDZFileScopePermissions(context, dropZoneName, fileNameWithRelPath, hostReq);
     if (permission < permissionReq)
