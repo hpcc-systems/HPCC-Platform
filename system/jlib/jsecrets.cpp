@@ -214,7 +214,8 @@ static void splitUrlSections(const char *url, const char * &authority, size_t &a
     else
     {
         authorityLen = path-url;
-        fullpath.append(path);
+        if (!streq(path, "/")) // treat empty trailing path as equal to no path
+            fullpath.append(path);
     }
 }
 

@@ -379,12 +379,22 @@ std::pair<std::string, unsigned> getDafileServiceFromConfig(const char *applicat
         throw makeStringExceptionV(JLIBERR_K8sServiceError, "dafilesrv service '%s' has no public service defined", application);
     StringBuffer dafilesrvName;
     dafilesrv.getProp("@name", dafilesrvName);
-    auto externalService = getExternalService(dafilesrvName);
-    if (externalService.first.empty())
-        throw makeStringExceptionV(JLIBERR_K8sServiceError, "dafilesrv service '%s' - external service '%s' not found", application, dafilesrvName.str());
-    if (0 == externalService.second)
-        throw makeStringExceptionV(JLIBERR_K8sServiceError, "dafilesrv service '%s' - external service '%s' port not defined", application, dafilesrvName.str());
-    return externalService;
+    unsigned port = (unsigned)dafilesrv.getPropInt("@port");
+
+    StringBuffer hostname;
+    dafilesrv.getProp("@hostname", hostname);
+    if (hostname.length())
+        return { hostname.str(), port };
+    else
+    {
+        auto externalService = getExternalService(dafilesrvName);
+        if (externalService.first.empty())
+            throw makeStringExceptionV(JLIBERR_K8sServiceError, "dafilesrv service '%s' - external service '%s' not found", application, dafilesrvName.str());
+        if (0 == externalService.second)
+            throw makeStringExceptionV(JLIBERR_K8sServiceError, "dafilesrv service '%s' - external service '%s' port not defined", application, dafilesrvName.str());
+        assertex(port == externalService.second);
+        return externalService;
+    }
 }
 
 
