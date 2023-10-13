@@ -1102,6 +1102,10 @@
         "alwaysCreateGlobalIds": {
           "type": "boolean",
           "description": "If true, allocate global ids to any requests that do not supply one"
+        },
+        "disabled": {
+          "type": "boolean",
+          "description": "If true, disable OTel based trace/span generation"
         }
       },
       "additionalProperties": { "type": ["integer", "string", "boolean"] }

@@ -25,6 +25,10 @@ global:
   logging:
     detail: 80
 
+  # tracing sets the default tracing information for all components. Can be overridden locally
+  tracing:
+    disabled: false
+
   ## resource settings for stub components
   #stubInstanceResources:
   #  memory: "200Mi"
