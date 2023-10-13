@@ -132,13 +132,18 @@ enum ParquetArrayType
     BoolType,
     IntType,
     UIntType,
-    FloatType,
+    DateType,
+    TimestampType,
+    TimeType,
+    DurationType,
     StringType,
+    LargeStringType,
     BinaryType,
-    Decimal128Type,
+    LargeBinaryType,
+    DecimalType,
     ListType,
     StructType,
-    DoubleType
+    RealType
 };
 
 class ParquetArrayVisitor : public arrow::ArrayVisitor
@@ -211,22 +216,77 @@ public:
         size = 64;
         return arrow::Status::OK();
     }
+    arrow::Status Visit(const arrow::Date32Array &array)
+    {
+        date32_arr = &array;
+        type = DateType;
+        size = 32;
+        return arrow::Status::OK();
+    }
+    arrow::Status Visit(const arrow::Date64Array &array)
+    {
+        date64_arr = &array;
+        type = DateType;
+        size = 64;
+        return arrow::Status::OK();
+    }
+    arrow::Status Visit(const arrow::TimestampArray &array)
+    {
+        timestamp_arr = &array;
+        type = TimestampType;
+        return arrow::Status::OK();
+    }
+    arrow::Status Visit(const arrow::Time32Array &array)
+    {
+        time32_arr = &array;
+        type = TimeType;
+        size = 32;
+        return arrow::Status::OK();
+    }
+    arrow::Status Visit(const arrow::Time64Array &array)
+    {
+        time64_arr = &array;
+        type = TimeType;
+        size = 64;
+        return arrow::Status::OK();
+    }
+    arrow::Status Visit(const arrow::DurationArray &array)
+    {
+        duration_arr = &array;
+        type = DurationType;
+        return arrow::Status::OK();
+    }
+    arrow::Status Visit(const arrow::HalfFloatArray &array)
+    {
+        half_float_arr = &array;
+        type = RealType;
+        size = 2;
+        return arrow::Status::OK();
+    }
     arrow::Status Visit(const arrow::FloatArray &array)
     {
         float_arr = &array;
-        type = FloatType;
+        type = RealType;
+        size = 4;
         return arrow::Status::OK();
     }
     arrow::Status Visit(const arrow::DoubleArray &array)
     {
         double_arr = &array;
-        type = DoubleType;
+        type = RealType;
+        size = 8;
         return arrow::Status::OK();
     }
     arrow::Status Visit(const arrow::StringArray &array)
     {
         string_arr = &array;
         type = StringType;
+        return arrow::Status::OK();
+    }
+    arrow::Status Visit(const arrow::LargeStringArray &array)
+    {
+        large_string_arr = &array;
+        type = LargeStringType;
         return arrow::Status::OK();
     }
     arrow::Status Visit(const arrow::BinaryArray &array)
@@ -238,13 +298,21 @@ public:
     arrow::Status Visit(const arrow::LargeBinaryArray &array)
     {
         large_bin_arr = &array;
-        type = BinaryType;
+        type = LargeBinaryType;
         return arrow::Status::OK();
     }
     arrow::Status Visit(const arrow::Decimal128Array &array)
     {
         dec_arr = &array;
-        type = Decimal128Type;
+        type = DecimalType;
+        size = 128;
+        return arrow::Status::OK();
+    }
+    arrow::Status Visit(const arrow::Decimal256Array &array)
+    {
+        large_dec_arr = &array;
+        type = DecimalType;
+        size = 256;
         return arrow::Status::OK();
     }
     arrow::Status Visit(const arrow::ListArray &array)
@@ -271,12 +339,21 @@ public:
     const arrow::UInt16Array *uint16_arr = nullptr;
     const arrow::UInt32Array *uint32_arr = nullptr;
     const arrow::UInt64Array *uint64_arr = nullptr;
+    const arrow::Date32Array *date32_arr = nullptr;
+    const arrow::Date64Array *date64_arr = nullptr;
+    const arrow::TimestampArray *timestamp_arr = nullptr;
+    const arrow::Time32Array *time32_arr = nullptr;
+    const arrow::Time64Array *time64_arr = nullptr;
+    const arrow::DurationArray *duration_arr = nullptr;
+    const arrow::HalfFloatArray *half_float_arr = nullptr;
     const arrow::FloatArray *float_arr = nullptr;
     const arrow::DoubleArray *double_arr = nullptr;
     const arrow::StringArray *string_arr = nullptr;
+    const arrow::LargeStringArray *large_string_arr = nullptr;
     const arrow::BinaryArray *bin_arr = nullptr;
     const arrow::LargeBinaryArray *large_bin_arr = nullptr;
     const arrow::Decimal128Array *dec_arr = nullptr;
+    const arrow::Decimal256Array *large_dec_arr = nullptr;
     const arrow::ListArray *list_arr = nullptr;
     const arrow::StructArray *struct_arr = nullptr;
 };
@@ -820,6 +897,8 @@ public:
 
 protected:
     const std::shared_ptr<arrow::Array> &getChunk(std::shared_ptr<arrow::ChunkedArray> *column);
+    std::string_view getCurrView(const RtlFieldInfo *field);
+    __int64 getCurrIntValue(const RtlFieldInfo *field);
     void nextField(const RtlFieldInfo *field);
     void nextFromStruct(const RtlFieldInfo *field);
     void xpathOrName(StringBuffer &outXPath, const RtlFieldInfo *field) const;
@@ -827,7 +906,9 @@ protected:
 
 private:
     __int64 currentRow;
-    TokenDeserializer m_tokenDeserializer;
+    TokenDeserializer tokenDeserializer;
+    TokenSerializer tokenSerializer;
+    StringBuffer serialized;
     std::unordered_map<std::string, std::shared_ptr<arrow::Array>> *result_rows;
     std::vector<PathTracker> m_pathStack;
     std::shared_ptr<ParquetArrayVisitor> *array_visitor;
@@ -1022,7 +1103,7 @@ protected:
 
     Owned<ParquetDatasetBinder> m_oInputStream; //! Input Stream used for building a dataset.
 
-    TokenDeserializer m_tokenDeserializer;
+    TokenDeserializer tokenDeserializer;
     TokenSerializer m_tokenSerializer;
     unsigned m_nextParam = 0;   //! Index of the next parameter to process.
     unsigned m_numParams = 0;   //! Number of parameters in the function definition.
