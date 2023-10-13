@@ -1185,7 +1185,7 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
                     throw MakeStringException(ROXIE_FILE_ERROR, "Local file %s does not match DFS information", localLocation);
                 else
                 {
-                    if (doTrace(TraceFlags::Always, TraceFlags::Detailed))
+                    if (doTrace(TraceFlags::Always, TraceFlags::Standard))
                     {
 #ifndef _CONTAINERIZED
                         DBGLOG("Failed to open file at any of the following %d local locations:", localLocations.length());
