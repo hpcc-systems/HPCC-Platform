@@ -533,7 +533,15 @@ IPropertyTree *ReferencedFile::getRemoteStorageFileTree(IUserDescriptor *user, c
 
     Owned<wsdfs::IDFSFile> dfsFile = wsdfs::lookupDFSFile(remoteLFN.str(), AccessMode::readSequential, INFINITE, wsdfs::keepAliveExpiryFrequency, user);
     IPropertyTree *tree = (dfsFile) ? dfsFile->queryFileMeta() : nullptr;
-    return tree ? tree->getPropTree("File") : nullptr;
+    if (!tree)
+    {
+        DBGLOG("RemoteStorage FileMetaTree not found %s [remoteStorage=%s, prefix=%s]", remoteLFN.str(), nullText(remoteStorageName), nullText(remotePrefix));
+        return nullptr;
+    }
+    tree = tree->getPropTree("File");
+    if (!tree)
+        DBGLOG("RemoteStorage FileTree not found %s [remoteStorage=%s, prefix=%s]", remoteLFN.str(), nullText(remoteStorageName), nullText(remotePrefix));
+    return tree;
 }
 
 void ReferencedFile::resolveRemote(IUserDescriptor *user, const char *remoteStorageName, const char *remotePrefix, const StringArray &locations, const char *srcCluster, bool checkLocalFirst, StringArray *subfiles, bool resolveLFNForeign)
@@ -1061,6 +1069,7 @@ void ReferencedFileList::resolveFiles(const StringArray &locations, const char *
 
     if (useRemoteStorage)
     {
+        DBGLOG("ReferencedFileList resolving remote storage files at %s", nullText(remoteLocation));
         if (!user)
             user.setown(createUserDescriptor());
         remoteStorage.set(remoteLocation);
@@ -1070,6 +1079,10 @@ void ReferencedFileList::resolveFiles(const StringArray &locations, const char *
     }
     else
     {
+        if (!isEmptyString(remoteLocation))
+            DBGLOG("ReferencedFileList resolving remote dali files at %s", remoteLocation);
+        else
+            DBGLOG("ReferencedFileList resolving local files (no daliip)");
         remote.setown(!isEmptyString(remoteLocation) ? createINode(remoteLocation, 7070) : nullptr);
 
         ReferencedFileIterator files(this);
