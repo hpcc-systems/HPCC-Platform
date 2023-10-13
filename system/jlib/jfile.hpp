@@ -605,6 +605,7 @@ extern jlib_decl StringBuffer &makeAbsolutePath(StringBuffer &relpath,bool mustE
 extern jlib_decl StringBuffer &makeAbsolutePath(const char *relpath, const char *basedir, StringBuffer &out);
 extern jlib_decl StringBuffer &makePathUniversal(const char *path, StringBuffer &out);
 extern jlib_decl const char *splitRelativePath(const char *full,const char *basedir,StringBuffer &reldir); // removes basedir if matches, returns tail and relative dir
+extern jlib_decl const char *getRelativePath(const char *path, const char *leadingPath);
 extern jlib_decl const char *splitDirMultiTail(const char *multipath,StringBuffer &dir,StringBuffer &tail);
 extern jlib_decl StringBuffer &mergeDirMultiTail(const char *dir,const char *tail, StringBuffer &multipath);
 extern jlib_decl StringBuffer &removeRelativeMultiPath(const char *full,const char *dir,StringBuffer &reltail); // removes dir if matches, returns relative multipath

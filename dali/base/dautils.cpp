@@ -1479,7 +1479,16 @@ bool CDfsLogicalFileName::getExternalPath(StringBuffer &dir, StringBuffer &tail,
                         *e = makeStringExceptionV(-1, "plane:: does not support planes with more than one device '%s'", planeName.str());
                     return false;
                 }
-                dir.append(plane->queryPrefix());
+                const char * prefix = plane->queryPrefix();
+                //If the prefix is a PathSepChar, it should not be appended to the dir here because
+                //a PathSepChar will be appended to the dir inside the expandExternalPath() if the s
+                //is started with the "::".
+                //Also a trailing pathsepchar in the prefix should be removed.
+                if (!isRootDirectory(prefix))
+                {
+                    dir.append(prefix);
+                    removeTrailingPathSepChar(dir);
+                }
             }
         }
     }

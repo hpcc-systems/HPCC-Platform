@@ -5642,6 +5642,24 @@ const char *splitRelativePath(const char *full,const char *basedir,StringBuffer 
     return t;
 }
 
+const char *getRelativePath(const char *path,const char *leadingPath)
+{
+    size_t pathLen = strlen(path);
+    size_t leadingLen = strlen(leadingPath);
+    if ((pathLen==leadingLen-1)&&isPathSepChar(leadingPath[leadingLen-1]))
+        --leadingLen;
+    if (0 == strncmp(path,leadingPath,leadingLen))
+    {
+        const char *rel = path + leadingLen;
+        if ('\0' == *rel)
+            return rel;
+        if (isPathSepChar(*rel))
+            return rel+1;
+        return rel;
+    }
+    return nullptr;
+}
+
 const char *splitDirMultiTail(const char *multipath,StringBuffer &dir,StringBuffer &tail)
 {
     // the first directory is the significant one
