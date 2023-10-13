@@ -187,9 +187,6 @@ extern TPWRAPPER_API bool validateDropZonePath(const char* dropZoneName, const c
 
 static SecAccessFlags getDropZoneScopePermissions(IEspContext& context, const IPropertyTree* dropZone, const char* dropZonePath)
 {
-    if (isEmptyString(dropZonePath))
-        throw makeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "getDropZoneScopePermissions(): DropZone path must be specified.");
-
     //If the dropZonePath is an absolute path, change it to a relative path.
     StringBuffer s;
     const char* prefix = dropZone->queryProp("@prefix");
@@ -210,9 +207,6 @@ static SecAccessFlags getDropZoneScopePermissions(IEspContext& context, const IP
 
 extern TPWRAPPER_API SecAccessFlags getDZPathScopePermissions(IEspContext& context, const char* dropZoneName, const char* dropZonePath, const char* dropZoneHost)
 {
-    if (isEmptyString(dropZonePath))
-        throw makeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "getDZPathScopePermissions(): DropZone path must be specified.");
-
     Owned<IPropertyTree> dropZone;
     if (isEmptyString(dropZoneName))
     {
