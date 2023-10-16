@@ -48,7 +48,7 @@ export const DFUWorkunitDetails: React.FunctionComponent<DFUWorkunitDetailsProps
     React.useEffect(() => {
         if (!workunit) return;
         workunit?.fetchXML().then(response => {
-            setWuXML(response.file);
+            setWuXML(response);
         }).catch(err => logger.error(err));
     }, [workunit]);
 
