@@ -165,6 +165,13 @@
                 <entry>returns a list of all the key user IDs that can be used
                 by the sign command.</entry>
               </row>
+
+              <row>
+                <entry>url-secret-name</entry>
+
+                <entry>generate a secret name from a URL for automatic URL
+                mapping</entry>
+              </row>
             </tbody>
           </tgroup>
         </informaltable>
@@ -8607,6 +8614,64 @@ ecl zapgen W20171018-091399 --path ~ --inc-thor-slave-logs --description "Unexpe
               </tbody>
             </tgroup>
           </informaltable></para>
+      </sect2>
+
+      <sect2 id="CT-url-secret-name" role="brk">
+        <title>ecl url-secret-name</title>
+
+        <para><emphasis role="bold">ecl url-secret-name url</emphasis>
+        [--<emphasis>username</emphasis>=&lt;username&gt;]</para>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry>ecl url-secret-name</entry>
+
+                  <entry>Generates a secret name from a URL for automatic URL
+                  mapping.</entry>
+                </row>
+
+                <row>
+                  <entry>url</entry>
+
+                  <entry>The URL to convert into a secret name.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>--username</emphasis></entry>
+
+                  <entry>Optional. The username to associate with the URL.
+                  This will override any username embedded in the URL.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>The <emphasis>ecl url-secret-name </emphasis>command
+        generates a secret name from a URL that can be used to support ECL
+        SOAPCALL/HTTPCALL automated URL to Secret mapping. </para>
+
+        <para>A username can either be embedded in the URL, such as
+        https://username@example.com, or passed in as a parameter using the
+        --username=username option. If a username is passed in as a parameter
+        it overrides a username in the URL. </para>
+
+        <para>Passwords embedded in the URL are not needed and will be
+        ignored. </para>
+
+        <para>When ECL SOAPCALL URL secret mapping is enabled SOAPCALL will
+        convert the URL provided into a name of this format. ECL will then
+        attempt to lookup the secret, and if found, will use the contents of
+        the secret, rather then the original URL.</para>
+
+        <para>Examples:</para>
+
+        <programlisting lang="bash">ecl url-secret-name https://example.com --username jimi
+ecl url-secret-name http://example.com --username jimi
+</programlisting>
       </sect2>
 
       <sect2 id="CT-RCTL-MEMLOCK" role="brk">
