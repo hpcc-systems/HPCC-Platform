@@ -175,9 +175,10 @@ extern TPWRAPPER_API IPropertyTree* getDropZoneAndValidateHostAndPath(const char
         dropZone.setown(getDropZonePlane(dropZoneName));
         if (!dropZone)
             throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "DropZone '%s' not found.", dropZoneName);
-        if (!validateDropZone(dropZone, pathToCheck, hostToCheck, isIPAddress(hostToCheck)))
-            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "The host '%s' or path '%s' is not valid for dropzone %s.",
-                isEmptyString(host) ? "unspecified" : host, isEmptyString(path) ? "unspecified" : path, dropZoneName);
+        if (!isEmptyString(hostToCheck) && !isHostInPlane(dropZone, hostToCheck, isIPAddress(hostToCheck)))
+            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "The host '%s' is not valid for dropzone %s.", host, dropZoneName);
+        if (!isEmptyString(pathToCheck) && !isPathInPlane(dropZone, pathToCheck))
+            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "The path '%s' is not valid for dropzone %s.", path, dropZoneName);
     }
     return dropZone.getClear();
 }
