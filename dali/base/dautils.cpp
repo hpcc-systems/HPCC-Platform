@@ -124,7 +124,7 @@ bool isPathInPlane(IPropertyTree *plane, const char *path)
 
 bool validateDropZone(IPropertyTree * plane, const char * path, const char * host, bool ipMatch)
 {
-    if (host)
+    if (!isEmptyString(host))
     {
         if (!isHostInPlane(plane, host, ipMatch))
             return false;
