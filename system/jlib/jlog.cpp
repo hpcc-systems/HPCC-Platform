@@ -3191,6 +3191,11 @@ ILogAccessFilter * getComponentLogAccessFilter(const char * component)
     return new FieldLogAccessFilter(component, LOGACCESS_FILTER_component);
 }
 
+ILogAccessFilter * getPodLogAccessFilter(const char * podName)
+{
+    return new FieldLogAccessFilter(podName, LOGACCESS_FILTER_pod);
+}
+
 ILogAccessFilter * getAudienceLogAccessFilter(MessageAudience audience)
 {
     return new FieldLogAccessFilter(LogMsgAudienceToFixString(audience), LOGACCESS_FILTER_audience);
@@ -3238,6 +3243,12 @@ bool fetchJobIDLog(LogQueryResultDetails & resultDetails,StringBuffer & returnbu
 bool fetchComponentLog(LogQueryResultDetails & resultDetails, StringBuffer & returnbuf, IRemoteLogAccess & logAccess, const char * component, LogAccessTimeRange timeRange, StringArray & cols, LogAccessLogFormat format = LOGACCESS_LOGFORMAT_json)
 {
     return fetchLog(resultDetails, returnbuf, logAccess, getComponentLogAccessFilter(component), timeRange, cols, format);
+}
+
+// Fetches log entries based on provided pod name, via provided IRemoteLogAccess instance
+bool fetchPodLog(LogQueryResultDetails & resultDetails, StringBuffer & returnbuf, IRemoteLogAccess & logAccess, const char * podName, LogAccessTimeRange timeRange, StringArray & cols, LogAccessLogFormat format = LOGACCESS_LOGFORMAT_json)
+{
+    return fetchLog(resultDetails, returnbuf, logAccess, getPodLogAccessFilter(podName), timeRange, cols, format);
 }
 
 // Fetches log entries based on provided audience, via provided IRemoteLogAccess instance
