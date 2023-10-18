@@ -330,8 +330,7 @@ jobs:
           build-args: |
             PKG_FILE=${{ steps.ln-container.outputs.k8s_pkg_file }}
           tags: |
-            ${{ secrets.JFROG_REGISTRY || 'dummy.io' }}/ln/platform-core-${{ matrix.os }}:${{ needs.preamble.outputs.internal_tag }}
-            ${{ secrets.JFROG_REGISTRY || 'dummy.io' }}/ln/platform-core-${{ matrix.os }}:${{ needs.preamble.outputs.candidate_base_branch }}
+            ${{ secrets.JFROG_REGISTRY || 'dummy.io' }}/hpccpl-docker-local/hpcc-platform/${{ matrix.os }}/platform-core-ln:${{ needs.preamble.outputs.internal_tag }}
           cache-from: |
             type=registry,ref=hpccsystems/platform-core-${{ matrix.os }}:${{ needs.preamble.outputs.candidate_base_branch }}
 
