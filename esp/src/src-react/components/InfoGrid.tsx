@@ -1,9 +1,10 @@
 import * as React from "react";
 import { Checkbox, CommandBar, ICommandBarItemProps, Link } from "@fluentui/react";
+import { SizeMe } from "react-sizeme";
 import nlsHPCC from "src/nlsHPCC";
 import { useWorkunitExceptions } from "../hooks/workunit";
 import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
-import { HolyGrail } from "../layouts/HolyGrail";
+import { pivotItemStyle } from "../layouts/pivot";
 
 function extractGraphInfo(msg) {
     const regex = /^([a-zA-Z0-9 :]+: )(graph graph(\d+)\[(\d+)\], )(([a-zA-Z]+)\[(\d+)\]: )?(.*)$/gmi;
@@ -149,18 +150,32 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
         setFilterCounts(filterCounts);
     }, [errorChecked, exceptions, infoChecked, otherChecked, warningChecked]);
 
-    return <HolyGrail
-        header={<CommandBar items={buttons} farItems={copyButtons} />}
-        main={
-            <FluentGrid
-                data={data}
-                primaryID={"id"}
-                alphaNumColumns={{ Name: true, Value: true }}
-                columns={columns}
-                setSelection={setSelection}
-                setTotal={setTotal}
-                refresh={refreshTable}
-            ></FluentGrid>
+    React.useEffect(() => {
+        if (data.length) {
+            const header = document.querySelector(".ms-DetailsList-headerWrapper");
+            const viewport = document.querySelector(".ms-Viewport");
+            if (header && viewport) {
+                header.remove();
+                header["style"].top = "-4px";
+                viewport.prepend(header);
+            }
         }
-    />;
+    }, [data.length]);
+
+    return <SizeMe monitorHeight>{({ size }) =>
+        <div style={{ height: "100%" }}>
+            <CommandBar items={buttons} farItems={copyButtons} />
+            <div style={pivotItemStyle(size)}>
+                <FluentGrid
+                    data={data}
+                    primaryID={"id"}
+                    alphaNumColumns={{ Name: true, Value: true }}
+                    columns={columns}
+                    setSelection={setSelection}
+                    setTotal={setTotal}
+                    refresh={refreshTable}
+                ></FluentGrid>
+            </div>
+        </div>
+    }</SizeMe>;
 };
