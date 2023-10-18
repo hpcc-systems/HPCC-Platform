@@ -556,7 +556,7 @@ bool CPermissionsCache::queryPermsManagedFileScope(ISecUser& sec_user, const cha
     if (!fullScope || !*fullScope)
     {
         *accessFlags = queryDefaultPermission(sec_user);
-        OWARNLOG("FileScope missing, using root for %s, applying default permissions %s(%d), took %dms", sec_user.getName(), getSecAccessFlagName(*accessFlags), *accessFlags,  msTick()-start);
+        OWARNLOG("FileScope empty for %s, applying default permissions %s(%d), took %dms", sec_user.getName(), getSecAccessFlagName(*accessFlags), *accessFlags,  msTick()-start);
         return true;
     }
 
@@ -580,9 +580,6 @@ bool CPermissionsCache::queryPermsManagedFileScope(ISecUser& sec_user, const cha
     if (m_managedFileScopesMap.empty())
     {
         *accessFlags = queryDefaultPermission(sec_user);
-        if (m_secMgr) {
-            OWARNLOG("Filescope managed scopes empty for %s, applying default permissions %s(%d), took %dms", sec_user.getName(), getSecAccessFlagName(*accessFlags), *accessFlags, msTick() - start);
-        }
         return true;
     }
 
