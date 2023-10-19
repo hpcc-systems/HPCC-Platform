@@ -956,8 +956,40 @@ __int64 ParquetRowBuilder::getCurrIntValue(const RtlFieldInfo *field)
         {
             __int64 myint64 = 0;
             auto scalar = getCurrView(field);
-            handleDeserializeOutcome(tokenDeserializer.deserialize(scalar.data(), myint64), "signed", scalar.data());
+            std::string scalarStr(scalar.data(), scalar.size());
+            handleDeserializeOutcome(tokenDeserializer.deserialize(scalarStr.c_str(), myint64), "signed", scalarStr.c_str());
             return myint64;
+        }
+    }
+}
+
+double ParquetRowBuilder::getCurrRealValue(const RtlFieldInfo *field)
+{
+    switch ((*array_visitor)->type)
+    {
+        case BoolType:
+            return (*array_visitor)->bool_arr->Value(currArrayIndex());
+        case IntType:
+            return getSigned(array_visitor, currArrayIndex());
+        case UIntType:
+            return getUnsigned(array_visitor, currArrayIndex());
+        case RealType:
+            return getReal(array_visitor, currArrayIndex());
+        case DateType:
+            return (*array_visitor)->size == 32 ? (*array_visitor)->date32_arr->Value(currArrayIndex()) : (*array_visitor)->date64_arr->Value(currArrayIndex());
+        case TimestampType:
+            return (*array_visitor)->timestamp_arr->Value(currArrayIndex());
+        case TimeType:
+            return (*array_visitor)->size == 32 ? (*array_visitor)->time32_arr->Value(currArrayIndex()) : (*array_visitor)->time64_arr->Value(currArrayIndex());
+        case DurationType:
+            return (*array_visitor)->duration_arr->Value(currArrayIndex());
+        default:
+        {
+            double mydouble = 0.0;
+            auto scalar = getCurrView(field);
+            std::string scalarStr(scalar.data(), scalar.size());
+            handleDeserializeOutcome(tokenDeserializer.deserialize(scalarStr.c_str(), mydouble), "real", scalarStr.c_str());
+            return mydouble;
         }
     }
 }
@@ -1020,10 +1052,7 @@ double ParquetRowBuilder::getRealResult(const RtlFieldInfo *field)
         return p.doubleResult;
     }
 
-    if ((*array_visitor)->type == RealType)
-        return getReal(array_visitor, currArrayIndex());
-    else
-        return getCurrIntValue(field);
+    return getCurrRealValue(field);
 }
 
 /**

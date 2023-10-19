@@ -899,6 +899,7 @@ protected:
     const std::shared_ptr<arrow::Array> &getChunk(std::shared_ptr<arrow::ChunkedArray> *column);
     std::string_view getCurrView(const RtlFieldInfo *field);
     __int64 getCurrIntValue(const RtlFieldInfo *field);
+    double getCurrRealValue(const RtlFieldInfo *field);
     void nextField(const RtlFieldInfo *field);
     void nextFromStruct(const RtlFieldInfo *field);
     void xpathOrName(StringBuffer &outXPath, const RtlFieldInfo *field) const;
