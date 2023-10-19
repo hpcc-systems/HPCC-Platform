@@ -71,6 +71,26 @@ bool Cws_logaccessEx::onGetLogAccessInfo(IEspContext &context, IEspGetLogAccessI
                                 WARNLOG("Invalid col type found in logaccess logmap config");
                             }
                         }
+                        if (clientVer >= 1.06)
+                        {
+                            if (column.hasProp("@alias"))
+                            {
+                                try
+                                {
+                                    espLogColumn->setAlias(column.queryProp("@alias"));
+                                }
+                                catch (IException *e)
+                                {
+                                    VStringBuffer msg("Invalid alias found in logaccess logmap config for '%s'", csearchColumn);
+                                    EXCLOG(e, msg.str());
+                                    e->Release();
+                                }
+                                catch(...)
+                                {
+                                    WARNLOG("Invalid alias found in logaccess logmap config");
+                                }
+                            }
+                        }
                         logColumns.append(*espLogColumn.getClear());
                     }
                     else

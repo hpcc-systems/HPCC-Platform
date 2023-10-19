@@ -59,7 +59,7 @@ global:
     - type: "instance"
       storeName: "ContainerInventory"
       searchColumn: "Name"
-      projectName: "hpcc_log_component"
+      alias: "hpcc_log_component"
       columnMode: "ALL"
       columnType: "string"
     - type: "node"

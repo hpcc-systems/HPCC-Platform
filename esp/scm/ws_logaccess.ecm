@@ -76,13 +76,14 @@ ESPenum LogColumnValueType : string
     enum("enum")
 };
 
-ESPStruct LogColumn
+ESPStruct [nil_remove] LogColumn
 {
     string Name;
     ESPenum LogColumnType LogType;
     ESParray<string> EnumeratedValues;
     LogSelectColumnMode ColumnMode;
     ESPenum LogColumnValueType ColumnType;
+    [min_ver("1.06")] string Alias;
 };
 
 ESPResponse GetLogAccessInfoResponse
@@ -219,7 +220,7 @@ ESPResponse GetLogsResponse
     [min_ver("1.02")] unsigned int TotalLogLinesAvailable;
 };
 
-ESPservice [auth_feature("WsLogAccess:READ"), version("1.05"), default_client_version("1.05"), exceptions_inline("xslt/exceptions.xslt")] ws_logaccess
+ESPservice [auth_feature("WsLogAccess:READ"), version("1.06"), default_client_version("1.06"), exceptions_inline("xslt/exceptions.xslt")] ws_logaccess
 {
     ESPmethod GetLogAccessInfo(GetLogAccessInfoRequest, GetLogAccessInfoResponse);
     ESPmethod GetLogs(GetLogsRequest, GetLogsResponse);
