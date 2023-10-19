@@ -782,6 +782,7 @@ interface IPropertyTreeIterator;
 extern jlib_decl IPropertyTree * getHostGroup(const char * name, bool required);
 extern jlib_decl IPropertyTree * getStoragePlane(const char * name);
 extern jlib_decl IPropertyTree * getRemoteStorage(const char * name);
+extern jlib_decl IPropertyTreeIterator * getRemoteStoragesIterator();
 extern jlib_decl IPropertyTreeIterator * getPlanesIterator(const char * category, const char *name);
 
 extern jlib_decl IFileIO *createBlockedIO(IFileIO *base, size32_t blockSize);

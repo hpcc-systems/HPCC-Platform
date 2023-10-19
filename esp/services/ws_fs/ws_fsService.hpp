@@ -138,6 +138,7 @@ public:
     virtual bool onDeleteDropZoneFiles(IEspContext &context, IEspDeleteDropZoneFilesRequest &req, IEspDFUWorkunitsActionResponse &resp);
     virtual bool onGetSprayTargets(IEspContext &context, IEspGetSprayTargetsRequest &req, IEspGetSprayTargetsResponse &resp);
     virtual bool onGetDFUServerQueues(IEspContext &context, IEspGetDFUServerQueuesRequest &req, IEspGetDFUServerQueuesResponse &resp);
+    virtual bool onGetRemoteTargets(IEspContext &context, IEspGetRemoteTargetsRequest &req, IEspGetRemoteTargetsResponse &resp);
 
 protected:
     StringBuffer m_QueueLabel;

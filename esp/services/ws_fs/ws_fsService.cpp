@@ -3818,3 +3818,24 @@ bool CFileSprayEx::onGetDFUServerQueues(IEspContext &context, IEspGetDFUServerQu
 
     return true;
 }
+
+bool CFileSprayEx::onGetRemoteTargets(IEspContext &context, IEspGetRemoteTargetsRequest &req, IEspGetRemoteTargetsResponse &resp)
+{
+    try
+    {
+        context.ensureFeatureAccess(FILE_SPRAY_URL, SecAccess_Read, ECLWATCH_FILE_SPRAY_ACCESS_DENIED, "Permission denied.");
+
+        StringArray remoteTargetNames;
+        Owned<IPropertyTreeIterator> remoteItr = getRemoteStoragesIterator();
+        ForEach(*remoteItr)
+            remoteTargetNames.append(remoteItr->query().queryProp("@name"));
+        resp.setTargetNames(remoteTargetNames);
+        resp.setAllowForeign(allowForeign());
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+
+    return true;
+}
