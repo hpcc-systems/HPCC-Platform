@@ -76,7 +76,7 @@ ESPenum LogColumnValueType : string
     enum("enum")
 };
 
-ESPStruct LogColumn
+ESPStruct [nil_remove] LogColumn
 {
     string Name;
     ESPenum LogColumnType LogType;

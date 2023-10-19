@@ -434,9 +434,9 @@ void AzureLogAnalyticsCurlClient::getDefaultReturnColumns(StringBuffer & columns
     if (includeComponentName)
         columns.appendf("%s, ", defaultHPCCLogComponentCol);
 
-    columns.appendf("%s, %s, %s, %s, %s, %s, %s",
+    columns.appendf("%s, %s, %s, %s, %s, %s, %s, %s",
     m_globalIndexTimestampField.str(), defaultHPCCLogMessageCol, m_classSearchColName.str(),
-    m_audienceSearchColName.str(), m_workunitSearchColName.str(), defaultHPCCLogSeqCol, defaultHPCCLogThreadIDCol);
+    m_audienceSearchColName.str(), m_workunitSearchColName.str(), defaultHPCCLogSeqCol, defaultHPCCLogThreadIDCol, defaultHPCCLogProcIDCol);
 }
 
 bool generateHPCCLogColumnstAllColumns(StringBuffer & kql, const char * colName)
