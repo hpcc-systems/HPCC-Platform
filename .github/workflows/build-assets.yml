@@ -330,13 +330,14 @@ jobs:
           echo "$k8s_pkg_file"
 
       - name: Create Docker Image (internal)
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         if: ${{ matrix.ln && matrix.container && !matrix.documentation }}
         with:
           builder: ${{ steps.buildx.outputs.name }}
           file: ${{ needs.preamble.outputs.folder_platform }}/dockerfiles/vcpkg/platform-core-${{ matrix.os }}/Dockerfile
           context: ${{ needs.preamble.outputs.folder_build }}
           push: false
+          load: true
           build-args: |
             PKG_FILE=${{ steps.ln-container.outputs.k8s_pkg_file }}
           tags: |
