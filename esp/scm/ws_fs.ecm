@@ -481,6 +481,7 @@ ESPrequest [nil_remove] Copy
     string srcusername;
     string srcpassword;
     bool   overwrite;
+    bool   ensure;
     bool   replicate;
     int    ReplicateOffset(1);
 

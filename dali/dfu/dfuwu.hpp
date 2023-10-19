@@ -153,6 +153,7 @@ interface IConstDFUoptions : extends IInterface
     virtual size32_t getTransferBufferSize() const = 0;
     virtual bool getVerify() const = 0;
     virtual bool getOverwrite() const = 0;
+    virtual bool getEnsure() const = 0;
     virtual DFUreplicateMode getReplicateMode(StringBuffer &cluster, bool &repeatlast,bool &onlyrepeated) const = 0;
     virtual const char *queryPartFilter() const = 0;
     virtual bool getKeepHeader() const = 0;
@@ -195,6 +196,7 @@ interface IDFUoptions : extends IConstDFUoptions
     virtual void setTransferBufferSize(size32_t val) = 0;
     virtual void setVerify(bool val=true) = 0;
     virtual void setOverwrite(bool val=true) = 0;
+    virtual void setEnsure(bool val=true) = 0;
     virtual void setReplicateMode(DFUreplicateMode val,const char *cluster=NULL,bool repeatlast=false,bool onlyrepeated=false) = 0;
     virtual void setPartFilter(const char *filter) = 0;             // format n,n-n,n etc
     virtual void setKeepHeader(bool val=true) = 0;
