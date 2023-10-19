@@ -55,7 +55,7 @@ jobs:
           community_tag=$(echo $community_ref | cut -d'/' -f3)
           echo "community_tag=$community_tag" >> $GITHUB_OUTPUT
           echo "internal_tag=$(echo $community_tag | sed 's/community/internal/')" >> $GITHUB_OUTPUT
-          echo "hpcc_version=$(echo $community_tag | sed 's/community_//')" >> $GITHUB_OUTPUT
+          echo "hpcc_version=$(echo $community_tag | sed 's/community_//' | sed 's/-[0-9]$//')" >> $GITHUB_OUTPUT
           community_base_ref=${{ github.event.base_ref || github.ref }}
           candidate_branch=$(echo $community_base_ref | cut -d'/' -f3)
           echo "candidate_branch=$candidate_branch" >> $GITHUB_OUTPUT
@@ -347,7 +347,7 @@ jobs:
       - name: JFrog Docker Push and Publish
         if: ${{ matrix.ln && matrix.container && !matrix.documentation && github.repository_owner == 'hpcc-systems' }}
         run: |
-          jf rt dp ${{ secrets.JFROG_REGISTRY || 'dummy.io' }}/hpccpl-docker-local/hpcc-platform/${{ matrix.os }}/platform-core-ln:${{ needs.preamble.outputs.hpcc_version }} hpccpl-docker-local --build-name=platform-core-ln --build-number=${{ needs.preamble.outputs.hpcc_version }} --project=hpccpl
+          jf docker push ${{ secrets.JFROG_REGISTRY || 'dummy.io' }}/hpccpl-docker-local/hpcc-platform/${{ matrix.os }}/platform-core-ln:${{ needs.preamble.outputs.hpcc_version }} --build-name=platform-core-ln --build-number=${{ needs.preamble.outputs.hpcc_version }} --project=hpccpl
           jf rt bp platform-core-ln ${{ needs.preamble.outputs.hpcc_version }} --project=hpccpl
 
       #  Common  ---
