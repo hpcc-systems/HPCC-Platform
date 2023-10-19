@@ -504,9 +504,9 @@ Pass in dict with root, planeName
 {{- range $plane := $planes -}}
  {{- if (eq $plane.name $name) -}}
   {{- if $plane.subPath -}}
-   {{- printf "%s/%s" $plane.prefix $plane.subPath | quote -}}
+   {{- printf "%s/%s" $plane.prefix $plane.subPath -}}
   {{- else -}}
-   {{- $plane.prefix | quote -}}
+   {{- $plane.prefix -}}
   {{- end -}}
  {{- end -}}
 {{- end -}}
@@ -2188,7 +2188,7 @@ global.noResourceValidation flag.  This behavior can be overridden by the caller
 A template to output a merged environment. Pass in a list with global then local environments. Only the last specified value for each named environment variable will be output
 */}}
 {{- define "hpcc.mergeEnvironments" -}}
-{{- $result := dict "MALLOC_ARENA_MAX" "8" -}}{{- /* HPCC arena default, can be overriden by component config */ -}}
+{{- $result := dict "MALLOC_ARENA_MAX" 8 -}}{{- /* HPCC arena default, can be overriden by component config */ -}}
 {{- range . -}}
  {{- $_ := set $result .name .value -}}
 {{- end -}}
