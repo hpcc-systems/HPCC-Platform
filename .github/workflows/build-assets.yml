@@ -34,6 +34,7 @@ jobs:
       internal_ref: ${{ steps.vars.outputs.internal_ref }}
       community_tag: ${{ steps.vars.outputs.community_tag }}
       internal_tag: ${{ steps.vars.outputs.internal_tag }}
+      hpcc_version: ${{ steps.vars.outputs.hpcc_version }}
       candidate_base_branch: ${{ steps.vars.outputs.candidate_base_branch }}
       candidate_branch: ${{ steps.vars.outputs.candidate_branch }}
       cmake_docker_config: ${{ steps.vars.outputs.cmake_docker_config }}
@@ -54,6 +55,7 @@ jobs:
           community_tag=$(echo $community_ref | cut -d'/' -f3)
           echo "community_tag=$community_tag" >> $GITHUB_OUTPUT
           echo "internal_tag=$(echo $community_tag | sed 's/community/internal/')" >> $GITHUB_OUTPUT
+          echo "hpcc_version=$(echo $community_tag | sed 's/community_//')" >> $GITHUB_OUTPUT
           community_base_ref=${{ github.event.base_ref || github.ref }}
           candidate_branch=$(echo $community_base_ref | cut -d'/' -f3)
           echo "candidate_branch=$candidate_branch" >> $GITHUB_OUTPUT
@@ -266,6 +268,14 @@ jobs:
           username: ${{ secrets.JFROG_USERNAME }}
           password: ${{ secrets.JFROG_PASSWORD }}
 
+      - name: Setup JFrog CLI (internal)
+        if: ${{ matrix.ln && matrix.container && github.repository_owner == 'hpcc-systems' }}
+        uses: jfrog/setup-jfrog-cli@v3
+        env:
+          JF_URL: https://${{ secrets.JFROG_REGISTRY }}
+          JF_USER: ${{ secrets.JFROG_USERNAME }}
+          JF_PASSWORD: ${{ secrets.JFROG_PASSWORD }}
+          
       - name: CMake Packages (internal)
         if: ${{ matrix.ln && !matrix.container && !matrix.documentation }}
         run: |
@@ -326,14 +336,19 @@ jobs:
           builder: ${{ steps.buildx.outputs.name }}
           file: ${{ needs.preamble.outputs.folder_platform }}/dockerfiles/vcpkg/platform-core-${{ matrix.os }}/Dockerfile
           context: ${{ needs.preamble.outputs.folder_build }}
-          push: ${{ github.repository_owner == 'hpcc-systems' }}
+          push: false
           build-args: |
             PKG_FILE=${{ steps.ln-container.outputs.k8s_pkg_file }}
           tags: |
-            ${{ secrets.JFROG_REGISTRY || 'dummy.io' }}/ln/platform-core-${{ matrix.os }}:${{ needs.preamble.outputs.internal_tag }}
-            ${{ secrets.JFROG_REGISTRY || 'dummy.io' }}/ln/platform-core-${{ matrix.os }}:${{ needs.preamble.outputs.candidate_base_branch }}
+            ${{ secrets.JFROG_REGISTRY || 'dummy.io' }}/hpccpl-docker-local/hpcc-platform/${{ matrix.os }}/platform-core-ln:${{ needs.preamble.outputs.hpcc_version }}
           cache-from: |
             type=registry,ref=hpccsystems/platform-core-${{ matrix.os }}:${{ needs.preamble.outputs.candidate_base_branch }}
+
+      - name: JFrog Docker Push and Publish
+        if: ${{ matrix.ln && matrix.container && !matrix.documentation && github.repository_owner == 'hpcc-systems' }}
+        run: |
+          jf rt dp ${{ secrets.JFROG_REGISTRY || 'dummy.io' }}/hpccpl-docker-local/hpcc-platform/${{ matrix.os }}/platform-core-ln:${{ needs.preamble.outputs.hpcc_version }} hpccpl-docker-local --build-name=platform-core-ln --build-number=${{ needs.preamble.outputs.hpcc_version }} --project=hpccpl
+          jf rt bp platform-core-ln ${{ needs.preamble.outputs.hpcc_version }} --project=hpccpl
 
       #  Common  ---
       - name: Cleanup Environment
