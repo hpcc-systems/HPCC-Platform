@@ -341,14 +341,14 @@ jobs:
           build-args: |
             PKG_FILE=${{ steps.ln-container.outputs.k8s_pkg_file }}
           tags: |
-            ${{ secrets.JFROG_REGISTRY || 'dummy.io' }}/hpccpl-docker-local/hpcc-platform/${{ matrix.os }}/platform-core-ln:${{ needs.preamble.outputs.hpcc_version }}
+            ${{ secrets.JFROG_REGISTRY || 'dummy.io' }}/hpccpl-docker-local/platform-core-ln:${{ needs.preamble.outputs.hpcc_version }}
           cache-from: |
             type=registry,ref=hpccsystems/platform-core-${{ matrix.os }}:${{ needs.preamble.outputs.candidate_base_branch }}
 
       - name: JFrog Docker Push and Publish
         if: ${{ matrix.ln && matrix.container && !matrix.documentation && github.repository_owner == 'hpcc-systems' }}
         run: |
-          jf docker push ${{ secrets.JFROG_REGISTRY || 'dummy.io' }}/hpccpl-docker-local/hpcc-platform/${{ matrix.os }}/platform-core-ln:${{ needs.preamble.outputs.hpcc_version }} --build-name=platform-core-ln --build-number=${{ needs.preamble.outputs.hpcc_version }} --project=hpccpl
+          jf docker push ${{ secrets.JFROG_REGISTRY || 'dummy.io' }}/hpccpl-docker-local/platform-core-ln:${{ needs.preamble.outputs.hpcc_version }} --build-name=platform-core-ln --build-number=${{ needs.preamble.outputs.hpcc_version }} --project=hpccpl
           jf rt bp platform-core-ln ${{ needs.preamble.outputs.hpcc_version }} --project=hpccpl
 
       #  Common  ---
