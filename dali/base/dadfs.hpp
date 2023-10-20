@@ -804,7 +804,8 @@ enum DistributedFileSystemError
     DFSERR_RestrictedFileAccessDenied,
     DFSERR_EmptyStoragePlane,
     DFSERR_MissingStoragePlane,
-    DFSERR_PhysicalCompressedPartInvalid
+    DFSERR_PhysicalCompressedPartInvalid,
+    DFSERR_InvalidRemoteFileContext
 };
 
 
