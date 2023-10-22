@@ -61,14 +61,34 @@ done
 
 ulimit -c unlimited
 
-#Ensure any signals to the script kill the child process
-trap 'echo EXIT via signal ; kill 0; wait; ' EXIT
+function cleanup {
+  echo "EXIT via signal for $progPid"
+  if [ -n "$progPid" ]; then
+    kill $progPid
+    wait $progPid
+    retVal=$?
+  fi
+}
+
+# Ensure any signals to the script kill the child process
+# NB: do not include SIGEXIT since when handled, it will cause the script to exit prematurely.
+trap cleanup SIGTERM SIGINT SIGABRT SIGQUIT SIGHUP
 
 # Execute the main program, defaulting postmortem logging on (can be overriden by program's config file)
-${PMD_PROGNAME} --logging.postMortem=1000 "$@" 
+${PMD_PROGNAME} --logging.postMortem=1000 "$@" &
+progPid=$!
+
+echo "Waiting for child process $progPid"
+# If the signal handler (cleanup) was called, it will wait and catpure retVal and cause this 'wait $progPid' to exit on completion.
+# NB: If the signal handler itself doesn't wait, then it will still cause this statement to complete before the child process has exited.
+wait $progPid
+retVal2=$?
+if [ ! -v retVal ]; then
+  retVal=$retVal2
+fi
+echo "Child process $progPid has exited with exit code $retVal"
 
 # If it did not exit cleanly, copy some post-mortem info
-retVal=$?
 if [ $PMD_ALWAYS = true ] || [ $retVal -ne 0 ]; then
   POST_MORTEM_DIR=${PMD_DIRECTORYBASE}/$(hostname)/$(date -Iseconds)
   mkdir -p ${POST_MORTEM_DIR}
