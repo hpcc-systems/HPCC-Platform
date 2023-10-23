@@ -56,6 +56,7 @@ public:
         CPPUNIT_TEST(testMultiNestedSpanTraceOutput);
         CPPUNIT_TEST(testNullSpan);
         CPPUNIT_TEST(testClientSpanGlobalID);
+        CPPUNIT_TEST(testEnsureTraceID);
     CPPUNIT_TEST_SUITE_END();
 
     const char * simulatedGlobalYaml = R"!!(global:
@@ -107,6 +108,21 @@ protected:
 
         //Not valid, due to tracemanager initialized at component load time
         initTraceManager("somecomponent", traceConfig, nullptr);
+    }
+
+    void testEnsureTraceID()
+    {
+        SpanFlags flags = SpanFlags::EnsureTraceId;
+        Owned<IProperties> emptyMockHTTPHeaders = createProperties();
+        Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("noRemoteParentEnsureTraceID", emptyMockHTTPHeaders, flags);
+
+        Owned<IProperties> retrievedSpanCtxAttributes = createProperties();
+        bool getSpanCtxSuccess = serverSpan->getSpanContext(retrievedSpanCtxAttributes.get(), false);
+
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected getSpanContext failure detected - EnsureTraceID flag was set", true, getSpanCtxSuccess);
+
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected empty TraceID detected", false, isEmptyString(retrievedSpanCtxAttributes->queryProp("traceID")));
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected empty SpanID detected", false, isEmptyString(retrievedSpanCtxAttributes->queryProp("spanID")));
     }
 
     void testIDPropegation()

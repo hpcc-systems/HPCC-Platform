@@ -28,6 +28,7 @@ global:
   # tracing sets the default tracing information for all components. Can be overridden locally
   tracing:
     disabled: false
+    alwaysCreateTraceIds: true
 
   ## resource settings for stub components
   #stubInstanceResources:

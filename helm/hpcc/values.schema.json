@@ -1111,6 +1111,10 @@
         "disabled": {
           "type": "boolean",
           "description": "If true, disable OTel based trace/span generation"
+        },
+        "alwaysCreateTraceIds": {
+          "type": "boolean",
+          "description": "If true, components generate trace/span ids to aid in unit of worktracing"
         }
       },
       "additionalProperties": { "type": ["integer", "string", "boolean"] }
