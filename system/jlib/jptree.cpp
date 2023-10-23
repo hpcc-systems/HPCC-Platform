@@ -8646,7 +8646,11 @@ IPropertyTree * getComponentConfig()
 {
     CriticalBlock b(configCS);
     if (!componentConfiguration)
-        throw makeStringException(99, "Configuration file has not yet been processed");
+    {
+        Owned<IException> e = makeStringException(99, "Configuration file has not yet been processed");
+        IWARNLOG(e);
+        componentConfiguration.setown(createPTree());
+    }
     return componentConfiguration.getLink();
 }
 
@@ -8654,7 +8658,11 @@ IPropertyTree * getGlobalConfig()
 {
     CriticalBlock b(configCS);
     if (!globalConfiguration)
-        throw makeStringException(99, "Configuration file has not yet been processed");
+    {
+        Owned<IException> e = makeStringException(99, "Configuration file has not yet been processed");
+        IWARNLOG(e);
+        globalConfiguration.setown(createPTree());
+    }
     return globalConfiguration.getLink();
 }
 
