@@ -32,7 +32,7 @@ Pass in dict with root and me
 {{- $thorAgentScope := dict "name" .thorAgentName "replicas" .thorAgentReplicas "maxActive" .me.maxGraphs | merge (pick .me "keepJobs") }}
 {{- $eclAgentResources := .me.eclAgentResources | default dict -}}
 {{- $hthorScope := dict "name" $hthorName "jobMemorySectionName" "eclAgentMemory" | merge (pick .me "multiJobLinger" "maxGraphStartupTime") | merge (dict "resources" (deepCopy $eclAgentResources)) }}
-{{- $thorScope := omit .me "eclagent" "thoragent" "hthor" "logging" "env" "eclAgentResources" "eclAgentUseChildProcesses" "eclAgentReplicas" "thorAgentReplicas" "eclAgentType" }}
+{{- $thorScope := omit .me "eclagent" "thoragent" "hthor" "logging" "Tracing" "env" "eclAgentResources" "eclAgentUseChildProcesses" "eclAgentReplicas" "thorAgentReplicas" "eclAgentType" }}
 {{- $misc := .root.Values.global.misc | default dict }}
 {{- $postJobCommand := $misc.postJobCommand | default "" }}
 {{- $eclAgentJobName := printf "%s-job-_HPCC_JOBNAME_" $eclAgentType }}
@@ -51,6 +51,7 @@ data:
     thor:
 {{ toYaml $thorScope | indent 6 }}
 {{- include "hpcc.generateLoggingConfig" (dict "root" .root "me" $thorScope) | indent 6 }}
+{{- include "hpcc.generateTracingConfig" (dict "root" .root "me" $thorScope) | indent 6 }}
 {{ include "hpcc.generateVaultConfig" . | indent 6 }}
     {{ $eclAgentType }}: # hthor or roxie
 {{ toYaml $hthorScope | indent 6 }}
@@ -58,13 +59,16 @@ data:
         type: "thor"
         width: {{ mul ($thorScope.numWorkers | default 1) ( $thorScope.channelsPerWorker | default 1) }}
 {{- include "hpcc.generateLoggingConfig" (dict "root" .root "me" $hthorScope ) | indent 6 }}
+{{- include "hpcc.generateTracingConfig" (dict "root" .root "me" $hthorScope ) | indent 6 }}
 {{ include "hpcc.generateVaultConfig" . | indent 6 }}
     eclagent: # main agent Q handler
 {{ toYaml $eclAgentScope | indent 6 }}
 {{- include "hpcc.generateLoggingConfig" (dict "root" .root "me" $eclAgentScope) | indent 6 }}
+{{- include "hpcc.generateTracingConfig" (dict "root" .root "me" $eclAgentScope) | indent 6 }}
     thoragent: # Thor graph handler
 {{ toYaml $thorAgentScope | indent 6 }}
 {{- include "hpcc.generateLoggingConfig" (dict "root" .root "me" $thorAgentScope) | indent 6 }}
+{{- include "hpcc.generateTracingConfig" (dict "root" .root "me" $thorAgentScope) | indent 6 }}
       type: thor
     global:
 {{ include "hpcc.generateGlobalConfigMap" .root| indent 6 }}

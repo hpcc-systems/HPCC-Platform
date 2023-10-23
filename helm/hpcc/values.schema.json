@@ -1102,6 +1102,10 @@
         "alwaysCreateGlobalIds": {
           "type": "boolean",
           "description": "If true, allocate global ids to any requests that do not supply one"
+        },
+        "alwaysCreateTraceIds": {
+          "type": "boolean",
+          "description": "If true, components generate trace/span ids to aid in unit of worktracing"
         }
       },
       "additionalProperties": { "type": ["integer", "string", "boolean"] }

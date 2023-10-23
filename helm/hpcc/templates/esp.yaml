@@ -33,8 +33,9 @@ data:
   {{ .me.name }}.yaml:
     version: 1.0
     esp:
-{{ toYaml (omit .me "logging" "metrics" "env") | indent 6 }}
+{{ toYaml (omit .me "logging" "tracing" "metrics" "env") | indent 6 }}
 {{- include "hpcc.generateLoggingConfig" . | indent 6 }}
+{{- include "hpcc.generateTracingConfig" . | indent 6 }}
 {{- include "hpcc.generateMetricsConfig" . | indent 6 }}
 {{- if and .root.Values.certificates .root.Values.certificates.enabled }}
  {{- $externalCert := (ne (include "hpcc.isVisibilityPublic" (dict "root" .root "visibility" .me.service.visibility)) "") -}}

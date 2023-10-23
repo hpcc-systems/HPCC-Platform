@@ -16,7 +16,7 @@
 ############################################################################## */
 
 
-
+#include "opentelemetry/sdk/trace/random_id_generator_factory.h"
 #include "opentelemetry/trace/semantic_conventions.h" //known span defines
 #include "opentelemetry/context/propagation/global_propagator.h" // context::propagation::GlobalTextMapPropagator::GetGlobalPropagator
 #include "opentelemetry/sdk/trace/tracer_provider_factory.h" //opentelemetry::sdk::trace::TracerProviderFactory::Create(context)
@@ -602,11 +602,6 @@ private:
     {
         if (httpHeaders)
         {
-            // perform any key mapping needed...
-            //Instrumented http client/server Capitalizes the first letter of the header name
-            //if (key == opentel_trace::propagation::kTraceParent || key == opentel_trace::propagation::kTraceState )
-            //    theKey[0] = toupper(theKey[0]);
-
             if (httpHeaders->hasProp(kGlobalIdHttpHeaderName))
                 hpccGlobalId.set(httpHeaders->queryProp(kGlobalIdHttpHeaderName));
             else if (httpHeaders->hasProp(kLegacyGlobalIdHttpHeaderName))
@@ -636,6 +631,35 @@ private:
                 remoteParentSpanCtx = remoteParentSpan->GetContext();
                 opts.parent = remoteParentSpanCtx;
             }
+        }
+
+       if ((!httpHeaders ||  !httpHeaders->hasProp("traceparent")) && queryTraceManager().alwaysCreateTraceIds())
+        {
+                //Generate random trace and span IDs
+
+                //Don't get the generator every time
+                auto randomIDGenerator = opentelemetry::sdk::trace::RandomIdGeneratorFactory::Create();
+
+                auto randomTraceID = randomIDGenerator->GenerateTraceId();
+                auto randomSpanID = randomIDGenerator->GenerateSpanId();
+
+                remoteParentSpanCtx = opentelemetry::trace::SpanContext(randomTraceID, randomSpanID, opentelemetry::trace::TraceFlags(), true);
+                opts.parent = remoteParentSpanCtx;
+
+
+//this is only for debugging:
+                char trace_id[32] = {0};
+
+                randomTraceID.ToLowerBase16(trace_id);
+                StringAttr traceID;
+                traceID.set(trace_id, 32);
+
+                char span_id[16] = {0};
+                randomSpanID.ToLowerBase16(span_id);
+                StringAttr spanID;
+                spanID.set(span_id, 16);
+
+                DBGLOG("!!No remoteParent received, generating remoteParent IDs: Trace '%s' span '%s' ", traceID.get(), spanID.get());
         }
     }
 
@@ -710,6 +734,7 @@ class CTraceManager : implements ITraceManager, public CInterface
 private:
     bool enabled = true;
     bool optAlwaysCreateGlobalIds = false;
+    bool optAlwaysCreateTraceIds = true;
     StringAttr moduleName;
 
     //Initializes the global trace provider which is required for all Otel based tracing operations.
@@ -816,6 +841,7 @@ private:
         tracing:                            #optional - tracing enabled by default
             disable: true                   #optional - disable OTel tracing
             alwaysCreateGlobalIds : false   #optional - should global ids always be created?
+            alwaysCreateTraceIds            #optional - should trace ids always be created?
             exporter:                       #optional - Controls how trace data is exported/reported
               type: OTLP                    #OS|OTLP|Prometheus|HPCC (default: no export, jlog entry)
               endpoint: "localhost:4317"    #exporter specific key/value pairs
@@ -870,6 +896,7 @@ private:
             if (traceConfig)
             {
                 optAlwaysCreateGlobalIds = traceConfig->getPropBool("@alwaysCreateGlobalIds", optAlwaysCreateGlobalIds);
+                optAlwaysCreateTraceIds = traceConfig->getPropBool("@alwaysCreateTraceIds", optAlwaysCreateTraceIds);
             }
 
             // The global propagator should be set regardless of whether tracing is enabled or not.
@@ -941,6 +968,11 @@ public:
     virtual bool alwaysCreateGlobalIds() const
     {
         return optAlwaysCreateGlobalIds;
+    }
+
+        virtual bool alwaysCreateTraceIds() const
+    {
+        return optAlwaysCreateTraceIds;
     }
 };
 

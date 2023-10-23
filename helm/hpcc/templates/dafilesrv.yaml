@@ -10,8 +10,9 @@ data:
   {{ .me.name }}.yaml:
     version: 1.0
     dafilesrv:
-{{ toYaml (omit .me "logging" "env") | indent 6 }}
+{{ toYaml (omit .me "logging" "tracing" "env") | indent 6 }}
 {{- include "hpcc.generateLoggingConfig" . | indent 6 }}
+{{- include "hpcc.generateTracingConfig" . | indent 6 }}
     global:
 {{ include "hpcc.generateGlobalConfigMap" .root | indent 6 }}
 {{- end -}}

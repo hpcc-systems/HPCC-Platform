@@ -44,7 +44,7 @@ data:
      {{- include "hpcc.addTLSServiceEntries" (dict "root" $root "service" $service "component" $component "visibility" $service.visibility "remoteClients" $service.remoteClients "trustClients" $service.trustClients "includeTrustedPeers" true "incluedRoxieAndEspServices" true) | indent 6 }}
    {{- end }}
   {{- end }}
-{{ toYaml ( omit .me "logging" "topoServer" "encryptInTransit" "env" "services") | indent 6 }}
+{{ toYaml ( omit .me "logging" "tracing" "topoServer" "encryptInTransit" "env" "services") | indent 6 }}
       numChannels: {{ .numChannels }}
       topologyServers: "{{ .toponame }}:{{ .topoport }}"
       heartbeatInterval: {{ .heartbeatInterval }}
@@ -60,6 +60,7 @@ data:
       encryptInTransit: {{ $mtlsEnabled }}
 {{ end -}}
 {{- include "hpcc.generateLoggingConfig" (dict "root" .root "me" .me) | indent 6 }}
+{{- include "hpcc.generateTracingConfig" (dict "root" .root "me" .me) | indent 6 }}
 {{ include "hpcc.generateVaultConfig" . | indent 6 }}
     global:
 {{ include "hpcc.generateGlobalConfigMap" .root | indent 6 }}
@@ -73,8 +74,9 @@ data:
   {{ .toponame }}.yaml:
     version: 1.0
     toposerver:
-{{ toYaml ( omit .toposerver "logging" "env") | indent 6 }}
+{{ toYaml ( omit .toposerver "logging" "tracing" "env") | indent 6 }}
 {{- include "hpcc.generateLoggingConfig" (dict "root" .root "me" .toposerver) | indent 6 }}
+{{- include "hpcc.generateTracingConfig" (dict "root" .root "me" .toposerver) | indent 6 }}
     global:
 {{ include "hpcc.generateGlobalConfigMap" .root | indent 6 }}
 {{- end -}}

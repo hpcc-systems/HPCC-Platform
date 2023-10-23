@@ -24,7 +24,8 @@ global:
   # logging sets the default logging information for all components. Can be overridden locally
   logging:
     detail: 80
-
+  tracing:
+    alwaysCreateTraceIds: true
   ## resource settings for stub components
   #stubInstanceResources:
   #  memory: "200Mi"

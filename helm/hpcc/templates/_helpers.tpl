@@ -289,6 +289,18 @@ logging:
 {{- end -}}
 
 {{/*
+Generate local tracing info, merged with global
+Pass in dict with root and me
+*/}}
+{{- define "hpcc.generateTracingConfig" -}}
+{{- $tracing := deepCopy (.me.tracing | default dict) | mergeOverwrite dict (.root.Values.global.tracing | default dict) -}}
+{{- if not (empty $tracing) }}
+tracing:
+{{ toYaml $tracing | indent 2 }}
+{{- end -}}
+{{- end -}}
+
+{{/*
 Generate local metrics configuration, merged with global
 Pass in dict with root and me
 */}}
@@ -1286,8 +1298,9 @@ data:
   {{ $configMapName }}.yaml:
     version: 1.0
     sasha:
-{{ toYaml (omit .me "logging") | indent 6 }}
+{{ toYaml (omit .me "logging" "tracing") | indent 6 }}
 {{- include "hpcc.generateLoggingConfig" . | indent 6 }}
+{{- include "hpcc.generateTracingConfig" . | indent 6 }}
 {{ include "hpcc.generateVaultConfig" . | indent 6 }}
 {{- if hasKey .me "plane" }}
  {{- $sashaStoragePlane := .me.plane | default (include "hpcc.getFirstPlaneForCategory" (dict "root" .root "category" "sasha")) }}

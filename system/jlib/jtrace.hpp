@@ -62,6 +62,7 @@ interface ITraceManager : extends IInterface
     virtual ISpan * createServerSpan(const char * name, const IProperties * httpHeaders, SpanFlags flags = SpanFlags::None) = 0;
     virtual bool isTracingEnabled() const = 0;
     virtual bool alwaysCreateGlobalIds() const = 0;
+    virtual bool alwaysCreateTraceIds() const = 0;
     virtual const char * getTracedComponentName() const = 0;
  };
 

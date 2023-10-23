@@ -171,9 +171,10 @@ data:
   {{ $dali.name }}.yaml: |
     version: 1.0
     dali:
-{{ toYaml (omit $dali "logging" "services" "env") | indent 6 }}
+{{ toYaml (omit $dali "logging" "tracing" "services" "env") | indent 6 }}
       dataPath: {{ include "hpcc.getPlanePrefix" (dict "root" $ "planeName" $daliStoragePlane) }}
 {{- include "hpcc.generateLoggingConfig" $commonCtx | indent 6 }}
+{{- include "hpcc.generateTracingConfig" $commonCtx | indent 6 }}
 {{- include "hpcc.generateMetricsConfig" $commonCtx | indent 6 }}
 {{ include "hpcc.generateVaultConfig" (dict "root" $ "secretsCategories" $daliSecretsCategories ) | indent 6 }}
       foreignAccess: {{ include "hpcc.isForeignAccessConfigured" (dict "root" $ "me" .) | default "false" }}
