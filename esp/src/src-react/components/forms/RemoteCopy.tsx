@@ -130,14 +130,9 @@ export const RemoteCopy: React.FunctionComponent<RemoteCopyProps> = ({
                 }) => <TextField
                         key={fieldName}
                         label={nlsHPCC.Dali}
-                        required={true}
                         value={value}
                         onChange={onChange}
-                        errorMessage={error && error.message}
                     />}
-                rules={{
-                    required: nlsHPCC.ValidationErrorRequired
-                }}
             />
             <Controller
                 control={control} name="srcusername"
