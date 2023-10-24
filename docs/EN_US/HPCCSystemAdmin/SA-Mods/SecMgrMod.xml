@@ -7,7 +7,7 @@
   <para>The Security Manager Plugin framework provides a mechanism for the
   creation and deployment of custom security manager plugins.</para>
 
-  <sect1 id="how-to-create-a-security-manager-plugin">
+  <sect1 id="how-to-create-a-security-manager-plugin" role="nobrk">
     <title>Plugin Development</title>
 
     <para>A custom Security Manager Plugin consists of a <emphasis
@@ -44,9 +44,9 @@
       </itemizedlist></para>
 
     <para><emphasis role="bold">Buildset definition</emphasis> - The plugin
-    declares itself as an HPCC Systems<superscript>®</superscript> Security Manager Plugin component, and declares
-    the location of the plugin files and the configuration definition
-    schema.</para>
+    declares itself as an HPCC Systems<superscript>®</superscript> Security
+    Manager Plugin component, and declares the location of the plugin files
+    and the configuration definition schema.</para>
 
     <para><emphasis role="bold">EXAMPLE:</emphasis></para>
 
@@ -67,8 +67,8 @@
     <para><emphasis role="bold">Configuration Definition</emphasis> - The
     plugin must provide a definition of the configuration elements and the
     structure it expects to receive at the time it is instantiated. The XSD
-    file is consumed by the HPCC Systems Configuration Manager component and is
-    rendered as a GUI form. The configuration definition is defined as an
+    file is consumed by the HPCC Systems Configuration Manager component and
+    is rendered as a GUI form. The configuration definition is defined as an
     element of the component name (as declared in the buildset) followed by
     attributes and/or complex elements.</para>
 
@@ -157,8 +157,6 @@
   &lt;/xs:element&gt;
 &lt;/xs:schema&gt;</programlisting>
 
-    <?hard-pagebreak ?>
-
     <para><emphasis role="bold">genenvrules.conf</emphasis> - (optional) This
     file allows the plugin to add itself to the
     "do_not(automatically)_generate" list. While this is an optional file,
@@ -170,8 +168,8 @@
 
     <para><emphasis role="bold">Configuration transformation rules</emphasis>
     - (optional) specified as an xsl template, this set of rules can be
-    applied to the configuration XML. Refer to XSL templates in the HPCC Systems
-    source tree.</para>
+    applied to the configuration XML. Refer to XSL templates in the HPCC
+    Systems source tree.</para>
 
     <sect2 id="concrete-example">
       <title>Concrete Example</title>
