@@ -1488,8 +1488,7 @@ void bindDataParam(unsigned len, const char *value, const RtlFieldInfo *field, s
     rapidjson::Value key;
     key.SetString(field->name, jsonAlloc);
     rapidjson::Value val;
-    size32_t utf8size = rtlUtf8Size(len, value);
-    val.SetString(value, utf8size, jsonAlloc);
+    val.SetString(value, len, jsonAlloc);
 
     addMember(r_parquet, key, val);
 }
