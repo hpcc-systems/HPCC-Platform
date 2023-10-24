@@ -109,13 +109,14 @@ extern void fail(const char *message)
  *
  * @param _batchSize The size of the batches when converting parquet columns to rows.
  */
-ParquetHelper::ParquetHelper(const char *option, const char *_location, const char *destination,
-                                int _rowSize, int _batchSize, bool _overwrite, const IThorActivityContext *_activityCtx)
+ParquetHelper::ParquetHelper(const char *option, const char *_location, const char *destination, int _rowSize, int _batchSize,
+    bool _overwrite, arrow::Compression::type _compressionOption, const IThorActivityContext *_activityCtx)
     : partOption(option), location(_location), destination(destination)
 {
     rowSize = _rowSize;
     batchSize = _batchSize;
     overwrite = _overwrite;
+    compressionOption = _compressionOption;
     activityCtx = _activityCtx;
 
     pool = arrow::default_memory_pool();
@@ -200,8 +201,7 @@ arrow::Status ParquetHelper::openWriteFile()
         PARQUET_ASSIGN_OR_THROW(outfile, arrow::io::FileOutputStream::Open(destination));
 
         // Choose compression
-        // TO DO let the user choose a compression
-        std::shared_ptr<parquet::WriterProperties> props = parquet::WriterProperties::Builder().compression(arrow::Compression::UNCOMPRESSED)->build();
+        std::shared_ptr<parquet::WriterProperties> props = parquet::WriterProperties::Builder().compression(compressionOption)->build();
 
         // Opt to store Arrow schema for easier reads back into Arrow
         std::shared_ptr<parquet::ArrowWriterProperties> arrow_props = parquet::ArrowWriterProperties::Builder().store_schema()->build();
@@ -1734,6 +1734,7 @@ ParquetEmbedFunctionContext::ParquetEmbedFunctionContext(const IContextLogger &_
     __int64 rowsize = 40000;    // Size of the row groups when writing to parquet files
     __int64 batchSize = 40000;  // Size of the batches when converting parquet columns to rows
     bool overwrite = false;     // If true overwrite file with no error. The default is false and will throw an error if the file already exists.
+    arrow::Compression::type compressionOption = arrow::Compression::UNCOMPRESSED;
 
     // Iterate through user options and save them
     StringArray inputOptions;
@@ -1758,6 +1759,27 @@ ParquetEmbedFunctionContext::ParquetEmbedFunctionContext(const IContextLogger &_
                 batchSize = atoi(val);
             else if (stricmp(optName, "overwriteOpt") == 0)
                 overwrite = clipStrToBool(val);
+            else if (stricmp(optName, "compression") == 0)
+            {
+                if (strieq(val, "snappy"))
+                    compressionOption = arrow::Compression::SNAPPY;
+                else if (strieq(val, "gzip"))
+                    compressionOption = arrow::Compression::GZIP;
+                else if (strieq(val, "brotli"))
+                    compressionOption = arrow::Compression::BROTLI;
+                else if (strieq(val, "lz4"))
+                    compressionOption = arrow::Compression::LZ4;
+                else if (strieq(val, "lz4frame"))
+                    compressionOption = arrow::Compression::LZ4_FRAME;
+                else if (strieq(val, "lz4hadoop"))
+                    compressionOption = arrow::Compression::LZ4_HADOOP;
+                else if (strieq(val, "zstd"))
+                    compressionOption = arrow::Compression::ZSTD;
+                else if (strieq(val, "uncompressed"))
+                    compressionOption = arrow::Compression::UNCOMPRESSED;
+                else
+                    failx("Unsupported compression type: %s", val);
+            }
             else
                 failx("Unknown option %s", optName.str());
         }
@@ -1768,7 +1790,7 @@ ParquetEmbedFunctionContext::ParquetEmbedFunctionContext(const IContextLogger &_
     }
     else
     {
-        m_parquet = std::make_shared<ParquetHelper>(option, location, destination, rowsize, batchSize, overwrite, activityCtx);
+        m_parquet = std::make_shared<ParquetHelper>(option, location, destination, rowsize, batchSize, overwrite, compressionOption, activityCtx);
     }
 }
 
