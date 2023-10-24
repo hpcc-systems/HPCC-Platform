@@ -556,6 +556,7 @@ bool CPermissionsCache::queryPermsManagedFileScope(ISecUser& sec_user, const cha
     if (!fullScope || !*fullScope)
     {
         *accessFlags = queryDefaultPermission(sec_user);
+        OWARNLOG("FileScope empty for %s, applying default permissions %s(%d), took %dms", sec_user.getName(), getSecAccessFlagName(*accessFlags), *accessFlags,  msTick()-start);
         return true;
     }
 
@@ -624,7 +625,7 @@ bool CPermissionsCache::queryPermsManagedFileScope(ISecUser& sec_user, const cha
                 {
                     *accessFlags = res->getAccessFlags();
                     managedScope.append(const_cast<char *>(res->getName()));
-                    DBGLOG("FileScope %s for %s(%s) access denied %d at scope %s, took %dms",fullScope, sec_user.getName(), res->getName(), *accessFlags, scope, msTick()-start);
+                    LOG(MCoperatorProgress, "FileScope %s for %s(%s) access denied %s(%d) at scope %s, took %dms", fullScope, sec_user.getName(), res->getName(), getSecAccessFlagName(*accessFlags), *accessFlags, scope, msTick()-start);
                     return true;
                 }
                 else
@@ -653,7 +654,6 @@ bool CPermissionsCache::queryPermsManagedFileScope(ISecUser& sec_user, const cha
         else
         {
             managedScope.append(const_cast<char *>(res->getName()));//return deepest managed scope
-
 #ifdef _DEBUG
             DBGLOG("FileScope %s for %s(%s) managed but not cached, took %dms", fullScope, sec_user.getName(), res->getName(), msTick()-start);
 #endif
@@ -663,9 +663,7 @@ bool CPermissionsCache::queryPermsManagedFileScope(ISecUser& sec_user, const cha
     else
     {
         *accessFlags = queryDefaultPermission(sec_user);
-#ifdef _DEBUG
-        DBGLOG("FileScope %s for %s not managed, using default %d, took %dms", fullScope, sec_user.getName(),*accessFlags, msTick()-start);
-#endif
+        OWARNLOG("FileScope %s for %s not managed, using default %s(%d), took %dms", fullScope, sec_user.getName(), getSecAccessFlagName(*accessFlags), *accessFlags, msTick()-start);
         rc = true;
     }
     return rc;
