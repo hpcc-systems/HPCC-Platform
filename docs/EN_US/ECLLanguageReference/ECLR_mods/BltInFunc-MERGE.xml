@@ -169,9 +169,14 @@
   <emphasis>recordsetset</emphasis>. This is particularly useful for
   incremental data updates as it allows you to merge a smaller set of new
   records into an existing large dataset or index without having to re-process
-  all the source data again. The <emphasis>recordsetset</emphasis> form makes
-  merging a variable number of datasets possible when used inside a GRAPH
-  function.</para>
+  all the source data again. </para>
+
+  <para>The <emphasis>recordsetset</emphasis> form makes merging a variable
+  number of datasets possible when used inside a GRAPH function.</para>
+
+  <para>To write a MERGEd index to disk, you must use the BUILD action.</para>
+
+  <?hard-pagebreak ?>
 
   <para>Example:</para>
 
@@ -192,4 +197,6 @@ ds4 := MERGE(SetDS,SORTED(letter,number));
 OUTPUT(ds3);
 OUTPUT(ds4);
 </programlisting>
+
+  <para>See Also: <link linkend="BUILD">BUILD</link></para>
 </sect1>
