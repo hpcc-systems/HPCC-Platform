@@ -1271,6 +1271,10 @@
         },
         "egress": {
           "$ref" : "#/definitions/egress"
+        },
+        "terminationGracePeriodSeconds": {
+          "$ref": "#/definitions/terminationGracePeriodSeconds",
+          "default": 3600
         }
       }
     },
@@ -1342,6 +1346,9 @@
           "type": "string",
           "description": "The default repo version used if not supplied for the defaultRepo"
         },
+        "terminationGracePeriodSeconds": {
+          "$ref": "#/definitions/terminationGracePeriodSeconds"
+        },
         "resources": {
           "$ref": "#/definitions/resources"
         },
@@ -1384,6 +1391,9 @@
         },
         "resources": {
           "$ref": "#/definitions/resources"
+        },
+        "terminationGracePeriodSeconds": {
+          "$ref": "#/definitions/terminationGracePeriodSeconds"
         }
       }
     },
@@ -3166,6 +3176,12 @@
         }
       },
       "required": [ "name", "type", "target" ]
+    },
+    "terminationGracePeriodSeconds": {
+      "type": "integer",
+      "description": "Period permitted for component to terminate gracefully before being killed by Kubernetes",
+      "default": 600,
+      "minimum": 0
     }
   }
 }
