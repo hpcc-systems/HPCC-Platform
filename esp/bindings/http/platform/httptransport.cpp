@@ -798,6 +798,49 @@ void CHttpMessage::logSOAPMessage(const char* message, const char* prefix)
     return;
 }
 
+static const char* POST_METHOD_STR = "POST ";
+static bool skipLogContent(const char* httpHeader)
+{
+    if (!startsWith(httpHeader, POST_METHOD_STR))
+        return false;
+
+    const char* servicePtr = httpHeader + 5;
+    if (servicePtr[0] != '/')
+        return false;
+
+    const char* methodPtr = strchr(++servicePtr, '/');
+    if (!methodPtr)
+        return false;
+
+    unsigned serviceType = 0;
+    if (startsWithIgnoreCase(servicePtr, "ws_access/"))
+        serviceType = 1;
+    else if (startsWithIgnoreCase(servicePtr, "ws_account/"))
+        serviceType = 2;
+    if (serviceType == 0)
+        return false;
+
+    StringBuffer espMethod;
+    const char* tail = strchr(++methodPtr, '.');
+    if (tail && (startsWithIgnoreCase(tail, ".xml") || startsWithIgnoreCase(tail, ".json")))
+        espMethod.append(tail - methodPtr, methodPtr);
+    else
+    {
+        tail = strchr(methodPtr, '?');
+        if (!tail)
+            tail = strchr(methodPtr, ' ');
+        if (tail)
+            espMethod.append(tail - methodPtr, methodPtr);
+        else
+            espMethod.append(methodPtr);
+    }
+
+    if (serviceType == 1)
+        return (strieq(espMethod, "AddUser") || strieq(espMethod, "UserResetPass"));
+
+    return strieq(espMethod, "UpdateUser");
+}
+
 void CHttpMessage::logMessage(MessageLogFlag messageLogFlag, const char *prefix)
 {
     logMessage(messageLogFlag, m_content, prefix);
@@ -812,8 +855,7 @@ void CHttpMessage::logMessage(MessageLogFlag messageLogFlag, StringBuffer& conte
 
         if (((messageLogFlag == LOGCONTENT) || (messageLogFlag == LOGALL)) && (content.length() > 0))
         {//log content
-            if ((m_header.length() > 0) && (startsWith(m_header.str(), "POST /ws_access/AddUser")
-                || startsWith(m_header.str(), "POST /ws_access/UserResetPass") || startsWith(m_header.str(), "POST /ws_account/UpdateUser")))
+            if (skipLogContent(m_header))
                 DBGLOG("%s<For security, ESP does not log the content of this request.>", prefix);
             else if (isSoapMessage())
                 logSOAPMessage(content.str(), prefix);
