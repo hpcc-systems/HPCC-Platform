@@ -83,7 +83,7 @@ function columnsAdapter(columns: FluentColumns, columnWidths: Map<string, any>):
                 iconName: column.headerIcon,
                 isIconOnly: !!column.headerIcon,
                 data: column,
-                styles: { root: { width } },
+                styles: { root: { width, ":hover": { cursor: column?.sortable !== false ? "pointer" : "default" } } },
                 onRender: (item: any, index: number, col: IColumn) => {
                     col.minWidth = column.width ?? 70;
                     col.maxWidth = column.width;
