@@ -430,9 +430,8 @@ static const StatisticsMapping indexWriteStatistics({ StNumDuplicateKeys, StNumL
 
 // These ones get accumulated and reported in COMPLETE: line (and workunit).
 // Excludes ones that are not sensible to sum across activities, other than StTimeTotalExecute which must be explicitly overwritten at global level before we report it
-extern const StatisticsMapping accumulatedStatistics({StWhenFirstRow, StTimeLocalExecute, StTimeTotalExecute, StSizeMaxRowSize,
-                                                      StNumRowsProcessed, StNumSlaves, StNumStarts, StNumStops, StNumStrands,
-                                                      StNumScansPerRow, StNumAllocations, StNumAllocationScans,
+extern const StatisticsMapping accumulatedStatistics({StWhenFirstRow, StTimeLocalExecute, StSizeMaxRowSize,
+                                                      StNumAllocations, StNumAllocationScans,
                                                       StCycleLocalExecuteCycles,
                                                       StNumAtmostTriggered,
                                                       StNumServerCacheHits, StNumIndexSeeks, StNumIndexScans, StNumIndexWildSeeks,
