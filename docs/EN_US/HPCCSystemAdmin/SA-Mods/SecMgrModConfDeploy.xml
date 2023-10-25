@@ -5,9 +5,11 @@
   <title role="nbrk">Configure and Deploy the Security Manager Plugin</title>
 
   <para>The following sections detail the process of configuring your HPCC
-  Systems<superscript>®</superscript> platform to use the Security Manager Plugin.</para>
+  Systems<superscript>®</superscript> platform to use the Security Manager
+  Plugin.</para>
 
-  <sect1 id="how-to-configure-an-existing-security-manager-plugin">
+  <sect1 id="how-to-configure-an-existing-security-manager-plugin"
+         role="nobrk">
     <title>How to Configure a Security Manager Plugin</title>
 
     <para>Once the plugin has been installed, the plugin can be configured
