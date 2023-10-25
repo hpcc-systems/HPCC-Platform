@@ -116,6 +116,9 @@ spec:
         run: {{ .name | quote }}
         server: {{ .name | quote }}
         accessDali: "yes"
+{{- if eq .application "eclwatch" }}
+        accessSasha: "yes"
+{{- end }}
         app: {{ $application }}
         helmVersion: 9.2.31-closedown0
         {{- include "hpcc.addStandardLabels" (dict "root" $ "name" $application "component" "esp" "instance" .name) | indent 8 }}
