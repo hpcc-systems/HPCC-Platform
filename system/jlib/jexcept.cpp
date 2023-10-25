@@ -271,10 +271,18 @@ IException *makeStringExceptionV(MessageAudience aud, int code, const char *form
     return ret;
 }
 
-IException jlib_decl *makeStringException(MessageAudience aud,int code,const char *why)
+IException *makeStringException(MessageAudience aud,int code,const char *why)
 {
     return new StringException(code,why,aud);
 }
+
+IException *makePrefixedException(const char * prefix, const IException * e)
+{
+    StringBuffer msg;
+    e->errorMessage(msg.append(prefix));
+    return makeStringException(e->errorAudience(), e->errorCode(), msg);
+}
+
 
 class jlib_thrown_decl WrappedException: public StringException
 {
