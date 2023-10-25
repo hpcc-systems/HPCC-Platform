@@ -24,6 +24,13 @@
 #include "daclient.hpp"
 
 
+static void usage()
+{
+    printf("usage: dalistop <server_ip:port> [/nowait]\n");
+    printf("eg:  dalistop .                          -- stop dali server running locally\n");
+    printf("     dalistop eq0001016                  -- stop dali server running remotely\n");
+}
+
 int main(int argc, const char* argv[])
 {
     InitModuleObjects();
@@ -34,23 +41,25 @@ int main(int argc, const char* argv[])
         const char *server = nullptr;
         if (argc<2)
         {
-            // with no args, use port from daliconfig if present (used by init scripts)
-            Owned<IFile> daliConfigFile = createIFile("daliconf.xml");
-            if (daliConfigFile->exists())
-            {
-                Owned<IPropertyTree> daliConfig = createPTree(*daliConfigFile, ipt_caseInsensitive);
-                port = daliConfig->getPropInt("@port", DALI_SERVER_PORT);
-                server = ".";
-            }
+            if (isContainerized())
+                usage();
             else
             {
-                printf("usage: dalistop <server_ip:port> [/nowait]\n");
-                printf("eg:  dalistop .                          -- stop dali server running locally\n");
-                printf("     dalistop eq0001016                  -- stop dali server running remotely\n");
+                // with no args, use port from daliconfig if present (used by init scripts)
+                Owned<IFile> daliConfigFile = createIFile("daliconf.xml");
+                if (daliConfigFile->exists())
+                {
+                    Owned<IPropertyTree> daliConfig = createPTree(*daliConfigFile, ipt_caseInsensitive);
+                    port = daliConfig->getPropInt("@port", DALI_SERVER_PORT);
+                    server = ".";
+                }
+                else
+                    usage();
             }
         }
         else
         {
+            initNullConfiguration();
             server = argv[1];
             port = DALI_SERVER_PORT;
         }
