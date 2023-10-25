@@ -186,6 +186,18 @@
     within those functions that require record structures (OUTPUT, TABLE,
     DATASET etc.), instead of defining the record as a separate
     definition.</para>
+
+    <para>If the RECORD structure is defining an INDEX, you can also use the
+    "results in" operator (=&gt;) before payload fields as shown below.</para>
+
+    <programlisting lang="ECL" role="NOTRunnable">VehicleKey2 := INDEX(Vehicles,SearchTerms,Payload,'vkey::st.city2');
+BUILD(VehicleKey2);
+
+// Using "results in" operator (=&gt;) for payload fields
+VehicleKey3 := INDEX(Vehicles,{st,city  =&gt; lname},'vkey::st.city3');
+BUILD(VehicleKey3);</programlisting>
+
+    <para></para>
   </sect2>
 
   <sect2 id="Field_Definitions">
