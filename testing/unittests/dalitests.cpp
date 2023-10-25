@@ -2782,6 +2782,14 @@ public:
                                { "~remote::dfs1::ascope::afile", "remote::dfs1::ascope"},
                                { nullptr, nullptr }                            // terminator
         };
+
+        const char *externalUrlChecks[][2] = {
+                               { "~file::127.0.0.1::var::lib::^H^P^C^C^Systems::mydropzone::ascope::afile", "/var/lib/HPCCSystems/mydropzone/ascope/afile"},
+                               { "~file::10.3.2.1::var::lib::^H^P^C^C^Systems::mydropzone::ascope::afile", "//10.3.2.1/var/lib/HPCCSystems/mydropzone/ascope/afile"},
+                               { "~plane::mydropzone::ascope::afile", "/var/lib/HPCCSystems/mydropzone/ascope/afile"},
+                               { "~plane::dropzone2::ascope::afile", "//10.4.3.2/var/lib/HPCCSystems/mydropzone/ascope/afile"},
+                               { nullptr, nullptr }                            // terminator
+        };
         PROGLOG("Checking valid logical filenames");
         unsigned nlfn=0;
         for (;;)
@@ -2853,6 +2861,59 @@ public:
                 dlfn.getScopes(result);
                 if (!streq(result, expected))
                     err.appendf("Logical filename '%s' scopes should be '%s', but result was '%s'.", lfn, expected, result.str());
+            }
+            catch (IException *e)
+            {
+                err.appendf("Logical filename '%s' failed: ", lfn);
+                e->errorMessage(err);
+                e->Release();
+            }
+            if (err.length())
+            {
+                ERRLOG("%s", err.str());
+                CPPUNIT_FAIL(err.str());
+            }
+        }
+
+        constexpr const char * globalConfigYaml = R"!!(
+        storage:
+          planes:
+          - name: data
+            category: data
+            prefix: /var/lib/HPCCSystems/hpcc-data
+          - name: mydropzone
+            category: lz
+            prefix: /var/lib/HPCCSystems/mydropzone
+          - name: dropzone2
+            category: lz
+            prefix: /var/lib/HPCCSystems/mydropzone
+            hosts:
+            - 10.4.3.2
+        )!!";
+        Owned<IPropertyTree> globalConfig = createPTreeFromYAMLString(globalConfigYaml);
+        replaceComponentConfig(getComponentConfigSP(), globalConfig);
+
+        PROGLOG("Checking physical file paths");
+        nlfn = 0;
+        for (;;)
+        {
+            const char **entry = externalUrlChecks[nlfn++];
+            if (nullptr == entry[0])
+                break;
+            const char *lfn = entry[0];
+            const char *expected = entry[1];
+            PROGLOG("lfn = %s, expect = %s", lfn, expected);
+            CDfsLogicalFileName dlfn;
+            StringBuffer err;
+            try
+            {
+                dlfn.set(lfn);
+                RemoteFilename rfn;
+                dlfn.getExternalFilename(rfn);
+                StringBuffer filePath;
+                rfn.getPath(filePath);
+                if (!streq(filePath, expected))
+                    err.appendf("Logical filename '%s' external url should be '%s', but result was '%s'.", lfn, expected, filePath.str());
             }
             catch (IException *e)
             {

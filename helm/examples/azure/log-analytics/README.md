@@ -22,6 +22,16 @@ The user should populate the following values in order to create a new Azure Log
      For example: "admin=MyName email=my.email@mycompany.com environment=myenv justification=testing"
 - AZURE_SUBSCRIPTION (Optional - Ensures this subscription is set before creating the new workspace)
 
+- AKS_RESOURCE_LOCATION (Optional e.g. eastus)
+
+- ENABLE_CONTAINER_LOG_V2 (true|false) Enables the ContainerLog V2 schema.
+   If set to true, the stdout/stderr Logs are forwarded to ContainerLogV2 table, otherwise the container logs continue to be forwarded to ContainerLog table.
+   Utilizes ./helm/examples/azure/log-analytics/dataCollectionSettings.json, and 
+   ./helm/examples/azure/log-analytics/container-azm-ms-agentconfig.yaml which creates and applies a new configmap 'kube-system/container-azm-ms-agentconfig'.
+
+   Details on benefits of V2 schema: https://learn.microsoft.com/en-us/azure/azure-monitor/containers/container-insights-logging-v2?tabs=configure-portal
+
+
 #### b - Execute enable-loganalytics.sh
 
 This helper script attempts to create new Azure LogAnalytics workspace (user can provide pre-existing), associates the workspace with the target AKS cluster, and enables the Azure Log Analytics feature. This script is dependant on the values provided in the previous step.
@@ -37,7 +47,7 @@ Depending on your Azure subscription structure, it might be necessary to request
 
 The Registered Application must provide a 'client secret' which is used to gain access to the Log Analytics API.
 
-#### b - Provide AAD registered application inforation and target ALA Workspace 
+#### b - Provide AAD registered application information and target ALA Workspace 
 HPCC logAccess requires access to the AAD Tenant ID, client ID, and secret which are provided by the registered app from section '2.a' above. The target workspace ID is also required, and can be retrieved after the step in section '1.b' is successfully completed. Those four values must be provided via a secure secret object.
 
 The secret is expected to be in the 'esp' category, and be named 'azure-logaccess'.
@@ -62,9 +72,19 @@ Example manual secret creation command (assuming ./secrets-templates contains a 
 ```
 
 #### c - Configure HPCC logAccess
-The target HPCC deployment should be directed to use the above Azure Log Analytics workspace, and the newly created secret by providing appropriate logAccess values (such as ./loganalytics-hpcc-logaccess.yaml). 
+The target HPCC deployment should be directed to use the above Azure Log Analytics workspace, and the newly created secret by providing appropriate logAccess values (such as ./loganalytics-hpcc-logaccess.yaml or ./loganalytics-hpcc-logaccessV2.yaml if targeting Azure Log Analytics ContainerLogV2 - recommended ). 
 
 Example use:
 ```console
-  helm install myhpcc hpcc/hpcc -f HPCC-Platform/helm/examples/azure/log-analytics/loganalytics-hpcc-logaccess.yaml
+  helm install myhpcc hpcc/hpcc -f HPCC-Platform/helm/examples/azure/log-analytics/loganalytics-hpcc-logaccessV2.yaml
 ```
+## Directory Contents
+
+- 'create-azure-logaccess-secret.sh' - Script for creating 'azure-logaccess' secret needed for accessing logs stored in Azure Log Analytics
+- 'secrets-templates' - Contains placeholders for information required to create 'azure-logaccess' secret via 'create-azure-logaccess-secret.sh' script
+- 'enable-loganalytics.sh' - Script for enabling Azure LogAnalytics upon a given AKS cluster
+- 'env-loganalytics' - Environment information required to enable ALA upon target AKS cluster.
+- 'dataCollectionSettings.json' - Provided to enable ContainerLogV2 schema on target AKS cluster
+- 'container-azm-ms-agentconfig.yaml' - Defines ConfigMap used to configure ALA log collection. Provided to re-direct ALA log collection to ContainerLogV2 schema.
+- 'loganalytics-hpcc-logaccess.yaml' - Used to configure ALA -> HPCC LogAccess. Provides mapping between ALA log tables to HPCC's known log categories
+- 'loganalytics-hpcc-logaccessV2.yaml' - Used to configure ALA -> HPCC LogAccess. Provides mapping between ALA ContainerLogV2 log table to HPCC's known log categories

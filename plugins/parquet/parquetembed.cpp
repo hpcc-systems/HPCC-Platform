@@ -110,11 +110,12 @@ extern void fail(const char *message)
  * @param _batchSize The size of the batches when converting parquet columns to rows.
  */
 ParquetHelper::ParquetHelper(const char *option, const char *_location, const char *destination,
-                                int _rowSize, int _batchSize, const IThorActivityContext *_activityCtx)
+                                int _rowSize, int _batchSize, bool _overwrite, const IThorActivityContext *_activityCtx)
     : partOption(option), location(_location), destination(destination)
 {
     rowSize = _rowSize;
     batchSize = _batchSize;
+    overwrite = _overwrite;
     activityCtx = _activityCtx;
 
     pool = arrow::default_memory_pool();
@@ -162,10 +163,31 @@ arrow::Status ParquetHelper::openWriteFile()
         writeOptions.filesystem = filesystem;
         writeOptions.base_dir = destination;
         writeOptions.partitioning = partitioning;
-        writeOptions.existing_data_behavior = arrow::dataset::ExistingDataBehavior::kOverwriteOrIgnore;
+        writeOptions.existing_data_behavior = overwrite ? arrow::dataset::ExistingDataBehavior::kOverwriteOrIgnore : arrow::dataset::ExistingDataBehavior::kError;
     }
     else
     {
+        StringBuffer filename;
+        StringBuffer path;
+        StringBuffer ext;
+        splitFilename(destination.c_str(), nullptr, &path, &filename, &ext, false);
+
+        if(!strieq(ext, ".parquet"))
+            failx("Error opening file: Invalid file extension %s", ext.str());
+
+        Owned<IDirectoryIterator> itr = createDirectoryIterator(path.str(), filename.append("*.parquet"));
+
+        ForEach(*itr)
+        {
+            if (overwrite)
+            {
+                IFile &file = itr->query();
+                if(!file.remove())
+                    failx("File %s could not be overwritten.", file.queryFilename());
+            }
+            else
+                failx("Cannot write to file %s because it already exists. To delete it set the overwrite option to true.", destination.c_str());
+        }
         // Currently under the assumption that all channels and workers are given a worker id and no matter
         // the configuration will show up in activityCtx->numSlaves()
         if (activityCtx->numSlaves() > 1)
@@ -956,8 +978,40 @@ __int64 ParquetRowBuilder::getCurrIntValue(const RtlFieldInfo *field)
         {
             __int64 myint64 = 0;
             auto scalar = getCurrView(field);
-            handleDeserializeOutcome(tokenDeserializer.deserialize(scalar.data(), myint64), "signed", scalar.data());
+            std::string scalarStr(scalar.data(), scalar.size());
+            handleDeserializeOutcome(tokenDeserializer.deserialize(scalarStr.c_str(), myint64), "signed", scalarStr.c_str());
             return myint64;
+        }
+    }
+}
+
+double ParquetRowBuilder::getCurrRealValue(const RtlFieldInfo *field)
+{
+    switch ((*array_visitor)->type)
+    {
+        case BoolType:
+            return (*array_visitor)->bool_arr->Value(currArrayIndex());
+        case IntType:
+            return getSigned(array_visitor, currArrayIndex());
+        case UIntType:
+            return getUnsigned(array_visitor, currArrayIndex());
+        case RealType:
+            return getReal(array_visitor, currArrayIndex());
+        case DateType:
+            return (*array_visitor)->size == 32 ? (*array_visitor)->date32_arr->Value(currArrayIndex()) : (*array_visitor)->date64_arr->Value(currArrayIndex());
+        case TimestampType:
+            return (*array_visitor)->timestamp_arr->Value(currArrayIndex());
+        case TimeType:
+            return (*array_visitor)->size == 32 ? (*array_visitor)->time32_arr->Value(currArrayIndex()) : (*array_visitor)->time64_arr->Value(currArrayIndex());
+        case DurationType:
+            return (*array_visitor)->duration_arr->Value(currArrayIndex());
+        default:
+        {
+            double mydouble = 0.0;
+            auto scalar = getCurrView(field);
+            std::string scalarStr(scalar.data(), scalar.size());
+            handleDeserializeOutcome(tokenDeserializer.deserialize(scalarStr.c_str(), mydouble), "real", scalarStr.c_str());
+            return mydouble;
         }
     }
 }
@@ -1020,10 +1074,7 @@ double ParquetRowBuilder::getRealResult(const RtlFieldInfo *field)
         return p.doubleResult;
     }
 
-    if ((*array_visitor)->type == RealType)
-        return getReal(array_visitor, currArrayIndex());
-    else
-        return getCurrIntValue(field);
+    return getCurrRealValue(field);
 }
 
 /**
@@ -1437,8 +1488,7 @@ void bindDataParam(unsigned len, const char *value, const RtlFieldInfo *field, s
     rapidjson::Value key;
     key.SetString(field->name, jsonAlloc);
     rapidjson::Value val;
-    size32_t utf8size = rtlUtf8Size(len, value);
-    val.SetString(value, utf8size, jsonAlloc);
+    val.SetString(value, len, jsonAlloc);
 
     addMember(r_parquet, key, val);
 }
@@ -1683,6 +1733,8 @@ ParquetEmbedFunctionContext::ParquetEmbedFunctionContext(const IContextLogger &_
     const char *destination = ""; // file name and location of where to read parquet file from
     __int64 rowsize = 40000;    // Size of the row groups when writing to parquet files
     __int64 batchSize = 40000;  // Size of the batches when converting parquet columns to rows
+    bool overwrite = false;     // If true overwrite file with no error. The default is false and will throw an error if the file already exists.
+
     // Iterate through user options and save them
     StringArray inputOptions;
     inputOptions.appendList(options, ",");
@@ -1704,6 +1756,8 @@ ParquetEmbedFunctionContext::ParquetEmbedFunctionContext(const IContextLogger &_
                 rowsize = atoi(val);
             else if (stricmp(optName, "BatchSize") == 0)
                 batchSize = atoi(val);
+            else if (stricmp(optName, "overwriteOpt") == 0)
+                overwrite = clipStrToBool(val);
             else
                 failx("Unknown option %s", optName.str());
         }
@@ -1714,7 +1768,7 @@ ParquetEmbedFunctionContext::ParquetEmbedFunctionContext(const IContextLogger &_
     }
     else
     {
-        m_parquet = std::make_shared<ParquetHelper>(option, location, destination, rowsize, batchSize, activityCtx);
+        m_parquet = std::make_shared<ParquetHelper>(option, location, destination, rowsize, batchSize, overwrite, activityCtx);
     }
 }
 

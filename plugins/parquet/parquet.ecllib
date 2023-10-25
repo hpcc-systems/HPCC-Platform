@@ -33,14 +33,14 @@ EXPORT ParquetIO := MODULE
         RETURN _DoParquetReadPartition();
     ENDMACRO;
 
-    EXPORT Write(outDS, filePath) := FUNCTIONMACRO
-        LOCAL _DoParquetWrite(STREAMED DATASET(RECORDOF(outDS)) _ds) := EMBED(parquet : activity, option('write'), destination(filePath))
+    EXPORT Write(outDS, filePath, overwriteOption = false) := FUNCTIONMACRO
+        LOCAL _DoParquetWrite(STREAMED DATASET(RECORDOF(outDS)) _ds) := EMBED(parquet : activity, option('write'), destination(filePath), overwriteOpt(overwriteOption))
         ENDEMBED;
         RETURN _doParquetWrite(outDS);
     ENDMACRO;
 
-    EXPORT WritePartition(outDS, outRows = 100000, basePath) := FUNCTIONMACRO
-        LOCAL _DoParquetWritePartition(STREAMED DATASET(RECORDOF(outDS)) _ds) := EMBED(parquet : activity, option('writepartition'), destination(basePath), MaxRowSize(outRows))
+    EXPORT WritePartition(outDS, outRows = 100000, basePath, overwriteOption = false) := FUNCTIONMACRO
+        LOCAL _DoParquetWritePartition(STREAMED DATASET(RECORDOF(outDS)) _ds) := EMBED(parquet : activity, option('writepartition'), destination(basePath), MaxRowSize(outRows), overwriteOpt(overwriteOption))
         ENDEMBED;
         RETURN _DoParquetWritePartition(outDS);
     ENDMACRO;

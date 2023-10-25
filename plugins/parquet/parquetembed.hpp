@@ -785,7 +785,7 @@ private:
 class ParquetHelper
 {
 public:
-    ParquetHelper(const char *option, const char *location, const char *destination, int rowsize, int _batchSize, const IThorActivityContext *_activityCtx);
+    ParquetHelper(const char *option, const char *_location, const char *destination, int rowsize, int _batchSize, bool _overwrite, const IThorActivityContext *_activityCtx);
     ~ParquetHelper();
     std::shared_ptr<arrow::Schema> getSchema();
     arrow::Status openWriteFile();
@@ -824,6 +824,7 @@ private:
     __int64 rowsCount = 0;                                            // The number of result rows in a given RowGroup read from the parquet file.
     size_t batchSize = 0;                                            // batchSize for converting Parquet Columns to ECL rows. It is more efficient to break the data into small batches for converting to rows than to convert all at once.
     bool partition;                                               // Boolean variable to track whether we are writing partitioned files or not.
+    bool overwrite = false;                                       // Overwrite option specified by the user. If true the plugin will overwrite files that are already exisiting. Default is false.
     std::string partOption;                                         // Read, r, Write, w, option for specifying parquet operation.
     std::string location;                                         // Location to read parquet file from.
     std::string destination;                                      // Destination to write parquet file to.
@@ -899,6 +900,7 @@ protected:
     const std::shared_ptr<arrow::Array> &getChunk(std::shared_ptr<arrow::ChunkedArray> *column);
     std::string_view getCurrView(const RtlFieldInfo *field);
     __int64 getCurrIntValue(const RtlFieldInfo *field);
+    double getCurrRealValue(const RtlFieldInfo *field);
     void nextField(const RtlFieldInfo *field);
     void nextFromStruct(const RtlFieldInfo *field);
     void xpathOrName(StringBuffer &outXPath, const RtlFieldInfo *field) const;

@@ -157,7 +157,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
                     return `${formatCost(row.CompileCost)}`;
                 }
             },
-            "Execute Cost": {
+            "Execution Cost": {
                 label: nlsHPCC.ExecuteCost, width: 100,
                 justify: "right",
                 formatter: (cost, row) => {
