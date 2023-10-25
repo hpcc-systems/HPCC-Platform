@@ -855,6 +855,8 @@ bool CDfsLogicalFileName::normalizeExternal(const char * name, StringAttr &res, 
             normalizeScope(s1, s1, ns1-s1, planeName, strict, false);
 
             str.append("::").append(planeName);
+            //Allow wildcards in plane path
+            allowWild = true;
             break;
         }
         case lfntype_remote:
