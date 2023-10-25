@@ -2098,7 +2098,7 @@ void WUANALYSIS_API analyseAndPrintIssues(IConstWorkUnit * wu, double costRate, 
     if (updatewu)
     {
         Owned<IWorkUnit> lockedwu = &(wu->lock());
-        lockedwu->clearExceptions("Workunit Analyzer");
+        lockedwu->clearExceptions(CostOptimizerName);
         analyser.update(lockedwu, costRate);
     }
 }
