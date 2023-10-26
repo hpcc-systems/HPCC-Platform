@@ -114,15 +114,14 @@ umask ${OUMASK}
 
 # use less heap when threaded
 # but if set too low it can affect performance significantly
-num_arenas=$num_cpus
-if [ -z "$num_arenas" ] ; then
-    num_arenas=8
-elif [ $num_arenas -lt 8 ] ; then
-    num_arenas=8
-elif [ $num_arenas -gt 32 ] ; then
-    num_arenas=32
+if [ -z "$MALLOC_ARENA_MAX" ]; then
+    if [ $num_cpus -gt 8 ]; then
+        num_arenas=8
+    else
+        num_arenas=$num_cpus
+    fi
+    export MALLOC_ARENA_MAX=$num_arenas
 fi
-export MALLOC_ARENA_MAX=$num_arenas
 
 PATH_PREFIX=`cat ${HPCC_CONFIG} | sed -n "/\[${SECTION}\]/,/\[/p" | grep "^path *= *" | sed -e 's/^path *= *//'`
 

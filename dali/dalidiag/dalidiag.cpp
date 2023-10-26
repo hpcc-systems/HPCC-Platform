@@ -532,6 +532,8 @@ int main(int _argc, char* argv[])
     }
 
     try {
+        initNullConfiguration();
+
         Owned<IGroup> group = createIGroup(epa);
         assertex(group);
         initClientProcess(group, DCR_DaliDiag, 0, NULL, NULL, MP_WAIT_FOREVER);

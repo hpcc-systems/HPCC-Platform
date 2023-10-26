@@ -58,7 +58,7 @@ export const GroupMembers: React.FunctionComponent<GroupMembersProps> = ({
     const columns = React.useMemo((): FluentColumns => {
         return {
             username: {
-                label: nlsHPCC.UserName,
+                label: nlsHPCC.Username,
                 formatter: (_name, idx) => {
                     return <Link href={`#/${opsCategory}/security/users/${_name}`}>{_name}</Link>;
                 }
