@@ -1373,6 +1373,7 @@ typedef enum
     LOGACCESS_FILTER_instance,
     LOGACCESS_FILTER_host,
     LOGACCESS_FILTER_column,
+    LOGACCESS_FILTER_pod,
     LOGACCESS_FILTER_unknown
 } LogAccessFilterType;
 
@@ -1388,6 +1389,8 @@ inline const char * logAccessFilterTypeToString(LogAccessFilterType field)
         return "audience";
     case LOGACCESS_FILTER_component:
         return "component";
+    case LOGACCESS_FILTER_pod:
+        return "pod";
     case LOGACCESS_FILTER_instance:
         return "instance";
     case LOGACCESS_FILTER_host:
@@ -1416,6 +1419,8 @@ inline unsigned logAccessFilterTypeFromName(char const * name)
         return LOGACCESS_FILTER_audience;
     if(strieq(name, "component"))
         return LOGACCESS_FILTER_component;
+    if(strieq(name, "pod"))
+        return LOGACCESS_FILTER_pod;
     if(strieq(name, "instance"))
         return LOGACCESS_FILTER_instance;
     if(strieq(name, "host"))
@@ -1466,6 +1471,7 @@ enum LogAccessMappedField
     LOGACCESS_MAPPEDFIELD_class,
     LOGACCESS_MAPPEDFIELD_audience,
     LOGACCESS_MAPPEDFIELD_instance,
+    LOGACCESS_MAPPEDFIELD_pod,
     LOGACCESS_MAPPEDFIELD_host,
     LOGACCESS_MAPPEDFIELD_unmapped
 };
@@ -1665,6 +1671,7 @@ extern jlib_decl ILogAccessFilter * getInstanceLogAccessFilter(const char * inst
 extern jlib_decl ILogAccessFilter * getHostLogAccessFilter(const char * host);
 extern jlib_decl ILogAccessFilter * getJobIDLogAccessFilter(const char * jobId);
 extern jlib_decl ILogAccessFilter * getComponentLogAccessFilter(const char * component);
+extern jlib_decl ILogAccessFilter * getPodLogAccessFilter(const char * podName);
 extern jlib_decl ILogAccessFilter * getAudienceLogAccessFilter(MessageAudience audience);
 extern jlib_decl ILogAccessFilter * getClassLogAccessFilter(LogMsgClass logclass);
 extern jlib_decl ILogAccessFilter * getBinaryLogAccessFilter(ILogAccessFilter * arg1, ILogAccessFilter * arg2, LogAccessFilterType type);

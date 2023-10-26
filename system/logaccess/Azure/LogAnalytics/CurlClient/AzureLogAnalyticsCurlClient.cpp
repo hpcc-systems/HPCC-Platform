@@ -39,6 +39,7 @@ static constexpr const char * defaultHPCCLogComponentCol   = "hpcc_log_component
 static constexpr const char * defaultHPCCLogTypeCol        = "hpcc_log_class";
 static constexpr const char * defaultHPCCLogAudCol         = "hpcc_log_audience";
 static constexpr const char * defaultHPCCLogComponentTSCol = "TimeGenerated";
+static constexpr const char * defaultPodHPCCLogCol         = "PodName";
 
 static constexpr const char * logMapIndexPatternAtt = "@storeName";
 static constexpr const char * logMapSearchColAtt = "@searchColumn";
@@ -426,6 +427,13 @@ AzureLogAnalyticsCurlClient::AzureLogAnalyticsCurlClient(IPropertyTree & logAcce
             else
                 OERRLOG("%s: Possible LogMap collision detected, 'host' and 'node' refer to same log column!", COMPONENT_NAME); 
         }
+        else if (streq(logMapType, "pod"))
+        {
+            if (logMap.hasProp(logMapIndexPatternAtt))
+                m_podIndexSearchPattern = logMap.queryProp(logMapIndexPatternAtt);
+            if (logMap.hasProp(logMapSearchColAtt))
+                m_podSearchColName = logMap.queryProp(logMapSearchColAtt);
+        }
         else
         {
             ERRLOG("Encountered invalid LogAccess field map type: '%s'", logMapType);
@@ -478,6 +486,9 @@ void AzureLogAnalyticsCurlClient::getDefaultReturnColumns(StringBuffer & columns
 
         columns.append(", ");
     }
+
+    if (!isEmptyString(m_podSearchColName))
+        columns.appendf("%s, ", m_podSearchColName.str());
 
     columns.appendf("%s, %s, %s, %s, %s, %s, %s",
     m_globalIndexTimestampField.str(), defaultHPCCLogMessageCol, m_classSearchColName.str(),
@@ -724,6 +735,19 @@ void AzureLogAnalyticsCurlClient::populateKQLQueryString(StringBuffer & queryStr
         populateKQLQueryString(queryString, queryIndex, filter->rightFilterClause());
         queryString.append(" ) ");
         return; // queryString populated, need to break out
+    }
+    case LOGACCESS_FILTER_pod:
+    {
+        queryField = m_podSearchColName.str();
+
+        if (!m_podIndexSearchPattern.isEmpty())
+        {
+            throwIfMultiIndexDetected(queryIndex.str(),  m_podIndexSearchPattern.str());
+            queryIndex = m_podIndexSearchPattern.str();
+        }
+
+        DBGLOG("%s: Searching log entries by Pod: '%s'", COMPONENT_NAME, queryValue.str() );
+        break;
     }
     case LOGACCESS_FILTER_column:
         if (filter->getFieldName() == nullptr)

@@ -139,6 +139,8 @@ ILogAccessFilter * buildLogFilterByFields(CLogAccessType searchByCategory, const
             return getJobIDLogAccessFilter(searchByValue);
         case CLogAccessType_ByComponent:
             return getComponentLogAccessFilter(searchByValue);
+        case CLogAccessType_ByPod:
+            return getPodLogAccessFilter(searchByValue);
         case CLogAccessType_ByLogType:
         {
             LogMsgClass logType = LogMsgClassFromAbbrev(searchByValue);

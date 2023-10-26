@@ -78,6 +78,10 @@ global:
       searchColumn: "hpcc_log_timestamp"
       columnMode: "MIN"
       columnType: "datetime"
+    - type: "pod"
+      searchColumn: "PodName"
+      columnMode: "DEFAULT"
+      columnType: "string"
 secrets:
   esp:
     azure-logaccess: "azure-logaccess"
