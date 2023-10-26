@@ -97,8 +97,8 @@ data:
 {{- $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.roxieConfigMap" "component" "roxie" "excludeKeys" "global")) }}
 {{- $topoconfigSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.roxieTopoConfigMap" "component" "toposerver" "excludeKeys" "global")) }}
 {{- include "hpcc.checkDefaultStoragePlane" $commonCtx }}
-{{- if not $roxie.localAgent -}}
-{{- $_ := set $roxie "localAgent" false -}}
+{{- $singleNode := (hasKey $roxie "singleNode") | ternary $roxie.singleNode ((hasKey $roxie "localAgent") | ternary $roxie.localAgent false) }}
+{{- if not $singleNode -}}
 {{- $servername := printf "%s-server" $roxie.name -}}
 {{- $udpkeyname := $roxie.name -}}
 {{- range $service := $roxie.services }}
