@@ -27,7 +27,6 @@ project( udplib )
 
 set (    SRCS 
          udpmsgpk.cpp 
-         udpaeron.cpp 
          udpsha.cpp 
          udptrr.cpp 
          udptrs.cpp
@@ -42,8 +41,6 @@ include_directories (
          ./../../roxie/ccd
          ${HPCC_SOURCE_DIR}/testing/unittests
          ./../../roxie/roxie
-         ./../../system/aeron/aeron-client/src/main/cpp 
-         ./../../system/aeron/aeron-driver/src/main/c/
     )
 
 HPCC_ADD_LIBRARY( udplib SHARED ${SRCS} )
@@ -56,13 +53,3 @@ target_link_libraries ( udplib
          jlib
          roxiemem 
     )
-    
-if (USE_AERON)
-  target_link_libraries ( udplib 
-         aeron_client
-         aeron_driver
-    )
-
-  install( TARGETS aeron_driver RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
-endif()    
-

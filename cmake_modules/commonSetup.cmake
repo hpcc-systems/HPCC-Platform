@@ -136,11 +136,6 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   endif()
 
   # The following options need to be set after the project() command
-  if (WIN32)
-      option(USE_AERON "Include the Aeron message protocol" OFF)
-  else()
-      option(USE_AERON "Include the Aeron message protocol" ON)
-  endif()
   if (APPLE OR WIN32)
     option(USE_NUMA "Configure use of numa" OFF)
   else()
@@ -747,10 +742,6 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
         SET(CPPUNIT_INCLUDE_DIR "")
         SET(CPPUNIT_LIBRARIES "")
       ENDIF(USE_CPPUNIT)
-
-      IF (USE_AERON)
-         add_definitions (-D_USE_AERON)
-      ENDIF(USE_AERON)
 
       IF (CONTAINERIZED)
          add_definitions (-D_CONTAINERIZED)

@@ -127,7 +127,6 @@ bool checkFileDate;
 bool lazyOpen;
 bool localAgent = false;
 bool encryptInTransit;
-bool useAeron;
 bool ignoreOrphans;
 bool doIbytiDelay = true; 
 bool copyResources;
@@ -1008,7 +1007,6 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             envInstallNASHooks(nas);
         }
 #endif
-        useAeron = topology->getPropBool("@useAeron", false);
         doIbytiDelay = topology->getPropBool("@doIbytiDelay", true);
         minIbytiDelay = topology->getPropInt("@minIbytiDelay", 2);
         initIbytiDelay = topology->getPropInt("@initIbytiDelay", 50);
@@ -1095,7 +1093,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         udpFlowSocketsSize = topology->getPropInt("@udpFlowSocketsSize", udpFlowSocketsSize);
         udpLocalWriteSocketSize = topology->getPropInt("@udpLocalWriteSocketSize", udpLocalWriteSocketSize);
 #if !defined(_CONTAINERIZED) && !defined(SUBCHANNELS_IN_HEADER)
-        roxieMulticastEnabled = topology->getPropBool("@roxieMulticastEnabled", true) && !useAeron;   // enable use of multicast for sending requests to agents
+        roxieMulticastEnabled = topology->getPropBool("@roxieMulticastEnabled", true);   // enable use of multicast for sending requests to agents
 #endif
 
         udpResendLostPackets = topology->getPropBool("@udpResendLostPackets", true);
@@ -1337,9 +1335,6 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
 #else
         topology->addPropBool("@linuxOS", true);
 #endif
-        if (useAeron)
-            setAeronProperties(topology);
-
 #ifdef _CONTAINERIZED
         allQuerySetNames.append(roxieName);
 #else
@@ -1693,8 +1688,6 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
 #ifndef _CONTAINERIZED
     perfMonHook.clear();
 #endif
-    stopAeronDriver();
-
     leakChecker = strdup("Make sure leak checking is working");
     roxiemem::releaseRoxieHeap();
     UseSysLogForOperatorMessages(false);

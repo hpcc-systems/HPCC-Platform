@@ -338,9 +338,6 @@
                     <xs:attribute name="udpStatsReportInterval" type="xs:nonNegativeInteger"
                                   hpcc:displayName="UDP transport layer stats reporting interval" hpcc:presetValue="60000"
                                   hpcc:tooltip="UDP transport layer send queue size"/>
-                    <xs:attribute name="useAeron" type="xs:boolean" hpcc:displayName="Use Aeron"
-                                  hpcc:presetValue="false"
-                                  hpcc:tooltip="Use Aeron for slave->server communication"/>
                 </xs:attributeGroup>
 
                 <xs:attributeGroup name="cache" hpcc:groupByName="Cache">

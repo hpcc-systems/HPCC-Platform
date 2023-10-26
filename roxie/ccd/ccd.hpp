@@ -313,7 +313,6 @@ extern bool debugPermitted;
 extern bool useRemoteResources;
 extern bool checkFileDate;
 extern bool lazyOpen;
-extern bool useAeron;
 extern bool ignoreOrphans;
 extern bool doIbytiDelay;
 extern bool copyResources;

@@ -88,14 +88,6 @@
 #define ROXIE_LAYOUT_MISMATCH       ROXIE_ERROR_START+66
 #define ROXIE_TLS_ERROR             ROXIE_ERROR_START+67
 
-// Aeron layer errors
-
-#define ROXIE_AERON_ERROR           ROXIE_ERROR_START+70
-#define ROXIE_PUBLICATION_CLOSED    ROXIE_ERROR_START+71
-#define ROXIE_PUBLICATION_NOT_CONNECTED  ROXIE_ERROR_START+72
-
-
-
 
 // MORE: move back to ccd.hpp when no longer public (used by roxieconfig)
 #define ROXIE_SLA_LOGIC
