@@ -23,9 +23,11 @@
   );</emphasis></para>
 
   <para><emphasis role="bold">[</emphasis><emphasis>attrname</emphasis>
-  :=<emphasis role="bold"> ] BUILD(</emphasis><emphasis> indexdef
-  </emphasis><emphasis role="bold">[, </emphasis><emphasis>options
-  </emphasis><emphasis role="bold">] );</emphasis></para>
+  :=<emphasis role="bold"> ] BUILD(</emphasis><emphasis> indexdef</emphasis>
+  <emphasis role="bold">[,</emphasis><emphasis>indexfile</emphasis><emphasis
+  role="bold">]</emphasis> <emphasis role="bold">[,
+  </emphasis><emphasis>options </emphasis><emphasis role="bold">]
+  );</emphasis></para>
 
   <para><emphasis role="bold">[</emphasis><emphasis>attrname</emphasis>
   :=<emphasis role="bold"> ] BUILD(</emphasis><emphasis> indexdef, dataset,
@@ -691,18 +693,29 @@ BUILD(Vehicles,SearchTerms,Payload,'vkey::st.city2');
     <title>BUILD from an INDEX Definition</title>
 
     <para><emphasis role="bold">[</emphasis><emphasis>attrname</emphasis>
-    :=<emphasis role="bold"> ] BUILD(</emphasis><emphasis> indexdef
-    </emphasis><emphasis role="bold">[, </emphasis><emphasis>options
-    </emphasis><emphasis role="bold">] );</emphasis></para>
+    :=<emphasis role="bold"> ] BUILD(</emphasis><emphasis> indexdef</emphasis>
+    <emphasis role="bold">[,</emphasis><emphasis>indexfile</emphasis><emphasis
+    role="bold">]</emphasis> <emphasis role="bold">[,
+    </emphasis><emphasis>options </emphasis><emphasis role="bold">]
+    );</emphasis></para>
 
     <para>Form 3 creates an index file by using a previously defined INDEX
-    definition.</para>
+    definition. </para>
+
+    <para>You can also use this form to build an index based upon two MERGEd
+    indexes. To write a MERGEd index to disk, you must use the BUILD action
+    and include the optional <emphasis>indexfile</emphasis> parameter.</para>
 
     <para>Example:</para>
 
-    <programlisting>nameKey := INDEX(mainTable,{surname,forename,filepos},'name.idx');
+    <programlisting lang="ECL" role="NOTrunnable">nameKey := INDEX(mainTable,{surname,forename,filepos},'name.idx');
 BUILD(nameKey); //gets all info from the INDEX definition
+
+// BUILDing a MERGEd index
+BUILD(MERGE(idx1,idx2,'~idx::MergedIndex');
 </programlisting>
+
+    <para>See Also: <link linkend="MERGE">MERGE</link></para>
   </sect2>
 
   <sect2 id="SepIndexFromDS" role="brk">
