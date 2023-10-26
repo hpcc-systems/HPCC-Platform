@@ -157,7 +157,7 @@ public:
                     if (now-timeSent[idx] >= udpResendDelay ||    // Note that this will block us from sending newer packets, if we have reached limit of tracking.
                         (udpAssumeSequential && (int)(seq - seen.lastSeen()) < 0))  // so we (optionally) assume any packet not received that is EARLIER than one that HAS been received is lost.
                     {
-                        if (udpTraceLevel > 1 || udpTraceTimeouts)
+                        if (udpTraceTimeouts)
                             DBGLOG("Resending %" SEQF "u last sent %u ms ago", seq, now-timeSent[idx]);
                         timeSent[idx] = now;
                         packetsResent++;
@@ -213,7 +213,7 @@ private:
     {
         try
         {
-            if (udpTraceLevel > 3 || udpTraceFlow)
+            if (udpTraceFlow)
             {
                 StringBuffer s, s2;
                 DBGLOG("UdpSender[%s]: sending flowType::%s msg %" SEQF "u flowSeq %" SEQF "u size=%u to node=%s %s",
@@ -461,7 +461,7 @@ public:
 #endif
         if (permit.flowSeq != activeFlowSequence)
         {
-            if (udpTraceLevel>1 || udpTraceFlow)
+            if (udpTraceFlow)
             {
                 StringBuffer s;
                 DBGLOG("UdpFlow: ignoring out-of-date permit_to_send seq %" SEQF "u (expected %" SEQF "u) to node %s", permit.flowSeq, activeFlowSequence+0, permit.destNode.getTraceText(s).str());
@@ -491,14 +491,14 @@ public:
                 if (maxPackets > TRACKER_BITS-inflight)
                 {
                     maxPackets = TRACKER_BITS-inflight;
-                    if (udpTraceLevel>2 || maxPackets == 0)
+                    if (maxPackets == 0)
                         DBGLOG("Can't send more than %d new packets or we will overwrite unreceived packets (%u in flight, %u active %u resending now)", maxPackets, inflight, resendList->numActive(), resending);
                     // Note that this may mean we can't send any packets, despite having asked for permission to do so
                     // We will keep on asking.
                 }
             }
         }
-        if (udpTraceLevel>2)
+        if (udpTraceFlow)
             DBGLOG("Resending %u packets", (unsigned) toSend.size());
         while (maxPackets && packetsQueued.load(std::memory_order_relaxed))
         {
@@ -521,7 +521,7 @@ public:
                    (unsigned)toSend.size(), nextSendSequence.load(), permit.max_data, resendList ? resendList->numActive() : 0, packetsQueued.load(std::memory_order_relaxed));
 
         unsigned gatherElapsed = sendTimer.elapsedMs();
-        if (udpTraceLevel > 2 || gatherElapsed > udpSendTraceThresholdMs)
+        if (udpTraceFlow || gatherElapsed > udpSendTraceThresholdMs)
         {
             StringBuffer s;
             DBGLOG("UdpSender: gatherSendBlocks() %u blocks to node=%s under permit %" SEQF "u in %ums", (unsigned)toSend.size(), permit.destNode.getTraceText(s).str(), permit.flowSeq, gatherElapsed);
@@ -561,8 +561,6 @@ public:
                         header->length = encryptBuffer.length();
                         encryptBuffer.writeDirect(0, sizeof(UdpPacketHeader), header);   // Only really need length updating
                         assert(length <= DATA_PAYLOAD);
-                        if (udpTraceLevel > 5)
-                            DBGLOG("ENCRYPT: Writing %u bytes to data socket", encryptBuffer.length());
                         data_socket->write(encryptBuffer.toByteArray(), encryptBuffer.length());
                     }
                     else
@@ -592,7 +590,7 @@ public:
         }
         activePermitSeq = 0;
         unsigned socketElapsed = sendTimer.elapsedMs();
-        if (udpTraceLevel > 2 || (socketElapsed - gatherElapsed) > udpSendTraceThresholdMs)
+        if ((socketElapsed - gatherElapsed) > udpSendTraceThresholdMs)
         {
             StringBuffer s;
             DBGLOG("UdpSender: socket->write() %u blocks, %u bytes to node=%s under permit %" SEQF "u in %ums", (unsigned)toSend.size(), totalSent, permit.destNode.getTraceText(s).str(), permit.flowSeq, (socketElapsed - gatherElapsed));
@@ -601,13 +599,13 @@ public:
         sendDone(toSend.size());
 
         unsigned doneElapsed = sendTimer.elapsedMs();
-        if (udpTraceLevel > 2 || (doneElapsed - socketElapsed) > udpSendTraceThresholdMs)
+        if ((doneElapsed - socketElapsed) > udpSendTraceThresholdMs)
         {
             StringBuffer s;
             DBGLOG("UdpSender: sendDone() %u blocks, %u bytes to node=%s under permit %" SEQF "u in %ums", (unsigned)toSend.size(), totalSent, permit.destNode.getTraceText(s).str(), permit.flowSeq, doneElapsed - socketElapsed);
         }
 
-        if (udpTraceLevel > 2 || doneElapsed > udpSendTraceThresholdMs)
+        if (doneElapsed > udpSendTraceThresholdMs)
         {
             StringBuffer s;
             DBGLOG("UdpSender: sendData() %u bytes to node=%s under permit %" SEQF "u in %ums", totalSent, permit.destNode.getTraceText(s).str(), permit.flowSeq, doneElapsed);
@@ -649,7 +647,7 @@ public:
     {
         // Called if too many timeouts on a request to send
 
-        if (udpTraceLevel > 3)
+        if (udpTraceFlow)
         {
             StringBuffer s;
             DBGLOG("UdpSender: abort sending queued data to node=%s", ip.getHostText(s).str());
@@ -676,16 +674,12 @@ public:
                 buffer = output_queue[current_q].pop(false);
                 if (!buffer)
                 {
-                    if (udpTraceLevel >= 5)
-                        DBGLOG("UdpSender: ---------- Empty Q %d", current_q);
                     currentQNumPkts = 0;
                     current_q = (current_q + 1) % numQueues;
                 }
                 else
                 {
                     currentQNumPkts++;
-                    if (udpTraceLevel >= 5)
-                        DBGLOG("UdpSender: ---------- Packet from Q %d", current_q);
                     if (currentQNumPkts >= maxPktsPerQ[current_q])
                     {
                         currentQNumPkts = 0;
@@ -987,7 +981,7 @@ class CSendManager : implements ISendManager, public CInterface
                         switch (f.cmd)
                         {
                         case flowType::ok_to_send:
-                            if (udpTraceLevel > 2 || udpTraceFlow)
+                            if (udpTraceFlow)
                             {
                                 StringBuffer s;
                                 DBGLOG("UdpSender[%s]: received ok_to_send msg max %d packets from node=%s seq %" SEQF "u", parent.myId, f.max_data, f.destNode.getTraceText(s).str(), f.flowSeq);
@@ -997,7 +991,7 @@ class CSendManager : implements ISendManager, public CInterface
                             break;
 
                         case flowType::request_received:
-                            if (udpTraceLevel > 2 || udpTraceFlow)
+                            if (udpTraceFlow)
                             {
                                 StringBuffer s;
                                 DBGLOG("UdpSender[%s]: received request_received msg from node=%s seq %" SEQF "u", parent.myId, f.destNode.getTraceText(s).str(), f.flowSeq);
@@ -1082,7 +1076,7 @@ class CSendManager : implements ISendManager, public CInterface
 
                 if (send_queue.pushOrModify(msg, updateTrackingIfMatches, pushTimeoutMs))
                 {
-                    if (wasDuplicate && ((udpTraceLevel > 2) || udpTraceFlow))
+                    if (wasDuplicate && udpTraceFlow)
                     {
                         StringBuffer s;
                         DBGLOG("UdpSender[%s]: duplicate permit ignored node=%s, maxData=%u", parent.myId, msg.destNode.getTraceText(s).str(), msg.max_data);

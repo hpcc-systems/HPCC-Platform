@@ -667,7 +667,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                     msg.seen = packetsSeen.copy();
                 }
 
-                if (udpTraceLevel > 3 || udpTraceFlow)
+                if (udpTraceFlow)
                 {
                     StringBuffer ipStr;
                     DBGLOG("UdpReceiver: sending request_received msg seq %" SEQF "u to node=%s", _flowSeq, dest.getHostText(ipStr).str());
@@ -707,7 +707,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                     CriticalBlock b(psCrit);
                     msg.seen = packetsSeen.copy();
                 }
-                if (udpTraceLevel > 3 || udpTraceFlow)
+                if (udpTraceFlow)
                 {
                     StringBuffer ipStr;
                     DBGLOG("UdpReceiver: sending ok_to_send %u msg seq %" SEQF "u to node=%s", maxTransfer, flowSeq, dest.getHostText(ipStr).str());
@@ -1003,7 +1003,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
         void doFlowRequest(const UdpRequestToSendMsg &msg)
         {
             flowRequestsReceived++;
-            if (udpTraceLevel > 5 || udpTraceFlow)
+            if (udpTraceFlow)
             {
                 StringBuffer ipStr;
                 DBGLOG("UdpReceiver: received %s msg flowSeq %" SEQF "u sendSeq %" SEQF "u from node=%s", flowType::name(msg.cmd), msg.flowSeq, msg.sendSeq, msg.sourceNode.getTraceText(ipStr).str());
@@ -1054,7 +1054,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                     if (elapsed >= udpPermitTimeout)
                     {
                         UdpSenderEntry * sender = finger->owner;
-                        if (udpTraceLevel || udpTraceFlow || udpTraceTimeouts)
+                        if (udpTraceFlow || udpTraceTimeouts)
                         {
                             StringBuffer s;
                             DBGLOG("permit %" SEQF "u to node %s (%u packets) timed out after %u ms, rescheduling", sender->flowSeq, sender->dest.getHostText(s).str(), sender->getTotalReserved(), elapsed);
@@ -1066,7 +1066,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
 
                         if (++sender->timeouts > udpMaxPermitDeadTimeouts && udpMaxPermitDeadTimeouts != 0)
                         {
-                            if (udpTraceLevel || udpTraceFlow || udpTraceTimeouts)
+                            if (udpTraceFlow || udpTraceTimeouts)
                             {
                                 StringBuffer s;
                                 DBGLOG("permit to send %" SEQF "u to node %s timed out %u times - abandoning", sender->flowSeq, sender->dest.getHostText(s).str(), sender->timeouts);
@@ -1206,7 +1206,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
             {
                 try
                 {
-                    if (udpTraceLevel > 5 || udpTraceFlow)
+                    if (udpTraceFlow)
                     {
                         DBGLOG("UdpReceiver: wait_read(%u)", timeout);
                     }
@@ -1353,11 +1353,6 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                     UdpSenderEntry *sender = &parent.sendersTable[hdr.node];
                     if (sender->noteSeen(hdr))
                     {
-                        if (udpTraceLevel > 5) // don't want to interrupt this thread if we can help it
-                        {
-                            StringBuffer s;
-                            DBGLOG("UdpReceiver: discarding unwanted resent packet %" SEQF "u %x from %s", hdr.sendSeq, hdr.pktSeq, hdr.node.getTraceText(s).str());
-                        }
                         // We should perhaps track how often this happens, but it's not the same as unwantedDiscarded
                         hdr.node.clear();  // Used to indicate a duplicate that collate thread should discard. We don't discard on this thread as don't want to do anything that requires locks...
                     }
@@ -1509,8 +1504,6 @@ public:
     virtual void detachCollator(const IMessageCollator *msgColl) 
     {
         ruid_t ruid = msgColl->queryRUID();
-        if (udpTraceLevel >= 2)
-            DBGLOG("UdpReceiver: detach %p %u", msgColl, ruid);
         {
             CriticalBlock b(collatorsLock);
             collators.erase(ruid);
@@ -1541,14 +1534,6 @@ public:
     void collatePacket(DataBuffer *dataBuff)
     {
         const UdpPacketHeader *pktHdr = (UdpPacketHeader*) dataBuff->data;
-
-        if (udpTraceLevel >= 4) 
-        {
-            StringBuffer s;
-            DBGLOG("UdpReceiver: CPacketCollator - unQed packet - ruid=" RUIDF " id=0x%.8X mseq=%u pkseq=0x%.8X len=%d node=%s",
-                pktHdr->ruid, pktHdr->msgId, pktHdr->msgSeq, pktHdr->pktSeq, pktHdr->length, pktHdr->node.getTraceText(s).str());
-        }
-
         Linked <CMessageCollator> msgColl;
         bool isDefault = false;
         {
@@ -1591,8 +1576,6 @@ public:
     virtual IMessageCollator *createMessageCollator(IRowManager *rowManager, ruid_t ruid)
     {
         CMessageCollator *msgColl = new CMessageCollator(rowManager, ruid, encrypted);
-        if (udpTraceLevel > 2)
-            DBGLOG("UdpReceiver: createMessageCollator %p %u", msgColl, ruid);
         {
             CriticalBlock b(collatorsLock);
             collators[ruid] = msgColl;
