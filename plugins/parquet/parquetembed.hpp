@@ -785,7 +785,7 @@ private:
 class ParquetHelper
 {
 public:
-    ParquetHelper(const char *option, const char *_location, const char *destination, int rowsize, int _batchSize, bool _overwrite, const IThorActivityContext *_activityCtx);
+    ParquetHelper(const char *option, const char *_location, const char *destination, int rowsize, int _batchSize, bool _overwrite, arrow::Compression::type _compressionOption, const IThorActivityContext *_activityCtx);
     ~ParquetHelper();
     std::shared_ptr<arrow::Schema> getSchema();
     arrow::Status openWriteFile();
@@ -835,6 +835,7 @@ private:
     std::vector<rapidjson::Value> rowStack;                      // Stack for keeping track of the context when building a nested row.
     std::shared_ptr<arrow::dataset::Scanner> scanner = nullptr;   // Scanner for reading through partitioned files. PARTITION
     arrow::dataset::FileSystemDatasetWriteOptions writeOptions;        // Write options for writing partitioned files. PARTITION
+    arrow::Compression::type compressionOption = arrow::Compression::type::UNCOMPRESSED;
     std::shared_ptr<arrow::RecordBatchReader> rbatchReader = nullptr;
     arrow::RecordBatchReader::RecordBatchReaderIterator rbatchItr;
     std::vector<__int64> fileTableCounts;

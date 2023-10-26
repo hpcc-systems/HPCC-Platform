@@ -40,8 +40,13 @@ dataset := ParquetIO.Read(layout, '/source/directory/data.parquet');
 
 The Write function empowers ECL programmers to write ECL datasets to Parquet files. By leveraging the Parquet format's columnar storage capabilities, this function provides efficient compression and optimized storage for data. There is an optional argument that sets the overwrite behavior of the plugin. The default value is false meaning it will throw an error if the target file already exists.
 
+The Parquet Plugin supports all available Arrow compression types. Specifying the compression when writing is optional and defaults to Uncompressed. The options for compressing your files are Snappy, GZip, Brotli, LZ4, LZ4Frame, LZ4Hadoop, ZSTD, Uncompressed.
+
 ```
-ParquetIO.Write(inDataset, '/output/directory/data.parquet', overwriteOption);
+overwriteOption := TRUE;
+compressionOption := 'Snappy';
+
+ParquetIO.Write(inDataset, '/output/directory/data.parquet', overwriteOption, compressionOption);
 ```
 
 ### Partitioned Files (Tabular Datasets)
