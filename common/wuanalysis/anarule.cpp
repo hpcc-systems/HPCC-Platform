@@ -129,20 +129,49 @@ public:
     {
         stat_type ioAvg = activity.getStatRaw(stat, StAvgX);
         stat_type ioMaxSkew = activity.getStatRaw(stat, StSkewMax);
+        unsigned actkind = activity.getAttr(WaKind);
         if (ioMaxSkew > options.queryOption(watOptSkewThreshold))
         {
             stat_type timeMaxLocalExecute = activity.getStatRaw(StTimeLocalExecute, StMaxX);
             stat_type timeAvgLocalExecute = activity.getStatRaw(StTimeLocalExecute, StAvgX);
 
             stat_type cost;
-            //If one node didn't spill then it is possible the skew caused all the lost time
-            unsigned actkind = activity.getAttr(WaKind);
-            if ((actkind==TAKspillread||actkind==TAKspillwrite) && activity.getStatRaw(stat, StMinX) == 0)
+            if ((actkind==TAKspillread||actkind==TAKspillwrite) && (activity.getStatRaw(stat, StMinX) == 0))
+            {
+                //If one node didn't spill then it is possible the skew caused all the lost time
                 cost = timeMaxLocalExecute;
+                result.set(ANA_IOSKEW_RECORDS_ID, cost, "Uneven worker spilling is causing uneven %s time", category);
+            }
             else
+            {
+                bool sizeSkew = false;
+                bool numRowsSkew = false;
+                IWuEdge *wuEdge = nullptr;
+                if ((stat==StTimeDiskWriteIO) || (actkind==TAKspillwrite))
+                {
+                    if (activity.getStatRaw(StSizeDiskWrite, StSkewMax)>options.queryOption(watOptSkewThreshold))
+                        sizeSkew = true;
+                    IWuEdge *wuEdge = activity.queryInput(0);
+                }
+                else if ((stat == StTimeDiskReadIO) || (actkind==TAKspillread))
+                {
+                    if (activity.getStatRaw(StSizeDiskRead, StSkewMax)>options.queryOption(watOptSkewThreshold))
+                        sizeSkew = true;
+                    IWuEdge *wuEdge = activity.queryOutput(0);
+                }
+                if (wuEdge && wuEdge->getStatRaw(StNumRowsProcessed, StSkewMax)>options.queryOption(watOptSkewThreshold))
+                    numRowsSkew = true;
                 cost = (timeMaxLocalExecute - timeAvgLocalExecute);
-
-            result.set(ANA_IOSKEW_RECORDS_ID, cost, "Significant skew in records causes uneven %s time", category);
+                if (sizeSkew)
+                {
+                    if (numRowsSkew)
+                        result.set(ANA_IOSKEW_RECORDS_ID, cost, "Significant skew in number of records is causing uneven %s time", category);
+                    else
+                        result.set(ANA_IOSKEW_RECORDS_ID, cost, "Significant skew in record sizes is causing uneven %s time", category);
+                }
+                else
+                    result.set(ANA_IOSKEW_RECORDS_ID, cost, "Significant skew in IO performance is causing uneven %s time", category);
+            }
             updateInformation(result, activity);
             return true;
         }
