@@ -59,6 +59,9 @@ private:
     StringBuffer m_hostSearchColName;
     StringBuffer m_hostIndexSearchPattern;
 
+    StringBuffer m_podIndexSearchPattern;
+    StringBuffer m_podSearchColName;
+
     StringBuffer m_logAnalyticsWorkspaceID;
     StringBuffer m_aadTenantID;
     StringBuffer m_aadClientID;

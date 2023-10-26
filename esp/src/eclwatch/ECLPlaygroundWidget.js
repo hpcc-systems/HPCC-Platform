@@ -337,8 +337,9 @@ define([
                 var context = this;
                 hpccComms.Workunit.compile({ baseUrl: "" }, selectedTarget.Name, ecl).then(function (wu) {
                     context.wu = wu;
+                    context.wu.update({ Jobname: jobname });
                     return context.wu.watchUntilComplete(function () {
-                        context.updateInput("State", "", wu.State);
+                        context.updateInput("State", "", context.wu.State);
                     });
                 }).then(function () {
                     context.updateInput("State", "", "Publishing");

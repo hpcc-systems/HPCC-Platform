@@ -9100,6 +9100,14 @@ void replaceComponentConfig(IPropertyTree *newComponentConfig, IPropertyTree *ne
     executeConfigUpdaterCallbacks();
 }
 
+void initNullConfiguration()
+{
+    if (componentConfiguration || globalConfiguration)
+        throw makeStringException(99, "Configuration has already been initialised");
+    componentConfiguration.setown(createPTree());
+    globalConfiguration.setown(createPTree());
+}
+
 class CYAMLBufferReader : public CInterfaceOf<IPTreeReader>
 {
 protected:

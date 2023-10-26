@@ -1292,6 +1292,10 @@
         },
         "egress": {
           "$ref" : "#/definitions/egress"
+        },
+        "terminationGracePeriodSeconds": {
+          "$ref": "#/definitions/terminationGracePeriodSeconds",
+          "default": 3600
         }
       }
     },
@@ -1366,6 +1370,9 @@
           "type": "string",
           "description": "The default repo version used if not supplied for the defaultRepo"
         },
+        "terminationGracePeriodSeconds": {
+          "$ref": "#/definitions/terminationGracePeriodSeconds"
+        },
         "resources": {
           "$ref": "#/definitions/resources"
         },
@@ -1411,6 +1418,9 @@
         },
         "resources": {
           "$ref": "#/definitions/resources"
+        },
+        "terminationGracePeriodSeconds": {
+          "$ref": "#/definitions/terminationGracePeriodSeconds"
         }
       }
     },
@@ -3003,7 +3013,7 @@
         "type": {
           "type": "string",
           "description" : "The searchable HPCC log column to be mapped - 'global' applies to all known fields",
-          "enum": [ "global", "workunits", "components", "audience", "class", "instance", "host", "node", "message", "logid", "processid", "threadid", "timestamp"]
+          "enum": [ "global", "workunits", "components", "audience", "class", "instance", "host", "node", "message", "logid", "processid", "threadid", "timestamp", "pod"]
         },
         "timeStampColumn": {
           "description" : "Name of timestamp column related to mapped field (only requried for 'global' mapping)",
@@ -3276,6 +3286,12 @@
         }
       },
       "required": [ "name", "type", "target" ]
+    },
+    "terminationGracePeriodSeconds": {
+      "type": "integer",
+      "description": "Period permitted for component to terminate gracefully before being killed by Kubernetes",
+      "default": 600,
+      "minimum": 0
     }
   }
 }

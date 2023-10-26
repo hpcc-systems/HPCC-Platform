@@ -318,6 +318,9 @@ Bld := BUILDINDEX(AlphaInStateCity);</programlisting>
     sorting behavior can be controlled by using
     <emphasis>sortIndexPayload</emphasis> in a #OPTION statement.</para>
 
+    <para>You can also use the "results in" operator (=&gt;) before payload
+    fields as shown below.</para>
+
     <para>Example:</para>
 
     <programlisting>Vehicles := DATASET('vehicles',
@@ -336,6 +339,10 @@ Payload     := RECORD
 END; 
 VehicleKey2 := INDEX(Vehicles,SearchTerms,Payload,'vkey::st.city2');
 BUILD(VehicleKey2);
+
+// Using "results in" operator (=&gt;) for payload fields
+VehicleKey3 := INDEX(Vehicles,{st,city  =&gt; lname},'vkey::st.city3');
+BUILD(VehicleKey3);
 </programlisting>
   </sect2>
 

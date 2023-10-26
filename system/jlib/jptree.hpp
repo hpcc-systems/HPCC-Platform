@@ -320,6 +320,7 @@ jlib_decl IPropertyTree * loadArgsIntoConfiguration(IPropertyTree *config, const
 jlib_decl IPropertyTree * loadConfiguration(IPropertyTree * defaultConfig, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *), const char *altNameAttribute=nullptr, bool monitor=true);
 jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *), const char *altNameAttribute=nullptr, bool monitor=true);
 jlib_decl void replaceComponentConfig(IPropertyTree *newComponentConfig, IPropertyTree *newGlobalConfig);
+jlib_decl void initNullConfiguration();
 jlib_decl IPropertyTree * getCostsConfiguration();
 
 //The following can only be called after loadConfiguration has been called.  All components must call loadConfiguration().

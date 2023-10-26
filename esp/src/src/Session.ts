@@ -48,13 +48,15 @@ getBuildInfo().then(info => {
     dojoConfig.currencyCode = info["currencyCode"] ?? "";
 });
 
-const format = d3Format(",.6f");
+const formatTwoDigits = d3Format(",.2f");
+const formatSixDigits = d3Format(",.6f");
 export function formatCost(value): string {
     if (isNaN(value)) {
         logger.debug(`formatCost called for a nullish value: ${value}`);
         return "";
     }
     const _number = typeof value === "string" ? Number(value) : value;
+    const format = (_number > 0 && _number < 1) ? formatSixDigits : formatTwoDigits;
     return `${format(_number)} (${dojoConfig?.currencyCode || "USD"})`;
 }
 

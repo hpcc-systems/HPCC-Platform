@@ -406,6 +406,8 @@ int main(int argc, char* argv[])
     EnableSEHtoExceptionMapping();
     Thread::setDefaultStackSize(0x10000);
     try {
+        initNullConfiguration();
+
         startMPServer(0);
         attachStandardFileLogMsgMonitor("sasha.log", NULL, MSGFIELD_STANDARD, MSGAUD_all, MSGCLS_all, TopDetail, LOGFORMAT_table, true);
         queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_prefix);

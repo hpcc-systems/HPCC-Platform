@@ -24,7 +24,8 @@ ESPenum LogAccessType : int
     ByTargetAudience(4, "ByTargetAudience"),
     BySourceInstance(5, "BySourceInstance"),
     BySourceNode(6, "BySourceNode"),
-    ByFieldName(7, "ByFieldName")
+    ByFieldName(7, "ByFieldName"),
+    ByPod(8, "ByPod")
 };
 
 ESPenum LogAccessLogFormat : int
@@ -65,7 +66,8 @@ ESPenum LogColumnType : string
     logid("logid"),
     processid("processid"),
     threadid("threadid"),
-    timestamp("timestamp")
+    timestamp("timestamp"),
+    pod("pod")
 };
 
 ESPenum LogColumnValueType : string
@@ -188,7 +190,8 @@ ESPenum SortColumType : int
     ByTargetAudience(4, "ByTargetAudience"),
     BySourceInstance(5, "BySourceInstance"),
     BySourceNode(6, "BySourceNode"),
-    ByFieldName(7, "ByFieldName")
+    ByFieldName(7, "ByFieldName"),
+    ByPod(8, "ByPod")
 };
 
 ESPStruct SortCondition
