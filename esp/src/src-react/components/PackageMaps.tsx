@@ -367,8 +367,8 @@ export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
                 const _targets: TypedDropdownOption[] = [{ key: "*", text: "ANY" }];
                 const _processes: TypedDropdownOption[] = [{ key: "*", text: "ANY" }];
                 Targets?.TargetData.map(target => {
-                    if (_targets.filter(t => t.key === target.Type).length === 0) {
-                        _targets.push({ key: target.Type, text: target.Type, type: target.Type });
+                    if (_targets.filter(t => t.key === target.Name).length === 0) {
+                        _targets.push({ key: target.Name, text: target.Name, type: target.Type });
                     }
                     target?.Processes?.Item.map(item => {
                         if (_processes.filter(p => p.key === item).length === 0) {
