@@ -214,7 +214,7 @@ myelk-kibana-68688b4d4d-d489b             1/1     Running            0      </pr
         Kibana (highlighted above) you can proceed.</para>
       </sect3>
 
-      <sect3 id="confirming_elastic_services" role="brk">
+      <sect3 id="confirming_elastic_services">
         <title>Confirming the Elastic Services</title>
 
         <para>To confirm the Elastic services are running, issue the following
@@ -279,47 +279,24 @@ myelk-kibana LoadBalancer 10.110.129.199 localhost 5601:31465/TCP 68m
         logs. The way you direct HPCC Systems to do so is by providing a
         values file that includes the log mappings. We have provided a default
         values file and we provide an example command line that inserts that
-        values file into your deployment.</para>
+        values file into your deployment. This suggested configuration values
+        file for enabling log access can be found in the HPCC Systems Platform
+        GitHub repository.</para>
 
-        <para>These are the Elastic4HPCCLogs values:</para>
+        <para><ulink
+        url="https://github.com/hpcc-systems/HPCC-Platform">https://github.com/hpcc-systems/HPCC-Platform</ulink></para>
 
-        <programlisting># Configures HPCC logAccess to target elastic4hpcclogs deployment
-global:
-  logAccess:
-    name: "Elastic4HPCCLogs"
-    type: "elasticstack"
-    connection:
-        protocol: "http"
-        host: "elasticsearch-master.default.svc.cluster.local"
-        port: 9200
-    logMaps:
-      - type: "global"                             #These settings apply to all log mappings
-        storeName: "hpcc-logs*"                    #Logs are expected to be housed in ES inde
-        searchColumn: "message"                    #The 'message' field is to be targeted for
-        timeStampColumn: "@timestamp"              #The '@timestamp' field contains time log 
-      - type: "workunits"                          #Search by workunits specific log mapping
-        storeName: "hpcc-logs*"                    # Only needed if differs from global.store
-        searchColumn: "hpcc.log.jobid"             # Field containing WU information
-      - type: "components"                         #Search by components specific log mapping
-        searchColumn: "kubernetes.container.name"  # Field containing container information
-      - type: "audience"                           #Search by audience specific log mapping
-        searchColumn: "hpcc.log.audience"          # Field containing audience information
-      - type: "class"                              #Search by log class specific log mapping
-        searchColumn: "hpcc.log.class"             # Field containing log class information
-      - type: "instance"                           #Search by log source instance specific ma
-        searchColumn: "kubernetes.pod.name"        # Field containing source instance informa
-      - type: "host"                               #Search by log source host specific mappin
-        searchColumn: "kubernetes.node.hostname"   # Field containing source host information</programlisting>
+        <para>Then navigating to the
+        <emphasis>helm/examples/azure/log-analytics/loganalytics-hpcc-logaccess.yaml</emphasis>
+        file.</para>
 
-        <para>You can use the delivered Elastic4HPCCLogs chart, provided on
-        https://github.com/hpcc-systems/HPCC-Platform/tree/master/helm/managed/logging/elastic
-        or you can add the values there to your customized configuration
-        values yaml file. You can then install it using a command such
-        as:</para>
+        <para>You can use the delivered Elastic4HPCCLogs chart provided or you
+        can add the values there to your customized configuration values yaml
+        file.</para>
+
+        <para>You can then install it using a command such as:</para>
 
         <programlisting>helm install mycluster hpcc/hpcc -f elastic4hpcclogs-hpcc-logaccess.yaml</programlisting>
-
-        <para></para>
       </sect3>
     </sect2>
   </sect1>
@@ -619,10 +596,10 @@ ContainerLog
       <title>Target Audience Filtering</title>
 
       <para>The availble target audiences include operator(OPR), user(USR),
-      programmer(PRO), monitor(MON), audit(ADT), or all. The filter is controlled by the
-      &lt;section&gt;.logging.audiences value. The string value is comprised
-      of 3 letter codes delimited by the aggregation operator (+) or the
-      removal operator (-).</para>
+      programmer(PRO), monitor(MON), audit(ADT), or all. The filter is
+      controlled by the &lt;section&gt;.logging.audiences value. The string
+      value is comprised of 3 letter codes delimited by the aggregation
+      operator (+) or the removal operator (-).</para>
 
       <para>For example, all component log output to include Programmer and
       User messages only:</para>
@@ -634,8 +611,8 @@ ContainerLog
       <title>Target Category Filtering</title>
 
       <para>The available target categories include disaster(DIS), error(ERR),
-      information(INF), warning(WRN), progress(PRO), event(EVT), metrics(MET). The
-      category (or class) filter is controlled by the
+      information(INF), warning(WRN), progress(PRO), event(EVT), metrics(MET).
+      The category (or class) filter is controlled by the
       &lt;section&gt;.logging.classes value, comprised of 3 letter codes
       delimited by the aggregation operator (+) or the removal operator
       (-).</para>
