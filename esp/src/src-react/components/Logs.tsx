@@ -102,7 +102,7 @@ export const Logs: React.FunctionComponent<LogsProps> = ({
 
     const query = React.useMemo(() => {
         if (wuid !== undefined) {
-            filter.jobId = wuid;
+            filter.workunits = wuid;
         }
         if (typeof filter.StartDate === "string") {
             filter.StartDate = new Date(filter.StartDate);
