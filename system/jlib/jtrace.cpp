@@ -770,7 +770,8 @@ private:
         }
 
         //Administrator can choose to process spans in batches or one at a time
-        std::unique_ptr<opentelemetry::v1::sdk::trace::SpanProcessor> processor;
+        //Default: SimpleSpanProcesser sends spans one by one to an exporter.
+        std::unique_ptr<opentelemetry::v1::sdk::trace::SpanProcessor> processor = opentelemetry::sdk::trace::SimpleSpanProcessorFactory::Create(std::move(exporter));
         if (traceConfig && traceConfig->hasProp("processor/@type"))
         {
             StringBuffer processorType;
@@ -789,11 +790,13 @@ private:
                 processor = opentelemetry::sdk::trace::BatchSpanProcessorFactory::Create(std::move(exporter), options);
                 DBGLOG("OpenTel tracing using batch Span Processor");
             }
+            else if (foundProcessorType &&  strcmp("simple", processorType.str())==0)
+            {
+                DBGLOG("OpenTel tracing using batch simple Processor");
+            }
             else
             {
-                //SimpleSpanProcesser sends spans one by one to an exporter.
-                processor = opentelemetry::sdk::trace::SimpleSpanProcessorFactory::Create(std::move(exporter));
-                DBGLOG("OpenTel tracing using Simple Span Processor");
+                DBGLOG("OpenTel tracing detected invalid processor type: '%s'", processorType.str());
             }
         }
 
