@@ -902,6 +902,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     label: field.label,
                     field: <input
                         key={fieldID}
+                        id={fieldID}
                         type="datetime-local"
                         name={fieldID}
                         defaultValue={field.value}
@@ -910,6 +911,10 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                         }}
                     />
                 });
+                const el = document.querySelector(`.ms-Modal.is-open #${fieldID}`);
+                if (el && field.value === "") {
+                    el["value"] = field.value;
+                }
                 break;
             case "link":
                 field.href = field.href;
