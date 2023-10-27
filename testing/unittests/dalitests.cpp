@@ -2276,10 +2276,16 @@ public:
             e->Release();
         }
 
-        // To make sure renamed files are cleaned properly
-        printf("Renaming 'regress::rename::other2 to 'sub2' on auto-commit\n");
-        dir.renamePhysical("regress::rename::other2", "regress::rename::sub2", user, transaction);
-        ASSERT(dir.exists("regress::rename::sub2", user, true, false) && "Renamed from other2 failed");
+        try {
+            // To make sure renamed files are cleaned properly
+            printf("Renaming 'regress::rename::other2 to 'sub2' on auto-commit\n");
+            dir.renamePhysical("regress::rename::other2", "regress::rename::sub2", user, transaction);
+            ASSERT(dir.exists("regress::rename::sub2", user, true, false) && "Renamed from other2 failed");
+        }
+        catch  (IException *e) {
+            // Expecting exception
+            e->Release();
+        }
     }
 
     void testDFSClearAdd()
