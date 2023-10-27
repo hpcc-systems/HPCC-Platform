@@ -32,7 +32,14 @@ The Parquet Plugin offers the following main functions:
 
 The Read function allows ECL programmers to create an ECL dataset from both regular and partitioned Parquet files. It leverages the Apache Arrow interface for Parquet to efficiently stream data from ECL to the plugin, ensuring optimized data transfer.
 
+In order to read a Parquet file it is necessary to define the record structure of the file you intend to read with the names of the fields as stored in the Parquet file and the type that you wish to read them as. It is possible for a Parquet file to have field names that contain characters that are incompatible with the ECL field name definition. For example, ECL field names are case insensitive causing an issue when trying to read Parquet fields with uppercase letters. To read field names of this type an XPATH can be passed as seen in the following example:
+
 ```
+layout := RECORD
+    STRING name;
+    STRING job_id {XPATH('jobID')};
+END;
+
 dataset := ParquetIO.Read(layout, '/source/directory/data.parquet');
 ```
 
