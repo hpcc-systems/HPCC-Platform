@@ -59,7 +59,7 @@ function doBuild() {
 # docker run -it --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached build-ubuntu-22.04:latest bash
 }
 
-# doBuild ubuntu-23.04
+# doBuild ubuntu-23.10
 # doBuild ubuntu-20.04
 # doBuild amazonlinux
 # doBuild ubuntu-22.04
