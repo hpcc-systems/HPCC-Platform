@@ -326,6 +326,28 @@ Add ConfigMap volume for a component
 {{- end -}}
 
 {{/*
+Get mount details
+Pass in plane
+Returns dictionary with "results" of mount details
+*/}}
+{{- define "hpcc.getMountDetails" -}}
+{{- $plane := .plane -}}
+{{- $mountPath := $plane.prefix -}}
+{{- $numMounts := int ( $plane.numMounts | default $plane.numDevices | default 1 ) -}}
+{{- $mountDetails := list -}}
+{{- if le $numMounts 1 -}}
+ {{- $mountDetails = append $mountDetails (dict "name" (lower (printf "%s-volume" $plane.name)) "path" $mountPath) -}}
+{{- else -}}
+ {{- range $elem := untilStep 1 (int (add $numMounts 1)) 1 -}}
+  {{- $name := lower (printf "%s-volume-many-%d" $plane.name $elem) -}}
+  {{- $path := printf "%s/d%d" $mountPath $elem -}}
+  {{- $mountDetails = append $mountDetails (dict "name" $name "path" $path) -}}
+ {{- end -}}
+{{- end -}}
+{{- $_ := set . "results" $mountDetails -}}
+{{- end -}}
+
+{{/*
 Add volume mounts
 Pass in root, me (the component), includeCategories (optional) and/or includeNames (optional)
 Note: if there are multiple planes (other than dll, dali and spill planes), they should be all called with a single call
@@ -348,14 +370,12 @@ to addVolumeMounts so that if a plane can be used for multiple purposes then dup
     {{- if not (hasKey $previousMounts $plane.prefix) }}
      {{- $mountPath := $plane.prefix }}
      {{- $numMounts := int ( $plane.numMounts | default $plane.numDevices | default 1 ) }}
-     {{- if le $numMounts 1 }}
-- name: {{ lower $plane.name }}-volume
-  mountPath: {{ $mountPath | quote }}
-     {{- else }}
-      {{- range $elem := untilStep 1 (int (add $numMounts 1)) 1 }}
-- name: {{ lower $plane.name }}-volume-many-{{ $elem }}
-  mountPath: {{ printf "%s/d%d" $mountPath $elem | quote }}
-      {{- end }}
+     {{- $mountDetails := dict "plane" $plane }}
+     {{- include "hpcc.getMountDetails" $mountDetails }}
+     {{- range $elem := untilStep 1 (int (add $numMounts 1)) 1 }}
+      {{- $multiMountDetails := index $mountDetails.results (sub $elem 1) }}
+- name: {{ $multiMountDetails.name }}
+  mountPath: {{ $multiMountDetails.path | quote }}
      {{- end }}
     {{- end }}
     {{- $_ := set $previousMounts $plane.prefix true -}}
@@ -874,13 +894,22 @@ A kludge to ensure mounted storage (e.g. for nfs, minikube or docker for desktop
 {{- $permCmd := "" -}}
 {{- $uid := .uid -}}
 {{- $gid := .gid -}}
-{{- range $index, $volume := .volumes }}
- {{- if ne $index 0 }}
-  {{- $permCmd = printf "%s & " $permCmd -}}
- {{- end -}}
- {{- $permCmd = printf "%s(chown -R %v:%v %s || true)" $permCmd $uid $gid $volume.path }}
+{{- $component := .component -}}
+{{- $volumeNames := list -}}
+{{- $count := 0 -}}
+{{- range $plane := .planes }}
+ {{- $volumeNames = append $volumeNames $plane.name }}
+ {{- $mountDetails := dict "plane" $plane }}
+ {{- include "hpcc.getMountDetails" $mountDetails }}
+ {{- range $result := $mountDetails.results }}
+  {{- if ne $count 0 }}
+   {{- $permCmd = printf "%s & " $permCmd -}}
+  {{- end -}}
+  {{- $permCmd = printf "%s(chown -R %v:%v %s || true)" $permCmd $uid $gid $result.path }}
+  {{- $count = add $count 1 }}
+ {{- end }}
 {{- end }}
-{{- if gt (len .volumes) 1 -}}
+{{- if gt $count 1 -}}
  {{- $permCmd = printf "%s; wait" $permCmd -}}
 {{- end }}
 - name: volume-mount-hack
@@ -891,10 +920,7 @@ A kludge to ensure mounted storage (e.g. for nfs, minikube or docker for desktop
              "{{ $permCmd }}"
            ]
   volumeMounts:
-{{- range $volume := .volumes }}
-    - name: {{ $volume.name | quote}}
-      mountPath: {{ $volume.path | quote }}
-{{- end }}
+{{ include "hpcc.addVolumeMounts" (dict "root" .root "component" $component "includeNames" $volumeNames) | indent 2 }}
 {{- end }}
 
 
@@ -937,11 +963,7 @@ NB: uid=10000 and gid=10001 are the uid/gid of the hpcc user, built into platfor
 {{- end -}}
 {{- $volumes := list -}}
 {{- if len $planesToChown -}}
- {{- range $plane := $planesToChown -}}
-  {{- $volumeName := (printf "%s-volume" $plane.name) -}}
-  {{- $volumes = append $volumes (dict "name" $volumeName "path" $plane.prefix) -}}
- {{- end -}}
- {{- include "hpcc.changeMountPerms" (dict "root" $root "uid" $uid "gid" $gid "volumes" $volumes) | nindent 0 }}
+ {{- include "hpcc.changeMountPerms" (dict "root" $root "component" $component "uid" $uid "gid" $gid "planes" $planesToChown) | nindent 0 }}
 {{- end -}}
 {{- include "hpcc.configContainer" . | nindent 0 -}}
 {{- end -}}
