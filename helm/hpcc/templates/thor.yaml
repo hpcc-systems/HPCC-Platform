@@ -87,10 +87,8 @@ data:
 {{- if hasKey .me "labels" }}
 {{ toYaml .me.labels | indent 12 }}
 {{- end }}
-{{- if hasKey .me "annotations" }}
           annotations:
-{{ toYaml .me.annotations | indent 12 }}
-{{- end }}
+            {{- include "hpcc.generateAnnotations" . | indent 12 }}
         spec:
           {{- include "hpcc.placementsByJobTargetType" (dict "root" .root "job" $eclAgentJobName "target" .me.name "type" "thor") | indent 10 }}
           serviceAccountName: "hpcc-agent"
@@ -154,10 +152,8 @@ data:
 {{- if hasKey $thorScope "labels" }}
 {{ toYaml $thorScope.labels | indent 12 }}
 {{- end }}
-{{- if hasKey $thorScope "annotations" }}
           annotations:
-{{ toYaml $thorScope.annotations | indent 12 }}
-{{- end }}
+            {{- include "hpcc.generateAnnotations" . | indent 12 }}
         spec:
           {{- include "hpcc.placementsByJobTargetType" (dict "root" .root "job" $thorManagerJobName "target" .me.name "type" "thor") | indent 10 }}
           serviceAccountName: hpcc-thoragent
@@ -221,10 +217,8 @@ data:
 {{- if hasKey $thorScope "labels" }}
 {{ toYaml $thorScope.labels | indent 12 }}
 {{- end }}
-{{- if hasKey $thorScope "annotations" }}
           annotations:
-{{ toYaml $thorScope.annotations | indent 12 }}
-{{- end }}
+            {{- include "hpcc.generateAnnotations" . | indent 12 }}
         spec:
           {{- include "hpcc.placementsByJobTargetType" (dict "root" .root "job" $thorWorkerJobName "target" .me.name "type" "thor") | indent 10 }}
           serviceAccountName: hpcc-default
@@ -355,9 +349,7 @@ spec:
 {{- end }}
       annotations:
         checksum/config: {{ $configSHA }}
-{{- if hasKey $commonCtx.me "annotations" }}
-{{ toYaml $commonCtx.me.annotations | indent 8 }}
-{{- end }}
+        {{- include "hpcc.generateAnnotations" $commonCtx | indent 8 }}
     spec:
       {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" $commonCtx.eclAgentName "target" .name "type" "thor") | indent 6 }}
       {{- include "hpcc.addImagePullSecrets" $commonCtx | nindent 6 -}}
@@ -420,9 +412,7 @@ spec:
 {{- end }}
       annotations:
         checksum/config: {{ $configSHA }}
-{{- if hasKey $commonCtx.me "annotations" }}
-{{ toYaml $commonCtx.me.annotations | indent 8 }}
-{{- end }}
+        {{- include "hpcc.generateAnnotations" $commonCtx | indent 8 }}
     spec:
       {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" $commonCtx.thorAgentName "target" .name "type" "thor") | indent 6 }}
       {{- include "hpcc.addImagePullSecrets" $commonCtx | nindent 6 -}}

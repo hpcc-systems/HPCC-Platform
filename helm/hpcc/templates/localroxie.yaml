@@ -77,9 +77,7 @@ spec:
 {{- end }}
       annotations:
         checksum/config: {{ $configSHA }}
-{{- if hasKey . "annotations" }}
-{{ toYaml .annotations | indent 8 }}
-{{- end }}
+        {{- include "hpcc.generateAnnotations" $commonCtx | indent 8 }}
     spec:
       {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" $roxie.name "target" $roxie.name "type" "roxie") | indent 6 }}
       serviceAccountName: "hpcc-default"

@@ -59,9 +59,7 @@ spec:
 {{- end }}
       annotations:
         checksum/config: {{ $configSHA }}
-{{- if hasKey $sasha "annotations" }}
-{{ toYaml $sasha.annotations | indent 8 }}
-{{- end }}
+        {{- include "hpcc.generateAnnotations" $commonCtx | indent 8 }}
     spec:
       {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" $serviceName "type" "sasha") | indent 6 }}
       serviceAccountName: "hpcc-default"
