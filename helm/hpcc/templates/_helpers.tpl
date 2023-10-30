@@ -327,7 +327,7 @@ Add ConfigMap volume for a component
 
 {{/*
 Add volume mounts
-Pass in root, me (the component), includeCategories (optional) and/or includeNames (optional), container identifier (optional)
+Pass in root, me (the component), includeCategories (optional) and/or includeNames (optional)
 Note: if there are multiple planes (other than dll, dali and spill planes), they should be all called with a single call
 to addVolumeMounts so that if a plane can be used for multiple purposes then duplicate volume mounts are not created.
 */}}
@@ -339,7 +339,6 @@ to addVolumeMounts so that if a plane can be used for multiple purposes then dup
 {{- $includeNames := .includeNames | default list -}}
 {{- $component := .me -}}
 {{- $previousMounts := dict -}}
-{{- $id := .id | default "" -}}
 {{- range $plane := $planes -}}
  {{- if not $plane.disabled }}
   {{- $componentMatches := or (not (hasKey $plane "components")) (has $component.name $plane.components) -}}
@@ -364,9 +363,6 @@ to addVolumeMounts so that if a plane can be used for multiple purposes then dup
     {{- if not (hasKey $previousMounts $plane.prefix) }}
 - name: {{ lower $plane.name }}-volume
   mountPath: {{ $plane.prefix | quote }}
-     {{- if $id }}
-  subPath: {{ printf "%s-%s" $component.name $id }}
-     {{- end }}
     {{- end }}
    {{- end }}
 
