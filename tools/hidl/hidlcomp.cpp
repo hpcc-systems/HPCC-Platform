@@ -6554,7 +6554,8 @@ void HIDLcompiler::processExecutionProfiling()
         if (!si->executionProfilingEnabled)
         {
             si->executionProfilingEnabled = !si->getMetaInt("disable_profile_execution");
-            serviceProfilingOptions.append("ms,100,200,300,400,500,600,700,800,900,1000");
+            // set the default to the following buckets 100us 200us, 500us, 1ms 2ms 5ms 10ms 20ms 50ms 100ms 200ms 500ms 1s 5s 10s (in microsecond units)
+            serviceProfilingOptions.append("us,100,200,500,1000,2000,5000,10000,20000,50000,100000,200000,500000,1000000,5000000,10000000");
         }
 #endif
 

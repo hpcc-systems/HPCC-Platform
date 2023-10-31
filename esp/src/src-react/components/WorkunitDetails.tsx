@@ -66,7 +66,7 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
             return response;
         }).then(hasLogAccess => {
             if (hasLogAccess) {
-                service.GetLogsEx({ ...queryParams, jobId: wuid, LogLineStartFrom: 0, LogLineLimit: 10 }).then(response => {    // HPCC-27711 - Requesting LogLineLimit=1 causes issues
+                service.GetLogsEx({ ...queryParams, workunits: wuid, LogLineStartFrom: 0, LogLineLimit: 10 }).then(response => {    // HPCC-27711 - Requesting LogLineLimit=1 causes issues
                     setLogCount(response.total);
                 }).catch((err) => logger.error(err));
             }
