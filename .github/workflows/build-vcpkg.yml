@@ -365,7 +365,7 @@ jobs:
         if: ${{ contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
         with:
           path: |
-            ./build
+            build
           key: ${{ matrix.os }}-${{ needs.preamble.outputs.community_tag }}
           restore-keys: |
             ${{ matrix.os }}-${{ needs.preamble.outputs.community_tag }}
@@ -375,6 +375,7 @@ jobs:
         if: ${{ contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
         shell: "bash"
         run: |
+          ls ./build
           cmake -S ./HPCC-Platform -B ./build ${{ matrix.cmake_config_options }}
           cmake --build ./build ${{ matrix.cmake_build_options }}
 
