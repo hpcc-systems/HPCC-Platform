@@ -239,7 +239,7 @@ jobs:
           - os: "ubuntu-22.04"
             mono: "mono"
             sudo: "sudo"
-            cmake_config_options: "-DCMAKE_BUILD_TYPE=RelWithDebInfo -DINCLUDE_PLUGINS=${{ needs.preamble.outputs.include_plugins }} -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON"
+            cmake_config_options: "-DCMAKE_BUILD_TYPE=RelWithDebInfo -DH3=${{ needs.preamble.outputs.include_plugins }} -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON"
             cmake_build_options: "-- -j$(nproc) -k"
             event_name: "pull_request,workflow_dispatch"
           - os: "windows-2019"
@@ -341,12 +341,6 @@ jobs:
         run: |
           ./HPCC-Platform/vcpkg/bootstrap-vcpkg.sh
 
-      - uses: actions/cache@v3
-        with:
-          path: |
-            ./build
-          key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
-
       - name: "Setup NuGet credentials"
         if: ${{ contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
         shell: "bash"
@@ -358,6 +352,17 @@ jobs:
             -storepasswordincleartext \
             -username "${{ github.actor }}" \
             -password "${{ secrets.GITHUB_TOKEN }}"
+
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ./build
+          key: ${{ matrix.os }}-${{ needs.preamble.outputs.community_tag }}
+          restore-keys: |
+            ${{ matrix.os }}-${{ needs.preamble.outputs.community_tag }}
+            ${{ matrix.os }}-
+            ${{ runner.os }}-${{ needs.preamble.outputs.community_tag }}
+            ${{ runner.os }}-
 
       - name: CMake Packages
         if: ${{ contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
