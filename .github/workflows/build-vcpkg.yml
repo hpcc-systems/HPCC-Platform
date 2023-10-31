@@ -355,16 +355,19 @@ jobs:
             -username "${{ github.actor }}" \
             -password "${{ secrets.GITHUB_TOKEN }}"
 
-      - uses: actions/cache/restore@v3
-        if: ${{ contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
-        id: cache
-        with:
-          path: |
-            ${{github.workspace}}/build
-          key: ${{ matrix.os }}-${{ needs.preamble.outputs.community_tag }}-${{ github.run_id }}
-          restore-keys: |
-            ${{ matrix.os }}-${{ needs.preamble.outputs.community_tag }}
-            ${{ matrix.os }}-
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+      
+      # - uses: actions/cache/restore@v3
+      #   if: ${{ contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
+      #   id: cache
+      #   with:
+      #     path: |
+      #       ${{github.workspace}}/build
+      #     key: ${{ matrix.os }}-${{ needs.preamble.outputs.community_tag }}-${{ github.run_id }}
+      #     restore-keys: |
+      #       ${{ matrix.os }}-${{ needs.preamble.outputs.community_tag }}
+      #       ${{ matrix.os }}-
 
       - name: Print cache restore outputs
         if: ${{ contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
@@ -378,7 +381,7 @@ jobs:
         shell: "bash"
         run: |
           mkdir -p ${{github.workspace}}/build
-          cmake -S ./HPCC-Platform -B ./build ${{ matrix.cmake_config_options }}
+          cmake -S ./HPCC-Platform -B ./build ${{ matrix.cmake_config_options }}  -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
       - name: CMake Packages
         if: ${{ contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
@@ -387,12 +390,12 @@ jobs:
           ls ${{github.workspace}}/build
           cmake --build ${{github.workspace}}/build ${{ matrix.cmake_build_options }}
 
-      - uses: actions/cache/save@v3
-        if: ${{ contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
-        with:
-          path: |
-            ${{github.workspace}}/build
-          key: ${{ matrix.os }}-${{ needs.preamble.outputs.community_tag }}-${{ github.run_id }}
+      # - uses: actions/cache/save@v3
+      #   if: ${{ contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
+      #   with:
+      #     path: |
+      #       ${{github.workspace}}/build
+      #     key: ${{ matrix.os }}-${{ needs.preamble.outputs.community_tag }}-${{ github.run_id }}
 
       - name: Upload error logs
         if: ${{ failure() || cancelled() }}
