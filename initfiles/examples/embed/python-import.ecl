@@ -1,4 +1,4 @@
-IMPORT python;
+﻿IMPORT Python3 as Python;
 
 /*
  This example illustrates a call to a Python functions defined in the Python module python_cat.py
