@@ -367,7 +367,7 @@ jobs:
         with:
           path: |
             build
-          key: ${{ matrix.os }}-${{ needs.preamble.outputs.community_tag }}
+          key: ${{ matrix.os }}-${{ needs.preamble.outputs.community_tag }}-${{ github.run_id }}
           restore-keys: |
             ${{ matrix.os }}-${{ needs.preamble.outputs.community_tag }}
             ${{ matrix.os }}-
