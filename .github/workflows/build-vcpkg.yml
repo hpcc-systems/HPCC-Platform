@@ -371,9 +371,10 @@ jobs:
         shell: "bash"
         run: |
           echo "${{ toJSON(steps.cache.outputs) }}"
+          echo "${{ steps.cache.outputs.cache-matched-key }}"
 
       - name: CMake Configure Packages
-        if: ${{ !!steps.cache.outputs.cache-matched-key && contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
+        if: ${{ !steps.cache.outputs.cache-matched-key && contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
         shell: "bash"
         run: |
           mkdir -p ${{github.workspace}}/build
