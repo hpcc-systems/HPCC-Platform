@@ -366,19 +366,25 @@ jobs:
             ${{ matrix.os }}-${{ needs.preamble.outputs.community_tag }}
             ${{ matrix.os }}-
 
+      - name: Print cache restore outputs
+        if: ${{ contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
+        shell: "bash"
+        run: |
+          echo "${{ toJSON(steps.cache.outputs) }}"
+
       - name: CMake Configure Packages
         if: ${{ steps.cache.outputs.cache-matched-key != '' && contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
         shell: "bash"
         run: |
-          ls ./build
+          mkdir -p ${{github.workspace}}/build
           cmake -S ./HPCC-Platform -B ./build ${{ matrix.cmake_config_options }}
 
       - name: CMake Packages
         if: ${{ contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
         shell: "bash"
         run: |
-          ls ./build 
-          cmake --build ./build ${{ matrix.cmake_build_options }}
+          ls ${{github.workspace}}/build
+          cmake --build ${{github.workspace}}/build ${{ matrix.cmake_build_options }}
 
       - uses: actions/cache/save@v3
         if: ${{ contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
