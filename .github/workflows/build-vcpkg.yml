@@ -299,6 +299,7 @@ jobs:
           gnupg \
           groff-base \
           libtool \
+          ninja-build \
           pkg-config \
           software-properties-common \
           tar \
