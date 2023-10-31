@@ -592,15 +592,25 @@ static void configureClientSSL(IEspClientRpcSettings &rpc, const char *secretNam
         throw makeStringExceptionV(-1, "secret %s.%s not found", "storage", secretName);
 
     StringBuffer certSecretBuf;
-    getSecretKeyValue(certSecretBuf, secretPTree, "tls.crt");
+    if (!getSecretKeyValue(certSecretBuf, secretPTree, "tls.crt"))
+        throw makeStringExceptionV(-1, "Client certificate 'tls.crt' missing from secret '%s'.", secretName);
+    if (!containsEmbeddedKey(certSecretBuf))
+        throw makeStringExceptionV(-1, "Client certificate content 'tls.crt' for secret '%s' not in expected format.", secretName);
 
     StringBuffer privKeySecretBuf;
-    getSecretKeyValue(privKeySecretBuf, secretPTree, "tls.key");
+    if (!getSecretKeyValue(privKeySecretBuf, secretPTree, "tls.key"))
+        throw makeStringExceptionV(-1, "Client private key 'tls.crt' missing from secret '%s'.", secretName);
+    if (!containsEmbeddedKey(privKeySecretBuf))
+        throw makeStringExceptionV(-1, "Client private key content 'tls.key' for secret '%s' not in expected format.", secretName);
 
-    StringBuffer caCertFileBuf;
-    getSecretKeyValue(caCertFileBuf, secretPTree, "ca.crt");
+    StringBuffer caCertBuf;
+    if (getSecretKeyValue(caCertBuf, secretPTree, "ca.crt"))
+    {
+        if (!containsEmbeddedKey(caCertBuf))
+            throw makeStringExceptionV(-1, "CA certificate content 'ca.crt' for secret '%s' not in expected format.", secretName);
+    }
 
-    setRpcSSLOptions(rpc, true, certSecretBuf.str(), privKeySecretBuf.str(), caCertFileBuf.str(), false);
+    setRpcSSLOptionsBuf(rpc, true, certSecretBuf.str(), privKeySecretBuf.str(), caCertBuf.str(), false);
 }
 
 static CriticalSection serviceLeaseMapCS;
