@@ -242,7 +242,7 @@ jobs:
             sudo: "sudo"
             cmake_config_options: "-G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DH3=${{ needs.preamble.outputs.include_plugins }} -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON"
             cmake_build_options: "-- -j$(nproc) -k"
-            event_name: "pull_request,workflow_dispatch"
+            event_name: "pull_request,workflow_dispatch,push"
           - os: "windows-2019"
             mono: ""
             sudo: ""
@@ -354,6 +354,12 @@ jobs:
             -username "${{ github.actor }}" \
             -password "${{ secrets.GITHUB_TOKEN }}"
 
+      - name: mkdir build
+        if: ${{ contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
+        shell: "bash"
+        run: |
+          mkdir -p ./build
+
       - uses: actions/cache@v3
         with:
           path: |
@@ -369,7 +375,6 @@ jobs:
         if: ${{ contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
         shell: "bash"
         run: |
-          mkdir -p ./build
           cmake -S ./HPCC-Platform -B ./build ${{ matrix.cmake_config_options }}
           cmake --build ./build ${{ matrix.cmake_build_options }}
 
