@@ -31,7 +31,7 @@ class CMasterWatchdogBase : public CSimpleInterface, implements IThreaded
     PointerArray state;
     SocketEndpoint master;
     Mutex mutex;
-    int retrycount;
+    int retrycount = 0;
     CThreaded threaded;
 protected:
     bool stopped;
