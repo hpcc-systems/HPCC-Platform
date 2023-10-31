@@ -355,8 +355,7 @@ jobs:
             -username "${{ github.actor }}" \
             -password "${{ secrets.GITHUB_TOKEN }}"
 
-      - name: ccache
-        uses: hendrikmuhs/ccache-action@v1.2
+      - uses: hendrikmuhs/ccache-action@v1.2
         with:
           key: ${{ matrix.os }}-${{ needs.preamble.outputs.community_tag }}
       
