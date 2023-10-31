@@ -1,6 +1,6 @@
 import * as React from "react";
 import { scopedLogger } from "@hpcc-js/util";
-import { Topology, TpLogicalClusterQuery } from "@hpcc-js/comms";
+import { Topology, WsTopology } from "@hpcc-js/comms";
 import { getBuildInfo, BuildInfo } from "src/Session";
 import { cmake_build_type, containerized } from "src/BuildInfo";
 
@@ -33,9 +33,9 @@ export function useBuildInfo(): [BuildInfo, { isContainer: boolean, currencyCode
     return [buildInfo, { isContainer, currencyCode, opsCategory }];
 }
 
-export function useLogicalClusters(): [TpLogicalClusterQuery.TpLogicalCluster[] | undefined, TpLogicalClusterQuery.TpLogicalCluster | undefined] {
-    const [targetClusters, setTargetClusters] = React.useState<TpLogicalClusterQuery.TpLogicalCluster[]>();
-    const [defaultCluster, setDefaultCluster] = React.useState<TpLogicalClusterQuery.TpLogicalCluster>();
+export function useLogicalClusters(): [WsTopology.TpLogicalCluster[] | undefined, WsTopology.TpLogicalCluster | undefined] {
+    const [targetClusters, setTargetClusters] = React.useState<WsTopology.TpLogicalCluster[]>();
+    const [defaultCluster, setDefaultCluster] = React.useState<WsTopology.TpLogicalCluster>();
 
     React.useEffect(() => {
         const topology = Topology.attach({ baseUrl: "" });
@@ -43,9 +43,9 @@ export function useLogicalClusters(): [TpLogicalClusterQuery.TpLogicalCluster[] 
         topology.fetchLogicalClusters().then(response => {
             if (active) {
                 setTargetClusters(response);
-                let firstRow: TpLogicalClusterQuery.TpLogicalCluster;
-                let firstHThor: TpLogicalClusterQuery.TpLogicalCluster;
-                let firstThor: TpLogicalClusterQuery.TpLogicalCluster;
+                let firstRow: WsTopology.TpLogicalCluster;
+                let firstHThor: WsTopology.TpLogicalCluster;
+                let firstThor: WsTopology.TpLogicalCluster;
                 response.forEach(row => {
                     if (firstRow === undefined) {
                         firstRow = row;
