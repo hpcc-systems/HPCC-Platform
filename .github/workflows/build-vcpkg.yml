@@ -372,8 +372,13 @@ jobs:
             ${{ matrix.os }}-${{ needs.preamble.outputs.community_tag }}
             ${{ matrix.os }}-
 
+      - name: Print cache output
+        shell: "bash"
+        run: |
+          echo "${{ toJSON(steps.cache.outputs) }}"
+        
       - name: CMake Configure Packages
-        if: ${{ steps.cache.outputs.cache-hit != 'true' && contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
+        if: ${{ steps.cache.outputs.cache-matched-key != '' && contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
         shell: "bash"
         run: |
           ls ./build
