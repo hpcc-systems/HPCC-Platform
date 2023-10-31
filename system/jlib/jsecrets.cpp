@@ -143,7 +143,7 @@ static void validateKeyName(const char *key)
       throw makeStringExceptionV(-1, "Invalid secret key name %s", key);
 }
 
-static void splitUrlAddress(const char *address, size_t len, StringBuffer &host, StringBuffer *port)
+static void splitUrlAddress(const char *address, size_t len, StringBuffer &host, StringBuffer &port)
 {
     if (!address || len==0)
         return;
@@ -154,14 +154,11 @@ static void splitUrlAddress(const char *address, size_t len, StringBuffer &host,
     {
         host.append(sep - address, address);
         len = len - (sep - address) - 1;
-        if (port)
-            port->append(len, sep+1);
-        else
-            host.append(':').append(len, sep+1);
+        port.append(len, sep+1);
     }
 }
 
-static void splitUrlAuthority(const char *authority, size_t authorityLen, StringBuffer &user, StringBuffer &password, StringBuffer &host, StringBuffer *port)
+static void splitUrlAuthority(const char *authority, size_t authorityLen, StringBuffer &user, StringBuffer &password, StringBuffer &host, StringBuffer &port)
 {
     if (!authority || authorityLen==0)
         return;
@@ -182,6 +179,14 @@ static void splitUrlAuthority(const char *authority, size_t authorityLen, String
             password.append(passwordLen, sep+1);
         }
     }
+}
+
+static void splitUrlAuthorityHostPort(const char *authority, size_t authorityLen, StringBuffer &user, StringBuffer &password, StringBuffer &hostPort)
+{
+    StringBuffer port;
+    splitUrlAuthority(authority, authorityLen, user, password, hostPort, port);
+    if (port.length())
+        hostPort.append(':').append(port);
 }
 
 static inline void extractUrlProtocol(const char *&url, StringBuffer *scheme)
@@ -224,7 +229,7 @@ extern jlib_decl void splitFullUrl(const char *url, StringBuffer &user, StringBu
     const char *authority = nullptr;
     size_t authorityLen = 0;
     splitUrlSections(url, authority, authorityLen, path, nullptr);
-    splitUrlAuthority(authority, authorityLen, user, password, host, &port);
+    splitUrlAuthority(authority, authorityLen, user, password, host, port);
 }
 
 extern jlib_decl void splitUrlSchemeHostPort(const char *url, StringBuffer &user, StringBuffer &password, StringBuffer &schemeHostPort, StringBuffer &path)
@@ -232,15 +237,15 @@ extern jlib_decl void splitUrlSchemeHostPort(const char *url, StringBuffer &user
     const char *authority = nullptr;
     size_t authorityLen = 0;
     splitUrlSections(url, authority, authorityLen, path, &schemeHostPort);
-    splitUrlAuthority(authority, authorityLen, user, password, schemeHostPort, nullptr);
+    splitUrlAuthorityHostPort(authority, authorityLen, user, password, schemeHostPort);
 }
 
-extern jlib_decl void splitUrlIsolateScheme(const char *url, StringBuffer &user, StringBuffer &password, StringBuffer &scheme, StringBuffer &hostPort, StringBuffer &path)
+extern jlib_decl void splitUrlIsolateScheme(const char *url, StringBuffer &user, StringBuffer &password, StringBuffer &scheme, StringBuffer &host, StringBuffer &port, StringBuffer &path)
 {
     const char *authority = nullptr;
     size_t authorityLen = 0;
     splitUrlSections(url, authority, authorityLen, path, &scheme);
-    splitUrlAuthority(authority, authorityLen, user, password, hostPort, nullptr);
+    splitUrlAuthority(authority, authorityLen, user, password, host, port);
 }
 
 
@@ -260,8 +265,23 @@ extern jlib_decl StringBuffer &generateDynamicUrlSecretName(StringBuffer &secret
 {
     secretName.set("http-connect-");
     //Having the host and port visible will help with manageability wherever the secret is stored
-    if (scheme && !strnicmp("https", scheme, 5))
-        secretName.append("ssl-");
+    if (scheme)
+    {
+        if (!strnicmp("http", scheme, 4))
+        {
+            if ('s' == scheme[4])
+            {
+                if (443 == port)
+                    port = 0; // suppress default port, such that with or without, the generated secret name will be the same
+                secretName.append("ssl-");
+            }
+            else if (':' == scheme[4])
+            {
+                if (80 == port)
+                    port = 0; // suppress default port, such that with or without, the generated secret name will be the same
+            }
+        }
+    }
     secretName.append(host);
     //port is optionally already part of host
     replaceExtraHostAndPortChars(secretName);
@@ -290,13 +310,14 @@ extern jlib_decl StringBuffer &generateDynamicUrlSecretName(StringBuffer &secret
     StringBuffer username;
     StringBuffer urlPassword;
     StringBuffer scheme;
-    StringBuffer hostPort;
+    StringBuffer host;
+    StringBuffer port;
     StringBuffer path;
-    splitUrlIsolateScheme(url, username, urlPassword, scheme, hostPort, path);
+    splitUrlIsolateScheme(url, username, urlPassword, scheme, host, port, path);
     if (!isEmptyString(inputUsername))
         username.set(inputUsername);
-
-    return generateDynamicUrlSecretName(secretName, scheme, username, hostPort, 0, path);
+    unsigned portNum = port.length() ? atoi(port) : 0;
+    return generateDynamicUrlSecretName(secretName, scheme, username, host, portNum, path);
 }
 //---------------------------------------------------------------------------------------------------------------------
 
