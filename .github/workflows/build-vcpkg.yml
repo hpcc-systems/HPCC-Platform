@@ -357,31 +357,26 @@ jobs:
 
       - name: ccache
         uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ${{ matrix.os }}-${{ needs.preamble.outputs.community_tag }}
       
-      # - uses: actions/cache/restore@v3
-      #   if: ${{ contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
-      #   id: cache
-      #   with:
-      #     path: |
-      #       ${{github.workspace}}/build
-      #     key: ${{ matrix.os }}-${{ needs.preamble.outputs.community_tag }}-${{ github.run_id }}
-      #     restore-keys: |
-      #       ${{ matrix.os }}-${{ needs.preamble.outputs.community_tag }}
-      #       ${{ matrix.os }}-
+      - uses: actions/cache@v3
+        if: ${{ contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
+        id: cache
+        with:
+          path: |
+            ${{github.workspace}}/build/vcpkg_installed
+          key: ${{ matrix.os }}-${{ needs.preamble.outputs.community_tag }}
+          restore-keys: |
+            ${{ matrix.os }}-${{ needs.preamble.outputs.community_tag }}
+            ${{ matrix.os }}-
 
-      - name: Print cache restore outputs
+      - name: CMake Configure Packages
         if: ${{ contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
         shell: "bash"
         run: |
-          echo "${{ toJSON(steps.cache.outputs) }}"
-          echo "${{ steps.cache.outputs.cache-matched-key }}"
-
-      - name: CMake Configure Packages
-        if: ${{ !steps.cache.outputs.cache-matched-key && contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
-        shell: "bash"
-        run: |
           mkdir -p ${{github.workspace}}/build
-          cmake -S ./HPCC-Platform -B ./build ${{ matrix.cmake_config_options }}  -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          cmake -S ./HPCC-Platform -B ./build ${{ matrix.cmake_config_options }} -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
       - name: CMake Packages
         if: ${{ contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
@@ -389,13 +384,6 @@ jobs:
         run: |
           ls ${{github.workspace}}/build
           cmake --build ${{github.workspace}}/build ${{ matrix.cmake_build_options }}
-
-      # - uses: actions/cache/save@v3
-      #   if: ${{ contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
-      #   with:
-      #     path: |
-      #       ${{github.workspace}}/build
-      #     key: ${{ matrix.os }}-${{ needs.preamble.outputs.community_tag }}-${{ github.run_id }}
 
       - name: Upload error logs
         if: ${{ failure() || cancelled() }}
