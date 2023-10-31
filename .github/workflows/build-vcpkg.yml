@@ -136,12 +136,12 @@ jobs:
           docker_build_label=hpccsystems/platform-build-${{ matrix.os }}
           echo "docker_build_label=$docker_build_label" >> $GITHUB_OUTPUT
           echo "docker_tag=$docker_build_label:$vcpkg_sha_short" >> $GITHUB_OUTPUT
-          echo "docker_tag_candidate_base=$docker_build_label:${{ needs.preamble.outputs.candidate_base_branch }}" >> $GITHUB_OUTPUT
+          echo "docker_tag_candidate_base=$docker_build_label:${{ needs.preamble.outputs.candidate_base_branch || needs.preamble.outputs.community_tag }}" >> $GITHUB_OUTPUT
 
       - name: Print vars
         run: |
-          echo "${{ toJSON(needs.preamble.outputs) }})"
-          echo "${{ toJSON(steps.vars.outputs) }})"
+          echo "${{ toJSON(needs.preamble.outputs) }}"
+          echo "${{ toJSON(steps.vars.outputs) }}"
 
       - name: Set up Docker Buildx
         if: ${{ contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
