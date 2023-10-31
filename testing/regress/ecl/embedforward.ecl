@@ -16,11 +16,11 @@
 ############################################################################## */
 
 //class=embedded
-//class=python2
+//class=python3
 
 //nothor
 
-IMPORT Python;
+IMPORT Python3 As Python;
 
 // Test whether you can use EMBED inside a FORWARD
 
