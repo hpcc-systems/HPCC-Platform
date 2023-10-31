@@ -363,6 +363,7 @@ jobs:
 
       - uses: actions/cache@v3
         if: ${{ contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
+        id: cache
         with:
           path: |
             build
@@ -371,12 +372,18 @@ jobs:
             ${{ matrix.os }}-${{ needs.preamble.outputs.community_tag }}
             ${{ matrix.os }}-
 
+      - name: CMake Configure Packages
+        if: ${{ steps.cache.outputs.cache-hit != 'true' && contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
+        shell: "bash"
+        run: |
+          ls ./build
+          cmake -S ./HPCC-Platform -B ./build ${{ matrix.cmake_config_options }}
+
       - name: CMake Packages
         if: ${{ contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
         shell: "bash"
         run: |
           ls ./build
-          cmake -S ./HPCC-Platform -B ./build ${{ matrix.cmake_config_options }}
           cmake --build ./build ${{ matrix.cmake_build_options }}
 
       - name: Upload error logs
