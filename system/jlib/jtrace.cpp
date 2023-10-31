@@ -655,6 +655,15 @@ private:
         return success;
     }
 
+    void setContextAttributes()
+    {
+        if (!isEmptyString(hpccGlobalId))
+            setSpanAttribute(kGlobalIdOtelAttributeName, hpccGlobalId.get());
+
+        if (!isEmptyString(hpccCallerId))
+            setSpanAttribute(kCallerIdOtelAttributeName, hpccCallerId.get());
+    }
+
 public:
     CServerSpan(const char * spanName, const char * tracerName_, const IProperties * httpHeaders, SpanFlags flags)
     : CSpan(spanName, tracerName_)
@@ -662,6 +671,7 @@ public:
         opts.kind = opentelemetry::trace::SpanKind::kServer;
         setSpanContext(httpHeaders, flags);
         init();
+        setContextAttributes();
     }
 
     void toLog(StringBuffer & out) const override

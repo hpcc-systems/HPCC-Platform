@@ -27,6 +27,8 @@ static constexpr const char *kGlobalIdHttpHeaderName = "Global-Id";
 static constexpr const char *kCallerIdHttpHeaderName = "Caller-Id";
 static constexpr const char *kLegacyGlobalIdHttpHeaderName = "HPCC-Global-Id";
 static constexpr const char *kLegacyCallerIdHttpHeaderName = "HPCC-Caller-Id";
+static constexpr const char *kGlobalIdOtelAttributeName = "hpcc.globalid";
+static constexpr const char *kCallerIdOtelAttributeName = "hpcc.callerid";
 
 enum class SpanFlags : unsigned
 {
