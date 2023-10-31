@@ -355,34 +355,41 @@ jobs:
             -username "${{ github.actor }}" \
             -password "${{ secrets.GITHUB_TOKEN }}"
 
-      - name: mkdir build
-        if: ${{ contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
-        shell: "bash"
-        run: |
-          mkdir -p ./build
-
-      - uses: actions/cache@v3
+      - uses: actions/cache/restore@v3
         if: ${{ contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
         id: cache
         with:
           path: |
-            build
+            ${{github.workspace}}/build
           key: ${{ matrix.os }}-${{ needs.preamble.outputs.community_tag }}-${{ github.run_id }}
           restore-keys: |
             ${{ matrix.os }}-${{ needs.preamble.outputs.community_tag }}
             ${{ matrix.os }}-
 
+      - name: CMake Configure Packages
+        if: ${{ steps.cache.outputs.cache-matched-key != '' && contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
+        shell: "bash"
+        run: |
+          ls ./build
+          cmake -S ./HPCC-Platform -B ./build ${{ matrix.cmake_config_options }}
+
       - name: CMake Packages
         if: ${{ contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
         shell: "bash"
         run: |
-          ls ./build
-          cmake --fresh -S ./HPCC-Platform -B ./build ${{ matrix.cmake_config_options }}
+          ls ./build 
           cmake --build ./build ${{ matrix.cmake_build_options }}
+
+      - uses: actions/cache/save@v3
+        if: ${{ contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
+        with:
+          path: |
+            ${{github.workspace}}/build
+          key: ${{ matrix.os }}-${{ needs.preamble.outputs.community_tag }}-${{ github.run_id }}
 
       - name: Upload error logs
         if: ${{ failure() || cancelled() }}
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.os }}--${{ matrix.ln }}-${{ matrix.container }}-logs
+          name: bare-metal-${{ matrix.os }}-logs
           path: ./build/**/*.log
