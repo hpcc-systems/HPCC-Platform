@@ -235,13 +235,13 @@ jobs:
             mono: "mono"
             sudo: "sudo"
             cmake_config_options: "-DCMAKE_BUILD_TYPE=RelWithDebInfo -DINCLUDE_PLUGINS=${{ needs.preamble.outputs.include_plugins }} -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON"
-            cmake_build_options: "-- -j$(nproc) -k"
+            cmake_build_options: "--parallel $(nproc)"
             event_name: "schedule"
           - os: "ubuntu-22.04"
             mono: "mono"
             sudo: "sudo"
-            cmake_config_options: "-G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DH3=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON"
-            cmake_build_options: "--parallel"
+            cmake_config_options: "-G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DINCLUDE_PLUGINS=${{ needs.preamble.outputs.include_plugins }} -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON"
+            cmake_build_options: "--parallel $(nproc)"
             event_name: "pull_request,workflow_dispatch,push"
           - os: "windows-2019"
             mono: ""
@@ -254,7 +254,7 @@ jobs:
             sudo: ""
             cmake_config_options: '-T host=x64 -A x64 -DUSE_OPTIONAL=OFF -DCLIENTTOOLS_ONLY=ON -DUSE_AZURE=OFF -DUSE_CASSANDRA=OFF -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
             cmake_build_options: "--config Release --parallel $NUMBER_OF_PROCESSORS"
-            event_name: "pull_request"
+            event_name: "pull_request,workflow_dispatch,push"
           - os: "macos-11"
             mono: "mono"
             sudo: "sudo"
@@ -266,7 +266,7 @@ jobs:
             sudo: "sudo"
             cmake_config_options: "-DCMAKE_BUILD_TYPE=Release -DUSE_OPTIONAL=OFF -DCLIENTTOOLS_ONLY=ON -DUSE_AZURE=OFF -DUSE_CASSANDRA=OFF -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF"
             cmake_build_options: "--parallel $(nproc)"
-            event_name: "pull_request"
+            event_name: "pull_request,workflow_dispatch,push"
       fail-fast: false
 
     runs-on: ${{ matrix.os }}
