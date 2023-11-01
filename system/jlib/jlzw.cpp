@@ -758,81 +758,60 @@ Escape:
     return (size32_t)(in-(const byte *)src);
 }
 
-void appendToBuffer(MemoryBuffer & out, size32_t len, const void * src)
+void compressToBuffer(MemoryBuffer & out, size32_t len, const void * src, CompressionMethod method, const char *options)
 {
-    out.append(false);
+    if (method != COMPRESS_METHOD_NONE)
+    {
+        unsigned originalLength = out.length();
+        // For back-compatibility, we always store COMPRESS_METHOD_LZW as 1 as earlier versions stored a boolean here
+        // rather than an enum
+        // This means that compressToBuffer/decompressToBuffer cannot bs used for rowdiff compression - this is not likely to be an issue
+        // Alternative would be a separate enum for compressToBuffer formats, but that seems more likely to cause confusion
+        out.append((byte) (method == COMPRESS_METHOD_LZW ? COMPRESS_METHOD_LZWLEGACY : method));
+        out.append((size32_t)0);
+        if (len >= 32)
+        {
+            size32_t newSize = len * 4 / 5; // Copy if compresses less than 80% ...
+            Owned<ICompressor> compressor = queryCompressHandler(method)->getCompressor(options);
+            void *newData = out.reserve(newSize);
+            compressor->open(newData, newSize);
+            if (compressor->write(src, len)==len)
+            {
+                compressor->close();
+                size32_t compressedLen = compressor->buflen();
+                out.setWritePos(originalLength + sizeof(bool));
+                out.append(compressedLen);
+                out.setWritePos(originalLength + sizeof(bool) + sizeof(size32_t) + compressedLen);
+                return;
+            }
+        }
+        
+        // all or don't compress
+        out.setWritePos(originalLength);
+    }
+    out.append((byte) COMPRESS_METHOD_NONE);
     out.append(len);
     out.append(len, src);
 }
 
-void compressToBuffer(MemoryBuffer & out, size32_t len, const void * src)
+void decompressToBuffer(MemoryBuffer & out, MemoryBuffer & in, const char *options)
 {
-    unsigned originalLength = out.length();
-    out.append(true);
-    out.append((size32_t)0);
-
-    if (len >= 32)
-    {
-        size32_t newSize = len * 4 / 5; // Copy if compresses less than 80% ...
-        Owned<ICompressor> compressor = createLZWCompressor();
-        void *newData = out.reserve(newSize);
-        compressor->open(newData, newSize);
-        if (compressor->write(src, len)==len)
-        {
-            compressor->close();
-            size32_t compressedLen = compressor->buflen();
-            out.setWritePos(originalLength + sizeof(bool));
-            out.append(compressedLen);
-            out.setWritePos(originalLength + sizeof(bool) + sizeof(size32_t) + compressedLen);
-            return;
-        }
-    }
-    
-    // all or don't compress
-    out.setWritePos(originalLength);
-    appendToBuffer(out, len, src);
-}
-
-void decompressToBuffer(MemoryBuffer & out, const void * src)
-{
-    Owned<IExpander> expander = createLZWExpander();
-    unsigned outSize = expander->init(src);
-    void * buff = out.reserve(outSize);
-    expander->expand(buff);
-}
-
-
-void decompressToBuffer(MemoryBuffer & out, MemoryBuffer & in)
-{
-    bool compressed;
     size32_t srcLen;
-    in.read(compressed).read(srcLen);
-    if (compressed)
-        decompressToBuffer(out, in.readDirect(srcLen));
-    else
+    unsigned char _method;
+    in.read(_method).read(srcLen);
+    CompressionMethod method = (CompressionMethod) _method;
+    if (method==COMPRESS_METHOD_NONE)
         out.append(srcLen, in.readDirect(srcLen));
-}
-
-void decompressToAttr(MemoryAttr & out, const void * src)
-{
-    Owned<IExpander> expander = createLZWExpander();
-    unsigned outSize = expander->init(src);
-    void * buff = out.allocate(outSize);
-    expander->expand(buff);
-}
-
-void decompressToBuffer(MemoryAttr & out, MemoryBuffer & in)
-{
-    bool compressed;
-    size32_t srcLen;
-    in.read(compressed).read(srcLen);
-    if (compressed)
-        decompressToAttr(out, in.readDirect(srcLen));
     else
-        out.set(srcLen, in.readDirect(srcLen));
+    {
+        if (method==COMPRESS_METHOD_LZWLEGACY)
+            method = COMPRESS_METHOD_LZW;    // Back compatibilty
+        Owned<IExpander> expander = queryCompressHandler(method)->getExpander(options);
+        unsigned outSize = expander->init(in.readDirect(srcLen));
+        void * buff = out.reserve(outSize);
+        expander->expand(buff);
+    }
 }
-
-
 
 /*
    Simple Diff compression format is
@@ -2875,6 +2854,18 @@ public:
         }
         return NULL;
     }
+    ICompressHandler *lookup(CompressionMethod method) const
+    {
+        // MORE - should probably use an array, cache last lookup, or something...
+        // This is called quite a lot now
+        ForEachItemIn(h, *this)
+        {
+            ICompressHandler &handler = item(h);
+            if (method == handler.queryMethod())
+                return &handler;
+        }
+        return NULL;
+    }
 } compressors;
 
 typedef IIteratorOf<ICompressHandler> ICompressHandlerIterator;
@@ -2884,11 +2875,9 @@ ICompressHandlerIterator *getCompressHandlerIterator()
     return new ArrayIIteratorOf<IArrayOf<ICompressHandler>, ICompressHandler, ICompressHandlerIterator>(compressors);
 }
 
-
-
 bool addCompressorHandler(ICompressHandler *handler)
 {
-    if (compressors.lookup(handler->queryType()))
+    if (compressors.lookup(handler->queryMethod()))
     {
         handler->Release();
         return false; // already registered
@@ -2908,38 +2897,38 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
     class CCompressHandlerBase : implements ICompressHandler, public CInterface
     {
-        StringAttr type;
     public:
         IMPLEMENT_IINTERFACE;
-        CCompressHandlerBase(const char *_type) : type(_type) { }
-    // ICompressHandler
-        virtual const char *queryType() const { return type; }
     };
     class CFLZCompressHandler : public CCompressHandlerBase
     {
     public:
-        CFLZCompressHandler() : CCompressHandlerBase("FLZ") { }
+        virtual const char *queryType() const { return "FLZ"; }
+        virtual CompressionMethod queryMethod() const { return COMPRESS_METHOD_FASTLZ; }
         virtual ICompressor *getCompressor(const char *options) { return createFastLZCompressor(); }
         virtual IExpander *getExpander(const char *options) { return createFastLZExpander(); }
     };
     class CLZ4CompressHandler : public CCompressHandlerBase
     {
     public:
-        CLZ4CompressHandler() : CCompressHandlerBase("LZ4") { }
+        virtual const char *queryType() const { return "LZ4"; }
+        virtual CompressionMethod queryMethod() const { return COMPRESS_METHOD_LZ4; }
         virtual ICompressor *getCompressor(const char *options) { return createLZ4Compressor(options, false); }
         virtual IExpander *getExpander(const char *options) { return createLZ4Expander(); }
     };
     class CLZ4HCCompressHandler : public CCompressHandlerBase
     {
     public:
-        CLZ4HCCompressHandler() : CCompressHandlerBase("LZ4HC") { }
+        virtual const char *queryType() const { return "LZ4HC"; }
+        virtual CompressionMethod queryMethod() const { return COMPRESS_METHOD_LZ4HC; }
         virtual ICompressor *getCompressor(const char *options) { return createLZ4Compressor(options, true); }
         virtual IExpander *getExpander(const char *options) { return createLZ4Expander(); }
     };
     class CAESCompressHandler : public CCompressHandlerBase
     {
     public:
-        CAESCompressHandler() : CCompressHandlerBase("AES") { }
+        virtual const char *queryType() const { return "AES"; }
+        virtual CompressionMethod queryMethod() const { return (CompressionMethod) (COMPRESS_METHOD_AES|COMPRESS_METHOD_LZW); }
         virtual ICompressor *getCompressor(const char *options)
         {
             assertex(options);
@@ -2954,34 +2943,38 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     class CDiffCompressHandler : public CCompressHandlerBase
     {
     public:
-        CDiffCompressHandler() : CCompressHandlerBase("DIFF") { }
+        virtual const char *queryType() const { return "DIFF"; }
+        virtual CompressionMethod queryMethod() const { return COMPRESS_METHOD_ROWDIF; }
         virtual ICompressor *getCompressor(const char *options) { return createRDiffCompressor(); }
         virtual IExpander *getExpander(const char *options) { return createRDiffExpander(); }
     };
     class CRDiffCompressHandler : public CCompressHandlerBase
     {
     public:
-        CRDiffCompressHandler() : CCompressHandlerBase("RDIFF") { }
+        virtual const char *queryType() const { return "RDIFF"; }  // Synonym for DIFF
+        virtual CompressionMethod queryMethod() const { return COMPRESS_METHOD_ROWDIF; }
         virtual ICompressor *getCompressor(const char *options) { return createRDiffCompressor(); }
         virtual IExpander *getExpander(const char *options) { return createRDiffExpander(); }
     };
     class CRandRDiffCompressHandler : public CCompressHandlerBase
     {
     public:
-        CRandRDiffCompressHandler() : CCompressHandlerBase("RANDROW") { }
+        virtual const char *queryType() const { return "RANDROW"; }
+        virtual CompressionMethod queryMethod() const { return COMPRESS_METHOD_RANDROW; }
         virtual ICompressor *getCompressor(const char *options) { return createRandRDiffCompressor(); }
         virtual IExpander *getExpander(const char *options) { UNIMPLEMENTED; } // Expander has a different interface
     };
     class CLZWCompressHandler : public CCompressHandlerBase
     {
     public:
-        CLZWCompressHandler() : CCompressHandlerBase("LZW") { }
+        virtual const char *queryType() const { return "LZW"; }
+        virtual CompressionMethod queryMethod() const { return COMPRESS_METHOD_LZW; }
         virtual ICompressor *getCompressor(const char *options) { return createLZWCompressor(true); }
         virtual IExpander *getExpander(const char *options) { return createLZWExpander(true); }
     };
+    addCompressorHandler(new CLZWCompressHandler());
     addCompressorHandler(new CAESCompressHandler());
     addCompressorHandler(new CDiffCompressHandler());
-    addCompressorHandler(new CLZWCompressHandler());
     addCompressorHandler(new CRDiffCompressHandler());
     addCompressorHandler(new CRandRDiffCompressHandler());
     addCompressorHandler(new CFLZCompressHandler());
@@ -2999,8 +2992,7 @@ ICompressHandler *queryCompressHandler(const char *type)
 
 ICompressHandler *queryCompressHandler(CompressionMethod method)
 {
-    //Could be more efficient, but doesn't matter
-    return compressors.lookup(translateFromCompMethod(method));
+    return compressors.lookup(method);
 }
 
 void setDefaultCompressor(const char *type)
