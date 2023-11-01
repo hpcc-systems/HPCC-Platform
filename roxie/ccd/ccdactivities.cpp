@@ -433,10 +433,12 @@ public:
 
     virtual void abort() 
     {
-        if (doTrace(traceRoxiePackets))
+        if (doTrace(traceRoxiePackets) || doTrace(traceAborts))
         {
             StringBuffer s;
+            StringBuffer statsStr;
             logctx.CTXLOG("Aborting running activity: %s", packet->queryHeader().toString(s).str());
+            logctx.CTXLOG("Aborted after processing: %s", logctx.queryStats().toStr(statsStr).str());
         }
         aborted = true;
         logctx.abort();
