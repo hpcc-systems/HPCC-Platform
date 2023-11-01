@@ -182,7 +182,8 @@ jobs:
           mkdir -p $HOME/.ccache
           declare -a plugins
           if [ ${{ needs.preamble.outputs.include_plugins }} == "ON" ]; then
-              plugins=("CASSANDRAEMBED" "COUCHBASEEMBED" "ECLBLAS" "H3" "JAVAEMBED" "KAFKA" "MEMCACHED" "MONGODBEMBED" "MYSQLEMBED" "NLP" "PARQUETEMBED" "REDIS" "REMBED" "SQLITE3EMBED" "SQS" "PLATFORM")
+              # plugins=("CASSANDRAEMBED" "COUCHBASEEMBED" "ECLBLAS" "H3" "JAVAEMBED" "KAFKA" "MEMCACHED" "MONGODBEMBED" "MYSQLEMBED" "NLP" "PARQUETEMBED" "REDIS" "REMBED" "SQLITE3EMBED" "SQS" "PLATFORM")
+              plugins=("H3")
           else
               plugins=("PLATFORM")
           fi
