@@ -928,4 +928,46 @@ CPPUNIT_TEST_SUITE_REGISTRATION( PipeRunTest );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( PipeRunTest, "PipeRunTest" );
 #endif
 
+#include "jlzw.hpp"
+class compressToBufferTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE( compressToBufferTest  );
+        CPPUNIT_TEST(testRun);
+    CPPUNIT_TEST_SUITE_END();
+    void testRun()
+    {
+        MemoryBuffer x;
+        compressToBuffer(x, 251, 
+          "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
+          "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
+          "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
+          "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
+          "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
+                        );
+        for (unsigned i = 0; i < x.length(); i++)
+            printf("%02x ", x.toByteArray()[i]);
+        printf("\n");
+        * (byte *) x.toByteArray() = 2;
+        for (unsigned i = 0; i < x.length(); i++)
+            printf("%02x ", x.toByteArray()[i]);
+        printf("\n");
+        try
+        {
+            MemoryBuffer out;
+            decompressToBuffer(out, x);
+            printf("%s\n", out.toByteArray());
+        }
+        catch(IException *E)
+        {
+            StringBuffer s;
+            printf("Exception %s\n", E->errorMessage(s).str());
+            ::Release(E);
+        }
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( compressToBufferTest );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( compressToBufferTest, "CompressToBufferTest" );
+
+
 #endif // _USE_CPPUNIT

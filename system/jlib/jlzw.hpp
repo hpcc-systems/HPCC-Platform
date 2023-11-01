@@ -24,6 +24,24 @@
 #include "jfile.hpp"
 #include <stdio.h>
 
+enum CompressionMethod
+{
+    //These values are persisted - they should not be changed
+    COMPRESS_METHOD_NONE,
+    COMPRESS_METHOD_ROWDIF,
+    COMPRESS_METHOD_LZW,
+    COMPRESS_METHOD_FASTLZ,
+    COMPRESS_METHOD_LZMA,
+    COMPRESS_METHOD_LZ4,
+    COMPRESS_METHOD_LZ4HC,
+    COMPRESS_METHOD_RANDROW,
+
+
+    COMPRESS_METHOD_AES = 0x80,
+    COMPRESS_METHOD_LZWLEGACY = 1,  // Matches value of boolean 'true' used to indicate LZW compression by legacy compressToBuffer
+};
+
+
 interface jlib_decl ICompressor : public IInterface
 {
     virtual void   open(MemoryBuffer &mb, size32_t initialSize=0)=0; // variable internally sized buffer
@@ -87,21 +105,9 @@ extern jlib_decl ICompressor *createRandRDiffCompressor(); // similar to RDiffCo
 extern jlib_decl IRandRowExpander *createRandRDiffExpander(); // NB only supports fixed row size
 
 
-//Some helper functions to make it easy to compress/decompress to memorybuffers.
-extern jlib_decl void compressToBuffer(MemoryBuffer & out, size32_t len, const void * src);
-extern jlib_decl void decompressToBuffer(MemoryBuffer & out, const void * src);
-extern jlib_decl void decompressToBuffer(MemoryBuffer & out, MemoryBuffer & in);
-extern jlib_decl void decompressToAttr(MemoryAttr & out, const void * src);
-extern jlib_decl void decompressToBuffer(MemoryAttr & out, MemoryBuffer & in);
-extern jlib_decl void appendToBuffer(MemoryBuffer & out, size32_t len, const void * src); //format as failed compression
-
-
-#define COMPRESS_METHOD_ROWDIF 1
-#define COMPRESS_METHOD_LZW    2
-#define COMPRESS_METHOD_FASTLZ 3
-#define COMPRESS_METHOD_LZMA   4
-#define COMPRESS_METHOD_LZ4    5
-#define COMPRESS_METHOD_LZ4HC  6
+// Helper functions to make it easy to compress/decompress to memorybuffers.
+extern jlib_decl void compressToBuffer(MemoryBuffer & out, size32_t len, const void * src, CompressionMethod method=COMPRESS_METHOD_LZW, const char *options=nullptr);
+extern jlib_decl void decompressToBuffer(MemoryBuffer & out, MemoryBuffer & in, const char *options=nullptr);
 
 interface ICompressedFileIO: extends IFileIO
 {
@@ -135,6 +141,7 @@ extern jlib_decl IPropertyTree *getBlockedFileDetails(IFile *file);
 interface ICompressHandler : extends IInterface
 {
     virtual const char *queryType() const = 0;
+    virtual CompressionMethod queryMethod() const = 0;
     virtual ICompressor *getCompressor(const char *options=NULL) = 0;
     virtual IExpander *getExpander(const char *options=NULL) = 0;
 };
