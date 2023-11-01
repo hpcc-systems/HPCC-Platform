@@ -1,4 +1,4 @@
-﻿IMPORT Python3 as Python;
+﻿IMPORT Python3 AS Python;
 
 /*
  This example illustrates and tests the use of embedded Python
