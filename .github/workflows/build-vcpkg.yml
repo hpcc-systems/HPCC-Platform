@@ -341,7 +341,7 @@ jobs:
         if: ${{ contains(matrix.os, 'macos') && contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
         shell: "bash"
         run: |
-          brew install bison flex pkg-config autoconf autoconf-archive automake libtool cmake openjdk@11
+          brew install bison flex pkg-config autoconf autoconf-archive automake libtool cmake openjdk@11 ninja
 
       - name: "Remove builtin vcpkg (old)"
         if: ${{ contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
