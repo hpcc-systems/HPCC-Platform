@@ -426,8 +426,8 @@ jobs:
             mv -f ecl-test.json $(realpath ..)/install/opt/HPCCSystems/testing/regress/ecl-test.json
             # configure environment.xml to slavesPerNode=2, channelsPerNode=1
             xmlstarlet ed -L -u 'Environment/Software/ThorCluster/@slavesPerNode' -v 2 -u 'Environment/Software/ThorCluster/@channelsPerSlave' -v 1 $(realpath ..)/install/etc/HPCCSystems/environment.xml
-            cp ${{ github.workspace }}/src/.github/workflows/timeoutcmd $(realpath ..)/install/opt/HPCCSystems/bin/
-            cp ${{ github.workspace }}/src/.github/workflows/smoketest-preabort.sh $(realpath ..)/install/opt/HPCCSystems/bin/
+            cp ${{ github.workspace }}/HPCC-Platform/.github/workflows/timeoutcmd $(realpath ..)/install/opt/HPCCSystems/bin/
+            cp ${{ github.workspace }}/HPCC-Platform/.github/workflows/smoketest-preabort.sh $(realpath ..)/install/opt/HPCCSystems/bin/
             mkdir copy
             cp -rp $(realpath ..)/install copy/
             rm -rf copy/install/var/lib/HPCCSystems/hpcc-data
@@ -466,7 +466,7 @@ jobs:
         run: |
           mv $(realpath ..)/install/var/lib/HPCCSystems/hpcc-data copy/install/var/lib/HPCCSystems/
           mv $(realpath ..)/install/var/lib/HPCCSystems/queries copy/install/var/lib/HPCCSystems/
-          [[ -d ${{ github.workspace }}/src/esp/src/test-ui ]] && cp -r ${{ github.workspace }}/src/esp/src/test-ui copy/install/
+          [[ -d ${{ github.workspace }}/HPCC-Platform/esp/src/test-ui ]] && cp -r ${{ github.workspace }}/HPCC-Platform/esp/src/test-ui copy/install/
           cd copy
           tar --zstd -cf ../install.tgz install
 
