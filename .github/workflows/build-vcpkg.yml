@@ -185,7 +185,7 @@ jobs:
               # plugins=("CASSANDRAEMBED" "COUCHBASEEMBED" "ECLBLAS" "H3" "JAVAEMBED" "KAFKA" "MEMCACHED" "MONGODBEMBED" "MYSQLEMBED" "NLP" "PARQUETEMBED" "REDIS" "REMBED" "SQLITE3EMBED" "SQS" "PLATFORM")
               plugins=("H3")
           else
-              plugins=("PLATFORM")
+              plugins=("H3")
           fi
           for plugin in "${plugins[@]}"; do
             sudo rm -f ${{ needs.preamble.outputs.folder_build }}/CMakeCache.txt
@@ -193,7 +193,7 @@ jobs:
             docker run --rm \
               --mount ${{ needs.preamble.outputs.mount_platform }} \
               --mount ${{ needs.preamble.outputs.mount_build }} \
-              --mount source="$HOME/.ccache",target=/home/hpcc/.ccache,type=bind,consistency=cached \
+              --mount source="$HOME/.ccache",target=/root/.ccache,type=bind,consistency=cached \
               ${{ steps.vars.outputs.docker_tag_candidate_base }} "\
               cmake -G Ninja -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/build ${{ needs.preamble.outputs.cmake_docker_config }} -D$plugin=ON -DCONTAINERIZED=OFF -DCPACK_STRIP_FILES=OFF ${{ matrix.cmake_options_extra }} -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache && \
               cmake --build /hpcc-dev/build --parallel --target package" 
@@ -212,7 +212,7 @@ jobs:
           docker run --rm \
             --mount ${{ needs.preamble.outputs.mount_platform }} \
             --mount ${{ needs.preamble.outputs.mount_build }} \
-            --mount source="$HOME/.ccache",target=/home/hpcc/.ccache,type=bind,consistency=cached \
+            --mount source="$HOME/.ccache",target=/root/.ccache,type=bind,consistency=cached \
             ${{ steps.vars.outputs.docker_tag_candidate_base }} "\
             cmake -G Ninja -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/build ${{ needs.preamble.outputs.cmake_docker_config }} -DINCLUDE_PLUGINS=${{ needs.preamble.outputs.include_plugins }} -DCONTAINERIZED=ON -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_SPARK=ON -DCPACK_STRIP_FILES=OFF ${{ matrix.cmake_options_extra }} -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache && \
             cmake --build /hpcc-dev/build --parallel --target package" 
@@ -229,7 +229,7 @@ jobs:
             --mount ${{ needs.preamble.outputs.mount_platform }} \
             --mount ${{ needs.preamble.outputs.mount_ln }} \
             --mount ${{ needs.preamble.outputs.mount_build }} \
-            --mount source="$HOME/.ccache",target=/home/hpcc/.ccache,type=bind,consistency=cached \
+            --mount source="$HOME/.ccache",target=/root/.ccache,type=bind,consistency=cached \
             ${{ steps.vars.outputs.docker_tag_candidate_base }} "\
             cmake -G Ninja -S /hpcc-dev/LN -B /hpcc-dev/build -DHPCC_SOURCE_DIR=/hpcc-dev/HPCC-Platform ${{ needs.preamble.outputs.cmake_docker_config }} -DINCLUDE_PLUGINS=${{ needs.preamble.outputs.include_plugins }} -DCONTAINERIZED=OFF -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_SPARK=ON -DCPACK_STRIP_FILES=OFF ${{ matrix.cmake_options_extra }} -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache && \
             cmake --build /hpcc-dev/build --parallel --target package" 
