@@ -3,6 +3,8 @@ name: Test Build
 env:
   VCPKG_BINARY_SOURCES: "clear;nuget,GitHub,read"
   VCPKG_NUGET_REPOSITORY: "https://github.com/hpcc-systems/vcpkg"
+  OS_DEPENDENCIES: "bison flex build-essential binutils-dev curl lsb-release libcppunit-dev python3-dev default-jdk
+    r-base-dev r-cran-rcpp r-cran-rinside r-cran-inline pkg-config libtool autotools-dev automake git cmake"
 
 on:
   workflow_dispatch:
@@ -260,8 +262,8 @@ jobs:
           - os: "ubuntu-22.04"
             mono: "mono"
             sudo: "sudo"
-            cmake_config_options: "-G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DINCLUDE_PLUGINS=${{ needs.preamble.outputs.include_plugins }} -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON"
-            cmake_build_options: "--parallel"
+            cmake_config_options: "-G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DRUNTIME_USER=$(whoami) -DRUNTIME_GROUP=$(id -gn) -DDESTDIR=$(realpath ..)/install -DINCLUDE_PLUGINS=${{ needs.preamble.outputs.include_plugins }} -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON"
+            cmake_build_options: "--target install --parallel"
             event_name: "pull_request,workflow_dispatch,push"
           - os: "windows-2019"
             mono: ""
@@ -390,14 +392,14 @@ jobs:
             vcpkg-${{ matrix.os }}-${{ needs.preamble.outputs.community_tag }}
             vcpkg-${{ matrix.os }}-
 
-      - name: CMake Configure Packages
+      - name: CMake Configure
         if: ${{ contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
         shell: "bash"
         run: |
           mkdir -p ./build
           cmake -S ./HPCC-Platform -B ./build ${{ matrix.cmake_config_options }} -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
-      - name: CMake Packages
+      - name: CMake Build
         if: ${{ contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
         shell: "bash"
         run: |
@@ -409,3 +411,194 @@ jobs:
         with:
           name: bare-metal-${{ matrix.os }}-logs
           path: ./build/**/*.log
+
+      # - alter stock ecl-test.json, to point to install dir (using jq)
+      # - create a clean copy of the install directory (for later reuse)
+      # - rm hpcc-data from copy (the post-setup hpcc-data will be moved in when done)
+      - name: Prepare install artifact
+        if: ${{ matrix.os == 'ubuntu-22.04' && contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
+        run: |
+            # configure ecl-test.json with correct paths
+            jq --arg rootdir "${{ github.workspace }}" \
+              '.Regress.dropzonePath = $rootdir + "/install" + .Regress.dropzonePath | .Regress.setupExtraParams.OriginalTextFilesOsPath = $rootdir + "/install" + .Regress.setupExtraParams.OriginalTextFilesOsPath | .Regress.setupExtraDParams.HPCCBaseDir = $rootdir + "/install" + .Regress.setupExtraDParams.HPCCBaseDir | .Regress.regressionDir = $rootdir + "/regress" | .Regress.maxAttemptCount = "1" | .Regress.logDir = $rootdir + "/regress/log"' \
+              install/opt/HPCCSystems/testing/regress/ecl-test.json > ecl-test.json
+            mv -f ecl-test.json install/opt/HPCCSystems/testing/regress/ecl-test.json
+            # configure environment.xml to slavesPerNode=2, channelsPerNode=1
+            xmlstarlet ed -L -u 'Environment/Software/ThorCluster/@slavesPerNode' -v 2 -u 'Environment/Software/ThorCluster/@channelsPerSlave' -v 1 install/etc/HPCCSystems/environment.xml
+            cp ${{ github.workspace }}/src/.github/workflows/timeoutcmd install/opt/HPCCSystems/bin/
+            cp ${{ github.workspace }}/src/.github/workflows/smoketest-preabort.sh install/opt/HPCCSystems/bin/
+            mkdir copy
+            cp -rp install copy/
+            rm -rf copy/install/var/lib/HPCCSystems/hpcc-data
+            rm -rf copy/install/var/lib/HPCCSystems/queries
+
+      - name: Run regression suite setup
+        if: ${{ matrix.os == 'ubuntu-22.04' && contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
+        timeout-minutes: 10
+        run: |
+          export LANG="en_US.UTF-8"
+          sudo update-locale
+          source install/opt/HPCCSystems/sbin/hpcc_setenv
+          install/opt/HPCCSystems/etc/init.d/hpcc-init start
+          mkdir -p regress
+          cd install/opt/HPCCSystems/testing/regress
+          # force regression suite to timeout after 8 minutes, so it captures ZAP report of any inflight hung queries
+          timeoutcmd $((8 * 60)) \
+            ./ecl-test setup --preAbort 'smoketest-preabort.sh' --pq 2 --generateStackTrace
+          grep Failure: ${{ github.workspace }}/regress/log/setup_*.log
+          if [[ "$(grep -ohP '(?<=^Failure: )[0-9]+$' ${{ github.workspace }}/regress/log/setup_*.log | awk '{s+=$1} END {print s}')" -gt 0 ]]; then exit 1; fi
+          ${{ github.workspace }}/install/opt/HPCCSystems/etc/init.d/hpcc-init stop
+      
+      - name: regression-setup-logs-artifact
+        if: ${{ failure() || cancelled() }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: regress-setup-logs
+          path: |
+            install/var/log/HPCCSystems
+            regress/
+
+      # - mv regression suite setup created data from hpcc-data and queries into copy of install
+      # - create tarball of install for artifact uploading
+      - name: Finalize install artifact
+        if: ${{ matrix.os == 'ubuntu-22.04' && contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
+        run: |
+          mv install/var/lib/HPCCSystems/hpcc-data copy/install/var/lib/HPCCSystems/
+          mv install/var/lib/HPCCSystems/queries copy/install/var/lib/HPCCSystems/
+          [[ -d ${{ github.workspace }}/src/esp/src/test-ui ]] && cp -r ${{ github.workspace }}/src/esp/src/test-ui copy/install/
+          cd copy
+          tar --zstd -cf ../install.tgz install
+
+      - name: Upload install artifact
+        if: ${{ matrix.os == 'ubuntu-22.04' && contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: installsetup-artifact
+          path: |
+            install.tgz
+
+  # Matrix of jobs run in parallel once build+setup above completes successfully.
+  # All use the post-setup install.tgz artifact, that contains binaries and setup state
+  # Break each engine run into sets for speed
+  # NB: each regression suite job, runs these steps:
+  # - installs dependencies (probably too many for runtime)
+  # - Starts HPCC
+  # - Runs regression suite with params { engine, match[pattern,exclude] }
+  # TODO: needs to process results, capture report, to be assembled by workflow when all jobs done
+  regression-jobs:
+    needs: build-bare-metal
+    if: ${{ github.event_name == 'pull_request' }}
+    timeout-minutes: 60 # each matrix step has its own timeout, however the job can sometimes take time to download dependencies
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: true
+      matrix:
+        engine: ['hthor', 'thor', 'roxie']
+        match:
+        - pattern: '[a-d]*.ecl'
+        - pattern: '[e-h]*.ecl'
+        - pattern: '[i-l]*.ecl'
+        - pattern: '[m-q]*.ecl'
+        - pattern: '[r-u]*.ecl'
+          exclude: teststdlibrary.ecl
+        - pattern: '[v-z]*.ecl'
+        include:
+        - engine: 'hthor'
+          match:
+            pattern: teststdlibrary.ecl
+        - engine: 'thor'
+          match:
+            pattern: teststdlibrary.ecl
+        - engine: 'roxie'
+          match:
+            pattern: teststdlibrary.ecl
+
+    steps:
+    - uses: actions/download-artifact@v2
+      with:
+        name: installsetup-artifact
+
+    - name: vars
+      id: vars
+      run: |
+        echo ::set-output name=matrix-setname::$(echo -n ${{ matrix.match.pattern }} | tr -c "[:alnum:]" _)
+
+    - name: Prerequisites
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y ${{ env.OS_DEPENDENCIES }}
+        sudo apt-get install -y gdb
+
+        curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
+        sudo apt-get install -y nodejs
+
+        echo "node.js version = $(node --version), npm version = $(npm --version), release = $(lsb_release -sc)"
+
+    - name: run
+      timeout-minutes: 30 # generous, each matrix step shouldn't take more than 10 mins
+      run: |
+        export LANG="en_US.UTF-8"
+        sudo update-locale
+        tar --zstd -xf install.tgz
+        source install/opt/HPCCSystems/sbin/hpcc_setenv
+        install/opt/HPCCSystems/etc/init.d/hpcc-init start
+        cd install/opt/HPCCSystems/testing/regress
+
+        (cd ecl; ls ${{ matrix.match.pattern }}) > matches.tmp
+        echo queries are:
+        cat matches.tmp
+        if [[ -z "${{ matrix.match.exclude }}" ]]
+        then
+          queries="$(cat matches.tmp | tr '\n' ' ')"
+        else
+          queries="$(cd ecl; ls ${{ matrix.match.exclude }} | grep -v -f - ../matches.tmp | tr '\n' ' ')"
+        fi
+        echo queries after exclude: ${queries}
+
+        # force regression suite to timeout after 28 minutes, so it captures ZAP report of any inflight hung queries
+        timeoutcmd $((28 * 60)) \
+          ./ecl-test query --preAbort 'smoketest-preabort.sh' --pq 2 --target ${{ matrix.engine }} --excludeclass python2,embedded-r,embedded-js,3rdpartyservice,mongodb --generateStackTrace ${queries}
+        grep Failure: ${{ github.workspace }}/regress/log/${{ matrix.engine }}.*.log
+        if [[ "$(grep -oP '(?<=^Failure: )[0-9]+$' ${{ github.workspace }}/regress/log/${{ matrix.engine }}.*.log)" -gt 0 ]]; then exit 1; fi
+
+    - name: regression-run-logs-artifact
+      if: ${{ failure() || cancelled() }}
+      uses: actions/upload-artifact@v2
+      with:
+        name: regression-run-logs-${{ matrix.engine }}-${{ steps.vars.outputs.matrix-setname }}
+        path: |
+          install/var/log/HPCCSystems
+          regress/
+        if-no-files-found: error
+
+
+  # NB: this doesn't really need the post-setup data files included in install.tgz
+  # but as this is relatively quick and in parallel with others, it probably doesn't matter
+  unittests:
+    needs: build-bare-metal
+    if: ${{ needs.build-bare-metal.outputs.cache-state != '' && github.event_name == 'pull_request' }}
+    timeout-minutes: 30 # the unittests run step has its own timeout, however the job can sometimes take time to download dependencies
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: actions/download-artifact@v2
+      with:
+        name: installsetup-artifact
+
+    - name: Prerequisites
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y ${{ env.OS_DEPENDENCIES }}
+        sudo apt-get install -y gdb
+
+        curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
+        sudo apt-get install -y nodejs
+
+        echo "node.js version = $(node --version), npm version = $(npm --version), release = $(lsb_release -sc)"
+
+    - name: run
+      timeout-minutes: 10 # generous, expected time is approx 1 min.
+      run: |
+        export LANG="en_US.UTF-8"
+        sudo update-locale
+        tar --zstd -xf install.tgz
+        install/opt/HPCCSystems/bin/unittests
