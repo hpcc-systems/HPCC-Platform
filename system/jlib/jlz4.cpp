@@ -34,18 +34,17 @@ class CLZ4Compressor final : public CFcmpCompressor
 protected:
     virtual void setinmax() override
     {
-        inmax = blksz-outlen-sizeof(size32_t);
-        if (inmax<256)
+        if (blksz <= outlen+sizeof(size32_t))
             trailing = true;    // too small to bother compressing
         else
         {
             trailing = false;
+            inmax = blksz-outlen-sizeof(size32_t);
             size32_t slack = LZ4_COMPRESSBOUND(inmax) - inmax;
-            int inmax2 = inmax - (slack + sizeof(size32_t));
-            if (inmax2<256)
+            if (inmax <= (slack + sizeof(size32_t)))
                 trailing = true;
             else
-                inmax = inmax2;
+                inmax = inmax - (slack + sizeof(size32_t));
         }
     }
 
@@ -72,12 +71,6 @@ protected:
         size32_t toflush = (inlenblk==COMMITTED)?inlen:inlenblk;
         if (toflush == 0)
             return;
-
-        if (toflush < 256)
-        {
-            trailing = true;
-            return;
-        }
 
         size32_t outSzRequired = outlen+sizeof(size32_t)*2+LZ4_COMPRESSBOUND(toflush);
         if (!dynamicOutSz)
