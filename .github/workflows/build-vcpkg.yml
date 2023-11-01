@@ -83,24 +83,24 @@ jobs:
           - os: ubuntu-22.04
             name: k8s
             container: true
-            event_name: "schedule"
+            event_name: "schedule,workflow_dispatch"
           - os: ubuntu-22.04
-            event_name: "schedule"
+            event_name: "schedule,workflow_dispatch"
           - os: ubuntu-20.04
-            event_name: "schedule"
+            event_name: "schedule,workflow_dispatch"
           - os: centos-8
-            event_name: "schedule"
+            event_name: "schedule,workflow_dispatch"
           - os: centos-7
             event_name: "pull_request,workflow_dispatch,push"
             cmake_options_extra: "-DVCPKG_TARGET_TRIPLET=x64-centos-7-dynamic"
           - os: amazonlinux
-            event_name: "schedule"
+            event_name: "schedule,workflow_dispatch"
             cmake_options_extra: "-DVCPKG_TARGET_TRIPLET=x64-amazonlinux-dynamic"
           - os: centos-7
             name: LN
             cmake_options_extra: "-DVCPKG_TARGET_TRIPLET=x64-centos-7-dynamic"
             ln: true
-            event_name: "schedule"
+            event_name: "schedule,workflow_dispatch"
       fail-fast: false
 
     steps:
@@ -160,7 +160,7 @@ jobs:
           builder: ${{ steps.buildx.outputs.name }}
           file: ${{ needs.preamble.outputs.folder_platform }}/dockerfiles/vcpkg/${{ matrix.os }}.dockerfile
           context: ${{ needs.preamble.outputs.folder_platform }}/dockerfiles/vcpkg
-          push: true
+          load: true
           build-args: |
             VCPKG_REF=${{ steps.vars.outputs.vcpkg_sha_short }}
           tags: |
@@ -182,10 +182,9 @@ jobs:
           mkdir -p ${{github.workspace}}/.ccache
           declare -a plugins
           if [ ${{ needs.preamble.outputs.include_plugins }} == "ON" ]; then
-              # plugins=("CASSANDRAEMBED" "COUCHBASEEMBED" "ECLBLAS" "H3" "JAVAEMBED" "KAFKA" "MEMCACHED" "MONGODBEMBED" "MYSQLEMBED" "NLP" "PARQUETEMBED" "REDIS" "REMBED" "SQLITE3EMBED" "SQS" "PLATFORM")
-              plugins=("H3")
+              plugins=("CASSANDRAEMBED" "COUCHBASEEMBED" "ECLBLAS" "H3" "JAVAEMBED" "KAFKA" "MEMCACHED" "MONGODBEMBED" "MYSQLEMBED" "NLP" "PARQUETEMBED" "REDIS" "REMBED" "SQLITE3EMBED" "SQS" "PLATFORM")
           else
-              plugins=("H3")
+              plugins=("PLATFORM")
           fi
           for plugin in "${plugins[@]}"; do
             sudo rm -f ${{ needs.preamble.outputs.folder_build }}/CMakeCache.txt
@@ -257,7 +256,7 @@ jobs:
             sudo: "sudo"
             cmake_config_options: "-G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DINCLUDE_PLUGINS=${{ needs.preamble.outputs.include_plugins }} -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON"
             cmake_build_options: "--parallel"
-            event_name: "schedule"
+            event_name: "schedule,workflow_dispatch"
           - os: "ubuntu-22.04"
             mono: "mono"
             sudo: "sudo"
@@ -269,7 +268,7 @@ jobs:
             sudo: ""
             cmake_config_options: '-T host=x64 -A x64 -DUSE_OPTIONAL=OFF -DCLIENTTOOLS_ONLY=ON -DUSE_AZURE=OFF -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
             cmake_build_options: "--config Release --parallel"
-            event_name: "schedule"
+            event_name: "schedule,workflow_dispatch"
           - os: "windows-2022"
             mono: ""
             sudo: ""
@@ -281,7 +280,7 @@ jobs:
             sudo: "sudo"
             cmake_config_options: "-G Ninja -DCMAKE_BUILD_TYPE=Release -DUSE_OPTIONAL=OFF -DCLIENTTOOLS_ONLY=ON -DUSE_AZURE=OFF -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF"
             cmake_build_options: "--parallel"
-            event_name: "schedule"
+            event_name: "schedule,workflow_dispatch"
           - os: "macos-12"
             mono: "mono"
             sudo: "sudo"
