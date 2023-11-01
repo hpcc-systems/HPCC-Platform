@@ -489,7 +489,7 @@ jobs:
   # TODO: needs to process results, capture report, to be assembled by workflow when all jobs done
   regression-jobs:
     needs: build-bare-metal
-    if: ${{ github.event_name == 'pull_request' }}
+    # if: ${{ github.event_name == 'pull_request' }}
     timeout-minutes: 60 # each matrix step has its own timeout, however the job can sometimes take time to download dependencies
     runs-on: ubuntu-22.04
     strategy:
@@ -578,7 +578,7 @@ jobs:
   # but as this is relatively quick and in parallel with others, it probably doesn't matter
   unittests:
     needs: build-bare-metal
-    if: ${{ github.event_name == 'pull_request' }}
+    # if: ${{ github.event_name == 'pull_request' }}
     timeout-minutes: 30 # the unittests run step has its own timeout, however the job can sometimes take time to download dependencies
     runs-on: ubuntu-22.04
     steps:
