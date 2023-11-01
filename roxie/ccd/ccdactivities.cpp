@@ -44,6 +44,7 @@
 #include "thorcommon.ipp"
 #include "thorstrand.hpp"
 #include "jstats.h"
+#include "jlz4.hpp"
 
 using roxiemem::OwnedRoxieRow;
 using roxiemem::OwnedConstRoxieRow;
@@ -2707,7 +2708,8 @@ public:
             compressed.append(siLen);  // Leaving space to patch when size known
             compressed.append(true);
             compressed.append(lastRowCompleteMatch);  // This field is not compressed - see above!
-            compressToBuffer(compressed, si.length() - compressed.length(), si.toByteArray() + compressed.length());
+            Owned<ICompressor> compressor = createLZ4Compressor("hclevel=3", true);
+            compressToBuffer(compressed, si.length() - compressed.length(), si.toByteArray() + compressed.length(), compressor);
             bool report = logctx.queryTraceLevel() && (doTrace(traceRoxiePackets) || si.length() >= continuationWarnThreshold);
             if (report)
                 logctx.CTXLOG("ERROR: continuation data size %u for %d cursor positions is large - compressed to %u", si.length(), tlk->numActiveKeys(), compressed.length());
@@ -2733,7 +2735,8 @@ public:
         if (isCompressed)
         {
             MemoryBuffer decompressed;
-            decompressToBuffer(decompressed, resentInfo);
+            Owned<IExpander> expander = createLZ4Expander();
+            decompressToBuffer(decompressed, resentInfo, expander);
             if (doTrace(traceRoxiePackets))
                  logctx.CTXLOG("readContinuationInfo: decompressed from %u to %u", resentInfo.length(), decompressed.length());
             resentInfo.swapWith(decompressed);
@@ -4120,7 +4123,8 @@ class CRoxieKeyedJoinIndexActivity : public CRoxieKeyedActivity
             MemoryBuffer compressed;
             compressed.append(siLen);  // Leaving space to patch when size known
             compressed.append(true);
-            compressToBuffer(compressed, si.length() - compressed.length(), si.toByteArray() + compressed.length());
+            Owned<ICompressor> compressor = createLZ4Compressor("hclevel=3", true);
+            compressToBuffer(compressed, si.length() - compressed.length(), si.toByteArray() + compressed.length(), compressor);
             bool report = logctx.queryTraceLevel() && (doTrace(traceRoxiePackets) || si.length() >= continuationWarnThreshold);
             if (report)
                 DBGLOG("ERROR: continuation data size %u for %d cursor positions is large - compressed to %u", si.length(), tlk->numActiveKeys(), compressed.length());
@@ -4145,7 +4149,8 @@ class CRoxieKeyedJoinIndexActivity : public CRoxieKeyedActivity
         if (isCompressed)
         {
             MemoryBuffer decompressed;
-            decompressToBuffer(decompressed, resentInfo);
+            Owned<IExpander> expander = createLZ4Expander();
+            decompressToBuffer(decompressed, resentInfo, expander);
             if (doTrace(traceRoxiePackets))
                  DBGLOG("readContinuationInfo: decompressed from %u to %u", resentInfo.length(), decompressed.length());
             resentInfo.swapWith(decompressed);

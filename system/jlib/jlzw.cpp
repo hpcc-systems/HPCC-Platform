@@ -765,7 +765,7 @@ void appendToBuffer(MemoryBuffer & out, size32_t len, const void * src)
     out.append(len, src);
 }
 
-void compressToBuffer(MemoryBuffer & out, size32_t len, const void * src)
+void compressToBuffer(MemoryBuffer & out, size32_t len, const void * src, ICompressor *compressor)
 {
     unsigned originalLength = out.length();
     out.append(true);
@@ -774,7 +774,6 @@ void compressToBuffer(MemoryBuffer & out, size32_t len, const void * src)
     if (len >= 32)
     {
         size32_t newSize = len * 4 / 5; // Copy if compresses less than 80% ...
-        Owned<ICompressor> compressor = createLZWCompressor();
         void *newData = out.reserve(newSize);
         compressor->open(newData, newSize);
         if (compressor->write(src, len)==len)
@@ -793,14 +792,33 @@ void compressToBuffer(MemoryBuffer & out, size32_t len, const void * src)
     appendToBuffer(out, len, src);
 }
 
-void decompressToBuffer(MemoryBuffer & out, const void * src)
+void compressToBuffer(MemoryBuffer & out, size32_t len, const void * src)
 {
-    Owned<IExpander> expander = createLZWExpander();
+    if (len < 32)
+    {
+        out.append(false);
+        appendToBuffer(out, len, src);
+    }
+    else
+    {
+        Owned<ICompressor> compressor = createLZWCompressor();
+        compressToBuffer(out, len, src, compressor);
+    }
+}
+
+void decompressToBuffer(MemoryBuffer & out, const void * src, IExpander *expander)
+{
     unsigned outSize = expander->init(src);
     void * buff = out.reserve(outSize);
     expander->expand(buff);
 }
 
+
+void decompressToBuffer(MemoryBuffer & out, const void * src)
+{
+    Owned<IExpander> expander = createLZWExpander();
+    decompressToBuffer(out, src, expander);
+}
 
 void decompressToBuffer(MemoryBuffer & out, MemoryBuffer & in)
 {
@@ -809,6 +827,17 @@ void decompressToBuffer(MemoryBuffer & out, MemoryBuffer & in)
     in.read(compressed).read(srcLen);
     if (compressed)
         decompressToBuffer(out, in.readDirect(srcLen));
+    else
+        out.append(srcLen, in.readDirect(srcLen));
+}
+
+void decompressToBuffer(MemoryBuffer & out, MemoryBuffer & in, IExpander *expander)
+{
+    bool compressed;
+    size32_t srcLen;
+    in.read(compressed).read(srcLen);
+    if (compressed)
+        decompressToBuffer(out, in.readDirect(srcLen), expander);
     else
         out.append(srcLen, in.readDirect(srcLen));
 }
