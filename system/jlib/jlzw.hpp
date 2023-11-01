@@ -38,6 +38,7 @@ enum CompressionMethod
 
 
     COMPRESS_METHOD_AES = 0x80,
+    COMPRESS_METHOD_LZWLEGACY = 1,  // Matches value of boolean 'true' used to indicate LZW compression by legacy compressToBuffer
 };
 
 
@@ -117,13 +118,9 @@ extern jlib_decl ICompressor *createRandRDiffCompressor(); // similar to RDiffCo
 extern jlib_decl IRandRowExpander *createRandRDiffExpander(); // NB only supports fixed row size
 
 
-//Some helper functions to make it easy to compress/decompress to memorybuffers.
-extern jlib_decl void compressToBuffer(MemoryBuffer & out, size32_t len, const void * src);
-extern jlib_decl void decompressToBuffer(MemoryBuffer & out, const void * src);
-extern jlib_decl void decompressToBuffer(MemoryBuffer & out, MemoryBuffer & in);
-extern jlib_decl void decompressToAttr(MemoryAttr & out, const void * src);
-extern jlib_decl void decompressToBuffer(MemoryAttr & out, MemoryBuffer & in);
-extern jlib_decl void appendToBuffer(MemoryBuffer & out, size32_t len, const void * src); //format as failed compression
+// Helper functions to make it easy to compress/decompress to memorybuffers.
+extern jlib_decl void compressToBuffer(MemoryBuffer & out, size32_t len, const void * src, CompressionMethod method=COMPRESS_METHOD_LZW, const char *options=nullptr);
+extern jlib_decl void decompressToBuffer(MemoryBuffer & out, MemoryBuffer & in, const char *options=nullptr);
 
 
 interface ICompressedFileIO: extends IFileIO
@@ -158,6 +155,7 @@ extern jlib_decl IPropertyTree *getBlockedFileDetails(IFile *file);
 interface ICompressHandler : extends IInterface
 {
     virtual const char *queryType() const = 0;
+    virtual CompressionMethod queryMethod() const = 0;
     virtual ICompressor *getCompressor(const char *options=NULL) = 0;
     virtual IExpander *getExpander(const char *options=NULL) = 0;
 };

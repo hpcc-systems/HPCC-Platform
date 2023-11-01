@@ -3085,11 +3085,14 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(JlibIOTest, "JlibIOTest");
 class JlibCompressionTestsStress : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(JlibCompressionTestsStress);
+        CPPUNIT_TEST(testc2b);
         CPPUNIT_TEST(test);
     CPPUNIT_TEST_SUITE_END();
 
 public:
-    void test()
+    void test() { dotest(false); }
+    void testc2b() { dotest(true); }
+    void dotest(bool c2b)
     {
         try
         {
@@ -3135,37 +3138,58 @@ public:
                 //Ignore unusual compressors with no expanders...
                 if (strieq(handler.queryType(), "randrow"))
                     continue;
-                Owned<ICompressor> compressor = handler.getCompressor(streq("AES", handler.queryType()) ? aesKey: nullptr);
-
-                CCycleTimer timer;
-                compressor->open(compressed, sz);
-                compressor->startblock();
-                const byte *ptr = src.bytes();
-                const byte *ptrEnd = ptr + src.length();
-                while (ptr != ptrEnd)
+                try
                 {
-                    compressor->write(ptr, rowSz);
-                    ptr += rowSz;
+                    cycle_t compressCycles;
+                    cycle_t decompressCycles;
+                    MemoryBuffer tgt;
+                    if (c2b)
+                    {
+                        CCycleTimer timer;
+                        compressToBuffer(compressed, src.length(), src.bytes(), handler.queryMethod(), streq("AES", handler.queryType()) ? aesKey: nullptr);
+                        compressCycles = timer.elapsedCycles();
+                        timer.reset();
+                        decompressToBuffer(tgt, compressed, streq("AES", handler.queryType()) ? aesKey: nullptr);
+                        decompressCycles = timer.elapsedCycles();
+                    }
+                    else
+                    {
+                        Owned<ICompressor> compressor = handler.getCompressor(streq("AES", handler.queryType()) ? aesKey: nullptr);
+
+                        CCycleTimer timer;
+                        compressor->open(compressed, sz);
+                        compressor->startblock();
+                        const byte *ptr = src.bytes();
+                        const byte *ptrEnd = ptr + src.length();
+                        while (ptr != ptrEnd)
+                        {
+                            compressor->write(ptr, rowSz);
+                            ptr += rowSz;
+                        }
+                        compressor->commitblock();
+                        compressor->close();
+                        compressCycles = timer.elapsedCycles();
+
+                        Owned<IExpander> expander = handler.getExpander(streq("AES", handler.queryType()) ? aesKey: nullptr);
+
+                        timer.reset();
+                        size32_t required = expander->init(compressed.bytes());
+                        tgt.ensureCapacity(required);
+                        expander->expand(tgt.bufferBase());
+                        tgt.setWritePos(required);
+                        decompressCycles = timer.elapsedCycles();
+                    }
+                    float ratio = (float)(src.length()) / compressed.length();
+                    DBGLOG("%9s || %21u || %23u || %17.2f [ %u, %u ]", handler.queryType(), (unsigned)cycle_to_millisec(compressCycles), (unsigned)cycle_to_millisec(decompressCycles), ratio, src.length(), compressed.length());
+                    CPPUNIT_ASSERT(tgt.length() >= sz);
+                    CPPUNIT_ASSERT(0 == memcmp(src.bufferBase(), tgt.bufferBase(), sz));
                 }
-                compressor->commitblock();
-                compressor->close();
-                cycle_t compressCycles = timer.elapsedCycles();
-
-                Owned<IExpander> expander = handler.getExpander(streq("AES", handler.queryType()) ? aesKey: nullptr);
-
-                timer.reset();
-                size32_t required = expander->init(compressed.bytes());
-                MemoryBuffer tgt(required);
-                expander->expand(tgt.bufferBase());
-                tgt.setWritePos(required);
-                cycle_t decompressCycles = timer.elapsedCycles();
-
-                float ratio = (float)(src.length()) / compressed.length();
-
-                DBGLOG("%9s || %21u || %23u || %17.2f [ %u, %u ]", handler.queryType(), (unsigned)cycle_to_millisec(compressCycles), (unsigned)cycle_to_millisec(decompressCycles), ratio, src.length(), compressed.length());
-
-                CPPUNIT_ASSERT(tgt.length() >= sz);
-                CPPUNIT_ASSERT(0 == memcmp(src.bufferBase(), tgt.bufferBase(), sz));
+                catch (IException *E)
+                {
+                    StringBuffer str;
+                    DBGLOG("%9s threw exception %s", handler.queryType(), E->errorMessage(str).str());
+                    E->Release();
+                }
            }
         }
         catch (IException *e)
