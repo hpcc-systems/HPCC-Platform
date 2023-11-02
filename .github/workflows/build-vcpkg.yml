@@ -453,7 +453,7 @@ jobs:
       
       - name: regression-setup-logs-artifact
         if: ${{ failure() || cancelled() }}
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: regress-setup-logs
           path: |
@@ -473,134 +473,8 @@ jobs:
 
       - name: Upload install artifact
         if: ${{ matrix.os == 'ubuntu-22.04' && contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: installsetup-artifact
           path: |
             install.tgz
-
-  # Matrix of jobs run in parallel once build+setup above completes successfully.
-  # All use the post-setup install.tgz artifact, that contains binaries and setup state
-  # Break each engine run into sets for speed
-  # NB: each regression suite job, runs these steps:
-  # - installs dependencies (probably too many for runtime)
-  # - Starts HPCC
-  # - Runs regression suite with params { engine, match[pattern,exclude] }
-  # TODO: needs to process results, capture report, to be assembled by workflow when all jobs done
-  regression-jobs:
-    needs: build-bare-metal
-    # if: ${{ github.event_name == 'pull_request' }}
-    timeout-minutes: 60 # each matrix step has its own timeout, however the job can sometimes take time to download dependencies
-    runs-on: ubuntu-22.04
-    strategy:
-      fail-fast: true
-      matrix:
-        engine: ['hthor', 'thor', 'roxie']
-        match:
-        - pattern: '[a-d]*.ecl'
-        - pattern: '[e-h]*.ecl'
-        - pattern: '[i-l]*.ecl'
-        - pattern: '[m-q]*.ecl'
-        - pattern: '[r-u]*.ecl'
-          exclude: teststdlibrary.ecl
-        - pattern: '[v-z]*.ecl'
-        include:
-        - engine: 'hthor'
-          match:
-            pattern: teststdlibrary.ecl
-        - engine: 'thor'
-          match:
-            pattern: teststdlibrary.ecl
-        - engine: 'roxie'
-          match:
-            pattern: teststdlibrary.ecl
-
-    steps:
-    - uses: actions/download-artifact@v2
-      with:
-        name: installsetup-artifact
-
-    - name: vars
-      id: vars
-      run: |
-        echo ::set-output name=matrix-setname::$(echo -n ${{ matrix.match.pattern }} | tr -c "[:alnum:]" _)
-
-    - name: Prerequisites
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y ${{ env.OS_DEPENDENCIES }}
-        sudo apt-get install -y gdb
-
-        curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
-        sudo apt-get install -y nodejs
-
-        echo "node.js version = $(node --version), npm version = $(npm --version), release = $(lsb_release -sc)"
-
-    - name: run
-      timeout-minutes: 30 # generous, each matrix step shouldn't take more than 10 mins
-      run: |
-        export LANG="en_US.UTF-8"
-        sudo update-locale
-        tar --zstd -xf install.tgz
-        source install/opt/HPCCSystems/sbin/hpcc_setenv
-        install/opt/HPCCSystems/etc/init.d/hpcc-init start
-        cd install/opt/HPCCSystems/testing/regress
-
-        (cd ecl; ls ${{ matrix.match.pattern }}) > matches.tmp
-        echo queries are:
-        cat matches.tmp
-        if [[ -z "${{ matrix.match.exclude }}" ]]
-        then
-          queries="$(cat matches.tmp | tr '\n' ' ')"
-        else
-          queries="$(cd ecl; ls ${{ matrix.match.exclude }} | grep -v -f - ../matches.tmp | tr '\n' ' ')"
-        fi
-        echo queries after exclude: ${queries}
-
-        # force regression suite to timeout after 28 minutes, so it captures ZAP report of any inflight hung queries
-        timeoutcmd $((28 * 60)) \
-          ./ecl-test query --preAbort 'smoketest-preabort.sh' --pq 2 --target ${{ matrix.engine }} --excludeclass python2,embedded-r,embedded-js,3rdpartyservice,mongodb --generateStackTrace ${queries}
-        grep Failure: ${{ github.workspace }}/regress/log/${{ matrix.engine }}.*.log
-        if [[ "$(grep -oP '(?<=^Failure: )[0-9]+$' ${{ github.workspace }}/regress/log/${{ matrix.engine }}.*.log)" -gt 0 ]]; then exit 1; fi
-
-    - name: regression-run-logs-artifact
-      if: ${{ failure() || cancelled() }}
-      uses: actions/upload-artifact@v2
-      with:
-        name: regression-run-logs-${{ matrix.engine }}-${{ steps.vars.outputs.matrix-setname }}
-        path: |
-          install/var/log/HPCCSystems
-          regress/
-        if-no-files-found: error
-
-
-  # NB: this doesn't really need the post-setup data files included in install.tgz
-  # but as this is relatively quick and in parallel with others, it probably doesn't matter
-  unittests:
-    needs: build-bare-metal
-    # if: ${{ github.event_name == 'pull_request' }}
-    timeout-minutes: 30 # the unittests run step has its own timeout, however the job can sometimes take time to download dependencies
-    runs-on: ubuntu-22.04
-    steps:
-    - uses: actions/download-artifact@v2
-      with:
-        name: installsetup-artifact
-
-    - name: Prerequisites
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y ${{ env.OS_DEPENDENCIES }}
-        sudo apt-get install -y gdb
-
-        curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
-        sudo apt-get install -y nodejs
-
-        echo "node.js version = $(node --version), npm version = $(npm --version), release = $(lsb_release -sc)"
-
-    - name: run
-      timeout-minutes: 10 # generous, expected time is approx 1 min.
-      run: |
-        export LANG="en_US.UTF-8"
-        sudo update-locale
-        tar --zstd -xf install.tgz
-        install/opt/HPCCSystems/bin/unittests
