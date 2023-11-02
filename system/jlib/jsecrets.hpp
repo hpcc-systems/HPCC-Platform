@@ -37,7 +37,7 @@ extern jlib_decl void setSecretMount(const char * path);
 extern jlib_decl void setSecretTimeout(unsigned timeoutMs);
 
 extern jlib_decl IPropertyTree *getSecret(const char *category, const char * name, const char * optVaultId = nullptr, const char * optVersion = nullptr);
-extern jlib_decl ISecret * resolveSecret(const char *category, const char * name, const char * optRequiredVault);
+extern jlib_decl ISecret * resolveSecret(const char *category, const char * name, const char * optRequiredVault, const char* optVersion);
 
 extern jlib_decl bool getSecretKeyValue(MemoryBuffer & result, const IPropertyTree *secret, const char * key);
 extern jlib_decl bool getSecretKeyValue(StringBuffer & result, const IPropertyTree *secret, const char * key);
