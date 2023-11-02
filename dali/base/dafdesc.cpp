@@ -1403,7 +1403,8 @@ class CFileDescriptor:  public CFileDescriptorBase, implements ISuperFileDescrip
     // Identify the target dafilesrv location urls a secret based connections in the dafilesrv hook
     // NB: the expectation is that they'll only be 1 target service dafilesrv URL
     // These will remain associated in the hook, until this CFileDescriptor object is destroyed, and removeMappedDafileSrvSecrets is called.
-    void mapDafileSrvSecrets(IClusterInfo &cluster)
+    // 'optSecret' is supplied if an explicit secret was defined for the remote service (if blank, "<TLS>" is used as a placeholder by the caller)
+    void mapDafileSrvSecrets(IClusterInfo &cluster, const char *optSecret)
     {
         Owned<INodeIterator> groupIter = cluster.queryGroup()->getIterator();
 
@@ -1417,14 +1418,22 @@ class CFileDescriptor:  public CFileDescriptorBase, implements ISuperFileDescrip
                 dafileSrvEndpoints.push_back(endpointString.str());
         }
         for (auto &dafileSrvEp: dafileSrvEndpoints)
-            queryDaFileSrvHook()->addSecretUrl(dafileSrvEp.c_str());
+            queryDaFileSrvHook()->addSecretEndpoint(dafileSrvEp.c_str(), optSecret);
     }
     void removeMappedDafileSrvSecrets()
     {
         for (auto &dafileSrvEp: dafileSrvEndpoints)
-            queryDaFileSrvHook()->removeSecretUrl(dafileSrvEp.c_str());
+            queryDaFileSrvHook()->removeSecretEndpoint(dafileSrvEp.c_str());
     }
 
+    void mapSecrets()
+    {
+        if (attr->getPropBool("@_remoteSecure"))
+        {
+            const char *remoteSecret = attr->queryProp("@_remoteSecret");
+            mapDafileSrvSecrets(clusters.item(0), remoteSecret);
+        }
+    }
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -1509,8 +1518,7 @@ public:
             {
                 assertex(1 == clusters.ordinality()); // only one cluster per logical remote file supported/will have resolved to 1
                 remoteStoragePlane.setown(createStoragePlane(remoteStoragePlaneMeta));
-                if (attr->getPropBool("@_remoteSecure"))
-                    mapDafileSrvSecrets(clusters.item(0));
+                mapSecrets();
             }
         }
         else
@@ -1642,8 +1650,7 @@ public:
             assertex(1 == clusters.ordinality()); // only one cluster per logical remote file supported/will have resolved to 1
             remoteStoragePlane.setown(createStoragePlane(remoteStoragePlaneMeta));
             clusters.item(0).applyPlane(remoteStoragePlane);
-            if (attr->getPropBool("@_remoteSecure"))
-                mapDafileSrvSecrets(clusters.item(0));
+            mapSecrets();
         }
     }
 

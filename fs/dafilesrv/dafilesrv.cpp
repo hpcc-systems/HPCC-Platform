@@ -350,6 +350,8 @@ const char *getSSLMethodText(DAFSConnectCfg connectMethod)
             return "SSLFirst";
         case UnsecureFirst:
             return "UnsecureFirst";
+        case UnsecureAndSSL:
+            return "UnsecureAndSSL";
         default:
             throwUnexpected();
     }
@@ -478,7 +480,7 @@ int main(int argc, const char* argv[])
         locallisten = true;
     if (config->hasProp("@noSSL"))
     {
-        if (connectMethod == SSLOnly || connectMethod == SSLFirst || connectMethod == UnsecureFirst)
+        if (connectMethod != SSLNone)
         {
             PROGLOG("DaFileSrv SSL specified in config but overridden by -NOSSL in command line");
             connectMethod = SSLNone;
@@ -623,7 +625,7 @@ int main(int argc, const char* argv[])
         usage();
         exit(-1);
     }
-    else if ( ((connectMethod == SSLFirst) || (connectMethod == UnsecureFirst)) && ((listenep.port == 0) || (sslport == 0)) )
+    else if ( ((connectMethod == SSLFirst) || (connectMethod == UnsecureFirst) || (connectMethod == UnsecureAndSSL)) && ((listenep.port == 0) || (sslport == 0)) )
     {
         printf("\nError, both port and secure port must not be 0\n");
         usage();
@@ -784,7 +786,7 @@ int main(int argc, const char* argv[])
 
                 if (connectMethod != SSLOnly)
                     PROGLOG("Opening " DAFS_SERVICE_DISPLAY_NAME " on %s", eps.str());
-                if (connectMethod == SSLOnly || connectMethod == SSLFirst || connectMethod == UnsecureFirst)
+                if (connectMethod != SSLNone)
                 {
                     SocketEndpoint sslep(listenep);
                     sslep.port = sslport;
@@ -852,7 +854,7 @@ int main(int argc, const char* argv[])
         listenep.getEndpointHostText(eps);
     if (connectMethod != SSLOnly)
         PROGLOG("Opening Dali File Server on %s", eps.str());
-    if (connectMethod == SSLOnly || connectMethod == SSLFirst || connectMethod == UnsecureFirst)
+    if (connectMethod != SSLNone)
     {
         SocketEndpoint sslep(listenep);
         sslep.port = sslport;

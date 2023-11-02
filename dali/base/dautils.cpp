@@ -31,6 +31,8 @@
 #include "dadfs.hpp"
 #include "dasds.hpp"
 #include "daclient.hpp"
+#include "rmtclient.hpp"
+
 #include <vector>
 
 #ifdef _DEBUG
@@ -3638,14 +3640,17 @@ void remapGroupsToDafilesrv(IPropertyTree *file, INamedGroupStore *resolver)
         Owned<IStoragePlane> plane = getDataStoragePlane(planeName, true);
         if ((0 == plane->queryHosts().size()) && isAbsolutePath(plane->queryPrefix())) // if hosts group, or url, don't touch
         {
-            auto updateFunc = [&](const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
+            if (isContainerized())
             {
-                CriticalBlock b(dafileSrvNodeCS);
-                auto externalService = k8s::getDafileServiceFromConfig("directio");
-                VStringBuffer dafilesrvEpStr("%s:%u", externalService.first.c_str(), externalService.second);
-                dafileSrvNode.setown(createINode(dafilesrvEpStr));
-            };
-            directIOUpdateHook.installOnce(updateFunc, true);
+                auto updateFunc = [&](const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
+                {
+                    CriticalBlock b(dafileSrvNodeCS);
+                    auto externalService = k8s::getDafileServiceFromConfig("directio");
+                    VStringBuffer dafilesrvEpStr("%s:%u", externalService.first.c_str(), externalService.second);
+                    dafileSrvNode.setown(createINode(dafilesrvEpStr));
+                };
+                directIOUpdateHook.installOnce(updateFunc, true);
+            }
 
             Owned<IGroup> group;
             if (cluster.hasProp("Group"))
@@ -3658,15 +3663,29 @@ void remapGroupsToDafilesrv(IPropertyTree *file, INamedGroupStore *resolver)
                 group.setown(resolver->lookup(planeName, defaultDir, groupType));
             }
 
-            Linked<INode> dafileSrvNodeCopy;
-            {
-                // in case config hook above changes dafileSrvNode
-                CriticalBlock b(dafileSrvNodeCS);
-                dafileSrvNodeCopy.set(dafileSrvNode);
-            }
             std::vector<INode *> nodes;
-            for (unsigned n=0; n<group->ordinality(); n++)
-                nodes.push_back(dafileSrvNodeCopy);
+            if (isContainerized())
+            {
+                Linked<INode> dafileSrvNodeCopy;
+                {
+                    // in case config hook above changes dafileSrvNode
+                    CriticalBlock b(dafileSrvNodeCS);
+                    dafileSrvNodeCopy.set(dafileSrvNode);
+                }
+                for (unsigned n=0; n<group->ordinality(); n++)
+                    nodes.push_back(dafileSrvNodeCopy);
+            }
+            else
+            {
+                // remap the group url's to explicitly contain the baremetal dafilesrv port configuration
+                unsigned port = getPreferredDafsClientPort(true);
+                for (unsigned n=0; n<group->ordinality(); n++)
+                {
+                    SocketEndpoint ep = group->queryNode(n).endpoint();
+                    Owned<INode> newNode = createINodeIP(group->queryNode(n).endpoint(), port);
+                    nodes.push_back(newNode);
+                }
+            }
             Owned<IGroup> newGroup = createIGroup((rank_t)group->ordinality(), &nodes[0]);
             StringBuffer groupText;
             newGroup->getText(groupText);

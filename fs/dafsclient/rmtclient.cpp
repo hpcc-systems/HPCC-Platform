@@ -340,6 +340,29 @@ IDAFS_Exception *createDafsExceptionV(int code, const char *format, ...)
     return ret;
 }
 
+unsigned getPreferredDafsClientPort(bool external)
+{
+    switch (securitySettings.queryConnectMethod())
+    {
+        case SSLNone:
+        case UnsecureFirst:
+            return securitySettings.queryDaFileSrvPort();
+        case SSLOnly:
+        case SSLFirst:
+            return securitySettings.queryDaFileSrvSSLPort();
+        case UnsecureAndSSL:
+        {
+            // for now, in this configuration, external is only used by DFS service
+            if (external)
+                return securitySettings.queryDaFileSrvSSLPort();
+            else
+                return securitySettings.queryDaFileSrvPort();
+        }
+        default:
+            throwUnexpected();
+    }
+}
+
 void setDafsEndpointPort(SocketEndpoint &ep)
 {
     // odd kludge (don't do this at home)
@@ -351,12 +374,7 @@ void setDafsEndpointPort(SocketEndpoint &ep)
         }
     }
     if (ep.port==0)
-    {
-        if ( (securitySettings.queryConnectMethod() == SSLNone) || (securitySettings.queryConnectMethod() == UnsecureFirst) )
-            ep.port = securitySettings.queryDaFileSrvPort();
-        else
-            ep.port = securitySettings.queryDaFileSrvSSLPort();
-    }
+        ep.port = getPreferredDafsClientPort(false);
 }
 
 
@@ -722,22 +740,30 @@ void CRemoteBase::connectSocket(SocketEndpoint &ep, unsigned connectTimeoutMs, u
                     // The context would be 'owned' by the hook, and would expire when the mappings are removed (when removeMappedDafileSrvSecrets is called).
                     if (storageSecret)
                     {
-                        Owned<IPropertyTree> secretPTree = getSecret("storage", storageSecret);
-                        if (!secretPTree)
-                            throw makeStringExceptionV(-1, "secret %s.%s not found", "storage", storageSecret.str());
-
-                        StringBuffer certSecretBuf;
-                        getSecretKeyValue(certSecretBuf, secretPTree, "tls.crt");
-
-                        StringBuffer privKeySecretBuf;
-                        getSecretKeyValue(privKeySecretBuf, secretPTree, "tls.key");
-
-                        Owned<ISecureSocketContext> secureContext = createSecureSocketContextEx(certSecretBuf, privKeySecretBuf, nullptr, ClientSocket);
                         int loglevel = SSLogNormal;
 #ifdef _DEBUG
                         loglevel = SSLogMax;
 #endif
-                        ssock.setown(secureContext->createSecureSocket(socket.getClear(), loglevel));
+                        if (streq("<TLS>", storageSecret))
+                        {
+                            Owned<ISecureSocketContext> secureContext = createSecureSocketContext(ClientSocket);
+                            ssock.setown(secureContext->createSecureSocket(socket.getClear(), loglevel));
+                        }
+                        else
+                        {
+                            Owned<IPropertyTree> secretPTree = getSecret("storage", storageSecret);
+                            if (!secretPTree)
+                                throw makeStringExceptionV(-1, "secret %s.%s not found", "storage", storageSecret.str());
+
+                            StringBuffer certSecretBuf;
+                            getSecretKeyValue(certSecretBuf, secretPTree, "tls.crt");
+
+                            StringBuffer privKeySecretBuf;
+                            getSecretKeyValue(privKeySecretBuf, secretPTree, "tls.key");
+
+                            Owned<ISecureSocketContext> secureContext = createSecureSocketContextEx(certSecretBuf, privKeySecretBuf, nullptr, ClientSocket);
+                            ssock.setown(secureContext->createSecureSocket(socket.getClear(), loglevel));
+                        }
                     }
                     else
                         ssock.setown(createSecureSocket(socket.getClear(), nullptr));
@@ -1186,7 +1212,7 @@ ISocket *connectDafs(SocketEndpoint &ep, unsigned timeoutms, const IPropertyTree
     }
     else
     {
-        if ( (securitySettings.queryConnectMethod() == SSLNone) || (securitySettings.queryConnectMethod() == SSLOnly) )
+        if ( (securitySettings.queryConnectMethod() == SSLNone) || (securitySettings.queryConnectMethod() == SSLOnly) || (securitySettings.queryConnectMethod() == UnsecureAndSSL))
         {
             socket.setown(ISocket::connect_timeout(ep, timeoutms));
             return checkSocketSecure(socket);

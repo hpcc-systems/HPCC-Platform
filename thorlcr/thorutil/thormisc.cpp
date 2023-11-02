@@ -1067,7 +1067,7 @@ bool getBestFilePart(CActivityBase *activity, IPartDescriptor &partDesc, OwnedIF
                 file.setown(createDaliServixFile(rfn));
             }
             else
-                file.setown(createIFile(locationName.str()));
+                file.setown(createIFile(rfn)); // use rfn not locationName, to preserve port through hooking mechanisms
             try
             {
                 if (file->exists())

@@ -228,7 +228,7 @@ class CDaliServixIntercept: public CInterface, implements IDaFileSrvHook
     CIArrayOf<CDaliServixFilter> filters;
     StringAttr forceRemotePattern;
     CriticalSection secretCrit;
-    std::unordered_map<std::string, unsigned> urls;
+    std::unordered_map<std::string, std::tuple<unsigned, std::string>> endpointMap;
 
     void addFilter(CDaliServixFilter *filter)
     {
@@ -248,16 +248,16 @@ public:
     {
         SocketEndpoint ep = filename.queryEndpoint();
 
-        // check 1st if this is a secret based url
-        StringBuffer storageSecret;
-        getSecretBased(storageSecret, filename);
-        if (storageSecret.length())
-            return createDaliServixFile(filename, storageSecret);
-
         bool noport = (ep.port==0);
         setDafsEndpointPort(ep);
         if (!filename.isLocal()||(ep.port!=DAFILESRV_PORT && ep.port!=SECURE_DAFILESRV_PORT)) // assume standard port is running on local machine
         {
+            // check 1st if this is a secret based url
+            StringBuffer storageSecret;
+            getSecretBased(storageSecret, filename);
+            if (storageSecret.length())
+                return createDaliServixFile(filename, storageSecret);
+
 #ifdef __linux__
 #ifndef USE_SAMBA
             if (noport && filters.ordinality())
@@ -301,7 +301,15 @@ public:
             filename.getLocalPath(localPath);
             // must be local to be here, check if matches forceRemotePattern
             if (WildMatch(localPath, forceRemotePattern, false))
-                return createDaliServixFile(filename);
+            {
+                // check 1st if this is a secret based url
+                StringBuffer storageSecret;
+                getSecretBased(storageSecret, filename);
+                if (storageSecret.length())
+                    return createDaliServixFile(filename, storageSecret);
+                else
+                    return createDaliServixFile(filename);
+            }
         }
         return NULL;
     }
@@ -352,32 +360,41 @@ public:
     }
     virtual StringBuffer &getSecretBased(StringBuffer &storageSecret, const RemoteFilename & filename) override
     {
-        const SocketEndpoint &ep = filename.queryEndpoint();
-
-        StringBuffer endpointStr;
-        ep.getEndpointHostText(endpointStr);
-
-        CriticalBlock b(secretCrit);
-        auto it = urls.find(endpointStr.str());
-        if (it != urls.end())
+        if (!endpointMap.empty())
         {
-            VStringBuffer secureUrl("https://%s", endpointStr.str());
-            generateDynamicUrlSecretName(storageSecret, secureUrl, nullptr);
+            const SocketEndpoint &ep = filename.queryEndpoint();
+
+            StringBuffer endpointStr;
+            ep.getEndpointHostText(endpointStr);
+
+            CriticalBlock b(secretCrit);
+            auto it = endpointMap.find(endpointStr.str());
+            if (it != endpointMap.end())
+            {
+                storageSecret.append(std::get<1>(it->second).c_str());
+                if (0 == storageSecret.length())
+                {
+                    VStringBuffer secureUrl("https://%s", endpointStr.str());
+                    generateDynamicUrlSecretName(storageSecret, secureUrl, nullptr);
+                }
+            }
         }
         return storageSecret;
     }
-    virtual void addSecretUrl(const char *url) override
+    virtual void addSecretEndpoint(const char *endpoint, const char *optSecret) override
     {
         CriticalBlock b(secretCrit);
-        urls[url]++; // NB: if doesn't exist std::unordered_map will insert with default values, i.e. with an initial unsigned value of 0
+        auto it = endpointMap.find(endpoint);
+        if (it == endpointMap.end())
+            endpointMap[endpoint] = { 1, optSecret ? optSecret : "" };
     }
-    virtual void removeSecretUrl(const char *url) override
+    virtual void removeSecretEndpoint(const char *endpoint) override
     {
         CriticalBlock b(secretCrit);
-        auto it = urls.find(url);
-        assertex(it != urls.end());
-        if (--it->second == 0)
-            urls.erase(it);
+        auto it = endpointMap.find(endpoint);
+        assertex(it != endpointMap.end());
+        if (--std::get<0>(it->second) == 0)
+            endpointMap.erase(it);
     }
 } *DaliServixIntercept = NULL;
 
