@@ -792,7 +792,6 @@ ParquetRowStream::ParquetRowStream(IEngineRowAllocator *_resultAllocator, std::s
     : m_resultAllocator(_resultAllocator), s_parquet(_parquet)
 {
     rowsCount = _parquet->queryRowsCount();
-    array_visitor = std::make_shared<ParquetArrayVisitor>();
 }
 
 const void *ParquetRowStream::nextRow()
@@ -1388,7 +1387,8 @@ void ParquetRowBuilder::nextField(const RtlFieldInfo *field)
         nextFromStruct(field);
         return;
     }
-    auto column = result_rows->find(field->name);
+    (*array_visitor) = std::make_shared<ParquetArrayVisitor>();
+    auto column = result_rows->find(field->xpath ? field->xpath : field->name);
     if (column != result_rows->end())
     {
         reportIfFailure(column->second->Accept((*array_visitor).get()));
