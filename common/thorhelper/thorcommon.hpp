@@ -678,7 +678,7 @@ class CStatsContextLogger : public CSimpleInterfaceOf<IContextLogger>
 protected:
     const LogMsgJobInfo job;
     unsigned traceLevel = 1;
-    Owned<ISpan> activeSpan;
+    Owned<ISpan> activeSpan = getNullSpan();
     mutable CRuntimeStatisticCollection stats;
 public:
     CStatsContextLogger(const CRuntimeStatisticCollection  &_mapping, const LogMsgJobInfo & _job=unknownJob) : job(_job), stats(_mapping) {}
@@ -723,26 +723,18 @@ public:
     }
     virtual IProperties * getClientHeaders() const override
     {
-        if (!activeSpan)
-            return nullptr;
         return ::getClientHeaders(activeSpan);
     }
     virtual const char *queryGlobalId() const override
     {
-        if (!activeSpan)
-            return nullptr;
         return activeSpan->queryGlobalId();
     }
     virtual const char *queryLocalId() const override
     {
-        if (!activeSpan)
-            return nullptr;
         return activeSpan->queryLocalId();
     }
     virtual const char *queryCallerId() const override
     {
-        if (!activeSpan)
-            return nullptr;
         return activeSpan->queryCallerId();
     }
     virtual const CRuntimeStatisticCollection &queryStats() const override
