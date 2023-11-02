@@ -138,6 +138,8 @@ function update_version_file()
     local _new_sequence=$3
     local _new_minor=$4
     local _new_major=$5
+    local _new_timestamp=$(date -u "+%Y-%m-%dT%H:%M:%SZ")
+
     if [ -z "$_new_minor" ] ; then
       _new_minor=$HPCC_MINOR
     fi
@@ -152,6 +154,7 @@ function update_version_file()
        -e "\"s/HPCC_POINT +$HPCC_POINT *\)/HPCC_POINT $_new_point )/\"" \
        -e "\"s/HPCC_SEQUENCE +$HPCC_SEQUENCE *\)/HPCC_SEQUENCE $_new_sequence )/\"" \
        -e "\"s/HPCC_MATURITY +\"$HPCC_MATURITY\" *\)/HPCC_MATURITY \"$_new_maturity\" )/\"" \
+       -e "\"s/HPCC_TAG_TIMESTAMP.*\)/HPCC_TAG_TIMESTAMP \"$_new_timestamp\" )/\"" \
        -i.bak $VERSIONFILE
     fi
     if [ -z "$DRYRUN" ] ; then 
@@ -161,6 +164,7 @@ function update_version_file()
        -e "s/HPCC_POINT +$HPCC_POINT *\)/HPCC_POINT $_new_point )/" \
        -e "s/HPCC_SEQUENCE +$HPCC_SEQUENCE *\)/HPCC_SEQUENCE $_new_sequence )/" \
        -e "s/HPCC_MATURITY +\"$HPCC_MATURITY\" *\)/HPCC_MATURITY \"$_new_maturity\" )/" \
+       -e "s/HPCC_TAG_TIMESTAMP.*\)/HPCC_TAG_TIMESTAMP \"$_new_timestamp\" )/" \
        -i.bak $VERSIONFILE
        cat $VERSIONFILE
     else
@@ -170,6 +174,7 @@ function update_version_file()
        -e "s/HPCC_POINT +$HPCC_POINT *\)/HPCC_POINT $_new_point )/" \
        -e "s/HPCC_SEQUENCE +$HPCC_SEQUENCE *\)/HPCC_SEQUENCE $_new_sequence )/" \
        -e "s/HPCC_MATURITY +\"$HPCC_MATURITY\" *\)/HPCC_MATURITY \"$_new_maturity\" )/" \
+       -e "s/HPCC_TAG_TIMESTAMP.*\)/HPCC_TAG_TIMESTAMP \"$_new_timestamp\" )/" \
        $VERSIONFILE
     fi
 }

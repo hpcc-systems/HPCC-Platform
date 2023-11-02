@@ -159,7 +159,10 @@ class CEspCorsAllowedOrigin : public CInterfaceOf<IEspCorsAllowedOrigin>
         {
             StringBuffer scheme;
             StringBuffer unused;
-            splitUrlIsolateScheme(_origin, unused, unused, scheme, hostPort, unused);
+            StringBuffer port;
+            splitUrlIsolateScheme(_origin, unused, unused, scheme, hostPort, port, unused);
+            if (port.length())
+                hostPort.append(':').append(port);
 
             //Allow-Max-Age of 7200 (2 hours) matches the limit in chrome
             const char *allowedMaxAge = allowed->queryProp("@maxAge");

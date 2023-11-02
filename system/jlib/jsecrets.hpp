@@ -37,7 +37,7 @@ extern jlib_decl void setSecretMount(const char * path);
 extern jlib_decl void setSecretTimeout(unsigned timeoutMs);
 
 extern jlib_decl IPropertyTree *getSecret(const char *category, const char * name, const char * optVaultId = nullptr, const char * optVersion = nullptr);
-extern jlib_decl ISecret * resolveSecret(const char *category, const char * name, const char * optRequiredVault);
+extern jlib_decl ISecret * resolveSecret(const char *category, const char * name, const char * optRequiredVault, const char* optVersion);
 
 extern jlib_decl bool getSecretKeyValue(MemoryBuffer & result, const IPropertyTree *secret, const char * key);
 extern jlib_decl bool getSecretKeyValue(StringBuffer & result, const IPropertyTree *secret, const char * key);
@@ -56,7 +56,7 @@ extern jlib_decl IPropertyTree *createIssuerTlsClientConfig(const char *issuer, 
 
 extern jlib_decl  void splitFullUrl(const char *url, bool &https, StringBuffer &user, StringBuffer &password, StringBuffer &host, StringBuffer &port, StringBuffer &fullpath);
 extern jlib_decl void splitUrlSchemeHostPort(const char *url, StringBuffer &user, StringBuffer &password, StringBuffer &schemeHostPort, StringBuffer &path);
-extern jlib_decl void splitUrlIsolateScheme(const char *url, StringBuffer &user, StringBuffer &password, StringBuffer &scheme, StringBuffer &hostPort, StringBuffer &path);
+extern jlib_decl void splitUrlIsolateScheme(const char *url, StringBuffer &user, StringBuffer &password, StringBuffer &scheme, StringBuffer &host, StringBuffer &port, StringBuffer &path);
 extern jlib_decl StringBuffer &generateDynamicUrlSecretName(StringBuffer &secretName, const char *scheme, const char *userPasswordPair, const char *host, unsigned port, const char *path);
 extern jlib_decl StringBuffer &generateDynamicUrlSecretName(StringBuffer &secretName, const char *url, const char *username);
 
