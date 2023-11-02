@@ -1,4 +1,4 @@
-IMPORT Python;
+﻿IMPORT Python3 AS Python;
 
 /*
  This example illustrates and tests the use of embedded Python
@@ -6,75 +6,75 @@ IMPORT Python;
 
 // Scalar parameters and resuls
 
-integer add1(integer val) := EMBED(Python)
-val+1
+INTEGER add1(INTEGER val) := EMBED(Python)
+  val+1
 ENDEMBED;
 
-string add2(string val) := EMBED(Python)
-val+'1'
+STRING add2(STRING val) := EMBED(Python)
+  val+'1'
 ENDEMBED;
 
-string add3(varstring val) := EMBED(Python)
-val+'1'
+STRING add3(VARSTRING val) := EMBED(Python)
+  val+'1'
 ENDEMBED;
 
-utf8 add4(utf8 val) := EMBED(Python)
-val+'1'
+UTF8 add4(UTF8 val) := EMBED(Python)
+  val+'1'
 ENDEMBED;
 
-unicode add5(unicode val) := EMBED(Python)
-val+'1'
+UNICODE add5(UNICODE val) := EMBED(Python)
+  val+'1'
 ENDEMBED;
 
-utf8 add6(utf8 val) := EMBED(Python)
-return val+'1'
+UTF8 add6(UTF8 val) := EMBED(Python)
+  return val+'1'
 ENDEMBED;
 
-unicode add7(unicode val) := EMBED(Python)
-return val+'1'
+UNICODE add7(UNICODE val) := EMBED(Python)
+  return val+'1'
 ENDEMBED;
 
-data testData(data val) := EMBED(Python)
-val[0] = val[0] + 1
-return val
+DATA testData(DATA val) := EMBED(Python)
+  val[0] = val[0] + 1
+  return val
 ENDEMBED;
 
 // Sets in ECL map to Python lists
 
-set of integer testSet(set of integer val) := EMBED(Python)
-return sorted(val)
+SET OF INTEGER testSet(SET OF INTEGER val) := EMBED(Python)
+  return sorted(val)
 ENDEMBED;
 
-set of string testSet2(set of string val) := EMBED(Python)
-return sorted(val)
+SET OF STRING testSet2(SET OF STRING val) := EMBED(Python)
+  return sorted(val)
 ENDEMBED;
 
-set of string testSet3(set of string8 val) := EMBED(Python)
-return sorted(val)
+SET OF STRING testSet3(SET OF STRING8 val) := EMBED(Python)
+  return sorted(val)
 ENDEMBED;
 
-set of utf8 testSet4(set of utf8 val) := EMBED(Python)
-return sorted(val)
+SET OF UTF8 testSet4(SET OF UTF8 val) := EMBED(Python)
+  return sorted(val)
 ENDEMBED;
 
-set of varstring testSet5(set of varstring val) := EMBED(Python)
-return sorted(val)
+SET OF VARSTRING testSet5(SET OF VARSTRING val) := EMBED(Python)
+  return sorted(val)
 ENDEMBED;
 
-set of varstring8 testSet6(set of varstring8 val) := EMBED(Python)
-return sorted(val)
+SET OF VARSTRING8 testSet6(SET OF VARSTRING8 val) := EMBED(Python)
+  return sorted(val)
 ENDEMBED;
 
-set of unicode testSet7(set of unicode val) := EMBED(Python)
-return sorted(val)
+SET OF UNICODE testSet7(SET OF UNICODE val) := EMBED(Python)
+  return sorted(val)
 ENDEMBED;
 
-set of unicode8 testSet8(set of unicode8 val) := EMBED(Python)
-return sorted(val)
+SET OF UNICODE8 testSet8(SET OF UNICODE8 val) := EMBED(Python)
+  return sorted(val)
 ENDEMBED;
 
-set of data testSet9(set of data val) := EMBED(Python)
-return val
+SET OF DATA testSet9(SET OF DATA val) := EMBED(Python)
+  return val
 ENDEMBED;
 
 // Now run the tests
