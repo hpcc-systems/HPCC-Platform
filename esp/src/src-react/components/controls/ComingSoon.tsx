@@ -1,9 +1,7 @@
 import * as React from "react";
 import { IStyle, Toggle } from "@fluentui/react";
 import nlsHPCC from "src/nlsHPCC";
-import { ModernMode } from "src/BuildInfo";
-import { useUserStore } from "../../hooks/store";
-import { useBuildInfo } from "../../hooks/platform";
+import { useBuildInfo, useModernMode } from "../../hooks/platform";
 
 const legacyIndex = {};
 const modernIndex = {};
@@ -75,7 +73,7 @@ export const ComingSoon: React.FunctionComponent<ComingSoon> = ({
 }) => {
 
     const [, { opsCategory }] = useBuildInfo();
-    const [modernMode, setModernMode] = useUserStore(ModernMode, String(defaultValue));
+    const { modernMode, setModernMode } = useModernMode();
 
     React.useEffect(() => {
         if (value !== undefined) {
