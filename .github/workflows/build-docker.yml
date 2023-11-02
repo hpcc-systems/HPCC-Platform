@@ -71,7 +71,7 @@ jobs:
           docker_build_label=hpccsystems/platform-build-${{ inputs.os }}
           echo "docker_build_label=$docker_build_label" >> $GITHUB_OUTPUT
           echo "docker_tag=$docker_build_label:$vcpkg_sha_short" >> $GITHUB_OUTPUT
-          echo "docker_tag_candidate_base=$docker_build_label:${{ github.base_ref }}" >> $GITHUB_OUTPUT
+          echo "docker_tag_candidate_base=$docker_build_label:$(${{ github.base_ref }} || $(echo $community_ref | cut -d'/' -f3))" >> $GITHUB_OUTPUT
 
       - name: Print vars
         run: |
