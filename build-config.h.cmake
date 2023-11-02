@@ -94,6 +94,14 @@
     #define BUILD_VERSION_POINT ${HPCC_POINT}
 #endif
 
+#ifndef BUILD_MATURITY
+    #define BUILD_MATURITY "${HPCC_MATURITY}"
+#endif
+
+#ifndef BUILD_TAG_TIMESTAMP
+    #define BUILD_TAG_TIMESTAMP "${HPCC_TAG_TIMESTAMP}"
+#endif
+
 #ifndef BASE_BUILD_TAG
     #cmakedefine BASE_BUILD_TAG "${BASE_BUILD_TAG}"
 #endif

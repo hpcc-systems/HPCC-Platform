@@ -5070,6 +5070,13 @@ bool CWsWorkunitsEx::onWUCheckFeatures(IEspContext &context, IEspWUCheckFeatures
     resp.setBuildVersionMajor(hpccBuildInfo.buildVersionMajor);
     resp.setBuildVersionMinor(hpccBuildInfo.buildVersionMinor);
     resp.setBuildVersionPoint(hpccBuildInfo.buildVersionPoint);
+    //This does not check version because a consistent version could not be used for all the places it was included
+    if (req.getIncludeFullVersion())
+    {
+        resp.setBuildVersion(hpccBuildInfo.buildTag);
+        resp.setBuildMaturity(hpccBuildInfo.buildMaturity);
+        resp.setBuildTagTimestamp(hpccBuildInfo.buildTagTimestamp);
+    }
     resp.setMaxRequestEntityLength(maxRequestEntityLength);
     resp.updateDeployment().setUseCompression(true);
     return true;
