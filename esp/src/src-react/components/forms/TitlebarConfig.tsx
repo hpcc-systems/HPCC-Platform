@@ -1,8 +1,10 @@
 import * as React from "react";
-import { Checkbox, ColorPicker, DefaultButton, getColorFromString, IColor, Label, PrimaryButton, TextField, TooltipHost } from "@fluentui/react";
+import { Checkbox, DefaultButton, getColorFromString, IColor, PrimaryButton, TextField, TooltipHost } from "@fluentui/react";
 import { useForm, Controller } from "react-hook-form";
+import { ThemeEditorColorPicker } from "../ThemeEditor";
 import { MessageBox } from "../../layouts/MessageBox";
 import { useGlobalStore } from "../../hooks/store";
+import { useToolbarTheme } from "../../hooks/theme";
 
 import nlsHPCC from "src/nlsHPCC";
 
@@ -24,38 +26,41 @@ interface TitlebarConfigProps {
     setShowForm: (_: boolean) => void;
 }
 
-const white = getColorFromString("#ffffff");
-
 export const TitlebarConfig: React.FunctionComponent<TitlebarConfigProps> = ({
     toolbarThemeDefaults,
     showForm,
     setShowForm
 }) => {
     const { handleSubmit, control, reset } = useForm<TitlebarConfigValues>({ defaultValues });
-    const [color, setColor] = React.useState(white);
-    const updateColor = React.useCallback((evt: any, colorObj: IColor) => setColor(colorObj), []);
+    const { primaryColor, setPrimaryColor } = useToolbarTheme();
+    const [previousColor, setPreviousColor] = React.useState(primaryColor);
     const [showEnvironmentTitle, setShowEnvironmentTitle] = useGlobalStore("HPCCPlatformWidget_Toolbar_Active", toolbarThemeDefaults.active, true);
     const [environmentTitle, setEnvironmentTitle] = useGlobalStore("HPCCPlatformWidget_Toolbar_Text", toolbarThemeDefaults.text, true);
-    const [titlebarColor, setTitlebarColor] = useGlobalStore("HPCCPlatformWidget_Toolbar_Color", toolbarThemeDefaults.color, true);
 
     const closeForm = React.useCallback(() => {
         setShowForm(false);
     }, [setShowForm]);
 
+    React.useEffect(() => {
+        // cache the previous color at dialog open, used to reset upon close
+        if (showForm) setPreviousColor(primaryColor);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [showForm]);
+
     const onSubmit = React.useCallback(() => {
         handleSubmit(
             (data, evt) => {
                 const request: any = data;
-                request.titlebarColor = color.str;
+                request.titlebarColor = primaryColor;
 
                 setShowEnvironmentTitle(request?.showEnvironmentTitle);
                 setEnvironmentTitle(request?.environmentTitle);
-                setTitlebarColor(request.titlebarColor);
+                setPrimaryColor(request.titlebarColor);
 
                 closeForm();
             },
         )();
-    }, [closeForm, color, handleSubmit, setEnvironmentTitle, setShowEnvironmentTitle, setTitlebarColor]);
+    }, [closeForm, primaryColor, handleSubmit, setEnvironmentTitle, setShowEnvironmentTitle, setPrimaryColor]);
 
     const [, , resetShowEnvironmentTitle] = useGlobalStore("HPCCPlatformWidget_Toolbar_Active", toolbarThemeDefaults.active, true);
     const [, , resetEnvironmentTitle] = useGlobalStore("HPCCPlatformWidget_Toolbar_Text", toolbarThemeDefaults.text, true);
@@ -68,18 +73,17 @@ export const TitlebarConfig: React.FunctionComponent<TitlebarConfigProps> = ({
     }, [resetEnvironmentTitle, resetShowEnvironmentTitle, resetTitlebarColor]);
 
     React.useEffect(() => {
-        setColor(getColorFromString(titlebarColor));
         const values = {
             showEnvironmentTitle: showEnvironmentTitle,
             environmentTitle: environmentTitle || ""
         };
         reset(values);
-    }, [environmentTitle, reset, showEnvironmentTitle, titlebarColor]);
+    }, [environmentTitle, reset, showEnvironmentTitle]);
 
     return <MessageBox show={showForm} setShow={closeForm} blocking={true} modeless={false} title={nlsHPCC.SetToolbarColor} minWidth={400}
         footer={<>
             <PrimaryButton text={nlsHPCC.OK} onClick={handleSubmit(onSubmit)} />
-            <DefaultButton text={nlsHPCC.Cancel} onClick={() => { reset(defaultValues); closeForm(); }} />
+            <DefaultButton text={nlsHPCC.Cancel} onClick={() => { setPrimaryColor(previousColor); reset(defaultValues); closeForm(); }} />
             <DefaultButton text={nlsHPCC.Reset} onClick={() => { onReset(); }} />
         </>}>
         <Controller
@@ -111,11 +115,15 @@ export const TitlebarConfig: React.FunctionComponent<TitlebarConfigProps> = ({
             />
         </TooltipHost>
         <TooltipHost content={nlsHPCC.BannerColorTooltip} id="bannerColorTooltip">
-            <Label aria-describedby="bannerColorTooltip">{nlsHPCC.BannerColor}</Label>
-            <ColorPicker
-                onChange={updateColor}
-                color={color}
-            />
+            <div style={{ marginTop: 6 }}>
+                <ThemeEditorColorPicker
+                    color={getColorFromString(primaryColor)}
+                    onColorChange={(newColor: IColor | undefined) => {
+                        setPrimaryColor(newColor.str);
+                    }}
+                    label={nlsHPCC.ToolbarColor}
+                />
+            </div>
         </TooltipHost>
     </MessageBox>;
 

@@ -3,12 +3,13 @@ import { IconButton, IContextualMenuItem, INavLink, INavLinkGroup, Link, mergeSt
 import { useConst } from "@fluentui/react-hooks";
 import nlsHPCC from "src/nlsHPCC";
 import { hasLogAccess } from "src/ESPLog";
-import { containerized, bare_metal } from "src/BuildInfo";
+import { cmake_build_type, containerized, bare_metal } from "src/BuildInfo";
 import { MainNav, routes } from "../routes";
 import { useFavorite, useFavorites, useHistory } from "../hooks/favorite";
 import { useUserTheme } from "../hooks/theme";
 import { usePivotItemDisable } from "../layouts/pivot";
 import { Breadcrumbs } from "./Breadcrumbs";
+import { Settings } from "./Settings";
 
 //  Top Level Nav  ---
 function navLinkGroups(): INavLinkGroup[] {
@@ -98,14 +99,16 @@ export const MainNavigation: React.FunctionComponent<MainNavigationProps> = ({
     hashPath
 }) => {
 
-    const menu = useConst(() => [...navLinkGroups()]);
-    const { theme, setTheme, isDark } = useUserTheme();
+    const menu = useConst([...navLinkGroups()]);
+    const { theme, setThemeDark, isDark } = useUserTheme();
+
+    const [showSettings, setShowSettings] = React.useState(false);
 
     const selKey = React.useMemo(() => {
         return navSelectedKey(hashPath);
     }, [hashPath]);
 
-    return <Stack verticalAlign="space-between" styles={{ root: { width: `${FIXED_WIDTH}px`, height: "100%", position: "relative", backgroundColor: theme.palette.themeLighterAlt } }}>
+    return <Stack verticalAlign="space-between" styles={{ root: { width: `${FIXED_WIDTH}px`, height: "100%", position: "relative", backgroundColor: theme?.palette?.themeLighterAlt ?? "white" } }}>
         <Stack.Item>
             <Nav selectedKey={selKey} groups={menu} />
         </Stack.Item>
@@ -113,15 +116,17 @@ export const MainNavigation: React.FunctionComponent<MainNavigationProps> = ({
             <IconButton
                 iconProps={{ iconName: isDark ? "Sunny" : "ClearNight" }}
                 onClick={() => {
-                    setTheme(isDark ? "light" : "dark");
+                    setThemeDark(isDark ? "light" : "dark");
                     const themeChangeEvent = new CustomEvent("eclwatch-theme-toggle", {
                         detail: { dark: !isDark }
                     });
                     document.dispatchEvent(themeChangeEvent);
                 }}
             />
-            {/* Disable Theme editor button for launch of 9.0 */}
-            {/* <IconButton iconProps={{ iconName: "Equalizer" }} onClick={() => { }} /> */}
+            {cmake_build_type === "Debug" &&
+                <IconButton iconProps={{ iconName: "Equalizer" }} onClick={() => setShowSettings(true)} />
+            }
+            <Settings show={showSettings} onClose={() => setShowSettings(false)} />
         </Stack.Item>
     </Stack>;
 };
