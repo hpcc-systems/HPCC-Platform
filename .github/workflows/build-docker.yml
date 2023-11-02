@@ -112,8 +112,11 @@ jobs:
 
       - uses: hendrikmuhs/ccache-action@v1.2
         with:
-          key: ${{ steps.vars.outputs.docker_tag_candidate_base }}-${{ inputs.internal == true && 'LN' || 'HPCC-Platform' }}-${{ inputs.containerized == true && 'k8s' || 'bare-metal' }}
-      
+          key: ${{ inputs.os }}-${{ inputs.containerized == true && 'k8s' || 'bare-metal' }}-${{ inputs.internal == true && 'LN' || 'HPCC-Platform' }}
+          restore-keys:
+            ${{ inputs.os }}-${{ inputs.containerized == true && 'k8s' || 'bare-metal' }}-
+            ${{ inputs.os }}-
+
       - name: CMake Packages
         run: |
           mkdir -p ${{ github.workspace }}/LN
