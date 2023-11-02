@@ -1,0 +1,139 @@
+name: Test Build
+
+on:
+  workflow_call:
+    inputs:
+      os:
+        type: string
+        description: 'Operating System'
+        required: true
+        default: 'ubuntu-22.04'
+      internal:
+        type: boolean
+        description: 'Internal Build'
+        required: false
+        default: false
+      containerized:
+        type: boolean
+        description: 'Containerized Build'
+        required: false
+        default: false
+      single-package:
+        type: boolean
+        description: 'Single Package'
+        required: false
+        default: false
+      cmake-configuration:
+        type: string
+        description: 'CMake Configuration'
+        required: false
+        default: '-DCMAKE_BUILD_TYPE=RelWithDebInfo -DVCPKG_FILES_DIR=/hpcc-dev -DCPACK_THREADS=0 -DUSE_OPTIONAL=OFF -DCPACK_STRIP_FILES=ON -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache'
+      cmake-configuration-ex:
+        type: string
+        description: 'CMake Configuration Extra'
+        required: false
+        default: ''
+    secrets:
+      LNB_TOKEN:
+        required: false
+
+jobs:
+
+  build-docker:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Free additional disk space (remove Android SDK + Tools)
+        run: |
+          sudo rm -rf /usr/local/lib/android
+
+      - name: Checkout HPCC-Platform
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          path: ${{ github.workspace }}/HPCC-Platform
+
+      - name: Checkout LN
+        if: ${{ inputs.internal == true }}
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ github.repository_owner }}/LN
+          token: ${{ secrets.LNB_TOKEN }}
+          ref: ${{ github.base_ref }}
+          submodules: recursive
+          path: ${{ github.workspace }}/LN
+
+      - name: Calculate vars
+        id: vars
+        working-directory: ${{ github.workspace }}/HPCC-Platform/vcpkg
+        run: |
+          vcpkg_sha_short=$(git rev-parse --short=8 HEAD)
+          echo "vcpkg_sha_short=$vcpkg_sha_short" >> $GITHUB_OUTPUT
+          docker_build_label=hpccsystems/platform-build-${{ inputs.os }}
+          echo "docker_build_label=$docker_build_label" >> $GITHUB_OUTPUT
+          echo "docker_tag=$docker_build_label:$vcpkg_sha_short" >> $GITHUB_OUTPUT
+          echo "docker_tag_candidate_base=$docker_build_label:${{ github.base_ref }}" >> $GITHUB_OUTPUT
+
+      - name: Print vars
+        run: |
+          echo "${{ toJSON(steps.vars.outputs) }}"
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Pull previous images
+        run: |
+          docker pull ${{ steps.vars.outputs.docker_tag_candidate_base }} || true
+          docker pull ${{ steps.vars.outputs.docker_tag }} || true
+
+      - name: Create Build Image  
+        uses: docker/build-push-action@v4
+        with:
+          builder: ${{ steps.buildx.outputs.name }}
+          file: ${{ github.workspace }}/HPCC-Platform/dockerfiles/vcpkg/${{ inputs.os }}.dockerfile
+          context: ${{ github.workspace }}/HPCC-Platform/dockerfiles/vcpkg
+          load: true
+          build-args: |
+            VCPKG_REF=${{ steps.vars.outputs.vcpkg_sha_short }}
+          tags: |
+            ${{ steps.vars.outputs.docker_tag_candidate_base }}
+          cache-from: |
+            type=registry,ref=${{ steps.vars.outputs.docker_tag_candidate_base }}
+            type=registry,ref=${{ steps.vars.outputs.docker_tag }}
+          cache-to: type=inline
+
+      - uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: docker-${{ inputs.os }}-${{ inputs.internal == true && 'LN' || 'HPCC-Platform' }}-${{ inputs.containerized == true && 'k8s' || 'bare-metal' }}-${{ github.base_ref }}
+      
+      - name: CMake Packages
+        run: |
+          mkdir -p ${{ github.workspace }}/LN
+          mkdir -p ${{ github.workspace }}/build
+          mkdir -p ${{ github.workspace }}/.ccache
+          declare -a plugins
+          if [ ${{ inputs.single-package }} ]; then
+            plugins=("PLATFORM")
+          else
+            plugins=("CASSANDRAEMBED" "COUCHBASEEMBED" "ECLBLAS" "H3" "JAVAEMBED" "KAFKA" "MEMCACHED" "MONGODBEMBED" "MYSQLEMBED" "NLP" "PARQUETEMBED" "REDIS" "REMBED" "SQLITE3EMBED" "SQS" "PLATFORM")
+          fi
+          for plugin in "${plugins[@]}"; do
+            sudo rm -f ${{ github.workspace }}/build/CMakeCache.txt
+            sudo rm -rf ${{ github.workspace }}/build/CMakeFiles
+            docker run --rm \
+              --mount source="${{ github.workspace }}/HPCC-Platform",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached \
+              --mount source="${{ github.workspace }}/LN",target=/hpcc-dev/LN,type=bind,consistency=cached \
+              --mount source="${{ github.workspace }}/build",target=/hpcc-dev/build,type=bind,consistency=cached \
+              --mount source="${{ github.workspace }}/.ccache",target=/root/.ccache,type=bind,consistency=cached \
+              ${{ steps.vars.outputs.docker_tag_candidate_base }} "\
+              cmake -G Ninja -S /hpcc-dev/${{ inputs.internal == true && 'LN' || 'HPCC-Platform' }} -B /hpcc-dev/build -DHPCC_SOURCE_DIR=/hpcc-dev/HPCC-Platform -DCONTAINERIZED=${{ inputs.containerized == true && 'ON' || 'OFF' }} ${{ inputs.cmake-configuration }} ${{ inputs.cmake-configuration-ex }} -D$plugin=ON && \
+              cmake --build /hpcc-dev/build --parallel --target package" 
+          done
+
+      - name: Upload error logs
+        if: ${{ failure() || cancelled() }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ inputs.os }}-${{ inputs.internal == true && 'LN' || 'HPCC-Platform' }}-logs
+          path: ${{ github.workspace }}/build/**/*.log
+
