@@ -640,6 +640,8 @@ struct HPCCBuildInfo
     unsigned buildVersionMinor;
     unsigned buildVersionPoint;
     const char *buildVersion;
+    const char *buildMaturity;
+    const char *buildTagTimestamp;
 };
 
 extern jlib_decl HPCCBuildInfo hpccBuildInfo;
