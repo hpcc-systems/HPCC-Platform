@@ -79,8 +79,7 @@ jobs:
           echo "internal_tag=$(echo $community_tag | sed 's/community/internal/')" >> $GITHUB_OUTPUT
           candidate_base_branch=${{ github.base_ref }}
           echo "candidate_base_branch=$candidate_base_branch" >> $GITHUB_OUTPUT
-          docker_tag_candidate_base=$docker_build_label:$($candidate_base_branch || $community_tag)
-          echo "docker_tag_candidate_base=$docker_tag_candidate_base" >> $GITHUB_OUTPUT
+          echo "docker_tag_candidate_base=$docker_build_label:${candidate_base_branch:-$community_tag}" >> $GITHUB_OUTPUT
 
       - name: Print vars
         run: |
