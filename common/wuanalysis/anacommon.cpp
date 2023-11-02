@@ -71,7 +71,7 @@ void PerformanceIssue::createException(IWorkUnit * wu, double costRate)
         s.appendf(" cost %.2f", timePenaltyPerHour*costRate);
     }
     we->setExceptionMessage(s.str());
-    we->setExceptionSource("Workunit Analyzer");
+    we->setExceptionSource(CostOptimizerName);
 }
 
 void PerformanceIssue::set(AnalyzerErrorCode _errorCode, stat_type _timePenalty, const char * msg, ...)
