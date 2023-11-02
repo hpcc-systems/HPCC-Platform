@@ -404,6 +404,11 @@
             },
             "additionalProperties": false
           }
+        },
+        "componentAnnotations": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Global component annotations, generated into all components"
         }
       },
       "additionalProperties": false
@@ -2852,6 +2857,14 @@
         },
         "image": {
           "$ref": "#/definitions/image"
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
         },
         "logging": {
           "$ref": "#/definitions/logging"

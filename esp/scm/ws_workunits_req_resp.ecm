@@ -939,6 +939,7 @@ ESPresponse [exceptions_inline] WUCreateZAPInfoResponse
 
 ESPrequest [nil_remove] WUCheckFeaturesRequest
 {
+    boolean IncludeFullVersion(false);
 };
 
 ESPresponse [exceptions_inline] WUCheckFeaturesResponse
@@ -948,6 +949,12 @@ ESPresponse [exceptions_inline] WUCheckFeaturesResponse
     int BuildVersionPoint;
     unsigned maxRequestEntityLength;
     ESPStruct DeploymentFeatures Deployment;
+    //The following fields are only generated if IncludeFullVersion is set.  Normally the fields would be versioned,
+    //but this change is applied to a much earlier version and the version number has been incremented several times,
+    //so that approach cannot be used.
+    string BuildVersion;
+    string BuildMaturity;
+    string BuildTagTimestamp;
 };
 
 ESPrequest [nil_remove] WUGetStatsRequest

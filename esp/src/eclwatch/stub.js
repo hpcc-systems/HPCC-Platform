@@ -30,8 +30,7 @@ define([
     const params = ioQuery.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search.substr(0, 1) === "?" ? 1 : 0)));
     const hpccWidget = params.Widget ? params.Widget : "HPCCPlatformWidget";
 
-    const store = KeyValStore.userKeyValStore();
-    store.getEx(BuildInfo.ModernMode, { defaultValue: String(true) }).then(modernMode => {
+    Session.fetchModernMode().then(modernMode => {
         if (modernMode === String(true) && hpccWidget !== "IFrameWidget") {
             switch (hpccWidget) {
                 case "WUDetailsWidget":

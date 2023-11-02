@@ -94,9 +94,7 @@ spec:
  {{- if hasKey $.Values.global "metrics" }}
   {{- include "hpcc.addPrometheusScrapeAnnotations" $.Values.global.metrics | nindent 8 }}
  {{- end }}
- {{- if hasKey $dali "annotations" }}
-  {{- toYaml $dali.annotations | nindent 8 }}
- {{- end }}
+ {{- include "hpcc.generateAnnotations" $commonCtx | indent 8 }}
 {{- end }}
     spec:
       {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" $dali.name "type" "dali") | indent 6 }}

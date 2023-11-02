@@ -1,8 +1,10 @@
 import * as React from "react";
+import { useConst } from "@fluentui/react-hooks";
 import { scopedLogger } from "@hpcc-js/util";
 import { Topology, WsTopology } from "@hpcc-js/comms";
-import { getBuildInfo, BuildInfo } from "src/Session";
-import { cmake_build_type, containerized } from "src/BuildInfo";
+import { getBuildInfo, BuildInfo, fetchModernMode } from "src/Session";
+import { cmake_build_type, containerized, ModernMode } from "src/BuildInfo";
+import { sessionKeyValStore, userKeyValStore } from "src/KeyValStore";
 
 const logger = scopedLogger("src-react/hooks/platform.ts");
 
@@ -65,4 +67,28 @@ export function useLogicalClusters(): [WsTopology.TpLogicalCluster[] | undefined
     }, []);
 
     return [targetClusters, defaultCluster];
+}
+
+export function useModernMode(): {
+    modernMode: string;
+    setModernMode: (value: string) => void;
+} {
+    const userStore = useConst(() => userKeyValStore());
+    const sessionStore = useConst(() => sessionKeyValStore());
+
+    const [modernMode, setModernMode] = React.useState<string>("");
+
+    React.useEffect(() => {
+        fetchModernMode().then(mode => {
+            setModernMode(String(mode));
+        });
+    }, [sessionStore, userStore]);
+
+    React.useEffect(() => {
+        if (modernMode === "") return;
+        sessionStore.set(ModernMode, modernMode);
+        userStore.set(ModernMode, modernMode);
+    }, [modernMode, sessionStore, userStore]);
+
+    return { modernMode, setModernMode };
 }

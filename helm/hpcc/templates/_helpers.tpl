@@ -2733,3 +2733,16 @@ spec:
   {{- end -}}
  {{- end -}}
 {{- end -}}
+
+{{/*
+A template to generate component annotations, merges static default annotations with global and component annotations
+Pass in dict with .root, .me
+*/}}
+{{- define "hpcc.generateAnnotations" -}}
+{{- $annotations := dict -}}
+{{- if hasKey .root.Values.global "componentAnnotations" -}}{{- $annotations = merge $annotations .root.Values.global.componentAnnotations -}}{{- end -}}
+{{- if hasKey .me "annotations" -}}{{- $annotations = merge $annotations .me.annotations -}}{{- end -}}
+{{- range $key, $value := $annotations }}
+{{ $key }}: {{ $value | quote }}
+{{- end -}}
+{{- end -}}

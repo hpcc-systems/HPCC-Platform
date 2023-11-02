@@ -316,6 +316,8 @@ public:
             return str.append(": Storage plane missing: ").append(errstr);
         case DFSERR_PhysicalCompressedPartInvalid:
             return str.append(": Compressed part is not in the valid format: ").append(errstr);
+        case DFSERR_InvalidRemoteFileContext:
+            return str.append(": Lookup of remote files must use wsdfs::lookup - file: ").append(errstr);
         }
         return str.append("Unknown DFS Exception");
     }
@@ -8247,6 +8249,11 @@ IDistributedFile *CDistributedFileDirectory::dolookup(CDfsLogicalFileName &_logi
 
 IDistributedFile *CDistributedFileDirectory::lookup(CDfsLogicalFileName &logicalname, IUserDescriptor *user, AccessMode accessMode, bool hold, bool lockSuperOwner, IDistributedFileTransaction *transaction, bool privilegedUser, unsigned timeout)
 {
+    if (logicalname.isRemote())
+    {
+        PrintStackReport(); // to help locate contexts it was called in
+        throw new CDFS_Exception(DFSERR_InvalidRemoteFileContext, logicalname.get());
+    }
     Owned <IDistributedFile>distributedFile = dolookup(logicalname, user, accessMode, hold, lockSuperOwner, transaction, timeout);
     // Restricted access is currently designed to stop users viewing sensitive information. It is not designed to stop users deleting or overwriting existing restricted files
     if (!isWrite(accessMode) && distributedFile && distributedFile->isRestrictedAccess() && !privilegedUser)
@@ -10194,25 +10201,27 @@ class CInitGroups
         switch (groupType)
         {
             case grp_thor:
-                getClusterGroupName(cluster, gname);
-                if (!streq(cluster.queryProp("@name"), gname.str()))
+                getClusterGroupName(cluster, gname); // NB: ensures lowercases
+                if (!strieq(cluster.queryProp("@name"), gname.str()))
                     realCluster = false;
                 if (oldEnvCluster)
                 {
-                    getClusterGroupName(*oldEnvCluster, oldGname);
-                    if (!streq(oldEnvCluster->queryProp("@name"), oldGname.str()))
+                    getClusterGroupName(*oldEnvCluster, oldGname); // NB: ensures lowercases
+                    if (!strieq(oldEnvCluster->queryProp("@name"), oldGname.str()))
                         oldRealCluster = false;
                 }
                 break;
             case grp_thorspares:
-                getClusterSpareGroupName(cluster, gname);
+                getClusterSpareGroupName(cluster, gname); // ensures lowercase
                 oldRealCluster = realCluster = false;
                 break;
             case grp_roxie:
                 gname.append(cluster.queryProp("@name"));
+                gname.toLowerCase();
                 break;
             case grp_dropzone:
                 gname.append(cluster.queryProp("@name"));
+                gname.toLowerCase();
                 oldRealCluster = realCluster = false;
                 defDir = cluster.queryProp("@directory");
                 break;
@@ -10584,8 +10593,12 @@ public:
 
     void ensureStorageGroup(bool force, const char * name, unsigned numDevices, const char * path, StringBuffer & messages)
     {
-        Owned<IPropertyTree> newClusterGroup = createStorageGroup(name, numDevices, path);
-        ensureConsistentStorageGroup(force, name, newClusterGroup, messages);
+        //Lower case the group name - see CNamedGroupStore::dolookup which lower cases before resolving.
+        StringBuffer gname;
+        gname.append(name).toLowerCase();
+
+        Owned<IPropertyTree> newClusterGroup = createStorageGroup(gname, numDevices, path);
+        ensureConsistentStorageGroup(force, gname, newClusterGroup, messages);
     }
 
     void constructStorageGroups(bool force, StringBuffer &messages)
@@ -10624,7 +10637,7 @@ public:
                 }
                 else if (plane.hasProp("hostGroup"))
                 {
-                    throw makeStringExceptionV(-1, "Use 'hosts' rather than 'hostGroup' for inline list of hosts for plane %s", name);
+                    throw makeStringExceptionV(-1, "Use 'hosts' rather than 'hostGroup' for inline list of hosts for plane %s", gname.str());
                 }
                 else if (plane.hasProp("hosts"))
                 {
@@ -10639,9 +10652,9 @@ public:
                 {
                     //Locally mounted, or url accessed storage plane - no associated hosts, localhost used as a placeholder
                     unsigned numDevices = plane.getPropInt("@numDevices", 1);
-                    newClusterGroup.setown(createStorageGroup(name, numDevices, prefix));
+                    newClusterGroup.setown(createStorageGroup(gname, numDevices, prefix));
                 }
-                ensureConsistentStorageGroup(force, name, newClusterGroup, messages);
+                ensureConsistentStorageGroup(force, gname, newClusterGroup, messages);
             }
         }
     }
