@@ -2739,7 +2739,7 @@ A template to generate component annotations, merges static default annotations 
 Pass in dict with .root, .me
 */}}
 {{- define "hpcc.generateAnnotations" -}}
-{{- $annotations := dict -}}
+{{- $annotations := dict "cluster-autoscaler.kubernetes.io/safe-to-evict" false -}}
 {{- if hasKey .root.Values.global "componentAnnotations" -}}{{- $annotations = merge $annotations .root.Values.global.componentAnnotations -}}{{- end -}}
 {{- if hasKey .me "annotations" -}}{{- $annotations = merge $annotations .me.annotations -}}{{- end -}}
 {{- range $key, $value := $annotations }}
