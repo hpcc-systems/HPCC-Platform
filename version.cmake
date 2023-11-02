@@ -8,4 +8,5 @@ set ( HPCC_MINOR 2 )
 set ( HPCC_POINT 33 )
 set ( HPCC_MATURITY "closedown" )
 set ( HPCC_SEQUENCE 0 )
+set ( HPCC_TAG_TIMESTAMP "1970-01-01T01:00:00Z" )
 ###
