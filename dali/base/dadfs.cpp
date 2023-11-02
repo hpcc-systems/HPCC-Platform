@@ -316,6 +316,8 @@ public:
             return str.append(": Storage plane missing: ").append(errstr);
         case DFSERR_PhysicalCompressedPartInvalid:
             return str.append(": Compressed part is not in the valid format: ").append(errstr);
+        case DFSERR_InvalidRemoteFileContext:
+            return str.append(": Lookup of remote files must use wsdfs::lookup - file: ").append(errstr);
         }
         return str.append("Unknown DFS Exception");
     }
@@ -8241,6 +8243,11 @@ IDistributedFile *CDistributedFileDirectory::dolookup(CDfsLogicalFileName &_logi
 
 IDistributedFile *CDistributedFileDirectory::lookup(CDfsLogicalFileName &logicalname, IUserDescriptor *user, AccessMode accessMode, bool hold, bool lockSuperOwner, IDistributedFileTransaction *transaction, bool privilegedUser, unsigned timeout)
 {
+    if (logicalname.isRemote())
+    {
+        PrintStackReport(); // to help locate contexts it was called in
+        throw new CDFS_Exception(DFSERR_InvalidRemoteFileContext, logicalname.get());
+    }
     Owned <IDistributedFile>distributedFile = dolookup(logicalname, user, accessMode, hold, lockSuperOwner, transaction, timeout);
     // Restricted access is currently designed to stop users viewing sensitive information. It is not designed to stop users deleting or overwriting existing restricted files
     if (!isWrite(accessMode) && distributedFile && distributedFile->isRestrictedAccess() && !privilegedUser)
