@@ -163,7 +163,7 @@ public:
     {
         StringBuffer out;
         toLog(out);
-        DBGLOG("Span end: {%s}", out.str());
+        LOG(MCmonitorEvent, "Span end: {%s}", out.str());
     }
 
     const char * getSpanID() const
@@ -449,7 +449,7 @@ protected:
 
             StringBuffer out;
             toLog(out);
-            DBGLOG("Span start: {%s}", out.str());
+            LOG(MCmonitorEvent, "Span start: {%s}", out.str());
         }
 
     }
