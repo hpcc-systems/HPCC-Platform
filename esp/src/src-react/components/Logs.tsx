@@ -18,7 +18,7 @@ const startTimeOffset = 6 * 60 * 60 * 1000;
 const defaultStartDate = new Date(new Date().getTime() - startTimeOffset);
 
 const FilterFields: Fields = {
-    containerName: { type: "cloud-containername", label: nlsHPCC.ContainerName },
+    components: { type: "cloud-containername", label: nlsHPCC.ContainerName },
     audience: {
         type: "dropdown", label: nlsHPCC.Audience, options: [
             { key: TargetAudience.Operator, text: "Operator" },
@@ -37,9 +37,9 @@ const FilterFields: Fields = {
             { key: LogType.Metric, text: "Metric" },
         ]
     },
-    jobId: { type: "string", label: nlsHPCC.JobID },
-    procId: { type: "string", label: nlsHPCC.ProcessID },
-    threadId: { type: "string", label: nlsHPCC.ThreadID },
+    workunits: { type: "string", label: nlsHPCC.JobID },
+    processid: { type: "string", label: nlsHPCC.ProcessID },
+    threadid: { type: "string", label: nlsHPCC.ThreadID },
     message: { type: "string", label: nlsHPCC.Message },
     StartDate: { type: "datetime", label: nlsHPCC.FromDate },
     EndDate: { type: "datetime", label: nlsHPCC.ToDate },
@@ -117,7 +117,7 @@ export const Logs: React.FunctionComponent<LogsProps> = ({
         return {
             timestamp: { label: nlsHPCC.TimeStamp, width: 140, sortable: false, },
             message: { label: nlsHPCC.Message, sortable: false, },
-            containerName: { label: nlsHPCC.ContainerName, width: 100, sortable: false },
+            components: { label: nlsHPCC.ContainerName, width: 150, sortable: false },
             audience: { label: nlsHPCC.Audience, width: 60, sortable: false, },
             class: {
                 label: nlsHPCC.Class, width: 40, sortable: false,
@@ -127,10 +127,10 @@ export const Logs: React.FunctionComponent<LogsProps> = ({
                     return <span style={styles}>{level}</span>;
                 }
             },
-            jobId: { label: nlsHPCC.JobID, width: 140, sortable: false, hidden: wuid !== undefined, },
-            procId: { label: nlsHPCC.ProcessID, width: 46, sortable: false, },
-            sequence: { label: nlsHPCC.Sequence, width: 70, sortable: false, },
-            threadId: { label: nlsHPCC.ThreadID, width: 60, sortable: false, },
+            workunits: { label: nlsHPCC.JobID, width: 50, sortable: false, hidden: wuid !== undefined, },
+            processid: { label: nlsHPCC.ProcessID, width: 75, sortable: false, },
+            logid: { label: nlsHPCC.Sequence, width: 70, sortable: false, },
+            threadid: { label: nlsHPCC.ThreadID, width: 60, sortable: false, },
         };
     }, [wuid]);
 
