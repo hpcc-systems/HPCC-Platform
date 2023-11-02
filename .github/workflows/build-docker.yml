@@ -17,7 +17,7 @@ on:
         type: boolean
         description: 'Containerized Build'
         required: false
-        default: true
+        default: false
       single-package:
         type: boolean
         description: 'Single Package'
