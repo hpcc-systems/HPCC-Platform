@@ -121,6 +121,7 @@ jobs:
       os: centos-7
       single-package: true
       containerized: false
+      cmake-configuration-ex: "-DVCPKG_TARGET_TRIPLET=x64-centos-7-dynamic"
     secrets: inherit
 
   build-docker-amazonlinux:
@@ -131,6 +132,7 @@ jobs:
       os: amazonlinux
       single-package: true
       containerized: false
+      cmake-configuration-ex: "-DVCPKG_TARGET_TRIPLET=x64-amazonlinux-dynamic"
     secrets: inherit
 
     # build-docker:
