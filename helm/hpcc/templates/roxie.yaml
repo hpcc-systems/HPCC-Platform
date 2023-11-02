@@ -129,11 +129,9 @@ spec:
 {{- end }}
       annotations:
         checksum/config: {{ $topoconfigSHA }}
+        {{- include "hpcc.generateAnnotations" (dict "root" $commonCtx.root "me" $toposerver) | indent 8 }}
 {{- if hasKey $.Values.global "metrics" }}
  {{- include "hpcc.addPrometheusScrapeAnnotations"  $.Values.global.metrics | nindent 8 }}
-{{- end }}
-{{- if hasKey $toposerver "annotations" }}
-{{ toYaml $toposerver.annotations | indent 8 }}
 {{- end }}
     spec:
       {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" $commonCtx.toponame "target" $roxie.name "type" "roxie") | indent 6 }}
@@ -252,6 +250,7 @@ spec:
 {{- end }}
       annotations:
         checksum/config: {{ $configSHA }}
+        {{- include "hpcc.generateAnnotations" $commonCtx | indent 8 }}
 {{- if hasKey $.Values.global "metrics" }}
  {{- include "hpcc.addPrometheusScrapeAnnotations" $.Values.global.metrics | nindent 8 }}
 {{- end }}
@@ -356,11 +355,9 @@ spec:
 {{- end }}
       annotations:
         checksum/config: {{ $configSHA }}
+        {{- include "hpcc.generateAnnotations" $commonCtx | indent 8 }}
 {{- if hasKey $.Values.global "metrics" }}
  {{- include "hpcc.addPrometheusScrapeAnnotations" $.Values.global.metrics | nindent 8 }}
-{{- end }}
-{{- if hasKey $roxie "annotations" }}
-{{ toYaml $roxie.annotations | indent 8 }}
 {{- end }}
     spec:
       {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" $name "target" $roxie.name "type" "roxie") | indent 6 }}
