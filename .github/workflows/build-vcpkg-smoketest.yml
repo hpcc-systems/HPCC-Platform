@@ -1,4 +1,4 @@
-name: Test Build
+name: Smoketest
 
 env:
   VCPKG_BINARY_SOURCES: "clear;nuget,GitHub,read"
@@ -8,7 +8,7 @@ env:
 
 on:
   workflow_run:
-    workflows: [Upload data]
+    workflows: [Test Build]
     types:
       - completed
 
