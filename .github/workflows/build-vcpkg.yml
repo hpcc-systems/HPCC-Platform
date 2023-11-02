@@ -276,7 +276,7 @@ jobs:
             sudo: ""
             cmake_config_options: '-T host=x64 -A x64 -DUSE_OPTIONAL=OFF -DCLIENTTOOLS_ONLY=ON -DUSE_AZURE=OFF -DUSE_CASSANDRA=OFF -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
             cmake_build_options: "--config Release --parallel"
-            event_name: "pull_request,workflow_dispatch,push"
+            event_name: "pull_request,workflow_dispatch"
           - os: "macos-11"
             mono: "mono"
             sudo: "sudo"
