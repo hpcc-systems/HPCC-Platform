@@ -62,10 +62,8 @@ data:
 {{- if hasKey .me "labels" }}
 {{ toYaml .me.labels | indent 12 }}
 {{- end }}
-{{- if hasKey .me "annotations" }}
           annotations:
-{{ toYaml .me.annotations | indent 12 }}
-{{- end }}
+            {{- include "hpcc.generateAnnotations" . | indent 12 }}
         spec:
           {{- include "hpcc.placementsByJobTargetType" (dict "root" .root "job" $appJobName "target" .me.name "type" "eclagent") | indent 10 }}
           serviceAccountName: "hpcc-agent"
@@ -143,9 +141,7 @@ spec:
 {{- end }}
       annotations:
         checksum/config: {{ $configSHA }}
-{{- if hasKey . "annotations" }}
-{{ toYaml .annotations | indent 8 }}
-{{- end }}
+        {{- include "hpcc.generateAnnotations" $commonCtx | indent 8 }}
     spec:
       {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" .name "target" .name "type" "eclagent") | indent 6 }}
       serviceAccountName: "hpcc-agent"

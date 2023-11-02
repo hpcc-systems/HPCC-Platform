@@ -3,8 +3,9 @@ import * as xhr from "dojo/request/xhr";
 import * as topic from "dojo/topic";
 import { format as d3Format } from "@hpcc-js/common";
 import { SMCService } from "@hpcc-js/comms";
-import { cookieKeyValStore } from "src/KeyValStore";
+import { cookieKeyValStore, sessionKeyValStore, userKeyValStore } from "src/KeyValStore";
 import { singletonDebounce } from "../src-react/util/throttle";
+import { ModernMode } from "./BuildInfo";
 import * as ESPUtil from "./ESPUtil";
 import { scopedLogger } from "@hpcc-js/util";
 
@@ -21,7 +22,18 @@ let _prevReset = Date.now();
 
 declare const dojoConfig;
 
-const userStore = cookieKeyValStore();
+const cookieStore = cookieKeyValStore();
+const sessionStore = sessionKeyValStore();
+const userStore = userKeyValStore();
+
+export async function fetchModernMode(): Promise<string> {
+    return Promise.all([
+        sessionStore.get(ModernMode),
+        userStore.getEx(ModernMode, { defaultValue: String(true) })
+    ]).then(([sessionModernMode, userModernMode]) => {
+        return sessionModernMode ?? userModernMode;
+    });
+}
 
 const smc = new SMCService({ baseUrl: "" });
 
@@ -96,7 +108,7 @@ export function fireIdle() {
 }
 
 async function resetESPTime() {
-    const userSession = userStore.getAll();
+    const userSession = cookieStore.getAll();
     if (!userSession || !userSession["ECLWatchUser"] || !userSession["Status"] || userSession["Status"] === "Locked") return;
     if (Date.now() - _prevReset > SESSION_RESET_FREQ) {
         _prevReset = Date.now();

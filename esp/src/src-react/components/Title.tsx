@@ -8,12 +8,11 @@ import { cookie } from "dojo/main";
 
 import nlsHPCC from "src/nlsHPCC";
 import * as Utility from "src/Utility";
-import { ModernMode } from "src/BuildInfo";
 
 import { useBanner } from "../hooks/banner";
 import { useECLWatchLogger } from "../hooks/logging";
-import { useBuildInfo } from "../hooks/platform";
-import { useGlobalStore, useUserStore } from "../hooks/store";
+import { useBuildInfo, useModernMode } from "../hooks/platform";
+import { useGlobalStore } from "../hooks/store";
 import { useMyAccount, useUserSession } from "../hooks/user";
 import { replaceUrl } from "../util/history";
 
@@ -71,7 +70,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
 
     const [log, logLastUpdated] = useECLWatchLogger();
 
-    const [_modernMode, setModernMode] = useUserStore(ModernMode, String(true));
+    const { setModernMode } = useModernMode();
     const onTechPreviewClick = React.useCallback(
         (ev?: React.MouseEvent<HTMLButtonElement>, item?: IContextualMenuItem): void => {
             setModernMode(String(false));

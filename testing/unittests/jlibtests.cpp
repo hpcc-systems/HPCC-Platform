@@ -54,6 +54,7 @@ public:
         CPPUNIT_TEST(testInvalidPropegatedServerSpan);
         CPPUNIT_TEST(testInternalSpan);
         CPPUNIT_TEST(testMultiNestedSpanTraceOutput);
+        CPPUNIT_TEST(testNullSpan);
     CPPUNIT_TEST_SUITE_END();
 
     const char * simulatedGlobalYaml = R"!!(global:
@@ -151,6 +152,26 @@ protected:
         Owned<IPropertyTree> traceConfig = testTree->getPropTree("global");
 
          initTraceManager("somecomponent", traceConfig, nullptr);
+    }
+
+    void testNullSpan()
+    {
+        if (!queryTraceManager().isTracingEnabled())
+        {
+            DBGLOG("Skipping testNullSpan, tracing is not enabled");
+            return;
+        }
+
+        Owned<ISpan> nullSpan = getNullSpan();
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected nullptr nullspan detected", true, nullSpan != nullptr);
+
+        {
+            Owned<IProperties> headers = createProperties(true);
+            nullSpan->getSpanContext(headers, true);
+        }
+
+        Owned<ISpan> nullSpanChild = nullSpan->createClientSpan("nullSpanChild");
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected nullptr nullSpanChild detected", true, nullSpanChild != nullptr);
     }
 
     void testClientSpan()

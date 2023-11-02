@@ -589,7 +589,7 @@ public: // Not very clean but I don't care
     mutable bool aborted;
     mutable CIArrayOf<LogItem> log;
 private:
-    Owned<ISpan> activeSpan;
+    Owned<ISpan> activeSpan = getNullSpan();
     ContextLogger(const ContextLogger &);  // Disable copy constructor
 public:
     IMPLEMENT_IINTERFACE;
@@ -748,26 +748,18 @@ public:
     }
     virtual IProperties * getClientHeaders() const override
     {
-        if (!activeSpan)
-            return nullptr;
         return ::getClientHeaders(activeSpan);
     }
     virtual const char *queryGlobalId() const override
     {
-        if (!activeSpan)
-            return nullptr;
         return activeSpan->queryGlobalId();
     }
     virtual const char *queryCallerId() const override
     {
-        if (!activeSpan)
-            return nullptr;
         return activeSpan->queryCallerId();
     }
     virtual const char *queryLocalId() const override
     {
-        if (!activeSpan)
-            return nullptr;
         return activeSpan->queryLocalId();
     }
     virtual const CRuntimeStatisticCollection & queryStats() const override

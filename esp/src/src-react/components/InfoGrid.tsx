@@ -84,6 +84,12 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
             },
             Column: { label: nlsHPCC.Col, field: "", width: 36, sortable: false },
             LineNo: { label: nlsHPCC.Line, field: "", width: 36, sortable: false },
+            Activity: {
+                label: nlsHPCC.Activity, field: "", width: 56, sortable: false,
+                formatter: (activityId, row) => {
+                    return activityId ? <Link href={`#/workunits/${wuid}/metrics/a${activityId}`}>a{activityId}</Link> : "";
+                }
+            },
             FileName: { label: nlsHPCC.FileName, field: "", width: 360, sortable: false }
         };
     }, [wuid]);

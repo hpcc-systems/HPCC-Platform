@@ -536,6 +536,33 @@ protected:
     CSpan * localParentSpan = nullptr;
 };
 
+class CNullSpan : public CInterfaceOf<ISpan>
+{
+public:
+    CNullSpan() = default;
+
+    virtual void setSpanAttribute(const char * key, const char * val) override {}
+    virtual void setSpanAttributes(const IProperties * attributes) override {}
+    virtual void addSpanEvent(const char * eventName) override {}
+    virtual bool getSpanContext(IProperties * ctxProps, bool otelFormatted) const override { return false; }
+
+    virtual void toString(StringBuffer & out) const override {}
+    virtual void toLog(StringBuffer & out) const override {}
+    virtual void getLogPrefix(StringBuffer & out) const override {}
+
+    virtual const char* queryGlobalId() const override { return nullptr; }
+    virtual const char* queryCallerId() const override { return nullptr; }
+    virtual const char* queryLocalId() const override { return nullptr; }
+
+    virtual ISpan * createClientSpan(const char * name) override { return getNullSpan(); }
+    virtual ISpan * createInternalSpan(const char * name) override { return getNullSpan(); }
+
+private:
+    CNullSpan(const CNullSpan&) = delete;
+    CNullSpan& operator=(const CNullSpan&) = delete;
+};
+
+
 class CInternalSpan : public CSpan
 {
 public:
@@ -817,7 +844,7 @@ private:
     Expected Configuration format:
     global:
         tracing:                            #optional - tracing enabled by default
-            disable: true                   #optional - disable OTel tracing
+            disabled: true                  #optional - disable OTel tracing
             alwaysCreateGlobalIds : false   #optional - should global ids always be created?
             exporter:                       #optional - Controls how trace data is exported/reported
               type: OTLP                    #OS|OTLP|Prometheus|HPCC (default: no export, jlog entry)
@@ -854,7 +881,7 @@ private:
             toXML(traceConfig, xml);
             DBGLOG("traceConfig tree: %s", xml.str());
 #endif
-            bool disableTracing = traceConfig && traceConfig->getPropBool("@disable", false);
+            bool disableTracing = traceConfig && traceConfig->getPropBool("@disabled", false);
 
             using namespace opentelemetry::trace;
             if (disableTracing)
@@ -920,13 +947,13 @@ public:
         throw makeStringExceptionV(-1, "TraceManager must be intialized!");
     }
 
-    ISpan * createServerSpan(const char * name, StringArray & httpHeaders, SpanFlags flags) override
+    ISpan * createServerSpan(const char * name, StringArray & httpHeaders, SpanFlags flags) const override
     {
         Owned<IProperties> headerProperties = getHeadersAsProperties(httpHeaders);
         return new CServerSpan(name, moduleName.get(), headerProperties, flags);
     }
 
-    ISpan * createServerSpan(const char * name, const IProperties * httpHeaders, SpanFlags flags) override
+    ISpan * createServerSpan(const char * name, const IProperties * httpHeaders, SpanFlags flags) const override
     {
         return new CServerSpan(name, moduleName.get(), httpHeaders, flags);
     }
@@ -957,6 +984,13 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
 MODULE_EXIT()
 {
     theTraceManager.destroy();
+}
+
+static Owned<ISpan> nullSpan = new CNullSpan();
+
+ISpan * getNullSpan()
+{
+    return nullSpan.getLink();
 }
 
 void initTraceManager(const char * componentName, const IPropertyTree * componentConfig, const IPropertyTree * globalConfig)

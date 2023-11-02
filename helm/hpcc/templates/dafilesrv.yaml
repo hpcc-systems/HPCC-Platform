@@ -53,6 +53,7 @@ spec:
         helmVersion: 9.5.0-trunk0
       annotations:
         checksum/config: {{ $configSHA }}
+        {{- include "hpcc.generateAnnotations" $commonCtx | indent 8 }}
     spec:
       {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" .name "type" "dafilesrv") | indent 6 }}
       serviceAccountName: "hpcc-default"

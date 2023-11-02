@@ -109,6 +109,8 @@ static void initBuildVars()
     hpccBuildInfo.buildVersionMinor = BUILD_VERSION_MINOR;
     hpccBuildInfo.buildVersionPoint = BUILD_VERSION_POINT;
     hpccBuildInfo.buildVersion = estringify(BUILD_VERSION_MAJOR) "." estringify(BUILD_VERSION_MINOR) "." estringify(BUILD_VERSION_POINT);
+    hpccBuildInfo.buildMaturity = BUILD_MATURITY;
+    hpccBuildInfo.buildTagTimestamp = BUILD_TAG_TIMESTAMP;
 
     hpccBuildInfo.dirName = DIR_NAME;
     hpccBuildInfo.prefix = PREFIX;

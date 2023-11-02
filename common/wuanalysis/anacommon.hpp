@@ -23,6 +23,7 @@
 #include "eclhelper.hpp"
 #include "anaerrorcodes.hpp"
 
+constexpr char CostOptimizerName[] = "Cost Optimizer";
 
 interface IWuScope
 {
