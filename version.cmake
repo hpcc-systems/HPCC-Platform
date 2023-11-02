@@ -8,4 +8,5 @@ set ( HPCC_MINOR 5 )
 set ( HPCC_POINT 0 )
 set ( HPCC_MATURITY "trunk" )
 set ( HPCC_SEQUENCE 0 )
+set ( HPCC_TAG_TIMESTAMP "1970-01-01T01:00:00Z" )
 ###
