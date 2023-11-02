@@ -22,7 +22,7 @@ on:
         type: boolean
         description: 'Single Package'
         required: false
-        default: false
+        default: true
       cmake-configuration:
         type: string
         description: 'CMake Configuration'
@@ -112,7 +112,7 @@ jobs:
 
       - uses: hendrikmuhs/ccache-action@v1.2
         with:
-          key: docker-${{ inputs.os }}-${{ inputs.internal == true && 'LN' || 'HPCC-Platform' }}-${{ inputs.containerized == true && 'k8s' || 'bare-metal' }}-${{ github.base_ref }}
+          key: ${{ steps.vars.outputs.docker_tag_candidate_base }}-${{ inputs.internal == true && 'LN' || 'HPCC-Platform' }}-${{ inputs.containerized == true && 'k8s' || 'bare-metal' }}
       
       - name: CMake Packages
         run: |
