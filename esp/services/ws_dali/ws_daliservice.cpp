@@ -77,7 +77,7 @@ void CWSDaliSoapBindingEx::exportSDSData(CHttpRequest* request, CHttpResponse* r
     CDateTime dt;
     dt.setNow();
     StringBuffer headerStr;
-    headerStr.appendf("attachment;filename=sds_%u.%u.tmp", (unsigned)GetCurrentProcessId(), (unsigned)dt.getSimple());
+    headerStr.appendf("attachment;filename=sds_%u.%llu.tmp", (unsigned)GetCurrentProcessId(), (unsigned __int64)dt.getSimple());
     IEspContext* context = request->queryContext();
     context->addCustomerHeader("Content-disposition", headerStr.str());
 
