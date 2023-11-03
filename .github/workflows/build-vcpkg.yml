@@ -81,6 +81,7 @@ jobs:
       os: ubuntu-23.10
       single-package: true
       containerized: false
+      cmake-configuration-ex: "-DSUPPRESS_V8EMBED=ON"
     secrets: inherit
 
   build-docker-ubuntu-22_04:
@@ -93,6 +94,7 @@ jobs:
       containerized: false
       upload-package: true
       asset-name: 'ubuntu-22_04.deb'
+      cmake-configuration-ex: "-DSUPPRESS_V8EMBED=ON"
     secrets: inherit
 
   build-docker-ubuntu-20_04:

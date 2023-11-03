@@ -81,13 +81,9 @@ jobs:
         id: vars
         working-directory: ${{ github.workspace }}/HPCC-Platform/vcpkg
         run: |
-          vcpkg_sha_short=$(git rev-parse --short=8 HEAD)
-          echo "vcpkg_sha_short=$vcpkg_sha_short" >> $GITHUB_OUTPUT
           docker_build_label=hpccsystems/platform-build-base-${{ inputs.os }}
-          base_branch_label=${{ github.base_ref }}
-          base_branch_label_alt=$(echo ${{ github.ref }} | cut -d'/' -f3)
+          vcpkg_sha_short=$(git rev-parse --short=8 HEAD)
           echo "docker_tag=$docker_build_label:$vcpkg_sha_short" >> $GITHUB_OUTPUT
-          echo "docker_tag_candidate_base=$docker_build_label:${base_branch_label:-$base_branch_label_alt}" >> $GITHUB_OUTPUT
 
       - name: Print vars
         run: |
@@ -99,24 +95,7 @@ jobs:
 
       - name: Pull previous images
         run: |
-          docker pull ${{ steps.vars.outputs.docker_tag_candidate_base }} || true
           docker pull ${{ steps.vars.outputs.docker_tag }} || true
-
-      # - name: Create Build Image  
-      #   uses: docker/build-push-action@v4
-      #   with:
-      #     builder: ${{ steps.buildx.outputs.name }}
-      #     file: ${{ github.workspace }}/HPCC-Platform/dockerfiles/vcpkg/${{ inputs.os }}.dockerfile
-      #     context: ${{ github.workspace }}/HPCC-Platform/dockerfiles/vcpkg
-      #     load: true
-      #     build-args: |
-      #       VCPKG_REF=${{ steps.vars.outputs.vcpkg_sha_short }}
-      #     tags: |
-      #       ${{ steps.vars.outputs.docker_tag_candidate_base }}
-      #     cache-from: |
-      #       type=registry,ref=${{ steps.vars.outputs.docker_tag_candidate_base }}
-      #       type=registry,ref=${{ steps.vars.outputs.docker_tag }}
-      #     cache-to: type=inline
 
       - uses: hendrikmuhs/ccache-action@v1.2
         with:
