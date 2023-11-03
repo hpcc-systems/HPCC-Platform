@@ -86,6 +86,9 @@ jobs:
         id: vars
         working-directory: ${{ github.workspace }}/HPCC-Platform/vcpkg
         run: |
+          branch_label_1=${{ github.base_ref }}
+          branch_label_2=$(echo ${{ github.ref }} | cut -d'/' -f3)
+          echo "branch_label=${branch_label_1:-$branch_label_2}" >> $GITHUB_OUTPUT
           docker_build_label=hpccsystems/platform-build-base-${{ inputs.os }}
           vcpkg_sha_short=$(git rev-parse --short=8 HEAD)
           echo "docker_tag=$docker_build_label:$vcpkg_sha_short" >> $GITHUB_OUTPUT
@@ -94,31 +97,28 @@ jobs:
         run: |
           echo "${{ toJSON(steps.vars.outputs) }}"
 
-      - name: Set up Docker Buildx
-        id: buildx
-        uses: docker/setup-buildx-action@v2
+      - uses: docker/setup-buildx-action@v2
 
-      - name: Pull previous images
+      - name: Pull Build Image
         run: |
           docker pull ${{ steps.vars.outputs.docker_tag }} || true
 
       - uses: hendrikmuhs/ccache-action@v1.2
         with:
-          key: ${{ inputs.os }}-${{ inputs.build-type }}-${{ inputs.containerized == true && 'k8s' || 'bare-metal' }}-${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }}
+          key: ${{ inputs.os }}-${{ inputs.build-type }}-${{ steps.vars.branch_label }}-${{ inputs.containerized == true && 'k8s' || 'bare-metal' }}-${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }}
           restore-keys: |
-            ${{ inputs.os }}-${{ inputs.build-type }}-${{ inputs.containerized == true && 'k8s' || 'bare-metal' }}-
+            ${{ inputs.os }}-${{ inputs.build-type }}-${{ steps.vars.branch_label }}-${{ inputs.containerized == true && 'k8s' || 'bare-metal' }}-
+            ${{ inputs.os }}-${{ inputs.build-type }}-${{ steps.vars.branch_label }}-
             ${{ inputs.os }}-${{ inputs.build-type }}-
-            ${{ inputs.os }}-${{ inputs.containerized == true && 'k8s' || 'bare-metal' }}-${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }}
-            ${{ inputs.os }}-${{ inputs.containerized == true && 'k8s' || 'bare-metal' }}-
             ${{ inputs.os }}-
 
-      - name: CMake Packages
+      - name: CMake Configure and Build
         run: |
           mkdir -p ${{ github.workspace }}/LN
           mkdir -p ${{ github.workspace }}/build
           mkdir -p ${{ github.workspace }}/.ccache
           declare -a plugins
-          plugins=(${{ inputs.single-package == true && '"PLATFORM"' || '"CASSANDRAEMBED" "COUCHBASEEMBED" "ECLBLAS" "H3" "JAVAEMBED" "KAFKA" "MEMCACHED" "MONGODBEMBED" "MYSQLEMBED" "NLP" "PARQUETEMBED" "REDIS" "REMBED" "SQLITE3EMBED" "SQS" "PLATFORM"' }})
+          plugins=(${{ inputs.single-package == true && '"PLATFORM"' || '"PLATFORM" "CASSANDRAEMBED" "COUCHBASEEMBED" "ECLBLAS" "H3" "JAVAEMBED" "KAFKA" "MEMCACHED" "MONGODBEMBED" "MYSQLEMBED" "NLP" "PARQUETEMBED" "REDIS" "REMBED" "SQLITE3EMBED" "SQS"' }})
           for plugin in "${plugins[@]}"; do
             sudo rm -f ${{ github.workspace }}/build/CMakeCache.txt
             sudo rm -rf ${{ github.workspace }}/build/CMakeFiles
@@ -132,7 +132,7 @@ jobs:
               cmake --build /hpcc-dev/build --parallel ${{ inputs.upload-package == true && '--target package' || ''}}" 
           done
 
-      - name: Upload package
+      - name: Upload Package
         if: ${{ inputs.upload-package == true }}
         uses: actions/upload-artifact@v3
         with:
@@ -142,7 +142,7 @@ jobs:
             ${{ github.workspace }}/build/*.rpm
           if-no-files-found: error
 
-      - name: Upload error logs
+      - name: Upload Error Logs
         if: ${{ failure() || cancelled() }}
         uses: actions/upload-artifact@v3
         with:
