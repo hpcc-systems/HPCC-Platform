@@ -154,16 +154,16 @@ jobs:
       - name: Calculate vars
         id: vars
         working-directory: ${{ github.workspace }}/HPCC-Platform/vcpkg
+        shell: "bash"
         run: |
           branch_label_1=${{ github.base_ref }}
           branch_label_2=$(echo ${{ github.ref }} | cut -d'/' -f3)
           echo "branch_label=${branch_label_1:-$branch_label_2}" >> $GITHUB_OUTPUT
-          docker_build_label=hpccsystems/platform-build-base-${{ inputs.os }}
           vcpkg_sha_short=$(git rev-parse --short=8 HEAD)
           echo "vcpkg_sha_short=$vcpkg_sha_short" >> $GITHUB_OUTPUT
-          echo "docker_tag=$docker_build_label:$vcpkg_sha_short" >> $GITHUB_OUTPUT
 
       - name: Print vars
+        shell: "bash"
         run: |
           echo "${{ toJSON(steps.vars.outputs) }}"
 
