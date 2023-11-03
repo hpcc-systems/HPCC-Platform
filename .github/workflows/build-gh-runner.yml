@@ -186,7 +186,7 @@ jobs:
         with:
           path: |
             ${{github.workspace}}/build/vcpkg_installed
-          key: vcpkg-${{ steps.vars.outputs.vcpkg_sha_short }}
+          key: vcpkg-${{ inputs.os }}-${{ steps.vars.outputs.vcpkg_sha_short }}
 
       - name: CMake Configure
         shell: "bash"
