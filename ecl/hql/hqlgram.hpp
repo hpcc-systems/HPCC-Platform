@@ -567,6 +567,7 @@ public:
     IHqlExpression * getTargetPlatformExpr();
     void normalizeExpression(attribute & expr);
     void normalizeExpression(attribute & expr, type_t expectedType, bool isConstant, bool callAllowed=true);
+    void checkRegex(const attribute & pattern);
 
     IHqlExpression * createListFromExprArray(const attribute & errpos, HqlExprArray & args);
     IHqlExpression * normalizeExprList(const attribute & errpos, const HqlExprArray & values);

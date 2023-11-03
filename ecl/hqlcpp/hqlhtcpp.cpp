@@ -18454,6 +18454,17 @@ IHqlExpression * HqlCppTranslator::doBuildRegexCompileInstance(BuildCtx & ctx, I
                 match = declareCtx->queryMatchExpr(searchKey);
                 if (match)
                     return match->queryExpr();
+
+                //Most regexes will have been checked in the parser, but not if it is the result of a constant fold.
+                //Check again because an error thrown in a static constructor of a dynamically loaded dll can cause
+                //the process to abort HPCC-30735
+                Owned<IException> e = checkRegexSyntax(pattern);
+                if (e)
+                {
+                    StringBuffer msg;
+                    e->errorMessage(msg);
+                    reportError(queryLocation(pattern), ECODETEXT(HQLERR_InvalidRegex), msg.str());
+                }
             }
         }
         else
