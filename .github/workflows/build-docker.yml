@@ -144,7 +144,7 @@ jobs:
               --mount source="${{ github.workspace }}/LN",target=/hpcc-dev/LN,type=bind,consistency=cached \
               --mount source="${{ github.workspace }}/build",target=/hpcc-dev/build,type=bind,consistency=cached \
               --mount source="${{ github.workspace }}/.ccache",target=/root/.ccache,type=bind,consistency=cached \
-              ${{ steps.vars.outputs.docker_tag_candidate_base }} "\
+              ${{ steps.vars.outputs.docker_tag }} "\
               cmake -G Ninja -S /hpcc-dev/${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }} -B /hpcc-dev/build -DHPCC_SOURCE_DIR=/hpcc-dev/HPCC-Platform -DCONTAINERIZED=${{ inputs.containerized == true && 'ON' || 'OFF' }} -DCPACK_STRIP_FILES=${{ inputs.strip-files == true && 'ON' || 'OFF' }} ${{ inputs.cmake-configuration }} ${{ inputs.cmake-configuration-ex }} -D$plugin=ON && \
               cmake --build /hpcc-dev/build --parallel ${{ inputs.upload-package == true && '--target package' || ''}}" 
           done
