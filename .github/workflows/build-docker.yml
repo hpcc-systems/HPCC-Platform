@@ -132,7 +132,7 @@ jobs:
           mkdir -p ${{ github.workspace }}/build
           mkdir -p ${{ github.workspace }}/.ccache
           declare -a plugins
-          if [ ${{ inputs.single-package }} ]; then
+          if [ ${{ inputs.single-package == true }} ]; then
             plugins=("PLATFORM")
           else
             plugins=("CASSANDRAEMBED" "COUCHBASEEMBED" "ECLBLAS" "H3" "JAVAEMBED" "KAFKA" "MEMCACHED" "MONGODBEMBED" "MYSQLEMBED" "NLP" "PARQUETEMBED" "REDIS" "REMBED" "SQLITE3EMBED" "SQS" "PLATFORM")
@@ -147,7 +147,7 @@ jobs:
               --mount source="${{ github.workspace }}/.ccache",target=/root/.ccache,type=bind,consistency=cached \
               ${{ steps.vars.outputs.docker_tag_candidate_base }} "\
               cmake -G Ninja -S /hpcc-dev/${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }} -B /hpcc-dev/build -DHPCC_SOURCE_DIR=/hpcc-dev/HPCC-Platform -DCONTAINERIZED=${{ inputs.containerized == true && 'ON' || 'OFF' }} -DCPACK_STRIP_FILES=${{ inputs.strip-files == true && 'ON' || 'OFF' }} ${{ inputs.cmake-configuration }} ${{ inputs.cmake-configuration-ex }} -D$plugin=ON && \
-              cmake --build /hpcc-dev/build --parallel ${{ inputs.upload-package == true && '--target package'}}" 
+              cmake --build /hpcc-dev/build --parallel ${{ inputs.upload-package == true && '--target package' || ''}}" 
           done
 
       - name: Upload package
