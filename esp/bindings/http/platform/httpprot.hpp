@@ -47,7 +47,7 @@ private:
     bool m_is_ssl;
     ISecureSocketContext* m_ssctx;
     IPersistentHandler* m_persistentHandler = nullptr;
-    bool m_shouldClose = false;
+    bool m_shouldClose = true;
     IHttpServerService* m_httpserver = nullptr;
     bool m_socketReturned = false;
     bool m_processAborted = false;
