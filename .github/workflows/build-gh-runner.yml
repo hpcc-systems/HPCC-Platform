@@ -171,16 +171,6 @@ jobs:
         run: |
           echo "${{ toJSON(steps.vars.outputs) }}"
 
-      - uses: hendrikmuhs/ccache-action@v1.2
-        with:
-          save: ${{ inputs.update-cache == true }}
-          key: ${{ inputs.os }}-${{ inputs.build-type }}-${{ steps.vars.outputs.branch_label }}-${{ inputs.containerized == true && 'k8s' || 'bare-metal' }}-${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }}
-          restore-keys: |
-            ${{ inputs.os }}-${{ inputs.build-type }}-${{ steps.vars.outputs.branch_label }}-${{ inputs.containerized == true && 'k8s' || 'bare-metal' }}-
-            ${{ inputs.os }}-${{ inputs.build-type }}-${{ steps.vars.outputs.branch_label }}-
-            ${{ inputs.os }}-${{ inputs.build-type }}-
-            ${{ inputs.os }}-
-
       - uses: actions/cache@v3
         id: cache
         with:
@@ -188,7 +178,17 @@ jobs:
             ${{github.workspace}}/build/vcpkg_installed
           key: vcpkg-${{ inputs.os }}-${{ steps.vars.outputs.vcpkg_sha_short }}
 
-      - name: CMake Configure
+      - uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          save: ${{ inputs.update-cache == true }}
+          key: gh-runner-${{ inputs.os }}-${{ inputs.build-type }}-${{ steps.vars.outputs.branch_label }}-${{ inputs.containerized == true && 'k8s' || 'bare-metal' }}-${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }}
+          restore-keys: |
+            gh-runner-${{ inputs.os }}-${{ inputs.build-type }}-${{ steps.vars.outputs.branch_label }}-${{ inputs.containerized == true && 'k8s' || 'bare-metal' }}-
+            gh-runner-${{ inputs.os }}-${{ inputs.build-type }}-${{ steps.vars.outputs.branch_label }}-
+            gh-runner-${{ inputs.os }}-${{ inputs.build-type }}-
+            gh-runner-${{ inputs.os }}-
+
+      - name: CMake Configure and Build
         shell: "bash"
         run: |
           mkdir -p ./build

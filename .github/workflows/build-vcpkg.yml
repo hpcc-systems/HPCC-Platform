@@ -131,6 +131,7 @@ jobs:
       os: macos-12
       single-package: true
       containerized: false
+      build-type: 'Release'
       cmake-configuration: '-DUSE_OPTIONAL=OFF -DCLIENTTOOLS_ONLY=ON -DUSE_AZURE=OFF -DUSE_CASSANDRA=OFF -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
     secrets: inherit
 
@@ -141,5 +142,6 @@ jobs:
       os: macos-11
       single-package: true
       containerized: false
+      build-type: 'Release'
       cmake-configuration: '-DUSE_OPTIONAL=OFF -DCLIENTTOOLS_ONLY=ON -DUSE_AZURE=OFF -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
     secrets: inherit

@@ -47,7 +47,7 @@ on:
         type: boolean
         description: 'Update Cache'
         required: false
-        default: false
+        default: true
       upload-package:
         type: boolean
         description: 'Upload Package as Asset'
@@ -90,6 +90,7 @@ jobs:
       - name: Calculate vars
         id: vars
         working-directory: ${{ github.workspace }}/HPCC-Platform/vcpkg
+        shell: "bash"
         run: |
           branch_label_1=${{ github.base_ref }}
           branch_label_2=$(echo ${{ github.ref }} | cut -d'/' -f3)
@@ -99,6 +100,7 @@ jobs:
           echo "docker_tag=$docker_build_label:$vcpkg_sha_short" >> $GITHUB_OUTPUT
 
       - name: Print vars
+        shell: "bash"
         run: |
           echo "${{ toJSON(steps.vars.outputs) }}"
 
@@ -111,14 +113,15 @@ jobs:
       - uses: hendrikmuhs/ccache-action@v1.2
         with:
           save: ${{ inputs.update-cache == true }}
-          key: ${{ inputs.os }}-${{ inputs.build-type }}-${{ steps.vars.outputs.branch_label }}-${{ inputs.containerized == true && 'k8s' || 'bare-metal' }}-${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }}
+          key: docker-${{ inputs.os }}-${{ inputs.build-type }}-${{ steps.vars.outputs.branch_label }}-${{ inputs.containerized == true && 'k8s' || 'bare-metal' }}-${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }}
           restore-keys: |
-            ${{ inputs.os }}-${{ inputs.build-type }}-${{ steps.vars.outputs.branch_label }}-${{ inputs.containerized == true && 'k8s' || 'bare-metal' }}-
-            ${{ inputs.os }}-${{ inputs.build-type }}-${{ steps.vars.outputs.branch_label }}-
-            ${{ inputs.os }}-${{ inputs.build-type }}-
-            ${{ inputs.os }}-
+            docker-${{ inputs.os }}-${{ inputs.build-type }}-${{ steps.vars.outputs.branch_label }}-${{ inputs.containerized == true && 'k8s' || 'bare-metal' }}-
+            docker-${{ inputs.os }}-${{ inputs.build-type }}-${{ steps.vars.outputs.branch_label }}-
+            docker-${{ inputs.os }}-${{ inputs.build-type }}-
+            docker-${{ inputs.os }}-
 
       - name: CMake Configure and Build
+        shell: "bash"
         run: |
           mkdir -p ${{ github.workspace }}/LN
           mkdir -p ${{ github.workspace }}/build
