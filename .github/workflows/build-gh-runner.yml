@@ -193,7 +193,7 @@ jobs:
         run: |
           mkdir -p ./build
           cmake ${{ !contains(inputs.os, 'windows') && '-G Ninja' || '' }} -S ./${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }} -B ./build -DCMAKE_BUILD_TYPE=${{ inputs.build-type }} -DCONTAINERIZED=${{ inputs.containerized == true && 'ON' || 'OFF' }} -DCPACK_STRIP_FILES=${{ inputs.strip-files == true && 'ON' || 'OFF' }} ${{ inputs.cmake-configuration }} ${{ inputs.cmake-configuration-ex }}
-          cmake --build ./build --parallel ${{ inputs.upload-package == true && '--target package' || ''}}
+          cmake --build ./build ${{ contains(inputs.os, 'windows') && '--config Release' || ''}} --parallel ${{ inputs.upload-package == true && '--target package' || ''}}
 
       - name: Upload Package
         if: ${{ inputs.upload-package == true }}
