@@ -41,7 +41,7 @@ on:
         type: string
         description: 'CMake Configuration'
         required: false
-        default: '-DCPACK_THREADS=0 -DUSE_OPTIONAL=OFF -DSUPPRESS_V8EMBED=ON -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache'
+        default: '-DCPACK_THREADS=0 -DUSE_OPTIONAL=OFF -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache'
       cmake-configuration-ex:
         type: string
         description: 'CMake Configuration Extra'
@@ -192,7 +192,7 @@ jobs:
         shell: "bash"
         run: |
           mkdir -p ./build
-          cmake -G Ninja -S ./${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }} -B ./build -DCMAKE_BUILD_TYPE=${{ inputs.build-type }} -DCONTAINERIZED=${{ inputs.containerized == true && 'ON' || 'OFF' }} -DCPACK_STRIP_FILES=${{ inputs.strip-files == true && 'ON' || 'OFF' }} ${{ inputs.cmake-configuration }} ${{ inputs.cmake-configuration-ex }} ${{ inputs.single-package == true && '-DINCLUDE_PLUGINS=ON' || '-D$plugin=ON' }}
+          cmake ${{ !contains(inputs.os, 'windows') && '-G Ninja' || '' }} -S ./${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }} -B ./build -DCMAKE_BUILD_TYPE=${{ inputs.build-type }} -DCONTAINERIZED=${{ inputs.containerized == true && 'ON' || 'OFF' }} -DCPACK_STRIP_FILES=${{ inputs.strip-files == true && 'ON' || 'OFF' }} ${{ inputs.cmake-configuration }} ${{ inputs.cmake-configuration-ex }} ${{ inputs.single-package == true && '-DINCLUDE_PLUGINS=ON' || '-D$plugin=ON' }}
           cmake --build ./build --parallel ${{ inputs.upload-package == true && '--target package' || ''}}
 
       - name: Upload Package
