@@ -2093,6 +2093,22 @@ extern TPWRAPPER_API void initContainerRoxieTargets(MapStringToMyClass<ISmartSoc
     }
 }
 
+extern TPWRAPPER_API void getRoxieTargetsSupportingPublishedQueries(StringArray& names)
+{
+    CConstWUClusterInfoArray clusters;
+    getEnvironmentClusterInfo(clusters);
+    ForEachItemIn(i, clusters)
+    {
+        IConstWUClusterInfo& clusterInfo = clusters.item(i);
+        if (clusterInfo.canPublishQueries())
+        {
+            SCMStringBuffer name;
+            clusterInfo.getName(name);
+            names.append(name.str());
+        }
+    }
+}
+
 extern TPWRAPPER_API unsigned getThorClusterNames(StringArray& targetNames, StringArray& queueNames)
 {
     StringArray thorNames, groupNames;
