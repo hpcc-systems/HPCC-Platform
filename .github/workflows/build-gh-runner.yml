@@ -1,4 +1,4 @@
-name: Build Package (Docker)
+name: Build Package (gh-runner)
 
 on:
   workflow_call:
@@ -64,12 +64,60 @@ on:
 
 jobs:
 
-  build-docker:
-    runs-on: ubuntu-22.04
+  build-gh-runner:
+    runs-on: ${{ inputs.os }}
     steps:
-      - name: Free additional disk space (remove Android SDK + Tools)
+      - name: Ubuntu Dependencies
+        if: ${{ contains(inputs.os, 'ubuntu') }}
+        shell: "bash"
         run: |
-          sudo rm -rf /usr/local/lib/android
+          sudo apt-get update -y
+          sudo apt-get install -yq --no-install-recommends \
+          apt-transport-https \
+          autoconf \
+          autoconf-archive \
+          automake \
+          autotools-dev \
+          binutils-dev \
+          bison \
+          build-essential \
+          ca-certificates \
+          curl \
+          dirmngr \
+          flex \
+          git \
+          gnupg \
+          groff-base \
+          libtool \
+          ninja-build \
+          pkg-config \
+          software-properties-common \
+          tar \
+          unzip \
+          uuid-dev \
+          xmlstarlet \
+          zip
+
+      - name: Ubuntu Mono Dependencies
+        if: ${{ inputs.os == 'ubuntu-22.04' }}
+        shell: "bash"
+        run: |
+          sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
+          echo "deb https://download.mono-project.com/repo/ubuntu stable-focal main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list
+          sudo apt-get update -y
+          sudo apt-get -yq install -f mono-complete
+
+      - name: OSX Dependencies
+        if: ${{ contains(inputs.os, 'macos') }}
+        shell: "bash"
+        run: |
+          brew install bison flex pkg-config autoconf autoconf-archive automake libtool cmake openjdk@11 ninja
+
+      - name: "Remove builtin vcpkg (old)"
+        working-directory: .
+        shell: "bash"
+        run: |
+          ${{ contains(inputs.os, 'windows') && '' || 'sudo' }} rm -rf "$VCPKG_INSTALLATION_ROOT"
 
       - name: Checkout HPCC-Platform
         uses: actions/checkout@v3
@@ -87,6 +135,22 @@ jobs:
           submodules: recursive
           path: ${{ github.workspace }}/LN
 
+      - name: "vcpkg Bootstrap"
+        shell: "bash"
+        run: |
+          ./HPCC-Platform/vcpkg/bootstrap-vcpkg.sh
+
+      - name: "Setup NuGet credentials"
+        shell: "bash"
+        run: |
+          ${{ contains(inputs.os, 'windows') && '' || 'mono' }} `./HPCC-Platform/vcpkg/vcpkg fetch nuget | tail -n 1` \
+            sources add \
+            -name "GitHub" \
+            -source "https://nuget.pkg.github.com/hpcc-systems/index.json" \
+            -storepasswordincleartext \
+            -username "${{ github.actor }}" \
+            -password "${{ secrets.GITHUB_TOKEN }}"
+
       - name: Calculate vars
         id: vars
         working-directory: ${{ github.workspace }}/HPCC-Platform/vcpkg
@@ -96,17 +160,12 @@ jobs:
           echo "branch_label=${branch_label_1:-$branch_label_2}" >> $GITHUB_OUTPUT
           docker_build_label=hpccsystems/platform-build-base-${{ inputs.os }}
           vcpkg_sha_short=$(git rev-parse --short=8 HEAD)
+          echo "vcpkg_sha_short=$vcpkg_sha_short" >> $GITHUB_OUTPUT
           echo "docker_tag=$docker_build_label:$vcpkg_sha_short" >> $GITHUB_OUTPUT
 
       - name: Print vars
         run: |
           echo "${{ toJSON(steps.vars.outputs) }}"
-
-      - uses: docker/setup-buildx-action@v2
-
-      - name: Pull Build Image
-        run: |
-          docker pull ${{ steps.vars.outputs.docker_tag }} || true
 
       - uses: hendrikmuhs/ccache-action@v1.2
         with:
@@ -118,25 +177,19 @@ jobs:
             ${{ inputs.os }}-${{ inputs.build-type }}-
             ${{ inputs.os }}-
 
-      - name: CMake Configure and Build
+      - uses: actions/cache@v3
+        id: cache
+        with:
+          path: |
+            ${{github.workspace}}/build/vcpkg_installed
+          key: vcpkg-${{ steps.vars.outputs.vcpkg_sha_short }}
+
+      - name: CMake Configure
+        shell: "bash"
         run: |
-          mkdir -p ${{ github.workspace }}/LN
-          mkdir -p ${{ github.workspace }}/build
-          mkdir -p ${{ github.workspace }}/.ccache
-          declare -a plugins
-          plugins=(${{ inputs.single-package == true && '"PLATFORM"' || '"PLATFORM" "CASSANDRAEMBED" "COUCHBASEEMBED" "ECLBLAS" "H3" "JAVAEMBED" "KAFKA" "MEMCACHED" "MONGODBEMBED" "MYSQLEMBED" "NLP" "PARQUETEMBED" "REDIS" "REMBED" "SQLITE3EMBED" "SQS"' }})
-          for plugin in "${plugins[@]}"; do
-            sudo rm -f ${{ github.workspace }}/build/CMakeCache.txt
-            sudo rm -rf ${{ github.workspace }}/build/CMakeFiles
-            docker run --rm \
-              --mount source="${{ github.workspace }}/HPCC-Platform",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=delegated \
-              --mount source="${{ github.workspace }}/LN",target=/hpcc-dev/LN,type=bind,consistency=delegated \
-              --mount source="${{ github.workspace }}/build",target=/hpcc-dev/build,type=bind,consistency=delegated \
-              --mount source="${{ github.workspace }}/.ccache",target=/root/.ccache,type=bind,consistency=delegated \
-              ${{ steps.vars.outputs.docker_tag }} "\
-              cmake -G Ninja -S /hpcc-dev/${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }} -B /hpcc-dev/build -DHPCC_SOURCE_DIR=/hpcc-dev/HPCC-Platform -DCMAKE_BUILD_TYPE=${{ inputs.build-type }} -DCONTAINERIZED=${{ inputs.containerized == true && 'ON' || 'OFF' }} -DCPACK_STRIP_FILES=${{ inputs.strip-files == true && 'ON' || 'OFF' }} ${{ inputs.cmake-configuration }} ${{ inputs.cmake-configuration-ex }} ${{ inputs.single-package == true && '-DINCLUDE_PLUGINS=ON' || '-D$plugin=ON' }} && \
-              cmake --build /hpcc-dev/build --parallel ${{ inputs.upload-package == true && '--target package' || ''}}" 
-          done
+          mkdir -p ./build
+          cmake -G Ninja -S ./${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }} -B ./build -DCMAKE_BUILD_TYPE=${{ inputs.build-type }} -DCONTAINERIZED=${{ inputs.containerized == true && 'ON' || 'OFF' }} -DCPACK_STRIP_FILES=${{ inputs.strip-files == true && 'ON' || 'OFF' }} ${{ inputs.cmake-configuration }} ${{ inputs.cmake-configuration-ex }} ${{ inputs.single-package == true && '-DINCLUDE_PLUGINS=ON' || '-D$plugin=ON' }} && \
+          cmake --build ./build --parallel ${{ inputs.upload-package == true && '--target package' || ''}}" 
 
       - name: Upload Package
         if: ${{ inputs.upload-package == true }}
