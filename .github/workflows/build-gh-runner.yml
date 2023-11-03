@@ -47,7 +47,7 @@ on:
         type: boolean
         description: 'Update Cache'
         required: false
-        default: false
+        default: true
       upload-package:
         type: boolean
         description: 'Upload Package as Asset'
