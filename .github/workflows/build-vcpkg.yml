@@ -97,7 +97,7 @@ jobs:
 
   build-docker-ubuntu-20_04:
     needs: preamble
-    if: ${{ contains('workflow_dispatch,schedule', github.event_name) && needs.preamble.outputs.platform }}
+    if: ${{ contains('workflow_dispatch,schedule,push', github.event_name) && needs.preamble.outputs.platform }}
     uses: ./.github/workflows/build-docker.yml
     with:
       os: ubuntu-20.04
@@ -107,7 +107,7 @@ jobs:
 
   build-docker-centos-8:
     needs: preamble
-    if: ${{ contains('workflow_dispatch,schedule', github.event_name) && needs.preamble.outputs.platform }}
+    if: ${{ contains('workflow_dispatch,schedule,push', github.event_name) && needs.preamble.outputs.platform }}
     uses: ./.github/workflows/build-docker.yml
     with:
       os: centos-8
@@ -128,7 +128,7 @@ jobs:
 
   build-docker-amazonlinux:
     needs: preamble
-    if: ${{ contains('workflow_dispatch,schedule', github.event_name) && needs.preamble.outputs.platform }}
+    if: ${{ contains('workflow_dispatch,schedule,push', github.event_name) && needs.preamble.outputs.platform }}
     uses: ./.github/workflows/build-docker.yml
     with:
       os: amazonlinux
