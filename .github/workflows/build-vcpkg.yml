@@ -85,12 +85,14 @@ jobs:
 
   build-docker-ubuntu-22_04:
     needs: preamble
-    if: ${{ contains('workflow_dispatch,schedule', github.event_name) && needs.preamble.outputs.platform }}
+    if: ${{ contains('workflow_dispatch,pull_request,push', github.event_name) && needs.preamble.outputs.platform }}
     uses: ./.github/workflows/build-docker.yml
     with:
       os: ubuntu-22.04
       single-package: true
       containerized: false
+      upload-package: true
+      asset-name: 'ubuntu-22_04.deb'
     secrets: inherit
 
   build-docker-ubuntu-20_04:
@@ -119,8 +121,8 @@ jobs:
     uses: ./.github/workflows/build-docker.yml
     with:
       os: centos-7
-      single-package: true
-      containerized: true
+      single-package: false
+      containerized: false
       cmake-configuration-ex: "-DVCPKG_TARGET_TRIPLET=x64-centos-7-dynamic"
     secrets: inherit
 

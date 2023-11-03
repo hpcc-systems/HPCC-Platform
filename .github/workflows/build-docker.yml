@@ -6,19 +6,24 @@ on:
       os:
         type: string
         description: 'Operating System'
-        required: true
+        required: false
         default: 'ubuntu-22.04'
-      internal:
+      ln:
         type: boolean
         description: 'Internal Build'
         required: false
         default: false
+      single-package:
+        type: boolean
+        description: 'Single Package'
+        required: false
+        default: true
       containerized:
         type: boolean
         description: 'Containerized Build'
         required: false
         default: false
-      single-package:
+      strip-files:
         type: boolean
         description: 'Single Package'
         required: false
@@ -27,10 +32,15 @@ on:
         type: string
         description: 'CMake Configuration'
         required: false
-        default: '-DCMAKE_BUILD_TYPE=RelWithDebInfo -DVCPKG_FILES_DIR=/hpcc-dev -DCPACK_THREADS=0 -DUSE_OPTIONAL=OFF -DCPACK_STRIP_FILES=ON -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache'
+        default: '-DCMAKE_BUILD_TYPE=RelWithDebInfo -DVCPKG_FILES_DIR=/hpcc-dev -DCPACK_THREADS=0 -DUSE_OPTIONAL=OFF -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache'
       cmake-configuration-ex:
         type: string
         description: 'CMake Configuration Extra'
+        required: false
+        default: ''
+      save-package:
+        type: string
+        description: 'Save Package as Asset'
         required: false
         default: ''
     secrets:
@@ -53,7 +63,7 @@ jobs:
           path: ${{ github.workspace }}/HPCC-Platform
 
       - name: Checkout LN
-        if: ${{ inputs.internal == true }}
+        if: ${{ inputs.ln == true }}
         uses: actions/checkout@v3
         with:
           repository: ${{ github.repository_owner }}/LN
@@ -69,16 +79,10 @@ jobs:
           vcpkg_sha_short=$(git rev-parse --short=8 HEAD)
           echo "vcpkg_sha_short=$vcpkg_sha_short" >> $GITHUB_OUTPUT
           docker_build_label=hpccsystems/platform-build-${{ inputs.os }}
-          echo "docker_build_label=$docker_build_label" >> $GITHUB_OUTPUT
-          echo "docker_tag=$docker_build_label:$vcpkg_sha_short" >> $GITHUB_OUTPUT
           community_ref=${{ github.ref }}
-          echo "community_ref=$community_ref" >> $GITHUB_OUTPUT
-          echo "internal_ref=${{ github.base_ref }}" >> $GITHUB_OUTPUT
           community_tag=$(echo $community_ref | cut -d'/' -f3)
-          echo "community_tag=$community_tag" >> $GITHUB_OUTPUT
-          echo "internal_tag=$(echo $community_tag | sed 's/community/internal/')" >> $GITHUB_OUTPUT
           candidate_base_branch=${{ github.base_ref }}
-          echo "candidate_base_branch=$candidate_base_branch" >> $GITHUB_OUTPUT
+          echo "docker_tag=$docker_build_label:$vcpkg_sha_short" >> $GITHUB_OUTPUT
           echo "docker_tag_candidate_base=$docker_build_label:${candidate_base_branch:-$community_tag}" >> $GITHUB_OUTPUT
 
       - name: Print vars
@@ -112,7 +116,7 @@ jobs:
 
       - uses: hendrikmuhs/ccache-action@v1.2
         with:
-          key: ${{ inputs.os }}-${{ inputs.containerized == true && 'k8s' || 'bare-metal' }}-${{ inputs.internal == true && 'LN' || 'HPCC-Platform' }}
+          key: ${{ inputs.os }}-${{ inputs.containerized == true && 'k8s' || 'bare-metal' }}-${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }}
           restore-keys:
             ${{ inputs.os }}-${{ inputs.containerized == true && 'k8s' || 'bare-metal' }}-
             ${{ inputs.os }}-
@@ -137,14 +141,23 @@ jobs:
               --mount source="${{ github.workspace }}/build",target=/hpcc-dev/build,type=bind,consistency=cached \
               --mount source="${{ github.workspace }}/.ccache",target=/root/.ccache,type=bind,consistency=cached \
               ${{ steps.vars.outputs.docker_tag_candidate_base }} "\
-              cmake -G Ninja -S /hpcc-dev/${{ inputs.internal == true && 'LN' || 'HPCC-Platform' }} -B /hpcc-dev/build -DHPCC_SOURCE_DIR=/hpcc-dev/HPCC-Platform -DCONTAINERIZED=${{ inputs.containerized == true && 'ON' || 'OFF' }} ${{ inputs.cmake-configuration }} ${{ inputs.cmake-configuration-ex }} -D$plugin=ON && \
-              cmake --build /hpcc-dev/build --parallel --target package" 
+              cmake -G Ninja -S /hpcc-dev/${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }} -B /hpcc-dev/build -DHPCC_SOURCE_DIR=/hpcc-dev/HPCC-Platform -DCONTAINERIZED=${{ inputs.containerized == true && 'ON' || 'OFF' }} -DCPACK_STRIP_FILES=${{ inputs.strip-files == true && 'ON' || 'OFF' }} ${{ inputs.cmake-configuration }} ${{ inputs.cmake-configuration-ex }} -D$plugin=ON && \
+              cmake --build /hpcc-dev/build --parallel ${{ inputs.save-package != '' && '--target package'}}" 
           done
+
+      - name: Upload package
+        if: ${{ inputs.save-package != '' }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ inputs.save-package }}
+          path: |
+            ${{ github.workspace }}/build/*.deb
+            ${{ github.workspace }}/build/*.rpm
+          if-no-files-found: error
 
       - name: Upload error logs
         if: ${{ failure() || cancelled() }}
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ inputs.os }}-${{ inputs.internal == true && 'LN' || 'HPCC-Platform' }}-logs
+          name: ${{ inputs.os }}-${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }}-logs
           path: ${{ github.workspace }}/build/**/*.log
-
