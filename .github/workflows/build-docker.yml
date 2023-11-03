@@ -38,11 +38,16 @@ on:
         description: 'CMake Configuration Extra'
         required: false
         default: ''
-      save-package:
-        type: string
-        description: 'Save Package as Asset'
+      upload-package:
+        type: boolean
+        description: 'Upload Package as Asset'
         required: false
-        default: ''
+        default: false
+      asset-name:
+        type: string
+        description: 'Asset Name (if upload-package is true)'
+        required: false
+        default: 'build-docker-package'
     secrets:
       LNB_TOKEN:
         required: false
@@ -142,14 +147,14 @@ jobs:
               --mount source="${{ github.workspace }}/.ccache",target=/root/.ccache,type=bind,consistency=cached \
               ${{ steps.vars.outputs.docker_tag_candidate_base }} "\
               cmake -G Ninja -S /hpcc-dev/${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }} -B /hpcc-dev/build -DHPCC_SOURCE_DIR=/hpcc-dev/HPCC-Platform -DCONTAINERIZED=${{ inputs.containerized == true && 'ON' || 'OFF' }} -DCPACK_STRIP_FILES=${{ inputs.strip-files == true && 'ON' || 'OFF' }} ${{ inputs.cmake-configuration }} ${{ inputs.cmake-configuration-ex }} -D$plugin=ON && \
-              cmake --build /hpcc-dev/build --parallel ${{ inputs.save-package != '' && '--target package'}}" 
+              cmake --build /hpcc-dev/build --parallel ${{ inputs.upload-package == true && '--target package'}}" 
           done
 
       - name: Upload package
-        if: ${{ inputs.save-package != '' }}
+        if: ${{ inputs.upload-package == true }}
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ inputs.save-package }}
+          name: ${{ inputs.asset-name }}
           path: |
             ${{ github.workspace }}/build/*.deb
             ${{ github.workspace }}/build/*.rpm
