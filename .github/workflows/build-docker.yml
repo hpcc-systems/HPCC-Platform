@@ -18,6 +18,11 @@ on:
         description: 'Single Package'
         required: false
         default: true
+      build-type:
+        type: string
+        description: 'CMake Build Type'
+        required: false
+        default: 'RelWithDebInfo'
       containerized:
         type: boolean
         description: 'Containerized Build'
@@ -32,7 +37,7 @@ on:
         type: string
         description: 'CMake Configuration'
         required: false
-        default: '-DCMAKE_BUILD_TYPE=RelWithDebInfo -DVCPKG_FILES_DIR=/hpcc-dev -DCPACK_THREADS=0 -DUSE_OPTIONAL=OFF -DSUPPRESS_V8EMBED=ON -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache'
+        default: '-DVCPKG_FILES_DIR=/hpcc-dev -DCPACK_THREADS=0 -DUSE_OPTIONAL=OFF -DSUPPRESS_V8EMBED=ON -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache'
       cmake-configuration-ex:
         type: string
         description: 'CMake Configuration Extra'
@@ -93,14 +98,17 @@ jobs:
         id: buildx
         uses: docker/setup-buildx-action@v2
 
-      - name: Pull previous images
-        run: |
-          docker pull ${{ steps.vars.outputs.docker_tag }} || true
+      # - name: Pull previous images
+      #   run: |
+      #     docker pull ${{ steps.vars.outputs.docker_tag }} || true
 
       - uses: hendrikmuhs/ccache-action@v1.2
         with:
-          key: ${{ inputs.os }}-${{ inputs.containerized == true && 'k8s' || 'bare-metal' }}-${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }}
+          key: ${{ inputs.os }}-${{ inputs.build-type }}-${{ inputs.containerized == true && 'k8s' || 'bare-metal' }}-${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }}
           restore-keys:
+            ${{ inputs.os }}-${{ inputs.build-type }}-${{ inputs.containerized == true && 'k8s' || 'bare-metal' }}-
+            ${{ inputs.os }}-${{ inputs.build-type }}-
+            ${{ inputs.os }}-${{ inputs.containerized == true && 'k8s' || 'bare-metal' }}-${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }}
             ${{ inputs.os }}-${{ inputs.containerized == true && 'k8s' || 'bare-metal' }}-
             ${{ inputs.os }}-
 
@@ -120,7 +128,7 @@ jobs:
               --mount source="${{ github.workspace }}/build",target=/hpcc-dev/build,type=bind,consistency=cached \
               --mount source="${{ github.workspace }}/.ccache",target=/root/.ccache,type=bind,consistency=cached \
               ${{ steps.vars.outputs.docker_tag }} "\
-              cmake -G Ninja -S /hpcc-dev/${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }} -B /hpcc-dev/build -DHPCC_SOURCE_DIR=/hpcc-dev/HPCC-Platform -DCONTAINERIZED=${{ inputs.containerized == true && 'ON' || 'OFF' }} -DCPACK_STRIP_FILES=${{ inputs.strip-files == true && 'ON' || 'OFF' }} ${{ inputs.cmake-configuration }} ${{ inputs.cmake-configuration-ex }} ${{ inputs.single-package == true && '-DINCLUDE_PLUGINS=ON' || '-D$plugin=ON' }} && \
+              cmake -G Ninja -S /hpcc-dev/${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }} -B /hpcc-dev/build -DHPCC_SOURCE_DIR=/hpcc-dev/HPCC-Platform -DCMAKE_BUILD_TYPE=${{ inputs.build-type }} -DCONTAINERIZED=${{ inputs.containerized == true && 'ON' || 'OFF' }} -DCPACK_STRIP_FILES=${{ inputs.strip-files == true && 'ON' || 'OFF' }} ${{ inputs.cmake-configuration }} ${{ inputs.cmake-configuration-ex }} ${{ inputs.single-package == true && '-DINCLUDE_PLUGINS=ON' || '-D$plugin=ON' }} && \
               cmake --build /hpcc-dev/build --parallel ${{ inputs.upload-package == true && '--target package' || ''}}" 
           done
 
