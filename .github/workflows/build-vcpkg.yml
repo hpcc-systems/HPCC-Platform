@@ -111,7 +111,7 @@ jobs:
       os: windows-2022
       single-package: true
       containerized: false
-      cmake-configuration: '-T host=x64 -A x64 -DUSE_OPTIONAL=OFF -DCLIENTTOOLS_ONLY=ON -DUSE_AZURE=OFF -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
+      cmake-configuration: '-T host=x64 -A x64 -DUSE_OPTIONAL=OFF -DCLIENTTOOLS_ONLY=ON -DUSE_AZURE=OFF -DUSE_CASSANDRA=OFF -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
     secrets: inherit
 
   build-gh-runner-windows-2019:
@@ -131,7 +131,7 @@ jobs:
       os: macos-12
       single-package: true
       containerized: false
-      cmake-configuration: '-DUSE_OPTIONAL=OFF -DCLIENTTOOLS_ONLY=ON -DUSE_AZURE=OFF -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
+      cmake-configuration: '-DUSE_OPTIONAL=OFF -DCLIENTTOOLS_ONLY=ON -DUSE_AZURE=OFF -DUSE_CASSANDRA=OFF -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
     secrets: inherit
 
   build-gh-runner-macos-11:
