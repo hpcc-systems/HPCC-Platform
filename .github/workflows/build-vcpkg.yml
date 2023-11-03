@@ -137,7 +137,29 @@ jobs:
       cmake-configuration-ex: "-DVCPKG_TARGET_TRIPLET=x64-amazonlinux-dynamic"
     secrets: inherit
 
-    # build-docker:
+  build-gh-runner-ubuntu-22_04:
+    needs: preamble
+    if: ${{ contains('workflow_dispatch,pull_request,push', github.event_name) && needs.preamble.outputs.platform }}
+    uses: ./.github/workflows/build-gh-runner.yml
+    with:
+      os: ubuntu-22.04
+      single-package: true
+      containerized: false
+      upload-package: true
+      asset-name: 'ubuntu-22_04.deb'
+    secrets: inherit
+  
+  build-gh-runner-ubuntu-20_04:
+    needs: preamble
+    if: ${{ contains('workflow_dispatch,schedule,push', github.event_name) && needs.preamble.outputs.platform }}
+    uses: ./.github/workflows/build-gh-runner.yml
+    with:
+      os: ubuntu-20.04
+      single-package: true
+      containerized: false
+    secrets: inherit
+
+      # build-docker:
   #   name: Build Docker
   #   needs: preamble
   #   runs-on: ubuntu-22.04

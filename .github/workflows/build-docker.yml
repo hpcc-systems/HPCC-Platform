@@ -43,6 +43,11 @@ on:
         description: 'CMake Configuration Extra'
         required: false
         default: ''
+      update-cache:
+        type: boolean
+        description: 'Update Cache'
+        required: false
+        default: false
       upload-package:
         type: boolean
         description: 'Upload Package as Asset'
@@ -105,6 +110,7 @@ jobs:
 
       - uses: hendrikmuhs/ccache-action@v1.2
         with:
+          save: ${{ inputs.update-cache == true }}
           key: ${{ inputs.os }}-${{ inputs.build-type }}-${{ steps.vars.branch_label }}-${{ inputs.containerized == true && 'k8s' || 'bare-metal' }}-${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }}
           restore-keys: |
             ${{ inputs.os }}-${{ inputs.build-type }}-${{ steps.vars.branch_label }}-${{ inputs.containerized == true && 'k8s' || 'bare-metal' }}-
@@ -123,10 +129,10 @@ jobs:
             sudo rm -f ${{ github.workspace }}/build/CMakeCache.txt
             sudo rm -rf ${{ github.workspace }}/build/CMakeFiles
             docker run --rm \
-              --mount source="${{ github.workspace }}/HPCC-Platform",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached \
-              --mount source="${{ github.workspace }}/LN",target=/hpcc-dev/LN,type=bind,consistency=cached \
-              --mount source="${{ github.workspace }}/build",target=/hpcc-dev/build,type=bind,consistency=cached \
-              --mount source="${{ github.workspace }}/.ccache",target=/root/.ccache,type=bind,consistency=cached \
+              --mount source="${{ github.workspace }}/HPCC-Platform",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=delegated \
+              --mount source="${{ github.workspace }}/LN",target=/hpcc-dev/LN,type=bind,consistency=delegated \
+              --mount source="${{ github.workspace }}/build",target=/hpcc-dev/build,type=bind,consistency=delegated \
+              --mount source="${{ github.workspace }}/.ccache",target=/root/.ccache,type=bind,consistency=delegated \
               ${{ steps.vars.outputs.docker_tag }} "\
               cmake -G Ninja -S /hpcc-dev/${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }} -B /hpcc-dev/build -DHPCC_SOURCE_DIR=/hpcc-dev/HPCC-Platform -DCMAKE_BUILD_TYPE=${{ inputs.build-type }} -DCONTAINERIZED=${{ inputs.containerized == true && 'ON' || 'OFF' }} -DCPACK_STRIP_FILES=${{ inputs.strip-files == true && 'ON' || 'OFF' }} ${{ inputs.cmake-configuration }} ${{ inputs.cmake-configuration-ex }} ${{ inputs.single-package == true && '-DINCLUDE_PLUGINS=ON' || '-D$plugin=ON' }} && \
               cmake --build /hpcc-dev/build --parallel ${{ inputs.upload-package == true && '--target package' || ''}}" 
