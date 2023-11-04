@@ -1,0 +1,122 @@
+name: Smoketest Package (gh-runner)
+
+env:
+  VCPKG_BINARY_SOURCES: "clear;nuget,GitHub,read"
+  VCPKG_NUGET_REPOSITORY: "https://github.com/hpcc-systems/vcpkg"
+
+on:
+  workflow_call:
+    inputs:
+      os:
+        type: string
+        description: 'Operating System'
+        required: false
+        default: 'ubuntu-22.04'
+      asset-name:
+        type: string
+        description: 'Asset Name'
+        required: false
+        default: 'build-docker-package'
+      dependencies:
+        type: string
+        description: 'Dependencies'
+        required: false
+        default: 'bison flex build-essential binutils-dev curl lsb-release libcppunit-dev python3-dev default-jdk r-base-dev r-cran-rcpp r-cran-rinside r-cran-inline pkg-config libtool autotools-dev automake git cmake xmlstarlet'
+
+jobs:
+
+  smoketest-gh-runner:
+    runs-on: ${{ inputs.os }}
+    strategy:
+        fail-fast: true
+        matrix:
+          engine: ['hthor', 'thor', 'roxie']
+          match:
+          - pattern: '[a-d]*.ecl'
+          - pattern: '[e-h]*.ecl'
+          - pattern: '[i-l]*.ecl'
+          - pattern: '[m-q]*.ecl'
+          - pattern: '[r-u]*.ecl'
+            exclude: teststdlibrary.ecl
+          - pattern: '[v-z]*.ecl'
+          include:
+          - engine: 'hthor'
+            match:
+              pattern: teststdlibrary.ecl
+          - engine: 'thor'
+            match:
+              pattern: teststdlibrary.ecl
+          - engine: 'roxie'
+            match:
+              pattern: teststdlibrary.ecl
+
+    steps:
+
+      - name: Download Package
+        uses: actions/download-artifact@v3
+
+      - name: vars
+        id: vars
+        run: |
+            echo ::set-output name=matrix-setname::$(echo -n ${{ matrix.match.pattern }} | tr -c "[:alnum:]" _)
+
+      - name: Install Package
+        shell: "bash"
+        run: |
+            sudo apt-get update
+            sudo apt-get install -y ${{ inputs.dependencies }}
+            sudo apt-get install -y gdb
+
+            curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+            sudo apt-get install -y nodejs
+
+            sudo apt-get install -y -f ./${{ inputs.asset-name }}
+            chown -R $USER:$USER /opt/HPCCSystems
+            chmod +x ./${{ inputs.asset-name }}-support-files/*
+            cp ./${{ inputs.asset-name }}-support-files/* /opt/HPCCSystems/testing/regress
+
+            echo "node.js version = $(node --version), npm version = $(npm --version), release = $(lsb_release -sc)"
+
+      - name: Start HPCC-Platform
+        shell: "bash"
+        run: |
+          sudo /etc/init.d/hpcc-init start
+
+      - name: Run Tests
+        shell: "bash"
+        run: |
+            cd /opt/HPCCSystems/testing/regress
+
+            # todo:  run once before matrix
+            timeoutcmd $((8 * 60)) \
+                ./ecl-test setup --preAbort 'smoketest-preabort.sh' --pq 2 --generateStackTrace
+            grep Failure: ./log/setup_*.log
+            if [[ "$(grep -ohP '(?<=^Failure: )[0-9]+$' ./log/setup_*.log | awk '{s+=$1} END {print s}')" -gt 0 ]]; then exit 1; fi
+
+            (cd ecl; ls ${{ matrix.match.pattern }}) > matches.tmp
+            echo queries are:
+            cat matches.tmp
+            if [[ -z "${{ matrix.match.exclude }}" ]]
+            then
+              queries="$(cat matches.tmp | tr '\n' ' ')"
+            else
+              queries="$(cd ecl; ls ${{ matrix.match.exclude }} | grep -v -f - ../matches.tmp | tr '\n' ' ')"
+            fi
+            echo queries after exclude: ${queries}
+
+            # force regression suite to timeout after 28 minutes, so it captures ZAP report of any inflight hung queries
+            timeoutcmd $((28 * 60)) \
+            ./ecl-test query --preAbort 'smoketest-preabort.sh' --pq 2 --target ${{ matrix.engine }} --excludeclass python2,embedded-r,embedded-js,3rdpartyservice,mongodb --generateStackTrace ${queries}
+            grep Failure: ./log/${{ matrix.engine }}.*.log
+            if [[ "$(grep -oP '(?<=^Failure: )[0-9]+$' ./log/${{ matrix.engine }}.*.log)" -gt 0 ]]; then exit 1; fi
+
+      - name: regression-run-logs-artifact
+        if: ${{ failure() || cancelled() }}
+        uses: actions/upload-artifact@v3
+        with:
+            name: regression-run-logs-${{ matrix.engine }}-${{ steps.vars.outputs.matrix-setname }}
+            path: |
+                /var/log/HPCCSystems
+                /opt/HPCCSystems/testing/regress/log
+            if-no-files-found: error
+

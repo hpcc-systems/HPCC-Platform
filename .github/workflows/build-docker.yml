@@ -151,6 +151,16 @@ jobs:
             ${{ github.workspace }}/build/*.rpm
           if-no-files-found: error
 
+      - name: Upload Support Files
+        if: ${{ inputs.upload-package == true }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ inputs.asset-name }}-support-files
+          path: |
+            ${{ github.workspace }}/HPCC-Platform/.github/workflows/smoketest-preabort.sh
+            ${{ github.workspace }}/HPCC-Platform/.github/workflows/timeoutcmd
+          if-no-files-found: error
+
       - name: Upload Error Logs
         if: ${{ failure() || cancelled() }}
         uses: actions/upload-artifact@v3
