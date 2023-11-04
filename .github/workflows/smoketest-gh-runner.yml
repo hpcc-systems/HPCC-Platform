@@ -28,7 +28,7 @@ jobs:
   smoketest-gh-runner:
     runs-on: ${{ inputs.os }}
     strategy:
-        fail-fast: true
+        fail-fast: false
         matrix:
           engine: ['hthor', 'thor', 'roxie']
           match:

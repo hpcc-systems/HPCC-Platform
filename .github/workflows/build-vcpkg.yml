@@ -32,6 +32,7 @@ on:
         required: false
         default: false
 
+  # Do not include "push" in final version
   push:
 
   pull_request:
