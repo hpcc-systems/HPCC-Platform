@@ -26,6 +26,11 @@ on:
         description: 'Internal Build'
         required: false
         default: false
+      smoketest:
+        type: boolean
+        description: 'Run Smoketest'
+        required: false
+        default: false
 
   push:
 
@@ -52,9 +57,20 @@ jobs:
       os: ${{ inputs.os }}
       ln: ${{ inputs.ln }}
       upload-package: true
+      asset-name: 'deb-package'
+    secrets: inherit
+
+  test-workflow-dispatch:
+    if: ${{ contains('workflow_dispatch', github.event_name) && inputs.smoketest == true }}
+    needs: build-workflow-dispatch
+    uses: ./.github/workflows/smoketest-gh-runner.yml
+    with:
+      os: ${{ inputs.os }}
+      asset-name: 'deb-package'
+    secrets: inherit
 
   build-docker-ubuntu-23_10:
-    if: ${{ contains('workflow_dispatch,pull_request,push', github.event_name) }}
+    if: ${{ contains('pull_request,push', github.event_name) }}
     uses: ./.github/workflows/build-docker.yml
     with:
       os: ubuntu-23.10
@@ -63,7 +79,7 @@ jobs:
     secrets: inherit
 
   build-docker-ubuntu-22_04:
-    if: ${{ contains('workflow_dispatch,pull_request,push', github.event_name) }}
+    if: ${{ contains('pull_request,push', github.event_name) }}
     uses: ./.github/workflows/build-docker.yml
     with:
       os: ubuntu-22.04
@@ -74,7 +90,7 @@ jobs:
     secrets: inherit
 
   test-docker-ubuntu-22_04:
-    if: ${{ contains('workflow_dispatch,pull_request,push', github.event_name) }}
+    if: ${{ contains('pull_request,push', github.event_name) }}
     needs: build-docker-ubuntu-22_04
     uses: ./.github/workflows/smoketest-gh-runner.yml
     with:
@@ -83,7 +99,7 @@ jobs:
     secrets: inherit
 
   build-docker-ubuntu-20_04:
-    if: ${{ contains('workflow_dispatch,schedule,push', github.event_name) }}
+    if: ${{ contains('schedule,push', github.event_name) }}
     uses: ./.github/workflows/build-docker.yml
     with:
       os: ubuntu-20.04
@@ -92,7 +108,7 @@ jobs:
     secrets: inherit
 
   build-docker-centos-8:
-    if: ${{ contains('workflow_dispatch,schedule,push', github.event_name) }}
+    if: ${{ contains('schedule,push', github.event_name) }}
     uses: ./.github/workflows/build-docker.yml
     with:
       os: centos-8
@@ -101,7 +117,7 @@ jobs:
     secrets: inherit
 
   build-docker-centos-7:
-    if: ${{ contains('workflow_dispatch,pull_request,push', github.event_name) }}
+    if: ${{ contains('pull_request,push', github.event_name) }}
     uses: ./.github/workflows/build-docker.yml
     with:
       os: centos-7
@@ -111,7 +127,7 @@ jobs:
     secrets: inherit
 
   build-docker-amazonlinux:
-    if: ${{ contains('workflow_dispatch,schedule,push', github.event_name) }}
+    if: ${{ contains('schedule,push', github.event_name) }}
     uses: ./.github/workflows/build-docker.yml
     with:
       os: amazonlinux
@@ -121,7 +137,7 @@ jobs:
     secrets: inherit
 
   build-gh-runner-ubuntu-22_04:
-    if: ${{ contains('workflow_dispatch,pull_request,push', github.event_name) }}
+    if: ${{ contains('pull_request,push', github.event_name) }}
     uses: ./.github/workflows/build-gh-runner.yml
     with:
       os: ubuntu-22.04
@@ -131,7 +147,7 @@ jobs:
     secrets: inherit
   
   build-gh-runner-ubuntu-20_04:
-    if: ${{ contains('workflow_dispatch,schedule,push', github.event_name) }}
+    if: ${{ contains('schedule,push', github.event_name) }}
     uses: ./.github/workflows/build-gh-runner.yml
     with:
       os: ubuntu-20.04
@@ -140,7 +156,7 @@ jobs:
     secrets: inherit
 
   build-gh-runner-windows-2022:
-    if: ${{ contains('workflow_dispatch,schedule,push', github.event_name) }}
+    if: ${{ contains('schedule,push', github.event_name) }}
     uses: ./.github/workflows/build-gh-runner.yml
     with:
       os: windows-2022
@@ -150,7 +166,7 @@ jobs:
     secrets: inherit
 
   build-gh-runner-windows-2019:
-    if: ${{ contains('workflow_dispatch,schedule,push', github.event_name) }}
+    if: ${{ contains('schedule,push', github.event_name) }}
     uses: ./.github/workflows/build-gh-runner.yml
     with:
       os: windows-2019
@@ -160,7 +176,7 @@ jobs:
     secrets: inherit
 
   build-gh-runner-macos-12:
-    if: ${{ contains('workflow_dispatch,schedule,push', github.event_name) }}
+    if: ${{ contains('schedule,push', github.event_name) }}
     uses: ./.github/workflows/build-gh-runner.yml
     with:
       os: macos-12
@@ -171,7 +187,7 @@ jobs:
     secrets: inherit
 
   build-gh-runner-macos-11:
-    if: ${{ contains('workflow_dispatch,schedule,push', github.event_name) }}
+    if: ${{ contains('schedule,push', github.event_name) }}
     uses: ./.github/workflows/build-gh-runner.yml
     with:
       os: macos-11

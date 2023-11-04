@@ -56,11 +56,13 @@ jobs:
         uses: actions/download-artifact@v3
         with:
             name: ${{ inputs.asset-name }}
+            path: ${{ inputs.asset-name }}
 
       - name: Download Support Files
         uses: actions/download-artifact@v3
         with:
             name: ${{ inputs.asset-name }}-support-files
+            path: ${{ inputs.asset-name }}-support-files
 
       - name: vars
         id: vars
