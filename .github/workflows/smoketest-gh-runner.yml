@@ -94,8 +94,8 @@ jobs:
             # todo:  run once before matrix
             /opt/HPCCSystems/bin/timeoutcmd $((8 * 60)) \
                 ./ecl-test setup --preAbort '/opt/HPCCSystems/bin/smoketest-preabort.sh' --pq 2 --generateStackTrace
-            grep Failure: ./log/setup_*.log
-            if [[ "$(grep -ohP '(?<=^Failure: )[0-9]+$' ./log/setup_*.log | awk '{s+=$1} END {print s}')" -gt 0 ]]; then exit 1; fi
+            grep Failure: /home/runner/HPCCSystems-regression/log/setup_*.log
+            if [[ "$(grep -ohP '(?<=^Failure: )[0-9]+$' /home/runner/HPCCSystems-regression/log/setup_*.log | awk '{s+=$1} END {print s}')" -gt 0 ]]; then exit 1; fi
 
             (cd ecl; ls ${{ matrix.match.pattern }}) > matches.tmp
             echo queries are:
@@ -111,8 +111,8 @@ jobs:
             # force regression suite to timeout after 28 minutes, so it captures ZAP report of any inflight hung queries
             /opt/HPCCSystems/bin/timeoutcmd $((28 * 60)) \
             ./ecl-test query --preAbort '/opt/HPCCSystems/bin/smoketest-preabort.sh' --pq 2 --target ${{ matrix.engine }} --excludeclass python2,embedded-r,embedded-js,3rdpartyservice,mongodb --generateStackTrace ${queries}
-            grep Failure: ./log/${{ matrix.engine }}.*.log
-            if [[ "$(grep -oP '(?<=^Failure: )[0-9]+$' ./log/${{ matrix.engine }}.*.log)" -gt 0 ]]; then exit 1; fi
+            grep Failure: /home/runner/HPCCSystems-regression/log/${{ matrix.engine }}.*.log
+            if [[ "$(grep -oP '(?<=^Failure: )[0-9]+$' /home/runner/HPCCSystems-regression/log/${{ matrix.engine }}.*.log)" -gt 0 ]]; then exit 1; fi
 
       - name: regression-run-logs-artifact
         if: ${{ failure() || cancelled() }}
@@ -121,6 +121,6 @@ jobs:
             name: regression-run-logs-${{ matrix.engine }}-${{ steps.vars.outputs.matrix-setname }}
             path: |
                 /var/log/HPCCSystems
-                /opt/HPCCSystems/testing/regress/log
+                /home/runner/HPCCSystems-regression
             if-no-files-found: error
 
