@@ -77,7 +77,7 @@ jobs:
         shell: "bash"
         run: |
             sudo apt-get install -y -f ./${{ inputs.asset-name }}/*.deb
-            chown -R $USER:$USER /opt/HPCCSystems
+            sudo chown -R $USER:$USER /opt/HPCCSystems
             chmod +x ./${{ inputs.asset-name }}-support-files/*
             cp ./${{ inputs.asset-name }}-support-files/* /opt/HPCCSystems/testing/regress
 
