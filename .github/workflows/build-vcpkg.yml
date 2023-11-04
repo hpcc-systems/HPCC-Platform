@@ -8,7 +8,27 @@ env:
 
 on:
   workflow_dispatch:
+    inputs:
+      os:
+        type: choice
+        options:
+          - 'ubuntu-23.10'
+          - 'ubuntu-22.04'
+          - 'ubuntu-20.04'
+          - 'centos-8'
+          - 'centos-7'
+          - 'amazonlinux'
+        description: 'Operating System'
+        required: false
+        default: 'ubuntu-22.04'
+      ln:
+        type: boolean
+        description: 'Internal Build'
+        required: false
+        default: false
+
   push:
+
   pull_request:
     branches:
       - "master"
@@ -25,6 +45,13 @@ on:
     - cron: "0 0 * * *"
 
 jobs:
+  build-workflow-dispatch:
+    if: ${{ contains('workflow_dispatch', github.event_name) }}
+    uses: ./.github/workflows/build-docker.yml
+    with:
+      os: ${{ inputs.os }}
+      ln: ${{ inputs.ln }}
+      upload-package: true
 
   build-docker-ubuntu-23_10:
     if: ${{ contains('workflow_dispatch,pull_request,push', github.event_name) }}

@@ -54,11 +54,18 @@ jobs:
 
       - name: Download Package
         uses: actions/download-artifact@v3
+        with:
+            name: ${{ inputs.asset-name }}
+
+      - name: Download Support Files
+        uses: actions/download-artifact@v3
+        with:
+            name: ${{ inputs.asset-name }}-support-files
 
       - name: vars
         id: vars
         run: |
-            echo ::set-output name=matrix-setname::$(echo -n ${{ matrix.match.pattern }} | tr -c "[:alnum:]" _)
+            echo "matrix-setname=$(echo -n ${{ matrix.match.pattern }} | tr -c '[:alnum:]' _)" >> $GITHUB_OUTPUT
 
       - name: Install Dependencies
         shell: "bash"
@@ -79,7 +86,7 @@ jobs:
             sudo chown -R $USER:$USER /opt/HPCCSystems
 
             chmod +x ./${{ inputs.asset-name }}-support-files/*
-            cp ./${{ inputs.asset-name }}-support-files/* /opt/HPCCSystems/bin
+            sudo cp ./${{ inputs.asset-name }}-support-files/* /opt/HPCCSystems/bin
 
       - name: Start HPCC-Platform
         shell: "bash"
