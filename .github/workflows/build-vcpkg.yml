@@ -43,7 +43,7 @@ jobs:
       single-package: true
       containerized: false
       upload-package: true
-      asset-name: 'ubuntu-22_04.deb'
+      asset-name: 'deb-package'
     secrets: inherit
 
   test-docker-ubuntu-22_04:
@@ -52,7 +52,7 @@ jobs:
     uses: ./.github/workflows/smoketest-gh-runner.yml
     with:
       os: ubuntu-22.04
-      asset-name: 'ubuntu-22_04.deb'
+      asset-name: 'deb-package'
     secrets: inherit
 
   build-docker-ubuntu-20_04:

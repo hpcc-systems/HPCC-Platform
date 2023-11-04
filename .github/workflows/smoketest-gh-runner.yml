@@ -60,22 +60,26 @@ jobs:
         run: |
             echo ::set-output name=matrix-setname::$(echo -n ${{ matrix.match.pattern }} | tr -c "[:alnum:]" _)
 
-      - name: Install Package
+      - name: Install Dependencies
         shell: "bash"
         run: |
             sudo apt-get update
             sudo apt-get install -y ${{ inputs.dependencies }}
             sudo apt-get install -y gdb
 
-            curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+            curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
             sudo apt-get install -y nodejs
 
-            sudo apt-get install -y -f ./${{ inputs.asset-name }}
+            echo "node.js version = $(node --version), npm version = $(npm --version), release = $(lsb_release -sc)"
+
+
+      - name: Install Package
+        shell: "bash"
+        run: |
+            sudo apt-get install -y -f ./${{ inputs.asset-name }}/*.deb
             chown -R $USER:$USER /opt/HPCCSystems
             chmod +x ./${{ inputs.asset-name }}-support-files/*
             cp ./${{ inputs.asset-name }}-support-files/* /opt/HPCCSystems/testing/regress
-
-            echo "node.js version = $(node --version), npm version = $(npm --version), release = $(lsb_release -sc)"
 
       - name: Start HPCC-Platform
         shell: "bash"
