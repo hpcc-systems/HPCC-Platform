@@ -53,6 +53,9 @@ private:
     StringBuffer m_audienceSearchColName;
     StringBuffer m_audienceIndexSearchPattern;
 
+    StringBuffer m_podSearchColName;
+    StringBuffer m_podIndexSearchPattern;
+
     StringBuffer m_classSearchColName;
     StringBuffer m_classIndexSearchPattern;
 
