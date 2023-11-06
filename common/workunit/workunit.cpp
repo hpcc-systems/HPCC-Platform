@@ -4423,6 +4423,8 @@ public:
             { return c->getHash(); }
     virtual IStringIterator *getLogs(const char *type, const char *instance) const
             { return c->getLogs(type, instance); }
+    virtual IPropertyTreeIterator *getProcessTypes() const
+            { return c->getProcessTypes(); }
     virtual IStringIterator *getProcesses(const char *type) const
             { return c->getProcesses(type); }
     virtual IPropertyTreeIterator* getProcesses(const char *type, const char *instance) const
@@ -8614,6 +8616,13 @@ IStringIterator *CLocalWorkUnit::getLogs(const char *type, const char *instance)
     }
     else
         return new CStringPTreeAttrIterator(p->getElements(xpath.str()), "@log");
+}
+
+IPropertyTreeIterator* CLocalWorkUnit::getProcessTypes() const
+{
+    VStringBuffer xpath("Process/*");
+    CriticalBlock block(crit);
+    return p->getElements(xpath.str());
 }
 
 IPropertyTreeIterator* CLocalWorkUnit::getProcesses(const char *type, const char *instance) const
