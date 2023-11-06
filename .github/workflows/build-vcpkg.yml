@@ -144,9 +144,19 @@ jobs:
       os: ubuntu-22.04
       single-package: true
       containerized: false
-      asset-name: 'ubuntu-22_04.deb'
+      upload-package: true
+      asset-name: 'gh-runner-deb-package'
     secrets: inherit
   
+  test-gh-runner-ubuntu-22_04:
+    if: ${{ contains('pull_request,push', github.event_name) }}
+    needs: build-gh-runner-ubuntu-22_04
+    uses: ./.github/workflows/smoketest-gh-runner.yml
+    with:
+      os: ubuntu-22.04
+      asset-name: 'gh-runner-deb-package'
+    secrets: inherit
+
   build-gh-runner-ubuntu-20_04:
     if: ${{ contains('schedule,push', github.event_name) }}
     uses: ./.github/workflows/build-gh-runner.yml
