@@ -64,7 +64,7 @@ jobs:
   test-workflow-dispatch:
     if: ${{ contains('workflow_dispatch', github.event_name) && inputs.smoketest == true }}
     needs: build-workflow-dispatch
-    uses: ./.github/workflows/smoketest-gh-runner.yml
+    uses: ./.github/workflows/test-smoke-gh_runner.yml
     with:
       os: ${{ inputs.os }}
       asset-name: 'deb-package'
@@ -93,14 +93,14 @@ jobs:
   test-docker-ubuntu-22_04:
     if: ${{ contains('pull_request,push', github.event_name) }}
     needs: build-docker-ubuntu-22_04
-    uses: ./.github/workflows/smoketest-gh-runner.yml
+    uses: ./.github/workflows/test-smoke-gh_runner.yml
     with:
       os: ubuntu-22.04
       asset-name: 'deb-package'
     secrets: inherit
 
   build-docker-ubuntu-20_04:
-    if: ${{ contains('schedule,push', github.event_name) }}
+    if: ${{ contains('schedule', github.event_name) }}
     uses: ./.github/workflows/build-docker.yml
     with:
       os: ubuntu-20.04
@@ -109,7 +109,7 @@ jobs:
     secrets: inherit
 
   build-docker-centos-8:
-    if: ${{ contains('schedule,push', github.event_name) }}
+    if: ${{ contains('schedule', github.event_name) }}
     uses: ./.github/workflows/build-docker.yml
     with:
       os: centos-8
@@ -128,7 +128,7 @@ jobs:
     secrets: inherit
 
   build-docker-amazonlinux:
-    if: ${{ contains('schedule,push', github.event_name) }}
+    if: ${{ contains('schedule', github.event_name) }}
     uses: ./.github/workflows/build-docker.yml
     with:
       os: amazonlinux
@@ -137,38 +137,38 @@ jobs:
       cmake-configuration-ex: "-DVCPKG_TARGET_TRIPLET=x64-amazonlinux-dynamic"
     secrets: inherit
 
-  build-gh-runner-ubuntu-22_04:
+  build-gh_runner-ubuntu-22_04:
     if: ${{ contains('pull_request,push', github.event_name) }}
-    uses: ./.github/workflows/build-gh-runner.yml
+    uses: ./.github/workflows/build-gh_runner.yml
     with:
       os: ubuntu-22.04
       single-package: true
       containerized: false
       upload-package: true
-      asset-name: 'gh-runner-deb-package'
+      asset-name: 'gh_runner-deb-package'
     secrets: inherit
   
-  test-gh-runner-ubuntu-22_04:
+  test-gh_runner-ubuntu-22_04:
     if: ${{ contains('pull_request,push', github.event_name) }}
-    needs: build-gh-runner-ubuntu-22_04
-    uses: ./.github/workflows/smoketest-gh-runner.yml
+    needs: build-gh_runner-ubuntu-22_04
+    uses: ./.github/workflows/test-smoke-gh_runner.yml
     with:
       os: ubuntu-22.04
-      asset-name: 'gh-runner-deb-package'
+      asset-name: 'gh_runner-deb-package'
     secrets: inherit
 
-  build-gh-runner-ubuntu-20_04:
-    if: ${{ contains('schedule,push', github.event_name) }}
-    uses: ./.github/workflows/build-gh-runner.yml
+  build-gh_runner-ubuntu-20_04:
+    if: ${{ contains('schedule', github.event_name) }}
+    uses: ./.github/workflows/build-gh_runner.yml
     with:
       os: ubuntu-20.04
       single-package: true
       containerized: false
     secrets: inherit
 
-  build-gh-runner-windows-2022:
-    if: ${{ contains('schedule,push', github.event_name) }}
-    uses: ./.github/workflows/build-gh-runner.yml
+  build-gh_runner-windows-2022:
+    if: ${{ contains('pull_request,push', github.event_name) }}
+    uses: ./.github/workflows/build-gh_runner.yml
     with:
       os: windows-2022
       single-package: true
@@ -176,9 +176,9 @@ jobs:
       cmake-configuration: '-T host=x64 -A x64 -DUSE_OPTIONAL=OFF -DCLIENTTOOLS_ONLY=ON -DUSE_AZURE=OFF -DUSE_CASSANDRA=OFF -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
     secrets: inherit
 
-  build-gh-runner-windows-2019:
-    if: ${{ contains('schedule,push', github.event_name) }}
-    uses: ./.github/workflows/build-gh-runner.yml
+  build-gh_runner-windows-2019:
+    if: ${{ contains('schedule', github.event_name) }}
+    uses: ./.github/workflows/build-gh_runner.yml
     with:
       os: windows-2019
       single-package: true
@@ -186,9 +186,9 @@ jobs:
       cmake-configuration: '-T host=x64 -A x64 -DUSE_OPTIONAL=OFF -DCLIENTTOOLS_ONLY=ON -DUSE_AZURE=OFF -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
     secrets: inherit
 
-  build-gh-runner-macos-12:
-    if: ${{ contains('schedule,push', github.event_name) }}
-    uses: ./.github/workflows/build-gh-runner.yml
+  build-gh_runner-macos-12:
+    if: ${{ contains('pull_request,push', github.event_name) }}
+    uses: ./.github/workflows/build-gh_runner.yml
     with:
       os: macos-12
       single-package: true
@@ -197,9 +197,9 @@ jobs:
       cmake-configuration: '-DUSE_OPTIONAL=OFF -DCLIENTTOOLS_ONLY=ON -DUSE_AZURE=OFF -DUSE_CASSANDRA=OFF -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
     secrets: inherit
 
-  build-gh-runner-macos-11:
-    if: ${{ contains('schedule,push', github.event_name) }}
-    uses: ./.github/workflows/build-gh-runner.yml
+  build-gh_runner-macos-11:
+    if: ${{ contains('schedule', github.event_name) }}
+    uses: ./.github/workflows/build-gh_runner.yml
     with:
       os: macos-11
       single-package: true

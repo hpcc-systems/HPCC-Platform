@@ -95,8 +95,9 @@ jobs:
           branch_label_1=${{ github.base_ref }}
           branch_label_2=$(echo ${{ github.ref }} | cut -d'/' -f3)
           echo "branch_label=${branch_label_1:-$branch_label_2}" >> $GITHUB_OUTPUT
-          docker_build_label=hpccsystems/platform-build-base-${{ inputs.os }}
           vcpkg_sha_short=$(git rev-parse --short=8 HEAD)
+          echo "vcpkg_sha_short=$vcpkg_sha_short" >> $GITHUB_OUTPUT
+          docker_build_label=hpccsystems/platform-build-base-${{ inputs.os }}
           echo "docker_tag=$docker_build_label:$vcpkg_sha_short" >> $GITHUB_OUTPUT
 
       - name: Print vars
@@ -159,6 +160,15 @@ jobs:
           path: |
             ${{ github.workspace }}/HPCC-Platform/.github/workflows/smoketest-preabort.sh
             ${{ github.workspace }}/HPCC-Platform/.github/workflows/timeoutcmd
+          if-no-files-found: error
+
+      - name: Upload UI Test Files
+        if: ${{ inputs.upload-package == true }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ inputs.asset-name }}-ui_test-files
+          path: |
+            ${{ github.workspace }}/HPCC-Platform/esp/src/test-ui/**/*
           if-no-files-found: error
 
       - name: Upload Error Logs

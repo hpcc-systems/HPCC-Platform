@@ -191,7 +191,8 @@ jobs:
       - name: CMake Configure and Build
         shell: "bash"
         run: |
-          mkdir -p ./build
+          mkdir -p ${{ github.workspace }}/LN
+          mkdir -p ${{ github.workspace }}/build
           cmake ${{ !contains(inputs.os, 'windows') && '-G Ninja' || '' }} -S ./${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }} -B ./build -DCMAKE_BUILD_TYPE=${{ inputs.build-type }} -DCONTAINERIZED=${{ inputs.containerized == true && 'ON' || 'OFF' }} -DCPACK_STRIP_FILES=${{ inputs.strip-files == true && 'ON' || 'OFF' }} ${{ inputs.cmake-configuration }} ${{ inputs.cmake-configuration-ex }}
           cmake --build ./build ${{ contains(inputs.os, 'windows') && '--config Release' || ''}} --parallel ${{ inputs.upload-package == true && '--target package' || ''}}
 
@@ -203,6 +204,25 @@ jobs:
           path: |
             ${{ github.workspace }}/build/*.deb
             ${{ github.workspace }}/build/*.rpm
+          if-no-files-found: error
+
+      - name: Upload Support Files
+        if: ${{ inputs.upload-package == true }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ inputs.asset-name }}-support-files
+          path: |
+            ${{ github.workspace }}/HPCC-Platform/.github/workflows/smoketest-preabort.sh
+            ${{ github.workspace }}/HPCC-Platform/.github/workflows/timeoutcmd
+          if-no-files-found: error
+
+      - name: Upload UI Test Files
+        if: ${{ inputs.upload-package == true }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ inputs.asset-name }}-ui-test-files
+          path: |
+            ${{ github.workspace }}/HPCC-Platform/esp/src/test-ui/**/*
           if-no-files-found: error
 
       - name: Upload Error Logs
