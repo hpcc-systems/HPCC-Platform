@@ -99,11 +99,11 @@ jobs:
         run: |
           export LANG="en_US.UTF-8"
           sudo update-locale
-          source /opt/HPCCSystems/sbin/hpcc_setenv
-          /opt/HPCCSystems/etc/init.d/hpcc-init start
+          sudo source /opt/HPCCSystems/sbin/hpcc_setenv
+          sudo /etc/init.d/hpcc-init start
           export CLASSPATH=".:$(realpath selenium-server-standalone-3.141.59.jar):$(realpath testng-6.8.7.jar)"
           pushd ${{ inputs.asset-name }}-ui_test-files
-          ./run.sh tests http://localhost:8010 > eclWatchUiTest.log 2>&1
+          sudo ./run.sh tests http://localhost:8010 > eclWatchUiTest.log 2>&1
           retCode=$?
           echo "UI test done"
           [[ $retCode -ne 0 ]] && exit 1

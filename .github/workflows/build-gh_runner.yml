@@ -41,7 +41,7 @@ on:
         type: string
         description: 'CMake Configuration'
         required: false
-        default: '-DCPACK_THREADS=0 -DUSE_OPTIONAL=OFF -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache'
+        default: '-DCPACK_THREADS=0 -DUSE_OPTIONAL=OFF -DUSE_CPPUNIT=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache'
       cmake-configuration-ex:
         type: string
         description: 'CMake Configuration Extra'
