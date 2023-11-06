@@ -21,7 +21,7 @@ on:
 
 jobs:
 
-  unittest-gh-runner:
+  main:
     runs-on: ${{ inputs.os }}
     steps:
 

@@ -68,7 +68,7 @@ on:
 
 jobs:
 
-  build-gh-runner:
+  build-gh_runner:
     runs-on: ${{ inputs.os }}
     steps:
       - name: Ubuntu Dependencies
@@ -220,7 +220,7 @@ jobs:
         if: ${{ inputs.upload-package == true }}
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ inputs.asset-name }}-ui-test-files
+          name: ${{ inputs.asset-name }}-ui_test-files
           path: |
             ${{ github.workspace }}/HPCC-Platform/esp/src/test-ui/**/*
           if-no-files-found: error

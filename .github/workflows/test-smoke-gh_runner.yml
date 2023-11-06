@@ -21,7 +21,7 @@ on:
 
 jobs:
 
-  smoketest-gh-runner:
+  main:
     runs-on: ${{ inputs.os }}
     strategy:
       fail-fast: false
