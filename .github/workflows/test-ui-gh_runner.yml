@@ -78,7 +78,6 @@ jobs:
           wget https://selenium-release.storage.googleapis.com/3.141/selenium-server-standalone-3.141.59.jar
           wget http://www.java2s.com/Code/JarDownload/testng/testng-6.8.7.jar.zip
           unzip testng-6.8.7.jar.zip
-   
 
       - name: Download Package
         if: steps.check.outputs.runtests

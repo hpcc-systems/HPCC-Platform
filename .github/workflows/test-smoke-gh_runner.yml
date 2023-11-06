@@ -125,7 +125,7 @@ jobs:
         if: ${{ failure() || cancelled() }}
         uses: actions/upload-artifact@v3
         with:
-          name: regression-run-logs-${{ matrix.engine }}-${{ steps.vars.outputs.matrix-setname }}
+          name: test-smoke-${{ inputs.asset-name }}-${{ matrix.engine }}-${{ steps.vars.outputs.matrix-setname }}
           path: |
               /var/log/HPCCSystems
               /home/runner/HPCCSystems-regression

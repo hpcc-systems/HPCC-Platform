@@ -58,7 +58,7 @@ jobs:
       os: ${{ inputs.os }}
       ln: ${{ inputs.ln }}
       upload-package: true
-      asset-name: 'deb-package'
+      asset-name: 'docker-package'
     secrets: inherit
 
   test-workflow-dispatch:
@@ -67,7 +67,7 @@ jobs:
     uses: ./.github/workflows/test-smoke-gh_runner.yml
     with:
       os: ${{ inputs.os }}
-      asset-name: 'deb-package'
+      asset-name: 'docker-package'
     secrets: inherit
 
   build-docker-ubuntu-23_10:
@@ -87,16 +87,34 @@ jobs:
       single-package: true
       containerized: false
       upload-package: true
-      asset-name: 'deb-package'
+      asset-name: 'docker-package'
     secrets: inherit
 
-  test-docker-ubuntu-22_04:
+  test-smoke-docker-ubuntu-22_04:
     if: ${{ contains('pull_request,push', github.event_name) }}
     needs: build-docker-ubuntu-22_04
     uses: ./.github/workflows/test-smoke-gh_runner.yml
     with:
       os: ubuntu-22.04
-      asset-name: 'deb-package'
+      asset-name: 'docker-package'
+    secrets: inherit
+
+  test-unit-docker-ubuntu-22_04:
+    if: ${{ contains('pull_request,push', github.event_name) }}
+    needs: build-docker-ubuntu-22_04
+    uses: ./.github/workflows/test-unit-gh_runner.yml
+    with:
+      os: ubuntu-22.04
+      asset-name: 'docker-package'
+    secrets: inherit
+
+  test-ui-docker-ubuntu-22_04:
+    if: ${{ contains('pull_request,push', github.event_name) }}
+    needs: build-docker-ubuntu-22_04
+    uses: ./.github/workflows/test-ui-gh_runner.yml
+    with:
+      os: ubuntu-22.04
+      asset-name: 'docker-package'
     secrets: inherit
 
   build-docker-ubuntu-20_04:
@@ -145,16 +163,34 @@ jobs:
       single-package: true
       containerized: false
       upload-package: true
-      asset-name: 'gh_runner-deb-package'
+      asset-name: 'gh_runner-package'
     secrets: inherit
   
-  test-gh_runner-ubuntu-22_04:
+  test-smoke-gh_runner-ubuntu-22_04:
     if: ${{ contains('pull_request,push', github.event_name) }}
     needs: build-gh_runner-ubuntu-22_04
     uses: ./.github/workflows/test-smoke-gh_runner.yml
     with:
       os: ubuntu-22.04
-      asset-name: 'gh_runner-deb-package'
+      asset-name: 'gh_runner-package'
+    secrets: inherit
+
+  test-unit-gh_runner-ubuntu-22_04:
+    if: ${{ contains('pull_request,push', github.event_name) }}
+    needs: build-gh_runner-ubuntu-22_04
+    uses: ./.github/workflows/test-unit-gh_runner.yml
+    with:
+      os: ubuntu-22.04
+      asset-name: 'gh_runner-package'
+    secrets: inherit
+
+  test-ui-gh_runner-ubuntu-22_04:
+    if: ${{ contains('pull_request,push', github.event_name) }}
+    needs: build-gh_runner-ubuntu-22_04
+    uses: ./.github/workflows/test-ui-gh_runner.yml
+    with:
+      os: ubuntu-22.04
+      asset-name: 'gh_runner-package'
     secrets: inherit
 
   build-gh_runner-ubuntu-20_04:
