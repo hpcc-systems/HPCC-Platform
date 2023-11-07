@@ -649,13 +649,30 @@ void CMasterActivity::done()
 
 void CMasterActivity::updateFileReadCostStats()
 {
-    // Updates numDiskReads & readCost in the file attributes and returns the readCost
-    auto updateReadCosts = [](IDistributedFile *file, CThorStatsCollection &stats)
+    // Update numDiskReads & readCost in the file attributes and return readCost
+    auto updateReadCosts = [](bool useJhtreeCacheStats, IDistributedFile *file, CThorStatsCollection &stats)
     {
-        stat_type curDiskReads = stats.getStatisticSum(StNumDiskReads);
+        StringBuffer clusterName;
+        file->getClusterName(0, clusterName);
         IPropertyTree & fileAttr = file->queryAttributes();
-        cost_type legacyReadCost = getLegacyReadCost(fileAttr, file);
-        cost_type curReadCost = money2cost_type(calcFileAccessCost(file, 0, curDiskReads));
+        cost_type legacyReadCost = 0, curReadCost = 0;
+        // Legacy files will not have the readCost stored as an attribute
+        if (!hasReadWriteCostFields(fileAttr) && fileAttr.hasProp(getDFUQResultFieldName(DFUQRFnumDiskReads)))
+        {
+            // Legacy file: calculate readCost using prev disk reads and new disk reads
+            stat_type prevDiskReads = fileAttr.getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskReads), 0);
+            legacyReadCost = money2cost_type(calcFileAccessCost(clusterName, 0, prevDiskReads));
+        }
+        stat_type curDiskReads = stats.getStatisticSum(StNumDiskReads);
+        if(useJhtreeCacheStats)
+        {
+            stat_type numActualReads = stats.getStatisticSum(StNumNodeDiskFetches)
+                                    + stats.getStatisticSum(StNumLeafDiskFetches)
+                                    + stats.getStatisticSum(StNumBlobDiskFetches);
+            curReadCost = money2cost_type(calcFileAccessCost(clusterName, 0, numActualReads));
+        }
+        else
+            curReadCost = money2cost_type(calcFileAccessCost(clusterName, 0, curDiskReads));
         file->addAttrValue(getDFUQResultFieldName(DFUQRFreadCost), legacyReadCost + curReadCost);
         file->addAttrValue(getDFUQResultFieldName(DFUQRFnumDiskReads), curDiskReads);
         return curReadCost;
@@ -663,11 +680,17 @@ void CMasterActivity::updateFileReadCostStats()
 
     if (fileStats.size()>0)
     {
+        ThorActivityKind activityKind = container.getKind();
         unsigned fileIndex = 0;
         diskAccessCost = 0;
-        for (unsigned i=0; i<readFiles.size();i++)
+        for (unsigned i=0; i<readFiles.size(); i++)
         {
             IDistributedFile *file = queryReadFile(i);
+            bool useJhtreeCache = false;
+            // Index uses jhtree caches, so use actual fetches to calculate cost
+            // To determine entry is an index file entry, use the test (i==0) because index file is always the first file
+            if ((TAKindexread == activityKind) || ((TAKkeyedjoin == activityKind) && (0 == i)))
+                useJhtreeCache = true;
             if (file)
             {
                 IDistributedSuperFile *super = file->querySuperFile();
@@ -677,13 +700,13 @@ void CMasterActivity::updateFileReadCostStats()
                     for (unsigned i=0; i<numSubFiles; i++)
                     {
                         IDistributedFile &subFile = super->querySubFile(i, true);
-                        diskAccessCost += updateReadCosts(&subFile, *fileStats[fileIndex]);
+                        diskAccessCost += updateReadCosts(useJhtreeCache, &subFile, *fileStats[fileIndex]);
                         fileIndex++;
                     }
                 }
                 else
                 {
-                    diskAccessCost += updateReadCosts(file, *fileStats[fileIndex]);
+                    diskAccessCost += updateReadCosts(useJhtreeCache, file, *fileStats[fileIndex]);
                     fileIndex++;
                 }
             }
@@ -693,7 +716,7 @@ void CMasterActivity::updateFileReadCostStats()
     {
         IDistributedFile *file = queryReadFile(0);
         if (file)
-            diskAccessCost = updateReadCosts(file, statsCollection);
+            diskAccessCost += updateReadCosts(true, file, statsCollection);
     }
 }
 

@@ -115,7 +115,6 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
     unsigned maxCachedKJManagers = defaultMaxCachedKJManagers;
     unsigned maxCachedFetchContexts = defaultMaxCachedFetchContexts;
     unsigned keyLookupMaxProcessThreads = defaultKeyLookupMaxProcessThreads;
-    CStatsContextLogger contextLogger;
     class CLookupKey
     {
         unsigned hashv = 0;
@@ -447,11 +446,13 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
         Owned<IKeyManager> keyManager;
         unsigned handle = 0;
         Owned<IHThorKeyedJoinArg> helper;
+        CStatsContextLogger contextLogger;
+
     public:
         CKMContainer(CKJService &_service, CKeyLookupContext *_ctx)
-            : service(_service), ctx(_ctx)
+            : service(_service), ctx(_ctx), contextLogger(jhtreeCacheStatistics, thorJob)
         {
-            keyManager.setown(ctx->createKeyManager(&service.contextLogger));
+            keyManager.setown(ctx->createKeyManager(&contextLogger));
             StringBuffer tracing;
             const IDynamicTransform *translator = ctx->queryTranslator(ctx->queryKey().getTracing(tracing));
             if (translator)
@@ -475,6 +476,7 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
         }
         inline IHThorKeyedJoinArg *queryHelper() const { return helper; }
         inline CKJService & queryService() const { return service; }
+        inline CStatsContextLogger & queryContextLogger() { return contextLogger; }
     };
     template<class KEY, class ITEM>
     class CKeyedCacheEntry : public CInterface
@@ -757,10 +759,8 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
                 unsigned rowCount = getRowCount();
                 unsigned rowNum = 0;
                 unsigned rowStart = 0;
-                const CRuntimeStatisticCollection & stats = kmc->queryService().contextLogger.queryStats();
-                unsigned __int64 startSeeks = stats.getStatisticValue(StNumIndexSeeks);
-                unsigned __int64 startScans = stats.getStatisticValue(StNumIndexScans);
-                unsigned __int64 startWildSeeks = stats.getStatisticValue(StNumIndexWildSeeks);
+                CStatsContextLogger  & contextLogger = kmc->queryContextLogger();
+                CRuntimeStatisticCollection startStats(contextLogger.queryStats());
                 while (!abortSoon)
                 {
                     OwnedConstThorRow row = getRowClear(rowNum++);
@@ -770,9 +770,15 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
                     if (last || (replyMb.length() >= DEFAULT_KEYLOOKUP_MAXREPLYSZ))
                     {
                         countMarker.write(rowNum-rowStart);
-                        replyMb.append(stats.getStatisticValue(StNumIndexSeeks)-startSeeks);
-                        replyMb.append(stats.getStatisticValue(StNumIndexScans)-startScans);
-                        replyMb.append(stats.getStatisticValue(StNumIndexWildSeeks)-startWildSeeks);
+
+                        CRuntimeStatisticCollection deltaStats(startStats.queryMapping());
+                        contextLogger.updateStatsDeltaTo(deltaStats, startStats);
+                        replyMb.append(deltaStats.getStatisticValue(StNumIndexSeeks));
+                        replyMb.append(deltaStats.getStatisticValue(StNumIndexScans));
+                        replyMb.append(deltaStats.getStatisticValue(StNumIndexWildSeeks));
+                        replyMb.append(deltaStats.getStatisticValue(StNumNodeDiskFetches));
+                        replyMb.append(deltaStats.getStatisticValue(StNumLeafDiskFetches));
+                        replyMb.append(deltaStats.getStatisticValue(StNumBlobDiskFetches));
                         if (activityCtx->useMessageCompression())
                         {
                             fastLZCompressToBuffer(replyMsg, tmpMB.length(), tmpMB.toByteArray());
@@ -1189,7 +1195,7 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterfaceOf<IKJService>);
 
-    CKJService(mptag_t _mpTag) : threaded("CKJService", this), keyLookupMpTag(_mpTag), contextLogger(jhtreeCacheStatistics, thorJob)
+    CKJService(mptag_t _mpTag) : threaded("CKJService", this), keyLookupMpTag(_mpTag)
     {
         setupProcessorPool();
     }

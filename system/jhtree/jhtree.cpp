@@ -572,10 +572,13 @@ public:
         filter->describe(out);
     }
 
-    virtual void mergeStats(CRuntimeStatisticCollection & stats) const
+    virtual void mergeStats(CRuntimeStatisticCollection & targetStats) const
     {
+        // IO Stats comming from the keyCursor and jhtree cache stats coming from this class's stats
         if (keyCursor)
-            keyCursor->mergeStats(stats);
+            keyCursor->mergeStats(targetStats); // merge IO stats
+        if (stats.ctx)
+            targetStats.merge(stats.ctx->queryStats()); // merge jhtree cache stats
     }
 };
 
