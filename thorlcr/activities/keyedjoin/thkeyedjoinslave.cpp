@@ -1248,7 +1248,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             if (limiter)
                 limiter->dec(); // unblocks any requests to start lookup threads
         }
-        virtual void getFileStats(std::vector<OwnedPtr<CRuntimeStatisticCollection>> & fileStats, unsigned startOffset) = 0;
+        virtual void getFileStats(std::vector<OwnedPtr<CRuntimeStatisticCollection>> & fileStats, unsigned startOffset) const = 0;
     };
 
     class CKeyLookupLocalBase : public CLookupHandler
@@ -1284,7 +1284,6 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         }
         void processRows(CThorExpandingRowArray &processing, unsigned partNo, IKeyManager *keyManager)
         {
-            CStatsScopedThresholdDeltaUpdater scoped(activity.statsUpdater);
             for (unsigned r=0; r<processing.ordinality() && !stopped; r++)
             {
                 OwnedConstThorRow row = processing.getClear(r);
@@ -1309,7 +1308,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                         joinGroup->setAtMostLimitHit(); // also clears existing rows
                         break;
                     }
-                    KLBlobProviderAdapter adapter(keyManager, &activity.contextLogger);
+                    KLBlobProviderAdapter adapter(keyManager, nullptr);
                     byte const * keyRow = keyManager->queryKeyBuffer();
                     size_t fposOffset = keyManager->queryRowSize() - sizeof(offset_t);
                     offset_t fpos = rtlReadBigUInt8(keyRow + fposOffset);
@@ -1350,6 +1349,8 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
 
         //Need ptr to std::vector as std::atomic's are not constructable(doesn't have copy constructor)
         std::unique_ptr<std::vector<std::atomic<IKeyManager *>>> keyManagers;
+        // One context logger per part. (Extract stats for logical file by mapping part to logical file/subfile)
+        std::vector<Owned<CStatsContextLogger>> contextLoggers;
     public:
         CKeyLookupLocalHandler(CKeyedJoinSlave &_activity) : CKeyLookupLocalBase(_activity)
         {
@@ -1368,6 +1369,15 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             keyManagers.reset(new std::vector<std::atomic<IKeyManager *>>(parts.size()));
             for (auto & k: *keyManagers)
                 k = nullptr;
+            contextLoggers.clear();
+            for (unsigned i=0; i<parts.size(); i++)
+                contextLoggers.push_back(new CStatsContextLogger(jhtreeCacheStatistics, thorJob));
+        }
+        virtual void reset() override
+        {
+            PARENT::reset();
+            for (auto contextLogger: contextLoggers)
+                contextLogger->reset();
         }
         virtual void addPartNum(unsigned partNum) override
         {
@@ -1382,13 +1392,13 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             std::atomic<IKeyManager *> & keyManager = (*keyManagers)[selected];
             if (!keyManager) // delayed until actually needed
             {
-                keyManager = activity.createPartKeyManager(partNo, copy);
+                keyManager = activity.createPartKeyManager(partNo, copy, contextLoggers[selected]);
                 // NB: potentially translation per part could be different if dealing with superkeys
                 setupTranslation(partNo, selected, *keyManager);
             }
             processRows(processing, partNo, keyManager);
         }
-        virtual void getFileStats(std::vector<OwnedPtr<CRuntimeStatisticCollection>> & fileStats, unsigned startOffset) override
+        virtual void getFileStats(std::vector<OwnedPtr<CRuntimeStatisticCollection>> & fileStats, unsigned startOffset) const override
         {
             for (size_t i=0; i<parts.size(); i++)
             {
@@ -1408,10 +1418,10 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
     class CKeyLookupMergeHandler : public CKeyLookupLocalBase
     {
         typedef CKeyLookupLocalBase PARENT;
-
+        CStatsContextLogger contextLogger;
         std::atomic<IKeyManager *> keyManager{nullptr};
     public:
-        CKeyLookupMergeHandler(CKeyedJoinSlave &_activity) : CKeyLookupLocalBase(_activity)
+        CKeyLookupMergeHandler(CKeyedJoinSlave &_activity) : CKeyLookupLocalBase(_activity), contextLogger(jhtreeCacheStatistics, thorJob)
         {
             limiter = &activity.lookupThreadLimiter;
             translators.push_back(nullptr);
@@ -1433,33 +1443,22 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                     Owned<IKeyIndex> keyIndex = activity.createPartKeyIndex(partNo, copy, false);
                     partKeySet->addIndex(keyIndex.getClear());
                 }
-                keyManager = createKeyMerger(helper->queryIndexRecordSize()->queryRecordAccessor(true), partKeySet, 0, nullptr, helper->hasNewSegmentMonitors(), false);
+                keyManager = createKeyMerger(helper->queryIndexRecordSize()->queryRecordAccessor(true), partKeySet, 0, &contextLogger, helper->hasNewSegmentMonitors(), false);
                 setupTranslation(0, 0, *keyManager);
             }
             processRows(processing, 0, keyManager);
         }
-        virtual void getFileStats(std::vector<OwnedPtr<CRuntimeStatisticCollection>> & fileStats, unsigned startOffset) override
+        virtual void getFileStats(std::vector<OwnedPtr<CRuntimeStatisticCollection>> & fileStats, unsigned startOffset) const override
         {
-            if (keyManager)
-            {
-                for (size_t i=0; i<parts.size(); i++)
-                {
-                    if (isSuper)
-                    {
-                        unsigned subfile = subFileNum[i];
-                        (*keyManager).mergeStats(*fileStats[startOffset+subfile]);
-                    }
-                    else
-                        (*keyManager).mergeStats(*fileStats[startOffset]);
-                }
-            }
+            // CKeyLookupMergeHandler is not tracking the stats at the part level and that means it is not possible to associate the stats with a  logical file level.
+            // Superfile: all stats will be associated with the first sub index file.  For non-super, it makes no difference (there is only one index file).
+            // (Future: make necessary changes to createKeyMerger to track stats at the part level/logical level.)
+            fileStats[startOffset]->merge(contextLogger.queryStats());
         }
-
     };
     class CRemoteLookupHandler : public CLookupHandler
     {
         typedef CLookupHandler PARENT;
-
     protected:
         rank_t lookupSlave = RANK_NULL;
         mptag_t replyTag = TAG_NULL;
@@ -1543,14 +1542,12 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             for (auto &h: handles)
                 h = 0;
         }
-        virtual void getFileStats(std::vector<OwnedPtr<CRuntimeStatisticCollection>> & fileStats, unsigned startOffset) override
-        {
-            /* Note: currently, stats from remote file not tracked */
-        }
     };
     class CKeyLookupRemoteHandler : public CRemoteLookupHandler
     {
         typedef CRemoteLookupHandler PARENT;
+        // One context logger per part. (Extract stats for logical file by mapping part to logical file/subfile)
+        std::vector<Owned<CStatsContextLogger>> contextLoggers;
 
         void initRead(CMessageBuffer &msg, unsigned selected, unsigned partNo, unsigned copy)
         {
@@ -1632,6 +1629,19 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         {
             limiter = &activity.lookupThreadLimiter;
             allParts = &activity.allIndexParts;
+        }
+        virtual void init() override
+        {
+            PARENT::init();
+            contextLoggers.clear();
+            for (unsigned i=0; i<parts.size(); i++)
+                contextLoggers.push_back(new CStatsContextLogger(jhtreeCacheStatistics, thorJob));
+        }
+        virtual void reset() override
+        {
+            PARENT::reset();
+            for (auto contextLogger: contextLoggers)
+                contextLogger->reset();
         }
         virtual StringBuffer &getInfo(StringBuffer &info) const override
         {
@@ -1750,10 +1760,16 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                     joinGroup->decPending(); // Every queued lookup row triggered an inc., this is the corresponding dec.
                 }
                 unsigned __int64 seeks, scans, wildseeks;
+                unsigned __int64 nodeDiskFetches, leafDiskFetches, blobDiskFetches;
                 mb.read(seeks).read(scans).read(wildseeks);
-                activity.inactiveStats.sumStatistic(StNumIndexSeeks, seeks);
-                activity.inactiveStats.sumStatistic(StNumIndexScans, scans);
-                activity.inactiveStats.sumStatistic(StNumIndexWildSeeks, wildseeks);
+                mb.read(nodeDiskFetches).read(leafDiskFetches).read(blobDiskFetches);
+                CStatsContextLogger * contextLogger(contextLoggers[selected]);
+                contextLogger->noteStatistic(StNumIndexSeeks, seeks);
+                contextLogger->noteStatistic(StNumIndexScans, scans);
+                contextLogger->noteStatistic(StNumIndexWildSeeks, wildseeks);
+                contextLogger->noteStatistic(StNumNodeDiskFetches, nodeDiskFetches);
+                contextLogger->noteStatistic(StNumLeafDiskFetches, leafDiskFetches);
+                contextLogger->noteStatistic(StNumBlobDiskFetches, blobDiskFetches);
                 if (received == numRows)
                     break;
             }
@@ -1762,6 +1778,19 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         {
             PARENT::end();
             doClose(kjs_keyclose);
+        }
+        virtual void getFileStats(std::vector<OwnedPtr<CRuntimeStatisticCollection>> & fileStats, unsigned startOffset) const override
+        {
+            assertex(parts.size()==contextLoggers.size());
+            for (size_t i=0; i<parts.size(); i++)
+            {
+                CStatsContextLogger * contextLogger = contextLoggers[i];
+                // Superfile: entry is StartOffset + subfileNum
+                // Otherwise, use 'startOffset' entry for the stats
+                unsigned fileEntry = isSuper ? (startOffset+subFileNum[i]) : startOffset;
+                assertex(fileEntry < fileStats.size());
+                fileStats[fileEntry]->merge(contextLogger->queryStats());
+            }
         }
     };
     class CFetchLocalLookupHandler : public CLookupHandler
@@ -1863,13 +1892,13 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                 diskSeeks++;
             }
         }
-        virtual void getFileStats(std::vector<OwnedPtr<CRuntimeStatisticCollection>> & fileStats, unsigned startOffset) override
+        virtual void getFileStats(std::vector<OwnedPtr<CRuntimeStatisticCollection>> & fileStats, unsigned startOffset) const override
         {
             for (size_t i=0; i<parts.size(); i++)
             {
                 if ((*partIOCreated)[i])
                 {
-                    PartIO & partIO = partIOs[i];
+                    const PartIO & partIO = partIOs[i];
                     if (isSuper)
                     {
                         unsigned subfile = subFileNum[i];
@@ -2077,6 +2106,8 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             PARENT::end();
             doClose(kjs_fetchclose);
         }
+        // Not tracking remote fetch file stats.  Future: may be something to consider.
+        virtual void getFileStats(std::vector<OwnedPtr<CRuntimeStatisticCollection>> & fileStats, unsigned startOffset) const override {}
     };
     class CReadAheadThread : implements IThreaded
     {
@@ -2189,7 +2220,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                     lookupHandler->end();
             }
         }
-        void getFileStats(std::vector<OwnedPtr<CRuntimeStatisticCollection>> & fileStats, unsigned startOffset)
+        void getFileStats(std::vector<OwnedPtr<CRuntimeStatisticCollection>> & fileStats, unsigned startOffset) const
         {
             ForEachItemIn(h, handlers)
                 handlers.item(h)->getFileStats(fileStats, startOffset);
@@ -2223,8 +2254,6 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
     CPartDescriptorArray allIndexParts;
     std::vector<unsigned> localIndexParts, localFetchPartMap;
     IArrayOf<IKeyIndex> tlkKeyIndexes;
-    CStatsContextLogger contextLogger;
-    CStatsCtxLoggerDeltaUpdater statsUpdater;
     Owned<IEngineRowAllocator> joinFieldsAllocator;
     OwnedConstThorRow defaultRight;
     unsigned joinFlags = 0;
@@ -2420,7 +2449,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         {
             IKeyIndex *tlkKeyIndex = &tlkKeyIndexes.item(i);
             const RtlRecord &keyRecInfo = helper->queryIndexRecordSize()->queryRecordAccessor(true);
-            Owned<IKeyManager> tlkManager = createLocalKeyManager(keyRecInfo, nullptr, &contextLogger, helper->hasNewSegmentMonitors(), false);
+            Owned<IKeyManager> tlkManager = createLocalKeyManager(keyRecInfo, nullptr, nullptr, helper->hasNewSegmentMonitors(), false);
             tlkManager->setKey(tlkKeyIndex);
             keyManagers.append(*tlkManager.getClear());
         }
@@ -2452,10 +2481,10 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             return createKeyIndex(filename, crc, *lazyIFileIO, (unsigned) -1, false);
         }
     }
-    IKeyManager *createPartKeyManager(unsigned partNo, unsigned copy)
+    IKeyManager *createPartKeyManager(unsigned partNo, unsigned copy, IContextLogger *ctx)
     {
         Owned<IKeyIndex> keyIndex = createPartKeyIndex(partNo, copy, false);
-        return createLocalKeyManager(helper->queryIndexRecordSize()->queryRecordAccessor(true), keyIndex, &contextLogger, helper->hasNewSegmentMonitors(), false);
+        return createLocalKeyManager(helper->queryIndexRecordSize()->queryRecordAccessor(true), keyIndex, ctx, helper->hasNewSegmentMonitors(), false);
     }
     const void *preparePendingLookupRow(void *row, size32_t maxSz, const void *lhsRow, size32_t keySz)
     {
@@ -2617,7 +2646,6 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
     }
     void stopReadAhead()
     {
-        CStatsScopedThresholdDeltaUpdater scoped(statsUpdater);
         keyLookupHandlers.flush();
         keyLookupHandlers.join(); // wait for pending handling, there may be more fetch items as a result
         fetchLookupHandlers.flushTS();
@@ -2938,7 +2966,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
 public:
     IMPLEMENT_IINTERFACE_USING(PARENT);
 
-    CKeyedJoinSlave(CGraphElementBase *_container) : PARENT(_container, keyedJoinActivityStatistics), readAheadThread(*this), contextLogger(jhtreeCacheStatistics, thorJob), statsUpdater(jhtreeCacheStatistics, *this, contextLogger)
+    CKeyedJoinSlave(CGraphElementBase *_container) : PARENT(_container, keyedJoinActivityStatistics), readAheadThread(*this)
     {
         helper = static_cast <IHThorKeyedJoinArg *> (queryHelper());
         reInit = 0 != (helper->getFetchFlags() & (FFvarfilename|FFdynamicfilename)) || (helper->getJoinFlags() & JFvarindexfilename);
@@ -3112,7 +3140,7 @@ public:
             }
             ISuperFileDescriptor *superFdesc = numIndexParts?allIndexParts.item(0).queryOwner().querySuperFileDescriptor():nullptr;
             unsigned numIndexSubFiles = superFdesc?superFdesc->querySubFiles():0;
-            setupSpace4FileStats(indexFileStatsTableEntry, true, superFdesc!=nullptr, numIndexSubFiles, indexReadActivityStatistics);
+            setupSpace4FileStats(indexFileStatsTableEntry, true, superFdesc!=nullptr, numIndexSubFiles, indexReadFileStatistics);
             setupLookupHandlers(keyLookupHandlers, totalIndexParts, superFdesc, localIndexParts, indexPartToSlaveMap, localKey, forceRemoteKeyedLookup ? ht_remotekeylookup : ht_localkeylookup, ht_remotekeylookup);
             data.read(totalDataParts);
             if (totalDataParts)
@@ -3368,7 +3396,6 @@ public:
     }
     virtual void stop() override
     {
-        CStatsScopedDeltaUpdater scoped(statsUpdater);
         endOfInput = true; // signals to readAhead which is reading input, that is should stop asap.
 
         // could be blocked in readAhead(), because CJoinGroup's are no longer being processed
@@ -3784,11 +3811,22 @@ public:
     {
         return container.queryId();
     }
-    virtual void serializeStats(MemoryBuffer &mb) override
+    virtual void gatherActiveStats(CRuntimeStatisticCollection &activeStats) const
     {
+        PARENT::gatherActiveStats(activeStats);
+        // fileStats gather per logical file.  Handlers track stats per part. Multiple handlers could be updating the same logical file.
+        // To allow each handler to update the same logical file without overwriting the other handlers updates, the fileStats are 'merged' into fileStats[]
+        // So, reset required because the handlers merge stats rather than sets them
+        for (auto & fileStatItem: fileStats)
+            fileStatItem->reset();
+
         keyLookupHandlers.getFileStats(fileStats, indexFileStatsTableEntry);
         fetchLookupHandlers.getFileStats(fileStats, dataFileStatsTableEntry);
-
+        for (auto & fileStatItem: fileStats)
+            activeStats.merge(*fileStatItem);
+    }
+    virtual void serializeStats(MemoryBuffer &mb) override
+    {
         PARENT::serializeStats(mb);
         mb.append((unsigned)fileStats.size());
         for (auto &stats: fileStats)
