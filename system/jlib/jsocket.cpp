@@ -3363,6 +3363,7 @@ inline bool isIp4(const unsigned *netaddr)
 
 void IpAddress::setIP4(unsigned ip)
 {
+    hostname.clear();
     netaddr[0] = 0;
     netaddr[1] = 0;
     if (ip)
@@ -3596,14 +3597,18 @@ static bool lookupHostAddress(const char *name,unsigned *netaddr)
 
 bool IpAddress::ipset(const char *text)
 {
-    if (text&&*text) {
-        if ((text[0]=='.')&&(text[1]==0)) {
+    if (text&&*text)
+    {
+        if ((text[0]=='.')&&(text[1]==0))
+        {
             ipset(queryHostIP());
             return true;
         }
-        hostname.set(text);
         if (decodeNumericIP(text,netaddr))
+        {
+            hostname.clear();
             return true;
+        }
         const char *s;
         for (s=text;*s;s++)
             if (!isdigit(*s)&&(*s!=':')&&(*s!='.')) 
@@ -3611,10 +3616,13 @@ bool IpAddress::ipset(const char *text)
         if (!*s)
             return ipset(NULL);
         if (lookupHostAddress(text,netaddr))
+        {
+            hostname.set(text);
             return true;
+        }
     }
-    memset(&netaddr,0,sizeof(netaddr));
     hostname.clear();
+    memset(&netaddr,0,sizeof(netaddr));
     return false;
 }
 
@@ -3676,6 +3684,7 @@ void IpAddress::ipserialize(MemoryBuffer & out) const
 
 void IpAddress::ipdeserialize(MemoryBuffer & in)
 {
+    hostname.clear();
     unsigned pfx;
     in.read(sizeof(pfx),&pfx);
     if (pfx!=IPV6_SERIALIZE_PREFIX) {
@@ -3736,6 +3745,7 @@ bool IpAddress::ipincrement(unsigned count,byte minoctet,byte maxoctet,unsigned 
             count = v/base;
         }
     }
+    hostname.clear(); // Probably should never be set for an IpAddress where ipincrement is used
     return true;
 }
 
@@ -3782,6 +3792,7 @@ NO_SANITIZE("alignment") size32_t IpAddress::getNetAddress(size32_t maxsz,void *
 
 NO_SANITIZE("alignment") void IpAddress::setNetAddress(size32_t sz,const void *src)
 {
+    hostname.clear();
     if (sz==sizeof(unsigned)) { // IPv4
         netaddr[0] = 0;
         netaddr[1] = 0;
