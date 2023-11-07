@@ -2691,11 +2691,24 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
         StringBuffer destFolder, destTitle, defaultFolder, defaultReplicateFolder;
         StringBuffer srcNodeGroup, destNodeGroup;
         bool bRoxie = false;
+        const char* srcDali = req.getSourceDali();
         const char* destNodeGroupReq = req.getDestGroup();
-        if(!destNodeGroupReq || !*destNodeGroupReq)
+        if (isEmptyString(destNodeGroupReq))
         {
-            getNodeGroupFromLFN(context, srcname, destNodeGroup);
-            DBGLOG("Destination node group not specified, using source node group %s", destNodeGroup.str());
+            CDfsLogicalFileName lfn;
+            lfn.set(srcname);
+            if (!isEmptyString(srcDali) || lfn.isForeign() || lfn.isRemote())
+            {
+                //makes no sense to get the srcname's current group, if a logical file is from a different environment.
+                if (!getDefaultStoragePlane(destNodeGroup))
+                    throw makeStringException(ECLWATCH_INVALID_INPUT, "Destination node group not specified. And no default node group found.");
+                DBGLOG("Destination node group not specified, using default node group %s", destNodeGroup.str());
+            }
+            else
+            {
+                getNodeGroupFromLFN(context, srcname, destNodeGroup);
+                DBGLOG("Destination node group not specified, using source node group %s", destNodeGroup.str());
+            }
         }
         else
         {
@@ -2721,7 +2734,6 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
         constructFileMask(destTitle.str(), fileMask);
 
         Owned<IUserDescriptor> udesc=createUserDescriptor();
-        const char* srcDali = req.getSourceDali();
         const char* srcu = req.getSrcusername();
         if (!isEmptyString(srcDali) && !isEmptyString(srcu))
         {
