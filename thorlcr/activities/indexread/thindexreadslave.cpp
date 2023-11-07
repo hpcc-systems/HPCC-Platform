@@ -44,6 +44,7 @@ class CIndexReadSlaveBase : public CSlaveActivity
 protected:
     StringAttr logicalFilename;
     IArrayOf<IPartDescriptor> partDescs;
+    bool isSuperFile = false;
     IHThorIndexReadBaseArg *helper;
     IHThorSourceLimitTransformExtra * limitTransformExtra;
     Owned<IEngineRowAllocator> allocator;
@@ -76,10 +77,9 @@ protected:
     rowcount_t rowLimit = RCMAX;
     bool useRemoteStreaming = false;
     Owned<IFileIO> lazyIFileIO;
-    mutable CriticalSection ioStatsCS;
+    mutable CriticalSection keyManagersCS;  // CS for any updates to keyManagers
     unsigned fileTableStart = NotFound;
-    CStatsContextLogger contextLogger;
-    CStatsCtxLoggerDeltaUpdater statsUpdater;
+    std::vector<Owned<CStatsContextLogger>> contextLoggers;
 
     class TransformCallback : implements IThorIndexCallback , public CSimpleInterface
     {
@@ -98,7 +98,7 @@ protected:
             if (!keyManager)
                 throw MakeActivityException(&activity, 0, "Callback attempting to read blob with no key manager - index being read remotely?");
             needsBlobCleaning = true;
-            return (byte *) keyManager->loadBlob(id, dummy, &activity.contextLogger);
+            return (byte *) keyManager->loadBlob(id, dummy, nullptr);
         }
         void prepareManager(IKeyManager *_keyManager)
         {
@@ -166,10 +166,9 @@ public:
             unsigned projectedFormatCrc = helper->getProjectedFormatCrc();
             IOutputMetaData *projectedFormat = helper->queryProjectedDiskRecordSize();
 
-            unsigned p = partNum;
-            while (p<partDescs.ordinality()) // will process all parts if localMerge
+            for (unsigned p = partNum; p<partDescs.ordinality(); p++) // will process all parts if localMerge
             {
-                IPartDescriptor &part = partDescs.item(p++);
+                IPartDescriptor &part = partDescs.item(p);
                 unsigned crc=0;
                 part.getCrc(crc);
 
@@ -273,7 +272,7 @@ public:
                                     continue; // try next copy and ultimately failover to local when no more copies
                                 }
                                 ActPrintLog("[part=%d]: reading remote dafilesrv index '%s' (logical file = %s)", partNum, path.str(), logicalFilename.get());
-                                partNum = p;
+                                partNum = (p+1);
                                 return indexLookup.getClear();
                             }
                         }
@@ -296,7 +295,7 @@ public:
                     part.queryOwner().getClusterLabel(0, planeName);
                     blockedSize = getBlockedFileIOSize(planeName);
                 }
-                lazyIFileIO.setown(queryThor().queryFileCache().lookupIFileIO(*this, logicalFilename, part, nullptr, indexReadActivityStatistics, blockedSize));
+                lazyIFileIO.setown(queryThor().queryFileCache().lookupIFileIO(*this, logicalFilename, part, nullptr, indexReadFileStatistics, blockedSize));
 
                 RemoteFilename rfn;
                 part.getFilename(0, rfn);
@@ -304,7 +303,7 @@ public:
                 rfn.getPath(path); // NB: use for tracing only, IDelayedFile uses IPartDescriptor and any copy
 
                 Owned<IKeyIndex> keyIndex = createKeyIndex(path, crc, *lazyIFileIO, (unsigned) -1, false);
-                Owned<IKeyManager> klManager = createLocalKeyManager(helper->queryDiskRecordSize()->queryRecordAccessor(true), keyIndex, &contextLogger, helper->hasNewSegmentMonitors(), false);
+                Owned<IKeyManager> klManager = createLocalKeyManager(helper->queryDiskRecordSize()->queryRecordAccessor(true), keyIndex, contextLoggers[p], helper->hasNewSegmentMonitors(), false);
                 if (localMerge)
                 {
                     if (!keyIndexSet)
@@ -315,7 +314,10 @@ public:
                         translators.append(translator.getClear());
                     }
                     keyIndexSet->addIndex(keyIndex.getClear());
-                    keyManagers.append(*klManager.getLink());
+                    {
+                        CriticalBlock b(keyManagersCS);
+                        keyManagers.append(*klManager.getLink());
+                    }
                     keyManager = klManager;
                 }
                 else
@@ -325,13 +327,17 @@ public:
                     if (translator)
                         klManager->setLayoutTranslator(&translator->queryTranslator());
                     translators.append(translator.getClear());
-                    keyManagers.append(*klManager.getLink());
+                    {
+                        CriticalBlock b(keyManagersCS);
+                        keyManagers.append(*klManager.getLink());
+                    }
                     keyManager = klManager;
-                    partNum = p;
+                    partNum = (p+1);
                     return createIndexLookup(keyManager);
                 }
             }
-            keyMergerManager.setown(createKeyMerger(helper->queryDiskRecordSize()->queryRecordAccessor(true), keyIndexSet, seekGEOffset, &contextLogger, helper->hasNewSegmentMonitors(), false));
+            //Not tracking jhtree cache stats in KeyMerger at the moment.  Future: something to consider
+            keyMergerManager.setown(createKeyMerger(helper->queryDiskRecordSize()->queryRecordAccessor(true), keyIndexSet, seekGEOffset, nullptr, helper->hasNewSegmentMonitors(), false));
             const ITranslator *translator = translators.item(0);
             if (translator)
                 keyMergerManager->setLayoutTranslator(&translator->queryTranslator());
@@ -348,40 +354,12 @@ public:
         else
             return nullptr;
     }
-    void mergeFileStats(IPartDescriptor *partDesc, IFileIO *partIO)
-    {
-        if (fileStats.size()>0)
-        {
-            ISuperFileDescriptor * superFDesc = partDesc->queryOwner().querySuperFileDescriptor();
-            if (superFDesc)
-            {
-                unsigned subfile, lnum;
-                if(superFDesc->mapSubPart(partDesc->queryPartIndex(), subfile, lnum))
-                    mergeStats(*fileStats[fileTableStart+subfile], partIO);
-            }
-            else
-                mergeStats(*fileStats[fileTableStart], partIO);
-        }
-    }
-    void updateStats()
-    {
-        // NB: updateStats() should always be called whilst ioStatsCS is held.
-        if (lazyIFileIO)
-        {
-            mergeStats(inactiveStats, lazyIFileIO);
-            if (currentPart<partDescs.ordinality())
-                mergeFileStats(&partDescs.item(currentPart), lazyIFileIO);
-        }
-    }
     void configureNextInput()
     {
         if (currentManager)
         {
             resetManager(currentManager);
             currentManager = nullptr;
-
-            CriticalBlock b(ioStatsCS);
-            updateStats();
             lazyIFileIO.clear();
         }
         IKeyManager *keyManager = nullptr;
@@ -433,7 +411,6 @@ public:
         if (eoi)
             return nullptr;
         dbgassertex(currentInput);
-        CStatsScopedThresholdDeltaUpdater scoped(statsUpdater);
         const void *ret = nullptr;
         while (true)
         {
@@ -528,7 +505,7 @@ public:
     }
 public:
     CIndexReadSlaveBase(CGraphElementBase *container)
-        : CSlaveActivity(container, indexReadActivityStatistics), callback(*this), contextLogger(jhtreeCacheStatistics, thorJob), statsUpdater(jhtreeCacheStatistics, *this, contextLogger)
+        : CSlaveActivity(container, indexReadActivityStatistics), callback(*this)
     {
         helper = (IHThorIndexReadBaseArg *)container->queryHelper();
         limitTransformExtra = nullptr;
@@ -555,7 +532,6 @@ public:
                 break;
             if (keyManager)
                 prepareManager(keyManager);
-            CStatsScopedThresholdDeltaUpdater scoped(statsUpdater);
             if (hard) // checkCount checks hard key count only.
                 count += indexInput->checkCount(keyedLimit-count); // part max, is total limit [keyedLimit] minus total so far [count]
             else
@@ -589,7 +565,10 @@ public:
             partDescs.kill();
             keyIndexSet.clear();
             translators.kill();
-            keyManagers.kill();
+            {
+                CriticalBlock b(keyManagersCS);
+                keyManagers.kill();
+            }
             keyMergerManager.clear();
         }
         else
@@ -607,6 +586,7 @@ public:
             IPartDescriptor &part0 = partDescs.item(0);
             IFileDescriptor &fileDesc = part0.queryOwner();
             ISuperFileDescriptor *super = fileDesc.querySuperFileDescriptor();
+            isSuperFile = super != nullptr;
 
             if ((0 == (helper->getFlags() & TIRusesblob)) && !localMerge)
             {
@@ -684,7 +664,15 @@ public:
                 }
             }
             data.read(fileTableStart);
-            setupSpace4FileStats(fileTableStart, reInit, super!=nullptr, super?super->querySubFiles():0, indexReadActivityStatistics);
+            setupSpace4FileStats(fileTableStart, reInit, isSuperFile, isSuperFile?super->querySubFiles():0, indexReadFileStatistics);
+            // One contextLoggers per part required:
+            // 1) superfile: multiple contextLoggers required to allow stats to be tracked at subfile level
+            // 2) non-superfile: although all stats doesn't need to be tracked at part level, having separate contextLoggers is needed to
+            //    merge both io stats and jhtree stats.  (Without multiple contextLoggers, when ForEach(keyManagers)mergeStats() is called,
+            //    the same jhtree stats would be merged multiple times.  And ForEach(keyManagers)->mergeStats needs to be called to ensure
+            //    that io stats are merged)
+            for(unsigned i = 0; i < parts; ++i)
+                contextLoggers.push_back(new CStatsContextLogger(jhtreeCacheStatistics, thorJob));
         }
     }
     // IThorDataLink
@@ -719,10 +707,42 @@ public:
     virtual void gatherActiveStats(CRuntimeStatisticCollection &activeStats) const
     {
         PARENT::gatherActiveStats(activeStats);
+        if (partDescs.ordinality())
         {
-            CriticalBlock b(ioStatsCS);
-            if (lazyIFileIO)
-                mergeStats(activeStats, lazyIFileIO);
+            // reset required because within loop below, mergeStats() is used to build up stats for each file
+            for (auto & fileStatItem: fileStats)
+                fileStatItem->reset();
+            ISuperFileDescriptor *superFDesc = partDescs.item(0).queryOwner().querySuperFileDescriptor();
+            for (unsigned partNum=0; partNum<partDescs.ordinality(); partNum++)
+            {
+                // If it is a superfile, track stats at subfile level with fileStats[fileTableStart+subfile]
+                // if not, one set of stats for the whole file with fileStats[fileTableStart]
+                unsigned subfile = 0;
+                if (isSuperFile) // if it's not superfile, subfile is always 0 (otherwise it is the subfile number)
+                {
+                    unsigned lnum;
+                    if(!superFDesc->mapSubPart(partDescs.item(partNum).queryPartIndex(), subfile, lnum))
+                        continue; // should not happen
+                }
+                IKeyManager * keyManager;
+                {
+                    CriticalBlock b(keyManagersCS);
+                    if (!keyManagers.isItem(partNum))
+                        continue;
+                    keyManager = &keyManagers.item(partNum);
+                }
+                if (fileStats.size()>0)
+                {
+                    CRuntimeStatisticCollection * fileStatItem = fileStats[fileTableStart+subfile];
+                    keyManager->mergeStats(*fileStatItem); // for file level stats
+                    activeStats.merge(*fileStatItem);   // for activity level stats
+                }
+                else
+                {
+                     // when just 1 file, merge into activeStats (can use activeStats for file level stats)
+                    keyManager->mergeStats(activeStats);
+                }
+            }
         }
         activeStats.setStatistic(StNumRowsProcessed, progress);
     }
@@ -735,11 +755,7 @@ public:
     }
     virtual void done() override
     {
-        {
-            CriticalBlock b(ioStatsCS);
-            updateStats();
-            lazyIFileIO.clear();
-        }
+        lazyIFileIO.clear();
         PARENT::done();
     }
 };
@@ -819,7 +835,6 @@ class CIndexReadSlaveActivity : public CIndexReadSlaveBase
             helper->mapOutputToInput(tempBuilder, seek, numFields); // NOTE - weird interface to mapOutputToInput means that it STARTS writing at seekGEOffset...
             rawSeek = (byte *)temp;
         }
-        CStatsScopedThresholdDeltaUpdater scoped(statsUpdater);
         if (!currentManager->lookupSkip(rawSeek, seekGEOffset, seekSize))
             return NULL;
         const byte *row = currentManager->queryKeyBuffer();
@@ -972,7 +987,6 @@ public:
 // IRowStream
     virtual void stop() override
     {
-        CStatsScopedDeltaUpdater scoped(statsUpdater);
         if (RCMAX != keyedLimit) // NB: will not be true if nextRow() has handled
         {
             keyedLimitCount = sendGetCount(keyedProcessed);
@@ -1142,7 +1156,6 @@ public:
                     if (keyManager)
                         prepareManager(keyManager);
 
-                    CStatsScopedThresholdDeltaUpdater scoped(statsUpdater);
                     while (true)
                     {
                         const void *key = indexInput->nextKey();
@@ -1301,7 +1314,6 @@ public:
                         if (keyManager)
                             prepareManager(keyManager);
 
-                        CStatsScopedThresholdDeltaUpdater scoped(statsUpdater);
                         while (true)
                         {
                             const void *key = indexInput->nextKey();
