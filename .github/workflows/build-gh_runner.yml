@@ -1,0 +1,244 @@
+name: Build Package (gh-runner)
+
+env:
+  VCPKG_BINARY_SOURCES: "clear;nuget,GitHub,read"
+  VCPKG_NUGET_REPOSITORY: "https://github.com/hpcc-systems/vcpkg"
+
+on:
+  workflow_call:
+    inputs:
+      os:
+        type: string
+        description: 'Operating System'
+        required: false
+        default: 'ubuntu-22.04'
+      ln:
+        type: boolean
+        description: 'Internal Build'
+        required: false
+        default: false
+      single-package:
+        type: boolean
+        description: 'Single Package'
+        required: false
+        default: true
+      build-type:
+        type: string
+        description: 'CMake Build Type'
+        required: false
+        default: 'RelWithDebInfo'
+      containerized:
+        type: boolean
+        description: 'Containerized Build'
+        required: false
+        default: false
+      strip-files:
+        type: boolean
+        description: 'Single Package'
+        required: false
+        default: true
+      cmake-configuration:
+        type: string
+        description: 'CMake Configuration'
+        required: false
+        default: '-DCPACK_THREADS=0 -DUSE_OPTIONAL=OFF -DUSE_CPPUNIT=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache'
+      cmake-configuration-ex:
+        type: string
+        description: 'CMake Configuration Extra'
+        required: false
+        default: ''
+      update-cache:
+        type: boolean
+        description: 'Update Cache'
+        required: false
+        default: true
+      upload-package:
+        type: boolean
+        description: 'Upload Package as Asset'
+        required: false
+        default: false
+      asset-name:
+        type: string
+        description: 'Asset Name (if upload-package is true)'
+        required: false
+        default: 'build-docker-package'
+    secrets:
+      LNB_TOKEN:
+        required: false
+
+jobs:
+
+  build-gh_runner:
+    runs-on: ${{ inputs.os }}
+    steps:
+      - name: Ubuntu Dependencies
+        if: ${{ contains(inputs.os, 'ubuntu') }}
+        shell: "bash"
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -yq --no-install-recommends \
+            apt-transport-https \
+            autoconf \
+            autoconf-archive \
+            automake \
+            autotools-dev \
+            binutils-dev \
+            bison \
+            build-essential \
+            ca-certificates \
+            curl \
+            dirmngr \
+            flex \
+            git \
+            gnupg \
+            groff-base \
+            libtool \
+            pkg-config \
+            software-properties-common \
+            tar \
+            unzip \
+            uuid-dev \
+            zip
+
+      - name: Ubuntu Dependencies 2
+        if: ${{ contains(inputs.os, 'ubuntu') }}
+        shell: "bash"
+        run: |
+          sudo apt-get install -yq --no-install-recommends \
+            ccache \
+            default-jdk \
+            ninja-build \
+            python3-dev \
+            rsync \
+            fop \
+            libsaxonb-java
+
+      - name: Ubuntu Mono Dependencies
+        if: ${{ inputs.os == 'ubuntu-22.04' }}
+        shell: "bash"
+        run: |
+          sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
+          echo "deb https://download.mono-project.com/repo/ubuntu stable-focal main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list
+          sudo apt-get update -y
+          sudo apt-get -yq install -f mono-complete
+
+      - name: OSX Dependencies
+        if: ${{ contains(inputs.os, 'macos') }}
+        shell: "bash"
+        run: |
+          brew install bison flex pkg-config autoconf autoconf-archive automake libtool cmake openjdk@11 ninja
+
+      - name: "Remove builtin vcpkg (old)"
+        working-directory: .
+        shell: "bash"
+        run: |
+          ${{ !contains(inputs.os, 'windows') && 'sudo' || '' }} rm -rf "$VCPKG_INSTALLATION_ROOT"
+
+      - name: Checkout HPCC-Platform
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          path: ${{ github.workspace }}/HPCC-Platform
+
+      - name: Checkout LN
+        if: ${{ inputs.ln == true }}
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ github.repository_owner }}/LN
+          token: ${{ secrets.LNB_TOKEN }}
+          ref: ${{ github.base_ref }}
+          submodules: recursive
+          path: ${{ github.workspace }}/LN
+
+      - name: "vcpkg Bootstrap"
+        shell: "bash"
+        run: |
+          ./HPCC-Platform/vcpkg/bootstrap-vcpkg.sh
+
+      - name: "Setup NuGet credentials"
+        shell: "bash"
+        run: |
+          ${{ !contains(inputs.os, 'windows') && 'mono' || '' }} `./HPCC-Platform/vcpkg/vcpkg fetch nuget | tail -n 1` \
+            sources add \
+            -name "GitHub" \
+            -source "https://nuget.pkg.github.com/hpcc-systems/index.json" \
+            -storepasswordincleartext \
+            -username "${{ github.actor }}" \
+            -password "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: Calculate vars
+        id: vars
+        working-directory: ${{ github.workspace }}/HPCC-Platform/vcpkg
+        shell: "bash"
+        run: |
+          branch_label_1=${{ github.base_ref }}
+          branch_label_2=$(echo ${{ github.ref }} | cut -d'/' -f3)
+          echo "branch_label=${branch_label_1:-$branch_label_2}" >> $GITHUB_OUTPUT
+          vcpkg_sha_short=$(git rev-parse --short=8 HEAD)
+          echo "vcpkg_sha_short=$vcpkg_sha_short" >> $GITHUB_OUTPUT
+
+      - name: Print vars
+        shell: "bash"
+        run: |
+          echo "${{ toJSON(steps.vars.outputs) }}"
+
+      - uses: actions/cache@v3
+        id: cache
+        with:
+          path: |
+            ${{github.workspace}}/build/vcpkg_installed
+          key: vcpkg-${{ inputs.os }}-${{ steps.vars.outputs.vcpkg_sha_short }}
+
+      - uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          save: ${{ inputs.update-cache == true }}
+          key: gh-runner-${{ inputs.os }}-${{ inputs.build-type }}-${{ steps.vars.outputs.branch_label }}-${{ inputs.containerized == true && 'k8s' || 'bare-metal' }}-${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }}
+          restore-keys: |
+            gh-runner-${{ inputs.os }}-${{ inputs.build-type }}-${{ steps.vars.outputs.branch_label }}-${{ inputs.containerized == true && 'k8s' || 'bare-metal' }}-
+            gh-runner-${{ inputs.os }}-${{ inputs.build-type }}-${{ steps.vars.outputs.branch_label }}-
+            gh-runner-${{ inputs.os }}-${{ inputs.build-type }}-
+            gh-runner-${{ inputs.os }}-
+
+      - name: CMake Configure and Build
+        shell: "bash"
+        run: |
+          mkdir -p ${{ github.workspace }}/LN
+          mkdir -p ${{ github.workspace }}/build
+          cmake ${{ !contains(inputs.os, 'windows') && '-G Ninja' || '' }} -S ./${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }} -B ./build -DCMAKE_BUILD_TYPE=${{ inputs.build-type }} -DCONTAINERIZED=${{ inputs.containerized == true && 'ON' || 'OFF' }} -DCPACK_STRIP_FILES=${{ inputs.strip-files == true && 'ON' || 'OFF' }} ${{ inputs.cmake-configuration }} ${{ inputs.cmake-configuration-ex }}
+          cmake --build ./build ${{ contains(inputs.os, 'windows') && '--config Release' || ''}} --parallel ${{ inputs.upload-package == true && '--target package' || ''}}
+
+      - name: Upload Package
+        if: ${{ inputs.upload-package == true }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ inputs.asset-name }}
+          path: |
+            ${{ github.workspace }}/build/*.deb
+            ${{ github.workspace }}/build/*.rpm
+          if-no-files-found: error
+
+      - name: Upload Support Files
+        if: ${{ inputs.upload-package == true }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ inputs.asset-name }}-support-files
+          path: |
+            ${{ github.workspace }}/HPCC-Platform/.github/workflows/smoketest-preabort.sh
+            ${{ github.workspace }}/HPCC-Platform/.github/workflows/timeoutcmd
+          if-no-files-found: error
+
+      - name: Upload UI Test Files
+        if: ${{ inputs.upload-package == true }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ inputs.asset-name }}-ui_test-files
+          path: |
+            ${{ github.workspace }}/HPCC-Platform/esp/src/test-ui/**/*
+          if-no-files-found: error
+
+      - name: Upload Error Logs
+        if: ${{ failure() || cancelled() }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ inputs.os }}-${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }}-logs
+          path: ${{ github.workspace }}/build/**/*.log

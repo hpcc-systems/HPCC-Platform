@@ -1,0 +1,124 @@
+name: UI test Package (gh-runner)
+
+on:
+  workflow_call:
+    inputs:
+      os:
+        type: string
+        description: 'Operating System'
+        required: false
+        default: 'ubuntu-22.04'
+      asset-name:
+        type: string
+        description: 'Asset Name'
+        required: false
+        default: 'build-docker-package'
+      dependencies:
+        type: string
+        description: 'Dependencies'
+        required: false
+        default: 'bison flex build-essential binutils-dev curl lsb-release libcppunit-dev python3-dev default-jdk r-base-dev r-cran-rcpp r-cran-rinside r-cran-inline pkg-config libtool autotools-dev automake git cmake xmlstarlet'
+
+jobs:
+
+  main:
+    timeout-minutes: 30 # the ui-tests run step has its own timeout, however the job can sometimes take time to download dependencies
+    runs-on: ${{ inputs.os }}
+    steps:
+
+      - name: Free additional disk space (remove Android SDK + Tools)
+        run: |
+          sudo rm -rf /usr/local/lib/android
+
+      - name: Download UI Test Files
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ inputs.asset-name }}-ui_test-files
+          path: ${{ inputs.asset-name }}-ui_test-files
+
+      - name: Check-ECLWatch-UI-Test-Directory
+        id: check
+        run: |
+          if [[ ! -d ${{ inputs.asset-name }}-ui_test-files ]]
+          then
+              echo "ECLWatch UI ${{ inputs.asset-name }}-ui_test-files directory missing."
+          else
+              javaFilesCount=$(find ${{ inputs.asset-name }}-ui_test-files/ -iname '*.java' -type f -print | wc -l )
+              echo "Number of test java files is $javaFilesCount"
+              if [[ ${javaFilesCount} -eq 0 ]]
+              then
+                echo "No java files, do nothing."
+              else
+                echo "runtests=true" >> $GITHUB_OUTPUT
+              fi
+          fi
+
+      - name: Install Dependencies
+        if: steps.check.outputs.runtests
+        shell: "bash"
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git wget net-tools
+          sudo apt-get install -y tzdata unzip xvfb libxi6
+          sudo apt-get install -y default-jdk
+          sudo apt-get install -y ${{ inputs.dependencies }}
+          sudo apt-get install -y gdb
+
+          curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
+          sudo apt-get install -y nodejs
+
+          echo "node.js version = $(node --version), npm version = $(npm --version), release = $(lsb_release -sc)"
+
+      - name: UI-Test-Prerequisites
+        if: steps.check.outputs.runtests
+        run: |
+          wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+          sudo apt-get install -y ./google-chrome-stable_current_amd64.deb
+          wget https://chromedriver.storage.googleapis.com/2.41/chromedriver_linux64.zip
+          unzip chromedriver_linux64.zip
+          sudo mv chromedriver /usr/bin/chromedriver
+          sudo chown root:root /usr/bin/chromedriver
+          sudo chmod +x /usr/bin/chromedriver
+          wget https://selenium-release.storage.googleapis.com/3.141/selenium-server-standalone-3.141.59.jar
+          wget http://www.java2s.com/Code/JarDownload/testng/testng-6.8.7.jar.zip
+          unzip testng-6.8.7.jar.zip
+
+      - name: Download Package
+        if: steps.check.outputs.runtests
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ inputs.asset-name }}
+          path: ${{ inputs.asset-name }}
+
+      - name: Install Package
+        if: steps.check.outputs.runtests
+        shell: "bash"
+        run: |
+          sudo apt-get install -y -f ./${{ inputs.asset-name }}/*.deb
+          sudo chown -R $USER:$USER /opt/HPCCSystems
+
+          sudo xmlstarlet ed -L -u 'Environment/Software/ThorCluster/@slavesPerNode' -v 2 -u 'Environment/Software/ThorCluster/@channelsPerSlave' -v 1 /etc/HPCCSystems/environment.xml
+
+      - name: run
+        timeout-minutes: 10 # generous, current runtime is ~1min, this should be increased if new tests are added
+        if: steps.check.outputs.runtests
+        run: |
+          export LANG="en_US.UTF-8"
+          update-locale
+          source /opt/HPCCSystems/sbin/hpcc_setenv
+          sudo /etc/init.d/hpcc-init start
+          export CLASSPATH=".:$(realpath selenium-server-standalone-3.141.59.jar):$(realpath testng-6.8.7.jar)"
+          pushd ${{ inputs.asset-name }}-ui_test-files
+          ./run.sh tests http://localhost:8010 > eclWatchUiTest.log 2>&1
+          retCode=$?
+          echo "UI test done"
+          [[ $retCode -ne 0 ]] && exit 1
+          popd
+
+      - name: eclwatch-ui-test-logs-artifact
+        if: ${{ failure() || cancelled() }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: ECLWatchUiTest
+          path: ${{ inputs.asset-name }}-ui_test-files/eclWatchUiTest.log
+          if-no-files-found: error

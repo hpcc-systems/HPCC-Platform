@@ -3,8 +3,38 @@ name: Test Build
 env:
   VCPKG_BINARY_SOURCES: "clear;nuget,GitHub,read"
   VCPKG_NUGET_REPOSITORY: "https://github.com/hpcc-systems/vcpkg"
+  OS_DEPENDENCIES: "bison flex build-essential binutils-dev curl lsb-release libcppunit-dev python3-dev default-jdk
+    r-base-dev r-cran-rcpp r-cran-rinside r-cran-inline pkg-config libtool autotools-dev automake git cmake"
 
 on:
+  workflow_dispatch:
+    inputs:
+      os:
+        type: choice
+        options:
+          - 'ubuntu-23.10'
+          - 'ubuntu-22.04'
+          - 'ubuntu-20.04'
+          - 'centos-8'
+          - 'centos-7'
+          - 'amazonlinux'
+        description: 'Operating System'
+        required: false
+        default: 'ubuntu-22.04'
+      ln:
+        type: boolean
+        description: 'Internal Build'
+        required: false
+        default: false
+      smoketest:
+        type: boolean
+        description: 'Run Smoketest'
+        required: false
+        default: false
+
+  # Do not include "push" in final version
+  push:
+
   pull_request:
     branches:
       - "master"
@@ -21,348 +51,195 @@ on:
     - cron: "0 0 * * *"
 
 jobs:
-  preamble:
-    name: Check Skip
-    runs-on: ubuntu-22.04
-    outputs:
-      folder_platform: ${{ steps.vars.outputs.folder_platform }}
-      mount_platform: ${{ steps.vars.outputs.mount_platform }}
-      folder_ln: ${{ steps.vars.outputs.folder_ln }}
-      mount_ln: ${{ steps.vars.outputs.mount_ln }}
-      folder_build: ${{ steps.vars.outputs.folder_build }}
-      mount_build: ${{ steps.vars.outputs.mount_build }}
-      community_ref: ${{ steps.vars.outputs.community_ref }}
-      internal_ref: ${{ steps.vars.outputs.internal_ref }}
-      community_tag: ${{ steps.vars.outputs.community_tag }}
-      internal_tag: ${{ steps.vars.outputs.internal_tag }}
-      candidate_base_branch: ${{ steps.vars.outputs.candidate_base_branch }}
-      cmake_docker_config: ${{ steps.vars.outputs.cmake_docker_config }}
-      platform: "1"
-      platform_testing_do_not_release: ${{ steps.skip_check.outputs.platform }}
-      include_plugins: ${{ (steps.skip_check.outputs.plugins && 'ON') || 'OFF' }}
-    steps:
-      - name: Calculate vars
-        id: vars
-        run: |
-          echo "folder_platform=${{ github.workspace }}/HPCC-Platform" >> $GITHUB_OUTPUT
-          echo 'mount_platform=source="${{ github.workspace }}/HPCC-Platform",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached' >> $GITHUB_OUTPUT
-          echo "folder_ln=${{ github.workspace }}/LN" >> $GITHUB_OUTPUT
-          echo 'mount_ln=source="${{ github.workspace }}/LN",target=/hpcc-dev/LN,type=bind,consistency=cached' >> $GITHUB_OUTPUT
-          echo "folder_build=${{ github.workspace }}/build" >> $GITHUB_OUTPUT
-          echo 'mount_build=source="${{ github.workspace }}/build",target=/hpcc-dev/build,type=bind,consistency=cached' >> $GITHUB_OUTPUT
-          community_ref=${{ github.ref }}
-          echo "community_ref=$community_ref" >> $GITHUB_OUTPUT
-          echo "internal_ref=${{ github.base_ref }}" >> $GITHUB_OUTPUT
-          community_tag=$(echo $community_ref | cut -d'/' -f3)
-          echo "community_tag=$community_tag" >> $GITHUB_OUTPUT
-          echo "internal_tag=$(echo $community_tag | sed 's/community/internal/')" >> $GITHUB_OUTPUT
-          echo "candidate_base_branch=${{ github.base_ref }}" >> $GITHUB_OUTPUT
-          echo "cmake_docker_config=-DCMAKE_BUILD_TYPE=RelWithDebInfo -DVCPKG_FILES_DIR=/hpcc-dev -DCPACK_THREADS=0 -DUSE_OPTIONAL=OFF" >> $GITHUB_OUTPUT
+  build-workflow-dispatch:
+    if: ${{ contains('workflow_dispatch', github.event_name) }}
+    uses: ./.github/workflows/build-docker.yml
+    with:
+      os: ${{ inputs.os }}
+      ln: ${{ inputs.ln }}
+      upload-package: true
+      asset-name: 'docker-package'
+    secrets: inherit
 
-      - id: skip_check
-        uses: hpcc-systems/github-actions/changed-modules@main
-        with:
-          github_token: ${{ github.token }}
+  test-workflow-dispatch:
+    if: ${{ contains('workflow_dispatch', github.event_name) && inputs.smoketest == true }}
+    needs: build-workflow-dispatch
+    uses: ./.github/workflows/test-smoke-gh_runner.yml
+    with:
+      os: ${{ inputs.os }}
+      asset-name: 'docker-package'
+    secrets: inherit
 
-      - name: Print vars
-        run: |
-          echo "${{ toJSON(steps.vars.outputs) }})"
-          echo "${{ toJSON(steps.skip_check.outputs) }})"
+  build-docker-ubuntu-23_10:
+    if: ${{ contains('pull_request,push', github.event_name) }}
+    uses: ./.github/workflows/build-docker.yml
+    with:
+      os: ubuntu-23.10
+      single-package: true
+      containerized: false
+    secrets: inherit
 
-  build-docker:
-    name: Build Docker
-    needs: preamble
-    runs-on: ubuntu-22.04
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-23.10
-            event_name: "pull_request"
-          - os: ubuntu-22.04
-            name: k8s
-            container: true
-            event_name: "schedule"
-          - os: ubuntu-22.04
-            event_name: "schedule"
-          - os: ubuntu-20.04
-            event_name: "schedule"
-          - os: centos-8
-            event_name: "schedule"
-          - os: centos-7
-            event_name: "pull_request"
-            cmake_options_extra: "-DVCPKG_TARGET_TRIPLET=x64-centos-7-dynamic"
-          - os: amazonlinux
-            event_name: "schedule"
-            cmake_options_extra: "-DVCPKG_TARGET_TRIPLET=x64-amazonlinux-dynamic"
-          - os: centos-7
-            name: LN
-            cmake_options_extra: "-DVCPKG_TARGET_TRIPLET=x64-centos-7-dynamic"
-            ln: true
-            event_name: "schedule"
-      fail-fast: false
+  build-docker-ubuntu-22_04:
+    if: ${{ contains('pull_request,push', github.event_name) }}
+    uses: ./.github/workflows/build-docker.yml
+    with:
+      os: ubuntu-22.04
+      single-package: true
+      containerized: false
+      upload-package: true
+      asset-name: 'docker-package'
+    secrets: inherit
 
-    steps:
-      - name: Free additional disk space (remove Android SDK + Tools)
-        run: |
-          sudo rm -rf /usr/local/lib/android
+  test-smoke-docker-ubuntu-22_04:
+    if: ${{ contains('pull_request,push', github.event_name) }}
+    needs: build-docker-ubuntu-22_04
+    uses: ./.github/workflows/test-smoke-gh_runner.yml
+    with:
+      os: ubuntu-22.04
+      asset-name: 'docker-package'
+    secrets: inherit
 
-      - name: Checkout HPCC-Platform
-        if: ${{ contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
-        uses: actions/checkout@v3
-        with:
-          ref: ${{ needs.preamble.outputs.community_ref }}
-          submodules: recursive
-          path: ${{ needs.preamble.outputs.folder_platform }}
+  test-unit-docker-ubuntu-22_04:
+    if: ${{ contains('pull_request,push', github.event_name) }}
+    needs: build-docker-ubuntu-22_04
+    uses: ./.github/workflows/test-unit-gh_runner.yml
+    with:
+      os: ubuntu-22.04
+      asset-name: 'docker-package'
+    secrets: inherit
 
-      - name: Checkout LN
-        if: ${{ matrix.ln && contains(matrix.event_name, github.event_name) }}
-        uses: actions/checkout@v3
-        with:
-          repository: ${{ github.repository_owner }}/LN
-          token: ${{ secrets.LNB_TOKEN }}
-          ref: ${{ needs.preamble.outputs.internal_ref }}
-          submodules: recursive
-          path: ${{ needs.preamble.outputs.folder_ln }}
+  test-ui-docker-ubuntu-22_04:
+    if: ${{ contains('pull_request,push', github.event_name) }}
+    needs: build-docker-ubuntu-22_04
+    uses: ./.github/workflows/test-ui-gh_runner.yml
+    with:
+      os: ubuntu-22.04
+      asset-name: 'docker-package'
+    secrets: inherit
 
-      - name: Calculate vars
-        if: ${{ contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
-        id: vars
-        working-directory: ${{ needs.preamble.outputs.folder_platform }}/vcpkg
-        run: |
-          vcpkg_sha_short=$(git rev-parse --short=8 HEAD)
-          echo "vcpkg_sha_short=$vcpkg_sha_short" >> $GITHUB_OUTPUT
-          docker_build_label=hpccsystems/platform-build-${{ matrix.os }}
-          echo "docker_build_label=$docker_build_label" >> $GITHUB_OUTPUT
-          echo "docker_tag=$docker_build_label:$vcpkg_sha_short" >> $GITHUB_OUTPUT
-          echo "docker_tag_candidate_base=$docker_build_label:${{ needs.preamble.outputs.candidate_base_branch }}" >> $GITHUB_OUTPUT
+  build-docker-ubuntu-20_04:
+    if: ${{ contains('schedule,push', github.event_name) }}
+    uses: ./.github/workflows/build-docker.yml
+    with:
+      os: ubuntu-20.04
+      single-package: true
+      containerized: false
+    secrets: inherit
 
-      - name: Print vars
-        run: |
-          echo "${{ toJSON(needs.preamble.outputs) }})"
-          echo "${{ toJSON(steps.vars.outputs) }})"
+  build-docker-centos-8:
+    if: ${{ contains('schedule,push', github.event_name) }}
+    uses: ./.github/workflows/build-docker.yml
+    with:
+      os: centos-8
+      single-package: true
+      containerized: false
+    secrets: inherit
 
-      - name: Set up Docker Buildx
-        if: ${{ contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
-        id: buildx
-        uses: docker/setup-buildx-action@v2
+  build-docker-centos-7:
+    if: ${{ contains('pull_request,push', github.event_name) }}
+    uses: ./.github/workflows/build-docker.yml
+    with:
+      os: centos-7
+      single-package: true
+      containerized: false
+      cmake-configuration-ex: "-DVCPKG_TARGET_TRIPLET=x64-centos-7-dynamic"
+    secrets: inherit
 
-      - name: Pull previous images
-        run: |
-          docker pull ${{ steps.vars.outputs.docker_tag_candidate_base }} || true
-          docker pull ${{ steps.vars.outputs.docker_tag }} || true
+  build-docker-amazonlinux:
+    if: ${{ contains('schedule,push', github.event_name) }}
+    uses: ./.github/workflows/build-docker.yml
+    with:
+      os: amazonlinux
+      single-package: true
+      containerized: false
+      cmake-configuration-ex: "-DVCPKG_TARGET_TRIPLET=x64-amazonlinux-dynamic"
+    secrets: inherit
 
-      - name: Create Build Image  
-        if: ${{ contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
-        uses: docker/build-push-action@v4
-        with:
-          builder: ${{ steps.buildx.outputs.name }}
-          file: ${{ needs.preamble.outputs.folder_platform }}/dockerfiles/vcpkg/${{ matrix.os }}.dockerfile
-          context: ${{ needs.preamble.outputs.folder_platform }}/dockerfiles/vcpkg
-          load: true
-          build-args: |
-            VCPKG_REF=${{ steps.vars.outputs.vcpkg_sha_short }}
-          tags: |
-            ${{ steps.vars.outputs.docker_tag_candidate_base }}
-          cache-from: |
-            type=registry,ref=${{ steps.vars.outputs.docker_tag_candidate_base }}
-            type=registry,ref=${{ steps.vars.outputs.docker_tag }}
-          cache-to: type=inline
+  build-gh_runner-ubuntu-22_04:
+    if: ${{ contains('pull_request,push', github.event_name) }}
+    uses: ./.github/workflows/build-gh_runner.yml
+    with:
+      os: ubuntu-22.04
+      single-package: true
+      containerized: false
+      upload-package: true
+      asset-name: 'gh_runner-package'
+    secrets: inherit
+  
+  test-smoke-gh_runner-ubuntu-22_04:
+    if: ${{ contains('pull_request,push', github.event_name) }}
+    needs: build-gh_runner-ubuntu-22_04
+    uses: ./.github/workflows/test-smoke-gh_runner.yml
+    with:
+      os: ubuntu-22.04
+      asset-name: 'gh_runner-package'
+    secrets: inherit
 
-      # Communtiy Build 
-      - name: CMake Packages
-        if: ${{ !matrix.ln && !matrix.container && contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
-        run: |
-          mkdir -p ${{ needs.preamble.outputs.folder_build }}
-          declare -a plugins
-          if [ ${{ needs.preamble.outputs.include_plugins }} == "ON" ]; then
-              plugins=("CASSANDRAEMBED" "COUCHBASEEMBED" "ECLBLAS" "H3" "JAVAEMBED" "KAFKA" "MEMCACHED" "MONGODBEMBED" "MYSQLEMBED" "NLP" "PARQUETEMBED" "REDIS" "REMBED" "SQLITE3EMBED" "SQS" "PLATFORM")
-          else
-              plugins=("PLATFORM")
-          fi
-          for plugin in "${plugins[@]}"; do
-            sudo rm -f ${{ needs.preamble.outputs.folder_build }}/CMakeCache.txt
-            sudo rm -rf ${{ needs.preamble.outputs.folder_build }}/CMakeFiles
-            docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} ${{ steps.vars.outputs.docker_tag_candidate_base }} "\
-              cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/build ${{ needs.preamble.outputs.cmake_docker_config }} -D$plugin=ON -DCONTAINERIZED=OFF -DCPACK_STRIP_FILES=OFF ${{ matrix.cmake_options_extra }} && \
-              cmake --build /hpcc-dev/build --parallel $(nproc) --target package" 
-            # Disabled as not currently needed ---
-            # docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} ${{ steps.vars.outputs.docker_tag_candidate_base }} "cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/build ${{ needs.preamble.outputs.cmake_docker_config }} -D$plugin=ON -DCONTAINERIZED=OFF -DCPACK_STRIP_FILES=ON"
-            # docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} ${{ steps.vars.outputs.docker_tag_candidate_base }} "cmake --build /hpcc-dev/build --parallel $(nproc) --target package" 
-          done
+  test-unit-gh_runner-ubuntu-22_04:
+    if: ${{ contains('pull_request,push', github.event_name) }}
+    needs: build-gh_runner-ubuntu-22_04
+    uses: ./.github/workflows/test-unit-gh_runner.yml
+    with:
+      os: ubuntu-22.04
+      asset-name: 'gh_runner-package'
+    secrets: inherit
 
-      - name: CMake Containerized Packages
-        if: ${{ matrix.container && contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
-        run: |
-          mkdir -p ${{ needs.preamble.outputs.folder_build }}
-          sudo rm -f ${{ needs.preamble.outputs.folder_build }}/CMakeCache.txt
-          sudo rm -rf ${{ needs.preamble.outputs.folder_build }}/CMakeFiles
-          docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} ${{ steps.vars.outputs.docker_tag_candidate_base }} "\
-            cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/build ${{ needs.preamble.outputs.cmake_docker_config }} -DINCLUDE_PLUGINS=${{ needs.preamble.outputs.include_plugins }} -DCONTAINERIZED=ON -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_SPARK=ON -DCPACK_STRIP_FILES=OFF ${{ matrix.cmake_options_extra }} && \
-            cmake --build /hpcc-dev/build --parallel $(nproc) --target package" 
+  test-ui-gh_runner-ubuntu-22_04:
+    if: ${{ contains('pull_request,push', github.event_name) }}
+    needs: build-gh_runner-ubuntu-22_04
+    uses: ./.github/workflows/test-ui-gh_runner.yml
+    with:
+      os: ubuntu-22.04
+      asset-name: 'gh_runner-package'
+    secrets: inherit
 
-      #  Internal Build  ---
-      - name: CMake LN Packages
-        if: ${{ matrix.ln && !matrix.container && contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
-        run: |
-          mkdir -p ${{ needs.preamble.outputs.folder_build }}
-          sudo rm -f ${{ needs.preamble.outputs.folder_build }}/CMakeCache.txt
-          sudo rm -rf ${{ needs.preamble.outputs.folder_build }}/CMakeFiles
-          docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_ln }} --mount ${{ needs.preamble.outputs.mount_build }} ${{ steps.vars.outputs.docker_tag_candidate_base }} "\
-            cmake -S /hpcc-dev/LN -B /hpcc-dev/build -DHPCC_SOURCE_DIR=/hpcc-dev/HPCC-Platform ${{ needs.preamble.outputs.cmake_docker_config }} -DINCLUDE_PLUGINS=${{ needs.preamble.outputs.include_plugins }} -DCONTAINERIZED=OFF -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_SPARK=ON -DCPACK_STRIP_FILES=OFF ${{ matrix.cmake_options_extra }} && \
-            cmake --build /hpcc-dev/build --parallel $(nproc) --target package" 
-          # Disabled as not currently needed ---
-          # docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_ln }} --mount ${{ needs.preamble.outputs.mount_build }} ${{ steps.vars.outputs.docker_tag_candidate_base }} "cmake -S /hpcc-dev/LN -B /hpcc-dev/build -DHPCC_SOURCE_DIR=/hpcc-dev/HPCC-Platform ${{ needs.preamble.outputs.cmake_docker_config }} -DINCLUDE_PLUGINS=${{ needs.preamble.outputs.include_plugins }} -DCONTAINERIZED=OFF -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_SPARK=ON -DCPACK_STRIP_FILES=ON" 
-          # docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_ln }} --mount ${{ needs.preamble.outputs.mount_build }} ${{ steps.vars.outputs.docker_tag_candidate_base }} "cmake --build /hpcc-dev/build --parallel $(nproc) --target package"
+  build-gh_runner-ubuntu-20_04:
+    if: ${{ contains('schedule,push', github.event_name) }}
+    uses: ./.github/workflows/build-gh_runner.yml
+    with:
+      os: ubuntu-20.04
+      single-package: true
+      containerized: false
+    secrets: inherit
 
-      #  Common  ---
-      - name: Upload error logs
-        if: ${{ failure() || cancelled() }}
-        uses: actions/upload-artifact@v3
-        with:
-          name: ${{ matrix.os }}-${{ matrix.ln }}-${{ matrix.container }}-logs
-          path: ${{ needs.preamble.outputs.folder_build }}/**/*.log
+  build-gh_runner-windows-2022:
+    if: ${{ contains('pull_request,push', github.event_name) }}
+    uses: ./.github/workflows/build-gh_runner.yml
+    with:
+      os: windows-2022
+      single-package: true
+      containerized: false
+      cmake-configuration: '-T host=x64 -A x64 -DUSE_OPTIONAL=OFF -DCLIENTTOOLS_ONLY=ON -DUSE_AZURE=OFF -DUSE_CASSANDRA=OFF -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
+    secrets: inherit
 
-  build-bare-metal:
-    name: Build Bare Metal
-    # if: github.repository == 'hpcc-systems/HPCC-Platform'
-    needs: preamble
-    strategy:
-      matrix:
-        include:
-          - os: "ubuntu-20.04"
-            mono: "mono"
-            sudo: "sudo"
-            cmake_config_options: "-DCMAKE_BUILD_TYPE=RelWithDebInfo -DINCLUDE_PLUGINS=${{ needs.preamble.outputs.include_plugins }} -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON"
-            cmake_build_options: "-- -j$(nproc) -k"
-            event_name: "schedule"
-          - os: "ubuntu-22.04"
-            mono: "mono"
-            sudo: "sudo"
-            cmake_config_options: "-DCMAKE_BUILD_TYPE=RelWithDebInfo -DINCLUDE_PLUGINS=${{ needs.preamble.outputs.include_plugins }} -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON"
-            cmake_build_options: "-- -j$(nproc) -k"
-            event_name: "pull_request"
-          - os: "windows-2019"
-            mono: ""
-            sudo: ""
-            cmake_config_options: '-T host=x64 -A x64 -DUSE_OPTIONAL=OFF -DCLIENTTOOLS_ONLY=ON -DUSE_AZURE=OFF -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
-            cmake_build_options: "--config Release --parallel $NUMBER_OF_PROCESSORS"
-            event_name: "schedule"
-          - os: "windows-2022"
-            mono: ""
-            sudo: ""
-            cmake_config_options: '-T host=x64 -A x64 -DUSE_OPTIONAL=OFF -DCLIENTTOOLS_ONLY=ON -DUSE_AZURE=OFF -DUSE_CASSANDRA=OFF -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
-            cmake_build_options: "--config Release --parallel $NUMBER_OF_PROCESSORS"
-            event_name: "pull_request"
-          - os: "macos-11"
-            mono: "mono"
-            sudo: "sudo"
-            cmake_config_options: "-DCMAKE_BUILD_TYPE=Release -DUSE_OPTIONAL=OFF -DCLIENTTOOLS_ONLY=ON -DUSE_AZURE=OFF -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF"
-            cmake_build_options: "--parallel $(nproc)"
-            event_name: "schedule"
-          - os: "macos-12"
-            mono: "mono"
-            sudo: "sudo"
-            cmake_config_options: "-DCMAKE_BUILD_TYPE=Release -DUSE_OPTIONAL=OFF -DCLIENTTOOLS_ONLY=ON -DUSE_AZURE=OFF -DUSE_CASSANDRA=OFF -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF"
-            cmake_build_options: "--parallel $(nproc)"
-            event_name: "pull_request"
-      fail-fast: false
+  build-gh_runner-windows-2019:
+    if: ${{ contains('schedule,push', github.event_name) }}
+    uses: ./.github/workflows/build-gh_runner.yml
+    with:
+      os: windows-2019
+      single-package: true
+      containerized: false
+      cmake-configuration: '-T host=x64 -A x64 -DUSE_OPTIONAL=OFF -DCLIENTTOOLS_ONLY=ON -DUSE_AZURE=OFF -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
+    secrets: inherit
 
-    runs-on: ${{ matrix.os }}
-    steps:
-      - name: Print vars
-        shell: "bash"
-        run: |
-          echo ${{ matrix.os }}
-          echo "${{ toJSON(needs.preamble.outputs) }})"
+  build-gh_runner-macos-12:
+    if: ${{ contains('pull_request,push', github.event_name) }}
+    uses: ./.github/workflows/build-gh_runner.yml
+    with:
+      os: macos-12
+      single-package: true
+      containerized: false
+      build-type: 'Release'
+      cmake-configuration: '-DUSE_OPTIONAL=OFF -DCLIENTTOOLS_ONLY=ON -DUSE_AZURE=OFF -DUSE_CASSANDRA=OFF -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
+    secrets: inherit
 
-      - name: Ubuntu Dependencies
-        if: ${{ contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform && contains(matrix.os, 'ubuntu') }}
-        shell: "bash"
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -yq --no-install-recommends \
-          apt-transport-https \
-          autoconf \
-          autoconf-archive \
-          automake \
-          autotools-dev \
-          binutils-dev \
-          bison \
-          build-essential \
-          ca-certificates \
-          curl \
-          dirmngr \
-          flex \
-          git \
-          gnupg \
-          groff-base \
-          libtool \
-          pkg-config \
-          software-properties-common \
-          tar \
-          unzip \
-          uuid-dev \
-          zip
-
-      - name: Ubuntu Mono Dependencies
-        if: ${{ matrix.os == 'ubuntu-22.04' && needs.preamble.outputs.platform && contains(matrix.os, 'ubuntu') }}
-        shell: "bash"
-        run: |
-          sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
-          echo "deb https://download.mono-project.com/repo/ubuntu stable-focal main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list
-          sudo apt-get update -y
-          sudo apt-get -yq install -f mono-complete
-
-      - name: OSX Dependencies
-        if: ${{ contains(matrix.os, 'macos') && contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
-        shell: "bash"
-        run: |
-          brew install bison flex pkg-config autoconf autoconf-archive automake libtool cmake openjdk@11
-
-      - name: "Remove builtin vcpkg (old)"
-        if: ${{ contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
-        working-directory: .
-        shell: "bash"
-        run: |
-          ${{ matrix.sudo }} rm -rf "$VCPKG_INSTALLATION_ROOT"
-
-      - name: Checkout HPCC-Platform
-        if: ${{ contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
-        uses: actions/checkout@v3
-        with:
-          ref: ${{ needs.preamble.outputs.community_ref }}
-          submodules: recursive
-          path: ./HPCC-Platform
-
-      - name: "vcpkg Bootstrap"
-        if: ${{ contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
-        shell: "bash"
-        run: |
-          ./HPCC-Platform/vcpkg/bootstrap-vcpkg.sh
-
-      - name: "Setup NuGet credentials"
-        if: ${{ contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
-        shell: "bash"
-        run: |
-          ${{ matrix.mono }} `./HPCC-Platform/vcpkg/vcpkg fetch nuget | tail -n 1` \
-            sources add \
-            -name "GitHub" \
-            -source "https://nuget.pkg.github.com/hpcc-systems/index.json" \
-            -storepasswordincleartext \
-            -username "${{ github.actor }}" \
-            -password "${{ secrets.GITHUB_TOKEN }}"
-
-      - name: CMake Packages
-        if: ${{ contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
-        shell: "bash"
-        run: |
-          mkdir -p ./build
-          cmake -S ./HPCC-Platform -B ./build ${{ matrix.cmake_config_options }}
-          cmake --build ./build ${{ matrix.cmake_build_options }}
-
-      - name: Upload error logs
-        if: ${{ failure() || cancelled() }}
-        uses: actions/upload-artifact@v3
-        with:
-          name: ${{ matrix.os }}--${{ matrix.ln }}-${{ matrix.container }}-logs
-          path: ./build/**/*.log
+  build-gh_runner-macos-11:
+    if: ${{ contains('schedule,push', github.event_name) }}
+    uses: ./.github/workflows/build-gh_runner.yml
+    with:
+      os: macos-11
+      single-package: true
+      containerized: false
+      build-type: 'Release'
+      cmake-configuration: '-DUSE_OPTIONAL=OFF -DCLIENTTOOLS_ONLY=ON -DUSE_AZURE=OFF -DUSE_CASSANDRA=OFF -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
+    secrets: inherit

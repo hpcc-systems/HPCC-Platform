@@ -4,6 +4,7 @@ FROM hpccsystems/platform-build-base-ubuntu-20.04:$VCPKG_REF
 ENV RInside_package=RInside_0.2.14.tar.gz
 
 RUN apt-get update && apt-get install --no-install-recommends -y \
+    ccache \
     default-jdk \
     python3-dev \
     wget \

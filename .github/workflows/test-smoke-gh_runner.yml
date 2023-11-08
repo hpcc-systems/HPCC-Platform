@@ -1,0 +1,147 @@
+name: Smoketest Package (gh-runner)
+
+on:
+  workflow_call:
+    inputs:
+      os:
+        type: string
+        description: 'Operating System'
+        required: false
+        default: 'ubuntu-22.04'
+      asset-name:
+        type: string
+        description: 'Asset Name'
+        required: false
+        default: 'build-docker-package'
+      dependencies:
+        type: string
+        description: 'Dependencies'
+        required: false
+        default: 'bison flex build-essential binutils-dev curl lsb-release libcppunit-dev python3-dev default-jdk r-base-dev r-cran-rcpp r-cran-rinside r-cran-inline pkg-config libtool autotools-dev automake git cmake xmlstarlet'
+
+jobs:
+
+  main:
+    runs-on: ${{ inputs.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: ['hthor', 'thor', 'roxie']
+        match:
+        - pattern: '[a-d]*.ecl'
+        - pattern: '[e-h]*.ecl'
+        - pattern: '[i-l]*.ecl'
+        - pattern: '[m-q]*.ecl'
+        - pattern: '[r-u]*.ecl'
+          exclude: teststdlibrary.ecl
+        - pattern: '[v-z]*.ecl'
+        include:
+        - engine: 'hthor'
+          match:
+            pattern: teststdlibrary.ecl
+        - engine: 'thor'
+          match:
+            pattern: teststdlibrary.ecl
+        - engine: 'roxie'
+          match:
+            pattern: teststdlibrary.ecl
+
+    steps:
+
+      - name: Free additional disk space (remove Android SDK + Tools)
+        run: |
+          sudo rm -rf /usr/local/lib/android
+
+      - name: Download Package
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ inputs.asset-name }}
+          path: ${{ inputs.asset-name }}
+
+      - name: Download Support Files
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ inputs.asset-name }}-support-files
+          path: ${{ inputs.asset-name }}-support-files
+
+      - name: vars
+        id: vars
+        run: |
+          echo "matrix-setname=$(echo -n ${{ matrix.match.pattern }} | tr -c \"[:alnum:]\" _)" >> $GITHUB_OUTPUT
+
+      - name: Install Dependencies
+        shell: "bash"
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ${{ inputs.dependencies }}
+          sudo apt-get install -y gdb
+
+          curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
+          sudo apt-get install -y nodejs
+
+          echo "node.js version = $(node --version), npm version = $(npm --version), release = $(lsb_release -sc)"
+
+      - name: Install Package
+        shell: "bash"
+        run: |
+          sudo apt-get install -y -f ./${{ inputs.asset-name }}/*.deb
+          sudo chown -R $USER:$USER /opt/HPCCSystems
+
+          sudo xmlstarlet ed -L -u 'Environment/Software/ThorCluster/@slavesPerNode' -v 2 -u 'Environment/Software/ThorCluster/@channelsPerSlave' -v 1 /etc/HPCCSystems/environment.xml
+
+          chmod +x ./${{ inputs.asset-name }}-support-files/*
+          sudo cp ./${{ inputs.asset-name }}-support-files/* /opt/HPCCSystems/bin
+
+      - name: Start HPCC-Platform
+        shell: "bash"
+        run: |
+          export LANG="en_US.UTF-8"
+          sudo update-locale
+          sudo /etc/init.d/hpcc-init start
+
+      - name: Run Setup
+        working-directory: /opt/HPCCSystems/testing/regress
+        shell: "bash"
+        run: |
+          # todo:  run once before matrix
+          /opt/HPCCSystems/bin/timeoutcmd $((8 * 60)) \
+              ./ecl-test setup --preAbort '/opt/HPCCSystems/bin/smoketest-preabort.sh' --pq 2 --generateStackTrace
+          grep Failure: /home/runner/HPCCSystems-regression/log/setup_*.log
+          if [[ "$(grep -ohP '(?<=^Failure: )[0-9]+$' /home/runner/HPCCSystems-regression/log/setup_*.log | awk '{s+=$1} END {print s}')" -gt 0 ]]; then exit 1; fi
+
+      - name: Select Tests
+        id: select-tests
+        working-directory: /opt/HPCCSystems/testing/regress
+        shell: "bash"
+        run: |
+          (cd ecl; ls ${{ matrix.match.pattern }}) > matches.tmp
+          echo queries are:
+          cat matches.tmp
+          if [[ -z "${{ matrix.match.exclude }}" ]]
+          then
+            queries="$(cat matches.tmp | tr '\n' ' ')"
+          else
+            queries="$(cd ecl; ls ${{ matrix.match.exclude }} | grep -v -f - ../matches.tmp | tr '\n' ' ')"
+          fi
+          echo queries after exclude: ${queries}
+          echo "queries=${queries}" >> $GITHUB_OUTPUT
+
+      - name: Run Tests
+        working-directory: /opt/HPCCSystems/testing/regress
+        shell: "bash"
+        run: |
+          # force regression suite to timeout after 60 minutes, so it captures ZAP report of any inflight hung queries
+          /opt/HPCCSystems/bin/timeoutcmd $((60 * 60)) \
+          ./ecl-test query --preAbort '/opt/HPCCSystems/bin/smoketest-preabort.sh' --pq 2 --target ${{ matrix.engine }} --excludeclass python2,embedded-r,embedded-js,3rdpartyservice,mongodb --generateStackTrace ${{ steps.select-tests.outputs.queries }}
+          grep Failure: /home/runner/HPCCSystems-regression/log/${{ matrix.engine }}.*.log
+          if [[ "$(grep -oP '(?<=^Failure: )[0-9]+$' /home/runner/HPCCSystems-regression/log/${{ matrix.engine }}.*.log)" -gt 0 ]]; then exit 1; fi
+
+      - name: regression-run-logs-artifact
+        if: ${{ failure() || cancelled() }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-smoke-${{ inputs.asset-name }}-${{ matrix.engine }}-${{ steps.vars.outputs.matrix-setname }}
+          path: |
+              /var/log/HPCCSystems
+              /home/runner/HPCCSystems-regression
+          if-no-files-found: error

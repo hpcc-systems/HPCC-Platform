@@ -1,0 +1,78 @@
+name: Unittest Package (gh-runner)
+
+on:
+  workflow_call:
+    inputs:
+      os:
+        type: string
+        description: 'Operating System'
+        required: false
+        default: 'ubuntu-22.04'
+      asset-name:
+        type: string
+        description: 'Asset Name'
+        required: false
+        default: 'build-docker-package'
+      dependencies:
+        type: string
+        description: 'Dependencies'
+        required: false
+        default: 'bison flex build-essential binutils-dev curl lsb-release libcppunit-dev python3-dev default-jdk r-base-dev r-cran-rcpp r-cran-rinside r-cran-inline pkg-config libtool autotools-dev automake git cmake xmlstarlet'
+
+jobs:
+
+  main:
+    runs-on: ${{ inputs.os }}
+    steps:
+
+      - name: Free additional disk space (remove Android SDK + Tools)
+        run: |
+          sudo rm -rf /usr/local/lib/android
+
+      - name: Download Package
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ inputs.asset-name }}
+          path: ${{ inputs.asset-name }}
+
+      - name: Download Support Files
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ inputs.asset-name }}-support-files
+          path: ${{ inputs.asset-name }}-support-files
+
+      - name: Install Dependencies
+        shell: "bash"
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ${{ inputs.dependencies }}
+          sudo apt-get install -y gdb
+
+          curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
+          sudo apt-get install -y nodejs
+
+          echo "node.js version = $(node --version), npm version = $(npm --version), release = $(lsb_release -sc)"
+
+      - name: Install Package
+        shell: "bash"
+        run: |
+          sudo apt-get install -y -f ./${{ inputs.asset-name }}/*.deb
+          sudo chown -R $USER:$USER /opt/HPCCSystems
+
+          sudo xmlstarlet ed -L -u 'Environment/Software/ThorCluster/@slavesPerNode' -v 2 -u 'Environment/Software/ThorCluster/@channelsPerSlave' -v 1 /etc/HPCCSystems/environment.xml
+
+          chmod +x ./${{ inputs.asset-name }}-support-files/*
+          sudo cp ./${{ inputs.asset-name }}-support-files/* /opt/HPCCSystems/bin
+
+      - name: Start HPCC-Platform
+        shell: "bash"
+        run: |
+          export LANG="en_US.UTF-8"
+          sudo update-locale
+          sudo /etc/init.d/hpcc-init start
+
+      - name: Run Tests
+        timeout-minutes: 10 # generous, expected time is approx 1 min.
+        shell: "bash"
+        run: |
+          /opt/HPCCSystems/bin/unittests
