@@ -21,6 +21,10 @@
 #ifdef _USE_OPENSSL
 
 #include "ske.hpp"
+#include <openssl/conf.h>
+#include <openssl/evp.h>
+#include <openssl/err.h>
+#include <string.h>
 
 #endif
 
@@ -1829,18 +1833,107 @@ size_t aesDecrypt(const void *key, size_t keylen, const void *input, size_t inle
 
 } // end of namespace jlib
 
+#ifdef _USE_OPENSSL
+MemoryBuffer &aesEncrypt_ssl(const void *key, unsigned keylen, const void *plaintext, size_t plaintext_len, MemoryBuffer &output)
+{
+    EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
+    if (!ctx)
+        throw makeStringException(0, "Crap");
+    unsigned char iv[16] = { 0 };
+    switch (keylen)
+    {
+        case 32:
+            if(1 != EVP_EncryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, (const unsigned char *) key, iv))
+                throw makeStringException(0, "Crap");
+            break;
+        case 24:
+            if(1 != EVP_EncryptInit_ex(ctx, EVP_aes_192_cbc(), NULL, (const unsigned char *) key, iv))
+                throw makeStringException(0, "Crap");
+            break;
+        case 16:
+            if(1 != EVP_EncryptInit_ex(ctx, EVP_aes_128_cbc(), NULL, (const unsigned char *) key, iv))
+                throw makeStringException(0, "Crap");
+            break;
+        default:
+            throw makeStringException(0, "Crap");
+    }
+    byte *ciphertext = (byte *) output.reserve(plaintext_len + 100);
+    int ciphertext_len = 0;
+    int thislen = 0;
+    if(1 != EVP_EncryptUpdate(ctx, ciphertext, &thislen, (const unsigned char *) plaintext, plaintext_len))
+        throw makeStringException(0, "Crap");
+    ciphertext_len += thislen;
+    if(1 != EVP_EncryptFinal_ex(ctx, ciphertext + ciphertext_len, &thislen))
+        throw makeStringException(0, "Crap");
+    ciphertext_len += thislen;
+    EVP_CIPHER_CTX_free(ctx);
+    output.setLength(ciphertext_len);
+    return output;
+}
+
+MemoryBuffer &aesDecrypt_ssl(const void *key, size_t keylen, const void *ciphertext, size_t ciphertext_len, MemoryBuffer &output)
+{
+    EVP_CIPHER_CTX *ctx;
+
+    int thislen = 0;
+    int plaintext_len = 0;
+
+    if(!(ctx = EVP_CIPHER_CTX_new()))
+        throw makeStringException(0, "Crap");
+
+    unsigned char iv[16] = { 0 };
+    switch (keylen)
+    {
+        case 32:
+            if(1 != EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, (const unsigned char *) key, iv))
+                throw makeStringException(0, "Crap");
+            break;
+        case 24:
+            if(1 != EVP_DecryptInit_ex(ctx, EVP_aes_192_cbc(), NULL, (const unsigned char *) key, iv))
+                throw makeStringException(0, "Crap");
+            break;
+        case 16:
+            if(1 != EVP_DecryptInit_ex(ctx, EVP_aes_128_cbc(), NULL, (const unsigned char *) key, iv))
+                throw makeStringException(0, "Crap");
+            break;
+        default:
+            throw makeStringException(0, "Crap");
+    }
+    byte *plaintext = (byte *) output.reserve(ciphertext_len + 100);
+    if(1 != EVP_DecryptUpdate(ctx, plaintext, &thislen, (const unsigned char *) ciphertext, ciphertext_len))
+        throw makeStringException(0, "Crap");
+    plaintext_len += thislen;
+
+    if(1 != EVP_DecryptFinal_ex(ctx, plaintext + plaintext_len, &thislen))
+        throw makeStringException(0, "Crap");
+    plaintext_len += thislen;
+    EVP_CIPHER_CTX_free(ctx);
+    return output;
+}
+
+#endif
+
 MemoryBuffer &aesEncrypt(const void *key, size_t keylen, const void *input, size_t inlen, MemoryBuffer &output)
 {
+#ifdef _USE_OPENSSL
+    return aesEncrypt_ssl(key, keylen, input, inlen, output);
+#else
     return jlib::aesEncrypt(key, keylen, input, inlen, output);
+#endif
 }
 
 MemoryBuffer &aesDecrypt(const void *key, size_t keylen, const void *input, size_t inlen, MemoryBuffer &output)
 {
+#ifdef _USE_OPENSSL
+    return aesDecrypt_ssl(key, keylen, input, inlen, output);
+#else
     return jlib::aesDecrypt(key, keylen, input, inlen, output);
+#endif
 }
 
 size_t aesDecrypt(const void *key, size_t keylen, const void *input, size_t inlen, void *output, size_t outlen)
 {
+    // MORE - add openssl version!
     return jlib::aesDecrypt(key, keylen, input, inlen, output, outlen);
 }
 
@@ -1874,85 +1967,6 @@ void decrypt(StringBuffer &ret, const char *in)
     }
 }
 
-
-
-#include <openssl/conf.h>
-#include <openssl/evp.h>
-#include <openssl/err.h>
-#include <string.h>
-
-void handleErrors(void)
-{
-    ERR_print_errors_fp(stderr);
-    abort();
-    
-}
-
-MemoryBuffer &aesEncrypt_ssl(const void *key, unsigned keylen, const void *plaintext, size_t plaintext_len, MemoryBuffer &output)
-{
-    assertex(keylen==32);
-    EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
-    if (!ctx)
-        throw makeStringException(0, "Crap");
-    unsigned char iv[16] = { 0 };
-    if(1 != EVP_EncryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, (const unsigned char *) key, iv))
-        throw makeStringException(0, "Crap");
-    byte *ciphertext = (byte *) output.reserve(plaintext_len + 100);
-    int ciphertext_len = 0;
-    if(1 != EVP_EncryptUpdate(ctx, ciphertext, &ciphertext_len, (const unsigned char *) plaintext, plaintext_len))
-        throw makeStringException(0, "Crap");
-    if(1 != EVP_EncryptFinal_ex(ctx, ciphertext + ciphertext_len, &ciphertext_len))
-        throw makeStringException(0, "Crap");
-    EVP_CIPHER_CTX_free(ctx);
-    output.setLength(ciphertext_len);
-    return output;
-}
-
-int aesDecrypt_ssl(unsigned char *ciphertext, int ciphertext_len, unsigned char *key,
-            unsigned char *iv, unsigned char *plaintext)
-{
-    EVP_CIPHER_CTX *ctx;
-
-    int len;
-
-    int plaintext_len;
-
-    /* Create and initialise the context */
-    if(!(ctx = EVP_CIPHER_CTX_new()))
-        handleErrors();
-
-    /*
-     * Initialise the decryption operation. IMPORTANT - ensure you use a key
-     * and IV size appropriate for your cipher
-     * In this example we are using 256 bit AES (i.e. a 256 bit key). The
-     * IV size for *most* modes is the same as the block size. For AES this
-     * is 128 bits
-     */
-    if(1 != EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, key, iv))
-        handleErrors();
-
-    /*
-     * Provide the message to be decrypted, and obtain the plaintext output.
-     * EVP_DecryptUpdate can be called multiple times if necessary.
-     */
-    if(1 != EVP_DecryptUpdate(ctx, plaintext, &len, ciphertext, ciphertext_len))
-        handleErrors();
-    plaintext_len = len;
-
-    /*
-     * Finalise the decryption. Further plaintext bytes may be written at
-     * this stage.
-     */
-    if(1 != EVP_DecryptFinal_ex(ctx, plaintext + len, &len))
-        handleErrors();
-    plaintext_len += len;
-
-    /* Clean up */
-    EVP_CIPHER_CTX_free(ctx);
-
-    return plaintext_len;
-}
-
 void xmain (void)
 {
     /*
@@ -1967,36 +1981,25 @@ void xmain (void)
                             0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x30, 0x31
                           };
 
-    /* A 128 bit IV */
-    unsigned char iv[16] = { 0 };
-
     /* Message to be encrypted */
     unsigned char *plaintext = (unsigned char *)"The quick brown fox jumps over the lazy dog";
 
-    MemoryBuffer ciphertext;
+    MemoryBuffer ciphertext, decrypted;
 
-    /* Buffer for the decrypted text */
-    unsigned char decryptedtext[128];
+    //aesEncrypt_ssl(key, 32, plaintext, strlen ((char *)plaintext), ciphertext);
+    jlib::aesEncrypt(key, 32, plaintext, strlen ((char *)plaintext), ciphertext);
 
-    int decryptedtext_len, ciphertext_len;
-
-    /* Encrypt the plaintext */
-    aesEncrypt_ssl(key, 32, plaintext, strlen ((char *)plaintext), ciphertext);
-    ciphertext_len = ciphertext.length();
-
-    /* Do something useful with the ciphertext here */
     printf("Ciphertext is:\n");
     BIO_dump_fp (stdout, ciphertext.bytes(), ciphertext.length());
 
     /* Decrypt the ciphertext */
-    decryptedtext_len = aesDecrypt_ssl((unsigned char *) ciphertext.bytes(), ciphertext.length(), key, iv,
-                                decryptedtext);
+    aesDecrypt_ssl(key, 32, ciphertext.bytes(), ciphertext.length(), decrypted);
 
     /* Add a NULL terminator. We are expecting printable text */
-    decryptedtext[decryptedtext_len] = '\0';
+    decrypted.append('\0');
 
     /* Show the decrypted text */
     printf("Decrypted text is:\n");
-    printf("%s\n", decryptedtext);
+    printf("%s\n", (const char *) decrypted.bytes());
 }
 
