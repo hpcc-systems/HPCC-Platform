@@ -207,7 +207,7 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
             }
         },
         {
-            key: "mine", text: nlsHPCC.Mine, disabled: !currentUser?.username, iconProps: { iconName: "Contact" }, canCheck: true, checked: filter["Owner"] === currentUser.username,
+            key: "mine", text: nlsHPCC.Mine, disabled: !currentUser?.username || !total, iconProps: { iconName: "Contact" }, canCheck: true, checked: filter["Owner"] === currentUser.username,
             onClick: () => {
                 if (filter["Owner"] === currentUser.username) {
                     filter["Owner"] = "";
@@ -217,7 +217,7 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
                 pushParams(filter);
             }
         },
-    ], [currentUser, filter, hasFilter, refreshTable, selection, setShowDeleteConfirm, store, uiState.hasNotProtected, uiState.hasProtected, uiState.hasSelection]);
+    ], [currentUser, filter, hasFilter, refreshTable, selection, setShowDeleteConfirm, store, total, uiState.hasNotProtected, uiState.hasProtected, uiState.hasSelection]);
 
     const copyButtons = useCopyButtons(columns, selection, "dfuworkunits");
 

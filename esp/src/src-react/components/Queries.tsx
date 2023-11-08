@@ -232,7 +232,7 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
             }
         },
         {
-            key: "mine", text: nlsHPCC.Mine, disabled: !currentUser?.username, iconProps: { iconName: "Contact" }, canCheck: true, checked: filter["PublishedBy"] === currentUser.username,
+            key: "mine", text: nlsHPCC.Mine, disabled: !currentUser?.username || !total, iconProps: { iconName: "Contact" }, canCheck: true, checked: filter["PublishedBy"] === currentUser.username,
             onClick: () => {
                 if (filter["PublishedBy"] === currentUser.username) {
                     filter["PublishedBy"] = "";
@@ -242,7 +242,7 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
                 pushParams(filter);
             }
         },
-    ], [currentUser.username, filter, hasFilter, refreshTable, selection, setShowDeleteConfirm, store, uiState.hasSelection, uiState.isActive, uiState.isNotActive, uiState.isNotSuspended, uiState.isSuspended, wuid]);
+    ], [currentUser.username, filter, hasFilter, refreshTable, selection, setShowDeleteConfirm, store, total, uiState.hasSelection, uiState.isActive, uiState.isNotActive, uiState.isNotSuspended, uiState.isSuspended, wuid]);
 
     //  Filter  ---
     const filterFields: Fields = {};
