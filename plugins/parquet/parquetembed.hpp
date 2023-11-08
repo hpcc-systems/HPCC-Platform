@@ -785,9 +785,10 @@ private:
 class ParquetHelper
 {
 public:
-    ParquetHelper(const char *option, const char *_location, const char *destination, int rowsize, int _batchSize, bool _overwrite, arrow::Compression::type _compressionOption, const IThorActivityContext *_activityCtx);
+    ParquetHelper(const char *option, const char *_location, const char *destination, int _rowSize, int _batchSize, bool _overwrite, arrow::Compression::type _compressionOption, const char *_partitionFields, const IThorActivityContext *_activityCtx);
     ~ParquetHelper();
     std::shared_ptr<arrow::Schema> getSchema();
+    arrow::Status checkDirContents();
     arrow::Status openWriteFile();
     arrow::Status openReadFile();
     arrow::Status processReadFile();
@@ -818,6 +819,9 @@ private:
     __int64 currentRow = 0;
     __int64 rowSize = 0;                                             // The maximum size of each parquet row group.
     __int64 tablesProcessed = 0;                                      // Current RowGroup that has been read from the input file.
+    __int64 totalRowsProcessed = 0;                                   // Total number of rows processed of partitioned dataset. We cannot get the total number of chunks and they are variable sizes.
+    __int64 totalRowCount = 0;                                        // Total number of rows in a partition dataset.
+    __int64 startRow = 0;                                             // The starting row in a partitioned dataset.
     __int64 rowsProcessed = 0;                                        // Current Row that has been read from the RowGroup
     __int64 startRowGroup = 0;                                      // The beginning RowGroup that is read by a worker
     __int64 tableCount = 0;                                           // The number of RowGroups to be read by the worker from the file that was opened for reading.
@@ -836,6 +840,8 @@ private:
     std::shared_ptr<arrow::dataset::Scanner> scanner = nullptr;   // Scanner for reading through partitioned files. PARTITION
     arrow::dataset::FileSystemDatasetWriteOptions writeOptions;        // Write options for writing partitioned files. PARTITION
     arrow::Compression::type compressionOption = arrow::Compression::type::UNCOMPRESSED;
+    std::shared_ptr<arrow::dataset::Partitioning> partitionType = nullptr;
+    std::vector<std::string> partitionFields;
     std::shared_ptr<arrow::RecordBatchReader> rbatchReader = nullptr;
     arrow::RecordBatchReader::RecordBatchReaderIterator rbatchItr;
     std::vector<__int64> fileTableCounts;
