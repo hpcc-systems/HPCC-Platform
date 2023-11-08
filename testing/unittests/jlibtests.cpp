@@ -3146,15 +3146,15 @@ public:
                     if (c2b)
                     {
                         CCycleTimer timer;
-                        compressToBuffer(compressed, src.length(), src.bytes(), handler.queryMethod(), streq("AES", handler.queryType()) ? aesKey: nullptr);
+                        compressToBuffer(compressed, src.length(), src.bytes(), handler.queryMethod(), handler.queryMethod() & COMPRESS_METHOD_AES ? aesKey: nullptr);
                         compressCycles = timer.elapsedCycles();
                         timer.reset();
-                        decompressToBuffer(tgt, compressed, streq("AES", handler.queryType()) ? aesKey: nullptr);
+                        decompressToBuffer(tgt, compressed, handler.queryMethod() & COMPRESS_METHOD_AES ? aesKey: nullptr);
                         decompressCycles = timer.elapsedCycles();
                     }
                     else
                     {
-                        Owned<ICompressor> compressor = handler.getCompressor(streq("AES", handler.queryType()) ? aesKey: nullptr);
+                        Owned<ICompressor> compressor = handler.getCompressor(handler.queryMethod() & COMPRESS_METHOD_AES ? aesKey: nullptr);
 
                         CCycleTimer timer;
                         compressor->open(compressed, sz);
@@ -3170,7 +3170,7 @@ public:
                         compressor->close();
                         compressCycles = timer.elapsedCycles();
 
-                        Owned<IExpander> expander = handler.getExpander(streq("AES", handler.queryType()) ? aesKey: nullptr);
+                        Owned<IExpander> expander = handler.getExpander(handler.queryMethod() & COMPRESS_METHOD_AES ? aesKey: nullptr);
 
                         timer.reset();
                         size32_t required = expander->init(compressed.bytes());

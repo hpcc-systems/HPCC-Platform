@@ -2608,10 +2608,10 @@ ICompressedFileIO *createCompressedFileWriter(IFile *file,size32_t recordsize,bo
 
 #define AES_PADDING_SIZE 32
 
-
 class CAESCompressor : implements ICompressor, public CInterface
 {
-    Owned<ICompressor> comp;    // base compressor
+private:
+    Owned<ICompressor> comp;
     MemoryBuffer compattr;      // compressed buffer
     MemoryAttr outattr;         // compressed and encrypted (if outblk NULL)
     void *outbuf;               // dest
@@ -2620,13 +2620,11 @@ class CAESCompressor : implements ICompressor, public CInterface
     size32_t originalMax = 0;
     MemoryAttr key;
     MemoryBuffer *outBufMb;
-
 public:
     IMPLEMENT_IINTERFACE;
-    CAESCompressor(const void *_key, unsigned _keylen)
-        : key(_keylen,_key)
+    CAESCompressor(const void *_key, unsigned _keylen, ICompressor *_comp)
+        : comp(_comp), key(_keylen,_key)
     {
-        comp.setown(createLZWCompressor(true));
         outlen = 0;
         outmax = 0;
         outBufMb = NULL;
@@ -2726,10 +2724,10 @@ class CAESExpander : implements CExpanderBase
     MemoryBuffer compbuf;
     MemoryAttr key;
 public:
-    CAESExpander(const void *_key, unsigned _keylen)
+    CAESExpander(const void *_key, unsigned _keylen, IExpander *_exp)
         : key(_keylen,_key)
     {
-        exp.setown(createLZWExpander(true));
+        exp.setown(_exp);
     }
     size32_t init(const void *blk)
     {
@@ -2759,11 +2757,11 @@ public:
 
 ICompressor *createAESCompressor(const void *key, unsigned keylen)
 {
-    return  new CAESCompressor(key,keylen);
+    return  new CAESCompressor(key,keylen,createLZWCompressor(true));
 }
 IExpander *createAESExpander(const void *key, unsigned keylen)
 {
-    return new CAESExpander(key,keylen);
+    return new CAESExpander(key,keylen,createLZWExpander(true));
 }
 
 #define ROTATE_BYTE_LEFT(x, n) (((x) << (n)) | ((x) >> (8 - (n))))
@@ -2790,14 +2788,14 @@ ICompressor *createAESCompressor256(size32_t len, const void *key)
 {
     byte k[32];
     padKey32(k,len,(const byte *)key);
-    return  new CAESCompressor(k,32);
+    return new CAESCompressor(k,32,createLZWCompressor(true));
 }
 
 IExpander *createAESExpander256(size32_t len, const void *key)
 {
     byte k[32];
     padKey32(k,len,(const byte *)key);
-    return new CAESExpander(k,32);
+    return new CAESExpander(k,32,createLZWExpander(true));
 }
 
 
@@ -2940,6 +2938,38 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
             return createAESExpander(options, strlen(options));
         }
     };
+    class CAESLZ4CompressHandler : public CCompressHandlerBase
+    {
+    public:
+        virtual const char *queryType() const { return "AESLZ4"; }
+        virtual CompressionMethod queryMethod() const { return (CompressionMethod) (COMPRESS_METHOD_AES|COMPRESS_METHOD_LZ4); }
+        virtual ICompressor *getCompressor(const char *options)
+        {
+            assertex(options);
+            return new CAESCompressor(options, strlen(options),createLZ4Compressor(nullptr));
+        }
+        virtual IExpander *getExpander(const char *options)
+        {
+            assertex(options);
+            return new CAESExpander(options, strlen(options), createLZ4Expander());
+        }
+    };
+    class CAESLZ4HCCompressHandler : public CCompressHandlerBase
+    {
+    public:
+        virtual const char *queryType() const { return "AESLZ4HC"; }
+        virtual CompressionMethod queryMethod() const { return (CompressionMethod) (COMPRESS_METHOD_AES|COMPRESS_METHOD_LZ4HC); }
+        virtual ICompressor *getCompressor(const char *options)
+        {
+            assertex(options);
+            return new CAESCompressor(options, strlen(options),createLZ4Compressor(nullptr, true));
+        }
+        virtual IExpander *getExpander(const char *options)
+        {
+            assertex(options);
+            return new CAESExpander(options, strlen(options), createLZ4Expander());
+        }
+    };
     class CDiffCompressHandler : public CCompressHandlerBase
     {
     public:
@@ -2974,6 +3004,8 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     };
     addCompressorHandler(new CLZWCompressHandler());
     addCompressorHandler(new CAESCompressHandler());
+    addCompressorHandler(new CAESLZ4CompressHandler());
+    addCompressorHandler(new CAESLZ4HCCompressHandler());
     addCompressorHandler(new CDiffCompressHandler());
     addCompressorHandler(new CRDiffCompressHandler());
     addCompressorHandler(new CRandRDiffCompressHandler());
