@@ -46,6 +46,7 @@ extern jlib_decl size_t aesDecrypt(const void *key, size_t keylen, const void *i
 extern jlib_decl void encrypt(StringBuffer &ret, const char *in);
 extern jlib_decl void decrypt(StringBuffer &ret, const char *in);
 
+extern jlib_decl void xmain();
 
 // simple inline block scrambler (shouldn't need jlib_decl)
 class Csimplecrypt

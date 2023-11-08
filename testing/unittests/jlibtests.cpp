@@ -3511,6 +3511,25 @@ protected:
 
 CPPUNIT_TEST_SUITE_REGISTRATION( JLibUnicodeTest );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JLibUnicodeTest, "JLibUnicodeTest" );
+#include <jencrypt.hpp>
 
+class JLibOpensslAESTest : public CppUnit::TestFixture
+{
+public:
+    CPPUNIT_TEST_SUITE(JLibOpensslAESTest);
+        CPPUNIT_TEST(test);
+    CPPUNIT_TEST_SUITE_END();
+
+protected:
+
+    void test()
+    {
+        xmain();
+    }
+
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( JLibOpensslAESTest );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JLibOpensslAESTest, "JLibOpensslAESTest" );
 
 #endif // _USE_CPPUNIT
