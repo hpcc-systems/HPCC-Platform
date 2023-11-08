@@ -32,7 +32,7 @@ interface IDeMonServer : extends IInterface
     virtual void endGraph(CGraphBase *graph, bool success) = 0;
     virtual void endGraphs() = 0;
     virtual void updateAggregates(IWorkUnit * lockedWu) = 0;
-    virtual void loadStats(IConstWorkUnit &workunit, const char * graphName, bool aggregatesOnly) = 0;
+    virtual void loadExistingAggregates(IConstWorkUnit &workunit) = 0;
 };
 
 

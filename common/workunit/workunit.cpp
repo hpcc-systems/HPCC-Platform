@@ -2669,7 +2669,7 @@ GlobalStatisticCollection::GlobalStatisticCollection() : aggregateKindsMapping(a
     statsCollection.setown(createStatisticCollection(nullptr, globalScopeId));
 }
 
-void GlobalStatisticCollection::load(IConstWorkUnit &workunit, const char * graphName, bool aggregatesOnly)
+void GlobalStatisticCollection::loadExistingAggregates(IConstWorkUnit &workunit)
 {
     const char * _wuid = workunit.queryWuid();
     if (!streq(_wuid, wuid.str())) // New statsCollection if collection for different workunit
@@ -2679,57 +2679,6 @@ void GlobalStatisticCollection::load(IConstWorkUnit &workunit, const char * grap
         wuid.set(_wuid);
     }
 
-    loadGlobalAggregates(workunit);
-    if (isEmptyString(graphName))
-    {
-        Owned<IPropertyTree> root = getWUGraphProgress(wuid, true);
-        if (root)
-        {
-            Owned<IPropertyTree> graphPT = root->getPropTree(graphName);
-            if (!graphPT)
-                return;
-
-            StatsScopeId wfScopeId(SSTworkflow, graphPT->getPropInt("@wfid", 0));
-            StatsScopeId graphScopeId(SSTgraph, graphName);
-
-            Owned<IPropertyTreeIterator> iter = graphPT->getElements("*");
-            ForEach(*iter)
-            {
-                StatsScopeId sgScopeId;
-                IPropertyTree * sgPT = & iter->query();
-                const char * sgName = sgPT->queryName();
-                if (strcmp(sgName, "node")==0)
-                    continue;
-                verifyex(sgScopeId.setScopeText(sgName));
-                MemoryBuffer compressed;
-                sgPT->getPropBin("Stats", compressed);
-                if (!compressed.length())
-                    break;
-                MemoryBuffer serialized;
-                decompressToBuffer(serialized, compressed);
-
-                unsigned version;
-                serialized.read(version);
-                byte kind;
-                serialized.read(kind);
-
-                StatsScopeId childId;
-                childId.deserialize(serialized, version);
-                int statsMinDepth = 0, statsMaxDepth = INT_MAX;
-                if (aggregatesOnly)
-                {
-                    // Only store stats for subgraph level
-                    statsMinDepth = 3;  // this is subgraph level
-                    statsMaxDepth = 3;
-                }
-                statsCollection->deserializeChild(childId, serialized, version, statsMinDepth, statsMaxDepth);
-            }
-        }
-    }
-}
-
-void GlobalStatisticCollection::loadGlobalAggregates(IConstWorkUnit &workunit)
-{
     class StatsCollectionAggregatesLoader : public IWuScopeVisitor
     {
     public:
@@ -2781,57 +2730,20 @@ IStatisticCollection * GlobalStatisticCollection::getCollectionForUpdate(Statist
     return createRootStatisticCollection(creatorType, creator, wfScopeId, graphScopeId, sgScopeCollection);
 }
 
-// Recalculate aggregates for global, workflow and graph scopes
-bool GlobalStatisticCollection::refreshAggregates()
-{
-    return statsCollection->refreshAggregates(aggregateKindsMapping);
-}
-
 // Recalculate aggregates and then write the aggregates to global stats (dali)
 void GlobalStatisticCollection::updateAggregates(IWorkUnit *wu)
 {
-    class StatisticsAggregatesWriter : implements IStatisticVisitor
+    struct AggregateUpdatedCallBackFunc : implements IWhenAggregateUpdatedCallBack
     {
-        const StatisticsMapping & aggregateKindsMapping;
-        const unsigned numStats;
         Linked<IWorkUnit> wu;
-    public:
-        StatisticsAggregatesWriter(IWorkUnit * _wu, const StatisticsMapping & _aggregateKindsMapping): wu(_wu), aggregateKindsMapping(_aggregateKindsMapping), numStats(aggregateKindsMapping.numStatistics()) {}
-
-        virtual bool visitScope(const IStatisticCollection & cur)
+        AggregateUpdatedCallBackFunc(IWorkUnit *_wu) : wu(_wu) {}
+        void operator () (const char * scope, StatisticScopeType sst, StatisticKind kind, stat_type value)
         {
-            switch (cur.queryScopeType())
-            {
-            case SSTglobal:
-            case SSTworkflow:
-            case SSTgraph:
-                for (unsigned i=0; i<numStats; ++i)
-                {
-                    StatisticKind kind = aggregateKindsMapping.getKind(i);
-                    stat_type value;
-                    if (cur.getStatistic(kind, value))
-                    {
-                        if (value || includeStatisticIfZero(kind))
-                        {
-                            StringBuffer s;
-                            wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), cur.queryScopeType(), cur.getFullScope(s).str(), kind, nullptr, value, 1, 0, StatsMergeReplace);
-                        }
-                    }
-                }
-                if (cur.queryScopeType()==SSTgraph)
-                    return false;
-                else
-                    return true;
-            default:
-                return false;
-            }
+            wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), sst, scope, kind, nullptr, value, 1, 0, StatsMergeReplace);
         }
-    };
-    if (refreshAggregates()) // Only serialize if the aggregates have changed
-    {
-        StatisticsAggregatesWriter statsAggregatorWriter(wu, aggregateKindsMapping);
-        statsCollection->visit(statsAggregatorWriter);
-    }
+    } aggregateUpdatedCallBackFunc(wu);
+
+    statsCollection->refreshAggregates(aggregateKindsMapping, aggregateUpdatedCallBackFunc);
 }
 
 // Prune all subgraph descendent stats (leaving subgraph stats for future aggregation)

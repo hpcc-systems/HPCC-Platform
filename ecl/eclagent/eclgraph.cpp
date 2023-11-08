@@ -925,7 +925,7 @@ void EclSubGraph::updateProgress(IStatisticGatherer &progress)
         subgraphs.item(i2).updateProgress(progress);
 
     Owned<IStatisticCollection> statsCollection = progress.getResult();
-    const cost_type costDiskAccess = aggregateStatistic(StCostFileAccess, statsCollection);
+    const cost_type costDiskAccess = statsCollection->aggregateStatistic(StCostFileAccess);
     if (costDiskAccess)
         progress.addStatistic(StCostFileAccess, costDiskAccess);
 }
@@ -1347,7 +1347,7 @@ void EclGraph::updateLibraryProgress()
         EclSubGraph & cur = graphs.item(idx);
         unsigned wfid = cur.parent.queryWfid();
 
-        Owned<IWUGraphStats> progress = agent->updateStats(queryStatisticsComponentType(), queryStatisticsComponentName(), wfid, queryGraphName(), cur.id);
+        Owned<IWUGraphStats> progress = agent->updateStats(wfid, queryGraphName(), cur.id);
         cur.updateProgress(progress->queryStatsBuilder());
     }
 }
@@ -1490,7 +1490,7 @@ void GraphResults::setResult(unsigned id, IHThorGraphResult * result)
 
 IWUGraphStats *EclGraph::updateStats(StatisticCreatorType creatorType, const char * creator, unsigned activeWfid, unsigned subgraph)
 {
-    return agent->updateStats(creatorType, creator, activeWfid, queryGraphName(), subgraph);
+    return agent->updateStats(activeWfid, queryGraphName(), subgraph);
 }
 
 void EclGraph::updateAggregates(IWorkUnit* lockedwu)
@@ -1547,7 +1547,7 @@ EclGraph * EclAgent::loadGraph(const char * graphName, IConstWorkUnit * wu, ILoa
 
     Owned<EclGraph> eclGraph = new EclGraph(*this, graphName, wu, isLibrary, debugContext, probeManager, wuGraph->getWfid());
     eclGraph->createFromXGMML(dll, xgmml);
-    globalStats.load(*wu, nullptr, true);
+    globalStats.loadExistingAggregates(*wu);
     return eclGraph.getClear();
 }
 

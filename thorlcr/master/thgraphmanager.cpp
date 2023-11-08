@@ -1118,7 +1118,7 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
                 podInfo.report(wu);
         }
         if (globals->getPropBool("@watchdogProgressEnabled"))
-            queryDeMonServer()->loadStats(workunit, nullptr, true); //graphName==nullptr so that sg stats are not loaded(at present, partial graph resumption not possible)
+            queryDeMonServer()->loadExistingAggregates(workunit);
 
         setWuid(workunit.queryWuid(), workunit.queryClusterName());
 

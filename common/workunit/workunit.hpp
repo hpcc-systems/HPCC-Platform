@@ -1788,10 +1788,8 @@ class WORKUNIT_API GlobalStatisticCollection : public CInterface
 public:
     GlobalStatisticCollection();
 
-    void load(IConstWorkUnit &workunit, const char * graphName, bool aggregatesOnly);
-    void loadGlobalAggregates(IConstWorkUnit &workunit);
+    void loadExistingAggregates(IConstWorkUnit &workunit);
     IStatisticCollection * getCollectionForUpdate(StatisticCreatorType creatorType, const char * creator, unsigned wfid, const char *graphName, unsigned sgId, bool clearStats);
-    bool refreshAggregates();
     IStatisticCollection * queryCollection() { return statsCollection; }
     void updateAggregates(IWorkUnit *wu);
     void pruneSubGraphDescendants(unsigned wfid, const char *graphName, unsigned sgId);

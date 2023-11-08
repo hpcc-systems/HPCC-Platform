@@ -318,9 +318,9 @@ public:
     {
         globalStatsCollection.updateAggregates(lockedWu);
     }
-    virtual void loadStats(IConstWorkUnit &workunit, const char * graphName, bool aggregatesOnly) override
+    virtual void loadExistingAggregates(IConstWorkUnit &workunit) override
     {
-        globalStatsCollection.load(workunit, graphName, aggregatesOnly);
+        globalStatsCollection.loadExistingAggregates(workunit);
     }
 };
 

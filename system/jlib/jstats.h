@@ -117,6 +117,11 @@ enum StatsMergeAction
     StatsMergeLast,
 };
 
+interface IWhenAggregateUpdatedCallBack
+{
+    virtual void operator () (const char * scope, StatisticScopeType sst, StatisticKind kind, stat_type value) = 0;
+};
+
 class StatisticsMapping;
 class CRuntimeStatisticCollection;
 interface IStatisticCollection : public IInterface
@@ -129,7 +134,8 @@ public:
     virtual unsigned getNumStatistics() const = 0;
     virtual bool getStatistic(StatisticKind kind, unsigned __int64 & value) const = 0;
     virtual void getStatistic(StatisticKind & kind, unsigned __int64 & value, unsigned idx) const = 0;
-    virtual bool setStatistic(const char *scope, StatisticKind kind, unsigned __int64 & value) = 0;
+    virtual bool getStatisticSum(StatisticKind kind, unsigned __int64 & value) const = 0;
+    virtual bool setStatistic(const char *scope, StatisticKind kind, unsigned __int64 value) = 0;
     virtual IStatisticCollectionIterator & getScopes(const char * filter, bool sorted) = 0;
     virtual void getMinMaxScope(IStringVal & minValue, IStringVal & maxValue, StatisticScopeType searchScopeType) const = 0;
     virtual void getMinMaxActivity(unsigned & minValue, unsigned & maxValue) const = 0;
@@ -147,13 +153,14 @@ public:
     virtual void pruneChildStats() = 0;
     virtual void addStatistic(StatisticKind kind, unsigned __int64 value) = 0;
     virtual bool updateStatistic(StatisticKind kind, unsigned __int64 value, StatsMergeAction mergeAction) = 0;
-    virtual bool refreshAggregates(const StatisticsMapping & mapping) = 0;
-    virtual bool refreshAggregates(CRuntimeStatisticCollection & totals, IBitSet & isTotalUpdated) = 0;
-    virtual void deserialize(MemoryBuffer & in, unsigned version, int minDepth, int maxDepth) = 0;
-    virtual void deserializeChild(const StatsScopeId & scopeId, MemoryBuffer & in, unsigned version, int minDepth, int maxDepth) = 0;
+    virtual bool refreshAggregates(const StatisticsMapping & mapping, IWhenAggregateUpdatedCallBack & fWhenAggregateUpdated) = 0;
+    virtual bool refreshAggregates(CRuntimeStatisticCollection & totals, IBitSet & isTotalUpdated, IWhenAggregateUpdatedCallBack & fWhenAggregateUpdated) = 0;
+    virtual void deserialize(MemoryBuffer & in, unsigned version) = 0;
+    virtual void deserializeChild(const StatsScopeId & scopeId, MemoryBuffer & in, unsigned version) = 0;
     virtual void clearStats() = 0;
     virtual void addChild(IStatisticCollection *stats) = 0;
     virtual void markDirty() = 0;
+    virtual stat_type aggregateStatistic(StatisticKind kind) const = 0;
 };
 
 interface IStatisticCollectionIterator : public IIteratorOf<IStatisticCollection>
@@ -967,6 +974,5 @@ protected:
 };
 
 extern jlib_decl StringBuffer & formatMoney(StringBuffer &out, unsigned __int64 value);
-extern jlib_decl stat_type aggregateStatistic(StatisticKind kind, IStatisticCollection * statsCollection);
 extern jlib_decl IStatisticCollection * createGlobalStatisticCollection(IPropertyTree * root);
 #endif

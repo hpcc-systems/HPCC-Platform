@@ -250,9 +250,9 @@ public:
     {
         return ctx->queryAgentMachineCost();
     };
-    virtual IWUGraphStats *updateStats(StatisticCreatorType creatorType, const char * creator, unsigned activeWfid, const char *graphName, unsigned subgraph) override
+    virtual IWUGraphStats *updateStats(unsigned activeWfid, const char *graphName, unsigned subgraph) override
     {
-        return ctx->updateStats(creatorType, creator, activeWfid, graphName, subgraph);
+        return ctx->updateStats(activeWfid, graphName, subgraph);
     };
     virtual void updateAggregates(IWorkUnit* lockedwu) override
     {
@@ -714,10 +714,10 @@ public:
     {
         return agentMachineCost;
     }
-    virtual IWUGraphStats *updateStats(StatisticCreatorType creatorType, const char * creator, unsigned activeWfid, const char *graphName, unsigned subgraph) override
+    virtual IWUGraphStats *updateStats(unsigned activeWfid, const char *graphName, unsigned subgraph) override
     {
-        Owned<IStatisticCollection> sgCollection = globalStats.getCollectionForUpdate(creatorType, creator, activeWfid, graphName, subgraph, true); // true=>clear existing stats
-        return wuRead->updateStats(graphName, creatorType, creator, activeWfid, subgraph, false, sgCollection);
+        Owned<IStatisticCollection> sgCollection = globalStats.getCollectionForUpdate(queryStatisticsComponentType(), queryStatisticsComponentName(), activeWfid, graphName, subgraph, true); // true=>clear existing stats
+        return wuRead->updateStats(graphName, queryStatisticsComponentType(), queryStatisticsComponentName(), activeWfid, subgraph, false, sgCollection);
     }
     virtual void updateAggregates(IWorkUnit* lockedwu) override
     {
