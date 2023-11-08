@@ -2875,7 +2875,7 @@ ICompressHandlerIterator *getCompressHandlerIterator()
 
 bool addCompressorHandler(ICompressHandler *handler)
 {
-    if (compressors.lookup(handler->queryMethod()))
+    if (compressors.lookup(handler->queryType()))
     {
         handler->Release();
         return false; // already registered
@@ -2956,13 +2956,20 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     };
     class CAESLZ4HCCompressHandler : public CCompressHandlerBase
     {
+        StringBuffer typestring;
+        StringBuffer levelstring;
     public:
-        virtual const char *queryType() const { return "AESLZ4HC"; }
+        CAESLZ4HCCompressHandler(unsigned level)
+        {
+            typestring.appendf("AESLZ4HC_%u", level);
+            levelstring.appendf("hclevel=%u", level);
+        }
+        virtual const char *queryType() const { return typestring.str(); }
         virtual CompressionMethod queryMethod() const { return (CompressionMethod) (COMPRESS_METHOD_AES|COMPRESS_METHOD_LZ4HC); }
         virtual ICompressor *getCompressor(const char *options)
         {
             assertex(options);
-            return new CAESCompressor(options, strlen(options),createLZ4Compressor(nullptr, true));
+            return new CAESCompressor(options, strlen(options),createLZ4Compressor(levelstring, true));
         }
         virtual IExpander *getExpander(const char *options)
         {
@@ -3005,7 +3012,8 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     addCompressorHandler(new CLZWCompressHandler());
     addCompressorHandler(new CAESCompressHandler());
     addCompressorHandler(new CAESLZ4CompressHandler());
-    addCompressorHandler(new CAESLZ4HCCompressHandler());
+    addCompressorHandler(new CAESLZ4HCCompressHandler(3));
+    addCompressorHandler(new CAESLZ4HCCompressHandler(9));
     addCompressorHandler(new CDiffCompressHandler());
     addCompressorHandler(new CRDiffCompressHandler());
     addCompressorHandler(new CRandRDiffCompressHandler());
