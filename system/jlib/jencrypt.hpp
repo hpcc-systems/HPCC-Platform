@@ -30,14 +30,23 @@ namespace jlib
 {
     extern jlib_decl MemoryBuffer &aesEncrypt(const void *key, size_t keylen, const void *input, size_t inlen, MemoryBuffer &output);
     extern jlib_decl MemoryBuffer &aesDecrypt(const void *key, size_t keylen, const void *input, size_t inlen, MemoryBuffer &output);
-    extern jlib_decl size_t aesDecrypt(const void *key, size_t keylen, const void *input, size_t inlen, void *output, size_t outlen);
+    extern jlib_decl size_t aesDecryptInPlace(const void *key, size_t keylen, void *data, size_t inlen);
 } // end of namespace jlib;
 
+#ifdef _USE_OPENSSL
+namespace openssl
+{
+    extern jlib_decl MemoryBuffer &aesEncrypt(const void *key, size_t keylen, const void *input, size_t inlen, MemoryBuffer &output);
+    extern jlib_decl MemoryBuffer &aesDecrypt(const void *key, size_t keylen, const void *input, size_t inlen, MemoryBuffer &output);
+    extern jlib_decl size_t aesDecryptInPlace(const void *key, size_t keylen, void *data, size_t inlen);
+} // end of namespace openssl;
+#endif
+
 // NB: these are wrappers to either the openssl versions (if USE_OPENSSL) or the jlib version.
-// MORE - are they?? I see no evidence of that!
+
 extern jlib_decl MemoryBuffer &aesEncrypt(const void *key, size_t keylen, const void *input, size_t inlen, MemoryBuffer &output);
 extern jlib_decl MemoryBuffer &aesDecrypt(const void *key, size_t keylen, const void *input, size_t inlen, MemoryBuffer &output);
-extern jlib_decl size_t aesDecrypt(const void *key, size_t keylen, const void *input, size_t inlen, void *output, size_t outlen);
+extern jlib_decl size_t aesDecryptInPlace(const void *key, size_t keylen, void *data, size_t inlen);
 
 
 #define encrypt _LogProcessError12
@@ -45,7 +54,6 @@ extern jlib_decl size_t aesDecrypt(const void *key, size_t keylen, const void *i
 
 extern jlib_decl void encrypt(StringBuffer &ret, const char *in);
 extern jlib_decl void decrypt(StringBuffer &ret, const char *in);
-
 
 // simple inline block scrambler (shouldn't need jlib_decl)
 class Csimplecrypt

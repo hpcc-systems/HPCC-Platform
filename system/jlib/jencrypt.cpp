@@ -21,6 +21,10 @@
 #ifdef _USE_OPENSSL
 
 #include "ske.hpp"
+#include <openssl/conf.h>
+#include <openssl/evp.h>
+#include <openssl/err.h>
+#include <string.h>
 
 #endif
 
@@ -1814,14 +1818,14 @@ MemoryBuffer &aesDecrypt(const void *key, size_t keylen, const void *input, size
     return output;
 }
 
-size_t aesDecrypt(const void *key, size_t keylen, const void *input, size_t inlen, void *output, size_t outlen)
+size_t aesDecryptInPlace(const void *key, size_t keylen, void *data, size_t inlen)
 {
     Rijndael rin;
     Rijndael::KeyLength keyType = getAesKeyType(keylen);
 
     rin.init(Rijndael::CBC, Rijndael::Decrypt, (const UINT8 *)key, keyType);
     size32_t truncInLen = (size32_t)inlen;
-    int len = rin.padDecrypt((const UINT8 *)input, truncInLen, (UINT8 *) output, outlen);
+    int len = rin.padDecrypt((const UINT8 *)data, truncInLen, (UINT8 *) data, inlen);
     if(len < 0)
         throw MakeStringException(-1,"AES Decryption error: %d, %s", len, getAesErrorText(len));
     return len;
@@ -1829,19 +1833,200 @@ size_t aesDecrypt(const void *key, size_t keylen, const void *input, size_t inle
 
 } // end of namespace jlib
 
+#ifdef _USE_OPENSSL
+namespace openssl {
+
+static void encryptError(const char *what)
+{
+    VStringBuffer s("openssl::aesEncrypt: %s", what);
+    throw makeStringException(0, s.str());
+}
+
+MemoryBuffer &aesEncrypt(const void *key, size_t keylen, const void *plaintext, size_t plaintext_len, MemoryBuffer &output)
+{
+    if (!plaintext || !plaintext_len)
+        return output;
+    EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
+    if (!ctx)
+        encryptError("Failed to create context");
+    try
+    {
+        unsigned char iv[16] = { 0 };
+        switch (keylen)
+        {
+            case 32:
+                if(1 != EVP_EncryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, (const unsigned char *) key, iv))
+                    encryptError("Failed to initialize context");
+                break;
+            case 24:
+                if(1 != EVP_EncryptInit_ex(ctx, EVP_aes_192_cbc(), NULL, (const unsigned char *) key, iv))
+                    encryptError("Failed to initialize context");
+                break;
+            case 16:
+                if(1 != EVP_EncryptInit_ex(ctx, EVP_aes_128_cbc(), NULL, (const unsigned char *) key, iv))
+                    encryptError("Failed to initialize context");
+                break;
+            default:
+                encryptError("Unsupported key length");
+                break;
+        }
+        byte *ciphertext = (byte *) output.reserve(plaintext_len + 100);
+        int ciphertext_len = 0;
+        int thislen = 0;
+        if(1 != EVP_EncryptUpdate(ctx, ciphertext, &thislen, (const unsigned char *) plaintext, plaintext_len))
+            encryptError("Error in EVP_EncryptUpdate");
+        ciphertext_len += thislen;
+        if(1 != EVP_EncryptFinal_ex(ctx, ciphertext + ciphertext_len, &thislen))
+            encryptError("Error in EVP_EncryptFinal_ex");
+        ciphertext_len += thislen;
+        EVP_CIPHER_CTX_free(ctx);
+        output.setLength(ciphertext_len);
+        return output;
+    }
+    catch (...)
+    {
+        EVP_CIPHER_CTX_free(ctx);
+        throw;
+    }
+}
+
+static void decryptError(const char *what)
+{
+    VStringBuffer s("openssl::aesDecrypt: unexpected failure in %s", what);
+    throw makeStringException(0, s.str());
+}
+
+MemoryBuffer &aesDecrypt(const void *key, size_t keylen, const void *ciphertext, size_t ciphertext_len, MemoryBuffer &output)
+{
+    if (!ciphertext || !ciphertext_len)
+        return output;
+    EVP_CIPHER_CTX *ctx;
+
+    int thislen = 0;
+    int plaintext_len = 0;
+
+    if(!(ctx = EVP_CIPHER_CTX_new()))
+        decryptError("Failed to create context");
+    try
+    {
+        unsigned char iv[16] = { 0 };
+        switch (keylen)
+        {
+            case 32:
+                if(1 != EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, (const unsigned char *) key, iv))
+                    decryptError("Failed to initialize context");
+                break;
+            case 24:
+                if(1 != EVP_DecryptInit_ex(ctx, EVP_aes_192_cbc(), NULL, (const unsigned char *) key, iv))
+                    decryptError("Failed to initialize context");
+                break;
+            case 16:
+                if(1 != EVP_DecryptInit_ex(ctx, EVP_aes_128_cbc(), NULL, (const unsigned char *) key, iv))
+                    decryptError("Failed to initialize context");
+                break;
+            default:
+                decryptError("Unsupported key length");
+                break;
+        }
+        byte *plaintext = (byte *) output.reserve(ciphertext_len);
+        if(1 != EVP_DecryptUpdate(ctx, plaintext, &thislen, (const unsigned char *) ciphertext, ciphertext_len))
+            decryptError("Error in EVP_DecryptUpdate");
+        plaintext_len += thislen;
+
+        if(1 != EVP_DecryptFinal_ex(ctx, plaintext + plaintext_len, &thislen))
+            decryptError("Error in EVP_DecryptFinal_ex");
+        plaintext_len += thislen;
+        output.setLength(plaintext_len);
+        EVP_CIPHER_CTX_free(ctx);
+        return output;
+    }
+    catch (...)
+    {
+        EVP_CIPHER_CTX_free(ctx);
+        throw;
+    }
+}
+
+size_t aesDecryptInPlace(const void *key, size_t keylen, void *ciphertext, size_t ciphertext_len)
+{
+    if (!ciphertext || !ciphertext_len)
+        return 0;
+    EVP_CIPHER_CTX *ctx;
+
+    int thislen = 0;
+    size_t plaintext_len = 0;
+
+    if(!(ctx = EVP_CIPHER_CTX_new()))
+        decryptError("Failed to create context");
+
+    try
+    {
+        unsigned char iv[16] = { 0 };
+        switch (keylen)
+        {
+            case 32:
+                if(1 != EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, (const unsigned char *) key, iv))
+                    decryptError("Failed to initialize context");
+                break;
+            case 24:
+                if(1 != EVP_DecryptInit_ex(ctx, EVP_aes_192_cbc(), NULL, (const unsigned char *) key, iv))
+                    decryptError("Failed to initialize context");
+                break;
+            case 16:
+                if(1 != EVP_DecryptInit_ex(ctx, EVP_aes_128_cbc(), NULL, (const unsigned char *) key, iv))
+                    decryptError("Failed to initialize context");
+                break;
+            default:
+                decryptError("Unsupported key length");
+                break;
+        }
+        byte *plaintext = (byte *) ciphertext;
+        if(1 != EVP_DecryptUpdate(ctx, plaintext, &thislen, (const unsigned char *) ciphertext, ciphertext_len))
+            decryptError("Error in EVP_DecryptUpdate");
+        plaintext_len += thislen;
+
+        if(1 != EVP_DecryptFinal_ex(ctx, plaintext + plaintext_len, &thislen))
+            decryptError("Error in EVP_DecryptFinal_ex");
+        plaintext_len += thislen;
+        assertex(plaintext_len <= ciphertext_len);
+        EVP_CIPHER_CTX_free(ctx);
+        return plaintext_len;
+    }
+    catch (...)
+    {
+        EVP_CIPHER_CTX_free(ctx);
+        throw;
+    }
+}
+
+}  // namespace
+#endif
+
 MemoryBuffer &aesEncrypt(const void *key, size_t keylen, const void *input, size_t inlen, MemoryBuffer &output)
 {
+#ifdef _USE_OPENSSL
+    return openssl::aesEncrypt(key, keylen, input, inlen, output);
+#else
     return jlib::aesEncrypt(key, keylen, input, inlen, output);
+#endif
 }
 
 MemoryBuffer &aesDecrypt(const void *key, size_t keylen, const void *input, size_t inlen, MemoryBuffer &output)
 {
+#ifdef _USE_OPENSSL
+    return openssl::aesDecrypt(key, keylen, input, inlen, output);
+#else
     return jlib::aesDecrypt(key, keylen, input, inlen, output);
+#endif
 }
 
-size_t aesDecrypt(const void *key, size_t keylen, const void *input, size_t inlen, void *output, size_t outlen)
+size_t aesDecryptInPlace(const void *key, size_t keylen, void *data, size_t inlen)
 {
-    return jlib::aesDecrypt(key, keylen, input, inlen, output, outlen);
+#ifdef _USE_OPENSSL
+    return openssl::aesDecryptInPlace(key, keylen, data, inlen);
+#else
+    return jlib::aesDecryptInPlace(key, keylen, data, inlen);
+#endif
 }
 
 #define CRYPTSIZE 32
@@ -1873,4 +2058,6 @@ void decrypt(StringBuffer &ret, const char *in)
         ret.append(out1.length(), out1.toByteArray());
     }
 }
+
+
 
