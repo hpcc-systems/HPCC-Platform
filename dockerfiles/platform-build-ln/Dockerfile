@@ -49,7 +49,7 @@ ARG BUILD_THREADS
 RUN if [ -n "${BUILD_THREADS}" ] ; then echo ${BUILD_THREADS} > ~/build_threads; else echo $(nproc) > ~/build_threads ; fi
 RUN echo Building with $(cat ~/build_threads) threads
 RUN make -j$(cat ~/build_threads) plugins
-RUN make -j$(cat ~/build_threads) mysqllogagent wslogserviceespagent
+RUN make -j$(cat ~/build_threads) mysqllogagent wslogserviceespagent scappsmodularlogagent
 
 USER root
 
@@ -58,3 +58,4 @@ RUN cd oss/plugins/eeproxies && make -j$(cat ~hpcc/build_threads) install
 RUN cd system/mysql && make -j$(cat ~hpcc/build_threads) install
 RUN cd esp/logging/loggingagent/mysqlloggingagent && make -j$(cat ~hpcc/build_threads) install
 RUN cd esp/logging/loggingagent/wslogserviceespagent && make -j$(cat ~hpcc/build_threads) install
+RUN cd esp/logging/loggingagent/scappsmodularlogagent && make -j$(cat ~hpcc/build_threads) install
