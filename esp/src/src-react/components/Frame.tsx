@@ -91,6 +91,24 @@ export const Frame: React.FunctionComponent<FrameProps> = () => {
     }, []);
 
     React.useEffect(() => {
+        initSession();
+
+        topic.subscribe("hpcc/session_management_status", function (publishedMessage) {
+            if (publishedMessage.status === "Unlocked") {
+                unlock();
+            } else if (publishedMessage.status === "Locked") {
+                lock();
+            } else if (publishedMessage.status === "DoIdle") {
+                fireIdle();
+            } else if (publishedMessage.status === "Idle") {
+                window.localStorage.setItem("pageOnLock", window.location.hash.substring(1));
+                setUserSession({ ...userSession, Status: "Locked" });
+                window.location.reload();
+            }
+        });
+    }, [setUserSession, userSession]);
+
+    React.useEffect(() => {
         document.title = `${showEnvironmentTitle && environmentTitle.length ? environmentTitle : "ECL Watch v9"}${locationPathname.split("/").join(" | ")}`;
     }, [environmentTitle, locationPathname, showEnvironmentTitle]);
 
