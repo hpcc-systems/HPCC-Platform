@@ -117,7 +117,7 @@ void waitJob(const char *componentName, const char *resourceType, const char *jo
             if ((0 == output.length()) || streq(output, "0"))  // status.active value
             {
                 // Job is no longer active - we can terminate
-                DBGLOG("kubectl jobs output: %s", output.str());
+                DBGLOG("kubectl output (from %s): %s", waitJob.str(), output.str());
                 VStringBuffer checkJobExitStatus("kubectl get jobs %s '-o=jsonpath={range .status.conditions[*]}{.type}: {.status} - {.message}|{end}'", jobName.str());
                 runKubectlCommand(componentName, checkJobExitStatus, nullptr, &output.clear());
                 if (strstr(output.str(), "Failed: "))
@@ -136,8 +136,17 @@ void waitJob(const char *componentName, const char *resourceType, const char *jo
                     }
                     throw makeStringException(0, errMsg);
                 }
-                else // assume success, either .status.conditions type of "Complete" or "Succeeded"
-                    break;
+                else
+                {
+                    DBGLOG("kubectl output (from %s): %s", checkJobExitStatus.str(), output.str());
+                    if (0 != output.length())
+                        break; // assume success, either .status.conditions type of "Complete" or "Succeeded"
+                    else
+                    {
+                        // no .status.conditions
+                        // cycle around, check .status.active again
+                    }
+                }
             }
             runKubectlCommand(nullptr, getScheduleStatus, nullptr, &output.clear());
 
