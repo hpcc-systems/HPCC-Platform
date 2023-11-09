@@ -1433,6 +1433,10 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         if (runOnce)
         {
             // Avoid delaying the release of packages or queries - otherwise stand-alone queries can take a while to terminate
+            PerfTracer oneShotTracer;
+            bool traceOneShot = topology->getPropBool("expert/@perftrace", false); // MORE - check wu options too?
+            if (traceOneShot)
+                oneShotTracer.start();
             agentQueryReleaseDelaySeconds = 0;
             if (wuid)
             {
@@ -1474,6 +1478,30 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                 {
                     EXCLOG(E);
                     E->Release();
+                }
+            }
+            if (traceOneShot)
+            {
+                oneShotTracer.stop();
+                const char *fname = topology->queryProp("expert/@perftraceFileName");
+                if (!fname)
+                    fname = "perftrace.svg";
+                Owned<IFile> iFile = createIFile(fname);
+                try
+                {
+                    Owned<IFileIO> iFileIO = iFile->open(IFOcreate);
+                    if (iFileIO)
+                    {
+                        StringBuffer &svg = oneShotTracer.queryResult();
+                        iFileIO->write(0, svg.length(), svg.str());
+                        DBGLOG("Flame graph for query written to %s", fname);
+                    }
+                }
+                catch (IException *E)
+                {
+                    VStringBuffer msg("Failed to write flame graph to %s", fname);
+                    EXCLOG(E, msg);
+                    ::Release(E);
                 }
             }
         }

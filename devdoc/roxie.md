@@ -282,6 +282,32 @@ Should the scope of the blacklist be different? Possible scopes are:
 Options 2 and 4 above would allow all aspects of the blacklisting behaviour to be specified by options on the SOAPCALL. We could control whether or not the
 blacklister is to be used at all via a SOAPCALL option with any of the above...
 
+perftrace options
+=================
+
+The HPCC Platform includes a rudimentary performance tracing feature using periodic stack capture to generate flame graphs. Roxie supports this in 3 ways:
+
+1. If expert/@profileStartup is set in roxie config, a flame graph is generated for operations during Roxie startup phase.
+2. If @perf is set on an incoming query, a flame graph is generated for the lifetime of that query's execution, and returned along with the query results
+3. If expert/perftrace is set in roxie config, one-shot roxie queries (e.g. eclagent mode) generate a flame graph (currently just to a text file).
+
+The perf trace operates as follows:
+
+1. A child process is launched that runs the doperf script. This samples the current stack(s) every 0.2s (configurable) to a series of text files.
+2. When tracing is done, these text files are "folded" via a perl script that notes every unique stack and how many times it was seen, one line per unique stack
+3. This folded stack list is filtered to suppress some stacks that are not very interesting
+4. The filtered folded stack list is passed to another perl script that generates an svg file.
+
+The basic info captured at step 1 (or maybe 2) could also be analysed to give other insights, such as:
+
+1. A list of "time in function, time in children of function". 
+2. An expanded list of callers to __GI___lll_lock_wait and __GI___lll_lock_wake, to help spot contended critsecs.
+
+Unfortunately some info present in the original stack text files is lost in the folded summary - in particular related to the TID
+that the stack is on. Can we spot lifetimes of threads and/or should we treat "stacks" on different threads as different? Thread pools might render this difficult though.
+There is an option in stack-collapse-elfutils.pl to include the TID when considering whether stacks match, so
+perhaps we should just (optionally) use that.
+
 Some notes on LocalAgent mode
 =============================
 
