@@ -285,7 +285,7 @@ public:
             // add tbd
             StringBuffer ips;
             StringArray warnings;
-            sendEmail(emailtarget.str(),subject,out.str(),ep.getIpText(ips).str(),ep.port,sender.str(),&warnings);
+            sendEmail(emailtarget.str(),subject,out.str(),ep.getIpText(ips).str(),ep.port,sender.str(),&warnings, false);
             ForEachItemIn(i,warnings)
                 WARNLOG("SWAPNODE: %s",warnings.item(i));
         }
