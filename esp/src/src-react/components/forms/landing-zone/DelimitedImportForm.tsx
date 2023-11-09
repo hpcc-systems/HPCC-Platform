@@ -187,7 +187,7 @@ export const DelimitedImportForm: React.FunctionComponent<DelimitedImportFormPro
                     fieldState: { error }
                 }) => <TargetGroupTextField
                         key="destGroup"
-                        label={nlsHPCC.Group}
+                        label={isContainer ? nlsHPCC.TargetPlane : nlsHPCC.Group}
                         required={true}
                         selectedKey={value}
                         placeholder={nlsHPCC.SelectValue}

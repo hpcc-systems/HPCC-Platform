@@ -523,43 +523,64 @@ FILESERVICES_API void FILESERVICES_CALL fsRenameLogicalFile_v2(ICodeContext *ctx
 }
 
 
-FILESERVICES_API void FILESERVICES_CALL fsSendEmail_v2(ICodeContext * ctx, const char * to, const char * subject, const char * body, const char * mailServer, unsigned port, const char * sender, const char *cc, const char *bcc, bool highPriority)
+FILESERVICES_API void FILESERVICES_CALL fsSendEmail_v3(ICodeContext * ctx, const char * to, const char * subject, const char * body, const char * mailServer, unsigned port, const char * sender, const char *cc, const char *bcc, bool highPriority, bool termJobOnFail)
 {
     StringArray warnings;
-    sendEmail( to, cc, bcc, subject, body, mailServer, port, sender, &warnings, highPriority);
+    sendEmail( to, cc, bcc, subject, body, mailServer, port, sender, &warnings, highPriority, termJobOnFail);
     ForEachItemIn(i,warnings)
         WUmessage(ctx, SeverityWarning, "SendEmail", warnings.item(i));
 }
 
+FILESERVICES_API void FILESERVICES_CALL fsSendEmail_v2(ICodeContext * ctx, const char * to, const char * subject, const char * body, const char * mailServer, unsigned port, const char * sender, const char *cc, const char *bcc, bool highPriority)
+{
+    fsSendEmail_v3(ctx, to, subject, body, mailServer, port, sender, cc, bcc, highPriority, true);
+}
+
 FILESERVICES_API void FILESERVICES_CALL fsSendEmail(ICodeContext * ctx, const char * to, const char * subject, const char * body, const char * mailServer, unsigned port, const char * sender)
 {
-    fsSendEmail_v2(ctx, to, subject, body, mailServer, port, sender, nullptr, nullptr, false);
+    fsSendEmail_v3(ctx, to, subject, body, mailServer, port, sender, nullptr, nullptr, false, true);
+}
+
+FILESERVICES_API void FILESERVICES_CALL fsSendEmailAttachText_v3(ICodeContext * ctx, const char * to, const char * subject, const char * body, const char * attachment, const char * mimeType, const char * attachmentName, const char * mailServer, unsigned int port, const char * sender, const char *cc, const char *bcc, bool highPriority, bool termJobOnFail)
+{
+    StringArray warnings;
+    sendEmailAttachText(to, cc, bcc, subject, body, attachment, mimeType, attachmentName, mailServer, port, sender, &warnings, highPriority, termJobOnFail);
+    ForEachItemIn(i,warnings)
+        WUmessage(ctx, SeverityWarning, "SendEmailAttachText", warnings.item(i));
 }
 
 FILESERVICES_API void FILESERVICES_CALL fsSendEmailAttachText_v2(ICodeContext * ctx, const char * to, const char * subject, const char * body, const char * attachment, const char * mimeType, const char * attachmentName, const char * mailServer, unsigned int port, const char * sender, const char *cc, const char *bcc, bool highPriority)
 {
     StringArray warnings;
-    sendEmailAttachText(to, cc, bcc, subject, body, attachment, mimeType, attachmentName, mailServer, port, sender, &warnings, highPriority);
+    sendEmailAttachText(to, cc, bcc, subject, body, attachment, mimeType, attachmentName, mailServer, port, sender, &warnings, highPriority, true);
     ForEachItemIn(i,warnings)
         WUmessage(ctx, SeverityWarning, "SendEmailAttachText", warnings.item(i));
 }
 
 FILESERVICES_API void FILESERVICES_CALL fsSendEmailAttachText(ICodeContext * ctx, const char * to, const char * subject, const char * body, const char * attachment, const char * mimeType, const char * attachmentName, const char * mailServer, unsigned int port, const char * sender)
 {
-    fsSendEmailAttachText_v2(ctx, to, subject, body, attachment, mimeType, attachmentName, mailServer, port, sender, nullptr, nullptr, false);
+    fsSendEmailAttachText_v3(ctx, to, subject, body, attachment, mimeType, attachmentName, mailServer, port, sender, nullptr, nullptr, false, true);
+}
+
+FILESERVICES_API void FILESERVICES_CALL fsSendEmailAttachData_v3(ICodeContext * ctx, const char * to, const char * subject, const char * body, size32_t lenAttachment, const void * attachment, const char * mimeType, const char * attachmentName, const char * mailServer, unsigned int port, const char * sender, const char *cc, const char *bcc, bool highPriority, bool termJobOnFail)
+{
+    StringArray warnings;
+    sendEmailAttachData(to, cc, bcc, subject, body, lenAttachment, attachment, mimeType, attachmentName, mailServer, port, sender, &warnings, highPriority, termJobOnFail);
+    ForEachItemIn(i,warnings)
+        WUmessage(ctx, SeverityWarning, "SendEmailAttachData", warnings.item(i));
 }
 
 FILESERVICES_API void FILESERVICES_CALL fsSendEmailAttachData_v2(ICodeContext * ctx, const char * to, const char * subject, const char * body, size32_t lenAttachment, const void * attachment, const char * mimeType, const char * attachmentName, const char * mailServer, unsigned int port, const char * sender, const char *cc, const char *bcc, bool highPriority)
 {
     StringArray warnings;
-    sendEmailAttachData(to, cc, bcc, subject, body, lenAttachment, attachment, mimeType, attachmentName, mailServer, port, sender, &warnings, highPriority);
+    sendEmailAttachData(to, cc, bcc, subject, body, lenAttachment, attachment, mimeType, attachmentName, mailServer, port, sender, &warnings, highPriority, true);
     ForEachItemIn(i,warnings)
         WUmessage(ctx, SeverityWarning, "SendEmailAttachData", warnings.item(i));
 }
 
 FILESERVICES_API void FILESERVICES_CALL fsSendEmailAttachData(ICodeContext * ctx, const char * to, const char * subject, const char * body, size32_t lenAttachment, const void * attachment, const char * mimeType, const char * attachmentName, const char * mailServer, unsigned int port, const char * sender)
 {
-    fsSendEmailAttachData_v2(ctx, to, subject, body, lenAttachment, attachment, mimeType, attachmentName, mailServer, port, sender, nullptr, nullptr, false);
+    fsSendEmailAttachData_v3(ctx, to, subject, body, lenAttachment, attachment, mimeType, attachmentName, mailServer, port, sender, nullptr, nullptr, false, true);
 }
 
 

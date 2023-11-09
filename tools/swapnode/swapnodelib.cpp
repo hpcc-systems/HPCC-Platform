@@ -40,25 +40,29 @@
 #include "swapnodelib.hpp"
 
 #define SDS_LOCK_TIMEOUT 30000
-#define SWAPNODE_RETRY_TIME (1000*60*60*1) // 1hr
+#define SWAPNODE_RETRY_TIME (1000 * 60 * 60 * 1) // 1hr
 
 static const LogMsgJobInfo swapnodeJob(UnknownJob, UnknownUser);
 
 static bool ensureThorIsDown(const char *cluster, bool nofail, bool wait)
 {
     bool retry = false;
-    do {
+    do
+    {
         Owned<IRemoteConnection> pStatus = querySDS().connect("/Status/Servers", myProcessSession(), RTM_NONE, SDS_LOCK_TIMEOUT);
         Owned<IPropertyTreeIterator> it = pStatus->queryRoot()->getElements("Server[@name='ThorMaster']");
         retry = false;
-        ForEach(*it) {
-            IPropertyTree* pServer = &it->query();
-            if (pServer->hasProp("@cluster") && !strcmp(pServer->queryProp("@cluster"), cluster)) {
-                if (nofail) {
+        ForEach(*it)
+        {
+            IPropertyTree *pServer = &it->query();
+            if (pServer->hasProp("@cluster") && !strcmp(pServer->queryProp("@cluster"), cluster))
+            {
+                if (nofail)
+                {
                     WARNLOG("A Thor on cluster %s is still active", cluster);
                     if (!wait)
                         return false;
-                    Sleep(1000*10);
+                    Sleep(1000 * 10);
                     PROGLOG("Retrying...");
                     retry = true;
                     break;
@@ -76,25 +80,25 @@ bool WuResubmit(const char *wuid)
     Owned<IWorkUnit> wu = factory->updateWorkUnit(wuid);
     if (!wu)
     {
-        ERRLOG("WuResubmit(%s): could not find workunit",wuid);
+        ERRLOG("WuResubmit(%s): could not find workunit", wuid);
         return false;
     }
-    if (wu->getState()!=WUStateFailed)
+    if (wu->getState() != WUStateFailed)
     {
         ERRLOG("WuResubmit(%s): could not resubmit as workunit state is '%s'", wuid, wu->queryStateDesc());
         return false;
     }
     SCMStringBuffer daToken;
     StringBuffer user;
-    wu->getWorkunitDistributedAccessToken(daToken);//TODO Can we use wu->queryUser() instead?
-    extractFromWorkunitDAToken(daToken.str(), nullptr, &user, nullptr);//get user from token
+    wu->getWorkunitDistributedAccessToken(daToken);                     // TODO Can we use wu->queryUser() instead?
+    extractFromWorkunitDAToken(daToken.str(), nullptr, &user, nullptr); // get user from token
     wu->resetWorkflow();
     wu->setState(WUStateSubmitted);
     wu->commit();
     wu.clear();
-    submitWorkUnit(wuid,user.str(),daToken.str());//use workunit token as password
+    submitWorkUnit(wuid, user.str(), daToken.str()); // use workunit token as password
 
-    PROGLOG("WuResubmit(%s): resubmitted",wuid);
+    PROGLOG("WuResubmit(%s): resubmitted", wuid);
     return true;
 }
 
@@ -106,9 +110,8 @@ bool WuResubmit(const char *wuid)
 //      Swap [ @inNetAddress, @outNetAddress, @time, @rank]
 //      WorkUnit [ @id @time @resubmitted ]
 
-//time,nodenum,ip,code,errmsg
-//time,nodenum,swapout,swapin
-
+// time,nodenum,ip,code,errmsg
+// time,nodenum,swapout,swapin
 
 class CSwapNode
 {
@@ -121,13 +124,16 @@ protected:
 
     bool checkIfNodeInUse(IpAddress &ip, bool includespares, StringBuffer &clustname)
     {
-        SocketEndpoint ep(0,ip);
-        if (RANK_NULL != group->rank(ep)) {
+        SocketEndpoint ep(0, ip);
+        if (RANK_NULL != group->rank(ep))
+        {
             clustname.append(groupName);
             return true;
         }
-        else if (includespares) {
-            if (RANK_NULL != spareGroup->rank(ep)) {
+        else if (includespares)
+        {
+            if (RANK_NULL != spareGroup->rank(ep))
+            {
                 clustname.append(groupName).append(" spares");
                 return true;
             }
@@ -136,21 +142,24 @@ protected:
     }
     IPropertyTree *getSwapNodeInfo(bool create)
     {
-        Owned<IRemoteConnection> conn = querySDS().connect("/SwapNode", myProcessSession(), RTM_LOCK_WRITE|(create?RTM_CREATE_QUERY:0), 1000*60*5);
-        if (!conn) {
+        Owned<IRemoteConnection> conn = querySDS().connect("/SwapNode", myProcessSession(), RTM_LOCK_WRITE | (create ? RTM_CREATE_QUERY : 0), 1000 * 60 * 5);
+        if (!conn)
+        {
             ERRLOG("SWAPNODE: could not connect to /SwapNode branch");
             return NULL;
         }
         StringBuffer xpath;
-        xpath.appendf("Thor[@group=\"%s\"]",groupName.get());
+        xpath.appendf("Thor[@group=\"%s\"]", groupName.get());
         Owned<IPropertyTree> info = conn->queryRoot()->getPropTree(xpath.str());
-        if (!info) {
-            if (!create) {
-                PROGLOG("SWAPNODE: no information for group %s",groupName.get());
+        if (!info)
+        {
+            if (!create)
+            {
+                PROGLOG("SWAPNODE: no information for group %s", groupName.get());
                 return NULL;
             }
-            info.set(conn->queryRoot()->addPropTree("Thor",createPTree("Thor")));
-            info->setProp("@group",groupName.get());
+            info.set(conn->queryRoot()->addPropTree("Thor", createPTree("Thor")));
+            info->setProp("@group", groupName.get());
         }
         return info.getClear();
     }
@@ -173,10 +182,13 @@ protected:
     }
     bool doSingleSwapNode(const char *oldHost, const char *newHost, unsigned nodenum, IPropertyTree *info, const char *timechecked)
     {
-        if (doSwap(oldHost, newHost)) {
-            if (info) {
+        if (doSwap(oldHost, newHost))
+        {
+            if (info)
+            {
                 StringBuffer times(timechecked);
-                if (times.length()==0) {
+                if (times.length() == 0)
+                {
                     CDateTime dt;
                     dt.setNow();
                     dt.getString(times);
@@ -188,7 +200,7 @@ protected:
                 swap->setProp("@outNetAddress", oldHost);
                 swap->setProp("@time", times.str());
                 if (UINT_MAX != nodenum)
-                    swap->setPropInt("@rank", nodenum-1);
+                    swap->setPropInt("@rank", nodenum - 1);
             }
             return true;
         }
@@ -212,8 +224,9 @@ protected:
         group.setown(queryNamedGroupStore().lookup(groupName));
         spareGroup.setown(queryNamedGroupStore().lookup(spareGroupName));
     }
+
 public:
-    CSwapNode(const char *_clusterName) :clusterName(_clusterName)
+    CSwapNode(const char *_clusterName) : clusterName(_clusterName)
     {
         init();
     }
@@ -224,78 +237,86 @@ public:
             return;
         CDateTime tt;
         CDateTime cutoff;
-        if (days) {
+        if (days)
+        {
             cutoff.setNow();
-            cutoff.adjustTime(-60*24*(int)days);
+            cutoff.adjustTime(-60 * 24 * (int)days);
         }
         Owned<IPropertyTreeIterator> it2 = info->getElements("Swap");
-        ForEach(*it2) {
+        ForEach(*it2)
+        {
             IPropertyTree &swappednode = it2->query();
             const char *ts = swappednode.queryProp("@time");
             if (!ts)
                 continue;
-            if (days) {
+            if (days)
+            {
                 tt.setString(ts);
-                if (cutoff.compare(tt)>0)
+                if (cutoff.compare(tt) > 0)
                     continue;
             }
             const char *ips = swappednode.queryProp("@outNetAddress");
-            if (!ips||!*ips)
+            if (!ips || !*ips)
                 continue;
             IpAddress ip(ips);
             StringBuffer clustname;
-            if (checkIfNodeInUse(ip,true,clustname))
+            if (checkIfNodeInUse(ip, true, clustname))
                 continue; // ignore
             if (out)
                 out->append(ips).append('\n');
             else
-                PROGLOG("%s",ips);
+                PROGLOG("%s", ips);
         }
     }
-    void emailSwap(const char *msg, bool warn=false, bool sendswapped=false, bool sendhistory=false)
+    void emailSwap(const char *msg, bool warn = false, bool sendswapped = false, bool sendhistory = false)
     {
         StringBuffer emailtarget;
         StringBuffer smtpserver;
-        if (options->getProp("SwapNode/@EmailAddress",emailtarget)&&emailtarget.length()&&options->getProp("SwapNode/@EmailSMTPServer",smtpserver)&&smtpserver.length()) {
-            const char * subject = options->queryProp("SwapNode/@EmailSubject");
+        if (options->getProp("SwapNode/@EmailAddress", emailtarget) && emailtarget.length() && options->getProp("SwapNode/@EmailSMTPServer", smtpserver) && smtpserver.length())
+        {
+            const char *subject = options->queryProp("SwapNode/@EmailSubject");
             if (!subject)
                 subject = "SWAPNODE automated email";
             StringBuffer msgs;
-            if (!msg) {
+            if (!msg)
+            {
                 msgs.append("Swapnode command line, Cluster: ");
                 msg = msgs.append(groupName).append('\n').str();
             }
             CDateTime dt;
             dt.setNow();
             StringBuffer out;
-            dt.getString(out,true).append(": ").append(msg).append("\n\n");
-            if (options->getPropBool("SwapNode/@EmailSwappedList")||sendswapped) {
+            dt.getString(out, true).append(": ").append(msg).append("\n\n");
+            if (options->getPropBool("SwapNode/@EmailSwappedList") || sendswapped)
+            {
                 out.append("Currently swapped out nodes:\n");
-                swappedList(0,&out);
+                swappedList(0, &out);
                 out.append('\n');
             }
-            if (options->getPropBool("SwapNode/@EmailHistory")||sendhistory) {
+            if (options->getPropBool("SwapNode/@EmailHistory") || sendhistory)
+            {
                 out.append("Swap history:\n");
-                swapNodeHistory(0,&out);
+                swapNodeHistory(0, &out);
                 out.append('\n');
             }
-            SocketEndpoint ep(smtpserver.str(),25);
+            SocketEndpoint ep(smtpserver.str(), 25);
             StringBuffer sender("swapnode@");
             queryHostIP().getHostText(sender);
             // add tbd
             StringBuffer ips;
             StringArray warnings;
-            sendEmail(emailtarget.str(),subject,out.str(),ep.getHostText(ips).str(),ep.port,sender.str(),&warnings);
-            ForEachItemIn(i,warnings)
-                WARNLOG("SWAPNODE: %s",warnings.item(i));
+            sendEmail(emailtarget.str(), subject, out.str(), ep.getHostText(ips).str(), ep.port, sender.str(), &warnings, false);
+            ForEachItemIn(i, warnings)
+                WARNLOG("SWAPNODE: %s", warnings.item(i));
         }
         else if (warn)
             WARNLOG("Either SwapNode/@EmailAddress or SwapNode/@EmailSMTPServer not set in thor.xml");
     }
-    void swapNodeHistory(unsigned days,StringBuffer *out)
+    void swapNodeHistory(unsigned days, StringBuffer *out)
     {
         Owned<IPropertyTree> info = getSwapNodeInfo(true);
-        if (!info.get()) {
+        if (!info.get())
+        {
             if (out)
                 out->append("No swapnode info\n");
             else
@@ -305,98 +326,111 @@ public:
         StringBuffer line;
         CDateTime tt;
         CDateTime cutoff;
-        if (days) {
+        if (days)
+        {
             cutoff.setNow();
-            cutoff.adjustTime(-60*24*(int)days);
+            cutoff.adjustTime(-60 * 24 * (int)days);
         }
-        unsigned i=0;
+        unsigned i = 0;
         if (out)
             out->append("Failure, Time, NodeNum, NodeIp, ErrCode, Error Message\n------------------------------------------------------\n");
-        else {
+        else
+        {
             PROGLOG("Failure, Time, NodeNum, NodeIp, ErrCode, Error Message");
             PROGLOG("------------------------------------------------------");
         }
         Owned<IPropertyTreeIterator> it1 = info->getElements("BadNode");
-        ForEach(*it1) {
+        ForEach(*it1)
+        {
             IPropertyTree &badnode = it1->query();
             const char *ts = badnode.queryProp("@time");
             if (!ts)
                 continue;
-            if (days) {
+            if (days)
+            {
                 tt.setString(ts);
-                if (cutoff.compare(tt)>0)
+                if (cutoff.compare(tt) > 0)
                     continue;
             }
             line.clear().append(++i).append(", ");
-            line.append(ts).append(", ").append(badnode.getPropInt("@rank",-1)+1).append(", ");
-            badnode.getProp("@netAddress",line);
+            line.append(ts).append(", ").append(badnode.getPropInt("@rank", -1) + 1).append(", ");
+            badnode.getProp("@netAddress", line);
             line.append(", ").append(badnode.getPropInt("@code")).append(", \"");
-            badnode.getProp(NULL,line);
+            badnode.getProp(NULL, line);
             line.append('\"');
             if (out)
                 out->append(line).append('\n');
             else
-                PROGLOG("%s",line.str());
+                PROGLOG("%s", line.str());
         }
         if (out)
             out->append("\nSwapped, Time, NodeNum, OutIp, InIp\n-----------------------------------\n");
-        else {
+        else
+        {
             PROGLOG("%s", "");
             PROGLOG("Swapped, Time, NodeNum, OutIp, InIp");
             PROGLOG("-----------------------------------");
         }
         i = 0;
         Owned<IPropertyTreeIterator> it2 = info->getElements("Swap");
-        ForEach(*it2) {
+        ForEach(*it2)
+        {
             IPropertyTree &swappednode = it2->query();
             const char *ts = swappednode.queryProp("@time");
             if (!ts)
                 continue;
-            if (days) {
+            if (days)
+            {
                 tt.setString(ts);
-                if (cutoff.compare(tt)>0)
+                if (cutoff.compare(tt) > 0)
                     continue;
             }
             line.clear().append(++i).append(", ");
-            swappednode.getProp("@time",line);
-            line.append(", ").append(swappednode.getPropInt("@rank",-1)+1).append(", ");
-            swappednode.getProp("@outNetAddress",line);
+            swappednode.getProp("@time", line);
+            line.append(", ").append(swappednode.getPropInt("@rank", -1) + 1).append(", ");
+            swappednode.getProp("@outNetAddress", line);
             line.append(", ");
-            swappednode.getProp("@inNetAddress",line);
+            swappednode.getProp("@inNetAddress", line);
             if (out)
                 out->append(line.str()).append('\n');
             else
-                PROGLOG("%s",line.str());
+                PROGLOG("%s", line.str());
         }
     }
     bool checkThorNodeSwap(const char *failedwuid, unsigned mininterval)
     {
         bool ret = false;
-        if (mininterval==(unsigned)-1) { // called by thor
+        if (mininterval == (unsigned)-1)
+        { // called by thor
             mininterval = 0;
-            if (!options||!options->getPropBool("SwapNode/@autoSwapNode"))
+            if (!options || !options->getPropBool("SwapNode/@autoSwapNode"))
                 return false;
-            if ((!failedwuid||!*failedwuid)&&!options->getPropBool("SwapNode/@checkAfterEveryJob"))
+            if ((!failedwuid || !*failedwuid) && !options->getPropBool("SwapNode/@checkAfterEveryJob"))
                 return false;
         }
 
-        try {
+        try
+        {
             Owned<IPropertyTree> info = getSwapNodeInfo(true);
-            if (info.get()) {
+            if (info.get())
+            {
                 PROGLOG("checkNodeSwap started");
                 StringBuffer xpath;
                 CDateTime dt;
                 StringBuffer ts;
                 // see if done less than mininterval ago
-                if (mininterval) {
+                if (mininterval)
+                {
                     dt.setNow();
                     dt.adjustTime(-((int)mininterval));
-                    if (info->getProp("@timeChecked",ts)) {
+                    if (info->getProp("@timeChecked", ts))
+                    {
                         CDateTime dtc;
                         dtc.setString(ts.str());
-                        if (dtc.compare(dt,false)>0) {
-                            PROGLOG("checkNodeSwap using cached validate from %s",ts.str());
-                            xpath.clear().appendf("BadNode[@timeChecked=\"%s\"]",ts.str());
+                        if (dtc.compare(dt, false) > 0)
+                        {
+                            PROGLOG("checkNodeSwap using cached validate from %s", ts.str());
+                            xpath.clear().appendf("BadNode[@timeChecked=\"%s\"]", ts.str());
                             return info->hasProp(xpath.str());
                         }
                     }
@@ -409,7 +443,8 @@ public:
                 {
                     SocketEndpointArray epa;
                     grp->getSocketEndpoints(epa);
-                    ForEachItemIn(i1,epa) {
+                    ForEachItemIn(i1, epa)
+                    {
                         epa.element(i1).port = getDaliServixPort();
                     }
                     SocketEndpointArray failures;
@@ -419,56 +454,62 @@ public:
 
                     const char *thorname = options->queryProp("@name");
                     StringBuffer dataDir, mirrorDir;
-                    getConfigurationDirectory(environment->queryPropTree("Software/Directories"),"data","thor",thorname,dataDir); // if not defined can't check
-                    getConfigurationDirectory(environment->queryPropTree("Software/Directories"),"mirror","thor",thorname,mirrorDir); // if not defined can't check
+                    getConfigurationDirectory(environment->queryPropTree("Software/Directories"), "data", "thor", thorname, dataDir);     // if not defined can't check
+                    getConfigurationDirectory(environment->queryPropTree("Software/Directories"), "mirror", "thor", thorname, mirrorDir); // if not defined can't check
 
-                    validateNodes(epa,dataDir.str(),mirrorDir.str(),false,failures,failedcodes,failedmessages);
+                    validateNodes(epa, dataDir.str(), mirrorDir.str(), false, failures, failedcodes, failedmessages);
 
                     dt.setNow();
                     dt.getString(ts.clear());
-                    ForEachItemIn(i,failures) {
+                    ForEachItemIn(i, failures)
+                    {
                         SocketEndpoint ep(failures.item(i));
                         ep.port = 0;
                         StringBuffer ips;
                         ep.getHostText(ips);
                         int r = (int)grp->rank(ep);
-                        if (r<0) {  // shouldn't occur
-                            ERRLOG("SWAPNODE node %s not found in group %s",ips.str(),groupName.get());
+                        if (r < 0)
+                        { // shouldn't occur
+                            ERRLOG("SWAPNODE node %s not found in group %s", ips.str(), groupName.get());
                             continue;
                         }
-                        PROGLOG("CheckSwapNode FAILED(%d) %s : %s",failedcodes.item(i),ips.str(),failedmessages.item(i));
+                        PROGLOG("CheckSwapNode FAILED(%d) %s : %s", failedcodes.item(i), ips.str(), failedmessages.item(i));
                         // SNMP TBD?
 
                         ret = true;
-                        xpath.clear().appendf("BadNode[@netAddress=\"%s\"]",ips.str());
+                        xpath.clear().appendf("BadNode[@netAddress=\"%s\"]", ips.str());
                         IPropertyTree *bnt = info->queryPropTree(xpath.str());
-                        if (!bnt) {
-                            bnt = info->addPropTree("BadNode",createPTree("BadNode"));
-                            bnt->setProp("@netAddress",ips.str());
+                        if (!bnt)
+                        {
+                            bnt = info->addPropTree("BadNode", createPTree("BadNode"));
+                            bnt->setProp("@netAddress", ips.str());
                         }
-                        bnt->setPropInt("@numTimes",bnt->getPropInt("@numTimes",0)+1);
-                        bnt->setProp("@timeChecked",ts.str());
-                        bnt->setProp("@time",ts.str());
-                        bnt->setPropInt("@code",failedcodes.item(i));
-                        bnt->setPropInt("@rank",r);
-                        bnt->setProp(NULL,failedmessages.item(i));
+                        bnt->setPropInt("@numTimes", bnt->getPropInt("@numTimes", 0) + 1);
+                        bnt->setProp("@timeChecked", ts.str());
+                        bnt->setProp("@time", ts.str());
+                        bnt->setPropInt("@code", failedcodes.item(i));
+                        bnt->setPropInt("@rank", r);
+                        bnt->setProp(NULL, failedmessages.item(i));
                     }
-                    if (failedwuid&&*failedwuid) {
-                        xpath.clear().appendf("WorkUnit[@id=\"%s\"]",failedwuid);
+                    if (failedwuid && *failedwuid)
+                    {
+                        xpath.clear().appendf("WorkUnit[@id=\"%s\"]", failedwuid);
                         IPropertyTree *wut = info->queryPropTree(xpath.str());
-                        if (!wut) {
-                            wut = info->addPropTree("WorkUnit",createPTree("WorkUnit"));
-                            wut->setProp("@id",failedwuid);
+                        if (!wut)
+                        {
+                            wut = info->addPropTree("WorkUnit", createPTree("WorkUnit"));
+                            wut->setProp("@id", failedwuid);
                         }
-                        wut->setProp("@time",ts.str());
+                        wut->setProp("@time", ts.str());
                     }
-                    PROGLOG("checkNodeSwap: Time taken = %dms",msTick()-start);
-                    info->setProp("@timeChecked",ts.str());
+                    PROGLOG("checkNodeSwap: Time taken = %dms", msTick() - start);
+                    info->setProp("@timeChecked", ts.str());
                 }
             }
         }
-        catch (IException *e) {
-            EXCLOG(e,"checkNodeSwap");
+        catch (IException *e)
+        {
+            EXCLOG(e, "checkNodeSwap");
         }
         return ret;
     }
@@ -498,7 +539,6 @@ bool checkThorNodeSwap(const char *clusterName, const char *failedwuid, unsigned
     return swapNode.checkThorNodeSwap(failedwuid, mininterval);
 }
 
-
 class CSingleSwapNode : public CSwapNode
 {
 public:
@@ -507,7 +547,7 @@ public:
     }
     bool swap(const char *oldHost, const char *newHost)
     {
-        ensureThorIsDown(clusterName,false,false);
+        ensureThorIsDown(clusterName, false, false);
 
         Owned<IPropertyTree> info = getSwapNodeInfo(true);
         if (!doSingleSwapNode(oldHost, newHost, UINT_MAX, info, NULL))
@@ -533,38 +573,41 @@ public:
 
 bool swapNode(const char *cluster, const char *oldHost, const char *newHost)
 {
-    PROGLOG("SWAPNODE(%s,%s,%s) starting",cluster, oldHost, newHost);
+    PROGLOG("SWAPNODE(%s,%s,%s) starting", cluster, oldHost, newHost);
     CSingleSwapNode swapNode(cluster);
     return swapNode.swap(oldHost, newHost);
 }
 
-
 class CAutoSwapNode : public CSwapNode
 {
-    bool doAutoSwapNode(bool dryRun=false)
+    bool doAutoSwapNode(bool dryRun = false)
     {
-        if (!checkThorNodeSwap(NULL,dryRun?0:5)) {
+        if (!checkThorNodeSwap(NULL, dryRun ? 0 : 5))
+        {
             PROGLOG("No bad nodes detected");
             PROGLOG("SWAPNODE(auto) exiting");
             return false;
         }
         Owned<IPropertyTree> info = getSwapNodeInfo(false);
-        if (!info.get()) {    // should put out error if returns false
+        if (!info.get())
+        { // should put out error if returns false
             PROGLOG("SWAPNODE(auto) exiting");
             return false;
         }
         StringBuffer ts;
-        if (!info->getProp("@timeChecked",ts)) {
+        if (!info->getProp("@timeChecked", ts))
+        {
             PROGLOG("SWAPNODE(auto): no check information generated");
             return false;
         }
 
         // enumerate bad nodes
         StringBuffer xpath;
-        xpath.appendf("BadNode[@time=\"%s\"]",ts.str());
+        xpath.appendf("BadNode[@time=\"%s\"]", ts.str());
         Owned<IPropertyTreeIterator> it = info->getElements(xpath.str());
         SocketEndpointArray epa1;
-        ForEach(*it) {
+        ForEach(*it)
+        {
             IPropertyTree &badnode = it->query();
             const char *ip = badnode.queryProp("@netAddress");
             if (!ip)
@@ -581,131 +624,148 @@ class CAutoSwapNode : public CSwapNode
 
         const char *thorname = options->queryProp("@name");
         StringBuffer dataDir, mirrorDir;
-        if (options->getPropBool("SwapNode/@swapNodeCheckPrimaryDrive",true))
-            getConfigurationDirectory(environment->queryPropTree("Software/Directories"),"data","thor",thorname,dataDir); // if not defined can't check
-        if (options->getPropBool("SwapNode/@swapNodeCheckMirrorDrive",true))
-            getConfigurationDirectory(environment->queryPropTree("Software/Directories"),"mirror","thor",thorname,mirrorDir); // if not defined can't check
+        if (options->getPropBool("SwapNode/@swapNodeCheckPrimaryDrive", true))
+            getConfigurationDirectory(environment->queryPropTree("Software/Directories"), "data", "thor", thorname, dataDir); // if not defined can't check
+        if (options->getPropBool("SwapNode/@swapNodeCheckMirrorDrive", true))
+            getConfigurationDirectory(environment->queryPropTree("Software/Directories"), "mirror", "thor", thorname, mirrorDir); // if not defined can't check
 
         validateNodes(epa1, dataDir.str(), mirrorDir.str(), false, badepa, failedcodes, failedmessages);
-        if (!badepa.ordinality()) {
-            PROGLOG("SWAPNODE: on recheck all bad nodes passed (%s,%s)",groupName.get(),ts.str());
+        if (!badepa.ordinality())
+        {
+            PROGLOG("SWAPNODE: on recheck all bad nodes passed (%s,%s)", groupName.get(), ts.str());
             return false;
         }
         Owned<IGroup> grp = queryNamedGroupStore().lookup(groupName);
         CDateTime dt;
         dt.setNow();
         dt.getString(ts.clear());
-        bool abort=false;
+        bool abort = false;
         UnsignedArray badrank;
-        ForEachItemIn(i1,badepa) {
+        ForEachItemIn(i1, badepa)
+        {
             SocketEndpoint ep(badepa.item(i1));
-            ep.port = 0;    // should be no ports in group
+            ep.port = 0; // should be no ports in group
             StringBuffer ips;
             ep.getHostText(ips);
-            xpath.clear().appendf("BadNode[@netAddress=\"%s\"]",ips.str());
+            xpath.clear().appendf("BadNode[@netAddress=\"%s\"]", ips.str());
             IPropertyTree *bnt = info->queryPropTree(xpath.str());
-            if (!bnt) {
-                ERRLOG("SWAPNODE node %s not found in swapnode info!",ips.str());
+            if (!bnt)
+            {
+                ERRLOG("SWAPNODE node %s not found in swapnode info!", ips.str());
                 return false;
             }
-            bnt->setProp("@time",ts.str());
-            int r = bnt->getPropInt("@rank",-1);
-            if ((int)r<0) { // shouldn't occur
-                ERRLOG("SWAPNODE node %s rank not found in group %s",ips.str(),groupName.get());
+            bnt->setProp("@time", ts.str());
+            int r = bnt->getPropInt("@rank", -1);
+            if ((int)r < 0)
+            { // shouldn't occur
+                ERRLOG("SWAPNODE node %s rank not found in group %s", ips.str(), groupName.get());
                 return false;
             }
             badrank.append((unsigned)r);
-            for (unsigned j1=0;j1<i1;j1++) {
+            for (unsigned j1 = 0; j1 < i1; j1++)
+            {
                 SocketEndpoint ep1(badepa.item(j1));
-                ep1.port = 0;   // should be no ports in group
+                ep1.port = 0; // should be no ports in group
                 int r1 = (int)badrank.item(j1);
-                if ((r==(r1+1)%grp->ordinality())||
-                    (r1==(r+1)%grp->ordinality())) {
+                if ((r == (r1 + 1) % grp->ordinality()) ||
+                    (r1 == (r + 1) % grp->ordinality()))
+                {
                     StringBuffer ips1;
                     ep1.getHostText(ips1);
-                    ERRLOG("SWAPNODE adjacent nodes %d (%s) and %d (%s) are bad!",r+1,ips.str(),r1+1,ips1.str());
+                    ERRLOG("SWAPNODE adjacent nodes %d (%s) and %d (%s) are bad!", r + 1, ips.str(), r1 + 1, ips1.str());
                     abort = true;
                 }
             }
         }
         // now see if any of bad nodes have been swapped out recently
         CDateTime recent = dt;
-        int snint = options->getPropInt("SwapNode/@swapNodeInterval",24);
-        recent.adjustTime(-60*snint);
+        int snint = options->getPropInt("SwapNode/@swapNodeInterval", 24);
+        recent.adjustTime(-60 * snint);
         it.setown(info->getElements("Swap"));
-        ForEach(*it) {
+        ForEach(*it)
+        {
             IPropertyTree &swappednode = it->query();
             CDateTime dt1;
             const char *dt1s = swappednode.queryProp("@time");
-            if (!dt1s||!*dt1s)
+            if (!dt1s || !*dt1s)
                 continue;
             dt1.setString(dt1s);
-            if (dt1.compare(recent)<0)
+            if (dt1.compare(recent) < 0)
                 continue;
             const char *ips = swappednode.queryProp("@outNetAddress");
-            if (!ips||!*ips)
+            if (!ips || !*ips)
                 continue;
-            int r1 = swappednode.getPropInt("@rank",-1);
+            int r1 = swappednode.getPropInt("@rank", -1);
             SocketEndpoint swappedep(ips);
             swappedep.port = 0;
-            ForEachItemIn(i2,badepa) {
+            ForEachItemIn(i2, badepa)
+            {
                 SocketEndpoint badep(badepa.item(i2));
                 int badr = (int)badrank.item(i2);
                 badep.port = 0;
-                if (swappedep.equals(badep)) {
+                if (swappedep.equals(badep))
+                {
                     // not sure if *really* want this
-                    ERRLOG("Node %d (%s) was swapped out on %s (too recent)",badr+1,ips,dt1s);
+                    ERRLOG("Node %d (%s) was swapped out on %s (too recent)", badr + 1, ips, dt1s);
                     abort = true;
                 }
-                else if ((badr==(r1+1)%grp->ordinality())||
-                    (r1==(badr+1)%grp->ordinality())) {
+                else if ((badr == (r1 + 1) % grp->ordinality()) ||
+                         (r1 == (badr + 1) % grp->ordinality()))
+                {
                     StringBuffer bs;
-                    ERRLOG("SWAPNODE adjacent node to bad node %d (%s), %d (%s) was swapped on %s (too recent) !",badr+1,badep.getHostText(bs).str(),r1+1,ips,dt1s);
+                    ERRLOG("SWAPNODE adjacent node to bad node %d (%s), %d (%s) was swapped on %s (too recent) !", badr + 1, badep.getHostText(bs).str(), r1 + 1, ips, dt1s);
                     abort = true;
                 }
             }
         }
-        const char *intent = dryRun?"would":"will";
+        const char *intent = dryRun ? "would" : "will";
         // find spares
         SocketEndpointArray spareepa;
         StringArray swapfrom;
         StringArray swapto;
         Owned<IGroup> spareGroup;
-        if (!abort) {
+        if (!abort)
+        {
             spareGroup.setown(queryNamedGroupStore().lookup(spareGroupName));
-            if (!spareGroup) {
+            if (!spareGroup)
+            {
                 ERRLOG("SWAPNODE could not find spare group %s", spareGroupName.get());
                 abort = true;
             }
             else
             {
                 spareGroup->getSocketEndpoints(spareepa);
-                ForEachItemIn(i3,badepa) {
+                ForEachItemIn(i3, badepa)
+                {
                     StringBuffer from;
                     badepa.item(i3).getHostText(from);
-                    if (i3<spareepa.ordinality()) {
+                    if (i3 < spareepa.ordinality())
+                    {
                         StringBuffer to;
                         spareepa.item(i3).getHostText(to);
-                        PROGLOG("SWAPNODE %s swap node %d from %s to %s",intent,badrank.item(i3)+1,from.str(),to.str());
+                        PROGLOG("SWAPNODE %s swap node %d from %s to %s", intent, badrank.item(i3) + 1, from.str(), to.str());
                     }
-                    else {
+                    else
+                    {
                         abort = true;
-                        ERRLOG("SWAPNODE no spare available to swap for node %d (%s)",badrank.item(i3)+1,from.str());
+                        ERRLOG("SWAPNODE no spare available to swap for node %d (%s)", badrank.item(i3) + 1, from.str());
                     }
                 }
             }
         }
         // now list what can do
-        if (abort) {
-            ERRLOG("SWAPNODE: problems found (listed above), no swap %s be attempted",intent);
+        if (abort)
+        {
+            ERRLOG("SWAPNODE: problems found (listed above), no swap %s be attempted", intent);
             return false;
         }
         if (dryRun)
             return false;
         // need to release swapnode lock for multi thor not to get deadlocked
         info.clear(); // NB: This clears the connection to SwapNode
-        ensureThorIsDown(clusterName,true,true);
-        ForEachItemIn(i4,badepa) {
+        ensureThorIsDown(clusterName, true, true);
+        ForEachItemIn(i4, badepa)
+        {
             StringBuffer from;
             badepa.item(i4).getHostText(from);
             const SocketEndpoint &spareEp = spareepa.item(i4);
@@ -716,9 +776,10 @@ class CAutoSwapNode : public CSwapNode
             spareGroup.setown(spareGroup->remove(r));
             queryNamedGroupStore().removeNode(spareGroupName, to);
             Owned<IPropertyTree> info = getSwapNodeInfo(false);
-            if (doSingleSwapNode(from.str(),to.str(),badrank.item(i4)+1,info,ts.str())) {
+            if (doSingleSwapNode(from.str(), to.str(), badrank.item(i4) + 1, info, ts.str()))
+            {
                 StringBuffer msg;
-                msg.appendf("AUTOSWAPNODE: cluster %s node %d: swapped out %s, swapped in %s",groupName.get(),badrank.item(i4)+1,from.str(),to.str());
+                msg.appendf("AUTOSWAPNODE: cluster %s node %d: swapped out %s, swapped in %s", groupName.get(), badrank.item(i4) + 1, from.str(), to.str());
                 emailSwap(msg.str());
                 FLLOG(MCoperatorError, swapnodeJob, "%s", msg.str());
             }
@@ -730,7 +791,8 @@ class CAutoSwapNode : public CSwapNode
         // restarts any workunits that failed near to swap
         // let see if need resubmit any nodes
         StringArray toresubmit;
-        if (options->getPropBool("SwapNode/@swapNodeRestartJob")) {
+        if (options->getPropBool("SwapNode/@swapNodeRestartJob"))
+        {
             Owned<IPropertyTree> info = getSwapNodeInfo(false); // should put out error if returns false
             if (!info.get())
             {
@@ -739,31 +801,35 @@ class CAutoSwapNode : public CSwapNode
             }
             CDateTime recent;
             recent.setNow();
-            recent.adjustTime(-SWAPNODE_RETRY_TIME/(1000*60));
+            recent.adjustTime(-SWAPNODE_RETRY_TIME / (1000 * 60));
             Owned<IPropertyTreeIterator> it = info->getElements("WorkUnit");
-            ForEach(*it) {
+            ForEach(*it)
+            {
                 IPropertyTree &wu = it->query();
                 const char *wuid = wu.queryProp("@id");
                 if (!wuid)
                     continue;
-                if (!wu.getPropBool("@resubmitted")) {
+                if (!wu.getPropBool("@resubmitted"))
+                {
                     // see if any swaps recently done
                     const char *dt1s = wu.queryProp("@time");
-                    if (!dt1s||!*dt1s)
+                    if (!dt1s || !*dt1s)
                         continue;
                     CDateTime dt1;
                     dt1.setString(dt1s);
-                    dt1.adjustTime(SWAPNODE_RETRY_TIME/(1000*60));
+                    dt1.adjustTime(SWAPNODE_RETRY_TIME / (1000 * 60));
                     Owned<IPropertyTreeIterator> swit = info->getElements("Swap");
-                    ForEach(*swit) {
+                    ForEach(*swit)
+                    {
                         IPropertyTree &swap = swit->query();
                         const char *dt2s = swap.queryProp("@time");
-                        if (!dt2s||!*dt2s)
+                        if (!dt2s || !*dt2s)
                             continue;
                         CDateTime dt2;
                         dt2.setString(dt2s);
-                        if ((dt2.compare(recent)>0)&&(dt1.compare(dt2)>0)) {
-                            wu.setPropBool("@resubmitted",true); // only one attempt
+                        if ((dt2.compare(recent) > 0) && (dt1.compare(dt2) > 0))
+                        {
+                            wu.setPropBool("@resubmitted", true); // only one attempt
                             toresubmit.append(wuid);
                             break;
                         }
@@ -771,18 +837,21 @@ class CAutoSwapNode : public CSwapNode
                 }
             }
         }
-        ForEachItemIn(ir,toresubmit) {
+        ForEachItemIn(ir, toresubmit)
+        {
             WuResubmit(toresubmit.item(ir));
         }
     }
+
 public:
     CAutoSwapNode(const char *clusterpName) : CSwapNode(clusterpName)
     {
     }
+
 public:
     bool swap(bool dryRun)
     {
-        PROGLOG("SWAPNODE(auto%s) starting",dryRun?",dryRun":"");
+        PROGLOG("SWAPNODE(auto%s) starting", dryRun ? ",dryRun" : "");
 
         if (!doAutoSwapNode(dryRun)) // using info in Dali (spares etc.)
             return false;

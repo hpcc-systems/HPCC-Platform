@@ -165,7 +165,7 @@ export const BlobImportForm: React.FunctionComponent<BlobImportFormProps> = ({
                     fieldState: { error }
                 }) => <TargetGroupTextField
                         key="destGroup"
-                        label={nlsHPCC.Group}
+                        label={isContainer ? nlsHPCC.TargetPlane : nlsHPCC.Group}
                         required={true}
                         selectedKey={value}
                         placeholder={nlsHPCC.SelectValue}
