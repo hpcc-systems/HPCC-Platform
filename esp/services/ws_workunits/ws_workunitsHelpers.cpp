@@ -4525,7 +4525,7 @@ IFileIOStream* CWsWuFileHelper::createWUZAPFileIOStream(IEspContext& context, IC
 
     if (request.sendEmail)
     {
-        CWsWuEmailHelper emailHelper(request.emailFrom.str(), request.emailTo.str(), request.emailServer.str(), request.port);
+        CWsWuEmailHelper emailHelper(request.emailFrom.str(), request.emailTo.str(), request.emailServer.str(), request.port, true);
 
         StringBuffer subject(request.emailSubject.str());
         if (subject.isEmpty())
@@ -4957,10 +4957,10 @@ void CWsWuFileHelper::readLocalFileToBuffer(const char* file, offset_t sizeLimit
 void CWsWuEmailHelper::send(const char* body, const void* attachment, size32_t lenAttachment, StringArray& warnings)
 {
     if (lenAttachment == 0)
-        sendEmail(to.get(), subject.get(), body, mailServer.get(), port, sender.get(), &warnings);
+        sendEmail(to.get(), subject.get(), body, mailServer.get(), port, sender.get(), &warnings, termOnJobFail);
     else
         sendEmailAttachData(to.get(), subject.get(), body, lenAttachment, attachment, mimeType.get(),
-            attachmentName.get(), mailServer.get(), port, sender.get(), &warnings);
+            attachmentName.get(), mailServer.get(), port, sender.get(), &warnings, termOnJobFail);
 }
 
 }

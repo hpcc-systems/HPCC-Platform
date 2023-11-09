@@ -923,9 +923,10 @@ class CWsWuEmailHelper
     StringAttr mailServer, sender, to, subject, body;
     StringAttr attachmentName, mimeType;
     unsigned port;
+    bool termOnJobFail;
 public:
-    CWsWuEmailHelper(const char *_sender, const char *_to, const char *_mailServer, unsigned _port)
-        : sender(_sender), to(_to), mailServer(_mailServer), port(_port) {};
+    CWsWuEmailHelper(const char *_sender, const char *_to, const char *_mailServer, unsigned _port, bool _termOnJobFail)
+        : sender(_sender), to(_to), mailServer(_mailServer), port(_port), termOnJobFail(_termOnJobFail) {};
 
     void setSubject(const char *_subject) { subject.set(_subject); };
     void setMimeType(const char *_mimeType) { mimeType.set(_mimeType); };
