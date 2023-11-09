@@ -7657,6 +7657,11 @@ IPropertyTree * getRemoteStorage(const char * name)
     return global->getPropTree(xpath);
 }
 
+IPropertyTreeIterator * getRemoteStoragesIterator()
+{
+    return getGlobalConfigSP()->getElements("storage/remote");
+}
+
 IPropertyTreeIterator * getPlanesIterator(const char * category, const char *name)
 {
     StringBuffer xpath("storage/planes");
