@@ -1198,3 +1198,11 @@ export function wrapStringWithTag(string, tag = "span") {
 export function isSpill(sourceKind: string, targetKind: string): boolean {
     return sourceKind === "2" || targetKind === "71";
 }
+
+export function wuidToDate(wuid: string): string {
+    return `${wuid.substring(1, 5)}-${wuid.substring(5, 7)}-${wuid.substring(7, 9)}`;
+}
+
+export function wuidToTime(wuid: string): string {
+    return `${wuid.substring(10, 12)}:${wuid.substring(12, 14)}:${wuid.substring(14, 16)}`;
+}
