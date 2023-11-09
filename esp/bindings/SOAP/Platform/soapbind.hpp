@@ -207,6 +207,20 @@ public:
     }
 };
 
+inline void setRpcSSLOptionsBuf(IEspClientRpcSettings &rpc, bool useSSL, const char *clientCertBuf, const char *clientPrivateKeyBuf, const char *caCertBuf, bool acceptSelfSigned)
+{
+    if (useSSL)
+    {
+        // NB: assume that caller has verified the content of the buffers contain embedded keys
+        rpc.setClientCertificate(clientCertBuf, clientPrivateKeyBuf);
+
+        if (!isEmptyString(caCertBuf))
+            rpc.setCACertificates(caCertBuf);
+
+        rpc.setAcceptSelfSigned(acceptSelfSigned);
+    }
+}
+
 inline void setRpcSSLOptions(IEspClientRpcSettings &rpc, bool useSSL, const char *clientCert, const char *clientPrivateKey, const char *caCert, bool acceptSelfSigned)
 {
     if (useSSL)
