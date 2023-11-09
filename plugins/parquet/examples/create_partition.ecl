@@ -18,12 +18,11 @@ layout := RECORD
     INTEGER commit_date;
 END;
 
-#IF(0)
-github_dataset := ParquetIO.Read(layout, '/datadrive/dev/test_data/ghtorrent-2019-01-07.parquet');
-Write(DISTRIBUTE(github_dataset, SKEW(.05)), '/datadrive/dev/test_data/hpcc_gh_partition/data.parquet');
-#END
+csv_data := DATASET('~parquet::large::ghtorrent-2019-02-04.csv', layout, CSV(HEADING(1)));
+writeStep := ParquetIO.HivePartition.Write(CHOOSEN(csv_data, 1330), , '/datadrive/dev/test_data/sandbox/test_partition/', TRUE, 'commit_date;repo');
 
-#IF(1)
-github_dataset := ParquetIO.ReadPartition(layout, '/datadrive/dev/test_data/hpcc_gh_partition');
-OUTPUT(CHOOSEN(github_dataset, 10000), NAMED('GITHUB_PARTITION'));
-#END
+github_dataset := ParquetIO.HivePartition.Read(layout, '/datadrive/dev/test_data/sandbox/test_partition/');
+readStep := OUTPUT(CHOOSEN(github_dataset, 100), NAMED('GITHUB_PARTITION'));
+countStep := OUTPUT(COUNT(github_dataset), NAMED('GITHUB_COUNT'));
+
+SEQUENTIAL(writeStep, PARALLEL(readStep, countStep));

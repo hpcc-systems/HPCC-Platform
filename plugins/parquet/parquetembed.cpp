@@ -110,7 +110,7 @@ extern void fail(const char *message)
  * @param _batchSize The size of the batches when converting parquet columns to rows.
  */
 ParquetHelper::ParquetHelper(const char *option, const char *_location, const char *destination, int _rowSize, int _batchSize,
-    bool _overwrite, arrow::Compression::type _compressionOption, const IThorActivityContext *_activityCtx)
+    bool _overwrite, arrow::Compression::type _compressionOption, const char *_partitionFields, const IThorActivityContext *_activityCtx)
     : partOption(option), location(_location), destination(destination)
 {
     rowSize = _rowSize;
@@ -118,12 +118,23 @@ ParquetHelper::ParquetHelper(const char *option, const char *_location, const ch
     overwrite = _overwrite;
     compressionOption = _compressionOption;
     activityCtx = _activityCtx;
-
     pool = arrow::default_memory_pool();
 
     parquetDoc = std::vector<rapidjson::Document>(rowSize);
 
-    partition = String(option).endsWith("partition");
+    if (activityCtx->querySlave() == 0 && startsWith(option, "write"))
+    {
+        reportIfFailure(checkDirContents());
+    }
+
+    partition = endsWithIgnoreCase(option, "partition");
+    if (partition)
+    {
+        std::stringstream ss(_partitionFields);
+        std::string field;
+        while (std::getline(ss, field, ';'))
+            partitionFields.push_back(field);
+    }
 }
 
 ParquetHelper::~ParquetHelper()
@@ -142,6 +153,53 @@ std::shared_ptr<arrow::Schema> ParquetHelper::getSchema()
     return schema;
 }
 
+arrow::Status ParquetHelper::checkDirContents()
+{
+    if (destination.empty())
+    {
+        failx("Missing target location when writing Parquet data.");
+    }
+    StringBuffer path;
+    StringBuffer filename;
+    StringBuffer ext;
+    splitFilename(destination.c_str(), nullptr, &path, &filename, &ext, false);
+
+    ARROW_ASSIGN_OR_RAISE(auto filesystem, arrow::fs::FileSystemFromUriOrPath(destination));
+
+    Owned<IDirectoryIterator> itr = createDirectoryIterator(path.str(), filename.appendf("*%s", ext.str()));
+    ForEach (*itr)
+    {
+        IFile &file = itr->query();
+        if (file.isFile() == fileBool::foundYes)
+        {
+            if(overwrite)
+            {
+                if (!file.remove())
+                {
+                    failx("Failed to remove file %s", file.queryFilename());
+                }
+            }
+            else
+            {
+                failx("The target file %s already exists. To delete the file set the overwrite option to true.", file.queryFilename());
+            }
+        }
+        else
+        {
+            if (overwrite)
+            {
+                reportIfFailure(filesystem->DeleteDirContents(path.str()));
+                break;
+            }
+            else
+            {
+                failx("The target directory %s is not empty. To delete the contents of the directory set the overwrite option to true.", path.str());
+            }
+        }
+    }
+    return arrow::Status::OK();
+}
+
 /**
  * @brief Opens the write stream with the schema and destination. T
  *
@@ -154,41 +212,18 @@ arrow::Status ParquetHelper::openWriteFile()
     if (partition)
     {
         ARROW_ASSIGN_OR_RAISE(auto filesystem, arrow::fs::FileSystemFromUriOrPath(destination));
-        reportIfFailure(filesystem->DeleteDirContents(destination));
-        auto partition_schema = arrow::schema({schema->field(5)});
-
         auto format = std::make_shared<arrow::dataset::ParquetFileFormat>();
-        auto partitioning = std::make_shared<arrow::dataset::HivePartitioning>(partition_schema);
-
         writeOptions.file_write_options = format->DefaultWriteOptions();
         writeOptions.filesystem = filesystem;
         writeOptions.base_dir = destination;
-        writeOptions.partitioning = partitioning;
-        writeOptions.existing_data_behavior = overwrite ? arrow::dataset::ExistingDataBehavior::kOverwriteOrIgnore : arrow::dataset::ExistingDataBehavior::kError;
+        writeOptions.partitioning = partitionType;
+        writeOptions.existing_data_behavior = arrow::dataset::ExistingDataBehavior::kOverwriteOrIgnore;
     }
     else
     {
-        StringBuffer filename;
-        StringBuffer path;
-        StringBuffer ext;
-        splitFilename(destination.c_str(), nullptr, &path, &filename, &ext, false);
+        if(!endsWith(destination.c_str(), ".parquet"))
+            failx("Error opening file: Invalid file extension for file %s", destination.c_str());
 
-        if(!strieq(ext, ".parquet"))
-            failx("Error opening file: Invalid file extension %s", ext.str());
-
-        Owned<IDirectoryIterator> itr = createDirectoryIterator(path.str(), filename.append("*.parquet"));
-
-        ForEach(*itr)
-        {
-            if (overwrite)
-            {
-                IFile &file = itr->query();
-                if(!file.remove())
-                    failx("File %s could not be overwritten.", file.queryFilename());
-            }
-            else
-                failx("Cannot write to file %s because it already exists. To delete it set the overwrite option to true.", destination.c_str());
-        }
         // Currently under the assumption that all channels and workers are given a worker id and no matter
         // the configuration will show up in activityCtx->numSlaves()
         if (activityCtx->numSlaves() > 1)
@@ -233,8 +268,18 @@ arrow::Status ParquetHelper::openReadFile()
         std::shared_ptr<arrow::dataset::ParquetFileFormat> format = std::make_shared<arrow::dataset::ParquetFileFormat>();
 
         arrow::dataset::FileSystemFactoryOptions options;
-        options.partitioning = arrow::dataset::HivePartitioning::MakeFactory(); // TODO set other partitioning types
-
+        if (endsWithIgnoreCase(partOption.c_str(), "hivepartition"))
+        {
+            options.partitioning = arrow::dataset::HivePartitioning::MakeFactory();
+        }
+        else if (endsWithIgnoreCase(partOption.c_str(), "directorypartition"))
+        {
+            options.partitioning = arrow::dataset::DirectoryPartitioning::MakeFactory(partitionFields);
+        }
+        else
+        {
+            failx("Incorrect partitioning type %s.", partOption.c_str());
+        }
         // Create the dataset factory
         PARQUET_ASSIGN_OR_THROW(auto dataset_factory, arrow::dataset::FileSystemDatasetFactory::Make(fs, selector, format, options));
 
@@ -421,14 +466,13 @@ arrow::Status ParquetHelper::processReadFile()
     {
         // rowsProcessed starts at zero and we read in batches until it is equal to rowsCount
         rowsProcessed = 0;
+        totalRowsProcessed = 0;
         PARQUET_ASSIGN_OR_THROW(rbatchReader, scanner->ToRecordBatchReader());
         rbatchItr = arrow::RecordBatchReader::RecordBatchReaderIterator(rbatchReader.get());
         // Divide the work among any number of workers
-        PARQUET_ASSIGN_OR_THROW(auto batch, *rbatchItr);
-        PARQUET_ASSIGN_OR_THROW(float total_rows, scanner->CountRows());
-        batchSize = batch->num_rows();
-        divide_row_groups(activityCtx, std::ceil(total_rows / batchSize), tableCount, startRowGroup);
-        if (tableCount != 0)
+        PARQUET_ASSIGN_OR_THROW(auto total_rows, scanner->CountRows());
+        divide_row_groups(activityCtx, total_rows, totalRowCount, startRow);
+        if (totalRowCount != 0)
         {
             std::shared_ptr<arrow::Table> table;
             PARQUET_ASSIGN_OR_THROW(table, queryRows());
@@ -515,7 +559,10 @@ char ParquetHelper::queryPartOptions()
  */
 bool ParquetHelper::shouldRead()
 {
-    return !(tablesProcessed >= tableCount && rowsProcessed >= rowsCount);
+    if (partition)
+        return !(totalRowsProcessed >= totalRowCount);
+    else
+        return !(tablesProcessed >= tableCount && rowsProcessed >= rowsCount);
 }
 
 __int64 &ParquetHelper::getRowsProcessed()
@@ -557,12 +604,13 @@ arrow::Result<std::shared_ptr<arrow::Table>> ParquetHelper::queryRows()
 {
     if (tablesProcessed == 0)
     {
-        __int64 offset = 0;
-        while (offset < startRowGroup)
+        __int64 offset = (*rbatchItr)->get()->num_rows();
+        while (offset < startRow)
         {
             rbatchItr++;
-            offset++;
+            offset += (*rbatchItr)->get()->num_rows();
         }
+        rowsProcessed = (*rbatchItr)->get()->num_rows() - (offset - startRow);
     }
     PARQUET_ASSIGN_OR_THROW(auto batch, *rbatchItr);
     rbatchItr++;
@@ -594,6 +642,7 @@ std::unordered_map<std::string, std::shared_ptr<arrow::Array>> &ParquetHelper::n
             chunkTable(table);
         }
     }
+    totalRowsProcessed++;
     return parquetTable;
 }
 
@@ -741,6 +790,27 @@ arrow::Status ParquetHelper::fieldsToSchema(const RtlTypeInfo *typeInfo)
     }
 
     schema = std::make_shared<arrow::Schema>(arrow_fields);
+
+    if (partition)
+    {
+        arrow::FieldVector partitionSchema;
+        for (int i = 0; i < partitionFields.size(); i++)
+        {
+            auto field = schema->GetFieldByName(partitionFields[i]);
+            if (field)
+                partitionSchema.push_back(field);
+            else
+                failx("Field %s not found in RECORD definition of Parquet file.", partitionFields[i].c_str());
+        }
+
+        if (endsWithIgnoreCase(partOption.c_str(), "hivepartition"))
+            partitionType = std::make_shared<arrow::dataset::HivePartitioning>(std::make_shared<arrow::Schema>(partitionSchema));
+        else if (endsWithIgnoreCase(partOption.c_str(), "directorypartition"))
+            partitionType = std::make_shared<arrow::dataset::DirectoryPartitioning>(std::make_shared<arrow::Schema>(partitionSchema));
+        else
+            failx("Partitioning method %s is not supported.", partOption.c_str());
+    }
+
     return arrow::Status::OK();
 }
 
@@ -1731,6 +1801,7 @@ ParquetEmbedFunctionContext::ParquetEmbedFunctionContext(const IContextLogger &_
     const char *option = "";      // Read(read), Read Parition(readpartition), Write(write), Write Partition(writepartition)
     const char *location = "";    // file name and location of where to write parquet file
     const char *destination = ""; // file name and location of where to read parquet file from
+    const char *partitionFields = ""; // comma delimited values containing fields to partition files on
     __int64 rowsize = 40000;    // Size of the row groups when writing to parquet files
     __int64 batchSize = 40000;  // Size of the batches when converting parquet columns to rows
     bool overwrite = false;     // If true overwrite file with no error. The default is false and will throw an error if the file already exists.
@@ -1780,6 +1851,8 @@ ParquetEmbedFunctionContext::ParquetEmbedFunctionContext(const IContextLogger &_
                 else
                     failx("Unsupported compression type: %s", val);
             }
+            else if (stricmp(optName, "partitionFields") == 0)
+                partitionFields = val;
             else
                 failx("Unknown option %s", optName.str());
         }
@@ -1790,7 +1863,7 @@ ParquetEmbedFunctionContext::ParquetEmbedFunctionContext(const IContextLogger &_
     }
     else
     {
-        m_parquet = std::make_shared<ParquetHelper>(option, location, destination, rowsize, batchSize, overwrite, compressionOption, activityCtx);
+        m_parquet = std::make_shared<ParquetHelper>(option, location, destination, rowsize, batchSize, overwrite, compressionOption, partitionFields, activityCtx);
     }
 }
 
