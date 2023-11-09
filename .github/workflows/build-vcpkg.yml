@@ -1,11 +1,5 @@
 name: Test Build
 
-env:
-  VCPKG_BINARY_SOURCES: "clear;nuget,GitHub,read"
-  VCPKG_NUGET_REPOSITORY: "https://github.com/hpcc-systems/vcpkg"
-  OS_DEPENDENCIES: "bison flex build-essential binutils-dev curl lsb-release libcppunit-dev python3-dev default-jdk
-    r-base-dev r-cran-rcpp r-cran-rinside r-cran-inline pkg-config libtool autotools-dev automake git cmake"
-
 on:
   workflow_dispatch:
     inputs:
@@ -32,8 +26,8 @@ on:
         required: false
         default: false
 
-  # Do not include "push" in final version
-  push:
+  # Do not include "push" in final version (uncomment for testing on users own repo)
+  # push:
 
   pull_request:
     branches:
@@ -51,6 +45,7 @@ on:
     - cron: "0 0 * * *"
 
 jobs:
+
   build-workflow-dispatch:
     if: ${{ contains('workflow_dispatch', github.event_name) }}
     uses: ./.github/workflows/build-docker.yml
@@ -75,8 +70,6 @@ jobs:
     uses: ./.github/workflows/build-docker.yml
     with:
       os: ubuntu-23.10
-      single-package: true
-      containerized: false
     secrets: inherit
 
   build-docker-ubuntu-22_04:
@@ -84,10 +77,8 @@ jobs:
     uses: ./.github/workflows/build-docker.yml
     with:
       os: ubuntu-22.04
-      single-package: true
-      containerized: false
       upload-package: true
-      asset-name: 'docker-package'
+      asset-name: 'docker-ubuntu-22_04'
     secrets: inherit
 
   test-smoke-docker-ubuntu-22_04:
@@ -96,7 +87,7 @@ jobs:
     uses: ./.github/workflows/test-smoke-gh_runner.yml
     with:
       os: ubuntu-22.04
-      asset-name: 'docker-package'
+      asset-name: 'docker-ubuntu-22_04'
     secrets: inherit
 
   test-unit-docker-ubuntu-22_04:
@@ -105,7 +96,7 @@ jobs:
     uses: ./.github/workflows/test-unit-gh_runner.yml
     with:
       os: ubuntu-22.04
-      asset-name: 'docker-package'
+      asset-name: 'docker-ubuntu-22_04'
     secrets: inherit
 
   test-ui-docker-ubuntu-22_04:
@@ -114,7 +105,7 @@ jobs:
     uses: ./.github/workflows/test-ui-gh_runner.yml
     with:
       os: ubuntu-22.04
-      asset-name: 'docker-package'
+      asset-name: 'docker-ubuntu-22_04'
     secrets: inherit
 
   build-docker-ubuntu-20_04:
@@ -122,8 +113,6 @@ jobs:
     uses: ./.github/workflows/build-docker.yml
     with:
       os: ubuntu-20.04
-      single-package: true
-      containerized: false
     secrets: inherit
 
   build-docker-centos-8:
@@ -131,8 +120,6 @@ jobs:
     uses: ./.github/workflows/build-docker.yml
     with:
       os: centos-8
-      single-package: true
-      containerized: false
     secrets: inherit
 
   build-docker-centos-7:
@@ -140,8 +127,6 @@ jobs:
     uses: ./.github/workflows/build-docker.yml
     with:
       os: centos-7
-      single-package: true
-      containerized: false
       cmake-configuration-ex: "-DVCPKG_TARGET_TRIPLET=x64-centos-7-dynamic"
     secrets: inherit
 
@@ -150,56 +135,21 @@ jobs:
     uses: ./.github/workflows/build-docker.yml
     with:
       os: amazonlinux
-      single-package: true
-      containerized: false
       cmake-configuration-ex: "-DVCPKG_TARGET_TRIPLET=x64-amazonlinux-dynamic"
     secrets: inherit
 
   build-gh_runner-ubuntu-22_04:
-    if: ${{ contains('pull_request,push', github.event_name) }}
+    if: ${{ contains('schedule,push', github.event_name) }}
     uses: ./.github/workflows/build-gh_runner.yml
     with:
       os: ubuntu-22.04
-      single-package: true
-      containerized: false
-      upload-package: true
-      asset-name: 'gh_runner-package'
     secrets: inherit
   
-  test-smoke-gh_runner-ubuntu-22_04:
-    if: ${{ contains('pull_request,push', github.event_name) }}
-    needs: build-gh_runner-ubuntu-22_04
-    uses: ./.github/workflows/test-smoke-gh_runner.yml
-    with:
-      os: ubuntu-22.04
-      asset-name: 'gh_runner-package'
-    secrets: inherit
-
-  test-unit-gh_runner-ubuntu-22_04:
-    if: ${{ contains('pull_request,push', github.event_name) }}
-    needs: build-gh_runner-ubuntu-22_04
-    uses: ./.github/workflows/test-unit-gh_runner.yml
-    with:
-      os: ubuntu-22.04
-      asset-name: 'gh_runner-package'
-    secrets: inherit
-
-  test-ui-gh_runner-ubuntu-22_04:
-    if: ${{ contains('pull_request,push', github.event_name) }}
-    needs: build-gh_runner-ubuntu-22_04
-    uses: ./.github/workflows/test-ui-gh_runner.yml
-    with:
-      os: ubuntu-22.04
-      asset-name: 'gh_runner-package'
-    secrets: inherit
-
   build-gh_runner-ubuntu-20_04:
     if: ${{ contains('schedule,push', github.event_name) }}
     uses: ./.github/workflows/build-gh_runner.yml
     with:
       os: ubuntu-20.04
-      single-package: true
-      containerized: false
     secrets: inherit
 
   build-gh_runner-windows-2022:
@@ -207,9 +157,7 @@ jobs:
     uses: ./.github/workflows/build-gh_runner.yml
     with:
       os: windows-2022
-      single-package: true
-      containerized: false
-      cmake-configuration: '-T host=x64 -A x64 -DUSE_OPTIONAL=OFF -DCLIENTTOOLS_ONLY=ON -DUSE_AZURE=OFF -DUSE_CASSANDRA=OFF -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
+      cmake-configuration-ex: '-T host=x64 -A x64 -DUSE_CPPUNIT=OFF -DCLIENTTOOLS_ONLY=ON -DUSE_AZURE=OFF -DINCLUDE_PLUGINS=OFF -DUSE_CASSANDRA=OFF -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
     secrets: inherit
 
   build-gh_runner-windows-2019:
@@ -217,9 +165,7 @@ jobs:
     uses: ./.github/workflows/build-gh_runner.yml
     with:
       os: windows-2019
-      single-package: true
-      containerized: false
-      cmake-configuration: '-T host=x64 -A x64 -DUSE_OPTIONAL=OFF -DCLIENTTOOLS_ONLY=ON -DUSE_AZURE=OFF -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
+      cmake-configuration-ex: '-T host=x64 -A x64 -DUSE_CPPUNIT=OFF -DCLIENTTOOLS_ONLY=ON -DINCLUDE_PLUGINS=OFF -DUSE_AZURE=OFF -DUSE_CASSANDRA=OFF -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
     secrets: inherit
 
   build-gh_runner-macos-12:
@@ -227,10 +173,8 @@ jobs:
     uses: ./.github/workflows/build-gh_runner.yml
     with:
       os: macos-12
-      single-package: true
-      containerized: false
       build-type: 'Release'
-      cmake-configuration: '-DUSE_OPTIONAL=OFF -DCLIENTTOOLS_ONLY=ON -DUSE_AZURE=OFF -DUSE_CASSANDRA=OFF -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
+      cmake-configuration-ex: '-DUSE_CPPUNIT=OFF -DCLIENTTOOLS_ONLY=ON -DINCLUDE_PLUGINS=OFF -DUSE_AZURE=OFF -DUSE_CASSANDRA=OFF -DSUPPRESS_CASSANDRAEMBED=ON -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
     secrets: inherit
 
   build-gh_runner-macos-11:
@@ -238,8 +182,6 @@ jobs:
     uses: ./.github/workflows/build-gh_runner.yml
     with:
       os: macos-11
-      single-package: true
-      containerized: false
       build-type: 'Release'
-      cmake-configuration: '-DUSE_OPTIONAL=OFF -DCLIENTTOOLS_ONLY=ON -DUSE_AZURE=OFF -DUSE_CASSANDRA=OFF -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
+      cmake-configuration-ex: '-DUSE_CPPUNIT=OFF -DCLIENTTOOLS_ONLY=ON -DINCLUDE_PLUGINS=OFF -DUSE_AZURE=OFF -DUSE_CASSANDRA=OFF -DSUPPRESS_CASSANDRAEMBED=ON -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
     secrets: inherit

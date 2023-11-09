@@ -35,12 +35,6 @@ jobs:
           name: ${{ inputs.asset-name }}
           path: ${{ inputs.asset-name }}
 
-      - name: Download Support Files
-        uses: actions/download-artifact@v3
-        with:
-          name: ${{ inputs.asset-name }}-support-files
-          path: ${{ inputs.asset-name }}-support-files
-
       - name: Install Dependencies
         shell: "bash"
         run: |
@@ -48,31 +42,26 @@ jobs:
           sudo apt-get install -y ${{ inputs.dependencies }}
           sudo apt-get install -y gdb
 
-          curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
-          sudo apt-get install -y nodejs
-
-          echo "node.js version = $(node --version), npm version = $(npm --version), release = $(lsb_release -sc)"
-
       - name: Install Package
         shell: "bash"
         run: |
           sudo apt-get install -y -f ./${{ inputs.asset-name }}/*.deb
           sudo chown -R $USER:$USER /opt/HPCCSystems
 
-          sudo xmlstarlet ed -L -u 'Environment/Software/ThorCluster/@slavesPerNode' -v 2 -u 'Environment/Software/ThorCluster/@channelsPerSlave' -v 1 /etc/HPCCSystems/environment.xml
-
-          chmod +x ./${{ inputs.asset-name }}-support-files/*
-          sudo cp ./${{ inputs.asset-name }}-support-files/* /opt/HPCCSystems/bin
-
-      - name: Start HPCC-Platform
-        shell: "bash"
-        run: |
-          export LANG="en_US.UTF-8"
-          sudo update-locale
-          sudo /etc/init.d/hpcc-init start
-
       - name: Run Tests
         timeout-minutes: 10 # generous, expected time is approx 1 min.
         shell: "bash"
         run: |
-          /opt/HPCCSystems/bin/unittests
+          export LANG="en_US.UTF-8"
+          sudo update-locale
+          sudo /opt/HPCCSystems/bin/unittests
+
+      - name: unittests-logs-artifact
+        if: ${{ failure() || cancelled() }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-unit-${{ inputs.asset-name }}
+          path: |
+              /var/log/HPCCSystems
+              /home/runner/HPCCSystems-regression
+          if-no-files-found: error

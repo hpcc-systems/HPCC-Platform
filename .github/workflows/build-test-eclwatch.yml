@@ -38,13 +38,6 @@ jobs:
       - uses: actions/setup-node@v2
         with:
           node-version: ${{ matrix.node }}
-      - name: Cache node modules
-        uses: actions/cache@v2
-        with:
-          path: ./esp/src/node_modules
-          key: npm-deps-${{ hashFiles('./esp/src/package-lock.json') }}
-          restore-keys: |
-            npm-deps-${{ hashFiles('./esp/src/package-lock.json') }}
       - name: Install Dependencies
         working-directory: ./esp/src
         run: npm ci

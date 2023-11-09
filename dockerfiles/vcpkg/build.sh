@@ -29,9 +29,9 @@ docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
 CMAKE_OPTIONS="-G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DVCPKG_FILES_DIR=/hpcc-dev -DCPACK_THREADS=0 -DUSE_OPTIONAL=OFF -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON"
 
 function doBuild() {
-    # docker pull "hpccsystems/platform-build-base-$1:$VCPKG_REF" || true
-    # docker pull "hpccsystems/platform-build-$1:$VCPKG_REF" || true
-    # docker pull "hpccsystems/platform-build-$1:$GITHUB_BRANCH" || true
+    docker pull "hpccsystems/platform-build-base-$1:$VCPKG_REF" || true
+    docker pull "hpccsystems/platform-build-$1:$VCPKG_REF" || true
+    docker pull "hpccsystems/platform-build-$1:$GITHUB_BRANCH" || true
 
     docker build --progress plain --rm -f "$SCRIPT_DIR/$1.dockerfile" \
         --build-arg DOCKER_NAMESPACE=$DOCKER_USERNAME \

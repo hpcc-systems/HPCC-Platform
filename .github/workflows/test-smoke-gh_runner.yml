@@ -76,11 +76,6 @@ jobs:
           sudo apt-get install -y ${{ inputs.dependencies }}
           sudo apt-get install -y gdb
 
-          curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
-          sudo apt-get install -y nodejs
-
-          echo "node.js version = $(node --version), npm version = $(npm --version), release = $(lsb_release -sc)"
-
       - name: Install Package
         shell: "bash"
         run: |
@@ -103,7 +98,6 @@ jobs:
         working-directory: /opt/HPCCSystems/testing/regress
         shell: "bash"
         run: |
-          # todo:  run once before matrix
           /opt/HPCCSystems/bin/timeoutcmd $((8 * 60)) \
               ./ecl-test setup --preAbort '/opt/HPCCSystems/bin/smoketest-preabort.sh' --pq 2 --generateStackTrace
           grep Failure: /home/runner/HPCCSystems-regression/log/setup_*.log
@@ -130,8 +124,8 @@ jobs:
         working-directory: /opt/HPCCSystems/testing/regress
         shell: "bash"
         run: |
-          # force regression suite to timeout after 60 minutes, so it captures ZAP report of any inflight hung queries
-          /opt/HPCCSystems/bin/timeoutcmd $((60 * 60)) \
+          # force regression suite to timeout after 28 minutes, so it captures ZAP report of any inflight hung queries
+          /opt/HPCCSystems/bin/timeoutcmd $((28 * 60)) \
           ./ecl-test query --preAbort '/opt/HPCCSystems/bin/smoketest-preabort.sh' --pq 2 --target ${{ matrix.engine }} --excludeclass python2,embedded-r,embedded-js,3rdpartyservice,mongodb --generateStackTrace ${{ steps.select-tests.outputs.queries }}
           grep Failure: /home/runner/HPCCSystems-regression/log/${{ matrix.engine }}.*.log
           if [[ "$(grep -oP '(?<=^Failure: )[0-9]+$' /home/runner/HPCCSystems-regression/log/${{ matrix.engine }}.*.log)" -gt 0 ]]; then exit 1; fi

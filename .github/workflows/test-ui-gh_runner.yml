@@ -36,7 +36,7 @@ jobs:
           name: ${{ inputs.asset-name }}-ui_test-files
           path: ${{ inputs.asset-name }}-ui_test-files
 
-      - name: Check-ECLWatch-UI-Test-Directory
+      - name: Check ECLWatch UI Test Directory
         id: check
         run: |
           if [[ ! -d ${{ inputs.asset-name }}-ui_test-files ]]
@@ -58,18 +58,19 @@ jobs:
         shell: "bash"
         run: |
           sudo apt-get update
-          sudo apt-get install -y git wget net-tools
-          sudo apt-get install -y tzdata unzip xvfb libxi6
-          sudo apt-get install -y default-jdk
-          sudo apt-get install -y ${{ inputs.dependencies }}
-          sudo apt-get install -y gdb
+          sudo apt-get install -y \
+            git \
+            wget \
+            net-tools \
+            tzdata \
+            unzip \
+            xvfb \
+            libxi6 \
+            default-jdk \
+            gdb \
+            ${{ inputs.dependencies }}
 
-          curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
-          sudo apt-get install -y nodejs
-
-          echo "node.js version = $(node --version), npm version = $(npm --version), release = $(lsb_release -sc)"
-
-      - name: UI-Test-Prerequisites
+      - name: Install UI Dependencies
         if: steps.check.outputs.runtests
         run: |
           wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
@@ -99,17 +100,22 @@ jobs:
 
           sudo xmlstarlet ed -L -u 'Environment/Software/ThorCluster/@slavesPerNode' -v 2 -u 'Environment/Software/ThorCluster/@channelsPerSlave' -v 1 /etc/HPCCSystems/environment.xml
 
-      - name: run
+          chmod +x ./${{ inputs.asset-name }}-ui_test-files/*
+
+      - name: Start HPCC-Platform
+        shell: "bash"
+        run: |
+          export LANG="en_US.UTF-8"
+          sudo update-locale
+          sudo /etc/init.d/hpcc-init start
+
+      - name: Run Tests
         timeout-minutes: 10 # generous, current runtime is ~1min, this should be increased if new tests are added
         if: steps.check.outputs.runtests
         run: |
-          export LANG="en_US.UTF-8"
-          update-locale
-          source /opt/HPCCSystems/sbin/hpcc_setenv
-          sudo /etc/init.d/hpcc-init start
           export CLASSPATH=".:$(realpath selenium-server-standalone-3.141.59.jar):$(realpath testng-6.8.7.jar)"
           pushd ${{ inputs.asset-name }}-ui_test-files
-          ./run.sh tests http://localhost:8010 > eclWatchUiTest.log 2>&1
+          sudo ./run.sh tests http://localhost:8010 > eclWatchUiTest.log 2>&1
           retCode=$?
           echo "UI test done"
           [[ $retCode -ne 0 ]] && exit 1
@@ -119,6 +125,6 @@ jobs:
         if: ${{ failure() || cancelled() }}
         uses: actions/upload-artifact@v2
         with:
-          name: ECLWatchUiTest
+          name: ${{ inputs.asset-name }}-ui_test-logs
           path: ${{ inputs.asset-name }}-ui_test-files/eclWatchUiTest.log
           if-no-files-found: error

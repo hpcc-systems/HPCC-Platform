@@ -34,7 +34,7 @@ on:
         default: false
       strip-files:
         type: boolean
-        description: 'Single Package'
+        description: 'Strip Debug Symbols'
         required: false
         default: true
       cmake-configuration:
@@ -204,8 +204,14 @@ jobs:
         run: |
           mkdir -p ${{ github.workspace }}/LN
           mkdir -p ${{ github.workspace }}/build
-          cmake ${{ !contains(inputs.os, 'windows') && '-G Ninja' || '' }} -S ./${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }} -B ./build -DCMAKE_BUILD_TYPE=${{ inputs.build-type }} -DCONTAINERIZED=${{ inputs.containerized == true && 'ON' || 'OFF' }} -DCPACK_STRIP_FILES=${{ inputs.strip-files == true && 'ON' || 'OFF' }} ${{ inputs.cmake-configuration }} ${{ inputs.cmake-configuration-ex }}
-          cmake --build ./build ${{ contains(inputs.os, 'windows') && '--config Release' || ''}} --parallel ${{ inputs.upload-package == true && '--target package' || ''}}
+          declare -a plugins
+          plugins=(${{ inputs.single-package == true && '"PLATFORM"' || '"PLATFORM" "CASSANDRAEMBED" "COUCHBASEEMBED" "ECLBLAS" "H3" "JAVAEMBED" "KAFKA" "MEMCACHED" "MONGODBEMBED" "MYSQLEMBED" "NLP" "PARQUETEMBED" "REDIS" "REMBED" "SQLITE3EMBED" "SQS"' }})
+          for plugin in "${plugins[@]}"; do
+            rm -f ./build/CMakeCache.txt
+            rm -rf ./build/CMakeFiles
+            cmake ${{ !contains(inputs.os, 'windows') && '-G Ninja' || '' }} -S ./${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }} -B ./build -DCMAKE_BUILD_TYPE=${{ inputs.build-type }} -DCONTAINERIZED=${{ inputs.containerized == true && 'ON' || 'OFF' }} -DCPACK_STRIP_FILES=${{ inputs.strip-files == true && 'ON' || 'OFF' }} ${{ inputs.single-package == true && '-DINCLUDE_PLUGINS=ON' || '-D$plugin=ON' }} ${{ inputs.cmake-configuration }} ${{ inputs.cmake-configuration-ex }}
+            cmake --build ./build ${{ contains(inputs.os, 'windows') && '--config RelWithDebInfo' || ''}} --parallel ${{ inputs.upload-package == true && '--target package' || ''}}
+          done
 
       - name: Upload Package
         if: ${{ inputs.upload-package == true }}
