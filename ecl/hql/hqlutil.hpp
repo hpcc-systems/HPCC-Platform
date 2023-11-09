@@ -256,6 +256,9 @@ extern HQL_API bool splitResultValue(SharedHqlExpr & dataset, SharedHqlExpr & at
 extern HQL_API bool isDependentOnParameter(IHqlExpression * expr);
 extern HQL_API bool isTimed(IHqlExpression * expr);
 
+//Check a regular expression return an exception if it is invalid
+extern HQL_API IException * checkRegexSyntax(IHqlExpression * expr);
+
 inline bool isInternalEmbedAttr(IAtom *name)
 {
     return name == languageAtom || name == projectedAtom || name == streamedAtom || name == _linkCounted_Atom || 

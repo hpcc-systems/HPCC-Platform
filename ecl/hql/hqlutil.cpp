@@ -10698,3 +10698,37 @@ IHqlExpression * queryAttributeModifier(ITypeInfo * type, IAtom * name)
     }
     return nullptr;
 }
+
+
+IException * checkRegexSyntax(IHqlExpression * expr)
+{
+    if (expr)
+    {
+        IValue * value = expr->queryValue();
+        if (value)
+        {
+            try
+            {
+                if (isUnicodeType(expr->queryType()))
+                {
+                    Owned<ITypeInfo> unknownVarUnicodeType = makeVarUnicodeType(UNKNOWN_LENGTH, nullptr);
+                    Owned<IValue> castValue = value->castTo(unknownVarUnicodeType);
+                    ICompiledUStrRegExpr * compiled = rtlCreateCompiledUStrRegExpr((const UChar *)castValue->queryValue(), false);
+                    rtlDestroyCompiledUStrRegExpr(compiled);
+                }
+                else
+                {
+                    Owned<ITypeInfo> unknownVarStringType = makeVarStringType(UNKNOWN_LENGTH);
+                    Owned<IValue> castValue = value->castTo(unknownVarStringType);
+                    ICompiledStrRegExpr * compiled = rtlCreateCompiledStrRegExpr((const char *)castValue->queryValue(), false);
+                    rtlDestroyCompiledStrRegExpr(compiled);
+                }
+            }
+            catch (IException * e)
+            {
+                return e;
+            }
+        }
+    }
+    return nullptr;
+}

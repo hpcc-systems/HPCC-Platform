@@ -4070,6 +4070,17 @@ void HqlGram::checkMaxCompatible(IHqlExpression * sortOrder, IHqlExpression * va
 }
 
 
+void HqlGram::checkRegex(const attribute & pattern)
+{
+    Owned<IException> e = checkRegexSyntax(pattern.queryExpr());
+    if (e)
+    {
+        StringBuffer msg;
+        e->errorMessage(msg);
+        reportError(HQLERR_InvalidRegex, pattern.pos, HQLERR_InvalidRegex_Text, msg.str());
+    }
+}
+
 static void extractExtraImports(HqlExprCopyArray & extra, HqlLookupContext & lookupCtx, IHqlScope * scope, IHqlScope * baseScope)
 {
     HqlExprArray symbols;
