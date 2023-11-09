@@ -131,7 +131,7 @@ bool CDfuPlusHelper::runLocalDaFileSvr(SocketEndpoint &listenep,bool requireauth
             addlPort.appendf("port %u", sslport);
         else if (connectMethod == SSLFirst)
             addlPort.appendf("ports %u:%u", sslport, port);
-        else
+        else // inc UnsecureAndSSL
             addlPort.appendf("ports %u:%u", port, sslport);
         progress("Started local Dali file server on %s\n", addlPort.str());
     }
@@ -146,7 +146,7 @@ bool CDfuPlusHelper::runLocalDaFileSvr(SocketEndpoint &listenep,bool requireauth
             printep.port = sslport;
             addlPort.appendf(":%u", port);
         }
-        else
+        else // inc UnsecureAndSSL
         {
             printep.port = port;
             addlPort.appendf(":%u", sslport);
@@ -197,7 +197,7 @@ bool CDfuPlusHelper::checkLocalDaFileSvr(const char *eps,SocketEndpoint &epout)
         dafsPort = sslport;
         addlPort.appendf("ports %u:%u", sslport, port);
     }
-    else
+    else // inc UnsecureAndSSL
     {
         dafsPort = port;
         addlPort.appendf("ports %u:%u", port, sslport);

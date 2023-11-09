@@ -59,6 +59,10 @@
   so that the compiler can warn you if you've gotten it wrong. Trailing fields
   not used in the filter are ignored (always treated as wildcards).</para>
 
+  <para>Prior to version 7.0, KEYED(expression) on a disk read filter would
+  give a compile-time error if the field being filtered was not fixed size. In
+  version 7.0 and later versions, it won't.</para>
+
   <para>The rules for their use are as follows (the term "segmonitor" refers
   to an internal object created to represent the possible match conditions for
   a single keyable field):</para>

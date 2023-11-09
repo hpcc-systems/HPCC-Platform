@@ -643,6 +643,23 @@ define([
             });
 
             this.checkReplicate();
+
+            if (dojoConfig.isContainer) {
+                const groupSelectIds = [
+                    context.sprayFixedDestinationSelect.id ?? "",
+                    context.sprayDelimitedDestinationSelect.id ?? "",
+                    context.sprayXmlDestinationSelect.id ?? "",
+                    context.sprayJsonDestinationSelect.id ?? "",
+                    context.sprayVariableDestinationSelect.id ?? "",
+                    context.sprayBlobDestinationSelect.id ?? ""
+                ];
+                groupSelectIds.forEach(selectId => {
+                    const label = selectId ? document.querySelector("[for='" + selectId + "']") : null;
+                    if (label) {
+                        label.innerText = this.i18n.TargetPlane + ":";
+                    }
+                });
+            }
         },
 
         checkReplicate: function (value, checkBoxValue) {

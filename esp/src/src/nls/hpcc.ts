@@ -914,6 +914,7 @@ export = {
         Targets: "Targets",
         TargetClusters: "Target Clusters",
         TargetClustersLegacy: "Target Clusters (legacy)",
+        TargetPlane: "Target Plane",
         TargetName: "Target Name",
         TargetNamePlaceholder: "some::logical::name",
         TargetRowTagRequired: "You must supply a target row tag",

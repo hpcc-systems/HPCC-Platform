@@ -294,7 +294,7 @@ export const Scopes: React.FunctionComponent<ScopesProps> = ({
         },
         { key: "divider_5", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
-            key: "mine", text: nlsHPCC.Mine, disabled: !currentUser?.username, iconProps: { iconName: "Contact" }, canCheck: true, checked: filter.Owner === currentUser.username,
+            key: "mine", text: nlsHPCC.Mine, disabled: !currentUser?.username || !data.length, iconProps: { iconName: "Contact" }, canCheck: true, checked: filter.Owner === currentUser.username,
             onClick: () => {
                 if (filter.Owner === currentUser.username) {
                     filter.Owner = "";

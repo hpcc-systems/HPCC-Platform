@@ -524,6 +524,7 @@
 #define HQLWRN_MergeInputIncompatible           3163
 #define HQLWRN_MergeInputLastMissing            3164
 #define HQLERR_MissingDelayedMember             3165
+#define HQLERR_InvalidRegex                     3166
 
 #define HQLERR_DedupFieldNotFound_Text          "Field removed from dedup could not be found"
 #define HQLERR_CycleWithModuleDefinition_Text   "Module definition contains an illegal cycle/recursive definition %s"
@@ -579,6 +580,7 @@
 #define HQLERR_AlienUseData_Text                "More efficient to use a DATA field than this custom alien type"
 #define HQLERR_LibraryParamNoFunctions_Text     "Library parameter '%s' cannot be a function"
 #define HQLERR_MissingDelayedMember_Text        "Module %s does not contain a member %s"
+#define HQLERR_InvalidRegex_Text                "%s"
 
 /* parser error */
 #define ERR_PARSER_CANNOTRECOVER    3005  /* The parser can not recover from previous error(s) */

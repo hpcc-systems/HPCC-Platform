@@ -6423,6 +6423,7 @@ primexpr1
     | REGEXFIND '(' expression ',' expression regexOpt ')'
                         {
                             parser->normalizeExpression($3, type_stringorunicode, false);
+                            parser->checkRegex($3);
                             if(isUnicodeType($3.queryExprType()))
                                 parser->normalizeExpression($5, type_unicode, false);
                             else
@@ -6432,6 +6433,7 @@ primexpr1
     | REGEXFIND '(' expression ',' expression ',' expression regexOpt ')'
                         {
                             parser->normalizeExpression($3, type_stringorunicode, false);
+                            parser->checkRegex($3);
                             Owned<ITypeInfo> subType;
                             if(isUnicodeType($3.queryExprType()))
                             {
@@ -6449,6 +6451,7 @@ primexpr1
     | REGEXFINDSET '(' expression ',' expression regexOpt ')'
                         {
                             parser->normalizeExpression($3, type_stringorunicode, false);
+                            parser->checkRegex($3);
                             Owned<ITypeInfo> retType;
                             if(isUnicodeType($3.queryExprType()))
                             {

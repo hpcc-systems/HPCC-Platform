@@ -714,9 +714,19 @@ ESPresponse [exceptions_inline, nil_remove] GetDFUServerQueuesResponse
     ESParray<string> Names;
 };
 
+ESPrequest GetRemoteTargetsRequest
+{
+};
+
+ESPresponse [exceptions_inline, nil_remove] GetRemoteTargetsResponse
+{
+    ESParray<string> TargetNames;
+    bool             AllowForeign;
+};
+
 ESPservice [
     auth_feature("DEFERRED"),
-    version("1.25"),
+    version("1.26"),
     exceptions_inline("./smc_xslt/exceptions.xslt")] FileSpray
 {
     ESPmethod EchoDateTime(EchoDateTime, EchoDateTimeResponse);
@@ -751,6 +761,7 @@ ESPservice [
     ESPmethod [min_ver("1.13")] DropZoneFileSearch(DropZoneFileSearchRequest, DropZoneFileSearchResponse);
     ESPmethod GetSprayTargets(GetSprayTargetsRequest, GetSprayTargetsResponse);
     ESPmethod [min_ver("1.14")] GetDFUServerQueues(GetDFUServerQueuesRequest, GetDFUServerQueuesResponse);
+    ESPmethod [min_ver("1.26")] GetRemoteTargets(GetRemoteTargetsRequest, GetRemoteTargetsResponse);
 };
 
 SCMexportdef(FileSpray);

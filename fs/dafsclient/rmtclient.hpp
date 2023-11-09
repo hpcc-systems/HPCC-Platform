@@ -56,6 +56,7 @@ extern DAFSCLIENT_API void setCanAccessDirectly(RemoteFilename & file,bool set);
 extern DAFSCLIENT_API unsigned getRemoteVersion(ISocket * _socket, StringBuffer &ver);
 extern DAFSCLIENT_API unsigned getCachedRemoteVersion(IDaFsConnection &daFsConnection);
 extern DAFSCLIENT_API unsigned getCachedRemoteVersion(const SocketEndpoint &ep, bool secure);
+extern DAFSCLIENT_API unsigned getPreferredDafsClientPort(bool external);
 extern DAFSCLIENT_API int setDafsTrace(ISocket * socket,byte flags);
 extern DAFSCLIENT_API int setDafsThrottleLimit(ISocket * socket, ThrottleClass throttleClass, unsigned throttleLimit, unsigned throttleDelayMs, unsigned throttleCPULimit, unsigned queueLimit, StringBuffer *errMsg=NULL);
 extern DAFSCLIENT_API int getDafsInfo(ISocket * socket, unsigned level, StringBuffer &retstr);

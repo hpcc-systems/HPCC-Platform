@@ -46,7 +46,7 @@ global:
           columnMode: "DEFAULT"
           columnType: "enum"
         - type: "instance"                           #Search by log source instance specific mapping
-          searchColumn: "kubernetes.pod.name"        # Field containing source instance information
+          searchColumn: "container.id"               # Field containing source instance information
           columnMode: "ALL"
           columnType: "string"
         - type: "node"                               #Search by log source host specific mapping
@@ -73,3 +73,7 @@ global:
           searchColumn: "hpcc.log.timestamp"
           columnMode: "MIN"
           columnType: "datetime"
+        - type: "pod"
+          searchColumn: "kubernetes.pod.name"
+          columnMode: "DEFAULT"
+          columnType: "string"

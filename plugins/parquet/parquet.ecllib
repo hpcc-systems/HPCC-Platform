@@ -21,16 +21,38 @@ END;
 
 EXPORT ParquetIO := MODULE
 
+    EXPORT HivePartition := MODULE
+        EXPORT Write(outDS, outRows = 100000, basePath, overwriteOption = false, partitionFieldList) := FUNCTIONMACRO
+            LOCAL _DoParquetWritePartition(STREAMED DATASET(RECORDOF(outDS)) _ds) := EMBED(parquet : activity, option('writehivepartition'), destination(basePath), MaxRowSize(outRows), overwriteOpt(overwriteOption), partitionFields(partitionFieldList))
+            ENDEMBED;
+            RETURN _DoParquetWritePartition(outDS);
+        ENDMACRO;
+
+        EXPORT Read(resultLayout, basePath) := FUNCTIONMACRO
+            LOCAL STREAMED DATASET(resultLayout) _DoParquetReadPartition() := EMBED(parquet: activity, option('readhivepartition'), location(basePath))
+            ENDEMBED;
+            RETURN _DoParquetReadPartition();
+        ENDMACRO;
+    END;
+
+    EXPORT DirectoryPartition := MODULE
+        EXPORT Write(outDS, outRows = 100000, basePath, overwriteOption = false, partitionFieldList) := FUNCTIONMACRO
+            LOCAL _DoParquetWritePartition(STREAMED DATASET(RECORDOF(outDS)) _ds) := EMBED(parquet : activity, option('writedirectorypartition'), destination(basePath), MaxRowSize(outRows), overwriteOpt(overwriteOption), partitionFields(partitionFieldList))
+            ENDEMBED;
+            RETURN _DoParquetWritePartition(outDS);
+        ENDMACRO;
+
+        EXPORT Read(resultLayout, basePath, partitionFieldList) := FUNCTIONMACRO
+            LOCAL STREAMED DATASET(resultLayout) _DoParquetReadPartition() := EMBED(parquet: activity, option('readdirectorypartition'), location(basePath)), partitionFields(partitionFieldList)
+            ENDEMBED;
+            RETURN _DoParquetReadPartition();
+        ENDMACRO;
+    END;
+
     EXPORT Read(resultLayout, filePath) := FUNCTIONMACRO
         LOCAL STREAMED DATASET(resultLayout) _DoParquetRead() := EMBED(parquet : activity, option('read'), location(filePath))
         ENDEMBED;
         RETURN _DoParquetRead();
-    ENDMACRO;
-
-    EXPORT ReadPartition(resultLayout, basePath) := FUNCTIONMACRO
-        LOCAL STREAMED DATASET(resultLayout) _DoParquetReadPartition() := EMBED(parquet: activity, option('readpartition'), location(basePath))
-        ENDEMBED;
-        RETURN _DoParquetReadPartition();
     ENDMACRO;
 
     EXPORT Write(outDS, filePath, overwriteOption = false, compressionOption = '\'UNCOMPRESSED\'') := FUNCTIONMACRO
@@ -39,11 +61,6 @@ EXPORT ParquetIO := MODULE
         RETURN _doParquetWrite(outDS);
     ENDMACRO;
 
-    EXPORT WritePartition(outDS, outRows = 100000, basePath, overwriteOption = false) := FUNCTIONMACRO
-        LOCAL _DoParquetWritePartition(STREAMED DATASET(RECORDOF(outDS)) _ds) := EMBED(parquet : activity, option('writepartition'), destination(basePath), MaxRowSize(outRows), overwriteOpt(overwriteOption))
-        ENDEMBED;
-        RETURN _DoParquetWritePartition(outDS);
-    ENDMACRO;
 END;
 
 EXPORT getEmbedContext := ParquetService.getEmbedContext;

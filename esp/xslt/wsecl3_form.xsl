@@ -311,7 +311,7 @@ function switchInputForm()
                      </span>
               </td>
             </tr>
-            <xsl:if test="$includeRoxieOptions=1">
+            <xsl:if test="$includeRoxieOptions=1 or $includeRoxieOptions=2">
             <tr>
                <td class='input' align='left'>
                   <span>
@@ -337,6 +337,16 @@ function switchInputForm()
                   <xsl:if test="$includeRoxieOptions=1">
                     <select id="job_type">
                       <option value="QUERY">Call Query</option>
+                      <option value="WORKUNIT">Create Workunit</option>
+                    </select>&nbsp;
+                  </xsl:if>
+                  <xsl:if test="$includeRoxieOptions=2">
+                    <select id="job_type">
+                      <option value="QUERY">Call Query</option>
+                    </select>&nbsp;
+                  </xsl:if>
+                  <xsl:if test="$includeRoxieOptions=3">
+                    <select id="job_type">
                       <option value="WORKUNIT">Create Workunit</option>
                     </select>&nbsp;
                   </xsl:if>

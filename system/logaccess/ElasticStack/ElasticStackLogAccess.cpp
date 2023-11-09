@@ -49,6 +49,7 @@ static constexpr const char * DEFAULT_HPCC_LOG_JOBID_COL       = "hpcc.log.jobid
 static constexpr const char * DEFAULT_HPCC_LOG_COMPONENT_COL   = "kubernetes.container.name";
 static constexpr const char * DEFAULT_HPCC_LOG_TYPE_COL        = "hpcc.log.class";
 static constexpr const char * DEFAULT_HPCC_LOG_AUD_COL         = "hpcc.log.audience";
+static constexpr const char * DEFAULT_HPCC_LOG_POD_COL         = "kubernetes.pod.name";
 
 static constexpr const char * LOGMAP_INDEXPATTERN_ATT = "@storeName";
 static constexpr const char * LOGMAP_SEARCHCOL_ATT = "@searchColumn";
@@ -66,7 +67,7 @@ void ElasticStackLogAccess::getMinReturnColumns(std::string & columns)
 void ElasticStackLogAccess::getDefaultReturnColumns(std::string & columns)
 {
     //timestamp, source component, all hpcc.log fields
-    columns.append(" \"").append(m_globalIndexTimestampField).append("\", \"").append(m_componentsSearchColName.str()).append("\", \"hpcc.log.*\" ");
+    columns.append(" \"").append(m_globalIndexTimestampField).append("\", \"").append(m_componentsSearchColName.str()).append("\", \"").append(m_podSearchColName.str()).append("\", \"hpcc.log.*\" ");
 }
 
 void ElasticStackLogAccess::getAllColumns(std::string & columns)
@@ -89,6 +90,7 @@ ElasticStackLogAccess::ElasticStackLogAccess(const std::vector<std::string> &hos
     m_workunitSearchColName.set(DEFAULT_HPCC_LOG_JOBID_COL);
     m_componentsSearchColName.set(DEFAULT_HPCC_LOG_COMPONENT_COL);
     m_audienceSearchColName.set(DEFAULT_HPCC_LOG_AUD_COL);
+    m_podSearchColName.set(DEFAULT_HPCC_LOG_POD_COL);
 
     Owned<IPropertyTreeIterator> logMapIter = m_pluginCfg->getElements("logMaps");
     ForEach(*logMapIter)
@@ -131,6 +133,13 @@ ElasticStackLogAccess::ElasticStackLogAccess(const std::vector<std::string> &hos
                 m_audienceIndexSearchPattern = logMap.queryProp(LOGMAP_INDEXPATTERN_ATT);
             if (logMap.hasProp(LOGMAP_SEARCHCOL_ATT))
                 m_audienceSearchColName = logMap.queryProp(LOGMAP_SEARCHCOL_ATT);
+        }
+        else if (streq(logMapType, "pod"))
+        {
+            if (logMap.hasProp(LOGMAP_INDEXPATTERN_ATT))
+                m_podIndexSearchPattern = logMap.queryProp(LOGMAP_INDEXPATTERN_ATT);
+            if (logMap.hasProp(LOGMAP_SEARCHCOL_ATT))
+                m_podSearchColName = logMap.queryProp(LOGMAP_SEARCHCOL_ATT);
         }
         else if (streq(logMapType, "instance"))
         {
@@ -732,6 +741,23 @@ void ElasticStackLogAccess::populateESQueryQueryString(std::string & queryString
             throw makeStringExceptionV(-1, "%s: empty field name detected in filter by column!", COMPONENT_NAME);
         queryField = filter->getFieldName();
         break;
+    case LOGACCESS_FILTER_pod:
+    {
+        if (m_podSearchColName.isEmpty())
+            throw makeStringExceptionV(-1, "%s: 'pod' log entry field not configured", COMPONENT_NAME);
+
+        queryField = m_podSearchColName.str();
+
+        if (!m_podIndexSearchPattern.isEmpty())
+        {
+            if (!queryIndex.empty() && queryIndex != m_podIndexSearchPattern.str())
+                throw makeStringExceptionV(-1, "%s: Multi-index query not supported: '%s' - '%s'", COMPONENT_NAME, queryIndex.c_str(), m_instanceIndexSearchPattern.str());
+
+            queryIndex = m_podIndexSearchPattern.str();
+        }
+        DBGLOG("%s: Searching log entries by Pod: '%s'", COMPONENT_NAME, queryValue.str() );
+        break;
+    }
     default:
         throw makeStringExceptionV(-1, "%s: Unknown query criteria type encountered: '%s'", COMPONENT_NAME, queryValue.str());
     }

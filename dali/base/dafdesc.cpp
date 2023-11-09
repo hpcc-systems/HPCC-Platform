@@ -1403,7 +1403,8 @@ class CFileDescriptor:  public CFileDescriptorBase, implements ISuperFileDescrip
     // Identify the target dafilesrv location urls a secret based connections in the dafilesrv hook
     // NB: the expectation is that they'll only be 1 target service dafilesrv URL
     // These will remain associated in the hook, until this CFileDescriptor object is destroyed, and removeMappedDafileSrvSecrets is called.
-    void mapDafileSrvSecrets(IClusterInfo &cluster)
+    // 'optSecret' is supplied if an explicit secret was defined for the remote service (if blank, "<TLS>" is used as a placeholder by the caller)
+    void mapDafileSrvSecrets(IClusterInfo &cluster, const char *optSecret)
     {
         Owned<INodeIterator> groupIter = cluster.queryGroup()->getIterator();
 
@@ -1417,14 +1418,22 @@ class CFileDescriptor:  public CFileDescriptorBase, implements ISuperFileDescrip
                 dafileSrvEndpoints.push_back(endpointString.str());
         }
         for (auto &dafileSrvEp: dafileSrvEndpoints)
-            queryDaFileSrvHook()->addSecretUrl(dafileSrvEp.c_str());
+            queryDaFileSrvHook()->addSecretEndpoint(dafileSrvEp.c_str(), optSecret);
     }
     void removeMappedDafileSrvSecrets()
     {
         for (auto &dafileSrvEp: dafileSrvEndpoints)
-            queryDaFileSrvHook()->removeSecretUrl(dafileSrvEp.c_str());
+            queryDaFileSrvHook()->removeSecretEndpoint(dafileSrvEp.c_str());
     }
 
+    void mapSecrets()
+    {
+        if (attr->getPropBool("@_remoteSecure"))
+        {
+            const char *remoteSecret = attr->queryProp("@_remoteSecret");
+            mapDafileSrvSecrets(clusters.item(0), remoteSecret);
+        }
+    }
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -1509,8 +1518,7 @@ public:
             {
                 assertex(1 == clusters.ordinality()); // only one cluster per logical remote file supported/will have resolved to 1
                 remoteStoragePlane.setown(createStoragePlane(remoteStoragePlaneMeta));
-                if (attr->getPropBool("@_remoteSecure"))
-                    mapDafileSrvSecrets(clusters.item(0));
+                mapSecrets();
             }
         }
         else
@@ -1642,8 +1650,7 @@ public:
             assertex(1 == clusters.ordinality()); // only one cluster per logical remote file supported/will have resolved to 1
             remoteStoragePlane.setown(createStoragePlane(remoteStoragePlaneMeta));
             clusters.item(0).applyPlane(remoteStoragePlane);
-            if (attr->getPropBool("@_remoteSecure"))
-                mapDafileSrvSecrets(clusters.item(0));
+            mapSecrets();
         }
     }
 
@@ -1758,7 +1765,10 @@ public:
             if (!sc)
                 sc = getPathSepChar(dirname);
             StringBuffer tmp;
-            tmp.append(queryBaseDirectory(grp_unknown, 0, SepCharBaseOs(sc))).append(sc).append(s);
+            tmp.append(queryBaseDirectory(grp_unknown, 0, SepCharBaseOs(sc)));
+            if (sc != tmp.charAt(tmp.length()-1))
+                tmp.append(sc);
+            tmp.append(s);
             directory.set(tmp.str());
         }
         else
@@ -2983,23 +2993,52 @@ bool setReplicateDir(const char *dir,StringBuffer &out,bool isrep,const char *ba
     unsigned count = 0;
     unsigned i;
     for (i=0;d[i]&&dir[i]&&(d[i]==dir[i]);i++)
-        if (isPathSepChar(dir[i])) {
+    {
+        if (isPathSepChar(dir[i]))
+        {
             match = i;
             count++;
         }
+    }
     const char *r = repDir?repDir:queryBaseDirectory(grp_unknown, isrep ? 1 : 0,os);
-    if (d[i]==0) {
-        if ((dir[i]==0)||isPathSepChar(dir[i])) {
-            out.append(r).append(dir+i);
+    if (d[i]==0)
+    {
+        if (dir[i]==0)
+        {
+            // dir was an exact match for the base directory, return replica directory in output
+            out.append(r);
+            return true;
+        }
+        else if (isPathSepChar(dir[i]))
+        {
+            // dir matched the prefix of the base directory and the remaining part leads with a path separator
+            // replace the base directory with the replica directory in the output, and append the remaining part of dir
+            out.append(r);
+            if (isPathSepChar(out.charAt(out.length()-1))) // if r has trailing path separator, skip the leading one in dir
+                i++;
+            out.append(dir+i);
+            return true;
+        }
+        else if (i>0 && isPathSepChar(d[i-1])) // implies dir[i-1] is also a pathsepchar
+        {
+            // dir matched the prefix of the base directory, including the trailing path separator
+            // replace the base directory with the replica directory in the output, and append the remaining part of dir
+            out.append(r);
+            addPathSepChar(out); // NB: this is an ensure-has-trailing-path-separator
+            out.append(dir+i); // NB: dir+i is beyond a path separator in dir
             return true;
         }
     }
-    else if (count) { // this is a bit of a kludge to handle roxie backup
+    else if (count) // this is a bit of a kludge to handle roxie backup
+    {
         const char *s = r;
         const char *b = s;
-        while (s&&*s) {
-            if (isPathSepChar(*s)) {
-                if (--count==0) {
+        while (s&&*s)
+        {
+            if (isPathSepChar(*s))
+            {
+                if (--count==0)
+                {
                     out.append(s-b,b).append(dir+match);
                     return true;
                 }

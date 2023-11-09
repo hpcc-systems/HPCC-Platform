@@ -44,18 +44,18 @@ static unsigned __int64 getLockId(unsigned __int64 leaseId)
 
 static void populateLFNMeta(const char *logicalName, unsigned __int64 leaseId, bool remap, IPropertyTree *metaRoot, IPropertyTree *meta)
 {
-    Owned<IPropertyTree> tree = queryDistributedFileDirectory().getFileTree(logicalName, nullptr);
-    if (!tree)
-        return;
-    if (remap)
-        remapGroupsToDafilesrv(tree, nullptr);
-
     CDfsLogicalFileName lfn;
     lfn.set(logicalName);
     if (lfn.isForeign())
         ThrowStringException(-1, "foreign file %s. Not supported", logicalName);
 
     assertex(!lfn.isMulti()); // not supported, don't think needs to be/will be.
+
+    Owned<IPropertyTree> tree = queryDistributedFileDirectory().getFileTree(logicalName, nullptr);
+    if (!tree)
+        return;
+    if (remap)
+        remapGroupsToDafilesrv(tree, nullptr);
 
     bool isSuper = streq(tree->queryName(), queryDfsXmlBranchName(DXB_SuperFile));
 

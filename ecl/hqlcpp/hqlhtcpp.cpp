@@ -4456,9 +4456,17 @@ public:
                 break;
             case no_ifblock:
                 {
-                    OwnedHqlExpr cond = replaceSelector(cur->queryChild(0), querySelfReference(), selector);
                     BuildCtx condctx(ctx);
-                    translator.buildFilter(condctx, cond);
+                    try
+                    {
+                        OwnedHqlExpr cond = replaceSelector(cur->queryChild(0), querySelfReference(), selector);
+                        translator.buildFilter(condctx, cond);
+                    }
+                    catch(IException * _e)
+                    {
+                        Owned<IException> e(_e);
+                        throw makePrefixedException("Error processing IFBLOCK() condition: ", e);
+                    }
                     walkRecord(condctx, selector, cur->queryChild(1));
                     break;
                 }
@@ -10158,9 +10166,17 @@ void HqlCppTranslator::buildCsvWriteTransform(BuildCtx & subctx, IHqlExpression 
         }
     case no_ifblock:
         {
-            OwnedHqlExpr cond = replaceSelector(expr->queryChild(0), querySelfReference(), selector);
             BuildCtx condctx(subctx);
-            buildFilter(condctx, cond);
+            try
+            {
+                OwnedHqlExpr cond = replaceSelector(expr->queryChild(0), querySelfReference(), selector);
+                buildFilter(condctx, cond);
+            }
+            catch(IException * _e)
+            {
+                Owned<IException> e(_e);
+                throw makePrefixedException("Error processing IFBLOCK() condition: ", e);
+            }
             buildCsvWriteTransform(condctx, expr->queryChild(1), selector, encoding);
             break;
         }
@@ -11617,9 +11633,18 @@ void HqlCppTranslator::buildXmlSerialize(BuildCtx & subctx, IHqlExpression * exp
             break;
         case no_ifblock:
             {
-                OwnedHqlExpr cond = replaceSelector(expr->queryChild(0), querySelfReference(), selector);
                 BuildCtx condctx(subctx);
-                buildFilter(condctx, cond);
+                try
+                {
+                    OwnedHqlExpr cond = replaceSelector(expr->queryChild(0), querySelfReference(), selector);
+                    buildFilter(condctx, cond);
+                }
+                catch(IException * _e)
+                {
+                    Owned<IException> e(_e);
+                    throw makePrefixedException("Error processing IFBLOCK() condition: ", e);
+                }
+
                 buildXmlSerialize(condctx, expr->queryChild(1), selector, assigns, pass, expectedIndex);
             }
             break;
@@ -18454,6 +18479,17 @@ IHqlExpression * HqlCppTranslator::doBuildRegexCompileInstance(BuildCtx & ctx, I
                 match = declareCtx->queryMatchExpr(searchKey);
                 if (match)
                     return match->queryExpr();
+
+                //Most regexes will have been checked in the parser, but not if it is the result of a constant fold.
+                //Check again because an error thrown in a static constructor of a dynamically loaded dll can cause
+                //the process to abort HPCC-30735
+                Owned<IException> e = checkRegexSyntax(pattern);
+                if (e)
+                {
+                    StringBuffer msg;
+                    e->errorMessage(msg);
+                    reportError(queryLocation(pattern), ECODETEXT(HQLERR_InvalidRegex), msg.str());
+                }
             }
         }
         else

@@ -45,7 +45,7 @@ dataset := ParquetIO.Read(layout, '/source/directory/data.parquet');
 
 #### 2. Writing Parquet Files
 
-The Write function empowers ECL programmers to write ECL datasets to Parquet files. By leveraging the Parquet format's columnar storage capabilities, this function provides efficient compression and optimized storage for data. There is an optional argument that sets the overwrite behavior of the plugin. The default value is false meaning it will throw an error if the target file already exists.
+The Write function empowers ECL programmers to write ECL datasets to Parquet files. By leveraging the Parquet format's columnar storage capabilities, this function provides efficient compression and optimized storage for data. There is an optional argument that sets the overwrite behavior of the plugin. The default value is false meaning it will throw an error if the target file already exists. If overwrite is set to true the plugin will check for files that match the target path passed in and delete them first before writing new files.
 
 The Parquet Plugin supports all available Arrow compression types. Specifying the compression when writing is optional and defaults to Uncompressed. The options for compressing your files are Snappy, GZip, Brotli, LZ4, LZ4Frame, LZ4Hadoop, ZSTD, Uncompressed.
 
@@ -58,14 +58,24 @@ ParquetIO.Write(inDataset, '/output/directory/data.parquet', overwriteOption, co
 
 ### Partitioned Files (Tabular Datasets)
 
+The Parquet plugin supports both Hive Partitioning and Directory Partitioning. Hive partitioning uses a key-value partitioning scheme for selecting directory names. For example, the file under `dataset/year=2017/month=01/data0.parquet` contains only data for which the year equals 2017 and the month equals 01. The second partitioning scheme, Directory Partitioning, is similar, but rather than having key-value pairs the partition keys are inferred in the file path. For example, instead of having `/year=2017/month=01/day=01` the file path would be `/2017/01/01`.
+
 #### 1. Reading Partitioned Files
 
-The Read Partition function extends the Read functionality by enabling ECL programmers to read from partitioned Parquet files.
+For reading partitioned files, pass in the target directory to the read function of the type of partition you are using. For directory partitioning, a list of the field names that make up the partitioning schema is required because it is not included in the directory structure like hive partitioning.
 
 ```
-github_dataset := ParquetIO.ReadPartition(layout, '/source/directory/partioned_dataset');
+github_dataset := ParquetIO.HivePartition.Read(layout, '/source/directory/partitioned_dataset');
+
+github_dataset := ParquetIO.DirectoryPartition.Read(layout, 'source/directory/partitioned_dataset', 'year;month;day')
 ```
 
 #### 2. Writing Partitioned Files
 
-For partitioning parquet files all you need to do is run the Write function on Thor rather than hthor and each worker will create its own parquet file.
+To select the fields that you wish to partition your data on pass in a string of semicolon seperated field names. If the fields you select create too many subdirectories you may need to partition your data on different fields. The rowSize field defaults to 100000 rows and determines how many rows to put in each part of the output files. Writing a partitioned file to a directory that already contains data will fail unless the overwrite option is set to true. If the overwrite option is set to true and the target directory is not empty the plugin will first erase the contents of the target directory before writing the new files.
+
+```
+ParquetIO.HivePartition.Write(outDataset, rowSize, '/source/directory/partioned_dataset', overwriteOption, 'year;month;day');
+
+ParquetIO.DirectoryPartition.Read(outDataset, rowSize, '/source/directory/partioned_dataset', overwriteOption, 'year;month;day');
+```

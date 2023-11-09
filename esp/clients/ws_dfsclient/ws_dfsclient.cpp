@@ -333,7 +333,32 @@ public:
             IPropertyTree *filePlane = dfsFile->queryCommonMeta()->queryPropTree(planeXPath);
             assertex(filePlane);
             if (remoteStorage->getPropBool("@useDafilesrv"))
-                dafileSrvRemoteFilePlane = filePlane;
+            {
+                // Some info needs to be propagated down to the workers and then used by dafilesrv connections.
+                // Since the workers are currently only serialized IPartDescriptor/IFileDescriptors,
+                // this info. is conveyed via attributes in the IFileDescriptor.
+
+                file->setPropTree("Attr/_remoteStoragePlane", createPTreeFromIPT(filePlane));
+
+                const char *serviceUrl = remoteStorage->queryProp("@service");
+                if (serviceUrl && startsWith(serviceUrl, "https"))
+                {
+                    // if remote storage service is secure, dafilesrv connections must be also.
+                    // this flag is used by consumers of this IFleDescriptor to tell whether they need to make
+                    // secure connections to the dafilesrv's
+                    file->setPropBool("Attr/@_remoteSecure", true);
+
+                    // Propagate whether the remote definition has supplied a explicit secret (if not it will be auto-generated based on service URLs)
+                    if (remoteStorage->hasProp("@secret"))
+                    {
+                        const char *secret = remoteStorage->queryProp("@secret");
+                        if (isEmptyString(secret)) // i.e. no secret, meaning TLS only.
+                            secret = "<TLS>";  // placeholder, picked up by dafilesrv at connect time when determining if TLS or secret based
+
+                        file->setProp("Attr/@_remoteSecret", secret);
+                    }
+                }
+            }
             else
             {
                 // Path translation is necessary, because the local plane will not necessarily have the same
@@ -393,19 +418,6 @@ public:
                         newPath.append(dir); // add remaining tail of path
                     DBGLOG("Remapping logical file directory to '%s'", newPath.str());
                     file->setProp("@directory", newPath.str());
-                }
-            }
-            if (dafileSrvRemoteFilePlane)
-            {
-                file->setPropTree("Attr/_remoteStoragePlane", createPTreeFromIPT(dafileSrvRemoteFilePlane));
-
-                const char *serviceUrl = remoteStorage->queryProp("@service");
-                if (serviceUrl && startsWith(serviceUrl, "https"))
-                {
-                    // if remote storage service is secure, dafilesrv connections must be also.
-                    // this flag is used by consumers of this IFleDescriptor to tell whether they need to make
-                    // secure secret based connections to the dafilesrv's
-                    file->setPropBool("Attr/@_remoteSecure", true);
                 }
             }
         }
@@ -592,15 +604,25 @@ static void configureClientSSL(IEspClientRpcSettings &rpc, const char *secretNam
         throw makeStringExceptionV(-1, "secret %s.%s not found", "storage", secretName);
 
     StringBuffer certSecretBuf;
-    getSecretKeyValue(certSecretBuf, secretPTree, "tls.crt");
+    if (!getSecretKeyValue(certSecretBuf, secretPTree, "tls.crt"))
+        throw makeStringExceptionV(-1, "Client certificate 'tls.crt' missing from secret '%s'.", secretName);
+    if (!containsEmbeddedKey(certSecretBuf))
+        throw makeStringExceptionV(-1, "Client certificate content 'tls.crt' for secret '%s' not in expected format.", secretName);
 
     StringBuffer privKeySecretBuf;
-    getSecretKeyValue(privKeySecretBuf, secretPTree, "tls.key");
+    if (!getSecretKeyValue(privKeySecretBuf, secretPTree, "tls.key"))
+        throw makeStringExceptionV(-1, "Client private key 'tls.crt' missing from secret '%s'.", secretName);
+    if (!containsEmbeddedKey(privKeySecretBuf))
+        throw makeStringExceptionV(-1, "Client private key content 'tls.key' for secret '%s' not in expected format.", secretName);
 
-    StringBuffer caCertFileBuf;
-    getSecretKeyValue(caCertFileBuf, secretPTree, "ca.crt");
+    StringBuffer caCertBuf;
+    if (getSecretKeyValue(caCertBuf, secretPTree, "ca.crt"))
+    {
+        if (!containsEmbeddedKey(caCertBuf))
+            throw makeStringExceptionV(-1, "CA certificate content 'ca.crt' for secret '%s' not in expected format.", secretName);
+    }
 
-    setRpcSSLOptions(rpc, true, certSecretBuf.str(), privKeySecretBuf.str(), caCertFileBuf.str(), false);
+    setRpcSSLOptionsBuf(rpc, true, certSecretBuf.str(), privKeySecretBuf.str(), caCertBuf.str(), false);
 }
 
 static CriticalSection serviceLeaseMapCS;
@@ -662,6 +684,7 @@ IDFSFile *lookupDFSFile(const char *logicalName, AccessMode accessMode, unsigned
     StringBuffer remoteName, remoteLogicalFileName;
     StringBuffer serviceUrl;
     StringBuffer serviceSecret;
+    bool secretProvided = false;
     bool useDafilesrv = false;
     if (lfn.isRemote())
     {
@@ -676,8 +699,17 @@ IDFSFile *lookupDFSFile(const char *logicalName, AccessMode accessMode, unsigned
                 throw makeStringExceptionV(0, "Remote storage '%s' not found", remoteName.str());
             serviceUrl.set(remoteStorage->queryProp("@service"));
 
-            // NB: for legacy support only, if the service url is secure, a secret name will be auto-generated
-            serviceSecret.set(remoteStorage->queryProp("@secret"));
+            if (startsWith(serviceUrl, "https"))
+            {
+                // NB: standard configuration should not supply a secret, the secret name will be auto-generated based on the URL
+                // If a manual secret name is defined, it will be used to connect to the DFS service and the dafilesrv services
+                // A blank secret name can be defined to support connecting to bare-metal DFS services/dafilesrv's that do not support client certificates.
+                if (remoteStorage->hasProp("@secret"))
+                {
+                    secretProvided = true;
+                    serviceSecret.set(remoteStorage->queryProp("@secret"));
+                }
+            }
 
             logicalName = remoteLogicalFileName;
             useDafilesrv = remoteStorage->getPropBool("@useDafilesrv");
@@ -717,13 +749,8 @@ IDFSFile *lookupDFSFile(const char *logicalName, AccessMode accessMode, unsigned
 #endif
     }
     bool useSSL = startsWith(serviceUrl, "https");
-    if (useSSL)
-    {
-        if (0 == serviceSecret.length())
-            generateDynamicUrlSecretName(serviceSecret, serviceUrl, nullptr);
-    }
-    else
-        serviceSecret.clear();
+    if (useSSL && !secretProvided)
+        generateDynamicUrlSecretName(serviceSecret, serviceUrl, nullptr);
 
     DBGLOG("Looking up file '%s' on '%s'", logicalName, serviceUrl.str());
     Owned<IClientWsDfs> dfsClient = getDfsClient(serviceUrl, userDesc);
@@ -807,24 +834,9 @@ IDistributedFile *lookup(CDfsLogicalFileName &lfn, IUserDescriptor *user, Access
     bool isForeign = false;
     try { isForeign = lfn.isForeign(); }
     catch(IException *e) { e->Release(); } // catch and ignore multi lfn case, will be checked later
-    if (isForeign)
-    {
-        // default denied in cloud, allowed in bare-metal
-        bool allow = isContainerized() ? false : true;
-        StringBuffer optValue;
-        // NB: component setting takes precedence over global
-        getComponentConfigSP()->getProp("expert/@allowForeign", optValue.clear());
-        if (optValue.length())
-            allow = strToBool(optValue);
-        else
-        {
-            getGlobalConfigSP()->getProp("expert/@allowForeign", optValue);
-            if (optValue.length())
-                allow = strToBool(optValue);
-        }
-        if (!allow)
-            throw makeStringExceptionV(0, "foreign access is not permitted from this system (file='%s')", lfn.get());
-    }
+    if (isForeign && !allowForeign())
+        throw makeStringExceptionV(0, "foreign access is not permitted from this system (file='%s')", lfn.get());
+
     // DFS service currently only supports remote files 
     if (isWrite(accessMode))
         viaDali = true;

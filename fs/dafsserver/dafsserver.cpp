@@ -5372,7 +5372,7 @@ public:
             }
         }
 
-        if (_connectMethod == SSLOnly || _connectMethod == SSLFirst || _connectMethod == UnsecureFirst)
+        if (_connectMethod != SSLNone)
         {
             if (sslep.port == 0)
                 throw createDafsException(DAFSERR_serverinit_failed, "Secure dafilesrv port not specified");
@@ -5461,7 +5461,7 @@ public:
                 throw createDafsException(DAFSERR_serverinit_failed, "Invalid non-secure socket");
         }
 
-        if (_connectMethod == SSLOnly || _connectMethod == SSLFirst || _connectMethod == UnsecureFirst)
+        if (_connectMethod != SSLNone)
         {
             if (!securesock)
                 throw createDafsException(DAFSERR_serverinit_failed, "Invalid secure socket");

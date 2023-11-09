@@ -623,7 +623,7 @@ define([
                     document.title = dojoConfig.pageTitle;
                 }
 
-                domStyle.set(this.id + "Titlebar", { backgroundColor: theme.active && theme.color ? theme.color : EnvironmentTheme.defaults.color });
+                domStyle.set(this.id + "Titlebar", { backgroundColor: theme.color ? theme.color : EnvironmentTheme.defaults.color });
             });
         },
 
