@@ -1,17 +1,20 @@
 import * as React from "react";
+import * as topic from "dojo/topic";
 import { ThemeProvider } from "@fluentui/react";
 import { FluentProvider } from "@fluentui/react-components";
 import { select as d3Select } from "@hpcc-js/common";
 import { scopedLogger } from "@hpcc-js/util";
-import { useUserTheme } from "../hooks/theme";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { hashHistory } from "../util/history";
 import { router } from "../routes";
 import { DevTitle } from "./Title";
 import { MainNavigation, SubNavigation } from "./Menu";
 import { CookieConsent } from "./forms/CookieConsent";
-import { userKeyValStore } from "../../src/KeyValStore";
+import { userKeyValStore } from "src/KeyValStore";
+import { fireIdle, initSession, lock, unlock } from "src/Session";
 import { useGlobalStore } from "../hooks/store";
+import { useUserTheme } from "../hooks/theme";
+import { useUserSession } from "../hooks/user";
 
 const logger = scopedLogger("../components/Frame.tsx");
 
@@ -21,6 +24,7 @@ interface FrameProps {
 export const Frame: React.FunctionComponent<FrameProps> = () => {
 
     const [showCookieConsent, setShowCookieConsent] = React.useState(false);
+    const { userSession, setUserSession } = useUserSession();
     const [locationPathname, setLocationPathname] = React.useState<string>(window.location.hash.split("#").join(""));
     const [body, setBody] = React.useState(<h1>...loading...</h1>);
     const { theme, themeV9, isDark } = useUserTheme();
@@ -45,6 +49,24 @@ export const Frame: React.FunctionComponent<FrameProps> = () => {
 
         return () => unlisten();
     }, []);
+
+    React.useEffect(() => {
+        initSession();
+
+        topic.subscribe("hpcc/session_management_status", function (publishedMessage) {
+            if (publishedMessage.status === "Unlocked") {
+                unlock();
+            } else if (publishedMessage.status === "Locked") {
+                lock();
+            } else if (publishedMessage.status === "DoIdle") {
+                fireIdle();
+            } else if (publishedMessage.status === "Idle") {
+                window.localStorage.setItem("pageOnLock", window.location.hash.substring(1));
+                setUserSession({ ...userSession, Status: "Locked" });
+                window.location.reload();
+            }
+        });
+    }, [setUserSession, userSession]);
 
     React.useEffect(() => {
         document.title = `${showEnvironmentTitle && environmentTitle.length ? environmentTitle : "ECL Watch v9"}${locationPathname.split("/").join(" | ")}`;

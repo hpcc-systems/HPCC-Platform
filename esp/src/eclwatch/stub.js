@@ -35,13 +35,13 @@ define([
         if (modernMode === String(true) && hpccWidget !== "IFrameWidget") {
             switch (hpccWidget) {
                 case "WUDetailsWidget":
-                    window.location.replace(`/esp/files/index.html#/workunits/${params.Wuid}`);
+                    window.location.replace(`/#/workunits/${params.Wuid}`);
                     break;
                 case "GraphsWUWidget":
-                    window.location.replace(`/esp/files/index.html#/workunits/${params.Wuid}/metrics`);
+                    window.location.replace(`/#/workunits/${params.Wuid}/metrics`);
                     break;
                 default:
-                    window.location.replace("/esp/files/index.html");
+                    window.location.replace("/");
             }
         } else {
             ready(function () {
