@@ -271,7 +271,7 @@ public:
     inline bool zap(TYPE * x)                   { return ConstPointerArray::zap(x); }
 };
 
-enum DAFSConnectCfg { SSLNone = 0, SSLOnly, SSLFirst, UnsecureFirst };
+enum DAFSConnectCfg { SSLNone = 0, SSLOnly, SSLFirst, UnsecureFirst, UnsecureAndSSL };
 
 #include "jstring.hpp"
 #include "jarray.hpp"

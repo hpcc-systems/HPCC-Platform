@@ -41,8 +41,8 @@ interface IDaFileSrvHook : extends IRemoteFileCreateHook
     virtual IPropertyTree *addMyFilters(IPropertyTree *filters, SocketEndpoint *myEp=NULL) = 0;
     virtual void clearFilters() = 0;
     virtual StringBuffer &getSecretBased(StringBuffer &storageSecret, const RemoteFilename & filename) = 0;
-    virtual void addSecretUrl(const char *url) = 0;
-    virtual void removeSecretUrl(const char *url) = 0;
+    virtual void addSecretEndpoint(const char *endpoint, const char *optSecret) = 0;
+    virtual void removeSecretEndpoint(const char *endpoint) = 0;
 };
 extern DAFSCLIENT_API IDaFileSrvHook *queryDaFileSrvHook();
 

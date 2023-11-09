@@ -2598,6 +2598,8 @@ jlib_decl bool querySecuritySettings(DAFSConnectCfg *_connectMethod,
             tmpMethod = SSLFirst;
         else if ( strieq(sslMethod.str(), "UnsecureFirst") )
             tmpMethod = UnsecureFirst;
+        else if ( strieq(sslMethod.str(), "UnsecureAndSSL") )
+            tmpMethod = UnsecureAndSSL;
         else // SSLNone or false or ...
             tmpMethod = SSLNone;
 
