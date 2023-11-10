@@ -1,0 +1,6 @@
+global:
+  tracing:
+    exporter:
+      type: OTLP-GRCP
+      endpoint: "localhost:4317"
+      useSslCredentials: false

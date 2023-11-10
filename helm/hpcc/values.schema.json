@@ -1115,6 +1115,26 @@
         "alwaysCreateTraceIds": {
           "type": "boolean",
           "description": "If true, components generate trace/span ids to aid in unit of worktracing"
+        },
+        "exporter": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["OTLP-HTTP", "OTLP-GRCP", "OS", "NONE"],
+              "description": "The type of exporter in charge of forwarding span data to target back-end"
+            }
+          }
+        },
+        "processor": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["batch", "simple"],
+              "description": "Defines the manner in which trace data is processed - in batches, or simple as available"
+            }
+          }
         }
       },
       "additionalProperties": { "type": ["integer", "string", "boolean"] }
