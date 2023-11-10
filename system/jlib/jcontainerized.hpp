@@ -42,7 +42,7 @@ extern jlib_decl void runKubectlCommand(const char *title, const char *cmd, cons
 // return the k8s external host and port for serviceName
 extern jlib_decl std::pair<std::string, unsigned> getExternalService(const char *serviceName);
 
-extern jlib_decl std::pair<std::string, unsigned> getDafileServiceFromConfig(const char *application);
+extern jlib_decl std::pair<std::string, unsigned> getDafileServiceFromConfig(const char *application, bool secure, bool errorIfMissing);
 
 
 }
