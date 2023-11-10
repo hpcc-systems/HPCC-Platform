@@ -11173,12 +11173,21 @@ public:
                 Owned<IPropertyTree> tree = getNamedPropTree(sroot,queryDfsXmlBranchName(DXB_File),"@name",tail.str(),false);
                 if (tree)
                 {
-#ifdef _CONTAINERIZED
-                    // This is for bare-metal clients using ~foreign pointing at a containerized/k8s setup,
-                    // asking for the returned meta data to be remapped to point to the dafilesrv service.
-                    if (hasMask(opts, GetFileTreeOpts::remapToService))
-                        remapGroupsToDafilesrv(tree, &queryNamedGroupStore());
-#endif
+                    if (isContainerized())
+                    {
+                        // This is for bare-metal clients using ~foreign pointing at a containerized/k8s setup,
+                        // asking for the returned meta data to be remapped to point to the dafilesrv service.
+                        if (hasMask(opts, GetFileTreeOpts::remapToService))
+                        {
+                            remapGroupsToDafilesrv(tree, &queryNamedGroupStore());
+
+                            const char *remotePlaneName = tree->queryProp("@group");
+                            Owned<IPropertyTree> filePlane = getStoragePlane(remotePlaneName);
+                            assertex(filePlane);
+                            // Used by DFS clients to determine if stripe and/or alias translation needed
+                            tree->setPropTree("Attr/_remoteStoragePlane", createPTreeFromIPT(filePlane));
+                        }
+                    }
 
                     Owned<IFileDescriptor> fdesc = deserializeFileDescriptorTree(tree,&queryNamedGroupStore(),IFDSF_EXCLUDE_CLUSTERNAMES);
                     mb.append((int)1); // 1 == standard file
