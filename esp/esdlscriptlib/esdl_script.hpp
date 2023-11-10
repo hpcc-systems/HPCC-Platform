@@ -52,6 +52,101 @@
 
 interface IEsdlFunctionRegister;
 
+namespace xpp
+{
+    class StartTag;
+}
+
+/**
+ * @brief Encapsulation of scripted secret identification tokens.
+ *
+ * A value for `name` is required to identify a secret. The distinction of whether a secret is
+ * required or accepted beyond the scope of this structure.
+ *
+ * Vault and version strings may be specified in an operation's attribute list. These values are
+ * ignored in the absence of `name`.
+ */
+struct EsdlScriptSecretSpec
+{
+    Owned<ICompiledXpath> name;
+    Owned<ICompiledXpath> vault;
+    Owned<ICompiledXpath> version;
+
+    EsdlScriptSecretSpec(xpp::StartTag& stag);
+};
+
+/**
+ * @brief Encapsulation of a secret identification.
+ *
+ *  Extracts secret identification labels in multiple formats:
+ *
+ * - The compiled XPath expressions from an `EsdlScriptSecretSpec` are evaluated as strings.
+ * - An identifier of the form `name [ ":" vault [ ":" version ] ]` is split into parts.
+ */
+struct SecretId
+{
+    StringBuffer name;
+    StringBuffer vault;
+    StringBuffer version;
+
+    SecretId(EsdlScriptSecretSpec& spec, IXpathContext* context);
+    SecretId(const char* identifier);
+};
+
+/**
+ * @brief Cache of secrets used during a transaction.
+ *
+ * Secrets expire. On expiration, they are reloaded. When reloaded, their contents can differ 
+ * from prior values. During a single transaction, it is preferred that two or more references
+ * to the same secret should always yield the same values.
+ *
+ * This addresses the edge case of a secret expiring mid-transaction. Given a secret's category
+ * and identity, a previously loaded secret will be returned before looking up new data. The
+ * life expectancy of data in this cache is intented to be for a single transaction.
+ *
+ * It is generally incorrect to treat secrets as unchanging data for extended periods of time.
+ * Ensure instances of this class are retained any longer than necessary.
+ */
+class TransactionSecrets
+{
+private:
+    /**
+     * @brief The cache key type is a comination of secret category, name, vault ID, and version.
+     */
+    using Key = std::tuple<std::string, std::string, std::string, std::string>;
+    using Cache = std::map<Key, Owned<IPTree>>;
+    Cache cache;
+public:
+    IPTree* getSecret(const char* category, const SecretId& id);
+protected:
+    inline Key makeKey(const char* category, const SecretId& id) const
+    {
+        return std::make_tuple<std::string, std::string, std::string, std::string>(
+            (category ? category : ""),
+            id.name.str(),
+            id.vault.str(),
+            id.version.str()
+        );
+    }
+    IPTree* lookup(const char* category, const SecretId& id) const;
+    void store(IPTree& secret, const char* category, const SecretId& id);
+};
+
+/**
+ * @brief `SecretId` extension enforcing `http-connect` secret naming conventions.
+ *
+ * If a stored secret used to establish HTTP connections is required to have a name prefix of
+ * `http-connect-`, this ensures that a configured reference to `foo` becomes `http-connect-foo`
+ * while a configured reference to `http-connect-foo` remains unchanged.
+ */
+struct HttpConnectSecretId : public SecretId
+{
+    HttpConnectSecretId(EsdlScriptSecretSpec& spec, IXpathContext* context);
+    HttpConnectSecretId(const char* identifier);
+private:
+    void normalize();
+};
+
 /**
  * @brief Script-specific context associated with a sectional document model.
  *
@@ -123,6 +218,13 @@ interface IEsdlScriptContext : extends ISectionalXmlDocModel
      * @return false options can be changed
      */
     virtual bool isTraceLocked() const = 0;
+
+    /**
+     * @brief Get a secret based on a category and a secret identifier.
+     *
+     * @return a secret property tree.
+     */
+    virtual IPTree* getSecret(const char* category, const SecretId& id) = 0;
 
 protected:
     /**

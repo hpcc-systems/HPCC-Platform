@@ -176,6 +176,11 @@ public: // IEsdlScriptContext
         return (!traceOptionsScopes.empty() && traceOptionsScopes.back().second);
     }
 
+    virtual IPTree* getSecret(const char* category, const SecretId& id) override
+    {
+        return secrets.getSecret(category, id);
+    }
+
 protected:
     virtual void pushMaskerScope() override
     {
@@ -225,6 +230,7 @@ private:
     using TraceOptionsScopeStack = std::list<TraceOptionsScope>;
     MaskerScopeStack              maskerScopes;
     TraceOptionsScopeStack        traceOptionsScopes;
+    TransactionSecrets            secrets;
 public:
     CEsdlScriptContext(IEspContext* _espCtx, IEsdlFunctionRegister* _functionRegister, IDataMaskingEngine* _engine)
         : functionRegister(_functionRegister)
@@ -766,8 +772,7 @@ class CEsdlTransformOperationMySqlCall : public CEsdlTransformOperationBase
 protected:
     StringAttr m_name;
 
-    Owned<ICompiledXpath> m_vaultName;
-    Owned<ICompiledXpath> m_secretName;
+    EsdlScriptSecretSpec m_secretSpec;
     Owned<ICompiledXpath> m_section;
     Owned<ICompiledXpath> m_resultsetTag;
     Owned<ICompiledXpath> m_server;
@@ -785,7 +790,9 @@ protected:
     IArrayOf<CEsdlTransformOperationMySqlBindParmeter> m_parameters;
 
 public:
-    CEsdlTransformOperationMySqlCall(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationBase(xpp, stag, prefix)
+    CEsdlTransformOperationMySqlCall(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix)
+        : CEsdlTransformOperationBase(xpp, stag, prefix)
+        , m_secretSpec(stag)
     {
         ensureMysqlEmbed();
 
@@ -797,8 +804,6 @@ public:
         //without select, it executes once in the current context
         m_select.setown(compileOptionalXpath(stag.getValue("select")));
 
-        m_vaultName.setown(compileOptionalXpath(stag.getValue("vault")));
-        m_secretName.setown(compileOptionalXpath(stag.getValue("secret")));
         m_section.setown(compileOptionalXpath(stag.getValue("section")));
         m_resultsetTag.setown(compileOptionalXpath(stag.getValue("resultset-tag")));
 
@@ -917,19 +922,15 @@ public:
         //  the most secure option in my opinion is to at least have the server, name, and password all in the secret
         //  with the server included the credentials can't be hijacked and sent somewhere else for capture.
         //
-        if (!m_secretName)
+        if (!m_secretSpec.name)
             return nullptr;
-        StringBuffer name;
-        sourceContext->evaluateAsString(m_secretName, name);
-        if (name.isEmpty())
+        SecretId id(m_secretSpec, sourceContext);
+        if (id.name.isEmpty())
         {
-            missingMySqlOptionError(name, true);
+            missingMySqlOptionError("secret name", true);
             return nullptr;
         }
-        StringBuffer vault;
-        if (m_vaultName)
-            sourceContext->evaluateAsString(m_vaultName, vault);
-        return getSecret("esp", name, vault);
+        return getSecret("esp", id.name, id.vault);
     }
     void appendOption(StringBuffer &options, const char *name, const char *value, bool required)
     {
@@ -1091,13 +1092,16 @@ public:
 class CEsdlTransformOperationHttpHeader : public CEsdlTransformOperationWithoutChildren, implements IEsdlTransformOperationHttpHeader
 {
 protected:
+    EsdlScriptSecretSpec m_secretSpec;
     XPathLiteralUnion m_name;
     Owned<ICompiledXpath> m_value;
 
 public:
     IMPLEMENT_IINTERFACE_USING(CEsdlTransformOperationWithoutChildren)
 
-    CEsdlTransformOperationHttpHeader(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithoutChildren(xpp, stag, prefix)
+    CEsdlTransformOperationHttpHeader(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix, EsdlScriptSecretSpec& secretSpec)
+        : CEsdlTransformOperationWithoutChildren(xpp, stag, prefix)
+        , m_secretSpec(secretSpec)
     {
         m_name.setRequired(stag, "name", *this);
         if (m_name.isEmpty())
@@ -1119,14 +1123,56 @@ public:
 
     bool processHeader(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext, IProperties *headers) override
     {
-        CXpathContextLocation location(targetContext);
-        targetContext->addElementToLocation("header");
-        StringBuffer name;
+        StringBuffer name, value;
         m_name.get(name, *sourceContext);
-
-        StringBuffer value;
         if (m_value)
             sourceContext->evaluateAsString(m_value, value);
+        if (m_secretSpec.name && streq(name, "Authorization"))
+            generateAuthorizationValue(scriptContext, sourceContext, value);
+        return processHeaderValue(scriptContext, targetContext, sourceContext, headers, name, value);
+    }
+
+    virtual void toDBGLog () override
+    {
+    #if defined(_DEBUG)
+        DBGLOG ("> %s (%s, value(%s)) >>>>>>>>>>", m_tagname.str(), m_name.configValue(), m_value ? m_value->getXpath() : "");
+    #endif
+    }
+
+protected:
+    void generateAuthorizationValue(IEsdlScriptContext * scriptContext, IXpathContext * sourceContext, StringBuffer& method)
+    {
+        HttpConnectSecretId id(m_secretSpec, sourceContext);
+        if (id.name.isEmpty())
+            recordException(ESDL_SCRIPT_InvalidOperationAttr, "empty or missing http-connect secret name");
+        Owned<IPTree> secret(scriptContext->getSecret("esp", id));
+        if (!secret)
+            recordException(ESDL_SCRIPT_MissingOperationAttr, "missing http-connect secret");
+
+        if (method.isEmpty() || streq(method, "Basic")) 
+            generateBasicAuthValue(method, *secret);
+        else
+            recordException(ESDL_SCRIPT_InvalidOperationAttr, VStringBuffer("unrecognized authorization method '%s'", method.str()));
+    }
+
+    void generateBasicAuthValue(StringBuffer& method, const IPTree& secret)
+    {
+        StringBuffer username, password;
+        if (!getSecretKeyValue(username, &secret, "username") || !getSecretKeyValue(password, &secret, "password"))
+            recordException(ESDL_SCRIPT_MissingOperationAttr, "empty or missing http-connect basic authorization credentials");
+        VStringBuffer credentials("%s:%s", username.str(), password.str());
+        StringBuffer encoded;
+        JBASE64_Encode(credentials, credentials.length(), encoded, false);
+        if (method.isEmpty())
+            method.append("Basic");
+        method.append(' ').append(encoded);
+    }
+
+    bool processHeaderValue(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext, IProperties *headers, const StringBuffer& name, const StringBuffer& value)
+    {
+        CXpathContextLocation location(targetContext);
+        targetContext->addElementToLocation("header");
+
         if (name.length() && value.length())
         {
             if (headers)
@@ -1135,13 +1181,6 @@ public:
             targetContext->ensureSetValue("@value", value, true);
         }
         return false;
-    }
-
-    virtual void toDBGLog () override
-    {
-    #if defined(_DEBUG)
-        DBGLOG ("> %s (%s, value(%s)) >>>>>>>>>>", m_tagname.str(), m_name.configValue(), m_value ? m_value->getXpath() : "");
-    #endif
     }
 };
 
@@ -1158,6 +1197,7 @@ public:
 class CEsdlTransformOperationHttpPostXml : public CEsdlTransformOperationBase
 {
 protected:
+    EsdlScriptSecretSpec m_secretSpec;
     StringAttr m_name;
     StringAttr m_section;
     Owned<ICompiledXpath> m_url;
@@ -1166,7 +1206,9 @@ protected:
     Owned<ICompiledXpath> m_testDelay;
 
 public:
-    CEsdlTransformOperationHttpPostXml(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix, IEsdlFunctionRegister *functionRegister) : CEsdlTransformOperationBase(xpp, stag, prefix)
+    CEsdlTransformOperationHttpPostXml(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix, IEsdlFunctionRegister *functionRegister)
+        : CEsdlTransformOperationBase(xpp, stag, prefix)
+        , m_secretSpec(stag)
     {
         m_name.set(stag.getValue("name"));
         if (m_traceName.isEmpty())
@@ -1176,10 +1218,13 @@ public:
             m_section.set("temporaries");
         if (m_name.isEmpty())
             recordError(ESDL_SCRIPT_MissingOperationAttr, "without name");
-        const char *url = stag.getValue("url");
-        if (isEmptyString(url))
-            recordError(ESDL_SCRIPT_MissingOperationAttr, "without url");
-        m_url.setown(compileXpath(url));
+        if (!m_secretSpec.name)
+        {
+            const char* url = stag.getValue("url");
+            if (isEmptyString(url))
+                recordError(ESDL_SCRIPT_MissingOperationAttr, "without url");
+            m_url.setown(compileXpath(url));
+        }
         const char *msTestDelayStr = stag.getValue("test-delay");
         if (!isEmptyString(msTestDelayStr))
             m_testDelay.setown(compileXpath(msTestDelayStr));
@@ -1195,7 +1240,7 @@ public:
                 if (isEmptyString(op))
                     recordError(ESDL_SCRIPT_Error, "unknown error");
                 if (streq(op, "http-header"))
-                    m_headers.append(*new CEsdlTransformOperationHttpHeader(xpp, stag, prefix));
+                    m_headers.append(*new CEsdlTransformOperationHttpHeader(xpp, stag, prefix, m_secretSpec));
                 else if (streq(op, "content"))
                     m_content.setown(new CEsdlTransformOperationHttpContentXml(xpp, stag, prefix, functionRegister));
                 else
@@ -1240,6 +1285,17 @@ public:
         targetContext->ensureLocation(xpath, true);
         if (m_url)
             sourceContext->evaluateAsString(m_url, preparedState->url);
+        else if (m_secretSpec.name)
+        {
+            HttpConnectSecretId id(m_secretSpec, sourceContext);
+            if (id.name.isEmpty())
+                recordException(ESDL_SCRIPT_MissingOperationAttr, "missing http-connect secret identification");
+            Owned<IPTree> secret(scriptContext->getSecret("esp", id));
+            if (!secret)
+                recordException(ESDL_SCRIPT_MissingOperationAttr, "missing http-connect secret");
+            if (!getSecretKeyValue(preparedState->url, secret, "url"))
+                recordException(ESDL_SCRIPT_MissingOperationAttr, "missing http-connect secret url");
+        }
 
         //don't complain if test-delay is used but test mode is off. Any script can be instrumented for testing but won't run those features outside of testing
         if (scriptContext->getTestMode() && m_testDelay)
@@ -3908,6 +3964,96 @@ public:
         }
     }
 };
+
+EsdlScriptSecretSpec::EsdlScriptSecretSpec(StartTag& stag)
+{
+    name.setown(compileOptionalXpath(stag.getValue("secret")));
+    vault.setown(compileOptionalXpath(stag.getValue("vault")));
+    version.setown(compileOptionalXpath(stag.getValue("version")));
+}
+
+SecretId::SecretId(EsdlScriptSecretSpec& spec, IXpathContext* context)
+{
+    if (spec.name)
+    {
+        context->evaluateAsString(spec.name, name);
+        if (!name.isEmpty())
+        {
+            if (spec.vault)
+                context->evaluateAsString(spec.vault, vault);
+            if (spec.version)
+                context->evaluateAsString(spec.version, version);
+        }
+    }
+}
+
+SecretId::SecretId(const char* identifier)
+{
+    if (!isEmptyString(identifier))
+    {
+        StringArray tokens;
+        tokens.appendList(identifier, ":", true);
+        switch (tokens.ordinality())
+        {
+        case 3:
+            version.append(tokens.item(2));
+            // fall through
+        case 2:
+            vault.append(tokens.item(1));
+            // fall through
+        case 1:
+            name.append(tokens.item(0));
+            break;
+        default:
+            break;
+        }
+    }
+}
+
+IPTree* TransactionSecrets::getSecret(const char* category, const SecretId& id)
+{
+    Owned<IPTree> secret(lookup(category, id));
+    if (!secret)
+    {
+        secret.setown(::getSecret(category, id.name, id.vault, id.version));
+        if (secret)
+            store(*secret, category, id);
+    }
+    return secret;
+}
+
+IPTree* TransactionSecrets::lookup(const char* category, const SecretId& id) const
+{
+    Cache::const_iterator it = cache.find(makeKey(category, id));
+    if (it != cache.end())
+        return it->second.getLink();
+    return nullptr;
+}
+
+void TransactionSecrets::store(IPTree& secret, const char* category, const SecretId& id)
+{
+    cache[makeKey(category, id)].set(&secret);
+}
+
+HttpConnectSecretId::HttpConnectSecretId(EsdlScriptSecretSpec& spec, IXpathContext* context)
+    : SecretId(spec, context)
+{
+    normalize();
+}
+
+HttpConnectSecretId::HttpConnectSecretId(const char* identifier)
+    : SecretId(identifier)
+{
+    normalize();
+}
+
+void HttpConnectSecretId::normalize()
+{
+    static const char* prefix = "http-connect-";
+    static size_t prefixLength = strlen(prefix);
+    if (!name.isEmpty() && strncmp(name, prefix, prefixLength) != 0)
+        name.insert(0, prefix);
+}
 
 esdlscript_decl IEsdlScriptContext* createEsdlScriptContext(IEspContext* espCtx, IEsdlFunctionRegister* functionRegister, IDataMaskingEngine* engine)
 {
