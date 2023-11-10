@@ -42,7 +42,6 @@ void usage()
     printf("Options are:\n");
     printf(
         "--jumboFrames\n"
-        "--useAeron\n"
         "--udpLocalWriteSocketSize nn\n"
         "--udpRetryBusySenders nn\n"
         "--maxPacketsPerSender nn\n"
@@ -77,7 +76,6 @@ bool doSortSimulator = false;
 bool simpleSequential = true;
 float slowNodeSkew = 1.0;
 unsigned numSortSlaves = 50;
-bool useAeron = false;
 bool doRawTest = false;
 unsigned rawBufferSize = 1024;
 
@@ -177,13 +175,7 @@ public:
     virtual int run()
     {
         Owned<IReceiveManager> rcvMgr;
-        if (useAeron)
-        {
-            SocketEndpoint myEP(7000, myNode.getIpAddress());
-            rcvMgr.setown(createAeronReceiveManager(myEP, false));
-        }
-        else
-            rcvMgr.setown(createReceiveManager(7000, 7001, 7002, udpQueueSize, false));
+        rcvMgr.setown(createReceiveManager(7000, 7001, 7002, udpQueueSize, false));
         Owned<roxiemem::IRowManager> rowMgr = roxiemem::createRowManager(0, NULL, queryDummyContextLogger(), NULL, false);
         Owned<IMessageCollator> collator = rcvMgr->createMessageCollator(rowMgr, 1);
         unsigned lastReport = 0;
@@ -290,10 +282,7 @@ void testNxN()
     if (maxPacketsPerSender > udpQueueSize)
         maxPacketsPerSender = udpQueueSize;
     Owned <ISendManager> sendMgr;
-    if (useAeron)
-        sendMgr.setown(createAeronSendManager(7000, udpNumQs, myNode.getIpAddress(), false));
-    else
-        sendMgr.setown(createSendManager(7000, 7001, 7002, 100, udpNumQs, myNode.getIpAddress(), nullptr, false));
+    sendMgr.setown(createSendManager(7000, 7001, 7002, 100, udpNumQs, myNode.getIpAddress(), nullptr, false));
     Receiver receiver;
 
     IMessagePacker **packers = new IMessagePacker *[numNodes];
@@ -666,10 +655,6 @@ int main(int argc, char * argv[] )
             else if (strcmp(ip, "--jumboFrames")==0)
             {
                 roxiemem::setDataAlignmentSize(0x2000);
-            }
-            else if (strcmp(ip, "--useAeron")==0)
-            {
-                useAeron = true;
             }
             else if (strcmp(ip, "--rawSpeedTest")==0)
             {

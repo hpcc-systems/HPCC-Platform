@@ -10,9 +10,6 @@
 [submodule "esp/services/ws_sql/libantlr3c"]
 	path = esp/services/ws_sql/libantlr3c
 	url = https://github.com/hpcc-systems/libantlr3c.git
-[submodule "system/aeron"]
-	path = system/aeron
-	url = https://github.com/hpcc-systems/aeron.git
 [submodule "vcpkg"]
 	path = vcpkg
 	url = https://github.com/hpcc-systems/vcpkg.git

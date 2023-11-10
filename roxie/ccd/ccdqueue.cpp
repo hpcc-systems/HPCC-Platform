@@ -2947,25 +2947,6 @@ public:
 
 };
 
-class RoxieAeronSocketQueueManager : public RoxieSocketQueueManager
-{
-public:
-    RoxieAeronSocketQueueManager(unsigned _numWorkers, bool encryptionInTransit) : RoxieSocketQueueManager(_numWorkers)
-    {
-        unsigned dataPort = topology->getPropInt("@dataPort", CCD_DATA_PORT);
-        SocketEndpoint ep(dataPort, myNode.getIpAddress());
-        receiveManager.setown(createAeronReceiveManager(ep, encryptionInTransit));
-        assertex(!myNode.getIpAddress().isNull());
-        sendManager.setown(createAeronSendManager(dataPort, fastLaneQueue ? 3 : 2, myNode.getIpAddress(), encryptionInTransit));
-    }
-
-    virtual void abortPendingData(const SocketEndpoint &ep) override
-    {
-    }
-
-};
-
-
 #ifdef _MSC_VER
 #pragma warning( pop )
 #endif
@@ -3768,8 +3749,6 @@ extern IRoxieOutputQueueManager *createOutputQueueManager(unsigned numWorkers, b
 {
     if (localAgent)
         return new RoxieLocalQueueManager(numWorkers);
-    else if (useAeron)
-        return new RoxieAeronSocketQueueManager(numWorkers, encrypted);
     else
         return new RoxieUdpSocketQueueManager(numWorkers, encrypted);
 
