@@ -55,6 +55,7 @@ public:
         CPPUNIT_TEST(testInternalSpan);
         CPPUNIT_TEST(testMultiNestedSpanTraceOutput);
         CPPUNIT_TEST(testNullSpan);
+        CPPUNIT_TEST(testClientSpanGlobalID);
     CPPUNIT_TEST_SUITE_END();
 
     const char * simulatedGlobalYaml = R"!!(global:
@@ -413,6 +414,31 @@ protected:
             CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing 'Name' entry in toString output", true, jtraceAsTree->hasProp("Name"));
             CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing 'Type' entry in toString output", true, jtraceAsTree->hasProp("Type"));
             CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing 'ParentSpan/SpanID' entry in toString output", true, jtraceAsTree->hasProp("ParentSpan/SpanID"));
+        }
+    }
+
+    void testClientSpanGlobalID()
+    {
+        Owned<IProperties> mockHTTPHeaders = createProperties();
+        createMockHTTPHeaders(mockHTTPHeaders, true); //includes global ID
+
+        Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("propegatedServerSpan", mockHTTPHeaders);
+        Owned<ISpan> clientSpan = serverSpan->createClientSpan("clientSpanWithGlobalID");
+
+        //retrieve serverSpan context with the intent to interrogate attributes
+        {
+            Owned<IProperties> retrievedClientSpanCtxAttributes = createProperties();
+            bool getClientSpanCtxSuccess = clientSpan->getSpanContext(retrievedClientSpanCtxAttributes.get(), false);
+
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected getSpanContext failure detected on client span", true, getClientSpanCtxSuccess);
+
+            CPPUNIT_ASSERT_MESSAGE("Unexpected GlobalID detected",
+             strsame("IncomingUGID", retrievedClientSpanCtxAttributes->queryProp(kGlobalIdHttpHeaderName)));
+            CPPUNIT_ASSERT_MESSAGE("Unexpected CallerID detected",
+             strsame("IncomingCID", retrievedClientSpanCtxAttributes->queryProp(kCallerIdHttpHeaderName)));
+
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected empty TraceID detected", false, isEmptyString(retrievedClientSpanCtxAttributes->queryProp("traceID")));
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected empty SpanID detected", false, isEmptyString(retrievedClientSpanCtxAttributes->queryProp("spanID")));
         }
     }
 
