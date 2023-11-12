@@ -1338,6 +1338,11 @@ public:
         }
         else
         {
+            //Edge case - ensure that the length of a variable length record does not span a packet
+            //this can occur when large rows > data_buffer_size are being appended to the buffer.
+            if (variable && ((data_buffer_size - data_used) < sizeof(RecordLengthType)))
+                flush(false);
+
             while (len)
             {
                 if (!part_buffer)
