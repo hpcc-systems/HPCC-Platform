@@ -35,10 +35,10 @@ define([
         if (modernMode === String(true) && hpccWidget !== "IFrameWidget") {
             switch (hpccWidget) {
                 case "WUDetailsWidget":
-                    window.location.replace(`/#/workunits/${params.Wuid}`);
+                    window.location.replace(`/esp/files/index.html#/workunits/${params.Wuid}`);
                     break;
                 case "GraphsWUWidget":
-                    window.location.replace(`/#/workunits/${params.Wuid}/metrics`);
+                    window.location.replace(`/esp/files/index.html#/workunits/${params.Wuid}/metrics`);
                     break;
                 case "TopologyWidget":
                 case "DiskUsageWidget":
@@ -49,7 +49,7 @@ define([
                     loadUI();
                     break;
                 default:
-                    window.location.replace("/");
+                    window.location.replace("/esp/files/index.html");
             }
         } else {
             loadUI();
