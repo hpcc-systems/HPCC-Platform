@@ -911,7 +911,7 @@ public:
             recordException(ESDL_SCRIPT_MissingOperationAttr, msg.append(name));
         }
     }
-    IPropertyTree *getSecretInfo(IXpathContext * sourceContext)
+    const IPropertyTree *getSecretInfo(IXpathContext * sourceContext)
     {
         //leaving flexibility for the secret to be configured multiple ways
         //  the most secure option in my opinion is to at least have the server, name, and password all in the secret
@@ -943,7 +943,7 @@ public:
         options.append(name).append('=').append(value);
 
     }
-    void appendOption(StringBuffer &options, const char *name, IXpathContext * sourceContext, ICompiledXpath *cx, IPropertyTree *secret, bool required)
+    void appendOption(StringBuffer &options, const char *name, IXpathContext * sourceContext, ICompiledXpath *cx, const IPropertyTree *secret, bool required)
     {
         if (secret && secret->hasProp(name))
         {
@@ -971,7 +971,7 @@ public:
     }
     IEmbedFunctionContext *createFunctionContext(IXpathContext * sourceContext)
     {
-        Owned<IPropertyTree> secret = getSecretInfo(sourceContext);
+        Owned<const IPropertyTree> secret = getSecretInfo(sourceContext);
         StringBuffer options;
         appendOption(options, "server", sourceContext, m_server, secret, true);
         appendOption(options, "user", sourceContext, m_user, secret, true);

@@ -6279,7 +6279,7 @@ void rtlBase64Decode(size32_t & tlen, void * & tgt, size32_t slen, const char * 
 
 void rtlGetEclUserSecret(size32_t & outlen, void * & out, const char *name, const char *key)
 {
-    Owned<IPropertyTree> secret = getSecret("eclUser", name);
+    Owned<const IPropertyTree> secret = getSecret("eclUser", name);
     if (secret)
     {
         MemoryBuffer data;

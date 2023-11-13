@@ -138,7 +138,7 @@ void GpgCodeSigner::importKeysFromSecret(const char * cat, const char *keytype)
     for (int keyentry = 1; ; keyentry++)
     {
         VStringBuffer keysecretname("gpg-%s-key-%d", keytype, keyentry);
-        Owned<IPropertyTree> secretKey = getSecret(cat, keysecretname.str());
+        Owned<const IPropertyTree> secretKey = getSecret(cat, keysecretname.str());
         if (secretKey)
         {
             StringBuffer gpgKey;

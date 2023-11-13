@@ -959,7 +959,7 @@ unsigned EclRepositoryManager::runGitCommand(StringBuffer * output, const char *
             }
             else
             {
-                Owned<IPropertyTree> secret = getSecret("git", options.gitUser.str());
+                Owned<const IPropertyTree> secret = getSecret("git", options.gitUser.str());
                 if (secret)
                 {
                     MemoryBuffer gitKey;

@@ -230,7 +230,7 @@ class CTestAuthSecurityManager : public CBaseSecurityManager
         const char* secretKey = userSettings.queryProp("@secretKey");
         if (!isEmptyString(secretKey))
         {
-            Owned<IPropertyTree> secretTree = getSecret("authn", secretKey);
+            Owned<const IPropertyTree> secretTree = getSecret("authn", secretKey);
             if (!secretTree)
                 throw makeStringExceptionV(-1, "Error retrieving the secret for %s.", secretKey);
 
