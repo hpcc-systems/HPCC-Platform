@@ -151,13 +151,13 @@ public:
                 {
                     if (activity.getStatRaw(StSizeDiskWrite, StSkewMax)>options.queryOption(watOptSkewThreshold))
                         sizeSkew = true;
-                    IWuEdge *wuEdge = activity.queryInput(0);
+                    wuEdge = activity.queryInput(0);
                 }
                 else if ((stat == StTimeDiskReadIO) || (actkind==TAKspillread))
                 {
                     if (activity.getStatRaw(StSizeDiskRead, StSkewMax)>options.queryOption(watOptSkewThreshold))
                         sizeSkew = true;
-                    IWuEdge *wuEdge = activity.queryOutput(0);
+                    wuEdge = activity.queryOutput(0);
                 }
                 if (wuEdge && wuEdge->getStatRaw(StNumRowsProcessed, StSkewMax)>options.queryOption(watOptSkewThreshold))
                     numRowsSkew = true;
