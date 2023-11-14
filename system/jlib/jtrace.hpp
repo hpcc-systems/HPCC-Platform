@@ -32,9 +32,9 @@ static constexpr const char *kCallerIdOtelAttributeName = "hpcc.callerid";
 
 enum class SpanFlags : unsigned
 {
-    None            = 0x000000000,
-    EnsureGlobalId  = 0x000000001,
-    EnsureTraceId   = 0x000000010,
+    None            = 0x00000000,
+    EnsureGlobalId  = 0x00000001,
+    EnsureTraceId   = 0x00000002,
 };
 BITMASK_ENUM(SpanFlags);
 
@@ -66,6 +66,8 @@ interface ITraceManager : extends IInterface
     virtual bool isTracingEnabled() const = 0;
     virtual bool alwaysCreateGlobalIds() const = 0;
     virtual bool alwaysCreateTraceIds() const = 0;
+    virtual bool logSpanStart() const = 0;
+    virtual bool logSpanFinish() const = 0;
     virtual const char * getTracedComponentName() const = 0;
  };
 

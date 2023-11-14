@@ -10,6 +10,9 @@ All configuration options detailed here are part of the HPCC Systems Helm chart,
 ### Tracing cofiguration options
 - disabled - (default: false) disables tracking and reporting of internal traces and spans
 - alwaysCreateGlobalIds - If true, assign newly created global ID to any requests that do not supply one.
+- optAlwaysCreateTraceIds - If true components generate trace/span ids if none are provided by the remote caller.
+- logSpanStart - If true, generate a log entry whenever a span is started (default: false)
+- logSpanFinish - If true, generate a log entry whenever a span is finished (default: true)
 - exporter - Defines The type of exporter in charge of forwarding span data to target back-end
  - type - (defalt: NONE) "OTLP-HTTP" | "OTLP-GRCP" | "OS" | "NONE"
   - OTLP-HTTP

@@ -1114,7 +1114,7 @@
         },
         "alwaysCreateTraceIds": {
           "type": "boolean",
-          "description": "If true, components generate trace/span ids to aid in unit of worktracing"
+          "description": "If true, components generate trace/span ids if none are provided by the remote caller"
         },
         "exporter": {
           "type": "object",
@@ -1135,6 +1135,16 @@
               "description": "Defines the manner in which trace data is processed - in batches, or simple as available"
             }
           }
+        },
+        "logSpanStart": {
+          "type": "boolean",
+          "description": "If true, generate a log entry whenever a span is started",
+          "default": false
+        },
+        "logSpanFinish": {
+          "type": "boolean",
+          "description": "If true, generate a log entry whenever a span is finished",
+          "default": true
         }
       },
       "additionalProperties": { "type": ["integer", "string", "boolean"] }
