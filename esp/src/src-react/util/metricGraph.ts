@@ -177,7 +177,7 @@ export class MetricGraph extends Graph2<IScope, IScopeEdge, IScope> {
         });
 
         data.forEach((scope: IScope) => {
-            if (scope.type === "edge") {
+            if (scope.type === "edge" && scope.IdSource !== undefined && scope.IdTarget !== undefined) {
                 if (!this.vertexExists(this._activityIndex[(scope as IScopeEdge).IdSource]))
                     logger.warning(`Missing vertex:  ${(scope as IScopeEdge).IdSource}`);
                 else if (!this.vertexExists(this._activityIndex[(scope as IScopeEdge).IdTarget])) {
