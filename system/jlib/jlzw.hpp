@@ -150,6 +150,7 @@ typedef IIteratorOf<ICompressHandler> ICompressHandlerIterator;
 extern jlib_decl ICompressHandlerIterator *getCompressHandlerIterator();
 extern jlib_decl void setDefaultCompressor(const char *type);
 extern jlib_decl ICompressHandler *queryCompressHandler(const char *type);
+extern jlib_decl ICompressHandler *queryCompressHandler(CompressionMethod method);
 extern jlib_decl ICompressHandler *queryDefaultCompressHandler();
 extern jlib_decl bool addCompressorHandler(ICompressHandler *handler); // returns true if added, false if already registered
 extern jlib_decl bool removeCompressorHandler(ICompressHandler *handler); // returns true if present and removed

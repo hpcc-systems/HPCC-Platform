@@ -2925,10 +2925,6 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
         virtual ICompressor *getCompressor(const char *options) { return createRDiffCompressor(); }
         virtual IExpander *getExpander(const char *options) { return createRDiffExpander(); }
     };
-        CRDiffCompressHandler() : CCompressHandlerBase("RDIFF") { }
-        virtual CompressionMethod queryMethod() const { return COMPRESS_METHOD_ROWDIF; }
-        CRandRDiffCompressHandler() : CCompressHandlerBase("RANDROW") { }
-        virtual CompressionMethod queryMethod() const { return COMPRESS_METHOD_RANDROW; }
     class CLZWCompressHandler : public CCompressHandlerBase
     {
     public:
@@ -2951,7 +2947,10 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
 ICompressHandler *queryCompressHandler(const char *type)
 {
     return compressors.lookup(type);
-    return compressors.lookup(translateFromCompMethod(method));
+}
+ICompressHandler *queryCompressHandler(CompressionMethod method)
+{
+    return compressors.lookup(method);
 }
 
 void setDefaultCompressor(const char *type)
