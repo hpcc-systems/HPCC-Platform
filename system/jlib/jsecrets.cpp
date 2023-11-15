@@ -49,6 +49,7 @@
 #include <openssl/x509v3.h>
 #endif
 
+//#define TRACE_SECRETS
 #include <vector>
 
 enum class CVaultKind { kv_v1, kv_v2 };
@@ -72,7 +73,7 @@ interface IVaultManager : extends IInterface
 static CriticalSection secretCacheCS;
 static Owned<IPropertyTree> secretCache;
 static CriticalSection mtlsInfoCacheCS;
-static Owned<IPropertyTree> mtlsInfoCache;
+static std::unordered_map<std::string, Linked<ISyncedPropertyTree>> mtlsInfoCache;
 static Owned<IVaultManager> vaultManager;
 static MemoryAttr udpKey;
 static bool udpKeyInitialized = false;
@@ -80,7 +81,6 @@ static bool udpKeyInitialized = false;
 MODULE_INIT(INIT_PRIORITY_SYSTEM)
 {
     secretCache.setown(createPTree());
-    mtlsInfoCache.setown(createPTree());
     return true;
 }
 
@@ -1157,41 +1157,17 @@ IPropertyTree *getSecret(const char *category, const char * name, const char * o
 bool getSecretKeyValue(MemoryBuffer & result, const IPropertyTree *secret, const char * key)
 {
     validateKeyName(key);
-
     if (!secret)
         return false;
-
-    IPropertyTree *tree = secret->queryPropTree(key);
-    if (tree)
-        return tree->getPropBin(nullptr, result);
-    return false;
+    return secret->getPropBin(key, result);
 }
 
 bool getSecretKeyValue(StringBuffer & result, const IPropertyTree *secret, const char * key)
 {
     validateKeyName(key);
-
     if (!secret)
         return false;
-
-    IPropertyTree *tree = secret->queryPropTree(key);
-    if (!tree)
-        return false;
-    if (tree->isBinary(nullptr))
-    {
-        MemoryBuffer mb;
-        tree->getPropBin(nullptr, mb);
-        //caller implies it's a string
-        result.append(mb.length(), mb.toByteArray());
-        return true;
-    }
-    const char *value = tree->queryProp(nullptr);
-    if (value)
-    {
-        result.append(value);
-        return true;
-    }
-    return false;
+    return secret->getProp(key, result);
 }
 
 extern jlib_decl bool getSecretValue(StringBuffer & result, const char *category, const char * name, const char * key, bool required)
@@ -1207,7 +1183,7 @@ extern jlib_decl bool getSecretValue(StringBuffer & result, const char *category
 
 //---------------------------------------------------------------------------------------------------------------------
 
-class CSecret final : public CInterfaceOf<ISecret>
+class CSecret final : public CInterfaceOf<ISyncedPropertyTree>
 {
 public:
     CSecret(const char *_category, const char * _name, const char * _vaultId, const char * _version, const IPropertyTree * _secret)
@@ -1216,27 +1192,34 @@ public:
         updateHash();
     }
 
-    virtual const IPropertyTree * getTree() const;
+    virtual const IPropertyTree * getTree() const override;
 
-    virtual bool getKeyValue(MemoryBuffer & result, const char * key) const
+    virtual bool getProp(MemoryBuffer & result, const char * key) const override
     {
         CriticalBlock block(secretCs);
         checkStale();
         return getSecretKeyValue(result, secret, key);
     }
-    virtual bool getKeyValue(StringBuffer & result, const char * key) const
+    virtual bool getProp(StringBuffer & result, const char * key) const override
     {
         CriticalBlock block(secretCs);
         checkStale();
         return getSecretKeyValue(result, secret, key);
     }
-    virtual bool isStale() const
+    virtual bool isStale() const override
     {
         return secret && hasCacheExpired(secret);
     }
-    virtual unsigned getVersion() const
+    virtual unsigned getVersion() const override
     {
+        CriticalBlock block(secretCs);
+        checkStale();
         return secretHash;
+    }
+    virtual bool isValid() const override
+    {
+        CriticalBlock block(secretCs);
+        return secret != nullptr;
     }
 
 protected:
@@ -1265,6 +1248,9 @@ void CSecret::checkStale() const
 {
     if (isStale())
     {
+#ifdef TRACE_SECRETS
+        DBGLOG("Secret %s/%s is stale updating from %u...", category.str(), name.str(), secretHash);
+#endif
         //MORE: This could block or fail - in roxie especially it would be better to return the old value
         try
         {
@@ -1280,48 +1266,15 @@ void CSecret::checkStale() const
     }
 }
 
-//This should probably move to jptree.?pp as a generally useful function
-static unsigned calculateTreeHash(const IPropertyTree & source, unsigned hashcode)
-{
-    if (source.isBinary())
-    {
-        MemoryBuffer mb;
-        source.getPropBin(nullptr, mb);
-        hashcode = hashc((const byte *)mb.bufferBase(), mb.length(), hashcode);
-    }
-    else
-    {
-        const char * value = source.queryProp(nullptr);
-        if (value)
-            hashcode = hashcz((const byte *)value, hashcode);
-    }
-
-    Owned<IAttributeIterator> aiter = source.getAttributes();
-    ForEach(*aiter)
-    {
-        hashcode = hashcz((const byte *)aiter->queryName(), hashcode);
-        hashcode = hashcz((const byte *)aiter->queryValue(), hashcode);
-    }
-
-    Owned<IPropertyTreeIterator> iter = source.getElements("*");
-    ForEach(*iter)
-    {
-        IPropertyTree & child = iter->query();
-        hashcode = hashcz((const byte *)child.queryName(), hashcode);
-        hashcode = calculateTreeHash(child, hashcode);
-    }
-    return hashcode;
-}
-
 void CSecret::updateHash() const
 {
     if (secret)
-        secretHash = calculateTreeHash(*secret.get(), 0x811C9DC5);
+        secretHash = getPropertyTreeHash(*secret.get(), 0x811C9DC5);
     else
         secretHash = 0;
 }
 
-ISecret * resolveSecret(const char *category, const char * name, const char * optVaultId, const char * optVersion)
+ISyncedPropertyTree * resolveSecret(const char *category, const char * name, const char * optVaultId, const char * optVersion)
 {
     Owned<IPropertyTree> resolved = getSecret(category, name, optVaultId, optVersion);
     return new CSecret(category, name, optVaultId, optVersion, resolved);
@@ -1385,106 +1338,241 @@ jlib_decl bool containsEmbeddedKey(const char *certificate)
     return false;
 }
 
-IPropertyTree *createIssuerTlsClientConfig(const char *issuer, bool acceptSelfSigned, bool addCACert)
+
+//---------------------------------------------------------------------------------------------------------------------
+
+class CSyncedCertificateBase : public CInterfaceOf<ISyncedPropertyTree>
+{
+public:
+    CSyncedCertificateBase(const char *_issuer)
+    : issuer(_issuer)
+    {
+    }
+
+    virtual const IPropertyTree * getTree() const override final;
+
+    virtual bool getProp(MemoryBuffer & result, const char * key) const override final
+    {
+        CriticalBlock block(secretCs);
+        checkStale();
+        return getSecretKeyValue(result, config, key);
+    }
+    virtual bool getProp(StringBuffer & result, const char * key) const override final
+    {
+        CriticalBlock block(secretCs);
+        checkStale();
+        return getSecretKeyValue(result, config, key);
+    }
+    virtual bool isStale() const override final
+    {
+        return secret->isStale();
+    }
+    virtual bool isValid() const override
+    {
+        return secret->isValid();
+
+    }
+    virtual unsigned getVersion() const override final
+    {
+        CriticalBlock block(secretCs);
+        checkStale();
+        //If information that is combined with the secret (e.g. trusted peers) can also change dynamically this would
+        //need to be a separate hash calculated from the config tree
+        return secretHash;
+    }
+
+protected:
+    virtual void updateConfigFromSecret(const IPropertyTree * secretInfo) const = 0;
+
+protected:
+    void checkStale() const;
+    void createConfig() const;
+    void createDefaultConfigFromSecret(const IPropertyTree * secretInfo, bool addCertificates, bool addCertificateAuthority) const;
+    void updateCertificateFromSecret(const IPropertyTree * secretInfo) const;
+    void updateCertificateAuthorityFromSecret(const IPropertyTree * secretInfo) const;
+
+protected:
+    StringAttr issuer;
+    Owned<ISyncedPropertyTree> secret;
+    mutable CriticalSection secretCs;
+    mutable Linked<IPropertyTree> config;
+    mutable std::atomic<unsigned> secretHash{0};
+};
+
+
+const IPropertyTree * CSyncedCertificateBase::getTree() const
+{
+    CriticalBlock block(secretCs);
+    checkStale();
+    return LINK(config);
+}
+
+void CSyncedCertificateBase::checkStale() const
+{
+    if (secretHash != secret->getVersion())
+        createConfig();
+}
+
+void CSyncedCertificateBase::createConfig() const
+{
+    //Update before getting the tree to avoid potential race condition updating the tree at the same time.
+    //Could alternatively return the version number from the getTree() call.
+    secretHash = secret->getVersion();
+
+    Owned<const IPropertyTree> secretInfo = secret->getTree();
+    if (secretInfo)
+    {
+        config.setown(createPTree(issuer));
+        ensurePTree(config, "verify");
+        updateConfigFromSecret(secretInfo);
+    }
+    else
+        config.clear();
+}
+
+
+void CSyncedCertificateBase::updateCertificateFromSecret(const IPropertyTree * secretInfo) const
+{
+    StringBuffer value;
+    config->setProp("@issuer", issuer); // server only?
+    if (secretInfo->getProp("tls.crt", value.clear()))
+        config->setProp("certificate", value.str());
+    if (secretInfo->getProp("tls.key", value.clear()))
+        config->setProp("privatekey", value.str());
+}
+
+void CSyncedCertificateBase::updateCertificateAuthorityFromSecret(const IPropertyTree * secretInfo) const
+{
+    StringBuffer value;
+    if (secretInfo->getProp("ca.crt", value.clear()))
+    {
+        IPropertyTree *verify = config->queryPropTree("verify");
+        IPropertyTree *ca = ensurePTree(verify, "ca_certificates");
+        ca->setProp("pem", value.str());
+    }
+}
+
+
+//---------------------------------------------------------------------------------------------------------------------
+
+class CIssuerConfig final : public CSyncedCertificateBase
+{
+public:
+    CIssuerConfig(const char *_issuer, const char * _trustedPeers, bool _isClientConnection, bool _acceptSelfSigned, bool _addCACert, bool _disableMTLS)
+    : CSyncedCertificateBase(_issuer), trustedPeers(_trustedPeers), isClientConnection(_isClientConnection), acceptSelfSigned(_acceptSelfSigned), addCACert(_addCACert), disableMTLS(_disableMTLS)
+    {
+        secret.setown(resolveSecret("certificates", issuer, nullptr, nullptr));
+        createConfig();
+    }
+
+    virtual void updateConfigFromSecret(const IPropertyTree * secretInfo) const override;
+
+protected:
+    StringAttr trustedPeers;
+    bool isClientConnection; // required in constructor
+    bool acceptSelfSigned; // required in constructor
+    bool addCACert; // required in constructor
+    bool disableMTLS;
+};
+
+
+void CIssuerConfig::updateConfigFromSecret(const IPropertyTree * secretInfo) const
+{
+    if (!isClientConnection || !strieq(issuer, "public"))
+        updateCertificateFromSecret(secretInfo);
+
+
+    // addCACert is usually true. A client hitting a public issuer is the case where we don't want the ca cert
+    // defined. Otherwise, for MTLS we want control over our CACert using addCACert. When hitting public services
+    // using public certificate authorities we want the well known (browser compatible) CA list installed on the
+    // system instead.
+    if (!isClientConnection || addCACert)
+        updateCertificateAuthorityFromSecret(secretInfo);
+
+    IPropertyTree *verify = config->queryPropTree("verify");
+    assertex(verify); // Should always be defined by this point.
+
+    //For now only the "public" issuer implies client certificates are not required
+    verify->setPropBool("@enable", !disableMTLS && (isClientConnection || !strieq(issuer, "public")));
+    verify->setPropBool("@address_match", false);
+    verify->setPropBool("@accept_selfsigned", isClientConnection && acceptSelfSigned);
+    if (trustedPeers) // Allow blank string to mean none, null means anyone
+        verify->setProp("trusted_peers", trustedPeers);
+    else
+        verify->setProp("trusted_peers", "anyone");
+}
+
+
+ISyncedPropertyTree * createIssuerTlsConfig(const char * issuer, const char * optTrustedPeers, bool isClientConnection, bool acceptSelfSigned, bool addCACert, bool disableMTLS)
+{
+    return new CIssuerConfig(issuer, optTrustedPeers, isClientConnection, acceptSelfSigned, addCACert, disableMTLS);
+
+}
+//---------------------------------------------------------------------------------------------------------------------
+
+class CCertificateConfig final : public CSyncedCertificateBase
+{
+public:
+    CCertificateConfig(const char * _category, const char * _secretName, bool _addCACert)
+    : CSyncedCertificateBase(nullptr), addCACert(_addCACert)
+    {
+        secret.setown(resolveSecret(_category, _secretName, nullptr, nullptr));
+        if (!secret->isValid())
+            throw makeStringExceptionV(-1, "secret %s.%s not found", _category, _secretName);
+        createConfig();
+    }
+
+    virtual void updateConfigFromSecret(const IPropertyTree * secretInfo) const override;
+
+protected:
+    bool addCACert; // required in constructor
+};
+
+void CCertificateConfig::updateConfigFromSecret(const IPropertyTree * secretInfo) const
+{
+    updateCertificateFromSecret(secretInfo);
+
+    if (addCACert)
+        updateCertificateAuthorityFromSecret(secretInfo);
+}
+
+
+ISyncedPropertyTree * createStorageTlsConfig(const char * secretName, bool addCACert)
+{
+    return new CCertificateConfig("storage", secretName, addCACert);
+
+}
+
+
+const ISyncedPropertyTree * getIssuerTlsSyncedConfig(const char * issuer, const char * optTrustedPeers, bool disableMTLS)
 {
     if (isEmptyString(issuer))
         return nullptr;
 
-    StringBuffer filepath;
-    StringBuffer secretpath;
-    buildSecretPath(secretpath, "certificates", issuer);
-
-    Owned<IPropertyTree> info = createPTree();
-
-    if (strieq(issuer, "remote")||strieq(issuer, "local"))
+    const char * key;
+    StringBuffer temp;
+    if (!isEmptyString(optTrustedPeers) || disableMTLS)
     {
-        filepath.set(secretpath).append("tls.crt");
-        if (!checkFileExists(filepath))
-            return nullptr;
-
-        info->setProp("certificate", filepath.str());
-        filepath.set(secretpath).append("tls.key");
-        if (checkFileExists(filepath))
-            info->setProp("privatekey", filepath.str());
+        temp.append(issuer).append("/").append(optTrustedPeers).append('/').append(disableMTLS);
+        key = temp.str();
     }
-
-    IPropertyTree *verify = ensurePTree(info, "verify");
-    if (addCACert)
-    {
-        filepath.set(secretpath).append("ca.crt");
-        if (checkFileExists(filepath))
-        {
-            IPropertyTree *ca = ensurePTree(verify, "ca_certificates");
-            ca->setProp("@path", filepath.str());
-        }
-    }
-    verify->setPropBool("@enable", true);
-    verify->setPropBool("@address_match", false);
-    verify->setPropBool("@accept_selfsigned", acceptSelfSigned);
-    verify->setProp("trusted_peers", "anyone");
-
-    return info.getClear();
-}
-
-IPropertyTree *getIssuerTlsServerConfig(const char *name)
-{
-    if (isEmptyString(name))
-        return nullptr;
-
-    validateSecretName(name);
+    else
+        key = issuer;
 
     CriticalBlock block(mtlsInfoCacheCS);
-    Owned<IPropertyTree> info = mtlsInfoCache->getPropTree(name);
-    if (info)
-        return info.getClear();
+    auto match = mtlsInfoCache.find(key);
+    if (match != mtlsInfoCache.cend())
+        return LINK(match->second);
 
-    StringBuffer filepath;
-    StringBuffer secretpath;
-
-    buildSecretPath(secretpath, "certificates", name);
-
-    filepath.set(secretpath).append("tls.crt");
-    if (!checkFileExists(filepath))
-        return nullptr;
-
-    info.set(mtlsInfoCache->setPropTree(name));
-    info->setProp("@issuer", name);
-    info->setProp("certificate", filepath.str());
-    filepath.set(secretpath).append("tls.key");
-    if (checkFileExists(filepath))
-        info->setProp("privatekey", filepath.str());
-    IPropertyTree *verify = ensurePTree(info, "verify");
-    if (verify)
-    {
-        filepath.set(secretpath).append("ca.crt");
-        if (checkFileExists(filepath))
-        {
-            IPropertyTree *ca = ensurePTree(verify, "ca_certificates");
-            if (ca)
-                ca->setProp("@path", filepath.str());
-        }
-        //For now only the "public" issuer implies client certificates are not required
-        verify->setPropBool("@enable", !strieq(name, "public"));
-        verify->setPropBool("@address_match", false);
-        verify->setPropBool("@accept_selfsigned", false);
-        verify->setProp("trusted_peers", "anyone");
-    }
-    return info.getClear();
+    Owned<ISyncedPropertyTree> config = createIssuerTlsConfig(issuer, optTrustedPeers, false, false, true, disableMTLS);
+    mtlsInfoCache.emplace(key, config);
+    return config.getClear();
 }
 
-IPropertyTree *getIssuerTlsServerConfigWithTrustedPeers(const char *issuer, const char *trusted_peers)
+bool hasIssuerTlsConfig(const char *issuer)
 {
-    Owned<IPropertyTree> issuerConfig = getIssuerTlsServerConfig(issuer);
-    if (!issuerConfig || isEmptyString(trusted_peers))
-        return issuerConfig.getClear();
-    //TBD: might cache in the future, but needs thought, lookup must include trusted_peers, but will there be cases where trusted_peers can change dynamically?
-    Owned<IPropertyTree> tlsConfig = createPTreeFromIPT(issuerConfig);
-    if (!tlsConfig)
-        return nullptr;
-
-    IPropertyTree *verify = ensurePTree(tlsConfig, "verify");
-    verify->setProp("trusted_peers", trusted_peers);
-    return tlsConfig.getClear();
+    Owned<const ISyncedPropertyTree> match = getIssuerTlsSyncedConfig(issuer, nullptr, false);
+    return match && match->isValid();
 }
 
 enum UseMTLS { UNINIT, DISABLED, ENABLED };
@@ -1518,21 +1606,18 @@ jlib_decl bool queryMtls()
                     if (checkFileExists(cert) && checkFileExists(privKey))
                     {
                         CriticalBlock block(mtlsInfoCacheCS);
-                        if (mtlsInfoCache)
-                        {
-                            IPropertyTree *info = mtlsInfoCache->queryPropTree("local");
-                            if (!info)
-                                info = mtlsInfoCache->setPropTree("local");
-                            if (info)
-                            {   // always update
-                                info->setProp("certificate", cert);
-                                info->setProp("privatekey", privKey);
-                                if ( (!isEmptyString(pubKey)) && (checkFileExists(pubKey)) )
-                                    info->setProp("publickey", pubKey);
-                                if (!isEmptyString(passPhrase))
-                                    info->setProp("passphrase", passPhrase); // encrypted
-                            }
-                        }
+                        assertex(mtlsInfoCache.find("local") == mtlsInfoCache.cend());
+
+                        Owned<IPropertyTree> info = createPTree("local");
+                        info->setProp("certificate", cert);
+                        info->setProp("privatekey", privKey);
+                        if ( (!isEmptyString(pubKey)) && (checkFileExists(pubKey)) )
+                            info->setProp("publickey", pubKey);
+                        if (!isEmptyString(passPhrase))
+                            info->setProp("passphrase", passPhrase); // encrypted
+
+                        Owned<ISyncedPropertyTree> entry = createSyncedPropertyTree(info);
+                        mtlsInfoCache.emplace("local", entry);
                     }
                 }
             }

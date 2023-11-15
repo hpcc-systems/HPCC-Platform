@@ -112,6 +112,13 @@ public:
     {
         queryDafsSecSettings(&connectMethod, &daFileSrvPort, &daFileSrvSSLPort, &certificate, &privateKey, &passPhrase);
     }
+
+    const IPropertyTree * getSecureConfig()
+    {
+        //Later: return a synced tree...
+        return createSecureSocketConfig(certificate, privateKey, passPhrase);
+    }
+
 } securitySettings;
 #endif
 
@@ -133,23 +140,12 @@ static ISecureSocket *createSecureSocket(ISocket *sock, bool disableClientCertVe
              */
 
             const char *certScope = strsame("cluster", getComponentConfigSP()->queryProp("service/@visibility")) ? "local" : "public";
-            Owned<IPropertyTree> info = getIssuerTlsServerConfig(certScope);
-            if (!info)
+            Owned<const ISyncedPropertyTree> info = getIssuerTlsSyncedConfig(certScope, nullptr, disableClientCertVerification);
+            if (!info || !info->isValid())
                 throw makeStringException(-1, "createSecureSocket() : missing MTLS configuration");
-            Owned<IPropertyTree> cloneInfo;
-            if (disableClientCertVerification)
-            {
-                // do not insist clients provide a cerificate for verification.
-                // This is used when the connection is TLS, but the authentication is done via other means
-                // e.g. in the case of the streaming service a opaque signed blob is transmitted and must
-                // be verified before proceeding.
-                cloneInfo.setown(createPTreeFromIPT(info));
-                cloneInfo->setPropBool("verify/@enable", false);
-                info = cloneInfo;
-            }
-            secureContextServer.setown(createSecureSocketContextEx2(info, ServerSocket));
+            secureContextServer.setown(createSecureSocketContextSynced(info, ServerSocket));
 #else
-            secureContextServer.setown(createSecureSocketContextEx(securitySettings.certificate, securitySettings.privateKey, securitySettings.passPhrase, ServerSocket));
+            secureContextServer.setown(createSecureSocketContextEx2(securitySettings.getSecureConfig(), ServerSocket));
 #endif
         }
     }

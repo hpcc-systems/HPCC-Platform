@@ -123,7 +123,7 @@ IHttpClient* CHttpClientContext::createHttpClient(const char* proxy, const char*
                 if (xproc)
                     m_ssctx.setown(xproc(m_config.get(),ClientSocket));
                 else
-                    throw MakeStringException(-1, "procedure createSecureSocketContext can't be loaded");
+                    throw MakeStringException(-1, "procedure createSecureSocketContextEx2 can't be loaded");
 
             }
             if(m_ssctx.get() == NULL)

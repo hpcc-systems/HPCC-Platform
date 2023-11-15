@@ -112,6 +112,12 @@ public:
         }
     }
 
+    const IPropertyTree * getSecureConfig()
+    {
+        //Later: return a synced tree...
+        return createSecureSocketConfig(queryCertificate(), queryPrivateKey(), queryPassPhrase());
+    }
+
 protected:
     DAFSConnectCfg  connectMethod;
     unsigned short  daFileSrvPort;
@@ -156,10 +162,10 @@ static ISecureSocket *createSecureSocket(ISocket *sock, const char *issuer)
             auto it = secureCtxClientIssuerMap.find(issuer);
             if (it == secureCtxClientIssuerMap.end())
             {
-                Owned<IPropertyTree> info = getIssuerTlsServerConfig(issuer);
-                if (!info)
+                Owned<const ISyncedPropertyTree> info = getIssuerTlsSyncedConfig(issuer);
+                if (!info || !info->isValid())
                     throw makeStringExceptionV(-1, "createSecureSocket() : missing MTLS configuration for issuer: %s", issuer);
-                secureContext.setown(createSecureSocketContextEx2(info, ClientSocket));
+                secureContext.setown(createSecureSocketContextSynced(info, ClientSocket));
                 secureCtxClientIssuerMap.emplace(issuer, secureContext.getLink());
             }
             else
@@ -168,7 +174,10 @@ static ISecureSocket *createSecureSocket(ISocket *sock, const char *issuer)
         else
         {
             if (!secureContextClient)
-                secureContextClient.setown(createSecureSocketContextEx(securitySettings.queryCertificate(), securitySettings.queryPrivateKey(), securitySettings.queryPassPhrase(), ClientSocket));
+            {
+                Owned<const IPropertyTree> config = securitySettings.getSecureConfig();
+                secureContextClient.setown(createSecureSocketContextEx2(config, ClientSocket));
+            }
             secureContext.set(secureContextClient);
         }
     }
@@ -751,17 +760,8 @@ void CRemoteBase::connectSocket(SocketEndpoint &ep, unsigned connectTimeoutMs, u
                         }
                         else
                         {
-                            Owned<IPropertyTree> secretPTree = getSecret("storage", storageSecret);
-                            if (!secretPTree)
-                                throw makeStringExceptionV(-1, "secret %s.%s not found", "storage", storageSecret.str());
-
-                            StringBuffer certSecretBuf;
-                            getSecretKeyValue(certSecretBuf, secretPTree, "tls.crt");
-
-                            StringBuffer privKeySecretBuf;
-                            getSecretKeyValue(privKeySecretBuf, secretPTree, "tls.key");
-
-                            Owned<ISecureSocketContext> secureContext = createSecureSocketContextEx(certSecretBuf, privKeySecretBuf, nullptr, ClientSocket);
+                            Owned<ISyncedPropertyTree> config = createStorageTlsConfig(storageSecret, false);
+                            Owned<ISecureSocketContext> secureContext = createSecureSocketContextSynced(config, ClientSocket);
                             ssock.setown(secureContext->createSecureSocket(socket.getClear(), loglevel));
                         }
                     }

@@ -430,4 +430,24 @@ extern jlib_decl StringBuffer &getExpertOptString(const char *opt, StringBuffer 
 extern jlib_decl void setExpertOpt(const char *opt, const char *value);
 
 
+//---------------------------------------------------------------------------------------------------------------------
+
+extern jlib_decl unsigned getPropertyTreeHash(const IPropertyTree & source, unsigned hashcode);
+
+//Interface for encapsulating an IPropertyTree that can be atomically updated.  The result of getTree() is guaranteed
+//to not be modified and to remain valid and consistent until it is released.
+interface ISyncedPropertyTree : extends IInterface
+{
+    virtual const IPropertyTree * getTree() const = 0;
+    virtual bool getProp(MemoryBuffer & result, const char * xpath) const = 0;
+    virtual bool getProp(StringBuffer & result, const char * xpath) const = 0;
+    //Return a version-hash which changes whenever the property tree changes - so that a caller can determine whether it needs to update
+    virtual unsigned getVersion() const = 0;
+    virtual bool isStale() const = 0; // An indication that the property tree may be out of date because it couldn't be resynchronized.
+    virtual bool isValid() const = 0; // Is the property tree non-null?  Typically called at startup to check configuration is provided.
+};
+
+extern jlib_decl ISyncedPropertyTree * createSyncedPropertyTree(IPropertyTree * tree);
+
+
 #endif
