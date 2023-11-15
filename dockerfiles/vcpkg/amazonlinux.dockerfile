@@ -6,6 +6,7 @@ RUN amazon-linux-extras install java-openjdk11 && yum install -y \
     python3-devel \
     epel-release
 RUN yum install -y \
+    ccache \
     R-core-devel \
     R-Rcpp-devel \
     R-RInside-devel

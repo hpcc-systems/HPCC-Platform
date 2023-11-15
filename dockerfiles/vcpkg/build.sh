@@ -33,7 +33,7 @@ function doBuild() {
     docker pull "hpccsystems/platform-build-$1:$VCPKG_REF" || true
     docker pull "hpccsystems/platform-build-$1:$GITHUB_BRANCH" || true
 
-    docker build --progress plain --pull --rm -f "$SCRIPT_DIR/$1.dockerfile" \
+    docker build --progress plain --rm -f "$SCRIPT_DIR/$1.dockerfile" \
         --build-arg DOCKER_NAMESPACE=$DOCKER_USERNAME \
         --build-arg VCPKG_REF=$VCPKG_REF \
         --cache-from hpccsystems/platform-build-$1:$VCPKG_REF \
@@ -51,9 +51,14 @@ function doBuild() {
     elif [ "$1" == "amazonlinux" ]; then
         CMAKE_OPTIONS_EXTRA="-DVCPKG_TARGET_TRIPLET=x64-amazonlinux-dynamic"
     fi
-    docker run --rm --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached hpccsystems/platform-build-$1:$VCPKG_REF \
-        "cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/HPCC-Platform/build-$1 ${CMAKE_OPTIONS} ${CMAKE_OPTIONS_EXTRA} && \
-        cmake --build /hpcc-dev/HPCC-Platform/build-$1 --target package --parallel $(nproc)"
+    mkdir -p $HOME/.ccache
+    docker run --rm \
+        --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached \
+        --mount source="$HOME/.ccache",target=/root/.ccache,type=bind,consistency=cached \
+        hpccsystems/platform-build-$1:$VCPKG_REF \
+        "cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/HPCC-Platform/build-$1 ${CMAKE_OPTIONS} ${CMAKE_OPTIONS_EXTRA} -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache && \
+        cmake --build /hpcc-dev/HPCC-Platform/build-$1 --target install --parallel $(nproc) && \
+        /etc/init.d/hpcc-init start"
 
     sudo chown -R $(id -u):$(id -g) ./build-$1
 # docker run -it --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached build-ubuntu-22.04:latest bash
