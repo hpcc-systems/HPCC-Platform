@@ -746,8 +746,14 @@ Escape:
 
 void compressToBuffer(MemoryBuffer & out, size32_t len, const void * src, CompressionMethod method, const char *options)
 {
-    if (method != COMPRESS_METHOD_NONE)
+    if (method != COMPRESS_METHOD_NONE && len >= 32)
     {
+        ICompressHandler *handler = queryCompressHandler(method);
+        if (!handler)
+        {
+            VStringBuffer s("Unknown compression method %x requested in compressToBuffer", (byte) method);
+            throw makeStringException(0, s.str());
+        }
         unsigned originalLength = out.length();
         // For back-compatibility, we always store COMPRESS_METHOD_LZW as 1 as earlier versions stored a boolean here
         // rather than an enum
@@ -755,24 +761,27 @@ void compressToBuffer(MemoryBuffer & out, size32_t len, const void * src, Compre
         // Alternative would be a separate enum for compressToBuffer formats, but that seems more likely to cause confusion
         out.append((byte) (method == COMPRESS_METHOD_LZW ? COMPRESS_METHOD_LZWLEGACY : method));
         out.append((size32_t)0);
-        if (len >= 32)
+        size32_t newSize = len * 4 / 5; // Copy if compresses less than 80% ...
+        Owned<ICompressor> compressor = handler->getCompressor(options);
+        void *newData = out.reserve(newSize);
+        try
         {
-            size32_t newSize = len * 4 / 5; // Copy if compresses less than 80% ...
-            Owned<ICompressor> compressor = queryCompressHandler(method)->getCompressor(options);
-            void *newData = out.reserve(newSize);
             compressor->open(newData, newSize);
             if (compressor->write(src, len)==len)
             {
                 compressor->close();
                 size32_t compressedLen = compressor->buflen();
-                out.setWritePos(originalLength + sizeof(bool));
+                out.setWritePos(originalLength + sizeof(byte));
                 out.append(compressedLen);
-                out.setWritePos(originalLength + sizeof(bool) + sizeof(size32_t) + compressedLen);
+                out.setWritePos(originalLength + sizeof(byte) + sizeof(size32_t) + compressedLen);
                 return;
             }
         }
-        
-        // all or don't compress
+        catch (IException *E)
+        {
+            E->Release();
+        }
+        // failed to compress...
         out.setWritePos(originalLength);
     }
     out.append((byte) COMPRESS_METHOD_NONE);
@@ -792,7 +801,13 @@ void decompressToBuffer(MemoryBuffer & out, MemoryBuffer & in, const char *optio
     {
         if (method==COMPRESS_METHOD_LZWLEGACY)
             method = COMPRESS_METHOD_LZW;    // Back compatibilty
-        Owned<IExpander> expander = queryCompressHandler(method)->getExpander(options);
+        ICompressHandler *handler = queryCompressHandler(method);
+        if (!handler)
+        {
+            VStringBuffer s("Unknown decompression method %x required in decompressToBuffer", (byte) method);
+            throw makeStringException(0, s.str());
+        }
+        Owned<IExpander> expander = handler->getExpander(options);
         unsigned outSize = expander->init(in.readDirect(srcLen));
         void * buff = out.reserve(outSize);
         expander->expand(buff);
@@ -2583,6 +2598,8 @@ public:
         else
             outbuf = outattr.allocate(blksize);
         outBufMb = NULL;
+        if (blksize <= AES_PADDING_SIZE+sizeof(size32_t))
+            throw makeStringException(0, "CAESCompressor: target buffer too small");
         size32_t subsz = blksize-AES_PADDING_SIZE-sizeof(size32_t);
         comp->open(compattr.reserveTruncate(subsz),subsz);
     }
@@ -2767,14 +2784,18 @@ IPropertyTree *getBlockedFileDetails(IFile *file)
     return NULL;
 }
 
-class CCompressHandlerArray : public IArrayOf<ICompressHandler>
+class CCompressHandlerArray
 {
+    IArrayOf<ICompressHandler> registered;    // Owns the relevant handler objects
+    ICompressHandler *byMethod[COMPRESS_METHOD_LAST] = { nullptr };
+    ICompressHandler *AESbyMethod[COMPRESS_METHOD_LAST] = { nullptr };
+
 public:
     ICompressHandler *lookup(const char *type) const
     {
-        ForEachItemIn(h, *this)
+        ForEachItemIn(h, registered)
         {
-            ICompressHandler &handler = item(h);
+            ICompressHandler &handler = registered.item(h);
             if (0 == stricmp(type, handler.queryType()))
                 return &handler;
         }
@@ -2782,15 +2803,51 @@ public:
     }
     ICompressHandler *lookup(CompressionMethod method) const
     {
-        // MORE - should probably use an array, cache last lookup, or something...
-        // This is called quite a lot now
-        ForEachItemIn(h, *this)
+        if ((method & ~COMPRESS_METHOD_AES) >= COMPRESS_METHOD_LAST)
+            return nullptr;
+        else if (method & COMPRESS_METHOD_AES)
+            return AESbyMethod[method & ~COMPRESS_METHOD_AES];
+        else
+            return byMethod[method];
+    }
+    ICompressHandlerIterator *getIterator()
+    {
+        return new ArrayIIteratorOf<IArrayOf<ICompressHandler>, ICompressHandler, ICompressHandlerIterator>(registered);
+    }
+    bool addCompressor(ICompressHandler *handler)
+    {
+        CompressionMethod method = handler->queryMethod();
+        if (lookup(method))
         {
-            ICompressHandler &handler = item(h);
-            if (method == handler.queryMethod())
-                return &handler;
+            handler->Release();
+            return false; // already registered
         }
-        return NULL;
+        registered.append(* handler);
+        if ((method & ~COMPRESS_METHOD_AES) < COMPRESS_METHOD_LAST)
+        {
+            if (method & COMPRESS_METHOD_AES)
+                AESbyMethod[method & ~COMPRESS_METHOD_AES] = handler;
+            else
+                byMethod[method] = handler;
+        }
+        return true;
+    }
+    bool removeCompressor(ICompressHandler *handler)
+    {
+        CompressionMethod method = handler->queryMethod();
+        if (registered.zap(* handler))
+        {
+            if ((method & ~COMPRESS_METHOD_AES) < COMPRESS_METHOD_LAST)
+            {
+                if (method & COMPRESS_METHOD_AES)
+                    AESbyMethod[method & ~COMPRESS_METHOD_AES] = handler;
+                else
+                    byMethod[method] = handler;
+            }
+            return true;
+        }
+        else
+            return false;
     }
 } compressors;
 
@@ -2798,23 +2855,17 @@ typedef IIteratorOf<ICompressHandler> ICompressHandlerIterator;
 
 ICompressHandlerIterator *getCompressHandlerIterator()
 {
-    return new ArrayIIteratorOf<IArrayOf<ICompressHandler>, ICompressHandler, ICompressHandlerIterator>(compressors);
+    return compressors.getIterator();
 }
 
 bool addCompressorHandler(ICompressHandler *handler)
 {
-    if (compressors.lookup(handler->queryMethod()))
-    {
-        handler->Release();
-        return false; // already registered
-    }
-    compressors.append(* handler);
-    return true;
+    return compressors.addCompressor(handler);
 }
 
 bool removeCompressorHandler(ICompressHandler *handler)
 {
-    return compressors.zap(* handler);
+    return compressors.removeCompressor(handler);
 }
 
 Linked<ICompressHandler> defaultCompressor;

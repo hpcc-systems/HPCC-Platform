@@ -934,35 +934,68 @@ class compressToBufferTest : public CppUnit::TestFixture
     CPPUNIT_TEST_SUITE( compressToBufferTest  );
         CPPUNIT_TEST(testRun);
     CPPUNIT_TEST_SUITE_END();
+
+    void testOne(unsigned len, CompressionMethod method, const char *options=nullptr)
+    {
+        constexpr const char *in = 
+          "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
+          "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
+          "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
+          "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
+          "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
+          "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
+          "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
+          "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
+          "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
+          "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
+          "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
+          "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
+          "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
+          "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
+          "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
+          "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
+          "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
+          "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
+          "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
+          "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
+          "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
+          "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
+          "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
+          "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
+          "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
+          "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
+          "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello";
+        assertex(len <= strlen(in));
+        MemoryBuffer compressed;
+        compressToBuffer(compressed, len, in, method, options);
+        
+        if (method != COMPRESS_METHOD_NONE && len >= 32 && compressed.length() == len+5)
+            DBGLOG("compressToBuffer %x size %u did not compress", (byte) method, len);
+        else 
+            DBGLOG("compressToBuffer %x size %u compressed to %u", (byte) method, len, compressed.length());
+        CPPUNIT_ASSERT(compressed.length() <= len+5);
+        MemoryBuffer out;
+        decompressToBuffer(out, compressed, options);
+        CPPUNIT_ASSERT(out.length() == len);
+        CPPUNIT_ASSERT(memcmp(out.bytes(), in, len) == 0);
+    }
+
+    void testSome(unsigned len)
+    {
+        testOne(len, COMPRESS_METHOD_NONE);
+        testOne(len, COMPRESS_METHOD_LZW);
+        testOne(len, COMPRESS_METHOD_LZ4);
+        testOne(len, (CompressionMethod) (COMPRESS_METHOD_LZW|COMPRESS_METHOD_AES), "0123456789abcdef");
+    }
+
     void testRun()
     {
-        MemoryBuffer x;
-        compressToBuffer(x, 251, 
-          "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
-          "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
-          "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
-          "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
-          "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
-                        );
-        for (unsigned i = 0; i < x.length(); i++)
-            printf("%02x ", x.toByteArray()[i]);
-        printf("\n");
-        * (byte *) x.toByteArray() = 2;
-        for (unsigned i = 0; i < x.length(); i++)
-            printf("%02x ", x.toByteArray()[i]);
-        printf("\n");
-        try
-        {
-            MemoryBuffer out;
-            decompressToBuffer(out, x);
-            printf("%s\n", out.toByteArray());
-        }
-        catch(IException *E)
-        {
-            StringBuffer s;
-            printf("Exception %s\n", E->errorMessage(s).str());
-            ::Release(E);
-        }
+        testSome(0);
+        testSome(1);
+        testSome(16);
+        testSome(32);
+        testSome(200);
+        testSome(1000);
     }
 };
 

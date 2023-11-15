@@ -72,8 +72,8 @@ public:
 
     virtual void open(void *buf,size32_t max)
     {
-        if (max<1024)
-            throw MakeStringException(-1,"CFcmpCompressor::open - block size (%d) not large enough", max);
+//        if (max<1024)
+//            throw MakeStringException(-1,"CFcmpCompressor::open - block size (%d) not large enough", max);
         wrmax = max;
         originalMax = max;
         if (buf)
@@ -103,8 +103,8 @@ public:
     {
         if (!initialSize)
             initialSize = FCMP_BUFFER_SIZE; // 1MB
-        if (initialSize<1024)
-            throw MakeStringException(-1,"CFcmpCompressor::open - block size (%d) not large enough", initialSize);
+        //if (initialSize<1024)
+        //    throw MakeStringException(-1,"CFcmpCompressor::open - block size (%d) not large enough", initialSize);
         wrmax = initialSize;
         if (bufalloc)
         {
