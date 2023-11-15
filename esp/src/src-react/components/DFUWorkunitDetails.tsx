@@ -9,10 +9,42 @@ import { useDfuWorkunit } from "../hooks/workunit";
 import { pivotItemStyle } from "../layouts/pivot";
 import { pushUrl, replaceUrl } from "../util/history";
 import { ShortVerticalDivider } from "./Common";
+import { Field, Fields } from "./forms/Fields";
 import { TableGroup } from "./forms/Groups";
 import { XMLSourceEditor } from "./SourceEditor";
 
 const logger = scopedLogger("../components/DFUWorkunitDetails.tsx");
+
+const createField = (label: string, value: any): Field => {
+    return { label, type: typeof value === "number" ? "number" : "string", value, readonly: true };
+};
+
+type FieldMap = { key: string, label: string };
+const sourceFieldIds: FieldMap[] = [
+    { key: "SourceIP", label: nlsHPCC.IP },
+    { key: "SourceDirectory", label: nlsHPCC.Directory },
+    { key: "SourceFilePath", label: nlsHPCC.FilePath },
+    { key: "SourceLogicalName", label: nlsHPCC.LogicalName },
+    { key: "SourceNumParts", label: nlsHPCC.NumberofParts },
+    { key: "SourceDali", label: nlsHPCC.Dali },
+    { key: "SourceFormat", label: nlsHPCC.Format },
+    { key: "SourceRecordSize", label: nlsHPCC.RecordSize },
+    { key: "RowTag", label: nlsHPCC.RowTag },
+    { key: "SourceCsvSeparate", label: nlsHPCC.Separators },
+    { key: "SourceCsvEscape", label: nlsHPCC.Escape },
+    { key: "SourceCsvTerminate", label: nlsHPCC.Terminators },
+    { key: "SourceCsvQuote", label: nlsHPCC.Quote }
+];
+const targetFieldIds: FieldMap[] = [
+    { key: "DestIP", label: nlsHPCC.IP },
+    { key: "DestDirectory", label: nlsHPCC.Directory },
+    { key: "DestFilePath", label: nlsHPCC.FilePath },
+    { key: "DestLogicalName", label: nlsHPCC.LogicalName },
+    { key: "DestGroupName", label: nlsHPCC.GroupName },
+    { key: "DestNumParts", label: nlsHPCC.NumberofParts },
+    { key: "DestFormat", label: nlsHPCC.Format },
+    { key: "DestRecordSize", label: nlsHPCC.RecordSize }
+];
 
 interface DFUWorkunitDetailsProps {
     wuid: string;
@@ -27,6 +59,10 @@ export const DFUWorkunitDetails: React.FunctionComponent<DFUWorkunitDetailsProps
     const [workunit, , , , refresh] = useDfuWorkunit(wuid, true);
     const [wuXML, setWuXML] = React.useState("");
     const [jobname, setJobname] = React.useState("");
+    const [sourceFormatMessage, setSourceFormatMessage] = React.useState("");
+    const [sourceFields, setSourceFields] = React.useState<Fields>();
+    const [targetFormatMessage, setTargetFormatMessage] = React.useState("");
+    const [targetFields, setTargetFields] = React.useState<Fields>();
     const [_protected, setProtected] = React.useState(false);
 
     const [showMessageBar, setShowMessageBar] = React.useState(false);
@@ -53,9 +89,44 @@ export const DFUWorkunitDetails: React.FunctionComponent<DFUWorkunitDetailsProps
     }, [workunit]);
 
     React.useEffect(() => {
+        if (!workunit) return;
         setJobname(workunit?.JobName);
         setProtected(workunit?.isProtected);
-    }, [workunit?.JobName, workunit?.isProtected]);
+
+        const sourceFormatMsg = FileSpray.FormatMessages[workunit?.SourceFormat];
+        if (sourceFormatMsg === "csv") {
+            setSourceFormatMessage(`(${nlsHPCC.CSV})`);
+        } else if (sourceFormatMsg === "fixed") {
+            setSourceFormatMessage(`(${nlsHPCC.Fixed})`);
+        } else if (!!workunit?.RowTag) {
+            setSourceFormatMessage(`(${nlsHPCC.XML}/${nlsHPCC.JSON})`);
+        }
+
+        const _sourceFields: Fields = {};
+        for (const fieldId of sourceFieldIds) {
+            if (workunit[fieldId.key] !== undefined) {
+                const value = fieldId.key === "SourceFormat" ? FileSpray.FormatMessages[workunit[fieldId.key]] : workunit[fieldId.key];
+                _sourceFields[fieldId.key] = createField(fieldId.label, value ?? null);
+            }
+        }
+        setSourceFields(_sourceFields);
+
+        const destFormatMsg = FileSpray.FormatMessages[workunit?.DestFormat];
+        if (destFormatMsg === "csv") {
+            setTargetFormatMessage(`(${nlsHPCC.CSV})`);
+        } else if (destFormatMsg === "fixed") {
+            setTargetFormatMessage(`(${nlsHPCC.Fixed})`);
+        }
+
+        const _targetFields: Fields = {};
+        for (const fieldId of targetFieldIds) {
+            if (workunit[fieldId.key] !== undefined) {
+                const value = fieldId.key === "DestFormat" ? FileSpray.FormatMessages[workunit[fieldId.key]] : workunit[fieldId.key];
+                _targetFields[fieldId.key] = createField(fieldId.label, value ?? null);
+            }
+        }
+        setTargetFields(_targetFields);
+    }, [workunit]);
 
     const canSave = React.useMemo(() => {
         return jobname !== workunit?.JobName || _protected !== workunit?.isProtected;
@@ -161,23 +232,11 @@ export const DFUWorkunitDetails: React.FunctionComponent<DFUWorkunitDetailsProps
                         }
                     }} />
                     <hr />
-                    <h2>{nlsHPCC.Source} ({nlsHPCC.Fixed})</h2>
-                    <TableGroup fields={{
-                        "ip": { label: nlsHPCC.IP, type: "string", value: workunit?.SourceIP, readonly: true },
-                        "directory": { label: nlsHPCC.Directory, type: "string", value: workunit?.SourceDirectory, readonly: true },
-                        "filePath": { label: nlsHPCC.FilePath, type: "string", value: workunit?.SourceFilePath, readonly: true },
-                        "numParts": { label: nlsHPCC.NumberofParts, type: "number", value: workunit?.SourceNumParts, readonly: true },
-                        "format": { label: nlsHPCC.Format, type: "string", value: FileSpray.FormatMessages[workunit?.SourceFormat], readonly: true },
-                        "recordSize": { label: nlsHPCC.RecordSize, type: "number", value: workunit?.SourceRecordSize, readonly: true },
-                    }} />
+                    <h2>{nlsHPCC.Source} {sourceFormatMessage}</h2>
+                    <TableGroup fields={sourceFields} />
                     <hr />
-                    <h2>{nlsHPCC.Target}</h2>
-                    <TableGroup fields={{
-                        "directory": { label: nlsHPCC.Directory, type: "string", value: workunit?.DestDirectory, readonly: true },
-                        "logicalName": { label: nlsHPCC.LogicalName, type: "string", value: workunit?.DestLogicalName, readonly: true },
-                        "groupName": { label: nlsHPCC.GroupName, type: "string", value: workunit?.DestGroupName, readonly: true },
-                        "numParts": { label: nlsHPCC.NumberofParts, type: "number", value: workunit?.DestNumParts, readonly: true },
-                    }} />
+                    <h2>{nlsHPCC.Target} {targetFormatMessage}</h2>
+                    <TableGroup fields={targetFields} />
                     <hr />
                     <h2>{nlsHPCC.Other}</h2>
                     <TableGroup fields={{
