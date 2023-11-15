@@ -249,7 +249,7 @@ define([
                     if (severity === "Error") {
                         row.customStyles += "background-color: red;";
                     } else if (severity === "Alert") {
-                        row.customStyles += "background-color: #febe47;";
+                        row.customStyles += "background-color: #fe8147;";
                     } else if (severity === "Warning") {
                         row.customStyles += "background-color: yellow;";
                     }
@@ -337,6 +337,7 @@ define([
                             break;
                         case "Alert":
                             this._counts.alert++;
+                            this._counts.errorWarning++;
                             if (errorChecked) {
                                 data.push(item);
                             }

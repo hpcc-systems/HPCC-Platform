@@ -24,6 +24,7 @@ define([
     "src/react/index",
     "src-react/components/About",
     "src-react/components/controls/ComingSoon",
+    "src-react/hooks/platform",
 
     "hpcc/_TabContainerWidget",
     "src/ESPRequest",
@@ -74,7 +75,7 @@ define([
 ], function (declare, lang, nlsHPCCMod, arrayUtil, dom, domConstruct, domClass, domForm, domStyle, domGeo, cookie, query, topic, xhr,
     registry, Tooltip,
     UpgradeBar, ColorPicker,
-    CodeMirror, srcReact, AboutModule, ComingSoonModule,
+    CodeMirror, srcReact, AboutModule, ComingSoonModule, platformModule,
     _TabContainerWidget, ESPRequest, ESPActivity, ESPUtil, WsAccount, WsAccess, WsSMC, WsTopology, WsMachine, LockDialogWidget, EnvironmentTheme, Utility,
     template,
 
@@ -162,6 +163,28 @@ define([
             /* */
             var teaserNode = dom.byId(this.id + "teaser");
             srcReact.render(ComingSoonModule.ComingSoon, { style: { color: "white" } }, teaserNode);
+
+            const DAY = 1000 * 60 * 60 * 24;
+            platformModule.fetchCheckFeatures().then(function (features) {
+                if (!features || !features.BuildTagTimestamp) return;
+                const age = features.BuildTagTimestamp ? Math.floor((Date.now() - new Date(features.BuildTagTimestamp).getTime()) / DAY) : 0;
+                const message = nlsHPCC.PlatformIsNNNDaysOld.replace("NNN", `${age}`);
+                let severity = "Info";
+                if (age > 90) {
+                    severity = "Alert";
+                } else if (age > 60) {
+                    severity = "Error";
+                } else if (age > 30) {
+                    severity = "Warning";
+                } else {
+                    severity = "Info";
+                }
+                dojo.publish("hpcc/brToaster", {
+                    Severity: severity,
+                    Source: "eclwatch/HPCCPlatformWidget.js",
+                    Exceptions: [{ Source: "", Message: message }]
+                });
+            });
         },
 
         //  Implementation  ---

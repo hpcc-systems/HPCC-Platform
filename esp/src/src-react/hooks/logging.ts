@@ -62,7 +62,9 @@ export class ECLWatchLogger implements Writer {
         this._origWriter.write(dateTime, level, id, message);
         const row = { dateTime, level, id, message };
         this._log.push(row);
-        toast.custom(CustomToaster({ id, level, message, dateTime }));
+        if (level > Level.info) {
+            toast.custom(CustomToaster({ id, level, message, dateTime }));
+        }
         this._dispatch.post(new Message());
     }
 

@@ -1,6 +1,7 @@
 import * as React from "react";
+import { Octokit } from "octokit";
 import { scopedLogger } from "@hpcc-js/util";
-import { Topology, TpLogicalClusterQuery } from "@hpcc-js/comms";
+import { Topology, TpLogicalClusterQuery, WorkunitsServiceEx } from "@hpcc-js/comms";
 import { getBuildInfo, BuildInfo } from "src/Session";
 
 const logger = scopedLogger("src-react/hooks/platform.ts");
@@ -57,3 +58,93 @@ export function useLogicalClusters(): [TpLogicalClusterQuery.TpLogicalCluster[] 
 
     return [targetClusters, defaultCluster];
 }
+
+let wuCheckFeaturesPromise;
+export const fetchCheckFeatures = () => {
+    if (!wuCheckFeaturesPromise) {
+        const wuService = new WorkunitsServiceEx({ baseUrl: "" });
+        wuCheckFeaturesPromise = wuService.WUCheckFeatures({ IncludeFullVersion: true });
+    }
+    return wuCheckFeaturesPromise;
+};
+export interface Features {
+    major: number;
+    minor: number;
+    point: number;
+    version: string;
+    maturity: string;
+    timestamp: Date;
+}
+
+export function useCheckFeatures(): Features {
+
+    const [major, setMajor] = React.useState<number>();
+    const [minor, setMinor] = React.useState<number>();
+    const [point, setPoint] = React.useState<number>();
+    const [version, setVersion] = React.useState<string>("");
+    const [maturity, setMaturity] = React.useState<string>("");
+    const [timestamp, setTimestamp] = React.useState<Date>();
+
+    React.useEffect(() => {
+        fetchCheckFeatures().then((response: any) => {
+            setMajor(response.BuildVersionMajor);
+            setMinor(response.BuildVersionMinor);
+            setPoint(response.BuildVersionPoint);
+            setVersion(response.BuildVersion);
+            setMaturity(response.BuildMaturity);
+            setTimestamp(new Date(response?.BuildTagTimestamp ?? Date.now()));
+        }).catch(err => logger.error(err));
+    }, []);
+
+    return {
+        major,
+        minor,
+        point,
+        version,
+        maturity,
+        timestamp
+    };
+}
+
+const fetchReleases = () => {
+    const octokit = new Octokit({});
+    return octokit.request("GET /repos/{owner}/{repo}/releases", {
+        owner: "hpcc-systems",
+        repo: "HPCC-Platform",
+        per_page: 40,
+        headers: {
+            "X-GitHub-Api-Version": "2022-11-28"
+        }
+    });
+};
+type ReleasesPromise = ReturnType<typeof fetchReleases>;
+type ReleasesResponse = Awaited<ReleasesPromise>;
+type Releases = ReleasesResponse["data"];
+type Release = Releases[number];
+
+const _fetchLatestReleases = (): Promise<Releases> => {
+    return fetchReleases().then(response => {
+        const latest: { [id: string]: Release } = response.data
+            .filter(release => !release.draft || !release.prerelease)
+            .reduce((prev, curr: Release) => {
+                const versionParts = curr.tag_name.split(".");
+                versionParts.length = 2;
+                const partialVersion = versionParts.join(".");
+                if (!prev[partialVersion]) {
+                    prev[partialVersion] = curr;
+                }
+                return prev;
+            }, {});
+        return Object.values(latest) as Releases;
+    }).catch(err => {
+        logger.error(err);
+        return [] as Releases;
+    });
+};
+let releasesPromise: Promise<Releases> | undefined;
+export const fetchLatestReleases = (): Promise<Releases> => {
+    if (!releasesPromise) {
+        releasesPromise = _fetchLatestReleases();
+    }
+    return releasesPromise;
+};

@@ -1,6 +1,6 @@
 import * as React from "react";
 import { ContextualMenuItemType, DefaultButton, IconButton, IContextualMenuItem, IIconProps, Image, IPanelProps, IPersonaSharedProps, IRenderFunction, Link, mergeStyleSets, Panel, PanelType, Persona, PersonaSize, SearchBox, Stack, Text, useTheme } from "@fluentui/react";
-import { Level } from "@hpcc-js/util";
+import { Level, scopedLogger } from "@hpcc-js/util";
 import { useBoolean } from "@fluentui/react-hooks";
 import { Toaster } from "react-hot-toast";
 import { cookie } from "dojo/main";
@@ -14,12 +14,15 @@ import { useECLWatchLogger } from "../hooks/logging";
 import { useGlobalStore, useUserStore } from "../hooks/store";
 import { useMyAccount, useUserSession } from "../hooks/user";
 import { replaceUrl } from "../util/history";
+import { useCheckFeatures } from "../hooks/platform";
 
 import { TitlebarConfig } from "./forms/TitlebarConfig";
 import { switchTechPreview } from "./controls/ComingSoon";
 import { About } from "./About";
 import { MyAccount } from "./MyAccount";
 import { toasterScale } from "./controls/CustomToaster";
+
+const logger = scopedLogger("src-react/components/Title.tsx");
 
 const collapseMenuIcon: IIconProps = { iconName: "CollapseMenu" };
 
@@ -33,6 +36,8 @@ const personaStyles = {
         "&:hover": { cursor: "pointer" }
     }
 };
+
+const DAY = 1000 * 60 * 60 * 24;
 
 interface DevTitleProps {
 }
@@ -162,7 +167,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
     }), [logIconColor]);
 
     React.useEffect(() => {
-        switch (log[0]?.level) {
+        switch (log.reduce((prev, cur) => Math.max(prev, cur.level), Level.debug)) {
             case Level.alert:
             case Level.critical:
             case Level.emergency:
@@ -182,6 +187,23 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
                 break;
         }
     }, [log, logLastUpdated, theme]);
+
+    const features = useCheckFeatures();
+
+    React.useEffect(() => {
+        if (!features.timestamp) return;
+        const age = Math.floor((Date.now() - features.timestamp.getTime()) / DAY);
+        const message = nlsHPCC.PlatformIsNNNDaysOld.replace("NNN", `${age}`);
+        if (age > 90) {
+            logger.critical(message);
+        } else if (age > 60) {
+            logger.error(message);
+        } else if (age > 30) {
+            logger.warning(message);
+        } else {
+            logger.info(message);
+        }
+    }, [features.timestamp]);
 
     React.useEffect(() => {
         if (!currentUser.username) return;

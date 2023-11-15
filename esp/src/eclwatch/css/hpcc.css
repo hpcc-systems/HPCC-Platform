@@ -1646,19 +1646,27 @@ margin-left:-20px;
 	color:#fff;
 }
 
-.dijitToasterWarning,
-.dijitToasterError,
-.dijitToasterFatal{
-	font-weight:bold;
-	color:#fff;
+.dijitToasterAlert,
+.dijitToasterWarning {
+    font-weight: bold;
 }
 
-.dijitToasterWarning .dijitToasterContent{
-	background:#d4d943;
-} 
+.dijitToasterError,
+.dijitToasterFatal {
+    font-weight: bold;
+    color: #fff;
+}
 
-.dijitToasterError .dijitToasterContent{
-	background:#c46600;
+.dijitToasterWarning .dijitToasterContent {
+    background: rgb(255, 238, 0);
+}
+
+.dijitToasterError .dijitToasterContent {
+    background: rgb(255, 30, 0);
+}
+
+.dijitToasterAlert .dijitToasterContent {
+    background: #fe8147;
 }
 
 /* imported from dijit.css */
