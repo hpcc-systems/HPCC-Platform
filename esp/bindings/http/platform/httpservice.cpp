@@ -386,6 +386,9 @@ int CEspHttpServer::processRequest()
                     return 0;
                 }
 
+                //Avoids unrestrictedSSType requests
+                m_request->startSpan();
+
                 if(stricmp(method.str(), POST_METHOD)==0)
                     thebinding->handleHttpPost(m_request.get(), m_response.get());
                 else if(!stricmp(method.str(), GET_METHOD))
