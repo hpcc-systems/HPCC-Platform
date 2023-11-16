@@ -1058,42 +1058,22 @@ static void getSecretKeyValueExtFunc(xmlXPathParserContextPtr ctxt, int nargs)
         xmlXPathSetError((ctxt), XPATH_INVALID_CTXT);
         return;
     }
-
-    SecretId id("");
-    StringBuffer key;
-    xmlChar* tmp;
-    switch (nargs)
+    if (nargs != 2)
     {
-    case 4: // version
-        tmp = xmlXPathPopString(ctxt);
-        if (xmlXPathCheckError(ctxt))
-            return;
-        id.version.set((const char*)tmp);
-        xmlFree(tmp);
-        // fall through
-    case 3: // vault ID
-        tmp = xmlXPathPopString(ctxt);
-        if (xmlXPathCheckError(ctxt))
-            return;
-        id.vault.set((const char*)tmp);
-        xmlFree(tmp);
-        // fall through
-    case 2: // key, secret name
-        tmp = xmlXPathPopString(ctxt);
-        if (xmlXPathCheckError(ctxt))
-            return;
-        id.name.set((const char*)tmp);
-        xmlFree(tmp);
-        tmp = xmlXPathPopString(ctxt);
-        if (xmlXPathCheckError(ctxt))
-            return;
-        key.append((const char*)tmp);
-        xmlFree(tmp);
-        break;
-    default:
         xmlXPathSetArityError(ctxt);
         return;
     }
+
+    xmlChar* tmp = xmlXPathPopString(ctxt);
+    if (xmlXPathCheckError(ctxt))
+        return;
+    StringBuffer key((const char*)tmp);
+    xmlFree(tmp);
+    tmp = xmlXPathPopString(ctxt);
+    if (xmlXPathCheckError(ctxt))
+        return;
+    SecretId id((const char*)tmp);
+    xmlFree(tmp);
 
     Owned<IPTree> secret(scriptContext->getSecret("espUser", id));
     if (!secret)
