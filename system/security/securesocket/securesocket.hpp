@@ -84,6 +84,7 @@ typedef ISecureSocketContext* (*createSecureSocketContext_t)(SecureSocketType);
 typedef ISecureSocketContext* (*createSecureSocketContextEx_t)(const char* certFileOrBuf, const char* privKeyFileOrBuf, const char* passphrase, SecureSocketType);
 typedef ISecureSocketContext* (*createSecureSocketContextEx2_t)(IPropertyTree* config, SecureSocketType);
 typedef ISecureSocketContext* (*createSecureSocketContextSecret_t)(const char *mtlsSecretName, SecureSocketType);
+typedef ISecureSocketContext* (*createSecureSocketContextSecretSrv_t)(const char *mtlsSecretName, bool requireMtlsConfig);
 
 extern "C" {
 

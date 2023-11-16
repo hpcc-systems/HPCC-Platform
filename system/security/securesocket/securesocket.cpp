@@ -2014,11 +2014,11 @@ SECURESOCKET_API ISecureSocketContext* createSecureSocketContextSecret(const cha
 SECURESOCKET_API ISecureSocketContext* createSecureSocketContextSecretSrv(const char *issuer, bool requireMtlsFlag)
 {
     if (requireMtlsFlag && !queryMtls())
-        throw makeStringException(-100, "TLS secure communication requested but not configured");
+        throw makeStringException(-100, "MTLS secure context required but not configured");
 
     Owned<const ISyncedPropertyTree> info = getIssuerTlsSyncedConfig(issuer);
     if (!info->isValid())
-        throw makeStringException(-101, "TLS secure communication requested but not configured (2)");
+        throw makeStringExceptionV(-101, "TLS issuer %s secure context requested but not configured (2)", issuer);
 
     return createSecureSocketContextSynced(info, ServerSocket);
 }
