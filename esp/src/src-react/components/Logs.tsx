@@ -5,7 +5,7 @@ import { GetLogsExRequest, TargetAudience, LogType } from "@hpcc-js/comms";
 import { Level } from "@hpcc-js/util";
 import { CreateLogsQueryStore } from "src/ESPLog";
 import nlsHPCC from "src/nlsHPCC";
-import { logColor } from "src/Utility";
+import { logColor, wuidToDate, wuidToTime } from "src/Utility";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
 import { FluentPagedGrid, FluentPagedFooter, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
@@ -14,7 +14,8 @@ import { Fields } from "./forms/Fields";
 import { ShortVerticalDivider } from "./Common";
 
 const maximumTimeUntilRefresh = 8 * 60 * 60 * 1000;
-const startTimeOffset = 6 * 60 * 60 * 1000;
+const startTimeOffset = 1 * 60 * 60 * 1000;
+const endTimeOffset = 23 * 60 * 60 * 1000;
 const defaultStartDate = new Date(new Date().getTime() - startTimeOffset);
 
 const FilterFields: Fields = {
@@ -62,7 +63,8 @@ function formatQuery(_request: any): Partial<GetLogsExRequest> {
 interface LogsProps {
     wuid?: string;
     filter?: Partial<GetLogsExRequest>;
-    page?: number
+    page?: number;
+    setLogCount?: (count: number | string) => void;
 }
 export const defaultFilter: Partial<GetLogsExRequest> = { StartDate: defaultStartDate };
 
@@ -83,7 +85,8 @@ const levelMap = (level) => {
 export const Logs: React.FunctionComponent<LogsProps> = ({
     wuid,
     filter = defaultFilter,
-    page
+    page,
+    setLogCount
 }) => {
 
     const hasFilter = React.useMemo(() => Object.keys(filter).length > 0, [filter]);
@@ -103,12 +106,21 @@ export const Logs: React.FunctionComponent<LogsProps> = ({
     const query = React.useMemo(() => {
         if (wuid !== undefined) {
             filter.workunits = wuid;
-        }
-        if (typeof filter.StartDate === "string") {
-            filter.StartDate = new Date(filter.StartDate);
-        }
-        if (filter.StartDate && now.getTime() - filter.StartDate.getTime() > maximumTimeUntilRefresh) {
-            filter.StartDate = new Date(now.getTime() - startTimeOffset);
+            if (typeof filter.StartDate === "string") {
+                filter.StartDate = new Date(filter.StartDate + ":00Z");
+            } else {
+                filter.StartDate = new Date(`${wuidToDate(wuid)}T${wuidToTime(wuid)}Z`);
+            }
+        } else {
+            if (typeof filter.StartDate === "string") {
+                filter.StartDate = new Date(filter.StartDate + ":00Z");
+            }
+            if (filter.StartDate && now.getTime() - filter.StartDate.getTime() > maximumTimeUntilRefresh) {
+                filter.StartDate = new Date(now.getTime() - startTimeOffset);
+            }
+            if (!filter.EndDate) {
+                filter.EndDate = new Date(now.getTime() + endTimeOffset);
+            }
         }
         return formatQuery(filter);
     }, [filter, now, wuid]);
@@ -157,6 +169,7 @@ export const Logs: React.FunctionComponent<LogsProps> = ({
         for (const field in FilterFields) {
             retVal[field] = { ...FilterFields[field], value: filter[field] };
             if (wuid !== undefined) {
+                delete filter.workunits;
                 delete retVal.jobId;
             }
         }
@@ -175,7 +188,12 @@ export const Logs: React.FunctionComponent<LogsProps> = ({
                     total={total}
                     columns={columns}
                     setSelection={setSelection}
-                    setTotal={setTotal}
+                    setTotal={(total) => {
+                        setTotal(total);
+                        if (setLogCount) {
+                            setLogCount(total);
+                        }
+                    }}
                     refresh={refreshTable}
                 ></FluentPagedGrid>
                 <Filter showFilter={showFilter} setShowFilter={setShowFilter} filterFields={filterFields} onApply={pushParams} />

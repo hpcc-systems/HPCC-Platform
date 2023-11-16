@@ -19,7 +19,8 @@ import { useMyAccount } from "../hooks/user";
 const logger = scopedLogger("src-react/components/EventScheduler.tsx");
 
 const FilterFields: Fields = {
-    "EventName": { type: "string", label: nlsHPCC.EventName },
+    "EventName": { type: "string", label: nlsHPCC.EventName, placeholder: nlsHPCC.EventNamePH },
+    "JobName": { type: "string", label: nlsHPCC.JobName, placeholder: nlsHPCC.log_analysis_1 },
     "State": { type: "workunit-state", label: nlsHPCC.State, placeholder: "" },
     "Owner": { type: "string", label: nlsHPCC.Owner, placeholder: nlsHPCC.jsmi },
     "EventText": { type: "string", label: nlsHPCC.EventText, placeholder: nlsHPCC.EventTextPH },
