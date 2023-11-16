@@ -3,7 +3,7 @@ import { IPivotItemProps, Pivot, PivotItem } from "@fluentui/react";
 import { scopedLogger } from "@hpcc-js/util";
 import { SizeMe } from "react-sizeme";
 import nlsHPCC from "src/nlsHPCC";
-import { service, hasLogAccess } from "src/ESPLog";
+import { hasLogAccess } from "src/ESPLog";
 import { useWorkunit } from "../hooks/workunit";
 import { useUserTheme } from "../hooks/theme";
 import { useDeepEffect } from "../hooks/deepHooks";
@@ -64,13 +64,8 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
         hasLogAccess().then(response => {
             setLogsDisabled(!response);
             return response;
-        }).then(hasLogAccess => {
-            if (hasLogAccess) {
-                service.GetLogsEx({ ...queryParams, workunits: wuid, LogLineStartFrom: 0, LogLineLimit: 10 }).then(response => {    // HPCC-27711 - Requesting LogLineLimit=1 causes issues
-                    setLogCount(response.total);
-                }).catch((err) => logger.error(err));
-            }
-        }).catch(() => {
+        }).catch(err => {
+            logger.warning(err);
             setLogsDisabled(true);
         });
     }, [wuid], [queryParams]);
@@ -116,7 +111,7 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
                 }
             </PivotItem>
             <PivotItem headerText={nlsHPCC.Logs} itemKey="logs" itemCount={logCount} headerButtonProps={logsDisabled ? { disabled: true, style: { background: themeV9.colorNeutralBackgroundDisabled, color: themeV9.colorNeutralForegroundDisabled } } : {}} style={pivotItemStyle(size, 0)}>
-                <Logs wuid={wuid} filter={queryParams} />
+                <Logs wuid={wuid} filter={queryParams} setLogCount={setLogCount} />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.ECL} itemKey="eclsummary" style={pivotItemStyle(size, 0)}>
                 <DojoAdapter widgetClassID="ECLArchiveWidget" params={{ Wuid: wuid }} />
