@@ -18,7 +18,8 @@
 #  This CMakeLists intended to be used in docs/PT_BR
 #    Refactored for internationalization
 ###
-# Last Mod GP 12/2022
+# Last Mod GP 11/2023
+#  Removed it the AWS/Instacloud
 #  Removed HPCC in a VM
 #  Removed Monitoring  
 #  Removed ECLWatch  
