@@ -68,7 +68,7 @@ protected:
     unsigned nextEndpointIndex;
     bool retry;
     bool tlsService = false;
-    Owned<IPropertyTree> tlsConfig;
+    Owned<ISyncedPropertyTree> tlsConfig;
     StringAttr issuer;
 
     unsigned retryInterval;
@@ -104,7 +104,7 @@ public:
 
     virtual StringBuffer & getUrlStr(StringBuffer &str, bool useHostName);
     virtual bool isTlsService() const override { return tlsService; }
-    virtual const IPropertyTree *queryTlsConfig() const { return tlsConfig; };
+    virtual const ISyncedPropertyTree *queryTlsConfig() const { return tlsConfig; };
     const char *queryTlsIssuer() const { return issuer.str(); }
 };
 

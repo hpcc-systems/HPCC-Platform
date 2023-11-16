@@ -46,6 +46,10 @@
 #include "hpccconfig.hpp"
 #include "udpsha.hpp"
 
+#ifdef _USE_OPENSSL
+#include "securesocket.hpp"
+#endif
+
 #if defined (__linux__)
 #include <sys/syscall.h>
 #include "ioprio.h"
@@ -229,7 +233,7 @@ unsigned leafCacheMB = 50;
 unsigned blobCacheMB = 0;
 
 unsigned roxiePort = 0;
-IPropertyTree *roxiePortTlsClientConfig = nullptr;
+ISyncedPropertyTree *roxiePortTlsClientConfig = nullptr;
 
 #ifndef _CONTAINERIZED
 Owned<IPerfMonHook> perfMonHook;
@@ -1449,7 +1453,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             else
             {
                 Owned<IHpccProtocolPlugin> protocolPlugin = loadHpccProtocolPlugin(protocolCtx, NULL);
-                Owned<IHpccProtocolListener> roxieServer = protocolPlugin->createListener("runOnce", createRoxieProtocolMsgSink(myNode.getIpAddress(), 0, 1, false), 0, 0, nullptr, nullptr, nullptr, nullptr, nullptr);
+                Owned<IHpccProtocolListener> roxieServer = protocolPlugin->createListener("runOnce", createRoxieProtocolMsgSink(myNode.getIpAddress(), 0, 1, false), 0, 0, nullptr, nullptr);
                 try
                 {
                     const char *format = topology->queryProp("@format");
@@ -1524,7 +1528,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                     {
                         roxiePort = port;
                         if (roxieFarm.getPropBool("@tls"))
-                            roxiePortTlsClientConfig = createIssuerTlsClientConfig(roxieFarm.queryProp("@issuer"), roxieFarm.getPropBool("@selfSigned"));
+                            roxiePortTlsClientConfig = createIssuerTlsConfig(roxieFarm.queryProp("@issuer"), nullptr, true, roxieFarm.getPropBool("@selfSigned"), true, false);
                         debugEndpoint.set(roxiePort, ip);
                     }
                     bool suspended = roxieFarm.getPropBool("@suspended", false);
@@ -1536,23 +1540,21 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                         StringBuffer certFileName;
                         StringBuffer keyFileName;
                         StringBuffer passPhraseStr;
-                        Owned<IPropertyTree> tlsConfig;
+                        Owned<const ISyncedPropertyTree> tlsConfig;
                         if (serviceTLS)
                         {
-                            protocol = "ssl";
 #ifdef _USE_OPENSSL
-                            if (isContainerized())
+                            protocol = "ssl";
+                            const char *certIssuer = roxieFarm.queryProp("@issuer");
+                            if (isEmptyString(certIssuer))
+                                certIssuer = roxieFarm.getPropBool("@public", true) ? "public" : "local";
+                            bool disableMtls = roxieFarm.getPropBool("@disableMtls", false);
+                            tlsConfig.setown(getIssuerTlsSyncedConfig(certIssuer, roxieFarm.queryProp("trusted_peers"), disableMtls));
+                            if (!tlsConfig || !tlsConfig->isValid())
                             {
-                                const char *certIssuer = roxieFarm.queryProp("@issuer");
-                                if (isEmptyString(certIssuer))
-                                    certIssuer = roxieFarm.getPropBool("@public", true) ? "public" : "local";
-                                tlsConfig.setown(getIssuerTlsServerConfigWithTrustedPeers(certIssuer, roxieFarm.queryProp("trusted_peers")));
-                                if (!tlsConfig)
+                                if (isContainerized())
                                     throw MakeStringException(ROXIE_FILE_ERROR, "TLS secret for issuer %s not found", certIssuer);
-                                DBGLOG("Roxie service, port(%d) TLS issuer (%s)", port, certIssuer);
-                            }
-                            else
-                            {
+
                                 const char *passPhrase = roxieFarm.queryProp("@passphrase");
                                 if (!isEmptyString(passPhrase))
                                     decrypt(passPhraseStr, passPhrase);
@@ -1578,7 +1580,12 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
 
                                 if (!checkFileExists(keyFileName.str()))
                                     throw MakeStringException(ROXIE_FILE_ERROR, "Roxie SSL Farm Listener on port %d missing privateKeyFile (%s)", port, keyFileName.str());
+
+                                Owned<IPropertyTree> staticConfig = createSecureSocketConfig(certFileName, keyFileName, passPhraseStr);
+                                tlsConfig.setown(createSyncedPropertyTree(staticConfig));
                             }
+                            else
+                                DBGLOG("Roxie service, port(%d) TLS issuer (%s)", port, certIssuer);
 
 #else
                             OWARNLOG("Skipping Roxie SSL Farm Listener on port %d : OpenSSL disabled in build", port);
@@ -1589,7 +1596,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                         const char *config  = roxieFarm.queryProp("@config");
                         // NB: leaks - until we fix bug in ensureProtocolPlugin() whereby some paths return a linked object and others do not
                         IHpccProtocolPlugin *protocolPlugin = ensureProtocolPlugin(*protocolCtx, soname);
-                        roxieServer.setown(protocolPlugin->createListener(protocol ? protocol : "native", createRoxieProtocolMsgSink(ip, port, numThreads, suspended), port, listenQueue, config, tlsConfig, certFileName, keyFileName, passPhraseStr));
+                        roxieServer.setown(protocolPlugin->createListener(protocol ? protocol : "native", createRoxieProtocolMsgSink(ip, port, numThreads, suspended), port, listenQueue, config, tlsConfig));
                     }
                     else
                         roxieServer.setown(createRoxieWorkUnitListener(numThreads, suspended));

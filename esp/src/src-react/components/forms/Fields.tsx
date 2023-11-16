@@ -369,7 +369,7 @@ interface CloudContainerNameField extends BaseField {
     value?: string;
 }
 
-type Field = StringField | NumericField | CheckboxField | ChoiceGroupField | DateTimeField | DropdownField | DropdownMultiField |
+export type Field = StringField | NumericField | CheckboxField | ChoiceGroupField | DateTimeField | DropdownField | DropdownMultiField |
     LinkField | LinksField | ProgressField |
     WorkunitStateField |
     FileTypeField | FileSortByField |

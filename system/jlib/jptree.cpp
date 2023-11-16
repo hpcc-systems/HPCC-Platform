@@ -10138,3 +10138,89 @@ void setExpertOpt(const char *opt, const char *value)
     getExpertOptPath(opt, xpath.clear());
     config->setProp(xpath, value);
 }
+
+//---------------------------------------------------------------------------------------------------------------------
+
+//HPCC-30752 This should move inside PTree to allow a more efficient hash calculation and possible caching.
+//Currently the values are not persisted so the implementation could change.  That may change in the future.
+unsigned getPropertyTreeHash(const IPropertyTree & source, unsigned hashcode)
+{
+    if (source.isBinary())
+    {
+        MemoryBuffer mb;
+        source.getPropBin(nullptr, mb);
+        hashcode = hashc((const byte *)mb.bufferBase(), mb.length(), hashcode);
+    }
+    else
+    {
+        const char * value = source.queryProp(nullptr);
+        if (value)
+            hashcode = hashcz((const byte *)value, hashcode);
+    }
+
+    Owned<IAttributeIterator> aiter = source.getAttributes();
+    ForEach(*aiter)
+    {
+        hashcode = hashcz((const byte *)aiter->queryName(), hashcode);
+        hashcode = hashcz((const byte *)aiter->queryValue(), hashcode);
+    }
+
+    Owned<IPropertyTreeIterator> iter = source.getElements("*");
+    ForEach(*iter)
+    {
+        IPropertyTree & child = iter->query();
+        hashcode = hashcz((const byte *)child.queryName(), hashcode);
+        hashcode = getPropertyTreeHash(child, hashcode);
+    }
+    return hashcode;
+}
+
+class SyncedPropertyTreeWrapper : extends CInterfaceOf<ISyncedPropertyTree>
+{
+public:
+    SyncedPropertyTreeWrapper(IPropertyTree * _tree) : tree(_tree)
+    {
+    }
+
+    virtual const IPropertyTree * getTree() const override
+    {
+        return LINK(tree);
+    }
+
+    virtual bool getProp(MemoryBuffer & result, const char * xpath) const override
+    {
+        if (!tree)
+            return false;
+        return tree->getPropBin(xpath, result);
+    }
+
+    virtual bool getProp(StringBuffer & result, const char * xpath) const override
+    {
+        if (!tree)
+            return false;
+        return tree->getProp(xpath, result);
+    }
+
+    virtual unsigned getVersion() const override
+    {
+        return 0;
+    }
+
+    virtual bool isStale() const override
+    {
+        return false;
+    }
+
+    virtual bool isValid() const override
+    {
+        return tree != nullptr;
+    }
+
+protected:
+    Linked<IPropertyTree> tree;
+};
+
+ISyncedPropertyTree * createSyncedPropertyTree(IPropertyTree * tree)
+{
+    return new SyncedPropertyTreeWrapper(tree);
+}

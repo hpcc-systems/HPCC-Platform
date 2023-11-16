@@ -88,7 +88,7 @@ if (NOT USE_JAVA)
     endif ()
     if ((INCLUDE_PLUGINS AND NOT SUPPRESS_JAVAEMBED) OR INCLUDE_JAVAEMBED)
         message(WARNING "JAVAEMBED requires USE_JAVA, forcing SUPPRESS_JAVAEMBED ON")
-        set (SUPRESS_JAVAEMBED ON)
+        set (SUPPRESS_JAVAEMBED ON)
     endif ()
 endif ()
 

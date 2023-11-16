@@ -314,10 +314,10 @@ export function goToPageUserPreference(gridName, key) {
 
 export const MonitorLockClick = dojo.declare([Evented], {
     unlocked() {
-        this.emit("Unlocked", {});
+        this.emit("unlocked", {});
     },
     locked() {
-        this.emit("Locked", {});
+        this.emit("locked", {});
     }
 });
 

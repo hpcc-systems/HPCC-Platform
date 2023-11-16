@@ -505,10 +505,7 @@ HttpClient::HttpClient(IProperties* globals, const char* url, const char* inname
                     if (cfg && *cfg)
                         cfgtree.setown(createPTreeFromXMLFile(cfg));
                 }
-                if (cfgtree)
-                    m_ssctx.setown(createSecureSocketContextEx2(cfgtree, ClientSocket));
-                else
-                    m_ssctx.setown(createSecureSocketContext(ClientSocket));
+                m_ssctx.setown(createSecureSocketContextEx2(cfgtree, ClientSocket));
             }
 #else
         throw MakeStringException(-1, "HttpClient: failure to create SSL socket - OpenSSL not enabled in build");

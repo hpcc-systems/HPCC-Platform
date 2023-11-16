@@ -79,7 +79,7 @@ class CascadeManager : public CInterface
     CriticalSection revisionCrit;
     int myEndpoint;
     const IRoxieContextLogger &logctx;
-    IPropertyTree *tlsConfig = nullptr;
+    ISyncedPropertyTree *tlsConfig = nullptr;
 
     void unlockChildren()
     {
@@ -135,7 +135,7 @@ class CascadeManager : public CInterface
                 assertex(sock);
                 if (tlsConfig)
                 {
-                    Owned<ISecureSocketContext> secureCtx = createSecureSocketContextEx2(tlsConfig, ClientSocket);
+                    Owned<ISecureSocketContext> secureCtx = createSecureSocketContextSynced(tlsConfig, ClientSocket);
                     if (!secureCtx)
                         throw makeStringException(ROXIE_TLS_ERROR, "Roxie CascadeManager failed creating secure context for roxie control message");
                     Owned<ISecureSocket> ssock = secureCtx->createSecureSocket(sock.getClear());
