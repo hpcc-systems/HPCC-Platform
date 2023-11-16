@@ -74,34 +74,6 @@ class EsdlServiceImpl : public CInterface, implements IEspService
 {
 private:
     /**
-     * @brief Cache of secrets accessed as part of transaction processing.
-     *
-     * In the context of a single transaction, multiple requests for the same secret should always
-     * return the same secret data for each request. Cached data does not expire and there is no
-     * option to reload data.
-     *
-     * TODO: Refactor to support additional use cases
-     *       - Provide ESDL script operation support so mysql (now) and http-post-xml (eventually)
-     *         can benefit secret reuse.
-     *       - Encapsulate non-jsecrets access to support non-standard secret sources, unless
-     *         jsecrets is changed to provide this encapsulation.
-     */
-    class TransactionSecrets
-    {
-    private:
-        using Key = std::tuple<std::string, std::string, std::string>;
-        using Cache = std::map<Key, Owned<IPTree>>;
-        Cache cache;
-    public:
-        IPTree* getVaultSecret(const char* category, const char* vaultId, const char* name);
-        IPTree* getSecret(const char* category, const char* name);
-    protected:
-        IPTree* lookup(const char* category, const char* vaultId, const char* name) const;
-        void store(IPTree& secret, const char* category, const char* vaultId, const char* name);
-    };
-
-private:
-    /**
      * @brief Abstraction of a per-transaction gateway updater.
      *
      * During service load, the method configurations are parsed for Gateways/Gateway elements.
@@ -115,7 +87,7 @@ private:
      */
     interface IGatewayUpdater : public IInterface
     {
-        virtual void updateGateway(IPTree& gw, const char* requiredUsage) = 0;
+        virtual void updateGateway(IPTree& gw) = 0;
     };
     using GatewayUpdaters = std::map<std::string, Owned<IGatewayUpdater>>;
 
@@ -143,6 +115,7 @@ private:
     interface IUpdatableGateway : public IInterface
     {
         virtual IGatewayUpdater* getUpdater(GatewayUpdaters& updaters, TransactionSecrets& secrets) const = 0;
+        virtual IGatewayUpdater* getUpdater(GatewayUpdaters& updaters, IEsdlScriptContext* scriptContext) const = 0;
     };
     using UpdatableGateways = std::map<std::string, Owned<IUpdatableGateway>>;
 
@@ -164,11 +137,13 @@ private:
     {
     public:
         virtual IGatewayUpdater* getUpdater(GatewayUpdaters& updaters, TransactionSecrets& secrets) const override;
+        virtual IGatewayUpdater* getUpdater(GatewayUpdaters& updaters, IEsdlScriptContext* scriptContext) const override;
     protected:
         std::string updatersKey;
     protected:
         CUpdatableGateway(const char* gwName);
         virtual IGatewayUpdater* getUpdater(TransactionSecrets& secrets) const = 0;
+        virtual IGatewayUpdater* getUpdater(IEsdlScriptContext* scriptContext) const = 0;
         bool updateURLCredentials(StringBuffer& url, const char* username, const char* password) const;
     };
     
@@ -189,8 +164,9 @@ private:
     {
     protected: // CUpdatableGateway
         virtual CLegacyUrlGateway* getUpdater(TransactionSecrets&) const override;
+        virtual CLegacyUrlGateway* getUpdater(IEsdlScriptContext*) const override;
     public: // IGatewayUpdater
-        virtual void updateGateway(IPTree& gw, const char*) override;
+        virtual void updateGateway(IPTree& gw) override;
     protected:
         StringBuffer url;
     public:
@@ -202,47 +178,74 @@ private:
      * @brief Concrete extension of `CUpdatableGateway` for handling local secrets that is always
      *        extended with secret usage-specific logic.
      *
-     * - Ensures `Gateway/@url` matches the pattern `"local-secret:" [ vault-id ":" ] secret-name".`
+     * - Ensures `Gateway/@url` matches the pattern `"local-secret:" [ vault-id "::" ] secret-name [ "::" version ]`.
+     *   - `secret-name` is required always
+     *   - `vault-id` is required before `version` can be specified
      * - Defines a standard updater separating dynamically changing secrets from the configuration.
-     * - Enforces a requirement for a local secret to explicitly allow its data to be shared with
-     *   a backend roxie service.
      *
      * Support is provided as an alternative to inline definitions when secret names cannot be
      * passed to the target roxie for resolution. Use is discouraged unless it is unavoidable.
      */
-    class CLocalSecretGateway : public CUpdatableGateway
+    template <typename secret_identity_t>
+    class TLocalSecretGateway : public CUpdatableGateway
     {
     protected:
-        class CUpdater : public CInterfaceOf<IGatewayUpdater>
+        template <typename secret_source_t>
+        class TUpdater : public CInterfaceOf<IGatewayUpdater>
         {
-            friend class CLocalSecretGateway;
+            friend class TLocalSecretGateway<secret_identity_t>;
+            static constexpr const char* category = "espUser";
         public: // IGatewayUpdater
-            virtual void updateGateway(IPTree& gw, const char* requiredUsage) override;
+            virtual void updateGateway(IPTree& gw) override
+            {
+                if (!secret)
+                    throw makeStringExceptionV(-1, "gateway %s: '%s' category secret '%s' not found", "?", entry->identifier.str(), category);
+                entry->doUpdate(gw, *secret);
+            }
         protected:
-            Linked<const CLocalSecretGateway> entry;
+            Linked<const TLocalSecretGateway<secret_identity_t>> entry;
             Owned<IPTree> secret;
         public:
-            CUpdater(const CLocalSecretGateway& _entry, TransactionSecrets& secrets);
+            TUpdater(const TLocalSecretGateway<secret_identity_t>& _entry, secret_source_t& secrets)
+            {
+                entry.set(&_entry);
+                secret.setown(secrets.getSecret(category, entry->identity));
+            }
         };
     protected: // CUpdatableGateway
-        virtual IGatewayUpdater* getUpdater(TransactionSecrets& secrets) const override;
+        virtual IGatewayUpdater* getUpdater(TransactionSecrets& secrets) const override
+        {
+            return new TUpdater<TransactionSecrets>(*this, secrets);
+        }
+        virtual IGatewayUpdater* getUpdater(IEsdlScriptContext* scriptContext) const override
+        {
+            if (!scriptContext)
+                return nullptr;
+            return new TUpdater<IEsdlScriptContext>(*this, *scriptContext);
+        }
     protected:
-        StringBuffer secretId;
-        StringAttr   vaultId;
-        StringBuffer secretName;
+        StringBuffer      identifier;
+        secret_identity_t identity;
     protected:
-        CLocalSecretGateway(const IPTree& gw, const char* gwName, const char* gwUrl, const char* classPrefix);
+        TLocalSecretGateway(const IPTree& gw, const char* gwName, const char* gwUrl)
+            : CUpdatableGateway(gwName)
+            , identifier(gwUrl + gwLocalSecretPrefixLength)
+            , identity(identifier)
+        {
+        }
     protected:
-        virtual void doUpdate(IPTree& gw, const IPTree& secret, const char* requiredUsage) const;
+        virtual void doUpdate(IPTree& gw, const IPTree& secret) const
+        {
+        }
     };
 
     /**
-     * @brief Concete extension of `CLocalSecretGateway` to construct a new `Gateway/@url` value
+     * @brief Concete extension of `TLocalSecretGateway<>` to construct a new `Gateway/@url` value
      *        from secret-defined values.
      *
      * - A secret name must begin with "http-connect-". Configurations should omit this prefix,
      *   but its presence is acceptable.
-     * - A secret must satisfy the requirements defined in `CLocalSecretGateway`.
+     * - A secret must satisfy the requirements defined in `TLocalSecretGateway<>`.
      * - A secret must define a non-empty `url` property.
      * - A secret must define either a non-empty `username` property or set the `omitCredentials`
      *   property to true.
@@ -250,10 +253,10 @@ private:
      * - A secret must not define `username` and set `omitCredentials` to true.
      * - A secret must not define a `password` property if `username` is not defined.
      */
-    class CHttpConnectGateway : public CLocalSecretGateway
+    class CHttpConnectGateway : public TLocalSecretGateway<HttpConnectSecretId>
     {
-    protected: // CLocalSecretGateway
-        void doUpdate(IPTree& gw, const IPTree& secret, const char* requiredUsage) const override;
+    protected: // TLocalSecretGateway
+        void doUpdate(IPTree& gw, const IPTree& secret) const override;
     public:
         CHttpConnectGateway(const IPTree& gw, const char* gwName, const char* gwUrl);
     };
@@ -489,7 +492,7 @@ protected:
      * @param updaters   cache of updaters used in the current transaction
      * @param secrets    cache of secrets used in the current transaction
      */
-    void applyGatewayUpdates(IPTreeIterator& gwIt, const UpdatableGateways& updatables, GatewayUpdaters& updaters, TransactionSecrets& secrets) const;
+    void applyGatewayUpdates(IPTreeIterator& gwIt, const UpdatableGateways& updatables, GatewayUpdaters& updaters, IEsdlScriptContext* scriptContext) const;
 
     /**
      * @brief Implementation of legacy gateway transformation invoked only during preparation of
