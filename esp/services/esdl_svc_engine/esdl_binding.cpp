@@ -750,6 +750,7 @@ void EsdlServiceImpl::configureTargets(IPropertyTree *cfg, const char *service)
             bool updateInlines = gateways->getPropBool("@updateInline");
             bool doLegacyTransform = !isEmptyString(gateways->queryProp("@legacyTransformTarget"));
             TransactionSecrets secrets;
+            TTransactionSecretsWrapper wrappedSecrets(secrets);
             Owned<IPTreeIterator> gwIt(gateways->getElements("Gateway"));
             ForEach(*gwIt)
             {
@@ -777,7 +778,7 @@ void EsdlServiceImpl::configureTargets(IPropertyTree *cfg, const char *service)
                     gce.targetContext[key].set(handler.get());
                     // sanity check that a secret is identified; the updater is not to be retained
                     GatewayUpdaters updaters;
-                    Owned<IGatewayUpdater> updater(handler->getUpdater(updaters, secrets));
+                    Owned<IGatewayUpdater> updater(handler->getUpdater(updaters, wrappedSecrets));
                     updater.clear();
                 }
                 else if (hasHttpPrefix(url))
@@ -1394,7 +1395,7 @@ EsdlServiceImpl::IUpdatableGateway* EsdlServiceImpl::createInlineGateway(const I
     return new CLegacyUrlGateway(gw, gwName, gwUrl);
 }
 
-void EsdlServiceImpl::applyGatewayUpdates(IPTreeIterator& gwIt, const UpdatableGateways& updatables, GatewayUpdaters& updaters, IEsdlScriptContext* scriptContext) const
+void EsdlServiceImpl::applyGatewayUpdates(IPTreeIterator& gwIt, const UpdatableGateways& updatables, GatewayUpdaters& updaters, ITransactionSecretsWrapper& secrets) const
 {
     ForEach(gwIt)
     {
@@ -1405,7 +1406,7 @@ void EsdlServiceImpl::applyGatewayUpdates(IPTreeIterator& gwIt, const UpdatableG
         UpdatableGateways::const_iterator ugIt = updatables.find(name);
         if (updatables.end() == ugIt)
             continue;
-        Owned<IGatewayUpdater> updater(ugIt->second->getUpdater(updaters, scriptContext));
+        Owned<IGatewayUpdater> updater(ugIt->second->getUpdater(updaters, secrets));
         if (updater)
             updater->updateGateway(gw);
     }
@@ -1787,7 +1788,7 @@ void EsdlServiceImpl::prepareFinalRequest(IEspContext &context,
             GatewaysCache::const_iterator mgcIt = m_methodGatewaysCache.find(mthName);
             Owned<IPTreeIterator> gwIt;
             GatewayUpdaters updaters;
-            TransactionSecrets secrets;
+            TTransactionSecretsWrapper wrappedSecrets(*scriptContext);
             if (tgtctx)
             {
                 if (mgcIt != m_methodGatewaysCache.end() && !mgcIt->second.targetContext.empty())
@@ -1799,7 +1800,7 @@ void EsdlServiceImpl::prepareFinalRequest(IEspContext &context,
                     if (ctxGateways)
                     {
                         gwIt.setown(ctxGateways->getElements("Gateway"));
-                        applyGatewayUpdates(*gwIt, mgcIt->second.targetContext, updaters, scriptContext);
+                        applyGatewayUpdates(*gwIt, mgcIt->second.targetContext, updaters, wrappedSecrets);
                     }
                 }
                 toXML(tgtctx.get(), reqProcessed);
@@ -1822,7 +1823,7 @@ void EsdlServiceImpl::prepareFinalRequest(IEspContext &context,
                         // used in subsequent transactions.
                         Owned<IPTree> copy(createPTreeFromIPT(cfgGateways));
                         gwIt.setown(copy->getElements("Gateway"));
-                        applyGatewayUpdates(*gwIt, mgcIt->second.legacyTransform, updaters, scriptContext);
+                        applyGatewayUpdates(*gwIt, mgcIt->second.legacyTransform, updaters, wrappedSecrets);
                     }
                     else
                         gwIt.setown(cfgGateways->getElements("Gateway"));
@@ -1905,22 +1906,12 @@ EsdlServiceImpl::~EsdlServiceImpl()
     }
 }
 
-EsdlServiceImpl::IGatewayUpdater* EsdlServiceImpl::CUpdatableGateway::getUpdater(GatewayUpdaters& updaters, TransactionSecrets& secrets) const
+EsdlServiceImpl::IGatewayUpdater* EsdlServiceImpl::CUpdatableGateway::getUpdater(GatewayUpdaters& updaters, ITransactionSecretsWrapper& secrets) const
 {
     GatewayUpdaters::iterator it = updaters.find(updatersKey);
     if (it != updaters.end())
         return it->second.getLink();
     Owned<IGatewayUpdater> spawned(getUpdater(secrets));
-    updaters[updatersKey].setown(spawned.getLink());
-    return spawned.getClear();
-}
-
-EsdlServiceImpl::IGatewayUpdater* EsdlServiceImpl::CUpdatableGateway::getUpdater(GatewayUpdaters& updaters, IEsdlScriptContext* scriptContext) const
-{
-    GatewayUpdaters::iterator it = updaters.find(updatersKey);
-    if (it != updaters.end())
-        return it->second.getLink();
-    Owned<IGatewayUpdater> spawned(getUpdater(scriptContext));
     updaters[updatersKey].setown(spawned.getLink());
     return spawned.getClear();
 }
@@ -1963,12 +1954,7 @@ bool EsdlServiceImpl::CUpdatableGateway::updateURLCredentials(StringBuffer& url,
     return false;
 }
 
-EsdlServiceImpl::CLegacyUrlGateway* EsdlServiceImpl::CLegacyUrlGateway::getUpdater(TransactionSecrets&) const
-{
-    return LINK(const_cast<CLegacyUrlGateway*>(this));
-}
-
-EsdlServiceImpl::CLegacyUrlGateway* EsdlServiceImpl::CLegacyUrlGateway::getUpdater(IEsdlScriptContext*) const
+EsdlServiceImpl::CLegacyUrlGateway* EsdlServiceImpl::CLegacyUrlGateway::getUpdater(ITransactionSecretsWrapper&) const
 {
     return LINK(const_cast<CLegacyUrlGateway*>(this));
 }

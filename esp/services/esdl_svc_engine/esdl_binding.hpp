@@ -74,6 +74,33 @@ class EsdlServiceImpl : public CInterface, implements IEspService
 {
 private:
     /**
+     * @brief Utility wrapper interface for secret access.
+     *
+     * At service load, secrets are cached directly in a TransactionSecrets instance. When
+     * processing requests, secrets are cached in the script context. Both provide the same
+     * interface to obtain a secret. This wrapper decouples gateway secret updating from the
+     * cache in use.
+     */
+    interface ITransactionSecretsWrapper
+    {
+        virtual IPTree* getSecret(const char* category, const SecretId& id) const = 0;
+    };
+
+    /**
+     * @brief Concrete implementation of `ITransactionSecretsWrapper` wrapping multiple caches.
+     *
+     * @tparam secret_cache_t
+     */
+    template <typename secret_cache_t>
+    struct TTransactionSecretsWrapper : public ITransactionSecretsWrapper
+    {
+        TTransactionSecretsWrapper(secret_cache_t& _wrapped) : wrapped(_wrapped) {}
+        virtual IPTree* getSecret(const char* category, const SecretId& id) const override { return wrapped.getSecret(category, id); }
+    private:
+        secret_cache_t& wrapped;
+    };
+
+    /**
      * @brief Abstraction of a per-transaction gateway updater.
      *
      * During service load, the method configurations are parsed for Gateways/Gateway elements.
@@ -114,8 +141,7 @@ private:
      */
     interface IUpdatableGateway : public IInterface
     {
-        virtual IGatewayUpdater* getUpdater(GatewayUpdaters& updaters, TransactionSecrets& secrets) const = 0;
-        virtual IGatewayUpdater* getUpdater(GatewayUpdaters& updaters, IEsdlScriptContext* scriptContext) const = 0;
+        virtual IGatewayUpdater* getUpdater(GatewayUpdaters& updaters, ITransactionSecretsWrapper& secrets) const = 0;
     };
     using UpdatableGateways = std::map<std::string, Owned<IUpdatableGateway>>;
 
@@ -130,20 +156,19 @@ private:
      * - Insertion (or replacement) of user credentials in a URL string is available to any
      *   subclass that needs it..
      *
-     * All extensions must implement `getUpdater(TransactionSecrets&)`. In some cases this may entail creation
-     * of a new updater instance. In other cases a single instance may be reused.
+     * All extensions must implement `getUpdater(ITransactionSecretsWrapper&)`. In some cases
+     * this may entail creation of a new updater instance. In other cases a single instance may
+     * be reused.
      */
     class CUpdatableGateway : public CInterfaceOf<IUpdatableGateway>
     {
     public:
-        virtual IGatewayUpdater* getUpdater(GatewayUpdaters& updaters, TransactionSecrets& secrets) const override;
-        virtual IGatewayUpdater* getUpdater(GatewayUpdaters& updaters, IEsdlScriptContext* scriptContext) const override;
+        virtual IGatewayUpdater* getUpdater(GatewayUpdaters& updaters, ITransactionSecretsWrapper& secrets) const override;
     protected:
         std::string updatersKey;
     protected:
         CUpdatableGateway(const char* gwName);
-        virtual IGatewayUpdater* getUpdater(TransactionSecrets& secrets) const = 0;
-        virtual IGatewayUpdater* getUpdater(IEsdlScriptContext* scriptContext) const = 0;
+        virtual IGatewayUpdater* getUpdater(ITransactionSecretsWrapper& secrets) const = 0;
         bool updateURLCredentials(StringBuffer& url, const char* username, const char* password) const;
     };
     
@@ -163,8 +188,7 @@ private:
     class CLegacyUrlGateway : public CUpdatableGateway, public IGatewayUpdater
     {
     protected: // CUpdatableGateway
-        virtual CLegacyUrlGateway* getUpdater(TransactionSecrets&) const override;
-        virtual CLegacyUrlGateway* getUpdater(IEsdlScriptContext*) const override;
+        virtual CLegacyUrlGateway* getUpdater(ITransactionSecretsWrapper&) const override;
     public: // IGatewayUpdater
         virtual void updateGateway(IPTree& gw) override;
     protected:
@@ -190,8 +214,7 @@ private:
     class TLocalSecretGateway : public CUpdatableGateway
     {
     protected:
-        template <typename secret_source_t>
-        class TUpdater : public CInterfaceOf<IGatewayUpdater>
+        class CUpdater : public CInterfaceOf<IGatewayUpdater>
         {
             friend class TLocalSecretGateway<secret_identity_t>;
             static constexpr const char* category = "espUser";
@@ -206,22 +229,16 @@ private:
             Linked<const TLocalSecretGateway<secret_identity_t>> entry;
             Owned<IPTree> secret;
         public:
-            TUpdater(const TLocalSecretGateway<secret_identity_t>& _entry, secret_source_t& secrets)
+            CUpdater(const TLocalSecretGateway<secret_identity_t>& _entry, ITransactionSecretsWrapper& secrets)
             {
                 entry.set(&_entry);
                 secret.setown(secrets.getSecret(category, entry->identity));
             }
         };
     protected: // CUpdatableGateway
-        virtual IGatewayUpdater* getUpdater(TransactionSecrets& secrets) const override
+        virtual IGatewayUpdater* getUpdater(ITransactionSecretsWrapper& secrets) const override
         {
-            return new TUpdater<TransactionSecrets>(*this, secrets);
-        }
-        virtual IGatewayUpdater* getUpdater(IEsdlScriptContext* scriptContext) const override
-        {
-            if (!scriptContext)
-                return nullptr;
-            return new TUpdater<IEsdlScriptContext>(*this, *scriptContext);
+            return new CUpdater(*this, secrets);
         }
     protected:
         StringBuffer      identifier;
@@ -492,7 +509,7 @@ protected:
      * @param updaters   cache of updaters used in the current transaction
      * @param secrets    cache of secrets used in the current transaction
      */
-    void applyGatewayUpdates(IPTreeIterator& gwIt, const UpdatableGateways& updatables, GatewayUpdaters& updaters, IEsdlScriptContext* scriptContext) const;
+    void applyGatewayUpdates(IPTreeIterator& gwIt, const UpdatableGateways& updatables, GatewayUpdaters& updaters, ITransactionSecretsWrapper& secrets) const;
 
     /**
      * @brief Implementation of legacy gateway transformation invoked only during preparation of
