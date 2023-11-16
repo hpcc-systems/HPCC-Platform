@@ -34,6 +34,7 @@ enum class SpanFlags : unsigned
 {
     None            = 0x000000000,
     EnsureGlobalId  = 0x000000001,
+    EnsureTraceId   = 0x000000010,
 };
 BITMASK_ENUM(SpanFlags);
 
@@ -64,6 +65,7 @@ interface ITraceManager : extends IInterface
     virtual ISpan * createServerSpan(const char * name, const IProperties * httpHeaders, SpanFlags flags = SpanFlags::None) const = 0;
     virtual bool isTracingEnabled() const = 0;
     virtual bool alwaysCreateGlobalIds() const = 0;
+    virtual bool alwaysCreateTraceIds() const = 0;
     virtual const char * getTracedComponentName() const = 0;
  };
 
