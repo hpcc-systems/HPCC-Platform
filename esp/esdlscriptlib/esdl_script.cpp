@@ -1127,9 +1127,13 @@ public:
         m_name.get(name, *sourceContext);
         if (m_value)
             sourceContext->evaluateAsString(m_value, value);
-        if (m_secretSpec.name && streq(name, "Authorization"))
+        bool maskInContext = false;
+        if (m_secretSpec.name && strieq(name, "Authorization"))
+        {
             generateAuthorizationValue(scriptContext, sourceContext, value);
-        return processHeaderValue(scriptContext, targetContext, sourceContext, headers, name, value);
+            maskInContext = true;
+        }
+        return processHeaderValue(scriptContext, targetContext, sourceContext, headers, name, value, maskInContext);
     }
 
     virtual void toDBGLog () override
@@ -1149,7 +1153,7 @@ protected:
         if (!secret)
             recordException(ESDL_SCRIPT_MissingOperationAttr, "missing http-connect secret");
 
-        if (method.isEmpty() || streq(method, "Basic")) 
+        if (method.trim().isEmpty() || strieq(method, "Basic")) 
             generateBasicAuthValue(method, *secret);
         else
             recordException(ESDL_SCRIPT_InvalidOperationAttr, VStringBuffer("unrecognized authorization method '%s'", method.str()));
@@ -1160,15 +1164,15 @@ protected:
         StringBuffer username, password;
         if (!getSecretKeyValue(username, &secret, "username") || !getSecretKeyValue(password, &secret, "password"))
             recordException(ESDL_SCRIPT_MissingOperationAttr, "empty or missing http-connect basic authorization credentials");
+        if (strchr(username, ':'))
+            recordException(ESDL_SCRIPT_InvalidOperationAttr, "invslid http-connect basic authorization username");
         VStringBuffer credentials("%s:%s", username.str(), password.str());
         StringBuffer encoded;
         JBASE64_Encode(credentials, credentials.length(), encoded, false);
-        if (method.isEmpty())
-            method.append("Basic");
-        method.append(' ').append(encoded);
+        method.set("Basic ").append(encoded);
     }
 
-    bool processHeaderValue(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext, IProperties *headers, const StringBuffer& name, const StringBuffer& value)
+    bool processHeaderValue(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext, IProperties *headers, const StringBuffer& name, const StringBuffer& value, bool maskInContext)
     {
         CXpathContextLocation location(targetContext);
         targetContext->addElementToLocation("header");
@@ -1178,7 +1182,14 @@ protected:
             if (headers)
                 headers->setProp(name, value);
             targetContext->ensureSetValue("@name", name, true);
-            targetContext->ensureSetValue("@value", value, true);
+            if (maskInContext)
+            {
+                StringBuffer masked;
+                masked.appendN(value.length(), '*');
+                targetContext->ensureSetValue("@value", masked, true);
+            }
+            else
+                targetContext->ensureSetValue("@value", value, true);
         }
         return false;
     }
@@ -3968,9 +3979,10 @@ public:
 EsdlScriptSecretSpec::EsdlScriptSecretSpec(StartTag& stag)
 {
     name.setown(compileOptionalXpath(stag.getValue("secret")));
-    vault.setown(compileOptionalXpath(stag.getValue("vault")));
-    version.setown(compileOptionalXpath(stag.getValue("version")));
+    deprecatedVault.setown(compileOptionalXpath(stag.getValue("vault")));
 }
+
+static const char* secretTokenDelimiter = ":::";
 
 SecretId::SecretId(EsdlScriptSecretSpec& spec, IXpathContext* context)
 {
@@ -3979,10 +3991,14 @@ SecretId::SecretId(EsdlScriptSecretSpec& spec, IXpathContext* context)
         context->evaluateAsString(spec.name, name);
         if (!name.isEmpty())
         {
-            if (spec.vault)
-                context->evaluateAsString(spec.vault, vault);
-            if (spec.version)
-                context->evaluateAsString(spec.version, version);
+            parse(name);
+            if (spec.deprecatedVault)
+            {
+                StringBuffer tmp;
+                context->evaluateAsString(spec.deprecatedVault, tmp);
+                if (!tmp.isEmpty() && !vault.isEmpty() && !streq(tmp, vault))
+                    UERRLOG("deprecated vault ID mismatch ('%s' versus '%s')", tmp.str(), vault.str());
+            }
         }
     }
 }
@@ -3990,23 +4006,30 @@ SecretId::SecretId(EsdlScriptSecretSpec& spec, IXpathContext* context)
 SecretId::SecretId(const char* identifier)
 {
     if (!isEmptyString(identifier))
+        parse(identifier);
+}
+
+void SecretId::parse(const char* identifier)
+{
+    StringArray tokens;
+    tokens.appendList(name, secretTokenDelimiter, true);
+    switch (tokens.ordinality())
     {
-        StringArray tokens;
-        tokens.appendList(identifier, ":", true);
-        switch (tokens.ordinality())
-        {
-        case 3:
-            version.append(tokens.item(2));
-            // fall through
-        case 2:
-            vault.append(tokens.item(1));
-            // fall through
-        case 1:
-            name.append(tokens.item(0));
-            break;
-        default:
-            break;
-        }
+    case 1: // name
+        name.append(tokens.item(0));
+        break;
+    case 2: // vault :: name
+        vault.append(tokens.item(0));
+        name.append(tokens.item(1));
+        break;
+    case 3: // vault :: name :: version
+        vault.append(tokens.item(0));
+        name.append(tokens.item(1));
+        version.append(tokens.item(2));
+        break;
+    default: // uh-oh
+        UERRLOG("invalid secret identifier '%s'", identifier);
+        break;
     }
 }
 

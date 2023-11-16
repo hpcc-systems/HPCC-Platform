@@ -1559,7 +1559,6 @@ Iterates a possibly empty set of input nodes. Child operations are processed onc
         section="XPath node expression"
         name="String value"
         vault="String value"
-        version="String value>
         <http-header name="String value"
                      xpath_name="XPath string expression"
                      value="XPath string expression"/>
@@ -1577,8 +1576,7 @@ Create then send an HTTP post message with XML content. Content type of the outg
 | @secret | 0..1 | Name of an "esp" category http-connect secret from which the message endpoint and authorization values are to be obtained. A named secret always takes precedence of `@url`. A named secret will be used to auto-fill an *Authorization* `http-header` for supported authorization methods, including:<br/><br/>- Basic: `username` and `password` secret properties required |
 | @section | 0..1 | Path to the section of script context where output is placed. If omitted defaults to `temporaries`.|
 | @name | 1..1 | Name of the node inside `@section` where the output is placed. If it does not exist it is created. |
-| @vault | 0..1 | String identifier of the repository containing `secret` referenced http-connect secret. Ignored when `secret` is unused; optional otherwise. |
-| @version | 0..1 | String representation of a secret version. Ignored when `secret` is unused; optional otherwise. |
+| @vault | 0..1 | String identifier of the repository containing `secret` referenced http-connect secret. Ignored when `secret` is unused; optional otherwise.<br/><br/>This value is deprecated. The preferred way to specify a vault is to include it in `@secret` as `vault::secret`. |
 | http-header | 0..n | An HTTP Header name and value to include with the POST. Use one element for each header |
 | http-header/@name | 0..1 | String value giving the name of the HTTP header.|
 | http-header/@xpath-name | 0..1 | XPath expression evaluated as a string giving the name of the HTTP header. |
@@ -1758,7 +1756,6 @@ See also [ensure-target](#ensure-target) and [target](#target).
         trace="String value"
         user="String value"
         vault="String value"
-        version="String value">
         <bind name="String value"
               value="XPath string expression"/>
         <sql>...</sql>
@@ -1779,8 +1776,7 @@ See also [ensure-target](#ensure-target) and [target](#target).
 | @server | 1..1 | String value of the database server in the format *ip:port* or *hostname:port*. Required if not provided in a _vault_ or _secret_. See the following [Credentials](#credentials) section for further explanation.|
 | @trace | 0..1 | Label used in trace log output messages. If omitted or empty, the element name is used. |
 | @user | 0..1 | String of the user name to login to the database server. Required if not provided in a _vault_ or _secret_. See the following [Credentials](#credentials) section for further explanation. |
-| @vault | 0..1 | String of the vault ID to retrieve database login info from. The category name used is *esp*. For security, preferred usage is to include user, password, server and database together. See the following [Credentials](#credentials) section for further explanation. |
-| @version | 0..1 | String representation of a secret version. Ignored when `secret` is unused; optional otherwise. |
+| @vault | 0..1 | String of the vault ID to retrieve database login info from. The category name used is *esp*. For security, preferred usage is to include user, password, server and database together. See the following [Credentials](#credentials) section for further explanation.<br/><br/>This value is deprecated. The preferred way to specify a vault is to include it in `@secret` as `vault::secret`. |
 | bind | 0..n | Node to bind a value to a sql parameter. |
 | bind/@name | 1..1 | String of the name of the sql parameter. Use only one instance per `bind` node. |
 | bind/@value | 1..1 | XPath string expression of the value of the parameter. Use only one instance per `bind` node. |

@@ -69,8 +69,7 @@ namespace xpp
 struct EsdlScriptSecretSpec
 {
     Owned<ICompiledXpath> name;
-    Owned<ICompiledXpath> vault;
-    Owned<ICompiledXpath> version;
+    Owned<ICompiledXpath> deprecatedVault;
 
     EsdlScriptSecretSpec(xpp::StartTag& stag);
 };
@@ -81,7 +80,14 @@ struct EsdlScriptSecretSpec
  *  Extracts secret identification labels in multiple formats:
  *
  * - The compiled XPath expressions from an `EsdlScriptSecretSpec` are evaluated as strings.
- * - An identifier of the form `name [ ":" vault [ ":" version ] ]` is split into parts.
+ *   - An evaluated spec.name must take one of these forms:
+ *     - name
+ *     - vault "::" name
+ *     - vault "::" name "::" version
+ *   - An evaluated spec.deprecatedVault must either:
+ *     - be empty
+ *     - match vault when extracted from name
+ *     - be a well formed name when vault not extracted from name
  */
 struct SecretId
 {
@@ -91,6 +97,8 @@ struct SecretId
 
     SecretId(EsdlScriptSecretSpec& spec, IXpathContext* context);
     SecretId(const char* identifier);
+private:
+    void parse(const char* identifier);
 };
 
 /**
