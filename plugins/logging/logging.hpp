@@ -42,6 +42,11 @@ LOGGING_API char * LOGGING_CALL logGetCallerId(ICodeContext *ctx);
 LOGGING_API char * LOGGING_CALL logGetLocalId(ICodeContext *ctx);
 LOGGING_API char * LOGGING_CALL logGenerateGloballyUniqueId();
 LOGGING_API unsigned int LOGGING_CALL logGetElapsedMs(ICodeContext *ctx);
+LOGGING_API char * LOGGING_CALL getTraceSpanHeader(ICodeContext *ctx);
+LOGGING_API char * LOGGING_CALL getTraceStateHeader(ICodeContext *ctx);
+LOGGING_API char * LOGGING_CALL getTraceID(ICodeContext *ctx);
+LOGGING_API char * LOGGING_CALL getSpanID(ICodeContext *ctx);
+LOGGING_API void LOGGING_CALL setSpanAttribute(ICodeContext *ctx, unsigned nameLen, const char * name, unsigned valueLen, const char * value);
 
 }
 
