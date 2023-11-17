@@ -1675,6 +1675,20 @@ IWSCHelper * createHttpCallHelper(IWSCRowProvider *r, IEngineRowAllocator * outp
 }
 
 //=================================================================================================
+
+const char * queryAlternativeHeader(const char * header)
+{
+    if (strieq(header, kGlobalIdHttpHeaderName))
+        return kLegacyGlobalIdHttpHeaderName;
+    if (strieq(header, kLegacyGlobalIdHttpHeaderName))
+        return kGlobalIdHttpHeaderName;
+    if (strieq(header, kCallerIdHttpHeaderName))
+        return kLegacyCallerIdHttpHeaderName;
+    if (strieq(header, kLegacyCallerIdHttpHeaderName))
+        return kCallerIdHttpHeaderName;
+    return nullptr;
+}
+
 bool httpHeaderBlockContainsHeader(const char *httpheaders, const char *header)
 {
     if (!httpheaders || !*httpheaders)
@@ -1921,11 +1935,18 @@ private:
             ForEach(*iter)
             {
                 const char * key = iter->getPropKey();
-                if (!httpHeaderBlockContainsHeader(httpheaders, key))
+                bool hasHeader = httpHeaderBlockContainsHeader(httpheaders, key);
+                if (!hasHeader)
                 {
-                    const char * value = iter->queryPropValue();
-                    if (!isEmptyString(value))
-                        request.append(key).append(": ").append(value).append("\r\n");
+                    //If this header is http-global-id, check that global-id hasn't been explicitly added already
+                    const char * altHeader = queryAlternativeHeader(key);
+                    bool hasAltHeader = altHeader && httpHeaderBlockContainsHeader(httpheaders, altHeader);
+                    if (!hasAltHeader)
+                    {
+                        const char * value = iter->queryPropValue();
+                        if (!isEmptyString(value))
+                            request.append(key).append(": ").append(value).append("\r\n");
+                    }
                 }
             }
         }

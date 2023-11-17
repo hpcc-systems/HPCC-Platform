@@ -1179,7 +1179,8 @@ public:
         Owned<StringContextLogger> logctx = new StringContextLogger(wuid.get());
 
         Owned<IProperties> traceHeaders = extractTraceDebugOptions(wu);
-        Owned<ISpan> requestSpan = queryTraceManager().createServerSpan(wu->queryWuid(), traceHeaders);
+        Owned<ISpan> requestSpan = queryTraceManager().createServerSpan("run_workunit", traceHeaders);
+        requestSpan->setSpanAttribute("hpcc.wuid", wuid);
         ContextSpanScope spanScope(*logctx, requestSpan);
 
         Owned<IQueryFactory> queryFactory;
@@ -1438,7 +1439,7 @@ public:
         return *cascade;
     }
 
-    virtual void startSpan(const char * id, const IProperties * headers) override
+    virtual void startSpan(const char * id, const char * querySetName, const char * queryName, const IProperties * headers) override
     {
         Linked<const IProperties> allHeaders = headers;
         SpanFlags flags = (ensureGlobalIdExists) ? SpanFlags::EnsureGlobalId : SpanFlags::None;
@@ -1455,7 +1456,12 @@ public:
 
         ensureContextLogger();
 
-        Owned<ISpan> requestSpan = queryTraceManager().createServerSpan("request", allHeaders, flags);
+        const char * spanQueryName = !isEmptyString(queryName) ? queryName : "run_query";
+        StringBuffer spanName(querySetName);
+        if (spanName.length())
+            spanName.append('/');
+        spanName.append(spanQueryName);
+        Owned<ISpan> requestSpan = queryTraceManager().createServerSpan(spanName, allHeaders, flags);
         //The span has a lifetime the same length as the logctx, so no need to restore it at the end of the query
         logctx->setActiveSpan(requestSpan);
 

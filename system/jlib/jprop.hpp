@@ -79,5 +79,9 @@ extern jlib_decl IProperties *getSystemProperties();
 extern jlib_decl void extractHeaders(IProperties * target, const StringArray & httpHeaders, char separator = ':');
 extern jlib_decl IProperties * getHeadersAsProperties(const StringArray & httpHeaders, char separator = ':');
 
+extern jlib_decl void getPropertiesAsXml(StringBuffer & out, const IProperties * properties);
+extern jlib_decl void printProperties(const IProperties * properties);
+extern jlib_decl void dbglogProperties(const IProperties * properties, const char * prefix);
+
 #endif
 
