@@ -1442,6 +1442,8 @@ public:
                 }
                 break;
             }
+
+            bool ensureLfnAlreadyPublished = false;
             // fill dstfile for commands that need it
             switch (cmd) {
             case DFUcmd_copymerge:
@@ -1542,6 +1544,14 @@ public:
                                 Owned<IDistributedFile> oldfile = wsdfs::lookup(tmp.str(),userdesc,AccessMode::tbdWrite,false,false,nullptr,defaultPrivilegedUser,INFINITE);
                                 if (oldfile)
                                 {
+                                    if (options->getEnsure())
+                                    {
+                                        // logical file already exists.
+                                        ensureLfnAlreadyPublished = true;
+                                        dstFile.setown(oldfile.getClear());
+                                        dstName.set(tmp);
+                                        break;
+                                    }
                                     StringBuffer reason;
                                     bool canRemove = oldfile->canRemove(reason);
                                     oldfile.clear();
@@ -1700,12 +1710,35 @@ public:
                             }
                         }
                         else {
-                            fsys.copy(srcFile,dstFile,recovery, recoveryconn, filter, opttree, &feedback, &abortnotify, dfuwuid);
-                            if (!abortnotify.abortRequested()) {
-                                if (needrep)
-                                    replicating = true;
+                            bool performCopy = true;
+                            if (options->getEnsure())
+                            {
+                                if (ensureLfnAlreadyPublished)
+                                    performCopy = false;
                                 else
-                                    dstFile->attach(dstName.get(),userdesc);
+                                {
+                                    if (dstFile->existsPhysicalPartFiles(0))
+                                    {
+                                        dstFile->attach(dstName.get(), userdesc);
+                                        performCopy = false;
+                                    }
+                                }
+                                if (!performCopy)
+                                {
+                                    feedback.repmode=cProgressReporter::REPnone;
+                                    feedback.displaySummary(nullptr, 0);
+                                    Audit("COPYENSURE", userdesc, srcFile?srcName.str():nullptr, dstName.get());
+                                }
+                            }
+                            if (performCopy)
+                            {
+                                fsys.copy(srcFile,dstFile,recovery, recoveryconn, filter, opttree, &feedback, &abortnotify, dfuwuid);
+                                if (!abortnotify.abortRequested()) {
+                                    if (needrep)
+                                        replicating = true;
+                                    else
+                                        dstFile->attach(dstName.get(),userdesc);
+                                }
                                 Audit("COPY",userdesc,srcFile?srcName.str():NULL,dstName.get());
                             }
                         }

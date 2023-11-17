@@ -2002,6 +2002,11 @@ public:
         return queryRoot()->getPropInt("@overwrite")!=0;
     }
 
+    bool getEnsure() const
+    {
+        return queryRoot()->getPropInt("@ensure")!=0;
+    }
+
     DFUreplicateMode getReplicateMode(StringBuffer &cluster, bool &repeatlast,bool &onlyrepeated) const
     {
         repeatlast = false;
@@ -2146,7 +2151,7 @@ public:
         queryRoot()->setPropInt("@throttle",val);
     }
 
-    void setTransferBufferSize(unsigned val)
+    void setTransferBufferSize(size32_t val)
     {
         queryRoot()->setPropInt("@transferBufferSize",val);
     }
@@ -2159,6 +2164,11 @@ public:
     void setOverwrite(bool val=true)
     {
         queryRoot()->setPropInt("@overwrite",val?1:0);
+    }
+
+    void setEnsure(bool val=true)
+    {
+        queryRoot()->setPropInt("@ensure",val?1:0);
     }
 
     void setReplicateMode(DFUreplicateMode val,const char *cluster=NULL,bool repeatlast=false,bool onlyrepeated=false)
