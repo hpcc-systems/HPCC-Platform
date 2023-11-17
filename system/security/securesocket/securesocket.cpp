@@ -2011,14 +2011,15 @@ SECURESOCKET_API ISecureSocketContext* createSecureSocketContextSecret(const cha
 }
 
 
-SECURESOCKET_API ISecureSocketContext* createSecureSocketContextSecretSrv(const char *issuer, bool requireMtlsFlag)
+SECURESOCKET_API ISecureSocketContext* createSecureSocketContextSecretSrv(const char *issuer, const char *optTrustedPeers, bool requireMtlsFlag)
 {
     if (requireMtlsFlag && !queryMtls())
-        throw makeStringException(-100, "TLS secure communication requested but not configured");
+        throw makeStringException(-100, "MTLS secure context required but not configured");
 
-    Owned<const ISyncedPropertyTree> info = getIssuerTlsSyncedConfig(issuer);
+    Owned<const ISyncedPropertyTree> info = getIssuerTlsSyncedConfig(issuer, optTrustedPeers, false);
+
     if (!info->isValid())
-        throw makeStringException(-101, "TLS secure communication requested but not configured (2)");
+        throw makeStringExceptionV(-101, "TLS issuer %s secure context requested but not configured (2)", issuer);
 
     return createSecureSocketContextSynced(info, ServerSocket);
 }
@@ -2216,7 +2217,7 @@ public:
         state = Snone;
         cancelling = false;
         secureContextClient.setown(createSecureSocketContextSecret("local", ClientSocket));
-        secureContextServer.setown(createSecureSocketContextSecretSrv("local", true));
+        secureContextServer.setown(createSecureSocketContextSecretSrv("local", nullptr, true));
 #ifdef _CONTAINERIZED
         tlsLogLevel = getComponentConfigSP()->getPropInt("logging/@detail", SSLogMin);
         if (tlsLogLevel >= ExtraneousMsgThreshold) // or InfoMsgThreshold ?

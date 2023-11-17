@@ -216,32 +216,38 @@ CSecureHttpProtocol::CSecureHttpProtocol(IPropertyTree* cfg)
     {
         m_config.setown(cfg);
 
-        //ensure keys are specified. Passphrase is optional
-        StringBuffer sb;
-        cfg->getProp("certificate", sb);
-        if(sb.length() == 0)
-        {
-            throw MakeStringException(-1, "certificate file not specified in config file");
-        }
-
-        cfg->getProp("privatekey", sb.clear());
-        if(sb.length() == 0)
-        {
-            throw MakeStringException(-1, "private key file not specified in config file");
-        }
-
-        createSecureSocketContextEx2_t xproc = NULL;
         IEspPlugin *pplg = loadPlugin(SSLIB);
-        if (pplg)
-            xproc = (createSecureSocketContextEx2_t) pplg->getProcAddress("createSecureSocketContextEx2");
-        else
+        if (!pplg)
             throw MakeStringException(-1, "dll/shared-object %s can't be loaded", SSLIB);
 
-
-        if (xproc)
-            m_ssctx.setown(xproc(cfg, ServerSocket));
+        const char *issuer = cfg->queryProp("issuer");
+        if (!isEmptyString(issuer))
+        {
+            const char *trustedPeers = nullptr;
+            if (cfg->hasProp("verify"))
+                trustedPeers = cfg->queryProp("verify/trusted_peers");
+            createSecureSocketContextSecretSrv_t xproc = (createSecureSocketContextSecretSrv_t) pplg->getProcAddress("createSecureSocketContextSecretSrv");
+            if (!xproc)
+                throw MakeStringException(-1, "procedure createSecureSocketContextSecretSrv can't be loaded");
+            m_ssctx.setown(xproc(issuer, trustedPeers, false));
+        }
         else
-            throw MakeStringException(-1, "procedure createSecureSocketContextEx2 can't be loaded");
+        {
+            //ensure keys are specified. Passphrase is optional
+            StringBuffer sb;
+            cfg->getProp("certificate", sb);
+            if(sb.isEmpty())
+                throw MakeStringException(-1, "certificate file not specified in config file");
+
+            cfg->getProp("privatekey", sb.clear());
+            if(sb.isEmpty())
+                throw MakeStringException(-1, "private key file not specified in config file");
+
+            createSecureSocketContextEx2_t xproc = (createSecureSocketContextEx2_t) pplg->getProcAddress("createSecureSocketContextEx2");
+            if (!xproc)
+                throw MakeStringException(-1, "procedure createSecureSocketContextEx2 can't be loaded");
+            m_ssctx.setown(xproc(cfg, ServerSocket));
+        }
     }
 }
 
