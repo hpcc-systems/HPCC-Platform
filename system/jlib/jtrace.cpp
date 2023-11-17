@@ -16,7 +16,6 @@
 ############################################################################## */
 
 
-
 #include "opentelemetry/trace/semantic_conventions.h" //known span defines
 #include "opentelemetry/context/propagation/global_propagator.h" // context::propagation::GlobalTextMapPropagator::GetGlobalPropagator
 #include "opentelemetry/sdk/trace/tracer_provider_factory.h" //opentelemetry::sdk::trace::TracerProviderFactory::Create(context)
@@ -35,6 +34,7 @@
 #define ForEach(i)              for((i).first();(i).isValid();(i).next())
 
 #include "opentelemetry/exporters/otlp/otlp_grpc_exporter_factory.h"
+#include "opentelemetry/exporters/otlp/otlp_http_exporter_factory.h"
 #include "opentelemetry/exporters/otlp/otlp_http_exporter_options.h"
 #include "opentelemetry/exporters/memory/in_memory_span_data.h"
 
@@ -171,6 +171,7 @@ public:
         return spanID.get();
     }
 
+
     ISpan * createClientSpan(const char * name) override;
     ISpan * createInternalSpan(const char * name) override;
 
@@ -187,16 +188,15 @@ public:
 
         if (span != nullptr)
         {
-            out.append(",\"SpanID\":\"").append(spanID.get()).append("\"");
-
             out.append(",\"TraceID\":\"").append(traceID.get()).append("\"");
+            out.append(",\"SpanID\":\"").append(spanID.get()).append("\"");
+        }
 
-            if (localParentSpan != nullptr)
-            {
-                out.append(",\"ParentSpanID\": \"");
-                out.append(localParentSpan->getSpanID());
-                out.append("\"");
-            }
+        if (localParentSpan != nullptr)
+        {
+            out.append(",\"ParentSpanID\": \"");
+            out.append(localParentSpan->getSpanID());
+            out.append("\"");
         }
     }
 
@@ -219,19 +219,19 @@ public:
         if (span != nullptr)
         {
             out.append(",\"SpanID\":\"").append(spanID.get()).append("\"");
+        }
 
-            if (isLeaf)
-            {
-                out.append(",\"TraceID\":\"").append(traceID.get()).append("\"")
-                 .append(",\"TraceFlags\":\"").append(traceFlags.get()).append("\"");
-            }
-
-            if (localParentSpan != nullptr)
-            {
-                out.append(",\"ParentSpan\":{ ");
-                localParentSpan->toString(out, false);
-                out.append(" }");
-            }
+        if (isLeaf)
+        {
+            out.append(",\"TraceID\":\"").append(traceID.get()).append("\"")
+                .append(",\"TraceFlags\":\"").append(traceFlags.get()).append("\"");
+        }
+        
+        if (localParentSpan != nullptr)
+        {
+            out.append(",\"ParentSpan\":{ ");
+            localParentSpan->toString(out, false);
+            out.append(" }");
         }
     };
 
@@ -417,7 +417,10 @@ protected:
         name.set(spanName);
         localParentSpan = parent;
         if (localParentSpan != nullptr)
+        {
+            injectlocalParentSpan(localParentSpan);
             tracerName.set(parent->queryTraceName());
+        }
     }
 
     CSpan(const char * spanName, const char * nameOfTracer)
@@ -427,31 +430,34 @@ protected:
         tracerName.set(nameOfTracer);
     }
 
-    void init()
+    void init(SpanFlags flags)
     {
         bool createLocalId = !isEmptyString(hpccGlobalId);
         if (createLocalId)
             hpccLocalId.set(ln_uid::createUniqueIdString().c_str());
 
-        auto provider = opentelemetry::trace::Provider::GetTracerProvider();
+        //we don't always want to create trace/span IDs
 
-        //what if tracerName is empty?
-        auto tracer = provider->GetTracer(tracerName.get());
-
-        if (localParentSpan != nullptr)
-            injectlocalParentSpan(localParentSpan);
-
-        span = tracer->StartSpan(name.get(), {}, opts);
-
-        if (span != nullptr)
+        if (hasMask(flags, SpanFlags::EnsureTraceId) || //per span flags
+            queryTraceManager().alwaysCreateTraceIds() || //Global/conponet flags
+            nostd::get<trace_api::SpanContext>(opts.parent).IsValid()) // valid parent was passed in
         {
-            storeSpanContext();
+            auto provider = opentelemetry::trace::Provider::GetTracerProvider();
 
-            StringBuffer out;
-            toLog(out);
-            LOG(MCmonitorEvent, "Span start: {%s}", out.str());
+            //what if tracerName is empty?
+            auto tracer = provider->GetTracer(tracerName.get());
+
+            span = tracer->StartSpan(name.get(), {}, opts);
+
+            if (span != nullptr)
+            {
+                storeSpanContext();
+
+                StringBuffer out;
+                toLog(out);
+                LOG(MCmonitorEvent, "Span start: {%s}", out.str());
+            }
         }
-
     }
 
     void storeSpanContext()
@@ -471,7 +477,11 @@ protected:
 
         auto localParentSpanCtx = localParentSpan->querySpanContext();
         if(localParentSpanCtx.IsValid())
+        {
             opts.parent = localParentSpanCtx;
+        }
+
+
     }
 
     void storeTraceID()
@@ -570,7 +580,7 @@ public:
     : CSpan(spanName, parent)
     {
         opts.kind = opentelemetry::trace::SpanKind::kInternal;
-        init();
+        init(SpanFlags::None);
     }
 
     void toLog(StringBuffer & out) const override
@@ -593,7 +603,7 @@ public:
     : CSpan(spanName, parent)
     {
         opts.kind = opentelemetry::trace::SpanKind::kClient;
-        init();
+        init(SpanFlags::None);
     }
 
     void toLog(StringBuffer & out) const override
@@ -629,11 +639,6 @@ private:
     {
         if (httpHeaders)
         {
-            // perform any key mapping needed...
-            //Instrumented http client/server Capitalizes the first letter of the header name
-            //if (key == opentel_trace::propagation::kTraceParent || key == opentel_trace::propagation::kTraceState )
-            //    theKey[0] = toupper(theKey[0]);
-
             if (httpHeaders->hasProp(kGlobalIdHttpHeaderName))
                 hpccGlobalId.set(httpHeaders->queryProp(kGlobalIdHttpHeaderName));
             else if (httpHeaders->hasProp(kLegacyGlobalIdHttpHeaderName))
@@ -662,6 +667,7 @@ private:
             {
                 remoteParentSpanCtx = remoteParentSpan->GetContext();
                 opts.parent = remoteParentSpanCtx;
+
             }
         }
     }
@@ -697,7 +703,7 @@ public:
     {
         opts.kind = opentelemetry::trace::SpanKind::kServer;
         setSpanContext(httpHeaders, flags);
-        init();
+        init(flags);
         setContextAttributes();
     }
 
@@ -715,6 +721,7 @@ public:
             .append("\"");
         }
     }
+
     void toString(StringBuffer & out, bool isLeaf) const override
     {
         out.append("\"Type\":\"Server\"");
@@ -747,6 +754,7 @@ class CTraceManager : implements ITraceManager, public CInterface
 private:
     bool enabled = true;
     bool optAlwaysCreateGlobalIds = false;
+    bool optAlwaysCreateTraceIds = true;
     StringAttr moduleName;
 
     //Initializes the global trace provider which is required for all Otel based tracing operations.
@@ -775,31 +783,53 @@ private:
                         exporter = opentelemetry::exporter::trace::OStreamSpanExporterFactory::Create();
                         DBGLOG("Tracing to stdout/err...");
                     }
-                    else if (stricmp(exportType.str(), "OTLP")==0)
+                    else if (stricmp(exportType.str(), "OTLP")==0 || stricmp(exportType.str(), "OTLP-HTTP")==0)
+                    {
+                        opentelemetry::exporter::otlp::OtlpHttpExporterOptions trace_opts;
+                        const char * endPoint = exportConfig->queryProp("@endpoint");
+                        if (endPoint)
+                            trace_opts.url = endPoint;
+
+                        if (exportConfig->hasProp("@timeOutSecs")) //not sure exactly what this value actually affects
+                            trace_opts.timeout = std::chrono::seconds(exportConfig->getPropInt("@timeOutSecs"));
+
+                        // Whether to print the status of the exporter in the console
+                        trace_opts.console_debug = exportConfig->getPropBool("@consoleDebug", false);
+
+                        exporter  = opentelemetry::exporter::otlp::OtlpHttpExporterFactory::Create(trace_opts);
+                        DBGLOG("Exporting traces via OTLP/HTTP to: (%s)", trace_opts.url.c_str());
+                    }
+                    else if (stricmp(exportType.str(), "OTLP-GRPC")==0)
                     {
                         namespace otlp = opentelemetry::exporter::otlp;
 
                         otlp::OtlpGrpcExporterOptions opts;
-                        StringBuffer endPoint;
-                        exportConfig->getProp("@endpoint", endPoint);
-                        opts.endpoint = endPoint.str();
+
+                        const char * endPoint = exportConfig->queryProp("@endpoint");
+                        if (endPoint)
+                            opts.endpoint = endPoint;
 
                         opts.use_ssl_credentials = exportConfig->getPropBool("@useSslCredentials", false);
 
                         if (opts.use_ssl_credentials)
                         {
-                            StringBuffer sslCACert;
-                            exportConfig->getProp("@sslCredentialsCACcert", sslCACert);
-                            opts.ssl_credentials_cacert_as_string = sslCACert.str();
+                            StringBuffer sslCACertPath;
+                            exportConfig->getProp("@sslCredentialsCACertPath", sslCACertPath);
+                            opts.ssl_credentials_cacert_path = sslCACertPath.str();
                         }
 
+                        if (exportConfig->hasProp("@timeOutSecs")) //grpc deadline timeout in seconds
+                            opts.timeout = std::chrono::seconds(exportConfig->getPropInt("@timeOutSecs"));
+
                         exporter = otlp::OtlpGrpcExporterFactory::Create(opts);
-                        DBGLOG("Tracing to OTLP (%s)", endPoint.str());
+                        DBGLOG("Exporting traces via OTLP/GRPC to: (%s)", opts.endpoint.c_str());
                     }
                     else if (stricmp(exportType.str(), "Prometheus")==0)
                         DBGLOG("Tracing to Prometheus currently not supported");
-                    else if (stricmp(exportType.str(), "HPCC")==0)
-                        DBGLOG("Tracing to HPCC JLog currently not supported");
+                    else if (stricmp(exportType.str(), "NONE")==0)
+                        DBGLOG("Tracing exporter set to 'NONE', no trace exporting will be performed");
+                    else
+                        DBGLOG("Tracing exporter type not supported: '%s', no trace exporting will be performed", exportType.str());
                 }
                 else
                     DBGLOG("Tracing exporter type not specified");
@@ -856,6 +886,7 @@ private:
         tracing:                            #optional - tracing enabled by default
             disabled: true                  #optional - disable OTel tracing
             alwaysCreateGlobalIds : false   #optional - should global ids always be created?
+            alwaysCreateTraceIds            #optional - should trace ids always be created?
             exporter:                       #optional - Controls how trace data is exported/reported
               type: OTLP                    #OS|OTLP|Prometheus|HPCC (default: no export, jlog entry)
               endpoint: "localhost:4317"    #exporter specific key/value pairs
@@ -874,22 +905,24 @@ private:
             {
                 const char * simulatedGlobalYaml = R"!!(global:
     tracing:
-        disable: true
+        disabled: false
         exporter:
-          type: OTLP
-          endpoint: "localhost:4317"
-          useSslCredentials: true
-          sslCredentialsCACcert: "ssl-certificate"
+          type: OTLP-HTTP
+          timeOutSecs: 15
+          consoleDebug: true
         processor:
-          type: batch
+          type: simple
     )!!";
                 testTree.setown(createPTreeFromYAMLString(simulatedGlobalYaml, ipt_none, ptr_ignoreWhiteSpace, nullptr));
                 traceConfig = testTree->queryPropTree("global/tracing");
             }
+            if (traceConfig)
+            {
+                StringBuffer xml;
+                toXML(traceConfig, xml);
+                DBGLOG("traceConfig tree: %s", xml.str());
+            }
 
-            StringBuffer xml;
-            toXML(traceConfig, xml);
-            DBGLOG("traceConfig tree: %s", xml.str());
 #endif
             bool disableTracing = traceConfig && traceConfig->getPropBool("@disabled", false);
 
@@ -910,6 +943,7 @@ private:
             if (traceConfig)
             {
                 optAlwaysCreateGlobalIds = traceConfig->getPropBool("@alwaysCreateGlobalIds", optAlwaysCreateGlobalIds);
+                optAlwaysCreateTraceIds = traceConfig->getPropBool("@alwaysCreateTraceIds", optAlwaysCreateTraceIds);
             }
 
             // The global propagator should be set regardless of whether tracing is enabled or not.
@@ -981,6 +1015,11 @@ public:
     virtual bool alwaysCreateGlobalIds() const
     {
         return optAlwaysCreateGlobalIds;
+    }
+
+    virtual bool alwaysCreateTraceIds() const
+    {
+        return optAlwaysCreateTraceIds;
     }
 };
 

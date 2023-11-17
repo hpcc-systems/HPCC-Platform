@@ -369,7 +369,9 @@ public:
 
     virtual int receive(IMultiException *me);
 
+    void startSpan();
     void updateContext();
+    void annotateSpan(const char * key, const char * value);
 
     virtual void setMaxRequestEntityLength(int len) {m_MaxRequestEntityLength = len;}
     virtual int getMaxRequestEntityLength() { return m_MaxRequestEntityLength; }

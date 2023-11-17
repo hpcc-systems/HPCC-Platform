@@ -154,63 +154,6 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         pushUrl(`/workunits/${wuid}/metrics/${selection}`);
     }, [wuid, selection]);
 
-    //  Command Bar  ---
-    const buttons = React.useMemo((): ICommandBarItemProps[] => [
-        {
-            key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
-            onClick: () => refresh()
-        },
-        {
-            key: "hotspot", text: nlsHPCC.Hotspots, iconProps: { iconName: "SpeedHigh" },
-            disabled: !hotspots, onClick: () => onHotspot()
-        },
-        { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
-        {
-            key: "timeline", text: nlsHPCC.Timeline, canCheck: true, checked: showTimeline, iconProps: { iconName: "TimelineProgress" },
-            onClick: () => {
-                setShowTimeline(!showTimeline);
-            }
-        },
-        {
-            key: "options", text: nlsHPCC.Options, iconProps: { iconName: "Settings" },
-            onClick: () => {
-                setOptions({ ...options, layout: dockpanel.layout() });
-                setShowMetricOptions(true);
-            }
-        }
-    ], [dockpanel, hotspots, onHotspot, options, refresh, setOptions, showTimeline]);
-
-    const formatColumns = React.useMemo((): Utility.ColumnMap => {
-        const copyColumns: Utility.ColumnMap = {};
-        for (const key in columns) {
-            copyColumns[key] = {
-                field: key,
-                label: key
-            };
-        }
-        return copyColumns;
-    }, [columns]);
-
-    const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
-        {
-            key: "copy", text: nlsHPCC.CopyToClipboard, disabled: !metrics.length || !navigator?.clipboard?.writeText, iconOnly: true, iconProps: { iconName: "Copy" },
-            onClick: () => {
-                const tsv = Utility.formatAsDelim(formatColumns, metrics, "\t");
-                navigator?.clipboard?.writeText(tsv);
-            }
-        },
-        {
-            key: "download", text: nlsHPCC.DownloadToCSV, disabled: !metrics.length, iconOnly: true, iconProps: { iconName: "Download" },
-            onClick: () => {
-                const csv = Utility.formatAsDelim(formatColumns, metrics, ",");
-                Utility.downloadText(csv, `metrics-${wuid}.csv`);
-            }
-        }, {
-            key: "fullscreen", title: nlsHPCC.MaximizeRestore, iconProps: { iconName: fullscreen ? "ChromeRestore" : "FullScreen" },
-            onClick: () => setFullscreen(!fullscreen)
-        }
-    ], [formatColumns, fullscreen, metrics, wuid]);
-
     //  Timeline ---
     const timeline = useConst(() => new WUTimelinePatched()
         .maxZoom(Number.MAX_SAFE_INTEGER)
@@ -547,6 +490,79 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         setOptions({ ...options, layout });
         saveOptions();
     }, [options, saveOptions, setOptions]);
+
+    //  Command Bar  ---
+    const buttons = React.useMemo((): ICommandBarItemProps[] => [
+        {
+            key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
+            onClick: () => refresh()
+        },
+        {
+            key: "hotspot", text: nlsHPCC.Hotspots, iconProps: { iconName: "SpeedHigh" },
+            disabled: !hotspots, onClick: () => onHotspot()
+        },
+        { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        {
+            key: "timeline", text: nlsHPCC.Timeline, canCheck: true, checked: showTimeline, iconProps: { iconName: "TimelineProgress" },
+            onClick: () => {
+                setShowTimeline(!showTimeline);
+            }
+        },
+        {
+            key: "options", text: nlsHPCC.Options, iconProps: { iconName: "Settings" },
+            onClick: () => {
+                setOptions({ ...options, layout: dockpanel.layout() });
+                setShowMetricOptions(true);
+            }
+        }
+    ], [dockpanel, hotspots, onHotspot, options, refresh, setOptions, showTimeline]);
+
+    const formatColumns = React.useMemo((): Utility.ColumnMap => {
+        const copyColumns: Utility.ColumnMap = {};
+        for (const key in columns) {
+            copyColumns[key] = {
+                field: key,
+                label: key
+            };
+        }
+        return copyColumns;
+    }, [columns]);
+
+    const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
+        {
+            key: "copy", text: nlsHPCC.CopyToClipboard, disabled: !metrics.length || !navigator?.clipboard?.writeText, iconOnly: true, iconProps: { iconName: "Copy" },
+            onClick: () => {
+                const tsv = Utility.formatAsDelim(formatColumns, metrics, "\t");
+                navigator?.clipboard?.writeText(tsv);
+            }
+        },
+        {
+            key: "download", text: nlsHPCC.DownloadToCSV, disabled: !metrics.length, iconOnly: true, iconProps: { iconName: "Download" },
+            subMenuProps: {
+                items: [{
+                    key: "downloadCSV",
+                    text: nlsHPCC.DownloadToCSV,
+                    iconProps: { iconName: "Table" },
+                    onClick: () => {
+                        const csv = Utility.formatAsDelim(formatColumns, metrics, ",");
+                        Utility.downloadText(csv, `metrics-${wuid}.csv`);
+                    }
+                },
+                {
+                    key: "downloadDOT",
+                    text: nlsHPCC.DownloadToDOT,
+                    iconProps: { iconName: "Relationship" },
+                    onClick: () => {
+                        const dot = metricGraph.graphTpl(selectedMetrics, options);
+                        Utility.downloadText(dot, `metrics-${wuid}.dot`);
+                    }
+                }]
+            }
+        }, {
+            key: "fullscreen", title: nlsHPCC.MaximizeRestore, iconProps: { iconName: fullscreen ? "ChromeRestore" : "FullScreen" },
+            onClick: () => setFullscreen(!fullscreen)
+        }
+    ], [formatColumns, fullscreen, metricGraph, metrics, options, selectedMetrics, wuid]);
 
     return <HolyGrail fullscreen={fullscreen}
         header={<>

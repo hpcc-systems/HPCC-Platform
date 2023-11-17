@@ -142,6 +142,7 @@ private:
 #define WUINFO_IncludeAllowedClusters   0x10000
 #define WUINFO_IncludeTotalClusterTime  0x20000
 #define WUINFO_IncludeServiceNames      0x40000
+#define WUINFO_IncludeProcesses         0x80000
 #define WUINFO_All                      0xFFFFFFFF
 
 static constexpr unsigned defaultMaxLogRecords = 10000;
@@ -470,6 +471,7 @@ public:
     void getResult(IConstWUResult &r, IArrayOf<IEspECLResult>& results, unsigned long flags);
     void getStats(const WuScopeFilter & filter, const StatisticsFilter& statsFilter, bool createDescriptions, IArrayOf<IEspWUStatisticItem>& statistics);
     void getServiceNames(IEspECLWorkunit &info, unsigned long flags);
+    void getECLWUProcesses(IEspECLWorkunit &info, unsigned long flags);
 
 #ifndef _CONTAINERIZED
     void getWUProcessLogSpecs(const char* processName, const char* logSpec, const char* logDir, bool eclAgent, StringArray& logSpecs);

@@ -114,6 +114,7 @@ public:
         updateTraceSummaryHeader();
         m_secureContext.setown(secureContext);
         m_SecurityHandler.setSecureContext(secureContext);
+        m_activeSpan.set(getNullSpan());
     }
 
     ~CEspContext()
@@ -633,29 +634,21 @@ public:
     {
         return m_activeSpan;
     }
-    //GH Can these be deleted?
+
     virtual const char* getGlobalId() const override
     {
-        if (!m_activeSpan)
-            return nullptr;
         return m_activeSpan->queryGlobalId();
     }
     virtual const char* getCallerId() const override
     {
-        if (!m_activeSpan)
-            return nullptr;
         return m_activeSpan->queryCallerId();
     }
     virtual const char* getLocalId() const override
     {
-        if (!m_activeSpan)
-            return nullptr;
         return m_activeSpan->queryLocalId();
     }
     virtual IProperties * getClientSpanHeaders() const override
     {
-        if (!m_activeSpan)
-            return nullptr;
         return ::getClientHeaders(m_activeSpan);
     }
 };

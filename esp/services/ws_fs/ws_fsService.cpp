@@ -2790,6 +2790,7 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
         wuFSpecDest->setLogicalName(dstname);
         wuFSpecDest->setFileMask(fileMask.str());
         wuOptions->setOverwrite(req.getOverwrite());
+        wuOptions->setEnsure(req.getEnsure());
         wuOptions->setPreserveCompression(req.getPreserveCompression());
         if (!req.getExpireDays_isNull())
             wuOptions->setExpireDays(req.getExpireDays());
