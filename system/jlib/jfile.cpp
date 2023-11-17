@@ -7711,10 +7711,10 @@ public:
             offset_t readPos = (pos / blockSize) * blockSize; // NB: could be beyond end of file
             if (readPos != lastReadPos)
             {
-                readLen = io->read(readPos, blockSize, buffer); // NB: can be less than blockSize (and 0 if beyodn end of file)
+                readLen = io->read(readPos, blockSize, buffer); // NB: can be less than blockSize (and 0 if beyond end of file)
                 lastReadPos = readPos;
             }
-            size32_t endPos = readPos+readLen;
+            offset_t endPos = readPos+readLen;
             size32_t copyNow;
             if (pos+len <= endPos) // common case hopefully
                 copyNow = len;
