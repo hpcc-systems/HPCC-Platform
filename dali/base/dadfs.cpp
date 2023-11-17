@@ -11168,6 +11168,7 @@ public:
             CScopeConnectLock sconnlock("getFileTree", *logicalname, false, false, false, defaultTimeout);
             IPropertyTree* sroot = sconnlock.conn()?sconnlock.conn()->queryRoot():NULL;
             logicalname->getTail(tail);
+            INamedGroupStore *groupResolver = &queryNamedGroupStore();
             if (version >= 2)
             {
                 Owned<IPropertyTree> tree = getNamedPropTree(sroot,queryDfsXmlBranchName(DXB_File),"@name",tail.str(),false);
@@ -11179,7 +11180,9 @@ public:
                         // asking for the returned meta data to be remapped to point to the dafilesrv service.
                         if (hasMask(opts, GetFileTreeOpts::remapToService))
                         {
+                            tree.setown(createPTreeFromIPT(tree)); // copy live Dali tree, because it is about to be altered by remapGroupsToDafilesrv
                             remapGroupsToDafilesrv(tree, &queryNamedGroupStore());
+                            groupResolver = nullptr; // do not attempt to resolve remapped group (it will not exist and cause addUnique to create a new anon one)
 
                             const char *remotePlaneName = tree->queryProp("@group");
                             Owned<IPropertyTree> filePlane = getStoragePlane(remotePlaneName);
@@ -11189,7 +11192,7 @@ public:
                         }
                     }
 
-                    Owned<IFileDescriptor> fdesc = deserializeFileDescriptorTree(tree,&queryNamedGroupStore(),IFDSF_EXCLUDE_CLUSTERNAMES);
+                    Owned<IFileDescriptor> fdesc = deserializeFileDescriptorTree(tree,groupResolver,IFDSF_EXCLUDE_CLUSTERNAMES);
                     mb.append((int)1); // 1 == standard file
                     fdesc->serialize(mb);
 
@@ -11220,15 +11223,20 @@ public:
                 {
                     if (version == MDFS_GET_FILE_TREE_V2)
                     {
-#ifdef _CONTAINERIZED
-                        // NB: to be here, the client is by definition legacy, and should be foreign.
-                        // foreignAccess must also have been configured in this environment
+                        if (isContainerized())
+                        {
+                            // NB: to be here, the client is by definition legacy, and should only be via ~foreign.
+                            // NB: foreignAccess is a auto-generated template setting, that is set to true if Dali and directio,
+                            // have been exposed in the helm chart for foreign access.
+                            if (getComponentConfigSP()->getPropBool("@foreignAccess"))
+                            {
+                                tree.setown(createPTreeFromIPT(tree)); // copy live Dali tree, because it is about to be altered by remapGroupsToDafilesrv
+                                remapGroupsToDafilesrv(tree, &queryNamedGroupStore());
+                                groupResolver = nullptr; // do not attempt to resolve remapped group (it will not exist and cause addUnique to create a new anon one)
+                            }
+                        }
 
-                        if (getComponentConfigSP()->getPropBool("@foreignAccess"))
-                            remapGroupsToDafilesrv(tree, &queryNamedGroupStore());
-#endif
-
-                        Owned<IFileDescriptor> fdesc = deserializeFileDescriptorTree(tree,&queryNamedGroupStore(),IFDSF_EXCLUDE_CLUSTERNAMES);
+                        Owned<IFileDescriptor> fdesc = deserializeFileDescriptorTree(tree,groupResolver,IFDSF_EXCLUDE_CLUSTERNAMES);
 
                         mb.append((int)-2).append(version);
 
