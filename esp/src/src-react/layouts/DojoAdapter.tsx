@@ -60,8 +60,12 @@ export const DojoAdapter: React.FunctionComponent<DojoAdapterProps> = ({
                     },
                     ...delayProps
                 }, elem);
-                widget.startup();
-                widget.resize();
+                if (widget.startup) {
+                    widget.startup();
+                }
+                if (widget.resize) {
+                    widget.resize();
+                }
                 if (widget.init) {
                     widget.init(params || {});
                 }

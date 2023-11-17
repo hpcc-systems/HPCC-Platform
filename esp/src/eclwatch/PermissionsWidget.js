@@ -11,7 +11,12 @@ define([
     "hpcc/GridDetailsWidget",
     "src/ws_access",
     "src/ESPUtil",
-    "src/Utility"
+    "src/Utility",
+
+    "dijit/Dialog",
+    "dijit/form/TextBox",
+
+    "hpcc/TableContainer"
 
 ], function (declare, nlsHPCCMod,
     registry, CheckBox,
