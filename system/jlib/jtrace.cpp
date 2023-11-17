@@ -34,6 +34,7 @@
 #define ForEach(i)              for((i).first();(i).isValid();(i).next())
 
 #include "opentelemetry/exporters/otlp/otlp_grpc_exporter_factory.h"
+#include "opentelemetry/exporters/otlp/otlp_http_exporter_factory.h"
 #include "opentelemetry/exporters/otlp/otlp_http_exporter_options.h"
 #include "opentelemetry/exporters/memory/in_memory_span_data.h"
 
@@ -782,31 +783,53 @@ private:
                         exporter = opentelemetry::exporter::trace::OStreamSpanExporterFactory::Create();
                         DBGLOG("Tracing to stdout/err...");
                     }
-                    else if (stricmp(exportType.str(), "OTLP")==0)
+                    else if (stricmp(exportType.str(), "OTLP")==0 || stricmp(exportType.str(), "OTLP-HTTP")==0)
+                    {
+                        opentelemetry::exporter::otlp::OtlpHttpExporterOptions trace_opts;
+                        const char * endPoint = exportConfig->queryProp("@endpoint");
+                        if (endPoint)
+                            trace_opts.url = endPoint;
+
+                        if (exportConfig->hasProp("@timeOutSecs")) //not sure exactly what this value actually affects
+                            trace_opts.timeout = std::chrono::seconds(exportConfig->getPropInt("@timeOutSecs"));
+
+                        // Whether to print the status of the exporter in the console
+                        trace_opts.console_debug = exportConfig->getPropBool("@consoleDebug", false);
+
+                        exporter  = opentelemetry::exporter::otlp::OtlpHttpExporterFactory::Create(trace_opts);
+                        DBGLOG("Exporting traces via OTLP/HTTP to: (%s)", trace_opts.url.c_str());
+                    }
+                    else if (stricmp(exportType.str(), "OTLP-GRPC")==0)
                     {
                         namespace otlp = opentelemetry::exporter::otlp;
 
                         otlp::OtlpGrpcExporterOptions opts;
-                        StringBuffer endPoint;
-                        exportConfig->getProp("@endpoint", endPoint);
-                        opts.endpoint = endPoint.str();
+
+                        const char * endPoint = exportConfig->queryProp("@endpoint");
+                        if (endPoint)
+                            opts.endpoint = endPoint;
 
                         opts.use_ssl_credentials = exportConfig->getPropBool("@useSslCredentials", false);
 
                         if (opts.use_ssl_credentials)
                         {
-                            StringBuffer sslCACert;
-                            exportConfig->getProp("@sslCredentialsCACcert", sslCACert);
-                            opts.ssl_credentials_cacert_as_string = sslCACert.str();
+                            StringBuffer sslCACertPath;
+                            exportConfig->getProp("@sslCredentialsCACertPath", sslCACertPath);
+                            opts.ssl_credentials_cacert_path = sslCACertPath.str();
                         }
 
+                        if (exportConfig->hasProp("@timeOutSecs")) //grpc deadline timeout in seconds
+                            opts.timeout = std::chrono::seconds(exportConfig->getPropInt("@timeOutSecs"));
+
                         exporter = otlp::OtlpGrpcExporterFactory::Create(opts);
-                        DBGLOG("Tracing to OTLP (%s)", endPoint.str());
+                        DBGLOG("Exporting traces via OTLP/GRPC to: (%s)", opts.endpoint.c_str());
                     }
                     else if (stricmp(exportType.str(), "Prometheus")==0)
                         DBGLOG("Tracing to Prometheus currently not supported");
-                    else if (stricmp(exportType.str(), "HPCC")==0)
-                        DBGLOG("Tracing to HPCC JLog currently not supported");
+                    else if (stricmp(exportType.str(), "NONE")==0)
+                        DBGLOG("Tracing exporter set to 'NONE', no trace exporting will be performed");
+                    else
+                        DBGLOG("Tracing exporter type not supported: '%s', no trace exporting will be performed", exportType.str());
                 }
                 else
                     DBGLOG("Tracing exporter type not specified");
@@ -882,22 +905,24 @@ private:
             {
                 const char * simulatedGlobalYaml = R"!!(global:
     tracing:
-        disable: true
+        disabled: false
         exporter:
-          type: OTLP
-          endpoint: "localhost:4317"
-          useSslCredentials: true
-          sslCredentialsCACcert: "ssl-certificate"
+          type: OTLP-HTTP
+          timeOutSecs: 15
+          consoleDebug: true
         processor:
-          type: batch
+          type: simple
     )!!";
                 testTree.setown(createPTreeFromYAMLString(simulatedGlobalYaml, ipt_none, ptr_ignoreWhiteSpace, nullptr));
                 traceConfig = testTree->queryPropTree("global/tracing");
             }
+            if (traceConfig)
+            {
+                StringBuffer xml;
+                toXML(traceConfig, xml);
+                DBGLOG("traceConfig tree: %s", xml.str());
+            }
 
-            StringBuffer xml;
-            toXML(traceConfig, xml);
-            DBGLOG("traceConfig tree: %s", xml.str());
 #endif
             bool disableTracing = traceConfig && traceConfig->getPropBool("@disabled", false);
 

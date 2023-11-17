@@ -261,7 +261,7 @@ target_link_libraries ( jlib
         #   opentelemetry-cpp::otlp_grpc_log_record_exporter     - Imported target of opentelemetry-cpp::otlp_grpc_log_record_exporter
         #   opentelemetry-cpp::otlp_grpc_metrics_exporter        - Imported target of opentelemetry-cpp::otlp_grpc_metrics_exporter
         #   opentelemetry-cpp::otlp_http_client                  - Imported target of opentelemetry-cpp::otlp_http_client
-        #   opentelemetry-cpp::otlp_http_exporter                - Imported target of opentelemetry-cpp::otlp_http_exporter
+        opentelemetry-cpp::otlp_http_exporter #                  - Imported target of opentelemetry-cpp::otlp_http_exporter
         #   opentelemetry-cpp::otlp_http_log_record_exporter     - Imported target of opentelemetry-cpp::otlp_http_log_record_exporter
         #   opentelemetry-cpp::otlp_http_metric_exporter         - Imported target of opentelemetry-cpp::otlp_http_metric_exporter
         #   opentelemetry-cpp::ostream_metrics_exporter          - Imported target of opentelemetry-cpp::ostream_metrics_exporter
