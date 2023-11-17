@@ -15,22 +15,22 @@
     limitations under the License.
 ############################################################################## */
 
-#ifndef _ESPWIZ_ws_sasha_HPP__
-#define _ESPWIZ_ws_sasha_HPP__
+EspInclude(common);
 
-#include "ws_sasha_esp.ipp"
-#include "exception_util.hpp"
-#include "mpbase.hpp"
-
-class CWSSashaEx : public CWSSasha
+ESPrequest [nil_remove] GetVersionRequest
 {
-    INode* createSashaNode(const char* archiverType);
-
-public:
-    IMPLEMENT_IINTERFACE;
-
-    virtual void init(IPropertyTree* cfg, const char* process, const char* service) override;
-    virtual bool onGetVersion(IEspContext& context, IEspGetVersionRequest& req, IEspResultResponse& resp) override;
 };
 
-#endif //_ESPWIZ_ws_sasha_HPP__
+ESPresponse [exceptions_inline, nil_remove] ResultResponse
+{
+    string Result;
+};
+
+ESPservice [auth_feature("DEFERRED"), //This declares that the method logic handles feature level authorization
+    version("1.00"), default_client_version("1.00"), exceptions_inline("./smc_xslt/exceptions.xslt")] WSSasha
+{
+    ESPmethod [auth_feature("SashaAccess:Access")] GetVersion(GetVersionRequest, ResultResponse);
+};
+
+SCMexportdef(WSSasha);
+SCMapi(WSSasha) IClientWSSasha *createWSSashaClient();

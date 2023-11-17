@@ -16,6 +16,7 @@
 #endif
 
 #include "sacmd.hpp"
+#include "saruncmd.hpp"
 
 bool restoreWU(const char * sashaserver,const char *wuid)
 {
@@ -374,23 +375,11 @@ ISashaCommand *createCommand(unsigned argc, char* argv[], SocketEndpoint &server
     return cmd.getClear();
 }
 
-bool getVersion(INode *node)
+void getVersion(INode *node)
 {
-    Owned<ISashaCommand> cmd = createSashaCommand();
-    cmd->setAction(SCA_GETVERSION);
-    StringBuffer ips;
-    node->endpoint().getHostText(ips);
-    if (!cmd->send(node,1*60*1000)) {
-        OERRLOG("Could not connect to Sasha server on %s",ips.str());
-        return false;
-    }
-    StringBuffer id;
-    if (cmd->getId(0,id)) {
-        PROGLOG("Sasha server[%s]: Version %s",ips.str(),id.str());
-        return true;
-    }
-    IERRLOG("Sasha server[%s]: Protocol error",ips.str());
-    return false;
+    StringBuffer outBuffer;
+    runSashaCommand(SCA_GETVERSION,node,outBuffer);
+    PROGLOG("%s",outBuffer.str());
 }
 
 struct ReleaseAtomBlock { ~ReleaseAtomBlock() { releaseAtoms(); } };
@@ -417,7 +406,8 @@ int main(int argc, char* argv[])
         if (cmd.get()) {
             SashaCommandAction action = cmd->getAction();
             Owned<INode> node = createINode(ep);
-            if (getVersion(node)&&(action!=SCA_GETVERSION)) {
+            getVersion(node);
+            if (action!=SCA_GETVERSION) {
                 if (action==SCA_RESTORE) {
                     cmd->setAction(SCA_LIST);
                     cmd->setArchived(true);

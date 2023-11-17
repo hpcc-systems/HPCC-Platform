@@ -26,6 +26,7 @@ project( ws_sasha )
 include(${HPCC_SOURCE_DIR}/esp/scm/espscm.cmake)
 
 set (    SRCS
+         ${HPCC_SOURCE_DIR}/dali/sasha/sacmd.cpp
          ${ESPSCM_GENERATED_DIR}/ws_sasha_esp.cpp
          ws_sashaplugin.cpp
          ws_sashaservice.cpp
@@ -45,6 +46,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/system/security/shared
          ${HPCC_SOURCE_DIR}/system/mp
          ${HPCC_SOURCE_DIR}/common/thorhelper
+         ${HPCC_SOURCE_DIR}/common/environment
          ${HPCC_SOURCE_DIR}/dali/base
          ${HPCC_SOURCE_DIR}/dali/sasha
     )
@@ -57,6 +59,8 @@ target_link_libraries ( ws_sasha
          jlib
          xmllib
          esphttp
+         SMCLib
+         saruncmdlib
          ${COMMON_ESP_SERVICE_LIBS}
     )
 

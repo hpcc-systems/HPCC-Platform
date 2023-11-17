@@ -21,9 +21,37 @@
 
 #include "ws_sashaservice.hpp"
 #include "jlib.hpp"
+#include "TpWrapper.hpp"
+#include "saruncmd.hpp"
 
-using namespace ws_sasha;
+constexpr const char* FEATURE_URL = "SashaAccess";
+
+INode* CWSSashaEx::createSashaNode(const char* archiverType)
+{
+    SocketEndpoint ep;
+    getSashaServiceEP(ep, archiverType, true);
+    return createINode(ep);
+}
 
 void CWSSashaEx::init(IPropertyTree* cfg, const char* process, const char* service)
 {
+}
+
+bool CWSSashaEx::onGetVersion(IEspContext& context, IEspGetVersionRequest& req, IEspResultResponse& resp)
+{
+    try
+    {
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_SASHA_ACCESS_DENIED, "WSSashaEx.GetVersion: Permission denied.");
+
+        StringBuffer results;
+        Owned<INode> node = createSashaNode(wuArchiverType);
+        runSashaCommand(SCA_GETVERSION, node, results);
+        resp.setResult(results);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+
+    return true;
 }

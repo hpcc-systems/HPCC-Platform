@@ -24,6 +24,8 @@
 
 project (sasha)
 
+include (saruncmd.cmake)
+
 INCLUDE(CheckLibraryExists) 
 
 if (NOT WIN32 AND NOT WIN64)
@@ -112,7 +114,8 @@ install ( TARGETS sasha RUNTIME DESTINATION ${EXEC_DIR})
 target_link_libraries ( sasha 
          ${XALAN_LIBRARIES} ${XERCES_LIBRARIES}
          jlib
-         mp 
+         mp
+         saruncmdlib
     )
 
 
