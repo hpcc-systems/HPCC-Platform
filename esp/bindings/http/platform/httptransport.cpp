@@ -1915,6 +1915,18 @@ int CHttpRequest::receive(IMultiException *me)
     return 0;
 }
 
+void CHttpRequest::startSpan()
+{
+    //MORE: The previous code would be better off querying httpHeaders...
+    Owned<IProperties> httpHeaders = getHeadersAsProperties(m_headers);
+    Owned<ISpan> requestSpan = queryTraceManager().createServerSpan("HTTPRequest", httpHeaders, SpanFlags::EnsureGlobalId);
+    m_context->setActiveSpan(requestSpan);
+}
+
+void CHttpRequest::annotateSpan(const char * key, const char * value)
+{
+    m_context->queryActiveSpan()->setSpanAttribute(key, value);
+}
 
 void CHttpRequest::updateContext()
 {
@@ -1982,11 +1994,6 @@ void CHttpRequest::updateContext()
         m_context->setUseragent(useragent.str());
         getHeader("Accept-Language", acceptLanguage);
         m_context->setAcceptLanguage(acceptLanguage.str());
-
-        //MORE: The previous code would be better off querying httpHeaders...
-        Owned<IProperties> httpHeaders = getHeadersAsProperties(m_headers);
-        Owned<ISpan> requestSpan = queryTraceManager().createServerSpan("request", httpHeaders, SpanFlags::EnsureGlobalId);
-        m_context->setActiveSpan(requestSpan);
     }
 }
 
