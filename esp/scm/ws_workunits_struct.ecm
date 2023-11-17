@@ -339,6 +339,18 @@ ESPStruct [nil_remove] ThorLogInfo
     int    NumberSlaves;
 };
 
+ESPStruct [nil_remove] ECLWUProcess
+{
+    string Name;
+    string Type;
+    string PodName;           //containerized only
+    int    InstanceNumber(1); //containerized only
+    string Log;               //bare metal only
+    string PID;               //bare metal only
+    string Pattern;           //bare metal only
+    int    Max(1);            //bare metal only
+};
+
 ESPStruct [nil_remove] ECLWorkunitLW
 {
     string Wuid;
@@ -442,6 +454,7 @@ ESPStruct [nil_remove] ECLWorkunit
     [min_ver("1.85")] double FileAccessCost;
     [min_ver("1.87")] double CompileCost;
     [min_ver("1.91")] bool NoAccess(false);
+    [min_ver("1.98")] ESParray<ESPstruct ECLWUProcess> ECLWUProcessList;
 };
 
 ESPStruct [nil_remove] WUECLAttribute

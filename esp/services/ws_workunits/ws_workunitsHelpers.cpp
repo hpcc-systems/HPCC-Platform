@@ -1210,6 +1210,50 @@ void WsWuInfo::getServiceNames(IEspECLWorkunit &info, unsigned long flags)
     info.setServiceNames(serviceNames);
 }
 
+void WsWuInfo::getECLWUProcesses(IEspECLWorkunit &info, unsigned long flags)
+{
+    if (!(flags & WUINFO_IncludeProcesses))
+        return;
+
+    IArrayOf<IEspECLWUProcess> processList;
+    Owned<IPropertyTreeIterator> processGroupItr = cw->getProcessTypes();
+    ForEach(*processGroupItr)
+    {
+        IPropertyTree &processGroup = processGroupItr->query();
+        const char *type = processGroup.queryName();
+
+        Owned<IPropertyTreeIterator> processItr = processGroup.getElements("*");
+        ForEach(*processItr)
+        {
+            IPropertyTree &process = processItr->query();
+            Owned<IEspECLWUProcess> p = createECLWUProcess();
+            p->setName(process.queryName());
+            p->setType(type);
+            const char *podName = process.queryProp("@podName");
+            if (!isEmptyString(podName))
+                p->setPodName(podName);
+            unsigned instanceNum = process.getPropInt("@instanceNum", NotFound);
+            if (NotFound != instanceNum)
+                p->setInstanceNumber(instanceNum);
+            const char *pid = process.queryProp("@pid");
+            if (!isEmptyString(pid))
+                p->setPID(pid);
+            const char *log = process.queryProp("@log");
+            if (!isEmptyString(log))
+                p->setLog(log);
+            unsigned max = process.getPropInt("@max", NotFound);
+            if (NotFound != max)
+                p->setMax(max);
+            const char *pattern = process.queryProp("@pattern");
+            if (!isEmptyString(pattern))
+                p->setPattern(pattern);
+
+            processList.append(*p.getClear());
+        }
+    }
+    info.setECLWUProcessList(processList);
+}
+
 void WsWuInfo::getEventScheduleFlag(IEspECLWorkunit &info)
 {
     info.setEventSchedule(0);
@@ -1371,6 +1415,8 @@ void WsWuInfo::getInfo(IEspECLWorkunit &info, unsigned long flags)
     getApplicationValues(info, flags);
     getWorkflow(info, flags);
     getServiceNames(info, flags);
+    if (version>=1.98)
+        getECLWUProcesses(info, flags);
 }
 
 #ifndef _CONTAINERIZED

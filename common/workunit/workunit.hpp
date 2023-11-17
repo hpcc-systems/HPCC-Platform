@@ -1292,6 +1292,7 @@ interface IConstWorkUnit : extends IConstWorkUnitInfo
     virtual const IPropertyTree * getXmlParams() const = 0;
     virtual unsigned __int64 getHash() const = 0;
     virtual IStringIterator *getLogs(const char *type, const char *instance=NULL) const = 0;
+    virtual IPropertyTreeIterator *getProcessTypes() const = 0;
     virtual IStringIterator *getProcesses(const char *type) const = 0;
     virtual IPropertyTreeIterator* getProcesses(const char *type, const char *instance) const = 0;
 

@@ -267,6 +267,7 @@ public:
     virtual const IPropertyTree *getXmlParams() const;
     virtual unsigned __int64 getHash() const;
     virtual IStringIterator *getLogs(const char *type, const char *component) const;
+    virtual IPropertyTreeIterator *getProcessTypes() const;
     virtual IStringIterator *getProcesses(const char *type) const;
     virtual IPropertyTreeIterator* getProcesses(const char *type, const char *instance) const;
     virtual IStringVal & getSnapshot(IStringVal & str) const;
