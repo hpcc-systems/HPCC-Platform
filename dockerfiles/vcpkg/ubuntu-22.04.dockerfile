@@ -1,5 +1,5 @@
 ARG VCPKG_REF=latest
-FROM hpccsystems/platform-build-base-amazonlinux:$VCPKG_REF
+FROM hpccsystems/platform-build-base-ubuntu-22.04:$VCPKG_REF
 
 ENTRYPOINT ["/bin/bash", "--login", "-c"]
 
