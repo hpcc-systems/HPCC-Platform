@@ -139,3 +139,13 @@ jobs:
               /var/log/HPCCSystems
               /home/runner/HPCCSystems-regression
           if-no-files-found: error
+
+  succeeded:
+    runs-on: ${{ inputs.os }}
+    needs: main
+    steps:
+      - shell: "bash"
+        run: |
+          echo "...all tests passed..."
+
+
