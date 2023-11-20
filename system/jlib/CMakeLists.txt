@@ -42,10 +42,10 @@ endif(NOT TARGET libbase58)
 
 find_package(yaml CONFIG REQUIRED)
 
-#For OpenTel exporter
 find_package(Protobuf REQUIRED)
-#For http exporter
-#find_package(CURL REQUIRED)
+find_package(CURL CONFIG REQUIRED)
+find_package(gRPC CONFIG REQUIRED)
+find_package(nlohmann_json CONFIG REQUIRED)
 find_package(opentelemetry-cpp CONFIG REQUIRED)
 
 SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${STRICT_CXX_FLAGS}")
@@ -238,8 +238,6 @@ endif ( ${HAVE_LIBDL} )
 if ( ${HAVE_LIBCRYPT} )
 target_link_libraries ( jlib crypt)
 endif ( ${HAVE_LIBCRYPT} )
-
-find_package(gRPC CONFIG REQUIRED)
 
 target_link_libraries ( jlib
         
