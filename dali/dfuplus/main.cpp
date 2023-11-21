@@ -123,6 +123,7 @@ void handleSyntax()
     out.append("        diffkeydst=<old-key-name>  -- use keydiff/keypatch (dst old name)\n");
     out.append("        multicopy=0|1  -- each destination part gets whole file\n");
     out.append("        preservecompression=1|0  -- optional, default is 1 (preserve)\n");
+    out.append("        ensure=0|1  -- optional, only copy file parts if not copied\n");
     out.append("    remove options:\n");
     out.append("        name=<logical-name>\n");
     out.append("        names=<multiple-logical-names-separated-by-comma>\n");

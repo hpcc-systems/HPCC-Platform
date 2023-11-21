@@ -640,11 +640,12 @@ EXPORT Despray(varstring logicalName, varstring destinationIP='', varstring dest
  * @param transferBufferSize Overrides the size (in bytes) of the internal buffer used to copy the file.  Default is 64k.
  * @param noSplit       Don't split a file part to multiple target parts. Default is FALSE.
  * @param expireDays    Number of days to auto-remove file. Default is -1, not expire.
+ * @param ensure        Only copy file parts if not copied. Defaults to FALSE.
  * @return              The DFU workunit id for the job.
  */
 
-EXPORT varstring fCopy(varstring sourceLogicalName, varstring destinationGroup, varstring destinationLogicalName, varstring sourceDali='', integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=FALSE, boolean replicate=FALSE, boolean asSuperfile=FALSE, boolean compress=FALSE, boolean forcePush=FALSE, integer4 transferBufferSize=0, boolean preserveCompression=TRUE, boolean noSplit=FALSE, integer4 expireDays=-1) :=
-    lib_fileservices.FileServices.fCopy(sourceLogicalName, destinationGroup, destinationLogicalName, sourceDali, timeOut, espServerIpPort, maxConnections, allowOverwrite, replicate, asSuperfile, compress, forcePush, transferBufferSize, preserveCompression, noSplit, expireDays);
+EXPORT varstring fCopy(varstring sourceLogicalName, varstring destinationGroup, varstring destinationLogicalName, varstring sourceDali='', integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=FALSE, boolean replicate=FALSE, boolean asSuperfile=FALSE, boolean compress=FALSE, boolean forcePush=FALSE, integer4 transferBufferSize=0, boolean preserveCompression=TRUE, boolean noSplit=FALSE, integer4 expireDays=-1, boolean ensure=false) :=
+    lib_fileservices.FileServices.fCopy(sourceLogicalName, destinationGroup, destinationLogicalName, sourceDali, timeOut, espServerIpPort, maxConnections, allowOverwrite, replicate, asSuperfile, compress, forcePush, transferBufferSize, preserveCompression, noSplit, expireDays, ensure);
 
 /**
  * Same as fCopy, but does not return the DFU Workunit ID.
@@ -652,8 +653,8 @@ EXPORT varstring fCopy(varstring sourceLogicalName, varstring destinationGroup, 
  * @see fCopy
  */
 
-EXPORT Copy(varstring sourceLogicalName, varstring destinationGroup, varstring destinationLogicalName, varstring sourceDali='', integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=FALSE, boolean replicate=FALSE, boolean asSuperfile=FALSE, boolean compress=FALSE, boolean forcePush=FALSE, integer4 transferBufferSize=0, boolean preserveCompression=TRUE, boolean noSplit=FALSE, integer4 expireDays=-1) :=
-    lib_fileservices.FileServices.Copy(sourceLogicalName, destinationGroup, destinationLogicalName, sourceDali, timeOut, espServerIpPort, maxConnections, allowOverwrite, replicate, asSuperfile, compress, forcePush, transferBufferSize, preserveCompression, noSplit, expireDays);
+EXPORT Copy(varstring sourceLogicalName, varstring destinationGroup, varstring destinationLogicalName, varstring sourceDali='', integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=FALSE, boolean replicate=FALSE, boolean asSuperfile=FALSE, boolean compress=FALSE, boolean forcePush=FALSE, integer4 transferBufferSize=0, boolean preserveCompression=TRUE, boolean noSplit=FALSE, integer4 expireDays=-1, boolean ensure=false) :=
+    lib_fileservices.FileServices.Copy(sourceLogicalName, destinationGroup, destinationLogicalName, sourceDali, timeOut, espServerIpPort, maxConnections, allowOverwrite, replicate, asSuperfile, compress, forcePush, transferBufferSize, preserveCompression, noSplit, expireDays, ensure);
 
 /**
  * Ensures the specified file is replicated to its mirror copies.
