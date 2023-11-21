@@ -14,7 +14,6 @@ esp:
    tls: true
    service:
      port: 8880
-   bindings: "/opt/HPCCSystems/bindings"
    loadDaliBindings: false
    enableSEHMapping: true
    httpConfigAccess: true

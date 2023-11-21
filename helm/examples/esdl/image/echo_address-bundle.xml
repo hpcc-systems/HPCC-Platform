@@ -1,0 +1,45 @@
+<EsdlBundle>
+  <Binding id="echo-binding-id">
+    <Definition name="echo-defn" esdlservice="WsEchoAddress" id="wsechoaddress.1">
+      <Methods>
+        <Method name="EchoAddress" querytype="script" traceLevel="10">
+          <Scripts>
+            <![CDATA[
+              <Scripts>
+                <es:Service name="service-body" xmlns:es="urn:hpcc:esdl:script">
+                  <es:copy-of select="Address"/>
+                </es:Service>
+              </Scripts>
+            ]]>
+          </Scripts>
+        </Method>
+      </Methods>
+    </Definition>
+  </Binding>
+  <Definitions>
+    <![CDATA[
+<esxdl name="echo_address">
+	<EsdlStruct name='AddressInfo'>
+		<EsdlElement name='Line1' type='string'/>
+		<EsdlElement name='Line2' type='string'/>
+		<EsdlElement name='City' type='string'/>
+		<EsdlElement name='State' type='string'/>
+		<EsdlElement name='Zip' type='int' default='33487'/>
+	</EsdlStruct>
+	<EsdlRequest name='EchoAddressRequest'>
+		<EsdlElement name='Address' complex_type='AddressInfo'/>
+	</EsdlRequest>
+	<EsdlResponse name='EchoAddressResponse'>
+		<EsdlElement name='Address' complex_type='AddressInfo'/>
+	</EsdlResponse>
+	<EsdlRequest name='WsEchoAddressPingRequest'>
+	</EsdlRequest>
+	<EsdlResponse name='WsEchoAddressPingResponse'>
+	</EsdlResponse>
+		<EsdlService name='WsEchoAddress'  version='1'>
+	<EsdlMethod name='EchoAddress' request_type='EchoAddressRequest' response_type='EchoAddressResponse' />
+	<EsdlMethod name='Ping' request_type='WsEchoAddressPingRequest' response_type='WsEchoAddressPingResponse'  auth_feature='none'/>
+		</EsdlService></esxdl>
+    ]]>
+  </Definitions>
+</EsdlBundle>
