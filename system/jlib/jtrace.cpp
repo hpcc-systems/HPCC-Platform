@@ -161,9 +161,12 @@ public:
 
     virtual void beforeDispose() override
     {
-        StringBuffer out;
-        toLog(out);
-        LOG(MCmonitorEvent, "Span end: {%s}", out.str());
+        if (queryTraceManager().logSpanFinish())
+        {
+            StringBuffer out;
+            toLog(out);
+            LOG(MCmonitorEvent, "SpanFinish: {%s}", out.str());
+        }
     }
 
     const char * getSpanID() const
@@ -453,9 +456,12 @@ protected:
             {
                 storeSpanContext();
 
-                StringBuffer out;
-                toLog(out);
-                LOG(MCmonitorEvent, "Span start: {%s}", out.str());
+                if (queryTraceManager().logSpanStart())
+                {
+                    StringBuffer out;
+                    toLog(out);
+                    LOG(MCmonitorEvent, "SpanStart: {%s}", out.str());
+                }
             }
         }
     }
@@ -755,6 +761,8 @@ private:
     bool enabled = true;
     bool optAlwaysCreateGlobalIds = false;
     bool optAlwaysCreateTraceIds = true;
+    bool optLogSpanStart = false;
+    bool optLogSpanFinish = true;
     StringAttr moduleName;
 
     //Initializes the global trace provider which is required for all Otel based tracing operations.
@@ -942,6 +950,8 @@ private:
             //Non open-telemetry tracing configuration
             if (traceConfig)
             {
+                optLogSpanStart = traceConfig->getPropBool("@logSpanStart", optLogSpanStart);
+                optLogSpanFinish = traceConfig->getPropBool("@logSpanFinish", optLogSpanFinish);
                 optAlwaysCreateGlobalIds = traceConfig->getPropBool("@alwaysCreateGlobalIds", optAlwaysCreateGlobalIds);
                 optAlwaysCreateTraceIds = traceConfig->getPropBool("@alwaysCreateTraceIds", optAlwaysCreateTraceIds);
             }
@@ -991,28 +1001,31 @@ public:
         throw makeStringExceptionV(-1, "TraceManager must be intialized!");
     }
 
-    ISpan * createServerSpan(const char * name, StringArray & httpHeaders, SpanFlags flags) const override
+    virtual ISpan * createServerSpan(const char * name, StringArray & httpHeaders, SpanFlags flags) const override
     {
         Owned<IProperties> headerProperties = getHeadersAsProperties(httpHeaders);
         return new CServerSpan(name, moduleName.get(), headerProperties, flags);
     }
 
-    ISpan * createServerSpan(const char * name, const IProperties * httpHeaders, SpanFlags flags) const override
+    virtual ISpan * createServerSpan(const char * name, const IProperties * httpHeaders, SpanFlags flags) const override
     {
         return new CServerSpan(name, moduleName.get(), httpHeaders, flags);
     }
 
-    const char * getTracedComponentName() const override
+    virtual const char * getTracedComponentName() const override
     {
         return moduleName.get();
     }
 
-    bool isTracingEnabled() const override
+    virtual bool isTracingEnabled() const override
     {
         return enabled;
     }
 
-    virtual bool alwaysCreateGlobalIds() const
+    //These functions are only accessed within this module, and should not really be in the public interface
+    //Something to possibly revisit later - either by passing as flags to the spans, or having a static
+    //function to provide the result of queryTraceManager() as a CTraceManager.
+    virtual bool alwaysCreateGlobalIds() const override
     {
         return optAlwaysCreateGlobalIds;
     }
@@ -1020,6 +1033,16 @@ public:
     virtual bool alwaysCreateTraceIds() const
     {
         return optAlwaysCreateTraceIds;
+    }
+
+    virtual bool logSpanStart() const override
+    {
+        return optLogSpanStart;
+    }
+
+    virtual bool logSpanFinish() const override
+    {
+        return optLogSpanFinish;
     }
 };
 
