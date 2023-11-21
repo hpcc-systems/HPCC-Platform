@@ -440,6 +440,11 @@
                          path="DfsAccess"
                          resource="DfsAccess"
                          service="ws_dfsservice"/>
+    <AuthenticateFeature authenticate="Yes"
+                         description="Access to HPCC Archive"
+                         path="SashaAccess"
+                         resource="SashaAccess"
+                         service="ws_sasha"/>
     <Authenticate access="Read"
                   description="Root access to SMC service"
                   path="/"
@@ -790,6 +795,11 @@
                          path="DfsAccess"
                          resource="DfsAccess"
                          service="ws_dfsservice"/>
+    <AuthenticateFeature authenticate="Yes"
+                         description="Access to HPCC Archive"
+                         path="SashaAccess"
+                         resource="SashaAccess"
+                         service="ws_sasha"/>
     <ProcessFilters>
      <Platform name="Windows">
       <ProcessFilter name="any">
@@ -1178,6 +1188,11 @@
                           path="DfsAccess"
                           resource="DfsAccess"
                           service="ws_dfsservice"/>
+     <AuthenticateFeature authenticate="Yes"
+                          description="Access to HPCC Archive"
+                          path="SashaAccess"
+                          resource="SashaAccess"
+                          service="ws_sasha"/>
      <ProcessFilters>
       <Platform name="Windows">
        <ProcessFilter name="any">
