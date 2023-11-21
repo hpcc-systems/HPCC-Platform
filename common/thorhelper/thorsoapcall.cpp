@@ -878,7 +878,7 @@ public:
 
 bool loadConnectSecret(const char *vaultId, const char *secretName, UrlArray &urlArray, StringBuffer &issuer, StringBuffer &proxyAddress, bool required, WSCType wscType)
 {
-    Owned<IPropertyTree> secret;
+    Owned<const IPropertyTree> secret;
     if (!isEmptyString(secretName))
         secret.setown(getSecret("ecl", secretName, vaultId, nullptr));
     if (!secret)

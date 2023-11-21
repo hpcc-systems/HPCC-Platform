@@ -438,11 +438,14 @@ extern jlib_decl unsigned getPropertyTreeHash(const IPropertyTree & source, unsi
 //to not be modified and to remain valid and consistent until it is released.
 interface ISyncedPropertyTree : extends IInterface
 {
+//The following functions check whether something is up to date before returning their values.
+    //Return a version-hash which changes whenever the property tree changes - so that a caller can determine whether it needs to update
+    virtual unsigned getVersion() const = 0;
     virtual const IPropertyTree * getTree() const = 0;
     virtual bool getProp(MemoryBuffer & result, const char * xpath) const = 0;
     virtual bool getProp(StringBuffer & result, const char * xpath) const = 0;
-    //Return a version-hash which changes whenever the property tree changes - so that a caller can determine whether it needs to update
-    virtual unsigned getVersion() const = 0;
+
+// The following functions return the current cached state - they do not force a check to see if the value is up to date
     virtual bool isStale() const = 0; // An indication that the property tree may be out of date because it couldn't be resynchronized.
     virtual bool isValid() const = 0; // Is the property tree non-null?  Typically called at startup to check configuration is provided.
 };

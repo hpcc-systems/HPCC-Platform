@@ -28,9 +28,9 @@ extern jlib_decl void setSecretMount(const char * path);
 extern jlib_decl void setSecretTimeout(unsigned timeoutMs);
 
 //Return the current (cached) value of a secret.  If the secret is not defined, return nullptr.
-extern jlib_decl IPropertyTree *getSecret(const char *category, const char * name, const char * optVaultId = nullptr, const char * optVersion = nullptr);
+extern jlib_decl const IPropertyTree *getSecret(const char *category, const char * name, const char * optVaultId = nullptr, const char * optVersion = nullptr);
 // resolveSecret() always returns an object, which will potentially be updated behind the scenes.  If no secret is originally
-// defined, but it then configured in a vault or Kubernetes secret, it will be bicked up when the cache entry is
+// defined, but it then added to a vault or Kubernetes secret, it will then be picked up when the cache entry is
 // refreshed - allowing missing configuration to be updated for a live system.
 extern jlib_decl ISyncedPropertyTree * resolveSecret(const char *category, const char * name, const char * optRequiredVault, const char* optVersion);
 
