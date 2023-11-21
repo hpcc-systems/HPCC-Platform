@@ -9689,11 +9689,11 @@ void HqlGram::checkDerivedCompatible(IIdAtom * name, IHqlExpression * scope, IHq
             if (match)
             {
                 if (!canBeVirtual(match))
-                    reportError(ERR_MISMATCH_PROTO, errpos, "Definition %s, cannot override this kind of definition", str(name));
+                    reportError(ERR_MISMATCH_PROTO, errpos, "Definition %s, cannot override this kind of definition", nullText(str(name)));
                 else
                 {
                     if (!areSymbolsCompatible(expr, isParametered, parameters, match))
-                        reportError(ERR_MISMATCH_PROTO, errpos, "Prototypes for %s in base and derived modules must match", str(name));
+                        reportError(ERR_MISMATCH_PROTO, errpos, "Prototypes for %s in base and derived modules must match", nullText(str(name)));
                 }
             }
         }
