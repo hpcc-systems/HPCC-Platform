@@ -39,4 +39,7 @@ protected:
     virtual void doCollection() override;
     void writeLogEntry(const std::shared_ptr<IMetric> &pMetric);
     void writeHistogramLogEntry(const std::shared_ptr<IMetric> &pMetric);
+
+protected:
+    bool ignoreZeroMetrics;
 };

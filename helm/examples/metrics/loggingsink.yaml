@@ -1,9 +1,11 @@
 #
 # Defines a logging sink that writes metric reports to the component defined log
 # Settings:
-#   type             - sink type (must be log for the logging sink)
-#   name             - name for the sink instance
-#   settings.period  - period in seconds between collections
+#   type                       - sink type (must be log for the logging sink)
+#   name                       - name for the sink instance
+#   settings.period            - period in seconds between collections
+#   settings.ignoreZeroMetrics - true|false true to ignore zero metrics, false to output regardless
+
 global:
   metrics:
     sinks:
