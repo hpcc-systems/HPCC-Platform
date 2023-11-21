@@ -57,6 +57,15 @@ function decodeID(id: string): string {
     return id.replace(/__(\d+)__/gm, (_match, p1) => String.fromCharCode(+p1));
 }
 
+function encodeLabel(label: string) {
+    return label
+        .split('"')
+        .join('\\"')
+        .split("\n")
+        .join("\\n")
+        ;
+}
+
 export interface IScope {
     __parentName?: string;
     __children?: IScope[];
@@ -226,7 +235,7 @@ export class MetricGraph extends Graph2<IScope, IScopeEdge, IScope> {
     }
 
     vertexTpl(v: IScope, options: MetricsOptions): string {
-        return `"${v.id}" [id="${encodeID(v.name)}" label="${this.vertexLabel(v, options)}" shape="${shape(v.Kind)}" class="${this.vertexStatus(v)}"]`;
+        return `"${v.id}" [id="${encodeID(v.name)}" label="${encodeLabel(this.vertexLabel(v, options))}" shape="${shape(v.Kind)}" class="${this.vertexStatus(v)}"]`;
     }
 
     protected _dedupEdges: { [scopeName: string]: boolean } = {};
@@ -263,7 +272,7 @@ export class MetricGraph extends Graph2<IScope, IScopeEdge, IScope> {
         if (options.ignoreGlobalStoreOutEdges && this.vertex(this._activityIndex[e.IdSource]).Kind === "22") {
             return "";
         }
-        return `"${e.IdSource}" -> "${e.IdTarget}" [id="${encodeID(e.name)}" label="${format(options.edgeTpl, { ...e, ...e.__formattedProps })}" style="${this.vertexParent(this._activityIndex[e.IdSource]) === this.vertexParent(this._activityIndex[e.IdTarget]) ? "solid" : "dashed"}" class="${this.edgeStatus(e)}"]`;
+        return `"${e.IdSource}" -> "${e.IdTarget}" [id="${encodeID(e.name)}" label="${encodeLabel(format(options.edgeTpl, { ...e, ...e.__formattedProps }))}" style="${this.vertexParent(this._activityIndex[e.IdSource]) === this.vertexParent(this._activityIndex[e.IdTarget]) ? "solid" : "dashed"}" class="${this.edgeStatus(e)}"]`;
     }
 
     subgraphStatus(sg: IScope): ScopeStatus {
@@ -294,7 +303,7 @@ subgraph cluster_${encodeID(sg.id)} {
     fillcolor="white";
     style="filled";
     id="${encodeID(sg.name)}";
-    label="${format(options.subgraphTpl, sg)}";
+    label="${encodeLabel(format(options.subgraphTpl, sg))}";
     class="${this.subgraphStatus(sg)}";
 
     ${childTpls.join("\n")}
