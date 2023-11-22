@@ -3626,6 +3626,16 @@ void getScheduledWUs(IEspContext &context, WUShowScheduledFilters *filters, cons
                             {
                                 jobName.set(cw->queryJobName());
                                 owner.set(cw->queryUser());
+                                if ((cw->getState() == WUStateScheduled) && cw->aborting())
+                                {
+                                    stateID = WUStateAborting;
+                                    state.set("aborting");
+                                }
+                                else
+                                {
+                                    stateID = cw->getState();
+                                    state.set(cw->queryStateDesc());
+                                }
                             }
 
                             if (!filters->jobName.isEmpty() && (jobName.isEmpty() || !WildMatch(jobName.str(), filters->jobName, true)))
@@ -3634,26 +3644,8 @@ void getScheduledWUs(IEspContext &context, WUShowScheduledFilters *filters, cons
                                 match =  false;
                             else if (!filters->eventText.isEmpty() && (ieventText.isEmpty() || !WildMatch(ieventText, filters->eventText, true)))
                                 match =  false;
-                            else if (!filters->state.isEmpty())
-                            {
-                                if (!cw)
-                                    match =  false;
-                                else
-                                {
-                                    if ((cw->getState() == WUStateScheduled) && cw->aborting())
-                                    {
-                                        stateID = WUStateAborting;
-                                        state.set("aborting");
-                                    }
-                                    else
-                                    {
-                                        stateID = cw->getState();
-                                        state.set(cw->queryStateDesc());
-                                    }
-                                    if (!strieq(filters->state, state.str()))
-                                        match =  false;
-                                }
-                            }
+                            else if (!filters->state.isEmpty() && !strisame(filters->state, state.str()))
+                                match =  false;
                         }
                         catch (IException *e)
                         {
