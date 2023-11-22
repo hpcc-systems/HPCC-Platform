@@ -303,7 +303,7 @@ void CLZWCompressor::open(void *buf,size32_t max)
         outbuf = malloc(bufalloc);
     }
     outBufMb = NULL;
-    ASSERT(max>SAFETY_MARGIN+sizeof(size32_t)); // minimum required
+    assertex(max>SAFETY_MARGIN+sizeof(size32_t)); // minimum required
     maxlen=max-SAFETY_MARGIN;
     initCommon();
 }
@@ -1372,7 +1372,7 @@ public:
             outbuf = malloc(bufalloc);
         }
         outBufMb = NULL;
-        ASSERT(max>2+sizeof(size32_t)*2); // minimum required (actually will need enough for recsize so only a guess)
+        assertex(max>2+sizeof(size32_t)*2); // minimum required (actually will need enough for recsize so only a guess)
         initCommon();
         remaining = max-outlen;
     }
@@ -1655,7 +1655,7 @@ public:
             outbuf = malloc(bufalloc);
         }
         outBufMb = NULL;
-        ASSERT(max>MIN_RRDHEADER_SIZE+sizeof(unsigned short)+3); // hopefully a lot bigger!
+        assertex(max>MIN_RRDHEADER_SIZE+sizeof(unsigned short)+3); // hopefully a lot bigger!
         initCommon();
     }
 
@@ -2914,9 +2914,9 @@ public:
             if ((method & ~COMPRESS_METHOD_AES) < COMPRESS_METHOD_LAST)
             {
                 if (method & COMPRESS_METHOD_AES)
-                    AESbyMethod[method & ~COMPRESS_METHOD_AES] = handler;
+                    AESbyMethod[method & ~COMPRESS_METHOD_AES] = nullptr;
                 else
-                    byMethod[method] = handler;
+                    byMethod[method] = nullptr;
             }
             return true;
         }

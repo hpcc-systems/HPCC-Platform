@@ -1056,10 +1056,10 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( RelaxedAtomicTimingTest, "RelaxedAtomicTi
 class compressToBufferTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE( compressToBufferTest  );
-        CPPUNIT_TEST(testRun);
+        CPPUNIT_TEST(testCompressors);
     CPPUNIT_TEST_SUITE_END();
 
-    void testOne(unsigned len, CompressionMethod method, const char *options=nullptr)
+    bool testOne(unsigned len, CompressionMethod method, bool prevResult, const char *options=nullptr)
     {
         constexpr const char *in = 
           "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
@@ -1092,34 +1092,41 @@ class compressToBufferTest : public CppUnit::TestFixture
         assertex(len <= strlen(in));
         MemoryBuffer compressed;
         compressToBuffer(compressed, len, in, method, options);
-        
-        if (method != COMPRESS_METHOD_NONE && len >= 32 && compressed.length() == len+5)
-            DBGLOG("compressToBuffer %x size %u did not compress", (byte) method, len);
+        bool ret;
+        if (compressed.length() == len+5)
+        {
+            if (prevResult)
+               DBGLOG("compressToBuffer %x size %u did not compress", (byte) method, len);
+            ret = false;
+        }
         else 
-            DBGLOG("compressToBuffer %x size %u compressed to %u", (byte) method, len, compressed.length());
+        {
+            if (!prevResult)
+                DBGLOG("compressToBuffer %x size %u compressed to %u", (byte) method, len, compressed.length());
+            ret = true;
+        }
         CPPUNIT_ASSERT(compressed.length() <= len+5);
         MemoryBuffer out;
         decompressToBuffer(out, compressed, options);
         CPPUNIT_ASSERT(out.length() == len);
         CPPUNIT_ASSERT(memcmp(out.bytes(), in, len) == 0);
+        return ret;
     }
 
-    void testSome(unsigned len)
+    void testCompressor(CompressionMethod method, const char *options=nullptr)
     {
-        testOne(len, COMPRESS_METHOD_NONE);
-        testOne(len, COMPRESS_METHOD_LZW);
-        testOne(len, COMPRESS_METHOD_LZ4);
-        testOne(len, (CompressionMethod) (COMPRESS_METHOD_LZW|COMPRESS_METHOD_AES), "0123456789abcdef");
-    }
+        bool result = true;
+        for (unsigned i = 0; i < 256; i++)
+            result = testOne(i, method, result,  options);
+        testOne(1000, method, false, options);
 
-    void testRun()
+    }
+    void testCompressors()
     {
-        testSome(0);
-        testSome(1);
-        testSome(16);
-        testSome(32);
-        testSome(200);
-        testSome(1000);
+        testCompressor(COMPRESS_METHOD_NONE);
+        testCompressor(COMPRESS_METHOD_LZW);
+        testCompressor(COMPRESS_METHOD_LZ4);
+        testCompressor((CompressionMethod) (COMPRESS_METHOD_LZW|COMPRESS_METHOD_AES), "0123456789abcdef");
     }
 };
 
