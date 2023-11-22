@@ -31,6 +31,9 @@
 #if defined(__clang__) || defined(__GNUC__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
+
+//httplib also generates warning about access outside of array bounds in gcc
+#pragma GCC diagnostic ignored "-Warray-bounds"
 #endif
 
 #ifdef _USE_OPENSSL
