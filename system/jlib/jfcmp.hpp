@@ -70,7 +70,7 @@ public:
             free(outbuf);
     }
 
-    virtual void open(void *buf,size32_t max) override
+    virtual bool open(void *buf,size32_t max) override
     {
 //        if (max<1024)
 //            throw MakeStringException(-1,"CFcmpCompressor::open - block size (%d) not large enough", max);
@@ -97,6 +97,7 @@ public:
         dynamicOutSz = 0;
         inbuf = (byte *)inma.ensureCapacity(max);
         initCommon(max);
+        return true;
     }
 
     virtual void open(MemoryBuffer &mb, size32_t initialSize) override

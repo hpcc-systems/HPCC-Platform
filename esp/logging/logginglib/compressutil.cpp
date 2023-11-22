@@ -25,8 +25,7 @@ size32_t LZWCompress(const void* src, size32_t srcSz, void* dest, size32_t destS
     if (srcSz>=threshold)
     {
         Owned<ICompressor> compressor = createLZWCompressor();
-        compressor->open((byte*)dest + sizeof(size32_t), srcSz * 4 / 5);
-        if(compressor->write(src, srcSz)==srcSz)
+        if (compressor->open((byte*)dest + sizeof(size32_t), srcSz * 4 / 5) && compressor->write(src, srcSz)==srcSz)
         {
             compressor->close();
             memcpy(dest, &srcSz, sizeof(size32_t)); 

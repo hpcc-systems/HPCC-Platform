@@ -1138,7 +1138,7 @@ protected:
         if (compressor)
         {
             void *rowData = sendMb.reserveTruncate(sendThresholdBytes);
-            compressor->open(rowData, sendThresholdBytes);
+            verifyex(compressor->open(rowData, sendThresholdBytes));
         }
     }
     unsigned send(MemoryBuffer &replyMb)
@@ -1233,7 +1233,7 @@ public:
         if (compressor)
         {
             void *rowData = sendMb.reserveTruncate(sendThresholdBytes);
-            compressor->open(rowData, sendThresholdBytes);
+            verifyex(compressor->open(rowData, sendThresholdBytes));
         }
         started = true;
     }

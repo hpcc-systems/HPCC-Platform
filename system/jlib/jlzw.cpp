@@ -280,7 +280,7 @@ void CLZWCompressor::open(MemoryBuffer &mb, size32_t initialSize)
     initCommon();
 }
 
-void CLZWCompressor::open(void *buf,size32_t max)
+bool CLZWCompressor::open(void *buf,size32_t max)
 {
 #ifdef STATS
     st_thistime = msTick();
@@ -303,9 +303,11 @@ void CLZWCompressor::open(void *buf,size32_t max)
         outbuf = malloc(bufalloc);
     }
     outBufMb = NULL;
-    assertex(max>SAFETY_MARGIN+sizeof(size32_t)); // minimum required
+    if (max<=SAFETY_MARGIN+sizeof(size32_t)) // minimum required
+        return false;
     maxlen=max-SAFETY_MARGIN;
     initCommon();
+    return true;
 }
 
 
@@ -780,8 +782,7 @@ void compressToBuffer(MemoryBuffer & out, size32_t len, const void * src, Compre
         void *newData = out.reserve(newSize);
         try
         {
-            compressor->open(newData, newSize);
-            if (compressor->write(src, len)==len)
+            if (compressor->open(newData, newSize) && compressor->write(src, len)==len)
             {
                 compressor->close();
                 size32_t compressedLen = compressor->buflen();
@@ -1354,7 +1355,7 @@ public:
         remaining = outBufMb->capacity()-outlen;
     }
 
-    virtual void open(void *buf,size32_t max) override
+    virtual bool open(void *buf, size32_t max) override
     {
         originalMax = max;
         if (buf)
@@ -1372,9 +1373,11 @@ public:
             outbuf = malloc(bufalloc);
         }
         outBufMb = NULL;
-        assertex(max>2+sizeof(size32_t)*2); // minimum required (actually will need enough for recsize so only a guess)
+        if (max<=2+sizeof(size32_t)*2) // minimum required (actually will need enough for recsize so only a guess)
+            return false;
         initCommon();
         remaining = max-outlen;
+        return true;
     }
 
     virtual void close() override
@@ -1637,7 +1640,7 @@ public:
         initCommon();
     }
 
-    virtual void open(void *buf,size32_t _max) override
+    virtual bool open(void *buf,size32_t _max) override
     {
         max = _max;
         originalMax = max;
@@ -1655,8 +1658,10 @@ public:
             outbuf = malloc(bufalloc);
         }
         outBufMb = NULL;
-        assertex(max>MIN_RRDHEADER_SIZE+sizeof(unsigned short)+3); // hopefully a lot bigger!
+        if (max<=MIN_RRDHEADER_SIZE+sizeof(unsigned short)+3) // hopefully a lot bigger!
+            return false;
         initCommon();
+        return true;
     }
 
     virtual void close() override
@@ -2232,7 +2237,6 @@ public:
                             break;
                     }
                 }
-                compressor->open(compblkptr, trailer.blockSize);
             }
         }
         if (mode!=ICFcreate)
@@ -2367,7 +2371,7 @@ public:
             }
             trailer.indexPos = p;
             if (trailer.recordSize==0) {
-                compressor->open(compblkptr, trailer.blockSize);
+                verifyex(compressor->open(compblkptr, trailer.blockSize));
             }
             lastFlushPos = trailer.expandedSize;
         }
@@ -2431,7 +2435,7 @@ public:
     {
         trailer.blockSize = size;
         compressor->close();
-        compressor->open(compblkptr, size);
+        verifyex(compressor->open(compblkptr, size));
     }
     virtual bool readMode() override
     {
@@ -2656,7 +2660,7 @@ public:
         comp->open(compattr, initialSize);
     }
 
-    virtual void open(void *blk,size32_t blksize) override
+    virtual bool open(void *blk,size32_t blksize) override
     {
         outlen = 0;
         outmax = blksize;
@@ -2667,9 +2671,9 @@ public:
             outbuf = outattr.allocate(blksize);
         outBufMb = NULL;
         if (blksize <= AES_PADDING_SIZE+sizeof(size32_t))
-            throw makeStringException(0, "CAESCompressor: target buffer too small");
+            return false;
         size32_t subsz = blksize-AES_PADDING_SIZE-sizeof(size32_t);
-        comp->open(compattr.reserveTruncate(subsz),subsz);
+        return comp->open(compattr.reserveTruncate(subsz),subsz);
     }
 
     virtual bool adjustLimit(size32_t newLimit) override

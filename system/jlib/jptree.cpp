@@ -1019,7 +1019,7 @@ CPTValue::CPTValue(size32_t size, const void *data, bool binary, bool raw, bool 
         {
             newData = malloc(sizeof(size32_t) + newSize);
             compressor = createLZWCompressor();
-            compressor->open(((char *)newData) + sizeof(size32_t), newSize);
+            verifyex(compressor->open(((char *)newData) + sizeof(size32_t), newSize));
             if (compressor->write(data, size)==size)
             {
                 compressor->close();
