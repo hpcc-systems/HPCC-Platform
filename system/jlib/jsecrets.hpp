@@ -29,10 +29,10 @@ extern jlib_decl void setSecretTimeout(unsigned timeoutMs);
 
 //Return the current (cached) value of a secret.  If the secret is not defined, return nullptr.
 extern jlib_decl const IPropertyTree *getSecret(const char *category, const char * name, const char * optVaultId = nullptr, const char * optVersion = nullptr);
-// resolveSecret() always returns an object, which will potentially be updated behind the scenes.  If no secret is originally
+// getSyncedSecret() always returns an object, which will potentially be updated behind the scenes.  If no secret is originally
 // defined, but it then added to a vault or Kubernetes secret, it will then be picked up when the cache entry is
 // refreshed - allowing missing configuration to be updated for a live system.
-extern jlib_decl ISyncedPropertyTree * resolveSecret(const char *category, const char * name, const char * optRequiredVault, const char* optVersion);
+extern jlib_decl ISyncedPropertyTree * getSyncedSecret(const char *category, const char * name, const char * optRequiredVault, const char* optVersion);
 
 extern jlib_decl bool getSecretKeyValue(MemoryBuffer & result, const IPropertyTree *secret, const char * key);
 extern jlib_decl bool getSecretKeyValue(StringBuffer & result, const IPropertyTree *secret, const char * key);
@@ -58,6 +58,15 @@ extern jlib_decl void splitUrlIsolateScheme(const char *url, StringBuffer &user,
 extern jlib_decl StringBuffer &generateDynamicUrlSecretName(StringBuffer &secretName, const char *scheme, const char *userPasswordPair, const char *host, unsigned port, const char *path);
 extern jlib_decl StringBuffer &generateDynamicUrlSecretName(StringBuffer &secretName, const char *url, const char *username);
 
+//Start a background thread that updates active secrets that are due to need refeshing within lookaheadMs
+extern jlib_decl void startSecretUpdateThread(unsigned lookaheadMs);
+extern jlib_decl void stopSecretUpdateThread();
+
 extern jlib_decl bool queryMtls();
+
+#ifdef _USE_CPPUNIT
+extern jlib_decl std::string testBuildSecretKey(const char * category, const char * name, const char * optVaultId, const char * optVersion);
+extern jlib_decl void testExpandSecretKey(std::string & category, std::string & name, std::string & optVaultId, std::string & optVersion, const char * key);
+#endif
 
 #endif

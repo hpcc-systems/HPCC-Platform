@@ -2322,6 +2322,10 @@
           "default": false,
           "description": "Require SOAPCALL and HTTPCALL URLs are secrets or mapped to secrets"
         },
+        "updateSecretsInBackground": {
+          "type": "boolean",
+          "description": "Preemptively update secrets that are active and about to expire in the background"
+        },
         "expert": {
           "description": "Custom internal options usually reserved for internal testing",
           "type": "object"
