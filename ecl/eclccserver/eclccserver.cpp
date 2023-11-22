@@ -235,6 +235,45 @@ static bool getHomeFolder(StringBuffer & homepath)
     return true;
 }
 
+static bool guardGitUpdates = false;
+static StringBuffer gitLockKey;
+static void configGitLock()
+{
+    Owned<IPropertyTree> config = getComponentConfig();
+    if (config->getPropBool("@enableEclccDali", true))
+    {
+        if (config->getPropBool("@guardGitUpdates", true))
+        {
+            if (isContainerized())
+            {
+                //Containerized: each git plane needs to be protected independently
+                gitLockKey.append(config->queryProp("@gitPlane"));
+            }
+            else
+            {
+                //Bare metal - git repos are fetched locally, so protect per host-ip
+                const char * hostname = GetCachedHostName();
+                if (hostname)
+                {
+                    gitLockKey.append("host");
+
+                    for (const byte * cur = (const byte *)hostname; *cur; cur++)
+                    {
+                        //remove '.' and other unsupported characters from the key name
+                        if (isalnum(*cur))
+                            gitLockKey.append(*cur);
+                        else
+                            gitLockKey.append("_");
+                    }
+                }
+            }
+
+            if (!gitLockKey.isEmpty())
+                guardGitUpdates = true;
+        }
+    }
+}
+
 class EclccCompileThread : implements IPooledThread, implements IErrorReporter, public CInterface
 {
     StringAttr wuid;
@@ -644,6 +683,9 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
         if (!repoRootPath.isEmpty())
             eclccCmd.appendf(" \"--repocachepath=%s\"", repoRootPath.str());
 
+        if (guardGitUpdates)
+            eclccCmd.appendf(" \"--gitlock=%s\"", gitLockKey.str());
+
         if (config->queryProp("@defaultRepo"))
             eclccCmd.appendf(" --defaultrepo=%s", config->queryProp("@defaultRepo"));
         if (config->queryProp("@defaultRepoVersion"))
@@ -835,7 +877,13 @@ public:
             if (GetCurrentDirectory(sizeof(dir), dir))
                 repoRootPath.append(dir);
         }
-        if (repoRootPath.length())
+
+        if (guardGitUpdates)
+        {
+            addPathSepChar(repoRootPath).append("repos");
+            recursiveCreateDirectory(repoRootPath.str());
+        }
+        else if (repoRootPath.length())
         {
             addPathSepChar(repoRootPath).append("repos_").append(idxStr);
             recursiveCreateDirectory(repoRootPath.str());
@@ -1421,6 +1469,7 @@ int main(int argc, const char *argv[])
     {
         initClientProcess(serverGroup, DCR_EclCCServer);
         openLogFile();
+        configGitLock();
         const char *wuid = globals->queryProp("@workunit");
         if (wuid)
         {

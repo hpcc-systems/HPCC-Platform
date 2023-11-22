@@ -226,6 +226,9 @@ interface ICodegenContextCallback : public IInterface
      * Which platform was this query originally targeted to?
      */
     virtual void getTargetPlatform(StringBuffer & result) = 0;
+    /*
+    */
+    virtual IInterface * getGitUpdateLock(const char * key) = 0;
 };
 
 

@@ -793,6 +793,7 @@ IEclSourceCollection * EclRepositoryManager::resolveGitCollection(const char * r
         throw makeStringExceptionV(99, "Unsupported repository link format '%s'", defaultUrl);
 
     bool alreadyExists = false;
+    Owned<IInterface> gitUpdateLock(getGitUpdateLock(repoPath));
     if (checkDirExists(repoPath))
     {
         if (options.cleanRepos)
@@ -855,6 +856,10 @@ IEclSourceCollection * EclRepositoryManager::resolveGitCollection(const char * r
             ok = true;
         }
     }
+    //All following operations are read-only and should not be affected if the git repo is updated behind the scenes
+    //this could become a read/write lock if that proved to be an issue.
+    gitUpdateLock.clear();
+
     gitDownloadCycles += gitDownloadTimer.elapsedCycles();
     if (error)
     {
