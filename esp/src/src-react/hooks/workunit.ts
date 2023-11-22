@@ -23,7 +23,7 @@ export function useWorkunit(wuid: string, full: boolean = false): [Workunit, WUS
         let active = true;
         let handle;
         const refresh = singletonDebounce(wu, "refresh");
-        refresh(full)
+        refresh(full, { IncludeTotalClusterTime: true })
             .then(() => {
                 if (active) {
                     setRetVal({ workunit: wu, state: wu.StateID, lastUpdate: Date.now(), isComplete: wu.isComplete(), refresh });

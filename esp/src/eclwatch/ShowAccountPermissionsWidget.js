@@ -13,7 +13,12 @@ define([
     "src/ws_access",
     "src/ESPUtil",
     "src/Utility",
-    "hpcc/ShowInheritedPermissionsWidget"
+    "hpcc/ShowInheritedPermissionsWidget",
+
+    "dijit/Dialog",
+    "dijit/form/TextBox",
+
+    "hpcc/TableContainer"
 
 ], function (declare, lang, nlsHPCCMod, arrayUtil,
     registry, CheckBox,
