@@ -193,13 +193,13 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
     React.useEffect(() => {
         if (!features.timestamp) return;
         const age = Math.floor((Date.now() - features.timestamp.getTime()) / DAY);
-        const message = nlsHPCC.PlatformIsNNNDaysOld.replace("NNN", `${age}`);
+        const message = nlsHPCC.PlatformBuildIsNNNDaysOld.replace("NNN", `${age}`);
         if (age > 90) {
-            logger.critical(message);
+            logger.alert(message + `  ${nlsHPCC.PleaseUpgradeToLaterPointRelease}`);
         } else if (age > 60) {
-            logger.error(message);
+            logger.error(message + `  ${nlsHPCC.PleaseUpgradeToLaterPointRelease}`);
         } else if (age > 30) {
-            logger.warning(message);
+            logger.warning(message + `  ${nlsHPCC.PleaseUpgradeToLaterPointRelease}`);
         } else {
             logger.info(message);
         }

@@ -1658,15 +1658,15 @@ margin-left:-20px;
 }
 
 .dijitToasterWarning .dijitToasterContent {
-    background: rgb(255, 238, 0);
+    background: #ffee00;
 }
 
 .dijitToasterError .dijitToasterContent {
-    background: rgb(255, 30, 0);
+    background: #fe8147;
 }
 
 .dijitToasterAlert .dijitToasterContent {
-    background: #fe8147;
+    background: #ff1e00;
 }
 
 /* imported from dijit.css */

@@ -168,14 +168,17 @@ define([
             platformModule.fetchCheckFeatures().then(function (features) {
                 if (!features || !features.BuildTagTimestamp) return;
                 const age = features.BuildTagTimestamp ? Math.floor((Date.now() - new Date(features.BuildTagTimestamp).getTime()) / DAY) : 0;
-                const message = nlsHPCC.PlatformIsNNNDaysOld.replace("NNN", `${age}`);
+                let message = nlsHPCC.PlatformBuildIsNNNDaysOld.replace("NNN", `${age}`);
                 let severity = "Info";
                 if (age > 90) {
                     severity = "Alert";
+                    message += `  ${nlsHPCC.PleaseUpgradeToLaterPointRelease}`;
                 } else if (age > 60) {
                     severity = "Error";
+                    message += `  ${nlsHPCC.PleaseUpgradeToLaterPointRelease}`;
                 } else if (age > 30) {
                     severity = "Warning";
+                    message += `  ${nlsHPCC.PleaseUpgradeToLaterPointRelease}`;
                 } else {
                     severity = "Info";
                 }
