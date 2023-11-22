@@ -45,6 +45,7 @@ data:
       tls: {{ include "hpcc.isIssuerEnabled" (dict "root" .root "issuerKeyName" $issuerKeyName) }}
  {{- end }}
       tls_config:
+        issuer: {{ $issuerKeyName }}
  {{- if $externalCert }}
         certificate: /opt/HPCCSystems/secrets/certificates/{{ $issuerKeyName }}/tls.crt
         privatekey: /opt/HPCCSystems/secrets/certificates/{{ $issuerKeyName }}/tls.key

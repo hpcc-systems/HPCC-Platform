@@ -70,20 +70,6 @@ jobs:
             gdb \
             ${{ inputs.dependencies }}
 
-      - name: Install UI Dependencies
-        if: steps.check.outputs.runtests
-        run: |
-          wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-          sudo apt-get install -y ./google-chrome-stable_current_amd64.deb
-          wget https://chromedriver.storage.googleapis.com/2.41/chromedriver_linux64.zip
-          unzip chromedriver_linux64.zip
-          sudo mv chromedriver /usr/bin/chromedriver
-          sudo chown root:root /usr/bin/chromedriver
-          sudo chmod +x /usr/bin/chromedriver
-          wget https://selenium-release.storage.googleapis.com/3.141/selenium-server-standalone-3.141.59.jar
-          wget http://www.java2s.com/Code/JarDownload/testng/testng-6.8.7.jar.zip
-          unzip testng-6.8.7.jar.zip
-
       - name: Download Package
         if: steps.check.outputs.runtests
         uses: actions/download-artifact@v3
@@ -109,13 +95,29 @@ jobs:
           sudo update-locale
           sudo /etc/init.d/hpcc-init start
 
+      - name: Install UI Dependencies
+        if: steps.check.outputs.runtests
+        shell: "bash"
+        run: |
+          wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+          sudo apt-get install -y ./google-chrome-stable_current_amd64.deb
+          wget https://chromedriver.storage.googleapis.com/2.41/chromedriver_linux64.zip
+          unzip chromedriver_linux64.zip
+          sudo mv chromedriver /usr/bin/chromedriver
+          sudo chown root:root /usr/bin/chromedriver
+          sudo chmod +x /usr/bin/chromedriver
+          wget https://selenium-release.storage.googleapis.com/3.141/selenium-server-standalone-3.141.59.jar
+          wget http://www.java2s.com/Code/JarDownload/testng/testng-6.8.7.jar.zip
+          unzip testng-6.8.7.jar.zip
+
       - name: Run Tests
         timeout-minutes: 10 # generous, current runtime is ~1min, this should be increased if new tests are added
         if: steps.check.outputs.runtests
+        shell: "bash"
         run: |
-          export CLASSPATH=".:$(realpath selenium-server-standalone-3.141.59.jar):$(realpath testng-6.8.7.jar)"
+          export CLASSPATH=".:${{ github.workspace }}/selenium-server-standalone-3.141.59.jar:${{ github.workspace }}/testng-6.8.7.jar"
           pushd ${{ inputs.asset-name }}-ui_test-files
-          sudo ./run.sh tests http://localhost:8010 > eclWatchUiTest.log 2>&1
+          ./run.sh tests http://localhost:8010 > eclWatchUiTest.log 2>&1
           retCode=$?
           echo "UI test done"
           [[ $retCode -ne 0 ]] && exit 1

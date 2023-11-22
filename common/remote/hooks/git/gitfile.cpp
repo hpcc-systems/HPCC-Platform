@@ -244,7 +244,7 @@ protected:
             addPathSepChar(scriptPath).append("bin/hpccaskpass.sh");
             env.emplace_back("GIT_ASKPASS", scriptPath);
 
-            Owned<IPropertyTree> secret = getSecret("git", gitUser);
+            Owned<const IPropertyTree> secret = getSecret("git", gitUser);
             if (secret)
             {
                 MemoryBuffer gitKey;

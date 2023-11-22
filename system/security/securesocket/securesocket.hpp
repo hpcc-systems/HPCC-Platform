@@ -84,13 +84,14 @@ typedef ISecureSocketContext* (*createSecureSocketContext_t)(SecureSocketType);
 typedef ISecureSocketContext* (*createSecureSocketContextEx_t)(const char* certFileOrBuf, const char* privKeyFileOrBuf, const char* passphrase, SecureSocketType);
 typedef ISecureSocketContext* (*createSecureSocketContextEx2_t)(IPropertyTree* config, SecureSocketType);
 typedef ISecureSocketContext* (*createSecureSocketContextSecret_t)(const char *mtlsSecretName, SecureSocketType);
+typedef ISecureSocketContext* (*createSecureSocketContextSecretSrv_t)(const char *mtlsSecretName, const char *optTrustedPeers, bool requireMtlsConfig);
 
 extern "C" {
 
 //The following allow the creation of a secure socket context where the certificates will automatically be updated when they expire.
 SECURESOCKET_API ISecureSocketContext* createSecureSocketContextSynced(const ISyncedPropertyTree * config, SecureSocketType sockettype); // Will become the primary (only) factory method
 SECURESOCKET_API ISecureSocketContext* createSecureSocketContextSecret(const char *mtlsSecretName, SecureSocketType);
-SECURESOCKET_API ISecureSocketContext* createSecureSocketContextSecretSrv(const char *mtlsSecretName, bool requireMtlsConfig);
+SECURESOCKET_API ISecureSocketContext* createSecureSocketContextSecretSrv(const char *mtlsSecretName, const char *optTrustedPeers, bool requireMtlsConfig);
 SECURESOCKET_API ISecureSocketContext* createSecureSocketContextSSF(ISmartSocketFactory* ssf);
 
 //Helper function to aid migration to the functions above.  This should eventually be removed.

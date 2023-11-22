@@ -599,7 +599,7 @@ IClientWsDfs *getDfsClient(const char *serviceUrl, IUserDescriptor *userDesc)
 
 static void configureClientSSL(IEspClientRpcSettings &rpc, const char *secretName)
 {
-    Owned<IPropertyTree> secretPTree = getSecret("storage", secretName);
+    Owned<const IPropertyTree> secretPTree = getSecret("storage", secretName);
     if (!secretPTree)
         throw makeStringExceptionV(-1, "secret %s.%s not found", "storage", secretName);
 

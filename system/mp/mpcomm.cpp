@@ -2132,7 +2132,7 @@ CMPConnectThread::CMPConnectThread(CMPServer *_parent, unsigned port, bool _list
 
 #if defined(_USE_OPENSSL)
     if (parent->useTLS)
-        secureContextServer.setown(createSecureSocketContextSecretSrv("local", true));
+        secureContextServer.setown(createSecureSocketContextSecretSrv("local", nullptr, true));
 #endif
 }
 

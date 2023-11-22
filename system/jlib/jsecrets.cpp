@@ -31,6 +31,9 @@
 #if defined(__clang__) || defined(__GNUC__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
+
+//httplib also generates warning about access outside of array bounds in gcc
+#pragma GCC diagnostic ignored "-Warray-bounds"
 #endif
 
 #ifdef _USE_OPENSSL
@@ -64,35 +67,18 @@ CVaultKind getSecretType(const char *s)
 }
 interface IVaultManager : extends IInterface
 {
-    virtual bool getCachedSecretFromVault(const char *category, const char *vaultId, CVaultKind &kind, StringBuffer &content, const char *secret, const char *version) = 0;
     virtual bool requestSecretFromVault(const char *category, const char *vaultId, CVaultKind &kind, StringBuffer &content, const char *secret, const char *version) = 0;
-    virtual bool getCachedSecretByCategory(const char *category, CVaultKind &kind, StringBuffer &content, const char *secret, const char *version) = 0;
     virtual bool requestSecretByCategory(const char *category, CVaultKind &kind, StringBuffer &content, const char *secret, const char *version) = 0;
 };
 
-static CriticalSection secretCacheCS;
-static Owned<IPropertyTree> secretCache;
-static CriticalSection mtlsInfoCacheCS;
-static std::unordered_map<std::string, Linked<ISyncedPropertyTree>> mtlsInfoCache;
 static Owned<IVaultManager> vaultManager;
 static MemoryAttr udpKey;
 static bool udpKeyInitialized = false;
 
-MODULE_INIT(INIT_PRIORITY_SYSTEM)
+static const IPropertyTree *getLocalSecret(const char *category, const char * name)
 {
-    secretCache.setown(createPTree());
-    return true;
+    return getSecret(category, name, "k8s", nullptr);
 }
-
-MODULE_EXIT()
-{
-    vaultManager.clear();
-    secretCache.clear();
-    mtlsInfoCache.clear();
-    udpKey.clear();
-}
-
-static IPropertyTree *getLocalSecret(const char *category, const char * name);
 
 //based on kubernetes secret / key names. Even if some vault backends support additional characters we'll restrict to this subset for now
 
@@ -319,8 +305,8 @@ extern jlib_decl StringBuffer &generateDynamicUrlSecretName(StringBuffer &secret
     unsigned portNum = port.length() ? atoi(port) : 0;
     return generateDynamicUrlSecretName(secretName, scheme, username, host, portNum, path);
 }
-//---------------------------------------------------------------------------------------------------------------------
 
+//---------------------------------------------------------------------------------------------------------------------
 
 static StringBuffer secretDirectory;
 static CriticalSection secretCS;
@@ -364,18 +350,6 @@ static StringBuffer &buildSecretPath(StringBuffer &path, const char *category, c
     return addPathSepChar(path.append(ensureSecretDirectory())).append(category).append(PATHSEPCHAR).append(name).append(PATHSEPCHAR);
 }
 
-static bool checkSecretExpired(unsigned created)
-{
-    if (!created)
-        return false;
-    unsigned age = msTick() - created;
-    return age > getSecretTimeout();
-}
-
-static bool hasCacheExpired(const IPropertyTree * secret)
-{
-    return checkSecretExpired((unsigned)secret->getPropInt("@created"));
-}
 
 enum class VaultAuthType {unknown, k8s, appRole, token, clientcert};
 
@@ -395,6 +369,134 @@ static bool isEmptyTimeval(const timeval &tv)
     return (tv.tv_sec==0 && tv.tv_usec==0);
 }
 
+//---------------------------------------------------------------------------------------------------------------------
+
+//Represents an entry in the secret cache.  Once created it is always used for the secret.
+using cache_timestamp = unsigned;
+class SecretCacheEntry : public CInterface
+{
+    friend class SecretCache;
+
+public:
+    //A cache entry is initally created that has a create and access time of now, but the checkTimestamp
+    //is set so that needsRefresh() will return true.
+    SecretCacheEntry(cache_timestamp _now)
+    : contentTimestamp(_now), accessedTimestamp(_now), checkedTimestamp(_now - 2 * secretTimeoutMs)
+    {
+    }
+
+    unsigned getHash() const
+    {
+        return contentHash;
+    }
+
+    // We should never replace known contents for unknown contents
+    // so once this returns true it should always return true
+    bool hasContents() const
+    {
+        return contents != nullptr;
+    }
+
+    //Is the secret potentially out of date?
+    bool isStale() const
+    {
+        cache_timestamp now = msTick();
+        cache_timestamp elapsed = (now - contentTimestamp);
+        return (elapsed  > secretTimeoutMs);
+    }
+
+    // Is it time to check if there is a new value for this secret?
+    bool needsRefresh(cache_timestamp now) const
+    {
+        cache_timestamp elapsed = (now - checkedTimestamp);
+        return (elapsed  > secretTimeoutMs);
+    }
+
+    bool needsRefresh() const
+    {
+        return needsRefresh(msTick());
+    }
+
+    void noteFailedUpdate(cache_timestamp now)
+    {
+        //Update the checked timestamp - so that we do not continually check for updates to secrets which
+        //are stale because the vault or other source of values in inaccessible.
+        //Keep using the last good value
+        checkedTimestamp = now;
+    }
+
+    //The following functions can only be called from member functions of SecretCache
+private:
+    void updateContents(IPropertyTree * _contents, cache_timestamp now)
+    {
+        contents.set(_contents);
+        updateHash();
+        contentTimestamp = now;
+        accessedTimestamp = now;
+        checkedTimestamp = now;
+    }
+
+    void updateHash()
+    {
+        if (contents)
+            contentHash = getPropertyTreeHash(*contents, 0x811C9DC5);
+        else
+            contentHash = 0;
+    }
+private:
+    Linked<IPropertyTree> contents;// Can only be accessed when SecretCache::cs is held
+    cache_timestamp contentTimestamp = 0;  // When was this secret read from disk/vault
+    cache_timestamp accessedTimestamp = 0; // When was this secret last accessed?
+    cache_timestamp checkedTimestamp = 0;  // When was this last checked for updates?
+    unsigned contentHash = 0;
+};
+
+// A cache of (secret[:version] to a secret cache entry)
+// Once a hash table entry has been created for a secret it is never removed and the associated
+// value is never replaced.  This means it is safe to keep a pointer to the entry in another class.
+class SecretCache
+{
+public:
+    const IPropertyTree * getContents(SecretCacheEntry * match)
+    {
+        //Return contents within the critical section so no other thread can modify it
+        CriticalBlock block(cs);
+        return LINK(match->contents);
+    }
+
+    //Check to see if a secret exists, and if not add a null entry that has expired.
+    SecretCacheEntry * resolveSecret(const std::string & secretKey, cache_timestamp now)
+    {
+        SecretCacheEntry * result;
+        CriticalBlock block(cs);
+        auto match = secrets.find(secretKey);
+        if (match != secrets.cend())
+        {
+            result = match->second.get();
+            result->accessedTimestamp = now;
+        }
+        else
+        {
+            //Insert an entry with a null value that is marked as out of date
+            result = new SecretCacheEntry(now);
+            secrets.emplace(secretKey, result);
+        }
+        return result;
+    }
+
+    void updateSecret(SecretCacheEntry * match, IPropertyTree * value, cache_timestamp now)
+    {
+        CriticalBlock block(cs);
+        match->updateContents(value, now);
+    }
+
+private:
+    CriticalSection cs;
+    std::unordered_map<std::string, std::unique_ptr<SecretCacheEntry>> secrets;
+};
+
+//---------------------------------------------------------------------------------------------------------------------
+
 class CVault
 {
 private:
@@ -402,7 +504,6 @@ private:
 
     CVaultKind kind;
     CriticalSection vaultCS;
-    Owned<IPropertyTree> cache;
 
     std::string clientCertPath;
     std::string clientKeyPath;
@@ -445,7 +546,6 @@ public:
         if (!checkFileExists(clientKeyPath.c_str()))
             WARNLOG("vault: client key not found, %s", clientKeyPath.c_str());
 
-        cache.setown(createPTree());
         StringBuffer url;
         replaceEnvVariables(url, vault->queryProp("@url"), false);
         PROGLOG("vault url %s", url.str());
@@ -486,7 +586,7 @@ public:
         }
         else if (vault->hasProp("@client-secret"))
         {
-            Owned<IPropertyTree> clientSecret = getLocalSecret("system", vault->queryProp("@client-secret"));
+            Owned<const IPropertyTree> clientSecret = getLocalSecret("system", vault->queryProp("@client-secret"));
             if (clientSecret)
             {
                 StringBuffer tokenText;
@@ -672,7 +772,7 @@ public:
             return;
         DBGLOG("appRoleLogin%s", permissionDenied ? " because existing token permission denied" : "");
         StringBuffer appRoleSecretId;
-        Owned<IPropertyTree> appRoleSecret = getLocalSecret("system", appRoleSecretName);
+        Owned<const IPropertyTree> appRoleSecret = getLocalSecret("system", appRoleSecretName);
         if (!appRoleSecret)
             vaultAuthErrorV("appRole secret %s not found", appRoleSecretName.str());
         else if (!getSecretKeyValue(appRoleSecretId, appRoleSecret, "secret-id"))
@@ -712,42 +812,6 @@ public:
         if (clientToken.isEmpty())
             vaultAuthError("no vault access token");
     }
-    bool getCachedSecret(CVaultKind &rkind, StringBuffer &content, const char *secret, const char *version)
-    {
-        CriticalBlock block(vaultCS);
-        IPropertyTree *tree = cache->queryPropTree(secret);
-        if (tree)
-        {
-            VStringBuffer vername("v.%s", isEmptyString(version) ? "latest" : version);
-            IPropertyTree *envelope = tree->queryPropTree(vername);
-            if (!envelope)
-                return false;
-            if (hasCacheExpired(envelope))
-            {
-                tree->removeTree(envelope);
-                return false;
-            }
-            const char *s = envelope->queryProp("");
-            rkind = kind;
-            if (!isEmptyString(s))
-                content.append(s);
-            return true;
-        }
-        return false;
-    }
-    void addCachedSecret(const char *content, const char *secret, const char *version)
-    {
-        VStringBuffer vername("v.%s", isEmptyString(version) ? "latest" : version);
-        Owned<IPropertyTree> envelope = createPTree(vername);
-        envelope->setPropInt("@created", (int) msTick());
-        if (!isEmptyString(content))
-            envelope->setProp("", content);
-        {
-            CriticalBlock block(vaultCS);
-            IPropertyTree *parent = ensurePTree(cache, secret);
-            parent->setPropTree(vername, envelope.getClear());
-        }
-    }
     bool requestSecretAtLocation(CVaultKind &rkind, StringBuffer &content, const char *location, const char *secretCacheKey, const char *version, bool permissionDenied)
     {
         checkAuthentication(permissionDenied);
@@ -779,7 +843,6 @@ public:
             {
                 rkind = kind;
                 content.append(res->body.c_str());
-                addCachedSecret(content.str(), secretCacheKey, version);
                 return true;
             }
             else if (res->status == 403)
@@ -801,7 +864,6 @@ public:
         else
             OERRLOG("Error: Vault %s http error (%d) accessing secret %s.%s location %s", name.str(), res.error(), secretCacheKey, version ? version : "", location);
 
-        addCachedSecret("", secretCacheKey, version); //cache misses so we don't keep calling the vault
         return false;
     }
     bool requestSecret(CVaultKind &rkind, StringBuffer &content, const char *secret, const char *version)
@@ -831,16 +893,6 @@ public:
         if (!isEmptyString(name))
             vaults.emplace(name, std::unique_ptr<CVault>(new CVault(vault)));
     }
-    bool getCachedSecret(CVaultKind &kind, StringBuffer &content, const char *secret, const char *version)
-    {
-        auto it = vaults.begin();
-        for (; it != vaults.end(); it++)
-        {
-            if (it->second->getCachedSecret(kind, content, secret, version))
-                return true;
-        }
-        return false;
-    }
     bool requestSecret(CVaultKind &kind, StringBuffer &content, const char *secret, const char *version)
     {
         auto it = vaults.begin();
@@ -850,15 +902,6 @@ public:
                 return true;
         }
         return false;
-    }
-    bool getCachedSecretFromVault(const char *vaultId, CVaultKind &kind, StringBuffer &content, const char *secret, const char *version)
-    {
-        if (isEmptyString(vaultId))
-            return false;
-        auto it = vaults.find(vaultId);
-        if (it == vaults.end())
-            return false;
-        return it->second->getCachedSecret(kind, content, secret, version);
     }
     bool requestSecretFromVault(const char *vaultId, CVaultKind &kind, StringBuffer &content, const char *secret, const char *version)
     {
@@ -906,15 +949,6 @@ public:
                 it->second->addVault(&vault);
         }
     }
-    bool getCachedSecretFromVault(const char *category, const char *vaultId, CVaultKind &kind, StringBuffer &content, const char *secret, const char *version) override
-    {
-        if (isEmptyString(category))
-            return false;
-        auto it = categories.find(category);
-        if (it == categories.end())
-            return false;
-        return it->second->getCachedSecretFromVault(vaultId, kind, content, secret, version);
-    }
     bool requestSecretFromVault(const char *category, const char *vaultId, CVaultKind &kind, StringBuffer &content, const char *secret, const char *version) override
     {
         if (isEmptyString(category))
@@ -925,15 +959,6 @@ public:
         return it->second->requestSecretFromVault(vaultId, kind, content, secret, version);
     }
 
-    bool getCachedSecretByCategory(const char *category, CVaultKind &kind, StringBuffer &content, const char *secret, const char *version) override
-    {
-        if (isEmptyString(category))
-            return false;
-        auto it = categories.find(category);
-        if (it == categories.end())
-            return false;
-        return it->second->getCachedSecret(kind, content, secret, version);
-    }
     bool requestSecretByCategory(const char *category, CVaultKind &kind, StringBuffer &content, const char *secret, const char *version) override
     {
         if (isEmptyString(category))
@@ -953,56 +978,34 @@ IVaultManager *ensureVaultManager()
     return vaultManager;
 }
 
-static IPropertyTree *getCachedLocalSecret(const char *category, const char *name, bool &cachedMiss)
+//---------------------------------------------------------------------------------------------------------------------
+
+static SecretCache globalSecretCache;
+static CriticalSection mtlsInfoCacheCS;
+static std::unordered_map<std::string, Linked<ISyncedPropertyTree>> mtlsInfoCache;
+
+MODULE_INIT(INIT_PRIORITY_SYSTEM)
 {
-    if (isEmptyString(name))
-        return nullptr;
-    Owned<IPropertyTree> secret;
-    {
-        CriticalBlock block(secretCacheCS);
-        IPropertyTree *tree = secretCache->queryPropTree(category);
-        if (!tree)
-            return nullptr;
-        secret.setown(tree->getPropTree(name));
-        if (secret)
-        {
-            if (hasCacheExpired(secret))
-            {
-                secretCache->removeProp(name);
-                return nullptr;
-            }
-            if (secret->hasProp("@miss"))
-            {
-                cachedMiss = true;
-                return nullptr;
-            }
-            return secret.getClear();
-        }
-    }
-    return nullptr;
+    return true;
 }
 
-static void addCachedLocalSecret(const char *category, const char *name, IPropertyTree *secret)
+MODULE_EXIT()
 {
-    if (!secret || isEmptyString(name) || isEmptyString(category))
-        return;
-    secret->setPropInt("@created", (int)msTick());
-    {
-        CriticalBlock block(secretCacheCS);
-        IPropertyTree *tree = ensurePTree(secretCache, category);
-        tree->setPropTree(name, LINK(secret));
-    }
+    vaultManager.clear();
+    udpKey.clear();
 }
 
-static IPropertyTree *loadLocalSecret(const char *category, const char * name)
+
+static IPropertyTree * resolveLocalSecret(const char *category, const char * name)
 {
     StringBuffer path;
     buildSecretPath(path, category, name);
+
     Owned<IDirectoryIterator> entries = createDirectoryIterator(path);
     if (!entries || !entries->first())
         return nullptr;
-    Owned<IPropertyTree> tree = createPTree(name);
-    tree->setPropInt("@created", (int) msTick());
+
+    Owned<IPropertyTree> tree(createPTree(name));
     ForEach(*entries)
     {
         if (entries->isDir())
@@ -1018,22 +1021,8 @@ static IPropertyTree *loadLocalSecret(const char *category, const char * name)
             continue;
         tree->setPropBin(name, content.length(), content.bufferBase());
     }
-    addCachedLocalSecret(category, name, tree);
+
     return tree.getClear();
-}
-
-static IPropertyTree *getLocalSecret(const char *category, const char * name)
-{
-    validateCategoryName(category);
-    validateSecretName(name);
-
-    bool skipLocalFetch = false;
-    Owned<IPropertyTree> tree = getCachedLocalSecret(category, name, skipLocalFetch);
-    if (skipLocalFetch)
-        return nullptr;
-    if (tree)
-        return tree.getClear();
-    return loadLocalSecret(category, name);
 }
 
 static IPropertyTree *createPTreeFromVaultSecret(const char *content, CVaultKind kind)
@@ -1056,30 +1045,8 @@ static IPropertyTree *createPTreeFromVaultSecret(const char *content, CVaultKind
     }
     return tree.getClear();
 }
-static IPropertyTree *getCachedVaultSecret(const char *category, const char *vaultId, const char * name, const char *version, bool &cachedMiss)
-{
-    CVaultKind kind;
-    StringBuffer json;
-    IVaultManager *vaultmgr = ensureVaultManager();
-    if (isEmptyString(vaultId))
-    {
-        if (!vaultmgr->getCachedSecretByCategory(category, kind, json, name, version))
-            return nullptr;
-    }
-    else
-    {
-        if (!vaultmgr->getCachedSecretFromVault(category, vaultId, kind, json, name, version))
-            return nullptr;
-    }
-    if (json.isEmpty())
-    {
-        cachedMiss = true;
-        return nullptr;
-    }
-    return createPTreeFromVaultSecret(json.str(), kind);
-}
 
-static IPropertyTree *requestVaultSecret(const char *category, const char *vaultId, const char * name, const char *version)
+static IPropertyTree *resolveVaultSecret(const char *category, const char * name, const char *vaultId, const char *version)
 {
     CVaultKind kind;
     StringBuffer json;
@@ -1097,55 +1064,58 @@ static IPropertyTree *requestVaultSecret(const char *category, const char *vault
     return createPTreeFromVaultSecret(json.str(), kind);
 }
 
-static IPropertyTree *getVaultSecret(const char *category, const char * name, const char *vaultId, const char *version)
+
+static SecretCacheEntry * getSecretEntry(const char *category, const char * name, const char * optVaultId, const char * optVersion)
 {
-    CVaultKind kind;
-    StringBuffer json;
-    IVaultManager *vaultmgr = ensureVaultManager();
+    cache_timestamp now = msTick();
 
-    bool cachedMiss = false;
+    std::string key;
+    key.append(category).append("/").append(name);
+    if (optVaultId)
+        key.append("@").append(optVaultId);
+    if (optVersion)
+        key.append("#").append(optVersion);
 
-    if (isEmptyString(vaultId))
+    SecretCacheEntry * match = globalSecretCache.resolveSecret(key, now);
+    if (!match->needsRefresh(now))
+        return match;
+
+    Owned<IPropertyTree> resolved;
+    if (!isEmptyString(optVaultId))
     {
-        if (vaultmgr->getCachedSecretByCategory(category, kind, json, name, version))
-            cachedMiss = json.isEmpty();
+        if (strieq(optVaultId, "k8s"))
+            resolved.setown(resolveLocalSecret(category, name));
         else
-            vaultmgr->requestSecretByCategory(category, kind, json, name, version);
+            resolved.setown(resolveVaultSecret(category, name, optVaultId, optVersion));
     }
     else
     {
-        if (!vaultmgr->getCachedSecretFromVault(category, vaultId, kind, json, name, version))
-            cachedMiss = json.isEmpty();
-        else
-            vaultmgr->requestSecretFromVault(category, vaultId, kind, json, name, version);
+        resolved.setown(resolveLocalSecret(category, name));
+        if (!resolved)
+            resolved.setown(resolveVaultSecret(category, name, nullptr, optVersion));
     }
-    if (cachedMiss)
-        return nullptr;
-    return createPTreeFromVaultSecret(json.str(), kind);
+
+    //If the secret could no longer be resolved (e.g. a vault has gone down) then keep the old one
+    if (resolved)
+        globalSecretCache.updateSecret(match, resolved, now);
+    else
+        match->noteFailedUpdate(now);
+
+    return match;
 }
 
-IPropertyTree *getSecretTree(const char *category, const char * name, const char * optVaultId, const char * optVersion)
+static const IPropertyTree *getSecretTree(const char *category, const char * name, const char * optVaultId, const char * optVersion)
 {
-    if (!isEmptyString(optVaultId))
-        return getVaultSecret(category, name, optVaultId, optVersion);
-
-    //if we get back a null secret, it might be a cached miss, so don't go to the source if flag gets set
-    bool skipVaultFetch = false;
-    bool skipLocalFetch = false;
-
-    //check for any chached first
-    Owned<IPropertyTree> secret = getCachedLocalSecret(category, name, skipLocalFetch);
-    if (!secret)
-        secret.setown(getCachedVaultSecret(category, nullptr, name, nullptr, skipVaultFetch));
-    //now check local, then vaults
-    if (!secret && !skipLocalFetch)
-        secret.setown(loadLocalSecret(category, name));
-    if (!secret && !skipVaultFetch)
-        secret.setown(requestVaultSecret(category, nullptr, name, nullptr));
-    return secret.getClear();
+    SecretCacheEntry * secret = getSecretEntry(category, name, optVaultId, optVersion);
+    if (secret)
+        return globalSecretCache.getContents(secret);
+    return nullptr;
 }
 
-IPropertyTree *getSecret(const char *category, const char * name, const char * optVaultId, const char * optVersion)
+
+//Public interface to the secrets
+
+const IPropertyTree *getSecret(const char *category, const char * name, const char * optVaultId, const char * optVersion)
 {
     validateCategoryName(category);
     validateSecretName(name);
@@ -1172,7 +1142,7 @@ bool getSecretKeyValue(StringBuffer & result, const IPropertyTree *secret, const
 
 extern jlib_decl bool getSecretValue(StringBuffer & result, const char *category, const char * name, const char * key, bool required)
 {
-    Owned<IPropertyTree> secret = getSecret(category, name);
+    Owned<const IPropertyTree> secret = getSecret(category, name);
     if (required && !secret)
         throw MakeStringException(-1, "secret %s.%s not found", category, name);
     bool found = getSecretKeyValue(result, secret, key);
@@ -1186,10 +1156,9 @@ extern jlib_decl bool getSecretValue(StringBuffer & result, const char *category
 class CSecret final : public CInterfaceOf<ISyncedPropertyTree>
 {
 public:
-    CSecret(const char *_category, const char * _name, const char * _vaultId, const char * _version, const IPropertyTree * _secret)
+    CSecret(const char *_category, const char * _name, const char * _vaultId, const char * _version, SecretCacheEntry * _secret)
     : category(_category), name(_name), vaultId(_vaultId), version(_version), secret(_secret)
     {
-        updateHash();
     }
 
     virtual const IPropertyTree * getTree() const override;
@@ -1197,34 +1166,34 @@ public:
     virtual bool getProp(MemoryBuffer & result, const char * key) const override
     {
         CriticalBlock block(secretCs);
-        checkStale();
-        return getSecretKeyValue(result, secret, key);
+        checkUptoDate();
+        Owned<const IPropertyTree> contents = globalSecretCache.getContents(secret);
+        return getSecretKeyValue(result, contents, key);
     }
     virtual bool getProp(StringBuffer & result, const char * key) const override
     {
         CriticalBlock block(secretCs);
-        checkStale();
-        return getSecretKeyValue(result, secret, key);
+        checkUptoDate();
+        Owned<const IPropertyTree> contents = globalSecretCache.getContents(secret);
+        return getSecretKeyValue(result, contents, key);
     }
     virtual bool isStale() const override
     {
-        return secret && hasCacheExpired(secret);
+        return secret->isStale();
     }
     virtual unsigned getVersion() const override
     {
         CriticalBlock block(secretCs);
-        checkStale();
-        return secretHash;
+        checkUptoDate();
+        return secret->getHash();
     }
     virtual bool isValid() const override
     {
-        CriticalBlock block(secretCs);
-        return secret != nullptr;
+        return secret->hasContents();
     }
 
 protected:
-    void checkStale() const;
-    void updateHash() const;
+    void checkUptoDate() const;
 
 protected:
     StringAttr category;
@@ -1232,21 +1201,20 @@ protected:
     StringAttr vaultId;
     StringAttr version;
     mutable CriticalSection secretCs;
-    mutable Linked<const IPropertyTree> secret;
-    mutable unsigned secretHash = 0;
+    mutable SecretCacheEntry * secret;
 };
 
 
 const IPropertyTree * CSecret::getTree() const
 {
     CriticalBlock block(secretCs);
-    checkStale();
-    return LINK(secret);
+    checkUptoDate();
+    return globalSecretCache.getContents(secret);
 }
 
-void CSecret::checkStale() const
+void CSecret::checkUptoDate() const
 {
-    if (isStale())
+    if (secret->needsRefresh())
     {
 #ifdef TRACE_SECRETS
         DBGLOG("Secret %s/%s is stale updating from %u...", category.str(), name.str(), secretHash);
@@ -1254,8 +1222,10 @@ void CSecret::checkStale() const
         //MORE: This could block or fail - in roxie especially it would be better to return the old value
         try
         {
-            secret.setown(getSecretTree(category, name, vaultId, version));
-            updateHash();
+            SecretCacheEntry * newSecret = getSecretEntry(category, name, vaultId, version);
+            //Check the secret is always returned consistently.  It would be possible to call a slightly
+            //more optimal function to refresh a secret, but this is simplest.
+            assertex(secret == newSecret);
         }
         catch (IException * e)
         {
@@ -1266,17 +1236,12 @@ void CSecret::checkStale() const
     }
 }
 
-void CSecret::updateHash() const
-{
-    if (secret)
-        secretHash = getPropertyTreeHash(*secret.get(), 0x811C9DC5);
-    else
-        secretHash = 0;
-}
-
 ISyncedPropertyTree * resolveSecret(const char *category, const char * name, const char * optVaultId, const char * optVersion)
 {
-    Owned<IPropertyTree> resolved = getSecret(category, name, optVaultId, optVersion);
+    validateCategoryName(category);
+    validateSecretName(name);
+
+    SecretCacheEntry * resolved = getSecretEntry(category, name, optVaultId, optVersion);
     return new CSecret(category, name, optVaultId, optVersion, resolved);
 }
 
@@ -1354,13 +1319,13 @@ public:
     virtual bool getProp(MemoryBuffer & result, const char * key) const override final
     {
         CriticalBlock block(secretCs);
-        checkStale();
+        checkUptoDate();
         return getSecretKeyValue(result, config, key);
     }
     virtual bool getProp(StringBuffer & result, const char * key) const override final
     {
         CriticalBlock block(secretCs);
-        checkStale();
+        checkUptoDate();
         return getSecretKeyValue(result, config, key);
     }
     virtual bool isStale() const override final
@@ -1375,7 +1340,7 @@ public:
     virtual unsigned getVersion() const override final
     {
         CriticalBlock block(secretCs);
-        checkStale();
+        checkUptoDate();
         //If information that is combined with the secret (e.g. trusted peers) can also change dynamically this would
         //need to be a separate hash calculated from the config tree
         return secretHash;
@@ -1385,7 +1350,7 @@ protected:
     virtual void updateConfigFromSecret(const IPropertyTree * secretInfo) const = 0;
 
 protected:
-    void checkStale() const;
+    void checkUptoDate() const;
     void createConfig() const;
     void createDefaultConfigFromSecret(const IPropertyTree * secretInfo, bool addCertificates, bool addCertificateAuthority) const;
     void updateCertificateFromSecret(const IPropertyTree * secretInfo) const;
@@ -1403,11 +1368,11 @@ protected:
 const IPropertyTree * CSyncedCertificateBase::getTree() const
 {
     CriticalBlock block(secretCs);
-    checkStale();
+    checkUptoDate();
     return LINK(config);
 }
 
-void CSyncedCertificateBase::checkStale() const
+void CSyncedCertificateBase::checkUptoDate() const
 {
     if (secretHash != secret->getVersion())
         createConfig();

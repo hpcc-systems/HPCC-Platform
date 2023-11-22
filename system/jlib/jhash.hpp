@@ -468,13 +468,13 @@ protected:
     }       
 
 public:
-    CMinHashTable<C>(unsigned _initialSize = 7)
+    CMinHashTable(unsigned _initialSize = 7)
     {
         htn = _initialSize;
         n = 0;
         table = (C **)calloc(sizeof(C *),htn);
     }
-    ~CMinHashTable<C>()
+    ~CMinHashTable()
     {
         C **t = table+htn; 
         while (t--!=table) 
@@ -625,7 +625,7 @@ template <class KEYTYPE, class VALUETYPE>
 class CTimeLimitedCache
 {
 public:
-    CTimeLimitedCache<KEYTYPE, VALUETYPE>(unsigned timeoutMs=defaultCacheTimeoutMs)
+    CTimeLimitedCache(unsigned timeoutMs=defaultCacheTimeoutMs)
     {
         timeoutPeriodCycles = ((cycle_t)timeoutMs) * queryOneSecCycles() / 1000;
     }
