@@ -20,6 +20,7 @@ const defaultStartDate = new Date(new Date().getTime() - startTimeOffset);
 
 const FilterFields: Fields = {
     components: { type: "cloud-containername", label: nlsHPCC.ContainerName },
+    instance: { type: "cloud-podname", label: nlsHPCC.PodName },
     audience: {
         type: "dropdown", label: nlsHPCC.Audience, options: [
             { key: TargetAudience.Operator, text: "Operator" },
@@ -130,6 +131,7 @@ export const Logs: React.FunctionComponent<LogsProps> = ({
             timestamp: { label: nlsHPCC.TimeStamp, width: 140, sortable: false, },
             message: { label: nlsHPCC.Message, sortable: false, },
             components: { label: nlsHPCC.ContainerName, width: 150, sortable: false },
+            instance: { label: nlsHPCC.PodName, width: 150, sortable: false },
             audience: { label: nlsHPCC.Audience, width: 60, sortable: false, },
             class: {
                 label: nlsHPCC.Class, width: 40, sortable: false,

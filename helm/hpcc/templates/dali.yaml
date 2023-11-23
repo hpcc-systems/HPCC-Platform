@@ -29,10 +29,12 @@ Pass in root and me
 {{- define "hpcc.isForeignAccessConfigured" }}
 {{- $service := .me.service | default dict -}}
 {{- $visibility := $service.visibility | default "cluster" -}}
+{{- $match := false -}}
 {{- if (not (eq $visibility "cluster")) -}}
  {{ range .root.Values.dafilesrv -}}
-  {{- if not .disabled -}}
+  {{- if and (not $match) (not .disabled) -}}
    {{- if (eq "directio" .application) -}}
+    {{- $match = true -}}
 true
    {{- end -}}
   {{- end -}}
@@ -200,7 +202,6 @@ kind: ConfigMap
 {{/*
 Expose dali as a external service, only if there is a service definition and dafilesrv directio service is active.
 */}}
-{{- $dafilesrvCtx := dict -}}
 {{- $service := deepCopy (.service | default dict) -}}
 {{- $_ := set $service "visibility" ($service.visibility | default "cluster") -}}
 {{- $_ := set $service "servicePort" ($service.servicePort | default 7070) -}}

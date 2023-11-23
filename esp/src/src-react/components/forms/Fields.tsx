@@ -10,7 +10,7 @@ import { FileList, States as DFUStates } from "src/FileSpray";
 import { joinPath } from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
 import { useBuildInfo, useLogicalClusters } from "../../hooks/platform";
-import { useContainerNames } from "../../hooks/cloud";
+import { useContainerNames, usePodNames } from "../../hooks/cloud";
 
 const logger = scopedLogger("src-react/components/forms/Fields.tsx");
 
@@ -200,7 +200,7 @@ export type FieldType = "string" | "password" | "number" | "checkbox" | "choiceg
     "target-dfuqueue" | "user-groups" | "group-members" | "permission-type" |
     "logicalfile-type" | "dfuworkunit-state" |
     "esdl-esp-processes" | "esdl-definitions" |
-    "cloud-containername";
+    "cloud-containername" | "cloud-podname";
 
 export type Values = { [name: string]: string | number | boolean | (string | number | boolean)[] };
 
@@ -369,6 +369,11 @@ interface CloudContainerNameField extends BaseField {
     value?: string;
 }
 
+interface CloudPodNameField extends BaseField {
+    type: "cloud-podname";
+    value?: string;
+}
+
 export type Field = StringField | NumericField | CheckboxField | ChoiceGroupField | DateTimeField | DropdownField | DropdownMultiField |
     LinkField | LinksField | ProgressField |
     WorkunitStateField |
@@ -378,7 +383,7 @@ export type Field = StringField | NumericField | CheckboxField | ChoiceGroupFiel
     TargetDfuSprayQueueField | UserGroupsField | GroupMembersField | PermissionTypeField |
     LogicalFileType | DFUWorkunitStateField |
     EsdlEspProcessesField | EsdlDefinitionsField |
-    CloudContainerNameField;
+    CloudContainerNameField | CloudPodNameField;
 
 export type Fields = { [id: string]: Field };
 
@@ -762,6 +767,28 @@ export const CloudContainerNameField: React.FunctionComponent<CloudContainerName
         }) || [];
         setOptions(options);
     }, [cloudContainerNames]);
+
+    return <ComboBox {...props} allowFreeform={true} autoComplete={"on"} options={options} />;
+};
+
+export interface CloudPodNameFieldProps extends Omit<IComboBoxProps, "options"> {
+    name?: string;
+}
+
+export const CloudPodNameField: React.FunctionComponent<CloudPodNameFieldProps> = (props) => {
+
+    const [cloudPodNames] = usePodNames();
+    const [options, setOptions] = React.useState<IComboBoxOption[]>();
+
+    React.useEffect(() => {
+        const options = cloudPodNames?.map(row => {
+            return {
+                key: row,
+                text: row
+            };
+        }) || [];
+        setOptions(options);
+    }, [cloudPodNames]);
 
     return <ComboBox {...props} allowFreeform={true} autoComplete={"on"} options={options} />;
 };
@@ -1260,7 +1287,21 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     />
                 });
                 break;
-
+            case "cloud-podname":
+                field.value = field.value !== undefined ? field.value : "";
+                retVal.push({
+                    id: fieldID,
+                    label: field.label,
+                    field: <CloudPodNameField
+                        key={fieldID}
+                        onChange={(ev, row) => {
+                            onChange(fieldID, row.key);
+                            setDropzone(row.key as string);
+                        }}
+                        placeholder={field.placeholder}
+                    />
+                });
+                break;
         }
     }
     return retVal;

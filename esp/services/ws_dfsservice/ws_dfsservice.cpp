@@ -42,7 +42,15 @@ static unsigned __int64 getLockId(unsigned __int64 leaseId)
     return ++nextLockID;
 }
 
-static void populateLFNMeta(const char *logicalName, unsigned __int64 leaseId, bool remap, IPropertyTree *metaRoot, IPropertyTree *meta)
+
+enum LfnMetaOpts : byte
+{
+    LfnMOptNone   = 0x00,
+    LfnMOptRemap  = 0x01,
+    LfnMOptTls    = 0x02,
+};
+BITMASK_ENUM(LfnMetaOpts);
+static void populateLFNMeta(const char *logicalName, unsigned __int64 leaseId, LfnMetaOpts opts, IPropertyTree *metaRoot, IPropertyTree *meta)
 {
     CDfsLogicalFileName lfn;
     lfn.set(logicalName);
@@ -54,8 +62,13 @@ static void populateLFNMeta(const char *logicalName, unsigned __int64 leaseId, b
     Owned<IPropertyTree> tree = queryDistributedFileDirectory().getFileTree(logicalName, nullptr);
     if (!tree)
         return;
-    if (remap)
-        remapGroupsToDafilesrv(tree, nullptr);
+    if (hasMask(opts, LfnMOptRemap))
+    {
+        bool secure = hasMask(opts, LfnMOptTls);
+        // If !secure - called from insecure DFS service, remapGroupsToDafilesrv needs to direct to an insecure dafilesrv
+
+        remapGroupsToDafilesrv(tree, false, secure);
+    }
 
     bool isSuper = streq(tree->queryName(), queryDfsXmlBranchName(DXB_SuperFile));
 
@@ -98,7 +111,7 @@ static void populateLFNMeta(const char *logicalName, unsigned __int64 leaseId, b
             {
                 IPropertyTree &sub = *(orderedSubFiles[f]);
                 sub.getProp("@name", subname.clear());
-                populateLFNMeta(subname, leaseId, remap, metaRoot, fileMeta);
+                populateLFNMeta(subname, leaseId, opts, metaRoot, fileMeta);
             }
         }
     }
@@ -160,9 +173,16 @@ bool CWsDfsEx::onDFSFileLookup(IEspContext &context, IEspDFSFileLookupRequest &r
         unsigned __int64 leaseId = req.getLeaseId();
 
         // populate file meta data and lock id's
+        LfnMetaOpts opts = LfnMOptNone;
+        if (req.getAccessViaDafilesrv())
+            opts |= LfnMOptRemap;
+
+        // NB: if we ever have some services with tls, and some without in bare-metal, this may need revisiting.
+        if (getComponentConfigSP()->getPropBool("@tls"))
+            opts |= LfnMOptTls;
+
         Owned<IPropertyTree> responseTree = createPTree();
-        bool remap = req.getAccessViaDafilesrv();
-        populateLFNMeta(logicalName, leaseId, remap, responseTree, responseTree);
+        populateLFNMeta(logicalName, leaseId, opts, responseTree, responseTree);
 
         // serialize response
         MemoryBuffer respMb, compressedRespMb;

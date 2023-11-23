@@ -1113,6 +1113,10 @@ export function formatNums(obj) {
     return obj;
 }
 
+export function isNumeric(n: string | undefined | null | number) {
+    return !isNaN(parseFloat(n as string)) && isFinite(n as number);
+}
+
 export function formatLine(labelTpl, obj): string {
     let retVal = "";
     let lpos = labelTpl.indexOf("%");

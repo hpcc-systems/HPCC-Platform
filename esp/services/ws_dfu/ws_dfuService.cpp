@@ -6116,7 +6116,7 @@ void CWsDfuEx::dFUFileAccessCommon(IEspContext &context, const CDfsLogicalFileNa
     if (!hasIssuerTlsConfig(keyPairName))
         throw makeStringExceptionV(-1, "dFUFileAccessCommon: file signing certificate ('%s') not defined in configuration.", keyPairName.str());
 
-    auto externalService = k8s::getDafileServiceFromConfig("stream");
+    auto externalService = k8s::getDafileServiceFromConfig("stream", true, true);
     dafilesrvHost.set(externalService.first.c_str());
     port = externalService.second;
     secure = true;
@@ -6497,7 +6497,7 @@ bool CWsDfuEx::onDFUFileCreateV2(IEspContext &context, IEspDFUFileCreateV2Reques
         fileDesc.setown(createFileDescriptor(tempFileName, planeName, numParts));
         numParts = fileDesc->numParts();
 
-        auto externalService = k8s::getDafileServiceFromConfig("stream");
+        auto externalService = k8s::getDafileServiceFromConfig("stream", true, true);
         dafilesrvHost.set(externalService.first.c_str());
         port = externalService.second;
         secure = true;

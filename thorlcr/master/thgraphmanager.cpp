@@ -59,6 +59,28 @@
 
 static const StatisticsMapping podStatistics({StNumPods});
 
+
+void relayWuidException(IConstWorkUnit *workunit, const IException *exception)
+{
+    WUState state = workunit->getState();
+    if (WUStateWait != state) // if already in wait state, then an exception has already been relayed
+    {
+        Owned<IWorkUnit> wu = &workunit->lock();
+        if (WUStateWait != state)
+        {
+            Owned<IWUException> we = wu->createException();
+            we->setSeverity(SeverityInformation);
+            StringBuffer errStr;
+            exception->errorMessage(errStr);
+            we->setExceptionMessage(errStr);
+            we->setExceptionSource("thormasterexception");
+            we->setExceptionCode(exception->errorCode());
+            WUState newState = (WUStateRunning == state) ? WUStateWait : WUStateFailed;
+            wu->setState(newState);
+        }
+    }
+}
+
 class CJobManager : public CSimpleInterface, implements IJobManager, implements IExceptionHandler
 {
     bool stopped, handlingConversation;
@@ -934,16 +956,7 @@ void CJobManager::reply(IConstWorkUnit *workunit, const char *wuid, IException *
         if (!exitException)
         {
             exitException.setown(e);
-            Owned<IWorkUnit> w = &workunit->lock();
-            Owned<IWUException> we = w->createException();
-            we->setSeverity(SeverityInformation);
-            StringBuffer errStr;
-            e->errorMessage(errStr);
-            we->setExceptionMessage(errStr);
-            we->setExceptionSource("thormasterexception");
-            we->setExceptionCode(e->errorCode());
-            WUState newState = (WUStateRunning == w->getState()) ? WUStateWait : WUStateFailed;
-            w->setState(newState);
+            relayWuidException(workunit, e);
         }
         return;
     }
@@ -1413,28 +1426,17 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                         SocketEndpoint dummyAgentEp;
                         jobManager->execute(workunit, currentWuid, currentGraphName, dummyAgentEp);
                         IException *e = jobManager->queryExitException();
-                        Owned<IWorkUnit> w = &workunit->lock();
-                        WUState newState = (WUStateRunning == w->getState()) ? WUStateWait : WUStateFailed;
                         if (e)
                         {
-                            if (WUStateWait != w->getState()) // if set already, CJobManager::reply may have already set to WUStateWait
-                            {
-                                Owned<IWUException> we = w->createException();
-                                we->setSeverity(SeverityInformation);
-                                StringBuffer errStr;
-                                e->errorMessage(errStr);
-                                we->setExceptionMessage(errStr);
-                                we->setExceptionSource("thormasterexception");
-                                we->setExceptionCode(e->errorCode());
-
-                                w->setState(newState);
-                            }
+                            // NB: exitException has already been relayed.
                             break;
                         }
 
+                        Owned<IWorkUnit> w = &workunit->lock();
                         if (!multiJobLinger && lingerPeriod)
                             w->setDebugValue(instance, "1", true);
 
+                        WUState newState = (WUStateRunning == w->getState()) ? WUStateWait : WUStateFailed;
                         w->setState(newState);
                     }
                     currentGraphName.clear();

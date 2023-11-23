@@ -1278,19 +1278,29 @@ table.miniSelect span {
 }
 
 .ErrorCell {
+    padding-left: 4px;
     background: red;
     color: white;
 }
 
 .AlertCell {
+    padding-left: 4px;
     background: #febe47;
 }
 
+.CostCell {
+    padding-left: 4px;
+    background: #fe4747;
+    color: white;
+}
+
 .WarningCell {
+    padding-left: 4px;
     background: yellow;
 }
 
 .NormalCell {
+    padding-left: 4px;
     background: rgba(0, 181, 0, 1);
 }
 
@@ -1687,19 +1697,30 @@ table.miniSelect span {
     color: #fff;
 }
 
-.dijitToasterWarning,
+.dijitToasterAlert,
+.dijitToasterWarning {
+    font-weight: bold;
+}
+
 .dijitToasterError,
+.dijitToasterFatal {
+    font-weight: bold;
+    color: #fff;
 .dijitToasterFatal {
     font-weight: bold;
     color: #fff;
 }
 
 .dijitToasterWarning .dijitToasterContent {
-    background: #d4d943;
+    background: #ffee00;
 }
 
 .dijitToasterError .dijitToasterContent {
-    background: #c46600;
+    background: #fe8147;
+}
+
+.dijitToasterAlert .dijitToasterContent {
+    background: #ff1e00;
 }
 
 /* imported from dijit.css */

@@ -96,7 +96,7 @@ bool checkExitCodes(StringBuffer &output, const char *podStatuses)
     return false;
 }
 
-void waitJob(const char *componentName, const char *resourceType, const char *job, unsigned pendingTimeoutSecs, KeepJobs keepJob)
+void waitJob(const char *componentName, const char *resourceType, const char *job, unsigned pendingTimeoutSecs, unsigned totalWaitTimeSecs, KeepJobs keepJob)
 {
     VStringBuffer jobName("%s-%s-%s", componentName, resourceType, job);
     jobName.toLowerCase();
@@ -160,6 +160,11 @@ void waitJob(const char *componentName, const char *resourceType, const char *jo
                 runKubectlCommand(componentName, getReason, nullptr, &output.clear());
                 throw makeStringExceptionV(0, "Failed to run %s - pod not scheduled after %u seconds: %s ", jobName.str(), pendingTimeoutSecs, output.str());
             }
+            if (0 == totalWaitTimeSecs)
+                break;
+            if ((INFINITE != totalWaitTimeSecs) && msTick()-start > totalWaitTimeSecs*1000)
+                throw makeStringExceptionV(0, "Wait job timeout (%u secs) expired, whilst running: %s", totalWaitTimeSecs, jobName.str());
+
             MilliSleep(delay);
             if (delay < 10000)
                 delay = delay * 2;
@@ -236,7 +241,7 @@ void runJob(const char *componentName, const char *wuid, const char *jobName, co
     Owned<IException> exception;
     try
     {
-        waitJob(componentName, "job", jobName, pendingTimeoutSecs, keepJob);
+        waitJob(componentName, "job", jobName, pendingTimeoutSecs, INFINITE, keepJob);
     }
     catch (IException *e)
     {
@@ -370,7 +375,7 @@ std::pair<std::string, unsigned> getExternalService(const char *serviceName)
     return servicePair;
 }
 
-std::pair<std::string, unsigned> getDafileServiceFromConfig(const char *application)
+std::pair<std::string, unsigned> getDafileServiceFromConfig(const char *application, bool secure, bool errorIfMissing)
 {
 #ifndef _CONTAINERIZED
     UNIMPLEMENTED_X("getDafileServiceFromConfig");
@@ -381,29 +386,35 @@ std::pair<std::string, unsigned> getDafileServiceFromConfig(const char *applicat
      */
     VStringBuffer serviceXPath("services[@type='%s']", application);
     Owned<IPropertyTreeIterator> dafilesrvServices = getGlobalConfigSP()->getElements(serviceXPath);
-    if (!dafilesrvServices->first())
-        throw makeStringExceptionV(JLIBERR_K8sServiceError, "dafilesrv service '%s' not defined or disabled", application);
-    const IPropertyTree &dafilesrv = dafilesrvServices->query();
-    if (!dafilesrv.getPropBool("@public"))
-        throw makeStringExceptionV(JLIBERR_K8sServiceError, "dafilesrv service '%s' has no public service defined", application);
-    StringBuffer dafilesrvName;
-    dafilesrv.getProp("@name", dafilesrvName);
-    unsigned port = (unsigned)dafilesrv.getPropInt("@port");
-
-    StringBuffer hostname;
-    dafilesrv.getProp("@hostname", hostname);
-    if (hostname.length())
-        return { hostname.str(), port };
-    else
+    ForEach(*dafilesrvServices)
     {
-        auto externalService = getExternalService(dafilesrvName);
-        if (externalService.first.empty())
-            throw makeStringExceptionV(JLIBERR_K8sServiceError, "dafilesrv service '%s' - external service '%s' not found", application, dafilesrvName.str());
-        if (0 == externalService.second)
-            throw makeStringExceptionV(JLIBERR_K8sServiceError, "dafilesrv service '%s' - external service '%s' port not defined", application, dafilesrvName.str());
-        assertex(port == externalService.second);
-        return externalService;
+        const IPropertyTree &dafilesrv = dafilesrvServices->query();
+        if (!dafilesrv.getPropBool("@public"))
+            continue;
+        if (secure != dafilesrv.getPropBool("@tls"))
+            continue;
+        StringBuffer dafilesrvName;
+        dafilesrv.getProp("@name", dafilesrvName);
+        unsigned port = (unsigned)dafilesrv.getPropInt("@port");
+
+        StringBuffer hostname;
+        dafilesrv.getProp("@hostname", hostname);
+        if (hostname.length())
+            return { hostname.str(), port };
+        else
+        {
+            auto externalService = getExternalService(dafilesrvName);
+            if (externalService.first.empty())
+                throw makeStringExceptionV(JLIBERR_K8sServiceError, "dafilesrv service '%s' - external service '%s' not found", application, dafilesrvName.str());
+            if (0 == externalService.second)
+                throw makeStringExceptionV(JLIBERR_K8sServiceError, "dafilesrv service '%s' - external service '%s' port not defined", application, dafilesrvName.str());
+            assertex(port == externalService.second);
+            return externalService;
+        }
     }
+    if (errorIfMissing)
+        throw makeStringExceptionV(JLIBERR_K8sServiceError, "No suitable dafilesrv service '%s' enabled (Rquired be @public=true and @tls=%s)", application, boolToStr(secure));
+    return { "", 0 };
 }
 
 

@@ -312,14 +312,6 @@ int check_max_socket_write_buffer(int size);
 int check_set_max_socket_read_buffer(int size);
 int check_set_max_socket_write_buffer(int size);
 
-#define TRACE_RETRY_DATA 0x08
-#define TRACE_MSGPACK 0x10
-
-inline bool checkTraceLevel(unsigned category, unsigned level)
-{
-    return (udpTraceLevel >= level);
-}
-
 extern UDPLIB_API void sanityCheckUdpSettings(unsigned receiveQueueSize, unsigned sendQueueSize, unsigned numSenders, __uint64 networkSpeedBitsPerSecond);
 
 

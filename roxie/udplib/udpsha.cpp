@@ -151,10 +151,6 @@ void queue_t::doEnqueue(DataBuffer *buf)
     }
     tail = buf;
     count.fastAdd(1); // inside a critical section, so no need for atomic inc.
-#ifdef _DEBUG
-    if (count > limit)
-        DBGLOG("queue_t::pushOwn set count to %u", count.load());
-#endif
 }
 
 void queue_t::pushOwnWait(DataBuffer * buf)
@@ -376,11 +372,6 @@ bool PacketTracker::noteSeen(UdpPacketHeader &hdr)
     // Be careful to think about wrapping. Less than and higher can't really be distinguished, but we treat resent differently from original
     bool duplicate = false;
     unsigned delta = seq - base;
-    if (udpTraceLevel > 5)
-    {
-        DBGLOG("PacketTracker::noteSeen %" SEQF "u: delta %d", hdr.sendSeq, delta);
-        dump();
-    }
     if (delta < TRACKER_BITS)
     {
         unsigned idx = (seq / 64) % TRACKER_DWORDS;
@@ -447,11 +438,6 @@ bool PacketTracker::hasSeen(sequence_t seq) const
     // Accessed only on sender side where these are not modified, so no need for locking
     // Careful about wrapping!
     unsigned delta = seq - base;
-    if (udpTraceLevel > 5)
-    {
-       DBGLOG("PacketTracker::hasSeen - have I seen %" SEQF "u, %d", seq, delta);
-       dump();
-    }
     if (delta < TRACKER_BITS)
     {
         unsigned idx = (seq / 64) % TRACKER_DWORDS;
@@ -468,11 +454,6 @@ bool PacketTracker::canRecord(sequence_t seq) const
 {
     // Careful about wrapping!
     unsigned delta = seq - base;
-    if (udpTraceLevel > 5)
-    {
-       DBGLOG("PacketTracker::hasSeen - can I record %" SEQF "u, %d", seq, delta);
-       dump();
-    }
     return (delta < TRACKER_BITS);
 }
 

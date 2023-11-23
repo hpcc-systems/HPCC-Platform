@@ -5,6 +5,7 @@ import nlsHPCC from "src/nlsHPCC";
 import { useWorkunitExceptions } from "../hooks/workunit";
 import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { pivotItemStyle } from "../layouts/pivot";
+import { formatCost } from "src/Session";
 
 function extractGraphInfo(msg) {
     const regex = /^([a-zA-Z0-9 :]+: )(graph graph(\d+)\[(\d+)\], )(([a-zA-Z]+)\[(\d+)\]: )?(.*)$/gmi;
@@ -21,6 +22,14 @@ function extractGraphInfo(msg) {
     return retVal;
 }
 
+interface FilterCounts {
+    cost: number,
+    error: number,
+    warning: number,
+    info: number,
+    other: number
+}
+
 interface InfoGridProps {
     wuid: string;
 }
@@ -29,11 +38,12 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
     wuid
 }) => {
 
+    const [costChecked, setCostChecked] = React.useState(true);
     const [errorChecked, setErrorChecked] = React.useState(true);
     const [warningChecked, setWarningChecked] = React.useState(true);
     const [infoChecked, setInfoChecked] = React.useState(true);
     const [otherChecked, setOtherChecked] = React.useState(true);
-    const [filterCounts, setFilterCounts] = React.useState<any>({});
+    const [filterCounts, setFilterCounts] = React.useState<FilterCounts>({ cost: 0, error: 0, warning: 0, info: 0, other: 0 });
     const [exceptions] = useWorkunitExceptions(wuid);
     const [data, setData] = React.useState<any[]>([]);
     const {
@@ -44,10 +54,11 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         { key: "errors", onRender: () => <Checkbox defaultChecked label={`${filterCounts.error || 0} ${nlsHPCC.Errors}`} onChange={(ev, value) => setErrorChecked(value)} styles={{ root: { paddingTop: 8, paddingRight: 8 } }} /> },
+        { key: "costs", onRender: () => <Checkbox defaultChecked label={`${filterCounts.cost || 0} ${nlsHPCC.Costs}`} onChange={(ev, value) => setCostChecked(value)} styles={{ root: { paddingTop: 8, paddingRight: 8 } }} /> },
         { key: "warnings", onRender: () => <Checkbox defaultChecked label={`${filterCounts.warning || 0} ${nlsHPCC.Warnings}`} onChange={(ev, value) => setWarningChecked(value)} styles={{ root: { paddingTop: 8, paddingRight: 8 } }} /> },
         { key: "infos", onRender: () => <Checkbox defaultChecked label={`${filterCounts.info || 0} ${nlsHPCC.Infos}`} onChange={(ev, value) => setInfoChecked(value)} styles={{ root: { paddingTop: 8, paddingRight: 8 } }} /> },
         { key: "others", onRender: () => <Checkbox defaultChecked label={`${filterCounts.other || 0} ${nlsHPCC.Others}`} onChange={(ev, value) => setOtherChecked(value)} styles={{ root: { paddingTop: 8, paddingRight: 8 } }} /> }
-    ], [filterCounts.error, filterCounts.info, filterCounts.other, filterCounts.warning]);
+    ], [filterCounts.cost, filterCounts.error, filterCounts.info, filterCounts.other, filterCounts.warning]);
 
     //  Grid ---
     const columns = React.useMemo((): FluentColumns => {
@@ -60,13 +71,23 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
                             return "ErrorCell";
                         case "Alert":
                             return "AlertCell";
+                        case "Cost":
+                            return "CostCell";
                         case "Warning":
                             return "WarningCell";
                     }
                     return "";
                 }
             },
-            Source: { label: nlsHPCC.Source, field: "", width: 144, sortable: false },
+            Source: {
+                label: `${nlsHPCC.Source} / ${nlsHPCC.Cost}`, field: "", width: 144, sortable: false,
+                formatter: (Source, row) => {
+                    if (Source === "Cost Optimizer") {
+                        return formatCost(+row.Priority);
+                    }
+                    return Source;
+                }
+            },
             Code: { label: nlsHPCC.Code, field: "", width: 45, sortable: false },
             Message: {
                 label: nlsHPCC.Message, field: "",
@@ -98,14 +119,21 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
     const copyButtons = useCopyButtons(columns, selection, "errorwarnings");
 
     React.useEffect(() => {
-        const filterCounts = {
+        const filterCounts: FilterCounts = {
+            cost: 0,
             error: 0,
             warning: 0,
             info: 0,
             other: 0
         };
         const filteredExceptions = exceptions.map((row, idx) => {
+            if (row.Source === "Cost Optimizer") {
+                row.Severity = "Cost";
+            }
             switch (row.Severity) {
+                case "Cost":
+                    filterCounts.cost++;
+                    break;
                 case "Error":
                     filterCounts.error++;
                     break;
@@ -124,13 +152,15 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
                 ...row
             };
         }).filter(row => {
-            if (!errorChecked && row.Severity === "Error") {
+            if (!costChecked && row.Severity === "Cost") {
+                return false;
+            } else if (!errorChecked && row.Severity === "Error") {
                 return false;
             } else if (!warningChecked && row.Severity === "Warning") {
                 return false;
             } else if (!infoChecked && row.Severity === "Info") {
                 return false;
-            } else if (!otherChecked && row.Severity !== "Error" && row.Severity !== "Warning" && row.Severity !== "Info") {
+            } else if (!otherChecked && row.Severity !== "Cost" && row.Severity !== "Error" && row.Severity !== "Warning" && row.Severity !== "Info") {
                 return false;
             }
             return true;
@@ -145,6 +175,10 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
                 return -1;
             } else if (r.Severity === "Alert") {
                 return 1;
+            } else if (l.Severity === "Cost") {
+                return -1;
+            } else if (r.Severity === "Cost") {
+                return 1;
             } else if (l.Severity === "Warning") {
                 return -1;
             } else if (r.Severity === "Warning") {
@@ -154,7 +188,7 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
         });
         setData(filteredExceptions);
         setFilterCounts(filterCounts);
-    }, [errorChecked, exceptions, infoChecked, otherChecked, warningChecked]);
+    }, [costChecked, errorChecked, exceptions, infoChecked, otherChecked, warningChecked]);
 
     React.useEffect(() => {
         if (data.length) {
