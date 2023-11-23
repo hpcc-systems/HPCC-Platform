@@ -25,7 +25,7 @@ CSDSServerStatus &openThorServerStatus();
 void closeThorServerStatus();
 void thorMain(ILogMsgHandler *logHandler, const char *workunit, const char *graphName);
 
-enum ThorExitCodes { TEC_Clean, TEC_CtrlC, TEC_Idle, TEC_Watchdog, TEC_SlaveInit, TEC_Swap, TEC_DaliDown };
+enum ThorExitCodes { TEC_Clean, TEC_CtrlC, TEC_Idle, TEC_Watchdog, TEC_SlaveInit, TEC_Swap, TEC_DaliDown, TEC_Exception };
 
 void abortThor(IException *e, unsigned errCode, bool abortCurrentJob=true);
 void setExitCode(int code);
@@ -33,6 +33,7 @@ int queryExitCode();
 
 void addConnectedWorkerPod(const char *podName);
 void publishPodNames(IWorkUnit *workunit);
+void relayWuidException(IConstWorkUnit *wu, const IException *exception);
 
 
 #endif
