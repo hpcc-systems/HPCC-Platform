@@ -1,7 +1,5 @@
 #include "util.hpp"
 
-#include "platform.h"
-#include "jexcept.hpp"
 #include "jfile.hpp"
 
 std::vector<uint8_t> readWasmBinaryToBuffer(const char *filename)
