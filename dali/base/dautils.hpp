@@ -582,7 +582,7 @@ inline unsigned calcStripeNumber(unsigned partNum, const char *lfnName, unsigned
     return ((partNum+lfnHash)%numStripes)+1;
 }
 interface INamedGroupStore;
-extern da_decl void remapGroupsToDafilesrv(IPropertyTree *file, INamedGroupStore *resolver);
+extern da_decl void remapGroupsToDafilesrv(IPropertyTree *file, bool foreign, bool secure);
 
 #ifdef NULL_DALIUSER_STACKTRACE
 extern da_decl void logNullUser(IUserDescriptor *userDesc);

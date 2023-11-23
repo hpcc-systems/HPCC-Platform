@@ -11156,6 +11156,9 @@ public:
         if (queryTransactionLogging())
             transactionLog.log("%s", trc.str());
 
+        // This is Dali, and for foreign access (see below), if in use, this is likely to be false
+        bool secureService = getComponentConfigSP()->getPropBool("@tls");
+
         mb.clear();
         CDfsLogicalFileName dlfn;
         dlfn.set(lname);
@@ -11181,7 +11184,7 @@ public:
                         if (hasMask(opts, GetFileTreeOpts::remapToService))
                         {
                             tree.setown(createPTreeFromIPT(tree)); // copy live Dali tree, because it is about to be altered by remapGroupsToDafilesrv
-                            remapGroupsToDafilesrv(tree, &queryNamedGroupStore());
+                            remapGroupsToDafilesrv(tree, true, secureService);
                             groupResolver = nullptr; // do not attempt to resolve remapped group (it will not exist and cause addUnique to create a new anon one)
 
                             const char *remotePlaneName = tree->queryProp("@group");
@@ -11231,7 +11234,7 @@ public:
                             if (getComponentConfigSP()->getPropBool("@foreignAccess"))
                             {
                                 tree.setown(createPTreeFromIPT(tree)); // copy live Dali tree, because it is about to be altered by remapGroupsToDafilesrv
-                                remapGroupsToDafilesrv(tree, &queryNamedGroupStore());
+                                remapGroupsToDafilesrv(tree, true, secureService);
                                 groupResolver = nullptr; // do not attempt to resolve remapped group (it will not exist and cause addUnique to create a new anon one)
                             }
                         }

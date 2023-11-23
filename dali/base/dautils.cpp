@@ -3642,11 +3642,10 @@ void addStripeDirectory(StringBuffer &out, const char *directory, const char *pl
 
 static CConfigUpdateHook directIOUpdateHook;
 static CriticalSection dafileSrvNodeCS;
-static Owned<INode> dafileSrvNode;
+static Owned<INode> tlsDirectIONode, nonTlsDirectIONode;
 
-void remapGroupsToDafilesrv(IPropertyTree *file, INamedGroupStore *resolver)
+void remapGroupsToDafilesrv(IPropertyTree *file, bool foreign, bool secure)
 {
-    FileDescriptorFlags fileFlags = static_cast<FileDescriptorFlags>(file->getPropInt("Attr/@flags"));
     Owned<IPropertyTreeIterator> iter = file->getElements("Cluster");
     ForEach(*iter)
     {
@@ -3659,10 +3658,24 @@ void remapGroupsToDafilesrv(IPropertyTree *file, INamedGroupStore *resolver)
             {
                 auto updateFunc = [&](const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
                 {
-                    CriticalBlock b(dafileSrvNodeCS);
-                    auto externalService = k8s::getDafileServiceFromConfig("directio");
-                    VStringBuffer dafilesrvEpStr("%s:%u", externalService.first.c_str(), externalService.second);
-                    dafileSrvNode.setown(createINode(dafilesrvEpStr));
+                    auto resolve = [&](bool secure) -> INode *
+                    {
+                        auto directioService = k8s::getDafileServiceFromConfig("directio", secure, false);
+                        if (0 == directioService.second) // port. If 0, getDafileServiceFromConfig did not find a match
+                            return nullptr;
+                        VStringBuffer dafilesrvEpStr("%s:%u", directioService.first.c_str(), directioService.second);
+                        const char *typeText = secure ? "secure" : "non-secure";
+                        Owned<INode> directIONode = createINode(dafilesrvEpStr);
+                        if (directIONode->endpoint().isNull())
+                            throw makeStringExceptionV(0, "Unable to resolve %s directio dafilesrv hostname '%s'", typeText, directioService.first.c_str());
+                        PROGLOG("%s directio = %s", typeText, dafilesrvEpStr.str());
+                        return directIONode.getClear();
+                    };
+                    {
+                        CriticalBlock b(dafileSrvNodeCS);
+                        tlsDirectIONode.setown(resolve(true));
+                        nonTlsDirectIONode.setown(resolve(false));
+                    }
                 };
                 directIOUpdateHook.installOnce(updateFunc, true);
             }
@@ -3672,10 +3685,11 @@ void remapGroupsToDafilesrv(IPropertyTree *file, INamedGroupStore *resolver)
                 group.setown(createIGroup(cluster.queryProp("Group")));
             else
             {
-                assertex(resolver);
+                // JCSMORE only expected here if via foreign access (not entirely sure if this route is ever possible anymore)
+                assertex(foreign);
                 StringBuffer defaultDir;
                 GroupType groupType;
-                group.setown(resolver->lookup(planeName, defaultDir, groupType));
+                group.setown(queryNamedGroupStore().lookup(planeName, defaultDir, groupType));
             }
 
             std::vector<INode *> nodes;
@@ -3683,9 +3697,14 @@ void remapGroupsToDafilesrv(IPropertyTree *file, INamedGroupStore *resolver)
             {
                 Linked<INode> dafileSrvNodeCopy;
                 {
-                    // in case config hook above changes dafileSrvNode
+                    // in case config hook above changes tlsDirectIONode/nonTlsDirectIONode
                     CriticalBlock b(dafileSrvNodeCS);
-                    dafileSrvNodeCopy.set(dafileSrvNode);
+                    dafileSrvNodeCopy.set(secure ? tlsDirectIONode : nonTlsDirectIONode);
+                }
+                if (!dafileSrvNodeCopy)
+                {
+                    const char *typeText = secure ? "secure" : "non-secure";
+                    throw makeStringExceptionV(0, "%s DFS service request made, but no %s directio service available", typeText, typeText);
                 }
                 for (unsigned n=0; n<group->ordinality(); n++)
                     nodes.push_back(dafileSrvNodeCopy);
