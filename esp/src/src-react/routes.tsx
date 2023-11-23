@@ -72,12 +72,12 @@ export const routes: RoutesEx = [
             },
             {
                 path: "/:Wuid/:Tab", action: (ctx, params) => import("./components/WorkunitDetails").then(_ => {
-                    return <_.WorkunitDetails wuid={params.Wuid as string} tab={params.Tab as string} queryParams={parseSearch(ctx.search) as any} />;
+                    return <_.WorkunitDetails wuid={params.Wuid as string} tab={params.Tab as string} queryParams={{ [params.Tab as string]: parseSearch(ctx.search) as any }} />;
                 })
             },
             {
                 path: "/:Wuid/:Tab/:State", action: (ctx, params) => import("./components/WorkunitDetails").then(_ => {
-                    return <_.WorkunitDetails wuid={params.Wuid as string} tab={params.Tab as string} state={(params.State as string)} queryParams={parseSearch(ctx.search) as any} />;
+                    return <_.WorkunitDetails wuid={params.Wuid as string} tab={params.Tab as string} state={{ [params.Tab as string]: (params.State as string) }} queryParams={{ [params.Tab as string]: parseSearch(ctx.search) as any }} />;
                 })
             },
         ]
@@ -124,7 +124,7 @@ export const routes: RoutesEx = [
             },
             {
                 path: "/:NodeGroup/:Name/:Tab", action: (ctx, params) => import("./components/FileDetails").then(_ => {
-                    return <_.FileDetails cluster={params.NodeGroup as string} logicalFile={params.Name as string} tab={params.Tab as string} sort={parseSort(ctx.search)} queryParams={parseSearch(ctx.search) as any} />;
+                    return <_.FileDetails cluster={params.NodeGroup as string} logicalFile={params.Name as string} tab={params.Tab as string} sort={{ [params.Tab as string]: parseSort(ctx.search) }} queryParams={{ [params.Tab as string]: parseSearch(ctx.search) as any }} />;
                 })
             },
         ]
@@ -226,7 +226,7 @@ export const routes: RoutesEx = [
             },
             {
                 path: "/:QuerySetId/:Id/metrics/:Wuid/:State", action: (ctx, params) => import("./components/QueryDetails").then(_ => {
-                    return <_.QueryDetails querySet={params.QuerySetId as string} queryId={params.Id as string} tab="metrics" metricsTab={params.Wuid as string} state={params.State as string} />;
+                    return <_.QueryDetails querySet={params.QuerySetId as string} queryId={params.Id as string} tab="metrics" metricsTab={params.Wuid as string} metricsState={params.State as string} />;
                 })
             },
             {

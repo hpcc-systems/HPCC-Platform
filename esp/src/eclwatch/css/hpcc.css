@@ -1697,19 +1697,30 @@ table.miniSelect span {
     color: #fff;
 }
 
-.dijitToasterWarning,
+.dijitToasterAlert,
+.dijitToasterWarning {
+    font-weight: bold;
+}
+
 .dijitToasterError,
+.dijitToasterFatal {
+    font-weight: bold;
+    color: #fff;
 .dijitToasterFatal {
     font-weight: bold;
     color: #fff;
 }
 
 .dijitToasterWarning .dijitToasterContent {
-    background: #d4d943;
+    background: #ffee00;
 }
 
 .dijitToasterError .dijitToasterContent {
-    background: #c46600;
+    background: #fe8147;
+}
+
+.dijitToasterAlert .dijitToasterContent {
+    background: #ff1e00;
 }
 
 /* imported from dijit.css */

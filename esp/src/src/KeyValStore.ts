@@ -1,4 +1,3 @@
-import { detect } from "detect-browser";
 import { Store, ValueChangedMessage } from "@hpcc-js/comms";
 import { Dispatch, IObserverHandle } from "@hpcc-js/util";
 import * as Utility from "./Utility";
@@ -273,74 +272,6 @@ export function cookieKeyValStore(): CookieStorage {
         _cookieStorage = new CookieStorage();
     }
     return _cookieStorage;
-}
-
-// Initialize Global Store  ---
-const store = globalKeyValStore();
-const userStore = cookieKeyValStore();
-userStore.getAll().then(async userSession => {
-    if (!userSession || !userSession["ECLWatchUser"] || !userSession["Status"] || userSession["Status"] === "Locked") return;
-    store.set("", "", false);
-
-    // Grab some aprox metrics - ignoring obvious race condition
-    const browser = detect();
-    const majorVersion = browser.version.split(".")[0];
-    const now = new Date(Date.now()).toISOString();
-
-    const statsStr = await store.get("browser-stats");
-    try {
-        const stats = JSON.parse(statsStr || "{}") || {};
-        if (!stats.since) stats.since = now;
-        if (browser.type === "browser") {
-            //  Browser Stats  ---
-            if (!stats[browser.name]) stats[browser.name] = {};
-            if (!stats[browser.name][majorVersion]) stats[browser.name][majorVersion] = {};
-            stats[browser.name][majorVersion].lastSeen = now;
-
-            if (!stats[browser.name][majorVersion].count) stats[browser.name][majorVersion].count = 0;
-            stats[browser.name][majorVersion].count++;
-
-            //  OS Stats  ---
-            if (!stats[browser.os]) stats[browser.os] = {};
-            stats[browser.os].lastSeen = now;
-
-            if (!stats[browser.os].count) stats[browser.os].count = 0;
-            stats[browser.os].count++;
-
-            store.set("browser-stats", JSON.stringify(stats), false);
-        }
-    } catch (e) {
-        console.warn("Failed to write stats", e);
-    }
-});
-
-export function fetchStats() {
-    const store = globalKeyValStore();
-    return store.get("browser-stats").then(statsStr => {
-        const browser = [];
-        const os = [];
-        try {
-            const stats = JSON.parse(statsStr ?? "{}");
-            for (const key in stats) {
-                if (key !== "since") {
-                    const val = stats[key];
-                    if (val.count === undefined) {
-                        for (const bKey in val) {
-                            browser.push([`${key}-${bKey}`, val[bKey].count]);
-                        }
-                    } else {
-                        os.push([`${key}`, val.count]);
-                    }
-                }
-            }
-        } catch (e) {
-            console.warn("Failed to read stats", e);
-        }
-        return {
-            browser,
-            os
-        };
-    });
 }
 
 export function getRecentFilters(filterName) {

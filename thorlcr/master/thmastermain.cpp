@@ -1168,6 +1168,12 @@ int main( int argc, const char *argv[]  )
             {
                 try
                 {
+                    if (exception)
+                    {
+                        Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+                        Owned<IConstWorkUnit> wu = factory->openWorkUnit(workunit);
+                        relayWuidException(wu, exception);
+                    }
                     k8s::KeepJobs keepJob = k8s::translateKeepJobs(globals->queryProp("@keepJobs"));
                     switch (keepJob)
                     {
@@ -1202,7 +1208,7 @@ int main( int argc, const char *argv[]  )
                 }
             }
         }
-        setExitCode(0);
+        setExitCode(exception ? TEC_Exception : 0);
     }
 
     // cleanup handler to be sure we end
