@@ -1,9 +1,7 @@
 import * as React from "react";
-import { Pivot, PivotItem } from "@fluentui/react";
 import { SizeMe } from "react-sizeme";
 import nlsHPCC from "src/nlsHPCC";
 import * as ESPQuery from "src/ESPQuery";
-import { pivotItemStyle, usePivotItemDisable } from "../layouts/pivot";
 import { pushUrl } from "../util/history";
 import { QueryErrors } from "./QueryErrors";
 import { QueryLibrariesUsed } from "./QueryLibrariesUsed";
@@ -14,14 +12,15 @@ import { QuerySuperFiles } from "./QuerySuperFiles";
 import { QueryTests } from "./QueryTests";
 import { Resources } from "./Resources";
 import { QueryMetrics } from "./QueryMetrics";
+import { DelayLoadedPanel, OverflowTabList, TabInfo } from "./controls/TabbedPanes/index";
 
 interface QueryDetailsProps {
     querySet: string;
     queryId: string;
     tab?: string;
     metricsTab?: string;
+    metricsState?: string;
     testTab?: string;
-    state?: string;
 }
 
 export const QueryDetails: React.FunctionComponent<QueryDetailsProps> = ({
@@ -29,8 +28,8 @@ export const QueryDetails: React.FunctionComponent<QueryDetailsProps> = ({
     queryId,
     tab = "summary",
     metricsTab,
-    testTab = "form",
-    state
+    metricsState,
+    testTab = "form"
 }) => {
 
     const [query, setQuery] = React.useState<any>();
@@ -38,7 +37,6 @@ export const QueryDetails: React.FunctionComponent<QueryDetailsProps> = ({
     const [logicalFileCount, setLogicalFileCount] = React.useState<number>(0);
     const [superFileCount, setSuperFileCount] = React.useState<number>(0);
     const [libsUsedCount, setLibsUsedCount] = React.useState<number>(0);
-    const wuidDisable = usePivotItemDisable(wuid === "");
 
     React.useEffect(() => {
         setQuery(ESPQuery.Get(querySet, queryId));
@@ -53,47 +51,82 @@ export const QueryDetails: React.FunctionComponent<QueryDetailsProps> = ({
         });
     }, [query, setLogicalFileCount, setSuperFileCount, setLibsUsedCount]);
 
+    const onTabSelect = React.useCallback((tab: TabInfo) => {
+        switch (tab.id) {
+            case "testPages":
+                pushUrl(tab.__state ?? `/queries/${querySet}/${queryId}/testPages/${testTab}`);
+                break;
+            default:
+                pushUrl(tab.__state ?? `/queries/${querySet}/${queryId}/${tab.id}`);
+                break;
+        }
+    }, [queryId, querySet, testTab]);
+
+    const tabs = React.useMemo((): TabInfo[] => {
+        return [{
+            id: "summary",
+            label: nlsHPCC.Summary,
+        }, {
+            id: "errors",
+            label: nlsHPCC.Errors,
+        }, {
+            id: "logicalFiles",
+            label: nlsHPCC.LogicalFiles,
+            count: logicalFileCount
+        }, {
+            id: "superfiles",
+            label: nlsHPCC.SuperFiles,
+            count: superFileCount
+        }, {
+            id: "librariesUsed",
+            label: nlsHPCC.LibrariesUsed,
+            count: libsUsedCount
+        }, {
+            id: "summaryStatistics",
+            label: nlsHPCC.SummaryStatistics,
+        }, {
+            id: "metrics",
+            label: nlsHPCC.Metrics,
+        }, {
+            id: "resources",
+            label: nlsHPCC.Resources,
+            disabled: wuid === ""
+        }, {
+            id: "testPages",
+            label: nlsHPCC.TestPages,
+        }];
+    }, [libsUsedCount, logicalFileCount, superFileCount, wuid]);
+
     return <SizeMe monitorHeight>{({ size }) =>
-        <Pivot
-            overflowBehavior="menu" style={{ height: "100%" }} selectedKey={tab}
-            onLinkClick={evt => {
-                switch (evt.props.itemKey) {
-                    case "testPages":
-                        pushUrl(`/queries/${querySet}/${queryId}/testPages/${testTab}`);
-                        break;
-                    default:
-                        pushUrl(`/queries/${querySet}/${queryId}/${evt.props.itemKey}`);
-                        break;
-                }
-            }}
-        >
-            <PivotItem headerText={queryId} itemKey="summary" style={pivotItemStyle(size)} >
+        <div style={{ height: "100%" }}>
+            <OverflowTabList tabs={tabs} selectedTab={tab} onTabSelect={onTabSelect} size="medium" />
+            <DelayLoadedPanel visible={tab === "summary"} size={size}>
                 <QuerySummary queryId={queryId} querySet={querySet} />
-            </PivotItem>
-            <PivotItem headerText={nlsHPCC.Errors} itemKey="errors" style={pivotItemStyle(size, 0)}>
+            </DelayLoadedPanel>
+            <DelayLoadedPanel visible={tab === "errors"} size={size}>
                 <QueryErrors queryId={queryId} querySet={querySet} />
-            </PivotItem>
-            <PivotItem headerText={nlsHPCC.LogicalFiles} itemKey="logicalFiles" itemCount={logicalFileCount} style={pivotItemStyle(size, 0)}>
+            </DelayLoadedPanel>
+            <DelayLoadedPanel visible={tab === "logicalFiles"} size={size}>
                 <QueryLogicalFiles queryId={queryId} querySet={querySet} />
-            </PivotItem>
-            <PivotItem headerText={nlsHPCC.SuperFiles} itemKey="superfiles" itemCount={superFileCount} style={pivotItemStyle(size, 0)}>
+            </DelayLoadedPanel>
+            <DelayLoadedPanel visible={tab === "superfiles"} size={size}>
                 <QuerySuperFiles queryId={queryId} querySet={querySet} />
-            </PivotItem>
-            <PivotItem headerText={nlsHPCC.LibrariesUsed} itemKey="librariesUsed" itemCount={libsUsedCount} style={pivotItemStyle(size, 0)}>
+            </DelayLoadedPanel>
+            <DelayLoadedPanel visible={tab === "librariesUsed"} size={size}>
                 <QueryLibrariesUsed queryId={queryId} querySet={querySet} />
-            </PivotItem>
-            <PivotItem headerText={nlsHPCC.SummaryStatistics} itemKey="summaryStatistics" style={pivotItemStyle(size, 0)}>
+            </DelayLoadedPanel>
+            <DelayLoadedPanel visible={tab === "summaryStatistics"} size={size}>
                 <QuerySummaryStats queryId={queryId} querySet={querySet} />
-            </PivotItem>
-            <PivotItem headerText={nlsHPCC.Metrics} itemKey="metrics" style={pivotItemStyle(size, 0)}>
-                <QueryMetrics wuid={query?.Wuid} queryId={queryId} querySet={querySet} tab={metricsTab} selection={state} />
-            </PivotItem>
-            <PivotItem headerText={nlsHPCC.Resources} itemKey="resources" headerButtonProps={wuidDisable} style={pivotItemStyle(size, 0)}>
-                {wuid && <Resources wuid={wuid} />}
-            </PivotItem>
-            <PivotItem headerText={nlsHPCC.TestPages} itemKey="testPages" style={pivotItemStyle(size, 0)}>
+            </DelayLoadedPanel>
+            <DelayLoadedPanel visible={tab === "metrics"} size={size}>
+                <QueryMetrics wuid={query?.Wuid} queryId={queryId} querySet={querySet} tab={metricsTab} selection={metricsState} />
+            </DelayLoadedPanel>
+            <DelayLoadedPanel visible={tab === "resources"} size={size}>
+                <Resources wuid={wuid} />
+            </DelayLoadedPanel>
+            <DelayLoadedPanel visible={tab === "testPages"} size={size}>
                 <QueryTests queryId={queryId} querySet={querySet} tab={testTab} />
-            </PivotItem>
-        </Pivot>
+            </DelayLoadedPanel>
+        </div>
     }</SizeMe>;
 };

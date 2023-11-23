@@ -1,12 +1,10 @@
 import * as React from "react";
-import { Pivot, PivotItem } from "@fluentui/react";
 import { WsDfu } from "@hpcc-js/comms";
 import { SizeMe } from "react-sizeme";
 import nlsHPCC from "src/nlsHPCC";
 import { QuerySortItem } from "src/store/Store";
 import { FileParts } from "./FileParts";
 import { useFile, useDefFile } from "../hooks/file";
-import { pivotItemStyle, usePivotItemDisable } from "../layouts/pivot";
 import { pushUrl, replaceUrl } from "../util/history";
 import { FileBlooms } from "./FileBlooms";
 import { FileHistory } from "./FileHistory";
@@ -20,23 +18,25 @@ import { SuperFileSummary } from "./SuperFileSummary";
 import { DataPatterns } from "./DataPatterns";
 import { Result } from "./Result";
 import { Queries } from "./Queries";
+import { IndexFileSummary } from "./IndexFileSummary";
+import { DelayLoadedPanel, OverflowTabList, TabInfo } from "./controls/TabbedPanes/index";
 
 import "react-reflex/styles.css";
-import { IndexFileSummary } from "./IndexFileSummary";
 
+type StringStringMap = { [key: string]: string };
 interface FileDetailsProps {
     cluster?: string;
     logicalFile: string;
     tab?: string;
-    sort?: QuerySortItem;
-    queryParams?: { [key: string]: string };
+    sort?: { subfiles?: QuerySortItem, superfiles?: QuerySortItem, parts?: QuerySortItem, graphs?: QuerySortItem, history?: QuerySortItem, blooms?: QuerySortItem, protectby?: QuerySortItem };
+    queryParams?: { contents?: StringStringMap };
 }
 
 export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
     cluster,
     logicalFile,
     tab = "summary",
-    sort,
+    sort = {},
     queryParams = {}
 }) => {
     const [file] = useFile(cluster, logicalFile);
@@ -47,59 +47,112 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
     }, [cluster, file?.NodeGroup, logicalFile]);
     const [defFile] = useDefFile(cluster, logicalFile, WsDfu.DFUDefFileFormat.def);
     const [xmlFile] = useDefFile(cluster, logicalFile, WsDfu.DFUDefFileFormat.xml);
-    const wuidDisable = usePivotItemDisable(file?.Wuid?.length && file?.Wuid[0] === "D");
+
+    const onTabSelect = React.useCallback((tab: TabInfo) => {
+        pushUrl(tab.__state ?? `/files/${cluster}/${logicalFile}/${tab.id}`);
+    }, [cluster, logicalFile]);
+
+    const tabs = React.useMemo((): TabInfo[] => {
+        return [{
+            id: "summary",
+            label: nlsHPCC.Summary,
+        }, {
+            id: "contents",
+            label: nlsHPCC.Contents,
+        }, {
+            id: "datapatterns",
+            label: nlsHPCC.DataPatterns,
+        }, {
+            id: "ecl",
+            label: nlsHPCC.ECL,
+        }, {
+            id: "def",
+            label: nlsHPCC.DEF,
+        }, {
+            id: "xml",
+            label: nlsHPCC.XML,
+        }, file?.isSuperfile ? {
+            id: "subfiles",
+            label: nlsHPCC.Subfiles,
+            count: file?.subfiles?.Item.length ?? 0
+        } : {
+            id: "superfiles",
+            label: nlsHPCC.Superfiles,
+            count: file?.Superfiles?.DFULogicalFile.length ?? 0
+        }, {
+            id: "parts",
+            label: nlsHPCC.FileParts,
+            count: file?.fileParts().length ?? 0
+        }, {
+            id: "queries",
+            label: nlsHPCC.Queries,
+        }, {
+            id: "graphs",
+            label: nlsHPCC.Graphs,
+            count: file?.Graphs?.ECLGraph?.length ?? 0
+        }, {
+            id: "history",
+            label: nlsHPCC.History
+        }, {
+            id: "blooms",
+            label: nlsHPCC.Blooms,
+            count: file?.Blooms?.DFUFileBloom?.length ?? 0
+        }, {
+            id: "protectby",
+            label: nlsHPCC.ProtectBy
+        }];
+    }, [file]);
 
     return <SizeMe monitorHeight>{({ size }) =>
-        <Pivot overflowBehavior="menu" style={{ height: "100%" }} selectedKey={tab} onLinkClick={evt => pushUrl(`/files/${cluster}/${logicalFile}/${evt.props.itemKey}`)}>
-            <PivotItem headerText={nlsHPCC.Summary} itemKey="summary" style={pivotItemStyle(size)}>
+        <div style={{ height: "100%" }}>
+            <OverflowTabList tabs={tabs} selectedTab={tab} onTabSelect={onTabSelect} size="medium" />
+            <DelayLoadedPanel visible={tab === "summary"} size={size}>
                 {file?.ContentType === "key"
                     ? <IndexFileSummary cluster={cluster} logicalFile={logicalFile} />
                     : file?.isSuperfile
                         ? <SuperFileSummary cluster={cluster} logicalFile={logicalFile} />
                         : <LogicalFileSummary cluster={cluster} logicalFile={logicalFile} />
                 }
-            </PivotItem>
-            <PivotItem headerText={nlsHPCC.Contents} itemKey="contents" style={pivotItemStyle(size, 0)}>
-                <Result cluster={cluster} logicalFile={logicalFile} filter={queryParams} />
-            </PivotItem>
-            <PivotItem headerText={nlsHPCC.DataPatterns} itemKey="datapatterns" style={pivotItemStyle(size, 0)}>
+            </DelayLoadedPanel>
+            <DelayLoadedPanel visible={tab === "contents"} size={size}>
+                <Result cluster={cluster} logicalFile={logicalFile} filter={queryParams.contents} />
+            </DelayLoadedPanel>
+            <DelayLoadedPanel visible={tab === "datapatterns"} size={size}>
                 <DataPatterns cluster={cluster} logicalFile={logicalFile} />
-            </PivotItem>
-            <PivotItem headerText={nlsHPCC.ECL} itemKey="ecl" style={pivotItemStyle(size, 0)}>
+            </DelayLoadedPanel>
+            <DelayLoadedPanel visible={tab === "ecl"} size={size}>
                 <SourceEditor text={file?.Ecl} mode="ecl" readonly={true} />
-            </PivotItem>
-            <PivotItem headerText={nlsHPCC.DEF} itemKey="def" style={pivotItemStyle(size, 0)}>
+            </DelayLoadedPanel>
+            <DelayLoadedPanel visible={tab === "def"} size={size}>
                 <XMLSourceEditor text={defFile} readonly={true} />
-            </PivotItem>
-            <PivotItem headerText={nlsHPCC.XML} itemKey="xml" style={pivotItemStyle(size, 0)}>
+            </DelayLoadedPanel>
+            <DelayLoadedPanel visible={tab === "xml"} size={size}>
                 <XMLSourceEditor text={xmlFile} readonly={true} />
-            </PivotItem>
-            {file?.isSuperfile
-                ? <PivotItem headerText={nlsHPCC.Subfiles} itemKey="subfiles" itemCount={file?.subfiles?.Item.length ?? 0} style={pivotItemStyle(size, 0)}>
-                    <SubFiles cluster={cluster} logicalFile={logicalFile} sort={sort} />
-                </PivotItem>
-                : <PivotItem headerText={nlsHPCC.Superfiles} itemKey="superfiles" itemCount={file?.Superfiles?.DFULogicalFile.length ?? 0} style={pivotItemStyle(size, 0)}>
-                    <SuperFiles cluster={cluster} logicalFile={logicalFile} sort={sort} />
-                </PivotItem>
-            }
-            <PivotItem headerText={nlsHPCC.FileParts} itemKey="parts" itemCount={file?.fileParts().length ?? 0} style={pivotItemStyle(size, 0)}>
-                <FileParts cluster={cluster} logicalFile={logicalFile} sort={sort} />
-            </PivotItem>
-            <PivotItem headerText={nlsHPCC.Queries} itemKey="queries" style={pivotItemStyle(size, 0)}>
+            </DelayLoadedPanel>
+            <DelayLoadedPanel visible={tab === "subfiles"} size={size}>
+                <SubFiles cluster={cluster} logicalFile={logicalFile} sort={sort.subfiles} />
+            </DelayLoadedPanel>
+            <DelayLoadedPanel visible={tab === "superfiles"} size={size}>
+                <SuperFiles cluster={cluster} logicalFile={logicalFile} sort={sort.superfiles} />
+            </DelayLoadedPanel>
+            <DelayLoadedPanel visible={tab === "parts"} size={size}>
+                <FileParts cluster={cluster} logicalFile={logicalFile} sort={sort.parts} />
+            </DelayLoadedPanel>
+            <DelayLoadedPanel visible={tab === "queries"} size={size}>
                 <Queries filter={{ FileName: logicalFile }} />
-            </PivotItem>
-            <PivotItem headerText={nlsHPCC.Graphs} itemKey="graphs" itemCount={file?.Graphs?.ECLGraph?.length ?? 0} headerButtonProps={wuidDisable} style={pivotItemStyle(size, 0)}>
-                <FileDetailsGraph cluster={cluster} logicalFile={logicalFile} sort={sort} />
-            </PivotItem>
-            <PivotItem headerText={nlsHPCC.History} itemKey="history" style={pivotItemStyle(size, 0)}>
-                <FileHistory cluster={cluster} logicalFile={logicalFile} sort={sort} />
-            </PivotItem>
-            <PivotItem headerText={nlsHPCC.Blooms} itemKey="blooms" itemCount={file?.Blooms?.DFUFileBloom?.length} style={pivotItemStyle(size, 0)}>
-                <FileBlooms cluster={cluster} logicalFile={logicalFile} sort={sort} />
-            </PivotItem>
-            <PivotItem headerText={nlsHPCC.ProtectBy} itemKey="protectby" style={pivotItemStyle(size, 0)}>
-                <ProtectedBy cluster={cluster} logicalFile={logicalFile} sort={sort} />
-            </PivotItem>
-        </Pivot>
+            </DelayLoadedPanel>
+            <DelayLoadedPanel visible={tab === "graphs"} size={size}>
+                <FileDetailsGraph cluster={cluster} logicalFile={logicalFile} sort={sort.graphs} />
+            </DelayLoadedPanel>
+            <DelayLoadedPanel visible={tab === "history"} size={size}>
+                <FileHistory cluster={cluster} logicalFile={logicalFile} sort={sort.history} />
+            </DelayLoadedPanel>
+            <DelayLoadedPanel visible={tab === "blooms"} size={size}>
+                <FileBlooms cluster={cluster} logicalFile={logicalFile} sort={sort.blooms} />
+            </DelayLoadedPanel>
+            <DelayLoadedPanel visible={tab === "protectby"} size={size}>
+                <ProtectedBy cluster={cluster} logicalFile={logicalFile} sort={sort.protectby} />
+            </DelayLoadedPanel>
+        </div>
     }</SizeMe>;
 };
