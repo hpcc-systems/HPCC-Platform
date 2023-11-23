@@ -16,7 +16,7 @@ export function useWorkunit(wuid: string, full: boolean = false): [Workunit, WUS
 
     React.useEffect(() => {
         if (wuid === undefined || wuid === null) {
-            setRetVal({ workunit: undefined, state: WUStateID.NotFound, lastUpdate: Date.now(), isComplete: undefined, refresh: () => Promise.resolve(undefined) });
+            setRetVal({ workunit: undefined, state: WUStateID.NotFound, lastUpdate: Date.now(), isComplete: undefined, refresh: (full?: boolean) => Promise.resolve(undefined) });
             return;
         }
         const wu = Workunit.attach({ baseUrl: "" }, wuid);

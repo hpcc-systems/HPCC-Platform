@@ -5,7 +5,7 @@ import nlsHPCC from "src/nlsHPCC";
 import { WUStatus } from "src/react/index";
 import { formatCost } from "src/Session";
 import { useConfirm } from "../hooks/confirm";
-import { useWorkunit } from "../hooks/workunit";
+import { useWorkunit, useWorkunitExceptions } from "../hooks/workunit";
 import { ReflexContainer, ReflexElement, ReflexSplitter } from "../layouts/react-reflex";
 import { pushUrl, replaceUrl } from "../util/history";
 import { ShortVerticalDivider } from "./Common";
@@ -15,6 +15,7 @@ import { SlaveLogs } from "./forms/SlaveLogs";
 import { ZAPDialog } from "./forms/ZAPDialog";
 import { InfoGrid } from "./InfoGrid";
 import { WorkunitPersona } from "./controls/StateIcon";
+import { isNumeric } from "src/Utility";
 
 const logger = scopedLogger("../components/WorkunitDetails.tsx");
 
@@ -27,6 +28,7 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
 }) => {
 
     const [workunit, , , , refresh] = useWorkunit(wuid, true);
+    const [exceptions, , refreshSavings] = useWorkunitExceptions(wuid);
     const [jobname, setJobname] = React.useState("");
     const [description, setDescription] = React.useState("");
     const [_protected, setProtected] = React.useState(false);
@@ -72,6 +74,7 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
             onClick: () => {
                 refresh(true);
+                refreshSavings();
             }
         },
         {
@@ -160,11 +163,26 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
             key: "slaveLogs", text: nlsHPCC.SlaveLogs, disabled: !workunit?.ThorLogList,
             onClick: () => setShowThorSlaveLogs(true)
         },
-    ], [_protected, canDelete, canDeschedule, canReschedule, canSave, description, jobname, refresh, setShowDeleteConfirm, workunit, wuid]);
+    ], [_protected, canDelete, canDeschedule, canReschedule, canSave, description, jobname, refresh, refreshSavings, setShowDeleteConfirm, workunit, wuid]);
 
     const serviceNames = React.useMemo(() => {
         return workunit?.ServiceNames?.Item?.join("\n") || "";
     }, [workunit?.ServiceNames?.Item]);
+
+    const totalCosts = React.useMemo(() => {
+        return (workunit?.CompileCost ?? 0) +
+            (workunit?.ExecuteCost ?? 0) +
+            (workunit?.FileAccessCost ?? 0);
+    }, [workunit?.CompileCost, workunit?.ExecuteCost, workunit?.FileAccessCost]);
+
+    const potentialSavings = React.useMemo(() => {
+        return exceptions.reduce((prev, cur) => {
+            if (isNumeric(cur.Priority)) {
+                prev += cur.Priority;
+            }
+            return prev;
+        }, 0) || 0;
+    }, [exceptions]);
 
     return <>
         <ReflexContainer orientation="horizontal">
@@ -196,6 +214,7 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
                             "owner": { label: nlsHPCC.Owner, type: "string", value: workunit?.Owner, readonly: true },
                             "jobname": { label: nlsHPCC.JobName, type: "string", value: jobname },
                             "description": { label: nlsHPCC.Description, type: "string", value: description },
+                            "potentialSavings": { label: nlsHPCC.PotentialSavings, type: "string", value: `${formatCost(potentialSavings)} (${Math.round((potentialSavings / totalCosts) * 10000) / 100}%)`, readonly: true },
                             "compileCost": { label: nlsHPCC.CompileCost, type: "string", value: `${formatCost(workunit?.CompileCost)}`, readonly: true },
                             "executeCost": { label: nlsHPCC.ExecuteCost, type: "string", value: `${formatCost(workunit?.ExecuteCost)}`, readonly: true },
                             "fileAccessCost": { label: nlsHPCC.FileAccessCost, type: "string", value: `${formatCost(workunit?.FileAccessCost)}`, readonly: true },

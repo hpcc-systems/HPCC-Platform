@@ -124,6 +124,7 @@ public:
 };
 
 static CThorEndHandler *thorEndHandler = nullptr;
+static StringBuffer cloudJobName;
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
@@ -266,58 +267,80 @@ public:
     }
     bool connect(unsigned slaves)
     {
-        LOG(MCdebugProgress, thorJob, "Waiting for %d slaves to register", slaves);
-
         IPointerArrayOf<INode> connectedSlaves;
         connectedSlaves.ensureCapacity(slaves);
         unsigned remaining = slaves;
         INode *_sender = nullptr;
         CMessageBuffer msg;
+
+        // Will wait for all workers to register within timelimit (default = 15 mins bare-metal, 60 mins containerized)
+        constexpr unsigned defaultMaxRegistrationMins = isContainerized() ? 60 : 15;
+        unsigned maxRegistrationMins = (unsigned)getExpertOptInt64("maxWorkerRegistrationMins", defaultMaxRegistrationMins);
+        constexpr unsigned oneMinMs = 60000;
+
+        PROGLOG("Waiting for %u workers to register - max registration time = %u minutes", slaves, maxRegistrationMins);
+        CTimeMon registerTM(maxRegistrationMins * oneMinMs);
         while (remaining)
         {
-            if (!queryWorldCommunicator().recv(msg, nullptr, MPTAG_THORREGISTRATION, &_sender, MP_WAIT_FOREVER))
+            // on timeout, check for any failed k8s worker job
+            if (!queryWorldCommunicator().recv(msg, nullptr, MPTAG_THORREGISTRATION, &_sender, oneMinMs))
             {
                 ::Release(_sender);
-                PROGLOG("Failed to initialize slaves");
-                return false;
-            }
-            Owned<INode> sender = _sender;
-            if (NotFound != connectedSlaves.find(sender))
-            {
-                StringBuffer epStr;
-                PROGLOG("Same slave registered twice!! : %s", sender->endpoint().getEndpointHostText(epStr).str());
-                return false;
-            }
+                if (registerTM.timedout())
+                {
+                    WARNLOG("Timeout waiting for all workers to register within timeout period (%u mins)", maxRegistrationMins);
+                    return false;
+                }
 
-            /* NB: in base metal setup, the slaves know which slave number they are in advance, and send their slavenum at registration.
-             * In non attached storage setup, they do not send a slave by default and instead are given a # once all are registered
-             */
-            unsigned slaveNum;
-            msg.read(slaveNum);
-            StringBuffer slavePodName;
-            if (NotFound == slaveNum)
-            {
-                connectedSlaves.append(sender.getLink());
-                slaveNum = connectedSlaves.ordinality();
                 if (isContainerized())
                 {
-                    msg.read(slavePodName);
-                    addConnectedWorkerPod(slavePodName); // NB: these are added in worker # order
+                    // NB: this is checking for error only, will throw an exception if any found.
+                    k8s::waitJob("thorworker", "job", cloudJobName.str(), 0, 0, k8s::KeepJobs::all);
                 }
+
+                // NB: will not reach here if waitJob fails.
+                PROGLOG("Waiting for %u remaining workers to register", remaining);
             }
             else
             {
-                unsigned pos = slaveNum - 1; // NB: slaveNum is 1 based
-                while (connectedSlaves.ordinality() < pos)
-                    connectedSlaves.append(nullptr);
-                if (connectedSlaves.ordinality() == pos)
+                Owned<INode> sender = _sender;
+                if (NotFound != connectedSlaves.find(sender))
+                {
+                    StringBuffer epStr;
+                    PROGLOG("Same slave registered twice!! : %s", sender->endpoint().getEndpointHostText(epStr).str());
+                    return false;
+                }
+
+                /* NB: in base metal setup, the slaves know which slave number they are in advance, and send their slavenum at registration.
+                * In non attached storage setup, they do not send a slave by default and instead are given a # once all are registered
+                */
+                unsigned slaveNum;
+                msg.read(slaveNum);
+                StringBuffer slavePodName;
+                if (NotFound == slaveNum)
+                {
                     connectedSlaves.append(sender.getLink());
+                    slaveNum = connectedSlaves.ordinality();
+                    if (isContainerized())
+                    {
+                        msg.read(slavePodName);
+                        addConnectedWorkerPod(slavePodName); // NB: these are added in worker # order
+                    }
+                }
                 else
-                    connectedSlaves.replace(sender.getLink(), pos);
+                {
+                    unsigned pos = slaveNum - 1; // NB: slaveNum is 1 based
+                    while (connectedSlaves.ordinality() < pos)
+                        connectedSlaves.append(nullptr);
+                    if (connectedSlaves.ordinality() == pos)
+                        connectedSlaves.append(sender.getLink());
+                    else
+                        connectedSlaves.replace(sender.getLink(), pos);
+                }
+                StringBuffer epStr;
+                PROGLOG("Slave %u connected from %s", slaveNum, sender->endpoint().getEndpointHostText(epStr).str());
+                --remaining;
             }
-            StringBuffer epStr;
-            PROGLOG("Slave %u connected from %s", slaveNum, sender->endpoint().getEndpointHostText(epStr).str());
-            --remaining;
         }
         assertex(slaves == connectedSlaves.ordinality());
 
@@ -946,7 +969,6 @@ int main( int argc, const char *argv[]  )
     StringBuffer queueName;
 
     // only for K8s
-    StringBuffer cloudJobName;
     bool workerNSInstalled = false;
     bool workerJobInstalled = false;
 
