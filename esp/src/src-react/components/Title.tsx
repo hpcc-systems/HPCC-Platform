@@ -1,7 +1,7 @@
 import * as React from "react";
 import { ContextualMenuItemType, DefaultButton, IconButton, IContextualMenuItem, IIconProps, IPersonaSharedProps, Link, mergeStyleSets, Persona, PersonaSize, SearchBox, Stack, Text, useTheme } from "@fluentui/react";
 import { CounterBadgeProps, CounterBadge } from "@fluentui/react-components";
-import { Level } from "@hpcc-js/util";
+import { Level, scopedLogger } from "@hpcc-js/util";
 import { useBoolean } from "@fluentui/react-hooks";
 import { Toaster } from "react-hot-toast";
 import { cookie } from "dojo/main";
@@ -16,12 +16,15 @@ import { useBuildInfo } from "../hooks/platform";
 import { useGlobalStore, useUserStore } from "../hooks/store";
 import { useMyAccount, useUserSession } from "../hooks/user";
 import { replaceUrl } from "../util/history";
+import { useCheckFeatures } from "../hooks/platform";
 
 import { TitlebarConfig } from "./forms/TitlebarConfig";
 import { switchTechPreview } from "./controls/ComingSoon";
 import { About } from "./About";
 import { MyAccount } from "./MyAccount";
 import { toasterScale } from "./controls/CustomToaster";
+
+const logger = scopedLogger("src-react/components/Title.tsx");
 import { AppPanel } from "./AppPanel";
 
 const collapseMenuIcon: IIconProps = { iconName: "CollapseMenu" };
@@ -35,6 +38,8 @@ const personaStyles = {
         "&:hover": { cursor: "pointer" }
     }
 };
+
+const DAY = 1000 * 60 * 60 * 24;
 
 interface DevTitleProps {
 }
@@ -178,8 +183,50 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
             minWidth: 48,
             padding: "0 10px 0 4px",
             color: theme.semanticColors.link
+        },
+        errorsWarningsCount: {
+            margin: "-3px 0 0 -3px"
         }
     }), [theme.semanticColors.link]);
+
+    React.useEffect(() => {
+        switch (log.reduce((prev, cur) => Math.max(prev, cur.level), Level.debug)) {
+            case Level.alert:
+            case Level.critical:
+            case Level.emergency:
+                setLogIconColor("danger");
+                break;
+            case Level.error:
+                setLogIconColor("danger");
+                break;
+            case Level.warning:
+                setLogIconColor("important");
+                break;
+            case Level.info:
+            case Level.notice:
+            case Level.debug:
+            default:
+                setLogIconColor("informative");
+                break;
+        }
+    }, [log, logLastUpdated, theme]);
+
+    const features = useCheckFeatures();
+
+    React.useEffect(() => {
+        if (!features.timestamp) return;
+        const age = Math.floor((Date.now() - features.timestamp.getTime()) / DAY);
+        const message = nlsHPCC.PlatformBuildIsNNNDaysOld.replace("NNN", `${age}`);
+        if (age > 90) {
+            logger.alert(message + `  ${nlsHPCC.PleaseUpgradeToLaterPointRelease}`);
+        } else if (age > 60) {
+            logger.error(message + `  ${nlsHPCC.PleaseUpgradeToLaterPointRelease}`);
+        } else if (age > 30) {
+            logger.warning(message + `  ${nlsHPCC.PleaseUpgradeToLaterPointRelease}`);
+        } else {
+            logger.info(message);
+        }
+    }, [features.timestamp]);
 
     React.useEffect(() => {
         if (!currentUser.username) return;
