@@ -686,6 +686,7 @@ export = {
         Plugins: "Plugins",
         PleaseEnterANumber: "Please enter a number 1 - ",
         PleaseLogin: "Please log in using your username and password",
+        PodName: "Pod Name",
         Pods: "Pods",
         PodsAccessError: "Cannot retrieve list of pods",
         Port: "Port",
