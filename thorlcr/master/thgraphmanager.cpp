@@ -852,7 +852,8 @@ void CJobManager::run()
                 addTimeStamp(w, wfid, graphName, StWhenDequeued);
             }
 
-            unsigned maxLogDetail = workunit->getDebugValueInt("maxlogdetail", DefaultDetail); 
+            unsigned defaultConfigLogLevel = getComponentConfigSP()->getPropInt("logging/@detail", DefaultDetail);
+            unsigned maxLogDetail = workunit->getDebugValueInt("maxlogdetail", defaultConfigLogLevel);
             ILogMsgFilter *existingLogHandler = queryLogMsgManager()->queryMonitorFilter(logHandler);
             dbgassertex(existingLogHandler);
             verifyex(queryLogMsgManager()->changeMonitorFilterOwn(logHandler, getCategoryLogMsgFilter(existingLogHandler->queryAudienceMask(), existingLogHandler->queryClassMask(), maxLogDetail)));
