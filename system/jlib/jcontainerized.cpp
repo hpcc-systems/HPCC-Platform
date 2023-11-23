@@ -96,7 +96,7 @@ bool checkExitCodes(StringBuffer &output, const char *podStatuses)
     return false;
 }
 
-void waitJob(const char *componentName, const char *resourceType, const char *job, unsigned pendingTimeoutSecs, KeepJobs keepJob)
+void waitJob(const char *componentName, const char *resourceType, const char *job, unsigned pendingTimeoutSecs, unsigned totalWaitTimeSecs, KeepJobs keepJob)
 {
     VStringBuffer jobName("%s-%s-%s", componentName, resourceType, job);
     jobName.toLowerCase();
@@ -160,6 +160,11 @@ void waitJob(const char *componentName, const char *resourceType, const char *jo
                 runKubectlCommand(componentName, getReason, nullptr, &output.clear());
                 throw makeStringExceptionV(0, "Failed to run %s - pod not scheduled after %u seconds: %s ", jobName.str(), pendingTimeoutSecs, output.str());
             }
+            if (0 == totalWaitTimeSecs)
+                break;
+            if ((INFINITE != totalWaitTimeSecs) && msTick()-start > totalWaitTimeSecs*1000)
+                throw makeStringExceptionV(0, "Wait job timeout (%u secs) expired, whilst running: %s", totalWaitTimeSecs, jobName.str());
+
             MilliSleep(delay);
             if (delay < 10000)
                 delay = delay * 2;
@@ -236,7 +241,7 @@ void runJob(const char *componentName, const char *wuid, const char *jobName, co
     Owned<IException> exception;
     try
     {
-        waitJob(componentName, "job", jobName, pendingTimeoutSecs, keepJob);
+        waitJob(componentName, "job", jobName, pendingTimeoutSecs, INFINITE, keepJob);
     }
     catch (IException *e)
     {
