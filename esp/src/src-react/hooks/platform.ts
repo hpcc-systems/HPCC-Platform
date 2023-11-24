@@ -160,7 +160,6 @@ export const fetchLatestReleases = (): Promise<Releases> => {
     return releasesPromise;
 };
 
-
 export function useModernMode(): {
     modernMode: string;
     setModernMode: (value: string) => void;
