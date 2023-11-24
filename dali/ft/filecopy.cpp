@@ -3592,7 +3592,10 @@ void FileSprayer::updateTargetProperties()
 
         DistributedFilePropertyLock lock(distributedTarget);
         IPropertyTree &curProps = lock.queryAttributes();
-        curProps.setPropInt64("@numDiskWrites", totalNumWrites);
+        cost_type writeCost = money2cost_type(calcFileAccessCost(distributedTarget, totalNumWrites, 0));
+        curProps.setPropInt64(getDFUQResultFieldName(DFUQRFwriteCost), writeCost);
+        curProps.setPropInt64(getDFUQResultFieldName(DFUQRFnumDiskWrites), totalNumWrites);
+
         if (calcCRC())
             curProps.setPropInt(FAcrc, totalCRC.get());
         curProps.setPropInt64(FAsize, totalLength);
@@ -3771,7 +3774,13 @@ void FileSprayer::updateTargetProperties()
     if (distributedSource)
     {
         if (distributedSource->querySuperFile()==nullptr)
-            distributedSource->addAttrValue("@numDiskReads", totalNumReads);
+        {
+            IPropertyTree & fileAttr = distributedSource->queryAttributes();
+            cost_type legacyReadCost = getLegacyReadCost(fileAttr, distributedSource);
+            cost_type curReadCost = money2cost_type(calcFileAccessCost(distributedSource, 0, totalNumReads));
+            distributedSource->addAttrValue(getDFUQResultFieldName(DFUQRFreadCost), legacyReadCost+curReadCost);
+            distributedSource->addAttrValue(getDFUQResultFieldName(DFUQRFnumDiskReads), totalNumReads);
+        }
     }
     if (error)
         throw error.getClear();

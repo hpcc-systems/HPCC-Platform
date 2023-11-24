@@ -294,15 +294,17 @@ enum DFUQResultField
     DFUQRFminSkew = 30,
     DFUQRFmaxSkewPart = 31,
     DFUQRFminSkewPart = 32,
-    DFUQRFterm = 33,
+    DFUQRFreadCost = 33,
+    DFUQRFwriteCost = 34,
+    DFUQRFterm = 35, // must be last in list
     DFUQRFreverse = 256,
     DFUQRFnocase = 512,
     DFUQRFnumeric = 1024,
     DFUQRFfloat = 2048
 };
 
-extern da_decl const char* getDFUQFilterFieldName(DFUQFilterField feild);
-extern da_decl const char* getDFUQResultFieldName(DFUQResultField feild);
+extern da_decl const char* getDFUQFilterFieldName(DFUQFilterField field);
+extern da_decl const char* getDFUQResultFieldName(DFUQResultField field);
 
 /**
  * File operations can be included in a transaction to ensure that multiple
@@ -861,7 +863,7 @@ extern da_decl GroupType translateGroupType(const char *groupType);
 
 // Useful property query functions
 
-inline bool isFileKey(IPropertyTree &pt) { const char *kind = pt.queryProp("@kind"); return kind&&strieq(kind,"key"); }
+inline bool isFileKey(const IPropertyTree &pt) { const char *kind = pt.queryProp("@kind"); return kind&&strieq(kind,"key"); }
 inline bool isFileKey(IDistributedFile *f) { return isFileKey(f->queryAttributes()); }
 inline bool isFileKey(IFileDescriptor *f) { return isFileKey(f->queryProperties()); }
 
@@ -886,11 +888,43 @@ inline const char *queryFileKind(IFileDescriptor *f) { return queryFileKind(f->q
 extern da_decl void ensureFileScope(const CDfsLogicalFileName &dlfn, unsigned timeoutms=INFINITE);
 
 extern da_decl bool checkLogicalName(const char *lfn,IUserDescriptor *user,bool readreq,bool createreq,bool allowquery,const char *specialnotallowedmsg);
-extern da_decl void calcFileCost(const char * cluster, double sizeGB, double fileAgeDays, __int64 numDiskWrites, __int64 numDiskReads, double & atRestCost, double & accessCost);
+
+extern da_decl double calcFileAtRestCost(const char * cluster, double sizeGB, double fileAgeDays);
 extern da_decl double calcFileAccessCost(const char * cluster, __int64 numDiskWrites, __int64 numDiskReads);
+extern da_decl double calcFileAccessCost(IDistributedFile *f, __int64 numDiskWrites, __int64 numDiskReads);
 constexpr bool defaultPrivilegedUser = true;
 constexpr bool defaultNonPrivilegedUser = false;
 
 extern da_decl void configurePreferredPlanes();
+inline bool hasReadWriteCostFields(const IPropertyTree & fileAttr)
+{
+    return fileAttr.hasProp(getDFUQResultFieldName(DFUQRFreadCost)) || fileAttr.hasProp(getDFUQResultFieldName(DFUQRFwriteCost));
+}
 
+template<typename Source>
+inline cost_type getLegacyReadCost(const IPropertyTree & fileAttr, Source source)
+{
+    // Legacy files do not have @readCost attribute, so calculate from numDiskRead
+    // NB: Costs of index reading can not be reliably estimated based on 'numDiskReads'
+    if (!hasReadWriteCostFields(fileAttr) && fileAttr.hasProp(getDFUQResultFieldName(DFUQRFnumDiskReads))
+        && !isFileKey(fileAttr))
+    {
+        stat_type prevDiskReads = fileAttr.getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskReads), 0);
+        return money2cost_type(calcFileAccessCost(source, 0, prevDiskReads));
+    }
+    else
+        return 0;
+}
+template<typename Source>
+inline cost_type getLegacyWriteCost(const IPropertyTree & fileAttr, Source source)
+{
+    // Legacy files do not have @writeCost attribute, so calculate from numDiskWrites
+    if (!hasReadWriteCostFields(fileAttr) && fileAttr.hasProp(getDFUQResultFieldName(DFUQRFnumDiskWrites)))
+    {
+        stat_type prevDiskWrites = fileAttr.getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskWrites), 0);
+        return money2cost_type(calcFileAccessCost(source, prevDiskWrites, 0));
+    }
+    else
+        return 0;
+}
 #endif
