@@ -2132,7 +2132,7 @@ void EclAgent::runProcess(IEclProcess *process)
 
     Owned<IProperties> traceHeaders = extractTraceDebugOptions(queryWorkUnit());
     Owned<ISpan> requestSpan = queryTraceManager().createServerSpan(queryWorkUnit()->queryWuid(), traceHeaders);
-    updateDummyContextLogger().setActiveSpan(requestSpan);
+    ContextSpanScope spanScope(updateDummyContextLogger(), requestSpan);
 
     // a component may specify an alternate name for the agent/workflow memory area,
     // e.g. Thor specifies in "eclAgentMemory"
