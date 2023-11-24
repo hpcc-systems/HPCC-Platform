@@ -76,8 +76,6 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-22.10
-            event_name: "pull_request"
           - os: ubuntu-22.04
             name: k8s
             container: true
