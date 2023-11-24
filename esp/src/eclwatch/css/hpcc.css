@@ -1706,9 +1706,6 @@ table.miniSelect span {
 .dijitToasterFatal {
     font-weight: bold;
     color: #fff;
-.dijitToasterFatal {
-    font-weight: bold;
-    color: #fff;
 }
 
 .dijitToasterWarning .dijitToasterContent {
