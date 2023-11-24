@@ -1681,7 +1681,7 @@ CJobSlave::CJobSlave(ISlaveWatchdog *_watchdog, IPropertyTree *_workUnitInfo, co
 
     Owned<IProperties> traceHeaders = deserializeTraceDebugOptions(workUnitInfo->queryPropTree("Debug"));
     Owned<ISpan> requestSpan = queryTraceManager().createServerSpan(wuid, traceHeaders);
-    logctx->setActiveSpan(requestSpan);
+    ContextSpanScope spanScope(*logctx, requestSpan);
 
     oldNodeCacheMem = 0;
     slavemptag = _slavemptag;

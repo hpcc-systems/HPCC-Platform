@@ -276,6 +276,10 @@ public:
     {
         return ctx->isBlind();
     }
+    virtual ISpan * queryActiveSpan() const override
+    {
+        return ctx->queryActiveSpan();
+    }
     virtual void setActiveSpan(ISpan * span) override
     {
         ctx->setActiveSpan(span);
@@ -1351,6 +1355,10 @@ public:
             return traceLevel;
     }
 
+    virtual ISpan * queryActiveSpan() const override
+    {
+        return ctx->queryActiveSpan();
+    }
     virtual void setActiveSpan(ISpan * span) override
     {
         if (ctx)
