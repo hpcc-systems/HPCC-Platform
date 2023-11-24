@@ -98,8 +98,8 @@
     "tslib": "2.5.3",
     "typescript": "4.9.5",
     "url-loader": "4.1.1",
-    "webpack": "5.86.0",
-    "webpack-cli": "4.10.0"
+    "webpack": "5.89.0",
+    "webpack-cli": "5.1.4"
   },
   "author": "HPCC Systems",
   "license": "Apache-2.0",
