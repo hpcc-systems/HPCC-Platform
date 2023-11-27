@@ -178,8 +178,14 @@ class CKeyedJoinMaster : public CMasterActivity
                             {
                                 do
                                 {
-                                    INode &groupNode = dfsGroup.queryNode(gn);
-                                    if (partNode->equals(&groupNode))
+                                    // NB: all parts are considered 'local' in containerized mode
+                                    // It will cause the parts to be striped across the group (and hence the workers),
+                                    // such that the parts will be partitioned, with each worker dealing with some parts
+                                    // locally via local key lookup handlers and the rest being handled remotely by other
+                                    // workers via remote key lookup handlers.
+                                    // remoteKeyedLookup=false will disabled this default behaviour, causing all parts
+                                    // to be handled locally by each worker.
+                                    if (isContainerized() || partNode->equals(&dfsGroup.queryNode(gn)))
                                     {
                                         /* NB: If there's >1 slave per node (e.g. slavesPerNode>1) then there are multiple matching node's in the dfsGroup
                                         * Which means a copy of a part may already be assigned to a cluster slave map. This check avoid handling it again if it has.
