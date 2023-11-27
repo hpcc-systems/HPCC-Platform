@@ -1271,11 +1271,15 @@ interface jlib_decl IContextLogger : extends IInterface
     virtual const char *queryLocalId() const = 0;
     virtual const char *queryCallerId() const = 0;
     virtual const CRuntimeStatisticCollection & queryStats() const = 0;
-    virtual void setActiveSpan(ISpan * span) = 0;
+    virtual ISpan * queryActiveSpan() const = 0;
+    virtual void setActiveSpan(ISpan * span) = 0; // Only call this function directly if this object's lifetime matches the lifetime of the span.  If there is any doubt use ContextSpanScope(ctx, span)
     virtual IProperties * getClientHeaders() const = 0;
     virtual void recordStatistics(IStatisticGatherer &progress) const = 0;
     virtual const LogMsgJobInfo & queryJob() const { return unknownJob; }
 };
+
+using ContextSpanScope = ContextSpanScopeImp<IContextLogger>;
+
 
 extern jlib_decl StringBuffer &appendGloballyUniqueId(StringBuffer &s);
 

@@ -1180,7 +1180,7 @@ public:
 
         Owned<IProperties> traceHeaders = extractTraceDebugOptions(wu);
         Owned<ISpan> requestSpan = queryTraceManager().createServerSpan(wu->queryWuid(), traceHeaders);
-        logctx->setActiveSpan(requestSpan);
+        ContextSpanScope spanScope(*logctx, requestSpan);
 
         Owned<IQueryFactory> queryFactory;
         try
@@ -1456,6 +1456,7 @@ public:
         ensureContextLogger();
 
         Owned<ISpan> requestSpan = queryTraceManager().createServerSpan("request", allHeaders, flags);
+        //The span has a lifetime the same length as the logctx, so no need to restore it at the end of the query
         logctx->setActiveSpan(requestSpan);
 
         const char * globalId = requestSpan->queryGlobalId();

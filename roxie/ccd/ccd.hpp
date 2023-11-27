@@ -742,6 +742,10 @@ public:
     {
         stats.reset();
     }
+    virtual ISpan * queryActiveSpan() const override
+    {
+        return activeSpan;
+    }
     virtual void setActiveSpan(ISpan * span) override
     {
         activeSpan.set(span);

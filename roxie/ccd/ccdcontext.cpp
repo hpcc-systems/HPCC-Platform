@@ -1382,6 +1382,10 @@ public:
     {
         return logctx.queryTraceLevel();
     }
+    virtual ISpan * queryActiveSpan() const override
+    {
+        return logctx.queryActiveSpan();
+    }
     virtual void setActiveSpan(ISpan * span) override
     {
         const_cast<IRoxieContextLogger&>(logctx).setActiveSpan(span);

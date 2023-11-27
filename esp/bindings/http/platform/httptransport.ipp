@@ -369,7 +369,7 @@ public:
 
     virtual int receive(IMultiException *me);
 
-    void startSpan();
+    ISpan * createServerSpan();
     void updateContext();
     void annotateSpan(const char * key, const char * value);
 
