@@ -1880,7 +1880,8 @@ public:
                         StringBuffer user;
                         workUnitInfo->getProp("user", user);
 
-                        unsigned maxLogDetail = workUnitInfo->getPropInt("Debug/maxlogdetail", DefaultDetail);
+                        unsigned defaultConfigLogLevel = getComponentConfigSP()->getPropInt("logging/@detail", DefaultDetail);
+                        unsigned maxLogDetail = workUnitInfo->getPropInt("Debug/maxlogdetail", defaultConfigLogLevel);
                         ILogMsgFilter *existingLogHandler = queryLogMsgManager()->queryMonitorFilter(logHandler);
                         dbgassertex(existingLogHandler);
                         verifyex(queryLogMsgManager()->changeMonitorFilterOwn(logHandler, getCategoryLogMsgFilter(existingLogHandler->queryAudienceMask(), existingLogHandler->queryClassMask(), maxLogDetail)));
