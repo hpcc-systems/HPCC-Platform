@@ -1858,6 +1858,11 @@
           "default": false,
           "description": "Delay opening files until first use."
         },
+        "localAgent": { 
+          "type": "boolean",
+          "default": false,
+          "description": "Communication between server and agent uses a memory queue rather than network. Implies singleNode, and defaults on if singleNode set."
+        },
         "localFilesExpire": { 
           "type": "integer",
           "default": -1,
@@ -1948,6 +1953,11 @@
           "default": 30,
           "minimum": 0,
           "description": "Default number of threads processing Roxie server requests (if not specified on service)"
+        },
+        "singleNode": { 
+          "type": "boolean",
+          "default": false,
+          "description": "Roxie is deployed as an array of self-contained single nodes, with all agents part of the server process."
         },
         "slaTimeout": { 
           "type": "integer",
