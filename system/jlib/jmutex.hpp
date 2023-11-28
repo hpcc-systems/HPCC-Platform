@@ -1002,6 +1002,13 @@ template <typename X>
 class Singleton
 {
 public:
+    X * query()
+    {
+        if (initialized.load(std::memory_order_acquire))
+            return singleton.load(std::memory_order_acquire);
+        return nullptr;
+    }
+
     template <typename FUNC> X * query(FUNC factory)
     {
         if (initialized.load(std::memory_order_acquire))
