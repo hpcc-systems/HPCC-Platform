@@ -333,20 +333,22 @@ export const IdleWatcher = dojo.declare([Evented], {
 
     start() {
         this.stop();
-        const context = this;
-        this._keydownHandle = on(document, "keydown", function (item, index, array) {
-            context.emit("active", {});
-            context.stop();
-            context.start();
-        });
-        this._mousedownHandle = on(document, "mousedown", function (item, index, array) {
-            context.emit("active", {});
-            context.stop();
-            context.start();
-        });
-        this._intervalHandle = setInterval(function () {
-            context.emit("idle", {});
-        }, this._idleDuration);
+        if (document.cookie.indexOf("ESPSessionState=true") > -1) {
+            const context = this;
+            this._keydownHandle = on(document, "keydown", function (item, index, array) {
+                context.emit("active", {});
+                context.stop();
+                context.start();
+            });
+            this._mousedownHandle = on(document, "mousedown", function (item, index, array) {
+                context.emit("active", {});
+                context.stop();
+                context.start();
+            });
+            this._intervalHandle = setInterval(function () {
+                context.emit("idle", {});
+            }, this._idleDuration);
+        }
     },
 
     stop() {
