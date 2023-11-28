@@ -32,7 +32,7 @@ Pass in dict with root and me
 {{- $thorAgentScope := dict "name" .thorAgentName "replicas" .thorAgentReplicas "maxActive" .me.maxGraphs | merge (pick .me "keepJobs" "logging" "tracing") }}
 {{- $eclAgentResources := .me.eclAgentResources | default dict -}}
 {{- $hthorScope := dict "name" $hthorName "jobMemorySectionName" "eclAgentMemory" | merge (pick .me "multiJobLinger" "maxGraphStartupTime" "logging" "tracing") | merge (dict "resources" (deepCopy $eclAgentResources)) }}
-{{- $thorScope := omit .me "eclagent" "thoragent" "hthor" "logging" "tracing" "env" "eclAgentResources" "eclAgentUseChildProcesses" "eclAgentReplicas" "thorAgentReplicas" "eclAgentType" }}
+{{- $thorScope := omit .me "eclagent" "thoragent" "hthor" "env" "eclAgentResources" "eclAgentUseChildProcesses" "eclAgentReplicas" "thorAgentReplicas" "eclAgentType" }}
 {{- $misc := .root.Values.global.misc | default dict }}
 {{- $postJobCommand := $misc.postJobCommand | default "" }}
 {{- $eclAgentJobName := printf "%s-job-_HPCC_JOBNAME_" $eclAgentType }}
