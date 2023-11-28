@@ -18,11 +18,13 @@
 #  This CMakeLists intended to be used in docs/EN
 #    Refactored for internationalization
 ###
-# Last Mod GP 12/2022
+# Last Mod GP 11/2023
+###
+#  Removed AWS
 #  Removed HPCC in a VM
 #  Removed Monitoring  
 #  Removed ECLWatch  
-####################
+#########################################
 #
 # Doc dirs to include.
 #
@@ -77,7 +79,6 @@ add_subdirectory(HPCCDataTutorial)
 add_subdirectory(HPCCSystemAdmin)
 add_subdirectory(HPCCSpark)
 add_subdirectory(HPCC4J)
-add_subdirectory(InstantCloud)
 add_subdirectory(Installing_and_RunningTheHPCCPlatform)
 add_subdirectory(JDBC-driver)
 add_subdirectory(RoxieReference)
