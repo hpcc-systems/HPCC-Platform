@@ -778,22 +778,36 @@ void compressToBuffer(MemoryBuffer & out, size32_t len, const void * src, Compre
         size32_t newSize = len * 4 / 5; // Copy if compresses less than 80% ...
         Owned<ICompressor> compressor = handler->getCompressor(options);
         void *newData = out.reserve(newSize);
-        try
+        if (compressor->supportsBlockCompression())
         {
-            compressor->open(newData, newSize);
-            if (compressor->write(src, len)==len)
+            size32_t compressedLen = compressor->compressBlock(newSize, newData, len, src);
+            if (compressedLen != 0)
             {
-                compressor->close();
-                size32_t compressedLen = compressor->buflen();
                 out.setWritePos(originalLength + sizeof(byte));
                 out.append(compressedLen);
                 out.setWritePos(originalLength + sizeof(byte) + sizeof(size32_t) + compressedLen);
                 return;
             }
         }
-        catch (IException *E)
+        else
         {
-            E->Release();
+            try
+            {
+                compressor->open(newData, newSize);
+                if (compressor->write(src, len)==len)
+                {
+                    compressor->close();
+                    size32_t compressedLen = compressor->buflen();
+                    out.setWritePos(originalLength + sizeof(byte));
+                    out.append(compressedLen);
+                    out.setWritePos(originalLength + sizeof(byte) + sizeof(size32_t) + compressedLen);
+                    return;
+                }
+            }
+            catch (IException *E)
+            {
+                E->Release();
+            }
         }
         // failed to compress...
         out.setWritePos(originalLength);
