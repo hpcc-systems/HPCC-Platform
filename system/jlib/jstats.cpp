@@ -1920,6 +1920,8 @@ public:
     void addStatistic(StatisticKind kind, unsigned __int64 value)
     {
         Statistic s(kind, value);
+        unsigned __int64 debugTest;
+        assertex(getStatistic(kind,debugTest)==false);
         stats.append(s);
     }
 
