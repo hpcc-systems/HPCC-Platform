@@ -59,7 +59,7 @@ extern void fail(const char *msg) __attribute__((noreturn));
 
 static void typeError(const char *expected, const char *fieldname)
 {
-    VStringBuffer msg("MongoDBembed: type mismatch - %s expected", expected);
+    VStringBuffer msg("parquetembed: type mismatch - %s expected", expected);
     if (!isEmptyString(fieldname))
         msg.appendf(" for field %s", fieldname);
     rtlFail(0, msg.str());
@@ -112,6 +112,9 @@ static void handleDeserializeOutcome(DeserializationResult resultcode, const cha
 
 enum PathNodeType {CPNTScalar, CPNTDataset, CPNTSet};
 
+/**
+ * @brief Keep track of nested structures when binding rows to parquet.
+ */
 struct PathTracker
 {
     const char *nodeName;
@@ -146,6 +149,10 @@ enum ParquetArrayType
     RealType
 };
 
+/**
+ * @brief A Visitor type class that implements every arrow type and gets a pointer to the visited array in the correct type.
+ * The size and type of the array are stored to read the correct array when returning values.
+*/
 class ParquetArrayVisitor : public arrow::ArrayVisitor
 {
 public:
@@ -156,206 +163,206 @@ public:
     }
     arrow::Status Visit(const arrow::BooleanArray &array)
     {
-        bool_arr = &array;
+        boolArr = &array;
         type = BoolType;
         return arrow::Status::OK();
     }
     arrow::Status Visit(const arrow::Int8Array &array)
     {
-        int8_arr = &array;
+        int8Arr = &array;
         type = IntType;
         size = 8;
         return arrow::Status::OK();
     }
     arrow::Status Visit(const arrow::Int16Array &array)
     {
-        int16_arr = &array;
+        int16Arr = &array;
         type = IntType;
         size = 16;
         return arrow::Status::OK();
     }
     arrow::Status Visit(const arrow::Int32Array &array)
     {
-        int32_arr = &array;
+        int32Arr = &array;
         type = IntType;
         size = 32;
         return arrow::Status::OK();
     }
     arrow::Status Visit(const arrow::Int64Array &array)
     {
-        int64_arr = &array;
+        int64Arr = &array;
         type = IntType;
         size = 64;
         return arrow::Status::OK();
     }
     arrow::Status Visit(const arrow::UInt8Array &array)
     {
-        uint8_arr = &array;
+        uint8Arr = &array;
         type = UIntType;
         size = 8;
         return arrow::Status::OK();
     }
     arrow::Status Visit(const arrow::UInt16Array &array)
     {
-        uint16_arr = &array;
+        uint16Arr = &array;
         type = UIntType;
         size = 16;
         return arrow::Status::OK();
     }
     arrow::Status Visit(const arrow::UInt32Array &array)
     {
-        uint32_arr = &array;
+        uint32Arr = &array;
         type = UIntType;
         size = 32;
         return arrow::Status::OK();
     }
     arrow::Status Visit(const arrow::UInt64Array &array)
     {
-        uint64_arr = &array;
+        uint64Arr = &array;
         type = UIntType;
         size = 64;
         return arrow::Status::OK();
     }
     arrow::Status Visit(const arrow::Date32Array &array)
     {
-        date32_arr = &array;
+        date32Arr = &array;
         type = DateType;
         size = 32;
         return arrow::Status::OK();
     }
     arrow::Status Visit(const arrow::Date64Array &array)
     {
-        date64_arr = &array;
+        date64Arr = &array;
         type = DateType;
         size = 64;
         return arrow::Status::OK();
     }
     arrow::Status Visit(const arrow::TimestampArray &array)
     {
-        timestamp_arr = &array;
+        timestampArr = &array;
         type = TimestampType;
         return arrow::Status::OK();
     }
     arrow::Status Visit(const arrow::Time32Array &array)
     {
-        time32_arr = &array;
+        time32Arr = &array;
         type = TimeType;
         size = 32;
         return arrow::Status::OK();
     }
     arrow::Status Visit(const arrow::Time64Array &array)
     {
-        time64_arr = &array;
+        time64Arr = &array;
         type = TimeType;
         size = 64;
         return arrow::Status::OK();
     }
     arrow::Status Visit(const arrow::DurationArray &array)
     {
-        duration_arr = &array;
+        durationArr = &array;
         type = DurationType;
         return arrow::Status::OK();
     }
     arrow::Status Visit(const arrow::HalfFloatArray &array)
     {
-        half_float_arr = &array;
+        halfFloatArr = &array;
         type = RealType;
         size = 2;
         return arrow::Status::OK();
     }
     arrow::Status Visit(const arrow::FloatArray &array)
     {
-        float_arr = &array;
+        floatArr = &array;
         type = RealType;
         size = 4;
         return arrow::Status::OK();
     }
     arrow::Status Visit(const arrow::DoubleArray &array)
     {
-        double_arr = &array;
+        doubleArr = &array;
         type = RealType;
         size = 8;
         return arrow::Status::OK();
     }
     arrow::Status Visit(const arrow::StringArray &array)
     {
-        string_arr = &array;
+        stringArr = &array;
         type = StringType;
         return arrow::Status::OK();
     }
     arrow::Status Visit(const arrow::LargeStringArray &array)
     {
-        large_string_arr = &array;
+        largeStringArr = &array;
         type = LargeStringType;
         return arrow::Status::OK();
     }
     arrow::Status Visit(const arrow::BinaryArray &array)
     {
-        bin_arr = &array;
+        binArr = &array;
         type = BinaryType;
         return arrow::Status::OK();
     }
     arrow::Status Visit(const arrow::LargeBinaryArray &array)
     {
-        large_bin_arr = &array;
+        largeBinArr = &array;
         type = LargeBinaryType;
         return arrow::Status::OK();
     }
     arrow::Status Visit(const arrow::Decimal128Array &array)
     {
-        dec_arr = &array;
+        decArr = &array;
         type = DecimalType;
         size = 128;
         return arrow::Status::OK();
     }
     arrow::Status Visit(const arrow::Decimal256Array &array)
     {
-        large_dec_arr = &array;
+        largeDecArr = &array;
         type = DecimalType;
         size = 256;
         return arrow::Status::OK();
     }
     arrow::Status Visit(const arrow::ListArray &array)
     {
-        list_arr = &array;
+        listArr = &array;
         type = ListType;
         return arrow::Status::OK();
     }
     arrow::Status Visit(const arrow::StructArray &array)
     {
-        struct_arr = &array;
+        structArr = &array;
         type = StructType;
         return arrow::Status::OK();
     }
 
-    ParquetArrayType type = NullType;
-    int size = 0;
-    const arrow::BooleanArray *bool_arr = nullptr;
-    const arrow::Int8Array *int8_arr = nullptr;
-    const arrow::Int16Array *int16_arr = nullptr;
-    const arrow::Int32Array *int32_arr = nullptr;
-    const arrow::Int64Array *int64_arr = nullptr;
-    const arrow::UInt8Array *uint8_arr = nullptr;
-    const arrow::UInt16Array *uint16_arr = nullptr;
-    const arrow::UInt32Array *uint32_arr = nullptr;
-    const arrow::UInt64Array *uint64_arr = nullptr;
-    const arrow::Date32Array *date32_arr = nullptr;
-    const arrow::Date64Array *date64_arr = nullptr;
-    const arrow::TimestampArray *timestamp_arr = nullptr;
-    const arrow::Time32Array *time32_arr = nullptr;
-    const arrow::Time64Array *time64_arr = nullptr;
-    const arrow::DurationArray *duration_arr = nullptr;
-    const arrow::HalfFloatArray *half_float_arr = nullptr;
-    const arrow::FloatArray *float_arr = nullptr;
-    const arrow::DoubleArray *double_arr = nullptr;
-    const arrow::StringArray *string_arr = nullptr;
-    const arrow::LargeStringArray *large_string_arr = nullptr;
-    const arrow::BinaryArray *bin_arr = nullptr;
-    const arrow::LargeBinaryArray *large_bin_arr = nullptr;
-    const arrow::Decimal128Array *dec_arr = nullptr;
-    const arrow::Decimal256Array *large_dec_arr = nullptr;
-    const arrow::ListArray *list_arr = nullptr;
-    const arrow::StructArray *struct_arr = nullptr;
+    ParquetArrayType type = NullType;               // Type of the Array that was read.
+    int size = 0;                                   // For Signed, Unsigned, and Real types size differentiates between the different array types.
+    const arrow::BooleanArray *boolArr = nullptr;   // A pointer to the tables column that is stored in memory for the correct value type.
+    const arrow::Int8Array *int8Arr = nullptr;
+    const arrow::Int16Array *int16Arr = nullptr;
+    const arrow::Int32Array *int32Arr = nullptr;
+    const arrow::Int64Array *int64Arr = nullptr;
+    const arrow::UInt8Array *uint8Arr = nullptr;
+    const arrow::UInt16Array *uint16Arr = nullptr;
+    const arrow::UInt32Array *uint32Arr = nullptr;
+    const arrow::UInt64Array *uint64Arr = nullptr;
+    const arrow::Date32Array *date32Arr = nullptr;
+    const arrow::Date64Array *date64Arr = nullptr;
+    const arrow::TimestampArray *timestampArr = nullptr;
+    const arrow::Time32Array *time32Arr = nullptr;
+    const arrow::Time64Array *time64Arr = nullptr;
+    const arrow::DurationArray *durationArr = nullptr;
+    const arrow::HalfFloatArray *halfFloatArr = nullptr;
+    const arrow::FloatArray *floatArr = nullptr;
+    const arrow::DoubleArray *doubleArr = nullptr;
+    const arrow::StringArray *stringArr = nullptr;
+    const arrow::LargeStringArray *largeStringArr = nullptr;
+    const arrow::BinaryArray *binArr = nullptr;
+    const arrow::LargeBinaryArray *largeBinArr = nullptr;
+    const arrow::Decimal128Array *decArr = nullptr;
+    const arrow::Decimal256Array *largeDecArr = nullptr;
+    const arrow::ListArray *listArr = nullptr;
+    const arrow::StructArray *structArr = nullptr;
 };
 
 const rapidjson::Value kNullJsonSingleton = rapidjson::Value();
@@ -363,67 +370,62 @@ const rapidjson::Value kNullJsonSingleton = rapidjson::Value();
 class DocValuesIterator
 {
 public:
-    /// \param rows vector of rows
-    /// \param path field names to enter
-    /// \param array_levels number of arrays to enter
     DocValuesIterator(const std::vector<rapidjson::Document> &_rows,
-                        std::vector<std::string> &&_path, int64_t _array_levels)
-        : rows(_rows), path(std::move(_path)), array_levels(_array_levels) {}
-
+                        std::vector<std::string> &&_path, int64_t _arrayLevels)
+        : rows(_rows), path(std::move(_path)), arrayLevels(_arrayLevels) {}
     ~DocValuesIterator() = default;
 
-    const rapidjson::Value *NextArrayOrRow(const rapidjson::Value *value, size_t *path_i,
-                                            int64_t *arr_i)
+    const rapidjson::Value *NextArrayOrRow(const rapidjson::Value *value, size_t *pathIdx, int64_t *arrIdx)
     {
-        while (array_stack.size() > 0)
+        while (arrayStack.size() > 0)
         {
-            ArrayPosition &pos = array_stack.back();
+            ArrayPosition &pos = arrayStack.back();
             // Try to get next position in Array
-            if (pos.index + 1 < pos.array_node->Size())
+            if (pos.index + 1 < pos.arrayNode->Size())
             {
                 ++pos.index;
-                value = &(*pos.array_node)[pos.index];
-                *path_i = pos.path_index;
-                *arr_i = array_stack.size();
+                value = &(*pos.arrayNode)[pos.index];
+                *pathIdx = pos.pathIndex;
+                *arrIdx = arrayStack.size();
                 return value;
             }
             else
             {
-                array_stack.pop_back();
+                arrayStack.pop_back();
             }
         }
-        ++row_i;
-        if (row_i < rows.size())
+        ++rowIdx;
+        if (rowIdx < rows.size())
         {
-            value = static_cast<const rapidjson::Value *>(&rows[row_i]);
+            value = static_cast<const rapidjson::Value *>(&rows[rowIdx]);
         }
         else
         {
             value = nullptr;
         }
-        *path_i = 0;
-        *arr_i = 0;
+        *pathIdx = 0;
+        *arrIdx = 0;
         return value;
     }
 
     arrow::Result<const rapidjson::Value *> Next()
     {
         const rapidjson::Value *value = nullptr;
-        size_t path_i;
-        int64_t arr_i;
+        size_t pathIdx;
+        int64_t arrIdx;
         // Can either start at document or at last array level
-        if (array_stack.size() > 0)
+        if (arrayStack.size() > 0)
         {
-            auto &pos = array_stack.back();
-            value = pos.array_node;
-            path_i = pos.path_index;
-            arr_i = array_stack.size() - 1;
+            auto &pos = arrayStack.back();
+            value = pos.arrayNode;
+            pathIdx = pos.pathIndex;
+            arrIdx = arrayStack.size() - 1;
         }
 
-        value = NextArrayOrRow(value, &path_i, &arr_i);
+        value = NextArrayOrRow(value, &pathIdx, &arrIdx);
 
         // Traverse to desired level (with possible backtracking as needed)
-        while (path_i < path.size() || arr_i < array_levels)
+        while (pathIdx < path.size() || arrIdx < arrayLevels)
         {
             if (value == nullptr)
             {
@@ -432,23 +434,23 @@ public:
             else if (value->IsArray() && value->Size() > 0)
             {
                 ArrayPosition pos;
-                pos.array_node = value;
-                pos.path_index = path_i;
+                pos.arrayNode = value;
+                pos.pathIndex = pathIdx;
                 pos.index = 0;
-                array_stack.push_back(pos);
+                arrayStack.push_back(pos);
 
                 value = &(*value)[0];
-                ++arr_i;
+                ++arrIdx;
             }
             else if (value->IsArray())
             {
                 // Empty array means we need to backtrack and go to next array or row
-                value = NextArrayOrRow(value, &path_i, &arr_i);
+                value = NextArrayOrRow(value, &pathIdx, &arrIdx);
             }
-            else if (value->HasMember(path[path_i]))
+            else if (value->HasMember(path[pathIdx]))
             {
-                value = &(*value)[path[path_i]];
-                ++path_i;
+                value = &(*value)[path[pathIdx]];
+                ++pathIdx;
             }
             else
             {
@@ -463,27 +465,27 @@ public:
 private:
     const std::vector<rapidjson::Document> &rows;
     std::vector<std::string> path;
-    int64_t array_levels;
-    size_t row_i = -1; // index of current row
+    int64_t arrayLevels;
+    size_t rowIdx = -1; // Index of current row
 
     // Info about array position for one array level in array stack
     struct ArrayPosition
     {
-        const rapidjson::Value *array_node;
-        int64_t path_index;
+        const rapidjson::Value *arrayNode;
+        int64_t pathIndex;
         rapidjson::SizeType index;
     };
-    std::vector<ArrayPosition> array_stack;
+    std::vector<ArrayPosition> arrayStack;
 };
 
 class JsonValueConverter
 {
 public:
-    explicit JsonValueConverter(const std::vector<rapidjson::Document> &rows)
-        : rows_(rows) {}
+    explicit JsonValueConverter(const std::vector<rapidjson::Document> &_rows)
+        : rows(_rows) {}
 
-    JsonValueConverter(const std::vector<rapidjson::Document> &rows, const std::vector<std::string> &root_path, int64_t array_levels)
-        : rows_(rows), root_path_(root_path), array_levels_(array_levels) {}
+    JsonValueConverter(const std::vector<rapidjson::Document> &_rows, const std::vector<std::string> &_rootPath, int64_t _arrayLevels)
+        : rows(_rows), rootPath(_rootPath), arrayLevels(_arrayLevels) {}
 
     ~JsonValueConverter() = default;
 
@@ -494,10 +496,10 @@ public:
     }
 
     /// \brief For field passed in, append corresponding values to builder
-    arrow::Status Convert(const arrow::Field &field, const std::string &field_name, arrow::ArrayBuilder *builder)
+    arrow::Status Convert(const arrow::Field &field, const std::string &_fieldName, arrow::ArrayBuilder *builder)
     {
-        field_name_ = field_name;
-        builder_ = builder;
+        fieldName = _fieldName;
+        arrayBuilder = builder;
         ARROW_RETURN_NOT_OK(arrow::VisitTypeInline(*field.type().get(), this));
         return arrow::Status::OK();
     }
@@ -510,10 +512,10 @@ public:
 
     arrow::Status Visit(const arrow::LargeBinaryType &type)
     {
-        arrow::LargeBinaryBuilder *builder = static_cast<arrow::LargeBinaryBuilder *>(builder_);
-        for (const auto &maybe_value : FieldValues())
+        arrow::LargeBinaryBuilder *builder = static_cast<arrow::LargeBinaryBuilder *>(arrayBuilder);
+        for (const auto &maybeValue : FieldValues())
         {
-            ARROW_ASSIGN_OR_RAISE(auto value, maybe_value);
+            ARROW_ASSIGN_OR_RAISE(auto value, maybeValue);
             if (value->IsNull())
             {
                 ARROW_RETURN_NOT_OK(builder->AppendNull());
@@ -528,10 +530,10 @@ public:
 
     arrow::Status Visit(const arrow::Int64Type &type)
     {
-        arrow::Int64Builder *builder = static_cast<arrow::Int64Builder *>(builder_);
-        for (const auto &maybe_value : FieldValues())
+        arrow::Int64Builder *builder = static_cast<arrow::Int64Builder *>(arrayBuilder);
+        for (const auto &maybeValue : FieldValues())
         {
-            ARROW_ASSIGN_OR_RAISE(auto value, maybe_value);
+            ARROW_ASSIGN_OR_RAISE(auto value, maybeValue);
             if (value->IsNull())
             {
                 ARROW_RETURN_NOT_OK(builder->AppendNull());
@@ -557,10 +559,10 @@ public:
 
     arrow::Status Visit(const arrow::Int32Type &type)
     {
-        arrow::Int32Builder *builder = static_cast<arrow::Int32Builder *>(builder_);
-        for (const auto &maybe_value : FieldValues())
+        arrow::Int32Builder *builder = static_cast<arrow::Int32Builder *>(arrayBuilder);
+        for (const auto &maybeValue : FieldValues())
         {
-            ARROW_ASSIGN_OR_RAISE(auto value, maybe_value);
+            ARROW_ASSIGN_OR_RAISE(auto value, maybeValue);
             if (value->IsNull())
             {
                 ARROW_RETURN_NOT_OK(builder->AppendNull());
@@ -575,10 +577,10 @@ public:
 
     arrow::Status Visit(const arrow::UInt64Type &type)
     {
-        arrow::Int64Builder *builder = static_cast<arrow::Int64Builder *>(builder_);
-        for (const auto &maybe_value : FieldValues())
+        arrow::Int64Builder *builder = static_cast<arrow::Int64Builder *>(arrayBuilder);
+        for (const auto &maybeValue : FieldValues())
         {
-            ARROW_ASSIGN_OR_RAISE(auto value, maybe_value);
+            ARROW_ASSIGN_OR_RAISE(auto value, maybeValue);
             if (value->IsNull())
             {
                 ARROW_RETURN_NOT_OK(builder->AppendNull());
@@ -604,10 +606,10 @@ public:
 
     arrow::Status Visit(const arrow::UInt32Type &type)
     {
-        arrow::UInt32Builder *builder = static_cast<arrow::UInt32Builder *>(builder_);
-        for (const auto &maybe_value : FieldValues())
+        arrow::UInt32Builder *builder = static_cast<arrow::UInt32Builder *>(arrayBuilder);
+        for (const auto &maybeValue : FieldValues())
         {
-            ARROW_ASSIGN_OR_RAISE(auto value, maybe_value);
+            ARROW_ASSIGN_OR_RAISE(auto value, maybeValue);
             if (value->IsNull())
             {
                 ARROW_RETURN_NOT_OK(builder->AppendNull());
@@ -622,10 +624,10 @@ public:
 
     arrow::Status Visit(const arrow::FloatType &type)
     {
-        arrow::FloatBuilder *builder = static_cast<arrow::FloatBuilder *>(builder_);
-        for (const auto &maybe_value : FieldValues())
+        arrow::FloatBuilder *builder = static_cast<arrow::FloatBuilder *>(arrayBuilder);
+        for (const auto &maybeValue : FieldValues())
         {
-            ARROW_ASSIGN_OR_RAISE(auto value, maybe_value);
+            ARROW_ASSIGN_OR_RAISE(auto value, maybeValue);
             if (value->IsNull())
             {
                 ARROW_RETURN_NOT_OK(builder->AppendNull());
@@ -640,10 +642,10 @@ public:
 
     arrow::Status Visit(const arrow::DoubleType &type)
     {
-        arrow::DoubleBuilder *builder = static_cast<arrow::DoubleBuilder *>(builder_);
-        for (const auto &maybe_value : FieldValues())
+        arrow::DoubleBuilder *builder = static_cast<arrow::DoubleBuilder *>(arrayBuilder);
+        for (const auto &maybeValue : FieldValues())
         {
-            ARROW_ASSIGN_OR_RAISE(auto value, maybe_value);
+            ARROW_ASSIGN_OR_RAISE(auto value, maybeValue);
             if (value->IsNull())
             {
                 ARROW_RETURN_NOT_OK(builder->AppendNull());
@@ -658,10 +660,10 @@ public:
 
     arrow::Status Visit(const arrow::StringType &type)
     {
-        arrow::StringBuilder *builder = static_cast<arrow::StringBuilder *>(builder_);
-        for (const auto &maybe_value : FieldValues())
+        arrow::StringBuilder *builder = static_cast<arrow::StringBuilder *>(arrayBuilder);
+        for (const auto &maybeValue : FieldValues())
         {
-            ARROW_ASSIGN_OR_RAISE(auto value, maybe_value);
+            ARROW_ASSIGN_OR_RAISE(auto value, maybeValue);
             if (value->IsNull())
             {
                 ARROW_RETURN_NOT_OK(builder->AppendNull());
@@ -676,10 +678,10 @@ public:
 
     arrow::Status Visit(const arrow::BooleanType &type)
     {
-        arrow::BooleanBuilder *builder = static_cast<arrow::BooleanBuilder *>(builder_);
-        for (const auto &maybe_value : FieldValues())
+        arrow::BooleanBuilder *builder = static_cast<arrow::BooleanBuilder *>(arrayBuilder);
+        for (const auto &maybeValue : FieldValues())
         {
-            ARROW_ASSIGN_OR_RAISE(auto value, maybe_value);
+            ARROW_ASSIGN_OR_RAISE(auto value, maybeValue);
             if (value->IsNull())
             {
                 ARROW_RETURN_NOT_OK(builder->AppendNull());
@@ -694,27 +696,27 @@ public:
 
     arrow::Status Visit(const arrow::StructType &type)
     {
-        arrow::StructBuilder *builder = static_cast<arrow::StructBuilder *>(builder_);
+        arrow::StructBuilder *builder = static_cast<arrow::StructBuilder *>(arrayBuilder);
 
-        std::vector<std::string> child_path(root_path_);
-        if (field_name_.size() > 0)
+        std::vector<std::string> childPath(rootPath);
+        if (fieldName.size() > 0)
         {
-            child_path.push_back(field_name_);
+            childPath.push_back(fieldName);
         }
-        auto child_converter = JsonValueConverter(rows_, child_path, array_levels_);
+        auto child_converter = JsonValueConverter(rows, childPath, arrayLevels);
 
         for (int i = 0; i < type.num_fields(); ++i)
         {
-            std::shared_ptr<arrow::Field> child_field = type.field(i);
-            std::shared_ptr<arrow::ArrayBuilder> child_builder = builder->child_builder(i);
+            std::shared_ptr<arrow::Field> childField = type.field(i);
+            std::shared_ptr<arrow::ArrayBuilder> childBuilder = builder->child_builder(i);
 
-            ARROW_RETURN_NOT_OK(child_converter.Convert(*child_field.get(), child_builder.get()));
+            ARROW_RETURN_NOT_OK(child_converter.Convert(*childField.get(), childBuilder.get()));
         }
 
         // Make null bitunordered_map
-        for (const auto &maybe_value : FieldValues())
+        for (const auto &maybeValue : FieldValues())
         {
-            ARROW_ASSIGN_OR_RAISE(auto value, maybe_value);
+            ARROW_ASSIGN_OR_RAISE(auto value, maybeValue);
             ARROW_RETURN_NOT_OK(builder->Append(!value->IsNull()));
         }
 
@@ -723,30 +725,29 @@ public:
 
     arrow::Status Visit(const arrow::ListType &type)
     {
-        arrow::ListBuilder *builder = static_cast<arrow::ListBuilder *>(builder_);
+        arrow::ListBuilder *builder = static_cast<arrow::ListBuilder *>(arrayBuilder);
 
-        // Values and offsets needs to be interleaved in ListBuilder, so first collect the
-        // values
-        std::unique_ptr<arrow::ArrayBuilder> tmp_value_builder;
-        ARROW_ASSIGN_OR_RAISE(tmp_value_builder, arrow::MakeBuilder(builder->value_builder()->type()));
-        std::vector<std::string> child_path(root_path_);
-        child_path.push_back(field_name_);
-        auto child_converter = JsonValueConverter(rows_, child_path, array_levels_ + 1);
-        ARROW_RETURN_NOT_OK(child_converter.Convert(*type.value_field().get(), "", tmp_value_builder.get()));
+        // Values and offsets needs to be interleaved in ListBuilder, so first collect the values
+        std::unique_ptr<arrow::ArrayBuilder> tmpValueBuilder;
+        ARROW_ASSIGN_OR_RAISE(tmpValueBuilder, arrow::MakeBuilder(builder->value_builder()->type()));
+        std::vector<std::string> childPath(rootPath);
+        childPath.push_back(fieldName);
+        auto child_converter = JsonValueConverter(rows, childPath, arrayLevels + 1);
+        ARROW_RETURN_NOT_OK(child_converter.Convert(*type.value_field().get(), "", tmpValueBuilder.get()));
 
-        std::shared_ptr<arrow::Array> values_array;
-        ARROW_RETURN_NOT_OK(tmp_value_builder->Finish(&values_array));
-        std::shared_ptr<arrow::ArrayData> values_data = values_array->data();
+        std::shared_ptr<arrow::Array> valuesArray;
+        ARROW_RETURN_NOT_OK(tmpValueBuilder->Finish(&valuesArray));
+        std::shared_ptr<arrow::ArrayData> valuesData = valuesArray->data();
 
-        arrow::ArrayBuilder *value_builder = builder->value_builder();
+        arrow::ArrayBuilder *valueBuilder = builder->value_builder();
         int64_t offset = 0;
-        for (const auto &maybe_value : FieldValues())
+        for (const auto &maybeValue : FieldValues())
         {
-            ARROW_ASSIGN_OR_RAISE(auto value, maybe_value);
+            ARROW_ASSIGN_OR_RAISE(auto value, maybeValue);
             ARROW_RETURN_NOT_OK(builder->Append(!value->IsNull()));
             if (!value->IsNull() && value->Size() > 0)
             {
-                ARROW_RETURN_NOT_OK(value_builder->AppendArraySlice(*values_data.get(), offset, value->Size()));
+                ARROW_RETURN_NOT_OK(valueBuilder->AppendArraySlice(*valuesData.get(), offset, value->Size()));
                 offset += value->Size();
             }
         }
@@ -755,22 +756,22 @@ public:
     }
 
 private:
-    std::string field_name_;
-    arrow::ArrayBuilder *builder_;
-    const std::vector<rapidjson::Document> &rows_;
-    std::vector<std::string> root_path_;
-    int64_t array_levels_ = 0;
+    std::string fieldName;
+    arrow::ArrayBuilder *arrayBuilder = nullptr;
+    const std::vector<rapidjson::Document> &rows;
+    std::vector<std::string> rootPath;
+    int64_t arrayLevels = 0;
 
-    /// Return a flattened iterator over values at nested location
+    // Return a flattened iterator over values at nested location
     arrow::Iterator<const rapidjson::Value *> FieldValues()
     {
-        std::vector<std::string> path(root_path_);
-        if (field_name_.size() > 0)
+        std::vector<std::string> path(rootPath);
+        if (fieldName.size() > 0)
         {
-            path.push_back(field_name_);
+            path.push_back(fieldName);
         }
 
-        auto iter = DocValuesIterator(rows_, std::move(path), array_levels_);
+        auto iter = DocValuesIterator(rows, std::move(path), arrayLevels);
         auto fn = [iter]() mutable -> arrow::Result<const rapidjson::Value *>
         { return iter.Next(); };
 
@@ -778,76 +779,95 @@ private:
     }
 };
 
+using TableColumns = std::unordered_map<std::string, std::shared_ptr<arrow::Array>>;
+
 /**
- * @brief ParquetHelper holds the inputs from the user, the file stream objects, function for setting the schema, and functions
- * for opening parquet files.
+ * @brief Opens and reads Parquet files and partitioned datasets. The ParquetReader processes a file
+ * based on the path passed in via location. processReadFile opens the file and sets the reader up to read rows.
+ * The next function returns the index to read and the table to read from. shouldRead will return true as long as
+ * the worker can read another row.
  */
-class ParquetHelper
+class ParquetReader
 {
 public:
-    ParquetHelper(const char *option, const char *_location, const char *destination, int _rowSize, int _batchSize, bool _overwrite, arrow::Compression::type _compressionOption, const char *_partitionFields, const IThorActivityContext *_activityCtx);
-    ~ParquetHelper();
-    std::shared_ptr<arrow::Schema> getSchema();
-    arrow::Status checkDirContents();
-    arrow::Status openWriteFile();
+    ParquetReader(const char *option, const char *_location, int _maxRowCountInTable, const char *_partitionFields, const IThorActivityContext *_activityCtx);
+    ~ParquetReader();
     arrow::Status openReadFile();
     arrow::Status processReadFile();
-    arrow::Status writePartition(std::shared_ptr<arrow::Table> table);
-    parquet::arrow::FileWriter *queryWriter();
-    void chunkTable(std::shared_ptr<arrow::Table> &table);
-    rapidjson::Value *queryCurrentRow();
-    void updateRow();
-    std::vector<rapidjson::Document> &queryRecordBatch();
-    bool partSetting();
-    __int64 getMaxRowSize();
-    char queryPartOptions();
+    void splitTable(std::shared_ptr<arrow::Table> &table);
     bool shouldRead();
-    __int64 &getRowsProcessed();
-    arrow::Result<std::shared_ptr<arrow::RecordBatch>> convertToRecordBatch(const std::vector<rapidjson::Document> &rows, std::shared_ptr<arrow::Schema> schema);
-    std::unordered_map<std::string, std::shared_ptr<arrow::Array>> &next();
+    __int64 next(TableColumns *&nextTable);
     std::shared_ptr<parquet::arrow::RowGroupReader> queryCurrentTable(__int64 currTable);
     arrow::Result<std::shared_ptr<arrow::Table>> queryRows();
-    __int64 queryRowsCount();
+
+private:
+    __int64 tablesProcessed = 0;                                       // The number of tables processed when reading parquet files.
+    __int64 totalRowsProcessed = 0;                                    // Total number of rows processed of partitioned dataset. We cannot get the total number of chunks and they are variable sizes.
+    __int64 totalRowCount = 0;                                         // Total number of rows in a partition dataset.
+    __int64 startRow = 0;                                              // The starting row in a partitioned dataset.
+    __int64 rowsProcessed = 0;                                         // Current Row that has been read from the RowGroup.
+    __int64 startRowGroup = 0;                                         // The beginning RowGroup that is read by a worker.
+    __int64 tableCount = 0;                                            // The number of RowGroups to be read by the worker from the file that was opened for reading.
+    __int64 rowsCount = 0;                                             // The number of result rows in a given RowGroup read from the parquet file.
+    size_t maxRowCountInTable = 0;                                     // Max table size set by user.
+    std::string partOption;                                            // Begins with either read or write and ends with the partitioning type if there is one i.e. 'readhivepartition'.
+    std::string location;                                              // Full path to location for reading parquet files. Can be a filename or directory.
+    const IThorActivityContext *activityCtx = nullptr;                 // Context about the thor worker configuration.
+    std::shared_ptr<arrow::dataset::Scanner> scanner = nullptr;        // Scanner for reading through partitioned files.
+    std::shared_ptr<arrow::RecordBatchReader> rbatchReader = nullptr;                           // RecordBatchReader reads a dataset one record batch at a time. Must be kept alive for rbatchItr.
+    arrow::RecordBatchReader::RecordBatchReaderIterator rbatchItr;                              // Iterator of RecordBatches when reading a partitioned dataset.
+    std::vector<__int64> fileTableCounts;                                                       // Count of RowGroups in each open file to get the correct row group when reading specific parts of the file.
+    std::vector<std::unique_ptr<parquet::arrow::FileReader>> parquetFileReaders;                // Vector of FileReaders that match the target file name. data0.parquet, data1.parquet, etc.
+    TableColumns parquetTable;                                                                  // The current table being read broken up into columns. Unordered map where the left side is a string of the field name and the right side is an array of the values.
+    std::vector<std::string> partitionFields;                                                   // The partitioning schema for reading Directory Partitioned files.
+    arrow::MemoryPool *pool = nullptr;                                                          // Memory pool for reading parquet files.
+};
+
+/**
+ * @brief Opens and writes to a Parquet file or writes RecordBatches to a partioned dataset. The ParquetWriter checks the destination
+ * for existing data on construction and will fail if there are prexisiting files. If the overwrite option is set to true the data in
+ * target directory or matching the file mask will be deleted and writing will continue. openWriteFile opens the write file or sets the
+ * partitioning options. writeRecordBatch utilizes the open write streams and writes the data to the target location.
+ */
+class ParquetWriter
+{
+public:
+    ParquetWriter(const char *option, const char *_destination, int _maxRowCountInBatch, bool _overwrite, arrow::Compression::type _compressionOption, const char *_partitionFields, const IThorActivityContext *_activityCtx);
+    ~ParquetWriter();
+    arrow::Status openWriteFile();
+    arrow::Status writePartition(std::shared_ptr<arrow::Table> table);
+    void writeRecordBatch();
+    void writeRecordBatch(std::size_t newSize);
+    rapidjson::Value *queryCurrentRow();
+    void updateRow();
+    arrow::Result<std::shared_ptr<arrow::RecordBatch>> convertToRecordBatch(const std::vector<rapidjson::Document> &rows, std::shared_ptr<arrow::Schema> schema);
     std::shared_ptr<arrow::NestedType> makeChildRecord(const RtlFieldInfo *field);
-    arrow::Status fieldToNode(const std::string &name, const RtlFieldInfo *field, std::vector<std::shared_ptr<arrow::Field>> &arrow_fields);
+    arrow::Status fieldToNode(const std::string &name, const RtlFieldInfo *field, std::vector<std::shared_ptr<arrow::Field>> &arrowFields);
     arrow::Status fieldsToSchema(const RtlTypeInfo *typeInfo);
     void beginSet();
     void beginRow();
     void endRow(const char *name);
+    void addMember(rapidjson::Value &key, rapidjson::Value &value);
+    arrow::Status checkDirContents();
+    __int64 getMaxRowSize() {return maxRowCountInBatch;}
 
 private:
     __int64 currentRow = 0;
-    __int64 rowSize = 0;                                             // The maximum size of each parquet row group.
-    __int64 tablesProcessed = 0;                                      // Current RowGroup that has been read from the input file.
-    __int64 totalRowsProcessed = 0;                                   // Total number of rows processed of partitioned dataset. We cannot get the total number of chunks and they are variable sizes.
-    __int64 totalRowCount = 0;                                        // Total number of rows in a partition dataset.
-    __int64 startRow = 0;                                             // The starting row in a partitioned dataset.
-    __int64 rowsProcessed = 0;                                        // Current Row that has been read from the RowGroup
-    __int64 startRowGroup = 0;                                      // The beginning RowGroup that is read by a worker
-    __int64 tableCount = 0;                                           // The number of RowGroups to be read by the worker from the file that was opened for reading.
-    __int64 rowsCount = 0;                                            // The number of result rows in a given RowGroup read from the parquet file.
-    size_t batchSize = 0;                                            // batchSize for converting Parquet Columns to ECL rows. It is more efficient to break the data into small batches for converting to rows than to convert all at once.
-    bool partition;                                               // Boolean variable to track whether we are writing partitioned files or not.
-    bool overwrite = false;                                       // Overwrite option specified by the user. If true the plugin will overwrite files that are already exisiting. Default is false.
-    std::string partOption;                                         // Read, r, Write, w, option for specifying parquet operation.
-    std::string location;                                         // Location to read parquet file from.
-    std::string destination;                                      // Destination to write parquet file to.
-    const IThorActivityContext *activityCtx;                      // Additional local context information
-    std::shared_ptr<arrow::Schema> schema = nullptr;              // Schema object that holds the schema of the file for reading and writing
-    std::unique_ptr<parquet::arrow::FileWriter> writer = nullptr; // FileWriter for writing to parquet files.
-    std::vector<rapidjson::Document> parquetDoc;                 // Document vector for converting rows to columns for writing to parquet files.
-    std::vector<rapidjson::Value> rowStack;                      // Stack for keeping track of the context when building a nested row.
-    std::shared_ptr<arrow::dataset::Scanner> scanner = nullptr;   // Scanner for reading through partitioned files. PARTITION
-    arrow::dataset::FileSystemDatasetWriteOptions writeOptions;        // Write options for writing partitioned files. PARTITION
-    arrow::Compression::type compressionOption = arrow::Compression::type::UNCOMPRESSED;
-    std::shared_ptr<arrow::dataset::Partitioning> partitionType = nullptr;
-    std::vector<std::string> partitionFields;
-    std::shared_ptr<arrow::RecordBatchReader> rbatchReader = nullptr;
-    arrow::RecordBatchReader::RecordBatchReaderIterator rbatchItr;
-    std::vector<__int64> fileTableCounts;
-    std::vector<std::unique_ptr<parquet::arrow::FileReader>> parquetFileReaders;
-    std::unordered_map<std::string, std::shared_ptr<arrow::Array>> parquetTable;
-    arrow::MemoryPool *pool = nullptr;
+    __int64 maxRowCountInBatch = 0;                                    // The maximum size of each parquet row group.
+    __int64 tablesProcessed = 0;                                       // Current RowGroup that has been read from the input file.
+    std::string partOption;                                            // Begins with either read or write and ends with the partitioning type if there is one i.e. 'readhivepartition'.
+    std::string destination;                                           // Full path to destination for writing parquet files. Can be a filename or directory.
+    bool overwrite = false;                                            // Overwrite option specified by the user. If true the plugin will overwrite files that are already exisiting. Default is false.
+    const IThorActivityContext *activityCtx = nullptr;                 // Context about the thor worker configuration.
+    std::shared_ptr<arrow::Schema> schema = nullptr;                   // Arrow Schema holding the rtlTypeInfo when writing to parquet files.
+    std::unique_ptr<parquet::arrow::FileWriter> writer = nullptr;      // FileWriter for writing to single parquet files.
+    std::vector<rapidjson::Document> parquetDoc;                       // Document vector for converting rows to columns for writing to parquet files.
+    std::vector<rapidjson::Value> rowStack;                            // Stack for keeping track of the context when building a nested row.
+    arrow::dataset::FileSystemDatasetWriteOptions writeOptions;        // Write options for writing partitioned files.
+    arrow::Compression::type compressionOption = arrow::Compression::type::UNCOMPRESSED;        // The compression type set by the user for compressing files on write.
+    std::shared_ptr<arrow::dataset::Partitioning> partitionType = nullptr;                      // The partition type with the partitioning schema for creating a dataset.
+    std::vector<std::string> partitionFields;                                                   // The partitioning schema.
+    arrow::MemoryPool *pool = nullptr;                                                          // Memory pool for writing parquet files.
 };
 
 /**
@@ -857,7 +877,8 @@ private:
 class ParquetRowStream : public RtlCInterface, implements IRowStream
 {
 public:
-    ParquetRowStream(IEngineRowAllocator *_resultAllocator, std::shared_ptr<ParquetHelper> _parquet);
+    ParquetRowStream(IEngineRowAllocator *_resultAllocator, std::shared_ptr<ParquetReader> _parquetReader)
+        : resultAllocator(_resultAllocator), parquetReader(_parquetReader) {}
     virtual ~ParquetRowStream() = default;
 
     RTLIMPLEMENT_IINTERFACE
@@ -865,12 +886,10 @@ public:
     virtual void stop() override;
 
 private:
-    Linked<IEngineRowAllocator> m_resultAllocator; //! Pointer to allocator used when building result rows.
-    bool m_shouldRead = true;                             //! If true, we should continue trying to read more messages.
-    __int64 m_currentRow = 0;                          //! Current result row.
-    __int64 rowsCount;                             //! Number of result rows read from parquet file.
-    std::shared_ptr<ParquetArrayVisitor> array_visitor = nullptr;
-    std::shared_ptr<ParquetHelper> s_parquet = nullptr; //! Shared pointer to ParquetHelper class for the stream class.
+    Linked<IEngineRowAllocator> resultAllocator;                    // Pointer to allocator used when building result rows.
+    bool shouldRead = true;                                         // If true, we should continue trying to read more messages.
+    __int64 currentRow = 0;                                         // Current result row.
+    std::shared_ptr<ParquetReader> parquetReader = nullptr;         // Parquet file reader.
 };
 
 /**
@@ -880,11 +899,9 @@ private:
 class ParquetRowBuilder : public CInterfaceOf<IFieldSource>
 {
 public:
-    ParquetRowBuilder(std::unordered_map<std::string, std::shared_ptr<arrow::Array>> *_result_rows, int64_t _currentRow, std::shared_ptr<ParquetArrayVisitor> *_array_visitor)
-        : result_rows(_result_rows), currentRow(_currentRow), array_visitor(_array_visitor) {}
-
+    ParquetRowBuilder(TableColumns *_resultRows, int64_t _currentRow)
+        : resultRows(_resultRows), currentRow(_currentRow) {}
     virtual ~ParquetRowBuilder() = default;
-
     virtual bool getBooleanResult(const RtlFieldInfo *field) override;
     virtual void getDataResult(const RtlFieldInfo *field, size32_t &len, void *&result) override;
     virtual double getRealResult(const RtlFieldInfo *field) override;
@@ -904,7 +921,6 @@ public:
     virtual void processEndRow(const RtlFieldInfo *field) override;
 
 protected:
-    const std::shared_ptr<arrow::Array> &getChunk(std::shared_ptr<arrow::ChunkedArray> *column);
     std::string_view getCurrView(const RtlFieldInfo *field);
     __int64 getCurrIntValue(const RtlFieldInfo *field);
     double getCurrRealValue(const RtlFieldInfo *field);
@@ -914,13 +930,13 @@ protected:
     int64_t currArrayIndex();
 
 private:
-    __int64 currentRow;
-    TokenDeserializer tokenDeserializer;
-    TokenSerializer tokenSerializer;
-    StringBuffer serialized;
-    std::unordered_map<std::string, std::shared_ptr<arrow::Array>> *result_rows;
-    std::vector<PathTracker> m_pathStack;
-    std::shared_ptr<ParquetArrayVisitor> *array_visitor;
+    __int64 currentRow;                                                             // The index in the arrow Array to read the current value.
+    TokenDeserializer tokenDeserializer;                                            // Deseralize string type values to numeric types when returning results.
+    TokenSerializer tokenSerializer;                                                // serialize numeric types to string types when returning results.
+    StringBuffer serialized;                                                        // Output string from serialization.
+    TableColumns *resultRows = nullptr;                                             // A pointer to the result rows map where the left side are the field names for the columns and the right is an array of values.
+    std::vector<PathTracker> pathStack;                                             // PathTracker keeps track of nested data when reading sets.
+    std::shared_ptr<ParquetArrayVisitor> arrayVisitor;                              // Visitor class for getting the correct type when reading a Parquet column.
 };
 
 /**
@@ -930,15 +946,9 @@ private:
 class ParquetRecordBinder : public CInterfaceOf<IFieldProcessor>
 {
 public:
-    ParquetRecordBinder(const IContextLogger &_logctx, const RtlTypeInfo *_typeInfo, int _firstParam, std::shared_ptr<ParquetHelper> _parquet)
-        : logctx(_logctx), typeInfo(_typeInfo), firstParam(_firstParam), dummyField("<row>", NULL, typeInfo), thisParam(_firstParam)
-    {
-        r_parquet = _parquet;
-        partition = _parquet->partSetting();
-    }
-
+    ParquetRecordBinder(const IContextLogger &_logctx, const RtlTypeInfo *_typeInfo, int _firstParam, std::shared_ptr<ParquetWriter> _parquetWriter)
+        : logctx(_logctx), typeInfo(_typeInfo), firstParam(_firstParam), dummyField("<row>", NULL, typeInfo), thisParam(_firstParam), parquetWriter(_parquetWriter) {}
     virtual ~ParquetRecordBinder() = default;
-
     int numFields();
     void processRow(const byte *row);
     virtual void processString(unsigned len, const char *value, const RtlFieldInfo *field);
@@ -952,13 +962,12 @@ public:
     {
         UNSUPPORTED("UNSIGNED decimals");
     }
-
     virtual void processUnicode(unsigned chars, const UChar *value, const RtlFieldInfo *field);
     virtual void processQString(unsigned len, const char *value, const RtlFieldInfo *field);
     virtual void processUtf8(unsigned chars, const char *value, const RtlFieldInfo *field);
     virtual bool processBeginSet(const RtlFieldInfo *field, unsigned numElements, bool isAll, const byte *data)
     {
-        r_parquet->beginSet();
+        parquetWriter->beginSet();
         return true;
     }
     virtual bool processBeginDataset(const RtlFieldInfo *field, unsigned rowsCount)
@@ -972,12 +981,12 @@ public:
         // copy over the members of the rapidjson value.
         // TO DO
         // Create a json string of all the fields which will be much more performant.
-        r_parquet->beginRow();
+        parquetWriter->beginRow();
         return true;
     }
     virtual void processEndSet(const RtlFieldInfo *field)
     {
-        r_parquet->endRow(field->name);
+        parquetWriter->endRow(field->name);
     }
     virtual void processEndDataset(const RtlFieldInfo *field)
     {
@@ -985,7 +994,7 @@ public:
     }
     virtual void processEndRow(const RtlFieldInfo *field)
     {
-        r_parquet->endRow(field->name);
+        parquetWriter->endRow(field->name);
     }
 
 protected:
@@ -996,10 +1005,8 @@ protected:
     int firstParam;
     RtlFieldStrInfo dummyField;
     int thisParam;
-    TokenSerializer m_tokenSerializer;
-
-    std::shared_ptr<ParquetHelper> r_parquet;
-    bool partition; //! Local copy of a boolean so we can know if we are writing partitioned files or not.
+    TokenSerializer tokenSerializer;
+    std::shared_ptr<ParquetWriter> parquetWriter;
 };
 
 /**
@@ -1012,27 +1019,25 @@ public:
     /**
      * @brief Construct a new ParquetDataset Binder object
      *
-     * @param _logctx logger for building the dataset.
+     * @param _logctx Logger for building the dataset.
      * @param _input Stream of input of dataset.
      * @param _typeInfo Field type info.
      * @param _query Holds the builder object for creating the documents.
      * @param _firstParam Index of the first param.
      */
-    ParquetDatasetBinder(const IContextLogger &_logctx, IRowStream *_input, const RtlTypeInfo *_typeInfo, std::shared_ptr<ParquetHelper> _parquet, int _firstParam)
-        : input(_input), ParquetRecordBinder(_logctx, _typeInfo, _firstParam, _parquet)
+    ParquetDatasetBinder(const IContextLogger &_logctx, IRowStream *_input, const RtlTypeInfo *_typeInfo, std::shared_ptr<ParquetWriter> _parquetWriter, int _firstParam)
+        : input(_input), parquetWriter(_parquetWriter), ParquetRecordBinder(_logctx, _typeInfo, _firstParam, _parquetWriter)
     {
-        d_parquet = _parquet;
-        reportIfFailure(d_parquet->fieldsToSchema(_typeInfo));
+        reportIfFailure(parquetWriter->fieldsToSchema(_typeInfo));
     }
     virtual ~ParquetDatasetBinder() = default;
     void getFieldTypes(const RtlTypeInfo *typeInfo);
     bool bindNext();
-    void writeRecordBatch();
     void executeAll();
 
 protected:
     Owned<IRowStream> input;
-    std::shared_ptr<ParquetHelper> d_parquet; //! Helper object for keeping track of read and write options, schema, and file names.
+    std::shared_ptr<ParquetWriter> parquetWriter; // Parquet file writer.
 };
 
 /**
@@ -1107,18 +1112,14 @@ public:
 protected:
     void execute();
     unsigned checkNextParam(const char *name);
+
     const IContextLogger &logctx;
-    Owned<IPropertyTreeIterator> m_resultrow;
-
-    Owned<ParquetDatasetBinder> m_oInputStream; //! Input Stream used for building a dataset.
-
-    TokenDeserializer tokenDeserializer;
-    TokenSerializer m_tokenSerializer;
-    unsigned m_nextParam = 0;   //! Index of the next parameter to process.
-    unsigned m_numParams = 0;   //! Number of parameters in the function definition.
-    unsigned m_scriptFlags;     //! Count of flags raised by embedded script.
-
-    std::shared_ptr<ParquetHelper> m_parquet; //! Helper object for keeping track of read and write options, schema, and file names.
+    Owned<ParquetDatasetBinder> oInputStream;                   // Input Stream used for building a dataset.
+    unsigned nextParam = 0;                                     // Index of the next parameter to process.
+    unsigned numParams = 0;                                     // Number of parameters in the function definition.
+    unsigned scriptFlags;                                       // Count of flags raised by embedded script.
+    std::shared_ptr<ParquetReader> parquetReader = nullptr;     // Parquet File Reader
+    std::shared_ptr<ParquetWriter> parquetWriter = nullptr;     // Parquet File Writer
 };
 }
 #endif

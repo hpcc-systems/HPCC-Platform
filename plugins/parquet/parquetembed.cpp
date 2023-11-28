@@ -97,38 +97,20 @@ extern void fail(const char *message)
 }
 
 /**
- * @brief Simple constructor that stores the inputs from the user.
+ * @brief Contructs a ParquetReader for a specific file location.
  *
- * @param option The read or write option.
- *
- * @param location The location to read a parquet file.
- *
- * @param destination The destination to write a parquet file.
- *
- * @param rowsize The max row group size when reading parquet files.
- *
- * @param _batchSize The size of the batches when converting parquet columns to rows.
+ * @param option The read or write option as well as information about partitioning.
+ * @param _location The full path from which to read a Parquet file or partitioned dataset. Can be a filename or directory.
+ * @param _maxRowCountInTable The number of rows in each batch when converting Parquet columns to rows.
+ * @param _activityCtx Additional context about the thor workers running.
  */
-ParquetHelper::ParquetHelper(const char *option, const char *_location, const char *destination, int _rowSize, int _batchSize,
-    bool _overwrite, arrow::Compression::type _compressionOption, const char *_partitionFields, const IThorActivityContext *_activityCtx)
-    : partOption(option), location(_location), destination(destination)
+ParquetReader::ParquetReader(const char *option, const char *_location, int _maxRowCountInTable, const char *_partitionFields, const IThorActivityContext *_activityCtx)
+    : partOption(option), location(_location)
 {
-    rowSize = _rowSize;
-    batchSize = _batchSize;
-    overwrite = _overwrite;
-    compressionOption = _compressionOption;
+    maxRowCountInTable = _maxRowCountInTable;
     activityCtx = _activityCtx;
     pool = arrow::default_memory_pool();
-
-    parquetDoc = std::vector<rapidjson::Document>(rowSize);
-
-    if (activityCtx->querySlave() == 0 && startsWith(option, "write"))
-    {
-        reportIfFailure(checkDirContents());
-    }
-
-    partition = endsWithIgnoreCase(option, "partition");
-    if (partition)
+    if (_partitionFields)
     {
         std::stringstream ss(_partitionFields);
         std::string field;
@@ -137,23 +119,714 @@ ParquetHelper::ParquetHelper(const char *option, const char *_location, const ch
     }
 }
 
-ParquetHelper::~ParquetHelper()
+ParquetReader::~ParquetReader()
+{
+    pool->ReleaseUnused();
+}
+
+/**
+ * @brief Opens a read stream at the target location set in the constructor.
+ *
+ * @return Status object arrow::Status::OK if successful.
+ */
+arrow::Status ParquetReader::openReadFile()
+{
+    if (location.empty())
+    {
+        failx("Invalid option: The destination was not supplied.");
+    }
+    if (endsWithIgnoreCase(partOption.c_str(), "partition"))
+    {
+        // Create a filesystem
+        std::shared_ptr<arrow::fs::FileSystem> fs;
+        ARROW_ASSIGN_OR_RAISE(fs, arrow::fs::FileSystemFromUriOrPath(location));
+
+        // FileSelector allows traversal of multi-file dataset
+        arrow::fs::FileSelector selector;
+        selector.base_dir = location; // The base directory to be searched is provided by the user in the location option.
+        selector.recursive = true;    // Selector will search the base path recursively for partitioned files.
+
+        // Create a file format
+        std::shared_ptr<arrow::dataset::ParquetFileFormat> format = std::make_shared<arrow::dataset::ParquetFileFormat>();
+
+        arrow::dataset::FileSystemFactoryOptions options;
+        if (endsWithIgnoreCase(partOption.c_str(), "hivepartition"))
+        {
+            options.partitioning = arrow::dataset::HivePartitioning::MakeFactory();
+        }
+        else if (endsWithIgnoreCase(partOption.c_str(), "directorypartition"))
+        {
+            options.partitioning = arrow::dataset::DirectoryPartitioning::MakeFactory(partitionFields);
+        }
+        else
+        {
+            failx("Incorrect partitioning type %s.", partOption.c_str());
+        }
+        // Create the dataset factory
+        PARQUET_ASSIGN_OR_THROW(auto datasetFactory, arrow::dataset::FileSystemDatasetFactory::Make(fs, selector, format, options));
+
+        // Get scanner
+        PARQUET_ASSIGN_OR_THROW(auto dataset, datasetFactory->Finish());
+        ARROW_ASSIGN_OR_RAISE(auto scanBuilder, dataset->NewScan());
+        reportIfFailure(scanBuilder->Pool(pool));
+        ARROW_ASSIGN_OR_RAISE(scanner, scanBuilder->Finish());
+    }
+    else
+    {
+        StringBuffer filename;
+        StringBuffer path;
+        splitFilename(location.c_str(), nullptr, &path, &filename, nullptr, false);
+        Owned<IDirectoryIterator> itr = createDirectoryIterator(path.str(), filename.append("*.parquet"));
+
+        auto readerProperties = parquet::ReaderProperties(pool);
+        auto arrowReaderProps = parquet::ArrowReaderProperties();
+        ForEach (*itr)
+        {
+            IFile &file = itr->query();
+            parquet::arrow::FileReaderBuilder readerBuilder;
+            reportIfFailure(readerBuilder.OpenFile(file.queryFilename(), false, readerProperties));
+            readerBuilder.memory_pool(pool);
+            readerBuilder.properties(arrowReaderProps);
+            std::unique_ptr<parquet::arrow::FileReader> parquetFileReader;
+            reportIfFailure(readerBuilder.Build(&parquetFileReader));
+            parquetFileReaders.push_back(std::move(parquetFileReader));
+        }
+    }
+    return arrow::Status::OK();
+}
+
+/**
+ * @brief Divide row groups being read from a Parquet file among any number of thor workers.
+ *
+ * @param activityCtx Context information about which thor worker is reading the file.
+ * @param totalRowGroups The total row groups in the file or files that are being read.
+ * @param numRowGroups The number of row groups that this worker needs to read.
+ * @param startRowGroup The starting row group index for each thor worker.
+ */
+void divide_row_groups(const IThorActivityContext *activityCtx, __int64 totalRowGroups, __int64 &numRowGroups, __int64 &startRowGroup)
+{
+    int workers = activityCtx->numSlaves();
+    int strands = activityCtx->numStrands();
+    int workerId = activityCtx->querySlave();
+
+    // Currently under the assumption that all channels and workers are given a worker id and no matter
+    // the configuration will show up in activityCtx->numSlaves()
+    if (workers > 1)
+    {
+        // If the number of workers goes into totalRowGroups evenly then every worker gets the same amount
+        // of rows to read
+        if (totalRowGroups % workers == 0)
+        {
+            numRowGroups = totalRowGroups / workers;
+            startRowGroup = numRowGroups * workerId;
+        }
+        // If the totalRowGroups is not evenly divisible by the number of workers then we divide them up
+        // with the first n-1 workers getting slightly more and the nth worker gets the remainder
+        else if (totalRowGroups > workers)
+        {
+            __int64 groupsPerWorker = totalRowGroups / workers;
+            __int64 remainder = totalRowGroups % workers;
+
+            if (workerId < remainder)
+            {
+                numRowGroups = groupsPerWorker + 1;
+                startRowGroup = numRowGroups * workerId;
+            }
+            else
+            {
+                numRowGroups = groupsPerWorker;
+                startRowGroup = (remainder * (numRowGroups + 1)) + ((workerId - remainder) * numRowGroups);
+            }
+        }
+        // If the number of totalRowGroups is less than the number of workers we give as many as possible
+        // a single row group to read.
+        else
+        {
+            if (workerId < totalRowGroups)
+            {
+                numRowGroups = 1;
+                startRowGroup = workerId;
+            }
+            else
+            {
+                numRowGroups = 0;
+                startRowGroup = 0;
+            }
+        }
+    }
+    else
+    {
+        // There is only one worker
+        numRowGroups = totalRowGroups;
+        startRowGroup = 0;
+    }
+}
+
+/**
+ * @brief Splits an arrow table into an unordered map with the left side containing the
+ * column names and the right side containing an Array of the column values.
+ *
+ * @param table The table to be split and stored in the unordered map.
+*/
+void ParquetReader::splitTable(std::shared_ptr<arrow::Table> &table)
+{
+    auto columns = table->columns();
+    parquetTable.clear();
+    for (int i = 0; i < columns.size(); i++)
+    {
+        parquetTable.insert(std::make_pair(table->field(i)->name(), columns[i]->chunk(0)));
+    }
+}
+
+/**
+ * @brief Get the current table taking into account multiple files with variable table counts.
+ *
+ * @param currTable The index of the current table relative to the total number in all files being read.
+ * @return std::shared_ptr<parquet::arrow::RowGroupReader> The RowGroupReader to read columns from the table.
+ */
+std::shared_ptr<parquet::arrow::RowGroupReader> ParquetReader::queryCurrentTable(__int64 currTable)
+{
+    __int64 tables = 0;
+    __int64 offset = 0;
+    for (int i = 0; i < parquetFileReaders.size(); i++)
+    {
+        tables += fileTableCounts[i];
+        if (currTable < tables)
+        {
+            return parquetFileReaders[i]->RowGroup(currTable - offset);
+        }
+        offset = tables;
+    }
+    failx("Failed getting RowGroupReader. Index %lli is out of bounds.", currTable);
+}
+
+/**
+ * @brief Open the file reader for the target file and read the metadata for the row counts.
+ *
+ * @return arrow::Status Returns ok if opening a file and reading the metadata succeeds.
+ */
+arrow::Status ParquetReader::processReadFile()
+{
+    reportIfFailure(openReadFile()); // Open the file with the target location before processing.
+    if (endsWithIgnoreCase(partOption.c_str(), "partition"))
+    {
+        PARQUET_ASSIGN_OR_THROW(rbatchReader, scanner->ToRecordBatchReader());
+        rbatchItr = arrow::RecordBatchReader::RecordBatchReaderIterator(rbatchReader.get());
+        PARQUET_ASSIGN_OR_THROW(auto datasetRows, scanner->CountRows());
+        // Divide the work among any number of workers
+        divide_row_groups(activityCtx, datasetRows, totalRowCount, startRowGroup);
+    }
+    else
+    {
+        __int64 totalTables = 0;
+
+        for (int i = 0; i < parquetFileReaders.size(); i++)
+        {
+            __int64 tables = parquetFileReaders[i]->num_row_groups();
+            fileTableCounts.push_back(tables);
+            totalTables += tables;
+        }
+
+        divide_row_groups(activityCtx, totalTables, tableCount, startRowGroup);
+    }
+    totalRowsProcessed = 0;
+    rowsProcessed = 0;
+    rowsCount = 0;
+    return arrow::Status::OK();
+}
+
+/**
+ * @brief Checks if all the rows have been read in a partitioned dataset, or if reading a single file checks if
+ * all the RowGroups and every row in the last group has been read.
+ *
+ * @return True if there are more rows to be read and false if else.
+ */
+bool ParquetReader::shouldRead()
+{
+    if (scanner)
+        return !(totalRowsProcessed >= totalRowCount);
+    else
+        return !(tablesProcessed >= tableCount && rowsProcessed >= rowsCount);
+}
+
+/**
+ * @brief Iterates to the correct starting RecordBatch in a partitioned dataset.
+ *
+ * @return arrow::Result A pointer to the current table.
+ */
+arrow::Result<std::shared_ptr<arrow::Table>> ParquetReader::queryRows()
+{
+    // If no tables have been processed find the starting RecordBatch
+    if (tablesProcessed == 0)
+    {
+        // Start by getting the number of rows in the first group and checking if it includes this workers startRow
+        __int64 offset = (*rbatchItr)->get()->num_rows();
+        while (offset < startRow)
+        {
+            rbatchItr++;
+            offset += (*rbatchItr)->get()->num_rows();
+        }
+        // If startRow is in the middle of a table skip processing the beginning of the batch
+        rowsProcessed = (*rbatchItr)->get()->num_rows() - (offset - startRow);
+    }
+    // Convert the current batch to a table
+    PARQUET_ASSIGN_OR_THROW(auto batch, *rbatchItr);
+    rbatchItr++;
+    std::vector<std::shared_ptr<arrow::RecordBatch>> toTable = {batch};
+    return std::move(arrow::Table::FromRecordBatches(std::move(toTable)));
+}
+
+/**
+ * @brief Updates the current table if all the rows have been proccessed. Sets nextTable to the current TableColumns object.
+ *
+ * @param nextTable The memory address of the TableColumns object containing the current table.
+ * @return __int64 The number of rows that have been processed and the current index in the columns.
+ */
+__int64 ParquetReader::next(TableColumns *&nextTable)
+{
+    if (rowsProcessed == rowsCount)
+    {
+        std::shared_ptr<arrow::Table> table;
+        if (endsWithIgnoreCase(partOption.c_str(), "partition"))
+        {
+            PARQUET_ASSIGN_OR_THROW(table, queryRows());
+        }
+        else
+        {
+            reportIfFailure(queryCurrentTable(tablesProcessed + startRowGroup)->ReadTable(&table));
+        }
+        rowsProcessed = 0;
+        tablesProcessed++;
+        rowsCount = table->num_rows();
+        splitTable(table);
+    }
+    nextTable = &parquetTable;
+    totalRowsProcessed++;
+    return rowsProcessed++;
+}
+
+/**
+ * @brief Constructs a ParquetWriter for the target destination and checks for existing data.
+ *
+ * @param option The read or write option as well as information about partitioning.
+ * @param _destination The full path to which to write a Parquet file or partitioned dataset. Can be a filename or directory.
+ * @param _maxRowCountInBatch The max number of rows when creating RecordBatches for output.
+ * @param _overwrite If true when the plugin calls checkDirContents the target directory contents will be deleted.
+ * @param _compressionOption Compression option for writing compressed Parquet files of different types.
+ * @param _activityCtx Additional context about the thor workers running.
+ */
+ParquetWriter::ParquetWriter(const char *option, const char *_destination, int _maxRowCountInBatch, bool _overwrite, arrow::Compression::type _compressionOption, const char *_partitionFields, const IThorActivityContext *_activityCtx)
+    : partOption(option), destination(_destination), maxRowCountInBatch(_maxRowCountInBatch), overwrite(_overwrite), compressionOption(_compressionOption), activityCtx(_activityCtx)
+{
+    pool = arrow::default_memory_pool();
+    parquetDoc = std::vector<rapidjson::Document>(maxRowCountInBatch);
+    if (activityCtx->querySlave() == 0 && startsWithIgnoreCase(partOption.c_str(), "write"))
+    {
+        reportIfFailure(checkDirContents());
+    }
+    if (endsWithIgnoreCase(partOption.c_str(), "partition"))
+    {
+        std::stringstream ss(_partitionFields);
+        std::string field;
+        while (std::getline(ss, field, ';'))
+        {
+            partitionFields.push_back(field);
+        }
+    }
+}
+
+ParquetWriter::~ParquetWriter()
 {
     pool->ReleaseUnused();
     jsonAlloc.Clear();
 }
 
 /**
- * @brief Get the Schema shared pointer
+ * @brief Opens a write stream depending on if the user is writing a partitioned file or regular file.
  *
- * @return std::shared_ptr<arrow::Schema> Shared_ptr of schema object for building the write stream.
+ * @return Status object arrow::Status::OK if successful.
  */
-std::shared_ptr<arrow::Schema> ParquetHelper::getSchema()
+arrow::Status ParquetWriter::openWriteFile()
 {
-    return schema;
+    if (destination.empty())
+    {
+        failx("Invalid option: The destination was not supplied.");
+    }
+    if (endsWithIgnoreCase(partOption.c_str(), "partition"))
+    {
+        ARROW_ASSIGN_OR_RAISE(auto filesystem, arrow::fs::FileSystemFromUriOrPath(destination));
+        auto format = std::make_shared<arrow::dataset::ParquetFileFormat>();
+        writeOptions.file_write_options = format->DefaultWriteOptions();
+        writeOptions.filesystem = filesystem;
+        writeOptions.base_dir = destination;
+        writeOptions.partitioning = partitionType;
+        writeOptions.existing_data_behavior = arrow::dataset::ExistingDataBehavior::kOverwriteOrIgnore;
+    }
+    else
+    {
+        if(!endsWith(destination.c_str(), ".parquet"))
+            failx("Error opening file: Invalid file extension for file %s", destination.c_str());
+
+        // Currently under the assumption that all channels and workers are given a worker id and no matter
+        // the configuration will show up in activityCtx->numSlaves()
+        if (activityCtx->numSlaves() > 1)
+        {
+            destination.insert(destination.find(".parquet"), std::to_string(activityCtx->querySlave()));
+        }
+
+        std::shared_ptr<arrow::io::FileOutputStream> outfile;
+        PARQUET_ASSIGN_OR_THROW(outfile, arrow::io::FileOutputStream::Open(destination));
+
+        // Choose compression
+        std::shared_ptr<parquet::WriterProperties> props = parquet::WriterProperties::Builder().compression(compressionOption)->build();
+
+        // Opt to store Arrow schema for easier reads back into Arrow
+        std::shared_ptr<parquet::ArrowWriterProperties> arrowProps = parquet::ArrowWriterProperties::Builder().store_schema()->build();
+
+        // Create a writer
+        ARROW_ASSIGN_OR_RAISE(writer, parquet::arrow::FileWriter::Open(*schema.get(), pool, outfile, props, arrowProps));
+    }
+    return arrow::Status::OK();
 }
 
-arrow::Status ParquetHelper::checkDirContents()
+/**
+ * @brief Writes a single record batch to a partitioned dataset.
+ *
+ * @param table An arrow table to write out.
+ * @return Status object arrow::Status::OK if successful.
+*/
+arrow::Status ParquetWriter::writePartition(std::shared_ptr<arrow::Table> table)
+{
+    // Create dataset for writing partitioned files.
+    auto dataset = std::make_shared<arrow::dataset::InMemoryDataset>(table);
+
+    StringBuffer basenameTemplate;
+    basenameTemplate.appendf("part_%d{i}_%lld.parquet",activityCtx->querySlave(), tablesProcessed++);
+    writeOptions.basename_template = basenameTemplate.str();
+
+    ARROW_ASSIGN_OR_RAISE(auto scannerBuilder, dataset->NewScan());
+    reportIfFailure(scannerBuilder->Pool(pool));
+    ARROW_ASSIGN_OR_RAISE(auto scanner, scannerBuilder->Finish());
+
+    // Write partitioned files.
+    reportIfFailure(arrow::dataset::FileSystemDataset::Write(writeOptions, scanner));
+
+    return arrow::Status::OK();
+}
+
+/**
+ * @brief Converts the vector of rapidjson::Documents into an arrow::RecordBatch and writes it to
+ * a file or partitioned dataset.
+ */
+void ParquetWriter::writeRecordBatch()
+{
+    // Convert row_batch vector to RecordBatch and write to file.
+    PARQUET_ASSIGN_OR_THROW(auto recordBatch, convertToRecordBatch(parquetDoc, schema));
+    // Write each batch as a row_groups
+    PARQUET_ASSIGN_OR_THROW(auto table, arrow::Table::FromRecordBatches(schema, {recordBatch}));
+
+    if (endsWithIgnoreCase(partOption.c_str(), "partition"))
+    {
+        reportIfFailure(writePartition(table));
+    }
+    else
+    {
+        reportIfFailure(writer->WriteTable(*(table.get()), recordBatch->num_rows()));
+    }
+}
+
+/**
+ * @brief Converts the vector of rapidjson::Documents into an arrow::RecordBatch and writes it to
+ * a file or partitioned dataset. Resizes the vector before converting to a RecordBatch.
+ *
+ * @param newSize The new size of the vector.
+ */
+void ParquetWriter::writeRecordBatch(std::size_t newSize)
+{
+    parquetDoc.resize(newSize);
+    writeRecordBatch();
+}
+
+/**
+ * @brief Returns a pointer to the top of the stack for the current row being built.
+ *
+ * @return A pointer to the rapidjson::Value containing the row
+ */
+rapidjson::Value *ParquetWriter::queryCurrentRow()
+{
+    return &rowStack[rowStack.size() - 1];
+}
+
+/**
+ * @brief A helper method for updating the current row on writes and keeping
+ * it within the boundary of the maxRowCountInBatch set by the user when creating RowGroups.
+ */
+void ParquetWriter::updateRow()
+{
+    if (++currentRow == maxRowCountInBatch)
+        currentRow = 0;
+}
+
+/**
+ * @brief Convert a vector of rapidjson::Documents containing single rows to an arrow::RecordBatch
+ *
+ * @param rows The vector of rows to be converted.
+ * @param schema The arrow::Schema of the rows being converted.
+ * @return An arrow::Result object containing the new RecordBatch.
+ */
+arrow::Result<std::shared_ptr<arrow::RecordBatch>> ParquetWriter::convertToRecordBatch(const std::vector<rapidjson::Document> &rows, std::shared_ptr<arrow::Schema> schema)
+{
+    // Create RecordBatchBuilder from schema and set the size
+    std::unique_ptr<arrow::RecordBatchBuilder> batchBuilder;
+    ARROW_ASSIGN_OR_RAISE(batchBuilder, arrow::RecordBatchBuilder::Make(schema, pool, rows.size()));
+
+    JsonValueConverter converter(rows);
+    for (int i = 0; i < batchBuilder->num_fields(); ++i)
+    {
+        std::shared_ptr<arrow::Field> field = schema->field(i);
+        arrow::ArrayBuilder *builder = batchBuilder->GetField(i);
+        ARROW_RETURN_NOT_OK(converter.Convert(*field.get(), builder));
+    }
+
+    std::shared_ptr<arrow::RecordBatch> batch;
+    ARROW_ASSIGN_OR_RAISE(batch, batchBuilder->Flush());
+
+    // Use RecordBatch::ValidateFull() to make sure arrays were correctly constructed.
+    reportIfFailure(batch->ValidateFull());
+    return batch;
+}
+
+/**
+ * @brief Creates the child record for an array or dataset type. This method is used for converting
+ * the ECL RtlFieldInfo object into arrow::Fields for creating a rapidjson document object.
+ *
+ * @param field The field containing metadata for the record.
+ * @returns An arrow::NestedType holding the schema and fields of the child records.
+ */
+std::shared_ptr<arrow::NestedType> ParquetWriter::makeChildRecord(const RtlFieldInfo *field)
+{
+    const RtlTypeInfo *typeInfo = field->type;
+    const RtlFieldInfo *const *fields = typeInfo->queryFields();
+    // Create child fields
+    if (fields)
+    {
+        int count = getNumFields(typeInfo);
+
+        std::vector<std::shared_ptr<arrow::Field>> childFields;
+
+        for (int i = 0; i < count; i++, fields++)
+        {
+            reportIfFailure(fieldToNode((*fields)->name, *fields, childFields));
+        }
+
+        return std::make_shared<arrow::StructType>(childFields);
+    }
+    else
+    {
+        // Create set
+        const RtlTypeInfo *child = typeInfo->queryChildType();
+        const RtlFieldInfo childFieldInfo = RtlFieldInfo("", "", child);
+        std::vector<std::shared_ptr<arrow::Field>> childField;
+        reportIfFailure(fieldToNode(childFieldInfo.name, &childFieldInfo, childField));
+        return std::make_shared<arrow::ListType>(childField[0]);
+    }
+}
+
+/**
+ * @brief Converts an RtlFieldInfo object into an arrow field and adds it to the output vector.
+ *
+ * @param name The name of the field
+ * @param field The field containing metadata for the record.
+ * @param arrowFields Output vector for pushing new nodes to.
+ * @return Status of the operation
+ */
+arrow::Status ParquetWriter::fieldToNode(const std::string &name, const RtlFieldInfo *field, std::vector<std::shared_ptr<arrow::Field>> &arrowFields)
+{
+    unsigned len = field->type->length;
+
+    switch (field->type->getType())
+    {
+    case type_boolean:
+        arrowFields.push_back(std::make_shared<arrow::Field>(name, arrow::boolean()));
+        break;
+    case type_int:
+        if (field->type->isSigned())
+        {
+            if (len > 4)
+            {
+                arrowFields.push_back(std::make_shared<arrow::Field>(name, arrow::int64()));
+            }
+            else
+            {
+                arrowFields.push_back(std::make_shared<arrow::Field>(name, arrow::int32()));
+            }
+        }
+        else
+        {
+            if (len > 4)
+            {
+                arrowFields.push_back(std::make_shared<arrow::Field>(name, arrow::uint64()));
+            }
+            else
+            {
+                arrowFields.push_back(std::make_shared<arrow::Field>(name, arrow::uint32()));
+            }
+        }
+        break;
+    case type_real:
+        arrowFields.push_back(std::make_shared<arrow::Field>(name, arrow::float64()));
+        break;
+    case type_string:
+        arrowFields.push_back(std::make_shared<arrow::Field>(name, arrow::utf8()));
+        break;
+    case type_char:
+        arrowFields.push_back(std::make_shared<arrow::Field>(name, arrow::utf8()));
+        break;
+    case type_varstring:
+        arrowFields.push_back(std::make_shared<arrow::Field>(name, arrow::utf8()));
+        break;
+    case type_qstring:
+        arrowFields.push_back(std::make_shared<arrow::Field>(name, arrow::utf8()));
+        break;
+    case type_unicode:
+        arrowFields.push_back(std::make_shared<arrow::Field>(name, arrow::utf8()));
+        break;
+    case type_utf8:
+        arrowFields.push_back(std::make_shared<arrow::Field>(name, arrow::utf8()));
+        break;
+    case type_decimal:
+        arrowFields.push_back(std::make_shared<arrow::Field>(name, arrow::utf8()));
+        break;
+    case type_data:
+        arrowFields.push_back(std::make_shared<arrow::Field>(name, arrow::large_binary()));
+        break;
+    case type_record:
+        arrowFields.push_back(std::make_shared<arrow::Field>(name, makeChildRecord(field)));
+        break;
+    case type_set:
+        arrowFields.push_back(std::make_shared<arrow::Field>(name, makeChildRecord(field)));
+        break;
+    default:
+        failx("Datatype %i is not compatible with this plugin.", field->type->getType());
+    }
+
+    return arrow::Status::OK();
+}
+
+/**
+ * @brief Creates an arrow::Schema from the field info of the row.
+ *
+ * @param typeInfo An RtlTypeInfo object that we iterate through to get all
+ * the information for the row.
+ */
+arrow::Status ParquetWriter::fieldsToSchema(const RtlTypeInfo *typeInfo)
+{
+    const RtlFieldInfo *const *fields = typeInfo->queryFields();
+    int count = getNumFields(typeInfo);
+
+    std::vector<std::shared_ptr<arrow::Field>> arrowFields;
+
+    for (int i = 0; i < count; i++, fields++)
+    {
+        ARROW_RETURN_NOT_OK(fieldToNode((*fields)->name, *fields, arrowFields));
+    }
+
+    schema = std::make_shared<arrow::Schema>(arrowFields);
+
+    // If writing a partitioned file also create the partitioning schema from the partitionFields set by the user
+    if (endsWithIgnoreCase(partOption.c_str(), "partition"))
+    {
+        arrow::FieldVector partitionSchema;
+        for (int i = 0; i < partitionFields.size(); i++)
+        {
+            auto field = schema->GetFieldByName(partitionFields[i]);
+            if (field)
+                partitionSchema.push_back(field);
+            else
+                failx("Field %s not found in RECORD definition of Parquet file.", partitionFields[i].c_str());
+        }
+
+        if (endsWithIgnoreCase(partOption.c_str(), "hivepartition"))
+            partitionType = std::make_shared<arrow::dataset::HivePartitioning>(std::make_shared<arrow::Schema>(partitionSchema));
+        else if (endsWithIgnoreCase(partOption.c_str(), "directorypartition"))
+            partitionType = std::make_shared<arrow::dataset::DirectoryPartitioning>(std::make_shared<arrow::Schema>(partitionSchema));
+        else
+            failx("Partitioning method %s is not supported.", partOption.c_str());
+    }
+
+    return arrow::Status::OK();
+}
+
+/**
+ * @brief Creates a rapidjson::Value with an array type and adds it to the stack
+ */
+void ParquetWriter::beginSet()
+{
+    rapidjson::Value row(rapidjson::kArrayType);
+    rowStack.push_back(std::move(row));
+}
+
+/**
+ * @brief Creates a rapidjson::Value with an object type and adds it to the stack
+ */
+void ParquetWriter::beginRow()
+{
+    rapidjson::Value row(rapidjson::kObjectType);
+    rowStack.push_back(std::move(row));
+}
+
+/**
+ * @brief Removes the value from the top of the stack and adds it the parent row.
+ * If there is only one value on the stack then it converts it to a rapidjson::Document.
+ *
+ * @param name The name of the row field.
+ */
+void ParquetWriter::endRow(const char *name)
+{
+    if (rowStack.size() > 1)
+    {
+        rapidjson::Value child = std::move(rowStack[rowStack.size() - 1]);
+        rowStack.pop_back();
+        rowStack[rowStack.size() - 1].AddMember(rapidjson::StringRef(name), child, jsonAlloc);
+    }
+    else
+    {
+        parquetDoc[currentRow].SetObject();
+
+        rapidjson::Value parent = std::move(rowStack[rowStack.size() - 1]);
+        rowStack.pop_back();
+
+        for (auto itr = parent.MemberBegin(); itr != parent.MemberEnd(); ++itr)
+        {
+            parquetDoc[currentRow].AddMember(itr->name, itr->value, jsonAlloc);
+        }
+    }
+}
+
+/**
+ * @brief Adds a key value pair to the current row being built for writing to parquet.
+ *
+ * @param key Field name of the column.
+ * @param value Value of the field.
+ */
+void ParquetWriter::addMember(rapidjson::Value &key, rapidjson::Value &value)
+{
+    rapidjson::Value *row = &rowStack[rowStack.size() - 1];
+    if(!row)
+        failx("Failed to add member to rapidjson row");
+    if (row->GetType() == rapidjson::kObjectType)
+        row->AddMember(key, value, jsonAlloc);
+    else
+        row->PushBack(value, jsonAlloc);
+}
+
+/**
+ * @brief Check the contents of the target location set by the user. If the overwrite option
+ * is true then any files in the target directory or matching the file mask will be deleted.
+ *
+ * @return arrow::Status::OK if all operations successful.
+ */
+arrow::Status ParquetWriter::checkDirContents()
 {
     if (destination.empty())
     {
@@ -201,682 +874,25 @@ arrow::Status ParquetHelper::checkDirContents()
 }
 
 /**
- * @brief Opens the write stream with the schema and destination. T
+ * @brief Create a ParquetRowBuilder and build a row. If all the rows in a table have been processed a
+ * new table will be read from the input file.
  *
+ * @return const void * Memory Address where result row is stored.
  */
-arrow::Status ParquetHelper::openWriteFile()
-{
-    if (destination == "")
-        failx("Invalid option: The destination was not supplied.");
-
-    if (partition)
-    {
-        ARROW_ASSIGN_OR_RAISE(auto filesystem, arrow::fs::FileSystemFromUriOrPath(destination));
-        auto format = std::make_shared<arrow::dataset::ParquetFileFormat>();
-        writeOptions.file_write_options = format->DefaultWriteOptions();
-        writeOptions.filesystem = filesystem;
-        writeOptions.base_dir = destination;
-        writeOptions.partitioning = partitionType;
-        writeOptions.existing_data_behavior = arrow::dataset::ExistingDataBehavior::kOverwriteOrIgnore;
-    }
-    else
-    {
-        if(!endsWith(destination.c_str(), ".parquet"))
-            failx("Error opening file: Invalid file extension for file %s", destination.c_str());
-
-        // Currently under the assumption that all channels and workers are given a worker id and no matter
-        // the configuration will show up in activityCtx->numSlaves()
-        if (activityCtx->numSlaves() > 1)
-        {
-            destination.insert(destination.find(".parquet"), std::to_string(activityCtx->querySlave()));
-        }
-
-        std::shared_ptr<arrow::io::FileOutputStream> outfile;
-
-        PARQUET_ASSIGN_OR_THROW(outfile, arrow::io::FileOutputStream::Open(destination));
-
-        // Choose compression
-        std::shared_ptr<parquet::WriterProperties> props = parquet::WriterProperties::Builder().compression(compressionOption)->build();
-
-        // Opt to store Arrow schema for easier reads back into Arrow
-        std::shared_ptr<parquet::ArrowWriterProperties> arrow_props = parquet::ArrowWriterProperties::Builder().store_schema()->build();
-
-        // Create a writer
-        ARROW_ASSIGN_OR_RAISE(writer, parquet::arrow::FileWriter::Open(*schema.get(), pool, outfile, props, arrow_props));
-    }
-    return arrow::Status::OK();
-}
-
-/**
- * @brief Opens the read stream with the schema and location.
- *
- */
-arrow::Status ParquetHelper::openReadFile()
-{
-    if (partition)
-    {
-        // Create a filesystem
-        std::shared_ptr<arrow::fs::FileSystem> fs;
-        ARROW_ASSIGN_OR_RAISE(fs, arrow::fs::FileSystemFromUriOrPath(location));
-
-        // FileSelector allows traversal of multi-file dataset
-        arrow::fs::FileSelector selector;
-        selector.base_dir = location; // The base directory to be searched is provided by the user in the location option.
-        selector.recursive = true;    // Selector will search the base path recursively for partitioned files.
-
-        // Create a file format
-        std::shared_ptr<arrow::dataset::ParquetFileFormat> format = std::make_shared<arrow::dataset::ParquetFileFormat>();
-
-        arrow::dataset::FileSystemFactoryOptions options;
-        if (endsWithIgnoreCase(partOption.c_str(), "hivepartition"))
-        {
-            options.partitioning = arrow::dataset::HivePartitioning::MakeFactory();
-        }
-        else if (endsWithIgnoreCase(partOption.c_str(), "directorypartition"))
-        {
-            options.partitioning = arrow::dataset::DirectoryPartitioning::MakeFactory(partitionFields);
-        }
-        else
-        {
-            failx("Incorrect partitioning type %s.", partOption.c_str());
-        }
-        // Create the dataset factory
-        PARQUET_ASSIGN_OR_THROW(auto dataset_factory, arrow::dataset::FileSystemDatasetFactory::Make(fs, selector, format, options));
-
-        // Get scanner
-        PARQUET_ASSIGN_OR_THROW(auto dataset, dataset_factory->Finish());
-        ARROW_ASSIGN_OR_RAISE(auto scan_builder, dataset->NewScan());
-        reportIfFailure(scan_builder->Pool(pool));
-        ARROW_ASSIGN_OR_RAISE(scanner, scan_builder->Finish());
-    }
-    else
-    {
-        StringBuffer filename;
-        StringBuffer path;
-        splitFilename(location.c_str(), nullptr, &path, &filename, nullptr, false);
-        Owned<IDirectoryIterator> itr = createDirectoryIterator(path.str(), filename.append("*.parquet"));
-
-        auto reader_properties = parquet::ReaderProperties(pool);
-        auto arrow_reader_props = parquet::ArrowReaderProperties();
-        ForEach (*itr)
-        {
-            IFile &file = itr->query();
-            parquet::arrow::FileReaderBuilder reader_builder;
-            reportIfFailure(reader_builder.OpenFile(file.queryFilename(), false, reader_properties));
-            reader_builder.memory_pool(pool);
-            reader_builder.properties(arrow_reader_props);
-            std::unique_ptr<parquet::arrow::FileReader> parquetFileReader;
-            reportIfFailure(reader_builder.Build(&parquetFileReader));
-            parquetFileReaders.push_back(std::move(parquetFileReader));
-        }
-    }
-    return arrow::Status::OK();
-}
-
-arrow::Status ParquetHelper::writePartition(std::shared_ptr<arrow::Table> table)
-{
-    // Create dataset for writing partitioned files.
-    auto dataset = std::make_shared<arrow::dataset::InMemoryDataset>(table);
-
-    StringBuffer basename_template;
-    basename_template.appendf("part{i}_%lld.parquet", tablesProcessed++);
-    writeOptions.basename_template = basename_template.str();
-
-    ARROW_ASSIGN_OR_RAISE(auto scanner_builder, dataset->NewScan());
-    reportIfFailure(scanner_builder->Pool(pool));
-    ARROW_ASSIGN_OR_RAISE(auto scanner, scanner_builder->Finish());
-
-    // Write partitioned files.
-    reportIfFailure(arrow::dataset::FileSystemDataset::Write(writeOptions, scanner));
-
-    return arrow::Status::OK();
-}
-
-/**
- * @brief Returns a pointer to the stream writer for writing to the destination.
- *
- * @return
- */
-parquet::arrow::FileWriter *ParquetHelper::queryWriter()
-{
-    return writer.get();
-}
-
-/**
- * @brief Returns a pointer to the top of the stack for the current row being built.
- *
- * @return A rapidjson::Value containing the row
- */
-rapidjson::Value *ParquetHelper::queryCurrentRow()
-{
-    return &rowStack[rowStack.size() - 1];
-}
-
-/**
- * @brief A helper method for updating the current row on writes and keeping
- * it within the boundary of the rowSize set by the user when creating RowGroups.
- */
-void ParquetHelper::updateRow()
-{
-    if (++currentRow == rowSize)
-        currentRow = 0;
-}
-
-std::vector<rapidjson::Document> &ParquetHelper::queryRecordBatch()
-{
-    return parquetDoc;
-}
-
-/**
- * @brief Divide row groups being read from a parquet file among any number of thor workers. If running hthor all row groups are assigned to it. This function
- * will handle all cases where the number of groups is greater than, less than or divisible by the number of thor workers.
- */
-void divide_row_groups(const IThorActivityContext *activityCtx, __int64 totalRowGroups, __int64 &numRowGroups, __int64 &startRowGroup)
-{
-    int workers = activityCtx->numSlaves();
-    int strands = activityCtx->numStrands();
-    int worker_id = activityCtx->querySlave();
-
-    // Currently under the assumption that all channels and workers are given a worker id and no matter
-    // the configuration will show up in activityCtx->numSlaves()
-    if (workers > 1)
-    {
-        // If the number of workers goes into totalRowGroups evenly then every worker gets the same amount
-        // of rows to read
-        if (totalRowGroups % workers == 0)
-        {
-            numRowGroups = totalRowGroups / workers;
-            startRowGroup = numRowGroups * worker_id;
-        }
-        // If the totalRowGroups is not evenly divisible by the number of workers then we divide them up
-        // with the first n-1 workers getting slightly more and the nth worker gets the remainder
-        else if (totalRowGroups > workers)
-        {
-            __int64 groupsPerWorker = totalRowGroups / workers;
-            __int64 remainder = totalRowGroups % workers;
-
-            if (worker_id < remainder)
-            {
-                numRowGroups = groupsPerWorker + 1;
-                startRowGroup = numRowGroups * worker_id;
-            }
-            else
-            {
-                numRowGroups = groupsPerWorker;
-                startRowGroup = (remainder * (numRowGroups + 1)) + ((worker_id - remainder) * numRowGroups);
-            }
-        }
-        // If the number of totalRowGroups is less than the number of workers we give as many as possible
-        // a single row group to read.
-        else
-        {
-            if (worker_id < totalRowGroups)
-            {
-                numRowGroups = 1;
-                startRowGroup = worker_id;
-            }
-            else
-            {
-                numRowGroups = 0;
-                startRowGroup = 0;
-            }
-        }
-    }
-    else
-    {
-        // There is only one worker
-        numRowGroups = totalRowGroups;
-        startRowGroup = 0;
-    }
-}
-
-void ParquetHelper::chunkTable(std::shared_ptr<arrow::Table> &table)
-{
-    auto columns = table->columns();
-    parquetTable.clear();
-    for (int i = 0; i < columns.size(); i++)
-    {
-        parquetTable.insert(std::make_pair(table->field(i)->name(), columns[i]->chunk(0)));
-    }
-}
-
-std::shared_ptr<parquet::arrow::RowGroupReader> ParquetHelper::queryCurrentTable(__int64 currTable)
-{
-    __int64 tables = 0;
-    __int64 offset = 0;
-    for (int i = 0; i < parquetFileReaders.size(); i++)
-    {
-        tables += fileTableCounts[i];
-        if (currTable < tables)
-        {
-            return parquetFileReaders[i]->RowGroup(currTable - offset);
-        }
-        offset = tables;
-    }
-    failx("Failed getting RowGroupReader. Index %lli is out of bounds.", currTable);
-}
-
-/**
- * @brief Sets the parquetTable member to the output of what is read from the given
- * parquet file.
- */
-arrow::Status ParquetHelper::processReadFile()
-{
-    if (partition)
-    {
-        // rowsProcessed starts at zero and we read in batches until it is equal to rowsCount
-        rowsProcessed = 0;
-        totalRowsProcessed = 0;
-        PARQUET_ASSIGN_OR_THROW(rbatchReader, scanner->ToRecordBatchReader());
-        rbatchItr = arrow::RecordBatchReader::RecordBatchReaderIterator(rbatchReader.get());
-        // Divide the work among any number of workers
-        PARQUET_ASSIGN_OR_THROW(auto total_rows, scanner->CountRows());
-        divide_row_groups(activityCtx, total_rows, totalRowCount, startRow);
-        if (totalRowCount != 0)
-        {
-            std::shared_ptr<arrow::Table> table;
-            PARQUET_ASSIGN_OR_THROW(table, queryRows());
-            rowsCount = table->num_rows();
-            chunkTable(table);
-            tablesProcessed++;
-        }
-        else
-        {
-            rowsCount = 0;
-        }
-    }
-    else
-    {
-        __int64 totalTables = 0;
-
-        for (int i = 0; i < parquetFileReaders.size(); i++)
-        {
-            __int64 tables = parquetFileReaders[i]->num_row_groups();
-            fileTableCounts.push_back(tables);
-            totalTables += tables;
-        }
-
-        divide_row_groups(activityCtx, totalTables, tableCount, startRowGroup);
-        rowsProcessed = 0;
-        if (tableCount != 0)
-        {
-            std::shared_ptr<arrow::Table> table;
-            reportIfFailure(queryCurrentTable(tablesProcessed + startRowGroup)->ReadTable(&table));
-            rowsCount = table->num_rows();
-            chunkTable(table);
-            tablesProcessed++;
-        }
-        else
-        {
-            rowsCount = 0;
-        }
-    }
-    return arrow::Status::OK();
-}
-
-/**
- * @brief Returns a boolean so we know if we are writing partitioned files.
- *
- * @return true If we are partitioning.
- * @return false If we are writing a single file.
- */
-bool ParquetHelper::partSetting()
-{
-    return partition;
-}
-
-/**
- * @brief Returns the maximum size of the row group set by the user. Default is 1000.
- *
- * @return int Maximum size of the row group.
- */
-__int64 ParquetHelper::getMaxRowSize()
-{
-    return rowSize;
-}
-
-char ParquetHelper::queryPartOptions()
-{
-    if (partOption[0] == 'W' || partOption[0] == 'w')
-    {
-        return 'w';
-    }
-    else if (partOption[0] == 'R' || partOption[0] == 'r')
-    {
-        return 'r';
-    }
-    else
-    {
-        failx("Invalid options parameter.");
-    }
-}
-
-/**
- * @brief Checks if all the rows have been read and if reading a single file all of the
- * RowGroups as well.
- *
- * @return True if there are more rows to be read and false if else.
- */
-bool ParquetHelper::shouldRead()
-{
-    if (partition)
-        return !(totalRowsProcessed >= totalRowCount);
-    else
-        return !(tablesProcessed >= tableCount && rowsProcessed >= rowsCount);
-}
-
-__int64 &ParquetHelper::getRowsProcessed()
-{
-    return rowsProcessed;
-}
-
-arrow::Result<std::shared_ptr<arrow::RecordBatch>> ParquetHelper::convertToRecordBatch(
-    const std::vector<rapidjson::Document> &rows, std::shared_ptr<arrow::Schema> schema)
-{
-    // RecordBatchBuilder will create array builders for us for each field in our
-    // schema. By passing the number of output rows (`rows.size()`) we can
-    // pre-allocate the correct size of arrays, except of course in the case of
-    // string, byte, and list arrays, which have dynamic lengths.
-    std::unique_ptr<arrow::RecordBatchBuilder> batch_builder;
-    ARROW_ASSIGN_OR_RAISE(
-        batch_builder,
-        arrow::RecordBatchBuilder::Make(schema, pool, rows.size()));
-
-    // Inner converter will take rows and be responsible for appending values
-    // to provided array builders.
-    JsonValueConverter converter(rows);
-    for (int i = 0; i < batch_builder->num_fields(); ++i)
-    {
-        std::shared_ptr<arrow::Field> field = schema->field(i);
-        arrow::ArrayBuilder *builder = batch_builder->GetField(i);
-        ARROW_RETURN_NOT_OK(converter.Convert(*field.get(), builder));
-    }
-
-    std::shared_ptr<arrow::RecordBatch> batch;
-    ARROW_ASSIGN_OR_RAISE(batch, batch_builder->Flush());
-
-    // Use RecordBatch::ValidateFull() to make sure arrays were correctly constructed.
-    reportIfFailure(batch->ValidateFull());
-    return batch;
-}
-
-arrow::Result<std::shared_ptr<arrow::Table>> ParquetHelper::queryRows()
-{
-    if (tablesProcessed == 0)
-    {
-        __int64 offset = (*rbatchItr)->get()->num_rows();
-        while (offset < startRow)
-        {
-            rbatchItr++;
-            offset += (*rbatchItr)->get()->num_rows();
-        }
-        rowsProcessed = (*rbatchItr)->get()->num_rows() - (offset - startRow);
-    }
-    PARQUET_ASSIGN_OR_THROW(auto batch, *rbatchItr);
-    rbatchItr++;
-    std::vector<std::shared_ptr<arrow::RecordBatch>> to_table = {batch};
-    return std::move(arrow::Table::FromRecordBatches(std::move(to_table)));
-}
-
-std::unordered_map<std::string, std::shared_ptr<arrow::Array>> &ParquetHelper::next()
-{
-    if (rowsProcessed == rowsCount)
-    {
-        if (partition)
-        {
-            // rowsProcessed starts at zero and we read in batches until it is equal to rowsCount
-            rowsProcessed = 0;
-            tablesProcessed++;
-            std::shared_ptr<arrow::Table> table;
-            PARQUET_ASSIGN_OR_THROW(table, queryRows());
-            rowsCount = table->num_rows();
-            chunkTable(table);
-        }
-        else
-        {
-            std::shared_ptr<arrow::Table> table;
-            reportIfFailure(queryCurrentTable(tablesProcessed + startRowGroup)->ReadTable(&table));
-            rowsProcessed = 0;
-            tablesProcessed++;
-            rowsCount = table->num_rows();
-            chunkTable(table);
-        }
-    }
-    totalRowsProcessed++;
-    return parquetTable;
-}
-
-__int64 ParquetHelper::queryRowsCount()
-{
-    return rowsCount;
-}
-
-/**
- * @brief Creates the child record for an array or dataset type. This method is used for converting
- * the ECL RtlFieldInfo object into arrow::Fields for creating a rapidjson document object.
- *
- * @param field The field containing metadata for the record.
- *
- * @returns An arrow::Structype holding the schema and fields of the child records.
- */
-std::shared_ptr<arrow::NestedType> ParquetHelper::makeChildRecord(const RtlFieldInfo *field)
-{
-    const RtlTypeInfo *typeInfo = field->type;
-    const RtlFieldInfo *const *fields = typeInfo->queryFields();
-    // Create child fields
-    if (fields)
-    {
-        int count = getNumFields(typeInfo);
-
-        std::vector<std::shared_ptr<arrow::Field>> child_fields;
-
-        for (int i = 0; i < count; i++, fields++)
-        {
-            reportIfFailure(fieldToNode((*fields)->name, *fields, child_fields));
-        }
-
-        return std::make_shared<arrow::StructType>(child_fields);
-    }
-    else
-    {
-        // Create set
-        const RtlTypeInfo *child = typeInfo->queryChildType();
-        const RtlFieldInfo childField = RtlFieldInfo("", "", child);
-        std::vector<std::shared_ptr<arrow::Field>> child_field;
-        reportIfFailure(fieldToNode(childField.name, &childField, child_field));
-        return std::make_shared<arrow::ListType>(child_field[0]);
-    }
-}
-
-/**
- * @brief Converts an RtlFieldInfo object into an arrow field and adds it to the output vector.
- *
- * @param name The name of the field
- *
- * @param field The field containing metadata for the record.
- *
- * @param arrow_fields Output vector for pushing new nodes to.
- *
- * @return Status of the operation
- */
-arrow::Status ParquetHelper::fieldToNode(const std::string &name, const RtlFieldInfo *field, std::vector<std::shared_ptr<arrow::Field>> &arrow_fields)
-{
-    unsigned len = field->type->length;
-
-    switch (field->type->getType())
-    {
-    case type_boolean:
-        arrow_fields.push_back(std::make_shared<arrow::Field>(name, arrow::boolean()));
-        break;
-    case type_int:
-        if (field->type->isSigned())
-        {
-            if (len > 4)
-            {
-                arrow_fields.push_back(std::make_shared<arrow::Field>(name, arrow::int64()));
-            }
-            else
-            {
-                arrow_fields.push_back(std::make_shared<arrow::Field>(name, arrow::int32()));
-            }
-        }
-        else
-        {
-            if (len > 4)
-            {
-                arrow_fields.push_back(std::make_shared<arrow::Field>(name, arrow::uint64()));
-            }
-            else
-            {
-                arrow_fields.push_back(std::make_shared<arrow::Field>(name, arrow::uint32()));
-            }
-        }
-        break;
-    case type_real:
-        arrow_fields.push_back(std::make_shared<arrow::Field>(name, arrow::float64()));
-        break;
-    case type_string:
-        arrow_fields.push_back(std::make_shared<arrow::Field>(name, arrow::utf8()));
-        break;
-    case type_char:
-        arrow_fields.push_back(std::make_shared<arrow::Field>(name, arrow::utf8()));
-        break;
-    case type_varstring:
-        arrow_fields.push_back(std::make_shared<arrow::Field>(name, arrow::utf8()));
-        break;
-    case type_qstring:
-        arrow_fields.push_back(std::make_shared<arrow::Field>(name, arrow::utf8()));
-        break;
-    case type_unicode:
-        arrow_fields.push_back(std::make_shared<arrow::Field>(name, arrow::utf8()));
-        break;
-    case type_utf8:
-        arrow_fields.push_back(std::make_shared<arrow::Field>(name, arrow::utf8()));
-        break;
-    case type_decimal:
-        arrow_fields.push_back(std::make_shared<arrow::Field>(name, arrow::utf8()));
-        break;
-    case type_data:
-        arrow_fields.push_back(std::make_shared<arrow::Field>(name, arrow::large_binary()));
-        break;
-    case type_record:
-        arrow_fields.push_back(std::make_shared<arrow::Field>(name, makeChildRecord(field)));
-        break;
-    case type_set:
-        arrow_fields.push_back(std::make_shared<arrow::Field>(name, makeChildRecord(field)));
-        break;
-    default:
-        failx("Datatype %i is not compatible with this plugin.", field->type->getType());
-    }
-
-    return arrow::Status::OK();
-}
-
-/**
- * @brief Creates an arrow::Schema from the field info of the row.
- * @param typeInfo An RtlTypeInfo object that we iterate through to get all
- * the information for the row.
- */
-arrow::Status ParquetHelper::fieldsToSchema(const RtlTypeInfo *typeInfo)
-{
-    const RtlFieldInfo *const *fields = typeInfo->queryFields();
-    int count = getNumFields(typeInfo);
-
-    std::vector<std::shared_ptr<arrow::Field>> arrow_fields;
-
-    for (int i = 0; i < count; i++, fields++)
-    {
-        ARROW_RETURN_NOT_OK(fieldToNode((*fields)->name, *fields, arrow_fields));
-    }
-
-    schema = std::make_shared<arrow::Schema>(arrow_fields);
-
-    if (partition)
-    {
-        arrow::FieldVector partitionSchema;
-        for (int i = 0; i < partitionFields.size(); i++)
-        {
-            auto field = schema->GetFieldByName(partitionFields[i]);
-            if (field)
-                partitionSchema.push_back(field);
-            else
-                failx("Field %s not found in RECORD definition of Parquet file.", partitionFields[i].c_str());
-        }
-
-        if (endsWithIgnoreCase(partOption.c_str(), "hivepartition"))
-            partitionType = std::make_shared<arrow::dataset::HivePartitioning>(std::make_shared<arrow::Schema>(partitionSchema));
-        else if (endsWithIgnoreCase(partOption.c_str(), "directorypartition"))
-            partitionType = std::make_shared<arrow::dataset::DirectoryPartitioning>(std::make_shared<arrow::Schema>(partitionSchema));
-        else
-            failx("Partitioning method %s is not supported.", partOption.c_str());
-    }
-
-    return arrow::Status::OK();
-}
-
-/**
- * @brief Creates a rapidjson::Value and adds it to the stack
- */
-void ParquetHelper::beginSet()
-{
-    rapidjson::Value row(rapidjson::kArrayType);
-    rowStack.push_back(std::move(row));
-}
-
-/**
- * @brief Creates a rapidjson::Value and adds it to the stack
- */
-void ParquetHelper::beginRow()
-{
-    rapidjson::Value row(rapidjson::kObjectType);
-    rowStack.push_back(std::move(row));
-}
-
-/**
- * @brief Removes the value from the top of the stack and adds it the parent row.
- * If there is only one value on the stack then it converts it to a rapidjson::Document.
- */
-void ParquetHelper::endRow(const char *name)
-{
-    if (rowStack.size() > 1)
-    {
-        rapidjson::Value child = std::move(rowStack[rowStack.size() - 1]);
-        rowStack.pop_back();
-        rowStack[rowStack.size() - 1].AddMember(rapidjson::StringRef(name), child, jsonAlloc);
-    }
-    else
-    {
-        parquetDoc[currentRow].SetObject();
-
-        rapidjson::Value parent = std::move(rowStack[rowStack.size() - 1]);
-        rowStack.pop_back();
-
-        for (auto itr = parent.MemberBegin(); itr != parent.MemberEnd(); ++itr)
-        {
-            parquetDoc[currentRow].AddMember(itr->name, itr->value, jsonAlloc);
-        }
-    }
-}
-
-ParquetRowStream::ParquetRowStream(IEngineRowAllocator *_resultAllocator, std::shared_ptr<ParquetHelper> _parquet)
-    : m_resultAllocator(_resultAllocator), s_parquet(_parquet)
-{
-    rowsCount = _parquet->queryRowsCount();
-}
-
 const void *ParquetRowStream::nextRow()
 {
-    if (m_shouldRead && s_parquet->shouldRead())
+    if (shouldRead && parquetReader->shouldRead())
     {
-        auto table = s_parquet->next();
-        m_currentRow++;
+        TableColumns *table = nullptr;
+        auto index = parquetReader->next(table);
+        currentRow++;
 
-        if (!table.empty())
+        if (table && !table->empty())
         {
-            ParquetRowBuilder pRowBuilder(&table, s_parquet->getRowsProcessed()++, &array_visitor);
+            ParquetRowBuilder pRowBuilder(table, index);
 
-            RtlDynamicRowBuilder rowBuilder(m_resultAllocator);
-            const RtlTypeInfo *typeInfo = m_resultAllocator->queryOutputMeta()->queryTypeInfo();
+            RtlDynamicRowBuilder rowBuilder(resultAllocator);
+            const RtlTypeInfo *typeInfo = resultAllocator->queryOutputMeta()->queryTypeInfo();
             assertex(typeInfo);
             RtlFieldStrInfo dummyField("<row>", NULL, typeInfo);
             size32_t len = typeInfo->build(rowBuilder, 0, &dummyField, pRowBuilder);
@@ -888,12 +904,21 @@ const void *ParquetRowStream::nextRow()
     return nullptr;
 }
 
+/**
+ * @brief Stop reading result rows from the Parquet file.
+ */
 void ParquetRowStream::stop()
 {
-    m_resultAllocator.clear();
-    m_shouldRead = false;
+    resultAllocator.clear();
+    shouldRead = false;
 }
 
+/**
+ * @brief Utility function for getting the xpath or field name from an RtlFieldInfo object.
+ *
+ * @param outXPath The buffer for storing output.
+ * @param field RtlFieldInfo object storing metadata for field.
+ */
 void ParquetRowBuilder::xpathOrName(StringBuffer &outXPath, const RtlFieldInfo *field) const
 {
     outXPath.clear();
@@ -924,125 +949,163 @@ void ParquetRowBuilder::xpathOrName(StringBuffer &outXPath, const RtlFieldInfo *
     }
 }
 
+/**
+ * @brief Gets the current array index taking into account the nested status of the row.
+ *
+ * @return int64_t The current array index of the value.
+ */
 int64_t ParquetRowBuilder::currArrayIndex()
 {
-    return !m_pathStack.empty() && m_pathStack.back().nodeType == CPNTSet ? m_pathStack.back().childrenProcessed++ : currentRow;
+    return !pathStack.empty() && pathStack.back().nodeType == CPNTSet ? pathStack.back().childrenProcessed++ : currentRow;
 }
 
-__int64 getSigned(std::shared_ptr<ParquetArrayVisitor> *array_visitor, int index)
+/**
+ * @brief Returns a Signed value depending on the size of the integer that was stored in parquet.
+ *
+ * @param arrayVisitor The ParquetVisitor class for getting a pointer to the column.
+ * @param index The index in the array to read a value from.
+ * @return __int64 Result value in the array..
+ */
+__int64 getSigned(std::shared_ptr<ParquetArrayVisitor> &arrayVisitor, int index)
 {
-    switch ((*array_visitor)->size)
+    switch (arrayVisitor->size)
     {
         case 8:
-            return (*array_visitor)->int8_arr->Value(index);
+            return arrayVisitor->int8Arr->Value(index);
         case 16:
-            return (*array_visitor)->int16_arr->Value(index);
+            return arrayVisitor->int16Arr->Value(index);
         case 32:
-            return (*array_visitor)->int32_arr->Value(index);
+            return arrayVisitor->int32Arr->Value(index);
         case 64:
-            return (*array_visitor)->int64_arr->Value(index);
+            return arrayVisitor->int64Arr->Value(index);
         default:
-            failx("getSigned: Invalid size %i", (*array_visitor)->size);
+            failx("getSigned: Invalid size %i", arrayVisitor->size);
     }
 }
 
-unsigned __int64 getUnsigned(std::shared_ptr<ParquetArrayVisitor> *array_visitor, int index)
+/**
+ * @brief Returns an Unsigned value depending on the size of the unsigned integer that was stored in parquet.
+ *
+ * @param arrayVisitor The ParquetVisitor class for getting a pointer to the column.
+ * @param index The index in the array to read a value from.
+ * @return unsigned __int64 Result value in the array.
+ */
+unsigned __int64 getUnsigned(std::shared_ptr<ParquetArrayVisitor> &arrayVisitor, int index)
 {
-    switch ((*array_visitor)->size)
+    switch (arrayVisitor->size)
     {
         case 8:
-            return (*array_visitor)->uint8_arr->Value(index);
+            return arrayVisitor->uint8Arr->Value(index);
         case 16:
-            return (*array_visitor)->uint16_arr->Value(index);
+            return arrayVisitor->uint16Arr->Value(index);
         case 32:
-            return (*array_visitor)->uint32_arr->Value(index);
+            return arrayVisitor->uint32Arr->Value(index);
         case 64:
-            return (*array_visitor)->uint64_arr->Value(index);
+            return arrayVisitor->uint64Arr->Value(index);
         default:
-            failx("getUnsigned: Invalid size %i", (*array_visitor)->size);
+            failx("getUnsigned: Invalid size %i", arrayVisitor->size);
     }
 }
 
-double getReal(std::shared_ptr<ParquetArrayVisitor> *array_visitor, int index)
+/**
+ * @brief Returns a Real value depending on the size of the double that was stored in parquet.
+ *
+ * @param arrayVisitor The ParquetVisitor class for getting a pointer to the column.
+ * @param index The index in the array to read a value from.
+ * @return double Result value in the array.
+ */
+double getReal(std::shared_ptr<ParquetArrayVisitor> &arrayVisitor, int index)
 {
-    switch ((*array_visitor)->size)
+    switch (arrayVisitor->size)
     {
         case 2:
-            return (*array_visitor)->half_float_arr->Value(index);
+            return arrayVisitor->halfFloatArr->Value(index);
         case 4:
-            return (*array_visitor)->float_arr->Value(index);
+            return arrayVisitor->floatArr->Value(index);
         case 8:
-            return (*array_visitor)->double_arr->Value(index);
+            return arrayVisitor->doubleArr->Value(index);
         default:
-            failx("getReal: Invalid size %i", (*array_visitor)->size);
+            failx("getReal: Invalid size %i", arrayVisitor->size);
     }
 }
 
+/**
+ * @brief Gets the value as a string_view. If the field is a numeric type it is serialized to a StringBuffer.
+ *
+ * @param field Field information used for warning the user if a type is unsupported.
+ * @return std::string_view A view of the current result.
+ */
 std::string_view ParquetRowBuilder::getCurrView(const RtlFieldInfo *field)
 {
     serialized.clear();
 
-    switch((*array_visitor)->type)
+    switch(arrayVisitor->type)
     {
         case BoolType:
-            tokenSerializer.serialize((*array_visitor)->bool_arr->Value(currArrayIndex()), serialized);
+            tokenSerializer.serialize(arrayVisitor->boolArr->Value(currArrayIndex()), serialized);
             return serialized.str();
         case BinaryType:
-            return (*array_visitor)->bin_arr->GetView(currArrayIndex());
+            return arrayVisitor->binArr->GetView(currArrayIndex());
         case LargeBinaryType:
-            return (*array_visitor)->large_bin_arr->GetView(currArrayIndex());
+            return arrayVisitor->largeBinArr->GetView(currArrayIndex());
         case RealType:
-            tokenSerializer.serialize(getReal(array_visitor, currArrayIndex()), serialized);
+            tokenSerializer.serialize(getReal(arrayVisitor, currArrayIndex()), serialized);
             return serialized.str();
         case IntType:
-            tokenSerializer.serialize(getSigned(array_visitor, currArrayIndex()), serialized);
+            tokenSerializer.serialize(getSigned(arrayVisitor, currArrayIndex()), serialized);
             return serialized.str();
         case UIntType:
-            tokenSerializer.serialize(getUnsigned(array_visitor, currArrayIndex()), serialized);
+            tokenSerializer.serialize(getUnsigned(arrayVisitor, currArrayIndex()), serialized);
             return serialized.str();
         case DateType:
-            tokenSerializer.serialize((*array_visitor)->size == 32 ? (__int32) (*array_visitor)->date32_arr->Value(currArrayIndex()) : (__int64) (*array_visitor)->date64_arr->Value(currArrayIndex()), serialized);
+            tokenSerializer.serialize(arrayVisitor->size == 32 ? (__int32) arrayVisitor->date32Arr->Value(currArrayIndex()) : (__int64) arrayVisitor->date64Arr->Value(currArrayIndex()), serialized);
             return serialized.str();
         case TimestampType:
-            tokenSerializer.serialize((__int64) (*array_visitor)->timestamp_arr->Value(currArrayIndex()), serialized);
+            tokenSerializer.serialize((__int64) arrayVisitor->timestampArr->Value(currArrayIndex()), serialized);
             return serialized.str();
         case TimeType:
-            tokenSerializer.serialize((*array_visitor)->size == 32 ? (__int32) (*array_visitor)->time32_arr->Value(currArrayIndex()) : (__int64) (*array_visitor)->time64_arr->Value(currArrayIndex()), serialized);
+            tokenSerializer.serialize(arrayVisitor->size == 32 ? (__int32) arrayVisitor->time32Arr->Value(currArrayIndex()) : (__int64) arrayVisitor->time64Arr->Value(currArrayIndex()), serialized);
             return serialized.str();
         case DurationType:
-            tokenSerializer.serialize((__int64) (*array_visitor)->duration_arr->Value(currArrayIndex()), serialized);
+            tokenSerializer.serialize((__int64) arrayVisitor->durationArr->Value(currArrayIndex()), serialized);
             return serialized.str();
         case StringType:
-            return (*array_visitor)->string_arr->GetView(currArrayIndex());
+            return arrayVisitor->stringArr->GetView(currArrayIndex());
         case LargeStringType:
-            return (*array_visitor)->large_string_arr->GetView(currArrayIndex());
+            return arrayVisitor->largeStringArr->GetView(currArrayIndex());
         case DecimalType:
-            return (*array_visitor)->size == 128 ? (*array_visitor)->dec_arr->GetView(currArrayIndex()) : (*array_visitor)->large_dec_arr->GetView(currArrayIndex());
+            return arrayVisitor->size == 128 ? arrayVisitor->decArr->GetView(currArrayIndex()) : arrayVisitor->largeDecArr->GetView(currArrayIndex());
         default:
             failx("Unimplemented Parquet type for field with name %s.", field->name);
     }
 }
 
+/**
+ * @brief Get the current value as an Integer.
+ *
+ * @param field Field information used for warning the user if a type is unsupported.
+ * @return __int64 The current value in the column.
+ */
 __int64 ParquetRowBuilder::getCurrIntValue(const RtlFieldInfo *field)
 {
-    switch ((*array_visitor)->type)
+    switch (arrayVisitor->type)
     {
         case BoolType:
-            return (*array_visitor)->bool_arr->Value(currArrayIndex());
+            return arrayVisitor->boolArr->Value(currArrayIndex());
         case IntType:
-            return getSigned(array_visitor, currArrayIndex());
+            return getSigned(arrayVisitor, currArrayIndex());
         case UIntType:
-            return getUnsigned(array_visitor, currArrayIndex());
+            return getUnsigned(arrayVisitor, currArrayIndex());
         case RealType:
-            return getReal(array_visitor, currArrayIndex());
+            return getReal(arrayVisitor, currArrayIndex());
         case DateType:
-            return (*array_visitor)->size == 32 ? (*array_visitor)->date32_arr->Value(currArrayIndex()) : (*array_visitor)->date64_arr->Value(currArrayIndex());
+            return arrayVisitor->size == 32 ? arrayVisitor->date32Arr->Value(currArrayIndex()) : arrayVisitor->date64Arr->Value(currArrayIndex());
         case TimestampType:
-            return (*array_visitor)->timestamp_arr->Value(currArrayIndex());
+            return arrayVisitor->timestampArr->Value(currArrayIndex());
         case TimeType:
-            return (*array_visitor)->size == 32 ? (*array_visitor)->time32_arr->Value(currArrayIndex()) : (*array_visitor)->time64_arr->Value(currArrayIndex());
+            return arrayVisitor->size == 32 ? arrayVisitor->time32Arr->Value(currArrayIndex()) : arrayVisitor->time64Arr->Value(currArrayIndex());
         case DurationType:
-            return (*array_visitor)->duration_arr->Value(currArrayIndex());
+            return arrayVisitor->durationArr->Value(currArrayIndex());
         default:
         {
             __int64 myint64 = 0;
@@ -1054,26 +1117,32 @@ __int64 ParquetRowBuilder::getCurrIntValue(const RtlFieldInfo *field)
     }
 }
 
+/**
+ * @brief Get the current value as a Double.
+ *
+ * @param field Field information used for warning the user if a type is unsupported.
+ * @return double The current value in the column.
+ */
 double ParquetRowBuilder::getCurrRealValue(const RtlFieldInfo *field)
 {
-    switch ((*array_visitor)->type)
+    switch (arrayVisitor->type)
     {
         case BoolType:
-            return (*array_visitor)->bool_arr->Value(currArrayIndex());
+            return arrayVisitor->boolArr->Value(currArrayIndex());
         case IntType:
-            return getSigned(array_visitor, currArrayIndex());
+            return getSigned(arrayVisitor, currArrayIndex());
         case UIntType:
-            return getUnsigned(array_visitor, currArrayIndex());
+            return getUnsigned(arrayVisitor, currArrayIndex());
         case RealType:
-            return getReal(array_visitor, currArrayIndex());
+            return getReal(arrayVisitor, currArrayIndex());
         case DateType:
-            return (*array_visitor)->size == 32 ? (*array_visitor)->date32_arr->Value(currArrayIndex()) : (*array_visitor)->date64_arr->Value(currArrayIndex());
+            return arrayVisitor->size == 32 ? arrayVisitor->date32Arr->Value(currArrayIndex()) : arrayVisitor->date64Arr->Value(currArrayIndex());
         case TimestampType:
-            return (*array_visitor)->timestamp_arr->Value(currArrayIndex());
+            return arrayVisitor->timestampArr->Value(currArrayIndex());
         case TimeType:
-            return (*array_visitor)->size == 32 ? (*array_visitor)->time32_arr->Value(currArrayIndex()) : (*array_visitor)->time64_arr->Value(currArrayIndex());
+            return arrayVisitor->size == 32 ? arrayVisitor->time32Arr->Value(currArrayIndex()) : arrayVisitor->time64Arr->Value(currArrayIndex());
         case DurationType:
-            return (*array_visitor)->duration_arr->Value(currArrayIndex());
+            return arrayVisitor->durationArr->Value(currArrayIndex());
         default:
         {
             double mydouble = 0.0;
@@ -1095,7 +1164,7 @@ bool ParquetRowBuilder::getBooleanResult(const RtlFieldInfo *field)
 {
     nextField(field);
 
-    if ((*array_visitor)->type == NullType)
+    if (arrayVisitor->type == NullType)
     {
         NullFieldProcessor p(field);
         return p.boolResult;
@@ -1105,17 +1174,17 @@ bool ParquetRowBuilder::getBooleanResult(const RtlFieldInfo *field)
 }
 
 /**
- * @brief Gets a data result from the result row and passes it back to engine through result.
+ * @brief Gets a Data value from the result row.
  *
  * @param field Holds the value of the field.
  * @param len Length of the Data value.
- * @param result Used for returning the result to the caller.
+ * @param result Pointer to return value stored in memory.
  */
 void ParquetRowBuilder::getDataResult(const RtlFieldInfo *field, size32_t &len, void *&result)
 {
     nextField(field);
 
-    if ((*array_visitor)->type == NullType)
+    if (arrayVisitor->type == NullType)
     {
         NullFieldProcessor p(field);
         rtlUtf8ToDataX(len, result, p.resultChars, p.stringResult);
@@ -1128,7 +1197,7 @@ void ParquetRowBuilder::getDataResult(const RtlFieldInfo *field, size32_t &len, 
 }
 
 /**
- * @brief Gets a real result from the result row.
+ * @brief Gets a Real value from the result row.
  *
  * @param field Holds the value of the field.
  * @return double Double value to return.
@@ -1137,7 +1206,7 @@ double ParquetRowBuilder::getRealResult(const RtlFieldInfo *field)
 {
     nextField(field);
 
-    if ((*array_visitor)->type == NullType)
+    if (arrayVisitor->type == NullType)
     {
         NullFieldProcessor p(field);
         return p.doubleResult;
@@ -1147,7 +1216,7 @@ double ParquetRowBuilder::getRealResult(const RtlFieldInfo *field)
 }
 
 /**
- * @brief Gets the Signed Integer result from the result row.
+ * @brief Gets the Signed Integer value from the result row.
  *
  * @param field Holds the value of the field.
  * @return __int64 Value to return.
@@ -1156,7 +1225,7 @@ __int64 ParquetRowBuilder::getSignedResult(const RtlFieldInfo *field)
 {
     nextField(field);
 
-    if ((*array_visitor)->type == NullType)
+    if (arrayVisitor->type == NullType)
     {
         NullFieldProcessor p(field);
         return p.intResult;
@@ -1166,7 +1235,7 @@ __int64 ParquetRowBuilder::getSignedResult(const RtlFieldInfo *field)
 }
 
 /**
- * @brief Gets the Unsigned Integer result from the result row.
+ * @brief Gets the Unsigned Integer value from the result row.
  *
  * @param field Holds the value of the field.
  * @return unsigned Value to return.
@@ -1175,14 +1244,14 @@ unsigned __int64 ParquetRowBuilder::getUnsignedResult(const RtlFieldInfo *field)
 {
     nextField(field);
 
-    if ((*array_visitor)->type == NullType)
+    if (arrayVisitor->type == NullType)
     {
         NullFieldProcessor p(field);
         return p.uintResult;
     }
 
-    if ((*array_visitor)->type == UIntType)
-        return getUnsigned(array_visitor, currArrayIndex());
+    if (arrayVisitor->type == UIntType)
+        return getUnsigned(arrayVisitor, currArrayIndex());
     else
         return getCurrIntValue(field);
 }
@@ -1192,13 +1261,13 @@ unsigned __int64 ParquetRowBuilder::getUnsignedResult(const RtlFieldInfo *field)
  *
  * @param field Holds the value of the field.
  * @param chars Number of chars in the String.
- * @param result Variable used for returning string back to the caller.
+ * @param result Pointer to return value stored in memory.
  */
 void ParquetRowBuilder::getStringResult(const RtlFieldInfo *field, size32_t &chars, char *&result)
 {
     nextField(field);
 
-    if ((*array_visitor)->type == NullType)
+    if (arrayVisitor->type == NullType)
     {
         NullFieldProcessor p(field);
         rtlUtf8ToStrX(chars, result, p.resultChars, p.stringResult);
@@ -1211,17 +1280,17 @@ void ParquetRowBuilder::getStringResult(const RtlFieldInfo *field, size32_t &cha
 }
 
 /**
- * @brief Gets a UTF8 from the result row.
+ * @brief Gets a UTF8 string from the result row.
  *
  * @param field Holds the value of the field.
  * @param chars Number of chars in the UTF8.
- * @param result Variable used for returning UTF8 back to the caller.
+ * @param result Pointer to return value stored in memory.
  */
 void ParquetRowBuilder::getUTF8Result(const RtlFieldInfo *field, size32_t &chars, char *&result)
 {
     nextField(field);
 
-    if ((*array_visitor)->type == NullType)
+    if (arrayVisitor->type == NullType)
     {
         NullFieldProcessor p(field);
         rtlUtf8ToUtf8X(chars, result, p.resultChars, p.stringResult);
@@ -1234,17 +1303,17 @@ void ParquetRowBuilder::getUTF8Result(const RtlFieldInfo *field, size32_t &chars
 }
 
 /**
- * @brief Gets a Unicode from the result row.
+ * @brief Gets a Unicode string from the result row.
  *
  * @param field Holds the value of the field.
  * @param chars Number of chars in the Unicode.
- * @param result Variable used for returning Unicode back to the caller.
+ * @param result Pointer to return value stored in memory.
  */
 void ParquetRowBuilder::getUnicodeResult(const RtlFieldInfo *field, size32_t &chars, UChar *&result)
 {
     nextField(field);
 
-    if ((*array_visitor)->type == NullType)
+    if (arrayVisitor->type == NullType)
     {
         NullFieldProcessor p(field);
         rtlUnicodeToUnicodeX(chars, result, p.resultChars, p.unicodeResult);
@@ -1266,13 +1335,12 @@ void ParquetRowBuilder::getDecimalResult(const RtlFieldInfo *field, Decimal &val
 {
     nextField(field);
 
-    if ((*array_visitor)->type == NullType)
+    if (arrayVisitor->type == NullType)
     {
         NullFieldProcessor p(field);
         value.set(p.decimalResult);
         return;
     }
-
     auto dvalue = getCurrView(field);
     value.setString(dvalue.size(), dvalue.data());
     RtlDecimalTypeInfo *dtype = (RtlDecimalTypeInfo *)field->type;
@@ -1291,11 +1359,11 @@ void ParquetRowBuilder::processBeginSet(const RtlFieldInfo *field, bool &isAll)
     isAll = false; // ALL not supported
     nextField(field);
 
-    if ((*array_visitor)->type == ListType)
+    if (arrayVisitor->type == ListType)
     {
-        PathTracker newPathNode(field->name, (*array_visitor)->list_arr, CPNTSet);
-        newPathNode.childCount = (*array_visitor)->list_arr->value_slice(currentRow)->length();
-        m_pathStack.push_back(newPathNode);
+        PathTracker newPathNode(field->name, arrayVisitor->listArr, CPNTSet);
+        newPathNode.childCount = arrayVisitor->listArr->value_slice(currentRow)->length();
+        pathStack.push_back(newPathNode);
     }
     else
     {
@@ -1307,12 +1375,12 @@ void ParquetRowBuilder::processBeginSet(const RtlFieldInfo *field, bool &isAll)
  * @brief Checks if we should process another set.
  *
  * @param field Context information about the set.
- * @return true If the children that we have process is less than the total child count.
+ * @return true If the children that we have processed is less than the total child count.
  * @return false If all the children sets have been processed.
  */
 bool ParquetRowBuilder::processNextSet(const RtlFieldInfo *field)
 {
-    return m_pathStack.back().finishedChildren();
+    return pathStack.back().finishedChildren();
 }
 
 /**
@@ -1340,9 +1408,9 @@ void ParquetRowBuilder::processBeginRow(const RtlFieldInfo *field)
         if (strncmp(xpath, "<row>", 5) != 0)
         {
             nextField(field);
-            if ((*array_visitor)->type == StructType)
+            if (arrayVisitor->type == StructType)
             {
-                m_pathStack.push_back(PathTracker(field->name, (*array_visitor)->struct_arr, CPNTScalar));
+                pathStack.push_back(PathTracker(field->name, arrayVisitor->structArr, CPNTScalar));
             }
             else
             {
@@ -1365,7 +1433,7 @@ void ParquetRowBuilder::processBeginRow(const RtlFieldInfo *field)
  */
 bool ParquetRowBuilder::processNextRow(const RtlFieldInfo *field)
 {
-    return m_pathStack.back().childrenProcessed < m_pathStack.back().childCount;
+    return pathStack.back().childrenProcessed < pathStack.back().childCount;
 }
 
 /**
@@ -1378,9 +1446,9 @@ void ParquetRowBuilder::processEndSet(const RtlFieldInfo *field)
     StringBuffer xpath;
     xpathOrName(xpath, field);
 
-    if (!xpath.isEmpty() && !m_pathStack.empty() && strcmp(xpath.str(), m_pathStack.back().nodeName) == 0)
+    if (!xpath.isEmpty() && !pathStack.empty() && strcmp(xpath.str(), pathStack.back().nodeName) == 0)
     {
-        m_pathStack.pop_back();
+        pathStack.pop_back();
     }
 }
 
@@ -1406,15 +1474,15 @@ void ParquetRowBuilder::processEndRow(const RtlFieldInfo *field)
 
     if (!xpath.isEmpty())
     {
-        if (!m_pathStack.empty())
+        if (!pathStack.empty())
         {
-            if (m_pathStack.back().nodeType == CPNTDataset)
+            if (pathStack.back().nodeType == CPNTDataset)
             {
-                m_pathStack.back().childrenProcessed++;
+                pathStack.back().childrenProcessed++;
             }
-            else if (strcmp(xpath.str(), m_pathStack.back().nodeName) == 0)
+            else if (strcmp(xpath.str(), pathStack.back().nodeName) == 0)
             {
-                m_pathStack.pop_back();
+                pathStack.pop_back();
             }
         }
     }
@@ -1424,19 +1492,24 @@ void ParquetRowBuilder::processEndRow(const RtlFieldInfo *field)
     }
 }
 
+/**
+ * @brief Applies a visitor to the nested value of a Struct or List field.
+ *
+ * @param field Information about the context of the field.
+ */
 void ParquetRowBuilder::nextFromStruct(const RtlFieldInfo *field)
 {
-    auto structPtr = m_pathStack.back().structPtr;
-    reportIfFailure(structPtr->Accept((*array_visitor).get()));
-    if (m_pathStack.back().nodeType == CPNTScalar)
+    auto structPtr = pathStack.back().structPtr;
+    reportIfFailure(structPtr->Accept(arrayVisitor.get()));
+    if (pathStack.back().nodeType == CPNTScalar)
     {
-        auto child = (*array_visitor)->struct_arr->GetFieldByName(field->name);
-        reportIfFailure(child->Accept((*array_visitor).get()));
+        auto child = arrayVisitor->structArr->GetFieldByName(field->name);
+        reportIfFailure(child->Accept(arrayVisitor.get()));
     }
-    else if (m_pathStack.back().nodeType == CPNTSet)
+    else if (pathStack.back().nodeType == CPNTSet)
     {
-        auto child = (*array_visitor)->list_arr->value_slice(currentRow);
-        reportIfFailure(child->Accept((*array_visitor).get()));
+        auto child = arrayVisitor->listArr->value_slice(currentRow);
+        reportIfFailure(child->Accept(arrayVisitor.get()));
     }
 }
 
@@ -1444,7 +1517,6 @@ void ParquetRowBuilder::nextFromStruct(const RtlFieldInfo *field)
  * @brief Gets the next field and processes it.
  *
  * @param field Information about the context of the next field.
- * @return const char* Result of building field.
  */
 void ParquetRowBuilder::nextField(const RtlFieldInfo *field)
 {
@@ -1452,20 +1524,26 @@ void ParquetRowBuilder::nextField(const RtlFieldInfo *field)
     {
         failx("Field name is empty.");
     }
-    if (m_pathStack.size() > 0)
+    if (pathStack.size() > 0)
     {
         nextFromStruct(field);
         return;
     }
-    (*array_visitor) = std::make_shared<ParquetArrayVisitor>();
-    auto column = result_rows->find(field->xpath ? field->xpath : field->name);
-    if (column != result_rows->end())
+    arrayVisitor = std::make_shared<ParquetArrayVisitor>();
+    auto column = resultRows->find(field->xpath ? field->xpath : field->name);
+    if (column != resultRows->end())
     {
-        reportIfFailure(column->second->Accept((*array_visitor).get()));
+        reportIfFailure(column->second->Accept(arrayVisitor.get()));
         return;
     }
 }
 
+/**
+ * @brief Logs what fields were bound to what index and increments the current parameter.
+ *
+ * @param field The field metadata.
+ * @return The current parameter index.
+ */
 unsigned ParquetRecordBinder::checkNextParam(const RtlFieldInfo *field)
 {
     if (logctx.queryTraceLevel() > 4)
@@ -1473,6 +1551,11 @@ unsigned ParquetRecordBinder::checkNextParam(const RtlFieldInfo *field)
     return thisParam++;
 }
 
+/**
+ * @brief Counts the fields in the row.
+ *
+ * @return int The number of fields.
+ */
 int ParquetRecordBinder::numFields()
 {
     int count = 0;
@@ -1483,42 +1566,15 @@ int ParquetRecordBinder::numFields()
     return count;
 }
 
-static void addMember(std::shared_ptr<ParquetHelper> r_parquet, rapidjson::Value &key, rapidjson::Value &value)
-{
-    rapidjson::Value *row = r_parquet->queryCurrentRow();
-    if(!row)
-        failx("Failed to add member to rapidjson row");
-    if (row->GetType() == rapidjson::kObjectType)
-        row->AddMember(key, value, jsonAlloc);
-    else
-        row->PushBack(value, jsonAlloc);
-}
-
 /**
- * @brief Writes the value to the parquet file using the StreamWriter from the ParquetHelper class.
+ * @brief Writes the value to the Parquet file using the StreamWriter from the ParquetWriter class.
  *
  * @param len Number of chars in value.
- * @param value pointer to value of parameter.
- * @param field RtlFieldInfo holds meta information about the embed context.
- * @param r_parquet Shared pointer to helper class that operates the parquet functions for us.
+ * @param value Pointer to value of parameter.
+ * @param field RtlFieldInfo holds metadata about the field.
+ * @param parquetWriter ParquetWriter object that holds the rapidjson::Value vector for building the rows
  */
-void bindUtf8Param(unsigned len, const char *value, const RtlFieldInfo *field, std::shared_ptr<ParquetHelper> r_parquet)
-{
-    rapidjson::Value key = rapidjson::Value(field->name, jsonAlloc);
-    rapidjson::Value val = rapidjson::Value(value, rtlUtf8Size(len, value), jsonAlloc);
-
-    addMember(r_parquet, key, val);
-}
-
-/**
- * @brief Writes the value to the parquet file using the StreamWriter from the ParquetHelper class.
- *
- * @param len Number of chars in value.
- * @param value pointer to value of parameter.
- * @param field RtlFieldInfo holds meta information about the embed context.
- * @param r_parquet Shared pointer to helper class that operates the parquet functions for us.
- */
-void bindStringParam(unsigned len, const char *value, const RtlFieldInfo *field, std::shared_ptr<ParquetHelper> r_parquet)
+void bindStringParam(unsigned len, const char *value, const RtlFieldInfo *field, std::shared_ptr<ParquetWriter> parquetWriter)
 {
     size32_t utf8chars;
     rtlDataAttr utf8;
@@ -1527,124 +1583,7 @@ void bindStringParam(unsigned len, const char *value, const RtlFieldInfo *field,
     rapidjson::Value key = rapidjson::Value(field->name, jsonAlloc);
     rapidjson::Value val = rapidjson::Value(std::string(utf8.getstr(), rtlUtf8Size(utf8chars, utf8.getdata())), jsonAlloc);
 
-    addMember(r_parquet, key, val);
-}
-
-/**
- * @brief Writes the value to the parquet file using the StreamWriter from the ParquetHelper class.
- *
- * @param value pointer to value of parameter.
- * @param field RtlFieldInfo holds meta information about the embed context.
- * @param r_parquet Shared pointer to helper class that operates the parquet functions for us.
- */
-void bindBoolParam(bool value, const RtlFieldInfo *field, std::shared_ptr<ParquetHelper> r_parquet)
-{
-    rapidjson::Value key = rapidjson::Value(field->name, jsonAlloc);
-    rapidjson::Value val = rapidjson::Value(value);
-
-    addMember(r_parquet, key, val);
-}
-
-/**
- * @brief Writes the value to the parquet file using the StreamWriter from the ParquetHelper class.
- *
- * @param len Number of chars in value.
- * @param value pointer to value of parameter.
- * @param field RtlFieldInfo holds meta information about the embed context.
- * @param r_parquet Shared pointer to helper class that operates the parquet functions for us.
- */
-void bindDataParam(unsigned len, const char *value, const RtlFieldInfo *field, std::shared_ptr<ParquetHelper> r_parquet)
-{
-    rapidjson::Value key;
-    key.SetString(field->name, jsonAlloc);
-    rapidjson::Value val;
-    val.SetString(value, len, jsonAlloc);
-
-    addMember(r_parquet, key, val);
-}
-
-/**
- * @brief Writes the value to the parquet file using the StreamWriter from the ParquetHelper class.
- *
- * @param value pointer to value of parameter.
- * @param field RtlFieldInfo holds meta information about the embed context.
- * @param r_parquet Shared pointer to helper class that operates the parquet functions for us.
- */
-void bindIntParam(__int64 value, const RtlFieldInfo *field, std::shared_ptr<ParquetHelper> r_parquet)
-{
-    int64_t val = value;
-
-    rapidjson::Value key = rapidjson::Value(field->name, jsonAlloc);
-    rapidjson::Value num(val);
-
-    addMember(r_parquet, key, num);
-}
-
-/**
- * @brief Writes the value to the parquet file using the StreamWriter from the ParquetHelper class.
- *
- * @param value pointer to value of parameter.
- * @param field RtlFieldInfo holds meta information about the embed context.
- * @param r_parquet Shared pointer to helper class that operates the parquet functions for us.
- */
-void bindUIntParam(unsigned __int64 value, const RtlFieldInfo *field, std::shared_ptr<ParquetHelper> r_parquet)
-{
-    uint64_t val = value;
-
-    rapidjson::Value key = rapidjson::Value(field->name, jsonAlloc);
-    rapidjson::Value num(val);
-
-    addMember(r_parquet, key, num);
-}
-
-/**
- * @brief Writes the value to the parquet file using the StreamWriter from the ParquetHelper class.
- *
- * @param value pointer to value of parameter.
- * @param field RtlFieldInfo holds meta information about the embed context.
- * @param r_parquet Shared pointer to helper class that operates the parquet functions for us.
- */
-void bindRealParam(double value, const RtlFieldInfo *field, std::shared_ptr<ParquetHelper> r_parquet)
-{
-    rapidjson::Value key = rapidjson::Value(field->name, jsonAlloc);
-    rapidjson::Value val = rapidjson::Value(value);
-
-    addMember(r_parquet, key, val);
-}
-
-/**
- * @brief Writes the value to the parquet file using the StreamWriter from the ParquetHelper class.
- *
- * @param chars Number of chars in value.
- * @param value pointer to value of parameter.
- * @param field RtlFieldInfo holds meta information about the embed context.
- * @param r_parquet Shared pointer to helper class that operates the parquet functions for us.
- */
-void bindUnicodeParam(unsigned chars, const UChar *value, const RtlFieldInfo *field, std::shared_ptr<ParquetHelper> r_parquet)
-{
-    size32_t utf8chars;
-    char *utf8;
-    rtlUnicodeToUtf8X(utf8chars, utf8, chars, value);
-
-    rapidjson::Value key = rapidjson::Value(field->name, jsonAlloc);
-    rapidjson::Value val = rapidjson::Value(utf8, rtlUtf8Size(utf8chars, utf8), jsonAlloc);
-
-    addMember(r_parquet, key, val);
-}
-
-/**
- * @brief Writes the value to the parquet file using the StreamWriter from the ParquetHelper class.
- *
- * @param value Decimal value represented as a string.
- * @param field RtlFieldInfo holds meta information about the embed context.
- * @param r_parquet Shared pointer to helper class that operates the parquet functions for us.
- */
-void bindDecimalParam(const char *value, size32_t bytes, const RtlFieldInfo *field, std::shared_ptr<ParquetHelper> r_parquet)
-{
-    rapidjson::Value key = rapidjson::Value(field->name, jsonAlloc);
-    rapidjson::Value val = rapidjson::Value(std::string(value, bytes), jsonAlloc);
-
-    addMember(r_parquet, key, val);
+    parquetWriter->addMember(key, val);
 }
 
 /**
@@ -1659,82 +1598,98 @@ void ParquetRecordBinder::processRow(const byte *row)
 }
 
 /**
- * @brief Calls the bind function for the data type of the value.
+ * @brief Processes the field for its respective type, and adds the key-value pair to the current row.
  *
  * @param len Number of chars in value.
- * @param value Data to be written to the parquet file.
- * @param field Object with information about the current field.
+ * @param value Data to be written to the Parquet file.
+ * @param field RtlFieldInfo holds metadeta about the field.
  */
 void ParquetRecordBinder::processString(unsigned len, const char *value, const RtlFieldInfo *field)
 {
     checkNextParam(field);
-
-    bindStringParam(len, value, field, r_parquet);
+    bindStringParam(len, value, field, parquetWriter);
 }
 
 /**
- * @brief Calls the bind function for the data type of the value.
+ * @brief Processes the field for its respective type, and adds the key-value pair to the current row.
  *
- * @param value Data to be written to the parquet file.
- * @param field Object with information about the current field.
+ * @param value Data to be written to the Parquet file.
+ * @param field RtlFieldInfo holds metadata about the field.
  */
 void ParquetRecordBinder::processBool(bool value, const RtlFieldInfo *field)
 {
-    bindBoolParam(value, field, r_parquet);
+    rapidjson::Value key = rapidjson::Value(field->name, jsonAlloc);
+    rapidjson::Value val = rapidjson::Value(value);
+
+    parquetWriter->addMember(key, val);
 }
 
 /**
- * @brief Calls the bind function for the data type of the value.
+ * @brief Processes the field for its respective type, and adds the key-value pair to the current row.
  *
  * @param len Number of chars in value.
- * @param value Data to be written to the parquet file.
- * @param field Object with information about the current field.
+ * @param value Data to be written to the Parquet file.
+ * @param field RtlFieldInfo holds metadata about the field.
  */
 void ParquetRecordBinder::processData(unsigned len, const void *value, const RtlFieldInfo *field)
 {
-    bindDataParam(len, (const char *) value, field, r_parquet);
+    rapidjson::Value key = rapidjson::Value(field->name, jsonAlloc);
+    rapidjson::Value val = rapidjson::Value((const char *)value, len, jsonAlloc);
+
+    parquetWriter->addMember(key, val);
 }
 
 /**
- * @brief Calls the bind function for the data type of the value.
+ * @brief Processes the field for its respective type, and adds the key-value pair to the current row.
  *
- * @param value Data to be written to the parquet file.
- * @param field Object with information about the current field.
+ * @param value Data to be written to the Parquet file.
+ * @param field RtlFieldInfo holds metadata about the field.
  */
 void ParquetRecordBinder::processInt(__int64 value, const RtlFieldInfo *field)
 {
-    bindIntParam(value, field, r_parquet);
+    int64_t val = value;
+    rapidjson::Value key = rapidjson::Value(field->name, jsonAlloc);
+    rapidjson::Value num(val);
+
+    parquetWriter->addMember(key, num);
 }
 
 /**
- * @brief Calls the bind function for the data type of the value.
+ * @brief Processes the field for its respective type, and adds the key-value pair to the current row.
  *
- * @param value Data to be written to the parquet file.
- * @param field Object with information about the current field.
+ * @param value Data to be written to the Parquet file.
+ * @param field RtlFieldInfo holds metadata about the field.
  */
 void ParquetRecordBinder::processUInt(unsigned __int64 value, const RtlFieldInfo *field)
 {
-    bindUIntParam(value, field, r_parquet);
+    uint64_t val = value;
+    rapidjson::Value key = rapidjson::Value(field->name, jsonAlloc);
+    rapidjson::Value num(val);
+
+    parquetWriter->addMember(key, num);
 }
 
 /**
- * @brief Calls the bind function for the data type of the value.
+ * @brief Processes the field for its respective type, and adds the key-value pair to the current row.
  *
- * @param value Data to be written to the parquet file.
- * @param field Object with information about the current field.
+ * @param value Data to be written to the Parquet file.
+ * @param field RtlFieldInfo holds metadata about the field.
  */
 void ParquetRecordBinder::processReal(double value, const RtlFieldInfo *field)
 {
-    bindRealParam(value, field, r_parquet);
+    rapidjson::Value key = rapidjson::Value(field->name, jsonAlloc);
+    rapidjson::Value val = rapidjson::Value(value);
+
+    parquetWriter->addMember(key, val);
 }
 
 /**
- * @brief Calls the bind function for the data type of the value.
+ * @brief Processes the field for its respective type, and adds the key-value pair to the current row.
  *
- * @param value Data to be written to the parquet file.
+ * @param value Data to be written to the Parquet file.
  * @param digits Number of digits in decimal.
  * @param precision Number of digits of precision.
- * @param field Object with information about the current field.
+ * @param field RtlFieldInfo holds metadata about the field.
  */
 void ParquetRecordBinder::processDecimal(const void *value, unsigned digits, unsigned precision, const RtlFieldInfo *field)
 {
@@ -1744,27 +1699,35 @@ void ParquetRecordBinder::processDecimal(const void *value, unsigned digits, uns
     val.setDecimal(digits, precision, value);
     val.getStringX(bytes, decText.refstr());
 
-    bindDecimalParam(decText.getstr(), bytes, field, r_parquet);
+    rapidjson::Value key = rapidjson::Value(field->name, jsonAlloc);
+    rapidjson::Value dValue = rapidjson::Value(std::string(decText.getstr(), bytes), jsonAlloc);
+    parquetWriter->addMember(key, dValue);
 }
 
 /**
- * @brief Calls the bind function for the data type of the value.
+ * @brief Processes the field for its respective type, and adds the key-value pair to the current row.
  *
  * @param chars Number of chars in the value.
- * @param value Data to be written to the parquet file.
- * @param field Object with information about the current field.
+ * @param value Data to be written to the Parquet file.
+ * @param field RtlFieldInfo holds metadata about the field.
  */
 void ParquetRecordBinder::processUnicode(unsigned chars, const UChar *value, const RtlFieldInfo *field)
 {
-    bindUnicodeParam(chars, value, field, r_parquet);
+    size32_t utf8chars;
+    char *utf8;
+    rtlUnicodeToUtf8X(utf8chars, utf8, chars, value);
+
+    rapidjson::Value key = rapidjson::Value(field->name, jsonAlloc);
+    rapidjson::Value val = rapidjson::Value(utf8, rtlUtf8Size(utf8chars, utf8), jsonAlloc);
+    parquetWriter->addMember(key, val);
 }
 
 /**
- * @brief Calls the bind function for the data type of the value.
+ * @brief Processes the field for its respective type, and adds the key-value pair to the current row.
  *
  * @param len Length of QString
- * @param value Data to be written to the parquet file.
- * @param field Object with information about the current field.
+ * @param value Data to be written to the Parquet file.
+ * @param field RtlFieldInfo holds metadata about the field.
  */
 void ParquetRecordBinder::processQString(unsigned len, const char *value, const RtlFieldInfo *field)
 {
@@ -1772,40 +1735,44 @@ void ParquetRecordBinder::processQString(unsigned len, const char *value, const 
     rtlDataAttr text;
     rtlQStrToStrX(charCount, text.refstr(), len, value);
 
-    bindStringParam(charCount, text.getstr(), field, r_parquet);
+    bindStringParam(charCount, text.getstr(), field, parquetWriter);
 }
 
 /**
- * @brief Calls the bind function for the data type of the value.
+ * @brief Processes the field for its respective type, and adds the key-value pair to the current row.
  *
  * @param chars Number of chars in the value.
- * @param value Data to be written to the parquet file.
- * @param field Object with information about the current field.
+ * @param value Data to be written to the Parquet file.
+ * @param field RtlFieldInfo holds metadata about the field.
  */
 void ParquetRecordBinder::processUtf8(unsigned chars, const char *value, const RtlFieldInfo *field)
 {
-    bindUtf8Param(chars, value, field, r_parquet);
+    rapidjson::Value key = rapidjson::Value(field->name, jsonAlloc);
+    rapidjson::Value val = rapidjson::Value(value, rtlUtf8Size(chars, value), jsonAlloc);
+
+    parquetWriter->addMember(key, val);
 }
 
 /**
- * @brief Construct a new ParquetEmbedFunctionContext object
+ * @brief Construct a new ParquetEmbedFunctionContext object and parses the options set by the user.
  *
  * @param _logctx Context logger for use with the ParquetRecordBinder ParquetDatasetBinder classes.
+ * @param activityCtx Context about the Thor worker configuration.
  * @param options Pointer to the list of options that are passed into the Embed function.
  * @param _flags Should be zero if the embedded script is ok.
  */
 ParquetEmbedFunctionContext::ParquetEmbedFunctionContext(const IContextLogger &_logctx, const IThorActivityContext *activityCtx, const char *options, unsigned _flags)
-    : logctx(_logctx), m_scriptFlags(_flags)
+    : logctx(_logctx), scriptFlags(_flags)
 {
     // Option Variables
-    const char *option = "";      // Read(read), Read Parition(readpartition), Write(write), Write Partition(writepartition)
-    const char *location = "";    // file name and location of where to write parquet file
-    const char *destination = ""; // file name and location of where to read parquet file from
-    const char *partitionFields = ""; // comma delimited values containing fields to partition files on
-    __int64 rowsize = 40000;    // Size of the row groups when writing to parquet files
-    __int64 batchSize = 40000;  // Size of the batches when converting parquet columns to rows
-    bool overwrite = false;     // If true overwrite file with no error. The default is false and will throw an error if the file already exists.
-    arrow::Compression::type compressionOption = arrow::Compression::UNCOMPRESSED;
+    const char *option = "";            // Read(read), Read Parition(readpartition), Write(write), Write Partition(writepartition)
+    const char *location = "";          // Full path to target location of where to write Parquet file/s. Can be a directory or filename.
+    const char *destination = "";       // Full path to target location of where to read Parquet file/s. Can be a directory or filename.
+    const char *partitionFields = "";   // Semicolon delimited values containing fields to partition files on
+    __int64 maxRowCountInBatch = 40000; // Number of rows in the row groups when writing to Parquet files
+    __int64 maxRowCountInTable = 40000; // Number of rows in the tables when converting Parquet columns to rows
+    bool overwrite = false;             // If true overwrite file with no error. The default is false and will throw an error if the file already exists.
+    arrow::Compression::type compressionOption = arrow::Compression::UNCOMPRESSED; // Compression option set by the user and defaults to UNCOMPRESSED.
 
     // Iterate through user options and save them
     StringArray inputOptions;
@@ -1825,9 +1792,9 @@ ParquetEmbedFunctionContext::ParquetEmbedFunctionContext(const IContextLogger &_
             else if (stricmp(optName, "destination") == 0)
                 destination = val;
             else if (stricmp(optName, "MaxRowSize") == 0)
-                rowsize = atoi(val);
+                maxRowCountInBatch = atoi(val);
             else if (stricmp(optName, "BatchSize") == 0)
-                batchSize = atoi(val);
+                maxRowCountInTable = atoi(val);
             else if (stricmp(optName, "overwriteOpt") == 0)
                 overwrite = clipStrToBool(val);
             else if (stricmp(optName, "compression") == 0)
@@ -1857,13 +1824,17 @@ ParquetEmbedFunctionContext::ParquetEmbedFunctionContext(const IContextLogger &_
                 failx("Unknown option %s", optName.str());
         }
     }
-    if (option == "" || (location == "" && destination == ""))
+    if (startsWithIgnoreCase(option, "read"))
     {
-        failx("Invalid options must specify read or write settings and a location to perform such actions.");
+        parquetReader = std::make_shared<ParquetReader>(option, location, maxRowCountInTable, partitionFields, activityCtx);
+    }
+    else if (startsWithIgnoreCase(option, "write"))
+    {
+        parquetWriter = std::make_shared<ParquetWriter>(option, destination, maxRowCountInBatch, overwrite, compressionOption, partitionFields, activityCtx);
     }
     else
     {
-        m_parquet = std::make_shared<ParquetHelper>(option, location, destination, rowsize, batchSize, overwrite, compressionOption, partitionFields, activityCtx);
+        failx("Invalid read/write selection.");
     }
 }
 
@@ -1916,17 +1887,29 @@ void ParquetEmbedFunctionContext::getDecimalResult(Decimal &value)
     UNIMPLEMENTED_X("Parquet Scalar Return Type DECIMAL");
 }
 
+/**
+ * @brief Return a Dataset read from Parquet to the user
+ *
+ * @param _resultAllocator Pointer to allocator for the engine.
+ * @return Pointer to the memory allocated for the result.
+ */
 IRowStream *ParquetEmbedFunctionContext::getDatasetResult(IEngineRowAllocator *_resultAllocator)
 {
     Owned<ParquetRowStream> parquetRowStream;
-    parquetRowStream.setown(new ParquetRowStream(_resultAllocator, m_parquet));
+    parquetRowStream.setown(new ParquetRowStream(_resultAllocator, parquetReader));
     return parquetRowStream.getLink();
 }
 
+/**
+ * @brief Return a Row read from Parquet to the user
+ *
+ * @param _resultAllocator Pointer to allocator for the engine.
+ * @return Pointer to the memory allocated for the result.
+ */
 byte *ParquetEmbedFunctionContext::getRowResult(IEngineRowAllocator *_resultAllocator)
 {
     Owned<ParquetRowStream> parquetRowStream;
-    parquetRowStream.setown(new ParquetRowStream(_resultAllocator, m_parquet));
+    parquetRowStream.setown(new ParquetRowStream(_resultAllocator, parquetReader));
     return (byte *)parquetRowStream->nextRow();
 }
 
@@ -1936,21 +1919,35 @@ size32_t ParquetEmbedFunctionContext::getTransformResult(ARowBuilder &rowBuilder
     return 0;
 }
 
+/**
+ * @brief Binds the values of a row to the with the ParquetWriter.
+ *
+ * @param name Name of the row field.
+ * @param metaVal Metadata containing the type info of the row.
+ * @param val The date for the row to be bound.
+ */
 void ParquetEmbedFunctionContext::bindRowParam(const char *name, IOutputMetaData &metaVal, const byte *val)
 {
-    ParquetRecordBinder binder(logctx, metaVal.queryTypeInfo(), m_nextParam, m_parquet);
+    ParquetRecordBinder binder(logctx, metaVal.queryTypeInfo(), nextParam, parquetWriter);
     binder.processRow(val);
-    m_nextParam += binder.numFields();
+    nextParam += binder.numFields();
 }
 
+/**
+ * @brief Bind dataset parameter passed in by user.
+ *
+ * @param name name of the dataset.
+ * @param metaVal Metadata holding typeinfo for the dataset.
+ * @param val Input rowstream for binding the dataset data.
+ */
 void ParquetEmbedFunctionContext::bindDatasetParam(const char *name, IOutputMetaData &metaVal, IRowStream *val)
 {
-    if (m_oInputStream)
+    if (oInputStream)
     {
         fail("At most one dataset parameter supported");
     }
-    m_oInputStream.setown(new ParquetDatasetBinder(logctx, LINK(val), metaVal.queryTypeInfo(), m_parquet, m_nextParam));
-    m_nextParam += m_oInputStream->numFields();
+    oInputStream.setown(new ParquetDatasetBinder(logctx, LINK(val), metaVal.queryTypeInfo(), parquetWriter, nextParam));
+    nextParam += oInputStream->numFields();
 }
 
 void ParquetEmbedFunctionContext::bindBooleanParam(const char *name, bool val)
@@ -2018,7 +2015,6 @@ void ParquetEmbedFunctionContext::bindUnicodeParam(const char *name, size32_t ch
  * and ENDEMBED block.
  *
  * @param chars The number of chars in the script.
- *
  * @param script The embedded script for compilation.
  */
 void ParquetEmbedFunctionContext::compileEmbeddedScript(size32_t chars, const char *script)
@@ -2027,16 +2023,15 @@ void ParquetEmbedFunctionContext::compileEmbeddedScript(size32_t chars, const ch
 
 void ParquetEmbedFunctionContext::execute()
 {
-    if (m_oInputStream)
+    if (oInputStream)
     {
-        m_oInputStream->executeAll();
+        oInputStream->executeAll();
     }
     else
     {
-        if (m_parquet->queryPartOptions() == 'r')
+        if (parquetReader)
         {
-            reportIfFailure(m_parquet->openReadFile());
-            reportIfFailure(m_parquet->processReadFile());
+            reportIfFailure(parquetReader->processReadFile());
         }
         else
         {
@@ -2052,9 +2047,9 @@ void ParquetEmbedFunctionContext::callFunction()
 
 unsigned ParquetEmbedFunctionContext::checkNextParam(const char *name)
 {
-    if (m_nextParam == m_numParams)
+    if (nextParam == numParams)
         failx("Too many parameters supplied: No matching $<name> placeholder for parameter %s", name);
-    return m_nextParam++;
+    return nextParam++;
 }
 
 /**
@@ -2072,23 +2067,6 @@ bool ParquetDatasetBinder::bindNext()
     return true;
 }
 
-void ParquetDatasetBinder::writeRecordBatch()
-{
-    // convert row_batch vector to RecordBatch and write to file.
-    PARQUET_ASSIGN_OR_THROW(auto recordBatch, d_parquet->convertToRecordBatch(d_parquet->queryRecordBatch(), d_parquet->getSchema()));
-    // Write each batch as a row_groups
-    PARQUET_ASSIGN_OR_THROW(auto table, arrow::Table::FromRecordBatches(d_parquet->getSchema(), {recordBatch}));
-
-    if (partition)
-    {
-        reportIfFailure(d_parquet->writePartition(table));
-    }
-    else
-    {
-        reportIfFailure(d_parquet->queryWriter()->WriteTable(*(table.get()), recordBatch->num_rows()));
-    }
-}
-
 /**
  * @brief Binds all the rows of the dataset and executes the function.
  */
@@ -2096,35 +2074,34 @@ void ParquetDatasetBinder::executeAll()
 {
     if (bindNext())
     {
-        reportIfFailure(d_parquet->openWriteFile());
+        reportIfFailure(parquetWriter->openWriteFile());
 
         int i = 1;
-        int rowSize = d_parquet->getMaxRowSize();
+        int maxRowCountInBatch = parquetWriter->getMaxRowSize();
         do
         {
-            if (i % rowSize == 0)
+            if (i % maxRowCountInBatch == 0)
             {
-                writeRecordBatch();
+                parquetWriter->writeRecordBatch();
                 jsonAlloc.Clear();
             }
-            d_parquet->updateRow();
+            parquetWriter->updateRow();
             i++;
         }
         while (bindNext());
 
         i--;
-        if (i % rowSize != 0)
+        if (i % maxRowCountInBatch != 0)
         {
-            d_parquet->queryRecordBatch().resize(i % rowSize);
-            writeRecordBatch();
+            parquetWriter->writeRecordBatch(i % maxRowCountInBatch);
             jsonAlloc.Clear();
         }
     }
 }
+
 /**
  * @brief Serves as the entry point for the HPCC Engine into the plugin and is how it obtains a
  * ParquetEmbedFunctionContext object for creating the query and executing it.
- *
  */
 class ParquetEmbedContext : public CInterfaceOf<IEmbedContext>
 {
