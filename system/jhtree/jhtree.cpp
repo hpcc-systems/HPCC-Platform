@@ -2027,7 +2027,6 @@ unsigned __int64 CKeyCursor::getCount(KeyStatsCollector &stats)
 {
     reset();
     unsigned __int64 result = 0;
-    unsigned lseeks = 0;
     unsigned lastRealSeg = filter->lastRealSeg();
     bool unfiltered = filter->isUnfiltered();
     for (;;)
@@ -2037,7 +2036,6 @@ unsigned __int64 CKeyCursor::getCount(KeyStatsCollector &stats)
             unsigned __int64 locount = getSequence();
             endRange(lastRealSeg);
             _ltEqual(stats);
-            lseeks++;
             result += getSequence()-locount+1;
             if (!incrementKey(lastRealSeg))
                 break;
@@ -2045,7 +2043,6 @@ unsigned __int64 CKeyCursor::getCount(KeyStatsCollector &stats)
         else
             break;
     }
-    stats.noteSeeks(lseeks, 0, 0);
     return result;
 }
 
@@ -2053,7 +2050,6 @@ unsigned __int64 CKeyCursor::checkCount(unsigned __int64 max, KeyStatsCollector 
 {
     reset();
     unsigned __int64 result = 0;
-    unsigned lseeks = 0;
     unsigned lastFullSeg = filter->lastFullSeg();
     bool unfiltered = filter->isUnfiltered();
     if (lastFullSeg == (unsigned) -1)
@@ -2071,7 +2067,6 @@ unsigned __int64 CKeyCursor::checkCount(unsigned __int64 max, KeyStatsCollector 
             unsigned __int64 locount = getSequence();
             endRange(lastFullSeg);
             _ltEqual(stats);
-            lseeks++;
             result += getSequence()-locount+1;
             if (max && (result > max))
                 break;
@@ -2081,7 +2076,6 @@ unsigned __int64 CKeyCursor::checkCount(unsigned __int64 max, KeyStatsCollector 
         else
             break;
     }
-    stats.noteSeeks(lseeks, 0, 0);
     return result;
 }
 
