@@ -639,4 +639,6 @@ void processLines(const StringBuffer & content, LineProcessor process)
 using optionCallback = std::function<void(const char * name, const char * value)>;
 extern jlib_decl void processOptionString(const char * options, optionCallback callback);
 
+extern jlib_decl const char * stristr(const char *haystack, const char *needle);
+
 #endif
