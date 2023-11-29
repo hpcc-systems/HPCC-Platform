@@ -729,6 +729,14 @@ public:
     {
         return ::getClientHeaders(activeSpan);
     }
+    virtual IProperties * getSpanContext() const override
+    {
+        return ::getSpanContext(activeSpan);
+    }
+    virtual void setSpanAttribute(const char *name, const char *value) const override
+    {
+        activeSpan->setSpanAttribute(name, value);
+    }
     virtual const char *queryGlobalId() const override
     {
         return activeSpan->queryGlobalId();

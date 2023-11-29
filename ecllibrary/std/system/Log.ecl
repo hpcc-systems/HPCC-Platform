@@ -89,4 +89,35 @@ EXPORT generateGloballyUniqueId() := lib_logging.Logging.generateGloballyUniqueI
 
 EXPORT getElapsedMs() := lib_logging.Logging.getElapsedMs();
 
+/*
+ * Gets the active span's traceID.
+ *
+ * Returns the the unique Id.
+ */
+EXPORT getTraceID() := lib_logging.Logging.getTraceID();
+/*
+ * Gets the active spanID.
+ *
+ * Returns the the unique Id.
+ */
+EXPORT getSpanID() := lib_logging.Logging.getSpanID();
+/*
+ * Gets OpenTelemetry formatted trace span header.
+ * Should be provided to remote services for trace propagation as 'traceparent'.
+ * 
+  * Returns the the unique Id.
+ */
+EXPORT getTraceSpanHeader() := lib_logging.Logging.getTraceSpanHeader();
+/*
+ * Gets OpenTelemetry formatted trace state header.
+ * Should be provided to remote services for trace propagation as 'tracestate'.
+ * 
+  * Returns the the unique Id.
+ */
+EXPORT getTraceStateHeader() := lib_logging.Logging.getTraceStateHeader();
+/*
+ * Adds the name/value pair to the active span as an attribute.
+ */
+EXPORT setSpanAttribute(string name, string value) := lib_logging.Logging.setSpanAttribute(name, value);
+
 END;

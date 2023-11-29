@@ -815,6 +815,13 @@ IProperties * getClientHeaders(const ISpan * span)
     return headers.getClear();
 }
 
+IProperties * getSpanContext(const ISpan * span)
+{
+    Owned<IProperties> headers = createProperties(true);
+    span->getSpanContext(headers, false);
+    return headers.getClear();
+}
+
 //---------------------------------------------------------------------------------------------------------------------
 
 void CTraceManager::initTracerProviderAndGlobalInternals(const IPropertyTree * traceConfig)

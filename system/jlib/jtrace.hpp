@@ -58,6 +58,7 @@ interface ISpan : extends IInterface
 };
 
 extern jlib_decl IProperties * getClientHeaders(const ISpan * span);
+extern jlib_decl IProperties * getSpanContext(const ISpan * span);
 
 interface ITraceManager : extends IInterface
 {

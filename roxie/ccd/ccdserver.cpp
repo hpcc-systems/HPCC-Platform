@@ -288,6 +288,14 @@ public:
     {
         return ctx->getClientHeaders();
     }
+    virtual IProperties * getSpanContext() const override
+    {
+        return ctx->getSpanContext();
+    }
+    virtual void setSpanAttribute(const char *name, const char *value) const override
+    {
+        ctx->setSpanAttribute(name, value);
+    }
     virtual const char *queryGlobalId() const
     {
         return ctx->queryGlobalId();
@@ -1369,6 +1377,14 @@ public:
         if (ctx)
             return ctx->getClientHeaders();
         return nullptr;
+    }
+    virtual IProperties * getSpanContext() const override
+    {
+        return ctx->getSpanContext();
+    }
+    virtual void setSpanAttribute(const char *name, const char *value) const override
+    {
+        ctx->setSpanAttribute(name, value);
     }
     virtual const char *queryGlobalId() const override
     {
