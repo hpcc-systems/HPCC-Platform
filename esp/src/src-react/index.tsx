@@ -13,7 +13,7 @@ import "css!hpcc/css/hpcc.css";
 import "src-react-css/index.css";
 
 ECLWatchLogger.init();
-initializeIcons();
+initializeIcons("/esp/files/dist/fluentui-fonts/");
 
 const logger = scopedLogger("../index.tsx");
 
