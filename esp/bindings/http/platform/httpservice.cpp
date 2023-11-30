@@ -377,18 +377,24 @@ int CEspHttpServer::processRequest()
 
             checkSetCORSAllowOrigin(thebinding, m_request, m_response);
 
+            if (thebinding && thebinding->isUnrestrictedSSType(stype))
+            {
+                //Avoid creating a span for unrestrictedSSType requests
+                thebinding->onGetUnrestricted(m_request.get(), m_response.get(), serviceName.str(), methodName.str(), stype);
+                ctx->addTraceSummaryTimeStamp(LogMin, "handleHttp");
+                return 0;
+            }
+
+            //The context will be destroyed when this request is destroyed. So rather than using
+            //EspContextSpanScope spanContext(*ctx, serverSpan);
+            //which would remove the activeSpan when this function exits, use
+            //setActiveSpan()
+            //It is possible that using EspContextSpanScope would be better
+            Owned<ISpan> serverSpan = m_request->createServerSpan();
+            ctx->setActiveSpan(serverSpan);
+
             if (thebinding!=NULL)
             {
-                if (thebinding->isUnrestrictedSSType(stype))
-                {
-                    thebinding->onGetUnrestricted(m_request.get(), m_response.get(), serviceName.str(), methodName.str(), stype);
-                    ctx->addTraceSummaryTimeStamp(LogMin, "handleHttp");
-                    return 0;
-                }
-
-                //Avoids unrestrictedSSType requests
-                m_request->startSpan();
-
                 if(stricmp(method.str(), POST_METHOD)==0)
                     thebinding->handleHttpPost(m_request.get(), m_response.get());
                 else if(!stricmp(method.str(), GET_METHOD))

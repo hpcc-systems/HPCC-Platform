@@ -1486,7 +1486,7 @@ CJobMaster::CJobMaster(IConstWorkUnit &_workunit, const char *graphName, ILoaded
 
     Owned<IProperties> traceHeaders = extractTraceDebugOptions(workunit);
     Owned<ISpan> requestSpan = queryTraceManager().createServerSpan(workunit->queryWuid(), traceHeaders);
-    logctx->setActiveSpan(requestSpan);
+    ContextSpanScope spanScope(*logctx, requestSpan);
 
     resumed = WUActionResume == workunit->getAction();
     fatalHandler.setown(new CFatalHandler(globals->getPropInt("@fatal_timeout", FATAL_TIMEOUT)));

@@ -28,11 +28,11 @@ Pass in dict with root and me
 {{- define "hpcc.thorConfigMap" -}}
 {{- $eclAgentType := .me.eclAgentType | default "hthor" }}
 {{- $hthorName := printf "%s-%s" .me.name $eclAgentType }}
-{{- $eclAgentScope := dict "name" .eclAgentName "type" $eclAgentType "useChildProcesses" .eclAgentUseChildProcesses "replicas" .eclAgentReplicas "maxActive" .me.maxJobs | merge (pick .me "keepJobs") }}
-{{- $thorAgentScope := dict "name" .thorAgentName "replicas" .thorAgentReplicas "maxActive" .me.maxGraphs | merge (pick .me "keepJobs") }}
+{{- $eclAgentScope := dict "name" .eclAgentName "type" $eclAgentType "useChildProcesses" .eclAgentUseChildProcesses "replicas" .eclAgentReplicas "maxActive" .me.maxJobs | merge (pick .me "keepJobs" "logging" "tracing") }}
+{{- $thorAgentScope := dict "name" .thorAgentName "replicas" .thorAgentReplicas "maxActive" .me.maxGraphs | merge (pick .me "keepJobs" "logging" "tracing") }}
 {{- $eclAgentResources := .me.eclAgentResources | default dict -}}
-{{- $hthorScope := dict "name" $hthorName "jobMemorySectionName" "eclAgentMemory" | merge (pick .me "multiJobLinger" "maxGraphStartupTime") | merge (dict "resources" (deepCopy $eclAgentResources)) }}
-{{- $thorScope := omit .me "eclagent" "thoragent" "hthor" "logging" "tracing" "env" "eclAgentResources" "eclAgentUseChildProcesses" "eclAgentReplicas" "thorAgentReplicas" "eclAgentType" }}
+{{- $hthorScope := dict "name" $hthorName "jobMemorySectionName" "eclAgentMemory" | merge (pick .me "multiJobLinger" "maxGraphStartupTime" "logging" "tracing") | merge (dict "resources" (deepCopy $eclAgentResources)) }}
+{{- $thorScope := omit .me "eclagent" "thoragent" "hthor" "env" "eclAgentResources" "eclAgentUseChildProcesses" "eclAgentReplicas" "thorAgentReplicas" "eclAgentType" }}
 {{- $misc := .root.Values.global.misc | default dict }}
 {{- $postJobCommand := $misc.postJobCommand | default "" }}
 {{- $eclAgentJobName := printf "%s-job-_HPCC_JOBNAME_" $eclAgentType }}
@@ -49,12 +49,12 @@ data:
   {{ $thorScope.name }}.yaml:
     version: 1.0
     thor:
-{{ toYaml $thorScope | indent 6 }}
+{{ toYaml (omit $thorScope "logging" "tracing") | indent 6 }}
 {{- include "hpcc.generateLoggingConfig" (dict "root" .root "me" $thorScope) | indent 6 }}
 {{- include "hpcc.generateTracingConfig" (dict "root" .root "me" $thorScope) | indent 6 }}
 {{ include "hpcc.generateVaultConfig" . | indent 6 }}
     {{ $eclAgentType }}: # hthor or roxie
-{{ toYaml $hthorScope | indent 6 }}
+{{ toYaml (omit $hthorScope "logging" "tracing") | indent 6 }}
       platform:
         type: "thor"
         width: {{ mul ($thorScope.numWorkers | default 1) ( $thorScope.channelsPerWorker | default 1) }}
@@ -62,11 +62,11 @@ data:
 {{- include "hpcc.generateTracingConfig" (dict "root" .root "me" $hthorScope ) | indent 6 }}
 {{ include "hpcc.generateVaultConfig" . | indent 6 }}
     eclagent: # main agent Q handler
-{{ toYaml $eclAgentScope | indent 6 }}
+{{ toYaml (omit $eclAgentScope "logging" "tracing") | indent 6 }}
 {{- include "hpcc.generateLoggingConfig" (dict "root" .root "me" $eclAgentScope) | indent 6 }}
 {{- include "hpcc.generateTracingConfig" (dict "root" .root "me" $eclAgentScope) | indent 6 }}
     thoragent: # Thor graph handler
-{{ toYaml $thorAgentScope | indent 6 }}
+{{ toYaml (omit $thorAgentScope "logging" "tracing") | indent 6 }}
 {{- include "hpcc.generateLoggingConfig" (dict "root" .root "me" $thorAgentScope) | indent 6 }}
 {{- include "hpcc.generateTracingConfig" (dict "root" .root "me" $thorAgentScope) | indent 6 }}
       type: thor

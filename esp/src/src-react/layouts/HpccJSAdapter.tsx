@@ -59,7 +59,8 @@ export const AutosizeHpccJSComponent: React.FunctionComponent<AutosizeHpccJSComp
     fixedHeight = "100%",
     padding = 0,
     debounce = true,
-    hidden = false
+    hidden = false,
+    children
 }) => {
 
     return <SizeMe monitorHeight>{({ size }) => {
@@ -68,6 +69,40 @@ export const AutosizeHpccJSComponent: React.FunctionComponent<AutosizeHpccJSComp
         return <div style={{ width: "100%", height: hidden ? "0px" : fixedHeight, position: "relative" }}>
             <div style={{ position: "absolute", padding: `${padding}px`, display: hidden ? "none" : "block" }}>
                 <HpccJSComponent widget={widget} debounce={debounce} width={width - padding * 2} height={height - padding * 2} />
+            </div>
+            {
+                children ?
+                    <div style={{ position: "absolute", padding: `${padding}px`, display: hidden ? "none" : "block" }}>
+                        {children}
+                    </div> :
+                    <></>
+            }
+        </div>;
+    }}
+    </SizeMe>;
+};
+
+export interface AutosizeComponentProps {
+    fixedHeight?: string;
+    padding?: number;
+    hidden?: boolean
+}
+
+export const AutosizeComponent: React.FunctionComponent<AutosizeComponentProps> = ({
+    fixedHeight = "100%",
+    padding = 0,
+    hidden = false,
+    children
+}) => {
+
+    return <SizeMe monitorHeight>{({ size }) => {
+        const width = size?.width || padding * 2;
+        const height = size?.height || padding * 2;
+        return <div style={{ width: "100%", height: hidden ? "0px" : fixedHeight, position: "relative" }}>
+            <div style={{ position: "absolute", padding: `${padding}px`, display: hidden ? "none" : "block" }}>
+                <div style={{ width: width - padding * 2, height: height - padding * 2, display: "flex", alignItems: "center", justifyContent: "center" }} >
+                    {children}
+                </div>
             </div>
         </div>;
     }}

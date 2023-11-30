@@ -276,6 +276,10 @@ public:
     {
         return ctx->isBlind();
     }
+    virtual ISpan * queryActiveSpan() const override
+    {
+        return ctx->queryActiveSpan();
+    }
     virtual void setActiveSpan(ISpan * span) override
     {
         ctx->setActiveSpan(span);
@@ -283,6 +287,14 @@ public:
     virtual IProperties * getClientHeaders() const override
     {
         return ctx->getClientHeaders();
+    }
+    virtual IProperties * getSpanContext() const override
+    {
+        return ctx->getSpanContext();
+    }
+    virtual void setSpanAttribute(const char *name, const char *value) const override
+    {
+        ctx->setSpanAttribute(name, value);
     }
     virtual const char *queryGlobalId() const
     {
@@ -1351,6 +1363,10 @@ public:
             return traceLevel;
     }
 
+    virtual ISpan * queryActiveSpan() const override
+    {
+        return ctx->queryActiveSpan();
+    }
     virtual void setActiveSpan(ISpan * span) override
     {
         if (ctx)
@@ -1361,6 +1377,14 @@ public:
         if (ctx)
             return ctx->getClientHeaders();
         return nullptr;
+    }
+    virtual IProperties * getSpanContext() const override
+    {
+        return ctx->getSpanContext();
+    }
+    virtual void setSpanAttribute(const char *name, const char *value) const override
+    {
+        ctx->setSpanAttribute(name, value);
     }
     virtual const char *queryGlobalId() const override
     {

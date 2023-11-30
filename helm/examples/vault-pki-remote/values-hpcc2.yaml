@@ -93,6 +93,7 @@ roxie:
   numChannels: 1
   serverReplicas: 0
   localAgent: false
+  singleNode: false
   traceLevel: 1
   topoServer:
     replicas: 1

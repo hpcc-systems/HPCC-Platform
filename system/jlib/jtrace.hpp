@@ -58,22 +58,66 @@ interface ISpan : extends IInterface
 };
 
 extern jlib_decl IProperties * getClientHeaders(const ISpan * span);
+extern jlib_decl IProperties * getSpanContext(const ISpan * span);
 
 interface ITraceManager : extends IInterface
 {
     virtual ISpan * createServerSpan(const char * name, StringArray & httpHeaders, SpanFlags flags = SpanFlags::None) const = 0;
     virtual ISpan * createServerSpan(const char * name, const IProperties * httpHeaders, SpanFlags flags = SpanFlags::None) const = 0;
     virtual bool isTracingEnabled() const = 0;
-    virtual bool alwaysCreateGlobalIds() const = 0;
-    virtual bool alwaysCreateTraceIds() const = 0;
-    virtual bool logSpanStart() const = 0;
-    virtual bool logSpanFinish() const = 0;
-    virtual const char * getTracedComponentName() const = 0;
  };
 
 extern jlib_decl ISpan * getNullSpan();
 extern jlib_decl void initTraceManager(const char * componentName, const IPropertyTree * componentConfig, const IPropertyTree * globalConfig);
 extern jlib_decl ITraceManager & queryTraceManager();
+
+//The following class is responsible for ensuring that the active span is restored in a context when the scope is exited
+//Use a template class so it can be reused for IContextLogger and IEspContext
+template <class CONTEXT>
+class ContextSpanScopeImp
+{
+public:
+    ContextSpanScopeImp(CONTEXT & _ctx, ISpan * span)
+    : ctx(_ctx)
+    {
+        prev.set(ctx.queryActiveSpan());
+        ctx.setActiveSpan(span);
+    }
+    ~ContextSpanScopeImp()
+    {
+        ctx.setActiveSpan(prev);
+    }
+
+protected:
+    CONTEXT & ctx;
+    Owned<ISpan> prev;
+};
+
+// A variant of the class above that allows startSpan to be called after construction
+template <class CONTEXT>
+class DynamicContextSpanScopeImp
+{
+public:
+    ~DynamicContextSpanScopeImp()
+    {
+        finishSpan();
+    }
+    void startSpan(CONTEXT & _ctx, ISpan * span)
+    {
+        ctx = &_ctx;
+        prev.set(ctx->queryActiveSpan());
+        ctx->setActiveSpan(span);
+    }
+    void finishSpan()
+    {
+        if (ctx)
+            ctx->setActiveSpan(prev);
+    }
+
+protected:
+    CONTEXT * ctx{nullptr};
+    Owned<ISpan> prev;
+};
 
 /*
   To use feature-level tracing flags, protect the tracing with a test such as:

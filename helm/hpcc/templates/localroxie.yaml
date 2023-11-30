@@ -50,7 +50,9 @@ data:
 {{- $commonCtx := dict "root" $ "me" $roxie "includeCategories" $enginePlaneDetails.planeCategories "includeNames" $enginePlaneDetails.namedPlanes "secretsCategories" $secretsCategories "env" $env }}
 {{- $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.localroxieConfigMap" "component" "roxie" "excludeKeys" "global")) }}
 {{- include "hpcc.checkDefaultStoragePlane" $commonCtx }}
-{{- if $roxie.localAgent -}}
+{{- $singleNode := (hasKey $roxie "singleNode") | ternary $roxie.singleNode ((hasKey $roxie "localAgent") | ternary $roxie.localAgent false) }}
+{{- if $singleNode -}}
+{{- $localAgent := ((hasKey $roxie "localAgent") | ternary $roxie.localAgent true) -}}
 {{- $name := $roxie.name -}}
 {{- $servername := printf "%s-server" $roxie.name -}}
 
@@ -93,7 +95,7 @@ spec:
                 {{ include "hpcc.configArg" $roxie }},
                 {{ include "hpcc.daliArg" (dict "root" $ "component" "Local Roxie" "optional" false) }},
                 "--server=true", 
-                "--localAgent=true",
+                "--localAgent={{ $localAgent }}",
                 "--resolveLocally=false"
               ]
         env:

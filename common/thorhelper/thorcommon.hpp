@@ -717,6 +717,10 @@ public:
     {
         return traceLevel;
     }
+    virtual ISpan * queryActiveSpan() const override
+    {
+        return activeSpan;
+    }
     virtual void setActiveSpan(ISpan * span) override
     {
         activeSpan.set(span);
@@ -724,6 +728,14 @@ public:
     virtual IProperties * getClientHeaders() const override
     {
         return ::getClientHeaders(activeSpan);
+    }
+    virtual IProperties * getSpanContext() const override
+    {
+        return ::getSpanContext(activeSpan);
+    }
+    virtual void setSpanAttribute(const char *name, const char *value) const override
+    {
+        activeSpan->setSpanAttribute(name, value);
     }
     virtual const char *queryGlobalId() const override
     {

@@ -1030,7 +1030,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         {
             StringBuffer log;
             getInfo(log).append(": ").append(msg);
-            PROGLOG("%s", log.str());
+            LOG(MCthorDetailedDebugInfo, thorJob, "%s", log.str());
         }
         virtual StringBuffer &getInfo(StringBuffer &info) const
         {
@@ -1165,10 +1165,11 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         }
         virtual void end()
         {
-#ifdef _DEBUG
-            VStringBuffer log("processed: %" I64F "u", total);
-            trace(log);
-#endif
+            if (!REJECTLOG(MCthorDetailedDebugInfo))
+            {
+                VStringBuffer log("processed: %" I64F "u", total);
+                trace(log);
+            }
         }
         virtual void process(CThorExpandingRowArray &processing, unsigned selected) = 0;
     // IThreaded
@@ -2931,9 +2932,8 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             }
         }
         handlerContainer.init();
-#ifdef _DEBUG
-        handlerContainer.trace();
-#endif
+        if (!REJECTLOG(MCthorDetailedDebugInfo))
+            handlerContainer.trace();
     }
 public:
     IMPLEMENT_IINTERFACE_USING(PARENT);
