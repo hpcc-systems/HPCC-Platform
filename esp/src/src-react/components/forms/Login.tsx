@@ -120,7 +120,9 @@ export const Login: React.FunctionComponent<LoginProps> = ({
                     cookies["ESPAuthenticated"] = "true";
                     createUserSession(cookies).then(() => {
                         setErrorMessage("");
-                        replaceUrl("/", true);
+                        const lastUrl = window.localStorage.getItem("pageOnLock") ?? "/";
+                        window.localStorage.removeItem("pageOnLock");
+                        replaceUrl(lastUrl, true);
                     }).catch(err => logger.error("Unable to create user session."));
                 }
             }

@@ -4,6 +4,9 @@ import { WUDetailsMeta, WorkunitsService } from "@hpcc-js/comms";
 import { userKeyValStore } from "src/KeyValStore";
 import { useWorkunit } from "./workunit";
 import { useCounter } from "./util";
+import { scopedLogger } from "@hpcc-js/util";
+
+const logger = scopedLogger("src-react\hooks\metrics.ts");
 
 const defaults = {
     scopeTypes: ["graph", "subgraph", "activity", "edge"],
@@ -81,7 +84,13 @@ export function useMetricMeta(): [string[], string[]] {
     return [scopeTypes, properties];
 }
 
-export function useWorkunitMetrics(wuid: string): [any[], { [id: string]: any }, WUDetailsMeta.Activity[], WUDetailsMeta.Property[], string[], string[], () => void] {
+export enum FetchStatus {
+    UNKNOWN,
+    STARTED,
+    COMPLETE
+}
+
+export function useWorkunitMetrics(wuid: string): [any[], { [id: string]: any }, WUDetailsMeta.Activity[], WUDetailsMeta.Property[], string[], string[], FetchStatus, () => void] {
 
     const [workunit, state] = useWorkunit(wuid);
     const [data, setData] = React.useState<any[]>([]);
@@ -90,10 +99,11 @@ export function useWorkunitMetrics(wuid: string): [any[], { [id: string]: any },
     const [properties, setProperties] = React.useState<WUDetailsMeta.Property[]>([]);
     const [measures, setMeasures] = React.useState<string[]>([]);
     const [scopeTypes, setScopeTypes] = React.useState<string[]>([]);
-    // const [scopes, setScopes] = React.useState<WUDetails.Scope[]>([]);
+    const [status, setStatus] = React.useState<FetchStatus>(FetchStatus.COMPLETE);
     const [count, increment] = useCounter();
 
     React.useEffect(() => {
+        setStatus(FetchStatus.STARTED);
         workunit?.fetchDetailsNormalized({
             ScopeFilter: {
                 MaxDepth: 999999,
@@ -132,9 +142,12 @@ export function useWorkunitMetrics(wuid: string): [any[], { [id: string]: any },
             setProperties(response?.meta?.Properties?.Property || []);
             setMeasures(response?.meta?.Measures?.Measure || []);
             setScopeTypes(response?.meta?.ScopeTypes?.ScopeType || []);
-            // setScopes(response?.scopes?.map(rawScope => new Scope(workunit, rawScope)) || []);
+        }).catch(e => {
+            logger.error(e);
+        }).finally(() => {
+            setStatus(FetchStatus.COMPLETE);
         });
     }, [workunit, state, count]);
 
-    return [data, columns, activities, properties, measures, scopeTypes, increment];
+    return [data, columns, activities, properties, measures, scopeTypes, status, increment];
 }
