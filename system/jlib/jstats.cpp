@@ -1917,8 +1917,15 @@ public:
     }
 
 //other public interface functions
+    // addStatistic() should only be used if it is known that the kind is not already there
     void addStatistic(StatisticKind kind, unsigned __int64 value)
     {
+#ifdef _DEBUG
+        // In debug builds check that a value for this kind has not already been added.
+        // We do not want the O(N) overhead in release mode, especially as N is beginning to get larger
+        unsigned __int64 debugTest;
+        assertex(getStatistic(kind,debugTest)==false);
+#endif
         Statistic s(kind, value);
         stats.append(s);
     }
