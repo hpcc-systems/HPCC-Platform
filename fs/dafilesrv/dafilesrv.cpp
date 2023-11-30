@@ -656,8 +656,13 @@ int main(int argc, const char* argv[])
     throttleSlowQueueLimit = throttleQueueLimit;
 #endif
 
+    Owned<IPropertyTree> dummyDafileSrvInstance;
     if (nullptr == dafileSrvInstance)
-        throw makeStringException(-1, "dafilesrv: configuration section missing");
+    {
+        PROGLOG("WARNING: no dafilesrv configuration, default settings will be used");
+        dummyDafileSrvInstance.setown(createPTree());
+        dafileSrvInstance = dummyDafileSrvInstance;
+    }
     maxThreads = dafileSrvInstance->getPropInt("@maxThreads", maxThreads);
     maxThreadsDelayMs = dafileSrvInstance->getPropInt("@maxThreadsDelayMs", maxThreadsDelayMs);
     maxAsyncCopy = dafileSrvInstance->getPropInt("@maxAsyncCopy", maxAsyncCopy);
