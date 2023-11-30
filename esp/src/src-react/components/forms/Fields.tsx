@@ -490,7 +490,8 @@ export const TargetGroupTextField: React.FunctionComponent<TargetGroupTextFieldP
 
     React.useEffect(() => {
         TpGroupQuery({}).then(({ TpGroupQueryResponse }) => {
-            setTargetGroups(TpGroupQueryResponse.TpGroups.TpGroup.map(group => {
+            const groups = TpGroupQueryResponse?.TpGroups?.TpGroup ?? [];
+            setTargetGroups(groups.map(group => {
                 switch (group?.Kind) {
                     case "Thor":
                     case "hthor":
