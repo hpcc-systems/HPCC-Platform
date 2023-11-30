@@ -1,18 +1,19 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, IIconProps, SearchBox } from "@fluentui/react";
+import { Breadcrumb, BreadcrumbButton, BreadcrumbDivider, BreadcrumbItem, Spinner } from "@fluentui/react-components";
 import { useConst } from "@fluentui/react-hooks";
+import { bundleIcon, Folder20Filled, Folder20Regular, FolderOpen20Filled, FolderOpen20Regular, } from "@fluentui/react-icons";
 import { WorkunitsServiceEx } from "@hpcc-js/comms";
 import { Table } from "@hpcc-js/dgrid";
 import { compare, scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import { WUTimelinePatched } from "src/Timings";
 import * as Utility from "src/Utility";
-import { useDeepEffect } from "../hooks/deepHooks";
-import { useMetricsOptions, useWorkunitMetrics } from "../hooks/metrics";
+import { FetchStatus, useMetricsOptions, useWorkunitMetrics } from "../hooks/metrics";
 import { HolyGrail } from "../layouts/HolyGrail";
-import { AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
+import { AutosizeComponent, AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
 import { DockPanel, DockPanelItems, ReactWidget, ResetableDockPanel } from "../layouts/DockPanel";
-import { IScope, MetricGraph, MetricGraphWidget } from "../util/metricGraph";
+import { IScope, MetricGraph, MetricGraphWidget, isGraphvizWorkerResponse, layoutCache } from "../util/metricGraph";
 import { pushUrl } from "../util/history";
 import { debounce } from "../util/throttle";
 import { ErrorBoundary } from "../util/errorBoundary";
@@ -22,6 +23,9 @@ import { MetricsOptions } from "./MetricsOptions";
 const logger = scopedLogger("src-react/components/Metrics.tsx");
 
 const filterIcon: IIconProps = { iconName: "Filter" };
+
+const LineageIcon = bundleIcon(Folder20Filled, Folder20Regular);
+const SelectedLineageIcon = bundleIcon(FolderOpen20Filled, FolderOpen20Regular);
 
 const defaultUIState = {
     hasSelection: false
@@ -112,13 +116,14 @@ interface MetricsProps {
 export const Metrics: React.FunctionComponent<MetricsProps> = ({
     wuid,
     parentUrl = `/workunits/${wuid}/metrics`,
-    selection = ""
+    selection
 }) => {
     const [_uiState, _setUIState] = React.useState({ ...defaultUIState });
     const [timelineFilter, setTimelineFilter] = React.useState("");
-    const [selectedMetrics, setSelectedMetrics] = React.useState([]);
+    const [selectedMetricsSource, setSelectedMetricsSource] = React.useState<"" | "scopesTable" | "metricGraphWidget" | "hotspot" | "reset">("");
+    const [selectedMetrics, setSelectedMetrics] = React.useState<IScope[]>([]);
     const [selectedMetricsPtr, setSelectedMetricsPtr] = React.useState<number>(-1);
-    const [metrics, columns, _activities, _properties, _measures, _scopeTypes, refresh] = useWorkunitMetrics(wuid);
+    const [metrics, columns, _activities, _properties, _measures, _scopeTypes, fetchStatus, refresh] = useWorkunitMetrics(wuid);
     const [showMetricOptions, setShowMetricOptions] = React.useState(false);
     const [options, setOptions, saveOptions] = useMetricsOptions();
     const [dockpanel, setDockpanel] = React.useState<ResetableDockPanel>();
@@ -126,6 +131,11 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     const [trackSelection, setTrackSelection] = React.useState<boolean>(true);
     const [fullscreen, setFullscreen] = React.useState<boolean>(false);
     const [hotspots, setHotspots] = React.useState<string>("");
+    const [lineage, setLineage] = React.useState<IScope[]>([]);
+    const [selectedLineage, setSelectedLineage] = React.useState<IScope>();
+    const [isLayoutComplete, setIsLayoutComplete] = React.useState<boolean>(false);
+    const [isRenderComplete, setIsRenderComplete] = React.useState<boolean>(false);
+    const [dot, setDot] = React.useState<string>("");
 
     React.useEffect(() => {
         const service = new WorkunitsServiceEx({ baseUrl: "" });
@@ -151,6 +161,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     }, [wuid]);
 
     const onHotspot = React.useCallback(() => {
+        setSelectedMetricsSource("hotspot");
         pushUrl(`/workunits/${wuid}/metrics/${selection}`);
     }, [wuid, selection]);
 
@@ -228,14 +239,15 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         .columns(["##", nlsHPCC.Type, nlsHPCC.Scope, ...options.properties])
         .sortable(true)
         .on("click", debounce((row, col, sel) => {
-            const selection = scopesTable.selection();
-            pushUrl(`${parentUrl}/${selection.map(row => row.__lparam.id).join(",")}`);
+            if (sel) {
+                const selection = scopesTable.selection();
+                setSelectedMetricsSource("scopesTable");
+                pushUrl(`${parentUrl}/${selection.map(row => row.__lparam.id).join(",")}`);
+            }
         }, 100))
     );
 
-    const [tableLoaded, setTableLoaded] = React.useState(false);
     React.useEffect(() => {
-        setTableLoaded(false);
         scopesTable
             .columns(["##", nlsHPCC.Type, nlsHPCC.Scope, ...options.properties])
             .data(metrics.filter(scopeFilterFunc).filter(row => {
@@ -247,11 +259,10 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
             }))
             .render()
             ;
-        setTableLoaded(true);
     }, [metrics, options.properties, options.scopeTypes, scopeFilterFunc, scopesTable, timelineFilter]);
 
     const updateScopesTable = React.useCallback((selection: IScope[]) => {
-        if (tableLoaded) {
+        if (scopesTable?.renderCount() > 0) {
             const prevSelection = scopesTable.selection().map(row => row.__lparam.id);
             const newSelection = selection.map(row => row.id);
             const diffs = compare(prevSelection, newSelection);
@@ -261,7 +272,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                 }));
             }
         }
-    }, [scopesTable, tableLoaded]);
+    }, [scopesTable]);
 
     //  Graph  ---
     const metricGraph = useConst(() => new MetricGraph());
@@ -269,6 +280,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         .zoomToFitLimit(1)
         .on("selectionChanged", () => {
             const selection = metricGraphWidget.selection().filter(id => metricGraph.item(id)).map(id => metricGraph.item(id).id);
+            setSelectedMetricsSource("metricGraphWidget");
             pushUrl(`${parentUrl}/${selection.join(",")}`);
         })
     );
@@ -277,30 +289,66 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         metricGraph.load(metrics);
     }, [metrics, metricGraph]);
 
-    const updateMetricGraph = React.useCallback((selection: IScope[]) => {
-        if (metricGraphWidget.renderCount() > 0) {
-            //  Check if selection is already visible  ---
-            const newSel = selection.map(s => s.name);
-            if (!selection.length || selection.every(row => metricGraphWidget.exists(row.name))) {
-                metricGraphWidget
-                    .selection(newSel)
-                    .render(() => {
-                        if (trackSelection) {
-                            metricGraphWidget.zoomToSelection();
-                        }
-                    })
-                    ;
-            } else {
-                metricGraphWidget
-                    .dot(metricGraph.graphTpl(selection, options))
-                    .resize()
-                    .render(() => {
-                        metricGraphWidget.selection(newSel);
-                    })
-                    ;
+    const updateLineage = React.useCallback((selection: IScope[]) => {
+        const newLineage: IScope[] = [];
+
+        let minLen = Number.MAX_SAFE_INTEGER;
+        const lineages = selection.map(item => {
+            const retVal = metricGraph.lineage(item);
+            minLen = Math.min(minLen, retVal.length);
+            return retVal;
+        });
+
+        if (lineages.length) {
+            for (let i = 0; i < minLen; ++i) {
+                const item = lineages[0][i];
+                if (lineages.every(lineage => lineage[i] === item)) {
+                    if (metricGraph.isSubgraph(item) && item.name) {
+                        newLineage.push(item);
+                    }
+                } else {
+                    break;
+                }
             }
         }
-    }, [metricGraph, metricGraphWidget, options, trackSelection]);
+
+        setLineage(newLineage);
+        if (!layoutCache.isComplete(dot) || newLineage.find(item => item === selectedLineage) === undefined) {
+            setSelectedLineage(newLineage[newLineage.length - 1]);
+        }
+    }, [dot, metricGraph, selectedLineage]);
+
+    const updateMetricGraph = React.useCallback((svg: string, selection: IScope[]) => {
+        let cancelled = false;
+        if (metricGraphWidget?.renderCount() > 0) {
+            setIsRenderComplete(false);
+            metricGraphWidget
+                .svg(svg)
+                .visible(false)
+                .resize()
+                .render(() => {
+                    if (!cancelled) {
+                        const newSel = selection.map(s => s.name).filter(sel => !!sel);
+                        metricGraphWidget
+                            .visible(true)
+                            .selection(newSel)
+                            ;
+                        if (trackSelection && selectedMetricsSource !== "metricGraphWidget") {
+                            if (newSel.length) {
+                                metricGraphWidget.zoomToSelection(0);
+                            } else {
+                                metricGraphWidget.zoomToFit(0);
+                            }
+                        }
+                    }
+                    setIsRenderComplete(true);
+                })
+                ;
+        }
+        return () => {
+            cancelled = true;
+        };
+    }, [metricGraphWidget, selectedMetricsSource, trackSelection]);
 
     const graphButtons = React.useMemo((): ICommandBarItemProps[] => [
         {
@@ -318,17 +366,8 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                 metricGraphWidget.centerOnItem(selectedMetrics[selectedMetricsPtr + 1].name);
                 setSelectedMetricsPtr(selectedMetricsPtr + 1);
             }
-        },
-        {
-            key: "reset", text: nlsHPCC.Reset, iconProps: { iconName: "Undo" },
-            onClick: () => {
-                metricGraphWidget.reset();
-                setSelectedMetrics([]);
-                setSelectedMetricsPtr(0);
-                pushUrl(parentUrl);
-            }
         }
-    ], [metricGraphWidget, parentUrl, selectedMetrics, selectedMetricsPtr]);
+    ], [metricGraphWidget, selectedMetrics, selectedMetricsPtr]);
 
     const graphRightButtons = React.useMemo((): ICommandBarItemProps[] => [
         {
@@ -365,12 +404,44 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         },
     ], [metricGraphWidget, selectedMetrics.length, trackSelection]);
 
+    const spinnerLabel: string = React.useMemo((): string => {
+        if (fetchStatus === FetchStatus.STARTED) {
+            return nlsHPCC.FetchingData;
+        } else if (!isLayoutComplete) {
+            return `${nlsHPCC.PerformingLayout} (${dot.split("\n").length})`;
+        } else if (!isRenderComplete) {
+            return `${nlsHPCC.RenderSVG}`;
+        }
+        return "";
+    }, [fetchStatus, isLayoutComplete, isRenderComplete, dot]);
+
     const graphComponent = React.useMemo(() => {
         return <HolyGrail
-            header={<CommandBar items={graphButtons} farItems={graphRightButtons} />}
-            main={<AutosizeHpccJSComponent widget={metricGraphWidget} ></AutosizeHpccJSComponent>}
+            header={<>
+                <CommandBar items={graphButtons} farItems={graphRightButtons} />
+                <Breadcrumb>{
+                    lineage.map((item, idx) => {
+                        return <>
+                            <BreadcrumbItem key={idx} >
+                                <BreadcrumbButton current={selectedLineage === item} icon={selectedLineage === item ? <SelectedLineageIcon /> : <LineageIcon />} onClick={() => setSelectedLineage(item)}>
+                                    {item.id}
+                                </BreadcrumbButton>
+                            </BreadcrumbItem>
+                            {idx < lineage.length - 1 && <BreadcrumbDivider />}
+                        </>;
+                    })
+                }</Breadcrumb>
+            </>}
+            main={<>
+                <AutosizeComponent hidden={!spinnerLabel}>
+                    <Spinner size="extra-large" label={spinnerLabel} labelPosition="below"></Spinner>
+                </AutosizeComponent>
+                <AutosizeHpccJSComponent widget={metricGraphWidget}>
+                </AutosizeHpccJSComponent>
+            </>
+            }
         />;
-    }, [graphButtons, graphRightButtons, metricGraphWidget]);
+    }, [graphButtons, graphRightButtons, lineage, spinnerLabel, metricGraphWidget, selectedLineage]);
 
     //  Props Table  ---
     const propsTable = useConst(() => new Table()
@@ -439,17 +510,41 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         portal.children(<h1>{timelineFilter}</h1>).lazyRender();
     }, [portal, timelineFilter]);
 
-    useDeepEffect(() => {
-        if (selectedMetrics) {
-            updateScopesTable(selectedMetrics);
-            updateMetricGraph(selectedMetrics);
-            updatePropsTable(selectedMetrics);
-            updatePropsTable2(selectedMetrics);
-        }
-    }, [], [selectedMetrics]);
+    React.useEffect(() => {
+        const dot = metricGraph.graphTpl(selectedLineage ? [selectedLineage] : [], options);
+        setDot(dot);
+    }, [metricGraph, options, selectedLineage]);
 
     React.useEffect(() => {
-        const selectedIDs = selection.split(",");
+        let cancelled = false;
+        if (metricGraphWidget?.renderCount() > 0) {
+            setIsLayoutComplete(false);
+            layoutCache.calcSVG(dot).then(response => {
+                if (!cancelled) {
+                    if (isGraphvizWorkerResponse(response)) {
+                        updateMetricGraph(response.svg, selectedMetrics?.length ? selectedMetrics : []);
+                    }
+                }
+                setIsLayoutComplete(true);
+            });
+        }
+        return () => {
+            cancelled = true;
+        };
+    }, [dot, metricGraphWidget, selectedMetrics, updateMetricGraph]);
+
+    React.useEffect(() => {
+        if (selectedMetrics) {
+            updateScopesTable(selectedMetrics);
+            updatePropsTable(selectedMetrics);
+            updatePropsTable2(selectedMetrics);
+            updateLineage(selectedMetrics);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedMetrics]);
+
+    React.useEffect(() => {
+        const selectedIDs = selection?.split(",") ?? [];
         setSelectedMetrics(metrics.filter(m => selectedIDs.indexOf(m.id) >= 0));
         setSelectedMetricsPtr(0);
     }, [metrics, selection]);
@@ -495,7 +590,9 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
-            onClick: () => refresh()
+            onClick: () => {
+                refresh();
+            }
         },
         {
             key: "hotspot", text: nlsHPCC.Hotspots, iconProps: { iconName: "SpeedHigh" },
@@ -553,7 +650,6 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                     text: nlsHPCC.DownloadToDOT,
                     iconProps: { iconName: "Relationship" },
                     onClick: () => {
-                        const dot = metricGraph.graphTpl(selectedMetrics, options);
                         Utility.downloadText(dot, `metrics-${wuid}.dot`);
                     }
                 }]
@@ -562,7 +658,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
             key: "fullscreen", title: nlsHPCC.MaximizeRestore, iconProps: { iconName: fullscreen ? "ChromeRestore" : "FullScreen" },
             onClick: () => setFullscreen(!fullscreen)
         }
-    ], [formatColumns, fullscreen, metricGraph, metrics, options, selectedMetrics, wuid]);
+    ], [dot, formatColumns, fullscreen, metrics, wuid]);
 
     return <HolyGrail fullscreen={fullscreen}
         header={<>

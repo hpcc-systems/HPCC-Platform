@@ -1,6 +1,6 @@
 import { d3Event, select as d3Select, SVGZoomWidget } from "@hpcc-js/common";
 import { graphviz } from "@hpcc-js/graph";
-import { Graph2, scopedLogger } from "@hpcc-js/util";
+import { Graph2, hashSum, scopedLogger } from "@hpcc-js/util";
 import { format } from "src/Utility";
 import { MetricsOptions } from "../hooks/metrics";
 
@@ -159,6 +159,15 @@ export class MetricGraph extends Graph2<IScope, IScopeEdge, IScope> {
         }
     }
 
+    lineage(scope: IScope): IScope[] {
+        const retVal: IScope[] = [];
+        while (scope) {
+            retVal.push(scope);
+            scope = this._index[scope.__parentName];
+        }
+        return retVal.reverse();
+    }
+
     load(data: any[]): this {
         this.clear();
 
@@ -272,7 +281,9 @@ export class MetricGraph extends Graph2<IScope, IScopeEdge, IScope> {
         if (options.ignoreGlobalStoreOutEdges && this.vertex(this._activityIndex[e.IdSource]).Kind === "22") {
             return "";
         }
-        return `"${e.IdSource}" -> "${e.IdTarget}" [id="${encodeID(e.name)}" label="${encodeLabel(format(options.edgeTpl, { ...e, ...e.__formattedProps }))}" style="${this.vertexParent(this._activityIndex[e.IdSource]) === this.vertexParent(this._activityIndex[e.IdTarget]) ? "solid" : "dashed"}" class="${this.edgeStatus(e)}"]`;
+        const ltail = this.subgraphExists(this._sourceFunc(e.IdSource)) ? `ltail="cluster_${e.IdSource}"` : "";
+        const lhead = this.subgraphExists(this._targetFunc(e.IdTarget)) ? `lhead="cluster_${e.IdTarget}"` : "";
+        return `"${e.IdSource}" -> "${e.IdTarget}" [id="${encodeID(e.name)}" label="${encodeLabel(format(options.edgeTpl, { ...e, ...e.__formattedProps }))}" style="${this.vertexParent(this._activityIndex[e.IdSource]) === this.vertexParent(this._activityIndex[e.IdTarget]) ? "solid" : "dashed"}" class="${this.edgeStatus(e)}" ${ltail} ${lhead}]`;
     }
 
     subgraphStatus(sg: IScope): ScopeStatus {
@@ -301,9 +312,9 @@ export class MetricGraph extends Graph2<IScope, IScopeEdge, IScope> {
         return `\
 subgraph cluster_${encodeID(sg.id)} {
     fillcolor="white";
-    style="filled";
+    style="${sg.type === "child" ? "dashed" : "filled"}";
     id="${encodeID(sg.name)}";
-    label="${encodeLabel(format(options.subgraphTpl, sg))}";
+    label="${sg.type === "child" ? "" : encodeLabel(format(sg.type === "activity" ? options.activityTpl : options.subgraphTpl, sg))}";
     class="${this.subgraphStatus(sg)}";
 
     ${childTpls.join("\n")}
@@ -317,7 +328,7 @@ subgraph cluster_${encodeID(sg.id)} {
         const childTpls: string[] = [];
         if (items?.length) {
             items.map(item => {
-                if (this.subgraphExists(item.id)) {
+                if (this.subgraphExists(this.id(item))) {
                     return item;
                 } else {
                     if (item?.__parentName && this.subgraphExists(item?.__parentName)) {
@@ -388,6 +399,80 @@ export class Rect {
     }
 }
 
+interface GraphvizWorkerResponse {
+    svg: string;
+}
+
+interface GraphvizWorkerError {
+    error: string;
+    errorDot: string;
+}
+
+export function isGraphvizWorkerResponse(response: GraphvizWorkerResponse | GraphvizWorkerError): response is GraphvizWorkerResponse {
+    return (response as GraphvizWorkerResponse).svg !== undefined;
+}
+
+interface GraphvizWorker {
+    terminate: () => void;
+    response: Promise<GraphvizWorkerResponse | GraphvizWorkerError>;
+    svg?: string;
+    error?: string;
+}
+
+export enum LayoutStatus {
+    UNKNOWN,
+    STARTED,
+    COMPLETED,
+    FAILED
+}
+
+class LayoutCache {
+
+    protected _cache: { [key: string]: GraphvizWorker } = {};
+
+    calcSVG(dot: string): Promise<GraphvizWorkerResponse | GraphvizWorkerError> {
+        const hashDot = hashSum(dot);
+        if (!(hashDot in this._cache)) {
+            this._cache[hashDot] = graphviz(dot, "dot", dojoConfig.urlInfo.fullPath + "/dist") as unknown as GraphvizWorker;
+            this._cache[hashDot].response.then(response => {
+                if (isGraphvizWorkerResponse(response)) {
+                    this._cache[hashDot].svg = response.svg as string;
+                } else {
+                    logger.error(`Invalid DOT:  ${response.error}`);
+                    this._cache[hashDot].error = response.error;
+                }
+            }).catch(e => {
+                logger.error(`Invalid DOT:  ${e}`);
+                this._cache[hashDot].error = e;
+            });
+        }
+        return this._cache[hashDot].response;
+    }
+
+    status(dot: string): LayoutStatus {
+        const hashDot = hashSum(dot);
+        if (!(hashDot in this._cache)) {
+            return LayoutStatus.UNKNOWN;
+        } else if (this._cache[hashDot].svg) {
+            return LayoutStatus.COMPLETED;
+        } else if (this._cache[hashDot].error) {
+            return LayoutStatus.FAILED;
+        }
+        return LayoutStatus.STARTED;
+    }
+
+    isComplete(dot: string): boolean {
+        switch (this.status(dot)) {
+            case LayoutStatus.COMPLETED:
+            case LayoutStatus.FAILED:
+                return true;
+        }
+        return false;
+    }
+}
+
+export const layoutCache = new LayoutCache();
+
 export class MetricGraphWidget extends SVGZoomWidget {
 
     protected _selection: { [id: string]: boolean } = {};
@@ -456,9 +541,11 @@ export class MetricGraphWidget extends SVGZoomWidget {
 
     selectionBBox() {
         const rect = new Rect();
-        this.selection().forEach(sel => {
+        this.selection().filter(sel => !!sel).forEach(sel => {
             const elem = this._renderElement.select(`#${encodeID(sel)}`);
-            rect.extend((elem.node() as SVGGraphicsElement).getBBox());
+            if (elem?.node()) {
+                rect.extend((elem.node() as SVGGraphicsElement).getBBox());
+            }
         });
         const bbox = rect.toStruct();
         const renderBBox = this._renderElement.node().getBBox();
@@ -482,15 +569,18 @@ export class MetricGraphWidget extends SVGZoomWidget {
         }
     }
 
-    protected _prevDot;
-    protected _dot = "";
+    protected _prevSVG;
+    protected _svg = "";
     reset() {
-        this._prevDot = "";
+        this._prevSVG = "";
         return this;
     }
 
-    dot(_: string): this {
-        this._dot = _;
+    svg(): string;
+    svg(_: string): this;
+    svg(_?: string): this | string {
+        if (arguments.length === 0) return this._svg;
+        this._svg = _;
         return this;
     }
 
@@ -504,8 +594,8 @@ export class MetricGraphWidget extends SVGZoomWidget {
         return this;
     }
 
-    zoomToSelection() {
-        this.zoomToBBox(this.selectionBBox());
+    zoomToSelection(transitionDuration?: number) {
+        this.zoomToBBox(this.selectionBBox(), transitionDuration);
         return this;
     }
 
@@ -513,49 +603,39 @@ export class MetricGraphWidget extends SVGZoomWidget {
         super.update(domNode, element);
     }
 
-    protected _prevGV;
-    render(callback?) {
-        return super.render(w => {
-            if (this._prevDot !== this._dot) {
-                this._prevDot = this._dot;
-                this?._prevGV?.terminate();
-                const dot = this._dot;
-                this._prevGV = graphviz(dot, "dot", dojoConfig.urlInfo.fullPath + "/dist");
-                this._prevGV.response.then(response => {
-                    //  Check for race condition  ---
-                    if (dot === this._prevDot) {
-                        if (response.svg) {
-                            const startPos = response.svg.indexOf("<g id=");
-                            const endPos = response.svg.indexOf("</svg>");
-                            this._renderElement.html(response.svg.substring(startPos, endPos));
-                            const context = this;
-                            setTimeout(() => {
-                                this.zoomToFit(0);
-                                this._renderElement.selectAll(".node,.edge,.cluster")
-                                    .on("click", function () {
-                                        const event = d3Event();
-                                        if (!event.ctrlKey) {
-                                            context.clearSelection();
-                                        }
-                                        context.toggleSelection(decodeID(this.id), true);
-                                    });
-                                if (callback) {
-                                    callback(this);
-                                }
-                            }, 0);
-                        } else if (response.error) {
-                            logger.error(`Invalid DOT:  ${response.error}\nresponse.errorDot`);
+    async renderSVG(svg: string): Promise<void> {
+        return new Promise<void>((resolve, reject) => {
+            this._selection = {};
+            const startPos = svg.indexOf("<g id=");
+            const endPos = svg.indexOf("</svg>");
+            this._renderElement.html(svg.substring(startPos, endPos));
+            setTimeout(() => {
+                this
+                    .zoomToFit(0)
+                    ;
+                const context = this;
+                this._renderElement.selectAll(".node,.edge,.cluster")
+                    .on("click", function () {
+                        const event = d3Event();
+                        if (!event.ctrlKey) {
+                            context.clearSelection();
                         }
-                    }
-                }).catch(e => {
-                    if (callback) {
-                        callback(this);
-                    }
-                });
-            } else {
-                if (callback) {
-                    callback(this);
-                }
+                        context.toggleSelection(decodeID(this.id), true);
+                    });
+                resolve();
+            }, 0);
+        });
+    }
+
+    render(callback?: (w: MetricGraphWidget) => void) {
+
+        return super.render(async w => {
+            if (this._prevSVG !== this._svg) {
+                this._prevSVG = this._svg;
+                await this.renderSVG(this._svg);
+            }
+            if (callback) {
+                callback(this);
             }
         });
     }
