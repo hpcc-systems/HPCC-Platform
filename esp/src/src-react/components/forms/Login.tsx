@@ -122,7 +122,7 @@ export const Login: React.FunctionComponent<LoginProps> = ({
                         setErrorMessage("");
                         const lastUrl = window.localStorage.getItem("pageOnLock") ?? "/";
                         window.localStorage.removeItem("pageOnLock");
-                        replaceUrl(lastUrl, true);
+                        replaceUrl(lastUrl, null, true);
                     }).catch(err => logger.error("Unable to create user session."));
                 }
             }
