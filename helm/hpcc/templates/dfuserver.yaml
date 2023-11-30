@@ -57,7 +57,7 @@ spec:
         {{- include "hpcc.addStandardLabels" (dict "root" $ "component" "dfuserver" "name" "dfuserver" "instance" .name) | indent 8 }}
         run: {{ .name | quote }}
         accessDali: "yes"
-        helmVersion: 9.4.15-closedown0
+        helmVersion: 9.4.17-closedown0
 {{- if hasKey . "labels" }}
 {{ toYaml .labels | indent 8 }}
 {{- end }}
