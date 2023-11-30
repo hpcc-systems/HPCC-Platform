@@ -303,7 +303,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
             for (let i = 0; i < minLen; ++i) {
                 const item = lineages[0][i];
                 if (lineages.every(lineage => lineage[i] === item)) {
-                    if (metricGraph.isSubgraph(item) && item.name) {
+                    if (metricGraph.isSubgraph(item) && item.id && !metricGraph.isVertex(item)) {
                         newLineage.push(item);
                     }
                 } else {
@@ -642,7 +642,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                     iconProps: { iconName: "Table" },
                     onClick: () => {
                         const csv = Utility.formatAsDelim(formatColumns, metrics, ",");
-                        Utility.downloadText(csv, `metrics-${wuid}.csv`);
+                        Utility.downloadCSV(csv, `metrics-${wuid}.csv`);
                     }
                 },
                 {
@@ -650,7 +650,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                     text: nlsHPCC.DownloadToDOT,
                     iconProps: { iconName: "Relationship" },
                     onClick: () => {
-                        Utility.downloadText(dot, `metrics-${wuid}.dot`);
+                        Utility.downloadPlain(dot, `metrics-${wuid}.dot`);
                     }
                 }]
             }

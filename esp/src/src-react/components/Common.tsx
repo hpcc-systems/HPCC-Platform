@@ -17,7 +17,7 @@ export function createCopyDownloadSelection(columns, selection: any, filename: s
         key: "download", text: nlsHPCC.DownloadSelectionAsCSV, disabled: !selection.length, iconOnly: true, iconProps: { iconName: "Download" },
         onClick: () => {
             const csv = Utility.formatAsDelim(columns, selection, ",");
-            Utility.downloadText(csv, filename);
+            Utility.downloadCSV(csv, filename);
         }
     }];
 }
