@@ -17,7 +17,9 @@ define([
     "hpcc/DelayLoadWidget",
     "hpcc/PreflightDetailsWidget",
     "hpcc/MachineInformationWidget",
-    "hpcc/IFrameWidget"
+    "hpcc/IFrameWidget",
+
+    "dijit/Dialog",
 ], function (declare, nlsHPCCMod, topic,
     registry,
     tree, selector,

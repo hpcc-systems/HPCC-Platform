@@ -16,6 +16,7 @@ define([
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane",
+    "dijit/Dialog",
     "dijit/Toolbar",
     "dijit/ToolbarSeparator",
     "dijit/form/Button",
