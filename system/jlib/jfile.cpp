@@ -4256,8 +4256,22 @@ void recursiveRemoveDirectory(IFile *dir)
             recursiveRemoveDirectory(thisFile);
         else
         {
+            try
+            {
+                if (thisFile->remove())
+                    continue;
+            }
+            catch(IException *e)
+            {
+                e->Release();
+            }
+
+            // is this actually useful?
+            // a file can still be deleted without write permissions, if the directory it's in has write permissions
+            // So if anything, setReadOnly(false) should be set before descending.
+            // But that would either involve an extra file op. or a change to the interface.
             thisFile->setReadOnly(false);
-            thisFile->remove();
+            thisFile->remove(); // if gets here, should exist (ignore return false if doesn't), throws an exception if fails for other reasons
         }
     }
     dir->remove();
