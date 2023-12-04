@@ -252,7 +252,6 @@ public:
     const IpAddress ip;
     std::atomic<unsigned> timeouts{0};    // Number of consecutive timeouts
     std::atomic<unsigned> requestExpiryTime{0};  // Updated by send_flow thread, read by send_resend thread and send_data thread
-
     static bool comparePacket(const void *pkData, const void *key)
     {
         UdpPacketHeader *dataHdr = (UdpPacketHeader*) ((DataBuffer*)pkData)->data;
