@@ -610,6 +610,11 @@ export class MetricGraphWidget extends SVGZoomWidget {
         return this;
     }
 
+    centerOnSelection(transitionDuration?: number) {
+        this.centerOnBBox(this.selectionBBox(), transitionDuration);
+        return this;
+    }
+
     zoomToItem(scopeID: string) {
         this.zoomToBBox(this.itemBBox(scopeID));
         return this;
