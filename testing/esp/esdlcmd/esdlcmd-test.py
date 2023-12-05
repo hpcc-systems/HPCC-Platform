@@ -52,6 +52,7 @@ class TestRun:
         self.test_path = test_path
         self.stats = stats
 
+# This class is base for commands related to services: wsdl, xsd, cpp and java.
 class TestCaseBase:
     """Settings for a specific test case."""
 
@@ -102,6 +103,110 @@ class TestCaseBase:
         """
         logging.debug('TestCaseBase implementation called, no comparison run')
         return False
+
+# This class is the base for the 'transform' commands: ecl and xml.
+# In a future update, investigate refactoring the base classes so there is a single
+# parent with any shared capabilities.
+#
+# When writing to stdout, the key directory should contain a file named 'from-stdout.ecl'
+# that contains the expected output.
+class TestCaseTransformBase:
+    def __init__(self, run_settings, name, command, esdl_file, xsl_path, use_stdout, expected_err=None, options=None):
+        self.run_settings = run_settings
+        self.name = name
+        self.command = command
+        self.esdl_path = (self.run_settings.test_path / 'inputs' / esdl_file)
+        self.xsl_path = xsl_path
+        self.options = options
+        self.output_path = Path(self.run_settings.output_base) / name
+        self.stdout = use_stdout
+        self.expected_err = expected_err
+        if self.stdout:
+            self.args = [
+                str(run_settings.exe_path),
+                self.command,
+                self.esdl_path,
+                '-cde',
+                self.xsl_path,
+            ]
+        else:
+            self.args = [
+                str(run_settings.exe_path),
+                self.command,
+                self.esdl_path,
+                self.output_path,
+                '-cde',
+                self.xsl_path,
+            ]
+
+        if options:
+            self.args.extend(options)
+
+        self.result = None
+
+    def run_test(self):
+        safe_mkdir(self.output_path)
+        logging.debug("Test %s args: %s", self.name, str(self.args))
+        self.result = subprocess.run(self.args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
+        if self.expected_err != None and self.expected_err == self.result.stderr:
+            success = True
+        elif self.result.returncode != 0:
+            logging.error('Error running "esdl %s" for test "%s": %s', self.command, self.name, self.result.stderr)
+            success = False
+        else:
+            success = self.validate_results()
+
+        self.run_settings.stats.add_count(success)
+
+    def is_same(self, dir1, dir2):
+        """
+        Compare two directory trees content.
+        Return False if they differ, True is they are the same.
+        """
+        compared = DirectoryCompare(dir1, dir2)
+        if (compared.left_only or compared.right_only or compared.diff_files
+            or compared.funny_files):
+            return False
+        for subdir in compared.common_dirs:
+            if not self.is_same(os.path.join(dir1, subdir), os.path.join(dir2, subdir)):
+                return False
+        return True
+
+    def validate_results(self):
+        """Compare test case results to the known key.
+
+        Return True if the two are identical or False otherwise.
+        """
+        outName = self.output_path
+        key = (self.run_settings.test_path / 'key' / self.name)
+
+        # When output was stdout, write the captured stdout text to a file named 'from-stdout.ecl'
+        # in the output directory. This allows us to use the same method of comparing the key
+        # and result.
+        if self.stdout:
+            if self.result.stdout != None and len(self.result.stdout) > 0:
+                with open((outName / 'from-stdout.ecl'), 'w', encoding='utf-8') as f:
+                    f.write(self.result.stdout)
+            else:
+                logging.error('Missing stdout output for test %s', self.name)
+                return False
+
+        if (not key.exists()):
+            logging.error('Missing key file %s', str(key))
+            return False
+
+        if (not outName.exists()):
+            logging.error('Missing output for test %s', self.name)
+            return False
+
+        if (not self.is_same(str(key), str(outName))):
+            logging.debug('Comparing key %s to output %s', str(key), str(outName))
+            logging.error('Test failed: %s', self.name)
+            return False
+        else:
+            logging.debug('Passed: %s', self.name)
+            return True
 
 
 class TestCaseXSD(TestCaseBase):
@@ -212,6 +317,8 @@ def parse_options():
     the parsed options and arguments.
     """
 
+    command_values = ['all', 'cpp', 'ecl', 'java', 'wsdl', 'xsd']
+
     parser = argparse.ArgumentParser(description=DESC)
     parser.add_argument('testroot',
                         help='Path of the root folder of the esdlcmd testing project')
@@ -231,7 +338,15 @@ def parse_options():
                         help='Enable debug logging of test cases',
                         action='store_true', default=False)
 
+    parser.add_argument('-c', '--commands',
+                         help='esdl commands to run tests for, use once for each command or pass "all" to test all commands. Defaults to "all".',
+                         action="append", choices=command_values)
+
     args = parser.parse_args()
+
+    if args.commands == None:
+        args.commands = ['all']
+
     return args
 
 
@@ -277,6 +392,11 @@ def main():
 
     stats = Statistics()
     run_settings = TestRun(stats, exe_path, args.outdir, test_path)
+
+    esdl_includes_path = str(test_path / 'inputs')
+
+    expected_err_multi_file_incl = '\nOutput to stdout is not supported for multiple files. Either add the Rollup\noption or specify an output directory.\n'
+    expected_err_multi_file_expanded = '\nOutput to stdout is not supported for multiple files. Remove the Output expanded\n XML option or specify an output directory.\n'
 
     test_cases = [
         # wsdl
@@ -390,10 +510,27 @@ def main():
         # A single element is created for each request structure defined. This is default behavior.
         TestCaseXSD(run_settings, 'use-request-name', 'wsdl', 'ws_userequestname.ecm', 'WsUseRequestName',
                     xsl_base_path),
+
+        # ecl
+        TestCaseTransformBase(run_settings, 'ecl-stdout-single', 'ecl', 'ws_test.ecm', xsl_base_path, use_stdout=True),
+
+        TestCaseTransformBase(run_settings, 'ecl-stdout-incl-err', 'ecl', 'ws_test.ecm', xsl_base_path, use_stdout=True,
+                              expected_err=expected_err_multi_file_incl, options=['-I', esdl_includes_path, '--includes']), 
+
+        TestCaseTransformBase(run_settings, 'ecl-stdout-expanded-err', 'ecl', 'ws_test.ecm', xsl_base_path, use_stdout=True,
+                              expected_err=expected_err_multi_file_expanded, options=['-x']),
+
+        TestCaseTransformBase(run_settings, 'ecl-stdout-incl-rollup', 'ecl', 'ws_test.ecm', xsl_base_path, use_stdout=True,
+                              options=['-I', esdl_includes_path, '--includes', '--rollup']),
+
+        TestCaseTransformBase(run_settings, 'ecl-incl', 'ecl', 'ws_test.ecm', xsl_base_path, use_stdout=False,
+                              options=['-I', esdl_includes_path, '--includes'])
+
     ]
 
     for case in test_cases:
-        case.run_test()
+        if 'all' in args.commands or case.command in args.commands:
+            case.run_test()
 
     logging.info('Success count: %d', stats.successCount)
     logging.info('Failure count: %d', stats.failureCount)

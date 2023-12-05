@@ -19,6 +19,7 @@
 #include "xslprocessor.hpp"
 
 #include "esdlcmd_core.hpp"
+#include "esdlcmdutils.hpp"
 
 typedef IPropertyTree * IPTreePtr;
 
@@ -103,7 +104,7 @@ public:
             {
                 fileName.append(srcext);
                 StringBuffer esxml;
-                EsdlCmdHelper::convertECMtoESXDL(fileName.str(), srcfile, esxml, loadincludes && rollUp, true, true, isIncludedESDL, includePath);
+                EsdlCmdHelper::convertECMtoESXDL(fileName.str(), srcfile, esxml, loadincludes && rollUp, false, true, isIncludedESDL, includePath);
                 src = createPTreeFromXMLString(esxml, 0);
             }
             else if (!srcext || !*srcext || stricmp(srcext, XML_FILE_EXTENSION)==0)
@@ -198,35 +199,32 @@ public:
     {
         if (iter.done())
         {
+            fprintf(stderr, "\nRequired sourcePath parameter missing.\n");
             usage();
             return false;
         }
 
-        //First two parameters' order is fixed.
-        for (int par = 0; par < 2 && !iter.done(); par++)
+        //First parameter's order is fixed.
+        const char *arg = iter.query();
+        if (*arg != '-')
+            optSource.set(arg);
+        else
         {
-            const char *arg = iter.query();
+            fprintf(stderr, "\nOption detected before required sourcePath parameter: %s\n", arg);
+            usage();
+            return false;
+        }
+
+
+        if (iter.next())
+        {
+            arg = iter.query();
             if (*arg != '-')
             {
-                if (optSource.isEmpty())
-                    optSource.set(arg);
-                else if (optOutDirPath.isEmpty())
-                    optOutDirPath.set(arg);
-                else
-                {
-                    fprintf(stderr, "\nunrecognized argument detected before required parameters: %s\n", arg);
-                    usage();
-                    return false;
-                }
+                optOutDirPath.set(arg);
+                optStdout = false;
+                iter.next();
             }
-            else
-            {
-                fprintf(stderr, "\noption detected before required parameters: %s\n", arg);
-                usage();
-                return false;
-            }
-
-            iter.next();
         }
 
         for (; !iter.done(); iter.next())
@@ -281,7 +279,27 @@ public:
 
     virtual bool finalizeOptions(IProperties *globals)
     {
-        return EsdlConvertCmd::finalizeOptions(globals);
+        if (optStdout)
+        {
+            // We can't call EsdlConvertCmd::finalizeOptions when using stdout because it
+            // requires outOutDirPath, so duplicate the other work it does here instead
+            extractEsdlCmdOption(optIncludePath, globals, ESDLOPT_INCLUDE_PATH_ENV, ESDLOPT_INCLUDE_PATH_INI, NULL, NULL);
+            if (optOutputExpandedXML)
+            {
+                fprintf(stderr, "\nOutput to stdout is not supported for multiple files. Remove the Output expanded\n XML option or specify an output directory.\n");
+                usage();
+                return false;
+            }
+            else if (optProcessIncludes && !optRollUpEclToSingleFile)
+            {
+                fprintf(stderr, "\nOutput to stdout is not supported for multiple files. Either add the Rollup\noption or specify an output directory.\n");
+                usage();
+                return false;
+            }
+            return EsdlCmdCommon::finalizeOptions(globals);
+        }
+        else
+            return EsdlConvertCmd::finalizeOptions(globals);
     }
 
     virtual int processCMD()
@@ -378,10 +396,16 @@ public:
     virtual void usage()
     {
         fputs("\nUsage:\n\n"
-                "esdl ecl sourcePath outputPath [options]\n"
-                "\nsourcePath must be absolute path to the ESDL Definition file containing the"
+                "esdl ecl sourcePath [outputPath] [options]\n"
+                "\n"
+                "sourcePath must be absolute path to the ESDL Definition file containing the\n"
                 "EsdlService definition for the service you want to work with.\n"
-                "outputPath must be the absolute path where the ECL output with be created.\n"
+                "\n"
+                "outputPath, if supplied, must be the absolute path where the ECL output will be\n"
+                "created. When outputPath is omitted options must generate a single file which is\n"
+                "written to stdout. This means to write to stdout, you must not use -x/--expandedxml,\n"
+                "nor can you use --includes without also using --rollup.\n"
+                "\n"
                 "   Options:\n"
                 "      -x, --expandedxml     Output expanded XML files\n"
                 "      --includes            Process all included files\n"
@@ -390,7 +414,7 @@ public:
                 "      --ecl-imports         Comma-delimited import list to be attached to output ECL\n"
                 "                            each entry generates a corresponding import *.<entry>\n"
                 "      --ecl-header          Text included in target header (must be valid ECL) \n"
-                "      --utf8-               Don't use UTF8 strings"
+                "      --utf8-               Don't use UTF8 strings\n"
                 "   " ESDLOPT_INCLUDE_PATH_USAGE
                 ,stdout);
     }
@@ -398,10 +422,11 @@ public:
     void outputEcl(const char *srcpath, const char *file, const char *path, const char *types, const char * xml, const char * eclimports, const char * eclheader)
     {
         DBGLOG("Generating ECL file for %s", file);
-
+        StringBuffer outfile;
         StringBuffer filePath;
         StringBuffer fileName;
         StringBuffer fileExt;
+        StringBuffer fullSrcFile;
 
         splitFilename(file, NULL, &filePath, &fileName, &fileExt);
 
@@ -409,30 +434,30 @@ public:
         if (!strnicmp(finger, "wsm_", 4))
             finger+=4;
 
-        StringBuffer outfile;
-        if (path && *path)
-        {
-            outfile.append(path);
-            if (outfile.length() && !strchr("/\\", outfile.charAt(outfile.length()-1)))
-                outfile.append('/');
-        }
-        outfile.append(finger).append(".ecl");
+        fullSrcFile.append(srcpath);
+        addPathSepChar(fullSrcFile, PATHSEPCHAR).append(file);
 
+        if (!optStdout)
         {
-            //If the target output file cannot be accessed, this operation will
-            //throw, and will be caught and reported at the shell level.
-            Owned<IFile> ofile =  createIFile(outfile.str());
-            if (ofile)
+            if (path && *path)
             {
-                Owned<IFileIO> fileIO = ofile->open(IFOcreate);
-                fileIO.clear();
+                outfile.append(path);
+                if (outfile.length() && !strchr("/\\", outfile.charAt(outfile.length()-1)))
+                    outfile.append('/');
+            }
+            outfile.append(finger).append(".ecl");
+
+            {
+                //If the target output file cannot be accessed, this operation will
+                //throw, and will be caught and reported at the shell level.
+                Owned<IFile> ofile =  createIFile(outfile.str());
+                if (ofile)
+                {
+                    Owned<IFileIO> fileIO = ofile->open(IFOcreate);
+                    fileIO.clear();
+                }
             }
         }
-
-        StringBuffer fullname(srcpath);
-        if (fullname.length() && !strchr("/\\", fullname.charAt(fullname.length()-1)))
-            fullname.append('/');
-        fullname.append(fileName.str()).append(".xml");
 
         StringBuffer expstr;
         expstr.append("<expesdl>");
@@ -468,10 +493,10 @@ public:
         params->setProp("utf8strings", optUseUtf8Strings ? "yes" : "no");
         StringBuffer esdl2eclxslt (optHPCCCompFilesDir.get());
         esdl2eclxslt.append("/xslt/esdl2ecl.xslt");
-        esdl2eclxsltTransform(expstr.str(), esdl2eclxslt.str(), params, outfile.str());
+        esdl2eclxsltTransform(expstr.str(), esdl2eclxslt.str(), params, outfile.str(), fullSrcFile.str());
     }
 
-    void esdl2eclxsltTransform(const char* xml, const char* sheet, IProperties *params, const char *filename)
+    void esdl2eclxsltTransform(const char* xml, const char* sheet, IProperties *params, const char *outputFilename, const char *srcFilename)
     {
         StringBuffer xsl;
         xsl.loadFile(sheet);
@@ -494,15 +519,23 @@ public:
             }
         }
 
-        trans->setResultTarget(filename);
-
         try
         {
-            trans->transform();
+            if (optStdout)
+            {
+                StringBuffer output;
+                trans->transform(output);
+                fputs(output.str(), stdout);
+            }
+            else
+            {
+                trans->setResultTarget(outputFilename);
+                trans->transform();
+            }
         }
         catch(...)
         {
-            fprintf(stderr, "Error transforming Esdl to ECL file %s", filename);
+            fprintf(stderr, "Error transforming Esdl file %s to ECL file", srcFilename);
         }
     }
 
@@ -511,6 +544,7 @@ public:
     bool optProcessIncludes;
     bool optOutputExpandedXML;
     bool optUseUtf8Strings = true;
+    bool optStdout = true;
     StringAttr optHPCCCompFilesDir;
     StringAttr optECLIncludesList;
     StringAttr optECLHeaderBlock;
