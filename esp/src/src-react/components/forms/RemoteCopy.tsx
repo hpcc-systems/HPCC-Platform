@@ -97,7 +97,7 @@ export const RemoteCopy: React.FunctionComponent<RemoteCopyProps> = ({
         WsTopology.TpGroupQuery({
             request: {}
         }).then(response => {
-            const groups = response.TpGroupQueryResponse.TpGroups?.TpGroup ?? [];
+            const groups = response.TpGroupQueryResponse?.TpGroups?.TpGroup ?? [];
             for (const index in groups) {
                 if (groups[index].Name === selectedDestGroup) {
                     if (groups[index].ReplicateOutputs === true) {
