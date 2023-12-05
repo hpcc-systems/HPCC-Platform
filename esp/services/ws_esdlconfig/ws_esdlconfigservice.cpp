@@ -695,6 +695,31 @@ bool CWsESDLConfigEx::onPublishESDLBinding(IEspContext &context, IEspPublishESDL
     return true;
 }
 
+void setContainerizedEspBindingNameByPort(StringBuffer& espPort, StringBuffer& espBindingName)
+{
+    VStringBuffer xpath("services[@class='esp'][@port='%s']", espPort.str());
+    Owned<IPropertyTree> process = getGlobalConfigSP()->getPropTree(xpath);
+    if (nullptr == process)
+        throw makeStringExceptionV(-1, "No ESP process configured for port %s", espPort.str());
+    const char* applicationType = process->queryProp("@type");
+    if (isEmptyString(applicationType))
+        throw makeStringExceptionV(-1, "ESP process configured for port %s is missing 'type'", espPort.str());
+
+    char sepchar = getPathSepChar(hpccBuildInfo.componentDir);
+    StringBuffer path(hpccBuildInfo.componentDir);
+    addPathSepChar(path, sepchar).append("applications").append(sepchar).append(applicationType).append(sepchar).append("application.yaml");
+    if (checkFileExists(path))
+    {
+        Owned<IPropertyTree> applicationProfile = createPTreeFromYAMLFile(path);
+        const char* serviceName = applicationProfile->queryProp("application/services[1]");
+        if (isEmptyString(serviceName))
+            throw makeStringExceptionV(-1, "No service entry found in ESP application profile '%s' while trying to build service binding name for port %s", path.str(), espPort.str());
+        espBindingName.setf("%s_binding", serviceName);
+    }
+    else
+        throw makeStringExceptionV(-1, "Can't open platform ESP application profile '%s' to build service binding name for port %s", path.str(), espPort.str());
+}
+
 bool CWsESDLConfigEx::onConfigureESDLBindingMethod(IEspContext &context, IEspConfigureESDLBindingMethodRequest &req, IEspConfigureESDLBindingMethodResponse &resp)
 {
     int success = 0;
@@ -816,19 +841,24 @@ bool CWsESDLConfigEx::onConfigureESDLBindingMethod(IEspContext &context, IEspCon
                 if (espPort.length() <= 0 && espServiceName.length() <= 0)
                     throw MakeStringException(-1, "Must provide either ESP Port, or Service Name");
 
-                VStringBuffer xpath("/Environment/Software/EspProcess[@name='%s']/EspBinding[@port='%s']", espProcName.str(), espPort.str());
-                Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ , SDS_LOCK_TIMEOUT_DESDL);
-                if (!conn)
+                if (isContainerized())
+                    setContainerizedEspBindingNameByPort(espPort, espBindingName);
+                else
                 {
-                    StringBuffer msg;
-                    msg.appendf(
-                            "Could not find ESP binding associated with Esp Process '%s' and either port '%s' or Esp Service Name '%s'",
-                            espProcName.str(), espPort.isEmpty() ? "N/A" : espPort.str(), espServiceName.isEmpty() ? "N/A" : espServiceName.str());
-                    resp.updateStatus().setCode(-1);
-                    resp.updateStatus().setDescription(msg.str());
-                    return false;
+                    VStringBuffer xpath("/Environment/Software/EspProcess[@name='%s']/EspBinding[@port='%s']", espProcName.str(), espPort.str());
+                    Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ , SDS_LOCK_TIMEOUT_DESDL);
+                    if (!conn)
+                    {
+                        StringBuffer msg;
+                        msg.appendf(
+                                "Could not find ESP binding associated with Esp Process '%s' and either port '%s' or Esp Service Name '%s'",
+                                espProcName.str(), espPort.isEmpty() ? "N/A" : espPort.str(), espServiceName.isEmpty() ? "N/A" : espServiceName.str());
+                        resp.updateStatus().setCode(-1);
+                        resp.updateStatus().setDescription(msg.str());
+                        return false;
+                    }
+                    espBindingName.set(conn->queryRoot()->queryProp("@name"));
                 }
-                espBindingName.set(conn->queryRoot()->queryProp("@name"));
             }
         }
 
@@ -1158,12 +1188,17 @@ bool CWsESDLConfigEx::onGetESDLBinding(IEspContext &context, IEspGetESDLBindingR
                     throw MakeStringException(-1, "Must provide EsdlBindingId, or EspProcName plus EspBinding or EspPort");
                 if (espBindingName.length() == 0)
                 {
-                    VStringBuffer xpath("/Environment/Software/EspProcess[@name='%s']/EspBinding[@port='%s']", espProcName.str(), espPort.str());
-                    Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ , SDS_LOCK_TIMEOUT_DESDL);
-                    if(conn)
-                         espBindingName.set(conn->queryRoot()->queryProp("@name"));
+                    if (isContainerized())
+                        setContainerizedEspBindingNameByPort(espPort, espBindingName);
                     else
-                        throw MakeStringException(-1, "Can't find any esp binding for port %s", espPort.str());
+                    {
+                        VStringBuffer xpath("/Environment/Software/EspProcess[@name='%s']/EspBinding[@port='%s']", espProcName.str(), espPort.str());
+                        Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ , SDS_LOCK_TIMEOUT_DESDL);
+                        if(conn)
+                            espBindingName.set(conn->queryRoot()->queryProp("@name"));
+                        else
+                            throw MakeStringException(-1, "Can't find any esp binding for port %s", espPort.str());
+                    }
                 }
             }
         }
@@ -1831,16 +1866,31 @@ static int bindingCompareFunc(IInterface * const *_itm1, IInterface * const* _it
 
 void getAllEspProcessesSorted(StringArray& processes)
 {
-    Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Software", myProcessSession(), RTM_LOCK_READ , SDS_LOCK_TIMEOUT_DESDL);
-    if (!conn)
-        throw MakeStringException(-1, "Unable to connect to /Environment/Software dali path");
-    Owned<IPropertyTreeIterator> iter = conn->queryRoot()->getElements("EspProcess");
-    ForEach (*iter)
+    if (isContainerized())
     {
-        IPropertyTree &item = iter->query();
-        processes.append(item.queryProp("@name"));
+        Owned <IPropertyTreeIterator> iter = getGlobalConfigSP()->getElements("services[@class='esp']");
+        ForEach (*iter)
+        {
+            IPropertyTree &item = iter->query();
+            const char* type = item.queryProp("@type");
+            bool loadDaliBindings = item.getPropBool("@loadDaliBindings");
+            if (strncmp(type, "esdl-sandbox", 12)==0 || loadDaliBindings)
+                processes.append(item.queryProp("@name"));
+        }
     }
+    else
+    {
+        Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Software", myProcessSession(), RTM_LOCK_READ , SDS_LOCK_TIMEOUT_DESDL);
+        if (!conn)
+            throw MakeStringException(-1, "Unable to connect to /Environment/Software dali path");
 
+        Owned<IPropertyTreeIterator> iter = conn->queryRoot()->getElements("EspProcess");
+        ForEach (*iter)
+        {
+            IPropertyTree &item = iter->query();
+            processes.append(item.queryProp("@name"));
+        }
+    }
     processes.sortAscii();
 }
 
