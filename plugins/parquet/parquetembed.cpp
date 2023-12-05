@@ -163,7 +163,7 @@ arrow::Status ParquetReader::openReadFile()
             failx("Incorrect partitioning type %s.", partOption.c_str());
         }
         // Create the dataset factory
-        PARQUET_ASSIGN_OR_THROW(auto datasetFactory, arrow::dataset::FileSystemDatasetFactory::Make(fs, selector, format, options));
+        PARQUET_ASSIGN_OR_THROW(auto datasetFactory, arrow::dataset::FileSystemDatasetFactory::Make(std::move(fs), std::move(selector), format, std::move(options)));
 
         // Get scanner
         PARQUET_ASSIGN_OR_THROW(auto dataset, datasetFactory->Finish());
@@ -372,7 +372,7 @@ arrow::Result<std::shared_ptr<arrow::Table>> ParquetReader::queryRows()
     // Convert the current batch to a table
     PARQUET_ASSIGN_OR_THROW(auto batch, *rbatchItr);
     rbatchItr++;
-    std::vector<std::shared_ptr<arrow::RecordBatch>> toTable = {batch};
+    std::vector<std::shared_ptr<arrow::RecordBatch>> toTable = {std::move(batch)};
     return std::move(arrow::Table::FromRecordBatches(std::move(toTable)));
 }
 
@@ -457,7 +457,7 @@ arrow::Status ParquetWriter::openWriteFile()
         ARROW_ASSIGN_OR_RAISE(auto filesystem, arrow::fs::FileSystemFromUriOrPath(destination));
         auto format = std::make_shared<arrow::dataset::ParquetFileFormat>();
         writeOptions.file_write_options = format->DefaultWriteOptions();
-        writeOptions.filesystem = filesystem;
+        writeOptions.filesystem = std::move(filesystem);
         writeOptions.base_dir = destination;
         writeOptions.partitioning = partitionType;
         writeOptions.existing_data_behavior = arrow::dataset::ExistingDataBehavior::kOverwriteOrIgnore;
@@ -484,7 +484,7 @@ arrow::Status ParquetWriter::openWriteFile()
         std::shared_ptr<parquet::ArrowWriterProperties> arrowProps = parquet::ArrowWriterProperties::Builder().store_schema()->build();
 
         // Create a writer
-        ARROW_ASSIGN_OR_RAISE(writer, parquet::arrow::FileWriter::Open(*schema.get(), pool, outfile, props, arrowProps));
+        ARROW_ASSIGN_OR_RAISE(writer, parquet::arrow::FileWriter::Open(*schema.get(), pool, outfile, std::move(props), std::move(arrowProps)));
     }
     return arrow::Status::OK();
 }
