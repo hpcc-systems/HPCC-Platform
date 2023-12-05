@@ -306,6 +306,16 @@ void CEspConfig::addBindingForSDSSession(unsigned short port)
     ensureSDSSessionApplications(querySDSSessionTree(conn), port);
 }
 
+static void mergeGlobalStorageConfig(IPropertyTree* espStorageConfig)
+{
+    if (!espStorageConfig)
+        return;
+
+    Owned <IPropertyTree> global = getGlobalConfig();
+    IPropertyTree* remote = global->hasProp("storage") ? global->queryPropTree("storage") : global->addPropTree("storage");
+    mergeConfiguration(*remote, *espStorageConfig, nullptr, false);
+}
+
 CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree* procpt, bool isDali)
 {
     hsami_=0;
@@ -411,6 +421,7 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
             IPropertyTree * cost = global->hasProp("cost") ? global->queryPropTree("cost") : global->addPropTree("cost");
             mergeConfiguration(*cost, *espConfigCost, nullptr, false);
         }
+        mergeGlobalStorageConfig(m_envpt->queryPropTree("global/storage"));
 #endif
         initializeStorageGroups(daliClientActive());
 
