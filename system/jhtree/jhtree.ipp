@@ -76,8 +76,8 @@ enum request { LTE, GTE };
 interface INodeLoader
 {
     virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset) const = 0;
-    virtual const CJHSearchNode *locateFirstLeafNode(KeyStatsCollector &stats) const = 0;
-    virtual const CJHSearchNode *locateLastLeafNode(KeyStatsCollector &stats) const = 0;
+    virtual const CJHSearchNode *locateFirstLeafNode(IContextLogger *ctx) const = 0;
+    virtual const CJHSearchNode *locateLastLeafNode(IContextLogger *ctx) const = 0;
 };
 
 class jhtree_decl CKeyIndex : implements IKeyIndex, implements INodeLoader, public CInterface
@@ -157,8 +157,8 @@ public:
 
  // INodeLoader impl.
     virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset) const override = 0;  // Must be implemented in derived classes
-    virtual const CJHSearchNode *locateFirstLeafNode(KeyStatsCollector &stats) const override;
-    virtual const CJHSearchNode *locateLastLeafNode(KeyStatsCollector &stats) const override;
+    virtual const CJHSearchNode *locateFirstLeafNode(IContextLogger *ctx) const override;
+    virtual const CJHSearchNode *locateLastLeafNode(IContextLogger *ctx) const override;
 
     virtual void mergeStats(CRuntimeStatisticCollection & stats) const override {}
 };
@@ -215,19 +215,19 @@ public:
     virtual size32_t getKeyedSize() const;
     virtual offset_t getFPos() const;
     virtual void serializeCursorPos(MemoryBuffer &mb);
-    virtual void deserializeCursorPos(MemoryBuffer &mb, KeyStatsCollector &stats);
+    virtual void deserializeCursorPos(MemoryBuffer &mb, IContextLogger *ctx);
     virtual unsigned __int64 getSequence(); 
     virtual const byte *loadBlob(unsigned __int64 blobid, size32_t &blobsize, IContextLogger *ctx);
     virtual void reset();
-    virtual bool lookup(bool exact, KeyStatsCollector &stats) override;
-    virtual bool next(KeyStatsCollector &stats) override;
-    virtual bool lookupSkip(const void *seek, size32_t seekOffset, size32_t seeklen, KeyStatsCollector &stats) override;
+    virtual bool lookup(bool exact, IContextLogger *ctx) override;
+    virtual bool next(IContextLogger *ctx) override;
+    virtual bool lookupSkip(const void *seek, size32_t seekOffset, size32_t seeklen, IContextLogger *ctx) override;
     virtual bool skipTo(const void *_seek, size32_t seekOffset, size32_t seeklen) override;
     virtual IKeyCursor *fixSortSegs(unsigned sortFieldOffset) override;
 
-    virtual unsigned __int64 getCount(KeyStatsCollector &stats) override;
-    virtual unsigned __int64 checkCount(unsigned __int64 max, KeyStatsCollector &stats) override;
-    virtual unsigned __int64 getCurrentRangeCount(unsigned groupSegCount, KeyStatsCollector &stats) override;
+    virtual unsigned __int64 getCount(IContextLogger *ctx) override;
+    virtual unsigned __int64 checkCount(unsigned __int64 max, IContextLogger *ctx) override;
+    virtual unsigned __int64 getCurrentRangeCount(unsigned groupSegCount, IContextLogger *ctx) override;
     virtual bool nextRange(unsigned groupSegCount) override;
     virtual const byte *queryRecordBuffer() const override;
     virtual const byte *queryKeyedBuffer() const override;
@@ -235,15 +235,15 @@ protected:
     CKeyCursor(const CKeyCursor &from);
 
     // Internal searching functions - set current node/nodekey/matched values
-    bool _last(KeyStatsCollector &stats);        // Updates node/nodekey
-    bool _gtEqual(KeyStatsCollector &stats);     // Reads recordBuffer, updates node/nodekey 
-    bool _ltEqual(KeyStatsCollector &stats);     // Reads recordBuffer, updates node/nodekey 
-    bool _next(KeyStatsCollector &stats);        // Updates node/nodekey 
+    bool _last(IContextLogger *ctx);        // Updates node/nodekey
+    bool _gtEqual(IContextLogger *ctx);     // Reads recordBuffer, updates node/nodekey 
+    bool _ltEqual(IContextLogger *ctx);     // Reads recordBuffer, updates node/nodekey 
+    bool _next(IContextLogger *ctx);        // Updates node/nodekey 
     // if _lookup returns true, recordBuffer will contain keyed portion of result
-    bool _lookup(bool exact, unsigned lastSeg, bool unfiltered, KeyStatsCollector &stats);
+    bool _lookup(bool exact, unsigned lastSeg, bool unfiltered, IContextLogger *ctx);
 
 
-    void reportExcessiveSeeks(unsigned numSeeks, unsigned lastSeg, KeyStatsCollector &stats);
+    void reportExcessiveSeeks(unsigned numSeeks, unsigned lastSeg, IContextLogger *ctx);
 
     inline void setLow(unsigned segNo)
     {
