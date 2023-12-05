@@ -12,7 +12,7 @@ if (fs.existsSync("./lws.target.txt")) {
 }
 console.log("debugServerIP:  ", debugServerIP);
 const proxy = {};
-const proxyItems = ["/WsWorkunits", "/WsStore", "/WsSMC", "/WsTopology", "/WsDfu", "/FileSpray", "/ws_machine", "/ws_account", "/ws_elk", "/esp/getauthtype", "/esp/reset_session_timeout", "/esp/titlebar"];
+const proxyItems = ["/WsWorkunits", "/WsStore", "/WsSMC", "/WsTopology", "/WsDfu", "/FileSpray", "/ws_machine", "/ws_account", "/Ws_Account", "WsResources", "/ws_logaccess", "/ws_elk", "/esp/getauthtype", "/esp/reset_session_timeout", "/esp/titlebar"];
 proxyItems.forEach(item => {
     proxy[item] = {
         target: "http://" + debugServerIP + ":8010",
@@ -108,9 +108,14 @@ module.exports = function (env) {
         },
 
         devServer: isProduction ? undefined : {
-            contentBase: path.join(__dirname, "build"),
-            contentBasePublicPath: "/esp/files",
-            proxy
+            hot: "only",
+            static: {
+                directory: path.join(__dirname, './build'),
+                publicPath: "/esp/files"
+            },
+            liveReload: false,
+            proxy,
+            port: 8080
         }
     }
 };
