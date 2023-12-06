@@ -100,8 +100,6 @@ jobs:
           - os: centos-8
           - os: centos-7
             cmake_options_extra: ""
-          - os: amazonlinux
-            cmake_options_extra: ""
           - os: ubuntu-22.04
             name: LN k8s
             ln: true
