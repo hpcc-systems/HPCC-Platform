@@ -183,6 +183,57 @@ protected:
     const char * category;
 };
 
+class LocalExecuteSkewRule : public AActivityRule
+{
+public:
+    virtual bool isCandidate(IWuActivity & activity) const override
+    {
+        switch (activity.getAttr(WaKind))
+        {
+            case TAKfirstn: // skew is expected, so ignore
+            case TAKtopn:
+            case TAKsort:
+                return false;
+        }
+        return true;
+    }
+
+    virtual bool check(PerformanceIssue & result, IWuActivity & activity, const IAnalyserOptions & options) override
+    {
+        stat_type localExecuteMaxSkew = activity.getStatRaw(StTimeLocalExecute, StSkewMax);
+        if (localExecuteMaxSkew<options.queryOption(watOptSkewThreshold))
+            return false;
+
+        stat_type timeMaxLocalExecute = activity.getStatRaw(StTimeLocalExecute, StMaxX);
+        stat_type timeAvgLocalExecute = activity.getStatRaw(StTimeLocalExecute, StAvgX);
+        stat_type timePenalty = (timeMaxLocalExecute - timeAvgLocalExecute);;
+        if (timePenalty<options.queryOption(watOptMinInterestingTime))
+            return false;
+
+        bool inputSkewed = false;
+        for(unsigned edgeNo = 0; IWuEdge *wuInputEdge = activity.queryInput(edgeNo); edgeNo++)
+        {
+            if (wuInputEdge->getStatRaw(StNumRowsProcessed, StSkewMax)>options.queryOption(watOptSkewThreshold))
+            {
+                inputSkewed = true;
+                break;
+            }
+        }
+        bool outputSkewed = false;
+        IWuEdge *wuOutputEdge = activity.queryOutput(0);
+        if (wuOutputEdge && (wuOutputEdge->getStatRaw(StNumRowsProcessed, StSkewMax)>options.queryOption(watOptSkewThreshold)))
+            outputSkewed = true;
+
+        if (inputSkewed)
+            result.set(ANA_EXECUTE_SKEW_ID, timePenalty, "Significant skew in local execute time caused by uneven input");
+        else if (outputSkewed)
+            result.set(ANA_EXECUTE_SKEW_ID, timePenalty, "Significant skew in local execute time caused by uneven output");
+        else
+            result.set(ANA_EXECUTE_SKEW_ID, timePenalty, "Significant skew in local execute time");
+        return true;
+    }
+};
+
 class KeyedJoinExcessRejectedRowsRule : public ActivityKindRule
 {
 public:
@@ -221,4 +272,5 @@ void gatherRules(CIArrayOf<AActivityRule> & rules)
     rules.append(*new IoSkewRule(StTimeDiskWriteIO, "disk write"));
     rules.append(*new IoSkewRule(StTimeSpillElapsed, "spill"));
     rules.append(*new KeyedJoinExcessRejectedRowsRule);
+    rules.append(*new LocalExecuteSkewRule);
 }
