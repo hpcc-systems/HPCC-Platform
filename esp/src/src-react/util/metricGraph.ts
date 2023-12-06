@@ -10,6 +10,10 @@ const logger = scopedLogger("src-react/util/metricGraph.ts");
 
 declare const dojoConfig;
 
+const TypeShape = {
+    "function": 'plain" fillcolor="" style="'
+};
+
 const KindShape = {
     2: "cylinder",          //  Disk Write
     3: "tripleoctagon",     //  Local Sort
@@ -36,8 +40,8 @@ const KindShape = {
     196: "cylinder",        //  Spill Write
 };
 
-function shape(kind: string) {
-    return KindShape[kind] || "rectangle";
+function shape(v: IScope) {
+    return TypeShape[v.type] ?? KindShape[v.kind] ?? "rectangle";
 }
 
 const CHARS = new Set("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
@@ -243,11 +247,18 @@ export class MetricGraph extends Graph2<IScope, IScopeEdge, IScope> {
         return this.outEdges(v.name).filter(e => e.__parentName === v.__parentName);
     }
 
+    protected _dedupVertices: { [scopeName: string]: boolean } = {};
     vertexTpl(v: IScope, options: MetricsOptions): string {
-        return `"${v.id}" [id="${encodeID(v.name)}" label="${encodeLabel(this.vertexLabel(v, options))}" shape="${shape(v.Kind)}" class="${this.vertexStatus(v)}"]`;
+        if (this._dedupVertices[v.id] === true) return "";
+        this._dedupVertices[v.id] = true;
+        return `"${v.id}" [id="${encodeID(v.name)}" label="${encodeLabel(this.vertexLabel(v, options))}" shape="${shape(v)}" class="${this.vertexStatus(v)}"]`;
     }
 
-    protected _dedupEdges: { [scopeName: string]: boolean } = {};
+    hiddenTpl(v: IScope, options: MetricsOptions): string {
+        if (this._dedupVertices[v.id] === true) return "";
+        this._dedupVertices[v.id] = true;
+        return `"${v.id}" [id="${encodeID(v.name)}" label="${encodeLabel(this.vertexLabel(v, options))}" shape="${shape(v)}" class="${this.vertexStatus(v)}" rank="min"]`;
+    }
 
     findFirstVertex(scopeName: string) {
         if (this.vertexExists(scopeName)) {
@@ -275,14 +286,15 @@ export class MetricGraph extends Graph2<IScope, IScopeEdge, IScope> {
         return "unknown";
     }
 
+    protected _dedupEdges: { [scopeName: string]: boolean } = {};
     edgeTpl(e: IScopeEdge, options: MetricsOptions) {
         if (this._dedupEdges[e.id] === true) return "";
         this._dedupEdges[e.id] = true;
         if (options.ignoreGlobalStoreOutEdges && this.vertex(this._activityIndex[e.IdSource]).Kind === "22") {
             return "";
         }
-        const ltail = this.subgraphExists(this._sourceFunc(e.IdSource)) ? `ltail="cluster_${e.IdSource}"` : "";
-        const lhead = this.subgraphExists(this._targetFunc(e.IdTarget)) ? `lhead="cluster_${e.IdTarget}"` : "";
+        const ltail = this.subgraphExists(this._sourceFunc(e)) ? `ltail=cluster_${e.IdSource}` : "";
+        const lhead = this.subgraphExists(this._targetFunc(e)) ? `lhead=cluster_${e.IdTarget}` : "";
         return `"${e.IdSource}" -> "${e.IdTarget}" [id="${encodeID(e.name)}" label="${encodeLabel(format(options.edgeTpl, { ...e, ...e.__formattedProps }))}" style="${this.vertexParent(this._activityIndex[e.IdSource]) === this.vertexParent(this._activityIndex[e.IdTarget]) ? "solid" : "dashed"}" class="${this.edgeStatus(e)}" ${ltail} ${lhead}]`;
     }
 
@@ -298,11 +310,17 @@ export class MetricGraph extends Graph2<IScope, IScopeEdge, IScope> {
         return "unknown";
     }
 
+    protected _dedupSubgraphs: { [scopeName: string]: boolean } = {};
     subgraphTpl(sg: IScope, options: MetricsOptions): string {
+        if (this._dedupSubgraphs[sg.id] === true) return "";
+        this._dedupSubgraphs[sg.id] = true;
         const childTpls: string[] = [];
         this.subgraphSubgraphs(sg.name).forEach(child => {
             childTpls.push(this.subgraphTpl(child, options));
         });
+        if (this.vertexExists(this.id(sg))) {
+            childTpls.push(this.hiddenTpl(this.vertex(this.id(sg)), options));
+        }
         this.subgraphVertices(sg.name).forEach(child => {
             childTpls.push(this.vertexTpl(child, options));
         });
@@ -323,7 +341,8 @@ subgraph cluster_${encodeID(sg.id)} {
     }
 
     graphTpl(items: IScope[] = [], options: MetricsOptions) {
-        // subgraphs.sort();
+        this._dedupSubgraphs = {};
+        this._dedupVertices = {};
         this._dedupEdges = {};
         const childTpls: string[] = [];
         if (items?.length) {
@@ -359,6 +378,8 @@ subgraph cluster_${encodeID(sg.id)} {
         }
         return `\
 digraph G {
+    compound=true;
+    oredering=in;
     graph [fontname="arial"];// fontsize=11.0];
     // graph [rankdir=TB];
     // node [shape=rect fontname=arial fontsize=11.0 fixedsize=true];
