@@ -47,7 +47,9 @@
                 "tsc watch",
                 "webpack-dev-server"
             ],
-            "group": "build",
+            "group": {
+                "kind": "build"
+            },
             "problemMatcher": []
         },
         {

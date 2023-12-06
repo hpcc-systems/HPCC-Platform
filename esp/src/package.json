@@ -28,7 +28,7 @@
     "dev-start": "run-p bundle-watch dev-start-ws",
     "dev-start-verbose": "ws --verbose.include request response",
     "rm-hpcc": "rimraf ./node_modules/@hpcc-js",
-    "start": "webpack-dev-server -d --env development",
+    "start": "webpack serve --env development --config webpack.config.js",
     "test": "run-s lint",
     "update": "npx npm-check-updates -u -t minor",
     "update-major": "npx npm-check-updates -u"
@@ -100,7 +100,8 @@
     "typescript": "4.9.5",
     "url-loader": "4.1.1",
     "webpack": "5.89.0",
-    "webpack-cli": "5.1.4"
+    "webpack-cli": "5.1.4",
+    "webpack-dev-server": "4.15.1"
   },
   "author": "HPCC Systems",
   "license": "Apache-2.0",
