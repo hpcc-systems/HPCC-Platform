@@ -1996,7 +1996,7 @@ public:
         if (statsBuilder)
         {
             StatsEdgeScope scope(*statsBuilder, activityId, oid);
-            if (_strands)
+            if (_strands > 1)
                 statsBuilder->addStatistic(StNumStrands, _strands);
             if (starts != 0)
             {
