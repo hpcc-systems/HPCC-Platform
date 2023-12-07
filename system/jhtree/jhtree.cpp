@@ -1953,6 +1953,8 @@ bool CKeyCursor::_lookup(bool exact, unsigned lastSeg, bool unfiltered, KeyStats
                 ret = true;
                 break;
             }
+            if (eof)
+                break;
             lwildseeks++;
         }
         else

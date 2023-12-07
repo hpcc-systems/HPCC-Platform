@@ -390,6 +390,60 @@ protected:
 
 //=================================================================================
 
+class MergingStatsGatherer : implements CUnsharedInterfaceOf<IStatisticGatherer>
+{
+public:
+    MergingStatsGatherer(IStatisticGatherer * _gatherer) : gatherer(_gatherer)
+    {
+    }
+
+    virtual void beginScope(const StatsScopeId & id) override
+    {
+        gatherer->beginScope(id);
+    }
+    virtual void beginSubGraphScope(unsigned id) override
+    {
+        gatherer->beginSubGraphScope(id);
+    }
+    virtual void beginActivityScope(unsigned id) override
+    {
+        gatherer->beginActivityScope(id);
+    }
+    virtual void beginEdgeScope(unsigned id, unsigned oid) override
+    {
+        gatherer->beginEdgeScope(id, oid);
+    }
+    virtual void beginChildGraphScope(unsigned id) override
+    {
+        gatherer->beginChildGraphScope(id);
+    }
+    virtual void beginChannelScope(unsigned id) override
+    {
+        gatherer->beginChannelScope(id);
+    }
+    virtual void endScope() override
+    {
+        gatherer->endScope();
+    }
+    virtual void addStatistic(StatisticKind kind, unsigned __int64 value) override
+    {
+        //Always merge rather than add (otherwise it may create duplicate entries)
+        gatherer->updateStatistic(kind, value, queryMergeMode(kind));
+    }
+    virtual void updateStatistic(StatisticKind kind, unsigned __int64 value, StatsMergeAction mergeAction) override
+    {
+        gatherer->updateStatistic(kind, value, mergeAction);
+    }
+    virtual IStatisticCollection * getResult() override
+    {
+        return gatherer->getResult();
+    }
+
+private:
+    IStatisticGatherer * gatherer;
+};
+
+//=================================================================================
 #define RESULT_FLUSH_THRESHOLD 10000u
 
 #ifdef _DEBUG
@@ -1942,7 +1996,7 @@ public:
         if (statsBuilder)
         {
             StatsEdgeScope scope(*statsBuilder, activityId, oid);
-            if (_strands)
+            if (_strands > 1)
                 statsBuilder->addStatistic(StNumStrands, _strands);
             if (starts != 0)
             {
@@ -16532,8 +16586,9 @@ public:
         resultStream = NULL;
         resultJunction.clear();
 
+        MergingStatsGatherer mergeStats(childStats);
         ForEachItemIn(i, iterationGraphs)
-            iterationGraphs.item(i).gatherStatistics(childStats);
+            iterationGraphs.item(i).gatherStatistics(childStats ? &mergeStats : nullptr);
 
         outputs.kill();
         iterationGraphs.kill(); // must be done after all activities killed
@@ -28506,9 +28561,11 @@ public:
     virtual const char *queryName() const override { throwUnexpected(); }
     virtual void gatherStatistics(IStatisticGatherer * statsBuilder) const override
     {
+        //Merge the stats from multiple graph instances.
+        MergingStatsGatherer mergeStatsBuilder(statsBuilder);
         CriticalBlock b(graphCrit);
         ForEachItemIn(i, stack)
-            stack.item(i).gatherStatistics(statsBuilder);
+            stack.item(i).gatherStatistics(statsBuilder ? &mergeStatsBuilder : nullptr);
     }
     virtual IEclGraphResults * evaluate(unsigned parentExtractSize, const byte * parentExtract) override
     {

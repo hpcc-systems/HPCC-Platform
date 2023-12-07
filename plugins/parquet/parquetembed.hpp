@@ -878,7 +878,7 @@ class ParquetRowStream : public RtlCInterface, implements IRowStream
 {
 public:
     ParquetRowStream(IEngineRowAllocator *_resultAllocator, std::shared_ptr<ParquetReader> _parquetReader)
-        : resultAllocator(_resultAllocator), parquetReader(_parquetReader) {}
+        : resultAllocator(_resultAllocator), parquetReader(std::move(_parquetReader)) {}
     virtual ~ParquetRowStream() = default;
 
     RTLIMPLEMENT_IINTERFACE
@@ -947,7 +947,7 @@ class ParquetRecordBinder : public CInterfaceOf<IFieldProcessor>
 {
 public:
     ParquetRecordBinder(const IContextLogger &_logctx, const RtlTypeInfo *_typeInfo, int _firstParam, std::shared_ptr<ParquetWriter> _parquetWriter)
-        : logctx(_logctx), typeInfo(_typeInfo), firstParam(_firstParam), dummyField("<row>", NULL, typeInfo), thisParam(_firstParam), parquetWriter(_parquetWriter) {}
+        : logctx(_logctx), typeInfo(_typeInfo), firstParam(_firstParam), dummyField("<row>", NULL, typeInfo), thisParam(_firstParam), parquetWriter(std::move(_parquetWriter)) {}
     virtual ~ParquetRecordBinder() = default;
     int numFields();
     void processRow(const byte *row);

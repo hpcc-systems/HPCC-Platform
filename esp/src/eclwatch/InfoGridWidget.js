@@ -222,7 +222,7 @@ define([
                 this.widget.ErrWarnDialogTextArea.domNode.select();
             },
             _onDownload: function (evt) {
-                Utility.downloadText(Utility.toCSV(this.infoData, ","), "ErrWarn.csv");
+                Utility.downloadCSV(Utility.toCSV(this.infoData, ","), "ErrWarn.csv");
             },
 
             _onErrors: function (args) {

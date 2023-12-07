@@ -1413,34 +1413,28 @@ private:
                     if(onepeerbuf.length() == 0)
                         break;
 
-                    char*  onepeer = onepeerbuf.detach();
+                    const char * onepeer = onepeerbuf.str();
                     if (isdigit(*onepeer))
                     {
-                        char *dash = strrchr(onepeer, '-');
-                        if (dash)
+                        const char *dash = strrchr(onepeer, '-');
+                        const char *dot = strrchr(onepeer, '.');
+                        //Allow a range in the form a.b.c.d-e
+                        if (dash && dot && dot < dash)
                         {
-                            *dash = 0;
-                            int last = atoi(dash+1);
-                            char *dot = strrchr(onepeer, '.');
-                            *dot = 0;
                             int first = atoi(dot+1);
+                            int last = atoi(dash+1);
                             for (int i = first; i <= last; i++)
                             {
                                 StringBuffer t;
-                                t.append(onepeer).append('.').append(i);
+                                t.append(dot-onepeer, onepeer).append('.').append(i);
                                 m_peers->add(t.str());
                             }
                         }
                         else
-                        {
                             m_peers->add(onepeer);
-                        }
                     }
                     else
-                    {
                         m_peers->add(onepeer);
-                    }
-                    free(onepeer);
                 }
             }
         }

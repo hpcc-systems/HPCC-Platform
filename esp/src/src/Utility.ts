@@ -1056,15 +1056,23 @@ export function toCSV(data, delim = ",") {
     return retVal;
 }
 
-export function downloadText(content: string, fileName: string) {
-    const encodedUri = "data:text/csv;charset=utf-8,\uFEFF" + encodeURI(content);
+function downloadText(content: string, fileName: string, type: "csv" | "plain" = "csv") {
+    const textBlob = new Blob([content], { type: `text/${type}` });
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
     link.setAttribute("download", fileName);
+    link.setAttribute("href", window.URL.createObjectURL(textBlob));
     link.style.visibility = "hidden";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+}
+
+export function downloadCSV(content: string, fileName: string) {
+    downloadText(content, fileName, "csv");
+}
+
+export function downloadPlain(content: string, fileName: string) {
+    downloadText(content, fileName, "plain");
 }
 
 const d3FormatNum = d3Format(",");

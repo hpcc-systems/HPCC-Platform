@@ -4256,8 +4256,20 @@ void recursiveRemoveDirectory(IFile *dir)
             recursiveRemoveDirectory(thisFile);
         else
         {
+            try
+            {
+                thisFile->remove();
+                continue; // i.e. continue if returns true (removed), or false (file no longer exists)
+            }
+            catch(IException *e)
+            {
+                e->Release();
+            }
+
+            // NB: not sure this is worth it. In linux the file can be read-only and still be deleted if the directory is writable
+            // Perhaps should ensure that the parent directory is writable, but that would require extra file ops. or interface changes
             thisFile->setReadOnly(false);
-            thisFile->remove();
+            thisFile->remove(); // if gets here, the file should exist (ignore return false if doesn't), throws an exception if fails for other reason
         }
     }
     dir->remove();

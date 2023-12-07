@@ -1211,6 +1211,9 @@ Generate list of available services
   workunitsBasedn: {{ $esp.ldap.workunitsBasedn }}
     {{ end -}}
   {{ end -}}
+  {{- if (hasKey $esp "loadDaliBindings") }}
+  loadDaliBindings: {{ $esp.loadDaliBindings }}
+  {{ end -}}
   {{- include "hpcc.addTLSServiceEntries" (dict "root" $ "service" $esp "component" $esp "visibility" $esp.service.visibility "remoteClients" $esp.remoteClients "trustClients" $esp.trustClients) }}
 {{ end -}}
 {{- range $dali := $.Values.dali -}}

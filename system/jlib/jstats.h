@@ -163,7 +163,7 @@ public:
     virtual void beginChildGraphScope(unsigned id) = 0;
     virtual void beginChannelScope(unsigned id) = 0;
     virtual void endScope() = 0;
-    virtual void addStatistic(StatisticKind kind, unsigned __int64 value) = 0;
+    virtual void addStatistic(StatisticKind kind, unsigned __int64 value) = 0; // use updateStatistic() if kind could already be defined for the active scope
     virtual void updateStatistic(StatisticKind kind, unsigned __int64 value, StatsMergeAction mergeAction) = 0;
     virtual IStatisticCollection * getResult() = 0;
 };
