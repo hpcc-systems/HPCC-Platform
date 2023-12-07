@@ -1335,7 +1335,7 @@ FILESERVICES_API char * FILESERVICES_CALL fsfDespray2(ICodeContext *ctx, const c
     return implementDespray(ctx, sourceLogicalName, destinationIP, destinationPath, timeOut, espServerIpPort, maxConnections, overwrite, destinationPlane);
 }
 
-FILESERVICES_API char * FILESERVICES_CALL implementCopy(ICodeContext *ctx, const char * sourceLogicalName, const char *destinationGroup, const char * destinationLogicalName, const char * sourceDali, int timeOut, const char * espServerIpPort, int maxConnections, bool overwrite, bool replicate, bool asSuperfile, bool compress, bool forcePush, int transferBufferSize, bool preserveCompression, bool noSplit, int expireDays)
+FILESERVICES_API char * FILESERVICES_CALL implementCopy(ICodeContext *ctx, const char * sourceLogicalName, const char *destinationGroup, const char * destinationLogicalName, const char * sourceDali, int timeOut, const char * espServerIpPort, int maxConnections, bool overwrite, bool replicate, bool asSuperfile, bool compress, bool forcePush, int transferBufferSize, bool preserveCompression, bool noSplit, int expireDays, bool ensure)
 {
     LOG(MCauditInfo, "Copy:  %s%s", sourceLogicalName,asSuperfile?" as superfile":"");
 
@@ -1373,6 +1373,8 @@ FILESERVICES_API char * FILESERVICES_CALL implementCopy(ICodeContext *ctx, const
         req->setMaxConnections(maxConnections);
     if (noSplit)
         req->setNosplit(true);
+    if (ensure)
+        req->setEnsure(true);
     req->setExpireDays(expireDays);
 
     Owned<IClientCopyResponse> result = server.Copy(req);
@@ -1401,32 +1403,42 @@ FILESERVICES_API char * FILESERVICES_CALL implementCopy(ICodeContext *ctx, const
 
 FILESERVICES_API void FILESERVICES_CALL fsCopy(ICodeContext *ctx, const char * sourceLogicalName, const char *destinationGroup, const char * destinationLogicalName, const char * sourceDali, int timeOut, const char * espServerIpPort, int maxConnections, bool overwrite, bool replicate, bool asSuperfile, bool compress, bool forcePush, int transferBufferSize)
 {
-    CTXFREE(parentCtx, implementCopy(ctx, sourceLogicalName, destinationGroup, destinationLogicalName, sourceDali, timeOut, espServerIpPort, maxConnections, overwrite, replicate, asSuperfile, compress, forcePush, transferBufferSize, true, false, -1));
+    CTXFREE(parentCtx, implementCopy(ctx, sourceLogicalName, destinationGroup, destinationLogicalName, sourceDali, timeOut, espServerIpPort, maxConnections, overwrite, replicate, asSuperfile, compress, forcePush, transferBufferSize, true, false, -1, false));
 }
 
 FILESERVICES_API void FILESERVICES_CALL fsCopy_v2(ICodeContext *ctx, const char * sourceLogicalName, const char *destinationGroup, const char * destinationLogicalName, const char * sourceDali, int timeOut, const char * espServerIpPort, int maxConnections, bool overwrite, bool replicate, bool asSuperfile, bool compress, bool forcePush, int transferBufferSize, bool preserveCompression)
 {
-    CTXFREE(parentCtx, implementCopy(ctx, sourceLogicalName, destinationGroup, destinationLogicalName, sourceDali, timeOut, espServerIpPort, maxConnections, overwrite, replicate, asSuperfile, compress, forcePush, transferBufferSize, preserveCompression, false, -1));
+    CTXFREE(parentCtx, implementCopy(ctx, sourceLogicalName, destinationGroup, destinationLogicalName, sourceDali, timeOut, espServerIpPort, maxConnections, overwrite, replicate, asSuperfile, compress, forcePush, transferBufferSize, preserveCompression, false, -1, false));
 }
 
 FILESERVICES_API void FILESERVICES_CALL fsCopy_v3(ICodeContext *ctx, const char * sourceLogicalName, const char *destinationGroup, const char * destinationLogicalName, const char * sourceDali, int timeOut, const char * espServerIpPort, int maxConnections, bool overwrite, bool replicate, bool asSuperfile, bool compress, bool forcePush, int transferBufferSize, bool preserveCompression, bool noSplit, int expireDays)
 {
-    CTXFREE(parentCtx, implementCopy(ctx, sourceLogicalName, destinationGroup, destinationLogicalName, sourceDali, timeOut, espServerIpPort, maxConnections, overwrite, replicate, asSuperfile, compress, forcePush, transferBufferSize, preserveCompression, noSplit, expireDays));
+    CTXFREE(parentCtx, implementCopy(ctx, sourceLogicalName, destinationGroup, destinationLogicalName, sourceDali, timeOut, espServerIpPort, maxConnections, overwrite, replicate, asSuperfile, compress, forcePush, transferBufferSize, preserveCompression, noSplit, expireDays, false));
+}
+
+FILESERVICES_API void FILESERVICES_CALL fsCopy_v4(ICodeContext *ctx, const char * sourceLogicalName, const char *destinationGroup, const char * destinationLogicalName, const char * sourceDali, int timeOut, const char * espServerIpPort, int maxConnections, bool overwrite, bool replicate, bool asSuperfile, bool compress, bool forcePush, int transferBufferSize, bool preserveCompression, bool noSplit, int expireDays, bool ensure)
+{
+    CTXFREE(parentCtx, implementCopy(ctx, sourceLogicalName, destinationGroup, destinationLogicalName, sourceDali, timeOut, espServerIpPort, maxConnections, overwrite, replicate, asSuperfile, compress, forcePush, transferBufferSize, preserveCompression, noSplit, expireDays, ensure));
 }
 
 FILESERVICES_API char * FILESERVICES_CALL fsfCopy(ICodeContext *ctx, const char * sourceLogicalName, const char *destinationGroup, const char * destinationLogicalName, const char * sourceDali, int timeOut, const char * espServerIpPort, int maxConnections, bool overwrite, bool replicate, bool asSuperfile, bool compress, bool forcePush, int transferBufferSize)
 {
-    return implementCopy(ctx, sourceLogicalName, destinationGroup, destinationLogicalName, sourceDali, timeOut, espServerIpPort, maxConnections, overwrite, replicate, asSuperfile, compress, forcePush, transferBufferSize, true, false, -1);
+    return implementCopy(ctx, sourceLogicalName, destinationGroup, destinationLogicalName, sourceDali, timeOut, espServerIpPort, maxConnections, overwrite, replicate, asSuperfile, compress, forcePush, transferBufferSize, true, false, -1, false);
 }
 
 FILESERVICES_API char * FILESERVICES_CALL fsfCopy_v2(ICodeContext *ctx, const char * sourceLogicalName, const char *destinationGroup, const char * destinationLogicalName, const char * sourceDali, int timeOut, const char * espServerIpPort, int maxConnections, bool overwrite, bool replicate, bool asSuperfile, bool compress, bool forcePush, int transferBufferSize, bool preserveCompression)
 {
-    return implementCopy(ctx, sourceLogicalName, destinationGroup, destinationLogicalName, sourceDali, timeOut, espServerIpPort, maxConnections, overwrite, replicate, asSuperfile, compress, forcePush, transferBufferSize, preserveCompression, false,-1);
+    return implementCopy(ctx, sourceLogicalName, destinationGroup, destinationLogicalName, sourceDali, timeOut, espServerIpPort, maxConnections, overwrite, replicate, asSuperfile, compress, forcePush, transferBufferSize, preserveCompression, false, -1, false);
 }
 
 FILESERVICES_API char * FILESERVICES_CALL fsfCopy_v3(ICodeContext *ctx, const char * sourceLogicalName, const char *destinationGroup, const char * destinationLogicalName, const char * sourceDali, int timeOut, const char * espServerIpPort, int maxConnections, bool overwrite, bool replicate, bool asSuperfile, bool compress, bool forcePush, int transferBufferSize, bool preserveCompression, bool noSplit, int expireDays)
 {
-    return implementCopy(ctx, sourceLogicalName, destinationGroup, destinationLogicalName, sourceDali, timeOut, espServerIpPort, maxConnections, overwrite, replicate, asSuperfile, compress, forcePush, transferBufferSize, preserveCompression, noSplit, expireDays);
+    return implementCopy(ctx, sourceLogicalName, destinationGroup, destinationLogicalName, sourceDali, timeOut, espServerIpPort, maxConnections, overwrite, replicate, asSuperfile, compress, forcePush, transferBufferSize, preserveCompression, noSplit, expireDays, false);
+}
+
+FILESERVICES_API char * FILESERVICES_CALL fsfCopy_v4(ICodeContext *ctx, const char * sourceLogicalName, const char *destinationGroup, const char * destinationLogicalName, const char * sourceDali, int timeOut, const char * espServerIpPort, int maxConnections, bool overwrite, bool replicate, bool asSuperfile, bool compress, bool forcePush, int transferBufferSize, bool preserveCompression, bool noSplit, int expireDays, bool ensure)
+{
+    return implementCopy(ctx, sourceLogicalName, destinationGroup, destinationLogicalName, sourceDali, timeOut, espServerIpPort, maxConnections, overwrite, replicate, asSuperfile, compress, forcePush, transferBufferSize, preserveCompression, noSplit, expireDays, ensure);
 }
 
 
