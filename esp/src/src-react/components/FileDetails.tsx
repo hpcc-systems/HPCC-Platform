@@ -105,7 +105,7 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
 
     return <SizeMe monitorHeight>{({ size }) =>
         <div style={{ height: "100%" }}>
-            <OverflowTabList tabs={tabs} selectedTab={tab} onTabSelect={onTabSelect} size="medium" />
+            <OverflowTabList tabs={tabs} selected={tab} onTabSelect={onTabSelect} size="medium" />
             <DelayLoadedPanel visible={tab === "summary"} size={size}>
                 {file?.ContentType === "key"
                     ? <IndexFileSummary cluster={cluster} logicalFile={logicalFile} />

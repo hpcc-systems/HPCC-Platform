@@ -28,10 +28,8 @@ file(COPY
     ${CMAKE_CURRENT_SOURCE_DIR}/eslint
     ${CMAKE_CURRENT_SOURCE_DIR}/ganglia
     ${CMAKE_CURRENT_SOURCE_DIR}/loader
-    ${CMAKE_CURRENT_SOURCE_DIR}/put-selector
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/src-react
-    ${CMAKE_CURRENT_SOURCE_DIR}/xstyle
     ${CMAKE_CURRENT_SOURCE_DIR}/.eslintrc.js
     ${CMAKE_CURRENT_SOURCE_DIR}/GetUserName.html
     ${CMAKE_CURRENT_SOURCE_DIR}/index.html

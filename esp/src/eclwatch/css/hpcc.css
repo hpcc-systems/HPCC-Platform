@@ -1297,6 +1297,7 @@ table.miniSelect span {
 .WarningCell {
     padding-left: 4px;
     background: yellow;
+    color: black;
 }
 
 .NormalCell {
