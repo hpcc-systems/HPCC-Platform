@@ -44,4 +44,5 @@ protected:
     StringBuffer fileName;
     bool clearFileOnStartCollecting = false;
     FILE *fhandle = nullptr;
+    bool ignoreZeroMetrics;
 };
