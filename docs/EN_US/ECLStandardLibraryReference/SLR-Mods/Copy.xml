@@ -28,6 +28,8 @@
   [</emphasis> <emphasis>,preserveCompression</emphasis> <emphasis
   role="bold">] [</emphasis> <emphasis>,noSplit</emphasis> <emphasis
   role="bold">] [</emphasis> <emphasis>,expireDays</emphasis> <emphasis
+  role="bold">] [</emphasis>
+  <emphasis>,ensure</emphasis> <emphasis
   role="bold">]);</emphasis></para>
 
   <para><emphasis>dfuwuid</emphasis> <emphasis role="bold"> :=
@@ -55,7 +57,9 @@
   [</emphasis> <emphasis>,preserveCompression</emphasis> <emphasis
   role="bold">] [</emphasis> <emphasis>,noSplit</emphasis> <emphasis
   role="bold">] [</emphasis> <emphasis>,expireDays</emphasis> <emphasis
-  role="bold">]);</emphasis></para>
+  role="bold">] [</emphasis>
+  <emphasis>,ensure</emphasis><emphasis role="bold">]);
+  </emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -202,6 +206,13 @@
           to 0, the file is automatically deleted when it reaches the
           threshold set in Sasha Server's <emphasis
           role="bold">expiryDefault</emphasis> setting.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>ensure</emphasis></entry>
+
+          <entry>Optional. Copies logical file, but does not copy file parts
+          if they already exist. Default is FALSE.</entry>
         </row>
 
         <row>
