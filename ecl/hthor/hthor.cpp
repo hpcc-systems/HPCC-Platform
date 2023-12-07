@@ -774,7 +774,7 @@ void CHThorDiskWriteActivity::publish()
     if (helper.getFlags() & TDWrestricted)
         properties.setPropBool("restricted", true);
 
-    properties.setPropInt64("@numDiskWrites", numDiskWrites);
+    properties.setPropInt64(getDFUQResultFieldName(DFUQRFnumDiskWrites), numDiskWrites);
     StringBuffer lfn;
     expandLogicalFilename(lfn, mangledHelperFileName.str(), agent.queryWorkUnit(), agent.queryResolveFilesLocally(), false);
     CDfsLogicalFileName logicalName;
@@ -790,6 +790,7 @@ void CHThorDiskWriteActivity::publish()
             StringBuffer clusterName;
             file->getClusterName(0, clusterName);
             diskAccessCost = money2cost_type(calcFileAccessCost(clusterName, numDiskWrites, 0));
+            properties.setPropInt64(getDFUQResultFieldName(DFUQRFwriteCost), diskAccessCost);
         }
         file->attach(logicalName.get(), agent.queryCodeContext()->queryUserDescriptor());
         agent.logFileAccess(file, "HThor", "CREATED", graph);
@@ -1366,7 +1367,7 @@ void CHThorIndexWriteActivity::execute()
     properties.setProp("@workunit", agent.queryWorkUnit()->queryWuid());
     properties.setProp("@job", agent.queryWorkUnit()->queryJobName());
     properties.setPropInt64("@duplicateKeyCount",duplicateKeyCount);
-    properties.setPropInt64("@numDiskWrites", numDiskWrites);
+    properties.setPropInt64(getDFUQResultFieldName(DFUQRFnumDiskWrites), numDiskWrites);
     properties.setPropInt64("@numLeafNodes", numLeafNodes);
     properties.setPropInt64("@numBranchNodes", numBranchNodes);
     properties.setPropInt64("@numBlobNodes", numBlobNodes);
@@ -1437,6 +1438,7 @@ void CHThorIndexWriteActivity::execute()
         StringBuffer clusterName;
         dfile->getClusterName(0, clusterName);
         diskAccessCost = money2cost_type(calcFileAccessCost(clusterName, numDiskWrites, 0));
+        properties.setPropInt64(getDFUQResultFieldName(DFUQRFwriteCost), diskAccessCost);
     }
     else
         lfn = filename;
@@ -8539,10 +8541,12 @@ void CHThorDiskReadBaseActivity::closepart()
                         dFile = &(super->querySubFile(subfile, true));
                     }
                 }
-                dFile->addAttrValue("@numDiskReads", curDiskReads);
-                StringBuffer clusterName;
-                dFile->getClusterName(0, clusterName);
-                diskAccessCost = money2cost_type(calcFileAccessCost(clusterName, 0, curDiskReads));
+                IPropertyTree & fileAttr = dFile->queryAttributes();
+                cost_type legacyReadCost = getLegacyReadCost(fileAttr, dFile);
+                cost_type curReadCost = money2cost_type(calcFileAccessCost(dFile, 0, curDiskReads));
+
+                dFile->addAttrValue(getDFUQResultFieldName(DFUQRFreadCost), legacyReadCost + curReadCost);
+                dFile->addAttrValue(getDFUQResultFieldName(DFUQRFnumDiskReads), curDiskReads);
             }
             numDiskReads += curDiskReads;
         }

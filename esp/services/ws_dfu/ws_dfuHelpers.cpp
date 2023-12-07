@@ -186,11 +186,16 @@ bool WsDFUHelpers::addToLogicalFileList(IPropertyTree& file, const char* nodeGro
         if (version >= 1.61)
         {
             if (version < 1.62)
-                lFile->setCost(file.getPropReal(getDFUQResultFieldName(DFUQRFcost)));
+            {
+                cost_type cost = file.getPropInt64(getDFUQResultFieldName(DFUQRFcost));
+                lFile->setCost(cost_type2money(cost));
+            }
             else
             {
-                lFile->setAtRestCost(file.getPropReal(getDFUQResultFieldName(DFUQRFatRestCost)));
-                lFile->setAccessCost(file.getPropReal(getDFUQResultFieldName(DFUQRFaccessCost)));
+                cost_type atRestCost = file.getPropInt64(getDFUQResultFieldName(DFUQRFatRestCost));
+                lFile->setAtRestCost(cost_type2money(atRestCost));
+                cost_type accessCost = file .getPropInt64(getDFUQResultFieldName(DFUQRFaccessCost));
+                lFile->setAccessCost(cost_type2money(accessCost));
             }
         }
         if ((version >= 1.63) && (file.hasProp(getDFUQResultFieldName(DFUQRFmaxSkew))))

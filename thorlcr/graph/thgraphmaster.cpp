@@ -649,9 +649,22 @@ void CMasterActivity::done()
 
 void CMasterActivity::updateFileReadCostStats()
 {
+    // Updates numDiskReads & readCost in the file attributes and returns the readCost
+    auto updateReadCosts = [](IDistributedFile *file, CThorStatsCollection &stats)
+    {
+        stat_type curDiskReads = stats.getStatisticSum(StNumDiskReads);
+        IPropertyTree & fileAttr = file->queryAttributes();
+        cost_type legacyReadCost = getLegacyReadCost(fileAttr, file);
+        cost_type curReadCost = money2cost_type(calcFileAccessCost(file, 0, curDiskReads));
+        file->addAttrValue(getDFUQResultFieldName(DFUQRFreadCost), legacyReadCost + curReadCost);
+        file->addAttrValue(getDFUQResultFieldName(DFUQRFnumDiskReads), curDiskReads);
+        return curReadCost;
+    };
+
     if (fileStats.size()>0)
     {
         unsigned fileIndex = 0;
+        diskAccessCost = 0;
         for (unsigned i=0; i<readFiles.size();i++)
         {
             IDistributedFile *file = queryReadFile(i);
@@ -664,21 +677,13 @@ void CMasterActivity::updateFileReadCostStats()
                     for (unsigned i=0; i<numSubFiles; i++)
                     {
                         IDistributedFile &subFile = super->querySubFile(i, true);
-                        stat_type numDiskReads = fileStats[fileIndex]->getStatisticSum(StNumDiskReads);
-                        StringBuffer clusterName;
-                        subFile.getClusterName(0, clusterName);
-                        diskAccessCost += money2cost_type(calcFileAccessCost(clusterName, 0, numDiskReads));
-                        subFile.addAttrValue("@numDiskReads", numDiskReads);
+                        diskAccessCost += updateReadCosts(&subFile, *fileStats[fileIndex]);
                         fileIndex++;
                     }
                 }
                 else
                 {
-                    stat_type numDiskReads = fileStats[fileIndex]->getStatisticSum(StNumDiskReads);
-                    StringBuffer clusterName;
-                    file->getClusterName(0, clusterName);
-                    diskAccessCost += money2cost_type(calcFileAccessCost(clusterName, 0, numDiskReads));
-                    file->addAttrValue("@numDiskReads", numDiskReads);
+                    diskAccessCost += updateReadCosts(file, *fileStats[fileIndex]);
                     fileIndex++;
                 }
             }
@@ -688,13 +693,7 @@ void CMasterActivity::updateFileReadCostStats()
     {
         IDistributedFile *file = queryReadFile(0);
         if (file)
-        {
-            stat_type numDiskReads = statsCollection.getStatisticSum(StNumDiskReads);
-            StringBuffer clusterName;
-            file->getClusterName(0, clusterName);
-            diskAccessCost += money2cost_type(calcFileAccessCost(clusterName, 0, numDiskReads));
-            file->addAttrValue("@numDiskReads", numDiskReads);
-        }
+            diskAccessCost = updateReadCosts(file, statsCollection);
     }
 }
 
@@ -702,11 +701,13 @@ void CMasterActivity::updateFileWriteCostStats(IFileDescriptor & fileDesc, IProp
 {
     if (numDiskWrites)
     {
-        props.setPropInt64("@numDiskWrites", numDiskWrites);
+        props.setPropInt64(getDFUQResultFieldName(DFUQRFnumDiskWrites), numDiskWrites);
         assertex(fileDesc.numClusters()>=1);
         StringBuffer clusterName;
         fileDesc.getClusterGroupName(0, clusterName);// Note: calculating for 1st cluster. (Future: calc for >1 clusters)
-        diskAccessCost = money2cost_type(calcFileAccessCost(clusterName, numDiskWrites, 0));
+        cost_type writeCost = money2cost_type(calcFileAccessCost(clusterName, numDiskWrites, 0));
+        props.setPropInt64(getDFUQResultFieldName(DFUQRFwriteCost), writeCost);
+        diskAccessCost = writeCost;
     }
 }
 
