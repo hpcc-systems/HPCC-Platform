@@ -1681,9 +1681,9 @@ bool httpHeaderBlockContainsHeader(const char *httpheaders, const char *header)
         return false;
     VStringBuffer match("\n%s:", header);
     const char *matchStart = match.str()+1;
-    if (!strncmp(httpheaders, matchStart, strlen(matchStart)))
+    if (!strnicmp(httpheaders, matchStart, strlen(matchStart)))
         return true;
-    if (strstr(httpheaders, match))
+    if (stristr(httpheaders, match))
         return true;
     return false;
 }
@@ -1693,7 +1693,7 @@ bool getHTTPHeader(const char *httpheaders, const char *header, StringBuffer& va
     if (!httpheaders || !*httpheaders || !header || !*header)
         return false;
 
-    const char* pHeader = strstr(httpheaders, header);
+    const char* pHeader = stristr(httpheaders, header);
     if (!pHeader)
         return false;
 
@@ -2026,10 +2026,10 @@ private:
                     s = strstr(buffer, " ");
                     if (s)
                         rval = atoi(s+1);
-                    if (!strstr(buffer,"Transfer-Encoding: chunked"))
+                    if (!stristr(buffer,"Transfer-Encoding: chunked"))
                     {
                         chunked = false;
-                        s = strstr(buffer,CONTENT_LENGTH);
+                        s = stristr(buffer,CONTENT_LENGTH);
                         if (s) {
                             s += strlen(CONTENT_LENGTH);
                             if ((size32_t)(s-buffer) < payloadofs)
