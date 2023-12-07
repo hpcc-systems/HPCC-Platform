@@ -1,9 +1,3 @@
-[submodule "esp/src/xstyle"]
-	path = esp/src/xstyle
-	url = https://github.com/hpcc-systems/xstyle.git
-[submodule "esp/src/put-selector"]
-	path = esp/src/put-selector
-	url = https://github.com/hpcc-systems/put-selector.git
 [submodule "esp/src/dgrid"]
 	path = esp/src/dgrid
 	url = https://github.com/hpcc-systems/dgrid.git
