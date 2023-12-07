@@ -23,6 +23,11 @@
 
 #onwarning (4522, ignore); // ignore implicit limit
 
+
+// turn off node fetch timing, in order to get consistent results (inc. costs)
+#option('nodeFetchThresholdNs', 0);
+
+
 import ^ as root;
 import Std.File;
 import lib_WorkunitServices.WorkunitServices;
@@ -64,7 +69,9 @@ iWStatKinds := DATASET([
 kJStatKinds := DATASET([
  { 'NumIndexSeeks' },
  { 'NumIndexScans' },
- { 'NumIndexWildSeeks' }
+ { 'NumIndexWildSeeks' },
+ { 'CostFileAccess' },
+ { 'NumLeafCacheAdds' }
 ], statRec);
 
 wuid := WORKUNIT;
