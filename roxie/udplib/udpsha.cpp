@@ -398,9 +398,10 @@ bool PacketTracker::noteSeen(UdpPacketHeader &hdr)
         else if (!resent)
             packetsOOO++;
     }
-    else if (resent)
+    else if (resent && base)
         // Don't treat a resend that goes out of range as indicative of a restart - it probably just means
-        // that the resend was not needed and the original moved things on when it arrived
+        // that the resend was not needed and the original moved things on when it arrived. Unless base is 0
+        // in which case it probably means I restarted
         duplicate = true;
     else
     {

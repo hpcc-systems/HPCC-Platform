@@ -254,8 +254,11 @@ void simulateTraffic()
             {
                 if (restartReceiver)
                 {
-                    Sleep(100);
+                    Sleep(1000);
                     rm.clear();
+                    DBGLOG("Killed receiver");
+                    Sleep(500);
+                    DBGLOG("Restarting receiver");
                     rm.setown(createReceiveManager(CCD_SERVER_FLOW_PORT, CCD_DATA_PORT, CCD_CLIENT_FLOW_PORT, numReceiveSlots, false));
                 }
             }
