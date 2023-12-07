@@ -1331,6 +1331,7 @@ const StatisticsMapping diskLocalStatistics({StCycleDiskReadIOCycles, StSizeDisk
 const StatisticsMapping diskRemoteStatistics({StTimeDiskReadIO, StSizeDiskRead, StNumDiskReads, StTimeDiskWriteIO, StSizeDiskWrite, StNumDiskWrites, StNumDiskRetries});
 const StatisticsMapping diskReadRemoteStatistics({StTimeDiskReadIO, StSizeDiskRead, StNumDiskReads, StNumDiskRetries, StCycleDiskReadIOCycles});
 const StatisticsMapping diskWriteRemoteStatistics({StTimeDiskWriteIO, StSizeDiskWrite, StNumDiskWrites, StNumDiskRetries, StCycleDiskWriteIOCycles});
+const StatisticsMapping stdAggregateKindStatistics({StCostExecute, StCostFileAccess, StSizeGraphSpill, StSizeSpillFile});
 
 const StatisticsMapping * queryStatsMapping(const StatsScopeId & scope, unsigned hashcode)
 {
@@ -1430,6 +1431,8 @@ StringBuffer & StatsScopeId::getScopeText(StringBuffer & out) const
         return out.append(ChannelScopePrefix).append(id);
     case SSTunknown:
         return out.append(name);
+    case SSTglobal:
+        return out;
     default:
 #ifdef _DEBUG
         throwUnexpected();
@@ -1783,11 +1786,78 @@ public:
 class CStatisticCollection : public CInterfaceOf<IStatisticCollection>
 {
     friend class CollectionHashTable;
+
+    CStatisticCollection * ensureSubScopePath(std::initializer_list<const StatsScopeId> path)
+    {
+        CStatisticCollection * curScope = this;
+        for (const auto & scopeItem: path)
+            curScope = curScope->ensureSubScope(scopeItem, true); // n.b. this will always return a valid pointer
+        return curScope;
+    }
+    void markDirty()
+    {
+        isDirty=true;
+        if (parent) parent->markDirty();
+    }
+    void refreshAggregates(CRuntimeStatisticCollection & parentTotals, AggregateUpdatedCallBackFunc & fWhenAggregateUpdated)
+    {
+        const StatisticsMapping & mapping = parentTotals.queryMapping();
+        // if this scope is not dirty, the aggregates are accurate at this level so return totals (no need to descend)
+        // Also there is no stats below sg scope, so no need to descend
+        if (isDirty==false || id.queryScopeType()==SSTsubgraph)
+        {
+            // return the aggregates at this scope level
+            ForEachItemIn(i, stats)
+            {
+                Statistic & stat = stats.element(i);
+                StatisticKind kind = stat.queryKind();
+                if (queryStatsVariant(kind) != 0)
+                    continue; // ignore variants (shouldn't happen as the mapping ensure only the aggregator kinds are present)
+                if (mapping.hasKind(kind))
+                {
+                    // Totals required from this level by parent, even if they are not dirty
+                    parentTotals.mergeStatistic(kind, stat.queryValue());
+                }
+            }
+            isDirty=false;
+            return;
+        }
+        else
+        {
+            // descend down to lower level to obtain totals required for aggregation and then aggregate
+            CRuntimeStatisticCollection childTotals(mapping);
+            for (auto & child : children)
+            {
+                child.refreshAggregates(childTotals, fWhenAggregateUpdated);
+            }
+            // 1) Set any values that has changed for this scope and 2) update ALL totals for parent
+            const unsigned numStats = mapping.numStatistics();
+            for (unsigned i=0; i<numStats; ++i)
+            {
+                StatisticKind kind = mapping.getKind(i);
+                unsigned __int64 value = childTotals.queryStatisticByIndex(i).get();
+
+                if (updateStatistic(kind, value, StatsMergeReplace))
+                {
+                    if (value || includeStatisticIfZero(kind))
+                    {
+                        StringBuffer s;
+                        fWhenAggregateUpdated(getFullScope(s).str(), queryScopeType(), kind, value);
+                    }
+                }
+
+                // All totals still required at parent level (even unchanged totals)
+                if (value)
+                    parentTotals.mergeStatistic(kind, value);
+            }
+            isDirty=false;
+            return;
+        }
+    }
 public:
     CStatisticCollection(CStatisticCollection * _parent, const StatsScopeId & _id) : id(_id), parent(_parent)
     {
     }
-
     CStatisticCollection(CStatisticCollection * _parent, MemoryBuffer & in, unsigned version) : parent(_parent)
     {
         id.deserialize(in, version);
@@ -1810,10 +1880,7 @@ public:
             children.add(*next);
         }
     }
-
     virtual byte getCollectionType() const { return SCintermediate; }
-
-
 //interface IStatisticCollection:
     virtual StringBuffer &toXML(StringBuffer &out) const override;
     virtual StatisticScopeType queryScopeType() const override
@@ -1835,7 +1902,8 @@ public:
         if (parent)
         {
             parent->getFullScope(str);
-            str.append(':');
+            if (!str.isEmpty())
+                str.append(':');
         }
         id.getScopeText(str);
         return str;
@@ -1881,7 +1949,6 @@ public:
             return *hashIter.getClear();
         return * new SortedCollectionIterator(*hashIter);
     }
-
     virtual void getMinMaxScope(IStringVal & minValue, IStringVal & maxValue, StatisticScopeType searchScopeType) const override
     {
         if (id.queryScopeType() == searchScopeType)
@@ -1899,7 +1966,6 @@ public:
         for (auto & curChild : children)
             curChild.getMinMaxScope(minValue, maxValue, searchScopeType);
     }
-
     virtual void getMinMaxActivity(unsigned & minValue, unsigned & maxValue) const override
     {
         unsigned activityId = id.queryActivity();
@@ -1915,6 +1981,25 @@ public:
         for (iter.first(); iter.isValid(); iter.next())
             iter.query().getMinMaxActivity(minValue, maxValue);
     }
+    virtual bool setStatistic(const char *scope, StatisticKind kind, unsigned __int64 value) override
+    {
+        if (*scope=='\0')
+        {
+            return updateStatistic(kind, value, StatsMergeReplace);
+        }
+        else
+        {
+            StatsScopeId childScopeId;
+            const char * next;
+            if (!childScopeId.setScopeText(scope, &next) || (*next!=':' && *next!='\0'))
+                throw makeStringExceptionV(JLIBERR_UnexpectedValue, "'%s' does not appear to be a valid scope id", scope);
+            CStatisticCollection * child = ensureSubScope(childScopeId, true);
+
+            if (*next==':')
+                next++;
+            return child->setStatistic(next, kind, value);
+        }
+    }
 
 //other public interface functions
     void addStatistic(StatisticKind kind, unsigned __int64 value)
@@ -1922,8 +2007,7 @@ public:
         Statistic s(kind, value);
         stats.append(s);
     }
-
-    void updateStatistic(StatisticKind kind, unsigned __int64 value, StatsMergeAction mergeAction)
+    bool updateStatistic(StatisticKind kind, unsigned __int64 value, StatsMergeAction mergeAction)
     {
         if (mergeAction != StatsMergeAppend)
         {
@@ -1932,15 +2016,20 @@ public:
                 Statistic & cur = stats.element(i);
                 if (cur.kind == kind)
                 {
+                    if (mergeAction==StatsMergeReplace)
+                    {
+                        if (cur.value==value)
+                            return false;
+                    }
                     cur.value = mergeStatisticValue(cur.value, value, mergeAction);
-                    return;
+                    return true;
                 }
             }
         }
         Statistic s(kind, value);
         stats.append(s);
+        return true;
     }
-
     CStatisticCollection * ensureSubScope(const StatsScopeId & search, bool hasChildren)
     {
         //Once the CStatisticCollection is created it should not be replaced - so that returned pointers remain valid.
@@ -1952,8 +2041,7 @@ public:
         children.add(*ret);
         return ret;
     }
-
-    virtual void serialize(MemoryBuffer & out) const
+    virtual void serialize(MemoryBuffer & out) const override
     {
         out.append(getCollectionType());
         id.serialize(out);
@@ -1967,9 +2055,7 @@ public:
         for (iter.first(); iter.isValid(); iter.next())
             iter.query().serialize(out);
     }
-
     inline const StatsScopeId & queryScopeId() const { return id; }
-
     virtual void mergeInto(IStatisticGatherer & target) const
     {
         StatsOptScope block(target, id);
@@ -1979,7 +2065,6 @@ public:
         for (auto const & cur : children)
             cur.mergeInto(target);
     }
-
     virtual void visit(IStatisticVisitor & visitor) const
     {
         if (visitor.visitScope(*this))
@@ -1988,19 +2073,71 @@ public:
                 cur.visit(visitor);
         }
     }
-
     virtual void visitChildren(IStatisticVisitor & visitor) const
     {
         for (auto const & cur : children)
             cur.visit(visitor);
     }
+    virtual void refreshAggregates(const StatisticsMapping & mapping, AggregateUpdatedCallBackFunc & fWhenAggregateUpdated) override
+    {
+        if (isDirty)
+        {
+            CRuntimeStatisticCollection totals(mapping);
+            refreshAggregates(totals, fWhenAggregateUpdated);
+        }
+    }
+    virtual stat_type aggregateStatistic(StatisticKind kind) const override
+    {
+        stat_type sum = 0;
+        if (!getStatistic(kind, sum)) // get sum of statistics at this level
+        {
+            // if no stats at this level, then get sum of stats from children
+            for (auto & child : children)
+                sum += child.aggregateStatistic(kind);
+        }
+        return sum;
+    }
+    virtual void recordStats(const StatisticsMapping & mapping, IStatisticCollection * sourceStatsCollection, std::initializer_list<const StatsScopeId> path) override
+    {
+        CStatisticCollection * curSrcCollection = static_cast<CStatisticCollection *>(sourceStatsCollection);
+        const StatsScopeId * scopeItem = path.begin();
+        // n.b. sourceStatsCollection has workflow as root but this collection has global as root
+        // Locate the collection with the stats and make curSrcCollection point to that
+        if (!curSrcCollection || curSrcCollection->queryScopeId().compare(*scopeItem)!=0)
+            return; // Required path doesn't exist in source collection so nothing more to do here
+        ++scopeItem;
+        while (scopeItem!=path.end())
+        {
+            curSrcCollection = curSrcCollection->children.find(scopeItem);
+            if (!curSrcCollection)
+                return; // Required path doesn't exist in source collection so nothing more to do here
+            ++scopeItem;
+        }
 
+        CStatisticCollection * tgtScopeCollection = ensureSubScopePath(path);
+        bool wasUpdated = false;
+        // More efficient to iterate over stats rather than mapping...
+        ForEachItemIn(i, curSrcCollection->stats)
+        {
+            Statistic & cur = curSrcCollection->stats.element(i);
+            if (queryStatsVariant(cur.kind) != 0)
+                continue; // ignore variants
+            if (mapping.hasKind(cur.kind))
+            {
+                if (tgtScopeCollection->updateStatistic(cur.kind, cur.value, StatsMergeReplace))
+                    wasUpdated=true;
+            }
+        }
+        if (wasUpdated)
+            tgtScopeCollection->markDirty();
+    }
 private:
     StatsScopeId id;
     CStatisticCollection * parent;
 protected:
     CollectionHashTable children;
     StatsArray stats;
+    bool isDirty = false; // used to track which scope has changed (used to workout what aggregates to recalculate)
 };
 
 StringBuffer &CStatisticCollection::toXML(StringBuffer &out) const
@@ -2114,52 +2251,6 @@ public:
     unsigned __int64 whenCreated;
 };
 
-
-class StatAggregator : implements IStatisticVisitor
-{
-public:
-    StatAggregator(StatisticKind _kind) : kind(_kind) {}
-
-    virtual bool visitScope(const IStatisticCollection & cur)
-    {
-        switch (cur.queryScopeType())
-        {
-        //If there is a match for the stat in any of these containers, then avoid summing any child scopes
-        case SSTglobal:
-        case SSTgraph:
-        case SSTsubgraph:
-        case SSTsection:
-        case SSTchildgraph:
-        case SSTworkflow:
-        {
-            stat_type value;
-            if (cur.getStatistic(kind, value))
-            {
-                total += value;
-                return false;
-            }
-            return true;
-        }
-        //Default is to sum the value for this scope and children => recurse.  E.g. activity and any child activities.
-        default:
-            total += cur.queryStatistic(kind);
-            return true;
-        }
-    }
-    stat_type getTotal() const { return total; }
-private:
-    stat_type total = 0;
-    StatisticKind kind;
-};
-
-
-stat_type aggregateStatistic(StatisticKind kind, IStatisticCollection * statsCollection)
-{
-    StatAggregator aggregator(kind);
-    statsCollection->visit(aggregator);
-    return aggregator.getTotal();
-}
-
 //---------------------------------------------------------------------------------------------------------------------
 
 void serializeStatisticCollection(MemoryBuffer & out, IStatisticCollection * collection)
@@ -2189,6 +2280,11 @@ IStatisticCollection * createStatisticCollection(MemoryBuffer & in)
     unsigned version;
     in.read(version);
     return deserializeCollection(NULL, in, version);
+}
+
+IStatisticCollection * createStatisticCollection(const StatsScopeId & scopeId)
+{
+    return new CStatisticCollection(nullptr, scopeId);
 }
 
 
@@ -2610,7 +2706,7 @@ StringBuffer & CRuntimeStatisticCollection::toStr(StringBuffer &str) const
             unsigned __int64 rawValue = getStatisticValue(rawKind);
             if (rawValue)
                 value += convertMeasure(rawKind, kind, rawValue);
-        }                
+        }
         if (value)
         {
             const char * name = queryStatisticName(serialKind);

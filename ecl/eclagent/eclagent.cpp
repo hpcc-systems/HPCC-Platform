@@ -509,7 +509,7 @@ public:
 //=======================================================================================
 
 EclAgent::EclAgent(IConstWorkUnit *wu, const char *_wuid, bool _checkVersion, bool _resetWorkflow, bool _noRetry, char const * _logname, const char *_allowedPipeProgs, IPropertyTree *_queryXML, ILogMsgHandler * _logMsgHandler)
-    : wuRead(wu), wuid(_wuid), checkVersion(_checkVersion), resetWorkflow(_resetWorkflow), noRetry(_noRetry), allowedPipeProgs(_allowedPipeProgs), logMsgHandler(_logMsgHandler)
+    : wuRead(wu), wuid(_wuid), checkVersion(_checkVersion), resetWorkflow(_resetWorkflow), noRetry(_noRetry), allowedPipeProgs(_allowedPipeProgs), logMsgHandler(_logMsgHandler), statsAggregator(stdAggregateKindStatistics)
 {
     isAborting = false;
     isStandAloneExe = false;
@@ -1988,10 +1988,6 @@ void EclAgent::doProcess()
         const cost_type cost = aggregateCost(w, nullptr, false);
         if (cost)
             w->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTglobal, "", StCostExecute, NULL, cost, 1, 0, StatsMergeReplace);
-        const cost_type diskAccessCost = aggregateDiskAccessCost(w, nullptr);
-        if (diskAccessCost)
-            w->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTglobal, "", StCostFileAccess, NULL, diskAccessCost, 1, 0, StatsMergeReplace);
-        updateSpillSize(w, nullptr, SSTglobal);
         addTimings(w);
 
         switch (w->getState())
@@ -2245,12 +2241,15 @@ void EclAgent::runProcess(IEclProcess *process)
     ForEachItemIn(i2, queryLibraries)
         queryLibraries.item(i2).destroyGraph();
 
-    if (rowManager)
     {
         WorkunitUpdate wu = updateWorkUnit();
-        WuStatisticTarget statsTarget(wu, "eclagent");
-        rowManager->reportPeakStatistics(statsTarget, 0);
-        rowManager->getMemoryUsage();//Causes statistics to be written to logfile
+        updateAggregates(wu);
+        if (rowManager)
+        {
+            WuStatisticTarget statsTarget(wu, "eclagent");
+            rowManager->reportPeakStatistics(statsTarget, 0);
+            rowManager->getMemoryUsage();//Causes statistics to be written to logfile
+        }
     }
 
     rowManager.clear(); // Must go before the allocatorCache
@@ -2513,10 +2512,6 @@ void EclAgentWorkflowMachine::noteTiming(unsigned wfid, timestamp_type startTime
     const cost_type cost = money2cost_type(calcCost(agent.queryAgentMachineCost(), nanoToMilli(elapsedNs))) + aggregateCost(wu, scope, true);
     if (cost)
         wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTworkflow, scope, StCostExecute, NULL, cost, 1, 0, StatsMergeReplace);
-    const cost_type diskAccessCost = aggregateDiskAccessCost(wu, scope);
-    if (diskAccessCost)
-        wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTworkflow, scope, StCostFileAccess, NULL, diskAccessCost, 1, 0, StatsMergeReplace);
-    updateSpillSize(wu, scope, SSTworkflow);
 }
 
 void EclAgentWorkflowMachine::doExecutePersistItem(IRuntimeWorkflowItem & item)

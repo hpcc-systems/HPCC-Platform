@@ -1131,6 +1131,8 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
             if (isContainerized() && podInfo.hasStdDev())
                 podInfo.report(wu);
         }
+        if (globals->getPropBool("@watchdogProgressEnabled"))
+            queryDeMonServer()->loadExistingAggregates(workunit);
 
         setWuid(workunit.queryWuid(), workunit.queryClusterName());
 
@@ -1148,7 +1150,9 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
         cost_type cost = money2cost_type(calculateThorCost(nanoToMilli(graphTimeNs), numberOfMachines));
         if (cost)
             wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTgraph, graphScope, StCostExecute, NULL, cost, 1, 0, StatsMergeReplace);
-        updateSpillSize(wu, graphScope, SSTgraph);
+        if (globals->getPropBool("@watchdogProgressEnabled"))
+            queryDeMonServer()->updateAggregates(wu);
+
         removeJob(*job);
     }
     catch (IException *e)

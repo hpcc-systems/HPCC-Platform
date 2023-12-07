@@ -43,6 +43,7 @@ private:
     unsigned numberOfMachines = 0;
     cost_type costLimit = 0;
     cost_type workunitCost = 0;
+    StatisticsAggregator statsAggregator;
 
     void doReportGraph(IStatisticGatherer & stats, CGraphBase *graph)
     {
@@ -91,16 +92,13 @@ private:
         if (costLimit || finished)
         {
             const cost_type sgCost = money2cost_type(calcCost(thorManagerRate, duration) + calcCost(thorWorkerRate, duration) * numberOfMachines);
-            cost_type costDiskAccess = graph.getDiskAccessCost();
             if (finished)
             {
                 if (sgCost)
                     wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTsubgraph, graphScope, StCostExecute, NULL, sgCost, 1, 0, StatsMergeReplace);
-                if (costDiskAccess)
-                    wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTsubgraph, graphScope, StCostFileAccess, NULL, costDiskAccess, 1, 0, StatsMergeReplace);
             }
 
-            const cost_type totalCost = workunitCost + sgCost + costDiskAccess;
+            const cost_type totalCost = workunitCost + sgCost + graph.getDiskAccessCost();
             if (costLimit>0 && totalCost > costLimit)
             {
                 LOG(MCwarning, thorJob, "ABORT job cost exceeds limit");
@@ -131,7 +129,15 @@ private:
             queryServerStatus().queryProperties()->setPropInt("@sg_duration", (duration+59999)/60000); // round it up
         }
     }
-
+    void updateGraphStats(IConstWorkUnit &currentWU, const char *graphName, unsigned wfid, CGraphBase & graph)
+    {
+        Owned<IWUGraphStats> stats = currentWU.updateStats(graphName, SCTthor, queryStatisticsComponentName(), wfid, graph.queryGraphId(), false);
+        IStatisticGatherer & statsBuilder = stats->queryStatsBuilder();
+        reportGraph(statsBuilder, &graph);
+        // Merge only the stats at the specified scope level
+        Owned<IStatisticCollection> statsCollection = statsBuilder.getResult();
+        statsAggregator.recordStats(statsCollection, wfid, graphName, graph.queryGraphId());
+    }
     void reportActiveGraphs(bool finished, bool success=true)
     {
         if (activeGraphs.ordinality())
@@ -145,8 +151,7 @@ private:
                 ForEachItemIn (g, activeGraphs)
                 {
                     CGraphBase &graph = activeGraphs.item(g);
-                    Owned<IWUGraphStats> stats = currentWU.updateStats(graphName, SCTthor, queryStatisticsComponentName(), wfid, graph.queryGraphId(), false);
-                    reportGraph(stats->queryStatsBuilder(), &graph);
+                    updateGraphStats(currentWU, graphName, wfid, graph);
                 }
                 Owned<IWorkUnit> wu = &currentWU.lock();
                 ForEachItemIn (g2, activeGraphs)
@@ -155,6 +160,7 @@ private:
                     unsigned startTime = graphStarts.item(g2);
                     reportStatus(wu, graph, startTime, finished, success);
                 }
+                updateAggregates(wu);
                 queryServerStatus().commitProperties();
             }
             catch (IException *E)
@@ -172,10 +178,7 @@ private:
             IConstWorkUnit &currentWU = graph->queryJob().queryWorkUnit();
             const char *graphName = ((CJobMaster &)activeGraphs.item(0).queryJob()).queryGraphName();
             unsigned wfid = graph->queryJob().getWfid();
-            {
-                Owned<IWUGraphStats> stats = currentWU.updateStats(graphName, SCTthor, queryStatisticsComponentName(), wfid, graph->queryGraphId(), false);
-                reportGraph(stats->queryStatsBuilder(), graph);
-            }
+            updateGraphStats(currentWU, graphName, wfid, *graph);
 
             Owned<IWorkUnit> wu = &currentWU.lock();
             if (startTimeStamp)
@@ -186,7 +189,6 @@ private:
                 wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTsubgraph, graphScope, StWhenStarted, NULL, getTimeStampNowValue(), 1, 0, StatsMergeAppend);
             }
             reportStatus(wu, *graph, startTime, finished, success);
-
             queryServerStatus().commitProperties();
         }
         catch (IException *e)
@@ -199,7 +201,7 @@ private:
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    DeMonServer()
+    DeMonServer() : statsAggregator(stdAggregateKindStatistics)
     {
         lastReport = msTick();
         reportRate = globals->getPropInt("@watchdogProgressInterval", 30);
@@ -299,6 +301,14 @@ public:
         synchronized block(mutex);
         reportActiveGraphs(true, false);
         activeGraphs.kill();
+    }
+    virtual void updateAggregates(IWorkUnit * lockedWu) override
+    {
+        statsAggregator.updateAggregates(lockedWu);
+    }
+    virtual void loadExistingAggregates(IConstWorkUnit &workunit) override
+    {
+        statsAggregator.loadExistingAggregates(workunit);
     }
 };
 
