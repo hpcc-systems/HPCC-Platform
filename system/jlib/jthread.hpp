@@ -33,6 +33,9 @@
 // no thread priority handling?
 #endif
 
+typedef unsigned PooledThreadHandle;
+
+#define NEW_THREADEDPERSISTENT
 interface jlib_decl IThread : public IInterface
 {
     virtual void start() = 0;
@@ -162,6 +165,21 @@ public:
 };
 
 // Similar to above, but the underlying thread always remains running. This can make repeated start + join's significantly quicker
+#ifdef NEW_THREADEDPERSISTENT
+class jlib_decl CThreadedPersistent
+{
+    Owned<IException> exception;
+    IThreaded *owner;
+    PooledThreadHandle handle = 0;
+    bool joined = true;
+    void threadmain();
+public:
+    CThreadedPersistent(const char *name, IThreaded *_owner);
+    ~CThreadedPersistent();
+    void start();
+    bool join(unsigned timeout, bool throwException = true);
+};
+#else
 class jlib_decl CThreadedPersistent
 {
     class CAThread : public Thread
@@ -184,6 +202,7 @@ public:
     void start();
     bool join(unsigned timeout, bool throwException = true);
 };
+#endif
 
 
 // Asynchronous 'for' utility class
@@ -250,7 +269,6 @@ interface IThreadFactory: extends IInterface                // factory for creat
 };
 
 typedef IIteratorOf<IPooledThread> IPooledThreadIterator;
-typedef unsigned PooledThreadHandle;
 
 interface IThreadPool : extends IInterface
 {
