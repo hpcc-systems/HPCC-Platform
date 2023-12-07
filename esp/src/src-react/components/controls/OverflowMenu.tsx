@@ -2,26 +2,35 @@ import * as React from "react";
 import { makeStyles, tokens, Button, Menu, MenuList, MenuPopover, MenuTrigger, useOverflowMenu, useIsOverflowItemVisible, MenuItem, } from "@fluentui/react-components";
 import { MoreHorizontalRegular, MoreHorizontalFilled, bundleIcon, } from "@fluentui/react-icons";
 import type { ARIAButtonElement } from "@fluentui/react-aria";
-import { TabInfo } from "./TabInfo";
-import { Count } from "./Count";
+import { Count } from "./TabbedPanes/Count";
 
 const MoreHorizontal = bundleIcon(MoreHorizontalFilled, MoreHorizontalRegular);
 
+export interface MenuItem {
+    id: string;
+    icon?: React.ReactElement;
+    label: string;
+    count?: string | number;
+    disabled?: boolean;
+}
+
 type OverflowMenuItemProps = {
-    tab: TabInfo;
+    item: MenuItem;
     onClick: React.MouseEventHandler<ARIAButtonElement<"div">>;
 };
 
-const OverflowMenuItem = (props: OverflowMenuItemProps) => {
-    const { tab, onClick } = props;
-    const isVisible = useIsOverflowItemVisible(tab.id);
+const OverflowMenuItem: React.FunctionComponent<OverflowMenuItemProps> = ({
+    item,
+    onClick
+}) => {
+    const isVisible = useIsOverflowItemVisible(item.id);
 
     if (isVisible) {
         return <></>;
     }
 
-    return <MenuItem key={tab.id} icon={tab.icon} disabled={tab.disabled} onClick={onClick}>
-        <div>{tab.label}<Count value={tab.count} /></div>
+    return <MenuItem key={item.id} icon={item.icon} disabled={item.disabled} onClick={onClick}>
+        <div>{item.label}<Count value={item.count} /></div>
     </MenuItem>;
 };
 
@@ -34,13 +43,13 @@ const useOverflowMenuStyles = makeStyles({
     },
 });
 
-export type OverflowMenuProps = {
-    tabs: TabInfo[];
-    onMenuSelect: (tab: TabInfo) => void;
-};
+export interface OverflowMenuProps {
+    menuItems: readonly MenuItem[];
+    onMenuSelect: (menuItem: MenuItem) => void;
+}
 
 export const OverflowMenu: React.FunctionComponent<OverflowMenuProps> = ({
-    tabs,
+    menuItems,
     onMenuSelect
 }) => {
     const { ref, isOverflowing, overflowCount } = useOverflowMenu<HTMLButtonElement>();
@@ -58,17 +67,17 @@ export const OverflowMenu: React.FunctionComponent<OverflowMenuProps> = ({
                 className={styles.menuButton}
                 ref={ref}
                 icon={<MoreHorizontal />}
-                aria-label={`${overflowCount} more tabs`}
-                role="tab"
+                aria-label={`${overflowCount} more menu items`}
+                role="menuItem"
             />
         </MenuTrigger>
         <MenuPopover>
             <MenuList className={styles.menu}>
-                {tabs.map((tab) => (
+                {menuItems.map((menuItem) => (
                     <OverflowMenuItem
-                        key={tab.id}
-                        tab={tab}
-                        onClick={() => onMenuSelect(tab)}
+                        key={menuItem.id}
+                        item={menuItem}
+                        onClick={() => onMenuSelect(menuItem)}
                     />
                 ))}
             </MenuList>

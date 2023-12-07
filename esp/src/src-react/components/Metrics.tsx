@@ -1,6 +1,7 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, IIconProps, SearchBox } from "@fluentui/react";
-import { Breadcrumb, BreadcrumbButton, BreadcrumbDivider, BreadcrumbItem, Spinner } from "@fluentui/react-components";
+import { Label, Spinner } from "@fluentui/react-components";
+import { typographyStyles } from "@fluentui/react-theme";
 import { useConst } from "@fluentui/react-hooks";
 import { bundleIcon, Folder20Filled, Folder20Regular, FolderOpen20Filled, FolderOpen20Regular, } from "@fluentui/react-icons";
 import { WorkunitsServiceEx } from "@hpcc-js/comms";
@@ -13,12 +14,13 @@ import { FetchStatus, useMetricsOptions, useWorkunitMetrics } from "../hooks/met
 import { HolyGrail } from "../layouts/HolyGrail";
 import { AutosizeComponent, AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
 import { DockPanel, DockPanelItems, ReactWidget, ResetableDockPanel } from "../layouts/DockPanel";
-import { IScope, MetricGraph, MetricGraphWidget, isGraphvizWorkerResponse, layoutCache } from "../util/metricGraph";
+import { IScope, LayoutStatus, MetricGraph, MetricGraphWidget, isGraphvizWorkerResponse, layoutCache } from "../util/metricGraph";
 import { pushUrl } from "../util/history";
 import { debounce } from "../util/throttle";
 import { ErrorBoundary } from "../util/errorBoundary";
 import { ShortVerticalDivider } from "./Common";
 import { MetricsOptions } from "./MetricsOptions";
+import { BreadcrumbInfo, OverflowBreadcrumb } from "./controls/OverflowBreadcrumb";
 
 const logger = scopedLogger("src-react/components/Metrics.tsx");
 
@@ -303,7 +305,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
             for (let i = 0; i < minLen; ++i) {
                 const item = lineages[0][i];
                 if (lineages.every(lineage => lineage[i] === item)) {
-                    if (metricGraph.isSubgraph(item) && item.id && !metricGraph.isVertex(item)) {
+                    if (item.id && item.type !== "child" && metricGraph.isSubgraph(item) && !metricGraph.isVertex(item)) {
                         newLineage.push(item);
                     }
                 } else {
@@ -321,7 +323,8 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     const updateMetricGraph = React.useCallback((svg: string, selection: IScope[]) => {
         let cancelled = false;
         if (metricGraphWidget?.renderCount() > 0) {
-            setIsRenderComplete(false);
+            const sameSVG = metricGraphWidget.svg() === svg;
+            setIsRenderComplete(sameSVG);
             metricGraphWidget
                 .svg(svg)
                 .visible(false)
@@ -335,7 +338,11 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                             ;
                         if (trackSelection && selectedMetricsSource !== "metricGraphWidget") {
                             if (newSel.length) {
-                                metricGraphWidget.zoomToSelection(0);
+                                if (sameSVG) {
+                                    metricGraphWidget.centerOnSelection();
+                                } else {
+                                    metricGraphWidget.zoomToSelection(0);
+                                }
                             } else {
                                 metricGraphWidget.zoomToFit(0);
                             }
@@ -410,38 +417,42 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         } else if (!isLayoutComplete) {
             return `${nlsHPCC.PerformingLayout} (${dot.split("\n").length})`;
         } else if (!isRenderComplete) {
-            return `${nlsHPCC.RenderSVG}`;
+            return nlsHPCC.RenderSVG;
         }
         return "";
     }, [fetchStatus, isLayoutComplete, isRenderComplete, dot]);
+
+    const breadcrumbs = React.useMemo<BreadcrumbInfo[]>(() => {
+        return lineage.map(item => {
+            return {
+                id: item.id,
+                label: item.id,
+                props: {
+                    icon: selectedLineage === item ? <SelectedLineageIcon /> : <LineageIcon />
+                }
+            };
+        });
+    }, [lineage, selectedLineage]);
 
     const graphComponent = React.useMemo(() => {
         return <HolyGrail
             header={<>
                 <CommandBar items={graphButtons} farItems={graphRightButtons} />
-                <Breadcrumb>{
-                    lineage.map((item, idx) => {
-                        return <>
-                            <BreadcrumbItem key={idx} >
-                                <BreadcrumbButton current={selectedLineage === item} icon={selectedLineage === item ? <SelectedLineageIcon /> : <LineageIcon />} onClick={() => setSelectedLineage(item)}>
-                                    {item.id}
-                                </BreadcrumbButton>
-                            </BreadcrumbItem>
-                            {idx < lineage.length - 1 && <BreadcrumbDivider />}
-                        </>;
-                    })
-                }</Breadcrumb>
+                <OverflowBreadcrumb breadcrumbs={breadcrumbs} selected={selectedLineage?.id} onSelect={item => setSelectedLineage(lineage.find(l => l.id === item.id))} />
             </>}
             main={<>
                 <AutosizeComponent hidden={!spinnerLabel}>
-                    <Spinner size="extra-large" label={spinnerLabel} labelPosition="below"></Spinner>
+                    <Spinner size="extra-large" label={spinnerLabel} labelPosition="below" ></Spinner>
+                </AutosizeComponent>
+                <AutosizeComponent hidden={!!spinnerLabel || selectedMetrics.length > 0}>
+                    <Label style={{ ...typographyStyles.subtitle2 }}>{nlsHPCC.NoContentPleaseSelectItem}</Label>
                 </AutosizeComponent>
                 <AutosizeHpccJSComponent widget={metricGraphWidget}>
                 </AutosizeHpccJSComponent>
             </>
             }
         />;
-    }, [graphButtons, graphRightButtons, lineage, spinnerLabel, metricGraphWidget, selectedLineage]);
+    }, [graphButtons, graphRightButtons, breadcrumbs, selectedLineage?.id, spinnerLabel, selectedMetrics.length, metricGraphWidget, lineage]);
 
     //  Props Table  ---
     const propsTable = useConst(() => new Table()
@@ -518,7 +529,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     React.useEffect(() => {
         let cancelled = false;
         if (metricGraphWidget?.renderCount() > 0) {
-            setIsLayoutComplete(false);
+            setIsLayoutComplete(layoutCache.status(dot) === LayoutStatus.COMPLETED);
             layoutCache.calcSVG(dot).then(response => {
                 if (!cancelled) {
                     if (isGraphvizWorkerResponse(response)) {
