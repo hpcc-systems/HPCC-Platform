@@ -2,8 +2,8 @@ import * as React from "react";
 import * as ReactDOM from "react-dom";
 import { initializeIcons } from "@fluentui/react";
 import { scopedLogger } from "@hpcc-js/util";
-import { cookieKeyValStore, userKeyValStore } from "src/KeyValStore";
-import { containerized, ModernMode } from "src/BuildInfo";
+import { cookieKeyValStore } from "src/KeyValStore";
+import { needsRedirectV9 } from "src/Session";
 import { ECLWatchLogger } from "./hooks/logging";
 import { replaceUrl } from "./util/history";
 
@@ -32,42 +32,43 @@ dojoConfig.urlInfo = {
 };
 dojoConfig.disableLegacyHashing = true;
 
-const store = userKeyValStore();
-store.getEx(ModernMode, { defaultValue: String(containerized) }).then(async modernMode => {
-    if (modernMode === String(false)) {
-        window.location.replace("/esp/files/stub.htm");
-    } else {
-        const authTypeResp = await fetch("/esp/getauthtype");
-        const authType = await authTypeResp?.text() ?? "None";
-        const userStore = cookieKeyValStore();
-        const userSession = await userStore.getAll();
-        if (authType.indexOf("None") < 0 && (userSession["ESPSessionState"] === "false" || userSession["ECLWatchUser"] === "false" || (!userSession["Status"] || userSession["Status"] === "Locked"))) {
-            if (window.location.hash.indexOf("login") < 0) {
-                replaceUrl("/login");
-            }
-            import("./components/forms/Login").then(_ => {
-                try {
-                    ReactDOM.render(
-                        <_.Login />,
-                        document.getElementById("placeholder")
-                    );
-                    document.getElementById("loadingOverlay").remove();
-                } catch (e) {
-                    logger.error(e);
-                }
-            });
-        } else {
-            import("./components/Frame").then(_ => {
-                try {
-                    ReactDOM.render(
-                        <_.Frame />,
-                        document.getElementById("placeholder")
-                    );
-                    document.getElementById("loadingOverlay").remove();
-                } catch (e) {
-                    logger.error(e);
-                }
-            });
-        }
+needsRedirectV9().then(async redirected => {
+    if (!redirected) {
+        loadUI();
     }
 });
+
+async function loadUI() {
+    const authTypeResp = await fetch("/esp/getauthtype");
+    const authType = await authTypeResp?.text() ?? "None";
+    const userStore = cookieKeyValStore();
+    const userSession = await userStore.getAll();
+    if (authType.indexOf("None") < 0 && (userSession["ESPSessionState"] === "false" || userSession["ECLWatchUser"] === "false" || (!userSession["Status"] || userSession["Status"] === "Locked"))) {
+        if (window.location.hash.indexOf("login") < 0) {
+            replaceUrl("/login");
+        }
+        import("./components/forms/Login").then(_ => {
+            try {
+                ReactDOM.render(
+                    <_.Login />,
+                    document.getElementById("placeholder")
+                );
+                document.getElementById("loadingOverlay").remove();
+            } catch (e) {
+                logger.error(e);
+            }
+        });
+    } else {
+        import("./components/Frame").then(_ => {
+            try {
+                ReactDOM.render(
+                    <_.Frame />,
+                    document.getElementById("placeholder")
+                );
+                document.getElementById("loadingOverlay").remove();
+            } catch (e) {
+                logger.error(e);
+            }
+        });
+    }
+}
