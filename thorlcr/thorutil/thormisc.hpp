@@ -716,5 +716,7 @@ public:
     void stop();
 };
 
+extern graph_decl void saveWuidToFile(const char *wuid);
+
 #endif
 
