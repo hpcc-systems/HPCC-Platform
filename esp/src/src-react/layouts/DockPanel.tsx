@@ -75,9 +75,7 @@ export class ReactWidget extends HTMLWidget {
     }
 
     exit(domNode, element) {
-        ReactDOM.unmountComponentAtNode(
-            this._div.node()
-        );
+        setTimeout(() => ReactDOM.unmountComponentAtNode(this._div.node()), 0);
         super.enter(domNode, element);
     }
 
