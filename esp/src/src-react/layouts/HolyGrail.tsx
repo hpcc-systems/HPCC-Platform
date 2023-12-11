@@ -22,54 +22,23 @@ export const HolyGrail: React.FunctionComponent<HolyGrailProps> = ({
     fullscreen = false
 }) => {
 
-    const { isDark } = useUserTheme();
-    const [btnHoverBgColor, setBtnHoverBgColor] = React.useState("rgb(175, 217, 255)");
-    const [btnDisabledColor, setBtnDisabledColor] = React.useState("rgb(180, 180, 180)");
-    const [btnDisabledBgColor, setBtnDisabledBgColor] = React.useState("rgb(238, 240, 242)");
+    const { themeV9 } = useUserTheme();
 
     const layoutStyles = React.useMemo(() => mergeStyleSets({
-        header: {
-            ".ms-CommandBar": {
-                ".ms-Button:hover": {
-                    backgroundColor: btnHoverBgColor
-                },
-                ".ms-Button.is-disabled": {
-                    color: btnDisabledColor,
-                    ".ms-Icon": {
-                        color: btnDisabledColor
-                    }
-                },
-                ".ms-Button.is-disabled:hover": {
-                    backgroundColor: btnDisabledBgColor,
-                }
-            }
-        },
         fullscreen: {
             position: "fixed",
             top: "0",
             left: "0",
             width: "100%",
             height: "100%",
-            background: "white"
+            background: themeV9.colorNeutralBackground1,
         },
         normal: {
         }
-    }), [btnDisabledColor, btnDisabledBgColor, btnHoverBgColor]);
-
-    React.useEffect(() => {
-        if (isDark) {
-            setBtnHoverBgColor("rgb(49, 49, 49)");
-            setBtnDisabledColor("rgb(130, 130, 130)");
-            setBtnDisabledBgColor("rgb(49, 49, 49)");
-        } else {
-            setBtnHoverBgColor("rgb(175, 217, 255)");
-            setBtnDisabledColor("rgb(180, 180, 180)");
-            setBtnDisabledBgColor("rgb(238, 240, 242)");
-        }
-    }, [isDark]);
+    }), [themeV9.colorNeutralBackground1]);
 
     return <div className={fullscreen ? layoutStyles.fullscreen : layoutStyles.normal} style={{ display: "flex", flexDirection: "column", minWidth: 0, minHeight: "100%", overflow: "hidden" }}>
-        <header className={layoutStyles.header} style={{ flex: "0 0", minWidth: 0 }}>{header}</header>
+        <header style={{ flex: "0 0", minWidth: 0 }}>{header}</header>
         <div style={{ flex: "1 1", display: "flex", minWidth: 0 }} >
             <div style={{ flex: "0 2" }}>{left}</div>
             <div style={{ flex: "1 1 auto", minWidth: 1, minHeight: 1 }}>{main}</div>
