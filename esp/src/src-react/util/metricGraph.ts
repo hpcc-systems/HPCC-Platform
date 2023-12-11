@@ -41,7 +41,7 @@ const KindShape = {
 };
 
 function shape(v: IScope) {
-    return TypeShape[v.type] ?? KindShape[v.kind] ?? "rectangle";
+    return TypeShape[v.type] ?? KindShape[v.Kind] ?? "rectangle";
 }
 
 const CHARS = new Set("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
@@ -502,6 +502,7 @@ export class MetricGraphWidget extends SVGZoomWidget {
         super();
         this._drawStartPos = "origin";
         this.showToolbar(false);
+
         this._iconBar
             .buttons([])
             ;
@@ -580,7 +581,12 @@ export class MetricGraphWidget extends SVGZoomWidget {
             .each(function () {
                 d3Select(this).selectAll("path,polygon")
                     .style("stroke", () => {
-                        return context._selection[decodeID(this.id)] ? "red" : undefined;
+                        return context._selection[decodeID(this.id)] ? context.selectionGlowColor() : undefined;
+                    })
+                    ;
+                d3Select(this).selectAll("polygon")
+                    .style("fill", () => {
+                        return context._selection[decodeID(this.id)] ? "LightCyan" : undefined;
                     })
                     ;
             })
