@@ -280,6 +280,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     const metricGraph = useConst(() => new MetricGraph());
     const metricGraphWidget = useConst(() => new MetricGraphWidget()
         .zoomToFitLimit(1)
+        .selectionGlowColor("DodgerBlue")
         .on("selectionChanged", () => {
             const selection = metricGraphWidget.selection().filter(id => metricGraph.item(id)).map(id => metricGraph.item(id).id);
             setSelectedMetricsSource("metricGraphWidget");
@@ -592,10 +593,16 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         ];
     }, [scopeFilter, onChangeScopeFilter, scopesTable, graphComponent, propsTable, propsTable2]);
 
-    const layoutChanged = React.useCallback((layout) => {
-        setOptions({ ...options, layout });
-        saveOptions();
-    }, [options, saveOptions, setOptions]);
+    React.useEffect(() => {
+
+        //  Update layout prior to unmount  ---
+        if (dockpanel && options && saveOptions && setOptions) {
+            return () => {
+                setOptions({ ...options, layout: dockpanel.getLayout() });
+                saveOptions();
+            };
+        }
+    }, [dockpanel, options, saveOptions, setOptions]);
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
@@ -678,7 +685,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         </>}
         main={
             <ErrorBoundary>
-                <DockPanel items={items} layout={options?.layout} layoutChanged={layoutChanged} onDockPanelCreate={setDockpanel} />
+                <DockPanel items={items} layout={options?.layout} onDockPanelCreate={setDockpanel} />
                 <MetricsOptions show={showMetricOptions} setShow={setShowMetricOptions} />
             </ErrorBoundary>
         }

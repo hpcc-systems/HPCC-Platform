@@ -34,6 +34,8 @@ export class WUTimelinePatched extends WUTimeline {
             .bucketHeight(22)
             .gutter(4)
             .overlapTolerence(-100)
+            .oddSeriesBackground("transparent")
+            .evenSeriesBackground("transparent")
             ;
         this._gantt["_series_idx"] = -1;
         this.strokeWidth(0);
