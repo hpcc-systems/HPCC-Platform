@@ -276,9 +276,6 @@ void streamFilteredLogsToFile(const char* outFile, LogAccessConditions & logFetc
 
 void WsWuInfo::readWorkunitComponentLogs(const char* outFile, CWsWuZAPInfoReq& zapLogFilterOptions)
 {
-    if (!queryRemoteLogAccessor())
-        throw makeStringException(ECLWATCH_LOGACCESS_UNAVAILABLE, "WsWuInfo: Remote Log Access plug-in not available!");
-
     if (isEmptyString(outFile))
         throw makeStringException(ECLWATCH_INVALID_FILE_NAME, "WsWuInfo: Target filename not provided!");
 
@@ -4201,13 +4198,15 @@ void CWsWuFileHelper::createZAPECLQueryArchiveFiles(IConstWorkUnit* cwu, const c
     }
 }
 
-void CWsWuFileHelper::createWULogFile(IConstWorkUnit *cwu, WsWuInfo &winfo, const char *path, CWsWuZAPInfoReq & zapLogFilterOptions)
+void CWsWuFileHelper::readWULogToFiles(IConstWorkUnit *cwu, WsWuInfo &winfo, const char *path, CWsWuZAPInfoReq &zapLogFilterOptions)
 {
     if (cwu->getWuidVersion() == 0)
         return;
 
-    LogAccessLogFormat logFormat = zapLogFilterOptions.logFilter.logDataFormat;
+    if (!queryRemoteLogAccessor())
+        throw makeStringException(ECLWATCH_LOGACCESS_UNAVAILABLE, "CWsWuFileHelper: Remote Log Access plug-in not available!");
 
+    LogAccessLogFormat logFormat = zapLogFilterOptions.logFilter.logDataFormat;
     StringBuffer logfileextension;
     if (logFormat == LOGACCESS_LOGFORMAT_csv)
         logfileextension.set("csv");
@@ -4218,18 +4217,37 @@ void CWsWuFileHelper::createWULogFile(IConstWorkUnit *cwu, WsWuInfo &winfo, cons
     else
         logfileextension.set("log");
 
-    VStringBuffer fileName("%s%c%s-log.%s", path, PATHSEPCHAR, cwu->queryWuid(), logfileextension.str());
+    const char *wuid = cwu->queryWuid();
+    ILogAccessFilter *logFetchFilter = getJobIDLogAccessFilter(wuid);
+    zapLogFilterOptions.logFilter.logFetchOptions.setFilter(logFetchFilter);
 
+    VStringBuffer componentLog("%s%c%s-log.%s", path, PATHSEPCHAR, wuid, logfileextension.str());
+    readWULogToFile(componentLog, winfo, zapLogFilterOptions);
+
+    Owned<IPropertyTreeIterator> iter = cwu->getProcesses("*", nullptr);
+    ForEach(*iter)
+    {
+        const char *processName = iter->query().queryProp("@podName");
+        ILogAccessFilter *processLogFetchFilter = getBinaryLogAccessFilter(logFetchFilter, getPodLogAccessFilter(processName), LOGACCESS_FILTER_and);
+        zapLogFilterOptions.logFilter.logFetchOptions.setFilter(processLogFetchFilter);
+
+        VStringBuffer processLog("%s%c%s-%s-log.%s", path, PATHSEPCHAR, wuid, processName, logfileextension.str());
+        readWULogToFile(processLog, winfo, zapLogFilterOptions);
+    }
+}
+
+void CWsWuFileHelper::readWULogToFile(const char *logFileName, WsWuInfo &winfo, CWsWuZAPInfoReq &zapLogFilterOptions)
+{
     try
     {
-        winfo.readWorkunitComponentLogs(fileName.str(), zapLogFilterOptions);
+        winfo.readWorkunitComponentLogs(logFileName, zapLogFilterOptions);
     }
     catch(IException* e)
     {
         StringBuffer s;
         e->errorMessage(s);
         IERRLOG(e, "Error accessing WU logs");
-        writeToFile(fileName.str(), s.length(), s.str());
+        writeToFile(logFileName, s.length(), s.str());
         e->Release();
     }
 }
@@ -4480,7 +4498,7 @@ void CWsWuFileHelper::createWUZAPFile(IEspContext& context, IConstWorkUnit* cwu,
     if (request.includeThorSlaveLog.isEmpty() || strieq(request.includeThorSlaveLog.str(), "on"))
         createThorSlaveLogfile(cwu, winfo, tempDirName);
 #else
-    createWULogFile(cwu, winfo, tempDirName, request);
+    readWULogToFiles(cwu, winfo, tempDirName, request);
 #endif
 
     //Write out to ZIP file
