@@ -1369,15 +1369,16 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             keyManagers.reset(new std::vector<std::atomic<IKeyManager *>>(parts.size()));
             for (auto & k: *keyManagers)
                 k = nullptr;
-            contextLoggers.clear();
-            for (unsigned i=0; i<parts.size(); i++)
-                contextLoggers.push_back(new CStatsContextLogger(jhtreeCacheStatistics, thorJob));
-        }
-        virtual void reset() override
-        {
-            PARENT::reset();
-            for (auto contextLogger: contextLoggers)
-                contextLogger->reset();
+            if (contextLoggers.size() > 0)
+            {
+                for (auto contextLogger: contextLoggers)
+                    contextLogger->reset();
+            }
+            else
+            {
+                for (unsigned i=0; i<parts.size(); i++)
+                    contextLoggers.push_back(new CStatsContextLogger(jhtreeCacheStatistics, thorJob));
+            }
         }
         virtual void addPartNum(unsigned partNum) override
         {
@@ -1633,15 +1634,16 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         virtual void init() override
         {
             PARENT::init();
-            contextLoggers.clear();
-            for (unsigned i=0; i<parts.size(); i++)
-                contextLoggers.push_back(new CStatsContextLogger(jhtreeCacheStatistics, thorJob));
-        }
-        virtual void reset() override
-        {
-            PARENT::reset();
-            for (auto contextLogger: contextLoggers)
-                contextLogger->reset();
+            if (contextLoggers.size() > 0)
+            {
+                for (auto contextLogger: contextLoggers)
+                    contextLogger->reset();
+            }
+            else
+            {
+                for (unsigned i=0; i<parts.size(); i++)
+                    contextLoggers.push_back(new CStatsContextLogger(jhtreeCacheStatistics, thorJob));
+            }
         }
         virtual StringBuffer &getInfo(StringBuffer &info) const override
         {
