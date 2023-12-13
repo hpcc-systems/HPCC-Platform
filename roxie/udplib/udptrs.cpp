@@ -276,9 +276,18 @@ public:
         activeFlowSequence = seq;
         return seq;
     }
+
     bool hasDataToSend() const
     {
         return (packetsQueued.load(std::memory_order_relaxed) || (resendList && resendList->numActive()));
+    }
+
+    void setRequestExpiryTime(unsigned newExpiryTime)
+    {
+        //requestExpiryTime 0 should only be used if there is no data to send.  Ensure it is non zero otherwise.
+        if (newExpiryTime == 0)
+            newExpiryTime == 1;
+        requestExpiryTime.store(newExpiryTime);
     }
 
     void sendStart(unsigned packets)
@@ -326,7 +335,7 @@ public:
                 msg.cmd = flowType::request_to_send;
                 msg.packets = 0;
                 msg.flowSeq = nextFlowSequence();
-                requestExpiryTime = msTick() + udpFlowAckTimeout;
+                setRequestExpiryTime(msTick() + udpFlowAckTimeout);
                 block.leave();
                 sendRequest(msg, false);
             }
@@ -339,7 +348,7 @@ public:
 
                 //The flow event is sent on the data socket, so it needs to wait for all the data to be sent before being received
                 //therefore use the updDataSendTimeout instead of udpFlowAckTimeout
-                requestExpiryTime = msTick() + updDataSendTimeout;
+                setRequestExpiryTime(msTick() + updDataSendTimeout);
                 block.leave();
                 sendRequest(msg, true);
             }
@@ -367,7 +376,7 @@ public:
             msg.sendSeq = nextSendSequence;
             msg.flowSeq = nextFlowSequence();
             msg.sourceNode = sourceIP;
-            requestExpiryTime = msTick() + udpFlowAckTimeout;
+            setRequestExpiryTime(msTick() + udpFlowAckTimeout);
             block.leave();
             sendRequest(msg, false);
         }
@@ -394,6 +403,11 @@ public:
         CLeavableCriticalBlock block(activeCrit);
         if (maxRequestDeadTimeouts && (timeouts >= maxRequestDeadTimeouts))
         {
+            int timeExpired = msTick()-requestExpiryTime;
+            StringBuffer s;
+            EXCLOG(MCoperatorError,"ERROR: UdpSender: too many timeouts - aborting sends. Timed out %i times (flow=%u, max=%i, timeout=%u, expiryTime=%u[%u] ack(%u)) waiting ok_to_send for %u packets from node=%s",
+                    timeouts.load(), activeFlowSequence.load(), maxRequestDeadTimeouts, udpFlowAckTimeout, requestExpiryTime.load(), timeExpired, (int)hadAcknowledgement, packetsQueued.load(), ip.getIpText(s).str());
+
             abort();
             return;
         }
@@ -405,7 +419,7 @@ public:
             msg.sendSeq = nextSendSequence;
             msg.flowSeq = activeFlowSequence;
             msg.sourceNode = sourceIP;
-            requestExpiryTime = msTick() + udpFlowAckTimeout;
+            setRequestExpiryTime(msTick() + udpFlowAckTimeout);
             block.leave();
             sendRequest(msg, false);
         }
@@ -430,7 +444,7 @@ public:
         hadAcknowledgement = true;
         CriticalBlock b(activeCrit);
         if (requestExpiryTime)
-            requestExpiryTime = msTick() + udpRequestTimeout;   // set a timeout in case an ok_to_send message goes missing
+            setRequestExpiryTime(msTick() + udpRequestTimeout);   // set a timeout in case an ok_to_send message goes missing
     }
 
 #ifdef TEST_DROPPED_PACKETS
@@ -655,8 +669,11 @@ public:
             DBGLOG("UdpSender: abort sending queued data to node=%s", ip.getIpText(s).str());
         }
         timeouts = 0;
-        requestExpiryTime = 0;
         removeData(nullptr, nullptr);
+
+        CriticalBlock block(activeCrit);
+        if (packetsQueued == 0)
+            requestExpiryTime = 0;
     }
 
     inline void pushData(unsigned queue, DataBuffer *buffer)
