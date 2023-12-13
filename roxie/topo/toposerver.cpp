@@ -368,9 +368,9 @@ int main(int argc, const char *argv[])
 
         timeoutCheckInterval = topology->getPropInt("@timeoutCheckInterval", timeoutCheckInterval);
         heartbeatInterval = topology->getPropInt("@heartbeatInterval", heartbeatInterval);
-        timeoutHeartbeatAgent = topology->getPropInt("@timeoutHeartbeatAgent", timeoutHeartbeatAgent);
-        timeoutHeartbeatServer = topology->getPropInt("@timeoutHeartbeatServer", timeoutHeartbeatServer);
-        removeHeartbeatInterval = topology->getPropInt("@removeHeartbeatInterval", removeHeartbeatInterval);
+        timeoutHeartbeatAgent = topology->getPropInt("@timeoutHeartbeatAgent", heartbeatInterval*2);
+        timeoutHeartbeatServer = topology->getPropInt("@timeoutHeartbeatServer", heartbeatInterval*6);
+        removeHeartbeatInterval = topology->getPropInt("@removeHeartbeatInterval", heartbeatInterval*10);
         topologyReportInterval = topology->getPropInt("@topologyReportInterval", topologyReportInterval);
 
 #ifndef _CONTAINERIZED
@@ -390,6 +390,21 @@ int main(int argc, const char *argv[])
 #else
         setupContainerizedLogMsgHandler();
 #endif
+        if (timeoutHeartbeatAgent < (heartbeatInterval*4)/3)
+        {
+            timeoutHeartbeatAgent = heartbeatInterval*2;
+            DBGLOG("timeoutHeartbeatAgent value too small - setting to %u", timeoutHeartbeatAgent);
+        }
+        if (timeoutHeartbeatServer < (heartbeatInterval*2))
+        {
+            timeoutHeartbeatServer = heartbeatInterval*6;
+            DBGLOG("timeoutHeartbeatServer value too small - setting to %u", timeoutHeartbeatServer);
+        }
+        if (removeHeartbeatInterval < timeoutHeartbeatServer)
+        {
+            removeHeartbeatInterval = timeoutHeartbeatServer*2;
+            DBGLOG("removeHeartbeatInterval value too small - setting to %u", removeHeartbeatInterval);
+        }
         Owned<ISocket> socket = ISocket::create(topoPort);
         if (traceLevel)
             DBGLOG("Topology server starting on port %u", topoPort);
