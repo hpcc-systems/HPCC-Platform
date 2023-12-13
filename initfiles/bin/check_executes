@@ -99,8 +99,8 @@ if [ $PMD_ALWAYS = true ] || [ $retVal -ne 0 ]; then
     cp $f $POST_MORTEM_DIR/$f
     echo "Copied $f to $POST_MORTEM_DIR/$f" | tee -a $POST_MORTEM_DIR/info.log
   done
-  cp `ls -rt /tmp/postmortem.log.*` $POST_MORTEM_DIR
-  rm /tmp/postmortem.log.*
+  cp `ls -rt /tmp/postmortem.$progPid.log.*` $POST_MORTEM_DIR
+  rm /tmp/postmortem.$progPid.log.*
   if [ -f core ]; then
     echo "Generating info from core file to $POST_MORTEM_DIR/info.log" | tee -a $POST_MORTEM_DIR/info.log
     gdb -batch -ix /opt/HPCCSystems/bin/.gdbinit -x /opt/HPCCSystems/bin/post-mortem-gdb ${PMD_PROGNAME} core 2>$POST_MORTEM_DIR/info.err >>$POST_MORTEM_DIR/info.log

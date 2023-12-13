@@ -2480,7 +2480,12 @@ void setupContainerizedLogMsgHandler()
         unsigned postMortemLines = logConfig->getPropInt(capturePostMortemAtt, 0);
         if (postMortemLines)
         {
-            ILogMsgHandler *fileMsgHandler = getPostMortemLogMsgHandler("/tmp/postmortem.log", postMortemLines, MSGFIELD_STANDARD);
+            // augment postmortem files with <pid> to avoid clashes where multiple processes are running within
+            // same process space, e.g. hthor processes running in same k8s container
+            unsigned pid = GetCurrentProcessId();
+            VStringBuffer portMortemFileBase("/tmp/postmortem.%u.log", pid);
+
+            ILogMsgHandler *fileMsgHandler = getPostMortemLogMsgHandler(portMortemFileBase, postMortemLines, MSGFIELD_STANDARD);
             queryLogMsgManager()->addMonitorOwn(fileMsgHandler, getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, TopDetail));
         }
     }
