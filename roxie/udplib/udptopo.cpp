@@ -596,7 +596,7 @@ extern UDPLIB_API void createStaticTopology(const std::vector<RoxieEndpointInfo>
 
 static std::thread topoThread;
 static Semaphore abortTopo;
-unsigned heartbeatInterval = 5000;   // How often roxie servers update topo server
+unsigned heartbeatInterval = 10000;   // How often roxie servers update topo server
 
 extern UDPLIB_API void initializeTopology(const StringArray &topoValues, const std::vector<RoxieEndpointInfo> &myRoles)
 {

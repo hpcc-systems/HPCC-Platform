@@ -78,9 +78,9 @@ unsigned lastTimeoutCheck = 0;
 unsigned lastTopologyReport = 0;
 
 unsigned timeoutCheckInterval = 1000;       // How often we check to see what has expired
-unsigned heartbeatInterval = 5000;          // How often nodes send heartbeats
+unsigned heartbeatInterval = 10000;          // How often nodes send heartbeats
 unsigned timeoutHeartbeatServer = 60000;    // How long before a server is marked as down
-unsigned timeoutHeartbeatAgent = 10000;     // How long before an agent is marked as down
+unsigned timeoutHeartbeatAgent = 20000;     // How long before an agent is marked as down
 unsigned removeHeartbeatInterval = 120000;  // How long before a node is removed from list
 unsigned topologyReportInterval = 60000;    // How often topology is reported to logging (if traceLevel >= 2)
 bool aborted = false;
