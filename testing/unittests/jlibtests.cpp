@@ -38,7 +38,7 @@
 
 #include "unittests.hpp"
 
-#define CPPUNIT_ASSERT_EQUAL_STR(x, y) CPPUNIT_ASSERT_EQUAL(std::string(x),std::string(y))
+#define CPPUNIT_ASSERT_EQUAL_STR(x, y) CPPUNIT_ASSERT_EQUAL(std::string(x ? x : ""),std::string(y ? y : ""))
 
 static const unsigned oneMinute = 60000; // msec
 
@@ -3829,5 +3829,32 @@ CPPUNIT_TEST_SUITE_REGISTRATION( JLibSecretsTest );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JLibSecretsTest, "JLibSecretsTest" );
 
 
+
+class JLibStringTest : public CppUnit::TestFixture
+{
+public:
+    CPPUNIT_TEST_SUITE(JLibStringTest);
+        CPPUNIT_TEST(testStristr);
+    CPPUNIT_TEST_SUITE_END();
+
+    void testStristr()
+    {
+        CPPUNIT_ASSERT_EQUAL_STR(stristr("abc", "abc"), "abc");
+        CPPUNIT_ASSERT_EQUAL_STR(stristr("abc", "ABC"), "abc");
+        CPPUNIT_ASSERT_EQUAL_STR(stristr("x", "ABC"), "");
+        CPPUNIT_ASSERT_EQUAL_STR(stristr("abcdefgh", "A"), "abcdefgh");
+        CPPUNIT_ASSERT_EQUAL_STR(stristr("ABCDEFGH", "a"), "ABCDEFGH");
+        CPPUNIT_ASSERT_EQUAL_STR(stristr("abcdefgh", "E"), "efgh");
+        CPPUNIT_ASSERT_EQUAL_STR(stristr("ABCDEFGH", "e"), "EFGH");
+        CPPUNIT_ASSERT_EQUAL_STR(stristr("abcdefgh", "FGH"), "fgh");
+        CPPUNIT_ASSERT_EQUAL_STR(stristr("aabcdefgh", "ABC"), "abcdefgh");
+        CPPUNIT_ASSERT_EQUAL_STR(stristr("ababacz", "ABAC"), "abacz");
+        CPPUNIT_ASSERT_EQUAL_STR(stristr("", "ABC"), "");
+        CPPUNIT_ASSERT_EQUAL_STR(stristr("ABC", ""), "");
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( JLibStringTest );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JLibStringTest, "JLibStringTest" );
 
 #endif // _USE_CPPUNIT

@@ -2869,36 +2869,24 @@ const char * stristr (const char *haystack, const char *needle)
     if (isEmptyString(haystack) || isEmptyString(needle))
         return nullptr;
 
-    const char *pptr  = needle;     /* Pattern to search for    */
-    const char *start = haystack;   /* Start with a bowl of hay */
-    const char *sptr;               /* Substring pointer        */
-    int   slen  = strlen(haystack); /* Total size of haystack   */
-    int   plen  = strlen(needle);   /* Length of our needle     */
-
-    /* while string length not shorter than pattern length */
-    for (; slen >= plen; start++, slen--)
+    const char * start = haystack;
+    size_t slen  = strlen(haystack); /* Total size of haystack   */
+    size_t nlen  = strlen(needle);   /* Length of our needle     */
+    char needle0 = tolower(*needle);
+    for (; slen >= nlen; start++, slen--)
     {
-        /* find start of pattern in string */
-        while (tolower(*start) != tolower(*needle))
+        if (tolower(*start) == needle0)
         {
-            start++;
-            slen--;
-            /* if pattern longer than string */
-            if (slen < plen)
-                return nullptr;
-        }
-
-        sptr = start;
-        pptr = (char *) needle;
-        while (tolower(*sptr) == tolower(*pptr))
-        {
-            sptr++;
-            pptr++;
-            /* if end of pattern then pattern was found */
-            if (!*pptr)
-                return start;
+            size_t i = 1;
+            for (;;)
+            {
+                if (i == nlen)
+                    return start;
+                if (tolower(start[i]) != tolower(needle[i]))
+                    break;
+                i++;
+            }
         }
     }
-
     return nullptr;
 }
