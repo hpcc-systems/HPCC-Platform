@@ -6,23 +6,26 @@
       <primary>SOAPCALL</primary>
     </indexterm></title>
 
-  <para><emphasis>result</emphasis><emphasis role="bold"> :=
-  SOAPCALL<indexterm>
-      <primary>SOAPCALL Function</primary>
-    </indexterm>( [ </emphasis><emphasis>recset, </emphasis><emphasis
-  role="bold">]</emphasis><emphasis> url, service, instructure,
-  </emphasis><emphasis role="bold">[ </emphasis><emphasis>transform,
-  </emphasis><emphasis role="bold">]</emphasis><emphasis role="bold">
-  DATASET<indexterm>
-      <primary>DATASET</primary>
-    </indexterm>(</emphasis><emphasis>outstructure</emphasis><emphasis
-  role="bold">) </emphasis><emphasis>| outstructure </emphasis><emphasis
-  role="bold">[</emphasis><emphasis>, options </emphasis><emphasis
-  role="bold">]</emphasis> <emphasis role="bold">[, UNORDERED |
+  <para><emphasis>result</emphasis><emphasis role="bold"> </emphasis><emphasis
+  role="bold"> := SOAPCALL( [ </emphasis><emphasis>recset,
+  </emphasis><emphasis role="bold">]</emphasis><emphasis> url, service,
+  instructure, </emphasis><emphasis role="bold">[
+  </emphasis><emphasis>transform, </emphasis><emphasis role="bold">]
+  DATASET(</emphasis><emphasis>outstructure</emphasis><emphasis role="bold">)
+  </emphasis><emphasis>| outstrucuture </emphasis><emphasis
+  role="bold">[</emphasis>,options <emphasis role="bold">[, UNORDERED |
   ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
   STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
   </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
-  <emphasis>name </emphasis><emphasis role="bold">) ] );</emphasis></para>
+  <emphasis>name</emphasis><emphasis role="bold"> )] [, PERSIST [ (
+  </emphasis><emphasis>option</emphasis> <emphasis role="bold">) ] ] ) ;
+  <indexterm>
+      <primary>PERSIST</primary>
+    </indexterm><indexterm>
+      <primary>SOAPCALL Function</primary>
+    </indexterm><indexterm>
+      <primary>DATASET</primary>
+    </indexterm></emphasis></para>
 
   <para><emphasis role="bold">SOAPCALL( [ </emphasis><emphasis>recset,
   </emphasis><emphasis role="bold">]</emphasis><emphasis> url, service,
@@ -34,7 +37,9 @@
   ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
   STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
   </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
-  <emphasis>name </emphasis><emphasis role="bold">) ] );</emphasis></para>
+  <emphasis>name</emphasis><emphasis role="bold"> )] [, PERSIST [ (
+  </emphasis><emphasis>option</emphasis> <emphasis role="bold">) ] ] ) ;
+  </emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
@@ -200,6 +205,22 @@
             <entry>The algorithm to use for this activity. Must be from the
             list of supported algorithms for the SORT function's STABLE and
             UNSTABLE options.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">PERSIST</emphasis></entry>
+
+            <entry>Optional. Use persistent connections. </entry>
+          </row>
+
+          <row>
+            <entry><emphasis>option</emphasis></entry>
+
+            <entry>Optional. If omitted, it uses the default number of
+            connections. If TRUE, it enables persistent connections. If FALSE
+            or 0, it disables persistent connections. If set to an integer, it
+            enables persistent connections and sets the number of active
+            connections. </entry>
           </row>
 
           <row>
@@ -509,6 +530,9 @@ DATASET(outRecord), ONFAIL(genDefault1())));
 OUTPUT(SOAPCALL(ds, ip, svc, inRecord, t(LEFT),DATASET(outRecord), ONFAIL(genDefault2(LEFT))));
 OUTPUT(SOAPCALL(ds, ip, svc, inRecord, t(LEFT),DATASET(outRecord), ONFAIL(SKIP)));
 
+OUTPUT(SOAPCALL(ds, ip, svc, inRecord, t(LEFT),DATASET(outRecord), ONFAIL(SKIP),PERSIST(12))); 
+                                                                      //use 12 persistent connections
+                                                                  
 //Using HTTPHEADER to pass Authorization info
 OUTPUT(SOAPCALL(ds, ip, svc, inRecord, t(LEFT),DATASET(outRecord), ONFAIL(SKIP),
                 HTTPHEADER('Authorization','Basic dXNlcm5hbWU6cGFzc3dvcmQ='),
