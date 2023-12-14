@@ -1788,6 +1788,7 @@ public:
                         StringAttr wuid, graphName;
                         StringBuffer soPath;
                         msg.read(wuid);
+                        saveWuidToFile(wuid);
                         msg.read(graphName);
 
                         Owned<ILoadedDllEntry> querySo;

@@ -1002,6 +1002,7 @@ int main( int argc, const char *argv[]  )
         bool doWorkerRegistration = false;
         if (isContainerized())
         {
+            saveWuidToFile(workunit);
             LogMsgJobId thorJobId = queryLogMsgManager()->addJobId(workunit);
             thorJob.setJobID(thorJobId);
             setDefaultJobId(thorJobId);

@@ -1691,3 +1691,13 @@ void CThorPerfTracer::stop()
         ::Release(E);
     }
 }
+
+void saveWuidToFile(const char *wuid)
+{
+    // Store current wuid to a local file, so post mortem script can find it (and if necessary publish files to it)
+    Owned<IFile> wuidFile = createIFile("wuid"); // NB: each pod is in it's own private working directory
+    Owned<IFileIO> wuidFileIO = wuidFile->open(IFOcreate);
+    if (!wuidFileIO)
+        throw makeStringException(0, "Failed to create file 'wuid' to store current workunit for post mortem script");
+    wuidFileIO->write(0, strlen(wuid), wuid);
+}
