@@ -47,8 +47,8 @@ END;
 iRecs := 10000;
 lhsRecs := 10000;
 
-//lhs := DATASET(lhsRecs, TRANSFORM(rec, SELF.id := HASH(COUNTER) % iRecs; SELF.s := (string)HASH(SELF.id)), DISTRIBUTED);
-lhs := DATASET(1, TRANSFORM(rec, SELF.id := HASH(COUNTER) % iRecs; SELF.s := (string)HASH(SELF.id)), DISTRIBUTED);
+lhs := DATASET(lhsRecs, TRANSFORM(rec, SELF.id := HASH(COUNTER) % iRecs; SELF.s := (string)HASH(SELF.id)), DISTRIBUTED);
+//lhs := DATASET(1, TRANSFORM(rec, SELF.id := HASH(COUNTER) % iRecs; SELF.s := (string)HASH(SELF.id)), DISTRIBUTED);
 rhs := DATASET(iRecs, TRANSFORM(rec, SELF.id := COUNTER; SELF.s := (string)HASH(SELF.id)), DISTRIBUTED);
  
 //iFilename := prefix + 'i';
@@ -97,7 +97,7 @@ kj := IF(forceKJRemote,
         );
 
 SEQUENTIAL(
-// BUILD(i, OVERWRITE);
+ BUILD(i, OVERWRITE);
  
  COUNT(kj);
 
