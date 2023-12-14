@@ -2352,7 +2352,8 @@ void CMasterGraph::reset()
 void CMasterGraph::abort(IException *e)
 {
     if (aborted) return;
-    getFinalProgress(true);
+    if (initialized) // if aborted before initialized, there will be no slave activity to collect
+        getFinalProgress(true);
     bool _graphDone = graphDone; // aborting master activities can trigger master graphDone, but want to fire GraphAbort to slaves if graphDone=false at start.
     bool dumpInfo = TE_WorkUnitAbortingDumpInfo == e->errorCode() || job.getOptBool("dumpInfoOnAbort");
     if (dumpInfo)
@@ -2793,9 +2794,12 @@ void CMasterGraph::getFinalProgress(bool aborting)
                     {
                         size32_t progressLen;
                         msg.read(progressLen);
-                        MemoryBuffer progressData;
-                        progressData.setBuffer(progressLen, (void *)msg.readDirect(progressLen));
-                        queryJobManager().queryDeMonServer()->takeHeartBeat(progressData);
+                        if (progressLen)
+                        {
+                            MemoryBuffer progressData;
+                            progressData.setBuffer(progressLen, (void *)msg.readDirect(progressLen));
+                            queryJobManager().queryDeMonServer()->takeHeartBeat(progressData);
+                        }
                     }
                     catch (IException *e)
                     {

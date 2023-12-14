@@ -1322,7 +1322,7 @@ table.miniSelect span {
     left: 0;
     right: 0;
     height: auto;
-    border-color: rgb(158, 158, 158);
+    border-style: none;
 }
 
 .flat .dgrid-page-size {
@@ -1928,22 +1928,28 @@ span.dijitReset.dijitInline.dijitIcon.fa.disabled {
     border-top: 4px solid white;
 }
 
+.flat .phosphor_WidgetAdapter.p-DockPanel-widget {
+    border-top: none;
+    box-shadow: 0 -1px var(--colorNeutralStroke1), var(--shadow2);
+}
+
 .flat .phosphor_WidgetAdapter {
-    background: inherit;
+    background-color: var(--colorNeutralBackground1);
+    border-color: var(--colorNeutralStroke1)
 }
 
 .flat .p-TabBar-tab {
-    background: rgb(229, 229, 229);
+    background-color: var(--colorNeutralBackground3);
+    border-bottom-style: solid;
+    border-color: var(--colorNeutralStroke1);
+    border-width: 1px;
 }
 
-.flat-dark .p-TabBar-tab {
-    background: rgb(48, 48, 48);
-}
-
-.flat-dark .p-TabBar-tab:hover:not(.p-mod-current) {
-    background: rgb(72, 72, 72);
+.flat .p-TabBar-tab:hover:not(.p-mod-current) {
+    background-color: var(--colorNeutralBackground3Hover);
 }
 
 .flat .p-TabBar-tab.p-mod-current {
-    background: inherit;
+    background-color: var(--colorNeutralBackground1);
+    border-bottom-color: var(--colorNeutralStroke1);
 }

@@ -109,6 +109,9 @@ if [ $PMD_ALWAYS = true ] || [ $retVal -ne 0 ]; then
   fi
   dmesg -xT > $POST_MORTEM_DIR/dmesg.log
   if [[ -n "${PMD_DALISERVER}" ]] && [[ -n "${PMD_WORKUNIT}" ]]; then
+    if [[ -s wuid ]]; then # takes precedence over command line option
+      PMD_WORKUNIT=$(cat wuid)
+    fi
     wutool postmortem ${PMD_WORKUNIT} DALISERVER=${PMD_DALISERVER} PMD=${POST_MORTEM_DIR}
     echo Updated workunit ${PMD_WORKUNIT}
   fi
