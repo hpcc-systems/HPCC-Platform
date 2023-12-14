@@ -200,6 +200,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
                 label: nlsHPCC.MaxSkew, width: 60, formatter: (value, row) => value ? `${Utility.formatDecimal(value / 100)}%` : ""
             },
             Modified: { label: nlsHPCC.ModifiedUTCGMT },
+            Accessed: { label: nlsHPCC.LastAccessed },
             AtRestCost: {
                 label: nlsHPCC.FileCostAtRest,
                 formatter: (cost, row) => {

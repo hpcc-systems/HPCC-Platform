@@ -759,7 +759,8 @@ define([
                             return "";
                         }
                     },
-                    Modified: { label: this.i18n.ModifiedUTCGMT, width: 162 },
+                    Modified: { label: this.i18n.ModifiedUTCGMT, width: 160 },
+                    Accessed: { label: this.i18n.LastAccessed, width: 160 },
                     AtRestCost: {
                         label: nlsHPCC.FileCostAtRest, width: 100,
                         formatter: function (cost, row) {
