@@ -452,7 +452,18 @@ int init_main(int argc, const char* argv[])
         else
         {
             envpt.setown(createPTreeFromXMLFile(cfgfile, ipt_caseInsensitive));
+
+            // NB: esp has no standard component config in bare-metal, this is loading defaultYaml only
             espConfig.setown(loadConfiguration(defaultYaml, argv, "esp", "ESP", nullptr, nullptr));
+
+            // legacy esp.xml will contain a generated global section if present in the environment.
+            // replace the empty stub created by loadConfiguration with this environment globals section.
+            Owned<IPropertyTree> global = envpt->queryPropTree("global");
+            if (global)
+            {
+                Owned<IPropertyTree> currentConfig = getComponentConfig();
+                replaceComponentConfig(currentConfig, global);
+            }
         }
         Owned<IPropertyTree> procpt = NULL;
         if (envpt)
