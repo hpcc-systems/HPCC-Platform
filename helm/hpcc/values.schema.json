@@ -1121,7 +1121,7 @@
           "properties": {
             "type": {
               "type": "string",
-              "enum": ["OTLP-HTTP", "OTLP-GRCP", "OS", "NONE"],
+              "enum": ["OTLP-HTTP", "OTLP-GRCP", "OS", "JLOG", "NONE"],
               "description": "The type of exporter in charge of forwarding span data to target back-end"
             }
           }
@@ -1135,16 +1135,6 @@
               "description": "Defines the manner in which trace data is processed - in batches, or simple as available"
             }
           }
-        },
-        "logSpanStart": {
-          "type": "boolean",
-          "description": "If true, generate a log entry whenever a span is started",
-          "default": false
-        },
-        "logSpanFinish": {
-          "type": "boolean",
-          "description": "If true, generate a log entry whenever a span is finished",
-          "default": true
         }
       },
       "additionalProperties": { "type": ["integer", "string", "boolean"] }
