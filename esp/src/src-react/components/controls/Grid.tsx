@@ -101,7 +101,13 @@ const gridStyles = (height: string): Partial<IDetailsListStyles> => {
             height,
             minHeight: height,
             maxHeight: height,
-            selectors: { ".ms-DetailsHeader-cellName": { fontSize: "13.5px" } }
+            selectors: {
+                ".ms-DetailsHeader-cellName": { fontSize: "13.5px" },
+                ".ms-DetailsRow-cell:has(.bgFilled)": { color: "white", boxShadow: "inset 1px 0 var(--colorNeutralBackground1), inset -1px 1px var(--colorNeutralBackground1)" },
+                ".ms-DetailsRow-cell:has(.bgGreen)": { background: "green" },
+                ".ms-DetailsRow-cell:has(.bgOrange)": { background: "orange" },
+                ".ms-DetailsRow-cell:has(.bgRed)": { background: "red" }
+            }
         },
         headerWrapper: {
             position: "sticky",
