@@ -3985,7 +3985,6 @@ public:
         helper.createSegmentMonitors(manager, row);
         manager->finishSegmentMonitors();
         manager->reset();
-        manager->resetCounts();
     }
 
     virtual void doneManager(IKeyManager * manager)

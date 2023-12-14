@@ -55,9 +55,9 @@ public:
         *fpos = 0;
     }
 
-    bool getCursorNext(IKeyCursor * keyCursor, KeyStatsCollector &stats)
+    bool getCursorNext(IKeyCursor * keyCursor, IContextLogger *ctx)
     {
-        if(keyCursor->next(stats))
+        if(keyCursor->next(ctx))
         {
             memcpy(row, keyCursor->queryRecordBuffer(), keyCursor->getSize());
             thisrowsize = keyCursor->getSize() - sizeof(offset_t);
@@ -216,7 +216,7 @@ private:
 class CKeyReader: public CInterface
 {
 public:
-    CKeyReader(char const * filename) : count(0), stats(nullptr)
+    CKeyReader(char const * filename) : count(0)
     {
         keyFile.setown(createIFile(filename));
         keyFileIO.setown(keyFile->open(IFOread));
@@ -260,7 +260,7 @@ public:
     {
         if(eof)
             return false;
-        if(buffer.getCursorNext(keyCursor, stats))
+        if(buffer.getCursorNext(keyCursor, ctx))
         {
             buffer.tally(crc);
             count++;
@@ -282,7 +282,7 @@ public:
     {
         while(!eof)
         {
-            if(keyCursor->next(stats))
+            if(keyCursor->next(ctx))
             {
                 const byte *buff = keyCursor->queryRecordBuffer();
                 offset_t fpos = keyCursor->getFPos();
@@ -330,7 +330,7 @@ private:
     Owned<IFileIO> keyFileIO;
     Owned<IKeyIndex> keyIndex;
     Owned<IKeyCursor> keyCursor;
-    KeyStatsCollector stats;
+    IContextLogger *ctx = nullptr;
     CRC32 crc;
     size32_t keyedsize;
     size32_t rowsize;
