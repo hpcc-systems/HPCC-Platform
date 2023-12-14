@@ -1886,6 +1886,7 @@ public:
                         ILogMsgFilter *existingLogHandler = queryLogMsgManager()->queryMonitorFilter(logHandler);
                         dbgassertex(existingLogHandler);
                         verifyex(queryLogMsgManager()->changeMonitorFilterOwn(logHandler, getCategoryLogMsgFilter(existingLogHandler->queryAudienceMask(), existingLogHandler->queryClassMask(), maxLogDetail)));
+                        queryLogMsgManager()->removeJobId(thorJob.queryJobID());
                         LogMsgJobId thorJobId = queryLogMsgManager()->addJobId(wuid);
                         thorJob.setJobID(thorJobId);
                         setDefaultJobId(thorJobId);

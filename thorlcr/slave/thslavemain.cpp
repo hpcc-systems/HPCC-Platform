@@ -292,24 +292,35 @@ public:
 ILogMsgHandler *startSlaveLog()
 {
     ILogMsgHandler *logHandler = nullptr;
-#ifndef _CONTAINERIZED
-    StringBuffer fileName("thorslave");
-    Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(globals->queryProp("@logDir"), "thor");
-    StringBuffer slaveNumStr;
-    lf->setPostfix(slaveNumStr.append(mySlaveNum).str());
-    lf->setCreateAliasFile(false);
-    lf->setName(fileName.str());//override default filename
-    logHandler = lf->beginLogging();
+    if (!isContainerized())
+    {
+        StringBuffer fileName("thorslave");
+        Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(globals->queryProp("@logDir"), "thor");
+        StringBuffer slaveNumStr;
+        lf->setPostfix(slaveNumStr.append(mySlaveNum).str());
+        lf->setCreateAliasFile(false);
+        lf->setName(fileName.str());//override default filename
+        logHandler = lf->beginLogging();
 #ifndef _DEBUG 
-    // keep duplicate logging output to stderr to aide debugging
-    queryLogMsgManager()->removeMonitor(queryStderrLogMsgHandler());
+        // keep duplicate logging output to stderr to aide debugging
+        queryLogMsgManager()->removeMonitor(queryStderrLogMsgHandler());
 #endif
 
-    LOG(MCdebugProgress, thorJob, "Opened log file %s", lf->queryLogFileSpec());
-#else
-    setupContainerizedLogMsgHandler();
-    logHandler = queryStderrLogMsgHandler();
-#endif
+        LOG(MCdebugProgress, thorJob, "Opened log file %s", lf->queryLogFileSpec());
+    }
+    else
+    {
+        setupContainerizedLogMsgHandler();
+        logHandler = queryStderrLogMsgHandler();
+        StringBuffer wuid;
+        if (getComponentConfigSP()->getProp("@workunit", wuid))
+        {
+            LogMsgJobId thorJobId = queryLogMsgManager()->addJobId(wuid);
+            thorJob.setJobID(thorJobId);
+            setDefaultJobId(thorJobId);
+        }
+    }
+
     //setupContainerizedStorageLocations();
     LOG(MCdebugProgress, thorJob, "Build %s", hpccBuildInfo.buildTag);
     return logHandler;
@@ -385,12 +396,9 @@ int main( int argc, const char *argv[]  )
             usage();
 
         mySlaveNum = globals->getPropInt("@slavenum", NotFound);
-        /* NB: in cloud/non-local storage mode, slave number is not known until after registration with the master
-        * For the time being log file names are based on their slave number, so can only start when known.
-        */
-        ILogMsgHandler *slaveLogHandler = nullptr;
-        if (NotFound != mySlaveNum)
-            slaveLogHandler = startSlaveLog();
+        if (!isContainerized() && (NotFound == mySlaveNum))
+            throw makeStringException(0, "Slave number not specified (@slavenum)");
+        ILogMsgHandler *slaveLogHandler = startSlaveLog();
 
         // In container world, SLAVE= will not be used
         const char *slave = globals->queryProp("@slave");
@@ -427,9 +435,6 @@ int main( int argc, const char *argv[]  )
 
         if (RegisterSelf(masterEp))
         {
-            if (!slaveLogHandler)
-                slaveLogHandler = startSlaveLog();
-
             if (getExpertOptBool("slaveDaliClient"))
                 enableThorSlaveAsDaliClient();
 
