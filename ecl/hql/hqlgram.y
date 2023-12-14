@@ -3822,6 +3822,19 @@ soapFlag
                             $3.unwindCommaList(args);
                             $$.setExpr(createExprAttribute(jsonAtom, args), $1);
                         }
+    | PERSIST
+                        {
+                            $$.setExpr(createAttribute(persistAtom), $1);
+                        }
+    | PERSIST '(' expression ')'
+                        {
+                            //Allow either bool or an integer as the parameter
+                            if ($3.queryExprType()->isBoolean())
+                                parser->normalizeExpression($3, type_boolean, true);
+                            else
+                                parser->normalizeExpression($3, type_int, true);
+                            $$.setExpr(createExprAttribute(persistAtom, $3.getExpr()), $1);
+                        }
     ;
 
 onFailAction

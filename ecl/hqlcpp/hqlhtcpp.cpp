@@ -18231,6 +18231,20 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySOAP(BuildCtx & ctx, IHqlExpre
         OwnedHqlExpr xpathHintsExpr = createConstant(createStringValue(xpathHints.str(), xpathHints.length()));
         doBuildVarStringFunction(instance->startctx, "getXpathHintsXml", xpathHintsExpr);
     }
+
+    IHqlExpression * persistArg = queryAttributeChild(expr, persistAtom, 0);
+    if (persistArg)
+    {
+        // PERSIST(false) maps to PERSIST(0).
+        if (matchesBoolean(persistArg, false))
+            persistArg = queryZero(); // Do not generate the function, but set the pool flag so the default base function is called.
+        // PERSIST(true) maps to PERSIST with no argument,
+        else if (matchesBoolean(persistArg, true))
+            persistArg = nullptr;
+        else if (!matchesConstantValue(persistArg, 0)) // Avoid generating 0 since that is the default implementation
+            doBuildUnsignedFunction(instance->createctx, "getPersistPoolSize", persistArg);
+    }
+
     //virtual unsigned getFlags()
     {
         StringBuffer flags;
@@ -18279,6 +18293,12 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySOAP(BuildCtx & ctx, IHqlExpre
             case ReqFormat::FORM_ENCODED:
                 flags.append("|SOAPFformEncoded");
                 break;
+        }
+        if (expr->hasAttribute(persistAtom))
+        {
+            flags.append("|SOAPFpersist");
+            if (persistArg)
+                flags.append("|SOAPFpersistPool");
         }
         if (flags.length())
             doBuildUnsignedFunction(instance->classctx, "getFlags", flags.str()+1);
