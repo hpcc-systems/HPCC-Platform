@@ -65,7 +65,7 @@ void LogMetricSink::writeLogEntry(const std::shared_ptr<IMetric> &pMetric)
             {
                 name.append(".").append(unitsStr);
             }
-            LOG(MCoperatorMetric, "name=%s,value=%" I64F "d", name.c_str(), metricValue);
+            LOG(MCmonitorMetric, "name=%s,value=%" I64F "d", name.c_str(), metricValue);
         }
     }
     else
@@ -84,20 +84,20 @@ void LogMetricSink::writeLogEntry(const std::shared_ptr<IMetric> &pMetric)
                 cumulative += values[i];
                 if (!ignoreZeroMetrics || values[i])
                 {
-                    LOG(MCoperatorMetric, "name=%s, bucket le %" I64F "d=%" I64F "d", name.c_str(), limits[i], cumulative);
+                    LOG(MCmonitorMetric, "name=%s, bucket le %" I64F "d=%" I64F "d", name.c_str(), limits[i], cumulative);
                 }
             }
 
             // The inf bucket count is the last element in the array of values returned.
             // Add it to the cumulative count and print the value
             cumulative += values[countBucketValues - 1];
-            LOG(MCoperatorMetric, "name=%s, bucket inf=%" I64F "d", name.c_str(), cumulative);
+            LOG(MCmonitorMetric, "name=%s, bucket inf=%" I64F "d", name.c_str(), cumulative);
 
             // sum - total of all observations
-            LOG(MCoperatorMetric, "name=%s, sum=%" I64F "d", name.c_str(), sum);
+            LOG(MCmonitorMetric, "name=%s, sum=%" I64F "d", name.c_str(), sum);
 
             // count - total of all bucket counts (same as inf)
-            LOG(MCoperatorMetric, "name=%s, count=%" I64F "d", name.c_str(), cumulative);
+            LOG(MCmonitorMetric, "name=%s, count=%" I64F "d", name.c_str(), cumulative);
         }
     }
 }

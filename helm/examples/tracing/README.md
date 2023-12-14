@@ -11,21 +11,26 @@ All configuration options detailed here are part of the HPCC Systems Helm chart,
 - disabled - (default: false) disables tracking and reporting of internal traces and spans
 - alwaysCreateGlobalIds - If true, assign newly created global ID to any requests that do not supply one.
 - optAlwaysCreateTraceIds - If true components generate trace/span ids if none are provided by the remote caller.
-- logSpanStart - If true, generate a log entry whenever a span is started (default: false)
-- logSpanFinish - If true, generate a log entry whenever a span is finished (default: true)
 - exporter - Defines The type of exporter in charge of forwarding span data to target back-end
- - type - (defalt: NONE) "OTLP-HTTP" | "OTLP-GRCP" | "OS" | "NONE"
+  - type - (default: JLOG) "OTLP-HTTP" | "OTLP-GRCP" | "OS" | "JLOG" | "NONE"
+  - JLOG
+    - logSpanDetails - Log span details such as description, status, kind
+    - logParentInfo  - Log the span's parent info such as ParentSpanId, and TraceState
+    - logAttributes  - Log the span's attributes
+    - logEvents      - Log the span's events
+    - logLinks       - Log the span's links
+    - logResources   - Log the span's resources such as telemetry.sdk version, name, language
   - OTLP-HTTP
-   - endpoint - (default localhost:4318) Specifies the target OTLP-HTTP backend
-   - timeOutSecs - (default 10secs)
-   - consoleDebug - (default false)
+    - endpoint - (default localhost:4318) Specifies the target OTLP-HTTP backend
+    - timeOutSecs - (default 10secs)
+    - consoleDebug - (default false)
   - OTLP-GRCP
-   - endpoint: (default localhost:4317) The endpoint to export to. By default the OpenTelemetry Collector's default endpoint.
-   - useSslCredentials - By default when false, uses grpc::InsecureChannelCredentials; If true uses sslCredentialsCACertPath
-   - sslCredentialsCACertPath - Path to .pem file to be used for SSL encryption.
-   - timeOutSeconds - (default 10secs) Timeout for grpc deadline
+    - endpoint: (default localhost:4317) The endpoint to export to. By default the OpenTelemetry Collector's default endpoint.
+    - useSslCredentials - By default when false, uses grpc::InsecureChannelCredentials; If true uses sslCredentialsCACertPath
+    - sslCredentialsCACertPath - Path to .pem file to be used for SSL encryption.
+    - timeOutSeconds - (default 10secs) Timeout for grpc deadline
 - processor - Controls span processing style. One by one as available, or in batches.
- - type - (default: simple) "simple" | "batch"
+  - type - (default: simple) "simple" | "batch"
 
 ### Sample configuration
 Below is a sample helm values block directing the HPCC tracing framework to process span information serially, and export the data over OTLP/HTTP protocol to localhost:4318 and output export debug information to console:
@@ -49,51 +54,65 @@ helm install myTracedHPCC hpcc/hpcc -f otlp-http-collector-default.yaml
 ## Tracing information
 HPCC tracing information includes data needed to trace requests as they traverse over distributed components, and detailed information pertaining to important request subtasks in the form of span information. Each trace and all its related spans are assigned unique IDs which follow the Open Telemetry standard.
 
-The start and end of spans are reported to HPCC component logs regardless of any exporter related configuration.
+Tracing information can be exported to various Open Telemetry compatible endpoints including HPCC component logs, or OTLP collectors, etc. By default, tracing information is configured to be exported to HPCC component logs.
 
 Sample span reported as log event:
 ```console
-000000A3 MON EVT 2023-10-10 22:12:23.827 24212 25115 Span start: {"Type":"Server","Name":"propagatedServerSpan","GlobalID":"IncomingUGID","CallerID":"IncomingCID","LocalID":"JDbF4xnv7LSWDV4Eug1SpJ","TraceID":"beca49ca8f3138a2842e5cf21402bfff","SpanID":"4b960b3e4647da3f"}
-
-000000FF MON EVT 2023-10-10 22:12:24.927 24212 25115 Span end: {"Type":"Server","Name":"propagatedServerSpan","GlobalID":"IncomingUGID","CallerID":"IncomingCID","LocalID":"JDbF4xnv7LSWDV4Eug1SpJ","TraceID":"beca49ca8f3138a2842e5cf21402bfff","SpanID":"4b960b3e4647da3f"}
+00000165 MON EVT 2023-12-01 17:19:07.270     8   688 UNK     "{ "name": "HTTPRequest", "trace_id": "891070fc4a9ef5a3751c19c555d7d4a8", "span_id": "23a47b5bb486ce58", "start": 1701451147269962337, "duration": 652093, "Attributes": {"http.request.method": "GET","hpcc.localid": "JJmSnTeFWTQL8ft9DcbYDK","hpcc.globalid": "JJmSnTedcRZ99RtnwWGwPN" } }""
 ```
 
-Each log statement denotes the time of the tracing event (start or stop), the span type, name, trace and span id, and any HPCC specific attribute such as legacy GlobalID (if any), HPCC CallerID (if any), LocalID (if any).
+Each log statement includes a timestamp denoting the span start time, and a duration along with  the span name, trace and span id, and any HPCC specific attribute such as legacy GlobalID (if any), HPCC CallerID (if any), LocalID (if any).
+The span info logged can be expanded to include span resources, events, and other details (see configuration details).
 
 Spans exported via exporters will contain more detailed information such as explicit start time, duration, and any other attribute assigned to the span by the component instrumentation.
 
 Sample exported span data:
 ```json
 {
-    "Name":"propagatedServerSpan",
-    "TraceId":"beca49ca8f3138a2842e5cf21402bfff",
-    "SpanId":"6225221529c24252",
-    "kind":"Server",
-    "ParentSpanId":"4b960b3e4647da3f",
-    "Start":1696983526105561763,
-    "Duration":1056403,
-    "Description":"",
-    "Status":"Unset",
-    "TraceState":"hpcc=4b960b3e4647da3f",
-    "Attributes":{
-        "hpcc.callerid":"IncomingCID",
-        "hpcc.globalid":"IncomingUGID"
+  "name": "HTTPRequest",
+  "trace_id": "53f47047517e9dd9f5ad8c318b4b4fe0",
+  "span_id": "b9489283b66c1073",
+  "start": 1701456073994968800,
+  "duration": 1002426,
+  "attributes": {
+    "http.request.method": "GET",
+    "hpcc.localid": "JJmvRRBJ1QYU8o4xe1sgxJ",
+    "hpcc.globalid": "JJmvRRBjnJGY6vgkjkAjJc"
+  },
+  "events": [
+    {
+      "name": "Acquiring lock",
+      "time_stamp": 1701456073995175400,
+      "attributes": {
+        "lock_name": "resourcelock"
+      }
     },
-    "Events":{
+    {
+      "name": "Got lock, doing work...",
+      "time_stamp": 1701456073995269400,
+      "attributes": {
+        "lock_name": "resourcelock"
+      }
     },
-    "Links":{
-    },
-    "Resources":{
-        "service.name":"unknown_service",
-        "telemetry.sdk.version":"1.9.1",
-        "telemetry.sdk.name":"opentelemetry",
-        "telemetry.sdk.language":"cpp"
-    },
-    "InstrumentedLibrary":"esp"
-
+    {
+      "name": "Release lock",
+      "time_stamp": 1701456073996269400,
+      "attributes": {
+        "lock_name": "resourcelock"
+      }
+    }
+  ],
+  "resources": {
+    "service.name": "unknown_service",
+    "telemetry.sdk.version": "1.9.1",
+    "telemetry.sdk.name": "opentelemetry",
+    "telemetry.sdk.language": "cpp"
+  }
 }
 ```
 
 ## Directory Contents
 
 - 'otlp-http-collector-default.yaml' - Sample tracing configuration targeting OTLP/HTTP trace collector
+- 'otlp-grcp-collector-default.yaml' - Sample tracing configuration targeting OTLP/GRCP trace collector
+- 'jlog-collector-fulloutput.yaml' - Sample tracing configuration targeting HPCC component logs

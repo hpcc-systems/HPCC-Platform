@@ -36,6 +36,9 @@
 #include "jutil.hpp"
 #include "junicode.hpp"
 
+#include "opentelemetry/sdk/common/attribute_utils.h"
+#include "opentelemetry/sdk/resource/resource.h"
+
 #include "unittests.hpp"
 
 #define CPPUNIT_ASSERT_EQUAL_STR(x, y) CPPUNIT_ASSERT_EQUAL(std::string(x ? x : ""),std::string(y ? y : ""))
@@ -60,6 +63,9 @@ public:
         CPPUNIT_TEST(testNullSpan);
         CPPUNIT_TEST(testClientSpanGlobalID);
         CPPUNIT_TEST(testEnsureTraceID);
+
+        //CPPUNIT_TEST(testJTraceJLOGExporterprintResources);
+        //CPPUNIT_TEST(testJTraceJLOGExporterprintAttributes);
     CPPUNIT_TEST_SUITE_END();
 
     const char * simulatedGlobalYaml = R"!!(global:
@@ -103,6 +109,84 @@ public:
     }
 
 protected:
+
+    /*void testJTraceJLOGExporterprintAttributes()
+    {
+        StringBuffer out;
+        testJLogExporterPrintAttributes(out, {}, "attributes");
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected non-empty printattributes", true, out.length() == 0);
+
+
+        testJLogExporterPrintAttributes(out, {{"url", "https://localhost"}, {"content-length", 562}, {"content-type", "html/text"}}, "attributes");
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected empty printattributes", false, out.length() == 0);
+
+        Owned<IPropertyTree> jtraceAsTree;
+        try
+        {
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected leading non-comma char in printattributes", true, out.charAt(0) == ',');
+
+            out.setCharAt(0, '{');
+            out.append("}");
+
+            jtraceAsTree.setown(createPTreeFromJSONString(out.str()));
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            msg.append("Unexpected printAttributes format failure detected: ");
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_ASSERT_MESSAGE(msg.str(), false);
+        }
+
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected printresources format failure detected", true, jtraceAsTree != nullptr);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Missing resource attribute detected", true, jtraceAsTree->hasProp("attributes"));
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Missing resource attribute detected", true, jtraceAsTree->hasProp("attributes/url"));
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Missing resource attribute detected", true, jtraceAsTree->hasProp("attributes/content-length"));
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Missing resource attribute detected", true, jtraceAsTree->hasProp("attributes/content-type"));
+    }*/
+
+    /*void testJTraceJLOGExporterprintResources()
+    {
+        StringBuffer out;
+        auto dummyAttributes = opentelemetry::sdk::resource::ResourceAttributes
+        {
+            {"service.name", "shoppingcart"},
+            {"service.instance.id", "instance-12"}
+        };
+        auto dummyResources = opentelemetry::sdk::resource::Resource::Create(dummyAttributes);
+
+        testJLogExporterPrintResources(out, dummyResources);
+
+        Owned<IPropertyTree> jtraceAsTree;
+        try
+        {
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected empty printresources return", false, out.length() == 0);
+
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected leading non-comma char in printresources return", true, out.charAt(0) == ',');
+
+            out.setCharAt(0, '{');
+            out.append("}");
+
+            jtraceAsTree.setown(createPTreeFromJSONString(out.str()));
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            msg.append("Unexpected printresources format failure detected: ");
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_ASSERT_MESSAGE(msg.str(), false);
+        }
+
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected printresources format failure detected", true, jtraceAsTree != nullptr);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Missing resource attribute detected", true, jtraceAsTree->hasProp("resources"));
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Missing resource attribute detected", true, jtraceAsTree->hasProp("resources/service.name"));
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Missing resource attribute detected", true, jtraceAsTree->hasProp("resources/service.instance.id"));
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Missing resource attribute detected", true, jtraceAsTree->hasProp("resources/telemetry.sdk.language"));
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Missing resource attribute detected", true, jtraceAsTree->hasProp("resources/telemetry.sdk.version"));
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Missing resource attribute detected", true, jtraceAsTree->hasProp("resources/telemetry.sdk.name"));
+    }*/
 
     void testTraceDisableConfig()
     {
@@ -383,32 +467,6 @@ protected:
         Owned<ISpan> internalSpan2 = internalSpan->createInternalSpan("internalSpan2");
 
         StringBuffer out;
-        out.set("{");
-        internalSpan2->toLog(out);
-        out.append("}");
-        {
-            Owned<IPropertyTree> jtraceAsTree;
-            try
-            {
-                jtraceAsTree.setown(createPTreeFromJSONString(out.str()));
-            }
-            catch (IException *e)
-            {
-                StringBuffer msg;
-                msg.append("Unexpected toLog format failure detected: ");
-                e->errorMessage(msg);
-                e->Release();
-                CPPUNIT_ASSERT_MESSAGE(msg.str(), false);
-            }
-
-            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected toLog format failure detected", true, jtraceAsTree != nullptr);
-            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing 'TraceID' entry in toLog output", true, jtraceAsTree->hasProp("TraceID"));
-            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing 'SpanID' entry in toLog output", true, jtraceAsTree->hasProp("SpanID"));
-            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing 'Name' entry in toLog output", true, jtraceAsTree->hasProp("Name"));
-            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing 'Type' entry in toLog output", true, jtraceAsTree->hasProp("Type"));
-            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing 'ParentSpanID' entry in toLog output", true, jtraceAsTree->hasProp("ParentSpanID"));
-        }
-
         out.set("{");
         internalSpan2->toString(out);
         out.append("}");

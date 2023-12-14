@@ -441,6 +441,7 @@ export = {
         Largest: "Largest",
         LargestFile: "Largest File",
         LargestSize: "Largest Size",
+        LastAccessed: "Last Accessed",
         LastEdit: "Last Edit",
         LastEditedBy: "Last Edited By",
         LastEditTime: "Last Edit Time",

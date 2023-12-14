@@ -350,7 +350,8 @@ static UnexpectedVirtualFieldCallback unexpectedFieldCallback;
 class jhtree_decl CKeyLevelManager : implements IKeyManager, public CInterface
 {
 protected:
-    KeyStatsCollector stats;
+    IContextLogger *ctx = nullptr;
+    IContextLogger *activeCtx = nullptr;
     Owned <IIndexFilterList> filter;
     IKeyCursor *keyCursor;
     ConstPointerArray activeBlobs;
@@ -368,7 +369,7 @@ public:
     IMPLEMENT_IINTERFACE;
 
     CKeyLevelManager(const RtlRecord &_recInfo, IKeyIndex * _key, IContextLogger *_ctx, bool _newFilters, bool _logExcessiveSeeks)
-    : stats(_ctx), newFilters(_newFilters), logExcessiveSeeks(_logExcessiveSeeks)
+    : ctx(_ctx), newFilters(_newFilters), logExcessiveSeeks(_logExcessiveSeeks)
     {
         if (newFilters)
             filter.setown(new IndexRowFilter(_recInfo));
@@ -390,11 +391,6 @@ public:
         return keyCursor ? 1 : 0;
     }
 
-    virtual void resetCounts()
-    {
-        stats.reset();
-    }
-
     void setKey(IKeyIndexBase * _key)
     {
         ::Release(keyCursor);
@@ -410,6 +406,9 @@ public:
                 keyedSize = ki->keyedSize();
             partitionFieldMask = ki->getPartitionFieldMask();
             indexParts = ki->numPartitions();
+
+            // If TLK don't collect context information
+            activeCtx = ki->isTopLevelKey() ? nullptr : ctx;
         }
     }
 
@@ -498,26 +497,26 @@ public:
     virtual bool lookup(bool exact)
     {
         if (keyCursor)
-            return keyCursor->lookup(exact, stats);
+            return keyCursor->lookup(exact, activeCtx);
         else
             return false;
     }
 
     virtual bool lookupSkip(const void *seek, size32_t seekOffset, size32_t seeklen)
     {
-        return keyCursor ? keyCursor->lookupSkip(seek, seekOffset, seeklen, stats) : false;
+        return keyCursor ? keyCursor->lookupSkip(seek, seekOffset, seeklen, activeCtx) : false;
     }
 
     unsigned __int64 getCount()
     {
         assertex(keyCursor);
-        return keyCursor->getCount(stats);
+        return keyCursor->getCount(activeCtx);
     }
 
     unsigned __int64 getCurrentRangeCount(unsigned groupSegCount)
     {
         assertex(keyCursor);
-        return keyCursor->getCurrentRangeCount(groupSegCount, stats);
+        return keyCursor->getCurrentRangeCount(groupSegCount, activeCtx);
     }
 
     bool nextRange(unsigned groupSegCount)
@@ -529,7 +528,7 @@ public:
     unsigned __int64 checkCount(unsigned __int64 max)
     {
         assertex(keyCursor);
-        return keyCursor->checkCount(max, stats);
+        return keyCursor->checkCount(max, activeCtx);
     }
 
     virtual void serializeCursorPos(MemoryBuffer &mb)
@@ -539,7 +538,7 @@ public:
 
     virtual void deserializeCursorPos(MemoryBuffer &mb)
     {
-        keyCursor->deserializeCursorPos(mb, stats);
+        keyCursor->deserializeCursorPos(mb, activeCtx);
     }
 
     virtual const byte *loadBlob(unsigned __int64 blobid, size32_t &blobsize, IContextLogger *ctx)
@@ -1037,6 +1036,28 @@ void CKeyStore::clearCacheEntry(const IFileIO *io)
     }
 }
 
+//
+
+static void noteSeeks(IContextLogger *ctx, unsigned lseeks, unsigned lscans, unsigned lwildseeks)
+{
+    if (ctx)
+    {
+        if (lseeks) ctx->noteStatistic(StNumIndexSeeks, lseeks);
+        if (lscans) ctx->noteStatistic(StNumIndexScans, lscans);
+        if (lwildseeks) ctx->noteStatistic(StNumIndexWildSeeks, lwildseeks);
+    }
+}
+
+static void noteSkips(IContextLogger *ctx, unsigned lskips, unsigned lnullSkips)
+{
+    if (ctx)
+    {
+        if (lskips) ctx->noteStatistic(StNumIndexSkips, lskips);
+        if (lnullSkips) ctx->noteStatistic(StNumIndexNullSkips, lnullSkips);
+    }
+}
+
+
 // CKeyIndex impl.
 
 CKeyIndex::CKeyIndex(unsigned _iD, const char *_name) : name(_name)
@@ -1502,7 +1523,7 @@ bool CKeyIndex::prewarmPage(offset_t offset, NodeType type)
     return false;
 }
 
-const CJHSearchNode *CKeyIndex::locateFirstLeafNode(KeyStatsCollector &stats) const
+const CJHSearchNode *CKeyIndex::locateFirstLeafNode(IContextLogger *ctx) const
 {
     keySeeks++;
 
@@ -1511,7 +1532,7 @@ const CJHSearchNode *CKeyIndex::locateFirstLeafNode(KeyStatsCollector &stats) co
     {
         if (leafOffset == 0)
             return nullptr;
-        return getNode(leafOffset, NodeLeaf, stats.ctx);
+        return getNode(leafOffset, NodeLeaf, ctx);
     }
 
     //Unusual - an index with no elements
@@ -1525,17 +1546,17 @@ const CJHSearchNode *CKeyIndex::locateFirstLeafNode(KeyStatsCollector &stats) co
         const CJHTreeNode * prev = cur;
         depth++;
         NodeType type = (depth < getBranchDepth()) ? NodeBranch : NodeLeaf;
-        cur = getNode(cur->getFPosAt(0), type, stats.ctx);
+        cur = getNode(cur->getFPosAt(0), type, ctx);
         assertex(cur);
         prev->Release();
     }
     return cur;
 }
 
-const CJHSearchNode *CKeyIndex::locateLastLeafNode(KeyStatsCollector &stats) const
+const CJHSearchNode *CKeyIndex::locateLastLeafNode(IContextLogger *ctx) const
 {
     keySeeks++;
-    stats.noteSeeks(1, 0, 0);
+    noteSeeks(ctx, 1, 0, 0);
 
     //Unusual - an index with no elements
     if (keyHdr->getNumRecords() == 0)
@@ -1549,7 +1570,7 @@ const CJHSearchNode *CKeyIndex::locateLastLeafNode(KeyStatsCollector &stats) con
         const CJHSearchNode * prev = cur;
         depth++;
         NodeType type = (depth < getBranchDepth()) ? NodeBranch : NodeLeaf;
-        cur = getNode(cur->nextNodeFpos(), type, stats.ctx);
+        cur = getNode(cur->nextNodeFpos(), type, ctx);
         assertex(cur);
         prev->Release();
     }
@@ -1558,34 +1579,11 @@ const CJHSearchNode *CKeyIndex::locateLastLeafNode(KeyStatsCollector &stats) con
     for (;;)
     {
         const CJHSearchNode * last = cur;
-        cur = getNode(cur->nextNodeFpos(), NodeLeaf, stats.ctx);
+        cur = getNode(cur->nextNodeFpos(), NodeLeaf, ctx);
         if (!cur)
             return last;
         ::Release(last);
     }
-}
-
-void KeyStatsCollector::noteSeeks(unsigned lseeks, unsigned lscans, unsigned lwildseeks)
-{
-    if (ctx)
-    {
-        if (lseeks) ctx->noteStatistic(StNumIndexSeeks, lseeks);
-        if (lscans) ctx->noteStatistic(StNumIndexScans, lscans);
-        if (lwildseeks) ctx->noteStatistic(StNumIndexWildSeeks, lwildseeks);
-    }
-}
-
-void KeyStatsCollector::noteSkips(unsigned lskips, unsigned lnullSkips)
-{
-    if (ctx)
-    {
-        if (lskips) ctx->noteStatistic(StNumIndexSkips, lskips);
-        if (lnullSkips) ctx->noteStatistic(StNumIndexNullSkips, lnullSkips);
-    }
-}
-
-void KeyStatsCollector::reset()
-{
 }
 
 CKeyCursor::CKeyCursor(CKeyIndex &_key, const IIndexFilterList *_filter, bool _logExcessiveSeeks)
@@ -1624,17 +1622,17 @@ void CKeyCursor::reset()
         setLow(0);
 }
 
-bool CKeyCursor::next(KeyStatsCollector &stats)
+bool CKeyCursor::next(IContextLogger *ctx)
 {
-    return _next(stats) && node && node->getKeyAt(nodeKey, recordBuffer);
+    return _next(ctx) && node && node->getKeyAt(nodeKey, recordBuffer);
 }
 
-bool CKeyCursor::_next(KeyStatsCollector &stats)
+bool CKeyCursor::_next(IContextLogger *ctx)
 {
     fullBufferValid = false;
     if (!node)
     {
-        node.setown(key.locateFirstLeafNode(stats));
+        node.setown(key.locateFirstLeafNode(ctx));
         nodeKey = 0;
         return node && node->isKeyAt(nodeKey);
     }
@@ -1648,7 +1646,7 @@ bool CKeyCursor::_next(KeyStatsCollector &stats)
             node.clear();
             if (rsib != 0)
             {
-                node.setown(key.getNode(rsib, type, stats.ctx));
+                node.setown(key.getNode(rsib, type, ctx));
                 if (node != NULL)
                 {
                     nodeKey = 0;
@@ -1706,10 +1704,10 @@ unsigned __int64 CKeyCursor::getSequence()
     return node->getSequence(nodeKey);
 }
 
-bool CKeyCursor::_last(KeyStatsCollector &stats)
+bool CKeyCursor::_last(IContextLogger *ctx)
 {
     fullBufferValid = false;
-    node.setown(key.locateLastLeafNode(stats));
+    node.setown(key.locateLastLeafNode(ctx));
     if (node)
     {
         nodeKey = node->getNumKeys()-1;
@@ -1718,7 +1716,7 @@ bool CKeyCursor::_last(KeyStatsCollector &stats)
     return false;
 }
 
-bool CKeyCursor::_gtEqual(KeyStatsCollector &stats)
+bool CKeyCursor::_gtEqual(IContextLogger *ctx)
 {
     fullBufferValid = false;
     key.keySeeks++;
@@ -1760,7 +1758,7 @@ bool CKeyCursor::_gtEqual(KeyStatsCollector &stats)
             else
             {
                 offset_t nextPos = node->nextNodeFpos();  // This can happen at eof because of key peculiarity where level above reports ffff as last
-                node.setown(key.getNode(nextPos, NodeLeaf, stats.ctx));
+                node.setown(key.getNode(nextPos, NodeLeaf, ctx));
                 nodeKey = 0;
             }
             if (node)
@@ -1775,7 +1773,7 @@ bool CKeyCursor::_gtEqual(KeyStatsCollector &stats)
                 offset_t npos = node->getFPosAt(a);
                 depth++;
                 NodeType type = (depth < branchDepth) ? NodeBranch : NodeLeaf;
-                node.setown(key.getNode(npos, type, stats.ctx));
+                node.setown(key.getNode(npos, type, ctx));
             }
             else
                 return false;
@@ -1783,7 +1781,7 @@ bool CKeyCursor::_gtEqual(KeyStatsCollector &stats)
     }
 }
 
-bool CKeyCursor::_ltEqual(KeyStatsCollector &stats)
+bool CKeyCursor::_ltEqual(IContextLogger *ctx)
 {
     fullBufferValid = false;
     key.keySeeks++;
@@ -1830,7 +1828,7 @@ bool CKeyCursor::_ltEqual(KeyStatsCollector &stats)
             else
             {
                 offset_t prevPos = node->prevNodeFpos();
-                node.setown(key.getNode(prevPos, NodeLeaf, stats.ctx));
+                node.setown(key.getNode(prevPos, NodeLeaf, ctx));
                 if (node)
                     nodeKey = node->getNumKeys()-1;
             }
@@ -1849,7 +1847,7 @@ bool CKeyCursor::_ltEqual(KeyStatsCollector &stats)
             offset_t npos = node->getFPosAt(a);
             depth++;
             NodeType type = (depth < branchDepth) ? NodeBranch : NodeLeaf;
-            node.setown(key.getNode(npos, type, stats.ctx));
+            node.setown(key.getNode(npos, type, ctx));
             if (!node)
                 throw MakeStringException(0, "Invalid key %s: child node pointer should never be NULL", key.name.get());
         }
@@ -1877,7 +1875,7 @@ void CKeyCursor::serializeCursorPos(MemoryBuffer &mb)
     }
 }
 
-void CKeyCursor::deserializeCursorPos(MemoryBuffer &mb, KeyStatsCollector &stats)
+void CKeyCursor::deserializeCursorPos(MemoryBuffer &mb, IContextLogger *ctx)
 {
     mb.read(eof);
     node.clear();
@@ -1890,7 +1888,7 @@ void CKeyCursor::deserializeCursorPos(MemoryBuffer &mb, KeyStatsCollector &stats
         fullBufferValid = false;
         if (nodeAddress)
         {
-            node.setown(key.getNode(nodeAddress, NodeLeaf, stats.ctx));
+            node.setown(key.getNode(nodeAddress, NodeLeaf, ctx));
             if (node && recordBuffer)
                 node->getKeyAt(nodeKey, recordBuffer);
         }
@@ -1902,12 +1900,12 @@ const byte *CKeyCursor::loadBlob(unsigned __int64 blobid, size32_t &blobsize, IC
     return key.loadBlob(blobid, blobsize, ctx);
 }
 
-bool CKeyCursor::lookup(bool exact, KeyStatsCollector &stats)
+bool CKeyCursor::lookup(bool exact, IContextLogger *ctx)
 {
-    return _lookup(exact, filter->lastRealSeg(), filter->isUnfiltered(), stats);
+    return _lookup(exact, filter->lastRealSeg(), filter->isUnfiltered(), ctx);
 }
 
-bool CKeyCursor::_lookup(bool exact, unsigned lastSeg, bool unfiltered, KeyStatsCollector &stats)
+bool CKeyCursor::_lookup(bool exact, unsigned lastSeg, bool unfiltered, IContextLogger *ctx)
 {
     if (unfiltered && !matched)
     {
@@ -1922,13 +1920,13 @@ bool CKeyCursor::_lookup(bool exact, unsigned lastSeg, bool unfiltered, KeyStats
     {
         if (matched)
         {
-            if (!_next(stats))
+            if (!_next(ctx))
                 eof = true;
             lscans++;
         }
         else
         {
-            if (!_gtEqual(stats))
+            if (!_gtEqual(ctx))
                 eof = true;
             lseeks++;
         }
@@ -1961,18 +1959,18 @@ bool CKeyCursor::_lookup(bool exact, unsigned lastSeg, bool unfiltered, KeyStats
             eof = true;
     }
     if (logExcessiveSeeks && lwildseeks > 1000 && ret)
-        reportExcessiveSeeks(lwildseeks, lastSeg, stats);
-    stats.noteSeeks(lseeks, lscans, lwildseeks);
+        reportExcessiveSeeks(lwildseeks, lastSeg, ctx);
+    noteSeeks(ctx, lseeks, lscans, lwildseeks);
     return ret;
 }
 
-bool CKeyCursor::lookupSkip(const void *seek, size32_t seekOffset, size32_t seeklen, KeyStatsCollector &stats)
+bool CKeyCursor::lookupSkip(const void *seek, size32_t seekOffset, size32_t seeklen, IContextLogger *ctx)
 {
     if (skipTo(seek, seekOffset, seeklen))
-        stats.noteSkips(1, 0);
+        noteSkips(ctx, 1, 0);
     else
-        stats.noteSkips(0, 1);
-    bool ret = lookup(true, stats);
+        noteSkips(ctx, 0, 1);
+    bool ret = lookup(true, ctx);
 #ifdef _DEBUG
     if (doTrace(traceSmartStepping, TraceFlags::Max))
     {
@@ -1988,9 +1986,9 @@ bool CKeyCursor::lookupSkip(const void *seek, size32_t seekOffset, size32_t seek
         {
             recstr.appendf("%02x ", ((unsigned char *) recordBuffer)[i]);
         }
-        if (stats.ctx)
+        if (ctx)
         {
-            const CRuntimeStatisticCollection &statsCollection = stats.ctx->queryStats();
+            const CRuntimeStatisticCollection &statsCollection = ctx->queryStats();
             unsigned __int64 seeks = statsCollection.getStatisticValue(StNumIndexSeeks);
             unsigned __int64 scans = statsCollection.getStatisticValue(StNumIndexScans);
             unsigned __int64 skips = statsCollection.getStatisticValue(StNumIndexSkips);
@@ -2006,7 +2004,7 @@ bool CKeyCursor::lookupSkip(const void *seek, size32_t seekOffset, size32_t seek
 }
 
 
-unsigned __int64 CKeyCursor::getCount(KeyStatsCollector &stats)
+unsigned __int64 CKeyCursor::getCount(IContextLogger *ctx)
 {
     reset();
     unsigned __int64 result = 0;
@@ -2014,11 +2012,11 @@ unsigned __int64 CKeyCursor::getCount(KeyStatsCollector &stats)
     bool unfiltered = filter->isUnfiltered();
     for (;;)
     {
-        if (_lookup(true, lastRealSeg, unfiltered, stats))
+        if (_lookup(true, lastRealSeg, unfiltered, ctx))
         {
             unsigned __int64 locount = getSequence();
             endRange(lastRealSeg);
-            _ltEqual(stats);
+            _ltEqual(ctx);
             result += getSequence()-locount+1;
             if (!incrementKey(lastRealSeg))
                 break;
@@ -2029,7 +2027,7 @@ unsigned __int64 CKeyCursor::getCount(KeyStatsCollector &stats)
     return result;
 }
 
-unsigned __int64 CKeyCursor::checkCount(unsigned __int64 max, KeyStatsCollector &stats)
+unsigned __int64 CKeyCursor::checkCount(unsigned __int64 max, IContextLogger *ctx)
 {
     reset();
     unsigned __int64 result = 0;
@@ -2037,19 +2035,19 @@ unsigned __int64 CKeyCursor::checkCount(unsigned __int64 max, KeyStatsCollector 
     bool unfiltered = filter->isUnfiltered();
     if (lastFullSeg == (unsigned) -1)
     {
-        stats.noteSeeks(1, 0, 0);
-        if (_last(stats))
+        noteSeeks(ctx, 1, 0, 0);
+        if (_last(ctx))
             return getSequence()+1;
         else
             return 0;
     }
     for (;;)
     {
-        if (_lookup(true, lastFullSeg, unfiltered, stats))
+        if (_lookup(true, lastFullSeg, unfiltered, ctx))
         {
             unsigned __int64 locount = getSequence();
             endRange(lastFullSeg);
-            _ltEqual(stats);
+            _ltEqual(ctx);
             result += getSequence()-locount+1;
             if (max && (result > max))
                 break;
@@ -2062,12 +2060,12 @@ unsigned __int64 CKeyCursor::checkCount(unsigned __int64 max, KeyStatsCollector 
     return result;
 }
 
-unsigned __int64 CKeyCursor::getCurrentRangeCount(unsigned groupSegCount, KeyStatsCollector &stats)
+unsigned __int64 CKeyCursor::getCurrentRangeCount(unsigned groupSegCount, IContextLogger *ctx)
 {
     unsigned __int64 locount = getSequence();
     endRange(groupSegCount);
-    _ltEqual(stats);
-    stats.noteSeeks(1, 0, 0);
+    _ltEqual(ctx);
+    noteSeeks(ctx, 1, 0, 0);
     return getSequence()-locount+1;
 }
 
@@ -2079,7 +2077,7 @@ bool CKeyCursor::nextRange(unsigned groupSegCount)
     return true;
 }
 
-void CKeyCursor::reportExcessiveSeeks(unsigned numSeeks, unsigned lastSeg, KeyStatsCollector &stats)
+void CKeyCursor::reportExcessiveSeeks(unsigned numSeeks, unsigned lastSeg, IContextLogger *ctx)
 {
     StringBuffer recstr;
     unsigned i;
@@ -2105,8 +2103,8 @@ void CKeyCursor::reportExcessiveSeeks(unsigned numSeeks, unsigned lastSeg, KeySt
     }
     recstr.append ("\nusing filter:\n");
     filter->describe(recstr);
-    if (stats.ctx)
-        stats.ctx->CTXLOG("%d seeks to lookup record \n%s\n in key %s", numSeeks, recstr.str(), key.queryFileName());
+    if (ctx)
+        ctx->CTXLOG("%d seeks to lookup record \n%s\n in key %s", numSeeks, recstr.str(), key.queryFileName());
     else
         DBGLOG("%d seeks to lookup record \n%s\n in key %s", numSeeks, recstr.str(), key.queryFileName());
 }
@@ -2898,8 +2896,8 @@ public:
                     activekeys--;
                     if (!activekeys)
                     {
-                        if (stats.ctx)
-                            stats.ctx->noteStatistic(StNumIndexMergeCompares, compares);
+                        if (ctx)
+                            ctx->noteStatistic(StNumIndexMergeCompares, compares);
                         return false;
                     }
                     mergeheap[0] = mergeheap[activekeys];
@@ -2950,9 +2948,9 @@ public:
                         {
                             recstr.appendf("%02x ", ((unsigned char *) keyBuffer)[i]);
                         }
-                        if (stats.ctx)
+                        if (ctx)
                         {
-                            const CRuntimeStatisticCollection &statsCollection = stats.ctx->queryStats();
+                            const CRuntimeStatisticCollection &statsCollection = ctx->queryStats();
                             unsigned __int64 seeks = statsCollection.getStatisticValue(StNumIndexSeeks);
                             unsigned __int64 scans = statsCollection.getStatisticValue(StNumIndexScans);
                             unsigned __int64 skips = statsCollection.getStatisticValue(StNumIndexSkips);
@@ -2964,16 +2962,16 @@ public:
                         }
                     }
 #endif
-                    if (stats.ctx)
-                        stats.ctx->noteStatistic(StNumIndexMergeCompares, compares);
+                    if (ctx)
+                        ctx->noteStatistic(StNumIndexMergeCompares, compares);
                     return true;
                 }
                 else
                 {
                     compares++;
-                    if (stats.ctx && (compares == 100))
+                    if (ctx && (compares == 100))
                     {
-                        stats.ctx->noteStatistic(StNumIndexMergeCompares, compares); // also checks for abort...
+                        ctx->noteStatistic(StNumIndexMergeCompares, compares); // also checks for abort...
                         compares = 0;
                     }
                 }
@@ -3031,11 +3029,11 @@ public:
                         else
                             lnullSkips++;
                     }
-                    found = cursor->lookup(true, stats);
+                    found = cursor->lookup(true, ctx);
                     if (!found || !seek || memcmp(cursor->queryKeyedBuffer() + seekOffset, seek, seeklen) >= 0)
                         break;
                 }
-                stats.noteSkips(lskips, lnullSkips);
+                noteSkips(ctx, lskips, lnullSkips);
                 if (found)
                 {
                     IKeyCursor *mergeCursor;
@@ -3058,8 +3056,8 @@ public:
         }
         if (activekeys>0) 
         {
-            if (stats.ctx)
-                stats.ctx->noteStatistic(StNumIndexMerges, activekeys);
+            if (ctx)
+                ctx->noteStatistic(StNumIndexMerges, activekeys);
             cursors = cursorArray.getArray();
             mergeheap = mergeHeapArray.getArray();
             /* Permute mergeheap to establish the heap property
@@ -3130,7 +3128,7 @@ public:
             if (!activekeys)
                 return false;
             unsigned key = mergeheap[0];
-            if (!keyCursor->lookup(exact, stats))
+            if (!keyCursor->lookup(exact, ctx))
             {
                 activekeys--;
                 if (!activekeys)
@@ -3223,7 +3221,7 @@ public:
             mb.read(keyno);
             keyNoArray.append(keyno);
             keyCursor = keyset->queryPart(keyno)->getCursor(filter, logExcessiveSeeks);
-            keyCursor->deserializeCursorPos(mb, stats);
+            keyCursor->deserializeCursorPos(mb, ctx);
             cursorArray.append(*keyCursor);
             mergeHeapArray.append(i);
         }

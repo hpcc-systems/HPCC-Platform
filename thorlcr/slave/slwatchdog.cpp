@@ -111,7 +111,12 @@ public:
     virtual void stopGraph(CGraphBase &graph, MemoryBuffer *mb) override
     {
         CriticalBlock b(crit);
-        if (NotFound != activeGraphs.find(graph))
+        if (NotFound == activeGraphs.find(graph))
+        {
+            if (mb)
+                mb->append((size32_t)0);
+        }
+        else
         {
             StringBuffer str("Watchdog: Stop Job ");
             LOG(MCthorDetailedDebugInfo, thorJob, "%s", str.append(graph.queryGraphId()).str());

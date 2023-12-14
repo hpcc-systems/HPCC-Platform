@@ -41,38 +41,26 @@ interface jhtree_decl IDelayedFile : public IInterface
     virtual IFileIO *getFileIO() = 0;
 };
 
-class KeyStatsCollector
-{
-public:
-    IContextLogger *ctx;
-
-    KeyStatsCollector(IContextLogger *_ctx) : ctx(_ctx) {}
-    void reset();
-    void noteSeeks(unsigned lseeks, unsigned lscans, unsigned lwildseeks);
-    void noteSkips(unsigned lskips, unsigned lnullSkips);
-
-};
-
 interface jhtree_decl IKeyCursor : public IInterface
 {
     virtual const char *queryName() const = 0;
     virtual size32_t getSize() = 0;  // Size of current row
     virtual size32_t getKeyedSize() const = 0;  // Size of keyed fields
     virtual void serializeCursorPos(MemoryBuffer &mb) = 0;
-    virtual void deserializeCursorPos(MemoryBuffer &mb, KeyStatsCollector &stats) = 0;
+    virtual void deserializeCursorPos(MemoryBuffer &mb, IContextLogger *ctx) = 0;
     virtual unsigned __int64 getSequence() = 0;
     virtual offset_t getFPos() const = 0;
     virtual const byte *loadBlob(unsigned __int64 blobid, size32_t &blobsize, IContextLogger *ctx) = 0;
     virtual void reset() = 0;
-    virtual bool lookup(bool exact, KeyStatsCollector &stats) = 0;
-    virtual bool next(KeyStatsCollector &stats) = 0;
-    virtual bool lookupSkip(const void *seek, size32_t seekOffset, size32_t seeklen, KeyStatsCollector &stats) = 0;
+    virtual bool lookup(bool exact, IContextLogger *ctx) = 0;
+    virtual bool next(IContextLogger *ctx) = 0;
+    virtual bool lookupSkip(const void *seek, size32_t seekOffset, size32_t seeklen, IContextLogger *ctx) = 0;
     virtual bool skipTo(const void *_seek, size32_t seekOffset, size32_t seeklen) = 0;
     virtual IKeyCursor *fixSortSegs(unsigned sortFieldOffset) = 0;
 
-    virtual unsigned __int64 getCount(KeyStatsCollector &stats) = 0;
-    virtual unsigned __int64 checkCount(unsigned __int64 max, KeyStatsCollector &stats) = 0;
-    virtual unsigned __int64 getCurrentRangeCount(unsigned groupSegCount, KeyStatsCollector &stats) = 0;
+    virtual unsigned __int64 getCount(IContextLogger *ctx) = 0;
+    virtual unsigned __int64 checkCount(unsigned __int64 max, IContextLogger *ctx) = 0;
+    virtual unsigned __int64 getCurrentRangeCount(unsigned groupSegCount, IContextLogger *ctx) = 0;
     virtual bool nextRange(unsigned groupSegCount) = 0;
     virtual const byte *queryRecordBuffer() const = 0;
     virtual const byte *queryKeyedBuffer() const = 0;
@@ -276,7 +264,6 @@ interface IKeyManager : public IInterface, extends IIndexReadContext
     virtual void deserializeCursorPos(MemoryBuffer &mb) = 0;
     virtual const byte *loadBlob(unsigned __int64 blobid, size32_t &blobsize, IContextLogger *ctx) = 0;
     virtual void releaseBlobs() = 0;
-    virtual void resetCounts() = 0;
 
     virtual void setLayoutTranslator(const IDynamicTransform * trans) = 0;
     virtual void finishSegmentMonitors() = 0;

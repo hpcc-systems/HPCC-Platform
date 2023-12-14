@@ -23,6 +23,7 @@
 #include "opentelemetry/sdk/trace/simple_processor_factory.h"
 #include "opentelemetry/sdk/trace/batch_span_processor_factory.h"
 #include "opentelemetry/exporters/ostream/span_exporter_factory.h"// auto exporter = opentelemetry::exporter::trace::OStreamSpanExporterFactory::Create();
+#include "opentelemetry/exporters/ostream/common_utils.h"
 //#define oldForEach ForEach // error: ‘ForEach’ was not declared in this scope
 #undef ForEach //opentelemetry defines ForEach
 #include "opentelemetry/exporters/memory/in_memory_span_exporter_factory.h"
@@ -65,7 +66,7 @@ public:
     /**
     * @return Returns a unique pointer to an empty recordable object
     */
-    std::unique_ptr<opentelemetry::sdk::trace::Recordable> MakeRecordable() noexcept override
+    virtual std::unique_ptr<opentelemetry::sdk::trace::Recordable> MakeRecordable() noexcept override
     {
         return std::unique_ptr<opentelemetry::sdk::trace::Recordable>(new opentelemetry::sdk::trace::SpanData());
     }
@@ -104,6 +105,294 @@ public:
     {
         return std::unique_ptr<opentelemetry::sdk::trace::SpanExporter>(
             new NoopSpanExporter());
+    }
+};
+
+/**
+ * Converts an OpenTelemetry span status to its string representation.
+ * These are OTel span status defined in include/opentelemetry/trace/span_metadata.h
+ *
+ * @param StatusCode The OpenTelemetry span status code to translate.
+ * @return The string representation of the OpenTelemetry status code.
+ */
+static const char * spanStatusToString(opentelemetry::trace::StatusCode spanStatus)
+{
+    switch(spanStatus)
+    {
+        case opentelemetry::trace::StatusCode::kUnset:
+            return "Unset";
+        case opentelemetry::trace::StatusCode::kOk:
+            return "Ok";
+        case opentelemetry::trace::StatusCode::kError:
+            return "Error";
+        default:
+            return "Unknown";
+    }
+}
+
+/**
+ * Converts an OpenTelemetry span kind to its string representation.
+ * These are OTel span kinds defined in include/opentelemetry/trace/span_metadata.h,
+ * not HPCC JLib CSpan kinds
+ *
+ * @param spanKind The OpenTelemetry span kind to convert.
+ * @return The string representation of the OpenTelemetry span kind.
+ */
+static const char * spanKindToString(opentelemetry::trace::SpanKind spanKind)
+{
+    switch (spanKind)
+    {
+        case opentelemetry::trace::SpanKind::kClient:
+            return "Client";
+        case opentelemetry::trace::SpanKind::kServer:
+            return "Server";
+        case opentelemetry::trace::SpanKind::kProducer:
+            return "Producer";
+        case opentelemetry::trace::SpanKind::kConsumer:
+            return "Consumer";
+        case opentelemetry::trace::SpanKind::kInternal:
+            return "Internal";
+        default:
+            return "Unknown";
+    }
+}
+
+class JLogSpanExporter final : public opentelemetry::sdk::trace::SpanExporter
+{
+public:
+    JLogSpanExporter(SpanLogFlags spanLogFlags) : logFlags(spanLogFlags), shutDown(false) {}
+
+    /**
+    * @return Returns a unique pointer to an empty recordable object
+    */
+    virtual std::unique_ptr<opentelemetry::sdk::trace::Recordable> MakeRecordable() noexcept override
+    {
+        return std::unique_ptr<opentelemetry::sdk::trace::Recordable>(new opentelemetry::sdk::trace::SpanData());
+    }
+
+    /**
+    * Export - Formats recordable spans in HPCC Jlog format and reports to JLog
+    *
+    * @param recordables
+    * @return Always returns success
+    */
+    opentelemetry::sdk::common::ExportResult Export(
+      const nostd::span<std::unique_ptr<opentelemetry::sdk::trace::Recordable>> &recordables) noexcept override
+    {
+        if (isShutDown())
+            return opentelemetry::sdk::common::ExportResult::kFailure;
+
+        for (auto &recordable : recordables)
+        {
+            //Casting the recordable object to the type of the object that was previously created by
+            //JLogSpanExporter::MakeRecordable() - 
+            auto span = std::unique_ptr<opentelemetry::sdk::trace::SpanData>(
+            static_cast<opentelemetry::sdk::trace::SpanData *>(recordable.release()));
+
+            if (span != nullptr)
+            {
+                char traceID[32]       = {0};
+                char spanID[16]        = {0};
+
+                span->GetTraceId().ToLowerBase16(traceID);
+                span->GetSpanId().ToLowerBase16(spanID);
+
+                StringBuffer out("{ \"type\": \"span\""); //for simple identification in log scraping
+                out.appendf(", \"name\": \"%s\"", span->GetName().data());
+                out.append(", \"trace_id\": \"").append(32, traceID).append("\"");
+                out.append(", \"span_id\": \"").append(16, spanID).append("\"");
+                out.appendf(", \"start\": %lld", (long long)(span->GetStartTime().time_since_epoch()).count());
+                out.appendf(", \"duration\": %lld", (long long)span->GetDuration().count());
+
+                if (hasMask(logFlags, SpanLogFlags::LogParentInfo))
+                {
+                    if (span->GetParentSpanId().IsValid())
+                    {
+                        char parentSpanID[16]  = {0};
+                        span->GetParentSpanId().ToLowerBase16(parentSpanID);
+                        out.append(", \"parent_span_id\": \"").append(16, parentSpanID).append("\"");
+                    }
+
+                    std::string traceStatestr = span->GetSpanContext().trace_state()->ToHeader();
+                    if (!traceStatestr.empty())
+                        out.appendf(", \"trace_state\": \"%s\"", traceStatestr.c_str());
+                }
+
+                if (hasMask(logFlags, SpanLogFlags::LogSpanDetails))
+                {
+                    out.appendf(", \"status\": \"%s\"", spanStatusToString(span->GetStatus()));
+                    out.appendf(", \"kind\": \"%s\"", spanKindToString(span->GetSpanKind()));
+                    const char * description = span->GetDescription().data();
+                    if (!isEmptyString(description))
+                    {
+                        StringBuffer encoded;
+                        encodeJSON(encoded, description);
+                        out.appendf(", \"description\": \"%s\"", encoded.str());
+                    }
+                    printInstrumentationScope(out, span->GetInstrumentationScope());
+                }
+
+                if (hasMask(logFlags, SpanLogFlags::LogAttributes))
+                    printAttributes(out, span->GetAttributes());
+
+                if (hasMask(logFlags, SpanLogFlags::LogEvents))
+                    printEvents(out, span->GetEvents());
+
+                if (hasMask(logFlags, SpanLogFlags::LogLinks))
+                    printLinks(out, span->GetLinks());
+
+                if (hasMask(logFlags, SpanLogFlags::LogResources))
+                    printResources(out, span->GetResource());
+
+                out.append(" }");
+                LOG(MCmonitorEvent, "%s",out.str());
+            }
+        }
+        return opentelemetry::sdk::common::ExportResult::kSuccess;
+    }
+
+   /**
+   * Shut down the exporter.
+   * @param timeout an optional timeout.
+   * @return return the status of the operation.
+   */
+    virtual bool Shutdown(
+      std::chrono::microseconds timeout = std::chrono::microseconds::max()) noexcept override
+    {
+        shutDown = true;
+        return true;
+    }
+
+private:
+    bool isShutDown() const noexcept
+    {
+        return shutDown;
+    }
+
+public:
+    static void printAttributes(StringBuffer & out, const std::unordered_map<std::string, opentelemetry::sdk::common::OwnedAttributeValue> &map, const char * attsContainerName = "attributes")
+    {
+        if (map.size() == 0)
+            return;
+
+        out.appendf(", \"%s\": {", attsContainerName);
+
+        bool first = true;
+        for (const auto &kv : map)
+        {
+            if (!first)
+                out.append(",");
+            else
+                first = false;
+
+            std::ostringstream attsOS; //used to exploit OTel convenience functions for printing attribute values
+            opentelemetry::exporter::ostream_common::print_value(kv.second, attsOS);
+            std::string val = attsOS.str();
+            if (val.size() > 0)
+            {
+                StringBuffer encoded;
+                encodeJSON(encoded, val.c_str());
+                out.appendf("\"%s\": \"%s\"", kv.first.c_str(), encoded.str());
+            }
+        }
+        out.append(" }");
+    }
+
+    static void printEvents(StringBuffer & out, const std::vector<opentelemetry::sdk::trace::SpanDataEvent> &events)
+    {
+        if (events.size() == 0)
+            return;
+
+        out.append(", \"events\":[ ");
+        bool first = true;
+        for (const auto &event : events)
+        {
+            if (!first)
+                out.append(",");
+            else
+                first = false;
+
+            out.append("{ \"name\": \"").append(event.GetName().data()).append("\"");
+            out.appendf(", \"time_stamp\": %lld", (long long)event.GetTimestamp().time_since_epoch().count());
+
+            printAttributes(out, event.GetAttributes());
+            out.append(" }");
+        }
+
+        out.append(" ]");
+    }
+
+    static void printLinks(StringBuffer & out, const std::vector<opentelemetry::sdk::trace::SpanDataLink> &links)
+    {
+        if (links.size() == 0)
+            return;
+
+        bool first = true;
+
+        out.append(",  \"links\": [");
+        for (const auto &link : links)
+        {
+            if (!first)
+                out.append(",");
+            else
+                first = false;
+
+            char traceID[32] = {0};
+            char spanID[16]  = {0};
+            link.GetSpanContext().trace_id().ToLowerBase16(traceID);
+            link.GetSpanContext().span_id().ToLowerBase16(spanID);
+
+            out.append(" { \"trace_id\": \"").append(32, traceID).append("\",");
+            out.append(" \"span_id\": \"").append(16, spanID).append("\",");
+            out.append(" \"trace_state\": \"").append(link.GetSpanContext().trace_state()->ToHeader().c_str()).append("\"");
+            printAttributes(out, link.GetAttributes());
+        }
+        out.append(" ]");
+    }
+
+    static void printResources(StringBuffer & out, const opentelemetry::sdk::resource::Resource &resources)
+    {
+        auto attributes = resources.GetAttributes();
+        if (attributes.size())
+            printAttributes(out, attributes, "resources");
+    }
+
+    static void printInstrumentationScope(StringBuffer & out,
+        const opentelemetry::sdk::instrumentationscope::InstrumentationScope &instrumentation_scope)
+    {
+        out.appendf(", \"instrumented_library\": \"%s\"", instrumentation_scope.GetName().c_str());
+        auto version = instrumentation_scope.GetVersion();
+        if (version.size())
+            out.appendf("-").append(version.c_str());
+    }
+
+private:
+    SpanLogFlags logFlags = SpanLogFlags::LogNone;
+    std::atomic_bool shutDown;
+};
+
+/*#ifdef _USE_CPPUNIT
+void testJLogExporterPrintAttributes(StringBuffer & out, const std::unordered_map<std::string, opentelemetry::sdk::common::OwnedAttributeValue> & map, const char * attsContainerName)
+{
+    JLogSpanExporter::printAttributes(out, map, attsContainerName);
+}
+
+void testJLogExporterPrintResources(StringBuffer & out, const opentelemetry::sdk::resource::Resource &resources)
+{
+    JLogSpanExporter::printResources(out, resources);
+}
+#endif
+*/
+class JLogSpanExporterFactory
+{
+public:
+    /**
+    * Create a JLogSpanExporter.
+    */
+    static std::unique_ptr<opentelemetry::sdk::trace::SpanExporter> Create(SpanLogFlags logFlags)
+    {
+        return std::unique_ptr<opentelemetry::sdk::trace::SpanExporter>(
+            new JLogSpanExporter(logFlags));
     }
 };
 
@@ -157,8 +446,6 @@ private:
     bool enabled = true;
     bool optAlwaysCreateGlobalIds = false;
     bool optAlwaysCreateTraceIds = true;
-    bool optLogSpanStart = false;
-    bool optLogSpanFinish = true;
     StringAttr moduleName;
     nostd::shared_ptr<opentelemetry::trace::Tracer> tracer;
 
@@ -190,16 +477,6 @@ public:
         return optAlwaysCreateTraceIds;
     }
 
-    bool logSpanStart() const
-    {
-        return optLogSpanStart;
-    }
-
-    bool logSpanFinish() const
-    {
-        return optLogSpanFinish;
-    }
-    
     nostd::shared_ptr<opentelemetry::trace::Tracer> queryTracer() const
     {
         return tracer;
@@ -224,13 +501,6 @@ public:
         //Record the span as complete before we output the logging for the end of the span
         if (span != nullptr)
             span->End();
-
-        if (queryInternalTraceManager().logSpanFinish())
-        {
-            StringBuffer out;
-            toLog(out);
-            LOG(MCmonitorEvent, "SpanFinish: {%s}", out.str());
-        }
     }
 
     const char * getSpanID() const
@@ -240,17 +510,6 @@ public:
 
     ISpan * createClientSpan(const char * name) override;
     ISpan * createInternalSpan(const char * name) override;
-
-    virtual void toLog(StringBuffer & out) const override
-    {
-        out.append(",\"Name\":\"").append(name.get()).append("\"");
-
-        if (span != nullptr)
-        {
-            out.append(",\"TraceID\":\"").append(traceID.get()).append("\"");
-            out.append(",\"SpanID\":\"").append(spanID.get()).append("\"");
-        }
-    }
 
     virtual void toString(StringBuffer & out) const
     {
@@ -287,6 +546,22 @@ public:
     {
         if (span && !isEmptyString(key) && !isEmptyString(val))
             span->SetAttribute(key, val);
+    }
+
+    void addSpanEvent(const char * eventName, IProperties * attributes) override 
+    {
+        if (span && !isEmptyString(eventName))
+        {
+            std::map<std::string, std::string> attributesMap;
+            Owned<IPropertyIterator> iter = attributes->getIterator();
+            ForEach(*iter)
+            {
+                const char * key = iter->getPropKey();
+                attributesMap.insert(std::pair<std::string,std::string>(key, iter->queryPropValue()));
+            }
+
+            span->AddEvent(eventName, attributesMap);
+        }
     }
 
     void addSpanEvent(const char * eventName) override
@@ -428,13 +703,6 @@ protected:
             if (span != nullptr)
             {
                 storeSpanContext();
-
-                if (queryInternalTraceManager().logSpanStart())
-                {
-                    StringBuffer out;
-                    toLog(out);
-                    LOG(MCmonitorEvent, "SpanStart: {%s}", out.str());
-                }
             }
         }
     }
@@ -513,10 +781,10 @@ public:
     virtual void setSpanAttribute(const char * key, const char * val) override {}
     virtual void setSpanAttributes(const IProperties * attributes) override {}
     virtual void addSpanEvent(const char * eventName) override {}
+    virtual void addSpanEvent(const char * eventName, IProperties * attributes) override {};
     virtual bool getSpanContext(IProperties * ctxProps, bool otelFormatted) const override { return false; }
 
     virtual void toString(StringBuffer & out) const override {}
-    virtual void toLog(StringBuffer & out) const override {}
     virtual void getLogPrefix(StringBuffer & out) const override {}
 
     virtual const char* queryGlobalId() const override { return nullptr; }
@@ -579,15 +847,6 @@ public:
         return localParentSpan->queryLocalId();
     }
 
-    virtual void toLog(StringBuffer & out) const override
-    {
-        CSpan::toLog(out);
-
-        out.append(",\"ParentSpanID\": \"");
-        out.append(localParentSpan->getSpanID());
-        out.append("\"");
-    }
-
     virtual void toString(StringBuffer & out, bool isLeaf) const
     {
         CSpan::toString(out, isLeaf);
@@ -611,12 +870,6 @@ public:
         init(SpanFlags::None);
     }
 
-    void toLog(StringBuffer & out) const override
-    {
-        out.append("\"Type\":\"Internal\"");
-        CChildSpan::toLog(out);
-    }
-
     void toString(StringBuffer & out, bool isLeaf) const override
     {
         out.append("\"Type\":\"Internal\"");
@@ -632,12 +885,6 @@ public:
     {
         opts.kind = opentelemetry::trace::SpanKind::kClient;
         init(SpanFlags::None);
-    }
-
-    void toLog(StringBuffer & out) const override
-    {
-        out.append("\"Type\":\"Client\"");
-        CChildSpan::toLog(out);
     }
 
     void toString(StringBuffer & out, bool isLeaf) const override
@@ -734,6 +981,9 @@ private:
 
         if (!isEmptyString(hpccCallerId))
             setSpanAttribute(kCallerIdOtelAttributeName, hpccCallerId.get());
+
+        if (!isEmptyString(hpccLocalId))
+            setSpanAttribute(kLocalIdIdOtelAttributeName, hpccLocalId.get());
     }
 
 public:
@@ -759,28 +1009,6 @@ public:
     virtual const char* queryLocalId() const override
     {
         return hpccLocalId.get();
-    }
-
-    virtual void toLog(StringBuffer & out) const override
-    {
-        out.append("\"Type\":\"Server\"");
-        CSpan::toLog(out);
-
-        if (!isEmptyString(hpccGlobalId.get()))
-            out.append(",\"GlobalID\":\"").append(hpccGlobalId.get()).append("\"");
-        if (!isEmptyString(hpccCallerId.get()))
-            out.append(",\"CallerID\":\"").append(hpccCallerId.get()).append("\"");
-        if (!isEmptyString(hpccLocalId.get()))
-            out.append(",\"LocalID\":\"").append(hpccLocalId.get()).append("\"");
-
-        if (remoteParentSpanCtx.IsValid())
-        {
-            out.append(",\"ParentSpanID\":\"");
-            char spanId[16] = {0};
-            remoteParentSpanCtx.span_id().ToLowerBase16(spanId);
-            out.append(16, spanId)
-            .append("\"");
-        }
     }
 
     virtual void toString(StringBuffer & out, bool isLeaf) const override
@@ -826,7 +1054,8 @@ IProperties * getSpanContext(const ISpan * span)
 
 void CTraceManager::initTracerProviderAndGlobalInternals(const IPropertyTree * traceConfig)
 {
-    std::unique_ptr<opentelemetry::sdk::trace::SpanExporter> exporter = NoopSpanExporterFactory::Create();
+    //Trace to JLog by default.
+    std::unique_ptr<opentelemetry::sdk::trace::SpanExporter> exporter = JLogSpanExporterFactory::Create(DEFAULT_SPAN_LOG_FLAGS);
 
     //Administrators can choose to export trace data to a different backend by specifying the exporter type
     if (traceConfig && traceConfig->hasProp("exporter"))
@@ -836,14 +1065,14 @@ void CTraceManager::initTracerProviderAndGlobalInternals(const IPropertyTree * t
         {
             StringBuffer exportType;
             exportConfig->getProp("@type", exportType);
-            DBGLOG("Exporter type: %s", exportType.str());
+            LOG(MCoperatorInfo, "Exporter type: %s", exportType.str());
 
             if (!exportType.isEmpty())
             {
                 if (stricmp(exportType.str(), "OS")==0) //To stdout/err
                 {
                     exporter = opentelemetry::exporter::trace::OStreamSpanExporterFactory::Create();
-                    DBGLOG("Tracing to stdout/err...");
+                    LOG(MCoperatorInfo, "Tracing exporter set OS");
                 }
                 else if (stricmp(exportType.str(), "OTLP")==0 || stricmp(exportType.str(), "OTLP-HTTP")==0)
                 {
@@ -859,7 +1088,7 @@ void CTraceManager::initTracerProviderAndGlobalInternals(const IPropertyTree * t
                     trace_opts.console_debug = exportConfig->getPropBool("@consoleDebug", false);
 
                     exporter  = opentelemetry::exporter::otlp::OtlpHttpExporterFactory::Create(trace_opts);
-                    DBGLOG("Exporting traces via OTLP/HTTP to: (%s)", trace_opts.url.c_str());
+                    LOG(MCoperatorInfo,"Tracing exporter set to OTLP/HTTP to: (%s)", trace_opts.url.c_str());
                 }
                 else if (stricmp(exportType.str(), "OTLP-GRPC")==0)
                 {
@@ -884,17 +1113,64 @@ void CTraceManager::initTracerProviderAndGlobalInternals(const IPropertyTree * t
                         opts.timeout = std::chrono::seconds(exportConfig->getPropInt("@timeOutSecs"));
 
                     exporter = otlp::OtlpGrpcExporterFactory::Create(opts);
-                    DBGLOG("Exporting traces via OTLP/GRPC to: (%s)", opts.endpoint.c_str());
+                    LOG(MCoperatorInfo, "Tracing exporter set to OTLP/GRPC to: (%s)", opts.endpoint.c_str());
+                }
+                else if (stricmp(exportType.str(), "JLOG")==0)
+                {
+                    StringBuffer logFlagsStr;
+                    SpanLogFlags logFlags = SpanLogFlags::LogNone;
+
+                    if (exportConfig->getPropBool("@logSpanDetails", false))
+                    {
+                        logFlags |= SpanLogFlags::LogSpanDetails;
+                        logFlagsStr.append(" LogDetails ");
+                    }
+                    if (exportConfig->getPropBool("@logParentInfo", false))
+                    {
+                        logFlags |= SpanLogFlags::LogParentInfo;
+                        logFlagsStr.append(" LogParentInfo ");
+                    }
+                    if (exportConfig->getPropBool("@logAttributes", false))
+                    {
+                        logFlags |= SpanLogFlags::LogAttributes;
+                        logFlagsStr.append(" LogAttributes ");
+                    }
+                    if (exportConfig->getPropBool("@logEvents", false))
+                    {
+                        logFlags |= SpanLogFlags::LogEvents;
+                        logFlagsStr.append(" LogEvents ");
+                    }
+                    if (exportConfig->getPropBool("@logLinks", false))
+                    {
+                        logFlags |= SpanLogFlags::LogLinks;
+                        logFlagsStr.append(" LogLinks ");
+                    }
+                    if (exportConfig->getPropBool("@logResources", false))
+                    {
+                        logFlags |= SpanLogFlags::LogResources;
+                        logFlagsStr.append(" LogLinks ");
+                    }
+
+                    //if no log feature flags provided, use default
+                    if (logFlags == SpanLogFlags::LogNone)
+                        logFlags = DEFAULT_SPAN_LOG_FLAGS;
+
+                    exporter = JLogSpanExporterFactory::Create(logFlags);
+
+                    LOG(MCoperatorInfo, "Tracing exporter set to JLog: logFlags( LogAttributes LogParentInfo %s)", logFlagsStr.str());
                 }
                 else if (stricmp(exportType.str(), "Prometheus")==0)
-                    DBGLOG("Tracing to Prometheus currently not supported");
+                    LOG(MCoperatorInfo, "Tracing to Prometheus currently not supported");
                 else if (stricmp(exportType.str(), "NONE")==0)
-                    DBGLOG("Tracing exporter set to 'NONE', no trace exporting will be performed");
+                {
+                    exporter = NoopSpanExporterFactory::Create();
+                    LOG(MCoperatorInfo, "Tracing exporter set to 'NONE', no trace exporting will be performed");
+                }
                 else
-                    DBGLOG("Tracing exporter type not supported: '%s', no trace exporting will be performed", exportType.str());
+                    LOG(MCoperatorInfo, "Tracing exporter type not supported: '%s', JLog trace exporting will be performed", exportType.str());
             }
             else
-                DBGLOG("Tracing exporter type not specified");
+                LOG(MCoperatorInfo, "Tracing exporter type not specified");
         }
     }
 
@@ -917,15 +1193,15 @@ void CTraceManager::initTracerProviderAndGlobalInternals(const IPropertyTree * t
                                                                             //equal to max_queue_size.
                                                                             //size_t max_export_batch_size = 512
             processor = opentelemetry::sdk::trace::BatchSpanProcessorFactory::Create(std::move(exporter), options);
-            DBGLOG("OpenTel tracing using batch Span Processor");
+            LOG(MCoperatorInfo, "OpenTel tracing using batch Span Processor");
         }
         else if (foundProcessorType &&  strcmp("simple", processorType.str())==0)
         {
-            DBGLOG("OpenTel tracing using batch simple Processor");
+            LOG(MCoperatorInfo, "OpenTel tracing using batch simple Processor");
         }
         else
         {
-            DBGLOG("OpenTel tracing detected invalid processor type: '%s'", processorType.str());
+            LOG(MCoperatorInfo, "OpenTel tracing detected invalid processor type: '%s'", processorType.str());
         }
     }
 
@@ -950,7 +1226,7 @@ global:
         alwaysCreateGlobalIds : false   #optional - should global ids always be created?
         alwaysCreateTraceIds            #optional - should trace ids always be created?
         exporter:                       #optional - Controls how trace data is exported/reported
-            type: OTLP                    #OS|OTLP|Prometheus|HPCC (default: no export, jlog entry)
+            type: OTLP                    #OS|OTLP|Prometheus|JLOG (default: JLOG)
             endpoint: "localhost:4317"    #exporter specific key/value pairs
             useSslCredentials: true
             sslCredentialsCACcert: "ssl-certificate"
@@ -966,14 +1242,18 @@ void CTraceManager::initTracer(const IPropertyTree * traceConfig)
         if (!traceConfig)
         {
             const char * simulatedGlobalYaml = R"!!(global:
-tracing:
+  tracing:
     disabled: false
-    exporter:
-        type: OTLP-HTTP
-        timeOutSecs: 15
-        consoleDebug: true
     processor:
-        type: simple
+      type: simple
+    exporter:
+      type: JLOG
+      logSpanDetails: true
+      logParentInfo: true
+      logAttributes: true
+      logEvents: true
+      logLinks: true
+      logResources: true
 )!!";
             testTree.setown(createPTreeFromYAMLString(simulatedGlobalYaml, ipt_none, ptr_ignoreWhiteSpace, nullptr));
             traceConfig = testTree->queryPropTree("global/tracing");
@@ -984,7 +1264,6 @@ tracing:
             toXML(traceConfig, xml);
             DBGLOG("traceConfig tree: %s", xml.str());
         }
-
 #endif
         bool disableTracing = traceConfig && traceConfig->getPropBool("@disabled", false);
 
@@ -1004,8 +1283,6 @@ tracing:
         //Non open-telemetry tracing configuration
         if (traceConfig)
         {
-            optLogSpanStart = traceConfig->getPropBool("@logSpanStart", optLogSpanStart);
-            optLogSpanFinish = traceConfig->getPropBool("@logSpanFinish", optLogSpanFinish);
             optAlwaysCreateGlobalIds = traceConfig->getPropBool("@alwaysCreateGlobalIds", optAlwaysCreateGlobalIds);
             optAlwaysCreateTraceIds = traceConfig->getPropBool("@alwaysCreateTraceIds", optAlwaysCreateTraceIds);
         }

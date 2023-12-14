@@ -645,7 +645,7 @@ dfuplus action=spray srcplane=lzstorageplane
                   If omitted, the information must be supplied by the
                   <emphasis>dstxml</emphasis> or <emphasis>dstplane</emphasis>
                   parameter. Deprecated, you should use
-                  <emphasis>dstplane</emphasis> instead. </entry>
+                  <emphasis>dstplane</emphasis> instead.</entry>
                 </row>
 
                 <row>
@@ -867,6 +867,13 @@ dfuplus action=despray srcname=mytest::test:spraytest
                   <entry>Optional. A boolean flag (0 | 1) indicating whether
                   to preserve the compression of the source file. If omitted,
                   the default is 1.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>ensure</emphasis></entry>
+
+                  <entry>Optional. Copies logical file, but does not copy file
+                  parts if they already exist. Default is FALSE.</entry>
                 </row>
               </tbody>
             </tgroup>

@@ -437,9 +437,12 @@ export const routes: RoutesEx = [
                 })
             },
             {
-                path: "/:Machine/usage", action: (ctx, params) => import("./components/DiskUsage").then(_ => {
-                    return <_.MachineUsage machine={params.Machine as string} />;
-                })
+                path: "/machines",
+                children: [{
+                    path: "/:Machine/usage", action: (ctx, params) => import("./components/DiskUsage").then(_ => {
+                        return <_.MachineUsage machine={params.Machine as string} />;
+                    })
+                }]
             },
             {
 

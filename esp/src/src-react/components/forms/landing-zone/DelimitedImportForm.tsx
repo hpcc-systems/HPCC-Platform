@@ -385,7 +385,7 @@ export const DelimitedImportForm: React.FunctionComponent<DelimitedImportFormPro
                                 onChange={onChange}
                                 label={nlsHPCC.Separators}
                                 value={value}
-                                placeholder={nlsHPCC.NamePrefixPlaceholder}
+                                placeholder=","
                                 errorMessage={error && error?.message}
                             />}
                     /></td>

@@ -1460,6 +1460,10 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                             {
                                 if (!streq(currentWuid, wuid))
                                 {
+                                    queryLogMsgManager()->removeJobId(thorJob.queryJobID());
+                                    LogMsgJobId thorJobId = queryLogMsgManager()->addJobId(wuid);
+                                    thorJob.setJobID(thorJobId);
+                                    setDefaultJobId(thorJobId);
                                     // perhaps slightly overkill, but avoid checking/locking wuid to add pod info.
                                     // if this instance has already done so.
                                     auto it = publishedPodWuids.find(wuid.str());
@@ -1477,6 +1481,7 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                                     // NB: this set of pods could still already be published, if so, publishPodNames will not re-add.
                                 }
                                 currentWuid.set(wuid); // NB: will always be same if !multiJobLinger
+                                saveWuidToFile(currentWuid);
                                 break; // success
                             }
                             else if (ret < 0)

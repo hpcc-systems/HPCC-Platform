@@ -835,7 +835,7 @@ constexpr LogMsgCategory MCuserInfo(MSGAUD_user, MSGCLS_information, InfoMsgThre
 constexpr LogMsgCategory MCdebugInfo(MSGAUD_programmer, MSGCLS_information, DebugMsgThreshold);
 constexpr LogMsgCategory MCauditInfo(MSGAUD_audit, MSGCLS_information, AudMsgThreshold);
 constexpr LogMsgCategory MCoperatorInfo(MSGAUD_operator, MSGCLS_information, InfoMsgThreshold);
-constexpr LogMsgCategory MCoperatorMetric(MSGAUD_operator, MSGCLS_metric, ErrMsgThreshold);
+constexpr LogMsgCategory MCmonitorMetric(MSGAUD_monitor, MSGCLS_metric, ErrMsgThreshold);
 constexpr LogMsgCategory MCmonitorEvent(MSGAUD_monitor, MSGCLS_event, ProgressMsgThreshold);
 
 /*
