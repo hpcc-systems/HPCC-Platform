@@ -577,8 +577,8 @@ public:
         // IO Stats comming from the keyCursor and jhtree cache stats coming from this class's stats
         if (keyCursor)
             keyCursor->mergeStats(targetStats); // merge IO stats
-        if (stats.ctx)
-            targetStats.merge(stats.ctx->queryStats()); // merge jhtree cache stats
+        if (ctx)
+            targetStats.merge(ctx->queryStats()); // merge jhtree cache stats
     }
 };
 
