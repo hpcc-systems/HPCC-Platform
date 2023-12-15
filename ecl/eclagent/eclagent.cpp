@@ -582,14 +582,9 @@ EclAgent::EclAgent(IConstWorkUnit *wu, const char *_wuid, bool _checkVersion, bo
     unsigned keyBlobCacheMB = wu->getDebugValueInt("keyBlobCacheMB", 0);
     setNodeCacheMem(((memsize_t)0x100000) * keyNodeCacheMB);
     setLeafCacheMem(((memsize_t)0x100000) * keyLeafCacheMB);
-    setBlobCacheMem(((memsize_t)0x100000) * keyBlobCacheMB);    
-    __uint64 nodeFetchThresholdNs = wu->getDebugValueInt64("nodeFetchThresholdNs", (__uint64)-1);
-    if (nodeFetchThresholdNs != (__uint64)-1)
-    {
-        if (0 == nodeFetchThresholdNs)
-            nodeFetchThresholdNs = (__uint64)-1; // effectively disable
-        setNodeFetchThresholdNs(nodeFetchThresholdNs);
-    }
+    setBlobCacheMem(((memsize_t)0x100000) * keyBlobCacheMB);
+    if (wu->hasDebugValue("nodeFetchThresholdNs"))
+        setNodeFetchThresholdNs(wu->getDebugValueInt64("nodeFetchThresholdNs", 0));
 
     configurePreferredPlanes();
 }

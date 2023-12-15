@@ -1,0 +1,7 @@
+<Dataset name='Result 1'>
+ <Row><Result_1>9721</Result_1></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><name>NumIndexScans</name><value>9721</value></Row>
+ <Row><name>NumIndexSeeks</name><value>1012</value></Row>
+</Dataset>

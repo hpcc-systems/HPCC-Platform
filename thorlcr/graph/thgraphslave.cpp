@@ -1807,6 +1807,12 @@ void CJobSlave::reportGraphEnd(graph_id gid)
     resetSocketStatistics();
 }
 
+bool CJobSlave::hasWorkUnitValue(const char *prop) const
+{
+    StringBuffer propName(prop);
+    return workUnitInfo->queryPropTree("Debug")->hasProp(propName.toLowerCase().str());
+}
+
 __int64 CJobSlave::getWorkUnitValueInt(const char *prop, __int64 defVal) const
 {
     StringBuffer propName(prop);

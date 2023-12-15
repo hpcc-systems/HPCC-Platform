@@ -2029,6 +2029,11 @@ void CJobMaster::addCreatedFile(const char *file)
     createdFiles.append(scopedName.str());
 }
 
+bool CJobMaster::hasWorkUnitValue(const char *prop) const
+{
+    return queryWorkUnit().hasDebugValue(prop);
+}
+
 __int64 CJobMaster::getWorkUnitValueInt(const char *prop, __int64 defVal) const
 {
     return queryWorkUnit().getDebugValueInt64(prop, defVal);
