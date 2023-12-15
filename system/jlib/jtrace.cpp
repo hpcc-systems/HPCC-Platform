@@ -452,6 +452,8 @@ private:
     void initTracerProviderAndGlobalInternals(const IPropertyTree * traceConfig);
     void initTracer(const IPropertyTree * traceConfig);
     void cleanupTracer();
+    std::unique_ptr<opentelemetry::sdk::trace::SpanExporter> createExporter(const IPropertyTree * exportConfig);
+    std::unique_ptr<opentelemetry::sdk::trace::SpanProcessor> createProcessor(const IPropertyTree * exportConfig);
 
 public:
     CTraceManager(const char * componentName, const IPropertyTree * componentConfig, const IPropertyTree * globalConfig);
@@ -1059,161 +1061,172 @@ IProperties * getSpanContext(const ISpan * span)
 
 //---------------------------------------------------------------------------------------------------------------------
 
-void CTraceManager::initTracerProviderAndGlobalInternals(const IPropertyTree * traceConfig)
+std::unique_ptr<opentelemetry::sdk::trace::SpanExporter> CTraceManager::createExporter(const IPropertyTree * exportConfig)
 {
-    //Trace to JLog by default.
-    std::unique_ptr<opentelemetry::sdk::trace::SpanExporter> exporter = JLogSpanExporterFactory::Create(DEFAULT_SPAN_LOG_FLAGS);
+    assertex(exportConfig);
 
-    //Administrators can choose to export trace data to a different backend by specifying the exporter type
-    if (traceConfig && traceConfig->hasProp("exporter"))
+    StringBuffer exportType;
+    exportConfig->getProp("@type", exportType);
+
+    LOG(MCoperatorInfo, "Exporter type: %s", exportType.str());
+    if (!exportType.isEmpty())
     {
-        Owned<IPropertyTree> exportConfig = traceConfig->getPropTree("exporter");
-        if (exportConfig)
+        if (stricmp(exportType.str(), "OS")==0) //To stdout/err
         {
-            StringBuffer exportType;
-            exportConfig->getProp("@type", exportType);
-            LOG(MCoperatorInfo, "Exporter type: %s", exportType.str());
+            LOG(MCoperatorInfo, "Tracing exporter set OS");
+            return opentelemetry::exporter::trace::OStreamSpanExporterFactory::Create();
+        }
+        else if (stricmp(exportType.str(), "OTLP")==0 || stricmp(exportType.str(), "OTLP-HTTP")==0)
+        {
+            opentelemetry::exporter::otlp::OtlpHttpExporterOptions trace_opts;
+            const char * endPoint = exportConfig->queryProp("@endpoint");
+            if (endPoint)
+                trace_opts.url = endPoint;
 
-            if (!exportType.isEmpty())
+            if (exportConfig->hasProp("@timeOutSecs")) //not sure exactly what this value actually affects
+                trace_opts.timeout = std::chrono::seconds(exportConfig->getPropInt("@timeOutSecs"));
+
+            // Whether to print the status of the exporter in the console
+            trace_opts.console_debug = exportConfig->getPropBool("@consoleDebug", false);
+
+            LOG(MCoperatorInfo,"Tracing exporter set to OTLP/HTTP to: (%s)", trace_opts.url.c_str());
+            return opentelemetry::exporter::otlp::OtlpHttpExporterFactory::Create(trace_opts);
+        }
+        else if (stricmp(exportType.str(), "OTLP-GRPC")==0)
+        {
+            namespace otlp = opentelemetry::exporter::otlp;
+
+            otlp::OtlpGrpcExporterOptions opts;
+
+            const char * endPoint = exportConfig->queryProp("@endpoint");
+            if (endPoint)
+                opts.endpoint = endPoint;
+
+            opts.use_ssl_credentials = exportConfig->getPropBool("@useSslCredentials", false);
+
+            if (opts.use_ssl_credentials)
             {
-                if (stricmp(exportType.str(), "OS")==0) //To stdout/err
-                {
-                    exporter = opentelemetry::exporter::trace::OStreamSpanExporterFactory::Create();
-                    LOG(MCoperatorInfo, "Tracing exporter set OS");
-                }
-                else if (stricmp(exportType.str(), "OTLP")==0 || stricmp(exportType.str(), "OTLP-HTTP")==0)
-                {
-                    opentelemetry::exporter::otlp::OtlpHttpExporterOptions trace_opts;
-                    const char * endPoint = exportConfig->queryProp("@endpoint");
-                    if (endPoint)
-                        trace_opts.url = endPoint;
-
-                    if (exportConfig->hasProp("@timeOutSecs")) //not sure exactly what this value actually affects
-                        trace_opts.timeout = std::chrono::seconds(exportConfig->getPropInt("@timeOutSecs"));
-
-                    // Whether to print the status of the exporter in the console
-                    trace_opts.console_debug = exportConfig->getPropBool("@consoleDebug", false);
-
-                    exporter  = opentelemetry::exporter::otlp::OtlpHttpExporterFactory::Create(trace_opts);
-                    LOG(MCoperatorInfo,"Tracing exporter set to OTLP/HTTP to: (%s)", trace_opts.url.c_str());
-                }
-                else if (stricmp(exportType.str(), "OTLP-GRPC")==0)
-                {
-                    namespace otlp = opentelemetry::exporter::otlp;
-
-                    otlp::OtlpGrpcExporterOptions opts;
-
-                    const char * endPoint = exportConfig->queryProp("@endpoint");
-                    if (endPoint)
-                        opts.endpoint = endPoint;
-
-                    opts.use_ssl_credentials = exportConfig->getPropBool("@useSslCredentials", false);
-
-                    if (opts.use_ssl_credentials)
-                    {
-                        StringBuffer sslCACertPath;
-                        exportConfig->getProp("@sslCredentialsCACertPath", sslCACertPath);
-                        opts.ssl_credentials_cacert_path = sslCACertPath.str();
-                    }
-
-                    if (exportConfig->hasProp("@timeOutSecs")) //grpc deadline timeout in seconds
-                        opts.timeout = std::chrono::seconds(exportConfig->getPropInt("@timeOutSecs"));
-
-                    exporter = otlp::OtlpGrpcExporterFactory::Create(opts);
-                    LOG(MCoperatorInfo, "Tracing exporter set to OTLP/GRPC to: (%s)", opts.endpoint.c_str());
-                }
-                else if (stricmp(exportType.str(), "JLOG")==0)
-                {
-                    StringBuffer logFlagsStr;
-                    SpanLogFlags logFlags = SpanLogFlags::LogNone;
-
-                    if (exportConfig->getPropBool("@logSpanDetails", false))
-                    {
-                        logFlags |= SpanLogFlags::LogSpanDetails;
-                        logFlagsStr.append(" LogDetails ");
-                    }
-                    if (exportConfig->getPropBool("@logParentInfo", false))
-                    {
-                        logFlags |= SpanLogFlags::LogParentInfo;
-                        logFlagsStr.append(" LogParentInfo ");
-                    }
-                    if (exportConfig->getPropBool("@logAttributes", false))
-                    {
-                        logFlags |= SpanLogFlags::LogAttributes;
-                        logFlagsStr.append(" LogAttributes ");
-                    }
-                    if (exportConfig->getPropBool("@logEvents", false))
-                    {
-                        logFlags |= SpanLogFlags::LogEvents;
-                        logFlagsStr.append(" LogEvents ");
-                    }
-                    if (exportConfig->getPropBool("@logLinks", false))
-                    {
-                        logFlags |= SpanLogFlags::LogLinks;
-                        logFlagsStr.append(" LogLinks ");
-                    }
-                    if (exportConfig->getPropBool("@logResources", false))
-                    {
-                        logFlags |= SpanLogFlags::LogResources;
-                        logFlagsStr.append(" LogLinks ");
-                    }
-
-                    //if no log feature flags provided, use default
-                    if (logFlags == SpanLogFlags::LogNone)
-                        logFlags = DEFAULT_SPAN_LOG_FLAGS;
-
-                    exporter = JLogSpanExporterFactory::Create(logFlags);
-
-                    LOG(MCoperatorInfo, "Tracing exporter set to JLog: logFlags( LogAttributes LogParentInfo %s)", logFlagsStr.str());
-                }
-                else if (stricmp(exportType.str(), "Prometheus")==0)
-                    LOG(MCoperatorInfo, "Tracing to Prometheus currently not supported");
-                else if (stricmp(exportType.str(), "NONE")==0)
-                {
-                    exporter = NoopSpanExporterFactory::Create();
-                    LOG(MCoperatorInfo, "Tracing exporter set to 'NONE', no trace exporting will be performed");
-                }
-                else
-                    LOG(MCoperatorInfo, "Tracing exporter type not supported: '%s', JLog trace exporting will be performed", exportType.str());
+                StringBuffer sslCACertPath;
+                exportConfig->getProp("@sslCredentialsCACertPath", sslCACertPath);
+                opts.ssl_credentials_cacert_path = sslCACertPath.str();
             }
-            else
-                LOG(MCoperatorInfo, "Tracing exporter type not specified");
-        }
-    }
 
-    //Administrator can choose to process spans in batches or one at a time
-    //Default: SimpleSpanProcesser sends spans one by one to an exporter.
-    std::unique_ptr<opentelemetry::v1::sdk::trace::SpanProcessor> processor = opentelemetry::sdk::trace::SimpleSpanProcessorFactory::Create(std::move(exporter));
-    if (traceConfig && traceConfig->hasProp("processor/@type"))
-    {
-        StringBuffer processorType;
-        bool foundProcessorType = traceConfig->getProp("processor/@type", processorType);
+            if (exportConfig->hasProp("@timeOutSecs")) //grpc deadline timeout in seconds
+                opts.timeout = std::chrono::seconds(exportConfig->getPropInt("@timeOutSecs"));
 
-        if (foundProcessorType &&  strcmp("batch", processorType.str())==0)
-        {
-            //Groups several spans together, before sending them to an exporter.
-            //These options should be configurable
-            opentelemetry::v1::sdk::trace::BatchSpanProcessorOptions options; //size_t max_queue_size = 2048;
-                                                                            //The time interval between two consecutive exports
-                                                                            //std::chrono::milliseconds(5000);
-                                                                            //The maximum batch size of every export. It must be smaller or
-                                                                            //equal to max_queue_size.
-                                                                            //size_t max_export_batch_size = 512
-            processor = opentelemetry::sdk::trace::BatchSpanProcessorFactory::Create(std::move(exporter), options);
-            LOG(MCoperatorInfo, "OpenTel tracing using batch Span Processor");
+            LOG(MCoperatorInfo, "Tracing exporter set to OTLP/GRPC to: (%s)", opts.endpoint.c_str());
+            return otlp::OtlpGrpcExporterFactory::Create(opts);
         }
-        else if (foundProcessorType &&  strcmp("simple", processorType.str())==0)
+        else if (stricmp(exportType.str(), "JLOG")==0)
         {
-            LOG(MCoperatorInfo, "OpenTel tracing using batch simple Processor");
+            StringBuffer logFlagsStr;
+            SpanLogFlags logFlags = SpanLogFlags::LogNone;
+
+            if (exportConfig->getPropBool("@logSpanDetails", false))
+            {
+                logFlags |= SpanLogFlags::LogSpanDetails;
+                logFlagsStr.append(" LogDetails ");
+            }
+            if (exportConfig->getPropBool("@logParentInfo", false))
+            {
+                logFlags |= SpanLogFlags::LogParentInfo;
+                logFlagsStr.append(" LogParentInfo ");
+            }
+            if (exportConfig->getPropBool("@logAttributes", false))
+            {
+                logFlags |= SpanLogFlags::LogAttributes;
+                logFlagsStr.append(" LogAttributes ");
+            }
+            if (exportConfig->getPropBool("@logEvents", false))
+            {
+                logFlags |= SpanLogFlags::LogEvents;
+                logFlagsStr.append(" LogEvents ");
+            }
+            if (exportConfig->getPropBool("@logLinks", false))
+            {
+                logFlags |= SpanLogFlags::LogLinks;
+                logFlagsStr.append(" LogLinks ");
+            }
+            if (exportConfig->getPropBool("@logResources", false))
+            {
+                logFlags |= SpanLogFlags::LogResources;
+                logFlagsStr.append(" LogLinks ");
+            }
+
+            //if no log feature flags provided, use default
+            if (logFlags == SpanLogFlags::LogNone)
+                logFlags = DEFAULT_SPAN_LOG_FLAGS;
+
+            LOG(MCoperatorInfo, "Tracing exporter set to JLog: logFlags( LogAttributes LogParentInfo %s)", logFlagsStr.str());
+            return JLogSpanExporterFactory::Create(logFlags);
+        }
+        else if (stricmp(exportType.str(), "Prometheus")==0)
+            LOG(MCoperatorInfo, "Tracing to Prometheus currently not supported");
+        else if (stricmp(exportType.str(), "NONE")==0)
+        {
+            LOG(MCoperatorInfo, "Tracing exporter set to 'NONE', no trace exporting will be performed");
+            return NoopSpanExporterFactory::Create();
         }
         else
+            LOG(MCoperatorInfo, "Tracing exporter type not supported: '%s', JLog trace exporting will be performed", exportType.str());
+    }
+    else
+        LOG(MCoperatorInfo, "Tracing exporter type not specified");
+    return nullptr;
+}
+
+std::unique_ptr<opentelemetry::sdk::trace::SpanProcessor> CTraceManager::createProcessor(const IPropertyTree * exportConfig)
+{
+    auto exporter = createExporter(exportConfig);
+    if (!exporter)
+        return nullptr;
+
+    if (exportConfig->getPropBool("@batch", false))
+    {
+        //Groups several spans together, before sending them to an exporter.
+        //MORE: These options should be configurable
+        opentelemetry::v1::sdk::trace::BatchSpanProcessorOptions options; //size_t max_queue_size = 2048;
+                                                                        //The time interval between two consecutive exports
+                                                                        //std::chrono::milliseconds(5000);
+                                                                        //The maximum batch size of every export. It must be smaller or
+                                                                        //equal to max_queue_size.
+                                                                        //size_t max_export_batch_size = 512
+        return opentelemetry::sdk::trace::BatchSpanProcessorFactory::Create(std::move(exporter), options);
+    }
+
+    return opentelemetry::sdk::trace::SimpleSpanProcessorFactory::Create(std::move(exporter));
+}
+
+void CTraceManager::initTracerProviderAndGlobalInternals(const IPropertyTree * traceConfig)
+{
+    std::vector<std::unique_ptr<opentelemetry::sdk::trace::SpanProcessor>> processors;
+    if (traceConfig)
+    {
+        //Administrators can choose to export trace data to a different backend by specifying the exporter type
+        IPropertyTree * exportConfig = traceConfig->queryPropTree("exporter");
+        if (exportConfig)
         {
-            LOG(MCoperatorInfo, "OpenTel tracing detected invalid processor type: '%s'", processorType.str());
+            std::unique_ptr<opentelemetry::v1::sdk::trace::SpanProcessor> processor = createProcessor(exportConfig);
+            if (processor)
+                processors.push_back(std::move(processor));
+        }
+
+        Owned<IPropertyTreeIterator> iter = traceConfig->getElements("exporters");
+        ForEach(*iter)
+        {
+            IPropertyTree & curExporter = iter->query();
+            std::unique_ptr<opentelemetry::v1::sdk::trace::SpanProcessor> processor = createProcessor(&curExporter);
+            if (processor)
+                processors.push_back(std::move(processor));
         }
     }
 
-    std::vector<std::unique_ptr<opentelemetry::sdk::trace::SpanProcessor>> processors;
-    processors.push_back(std::move(processor));
+    if (processors.empty())
+    {
+        //Default to tracing to the log file if no exporters are specified
+        std::unique_ptr<opentelemetry::sdk::trace::SpanExporter> exporter = JLogSpanExporterFactory::Create(DEFAULT_SPAN_LOG_FLAGS);
+        processors.push_back(opentelemetry::sdk::trace::SimpleSpanProcessorFactory::Create(std::move(exporter)));
+    }
 
     // Default is an always-on sampler.
     std::shared_ptr<opentelemetry::sdk::trace::TracerContext> context =

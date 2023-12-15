@@ -1123,16 +1123,10 @@
               "type": "string",
               "enum": ["OTLP-HTTP", "OTLP-GRPC", "OS", "JLOG", "NONE"],
               "description": "The type of exporter in charge of forwarding span data to target back-end"
-            }
-          }
-        },
-        "processor": {
-          "type": "object",
-          "properties": {
-            "type": {
-              "type": "string",
-              "enum": ["batch", "simple"],
-              "description": "Defines the manner in which trace data is processed - in batches, or simple as available"
+            },
+            "batch": {
+              "type": "boolean",
+              "description": "If true, trace data is processed in a batch, if false when it is available"
             }
           }
         }

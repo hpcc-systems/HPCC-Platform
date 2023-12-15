@@ -13,24 +13,23 @@ All configuration options detailed here are part of the HPCC Systems Helm chart,
 - optAlwaysCreateTraceIds - If true components generate trace/span ids if none are provided by the remote caller.
 - exporter - Defines The type of exporter in charge of forwarding span data to target back-end
   - type - (default: JLOG) "OTLP-HTTP" | "OTLP-GRPC" | "OS" | "JLOG" | "NONE"
-  - JLOG
-    - logSpanDetails - Log span details such as description, status, kind
-    - logParentInfo  - Log the span's parent info such as ParentSpanId, and TraceState
-    - logAttributes  - Log the span's attributes
-    - logEvents      - Log the span's events
-    - logLinks       - Log the span's links
-    - logResources   - Log the span's resources such as telemetry.sdk version, name, language
-  - OTLP-HTTP
-    - endpoint - (default localhost:4318) Specifies the target OTLP-HTTP backend
-    - timeOutSecs - (default 10secs)
-    - consoleDebug - (default false)
-  - OTLP-GRPC
-    - endpoint: (default localhost:4317) The endpoint to export to. By default the OpenTelemetry Collector's default endpoint.
-    - useSslCredentials - By default when false, uses grpc::InsecureChannelCredentials; If true uses sslCredentialsCACertPath
-    - sslCredentialsCACertPath - Path to .pem file to be used for SSL encryption.
-    - timeOutSeconds - (default 10secs) Timeout for grpc deadline
-- processor - Controls span processing style. One by one as available, or in batches.
-  - type - (default: simple) "simple" | "batch"
+    - JLOG
+      - logSpanDetails - Log span details such as description, status, kind
+      - logParentInfo  - Log the span's parent info such as ParentSpanId, and TraceState
+      - logAttributes  - Log the span's attributes
+      - logEvents      - Log the span's events
+      - logLinks       - Log the span's links
+      - logResources   - Log the span's resources such as telemetry.sdk version, name, language
+    - OTLP-HTTP
+      - endpoint - (default localhost:4318) Specifies the target OTLP-HTTP backend
+      - timeOutSecs - (default 10secs)
+      - consoleDebug - (default false)
+    - OTLP-GRPC
+      - endpoint: (default localhost:4317) The endpoint to export to. By default the OpenTelemetry Collector's default endpoint.
+      - useSslCredentials - By default when false, uses grpc::InsecureChannelCredentials; If true uses sslCredentialsCACertPath
+      - sslCredentialsCACertPath - Path to .pem file to be used for SSL encryption.
+      - timeOutSeconds - (default 10secs) Timeout for grpc deadline
+  - batch - If true, trace data is processed in a batch, if false when it is available (simple)
 
 ### Sample configuration
 Below is a sample helm values block directing the HPCC tracing framework to process span information serially, and export the data over OTLP/HTTP protocol to localhost:4318 and output export debug information to console:
@@ -41,8 +40,6 @@ global:
     exporter:
       type: OTLP-HTTP
       consoleDebug: true
-    processor:
-      type: simple
 ```
 ### Sample configuration command
 
