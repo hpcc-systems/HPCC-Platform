@@ -9037,7 +9037,7 @@ static std::tuple<std::string, IPropertyTree *, IPropertyTree *> doLoadConfigura
     return std::make_tuple(std::string(absConfigFilename.str()), newComponentConfig.getClear(), newGlobalConfig.getClear());
 }
 
-jlib_decl IPropertyTree * loadConfiguration(IPropertyTree *componentDefault, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *), const char *altNameAttribute, bool monitor)
+jlib_decl IPropertyTree * loadConfiguration(IPropertyTree *componentDefault, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *), const char *altNameAttribute, bool monitor, bool initTracing)
 {
     assertex(configFileUpdater); // NB: loadConfiguration should always be called after configFileUpdater is initialized
     if (configFileUpdater->isInitialized())
@@ -9066,12 +9066,12 @@ jlib_decl IPropertyTree * loadConfiguration(IPropertyTree *componentDefault, con
     configFileUpdater->init(std::get<0>(result).c_str(), componentDefault, argv, componentTag, envPrefix, legacyFilename, mapper, altNameAttribute);
     if (monitor)
         configFileUpdater->startMonitoring();
-
-    initTraceManager(componentTag, componentConfiguration.get(), globalConfiguration.get());
+    if (initTracing)
+        initTraceManager(componentTag, componentConfiguration.get(), globalConfiguration.get());
     return componentConfiguration.getLink();
 }
 
-jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *), const char *altNameAttribute, bool monitor)
+jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *), const char *altNameAttribute, bool monitor, bool initTracing)
 {
     if (componentConfiguration)
         throw makeStringExceptionV(99, "Configuration for component %s has already been initialised", componentTag);
@@ -9087,7 +9087,7 @@ jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char
     else
         componentDefault.setown(createPTree(componentTag));
 
-    return loadConfiguration(componentDefault, argv, componentTag, envPrefix, legacyFilename, mapper, altNameAttribute, monitor);
+    return loadConfiguration(componentDefault, argv, componentTag, envPrefix, legacyFilename, mapper, altNameAttribute, monitor, initTracing);
 }
 
 void replaceComponentConfig(IPropertyTree *newComponentConfig, IPropertyTree *newGlobalConfig)

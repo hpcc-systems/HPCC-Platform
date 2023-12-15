@@ -454,7 +454,8 @@ int init_main(int argc, const char* argv[])
             envpt.setown(createPTreeFromXMLFile(cfgfile, ipt_caseInsensitive));
 
             // NB: esp has no standard component config in bare-metal, this is loading defaultYaml only
-            espConfig.setown(loadConfiguration(defaultYaml, argv, "esp", "ESP", nullptr, nullptr));
+            //   disable initTracing here, it will be called explicitly below after global config is replaced
+            espConfig.setown(loadConfiguration(defaultYaml, argv, "esp", "ESP", nullptr, nullptr, nullptr, true, false));
 
             // legacy esp.xml will contain a generated global section if present in the environment.
             // replace the empty stub created by loadConfiguration with this environment globals section.
@@ -464,6 +465,7 @@ int init_main(int argc, const char* argv[])
                 Owned<IPropertyTree> currentConfig = getComponentConfig();
                 replaceComponentConfig(currentConfig, global);
             }
+            initTraceManager("esp", getComponentConfigSP(), getGlobalConfigSP());
         }
         Owned<IPropertyTree> procpt = NULL;
         if (envpt)
