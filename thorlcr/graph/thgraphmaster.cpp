@@ -1486,7 +1486,9 @@ CJobMaster::CJobMaster(IConstWorkUnit &_workunit, const char *graphName, ILoaded
     init();
 
     Owned<IProperties> traceHeaders = extractTraceDebugOptions(workunit);
-    Owned<ISpan> requestSpan = queryTraceManager().createServerSpan(workunit->queryWuid(), traceHeaders);
+    Owned<ISpan> requestSpan = queryTraceManager().createServerSpan("run_graph", traceHeaders);
+    requestSpan->setSpanAttribute("hpcc.wuid", workunit->queryWuid());
+    requestSpan->setSpanAttribute("hpcc.graph", graphName);
     ContextSpanScope spanScope(*logctx, requestSpan);
 
     resumed = WUActionResume == workunit->getAction();

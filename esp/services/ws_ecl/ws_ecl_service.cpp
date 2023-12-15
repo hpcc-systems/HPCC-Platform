@@ -2001,7 +2001,7 @@ int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinf
 
     Owned<ISpan> clientSpan;
     ISpan * activeSpan = context.queryActiveSpan();
-    clientSpan.setown(activeSpan->createClientSpan("wsecl/SubmitWorkunit"));
+    clientSpan.setown(activeSpan->createClientSpan("run_workunit"));
     Owned<IProperties> httpHeaders = ::getClientHeaders(clientSpan);
     recordTraceDebugOptions(workunit, httpHeaders);
 
