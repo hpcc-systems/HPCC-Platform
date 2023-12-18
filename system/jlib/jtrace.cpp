@@ -47,6 +47,7 @@
 #include "jmisc.hpp"
 #include "jtrace.hpp"
 #include "lnuid.h"
+#include <variant>
 
 namespace context     = opentelemetry::context;
 namespace nostd       = opentelemetry::nostd;
@@ -275,27 +276,35 @@ public:
         if (map.size() == 0)
             return;
 
-        out.appendf(", \"%s\": {", attsContainerName);
-
-        bool first = true;
-        for (const auto &kv : map)
+        try
         {
-            if (!first)
-                out.append(",");
-            else
-                first = false;
+            out.appendf(", \"%s\": {", attsContainerName);
 
-            std::ostringstream attsOS; //used to exploit OTel convenience functions for printing attribute values
-            opentelemetry::exporter::ostream_common::print_value(kv.second, attsOS);
-            std::string val = attsOS.str();
-            if (val.size() > 0)
+            bool first = true;
+            for (const auto &kv : map)
             {
-                StringBuffer encoded;
-                encodeJSON(encoded, val.c_str());
-                out.appendf("\"%s\": \"%s\"", kv.first.c_str(), encoded.str());
+                if (!first)
+                    out.append(",");
+                else
+                    first = false;
+
+                std::ostringstream attsOS; //used to exploit OTel convenience functions for printing attribute values
+                opentelemetry::exporter::ostream_common::print_value(kv.second, attsOS);
+                std::string val = attsOS.str();
+                if (val.size() > 0)
+                {
+                    StringBuffer encoded;
+                    encodeJSON(encoded, val.c_str());
+                    out.appendf("\"%s\": \"%s\"", kv.first.c_str(), encoded.str());
+                }
             }
+            out.append(" }");
+
         }
-        out.append(" }");
+        catch(const std::bad_variant_access & e)
+        {
+            ERRLOG("Could not export span %s: %s", attsContainerName, e.what());
+        }
     }
 
     static void printEvents(StringBuffer & out, const std::vector<opentelemetry::sdk::trace::SpanDataEvent> &events)
@@ -352,18 +361,16 @@ public:
 
     static void printResources(StringBuffer & out, const opentelemetry::sdk::resource::Resource &resources)
     {
-        auto attributes = resources.GetAttributes();
-        if (attributes.size())
-            printAttributes(out, attributes, "resources");
+        if (resources.GetAttributes().size())
+            printAttributes(out, resources.GetAttributes(), "resources");
     }
 
     static void printInstrumentationScope(StringBuffer & out,
         const opentelemetry::sdk::instrumentationscope::InstrumentationScope &instrumentation_scope)
     {
         out.appendf(", \"instrumented_library\": \"%s\"", instrumentation_scope.GetName().c_str());
-        auto version = instrumentation_scope.GetVersion();
-        if (version.size())
-            out.appendf("-").append(version.c_str());
+        if (instrumentation_scope.GetVersion().size())
+            out.appendf("-").append(instrumentation_scope.GetVersion().c_str());
     }
 
 private:
