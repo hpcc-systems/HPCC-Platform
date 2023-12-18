@@ -286,7 +286,7 @@ public:
     {
         //requestExpiryTime 0 should only be used if there is no data to send.  Ensure it is non zero otherwise.
         if (newExpiryTime == 0)
-            newExpiryTime == 1;
+            newExpiryTime = 1;
         requestExpiryTime.store(newExpiryTime);
     }
 
