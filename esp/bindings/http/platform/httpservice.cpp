@@ -390,7 +390,7 @@ int CEspHttpServer::processRequest()
             //which would remove the activeSpan when this function exits, use
             //setActiveSpan()
             //It is possible that using EspContextSpanScope would be better
-            Owned<ISpan> serverSpan = m_request->createServerSpan();
+            Owned<ISpan> serverSpan = m_request->createServerSpan(serviceName, methodName);
             ctx->setActiveSpan(serverSpan);
 
             if (thebinding!=NULL)

@@ -58,11 +58,11 @@ RUN apt-get install -y \
     gdb \
     nano 
 
-RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.28.3/bin/linux/amd64/kubectl && \
+RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.28.4/bin/linux/amd64/kubectl && \
     chmod +x ./kubectl && \
     mv ./kubectl /usr/local/bin
 
-RUN curl -LO https://packagecloud.io/github/git-lfs/packages/debian/bullseye/git-lfs_3.4.0_amd64.deb/download && \
+RUN curl -LO https://packagecloud.io/github/git-lfs/packages/debian/jammy/git-lfs_3.4.1_amd64.deb/download && \
     dpkg -i download && \
     rm download
 

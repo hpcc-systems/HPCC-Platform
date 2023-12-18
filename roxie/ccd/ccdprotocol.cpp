@@ -1891,7 +1891,7 @@ readAnother:
                 uid = NULL;
                 sanitizeQuery(queryPT, queryName, sanitizedText, httpHelper, uid, isBlind, isDebug);
 
-                msgctx->startSpan(uid, httpHelper.queryRequestHeaders());
+                msgctx->startSpan(uid, querySetName, queryName, httpHelper.queryRequestHeaders());
 
                 if (!uid)
                     uid = "-";

@@ -954,7 +954,7 @@ private:
     {
         bool success = CSpan::getSpanContext(ctxProps, otelFormatted);
 
-        if (remoteParentSpanCtx.IsValid())
+        if (!otelFormatted && remoteParentSpanCtx.IsValid())
         {
             StringBuffer remoteParentSpanID;
             char remoteParentSpanId[16] = {0};

@@ -448,6 +448,36 @@ IProperties * getHeadersAsProperties(const StringArray & httpHeaders, char separ
 }
 
 
+void getPropertiesAsXml(StringBuffer & out, const IProperties * properties)
+{
+    if (properties)
+    {
+        Owned<IPropertyIterator> it = properties->getIterator();
+        for (it->first(); it->isValid(); it->next())
+        {
+            const char* k = it->getPropKey();
+            const char* v = it->queryPropValue();
+            out.append(' ').append(k).append("=\"");
+            encodeUtf8XML(v, out);
+            out.append('"');
+        }
+    }
+}
+
+void printProperties(const IProperties * properties)
+{
+    StringBuffer temp;
+    getPropertiesAsXml(temp, properties);
+    puts(temp.str());
+}
+
+void dbglogProperties(const IProperties * properties, const char * prefix)
+{
+    StringBuffer temp;
+    getPropertiesAsXml(temp, properties);
+    DBGLOG("%s: %s", prefix, temp.str());
+}
+
 static CProperties *sysProps = NULL;
 
 extern jlib_decl IProperties *querySystemProperties()

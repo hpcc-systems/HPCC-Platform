@@ -41,6 +41,7 @@ string constHeader := 'constHeaderValue';
 
 soapcallResult := SOAPCALL(TargetURL, 'HttpEcho', httpEchoServiceRequestRecord, DATASET(httpEchoServiceResponseRecord), LITERAL, xpath('HttpEchoResponse'),
                 httpheader('StoredHeader', storedHeader), httpheader('literalHeader', 'literalHeaderValue'), httpheader('constHeader', constHeader),
+                httpheader('HPCC-Global-Id','9876543210'), httpheader('HPCC-Caller-Id','http111'),
                 httpheader('traceparent', '00-0123456789abcdef0123456789abcdef-0123456789abcdef-01'));
 
 output(soapcallResult, named('soapcallResult'));
@@ -52,6 +53,7 @@ string TargetProxy := 'http://' + TargetIP + ':8010';
 
 proxyResult := SOAPCALL(HostURL, 'HttpEcho', httpEchoServiceRequestRecord, DATASET(httpEchoServiceResponseRecord), LITERAL, xpath('HttpEchoResponse'), proxyAddress(TargetProxy),
                 httpheader('StoredHeader', storedHeader), httpheader('literalHeader', 'literalHeaderValue'), httpheader('constHeader', constHeader),
+                httpheader('HPCC-Global-Id','9876543210'), httpheader('HPCC-Caller-Id','http111'),
                 httpheader('traceparent', '00-0123456789abcdef0123456789abcdef-f123456789abcdef-01'));
 
 output(proxyResult, named('proxyResult'));

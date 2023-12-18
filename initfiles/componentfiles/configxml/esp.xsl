@@ -82,6 +82,9 @@
                 <expert>
                     <xsl:copy-of select="/Environment/Software/Globals/@* | /Environment/Software/Globals/*"/>
                 </expert>
+                <storage>
+                    <xsl:copy-of select="/Environment/Software/RemoteStorage/*"/>
+                </storage>
                 <xsl:copy-of select="/Environment/Hardware/cost"/>
             </global>
         </xsl:copy>

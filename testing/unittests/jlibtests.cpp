@@ -3213,7 +3213,7 @@ class JlibCompressionTestsStress : public CppUnit::TestFixture
     CPPUNIT_TEST_SUITE_END();
 
     static constexpr size32_t sz = 100*0x100000; // 100MB
-    enum CompressOpt { RowCompress, AllRowCompress, BlockCompress };
+    enum CompressOpt { RowCompress, AllRowCompress, BlockCompress, CompressToBuffer };
 public:
     void test()
     {
@@ -3276,6 +3276,7 @@ public:
                     testCompressor(handler, "hclevel=10", rowSz, src.length(), src.bytes(), RowCompress);
                 }
                 testCompressor(handler, options, rowSz, src.length(), src.bytes(), RowCompress);
+                testCompressor(handler, options, rowSz, src.length(), src.bytes(), CompressToBuffer);
                 if (streq(type, "LZ4"))
                 {
                     testCompressor(handler, "allrow", rowSz, src.length(), src.bytes(), AllRowCompress); // block doesn't affect the compressor, just tracing
@@ -3334,23 +3335,38 @@ public:
                 compressed.setLength(written);
                 break;
             }
+            case CompressToBuffer:
+            {
+                compressToBuffer(compressed, srcLen, ptr, handler.queryMethod(), options);
+                break;
+            }
         }
 
         cycle_t compressCycles = timer.elapsedCycles();
         Owned<IExpander> expander = handler.getExpander(options);
-
+        MemoryBuffer tgt;
         timer.reset();
-        size32_t required = expander->init(compressed.bytes());
-        MemoryBuffer tgt(required);
-        expander->expand(tgt.bufferBase());
-        tgt.setWritePos(required);
+        if (opt==CompressToBuffer)
+        {
+            decompressToBuffer(tgt, compressed, options);
+        }
+        else
+        {
+            size32_t required = expander->init(compressed.bytes());
+            tgt.reserveTruncate(required);
+            expander->expand(tgt.bufferBase());
+            tgt.setWritePos(required);
+        }
         cycle_t decompressCycles = timer.elapsedCycles();
 
         float ratio = (float)(srcLen) / compressed.length();
 
         StringBuffer name(handler.queryType());
-        if (options)
-            name.append("(").append(options).append(")");
+        if (opt == CompressToBuffer)
+            name.append("-c2b");
+        if (options && *options)
+            name.append("-").append(options);
+
 
         if (name.length() > 19)
             name.setLength(19);

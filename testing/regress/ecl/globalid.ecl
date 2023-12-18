@@ -21,6 +21,9 @@ import lib_workunitservices;
 #option('CallerId', 'PkAntaCLkY4MknCnXA');
 #option('GlobalId', 'xPSDvT9akc1fGSTZWJKb');
 
-OUTPUT(logging.getGlobalId(), NAMED('GlobalId'));
-OUTPUT(logging.getCallerId(), NAMED('CallerId'));
+//The global and caller ids could either be set by esp when the query is received
+//or from the #options above, so the test checks that it has been set by someone.
+
+OUTPUT(logging.getGlobalId() != '', NAMED('GlobalId'));
+OUTPUT(logging.getCallerId() != '', NAMED('CallerId'));
 

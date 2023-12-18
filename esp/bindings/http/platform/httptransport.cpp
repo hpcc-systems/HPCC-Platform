@@ -1915,11 +1915,16 @@ int CHttpRequest::receive(IMultiException *me)
     return 0;
 }
 
-ISpan * CHttpRequest::createServerSpan()
+ISpan * CHttpRequest::createServerSpan(const char * serviceName, const char * methodName)
 {
     //MORE: The previous code would be better off querying httpHeaders...
+    StringBuffer spanName;
+    spanName.append(serviceName);
+    if (!isEmptyString(methodName))
+        spanName.append("/").append(methodName);
+    spanName.toLowerCase();
     Owned<IProperties> httpHeaders = getHeadersAsProperties(m_headers);
-    return queryTraceManager().createServerSpan("HTTPRequest", httpHeaders, SpanFlags::EnsureGlobalId);
+    return queryTraceManager().createServerSpan(spanName, httpHeaders, SpanFlags::EnsureGlobalId);
 }
 
 void CHttpRequest::annotateSpan(const char * key, const char * value)
