@@ -82,6 +82,9 @@ ldap:
          -  path: EclDirectAccess
             resource: EclDirectAccess
             description: Access to ECL direct service
+         -  path: PackageMapAccess
+            resource: PackageMapAccess
+            description: Access to packagemaps
       WsWorkunits:
          Feature:
          -  path: OwnWorkunitsAccess
@@ -151,7 +154,11 @@ ldap:
          -  path: ResourceQueryAccess
             resource: ResourceQueryAccess
             description: Access to resources
-      WsPackageProcess: []
+      WsPackageProcess:
+         Feature:
+         -  path: PackageMapAccess
+            resource: PackageMapAccess
+            description: Access to packagemaps
       ws_account: []
       ws_access: []
       ws_esdlconfig: []
