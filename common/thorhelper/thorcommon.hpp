@@ -682,7 +682,10 @@ protected:
     mutable CRuntimeStatisticCollection stats;
 public:
     CStatsContextLogger(const CRuntimeStatisticCollection  &_mapping, const LogMsgJobInfo & _job=unknownJob) : job(_job), stats(_mapping) {}
-
+    void reset()
+    {
+        stats.reset();
+    }
     virtual void CTXLOGva(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char *format, va_list args) const override  __attribute__((format(printf,5,0)))
     {
         VALOG(cat, job, code, format, args);

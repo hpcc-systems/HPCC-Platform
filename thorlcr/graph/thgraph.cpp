@@ -2786,6 +2786,8 @@ void CJobBase::startJob()
     unsigned keyNodeCacheMB = getWorkUnitValueInt("keyNodeCacheMB", DEFAULT_KEYNODECACHEMB * queryJobChannels());
     unsigned keyLeafCacheMB = getWorkUnitValueInt("keyLeafCacheMB", DEFAULT_KEYLEAFCACHEMB * queryJobChannels());
     unsigned keyBlobCacheMB = getWorkUnitValueInt("keyBlobCacheMB", DEFAULT_KEYBLOBCACHEMB * queryJobChannels());
+    if (hasWorkUnitValue("nodeFetchThresholdNs"))
+        setNodeFetchThresholdNs(getWorkUnitValueInt("nodeFetchThresholdNs", 0));
     keyNodeCacheBytes = ((memsize_t)0x100000) * keyNodeCacheMB;
     keyLeafCacheBytes = ((memsize_t)0x100000) * keyLeafCacheMB;
     keyBlobCacheBytes = ((memsize_t)0x100000) * keyBlobCacheMB;

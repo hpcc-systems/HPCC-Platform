@@ -210,7 +210,10 @@ protected:
     bool optUnordered = false; // is the output specified as unordered?
     CriticalSection statsCs; // to be used to protect objects refernce during stat. collection
     CRuntimeStatisticCollection inactiveStats; // stats collected from previous iteration, to be combined with current 'stats'
-    std::vector<OwnedPtr<CRuntimeStatisticCollection>> fileStats;
+    // fileStats is mutable as it is updated by gatherActiveStats (const member func)
+    // fileStats is in this base class as it used by multiple derived classes (both slave and master) but not all.
+    // (Having it in the base class aids setup and resizing.)
+    mutable std::vector<OwnedPtr<CRuntimeStatisticCollection>> fileStats;
 
 protected:
     unsigned __int64 queryLocalCycles() const;
@@ -578,6 +581,7 @@ public:
     void reportGraphEnd(graph_id gid);
 
     virtual mptag_t deserializeMPTag(MemoryBuffer &mb);
+    virtual bool hasWorkUnitValue(const char *prop) const override;
     virtual __int64 getWorkUnitValueInt(const char *prop, __int64 defVal) const override;
     virtual StringBuffer &getWorkUnitValue(const char *prop, StringBuffer &str) const override;
     virtual bool getWorkUnitValueBool(const char *prop, bool defVal) const override;

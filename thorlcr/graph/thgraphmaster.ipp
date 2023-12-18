@@ -204,6 +204,7 @@ public:
     CGraphTableCopy executed;
     CriticalSection exceptCrit;
 
+    virtual bool hasWorkUnitValue(const char *prop) const override;
     virtual __int64 getWorkUnitValueInt(const char *prop, __int64 defVal) const override;
     virtual StringBuffer &getWorkUnitValue(const char *prop, StringBuffer &str) const override;
     virtual bool getWorkUnitValueBool(const char *prop, bool defVal) const override;
