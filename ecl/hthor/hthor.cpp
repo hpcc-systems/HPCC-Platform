@@ -789,7 +789,7 @@ void CHThorDiskWriteActivity::publish()
         {
             StringBuffer clusterName;
             file->getClusterName(0, clusterName);
-            diskAccessCost = money2cost_type(calcFileAccessCost(clusterName, numDiskWrites, 0));
+            diskAccessCost = calcFileAccessCost(clusterName, numDiskWrites, 0);
             properties.setPropInt64(getDFUQResultFieldName(DFUQRFwriteCost), diskAccessCost);
         }
         file->attach(logicalName.get(), agent.queryCodeContext()->queryUserDescriptor());
@@ -1437,7 +1437,7 @@ void CHThorIndexWriteActivity::execute()
 
         StringBuffer clusterName;
         dfile->getClusterName(0, clusterName);
-        diskAccessCost = money2cost_type(calcFileAccessCost(clusterName, numDiskWrites, 0));
+        diskAccessCost = calcFileAccessCost(clusterName, numDiskWrites, 0);
         properties.setPropInt64(getDFUQResultFieldName(DFUQRFwriteCost), diskAccessCost);
     }
     else
@@ -8543,7 +8543,7 @@ void CHThorDiskReadBaseActivity::closepart()
                 }
                 IPropertyTree & fileAttr = dFile->queryAttributes();
                 cost_type legacyReadCost = getLegacyReadCost(fileAttr, dFile);
-                cost_type curReadCost = money2cost_type(calcFileAccessCost(dFile, 0, curDiskReads));
+                cost_type curReadCost = calcFileAccessCost(dFile, 0, curDiskReads);
 
                 dFile->addAttrValue(getDFUQResultFieldName(DFUQRFreadCost), legacyReadCost + curReadCost);
                 dFile->addAttrValue(getDFUQResultFieldName(DFUQRFnumDiskReads), curDiskReads);

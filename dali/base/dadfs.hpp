@@ -433,7 +433,7 @@ interface IDistributedFile: extends IInterface
     virtual bool getSkewInfo(unsigned &maxSkew, unsigned &minSkew, unsigned &maxSkewPart, unsigned &minSkewPart, bool calculateIfMissing) = 0;
     virtual int  getExpire(StringBuffer *expirationDate) = 0;
     virtual void setExpire(int expireDays) = 0;
-    virtual void getCost(const char * cluster, double & atRestCost, double & accessCost) = 0;
+    virtual void getCost(const char * cluster, cost_type & atRestCost, cost_type & accessCost) = 0;
 };
 
 
@@ -889,9 +889,9 @@ extern da_decl void ensureFileScope(const CDfsLogicalFileName &dlfn, unsigned ti
 
 extern da_decl bool checkLogicalName(const char *lfn,IUserDescriptor *user,bool readreq,bool createreq,bool allowquery,const char *specialnotallowedmsg);
 
-extern da_decl double calcFileAtRestCost(const char * cluster, double sizeGB, double fileAgeDays);
-extern da_decl double calcFileAccessCost(const char * cluster, __int64 numDiskWrites, __int64 numDiskReads);
-extern da_decl double calcFileAccessCost(IDistributedFile *f, __int64 numDiskWrites, __int64 numDiskReads);
+extern da_decl cost_type calcFileAtRestCost(const char * cluster, double sizeGB, double fileAgeDays);
+extern da_decl cost_type calcFileAccessCost(const char * cluster, __int64 numDiskWrites, __int64 numDiskReads);
+extern da_decl cost_type calcFileAccessCost(IDistributedFile *f, __int64 numDiskWrites, __int64 numDiskReads);
 constexpr bool defaultPrivilegedUser = true;
 constexpr bool defaultNonPrivilegedUser = false;
 
@@ -910,7 +910,7 @@ inline cost_type getLegacyReadCost(const IPropertyTree & fileAttr, Source source
         && !isFileKey(fileAttr))
     {
         stat_type prevDiskReads = fileAttr.getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskReads), 0);
-        return money2cost_type(calcFileAccessCost(source, 0, prevDiskReads));
+        return calcFileAccessCost(source, 0, prevDiskReads);
     }
     else
         return 0;
@@ -922,7 +922,7 @@ inline cost_type getLegacyWriteCost(const IPropertyTree & fileAttr, Source sourc
     if (!hasReadWriteCostFields(fileAttr) && fileAttr.hasProp(getDFUQResultFieldName(DFUQRFnumDiskWrites)))
     {
         stat_type prevDiskWrites = fileAttr.getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskWrites), 0);
-        return money2cost_type(calcFileAccessCost(source, prevDiskWrites, 0));
+        return calcFileAccessCost(source, prevDiskWrites, 0);
     }
     else
         return 0;

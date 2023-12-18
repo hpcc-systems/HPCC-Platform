@@ -779,7 +779,7 @@ public:
         queryRoot()->getProp("@subdone",str);
         return str;
     }
-    double getFileAccessCost() const
+    cost_type getFileAccessCost() const
     {
         CriticalBlock block(parent->crit);
         return queryRoot()->getPropInt64("@fileAccessCost");
@@ -795,10 +795,10 @@ public:
         CriticalBlock block(parent->crit);
         queryRoot()->setProp("@subdone",str);
     }
-    void setFileAccessCost(double fileAccessCost)
+    void setFileAccessCost(cost_type fileAccessCost)
     {
         CriticalBlock block(parent->crit);
-        queryRoot()->setPropReal("@fileAccessCost", fileAccessCost);
+        queryRoot()->setPropInt64("@fileAccessCost", fileAccessCost);
     }
     unsigned incPublisherTaskCount()
     {
