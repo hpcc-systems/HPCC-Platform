@@ -1,0 +1,57 @@
+/*##############################################################################
+
+    HPCC SYSTEMS software Copyright (C) 2023 HPCC Systems.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+############################################################################## */
+
+EspInclude(common);
+
+ESPenum WUTypes : string
+{
+    ECL("ECL"),
+    DFU("DFU"),
+};
+
+ESPrequest [nil_remove] GetVersionRequest
+{
+};
+
+ESPresponse [exceptions_inline, nil_remove] ResultResponse
+{
+    string Result;
+};
+
+ESPrequest [nil_remove] ArchiveWURequest
+{
+    string Wuid;
+    ESPenum WUTypes WUType;
+    bool DeleteOnSuccess(true);
+};
+
+ESPrequest [nil_remove] RestoreWURequest
+{
+    string Wuid;
+    ESPenum WUTypes WUType;
+};
+
+ESPservice [auth_feature("DEFERRED"), //This declares that the method logic handles feature level authorization
+    version("1.00"), default_client_version("1.00"), exceptions_inline("./smc_xslt/exceptions.xslt")] WSSasha
+{
+    ESPmethod [auth_feature("SashaAccess:Access")] GetVersion(GetVersionRequest, ResultResponse);
+    ESPmethod [auth_feature("SashaAccess:FULL")] ArchiveWU(ArchiveWURequest, ResultResponse); //archive ECL WUs or DFU WUs
+    ESPmethod [auth_feature("SashaAccess:FULL")] RestoreWU(RestoreWURequest, ResultResponse); //restore ECL WUs or DFU WUs
+};
+
+SCMexportdef(WSSasha);
+SCMapi(WSSasha) IClientWSSasha *createWSSashaClient();
