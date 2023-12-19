@@ -32,12 +32,14 @@ class CWSSashaEx : public CWSSasha
     ISashaCmdExecutor* querySashaCommandExecutor(CWUTypes wuType);
     void setSuccess(ISashaCmdExecutor* executor, IEspResultResponse& resp);
     void setFailure(const char* wuid, const char* action, IEspResultResponse& resp);
+    void normalizeDateReq(const char* dateString, StringBuffer& date);
 
 public:
     virtual void init(IPropertyTree* cfg, const char* process, const char* service) override;
     virtual bool onGetVersion(IEspContext& context, IEspGetVersionRequest& req, IEspResultResponse& resp) override;
     virtual bool onArchiveWU(IEspContext& context, IEspArchiveWURequest& req, IEspResultResponse& resp) override;
     virtual bool onRestoreWU(IEspContext& context, IEspRestoreWURequest& req, IEspResultResponse& resp) override;
+    virtual bool onListWU(IEspContext& context, IEspListWURequest& req, IEspResultResponse& resp) override;
 };
 
 #endif //_ESPWIZ_ws_sasha_HPP__

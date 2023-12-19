@@ -149,3 +149,64 @@ bool CWSSashaEx::onRestoreWU(IEspContext& context, IEspRestoreWURequest& req, IE
     }
     return true;
 }
+
+bool CWSSashaEx::onListWU(IEspContext& context, IEspListWURequest& req, IEspResultResponse& resp)
+{
+    try
+    {
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_SASHA_ACCESS_DENIED, "WSSashaEx.ListWU: Permission denied.");
+
+        Owned<ListWURequests> listWURequests = new ListWURequests(req.getOutputFields(), req.getArchived(), req.getOnline());
+        const char* wuid = req.getWuid();
+        listWURequests->wuid.set(wuid);
+        listWURequests->cluster.set(req.getCluster());
+        listWURequests->owner.set(req.getOwner());
+        listWURequests->jobName.set(req.getJobName());
+        listWURequests->state.set(req.getState());
+        normalizeDateReq(req.getFromDate(), listWURequests->fromDate);
+        normalizeDateReq(req.getToDate(), listWURequests->toDate);
+        listWURequests->includeDT = req.getIncludeDT();
+        listWURequests->beforeWU.set(req.getBeforeWU());
+        listWURequests->afterWU.set(req.getAfterWU());
+        listWURequests->maxNumberWUs = req.getMaxNumberWUs();
+        listWURequests->descending = req.getDescending();
+
+        CWUTypes wuType = req.getWUType();
+        ISashaCmdExecutor* executor = querySashaCommandExecutor(wuType);
+
+        bool sashaCmdSuccess = false;
+        if ((wuType == CWUTypes_ECL))
+            sashaCmdSuccess = executor->listECLWorkUnit(listWURequests);
+        else
+            sashaCmdSuccess = executor->listDFUWorkUnit(listWURequests);
+        if (sashaCmdSuccess)
+            setSuccess(executor, resp);
+        else
+            setFailure(wuid, "found", resp);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+
+    return true;
+}
+
+void CWSSashaEx::normalizeDateReq(const char* dateString, StringBuffer& date)
+{
+    if (isEmptyString(dateString))
+        return;
+
+    if (strlen(dateString) == 8)
+    { //Assuming the dateString is in YYYYMMDD format
+        date.set(dateString);
+        return;
+    }
+
+    CDateTime dt;
+    dt.setString(dateString);
+
+    unsigned year, month, day, hour, minute, second, nano;
+    dt.getDate(year, month, day, true);
+    date.setf("%04d%02d%02d", year, month, day);
+}
