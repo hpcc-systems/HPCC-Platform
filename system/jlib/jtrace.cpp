@@ -1160,18 +1160,11 @@ std::unique_ptr<opentelemetry::sdk::trace::SpanExporter> CTraceManager::createEx
             LOG(MCoperatorInfo, "Tracing exporter set to JLog: logFlags( LogAttributes LogParentInfo %s)", logFlagsStr.str());
             return JLogSpanExporterFactory::Create(logFlags);
         }
-        else if (stricmp(exportType.str(), "Prometheus")==0)
-            LOG(MCoperatorInfo, "Tracing to Prometheus currently not supported");
-        else if (stricmp(exportType.str(), "NONE")==0)
-        {
-            LOG(MCoperatorInfo, "Tracing exporter set to 'NONE', no trace exporting will be performed");
-            return NoopSpanExporterFactory::Create();
-        }
         else
-            LOG(MCoperatorInfo, "Tracing exporter type not supported: '%s', JLog trace exporting will be performed", exportType.str());
+            LOG(MCoperatorWarning, "Tracing exporter type not supported: '%s'", exportType.str());
     }
     else
-        LOG(MCoperatorInfo, "Tracing exporter type not specified");
+        LOG(MCoperatorWarning, "Tracing exporter type not specified");
     return nullptr;
 }
 
@@ -1181,10 +1174,10 @@ std::unique_ptr<opentelemetry::sdk::trace::SpanProcessor> CTraceManager::createP
     if (!exporter)
         return nullptr;
 
-    if (exportConfig->getPropBool("@batch", false))
+    if (exportConfig->getPropBool("batch/@enabled", false))
     {
         //Groups several spans together, before sending them to an exporter.
-        //MORE: These options should be configurable
+        //MORE: These options should be configurable from batch/@option
         opentelemetry::v1::sdk::trace::BatchSpanProcessorOptions options; //size_t max_queue_size = 2048;
                                                                         //The time interval between two consecutive exports
                                                                         //std::chrono::milliseconds(5000);
@@ -1200,17 +1193,13 @@ std::unique_ptr<opentelemetry::sdk::trace::SpanProcessor> CTraceManager::createP
 void CTraceManager::initTracerProviderAndGlobalInternals(const IPropertyTree * traceConfig)
 {
     std::vector<std::unique_ptr<opentelemetry::sdk::trace::SpanProcessor>> processors;
+
+    //By default trace spans to the logs in debug builds - so that developers get used to seeing them.
+    //Default off for release builds to avoid flooding the logs, and because they are likely to use OTLP
+    bool createDefaultLogExporter = isDebugBuild();
     if (traceConfig)
     {
         //Administrators can choose to export trace data to a different backend by specifying the exporter type
-        IPropertyTree * exportConfig = traceConfig->queryPropTree("exporter");
-        if (exportConfig)
-        {
-            std::unique_ptr<opentelemetry::v1::sdk::trace::SpanProcessor> processor = createProcessor(exportConfig);
-            if (processor)
-                processors.push_back(std::move(processor));
-        }
-
         Owned<IPropertyTreeIterator> iter = traceConfig->getElements("exporters");
         ForEach(*iter)
         {
@@ -1219,11 +1208,13 @@ void CTraceManager::initTracerProviderAndGlobalInternals(const IPropertyTree * t
             if (processor)
                 processors.push_back(std::move(processor));
         }
+
+        createDefaultLogExporter = traceConfig->getPropBool("createDefaultLogExporter", createDefaultLogExporter);
     }
 
-    if (processors.empty())
+    if (createDefaultLogExporter)
     {
-        //Default to tracing to the log file if no exporters are specified
+        //Simple option to create logging to the log file - primarily to aid developers.
         std::unique_ptr<opentelemetry::sdk::trace::SpanExporter> exporter = JLogSpanExporterFactory::Create(DEFAULT_SPAN_LOG_FLAGS);
         processors.push_back(opentelemetry::sdk::trace::SimpleSpanProcessorFactory::Create(std::move(exporter)));
     }
@@ -1245,13 +1236,13 @@ global:
         disabled: true                  #optional - disable OTel tracing
         alwaysCreateGlobalIds : false   #optional - should global ids always be created?
         alwaysCreateTraceIds            #optional - should trace ids always be created?
-        exporter:                       #optional - Controls how trace data is exported/reported
-            type: OTLP                    #OS|OTLP|Prometheus|JLOG (default: JLOG)
+        exporters:                       #optional - Controls how trace data is exported/reported
+        -   type: OTLP                    #OS|OTLP|Prometheus|JLOG
             endpoint: "localhost:4317"    #exporter specific key/value pairs
             useSslCredentials: true
             sslCredentialsCACcert: "ssl-certificate"
-        processor:                      #optional - Controls span processing style
-            type: batch                   #simple|batch (default: simple)
+            batch:                        #optional - Controls span processing style
+                enabled                    #is batched processing enabled?
 */
 void CTraceManager::initTracer(const IPropertyTree * traceConfig)
 {
