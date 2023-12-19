@@ -66,6 +66,7 @@ public:
 
         //CPPUNIT_TEST(testJTraceJLOGExporterprintResources);
         //CPPUNIT_TEST(testJTraceJLOGExporterprintAttributes);
+        CPPUNIT_TEST(manualTestsDeclaredSpanStartTime);
     CPPUNIT_TEST_SUITE_END();
 
     const char * simulatedGlobalYaml = R"!!(global:
@@ -187,6 +188,60 @@ protected:
         CPPUNIT_ASSERT_EQUAL_MESSAGE("Missing resource attribute detected", true, jtraceAsTree->hasProp("resources/telemetry.sdk.version"));
         CPPUNIT_ASSERT_EQUAL_MESSAGE("Missing resource attribute detected", true, jtraceAsTree->hasProp("resources/telemetry.sdk.name"));
     }*/
+
+    //not able to programmatically test yet, but can visually inspect trace output
+    void manualTestsDeclaredSpanStartTime()
+    {
+        Owned<IProperties> emptyMockHTTPHeaders = createProperties();
+        SpanTimeStamp declaredSpanStartTime;
+        declaredSpanStartTime.now(); // must be initialized via now(), or setMSTickTime
+        MilliSleep(125);
+
+        {
+            //duration should be at least 125 milliseconds
+            Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("declaredSpanStartTime", emptyMockHTTPHeaders, &declaredSpanStartTime);
+            //{ "type": "span", "name": "declaredSpanStartTime", "trace_id": "0a2eff24e1996540056745aaeb2f5824", "span_id": "46d0faf8b4da893e",
+            //"start": 1702672311203213259, "duration": 125311051 }
+        }
+
+        auto reqStartMSTick = msTick();
+        // a good test would track chrono::system_clock::now() at the point of span creation
+        // ensure a measurable sleep time between reqStartMSTick and msTickOffsetTimeStamp
+        // then compare OTel reported span start timestamp to span creation-time timestamp
+        SpanTimeStamp msTickOffsetTimeStamp;
+        msTickOffsetTimeStamp.setMSTickTime(reqStartMSTick);
+        //sleep for 50 milliseconds after span creation and mstick offset, expect at least 50 milliseconds duration output
+        MilliSleep(50);
+
+        {
+            SpanTimeStamp nowTimeStamp; //not used, printed out as "start" time for manual comparison
+            nowTimeStamp.now();
+            {
+                Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("msTickOffsetStartTime", emptyMockHTTPHeaders, &msTickOffsetTimeStamp);
+            }
+
+            DBGLOG("MsTickOffset span actual start-time timestamp: %lld", (long long)(nowTimeStamp.systemClockTime).count());
+            //14:49:13.776139   904 MsTickOffset span actual start-time timestamp: 1702669753775893057
+            //14:49:13.776082   904 { "type": "span", "name": "msTickOffsetStartTime", "trace_id": "6e89dd6082ff647daed523089f032240", "span_id": "fd359b41a0a9626d", 
+            //"start": 1702669753725771035, "duration": 50285323 }
+            //Actual start - declared start: 1702669753775893057-1702669753725771035 = 50162022
+        }
+
+        //uninitialized SpanTimeStamp will be ignored, and current time will be used
+        SpanTimeStamp uninitializedTS;
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected initialized spanTimeStamp", false, uninitializedTS.isInitialized());
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected initialized spanTimeStamp", true, uninitializedTS.systemClockTime == std::chrono::nanoseconds::zero());
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected initialized spanTimeStamp", true, uninitializedTS.steadyClockTime == std::chrono::nanoseconds::zero());
+        {
+            Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("uninitializeddeclaredSpanStartTime", emptyMockHTTPHeaders, &uninitializedTS);
+            //sleep for 75 milliseconds after span creation, expect at least 75 milliseconds duration output
+            MilliSleep(75);
+
+            //14:22:37.865509 30396 { "type": "span", "name": "uninitializeddeclaredSpanStartTime", "trace_id": "f7844c5c09b413e008f912ded0e12dec", "span_id": "7fcf9042a090c663", 
+            //"start": 1702668157790080022,
+            //"duration": 75316248 }
+        }
+    }
 
     void testTraceDisableConfig()
     {

@@ -458,6 +458,7 @@ public:
     CTraceManager();
     IMPLEMENT_IINTERFACE
 
+    virtual ISpan * createServerSpan(const char * name, const IProperties * httpHeaders, const SpanTimeStamp * spanStartTimeStamp, SpanFlags flags) const override;
     virtual ISpan * createServerSpan(const char * name, StringArray & httpHeaders, SpanFlags flags) const override;
     virtual ISpan * createServerSpan(const char * name, const IProperties * httpHeaders, SpanFlags flags) const override;
 
@@ -987,9 +988,15 @@ private:
     }
 
 public:
-    CServerSpan(const char * spanName, const IProperties * httpHeaders, SpanFlags flags)
+    CServerSpan(const char * spanName, const IProperties * httpHeaders, SpanFlags flags, const SpanTimeStamp * spanStartTimeStamp = nullptr)
     : CSpan(spanName)
     {
+        if (spanStartTimeStamp && spanStartTimeStamp->isInitialized())
+        {
+            opts.start_system_time = opentelemetry::common::SystemTimestamp(spanStartTimeStamp->systemClockTime);
+            opts.start_steady_time = opentelemetry::common::SteadyTimestamp(spanStartTimeStamp->steadyClockTime);
+        }
+
         opts.kind = opentelemetry::trace::SpanKind::kServer;
         setSpanContext(httpHeaders, flags);
         init(flags);
@@ -1339,6 +1346,10 @@ ISpan * CTraceManager::createServerSpan(const char * name, const IProperties * h
     return new CServerSpan(name, httpHeaders, flags);
 }
 
+ISpan * CTraceManager::createServerSpan(const char * name, const IProperties * httpHeaders, const SpanTimeStamp * spanStartTimeStamp, SpanFlags flags) const
+{
+    return new CServerSpan(name, httpHeaders, flags, spanStartTimeStamp);
+}
 
 //---------------------------------------------------------------------------------------------------------------------
 
