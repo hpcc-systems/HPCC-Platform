@@ -1163,18 +1163,23 @@ int main( int argc, const char *argv[]  )
     }
     if (isContainerized())
     {
+        int retCode = exception ? TEC_Exception : 0;
         if (!cloudJobName.isEmpty())
         {
+            if (exception)
+            {
+                Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+                Owned<IConstWorkUnit> wu = factory->openWorkUnit(workunit);
+                if (wu)
+                {
+                    relayWuidException(wu, exception);
+                    retCode = 0; // if successfully reported, suppress thormanager exit failure that would trigger another exception
+                }
+            }
             if (workerJobInstalled)
             {
                 try
                 {
-                    if (exception)
-                    {
-                        Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-                        Owned<IConstWorkUnit> wu = factory->openWorkUnit(workunit);
-                        relayWuidException(wu, exception);
-                    }
                     k8s::KeepJobs keepJob = k8s::translateKeepJobs(globals->queryProp("@keepJobs"));
                     switch (keepJob)
                     {
@@ -1209,7 +1214,7 @@ int main( int argc, const char *argv[]  )
                 }
             }
         }
-        setExitCode(exception ? TEC_Exception : 0);
+        setExitCode(retCode);
     }
 
     // cleanup handler to be sure we end
