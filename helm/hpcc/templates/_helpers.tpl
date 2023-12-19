@@ -308,6 +308,9 @@ Add ConfigMap volume mount for a component
   mountPath: /tmp
 - name: {{ .name }}-hpcctmp-volume
   mountPath: /var/lib/HPCCSystems
+{{- if .tmpSubPath }}
+  subPath: {{ .tmpSubPath | quote }}
+{{- end }}
 - name: {{ .name }}-configmap-volume
   mountPath: /etc/config
 {{- end -}}
