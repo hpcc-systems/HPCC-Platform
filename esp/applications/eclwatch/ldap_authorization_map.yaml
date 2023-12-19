@@ -82,6 +82,9 @@ ldap:
          -  path: EclDirectAccess
             resource: EclDirectAccess
             description: Access to ECL direct service
+         -  path: SashaAccess
+            resource: SashaAccess
+            description: Access to WS Sasha service
       WsWorkunits:
          Feature:
          -  path: OwnWorkunitsAccess

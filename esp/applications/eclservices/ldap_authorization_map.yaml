@@ -81,6 +81,9 @@ ldap:
          -  path: EclDirectAccess
             resource: EclDirectAccess
             description: Access to ECL direct service
+         -  path: SashaAccess
+            resource: SashaAccess
+            description: Access to WS Sasha service
       WsWorkunits:
          Feature:
          -  path: OwnWorkunitsAccess
@@ -151,3 +154,8 @@ ldap:
          -  path: WsLogAccess
             resource: WsLogAccess
             description: Access to HPCC component log
+      WSSasha:
+         Feature:
+         -  path: SashaAccess
+            resource: SashaAccess
+            description: Access to HPCC Archive

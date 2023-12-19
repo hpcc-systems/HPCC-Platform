@@ -88,3 +88,9 @@ ws_workunits:
         Read - view other users' workunits
         Write- resubmit/abort/update/reset other users' workunits
         Full - delete other users' workunits
+
+WSSasha:
+    SashaAccess:
+        Access - GetVersion
+        Read - ListWU
+        Full - ArchiveWU, RestoreWU
