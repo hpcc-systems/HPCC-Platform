@@ -1,0 +1,11 @@
+esp:
+- name: echo-example
+  instance: echo-example
+  application: esdl
+  auth: none
+  replicas: 1
+  service:
+    visibility: local
+    servicePort: 7770
+  bindings: "/home/hpcc/esdl/echo-example/bundle"
+  loadDaliBindings: false
