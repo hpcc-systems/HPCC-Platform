@@ -133,13 +133,13 @@ ESPenum QuerySetQueryActionTypes : string
 
 ESPStruct [nil_remove] ECLException
 {
-    string Source;
     string Severity;
+    string Source;
     int Code;
     string Message;
-    string FileName;
-    int LineNo;
     int Column;
+    int LineNo;
+    string FileName;
     [min_ver("1.63")] int Activity;
     [min_ver("1.69")] string Scope;
     [min_ver("1.69")] int Priority;
