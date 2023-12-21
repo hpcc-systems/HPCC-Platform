@@ -1837,34 +1837,21 @@ void CWsWorkunitsEx::getSuspendedQueriesByCluster(MapStringTo<bool> &suspendedQu
     if (!isEmptyString(queryID))
         queryIDs.append(queryID);
 
+    StringArray roxieTargets;
     if (!isEmptyString(querySet))
-    {
-#ifndef _CONTAINERIZED
-        Owned<IPropertyTree> queriesOnCluster = getQueriesOnCluster(querySet, querySet, &queryIDs, checkAllNodes);
-#else
-        Owned<IPropertyTree> queriesOnCluster = getQueriesOnCluster(querySet, querySet, &queryIDs, checkAllNodes, roxieConnMap);
-#endif
-        addSuspendedQueryIDs(suspendedQueries, queriesOnCluster, querySet);
-    }
+        roxieTargets.append(querySet);
     else
-    {
-#ifdef _CONTAINERIZED
-        Owned<IStringIterator> targets = getContainerTargetClusters("roxie", nullptr);
-#else
-        Owned<IStringIterator> targets = getTargetClusters("RoxieCluster", nullptr);
-#endif
-        ForEach(*targets)
-        {
-            SCMStringBuffer target;
-            targets->str(target);
+        getRoxieTargetsSupportingPublishedQueries(roxieTargets);
 
+    ForEachItemIn(i, roxieTargets)
+    {
+        const char *roxieTarget = roxieTargets.item(i);
 #ifndef _CONTAINERIZED
-            Owned<IPropertyTree> queriesOnCluster = getQueriesOnCluster(target.str(), target.str(), &queryIDs, checkAllNodes);
+        Owned<IPropertyTree> queriesOnCluster = getQueriesOnCluster(roxieTarget, roxieTarget, &queryIDs, checkAllNodes);
 #else
-            Owned<IPropertyTree> queriesOnCluster = getQueriesOnCluster(target.str(), target.str(), &queryIDs, checkAllNodes, roxieConnMap);
+        Owned<IPropertyTree> queriesOnCluster = getQueriesOnCluster(roxieTarget, roxieTarget, &queryIDs, checkAllNodes, roxieConnMap);
 #endif
-            addSuspendedQueryIDs(suspendedQueries, queriesOnCluster, target.str());
-        }
+        addSuspendedQueryIDs(suspendedQueries, queriesOnCluster, roxieTarget);
     }
 }
 

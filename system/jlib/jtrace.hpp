@@ -17,6 +17,8 @@
 
 #ifndef JTRACE_HPP
 #define JTRACE_HPP
+#include <chrono>
+
 /**
  * @brief This follows open telemetry's span attribute naming conventions
  *  Known HPCC span Keys could be added here
@@ -75,8 +77,32 @@ interface ISpan : extends IInterface
 extern jlib_decl IProperties * getClientHeaders(const ISpan * span);
 extern jlib_decl IProperties * getSpanContext(const ISpan * span);
 
+struct SpanTimeStamp
+{
+    std::chrono::nanoseconds steadyClockTime = std::chrono::nanoseconds::zero();
+    std::chrono::nanoseconds systemClockTime = std::chrono::nanoseconds::zero();
+
+    void now()
+    {
+        systemClockTime = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch());
+        steadyClockTime = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch());
+    }
+
+    void setMSTickTime(const unsigned int msTickTime)
+    {
+        systemClockTime = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch() - std::chrono::milliseconds(msTick() - msTickTime));
+        steadyClockTime = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch() - std::chrono::milliseconds(msTick() - msTickTime));
+    }
+
+    bool isInitialized() const
+    {
+        return systemClockTime != std::chrono::nanoseconds::zero();
+    }
+};
+
 interface ITraceManager : extends IInterface
 {
+    virtual ISpan * createServerSpan(const char * name, const IProperties * httpHeaders, const SpanTimeStamp * spanStartTimeStamp, SpanFlags flags = SpanFlags::None) const = 0;
     virtual ISpan * createServerSpan(const char * name, StringArray & httpHeaders, SpanFlags flags = SpanFlags::None) const = 0;
     virtual ISpan * createServerSpan(const char * name, const IProperties * httpHeaders, SpanFlags flags = SpanFlags::None) const = 0;
     virtual bool isTracingEnabled() const = 0;
@@ -85,6 +111,7 @@ interface ITraceManager : extends IInterface
 extern jlib_decl ISpan * getNullSpan();
 extern jlib_decl void initTraceManager(const char * componentName, const IPropertyTree * componentConfig, const IPropertyTree * globalConfig);
 extern jlib_decl ITraceManager & queryTraceManager();
+
 /*
 Temporarily disabled due to build issues in certain environments
 #ifdef _USE_CPPUNIT
@@ -95,7 +122,6 @@ extern jlib_decl void testJLogExporterPrintResources(StringBuffer & out, const o
 extern jlib_decl void testJLogExporterPrintAttributes(StringBuffer & out, const std::unordered_map<std::string, opentelemetry::sdk::common::OwnedAttributeValue> & map, const char * attsContainerName);
 #endif
 */
-
 
 //The following class is responsible for ensuring that the active span is restored in a context when the scope is exited
 //Use a template class so it can be reused for IContextLogger and IEspContext

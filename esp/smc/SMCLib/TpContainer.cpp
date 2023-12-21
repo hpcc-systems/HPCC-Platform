@@ -689,6 +689,17 @@ extern TPWRAPPER_API void initContainerRoxieTargets(MapStringToMyClass<ISmartSoc
     }
 }
 
+extern TPWRAPPER_API void getRoxieTargetsSupportingPublishedQueries(StringArray& names)
+{
+    Owned<IPropertyTreeIterator> queues = getComponentConfigSP()->getElements("queues[@type='roxie']");
+    ForEach(*queues)
+    {
+        IPropertyTree& queue = queues->query();
+        if (queue.getPropBool("@queriesOnly"))
+            names.append(queue.queryProp("@name"));
+    }
+}
+
 extern TPWRAPPER_API unsigned getThorClusterNames(StringArray& targetNames, StringArray& queueNames)
 {
     Owned<IStringIterator> targets = getContainerTargetClusters("thor", nullptr);
