@@ -31,7 +31,7 @@ static const NullFieldProcessor NULLFIELD(NULL);
  * @brief Takes a pointer to an ECLPluginDefinitionBlock and passes in all the important info
  * about the plugin.
  */
-extern "C" PARQUETEMBED_PLUGIN_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
+extern "C" DECL_EXPORT bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
 {
     if (pb->size == sizeof(ECLPluginDefinitionBlockEx))
     {
@@ -298,6 +298,7 @@ std::shared_ptr<parquet::arrow::RowGroupReader> ParquetReader::queryCurrentTable
         offset = tables;
     }
     failx("Failed getting RowGroupReader. Index %lli is out of bounds.", currTable);
+    return nullptr;
 }
 
 /**
@@ -981,6 +982,7 @@ __int64 getSigned(std::shared_ptr<ParquetArrayVisitor> &arrayVisitor, int index)
         default:
             failx("getSigned: Invalid size %i", arrayVisitor->size);
     }
+    return 0;
 }
 
 /**
@@ -1005,6 +1007,7 @@ unsigned __int64 getUnsigned(std::shared_ptr<ParquetArrayVisitor> &arrayVisitor,
         default:
             failx("getUnsigned: Invalid size %i", arrayVisitor->size);
     }
+    return 0;
 }
 
 /**
@@ -1027,6 +1030,7 @@ double getReal(std::shared_ptr<ParquetArrayVisitor> &arrayVisitor, int index)
         default:
             failx("getReal: Invalid size %i", arrayVisitor->size);
     }
+    return 0;
 }
 
 /**
@@ -1042,32 +1046,32 @@ std::string_view ParquetRowBuilder::getCurrView(const RtlFieldInfo *field)
     switch(arrayVisitor->type)
     {
         case BoolType:
-            tokenSerializer.serialize(arrayVisitor->boolArr->Value(currArrayIndex()), serialized);
+            serialized.append(arrayVisitor->boolArr->Value(currArrayIndex()));
             return serialized.str();
         case BinaryType:
             return arrayVisitor->binArr->GetView(currArrayIndex());
         case LargeBinaryType:
             return arrayVisitor->largeBinArr->GetView(currArrayIndex());
         case RealType:
-            tokenSerializer.serialize(getReal(arrayVisitor, currArrayIndex()), serialized);
+            serialized.append(getReal(arrayVisitor, currArrayIndex()));
             return serialized.str();
         case IntType:
-            tokenSerializer.serialize(getSigned(arrayVisitor, currArrayIndex()), serialized);
+            serialized.append(getSigned(arrayVisitor, currArrayIndex()));
             return serialized.str();
         case UIntType:
-            tokenSerializer.serialize(getUnsigned(arrayVisitor, currArrayIndex()), serialized);
+            serialized.append(getUnsigned(arrayVisitor, currArrayIndex()));
             return serialized.str();
         case DateType:
-            tokenSerializer.serialize(arrayVisitor->size == 32 ? (__int32) arrayVisitor->date32Arr->Value(currArrayIndex()) : (__int64) arrayVisitor->date64Arr->Value(currArrayIndex()), serialized);
+            serialized.append(arrayVisitor->size == 32 ? (__int32) arrayVisitor->date32Arr->Value(currArrayIndex()) : (__int64) arrayVisitor->date64Arr->Value(currArrayIndex()));
             return serialized.str();
         case TimestampType:
-            tokenSerializer.serialize((__int64) arrayVisitor->timestampArr->Value(currArrayIndex()), serialized);
+            serialized.append((__int64) arrayVisitor->timestampArr->Value(currArrayIndex()));
             return serialized.str();
         case TimeType:
-            tokenSerializer.serialize(arrayVisitor->size == 32 ? (__int32) arrayVisitor->time32Arr->Value(currArrayIndex()) : (__int64) arrayVisitor->time64Arr->Value(currArrayIndex()), serialized);
+            serialized.append(arrayVisitor->size == 32 ? (__int32) arrayVisitor->time32Arr->Value(currArrayIndex()) : (__int64) arrayVisitor->time64Arr->Value(currArrayIndex()));
             return serialized.str();
         case DurationType:
-            tokenSerializer.serialize((__int64) arrayVisitor->durationArr->Value(currArrayIndex()), serialized);
+            serialized.append((__int64) arrayVisitor->durationArr->Value(currArrayIndex()));
             return serialized.str();
         case StringType:
             return arrayVisitor->stringArr->GetView(currArrayIndex());
@@ -1078,6 +1082,7 @@ std::string_view ParquetRowBuilder::getCurrView(const RtlFieldInfo *field)
         default:
             failx("Unimplemented Parquet type for field with name %s.", field->name);
     }
+    return "";
 }
 
 /**
@@ -1108,11 +1113,8 @@ __int64 ParquetRowBuilder::getCurrIntValue(const RtlFieldInfo *field)
             return arrayVisitor->durationArr->Value(currArrayIndex());
         default:
         {
-            __int64 myint64 = 0;
             auto scalar = getCurrView(field);
-            std::string scalarStr(scalar.data(), scalar.size());
-            handleDeserializeOutcome(tokenDeserializer.deserialize(scalarStr.c_str(), myint64), "signed", scalarStr.c_str());
-            return myint64;
+            return rtlStrToInt8(scalar.size(), scalar.data());
         }
     }
 }
@@ -1145,11 +1147,8 @@ double ParquetRowBuilder::getCurrRealValue(const RtlFieldInfo *field)
             return arrayVisitor->durationArr->Value(currArrayIndex());
         default:
         {
-            double mydouble = 0.0;
             auto scalar = getCurrView(field);
-            std::string scalarStr(scalar.data(), scalar.size());
-            handleDeserializeOutcome(tokenDeserializer.deserialize(scalarStr.c_str(), mydouble), "real", scalarStr.c_str());
-            return mydouble;
+            return rtlStrToReal(scalar.size(), scalar.data());
         }
     }
 }

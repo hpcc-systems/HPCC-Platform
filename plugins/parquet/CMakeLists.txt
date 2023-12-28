@@ -26,9 +26,9 @@
 project(parquetembed)
 message("CMAKE Version: ${CMAKE_VERSION}")
 
-if(PARQUETEMBED)
+if(PARQUETEMBED OR USE_PARQUET)
     ADD_PLUGIN(parquetembed)
-    if(MAKE_PARQUETEMBED)
+    if(MAKE_PARQUETEMBED OR USE_PARQUET)
         find_package(Arrow CONFIG REQUIRED)
         find_package(Parquet CONFIG REQUIRED)
         find_package(ArrowDataset CONFIG REQUIRED)
@@ -39,7 +39,6 @@ if(PARQUETEMBED)
         )
 
         INCLUDE_DIRECTORIES(
-            ${HPCC_SOURCE_DIR}/esp/platform
             ${HPCC_SOURCE_DIR}/system/include
             ${HPCC_SOURCE_DIR}/rtl/eclrtl
             ${HPCC_SOURCE_DIR}/rtl/include
@@ -49,6 +48,8 @@ if(PARQUETEMBED)
             ${HPCC_SOURCE_DIR}/roxie/roxiemem
         )
 
+        add_definitions(-D_USRDLL -DPARQUETEMBED_PLUGIN_EXPORTS)
+
         HPCC_ADD_LIBRARY(parquetembed SHARED ${SRCS})
 
         install(
@@ -57,56 +58,18 @@ if(PARQUETEMBED)
         )
 
         install(
-            FILES ${LIBARROW_LIB_REAL}
-            DESTINATION ${LIB_DIR} CALC_DEPS
-            PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
-            COMPONENT Runtime)
-
-        install(
-            FILES ${LIBARROW_LIB} ${LIBARROW_LIB_ABI}
-            DESTINATION ${LIB_DIR} CALC_DEPS
-            COMPONENT Runtime)
-
-        install(
-            FILES ${LIBPARQUET_LIB_REAL}
-            DESTINATION ${LIB_DIR} CALC_DEPS
-            PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
-            COMPONENT Runtime)
-
-        install(
-            FILES ${LIBPARQUET_LIB} ${LIBPARQUET_LIB_ABI}
-            DESTINATION ${LIB_DIR} CALC_DEPS
-            COMPONENT Runtime)
-
-        install(
-            FILES ${LIBARRORACERO_LIB_REAL}
-            DESTINATION ${LIB_DIR} CALC_DEPS
-            PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
-            COMPONENT Runtime)
-
-        install(
-            FILES ${LIBARRORACERO_LIB} ${LIBARROWDATASET_LIB_ABI}
-            DESTINATION ${LIB_DIR} CALC_DEPS
-            COMPONENT Runtime)
-
-        install(
-            FILES ${LIBARROWDATASET_LIB_REAL}
-            DESTINATION ${LIB_DIR} CALC_DEPS
-            PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
-            COMPONENT Runtime)
-
-        install(
-            FILES ${LIBARROWDATASET_LIB} ${LIBARROWDATASET_LIB_ABI}
-            DESTINATION ${LIB_DIR} CALC_DEPS
-            COMPONENT Runtime)
+            TARGETS parquetembed
+            DESTINATION ${LIB_DIR}
+            COMPONENT Runtime CALC_DEPS
+        )
 
         target_link_libraries(
             parquetembed
             eclrtl
             jlib
-            Arrow::arrow_shared
-            Parquet::parquet_shared
-            ArrowDataset::arrow_dataset_shared
+            "$<IF:$<BOOL:${ARROW_BUILD_STATIC}>,Arrow::arrow_static,Arrow::arrow_shared>"
+            "$<IF:$<BOOL:${ARROW_BUILD_STATIC}>,Parquet::parquet_static,Parquet::parquet_shared>"
+            "$<IF:$<BOOL:${ARROW_BUILD_STATIC}>,ArrowDataset::arrow_dataset_static,ArrowDataset::arrow_dataset_shared>"
         )
     endif()
 endif()

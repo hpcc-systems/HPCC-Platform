@@ -865,6 +865,11 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
         endif(USE_C11_REGEX)
       endif(USE_BOOST_REGEX)
 
+      if(USE_PARQUET)
+        message(STATUS "Parquet enabled")
+        add_definitions(-D_USE_PARQUET)
+      endif()
+
       if(USE_OPENSSL AND USE_OPENSSLV3)
         message(STATUS "OPENSSL Version 3 or greater enabled")
         add_definitions (-D_USE_OPENSSL)
