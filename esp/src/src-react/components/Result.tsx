@@ -237,7 +237,7 @@ export const Result: React.FunctionComponent<ResultProps> = ({
     const hasFilter = React.useMemo(() => Object.keys(filter).length > 0, [filter]);
     const [renderHTML, setRenderHTML] = React.useState(false);
 
-    const resultTable: ResultWidget = useConst(new ResultWidget()
+    const resultTable: ResultWidget = useConst(() => new ResultWidget()
         .baseUrl("")
         .wuid(wuid)
         .resultName(resultName)

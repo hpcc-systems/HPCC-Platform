@@ -98,7 +98,7 @@ export const MainNavigation: React.FunctionComponent<MainNavigationProps> = ({
     hashPath
 }) => {
 
-    const menu = useConst([...navLinkGroups()]);
+    const menu = useConst(() => [...navLinkGroups()]);
     const { theme, setTheme, isDark } = useUserTheme();
 
     const selKey = React.useMemo(() => {
@@ -309,9 +309,9 @@ export const SubNavigation: React.FunctionComponent<SubNavigationProps> = ({
                     {!subNav &&
                         <Stack.Item grow={1} style={{ lineHeight: "24px" }}>
                             {hashPath.includes("/files/")
-                            ? <Breadcrumbs hashPath={hashPath} ignoreN={2} />
-                            : <Breadcrumbs hashPath={hashPath} ignoreN={1} />
-                            }                    
+                                ? <Breadcrumbs hashPath={hashPath} ignoreN={2} />
+                                : <Breadcrumbs hashPath={hashPath} ignoreN={1} />
+                            }
                         </Stack.Item>
                     }
                 </Stack>

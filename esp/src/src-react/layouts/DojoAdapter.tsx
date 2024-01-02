@@ -124,7 +124,7 @@ export const DojoComponent: React.FunctionComponent<DojoComponentProps> = ({
 }) => {
 
     const id = useId();
-    const divID = useConst(`dojo-component-${id}`);
+    const divID = useConst(() => `dojo-component-${id}`);
 
     React.useEffect(() => {
         const w = new Widget({

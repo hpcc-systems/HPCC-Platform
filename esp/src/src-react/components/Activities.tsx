@@ -58,7 +58,7 @@ export const Activities: React.FunctionComponent<ActivitiesProps> = ({
     const [, { isContainer }] = useBuildInfo();
 
     //  Grid ---
-    const activity = useConst(ESPActivity.Get());
+    const activity = useConst(() => ESPActivity.Get());
     const { Grid, selection, refreshTable, copyButtons } = useGrid({
         store: activity.getStore({}),
         sort: { attribute: "idx", descending: false },

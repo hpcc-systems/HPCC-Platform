@@ -54,7 +54,7 @@ export const SourceEditor: React.FunctionComponent<SourceEditorProps> = ({
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
     ];
 
-    const editor = useConst(newEditor(mode)
+    const editor = useConst(() => newEditor(mode)
         .on("changes", () => {
             onChange(editor.text());
         })
@@ -202,7 +202,7 @@ export const ECLSourceEditor: React.FunctionComponent<ECLSourceEditorProps> = ({
     setEditor
 }) => {
 
-    const editor = useConst(new ECLEditor());
+    const editor = useConst(() => new ECLEditor());
     React.useEffect(() => {
         editor
             .text(text)
