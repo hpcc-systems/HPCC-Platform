@@ -1,7 +1,8 @@
 global:
   tracing:
-    exporter:
-      type: JLog
+    enableDefaultLogExporter: false
+    exporters:
+    - type: JLOG
       logSpanDetails: true
       logParentInfo: true
       logAttributes: true

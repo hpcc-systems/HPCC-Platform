@@ -11,7 +11,7 @@ All configuration options detailed here are part of the HPCC Systems Helm chart,
 - disabled - (default: false) disables tracking and reporting of internal traces and spans
 - alwaysCreateGlobalIds - If true, assign newly created global ID to any requests that do not supply one.
 - optAlwaysCreateTraceIds - If true components generate trace/span ids if none are provided by the remote caller.
-- createDefaultLogExporter - If true, creates a trace exporter outputting to the log using the default options
+- enableDefaultLogExporter - If true, creates a trace exporter outputting to the log using the default options
 - exporters: - Defines a list of exporters in charge of forwarding span data to target back-end
   - type - "OTLP-HTTP" | "OTLP-GRPC" | "OS" | "JLOG"
     - "JLOG"
@@ -31,7 +31,7 @@ All configuration options detailed here are part of the HPCC Systems Helm chart,
       - sslCredentialsCACertPath - Path to .pem file to be used for SSL encryption.
       - timeOutSeconds - (default 10secs) Timeout for grpc deadline
   - batch:
-    - enabled - If true, trace data is processed in a batch, if false when it is available (simple)
+    - enabled - If true, trace data is processed in a batch, if false, trace data is processed immediately
 
 ### Sample configuration
 Below is a sample helm values block directing the HPCC tracing framework to process span information serially, and export the data over OTLP/HTTP protocol to localhost:4318 and output export debug information to console:
@@ -39,8 +39,8 @@ Below is a sample helm values block directing the HPCC tracing framework to proc
 ```console
 global:
   tracing:
-    exporter:
-      type: OTLP-HTTP
+    exporters:
+    - type: OTLP-HTTP
       consoleDebug: true
 ```
 ### Sample configuration command

@@ -1,6 +1,6 @@
 global:
   tracing:
-    exporter:
-      type: OTLP-HTTP
+    exporters:
+    - type: OTLP-HTTP
       endpoint: "localhost:4318"
       consoleDebug: true

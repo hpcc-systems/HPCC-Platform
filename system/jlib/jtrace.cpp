@@ -1196,7 +1196,7 @@ void CTraceManager::initTracerProviderAndGlobalInternals(const IPropertyTree * t
 
     //By default trace spans to the logs in debug builds - so that developers get used to seeing them.
     //Default off for release builds to avoid flooding the logs, and because they are likely to use OTLP
-    bool createDefaultLogExporter = isDebugBuild();
+    bool enableDefaultLogExporter = isDebugBuild();
     if (traceConfig)
     {
         //Administrators can choose to export trace data to a different backend by specifying the exporter type
@@ -1209,10 +1209,10 @@ void CTraceManager::initTracerProviderAndGlobalInternals(const IPropertyTree * t
                 processors.push_back(std::move(processor));
         }
 
-        createDefaultLogExporter = traceConfig->getPropBool("createDefaultLogExporter", createDefaultLogExporter);
+        enableDefaultLogExporter = traceConfig->getPropBool("enableDefaultLogExporter", enableDefaultLogExporter);
     }
 
-    if (createDefaultLogExporter)
+    if (enableDefaultLogExporter)
     {
         //Simple option to create logging to the log file - primarily to aid developers.
         std::unique_ptr<opentelemetry::sdk::trace::SpanExporter> exporter = JLogSpanExporterFactory::Create(DEFAULT_SPAN_LOG_FLAGS);

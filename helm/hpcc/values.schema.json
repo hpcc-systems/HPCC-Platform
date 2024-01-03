@@ -1116,7 +1116,7 @@
           "type": "boolean",
           "description": "If true, components generate trace/span ids if none are provided by the remote caller"
         },
-        "createDefaultLogExporter": {
+        "enableDefaultLogExporter": {
           "type": "boolean",
           "description": "If true, creates a trace exporter outputting to the log using the default options"
         },
@@ -1143,7 +1143,7 @@
           "properties": {
             "enabled": {
               "type": "boolean",
-              "description": "If true, trace data is processed in a batch, if false, as soon as it is available"
+              "description": "If true, trace data is processed in a batch, if false, trace data is processed immediately"
             }
           },
           "additionalProperties": { "type": ["integer", "string", "boolean"] }

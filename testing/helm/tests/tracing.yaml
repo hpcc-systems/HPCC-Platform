@@ -1,6 +1,6 @@
 global:
   tracing:
-    createDefaultLogExporter: true
+    enableDefaultLogExporter: true
     exporters:
     - type: OTLP-HTTP
       consoleDebug: true
