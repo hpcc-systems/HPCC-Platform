@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-declaration-merging */
 import * as lang from "dojo/_base/lang";
 import * as aspect from "dojo/aspect";
 import * as dom from "dojo/dom";
