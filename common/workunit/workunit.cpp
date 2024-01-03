@@ -14269,16 +14269,16 @@ void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IP
         unsigned runningTimeLimit = workunit.getDebugValueInt("maxRunTime", 0);
         runningTimeLimit = runningTimeLimit ? runningTimeLimit : INFINITE;
 
-        std::list<WUState> expectedStates = { WUStateRunning, WUStateWait };
+        std::list<WUState> expectedStates = { WUStateRunning, WUStateWait, WUStateFailed };
         unsigned __int64 blockedTime = 0;
         for (unsigned i=0; i<2; i++)
         {
             WUState state = waitForWorkUnitToComplete(wuid, timelimit*1000, expectedStates);
             DBGLOG("Got state: %s", getWorkunitStateStr(state));
-            if (WUStateWait == state) // already finished
+            if ((WUStateWait == state) || (WUStateFailed == state)) // already finished or failed
             {
                 // workunit may have spent time in blocked state, but then transitioned to
-                // wait state quickly such that this code did not see its running state.
+                // wait or failed state quickly such that this code did not see its running state.
                 if (!blockedTime)
                     blockedTime = elapsedTimer.elapsedNs();
                 break;
