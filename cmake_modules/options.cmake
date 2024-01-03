@@ -68,7 +68,7 @@ option(SKIP_ECLWATCH "Skip building ECL Watch" OFF)
 option(USE_ADDRESS_SANITIZER "Use address sanitizer to spot leaks" OFF)
 option(INSTALL_VCPKG_CATALOG "Install vcpkg-catalog.txt" ON)
 option(PORTALURL "Set url to hpccsystems portal download page")
-option(PROFILING "Set to true if planning to profile so stacks are informative" OFF)
+option(PROFILING "Set to true if planning to profile so stacks are informative" ON)
 
 if ( NOT PORTALURL )
   set( PORTALURL "http://hpccsystems.com/download" )

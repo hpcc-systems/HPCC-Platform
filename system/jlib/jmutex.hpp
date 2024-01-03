@@ -25,6 +25,13 @@
 #include <functional>
 #include "jiface.hpp"
 #include "jsem.hpp"
+#include "jtiming.hpp"
+#include <unordered_map>
+
+#if defined (__linux__) || defined(__FreeBSD__)  || defined(__APPLE__)
+#include <execinfo.h> // comment out if not present
+#define HAS_BACKTRACE
+#endif
 
 extern jlib_decl void ThreadYield();
 extern jlib_decl void spinUntilReady(std::atomic_uint &value);
@@ -34,6 +41,11 @@ extern jlib_decl void spinUntilReady(std::atomic_uint &value);
 //#define SPINLOCK_USE_MUTEX // for testing
 #define SPINLOCK_RR_CHECK     // checks for realtime threads
 #define _ASSERT_LOCK_SUPPORT
+//#define USE_INSTRUMENTED_CRITSECS
+#endif
+
+#if defined(_PROFILING)
+#define USE_INSTRUMENTED_CRITSECS
 #endif
 
 #ifdef SPINLOCK_USE_MUTEX
@@ -195,7 +207,7 @@ TryEnterCriticalSection(
     );
 };
 
-class jlib_decl CriticalSection
+class jlib_decl UninstrumentedCriticalSection
 {
     // lightweight mutex within a single process
 private:
@@ -255,12 +267,14 @@ public:
     bool wouldBlock()  { if (TryEnterCriticalSection(&flags)) { leave(); return false; } return true; } // debug only
 #endif
 };
+
+typedef UninstrumentedCriticalSection InstrumentedCriticalSection;  // Not worth implementing for Windows
 #else
 
 /**
  * Mutex locking wrapper. Use enter/leave to lock/unlock.
  */
-class CriticalSection 
+class UninstrumentedCriticalSection 
 {
 private:
     MutexId mutex;
@@ -268,9 +282,9 @@ private:
     ThreadId owner;
     unsigned depth;
 #endif
-    CriticalSection (const CriticalSection &);  
+    UninstrumentedCriticalSection (const UninstrumentedCriticalSection &) = delete; 
 public:
-    inline CriticalSection()
+    inline UninstrumentedCriticalSection()
     {
         pthread_mutexattr_t attr;
         pthread_mutexattr_init(&attr);
@@ -287,7 +301,7 @@ public:
 #endif
     }
 
-    inline ~CriticalSection()
+    inline ~UninstrumentedCriticalSection()
     {
 #ifdef _ASSERT_LOCK_SUPPORT
         assert(owner==0 && depth==0);
@@ -327,6 +341,76 @@ public:
 #endif
     }
 };
+
+class InstrumentedCriticalSection 
+{
+private:
+    MutexId mutex;
+#ifdef _ASSERT_LOCK_SUPPORT
+    ThreadId owner = 0;
+#endif
+    unsigned depth = 0;
+    bool wasContended = false;
+    InstrumentedCriticalSection (const InstrumentedCriticalSection &) = delete;
+public:
+    inline InstrumentedCriticalSection()
+    {
+        pthread_mutexattr_t attr;
+        pthread_mutexattr_init(&attr);
+#ifdef _DEBUG
+        verifyex(pthread_mutexattr_settype(&attr,PTHREAD_MUTEX_RECURSIVE)==0); // verify supports attr
+#else
+        pthread_mutexattr_settype(&attr,PTHREAD_MUTEX_RECURSIVE);
+#endif
+        pthread_mutex_init(&mutex, &attr);
+        pthread_mutexattr_destroy(&attr);
+    }
+
+    inline ~InstrumentedCriticalSection()
+    {
+#ifdef _ASSERT_LOCK_SUPPORT
+        assert(owner==0);
+#endif
+        assert(depth==0);
+        pthread_mutex_destroy(&mutex);
+    }
+
+    inline void enter()
+    {
+#ifdef _ASSERT_LOCK_SUPPORT
+        ThreadId me = GetCurrentThreadId();
+#endif
+        bool isContended = depth != 0;
+        pthread_mutex_lock(&mutex);
+        depth++;
+        wasContended = isContended;
+#ifdef _ASSERT_LOCK_SUPPORT
+        owner = me;
+#endif
+    }
+
+    inline bool leave()
+    {
+        bool isContended = false;
+        if (depth==1)
+        {
+#ifdef _ASSERT_LOCK_SUPPORT
+            owner = 0;
+#endif
+            isContended = wasContended;
+        }
+        depth--;
+        pthread_mutex_unlock(&mutex);
+        return isContended;
+    }
+    inline void assertLocked()
+    {
+#ifdef _ASSERT_LOCK_SUPPORT
+        assertex(owner == GetCurrentThreadId());
+#endif
+    }
+};
+
 #endif
 
 /**
@@ -334,63 +418,14 @@ public:
  * the lock on a critical section (parameter).
  * Blocks on construction, unblocks on destruction.
  */
-class CriticalBlock
-{
-    CriticalSection &crit;
-public:
-    inline CriticalBlock(CriticalSection &c) : crit(c)      { crit.enter(); }
-    inline ~CriticalBlock()                             { crit.leave(); }
-};
 
-/**
- * Critical section delimiter, using scope to define lifetime of
- * the lock on a critical section (parameter).
- * Unblocks on construction, blocks on destruction.
- */
-class CriticalUnblock
+template<typename T> class CriticalBlockOf
 {
-    CriticalSection &crit;
+    T &crit;
 public:
-    inline CriticalUnblock(CriticalSection &c) : crit(c)        { crit.leave(); }
-    inline ~CriticalUnblock()                                   { crit.enter(); }
+    inline CriticalBlockOf(T &c) : crit(c) { crit.enter(); }
+    inline ~CriticalBlockOf() { crit.leave(); }
 };
-
-class CLeavableCriticalBlock
-{
-    CriticalSection &crit;
-    bool locked = false;
-public:
-    inline CLeavableCriticalBlock(CriticalSection &_crit) : crit(_crit)
-    {
-        enter();
-    }
-    inline CLeavableCriticalBlock(CriticalSection &_crit, bool lock) : crit(_crit)
-    {
-        if (lock)
-            enter();
-    }
-    inline ~CLeavableCriticalBlock()
-    {
-        if (locked)
-            crit.leave();
-    }
-    inline void enter()
-    {
-        if (locked)
-            return;
-        locked = true;
-        crit.enter();
-    }
-    inline void leave()
-    {
-        if (locked)
-        {
-            locked = false;
-            crit.leave();
-        }
-    }
-};
-
 
 #ifdef SPINLOCK_USE_MUTEX // for testing
 
@@ -540,6 +575,135 @@ public:
 #endif
 
 #endif
+
+typedef CriticalBlockOf<UninstrumentedCriticalSection> UninstrumentedCriticalBlock;
+
+class CriticalBlockInstrumentation
+{
+#ifdef HAS_BACKTRACE
+    static constexpr unsigned numStackEntries = 8;
+    class Stack
+    {
+    public:
+        void *stack[numStackEntries];
+        bool operator==(const Stack &other) const
+        {
+            return memcmp(stack, other.stack, sizeof(stack)) == 0;
+        }
+    };
+
+    struct StackHash
+    {
+        std::size_t operator()(const Stack& k) const;
+    };
+#endif
+
+public:
+    CriticalBlockInstrumentation(const char *file, const char *func, unsigned line);
+    ~CriticalBlockInstrumentation();
+    void addStat(cycle_t wait, cycle_t hold, bool wasContended);
+    void describe(bool withStack) const;
+    int compare(const CriticalBlockInstrumentation *other) const;
+private:
+    NonReentrantSpinLock lock;
+    const char *file;
+    const char *func;
+    unsigned line;
+    cycle_t waitCycles;
+    cycle_t holdCycles;
+    unsigned uncontended;
+    unsigned contended;
+#ifdef HAS_BACKTRACE
+    std::unordered_map<Stack, unsigned, StackHash> stacks;
+#endif
+};
+
+class InstrumentedCriticalBlock
+{
+    InstrumentedCriticalSection &crit;
+public:
+    InstrumentedCriticalBlock(InstrumentedCriticalSection &c);
+    ~InstrumentedCriticalBlock();
+private:
+    CriticalBlockInstrumentation *inst;
+    cycle_t start = 0;
+    cycle_t in = 0;
+};
+
+/**
+ * Critical section delimiter, using scope to define lifetime of
+ * the lock on a critical section (parameter).
+ * Unblocks on construction, blocks on destruction.
+ */
+template<typename T> class CriticalUnblockOf
+{
+    T &crit;
+public:
+    inline CriticalUnblockOf(T &c) : crit(c) { crit.leave(); }
+    inline ~CriticalUnblockOf()              { crit.enter(); }
+};
+
+typedef CriticalUnblockOf<UninstrumentedCriticalSection> UninstrumentedCriticalUnblock;
+typedef CriticalUnblockOf<InstrumentedCriticalSection> InstrumentedCriticalUnblock;
+
+template<typename T> class CLeavableCriticalBlockOf
+{
+    T &crit;
+    bool locked = false;
+public:
+    inline CLeavableCriticalBlockOf(T &_crit) : crit(_crit)
+    {
+        enter();
+    }
+    inline CLeavableCriticalBlockOf(T &_crit, bool lock) : crit(_crit)
+    {
+        if (lock)
+            enter();
+    }
+    inline ~CLeavableCriticalBlockOf()
+    {
+        if (locked)
+            crit.leave();
+    }
+    inline void enter()
+    {
+        if (locked)
+            return;
+        locked = true;
+        crit.enter();
+    }
+    inline void leave()
+    {
+        if (locked)
+        {
+            locked = false;
+            crit.leave();
+        }
+    }
+};
+
+typedef CLeavableCriticalBlockOf<UninstrumentedCriticalSection> UninstrumentedLeavableCriticalBlock;
+typedef CLeavableCriticalBlockOf<InstrumentedCriticalSection> InstrumentedLeavableCriticalBlock;
+
+#ifdef USE_INSTRUMENTED_CRITSECS
+#define __glue(a,b) a ## b
+#define glue(a,b) __glue(a,b)
+
+extern thread_local CriticalBlockInstrumentation* __cbinst;
+
+typedef InstrumentedCriticalSection CriticalSection;
+typedef InstrumentedCriticalBlock ICriticalBlock;
+#define CriticalBlock static CriticalBlockInstrumentation *glue(instrumenter,__LINE__) = new CriticalBlockInstrumentation(__FILE__, __func__, __LINE__); __cbinst = glue(instrumenter,__LINE__); ICriticalBlock
+typedef InstrumentedCriticalUnblock CriticalUnblock;
+typedef InstrumentedLeavableCriticalBlock CLeavableCriticalBlock;
+#else
+typedef UninstrumentedCriticalSection CriticalSection;
+typedef UninstrumentedCriticalBlock ICriticalBlock;
+typedef ICriticalBlock CriticalBlock;
+typedef UninstrumentedCriticalUnblock CriticalUnblock;
+typedef UninstrumentedLeavableCriticalBlock CLeavableCriticalBlock;
+#endif
+
 
 class NonReentrantSpinBlock
 {

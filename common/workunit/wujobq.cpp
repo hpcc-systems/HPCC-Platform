@@ -972,13 +972,13 @@ public:
         }
     }
 
-    class Cconnlockblock: public CriticalBlock
+    class Cconnlockblock: public ICriticalBlock
     {
         CJobQueue *parent;
         bool rollback;
     public:
         Cconnlockblock(CJobQueue *_parent,bool exclusive)
-            : CriticalBlock(_parent->crit)
+            : ICriticalBlock(_parent->crit)
         {
             parent = _parent;
             parent->connlock(exclusive);

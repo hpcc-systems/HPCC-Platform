@@ -118,8 +118,135 @@ int Mutex::unlockAll()
     return ret;
 }
 
+static CriticalBlockInstrumentation *critBlocks[10000];
+static RelaxedAtomic<unsigned> nextCritBlock;
 
+int compareCI (const void * a, const void * b) 
+{
+   return - (*(CriticalBlockInstrumentation **)a)->compare(*(CriticalBlockInstrumentation **)b);
+}
 
+MODULE_EXIT()
+{
+    unsigned numCritBlocks = nextCritBlock;
+    qsort(critBlocks, numCritBlocks, sizeof(CriticalBlockInstrumentation*), compareCI);
+    for (unsigned i = 0; i < numCritBlocks; i++)
+    {
+        critBlocks[i]->describe(i < 10);
+    }
+}
+
+thread_local CriticalBlockInstrumentation *__cbinst = nullptr;
+
+std::size_t CriticalBlockInstrumentation::StackHash::operator()(const Stack& k) const
+{
+    return hashc((const byte *) k.stack, sizeof(k.stack), 0);
+}
+
+std::string humanTime(unsigned long cycles)
+{
+    if (!cycles)
+        return "0 ns";
+    unsigned long v = cycle_to_nanosec(cycles);
+    if (v < 1000)
+        return std::to_string(v) + " ns";
+    else if (v < 1000000)
+        return std::to_string(v/1000) + " us";
+    else
+        return std::to_string(v/1000000) + " ms";
+}
+
+CriticalBlockInstrumentation::CriticalBlockInstrumentation(const char *_file, const char *_func, unsigned _line)
+: file(strdup(_file)), func(strdup(_func)), line(_line), waitCycles(0), holdCycles(0), uncontended(0), contended(0)
+{
+    unsigned idx = nextCritBlock++;
+    if (idx < 10000)
+        critBlocks[idx] = this;
+}
+
+void CriticalBlockInstrumentation::addStat(cycle_t wait, cycle_t hold, bool wasContended)
+{
+#ifdef HAS_BACKTRACE
+    void *lbtBuff[numStackEntries+3];
+    unsigned nFrames = backtrace(lbtBuff, numStackEntries+3);
+    NonReentrantSpinBlock b(lock);
+    if (nFrames == numStackEntries+3)
+    {
+        Stack *a = (Stack *) (lbtBuff+3);
+        stacks[*a]++;
+    }
+#else
+    NonReentrantSpinBlock b(lock);
+#endif
+    if (wasContended)
+        contended++;
+    else
+        uncontended++;
+    waitCycles += wait;
+    holdCycles += hold;
+}
+
+CriticalBlockInstrumentation::~CriticalBlockInstrumentation() 
+{
+}
+
+void CriticalBlockInstrumentation::describe(bool includeStack) const
+{
+    DBGLOG("CritBlock %s (%s:%u): wait %s hold %s, entered %u times, contended %u times", func, strrchr(file, PATHSEPCHAR)+1, line, humanTime(waitCycles).c_str(), humanTime(holdCycles).c_str(), contended+uncontended, contended);
+    if (includeStack)
+    {
+        std::vector<std::pair<Stack, int>> sorted_stacks(stacks.begin(), stacks.end());
+        std::sort(sorted_stacks.begin(), sorted_stacks.end(), [](auto &left, auto &right) { return left.second > right.second; });
+        unsigned printed = 0;
+        for (auto &stack: sorted_stacks)
+        {
+            if (printed == 3)
+                break;
+            DBGLOG("Stack appeared %u times:", stack.second);
+            char** strs = backtrace_symbols(stack.first.stack, 4);
+            for (unsigned i = 0; i < 4; ++i)
+                DBGLOG("%s", strs[i]);
+            free(strs);
+            printed++;
+        }
+    }
+}
+
+int CriticalBlockInstrumentation::compare(const CriticalBlockInstrumentation *other) const
+{
+    if (waitCycles < other->waitCycles)
+        return -1;
+    if (waitCycles > other->waitCycles)
+        return 1;
+    if (holdCycles < other->holdCycles)
+        return -1;
+    if (holdCycles > other->holdCycles)
+        return 1;
+    if (contended < other->contended)
+        return -1;
+    if (contended > other->contended)
+        return 1;
+    if (uncontended < other->uncontended)
+        return -1;
+    if (uncontended > other->uncontended)
+        return 1;
+    return 0;
+}
+
+InstrumentedCriticalBlock::InstrumentedCriticalBlock(InstrumentedCriticalSection &c) : crit(c)
+{
+    inst = __cbinst;
+    start = get_cycles_now();
+    c.enter();
+    in = get_cycles_now();
+}
+
+InstrumentedCriticalBlock::~InstrumentedCriticalBlock()
+{
+    bool wasContended = crit.leave();
+    cycle_t out = get_cycles_now();
+    inst->addStat(in-start, out-in, wasContended);
+}
 
 inline bool read_data(int fd, void *buf, size_t nbytes) 
 {
