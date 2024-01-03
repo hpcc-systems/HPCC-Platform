@@ -78,7 +78,7 @@ export const WorkunitsDashboard: React.FunctionComponent<WorkunitsDashboardProps
     }, [filterProps.lastNDays]);
 
     //  Cluster Chart ---
-    const clusterChart = useConst(
+    const clusterChart = useConst(() =>
         new Bar()
             .columns(["Cluster", "Count"])
             .on("click", (row, col, sel) => pushParamExact("cluster", sel ? row.Cluster : undefined))
@@ -99,7 +99,7 @@ export const WorkunitsDashboard: React.FunctionComponent<WorkunitsDashboardProps
         ;
 
     //  Owner Chart ---
-    const ownerChart = useConst(
+    const ownerChart = useConst(() =>
         new Column()
             .columns(["Owner", "Count"])
             .on("click", (row, col, sel) => pushParamExact("owner", sel ? row.Owner : undefined))
@@ -120,7 +120,7 @@ export const WorkunitsDashboard: React.FunctionComponent<WorkunitsDashboardProps
         ;
 
     //  State Chart ---
-    const stateChart = useConst(
+    const stateChart = useConst(() =>
         new Pie()
             .columns(["State", "Count"])
             .on("click", (row, col, sel) => pushParamExact("state", sel ? row.State : undefined))
@@ -140,7 +140,7 @@ export const WorkunitsDashboard: React.FunctionComponent<WorkunitsDashboardProps
         ;
 
     //  Protected Chart ---
-    const protectedChart = useConst(
+    const protectedChart = useConst(() =>
         new Pie()
             .columns(["Protected", "Count"])
             .on("click", (row, col, sel) => pushParamExact("protected", sel ? row.Protected === "true" : undefined))
@@ -159,7 +159,7 @@ export const WorkunitsDashboard: React.FunctionComponent<WorkunitsDashboardProps
         ;
 
     //  Day Chart ---
-    const dayChart = useConst(
+    const dayChart = useConst(() =>
         new Area()
             .columns(["Day", "Count"])
             .xAxisType("time")
@@ -183,7 +183,7 @@ export const WorkunitsDashboard: React.FunctionComponent<WorkunitsDashboardProps
         ;
 
     //  Table ---
-    const workunitsStore = useConst(new Observable(new Memory("Wuid")));
+    const workunitsStore = useConst(() => new Observable(new Memory("Wuid")));
     const tablePipeline = chain(
         filter<WorkunitEx>(row => filterProps.cluster === undefined || row.Cluster === filterProps.cluster),
         filter(row => filterProps.owner === undefined || row.Owner === filterProps.owner),

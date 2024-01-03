@@ -40,7 +40,7 @@ export const DESDLBindings: React.FunctionComponent<ESDLBindingProps> = ({
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
 
     //  Grid ---
-    const store = useConst(new Observable(new TreeStore("__hpcc_id", { Name: true })));
+    const store = useConst(() => new Observable(new TreeStore("__hpcc_id", { Name: true })));
     const { Grid, selection, refreshTable } = useGrid({
         store,
         query: { __hpcc_parentName: null },

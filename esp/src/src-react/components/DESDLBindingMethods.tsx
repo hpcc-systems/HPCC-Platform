@@ -26,7 +26,7 @@ export const DESDLBindingMethods: React.FunctionComponent<DESDLBindingMethodsPro
     const [messageBarType, setMessageBarType] = React.useState<MessageBarType>();
 
     //  Grid ---
-    const store = useConst(new Observable(new MemoryTreeStore("__hpcc_id", "__hpcc_parentName", { Name: true })));
+    const store = useConst(() => new Observable(new MemoryTreeStore("__hpcc_id", "__hpcc_parentName", { Name: true })));
     const { Grid, refreshTable } = useGrid({
         store,
         query: { __hpcc_parentName: null },

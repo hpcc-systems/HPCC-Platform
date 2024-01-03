@@ -102,7 +102,7 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
     }, []);
 
     //  Grid ---
-    const store = useConst(FileSpray.CreateLandingZonesStore({}));
+    const store = useConst(() => FileSpray.CreateLandingZonesStore({}));
 
     const query = React.useMemo(() => {
         return formatQuery(targetDropzones, filter);

@@ -201,7 +201,7 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
     const [items, setItems] = React.useState<any[]>([]);
     const [columnWidths] = useNonReactiveEphemeralPageStore("columnWidths");
 
-    const selectionHandler = useConst(new Selection({
+    const selectionHandler = useConst(() => new Selection({
         onSelectionChanged: () => {
             setSelection(selectionHandler.getSelection());
         }
@@ -315,7 +315,7 @@ export const FluentGrid: React.FunctionComponent<FluentGridProps> = ({
     refresh
 }) => {
 
-    const constStore = useConst(new Memory(primaryID, alphaNumColumns));
+    const constStore = useConst(() => new Memory(primaryID, alphaNumColumns));
 
     React.useEffect(() => {
         constStore.setData(data);

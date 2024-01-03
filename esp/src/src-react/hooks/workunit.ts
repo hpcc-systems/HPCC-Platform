@@ -180,7 +180,7 @@ export function useWorkunitWorkflows(wuid: string): [WUInfo.ECLWorkflow[], Worku
 
 export function useWorkunitXML(wuid: string): [string] {
 
-    const service = useConst(new WorkunitsService({ baseUrl: "" }));
+    const service = useConst(() => new WorkunitsService({ baseUrl: "" }));
 
     const [xml, setXML] = React.useState("");
 

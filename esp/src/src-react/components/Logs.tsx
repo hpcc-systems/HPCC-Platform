@@ -101,7 +101,7 @@ export const Logs: React.FunctionComponent<LogsProps> = ({
     const now = React.useMemo(() => new Date(), []);
 
     //  Grid ---
-    const gridStore = useConst(CreateLogsQueryStore());
+    const gridStore = useConst(() => CreateLogsQueryStore());
 
     const query = React.useMemo(() => {
         if (wuid !== undefined) {

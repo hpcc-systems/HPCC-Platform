@@ -40,10 +40,10 @@ export const Permissions: React.FunctionComponent<PermissionsProps> = ({
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
 
     //  Grid ---
-    const gridStore = useConst(WsAccess.CreatePermissionsStore(null, null));
-    const gridSort = useConst([{ attribute: "name", descending: false }]);
-    const gridQuery = useConst({});
-    const gridColumns = useConst({
+    const gridStore = useConst(() => WsAccess.CreatePermissionsStore(null, null));
+    const gridSort = useConst(() => [{ attribute: "name", descending: false }]);
+    const gridQuery = useConst(() => ({}));
+    const gridColumns = useConst(() => ({
         check: selector({
             width: 27,
             disabled: function (row) {
@@ -66,7 +66,7 @@ export const Permissions: React.FunctionComponent<PermissionsProps> = ({
         }),
         description: { label: nlsHPCC.Description },
         basedn: { label: "basedn" }
-    });
+    }));
 
     //  Selection  ---
     React.useEffect(() => {
