@@ -774,7 +774,9 @@ public:
             }
             output_queue = new queue_t[numQueues];
             maxPktsPerQ = new int[numQueues];
-            for (unsigned j = 0; j < numQueues; j++) 
+            maxPktsPerQ[0] = INT_MAX;   // Always send out-of-band first
+            output_queue[0].set_queue_size(_queueSize);
+            for (unsigned j = 1; j < numQueues; j++) 
             {
                 output_queue[j].set_queue_size(_queueSize);
                 maxPktsPerQ[j] = (int) pow((double)udpOutQsPriority, (double)numQueues - j - 1);
