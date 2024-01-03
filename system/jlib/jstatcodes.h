@@ -295,6 +295,7 @@ enum StatisticKind
     StCycleIndexCacheBlockedCycles,
     StTimeAgentProcess,
     StCycleAgentProcessCycles,
+    StNumAckRetries,
     StMax,
 
     //For any quantity there is potentially the following variants.

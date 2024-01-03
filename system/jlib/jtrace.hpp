@@ -268,6 +268,7 @@ constexpr TraceFlags traceMissingOptFiles = TraceFlags::flag26;
 constexpr TraceFlags traceAffinity = TraceFlags::flag27;
 constexpr TraceFlags traceSmartStepping = TraceFlags::flag28;
 constexpr TraceFlags traceAborts = TraceFlags::flag29;
+constexpr TraceFlags traceAcknowledge = TraceFlags::flag30;
 
 
 
@@ -307,6 +308,7 @@ constexpr std::initializer_list<TraceOption> roxieTraceOptions
     TRACEOPT(traceAffinity),
     TRACEOPT(traceSmartStepping),
     TRACEOPT(traceAborts),
+    TRACEOPT(traceAcknowledge),
 };
 
 interface IPropertyTree;
