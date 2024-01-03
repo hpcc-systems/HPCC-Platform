@@ -44,6 +44,11 @@
 #include "enginecontext.hpp"
 #include <regex>
 
+#if defined (__linux__) || defined(__FreeBSD__)  || defined(__APPLE__)
+#include <execinfo.h> // comment out if not present
+#define HAS_BACKTRACE
+#endif
+
 #if PY_MAJOR_VERSION >=3
   #define Py_TPFLAGS_HAVE_ITER 0
 #endif
@@ -131,6 +136,14 @@ static void failx(const char *message, ...)
     StringBuffer msg;
     msg.append("pyembed: ").valist_appendf(message,args);
     va_end(args);
+#ifdef HAS_BACKTRACE
+    void *stack[5];
+    unsigned nFrames = backtrace(stack, 5);
+    char** strs = backtrace_symbols(stack, nFrames);
+    for (unsigned i = 0; i < nFrames; ++i)
+        msg.append("\n  ").append(strs[i]);
+    free(strs);
+#endif
     rtlFail(0, msg.str());
 }
 
@@ -382,6 +395,9 @@ static bool releaseContext(bool isPooled)
     }
     return false;
 }
+
+// GILUnblock ensures the we release the Python "Global interpreter lock" for the appropriate duration
+
 
 // Use a global object to ensure that the Python interpreter is initialized on main thread
 
