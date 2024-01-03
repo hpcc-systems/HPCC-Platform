@@ -204,7 +204,7 @@ bool RoxiePacketHeader::allChannelsFailed()
     return (retries & mask) == mask;
 }
 
-bool RoxiePacketHeader::retry()
+bool RoxiePacketHeader::retry(bool ack)
 {
     bool worthRetrying = false;
     unsigned mask = SUBCHANNEL_MASK;
@@ -213,7 +213,8 @@ bool RoxiePacketHeader::retry()
     {
         unsigned subRetries = (retries & mask) >> (subChannel * SUBCHANNEL_BITS);
         if (subRetries != SUBCHANNEL_MASK)
-            subRetries++;
+            if (!subRetries || !ack)
+                subRetries++;
         if (subRetries != SUBCHANNEL_MASK)
             worthRetrying = true;
         retries = (retries & ~mask) | (subRetries << (subChannel * SUBCHANNEL_BITS));
