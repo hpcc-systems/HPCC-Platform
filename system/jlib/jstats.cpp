@@ -1429,6 +1429,8 @@ StringBuffer & StatsScopeId::getScopeText(StringBuffer & out) const
         return out.append(FileScopePrefix).append(name);
     case SSTchannel:
         return out.append(ChannelScopePrefix).append(id);
+    case SSTdfuworkunit:
+        return out.append(DFUWorkunitScopePrefix).append(name);
     case SSTunknown:
         return out.append(name);
     case SSTglobal:
@@ -1447,6 +1449,7 @@ unsigned StatsScopeId::getHash() const
     {
     case SSTfunction:
     case SSTunknown:
+    case SSTdfuworkunit:
         return hashcz((const byte *)name.get(), (unsigned)scopeType);
     default:
         return hashc((const byte *)&id, sizeof(id), (unsigned)scopeType);
@@ -1496,6 +1499,7 @@ void StatsScopeId::describe(StringBuffer & description) const
         break;
     case SSTfile:
     case SSTfunction:
+    case SSTdfuworkunit:
         description.append(' ').append(name);
         break;
     default:
@@ -1544,6 +1548,7 @@ void StatsScopeId::deserialize(MemoryBuffer & in, unsigned version)
         break;
     case SSTfile:
     case SSTfunction:
+    case SSTdfuworkunit:
         in.read(name);
         break;
     default:
@@ -1571,6 +1576,7 @@ void StatsScopeId::serialize(MemoryBuffer & out) const
         break;
     case SSTfile:
     case SSTfunction:
+    case SSTdfuworkunit:
         out.append(name);
         break;
     default:
@@ -1675,6 +1681,15 @@ bool StatsScopeId::setScopeText(const char * text, const char * * _next)
             return true;
         }
         break;
+    case DFUWorkunitScopePrefix[0]:
+        if (MATCHES_CONST_PREFIX(text, DFUWorkunitScopePrefix))
+        {
+            setDfuWorkunitId(text+ strlen(DFUWorkunitScopePrefix));
+            if (_next)
+                *_next = text + strlen(text);
+            return true;
+        }
+        break;
     case '\0':
         setId(SSTglobal, 0);
         return true;
@@ -1740,7 +1755,11 @@ void StatsScopeId::setChildGraphId(unsigned _id)
 {
     setId(SSTchildgraph, _id);
 }
-
+void StatsScopeId::setDfuWorkunitId(const char * _name)
+{
+    scopeType = SSTdfuworkunit;
+    name.set(_name);
+}
 //--------------------------------------------------------------------------------------------------------------------
 
 enum

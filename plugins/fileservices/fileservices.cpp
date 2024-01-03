@@ -635,7 +635,8 @@ static void blockUntilComplete(const char * label, IClientFileSpray &server, ICo
         if (wu.get()) { // if updatable (e.g. not hthor with no agent context)
             aborting = wu->aborting();
             StringBuffer wuScope, ElapsedLabel, RemainingLabel;
-            wuScope.appendf("%s-%s", label, dfuwu.getID());
+            StringBuffer labelbuf(label);
+            wuScope.appendf("dfu:%s:%s", labelbuf.toLowerCase().str(), dfuwu.getID());
             ElapsedLabel.append(wuScope).append(" (Elapsed) ");
             RemainingLabel.append(wuScope).append(" (Remaining) ");
             //MORE: I think this are intended to replace the timing information, but will currently combine

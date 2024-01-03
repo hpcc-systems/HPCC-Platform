@@ -87,7 +87,7 @@ public:
     void setSubgraphId(unsigned _id);
     void setWorkflowId(unsigned _id);
     void setChildGraphId(unsigned _id);
-
+    void setDfuWorkunitId(const char * _name);
     int compare(const StatsScopeId & other) const;
 
     bool operator == (const StatsScopeId & other) const { return matches(other); }
