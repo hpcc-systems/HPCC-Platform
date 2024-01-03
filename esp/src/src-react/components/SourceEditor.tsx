@@ -1,14 +1,15 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, useTheme } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
 import { useConst, useOnEvent } from "@fluentui/react-hooks";
 import { Editor, ECLEditor, XMLEditor, JSONEditor } from "@hpcc-js/codemirror";
 import { Workunit } from "@hpcc-js/comms";
 import nlsHPCC from "src/nlsHPCC";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
+import { useUserTheme } from "../hooks/theme";
 import { useWorkunitXML } from "../hooks/workunit";
-import { themeIsDark } from "src/Utility";
 import { ShortVerticalDivider } from "./Common";
+
 import "eclwatch/css/cmDarcula.css";
 
 type ModeT = "ecl" | "xml" | "json" | "text";
@@ -41,7 +42,7 @@ export const SourceEditor: React.FunctionComponent<SourceEditorProps> = ({
     onChange = (text: string) => { }
 }) => {
 
-    const theme = useTheme();
+    const { isDark } = useUserTheme();
 
     //  Command Bar  ---
     const buttons: ICommandBarItemProps[] = [
@@ -61,17 +62,7 @@ export const SourceEditor: React.FunctionComponent<SourceEditorProps> = ({
     );
 
     React.useEffect(() => {
-        try {
-            const t = window.setTimeout(function () {
-                if (themeIsDark()) {
-                    editor.setOption("theme", "darcula");
-                } else {
-                    editor.setOption("theme", "default");
-                }
-                window.clearTimeout(t);
-            }, 50);
-        } catch (e) { } // editor's internal codemirror is possibly undefined?
-
+        editor.option("theme", isDark ? "darcula" : "default");
         if (editor.text() !== text) {
             editor.text(text);
         }
@@ -80,7 +71,7 @@ export const SourceEditor: React.FunctionComponent<SourceEditorProps> = ({
             .readOnly(readonly)
             .lazyRender()
             ;
-    }, [editor, readonly, text, theme]);
+    }, [editor, text, readonly, isDark]);
 
     const handleThemeToggle = React.useCallback((evt) => {
         if (!editor) return;
