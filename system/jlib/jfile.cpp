@@ -3264,7 +3264,8 @@ void doCopyFile(IFile * target, IFile * source, size32_t buffersize, ICopyFilePr
         // try to delete partial copy
         StringBuffer s;
         s.append("copyFile target=").append(dest->queryFilename()).append(" source=").append(source->queryFilename()).appendf("; read/write failure (%d): ",e->errorCode());
-        exc.setown(MakeStringException(e->errorCode(), "%s", s.str()));
+        e->errorMessage(s);
+        exc.setown(makeStringException(e->errorCode(), s.str()));
         e->Release();
         EXCLOG(exc, "doCopyFile");
     }
