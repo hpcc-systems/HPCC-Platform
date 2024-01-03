@@ -1121,7 +1121,7 @@
           "properties": {
             "type": {
               "type": "string",
-              "enum": ["OTLP-HTTP", "OTLP-GRCP", "OS", "JLOG", "NONE"],
+              "enum": ["OTLP-HTTP", "OTLP-GRPC", "OS", "JLOG", "NONE"],
               "description": "The type of exporter in charge of forwarding span data to target back-end"
             }
           }
