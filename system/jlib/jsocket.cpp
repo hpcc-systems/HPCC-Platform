@@ -971,7 +971,11 @@ int CSocket::pre_connect (bool block)
     if (targetip.isNull())
     {
         StringBuffer err;
-        err.appendf("CSocket::pre_connect - Invalid/missing host IP address raised in : %s, line %d",sanitizeSourceFile(__FILE__), __LINE__);
+        const char * hostname = targetip.queryHostname();
+        if (isEmptyString(hostname))
+            err.appendf("CSocket::pre_connect - missing host IP address raised in : %s, line %d",sanitizeSourceFile(__FILE__), __LINE__);
+        else
+            err.appendf("CSocket::pre_connect - Invalid host IP address '%s' raised in : %s, line %d", hostname, sanitizeSourceFile(__FILE__), __LINE__);
         IJSOCK_Exception *e = new SocketException(JSOCKERR_bad_netaddr,err.str());
         throw e;
     }
