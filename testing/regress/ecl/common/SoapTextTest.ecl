@@ -86,10 +86,10 @@ EXPORT SoapTextTest := MODULE
 
     EXPORT doMain(string serviceUrl, string searchWords, unsigned documentLimit) := FUNCTION
 
-        soapcallDocumentCount(string searchWord) := SOAPCALL(serviceUrl, 'soaptest_getdocumentcount', countServiceRequest, transform(countServiceRequest, SELF.search := searchWord), countServiceResponse).cnt;
+        soapcallDocumentCount(string searchWord) := SOAPCALL(serviceUrl, 'soaptest_getdocumentcount', countServiceRequest, transform(countServiceRequest, SELF.search := searchWord), countServiceResponse, PERSIST).cnt;
         callDocumentCount(string search) := IF((serviceUrl != ''), soapcallDocumentCount(search), doDocumentCount(search));
 
-        soapcallSearchWords(DATASET(wordRec) searchWords) := SOAPCALL(serviceUrl, 'soaptest_getsearchwords', { DATASET(wordRec) search := searchWords }, DATASET(joinServiceResponseRecord));
+        soapcallSearchWords(DATASET(wordRec) searchWords) := SOAPCALL(serviceUrl, 'soaptest_getsearchwords', { DATASET(wordRec) search := searchWords }, DATASET(joinServiceResponseRecord), PERSIST);
         callSearchWords(DATASET(wordRec) searchWords) := IF((serviceUrl != ''), soapcallSearchWords(searchWords), doSearchWords(searchWords));
 
         splitWords := Std.Str.SplitWords(searchWords, ',', false);

@@ -205,7 +205,7 @@ public:
     {
     }
 
-    virtual void add(ISocket* sock, SocketEndpoint* ep = nullptr, PersistentProtocol proto = PersistentProtocol::ProtoTCP) override
+    virtual void add(ISocket* sock, SocketEndpoint* ep, PersistentProtocol proto) override
     {
         if (!sock || !sock->isValid())
             return;
@@ -249,7 +249,7 @@ public:
             m_selectHandler->remove(sock);
     }
 
-    virtual void doneUsing(ISocket* sock, bool keep, unsigned usesOverOne) override
+    virtual void doneUsing(ISocket* sock, bool keep, unsigned usesOverOne, unsigned overrideMaxRequests) override
     {
         PERSILOG(PersistentLogLevel::PLogMax, "PERSISTENT: Done using socket %d, keep=%s", sock->OShandle(), boolToStr(keep));
         CriticalBlock block(m_critsect);
@@ -260,7 +260,8 @@ public:
         if (info)
         {
             info->useCount += usesOverOne;
-            bool reachedQuota = m_maxReqs > 0 && m_maxReqs <= info->useCount;
+            unsigned requestLimit = overrideMaxRequests ? overrideMaxRequests : m_maxReqs;
+            bool reachedQuota = requestLimit > 0 && requestLimit <= info->useCount;
             if(!sock->isValid())
                 keep = false;
             if (keep && !reachedQuota)
