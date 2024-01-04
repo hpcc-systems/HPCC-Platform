@@ -1,4 +1,5 @@
-/* eslint-disable */
+/* eslint-disable no-undef */
+/* eslint-disable @typescript-eslint/no-var-requires */
 var DojoWebpackPlugin = require("dojo-webpack-plugin");
 
 var fs = require("fs");
@@ -55,12 +56,12 @@ module.exports = function (env) {
     ];
 
     return {
-        context: __dirname,
+        context: path.resolve(__dirname),
         entry: entry,
         output: {
             filename: "[name].eclwatch.js",
             chunkFilename: "[name].eclwatch.js",
-            path: path.join(__dirname, "build/dist"),
+            path: path.resolve(__dirname, "build/dist"),
             publicPath: "/esp/files/dist/",
             pathinfo: true
         },
@@ -75,11 +76,11 @@ module.exports = function (env) {
                     enforce: "pre"
                 }, {
                     test: /\.js$/,
-                    loader: 'string-replace-loader',
+                    loader: "string-replace-loader",
                     options: {
                         search: isProduction ? "RELEASE_ONLY" : "DEBUG_ONLY",
                         replace(match, p1, offset, string) {
-                            return "DEBUG_ONLY */"
+                            return "DEBUG_ONLY */";
                         },
                         flags: "g"
                     }
@@ -87,13 +88,13 @@ module.exports = function (env) {
         },
         resolve: {
             alias: {
-                "clipboard": path.resolve(__dirname, "node_modules/clipboard/dist/clipboard"),
-                "@fluentui/react-experiments/lib/Pagination": path.resolve(__dirname, "node_modules/@fluentui/react-experiments/lib/Pagination")
             },
-            // WebPack >= v5
-            // fallback: {
-            //     "@hpcc-js": path.resolve(__dirname, "../../../hpcc-js/packages")
-            // },
+            fallback: {
+                "@hpcc-js": [
+                    path.resolve(__dirname, "../../../hpcc-js/packages"),
+                    path.resolve(__dirname, "../../../Visualization/packages")
+                ]
+            }
         },
         plugins: plugins,
         resolveLoader: {
@@ -110,12 +111,12 @@ module.exports = function (env) {
         devServer: isProduction ? undefined : {
             hot: "only",
             static: {
-                directory: path.join(__dirname, './build'),
+                directory: path.resolve(__dirname, "build"),
                 publicPath: "/esp/files"
             },
             liveReload: false,
             proxy,
             port: 8080
         }
-    }
+    };
 };

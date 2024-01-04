@@ -47,10 +47,10 @@ export function useGrid({
     filename
 }: useGridProps): useGridResponse {
 
-    const constStore = useConst(store);
-    const constQuery = useConst({ ...query });
-    const constSort = useConst({ ...sort });
-    const constColumns = useConst({ ...columns });
+    const constStore = useConst(() => store);
+    const constQuery = useConst(() => ({ ...query }));
+    const constSort = useConst(() => ({ ...sort }));
+    const constColumns = useConst(() => ({ ...columns }));
     const constGetSelected = useConst(() => getSelected);
     const [grid, setGrid] = React.useState<any>(undefined);
     const [selection, setSelection] = React.useState([]);

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-declaration-merging */
 import * as arrayUtil from "dojo/_base/array";
 import * as declare from "dojo/_base/declare";
 import * as Deferred from "dojo/_base/Deferred";

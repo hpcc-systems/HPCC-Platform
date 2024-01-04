@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-declaration-merging */
 import * as dom from "dojo/dom";
 import * as domClass from "dojo/dom-class";
 import * as domForm from "dojo/dom-form";

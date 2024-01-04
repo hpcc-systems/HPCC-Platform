@@ -20,6 +20,13 @@ const defaults = {
 
 const options = { ...defaults };
 
+function checkLayout(options: MetricsOptions): boolean {
+    if (options?.layout && !options?.layout?.["main"]) {
+        delete options.layout;
+    }
+    return !!options?.layout;
+}
+
 export interface MetricsOptions {
     scopeTypes: string[];
     properties: string[];
@@ -43,7 +50,9 @@ export function useMetricsOptions(): [MetricsOptions, (opts: MetricsOptions) => 
     }, [refresh]);
 
     const save = React.useCallback(() => {
-        store?.set("MetricOptions", JSON.stringify(options), true);
+        if (checkLayout(options)) {
+            store?.set("MetricOptions", JSON.stringify(options), true);
+        }
     }, [store]);
 
     const reset = React.useCallback((toDefaults: boolean = false) => {
@@ -51,7 +60,9 @@ export function useMetricsOptions(): [MetricsOptions, (opts: MetricsOptions) => 
             setOptions({ ...defaults });
         } else {
             store?.get("MetricOptions").then(opts => {
-                setOptions({ ...defaults, ...JSON.parse(opts) });
+                const options = JSON.parse(opts);
+                checkLayout(options);
+                setOptions({ ...defaults, ...options });
             });
         }
     }, [setOptions, store]);
