@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-declaration-merging */
 import { QuartileCandlestick, Scatter } from "@hpcc-js/chart";
 import { format as d3Format, HTMLWidget, Palette } from "@hpcc-js/common";
 import { StyledTable } from "@hpcc-js/html";

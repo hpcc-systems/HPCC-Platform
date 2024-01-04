@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-declaration-merging */
 import { ECLEditor } from "@hpcc-js/codemirror";
 import { extent, Palette } from "@hpcc-js/common";
 import { Workunit } from "@hpcc-js/comms";
