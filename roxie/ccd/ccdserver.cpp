@@ -475,7 +475,7 @@ static const StatisticsMapping keyedJoinStatistics({ StNumServerCacheHits, StNum
                                                     StCycleBlobFetchCycles, StCycleLeafFetchCycles, StCycleNodeFetchCycles, StTimeBlobFetch, StTimeLeafFetch, StTimeNodeFetch,
                                                     StCycleIndexCacheBlockedCycles, StTimeIndexCacheBlocked,
                                                     StNumNodeDiskFetches, StNumLeafDiskFetches, StNumBlobDiskFetches,
-                                                    StNumDiskRejected, StSizeAgentReply, StTimeAgentWait, StTimeAgentQueue, StTimeAgentProcess, StTimeIBYTIDelay }, joinStatistics);
+                                                    StNumDiskRejected, StSizeAgentReply, StTimeAgentWait, StTimeAgentQueue, StTimeAgentProcess, StTimeIBYTIDelay, StNumAckRetries }, joinStatistics);
 static const StatisticsMapping indexStatistics({StNumServerCacheHits, StNumIndexSeeks, StNumIndexScans, StNumIndexWildSeeks,
                                                 StNumIndexSkips, StNumIndexNullSkips, StNumIndexMerges, StNumIndexMergeCompares,
                                                 StNumPreFiltered, StNumPostFiltered, StNumIndexAccepted, StNumIndexRejected,
@@ -486,9 +486,9 @@ static const StatisticsMapping indexStatistics({StNumServerCacheHits, StNumIndex
                                                 StCycleBlobFetchCycles, StCycleLeafFetchCycles, StCycleNodeFetchCycles, StTimeBlobFetch, StTimeLeafFetch, StTimeNodeFetch,
                                                 StCycleIndexCacheBlockedCycles, StTimeIndexCacheBlocked,
                                                 StNumNodeDiskFetches, StNumLeafDiskFetches, StNumBlobDiskFetches,
-                                                StNumIndexRowsRead, StSizeAgentReply, StTimeAgentWait, StTimeAgentQueue, StTimeAgentProcess, StTimeIBYTIDelay }, actStatistics);
+                                                StNumIndexRowsRead, StSizeAgentReply, StTimeAgentWait, StTimeAgentQueue, StTimeAgentProcess, StTimeIBYTIDelay, StNumAckRetries }, actStatistics);
 static const StatisticsMapping diskStatistics({StNumServerCacheHits, StNumDiskRowsRead, StNumDiskSeeks, StNumDiskAccepted,
-                                               StNumDiskRejected, StSizeAgentReply, StTimeAgentWait, StTimeAgentQueue, StTimeAgentProcess, StTimeIBYTIDelay }, actStatistics);
+                                               StNumDiskRejected, StSizeAgentReply, StTimeAgentWait, StTimeAgentQueue, StTimeAgentProcess, StTimeIBYTIDelay, StNumAckRetries }, actStatistics);
 static const StatisticsMapping soapStatistics({ StTimeSoapcall }, actStatistics);
 static const StatisticsMapping groupStatistics({ StNumGroups, StNumGroupMax }, actStatistics);
 static const StatisticsMapping sortStatistics({ StTimeSortElapsed }, actStatistics);
@@ -519,6 +519,7 @@ extern const StatisticsMapping accumulatedStatistics({StWhenFirstRow, StTimeLoca
                                                       StNumSocketWrites, StSizeSocketWrite, StTimeSocketWriteIO,
                                                       StNumSocketReads, StSizeSocketRead, StTimeSocketReadIO,
                                                       StCycleIndexCacheBlockedCycles, StTimeIndexCacheBlocked,
+                                                      StNumAckRetries,
                                                       });
 
 //=================================================================================
@@ -4172,9 +4173,12 @@ class CRemoteResultAdaptor : implements IEngineRowStream, implements IFinalRoxie
                     {
                         if (!i->resendNeeded(timeout, now))
                             continue;
-                        activity.queryLogCtx().CTXLOG("Input has not been acknowledged for %u ms - retry required?", timeout);
+                        if (doTrace(traceAcknowledge) || doTrace(traceRoxiePackets))
+                            activity.queryLogCtx().CTXLOG("Input has not been acknowledged for %u ms - retry required?", timeout);
+                        activity.noteStatistic(StNumAckRetries, 1);
+
                     }
-                    if (!i->queryHeader().retry())
+                    if (!i->queryHeader().retry(timeout!=0))
                     {
                         StringBuffer s;
                         IException *E = MakeStringException(ROXIE_MULTICAST_ERROR, "Failed to get response from agent(s) for %s in activity %d", i->queryHeader().toString(s).str(), activity.queryId());

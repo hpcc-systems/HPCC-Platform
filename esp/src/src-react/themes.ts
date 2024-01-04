@@ -6,8 +6,7 @@
 
 import { createTheme, PartialTheme } from "@fluentui/react";
 import { BrandVariants, createDarkTheme, createLightTheme } from "@fluentui/react-components";
-import { createv8Theme } from "./theme-shims/v8ThemeShim";
-import { createv9Theme } from "./theme-shims/v9ThemeShim";
+import { createV8Theme, createV9Theme } from "@fluentui/react-migration-v8-v9";
 
 const lightThemeOld: PartialTheme = {
     palette: {
@@ -120,21 +119,25 @@ const brandOffice: BrandVariants = {
     160: "#f9dcd1",
 };
 
-const brandMode: "web" | "teams" | "office" = "web";
-const brand = brandMode === "web" ? brandWeb : brandMode === "teams" ? brandTeams : brandOffice;
+const brands = {
+    "web": brandWeb,
+    "office": brandOffice,
+    "teams": brandTeams
+};
+const brand = brands["web"];
 
 namespace current {
     export const lightTheme = createTheme(lightThemeOld, true);
     export const darkTheme = createTheme(darkThemeOld, true);
-    export const lightThemeV9 = createv9Theme(lightTheme, createLightTheme(brand));
-    export const darkThemeV9 = createv9Theme(darkTheme, createDarkTheme(brand));
+    export const lightThemeV9 = createV9Theme(lightTheme, createLightTheme(brand));
+    export const darkThemeV9 = createV9Theme(darkTheme, createDarkTheme(brand));
 }
 
 namespace next {
     export const lightThemeV9 = createLightTheme(brand);
     export const darkThemeV9 = createDarkTheme(brand);
-    export const lightTheme = createv8Theme(brand, lightThemeV9, current.lightTheme);
-    export const darkTheme = createv8Theme(brand, darkThemeV9, current.darkTheme);
+    export const lightTheme = createV8Theme(brand, lightThemeV9, false, current.lightTheme);
+    export const darkTheme = createV8Theme(brand, darkThemeV9, true, current.darkTheme);
 }
 
 const useNext = false;

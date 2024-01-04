@@ -21,7 +21,9 @@ export const MetricsOptions: React.FunctionComponent<MetricsOptionsProps> = ({
     const [scopeTypes, properties] = useMetricMeta();
     const [options, setOptions, save, reset] = useMetricsOptions();
 
-    const closeOptions = () => setShow(false);
+    const closeOptions = React.useCallback(() => {
+        setShow(false);
+    }, [setShow]);
 
     const allChecked = scopeTypes.length === options.scopeTypes.length;
 

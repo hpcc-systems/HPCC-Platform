@@ -178,7 +178,7 @@ public:
     void init(const RemoteActivityId &_remoteId, ruid_t _uid, unsigned _channel, unsigned _overflowSequence);
     StringBuffer &toString(StringBuffer &ret) const;
     bool allChannelsFailed();
-    bool retry();
+    bool retry(bool ack);
     void setException(unsigned subChannel);
     unsigned thisChannelRetries(unsigned subChannel);
 

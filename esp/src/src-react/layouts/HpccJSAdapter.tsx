@@ -20,17 +20,15 @@ export const HpccJSComponent: React.FunctionComponent<HpccJSComponentProps> = ({
 }) => {
     const divID = useId("viz-component-");
 
-    React.useEffect(() => {
-        const w = widget?.target(divID)
-            .render()
-            ;
-        return () => {
-            w?.target(null);
-        };
-    }, [divID, widget]);
+    const setDivRef = React.useCallback(node => {
+        widget?.target(node);
+        if (node) {
+            widget?.render();
+        }
+    }, [widget]);
 
     React.useEffect(() => {
-        if (widget.target()) {
+        if (widget?.target()) {
             widget.resize({ width, height });
             if (debounce) {
                 widget.lazyRender();
@@ -40,9 +38,9 @@ export const HpccJSComponent: React.FunctionComponent<HpccJSComponentProps> = ({
         }
     }, [debounce, height, widget, width]);
 
-    return (isNaN(width) || isNaN(height)) ?
+    return (isNaN(width) || isNaN(height) || width === 0 || height === 0) ?
         <></> :
-        <div id={divID} className="hpcc-js-component" style={{ width, height }}>
+        <div ref={setDivRef} id={divID} className="hpcc-js-component" style={{ width, height }}>
         </div>;
 };
 
@@ -66,7 +64,7 @@ export const AutosizeHpccJSComponent: React.FunctionComponent<AutosizeHpccJSComp
     return <SizeMe monitorHeight>{({ size }) => {
         const width = size?.width || padding * 2;
         const height = size?.height || padding * 2;
-        return <div style={{ width: "100%", height: hidden ? "0px" : fixedHeight, position: "relative" }}>
+        return <div style={{ width: "100%", height: hidden ? "1px" : fixedHeight, position: "relative" }}>
             <div style={{ position: "absolute", padding: `${padding}px`, display: hidden ? "none" : "block" }}>
                 <HpccJSComponent widget={widget} debounce={debounce} width={width - padding * 2} height={height - padding * 2} />
             </div>
@@ -98,7 +96,7 @@ export const AutosizeComponent: React.FunctionComponent<AutosizeComponentProps> 
     return <SizeMe monitorHeight>{({ size }) => {
         const width = size?.width || padding * 2;
         const height = size?.height || padding * 2;
-        return <div style={{ width: "100%", height: hidden ? "0px" : fixedHeight, position: "relative" }}>
+        return <div style={{ width: "100%", height: hidden ? "1px" : fixedHeight, position: "relative" }}>
             <div style={{ position: "absolute", padding: `${padding}px`, display: hidden ? "none" : "block" }}>
                 <div style={{ width: width - padding * 2, height: height - padding * 2, display: "flex", alignItems: "center", justifyContent: "center" }} >
                     {children}

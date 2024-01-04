@@ -3758,6 +3758,76 @@ protected:
 CPPUNIT_TEST_SUITE_REGISTRATION( JLibUnicodeTest );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JLibUnicodeTest, "JLibUnicodeTest" );
 
+#ifdef _USE_OPENSSL
+#include <jencrypt.hpp>
+
+class JLibOpensslAESTest : public CppUnit::TestFixture
+{
+public:
+    CPPUNIT_TEST_SUITE(JLibOpensslAESTest);
+        CPPUNIT_TEST(test);
+    CPPUNIT_TEST_SUITE_END();
+
+protected:
+
+    void testOne(unsigned len, const char *intext)
+    {
+        /* A 256 bit key */
+        unsigned char key[] = { 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37,
+                                0x38, 0x39, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35,
+                                0x36, 0x37, 0x38, 0x39, 0x30, 0x31, 0x32, 0x33,
+                                0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x30, 0x31
+                              };
+
+        MemoryBuffer ciphertext1, ciphertext2, decrypted1, decrypted2;
+
+        openssl::aesEncrypt(key, 32, intext, len, ciphertext1);
+        jlib::aesEncrypt(key, 32, intext, len, ciphertext2);
+
+        CPPUNIT_ASSERT(ciphertext1.length()==ciphertext2.length());
+        CPPUNIT_ASSERT(memcmp(ciphertext1.bytes(), ciphertext2.bytes(), ciphertext1.length()) == 0);
+        
+        /* Decrypt the ciphertext */
+        openssl::aesDecrypt(key, 32, ciphertext1.bytes(), ciphertext1.length(), decrypted1);
+        assert(decrypted1.length() == len);
+        CPPUNIT_ASSERT(decrypted1.length() == len);
+        CPPUNIT_ASSERT(memcmp(decrypted1.bytes(), intext, len) == 0);
+        CPPUNIT_ASSERT(memcmp(ciphertext1.bytes(), ciphertext2.bytes(), ciphertext1.length()) == 0); // check input unchanged
+
+        jlib::aesDecrypt(key, 32, ciphertext2.bytes(), ciphertext2.length(), decrypted2);
+        CPPUNIT_ASSERT(decrypted2.length() == len);
+        CPPUNIT_ASSERT(memcmp(decrypted2.bytes(), intext, len) == 0);
+        CPPUNIT_ASSERT(memcmp(ciphertext1.bytes(), ciphertext2.bytes(), ciphertext1.length()) == 0); // check input unchanged
+
+        // Now test in-place decrypt
+        unsigned cipherlen = ciphertext1.length();
+        ciphertext1.append(4, "XXXX");   // Marker
+        unsigned decryptedlen = openssl::aesDecryptInPlace(key, 32, (void *) ciphertext1.bytes(), cipherlen);
+        CPPUNIT_ASSERT(decryptedlen == len);
+        CPPUNIT_ASSERT(memcmp(ciphertext1.bytes(), intext, len) == 0);
+        CPPUNIT_ASSERT(memcmp(ciphertext1.bytes()+cipherlen, "XXXX", 4) == 0);
+
+        cipherlen = ciphertext2.length();
+        ciphertext2.append(4, "XXXX");   // Marker
+        decryptedlen = jlib::aesDecryptInPlace(key, 32, (void *) ciphertext2.bytes(), cipherlen);
+        CPPUNIT_ASSERT(decryptedlen == len);
+        CPPUNIT_ASSERT(memcmp(ciphertext2.bytes(), intext, len) == 0);
+        CPPUNIT_ASSERT(memcmp(ciphertext2.bytes()+cipherlen, "XXXX", 4) == 0);
+    }
+
+    void test()
+    {
+        /* Message to be encrypted */
+        const char *plaintext = "The quick brown fox jumps over the lazy dog";
+        for (unsigned l = 0; l < strlen(plaintext); l++)
+            testOne(l, plaintext);
+    }
+
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( JLibOpensslAESTest );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JLibOpensslAESTest, "JLibOpensslAESTest" );
+#endif
 
 class JLibSecretsTest : public CppUnit::TestFixture
 {
@@ -3766,6 +3836,8 @@ public:
         CPPUNIT_TEST(setup);
         CPPUNIT_TEST(testUpdate1);
         CPPUNIT_TEST(testUpdate2);
+        CPPUNIT_TEST(testBackgroundUpdate);
+        CPPUNIT_TEST(testKeyEncoding);
     CPPUNIT_TEST_SUITE_END();
 
     //Each test creates a different instance of the class(!) so member values cannot be used to pass items
@@ -3773,21 +3845,35 @@ public:
     StringBuffer secretRoot;
 
 protected:
+    void checkSecret(const IPropertyTree * match, const char * key, const char * expectedValue)
+    {
+        if (match)
+        {
+            const char * secretValue = match->queryProp(key);
+            if (secretValue)
+            {
+                CPPUNIT_ASSERT_EQUAL_STR(secretValue, expectedValue);
+            }
+            else
+            {
+                //IPropertyTree doesn't allow blank values, so a missing value is the same as a blank value
+                //We should probably revisit some day, but it is likely to break existing code if we do.
+                CPPUNIT_ASSERT_EQUAL_STR("", expectedValue);
+            }
+        }
+        else
+            CPPUNIT_ASSERT_EQUAL_STR("", expectedValue);
+    }
     void checkSecret(const char * secret, const char * key, const char * expectedValue)
     {
         Owned<const IPropertyTree> match = getSecret("testing", secret);
-        CPPUNIT_ASSERT(match);
-        const char * secretValue = match->queryProp(key);
-        if (secretValue)
-        {
-            CPPUNIT_ASSERT_EQUAL_STR(secretValue, expectedValue);
-        }
-        else
-        {
-            //IPropertyTree doesn't allow blank values, so a missing value is the same as a blank value
-            //We should probably revisit some day, but it is likely to break existing code if we do.
-            CPPUNIT_ASSERT_EQUAL_STR("", expectedValue);
-        }
+        checkSecret(match, key, expectedValue);
+    }
+
+    void checkSecret(ISyncedPropertyTree * secret, const char * key, const char * expectedValue)
+    {
+        Owned<const IPropertyTree> match = secret->getTree();
+        checkSecret(match, key, expectedValue);
     }
 
     bool hasSecret(const char * name)
@@ -3828,7 +3914,7 @@ protected:
         //Secret should not appear yet - null should be cached.
         CPPUNIT_ASSERT(!hasSecret("secret1"));
 
-        Owned<ISyncedPropertyTree> secret2 = resolveSecret("testing", "secret2", nullptr, nullptr);
+        Owned<ISyncedPropertyTree> secret2 = getSyncedSecret("testing", "secret2", nullptr, nullptr);
         CPPUNIT_ASSERT(!secret2->isValid());
         CPPUNIT_ASSERT(!secret2->isStale());
 
@@ -3852,7 +3938,7 @@ protected:
     {
         initPath(); // secretRoot needs to be called for each test
 
-        Owned<ISyncedPropertyTree> secret3 = resolveSecret("testing", "secret3", nullptr, nullptr);
+        Owned<ISyncedPropertyTree> secret3 = getSyncedSecret("testing", "secret3", nullptr, nullptr);
         unsigned version = secret3->getVersion();
         CPPUNIT_ASSERT(!secret3->isValid());
         CPPUNIT_ASSERT(!secret3->isStale());
@@ -3933,6 +4019,117 @@ protected:
 
         //Cleanup
         writeTestingSecret("secret3", "value", nullptr);
+    }
+
+    void testBackgroundUpdate()
+    {
+        initPath(); // secretRoot needs to be called for each test
+        startSecretUpdateThread(20);    // 100ms expiry, check every 5ms for items expiring in 20ms time.
+
+        //--------- First check that a missed secret is checked in the background ---------
+        Owned<ISyncedPropertyTree> secret4 = getSyncedSecret("testing", "secret4", nullptr, nullptr);
+        CPPUNIT_ASSERT(!secret4->isValid());
+        CPPUNIT_ASSERT(!secret4->isStale());
+
+        //Sleep for less than the update interval
+        MilliSleep(50);
+        CPPUNIT_ASSERT(!secret4->isValid());
+        CPPUNIT_ASSERT(!secret4->isStale());
+
+        //Sleep so the cache entry should have expired, and no data around to make it not stale.
+        MilliSleep(60);
+        CPPUNIT_ASSERT(!secret4->isValid());
+        CPPUNIT_ASSERT(secret4->isStale());
+
+        //--------- Now update the value in the background ---------
+        //First check that a missed secret is checked in the background
+        Owned<ISyncedPropertyTree> secret5 = getSyncedSecret("testing", "secret5", nullptr, nullptr);
+        CPPUNIT_ASSERT(!secret5->isValid());
+        CPPUNIT_ASSERT(!secret5->isStale());
+        //And write a value so it is picked up on the next refresh
+        writeTestingSecret("secret5", "value", "secret5Value");
+
+        //Sleep for less than the update interval
+        MilliSleep(50); // elapsed=50
+        CPPUNIT_ASSERT(!secret5->isValid());
+        CPPUNIT_ASSERT(!secret5->isStale());
+
+        //Sleep so the cache entry should have expired and the value reread since reading ahead
+        MilliSleep(60); // elapsed=110 = 80 + 30
+        CPPUNIT_ASSERT(secret5->isValid());
+        CPPUNIT_ASSERT(!secret5->isStale());
+
+        //Sleep again so it is not accessed within the timeout period - it should now be marked as stale but valid
+        MilliSleep(100); // elapsed=210 = 80 + 80 + 50
+        CPPUNIT_ASSERT(secret5->isValid());
+        CPPUNIT_ASSERT(secret5->isStale());
+
+        //--------- Check that accessing the function marks the value so it is refreshed ---------
+        Owned<ISyncedPropertyTree> secret6 = getSyncedSecret("testing", "secret6", nullptr, nullptr);
+        CPPUNIT_ASSERT(!secret6->isValid());
+        CPPUNIT_ASSERT(!secret6->isStale());
+        //And write a value so it is picked up on the next refresh
+        writeTestingSecret("secret6", "value", "secret6Value");
+
+        //Sleep for less than the update interval
+        MilliSleep(50); // elapsed=50
+        CPPUNIT_ASSERT(!secret6->isValid());
+        CPPUNIT_ASSERT(!secret6->isStale());
+
+        //Sleep so the cache entry should have expired and the value reread since reading ahead
+        MilliSleep(60); // elapsed=110 = 80 + 30
+        CPPUNIT_ASSERT(secret6->isValid());
+        CPPUNIT_ASSERT(!secret6->isStale());
+        unsigned version1 = secret6->getVersion(); // Mark the value as accessed, but too early to be refreshed
+        writeTestingSecret("secret6", "value", "secret6Value2");
+
+        MilliSleep(40); // elapsed=150 = 80 + 70
+        CPPUNIT_ASSERT(secret6->isValid());
+        CPPUNIT_ASSERT(!secret6->isStale());
+        unsigned version2 = secret6->getVersion(); // Mark the value as accessed, but too early to be refreshed
+        CPPUNIT_ASSERT(version2 == version1);
+
+        MilliSleep(30); // elapsed=180 = 80 + 80 + 20
+        CPPUNIT_ASSERT(secret6->isValid());
+        CPPUNIT_ASSERT(!secret6->isStale());
+        unsigned version3 = secret6->getVersion(); // Mark the value as accessed, but will now have been refreshed
+        CPPUNIT_ASSERT(version3 != version1);
+        checkSecret(secret4, "value", "");
+        checkSecret(secret5, "value", "secret5Value");
+        checkSecret(secret6, "value", "secret6Value2");
+
+        //Cleanup
+        writeTestingSecret("secret5", "value", nullptr);
+        writeTestingSecret("secret6", "value", nullptr);
+        stopSecretUpdateThread();
+    }
+
+    void testKeyEncoding()
+    {
+        for (auto category : { "abc", "def" })
+        {
+            for (auto name : { "x", "y" })
+            {
+                for (auto vault : { "vaultx", "" })
+                {
+                    for (auto version : { "", "v1" })
+                    {
+                        std::string encoded = testBuildSecretKey(category, name, vault, version);
+
+                        std::string readCategory;
+                        std::string readName;
+                        std::string readVaultId;
+                        std::string readVersion;
+                        testExpandSecretKey(readCategory, readName, readVaultId, readVersion, encoded.c_str());
+
+                        CPPUNIT_ASSERT_EQUAL_STR(category, readCategory.c_str());
+                        CPPUNIT_ASSERT_EQUAL_STR(name, readName.c_str());
+                        CPPUNIT_ASSERT_EQUAL_STR(vault, readVaultId.c_str());
+                        CPPUNIT_ASSERT_EQUAL_STR(version, readVersion.c_str());
+                    }
+                }
+            }
+        }
     }
 
     void writeTestingSecret(const char * secret, const char * key, const char * value)

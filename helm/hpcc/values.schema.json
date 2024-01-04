@@ -1121,7 +1121,7 @@
           "properties": {
             "type": {
               "type": "string",
-              "enum": ["OTLP-HTTP", "OTLP-GRCP", "OS", "JLOG", "NONE"],
+              "enum": ["OTLP-HTTP", "OTLP-GRPC", "OS", "JLOG", "NONE"],
               "description": "The type of exporter in charge of forwarding span data to target back-end"
             }
           }
@@ -2321,6 +2321,10 @@
           "type": "boolean",
           "default": false,
           "description": "Require SOAPCALL and HTTPCALL URLs are secrets or mapped to secrets"
+        },
+        "updateSecretsInBackground": {
+          "type": "boolean",
+          "description": "Preemptively update secrets that are active and about to expire in the background"
         },
         "expert": {
           "description": "Custom internal options usually reserved for internal testing",

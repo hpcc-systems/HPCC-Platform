@@ -1953,3 +1953,8 @@ span.dijitReset.dijitInline.dijitIcon.fa.disabled {
     background-color: var(--colorNeutralBackground1);
     border-bottom-color: var(--colorNeutralStroke1);
 }
+
+.flat .chart_Axis .axis .tick line,
+.flat .chart_Axis .axis path.domain {
+    stroke: var(--colorNeutralStroke1);
+}

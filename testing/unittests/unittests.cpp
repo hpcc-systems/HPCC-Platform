@@ -1091,6 +1091,7 @@ class compressToBufferTest : public CppUnit::TestFixture
           "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello";
         assertex(len <= strlen(in));
         MemoryBuffer compressed;
+        CCycleTimer start;
         compressToBuffer(compressed, len, in, method, options);
         bool ret;
         if (compressed.length() == len+5)
@@ -1102,7 +1103,7 @@ class compressToBufferTest : public CppUnit::TestFixture
         else 
         {
             if (!prevResult)
-                DBGLOG("compressToBuffer %x size %u compressed to %u", (byte) method, len, compressed.length());
+                DBGLOG("compressToBuffer %x size %u compressed to %u in %lluns", (byte) method, len, compressed.length(), start.elapsedNs());
             ret = true;
         }
         CPPUNIT_ASSERT(compressed.length() <= len+5);

@@ -12,7 +12,7 @@ All configuration options detailed here are part of the HPCC Systems Helm chart,
 - alwaysCreateGlobalIds - If true, assign newly created global ID to any requests that do not supply one.
 - optAlwaysCreateTraceIds - If true components generate trace/span ids if none are provided by the remote caller.
 - exporter - Defines The type of exporter in charge of forwarding span data to target back-end
-  - type - (default: JLOG) "OTLP-HTTP" | "OTLP-GRCP" | "OS" | "JLOG" | "NONE"
+  - type - (default: JLOG) "OTLP-HTTP" | "OTLP-GRPC" | "OS" | "JLOG" | "NONE"
   - JLOG
     - logSpanDetails - Log span details such as description, status, kind
     - logParentInfo  - Log the span's parent info such as ParentSpanId, and TraceState
@@ -24,7 +24,7 @@ All configuration options detailed here are part of the HPCC Systems Helm chart,
     - endpoint - (default localhost:4318) Specifies the target OTLP-HTTP backend
     - timeOutSecs - (default 10secs)
     - consoleDebug - (default false)
-  - OTLP-GRCP
+  - OTLP-GRPC
     - endpoint: (default localhost:4317) The endpoint to export to. By default the OpenTelemetry Collector's default endpoint.
     - useSslCredentials - By default when false, uses grpc::InsecureChannelCredentials; If true uses sslCredentialsCACertPath
     - sslCredentialsCACertPath - Path to .pem file to be used for SSL encryption.
@@ -114,5 +114,5 @@ Sample exported span data:
 ## Directory Contents
 
 - 'otlp-http-collector-default.yaml' - Sample tracing configuration targeting OTLP/HTTP trace collector
-- 'otlp-grcp-collector-default.yaml' - Sample tracing configuration targeting OTLP/GRCP trace collector
+- 'otlp-grpc-collector-default.yaml' - Sample tracing configuration targeting OTLP/GRPC trace collector
 - 'jlog-collector-fulloutput.yaml' - Sample tracing configuration targeting HPCC component logs

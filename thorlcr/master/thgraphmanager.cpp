@@ -69,7 +69,7 @@ void relayWuidException(IConstWorkUnit *workunit, const IException *exception)
         if (WUStateWait != state)
         {
             Owned<IWUException> we = wu->createException();
-            we->setSeverity(SeverityInformation);
+            we->setSeverity(SeverityError);
             StringBuffer errStr;
             exception->errorMessage(errStr);
             we->setExceptionMessage(errStr);

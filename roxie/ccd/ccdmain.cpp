@@ -944,6 +944,8 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
 #endif
 
         roxieMetrics.setown(createRoxieMetricsManager());
+        if (topology->getPropBool("@updateSecretsInBackground", !runOnce))
+            startSecretUpdateThread(0);
 
         Owned<IPropertyTreeIterator> userMetrics = topology->getElements("./UserMetric");
         ForEach(*userMetrics)
@@ -1709,6 +1711,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         E->Release();
     }
 
+    stopSecretUpdateThread();
     roxieMetrics.clear();
 #ifndef _CONTAINERIZED
     stopPerformanceMonitor();

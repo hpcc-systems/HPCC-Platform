@@ -196,10 +196,8 @@ public:
         // MORE - could argue that we would prefer to wait even longer - until we know consumer wants it - but that might be complex
         if (encrypted)
         {
-            // MORE - This is decrypting in-place. Is that ok?? Seems to be with the code we currently use, but if that changed
-            // might need to rethink this
             const MemoryAttr &udpkey = getSecretUdpKey(true);
-            size_t decryptedSize = aesDecrypt(udpkey.get(), udpkey.length(), pktHdr+1, pktHdr->length-sizeof(UdpPacketHeader), pktHdr+1, DATA_PAYLOAD-sizeof(UdpPacketHeader));
+            size_t decryptedSize = aesDecryptInPlace(udpkey.get(), udpkey.length(), pktHdr+1, pktHdr->length-sizeof(UdpPacketHeader));
             pktHdr->length = decryptedSize + sizeof(UdpPacketHeader);
         }
 

@@ -24,6 +24,7 @@
 #include "jptree.hpp"
 #include "jerror.hpp"
 #include "jsecrets.hpp"
+#include "jthread.hpp"
 
 //including cpp-httplib single header file REST client
 //  doesn't work with format-nonliteral as an error
@@ -314,16 +315,16 @@ static CriticalSection secretCS;
 //there are various schemes for renewing kubernetes secrets and they are likely to vary greatly in how often
 //  a secret gets updated this timeout determines the maximum amount of time before we'll pick up a change
 //  10 minutes for now we can change this as we gather more experience and user feedback
-static unsigned secretTimeoutMs = 10 * 60 * 1000;
+static unsigned __int64 secretTimeoutNs = 10 * 60 * 1000000000LL;
 
 extern jlib_decl unsigned getSecretTimeout()
 {
-    return secretTimeoutMs;
+    return secretTimeoutNs / 1000000;
 }
 
 extern jlib_decl void setSecretTimeout(unsigned timeoutMs)
 {
-    secretTimeoutMs = timeoutMs;
+    secretTimeoutNs = (unsigned __int64)timeoutMs * 1000000;
 }
 
 extern jlib_decl void setSecretMount(const char * path)
@@ -371,8 +372,54 @@ static bool isEmptyTimeval(const timeval &tv)
 
 //---------------------------------------------------------------------------------------------------------------------
 
+//The secret key has the form category/name[@vaultId][#version]
+
+static std::string buildSecretKey(const char * category, const char * name, const char * optVaultId, const char * optVersion)
+{
+    std::string key;
+    key.append(category).append("/").append(name);
+    if (optVaultId)
+        key.append("@").append(optVaultId);
+    if (optVersion)
+        key.append("#").append(optVersion);
+    return key;
+}
+
+static void expandSecretKey(std::string & category, std::string & name, std::string & optVaultId, std::string & optVersion, const char * key)
+{
+    const char * slash = strchr(key, '/');
+    assertex(slash);
+    const char * at = strchr(slash, '@');
+    const char * hash = strchr(slash, '#');
+
+    const char * end = nullptr;
+    if (hash)
+    {
+        optVersion.assign(hash+1);
+        end = hash;
+    }
+    if (at)
+    {
+        if (end)
+            optVaultId.assign(at+1, end-at-1);
+        else
+            optVaultId.assign(at+1);
+        end = at;
+    }
+    if (end)
+        name.assign(slash+1, end-slash-1);
+    else
+        name.assign(slash+1);
+    category.assign(key, slash-key);
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+
 //Represents an entry in the secret cache.  Once created it is always used for the secret.
-using cache_timestamp = unsigned;
+using cache_timestamp = unsigned __int64;
+using cache_timestamp_diff = __int64;
+inline cache_timestamp getCacheTimestamp() { return nsTick(); }
+
 class SecretCacheEntry : public CInterface
 {
     friend class SecretCache;
@@ -380,14 +427,19 @@ class SecretCacheEntry : public CInterface
 public:
     //A cache entry is initally created that has a create and access time of now, but the checkTimestamp
     //is set so that needsRefresh() will return true.
-    SecretCacheEntry(cache_timestamp _now)
-    : contentTimestamp(_now), accessedTimestamp(_now), checkedTimestamp(_now - 2 * secretTimeoutMs)
+    SecretCacheEntry(cache_timestamp _now, const char * _secretKey)
+    : secretKey(_secretKey), contentTimestamp(_now), accessedTimestamp(_now), checkedTimestamp(_now - 2 * secretTimeoutNs)
     {
     }
 
     unsigned getHash() const
     {
         return contentHash;
+    }
+
+    void getSecretOptions(std::string & category, std::string & name, std::string & optVaultId, std::string & optVersion)
+    {
+        expandSecretKey(category, name, optVaultId, optVersion, secretKey.c_str());
     }
 
     // We should never replace known contents for unknown contents
@@ -397,43 +449,54 @@ public:
         return contents != nullptr;
     }
 
+    //Has the secret value been used since it was last checked for an update?
+    bool isActive() const
+    {
+        return (cache_timestamp_diff)(accessedTimestamp - checkedTimestamp) >= 0;
+    }
+
     //Is the secret potentially out of date?
     bool isStale() const
     {
-        cache_timestamp now = msTick();
+        cache_timestamp now = getCacheTimestamp();
         cache_timestamp elapsed = (now - contentTimestamp);
-        return (elapsed  > secretTimeoutMs);
+        return (elapsed > secretTimeoutNs);
     }
 
     // Is it time to check if there is a new value for this secret?
     bool needsRefresh(cache_timestamp now) const
     {
         cache_timestamp elapsed = (now - checkedTimestamp);
-        return (elapsed  > secretTimeoutMs);
+        return (elapsed > secretTimeoutNs);
     }
 
-    bool needsRefresh() const
+    void noteAccessed(cache_timestamp now)
     {
-        return needsRefresh(msTick());
+        accessedTimestamp = now;
     }
 
-    void noteFailedUpdate(cache_timestamp now)
+    void noteFailedUpdate(cache_timestamp now, bool accessed)
     {
         //Update the checked timestamp - so that we do not continually check for updates to secrets which
         //are stale because the vault or other source of values in inaccessible.
         //Keep using the last good value
         checkedTimestamp = now;
+        if (accessed)
+            accessedTimestamp = now;
     }
+
+    const char * queryTraceName() const { return secretKey.c_str(); }
 
     //The following functions can only be called from member functions of SecretCache
 private:
-    void updateContents(IPropertyTree * _contents, cache_timestamp now)
+    void updateContents(IPropertyTree * _contents, cache_timestamp now, bool accessed)
     {
         contents.set(_contents);
         updateHash();
         contentTimestamp = now;
-        accessedTimestamp = now;
         checkedTimestamp = now;
+        if (accessed)
+            accessedTimestamp = now;
     }
 
     void updateHash()
@@ -444,12 +507,14 @@ private:
             contentHash = 0;
     }
 private:
+    const std::string secretKey; // Duplicate of the key used to find this entry in the cache
     Linked<IPropertyTree> contents;// Can only be accessed when SecretCache::cs is held
     cache_timestamp contentTimestamp = 0;  // When was this secret read from disk/vault
     cache_timestamp accessedTimestamp = 0; // When was this secret last accessed?
     cache_timestamp checkedTimestamp = 0;  // When was this last checked for updates?
     unsigned contentHash = 0;
 };
+
 
 // A cache of (secret[:version] to a secret cache entry)
 // Once a hash table entry has been created for a secret it is never removed and the associated
@@ -465,7 +530,7 @@ public:
     }
 
     //Check to see if a secret exists, and if not add a null entry that has expired.
-    SecretCacheEntry * resolveSecret(const std::string & secretKey, cache_timestamp now)
+    SecretCacheEntry * getSecret(const std::string & secretKey, cache_timestamp now)
     {
         SecretCacheEntry * result;
         CriticalBlock block(cs);
@@ -478,16 +543,30 @@ public:
         else
         {
             //Insert an entry with a null value that is marked as out of date
-            result = new SecretCacheEntry(now);
+            result = new SecretCacheEntry(now, secretKey.c_str());
             secrets.emplace(secretKey, result);
         }
         return result;
     }
 
-    void updateSecret(SecretCacheEntry * match, IPropertyTree * value, cache_timestamp now)
+
+    void gatherPendingRefresh(std::vector<SecretCacheEntry *> & pending, cache_timestamp when)
     {
         CriticalBlock block(cs);
-        match->updateContents(value, now);
+        for (auto & entry : secrets)
+        {
+            SecretCacheEntry * secret = entry.second.get();
+            //Only refresh secrets that have been used since the last time they were refreshed, otherwise the vault
+            //may be overloaed with unnecessary requests - since secrets are never removed from the hash table.
+            if (secret->isActive() && secret->needsRefresh(when))
+                pending.push_back(secret);
+        }
+    }
+
+    void updateSecret(SecretCacheEntry * match, IPropertyTree * value, cache_timestamp now, bool accessed)
+    {
+        CriticalBlock block(cs);
+        match->updateContents(value, now, accessed);
     }
 
 private:
@@ -808,7 +887,7 @@ public:
         else if (authType == VaultAuthType::clientcert)
             clientCertLogin(permissionDenied);
         else if (permissionDenied && authType == VaultAuthType::token)
-            vaultAuthError("token permission denied"); //don't permenently invalidate token. Try again next time because it could be permissions for a particular secret rather than invalid token
+            vaultAuthError("token permission denied"); //don't permanently invalidate token. Try again next time because it could be permissions for a particular secret rather than invalid token
         if (clientToken.isEmpty())
             vaultAuthError("no vault access token");
     }
@@ -1064,44 +1143,62 @@ static IPropertyTree *resolveVaultSecret(const char *category, const char * name
     return createPTreeFromVaultSecret(json.str(), kind);
 }
 
-
-static SecretCacheEntry * getSecretEntry(const char *category, const char * name, const char * optVaultId, const char * optVersion)
+static IPropertyTree * resolveSecret(const char *category, const char * name, const char * optVaultId, const char * optVersion)
 {
-    cache_timestamp now = msTick();
-
-    std::string key;
-    key.append(category).append("/").append(name);
-    if (optVaultId)
-        key.append("@").append(optVaultId);
-    if (optVersion)
-        key.append("#").append(optVersion);
-
-    SecretCacheEntry * match = globalSecretCache.resolveSecret(key, now);
-    if (!match->needsRefresh(now))
-        return match;
-
-    Owned<IPropertyTree> resolved;
     if (!isEmptyString(optVaultId))
     {
         if (strieq(optVaultId, "k8s"))
-            resolved.setown(resolveLocalSecret(category, name));
+            return resolveLocalSecret(category, name);
         else
-            resolved.setown(resolveVaultSecret(category, name, optVaultId, optVersion));
+            return resolveVaultSecret(category, name, optVaultId, optVersion);
     }
     else
     {
-        resolved.setown(resolveLocalSecret(category, name));
+        Owned<IPropertyTree> resolved(resolveLocalSecret(category, name));
         if (!resolved)
             resolved.setown(resolveVaultSecret(category, name, nullptr, optVersion));
+        return resolved.getClear();
     }
+}
+
+static SecretCacheEntry * getSecretEntry(const char * category, const char * name, const char * optVaultId, const char * optVersion)
+{
+    cache_timestamp now = getCacheTimestamp();
+
+    std::string key(buildSecretKey(category, name, optVaultId, optVersion));
+
+    SecretCacheEntry * match = globalSecretCache.getSecret(key, now);
+    if (!match->needsRefresh(now))
+        return match;
+
+    Owned<IPropertyTree> resolved(resolveSecret(category, name, optVaultId, optVersion));
 
     //If the secret could no longer be resolved (e.g. a vault has gone down) then keep the old one
     if (resolved)
-        globalSecretCache.updateSecret(match, resolved, now);
+        globalSecretCache.updateSecret(match, resolved, now, true);
     else
-        match->noteFailedUpdate(now);
+        match->noteFailedUpdate(now, true);
 
     return match;
+}
+
+static void refreshSecret(SecretCacheEntry * secret, bool accessed)
+{
+    cache_timestamp now = getCacheTimestamp();
+
+    std::string category;
+    std::string name;
+    std::string optVaultId;
+    std::string optVersion;
+    secret->getSecretOptions(category, name, optVaultId, optVersion);
+
+    Owned<IPropertyTree> resolved(resolveSecret(category.c_str(), name.c_str(), optVaultId.c_str(), optVersion.c_str()));
+
+    //If the secret could no longer be resolved (e.g. a vault has gone down) then keep the old one
+    if (resolved)
+        globalSecretCache.updateSecret(secret, resolved, now, accessed);
+    else
+        secret->noteFailedUpdate(now, accessed);
 }
 
 static const IPropertyTree *getSecretTree(const char *category, const char * name, const char * optVaultId, const char * optVersion)
@@ -1156,8 +1253,8 @@ extern jlib_decl bool getSecretValue(StringBuffer & result, const char *category
 class CSecret final : public CInterfaceOf<ISyncedPropertyTree>
 {
 public:
-    CSecret(const char *_category, const char * _name, const char * _vaultId, const char * _version, SecretCacheEntry * _secret)
-    : category(_category), name(_name), vaultId(_vaultId), version(_version), secret(_secret)
+    CSecret(SecretCacheEntry * _secret)
+    : secret(_secret)
     {
     }
 
@@ -1196,10 +1293,6 @@ protected:
     void checkUptoDate() const;
 
 protected:
-    StringAttr category;
-    StringAttr name;
-    StringAttr vaultId;
-    StringAttr version;
     mutable CriticalSection secretCs;
     mutable SecretCacheEntry * secret;
 };
@@ -1214,35 +1307,118 @@ const IPropertyTree * CSecret::getTree() const
 
 void CSecret::checkUptoDate() const
 {
-    if (secret->needsRefresh())
+    cache_timestamp now = getCacheTimestamp();
+    if (secret->needsRefresh(now))
     {
 #ifdef TRACE_SECRETS
-        DBGLOG("Secret %s/%s is stale updating from %u...", category.str(), name.str(), secretHash);
+        DBGLOG("Secret %s is stale updating from %u...", secret->queryTraceName(), secretHash);
 #endif
         //MORE: This could block or fail - in roxie especially it would be better to return the old value
         try
         {
-            SecretCacheEntry * newSecret = getSecretEntry(category, name, vaultId, version);
-            //Check the secret is always returned consistently.  It would be possible to call a slightly
-            //more optimal function to refresh a secret, but this is simplest.
-            assertex(secret == newSecret);
+            refreshSecret(secret, true);
         }
         catch (IException * e)
         {
-            VStringBuffer msg("Failed to update secret %s.%s", category.str(), name.str());
+            VStringBuffer msg("Failed to update secret %s", secret->queryTraceName());
             EXCLOG(e, msg.str());
             e->Release();
         }
     }
+    else
+        secret->noteAccessed(now);
 }
 
-ISyncedPropertyTree * resolveSecret(const char *category, const char * name, const char * optVaultId, const char * optVersion)
+ISyncedPropertyTree * getSyncedSecret(const char *category, const char * name, const char * optVaultId, const char * optVersion)
 {
     validateCategoryName(category);
     validateSecretName(name);
 
     SecretCacheEntry * resolved = getSecretEntry(category, name, optVaultId, optVersion);
-    return new CSecret(category, name, optVaultId, optVersion, resolved);
+    return new CSecret(resolved);
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+
+//Manage a background thread, that checks which of the secrets have been accessed recently and refreshes them if they
+//are going to go out of date soon.
+
+static cache_timestamp refreshLookaheadNs = 0;
+class SecretRefreshThread : public Thread
+{
+public:
+    virtual int run() override
+    {
+        std::vector<SecretCacheEntry *> pending;
+        while (!abort)
+        {
+#ifdef TRACE_SECRETS
+            DBGLOG("Check for expired secrets...");
+#endif
+            cache_timestamp now = getCacheTimestamp();
+            globalSecretCache.gatherPendingRefresh(pending, now + refreshLookaheadNs);
+            for (auto secret : pending)
+            {
+#ifdef TRACE_SECRETS
+                DBGLOG("Refreshing secret %s", secret->queryTraceName());
+#endif
+                refreshSecret(secret, false);
+            }
+            pending.clear();
+
+            unsigned intervalMs = refreshLookaheadNs/4/1000000;
+            if (sem.wait(intervalMs))
+                break;
+        }
+        return 0;
+    }
+
+    void stop()
+    {
+        abort = true;
+        sem.signal();
+        join();
+    }
+
+public:
+    std::atomic<bool> abort{false};
+    Semaphore sem;
+};
+static Owned<SecretRefreshThread> refreshThread;
+
+void startSecretUpdateThread(const unsigned lookaheadMs)
+{
+    cache_timestamp lookaheadNs = (cache_timestamp)lookaheadMs * 1000000;
+    if (lookaheadNs == 0)
+        lookaheadNs = secretTimeoutNs / 5;
+    if (lookaheadNs > secretTimeoutNs / 2)
+        lookaheadNs = secretTimeoutNs / 2;
+    refreshLookaheadNs = lookaheadNs;
+    if (!refreshThread)
+    {
+        refreshThread.setown(new SecretRefreshThread());
+        refreshThread->start();
+    }
+}
+
+void stopSecretUpdateThread()
+{
+    if (refreshThread)
+    {
+        refreshThread->stop();
+        refreshThread->join();
+        refreshThread.clear();
+    }
+}
+
+MODULE_INIT(INIT_PRIORITY_SYSTEM)
+{
+    return true;
+}
+MODULE_EXIT()
+{
+    //This should have been called already, but for safety ensure the thread is terminated.
+    stopSecretUpdateThread();
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -1426,7 +1602,7 @@ public:
     CIssuerConfig(const char *_issuer, const char * _trustedPeers, bool _isClientConnection, bool _acceptSelfSigned, bool _addCACert, bool _disableMTLS)
     : CSyncedCertificateBase(_issuer), trustedPeers(_trustedPeers), isClientConnection(_isClientConnection), acceptSelfSigned(_acceptSelfSigned), addCACert(_addCACert), disableMTLS(_disableMTLS)
     {
-        secret.setown(resolveSecret("certificates", issuer, nullptr, nullptr));
+        secret.setown(getSyncedSecret("certificates", issuer, nullptr, nullptr));
         createConfig();
     }
 
@@ -1481,7 +1657,7 @@ public:
     CCertificateConfig(const char * _category, const char * _secretName, bool _addCACert)
     : CSyncedCertificateBase(nullptr), addCACert(_addCACert)
     {
-        secret.setown(resolveSecret(_category, _secretName, nullptr, nullptr));
+        secret.setown(getSyncedSecret(_category, _secretName, nullptr, nullptr));
         if (!secret->isValid())
             throw makeStringExceptionV(-1, "secret %s.%s not found", _category, _secretName);
         createConfig();
@@ -1595,3 +1771,16 @@ jlib_decl bool queryMtls()
     else
         return false;
 }
+
+
+#ifdef _USE_CPPUNIT
+std::string testBuildSecretKey(const char * category, const char * name, const char * optVaultId, const char * optVersion)
+{
+    return buildSecretKey(category, name, optVaultId, optVersion);
+}
+
+void testExpandSecretKey(std::string & category, std::string & name, std::string & optVaultId, std::string & optVersion, const char * key)
+{
+    expandSecretKey(category, name, optVaultId, optVersion, key);
+}
+#endif
