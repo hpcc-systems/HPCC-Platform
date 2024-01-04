@@ -483,7 +483,7 @@ bool CppCompiler::compile()
     if (abortChecker && abortChecker->abortRequested())
         return false;
 
-    TIME_SECTION(!verbose ? NULL : onlyCompile ? "compile" : "compile/link");
+    TIME_SECTION(!verbose ? NULL : ">compile");
 
     Owned<IThreadPool> pool = createThreadPool("CCompilerWorker", this, this, maxCompileThreads && !reportOnly() ? maxCompileThreads : 1, INFINITE);
     addCompileOption(COMPILE_ONLY[targetCompiler]);

@@ -718,7 +718,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityParse(BuildCtx & ctx, IHqlExpr
     doBuildParseValidators(instance->nestedctx, expr);
     doBuildParseExtra(instance->startctx, expr);
     if (options.timeTransforms)
-        noteFinishedTiming("compile:PARSE:prepare", startPrepareCycles);
+        noteFinishedTiming(">compile:>PARSE:>prepare", startPrepareCycles);
     
     MemoryBuffer buffer;
     cycle_t startCompileCycles = get_cycles_now();
@@ -729,7 +729,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityParse(BuildCtx & ctx, IHqlExpr
 
     doBuildParseCompiled(instance->classctx, buffer);
     if (options.timeTransforms)
-        noteFinishedTiming("compile:PARSE:compile", startCompileCycles);
+        noteFinishedTiming(">compile:>PARSE:>compile", startCompileCycles);
 
     nlpParse->buildProductions(*this, instance->classctx, instance->startctx);
 
@@ -763,7 +763,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityParse(BuildCtx & ctx, IHqlExpr
     buildInstanceSuffix(instance);
     buildConnectInputOutput(ctx, instance, boundDataset, 0, 0);
     if (options.timeTransforms)
-        noteFinishedTiming("compile:PARSE", startCycles);
+        noteFinishedTiming(">compile:>PARSE", startCycles);
 
     return instance->getBoundActivity();
 }

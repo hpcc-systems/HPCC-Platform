@@ -6130,7 +6130,7 @@ bool HqlCppTranslator::buildCode(HqlQueryContext & query, const char * embeddedL
             complexityText.append(getComplexity(workflow));
             wu()->setDebugValue("__Calculated__Complexity__", complexityText, true);
             if (options.timeTransforms)
-                noteFinishedTiming("compile:complexity", startCycles);
+                noteFinishedTiming(">compile:>complexity", startCycles);
         }
 
         buildRowAccessors();
@@ -6220,7 +6220,7 @@ bool HqlCppTranslator::buildCpp(IHqlCppInstance & _code, HqlQueryContext & query
             cycle_t startCycles = get_cycles_now();
             peepholeOptimize(*code, *this);
             if (options.timeTransforms)
-                noteFinishedTiming("compile:transform:peephole", startCycles);
+                noteFinishedTiming(">compile:>transform:>peephole", startCycles);
         }
     }
     catch (IException * e)
@@ -6245,7 +6245,7 @@ bool HqlCppTranslator::buildCpp(IHqlCppInstance & _code, HqlQueryContext & query
 void HqlCppTranslator::ensureWorkUnitUpdated()
 {
     if (timeReporter)
-        updateWorkunitTimings(wu(), SSTcompilestage, StTimeTotalExecute, timeReporter);
+        updateWorkunitTimings(wu(), SSToperation, StTimeTotalExecute, timeReporter);
 }
 
 double HqlCppTranslator::getComplexity(IHqlExpression * expr, ClusterType cluster)
@@ -9767,7 +9767,7 @@ IHqlExpression * HqlCppTranslator::getResourcedGraph(IHqlExpression * expr, IHql
         return NULL;
 
     if (options.timeTransforms)
-        noteFinishedTiming("compile:resource graph", startCycles);
+        noteFinishedTiming(">compile:>resource graph", startCycles);
     traceExpression("AfterResourcing", resourced);
 
     if (options.regressionTest)

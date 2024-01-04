@@ -3405,7 +3405,7 @@ void WuScopeFilter::finishedFilter()
     {
         sourceFlags &= ~(SSFsearchWorkflow);
     }
-    else if (matchOnly(SSTcompilestage))
+    else if (matchOnly(SSToperation))
     {
         //compile stages are not stored in the graph
         sourceFlags &= ~(SSFsearchGraphStats|SSFsearchGraph|SSFsearchWorkflow);
@@ -12346,7 +12346,7 @@ extern WORKUNIT_API void submitWorkUnit(const char *wuid, const char *username, 
 
     {
         Owned<IWorkUnit> wu = &cw->lock();
-        addTimeStamp(wu, SSTcompilestage, "compile", StWhenQueued, 0);
+        addTimeStamp(wu, SSToperation, ">compile", StWhenQueued, 0);
     }
 
     cw.clear();

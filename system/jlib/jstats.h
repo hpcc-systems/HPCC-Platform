@@ -88,6 +88,9 @@ public:
     void setWorkflowId(unsigned _id);
     void setChildGraphId(unsigned _id);
     void setDfuWorkunitId(const char * _name);
+    void setSectionId(const char * _name);
+    void setOperationId(const char * _name);
+
     int compare(const StatsScopeId & other) const;
 
     bool operator == (const StatsScopeId & other) const { return matches(other); }
