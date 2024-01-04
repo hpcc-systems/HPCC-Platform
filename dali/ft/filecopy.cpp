@@ -3709,7 +3709,8 @@ void FileSprayer::updateTargetProperties()
             ForEach(*iter)
             {
                 const char *aname = iter->query().queryName();
-                if (stricmp(aname, "Protect") != 0)
+                if (!(strieq(aname, "Protect")||
+                      strieq(aname, "_remoteStoragePlane")))
                     curProps.addPropTree(aname, createPTreeFromIPT(&iter->query()));
             }
 
