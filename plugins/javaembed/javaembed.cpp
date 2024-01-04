@@ -966,8 +966,10 @@ public:
 
         // Options we know we always want set
         optionStrings.append("-Xrs");
+
 #ifdef RLIMIT_STACK
         // JVM has a habit of reducing the stack limit on main thread to 1M - probably dates back to when it was actually an increase...
+        // is this different than -XX:ThreadStackSize ?
         StringBuffer stackOption("-Xss");
         struct rlimit limit;
         rlim_t slim = 0;
@@ -977,6 +979,9 @@ public:
             slim = 8*1024*1024;
         if (slim >= 1*1024*1024)
         {
+            // 500m max resonable ?
+            if (slim >= 0x1f400000)
+                slim = 0x1f400000;
             stackOption.append((__uint64) slim);
             optionStrings.append(stackOption);
         }
