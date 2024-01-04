@@ -1,16 +1,6 @@
 :root {
     --header-font-size: 14px;
     --row-font-size: 13px;
-    --grid-background: transparent;
-    --grid-selectionForeground: rgb(50, 49, 48);
-    --grid-selectionForegroundDark: rgb(225, 225, 225);
-    --grid-selectionForgroundHoverDark: rgb(225, 225, 225);
-    --grid-selectionBackground: rgb(235, 235, 235);
-    --grid-selectionBackgroundDark: rgb(47, 47, 47);
-    --grid-hoverBackground: rgb(215, 237, 248);
-    --grid-hoverBackgroundDark: rgb(49, 49, 49);
-    --grid-selectionHoverBackground: rgb(227, 225, 223);
-    --grid-selectionHoverBackgroundDark: rgb(176, 176, 176);
 }
 
 .flat .dojo-component.dgrid.dgrid-grid {
@@ -18,13 +8,13 @@
 }
 
 .flat .dgrid-header-row {
-    background-color: var(--grid-background);
+    background-color: transparent;
     font-size: var(--header-font-size);
     line-height: 32px;
 }
 
 .flat .dgrid-header-row .dgrid-cell {
-    border-bottom-color: var(--grid-selectionBackground);
+    border-bottom-color: var(--colorNeutralBackground1Selected);
 }
 
 .flat .dgrid-header-row:focus {
@@ -32,7 +22,7 @@
 }
 
 .flat .dgrid-header.dgrid-header-scroll {
-    background-color: var(--grid-background);
+    background-color: transparent;
 }
 
 .flat .dgrid-row {
@@ -41,34 +31,34 @@
 }
 
 .flat .dgrid-row:hover {
-    background-color: var(--grid-hoverBackground);
+    background-color: var(--colorNeutralBackground1Hover);
 }
 
 .flat-dark .dgrid-row:hover {
-    background-color: var(--grid-hoverBackgroundDark);
+    background-color: var(--colorNeutralBackground1Hover);
 }
 
 .flat .dgrid-row.dgrid-selected:hover {
-    background-color: var(--grid-selectionHoverBackground);
+    background-color: var(--colorNeutralBackground1Hover);
 }
 
 .flat-dark .dgrid-row.dgrid-selected:hover {
-    background-color: var(--grid-selectionHoverBackgroundDark);
+    background-color: var(--colorNeutralBackground1Hover);
 }
 
 .flat .dgrid-row.dgrid-selected {
-    background-color: var(--grid-selectionBackground);
-    color: var(--grid-selectionForeground);
-    border-color: var(--grid-background);
+    background-color: var(--colorNeutralBackground1Selected);
+    color: var(--colorNeutralForeground1Selected);
+    border-color: transparent;
 }
 
 .flat-dark .dgrid-row.dgrid-selected {
-    background-color: var(--grid-selectionBackgroundDark);
-    color: var(--grid-selectionForegroundDark);
+    background-color: var(--colorNeutralBackground1Selected);
+    color: var(--colorNeutralForeground1Selected);
 }
 
 .flat .dgrid-cell {
-    border-color: var(--grid-background);
+    border-color: transparent;
 }
 
 .flat .dgrid-focus:focus {
@@ -81,7 +71,7 @@
 }
 
 .flat .dgrid-footer {
-    background-color: var(--grid-background);
+    background-color: var(--colorNeutralStroke1);
 }
 
 .flat .dgrid-pagination {
@@ -109,7 +99,7 @@
 .flat .dgrid-pagination .dgrid-navigation .dgrid-page-input {
     padding: 0;
     margin: 0;
-    background: var(--grid-background);
+    background: var(--colorNeutralStroke1);
     border-style: solid;
     border-width: 1px;
     color: inherit;
