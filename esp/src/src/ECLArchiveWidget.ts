@@ -59,9 +59,9 @@ export class ECLArchiveWidget {
 
     setEditorTheme() {
         if (themeIsDark()) {
-            this.editor.setOption("theme", "darcula");
+            this.editor.option("theme", "darcula");
         } else {
-            this.editor.setOption("theme", "default");
+            this.editor.option("theme", "default");
         }
     }
 
@@ -108,9 +108,9 @@ export class ECLArchiveWidget {
         const handleThemeToggle = (evt) => {
             if (!context.editor) return;
             if (evt.detail && evt.detail.dark === true) {
-                context.editor.setOption("theme", "darcula");
+                context.editor.option("theme", "darcula");
             } else {
-                context.editor.setOption("theme", "default");
+                context.editor.option("theme", "default");
             }
         };
         document.addEventListener("eclwatch-theme-toggle", handleThemeToggle);
