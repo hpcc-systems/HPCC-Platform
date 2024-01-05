@@ -643,7 +643,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
             {
                 // It's a duplicate request-to-send - either they lost the request_received, or the ok_to_send (which has timed out)
                 // whichever is the case we should resend the acknowledgement to prevent the sender flooding us with requests
-                if (udpTraceLevel || udpTraceFlow)
+                if (udpTraceLevel >= 2 || udpTraceFlow)
                 {
                     StringBuffer s;
                     DBGLOG("UdpFlow: Duplicate requestToSend %" SEQF "u from node %s", _flowSeq, dest.getHostText(s).str());
