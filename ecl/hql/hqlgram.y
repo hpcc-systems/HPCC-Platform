@@ -10494,7 +10494,7 @@ mode
     : FLAT              {   $$.setExpr(createValue(no_flat, makeNullType()));   }
     | CSV               {   $$.setExpr(createValue(no_csv, makeNullType()));    }
     | CSV '(' csvOptions ')'
-                        {   
+                        {
                             HqlExprArray args;
                             $3.unwindCommaList(args);
                             $$.setExpr(createValue(no_csv, makeNullType(), args));
@@ -10542,6 +10542,75 @@ mode
                             $$.setExpr(createValue(no_json, makeNullType(), args));
                         }
     | pipe
+    | TYPE '(' FLAT ')'
+                        {
+                            $$.setExpr(createValue(no_flat, makeNullType()));
+                        }
+    | TYPE '(' CSV ')'
+                        {
+                            $$.setExpr(createValue(no_csv, makeNullType()));
+                        }
+    | TYPE '(' CSV ':' csvOptions ')'
+                        {
+                            HqlExprArray args;
+                            $5.unwindCommaList(args);
+                            $$.setExpr(createValue(no_csv, makeNullType(), args));
+                        }
+    | TYPE '(' THOR ')'
+                        {
+                            $$.setExpr(createValue(no_thor, makeNullType()));
+                        }
+    | TYPE '(' XML_TOKEN ')'
+                        {
+                            $$.setExpr(createValue(no_xml, makeNullType()));
+                        }
+    | TYPE '(' XML_TOKEN ':' xmlOptions ')'
+                        {
+                            HqlExprArray args;
+                            $5.unwindCommaList(args);
+
+                            //Create expression in a form that is backward compatible
+                            IHqlExpression * name = queryAttribute(rowAtom, args);
+                            if (name)
+                            {
+                                args.add(*LINK(name->queryChild(0)), 0);
+                                args.zap(*name);
+                            }
+                            else
+                                args.add(*createConstant("xml"), 0);
+                            $$.setExpr(createValue(no_xml, makeNullType(), args));
+                        }
+    | TYPE '(' JSON_TOKEN ')'
+                        {
+                            $$.setExpr(createValue(no_json, makeNullType()));
+                        }
+    | TYPE '(' JSON_TOKEN ':' xmlOptions ')'
+                        {
+                            HqlExprArray args;
+                            $5.unwindCommaList(args);
+
+                            //Create expression in a form that is backward compatible
+                            IHqlExpression * name = queryAttribute(rowAtom, args);
+                            if (name)
+                            {
+                                args.add(*LINK(name->queryChild(0)), 0);
+                                args.zap(*name);
+                            }
+                            else
+                                args.add(*createConstant("json"), 0);
+                            $$.setExpr(createValue(no_json, makeNullType(), args));
+                        }
+    | TYPE '(' pipe ')'
+    | TYPE '(' UNKNOWN_ID ')'
+                        {
+                            parser->setPluggableModeExpr($$, $3, nullptr);
+                        }
+    | TYPE '(' UNKNOWN_ID ':' hintList ')'
+                        {
+                            HqlExprArray options;
+                            $5.unwindCommaList(options);
+                            parser->setPluggableModeExpr($$, $3, &options);
+                        }
     ;
 
 dsOption

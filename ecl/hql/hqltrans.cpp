@@ -2687,6 +2687,7 @@ bool onlyTransformOnce(IHqlExpression * expr)
     case no_csv:
     case no_xml:
     case no_json:
+    case no_filetype:
     case no_list:
         return (expr->numChildren() == 0);
     case no_select:

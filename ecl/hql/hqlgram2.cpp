@@ -8992,6 +8992,29 @@ bool HqlGram::convertAllToAttribute(attribute &atr)
     return true;
 }
 
+void HqlGram::setPluggableModeExpr(attribute & targetAttr, attribute & mode, HqlExprArray * options)
+{
+    // This function is a placeholder for activating a pluggable file format;
+    // the grammar should have ensured that none of the legacy (built-in) file formats
+    // were activated, even with the new TYPE(<format>) syntax; if you get here,
+    // you should be only trying to load a plugin
+    IAtom * fileFormat = lower(mode.getId());
+    StringBuffer fileFormatStr(fileFormat->queryStr());
+
+    // TODO: Look for a plugin filetype of name fileFormatStr
+    DBGLOG("HqlGram::setPluggableModeExpr processing file type %s", fileFormatStr.str());
+
+    // Following is a placeholder to make the parser happy -- note the hardwiring
+    // of CSV format....
+    if (options)
+    {
+        targetAttr.setExpr(createValue(no_csv, makeNullType(), *options));
+    }
+    else
+    {
+        targetAttr.setExpr(createValue(no_csv, makeNullType()));
+    }
+}
 
 void HqlGram::checkValidRecordMode(IHqlExpression * dataset, attribute & atr, attribute & modeattr)
 {

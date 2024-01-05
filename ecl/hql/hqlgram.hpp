@@ -766,6 +766,8 @@ public:
     void checkValidPipeRecord(const attribute & errpos, IHqlExpression * record, IHqlExpression * attrs, IHqlExpression * expr);
     void checkValidLookupFlag(IHqlExpression * dataset, IHqlExpression * filename, attribute & atr);
 
+    void setPluggableModeExpr(attribute & targetAttr, attribute & mode, HqlExprArray * options);
+
     void createAppendDictionaries(attribute & targetAttr, attribute & leftAttr, attribute & rightAttr, IAtom * kind);
     void createAppendFiles(attribute & targetAttr, attribute & leftAttr, attribute & rightAttr, IAtom * kind);
     IHqlExpression * createAppendFiles(attribute & filesAttr, IHqlExpression * _attrs);
