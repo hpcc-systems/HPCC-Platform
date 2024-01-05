@@ -76,9 +76,9 @@ export const SourceEditor: React.FunctionComponent<SourceEditorProps> = ({
     const handleThemeToggle = React.useCallback((evt) => {
         if (!editor) return;
         if (evt.detail && evt.detail.dark === true) {
-            editor.setOption("theme", "darcula");
+            editor.option("theme", "darcula");
         } else {
-            editor.setOption("theme", "default");
+            editor.option("theme", "default");
         }
     }, [editor]);
     useOnEvent(document, "eclwatch-theme-toggle", handleThemeToggle);
