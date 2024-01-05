@@ -18242,7 +18242,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySOAP(BuildCtx & ctx, IHqlExpre
         else if (matchesBoolean(persistArg, true))
             persistArg = nullptr;
         else if (!matchesConstantValue(persistArg, 0)) // Avoid generating 0 since that is the default implementation
-            doBuildUnsignedFunction(instance->createctx, "getPersistPoolSize", persistArg);
+            doBuildUnsignedFunction(instance->createctx, "getPersistMaxRequests", persistArg);
     }
 
     //virtual unsigned getFlags()
@@ -18298,7 +18298,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySOAP(BuildCtx & ctx, IHqlExpre
         {
             flags.append("|SOAPFpersist");
             if (persistArg)
-                flags.append("|SOAPFpersistPool");
+                flags.append("|SOAPFpersistMax");
         }
         if (flags.length())
             doBuildUnsignedFunction(instance->classctx, "getFlags", flags.str()+1);

@@ -2234,7 +2234,7 @@ enum
     SOAPFlogusertail    = 0x020000,
     SOAPFformEncoded    = 0x040000,
     SOAPFpersist        = 0x080000,
-    SOAPFpersistPool    = 0x100000,
+    SOAPFpersistMax     = 0x100000,
 };
 
 struct IHThorWebServiceCallActionArg : public IHThorArg
@@ -2269,7 +2269,7 @@ struct IHThorWebServiceCallActionArg : public IHThorArg
     virtual const char * getRequestHeader() = 0;
     virtual const char * getRequestFooter() = 0;
     virtual void getLogTailText(size32_t & lenText, char * & text, const void * left) = 0;  // iff SOAPFlogusertail set
-    virtual unsigned getPersistPoolSize() = 0; // only available iff SOAPFpersistPool
+    virtual unsigned getPersistMaxRequests() = 0; // only available iff SOAPFpersistMax
 };
 typedef IHThorWebServiceCallActionArg IHThorSoapActionArg ;
 typedef IHThorWebServiceCallActionArg IHThorHttpActionArg ;
