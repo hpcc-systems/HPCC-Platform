@@ -458,7 +458,7 @@ int init_main(int argc, const char* argv[])
 
             // legacy esp.xml will contain a generated global section if present in the environment.
             // replace the empty stub created by loadConfiguration with this environment globals section.
-            Owned<IPropertyTree> global = envpt->queryPropTree("global");
+            Owned<IPropertyTree> global = envpt->getPropTree("global");
             if (global)
             {
                 Owned<IPropertyTree> currentConfig = getComponentConfig();
