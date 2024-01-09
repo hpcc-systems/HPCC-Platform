@@ -1098,6 +1098,9 @@ static IPropertyTree * resolveLocalSecret(const char *category, const char * nam
         read(io, 0, (size32_t)-1, content);
         if (!content.length())
             continue;
+
+        //Always add a null terminator to data read from a file so that queryProp() can be used on the resultant tree
+        content.append((byte)0);
         tree->setPropBin(name, content.length(), content.bufferBase());
     }
 
