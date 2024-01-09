@@ -21,6 +21,7 @@ import { ErrorBoundary } from "../util/errorBoundary";
 import { ShortVerticalDivider } from "./Common";
 import { MetricsOptions } from "./MetricsOptions";
 import { BreadcrumbInfo, OverflowBreadcrumb } from "./controls/OverflowBreadcrumb";
+import { MetricsPropertiesTables } from "./MetricsPropertiesTables";
 
 const logger = scopedLogger("src-react/components/Metrics.tsx");
 
@@ -360,28 +361,6 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     }, [lineage, selectedLineage]);
 
     //  Props Table  ---
-    const propsTable = useConst(() => new Table()
-        .columns([nlsHPCC.Property, nlsHPCC.Value, "Avg", "Min", "Max", "Delta", "StdDev", "SkewMin", "SkewMax", "NodeMin", "NodeMax"])
-        .columnWidth("auto")
-    );
-
-    const updatePropsTable = React.useCallback((scopes: IScope[]) => {
-        const props = [];
-        scopes.forEach((item, idx) => {
-            for (const key in item.__groupedProps) {
-                const row = item.__groupedProps[key];
-                props.push([row.Key, row.Value, row.Avg, row.Min, row.Max, row.Delta, row.StdDev, row.SkewMin, row.SkewMax, row.NodeMin, row.NodeMax]);
-            }
-            if (idx < scopes.length - 1) {
-                props.push(["------------------------------", "------------------------------"]);
-            }
-        });
-        propsTable
-            ?.data(props)
-            ?.lazyRender()
-            ;
-    }, [propsTable]);
-
     const propsTable2 = useConst(() => new Table()
         .columns([nlsHPCC.Property, nlsHPCC.Value])
         .columnWidth("auto")
@@ -437,7 +416,6 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     React.useEffect(() => {
         if (selectedMetrics) {
             updateScopesTable(selectedMetrics);
-            updatePropsTable(selectedMetrics);
             updatePropsTable2(selectedMetrics);
             updateLineage(selectedMetrics);
         }
@@ -569,7 +547,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                         />
                     </DockPanelItem>
                     <DockPanelItem key="propsTable" title={nlsHPCC.Properties} location="split-bottom" relativeTo="scopesTable" >
-                        <AutosizeHpccJSComponent widget={propsTable}></AutosizeHpccJSComponent>
+                        <MetricsPropertiesTables scopes={selectedMetrics}></MetricsPropertiesTables>
                     </DockPanelItem>
                     <DockPanelItem key="propsTable2" title={nlsHPCC.CrossTab} location="tab-after" relativeTo="propsTable" >
                         <AutosizeHpccJSComponent widget={propsTable2}></AutosizeHpccJSComponent>

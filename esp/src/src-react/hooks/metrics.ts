@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useConst, useForceUpdate } from "@fluentui/react-hooks";
-import { WUDetailsMeta, WorkunitsService } from "@hpcc-js/comms";
+import { WUDetails, WUDetailsMeta, WorkunitsService, IScope } from "@hpcc-js/comms";
 import { userKeyValStore } from "src/KeyValStore";
 import { useWorkunit } from "./workunit";
 import { useCounter } from "./util";
@@ -101,10 +101,24 @@ export enum FetchStatus {
     COMPLETE
 }
 
-export function useWorkunitMetrics(wuid: string): [any[], { [id: string]: any }, WUDetailsMeta.Activity[], WUDetailsMeta.Property[], string[], string[], FetchStatus, () => void] {
+const scopeFilterDefault: WUDetails.RequestNS.ScopeFilter = {
+    MaxDepth: 999999,
+    ScopeTypes: []
+};
+
+const nestedFilterDefault: WUDetails.RequestNS.NestedFilter = {
+    Depth: 0,
+    ScopeTypes: []
+};
+
+export function useWorkunitMetrics(
+    wuid: string,
+    scopeFilter: WUDetails.RequestNS.ScopeFilter = scopeFilterDefault,
+    nestedFilter: WUDetails.RequestNS.NestedFilter = nestedFilterDefault
+): [IScope[], { [id: string]: any }, WUDetailsMeta.Activity[], WUDetailsMeta.Property[], string[], string[], FetchStatus, () => void] {
 
     const [workunit, state] = useWorkunit(wuid);
-    const [data, setData] = React.useState<any[]>([]);
+    const [data, setData] = React.useState<IScope[]>([]);
     const [columns, setColumns] = React.useState<{ [id: string]: any }>([]);
     const [activities, setActivities] = React.useState<WUDetailsMeta.Activity[]>([]);
     const [properties, setProperties] = React.useState<WUDetailsMeta.Property[]>([]);
@@ -116,14 +130,8 @@ export function useWorkunitMetrics(wuid: string): [any[], { [id: string]: any },
     React.useEffect(() => {
         setStatus(FetchStatus.STARTED);
         workunit?.fetchDetailsNormalized({
-            ScopeFilter: {
-                MaxDepth: 999999,
-                ScopeTypes: []
-            },
-            NestedFilter: {
-                Depth: 0,
-                ScopeTypes: []
-            },
+            ScopeFilter: scopeFilter,
+            NestedFilter: nestedFilter,
             PropertiesToReturn: {
                 AllScopes: true,
                 AllAttributes: true,
@@ -158,7 +166,7 @@ export function useWorkunitMetrics(wuid: string): [any[], { [id: string]: any },
         }).finally(() => {
             setStatus(FetchStatus.COMPLETE);
         });
-    }, [workunit, state, count]);
+    }, [workunit, state, count, scopeFilter, nestedFilter]);
 
     return [data, columns, activities, properties, measures, scopeTypes, status, increment];
 }
