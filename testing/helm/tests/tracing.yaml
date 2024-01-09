@@ -1,11 +1,14 @@
 global:
   tracing:
-    enableDefaultLogExporter: false
+    enableDefaultLogExporter: true
     exporters:
+    - type: OTLP-HTTP
+      consoleDebug: true
+      batch:
+        enabled: true
     - type: JLOG
       logSpanDetails: true
       logParentInfo: true
       logAttributes: true
       logEvents: true
       logLinks: true
-      logResources: true

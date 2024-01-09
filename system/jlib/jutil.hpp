@@ -315,6 +315,13 @@ inline constexpr bool isContainerized() { return true; }
 inline constexpr bool isContainerized() { return false; }
 #endif
 
+//Same for isDebugBuild() rather than requiring #ifdef _DEBUG
+#ifdef _DEBUG
+inline constexpr bool isDebugBuild() { return true; }
+#else
+inline constexpr bool isDebugBuild() { return false; }
+#endif
+
 #ifndef arraysize
 #define arraysize(T) (sizeof(T)/sizeof(*T))
 #endif
