@@ -1,14 +1,17 @@
 import * as React from "react";
 import { DetailsList, DetailsListLayoutMode, Dropdown, IColumn as _IColumn, ICommandBarItemProps, IDetailsHeaderProps, IDetailsListStyles, mergeStyleSets, Selection, Stack, TooltipHost, TooltipOverflowMode, IDetailsList, IRenderFunction, IDetailsRowProps } from "@fluentui/react";
+import { DataGridProps } from "@fluentui/react-components";
 import { Pagination } from "@fluentui/react-experiments/lib/Pagination";
 import { useConst, useId, useMount, useOnEvent } from "@fluentui/react-hooks";
 import { BaseStore, Memory, QueryRequest, QuerySortItem } from "src/store/Memory";
 import nlsHPCC from "src/nlsHPCC";
+import { ColumnMap } from "src/Utility";
 import { createCopyDownloadSelection } from "../Common";
 import { updatePage, updateSort } from "../../util/history";
 import { useDeepCallback, useDeepEffect, useDeepMemo } from "../../hooks/deepHooks";
 import { useUserStore, useNonReactiveEphemeralPageStore } from "../../hooks/store";
 import { useUserTheme } from "../../hooks/theme";
+import { DataGridV9 } from "./DataGrid";
 
 /*  ---  Debugging dependency changes  ---
  *
@@ -118,7 +121,7 @@ const gridStyles = (height: string): Partial<IDetailsListStyles> => {
     };
 };
 
-export function useCopyButtons(columns: FluentColumns, selection: any[], filename: string): ICommandBarItemProps[] {
+export function useCopyButtons(columns: FluentColumns | ColumnMap, selection: any[], filename: string): ICommandBarItemProps[] {
 
     const memoizedColumns = useDeepMemo(() => columns, [], [columns]);
 
@@ -328,6 +331,123 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
     </div>;
 };
 
+interface FluentStoreDataGridProps {
+    store: any,
+    query?: QueryRequest,
+    sort?: QuerySortItem,
+    start: number,
+    count: number,
+    columns: any,
+    height: string,
+    refresh: RefreshTable,
+    onSelect: any,
+    selectedItems?: any,
+    setSelection: (selection: any[]) => void,
+    setTotal: (total: number) => void,
+    sizingOptions?: any
+}
+
+const FluentStoreDataGrid: React.FunctionComponent<FluentStoreDataGridProps> = ({
+    store,
+    query,
+    sort,
+    start,
+    count,
+    columns,
+    height,
+    refresh,
+    onSelect,
+    selectedItems,
+    setSelection,
+    setTotal,
+    sizingOptions
+}) => {
+    const memoizedColumns = useDeepMemo(() => columns, [], [columns]);
+    const [items, setItems] = React.useState<any[]>([]);
+    const [columnWidths] = useNonReactiveEphemeralPageStore("columnWidths");
+    const [storeSort, setStoreSort] = React.useState<QuerySortItem>(sort);
+    const [gridSort, setGridSort] = React.useState<Parameters<NonNullable<DataGridProps["onSortChange"]>>[1]>({ sortColumn: sort?.attribute?.toString() ?? "", sortDirection: sort?.descending ? "descending" : "ascending" });
+
+    const selectionHandler = useConst(() => new Selection({
+        onSelectionChanged: () => {
+            setSelection(selectionHandler.getSelection());
+        }
+    }));
+
+    const refreshTable = useDeepCallback((clearSelection = false) => {
+        if (isNaN(start) || isNaN(count)) return;
+        if (clearSelection) {
+            selectionHandler.setItems([], true);
+        }
+        const storeQuery = store.query({ ...query }, { start, count, sort: storeSort ? [storeSort] : undefined });
+        storeQuery.total.then(total => {
+            setTotal(total);
+        });
+        storeQuery.then(items => {
+            setItems(items);
+            setSelection(selectionHandler.getSelection());
+        });
+    }, [count, selectionHandler, start, store], [query, storeSort]);
+
+    React.useEffect(() => {
+        //  Dummy line to ensure its included in the dependency array  ---
+        refresh.value;
+        refreshTable(refresh.clear);
+    }, [refresh.clear, refresh.value, refreshTable]);
+
+    const fluentColumns: IColumn[] = React.useMemo(() => {
+        return columnsAdapter(memoizedColumns, columnWidths);
+    }, [columnWidths, memoizedColumns]);
+
+    const datagridStyles = mergeStyleSets({
+        wrapper: {
+            width: "auto",
+            height: "100%",
+            overflowY: "hidden",
+            ".fui-TableCellLayout": {
+                overflow: "hidden",
+            },
+            ".fui-TableCellLayout__content": {
+                overflow: "hidden"
+            },
+            ".fui-TableCellLayout__main": {
+                overflow: "hidden",
+                textOverflow: "ellipsis"
+            },
+            ".fui-DataGridBody": {
+                maxHeight: "calc(100vh - 250px)",
+                overflowY: "auto"
+            }
+        }
+    });
+
+    React.useEffect(() => {
+        setStoreSort(sort);
+    }, [sort]);
+
+    React.useEffect(() => {
+        updateColumnSorted(fluentColumns, sort?.attribute, sort?.descending);
+    }, [fluentColumns, sort]);
+
+    const onSortChange: DataGridProps["onSortChange"] = React.useCallback((e, nextSortState) => {
+        updateSort(true, nextSortState.sortDirection !== "ascending", nextSortState.sortColumn.toString());
+        setStoreSort({ attribute: nextSortState.sortColumn, descending: nextSortState.sortDirection === "descending" });
+        setGridSort(nextSortState);
+    }, []);
+
+    return <div className={datagridStyles.wrapper}>
+        <DataGridV9
+            items={items}
+            columns={columns}
+            sortState={gridSort}
+            onSelect={onSelect}
+            selectedItems={selectedItems}
+            onSortChange={onSortChange}
+            sizingOptions={sizingOptions}
+        />
+    </div>;
+};
+
 interface FluentGridProps {
     data: any[],
     primaryID: string,
@@ -418,6 +538,62 @@ export const FluentPagedGrid: React.FunctionComponent<FluentPagedGridProps> = ({
     </FluentStoreGrid>;
 };
 
+interface FluentPagedDataGridProps {
+    store: BaseStore<any, any>,
+    query?: QueryRequest,
+    sort?: QuerySortItem,
+    pageNum?: number,
+    pageSize: number,
+    total: number,
+    columns: any,
+    sizingOptions?: any,
+    height?: string,
+    onSelect?: any,
+    selectedItems?: any,
+    setSelection: (selection: any[]) => void,
+    setTotal: (total: number) => void,
+    refresh: RefreshTable
+}
+
+export const FluentPagedDataGrid: React.FunctionComponent<FluentPagedDataGridProps> = ({
+    store,
+    query,
+    sort,
+    pageNum = 1,
+    pageSize,
+    total,
+    columns,
+    sizingOptions,
+    height,
+    onSelect,
+    selectedItems,
+    setSelection,
+    setTotal,
+    refresh
+}) => {
+    const [page, setPage] = React.useState(pageNum - 1);
+    const [sortBy, setSortBy] = React.useState(sort);
+
+    React.useEffect(() => {
+        const maxPage = Math.ceil(total / pageSize) - 1;
+        if (maxPage >= 0 && page > maxPage) {   //  maxPage can be -1 if total is 0
+            setPage(maxPage);
+        }
+    }, [page, pageSize, total]);
+
+    React.useEffect(() => {
+        setSortBy(sort);
+    }, [sort]);
+
+    React.useEffect(() => {
+        const _page = pageNum >= 1 ? pageNum - 1 : 0;
+        setPage(_page);
+    }, [pageNum]);
+
+    return <FluentStoreDataGrid store={store} query={query} columns={columns} sizingOptions={sizingOptions} selectedItems={selectedItems} onSelect={onSelect} sort={sortBy} start={page * pageSize} count={pageSize} height={height} setSelection={setSelection} setTotal={setTotal} refresh={refresh}>
+    </FluentStoreDataGrid>;
+};
+
 interface FluentPagedFooterProps {
     persistID: string,
     pageNum?: number,
@@ -452,7 +628,12 @@ export const FluentPagedFooter: React.FunctionComponent<FluentPagedFooterProps> 
             padding: "10px 12px 10px 6px",
             display: "grid",
             gridTemplateColumns: "9fr 1fr",
-            gridColumnGap: "10px"
+            gridColumnGap: "10px",
+        },
+        footer: {
+            borderTop: `1px solid ${theme.palette.neutralLight}`,
+            zIndex: 2,
+            background: theme.palette.black
         },
         pageControls: {
             ".ms-Pagination-container": {

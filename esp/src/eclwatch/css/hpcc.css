@@ -25,6 +25,7 @@ body {
     font-family: Lucida Sans, Lucida Grande, Arial !important;
     font-size: 13px !important;
     padding: 0;
+    overflow: hidden;
 }
 
 button:hover {

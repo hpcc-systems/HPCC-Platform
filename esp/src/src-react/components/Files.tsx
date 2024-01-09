@@ -1,18 +1,23 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Icon, Link } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link } from "@fluentui/react";
+import { FolderZip20Regular, LockClosedFilled } from "@fluentui/react-icons";
+import { TableCellLayout, TableColumnDefinition, TableRowId, createTableColumn, Tooltip } from "@fluentui/react-components";
+import { WsDfu as HPCCWsDfu } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
+import { SizeMe } from "react-sizeme";
 import * as WsDfu from "src/WsDfu";
-import { CreateDFUQueryStore, Get } from "src/ESPLogicalFile";
+import { CreateDFUQueryStore } from "src/ESPLogicalFile";
 import { formatCost } from "src/Session";
 import * as Utility from "src/Utility";
 import { QuerySortItem } from "src/store/Store";
 import nlsHPCC from "src/nlsHPCC";
 import { useConfirm } from "../hooks/confirm";
+import { useUserTheme } from "../hooks/theme";
 import { useMyAccount } from "../hooks/user";
 import { useHasFocus, useIsMounted } from "../hooks/util";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
-import { FluentPagedGrid, FluentPagedFooter, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
+import { FluentPagedDataGrid, FluentPagedFooter, useCopyButtons, useFluentStoreState } from "./controls/Grid";
 import { AddToSuperfile } from "./forms/AddToSuperfile";
 import { CopyFile } from "./forms/CopyFile";
 import { DesprayFile } from "./forms/DesprayFile";
@@ -21,9 +26,10 @@ import { Filter } from "./forms/Filter";
 import { RemoteCopy } from "./forms/RemoteCopy";
 import { RenameFile } from "./forms/RenameFile";
 import { ShortVerticalDivider } from "./Common";
-import { SizeMe } from "react-sizeme";
 
 const logger = scopedLogger("src-react/components/Files.tsx");
+
+type LogicalFile = HPCCWsDfu.DFULogicalFile;
 
 const FilterFields: Fields = {
     "LogicalName": { type: "string", label: nlsHPCC.Name, placeholder: nlsHPCC.somefile },
@@ -99,6 +105,15 @@ export const Files: React.FunctionComponent<FilesProps> = ({
     store
 }) => {
 
+    const { themeV9 } = useUserTheme();
+    const footerStyles = React.useMemo(() => {
+        return {
+            zIndex: 2,
+            background: themeV9.colorNeutralBackground1,
+            borderTop: `1px solid ${themeV9.colorNeutralStroke1}`
+        };
+    }, [themeV9]);
+
     const hasFilter = React.useMemo(() => Object.keys(filter).length > 0, [filter]);
 
     const [showFilter, setShowFilter] = React.useState(false);
@@ -116,6 +131,12 @@ export const Files: React.FunctionComponent<FilesProps> = ({
         pageSize, setPageSize,
         total, setTotal,
         refreshTable } = useFluentStoreState({ page });
+
+    const [selectedRows, setSelectedRows] = React.useState(new Set<TableRowId>());
+    const onSelectionChange = (items, rowIds) => {
+        setSelectedRows(rowIds);
+        setSelection(items);
+    };
 
     //  Refresh on focus  ---
     const isMounted = useIsMounted();
@@ -136,104 +157,140 @@ export const Files: React.FunctionComponent<FilesProps> = ({
         return formatQuery(filter);
     }, [filter]);
 
-    const columns = React.useMemo((): FluentColumns => {
+    const columnSizingOptions = React.useMemo(() => {
         return {
-            col1: {
-                width: 16,
-                disabled: (item) => {
-                    return item ? item.__hpcc_isDir : true;
-                },
-                selectorType: "checkbox"
-            },
-            IsProtected: {
-                headerIcon: "LockSolid",
-                headerTooltip: nlsHPCC.Protected,
-                width: 16,
-                sortable: false,
-                formatter: (_protected) => {
-                    if (_protected === true) {
-                        return <Icon iconName="LockSolid" />;
-                    }
-                    return "";
-                },
-            },
-            IsCompressed: {
-                headerIcon: "ZipFolder",
-                headerTooltip: nlsHPCC.Compressed,
-                width: 16,
-                sortable: false,
-                formatter: (compressed) => {
-                    if (compressed === true) {
-                        return <Icon iconName="ZipFolder" />;
-                    }
-                    return "";
-                },
-            },
-            Name: {
-                label: nlsHPCC.LogicalName,
-                width: 360,
-                formatter: (name, row) => {
-                    const file = Get(row.NodeGroup, name, row);
-                    if (row.__hpcc_isDir) {
-                        return name;
-                    }
-                    const url = "#/files/" + (row.NodeGroup ? row.NodeGroup + "/" : "") + name;
-                    return <>
-                        <Icon iconName={file.getStateIcon ? file.getStateIcon() : ""} />
-                        &nbsp;
-                        <Link href={url}>{name}</Link>
-                    </>;
-                },
-            },
-            Owner: { label: nlsHPCC.Owner },
-            SuperOwners: { label: nlsHPCC.SuperOwner, sortable: false },
-            Description: { label: nlsHPCC.Description, sortable: false },
-            NodeGroup: { label: nlsHPCC.Cluster },
-            Records: {
-                label: nlsHPCC.Records,
-                formatter: (value, row) => {
-                    return Utility.formatNum(row.IntRecordCount);
-                },
-            },
-            FileSize: {
-                label: nlsHPCC.Size,
-                formatter: (value, row) => {
-                    return Utility.convertedSize(row.IntSize);
-                },
-            },
-            CompressedFileSizeString: {
-                label: nlsHPCC.CompressedSize,
-                formatter: (value, row) => {
-                    return Utility.convertedSize(row.CompressedFileSize);
-                }
-            },
-            Parts: {
-                label: nlsHPCC.Parts, width: 40,
-            },
-            MinSkew: {
-                label: nlsHPCC.MinSkew, width: 60, formatter: (value, row) => value ? `${Utility.formatDecimal(value / 100)}%` : ""
-            },
-            MaxSkew: {
-                label: nlsHPCC.MaxSkew, width: 60, formatter: (value, row) => value ? `${Utility.formatDecimal(value / 100)}%` : ""
-            },
-            Modified: { label: nlsHPCC.ModifiedUTCGMT },
-            Accessed: { label: nlsHPCC.LastAccessed },
-            AtRestCost: {
-                label: nlsHPCC.FileCostAtRest,
-                formatter: (cost, row) => {
-                    return `${formatCost(cost)}`;
-                },
-            },
-            AccessCost: {
-                label: nlsHPCC.FileAccessCost,
-                formatter: (cost, row) => {
-                    return `${formatCost(cost)}`;
-                },
-            }
+            IsProtected: { minWidth: 16, defaultWidth: 16 },
+            IsCompressed: { minWidth: 16, defaultWidth: 16 },
+            Name: { minWidth: 160, idealWidth: 360, defaultWidth: 360 },
+            Owner: { minWidth: 90, idealWidth: 120, defaultWidth: 120 },
+            SuperOwners: { minWidth: 90, idealWidth: 90, defaultWidth: 90 },
+            Description: { minWidth: 60, idealWidth: 80, defaultWidth: 80 },
+            Cluster: { minWidth: 64, defaultWidth: 64 },
+            Records: { minWidth: 64, defaultWidth: 64 },
+            Size: { minWidth: 32, defaultWidth: 64 },
+            Parts: { minWidth: 32, defaultWidth: 64 },
+            MinSkew: { minWidth: 64, defaultWidth: 64 },
+            MaxSkew: { minWidth: 64, defaultWidth: 64 },
+            Modified: { minWidth: 160, idealWidth: 160, defaultWidth: 160 },
+            Accessed: { minWidth: 130, idealWidth: 130, defaultWidth: 130 },
         };
     }, []);
 
-    const copyButtons = useCopyButtons(columns, selection, "files");
+    const columns: TableColumnDefinition<LogicalFile>[] = React.useMemo(() => [
+        createTableColumn<LogicalFile>({
+            columnId: "IsProtected",
+            renderHeaderCell: () => <Tooltip content={nlsHPCC.Protected} relationship="label"><LockClosedFilled fontSize={18} /></Tooltip>,
+            renderCell: (cell) => cell.IsProtected ? <LockClosedFilled /> : "",
+        }),
+        createTableColumn<LogicalFile>({
+            columnId: "IsCompressed",
+            renderHeaderCell: () => <Tooltip content={nlsHPCC.Compressed} relationship="label"><FolderZip20Regular /></Tooltip>,
+            renderCell: (cell) => cell.IsCompressed ? <FolderZip20Regular /> : "",
+        }),
+        createTableColumn<LogicalFile>({
+            columnId: "Name",
+            compare: (a, b) => a.Name?.localeCompare(b.Name),
+            renderHeaderCell: () => nlsHPCC.LogicalName,
+            renderCell: (cell) => {
+                return <TableCellLayout>
+                    <Link href={`#/files/${cell.Name}`}>{cell.Name}</Link>
+                </TableCellLayout>;
+            },
+        }),
+        createTableColumn<LogicalFile>({
+            columnId: "Owner",
+            compare: (a, b) => a.Owner?.localeCompare(b.Owner),
+            renderHeaderCell: () => nlsHPCC.Owner,
+            renderCell: (cell) => <TableCellLayout>{cell?.Owner}</TableCellLayout>,
+        }),
+        createTableColumn<LogicalFile>({
+            columnId: "SuperOwners",
+            compare: (a, b) => a.SuperOwners?.localeCompare(b.SuperOwners),
+            renderHeaderCell: () => nlsHPCC.SuperOwner,
+            renderCell: (cell) => <TableCellLayout>{cell?.SuperOwners}</TableCellLayout>,
+        }),
+        createTableColumn<LogicalFile>({
+            columnId: "Description",
+            compare: (a, b) => a.Description?.localeCompare(b.Description),
+            renderHeaderCell: () => nlsHPCC.Description,
+            renderCell: (cell) => <TableCellLayout>{cell?.Description}</TableCellLayout>,
+        }),
+        createTableColumn<LogicalFile>({
+            columnId: "Cluster",
+            compare: (a, b) => a["Cluster"]?.localeCompare(b["Cluster"]),
+            renderHeaderCell: () => nlsHPCC.Cluster,
+            renderCell: (cell) => <TableCellLayout>{cell["Cluster"]}</TableCellLayout>,
+        }),
+        createTableColumn<LogicalFile>({
+            columnId: "Records",
+            compare: (a, b) => a["Records"]?.localeCompare(b["Records"]),
+            renderHeaderCell: () => nlsHPCC.Records,
+            renderCell: (cell) => <TableCellLayout>{cell["Records"]}</TableCellLayout>,
+        }),
+        createTableColumn<LogicalFile>({
+            columnId: "Size",
+            compare: (a, b) => a["Size"]?.localeCompare(b["Size"]),
+            renderHeaderCell: () => nlsHPCC.Size,
+            renderCell: (cell) => <TableCellLayout>{cell["Size"]}</TableCellLayout>,
+        }),
+        createTableColumn<LogicalFile>({
+            columnId: "Parts",
+            compare: (a, b) => a["Parts"]?.localeCompare(b["Parts"]),
+            renderHeaderCell: () => nlsHPCC.Parts,
+            renderCell: (cell) => <TableCellLayout>{cell["Parts"]}</TableCellLayout>,
+        }),
+        createTableColumn<LogicalFile>({
+            columnId: "MinSkew",
+            compare: (a, b) => a["MinSkew"] - b["MinSkew"],
+            renderHeaderCell: () => nlsHPCC.MinSkew,
+            renderCell: (cell) => <TableCellLayout>{cell.MinSkew ? `${Utility.formatDecimal(cell.MinSkew / 100)}%` : ""}</TableCellLayout>,
+        }),
+        createTableColumn<LogicalFile>({
+            columnId: "MaxSkew",
+            compare: (a, b) => a["MaxSkew"] - b["MaxSkew"],
+            renderHeaderCell: () => nlsHPCC.MaxSkew,
+            renderCell: (cell) => <TableCellLayout>{cell.MaxSkew ? `${Utility.formatDecimal(cell.MaxSkew / 100)}%` : ""}</TableCellLayout>,
+        }),
+        createTableColumn<LogicalFile>({
+            columnId: "Modified",
+            compare: (a, b) => a.Modified?.localeCompare(b.Modified),
+            renderHeaderCell: () => nlsHPCC.ModifiedUTCGMT,
+            renderCell: (cell) => <TableCellLayout>{cell?.Modified}</TableCellLayout>,
+        }),
+        createTableColumn<LogicalFile>({
+            columnId: "Accessed",
+            compare: (a, b) => a.Accessed?.localeCompare(b.Accessed),
+            renderHeaderCell: () => nlsHPCC.LastAccessed,
+            renderCell: (cell) => <TableCellLayout>{cell?.Accessed}</TableCellLayout>,
+        }),
+        createTableColumn<LogicalFile>({
+            columnId: "AtRestCost",
+            compare: (a, b) => a.AtRestCost - b.AtRestCost,
+            renderHeaderCell: () => nlsHPCC.FileCostAtRest,
+            renderCell: (cell) => <TableCellLayout>{formatCost(cell.AtRestCost)}</TableCellLayout>,
+        }),
+        createTableColumn<LogicalFile>({
+            columnId: "AccessCost",
+            compare: (a, b) => a.AccessCost - b.AccessCost,
+            renderHeaderCell: () => nlsHPCC.FileAccessCost,
+            renderCell: (cell) => <TableCellLayout>{formatCost(cell.AccessCost)}</TableCellLayout>,
+        }),
+    ], []);
+
+    const columnMap: Utility.ColumnMap = React.useMemo(() => {
+        const retVal: Utility.ColumnMap = {};
+        columns.forEach((col, idx) => {
+            const columnId = col.columnId.toString();
+            retVal[columnId] = {
+                id: `${columnId}_${idx}`,
+                field: columnId,
+                label: columnId
+            };
+        });
+        return retVal;
+    }, [columns]);
+
+    const copyButtons = useCopyButtons(columnMap, selection, "files");
 
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
@@ -347,7 +404,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
                 <SizeMe monitorHeight>{({ size }) =>
                     <div style={{ position: "relative", width: "100%", height: "100%" }}>
                         <div style={{ position: "absolute", width: "100%", height: `${size.height}px` }}>
-                            <FluentPagedGrid
+                            <FluentPagedDataGrid
                                 store={gridStore}
                                 query={query}
                                 sort={sort}
@@ -355,11 +412,14 @@ export const Files: React.FunctionComponent<FilesProps> = ({
                                 pageSize={pageSize}
                                 total={total}
                                 columns={columns}
-                                height={`${size.height}px`}
+                                sizingOptions={columnSizingOptions}
+                                height={"calc(100vh - 176px)"}
+                                onSelect={onSelectionChange}
+                                selectedItems={selectedRows}
                                 setSelection={setSelection}
                                 setTotal={setTotal}
                                 refresh={refreshTable}
-                            ></FluentPagedGrid>
+                            ></FluentPagedDataGrid>
                         </div>
                     </div>
                 }</SizeMe>
@@ -380,6 +440,6 @@ export const Files: React.FunctionComponent<FilesProps> = ({
             setPageSize={setPageSize}
             total={total}
         ></FluentPagedFooter>}
-        footerStyles={{}}
+        footerStyles={footerStyles}
     />;
 };
