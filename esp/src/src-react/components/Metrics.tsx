@@ -4,7 +4,7 @@ import { Label, Spinner } from "@fluentui/react-components";
 import { typographyStyles } from "@fluentui/react-theme";
 import { useConst } from "@fluentui/react-hooks";
 import { bundleIcon, Folder20Filled, Folder20Regular, FolderOpen20Filled, FolderOpen20Regular, } from "@fluentui/react-icons";
-import { WorkunitsServiceEx } from "@hpcc-js/comms";
+import { WorkunitsServiceEx, IScope } from "@hpcc-js/comms";
 import { Table } from "@hpcc-js/dgrid";
 import { compare, scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
@@ -14,7 +14,7 @@ import { FetchStatus, useMetricsOptions, useWorkunitMetrics } from "../hooks/met
 import { HolyGrail } from "../layouts/HolyGrail";
 import { AutosizeComponent, AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
 import { DockPanel, DockPanelItem, ResetableDockPanel } from "../layouts/DockPanel";
-import { IScope, LayoutStatus, MetricGraph, MetricGraphWidget, isGraphvizWorkerResponse, layoutCache } from "../util/metricGraph";
+import { LayoutStatus, MetricGraph, MetricGraphWidget, isGraphvizWorkerResponse, layoutCache } from "../util/metricGraph";
 import { pushUrl } from "../util/history";
 import { debounce } from "../util/throttle";
 import { ErrorBoundary } from "../util/errorBoundary";
@@ -32,82 +32,6 @@ const SelectedLineageIcon = bundleIcon(FolderOpen20Filled, FolderOpen20Regular);
 const defaultUIState = {
     hasSelection: false
 };
-
-interface PropertyValue {
-    Key: string;
-    Value: string;
-    Avg: string;
-    Min: string;
-    Max: string;
-    Delta: string;
-    StdDev: string;
-    SkewMin: string;
-    SkewMax: string;
-    NodeMin: string;
-    NodeMax: string;
-}
-
-const regex = /[A-Z][a-z]*/g;
-function splitKey(key: string): [string, string, string] | null {
-
-    // Related properties  ---
-    const relatedProps = ["SkewMin", "SkewMax", "NodeMin", "NodeMax"];
-    for (const prop of relatedProps) {
-        const index = key.indexOf(prop);
-        if (index === 0) {
-            const before = "";
-            const after = key.slice(index + prop.length);
-            return [before, prop, after];
-        }
-    }
-
-    // Primary properties  ---
-    const keyParts = key.match(regex);
-    if (keyParts?.length) {
-        const before = keyParts.shift();
-        const newKey = keyParts.join("");
-        const props = ["Avg", "Min", "Max", "Delta", "StdDev"];
-        for (const keyword of props) {
-            const index = newKey.indexOf(keyword);
-            if (index === 0) {
-                const after = newKey.slice(index + keyword.length);
-                return [before, keyword, after];
-            }
-        }
-        // Not an aggregate property  ---
-        return [before, "", newKey];
-    }
-
-    // No match found  ---
-    return ["", "", key];
-}
-
-function formatValue(item: IScope, key: string): string {
-    return item.__formattedProps?.[key] ?? item[key] ?? "";
-}
-
-type DedupProperties = { [key: string]: boolean };
-
-function formatValues(item: IScope, key: string, dedup: DedupProperties): PropertyValue | null {
-    const keyParts = splitKey(key);
-    if (!dedup[keyParts[2]]) {
-        dedup[keyParts[2]] = true;
-        return {
-            Key: `${keyParts[0]}${keyParts[2]}`,
-            Value: formatValue(item, `${keyParts[0]}${keyParts[2]}`),
-            Avg: formatValue(item, `${keyParts[0]}Avg${keyParts[2]}`),
-            Min: formatValue(item, `${keyParts[0]}Min${keyParts[2]}`),
-            Max: formatValue(item, `${keyParts[0]}Max${keyParts[2]}`),
-            Delta: formatValue(item, `${keyParts[0]}Delta${keyParts[2]}`),
-            StdDev: formatValue(item, `${keyParts[0]}StdDev${keyParts[2]}`),
-            SkewMin: formatValue(item, `SkewMin${keyParts[2]}`),
-            SkewMax: formatValue(item, `SkewMax${keyParts[2]}`),
-            NodeMin: formatValue(item, `NodeMin${keyParts[2]}`),
-            NodeMax: formatValue(item, `NodeMax${keyParts[2]}`)
-        };
-    }
-    return null;
-}
 
 interface MetricsProps {
     wuid: string;
@@ -441,19 +365,14 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         .columnWidth("auto")
     );
 
-    const updatePropsTable = React.useCallback((selection: IScope[]) => {
+    const updatePropsTable = React.useCallback((scopes: IScope[]) => {
         const props = [];
-        selection.forEach((item, idx) => {
-            const dedup: DedupProperties = {};
-            for (const key in item) {
-                if (key.indexOf("__") !== 0) {
-                    const row = formatValues(item, key, dedup);
-                    if (row) {
-                        props.push([row.Key, row.Value, row.Avg, row.Min, row.Max, row.Delta, row.StdDev, row.SkewMin, row.SkewMax, row.NodeMin, row.NodeMax]);
-                    }
-                }
+        scopes.forEach((item, idx) => {
+            for (const key in item.__groupedProps) {
+                const row = item.__groupedProps[key];
+                props.push([row.Key, row.Value, row.Avg, row.Min, row.Max, row.Delta, row.StdDev, row.SkewMin, row.SkewMax, row.NodeMin, row.NodeMax]);
             }
-            if (idx < selection.length - 1) {
+            if (idx < scopes.length - 1) {
                 props.push(["------------------------------", "------------------------------"]);
             }
         });

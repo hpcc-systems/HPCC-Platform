@@ -1,4 +1,5 @@
 import { d3Event, select as d3Select, SVGZoomWidget } from "@hpcc-js/common";
+import type { IScope } from "@hpcc-js/comms";
 import { graphviz } from "@hpcc-js/graph";
 import { Graph2, hashSum, scopedLogger } from "@hpcc-js/util";
 import { format } from "src/Utility";
@@ -70,18 +71,6 @@ function encodeLabel(label: string) {
         ;
 }
 
-export interface IScope {
-    __parentName?: string;
-    __children?: IScope[];
-    __formattedProps: { [key: string]: any };
-    id: string;
-    name: string;
-    type: string;
-    Kind: string;
-    Label: string;
-    [key: string]: any;
-}
-
 interface IScopeEdge extends IScope {
     IdSource: string;
     IdTarget: string;
@@ -138,6 +127,7 @@ export class MetricGraph extends Graph2<IScope, IScopeEdge, IScope> {
             if (!parent) {
                 parent = this.ensureLineage({
                     __formattedProps: {},
+                    __groupedProps: {},
                     id: this.scopeID(scope.__parentName),
                     name: scope.__parentName,
                     type: "unknown",
@@ -354,9 +344,10 @@ subgraph cluster_${encodeID(sg.id)} {
                         return this.subgraph(item.__parentName);
                     }
                 }
-            }).filter(subgraph => !!subgraph).map(subgraph => {
+            }).filter(subgraph => {
+                return !!subgraph;
+            }).forEach(subgraph => {
                 childTpls.push(this.subgraphTpl(subgraph, options));
-                return subgraph;
             });
             this.allEdges().filter(e => {
                 const sV = this.vertex(this._activityIndex[e.IdSource]);
