@@ -74,7 +74,10 @@ public:
     }
 
     IEclSourceCollection * resolveGitCollection(const char * repoPath, const char * defaultUrl);
-
+    void setErrorReceiver(IErrorReceiver * _errorReceiver) const
+    {
+        errorReceiver = _errorReceiver;
+    }
 protected:
     IEclRepository * createNewSourceFileEclRepository(IErrorReceiver *errs, const char * path, unsigned flags, unsigned trace, bool includeInArchive);
     IEclRepository * createGitRepository(IErrorReceiver *errs, const char * path, const char * urn, unsigned flags, unsigned trace, bool includeInArchive);
@@ -85,6 +88,7 @@ protected:
     IEclPackage * queryRepository(IIdAtom * name, const char * defaultUrl, IEclSourceCollection * overrideSource, bool includeDefinitions);
 
 private:
+    mutable IErrorReceiver * errorReceiver = nullptr; // mutable to allow const methods to set it, it logically doesn't change the object
     using DependencyInfo = std::pair<std::string, Shared<IEclPackage>>;
     CIArrayOf<EclRepositoryMapping> repos;
     std::vector<DependencyInfo> dependencies;

@@ -1252,6 +1252,12 @@ void EclCC::processSingleQuery(const EclRepositoryManager & localRepositoryManag
     }
 
     IErrorReceiver & errorProcessor = *severityMapper;
+    //Associate the error handler - so that failures to fetch from git can be reported as errors, but also mapped
+    //to warnings to ensure that automated tasks do not fail because the could not connect to git.
+    localRepositoryManager.setErrorReceiver(&errorProcessor);
+    //Ensure the error processor is cleared up when we exit this function
+    COnScopeExit scoped([&]() { localRepositoryManager.setErrorReceiver(NULL); });
+
     //All dlls/exes are essentially cloneable because you may be running multiple instances at once
     //The only exception would be a dll created for a one-time query.  (Currently handled by eclserver.)
     instance.wu->setCloneable(true);
@@ -1507,7 +1513,10 @@ void EclCC::processSingleQuery(const EclRepositoryManager & localRepositoryManag
         {
             StringBuffer s;
             e->errorMessage(s);
-            errorProcessor.reportError(3, s.str(), defaultErrorPathname, 1, 0, 0);
+            unsigned errorCode = e->errorCode();
+            if ((errorCode < HQL_ERROR_START) || (errorCode > HQL_ERROR_END))
+                errorCode = ERR_UNKNOWN_EXCEPTION;
+            errorProcessor.reportError(errorCode, s.str(), defaultErrorPathname, 1, 0, 0);
             e->Release();
         }
 
