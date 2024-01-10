@@ -228,7 +228,7 @@ public:
                 if (lock.lockWrite(timeout))
                     break;
             }
-            PROGLOG("CLCLockBlock(write=%d) timeout %s(%d), took %d ms",!readLock,fname,lnum,got-msTick());
+            PROGLOG("CLCLockBlock(write=%d) timeout %s(%d), took %d ms",!readLock,fname,lnum,msTick()-got);
             if (readWriteStackTracing)
                 PrintStackReport();
         }
