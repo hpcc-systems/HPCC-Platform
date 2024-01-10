@@ -1476,7 +1476,7 @@ bool CLogMsgManager::MsgProcessor::flush(unsigned timeout)
     if(!q.waitMaxOrdinality(0, timeout))
         return false;
     unsigned now = msTick();
-    if(now >= (start+timeout))
+    if(now - start >= timeout)
         return false;
     try
     {
