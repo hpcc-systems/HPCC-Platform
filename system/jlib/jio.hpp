@@ -109,20 +109,6 @@ interface IReceiver : public IInterface
     virtual bool takeRecord(offset_t pos) = 0;
 };
 
-interface IRecordFetchChannel : public IInterface
-{
-    virtual void fetch(offset_t pos, void *buffer, IReceiver *receiver) = 0;
-    virtual void flush() = 0;
-    virtual void abort() = 0;
-    virtual bool isAborted() = 0;
-    virtual bool isImmediate() = 0;
-};
-
-interface IRecordFetcher : public IInterface
-{
-    virtual IRecordFetchChannel *openChannel(bool immediate) = 0;
-};
-
 interface IWriteSeqAllocator : public IInterface
 {
     virtual IWriteSeq *next(size32_t &num) = 0; 
@@ -140,8 +126,6 @@ extern jlib_decl IWriteSeq *createWriteSeq(int fh, size32_t size, size32_t bufsi
 extern jlib_decl IWriteSeq *createTeeWriteSeq(IWriteSeq *, IWriteSeq *);
 extern jlib_decl IWriteSeq *createChainedWriteSeq(IWriteSeqAllocator *iwsa);
 extern jlib_decl IReadSeq *createChainedReadSeq(IReadSeqAllocator *irsa);
-extern jlib_decl IRecordFetcher *createElevatorFetcher(int fh, size32_t recSize);
-
 
 extern jlib_decl IRecordSize *createFixedRecordSize(size32_t recsize);
 extern jlib_decl IRecordSize *createDeltaRecordSize(IRecordSize * size, int delta);
