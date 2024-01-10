@@ -2403,6 +2403,7 @@ protected:
     Owned<TokenBucket> bucket;
     unsigned maxPacketSize = 0;
     std::atomic<bool> running = { false };
+    StringContextLogger logctx;
 #ifdef NEW_IBYTI
     DelayedPacketQueueManager delayed;
 #endif
@@ -2426,7 +2427,7 @@ protected:
     } readThread;
 
 public:
-    RoxieSocketQueueManager(unsigned _numWorkers) : RoxieReceiverBase(_numWorkers), readThread(*this)
+    RoxieSocketQueueManager(unsigned _numWorkers) : RoxieReceiverBase(_numWorkers), logctx("RoxieSocketQueueManager"), readThread(*this)
     {
         maxPacketSize = multicastSocket->get_max_send_size();
         if ((maxPacketSize==0)||(maxPacketSize>65535))
@@ -2711,7 +2712,6 @@ public:
                     if (testAgentFailure & 0x1 && !retries)
                         return;
 #endif
-                    AgentContextLogger logctx(packet);
                     if (doTrace(traceRoxiePackets))
                     {
                         StringBuffer buf;
@@ -2728,7 +2728,6 @@ public:
                     if (retries >= SUBCHANNEL_MASK)
                         return; // someone sent a failure or something - ignore it
 
-                    AgentContextLogger logctx(packet);
                     // Send back an out-of-band immediately, to let Roxie server know that channel is still active
                     if (!(testAgentFailure & 0x800) && !acknowledgeAllRequests)
                     {
@@ -3548,11 +3547,10 @@ class RoxieLocalReceiveManager : implements ILocalReceiveManager, public CInterf
 {
     MapXToMyClass<ruid_t, ruid_t, ILocalMessageCollator> collators;
     CriticalSection crit;
-    Owned<StringContextLogger> logctx;
 
 public:
     IMPLEMENT_IINTERFACE;
-    RoxieLocalReceiveManager() : logctx(new StringContextLogger("RoxieLocalReceiveManager"))
+    RoxieLocalReceiveManager()
     {
     }
 
