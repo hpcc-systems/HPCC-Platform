@@ -39,7 +39,7 @@ interface IPersistentHandler : implements IInterface
     // Remove a socket from the pool
     virtual void remove(ISocket* sock) = 0;
     // Put a socket back to the pool for further reuse, or remove its record from the pool when "keep" is false
-    virtual void doneUsing(ISocket* sock, bool keep, unsigned usesOverOne = 0) = 0;
+    virtual void doneUsing(ISocket* sock, bool keep, unsigned usesOverOne = 0, unsigned overrideMaxRequests = 0) = 0;
     // Get one available socket from the pool
     virtual ISocket* getAvailable(SocketEndpoint* ep = nullptr, bool* pShouldClose = nullptr, PersistentProtocol proto = PersistentProtocol::ProtoTCP) = 0;
     virtual void stop(bool wait) = 0;
