@@ -3371,11 +3371,11 @@ class CLocalMessageResult : implements IMessageResult, public CInterface
 {
     void *data;
     void *meta;
-    void *header;
+    RoxiePacketHeader *header;
     unsigned datalen, metalen, headerlen;
 public:
     IMPLEMENT_IINTERFACE;
-    CLocalMessageResult(void *_data, unsigned _datalen, void *_meta, unsigned _metalen, void *_header, unsigned _headerlen)
+    CLocalMessageResult(void *_data, unsigned _datalen, void *_meta, unsigned _metalen, RoxiePacketHeader *_header, unsigned _headerlen)
     {
         datalen = _datalen;
         metalen = _metalen;
@@ -3397,7 +3397,7 @@ public:
         return new CLocalMessageUnpackCursor(rowMgr, data, datalen);
     }
 
-    virtual const void *getMessageHeader(unsigned &length) const
+    virtual const RoxiePacketHeader *getMessageHeader(unsigned &length) const
     {
         length = headerlen;
         return header;
@@ -3419,11 +3419,11 @@ class CLocalBlockedMessageResult : implements IMessageResult, public CInterface
 {
     ArrayOf<roxiemem::OwnedDataBuffer> buffers;
     void *meta;
-    void *header;
+    RoxiePacketHeader *header;
     unsigned metalen, headerlen;
 public:
     IMPLEMENT_IINTERFACE;
-    CLocalBlockedMessageResult(ArrayOf<roxiemem::OwnedDataBuffer> &_buffers, void *_meta, unsigned _metalen, void *_header, unsigned _headerlen)
+    CLocalBlockedMessageResult(ArrayOf<roxiemem::OwnedDataBuffer> &_buffers, void *_meta, unsigned _metalen, RoxiePacketHeader *_header, unsigned _headerlen)
     {
         buffers.swapWith(_buffers);
         metalen = _metalen;
@@ -3443,7 +3443,7 @@ public:
         return new CLocalBlockedMessageUnpackCursor(rowMgr, buffers);
     }
 
-    virtual const void *getMessageHeader(unsigned &length) const
+    virtual const RoxiePacketHeader *getMessageHeader(unsigned &length) const
     {
         length = headerlen;
         return header;
@@ -3593,7 +3593,7 @@ void LocalMessagePacker::flush()
         unsigned datalen = data.length();
         unsigned metalen = meta.length();
         unsigned headerlen = header.length();
-        collator->enqueueMessage(outOfBand, datalen+metalen+headerlen, new CLocalMessageResult(data.detach(), datalen, meta.detach(), metalen, header.detach(), headerlen));
+        collator->enqueueMessage(outOfBand, datalen+metalen+headerlen, new CLocalMessageResult(data.detach(), datalen, meta.detach(), metalen, (RoxiePacketHeader *) header.detach(), headerlen));
     }
     // otherwise Roxie server is no longer interested and we can simply discard
 }
@@ -3613,7 +3613,7 @@ void LocalBlockedMessagePacker::flush()
         unsigned headerlen = header.length();
         // NOTE - takes ownership of buffers and leaves it empty
         if (collator->attachDataBuffers(buffers))
-            collator->enqueueMessage(outOfBand, totalDataLen+metalen+headerlen, new CLocalBlockedMessageResult(buffers, meta.detach(), metalen, header.detach(), headerlen));
+            collator->enqueueMessage(outOfBand, totalDataLen+metalen+headerlen, new CLocalBlockedMessageResult(buffers, meta.detach(), metalen, (RoxiePacketHeader *) header.detach(), headerlen));
     }
     // otherwise Roxie server is no longer interested and we can simply discard
 }
@@ -3947,7 +3947,7 @@ public:
             if (mr)
             {
                 unsigned headerLen;
-                const RoxiePacketHeader *header = (const RoxiePacketHeader *) mr->getMessageHeader(headerLen);
+                const RoxiePacketHeader *header = mr->getMessageHeader(headerLen);
                 Owned<IMessageUnpackCursor> mu = mr->getCursor(rowManager);
                 PingRecord *answer = (PingRecord *) mu->getNext(sizeof(PingRecord));
                 if (answer && mu->atEOF() && headerLen==sizeof(RoxiePacketHeader))

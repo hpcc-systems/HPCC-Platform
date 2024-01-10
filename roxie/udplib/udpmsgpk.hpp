@@ -30,7 +30,7 @@ class CMessageCollator : public CInterfaceOf<IMessageCollator>
 {
 private:
     Linked<roxiemem::IRowManager> rowMgr;  // Must be placed first to ensure it is destroyed last
-    std::queue<PackageSequencer*> queue;
+    std::deque<PackageSequencer*> queue;
     msg_map             mapping;  // Note - only accessed from collator thread
     RelaxedAtomic<bool> activity;
     bool                memLimitExceeded;
