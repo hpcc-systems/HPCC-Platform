@@ -493,6 +493,10 @@ public:
     {
         return ctx->getWuid();
     }
+    virtual unsigned getWorkflowId() const
+    {
+        return ctx->getWorkflowId();
+    }
     virtual void getExternalResultRaw(unsigned & tlen, void * & tgt, const char * wuid, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer)
     {
         ctx->getExternalResultRaw(tlen, tgt, wuid, stepname, sequence, xmlTransformer, csvTransformer);

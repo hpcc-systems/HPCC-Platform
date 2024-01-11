@@ -1925,7 +1925,7 @@ void EclAgent::doProcess()
         }
         {
             MTIME_SECTION(queryActiveTimer(), "Process");
-            Owned<IEclProcess> process = loadProcess();
+            Owned<IEclProcess> process = new EclProcessExtra(loadProcess());
             QueryTerminationCleanup threadCleanup(false);
 
             if (checkVersion && (process->getActivityVersion() != eclccCodeVersion))
@@ -2267,10 +2267,6 @@ void EclAgent::runProcess(IEclProcess *process)
     LOG(MCrunlock, unknownJob, "Released persist read locks");
 }
 
-unsigned EclAgent::getWorkflowId()
-{
-    throwUnexpected();
-}
 
 //----------------------------------------------------------------
 
