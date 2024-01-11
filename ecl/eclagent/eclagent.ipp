@@ -68,7 +68,7 @@ public:
     {
         return ctx->isResult(name, sequence);
     }
-    virtual unsigned getWorkflowId()
+    virtual unsigned getWorkflowId() const override
     {
         return ctx->getWorkflowId();
     }
@@ -631,7 +631,6 @@ public:
     virtual const char *loadResource(unsigned id);
     virtual ICodeContext *queryCodeContext();
     virtual bool isResult(const char * name, unsigned sequence);
-    virtual unsigned getWorkflowId();
     virtual IConstWorkUnit *queryWorkUnit() const override;  // no link
     virtual IWorkUnit *updateWorkUnit() const; // links
     virtual void reloadWorkUnit();
@@ -645,6 +644,7 @@ public:
     virtual unsigned __int64 getFileOffset(const char *logicalPart) { UNIMPLEMENTED; return 0; }
     virtual char *getOutputDir() { UNIMPLEMENTED; }
     virtual char *getWuid();
+    virtual unsigned getWorkflowId() const override { throwUnexpected(); }
     virtual const char *queryWuid();
     virtual IDistributedFileTransaction *querySuperFileTransaction();
     virtual unsigned getPriority() const { return 0; }

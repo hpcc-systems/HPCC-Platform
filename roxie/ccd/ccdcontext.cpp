@@ -1775,7 +1775,6 @@ public:
     }
     virtual IEngineContext *queryEngineContext() { return NULL; }
     virtual char *getDaliServers() { throwUnexpected(); }
-    virtual unsigned getWorkflowId() { return 0; } // this is a virtual which is implemented in IGlobalContext
 
     // The following from ICodeContext should never be executed in agent activity. If we are on Roxie server, they will be implemented by more derived CRoxieServerContext class
     virtual void setResultBool(const char *name, unsigned sequence, bool value) { throwUnexpected(); }
@@ -1796,6 +1795,7 @@ public:
     virtual void printResults(IXmlWriter *output, const char *name, unsigned sequence) { throwUnexpected(); }
 
     virtual char *getWuid() { throwUnexpected(); }
+    virtual unsigned getWorkflowId() const override { return graph->queryWorkflowId(); }
     virtual void getExternalResultRaw(unsigned & tlen, void * & tgt, const char * wuid, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) { throwUnexpected(); }
 
     virtual char * getExpandLogicalName(const char * logicalName) { throwUnexpected(); }
@@ -2876,7 +2876,7 @@ public:
         MTIME_SECTION(myTimer, "Process");
         QueryTerminationCleanup threadCleanup(true);
         EclProcessFactory pf = (EclProcessFactory) factory->queryDll()->getEntry("createProcess");
-        Owned<IEclProcess> p = pf();
+        Owned<IEclProcess> p = new EclProcessEx(pf());
         try
         {
             if (debugContext)
@@ -3692,7 +3692,10 @@ public:
         CriticalBlock b(contextCrit);
         return useContext(sequence).hasProp(name);
     }
-
+    virtual unsigned getWorkflowId() const override
+    {
+        throwUnexpected();
+    }
     virtual char *getClusterName()
     {
         if (workUnit)
@@ -4029,7 +4032,7 @@ public:
     virtual void process()
     {
         EclProcessFactory pf = (EclProcessFactory) factory->queryDll()->getEntry("createProcess");
-        Owned<IEclProcess> p = pf();
+        Owned<IEclProcess> p = new EclProcessEx(pf());
         if (workflow)
             workflow->perform(this, p);
         else

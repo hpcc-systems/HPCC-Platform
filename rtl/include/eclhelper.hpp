@@ -48,7 +48,7 @@ typedef unsigned short UChar;
 
 //Should be incremented whenever the virtuals in the context or a helper are changed, so
 //that a work unit can't be rerun.  Try as hard as possible to retain compatibility.
-#define ACTIVITY_INTERFACE_VERSION      653
+#define ACTIVITY_INTERFACE_VERSION      654
 #define MIN_ACTIVITY_INTERFACE_VERSION  650             //minimum value that is compatible with current interface
 
 typedef unsigned char byte;
@@ -727,6 +727,7 @@ interface ICodeContext : public IResourceContext
     virtual char *getPlatform() = 0; // caller frees return string.
     virtual unsigned getPriority() const = 0;
     virtual char *getWuid() = 0; // caller frees return string.
+    virtual unsigned getWorkflowId() const = 0; // Note: don't use yet as it has not been fully implemented in all derived classes
 
     // Exception handling
 
@@ -2954,7 +2955,7 @@ struct IGlobalCodeContext
     virtual void fail(int, const char *) = 0;  
 
     virtual bool isResult(const char * name, unsigned sequence) = 0;
-    virtual unsigned getWorkflowId() = 0;
+    virtual unsigned getWorkflowId() const = 0;
     virtual void doNotify(char const * name, char const * text) = 0;
 
     virtual int queryLastFailCode() = 0;
@@ -2979,7 +2980,6 @@ struct IEclProcess : public IInterface
     virtual int perform(IGlobalCodeContext * gctx, unsigned wfid) = 0;
     virtual unsigned getActivityVersion() const = 0;
 };
-
 
 //------------------------------------------------------------------------------------------------
 
