@@ -7,7 +7,6 @@ import { formatCost } from "src/Session";
 import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
 import { useConfirm } from "../hooks/confirm";
-import { useBuildInfo } from "../hooks/platform";
 import { useUserTheme } from "../hooks/theme";
 import { useMyAccount } from "../hooks/user";
 import { HolyGrail } from "../layouts/HolyGrail";
@@ -101,7 +100,6 @@ export const Scopes: React.FunctionComponent<ScopesProps> = ({
     const { currentUser } = useMyAccount();
     const [viewByScope, setViewByScope] = React.useState(true);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
-    const [, { currencyCode }] = useBuildInfo();
     const {
         selection, setSelection,
         setTotal,
@@ -197,14 +195,14 @@ export const Scopes: React.FunctionComponent<ScopesProps> = ({
             Modified: { label: nlsHPCC.ModifiedUTCGMT, width: 162 },
             AtRestCost: {
                 label: nlsHPCC.FileCostAtRest, width: 100,
-                formatter: (cost, row) => `${formatCost(cost ?? 0)} (${currencyCode || "$"})`
+                formatter: (cost, row) => `${formatCost(cost ?? 0)}`
             },
             AccessCost: {
                 label: nlsHPCC.FileAccessCost, width: 100,
-                formatter: (cost, row) => `${formatCost(cost ?? 0)} (${currencyCode || "$"})`
+                formatter: (cost, row) => `${formatCost(cost ?? 0)}`
             }
         };
-    }, [currencyCode, scopePath]);
+    }, [scopePath]);
 
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,

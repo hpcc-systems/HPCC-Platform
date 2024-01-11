@@ -1093,7 +1093,7 @@ export function deleteCookie(name: string) {
 }
 
 const d3FormatDecimal = d3Format(",.2f");
-const d3FormatInt = d3Format(",");
+const d3FormatInt = d3Format(",.0f");
 
 export function formatDecimal(num: number): string {
     if (!num) return "";
