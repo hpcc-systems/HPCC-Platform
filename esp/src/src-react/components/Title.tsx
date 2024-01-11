@@ -65,6 +65,10 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
     const [showBannerConfig, setShowBannerConfig] = React.useState(false);
     const [BannerMessageBar, BannerConfig] = useBanner({ showForm: showBannerConfig, setShowForm: setShowBannerConfig });
 
+    const titlebarColorSet = React.useMemo(() => {
+        return titlebarColor && titlebarColor !== theme.palette.themeLight;
+    }, [theme.palette, titlebarColor]);    
+
     const personaProps: IPersonaSharedProps = React.useMemo(() => {
         return {
             text: (currentUser?.firstName && currentUser?.lastName) ? currentUser.firstName + " " + currentUser.lastName : currentUser?.username,
@@ -181,12 +185,12 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
             background: "transparent",
             minWidth: 48,
             padding: "0 10px 0 4px",
-            color: theme.semanticColors.link
+            color: titlebarColor ? Utility.textColor(titlebarColor) : theme.semanticColors.link
         },
         errorsWarningsCount: {
             margin: "-3px 0 0 -3px"
         }
-    }), [theme.semanticColors.link]);
+    }), [theme.semanticColors.link, titlebarColor]);
 
     React.useEffect(() => {
         switch (log.reduce((prev, cur) => Math.max(prev, cur.level), Level.debug)) {
@@ -248,18 +252,18 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
         document.title = environmentTitle;
     }, [environmentTitle]);
 
-    return <div style={{ backgroundColor: titlebarColor ? titlebarColor : theme.palette.themeLight }}>
+    return <div style={{ backgroundColor: titlebarColorSet ? titlebarColor : theme.palette.themeLight }}>
         <BannerMessageBar />
         <Stack horizontal verticalAlign="center" horizontalAlign="space-between">
             <Stack.Item align="center">
                 <Stack horizontal>
                     <Stack.Item>
-                        <IconButton iconProps={waffleIcon} onClick={openAppPanel} style={{ width: 48, height: 48, color: theme.palette.themeDarker }} />
+                        <IconButton iconProps={waffleIcon} onClick={openAppPanel} style={{ width: 48, height: 48, color: titlebarColorSet ? Utility.textColor(titlebarColor) : theme.palette.themeDarker }} />
                     </Stack.Item>
                     <Stack.Item align="center">
                         <Link href="#/activities">
                             <Text variant="large" nowrap block >
-                                <b title="ECL Watch" style={{ color: titlebarColor && titlebarColor !== theme.palette.themeLight ? Utility.textColor(titlebarColor) : theme.palette.themeDarker }}>
+                                <b title="ECL Watch" style={{ color: titlebarColorSet ? Utility.textColor(titlebarColor) : theme.palette.themeDarker }}>
                                     {showEnvironmentTitle && environmentTitle.length ? environmentTitle : "ECL Watch"}
                                 </b>
                             </Text>
@@ -283,7 +287,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
                         </DefaultButton>
                     </Stack.Item>
                     <Stack.Item align="center">
-                        <IconButton title={nlsHPCC.Advanced} iconProps={collapseMenuIcon} menuProps={advMenuProps} />
+                        <IconButton title={nlsHPCC.Advanced} iconProps={collapseMenuIcon} menuProps={advMenuProps} style={{color: titlebarColorSet ? Utility.textColor(titlebarColor) : theme.palette.themeDarker }}/>
                     </Stack.Item>
                 </Stack>
                 <Toaster position="top-right" gutter={8 - (90 - toasterScale(90))} containerStyle={{
