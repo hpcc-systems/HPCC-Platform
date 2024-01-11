@@ -68,7 +68,6 @@ void _rev(size32_t len, void * _ptr)
 Mutex printMutex;
 FILE *logFile;
 FILE *stdlog = stderr;
-HiresTimer logTimer;
 class CStdLogIntercept: public ILogIntercept
 {
     bool nl;
