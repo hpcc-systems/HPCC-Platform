@@ -5,6 +5,7 @@ import { useConst } from "@fluentui/react-hooks";
 import { FluentProvider, Theme as ThemeV9 } from "@fluentui/react-components";
 import { HTMLWidget, Widget } from "@hpcc-js/common";
 import { DockPanel as HPCCDockPanel, IClosable } from "@hpcc-js/phosphor";
+import { compare2 } from "@hpcc-js/util";
 import { lightTheme, lightThemeV9 } from "../themes";
 import { useUserTheme } from "../hooks/theme";
 import { AutosizeHpccJSComponent } from "./HpccJSAdapter";
@@ -85,26 +86,6 @@ export class ReactWidget extends HTMLWidget {
     }
 }
 
-export interface DockPanelBase {
-    title: string;
-    location?: "split-top" | "split-left" | "split-right" | "split-bottom" | "tab-before" | "tab-after";
-    ref?: string;
-    closable?: boolean | IClosable;
-}
-
-export interface DockPanelWidget extends DockPanelBase {
-    widget?: Widget;
-}
-
-export interface DockPanelComponent extends DockPanelBase {
-    key: string;
-    component?: JSX.Element;
-}
-
-function isDockPanelComponent(item: DockPanelWidget | DockPanelComponent): item is DockPanelComponent {
-    return !!(item as DockPanelComponent).component;
-}
-
 export interface DockPanelLayout {
     main: object;
 }
@@ -146,10 +127,13 @@ export class ResetableDockPanel extends HPCCDockPanel {
         return formatLayout(this.layout()) ?? this._lastLayout ?? this._origLayout;
     }
 
-    render() {
+    render(callback?: (w: Widget) => void) {
         const retVal = super.render();
         if (this._origLayout === undefined) {
             this._origLayout = formatLayout(this.layout());
+        }
+        if (callback) {
+            callback(this);
         }
         return retVal;
     }
@@ -160,36 +144,44 @@ export class ResetableDockPanel extends HPCCDockPanel {
     }
 }
 
-export type DockPanelItems = (DockPanelWidget | DockPanelComponent)[];
+interface DockPanelItemProps {
+    key: string;
+    title: string;
+    location?: "split-top" | "split-left" | "split-right" | "split-bottom" | "tab-before" | "tab-after";
+    relativeTo?: string;
+    closable?: boolean | IClosable;
+    children: JSX.Element;
+}
+
+export const DockPanelItem: React.FunctionComponent<DockPanelItemProps> = ({
+    children
+}) => {
+    return <>{children}</>;
+};
 
 interface DockPanelProps {
-    items?: DockPanelItems;
     layout?: object;
+    hideSingleTabs?: boolean;
     onDockPanelCreate?: (dockpanel: ResetableDockPanel) => void;
+    children?: React.ReactElement<DockPanelItemProps> | React.ReactElement<DockPanelItemProps>[];
 }
 
 export const DockPanel: React.FunctionComponent<DockPanelProps> = ({
-    items = [],
     layout,
-    onDockPanelCreate
+    hideSingleTabs,
+    onDockPanelCreate,
+    children
 }) => {
-
+    const items = React.useMemo(() => {
+        if (children === undefined) return [];
+        return Array.isArray(children) ? children : [children];
+    }, [children]);
+    const [prevItems, setPrevItems] = React.useState<React.ReactElement<DockPanelItemProps>[]>([]);
     const { theme, themeV9 } = useUserTheme();
-    const [idx, setIdx] = React.useState<{ [key: string]: Widget }>({});
+    const idx = useConst(() => new Map<string, ReactWidget>());
 
     const dockPanel = useConst(() => {
         const retVal = new ResetableDockPanel();
-        const idx: { [key: string]: Widget } = {};
-        items.forEach(item => {
-            if (isDockPanelComponent(item)) {
-                idx[item.key] = new ReactWidget().id(item.key);
-                retVal.addWidget(idx[item.key], item.title, item.location, idx[item.ref], item.closable);
-            } else if (item.widget) {
-                idx[item.widget.id()] = item.widget;
-                retVal.addWidget(item.widget, item.title, item.location, idx[item.ref], item.closable);
-            }
-        });
-        setIdx(idx);
         if (onDockPanelCreate) {
             setTimeout(() => {
                 onDockPanelCreate(retVal);
@@ -199,23 +191,41 @@ export const DockPanel: React.FunctionComponent<DockPanelProps> = ({
     });
 
     React.useEffect(() => {
+        dockPanel?.hideSingleTabs(hideSingleTabs);
+    }, [dockPanel, hideSingleTabs]);
+
+    React.useEffect(() => {
+        const diffs = compare2(prevItems, items, item => item.key);
+        diffs.exit.forEach(item => {
+            idx.delete(item.key);
+            dockPanel.removeWidget(idx.get(item.key));
+        });
+        diffs.enter.forEach(item => {
+            const reactWidget = new ReactWidget().id(item.key);
+            dockPanel.addWidget(reactWidget, item.props.title, item.props.location, idx.get(item.props.relativeTo), item.props.closable);
+            idx.set(item.key, reactWidget);
+        });
+        [...diffs.enter, ...diffs.update].forEach(item => {
+            const reactWidget = idx.get(item.key);
+            if (reactWidget) {
+                reactWidget
+                    .theme(theme)
+                    .themeV9(themeV9)
+                    .children(item.props.children)
+                    ;
+            }
+        });
+        dockPanel.render();
+        setPrevItems(items);
+    }, [prevItems, dockPanel, idx, items, theme, themeV9]);
+
+    React.useEffect(() => {
         if (layout === undefined) {
             dockPanel?.resetLayout();
         } else {
             dockPanel?.setLayout(layout);
         }
     }, [dockPanel, layout]);
-
-    React.useEffect(() => {
-        items.filter(isDockPanelComponent).forEach(item => {
-            (idx[item.key] as ReactWidget)
-                .theme(theme)
-                .themeV9(themeV9)
-                .children(item.component)
-                .render()
-                ;
-        });
-    }, [idx, items, theme, themeV9]);
 
     return <AutosizeHpccJSComponent widget={dockPanel} padding={4} debounce={false} />;
 };

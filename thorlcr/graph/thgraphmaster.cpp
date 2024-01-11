@@ -661,7 +661,7 @@ void CMasterActivity::updateFileReadCostStats()
         {
             // Legacy file: calculate readCost using prev disk reads and new disk reads
             stat_type prevDiskReads = fileAttr.getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskReads), 0);
-            legacyReadCost = money2cost_type(calcFileAccessCost(clusterName, 0, prevDiskReads));
+            legacyReadCost = calcFileAccessCost(clusterName, 0, prevDiskReads);
         }
         stat_type curDiskReads = stats.getStatisticSum(StNumDiskReads);
         if(useJhtreeCacheStats)
@@ -669,10 +669,10 @@ void CMasterActivity::updateFileReadCostStats()
             stat_type numActualReads = stats.getStatisticSum(StNumNodeDiskFetches)
                                     + stats.getStatisticSum(StNumLeafDiskFetches)
                                     + stats.getStatisticSum(StNumBlobDiskFetches);
-            curReadCost = money2cost_type(calcFileAccessCost(clusterName, 0, numActualReads));
+            curReadCost = calcFileAccessCost(clusterName, 0, numActualReads);
         }
         else
-            curReadCost = money2cost_type(calcFileAccessCost(clusterName, 0, curDiskReads));
+            curReadCost = calcFileAccessCost(clusterName, 0, curDiskReads);
         file->addAttrValue(getDFUQResultFieldName(DFUQRFreadCost), legacyReadCost + curReadCost);
         file->addAttrValue(getDFUQResultFieldName(DFUQRFnumDiskReads), curDiskReads);
         return curReadCost;
@@ -728,7 +728,7 @@ void CMasterActivity::updateFileWriteCostStats(IFileDescriptor & fileDesc, IProp
         assertex(fileDesc.numClusters()>=1);
         StringBuffer clusterName;
         fileDesc.getClusterGroupName(0, clusterName);// Note: calculating for 1st cluster. (Future: calc for >1 clusters)
-        cost_type writeCost = money2cost_type(calcFileAccessCost(clusterName, numDiskWrites, 0));
+        cost_type writeCost = calcFileAccessCost(clusterName, numDiskWrites, 0);
         props.setPropInt64(getDFUQResultFieldName(DFUQRFwriteCost), writeCost);
         diskAccessCost = writeCost;
     }

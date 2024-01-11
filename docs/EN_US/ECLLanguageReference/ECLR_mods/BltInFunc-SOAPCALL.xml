@@ -216,11 +216,11 @@
           <row>
             <entry><emphasis>option</emphasis></entry>
 
-            <entry>Optional. If omitted, it uses the default number of
-            connections. If TRUE, it enables persistent connections. If FALSE
+            <entry>Optional. If omitted, it uses the default number of requests per
+            connection. If TRUE, it enables persistent connections. If FALSE
             or 0, it disables persistent connections. If set to an integer, it
-            enables persistent connections and sets the number of active
-            connections. </entry>
+            enables persistent connections and sets the maximum number of
+            requests each connection will be used for. </entry>
           </row>
 
           <row>

@@ -1116,28 +1116,40 @@
           "type": "boolean",
           "description": "If true, components generate trace/span ids if none are provided by the remote caller"
         },
-        "exporter": {
-          "type": "object",
-          "properties": {
-            "type": {
-              "type": "string",
-              "enum": ["OTLP-HTTP", "OTLP-GRPC", "OS", "JLOG", "NONE"],
-              "description": "The type of exporter in charge of forwarding span data to target back-end"
-            }
-          }
+        "enableDefaultLogExporter": {
+          "type": "boolean",
+          "description": "If true, creates a trace exporter outputting to the log using the default options"
         },
-        "processor": {
-          "type": "object",
-          "properties": {
-            "type": {
-              "type": "string",
-              "enum": ["batch", "simple"],
-              "description": "Defines the manner in which trace data is processed - in batches, or simple as available"
-            }
+        "exporters": {
+          "type": "array",
+          "description": "List of trace exporters",
+          "items": {
+            "$ref": "#/definitions/traceExporter"
           }
         }
       },
       "additionalProperties": { "type": ["integer", "string", "boolean"] }
+    },
+    "traceExporter": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["OTLP-HTTP", "OTLP-GRPC", "OS", "JLOG"],
+          "description": "The type of exporter in charge of forwarding span data to target back-end"
+        },
+        "batch": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "If true, trace data is processed in a batch, if false, trace data is processed immediately"
+            }
+          },
+          "additionalProperties": { "type": ["integer", "string", "boolean"] }
+        },
+        "additionalProperties": { "type": ["integer", "string", "boolean"] }
+      }
     },
     "compileOption": {
       "type": "object",

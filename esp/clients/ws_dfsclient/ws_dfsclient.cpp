@@ -235,7 +235,7 @@ public:
     virtual bool isExternal() const override { return false; }
     virtual bool getSkewInfo(unsigned &maxSkew, unsigned &minSkew, unsigned &maxSkewPart, unsigned &minSkewPart, bool calculateIfMissing) override { return legacyDFSFile->getSkewInfo(maxSkew, minSkew, maxSkewPart, minSkewPart, calculateIfMissing); }
     virtual int getExpire(StringBuffer *expirationDate) override { return legacyDFSFile->getExpire(expirationDate); }
-    virtual void getCost(const char * cluster, double & atRestCost, double & accessCost) override { legacyDFSFile->getCost(cluster, atRestCost, accessCost); }
+    virtual void getCost(const char * cluster, cost_type & atRestCost, cost_type & accessCost) override { legacyDFSFile->getCost(cluster, atRestCost, accessCost); }
     
 // setters (change file meta data)
     virtual void setPreferredClusters(const char *clusters) override { legacyDFSFile->setPreferredClusters(clusters); }

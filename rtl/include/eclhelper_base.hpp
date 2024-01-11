@@ -822,7 +822,7 @@ class ECLRTL_API CThorSoapActionArg : public CThorSinkArgOf<IHThorSoapActionArg>
     virtual const char * getXpathHintsXml() override;
     virtual const char * getRequestHeader() override;
     virtual const char * getRequestFooter() override;
-    virtual unsigned getPersistPoolSize() override;
+    virtual unsigned getPersistMaxRequests() override;
 };
 
 class ECLRTL_API CThorSoapCallArg : public CThorArgOf<IHThorSoapCallArg>
@@ -853,7 +853,7 @@ class ECLRTL_API CThorSoapCallArg : public CThorArgOf<IHThorSoapCallArg>
     virtual const char * getXpathHintsXml() override;
     virtual const char * getRequestHeader() override;
     virtual const char * getRequestFooter() override;
-    virtual unsigned getPersistPoolSize() override;
+    virtual unsigned getPersistMaxRequests() override;
 };
 
 typedef CThorSoapCallArg CThorHttpCallArg;

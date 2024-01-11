@@ -34,6 +34,11 @@ include_directories (
          ./../../system/include 
          ./../../system/jlib 
          ./../../roxie/ccd 
+         ./../../roxie/udplib
+         ./../../common/thorhelper
+         ./../../common/workunit
+         ./../../rtl/include
+         ./../../rtl/eclrtl
     )
 
 ADD_DEFINITIONS ( -D_CONSOLE )

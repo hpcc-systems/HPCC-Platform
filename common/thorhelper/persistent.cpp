@@ -205,7 +205,7 @@ public:
     {
     }
 
-    virtual void add(ISocket* sock, SocketEndpoint* ep = nullptr, PersistentProtocol proto = PersistentProtocol::ProtoTCP) override
+    virtual void add(ISocket* sock, SocketEndpoint* ep, PersistentProtocol proto) override
     {
         if (!sock || !sock->isValid())
             return;
@@ -223,7 +223,7 @@ public:
             }
         }
         m_selectHandler->add(sock, SELECTMODE_READ, this);
-        Owned<CPersistentInfo> info = new CPersistentInfo(false, usTick()/1000, 0, ep, proto, sock);
+        Owned<CPersistentInfo> info = new CPersistentInfo(false, msTick(), 0, ep, proto, sock);
         m_infomap.setValue(sock, info.getLink());
         m_availkeeper.add(info);
     }
@@ -249,7 +249,7 @@ public:
             m_selectHandler->remove(sock);
     }
 
-    virtual void doneUsing(ISocket* sock, bool keep, unsigned usesOverOne) override
+    virtual void doneUsing(ISocket* sock, bool keep, unsigned usesOverOne, unsigned overrideMaxRequests) override
     {
         PERSILOG(PersistentLogLevel::PLogMax, "PERSISTENT: Done using socket %d, keep=%s", sock->OShandle(), boolToStr(keep));
         CriticalBlock block(m_critsect);
@@ -260,13 +260,14 @@ public:
         if (info)
         {
             info->useCount += usesOverOne;
-            bool reachedQuota = m_maxReqs > 0 && m_maxReqs <= info->useCount;
+            unsigned requestLimit = overrideMaxRequests ? overrideMaxRequests : m_maxReqs;
+            bool reachedQuota = requestLimit > 0 && requestLimit <= info->useCount;
             if(!sock->isValid())
                 keep = false;
             if (keep && !reachedQuota)
             {
                 info->inUse = false;
-                info->timeUsed = usTick()/1000;
+                info->timeUsed = msTick();
                 m_selectHandler->add(sock, SELECTMODE_READ, this);
                 m_availkeeper.add(info);
             }
@@ -289,7 +290,7 @@ public:
         {
             Linked<ISocket> sock = info->sock;
             info->inUse = true;
-            info->timeUsed = usTick()/1000;
+            info->timeUsed = msTick();
             info->useCount++;
             if (pShouldClose != nullptr)
                 *pShouldClose = m_maxReqs > 0 && m_maxReqs <= info->useCount;
@@ -353,7 +354,7 @@ public:
                 {
                     m_availkeeper.remove(info);
                     info->inUse = true;
-                    info->timeUsed = usTick()/1000;
+                    info->timeUsed = msTick();
                     info->useCount++;
                     reachedQuota = m_maxReqs > 0 && m_maxReqs <= info->useCount;
                 }
@@ -391,7 +392,7 @@ public:
             m_waitsem.wait(1000);
             if (m_stop)
                 break;
-            unsigned now = usTick()/1000;
+            unsigned now = msTick();
             CriticalBlock block(m_critsect);
             std::vector<ISocket*> socks1;
             std::vector<ISocket*> socks2;
@@ -400,9 +401,9 @@ public:
                 CPersistentInfo* info = si.getValue();
                 if (!info)
                     continue;
-                if(m_maxIdleTime > 0 && !info->inUse && info->timeUsed + m_maxIdleTime*1000 < now)
+                if(m_maxIdleTime > 0 && !info->inUse && now - info->timeUsed >= m_maxIdleTime*1000)
                     socks1.push_back(*(ISocket**)(si.getKey()));
-                if(info->inUse && info->timeUsed + MAX_INFLIGHT_TIME*1000 < now)
+                if(info->inUse && now - info->timeUsed >= MAX_INFLIGHT_TIME*1000)
                     socks2.push_back(*(ISocket**)(si.getKey()));
             }
             for (auto& s:socks1)

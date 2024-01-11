@@ -191,30 +191,30 @@ static IPropertyTree *getCostPropTree(const char *cluster)
     }
 }
 
-extern da_decl double calcFileAtRestCost(const char * cluster, double sizeGB, double fileAgeDays)
+extern da_decl cost_type calcFileAtRestCost(const char * cluster, double sizeGB, double fileAgeDays)
 {
     Owned<const IPropertyTree> costPT = getCostPropTree(cluster);
 
     if (costPT==nullptr)
-        return 0.0;
+        return 0;
     double atRestPrice = costPT->getPropReal("@storageAtRest", 0.0);
     double storageCostDaily = atRestPrice * 12 / 365;
-    return storageCostDaily * sizeGB * fileAgeDays;
+    return money2cost_type(storageCostDaily * sizeGB * fileAgeDays);
 }
 
-extern da_decl double calcFileAccessCost(const char * cluster, __int64 numDiskWrites, __int64 numDiskReads)
+extern da_decl cost_type calcFileAccessCost(const char * cluster, __int64 numDiskWrites, __int64 numDiskReads)
 {
     Owned<const IPropertyTree> costPT = getCostPropTree(cluster);
 
     if (costPT==nullptr)
-        return 0.0;
+        return 0;
     constexpr int accessPriceScalingFactor = 10000; // read/write pricing based on 10,000 operations
     double readPrice =  costPT->getPropReal("@storageReads", 0.0);
     double writePrice =  costPT->getPropReal("@storageWrites", 0.0);
-    return (readPrice * numDiskReads / accessPriceScalingFactor) + (writePrice * numDiskWrites / accessPriceScalingFactor);
+    return money2cost_type((readPrice * numDiskReads / accessPriceScalingFactor) + (writePrice * numDiskWrites / accessPriceScalingFactor));
 }
 
-extern da_decl double calcFileAccessCost(IDistributedFile *f, __int64 numDiskWrites, __int64 numDiskReads)
+extern da_decl cost_type calcFileAccessCost(IDistributedFile *f, __int64 numDiskWrites, __int64 numDiskReads)
 {
     StringBuffer clusterName;
     // Should really specify the cluster number too, but this is the best we can do for now
@@ -4942,7 +4942,7 @@ public:
         else
             return false;
     }
-    virtual void getCost(const char * cluster, double & atRestCost, double & accessCost) override
+    virtual void getCost(const char * cluster, cost_type & atRestCost, cost_type & accessCost) override
     {
         CDateTime dt;
         getModificationTime(dt);
@@ -4956,7 +4956,7 @@ public:
             if (hasReadWriteCostFields(*attrs))
             {
                 // Newer files have readCost and writeCost attributes
-                accessCost = cost_type2money(attrs->getPropInt64(getDFUQResultFieldName(DFUQRFreadCost)) + attrs->getPropInt64(getDFUQResultFieldName(DFUQRFwriteCost)));
+                accessCost = attrs->getPropInt64(getDFUQResultFieldName(DFUQRFreadCost)) + attrs->getPropInt64(getDFUQResultFieldName(DFUQRFwriteCost));
             }
             else
             {
@@ -7041,12 +7041,12 @@ public:
         return false;
     }
 
-    virtual void getCost(const char * cluster, double & atRestCost, double & accessCost) override
+    virtual void getCost(const char * cluster, cost_type & atRestCost, cost_type & accessCost) override
     {
         CriticalBlock block (sect);
         ForEachItemIn(i,subfiles)
         {
-            double tmpAtRestcost, tmpAccessCost;
+            cost_type tmpAtRestcost, tmpAccessCost;
             IDistributedFile &f = subfiles.item(i);
             f.getCost(cluster, tmpAtRestcost, tmpAccessCost);
             atRestCost += tmpAtRestcost;
@@ -13454,7 +13454,7 @@ IPropertyTreeIterator *deserializeFileAttrIterator(MemoryBuffer& mb, unsigned nu
             else
                 sizeDiskSize = file->getPropInt64(getDFUQResultFieldName(DFUQRForigsize), 0);
             double sizeGB = sizeDiskSize / ((double)1024 * 1024 * 1024);
-            cost_type atRestCost = money2cost_type(calcFileAtRestCost(nodeGroup, sizeGB, fileAgeDays));
+            cost_type atRestCost = calcFileAtRestCost(nodeGroup, sizeGB, fileAgeDays);
             file->setPropInt64(getDFUQResultFieldName(DFUQRFatRestCost), atRestCost);
 
             // Dyamically calc and set the access cost field and for legacy files set read/write cost fields

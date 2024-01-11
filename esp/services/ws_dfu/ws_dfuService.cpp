@@ -2667,15 +2667,15 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, co
     }
     if (version >= 1.60)
     {
-        double atRestCost, accessCost;
+        cost_type atRestCost, accessCost;
         df->getCost(cluster, atRestCost, accessCost);
 
         if (version <= 1.61)
-            FileDetails.setCost(atRestCost+accessCost);
+            FileDetails.setCost(cost_type2money(atRestCost+accessCost));
         else
         {
-            FileDetails.setAccessCost(accessCost);
-            FileDetails.setAtRestCost(atRestCost);
+            FileDetails.setAccessCost(cost_type2money(accessCost));
+            FileDetails.setAtRestCost(cost_type2money(atRestCost));
         }
     }
     if (version >= 1.65)

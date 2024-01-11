@@ -18,6 +18,7 @@
 ///* simple test
 #include "udplib.hpp"
 #include "roxiemem.hpp"
+#include "ccd.hpp"
 //#include "udptrr.hpp"
 //#include "udptrs.hpp"
 
@@ -89,7 +90,7 @@ bool readRows = true;
 
 IpAddressArray allNodes;
 
-struct TestHeader
+struct TestHeader : public RoxiePacketHeader
 {
     unsigned sequence;
     unsigned nodeIndex;
@@ -246,7 +247,7 @@ public:
                                 break;
                         }
                         else
-                            UNIMPLEMENTED;
+                            throwUnexpected();
                     }
                 }
             }   
@@ -324,7 +325,9 @@ void testNxN()
             while (dontSendToSelf&&(dest==myIndex));
             if (!packers[dest])
             {
-                TestHeader t = {sequences[dest], myIndex};
+                TestHeader t;
+                t.sequence = sequences[dest];
+                t.nodeIndex = myIndex;
                 ServerIdentifier destServer;
                 destServer.setIp(allNodes.item(dest));
                 packers[dest] = sendMgr->createMessagePacker(1, sequences[dest], &t, sizeof(t), destServer, 0);

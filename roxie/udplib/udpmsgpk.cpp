@@ -37,6 +37,7 @@
 #include "udpmsgpk.hpp"
 #include "roxiemem.hpp"
 #include "roxie.hpp"
+#include "ccd.hpp"
 
 using roxiemem::DataBuffer;
 using roxiemem::IRowManager;
@@ -65,9 +66,10 @@ class PackageSequencer : public CInterface, implements IInterface
     DataBuffer *tail = nullptr;
     unsigned metaSize;
     unsigned headerSize;
-    const void *header;
+    const RoxiePacketHeader *header;
     unsigned maxSeqSeen = 0;
     unsigned numPackets = 0;
+    bool outOfBand = false;
 #ifdef _DEBUG
     unsigned scans = 0;
     unsigned overscans = 0;
@@ -228,7 +230,8 @@ public:
                         // MORE - Is this safe - header lifetime is somewhat unpredictable without a copy of it...
                         // Client header is at the start of packet 0
                         headerSize = *(unsigned short *)(finger->data + sizeof(UdpPacketHeader));
-                        header = finger->data + sizeof(UdpPacketHeader) + sizeof(unsigned short);
+                        header = (const RoxiePacketHeader *) (finger->data + sizeof(UdpPacketHeader) + sizeof(unsigned short));
+                        outOfBand = (header->overflowSequence & OUTOFBAND_SEQUENCE) != 0;
                         packetDataSize -= headerSize + sizeof(unsigned short);
                     }
                     if (fingerHdr->metalength)
@@ -261,14 +264,17 @@ public:
         return metadata.toByteArray();
     }
 
-    inline const void *getMessageHeader()
+    inline const RoxiePacketHeader *getMessageHeader()
     {
         return header;
     }
-
     inline unsigned getHeaderSize()
     {
         return headerSize;
+    }
+    inline bool isOutOfBand()
+    {
+        return outOfBand;
     }
 
 };
@@ -437,7 +443,7 @@ public:
         return new CMessageUnpackCursor(LINK(pkSequencer), rowMgr);
     }
 
-    virtual const void *getMessageHeader(unsigned &length) const 
+    virtual const RoxiePacketHeader *getMessageHeader(unsigned &length) const override
     {
         length = pkSequencer->getHeaderSize();
         return pkSequencer->getMessageHeader();
@@ -480,7 +486,7 @@ CMessageCollator::~CMessageCollator()
     while (!queue.empty())
     {
         PackageSequencer *pkSqncr = queue.front();
-        queue.pop();
+        queue.pop_front();
         pkSqncr->Release();
     }
 }
@@ -579,7 +585,10 @@ void CMessageCollator::collate(DataBuffer *dataBuff)
             mapping.remove(puid);
         }
         queueCrit.enter();
-        queue.push(pkSqncr);
+        if (pkSqncr->isOutOfBand())
+            queue.push_front(pkSqncr);
+        else
+            queue.push_back(pkSqncr);
         queueCrit.leave();
         sem.signal();
     }
@@ -606,7 +615,7 @@ IMessageResult *CMessageCollator::getNextResult(unsigned time_out, bool &anyActi
     {
         queueCrit.enter();
         PackageSequencer *pkSqncr = queue.front();
-        queue.pop();
+        queue.pop_front();
         queueCrit.leave();
         anyActivity = true;
         activity = false;

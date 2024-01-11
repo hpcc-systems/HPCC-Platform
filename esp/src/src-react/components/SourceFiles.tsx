@@ -54,10 +54,14 @@ export const SourceFiles: React.FunctionComponent<SourceFilesProps> = ({
             Name: {
                 label: "Name", sortable: true,
                 formatter: (Name, row) => {
+                    let fileUrl = `#/files/${Name}`;
+                    if (row?.FileCluster) {
+                        fileUrl = `#/files/${row.FileCluster}/${Name}`;
+                    }
                     return <>
                         <Image src={Utility.getImageURL(row.IsSuperFile ? "folder_table.png" : "file.png")} />
                         &nbsp;
-                        <Link href={`#/files/${row.FileCluster}/${Name}`}>{Name}</Link>
+                        <Link href={fileUrl}>{Name}</Link>
                     </>;
                 }
             },
@@ -86,10 +90,18 @@ export const SourceFiles: React.FunctionComponent<SourceFilesProps> = ({
             key: "open", text: nlsHPCC.Open, disabled: !uiState.hasSelection, iconProps: { iconName: "WindowEdit" },
             onClick: () => {
                 if (selection.length === 1) {
-                    window.location.href = `#/files/${selection[0].Name}`;
+                    let fileUrl = `#/files/${selection[0].Name}`;
+                    if (selection[0]?.FileCluster) {
+                        fileUrl = `#/files/${selection[0].FileCluster}/${selection[0].Name}`;
+                    }
+                    window.location.href = fileUrl;
                 } else {
                     for (let i = selection.length - 1; i >= 0; --i) {
-                        window.open(`#/files/${selection[i].Name}`, "_blank");
+                        let fileUrl = `#/files/${selection[i].Name}`;
+                        if (selection[i]?.FileCluster) {
+                            fileUrl = `#/files/${selection[i].FileCluster}/${selection[i].Name}`;
+                        }
+                        window.open(fileUrl, "_blank");
                     }
                 }
             }

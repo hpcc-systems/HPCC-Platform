@@ -376,9 +376,9 @@ export const ECLPlayground: React.FunctionComponent<ECLPlaygroundProps> = (props
 
         if (editor) {
             if (theme.semanticColors.link === darkTheme.palette.themePrimary) {
-                editor.setOption("theme", "darcula");
+                editor.option("theme", "darcula");
             } else {
-                editor.setOption("theme", "default");
+                editor.option("theme", "default");
             }
         }
     }, [wuid, editor, theme]);
@@ -404,9 +404,9 @@ export const ECLPlayground: React.FunctionComponent<ECLPlaygroundProps> = (props
     const handleThemeToggle = React.useCallback((evt) => {
         if (!editor) return;
         if (evt.detail && evt.detail.dark === true) {
-            editor.setOption("theme", "darcula");
+            editor.option("theme", "darcula");
         } else {
-            editor.setOption("theme", "default");
+            editor.option("theme", "default");
         }
     }, [editor]);
     useOnEvent(document, "eclwatch-theme-toggle", handleThemeToggle);

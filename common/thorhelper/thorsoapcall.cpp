@@ -556,6 +556,7 @@ public:
     }
 } *blacklist;
 
+static bool defaultUsePersistConnections = false;
 static IPersistentHandler* persistentHandler = nullptr;
 static CriticalSection globalFeatureCrit;
 static std::atomic<bool> globalFeaturesInitDone{false};
@@ -568,11 +569,16 @@ void initGlobalFeatures()
     CriticalBlock block(globalFeatureCrit);
     if (!globalFeaturesInitDone)
     {
-        int maxPersistentRequests = 0;
+        int maxPersistentRequests = 100;
+        defaultUsePersistConnections = false;
         if (!isContainerized())
+        {
+            defaultUsePersistConnections = queryEnvironmentConf().getPropBool("useHttpCallPersistentRequests", defaultUsePersistConnections);
             maxPersistentRequests = queryEnvironmentConf().getPropInt("maxHttpCallPersistentRequests", maxPersistentRequests); //global (backward compatible)
+        }
 
         Owned<IPropertyTree> conf = getComponentConfig();
+        defaultUsePersistConnections = conf->getPropBool("@useHttpCallPersistentRequests", defaultUsePersistConnections);
         maxPersistentRequests = conf->getPropInt("@maxHttpCallPersistentRequests", maxPersistentRequests); //component config wins
         mapUrlsToSecrets = conf->getPropBool("@mapHttpCallUrlsToSecrets", false);
         warnIfUrlNotMappedToSecret = conf->getPropBool("@warnIfUrlNotMappedToSecret", mapUrlsToSecrets);
@@ -580,6 +586,8 @@ void initGlobalFeatures()
 
         if (maxPersistentRequests != 0)
             persistentHandler = createPersistentHandler(nullptr, DEFAULT_MAX_PERSISTENT_IDLE_TIME, maxPersistentRequests, PersistentLogLevel::PLogMin, true);
+        else
+            defaultUsePersistConnections = false;
 
         globalFeaturesInitDone = true;
     }
@@ -601,6 +609,7 @@ MODULE_EXIT()
     {
         persistentHandler->stop(true);
         ::Release(persistentHandler);
+        persistentHandler = nullptr;
     }
 }
 
@@ -876,7 +885,7 @@ public:
     }
 };
 
-bool loadConnectSecret(const char *vaultId, const char *secretName, UrlArray &urlArray, StringBuffer &issuer, StringBuffer &proxyAddress, bool required, WSCType wscType)
+bool loadConnectSecret(const char *vaultId, const char *secretName, UrlArray &urlArray, StringBuffer &issuer, StringBuffer &proxyAddress, bool & persistEnabled, unsigned & persistMaxRequests, bool required, WSCType wscType)
 {
     Owned<const IPropertyTree> secret;
     if (!isEmptyString(secretName))
@@ -907,6 +916,15 @@ bool loadConnectSecret(const char *vaultId, const char *secretName, UrlArray &ur
     urlListParser.getUrls(urlArray, usernamePasswordPair);
     getSecretKeyValue(proxyAddress.clear(), secret, "proxy");
     getSecretKeyValue(issuer, secret, "issuer");
+
+    //Options defined in the secret override the defaults and the values specified in ECL
+    StringBuffer persist;
+    if (getSecretKeyValue(persist, secret, "persist"))
+        persistEnabled = strToBool(persist.str());
+
+    if (getSecretKeyValue(persist.clear(), secret, "persistMaxRequests"))
+        persistMaxRequests = atoi(persist);
+
     return true;
 }
 
@@ -934,6 +952,8 @@ private:
     bool complete;
     std::atomic_bool timeLimitExceeded{false};
     bool customClientCert = false;
+    bool persistEnabled = false;
+    unsigned persistMaxRequests = 0;
     StringAttr clientCertIssuer;
     IRoxieAbortMonitor * roxieAbortMonitor;
     StringBuffer issuer; //TBD sync up with other PR, it will benefit from this being able to come from the secret
@@ -987,6 +1007,25 @@ public:
             timeLimitMS = WAIT_FOREVER;
         else
             timeLimitMS = (unsigned)(dval * 1000);
+
+        persistEnabled = defaultUsePersistConnections;
+        persistMaxRequests = 0; // 0 implies do not override the default pool size
+        if (flags & SOAPFpersist)
+        {
+            if (flags & SOAPFpersistMax)
+            {
+                unsigned maxRequests = helper->getPersistMaxRequests();
+                if (maxRequests != 0)
+                {
+                    persistEnabled = true;
+                    persistMaxRequests = maxRequests;
+                }
+                else
+                    persistEnabled = false;
+            }
+            else
+                persistEnabled = true;
+        }
 
         if (flags & SOAPFhttpheaders)
             httpHeaders.set(s.setown(helper->getHttpHeaders()));
@@ -1097,7 +1136,7 @@ public:
             }
             StringBuffer secretName("http-connect-");
             secretName.append(finger);
-            loadConnectSecret(vaultId, secretName, urlArray, issuer, proxyAddress, true, wscType);
+            loadConnectSecret(vaultId, secretName, urlArray, issuer, proxyAddress, persistEnabled, persistMaxRequests, true, wscType);
         }
         else
         {
@@ -1108,11 +1147,11 @@ public:
                 StringBuffer secretName;
                 UrlArray tempArray;
                 //TBD: If this is a list of URLs do we A. not check for a mapped secret, B. check the first one, C. Use long secret name including entire list
-                Url &url = urlArray.tos();
+                Url &url = urlArray.item(0);
                 url.getDynamicUrlSecretName(secretName);
                 if (secretName.length())
                 {
-                    if (loadConnectSecret(nullptr, secretName, tempArray, issuer, proxyAddress, requireUrlsMappedToSecrets, wscType))
+                    if (loadConnectSecret(nullptr, secretName, tempArray, issuer, proxyAddress, persistEnabled, persistMaxRequests, requireUrlsMappedToSecrets, wscType))
                     {
                         logctx.CTXLOG("Mapped %s URL!", wscCallTypeText());
                         if (tempArray.length())
@@ -1130,6 +1169,9 @@ public:
         numUrls = urlArray.ordinality();
         if (numUrls == 0)
             throw MakeStringException(0, "%s specified no URLs", getWsCallTypeName(wscType));
+
+        if (!persistentHandler)
+            persistEnabled = false;
 
         if (!proxyAddress.isEmpty())
         {
@@ -1316,6 +1358,8 @@ public:
     }
     inline IXmlToRowTransformer * getRowTransformer() { return rowTransformer; }
     inline const char * wscCallTypeText() const { return getWsCallTypeName(wscType); }
+    inline bool usePersistConnections() const { return persistEnabled; }
+    inline unsigned getPersistMaxRequests() const { return persistMaxRequests; }
 
 protected:
     friend class CWSCHelperThread;
@@ -2407,11 +2451,14 @@ public:
                     checkTimeLimitExceeded(&remainingMS);
                     Url &connUrl = master->proxyUrlArray.empty() ? url : master->proxyUrlArray.item(0);
                     ep.set(connUrl.host.get(), connUrl.port);
+                    if (ep.isNull())
+                        throw MakeStringException(-1, "Failed to resolve host '%s'", nullText(connUrl.host.get()));
+
                     checkTimeLimitExceeded(&remainingMS);  // after ep.set which might make a potentially long getaddrinfo lookup ...
                     if (strieq(url.method, "https"))
                         proto = PersistentProtocol::ProtoTLS;
                     bool shouldClose = false;
-                    Owned<ISocket> psock = persistentHandler?persistentHandler->getAvailable(&ep, &shouldClose, proto):nullptr;
+                    Owned<ISocket> psock = master->usePersistConnections() ? persistentHandler->getAvailable(&ep, &shouldClose, proto) : nullptr;
                     if (psock)
                     {
                         isReused = true;
@@ -2521,10 +2568,10 @@ public:
                 processResponse(url, response, meta, contentType);
                 delete meta;
 
-                if (persistentHandler)
+                if (master->usePersistConnections())
                 {
                     if (isReused)
-                        persistentHandler->doneUsing(socket, keepAlive);
+                        persistentHandler->doneUsing(socket, keepAlive, master->getPersistMaxRequests());
                     else if (keepAlive)
                         persistentHandler->add(socket, &ep, proto);
                 }
@@ -2532,7 +2579,7 @@ public:
             }
             catch (IReceivedRoxieException *e)
             {
-                if (persistentHandler && isReused)
+                if (master->usePersistConnections() && isReused)
                     persistentHandler->doneUsing(socket, false);
                 // server busy ... Sleep and retry
                 if (e->errorCode() == 1001)
@@ -2564,7 +2611,7 @@ public:
             }
             catch (IException *e)
             {
-                if (persistentHandler && isReused)
+                if (master->usePersistConnections() && isReused)
                     persistentHandler->doneUsing(socket, false);
                 if (master->timeLimitExceeded)
                 {
@@ -2597,7 +2644,7 @@ public:
             }
             catch (std::exception & es)
             {
-                if (persistentHandler && isReused)
+                if (master->usePersistConnections() && isReused)
                     persistentHandler->doneUsing(socket, false);
                 if(dynamic_cast<std::bad_alloc *>(&es))
                     throw MakeStringException(-1, "std::exception: out of memory (std::bad_alloc) in CWSCAsyncFor processQuery");
@@ -2605,7 +2652,7 @@ public:
             }
             catch (...)
             {
-                if (persistentHandler && isReused)
+                if (master->usePersistConnections() && isReused)
                     persistentHandler->doneUsing(socket, false);
                 throw MakeStringException(-1, "Unknown exception in processQuery");
             }

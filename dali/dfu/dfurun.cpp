@@ -143,7 +143,7 @@ class CDFUengine: public CInterface, implements IDFUengine
             DaftProgress::setRange(sizeReadBefore,totalSize,_totalNodes);
             progress->setTotalNodes(_totalNodes);
         }
-        void setFileAccessCost(double fileAccessCost)
+        void setFileAccessCost(cost_type fileAccessCost)
         {
             progress->setFileAccessCost(fileAccessCost);
         }

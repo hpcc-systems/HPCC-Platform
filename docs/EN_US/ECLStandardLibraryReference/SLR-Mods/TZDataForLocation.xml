@@ -2,8 +2,6 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="TZDataForLocation">
-  <!--This is a template for STD library method mod files-->
-
   <title>TZDataForLocation</title>
 
   <para><emphasis role="bold">STD.Date.TimeZone.TZDataForLocation<indexterm>
@@ -26,7 +24,7 @@
           <entry><emphasis>location</emphasis></entry>
 
           <entry>REQUIRED. The name of the location to search for; must be a
-          non-empty uppercase string. </entry>
+          non-empty uppercase string.</entry>
         </row>
 
         <row>
