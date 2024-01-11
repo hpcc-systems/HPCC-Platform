@@ -57,6 +57,7 @@
 #include "hpccconfig.hpp"
 
 #include "ws_dfsclient.hpp"
+#include "wfcontext.hpp"
 
 using roxiemem::OwnedRoxieString;
 
@@ -2234,7 +2235,10 @@ void EclAgent::runProcess(IEclProcess *process)
         workflow->perform(this, process);
     }
     else
-        process->perform(this, 0);
+    {
+        GlobalCodeContextExtra gctx(this, 0);
+        process->perform(&gctx, 0);
+    }
 
     ForEachItemIn(i, queryLibraries)
         queryLibraries.item(i).updateProgress();
@@ -2267,7 +2271,7 @@ void EclAgent::runProcess(IEclProcess *process)
     LOG(MCrunlock, unknownJob, "Released persist read locks");
 }
 
-unsigned EclAgent::getWorkflowId()
+unsigned EclAgent::getWorkflowIdDeprecated()
 {
     throwUnexpected();
 }

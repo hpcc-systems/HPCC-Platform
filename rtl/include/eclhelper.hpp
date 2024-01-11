@@ -48,7 +48,7 @@ typedef unsigned short UChar;
 
 //Should be incremented whenever the virtuals in the context or a helper are changed, so
 //that a work unit can't be rerun.  Try as hard as possible to retain compatibility.
-#define ACTIVITY_INTERFACE_VERSION      653
+#define ACTIVITY_INTERFACE_VERSION      654
 #define MIN_ACTIVITY_INTERFACE_VERSION  650             //minimum value that is compatible with current interface
 
 typedef unsigned char byte;
@@ -780,8 +780,8 @@ interface ICodeContext : public IResourceContext
     virtual IEngineRowAllocator * getRowAllocatorEx(IOutputMetaData * meta, unsigned activityId, unsigned flags) const = 0;
     virtual void addWuExceptionEx(const char * text, unsigned code, unsigned severity, unsigned audience, const char * source) = 0;
     virtual unsigned getElapsedMs() const = 0;
+    virtual unsigned getWorkflowId() const = 0; // Note: don't use yet as it has not been fully implemented in all derived classes
 };
-
 
 //Provided by engine=>can extend
 interface IFilePositionProvider : extends IInterface
@@ -2954,7 +2954,7 @@ struct IGlobalCodeContext
     virtual void fail(int, const char *) = 0;  
 
     virtual bool isResult(const char * name, unsigned sequence) = 0;
-    virtual unsigned getWorkflowId() = 0;
+    virtual unsigned getWorkflowIdDeprecated() = 0; // Workflows are not associated with global context. Deprecated. Left here to avoid changing interface.
     virtual void doNotify(char const * name, char const * text) = 0;
 
     virtual int queryLastFailCode() = 0;
@@ -2973,13 +2973,11 @@ struct IGlobalCodeContext
     virtual void doNotify(char const * name, char const * text, const char * target) = 0;
 };
 
-
 struct IEclProcess : public IInterface
 {
     virtual int perform(IGlobalCodeContext * gctx, unsigned wfid) = 0;
     virtual unsigned getActivityVersion() const = 0;
 };
-
 
 //------------------------------------------------------------------------------------------------
 

@@ -1091,7 +1091,7 @@ protected:
 
     IHThorArg &basehelper;
     IRoxieAgentContext *ctx;
-    class InterceptRegisterTimer : public IndirectCodeContext
+    class InterceptRegisterTimer : public IndirectCodeContextEx
     {
     public:
         InterceptRegisterTimer(CRoxieServerActivity &_activity) : activity(_activity) {}
@@ -27982,7 +27982,7 @@ protected:
         MapXToMyClass<unsigned, unsigned, IActivityGraph> childGraphs;
     } graphAgentContext;
 
-    class ActivityGraphCodeContext : public IndirectCodeContext
+    class ActivityGraphCodeContext : public IndirectCodeContextEx
     {
     public:
         virtual IEclGraphResults * resolveLocalQuery(__int64 activityId)
@@ -27992,7 +27992,7 @@ protected:
             IActivityGraph * match = agentContext->queryChildGraph((unsigned) activityId);
             if (match)
                 return match->queryLocalGraph();
-            return IndirectCodeContext::resolveLocalQuery(activityId);
+            return IndirectCodeContextEx::resolveLocalQuery(activityId);
         }
         virtual IThorChildGraph * resolveChildQuery(__int64 activityId, IHThorArg * colocal)
         {

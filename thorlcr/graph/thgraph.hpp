@@ -347,6 +347,7 @@ public:
     virtual const char *cloneVString(const char *str) const { return ctx->cloneVString(str); }
     virtual const char *cloneVString(size32_t len, const char *str) const { return ctx->cloneVString(len, str); }
     virtual char *getWuid() { return ctx->getWuid(); }
+    virtual unsigned getWorkflowId() const { return ctx->getWorkflowId(); }
     virtual void getExternalResultRaw(unsigned & tlen, void * & tgt, const char * wuid, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) { ctx->getExternalResultRaw(tlen, tgt, wuid, stepname, sequence, xmlTransformer, csvTransformer); }
     virtual void executeGraph(const char * graphName, bool realThor, size32_t parentExtractSize, const void * parentExtract) { ctx->executeGraph(graphName, realThor, parentExtractSize, parentExtract); }
     virtual char * getExpandLogicalName(const char * logicalName) { return ctx->getExpandLogicalName(logicalName); }
