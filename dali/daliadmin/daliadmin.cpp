@@ -726,10 +726,10 @@ static void testDFSFile(IDistributedFile *legacyDfsFile, const char *logicalName
     PROGLOG("expire: %d", expire);
     try
     {
-        double atRestCost, accessCost;
+        cost_type atRestCost, accessCost;
         legacyDfsFile->getCost(clusterName.str(), atRestCost, accessCost);
-        PROGLOG("accessCost: %f", accessCost);
-        PROGLOG("atRestCost: %f", atRestCost);
+        PROGLOG("accessCost: %f", cost_type2money(accessCost));
+        PROGLOG("atRestCost: %f", cost_type2money(atRestCost));
     }
     catch(IException *e)
     {

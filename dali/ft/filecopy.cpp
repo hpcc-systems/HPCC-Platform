@@ -3387,7 +3387,7 @@ void FileSprayer::spray()
     updateTargetProperties();
 
     //Calculate and store file access cost
-    double fileAccessCost = 0.0;
+    cost_type fileAccessCost = 0;
     if (distributedTarget)
     {
         StringBuffer cluster;
@@ -3592,7 +3592,7 @@ void FileSprayer::updateTargetProperties()
 
         DistributedFilePropertyLock lock(distributedTarget);
         IPropertyTree &curProps = lock.queryAttributes();
-        cost_type writeCost = money2cost_type(calcFileAccessCost(distributedTarget, totalNumWrites, 0));
+        cost_type writeCost = calcFileAccessCost(distributedTarget, totalNumWrites, 0);
         curProps.setPropInt64(getDFUQResultFieldName(DFUQRFwriteCost), writeCost);
         curProps.setPropInt64(getDFUQResultFieldName(DFUQRFnumDiskWrites), totalNumWrites);
 
@@ -3778,7 +3778,7 @@ void FileSprayer::updateTargetProperties()
         {
             IPropertyTree & fileAttr = distributedSource->queryAttributes();
             cost_type legacyReadCost = getLegacyReadCost(fileAttr, distributedSource);
-            cost_type curReadCost = money2cost_type(calcFileAccessCost(distributedSource, 0, totalNumReads));
+            cost_type curReadCost = calcFileAccessCost(distributedSource, 0, totalNumReads);
             distributedSource->addAttrValue(getDFUQResultFieldName(DFUQRFreadCost), legacyReadCost+curReadCost);
             distributedSource->addAttrValue(getDFUQResultFieldName(DFUQRFnumDiskReads), totalNumReads);
         }
