@@ -109,6 +109,9 @@ jobs:
             name: LN k8s
             ln: true
             container: true
+          - os: ubuntu-22.04
+            name: LN
+            ln: true
           - os: ubuntu-20.04
             name: LN
             ln: true
