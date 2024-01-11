@@ -3575,7 +3575,7 @@ public:
         return new CRowArrayMessageUnpackCursor(_this->data, _this);
     }
 
-    virtual const void *getMessageHeader(unsigned &length) const
+    virtual const RoxiePacketHeader *getMessageHeader(unsigned &length) const
     {
         throwUnexpected(); // should never get called - I don't have a header available
     }
@@ -5026,7 +5026,7 @@ public:
             if (mr)
             {
                 unsigned roxieHeaderLen;
-                const RoxiePacketHeader &header = *(const RoxiePacketHeader *) mr->getMessageHeader(roxieHeaderLen);
+                const RoxiePacketHeader &header = * mr->getMessageHeader(roxieHeaderLen);
 #ifdef _DEBUG
                 assertex(roxieHeaderLen == sizeof(RoxiePacketHeader));
 #endif
@@ -23908,7 +23908,7 @@ public:
             Link();
             return const_cast<LazyLocalKeyReader*> (this);
         }
-        virtual const void *getMessageHeader(unsigned &length) const
+        virtual const RoxiePacketHeader *getMessageHeader(unsigned &length) const
         {
             length = 0;
             return NULL;

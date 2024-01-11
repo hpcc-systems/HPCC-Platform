@@ -102,6 +102,7 @@ interface IMessagePacker : extends IInterface
 };
 
 interface IException;
+class RoxiePacketHeader;
 
 interface IMessageUnpackCursor : extends IInterface
 {
@@ -116,7 +117,7 @@ interface IMessageUnpackCursor : extends IInterface
 interface IMessageResult : extends IInterface
 {
     virtual IMessageUnpackCursor *getCursor(roxiemem::IRowManager *rowMgr) const = 0;
-    virtual const void *getMessageHeader(unsigned &length) const = 0;
+    virtual const RoxiePacketHeader *getMessageHeader(unsigned &length) const = 0;
     virtual const void *getMessageMetadata(unsigned &length) const = 0;
     virtual void discard() const = 0;
 };

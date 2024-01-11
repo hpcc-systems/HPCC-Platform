@@ -1214,7 +1214,7 @@ protected:
             if (mr)
             {
                 unsigned roxieHeaderLen;
-                const RoxiePacketHeader *header = (const RoxiePacketHeader *) mr->getMessageHeader(roxieHeaderLen);
+                const RoxiePacketHeader *header = mr->getMessageHeader(roxieHeaderLen);
                 Owned<IMessageUnpackCursor> mu = mr->getCursor(rowManager);
                 if (header->activityId == ROXIE_EXCEPTION)
                     throwRemoteException(mu);
