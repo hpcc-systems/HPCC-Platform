@@ -344,7 +344,7 @@ public:
                 CMasterActivity::fireException(e);
                 lastMsgTime = msTick();
             }
-            else if (msTick() > lastMsgTime + MSGTIME)
+            else if (msTick() - lastMsgTime > MSGTIME)
             {
                 Owned<IException> e = MakeActivityWarning(this, -1, "SELFJOIN: Warning %d preliminary matches, join will take some time", count);
                 CMasterActivity::fireException(e);
