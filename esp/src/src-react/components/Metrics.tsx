@@ -13,7 +13,7 @@ import * as Utility from "src/Utility";
 import { FetchStatus, useMetricsOptions, useWorkunitMetrics } from "../hooks/metrics";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { AutosizeComponent, AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
-import { DockPanel, DockPanelItems, ReactWidget, ResetableDockPanel } from "../layouts/DockPanel";
+import { DockPanel, DockPanelItem, ResetableDockPanel } from "../layouts/DockPanel";
 import { IScope, LayoutStatus, MetricGraph, MetricGraphWidget, isGraphvizWorkerResponse, layoutCache } from "../util/metricGraph";
 import { pushUrl } from "../util/history";
 import { debounce } from "../util/throttle";
@@ -435,29 +435,8 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         });
     }, [lineage, selectedLineage]);
 
-    const graphComponent = React.useMemo(() => {
-        return <HolyGrail
-            header={<>
-                <CommandBar items={graphButtons} farItems={graphRightButtons} />
-                <OverflowBreadcrumb breadcrumbs={breadcrumbs} selected={selectedLineage?.id} onSelect={item => setSelectedLineage(lineage.find(l => l.id === item.id))} />
-            </>}
-            main={<>
-                <AutosizeComponent hidden={!spinnerLabel}>
-                    <Spinner size="extra-large" label={spinnerLabel} labelPosition="below" ></Spinner>
-                </AutosizeComponent>
-                <AutosizeComponent hidden={!!spinnerLabel || selectedMetrics.length > 0}>
-                    <Label style={{ ...typographyStyles.subtitle2 }}>{nlsHPCC.NoContentPleaseSelectItem}</Label>
-                </AutosizeComponent>
-                <AutosizeHpccJSComponent widget={metricGraphWidget}>
-                </AutosizeHpccJSComponent>
-            </>
-            }
-        />;
-    }, [graphButtons, graphRightButtons, breadcrumbs, selectedLineage?.id, spinnerLabel, selectedMetrics.length, metricGraphWidget, lineage]);
-
     //  Props Table  ---
     const propsTable = useConst(() => new Table()
-        .id("propsTable")
         .columns([nlsHPCC.Property, nlsHPCC.Value, "Avg", "Min", "Max", "Delta", "StdDev", "SkewMin", "SkewMax", "NodeMin", "NodeMax"])
         .columnWidth("auto")
     );
@@ -485,7 +464,6 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     }, [propsTable]);
 
     const propsTable2 = useConst(() => new Table()
-        .id("propsTable2")
         .columns([nlsHPCC.Property, nlsHPCC.Value])
         .columnWidth("auto")
     );
@@ -513,14 +491,6 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
             ?.lazyRender()
             ;
     }, [propsTable2]);
-
-    const portal = useConst(() => new ReactWidget()
-        .id("portal")
-    );
-
-    React.useEffect(() => {
-        portal.children(<h1>{timelineFilter}</h1>).lazyRender();
-    }, [portal, timelineFilter]);
 
     React.useEffect(() => {
         const dot = metricGraph.graphTpl(selectedLineage ? [selectedLineage] : [], options);
@@ -560,38 +530,6 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         setSelectedMetrics(metrics.filter(m => selectedIDs.indexOf(m.id) >= 0));
         setSelectedMetricsPtr(0);
     }, [metrics, selection]);
-
-    const items: DockPanelItems = React.useMemo<DockPanelItems>((): DockPanelItems => {
-        return [
-            {
-                key: "scopesTable",
-                title: nlsHPCC.Metrics,
-                component: <HolyGrail
-                    header={<SearchBox value={scopeFilter} onChange={onChangeScopeFilter} iconProps={filterIcon} placeholder={nlsHPCC.Filter} />}
-                    main={<AutosizeHpccJSComponent widget={scopesTable} ></AutosizeHpccJSComponent>}
-                />
-            },
-            {
-                key: "metricGraph",
-                title: nlsHPCC.Graph,
-                component: graphComponent,
-                location: "split-right",
-                ref: "scopesTable"
-            },
-            {
-                title: nlsHPCC.Properties,
-                widget: propsTable,
-                location: "split-bottom",
-                ref: "scopesTable"
-            },
-            {
-                title: nlsHPCC.CrossTab,
-                widget: propsTable2,
-                location: "tab-after",
-                ref: propsTable.id()
-            }
-        ];
-    }, [scopeFilter, onChangeScopeFilter, scopesTable, graphComponent, propsTable, propsTable2]);
 
     React.useEffect(() => {
 
@@ -685,7 +623,39 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         </>}
         main={
             <ErrorBoundary>
-                <DockPanel items={items} layout={options?.layout} onDockPanelCreate={setDockpanel} />
+                <DockPanel layout={options?.layout} onDockPanelCreate={setDockpanel}>
+                    <DockPanelItem key="scopesTable" title={nlsHPCC.Metrics}>
+                        <HolyGrail
+                            header={<SearchBox value={scopeFilter} onChange={onChangeScopeFilter} iconProps={filterIcon} placeholder={nlsHPCC.Filter} />}
+                            main={<AutosizeHpccJSComponent widget={scopesTable} ></AutosizeHpccJSComponent>}
+                        />
+                    </DockPanelItem>
+                    <DockPanelItem key="metricGraph" title={nlsHPCC.Graph} location="split-right" relativeTo="scopesTable" >
+                        <HolyGrail
+                            header={<>
+                                <CommandBar items={graphButtons} farItems={graphRightButtons} />
+                                <OverflowBreadcrumb breadcrumbs={breadcrumbs} selected={selectedLineage?.id} onSelect={item => setSelectedLineage(lineage.find(l => l.id === item.id))} />
+                            </>}
+                            main={<>
+                                <AutosizeComponent hidden={!spinnerLabel}>
+                                    <Spinner size="extra-large" label={spinnerLabel} labelPosition="below" ></Spinner>
+                                </AutosizeComponent>
+                                <AutosizeComponent hidden={!!spinnerLabel || selectedMetrics.length > 0}>
+                                    <Label style={{ ...typographyStyles.subtitle2 }}>{nlsHPCC.NoContentPleaseSelectItem}</Label>
+                                </AutosizeComponent>
+                                <AutosizeHpccJSComponent widget={metricGraphWidget}>
+                                </AutosizeHpccJSComponent>
+                            </>
+                            }
+                        />
+                    </DockPanelItem>
+                    <DockPanelItem key="propsTable" title={nlsHPCC.Properties} location="split-bottom" relativeTo="scopesTable" >
+                        <AutosizeHpccJSComponent widget={propsTable}></AutosizeHpccJSComponent>
+                    </DockPanelItem>
+                    <DockPanelItem key="propsTable2" title={nlsHPCC.CrossTab} location="tab-after" relativeTo="propsTable" >
+                        <AutosizeHpccJSComponent widget={propsTable2}></AutosizeHpccJSComponent>
+                    </DockPanelItem>
+                </DockPanel>
                 <MetricsOptions show={showMetricOptions} setShow={setShowMetricOptions} />
             </ErrorBoundary>
         }
