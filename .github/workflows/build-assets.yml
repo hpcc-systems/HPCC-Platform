@@ -112,6 +112,9 @@ jobs:
           - os: ubuntu-22.04
             name: LN
             ln: true
+          - os: ubuntu-22.04
+            name: Enterprise
+            ee: true
           - os: ubuntu-20.04
             name: LN
             ln: true
@@ -138,7 +141,7 @@ jobs:
           path: ${{ needs.preamble.outputs.folder_platform }}
 
       - name: Checkout LN
-        if: ${{ matrix.ln }}
+        if: ${{ matrix.ln || matrix.ee }} 
         uses: actions/checkout@v3
         with:
           repository: ${{ github.repository_owner }}/LN
@@ -192,7 +195,7 @@ jobs:
 
       # Communtiy Build 
       - name: CMake Packages (community)
-        if: ${{ !matrix.ln && !matrix.container && !matrix.documentation }}
+        if: ${{ !matrix.ln && !matrix.ee && !matrix.container && !matrix.documentation }}
         run: |
           mkdir -p ${{ needs.preamble.outputs.folder_build }}
           echo "${{ secrets.SIGNING_SECRET }}" > ${{ needs.preamble.outputs.folder_build }}/private.key
@@ -209,7 +212,7 @@ jobs:
           done
 
       - name: CMake Containerized Packages (community)
-        if: ${{ !matrix.ln && matrix.container && !matrix.documentation }}
+        if: ${{ !matrix.ln && !matrix.ee && matrix.container && !matrix.documentation }}
         run: |
           mkdir -p ${{ needs.preamble.outputs.folder_build }}
           echo "${{ secrets.SIGNING_SECRET }}" > ${{ needs.preamble.outputs.folder_build }}/private.key
@@ -223,7 +226,7 @@ jobs:
             cmake --build /hpcc-dev/build --parallel $(nproc) --target package"
 
       - name: CMake documentation (community)
-        if: ${{ !matrix.ln && !matrix.container && matrix.documentation }}
+        if: ${{ !matrix.ln && !matrix.ee && !matrix.container && matrix.documentation }}
         run: |
           mkdir -p {${{needs.preamble.outputs.folder_build }},EN_US,PT_BR}
           sudo rm -f ${{ needs.preamble.outputs.folder_build }}/CMakeCache.txt
@@ -235,7 +238,7 @@ jobs:
           docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} ${{ steps.vars.outputs.docker_tag_candidate_base }} "cd /hpcc-dev/build/Release/docs/PT_BR && zip ALL_HPCC_DOCS_PT_BR-${{ needs.preamble.outputs.community_tag }}.zip *.pdf"
 
       - name: Upload Assets (community)
-        if: ${{ !matrix.ln }}
+        if: ${{ !matrix.ln && !matrix.ee }}
         uses: ncipollo/release-action@v1.12.0
         with:
           allowUpdates: true
@@ -244,7 +247,7 @@ jobs:
           artifacts: "${{ needs.preamble.outputs.folder_build }}/*.deb,${{ needs.preamble.outputs.folder_build }}/*.rpm,${{ needs.preamble.outputs.folder_build }}/Release/docs/*.zip,${{ needs.preamble.outputs.folder_build }}/Release/docs/EN_US/*.zip,${{ needs.preamble.outputs.folder_build }}/Release/docs/PT_BR/*.zip,${{ needs.preamble.outputs.folder_build }}/docs/EN_US/EclipseHelp/*.zip,${{ needs.preamble.outputs.folder_build }}/docs/EN_US/HTMLHelp/*.zip,${{ needs.preamble.outputs.folder_build }}/docs/PT_BR/HTMLHelp/*.zip"
 
       - name: Locate k8s deb file (community)
-        if: ${{ !matrix.ln && matrix.container && !matrix.documentation }}
+        if: ${{ !matrix.ln && !matrix.ee && matrix.container && !matrix.documentation }}
         id: container
         run: |
           k8s_pkg_path=$(ls -t ${{ needs.preamble.outputs.folder_build }}/*64_k8s.deb 2>/dev/null | head -1)
@@ -254,7 +257,7 @@ jobs:
 
       - name: Create Docker Image (community)
         uses: docker/build-push-action@v4
-        if: ${{ !matrix.ln && matrix.container && !matrix.documentation }}
+        if: ${{ !matrix.ln && !matrix.ee && matrix.container && !matrix.documentation }}
         with:
           builder: ${{ steps.buildx.outputs.name }}
           file: ${{ needs.preamble.outputs.folder_platform }}/dockerfiles/vcpkg/platform-core-${{ matrix.os }}/Dockerfile
@@ -359,6 +362,33 @@ jobs:
         run: |
           jf docker push ${{ secrets.JFROG_REGISTRY || 'dummy.io' }}/hpccpl-docker-local/platform-core-ln:${{ needs.preamble.outputs.hpcc_version }} --build-name=platform-core-ln --build-number=${{ needs.preamble.outputs.hpcc_version }} --project=hpccpl
           jf rt bp platform-core-ln ${{ needs.preamble.outputs.hpcc_version }} --project=hpccpl
+
+
+      #  Enterprise Build ---
+      - name: CMake Packages (enterprise)
+        if: ${{ matrix.ee }}
+        run: |
+          mkdir -p ${{ needs.preamble.outputs.folder_build }}
+          echo "${{ secrets.SIGNING_SECRET }}" > ${{ needs.preamble.outputs.folder_build }}/private.key
+          sudo rm -f ${{ needs.preamble.outputs.folder_build }}/CMakeCache.txt
+          sudo rm -rf ${{ needs.preamble.outputs.folder_build }}/CMakeFiles
+          docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_ln }} --mount ${{ needs.preamble.outputs.mount_build }} ${{ steps.vars.outputs.docker_tag_candidate_base }} "${{ needs.preamble.outputs.gpg_import }} && \
+          cmake -S /hpcc-dev/LN -B /hpcc-dev/build -DHPCC_SOURCE_DIR=/hpcc-dev/HPCC-Platform ${{ needs.preamble.outputs.cmake_docker_config }} -DBUILD_LEVEL=ENTERPRISE -DSIGN_MODULES_PASSPHRASE=${{ secrets.SIGN_MODULES_PASSPHRASE }} -DSIGN_MODULES_KEYID=${{ secrets.SIGN_MODULES_KEYID }} -DPLATFORM=ON -DINCLUDE_PLUGINS=ON -DCONTAINERIZED=OFF -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_SPARK=ON -DCPACK_STRIP_FILES=OFF && \
+          cmake --build /hpcc-dev/build --parallel $(nproc) --target package" 
+      
+      - name: Upload Assets (enterprise)
+        if: ${{ matrix.ee }}
+        uses: ncipollo/release-action@v1.12.0
+        with:
+          allowUpdates: true
+          generateReleaseNotes: false
+          prerelease: ${{ contains(github.ref, '-rc') }}
+          owner: ${{ secrets.LNB_ACTOR }}
+          repo: LN
+          token: ${{ secrets.LNB_TOKEN }}
+          tag: ${{ needs.preamble.outputs.internal_tag }}
+          artifacts: "${{ needs.preamble.outputs.folder_build }}/hpccsystems-platform-enterprise*.deb,${{ needs.preamble.outputs.folder_build }}/hpccsystems-platform-enterprise*.rpm"
+  
 
       #  Common  ---
       - name: Cleanup Environment
