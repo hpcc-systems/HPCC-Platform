@@ -2,8 +2,6 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="UniqueTZLocations">
-  <!--This is a template for STD library method mod files-->
-
   <title>UniqueTZLocations</title>
 
   <para><emphasis role="bold">STD.Date.TimeZone.UniqueTZLocations<indexterm>
