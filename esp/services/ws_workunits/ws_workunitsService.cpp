@@ -4979,8 +4979,8 @@ bool CWsWorkunitsEx::onWUGetZAPInfo(IEspContext &context, IEspWUGetZAPInfoReques
             ipaddr.getHostText(EspIP);
             resp.setESPIPAddress(EspIP.str());
         }
-        if ((version >= 1.96) && !queryRemoteLogAccessor())
-            resp.setMessage("Warning: may not be able to include log file because Remote Log Access plug-in is not available!");
+        if ((version >= 1.96) && isContainerized() & !queryRemoteLogAccessor())
+            resp.setMessage("Warning: the log file cannot be included because Remote Log Access plug-in is not available!");
 
         //Get Archive
         Owned<IConstWUQuery> query = cw->getQuery();
@@ -4992,8 +4992,18 @@ bool CWsWorkunitsEx::onWUGetZAPInfo(IEspContext &context, IEspWUGetZAPInfoReques
                 resp.setArchive(queryText.str());
         }
 
+        if (isContainerized())
+        {
+            resp.setEmailTo(zapEmailTo.get());
+            resp.setEmailFrom(zapEmailFrom.get());
+            return true;
+        }
+
+        //The code below is for bare-metal only.
         if (version >= 1.95)
         {
+            //Using the getProcesses(), find out possible Thor processes used by the WU.
+            //The processes may be displayed inside the dialog box of creating ZAP report.
             StringBuffer thorProcesses;
             Owned<IStringIterator> thorInstances = cw->getProcesses("Thor");
             ForEach (*thorInstances)
@@ -5014,7 +5024,7 @@ bool CWsWorkunitsEx::onWUGetZAPInfo(IEspContext &context, IEspWUGetZAPInfoReques
             return true;
         }
 
-        //Get Thor IP
+        //Get Thor IP which may be displayed inside the dialog box of creating ZAP report.
         BoolHash uniqueProcesses;
         Owned<IStringIterator> thorInstances = cw->getProcesses("Thor");
         ForEach (*thorInstances)
