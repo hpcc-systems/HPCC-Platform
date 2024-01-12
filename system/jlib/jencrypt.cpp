@@ -1814,7 +1814,7 @@ MemoryBuffer &aesDecrypt(const void *key, size_t keylen, const void *input, size
     if(len >= 0)
         output.setLength(origLen+len);
     else 
-        throw MakeStringException(-1,"AES Decryption error: %d, %s", len, getAesErrorText(len));
+        throw MakeStringException(-1,"AES Decryption len: %zu error: %d, %s", inlen, len, getAesErrorText(len));
     return output;
 }
 
@@ -1827,7 +1827,7 @@ size_t aesDecryptInPlace(const void *key, size_t keylen, void *data, size_t inle
     size32_t truncInLen = (size32_t)inlen;
     int len = rin.padDecrypt((const UINT8 *)data, truncInLen, (UINT8 *) data, inlen);
     if(len < 0)
-        throw MakeStringException(-1,"AES Decryption error: %d, %s", len, getAesErrorText(len));
+        throw MakeStringException(-1,"AES Decryption len: %zu error: %d, %s", inlen, len, getAesErrorText(len));
     return len;
 }
 
@@ -1890,9 +1890,11 @@ MemoryBuffer &aesEncrypt(const void *key, size_t keylen, const void *plaintext, 
     }
 }
 
-static void decryptError(const char *what)
+static void decryptError(const char *what, size32_t len=0)
 {
     VStringBuffer s("openssl::aesDecrypt: unexpected failure in %s", what);
+    if (len)
+        s.appendf(" len: %u", len);
     throw makeStringException(0, s.str());
 }
 
@@ -1925,16 +1927,16 @@ MemoryBuffer &aesDecrypt(const void *key, size_t keylen, const void *ciphertext,
                     decryptError("Failed to initialize context");
                 break;
             default:
-                decryptError("Unsupported key length");
+                decryptError("Unsupported key length", keylen);
                 break;
         }
         byte *plaintext = (byte *) output.reserve(ciphertext_len);
         if(1 != EVP_DecryptUpdate(ctx, plaintext, &thislen, (const unsigned char *) ciphertext, ciphertext_len))
-            decryptError("Error in EVP_DecryptUpdate");
+            decryptError("Error in EVP_DecryptUpdate", ciphertext_len);
         plaintext_len += thislen;
 
         if(1 != EVP_DecryptFinal_ex(ctx, plaintext + plaintext_len, &thislen))
-            decryptError("Error in EVP_DecryptFinal_ex");
+            decryptError("Error in EVP_DecryptFinal_ex", ciphertext_len);
         plaintext_len += thislen;
         output.setLength(plaintext_len);
         EVP_CIPHER_CTX_free(ctx);
@@ -1977,16 +1979,16 @@ size_t aesDecryptInPlace(const void *key, size_t keylen, void *ciphertext, size_
                     decryptError("Failed to initialize context");
                 break;
             default:
-                decryptError("Unsupported key length");
+                decryptError("Unsupported key length", keylen);
                 break;
         }
         byte *plaintext = (byte *) ciphertext;
         if(1 != EVP_DecryptUpdate(ctx, plaintext, &thislen, (const unsigned char *) ciphertext, ciphertext_len))
-            decryptError("Error in EVP_DecryptUpdate");
+            decryptError("Error in EVP_DecryptUpdate", ciphertext_len);
         plaintext_len += thislen;
 
         if(1 != EVP_DecryptFinal_ex(ctx, plaintext + plaintext_len, &thislen))
-            decryptError("Error in EVP_DecryptFinal_ex");
+            decryptError("Error in EVP_DecryptFinal_ex", ciphertext_len);
         plaintext_len += thislen;
         assertex(plaintext_len <= ciphertext_len);
         EVP_CIPHER_CTX_free(ctx);
