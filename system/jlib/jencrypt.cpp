@@ -1771,6 +1771,22 @@ inline const char *getAesErrorText(int err)
     return (err<0 && abs(err)<8) ? aesErrorText[abs(err)] : "unknown";
 }
 
+static void decryptError(const char *what, size_t len=0, const void * data=nullptr, int error=0)
+{
+    VStringBuffer s("openssl::aesDecrypt: unexpected failure in %s", what);
+    if (error)
+        s.appendf(" error: %d", error);
+    if (len)
+        s.appendf(" len: %zu", len);
+    if (len >= 16)
+    {
+        s.append(" data: ...");
+        for (size_t i=0; i < 16; i++)
+            s.appendf("%02x ", ((const byte *)data)[len - 16 + i]);
+    }
+    throw makeStringException(0, s.str());
+}
+
 inline Rijndael::KeyLength getAesKeyType(size_t keylen)
 {
     if (keylen==16)
@@ -1814,7 +1830,7 @@ MemoryBuffer &aesDecrypt(const void *key, size_t keylen, const void *input, size
     if(len >= 0)
         output.setLength(origLen+len);
     else 
-        throw MakeStringException(-1,"AES Decryption len: %zu error: %d, %s", inlen, len, getAesErrorText(len));
+        decryptError(getAesErrorText(len), inlen, input, len);
     return output;
 }
 
@@ -1827,7 +1843,7 @@ size_t aesDecryptInPlace(const void *key, size_t keylen, void *data, size_t inle
     size32_t truncInLen = (size32_t)inlen;
     int len = rin.padDecrypt((const UINT8 *)data, truncInLen, (UINT8 *) data, inlen);
     if(len < 0)
-        throw MakeStringException(-1,"AES Decryption len: %zu error: %d, %s", inlen, len, getAesErrorText(len));
+        decryptError(getAesErrorText(len), inlen, input, len);
     return len;
 }
 
@@ -1890,14 +1906,6 @@ MemoryBuffer &aesEncrypt(const void *key, size_t keylen, const void *plaintext, 
     }
 }
 
-static void decryptError(const char *what, size32_t len=0)
-{
-    VStringBuffer s("openssl::aesDecrypt: unexpected failure in %s", what);
-    if (len)
-        s.appendf(" len: %u", len);
-    throw makeStringException(0, s.str());
-}
-
 MemoryBuffer &aesDecrypt(const void *key, size_t keylen, const void *ciphertext, size_t ciphertext_len, MemoryBuffer &output)
 {
     if (!ciphertext || !ciphertext_len)
@@ -1932,11 +1940,11 @@ MemoryBuffer &aesDecrypt(const void *key, size_t keylen, const void *ciphertext,
         }
         byte *plaintext = (byte *) output.reserve(ciphertext_len);
         if(1 != EVP_DecryptUpdate(ctx, plaintext, &thislen, (const unsigned char *) ciphertext, ciphertext_len))
-            decryptError("Error in EVP_DecryptUpdate", ciphertext_len);
+            decryptError("Error in EVP_DecryptUpdate", ciphertext_len, ciphertext, 1);
         plaintext_len += thislen;
 
         if(1 != EVP_DecryptFinal_ex(ctx, plaintext + plaintext_len, &thislen))
-            decryptError("Error in EVP_DecryptFinal_ex", ciphertext_len);
+            decryptError("Error in EVP_DecryptUpdate", ciphertext_len, ciphertext, 2);
         plaintext_len += thislen;
         output.setLength(plaintext_len);
         EVP_CIPHER_CTX_free(ctx);
