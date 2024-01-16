@@ -573,7 +573,7 @@ public:
                         aesEncrypt(udpkey.get(), udpkey.length(), data, length, encryptBuffer);
                         header->length = encryptBuffer.length();
                         encryptBuffer.writeDirect(0, sizeof(UdpPacketHeader), header);   // Only really need length updating
-                        assert(length <= DATA_PAYLOAD);
+                        assertex(encryptBuffer.length() <= DATA_PAYLOAD);
                         data_socket->write(encryptBuffer.toByteArray(), encryptBuffer.length());
                     }
                     else
