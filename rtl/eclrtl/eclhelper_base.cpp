@@ -620,6 +620,7 @@ const char * CThorSoapActionArg::getXpathHintsXml() { return nullptr;}
 const char * CThorSoapActionArg::getRequestHeader() { return nullptr; }
 const char * CThorSoapActionArg::getRequestFooter() { return nullptr; }
 unsigned CThorSoapActionArg::getPersistMaxRequests() { return 0; }
+unsigned CThorSoapActionArg::getPersistPoolSize() { return 0; }
 
 //CThorSoapCallArg
 
@@ -646,6 +647,7 @@ const char * CThorSoapCallArg::getXpathHintsXml() { return nullptr; }
 const char * CThorSoapCallArg::getRequestHeader() { return nullptr; }
 const char * CThorSoapCallArg::getRequestFooter() { return nullptr; }
 unsigned CThorSoapCallArg::getPersistMaxRequests() { return 0; }
+unsigned CThorSoapCallArg::getPersistPoolSize() { return 0; }
 
 size32_t CThorSoapCallArg::onFailTransform(ARowBuilder & rowBuilder, const void * left, IException * e) { return 0; }
 void CThorSoapCallArg::getLogText(size32_t & lenText, char * & text, const void * left) { lenText =0; text = NULL; }
