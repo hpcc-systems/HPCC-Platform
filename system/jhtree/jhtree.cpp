@@ -574,11 +574,8 @@ public:
 
     virtual void mergeStats(CRuntimeStatisticCollection & targetStats) const
     {
-        // IO Stats coming from the keyCursor and jhtree cache stats coming from this class's stats
         if (keyCursor)
             keyCursor->mergeStats(targetStats); // merge IO stats
-        if (ctx)
-            targetStats.merge(ctx->queryStats()); // merge jhtree cache stats
     }
 };
 

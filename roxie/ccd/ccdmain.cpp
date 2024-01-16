@@ -1413,6 +1413,12 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
 #endif
         configurePreferredPlanes();
         createDelayedReleaser();
+        CCycleTimer loadPackageTimer;
+        globalPackageSetManager = createRoxiePackageSetManager(standAloneDll.getClear());
+        globalPackageSetManager->load();
+        if (traceLevel)
+            DBGLOG("Loading all packages took %ums", loadPackageTimer.elapsedMs());
+
         ROQ = createOutputQueueManager(numAgentThreads, encryptInTransit);
         ROQ->setHeadRegionSize(headRegionSize);
         ROQ->start();
@@ -1428,13 +1434,6 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
 
         EnableSEHtoExceptionMapping();
         setSEHtoExceptionHandler(&abortHandler);
-
-        CCycleTimer loadPackageTimer;
-        globalPackageSetManager = createRoxiePackageSetManager(standAloneDll.getClear());
-        globalPackageSetManager->load();
-        if (traceLevel)
-            DBGLOG("Loading all packages took %ums", loadPackageTimer.elapsedMs());
-
         Owned<IHpccProtocolPluginContext> protocolCtx = new CHpccProtocolPluginCtx();
         if (runOnce)
         {

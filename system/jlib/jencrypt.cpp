@@ -1870,7 +1870,8 @@ MemoryBuffer &aesEncrypt(const void *key, size_t keylen, const void *plaintext, 
                 encryptError("Unsupported key length");
                 break;
         }
-        byte *ciphertext = (byte *) output.reserve(plaintext_len + 100);
+        unsigned originalLen = output.length();
+        byte *ciphertext = (byte *) output.reserve(plaintext_len + 16);
         int ciphertext_len = 0;
         int thislen = 0;
         if(1 != EVP_EncryptUpdate(ctx, ciphertext, &thislen, (const unsigned char *) plaintext, plaintext_len))
@@ -1880,7 +1881,7 @@ MemoryBuffer &aesEncrypt(const void *key, size_t keylen, const void *plaintext, 
             encryptError("Error in EVP_EncryptFinal_ex");
         ciphertext_len += thislen;
         EVP_CIPHER_CTX_free(ctx);
-        output.setLength(ciphertext_len);
+        output.setLength(originalLen + ciphertext_len);
         return output;
     }
     catch (...)
@@ -1928,6 +1929,7 @@ MemoryBuffer &aesDecrypt(const void *key, size_t keylen, const void *ciphertext,
                 decryptError("Unsupported key length");
                 break;
         }
+        unsigned originalLen = output.length();
         byte *plaintext = (byte *) output.reserve(ciphertext_len);
         if(1 != EVP_DecryptUpdate(ctx, plaintext, &thislen, (const unsigned char *) ciphertext, ciphertext_len))
             decryptError("Error in EVP_DecryptUpdate");
@@ -1936,7 +1938,7 @@ MemoryBuffer &aesDecrypt(const void *key, size_t keylen, const void *ciphertext,
         if(1 != EVP_DecryptFinal_ex(ctx, plaintext + plaintext_len, &thislen))
             decryptError("Error in EVP_DecryptFinal_ex");
         plaintext_len += thislen;
-        output.setLength(plaintext_len);
+        output.setLength(originalLen + plaintext_len);
         EVP_CIPHER_CTX_free(ctx);
         return output;
     }

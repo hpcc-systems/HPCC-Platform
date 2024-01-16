@@ -3778,49 +3778,71 @@ protected:
                                 0x36, 0x37, 0x38, 0x39, 0x30, 0x31, 0x32, 0x33,
                                 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x30, 0x31
                               };
+        constexpr const char * prefix = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        constexpr unsigned lenPrefix = strlen(prefix);
 
         MemoryBuffer ciphertext1, ciphertext2, decrypted1, decrypted2;
 
+        ciphertext1.append(lenPrefix, prefix);
+        ciphertext2.append(lenPrefix, prefix);
         openssl::aesEncrypt(key, 32, intext, len, ciphertext1);
         jlib::aesEncrypt(key, 32, intext, len, ciphertext2);
 
+        CPPUNIT_ASSERT(memcmp(ciphertext1.bytes(), prefix, lenPrefix) == 0);
+        CPPUNIT_ASSERT(memcmp(ciphertext2.bytes(), prefix, lenPrefix) == 0);
+        if (len)
+            CPPUNIT_ASSERT(ciphertext1.length() > len + lenPrefix);
+        else
+            CPPUNIT_ASSERT(ciphertext1.length() == len + lenPrefix);
+        CPPUNIT_ASSERT(ciphertext1.length() <= len + lenPrefix + 16);
         CPPUNIT_ASSERT(ciphertext1.length()==ciphertext2.length());
         CPPUNIT_ASSERT(memcmp(ciphertext1.bytes(), ciphertext2.bytes(), ciphertext1.length()) == 0);
         
+        unsigned cipherlen = ciphertext1.length() - lenPrefix;
+
         /* Decrypt the ciphertext */
-        openssl::aesDecrypt(key, 32, ciphertext1.bytes(), ciphertext1.length(), decrypted1);
-        assert(decrypted1.length() == len);
-        CPPUNIT_ASSERT(decrypted1.length() == len);
-        CPPUNIT_ASSERT(memcmp(decrypted1.bytes(), intext, len) == 0);
+        decrypted1.append(lenPrefix, prefix);
+        openssl::aesDecrypt(key, 32, ciphertext1.bytes()+lenPrefix, cipherlen, decrypted1);
+        CPPUNIT_ASSERT(decrypted1.length() == len+lenPrefix);
+        CPPUNIT_ASSERT(memcmp(decrypted1.bytes(), prefix, lenPrefix) == 0);
+        CPPUNIT_ASSERT(memcmp(decrypted1.bytes()+lenPrefix, intext, len) == 0);
         CPPUNIT_ASSERT(memcmp(ciphertext1.bytes(), ciphertext2.bytes(), ciphertext1.length()) == 0); // check input unchanged
 
-        jlib::aesDecrypt(key, 32, ciphertext2.bytes(), ciphertext2.length(), decrypted2);
-        CPPUNIT_ASSERT(decrypted2.length() == len);
-        CPPUNIT_ASSERT(memcmp(decrypted2.bytes(), intext, len) == 0);
+        decrypted2.append(lenPrefix, prefix);
+        jlib::aesDecrypt(key, 32, ciphertext2.bytes()+lenPrefix, cipherlen, decrypted2);
+        CPPUNIT_ASSERT(memcmp(decrypted2.bytes(), prefix, lenPrefix) == 0);
+        CPPUNIT_ASSERT(decrypted2.length() == len + lenPrefix);
+        CPPUNIT_ASSERT(memcmp(decrypted2.bytes() + lenPrefix, intext, len) == 0);
         CPPUNIT_ASSERT(memcmp(ciphertext1.bytes(), ciphertext2.bytes(), ciphertext1.length()) == 0); // check input unchanged
 
         // Now test in-place decrypt
-        unsigned cipherlen = ciphertext1.length();
         ciphertext1.append(4, "XXXX");   // Marker
-        unsigned decryptedlen = openssl::aesDecryptInPlace(key, 32, (void *) ciphertext1.bytes(), cipherlen);
+        unsigned decryptedlen = openssl::aesDecryptInPlace(key, 32, (void *)(ciphertext1.bytes() + lenPrefix), cipherlen);
         CPPUNIT_ASSERT(decryptedlen == len);
-        CPPUNIT_ASSERT(memcmp(ciphertext1.bytes(), intext, len) == 0);
-        CPPUNIT_ASSERT(memcmp(ciphertext1.bytes()+cipherlen, "XXXX", 4) == 0);
+        CPPUNIT_ASSERT(memcmp(ciphertext1.bytes()+lenPrefix, intext, len) == 0);
+        CPPUNIT_ASSERT(memcmp(ciphertext1.bytes()+lenPrefix+cipherlen, "XXXX", 4) == 0);
 
-        cipherlen = ciphertext2.length();
         ciphertext2.append(4, "XXXX");   // Marker
-        decryptedlen = jlib::aesDecryptInPlace(key, 32, (void *) ciphertext2.bytes(), cipherlen);
+        decryptedlen = jlib::aesDecryptInPlace(key, 32, (void *)(ciphertext2.bytes() + lenPrefix), cipherlen);
         CPPUNIT_ASSERT(decryptedlen == len);
-        CPPUNIT_ASSERT(memcmp(ciphertext2.bytes(), intext, len) == 0);
-        CPPUNIT_ASSERT(memcmp(ciphertext2.bytes()+cipherlen, "XXXX", 4) == 0);
+        CPPUNIT_ASSERT(memcmp(ciphertext2.bytes()+lenPrefix, intext, len) == 0);
+        CPPUNIT_ASSERT(memcmp(ciphertext2.bytes()+lenPrefix+cipherlen, "XXXX", 4) == 0);
     }
 
     void test()
     {
-        /* Message to be encrypted */
-        const char *plaintext = "The quick brown fox jumps over the lazy dog";
-        for (unsigned l = 0; l < strlen(plaintext); l++)
-            testOne(l, plaintext);
+        try
+        {
+            /* Message to be encrypted */
+            const char *plaintext = "The quick brown fox jumps over the lazy dog";
+            for (unsigned l = 0; l < strlen(plaintext); l++)
+                testOne(l, plaintext);
+        }
+        catch (IException * e)
+        {
+            EXCLOG(e, "Exception in AES unit test");
+            throw;
+        }
     }
 
 };
