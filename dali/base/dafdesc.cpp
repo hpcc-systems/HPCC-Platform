@@ -3856,9 +3856,10 @@ public:
         Owned<IPropertyTreeIterator> srcAliases = xml->getElements("aliases");
         ForEach(*srcAliases)
             aliases.push_back(new CStoragePlaneAlias(&srcAliases->query()));
-        Owned<IPropertyTreeIterator> srcHosts = xml->getElements("hosts");
-        ForEach(*srcHosts)
-            hosts.emplace_back(srcHosts->query().queryProp(nullptr));
+        StringArray planeHosts;
+        getPlaneHosts(planeHosts, xml);
+        ForEachItemIn(h, planeHosts)
+            hosts.emplace_back(planeHosts.item(h));
     }
 
     virtual const char * queryPrefix() const override { return xml->queryProp("@prefix"); }
