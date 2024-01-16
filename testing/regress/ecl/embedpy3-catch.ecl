@@ -23,6 +23,7 @@
 //skip type==thorlcr TBD
 
 IMPORT Python3;
+IMPORT Std.Str;
 
 integer testThrow(integer val) := EMBED(Python3)
 raise Exception('Error from Python')
@@ -32,8 +33,9 @@ ENDEMBED;
 d := dataset([{ 1, '' }], { integer a, string m} ) : stored('nofold');
 
 d t := transform
+  eol := Str.Find(FAILMESSAGE, '\n');
   self.a := FAILCODE;
-  self.m := FAILMESSAGE;
+  self.m := IF(eol != 0, FAILMESSAGE[1..eol-1], FAILMESSAGE);
   self := [];
 end;
 
