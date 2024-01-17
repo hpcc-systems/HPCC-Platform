@@ -528,7 +528,6 @@ public:
                 break;
 #endif
         }
-        MemoryBuffer encryptBuffer;
         if (udpTraceFlow)
             DBGLOG("Sending %u packets [..%u] from max of %u [resend %u queued %u]",
                    (unsigned)toSend.size(), nextSendSequence.load(), permit.max_data, resendList ? resendList->numActive() : 0, packetsQueued.load(std::memory_order_relaxed));
@@ -555,30 +554,24 @@ public:
                 }
                 try
                 {
-    #ifdef TEST_DROPPED_PACKETS
+                    if (encrypted && !resending)
+                    {
+                        length -= sizeof(UdpPacketHeader);
+                        const MemoryAttr &udpkey = getSecretUdpKey(true);
+                        size_t encryptedLength = aesEncryptInPlace(udpkey.get(), udpkey.length(), buffer->data + sizeof(UdpPacketHeader), length, DATA_PAYLOAD - sizeof(UdpPacketHeader));
+                        length = encryptedLength + sizeof(UdpPacketHeader);
+                        header->length = length;
+                        assertex(length <= DATA_PAYLOAD);
+                    }
+#ifdef TEST_DROPPED_PACKETS
                     if (udpDropDataPackets && dropUdpPacket(header->pktSeq))
                     {
                         if (udpTraceTimeouts)
                             DBGLOG("Deliberately dropping packet %" SEQF "u [%" SEQF "x]", header->sendSeq, header->pktSeq);
                     }
                     else
-    #endif
-                    if (encrypted)
-                    {
-                        encryptBuffer.clear();
-                        encryptBuffer.append(sizeof(UdpPacketHeader), header);    // We don't encrypt the header
-                        length -= sizeof(UdpPacketHeader);
-                        const char *data = buffer->data + sizeof(UdpPacketHeader);
-                        const MemoryAttr &udpkey = getSecretUdpKey(true);
-                        aesEncrypt(udpkey.get(), udpkey.length(), data, length, encryptBuffer);
-                        UdpPacketHeader newHeader;
-                        newHeader.length = encryptBuffer.length();
-                        encryptBuffer.writeDirect(offsetof(UdpPacketHeader, length), sizeof(newHeader.length), &newHeader.length);  // Only need to update the length - rest is the same
-                        assertex(encryptBuffer.length() <= DATA_PAYLOAD);
-                        data_socket->write(encryptBuffer.toByteArray(), encryptBuffer.length());
-                    }
-                    else
-                        data_socket->write(buffer->data, length);
+#endif
+                    data_socket->write(buffer->data, length);
                     dataPacketsSent++;
                 }
                 catch(IException *e)

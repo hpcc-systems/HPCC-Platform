@@ -591,6 +591,7 @@ extern roxiemem_decl unsigned getDataBuffersActive();
 
 extern roxiemem_decl void setMemTraceLevel(unsigned value);
 extern roxiemem_decl void setMemTraceSizeLimit(memsize_t value);
+extern roxiemem_decl bool memTraceInconsistencies;
 
 extern roxiemem_decl int lockRoxieMem(bool lock);
 extern roxiemem_decl bool getRoxieMemLocked();
