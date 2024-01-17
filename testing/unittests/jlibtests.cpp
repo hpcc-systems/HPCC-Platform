@@ -3779,7 +3779,7 @@ protected:
                                 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x30, 0x31
                               };
         constexpr const char * prefix = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-        constexpr unsigned lenPrefix = strlen(prefix);
+        unsigned lenPrefix = strlen(prefix);
 
         MemoryBuffer ciphertext1, ciphertext2, decrypted1, decrypted2;
 
