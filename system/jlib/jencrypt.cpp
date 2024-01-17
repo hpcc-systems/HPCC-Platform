@@ -2073,41 +2073,48 @@ size_t aesDecryptInPlace(const void *key, size_t keylen, void *ciphertext, size_
 }  // namespace
 #endif
 
+static bool useLegacyAES = false;
+
 MemoryBuffer &aesEncrypt(const void *key, size_t keylen, const void *input, size_t inlen, MemoryBuffer &output)
 {
 #ifdef _USE_OPENSSL
-    return openssl::aesEncrypt(key, keylen, input, inlen, output);
-#else
-    return jlib::aesEncrypt(key, keylen, input, inlen, output);
+    if (!useLegacyAES)
+        return openssl::aesEncrypt(key, keylen, input, inlen, output);
 #endif
+    return jlib::aesEncrypt(key, keylen, input, inlen, output);
 }
 
 MemoryBuffer &aesDecrypt(const void *key, size_t keylen, const void *input, size_t inlen, MemoryBuffer &output)
 {
 #ifdef _USE_OPENSSL
-    return openssl::aesDecrypt(key, keylen, input, inlen, output);
-#else
-    return jlib::aesDecrypt(key, keylen, input, inlen, output);
+    if (!useLegacyAES)
+        return openssl::aesDecrypt(key, keylen, input, inlen, output);
 #endif
+    return jlib::aesDecrypt(key, keylen, input, inlen, output);
 }
 
 size_t aesEncryptInPlace(const void *key, size_t keylen, void *buffer, size_t inlen, size_t buflen)
 {
 #ifdef _USE_OPENSSL
-    return openssl::aesEncryptInPlace(key, keylen, buffer, inlen, buflen);
-#else
-    return jlib::aesEncryptInPlace(key, keylen, buffer, inlen, buflen);
+    if (!useLegacyAES)
+        return openssl::aesEncryptInPlace(key, keylen, buffer, inlen, buflen);
 #endif
+    return jlib::aesEncryptInPlace(key, keylen, buffer, inlen, buflen);
 }
 
 
 size_t aesDecryptInPlace(const void *key, size_t keylen, void *data, size_t inlen)
 {
 #ifdef _USE_OPENSSL
-    return openssl::aesDecryptInPlace(key, keylen, data, inlen);
-#else
-    return jlib::aesDecryptInPlace(key, keylen, data, inlen);
+    if (!useLegacyAES)
+        return openssl::aesDecryptInPlace(key, keylen, data, inlen);
 #endif
+    return jlib::aesDecryptInPlace(key, keylen, data, inlen);
+}
+
+void setLegacyAES(bool value)
+{
+    useLegacyAES = value;
 }
 
 #define CRYPTSIZE 32
