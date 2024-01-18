@@ -21,10 +21,10 @@ NamesLayout := RECORD
     INTEGER2        age := 25;
 END;
 
-//-----------------------------------------------------------
-// All of the following represent referencing legacy/built-in
-// file types and their options with a new syntax
-//-----------------------------------------------------------
+//==============================================================================
+// The following are built-in file formats using the new syntax
+//==============================================================================
+
 namesTableFlat_1 := DATASET(DYNAMIC('x'), NamesLayout, TYPE(FLAT), __COMPRESSED__, __GROUPED__, OPT);
 OUTPUT(namesTableFlat_1, {namesTableFlat_1}, '~filetypetest::namestableflat_1', OVERWRITE);
 
@@ -49,6 +49,9 @@ namesTableJSON_1 := DATASET(DYNAMIC('x'), NamesLayout, TYPE(JSON), OPT);
 namesTableJSON_2 := DATASET(DYNAMIC('x'), NamesLayout, TYPE(JSON : '/', NOROOT), OPT);
 // OUTPUT(namesTableJSON_2, {namesTableJSON_2}, '~filetypetest::namestablejson_2', TYPE(JSON : TRIM), OVERWRITE);
 
-//-----------------------------------------------------------
-// What follows is testing pluggable file types
-//-----------------------------------------------------------
+//==============================================================================
+// The following are new file formats with new syntax
+//==============================================================================
+
+namesTableParquet_1 := DATASET(DYNAMIC('x'), NamesLayout, TYPE(PARQUET), OPT);
+// OUTPUT(namesTableParquet_1, {namesTableParquet_1}, '~filetypetest::namestableparquet_1', TYPE(PARQUET), OVERWRITE);

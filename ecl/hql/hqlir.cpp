@@ -291,7 +291,6 @@ const char * getOperatorIRText(node_operator op)
     EXPAND_CASE(no,unlikely);
     EXPAND_CASE(no,inline);
     EXPAND_CASE(no,nwaydistribute);
-    EXPAND_CASE(no,unused35);
     EXPAND_CASE(no,unused36);
     EXPAND_CASE(no,unused37);
     EXPAND_CASE(no,unused38);
@@ -661,7 +660,8 @@ const char * getOperatorIRText(node_operator op)
     EXPAND_CASE(no,getenv);
     EXPAND_CASE(no,json);
     EXPAND_CASE(no,matched_injoin);
-    EXPAND_CASE(no,filetype);
+    EXPAND_CASE(no,filetype_token);
+    EXPAND_CASE(no,filetype_plugin);
     }
 
     return "<unknown>";

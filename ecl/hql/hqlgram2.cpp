@@ -8998,21 +8998,26 @@ void HqlGram::setPluggableModeExpr(attribute & targetAttr, attribute & mode, Hql
     // the grammar should have ensured that none of the legacy (built-in) file formats
     // were activated, even with the new TYPE(<format>) syntax; if you get here,
     // you should be only trying to load a plugin
-    IAtom * fileFormat = lower(mode.getId());
-    StringBuffer fileFormatStr(fileFormat->queryStr());
+    IAtom * fileFormatAtom = lower(mode.getId());
+    StringBuffer fileFormat(fileFormatAtom->queryStr());
+    const char * fileFormatStr = fileFormat.str();
+    bool isSupportedFileType = false;
 
-    // TODO: Look for a plugin filetype of name fileFormatStr
-    DBGLOG("HqlGram::setPluggableModeExpr processing file type %s", fileFormatStr.str());
+    // Temp: Hardcoded tests for known filetype plugins; should be
+    // an iteration through loaded plugins, checking for names
+    isSupportedFileType = strsame(fileFormatStr, "parquet");
 
-    // Following is a placeholder to make the parser happy -- note the hardwiring
-    // of CSV format....
-    if (options)
+    if (isSupportedFileType)
     {
-        targetAttr.setExpr(createValue(no_csv, makeNullType(), *options));
+        if (options)
+            targetAttr.setExpr(createValue(no_filetype_plugin, makeNullType(), *options));
+        else
+            targetAttr.setExpr(createValue(no_filetype_plugin, makeNullType()));
     }
     else
     {
-        targetAttr.setExpr(createValue(no_csv, makeNullType()));
+        // ERR_UNKNOWN_TYPE is generic; create file type-specific error?
+        reportError(ERR_UNKNOWN_TYPE, mode, "Unknown file type %s", fileFormatStr);
     }
 }
 

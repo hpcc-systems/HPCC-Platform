@@ -358,8 +358,8 @@ enum node_operator : unsigned short {
         no_unlikely,
         no_inline,
         no_nwaydistribute,
-        no_filetype,                    // File format/type information (input or output)
-    no_unused35,
+        no_filetype_token,              // File format/type information (input or output)
+        no_filetype_plugin,             // File type plugin to support dynamic file formats
     no_unused36,
     no_unused37,
     no_unused38,
