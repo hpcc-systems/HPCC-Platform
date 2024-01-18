@@ -940,7 +940,7 @@ class EclSubGraph : public CInterface, implements ILocalEclGraphResults, public 
 private:
 
     RedirectedAgentContext subgraphAgentContext;
-    class SubGraphCodeContext : public IndirectCodeContext
+    class SubGraphCodeContext : public IndirectCodeContextEx
     {
     public:
         virtual IEclGraphResults * resolveLocalQuery(__int64 activityId)
@@ -1033,7 +1033,7 @@ typedef MapBetween<graphid_t, graphid_t, EclSubGraphPtr, EclSubGraphPtr> SubGrap
 class EclGraph : public CInterface
 {
     RedirectedAgentContext graphAgentContext;
-    class SubGraphCodeContext : public IndirectCodeContext
+    class SubGraphCodeContext : public IndirectCodeContextEx
     {
     public:
         IThorChildGraph * resolveChildQuery(__int64 subgraphId, IHThorArg * colocal)

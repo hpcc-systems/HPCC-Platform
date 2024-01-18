@@ -22,7 +22,6 @@
 #include "jregexp.hpp"
 #include "workflow.hpp"
 #include "dasds.hpp"
-#include "thorcommon.hpp"
 
 //------------------------------------------------------------------------------------------
 /* Parallel Workflow explanation
