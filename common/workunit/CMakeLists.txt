@@ -77,6 +77,7 @@ if(NOT PLUGIN)
         nbcd 
         eclrtl 
         deftype
+        thorhelper
         )
     if (USE_OPENSSL)
         target_link_libraries(workunit securesocket)

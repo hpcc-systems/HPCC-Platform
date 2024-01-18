@@ -493,10 +493,6 @@ public:
     {
         return ctx->getWuid();
     }
-    virtual unsigned getWorkflowId() const
-    {
-        return ctx->getWorkflowId();
-    }
     virtual void getExternalResultRaw(unsigned & tlen, void * & tgt, const char * wuid, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer)
     {
         ctx->getExternalResultRaw(tlen, tgt, wuid, stepname, sequence, xmlTransformer, csvTransformer);
@@ -673,6 +669,10 @@ public:
     {
         return ctx->getElapsedMs();
     }
+    virtual unsigned getWorkflowId() const
+    {
+        return ctx->getWorkflowId();
+    }
 
 protected:
     ICodeContext * ctx;
@@ -680,14 +680,13 @@ protected:
 
 
 
-// Wraps an IEclProcess so that when IEclProcess::perform is called, EclProcessEx::perform
-// can construct an ICodeContext that returns the workflow id.
-// (It cannot be done by wrapping IGlobalCodeContext because workflow id is known only when
-// IEclProcess::perform is called. Workflow id isn't known before that.)
-struct THORHELPER_API EclProcessEx : implements IEclProcess, public CInterface
+// Wraps an IGlobalCodeContext so that ::queryCodeContext returns
+// an ICodeContext which returns the workflow id.
+struct THORHELPER_API GlobalCodeContextExtra : implements IGlobalCodeContext
 {
+private:
     // Wraps ICodeContext and overrides getWorkflowId() method
-    class CodeContextEx : extends IndirectCodeContext
+    class CodeContextEx : public IndirectCodeContext
     {
         unsigned wfid;
     public:
@@ -695,56 +694,41 @@ struct THORHELPER_API EclProcessEx : implements IEclProcess, public CInterface
         virtual ~CodeContextEx() {};
         virtual unsigned getWorkflowId() const override { return wfid; }
     };
-    // Wraps IGlobalCodeContext and returns a constructed ICodeContext that can return workflow id
-    struct GlobalCodeContextExtra : implements IGlobalCodeContext
-    {
-        GlobalCodeContextExtra(IGlobalCodeContext * _gctx, unsigned _wfid) : gctx(_gctx)
-        {
-            codeContextEx = new CodeContextEx(gctx->queryCodeContext(), _wfid);
-        }
-        virtual ~GlobalCodeContextExtra()
-        {
-            delete codeContextEx;
-        }
-        virtual ICodeContext * queryCodeContext()
-        {
-            return codeContextEx;
-        }
-        virtual void fail(int, const char *) { gctx->fail(0, NULL); }
-
-        virtual bool isResult(const char * name, unsigned sequence) { return gctx->isResult(name, sequence); }
-        virtual unsigned getWorkflowId() const override { return gctx->getWorkflowId(); }
-        virtual void doNotify(char const * name, char const * text) { gctx->doNotify(name, text); }
-
-        virtual int queryLastFailCode() { return gctx->queryLastFailCode(); }
-        virtual void getLastFailMessage(size32_t & outLen, char * & outStr, const char * tag) { gctx->getLastFailMessage(outLen, outStr, tag); }
-        virtual bool fileExists(const char * filename) { return gctx->fileExists(filename); }
-        virtual void deleteFile(const char * logicalName) { gctx->deleteFile(logicalName); }
-
-        virtual void selectCluster(const char * cluster) { gctx->selectCluster(cluster); }
-        virtual void restoreCluster() { gctx->restoreCluster(); }
-
-        virtual void setWorkflowCondition(bool value) { gctx->setWorkflowCondition(value); }
-        virtual void returnPersistVersion(const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile) { gctx->returnPersistVersion(logicalName, eclCRC, allCRC, isFile); }
-        virtual void setResultDataset(const char * name, unsigned sequence, size32_t len, const void *val, unsigned numRows, bool extend) { gctx->setResultDataset(name, sequence, len, val, numRows, extend); }
-        virtual void getEventName(size32_t & outLen, char * & outStr) { gctx->getEventName(outLen, outStr); }
-        virtual void getEventExtra(size32_t & outLen, char * & outStr, const char * tag) { gctx->getEventExtra(outLen, outStr, tag); }
-        virtual void doNotify(char const * name, char const * text, const char * target) { gctx->doNotify(name, text, target); }
-    private:
-        IGlobalCodeContext * gctx;
-        CodeContextEx * codeContextEx;
-    };
-private:
-    Owned<IEclProcess> eclProcess;
+    IGlobalCodeContext * gctx;
+    CodeContextEx * codeContextEx;
 public:
-    IMPLEMENT_IINTERFACE;
-    EclProcessEx(IEclProcess *_eclProcess) : eclProcess(_eclProcess) {}
-    virtual int perform(IGlobalCodeContext * _gctx, unsigned wfid)
+    GlobalCodeContextExtra(IGlobalCodeContext * _gctx, unsigned _wfid) : gctx(_gctx)
     {
-        GlobalCodeContextExtra gctx(_gctx, wfid);
-        return eclProcess->perform(&gctx, wfid);
+        codeContextEx = new CodeContextEx(gctx->queryCodeContext(), _wfid);
     }
-    virtual unsigned getActivityVersion() const { return eclProcess->getActivityVersion(); }
+    virtual ~GlobalCodeContextExtra()
+    {
+        delete codeContextEx;
+    }
+    virtual ICodeContext * queryCodeContext()
+    {
+        return codeContextEx;
+    }
+    virtual void fail(int, const char *) { gctx->fail(0, NULL); }
+
+    virtual bool isResult(const char * name, unsigned sequence) { return gctx->isResult(name, sequence); }
+    virtual unsigned getWorkflowId() const override { return gctx->getWorkflowId(); }
+    virtual void doNotify(char const * name, char const * text) { gctx->doNotify(name, text); }
+
+    virtual int queryLastFailCode() { return gctx->queryLastFailCode(); }
+    virtual void getLastFailMessage(size32_t & outLen, char * & outStr, const char * tag) { gctx->getLastFailMessage(outLen, outStr, tag); }
+    virtual bool fileExists(const char * filename) { return gctx->fileExists(filename); }
+    virtual void deleteFile(const char * logicalName) { gctx->deleteFile(logicalName); }
+
+    virtual void selectCluster(const char * cluster) { gctx->selectCluster(cluster); }
+    virtual void restoreCluster() { gctx->restoreCluster(); }
+
+    virtual void setWorkflowCondition(bool value) { gctx->setWorkflowCondition(value); }
+    virtual void returnPersistVersion(const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile) { gctx->returnPersistVersion(logicalName, eclCRC, allCRC, isFile); }
+    virtual void setResultDataset(const char * name, unsigned sequence, size32_t len, const void *val, unsigned numRows, bool extend) { gctx->setResultDataset(name, sequence, len, val, numRows, extend); }
+    virtual void getEventName(size32_t & outLen, char * & outStr) { gctx->getEventName(outLen, outStr); }
+    virtual void getEventExtra(size32_t & outLen, char * & outStr, const char * tag) { gctx->getEventExtra(outLen, outStr, tag); }
+    virtual void doNotify(char const * name, char const * text, const char * target) { gctx->doNotify(name, text, target); }
 };
 
 class CStatsContextLogger : public CSimpleInterfaceOf<IContextLogger>

@@ -1925,7 +1925,7 @@ void EclAgent::doProcess()
         }
         {
             MTIME_SECTION(queryActiveTimer(), "Process");
-            Owned<IEclProcess> process = new EclProcessEx(loadProcess());
+            Owned<IEclProcess> process = loadProcess();
             QueryTerminationCleanup threadCleanup(false);
 
             if (checkVersion && (process->getActivityVersion() != eclccCodeVersion))
@@ -2234,7 +2234,10 @@ void EclAgent::runProcess(IEclProcess *process)
         workflow->perform(this, process);
     }
     else
-        process->perform(this, 0);
+    {
+        GlobalCodeContextExtra gctx(this, 0);
+        process->perform(&gctx, 0);
+    }
 
     ForEachItemIn(i, queryLibraries)
         queryLibraries.item(i).updateProgress();

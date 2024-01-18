@@ -727,7 +727,6 @@ interface ICodeContext : public IResourceContext
     virtual char *getPlatform() = 0; // caller frees return string.
     virtual unsigned getPriority() const = 0;
     virtual char *getWuid() = 0; // caller frees return string.
-    virtual unsigned getWorkflowId() const = 0; // Note: don't use yet as it has not been fully implemented in all derived classes
 
     // Exception handling
 
@@ -781,6 +780,7 @@ interface ICodeContext : public IResourceContext
     virtual IEngineRowAllocator * getRowAllocatorEx(IOutputMetaData * meta, unsigned activityId, unsigned flags) const = 0;
     virtual void addWuExceptionEx(const char * text, unsigned code, unsigned severity, unsigned audience, const char * source) = 0;
     virtual unsigned getElapsedMs() const = 0;
+    virtual unsigned getWorkflowId() const = 0; // Note: don't use yet as it has not been fully implemented in all derived classes
 };
 
 

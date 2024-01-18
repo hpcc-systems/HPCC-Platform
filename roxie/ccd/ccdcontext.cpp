@@ -2876,7 +2876,7 @@ public:
         MTIME_SECTION(myTimer, "Process");
         QueryTerminationCleanup threadCleanup(true);
         EclProcessFactory pf = (EclProcessFactory) factory->queryDll()->getEntry("createProcess");
-        Owned<IEclProcess> p = new EclProcessEx(pf());
+        Owned<IEclProcess> p = pf();
         try
         {
             if (debugContext)
@@ -2884,7 +2884,10 @@ public:
             if (workflow)
                 workflow->perform(this, p);
             else
-                p->perform(this, 0);
+            {
+                GlobalCodeContextExtra gctx(this, 0);
+                p->perform(&gctx, 0);
+            }
         }
         catch(WorkflowException *E)
         {
@@ -4032,11 +4035,14 @@ public:
     virtual void process()
     {
         EclProcessFactory pf = (EclProcessFactory) factory->queryDll()->getEntry("createProcess");
-        Owned<IEclProcess> p = new EclProcessEx(pf());
+        Owned<IEclProcess> p = pf();
         if (workflow)
             workflow->perform(this, p);
         else
-            p->perform(this, 0);
+        {
+            GlobalCodeContextExtra gctx(this, 0);
+            p->perform(&gctx, 0);
+        }
     }
 };
 
