@@ -2270,6 +2270,10 @@ void EclAgent::runProcess(IEclProcess *process)
     LOG(MCrunlock, unknownJob, "Released persist read locks");
 }
 
+unsigned EclAgent::getWorkflowIdDeprecated()
+{
+    throwUnexpected();
+}
 
 //----------------------------------------------------------------
 

@@ -3258,7 +3258,7 @@ struct IGlobalCodeContext
     virtual void fail(int, const char *) = 0;  
 
     virtual bool isResult(const char * name, unsigned sequence) = 0;
-    virtual unsigned getWorkflowId() const = 0;
+    virtual unsigned getWorkflowIdDeprecated() = 0; // Workflows are not associated with global context. Deprecated. Left here to avoid changing interface.
     virtual void doNotify(char const * name, char const * text) = 0;
 
     virtual int queryLastFailCode() = 0;
@@ -3302,7 +3302,7 @@ public:
     virtual ICodeContext * queryCodeContext() override { return codeContextEx; }
     virtual void fail(int, const char *) override { gctx->fail(0, NULL); }
     virtual bool isResult(const char * name, unsigned sequence) override { return gctx->isResult(name, sequence); }
-    virtual unsigned getWorkflowId() const override { return gctx->getWorkflowId(); }
+    virtual unsigned getWorkflowIdDeprecated() override { return gctx->getWorkflowIdDeprecated(); }
     virtual void doNotify(char const * name, char const * text) override { gctx->doNotify(name, text); }
     virtual int queryLastFailCode() override { return gctx->queryLastFailCode(); }
     virtual void getLastFailMessage(size32_t & outLen, char * & outStr, const char * tag) override { gctx->getLastFailMessage(outLen, outStr, tag); }

@@ -1775,7 +1775,9 @@ public:
     }
     virtual IEngineContext *queryEngineContext() { return NULL; }
     virtual char *getDaliServers() { throwUnexpected(); }
-
+    // The following method isn't used.  Renaming and leaving here to avoid changing interface
+    // (Note, this getWorkflowId doesn't implement virtual from any derived classess.)
+    virtual unsigned getWorkflowIdDeprecated() { throwUnexpected(); }
     // The following from ICodeContext should never be executed in agent activity. If we are on Roxie server, they will be implemented by more derived CRoxieServerContext class
     virtual void setResultBool(const char *name, unsigned sequence, bool value) { throwUnexpected(); }
     virtual void setResultData(const char *name, unsigned sequence, int len, const void * data) { throwUnexpected(); }
@@ -3695,10 +3697,7 @@ public:
         CriticalBlock b(contextCrit);
         return useContext(sequence).hasProp(name);
     }
-    virtual unsigned getWorkflowId() const override
-    {
-        throwUnexpected();
-    }
+    virtual unsigned getWorkflowIdDeprecated() override { throwUnexpected(); }
     virtual char *getClusterName()
     {
         if (workUnit)
