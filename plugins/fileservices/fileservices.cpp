@@ -609,7 +609,7 @@ static void blockUntilComplete(const char * label, IClientFileSpray &server, ICo
 
     unsigned polltime = 1;
 
-    VStringBuffer reason("Blocked by fileservice activity: %s",label);
+    VStringBuffer reason("Blocked by fileservice activity: %s, workunit: %s", label, wuid);
     setWorkunitState(ctx, WUStateBlocked, reason.str());
 
     while(true)
