@@ -2907,7 +2907,13 @@ void CJobBase::addDependencies(IPropertyTree *xgmml, bool failIfMissing)
 
 bool CJobBase::queryUseCheckpoints() const
 {
-    return globals->getPropBool("@checkPointRecovery") || 0 != getWorkUnitValueInt("checkPointRecovery", 0);
+    bool configured = globals->getPropBool("@checkPointRecovery") || 0 != getWorkUnitValueInt("checkPointRecovery", 0);
+    if (configured && isContainerized())
+    {
+        WARNLOG("Containerized Thor does not support checkpoint recovery");
+        return false;
+    }
+    return configured;
 }
 
 void CJobBase::abort(IException *e)
