@@ -259,9 +259,7 @@ protected:
         Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("noRemoteParentEnsureTraceID", emptyMockHTTPHeaders, flags);
 
         Owned<IProperties> retrievedSpanCtxAttributes = createProperties();
-        bool getSpanCtxSuccess = serverSpan->getSpanContext(retrievedSpanCtxAttributes.get(), false);
-
-        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected getSpanContext failure detected - EnsureTraceID flag was set", true, getSpanCtxSuccess);
+        serverSpan->getSpanContext(retrievedSpanCtxAttributes.get());
 
         CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected empty TraceID detected", false, isEmptyString(retrievedSpanCtxAttributes->queryProp("traceID")));
         CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected empty SpanID detected", false, isEmptyString(retrievedSpanCtxAttributes->queryProp("spanID")));
@@ -279,9 +277,7 @@ protected:
         //retrieve serverSpan context with the intent to interrogate attributes
         {
             Owned<IProperties> retrievedSpanCtxAttributes = createProperties();
-            bool getSpanCtxSuccess = serverSpan->getSpanContext(retrievedSpanCtxAttributes.get(), false);
-
-            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected getSpanContext failure detected", true, getSpanCtxSuccess);
+            serverSpan->getSpanContext(retrievedSpanCtxAttributes.get());
 
             CPPUNIT_ASSERT_MESSAGE("Unexpected GlobalID detected",
              strsame("IncomingUGID", retrievedSpanCtxAttributes->queryProp(kGlobalIdHttpHeaderName)));
@@ -296,12 +292,17 @@ protected:
 
         //retrieve serverSpan context with the intent to propagate it to a remote child span
         {
-            Owned<IProperties> retrievedSpanCtxAttributes = createProperties();
-            bool getSpanCtxSuccess = serverSpan->getSpanContext(retrievedSpanCtxAttributes.get(), true);
+            Owned<IProperties> retrievedClientHeaders = createProperties();
+            serverSpan->getClientHeaders(retrievedClientHeaders.get());
 
-            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected getSpanContext failure detected", true, getSpanCtxSuccess);
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("getClientHeaders failed to produce traceParent!", true, retrievedClientHeaders->hasProp("traceparent"));
             CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected Otel traceparent header len detected", (size_t)55,
-             strlen(retrievedSpanCtxAttributes->queryProp("traceparent")));
+             strlen(retrievedClientHeaders->queryProp("traceparent")));
+
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("getClientHeaders failed to produce traceState!", true, retrievedClientHeaders->hasProp("tracestate"));
+            const char * tracestate = retrievedClientHeaders->queryProp("tracestate");
+            CPPUNIT_ASSERT_MESSAGE("Unexpected traceState detected",
+             strsame("hpcc=4b960b3e4647da3f", retrievedClientHeaders->queryProp("tracestate")));
         }
     }
 
@@ -326,7 +327,7 @@ protected:
 
         {
             Owned<IProperties> headers = createProperties(true);
-            nullSpan->getSpanContext(headers, true);
+            nullSpan->getClientHeaders(headers);
         }
 
         Owned<ISpan> nullSpanChild = nullSpan->createClientSpan("nullSpanChild");
@@ -339,8 +340,7 @@ protected:
         Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("propegatedServerSpan", emptyMockHTTPHeaders);
 
         Owned<IProperties> retrievedSpanCtxAttributes = createProperties();
-        bool getSpanCtxSuccess = serverSpan->getSpanContext(retrievedSpanCtxAttributes, false);
-        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected getSpanContext failure detected", true, getSpanCtxSuccess);
+        serverSpan->getSpanContext(retrievedSpanCtxAttributes);
 
         CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected empty spanID detected", true, retrievedSpanCtxAttributes->hasProp("spanID"));
         const char * serverSpanID = retrievedSpanCtxAttributes->queryProp("spanID");
@@ -353,8 +353,7 @@ protected:
             //retrieve clientSpan context with the intent to propogate otel and HPCC context
             {
                 Owned<IProperties> retrievedSpanCtxAttributes = createProperties();
-                bool getSpanCtxSuccess = internalSpan->getSpanContext(retrievedSpanCtxAttributes, false);
-                CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected getSpanContext failure detected", true, getSpanCtxSuccess);
+                internalSpan->getSpanContext(retrievedSpanCtxAttributes);
 
                 CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing localParentSpanID detected", true,
                  retrievedSpanCtxAttributes->hasProp("localParentSpanID"));
@@ -388,8 +387,7 @@ protected:
         Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("propegatedServerSpan", emptyMockHTTPHeaders);
 
         Owned<IProperties> retrievedSpanCtxAttributes = createProperties();
-        bool getSpanCtxSuccess = serverSpan->getSpanContext(retrievedSpanCtxAttributes, false);
-        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected getSpanContext failure detected", true, getSpanCtxSuccess);
+        serverSpan->getSpanContext(retrievedSpanCtxAttributes);
 
         CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected empty spanID detected", true, retrievedSpanCtxAttributes->hasProp("spanID"));
         const char * serverSpanID = retrievedSpanCtxAttributes->queryProp("spanID");
@@ -402,8 +400,7 @@ protected:
             //retrieve internalSpan context with the intent to interrogate attributes
             {
                 Owned<IProperties> retrievedSpanCtxAttributes = createProperties();
-                bool getSpanCtxSuccess = internalSpan->getSpanContext(retrievedSpanCtxAttributes, false);
-                CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected getSpanContext failure detected", true, getSpanCtxSuccess);
+                internalSpan->getSpanContext(retrievedSpanCtxAttributes);
 
                 CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing localParentSpanID detected", true,
                  retrievedSpanCtxAttributes->hasProp("localParentSpanID"));
@@ -434,25 +431,24 @@ protected:
         Owned<IProperties> emptyMockHTTPHeaders = createProperties();
         Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("propegatedServerSpan", emptyMockHTTPHeaders);
 
-        Owned<IProperties> retrievedSpanCtxAttributes = createProperties();
-        //at this point the serverSpan should have the following context attributes
-        //traceID, spanID,traceFlags, traceState
-        //but no remoteParentSpanID, globalID, callerID
-
         //retrieve serverSpan context with the intent to propagate it to a remote child span
         {
-            bool getSpanCtxSuccess = serverSpan->getSpanContext(retrievedSpanCtxAttributes, true);
+            Owned<IProperties> retrievedClientHeaders = createProperties();
+            serverSpan->getClientHeaders(retrievedClientHeaders);
 
-            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected getSpanContext failure detected", true, getSpanCtxSuccess);
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("getClientHeaders failed to produce traceParent!", true, retrievedClientHeaders->hasProp("traceparent"));
             CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected Otel traceparent header len detected", (size_t)55,
-             strlen(retrievedSpanCtxAttributes->queryProp("traceparent")));
+             strlen(retrievedClientHeaders->queryProp("traceparent")));
+
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("detected unexpected tracestate from getClientHeaders", false, retrievedClientHeaders->hasProp("tracestate"));
         }
 
         //retrieve serverSpan context with the intent to interrogate attributes
         {
-            bool getSpanCtxSuccess = serverSpan->getSpanContext(retrievedSpanCtxAttributes, false);
-
-            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected getSpanContext failure detected", true, getSpanCtxSuccess);
+            Owned<IProperties> retrievedSpanCtxAttributes = createProperties();
+            serverSpan->getSpanContext(retrievedSpanCtxAttributes);
+            //at this point the serverSpan should have the following context attributes
+            //traceID, spanID //but no remoteParentSpanID, globalID, callerID
 
             CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected GlobalID detected", false,
              retrievedSpanCtxAttributes->hasProp(kGlobalIdHttpHeaderName));
@@ -474,9 +470,8 @@ protected:
         Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("invalidPropegatedServerSpan", mockHTTPHeaders);
 
         Owned<IProperties> retrievedSpanCtxAttributes = createProperties();
-        bool getSpanCtxSuccess = serverSpan->getSpanContext(retrievedSpanCtxAttributes.get(), true);
+        serverSpan->getClientHeaders(retrievedSpanCtxAttributes.get());
 
-        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected getSpanContext failure detected", true, getSpanCtxSuccess);
         const char * traceParent = retrievedSpanCtxAttributes->queryProp("remoteParentSpanID");
         DBGLOG("testInvalidPropegatedServerSpan: traceparent: %s", traceParent);
     }
@@ -498,9 +493,7 @@ protected:
         //remoteParentSpanID, globalID, callerID
 
         Owned<IProperties> retrievedSpanCtxAttributes = createProperties();
-        bool getSpanCtxSuccess = serverSpan->getSpanContext(retrievedSpanCtxAttributes.get(), false);
-
-        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected getSpanContext failure detected", true, getSpanCtxSuccess);
+        serverSpan->getSpanContext(retrievedSpanCtxAttributes.get());
 
         CPPUNIT_ASSERT_MESSAGE("Unexpected GlobalID detected",
             strsame("IncomingUGID", retrievedSpanCtxAttributes->queryProp(kGlobalIdHttpHeaderName)));
@@ -560,9 +553,7 @@ protected:
         //retrieve serverSpan context with the intent to interrogate attributes
         {
             Owned<IProperties> retrievedClientSpanCtxAttributes = createProperties();
-            bool getClientSpanCtxSuccess = clientSpan->getSpanContext(retrievedClientSpanCtxAttributes.get(), false);
-
-            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected getSpanContext failure detected on client span", true, getClientSpanCtxSuccess);
+            clientSpan->getSpanContext(retrievedClientSpanCtxAttributes.get());
 
             CPPUNIT_ASSERT_MESSAGE("Unexpected GlobalID detected",
              strsame("IncomingUGID", retrievedClientSpanCtxAttributes->queryProp(kGlobalIdHttpHeaderName)));
@@ -586,9 +577,7 @@ protected:
         //retrieve serverSpan context with the intent to interrogate attributes
         {
             Owned<IProperties> retrievedSpanCtxAttributes = createProperties();
-            bool getSpanCtxSuccess = serverSpan->getSpanContext(retrievedSpanCtxAttributes.get(), false);
-
-            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected getSpanContext failure detected", true, getSpanCtxSuccess);
+            serverSpan->getSpanContext(retrievedSpanCtxAttributes.get());
 
             CPPUNIT_ASSERT_MESSAGE("Unexpected GlobalID detected",
              strsame("IncomingUGID", retrievedSpanCtxAttributes->queryProp(kGlobalIdHttpHeaderName)));
@@ -602,14 +591,18 @@ protected:
             CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected empty SpanID detected", false, isEmptyString(retrievedSpanCtxAttributes->queryProp("spanID")));
         }
 
-        //retrieve serverSpan context with the intent to propagate it to a remote child span
+        //retrieve serverSpan client headers with the intent to propagate them onto the next hop
         {
-            Owned<IProperties> retrievedSpanCtxAttributes = createProperties();
-            bool getSpanCtxSuccess = serverSpan->getSpanContext(retrievedSpanCtxAttributes.get(), true);
+            Owned<IProperties> retrievedClientHeaders = createProperties();
+            serverSpan->getClientHeaders(retrievedClientHeaders.get());
 
-            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected getSpanContext failure detected", true, getSpanCtxSuccess);
             CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected Otel traceparent header len detected", (size_t)55,
-             strlen(retrievedSpanCtxAttributes->queryProp("traceparent")));
+             strlen(retrievedClientHeaders->queryProp("traceparent")));
+
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("getClientHeaders failed to produce traceState!", true, retrievedClientHeaders->hasProp("tracestate"));
+            const char * tracestate = retrievedClientHeaders->queryProp("tracestate");
+            CPPUNIT_ASSERT_MESSAGE("Unexpected traceState detected",
+             strsame("hpcc=4b960b3e4647da3f", retrievedClientHeaders->queryProp("tracestate")));
         }
     }
 
@@ -630,11 +623,7 @@ protected:
         //retrieve serverSpan context with the intent to interrogate attributes
         {
             Owned<IProperties> retrievedSpanCtxAttributes = createProperties();
-            bool getSpanCtxSuccess = serverSpan->getSpanContext(retrievedSpanCtxAttributes.get(), false);
-
-            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected getSpanContext failure detected", true, getSpanCtxSuccess);
-
-            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected getSpanContext failure detected", true, getSpanCtxSuccess);
+            serverSpan->getSpanContext(retrievedSpanCtxAttributes.get());
 
             CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected GlobalID detected", true,
              strsame("someGlobalID", retrievedSpanCtxAttributes->queryProp(kGlobalIdHttpHeaderName)));
