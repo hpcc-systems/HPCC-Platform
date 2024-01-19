@@ -897,7 +897,8 @@ class CWsWuFileHelper
     void createThorSlaveLogfile(IConstWorkUnit *cwu, WsWuInfo &winfo, const char *path);
 #endif
     LogAccessLogFormat getComponentLogFormatFromLogName(const char *log);
-    void createWULogFile(IConstWorkUnit *cwu, WsWuInfo &winfo, const char *path, CWsWuZAPInfoReq & zapLogFilterOptions);
+    void readWULogToFiles(IConstWorkUnit *cwu, WsWuInfo &winfo, const char *path, CWsWuZAPInfoReq &zapLogFilterOptions);
+    void readWULogToFile(const char *logFileName, WsWuInfo &winfo, CWsWuZAPInfoReq &zapLogFilterOptions);
     void writeZAPWUInfoToIOStream(IFileIOStream *outFile, const char *name, SCMStringBuffer &value);
     void writeZAPWUInfoToIOStream(IFileIOStream *outFile, const char *name, const char *value);
     void readWUIDRequest(CHttpRequest *request, StringBuffer &wuid);

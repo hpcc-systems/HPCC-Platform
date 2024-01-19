@@ -1409,10 +1409,14 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                 if (isSuper)
                 {
                     unsigned subfile = subFileNum[i];
-                    keyManager->mergeStats(*fileStats[startOffset+subfile]);
+                    keyManager->mergeStats(*fileStats[startOffset+subfile]); // merge IO stats
+                    fileStats[startOffset+subfile]->merge(contextLoggers[i]->queryStats()); // merge jhtreeStats
                 }
                 else
-                    keyManager->mergeStats(*fileStats[startOffset]);
+                {
+                    keyManager->mergeStats(*fileStats[startOffset]); // merge IO stats
+                    fileStats[startOffset]->merge(contextLoggers[i]->queryStats()); // merge jhtreeStats
+                }
             }
         }
     };

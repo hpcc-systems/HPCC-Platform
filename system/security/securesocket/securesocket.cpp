@@ -1285,7 +1285,7 @@ private:
     Owned<CStringSet> m_peers;
     StringAttr password;
     CriticalSection cs;
-    Owned<const ISyncedPropertyTree> syncedConfig;
+    Linked<const ISyncedPropertyTree> syncedConfig;
     unsigned configVersion = 0;
 
     void setSessionIdContext()

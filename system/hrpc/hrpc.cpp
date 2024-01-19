@@ -305,9 +305,7 @@ struct SafeInc
 };
 void HRPCcommon::doproxy(HRPCcallframe &frame,int fn,IHRPCtransport *tr,HRPCbuffer &buff,HRPCbuffer &rbuff,int cb,int locked)
 {
-    unsigned duetime = 0;
-    if (timelimit)
-        duetime = msTick()+timelimit;
+    unsigned start = msTick();
     size32_t base=buff.markwrite();
     HRPCtrace(">doproxy in fn=%d base=%d cb=%d locked=%d\n",fn,base,cb,locked);
     HRPCpacketheader *h=(HRPCpacketheader *)buff.buffptr(frame.mark);
@@ -328,11 +326,14 @@ void HRPCcommon::doproxy(HRPCcallframe &frame,int fn,IHRPCtransport *tr,HRPCbuff
         buff.releasewrite(base);
         int timeleft=-1;
         HRPCtrace(" doproxy pre-receive\n");
-        if (timelimit) {
-            timeleft = (duetime-msTick());
-            if (timeleft<=0) {
+        if (timelimit) 
+        {
+            unsigned now = msTick();
+            if (now - start >= timelimit)
+            {
                 THROWHRPCEXCEPTION(HRPCERR_call_timeout);
             }
+            timeleft = timelimit - (now - start);
         }
         tr->Receive(buff,timeleft);
         HRPCtrace(" doproxy post-receive\n");

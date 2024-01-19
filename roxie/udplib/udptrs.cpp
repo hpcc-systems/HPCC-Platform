@@ -571,9 +571,10 @@ public:
                         const char *data = buffer->data + sizeof(UdpPacketHeader);
                         const MemoryAttr &udpkey = getSecretUdpKey(true);
                         aesEncrypt(udpkey.get(), udpkey.length(), data, length, encryptBuffer);
-                        header->length = encryptBuffer.length();
-                        encryptBuffer.writeDirect(0, sizeof(UdpPacketHeader), header);   // Only really need length updating
-                        assert(length <= DATA_PAYLOAD);
+                        UdpPacketHeader newHeader;
+                        newHeader.length = encryptBuffer.length();
+                        encryptBuffer.writeDirect(offsetof(UdpPacketHeader, length), sizeof(newHeader.length), &newHeader.length);  // Only need to update the length - rest is the same
+                        assertex(encryptBuffer.length() <= DATA_PAYLOAD);
                         data_socket->write(encryptBuffer.toByteArray(), encryptBuffer.length());
                     }
                     else

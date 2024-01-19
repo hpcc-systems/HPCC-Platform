@@ -259,9 +259,7 @@ protected:
         Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("noRemoteParentEnsureTraceID", emptyMockHTTPHeaders, flags);
 
         Owned<IProperties> retrievedSpanCtxAttributes = createProperties();
-        bool getSpanCtxSuccess = serverSpan->getSpanContext(retrievedSpanCtxAttributes.get(), false);
-
-        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected getSpanContext failure detected - EnsureTraceID flag was set", true, getSpanCtxSuccess);
+        serverSpan->getSpanContext(retrievedSpanCtxAttributes.get());
 
         CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected empty TraceID detected", false, isEmptyString(retrievedSpanCtxAttributes->queryProp("traceID")));
         CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected empty SpanID detected", false, isEmptyString(retrievedSpanCtxAttributes->queryProp("spanID")));
@@ -279,9 +277,7 @@ protected:
         //retrieve serverSpan context with the intent to interrogate attributes
         {
             Owned<IProperties> retrievedSpanCtxAttributes = createProperties();
-            bool getSpanCtxSuccess = serverSpan->getSpanContext(retrievedSpanCtxAttributes.get(), false);
-
-            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected getSpanContext failure detected", true, getSpanCtxSuccess);
+            serverSpan->getSpanContext(retrievedSpanCtxAttributes.get());
 
             CPPUNIT_ASSERT_MESSAGE("Unexpected GlobalID detected",
              strsame("IncomingUGID", retrievedSpanCtxAttributes->queryProp(kGlobalIdHttpHeaderName)));
@@ -296,12 +292,17 @@ protected:
 
         //retrieve serverSpan context with the intent to propagate it to a remote child span
         {
-            Owned<IProperties> retrievedSpanCtxAttributes = createProperties();
-            bool getSpanCtxSuccess = serverSpan->getSpanContext(retrievedSpanCtxAttributes.get(), true);
+            Owned<IProperties> retrievedClientHeaders = createProperties();
+            serverSpan->getClientHeaders(retrievedClientHeaders.get());
 
-            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected getSpanContext failure detected", true, getSpanCtxSuccess);
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("getClientHeaders failed to produce traceParent!", true, retrievedClientHeaders->hasProp("traceparent"));
             CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected Otel traceparent header len detected", (size_t)55,
-             strlen(retrievedSpanCtxAttributes->queryProp("traceparent")));
+             strlen(retrievedClientHeaders->queryProp("traceparent")));
+
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("getClientHeaders failed to produce traceState!", true, retrievedClientHeaders->hasProp("tracestate"));
+            const char * tracestate = retrievedClientHeaders->queryProp("tracestate");
+            CPPUNIT_ASSERT_MESSAGE("Unexpected traceState detected",
+             strsame("hpcc=4b960b3e4647da3f", retrievedClientHeaders->queryProp("tracestate")));
         }
     }
 
@@ -326,7 +327,7 @@ protected:
 
         {
             Owned<IProperties> headers = createProperties(true);
-            nullSpan->getSpanContext(headers, true);
+            nullSpan->getClientHeaders(headers);
         }
 
         Owned<ISpan> nullSpanChild = nullSpan->createClientSpan("nullSpanChild");
@@ -339,8 +340,7 @@ protected:
         Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("propegatedServerSpan", emptyMockHTTPHeaders);
 
         Owned<IProperties> retrievedSpanCtxAttributes = createProperties();
-        bool getSpanCtxSuccess = serverSpan->getSpanContext(retrievedSpanCtxAttributes, false);
-        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected getSpanContext failure detected", true, getSpanCtxSuccess);
+        serverSpan->getSpanContext(retrievedSpanCtxAttributes);
 
         CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected empty spanID detected", true, retrievedSpanCtxAttributes->hasProp("spanID"));
         const char * serverSpanID = retrievedSpanCtxAttributes->queryProp("spanID");
@@ -353,8 +353,7 @@ protected:
             //retrieve clientSpan context with the intent to propogate otel and HPCC context
             {
                 Owned<IProperties> retrievedSpanCtxAttributes = createProperties();
-                bool getSpanCtxSuccess = internalSpan->getSpanContext(retrievedSpanCtxAttributes, false);
-                CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected getSpanContext failure detected", true, getSpanCtxSuccess);
+                internalSpan->getSpanContext(retrievedSpanCtxAttributes);
 
                 CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing localParentSpanID detected", true,
                  retrievedSpanCtxAttributes->hasProp("localParentSpanID"));
@@ -388,8 +387,7 @@ protected:
         Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("propegatedServerSpan", emptyMockHTTPHeaders);
 
         Owned<IProperties> retrievedSpanCtxAttributes = createProperties();
-        bool getSpanCtxSuccess = serverSpan->getSpanContext(retrievedSpanCtxAttributes, false);
-        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected getSpanContext failure detected", true, getSpanCtxSuccess);
+        serverSpan->getSpanContext(retrievedSpanCtxAttributes);
 
         CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected empty spanID detected", true, retrievedSpanCtxAttributes->hasProp("spanID"));
         const char * serverSpanID = retrievedSpanCtxAttributes->queryProp("spanID");
@@ -402,8 +400,7 @@ protected:
             //retrieve internalSpan context with the intent to interrogate attributes
             {
                 Owned<IProperties> retrievedSpanCtxAttributes = createProperties();
-                bool getSpanCtxSuccess = internalSpan->getSpanContext(retrievedSpanCtxAttributes, false);
-                CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected getSpanContext failure detected", true, getSpanCtxSuccess);
+                internalSpan->getSpanContext(retrievedSpanCtxAttributes);
 
                 CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing localParentSpanID detected", true,
                  retrievedSpanCtxAttributes->hasProp("localParentSpanID"));
@@ -434,25 +431,24 @@ protected:
         Owned<IProperties> emptyMockHTTPHeaders = createProperties();
         Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("propegatedServerSpan", emptyMockHTTPHeaders);
 
-        Owned<IProperties> retrievedSpanCtxAttributes = createProperties();
-        //at this point the serverSpan should have the following context attributes
-        //traceID, spanID,traceFlags, traceState
-        //but no remoteParentSpanID, globalID, callerID
-
         //retrieve serverSpan context with the intent to propagate it to a remote child span
         {
-            bool getSpanCtxSuccess = serverSpan->getSpanContext(retrievedSpanCtxAttributes, true);
+            Owned<IProperties> retrievedClientHeaders = createProperties();
+            serverSpan->getClientHeaders(retrievedClientHeaders);
 
-            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected getSpanContext failure detected", true, getSpanCtxSuccess);
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("getClientHeaders failed to produce traceParent!", true, retrievedClientHeaders->hasProp("traceparent"));
             CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected Otel traceparent header len detected", (size_t)55,
-             strlen(retrievedSpanCtxAttributes->queryProp("traceparent")));
+             strlen(retrievedClientHeaders->queryProp("traceparent")));
+
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("detected unexpected tracestate from getClientHeaders", false, retrievedClientHeaders->hasProp("tracestate"));
         }
 
         //retrieve serverSpan context with the intent to interrogate attributes
         {
-            bool getSpanCtxSuccess = serverSpan->getSpanContext(retrievedSpanCtxAttributes, false);
-
-            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected getSpanContext failure detected", true, getSpanCtxSuccess);
+            Owned<IProperties> retrievedSpanCtxAttributes = createProperties();
+            serverSpan->getSpanContext(retrievedSpanCtxAttributes);
+            //at this point the serverSpan should have the following context attributes
+            //traceID, spanID //but no remoteParentSpanID, globalID, callerID
 
             CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected GlobalID detected", false,
              retrievedSpanCtxAttributes->hasProp(kGlobalIdHttpHeaderName));
@@ -474,9 +470,8 @@ protected:
         Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("invalidPropegatedServerSpan", mockHTTPHeaders);
 
         Owned<IProperties> retrievedSpanCtxAttributes = createProperties();
-        bool getSpanCtxSuccess = serverSpan->getSpanContext(retrievedSpanCtxAttributes.get(), true);
+        serverSpan->getClientHeaders(retrievedSpanCtxAttributes.get());
 
-        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected getSpanContext failure detected", true, getSpanCtxSuccess);
         const char * traceParent = retrievedSpanCtxAttributes->queryProp("remoteParentSpanID");
         DBGLOG("testInvalidPropegatedServerSpan: traceparent: %s", traceParent);
     }
@@ -498,9 +493,7 @@ protected:
         //remoteParentSpanID, globalID, callerID
 
         Owned<IProperties> retrievedSpanCtxAttributes = createProperties();
-        bool getSpanCtxSuccess = serverSpan->getSpanContext(retrievedSpanCtxAttributes.get(), false);
-
-        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected getSpanContext failure detected", true, getSpanCtxSuccess);
+        serverSpan->getSpanContext(retrievedSpanCtxAttributes.get());
 
         CPPUNIT_ASSERT_MESSAGE("Unexpected GlobalID detected",
             strsame("IncomingUGID", retrievedSpanCtxAttributes->queryProp(kGlobalIdHttpHeaderName)));
@@ -560,9 +553,7 @@ protected:
         //retrieve serverSpan context with the intent to interrogate attributes
         {
             Owned<IProperties> retrievedClientSpanCtxAttributes = createProperties();
-            bool getClientSpanCtxSuccess = clientSpan->getSpanContext(retrievedClientSpanCtxAttributes.get(), false);
-
-            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected getSpanContext failure detected on client span", true, getClientSpanCtxSuccess);
+            clientSpan->getSpanContext(retrievedClientSpanCtxAttributes.get());
 
             CPPUNIT_ASSERT_MESSAGE("Unexpected GlobalID detected",
              strsame("IncomingUGID", retrievedClientSpanCtxAttributes->queryProp(kGlobalIdHttpHeaderName)));
@@ -586,9 +577,7 @@ protected:
         //retrieve serverSpan context with the intent to interrogate attributes
         {
             Owned<IProperties> retrievedSpanCtxAttributes = createProperties();
-            bool getSpanCtxSuccess = serverSpan->getSpanContext(retrievedSpanCtxAttributes.get(), false);
-
-            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected getSpanContext failure detected", true, getSpanCtxSuccess);
+            serverSpan->getSpanContext(retrievedSpanCtxAttributes.get());
 
             CPPUNIT_ASSERT_MESSAGE("Unexpected GlobalID detected",
              strsame("IncomingUGID", retrievedSpanCtxAttributes->queryProp(kGlobalIdHttpHeaderName)));
@@ -602,14 +591,18 @@ protected:
             CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected empty SpanID detected", false, isEmptyString(retrievedSpanCtxAttributes->queryProp("spanID")));
         }
 
-        //retrieve serverSpan context with the intent to propagate it to a remote child span
+        //retrieve serverSpan client headers with the intent to propagate them onto the next hop
         {
-            Owned<IProperties> retrievedSpanCtxAttributes = createProperties();
-            bool getSpanCtxSuccess = serverSpan->getSpanContext(retrievedSpanCtxAttributes.get(), true);
+            Owned<IProperties> retrievedClientHeaders = createProperties();
+            serverSpan->getClientHeaders(retrievedClientHeaders.get());
 
-            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected getSpanContext failure detected", true, getSpanCtxSuccess);
             CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected Otel traceparent header len detected", (size_t)55,
-             strlen(retrievedSpanCtxAttributes->queryProp("traceparent")));
+             strlen(retrievedClientHeaders->queryProp("traceparent")));
+
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("getClientHeaders failed to produce traceState!", true, retrievedClientHeaders->hasProp("tracestate"));
+            const char * tracestate = retrievedClientHeaders->queryProp("tracestate");
+            CPPUNIT_ASSERT_MESSAGE("Unexpected traceState detected",
+             strsame("hpcc=4b960b3e4647da3f", retrievedClientHeaders->queryProp("tracestate")));
         }
     }
 
@@ -630,11 +623,7 @@ protected:
         //retrieve serverSpan context with the intent to interrogate attributes
         {
             Owned<IProperties> retrievedSpanCtxAttributes = createProperties();
-            bool getSpanCtxSuccess = serverSpan->getSpanContext(retrievedSpanCtxAttributes.get(), false);
-
-            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected getSpanContext failure detected", true, getSpanCtxSuccess);
-
-            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected getSpanContext failure detected", true, getSpanCtxSuccess);
+            serverSpan->getSpanContext(retrievedSpanCtxAttributes.get());
 
             CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected GlobalID detected", true,
              strsame("someGlobalID", retrievedSpanCtxAttributes->queryProp(kGlobalIdHttpHeaderName)));
@@ -3778,49 +3767,127 @@ protected:
                                 0x36, 0x37, 0x38, 0x39, 0x30, 0x31, 0x32, 0x33,
                                 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x30, 0x31
                               };
+        constexpr const char * prefix = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        unsigned lenPrefix = strlen(prefix);
 
         MemoryBuffer ciphertext1, ciphertext2, decrypted1, decrypted2;
 
+        ciphertext1.append(lenPrefix, prefix);
+        ciphertext2.append(lenPrefix, prefix);
         openssl::aesEncrypt(key, 32, intext, len, ciphertext1);
         jlib::aesEncrypt(key, 32, intext, len, ciphertext2);
 
+        CPPUNIT_ASSERT(memcmp(ciphertext1.bytes(), prefix, lenPrefix) == 0);
+        CPPUNIT_ASSERT(memcmp(ciphertext2.bytes(), prefix, lenPrefix) == 0);
+        if (len)
+            CPPUNIT_ASSERT(ciphertext1.length() > len + lenPrefix);
+        else
+            CPPUNIT_ASSERT(ciphertext1.length() == len + lenPrefix);
+        CPPUNIT_ASSERT(ciphertext1.length() <= len + lenPrefix + 16);
         CPPUNIT_ASSERT(ciphertext1.length()==ciphertext2.length());
         CPPUNIT_ASSERT(memcmp(ciphertext1.bytes(), ciphertext2.bytes(), ciphertext1.length()) == 0);
         
+        unsigned cipherlen = ciphertext1.length() - lenPrefix;
+
         /* Decrypt the ciphertext */
-        openssl::aesDecrypt(key, 32, ciphertext1.bytes(), ciphertext1.length(), decrypted1);
-        assert(decrypted1.length() == len);
-        CPPUNIT_ASSERT(decrypted1.length() == len);
-        CPPUNIT_ASSERT(memcmp(decrypted1.bytes(), intext, len) == 0);
+        decrypted1.append(lenPrefix, prefix);
+        openssl::aesDecrypt(key, 32, ciphertext1.bytes()+lenPrefix, cipherlen, decrypted1);
+        CPPUNIT_ASSERT(decrypted1.length() == len+lenPrefix);
+        CPPUNIT_ASSERT(memcmp(decrypted1.bytes(), prefix, lenPrefix) == 0);
+        CPPUNIT_ASSERT(memcmp(decrypted1.bytes()+lenPrefix, intext, len) == 0);
         CPPUNIT_ASSERT(memcmp(ciphertext1.bytes(), ciphertext2.bytes(), ciphertext1.length()) == 0); // check input unchanged
 
-        jlib::aesDecrypt(key, 32, ciphertext2.bytes(), ciphertext2.length(), decrypted2);
-        CPPUNIT_ASSERT(decrypted2.length() == len);
-        CPPUNIT_ASSERT(memcmp(decrypted2.bytes(), intext, len) == 0);
+        decrypted2.append(lenPrefix, prefix);
+        jlib::aesDecrypt(key, 32, ciphertext2.bytes()+lenPrefix, cipherlen, decrypted2);
+        CPPUNIT_ASSERT(memcmp(decrypted2.bytes(), prefix, lenPrefix) == 0);
+        CPPUNIT_ASSERT(decrypted2.length() == len + lenPrefix);
+        CPPUNIT_ASSERT(memcmp(decrypted2.bytes() + lenPrefix, intext, len) == 0);
         CPPUNIT_ASSERT(memcmp(ciphertext1.bytes(), ciphertext2.bytes(), ciphertext1.length()) == 0); // check input unchanged
 
         // Now test in-place decrypt
-        unsigned cipherlen = ciphertext1.length();
         ciphertext1.append(4, "XXXX");   // Marker
-        unsigned decryptedlen = openssl::aesDecryptInPlace(key, 32, (void *) ciphertext1.bytes(), cipherlen);
+        unsigned decryptedlen = openssl::aesDecryptInPlace(key, 32, (void *)(ciphertext1.bytes() + lenPrefix), cipherlen);
         CPPUNIT_ASSERT(decryptedlen == len);
-        CPPUNIT_ASSERT(memcmp(ciphertext1.bytes(), intext, len) == 0);
-        CPPUNIT_ASSERT(memcmp(ciphertext1.bytes()+cipherlen, "XXXX", 4) == 0);
+        CPPUNIT_ASSERT(memcmp(ciphertext1.bytes()+lenPrefix, intext, len) == 0);
+        CPPUNIT_ASSERT(memcmp(ciphertext1.bytes()+lenPrefix+cipherlen, "XXXX", 4) == 0);
 
-        cipherlen = ciphertext2.length();
         ciphertext2.append(4, "XXXX");   // Marker
-        decryptedlen = jlib::aesDecryptInPlace(key, 32, (void *) ciphertext2.bytes(), cipherlen);
+        decryptedlen = jlib::aesDecryptInPlace(key, 32, (void *)(ciphertext2.bytes() + lenPrefix), cipherlen);
         CPPUNIT_ASSERT(decryptedlen == len);
-        CPPUNIT_ASSERT(memcmp(ciphertext2.bytes(), intext, len) == 0);
-        CPPUNIT_ASSERT(memcmp(ciphertext2.bytes()+cipherlen, "XXXX", 4) == 0);
+        CPPUNIT_ASSERT(memcmp(ciphertext2.bytes()+lenPrefix, intext, len) == 0);
+        CPPUNIT_ASSERT(memcmp(ciphertext2.bytes()+lenPrefix+cipherlen, "XXXX", 4) == 0);
+
+        // Now in-place encrypt
+        ciphertext1.clear().append(lenPrefix, prefix).append(len, intext);
+        ciphertext1.append(16, "1234123412341234"); // Filler to be used by AES padding
+        ciphertext1.append(4, "WXYZ");   // Marker - check this is untouched
+        unsigned encryptedlen = openssl::aesEncryptInPlace(key, 32, (void *)(ciphertext1.bytes() + lenPrefix), len, len+16);
+        CPPUNIT_ASSERT(encryptedlen >= len);
+        CPPUNIT_ASSERT(encryptedlen <= len+16);
+        CPPUNIT_ASSERT(memcmp(ciphertext1.bytes()+lenPrefix+len+16, "WXYZ", 4) == 0);
+        CPPUNIT_ASSERT(len == 0 || memcmp(ciphertext1.bytes()+lenPrefix, intext, len) != 0);  // Check it actually did encrypt!
+        decryptedlen = openssl::aesDecryptInPlace(key, 32, (void *)(ciphertext1.bytes() + lenPrefix), encryptedlen);
+        CPPUNIT_ASSERT(decryptedlen == len);
+        CPPUNIT_ASSERT(memcmp(ciphertext1.bytes()+lenPrefix, intext, len) == 0);
+        CPPUNIT_ASSERT(memcmp(ciphertext1.bytes()+lenPrefix+len+16, "WXYZ", 4) == 0);
+
+        ciphertext2.clear().append(lenPrefix, prefix).append(len, intext);
+        ciphertext2.append(16, "1234123412341234"); // Filler to be used by AES padding
+        ciphertext2.append(4, "ABCD");   // Marker - check this is untouched
+        encryptedlen = jlib::aesEncryptInPlace(key, 32, (void *)(ciphertext2.bytes() + lenPrefix), len, len+16);
+        CPPUNIT_ASSERT(encryptedlen >= len);
+        CPPUNIT_ASSERT(encryptedlen <= len+16);
+        CPPUNIT_ASSERT(memcmp(ciphertext2.bytes()+lenPrefix+len+16, "ABCD", 4) == 0);
+        CPPUNIT_ASSERT(len == 0 || memcmp(ciphertext2.bytes()+lenPrefix, intext, len) != 0);  // Check it actually did encrypt!
+        decryptedlen = jlib::aesDecryptInPlace(key, 32, (void *)(ciphertext2.bytes() + lenPrefix), encryptedlen);
+        CPPUNIT_ASSERT(decryptedlen == len);
+        CPPUNIT_ASSERT(memcmp(ciphertext2.bytes()+lenPrefix, intext, len) == 0);
+        CPPUNIT_ASSERT(memcmp(ciphertext2.bytes()+lenPrefix+len+16, "ABCD", 4) == 0);
+
+        // Test some error cases
+        if (len)
+        {
+            ciphertext1.clear().append(lenPrefix, prefix).append(len, intext);
+            ciphertext1.append(4, "WXYZ");   // Marker - check this is untouched
+            try
+            {
+                encryptedlen = openssl::aesEncryptInPlace(key, 32, (void *)(ciphertext1.bytes() + lenPrefix), len, len);
+                CPPUNIT_ASSERT(!"Should have reported insufficient length");
+            }
+            catch (IException *E)
+            {
+                CPPUNIT_ASSERT(memcmp(ciphertext1.bytes()+lenPrefix+len, "WXYZ", 4) == 0);
+                E->Release();
+            }
+            ciphertext2.clear().append(lenPrefix, prefix).append(len, intext);
+            ciphertext2.append(4, "ABCD");   // Marker - check this is untouched
+            try
+            {
+                encryptedlen = jlib::aesEncryptInPlace(key, 32, (void *)(ciphertext2.bytes() + lenPrefix), len, len);
+                CPPUNIT_ASSERT(!"Should have reported insufficient length");
+            }
+            catch (IException *E)
+            {
+                CPPUNIT_ASSERT(memcmp(ciphertext2.bytes()+lenPrefix+len, "ABCD", 4) == 0);
+                E->Release();
+            }
+        }        
     }
 
     void test()
     {
-        /* Message to be encrypted */
-        const char *plaintext = "The quick brown fox jumps over the lazy dog";
-        for (unsigned l = 0; l < strlen(plaintext); l++)
-            testOne(l, plaintext);
+        try
+        {
+            /* Message to be encrypted */
+            const char *plaintext = "The quick brown fox jumps over the lazy dog";
+            for (unsigned l = 0; l < strlen(plaintext); l++)
+                testOne(l, plaintext);
+        }
+        catch (IException * e)
+        {
+            EXCLOG(e, "Exception in AES unit test");
+            throw;
+        }
     }
 
 };

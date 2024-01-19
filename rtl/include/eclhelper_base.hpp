@@ -823,6 +823,7 @@ class ECLRTL_API CThorSoapActionArg : public CThorSinkArgOf<IHThorSoapActionArg>
     virtual const char * getRequestHeader() override;
     virtual const char * getRequestFooter() override;
     virtual unsigned getPersistMaxRequests() override;
+    unsigned getPersistPoolSize(); // Included for backward compatibility to prevent linking problems
 };
 
 class ECLRTL_API CThorSoapCallArg : public CThorArgOf<IHThorSoapCallArg>
@@ -854,6 +855,7 @@ class ECLRTL_API CThorSoapCallArg : public CThorArgOf<IHThorSoapCallArg>
     virtual const char * getRequestHeader() override;
     virtual const char * getRequestFooter() override;
     virtual unsigned getPersistMaxRequests() override;
+    unsigned getPersistPoolSize(); // Included for backward compatibility to prevent linking problems
 };
 
 typedef CThorSoapCallArg CThorHttpCallArg;

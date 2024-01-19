@@ -2299,7 +2299,7 @@ void setMaxPageCacheItems(unsigned _maxPageCacheItems)
 class CTimedCacheItem: public CInterface
 {
 protected: friend class CTimedCache;
-    unsigned due = 0;
+    unsigned timestamp = 0;
     StringAttr owner;
 public:
     DALI_UID hint;
@@ -2342,9 +2342,9 @@ class CTimedCache
         ForEachItemIn(i, items)
         {
             CTimedCacheItem &item = items.item(i);
-            if (item.due > now)
+            if (now - item.timestamp < pageCacheTimeoutMilliSeconds)
             {
-                res = item.due - now;
+                res = pageCacheTimeoutMilliSeconds - (now - item.timestamp);
                 break;
             }
             expired++;
@@ -2392,7 +2392,7 @@ public:
         CriticalBlock block(sect);
         if ((maxPageCacheItems > 0) && (maxPageCacheItems == items.length()))
             items.remove(0);
-        item->due = msTick() + pageCacheTimeoutMilliSeconds;
+        item->timestamp = msTick();
         items.append(*item);
         DALI_UID ret = item->hint;
         sem.signal();

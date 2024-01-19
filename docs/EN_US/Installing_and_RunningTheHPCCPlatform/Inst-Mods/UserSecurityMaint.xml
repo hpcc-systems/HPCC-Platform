@@ -1632,6 +1632,30 @@
 
                 <entry>Read</entry>
               </row>
+
+              <row>
+                <entry>SashaAccess</entry>
+
+                <entry>Access to WsSasha service</entry>
+
+                <entry>Access</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>List Workunits</entry>
+
+                <entry>Read</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>Archive Workunits, restore archived Workunits</entry>
+
+                <entry>Full</entry>
+              </row>
             </tbody>
           </tgroup>
         </informaltable></para>

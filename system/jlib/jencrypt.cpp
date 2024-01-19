@@ -1818,6 +1818,25 @@ MemoryBuffer &aesDecrypt(const void *key, size_t keylen, const void *input, size
     return output;
 }
 
+size_t aesEncryptInPlace(const void *key, size_t keylen, void *buffer, size_t inlen, size_t maxlen)
+{
+    if (!buffer || !inlen)
+        return 0;
+    // Make sure there is space for the padding. This is up to 16 bytes
+    if (maxlen - inlen < 16)
+        throw MakeStringException(-1,"AES Encryption error: Insufficient space in input buffer");
+    Rijndael rin;
+    Rijndael::KeyLength keyType = getAesKeyType(keylen);
+    
+    rin.init(Rijndael::CBC, Rijndael::Encrypt, (const UINT8 *)key, keyType);
+    size32_t truncInLen = (size32_t)inlen; //MORE: Modify the padEncrypt function
+    int len = rin.padEncrypt((const UINT8 *)buffer, truncInLen, (UINT8 *) buffer);
+    if(len >= 0)
+        return len;
+    else 
+        throw MakeStringException(-1,"AES Encryption error: %d, %s", len, getAesErrorText(len));
+}
+
 size_t aesDecryptInPlace(const void *key, size_t keylen, void *data, size_t inlen)
 {
     Rijndael rin;
@@ -1870,7 +1889,8 @@ MemoryBuffer &aesEncrypt(const void *key, size_t keylen, const void *plaintext, 
                 encryptError("Unsupported key length");
                 break;
         }
-        byte *ciphertext = (byte *) output.reserve(plaintext_len + 100);
+        unsigned originalLen = output.length();
+        byte *ciphertext = (byte *) output.reserve(plaintext_len + 16);
         int ciphertext_len = 0;
         int thislen = 0;
         if(1 != EVP_EncryptUpdate(ctx, ciphertext, &thislen, (const unsigned char *) plaintext, plaintext_len))
@@ -1880,8 +1900,58 @@ MemoryBuffer &aesEncrypt(const void *key, size_t keylen, const void *plaintext, 
             encryptError("Error in EVP_EncryptFinal_ex");
         ciphertext_len += thislen;
         EVP_CIPHER_CTX_free(ctx);
-        output.setLength(ciphertext_len);
+        output.setLength(originalLen + ciphertext_len);
         return output;
+    }
+    catch (...)
+    {
+        EVP_CIPHER_CTX_free(ctx);
+        throw;
+    }
+}
+
+extern jlib_decl size_t aesEncryptInPlace(const void *key, size_t keylen, void *buffer, size_t inlen, size_t buflen)
+{
+    if (!buffer || !inlen)
+        return 0;
+    byte *data = (byte *) buffer;
+    EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
+    if (!ctx)
+        encryptError("Failed to create context");
+    try
+    {
+        unsigned char iv[16] = { 0 };
+        switch (keylen)
+        {
+            case 32:
+                if(1 != EVP_EncryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, (const unsigned char *) key, iv))
+                    encryptError("Failed to initialize context");
+                break;
+            case 24:
+                if(1 != EVP_EncryptInit_ex(ctx, EVP_aes_192_cbc(), NULL, (const unsigned char *) key, iv))
+                    encryptError("Failed to initialize context");
+                break;
+            case 16:
+                if(1 != EVP_EncryptInit_ex(ctx, EVP_aes_128_cbc(), NULL, (const unsigned char *) key, iv))
+                    encryptError("Failed to initialize context");
+                break;
+            default:
+                encryptError("Unsupported key length");
+                break;
+        }
+        // Make sure there is space for the padding. This is up to 16 bytes
+        if (buflen - inlen < 16)
+            encryptError("Insufficient space in input buffer");
+        int ciphertext_len = 0;
+        int thislen = 0;
+        if(1 != EVP_EncryptUpdate(ctx, data, &thislen, (const unsigned char *) data, inlen))
+            encryptError("Error in EVP_EncryptUpdate");
+        ciphertext_len += thislen;
+        if(1 != EVP_EncryptFinal_ex(ctx, data + ciphertext_len, &thislen))
+            encryptError("Error in EVP_EncryptFinal_ex");
+        ciphertext_len += thislen;
+        EVP_CIPHER_CTX_free(ctx);
+        return ciphertext_len;
     }
     catch (...)
     {
@@ -1928,6 +1998,7 @@ MemoryBuffer &aesDecrypt(const void *key, size_t keylen, const void *ciphertext,
                 decryptError("Unsupported key length");
                 break;
         }
+        unsigned originalLen = output.length();
         byte *plaintext = (byte *) output.reserve(ciphertext_len);
         if(1 != EVP_DecryptUpdate(ctx, plaintext, &thislen, (const unsigned char *) ciphertext, ciphertext_len))
             decryptError("Error in EVP_DecryptUpdate");
@@ -1936,7 +2007,7 @@ MemoryBuffer &aesDecrypt(const void *key, size_t keylen, const void *ciphertext,
         if(1 != EVP_DecryptFinal_ex(ctx, plaintext + plaintext_len, &thislen))
             decryptError("Error in EVP_DecryptFinal_ex");
         plaintext_len += thislen;
-        output.setLength(plaintext_len);
+        output.setLength(originalLen + plaintext_len);
         EVP_CIPHER_CTX_free(ctx);
         return output;
     }
@@ -2002,31 +2073,48 @@ size_t aesDecryptInPlace(const void *key, size_t keylen, void *ciphertext, size_
 }  // namespace
 #endif
 
+static bool useLegacyAES = false;
+
 MemoryBuffer &aesEncrypt(const void *key, size_t keylen, const void *input, size_t inlen, MemoryBuffer &output)
 {
 #ifdef _USE_OPENSSL
-    return openssl::aesEncrypt(key, keylen, input, inlen, output);
-#else
-    return jlib::aesEncrypt(key, keylen, input, inlen, output);
+    if (!useLegacyAES)
+        return openssl::aesEncrypt(key, keylen, input, inlen, output);
 #endif
+    return jlib::aesEncrypt(key, keylen, input, inlen, output);
 }
 
 MemoryBuffer &aesDecrypt(const void *key, size_t keylen, const void *input, size_t inlen, MemoryBuffer &output)
 {
 #ifdef _USE_OPENSSL
-    return openssl::aesDecrypt(key, keylen, input, inlen, output);
-#else
-    return jlib::aesDecrypt(key, keylen, input, inlen, output);
+    if (!useLegacyAES)
+        return openssl::aesDecrypt(key, keylen, input, inlen, output);
 #endif
+    return jlib::aesDecrypt(key, keylen, input, inlen, output);
 }
+
+size_t aesEncryptInPlace(const void *key, size_t keylen, void *buffer, size_t inlen, size_t buflen)
+{
+#ifdef _USE_OPENSSL
+    if (!useLegacyAES)
+        return openssl::aesEncryptInPlace(key, keylen, buffer, inlen, buflen);
+#endif
+    return jlib::aesEncryptInPlace(key, keylen, buffer, inlen, buflen);
+}
+
 
 size_t aesDecryptInPlace(const void *key, size_t keylen, void *data, size_t inlen)
 {
 #ifdef _USE_OPENSSL
-    return openssl::aesDecryptInPlace(key, keylen, data, inlen);
-#else
-    return jlib::aesDecryptInPlace(key, keylen, data, inlen);
+    if (!useLegacyAES)
+        return openssl::aesDecryptInPlace(key, keylen, data, inlen);
 #endif
+    return jlib::aesDecryptInPlace(key, keylen, data, inlen);
+}
+
+void setLegacyAES(bool value)
+{
+    useLegacyAES = value;
 }
 
 #define CRYPTSIZE 32

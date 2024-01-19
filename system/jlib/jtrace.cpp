@@ -582,8 +582,7 @@ public:
 
     bool getSpanContext(CHPCCHttpTextMapCarrier * carrier) const
     {
-        if (!carrier)
-            return false;
+        assertex(carrier);
 
         auto propagator = opentelemetry::context::propagation::GlobalTextMapPropagator::GetGlobalPropagator();
 
@@ -603,66 +602,68 @@ public:
     }
 
     /**
+     * Retrieves the Span's client headers traceparent and tracestate
+     * Output follows OpenTelemetry Span context format for propogation 
+     * accross process boundaries.
+     *
+     * @param clientHeaders IProperties container for client headers.
+     */
+    void getClientHeaders(IProperties * clientHeaders) const
+    {
+        assertex(clientHeaders);
+
+        clientHeaders->setNonEmptyProp(kGlobalIdHttpHeaderName, queryGlobalId());
+
+        //The localid is passed as the callerid for the client request....
+        clientHeaders->setNonEmptyProp(kCallerIdHttpHeaderName, queryLocalId());
+
+        if (span == nullptr)
+            return;
+
+        if (isEmptyString(traceID.get()) || isEmptyString(spanID.get()) || isEmptyString(traceFlags.get()))
+            return;
+
+        //The traceparent header uses the version-trace_id-parent_id-trace_flags format where:
+        //version is always 00. trace_id is a hex-encoded trace id. span_id is a hex-encoded span id. trace_flags is a hex-encoded 8-bit field that contains tracing flags such as sampling, trace level, etc.
+        //Example: "traceparent", "00-beca49ca8f3138a2842e5cf21402bfff-4b960b3e4647da3f-01"
+
+        StringBuffer contextHTTPHeader;
+        //https://www.w3.org/TR/trace-context/#header-name
+        contextHTTPHeader.append("00-").append(traceID.get()).append("-").append(spanID.get()).append("-").append(traceFlags.get());
+        clientHeaders->setProp(opentelemetry::trace::propagation::kTraceParent.data(), contextHTTPHeader.str());
+
+        //The main purpose of the tracestate HTTP header is to provide additional vendor-specific trace identification
+        // information across different distributed tracing systems and is a companion header for the traceparent field.
+        // It also conveys information about the request’s position in multiple distributed tracing graphs.
+
+        //https://www.w3.org/TR/trace-context/#trace-context-http-headers-format
+        //StringBuffer traceStateHTTPHeader;
+        //traceStateHTTPHeader.append("hpcc=").append(spanID.get());
+
+        clientHeaders->setNonEmptyProp(opentelemetry::trace::propagation::kTraceState.data(), span->GetContext().trace_state()->ToHeader().c_str());
+    }
+
+    /**
      * Retrieves the Span's context as key/value pairs into the provided IProperties.
      * Optionally, output follows OpenTelemetry Span context format for propogation 
      * accross process boundaries.
      *
      * @param ctxProps IProperties container for span context key/value pairs.
-     * @param otelFormatted If true, output follows OpenTelemetry Span context format.
-     * @return True if the span context was successfully retrieved, false otherwise.
      */
-    bool getSpanContext(IProperties * ctxProps, bool otelFormatted) const override
+    void getSpanContext(IProperties * ctxProps) const override
     {
         if (ctxProps == nullptr)
-            return false;
+            return;
 
         ctxProps->setNonEmptyProp(kGlobalIdHttpHeaderName, queryGlobalId());
-
-        if (otelFormatted)
-        {
-            //The localid is passed as the callerid for the client request....
-            ctxProps->setNonEmptyProp(kCallerIdHttpHeaderName, queryLocalId());
-        }
-        else
-        {
-            ctxProps->setNonEmptyProp(kCallerIdHttpHeaderName, queryCallerId());
-        }
+        ctxProps->setNonEmptyProp(kCallerIdHttpHeaderName, queryCallerId());
 
         if (span == nullptr)
-            return false;
+            return;
 
-        if (otelFormatted)
-        {
-            if (isEmptyString(traceID.get()) || isEmptyString(spanID.get()) || isEmptyString(traceFlags.get()))
-                return false;
-
-            //The traceparent header uses the version-trace_id-parent_id-trace_flags format where:
-            //version is always 00. trace_id is a hex-encoded trace id. span_id is a hex-encoded span id. trace_flags is a hex-encoded 8-bit field that contains tracing flags such as sampling, trace level, etc.
-            //Example: "traceparent", "00-beca49ca8f3138a2842e5cf21402bfff-4b960b3e4647da3f-01"
-
-            StringBuffer contextHTTPHeader;
-            //https://www.w3.org/TR/trace-context/#header-name
-            contextHTTPHeader.append("00-").append(traceID.get()).append("-").append(spanID.get()).append("-").append(traceFlags.get());
-            ctxProps->setProp(opentelemetry::trace::propagation::kTraceParent.data(), contextHTTPHeader.str());
-
-            //The main purpose of the tracestate HTTP header is to provide additional vendor-specific trace identification
-            // information across different distributed tracing systems and is a companion header for the traceparent field.
-            // It also conveys information about the request’s position in multiple distributed tracing graphs.
-
-            //https://www.w3.org/TR/trace-context/#trace-context-http-headers-format
-            //StringBuffer traceStateHTTPHeader;
-            //traceStateHTTPHeader.append("hpcc=").append(spanID.get());
-
-            ctxProps->setNonEmptyProp(opentelemetry::trace::propagation::kTraceState.data(), span->GetContext().trace_state()->ToHeader().c_str());
-        }
-        else
-        {
-            ctxProps->setNonEmptyProp("traceID", traceID.get());
-            ctxProps->setNonEmptyProp("spanID", spanID.get());
-            ctxProps->setNonEmptyProp("traceFlags", traceFlags.get());
-        }
-
-        return true;
+        ctxProps->setNonEmptyProp("traceID", traceID.get());
+        ctxProps->setNonEmptyProp("spanID", spanID.get());
+        ctxProps->setNonEmptyProp("traceFlags", traceFlags.get());
     }
 
     opentelemetry::v1::trace::SpanContext querySpanContext() const
@@ -792,7 +793,8 @@ public:
     virtual void setSpanAttributes(const IProperties * attributes) override {}
     virtual void addSpanEvent(const char * eventName) override {}
     virtual void addSpanEvent(const char * eventName, IProperties * attributes) override {};
-    virtual bool getSpanContext(IProperties * ctxProps, bool otelFormatted) const override { return false; }
+    virtual void getSpanContext(IProperties * ctxProps) const override {}
+    virtual void getClientHeaders(IProperties * clientHeaders) const override {}
 
     virtual void toString(StringBuffer & out) const override {}
     virtual void getLogPrefix(StringBuffer & out) const override {}
@@ -827,19 +829,13 @@ protected:
     }
 
 public:
-    virtual bool getSpanContext(IProperties * ctxProps, bool otelFormatted) const override
+    virtual void getSpanContext(IProperties * ctxProps) const override
     {
-        //MORE: It is not clear what this return value represents, and whether it would ever be checked.
-        bool ok = CSpan::getSpanContext(ctxProps, otelFormatted);
+        CSpan::getSpanContext(ctxProps);
 
-        if (ok && !otelFormatted)
-        {
-            Owned<IProperties> localParentSpanCtxProps = createProperties();
-            localParentSpan->getSpanContext(localParentSpanCtxProps, false);
-            ctxProps->setNonEmptyProp("localParentSpanID", localParentSpanCtxProps->queryProp("spanID"));
-        }
-
-        return ok;
+        Owned<IProperties> localParentSpanCtxProps = createProperties();
+        localParentSpan->getSpanContext(localParentSpanCtxProps);
+        ctxProps->setNonEmptyProp("localParentSpanID", localParentSpanCtxProps->queryProp("spanID"));
     }
 
     virtual const char* queryGlobalId() const override
@@ -960,11 +956,11 @@ private:
         }
     }
 
-    bool getSpanContext(IProperties * ctxProps, bool otelFormatted) const override
+    void getSpanContext(IProperties * ctxProps) const override
     {
-        bool success = CSpan::getSpanContext(ctxProps, otelFormatted);
+        CSpan::getSpanContext(ctxProps);
 
-        if (!otelFormatted && remoteParentSpanCtx.IsValid())
+        if (remoteParentSpanCtx.IsValid())
         {
             StringBuffer remoteParentSpanID;
             char remoteParentSpanId[16] = {0};
@@ -972,8 +968,6 @@ private:
             remoteParentSpanID.append(16, remoteParentSpanId);
             ctxProps->setProp("remoteParentSpanID", remoteParentSpanID.str());
         }
-
-        return success;
     }
 
     void init(SpanFlags flags)
@@ -1055,14 +1049,14 @@ public:
 IProperties * getClientHeaders(const ISpan * span)
 {
     Owned<IProperties> headers = createProperties(true);
-    span->getSpanContext(headers, true);      // Return value is not helpful
+    span->getClientHeaders(headers);
     return headers.getClear();
 }
 
 IProperties * getSpanContext(const ISpan * span)
 {
     Owned<IProperties> headers = createProperties(true);
-    span->getSpanContext(headers, false);
+    span->getSpanContext(headers);
     return headers.getClear();
 }
 
