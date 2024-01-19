@@ -177,7 +177,10 @@ bool CWsDfuXRefEx::onDFUXRefArrayAction(IEspContext &context, IEspDFUXRefArrayAc
             else 
             {   // DeleteLogical:
                 // Note we don't want to physically delete 'lost' files - this will end up with orphans on next time round but that is safer
-                if (fileNode->RemoveLogical(file, userDesc, cluster, err))
+                if (!canRemoveLogicalFile(file, userDesc, req.getRemoveFromSuperfiles(), err))
+                    appendReplyMessage(fmt==ESPSerializationJSON, returnStr, nullptr,
+                        "Error(s) removing File %s\n%s", file, err.str());
+                else if (fileNode->RemoveLogical(file, userDesc, cluster, err))
                     appendReplyMessage(fmt==ESPSerializationJSON, returnStr, nullptr,
                         "Removed Logical File %s", file);
                 else
@@ -198,6 +201,47 @@ bool CWsDfuXRefEx::onDFUXRefArrayAction(IEspContext &context, IEspDFUXRefArrayAc
     catch(IException *e)
     {   
         FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWsDfuXRefEx::canRemoveLogicalFile(const char *logicalFile, IUserDescriptor *userDesc, bool removeFromSuperfiles, StringBuffer &errStr)
+{
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalFile, userDesc, AccessMode::tbdWrite, false, false, nullptr, defaultPrivilegedUser);
+    if (!df)
+    {
+        errStr.appendf("Logical file %s not found", logicalFile);
+        return false;
+    }
+    Owned<IDistributedSuperFileIterator> superOwners = df->getOwningSuperFiles();
+    if (!superOwners->first())
+        return true;
+
+    if (!removeFromSuperfiles)
+    {
+        errStr.appendf("Cannot remove logical file %s as owned by SuperFile(s)", logicalFile);
+        return false;
+    }
+    return removeLogicalFileFromSuperfiles(logicalFile, superOwners, errStr);
+}
+
+bool CWsDfuXRefEx::removeLogicalFileFromSuperfiles(const char *logicalFile, IDistributedSuperFileIterator *superOwners, StringBuffer &errStr)
+{
+    ForEach(*superOwners)
+    {
+        IDistributedSuperFile &superOwner = superOwners->query();
+        try
+        {
+            superOwner.removeSubFile(logicalFile, false, false, nullptr);
+            PROGLOG("File %s is removed from superfile %s", logicalFile, superOwner.queryLogicalName());
+        }
+        catch(IException *e)
+        {
+            errStr.appendf("Could not remove file %s from superfile %s: ", logicalFile, superOwner.queryLogicalName());
+            e->errorMessage(errStr);
+            e->Release();
+            return false;
+        }
     }
     return true;
 }
