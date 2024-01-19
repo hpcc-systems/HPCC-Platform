@@ -486,6 +486,9 @@
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/YearWeekNumFromDate.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/TimestampToString.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
     <!-- TimeZone Module methods **** -->
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/UniqueTZAbbreviations.xml"

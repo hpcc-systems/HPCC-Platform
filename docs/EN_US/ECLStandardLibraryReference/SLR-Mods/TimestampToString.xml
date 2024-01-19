@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="TimestampToString">
+  <title>TimestampToString</title>
+
+  <para><emphasis role="bold">STD.Date.TimestampToString
+  (</emphasis><emphasis>timestamp, format</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>timestamp</emphasis></entry>
+
+          <entry>An INTEGER8 holding the number of microseconds since epoch
+          (January 1, 1970 UTC)</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>format</emphasis></entry>
+
+          <entry>OPTIONAL. The format of the string to return. See strftime
+          documentation for details (<ulink
+          url="http://strftime.org/">http://strftime.org/</ulink>). If
+          omitted, it defaults to '%Y-%m-%dT%H:%M:%S.%@' which is
+          YYYY-MM-DDTHH:MM:SS.ssssss.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>The converted <emphasis>timestamp</emphasis> as a string in
+          the specified format.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">TimestampToString <indexterm>
+      <primary>TimestampToString</primary>
+    </indexterm></emphasis> function converts a Timestamp_t value containing
+  the number of microseconds since epoch (January 1, 1970 UTC) into a
+  human-readable string using a format template of strftime standards. Two
+  additional format specifiers are available to show fractional
+  seconds:</para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="80.50pt" />
+
+        <colspec colwidth="290" />
+
+        <tbody>
+          <row>
+            <entry><emphasis>%@</emphasis></entry>
+
+            <entry>Fraction of seconds in microseconds (6 digits)</entry>
+          </row>
+
+          <row>
+            <entry>%#</entry>
+
+            <entry>Fraction of seconds in milliseconds (3 digits)</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>Millisecond fractions are truncated from microseconds when
+  necessary.</para>
+
+  <para>The maximum length of the resulting string is 255 characters.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific" lang="ECL" role="runnable">IMPORT STD; 
+STD.Date.TimestampToString(1048998120000000, '%A %B %d, %Y T%H:%M:%S.%#'); 
+                                // returns Sunday March 30, 2003 T04:22:00.000
+</programlisting>
+
+  <para></para>
+</sect1>
