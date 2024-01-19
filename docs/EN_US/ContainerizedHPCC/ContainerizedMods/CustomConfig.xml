@@ -319,6 +319,125 @@ helm upgrade mycluster hpcc/hpcc -f tworoxies.yaml -f twothors.yaml
       </orderedlist>
     </sect2>
 
+    <sect2 id="HelmAllowPipeProgramsThor" role="nobrk">
+      <title>Create a Custom Configuration Chart to AllowPipePrograms</title>
+
+      <para>You can specify more than one custom configuration by repeating
+      the -f parameter.</para>
+
+      <para>For example:</para>
+
+      <para><programlisting>helm install mycluster hpcc/hpcc  -f tworoxies.yaml -f thorWithPipe.yaml</programlisting></para>
+
+      <para>In this section, we will modify the Thor to allow some Pipe
+      Programs. In version 9.2.0 and greater, commands used in PIPE are
+      restricted by default in containerized deployments unless explicitly
+      allowed in the Helm chart.</para>
+
+      <orderedlist>
+        <listitem>
+          <para>If you have not already added the HPCC Systems repository to
+          the helm repository list, add it now.</para>
+
+          <para><programlisting>helm repo add hpcc https://hpcc-systems.github.io/helm-chart/</programlisting></para>
+
+          <para>If you have added it, update to the latest charts:</para>
+
+          <para><programlisting>helm repo update</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Create a new text file and name it <emphasis
+          role="bold">thorWithPipe.yaml</emphasis> and open it in a text
+          editor.</para>
+
+          <para>You can use any text editor.</para>
+        </listitem>
+
+        <listitem>
+          <para>Open the default values file that you saved earlier
+          (myvalues.yaml) in a text editor.</para>
+        </listitem>
+
+        <listitem>
+          <para>Copy the entire <emphasis role="bold">thor:</emphasis> section
+          and paste it into the new thorWithPipe.yaml file.</para>
+        </listitem>
+
+        <listitem>
+          <para>Add a block at the end:</para>
+
+          <para><programlisting>  allowedPipePrograms: 
+  - sort 
+  - grep 
+  - echo</programlisting>This example enables three common programs. You can
+          use the ones you want instead.</para>
+        </listitem>
+
+        <listitem>
+          <para>Save the file and close the text editor.</para>
+
+          <para>The resulting thorWithPipe.yaml file should look like
+          this</para>
+
+          <para><emphasis role="bold">Note:</emphasis> The comments have been
+          removed to simplify the example:</para>
+
+          <para><programlisting>thor:
+- name: thor
+  prefix: thor
+  numWorkers: 2
+  maxJobs: 4
+  maxGraphs: 2
+  allowedPipePrograms:
+  - sort
+  - grep
+  - echo</programlisting></para>
+        </listitem>
+      </orderedlist>
+
+      <para><emphasis role="bold">Deploy using the new custom configuration
+      chart.</emphasis></para>
+
+      <orderedlist>
+        <listitem>
+          <para>Open a terminal and navigate to the folder where you saved the
+          thorWithPipe.yaml file file.</para>
+        </listitem>
+
+        <listitem>
+          <para>Deploy your HPCC Systems Platform, adding the new
+          configuration to your command:</para>
+
+          <para><programlisting># If you have previously stopped your cluster
+
+helm install mycluster hpcc/hpcc -f thorWithPipe.yaml
+
+# To upgrade without stopping
+
+helm upgrade mycluster hpcc/hpcc -f thorWithPipe.yaml
+</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>After you confirm that your deployment is running, submit a
+          job that uses a PIPE action and specifies one of the programs you
+          specified.</para>
+
+          <para><emphasis role="bold">Note:</emphasis> If the job is too
+          simple, it will execute on hThor instead of Thor and this example
+          doesn't enable Pipe programs on hThor.</para>
+
+          <para>You can create another yaml file to allow Pipe Programs on ECL
+          Agent or you can use:</para>
+
+          <para><programlisting>#OPTION('pickBestEngine',FALSE);</programlisting></para>
+
+          <para>to force the job to run on Thor.</para>
+        </listitem>
+      </orderedlist>
+    </sect2>
+
     <sect2 id="CustTutorial3" role="nobrk">
       <title>Create a Custom Configuration Chart for No Thor</title>
 

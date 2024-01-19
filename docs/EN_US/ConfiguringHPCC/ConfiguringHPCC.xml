@@ -1155,8 +1155,10 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                 <entry>Directory</entry>
 
                 <entry>Description</entry>
-              </row></thead>
-  <tbody>
+              </row>
+            </thead>
+
+            <tbody>
               <row>
                 <entry>
                   <emphasis role="bold">log</emphasis>
@@ -1449,6 +1451,30 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           </para>
         </sect3>
 
+        <sect3 id="AllowedPipePrograms_hThor">
+          <title>Allowed Pipe Programs</title>
+
+          <para>In version 9.2.0 and greater, commands used in a PIPE action
+          are restricted by default. However, for legacy reasons, the default
+          stock behavior is different in bare-metal and containerized
+          deployments. In both types of systems, if allowedPipePrograms is
+          unset, then all but "built-in" programs are restricted (The only
+          built-in program currently is 'roxiepipe').</para>
+
+          <para>In bare-metal, the default environment.xml includes a setting
+          value of "*" for <emphasis
+          role="bold">allowedPipePrograms</emphasis>. This means (by default)
+          any PIPE program can be used.</para>
+
+          <para>
+            <emphasis role="bold">In a secure system, this should be removed
+            or edited to avoid arbitrary programs, including system programs,
+            from being executed.</emphasis>
+          </para>
+
+          <para />
+        </sect3>
+
         <sect3>
           <title>EclAgentProcessNotes</title>
 
@@ -1702,7 +1728,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <para>If you update the platform, but are using a preexisting
         configuration, you could encounter a situation where Feature level
         access flags are not automatically created. Missing flags can deny
-        access to users trying to access features in the system. </para>
+        access to users trying to access features in the system.</para>
 
         <orderedlist>
           <listitem>
@@ -2651,6 +2677,30 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                           xmlns:xi="http://www.w3.org/2001/XInclude" />
             </para>
           </sect4>
+        </sect3>
+
+        <sect3 id="AllowedPipeProgramsThor">
+          <title>Allowed Pipe Programs</title>
+
+          <para>In version 9.2.0 and greater, commands used in a PIPE action
+          are restricted by default. However, for legacy reasons, the default
+          stock behavior is different in bare-metal and containerized
+          deployments. In both types of systems, if allowedPipePrograms is
+          unset, then all but "built-in" programs are restricted (The only
+          built-in program currently is 'roxiepipe'). </para>
+
+          <para>In bare-metal, the default environment.xml includes a setting
+          value of "*" for <emphasis
+          role="bold">allowedPipePrograms</emphasis>. This means (by default)
+          any PIPE program can be used. </para>
+
+          <para>
+            <emphasis role="bold">In a secure system, this should be removed
+            or edited to avoid arbitrary programs, including system programs,
+            from being executed.</emphasis>
+          </para>
+
+          <para />
         </sect3>
 
         <xi:include href="ECLWatch/TheECLWatchMan.xml"
