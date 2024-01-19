@@ -3827,6 +3827,62 @@ protected:
         CPPUNIT_ASSERT(decryptedlen == len);
         CPPUNIT_ASSERT(memcmp(ciphertext2.bytes()+lenPrefix, intext, len) == 0);
         CPPUNIT_ASSERT(memcmp(ciphertext2.bytes()+lenPrefix+cipherlen, "XXXX", 4) == 0);
+
+        // Now in-place encrypt
+        ciphertext1.clear().append(lenPrefix, prefix).append(len, intext);
+        ciphertext1.append(16, "1234123412341234"); // Filler to be used by AES padding
+        ciphertext1.append(4, "WXYZ");   // Marker - check this is untouched
+        unsigned encryptedlen = openssl::aesEncryptInPlace(key, 32, (void *)(ciphertext1.bytes() + lenPrefix), len, len+16);
+        CPPUNIT_ASSERT(encryptedlen >= len);
+        CPPUNIT_ASSERT(encryptedlen <= len+16);
+        CPPUNIT_ASSERT(memcmp(ciphertext1.bytes()+lenPrefix+len+16, "WXYZ", 4) == 0);
+        CPPUNIT_ASSERT(len == 0 || memcmp(ciphertext1.bytes()+lenPrefix, intext, len) != 0);  // Check it actually did encrypt!
+        decryptedlen = openssl::aesDecryptInPlace(key, 32, (void *)(ciphertext1.bytes() + lenPrefix), encryptedlen);
+        CPPUNIT_ASSERT(decryptedlen == len);
+        CPPUNIT_ASSERT(memcmp(ciphertext1.bytes()+lenPrefix, intext, len) == 0);
+        CPPUNIT_ASSERT(memcmp(ciphertext1.bytes()+lenPrefix+len+16, "WXYZ", 4) == 0);
+
+        ciphertext2.clear().append(lenPrefix, prefix).append(len, intext);
+        ciphertext2.append(16, "1234123412341234"); // Filler to be used by AES padding
+        ciphertext2.append(4, "ABCD");   // Marker - check this is untouched
+        encryptedlen = jlib::aesEncryptInPlace(key, 32, (void *)(ciphertext2.bytes() + lenPrefix), len, len+16);
+        CPPUNIT_ASSERT(encryptedlen >= len);
+        CPPUNIT_ASSERT(encryptedlen <= len+16);
+        CPPUNIT_ASSERT(memcmp(ciphertext2.bytes()+lenPrefix+len+16, "ABCD", 4) == 0);
+        CPPUNIT_ASSERT(len == 0 || memcmp(ciphertext2.bytes()+lenPrefix, intext, len) != 0);  // Check it actually did encrypt!
+        decryptedlen = jlib::aesDecryptInPlace(key, 32, (void *)(ciphertext2.bytes() + lenPrefix), encryptedlen);
+        CPPUNIT_ASSERT(decryptedlen == len);
+        CPPUNIT_ASSERT(memcmp(ciphertext2.bytes()+lenPrefix, intext, len) == 0);
+        CPPUNIT_ASSERT(memcmp(ciphertext2.bytes()+lenPrefix+len+16, "ABCD", 4) == 0);
+
+        // Test some error cases
+        if (len)
+        {
+            ciphertext1.clear().append(lenPrefix, prefix).append(len, intext);
+            ciphertext1.append(4, "WXYZ");   // Marker - check this is untouched
+            try
+            {
+                encryptedlen = openssl::aesEncryptInPlace(key, 32, (void *)(ciphertext1.bytes() + lenPrefix), len, len);
+                CPPUNIT_ASSERT(!"Should have reported insufficient length");
+            }
+            catch (IException *E)
+            {
+                CPPUNIT_ASSERT(memcmp(ciphertext1.bytes()+lenPrefix+len, "WXYZ", 4) == 0);
+                E->Release();
+            }
+            ciphertext2.clear().append(lenPrefix, prefix).append(len, intext);
+            ciphertext2.append(4, "ABCD");   // Marker - check this is untouched
+            try
+            {
+                encryptedlen = jlib::aesEncryptInPlace(key, 32, (void *)(ciphertext2.bytes() + lenPrefix), len, len);
+                CPPUNIT_ASSERT(!"Should have reported insufficient length");
+            }
+            catch (IException *E)
+            {
+                CPPUNIT_ASSERT(memcmp(ciphertext2.bytes()+lenPrefix+len, "ABCD", 4) == 0);
+                E->Release();
+            }
+        }        
     }
 
     void test()

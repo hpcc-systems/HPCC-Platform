@@ -30,6 +30,7 @@ namespace jlib
 {
     extern jlib_decl MemoryBuffer &aesEncrypt(const void *key, size_t keylen, const void *input, size_t inlen, MemoryBuffer &output);
     extern jlib_decl MemoryBuffer &aesDecrypt(const void *key, size_t keylen, const void *input, size_t inlen, MemoryBuffer &output);
+    extern jlib_decl size_t aesEncryptInPlace(const void *key, size_t keylen, void *data, size_t inlen, size_t buflen);
     extern jlib_decl size_t aesDecryptInPlace(const void *key, size_t keylen, void *data, size_t inlen);
 } // end of namespace jlib;
 
@@ -38,6 +39,7 @@ namespace openssl
 {
     extern jlib_decl MemoryBuffer &aesEncrypt(const void *key, size_t keylen, const void *input, size_t inlen, MemoryBuffer &output);
     extern jlib_decl MemoryBuffer &aesDecrypt(const void *key, size_t keylen, const void *input, size_t inlen, MemoryBuffer &output);
+    extern jlib_decl size_t aesEncryptInPlace(const void *key, size_t keylen, void *data, size_t inlen, size_t buflen);
     extern jlib_decl size_t aesDecryptInPlace(const void *key, size_t keylen, void *data, size_t inlen);
 } // end of namespace openssl;
 #endif
@@ -46,6 +48,7 @@ namespace openssl
 
 extern jlib_decl MemoryBuffer &aesEncrypt(const void *key, size_t keylen, const void *input, size_t inlen, MemoryBuffer &output);
 extern jlib_decl MemoryBuffer &aesDecrypt(const void *key, size_t keylen, const void *input, size_t inlen, MemoryBuffer &output);
+extern jlib_decl size_t aesEncryptInPlace(const void *key, size_t keylen, void *data, size_t inlen, size_t buflen);
 extern jlib_decl size_t aesDecryptInPlace(const void *key, size_t keylen, void *data, size_t inlen);
 
 
