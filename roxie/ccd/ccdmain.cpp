@@ -1254,6 +1254,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             defaultSinkMode = getSinkMode(sinkModeText);
 
         cacheReportPeriodSeconds = topology->getPropInt("@cacheReportPeriodSeconds", 5*60);
+        setLegacyAES(topology->getPropBool("expert/@useLegacyAES", false));
 
         // NB: these directories will have been setup by topology earlier
         const char *primaryDirectory = queryBaseDirectory(grp_unknown, 0);
