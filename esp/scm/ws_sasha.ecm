@@ -45,12 +45,35 @@ ESPrequest [nil_remove] RestoreWURequest
     ESPenum WUTypes WUType;
 };
 
+ESPrequest [nil_remove] ListWURequest
+{
+    ESPenum WUTypes WUType;
+    string Wuid;
+    string Cluster;
+    string Owner;
+    string JobName;
+    string State;
+    string FromDate;
+    string ToDate;
+
+    bool Archived(false);
+    bool Online(false);
+
+    bool IncludeDT(false);
+    string BeforeWU;
+    string AfterWU;
+    unsigned MaxNumberWUs(500);
+    bool Descending(false);
+    string OutputFields; //example: Cluster,State
+};
+
 ESPservice [auth_feature("DEFERRED"), //This declares that the method logic handles feature level authorization
-    version("1.00"), default_client_version("1.00"), exceptions_inline("./smc_xslt/exceptions.xslt")] WSSasha
+    version("1.01"), default_client_version("1.01"), exceptions_inline("./smc_xslt/exceptions.xslt")] WSSasha
 {
     ESPmethod [auth_feature("SashaAccess:Access")] GetVersion(GetVersionRequest, ResultResponse);
     ESPmethod [auth_feature("SashaAccess:FULL")] ArchiveWU(ArchiveWURequest, ResultResponse); //archive ECL WUs or DFU WUs
     ESPmethod [auth_feature("SashaAccess:FULL")] RestoreWU(RestoreWURequest, ResultResponse); //restore ECL WUs or DFU WUs
+    ESPmethod [auth_feature("SashaAccess:READ"), min_ver("1.01")] ListWU(ListWURequest, ResultResponse); //list ECL WUs or DFU WUs in Archive server.
 };
 
 SCMexportdef(WSSasha);
