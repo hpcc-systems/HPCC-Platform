@@ -261,9 +261,8 @@ bool CWUXMLInfo::buildXmlResultList(IConstWorkUnit &wu,IPropertyTree& XMLStructu
                 }
                 else
                 {
-                    value.append("   [");
-                    value.append(r.getResultTotalRowCount());
-                    value.append(" rows]");
+                    value.append("   ");
+                    r.getResultTotalRowCountString(value);
                     link.append(r.getResultSequence());
                 }
                 IPropertyTree* result = resultsTree->addPropTree("WUResult", createPTree(ipt_caseInsensitive));
