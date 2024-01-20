@@ -954,9 +954,17 @@ private:
         {
             container = _container;
         }
-
+        virtual unsigned getWorkflowId() const override
+        {
+            return wfid;
+        }
+        void setWfid(unsigned _wfid)
+        {
+            wfid = _wfid;
+        }
     protected:
         EclSubGraph * container;
+        unsigned wfid = 0;
     } subgraphCodeContext;
 
 public:
@@ -1050,9 +1058,17 @@ class EclGraph : public CInterface
         {
             container = _container;
         }
-
+        virtual unsigned getWorkflowId() const override
+        {
+            return wfid;
+        }
+        void setWfid(unsigned _wfid)
+        {
+            wfid = _wfid;
+        }
     protected:
         EclGraph * container;
+        unsigned wfid = 0;
     } graphCodeContext;
 
 public:
@@ -1061,6 +1077,7 @@ public:
     {
         isLibrary = _isLibrary;
         graphCodeContext.set(_agent.queryCodeContext());
+        graphCodeContext.setWfid(wfid);
         graphCodeContext.setContainer(this);
         graphAgentContext.setCodeContext(&graphCodeContext);
         graphAgentContext.set(&_agent);
