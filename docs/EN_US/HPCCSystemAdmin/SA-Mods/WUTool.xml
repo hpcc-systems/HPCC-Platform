@@ -17,16 +17,15 @@
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
-      <colspec align="left" colwidth="125.55pt" />
+      <colspec align="left" colwidth="175.55pt" />
 
       <colspec />
 
       <tbody>
         <row>
-          <entry><emphasis role="bold">Actions</emphasis></entry>
+          <entry colsep="0"><emphasis role="bold">Actions</emphasis></entry>
 
-          <entry><ns:textPlaceholder
-          xmlns:ns="http://www.xmlmind.com/xmleditor/namespace/clipboard" /></entry>
+          <entry></entry>
         </row>
 
         <row>
@@ -51,6 +50,21 @@
           <entry>results &lt;workunits&gt;</entry>
 
           <entry>Dump results from specified workunits.</entry>
+        </row>
+
+        <row>
+          <entry>info &lt;workunits&gt; &lt;filter&gt;</entry>
+
+          <entry>This command provides filtered access to statistics and other
+          information from a workunit. <para>See the following table for
+          additional info parameter information. </para></entry>
+        </row>
+
+        <row>
+          <entry>analyze &lt;workunit&gt;</entry>
+
+          <entry>Analyze the workunit to highlight potential cost
+          savings</entry>
         </row>
 
         <row>
@@ -81,10 +95,10 @@
         </row>
 
         <row>
-          <entry>validate</entry>
+          <entry>validate [FIX=1]</entry>
 
-          <entry>Check contents of workunit repository for errors. [FIX=1]
-          will try to repair any issues found.</entry>
+          <entry>Check contents of workunit repository for errors. With
+          [FIX=1] will try to repair any issues found.</entry>
         </row>
 
         <row>
@@ -98,6 +112,218 @@
           <entry>initialize</entry>
 
           <entry>Initialize new workunit repository</entry>
+        </row>
+
+        <row>
+          <entry>graph &lt;wu&gt;</entry>
+
+          <entry>Generate an alternative representation of the graph with
+          execution details</entry>
+        </row>
+
+        <row>
+          <entry>activity &lt;wu&gt;</entry>
+
+          <entry><para>What activities are executed between a range of times
+          (in time order)</para><para>&lt;wu&gt; ["&gt;scope|mintime"]
+          ["&lt;scope|maxtime"] [threshold=n%]</para></entry>
+        </row>
+
+        <row>
+          <entry>hotspot &lt;wu&gt; [&lt;activity&gt;]</entry>
+
+          <entry>Find the hotspots for workunit (or one particular
+          activity)</entry>
+        </row>
+
+        <row>
+          <entry>critical &lt;wu&gt; &lt;activity&gt;</entry>
+
+          <entry>What activities are executed in order to execute
+          activity</entry>
+        </row>
+
+        <row>
+          <entry><programlisting role="tab">depend &lt;wu&gt; &lt;activity&gt; 
+&lt;activity&gt;</programlisting></entry>
+
+          <entry>Find the common paths between two activities</entry>
+        </row>
+
+        <row>
+          <entry>depend &lt;wu&gt; ?&lt;activity&gt;:startTime</entry>
+
+          <entry>Which dependencies take a large % of the start time for this
+          activity</entry>
+        </row>
+
+        <row>
+          <entry>help &lt;command&gt;</entry>
+
+          <entry>More help on a command</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The following table provides further information for the wutool
+  utility issued with the action=info parameter:</para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec align="left" colwidth="175.55pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry colsep="0"><emphasis role="bold">info
+          parameters</emphasis></entry>
+
+          <entry></entry>
+        </row>
+
+        <row>
+          <entry>info &lt;workunits&gt; &lt;filter&gt;</entry>
+
+          <entry>This command provides filtered access to statistics and other
+          information from a workunit. <para>The filter can include the
+          following elements (those denoted by * can be repeated):
+          </para></entry>
+        </row>
+
+        <row>
+          <entry colsep="0"></entry>
+
+          <entry><emphasis role="bold">Which scopes are
+          matched</emphasis>:</entry>
+        </row>
+
+        <row>
+          <entry><programlisting role="tab">  
+          scope[&lt;scope-id&gt;]*</programlisting></entry>
+
+          <entry>scope to match</entry>
+        </row>
+
+        <row>
+          <entry><programlisting role="tab">  
+          stype[&lt;scope-type&gt;]*</programlisting></entry>
+
+          <entry>scope type to match</entry>
+        </row>
+
+        <row rowsep="0">
+          <entry><programlisting role="tab">  id[&lt;id&gt;]*</programlisting></entry>
+
+          <entry>the id of a scope to to match</entry>
+        </row>
+
+        <row>
+          <entry></entry>
+
+          <entry><emphasis role="bold">NOTE</emphasis>: scope, stype and id
+          cannot be specified in the same filter</entry>
+        </row>
+
+        <row>
+          <entry><programlisting role="tab">  depth[n |
+          low..high]</programlisting></entry>
+
+          <entry>range of depths to search for a match</entry>
+        </row>
+
+        <row>
+          <entry><programlisting role="tab">  source[global|stats|graph|all]*</programlisting></entry>
+
+          <entry>which sources within the workunit to search. Defaults to the
+          optimal sources for the rest of the filter</entry>
+        </row>
+
+        <row>
+          <entry><programlisting role="tab">  where[&lt;statistickind&gt; | &lt;statistickind&gt; 
+(=|&lt;|&lt;=|&gt;|&gt;=) value | 
+&lt;statistickind&gt;=low..high]</programlisting></entry>
+
+          <entry>filter by statistic existence or value range</entry>
+        </row>
+
+        <row rowsep="0">
+          <entry colsep="0"></entry>
+
+          <entry><emphasis role="bold">Which scopes are include in the
+          results:</emphasis></entry>
+        </row>
+
+        <row>
+          <entry><programlisting role="tab">  matched[true|false]</programlisting></entry>
+
+          <entry>are the matched scopes returned?</entry>
+        </row>
+
+        <row>
+          <entry><programlisting role="tab">  nested[&lt;depth&gt;|all]</programlisting></entry>
+
+          <entry>what nesting of scopes within a matched scope are in the
+          results (defaults to '0' if matched[true] and 'all' if
+          matched[false])</entry>
+        </row>
+
+        <row>
+          <entry><programlisting role="tab">  includetype[&lt;scope-type&gt;]*</programlisting></entry>
+
+          <entry>which scope types should be included?</entry>
+        </row>
+
+        <row>
+          <entry colsep="0"></entry>
+
+          <entry><emphasis role="bold">Which information about a scope is
+          reported:</emphasis></entry>
+        </row>
+
+        <row>
+          <entry><programlisting role="tab">  properties[statistics|hints|
+attributes|scope|all]*</programlisting></entry>
+
+          <entry></entry>
+        </row>
+
+        <row>
+          <entry><programlisting role="tab">  statistic[&lt;statistic-kind&gt;|none|all]*</programlisting></entry>
+
+          <entry></entry>
+        </row>
+
+        <row>
+          <entry><programlisting role="tab">  attribute[&lt;attribute-name&gt;|none|all]*</programlisting></entry>
+
+          <entry></entry>
+        </row>
+
+        <row>
+          <entry><programlisting role="tab">  hint[&lt;hint-name&gt;]*</programlisting></entry>
+
+          <entry></entry>
+        </row>
+
+        <row>
+          <entry><programlisting role="tab">  property[&lt;statistic-kind&gt;|
+&lt;attribute-name&gt;|&lt;hint-name&gt;]*</programlisting></entry>
+
+          <entry>include property (category is deduced)</entry>
+        </row>
+
+        <row>
+          <entry><programlisting role="tab">  measure[&lt;measure&gt;]</programlisting></entry>
+
+          <entry>all statistics with a particular measure</entry>
+        </row>
+
+        <row>
+          <entry><programlisting role="tab">  version[&lt;version&gt;]</programlisting></entry>
+
+          <entry>minimum version to return</entry>
         </row>
       </tbody>
     </tgroup>
