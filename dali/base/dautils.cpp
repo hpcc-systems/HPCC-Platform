@@ -119,7 +119,19 @@ IPropertyTree * getDropZonePlane(const char * name)
 
 bool isPathInPlane(IPropertyTree *plane, const char *path)
 {
-    return isEmptyString(path) || startsWith(path, plane->queryProp("@prefix"));
+    if (isEmptyString(path))
+        return true;
+
+    StringBuffer prefix(plane->queryProp("@prefix"));
+    const char *p = addPathSepChar(prefix).str(); //Add a trailing path separator to the prefix if it does not have one.
+    //There are 3 options for a path to be in a plane:
+    //1. the path is the same as the prefix (with a trailing path separator).
+    //2. the path = the prefix - the trailing path separator. //For example, prefix='/parent_folder/mydropzone/' and path='/parent_folder/mydropzone'.
+    //3. the path = the prefix + a substring.
+    while (*p && *p == *path) { path++; p++; }
+    if (*p == 0)
+        return true; //found the option 1 and 3.
+    return (strlen(p) == 1) && isPathSepChar(p[0]) && (*path == 0); //check the option 2.
 }
 
 bool validateDropZone(IPropertyTree * plane, const char * path, const char * host, bool ipMatch)
