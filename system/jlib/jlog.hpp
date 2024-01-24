@@ -281,9 +281,11 @@ typedef unsigned LogMsgId;
 
 typedef unsigned __int64 LogMsgJobId;
 typedef unsigned __int64 LogMsgUserId;
+typedef unsigned __int64 LogMsgTraceInfoId; //Not a traceID, but a table reference of it
 typedef unsigned __int64 LogMsgSessionId;
 constexpr LogMsgJobId UnknownJob = (LogMsgJobId)-1;
 constexpr LogMsgUserId UnknownUser = (LogMsgUserId)-1;
+constexpr LogMsgTraceInfoId UnknownTraceInfoId = (LogMsgTraceInfoId)-1; //just following the convention of UnknownJob
 constexpr LogMsgSessionId UnknownSession = (LogMsgSessionId)-1;
 
 // Other enums, typedefs, and consts
@@ -318,7 +320,9 @@ typedef enum
     MSGFIELD_component   = 0x010000,
     MSGFIELD_quote       = 0x020000,
     MSGFIELD_prefix      = 0x040000,
-    MSGFIELD_last        = 0x040000,
+    MSGFIELD_trace       = 0x080000,
+    MSGFIELD_span        = 0x100000,
+    MSGFIELD_last        = 0x100000,
     MSGFIELD_all         = 0xFFFFFF
 } LogMsgField;
 
@@ -327,6 +331,7 @@ typedef enum
 #define MSGFIELD_LEGACY LogMsgField(MSGFIELD_timeDate | MSGFIELD_milliTime | MSGFIELD_msgID | MSGFIELD_process | MSGFIELD_thread | MSGFIELD_code | MSGFIELD_quote | MSGFIELD_prefix)
 #else
 
+//should trace/span be included in the standard fields? As-is, stderr output will not include trace/span 
 #ifdef _CONTAINERIZED
 #define MSGFIELD_STANDARD LogMsgField(MSGFIELD_job | MSGFIELD_timeDate | MSGFIELD_milliTime | MSGFIELD_msgID | MSGFIELD_process | MSGFIELD_thread | MSGFIELD_code | MSGFIELD_quote | MSGFIELD_class | MSGFIELD_audience)
 #else
@@ -375,6 +380,10 @@ inline const char * LogMsgFieldToString(LogMsgField field)
         return("Component");
     case MSGFIELD_quote:
         return("Quote");
+    case MSGFIELD_trace:
+        return("Trace ID");
+    case MSGFIELD_span:
+        return("Span ID");
     default:
         return("UNKNOWN");
     }
@@ -404,6 +413,10 @@ inline unsigned LogMsgFieldFromAbbrev(char const * abbrev)
         return MSGFIELD_job;
     if(strnicmp(abbrev, "USE", 3)==0)
         return MSGFIELD_user;
+    if(strnicmp(abbrev, "TRC", 3)==0)
+        return MSGFIELD_trace;
+    if(strnicmp(abbrev, "SPN", 3)==0)
+        return MSGFIELD_span;
     if(strnicmp(abbrev, "SES", 3)==0)
         return MSGFIELD_session;
     if(strnicmp(abbrev, "COD", 3)==0)
@@ -588,15 +601,46 @@ private:
     bool                      isDeserialized = false;
 };
 
+class jlib_decl LogMsgTraceInfo
+{
+public:
+    constexpr LogMsgTraceInfo(LogMsgTraceInfoId _traceID = UnknownTraceInfoId)  :
+        traceInfoId(_traceID), traceIDStr("UNK"), spanIDStr("UNK")
+    {}
+    //LogMsgTraceInfo(LogMsgTraceInfo & traceInfo) = delete;
+    LogMsgTraceInfo(const LogMsgTraceInfo & _traceInfo) :
+        traceInfoId(_traceInfo.queryTraceID())
+    {
+        traceIDStr = _traceInfo.queryTraceIDStr();
+        spanIDStr = _traceInfo.querySpanIDStr();
+    }
+
+    ~LogMsgTraceInfo() {};
+
+    LogMsgTraceInfoId queryTraceID() const { return traceInfoId; };
+    const char * queryTraceIDStr() const { return traceIDStr;}
+    const char * querySpanIDStr() const { return spanIDStr;};
+    void setTraceIDStr(const char * theTraceID) { traceIDStr = theTraceID;};
+    void setSpanIDStr(const char * theSpanID) { spanIDStr = theSpanID;};
+    void setTraceID(LogMsgTraceInfoId id) { traceInfoId = id;};
+    void serialize(MemoryBuffer & out) const;
+    void deserialize(MemoryBuffer & in);
+private:
+    LogMsgTraceInfoId     traceInfoId;
+    const char *          traceIDStr;
+    const char *          spanIDStr;
+    bool                  isDeserialized = false;
+};
+
 class jlib_decl LogMsg : public CInterface
 {
 public:
-    LogMsg() : category(), sysInfo(), jobInfo(), remoteFlag(false) {}
+    LogMsg() : category(), sysInfo(), jobInfo(), traceInfo(), remoteFlag(false) {}
     LogMsg(LogMsgJobId id, const char *job);  // Used for tracking job ids
-    LogMsg(const LogMsgCategory & _cat, LogMsgId _id, const LogMsgJobInfo & _jobInfo, LogMsgCode _code, const char * _text, unsigned port, LogMsgSessionId session);
+    LogMsg(LogMsgTraceInfoId traceID, const char * theTraceID, const char * theSpanID);
     LogMsg(const LogMsgCategory & _cat, LogMsgId _id, const LogMsgJobInfo & _jobInfo, LogMsgCode _code, size32_t sz, const char * _text, unsigned port, LogMsgSessionId session);
-    LogMsg(const LogMsgCategory & _cat, LogMsgId _id, const LogMsgJobInfo & _jobInfo, LogMsgCode _code, const char * format, va_list args,
-           unsigned port, LogMsgSessionId session)  __attribute__((format(printf,6, 0)));
+    LogMsg(const LogMsgCategory & _cat, LogMsgId _id, const LogMsgJobInfo & _jobInfo, LogMsgCode _code, const char * format, va_list args, unsigned port, LogMsgSessionId session)  __attribute__((format(printf,6, 0)));
+    LogMsg(const LogMsgCategory & _cat, LogMsgId _id, const LogMsgJobInfo & _jobInfo, LogMsgCode _code, const char * _text, unsigned port, LogMsgSessionId session);
     StringBuffer &            toStringPlain(StringBuffer & out, unsigned fields) const;
     StringBuffer &            toStringXML(StringBuffer & out, unsigned fields) const;
     StringBuffer &            toStringJSON(StringBuffer & out, unsigned fields) const;
@@ -606,15 +650,17 @@ public:
     inline const LogMsgCategory  queryCategory() const { return category; }
     inline const LogMsgSysInfo & querySysInfo() const { return sysInfo; }
     inline const LogMsgJobInfo & queryJobInfo() const { return jobInfo; }
+    inline const LogMsgTraceInfo & queryTraceInfo() const { return traceInfo; }
     inline LogMsgCode         queryCode() const { return msgCode; }
     inline const char *       queryText() const { return text.str(); }
-    void                      serialize(MemoryBuffer & out) const { category.serialize(out); sysInfo.serialize(out); jobInfo.serialize(out); out.append(msgCode); text.serialize(out); }
+    void                      serialize(MemoryBuffer & out) const { category.serialize(out); sysInfo.serialize(out); jobInfo.serialize(out); traceInfo.serialize(out); out.append(msgCode); text.serialize(out); }
     void                      deserialize(MemoryBuffer & in);
     bool                      queryRemoteFlag() const { return remoteFlag; }
 protected:
     LogMsgCategory            category;
     LogMsgSysInfo             sysInfo;
     LogMsgJobInfo             jobInfo;
+    LogMsgTraceInfo           traceInfo;
     LogMsgCode                msgCode = NoLogMsgCode;
     StringBuffer              text;
     bool                      remoteFlag = false;
@@ -734,8 +780,11 @@ interface jlib_decl ILogMsgManager : public ILogMsgListener
     virtual bool              rejectsCategory(const LogMsgCategory & cat) const = 0;
     virtual offset_t          getLogPosition(StringBuffer &logFileName, const ILogMsgHandler * handler) const = 0;
     virtual LogMsgJobId       addJobId(const char *job) = 0;
+    virtual LogMsgTraceInfoId addTraceInfo(const char * theTraceID, const char * theSpanID) = 0;
     virtual void              removeJobId(LogMsgJobId) = 0;
+    virtual void              removeTraceId(LogMsgTraceInfoId) = 0;
     virtual const char *      queryJobId(LogMsgJobId id) const = 0;
+    virtual LogMsgTraceInfo * queryTraceInfo(LogMsgTraceInfoId id) const = 0;
 };
 
 // CONCRETE CLASSES
@@ -870,6 +919,7 @@ inline LogMsgCategory MCexception(IException * e, LogMsgClass cls = MSGCLS_error
 #define MCwarning MCuserWarning
 #define MCprogress MCuserProgress
 
+extern jlib_decl const LogMsgTraceInfo unknownTrace;
 extern jlib_decl const LogMsgJobInfo unknownJob;
 
 // Function to return manager, standard handler and the reporters, and the handler's message fields
@@ -882,6 +932,9 @@ extern jlib_decl void setupContainerizedLogMsgHandler();
 
 extern jlib_decl void setDefaultJobId(const char *id, bool threaded = false);
 extern jlib_decl void setDefaultJobId(LogMsgJobId id, bool threaded = false);
+
+extern jlib_decl LogMsgTraceInfoId setDefaultTraceInfo(const char *theTraceID, const char *theSpanID, bool threaded = false);
+extern jlib_decl LogMsgTraceInfoId setDefaultTraceInfo(LogMsgTraceInfoId id, bool threaded = false);
 
 // Macros to make logging as simple as possible
 

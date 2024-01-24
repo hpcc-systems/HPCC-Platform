@@ -171,7 +171,7 @@ void *Thread::_threadmain(void *v)
 #endif
 {
     Thread * t = (Thread *)v;
-    resetThreadLogging(t->logctx, t->traceFlags);
+    resetThreadLogging(t->logctx, t->traceFlags, t->traceInfoId);
 #ifdef _WIN32
     if (SEHHandling) 
         EnableSEHtranslation();
@@ -374,17 +374,19 @@ void Thread::init(const char *_name)
     prioritydelta = 0;
     nicelevel = 0;
     stacksize = 0; // default is EXE default stack size  (set by /STACK)
+    getThreadLoggingInfo(); //get the current thread logging info, was this working before?
 }
 
 void Thread::getThreadLoggingInfo()
 {
-    ::getThreadLoggingInfo(logctx, traceFlags);
+    ::getThreadLoggingInfo(logctx, traceFlags, traceInfoId);
 }
 
-void Thread::setThreadLoggingInfo(const IContextLogger *_logctx, TraceFlags _traceFlags)
+void Thread::setThreadLoggingInfo(const IContextLogger *_logctx, TraceFlags _traceFlags, unsigned __int64 _traceInfoId)
 {
     logctx = _logctx;
     traceFlags = _traceFlags;
+    traceInfoId = _traceInfoId;
 }
 
 void Thread::start()
@@ -577,7 +579,7 @@ void CThreadedPersistent::threadmain()
             break;
         try
         {
-            resetThreadLogging(athread.logctx, athread.traceFlags);
+            resetThreadLogging(athread.logctx, athread.traceFlags, athread.traceInfoId);
             owner->threadmain();
             // Note we do NOT call the thread reset hook here - these threads are expected to be able to preserve state, I think
         }
@@ -836,6 +838,7 @@ protected: friend class CPooledThreadWrapper;
     unsigned targetpoolsize;
     unsigned delay;
     const IContextLogger *logctx = nullptr;
+    unsigned __int64 traceInfoId = UnknownTraceInfoId;
     TraceFlags traceFlags = queryDefaultTraceFlags();
     Semaphore availsem;
     std::atomic_uint numrunning{0};
@@ -898,7 +901,7 @@ public:
                 if (parent.stopall)
                     break;
             }
-            resetThreadLogging(logctx, traceFlags);
+            resetThreadLogging(logctx, traceFlags, traceInfoId);
             parent.notifyStarted(this);
             try
             {
@@ -1292,12 +1295,13 @@ public:
     }
     void getThreadLoggingInfo()
     {
-        ::getThreadLoggingInfo(logctx, traceFlags);
+        ::getThreadLoggingInfo(logctx, traceFlags, traceInfoId);
     }
-    void setThreadLoggingInfo(const IContextLogger *_logctx, TraceFlags _traceFlags)
+    void setThreadLoggingInfo(const IContextLogger *_logctx, TraceFlags _traceFlags, unsigned __int64 _traceInfoId)
     {
         logctx = _logctx;
         traceFlags = _traceFlags;
+        traceInfoId = _traceInfoId;
     }
 };
 

@@ -131,7 +131,7 @@ void LogMsgSysInfo::deserialize(MemoryBuffer & in)
 
 class LoggingFieldColumns
 {
-    const EnumMapping MsgFieldMap[16] =
+    const EnumMapping MsgFieldMap[18] =
     {
         { MSGFIELD_msgID,     "MsgID    " },
         { MSGFIELD_audience,  "Audience " },
@@ -148,6 +148,8 @@ class LoggingFieldColumns
         { MSGFIELD_job,       "JobID  " },
         { MSGFIELD_user,      "UserID  " },
         { MSGFIELD_component, "Compo " },
+        { MSGFIELD_trace,     "Trace " },
+        { MSGFIELD_span,      "Span " },
         { MSGFIELD_quote,     "Quoted "}
     };
     const unsigned sizeMsgFieldMap = arraysize(MsgFieldMap);
@@ -227,7 +229,6 @@ unsigned getPositionOfField(unsigned logfields, unsigned positionoffield)
 }
 
 // LogMsg
-
 LogMsgJobInfo::~LogMsgJobInfo()
 {
     if (isDeserialized)
@@ -260,6 +261,13 @@ void LogMsgJobInfo::setJobID(LogMsgUserId id)
     isDeserialized = false;
 }
 
+void LogMsgTraceInfo::serialize(MemoryBuffer & out) const
+{
+    out.append(traceIDStr);
+    out.append(" ");
+    out.append(spanIDStr);
+}
+
 void LogMsgJobInfo::serialize(MemoryBuffer & out) const
 {
     if (isDeserialized)
@@ -267,6 +275,15 @@ void LogMsgJobInfo::serialize(MemoryBuffer & out) const
     else
         out.append(theManager->queryJobId(jobID));
     out.append(userID);
+}
+
+void LogMsgTraceInfo::deserialize(MemoryBuffer & in)
+{
+    dbgassertex(in.remaining() >= sizeof(LogMsgTraceInfoId)); // should always be at least this amount, because userID follows the jobID
+    StringBuffer idStr;
+    in.read(idStr);
+    traceIDStr = idStr.detach();
+    isDeserialized = true; //meaninglesss for traceID but consistent with jobID
 }
 
 void LogMsgJobInfo::deserialize(MemoryBuffer & in)
@@ -292,28 +309,33 @@ void LogMsgJobInfo::deserialize(MemoryBuffer & in)
 }
 
 static LogMsgJobInfo globalDefaultJobInfo(UnknownJob, UnknownUser);
+static LogMsgTraceInfoId globalDefaultTraceInfoId = UnknownTraceInfoId;
 
 // NOTE - extern thread_local variables are very inefficient - don't be tempted to expose the variables directly
 
 static  TraceFlags defaultTraceFlags = TraceFlags::Standard;
 static thread_local LogMsgJobInfo defaultJobInfo;
+static thread_local LogMsgTraceInfoId defaultTraceInfoId;
 static thread_local TraceFlags threadTraceFlags = TraceFlags::Standard;
 static thread_local const IContextLogger *default_thread_logctx = nullptr;
 
 const LogMsgJobInfo unknownJob(UnknownJob, UnknownUser);
+const LogMsgTraceInfo unknownTrace(UnknownTraceInfoId);
 
-void getThreadLoggingInfo(const IContextLogger * &_logctx, TraceFlags &_traceFlags)
+void getThreadLoggingInfo(const IContextLogger * &_logctx, TraceFlags &_traceFlags, unsigned __int64 &_traceInfoId)
 {
     _logctx = default_thread_logctx;
     _traceFlags = threadTraceFlags;
+    _traceInfoId = defaultTraceInfoId;
 }
 
-void resetThreadLogging(const IContextLogger *_logctx, TraceFlags _traceFlags)
+void resetThreadLogging(const IContextLogger *_logctx, TraceFlags _traceFlags, unsigned __int64 _traceInfoId)
 {
     // Note - as implemented the thread default job info is determined by what the global one was when the thread was created.
     // There is an alternative interpretation, that an unset thread-local one should default to whatever the global one is at the time the thread one is used.
     // In practice I doubt there's a lot of difference as global one is likely to be set once at program startup
     defaultJobInfo = globalDefaultJobInfo;
+    setDefaultTraceInfo(_traceInfoId, true);
     default_thread_logctx = _logctx;
     threadTraceFlags = _traceFlags;
 }
@@ -325,6 +347,37 @@ const LogMsgJobInfo & checkDefaultJobInfo(const LogMsgJobInfo & _jobInfo)
         return defaultJobInfo;
     }
     return _jobInfo;
+}
+
+const LogMsgTraceInfo & checkDefaultTraceInfo(const LogMsgTraceInfo & _traceInfo)
+{
+    if (&_traceInfo == &unknownTrace)
+    {
+        if (defaultTraceInfoId != UnknownTraceInfoId)
+        {
+            LogMsgTraceInfo * traceInfo = theManager->queryTraceInfo(defaultTraceInfoId);
+            if (traceInfo)
+                return *traceInfo;
+        }
+
+        return unknownTrace;
+    }
+
+    return _traceInfo;
+}
+
+LogMsgTraceInfoId setDefaultTraceInfo(const char *theTraceID, const char *theSpanID, bool threaded)
+{
+    return setDefaultTraceInfo(theManager->addTraceInfo(theTraceID, theSpanID), threaded);
+}
+
+LogMsgTraceInfoId setDefaultTraceInfo(LogMsgTraceInfoId id, bool threaded)
+{
+    if (!threaded)
+        globalDefaultTraceInfoId = id;
+    defaultTraceInfoId = id;
+
+    return defaultTraceInfoId;
 }
 
 void setDefaultJobId(const char *id, bool threaded)
@@ -339,27 +392,35 @@ void setDefaultJobId(LogMsgJobId id, bool threaded)
     defaultJobInfo.setJobID(id);
 }
 
-LogMsg::LogMsg(LogMsgJobId id, const char *job) : category(MSGAUD_programmer, job ? MSGCLS_addid : MSGCLS_removeid), sysInfo(), jobInfo(id), remoteFlag(false)
+LogMsg::LogMsg(LogMsgJobId id, const char *job) 
+: category(MSGAUD_programmer, job ? MSGCLS_addid : MSGCLS_removeid), sysInfo(), jobInfo(id), traceInfo(), remoteFlag(false)
 {
     if (job)
         text.append(job);
 }
 
+LogMsg::LogMsg(LogMsgTraceInfoId traceID, const char * theTraceID, const char * theSpanID) 
+: category(MSGAUD_all, theTraceID ? MSGCLS_addid : MSGCLS_removeid), sysInfo(), jobInfo(), traceInfo(traceID), remoteFlag(false)
+{
+    traceInfo.setTraceIDStr(theTraceID);
+    traceInfo.setSpanIDStr(theSpanID);
+}
+
 LogMsg::LogMsg(const LogMsgCategory & _cat, LogMsgId _id, const LogMsgJobInfo & _jobInfo, LogMsgCode _code, const char * _text, unsigned port, LogMsgSessionId session)
-  : category(_cat), sysInfo(_id, port, session), jobInfo(checkDefaultJobInfo(_jobInfo)), msgCode(_code), remoteFlag(false)
+  : category(_cat), sysInfo(_id, port, session), jobInfo(checkDefaultJobInfo(_jobInfo)), traceInfo(checkDefaultTraceInfo(unknownTrace)), msgCode(_code), remoteFlag(false)
 {
     text.append(_text);
 }
 
 LogMsg::LogMsg(const LogMsgCategory & _cat, LogMsgId _id, const LogMsgJobInfo & _jobInfo, LogMsgCode _code, size32_t sz, const char * _text, unsigned port, LogMsgSessionId session)
-  : category(_cat), sysInfo(_id, port, session), jobInfo(checkDefaultJobInfo(_jobInfo)), msgCode(_code), remoteFlag(false)
+  : category(_cat), sysInfo(_id, port, session), jobInfo(checkDefaultJobInfo(_jobInfo)), traceInfo(checkDefaultTraceInfo(unknownTrace)), msgCode(_code), remoteFlag(false)
 {
     text.append(sz, _text);
 }
 
 LogMsg::LogMsg(const LogMsgCategory & _cat, LogMsgId _id, const LogMsgJobInfo & _jobInfo, LogMsgCode _code, const char * format, va_list args,
        unsigned port, LogMsgSessionId session)
-  : category(_cat), sysInfo(_id, port, session), jobInfo(checkDefaultJobInfo(_jobInfo)), msgCode(_code), remoteFlag(false)
+  : category(_cat), sysInfo(_id, port, session), jobInfo(checkDefaultJobInfo(_jobInfo)), traceInfo(checkDefaultTraceInfo(unknownTrace)), msgCode(_code), remoteFlag(false)
 {
     text.valist_appendf(format, args);
 }
@@ -426,6 +487,16 @@ StringBuffer & LogMsg::toStringPlain(StringBuffer & out, unsigned fields) const
             out.append("usr=unknown ");
         else
             out.appendf("usr=%" I64F "u ", jobInfo.queryUserID());
+    }
+    if(fields & MSGFIELD_trace)
+    {
+        out.appendf("trc=%s ", traceInfo.queryTraceIDStr());
+        //it seems the existing convention is to use 3 char abbreviation
+    }
+    if (fields & MSGFIELD_span)
+    {
+        out.appendf("spn=%s ", traceInfo.querySpanIDStr());
+        //it seems the existing convention is to use 3 char abbreviation
     }
     if (fields & MSGFIELD_quote)
         out.append('"');
@@ -511,6 +582,14 @@ StringBuffer & LogMsg::toStringXML(StringBuffer & out, unsigned fields) const
         else
             out.append("UserID=\"").append(jobInfo.queryUserID()).append("\" ");
     }
+    if(fields & MSGFIELD_trace)
+    {
+        out.append("TraceID=\"").append(traceInfo.queryTraceIDStr()).append("\" ");
+    }
+    if (fields & MSGFIELD_span)
+    {
+        out.append("SpanID=\"").append(traceInfo.querySpanIDStr()).append("\" ");
+    }
 #ifdef LOG_MSG_NEWLINE
     if(fields & MSGFIELD_allJobInfo) out.append("\n     ");
 #endif
@@ -586,6 +665,14 @@ StringBuffer & LogMsg::toStringJSON(StringBuffer & out, unsigned fields) const
         else
             out.append(", \"USER\": \"").append(jobInfo.queryUserID()).append("\"");
     }
+    if(fields & MSGFIELD_trace)
+    {
+        out.appendf("\"TRACEID\"=\"%s\"", traceInfo.queryTraceIDStr());
+    }
+    if (fields & MSGFIELD_span)
+    {
+        out.appendf("\"SPANID\"=\"%s\"",traceInfo.querySpanIDStr());
+    }
     if((fields & MSGFIELD_code) && (msgCode != NoLogMsgCode))
         out.append(", \"CODE\": \"").append(msgCode).append("\"");
 
@@ -650,6 +737,14 @@ StringBuffer & LogMsg::toStringTable(StringBuffer & out, unsigned fields) const
     {
         out.appendf("%-7s ", jobInfo.queryJobIDStr());
     }
+    if(fields & MSGFIELD_trace)
+    {
+        out.appendf("%s ", traceInfo.queryTraceIDStr());
+    }
+    if(fields & MSGFIELD_span)
+    {
+        out.appendf("%s ", traceInfo.querySpanIDStr());
+    }
     if(fields & MSGFIELD_user)
     {
         if(jobInfo.queryUserID() == UnknownUser)
@@ -690,6 +785,7 @@ void LogMsg::deserialize(MemoryBuffer & in)
     category.deserialize(in);
     sysInfo.deserialize(in);
     jobInfo.deserialize(in);
+    traceInfo.deserialize(in);
     in.read(msgCode);
     text.clear();
     text.deserialize(in);
@@ -1500,6 +1596,30 @@ CLogMsgManager::~CLogMsgManager()
     }
 }
 
+LogMsgTraceInfoId CLogMsgManager::addTraceInfo(const char * theTraceID, const char * theSpanID)
+{
+    LogMsgTraceInfoId ret = ++nextTraceInfoId;
+    pushMsg(new LogMsg(ret, theTraceID, theSpanID));
+    return ret;
+}
+
+void CLogMsgManager::removeTraceId(LogMsgTraceInfoId id)
+{
+    pushMsg(new LogMsg(id, nullptr, nullptr));
+}
+
+LogMsgTraceInfo * CLogMsgManager::queryTraceInfo(LogMsgTraceInfoId id) const
+{
+    // NOTE - thread safety is important here. We have to consider two things:
+    // 1. Whether an id (and therefore an entry in this table) can be invalidated between the return statement and someone using the result
+    //    It is up to the calling application to ensure that it does not call removeJobId() on an ID that may still be being used for logging by another thread.
+    // 2. Whether the table lookup may coincide with a table add, and crash in getValue/setValue
+    //    This is a non-issue in queueing mode as all gets/sets happen on a single thread, but we lock to be on the safe side
+
+    CriticalBlock b(traceIdLock);
+    return traceInfos.getValue(id);
+}
+
 LogMsgJobId CLogMsgManager::addJobId(const char *job)
 {
     LogMsgJobId ret = ++nextJobId;
@@ -1535,6 +1655,18 @@ void CLogMsgManager::doRemoveJobId(LogMsgJobId id) const
 {
     CriticalBlock b(jobIdLock);
     jobIds.remove(id);
+}
+
+void CLogMsgManager::doAddTraceInfo(LogMsgTraceInfoId id, LogMsgTraceInfo logMsgTraceInfo) const
+{
+    CriticalBlock b(traceIdLock);
+    traceInfos.setValue(id, logMsgTraceInfo);
+}
+
+void CLogMsgManager::doRemoveTraceInfo(LogMsgTraceInfoId id) const
+{
+    CriticalBlock b(traceIdLock);
+    traceInfos.remove(id);
 }
 
 void CLogMsgManager::enterQueueingMode()
@@ -1698,10 +1830,16 @@ void CLogMsgManager::doReport(const LogMsg & msg) const
         switch (msg.queryCategory().queryClass())
         {
         case MSGCLS_addid:
-            doAddJobId(msg.queryJobInfo().queryJobID(), msg.queryText());
+            if (msg.queryTraceInfo().queryTraceID() != UnknownTraceInfoId)
+                doAddTraceInfo(msg.queryTraceInfo().queryTraceID(), msg.queryTraceInfo());
+            else
+                doAddJobId(msg.queryJobInfo().queryJobID(), msg.queryText());
             break;
         case MSGCLS_removeid:
-            doRemoveJobId(msg.queryJobInfo().queryJobID());
+            if (msg.queryTraceInfo().queryTraceID() != UnknownTraceInfoId)
+                doRemoveTraceInfo(msg.queryTraceInfo().queryTraceID());
+            else
+                doRemoveJobId(msg.queryJobInfo().queryJobID());
             break;
         default:
             ReadLockBlock block(monitorLock);
@@ -2337,8 +2475,11 @@ public:
     virtual bool              rejectsCategory(const LogMsgCategory & cat) const override { return true; }
     virtual offset_t          getLogPosition(StringBuffer &logFileName, const ILogMsgHandler * handler) const override { return 0; }
     virtual LogMsgJobId       addJobId(const char *job) override { return 0; }
+    virtual LogMsgTraceInfoId addTraceInfo(const char * theTraceID, const char * theSpanID) override { return 0; }
     virtual void              removeJobId(LogMsgJobId) override {}
+    virtual void              removeTraceId(LogMsgTraceInfoId) override {}
     virtual const char *      queryJobId(LogMsgJobId id) const override { return ""; }
+    virtual LogMsgTraceInfo * queryTraceInfo(LogMsgTraceInfoId id) const override { return nullptr; }
 };
 
 static CNullManager nullManager;
@@ -2427,7 +2568,7 @@ void setupContainerizedLogMsgHandler()
 
         if (logConfig->hasProp(logFieldsAtt))
         {
-            //Supported logging fields: AUD,CLS,DET,MID,TIM,DAT,PID,TID,NOD,JOB,USE,SES,COD,MLT,MCT,NNT,COM,QUO,PFX,ALL,STD
+            //Supported logging fields: TRC,SPN,AUD,CLS,DET,MID,TIM,DAT,PID,TID,NOD,JOB,USE,SES,COD,MLT,MCT,NNT,COM,QUO,PFX,ALL,STD
             const char *logFields = logConfig->queryProp(logFieldsAtt);
             if (!isEmptyString(logFields))
                 theStderrHandler->setMessageFields(logMsgFieldsFromAbbrevs(logFields));

@@ -696,6 +696,7 @@ class DropLogMsg;
 // Implementation of logging manager
 
 typedef MapBetween<LogMsgJobId, LogMsgJobId, StringAttr, const char *> MapLogMsgJobIdToStr;
+typedef MapBetween<LogMsgTraceInfoId, LogMsgTraceInfoId, LogMsgTraceInfo, LogMsgTraceInfo> MapLogMsgTraceInfoIdToTraceInfo;
 
 class CLogMsgManager : public ILogMsgManager, public CInterface
 {
@@ -779,6 +780,9 @@ public:
     bool                      rejectsCategory(const LogMsgCategory & cat) const;
     virtual offset_t          getLogPosition(StringBuffer &logFileName, const ILogMsgHandler * handler) const;
     virtual LogMsgJobId       addJobId(const char *job);
+    virtual LogMsgTraceInfoId addTraceInfo(const char * theTraceID, const char * theSpanID);
+    virtual LogMsgTraceInfo * queryTraceInfo(LogMsgTraceInfoId id) const;
+    virtual void              removeTraceId(LogMsgTraceInfoId);
     virtual void              removeJobId(LogMsgJobId);
     virtual const char *      queryJobId(LogMsgJobId id) const;
 private:
@@ -792,6 +796,8 @@ private:
 
     void                      doAddJobId(LogMsgJobId id, const char *job) const;
     void                      doRemoveJobId(LogMsgJobId) const;
+    void                      doAddTraceInfo(LogMsgTraceInfoId id, LogMsgTraceInfo logMsgTraceInfo) const;
+    void                      doRemoveTraceInfo(LogMsgTraceInfoId id) const;
 
 private:
     CIArrayOf<LogMsgMonitor>  monitors;
@@ -807,6 +813,9 @@ private:
     std::atomic<LogMsgJobId>  nextJobId = { 0 };
     mutable MapLogMsgJobIdToStr jobIds;
     mutable CriticalSection   jobIdLock;
+    std::atomic<LogMsgTraceInfoId>  nextTraceInfoId = { 0 };
+    mutable MapLogMsgTraceInfoIdToTraceInfo traceInfos;
+    mutable CriticalSection   traceIdLock;
 };
 
 // Message indicating messages have been dropped
@@ -1004,7 +1013,7 @@ private:
 };
 
 // Reset logging-related thread-local variables, when a threadpool starts
-extern void resetThreadLogging(const IContextLogger *_logctx, TraceFlags _traceFlags);
-extern void getThreadLoggingInfo(const IContextLogger * &_logctx, TraceFlags &_traceFlags);
+extern void resetThreadLogging(const IContextLogger *_logctx, TraceFlags _traceFlags, unsigned __int64 _traceInfoId);
+extern void getThreadLoggingInfo(const IContextLogger * &_logctx, TraceFlags &_traceFlags, unsigned __int64 &_traceInfoId);
 
 #endif

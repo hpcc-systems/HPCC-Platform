@@ -65,6 +65,10 @@ interface ISpan : extends IInterface
     virtual void getClientHeaders(IProperties * clientHeaders) const = 0;
     virtual void toString(StringBuffer & out) const = 0;
     virtual void getLogPrefix(StringBuffer & out) const = 0;
+    virtual ISpan * queryParentSpan() const = 0;
+
+    //typedef unsigned __int64 LogMsgTraceInfoId; declared in jlog.hpp
+    virtual unsigned __int64 getLogTraceInfoId() const = 0;
 
     virtual ISpan * createClientSpan(const char * name) = 0;
     virtual ISpan * createInternalSpan(const char * name) = 0;
