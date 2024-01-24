@@ -579,12 +579,12 @@ export class MetricGraphWidget extends SVGZoomWidget {
         const context = this;
         this._renderElement.selectAll(".node,.edge,.cluster")
             .each(function () {
-                d3Select(this).selectAll("path,polygon")
+                d3Select(this).selectAll("path,polygon,ellipse")
                     .style("stroke", () => {
                         return context._selection[decodeID(this.id)] ? context.selectionGlowColor() : undefined;
                     })
                     ;
-                d3Select(this).selectAll("polygon")
+                d3Select(this).selectAll("path,polygon,ellipse")
                     .style("fill", () => {
                         return context._selection[decodeID(this.id)] ? "LightCyan" : undefined;
                     })
