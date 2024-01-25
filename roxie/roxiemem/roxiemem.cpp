@@ -72,7 +72,7 @@ namespace roxiemem {
 static unsigned memTraceLevel = 1;
 static memsize_t memTraceSizeLimit = 0;
 static const unsigned ScanReportThreshold = 10; // If average more than 10 scans per allocate then notify us.  More than 10 starts slowing the query down.
-static bool memTraceInconsistencies = true;
+bool memTraceInconsistencies = true;
 static bool memTraceReleaseWhenFree = true;
 
 void setMemTraceLevel(unsigned value)

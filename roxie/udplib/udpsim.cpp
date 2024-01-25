@@ -21,6 +21,7 @@
 #include "udpipmap.hpp"
 #include "roxiemem.hpp"
 #include "jptree.hpp"
+#include "jsecrets.hpp"
 #include "portlist.h"
 
 using roxiemem::DataBuffer;
@@ -39,6 +40,7 @@ static unsigned optWorkFrequency = 0;
 static bool restartSender = false;
 static bool restartReceiver = false;
 static bool sendFlowWithData = false;
+static bool encryptInTransit = true;
 
 static constexpr const char * defaultYaml = R"!!(
 version: "1.0"
@@ -51,6 +53,7 @@ udpsim:
   dropRequestToSendMorePackets: 0
   dropSendStartPackets: 0
   dropSendCompletedPackets: 0
+  encryptInTransit: true
   help: false
   minWork: 0                # minimum amount of work
   maxWork: 0                # maximum work per set of packets, if 0 use minWork
@@ -175,6 +178,9 @@ void initOptions(int argc, const char **argv)
     minWork = options->getPropInt("@minWork", 0);
     maxWork = options->getPropInt("@maxWork", 0);
     optWorkFrequency = options->getPropInt("@workFrequency", 0);
+    encryptInTransit = options->getPropBool("@encryptInTransit", true);
+    if (encryptInTransit)
+        setTestUdpKey();
 
     numThreads = options->getPropInt("@numThreads", 0);
     udpTraceLevel = options->getPropInt("@udpTraceLevel", 1);
@@ -238,44 +244,76 @@ unsigned numStarts(unsigned i)
     return 1;
 }
 
+static unsigned completedThreads = 0;
+
 void simulateTraffic()
 {
     const unsigned maxSendQueueSize = 100;
     try
     {
         myNode.setIp(IpAddress("1.2.3.4"));
-        Owned<IReceiveManager> rm = createReceiveManager(CCD_SERVER_FLOW_PORT, CCD_DATA_PORT, CCD_CLIENT_FLOW_PORT, numReceiveSlots, false);
+        Owned<IReceiveManager> rm = createReceiveManager(CCD_SERVER_FLOW_PORT, CCD_DATA_PORT, CCD_CLIENT_FLOW_PORT, numReceiveSlots, encryptInTransit);
+        Owned<roxiemem::IRowManager> rowManager = roxiemem::createRowManager(1024*1024*1024, NULL, queryDummyContextLogger(), NULL, false);
+        Owned<IMessageCollator> mc = rm->createMessageCollator(rowManager, 0);
         unsigned begin = msTick();
         std::atomic<unsigned> workValue{0};
 
-        asyncFor(numThreads+1, numThreads+1, [&workValue, maxSendQueueSize, &rm](unsigned i)
+        asyncFor(numThreads+1, numThreads+1, [&workValue, maxSendQueueSize, &rm, &mc, &rowManager](unsigned i)
         {
             if (!i)
             {
-                if (restartReceiver)
+                unsigned start = msTick();
+                while (completedThreads < numThreads)
                 {
-                    Sleep(1000);
-                    rm.clear();
-                    DBGLOG("Killed receiver");
-                    Sleep(500);
-                    DBGLOG("Restarting receiver");
-                    rm.setown(createReceiveManager(CCD_SERVER_FLOW_PORT, CCD_DATA_PORT, CCD_CLIENT_FLOW_PORT, numReceiveSlots, false));
+                    bool anyActivity = false;
+                    Owned<IMessageResult> mr = mc->getNextResult(10, anyActivity);
+                    if (mr)
+                    {
+                        unsigned headerLen;
+                        unsigned *header = (unsigned *) mr->getMessageHeader(headerLen);
+                        Owned<IMessageUnpackCursor> mu = mr->getCursor(rowManager);
+                        byte *data = (byte *) mu->getNext(500);
+                        if (data && mu->atEOF() && headerLen==sizeof(unsigned))
+                        {
+                            for (unsigned j = 0; j < 500; j++)
+                                if (data[j] != (byte) j)
+                                {
+                                    DBGLOG("Dodgy data received from thread %u at position %u", *header, j);
+                                    break;
+                                }
+                        }
+                        else
+                            DBGLOG("Unexpected data received");
+                        ReleaseRoxieRow(data);
+                    }
+                    if (restartReceiver && msTick()-start >= 100)
+                    {
+                        roxiemem::memTraceInconsistencies = false;
+                        restartReceiver = false;
+                        rm.clear();
+                        DBGLOG("Killed receiver");
+                        Sleep(500);
+                        DBGLOG("Restarting receiver");
+                        rm.setown(createReceiveManager(CCD_SERVER_FLOW_PORT, CCD_DATA_PORT, CCD_CLIENT_FLOW_PORT, numReceiveSlots, encryptInTransit));
+                        mc.setown(rm->createMessageCollator(rowManager, 0));
+                        roxiemem::memTraceInconsistencies = true;
+                    }
                 }
             }
             else
             {
-                unsigned header = 0;
+                unsigned header = i;
                 const unsigned serverFlowPort = sendFlowWithData ? CCD_DATA_PORT : CCD_SERVER_FLOW_PORT;
                 unsigned myStarts = numStarts(i);
                 for (unsigned startNo = 0; startNo < myStarts; startNo++)
                 {
                     IpAddress pretendIP(VStringBuffer("8.8.8.%d", i));
                     // Note - this is assuming we send flow on the data port (that option defaults true in roxie too)
-                    Owned<ISendManager> sm = createSendManager(serverFlowPort, CCD_DATA_PORT, CCD_CLIENT_FLOW_PORT, maxSendQueueSize, 3, pretendIP, nullptr, false);
-                    Owned<IMessagePacker> mp = sm->createMessagePacker(0, 0, &header, sizeof(header), myNode, 0);
+                    Owned<ISendManager> sm = createSendManager(serverFlowPort, CCD_DATA_PORT, CCD_CLIENT_FLOW_PORT, maxSendQueueSize, 3, pretendIP, nullptr, encryptInTransit);
                     unsigned numPackets = packetsPerThread / myStarts;
                     for (unsigned j = 0; j < packetsPerThread; j++)
                     {
+                        Owned<IMessagePacker> mp = sm->createMessagePacker(0, 0, &header, sizeof(header), myNode, 0);
                         if (minWork || maxWork)
                         {
                             if ((j % optWorkFrequency) == 0)
@@ -296,8 +334,9 @@ void simulateTraffic()
                                 workValue += tally;
                             }
                         }
-                        void *buf = mp->getBuffer(500, false);
-                        memset(buf, i, 500);
+                        byte *buf = (byte *) mp->getBuffer(500, false);
+                        for (unsigned k = 0; k < 500; k++)
+                            buf[k] = k;
                         mp->putBuffer(buf, 500, false);
                         mp->flush();
                     }
@@ -310,6 +349,7 @@ void simulateTraffic()
                     DBGLOG("UdpSim sender thread %d sent %d packets", i, numPackets);
                 }
                 DBGLOG("UdpSim sender thread %d completed", i);
+                completedThreads++;
             }
         });
         printf("UdpSim test took %ums\n", msTick() - begin);
