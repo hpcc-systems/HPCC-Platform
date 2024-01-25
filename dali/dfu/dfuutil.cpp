@@ -409,15 +409,23 @@ public:
             throw afor2.exc.getClear();
     }
 
-    void updateCloneFrom(const char *lfn, IPropertyTree &attrs, IFileDescriptor *srcfdesc, INode *srcdali, const char *srcCluster)
+    void updateCloneFrom(const char *lfn, IPropertyTree &attrs, IFileDescriptor *srcfdesc, const IPropertyTree *srcTree, INode *srcdali, const char *srcCluster)
     {
         DBGLOG("updateCloneFrom %s", lfn);
         if (remoteStorage.isEmpty() && (!srcdali || srcdali->endpoint().isNull()))
             attrs.setProp("@cloneFromPeerCluster", srcCluster);
         else
         {
-            while(attrs.removeProp("cloneFromGroup"));
+            // for now, only use source file descriptor as cloned source if it's from
+            // wsdfs file backed by remote storage using dafilesrv (NB: if it is '_remoteStoragePlane' will be set)
+            // JCSMORE: it may be this can replace the need for the other 'clone*' attributes altogether.
+            if (srcfdesc->queryProperties().hasProp("_remoteStoragePlane"))
+            {
+                attrs.setPropTree("cloneFromFDesc", createPTreeFromIPT(srcTree));
+                return;
+            }
 
+            while(attrs.removeProp("cloneFromGroup"));
             StringBuffer s;
             if (!remoteStorage.isEmpty())
             {
@@ -449,15 +457,15 @@ public:
                 attrs.setProp("@cloneFromPrefix", prefix.get());
         }
     }
-    void updateCloneFrom(IDistributedFile *dfile, IFileDescriptor *srcfdesc, INode *srcdali, const char *srcCluster)
+    void updateCloneFrom(IDistributedFile *dfile, IFileDescriptor *srcfdesc, const IPropertyTree *srcTree, INode *srcdali, const char *srcCluster)
     {
         DistributedFilePropertyLock lock(dfile);
         IPropertyTree &attrs = lock.queryAttributes();
-        updateCloneFrom(dfile->queryLogicalName(), attrs, srcfdesc, srcdali, srcCluster);
+        updateCloneFrom(dfile->queryLogicalName(), attrs, srcfdesc, srcTree, srcdali, srcCluster);
     }
-    void updateCloneFrom(const char *lfn, IFileDescriptor *dstfdesc, IFileDescriptor *srcfdesc, INode *srcdali, const char *srcCluster)
+    void updateCloneFrom(const char *lfn, IFileDescriptor *dstfdesc, IFileDescriptor *srcfdesc, const IPropertyTree *srcTree, INode *srcdali, const char *srcCluster)
     {
-        updateCloneFrom(lfn, dstfdesc->queryProperties(), srcfdesc, srcdali, srcCluster);
+        updateCloneFrom(lfn, dstfdesc->queryProperties(), srcfdesc, srcTree, srcdali, srcCluster);
     }
 
     void cloneSubFile(IPropertyTree *ftree,const char *destfilename, INode *srcdali, const char *srcCluster)   // name already has prefix added
@@ -466,7 +474,11 @@ public:
         const char * kind = srcfdesc->queryProperties().queryProp("@kind");
         bool iskey = kind&&(strcmp(kind,"key")==0);
 
-        Owned<IFileDescriptor> dstfdesc = createFileDescriptor(srcfdesc->getProperties());
+        Owned<IPropertyTree> dstProps = createPTreeFromIPT(&srcfdesc->queryProperties());
+        // If present, we do not want this as part of the cloned properties of this new local roxie file
+        dstProps->removeProp("_remoteStoragePlane");
+        Owned<IFileDescriptor> dstfdesc = createFileDescriptor(dstProps.getClear());
+
         if (!nameprefix.isEmpty())
             dstfdesc->queryProperties().setProp("@roxiePrefix", nameprefix.get());
         if (!copyphysical)
@@ -518,7 +530,7 @@ public:
         }
 
         if (!copyphysical) //cloneFrom tells roxie where to copy from.. it's unnecessary if we already did the copy
-            updateCloneFrom(destfilename, dstfdesc, srcfdesc, srcdali, srcCluster);
+            updateCloneFrom(destfilename, dstfdesc, srcfdesc, ftree, srcdali, srcCluster);
         else
         {
             DBGLOG("copyphysical dst=%s", destfilename);
@@ -785,7 +797,7 @@ public:
                 {
                     Owned<IFileDescriptor> dstfdesc=dfile->getFileDescriptor();
                     Owned<IFileDescriptor> srcfdesc = deserializeFileDescriptorTree(ftree, NULL, 0);
-                    updateCloneFrom(filename, dstfdesc, srcfdesc, srcdali, srcCluster);
+                    updateCloneFrom(filename, dstfdesc, srcfdesc, ftree, srcdali, srcCluster);
                 }
                 return;
             }
@@ -846,6 +858,16 @@ public:
         }
         else
         {
+            IPropertyTree *dstClonedFDesc = dfile->queryAttributes().queryPropTree("cloneFromFDesc");
+            IPropertyTree *srcClonedFDesc = srcfdesc->queryProperties().queryPropTree("cloneFromFDesc");
+            if (dstClonedFDesc && srcClonedFDesc)
+            {
+                // if both based on cloneFromFDesc, no need to check other varieties.
+                return !areMatchingPTrees(dstClonedFDesc, srcClonedFDesc);
+            }
+            else if (dstClonedFDesc || srcClonedFDesc) // one has cloneFromFDesc, the other doesn't
+                return true;
+            // else - neither based on cloneFromFDesc
             StringBuffer s;
             if (checkValueChanged(dfile->queryAttributes().queryProp("@cloneRemote"), remoteStorage.str()))
                 return true;
@@ -955,7 +977,7 @@ public:
                 {
                     Owned<IFileDescriptor> srcfdesc = deserializeFileDescriptorTree(ftree, NULL, 0);
                     if (checkCloneFromChanged(dfile, srcfdesc, srcdali, srcCluster))
-                        updateCloneFrom(dfile, srcfdesc, srcdali, srcCluster);
+                        updateCloneFrom(dfile, srcfdesc, ftree, srcdali, srcCluster);
                 }
                 return;
             }

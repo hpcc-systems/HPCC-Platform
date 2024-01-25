@@ -150,6 +150,7 @@ interface DockPanelItemProps {
     location?: "split-top" | "split-left" | "split-right" | "split-bottom" | "tab-before" | "tab-after";
     relativeTo?: string;
     closable?: boolean | IClosable;
+    padding?: number;
     children: JSX.Element;
 }
 
@@ -174,7 +175,7 @@ export const DockPanel: React.FunctionComponent<DockPanelProps> = ({
 }) => {
     const items = React.useMemo(() => {
         if (children === undefined) return [];
-        return Array.isArray(children) ? children : [children];
+        return (Array.isArray(children) ? children : [children]).filter(item => !!item);
     }, [children]);
     const [prevItems, setPrevItems] = React.useState<React.ReactElement<DockPanelItemProps>[]>([]);
     const { theme, themeV9 } = useUserTheme();
@@ -201,8 +202,10 @@ export const DockPanel: React.FunctionComponent<DockPanelProps> = ({
             dockPanel.removeWidget(idx.get(item.key));
         });
         diffs.enter.forEach(item => {
-            const reactWidget = new ReactWidget().id(item.key);
-            dockPanel.addWidget(reactWidget, item.props.title, item.props.location, idx.get(item.props.relativeTo), item.props.closable);
+            const reactWidget = new ReactWidget()
+                .id(item.key)
+                ;
+            dockPanel.addWidget(reactWidget, item.props.title, item.props.location, idx.get(item.props.relativeTo), item.props.closable, item.props.padding);
             idx.set(item.key, reactWidget);
         });
         [...diffs.enter, ...diffs.update].forEach(item => {
