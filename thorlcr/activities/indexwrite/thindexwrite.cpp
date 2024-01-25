@@ -293,6 +293,8 @@ public:
                 props.setPropInt64("@totalCRC", totalCRC);
             }
             props.setPropInt("@formatCrc", helper->getFormatCrc());
+            props.setPropInt64(getDFUQResultFieldName(DFUQRFnumDiskWrites), statsCollection.getStatisticSum(StNumDiskWrites));
+            props.setPropInt64(getDFUQResultFieldName(DFUQRFwriteCost), diskAccessCost);
             if (isLocal)
             {
                 props.setPropBool("@local", true);
@@ -310,7 +312,6 @@ public:
                 bloom->setProp("@bloomProbability", pval.str());
             }
             container.queryTempHandler()->registerFile(fileName, container.queryOwner().queryGraphId(), 0, false, WUFileStandard, &clusters);
-            updateFileWriteCostStats(*fileDesc, props, statsCollection.getStatisticSum(StNumDiskWrites));
             if (!dlfn.isExternal())
                 queryThorFileManager().publish(container.queryJob(), fileName, *fileDesc);
         }
@@ -418,6 +419,9 @@ public:
     {
         CMasterActivity::getActivityStats(stats);
         stats.addStatistic(StNumDuplicateKeys, cummulativeDuplicateKeyCount);
+        diskAccessCost = calcDiskWriteCost(clusters, statsCollection.getStatisticSum(StNumDiskWrites));
+        if (diskAccessCost)
+            stats.addStatistic(StCostFileAccess, diskAccessCost);
     }
 };
 

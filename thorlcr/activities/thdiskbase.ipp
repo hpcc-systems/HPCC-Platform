@@ -39,6 +39,7 @@ public:
     virtual void init() override;
     virtual void kill() override;
     virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave) override;
+    virtual void getActivityStats(IStatisticGatherer & stats) override;
     virtual void done() override;
     virtual void validateFile(IDistributedFile *file) { }
     virtual void deserializeStats(unsigned node, MemoryBuffer &mb) override;
@@ -62,6 +63,7 @@ public:
     virtual void preStart(size32_t parentExtractSz, const byte *parentExtract);
     virtual void init();
     virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave);
+    virtual void getActivityStats(IStatisticGatherer & stats) override;
     virtual void done();
     virtual void slaveDone(size32_t slaveIdx, MemoryBuffer &mb);
 };
