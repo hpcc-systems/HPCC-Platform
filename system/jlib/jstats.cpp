@@ -72,7 +72,7 @@ void setStatisticsComponentName(StatisticCreatorType processType, const char * p
 // Textual forms of the different enumerations, first items are for none and all.
 static constexpr const char * const measureNames[] = { "", "all", "ns", "ts", "cnt", "sz", "cpu", "skw", "node", "ppm", "ip", "cy", "en", "txt", "bool", "id", "fname", "cost", NULL };
 static constexpr const char * const creatorTypeNames[]= { "", "all", "unknown", "hthor", "roxie", "roxie:s", "thor", "thor:m", "thor:s", "eclcc", "esp", "summary", NULL };
-static constexpr const char * const scopeTypeNames[] = { "", "all", "global", "graph", "subgraph", "activity", "allocator", "section", "compile", "dfu", "edge", "function", "workflow", "child", "file", "channel", "unknown", nullptr };
+static constexpr const char * const scopeTypeNames[] = { "", "all", "global", "graph", "subgraph", "activity", "allocator", "section", "operation", "dfu", "edge", "function", "workflow", "child", "file", "channel", "unknown", nullptr };
 
 static unsigned matchString(const char * const * names, const char * search, unsigned dft)
 {
@@ -106,7 +106,7 @@ static const StatisticScopeType scoreOrder[] = {
     SSTsubgraph,
     SSTallocator,
     SSTsection,
-    SSTcompilestage,
+    SSToperation,
     SSTdfuworkunit,
     SSTfunction,
     SSTworkflow,
@@ -554,7 +554,7 @@ StatisticScopeType getScopeType(const char * scope)
     if (nullptr == scope)
         id.setId(SSTglobal, 0);
     else if (startsWith(scope, "compile"))
-        id.setId(SSTcompilestage, 0);
+        id.setId(SSToperation, 0);
     else
     {
         const char * colon = strchr(scope, ':');
@@ -1432,6 +1432,10 @@ StringBuffer & StatsScopeId::getScopeText(StringBuffer & out) const
         return out.append(ChannelScopePrefix).append(id);
     case SSTdfuworkunit:
         return out.append(DFUWorkunitScopePrefix).append(name);
+    case SSTsection:
+        return out.append(SectionScopePrefix).append(name);
+    case SSToperation:
+        return out.append(OperationScopePrefix).append(name);
     case SSTunknown:
         return out.append(name);
     case SSTglobal:
@@ -1449,8 +1453,11 @@ unsigned StatsScopeId::getHash() const
     switch (scopeType)
     {
     case SSTfunction:
-    case SSTunknown:
     case SSTdfuworkunit:
+    case SSTfile:
+    case SSTsection:
+    case SSToperation:
+    case SSTunknown:
         return hashcz((const byte *)name.get(), (unsigned)scopeType);
     default:
         return hashc((const byte *)&id, sizeof(id), (unsigned)scopeType);
@@ -1498,9 +1505,11 @@ void StatsScopeId::describe(StringBuffer & description) const
     case SSTedge:
         description.append(' ').append(id).append(',').append(extra);
         break;
-    case SSTfile:
     case SSTfunction:
     case SSTdfuworkunit:
+    case SSTfile:
+    case SSTsection:
+    case SSToperation:
         description.append(' ').append(name);
         break;
     default:
@@ -1547,9 +1556,11 @@ void StatsScopeId::deserialize(MemoryBuffer & in, unsigned version)
         in.read(id);
         in.read(extra);
         break;
-    case SSTfile:
     case SSTfunction:
     case SSTdfuworkunit:
+    case SSTfile:
+    case SSTsection:
+    case SSToperation:
         in.read(name);
         break;
     default:
@@ -1575,9 +1586,11 @@ void StatsScopeId::serialize(MemoryBuffer & out) const
         out.append(id);
         out.append(extra);
         break;
-    case SSTfile:
     case SSTfunction:
     case SSTdfuworkunit:
+    case SSTfile:
+    case SSTsection:
+    case SSToperation:
         out.append(name);
         break;
     default:
@@ -1674,6 +1687,11 @@ bool StatsScopeId::setScopeText(const char * text, const char * * _next)
             setChildGraphId(strtoul(text+ strlen(ChildGraphScopePrefix), next, 10));
             return true;
         }
+        if (MATCHES_CONST_PREFIX(text, "compile"))
+        {
+            setOperationId("compile");
+            return true;
+        }
         break;
     case ChannelScopePrefix[0]:
         if (MATCHES_CONST_PREFIX(text, ChannelScopePrefix) && isdigit(text[strlen(ChannelScopePrefix)]))
@@ -1686,6 +1704,24 @@ bool StatsScopeId::setScopeText(const char * text, const char * * _next)
         if (MATCHES_CONST_PREFIX(text, DFUWorkunitScopePrefix))
         {
             setDfuWorkunitId(text+ strlen(DFUWorkunitScopePrefix));
+            if (_next)
+                *_next = text + strlen(text);
+            return true;
+        }
+        break;
+    case SectionScopePrefix[0]:
+        if (MATCHES_CONST_PREFIX(text, SectionScopePrefix))
+        {
+            setSectionId(text+strlen(SectionScopePrefix));
+            if (_next)
+                *_next = text + strlen(text);
+            return true;
+        }
+        break;
+    case OperationScopePrefix[0]:
+        if (MATCHES_CONST_PREFIX(text, OperationScopePrefix))
+        {
+            setOperationId(text+strlen(OperationScopePrefix));
             if (_next)
                 *_next = text + strlen(text);
             return true;
@@ -1761,6 +1797,17 @@ void StatsScopeId::setDfuWorkunitId(const char * _name)
     scopeType = SSTdfuworkunit;
     name.set(_name);
 }
+void StatsScopeId::setSectionId(const char * _name)
+{
+    scopeType = SSTsection;
+    name.set(_name);
+}
+void StatsScopeId::setOperationId(const char * _name)
+{
+    scopeType = SSToperation;
+    name.set(_name);
+}
+
 //--------------------------------------------------------------------------------------------------------------------
 
 enum

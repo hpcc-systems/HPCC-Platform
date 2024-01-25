@@ -1282,7 +1282,7 @@ void EclCC::processSingleQuery(const EclRepositoryManager & localRepositoryManag
         systemIoStartInfo.setown(new OsDiskStats(true));
 
     if (optCompileBatchOut.isEmpty())
-        addTimeStamp(instance.wu, SSTcompilestage, "compile", StWhenStarted);
+        addTimeStamp(instance.wu, SSToperation, ">compile", StWhenStarted);
     const char * sourcePathname = queryContents ? str(queryContents->querySourcePath()) : NULL;
     const char * defaultErrorPathname = sourcePathname ? sourcePathname : queryAttributePath;
 
@@ -1411,7 +1411,7 @@ void EclCC::processSingleQuery(const EclRepositoryManager & localRepositoryManag
         if (exportDependencies || optMetaLocation)
             parseCtx.nestedDependTree.setown(createPTree("Dependencies", ipt_fast));
 
-        addTimeStamp(instance.wu, SSTcompilestage, "compile:parse", StWhenStarted);
+        addTimeStamp(instance.wu, SSToperation, ">compile:>parse", StWhenStarted);
         try
         {
             HqlLookupContext ctx(parseCtx, &errorProcessor, instance.dataServer);
@@ -1464,14 +1464,14 @@ void EclCC::processSingleQuery(const EclRepositoryManager & localRepositoryManag
             unsigned __int64 parseTimeNs = cycle_to_nanosec(get_cycles_now() - startCycles);
             instance.stats.parseTime = (unsigned)nanoToMilli(parseTimeNs);
 
-            updateWorkunitStat(instance.wu, SSTcompilestage, "compile:parse", StTimeElapsed, NULL, parseTimeNs);
+            updateWorkunitStat(instance.wu, SSToperation, ">compile:>parse", StTimeElapsed, NULL, parseTimeNs);
             stat_type sourceDownloadTime = localRepositoryManager.getStatistic(StTimeElapsed);
             if (sourceDownloadTime)
-                updateWorkunitStat(instance.wu, SSTcompilestage, "compile:parse:download", StTimeElapsed, NULL, sourceDownloadTime);
+                updateWorkunitStat(instance.wu, SSToperation, ">compile:>parse:>download", StTimeElapsed, NULL, sourceDownloadTime);
 
             if (optExtraStats)
             {
-                updateWorkunitStat(instance.wu, SSTcompilestage, "compile:cache", StNumAttribsProcessed, NULL, parseCtx.numAttribsProcessed);
+                updateWorkunitStat(instance.wu, SSToperation, ">compile:>parse", StNumAttribsProcessed, NULL, parseCtx.numAttribsProcessed);
             }
 
             if (exportDependencies)
@@ -1576,35 +1576,35 @@ void EclCC::processSingleQuery(const EclRepositoryManager & localRepositoryManag
     if (optGatherDiskStats)
         systemIoFinishInfo.setown(new OsDiskStats(true));
     instance.stats.generateTime = (unsigned)nanoToMilli(totalTimeNs) - instance.stats.parseTime;
-    const char *scopeName = optCompileBatchOut.isEmpty() ? "compile" : "compile:generate";
+    const char *scopeName = optCompileBatchOut.isEmpty() ? ">compile" : ">compile:>generate";
     if (optCompileBatchOut.isEmpty())
-        updateWorkunitStat(instance.wu, SSTcompilestage, scopeName, StTimeElapsed, NULL, totalTimeNs);
+        updateWorkunitStat(instance.wu, SSToperation, scopeName, StTimeElapsed, NULL, totalTimeNs);
 
     const cost_type cost = money2cost_type(calcCost(getMachineCostRate(), nanoToMilli(totalTimeNs)));
     if (cost)
-        instance.wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTcompilestage, scopeName, StCostCompile, NULL, cost, 1, 0, StatsMergeReplace);
+        instance.wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSToperation, scopeName, StCostCompile, NULL, cost, 1, 0, StatsMergeReplace);
 
     if (systemFinishTime.getTotal())
     {
         SystemProcessInfo systemElapsed = systemFinishTime - systemStartTime;
         SystemProcessInfo processElapsed = processFinishTime - processStartTime;
-        updateWorkunitStat(instance.wu, SSTcompilestage, scopeName, StNumSysContextSwitches, NULL, systemElapsed.getNumContextSwitches());
-        updateWorkunitStat(instance.wu, SSTcompilestage, scopeName, StTimeOsUser, NULL, systemElapsed.getUserNs());
-        updateWorkunitStat(instance.wu, SSTcompilestage, scopeName, StTimeOsSystem, NULL, systemElapsed.getSystemNs());
-        updateWorkunitStat(instance.wu, SSTcompilestage, scopeName, StTimeOsTotal, NULL, systemElapsed.getTotalNs());
-        updateWorkunitStat(instance.wu, SSTcompilestage, scopeName, StTimeUser, NULL, processElapsed.getUserNs());
-        updateWorkunitStat(instance.wu, SSTcompilestage, scopeName, StTimeSystem, NULL, processElapsed.getSystemNs());
+        updateWorkunitStat(instance.wu, SSToperation, scopeName, StNumSysContextSwitches, NULL, systemElapsed.getNumContextSwitches());
+        updateWorkunitStat(instance.wu, SSToperation, scopeName, StTimeOsUser, NULL, systemElapsed.getUserNs());
+        updateWorkunitStat(instance.wu, SSToperation, scopeName, StTimeOsSystem, NULL, systemElapsed.getSystemNs());
+        updateWorkunitStat(instance.wu, SSToperation, scopeName, StTimeOsTotal, NULL, systemElapsed.getTotalNs());
+        updateWorkunitStat(instance.wu, SSToperation, scopeName, StTimeUser, NULL, processElapsed.getUserNs());
+        updateWorkunitStat(instance.wu, SSToperation, scopeName, StTimeSystem, NULL, processElapsed.getSystemNs());
         if (processFinishTime.getPeakResidentMemory())
-            updateWorkunitStat(instance.wu, SSTcompilestage, scopeName, StSizePeakMemory, NULL, processFinishTime.getPeakResidentMemory());
+            updateWorkunitStat(instance.wu, SSToperation, scopeName, StSizePeakMemory, NULL, processFinishTime.getPeakResidentMemory());
     }
 
     if (optGatherDiskStats)
     {
         const BlockIoStats summaryIo = systemIoFinishInfo->querySummaryStats() - systemIoStartInfo->querySummaryStats();
         if (summaryIo.rd_sectors)
-            updateWorkunitStat(instance.wu, SSTcompilestage, scopeName, StSizeOsDiskRead, NULL, summaryIo.rd_sectors * summaryIo.getSectorSize());
+            updateWorkunitStat(instance.wu, SSToperation, scopeName, StSizeOsDiskRead, NULL, summaryIo.rd_sectors * summaryIo.getSectorSize());
         if (summaryIo.wr_sectors)
-            updateWorkunitStat(instance.wu, SSTcompilestage, scopeName, StSizeOsDiskWrite, NULL, summaryIo.wr_sectors * summaryIo.getSectorSize());
+            updateWorkunitStat(instance.wu, SSToperation, scopeName, StSizeOsDiskWrite, NULL, summaryIo.wr_sectors * summaryIo.getSectorSize());
     }
 }
 

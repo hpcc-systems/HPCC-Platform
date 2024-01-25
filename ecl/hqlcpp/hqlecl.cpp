@@ -512,7 +512,7 @@ bool HqlDllGenerator::generateCode(HqlQueryContext & query)
     noOutput = true;
     {
         // ensure warnings/errors are available before we do the processing...
-        addTimeStamp(wu, SSTcompilestage, "compile:generate", StWhenStarted);
+        addTimeStamp(wu, SSToperation, ">compile:>generate", StWhenStarted);
         wu->commit();
 
         cycle_t startCycles = get_cycles_now();
@@ -583,13 +583,13 @@ bool HqlDllGenerator::generateCode(HqlQueryContext & query)
 
         doExpand(translator);
         unsigned __int64 elapsed = cycle_to_nanosec(get_cycles_now() - startCycles);
-        updateWorkunitStat(wu, SSTcompilestage, "compile:generate", StTimeElapsed, NULL, elapsed);
+        updateWorkunitStat(wu, SSToperation, ">compile:>generate", StTimeElapsed, NULL, elapsed);
 
         if (wu->getDebugValueBool("addMemoryToWorkunit", true))
         {
             ProcessInfo info(ReadMemoryInfo);
             if (info.getPeakResidentMemory())
-                wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTcompilestage, "compile", StSizePeakMemory, NULL, info.getPeakResidentMemory(), 1, 0, StatsMergeReplace);
+                wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSToperation, ">compile", StSizePeakMemory, NULL, info.getPeakResidentMemory(), 1, 0, StatsMergeReplace);
         }
 
 
@@ -633,7 +633,7 @@ void HqlDllGenerator::insertStandAloneCode()
 void HqlDllGenerator::doExpand(HqlCppTranslator & translator)
 {
     CCycleTimer elapsedTimer;
-    addTimeStamp(wu, SSTcompilestage, "compile:generate:write c++", StWhenStarted);
+    addTimeStamp(wu, SSToperation, ">compile:>generate:>write c++", StWhenStarted);
 
     bool isMultiFile = translator.spanMultipleCppFiles();
     CompilerType targetCompiler = translator.queryOptions().targetCompiler;
@@ -655,7 +655,7 @@ void HqlDllGenerator::doExpand(HqlCppTranslator & translator)
         }
     }
 
-    updateWorkunitStat(wu, SSTcompilestage, "compile:generate:write c++", StTimeElapsed, NULL, elapsedTimer.elapsedNs());
+    updateWorkunitStat(wu, SSToperation, ">compile:>generate:>write c++", StTimeElapsed, NULL, elapsedTimer.elapsedNs());
 }
 
 bool HqlDllGenerator::abortRequested()
@@ -666,7 +666,7 @@ bool HqlDllGenerator::abortRequested()
 bool HqlDllGenerator::doCompile(ICppCompiler * compiler)
 {
     cycle_t startCycles = get_cycles_now();
-    addTimeStamp(wu, SSTcompilestage, "compile:compile c++", StWhenStarted);
+    addTimeStamp(wu, SSToperation, ">compile:>compile c++", StWhenStarted);
     ForEachItemIn(i, sourceFiles)
         compiler->addSourceFile(sourceFiles.item(i), sourceFlags.item(i));
 
@@ -735,7 +735,7 @@ bool HqlDllGenerator::doCompile(ICppCompiler * compiler)
         }
 
         unsigned __int64 elapsed = cycle_to_nanosec(get_cycles_now() - startCycles);
-        updateWorkunitStat(wu, SSTcompilestage, "compile:compile c++", StTimeElapsed, NULL, elapsed);
+        updateWorkunitStat(wu, SSToperation, ">compile:>compile c++", StTimeElapsed, NULL, elapsed);
     }
     //Keep the files if there was a compile error.
     if (ok && deleteGenerated)

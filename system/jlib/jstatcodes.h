@@ -29,6 +29,8 @@
 #define FileScopePrefix "p"
 #define ChannelScopePrefix "x"
 #define DFUWorkunitScopePrefix "D"
+#define SectionScopePrefix "n"
+#define OperationScopePrefix ">"
 
 #define MATCHES_CONST_PREFIX(search, prefix) (strncmp(search, prefix, strlen(prefix)) == 0)
 
@@ -66,7 +68,7 @@ enum StatisticScopeType
     SSTactivity,
     SSTallocator,                       // identifies an allocator
     SSTsection,                         // A section within the query - not a great differentiator
-    SSTcompilestage,                    // a stage within the compilation process
+    SSToperation,                       // an operation or stage in processing
     SSTdfuworkunit,                     // a reference to an executing dfu workunit
     SSTedge,
     SSTfunction,                        // a function call

@@ -166,18 +166,18 @@ void HqlTransformStats::add(const HqlTransformStats & other)
 void HqlTransformStats::gatherTransformStats(IStatisticTarget & target, const char * scope) const
 {
 #ifdef TRANSFORM_STATS_TIME
-    target.addStatistic(SSTcompilestage, scope, StTimeTotalExecute, nullptr, cycle_to_nanosec(totalTime), 1, 0, StatsMergeSum);
-    target.addStatistic(SSTcompilestage, scope, StTimeLocalExecute, nullptr, cycle_to_nanosec(totalTime-(childTime-recursiveTime)), 1, 0, StatsMergeSum);
+    target.addStatistic(SSToperation, scope, StTimeTotalExecute, nullptr, cycle_to_nanosec(totalTime), 1, 0, StatsMergeSum);
+    target.addStatistic(SSToperation, scope, StTimeLocalExecute, nullptr, cycle_to_nanosec(totalTime-(childTime-recursiveTime)), 1, 0, StatsMergeSum);
 #endif
 #ifdef TRANSFORM_STATS_DETAILS
     if (numAnalyseCalls)
-        target.addStatistic(SSTcompilestage, scope, StNumAnalyseExprs, nullptr, numAnalyseCalls, 1, 0, StatsMergeSum);
+        target.addStatistic(SSToperation, scope, StNumAnalyseExprs, nullptr, numAnalyseCalls, 1, 0, StatsMergeSum);
     if (numAnalyse)
-        target.addStatistic(SSTcompilestage, scope, StNumUniqueAnalyseExprs, nullptr, numAnalyse, 1, 0, StatsMergeSum);
+        target.addStatistic(SSToperation, scope, StNumUniqueAnalyseExprs, nullptr, numAnalyse, 1, 0, StatsMergeSum);
     if (numTransformCalls)
-        target.addStatistic(SSTcompilestage, scope, StNumTransformExprs, nullptr, numTransformCalls, 1, 0, StatsMergeSum);
+        target.addStatistic(SSToperation, scope, StNumTransformExprs, nullptr, numTransformCalls, 1, 0, StatsMergeSum);
     if (numTransforms)
-        target.addStatistic(SSTcompilestage, scope, StNumUniqueTransformExprs, nullptr, numTransforms, 1, 0, StatsMergeSum);
+        target.addStatistic(SSToperation, scope, StNumUniqueTransformExprs, nullptr, numTransforms, 1, 0, StatsMergeSum);
 #endif
 }
 
@@ -247,8 +247,8 @@ void HqlTransformerInfo::gatherTransformStats(IStatisticTarget & target) const
     if (numInstances)
     {
         StringBuffer scope;
-        scope.append("compile:transform:").append(name);
-        target.addStatistic(SSTcompilestage, scope, StNumStarts, nullptr, numInstances, 1, 0, StatsMergeSum);
+        scope.append(">compile:>transform:>").append(name);
+        target.addStatistic(SSToperation, scope, StNumStarts, nullptr, numInstances, 1, 0, StatsMergeSum);
         stats.gatherTransformStats(target, scope);
     }
 #endif

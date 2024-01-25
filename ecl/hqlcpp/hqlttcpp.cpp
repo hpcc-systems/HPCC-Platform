@@ -14168,7 +14168,7 @@ void HqlCppTranslator::normalizeGraphForGeneration(HqlExprArray & exprs, HqlQuer
         cycle_t startCycles = get_cycles_now();
         pickBestEngine(exprs);
         if (options.timeTransforms)
-            noteFinishedTiming("compile:transform:pick engine", startCycles);
+            noteFinishedTiming(">compile:>transform:>pick engine", startCycles);
     }
 #endif
 
@@ -14375,7 +14375,7 @@ bool HqlCppTranslator::transformGraphForGeneration(HqlQueryContext & query, Work
         cycle_t startCycles = get_cycles_now();
         pickBestEngine(workflow);
         if (options.timeTransforms)
-            noteFinishedTiming("compile:transform:pick engine", startCycles);
+            noteFinishedTiming(">compile:>transform:>pick engine", startCycles);
     }
 #endif
     updateClusterType();
@@ -14397,7 +14397,7 @@ bool HqlCppTranslator::transformGraphForGeneration(HqlQueryContext & query, Work
             cycle_t startCycles = get_cycles_now();
             checkDependencyConsistency(curWorkflow.queryExprs());
             if (options.timeTransforms)
-                noteFinishedTiming("compile:transform:check dependency", startCycles);
+                noteFinishedTiming(">compile:>transform:>check dependency", startCycles);
         }
 
         traceExpressions("afterTransformGraphForGeneration", curWorkflow);

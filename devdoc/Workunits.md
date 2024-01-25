@@ -365,7 +365,7 @@ workunit dll:
             creator="eclcc"
             kind="SizePeakMemory"
             s="compile"
-            scope="compile"
+            scope=">compile"
             ts="1428933081084000"
             unit="sz"
             value="27885568"/>
@@ -1083,7 +1083,7 @@ the same time (the output filenames are derived from the input name).
             creator="eclcc"
             kind="SizePeakMemory"
             s="compile"
-            scope="compile"
+            scope=">compile"
             ts="1428933081084000"
             unit="sz"
             value="27885568" />

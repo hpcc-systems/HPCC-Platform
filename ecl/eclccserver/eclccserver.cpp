@@ -408,8 +408,8 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
                 if (!extension || strncmp(extension, ".o", 2) == 0)
                     filename.set("link");
 
-                scope.append("compile:compile c++:").append(filename);
-                workunit->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTcompilestage, scope, StTimeElapsed, NULL, compileTimer.elapsedNs(), 1, 0, StatsMergeReplace);
+                scope.append(">compile:>compile c++:").append(filename);
+                workunit->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSToperation, scope, StTimeElapsed, NULL, compileTimer.elapsedNs(), 1, 0, StatsMergeReplace);
             }
 
             return ret;
@@ -683,7 +683,7 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
         bool compileCppSeparately = config->getPropBool("@compileCppSeparately", true);
         if (compileCppSeparately)
         {
-            workunit->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTcompilestage, "compile", StWhenStarted, NULL, getTimeStampNowValue(), 1, 0, StatsMergeAppend);
+            workunit->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSToperation, ">compile", StWhenStarted, NULL, getTimeStampNowValue(), 1, 0, StatsMergeAppend);
             eclccCmd.appendf(" -Sx %s.cc", wuid);
         }
         if (workunit->getResultLimit())
@@ -717,15 +717,15 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
             if (retcode == 0 && compileCppSeparately)
             {
                 cycle_t startCompileCpp = get_cycles_now();
-                workunit->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTcompilestage, "compile:compile c++", StWhenStarted, NULL, getTimeStampNowValue(), 1, 0, StatsMergeAppend);
+                workunit->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSToperation, ">compile:>compile c++", StWhenStarted, NULL, getTimeStampNowValue(), 1, 0, StatsMergeAppend);
                 retcode = doCompileCpp(abortWaiter, wuid, workunit->getDebugValueInt("maxCompileThreads", defaultMaxCompileThreads));
                 unsigned __int64 elapsed_compilecpp = cycle_to_nanosec(get_cycles_now() - startCompileCpp);
-                workunit->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTcompilestage, "compile:compile c++", StTimeElapsed, NULL, elapsed_compilecpp, 1, 0, StatsMergeReplace);
+                workunit->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSToperation, ">compile:>compile c++", StTimeElapsed, NULL, elapsed_compilecpp, 1, 0, StatsMergeReplace);
             }
             if (compileCppSeparately)
             {
                 unsigned __int64 elapsed_compile = cycle_to_nanosec(get_cycles_now() - startCompile);
-                workunit->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTcompilestage, "compile", StTimeElapsed, NULL, elapsed_compile, 1, 0, StatsMergeReplace);
+                workunit->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSToperation, ">compile", StTimeElapsed, NULL, elapsed_compile, 1, 0, StatsMergeReplace);
             }
             bool processKilled = (retcode >= 128);
             //If the process is killed it is probably because it ran out of memory - so try to compile as a K8s job
@@ -859,8 +859,8 @@ public:
                 Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
                 Owned<IWorkUnit> wu = factory->updateWorkUnit(wuid.get());
                 if (noteDequeued)
-                    addTimeStamp(wu, SSTcompilestage, "compile", StWhenDequeued, 0);
-                addTimeStamp(wu, SSTcompilestage, "compile", StWhenK8sLaunched, 0);
+                    addTimeStamp(wu, SSToperation, ">compile", StWhenDequeued, 0);
+                addTimeStamp(wu, SSToperation, ">compile", StWhenK8sLaunched, 0);
             }
             k8s::runJob("compile", wuid, wuid);
         }
@@ -934,12 +934,12 @@ public:
         if (isContainerized())
         {
             if (config->getPropBool("@k8sJob"))
-                addTimeStamp(workunit, SSTcompilestage, "compile", StWhenK8sStarted, 0);
+                addTimeStamp(workunit, SSToperation, ">compile", StWhenK8sStarted, 0);
             else
-                addTimeStamp(workunit, SSTcompilestage, "compile", StWhenDequeued, 0);
+                addTimeStamp(workunit, SSToperation, ">compile", StWhenDequeued, 0);
         }
         else
-            addTimeStamp(workunit, SSTcompilestage, "compile", StWhenDequeued, 0);
+            addTimeStamp(workunit, SSToperation, ">compile", StWhenDequeued, 0);
 
         CSDSServerStatus serverstatus("ECLCCserverThread");
         serverstatus.queryProperties()->setProp("@cluster", config->queryProp("@name"));
