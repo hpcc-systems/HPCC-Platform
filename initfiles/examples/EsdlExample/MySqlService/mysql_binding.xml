@@ -1,7 +1,7 @@
 <Methods>
    <Method name="MySqlEchoAddressReset" querytype="script">
       <Scripts><![CDATA[
-         <Transforms xmlns:es='urn:hpcc:esdl:script'>
+         <Scripts xmlns:es='urn:hpcc:esdl:script'>
            <es:Service>
             <es:variable name="secret" select="'mydb'"/>
             <es:variable name="database" select="'classicmodels'"/>
@@ -10,13 +10,13 @@
               <es:sql>DROP TABLE IF EXISTS esdlecho;</es:sql>
             </es:mysql>
            </es:Service>
-         </Transforms>
+         </Scripts>
       ]]>
       </Scripts>
    </Method>
    <Method name="MySqlEchoAddressInfo" querytype="script">
       <Scripts><![CDATA[
-         <Transforms xmlns:es='urn:hpcc:esdl:script'>
+         <Scripts xmlns:es='urn:hpcc:esdl:script'>
            <es:Service>
             <es:variable name="secret" select="'mydb'"/>
             <es:variable name="database" select="'classicmodels'"/>
@@ -44,7 +44,7 @@
              </es:for-each>
             </es:ensure-target>
            </es:Service>
-         </Transforms>
+         </Scripts>
       ]]>
       </Scripts>
    </Method>

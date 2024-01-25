@@ -1,0 +1,102 @@
+<EsdlBundle>
+  <Binding id="WsFoobar_desdl_binding">
+    <Definition esdlservice="WsFoobar" id="WsFoobar.1">
+      <Methods>
+        <Scripts>
+          <![CDATA[
+            <Scripts>
+              <es:BackendRequest name="request-prep" target="soap:Body/{$query}" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:es="urn:hpcc:esdl:script">
+                <es:set-value target="RequestValue" value="&apos;foobar&apos;"/>
+              </es:BackendRequest>
+              <es:PreLogging name="logging-prep" target="soap:Body/{$query}" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:es="urn:hpcc:esdl:script">
+                  <es:set-value target="LogValue" value="23"/>
+              </es:PreLogging>
+            </Scripts>
+          ]]>
+        </Scripts>
+        <Method name="FoobarSearch" url="127.0.0.1:8888">
+          <Scripts>
+            <![CDATA[
+              <Scripts>
+                <Scripts>
+                    <es:BackendRequest name="search-request-prep" target="soap:Body/{$query}" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:es="urn:hpcc:esdl:script">
+                        <es:if test="RequestOption>1">
+                            <es:set-value target="HiddenOption" value="true()"/>
+                        </es:if>
+                    </es:BackendRequest>
+                    <es:PreLogging name="search-logging-prep" target="soap:Body/{$query}" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:es="urn:hpcc:esdl:script">
+                        <es:if test="RequestOption=1">
+                            <es:set-value target="ProductPrice" value="10"/>
+                        </es:if>
+                    </es:PreLogging>
+                </Scripts>
+              </Scripts>
+            ]]>
+          </Scripts>
+        </Method>
+      </Methods>
+      <LoggingManager>
+        <LogAgent transformSource="local" name="main-logging">
+          <LogDataXPath>
+            <LogInfo name="PreparedData" xsl="log-prep"/>
+          </LogDataXPath>
+          <XSL>
+            <Transform name="log-prep">
+              <![CDATA[
+                <?xml version="1.0" encoding="UTF-8"?>
+                <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+                  <xsl:output method="xml" omit-xml-declaration="yes"/>
+                  <xsl:variable name="logContent" select="/UpdateLogRequest/LogContent"/>
+                  <xsl:variable name="transactionId" select="$logContent/UserContext/Context/Row/Common/TransactionId"/>
+                  <xsl:template match="/">
+                    <Result>
+                      <Dataset name='all-the-data'>
+                        <Row>
+                          <Records>
+                            <Rec>
+                              <transaction_id><xsl:value-of select="$transactionId" /></transaction_id>
+                              <request_data>
+                                <xsl:text disable-output-escaping="yes">&amp;lt;![CDATA[COMPRESS('</xsl:text>
+                                <xsl:copy-of select="$logContent"/>
+                                <xsl:text disable-output-escaping="yes">')]]&amp;gt;</xsl:text>
+                              </request_data>
+                              <request_format>SPECIAL</request_format>
+                              <type>23</type>
+                            </Rec>
+                          </Records>
+                        </Row>
+                      </Dataset>
+                    </Result>
+                  </xsl:template>
+                </xsl:stylesheet>
+              ]]>
+            </Transform>
+          </XSL>
+        </LogAgent>
+      </LoggingManager>
+    </Definition>
+  </Binding>
+  <Definitions>
+    <![CDATA[
+      <esxdl name="WsFoobar">
+        <EsdlRequest name="FoobarSearchRequest">
+          <EsdlElement type="int" name="RequestOption"/>
+          <EsdlElement type="string" name="RequestName"/>
+          <EsdlElement optional="hidden" type="bool" name="HiddenOption"/>
+        </EsdlRequest>
+        <EsdlResponse name="FoobarSearchResponse">
+          <EsdlElement type="int" name="FoundCount"/>
+          <EsdlElement type="string" name="FoundAddress"/>
+        </EsdlResponse>
+        <EsdlRequest name="WsFoobarPingRequest">
+        </EsdlRequest>
+        <EsdlResponse name="WsFoobarPingResponse">
+        </EsdlResponse>
+        <EsdlService version="1" auth_feature="DEFERRED" name="WsFoobar" default_client_version="1">
+          <EsdlMethod response_type="FoobarSearchResponse" request_type="FoobarSearchRequest" name="FoobarSearch"/>
+          <EsdlMethod response_type="WsFoobarPingResponse" auth_feature="none" request_type="WsFoobarPingRequest" name="Ping"/>
+        </EsdlService>
+      </esxdl>
+    ]]>
+  </Definitions>
+</EsdlBundle>

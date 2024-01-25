@@ -38,6 +38,7 @@ set ( SRCS
          ${CMAKE_CURRENT_SOURCE_DIR}/esdlcmd_monitor.cpp
          ${CMAKE_CURRENT_SOURCE_DIR}/esdl-publish.cpp
          ${CMAKE_CURRENT_SOURCE_DIR}/esdlcmdutils.cpp
+         ${CMAKE_CURRENT_SOURCE_DIR}/esdlcmd_manifest.cpp
          ${ESPSCM_GENERATED_DIR}/ws_esdlconfig_esp.cpp
     )
 

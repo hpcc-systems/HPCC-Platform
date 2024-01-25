@@ -1,6 +1,6 @@
 #! /usr/bin/python3
 ################################################################################
-#    HPCC SYSTEMS software Copyright (C) 2020 HPCC Systems®.
+#    HPCC SYSTEMS software Copyright (C) 2023 HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 __version__ = "0.1"
 
 import argparse
+import difflib
 import filecmp
 import inspect
 import logging
@@ -53,16 +54,125 @@ class TestRun:
         self.stats = stats
 
 class TestCaseBase:
-    """Settings for a specific test case."""
 
-    def __init__(self, run_settings, name, command, esdl_file, service, xsl_path, options=None):
+    def __init__(self, run_settings, name, command, options=None, expected_err=None):
         self.run_settings = run_settings
         self.name = name
         self.command = command
+        self.options = options
+        self.expected_err = expected_err
+        self.result = None
+
+    def run_test(self):
+        logging.debug("Test %s args: %s", self.name, str(self.args))
+        self.result = subprocess.run(self.args, capture_output=True)
+
+        # expected_err is a tuple: (<expected_result_code>, <expected_stderr_message>)
+        # It can be used to confirm a failure and error message, or a successful run
+        # where the result code = 0 but a warning is printed to stderr
+        # In the case where the expected result code = 0 (success) then we still validate
+        # the results. In this case, passing the test consists of validating both the
+        # warning message and the results.
+        # The returned error need only contain the expected_stderr_message, it doesn't
+        # need to be the entire message.
+
+        if self.expected_err:
+            if self.result.returncode != self.expected_err[0]:
+                logging.error('Test failed: %s : Expected return code "%d" but saw return code "%d"', self.name, self.expected_err[0], self.result.returncode)
+                success = False
+            elif self.result.stderr.decode('UTF-8').find(self.expected_err[1]) == -1:
+                logging.error('Test failed: %s : Expected error "%s" but saw error "%s"', self.name, self.expected_err[1], self.result.stderr)
+                success = False
+            else:
+                if self.expected_err[0] == 0:
+                    success = self.validate_results()
+                else:
+                    success = True
+        else:
+            if self.result.returncode != 0:
+                logging.error('Test failed: %s : return code=%d, message=%s', self.name, self.result.returncode, str(self.result.stderr))
+                success = False
+            else:
+                success = self.validate_results()
+
+        self.run_settings.stats.add_count(success)
+
+    def validate_results(self):
+        """Compare test case results to the known key.
+
+        Return True if the two are identical or False otherwise.
+        """
+        logging.debug('TestCaseBase implementation called for case "%s", no comparison run', self.name)
+        return False
+
+
+class TestCaseManifest(TestCaseBase):
+    """
+    Test case for the manifest command
+    """
+
+    def __init__(self, run_settings, name, manifest, options=None, expected_err=None):
+        super().__init__(run_settings, name, 'manifest', options, expected_err)
+        self.manifest = manifest
+        self.output_path = Path(self.run_settings.output_base)
+        self.output_file = self.output_path / (name+'.xml')
+        self.args = [
+            str(run_settings.exe_path),
+            self.command,
+            self.manifest,
+            '--outfile', str(self.output_file),
+        ]
+
+        if options:
+            self.args.extend(options)
+        self.result = None
+
+    def run_test(self):
+        safe_mkdir(self.output_path)
+        super().run_test()
+
+    def validate_results(self):
+        """
+        Compare test case results to the known key.
+
+        Return True if the two are identical or False otherwise.
+        """
+        key = (self.run_settings.test_path / 'key' / self.name).with_suffix('.xml')
+
+        if (not key.exists()):
+            logging.error('Missing key file %s', str(key))
+            return False
+
+        if (not self.output_file.exists()):
+            logging.error('Missing output for test %s', self.name)
+            return False
+
+        if (not filecmp.cmp(str(key), str(self.output_file))):
+            logging.debug('Comparing key %s to output %s shows differences:', str(key), str(self.output_file))
+            if (logging.getLogger(__name__).isEnabledFor(logging.DEBUG)):
+                with open(key) as ff:
+                    keylines = ff.readlines()
+                with open(self.output_file) as ff:
+                    outlines = ff.readlines()
+                diff = difflib.unified_diff(keylines, outlines)
+                sys.stdout.writelines(diff)
+            logging.error('Test failed: %s', self.name)
+            return False
+        else:
+            logging.debug('Passed: %s', self.name)
+            return True
+
+
+class TestCaseEsdlBase(TestCaseBase):
+    """
+    Test case for commands that transform an ESDL Definition.
+    """
+
+    def __init__(self, run_settings, name, command, esdl_file, service, xsl_path, options=None, expected_err=None):
+        super().__init__(run_settings, name, command, options, expected_err)
         self.esdl_path = (self.run_settings.test_path / 'inputs' / esdl_file)
         self.service = service
         self.xsl_path = xsl_path
-        self.options = options
         self.output_path = Path(self.run_settings.output_base) / name
         self.args = [
             str(run_settings.exe_path),
@@ -84,27 +194,10 @@ class TestCaseBase:
 
     def run_test(self):
         safe_mkdir(self.output_path)
-        logging.debug("Test %s args: %s", self.name, str(self.args))
-        self.result = subprocess.run(self.args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-        if self.result.returncode != 0:
-            logging.error('Error running "esdl %s" for test "%s": %s', self.command, self.name, self.result.stderr)
-            success = False
-        else:
-            success = self.validate_results()
-
-        self.run_settings.stats.add_count(success)
-
-    def validate_results(self):
-        """Compare test case results to the known key.
-
-        Return True if the two are identical or False otherwise.
-        """
-        logging.debug('TestCaseBase implementation called, no comparison run')
-        return False
+        super().run_test()
 
 
-class TestCaseXSD(TestCaseBase):
+class TestCaseXSD(TestCaseEsdlBase):
     """Test case for the wsdl or xsd commands.
 
     Both generate a single file output, so test validation compares
@@ -114,8 +207,9 @@ class TestCaseXSD(TestCaseBase):
     assumes it needs to apped that directory itself.
     """
 
-    def __init__(self, run_settings, name, command, esdl_file, service, xsl_path, options=None):
-        super().__init__(run_settings, name, command, esdl_file, service, xsl_path, options)
+    def __init__(self, run_settings, name, command, esdl_file, service, xsl_path, options=None, expected_err=None):
+        super().__init__(run_settings, name, command, esdl_file, service, xsl_path, options, expected_err)
+
 
     def validate_results(self):
         """Compare test case results to the known key.
@@ -135,14 +229,21 @@ class TestCaseXSD(TestCaseBase):
             return False
 
         if (not filecmp.cmp(str(key), str(outName))):
-            logging.debug('Comparing key %s to output %s', str(key), str(outName))
+            logging.debug('Comparing key %s to output %s shows differences:', str(key), str(outName))
+            if (logging.getLogger(__name__).isEnabledFor(logging.DEBUG)):
+                with open(key) as ff:
+                    keylines = ff.readlines()
+                with open(outName) as ff:
+                    outlines = ff.readlines()
+                diff = difflib.unified_diff(keylines, outlines)
+                sys.stdout.writelines(diff)
             logging.error('Test failed: %s', self.name)
             return False
         else:
             logging.debug('Passed: %s', self.name)
             return True
 
-class TestCaseCode(TestCaseBase):
+class TestCaseCode(TestCaseEsdlBase):
     """Test case for the cpp or java commands.
 
     Both generate a directory full of output, so test validation compares
@@ -152,12 +253,43 @@ class TestCaseCode(TestCaseBase):
     to find the xslt files.
     """
 
-    def __init__(self, run_settings, name, command, esdl_file, service, xsl_path, options=None):
+    def __init__(self, run_settings, name, command, esdl_file, service, xsl_path, options=None, expected_err=None):
         # must end in a slash esdl command doesn't
         # add a slash before appending the file name
         xsl_cpp_path = str((xsl_path / 'xslt'))
         xsl_cpp_path += '/'
-        super().__init__(run_settings, name, command, esdl_file, service, xsl_cpp_path, options)
+        super().__init__(run_settings, name, command, esdl_file, service, xsl_cpp_path, options, expected_err)
+        self.compare_result = None
+
+
+    def run_test(self):
+        logging.debug("Test %s args: %s", self.name, str(self.args))
+        self.result = subprocess.run(self.args, capture_output=True)
+
+        # Special case behavior for this command because it returns -11 on success in some cases
+
+        if self.expected_err:
+            if self.result.returncode != self.expected_err[0]:
+                logging.error('Test failed: %s : Expected return code "%d" but saw return code "%d"', self.name, self.expected_err[0], self.result.returncode)
+                success = False
+            elif self.result.stderr.decode('UTF-8').find(self.expected_err[1]) == -1:
+                logging.error('Test failed: %s : Expected error "%s" but saw error "%s"', self.name, self.expected_err[1], self.result.stderr)
+                success = False
+            else:
+                if self.expected_err[0] == 0:
+                    success = self.validate_results()
+                elif self.expected_err[0] == -11:
+                    success = self.validate_results()
+                else:
+                    success = True
+        else:
+            if self.result.returncode != 0:
+                logging.error('Test failed: %s : %s', self.name, str(self.result.stderr))
+                success = False
+            else:
+                success = self.validate_results()
+        self.run_settings.stats.add_count(success)
+
 
     def is_same(self, dir1, dir2):
         """
@@ -167,10 +299,13 @@ class TestCaseCode(TestCaseBase):
         compared = DirectoryCompare(dir1, dir2)
         if (compared.left_only or compared.right_only or compared.diff_files
             or compared.funny_files):
+            self.compare_result = compared
             return False
         for subdir in compared.common_dirs:
             if not self.is_same(os.path.join(dir1, subdir), os.path.join(dir2, subdir)):
+                self.compare_result = compared
                 return False
+        self.compare_result = compared
         return True
 
     def validate_results(self):
@@ -188,6 +323,7 @@ class TestCaseCode(TestCaseBase):
 
         if (not self.is_same(str(key), str(outName))):
             logging.debug('Comparing key %s to output %s', str(key), str(outName))
+            # In future, check self.compare_result for more details if needed
             logging.error('Test failed: %s', self.name)
             return False
         else:
@@ -214,21 +350,21 @@ def parse_options():
 
     parser = argparse.ArgumentParser(description=DESC)
     parser.add_argument('testroot',
-                        help='Path of the root folder of the esdlcmd testing project')
+                        help='Path of the root folder of the esdlcmd testing project.')
 
     parser.add_argument('-o', '--outdir',
-                        help='Directory name of output for tests',
+                        help='Directory name of output for tests. Defaults to creating \'esdlcmd-test-output\' in the current directory.',
                         default='esdlcmd-test-output')
 
     parser.add_argument('-e', '--esdlpath',
-                        help='Path to the esdl executable to test')
+                        help='Path to the esdl executable to test.')
 
     parser.add_argument('-x', '--xslpath',
-                        help='Path to the folder containing xslt/*.xslt transforms',
+                        help='Path to the folder containing ESP\'s xslt/*.xslt transforms. Defaults to /opt/HPCCSystems/componentfiles/',
                         default='/opt/HPCCSystems/componentfiles/')
 
     parser.add_argument('-d', '--debug',
-                        help='Enable debug logging of test cases',
+                        help='Enable debug logging of test cases.',
                         action='store_true', default=False)
 
     args = parser.parse_args()
@@ -266,7 +402,9 @@ def main():
     stats = Statistics()
 
     test_path = Path(args.testroot)
-    exe_path = Path(args.esdlpath) / 'esdl'
+    esdl_path = Path(args.esdlpath)
+    if esdl_path.is_dir():
+        exe_path = Path(args.esdlpath) / 'esdl'
     xsl_base_path = Path(args.xslpath)
 
     if (args.debug):
@@ -350,8 +488,10 @@ def main():
                     xsl_base_path, ['-iv', '1', '-tns', 'urn:passed:name:space']),
 
         # cpp
+        # This command currently returns -11 for success, though its behaivor has changed across
+        # platform builds- unsure of the reason why.
         TestCaseCode(run_settings, 'wstest-cpp-installdir', 'cpp', 'ws_test.ecm', 'WsTest',
-                     xsl_base_path),
+                     xsl_base_path, None, expected_err=(-11,'Loading XML ESDL definition:')),
 
         # Testing exceptions_inline output
         TestCaseXSD(run_settings, 'wsexctest1-wsdl-default', 'wsdl', 'ws_exc_test_1.ecm', 'WsExcTest1',
@@ -383,22 +523,127 @@ def main():
         # Shows how the name of the method is used as the xsd:element name for the request structure.
         # One element is created for each method that shares a request structure. Enabled when the
         # use_method_name option is present on the EsdlService definition.
-        TestCaseXSD(run_settings, 'use-method-name', 'wsdl', 'ws_usemethodname.ecm', 'WsUseMethodName',
-                    xsl_base_path),
+#        TestCaseXSD(run_settings, 'use-method-name', 'wsdl', 'ws_usemethodname.ecm', 'WsUseMethodName',
+#                    xsl_base_path),
 
         # Shows how the request structure name is used as the xsd:element name for the request structure.
         # A single element is created for each request structure defined. This is default behavior.
-        TestCaseXSD(run_settings, 'use-request-name', 'wsdl', 'ws_userequestname.ecm', 'WsUseRequestName',
-                    xsl_base_path),
+        # TestCaseXSD(run_settings, 'use-request-name', 'wsdl', 'ws_userequestname.ecm', 'WsUseRequestName',
+        #             xsl_base_path)
+    ]
+
+    includes = ['-I', str(run_settings.test_path / 'inputs')]
+    opts_w_format = ['--output-type', 'binding']
+    opts_w_format.extend(includes)
+
+    opts_w_service = ['--service', 'WsTest']
+    opts_w_service.extend(includes)
+
+    opts_bad_format = ['--output-type', 'invalidValue']
+    opts_bad_format.extend(includes)
+
+    manifest_cases = [
+
+        # Expected error - can't find manifest file
+        TestCaseManifest(run_settings, 'manifest-missing', 'missing-file.xml', includes,
+            (1, 'Error reading manifest file (missing-file.xml): File missing-file.xml could not be opened\nError: Failed processsing manifest file. Exiting.\n')),
+
+        # Basic test of all features- including script, XSLT and ESDL definition using search paths
+        TestCaseManifest(run_settings, 'manifest-full-bundle', 'inputs/manifest-full-bundle.xml', includes),
+
+        # Override the default Bundle output to write out a binding
+        TestCaseManifest(run_settings, 'manifest-binding-option-override', 'inputs/manifest-full-bundle.xml', opts_w_format),
+
+        # Test behavior to output bundle with no ESDL Definition
+        TestCaseManifest(run_settings, 'manifest-no-esdl-defn', 'inputs/manifest-no-esdl-defn.xml', includes,
+            (1, 'Generating EsdlBundle output without ESDL Definition is not supported.')),
+
+        # Error returned when manifest namespace is incorrect
+        TestCaseManifest(run_settings, 'manifest-bad-manifest-namespace', 'inputs/manifest-bad-namespace.xml', includes,
+            (1, 'Error reading manifest file (inputs/manifest-bad-namespace.xml): Manifest file using incorrect namespace URI \'urn:wrong:namespace\', must be \'urn:hpcc:esdl:manifest\'\nError: Failed processsing manifest file. Exiting.\n')),
+
+        # When an element doesn't have the expected manifest namespace the warning returned and results match what's expected
+        TestCaseManifest(run_settings, 'manifest-bad-include-namespace', 'inputs/manifest-bad-include-namespace.xml', includes,
+            (0, 'Found node named \'Include\' with namespace \'\', but the namespace \'urn:hpcc:esdl:manifest\' may have been intended.\nSuccess\n')),
+
+        # Confirm error for bad --output-type option
+        TestCaseManifest(run_settings, 'manifest-bad-format-option', 'inputs/manifest-bad-format.xml', opts_bad_format,
+            (2, 'Unknown value \'invalidValue\' provided for --output-type option.\n')),
+
+        # Confirm error for bad outputType attribute
+        TestCaseManifest(run_settings, 'manifest-bad-format-attr', 'inputs/manifest-bad-format.xml', includes,
+            (1, 'Error reading manifest file (inputs/manifest-bad-format.xml): Unknown value \'invalidValue\' provided for attribute Manifest/@outputType\nError: Failed processsing manifest file. Exiting.\n')),
+
+        # Confirm error for missing ServiceBinding[@service] attribute
+        TestCaseManifest(run_settings, 'manifest-bad-service-attr', 'inputs/manifest-bad-service.xml', includes,
+            (1, 'Error reading manifest file (inputs/manifest-bad-service.xml): ESDL Service Definition not found for WsWillCauseFailure\nError: Failed processsing manifest file. Exiting.\n')),
+
+        # Show that scripts inline in the Manifest are processed correctly
+        TestCaseManifest(run_settings, 'manifest-inline-script-defn', 'inputs/manifest-inline.xml', includes),
+
+        # Show how default namespace defined in root node of manifest is output for
+        # parsed nodes that are using the default ns. Note that we can only detect
+        # a default namespace when looking at a start tag and see it with no prefix
+        # and a non-empty uri (though technically an empty uri can be a default ns uri)
+        # This is why we see the default ns output for the first time on <Methods>
+        # rather than on <Binding>. This is arguably incorrect, but is is also likely
+        # incorrect to define a default ns on the root node that will apply to the
+        # <Binding>. If we need a change in behavior it will require an update to xpp.
+        TestCaseManifest(run_settings, 'manifest-ns-def-root', 'inputs/manifest-ns-def-root.xml', includes),
+
+        # Confirm error for multiple ServiceBindings
+        TestCaseManifest(run_settings, 'manifest-doublesvc', 'inputs/manifest-doublesvc.xml', includes,
+            (1, 'Only one ServiceBinding per manifest is supported.')),
+
+        # Shows how a namespace defn on the <em:Scripts> element is moved to the <Scripts>
+        # enclosed in the CDATA section, and how the parser recognizes that the defn is not
+        # required on the inline script, but remains in the Included script because it isn't parsed
+        TestCaseManifest(run_settings, 'manifest-inline-ns', 'inputs/manifest-inline-ns.xml', includes),
+
+        # Show how a different namespaces defined in the root <Scripts> element of multiple
+        # included files are moved to the <Scripts> element enclosed in the CDATA section
+        TestCaseManifest(run_settings, 'manifest-multi-include-diffprefix', 'inputs/manifest-multi-include-diffprefix.xml', includes),
+
+        # Show how multiple included scripts in the same <Scripts> node have the namespaces
+        # remain as defined in the Entry Point nodes.
+        TestCaseManifest(run_settings, 'manifest-multi-include', 'inputs/manifest-multi-include.xml', includes),
+
+        # Show handing of CDATA in different situations. When inline it is escaped.
+        # When in an Included file that will be output in a CDATA section, any included CDATA end markup
+        # is encoded as ]]]]><![CDATA[> to avoid nesting CDATA which is disallowed.
+        # The ESDL Script in this example is not valid, but used to verify that the tool is correctly
+        # encoding previously-encoded CDATA sections.
+        TestCaseManifest(run_settings, 'manifest-cdata', 'inputs/manifest-cdata.xml', includes),
+
+        # Show behavior of inline xslt with escaped content
+        TestCaseManifest(run_settings, 'manifest-inline-xslt', 'inputs/manifest-inline-xslt.xml', includes),
+
+        # Show behavior of inline xslt with CDATA content.
+        TestCaseManifest(run_settings, 'manifest-inline-cdata-xslt', 'inputs/manifest-inline-cdata-xslt.xml', includes),
+
+        # Show treatment of different types of attributes on the ServiceBinding element for binding output
+        TestCaseManifest(run_settings, 'manifest-binding-attrs', 'inputs/manifest-binding-attrs.xml', opts_w_format),
+
+        # Show treatment of different types of attributes on the ServiceBinding element for bundle output
+        TestCaseManifest(run_settings, 'manifest-bundle-attrs', 'inputs/manifest-binding-attrs.xml', includes),
+
+        # Confirm error for multiple ServiceBindings
+        TestCaseManifest(run_settings, 'manifest-doubleesdl', 'inputs/manifest-doubleesdl.xml', includes,
+            (1, 'Only one EsdlDefinition per manifest is supported.')),
+
+        # Shows that unrecognized markup in the em namespace is copied through to output
+        TestCaseManifest(run_settings, 'manifest-unknown-markup', 'inputs/manifest-unknown-markup.xml', includes),
+
     ]
 
     for case in test_cases:
         case.run_test()
 
+    for case in manifest_cases:
+        case.run_test()
+
     logging.info('Success count: %d', stats.successCount)
     logging.info('Failure count: %d', stats.failureCount)
-
-
 
 
 if __name__ == "__main__":

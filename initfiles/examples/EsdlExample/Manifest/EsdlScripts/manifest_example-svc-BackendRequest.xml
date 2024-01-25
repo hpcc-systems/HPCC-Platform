@@ -1,0 +1,11 @@
+<Scripts>
+  <es:BackendRequest xmlns:es="urn:hpcc:esdl:script">
+    <es:set-value target="Row/Name/First" value="'modified-request-at-service'" />
+  </es:BackendRequest>
+  <es:BackendRequest xmlns:es="urn:hpcc:esdl:script">
+    <es:set-value target="BRSRV2" value="'s2'" />
+  </es:BackendRequest>
+  <es:BackendRequest xmlns:es="urn:hpcc:esdl:script">
+    <es:set-value target="BRSRV3" value="'s3'" />
+  </es:BackendRequest>
+</Scripts>

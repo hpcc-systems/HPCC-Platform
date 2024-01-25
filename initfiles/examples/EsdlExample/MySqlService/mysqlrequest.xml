@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns="urn:hpccsystems:ws:esdlexample:roxieechopersoninfo@ver=0">
+ <soap:Body>
+  <MySqlEchoAddressInfoRequest>
+   <Addresses>
+    <Address>
+     <Line1>105 Main St</Line1>
+     <City>Boca Raton</City>
+     <State>Florida</State>
+     <Zip>33487</Zip>
+     <type>Home</type>
+    </Address>
+    <Address>
+     <Line1>901 Main St</Line1>
+     <City>Orlando</City>
+     <State>Florida</State>
+     <Zip>77777</Zip>
+     <type>Work</type>
+    </Address>
+   </Addresses>
+  </MySqlEchoAddressInfoRequest>
+ </soap:Body>
+</soap:Envelope>

@@ -1,0 +1,32 @@
+<em:Manifest xmlns:em="urn:hpcc:esdl:manifest" outputType="binding">
+    <em:ServiceBinding esdlservice="WsFoobar" id="WsFoobar_desdl_binding">
+        <Methods>
+            <Method name="FoobarSearch" url="127.0.0.1:8888" mode="ESDL" queryname="DummyModule.Foobar_Service" status="available"/>
+        </Methods>
+        <LoggingManager name="logman">
+            <LogAgent name="dummyagent" type="LogAgent" services="GetTransactionID" plugin="fakeplugin">
+                <LoggingServer url="https://127.0.0.1:1973/WsLogService" user="" password=""/>
+                <FailSafe>false</FailSafe>
+                <LogDataXPath>
+                    <LogInfo name="message" default="" XPath="" xsl="massage-message" multiple="" encode="true" type="Data"/>
+                </LogDataXPath>
+                <XSL>
+                    <em:Transform name="massage-message">
+                        <![CDATA[<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+                          <xsl:output method="xml" omit-xml-declaration="yes"/>
+                          <xsl:template match="/">
+                            <Result>
+                              <Dataset name='timemachine'>
+                                <Record order='1' unescapedvalue='<' escapedvalue='&lt;'>
+                                    Mr. Peabody & Sherman
+                                </Record>
+                              </Dataset>
+                            </Result>
+                          </xsl:template>
+                        </xsl:stylesheet>]]>
+                    </em:Transform>
+                </XSL>
+            </LogAgent>
+        </LoggingManager>
+    </em:ServiceBinding>
+</em:Manifest>

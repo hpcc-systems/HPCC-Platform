@@ -13,4 +13,3 @@ public class EsdlExampleService extends EsdlExampleServiceBase
         return response;
     }
 }
-

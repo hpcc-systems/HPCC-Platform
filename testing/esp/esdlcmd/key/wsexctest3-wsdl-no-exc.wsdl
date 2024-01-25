@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<wsdl:definitions xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:http="http://schemas.xmlsoap.org/wsdl/http/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:tns="urn:hpccsystems:ws:wsexctest3" targetNamespace="urn:hpccsystems:ws:wsexctest3">
+<wsdl:definitions xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:http="http://schemas.xmlsoap.org/wsdl/http/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:tns="urn:hpccsystems:ws:wsexctest3@ver=1" targetNamespace="urn:hpccsystems:ws:wsexctest3@ver=1">
   <wsdl:types>
-    <xsd:schema elementFormDefault="qualified" targetNamespace="urn:hpccsystems:ws:wsexctest3">
+    <xsd:schema elementFormDefault="qualified" targetNamespace="urn:hpccsystems:ws:wsexctest3@ver=1">
       <xsd:element name="string" nillable="true" type="xsd:string"/>
       <xsd:complexType name="EspException">
         <xsd:all>
@@ -99,7 +99,7 @@
   <wsdl:binding name="WsExcTest3ServiceSoap" type="tns:WsExcTest3ServiceSoap">
     <soap:binding transport="http://schemas.xmlsoap.org/soap/http" style="document"/>
     <wsdl:operation name="InlineExceptions">
-      <soap:operation style="document" soapAction="WsExcTest3/InlineExceptions?ver_=0.000000"/>
+      <soap:operation style="document" soapAction="WsExcTest3/InlineExceptions?ver_=1.000000"/>
       <wsdl:input>
         <soap:body use="literal"/>
       </wsdl:input>
@@ -111,7 +111,7 @@
       </wsdl:fault>
     </wsdl:operation>
     <wsdl:operation name="Ping">
-      <soap:operation style="document" soapAction="WsExcTest3/Ping?ver_=0.000000"/>
+      <soap:operation style="document" soapAction="WsExcTest3/Ping?ver_=1.000000"/>
       <wsdl:input>
         <soap:body use="literal"/>
       </wsdl:input>
@@ -123,7 +123,7 @@
       </wsdl:fault>
     </wsdl:operation>
     <wsdl:operation name="SoapFaultExceptions">
-      <soap:operation style="document" soapAction="WsExcTest3/SoapFaultExceptions?ver_=0.000000"/>
+      <soap:operation style="document" soapAction="WsExcTest3/SoapFaultExceptions?ver_=1.000000"/>
       <wsdl:input>
         <soap:body use="literal"/>
       </wsdl:input>

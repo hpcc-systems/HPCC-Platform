@@ -1,0 +1,42 @@
+<Binding id="WsFoobar_desdl_binding">
+  <Definition esdlservice="WsFoobar">
+    <Methods>
+      <Scripts>
+        <![CDATA[
+          <Scripts xmlns:es="urn:hpcc:esdl:script">
+            <es:BackendRequest name="request-prep" target="soap:Body/{$query}" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+              <es:set-value target="RequestValue" value="&apos;foobar&apos;"/>
+            </es:BackendRequest>
+            <es:PreLogging name="logging-prep" target="soap:Body/{$query}" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:es="urn:hpcc:esdl:script">
+                <es:set-value target="LogValue" value="23"/>
+            </es:PreLogging>
+          </Scripts>
+        ]]>
+      </Scripts>
+      <Method name="FoobarSearch" url="127.0.0.1:8888">
+        <Scripts>
+          <![CDATA[
+            <Scripts>
+              <Scripts>
+                  <es:BackendRequest name="search-request-prep" target="soap:Body/{$query}" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:es="urn:hpcc:esdl:script">
+                      <es:if test="RequestOption>1">
+                          <es:set-value target="HiddenOption" value="true()"/>
+                      </es:if>
+                  </es:BackendRequest>
+                  <es:PreLogging name="search-logging-prep" target="soap:Body/{$query}" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:es="urn:hpcc:esdl:script">
+                      <es:if test="RequestOption=1">
+                          <es:set-value target="ProductPrice" value="10"/>
+                      </es:if>
+                  </es:PreLogging>
+              </Scripts>
+            </Scripts>
+          ]]>
+        </Scripts>
+      </Method>
+    </Methods>
+    <LoggingManager>
+      <LogAgent transformSource="local" name="main-logging">
+      </LogAgent>
+    </LoggingManager>
+  </Definition>
+</Binding>

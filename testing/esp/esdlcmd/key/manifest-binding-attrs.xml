@@ -1,0 +1,11 @@
+<Binding id="WsTest_desdl_binding">
+  <Definition esdlservice="WsTest" definitionAttr="attributevalue">
+    <Methods>
+      <Method name="AllVersionReport" path="" url="https://127.0.0.1:9876" timeout="" mode="ESDL" queryname="DummyModule.Foobar_Service" status="available" maxWaitSecondsAllowed="10" traceLevel="1" auth_feature="AllowAllVersionReport:FULL">
+        <Gateways>
+          <Gateway name="sample" password="xxx" url="https://127.0.0.1:88" username="misteruser"/>
+        </Gateways>
+      </Method>
+    </Methods>
+  </Definition>
+</Binding>

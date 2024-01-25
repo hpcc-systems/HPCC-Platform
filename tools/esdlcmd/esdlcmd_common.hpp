@@ -143,6 +143,13 @@ typedef IEsdlCommand *(*EsdlCommandFactory)(const char *cmdname);
 #define ESDLOPT_INCLUDE_PATH_ENV        "ESDL_INCLUDE_PATH"
 #define ESDLOPT_INCLUDE_PATH_INI        "esdlIncludePath"
 #define ESDLOPT_INCLUDE_PATH_USAGE      "   -I, --include-path <include path>    Locations to look for included esdl files\n"
+#define ESDLOPT_RECURSIVE               "--recursive"
+#define ESDLOPT_RECURSIVE_S             "-r"
+
+#define ESDLOPT_MANIFEST_NOCDATA        "--no-cdata"
+#define ESDLOPT_MANIFEST_OUTFILE        "--outfile"
+#define ESDLOPT_MANIFEST_FORMAT         "--output-type"
+
 
 bool matchVariableOption(ArgvIterator &iter, const char prefix, IArrayOf<IEspNamedValue> &values);
 
@@ -190,8 +197,8 @@ public:
             "                                            " ESDL_TRACE_CATEGORY_WARNING ": all warning output\n"
             "                                            " ESDL_TRACE_CATEGORY_PROGRESS ": all progress output\n"
             "                                            " ESDL_TRACE_CATEGORY_INFO ": all info output\n"
-            "                                        Errors and warnings are enabled by default if not verbose, and all are enabled when verbose."
-            "                                        Use an empty <flags> value to disable all."
+            "                                        Errors and warnings are enabled by default if not verbose, and all are enabled when verbose.\n"
+            "                                        Use an empty <flags> value to disable all.\n"
         );
     }
     virtual void outputWsStatus(int code, const char * message)
@@ -223,7 +230,7 @@ public:
     EsdlCmdHelper()
     {
         esdlDef.set(createEsdlDefinition(nullptr, makeCmdReporter));
-        defHelper.set(createEsdlDefinitionHelper());
+        defHelper.setown(createEsdlDefinitionHelper());
     }
 
     IMPLEMENT_IINTERFACE;

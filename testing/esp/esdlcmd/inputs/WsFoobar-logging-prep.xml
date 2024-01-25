@@ -1,0 +1,3 @@
+<es:PreLogging name="logging-prep" target="soap:Body/{$query}" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:es="urn:hpcc:esdl:script">
+    <es:set-value target="LogValue" value="23"/>
+</es:PreLogging>

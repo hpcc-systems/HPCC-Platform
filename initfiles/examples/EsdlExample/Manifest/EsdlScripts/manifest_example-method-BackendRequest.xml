@@ -1,0 +1,11 @@
+<Scripts>
+  <es:BackendRequest xmlns:es="urn:hpcc:esdl:script">
+    <es:append-to-value target="Row/Name/First" value="'-and-method'" />
+  </es:BackendRequest>
+  <es:BackendRequest xmlns:es="urn:hpcc:esdl:script">
+    <es:set-value target="BRMTH2" value="'m2'" />
+  </es:BackendRequest>
+  <es:BackendRequest xmlns:es="urn:hpcc:esdl:script">
+    <es:set-value target="BRMTH3" value="'m3'" />
+  </es:BackendRequest>
+</Scripts>

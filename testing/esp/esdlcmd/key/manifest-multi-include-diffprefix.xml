@@ -1,0 +1,34 @@
+<Binding id="WsFoobar_desdl_binding">
+  <Definition esdlservice="WsFoobar">
+    <Methods>
+      <Scripts>
+        <![CDATA[
+          <Scripts>
+            <Scripts xmlns:esdlscript="urn:hpcc:esdl:script">
+                <esdlscript:BackendRequest name="request-script" target="soap:Body/{$query}" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+                    <esdlscript:set-value target="Engine" value="'caboose'"/>
+                </esdlscript:BackendRequest>
+                <esdlscript:PreLogging name="log-script" trace="log-script" source="getDataSection('esdl_request')/soap:Envelope/soap:Body/{$query}/{$request}/Row/Options" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+                    <esdlscript:ensure-target xpath="scripted-values">
+                        <esdlscript:set-value target="logoptions" select="'000000'"/>
+                    </esdlscript:ensure-target>
+                </esdlscript:PreLogging>
+            </Scripts>
+            <Scripts xmlns:es="urn:hpcc:esdl:script">
+                <es:BackendRequest name="request-script-2" target="soap:Body/{$query}" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+                    <es:set-value target="Engine2" value="'caboose'"/>
+                </es:BackendRequest>
+                <es:PreLogging name="log-script-2" trace="log-script" source="getDataSection('esdl_request')/soap:Envelope/soap:Body/{$query}/{$request}/Row/Options" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+                    <es:ensure-target xpath="scripted-values">
+                        <es:set-value target="logoptions-2" select="'000000'"/>
+                    </es:ensure-target>
+                </es:PreLogging>
+            </Scripts>
+          </Scripts>
+        ]]>
+      </Scripts>
+      <Method name="FoobarSearch" url="127.0.0.1:8888">
+      </Method>
+    </Methods>
+  </Definition>
+</Binding>
