@@ -356,6 +356,13 @@ private:
 
     IFileDescriptor *recreateCloneSource(IFileDescriptor *srcfdesc, const char *destfilename)
     {
+        IPropertyTree *clonedFDescTree = srcfdesc->queryProperties().queryPropTree("cloneFromFDesc");
+        if (clonedFDescTree)
+        {
+            Owned<IFileDescriptor> srcFDesc = deserializeFileDescriptorTree(clonedFDescTree);
+            return srcFDesc.getClear();
+        }
+
         Owned<IFileDescriptor> dstfdesc = createFileDescriptor(srcfdesc->getProperties());
         // calculate dest dir
 
@@ -596,7 +603,7 @@ public:
             return resolveCachedLFN(foreignLfn);  // Note - cache only used when no dali connection available
         try
         {
-            if (fdesc->queryProperties().hasProp("cloneFromGroup") && fdesc->queryProperties().hasProp("@cloneFromDir"))
+            if (fdesc->queryProperties().hasProp("cloneFromFDesc") || (fdesc->queryProperties().hasProp("cloneFromGroup") && fdesc->queryProperties().hasProp("@cloneFromDir")))
             {
                 Owned<IFileDescriptor> ret = recreateCloneSource(fdesc, _lfn);
                 if (cacheIt)
