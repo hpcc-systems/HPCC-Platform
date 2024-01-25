@@ -4748,6 +4748,7 @@ public:
     virtual IStringVal& getResultXml(IStringVal &str, bool hidePasswords) const;
     virtual unsigned    getResultFetchSize() const;
     virtual __int64     getResultTotalRowCount() const;
+    virtual StringBuffer& getResultTotalRowCountString(StringBuffer &str) const;
     virtual __int64     getResultRowCount() const;
     virtual void        getResultDataset(IStringVal & ecl, IStringVal & defs) const;
     virtual IStringVal& getResultLogicalName(IStringVal &ecl) const;
@@ -11214,6 +11215,16 @@ unsigned CLocalWUResult::getResultFetchSize() const
 __int64 CLocalWUResult::getResultTotalRowCount() const
 {
     return p->getPropInt64("totalRowCount", -1);
+}
+
+StringBuffer &CLocalWUResult::getResultTotalRowCountString(StringBuffer &str) const
+{
+    __int64 count = getResultTotalRowCount();
+    if (count == -1)
+        str.append("[??? rows]");
+    else
+        str.append('[').append(count).append(" rows]");
+    return str;
 }
 
 __int64 CLocalWUResult::getResultRowCount() const

@@ -1883,7 +1883,7 @@ void WsWuInfo::getResult(IConstWUResult &r, IArrayOf<IEspECLResult>& results, un
     }
     else
     {
-        value.append('[').append(r.getResultTotalRowCount()).append(" rows]");
+        r.getResultTotalRowCountString(value);
         if((r.getResultSequence()>=0) && (!filename.length() || (df && df->queryAttributes().hasProp("ECL"))))
             link.append(r.getResultSequence());
     }
