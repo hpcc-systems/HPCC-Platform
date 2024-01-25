@@ -1035,7 +1035,7 @@ const void * CsvDiskRowReader::nextRow(MemoryBufferBuilder & builder)
         if (!lineLength)
             break;
 
-        size32_t resultSize = translator->translate(bufferBuilder, *this, *fieldFetcher);
+        size32_t resultSize = translator->translate(builder, *this, *fieldFetcher);
         dbgassertex(resultSize);
         const void *ret = builder.getSelf();
         if (fieldFilterMatchProjected(ret))
