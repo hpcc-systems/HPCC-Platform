@@ -17,7 +17,7 @@ jobs:
           fetch-depth: 1
       - name: Fetch base
         run: |
-          git -c protocol.version=2 fetch --no-tags --prune --progress --no-recurse-submodules --depth=1 origin ${{ github.event.pull_request.base.sha }}
+          git -c protocol.version=2 fetch --no-tags --prune --progress --no-recurse-submodules --depth=1 origin ${{ github.base_ref }}
       - name: Check eclhelper
         run: |
-          git diff ${{ github.event.pull_request.base.sha }} --exit-code -- rtl/include/eclhelper.hpp
+          git diff origin/${{ github.base_ref }} --exit-code -- rtl/include/eclhelper.hpp
