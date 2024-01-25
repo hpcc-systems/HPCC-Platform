@@ -90,6 +90,14 @@ jobs:
       asset-name: 'docker-ubuntu-22_04'
     secrets: inherit
 
+  test-regression-suite-k8s-ubuntu-22_04:
+    if: ${{ contains('pull_request,push', github.event_name) }}
+    uses: ./.github/workflows/test-regression-suite-k8s.yml
+    secrets: inherit
+    with:
+      os: ubuntu-22.04
+      asset-name: 'docker-ubuntu-22_04-containerized'
+
   test-unit-docker-ubuntu-22_04:
     if: ${{ contains('pull_request,push', github.event_name) }}
     needs: build-docker-ubuntu-22_04
@@ -144,7 +152,7 @@ jobs:
     with:
       os: ubuntu-22.04
     secrets: inherit
-  
+
   build-gh_runner-ubuntu-20_04:
     if: ${{ contains('schedule,push', github.event_name) }}
     uses: ./.github/workflows/build-gh_runner.yml

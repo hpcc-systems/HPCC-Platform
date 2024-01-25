@@ -1,0 +1,54 @@
+name: Regression Suite on K8s
+
+on:
+  workflow_call:
+    inputs:
+      os:
+        type: string
+        description: 'Operating System'
+        required: false
+        default: 'ubuntu-22.04'
+      asset-name:
+        type: string
+        description: 'Asset Name'
+        required: false
+        default: 'docker-ubuntu-22_04-containerized'
+
+jobs:
+  build-docker:
+    name: build-docker-${{ inputs.os }}
+    if: ${{ contains('pull_request,push', github.event_name) }}
+    uses: ./.github/workflows/build-docker.yml
+    with:
+      os: ${{ inputs.os }}
+      upload-package: true
+      containerized: true
+      asset-name: ${{ inputs.asset-name }}
+    secrets: inherit
+
+  main:
+    name: K8s Regression Suite
+    needs: build-docker
+    runs-on: ${{ inputs.os }}
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          path: ./HPCC-Platform
+      - name: Deploy HPCC on K8s
+        uses: ./HPCC-Platform/.github/actions/deploy-hpcc-k8s
+        with:
+          os: ${{ inputs.os }}
+          asset-name: ${{ inputs.asset-name }}
+          platform-folder: ./HPCC-Platform
+
+  succeeded:
+    runs-on: ${{ inputs.os }}
+    needs: main
+    steps:
+      - shell: "bash"
+        run: |
+          echo "...all tests passed..."
+
+
