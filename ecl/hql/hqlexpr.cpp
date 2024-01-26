@@ -1604,6 +1604,7 @@ const char *getOpString(node_operator op)
     case no_csv: return "CSV";
     case no_xml: return "XML";
     case no_json: return "JSON";
+    case no_filetype: return "TYPE";
 
     case no_when: return "WHEN";
     case no_priority: return "PRIORITY";
@@ -2020,7 +2021,7 @@ const char *getOpString(node_operator op)
 
     case no_unused6:
     case no_unused13: case no_unused14: case no_unused15:
-    case no_unused34: case no_unused35: case no_unused36: case no_unused37: case no_unused38:
+    case no_unused35: case no_unused36: case no_unused37: case no_unused38:
     case no_unused40: case no_unused41: case no_unused42: case no_unused43: case no_unused44: case no_unused45: case no_unused46: case no_unused47: case no_unused48: case no_unused49:
     case no_unused50: case no_unused52:
     case no_unused80:
@@ -5095,6 +5096,7 @@ unsigned CHqlRealExpression::getCachedEclCRC()
     case no_csv:
     case no_xml:
     case no_json:
+    case no_filetype:
     case no_null:
         if (thisType && (thisType->getTypeCode() == type_null))
             thisType = nullptr;

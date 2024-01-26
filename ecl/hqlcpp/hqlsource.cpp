@@ -632,7 +632,7 @@ static bool forceLegacyMapping(IHqlExpression * expr)
 class SourceBuilder
 {
 public:
-    SourceBuilder(HqlCppTranslator & _translator, IHqlExpression *_tableExpr, IHqlExpression *_nameExpr, bool canReadGenerically)
+    SourceBuilder(HqlCppTranslator & _translator, IHqlExpression *_tableExpr, IHqlExpression *_nameExpr, bool canReadGenerically, bool forceReadGenerically)
         : tableExpr(_tableExpr), newInputMapping(false), translator(_translator)
     { 
         nameExpr.setown(foldHqlExpression(_nameExpr));
@@ -661,7 +661,7 @@ public:
         isUnfilteredCount = false;
         requiresOrderedMerge = false;
         genericDiskReads = translator.queryOptions().genericDiskReads;
-        genericDiskRead = genericDiskReads && canReadGenerically;
+        genericDiskRead = (genericDiskReads && canReadGenerically) || forceReadGenerically;
         rootSelfRow = NULL;
         activityKind = TAKnone;
 
@@ -2847,8 +2847,8 @@ void SourceBuilder::gatherSteppingMeta(IHqlExpression * expr, SourceSteppingInfo
 class DiskReadBuilderBase : public SourceBuilder
 {
 public:
-    DiskReadBuilderBase(HqlCppTranslator & _translator, IHqlExpression *_tableExpr, IHqlExpression *_nameExpr, bool canReadGenerically)
-        : SourceBuilder(_translator, _tableExpr, _nameExpr, canReadGenerically), monitors(_tableExpr, _translator, 0, true, true)
+    DiskReadBuilderBase(HqlCppTranslator & _translator, IHqlExpression *_tableExpr, IHqlExpression *_nameExpr, bool canReadGenerically, bool forceReadGenerically)
+        : SourceBuilder(_translator, _tableExpr, _nameExpr, canReadGenerically, forceReadGenerically), monitors(_tableExpr, _translator, 0, true, true)
     {
         fpos.setown(getFilepos(tableExpr, false));
         lfpos.setown(getFilepos(tableExpr, true));
@@ -2912,7 +2912,17 @@ void DiskReadBuilderBase::buildMembers(IHqlExpression * expr)
         if ((modeOp != no_thor) && (modeOp != no_flat))
         {
             StringBuffer format;
-            format.append(getOpString(modeOp)).toLowerCase();
+            if (modeOp != no_filetype)
+            {
+                format.append(getOpString(modeOp)).toLowerCase();
+            }
+            else
+            {
+                // Pluggable file type; cite the file type name
+                IHqlExpression * fileType = queryAttributeChild(mode, fileTypeAtom, 0);
+                getStringValue(format, fileType);
+                format.toLowerCase();
+            }
             instance->startctx.addQuotedF("virtual const char * queryFormat() { return \"%s\"; }", format.str());
         }
     }
@@ -3096,9 +3106,10 @@ class DiskReadBuilder : public DiskReadBuilderBase
 {
 public:
     DiskReadBuilder(HqlCppTranslator & _translator, IHqlExpression *_tableExpr, IHqlExpression *_nameExpr)
-        : DiskReadBuilderBase(_translator, _tableExpr, _nameExpr, (_tableExpr->queryChild(2)->getOperator() != no_pipe))
+        : DiskReadBuilderBase(_translator, _tableExpr, _nameExpr, (_tableExpr->queryChild(2)->getOperator() != no_pipe), (_tableExpr->queryChild(2)->getOperator() == no_filetype))
     {
         extractCanMatch = (modeOp == no_thor) || (modeOp == no_flat) ||
+                          (modeOp == no_filetype) ||
                           ((modeOp == no_csv) && genericDiskRead);
     }
 
@@ -3232,10 +3243,15 @@ void DiskReadBuilder::buildFormatOption(BuildCtx & ctx, IHqlExpression * name, I
 
 void DiskReadBuilder::buildFormatOptions(BuildCtx & fixedCtx, BuildCtx & dynCtx, IHqlExpression * expr)
 {
+    IHqlExpression * pluggableFileTypeAtom = expr->queryAttribute(fileTypeAtom); // null if pluggable file type not used
+    
     ForEachChild(i, expr)
     {
         IHqlExpression * cur = expr->queryChild(i);
-        if (cur->isAttribute())
+
+        // Skip if expression is a pluggable file type (we don't want it appearing as an option)
+        // or if it is not an attribute
+        if (cur != pluggableFileTypeAtom && cur->isAttribute())
         {
             OwnedHqlExpr name = createConstant(str(cur->queryName()));
             if (cur->numChildren())
@@ -3398,7 +3414,7 @@ class DiskNormalizeBuilder : public DiskReadBuilderBase
 {
 public:
     DiskNormalizeBuilder(HqlCppTranslator & _translator, IHqlExpression *_tableExpr, IHqlExpression *_nameExpr)
-        : DiskReadBuilderBase(_translator, _tableExpr, _nameExpr, false)
+        : DiskReadBuilderBase(_translator, _tableExpr, _nameExpr, false, false)
     { 
     }
 
@@ -3470,7 +3486,7 @@ class DiskAggregateBuilder : public DiskReadBuilderBase
 {
 public:
     DiskAggregateBuilder(HqlCppTranslator & _translator, IHqlExpression *_tableExpr, IHqlExpression *_nameExpr)
-        : DiskReadBuilderBase(_translator, _tableExpr, _nameExpr, false)
+        : DiskReadBuilderBase(_translator, _tableExpr, _nameExpr, false, false)
     { 
         failedFilterValue.clear();
     }
@@ -3538,7 +3554,7 @@ class DiskCountBuilder : public DiskReadBuilderBase
 {
 public:
     DiskCountBuilder(HqlCppTranslator & _translator, IHqlExpression *_tableExpr, IHqlExpression *_nameExpr, node_operator _aggOp)
-        : DiskReadBuilderBase(_translator, _tableExpr, _nameExpr, false)
+        : DiskReadBuilderBase(_translator, _tableExpr, _nameExpr, false, false)
     { 
         aggOp = _aggOp;
         isCompoundCount = true;
@@ -3637,7 +3653,7 @@ class DiskGroupAggregateBuilder : public DiskReadBuilderBase
 {
 public:
     DiskGroupAggregateBuilder(HqlCppTranslator & _translator, IHqlExpression *_tableExpr, IHqlExpression *_nameExpr)
-        : DiskReadBuilderBase(_translator, _tableExpr, _nameExpr, false)
+        : DiskReadBuilderBase(_translator, _tableExpr, _nameExpr, false, false)
     { 
         failedFilterValue.clear();
     }
@@ -3708,7 +3724,7 @@ class ChildBuilderBase : public SourceBuilder
 {
 public:
     ChildBuilderBase(HqlCppTranslator & _translator, IHqlExpression *_tableExpr, IHqlExpression *_nameExpr)
-        : SourceBuilder(_translator, _tableExpr, _nameExpr, false)
+        : SourceBuilder(_translator, _tableExpr, _nameExpr, false, false)
     { 
     }
 
@@ -3983,7 +3999,7 @@ class IndexReadBuilderBase : public SourceBuilder
     friend class MonitorRemovalTransformer;
 public:
     IndexReadBuilderBase(HqlCppTranslator & _translator, IHqlExpression *_tableExpr, IHqlExpression *_nameExpr)
-        : SourceBuilder(_translator, _tableExpr, _nameExpr, false),
+        : SourceBuilder(_translator, _tableExpr, _nameExpr, false, false),
           monitors(_tableExpr, _translator, -(int)numPayloadFields(_tableExpr), false, getHintBool(_tableExpr, createValueSetsAtom, _translator.queryOptions().createValueSets))
     {
     }
@@ -4874,6 +4890,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityTable(BuildCtx & ctx, IHqlExpr
     case no_flat:
     case no_pipe:
     case no_csv:
+    case no_filetype:
         return doBuildActivityDiskRead(ctx, expr);
     case no_xml:
     case no_json:
@@ -4889,7 +4906,7 @@ class FetchBuilder : public SourceBuilder
 {
 public:
     FetchBuilder(HqlCppTranslator & _translator, IHqlExpression *_tableExpr, IHqlExpression *_nameExpr, IHqlExpression * _fetchExpr)
-        : SourceBuilder(_translator, _tableExpr, _nameExpr, false)
+        : SourceBuilder(_translator, _tableExpr, _nameExpr, false, false)
     {
         compoundExpr.set(_fetchExpr);
         fetchExpr.set(queryFetch(_fetchExpr));
@@ -4959,6 +4976,7 @@ void FetchBuilder::buildMembers(IHqlExpression * expr)
         }
     case no_xml:
     case no_json:
+    case no_filetype:
         break;
     default:
         translator.buildFormatCrcFunction(instance->classctx, "getDiskFormatCrc", physicalRecord);
