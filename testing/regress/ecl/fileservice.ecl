@@ -17,6 +17,7 @@
 
 import Std.File;
 import Std.Str;
+import Std.System;
 import $.setup;
 prefix := setup.Files(false, false).QueryFilePrefix;
 
@@ -57,4 +58,5 @@ SEQUENTIAL(
   RemovePrefix(File.ForeignLogicalFileName('somescope::somefilename', '192.168.168.168', false), 3);
   RemovePrefix(File.ForeignLogicalFileName('somescope::somefilename', '192.168.168.168', true, true), 2);
   RemovePrefix(File.ForeignLogicalFileName('somescope::somefilename', '192.168.168.168', false, true), 2);
+  OUTPUT((INTEGER)System.Util.ResolveHostName('localhost') != 0);   // Check that host names are resolved to actual IP addresses
 );
