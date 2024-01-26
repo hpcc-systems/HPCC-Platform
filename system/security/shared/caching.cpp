@@ -663,7 +663,8 @@ bool CPermissionsCache::queryPermsManagedFileScope(ISecUser& sec_user, const cha
     else
     {
         *accessFlags = queryDefaultPermission(sec_user);
-        OWARNLOG("FileScope %s for %s not managed, using default %s(%d), took %dms", fullScope, sec_user.getName(), getSecAccessFlagName(*accessFlags), *accessFlags, msTick()-start);
+        if (isDebugBuild())
+            OWARNLOG("FileScope %s for %s not managed, using default %s(%d), took %dms", fullScope, sec_user.getName(), getSecAccessFlagName(*accessFlags), *accessFlags, msTick()-start);
         rc = true;
     }
     return rc;
