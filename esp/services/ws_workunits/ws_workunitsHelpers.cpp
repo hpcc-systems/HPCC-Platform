@@ -33,6 +33,7 @@
 #include "rmtsmtp.hpp"
 #include "LogicFileWrapper.hpp"
 #include "TpWrapper.hpp"
+#include "WUXMLInfo.hpp"
 
 #ifndef _NO_LDAP
 #include "ldapsecurity.ipp"
@@ -1883,7 +1884,7 @@ void WsWuInfo::getResult(IConstWUResult &r, IArrayOf<IEspECLResult>& results, un
     }
     else
     {
-        r.getResultTotalRowCountString(value);
+        getResultTotalRowCountString(r, value);
         if((r.getResultSequence()>=0) && (!filename.length() || (df && df->queryAttributes().hasProp("ECL"))))
             link.append(r.getResultSequence());
     }

@@ -53,4 +53,6 @@ public:
     void buildXmlActiveWuidStatus(const char* ClusterName, IEspECLWorkunit& wuStructure);
 };
 
+extern WUXMLINFO_API StringBuffer& getResultTotalRowCountString(IConstWUResult& r, StringBuffer& str);
+
 #endif // __CWUXMLInfo_HPP__
