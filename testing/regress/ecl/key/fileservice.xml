@@ -26,3 +26,6 @@
 <Dataset name='Result 9'>
  <Row><Result_9>somescope::somefilename</Result_9></Row>
 </Dataset>
+<Dataset name='Result 10'>
+ <Row><Result_10>true</Result_10></Row>
+</Dataset>
