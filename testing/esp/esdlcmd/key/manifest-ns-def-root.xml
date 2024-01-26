@@ -1,0 +1,34 @@
+<Binding id="WsTest_desdl_binding">
+  <Definition esdlservice="WsTest">
+    <Methods xmlns="urn:nonsense:default">
+      <Scripts>
+        <![CDATA[
+          <Scripts>
+            <Scripts>
+                <es:BackendRequest name="request-script" target="soap:Body/{$query}" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:es="urn:hpcc:esdl:script">
+                    <es:set-value target="Engine" value="'caboose'"/>
+                </es:BackendRequest>
+                <es:PreLogging name="log-script" trace="log-script" source="getDataSection('esdl_request')/soap:Envelope/soap:Body/{$query}/{$request}/Row/Options" xmlns:es="urn:hpcc:esdl:script" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+                    <es:ensure-target xpath="scripted-values">
+                        <es:set-value target="logoptions" select="'000000'"/>
+                        <es:if test="translate(substring(MatchFlag, 1,1), 't', 'T')='T' or MatchFlag=1">
+                            <es:set-value target="logoptions" select="'100000'"/>
+                        </es:if>
+                    </es:ensure-target>
+                </es:PreLogging>
+            </Scripts>
+          </Scripts>
+        ]]>
+      </Scripts>
+      <Method name="AllVersionReport" path="" url="https://127.0.0.1:9876" timeout="" mode="ESDL" queryname="DummyModule.Foobar_Service" status="available" maxWaitSecondsAllowed="10" traceLevel="1" auth_feature="AllowAllVersionReport:FULL">
+        <Gateways>
+          <Gateway name="sample" password="xxx" url="https://127.0.0.1:88" username="misteruser"/>
+        </Gateways>
+      </Method>
+    </Methods>
+    <LoggingManager name="logman" xmlns="urn:nonsense:default">
+      <Failsafe/>
+      <Filters/>
+    </LoggingManager>
+  </Definition>
+</Binding>

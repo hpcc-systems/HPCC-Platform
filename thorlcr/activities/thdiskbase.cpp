@@ -121,9 +121,17 @@ void CDiskReadMasterBase::serializeSlaveData(MemoryBuffer &dst, unsigned slave)
         CSlavePartMapping::serializeNullMap(dst);
 }
 
+void CDiskReadMasterBase::getActivityStats(IStatisticGatherer & stats)
+{
+    CMasterActivity::getActivityStats(stats);
+    diskAccessCost = calcFileReadCostStats(false);
+    if (diskAccessCost)
+        stats.addStatistic(StCostFileAccess, diskAccessCost);
+}
+
 void CDiskReadMasterBase::done()
 {
-    updateFileReadCostStats();
+    diskAccessCost = calcFileReadCostStats(true);
     CMasterActivity::done();
 }
 
@@ -284,7 +292,8 @@ void CWriteMasterBase::publish()
     }
     if (TDWrestricted & diskHelperBase->getFlags())
         props.setPropBool("restricted", true );
-    updateFileWriteCostStats(*fileDesc, props, statsCollection.getStatisticSum(StNumDiskWrites));
+    props.setPropInt64(getDFUQResultFieldName(DFUQRFnumDiskWrites), statsCollection.getStatisticSum(StNumDiskWrites));
+    props.setPropInt64(getDFUQResultFieldName(DFUQRFwriteCost), diskAccessCost);
     container.queryTempHandler()->registerFile(fileName, container.queryOwner().queryGraphId(), diskHelperBase->getTempUsageCount(), TDXtemporary & diskHelperBase->getFlags(), getDiskOutputKind(diskHelperBase->getFlags()), &clusters);
     if (!dlfn.isExternal())
     {
@@ -430,6 +439,14 @@ void CWriteMasterBase::done()
         published = false;
         recordsProcessed = 0;
     }
+}
+
+void CWriteMasterBase::getActivityStats(IStatisticGatherer & stats)
+{
+    CMasterActivity::getActivityStats(stats);
+    diskAccessCost = calcDiskWriteCost(clusters, statsCollection.getStatisticSum(StNumDiskWrites));
+    if (diskAccessCost)
+        stats.addStatistic(StCostFileAccess, diskAccessCost);
 }
 
 void CWriteMasterBase::slaveDone(size32_t slaveIdx, MemoryBuffer &mb)

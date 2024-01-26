@@ -1,0 +1,88 @@
+<Binding id="WsTest_desdl_binding">
+  <Definition esdlservice="WsTest">
+    <Methods>
+      <Scripts>
+        <![CDATA[
+          <Scripts>
+            <es:BackendRequest name="single-script" target="soap:Body/{$query}"
+                xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"
+                xmlns:es="urn:hpcc:esdl:script">
+                <es:set-value target="MySpecialValue" value="'veryspecial'"/>
+            </es:BackendRequest>
+          </Scripts>
+        ]]>
+      </Scripts>
+      <Method name="AllVersionReport" path="" url="https://127.0.0.1:9876" timeout="" mode="ESDL" queryname="DummyModule.Foobar_Service" status="available" maxWaitSecondsAllowed="10" traceLevel="1" auth_feature="AllowAllVersionReport:FULL">
+        <Gateways>
+          <Gateway name="sample" password="xxx" url="https://127.0.0.1:88" username="misteruser"/>
+        </Gateways>
+        <Scripts>
+          <![CDATA[
+            <Scripts>
+              <Scripts>
+                  <es:BackendRequest name="request-script" target="soap:Body/{$query}" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:es="urn:hpcc:esdl:script">
+                      <es:set-value target="Engine" value="'caboose'"/>
+                  </es:BackendRequest>
+                  <es:PreLogging name="log-script" trace="log-script" source="getDataSection('esdl_request')/soap:Envelope/soap:Body/{$query}/{$request}/Row/Options" xmlns:es="urn:hpcc:esdl:script" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+                      <es:ensure-target xpath="scripted-values">
+                          <es:set-value target="logoptions" select="'000000'"/>
+                          <es:if test="translate(substring(MatchFlag, 1,1), 't', 'T')='T' or MatchFlag=1">
+                              <es:set-value target="logoptions" select="'100000'"/>
+                          </es:if>
+                      </es:ensure-target>
+                  </es:PreLogging>
+              </Scripts>
+            </Scripts>
+          ]]>
+        </Scripts>
+      </Method>
+    </Methods>
+    <LoggingManager name="logman">
+      <FailSafe>true</FailSafe>
+      <FailSafeLogsDir>/tmp/FailSafeLogs</FailSafeLogsDir>
+      <Filters/>
+      <LogAgent name="dummyagent" type="LogAgent" services="GetTransactionSeed,UpdateLog,GetTransactionID" plugin="fakeplugin">
+        <LoggingServer url="https://127.0.0.1:1973/WsLogService" user="" password=""/>
+        <FailSafe>false</FailSafe>
+        <LogDataXPath>
+          <LogDataItem name="ServiceName" XPath="LogContent/UserContext/Context/Row/Common/ESP/ServiceName" xsl="" encode="" default=""/>
+          <LogInfo name="transaction_id" default="" XPath="LogContent/UserContext/Context/Row/Common/TransactionId" xsl="" multiple="" encode="" type="Value"/>
+          <LogInfo name="message" default="" XPath="" xsl="massage-message" multiple="" encode="true" type="Data"/>
+        </LogDataXPath>
+        <Variant type="accounting_log" group=""/>
+        <XSL>
+          <Transform name="massage-message">
+            <![CDATA[
+              <?xml version="1.0" encoding="UTF-8"?>
+              <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+                <xsl:output method="xml" omit-xml-declaration="yes"/>
+                <xsl:variable name="logContent" select="/UpdateLogRequest/LogContent"/>
+                <xsl:variable name="transactionId" select="$logContent/UserContext/Context/Row/Common/TransactionId"/>
+                <xsl:template match="/">
+                  <Result>
+                    <Dataset name='all-the-data'>
+                      <Row>
+                        <Records>
+                          <Rec>
+                            <transaction_id><xsl:value-of select="$transactionId" /></transaction_id>
+                            <request_data>
+                              <xsl:text disable-output-escaping="yes">&amp;lt;![CDATA[COMPRESS('</xsl:text>
+                              <xsl:copy-of select="$logContent"/>
+                              <xsl:text disable-output-escaping="yes">')]]&amp;gt;</xsl:text>
+                            </request_data>
+                            <request_format>SPECIAL</request_format>
+                            <type>23</type>
+                          </Rec>
+                        </Records>
+                      </Row>
+                    </Dataset>
+                  </Result>
+                </xsl:template>
+              </xsl:stylesheet>
+            ]]>
+          </Transform>
+        </XSL>
+      </LogAgent>
+    </LoggingManager>
+  </Definition>
+</Binding>

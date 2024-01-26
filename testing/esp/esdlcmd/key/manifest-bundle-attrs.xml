@@ -1,0 +1,30 @@
+<EsdlBundle>
+  <Binding id="WsTest_desdl_binding">
+    <Definition esdlservice="WsTest" definitionAttr="attributevalue" id="WsTest.1">
+      <Methods>
+        <Method name="AllVersionReport" path="" url="https://127.0.0.1:9876" timeout="" mode="ESDL" queryname="DummyModule.Foobar_Service" status="available" maxWaitSecondsAllowed="10" traceLevel="1" auth_feature="AllowAllVersionReport:FULL">
+          <Gateways>
+            <Gateway name="sample" password="xxx" url="https://127.0.0.1:88" username="misteruser"/>
+          </Gateways>
+        </Method>
+      </Methods>
+    </Definition>
+  </Binding>
+  <Definitions>
+    <![CDATA[
+      <esxdl name="WsTest"><EsdlEnumType  name="AnnotatedEnum" base_type="int"><EsdlEnumItem  enum="1" desc="Force" name="Fus"/><EsdlEnumItem  enum="2" desc="Balance" name="Ro"/><EsdlEnumItem  enum="3" desc="Push" name="Dah"/></EsdlEnumType>
+      <EsdlStruct name="FooBar"><EsdlElement  type="string" name="Foo"/><EsdlElement  type="string" name="Bar"/></EsdlStruct>
+      <EsdlStruct name="AllVersionArrays"><EsdlArray  type="string" name="StringArray"/><EsdlArray  type="FooBar" name="FooBarArray"/><EsdlArray  item_tag="NamedItem" type="FooBar" name="NamedItemFooBarArray"/></EsdlStruct>
+      <EsdlRequest name="AllVersionReportRequest"><EsdlElement  optional="developer" type="string" name="OptionalDeveloperStringVal"/><EsdlElement  type="int" cols="20" name="Annotate20ColsIntVal"/><EsdlEnum  enum_type="AnnotatedEnum" default="1" name="UnrelentingForce"/><EsdlElement  name="Arrays" complex_type="AllVersionArrays"/></EsdlRequest>
+      <EsdlResponse name="AllVersionReportResponse"><EsdlElement  type="string" name="ResultVal"/><EsdlElement  name="ResultArrays" complex_type="AllVersionArrays"/></EsdlResponse>
+      <EsdlRequest name="MinVersionReportRequest"><EsdlElement  type="string" name="RequestString"/></EsdlRequest>
+      <EsdlResponse name="MinVersionReportResponse"><EsdlElement  type="string" name="ResponseString"/></EsdlResponse>
+      <EsdlRequest name="WsTestPingRequest"></EsdlRequest>
+      <EsdlResponse name="WsTestPingResponse"></EsdlResponse>
+      <EsdlRequest name="VersionRangeReportRequest"><EsdlElement  type="string" name="RequestString"/></EsdlRequest>
+      <EsdlRequest name="VersionRangeReportResponse"><EsdlElement  type="string" name="ResponseString"/></EsdlRequest>
+      <EsdlService version="1" auth_feature="DEFERRED" name="WsTest" default_client_version="1"><EsdlMethod response_type="AllVersionReportResponse" request_type="AllVersionReportRequest" name="AllVersionReport"/><EsdlMethod response_type="MinVersionReportResponse" request_type="MinVersionReportRequest" min_ver="2" name="MinVersion"/><EsdlMethod response_type="WsTestPingResponse" auth_feature="none" request_type="WsTestPingRequest" name="Ping"/><EsdlMethod depr_ver="3" response_type="VersionRangeReportResponse" request_type="VersionRangeReportRequest" min_ver="2" name="VersionRangeReport"/></EsdlService>
+      </esxdl>
+    ]]>
+  </Definitions>
+</EsdlBundle>

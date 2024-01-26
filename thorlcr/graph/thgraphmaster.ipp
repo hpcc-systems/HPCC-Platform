@@ -253,8 +253,7 @@ protected:
     unsigned queryReadFileId(const char *lfnName);
     IDistributedFile *findReadFile(const char *lfnName);
     IDistributedFile *lookupReadFile(const char *lfnName, AccessMode mode, bool jobTemp, bool temp, bool opt, bool statsForMultipleFiles=false, const StatisticsMapping &statsMapping=diskReadRemoteStatistics, unsigned * fileStatsStartEntry=nullptr);
-    void updateFileReadCostStats();
-    void updateFileWriteCostStats(IFileDescriptor & fileDesc, IPropertyTree &props, stat_type numDiskWrites);
+    cost_type calcFileReadCostStats(bool updateFileProps);
     virtual void process() { }
 public:
     IMPLEMENT_IINTERFACE_USING(CActivityBase)

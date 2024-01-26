@@ -1,0 +1,45 @@
+<em:Manifest xmlns:em="urn:hpcc:esdl:manifest" outputType="binding">
+    <em:ServiceBinding esdlservice="WsTest" id="WsTest_desdl_binding">
+        <Methods>
+          <em:Scripts>
+            <em:Include file="script-with-cdata.xml"/>
+            <es:BackendRequest name="request-prep" xmlns:es="urn:hpcc:esdl:script">
+              <es:set-value target="EndCdataString" value="]]>"/>
+            </es:BackendRequest>
+          </em:Scripts>
+            <Method name="AllVersionReport" path="" url="https://127.0.0.1:9876" timeout="" mode="ESDL" queryname="DummyModule.Foobar_Service" status="available" maxWaitSecondsAllowed="10" traceLevel="1" auth_feature="AllowAllVersionReport:FULL">
+                <Gateways>
+                    <Gateway name="sample" password="xxx" url="https://127.0.0.1:88" username="misteruser"/>
+                </Gateways>
+            </Method>
+        </Methods>
+        <LoggingManager name="logman">
+            <LogAgent name="dummyagent" type="LogAgent" services="GetTransactionSeed,UpdateLog,GetTransactionID" plugin="fakeplugin">
+                <LoggingServer url="https://127.0.0.1:1973/WsLogService" user="" password=""/>
+                <LogDataXPath>
+                    <LogDataItem name="ServiceName" XPath="LogContent/UserContext/Context/Row/Common/ESP/ServiceName" xsl="" encode="" default=""/>
+                    <LogInfo name="transaction_id" default="" XPath="LogContent/UserContext/Context/Row/Common/TransactionId" xsl="" multiple="" encode="" type="Value"/>
+                </LogDataXPath>
+                <XSL>
+                  <em:Transform name="inline-cdata">
+                    <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+                      <xsl:output method="xml" omit-xml-declaration="yes"/>
+                      <xsl:template match="/">
+                        <Result>
+                          <Dataset name='test-with-cdata'>
+                            <Record>
+                              <![CDATA[<some><arbitraryxml>testdata</arbitraryxml></some>]]>
+                            </Record>
+                          </Dataset>
+                        </Result>
+                      </xsl:template>
+                    </xsl:stylesheet>
+                  </em:Transform>
+                  <em:Transform name="include-cdata">
+                    <em:Include file="xslt-with-cdata.xslt"/>
+                  </em:Transform>
+                </XSL>
+            </LogAgent>
+        </LoggingManager>
+    </em:ServiceBinding>
+</em:Manifest>

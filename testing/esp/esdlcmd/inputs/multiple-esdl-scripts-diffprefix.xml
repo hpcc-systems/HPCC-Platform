@@ -1,0 +1,10 @@
+<Scripts xmlns:esdlscript="urn:hpcc:esdl:script">
+    <esdlscript:BackendRequest name="request-script" target="soap:Body/{$query}" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+        <esdlscript:set-value target="Engine" value="'caboose'"/>
+    </esdlscript:BackendRequest>
+    <esdlscript:PreLogging name="log-script" trace="log-script" source="getDataSection('esdl_request')/soap:Envelope/soap:Body/{$query}/{$request}/Row/Options" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+        <esdlscript:ensure-target xpath="scripted-values">
+            <esdlscript:set-value target="logoptions" select="'000000'"/>
+        </esdlscript:ensure-target>
+    </esdlscript:PreLogging>
+</Scripts>

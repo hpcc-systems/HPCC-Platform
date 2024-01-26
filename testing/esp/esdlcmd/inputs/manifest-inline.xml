@@ -1,0 +1,37 @@
+<em:Manifest xmlns:em="urn:hpcc:esdl:manifest">
+    <em:ServiceBinding esdlservice="WsFoobar" id="WsFoobar_desdl_binding">
+        <Methods>
+            <em:Scripts>
+                <es:BackendRequest name="request-prep" target="soap:Body/{$query}" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:es="urn:hpcc:esdl:script">
+                    <es:set-value target="RequestValue" value="&apos;foobar&apos;"/>
+                </es:BackendRequest>
+                <em:Include file="WsFoobar-logging-prep.xml"/>
+            </em:Scripts>
+            <Method name="FoobarSearch" url="127.0.0.1:8888">
+                <em:Scripts>
+                    <em:Include file="FoobarSearch-scripts.xml"/>
+                </em:Scripts>
+            </Method>
+        </Methods>
+        <LoggingManager>
+            <LogAgent transformSource="local" name="main-logging">
+                <LogDataXPath>
+                    <LogInfo name="PreparedData" xsl="log-prep"/>
+                </LogDataXPath>
+                <XSL>
+                    <em:Transform name="log-prep">
+                        <em:Include file="log-prep.xslt"/>
+                    </em:Transform>
+                </XSL>
+            </LogAgent>
+        </LoggingManager>
+    </em:ServiceBinding>
+    <em:EsdlDefinition>
+        <esxdl name="WsFoobar"><EsdlRequest name="FoobarSearchRequest"><EsdlElement  type="int" name="RequestOption"/><EsdlElement  type="string" name="RequestName"/><EsdlElement  optional="hidden" type="bool" name="HiddenOption"/></EsdlRequest>
+      <EsdlResponse name="FoobarSearchResponse"><EsdlElement  type="int" name="FoundCount"/><EsdlElement  type="string" name="FoundAddress"/></EsdlResponse>
+      <EsdlRequest name="WsFoobarPingRequest"></EsdlRequest>
+      <EsdlResponse name="WsFoobarPingResponse"></EsdlResponse>
+      <EsdlService version="1" auth_feature="DEFERRED" name="WsFoobar" default_client_version="1"><EsdlMethod response_type="FoobarSearchResponse" request_type="FoobarSearchRequest" name="FoobarSearch"/><EsdlMethod response_type="WsFoobarPingResponse" auth_feature="none" request_type="WsFoobarPingRequest" name="Ping"/></EsdlService>
+      </esxdl>
+    </em:EsdlDefinition>
+</em:Manifest>

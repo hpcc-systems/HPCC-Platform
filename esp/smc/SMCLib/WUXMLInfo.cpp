@@ -261,9 +261,8 @@ bool CWUXMLInfo::buildXmlResultList(IConstWorkUnit &wu,IPropertyTree& XMLStructu
                 }
                 else
                 {
-                    value.append("   [");
-                    value.append(r.getResultTotalRowCount());
-                    value.append(" rows]");
+                    value.append("   ");
+                    getResultTotalRowCountString(r, value);
                     link.append(r.getResultSequence());
                 }
                 IPropertyTree* result = resultsTree->addPropTree("WUResult", createPTree(ipt_caseInsensitive));
@@ -368,4 +367,13 @@ void CWUXMLInfo::formatDuration(StringBuffer &ret, unsigned ms)
         ret.appendf("%02d.%03d", secs, ms);
     else
         ret.appendf("%d.%03d", secs, ms);
+}
+
+extern WUXMLINFO_API StringBuffer &getResultTotalRowCountString(IConstWUResult &r, StringBuffer &str)
+{
+    if (r.hasTotalRowCount())
+        str.append('[').append(r.getResultTotalRowCount()).append(" rows]");
+    else
+        str.append("[??? rows]");
+    return str;
 }

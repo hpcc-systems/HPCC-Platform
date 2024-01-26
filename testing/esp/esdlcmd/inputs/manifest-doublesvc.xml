@@ -1,0 +1,15 @@
+<em:Manifest xmlns:em="urn:hpcc:esdl:manifest" outputType="bundle">
+    <em:ServiceBinding esdlservice="WsFoobar" id="WsFoobar_desdl_binding">
+        <Methods>
+            <Method name="FoobarSearch" path="" url="https://127.0.0.1:9876" timeout="" mode="ESDL" queryname="DummyModule.Foobar_Service" status="available" maxWaitSecondsAllowed="10" traceLevel="1"/>
+        </Methods>
+    </em:ServiceBinding>
+    <em:ServiceBinding esdlservice="WsBaz" id="WsBaz_desdl_binding">
+        <Methods>
+            <Method name="BazSearch" path="" url="https://127.0.0.1:9876" timeout="" mode="ESDL" queryname="DummyModule.Foobar_Service" status="available" maxWaitSecondsAllowed="10" traceLevel="1"/>
+        </Methods>
+    </em:ServiceBinding>
+    <em:EsdlDefinition>
+        <em:Include file="ws_doublesvc.ecm"/>
+    </em:EsdlDefinition>
+</em:Manifest>

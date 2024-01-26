@@ -298,9 +298,16 @@ public:
         for (unsigned i=0; i<numFilesToRead; i++)
             fileStats[i]->deserialize(node, mb);
     }
+    virtual void getActivityStats(IStatisticGatherer & stats) override
+    {
+        CMasterActivity::getActivityStats(stats);
+        diskAccessCost = calcFileReadCostStats(false);
+        if (diskAccessCost)
+            stats.addStatistic(StCostFileAccess, diskAccessCost);
+    }
     virtual void done() override
     {
-        updateFileReadCostStats();
+        diskAccessCost = calcFileReadCostStats(true);
         CMasterActivity::done();
     }
 };

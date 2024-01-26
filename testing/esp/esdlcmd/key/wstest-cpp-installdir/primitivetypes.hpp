@@ -5,6 +5,8 @@
 #include "jstring.hpp"
 #include <string>
 
+using namespace std;
+
 namespace cppplugin
 {
 

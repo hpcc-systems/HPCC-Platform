@@ -1,0 +1,3 @@
+<Methods>
+  <Method name="JavaEchoPersonInfo" querytype="java" javamethod="EsdlExample.EsdlExampleService.JavaEchoPersonInfo"/>
+</Methods>

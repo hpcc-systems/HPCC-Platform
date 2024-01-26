@@ -2494,7 +2494,8 @@ void CFileSprayEx::getDropZoneInfoByDestPlane(double clientVersion, const char* 
     if (isAbsolutePath(destFileIn))
     {
         if (!startsWith(destFileIn, fullDropZoneDir))
-            throw makeStringExceptionV(ECLWATCH_DROP_ZONE_NOT_FOUND, "No landing zone configured for %s:%s", destPlane, destFileIn);
+            throw makeStringExceptionV(ECLWATCH_DROP_ZONE_NOT_FOUND, "The absolute destination path: '%s' is not valid for dropzone '%s' (path prefix '%s').",
+                destFileIn, destPlane, fullDropZoneDir.str());
     }
     else
     {

@@ -222,6 +222,16 @@ extern da_decl cost_type calcFileAccessCost(IDistributedFile *f, __int64 numDisk
     return calcFileAccessCost(clusterName, numDiskWrites, numDiskReads);
 }
 
+extern da_decl cost_type calcDiskWriteCost(const StringArray & clusters, stat_type numDiskWrites)
+{
+    if (!numDiskWrites)
+        return 0;
+    cost_type writeCost = 0;
+    ForEachItemIn(idx, clusters)
+        writeCost += calcFileAccessCost(clusters.item(idx), numDiskWrites, 0);
+    return writeCost;
+}
+
 RemoteFilename &constructPartFilename(IGroup *grp,unsigned partno,unsigned partmax,const char *name,const char *partmask,const char *partdir,unsigned copy,ClusterPartDiskMapSpec &mspec,RemoteFilename &rfn)
 {
     partno--;

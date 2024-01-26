@@ -1,0 +1,37 @@
+<em:Manifest xmlns:em="urn:hpcc:esdl:manifest">
+    <em:ServiceBinding esdlservice="WsTest" id="WsTest_desdl_binding">
+        <Methods>
+            <em:Scripts>
+                <em:Include file="single-esdl-script.xml" />
+            </em:Scripts>
+            <Method name="AllVersionReport" path="" url="https://127.0.0.1:9876" timeout="" mode="ESDL" queryname="DummyModule.Foobar_Service" status="available" maxWaitSecondsAllowed="10" traceLevel="1" auth_feature="AllowAllVersionReport:FULL">
+                <Gateways>
+                    <Gateway name="sample" password="xxx" url="https://127.0.0.1:88" username="misteruser"/>
+                </Gateways>
+                <em:Scripts>
+                    <em:Include file="multiple-esdl-scripts.xml"/>
+                </em:Scripts>
+            </Method>
+        </Methods>
+        <LoggingManager name="logman">
+            <FailSafe>true</FailSafe>
+            <FailSafeLogsDir>/tmp/FailSafeLogs</FailSafeLogsDir>
+            <Filters/>
+            <LogAgent name="dummyagent" type="LogAgent" services="GetTransactionSeed,UpdateLog,GetTransactionID" plugin="fakeplugin">
+                <LoggingServer url="https://127.0.0.1:1973/WsLogService" user="" password=""/>
+                <FailSafe>false</FailSafe>
+                <LogDataXPath>
+                    <LogDataItem name="ServiceName" XPath="LogContent/UserContext/Context/Row/Common/ESP/ServiceName" xsl="" encode="" default=""/>
+                    <LogInfo name="transaction_id" default="" XPath="LogContent/UserContext/Context/Row/Common/TransactionId" xsl="" multiple="" encode="" type="Value"/>
+                    <LogInfo name="message" default="" XPath="" xsl="massage-message" multiple="" encode="true" type="Data"/>
+                </LogDataXPath>
+                <Variant type="accounting_log" group=""/>
+                <XSL>
+                    <em:Transform name="massage-message">
+                        <em:Include file="log-prep.xslt"/>
+                    </em:Transform>
+                </XSL>
+            </LogAgent>
+        </LoggingManager>
+    </em:ServiceBinding>
+</em:Manifest>

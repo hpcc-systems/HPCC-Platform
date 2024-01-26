@@ -1,0 +1,12 @@
+<em:Manifest xmlns:em="urn:hpcc:esdl:manifest" outputType="binding">
+    <em:ServiceBinding esdlservice="WsFoobar" id="WsFoobar_desdl_binding">
+        <Methods>
+            <em:Scripts>
+                <em:Include file="multiple-esdl-scripts-diffprefix.xml"/>
+                <em:Include file="multiple-esdl-scripts-2.xml"/>
+            </em:Scripts>
+            <Method name="FoobarSearch" url="127.0.0.1:8888">
+            </Method>
+        </Methods>
+    </em:ServiceBinding>
+</em:Manifest>

@@ -1,0 +1,178 @@
+name: 'Deploy HPCC on K8s'
+description: 'Builds a docker image and deploys a HPCC cluster on K8s'
+inputs:
+  os:
+    description: 'Operating System'
+    required: false
+    default: 'ubuntu-22.04'
+  asset-name:
+    description: 'Asset Name'
+    required: false
+    default: 'docker-ubuntu-22_04-containerized'
+  platform-folder:
+    description: 'Platform Folder'
+    required: false
+    default: './HPCC-Platform'
+
+runs:
+  using: "composite"
+  steps:
+    - name: Free additional disk space (remove Android SDK + Tools)
+      run: |
+        sudo rm -rf /usr/local/lib/android
+      shell: bash
+
+    - name: Download Package
+      uses: actions/download-artifact@v3
+      with:
+        name: ${{ inputs.asset-name }}
+        path: ${{ inputs.asset-name }}
+
+    - name: Download Support Files
+      uses: actions/download-artifact@v3
+      with:
+        name: ${{ inputs.asset-name }}-support-files
+        path: ${{ inputs.asset-name }}-support-files
+
+    - name: Install K8s
+      uses: balchua/microk8s-actions@v0.4.0
+      with:
+        channel: '1.27/stable'
+        devMode: 'true'
+        addons: '["dns", "rbac", "hostpath-storage", "helm", "registry"]'
+
+    - name: Wait for registry startup
+      run: |
+        kubectl wait pods --for=jsonpath='{.status.phase}'=Running -l app=registry -n container-registry --timeout=90s
+      shell: bash
+
+    # Note: We need to move the package file due to the Dockerfile expecting it in the platform folder
+    - name: Find & Move Package
+      run: |
+        k8s_pkg_path=$(ls -t ./${{ inputs.asset-name }}/*.deb 2>/dev/null | head -1)
+        k8s_pkg_file=$(basename "$k8s_pkg_path")
+        mv ${k8s_pkg_path} ${{ inputs.platform-folder }}/${k8s_pkg_file}
+        echo "k8s_pkg_file=$k8s_pkg_file" >> $GITHUB_ENV
+        echo "$k8s_pkg_file"
+      shell: bash
+
+    - name: Set up Docker Buildx
+      id: buildx
+      uses: docker/setup-buildx-action@v2
+      with:
+        driver-opts: |
+          network=host
+
+    - name: Calculate vars
+      id: vars
+      run: |
+        community_base_ref=${{ github.event.base_ref || github.ref }}
+        candidate_branch=$(echo $community_base_ref | cut -d'/' -f3)
+        echo "candidate_branch=$candidate_branch" >> $GITHUB_OUTPUT
+        echo "candidate_base_branch=$(echo $candidate_branch | awk -F'.' -v OFS='.' '{ $3="x"; print }')" >> $GITHUB_OUTPUT
+      shell: bash
+
+    - name: Create Docker Image (community)
+      uses: docker/build-push-action@v4
+      with:
+        builder: ${{ steps.buildx.outputs.name }}
+        file: ${{ inputs.platform-folder }}/dockerfiles/vcpkg/platform-core-ubuntu-22.04/Dockerfile
+        context: ${{ inputs.platform-folder }}/
+        push: true
+        tags: localhost:32000/hpccsystems/platform-core:latest
+        build-args: |
+          PKG_FILE=${{ env.k8s_pkg_file }}
+        cache-from: |
+          type=registry,ref=hpccsystems/platform-core-${{ inputs.os }}:${{ steps.vars.outputs.candidate_base_branch }}
+
+    # Note: IP Address range below is the IP address range that will be made available for load balancers
+    # on the host machine, they aren't actual load balancers so they will not be accessible externally
+    - name: Enable LoadBalancers
+      run: |
+        sudo microk8s enable metallb:10.64.140.43-10.64.140.69
+      shell: bash
+
+    - name: Create Root Certificates
+      run: |
+        echo "[req]
+        default_bits           = 2048
+        default_keyfile        = ca.key
+        distinguished_name     = dn
+        prompt                 = no
+        x509_extensions        = x509_ca
+
+        [dn]
+        C                      = US
+        ST                     = GA
+        L                      = Alparetta
+        O                      = Lexis Nexis Risk
+        OU                     = Platform Development
+        CN                     = TestCluster
+        emailAddress           = support@lexisnexisrisk.com
+
+        [x509_ca]
+        basicConstraints=CA:true,pathlen:1" > ca-req.cfg
+        openssl req -x509 -newkey rsa:2048 -nodes -keyout ca.key -sha256 -days 1825 -out ca.crt -config ca-req.cfg
+        kubectl create secret tls hpcc-signing-issuer-key-pair --cert=ca.crt --key=ca.key
+        kubectl create secret tls hpcc-local-issuer-key-pair --cert=ca.crt --key=ca.key
+        sudo keytool -import -trustcacerts -cacerts -storepass changeit -noprompt -alias hpcc-local-issuer -file ca.crt
+      shell: bash
+
+    - name: Install JetStack Cert Manager
+      run: |
+        sudo microk8s helm repo add jetstack https://charts.jetstack.io
+        sudo microk8s helm repo update
+        kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.11.0/cert-manager.crds.yaml
+        sudo microk8s helm install cert-manager jetstack/cert-manager --namespace cert-manager --create-namespace --version v1.11.0
+      shell: bash
+
+    - name: Install HPCC Cluster
+      run: |
+        cat <<EOF > values.yaml
+        certificates:
+          enabled: true
+        dafilesrv:
+          - name: rowservice
+            disabled: false
+            application: stream
+            service:
+              servicePort: 7600
+              visibility: global
+          - name: spray-service
+            application: spray
+            service:
+              servicePort: 7300
+              visibility: cluster
+        EOF
+        sudo microk8s helm install myhpcc ${{ inputs.platform-folder }}/helm/hpcc --set global.image.root=localhost:32000/hpccsystems --set global.image.version=latest -f values.yaml
+      shell: bash
+
+    - name: Wait for Deployment Rollout & Grab Service IPs
+      run: |
+        sleep 10
+        deploy=$(kubectl get deploy -o name)
+        for i in $deploy; do kubectl rollout status $i -w --timeout=180s; done
+        echo "ECLWATCH_IP=$(kubectl get svc eclwatch -o jsonpath='{.spec.clusterIP}')" >> $GITHUB_ENV
+        echo "ROWSERVICE_IP=$(kubectl get svc rowservice -o jsonpath='{.spec.clusterIP}')" >> $GITHUB_ENV
+        echo "SQL_TO_ECL_IP=$(kubectl get svc sql2ecl -o jsonpath='{.spec.clusterIP}')" >> $GITHUB_ENV
+        kubectl get pods
+        kubectl get svc
+      shell: bash
+
+    - name: Add Host File Entries
+      run: |
+        sudo -- sh -c -e "echo '${{ env.ECLWATCH_IP }} eclwatch.default' >> /etc/hosts";
+        sudo -- sh -c -e "echo '${{ env.ROWSERVICE_IP }} rowservice.default' >> /etc/hosts";
+        sudo -- sh -c -e "echo '${{ env.SQL_TO_ECL_IP }} sql2ecl.default' >> /etc/hosts";
+      shell: bash
+
+    - name: Trust Certs
+      run: |
+        openssl s_client -showcerts -connect eclwatch.default:8010 < /dev/null | openssl x509 -outform DER > cert.der
+        sudo keytool -import -keystore $JAVA_HOME/lib/security/cacerts -storepass changeit -noprompt -alias eclwatch-tls -file cert.der
+        openssl s_client -showcerts -connect rowservice.default:7600 < /dev/null | openssl x509 -outform DER > cert.der
+        sudo keytool -import -keystore $JAVA_HOME/lib/security/cacerts -storepass changeit -noprompt -alias dafilesrv-tls -file cert.der
+        openssl s_client -showcerts -connect sql2ecl.default:8510 < /dev/null | openssl x509 -outform DER > cert.der
+        sudo keytool -import -keystore $JAVA_HOME/lib/security/cacerts -storepass changeit -noprompt -alias sqltoecl-tls -file cert.der
+      shell: bash
+

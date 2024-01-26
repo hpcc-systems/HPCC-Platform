@@ -1004,7 +1004,7 @@ static MapXToMyClass<hash64_t, hash64_t, IQueryFactory> onDemandQueryCache;
 void sendUnloadMessage(hash64_t hash, const char *id, const IRoxieContextLogger &logctx)
 {
     RemoteActivityId unloadId(ROXIE_UNLOAD, hash);
-    RoxiePacketHeader header(unloadId, 0, 0, 0);
+    RoxiePacketHeader header(unloadId, RUID_DISCARD, 0, 0);
 
     MemoryBuffer mb;
     mb.append(sizeof(RoxiePacketHeader), &header);
@@ -2706,7 +2706,7 @@ public:
 #endif
                 Owned<ISerializedRoxieQueryPacket> packet = createSerializedRoxiePacket(mb);
                 unsigned retries = header.thisChannelRetries(mySubchannel);
-                if (acknowledgeAllRequests && (header.activityId & ~ROXIE_PRIORITY_MASK) != ROXIE_PING)
+                if (acknowledgeAllRequests && (header.activityId & ~ROXIE_PRIORITY_MASK) < ROXIE_ACTIVITY_SPECIAL_FIRST)
                 {
 #ifdef DEBUG
                     if (testAgentFailure & 0x1 && !retries)
@@ -3874,7 +3874,7 @@ class PingTimer : public Thread
         try
         {
             RemoteActivityId pingId(ROXIE_PING | priorityMask, 0);
-            RoxiePacketHeader header(pingId, 0, 0, 0);
+            RoxiePacketHeader header(pingId, RUID_PING, 0, 0);
 
             MemoryBuffer mb;
             mb.append(sizeof(RoxiePacketHeader), &header);
@@ -3926,21 +3926,29 @@ public:
                 unsigned headerLen;
                 const RoxiePacketHeader *header = mr->getMessageHeader(headerLen);
                 Owned<IMessageUnpackCursor> mu = mr->getCursor(rowManager);
-                PingRecord *answer = (PingRecord *) mu->getNext(sizeof(PingRecord));
-                if (answer && mu->atEOF() && headerLen==sizeof(RoxiePacketHeader))
+                if (header->activityId == ROXIE_PING)
                 {
-                    unsigned elapsed = usTick() - answer->tick;
-                    pingsReceived++;
-                    pingsElapsed += elapsed;
-                    if (doTrace(traceRoxiePings, TraceFlags::Max))
-                        DBGLOG("PING reply channel=%d, time %d", header->channel, elapsed); // DBGLOG is slower than the pings so be careful!
+                    PingRecord *answer = (PingRecord *) mu->getNext(sizeof(PingRecord));
+                    if (answer && mu->atEOF() && headerLen==sizeof(RoxiePacketHeader))
+                    {
+                        unsigned elapsed = usTick() - answer->tick;
+                        pingsReceived++;
+                        pingsElapsed += elapsed;
+                        if (doTrace(traceRoxiePings, TraceFlags::Max))
+                            DBGLOG("PING reply channel=%d, time %d", header->channel, elapsed); // DBGLOG is slower than the pings so be careful!
+                    }
+                    else
+                    {
+                        StringBuffer s;
+                        DBGLOG("PING reply, garbled result %s", header->toString(s).str());
+                    }
+                    ReleaseRoxieRow(answer);
                 }
                 else
                 {
                     StringBuffer s;
-                    DBGLOG("PING reply, garbled result %s", header->toString(s).str());
+                    DBGLOG("PING reply, unexpected result %s", header->toString(s).str());
                 }
-                ReleaseRoxieRow(answer);
             }
             else if (!anyActivity)
             {

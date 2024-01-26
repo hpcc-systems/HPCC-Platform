@@ -1,0 +1,34 @@
+<Scripts>
+  <es:PreLogging xmlns:es="urn:hpcc:esdl:script">
+    <es:http-post-xml url="'http://127.0.0.1:9876'" section="logdata/LogDatasets" name="roxie_call_exception">
+      <es:content>
+        <es:element name="Envelope">
+          <es:namespace prefix="soap" uri="http://schemas.xmlsoap.org/soap/envelope/" current="true" />
+          <es:element name="Body">
+            <es:element name="nonexistent_query">
+              <es:namespace uri="urn:hpccsystems:ecl:roxieechopersoninfo" current="true" />
+              <es:element name="nonexistent_queryrequest">
+                <es:element name="Row">
+                  <es:element name="Name">
+                    <es:set-value target="First" value="'aaa'"/>
+                    <es:set-value target="Last" value="'bbb'"/>
+                    <es:element name="Aliases">
+                      <es:set-value target="Alias" value="'ccc'"/>
+                      <es:add-value target="Alias" value="'ddd'"/>
+                    </es:element>
+                  </es:element>
+                </es:element>
+              </es:element>
+            </es:element>
+          </es:element>
+        </es:element>
+      </es:content>
+    </es:http-post-xml>
+  </es:PreLogging>
+  <es:PreLogging xmlns:es="urn:hpcc:esdl:script">
+    <es:set-value target="PLMTH2" value="'m222'" />
+  </es:PreLogging>
+  <es:PreLogging xmlns:es="urn:hpcc:esdl:script">
+    <es:set-value target="PLMTH3" value="'m333'" />
+  </es:PreLogging>
+</Scripts>

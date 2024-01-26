@@ -196,6 +196,7 @@ void EsdlCMDShell::usage()
            "   bind-method       Configure method associated with existing ESDL binding.\n"
            "   unbind-method     Remove method associated with existing ESDL binding.\n"
            "   get-binding       Get ESDL binding.\n"
+           "   manifest          Build a service binding or bundle from a manifest file.\n"
            "   bind-log-transform  	Configure log transform associated with existing ESDL binding.\n"
            "   unbind-log-transform	Remove log transform associated with existing ESDL binding.\n"
            "   monitor           Generate ECL code for result monitoring / differencing\n"

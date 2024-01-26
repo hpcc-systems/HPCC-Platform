@@ -1,0 +1,5 @@
+<es:BackendRequest name="included-with-cdata-end" xmlns:es="urn:hpcc:esdl:script">
+  <es:set-value target="EndCdataString" value="]]>"/>
+  <invalidEsdlScript1><![CDATA[<apple munch='good'/>]]></invalidEsdlScript1>
+  <invalidEsdlScript2><![CDATA[<one><![CDATA[<apple munch='good'/>]]]]><![CDATA[></one>]]></invalidEsdlScript2>
+</es:BackendRequest>

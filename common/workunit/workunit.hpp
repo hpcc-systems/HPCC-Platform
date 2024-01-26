@@ -275,6 +275,7 @@ interface IConstWUResult : extends IInterface
     virtual IStringVal & getResultXml(IStringVal & str, bool hidePasswords) const = 0;
     virtual unsigned getResultFetchSize() const = 0;
     virtual __int64 getResultTotalRowCount() const = 0;
+    virtual bool hasTotalRowCount() const = 0;
     virtual __int64 getResultRowCount() const = 0;
     virtual void getResultDataset(IStringVal & ecl, IStringVal & defs) const = 0;
     virtual IStringVal & getResultLogicalName(IStringVal & ecl) const = 0;

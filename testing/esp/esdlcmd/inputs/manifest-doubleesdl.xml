@@ -1,0 +1,18 @@
+<em:Manifest xmlns:em="urn:hpcc:esdl:manifest" outputType="bundle">
+    <em:ServiceBinding esdlservice="WsTest" id="WsTest_desdl_binding">
+        <Methods>
+            <Method name="AllVersionReport" path="" url="https://127.0.0.1:9876" timeout="" mode="ESDL" queryname="DummyModule.Foobar_Service" status="available" maxWaitSecondsAllowed="10" traceLevel="1" auth_feature="AllowAllVersionReport:FULL">
+                <Gateways>
+                    <Gateway name="sample" password="xxx" url="https://127.0.0.1:88" username="misteruser"/>
+                </Gateways>
+            </Method>
+        </Methods>
+    </em:ServiceBinding>
+
+    <em:EsdlDefinition>
+        <em:Include file="ws_test.ecm"/>
+    </em:EsdlDefinition>
+    <em:EsdlDefinition>
+        <em:Include file="ws_baz.ecm"/>
+    </em:EsdlDefinition>
+</em:Manifest>

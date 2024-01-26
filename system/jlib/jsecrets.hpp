@@ -39,6 +39,7 @@ extern jlib_decl bool getSecretKeyValue(StringBuffer & result, const IPropertyTr
 extern jlib_decl bool getSecretValue(StringBuffer & result, const char *category, const char * name, const char * key, bool required);
 
 extern jlib_decl void initSecretUdpKey();
+extern jlib_decl void setTestUdpKey();
 extern jlib_decl const MemoryAttr &getSecretUdpKey(bool required);
 
 extern jlib_decl bool containsEmbeddedKey(const char *certificate);

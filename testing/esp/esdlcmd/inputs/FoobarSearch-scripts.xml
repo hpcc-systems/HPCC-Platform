@@ -1,0 +1,12 @@
+<Scripts>
+    <es:BackendRequest name="search-request-prep" target="soap:Body/{$query}" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:es="urn:hpcc:esdl:script">
+        <es:if test="RequestOption>1">
+            <es:set-value target="HiddenOption" value="true()"/>
+        </es:if>
+    </es:BackendRequest>
+    <es:PreLogging name="search-logging-prep" target="soap:Body/{$query}" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:es="urn:hpcc:esdl:script">
+        <es:if test="RequestOption=1">
+            <es:set-value target="ProductPrice" value="10"/>
+        </es:if>
+    </es:PreLogging>
+</Scripts>

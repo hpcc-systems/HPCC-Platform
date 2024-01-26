@@ -892,6 +892,7 @@ extern da_decl bool checkLogicalName(const char *lfn,IUserDescriptor *user,bool 
 extern da_decl cost_type calcFileAtRestCost(const char * cluster, double sizeGB, double fileAgeDays);
 extern da_decl cost_type calcFileAccessCost(const char * cluster, __int64 numDiskWrites, __int64 numDiskReads);
 extern da_decl cost_type calcFileAccessCost(IDistributedFile *f, __int64 numDiskWrites, __int64 numDiskReads);
+extern da_decl cost_type calcDiskWriteCost(const StringArray & clusters, stat_type numDiskWrites);
 constexpr bool defaultPrivilegedUser = true;
 constexpr bool defaultNonPrivilegedUser = false;
 

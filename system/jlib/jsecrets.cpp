@@ -1454,6 +1454,18 @@ void initSecretUdpKey()
     udpKeyInitialized = true;
 }
 
+void setTestUdpKey()
+{
+    // Used in unit tests etc
+    constexpr unsigned char key[] = { 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37,
+                                      0x38, 0x39, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35,
+                                      0x36, 0x37, 0x38, 0x39, 0x30, 0x31, 0x32, 0x33,
+                                      0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x30, 0x31
+                                    };
+    udpKey.set(32, key);
+    udpKeyInitialized = true;
+}
+
 const MemoryAttr &getSecretUdpKey(bool required)
 {
     if (!udpKeyInitialized)

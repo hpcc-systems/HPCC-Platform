@@ -1,0 +1,5 @@
+<es:BackendRequest name="single-script" target="soap:Body/{$query}"
+    xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"
+    xmlns:es="urn:hpcc:esdl:script">
+    <es:set-value target="MySpecialValue" value="'veryspecial'"/>
+</es:BackendRequest>
