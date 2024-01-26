@@ -68,8 +68,22 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Free additional disk space (remove Android SDK + Tools)
+        continue-on-error: true
         run: |
-          sudo rm -rf /usr/local/lib/android
+          df -h
+          sudo rm -rf ${ANDROID_HOME}
+          sudo rm -rf ${JAVA_HOME_8_X64}
+          sudo rm -rf ${JAVA_HOME_11_X64}
+          sudo rm -rf ${JAVA_HOME_17_X64}
+          sudo rm -rf ${JAVA_HOME_21_X64}
+          sudo rm -rf ${CHROMEWEBDRIVER}
+          sudo rm -rf ${EDGEWEBDRIVER}
+          sudo rm -rf ${GECKOWEBDRIVER}
+          sudo rm -rf ${SELENIUM_JAR_PATH}
+
+      - name: Display disk space (post free)
+        run: |
+          df -h
 
       - name: Checkout HPCC-Platform
         uses: actions/checkout@v3
