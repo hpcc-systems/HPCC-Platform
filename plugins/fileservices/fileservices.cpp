@@ -2720,7 +2720,8 @@ FILESERVICES_API char *  FILESERVICES_CALL fsfResolveHostName(const char *hostna
 {
     StringBuffer ret;
     SocketEndpoint ep(hostname);
-    ep.getHostText(ret);
+    //NB: Get a string for the resolved IP, not the hostname
+    ep.getIpText(ret);
     return ret.detach();
 }
 
