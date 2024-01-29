@@ -45,10 +45,11 @@ typedef unsigned short UChar;
 #endif
 #endif
 #include "rtlconst.hpp"
+#include "jiface.hpp"
 
 //Should be incremented whenever the virtuals in the context or a helper are changed, so
 //that a work unit can't be rerun.  Try as hard as possible to retain compatibility.
-#define ACTIVITY_INTERFACE_VERSION      653
+#define ACTIVITY_INTERFACE_VERSION      654
 #define MIN_ACTIVITY_INTERFACE_VERSION  650             //minimum value that is compatible with current interface
 
 typedef unsigned char byte;
@@ -727,6 +728,7 @@ interface ICodeContext : public IResourceContext
     virtual char *getPlatform() = 0; // caller frees return string.
     virtual unsigned getPriority() const = 0;
     virtual char *getWuid() = 0; // caller frees return string.
+    virtual unsigned getWorkflowId() const = 0;
 
     // Exception handling
 
@@ -2954,7 +2956,7 @@ struct IGlobalCodeContext
     virtual void fail(int, const char *) = 0;  
 
     virtual bool isResult(const char * name, unsigned sequence) = 0;
-    virtual unsigned getWorkflowId() = 0;
+    virtual unsigned getWorkflowId() const = 0;
     virtual void doNotify(char const * name, char const * text) = 0;
 
     virtual int queryLastFailCode() = 0;
@@ -2980,6 +2982,362 @@ struct IEclProcess : public IInterface
     virtual unsigned getActivityVersion() const = 0;
 };
 
+
+// Wraps existing IEclProcess so that when perform is called,
+// ICodeContext->getWorkflowId() may be used by the process to query
+// the workflow id
+struct EclProcessExtra : implements IEclProcess, public CInterface
+{
+    class CodeContext : implements ICodeContext
+    {
+        ICodeContext * ctx;
+        unsigned wfid;
+    public:
+        CodeContext(ICodeContext * _ctx, unsigned _wfid) : ctx(_ctx), wfid(_wfid) {}
+        virtual ~CodeContext(){};
+        virtual const char *loadResource(unsigned id)
+        {
+            return ctx->loadResource(id);
+        }
+        virtual void setResultBool(const char *name, unsigned sequence, bool value)
+        {
+            ctx->setResultBool(name, sequence, value);
+        }
+        virtual void setResultData(const char *name, unsigned sequence, int len, const void * data)
+        {
+            ctx->setResultData(name, sequence, len, data);
+        }
+        virtual void setResultDecimal(const char * stepname, unsigned sequence, int len, int precision, bool isSigned, const void *val)
+        {
+            ctx->setResultDecimal(stepname, sequence, len, precision, isSigned, val);
+        }
+        virtual void setResultInt(const char *name, unsigned sequence, __int64 value, unsigned size)
+        {
+            ctx->setResultInt(name, sequence, value, size);
+        }
+        virtual void setResultRaw(const char *name, unsigned sequence, int len, const void * data)
+        {
+            ctx->setResultRaw(name, sequence, len, data);
+        }
+        virtual void setResultReal(const char * stepname, unsigned sequence, double value)
+        {
+            ctx->setResultReal(stepname, sequence, value);
+        }
+        virtual void setResultSet(const char *name, unsigned sequence, bool isAll, size32_t len, const void * data, ISetToXmlTransformer * transformer)
+        {
+            ctx->setResultSet(name, sequence, isAll, len, data, transformer);
+        }
+        virtual void setResultString(const char *name, unsigned sequence, int len, const char * str)
+        {
+            ctx->setResultString(name, sequence, len, str);
+        }
+        virtual void setResultUInt(const char *name, unsigned sequence, unsigned __int64 value, unsigned size)
+        {
+            ctx->setResultUInt(name, sequence, value, size);
+        }
+        virtual void setResultUnicode(const char *name, unsigned sequence, int len, UChar const * str)
+        {
+            ctx->setResultUnicode(name, sequence, len, str);
+        }
+        virtual void setResultVarString(const char * name, unsigned sequence, const char * value)
+        {
+            ctx->setResultVarString(name, sequence, value);
+        }
+        virtual void setResultVarUnicode(const char * name, unsigned sequence, UChar const * value)
+        {
+            ctx->setResultVarUnicode(name, sequence, value);
+        }
+        virtual bool getResultBool(const char * name, unsigned sequence)
+        {
+            return ctx->getResultBool(name, sequence);
+        }
+        virtual void getResultData(unsigned & tlen, void * & tgt, const char * name, unsigned sequence)
+        {
+            ctx->getResultData(tlen, tgt, name, sequence);
+        }
+        virtual void getResultDecimal(unsigned tlen, int precision, bool isSigned, void * tgt, const char * stepname, unsigned sequence)
+        {
+            ctx->getResultDecimal(tlen, precision, isSigned, tgt, stepname, sequence);
+        }
+        virtual void getResultRaw(unsigned & tlen, void * & tgt, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer)
+        {
+            ctx->getResultRaw(tlen, tgt, name, sequence, xmlTransformer, csvTransformer);
+        }
+        virtual void getResultSet(bool & isAll, size32_t & tlen, void * & tgt, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer)
+        {
+            ctx->getResultSet(isAll, tlen, tgt, name, sequence, xmlTransformer, csvTransformer);
+        }
+        virtual __int64 getResultInt(const char * name, unsigned sequence)
+        {
+            return ctx->getResultInt(name, sequence);
+        }
+        virtual double getResultReal(const char * name, unsigned sequence)
+        {
+            return ctx->getResultReal(name, sequence);
+        }
+        virtual void getResultString(unsigned & tlen, char * & tgt, const char * name, unsigned sequence)
+        {
+            ctx->getResultString(tlen, tgt, name, sequence);
+        }
+        virtual void getResultStringF(unsigned tlen, char * tgt, const char * name, unsigned sequence)
+        {
+            ctx->getResultStringF(tlen, tgt, name, sequence);
+        }
+        virtual void getResultUnicode(unsigned & tlen, UChar * & tgt, const char * name, unsigned sequence)
+        {
+            ctx->getResultUnicode(tlen, tgt, name, sequence);
+        }
+        virtual char *getResultVarString(const char * name, unsigned sequence)
+        {
+            return ctx->getResultVarString(name, sequence);
+        }
+        virtual UChar *getResultVarUnicode(const char * name, unsigned sequence)
+        {
+            return ctx->getResultVarUnicode(name, sequence);
+        }
+        virtual unsigned getResultHash(const char * name, unsigned sequence)
+        {
+            return ctx->getResultHash(name, sequence);
+        }
+        virtual unsigned getExternalResultHash(const char * wuid, const char * name, unsigned sequence)
+        {
+            return ctx->getExternalResultHash(wuid, name, sequence);
+        }
+        virtual char *getWuid()
+        {
+            return ctx->getWuid();
+        }
+        virtual unsigned getWorkflowId() const override
+        {
+            return wfid;
+        }
+        virtual void getExternalResultRaw(unsigned & tlen, void * & tgt, const char * wuid, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer)
+        {
+            ctx->getExternalResultRaw(tlen, tgt, wuid, stepname, sequence, xmlTransformer, csvTransformer);
+        }
+        virtual void executeGraph(const char * graphName, bool realThor, size32_t parentExtractSize, const void * parentExtract)
+        {
+            ctx->executeGraph(graphName, realThor, parentExtractSize, parentExtract);
+        }
+        virtual char * getExpandLogicalName(const char * logicalName)
+        {
+            return ctx->getExpandLogicalName(logicalName);
+        }
+        virtual void addWuException(const char * text, unsigned code, unsigned severity, const char *source)
+        {
+            ctx->addWuException(text, code, severity, source);
+        }
+        virtual void addWuAssertFailure(unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, bool isAbort)
+        {
+            ctx->addWuAssertFailure(code, text, filename, lineno, column, isAbort);
+        }
+        virtual IUserDescriptor *queryUserDescriptor()
+        {
+            return ctx->queryUserDescriptor();
+        }
+        virtual IThorChildGraph * resolveChildQuery(__int64 activityId, IHThorArg * colocal)
+        {
+            return ctx->resolveChildQuery(activityId, colocal);
+        }
+        virtual unsigned __int64 getDatasetHash(const char * name, unsigned __int64 hash)
+        {
+            return ctx->getDatasetHash(name, hash);
+        }
+        virtual unsigned getNodes()
+        {
+            return ctx->getNodes();
+        }
+        virtual unsigned getNodeNum()
+        {
+            return ctx->getNodeNum();
+        }
+        virtual char *getFilePart(const char *logicalPart, bool create)
+        {
+            return ctx->getFilePart(logicalPart, create);
+        }
+        virtual unsigned __int64 getFileOffset(const char *logicalPart)
+        {
+            return ctx->getFileOffset(logicalPart);
+        }
+        virtual IDistributedFileTransaction *querySuperFileTransaction()
+        {
+            return ctx->querySuperFileTransaction();
+        }
+        virtual char *getEnv(const char *name, const char *defaultValue) const
+        {
+            return ctx->getEnv(name, defaultValue);
+        }
+        virtual char *getJobName()
+        {
+            return ctx->getJobName();
+        }
+        virtual char *getJobOwner()
+        {
+            return ctx->getJobOwner();
+        }
+        virtual char *getClusterName()
+        {
+            return ctx->getClusterName();
+        }
+        virtual char *getGroupName()
+        {
+            return ctx->getGroupName();
+        }
+        virtual char * queryIndexMetaData(char const * lfn, char const * xpath)
+        {
+            return ctx->queryIndexMetaData(lfn, xpath);
+        }
+        virtual unsigned getPriority() const
+        {
+            return ctx->getPriority();
+        }
+        virtual char *getPlatform()
+        {
+            return ctx->getPlatform();
+        }
+        virtual char *getOS()
+        {
+            return ctx->getOS();
+        }
+        virtual IEclGraphResults * resolveLocalQuery(__int64 activityId)
+        {
+            return ctx->resolveLocalQuery(activityId);
+        }
+        virtual char *getEnv(const char *name, const char *defaultValue)
+        {
+            return ctx->getEnv(name, defaultValue);
+        }
+        virtual unsigned logString(const char *text) const
+        {
+            return ctx->logString(text);
+        }
+        virtual const IContextLogger &queryContextLogger() const
+        {
+            return ctx->queryContextLogger();
+        }
+        virtual IDebuggableContext *queryDebugContext() const
+        {
+            return ctx->queryDebugContext();
+        }
+        virtual IEngineRowAllocator * getRowAllocator(IOutputMetaData * meta, unsigned activityId) const
+        {
+            return ctx->getRowAllocator(meta, activityId);
+        }
+        virtual IEngineRowAllocator * getRowAllocatorEx(IOutputMetaData * meta, unsigned activityId, unsigned heapFlags) const
+        {
+            return ctx->getRowAllocatorEx(meta, activityId, heapFlags);
+        }
+        virtual const char *cloneVString(const char *str) const
+        {
+            return ctx->cloneVString(str);
+        }
+        virtual const char *cloneVString(size32_t len, const char *str) const
+        {
+            return ctx->cloneVString(len, str);
+        }
+        virtual void getResultRowset(size32_t & tcount, const byte * * & tgt, const char * name, unsigned sequence, IEngineRowAllocator * _rowAllocator, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) override
+        {
+            ctx->getResultRowset(tcount, tgt, name, sequence, _rowAllocator, isGrouped, xmlTransformer, csvTransformer);
+        }
+        virtual void getResultDictionary(size32_t & tcount, const byte * * & tgt, IEngineRowAllocator * _rowAllocator, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher) override
+        {
+            ctx->getResultDictionary(tcount, tgt, _rowAllocator, name, sequence, xmlTransformer, csvTransformer, hasher);
+        }
+        virtual void getRowXML(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags)
+        {
+            ctx->getRowXML(lenResult, result, info, row, flags);
+        }
+        virtual void getRowJSON(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags)
+        {
+            ctx->getRowJSON(lenResult, result, info, row, flags);
+        }
+        virtual const void * fromXml(IEngineRowAllocator * _rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace)
+        {
+            return ctx->fromXml(_rowAllocator, len, utf8, xmlTransformer, stripWhitespace);
+        }
+        virtual const void * fromJson(IEngineRowAllocator * _rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace)
+        {
+            return ctx->fromJson(_rowAllocator, len, utf8, xmlTransformer, stripWhitespace);
+        }
+        virtual IEngineContext *queryEngineContext()
+        {
+            return ctx->queryEngineContext();
+        }
+        virtual char *getDaliServers()
+        {
+            return ctx->getDaliServers();
+        }
+        virtual IWorkUnit *updateWorkUnit() const
+        {
+            return ctx->updateWorkUnit();
+        }
+        virtual ISectionTimer * registerTimer(unsigned activityId, const char * name)
+        {
+            return ctx->registerTimer(activityId, name);
+        }
+        virtual unsigned getGraphLoopCounter() const override
+        {
+            return ctx->getGraphLoopCounter();
+        }
+        virtual void addWuExceptionEx(const char * text, unsigned code, unsigned severity, unsigned audience, const char *source) override
+        {
+            ctx->addWuExceptionEx(text, code, severity, audience, source);
+        }
+        virtual unsigned getElapsedMs() const override
+        {
+            return ctx->getElapsedMs();
+        }
+    };
+    struct GlobalCodeContextExtra : implements IGlobalCodeContext
+    {
+        GlobalCodeContextExtra(IGlobalCodeContext * _gctx, unsigned _wfid) : gctx(_gctx)
+        {
+            codeContext = new CodeContext(gctx->queryCodeContext(), _wfid);
+        }
+        virtual ~GlobalCodeContextExtra()
+        {
+            delete codeContext;
+        }
+        virtual ICodeContext * queryCodeContext()
+        {
+            return codeContext;
+        }
+        virtual void fail(int, const char *) { gctx->fail(0, NULL); }
+
+        virtual bool isResult(const char * name, unsigned sequence) { return gctx->isResult(name, sequence); }
+        virtual unsigned getWorkflowId() const override { return gctx->getWorkflowId(); }
+        virtual void doNotify(char const * name, char const * text) { gctx->doNotify(name, text); }
+
+        virtual int queryLastFailCode() { return gctx->queryLastFailCode(); }
+        virtual void getLastFailMessage(size32_t & outLen, char * & outStr, const char * tag) { gctx->getLastFailMessage(outLen, outStr, tag); }
+        virtual bool fileExists(const char * filename) { return gctx->fileExists(filename); }
+        virtual void deleteFile(const char * logicalName) { gctx->deleteFile(logicalName); }
+
+        virtual void selectCluster(const char * cluster) { gctx->selectCluster(cluster); }
+        virtual void restoreCluster() { gctx->restoreCluster(); }
+
+        virtual void setWorkflowCondition(bool value) { gctx->setWorkflowCondition(value); }
+        virtual void returnPersistVersion(const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile) { gctx->returnPersistVersion(logicalName, eclCRC, allCRC, isFile); }
+        virtual void setResultDataset(const char * name, unsigned sequence, size32_t len, const void *val, unsigned numRows, bool extend) { gctx->setResultDataset(name, sequence, len, val, numRows, extend); }
+        virtual void getEventName(size32_t & outLen, char * & outStr) { gctx->getEventName(outLen, outStr); }
+        virtual void getEventExtra(size32_t & outLen, char * & outStr, const char * tag) { gctx->getEventExtra(outLen, outStr, tag); }
+        virtual void doNotify(char const * name, char const * text, const char * target) { gctx->doNotify(name, text, target); }
+    private:
+        IGlobalCodeContext * gctx;
+        CodeContext * codeContext;
+    };
+private:
+    Owned<IEclProcess> eclProcess;
+public:
+    IMPLEMENT_IINTERFACE;
+    EclProcessExtra(IEclProcess *_eclProcess) : eclProcess(_eclProcess) {}
+    virtual int perform(IGlobalCodeContext * _gctx, unsigned wfid)
+    {
+        GlobalCodeContextExtra gctx(_gctx, wfid);
+        return eclProcess->perform(&gctx, wfid);
+    }
+    virtual unsigned getActivityVersion() const { return eclProcess->getActivityVersion(); }
+};
 
 //------------------------------------------------------------------------------------------------
 

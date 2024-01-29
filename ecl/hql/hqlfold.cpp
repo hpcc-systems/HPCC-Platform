@@ -1471,7 +1471,7 @@ class DummyContext: implements ICodeContext
     virtual char *getPlatform() { throwUnexpected(); } // caller frees return string.
     virtual unsigned getPriority() const { throwUnexpected(); }
     virtual char *getWuid() { throwUnexpected(); } // caller frees return string.
-
+    virtual unsigned getWorkflowId() const { throwUnexpected(); }
     // Exception handling
 
     virtual void addWuException(const char*, unsigned int, unsigned int, const char*) { throwUnexpected(); } //n.b. this might be better named: it should only be used for adding user-generated exceptions (via the logging plug-in) --- there's a call in IAgentContext which takes a source argument too

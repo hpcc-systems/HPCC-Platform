@@ -2150,6 +2150,7 @@ protected:
             virtual char *getPlatform() { throwUnexpected(); } // caller frees return string.
             virtual unsigned getPriority() const { throwUnexpected(); }
             virtual char *getWuid() { throwUnexpected(); } // caller frees return string.
+            virtual unsigned getWorkflowId() const { throwUnexpected(); }
 
             // Exception handling
 
