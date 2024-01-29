@@ -33,7 +33,7 @@ export const XrefLostFiles: React.FunctionComponent<XrefLostFilesProps> = ({
     const columns = React.useMemo((): FluentColumns => {
         return {
             check: { width: 27, selectorType: "checkbox" },
-            name: { width: 180, label: nlsHPCC.Name },
+            Name: { width: 360, label: nlsHPCC.Name },
             modified: { width: 80, label: nlsHPCC.Modified },
             numParts: { width: 80, label: nlsHPCC.TotalParts },
             size: { width: 80, label: nlsHPCC.Size },
@@ -60,7 +60,7 @@ export const XrefLostFiles: React.FunctionComponent<XrefLostFilesProps> = ({
                 if (rows.length) {
                     setData(rows.map((item, idx) => {
                         return {
-                            name: item.Name,
+                            Name: item.Name,
                             modified: item.Modified,
                             numParts: item.Numparts,
                             size: item.Size,
@@ -78,7 +78,7 @@ export const XrefLostFiles: React.FunctionComponent<XrefLostFilesProps> = ({
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
         message: nlsHPCC.DeleteSelectedFiles,
-        items: selection.map(file => file.name),
+        items: selection.map(file => file.Name),
         onSubmit: React.useCallback(() => {
             WsDFUXref.DFUXRefArrayAction(selection, "DeleteLogical", name, "Lost")
                 .then(response => {
@@ -115,7 +115,7 @@ export const XrefLostFiles: React.FunctionComponent<XrefLostFilesProps> = ({
             <>
                 <FluentGrid
                     data={data}
-                    primaryID={"name"}
+                    primaryID={"Name"}
                     sort={{ attribute: "modified", descending: false }}
                     columns={columns}
                     setSelection={setSelection}
