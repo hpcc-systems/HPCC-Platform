@@ -23,6 +23,7 @@
 #include "jlib.hpp"
 #include "dautils.hpp"
 #include "daadmin.hpp"
+#include "dadiags.hpp"
 
 using namespace daadmin;
 
@@ -517,6 +518,74 @@ bool CWSDaliEx::onGetProtectedList(IEspContext& context, IEspGetProtectedListReq
 
         StringBuffer result;
         listprotect(fileName, callerId, result);
+        resp.setResult(result);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWSDaliEx::onGetConnections(IEspContext& context, IEspGetConnectionsRequest& req, IEspResultResponse& resp)
+{
+    try
+    {
+        checkAccess(context);
+
+        StringBuffer result;
+        querySDS().getConnections(result);
+        resp.setResult(result);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWSDaliEx::onGetClients(IEspContext& context, IEspGetClientsRequest& req, IEspResultResponse& resp)
+{
+    try
+    {
+        checkAccess(context);
+
+        StringBuffer result;
+        getDaliDiagnosticValue("clients", result);
+        resp.setResult(result);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWSDaliEx::onGetSDSStats(IEspContext& context, IEspGetSDSStatsRequest& req, IEspResultResponse& resp)
+{
+    try
+    {
+        checkAccess(context);
+
+        StringBuffer result;
+        querySDS().getUsageStats(result);
+        resp.setResult(result);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWSDaliEx::onGetSDSSubscribers(IEspContext& context, IEspGetSDSSubscribersRequest& req, IEspResultResponse& resp)
+{
+    try
+    {
+        checkAccess(context);
+
+        StringBuffer result;
+        querySDS().getSubscribers(result);
         resp.setResult(result);
     }
     catch(IException* e)

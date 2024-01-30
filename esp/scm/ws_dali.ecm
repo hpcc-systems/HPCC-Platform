@@ -135,8 +135,24 @@ ESPrequest [nil_remove] GetProtectedListRequest
     string CallerId;
 };
 
+ESPrequest [nil_remove] GetConnectionsRequest
+{
+};
+
+ESPrequest [nil_remove] GetClientsRequest
+{
+};
+
+ESPrequest [nil_remove] GetSDSStatsRequest
+{
+};
+
+ESPrequest [nil_remove] GetSDSSubscribersRequest
+{
+};
+
 ESPservice [auth_feature("NONE"), //This declares that the method logic handles feature level authorization
-    version("1.04"), default_client_version("1.04"), exceptions_inline("./smc_xslt/exceptions.xslt")] WSDali
+    version("1.05"), default_client_version("1.05"), exceptions_inline("./smc_xslt/exceptions.xslt")] WSDali
 {
     ESPmethod [min_ver("1.01")] SetValue(SetValueRequest, ResultResponse);
     ESPmethod [min_ver("1.01")] GetValue(GetValueRequest, ResultResponse);
@@ -156,6 +172,10 @@ ESPservice [auth_feature("NONE"), //This declares that the method logic handles 
     ESPmethod [min_ver("1.04")] SetProtected(SetProtectedRequest, ResultResponse);
     ESPmethod [min_ver("1.04")] SetUnprotected(SetUnprotectedRequest, ResultResponse);
     ESPmethod [min_ver("1.04")] GetProtectedList(GetProtectedListRequest, ResultResponse);
+    ESPmethod [min_ver("1.05")] GetConnections(GetConnectionsRequest, ResultResponse);
+    ESPmethod [min_ver("1.05")] GetClients(GetClientsRequest, ResultResponse);
+    ESPmethod [min_ver("1.05")] GetSDSStats(GetSDSStatsRequest, ResultResponse);
+    ESPmethod [min_ver("1.05")] GetSDSSubscribers(GetSDSSubscribersRequest, ResultResponse);
 };
 
 SCMexportdef(WSDali);
