@@ -636,7 +636,13 @@ static void blockUntilComplete(const char * label, IClientFileSpray &server, ICo
             aborting = wu->aborting();
             StringBuffer wuScope, ElapsedLabel, RemainingLabel;
             StringBuffer labelbuf(label);
-            wuScope.appendf("dfu:%s:%s", labelbuf.toLowerCase().str(), dfuwu.getID());
+            //wuScope.appendf("dfu:%s:%s", labelbuf.toLowerCase().str(), dfuwu.getID());
+            try {
+                wuScope.appendf("w%u:dfu:%s:%s", ctx->getWorkflowId(), labelbuf.toLowerCase().str(), dfuwu.getID());
+            } catch (...) {
+                printStackReport();
+                throw makeStringException(0, "Workunit has no workflow id");
+            }
             ElapsedLabel.append(wuScope).append(" (Elapsed) ");
             RemainingLabel.append(wuScope).append(" (Remaining) ");
             //MORE: I think this are intended to replace the timing information, but will currently combine

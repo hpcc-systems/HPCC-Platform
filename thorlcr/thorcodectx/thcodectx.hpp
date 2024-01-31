@@ -52,6 +52,10 @@ public:
 // ICodeContext
     virtual const char *loadResource(unsigned id) override;
     virtual char *getWuid() override;
+    virtual unsigned getWorkflowId() const override
+    {
+        return jobChannel.queryJob().getWfid();
+    }
 
     virtual char *getExpandLogicalName(const char * logicalName) override;
     virtual IUserDescriptor *queryUserDescriptor() override { return userDesc; }
