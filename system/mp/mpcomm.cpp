@@ -1686,7 +1686,7 @@ public:
                     if (hdr.version/0x100 != MP_PROTOCOL_VERSION/0x100) {
                         // TBD IPV6 here
                         SocketEndpoint ep;
-                        hdr.sender.get(ep);
+                        sock->getPeerEndpoint(ep);
                         IMP_Exception *e=new CMPException(MPERR_protocol_version_mismatch,ep);
                         throw e;
                     }
