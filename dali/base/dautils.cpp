@@ -121,7 +121,28 @@ IPropertyTree * getDropZonePlane(const char * name)
 
 bool isPathInPlane(IPropertyTree *plane, const char *path)
 {
-    return isEmptyString(path) || startsWith(path, plane->queryProp("@prefix"));
+    if (isEmptyString(path))
+        return true;
+
+    const char *prefix = plane->queryProp("@prefix");
+    if (isEmptyString(prefix))
+        return false; //prefix is empty, path is not - can't match.
+
+    while (*prefix && *prefix == *path)
+    {
+        path++;
+        prefix++;
+    }
+    if (0 == *prefix)
+    {
+        if (0 == *path || isPathSepChar(*path))
+            return true;
+        if (isPathSepChar(*(path - 1))) //implies both last characters of prefix and path were '/'
+            return true;
+    }
+    else if (0 == *path && isPathSepChar(*prefix) && (0 == *(prefix + 1)))
+        return true;
+    return false;
 }
 
 bool validateDropZone(IPropertyTree * plane, const char * path, const char * host, bool ipMatch)

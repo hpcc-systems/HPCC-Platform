@@ -92,35 +92,46 @@ SecAccessFlags getWsWorkunitAccess(IEspContext& ctx, IConstWorkUnit& cw)
     return accessFlag;
 }
 
-bool validateWsWorkunitAccess(IEspContext& ctx, const char* wuid, SecAccessFlags minAccess)
+bool validateWsWorkunitAccess(IEspContext& ctx, IConstWorkUnit& cw, SecAccessFlags minAccess, StringBuffer& secAccessFeature)
+{
+    secAccessFeature.set(getWuAccessType(cw, ctx.queryUserId()));
+    return ctx.validateFeatureAccess(secAccessFeature, minAccess, false);
+}
+
+bool validateWsWorkunitAccess(IEspContext& ctx, const char* wuid, SecAccessFlags minAccess, StringBuffer& secAccessFeature)
 {
     Owned<IWorkUnitFactory> wf = getWorkUnitFactory(ctx.querySecManager(), ctx.queryUser());
     Owned<IConstWorkUnit> cw = wf->openWorkUnit(wuid);
     if (!cw)
         throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT, "Failed to open workunit %s when validating workunit access", wuid);
-    return ctx.validateFeatureAccess(getWuAccessType(*cw, ctx.queryUserId()), minAccess, false);
+    return validateWsWorkunitAccess(ctx, *cw, minAccess, secAccessFeature);
 }
 
-bool validateWsWorkunitAccessByOwnerId(IEspContext& ctx, const char* owner, SecAccessFlags minAccess)
+bool validateWsWorkunitAccessByOwnerId(IEspContext& ctx, const char* owner, SecAccessFlags minAccess, StringBuffer& secAccessFeature)
 {
-    return ctx.validateFeatureAccess(getWuAccessType(owner, ctx.queryUserId()), minAccess, false);
+    secAccessFeature.set(getWuAccessType(owner, ctx.queryUserId()));
+    return ctx.validateFeatureAccess(secAccessFeature, minAccess, false);
 }
 
 void ensureWsWorkunitAccessByOwnerId(IEspContext& ctx, const char* owner, SecAccessFlags minAccess)
 {
-    if (!ctx.validateFeatureAccess(getWuAccessType(owner, ctx.queryUserId()), minAccess, false))
+    const char * secAccessFeature = getWuAccessType(owner, ctx.queryUserId());
+    if (!ctx.validateFeatureAccess(secAccessFeature, minAccess, false))
     {
         ctx.setAuthStatus(AUTH_STATUS_NOACCESS);
-        throw MakeStringException(ECLWATCH_ECL_WU_ACCESS_DENIED, "Failed to access workunit. Permission denied.");
+        throw makeStringExceptionV(ECLWATCH_ECL_WU_ACCESS_DENIED, "Failed to access workunit. Resource %s : Permission denied. %s Access Required.",
+            secAccessFeature, getSecAccessFlagName(minAccess));
     }
 }
 
 void ensureWsWorkunitAccess(IEspContext& ctx, IConstWorkUnit& cw, SecAccessFlags minAccess)
 {
-    if (!ctx.validateFeatureAccess(getWuAccessType(cw, ctx.queryUserId()), minAccess, false))
+    const char * secAccessFeature = getWuAccessType(cw, ctx.queryUserId());
+    if (!ctx.validateFeatureAccess(secAccessFeature, minAccess, false))
     {
         ctx.setAuthStatus(AUTH_STATUS_NOACCESS);
-        throw MakeStringException(ECLWATCH_ECL_WU_ACCESS_DENIED, "Failed to access workunit. Permission denied.");
+        throw makeStringExceptionV(ECLWATCH_ECL_WU_ACCESS_DENIED, "Failed to access workunit %s. Resource %s : Permission denied. %s Access Required.",
+            cw.queryWuid(), secAccessFeature, getSecAccessFlagName(minAccess));
     }
 }
 
@@ -138,7 +149,7 @@ void ensureWsCreateWorkunitAccess(IEspContext& ctx)
     if (!ctx.validateFeatureAccess(OWN_WU_ACCESS, SecAccess_Write, false))
     {
         ctx.setAuthStatus(AUTH_STATUS_NOACCESS);
-        throw MakeStringException(ECLWATCH_ECL_WU_ACCESS_DENIED, "Failed to create workunit. Permission denied.");
+        throw makeStringExceptionV(ECLWATCH_ECL_WU_ACCESS_DENIED, "Failed to create workunit. Resource %s : Permission denied. Write Access Required.", OWN_WU_ACCESS);
     }
 }
 

@@ -110,7 +110,7 @@
   
 <xsl:template match="programlisting[@role='tab']">
   <fo:block xsl:use-attribute-sets="monospace.verbatim.properties">
-   <xsl:attribute name="font-family">serif</xsl:attribute>
+   <xsl:attribute name="font-family">sans-serif</xsl:attribute>
    <xsl:attribute name="font-size">10pt</xsl:attribute>
     <xsl:apply-templates/>
   </fo:block>
@@ -120,6 +120,12 @@
 <xsl:template match="para[@role='sans']">
   <fo:block>
    <xsl:attribute name="font-family">sans-serif</xsl:attribute>
+    <xsl:apply-templates/>
+  </fo:block>
+</xsl:template>
+<xsl:template match="para[@role='serif']">
+  <fo:block>
+   <xsl:attribute name="font-family">serif</xsl:attribute>
     <xsl:apply-templates/>
   </fo:block>
 </xsl:template>

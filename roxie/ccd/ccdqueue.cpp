@@ -2790,7 +2790,7 @@ public:
                 {
 #ifdef NEW_IBYTI
                     unsigned delay = 0;
-                    if (mySubchannel != 0)  // i.e. I am not the primary here
+                    if (mySubchannel != 0 && (header.activityId & ~ROXIE_PRIORITY_MASK) < ROXIE_ACTIVITY_SPECIAL_FIRST)  // i.e. I am not the primary here, and never delay special
                     {
                         for (unsigned subChannel = 0; subChannel < mySubchannel; subChannel++)
                             delay += getIbytiDelay(header.subChannels[subChannel]);
@@ -3859,8 +3859,9 @@ IPacketDiscarder *createPacketDiscarder()
 // Reply as soon as receive, or put it on the queue like other messages?
 // Reply for every channel, or just once for every agent?
 // Should I send on channel 0 or round-robin the channels?
-// My gut feeling is that knowing what channels are responding is useful so should reply on every unsuspended channel, 
-// and that the delay caused by queuing system is an interesting part of what we want to measure (though nice to know minimum possible too)
+// My gut feeling is that knowing what channels and agents are responding is useful so should reply on every unsuspended channel
+// Don't use IBYTI mechanism or ack/retry mechanism.
+
 
 class PingTimer : public Thread
 {

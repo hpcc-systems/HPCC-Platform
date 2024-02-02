@@ -60,8 +60,12 @@ public:
 
 #define RECHECK(b) CREcheck checkRE(b)
 
+// unique/random pattern used to validate header is of expected protocol on connect
+static constexpr unsigned __int64 transferStreamSignature = 0x0ea614193fb99496;
+
 struct TransferStreamHeader
 {
+    unsigned __int64 hdrSig = transferStreamSignature; // used to validate hdr is of expected protocol on connect
     rowcount_t numrecs;
     rowcount_t pos;
     unsigned id;
@@ -72,7 +76,6 @@ struct TransferStreamHeader
         crc = getCrc();
     }
     TransferStreamHeader() {}
-    void winrev() { _WINREV(pos); _WINREV(numrecs); _WINREV(id); _WINREV(crc); }
     unsigned getCrc() const
     {
         unsigned retCrc = crc32((const char *)&numrecs, sizeof(numrecs), 0);
@@ -288,7 +291,6 @@ IRowStream *ConnectMergeRead(unsigned id, IThorRowInterfaces *rowif,SocketEndpoi
     nodeaddr.getEndpointHostText(s);
     LOG(MCthorDetailedDebugInfo, thorJob, "ConnectMergeRead(%d,%s,%x,%" RCPF "d,%" RCPF "u)",id,s.str(),(unsigned)(memsize_t)socket.get(),startrec,numrecs);
 #endif
-    hdr.winrev();
     socket->write(&hdr,sizeof(hdr));
     return new CSocketRowStream(id,rowif->queryRowAllocator(),rowif->queryRowDeserializer(),socket);
 }
@@ -314,12 +316,21 @@ ISocketRowWriter *ConnectMergeWrite(IThorRowInterfaces *rowif,ISocket *socket,si
         remaining -= read;
         dst += read;
     }
-    hdr.winrev();
+    if (hdr.hdrSig != transferStreamSignature)
+    {
+        char name[100];
+        int port = socket->peer_name(name,sizeof(name));
+        StringBuffer hdrRaw;
+        hexdump2string((byte const *)&hdr, sizeof(hdr), hdrRaw);
+        throw makeStringExceptionV(TE_SortConnectProtocolErr, "SORT connection protocol mismatch from: %s:%u, raw hdr = %s", name, port, hdrRaw.str());
+    }
     if (hdr.getCrc() != hdr.crc)
     {
         char name[100];
         int port = socket->peer_name(name,sizeof(name));
-        throw makeStringExceptionV(TE_InvalidSortConnect, "Invalid SORT connection from: %s:%u", name, port);
+        StringBuffer hdrRaw;
+        hexdump2string((byte const *)&hdr, sizeof(hdr), hdrRaw);
+        throw makeStringExceptionV(TE_SortConnectCrcErr, "SORT connection failed crc check from: %s:%u, raw hdr = %s", name, port, hdrRaw.str());
     }
     startrec = hdr.pos;
     numrecs = hdr.numrecs;

@@ -158,8 +158,9 @@
 #define TE_RemoteReadFailure                    THOR_ERROR_START + 137
 #define TE_UnsupportedSortOrder                 THOR_ERROR_START + 138
 #define TE_CostExceeded                         THOR_ERROR_START + 139
-#define TE_InvalidSortConnect                   THOR_ERROR_START + 140
-#define TE_Final                                THOR_ERROR_START + 141       // keep this last
+#define TE_SortConnectCrcErr                    THOR_ERROR_START + 140
+#define TE_SortConnectProtocolErr               THOR_ERROR_START + 141
+#define TE_Final                                THOR_ERROR_START + 142       // keep this last
 #define ISTHOREXCEPTION(n) (n > THOR_ERROR_START && n < TE_Final)
 
 #endif
