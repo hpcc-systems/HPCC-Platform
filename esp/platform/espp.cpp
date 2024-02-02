@@ -373,6 +373,21 @@ void initializeMetrics(CEspConfig* config)
     }
 }
 
+static void copyTree(IPropertyTree * to, const IPropertyTree * from, const char * xpath)
+{
+    IPropertyTree * match = from->queryPropTree(xpath);
+    if (match)
+        to->setPropTree(xpath, LINK(match));
+}
+
+static IPropertyTree * extractLegacyOptions(IPropertyTree * legacyOptions)
+{
+    IPropertyTree * legacyProcessConfig = legacyOptions->queryPropTree("Software/EspProcess[1]");
+    Owned<IPropertyTree> extractedOptions = createPTree();
+    copyTree(extractedOptions, legacyProcessConfig, "tracing");
+    return extractedOptions.getClear();
+}
+
 int init_main(int argc, const char* argv[])
 {
     if (!checkCreateDaemon(argc, argv))
@@ -454,16 +469,7 @@ int init_main(int argc, const char* argv[])
             envpt.setown(createPTreeFromXMLFile(cfgfile, ipt_caseInsensitive));
 
             // NB: esp has no standard component config in bare-metal, this is loading defaultYaml only
-            espConfig.setown(loadConfiguration(defaultYaml, argv, "esp", "ESP", nullptr, nullptr));
-
-            // legacy esp.xml will contain a generated global section if present in the environment.
-            // replace the empty stub created by loadConfiguration with this environment globals section.
-            Owned<IPropertyTree> global = envpt->getPropTree("global");
-            if (global)
-            {
-                Owned<IPropertyTree> currentConfig = getComponentConfig();
-                replaceComponentConfig(currentConfig, global);
-            }
+            espConfig.setown(loadConfiguration(defaultYaml, argv, "esp", "ESP", cfgfile, extractLegacyOptions));
         }
         Owned<IPropertyTree> procpt = NULL;
         if (envpt)
