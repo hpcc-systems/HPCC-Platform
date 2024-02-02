@@ -403,8 +403,13 @@ public:
                 catch (IException *e) // only retry if serialization check failed, indicating possible foreign client connect
                 {
                     PrintExceptionLog(e, "WARNING: Exception(ConnectMergeWrite)");
-                    if (TE_InvalidSortConnect != e->errorCode() || (--numretries==0))
-                        throw;
+
+                    if (TE_SortConnectProtocolErr != e->errorCode())
+                    {
+                        if (TE_SortConnectCrcErr != e->errorCode() || (--numretries==0))
+                            throw;
+                    }
+
                     e->Release();
                     continue;
                 }
