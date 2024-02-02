@@ -630,7 +630,48 @@ ContainerLog
       (1) up to "report all messages" (100). The default log level is rather
       high (80) and should be adjusted accordingly.</para>
 
-      <para>For example, verbosity should be medium for all components:</para>
+      <para>These are the available log levels:</para>
+
+      <para><itemizedlist>
+          <listitem>
+            <para>CriticalMsgThreshold = 1;</para>
+          </listitem>
+
+          <listitem>
+            <para>FatalMsgThreshold = 1;</para>
+          </listitem>
+
+          <listitem>
+            <para>ErrMsgThreshold = 10;</para>
+          </listitem>
+
+          <listitem>
+            <para>WarnMsgThreshold = 20;</para>
+          </listitem>
+
+          <listitem>
+            <para>AudMsgThreshold = 30;</para>
+          </listitem>
+
+          <listitem>
+            <para>ProgressMsgThreshold = 50;</para>
+          </listitem>
+
+          <listitem>
+            <para>InfoMsgThreshold = 60;</para>
+          </listitem>
+
+          <listitem>
+            <para>DebugMsgThreshold = 80;</para>
+          </listitem>
+
+          <listitem>
+            <para>ExtraneousMsgThreshold = 90;</para>
+          </listitem>
+        </itemizedlist></para>
+
+      <para>For example, to show only progress and lower level (more critical)
+      messages set the verbosity to 50:</para>
 
       <programlisting>helm install myhpcc ./hpcc --set global.logging.detail="50" </programlisting>
     </sect2>
