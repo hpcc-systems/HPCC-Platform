@@ -1092,6 +1092,8 @@ int main( int argc, const char *argv[]  )
         if (!queryNodeComm().verifyAll(false, 1000*60*30, 1000*60))
             throwStringExceptionV(0, "Failed to connect to all nodes");
         PROGLOG("verified mp connection to rest of cluster");
+        Owned<IMPServer> mpServer = getMPServer();
+        mpServer->stopListening(); // stop accepting new connections
 
 #ifdef _CONTAINERIZED
         if (globals->getPropBool("@_dafsStorage"))

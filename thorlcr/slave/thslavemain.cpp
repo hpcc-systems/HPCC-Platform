@@ -234,6 +234,9 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
             OERRLOG("Failed to connect to all nodes");
         else
             PROGLOG("verified mp connection to rest of cluster");
+
+        Owned<IMPServer> mpServer = getMPServer();
+        mpServer->stopListening(); // stop accepting new connections
         LOG(MCdebugProgress, thorJob, "registered %s",slfStr.str());
     }
     catch (IException *e)

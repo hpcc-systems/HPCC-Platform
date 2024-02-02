@@ -478,6 +478,14 @@ public:
     {
         return allowListCallback;
     }
+    void stopListening()
+    {
+        if (!listen)
+            return;
+        listen = false;
+        stop();
+        PROGLOG("CMPConnectThread - no longer listening for new connections");
+    }
 };
 
 class PingPacketHandler;
@@ -602,6 +610,10 @@ public:
     virtual IAllowListHandler *queryAllowListCallback() const override
     {
         return connectthread->queryAllowListCallback();
+    }
+    virtual void stopListening() override
+    {
+        connectthread->stopListening();
     }
 };
 
