@@ -151,7 +151,7 @@ bool doAction(IEspContext& context, StringArray& wuids, CECLWUActions action, IP
 
     if ((action == CECLWUActions_Restore) || (action == CECLWUActions_Archive))
     {
-        StringBuffer msg;
+        StringBuffer msg, secAccessFeature;
         ForEachItemIn(i, wuids)
         {
             StringBuffer wuidStr(wuids.item(i));
@@ -161,15 +161,15 @@ bool doAction(IEspContext& context, StringArray& wuids, CECLWUActions action, IP
                 msg.appendf("Empty Workunit ID at %u. ", i);
                 continue;
             }
-            if ((action == CECLWUActions_Archive) && !validateWsWorkunitAccess(context, wuid, SecAccess_Full))
-                msg.appendf("Access denied for Workunit %s. ", wuid);
+            if ((action == CECLWUActions_Archive) && !validateWsWorkunitAccess(context, wuid, SecAccess_Full, secAccessFeature.clear()))
+                msg.appendf("Resource %s : Access denied for Workunit %s. Full Access Required. ", secAccessFeature.str(), wuid);
             else if (action == CECLWUActions_Restore)
             {
                 Owned<IPropertyTree> wuProps = getArchivedWorkUnitProperties(wuid, false);
                 if (!wuProps)
                     msg.appendf("Archived workunit %s not found.", wuid);
-                else if (!validateWsWorkunitAccessByOwnerId(context, wuProps->queryProp("@submitID"), SecAccess_Full))
-                    msg.appendf("Access denied for Workunit %s. ", wuid);
+                else if (!validateWsWorkunitAccessByOwnerId(context, wuProps->queryProp("@submitID"), SecAccess_Full, secAccessFeature.clear()))
+                    msg.appendf("Resource %s : Access denied for Workunit %s. Full Access Required. ", secAccessFeature.str(), wuid);
             }
         }
         if (!msg.isEmpty())
@@ -1724,15 +1724,19 @@ void doWUQueryByFile(IEspContext &context, const char *logicalFile, IEspWUQueryR
 {
     StringBuffer wuid;
     getWuidFromLogicalFileName(context, logicalFile, wuid);
-    if (!wuid.length())
-        throw MakeStringException(ECLWATCH_CANNOT_GET_WORKUNIT,"Cannot find the workunit for file %s.", logicalFile);
+    if (wuid.isEmpty())
+        throw makeStringExceptionV(ECLWATCH_CANNOT_GET_WORKUNIT, "Cannot find the workunit for file %s.", logicalFile);
 
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-    Owned<IConstWorkUnit> cw= factory->openWorkUnit(wuid.str());
+    Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str());
     if (!cw)
-        throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot find the workunit for file %s.", logicalFile);
-    if (getWsWorkunitAccess(context, *cw) < SecAccess_Read)
-        throw MakeStringException(ECLWATCH_ECL_WU_ACCESS_DENIED,"Cannot access the workunit for file %s.",logicalFile);
+        throw makeStringExceptionV(ECLWATCH_CANNOT_OPEN_WORKUNIT, "Cannot find the workunit for file %s.", logicalFile);
+
+    StringBuffer secAccessFeature;
+    if (!validateWsWorkunitAccess(context, *cw, SecAccess_Read, secAccessFeature))
+        throw makeStringExceptionV(ECLWATCH_ECL_WU_ACCESS_DENIED,
+            "Cannot access the workunit for file %s. Resource %s : Permission denied. Read Access Required.",
+            logicalFile, secAccessFeature.str());
 
     doWUQueryBySingleWuid(context, wuid.str(), resp);
 
@@ -2589,8 +2593,7 @@ bool CWsWorkunitsEx::onWUQuery(IEspContext &context, IEspWUQueryRequest & req, I
             doWUQueryFromArchive(context, sashaServerIp.get(), sashaServerPort, *archivedWuCache, awusCacheMinutes, req, resp);
         else if(notEmpty(wuid) && looksLikeAWuid(wuid, 'W'))
         {
-            if (!validateWsWorkunitAccess(context, wuid, SecAccess_Read))
-                throw makeStringExceptionV(ECLWATCH_ECL_WU_ACCESS_DENIED, "WorkUnit access denied: %s.", wuid);
+            ensureWsWorkunitAccess(context, wuid, SecAccess_Read);
             doWUQueryBySingleWuid(context, wuid, resp);
         }
         else if (notEmpty(req.getLogicalFile()) && req.getLogicalFileSearchType() && strieq(req.getLogicalFileSearchType(), "Created"))
@@ -4571,7 +4574,7 @@ int CWsWorkunitsSoapBindingEx::onStartUpload(IEspContext &ctx, CHttpRequest* req
             SecAccessFlags accessOwn, accessOthers;
             getUserWuAccessFlags(ctx, accessOwn, accessOthers, false);
             if ((accessOwn != SecAccess_Full) || (accessOthers != SecAccess_Full))
-                throw MakeStringException(-1, "Permission denied.");
+                throw makeStringExceptionV(-1, "Resources %s and/or %s : Permission denied. Full Access Required.", OWN_WU_ACCESS, OTHERS_WU_ACCESS);
     
             StringBuffer password;
             request->getParameter("Password", password);
