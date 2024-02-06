@@ -63,7 +63,9 @@ set (    SRCS
          rtlrecord.hpp
          rtlsize.hpp
          rtltype.hpp
-         rtlbcdtest.cpp 
+         rtlbcdtest.cpp
+         wfcontext.cpp
+         wfcontext.hpp
     )
 
 include_directories ( 

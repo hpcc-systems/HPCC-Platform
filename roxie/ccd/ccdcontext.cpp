@@ -40,6 +40,7 @@
 #include "roxiehelper.hpp"
 #include "enginecontext.hpp"
 #include "ws_dfsclient.hpp"
+#include "wfcontext.hpp"
 
 #include <list>
 #include <string>
@@ -1775,8 +1776,6 @@ public:
     }
     virtual IEngineContext *queryEngineContext() { return NULL; }
     virtual char *getDaliServers() { throwUnexpected(); }
-    virtual unsigned getWorkflowId() { return 0; } // this is a virtual which is implemented in IGlobalContext
-
     // The following from ICodeContext should never be executed in agent activity. If we are on Roxie server, they will be implemented by more derived CRoxieServerContext class
     virtual void setResultBool(const char *name, unsigned sequence, bool value) { throwUnexpected(); }
     virtual void setResultData(const char *name, unsigned sequence, int len, const void * data) { throwUnexpected(); }
@@ -1796,6 +1795,7 @@ public:
     virtual void printResults(IXmlWriter *output, const char *name, unsigned sequence) { throwUnexpected(); }
 
     virtual char *getWuid() { throwUnexpected(); }
+    virtual unsigned getWorkflowId() const override { return graph->queryWorkflowId(); }
     virtual void getExternalResultRaw(unsigned & tlen, void * & tgt, const char * wuid, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) { throwUnexpected(); }
 
     virtual char * getExpandLogicalName(const char * logicalName) { throwUnexpected(); }
@@ -2884,7 +2884,10 @@ public:
             if (workflow)
                 workflow->perform(this, p);
             else
-                p->perform(this, 0);
+            {
+                GlobalCodeContextExtra gctx(this, 0);
+                p->perform(&gctx, 0);
+            }
         }
         catch(WorkflowException *E)
         {
@@ -3692,7 +3695,7 @@ public:
         CriticalBlock b(contextCrit);
         return useContext(sequence).hasProp(name);
     }
-
+    virtual unsigned getWorkflowIdDeprecated() override { throwUnexpected(); }
     virtual char *getClusterName()
     {
         if (workUnit)
@@ -4033,7 +4036,10 @@ public:
         if (workflow)
             workflow->perform(this, p);
         else
-            p->perform(this, 0);
+        {
+            GlobalCodeContextExtra gctx(this, 0);
+            p->perform(&gctx, 0);
+        }
     }
 };
 
