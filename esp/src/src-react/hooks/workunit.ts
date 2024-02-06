@@ -6,6 +6,7 @@ import nlsHPCC from "src/nlsHPCC";
 import * as Utility from "src/Utility";
 import { singletonDebounce } from "../util/throttle";
 import { useCounter } from "./util";
+import { Archive } from "../util/metricArchive";
 
 const logger = scopedLogger("../hooks/workunit.ts");
 type RefreshFunc = (full?: boolean) => Promise<Workunit>;
@@ -234,6 +235,45 @@ export function useWorkunitResources(wuid: string): [string[], Workunit, WUState
     }, [workunit, state, count]);
 
     return [resources, workunit, state, increment];
+}
+
+export function useWorkunitQuery(wuid: string): [string, Workunit, WUStateID, () => void] {
+
+    const [workunit, state] = useWorkunit(wuid);
+    const [query, setQuery] = React.useState<string>("");
+    const [count, increment] = useCounter();
+
+    React.useEffect(() => {
+        if (workunit) {
+            const fetchQuery = singletonDebounce(workunit, "fetchQuery");
+            fetchQuery().then(response => {
+                setQuery(response?.Text ?? "");
+            }).catch(err => logger.error(err));
+        }
+    }, [workunit, state, count]);
+
+    return [query, workunit, state, increment];
+}
+
+export function useWorkunitArchive(wuid: string): [string, Workunit, WUStateID, Archive, () => void] {
+
+    const [workunit, state] = useWorkunit(wuid);
+    const [archiveString, setArchiveString] = React.useState<string>("");
+    const [archive, setArchive] = React.useState<Archive>();
+    const [count, increment] = useCounter();
+
+    React.useEffect(() => {
+        if (workunit) {
+            const fetchArchive = singletonDebounce(workunit, "fetchArchive");
+            fetchArchive().then(response => {
+                setArchiveString(response);
+                const archive = new Archive(response);
+                setArchive(archive);
+            }).catch(err => logger.error(err));
+        }
+    }, [workunit, state, count]);
+
+    return [archiveString, workunit, state, archive, increment];
 }
 
 export interface HelperRow {
