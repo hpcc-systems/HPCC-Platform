@@ -264,7 +264,6 @@ void LogMsgJobInfo::setJobID(LogMsgUserId id)
 void LogMsgTraceInfo::serialize(MemoryBuffer & out) const
 {
     out.append(traceIDStr);
-    out.append(" ");
     out.append(spanIDStr);
 }
 
@@ -279,10 +278,13 @@ void LogMsgJobInfo::serialize(MemoryBuffer & out) const
 
 void LogMsgTraceInfo::deserialize(MemoryBuffer & in)
 {
-    dbgassertex(in.remaining() >= sizeof(LogMsgTraceInfoId)); // should always be at least this amount, because userID follows the jobID
-    StringBuffer idStr;
-    in.read(idStr);
-    traceIDStr = idStr.detach();
+    dbgassertex(in.remaining() >= sizeof(LogMsgTraceInfo)); //does this make sense?
+    StringBuffer deserializedTraceIdStr;
+    in.read(deserializedTraceIdStr);
+    traceIDStr = deserializedTraceIdStr.detach();
+    StringBuffer deserializedSpanIdStr;
+    in.read(deserializedSpanIdStr);
+    traceIDStr = deserializedSpanIdStr.detach();
     isDeserialized = true; //meaninglesss for traceID but consistent with jobID
 }
 
