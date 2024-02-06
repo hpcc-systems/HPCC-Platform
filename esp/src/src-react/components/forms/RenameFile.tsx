@@ -1,14 +1,17 @@
 import * as React from "react";
 import { Checkbox, DefaultButton, mergeStyleSets, PrimaryButton, Stack, TextField, } from "@fluentui/react";
+import { useConst } from "@fluentui/react-hooks";
 import { useForm, Controller } from "react-hook-form";
+import { FileSprayService, FileSprayStates } from "@hpcc-js/comms";
+import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
-import * as FileSpray from "src/FileSpray";
 import { MessageBox } from "../../layouts/MessageBox";
-import { replaceUrl } from "../../util/history";
+import { pushUrl, replaceUrl } from "../../util/history";
 import * as FormStyles from "./landing-zone/styles";
 
+const logger = scopedLogger("src-react/components/forms/RenameFile.tsx");
+
 interface RenameFileFormValues {
-    dstname: string;
     targetRenameFile?: {
         name: string
     }[],
@@ -16,7 +19,6 @@ interface RenameFileFormValues {
 }
 
 const defaultValues: RenameFileFormValues = {
-    dstname: "",
     overwrite: false
 };
 
@@ -38,42 +40,61 @@ export const RenameFile: React.FunctionComponent<RenameFileProps> = ({
 
     const { handleSubmit, control, reset } = useForm<RenameFileFormValues>({ defaultValues });
 
+    const service = useConst(() => new FileSprayService({ baseUrl: "" }));
+
     const closeForm = React.useCallback(() => {
         setShowForm(false);
     }, [setShowForm]);
 
     const onSubmit = React.useCallback(() => {
         handleSubmit(
-            (data, evt) => {
-                if (logicalFiles?.length > 0) {
-                    if (logicalFiles?.length === 1) {
-                        const request = { ...data, srcname: logicalFiles[0] };
-                        FileSpray.Rename({ request: request }).then(response => {
-                            closeForm();
-                            if (window.location.hash.match(/#\/files\//) === null) {
-                                if (refreshGrid) refreshGrid(true);
-                            } else {
-                                replaceUrl(`/files/${data.dstname}`);
-                            }
-                        });
-                    } else {
-                        logicalFiles.forEach((logicalFile, idx) => {
-                            const request = { ...data, srcname: logicalFile, dstname: data.targetRenameFile[idx].name };
-                            const requests = [];
-                            requests.push(FileSpray.Rename({ request: request }));
-                            Promise.all(requests).then(_ => {
-                                closeForm();
-                                if (refreshGrid) refreshGrid(true);
-                            });
-                        });
+            async (data, evt) => {
+                const renameRequests = [];
+                const getDfuWuRequests = [];
+
+                logicalFiles.forEach((logicalFile, idx) => {
+                    const request = { ...data, srcname: logicalFile, dstname: data.targetRenameFile[idx].name, DFUServerQueue: "" };
+                    renameRequests.push(service.Rename(request));
+                });
+
+                const renameResponses = await Promise.all(renameRequests);
+                renameResponses.forEach(response => {
+                    const wuid = response?.wuid ?? null;
+                    if (wuid) {
+                        getDfuWuRequests.push(service.GetDFUWorkunit({ wuid }));
                     }
-                }
+                });
+
+                const getDfuWuResponses = await Promise.all(getDfuWuRequests);
+                getDfuWuResponses.forEach(response => {
+                    const State = response?.result?.State ?? FileSprayStates.unknown;
+                    const ID = response?.result?.ID;
+
+                    if (State === FileSprayStates.failed) {
+                        logger.error(response?.result?.SummaryMessage ?? "");
+                        if (getDfuWuResponses.length === 1 && ID) {
+                            pushUrl(`/dfuworkunits/${ID}`);
+                        }
+                    } else if (ID) {
+                        if (getDfuWuResponses.length === 1) {
+                            if (window.location.hash.match(/#\/files\//) === null) {
+                                pushUrl(`/dfuworkunits/${ID}`);
+                            } else {
+                                replaceUrl(`/dfuworkunits/${ID}`);
+                            }
+                        } else {
+                            window.setTimeout(function () { window.open(`#/dfuworkunits/${ID}`); }, 0);
+                        }
+                    }
+                });
+                closeForm();
+                if (refreshGrid) refreshGrid(true);
             },
             err => {
                 console.log(err);
             }
         )();
-    }, [closeForm, handleSubmit, logicalFiles, refreshGrid]);
+    }, [closeForm, handleSubmit, logicalFiles, refreshGrid, service]);
 
     const componentStyles = mergeStyleSets(
         FormStyles.componentStyles,
@@ -85,17 +106,12 @@ export const RenameFile: React.FunctionComponent<RenameFileProps> = ({
     );
 
     React.useEffect(() => {
-        if (logicalFiles.length === 1) {
-            const newValues = { ...defaultValues, dstname: logicalFiles[0] };
-            reset(newValues);
-        } else if (logicalFiles.length > 1) {
-            const _files = [];
-            logicalFiles.forEach(file => {
-                _files.push({ name: file });
-            });
-            const newValues = { ...defaultValues, targetRenameFile: _files };
-            reset(newValues);
-        }
+        const _files = [];
+        logicalFiles.forEach(file => {
+            _files.push({ name: file });
+        });
+        const newValues = { ...defaultValues, targetRenameFile: _files };
+        reset(newValues);
     }, [logicalFiles, reset]);
 
     return <MessageBox title={nlsHPCC.Rename} show={showForm} setShow={closeForm}
@@ -106,7 +122,7 @@ export const RenameFile: React.FunctionComponent<RenameFileProps> = ({
         <Stack>
             {logicalFiles?.length === 1 &&
                 <Controller
-                    control={control} name="dstname"
+                    control={control} name="targetRenameFile.0.name"
                     render={({
                         field: { onChange, name: fieldName, value },
                         fieldState: { error }
