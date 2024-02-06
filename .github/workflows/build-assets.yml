@@ -32,6 +32,7 @@ jobs:
       mount_build: ${{ steps.vars.outputs.mount_build }}
       community_ref: ${{ steps.vars.outputs.community_ref }}
       internal_ref: ${{ steps.vars.outputs.internal_ref }}
+      eclide_ref: ${{ steps.vars.outputs.eclide_ref }}
       community_tag: ${{ steps.vars.outputs.community_tag }}
       internal_tag: ${{ steps.vars.outputs.internal_tag }}
       hpcc_version: ${{ steps.vars.outputs.hpcc_version }}
@@ -52,6 +53,7 @@ jobs:
           community_ref=${{ github.ref }}
           echo "community_ref=$community_ref" >> $GITHUB_OUTPUT
           echo "internal_ref=$(echo $community_ref | sed 's/community/internal/')" >> $GITHUB_OUTPUT
+          echo "eclide_ref=$(echo $community_ref | sed 's/community/eclide/')" >> $GITHUB_OUTPUT
           community_tag=$(echo $community_ref | cut -d'/' -f3)
           echo "community_tag=$community_tag" >> $GITHUB_OUTPUT
           echo "internal_tag=$(echo $community_tag | sed 's/community/internal/')" >> $GITHUB_OUTPUT
