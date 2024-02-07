@@ -62,7 +62,7 @@ jobs:
           echo "build_base_label = ${{ steps.vars.outputs.build_base_label }}"
 
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Calculate vcpkg vars
         id: vcpkg_vars
@@ -75,24 +75,24 @@ jobs:
 
       - name: Set up Docker Buildx
         id: buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v3
 
       # - name: Login to GitHub Container Registry
-      #   uses: docker/login-action@v1
+      #   uses: docker/login-action@v3
       #   with:
       #     registry: ghcr.io
       #     username: ${{ github.repository_owner }}
       #     password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Login to DockerHub
-        uses: docker/login-action@v1
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       # build branch image
       - name: branch image
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v5
         with:
           context: .
           file: ./dockerfiles/platform-build/Dockerfile
