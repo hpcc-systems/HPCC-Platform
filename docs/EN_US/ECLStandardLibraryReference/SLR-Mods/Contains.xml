@@ -71,5 +71,5 @@ B:= STD.Str.Contains(
  'abcdefghijklmnopqrstuvwxyz', false); //returns FALSE -- 'z' is missing
 </programlisting>
 
-  <para></para>
+  <para>See Also: <link linkend="Find">Find</link></para>
 </sect1>
