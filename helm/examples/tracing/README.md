@@ -48,8 +48,41 @@ global:
 Sample helm command deploying an HPCC chart named myTracedHPCC using the hpcc helm repo and providing a the above tracing configuration.
 
 ```console
-helm install myTracedHPCC hpcc/hpcc -f otlp-http-collector-default.yaml
+helm install myTracedHPCC hpcc/hpcc -f otlp-http-collector-k8s.yaml
 ```
+
+The above command configures HPCC to export trace data to a metrics collector via the OTLP/HTTP protocol. For testing purposes, users can deploy the OpenTelemetry collector (see documentation https://github.com/open-telemetry/opentelemetry-helm-charts?tab=readme-ov-file#usage)
+
+Add the OpenTelemetry Helm repo:
+
+```console
+helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts
+```
+
+Deploy the OpenTelemetry collector with default configuration:
+
+```console
+helm install myotelcollector open-telemetry/opentelemetry-collector --set mode=deployment
+```
+
+At this point, the 'myotelcollector' deployment should be accepting trace info over OTLP/HTTP on port 4318 and OTLP/GRPC on port 4317. To reach these services from within the k8s cluster, use the following fully qualified domain name:
+
+```
+http://myotelcollector-opentelemetry-collector.default.svc.cluster.local
+```
+
+To customize the collector, provide custom values yaml:
+
+```console
+helm install myotelcollector open-telemetry/opentelemetry-collector -f otel-collector-custom-values.yaml --set mode=deployment
+```
+
+To find the default values used by the collecter perform the following Helm command:
+
+```console
+helm show values open-telemetry/opentelemetry-collector
+```
+
 ## Tracing information
 HPCC tracing information includes data needed to trace requests as they traverse over distributed components, and detailed information pertaining to important request subtasks in the form of span information. Each trace and all its related spans are assigned unique IDs which follow the Open Telemetry standard.
 
@@ -112,6 +145,9 @@ Sample exported span data:
 
 ## Directory Contents
 
-- 'otlp-http-collector-default.yaml' - Sample tracing configuration targeting OTLP/HTTP trace collector
-- 'otlp-grpc-collector-default.yaml' - Sample tracing configuration targeting OTLP/GRPC trace collector
+- 'otlp-http-collector-k8s.yaml' - Sample tracing configuration targeting OTLP/HTTP trace collector accessible on local k8s cluster 
+- 'otlp-grpc-collector-k8s.yaml' - Sample tracing configuration targeting OTLP/GRPC trace collector accessible on local k8s cluster
+- 'otlp-http-collector-default.yaml' - Sample tracing configuration targeting OTLP/HTTP trace collector accessible on localhost
+- 'otlp-grpc-collector-default.yaml' - Sample tracing configuration targeting OTLP/GRPC trace collector accessible on localhost
 - 'jlog-collector-fulloutput.yaml' - Sample tracing configuration targeting HPCC component logs
+- 'otel-collector-custom-values.yaml' - Sample custom configuration for OpenTelemetry collector

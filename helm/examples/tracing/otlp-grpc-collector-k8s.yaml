@@ -1,0 +1,6 @@
+global:
+  tracing:
+    exporters:
+    - type: OTLP-GRPC
+      endpoint: "http://myotelcollector-opentelemetry-collector.default.svc.cluster.local:4317"
+      useSslCredentials: false
