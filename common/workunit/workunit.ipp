@@ -385,7 +385,7 @@ public:
     IWorkUnit &lockRemote(bool commit);
     void unlockRemote();
     void abort();
-    bool switchThorQueue(const char *cluster, IQueueSwitcher *qs);
+    bool switchThorQueue(const char *cluster, IQueueSwitcher *qs, const char *item);
     void setAllowedClusters(const char *value);
     IStringVal & getAllowedClusters(IStringVal & str) const;
     void remoteCheckAccess(IUserDescriptor *user, bool writeaccess) const;

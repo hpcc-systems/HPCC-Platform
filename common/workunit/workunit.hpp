@@ -85,7 +85,7 @@ typedef unsigned __int64 __uint64;
 interface IQueueSwitcher : extends IInterface
 {
     virtual void * getQ(const char * qname, const char * wuid) = 0;
-    virtual void putQ(const char * qname, const char * wuid, void * qitem) = 0;
+    virtual void putQ(const char * qname, void * qitem) = 0;
     virtual bool isAuto() = 0;
 };
 
@@ -1374,7 +1374,7 @@ interface IWorkUnit : extends IConstWorkUnit
     virtual void noteFileRead(IDistributedFile * file) = 0;
     virtual void noteFieldUsage(IPropertyTree * file) = 0;
     virtual void resetBeforeGeneration() = 0;
-    virtual bool switchThorQueue(const char * newcluster, IQueueSwitcher * qs) = 0;
+    virtual bool switchThorQueue(const char * newcluster, IQueueSwitcher * qs, const char *item) = 0;
     virtual void setAllowedClusters(const char * value) = 0;
     virtual void setAllowAutoQueueSwitch(bool val) = 0;
     virtual void setLibraryInformation(const char * name, unsigned interfaceHash, unsigned definitionHash) = 0;

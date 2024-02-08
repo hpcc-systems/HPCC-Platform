@@ -8,6 +8,7 @@
 
 #include "dasds.hpp"
 #include "daaudit.hpp"
+#include "daqueue.hpp"
 #include "saserver.hpp"
 #include "workunit.hpp"
 #include "wujobq.hpp"
@@ -110,7 +111,7 @@ public:
     }
 
 
-    bool doSwitch(const char *wuid,const char *cluster)
+    bool doSwitch(const char *item, const char *wuid, const char *cluster)
     {
         class cQswitcher: public CInterface, implements IQueueSwitcher
         {
@@ -145,7 +146,7 @@ public:
                     return NULL;
                 return q->take(wuid);
             }
-            void putQ(const char * qname, const char * wuid, void * qitem)
+            void putQ(const char * qname, void * qitem)
             {
                 IJobQueue *q = findQueue(qname);
                 if (q)
@@ -162,7 +163,7 @@ public:
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
         Owned<IWorkUnit> wu = factory->updateWorkUnit(wuid);
         if (wu)
-            return wu->switchThorQueue(cluster, &switcher);
+            return wu->switchThorQueue(cluster, &switcher, item);
         return false;
     }
 
@@ -175,31 +176,37 @@ public:
 
         // see if can find candidate on another queue
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-        ForEachItemIn(i1,queues) {
-            if (i1!=qi) {
+        ForEachItemIn(i1,queues)
+        {
+            if (i1!=qi)
+            {
                 IJobQueue &srcq = queues.item(i1);
                 CJobQueueContents qc;
                 srcq.copyItems(qc);
                 Owned<IJobQueueIterator> iter = qc.getIterator();
-                ForEach(*iter) {
+                ForEach(*iter)
+                {
                     const char *wuidGraph = iter->query().queryWUID();
-                    if (!isEmptyString(wuidGraph)) {
-                        const char *sep = strchr(wuidGraph, '/');
-                        StringAttr wuid;
-                        if (sep)
-                            wuid.set(wuidGraph, sep-wuidGraph);
-                        else
-                            wuid.set(wuidGraph);
+                    if (!isEmptyString(wuidGraph))
+                    {
+                        StringArray sArray;
+                        sArray.appendList(wuidGraph, "/");
+                        assertex(3 == sArray.ordinality());
+                        const char *wuid = sArray.item(1);
                         Owned<IConstWorkUnit> wu = factory->openWorkUnit(wuid);
-                        if (wu) {
+                        if (wu)
+                        {
                             SCMStringBuffer allowedClusters;
-                            if (wu->getAllowedClusters(allowedClusters).length()) {
+                            if (wu->getAllowedClusters(allowedClusters).length())
+                            {
                                 StringArray acs;
                                 acs.appendListUniq(allowedClusters.str(), ",");
                                 bool found = true;
-                                ForEachItemIn(i,acs) {
+                                const char *cn = cnames.item(qi);
+                                ForEachItemIn(i,acs)
+                                {
                                     if (strcmp(cnames.item(qi),acs.item(i))==0) 
-                                        return doSwitch(wuid,acs.item(i));
+                                        return doSwitch(wuidGraph, wuid, acs.item(i));
                                 }
                             }
                         }
@@ -222,12 +229,14 @@ public:
         if (!initQueueNames(qmonprops->queryProp("@queues")))
             return 0;
         Owned<IRemoteConnection> conn = querySDS().connect("Status/Servers", myProcessSession(), 0, 100000);
-        if (!conn) {
+        if (!conn)
+        {
             OERRLOG("cannot connect to Status/Servers");
             return -1;
         }
         unsigned *qidlecount = new unsigned[qnames.ordinality()];
-        ForEachItemIn(i1,qnames) {
+        ForEachItemIn(i1,qnames)
+        {
             StringBuffer qname(qnames.item(i1));
             qname.append(".thor");
             queues.append(*createJobQueue(qname.str()));
@@ -235,23 +244,38 @@ public:
         }
         unsigned sleeptime = autoswitch?1:interval;
         unsigned moninter = interval;
-        while (!stopped) {
+        while (!stopped)
+        {
             stopsem.wait(60*1000*sleeptime);
             if (stopped)
                 break;
             moninter-=sleeptime;
-            if (autoswitch||(moninter==0)) { // always true at moment
-                try {
+            if (autoswitch||(moninter==0)) // always true at moment
+            {
+                try
+                {
                     conn->reload();
-                    ForEachItemIn(qi,qnames) {
+                    ForEachItemIn(qi,qnames)
+                    {
+                        StringBuffer thorQName;
                         const char *qname = qnames.item(qi);
-                        StringBuffer xpath;
-                        xpath.appendf("Server[@queue=\"%s.thor\"]/WorkUnit",qname);
-                        Owned<IPropertyTreeIterator> iter = conn->queryRoot()->getElements(xpath.str());
+                        getClusterThorQueueName(thorQName, qname);
+                        Owned<IPropertyTreeIterator> iter = conn->queryRoot()->getElements("Server[@queue]");
                         StringArray wuids;
-                        ForEach(*iter) {
-                            IPropertyTree &wu = iter->query();
-                            wuids.append(wu.queryProp(NULL));
+                        ForEach(*iter)
+                        {
+                            IPropertyTree &server = iter->query();
+                            const char *wuid = server.queryProp("WorkUnit");
+                            if (isEmptyString(wuid))
+                                continue;
+                            const char *queues = server.queryProp("@queue");
+                            if (isEmptyString(queues))
+                                continue;
+                            StringArray queueList;
+                            queueList.appendList(queues, ",");
+                            if (!queueList.contains(thorQName))
+                                continue;
+                            wuids.append(wuid);
                         }
                         unsigned enqueued=0;
                         unsigned connected=0;
@@ -265,14 +289,18 @@ public:
                             qidlecount[qi] = 0;
                     }
                 }
-                catch (IException *e) {
+                catch (IException *e)
+                {
                     StringBuffer s;
                     EXCLOG(e, "QMONITOR");
                     e->Release();
                 }
-                if (autoswitch) {
-                    ForEachItemIn(qi2,qnames) {
-                        if (qidlecount[qi2]>autoswitch) {   // > not >= to get conservative estimate of how long idle
+                if (autoswitch)
+                {
+                    ForEachItemIn(qi2,qnames)
+                    {
+                        if (qidlecount[qi2]>autoswitch) // > not >= to get conservative estimate of how long idle
+                        {
                             if (switchQueues(qi2))
                                 break; // only switch one per cycle (bit of cop-out)
                         }

@@ -4579,8 +4579,8 @@ public:
     virtual void deserialize(MemoryBuffer &src)
             { c->deserialize(src); }
 
-    virtual bool switchThorQueue(const char *cluster, IQueueSwitcher *qs)
-            { return c->switchThorQueue(cluster,qs); }
+    virtual bool switchThorQueue(const char *cluster, IQueueSwitcher *qs, const char *item)
+            { return c->switchThorQueue(cluster, qs, item); }
     virtual void setAllowedClusters(const char *value)
             { c->setAllowedClusters(value); }
     virtual IStringVal& getAllowedClusters(IStringVal &str) const
@@ -9852,28 +9852,45 @@ IPropertyTreeIterator & CLocalWorkUnit::getFilesReadIterator() const
 
 //=================================================================================================
 
-
-bool CLocalWorkUnit::switchThorQueue(const char *cluster, IQueueSwitcher *qs)
+// queued Thor jobs take the form : <wfid>/<workunit>/<graphName>
+bool CLocalWorkUnit::switchThorQueue(const char *newCluster, IQueueSwitcher *qs, const char *item)
 {
     CriticalBlock block(crit);
     if (qs->isAuto()&&!getAllowAutoQueueSwitch())
         return false;
 
-    const char * currentcluster = queryClusterName();
-    const char *wuid = p->queryName();
     StringBuffer curqname;
-    getClusterThorQueueName(curqname, currentcluster);
-
-    void *qi = qs->getQ(curqname.str(),wuid);
-    if (!qi)
-        return false;
-
-    setClusterName(cluster);
-
+    getClusterThorQueueName(curqname, queryClusterName());
     StringBuffer newqname;
-    getClusterThorQueueName(newqname, cluster);
-    qs->putQ(newqname.str(),wuid,qi);
-    return true;
+    getClusterThorQueueName(newqname, newCluster);
+
+    bool oneItem = !isEmptyString(item);
+    StringBuffer tmpItem;
+    if (!oneItem)
+    {
+        // All items in a Thor job queue are of the form <wfid>/<workunit>/<graphName>
+        // When switching items from a queue, and no item has been specified,
+        // we need to switch all items that belong to the same workunit.
+        // NB: This scenario happens if switching is invoked at the workunit level by the user/soap call.
+        // The standard thor queue switching mechanism always names a specific item.
+        tmpItem.appendf("*/%s/*", p->queryName());
+        item = tmpItem;
+    }
+
+    setClusterName(newCluster);
+
+    bool res = false;
+    while (true)
+    {
+        void *qi = qs->getQ(curqname.str(), item);
+        if (!qi)
+            break;
+        qs->putQ(newqname.str(), qi);
+        res = true;
+        if (oneItem)
+            break;
+    }
+    return res;
 }
 
 

@@ -41,7 +41,7 @@ bool switchWorkunitQueue(const char *wuid, const char *cluster)
             Owned<IJobQueue> q = createJobQueue(qname);
             return q->take(wuid);
         }
-        void putQ(const char * qname, const char * wuid, void * qitem)
+        void putQ(const char * qname, void * qitem)
         {
             Owned<IJobQueue> q = createJobQueue(qname);
             q->enqueue((IJobQueueItem *)qitem);
@@ -56,6 +56,6 @@ bool switchWorkunitQueue(const char *wuid, const char *cluster)
     Owned<IWorkUnit> wu = factory->updateWorkUnit(wuid);
     if (!wu)
         return false;
-    return wu->switchThorQueue(cluster, &switcher);
+    return wu->switchThorQueue(cluster, &switcher, nullptr);
 }
 

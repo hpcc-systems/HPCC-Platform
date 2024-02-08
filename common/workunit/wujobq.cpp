@@ -1404,20 +1404,31 @@ public:
 
     IJobQueueItem *dotake(sQueueData &qd,const char *wuid,bool saveitem,bool hasminprio=false,int minprio=0)
     {
+        // will match and remove 1st item with priority >= minprio
         StringBuffer path;
-        IPropertyTree *item = qd.root->queryPropTree(getItemPath(path,wuid).str());
-        if (!item)
-            return NULL;
-        if (item->getPropInt("@num",0)<=0)
-            return NULL;    // don't want (old) cached value
-        if (hasminprio&&(item->getPropInt("@priority")<minprio))
-            return NULL;
-        IJobQueueItem *ret = new CJobQueueItem(item);
-        removeItem(qd,item,saveitem);
-        unsigned count = qd.root->getPropInt("@count");
-        assertex(count);
-        qd.root->setPropInt("@count",count-1);
-        return ret;
+        Owned<IPropertyTreeIterator> iter = qd.root->getElements(getItemPath(path,wuid).str());
+        if (iter->first())
+        {
+            while (true)
+            {
+                IPropertyTree *item = &iter->query();
+                if ((item->getPropInt("@num",0) > 0)) // don't want (old) cached value
+                {
+                    if (!hasminprio || (item->getPropInt("@priority") >= minprio))
+                    {
+                        IJobQueueItem *ret = new CJobQueueItem(item);
+                        removeItem(qd,item,saveitem);
+                        unsigned count = qd.root->getPropInt("@count");
+                        assertex(count);
+                        qd.root->setPropInt("@count",count-1);
+                        return ret;
+                    }
+                }
+                if (!iter->next())
+                    break;
+            }
+        }
+        return nullptr;
     }
 
     IJobQueueItem *take(sQueueData &qd,const char *wuid)
@@ -2246,7 +2257,7 @@ extern bool WORKUNIT_API switchWorkUnitQueue(IWorkUnit* wu, const char *cluster)
             Owned<IJobQueue> q = createJobQueue(qname);
             return q->take(wuid);
         }
-        void putQ(const char * qname, const char * wuid, void * qitem)
+        void putQ(const char * qname, void * qitem)
         {
             Owned<IJobQueue> q = createJobQueue(qname);
             q->enqueue((IJobQueueItem *)qitem);
@@ -2257,5 +2268,5 @@ extern bool WORKUNIT_API switchWorkUnitQueue(IWorkUnit* wu, const char *cluster)
         }
     } switcher;
 
-    return wu->switchThorQueue(cluster, &switcher);
+    return wu->switchThorQueue(cluster, &switcher, nullptr);
 }
