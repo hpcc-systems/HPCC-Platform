@@ -13,8 +13,8 @@
 #include "workunit.hpp"
 #include "wujobq.hpp"
 #include "environment.hpp"
+#include "jconfig.hpp"
 
-#ifndef _CONTAINERIZED
 //not currently created or used in the containerized version
 
 //#define TESTING
@@ -71,36 +71,58 @@ public:
     {
         if (!qlist||!*qlist)
             return false;
-        if (!qinitdone) {
+        if (!qinitdone)
+        {
             qinitdone = true;
             StringArray qs;
             qs.appendListUniq(qlist, ",");
             if (!qs.ordinality())
                 return false;
+            StringArray tna;
+#ifdef _CONTAINERIZED
+            Owned<IStringIterator> cnaIter = config::getContainerTargets("thor", nullptr);
+            if (!cnaIter->first())
+                return false;
+            while (true)
+            {
+                SCMStringBuffer target;
+                cnaIter->str(target);
+                tna.append(target.str());
+                if (!cnaIter->next())
+                    break;
+            }
+#else
             StringArray cna;
             StringArray gna;
-            StringArray tna;
             StringArray qna;
             if (getEnvironmentThorClusterNames(cna,gna,tna,qna)==0)
                 return false;
-            ForEachItemIn(i1,tna) {
+#endif
+            ForEachItemIn(i1,tna)
+            {
                 const char *qname = tna.item(i1); // JCSMORE - ThorQMon/@queues is actually matching targets, rename property to @targets ?
                 bool ok = false;
-                ForEachItemIn(i2,qs) {
-                    if (WildMatch(qname,qs.item(i2),true)) {
+                ForEachItemIn(i2,qs)
+                {
+                    if (WildMatch(qname,qs.item(i2),true))
+                    {
                         ok = true;
                         break;
                     }
                 }
-                if (ok) {
+                if (ok)
+                {
                 // see if already done
-                    ForEachItemIn(i2,qnames) {
-                        if (strcmp(qname,qnames.item(i2))==0) {
+                    ForEachItemIn(i2,qnames)
+                    {
+                        if (strcmp(qname,qnames.item(i2))==0)
+                        {
                             ok = false;
                             break;
                         }
                     }
-                    if (ok) {
+                    if (ok)
+                    {
                         qnames.append(qname);
                         cnames.append(tna.item(i1));
                     }
@@ -219,14 +241,30 @@ public:
 
     int run()
     {
-        Owned<IPropertyTree> qmonprops = serverConfig->getPropTree("ThorQMon");
-        if (!qmonprops)
-            qmonprops.setown(createPTree("ThorQMon"));
+        Owned<IPropertyTree> qmonprops;
+        if (isContainerized())
+            qmonprops.set(serverConfig);
+        else
+        {
+            qmonprops.setown(serverConfig->getPropTree("ThorQMon"));
+            if (!qmonprops)
+                qmonprops.setown(createPTree("ThorQMon"));
+        }
         unsigned interval = qmonprops->getPropInt("@interval",DEFAULT_QMONITOR_INTERVAL); // probably always 1
-        unsigned autoswitch = qmonprops->getPropInt("@switchMinTime",0);
         if (!interval)
             return 0;
-        if (!initQueueNames(qmonprops->queryProp("@queues")))
+
+        // In bare-metal, historically autoswitching has been disabled by default.
+        // However, it is usually enabled in the environment.xml in most deployments.
+        // To simplify the containerized configuration, we set autoswitching period to match the interval by default.
+        unsigned autoSwitchDefault = isContainerized() ? interval : 0;
+
+        unsigned autoswitch = qmonprops->getPropInt("@switchMinTime", autoSwitchDefault);
+
+        const char *configQueues = qmonprops->queryProp("@queues");
+        if (!configQueues && isContainerized())
+            configQueues = "*"; // NB: this is the bare-metal default too (from stock environment.xml)
+        if (!initQueueNames(configQueues))
             return 0;
         Owned<IRemoteConnection> conn = querySDS().connect("Status/Servers", myProcessSession(), 0, 100000);
         if (!conn)
@@ -238,7 +276,7 @@ public:
         ForEachItemIn(i1,qnames)
         {
             StringBuffer qname(qnames.item(i1));
-            qname.append(".thor");
+            qname.append(THOR_QUEUE_EXT);
             queues.append(*createJobQueue(qname.str()));
             qidlecount[i1] = 0;
         }
@@ -324,5 +362,3 @@ ISashaServer *createSashaQMonitorServer()
     sashaQMonitorServer = new CSashaQMonitorServer();
     return sashaQMonitorServer;
 }
-
-#endif // !_CONTAINERIZED

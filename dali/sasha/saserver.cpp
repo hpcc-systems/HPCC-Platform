@@ -433,6 +433,8 @@ int main(int argc, const char* argv[])
                     servers.append(*createSashaCachedWURemoverServer());
                 else if (strieq(service, "file-expiry"))
                     servers.append(*createSashaFileExpiryServer());
+                else if (strieq(service, "thor-qmon"))
+                    servers.append(*createSashaQMonitorServer());
                 //else if (strieq(service, "xref")) // TODO
                 //    servers.append(*createSashaXrefServer());
                 else

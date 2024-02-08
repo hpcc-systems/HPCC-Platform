@@ -2854,6 +2854,32 @@
       },
       "additionalProperties": false
     },
+    "sasha-thor-qmon" : {
+      "type": "object",
+      "allOf": [{ "$ref": "#/definitions/sashacommon" }],
+      "properties": {
+        "queues": {
+          "description": "A list of queues to monitor",
+          "type": "array",
+          "items": { "type": "string" },
+          "default": "*"
+        },
+        "switchMinTime": {
+          "type": "integer",
+          "description": "Minimum time (in seconds) to wait before switching to a different queue",
+          "default": "0"
+        },
+        "disabled": {},
+        "hold": {},
+        "interval": {},
+        "image": {},
+        "resources": {},
+        "annotations": {},
+        "labels": {},
+        "egress": {}
+      },
+      "additionalProperties": false
+    },
     "sashaservice": {
       "oneOf": [
         {
@@ -2874,6 +2900,9 @@
             },
             "file-expiry": {
               "$ref": "#/definitions/sasha-file-expiry"
+            },
+            "thor-qmon": {
+              "$ref": "#/definitions/sasha-thor-qmon"
             },
             "disabled": {
               "type": "boolean"
