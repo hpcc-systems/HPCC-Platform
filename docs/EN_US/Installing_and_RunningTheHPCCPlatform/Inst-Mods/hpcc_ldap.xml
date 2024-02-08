@@ -288,6 +288,26 @@
     </sect3>
   </sect2>
 
+  <sect2 id="SingleUserSecMgr">
+    <title>Single User Security Manager</title>
+
+    <para>The Single User security manager is a specialized security manager
+    that allows a username/password combination to be specified on the ESP
+    startup command line. At runtime, when you attempt to access any
+    authenticating ESP feature, such as ECL Watch, you must specify a
+    username/password combination.</para>
+
+    <para>A single user security manager could be useful for a custom
+    deployment where you do not want to configure an entire LDAP server or
+    create a Linux HTPASSWD file, such as a classroom environment or a custom
+    HPCC Systems Virtual Machine.</para>
+
+    <para>See the <ulink
+    url="https://hpccsystems.com/training/documentation/all/"><emphasis>Security
+    Manager Plugin Framework</emphasis></ulink> document for more information
+    on configuring and deploying Security Manager plugins.</para>
+  </sect2>
+
   <sect2 id="Using_LDAP_Authentication" role="brk">
     <title>Using LDAP Authentication</title>
 
