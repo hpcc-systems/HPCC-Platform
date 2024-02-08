@@ -133,7 +133,16 @@ int CEclAgentExecutionServer::run()
             }
         }
         else
+        {
             getClusterEclAgentQueueName(queueNames, agentName);
+            Owned<IPropertyTreeIterator> auxQueueIter = config->getElements("auxQueues");
+            ForEach(*auxQueueIter)
+            {
+                queueNames.append(',');
+                const char *auxQueueName = auxQueueIter->query().queryProp(nullptr);
+                getClusterEclAgentQueueName(queueNames, auxQueueName);
+            }
+        }
 #else
         getAgentQueueNames(queueNames, agentName);
 #endif
