@@ -58,6 +58,7 @@ set (    SRCS
          jbsocket.cpp
          jbuff.cpp
          jcomp.cpp
+         jconfig.cpp
          jcontainerized.cpp
          jcrc.cpp
          jdebug.cpp
@@ -119,6 +120,7 @@ set (    INCLUDES
         jbuff.hpp
         jcomp.hpp
         jcomp.ipp
+        jconfig.hpp
         jcontainerized.hpp
         jcrc.hpp
         jdebug.hpp

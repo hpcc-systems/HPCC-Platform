@@ -19,6 +19,7 @@
 
 #include "ws_dfuXRefService.hpp"
 
+#include "jconfig.hpp"
 #include "dadfs.hpp"
 #include "daft.hpp"
 #include "dautils.hpp"
@@ -655,7 +656,7 @@ void addUsedFilesFromPackageMaps(MapStringTo<bool> &usedFileMap, const char *pro
         throw MakeStringException(ECLWATCH_PACKAGEMAP_NOTRESOLVED, "Unable to retrieve package information from dali /PackageMaps");
     StringArray pmids;
 #ifdef _CONTAINERIZED
-    Owned<IStringIterator> targets = getContainerTargetClusters("roxie", process);
+    Owned<IStringIterator> targets = config::getContainerTargets("roxie", process);
 #else
     Owned<IStringIterator> targets = getTargetClusters("RoxieCluster", process);
 #endif

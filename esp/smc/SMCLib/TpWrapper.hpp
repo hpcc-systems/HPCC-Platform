@@ -227,7 +227,6 @@ extern TPWRAPPER_API unsigned getContainerWUClusterInfo(CConstWUClusterInfoArray
 extern TPWRAPPER_API unsigned getWUClusterInfo(CConstWUClusterInfoArray& clusters);
 extern TPWRAPPER_API IConstWUClusterInfo* getWUClusterInfoByName(const char* clustName);
 
-extern TPWRAPPER_API IStringIterator *getContainerTargetClusters(const char* processType, const char* processName);
 extern TPWRAPPER_API void initContainerRoxieTargets(MapStringToMyClass<ISmartSocketFactory>& connMap);
 extern TPWRAPPER_API unsigned getThorClusterNames(StringArray& targetNames, StringArray& queueNames);
 extern TPWRAPPER_API void getRoxieTargetsSupportingPublishedQueries(StringArray& names);

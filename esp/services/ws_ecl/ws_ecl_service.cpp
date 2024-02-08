@@ -1,5 +1,6 @@
 #include <memory>
 
+#include "jconfig.hpp"
 #include "daclient.hpp"
 #include "environment.hpp"
 #include "workunit.hpp"
@@ -388,28 +389,6 @@ void CWsEclBinding::getNavigationData(IEspContext &context, IPropertyTree & data
     ensureNavDynFolder(data, "Targets", "Targets", "root=true", NULL);
 }
 
-static IStringIterator *getContainerTargetClusters()
-{
-    Owned<CStringArrayIterator> ret = new CStringArrayIterator;
-    Owned<IPropertyTreeIterator> queues = getComponentConfigSP()->getElements("queues");
-    ForEach(*queues)
-    {
-        IPropertyTree &queue = queues->query();
-        const char *qName = queue.queryProp("@name");
-        if (!isEmptyString(qName))
-            ret->append_unique(qName);
-    }
-    Owned<IPropertyTreeIterator> services = getGlobalConfigSP()->getElements("services[@type='roxie']");
-    ForEach(*services)
-    {
-        IPropertyTree &service = services->query();
-        const char *targetName = service.queryProp("@target");
-        if (!isEmptyString(targetName))
-            ret->append_unique(targetName);
-    }
-    return ret.getClear();
-}
-
 void CWsEclBinding::getRootNavigationFolders(IEspContext &context, IPropertyTree & data)
 {
     DBGLOG("CScrubbedXmlBinding::getNavigationData");
@@ -422,7 +401,7 @@ void CWsEclBinding::getRootNavigationFolders(IEspContext &context, IPropertyTree
     data.addProp("@appName", "WsECL 3.0");
 
 #ifdef _CONTAINERIZED
-    Owned<IStringIterator> envTargets = getContainerTargetClusters();
+    Owned<IStringIterator> envTargets = config::getContainerTargets(nullptr, nullptr);
 #else
     Owned<IStringIterator> envTargets = getTargetClusters(NULL, NULL);
 #endif
