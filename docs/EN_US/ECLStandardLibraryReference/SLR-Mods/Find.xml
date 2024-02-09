@@ -100,4 +100,6 @@ D := IF(STD.Str.Find('', 'BD', 1) = 0,
    'Success',
    'Failure - 4');  //success
 </programlisting>
+
+  <para>See Also: <link linkend="Contains">Contains</link></para>
 </sect1>
