@@ -4234,7 +4234,7 @@ bool CWsWorkunitsEx::onWUAnalyseHotspot(IEspContext &context, IEspWUAnalyseHotsp
 }
 
 
-static void getWUDetailsMetaProperties(IArrayOf<IEspWUDetailsMetaProperty> & properties)
+static void getWUDetailsMetaProperties(double version, IArrayOf<IEspWUDetailsMetaProperty> & properties)
 {
     for (unsigned sk=StKindAll+1; sk<StMax;++sk)
     {
@@ -4244,6 +4244,8 @@ static void getWUDetailsMetaProperties(IArrayOf<IEspWUDetailsMetaProperty> & pro
             Owned<IEspWUDetailsMetaProperty> property = createWUDetailsMetaProperty("","");
             property->setName(s);
             property->setValueType(CWUDetailsAttrValueType_Single);
+            if (version >= 1.99)
+                property->setDescription(queryStatisticDescription((StatisticKind)sk));
             properties.append(*property.getClear());
         }
     }
@@ -4301,8 +4303,10 @@ bool CWsWorkunitsEx::onWUDetailsMeta(IEspContext &context, IEspWUDetailsMetaRequ
 {
     try
     {
+        double version = context.getClientVersion();
+
         IArrayOf<IEspWUDetailsMetaProperty> properties;
-        getWUDetailsMetaProperties(properties);
+        getWUDetailsMetaProperties(version, properties);
         resp.setProperties(properties);
 
         StringArray scopeTypes;
@@ -4339,7 +4343,7 @@ class WUDetailsMetaTest : public CppUnit::TestFixture
         // These calls also check that all the calls required to build WUDetailsMeta
         // are successful.
         IArrayOf<IEspWUDetailsMetaProperty> properties;
-        getWUDetailsMetaProperties(properties);
+        getWUDetailsMetaProperties(1.98, properties);
         unsigned expectedOrdinalityProps = StMax - (StKindAll + 1) + (WaMax-WaKind);
         ASSERT(properties.ordinality()==expectedOrdinalityProps);
 
