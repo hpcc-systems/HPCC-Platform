@@ -1621,25 +1621,33 @@ public:
         --nested;
     }
 
+    virtual unsigned __int64 getStatistic(StatisticKind kind) override
+    {
+        return stream->getStatistic(kind);
+    }
 };
 
 #ifdef TRACE_CREATE
 unsigned CRowStreamWriter::wrnum=0;
 #endif
 
+template<typename T>
+static IFileIO * createCompressedFileWriter(T file, IRowInterfaces *rowIf, unsigned flags, ICompressor *compressor, size32_t compressorBlkSz)
+{
+    size32_t fixedSize = rowIf->queryRowMetaData()->querySerializedDiskMeta()->getFixedSize();
+    if (fixedSize && TestRwFlag(flags, rw_grouped))
+        ++fixedSize; // row writer will include a grouping byte
+    ICompressedFileIO *compressedFileIO = createCompressedFileWriter(file, fixedSize, TestRwFlag(flags, rw_extend), TestRwFlag(flags, rw_compressblkcrc), compressor, getCompMethod(flags));
+    if (compressorBlkSz)
+        compressedFileIO->setBlockSize(compressorBlkSz);
+    return compressedFileIO;
+}
+
 IExtRowWriter *createRowWriter(IFile *iFile, IRowInterfaces *rowIf, unsigned flags, ICompressor *compressor, size32_t compressorBlkSz)
 {
     OwnedIFileIO iFileIO;
     if (TestRwFlag(flags, rw_compress))
-    {
-        size32_t fixedSize = rowIf->queryRowMetaData()->querySerializedDiskMeta()->getFixedSize();
-        if (fixedSize && TestRwFlag(flags, rw_grouped))
-            ++fixedSize; // row writer will include a grouping byte
-        ICompressedFileIO *compressedFileIO = createCompressedFileWriter(iFile, fixedSize, TestRwFlag(flags, rw_extend), TestRwFlag(flags, rw_compressblkcrc), compressor, getCompMethod(flags));
-        if (compressorBlkSz)
-            compressedFileIO->setBlockSize(compressorBlkSz);
-        iFileIO.setown(compressedFileIO);
-    }
+        iFileIO.setown(createCompressedFileWriter(iFile, rowIf, flags, compressor, compressorBlkSz));
     else
         iFileIO.setown(iFile->open((flags & rw_extend)?IFOwrite:IFOcreate));
     if (!iFileIO)
@@ -1648,10 +1656,14 @@ IExtRowWriter *createRowWriter(IFile *iFile, IRowInterfaces *rowIf, unsigned fla
     return createRowWriter(iFileIO, rowIf, flags);
 }
 
-IExtRowWriter *createRowWriter(IFileIO *iFileIO, IRowInterfaces *rowIf, unsigned flags, size32_t compressorBlkSz)
+IExtRowWriter *createRowWriter(IFileIO *iFileIO, IRowInterfaces *rowIf, unsigned flags, ICompressor *compressor, size32_t compressorBlkSz)
 {
+    Owned<IFileIO> compressedFileIO;
     if (TestRwFlag(flags, rw_compress))
-        throw MakeStringException(0, "Unsupported createRowWriter flags");
+    {
+        compressedFileIO.setown(createCompressedFileWriter(iFileIO, rowIf, flags, compressor, compressorBlkSz));
+        iFileIO = compressedFileIO.get();
+    }
     Owned<IFileIOStream> stream;
     if (TestRwFlag(flags, rw_buffered))
         stream.setown(createBufferedIOStream(iFileIO));
@@ -1659,7 +1671,7 @@ IExtRowWriter *createRowWriter(IFileIO *iFileIO, IRowInterfaces *rowIf, unsigned
         stream.setown(createIOStream(iFileIO));
     if (flags & rw_extend)
         stream->seek(0, IFSend);
-    flags &= ~((unsigned)(rw_extend|rw_buffered));
+    flags &= ~((unsigned)(rw_extend|rw_buffered|COMP_MASK));
     return createRowWriter(stream, rowIf, flags);
 }
 
