@@ -296,6 +296,8 @@ enum StatisticKind
     StTimeAgentProcess,
     StCycleAgentProcessCycles,
     StNumAckRetries,
+    StSizeContinuationData,
+    StNumContinuationRequests,
     StMax,
 
     //For any quantity there is potentially the following variants.
