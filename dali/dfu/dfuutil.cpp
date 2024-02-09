@@ -421,8 +421,15 @@ public:
             // JCSMORE: it may be this can replace the need for the other 'clone*' attributes altogether.
             if (srcfdesc->queryProperties().hasProp("_remoteStoragePlane"))
             {
-                attrs.setPropTree("cloneFromFDesc", createPTreeFromIPT(srcTree));
-                return;
+                if (srcdali && !srcdali->endpoint().isNull())
+                {
+                    attrs.setPropTree("cloneFromFDesc", createPTreeFromIPT(srcTree));
+                    StringBuffer host;
+                    attrs.setProp("@cloneFrom", srcdali->endpoint().getEndpointHostText(host).str());
+                    if (prefix.length())
+                        attrs.setProp("@cloneFromPrefix", prefix.get());
+                    return;
+                }
             }
 
             while(attrs.removeProp("cloneFromGroup"));
