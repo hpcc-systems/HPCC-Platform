@@ -24,13 +24,28 @@ bool CDALIKVStore::createStore(const char * apptype, const char * storename, con
 
     ensureAttachedToDali(); //throws if in offline mode
 
-    Owned<IRemoteConnection> conn = querySDS().connect(DALI_KVSTORE_PATH, myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT_KVSTORE);
+    Owned<IRemoteConnection> conn = querySDS().connect(DALI_KVSTORE_PATH, myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_KVSTORE);
     if (!conn)
         throw MakeStringException(-1, "Unable to connect to DALI KeyValue store root: '%s'", DALI_KVSTORE_PATH);
 
-    Owned<IPropertyTree> root = conn->getRoot();
+    VStringBuffer xpath("Store[%s='%s'][1]", DALI_KVSTORE_NAME_ATT, storename);
+    {
+        Owned<IPropertyTree> root = conn->getRoot();
+        if (root->hasProp(xpath.str()))
+        {
+            LOG(MCuserInfo,"DALI Keystore createStore(): '%s' entry already exists", storename);
+            return false;
+        }
+    }
 
-    VStringBuffer xpath("Store[%s='%s'][1]", DALI_KVSTORE_NAME_ATT,  storename);
+    //target store does not exist, let's create it
+    //re-establish connection with write lock
+    conn.clear();
+    conn.setown(querySDS().connect(DALI_KVSTORE_PATH, myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT_KVSTORE));
+
+    Owned<IPropertyTree> root = conn->getRoot();
+    //was the target store created while we were waiting for the lock?
+    //if so, we don't need to create it again
     if (root->hasProp(xpath.str()))
     {
         LOG(MCuserInfo,"DALI Keystore createStore(): '%s' entry already exists", storename);
