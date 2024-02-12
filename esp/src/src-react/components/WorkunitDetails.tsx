@@ -23,6 +23,7 @@ import { Variables } from "./Variables";
 import { Workflows } from "./Workflows";
 import { WorkunitSummary } from "./WorkunitSummary";
 import { TabInfo, DelayLoadedPanel, OverflowTabList } from "./controls/TabbedPanes/index";
+import { ECLArchive } from "./ECLArchive";
 
 const logger = scopedLogger("src-react/components/WorkunitDetails.tsx");
 
@@ -30,7 +31,7 @@ type StringStringMap = { [key: string]: string };
 interface WorkunitDetailsProps {
     wuid: string;
     tab?: string;
-    state?: { outputs?: string, metrics?: string, resources?: string, helpers?: string };
+    state?: { outputs?: string, metrics?: string, resources?: string, helpers?: string, eclsummary?: string };
     queryParams?: { outputs?: StringStringMap, inputs?: StringStringMap, resources?: StringStringMap, helpers?: StringStringMap, logs?: StringStringMap };
 }
 
@@ -105,6 +106,9 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
             id: "eclsummary",
             label: nlsHPCC.ECL
         }, {
+            id: "eclsummaryold",
+            label: "L" + nlsHPCC.ECL
+        }, {
             id: "xml",
             label: nlsHPCC.XML
         }];
@@ -155,7 +159,7 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
                 <Logs wuid={wuid} filter={queryParams.logs} setLogCount={setLogCount} />
             </DelayLoadedPanel>
             <DelayLoadedPanel visible={tab === "eclsummary"} size={size}>
-                <DojoAdapter widgetClassID="ECLArchiveWidget" params={{ Wuid: wuid }} />
+                <ECLArchive wuid={wuid} selection={state?.eclsummary} />
             </DelayLoadedPanel>
             <DelayLoadedPanel visible={tab === "xml"} size={size}>
                 <WUXMLSourceEditor wuid={wuid} />

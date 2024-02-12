@@ -25,7 +25,7 @@ jobs:
   build:
     strategy:
       matrix:
-        node: ["18", "16"]
+        node: ["20", "18", "16"]
       fail-fast: false
     name: "Check eclwatch and npm"
     needs: pre_job
