@@ -957,6 +957,8 @@ static const constexpr StatisticMeta statsMetaData[StMax] = {
     { TIMESTAT(AgentProcess) },
     { CYCLESTAT(AgentProcess) },
     { NUMSTAT(AckRetries) },
+    { SIZESTAT(ContinuationData) },
+    { NUMSTAT(ContinuationRequests) },
 };
 
 static MapStringTo<StatisticKind, StatisticKind> statisticNameMap(true);

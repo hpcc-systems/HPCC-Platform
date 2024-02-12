@@ -4,13 +4,14 @@ import { Label, Spinner } from "@fluentui/react-components";
 import { typographyStyles } from "@fluentui/react-theme";
 import { useConst } from "@fluentui/react-hooks";
 import { bundleIcon, Folder20Filled, Folder20Regular, FolderOpen20Filled, FolderOpen20Regular, } from "@fluentui/react-icons";
-import { WorkunitsServiceEx, IScope } from "@hpcc-js/comms";
-import { Table } from "@hpcc-js/dgrid";
+import { Database } from "@hpcc-js/common";
+import { WorkunitsServiceEx, IScope, splitMetric } from "@hpcc-js/comms";
+import { DBStore, Table } from "@hpcc-js/dgrid";
 import { compare, scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import { WUTimelinePatched } from "src/Timings";
 import * as Utility from "src/Utility";
-import { FetchStatus, useMetricsOptions, useWorkunitMetrics } from "../hooks/metrics";
+import { FetchStatus, useMetricsOptions, useWorkunitMetrics, MetricsOptions as MetricsOptionsT } from "../hooks/metrics";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { AutosizeComponent, AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
 import { DockPanel, DockPanelItem, ResetableDockPanel } from "../layouts/DockPanel";
@@ -21,6 +22,7 @@ import { ErrorBoundary } from "../util/errorBoundary";
 import { ShortVerticalDivider } from "./Common";
 import { MetricsOptions } from "./MetricsOptions";
 import { BreadcrumbInfo, OverflowBreadcrumb } from "./controls/OverflowBreadcrumb";
+import { MetricsPropertiesTables } from "./MetricsPropertiesTables";
 
 const logger = scopedLogger("src-react/components/Metrics.tsx");
 
@@ -32,6 +34,100 @@ const SelectedLineageIcon = bundleIcon(FolderOpen20Filled, FolderOpen20Regular);
 const defaultUIState = {
     hasSelection: false
 };
+
+class DBStoreEx extends DBStore {
+
+    constructor(protected _table: TableEx, db: Database.Grid) {
+        super(db);
+    }
+
+    sort(opts) {
+        this._table.sort(opts);
+        return this;
+    }
+}
+
+class TableEx extends Table {
+
+    constructor() {
+        super();
+        this._store = new DBStoreEx(this, this._db);
+    }
+
+    scopeFilterFunc(row: object, scopeFilter: string): boolean {
+        const filter = scopeFilter.trim();
+        if (filter) {
+            let field = "";
+            const colonIdx = filter.indexOf(":");
+            if (colonIdx > 0) {
+                field = filter.substring(0, colonIdx);
+            }
+            if (field) {
+                return row[field]?.indexOf && row[field]?.indexOf(filter.substring(colonIdx + 1)) >= 0;
+            }
+            for (const key in row) {
+                if (row[key]?.indexOf && row[key]?.indexOf(filter) >= 0) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        return true;
+    }
+
+    _rawDataMap: { [id: number]: string } = {};
+    metrics(metrics: any[], options: MetricsOptionsT, timelineFilter: string, scopeFilter: string): this {
+        this.columns(["##", nlsHPCC.Type, nlsHPCC.Scope, ...options.properties]);
+        this.data(metrics.filter(m => this.scopeFilterFunc(m, scopeFilter)).filter(row => {
+            return (timelineFilter === "" || row.name?.indexOf(timelineFilter) === 0) &&
+                (options.scopeTypes.indexOf(row.type) >= 0);
+        }).map((row, idx) => {
+            if (idx === 0) {
+                this._rawDataMap = {
+                    0: "##", 1: "type", 2: "name"
+                };
+                options.properties.forEach((p, idx2) => {
+                    this._rawDataMap[3 + idx2] = p;
+                });
+            }
+            row.__hpcc_id = row.name;
+            return [idx, row.type, row.name, ...options.properties.map(p => {
+                return row.__groupedProps[p]?.Value ??
+                    row.__groupedProps[p]?.Max ??
+                    row.__groupedProps[p]?.Avg ??
+                    row.__formattedProps[p] ??
+                    row[p] ??
+                    "";
+            }), row];
+        }));
+        return this;
+    }
+
+    sort(opts) {
+        const optsEx = opts.map(opt => {
+            return {
+                idx: opt.property,
+                metricLabel: this._rawDataMap[opt.property],
+                splitMetricLabel: splitMetric(this._rawDataMap[opt.property]),
+                descending: opt.descending
+            };
+        });
+
+        const lparamIdx = this.columns().length;
+        this._db.data().sort((l, r) => {
+            const llparam = l[lparamIdx];
+            const rlparam = r[lparamIdx];
+            for (const { idx, metricLabel, splitMetricLabel, descending } of optsEx) {
+                const lval = llparam[metricLabel] ?? llparam[`${splitMetricLabel.measure}Max${splitMetricLabel.label}`] ?? llparam[`${splitMetricLabel.measure}Avg${splitMetricLabel.label}`] ?? l[idx];
+                const rval = rlparam[metricLabel] ?? rlparam[`${splitMetricLabel.measure}Max${splitMetricLabel.label}`] ?? rlparam[`${splitMetricLabel.measure}Avg${splitMetricLabel.label}`] ?? r[idx];
+                if ((lval === undefined && rval !== undefined) || lval < rval) return descending ? 1 : -1;
+                if ((lval !== undefined && rval === undefined) || lval > rval) return descending ? -1 : 1;
+            }
+            return 0;
+        });
+        return this;
+    }
+}
 
 interface MetricsProps {
     wuid: string;
@@ -108,7 +204,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                 AllProperties: false,
                 AllStatistics: true,
                 AllHints: false,
-                Properties: ["WhenStarted", "TimeElapsed"]
+                Properties: ["WhenStarted", "TimeElapsed", "TimeLocalExecute"]
             },
             ScopeOptions: {
                 IncludeId: true,
@@ -139,30 +235,9 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         setScopeFilter(newValue || "");
     }, []);
 
-    const scopeFilterFunc = React.useCallback((row: object): boolean => {
-        const filter = scopeFilter.trim();
-        if (filter) {
-            let field = "";
-            const colonIdx = filter.indexOf(":");
-            if (colonIdx > 0) {
-                field = filter.substring(0, colonIdx);
-            }
-            if (field) {
-                return row[field]?.indexOf && row[field]?.indexOf(filter.substring(colonIdx + 1)) >= 0;
-            }
-            for (const key in row) {
-                if (row[key]?.indexOf && row[key]?.indexOf(filter) >= 0) {
-                    return true;
-                }
-            }
-            return false;
-        }
-        return true;
-    }, [scopeFilter]);
-
-    const scopesTable = useConst(() => new Table()
+    const scopesTable = useConst(() => new TableEx()
         .multiSelect(true)
-        .columns(["##", nlsHPCC.Type, nlsHPCC.Scope, ...options.properties])
+        .metrics([], options, timelineFilter, scopeFilter)
         .sortable(true)
         .on("click", debounce((row, col, sel) => {
             if (sel) {
@@ -175,17 +250,10 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
 
     React.useEffect(() => {
         scopesTable
-            .columns(["##", nlsHPCC.Type, nlsHPCC.Scope, ...options.properties])
-            .data(metrics.filter(scopeFilterFunc).filter(row => {
-                return (timelineFilter === "" || row.name?.indexOf(timelineFilter) === 0) &&
-                    (options.scopeTypes.indexOf(row.type) >= 0);
-            }).map((row, idx) => {
-                row.__hpcc_id = row.name;
-                return [idx, row.type, row.name, ...options.properties.map(p => row[p] !== undefined ? row[p] : ""), row];
-            }))
+            .metrics(metrics, options, timelineFilter, scopeFilter)
             .render()
             ;
-    }, [metrics, options.properties, options.scopeTypes, scopeFilterFunc, scopesTable, timelineFilter]);
+    }, [metrics, options, scopeFilter, scopesTable, timelineFilter]);
 
     const updateScopesTable = React.useCallback((selection: IScope[]) => {
         if (scopesTable?.renderCount() > 0) {
@@ -360,28 +428,6 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     }, [lineage, selectedLineage]);
 
     //  Props Table  ---
-    const propsTable = useConst(() => new Table()
-        .columns([nlsHPCC.Property, nlsHPCC.Value, "Avg", "Min", "Max", "Delta", "StdDev", "SkewMin", "SkewMax", "NodeMin", "NodeMax"])
-        .columnWidth("auto")
-    );
-
-    const updatePropsTable = React.useCallback((scopes: IScope[]) => {
-        const props = [];
-        scopes.forEach((item, idx) => {
-            for (const key in item.__groupedProps) {
-                const row = item.__groupedProps[key];
-                props.push([row.Key, row.Value, row.Avg, row.Min, row.Max, row.Delta, row.StdDev, row.SkewMin, row.SkewMax, row.NodeMin, row.NodeMax]);
-            }
-            if (idx < scopes.length - 1) {
-                props.push(["------------------------------", "------------------------------"]);
-            }
-        });
-        propsTable
-            ?.data(props)
-            ?.lazyRender()
-            ;
-    }, [propsTable]);
-
     const propsTable2 = useConst(() => new Table()
         .columns([nlsHPCC.Property, nlsHPCC.Value])
         .columnWidth("auto")
@@ -437,7 +483,6 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     React.useEffect(() => {
         if (selectedMetrics) {
             updateScopesTable(selectedMetrics);
-            updatePropsTable(selectedMetrics);
             updatePropsTable2(selectedMetrics);
             updateLineage(selectedMetrics);
         }
@@ -569,7 +614,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                         />
                     </DockPanelItem>
                     <DockPanelItem key="propsTable" title={nlsHPCC.Properties} location="split-bottom" relativeTo="scopesTable" >
-                        <AutosizeHpccJSComponent widget={propsTable}></AutosizeHpccJSComponent>
+                        <MetricsPropertiesTables scopes={selectedMetrics}></MetricsPropertiesTables>
                     </DockPanelItem>
                     <DockPanelItem key="propsTable2" title={nlsHPCC.CrossTab} location="tab-after" relativeTo="propsTable" >
                         <AutosizeHpccJSComponent widget={propsTable2}></AutosizeHpccJSComponent>

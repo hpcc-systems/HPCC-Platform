@@ -33,7 +33,7 @@ export const XrefFoundFiles: React.FunctionComponent<XrefFoundFilesProps> = ({
     const columns = React.useMemo((): FluentColumns => {
         return {
             check: { width: 27, selectorType: "checkbox" },
-            name: { width: 180, label: nlsHPCC.Name },
+            Name: { width: 360, label: nlsHPCC.Name },
             modified: { width: 80, label: nlsHPCC.Modified },
             parts: { width: 80, label: nlsHPCC.Parts },
             size: { width: 80, label: nlsHPCC.Size }
@@ -57,7 +57,7 @@ export const XrefFoundFiles: React.FunctionComponent<XrefFoundFilesProps> = ({
                 if (rows.length) {
                     setData(rows.map((item, idx) => {
                         return {
-                            name: item.Name,
+                            Name: item.Name,
                             modified: item.Modified,
                             parts: item.Parts,
                             size: item.Size
@@ -72,7 +72,7 @@ export const XrefFoundFiles: React.FunctionComponent<XrefFoundFilesProps> = ({
     const [AttachConfirm, setShowAttachConfirm] = useConfirm({
         title: nlsHPCC.Attach,
         message: nlsHPCC.AddTheseFilesToDali,
-        items: selection.map(file => file.name),
+        items: selection.map(file => file.Name),
         onSubmit: React.useCallback(() => {
             WsDFUXref.DFUXRefArrayAction(selection, nlsHPCC.Attach, name, "Found")
                 .then(response => {
@@ -86,7 +86,7 @@ export const XrefFoundFiles: React.FunctionComponent<XrefFoundFilesProps> = ({
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
         message: nlsHPCC.DeleteSelectedFiles,
-        items: selection.map(file => file.name),
+        items: selection.map(file => file.Name),
         onSubmit: React.useCallback(() => {
             WsDFUXref.DFUXRefArrayAction(selection, nlsHPCC.Delete, name, "Found")
                 .then(response => {
@@ -127,7 +127,7 @@ export const XrefFoundFiles: React.FunctionComponent<XrefFoundFilesProps> = ({
             <>
                 <FluentGrid
                     data={data}
-                    primaryID={"name"}
+                    primaryID={"Name"}
                     sort={{ attribute: "modified", descending: false }}
                     columns={columns}
                     setSelection={setSelection}
