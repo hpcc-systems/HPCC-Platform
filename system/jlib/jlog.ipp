@@ -696,7 +696,7 @@ class DropLogMsg;
 // Implementation of logging manager
 
 typedef MapBetween<LogMsgJobId, LogMsgJobId, StringAttr, const char *> MapLogMsgJobIdToStr;
-typedef MapBetween<LogMsgTraceInfoId, LogMsgTraceInfoId, LogMsgTraceInfo, LogMsgTraceInfo> MapLogMsgTraceInfoIdToTraceInfo;
+typedef MapBetween<LogMsgTraceInfoId, LogMsgTraceInfoId, const LogMsgTraceInfo *, const LogMsgTraceInfo *> MapLogMsgTraceInfoIdToTraceInfo;
 
 class CLogMsgManager : public ILogMsgManager, public CInterface
 {
@@ -781,7 +781,7 @@ public:
     virtual offset_t          getLogPosition(StringBuffer &logFileName, const ILogMsgHandler * handler) const;
     virtual LogMsgJobId       addJobId(const char *job);
     virtual LogMsgTraceInfoId addTraceInfo(const char * theTraceID, const char * theSpanID);
-    virtual LogMsgTraceInfo * queryTraceInfo(LogMsgTraceInfoId id) const;
+    virtual const LogMsgTraceInfo * queryTraceInfo(LogMsgTraceInfoId id) const;
     virtual void              removeTraceId(LogMsgTraceInfoId);
     virtual void              removeJobId(LogMsgJobId);
     virtual const char *      queryJobId(LogMsgJobId id) const;
@@ -796,7 +796,7 @@ private:
 
     void                      doAddJobId(LogMsgJobId id, const char *job) const;
     void                      doRemoveJobId(LogMsgJobId) const;
-    void                      doAddTraceInfo(LogMsgTraceInfoId id, LogMsgTraceInfo logMsgTraceInfo) const;
+    void                      doAddTraceInfo(LogMsgTraceInfoId id, const LogMsgTraceInfo * logMsgTraceInfo) const;
     void                      doRemoveTraceInfo(LogMsgTraceInfoId id) const;
 
 private:

@@ -604,15 +604,18 @@ private:
 class jlib_decl LogMsgTraceInfo
 {
 public:
-    constexpr LogMsgTraceInfo(LogMsgTraceInfoId _traceID = UnknownTraceInfoId)  :
-        traceInfoId(_traceID), traceIDStr("UNK"), spanIDStr("UNK")
-    {}
-    //LogMsgTraceInfo(LogMsgTraceInfo & traceInfo) = delete;
-    LogMsgTraceInfo(const LogMsgTraceInfo & _traceInfo) :
-        traceInfoId(_traceInfo.queryTraceID())
+    LogMsgTraceInfo() {}
+    LogMsgTraceInfo(LogMsgTraceInfoId _traceInfoId) : traceInfoId(_traceInfoId) {}
+    LogMsgTraceInfo(LogMsgTraceInfoId _traceInfoId, const char * theTraceID, const char * theSpanID) :
+        traceInfoId(_traceInfoId), traceIDStr(theTraceID), spanIDStr(theSpanID) {}
+    LogMsgTraceInfo(const LogMsgTraceInfo * _traceInfo) :
+        traceInfoId(_traceInfo? _traceInfo->queryTraceID() : UnknownTraceInfoId)
     {
-        traceIDStr = _traceInfo.queryTraceIDStr();
-        spanIDStr = _traceInfo.querySpanIDStr();
+        if (_traceInfo)
+        {
+            traceIDStr = _traceInfo->queryTraceIDStr();
+            spanIDStr = _traceInfo->querySpanIDStr();
+        }
     }
 
     ~LogMsgTraceInfo() {};
@@ -623,21 +626,17 @@ public:
     void setTraceIDStr(const char * theTraceID) { traceIDStr = theTraceID;};
     void setSpanIDStr(const char * theSpanID) { spanIDStr = theSpanID;};
     void setTraceID(LogMsgTraceInfoId id) { traceInfoId = id;};
-    void serialize(MemoryBuffer & out) const;
-    void deserialize(MemoryBuffer & in);
 private:
-    LogMsgTraceInfoId     traceInfoId;
-    const char *          traceIDStr;
-    const char *          spanIDStr;
-    bool                  isDeserialized = false;
+    LogMsgTraceInfoId     traceInfoId = UnknownTraceInfoId;
+    const char *          traceIDStr = "UNK";
+    const char *          spanIDStr = "UNK";;
 };
 
 class jlib_decl LogMsg : public CInterface
 {
 public:
-    LogMsg() : category(), sysInfo(), jobInfo(), traceInfo(), remoteFlag(false) {}
+    LogMsg() : category(), sysInfo(), jobInfo(), remoteFlag(false) {}
     LogMsg(LogMsgJobId id, const char *job);  // Used for tracking job ids
-    LogMsg(LogMsgTraceInfoId traceID, const char * theTraceID, const char * theSpanID);
     LogMsg(const LogMsgCategory & _cat, LogMsgId _id, const LogMsgJobInfo & _jobInfo, LogMsgCode _code, size32_t sz, const char * _text, unsigned port, LogMsgSessionId session);
     LogMsg(const LogMsgCategory & _cat, LogMsgId _id, const LogMsgJobInfo & _jobInfo, LogMsgCode _code, const char * format, va_list args, unsigned port, LogMsgSessionId session)  __attribute__((format(printf,6, 0)));
     LogMsg(const LogMsgCategory & _cat, LogMsgId _id, const LogMsgJobInfo & _jobInfo, LogMsgCode _code, const char * _text, unsigned port, LogMsgSessionId session);
@@ -650,10 +649,10 @@ public:
     inline const LogMsgCategory  queryCategory() const { return category; }
     inline const LogMsgSysInfo & querySysInfo() const { return sysInfo; }
     inline const LogMsgJobInfo & queryJobInfo() const { return jobInfo; }
-    inline const LogMsgTraceInfo & queryTraceInfo() const { return traceInfo; }
+    inline const LogMsgTraceInfo * queryTraceInfo() const { return &traceInfo; }
     inline LogMsgCode         queryCode() const { return msgCode; }
     inline const char *       queryText() const { return text.str(); }
-    void                      serialize(MemoryBuffer & out) const { category.serialize(out); sysInfo.serialize(out); jobInfo.serialize(out); traceInfo.serialize(out); out.append(msgCode); text.serialize(out); }
+    void                      serialize(MemoryBuffer & out) const { category.serialize(out); sysInfo.serialize(out); jobInfo.serialize(out); out.append(msgCode); text.serialize(out); }
     void                      deserialize(MemoryBuffer & in);
     bool                      queryRemoteFlag() const { return remoteFlag; }
 protected:
@@ -784,7 +783,7 @@ interface jlib_decl ILogMsgManager : public ILogMsgListener
     virtual void              removeJobId(LogMsgJobId) = 0;
     virtual void              removeTraceId(LogMsgTraceInfoId) = 0;
     virtual const char *      queryJobId(LogMsgJobId id) const = 0;
-    virtual LogMsgTraceInfo * queryTraceInfo(LogMsgTraceInfoId id) const = 0;
+    virtual const LogMsgTraceInfo * queryTraceInfo(LogMsgTraceInfoId id) const = 0;
 };
 
 // CONCRETE CLASSES

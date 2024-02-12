@@ -261,12 +261,6 @@ void LogMsgJobInfo::setJobID(LogMsgUserId id)
     isDeserialized = false;
 }
 
-void LogMsgTraceInfo::serialize(MemoryBuffer & out) const
-{
-    out.append(traceIDStr);
-    out.append(spanIDStr);
-}
-
 void LogMsgJobInfo::serialize(MemoryBuffer & out) const
 {
     if (isDeserialized)
@@ -274,18 +268,6 @@ void LogMsgJobInfo::serialize(MemoryBuffer & out) const
     else
         out.append(theManager->queryJobId(jobID));
     out.append(userID);
-}
-
-void LogMsgTraceInfo::deserialize(MemoryBuffer & in)
-{
-    dbgassertex(in.remaining() >= sizeof(LogMsgTraceInfo)); //does this make sense?
-    StringBuffer deserializedTraceIdStr;
-    in.read(deserializedTraceIdStr);
-    traceIDStr = deserializedTraceIdStr.detach();
-    StringBuffer deserializedSpanIdStr;
-    in.read(deserializedSpanIdStr);
-    traceIDStr = deserializedSpanIdStr.detach();
-    isDeserialized = true; //meaninglesss for traceID but consistent with jobID
 }
 
 void LogMsgJobInfo::deserialize(MemoryBuffer & in)
@@ -317,7 +299,7 @@ static LogMsgTraceInfoId globalDefaultTraceInfoId = UnknownTraceInfoId;
 
 static  TraceFlags defaultTraceFlags = TraceFlags::Standard;
 static thread_local LogMsgJobInfo defaultJobInfo;
-static thread_local LogMsgTraceInfoId defaultTraceInfoId;
+static thread_local LogMsgTraceInfoId defaultTraceInfoId = UnknownTraceInfoId;
 static thread_local TraceFlags threadTraceFlags = TraceFlags::Standard;
 static thread_local const IContextLogger *default_thread_logctx = nullptr;
 
@@ -351,21 +333,16 @@ const LogMsgJobInfo & checkDefaultJobInfo(const LogMsgJobInfo & _jobInfo)
     return _jobInfo;
 }
 
-const LogMsgTraceInfo & checkDefaultTraceInfo(const LogMsgTraceInfo & _traceInfo)
+const LogMsgTraceInfo & queryActiveTraceInfo()
 {
-    if (&_traceInfo == &unknownTrace)
+    if (defaultTraceInfoId != UnknownTraceInfoId)
     {
-        if (defaultTraceInfoId != UnknownTraceInfoId)
-        {
-            LogMsgTraceInfo * traceInfo = theManager->queryTraceInfo(defaultTraceInfoId);
-            if (traceInfo)
-                return *traceInfo;
-        }
-
-        return unknownTrace;
+        const LogMsgTraceInfo * traceInfo = theManager->queryTraceInfo(defaultTraceInfoId);
+        if (traceInfo)
+            return *traceInfo;
     }
 
-    return _traceInfo;
+    return unknownTrace;
 }
 
 LogMsgTraceInfoId setDefaultTraceInfo(const char *theTraceID, const char *theSpanID, bool threaded)
@@ -395,34 +372,27 @@ void setDefaultJobId(LogMsgJobId id, bool threaded)
 }
 
 LogMsg::LogMsg(LogMsgJobId id, const char *job) 
-: category(MSGAUD_programmer, job ? MSGCLS_addid : MSGCLS_removeid), sysInfo(), jobInfo(id), traceInfo(), remoteFlag(false)
+: category(MSGAUD_programmer, job ? MSGCLS_addid : MSGCLS_removeid), sysInfo(), jobInfo(id), remoteFlag(false)
 {
     if (job)
         text.append(job);
 }
 
-LogMsg::LogMsg(LogMsgTraceInfoId traceID, const char * theTraceID, const char * theSpanID) 
-: category(MSGAUD_all, theTraceID ? MSGCLS_addid : MSGCLS_removeid), sysInfo(), jobInfo(), traceInfo(traceID), remoteFlag(false)
-{
-    traceInfo.setTraceIDStr(theTraceID);
-    traceInfo.setSpanIDStr(theSpanID);
-}
-
 LogMsg::LogMsg(const LogMsgCategory & _cat, LogMsgId _id, const LogMsgJobInfo & _jobInfo, LogMsgCode _code, const char * _text, unsigned port, LogMsgSessionId session)
-  : category(_cat), sysInfo(_id, port, session), jobInfo(checkDefaultJobInfo(_jobInfo)), traceInfo(checkDefaultTraceInfo(unknownTrace)), msgCode(_code), remoteFlag(false)
+  : category(_cat), sysInfo(_id, port, session), jobInfo(checkDefaultJobInfo(_jobInfo)), traceInfo(queryActiveTraceInfo()), msgCode(_code), remoteFlag(false)
 {
     text.append(_text);
 }
 
 LogMsg::LogMsg(const LogMsgCategory & _cat, LogMsgId _id, const LogMsgJobInfo & _jobInfo, LogMsgCode _code, size32_t sz, const char * _text, unsigned port, LogMsgSessionId session)
-  : category(_cat), sysInfo(_id, port, session), jobInfo(checkDefaultJobInfo(_jobInfo)), traceInfo(checkDefaultTraceInfo(unknownTrace)), msgCode(_code), remoteFlag(false)
+  : category(_cat), sysInfo(_id, port, session), jobInfo(checkDefaultJobInfo(_jobInfo)), traceInfo(queryActiveTraceInfo()), msgCode(_code), remoteFlag(false)
 {
     text.append(sz, _text);
 }
 
 LogMsg::LogMsg(const LogMsgCategory & _cat, LogMsgId _id, const LogMsgJobInfo & _jobInfo, LogMsgCode _code, const char * format, va_list args,
        unsigned port, LogMsgSessionId session)
-  : category(_cat), sysInfo(_id, port, session), jobInfo(checkDefaultJobInfo(_jobInfo)), traceInfo(checkDefaultTraceInfo(unknownTrace)), msgCode(_code), remoteFlag(false)
+  : category(_cat), sysInfo(_id, port, session), jobInfo(checkDefaultJobInfo(_jobInfo)), traceInfo(queryActiveTraceInfo()), msgCode(_code), remoteFlag(false)
 {
     text.valist_appendf(format, args);
 }
@@ -787,7 +757,6 @@ void LogMsg::deserialize(MemoryBuffer & in)
     category.deserialize(in);
     sysInfo.deserialize(in);
     jobInfo.deserialize(in);
-    traceInfo.deserialize(in);
     in.read(msgCode);
     text.clear();
     text.deserialize(in);
@@ -1601,25 +1570,34 @@ CLogMsgManager::~CLogMsgManager()
 LogMsgTraceInfoId CLogMsgManager::addTraceInfo(const char * theTraceID, const char * theSpanID)
 {
     LogMsgTraceInfoId ret = ++nextTraceInfoId;
-    pushMsg(new LogMsg(ret, theTraceID, theSpanID));
+    if (ret != UnknownTraceInfoId)
+        doAddTraceInfo(ret, new LogMsgTraceInfo(ret, theTraceID, theSpanID)); //mem leak
+
     return ret;
 }
 
 void CLogMsgManager::removeTraceId(LogMsgTraceInfoId id)
 {
-    pushMsg(new LogMsg(id, nullptr, nullptr));
+    doRemoveTraceInfo(id);
 }
 
-LogMsgTraceInfo * CLogMsgManager::queryTraceInfo(LogMsgTraceInfoId id) const
+const LogMsgTraceInfo * CLogMsgManager::queryTraceInfo(LogMsgTraceInfoId id) const
 {
     // NOTE - thread safety is important here. We have to consider two things:
     // 1. Whether an id (and therefore an entry in this table) can be invalidated between the return statement and someone using the result
-    //    It is up to the calling application to ensure that it does not call removeJobId() on an ID that may still be being used for logging by another thread.
+    //    It is up to the calling application to ensure that it does not call removeTraceId() on an ID that may still be being used for logging by another thread.
     // 2. Whether the table lookup may coincide with a table add, and crash in getValue/setValue
     //    This is a non-issue in queueing mode as all gets/sets happen on a single thread, but we lock to be on the safe side
 
+    if (id == UnknownTraceInfoId)
+        return nullptr;
+
     CriticalBlock b(traceIdLock);
-    return traceInfos.getValue(id);
+    auto traceinfo = traceInfos.getValue(id);
+    if (!traceinfo || !*traceinfo)
+        return nullptr;
+    else
+        return *traceinfo;
 }
 
 LogMsgJobId CLogMsgManager::addJobId(const char *job)
@@ -1659,7 +1637,7 @@ void CLogMsgManager::doRemoveJobId(LogMsgJobId id) const
     jobIds.remove(id);
 }
 
-void CLogMsgManager::doAddTraceInfo(LogMsgTraceInfoId id, LogMsgTraceInfo logMsgTraceInfo) const
+void CLogMsgManager::doAddTraceInfo(LogMsgTraceInfoId id, const LogMsgTraceInfo * logMsgTraceInfo) const
 {
     CriticalBlock b(traceIdLock);
     traceInfos.setValue(id, logMsgTraceInfo);
@@ -1832,16 +1810,10 @@ void CLogMsgManager::doReport(const LogMsg & msg) const
         switch (msg.queryCategory().queryClass())
         {
         case MSGCLS_addid:
-            if (msg.queryTraceInfo().queryTraceID() != UnknownTraceInfoId)
-                doAddTraceInfo(msg.queryTraceInfo().queryTraceID(), msg.queryTraceInfo());
-            else
-                doAddJobId(msg.queryJobInfo().queryJobID(), msg.queryText());
+            doAddJobId(msg.queryJobInfo().queryJobID(), msg.queryText());
             break;
         case MSGCLS_removeid:
-            if (msg.queryTraceInfo().queryTraceID() != UnknownTraceInfoId)
-                doRemoveTraceInfo(msg.queryTraceInfo().queryTraceID());
-            else
-                doRemoveJobId(msg.queryJobInfo().queryJobID());
+            doRemoveJobId(msg.queryJobInfo().queryJobID());
             break;
         default:
             ReadLockBlock block(monitorLock);
@@ -2481,7 +2453,7 @@ public:
     virtual void              removeJobId(LogMsgJobId) override {}
     virtual void              removeTraceId(LogMsgTraceInfoId) override {}
     virtual const char *      queryJobId(LogMsgJobId id) const override { return ""; }
-    virtual LogMsgTraceInfo * queryTraceInfo(LogMsgTraceInfoId id) const override { return nullptr; }
+    virtual const LogMsgTraceInfo * queryTraceInfo(LogMsgTraceInfoId id) const override { return nullptr; }
 };
 
 static CNullManager nullManager;
