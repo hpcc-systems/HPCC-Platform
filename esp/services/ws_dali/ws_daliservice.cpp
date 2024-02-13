@@ -594,3 +594,135 @@ bool CWSDaliEx::onGetSDSSubscribers(IEspContext& context, IEspGetSDSSubscribersR
     }
     return true;
 }
+
+bool CWSDaliEx::onDisconnectClientConnection(IEspContext& context, IEspDisconnectClientConnectionRequest& req, IEspResultResponse& resp)
+{
+    try
+    {
+        checkAccess(context);
+
+        const char* url = req.getURL();
+        if (isEmptyString(url))
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "URL not specified.");
+
+        MemoryBuffer mb;
+        mb.append("disconnect").append(url);
+        getDaliDiagnosticValue(mb);
+
+        VStringBuffer result("DisconnectClientConnection called for %s.", url);
+        resp.setResult(result);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWSDaliEx::onUnlockSDSLock(IEspContext& context, IEspUnlockSDSLockRequest& req, IEspResultResponse& resp)
+{
+    try
+    {
+        checkAccess(context);
+
+        const char* connectionIdHex = req.getConnectionID();
+        if (isEmptyString(connectionIdHex))
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "ConnectionID not specified.");
+
+        MemoryBuffer mb;
+        mb.append("unlock").append(strtoll(connectionIdHex, nullptr, 16)).append(req.getClose());
+        getDaliDiagnosticValue(mb);
+
+        bool success = false;
+        mb.read(success);
+        if (!success)
+            resp.setResult("Lock not found");
+        else
+        {
+            StringBuffer result(("Lock successfully removed: "));
+            mb.read(result);
+            resp.setResult(result);
+        }
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWSDaliEx::onSaveSDSStore(IEspContext& context, IEspSaveSDSStoreRequest& req, IEspResultResponse& resp)
+{
+    try
+    {
+        checkAccess(context);
+
+        MemoryBuffer mb;
+        mb.append("save");
+        getDaliDiagnosticValue(mb);
+        resp.setResult("SaveSDSStore called.");
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWSDaliEx::onSetTraceTransactions(IEspContext& context, IEspSetTraceTransactionsRequest& req, IEspResultResponse& resp)
+{
+    try
+    {
+        checkAccess(context);
+
+        StringBuffer result;
+        const char* cmd = "settracetransactions";
+        getDaliDiagnosticValue(cmd, result);
+        resp.setResult(result.isEmpty() ? "SetTraceTransactions called." : result);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWSDaliEx::onSetTraceSlowTransactions(IEspContext& context, IEspSetTraceSlowTransactionsRequest& req, IEspResultResponse& resp)
+{
+    try
+    {
+        checkAccess(context);
+
+        MemoryBuffer mb;
+        mb.append("settraceslowtransactions");
+        mb.append(req.getSlowThresholdMS());
+        getDaliDiagnosticValue(mb);
+
+        StringAttr result;
+        mb.read(result);
+        resp.setResult(result.isEmpty() ? "SetTraceSlowTransactions called." : result);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWSDaliEx::onClearTraceTransactions(IEspContext& context, IEspClearTraceTransactionsRequest& req, IEspResultResponse& resp)
+{
+    try
+    {
+        checkAccess(context);
+
+        StringBuffer result;
+        const char* cmd = "cleartracetransactions";
+        getDaliDiagnosticValue(cmd, result);
+        resp.setResult(result.isEmpty() ? "ClearTraceTransactions called." : result);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
