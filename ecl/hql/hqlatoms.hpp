@@ -185,6 +185,7 @@ extern HQL_API IAtom * fewAtom;
 extern HQL_API IAtom * fieldAtom;
 extern HQL_API IAtom * fieldsAtom;
 extern HQL_API IAtom * filenameAtom;
+extern HQL_API IAtom * fileTypeAtom;
 extern HQL_API IAtom * __fileposAtom;
 extern HQL_API IAtom * _signed_Atom;
 extern HQL_API IAtom * filepositionAtom;

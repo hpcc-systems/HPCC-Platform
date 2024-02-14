@@ -3566,6 +3566,11 @@ outputFlag
                             $3.unwindCommaList(args);
                             $$.setExpr(createExprAttribute(jsonAtom, args), $1);
                         }
+    | TYPE '(' UNKNOWN_ID attribs ')'
+                        {
+                            parser->setPluggableModeExpr($$, $3, $4);
+                            $$.setPosition($1);
+                        }
     | UPDATE            {
                             $$.setExpr(createComma(createAttribute(updateAtom), createAttribute(overwriteAtom)), $1);
                         }
@@ -10494,7 +10499,7 @@ mode
     : FLAT              {   $$.setExpr(createValue(no_flat, makeNullType()));   }
     | CSV               {   $$.setExpr(createValue(no_csv, makeNullType()));    }
     | CSV '(' csvOptions ')'
-                        {   
+                        {
                             HqlExprArray args;
                             $3.unwindCommaList(args);
                             $$.setExpr(createValue(no_csv, makeNullType(), args));
@@ -10542,6 +10547,10 @@ mode
                             $$.setExpr(createValue(no_json, makeNullType(), args));
                         }
     | pipe
+    | TYPE '(' UNKNOWN_ID attribs ')'
+                        {
+                            parser->setPluggableModeExpr($$, $3, $4);
+                        }
     ;
 
 dsOption

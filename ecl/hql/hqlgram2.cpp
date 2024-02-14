@@ -8992,6 +8992,36 @@ bool HqlGram::convertAllToAttribute(attribute &atr)
     return true;
 }
 
+void HqlGram::setPluggableModeExpr(attribute & targetAttr, attribute & pluginAttr, attribute & options)
+{
+    const char * fileFormatStr = str(pluginAttr.getId());
+    bool isSupportedFileType = false;
+
+    // TODO: Hardcoded tests for known filetype plugins; should be
+    // an iteration through a list of available types, checking for names
+    isSupportedFileType = strisame(fileFormatStr, "parquet");
+
+    if (isSupportedFileType)
+    {
+        // Do we just cite the name of the plugin, or perhaps something
+        // like a unique ID from the plugin's factory (assuming there is one)?
+        OwnedHqlExpr fileTypeExp = createExprAttribute(fileTypeAtom, createConstant(fileFormatStr));
+
+        // Create an option list with the filetype first (easy to find while debugging)
+        HqlExprArray args;
+        args.append(*LINK(fileTypeExp));
+        options.unwindCommaList(args);
+        targetAttr.setExpr(createValue(no_filetype, makeNullType(), args));
+    }
+    else
+    {
+        // ERR_UNKNOWN_TYPE is generic; create file type-specific error?
+        reportError(ERR_UNKNOWN_TYPE, pluginAttr, "Unknown plugin file type %s", fileFormatStr);
+        options.release();
+        // Set the target to something...
+        targetAttr.setExpr(createValue(no_thor, makeNullType()));
+    }
+}
 
 void HqlGram::checkValidRecordMode(IHqlExpression * dataset, attribute & atr, attribute & modeattr)
 {
