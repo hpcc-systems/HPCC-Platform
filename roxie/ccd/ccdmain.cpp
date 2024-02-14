@@ -464,6 +464,16 @@ static std::vector<std::pair<unsigned, unsigned>> agentChannels;
 
 void *leakChecker = nullptr;   // Used to deliberately leak an allocation to ensure leak checking is working
 
+unsigned __int64 currentTopologyHash = 0;
+unsigned __int64 originalTopologyHash = 0;
+
+hash64_t getTopologyHash()
+{
+    StringBuffer xml;
+    toXML(topology, xml, 0, XML_SortTags);
+    return rtlHash64Data(xml.length(), xml.str(), 707018);
+}
+
 #ifndef _CONTAINERIZED
 void readStaticTopology()
 {
@@ -699,6 +709,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         useOldTopology = checkFileExists(topologyFile.str());
         topology = loadConfiguration(useOldTopology ? nullptr : defaultYaml, argv, "roxie", "ROXIE", topologyFile, nullptr, "@netAddress");
         saveTopology(topology->getPropBool("@lockDali", false));
+        originalTopologyHash = currentTopologyHash = getTopologyHash();
 
         // Any settings we read from topology that must NOT be overridden in workunit debug fields should be read at this point, before the following section
         getAllowedPipePrograms(allowedPipePrograms, true);
