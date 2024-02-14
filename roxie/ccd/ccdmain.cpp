@@ -420,16 +420,18 @@ int myhook(int alloctype, void *, size_t nSize, int p1, long allocSeq, const uns
 }
 #endif
 
-void saveTopology()
+void saveTopology(bool lockDali)
 {
-    // Write back changes that have been made via certain control:xxx changes, so that they survive a roxie restart
+    // Write back changes that have been made via control:(un)lockDali changes, so that they survive a roxie restart
     // Note that they are overwritten when Roxie is manually stopped/started via hpcc-init service - these changes
     // are only intended to be temporary for the current session
     if (!useOldTopology)
         return;
     try
     {
-        saveXML(topologyFile.str(), topology);
+        Owned<IPTree> tempTopology = createPTreeFromXMLFile(topologyFile.str(), ipt_caseInsensitive);
+        tempTopology->setPropBool("@lockDali", lockDali);
+        saveXML(topologyFile.str(), tempTopology);
     }
     catch (IException *E)
     {
@@ -696,7 +698,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         topologyFile.append(codeDirectory).append(PATHSEPCHAR).append("RoxieTopology.xml");
         useOldTopology = checkFileExists(topologyFile.str());
         topology = loadConfiguration(useOldTopology ? nullptr : defaultYaml, argv, "roxie", "ROXIE", topologyFile, nullptr, "@netAddress");
-        saveTopology();
+        saveTopology(topology->getPropBool("@lockDali", false));
 
         // Any settings we read from topology that must NOT be overridden in workunit debug fields should be read at this point, before the following section
         getAllowedPipePrograms(allowedPipePrograms, true);

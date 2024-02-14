@@ -2580,7 +2580,7 @@ private:
                 topology->setPropBool("@lockDali", true);
                 if (daliHelper)
                     daliHelper->disconnect();
-                saveTopology();
+                saveTopology(true);
             }
             else if (stricmp(queryName, "control:logfullqueries")==0)
             {
@@ -3029,7 +3029,7 @@ private:
             {
                 topology->setPropBool("@lockDali", false);
                 // Dali will reattach via the timer that checks every so often if can reattach...
-                saveTopology();
+                saveTopology(false);
             }
             else if (stricmp(queryName, "control:unsuspend")==0)
             {
