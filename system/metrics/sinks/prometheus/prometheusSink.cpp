@@ -180,6 +180,9 @@ void PrometheusMetricSink::toPrometheusHistogram(const std::string &name, const 
 std::string PrometheusMetricSink::getPrometheusMetricName(const std::shared_ptr<IMetric> &pMetric)
 {
     std::string name = pMetric->queryName();
+    // Convert to lower case - per promtool output: "metric names should be written in 'snake_case' not 'camelCase'"
+    std::transform(name.begin(), name.end(), name.begin(),
+    [](unsigned char c){ return std::tolower(c); });
 
     //'.' is a known char used in HPCC metric names but invalid in Prometheus
     std::replace(name.begin(), name.end(), '.', '_');
@@ -240,16 +243,16 @@ const std::vector<std::string> &PrometheusMetricSink::getHistogramLabels(const s
 
     // Add the inf label
     std::string infLabel(name);
-    infLabel.append("_bucket{\"le=+Inf\"}");
+    infLabel.append("_bucket{le=\"+Inf\"}");
     labels.emplace_back(infLabel);
 
     // Sum and count
-    std::string sumLabel;
-    sumLabel.append("_sum");
+    std::string sumLabel(name);
+    sumLabel.append("_sum{}");
     labels.emplace_back(sumLabel);
 
-    std::string countLabel;
-    countLabel.append("_count");
+    std::string countLabel(name);
+    countLabel.append("_count{}");
     labels.emplace_back(countLabel);
 
     // Insert the labels for reuse
