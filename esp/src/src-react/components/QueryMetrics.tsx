@@ -1,11 +1,10 @@
 import * as React from "react";
-import { Pivot, PivotItem } from "@fluentui/react";
 import { SizeMe } from "react-sizeme";
 import nlsHPCC from "src/nlsHPCC";
 import { useQuerySnapshots } from "../hooks/query";
-import { pivotItemStyle } from "../layouts/pivot";
 import { pushUrl } from "../util/history";
 import { Metrics } from "./Metrics";
+import { DelayLoadedPanel, OverflowTabList, TabInfo } from "./controls/TabbedPanes/index";
 
 interface QueryMetricsProps {
     wuid: string;
@@ -19,34 +18,43 @@ export const QueryMetrics: React.FunctionComponent<QueryMetricsProps> = ({
     wuid,
     querySet,
     queryId,
-    tab = wuid,
+    tab = "statistics",
     selection
 }) => {
 
     const [snapshots, _refresh] = useQuerySnapshots(querySet, queryId);
 
+    const onTabSelect = React.useCallback((tab: TabInfo) => {
+        pushUrl(tab.__state ?? `/queries/${querySet}/${queryId}/metrics/${tab.id}`);
+    }, [queryId, querySet]);
+
+    const tabs = React.useMemo((): TabInfo[] => {
+        const retVal = [{
+            id: "statistics",
+            label: nlsHPCC.Statistics,
+        }];
+        snapshots?.filter(snapshot => snapshot.Wuid !== wuid).forEach(snapshot => {
+            retVal.push({
+                id: snapshot.Wuid,
+                label: snapshot.Wuid
+            });
+        });
+        return retVal;
+    }, [snapshots, wuid]);
+
     return <SizeMe monitorHeight>{({ size }) =>
-        <Pivot overflowBehavior="menu" style={{ height: "100%" }}
-            selectedKey={tab}
-            onLinkClick={evt => {
-                pushUrl(`/queries/${querySet}/${queryId}/metrics/${evt.props.itemKey}`);
-            }}>
+        <div style={{ height: "100%" }}>
+            <OverflowTabList tabs={tabs} selected={tab} onTabSelect={onTabSelect} size="medium" />
+            <DelayLoadedPanel visible={tab === "statistics"} size={size}>
+                <Metrics wuid={wuid} querySet={querySet} queryId={queryId} parentUrl={`/queries/${querySet}/${queryId}/metrics/statistics`} selection={selection} />
+            </DelayLoadedPanel>
             {
-                (wuid && snapshots) ?
-                    <PivotItem headerText={nlsHPCC.Compilation} itemKey={wuid} style={pivotItemStyle(size)} >
-                        <Metrics wuid={wuid} parentUrl={`/queries/${querySet}/${queryId}/metrics/${wuid}`} selection={selection} />
-                    </PivotItem> :
-                    undefined
+                snapshots?.filter(snapshot => snapshot.Wuid !== wuid).map(snapshot => {
+                    return <DelayLoadedPanel visible={tab === snapshot.Wuid} size={size}>
+                        <Metrics wuid={snapshot.Wuid} parentUrl={`/queries/${querySet}/${queryId}/metrics/${snapshot.Wuid}`} selection={selection} />
+                    </DelayLoadedPanel>;
+                })
             }
-            {
-                (wuid && snapshots) ?
-                    snapshots?.filter(snapshot => snapshot.Wuid !== wuid).map(snapshot => {
-                        return <PivotItem headerText={snapshot.Wuid} itemKey={snapshot.Wuid} style={pivotItemStyle(size)} >
-                            <Metrics wuid={snapshot.Wuid} parentUrl={`/queries/${querySet}/${queryId}/metrics/${snapshot.Wuid}`} selection={selection} />
-                        </PivotItem>;
-                    }) :
-                    undefined
-            }
-        </Pivot>
+        </div>
     }</SizeMe>;
 };

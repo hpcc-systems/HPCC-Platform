@@ -915,6 +915,7 @@ export = {
         SuspendedByFirstNode: "Suspended By First Node",
         SuspendedByUser: "Suspended By User",
         SuspendedReason: "Suspended Reason",
+        Statistics: "Statistics",
         SVGSource: "SVG Source",
         SyncSelection: "Sync To Selection",
         SystemServers: "System Servers",

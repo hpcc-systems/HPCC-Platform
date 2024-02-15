@@ -11,7 +11,7 @@ import { compare, scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import { WUTimelinePatched } from "src/Timings";
 import * as Utility from "src/Utility";
-import { FetchStatus, useMetricsOptions, useWorkunitMetrics, MetricsOptions as MetricsOptionsT } from "../hooks/metrics";
+import { FetchStatus, useMetricsOptions, useWUQueryMetrics, MetricsOptions as MetricsOptionsT } from "../hooks/metrics";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { AutosizeComponent, AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
 import { DockPanel, DockPanelItem, ResetableDockPanel } from "../layouts/DockPanel";
@@ -131,12 +131,16 @@ class TableEx extends Table {
 
 interface MetricsProps {
     wuid: string;
+    querySet?: string;
+    queryId?: string;
     parentUrl?: string;
     selection?: string;
 }
 
 export const Metrics: React.FunctionComponent<MetricsProps> = ({
     wuid,
+    querySet = "",
+    queryId = "",
     parentUrl = `/workunits/${wuid}/metrics`,
     selection
 }) => {
@@ -145,7 +149,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     const [selectedMetricsSource, setSelectedMetricsSource] = React.useState<"" | "scopesTable" | "metricGraphWidget" | "hotspot" | "reset">("");
     const [selectedMetrics, setSelectedMetrics] = React.useState<IScope[]>([]);
     const [selectedMetricsPtr, setSelectedMetricsPtr] = React.useState<number>(-1);
-    const [metrics, columns, _activities, _properties, _measures, _scopeTypes, fetchStatus, refresh] = useWorkunitMetrics(wuid);
+    const [metrics, columns, _activities, _properties, _measures, _scopeTypes, fetchStatus, refresh] = useWUQueryMetrics(wuid, querySet, queryId);
     const [showMetricOptions, setShowMetricOptions] = React.useState(false);
     const [options, setOptions, saveOptions] = useMetricsOptions();
     const [dockpanel, setDockpanel] = React.useState<ResetableDockPanel>();
@@ -184,8 +188,8 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
 
     const onHotspot = React.useCallback(() => {
         setSelectedMetricsSource("hotspot");
-        pushUrl(`/workunits/${wuid}/metrics/${selection}`);
-    }, [wuid, selection]);
+        pushUrl(`${parentUrl}/${selection}`);
+    }, [parentUrl, selection]);
 
     //  Timeline ---
     const timeline = useConst(() => new WUTimelinePatched()

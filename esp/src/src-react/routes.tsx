@@ -220,13 +220,13 @@ export const routes: RoutesEx = [
                 })
             },
             {
-                path: "/:QuerySetId/:Id/metrics/:Wuid", action: (ctx, params) => import("./components/QueryDetails").then(_ => {
-                    return <_.QueryDetails querySet={params.QuerySetId as string} queryId={params.Id as string} tab="metrics" metricsTab={params.Wuid as string} />;
+                path: "/:QuerySetId/:Id/metrics/:MetricsTab", action: (ctx, params) => import("./components/QueryDetails").then(_ => {
+                    return <_.QueryDetails querySet={params.QuerySetId as string} queryId={params.Id as string} tab="metrics" state={{ metricsTab: params.MetricsTab as string }} />;
                 })
             },
             {
-                path: "/:QuerySetId/:Id/metrics/:Wuid/:State", action: (ctx, params) => import("./components/QueryDetails").then(_ => {
-                    return <_.QueryDetails querySet={params.QuerySetId as string} queryId={params.Id as string} tab="metrics" metricsTab={params.Wuid as string} metricsState={params.State as string} />;
+                path: "/:QuerySetId/:Id/metrics/:MetricsTab/:Selection", action: (ctx, params) => import("./components/QueryDetails").then(_ => {
+                    return <_.QueryDetails querySet={params.QuerySetId as string} queryId={params.Id as string} tab="metrics" state={{ metricsTab: params.MetricsTab as string }} queryParams={{ metricsSelection: params.Selection as string }} />;
                 })
             },
             {
@@ -236,7 +236,7 @@ export const routes: RoutesEx = [
             },
             {
                 path: "/:QuerySetId/:Id/testPages/:Tab", action: (ctx, params) => import("./components/QueryDetails").then(_ => {
-                    return <_.QueryDetails querySet={params.QuerySetId as string} queryId={params.Id as string} tab="testPages" testTab={params.Tab as string} />;
+                    return <_.QueryDetails querySet={params.QuerySetId as string} queryId={params.Id as string} tab="testPages" state={{ testTab: params.Tab as string }} queryParams={{ [params.Tab as string]: parseSearch(ctx.search) as any }} />;
                 })
             },
         ]

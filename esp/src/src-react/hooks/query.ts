@@ -13,7 +13,7 @@ export function useQuery(querySet: string, queryId: string): UseQueryResponse {
     const [retVal, setRetVal] = React.useState<UseQueryResponse>([undefined, Date.now(), () => Promise.resolve(undefined)]);
 
     React.useEffect(() => {
-        if (querySet === undefined || querySet === null || queryId === undefined || queryId === null) {
+        if (!querySet || !queryId) {
             setRetVal([undefined, Date.now(), () => Promise.resolve(undefined)]);
             return;
         }
