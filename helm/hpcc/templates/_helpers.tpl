@@ -1092,9 +1092,26 @@ securityContext:
 {{ end -}}
 
 {{/*
+Validate the Thors associated with two aux queues match
+*/}}
+{{- define "hpcc.validateAuxQueueMatch" -}}
+{{- $root := .root -}}
+{{- $current := .current -}}
+{{- $incoming := .incoming -}}
+{{- $currentPrefix := get $current "prefix" -}}
+{{- $incomingPrefix := get $incoming "prefix" -}}
+{{- if not (eq $currentPrefix $incomingPrefix) -}}
+ {{- $_ := fail (printf "Thor '%s' defines additional queue '%s' with different prefix to existing Thor using same aux queue" $incoming.name $current.name) -}}
+{{- else if not (eq $current.width $incoming.width) -}}
+ {{- $_ := fail (printf "Thor '%s' defines additional queue '%s' with different width to existing Thor using same aux queue" $incoming.name $current.name) -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
 Generate instance queue names
 */}}
 {{- define "hpcc.generateConfigMapQueues" -}}
+{{- $root := . -}}
 {{- range $.Values.eclagent -}}
  {{- if not .disabled -}}
 - name: {{ .name }}
@@ -1119,16 +1136,46 @@ Generate instance queue names
   {{- end }}
  {{- end }}
 {{ end -}}
+{{- $stdThorQueues := dict -}}
+{{- $stdThorQueuesWithAux := dict -}}
 {{- range $.Values.thor -}}
  {{- if not .disabled -}}
-- name: {{ .name }}
-  type: thor
-  {{- if hasKey . "prefix" }}
-  prefix: {{ .prefix }}
-  {{- end }}
-  width: {{ mul (.numWorkers | default 1) ( .channelsPerWorker | default 1) }}
- {{- end }}
-{{ end -}}
+  {{- $queueItem := dict "name" .name "type" "thor" -}}
+  {{- if hasKey . "prefix" -}}
+   {{- $_ := set $queueItem "prefix" .prefix -}}
+  {{- end -}}
+  {{- $_ := set $queueItem "width" (mul (.numWorkers | default 1) ( .channelsPerWorker | default 1)) -}}
+  {{- if hasKey . "auxQueues" -}}
+   {{- $_ := set $stdThorQueuesWithAux .name .auxQueues -}}
+  {{- end -}}
+  {{- $_ := set $stdThorQueues .name $queueItem -}}
+ {{- end -}}
+{{- end -}}
+{{- $auxThorQueues := dict -}}
+{{- range $thorNameWithAuxQueues, $auxQueues := $stdThorQueuesWithAux -}}
+ {{ $queueItem := get $stdThorQueues $thorNameWithAuxQueues -}}
+ {{- range $auxQueueName := $auxQueues -}}
+  {{- if (hasKey $stdThorQueues $auxQueueName) -}}
+   {{- $_ := fail (printf "Thor '%s' defines aux queue '%s' that clashes with existing Thor name" $queueItem.name $auxQueueName) -}}
+  {{- end -}}
+  {{- if (hasKey $auxThorQueues $auxQueueName) -}}
+   {{- $existingAuxQueueItem := get $auxThorQueues $auxQueueName -}}
+   {{- include "hpcc.validateAuxQueueMatch" (dict "root" $root "current" $existingAuxQueueItem "incoming" $queueItem) -}}
+  {{- else -}}
+   {{- $newQueueItem := deepCopy $queueItem -}}
+   {{- $_ := set $newQueueItem "name" $auxQueueName -}}
+   {{- $_ := set $auxThorQueues $auxQueueName $newQueueItem -}}
+  {{- end -}}
+ {{- end -}}
+{{- end -}}
+{{- $combinedList := list -}}
+{{- range $stdQueue := $stdThorQueues }}
+ {{- $combinedList = append $combinedList $stdQueue -}}
+{{- end -}}
+{{- range $auxQueue := $auxThorQueues }}
+ {{- $combinedList = append $combinedList $auxQueue -}}
+{{- end -}}
+{{- toYaml $combinedList -}}
 {{- end -}}
 
 {{- define "hpcc.usesRemoteIssuer" -}}

@@ -1,0 +1,16 @@
+thor:
+- name: thor1
+  auxQueues: [ thor ]
+  numWorkers: 1
+  maxJobs: 1
+  maxGraphs: 1
+- name: thor2
+  auxQueues: [ thor ]
+  numWorkers: 2
+  maxJobs: 1
+  maxGraphs: 1
+- name: thor3
+  auxQueues: [ thor ]
+  numWorkers: 3
+  maxJobs: 1
+  maxGraphs: 1
