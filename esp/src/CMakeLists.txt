@@ -249,7 +249,6 @@ set ( SRCS
     ${CMAKE_CURRENT_BINARY_DIR}/src/ESPActivity.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/ESPBase.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/ESPDFUWorkunit.ts
-    ${CMAKE_CURRENT_BINARY_DIR}/src/ESPGraph.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/ESPLogicalFile.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/ESPPackageProcess.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/ESPPreflight.ts

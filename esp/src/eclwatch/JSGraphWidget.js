@@ -6,17 +6,17 @@ define([
     "dojo/Evented",
 
     "@hpcc-js/common",
+    "@hpcc-js/comms",
     "@hpcc-js/graph",
     "@hpcc-js/layout",
 
     "hpcc/GraphWidget",
-    "src/ESPGraph",
     "src/Utility",
 
     "css!font-awesome/css/font-awesome.css"
 ], function (declare, lang, nlsHPCCMod, arrayUtil, Evented,
-    hpccCommon, hpccGraph, hpccLayout,
-    GraphWidget, ESPGraph, Utility) {
+    hpccCommon, hpccComms, hpccGraph, hpccLayout,
+    GraphWidget, Utility) {
 
     var nlsHPCC = nlsHPCCMod.default;
     var faCharFactory = function (kind) {
@@ -69,7 +69,7 @@ define([
         KeyState_Menu: 4,
 
         constructor: function (domNode) {
-            this.graphData = new ESPGraph.Graph();
+            this.graphData = new hpccComms.QueryGraph();
             this.graphWidget = new hpccGraph.Graph()
                 .allowDragging(false)
                 .showToolbar(false)
@@ -471,7 +471,7 @@ define([
     return declare("JSGraphWidget", [GraphWidget], {
         baseClass: "JSGraphWidget",
         constructor: function () {
-            this.graphData = new ESPGraph.Graph();
+            this.graphData = new hpccComms.QueryGraph();
         },
 
         hasOptions: function (key, val) {

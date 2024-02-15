@@ -18,19 +18,18 @@ interface QueryDetailsProps {
     querySet: string;
     queryId: string;
     tab?: string;
-    metricsTab?: string;
-    metricsState?: string;
-    testTab?: string;
+    state?: { metricsTab?: string, metricsState?: string, testTab?: string };
+    queryParams?: { metricsSelection?: string };
 }
 
 export const QueryDetails: React.FunctionComponent<QueryDetailsProps> = ({
     querySet,
     queryId,
     tab = "summary",
-    metricsTab,
-    metricsState,
-    testTab = "form"
+    state = {},
+    queryParams = {}
 }) => {
+    state.testTab = state.testTab ?? "Form";
 
     const [query, setQuery] = React.useState<any>();
     const [wuid, setWuid] = React.useState<string>("");
@@ -54,13 +53,13 @@ export const QueryDetails: React.FunctionComponent<QueryDetailsProps> = ({
     const onTabSelect = React.useCallback((tab: TabInfo) => {
         switch (tab.id) {
             case "testPages":
-                pushUrl(tab.__state ?? `/queries/${querySet}/${queryId}/testPages/${testTab}`);
+                pushUrl(tab.__state ?? `/queries/${querySet}/${queryId}/testPages/${state.testTab}`);
                 break;
             default:
                 pushUrl(tab.__state ?? `/queries/${querySet}/${queryId}/${tab.id}`);
                 break;
         }
-    }, [queryId, querySet, testTab]);
+    }, [queryId, querySet, state.testTab]);
 
     const tabs = React.useMemo((): TabInfo[] => {
         return [{
@@ -119,13 +118,13 @@ export const QueryDetails: React.FunctionComponent<QueryDetailsProps> = ({
                 <QuerySummaryStats queryId={queryId} querySet={querySet} />
             </DelayLoadedPanel>
             <DelayLoadedPanel visible={tab === "metrics"} size={size}>
-                <QueryMetrics wuid={query?.Wuid} queryId={queryId} querySet={querySet} tab={metricsTab} selection={metricsState} />
+                <QueryMetrics wuid={query?.Wuid} queryId={queryId} querySet={querySet} tab={state.metricsTab} selection={queryParams.metricsSelection} />
             </DelayLoadedPanel>
             <DelayLoadedPanel visible={tab === "resources"} size={size}>
                 <Resources wuid={wuid} />
             </DelayLoadedPanel>
             <DelayLoadedPanel visible={tab === "testPages"} size={size}>
-                <QueryTests queryId={queryId} querySet={querySet} tab={testTab} />
+                <QueryTests queryId={queryId} querySet={querySet} tab={state.testTab} />
             </DelayLoadedPanel>
         </div>
     }</SizeMe>;
