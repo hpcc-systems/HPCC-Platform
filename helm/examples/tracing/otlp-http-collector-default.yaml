@@ -2,5 +2,5 @@ global:
   tracing:
     exporters:
     - type: OTLP-HTTP
-      endpoint: "localhost:4318"
+      endpoint: "localhost:4318/v1/traces"
       consoleDebug: true
