@@ -40,7 +40,7 @@ jobs:
     needs: pre_job
     if: ${{ github.repository == 'hpcc-systems/HPCC-Platform' && needs.pre_job.outputs.helm }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           submodules: false
       - uses: azure/setup-helm@v3

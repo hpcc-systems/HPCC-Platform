@@ -32,14 +32,14 @@ jobs:
     if: ${{ needs.pre_job.outputs.eclwatch }}
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           submodules: "recursive"
-      - uses: actions/setup-node@v2
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
       - name: Cache node modules
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: ./esp/src/node_modules
           key: npm-deps-${{ hashFiles('./esp/src/package-lock.json') }}

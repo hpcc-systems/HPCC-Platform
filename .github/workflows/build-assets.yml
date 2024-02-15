@@ -68,14 +68,14 @@ jobs:
           echo "${{ toJSON(steps.vars.outputs) }})"
 
       - name: Release HPCC-Platform
-        uses: ncipollo/release-action@v1.12.0
+        uses: ncipollo/release-action@v1.14.0
         with:
           allowUpdates: true
           generateReleaseNotes: false
           prerelease: ${{ contains(github.ref, '-rc') }}
 
       - name: Release LN
-        uses: ncipollo/release-action@v1.12.0
+        uses: ncipollo/release-action@v1.14.0
         with:
           allowUpdates: true
           generateReleaseNotes: false
@@ -128,7 +128,7 @@ jobs:
           sudo rm -rf /usr/local/lib/android
 
       - name: Checkout HPCC-Platform
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ needs.preamble.outputs.community_ref }}
           submodules: recursive
@@ -136,7 +136,7 @@ jobs:
 
       - name: Checkout LN
         if: ${{ matrix.ln }}
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: ${{ github.repository_owner }}/LN
           token: ${{ secrets.LNB_TOKEN }}
@@ -162,16 +162,16 @@ jobs:
 
       - name: Set up Docker Buildx
         id: buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
 
       - name: Login to DockerHub
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Create Build Image
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           builder: ${{ steps.buildx.outputs.name }}
           file: ${{ needs.preamble.outputs.folder_platform }}/dockerfiles/vcpkg/${{ matrix.os }}.dockerfile
@@ -233,7 +233,7 @@ jobs:
 
       - name: Upload Assets (community)
         if: ${{ !matrix.ln }}
-        uses: ncipollo/release-action@v1.12.0
+        uses: ncipollo/release-action@v1.14.0
         with:
           allowUpdates: true
           generateReleaseNotes: false
@@ -250,7 +250,7 @@ jobs:
           echo "$k8s_pkg_file"
 
       - name: Create Docker Image (community)
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         if: ${{ !matrix.ln && matrix.container && !matrix.documentation }}
         with:
           builder: ${{ steps.buildx.outputs.name }}
@@ -268,7 +268,7 @@ jobs:
       #  Internal Build  ---
       - name: Login to JFrog (internal)
         if: ${{ matrix.ln && matrix.container && github.repository_owner == 'hpcc-systems' }}
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           registry: ${{ secrets.JFROG_REGISTRY }}
           username: ${{ secrets.JFROG_USERNAME }}
@@ -315,7 +315,7 @@ jobs:
 
       - name: Upload Assets (internal)
         if: ${{ matrix.ln }}
-        uses: ncipollo/release-action@v1.12.0
+        uses: ncipollo/release-action@v1.14.0
         with:
           allowUpdates: true
           generateReleaseNotes: false
@@ -364,7 +364,7 @@ jobs:
 
       - name: Upload error logs
         if: ${{ failure() || cancelled() }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.os }}-${{ matrix.ln }}-${{ matrix.container }}-${{ matrix.documentation }}-logs
           path: ${{ needs.preamble.outputs.folder_build }}/**/*.log
@@ -409,14 +409,14 @@ jobs:
           ${{ matrix.sudo }} rm -rf "$VCPKG_INSTALLATION_ROOT"
 
       - name: Checkout HPCC-Platform
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ needs.preamble.outputs.community_ref }}
           submodules: recursive
           path: ./HPCC-Platform
 
       - name: Checkout LN
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: ${{ github.repository_owner }}/LN
           token: ${{ secrets.LNB_TOKEN }}
@@ -448,7 +448,7 @@ jobs:
           cmake --build ./build ${{ matrix.cmake_build_options }} --target package
 
       - name: Upload Assets
-        uses: ncipollo/release-action@v1.12.0
+        uses: ncipollo/release-action@v1.14.0
         with:
           allowUpdates: true
           generateReleaseNotes: false
@@ -464,7 +464,7 @@ jobs:
           cmake --build ./build ${{ matrix.cmake_build_options }} --target package
 
       - name: Upload LN Assets
-        uses: ncipollo/release-action@v1.12.0
+        uses: ncipollo/release-action@v1.14.0
         with:
           allowUpdates: true
           generateReleaseNotes: false
@@ -477,7 +477,7 @@ jobs:
 
       - name: Upload error logs
         if: ${{ failure() || cancelled() }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.os }}-logs
           path: ./build/**/*.log
