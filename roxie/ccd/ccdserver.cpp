@@ -240,13 +240,13 @@ public:
     {
         return ctx->collectingDetailedStatistics();
     }
-    virtual void CTXLOGva(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char *format, va_list args) const override  __attribute__((format(printf,5,0))) 
+    virtual void CTXLOGva(const LogMsgCategory & cat, LogMsgCode code, const char *format, va_list args) const override  __attribute__((format(printf,4,0)))
     {
-        ctx->CTXLOGva(cat, job, code, format, args);
+        ctx->CTXLOGva(cat, code, format, args);
     }
-    virtual void CTXLOGa(TracingCategory category, const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char *prefix, const char *text) const override
+    virtual void CTXLOGa(TracingCategory category, const LogMsgCategory & cat, LogMsgCode code, const char *prefix, const char *text) const override
     {
-        ctx->CTXLOGa(category, cat, job, code, prefix, text);
+        ctx->CTXLOGa(category, cat, code, prefix, text);
     }
     virtual void logOperatorExceptionVA(IException *E, const char *file, unsigned line, const char *format, va_list args) const __attribute__((format(printf,5,0)))
     {
@@ -1331,14 +1331,14 @@ public:
     }
 
     // MORE - most of this is copied from ccd.hpp - can't we refactor?
-    virtual void CTXLOGa(TracingCategory category, const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char *prefix, const char *text) const override
+    virtual void CTXLOGa(TracingCategory category, const LogMsgCategory & cat, LogMsgCode code, const char *prefix, const char *text) const override
     {
         if (ctx)
-            ctx->CTXLOGa(category, cat, job, code, prefix, text);
+            ctx->CTXLOGa(category, cat, code, prefix, text);
         else
         {
             LogContextScope ls(nullptr);
-            LOG(cat, job, code, "[%s] %s", prefix, text);
+            LOG(cat, code, "[%s] %s", prefix, text);
         }
     }
 
@@ -1361,7 +1361,7 @@ public:
             {
                 ss.append(": ").valist_appendf(format, args);
             }
-            LOG(MCoperatorProgress, unknownJob, "%s", ss.str());
+            LOG(MCoperatorProgress, "%s", ss.str());
         }
     }
 

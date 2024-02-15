@@ -195,7 +195,7 @@ int CSoapService::processRequest(ISoapMessage &req, ISoapMessage& resp)
         rpc_call->preunmarshall(xpp.get());
         rpc_call->unmarshall(xpp.get(), multipart.get());
         const char* userId = ctx->queryUserId();
-        DBGLOG("JSON method <%s> from %s@%s.", rpc_call->get_name(),  (userId&&*userId)?userId:"unknown",
+        DBGLOG("JSON method <%s> from %s@%s.", rpc_call->get_name(), (userId&&*userId)?userId:"unknown",
             (peerStr.length()>0)?peerStr.str():"unknown");
         ctx->setHTTPMethod("JSON");
     }
@@ -243,12 +243,12 @@ int CSoapService::processRequest(ISoapMessage &req, ISoapMessage& resp)
         } catch (...) {
             response.set_status(SOAP_CLIENT_ERROR);
             response.set_err("Unknown error when parsing soap body XML");
-            IERRLOG("SOAP request from %s@%s. Unknown error when parsing: %s",  (userId&&*userId)?userId:"unknown",
+            IERRLOG("SOAP request from %s@%s. Unknown error when parsing: %s", (userId&&*userId)?userId:"unknown",
                 (peerStr.length()>0)?peerStr.str():"unknown", requeststr.str());
             return 0;
         }
 
-        DBGLOG("SOAP method <%s> from %s@%s.", rpc_call->get_name(),  (userId&&*userId)?userId:"unknown",
+        DBGLOG("SOAP method <%s> from %s@%s.", rpc_call->get_name(), (userId&&*userId)?userId:"unknown",
             (peerStr.length()>0)?peerStr.str():"unknown");
         ctx->setHTTPMethod("SOAP");
     }

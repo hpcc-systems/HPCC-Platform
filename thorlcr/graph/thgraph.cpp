@@ -1200,12 +1200,12 @@ void traceMemUsage()
 {
     StringBuffer memStatsStr;
     roxiemem::memstats(memStatsStr);
-    LOG(MCthorDetailedDebugInfo, thorJob, "Roxiemem stats: %s", memStatsStr.str());
+    LOG(MCthorDetailedDebugInfo, "Roxiemem stats: %s", memStatsStr.str());
     memsize_t heapUsage = getMapInfo("heap");
     if (heapUsage) // if 0, assumed to be unavailable
     {
         memsize_t rmtotal = roxiemem::getTotalMemoryLimit();
-        LOG(MCthorDetailedDebugInfo, thorJob, "Heap usage (excluding Roxiemem) : %" I64F "d bytes", (unsigned __int64)(heapUsage-rmtotal));
+        LOG(MCthorDetailedDebugInfo, "Heap usage (excluding Roxiemem) : %" I64F "d bytes", (unsigned __int64)(heapUsage-rmtotal));
     }
 }
 
@@ -1412,7 +1412,7 @@ void CGraphBase::executeSubGraph(size32_t parentExtractSz, const byte *parentExt
             {
                 StringBuffer s;
                 toXML(&queryXGMML(), s, 2);
-                MLOG(MCthorDetailedDebugInfo, thorJob, "Running graph [%s] : %s", isGlobal()?"global":"local", s.str());
+                MLOG(MCthorDetailedDebugInfo, "Running graph [%s] : %s", isGlobal()?"global":"local", s.str());
             }
         }
         if (localResults)
@@ -2296,7 +2296,7 @@ IThorGraphResults *CGraphBase::createThorGraphResults(unsigned num)
 CFileUsageEntry * CGraphTempHandler::registerFile(const char *name, graph_id graphId, unsigned usageCount, bool temp, WUFileKind fileKind, StringArray *clusters)
 {
     assertex(temp);
-    LOG(MCdebugProgress, thorJob, "registerTmpFile name=%s, usageCount=%d", name, usageCount);
+    LOG(MCdebugProgress, "registerTmpFile name=%s, usageCount=%d", name, usageCount);
     CriticalBlock b(crit);
     if (tmpFiles.find(name))
         throw MakeThorException(TE_FileAlreadyUsedAsTempFile, "File already used as temp file (%s)", name);
@@ -2307,7 +2307,7 @@ CFileUsageEntry * CGraphTempHandler::registerFile(const char *name, graph_id gra
 
 void CGraphTempHandler::deregisterFile(const char *name, bool kept)
 {
-    LOG(MCdebugProgress, thorJob, "deregisterTmpFile name=%s", name);
+    LOG(MCdebugProgress, "deregisterTmpFile name=%s", name);
     CriticalBlock b(crit);
     CFileUsageEntry *fileUsage = tmpFiles.find(name);
     if (!fileUsage)
@@ -2324,9 +2324,9 @@ void CGraphTempHandler::deregisterFile(const char *name, bool kept)
         try
         {
             if (!removeTemp(name))
-                LOG(MCwarning, thorJob, "Failed to delete tmp file : %s (not found)", name);
+                LOG(MCwarning, "Failed to delete tmp file : %s (not found)", name);
         }
-        catch (IException *e) { StringBuffer s("Failed to delete tmp file : "); FLLOG(MCwarning, thorJob, e, s.append(name).str()); }
+        catch (IException *e) { StringBuffer s("Failed to delete tmp file : "); FLLOG(MCwarning, e, s.append(name).str()); }
     }
     else
         fileUsage->decUsage();
@@ -2343,9 +2343,9 @@ void CGraphTempHandler::clearTemps()
         try
         {
             if (!removeTemp(tmpname))
-                LOG(MCwarning, thorJob, "Failed to delete tmp file : %s (not found)", tmpname);
+                LOG(MCwarning, "Failed to delete tmp file : %s (not found)", tmpname);
         }
-        catch (IException *e) { StringBuffer s("Failed to delete tmp file : "); FLLOG(MCwarning, thorJob, e, s.append(tmpname).str()); }
+        catch (IException *e) { StringBuffer s("Failed to delete tmp file : "); FLLOG(MCwarning, e, s.append(tmpname).str()); }
     }
     iter.clear();
     tmpFiles.kill();
@@ -2778,7 +2778,7 @@ CActivityBase &CJobBase::queryChannelActivity(unsigned c, graph_id gid, activity
 
 void CJobBase::startJob()
 {
-    LOG(MCdebugProgress, thorJob, "New Graph started : %s", graphName.get());
+    LOG(MCdebugProgress, "New Graph started : %s", graphName.get());
     perfmonhook.setown(createThorMemStatsPerfMonHook(*this, getOptInt(THOROPT_MAX_KERNLOG, 3)));
     setPerformanceMonitorHook(perfmonhook);
     PrintMemoryStatusLog();
@@ -2825,7 +2825,7 @@ void CJobBase::endJob()
 
     jobEnded = true;
     setPerformanceMonitorHook(nullptr);
-    LOG(MCdebugProgress, thorJob, "Job ended : %s", graphName.get());
+    LOG(MCdebugProgress, "Job ended : %s", graphName.get());
     clearKeyStoreCache(true);
     PrintMemoryStatusLog();
 
@@ -3018,7 +3018,7 @@ mptag_t CJobChannel::deserializeMPTag(MemoryBuffer &mb)
     deserializeMPtag(mb, tag);
     if (TAG_NULL != tag)
     {
-        LOG(MCthorDetailedDebugInfo, thorJob, "deserializeMPTag: tag = %d", (int)tag);
+        LOG(MCthorDetailedDebugInfo, "deserializeMPTag: tag = %d", (int)tag);
         jobComm->flush(tag);
     }
     return tag;
@@ -3057,7 +3057,7 @@ void CJobChannel::clean()
     if (!REJECTLOG(MCthorDetailedDebugInfo))
     {
         queryRowManager()->reportMemoryUsage(false);
-        LOG(MCthorDetailedDebugInfo, thorJob, "CJobBase resetting memory manager");
+        LOG(MCthorDetailedDebugInfo, "CJobBase resetting memory manager");
     }
 
     if (graphExecutor)

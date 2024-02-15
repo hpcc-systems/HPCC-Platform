@@ -574,7 +574,7 @@ bool LRActiveState::mergePackedNode(unsigned stateId, StackElement * next, bool 
                     {
                         cur->shifted.setown(curSymbol->createMerged(nextSymbol));
 #ifdef TRACING
-                        LOG(MCdebugProgress, unknownJob, "Nodes Merged: %p = %p, %p", cur->shifted.get(), curSymbol, nextSymbol);
+                        LOG(MCdebugProgress, "Nodes Merged: %p = %p, %p", cur->shifted.get(), curSymbol, nextSymbol);
 #endif
                         return true;
                     }
@@ -704,11 +704,11 @@ StackElement * LRParser::createState(StackElement * prev, state_id nextState, Gr
         newState = new StackElement(shifted, nextState, prev, this);
     }
 #ifdef TRACING
-    LOG(MCdebugProgress, unknownJob, "%p: Push state %d symbol %d[%p] previous: %d[%p]", newState, nextState, shifted ? shifted->id : -1, shifted, prev ? prev->state : -1, prev);
+    LOG(MCdebugProgress, "%p: Push state %d symbol %d[%p] previous: %d[%p]", newState, nextState, shifted ? shifted->id : -1, shifted, prev ? prev->state : -1, prev);
     StringBuffer s;
     newState->getDebugText(s);
     s.newline();
-    LOG(MCdebugProgress, unknownJob, s.str());
+    LOG(MCdebugProgress, s.str());
 #endif
     return newState;
 }
@@ -769,7 +769,7 @@ void LRParser::doReductions(GrammarSymbol * next, bool singleToken)
 void LRParser::process(GrammarSymbol * next, bool singleToken)
 {
 #ifdef TRACING
-    LOG(MCdebugProgress, unknownJob, "Process token '%.*s' %d at position %d", next->queryEndPtr()-next->queryStartPtr(), next->queryStartPtr(), next->id, next->queryStartPtr()-rowState.inputText);
+    LOG(MCdebugProgress, "Process token '%.*s' %d at position %d", next->queryEndPtr()-next->queryStartPtr(), next->queryStartPtr(), next->id, next->queryStartPtr()-rowState.inputText);
 #endif
     doReductions(next, singleToken);
     selectEndPosition((size32_t)(next->queryEndPtr()-rowState.inputText));
@@ -791,7 +791,7 @@ void LRParser::expandReduction(StackElement & element, LRProduction * production
             StringBuffer s;
             for (unsigned i = 0; i < production->getNumSymbols(); i++)
                 s.appendf("%p ", reducedArgs[i]);
-            LOG(MCdebugProgress, unknownJob, "Reduce by production %d new element %p[%s]", reduced->id, reduced.get(), s.str());
+            LOG(MCdebugProgress, "Reduce by production %d new element %p[%s]", reduced->id, reduced.get(), s.str());
 #endif
             //MORE: Some kind of recursion checking needed?
             if (activeOutput->okToAddReduction(nextState))
@@ -848,7 +848,7 @@ void LRParser::doShifts(LRActiveState * active, GrammarSymbol * next)
         if (nextState != NO_STATE)
         {
 #ifdef TRACING
-            LOG(MCdebugProgress, unknownJob, "Shift to state %d", nextState);
+            LOG(MCdebugProgress, "Shift to state %d", nextState);
 #endif
             activeOutput->addElementOwn(createState(&cur, nextState, next), chooseBest);
         }
@@ -859,7 +859,7 @@ void LRParser::doShifts(LRActiveState * active, GrammarSymbol * next)
                 GrammarSymbol * sym = accept->shifted;
                 accepted.append(*LINK(sym));
 #ifdef TRACING
-                LOG(MCdebugProgress, unknownJob, "Accepted %p[%p]", accept, sym);
+                LOG(MCdebugProgress, "Accepted %p[%p]", accept, sym);
 #endif
             }
         }

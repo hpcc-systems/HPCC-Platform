@@ -453,7 +453,7 @@ class CDFUengine: public CInterface, implements IDFUengine
         const char * pfilePath = filePath.str();
 
     #ifdef _DEBUG
-        LOG(MCdebugInfo, unknownJob, "File path is '%s'", filePath.str());
+        LOG(MCdebugInfo, "File path is '%s'", filePath.str());
     #endif
 
         const char pathSep = filename.getPathSeparator();
@@ -488,7 +488,7 @@ class CDFUengine: public CInterface, implements IDFUengine
             if (env->isDropZoneRestrictionEnabled())
                 throwError2(DFTERR_NoMatchingDropzonePath, netaddress.str(), pfilePath);
             else
-                LOG(MCdebugInfo, unknownJob, "No matching drop zone path on '%s' to file path: '%s'", netaddress.str(), pfilePath);
+                LOG(MCdebugInfo, "No matching drop zone path on '%s' to file path: '%s'", netaddress.str(), pfilePath);
         }
 #ifdef _DEBUG
         else
@@ -496,7 +496,7 @@ class CDFUengine: public CInterface, implements IDFUengine
             SCMStringBuffer dropZoneName;
             dropZone->getName(dropZoneName);
 
-            LOG(MCdebugInfo, unknownJob, "Drop zone path '%s' is %svisible in ECLWatch."
+            LOG(MCdebugInfo, "Drop zone path '%s' is %svisible in ECLWatch."
                 , dropZoneName.str()
                 , (dropZone->isECLWatchVisible() ? "" : "not ")
                 );
@@ -1212,6 +1212,8 @@ public:
             OWARNLOG("DFURUN: Workunit %s not found",dfuwuid);
             return DFUstate_unknown;
         }
+
+        JobNameScope jobName(dfuwuid);
         if (dfuServerName.length())
             wu->setDFUServerName(dfuServerName.str());
         StringBuffer logname;

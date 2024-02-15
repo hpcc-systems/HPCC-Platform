@@ -1739,7 +1739,11 @@ public:
                     Owned<ISerializedRoxieQueryPacket> next = queue->dequeue();
                     if (next)
                     {
+                        JobNameScope jobName;
                         logctx.set(next);
+                        const char * wuid = logctx.queryWuid();
+                        if (wuid)
+                            jobName.set(wuid);
                         logctx.setStatistic(StTimeAgentQueue, nsTick()-next->queryEnqueuedTimeStamp());
 #ifdef NEW_IBYTI
                         logctx.setStatistic(StTimeIBYTIDelay, next->queryIBYTIDelayTime());

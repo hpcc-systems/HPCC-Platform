@@ -42,8 +42,6 @@
 #define SDS_LOCK_TIMEOUT 30000
 #define SWAPNODE_RETRY_TIME (1000 * 60 * 60 * 1) // 1hr
 
-static const LogMsgJobInfo swapnodeJob(UnknownJob, UnknownUser);
-
 static bool ensureThorIsDown(const char *cluster, bool nofail, bool wait)
 {
     bool retry = false;
@@ -781,7 +779,7 @@ class CAutoSwapNode : public CSwapNode
                 StringBuffer msg;
                 msg.appendf("AUTOSWAPNODE: cluster %s node %d: swapped out %s, swapped in %s", groupName.get(), badrank.item(i4) + 1, from.str(), to.str());
                 emailSwap(msg.str());
-                FLLOG(MCoperatorError, swapnodeJob, "%s", msg.str());
+                FLLOG(MCoperatorError, "%s", msg.str());
             }
         }
         return true;

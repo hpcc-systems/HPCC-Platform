@@ -1877,7 +1877,7 @@ bool CLocalEnvironment::getRunInfo(IStringVal & path, IStringVal & dir, const ch
         Owned<IConstMachineInfo> machine = getMachineByAddress(machineaddr);
         if (!machine)
         {
-            LOG(MCdebugInfo, unknownJob, "Unable to find machine for %s", machineaddr);
+            LOG(MCdebugInfo, "Unable to find machine for %s", machineaddr);
             return false;
         }
 
@@ -1885,7 +1885,7 @@ bool CLocalEnvironment::getRunInfo(IStringVal & path, IStringVal & dir, const ch
         Owned<IConstDomainInfo> domain = machine->getDomain();
         if (!domain)
         {
-            LOG(MCdebugInfo, unknownJob, "Unable to find domain for %s", machineaddr);
+            LOG(MCdebugInfo, "Unable to find domain for %s", machineaddr);
             return false;
         }
 
@@ -1896,7 +1896,7 @@ bool CLocalEnvironment::getRunInfo(IStringVal & path, IStringVal & dir, const ch
         Owned<IConstInstanceInfo> instance = getInstance(tag, version, targetdomain);
         if (!instance)
         {
-            LOG(MCdebugInfo, unknownJob, "Unable to find process %s for domain %s", tag, targetdomain.get());
+            LOG(MCdebugInfo, "Unable to find process %s for domain %s", tag, targetdomain.get());
             return false;
         }
         return instance->getRunInfo(path,dir,defprogname);
@@ -1944,7 +1944,7 @@ IConstDropZoneInfo * CLocalEnvironment::getDropZoneByAddressPath(const char * ne
     unsigned dropzonePathLen = _MAX_PATH + 1;
 
 #ifdef _DEBUG
-    LOG(MCdebugInfo, unknownJob, "Netaddress: '%s', targetFilePath: '%s'", netaddress, targetFilePath);
+    LOG(MCdebugInfo, "Netaddress: '%s', targetFilePath: '%s'", netaddress, targetFilePath);
 #endif
     // Check the directory path first
 
@@ -1973,7 +1973,7 @@ IConstDropZoneInfo * CLocalEnvironment::getDropZoneByAddressPath(const char * ne
 #ifdef _DEBUG
                 StringBuffer serverIpString;
                 serverIP.getHostText(serverIpString);
-                LOG(MCdebugInfo, unknownJob, "Listed server: '%s', IP: '%s'", dropzoneServer.str(), serverIpString.str());
+                LOG(MCdebugInfo, "Listed server: '%s', IP: '%s'", dropzoneServer.str(), serverIpString.str());
 #endif
                 if (strisame(netaddress, dropzoneServer) || targetIp.ipequals(serverIP))
                 {
@@ -2551,7 +2551,7 @@ unsigned getAccessibleServiceURLList(const char *serviceType, std::vector<std::s
             Owned<IPropertyTreeIterator> espBindingIter = espProcessIter->query().getElements("EspBinding");
             ForEach(*espBindingIter)
             {
-                xpath.setf("Software/EspService[@name=\"%s\"]/Properties/@type",  espBindingIter->query().queryProp("@service"));
+                xpath.setf("Software/EspService[@name=\"%s\"]/Properties/@type", espBindingIter->query().queryProp("@service"));
 
                 if (strisame(env->queryProp(xpath), serviceType))
                 {

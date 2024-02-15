@@ -90,7 +90,7 @@ extern TPWRAPPER_API void throwOrLogDropZoneLookUpError(int code, char const* fo
     if (env->isDropZoneRestrictionEnabled())
         throw makeStringExceptionVA(code, format, args);
 
-    VALOG(MCdebugInfo, unknownJob, format, args);
+    VALOG(MCdebugInfo, format, args);
 #endif
     va_end(args);
 }

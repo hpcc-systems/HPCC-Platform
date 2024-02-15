@@ -388,7 +388,7 @@ public:
         bool extend = 0 != (helperFlags&TDWextend);
         bool jobTemp = 0 != (helperFlags&TDXjobtemp);
 
-        LOG(MCdebugInfo, thorJob, "createLogicalFile ( %s )", logicalName);
+        LOG(MCdebugInfo, "createLogicalFile ( %s )", logicalName);
 
         Owned<IDistributedFile> efile;
         CDfsLogicalFileName dlfn;

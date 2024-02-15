@@ -55,7 +55,7 @@ public:
             markdead = false;
             StringBuffer epstr;
             ep.getEndpointHostText(epstr);
-            LOG(MCdebugProgress, thorJob, "Watchdog : Marking Machine as Up! [%s]", epstr.str());
+            LOG(MCdebugProgress, "Watchdog : Marking Machine as Up! [%s]", epstr.str());
         }
     }   
 };
@@ -133,13 +133,13 @@ void CMasterWatchdog::stop()
         stopped = true;
     }
 
-    LOG(MCdebugProgress, thorJob, "Stopping watchdog");
+    LOG(MCdebugProgress, "Stopping watchdog");
 #ifdef _WIN32
     threaded.adjustPriority(0); // restore to normal before stopping
 #endif
     stopReading();
     threaded.join();
-    LOG(MCdebugProgress, thorJob, "Stopped watchdog");
+    LOG(MCdebugProgress, "Stopped watchdog");
 }
 
 void CMasterWatchdog::checkMachineStatus()
@@ -157,7 +157,7 @@ void CMasterWatchdog::checkMachineStatus()
             else
             {
                 mstate->markdead = true;
-                LOG(MCdebugProgress, thorJob, "Watchdog : Marking Machine as Down! [%s]", epstr.str());
+                LOG(MCdebugProgress, "Watchdog : Marking Machine as Down! [%s]", epstr.str());
                 //removeSlave(mstate->ep); // more TBD
             }
         }
@@ -202,7 +202,7 @@ void CMasterWatchdog::stopReading()
 
 void CMasterWatchdog::threadmain()
 {
-    LOG(MCdebugProgress, thorJob, "Started watchdog");
+    LOG(MCdebugProgress, "Started watchdog");
     unsigned lastbeat=msTick();
     unsigned lastcheck=lastbeat;
 
@@ -234,7 +234,7 @@ void CMasterWatchdog::threadmain()
                 {
                     StringBuffer epstr;
                     hb.sender.getEndpointHostText(epstr);
-                    LOG(MCdebugProgress, thorJob, "Watchdog : Unknown Machine! [%s]", epstr.str()); //TBD
+                    LOG(MCdebugProgress, "Watchdog : Unknown Machine! [%s]", epstr.str()); //TBD
                 }
             }
             unsigned now=msTick();
@@ -253,7 +253,7 @@ void CMasterWatchdog::threadmain()
         {
             if (MPERR_link_closed != e->errorCode())
             {
-                FLLOG(MCexception(e), thorJob, e,"Watchdog Server Exception");
+                FLLOG(MCexception(e), e,"Watchdog Server Exception");
                 e->Release();
             }
             else
@@ -266,7 +266,7 @@ void CMasterWatchdog::threadmain()
         }
         catch (IException *e)
         {
-            FLLOG(MCexception(e), thorJob, e,"Watchdog Server Exception");
+            FLLOG(MCexception(e), e,"Watchdog Server Exception");
             e->Release();
             // NB: it is important to continue with master watchdog, to continue to consume packets from workers
         }

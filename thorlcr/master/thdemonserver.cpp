@@ -76,7 +76,7 @@ private:
         catch (IException *e)
         {
             StringBuffer s;
-            LOG(MCwarning, thorJob, "Failed to update progress information: %s", e->errorMessage(s).str());
+            LOG(MCwarning, "Failed to update progress information: %s", e->errorMessage(s).str());
             e->Release();
         }
     }
@@ -101,7 +101,7 @@ private:
             const cost_type totalCost = workunitCost + sgCost + graph.getDiskAccessCost();
             if (costLimit>0 && totalCost > costLimit)
             {
-                LOG(MCwarning, thorJob, "ABORT job cost exceeds limit");
+                LOG(MCwarning, "ABORT job cost exceeds limit");
                 graph.fireException(MakeThorException(TE_CostExceeded, "Job cost exceeds limit"));
             }
         }
@@ -166,7 +166,7 @@ private:
             catch (IException *E)
             {
                 StringBuffer s;
-                LOG(MCwarning, thorJob, "Failed to update progress information: %s", E->errorMessage(s).str());
+                LOG(MCwarning, "Failed to update progress information: %s", E->errorMessage(s).str());
                 E->Release();
             }
         }
@@ -194,7 +194,7 @@ private:
         catch (IException *e)
         {
             StringBuffer s;
-            LOG(MCwarning, thorJob, "Failed to update progress information: %s", e->errorMessage(s).str());
+            LOG(MCwarning, "Failed to update progress information: %s", e->errorMessage(s).str());
             e->Release();
         }
     }
@@ -215,7 +215,7 @@ public:
         if (0 == activeGraphs.ordinality())
         {
             StringBuffer urlStr;
-            LOG(MCdebugProgress, thorJob, "heartbeat packet received with no active graphs");
+            LOG(MCdebugProgress, "heartbeat packet received with no active graphs");
             return;
         }
         size32_t compressedProgressSz = progressMb.remaining();
@@ -233,12 +233,12 @@ public:
                 ForEachItemIn(g, activeGraphs) if (activeGraphs.item(g).queryGraphId() == graphId) graph = (CMasterGraph *)&activeGraphs.item(g);
                 if (!graph)
                 {
-                    LOG(MCdebugProgress, thorJob, "heartbeat received from unknown graph %" GIDPF "d", graphId);
+                    LOG(MCdebugProgress, "heartbeat received from unknown graph %" GIDPF "d", graphId);
                     break;
                 }
                 if (!graph->deserializeStats(slave, uncompressedMb))
                 {
-                    LOG(MCdebugProgress, thorJob, "heartbeat error in graph %" GIDPF "d", graphId);
+                    LOG(MCdebugProgress, "heartbeat error in graph %" GIDPF "d", graphId);
                     break;
                 }
             }

@@ -265,7 +265,7 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
             }
             else if (strncmp(command,"quit", 4) == 0)
             {
-                LOG(MCwarning, thorJob, "ABORT detected from user during debug session");
+                LOG(MCwarning, "ABORT detected from user during debug session");
                 Owned<IException> e = MakeThorException(TE_WorkUnitAborting, "User signalled abort during debug session");
                 job->fireException(e);
                 response.appendf("<quit state='quit'/>");
@@ -384,7 +384,7 @@ void CJobManager::stop()
 {
     if (!stopped)
     {
-        LOG(MCdebugProgress, thorJob, "Stopping jobManager");
+        LOG(MCdebugProgress, "Stopping jobManager");
         stopped = true;
         if (jobq)
         {
@@ -578,7 +578,7 @@ bool CJobManager::execute(IConstWorkUnit *workunit, const char *wuid, const char
 
 void CJobManager::run()
 {
-    LOG(MCdebugProgress, thorJob, "Listening for graph");
+    LOG(MCdebugProgress, "Listening for graph");
 
     setWuid(NULL);
 #ifndef _CONTAINERIZED
@@ -671,7 +671,7 @@ void CJobManager::run()
         if (exclusiveLockName.length())
         {
             if (globals->getPropBool("@multiThorPriorityLock"))
-                FLLOG(MCoperatorWarning, thorJob, "multiThorPriorityLock cannot be used in conjunction with multiThorExclusionLockName");
+                FLLOG(MCoperatorWarning, "multiThorPriorityLock cannot be used in conjunction with multiThorExclusionLockName");
             else
             {
                 PROGLOG("Multi-Thor exclusive lock defined: %s", exclusiveLockName.str());
@@ -836,7 +836,7 @@ void CJobManager::run()
         }
         catch (IException *e)
         {
-            FLLOG(MCoperatorWarning, thorJob, e, "CJobManager::run");
+            FLLOG(MCoperatorWarning, e, "CJobManager::run");
             continue;
         }
         Owned<IWorkUnitFactory> factory;
@@ -887,11 +887,9 @@ bool CJobManager::doit(IConstWorkUnit *workunit, const char *graphName, const So
     StringAttr wuid(workunit->queryWuid());
     StringAttr user(workunit->queryUser());
 
-    LogMsgJobId thorJobId = queryLogMsgManager()->addJobId(wuid);
-    thorJob.setJobID(thorJobId);
-    setDefaultJobId(thorJobId);
+    JobNameScope activeJobName(wuid);
 
-    LOG(MCdebugInfo, thorJob, "Processing wuid=%s, graph=%s from agent: %s", wuid.str(), graphName, agentep.getEndpointHostText(s).str());
+    LOG(MCdebugInfo, "Processing wuid=%s, graph=%s from agent: %s", wuid.str(), graphName, agentep.getEndpointHostText(s).str());
     LOG(MCauditInfo,",Progress,Thor,Start,%s,%s,%s,%s,%s,%s",
             queryServerStatus().queryProperties()->queryProp("@thorname"),
             wuid.str(),
@@ -913,10 +911,6 @@ bool CJobManager::doit(IConstWorkUnit *workunit, const char *graphName, const So
             user.str(),
             queryServerStatus().queryProperties()->queryProp("@nodeGroup"),
             queryServerStatus().queryProperties()->queryProp("@queue"));
-
-    thorJob.setJobID(UnknownJob);
-    setDefaultJobId(UnknownJob);
-    queryLogMsgManager()->removeJobId(thorJobId);
 
     if (e.get()) throw e.getClear();
     return allDone;
@@ -942,12 +936,12 @@ void CJobManager::setWuid(const char *wuid, const char *cluster)
     }
     catch (IException *e)
     {
-        FLLOG(MCexception(e), thorJob, e, "WARNING: Failed to set wuid in SDS:");
+        FLLOG(MCexception(e), e, "WARNING: Failed to set wuid in SDS:");
         e->Release();
     }
     catch (CATCHALL)
     {
-        FLLOG(MCerror, thorJob, "WARNING: Failed to set wuid in SDS: Unknown error");
+        FLLOG(MCerror, "WARNING: Failed to set wuid in SDS: Unknown error");
     }
 }
 
@@ -1089,7 +1083,7 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
             }
             catch (IException *e)
             {
-                FLLOG(MCexception(e), thorJob, e, "Failed to write query dll - ignoring!");
+                FLLOG(MCexception(e), e, "Failed to write query dll - ignoring!");
                 e->Release();
             }
             sendSo = getExpertOptBool("dllsToSlaves", true);
@@ -1213,7 +1207,7 @@ void abortThor(IException *e, unsigned errCode, bool abortCurrentJob)
             }
             EXCLOG(e,"abortThor");
         }
-        LOG(MCdebugProgress, thorJob, "abortThor called");
+        LOG(MCdebugProgress, "abortThor called");
         if (jM)
             jM->stop();
         if (thorQueue)
@@ -1225,7 +1219,7 @@ void abortThor(IException *e, unsigned errCode, bool abortCurrentJob)
     if (2 > aborting && abortCurrentJob)
     {
         aborting = 2;
-        LOG(MCdebugProgress, thorJob, "aborting any current active job");
+        LOG(MCdebugProgress, "aborting any current active job");
         if (jM)
         {
             if (!e)
@@ -1237,7 +1231,7 @@ void abortThor(IException *e, unsigned errCode, bool abortCurrentJob)
         }
         if (errCode == TEC_Clean)
         {
-            LOG(MCdebugProgress, thorJob, "Removing sentinel upon normal shutdown");
+            LOG(MCdebugProgress, "Removing sentinel upon normal shutdown");
             Owned<IFile> sentinelFile = createSentinelTarget();
             removeSentinelFile(sentinelFile);
         }
@@ -1425,6 +1419,8 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
 
                 while (true)
                 {
+                    JobNameScope activeJobName(currentWuid.str());
+
                     PROGLOG("Executing: wuid=%s, graph=%s", currentWuid.str(), currentGraphName.str());
 
                     {
@@ -1469,10 +1465,8 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                             {
                                 if (!streq(currentWuid, wuid))
                                 {
-                                    queryLogMsgManager()->removeJobId(thorJob.queryJobID());
-                                    LogMsgJobId thorJobId = queryLogMsgManager()->addJobId(wuid);
-                                    thorJob.setJobID(thorJobId);
-                                    setDefaultJobId(thorJobId);
+                                    activeJobName.set(wuid);
+
                                     // perhaps slightly overkill, but avoid checking/locking wuid to add pod info.
                                     // if this instance has already done so.
                                     auto it = publishedPodWuids.find(wuid.str());
@@ -1521,7 +1515,7 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
     }
     catch (IException *e)
     {
-        FLLOG(MCexception(e), thorJob, e,"ThorMaster");
+        FLLOG(MCexception(e), e,"ThorMaster");
         e->Release();
     }
     if (multiThorMemoryThreshold)

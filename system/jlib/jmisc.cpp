@@ -251,7 +251,7 @@ jlib_decl void PrintMemoryStatusLog()
 #ifdef _WIN32
     MEMORYSTATUS mS;
     GlobalMemoryStatus(&mS);
-    LOG(MCdebugInfo, unknownJob, "Available Physical Memory = %dK", (unsigned)(mS.dwAvailPhys/1024));
+    LOG(MCdebugInfo, "Available Physical Memory = %dK", (unsigned)(mS.dwAvailPhys/1024));
 #ifdef FRAGMENTATION_CHECK
     // see if fragmented
     size32_t sz = MAX_TRY_SIZE;
@@ -267,7 +267,7 @@ jlib_decl void PrintMemoryStatusLog()
     }
     sz *= 2;
     if ((sz<MAX_TRY_SIZE)&&(sz<mS.dwAvailPhys/4)) {
-        LOG(MCdebugInfo, unknownJob, "WARNING: Could not allocate block size %d", sz);
+        LOG(MCdebugInfo, "WARNING: Could not allocate block size %d", sz);
        _HEAPINFO hinfo;
        int heapstatus;
        hinfo._pentry = NULL;
@@ -280,8 +280,8 @@ jlib_decl void PrintMemoryStatusLog()
                 fragments++;
            }
        }
-       LOG(MCdebugInfo, unknownJob, "Largest unused fragment = %d", max);
-       LOG(MCdebugInfo, unknownJob, "Number of fragments = %d", fragments);
+       LOG(MCdebugInfo, "Largest unused fragment = %d", max);
+       LOG(MCdebugInfo, "Number of fragments = %d", fragments);
     }
 #endif
 #endif
