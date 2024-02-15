@@ -124,7 +124,7 @@ jobs:
     # NB: restore-keys set to e.g. hpccbuild-2-7.12.10, hpccbuild-2-7.12, hpccbuild-2-7, hpccbuild-2-
     - name: Fetch cache
       id: cache
-      uses: actions/cache@v2
+      uses: actions/cache@v4
       with:
         path: |
           build-cache
@@ -292,7 +292,7 @@ jobs:
 
     - name: build-logs-artifact
       if: ${{ failure() }}
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: build-logs
         path: |
@@ -356,7 +356,7 @@ jobs:
 
     - name: regression-setup-logs-artifact
       if: ${{ failure() || cancelled() }}
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: regress-setup-logs
         path: |
@@ -376,7 +376,7 @@ jobs:
 
     - name: Upload install artifact
       if: ${{ steps.check-cache.outputs.state != '' && github.event_name == 'pull_request' }}
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: installsetup-artifact
         path: |
@@ -419,7 +419,7 @@ jobs:
             pattern: teststdlibrary.ecl
 
     steps:
-    - uses: actions/download-artifact@v2
+    - uses: actions/download-artifact@v4
       with:
         name: installsetup-artifact
 
@@ -468,7 +468,7 @@ jobs:
 
     - name: regression-run-logs-artifact
       if: ${{ failure() || cancelled() }}
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: regression-run-logs-${{ matrix.engine }}-${{ steps.vars.outputs.matrix-setname }}
         path: |
@@ -485,7 +485,7 @@ jobs:
     timeout-minutes: 30 # the unittests run step has its own timeout, however the job can sometimes take time to download dependencies
     runs-on: ubuntu-22.04
     steps:
-    - uses: actions/download-artifact@v2
+    - uses: actions/download-artifact@v4
       with:
         name: installsetup-artifact
 
@@ -516,7 +516,7 @@ jobs:
     timeout-minutes: 30 # the ui-tests run step has its own timeout, however the job can sometimes take time to download dependencies
     runs-on: ubuntu-22.04
     steps:
-    - uses: actions/download-artifact@v2
+    - uses: actions/download-artifact@v4
       with:
         name: installsetup-artifact
 
@@ -585,7 +585,7 @@ jobs:
 
     - name: eclwatch-ui-test-logs-artifact
       if: ${{ failure() || cancelled() }}
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: ECLWatchUiTest
         path: install/test-ui/eclWatchUiTest.log
