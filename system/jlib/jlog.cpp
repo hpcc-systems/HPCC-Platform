@@ -291,53 +291,7 @@ void LogMsgJobInfo::deserialize(MemoryBuffer & in)
     in.read(userID);
 }
 
-static LogMsgJobInfo globalDefaultJobInfo(UnknownJob, UnknownUser);
-
-// NOTE - extern thread_local variables are very inefficient - don't be tempted to expose the variables directly
-
-static  TraceFlags defaultTraceFlags = TraceFlags::Standard;
-static thread_local LogMsgJobInfo defaultJobInfo;
-static thread_local TraceFlags threadTraceFlags = TraceFlags::Standard;
-static thread_local const IContextLogger *default_thread_logctx = nullptr;
-
-const LogMsgJobInfo unknownJob(UnknownJob, UnknownUser);
-
-void getThreadLoggingInfo(const IContextLogger * &_logctx, TraceFlags &_traceFlags)
-{
-    _logctx = default_thread_logctx;
-    _traceFlags = threadTraceFlags;
-}
-
-void resetThreadLogging(const IContextLogger *_logctx, TraceFlags _traceFlags)
-{
-    // Note - as implemented the thread default job info is determined by what the global one was when the thread was created.
-    // There is an alternative interpretation, that an unset thread-local one should default to whatever the global one is at the time the thread one is used.
-    // In practice I doubt there's a lot of difference as global one is likely to be set once at program startup
-    defaultJobInfo = globalDefaultJobInfo;
-    default_thread_logctx = _logctx;
-    threadTraceFlags = _traceFlags;
-}
-
-const LogMsgJobInfo & checkDefaultJobInfo(const LogMsgJobInfo & _jobInfo)
-{
-    if (&_jobInfo == &unknownJob)
-    {
-        return defaultJobInfo;
-    }
-    return _jobInfo;
-}
-
-void setDefaultJobId(const char *id, bool threaded)
-{
-    setDefaultJobId(theManager->addJobId(id), threaded);
-}
-
-void setDefaultJobId(LogMsgJobId id, bool threaded)
-{
-    if (!threaded)
-        globalDefaultJobInfo.setJobID(id);
-    defaultJobInfo.setJobID(id);
-}
+//--------------------------------------------------------------------------------------------------------------------
 
 LogMsg::LogMsg(LogMsgJobId id, const char *job) : category(MSGAUD_programmer, job ? MSGCLS_addid : MSGCLS_removeid), sysInfo(), jobInfo(id), remoteFlag(false)
 {
@@ -3360,47 +3314,9 @@ IRemoteLogAccess *queryRemoteLogAccessor()
     );
 }
 
-bool doTrace(TraceFlags featureFlag, TraceFlags level)
+void setDefaultJobId(const char *id, bool threaded)
 {
-    if ((threadTraceFlags & TraceFlags::LevelMask) < level)
-        return false;
-    return (threadTraceFlags & featureFlag) == featureFlag;
-}
-
-void updateTraceFlags(TraceFlags flag, bool global)
-{
-    if (global)
-        defaultTraceFlags = flag;
-    threadTraceFlags = flag;
-}
-
-TraceFlags queryTraceFlags()
-{
-    return threadTraceFlags;
-}
-
-TraceFlags queryDefaultTraceFlags()
-{
-    return defaultTraceFlags;
-}
-
-LogContextScope::LogContextScope(const IContextLogger *ctx)
-{
-    prevFlags = threadTraceFlags;
-    prev = default_thread_logctx;
-    default_thread_logctx = ctx;
-}
-LogContextScope::LogContextScope(const IContextLogger *ctx, TraceFlags traceFlags)
-{
-    prevFlags = threadTraceFlags;
-    threadTraceFlags = traceFlags;
-    prev = default_thread_logctx;
-    default_thread_logctx = ctx;
-}
-LogContextScope::~LogContextScope()
-{
-    default_thread_logctx = prev;
-    threadTraceFlags = prevFlags;
+    setDefaultJobId(theManager->addJobId(id), threaded);
 }
 
 TraceFlags loadTraceFlags(const IPropertyTree *ptree, const std::initializer_list<TraceOption> &optNames, TraceFlags dft)
@@ -3477,7 +3393,7 @@ void ctxlogReport(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgC
 }
 void ctxlogReportVA(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char * format, va_list args) 
 {
-    if (default_thread_logctx)
+    if (queryActiveContextLogger())
     {
         LogContextScope ls(nullptr);
         ls.prev->CTXLOGva(cat, job, code, format, args);

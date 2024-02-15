@@ -881,7 +881,6 @@ extern jlib_decl void setupContainerizedLogMsgHandler();
 //extern jlib_decl ILogMsgManager * createLogMsgManager(); // use with care! (needed by mplog listener facility)
 
 extern jlib_decl void setDefaultJobId(const char *id, bool threaded = false);
-extern jlib_decl void setDefaultJobId(LogMsgJobId id, bool threaded = false);
 
 // Macros to make logging as simple as possible
 

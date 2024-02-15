@@ -33,6 +33,9 @@
 // no thread priority handling?
 #endif
 
+
+interface IContextLogger;
+
 interface jlib_decl IThread : public IInterface
 {
     virtual void start() = 0;
@@ -361,5 +364,31 @@ interface IWorkQueueThread: extends IInterface
 // Simple lightweight async worker queue
 // internally thread persists for specified time waiting before self destroying
 extern jlib_decl IWorkQueueThread *createWorkQueueThread(unsigned persisttime=1000*60);
+
+//--- Functions that manage the current thread state =- for context, tracing, spans etc.
+
+typedef unsigned __int64 LogMsgJobId;
+class LogMsgJobInfo;
+
+const LogMsgJobInfo & checkDefaultJobInfo(const LogMsgJobInfo & _jobInfo);
+extern jlib_decl void setDefaultJobId(LogMsgJobId id, bool threaded = false);
+
+// Reset logging-related thread-local variables, when a threadpool starts
+extern void resetThreadLogging(const IContextLogger *_logctx, TraceFlags _traceFlags);
+extern void getThreadLoggingInfo(const IContextLogger * &_logctx, TraceFlags &_traceFlags);
+extern const IContextLogger * queryActiveContextLogger();
+
+// Temporarily modify the trace context and/or flags for the current thread, for the lifetime of the LogContextScope object
+class jlib_decl LogContextScope
+{
+public:
+    LogContextScope(const IContextLogger *ctx);
+    LogContextScope(const IContextLogger *ctx, TraceFlags traceFlags);
+    ~LogContextScope();
+
+    const IContextLogger *prev;
+    TraceFlags prevFlags;
+};
+
 
 #endif
