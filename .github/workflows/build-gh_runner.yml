@@ -135,14 +135,14 @@ jobs:
           ${{ !contains(inputs.os, 'windows') && 'sudo' || '' }} rm -rf "$VCPKG_INSTALLATION_ROOT"
 
       - name: Checkout HPCC-Platform
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: recursive
           path: ${{ github.workspace }}/HPCC-Platform
 
       - name: Checkout LN
         if: ${{ inputs.ln == true }}
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: ${{ github.repository_owner }}/LN
           token: ${{ secrets.LNB_TOKEN }}

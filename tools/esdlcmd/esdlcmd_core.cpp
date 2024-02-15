@@ -1177,7 +1177,7 @@ protected:
     bool optRollup;
 
 public:
-    Esdl2XmlCmd() : optRollup(false)
+    Esdl2XmlCmd() : optRollup(false), optProcessAllIncludes(false)
     {}
 
     virtual bool parseCommandLineOptions(ArgvIterator &iter) override

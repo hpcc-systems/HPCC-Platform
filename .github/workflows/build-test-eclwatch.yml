@@ -35,10 +35,10 @@ jobs:
       - name: Free additional disk space (remove Android SDK + Tools)
         run: |
           sudo rm -rf /usr/local/lib/android
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           submodules: "recursive"
-      - uses: actions/setup-node@v2
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
       - name: Install Dependencies

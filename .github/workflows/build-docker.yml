@@ -86,14 +86,14 @@ jobs:
           df -h
 
       - name: Checkout HPCC-Platform
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: recursive
           path: ${{ github.workspace }}/HPCC-Platform
 
       - name: Checkout LN
         if: ${{ inputs.ln == true }}
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: ${{ github.repository_owner }}/LN
           token: ${{ secrets.LNB_TOKEN }}

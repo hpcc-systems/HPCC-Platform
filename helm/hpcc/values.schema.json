@@ -2522,6 +2522,11 @@
           "description": "[Optional] The time (seconds) for the job to wait for a Thor instance to start",
           "default": 600
         },
+        "auxQueues": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "[Optional] Auxiliary queue names to listen to. Multiple Thor's can listen to the same queue using this mechanism"
+        },
         "image": {
           "$ref": "#/definitions/image"
         },
