@@ -19,7 +19,7 @@ jobs:
     if: github.repository == 'hpcc-systems/HPCC-Platform'
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Build
         uses: ./dockerfiles
         with:
@@ -42,7 +42,7 @@ jobs:
         engine: ['ml', 'gnn', 'gnn-gpu']
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
     - name: Build
       uses: ./dockerfiles
       with:

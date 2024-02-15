@@ -65,7 +65,7 @@ jobs:
           echo "platform_build = ${{ steps.vars.outputs.platform_build }}"
 
       - name: Checkout PR
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Calculate vcpkg vars
         id: vcpkg_vars
@@ -78,7 +78,7 @@ jobs:
 
       - name: Set up Docker Buildx
         id: buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v3
         with:
           driver: docker
 
@@ -107,7 +107,7 @@ jobs:
       # or they'll be a "latest" which will have been picked up by the check-images step.
       - name: branch image
         if: ${{ steps.check-images.outputs.prbase_missing == '1' }}
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v5
         with:
           context: .
           file: ./dockerfiles/platform-build/Dockerfile
@@ -127,7 +127,7 @@ jobs:
             BUILD_THREADS=${{ steps.vars.outputs.build_threads }}
 
       - name: PR image
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v5
         with:
           context: .
           file: ./dockerfiles/platform-build-incremental-container/Dockerfile
