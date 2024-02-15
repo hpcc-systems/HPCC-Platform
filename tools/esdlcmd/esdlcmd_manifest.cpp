@@ -181,6 +181,7 @@ class EsdlManifestCmd : public EsdlCmdCommon
                 if (*arg != '-')
                 {
                     optManifestPath.set(arg);
+                    iter.next();
                 }
                 else
                 {
@@ -193,10 +194,16 @@ class EsdlManifestCmd : public EsdlCmdCommon
                 {
                     StringAttr oneOption;
                     if (iter.matchOption(oneOption, ESDLOPT_INCLUDE_PATH) || iter.matchOption(oneOption, ESDLOPT_INCLUDE_PATH_S))
+                    {
                         includeSearchPaths.push_back(oneOption.get());
-
-                    iter.matchOption(optOutputPath, ESDLOPT_MANIFEST_OUTFILE);
-                    iter.matchOption(optOutputType, ESDLOPT_MANIFEST_FORMAT);
+                        continue;
+                    }
+                    if (iter.matchOption(optOutputPath, ESDLOPT_MANIFEST_OUTFILE))
+                        continue;
+                    if (iter.matchOption(optOutputType, ESDLOPT_MANIFEST_FORMAT))
+                        continue;
+                    if (EsdlCmdCommon::matchCommandLineOption(iter, true) != EsdlCmdOptionMatch)
+                        return false;
                 }
             }
             return true;
