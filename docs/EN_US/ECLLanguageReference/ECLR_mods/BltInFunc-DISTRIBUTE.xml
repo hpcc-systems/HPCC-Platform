@@ -104,16 +104,19 @@
           <row>
             <entry><emphasis>maxskew</emphasis></entry>
 
-            <entry>A floating point number in the range of zero (0.0) to one
-            (1.0) specifying the minimum skew to allow (0.1=10%).</entry>
+            <entry>A value between zero (0) and one (1.0 = 100%) indicating
+            the maximum percentage of skew to allow before the job fails (the
+            default skew is 1.0 / &lt;number of worker nodes on
+            cluster&gt;).</entry>
           </row>
 
           <row>
             <entry><emphasis>skewlimit</emphasis></entry>
 
-            <entry>Optional. A floating point number in the range of zero
-            (0.0) to one (1.0) specifying the maximum skew to allow
-            (0.1=10%).</entry>
+            <entry>Optional. A value between zero (0) and one (1.0 = 100%)
+            indicating the desired maximum percentage of skew to allow (the
+            default skew is 1.0 / &lt;number of worker nodes on
+            cluster&gt;).</entry>
           </row>
 
           <row>
