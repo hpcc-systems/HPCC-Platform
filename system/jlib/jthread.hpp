@@ -33,8 +33,18 @@
 // no thread priority handling?
 #endif
 
-
+// Functions used to reset thread-local context variables, when a threadpool starts
 interface IContextLogger;
+struct jlib_decl SavedThreadContext
+{
+    const IContextLogger * logctx = nullptr;
+    TraceFlags traceFlags = queryDefaultTraceFlags();
+};
+
+extern void restoreThreadContext(const SavedThreadContext & saveCtx);
+extern void saveThreadContext(SavedThreadContext & saveCtx);
+
+//--------------------------------------------------------------
 
 interface jlib_decl IThread : public IInterface
 {
@@ -101,8 +111,7 @@ private:
 
 protected:
     StringAttr cthreadname;
-    const IContextLogger *logctx = nullptr;
-    TraceFlags traceFlags = queryDefaultTraceFlags();
+    SavedThreadContext savedCtx;
 public:
 #ifndef _WIN32
     Semaphore suspend;
@@ -123,8 +132,7 @@ public:
     const char *getName() { return cthreadname.isEmpty() ? "unknown" : cthreadname.str(); }
     bool isAlive() { return alive; }
     bool join(unsigned timeout=INFINITE);
-    void getThreadLoggingInfo();                    // Capture current thread logging context to be used by this thread when started
-    void setThreadLoggingInfo(const IContextLogger * _logctx, TraceFlags _traceFlags);  // Set a specified thread logging context to be used when this thread is started
+    void captureThreadLoggingInfo();                // Capture current thread logging context to be used by this thread when started
 
     virtual void start();
     virtual void startRelease();        
@@ -271,8 +279,7 @@ interface IThreadPool : extends IInterface
         virtual PooledThreadHandle startNoBlock(void *param)=0; // starts a new thread if it can do so without blocking, else throws exception
         virtual void setStartDelayTracing(unsigned secs) = 0;        // set start delay tracing period
         virtual bool waitAvailable(unsigned timeout) = 0;            // wait until a pool member is available
-        virtual void getThreadLoggingInfo() = 0;                     // Capture current thread logging context to be used by thread in pool when started
-        virtual void setThreadLoggingInfo(const IContextLogger * _logctx, TraceFlags _traceFlags) = 0;  // Set a specified thread logging context to be used by thredas in pool when started
+        virtual void captureThreadLoggingInfo() = 0;                 // Capture current thread logging context to be used by thread in pool when started
 };
 
 extern jlib_decl IThreadPool *createThreadPool(
@@ -373,10 +380,7 @@ class LogMsgJobInfo;
 const LogMsgJobInfo & checkDefaultJobInfo(const LogMsgJobInfo & _jobInfo);
 extern jlib_decl void setDefaultJobId(LogMsgJobId id, bool threaded = false);
 
-// Reset logging-related thread-local variables, when a threadpool starts
-extern void resetThreadLogging(const IContextLogger *_logctx, TraceFlags _traceFlags);
-extern void getThreadLoggingInfo(const IContextLogger * &_logctx, TraceFlags &_traceFlags);
-extern const IContextLogger * queryActiveContextLogger();
+extern const IContextLogger * queryThreadedContextLogger();
 
 // Temporarily modify the trace context and/or flags for the current thread, for the lifetime of the LogContextScope object
 class jlib_decl LogContextScope

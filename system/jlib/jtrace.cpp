@@ -49,8 +49,6 @@
 #include "lnuid.h"
 #include <variant>
 
-#include "jthread.hpp"
-
 namespace context     = opentelemetry::context;
 namespace nostd       = opentelemetry::nostd;
 namespace opentel_trace = opentelemetry::trace;

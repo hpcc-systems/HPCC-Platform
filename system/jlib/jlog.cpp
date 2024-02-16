@@ -3393,7 +3393,7 @@ void ctxlogReport(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgC
 }
 void ctxlogReportVA(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char * format, va_list args) 
 {
-    if (queryActiveContextLogger())
+    if (queryThreadedContextLogger())
     {
         LogContextScope ls(nullptr);
         ls.prev->CTXLOGva(cat, job, code, format, args);
