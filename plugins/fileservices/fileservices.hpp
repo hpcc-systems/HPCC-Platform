@@ -146,7 +146,8 @@ FILESERVICES_API char *  FILESERVICES_CALL fsfMonitorLogicalFileName(ICodeContex
 FILESERVICES_API char *  FILESERVICES_CALL fsfMonitorFile(ICodeContext *ctx, const char *eventname, const char *ip, const char *filename, bool sub, int shotcount, const char * espServerIpPort);
 FILESERVICES_API void FILESERVICES_CALL fsSetFileDescription(ICodeContext *ctx, const char *logicalfilename, const char *value);
 FILESERVICES_API char *  FILESERVICES_CALL fsGetFileDescription(ICodeContext *ctx, const char *logicalfilename);
-FILESERVICES_API void FILESERVICES_CALL fsRemoteDirectory(size32_t & __lenResult,void * & __result, const char *machineip, const char *dir, const char *mask, bool sub);
+FILESERVICES_API void FILESERVICES_CALL fsRemoteDirectory(ICodeContext *ctx, size32_t & __lenResult,void * & __result, const char *machineip, const char *dir, const char *mask, bool sub);
+FILESERVICES_API void FILESERVICES_CALL fsRemoteDirectory_v2(ICodeContext *ctx, size32_t & __lenResult,void * & __result, const char *machineip, const char *dir, const char *mask, bool sub, const char *planename);
 FILESERVICES_API void FILESERVICES_CALL fsLogicalFileList(ICodeContext *ctx,size32_t & __lenResult,void * & __result, const char *mask, bool includenormal, bool includesuper, bool unknownszero,const char *foreigndali);
 FILESERVICES_API void FILESERVICES_CALL fsSuperFileContents(ICodeContext *ctx,size32_t & __lenResult,void * & __result, const char *lsuperlfn, bool recurse);
 FILESERVICES_API void FILESERVICES_CALL fsLogicalFileSuperOwners(ICodeContext *ctx,size32_t & __lenResult,void * & __result, const char *lfn);

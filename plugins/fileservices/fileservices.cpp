@@ -2092,18 +2092,9 @@ FILESERVICES_API char *  FILESERVICES_CALL fsGetFileDescription(ICodeContext *ct
         return CTXSTRDUP(parentCtx, "");
 }
 
-FILESERVICES_API void FILESERVICES_CALL fsRemoteDirectory(size32_t & __lenResult,void * & __result, const char *machine, const char *dir, const char *mask, bool sub)
+static void listRemoteDirectoryFiles(RemoteFilename &rfn, const char *mask, bool sub, size32_t &__lenResult, void *&__result)
 {
     MemoryBuffer mb;
-    RemoteFilename rfn;
-    SocketEndpoint ep(machine);
-    if (ep.isNull()){
-        if (machine)
-            throw MakeStringException(-1, "RemoteDirectory: Could not resolve host '%s'", machine);
-        ep.setLocalHost(0);
-    }
-
-    rfn.setPath(ep,dir);
     Owned<IFile> f = createIFile(rfn);
     if (f) {
         StringBuffer s;
@@ -2885,6 +2876,27 @@ FILESERVICES_API void FILESERVICES_CALL fsCreateExternalDirectory(ICodeContext *
 FILESERVICES_API void FILESERVICES_CALL fsCreateExternalDirectory_v2(ICodeContext *ctx,const char *location,const char *path,const char *planename)
 {
     implementCreateExternalDirectory(ctx,location,path,planename);
+}
+
+static void implementListPlaneDirectory(ICodeContext *ctx,const char *planename,const char *machine,const char *dir,
+    const char *mask,bool sub,size32_t &lenresult,void *&result)
+{
+    Owned<IPropertyTree> plane = checkPlaneOrHost(planename,machine,dir);
+    RemoteFilename rfn;
+    checkExternalFilePath(ctx,plane,machine,dir,true,false,rfn);
+    listRemoteDirectoryFiles(rfn,mask,sub,lenresult,result);
+}
+
+FILESERVICES_API void FILESERVICES_CALL fsRemoteDirectory(ICodeContext *ctx,size32_t &lenresult,
+    void *&result,const char *machine,const char *dir,const char *mask,bool sub)
+{
+    implementListPlaneDirectory(ctx,nullptr,machine,dir,mask,sub,lenresult,result);
+}
+
+FILESERVICES_API void FILESERVICES_CALL fsRemoteDirectory_v2(ICodeContext *ctx,size32_t &lenresult,
+    void *&result,const char *machine,const char *dir,const char *mask,bool sub,const char *planename)
+{
+    implementListPlaneDirectory(ctx,planename,machine,dir,mask,sub,lenresult,result);
 }
 
 FILESERVICES_API char * FILESERVICES_CALL fsfGetLogicalFileAttribute(ICodeContext * ctx,const char *_lfn,const char *attrname)
