@@ -66,6 +66,7 @@ interface ISpan : extends IInterface
     virtual void getClientHeaders(IProperties * clientHeaders) const = 0;
     virtual void toString(StringBuffer & out) const = 0;
     virtual void getLogPrefix(StringBuffer & out) const = 0;
+    virtual bool isRecording() const = 0;   // Is it worth adding any events/attributes to this span?
 
     virtual ISpan * createClientSpan(const char * name) = 0;
     virtual ISpan * createInternalSpan(const char * name) = 0;

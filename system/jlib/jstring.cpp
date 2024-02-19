@@ -2843,6 +2843,29 @@ void processOptionString(const char * options, optionCallback callback)
     }
 }
 
+void getSnakeCase(StringBuffer & out, const char * camelValue)
+{
+    if (isEmptyString(camelValue))
+        return;
+
+    out.append((char)tolower(*camelValue++));
+
+    for (;;)
+    {
+        byte next = *camelValue++;
+        if (!next)
+            break;
+
+        if (isupper(next))
+        {
+            out.append('_');
+            out.append((char)tolower(next));
+        }
+        else
+            out.append((char)next);
+    }
+}
+
 /**
  * stristr - Case insensitive strstr()
  * @haystack: Where we will search for our @needle
