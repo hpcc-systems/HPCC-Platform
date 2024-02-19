@@ -46,11 +46,6 @@ interface INamedMetric : extends IInterface
     virtual void resetValue() = 0;
 };
 
-interface ITimerCallback : extends IInterface
-{
-    virtual void onTimer() = 0;
-};
-
 class RelaxedAtomicMetric : implements INamedMetric, public CInterface
 {
     RelaxedAtomic<unsigned> &counter;
@@ -123,50 +118,7 @@ public:
 
 };
 
-class TickProvider : public Thread
-{
-    IArrayOf<ITimerCallback> listeners;
-    CriticalSection crit;
-    Semaphore stopped;
-
-    void doTicks()
-    {
-        CriticalBlock c(crit);
-        ForEachItemIn(idx, listeners)
-        {
-            listeners.item(idx).onTimer();
-        }
-    }
-
-public:
-    TickProvider() : Thread("TickProvider") 
-    {
-    }
-    int run()
-    {
-        for (;;)
-        {
-            if (stopped.wait(10000))
-                break;
-            doTicks();
-        }
-        return 0;
-    }
-
-    void addListener(ITimerCallback *l)
-    {
-        CriticalBlock c(crit);
-        listeners.append(*LINK(l));
-    }
-
-    void stop()
-    {
-        stopped.signal();
-        join();
-    }
-};
-
-class IntervalMetric : implements INamedMetric, implements ITimerCallback, public CInterface
+class IntervalMetric : implements INamedMetric, public CInterface
 {
     Linked<INamedMetric> base;
     CriticalSection crit;
@@ -196,10 +148,6 @@ public:
         lastSnapshotTime = msTick();
         lastSnapshotValue = 0;
         value = 0;
-    }
-    virtual void onTimer()
-    {
-        takeSnapshot();
     }
     virtual long getValue() 
     {
@@ -264,9 +212,6 @@ public:
 
 private:
     MapStringToMyClassViaBase<INamedMetric, INamedMetric> metricMap;
-    bool started;
-
-    TickProvider ticker;
 };
 
 void RoxieQueryStats::addMetrics(CRoxieMetricsManager *snmpManager, const char *prefix, unsigned interval)
@@ -287,7 +232,6 @@ using roxiemem::getDataBuffersActive;
 
 CRoxieMetricsManager::CRoxieMetricsManager()
 {
-    started = false;
     unknownQueryStats.addMetrics(this, "unknown", 1000);
     loQueryStats.addMetrics(this, "lo", 1000);
     hiQueryStats.addMetrics(this, "hi", 1000);
@@ -321,7 +265,6 @@ CRoxieMetricsManager::CRoxieMetricsManager()
     addMetric(flowRequestsSent, 1000);
     addMetric(flowPermitsReceived, 1000);
     addMetric(dataPacketsSent, 1000);
-    ticker.start();
 }
 
 void CRoxieMetricsManager::doAddMetric(RelaxedAtomic<unsigned> &counter, const char *name, unsigned interval, bool isMinVal)
@@ -336,7 +279,6 @@ void CRoxieMetricsManager::doAddMetric(INamedMetric *n, const char *name, unsign
         StringBuffer fname(name);
         fname.append("/s");
         IntervalMetric *im = new IntervalMetric(n, interval);
-        ticker.addListener(im);
         metricMap.setValue(fname.str(), im);
         im->Release();
     }
@@ -375,9 +317,6 @@ long CRoxieMetricsManager::getValue(const char * name)
 
 CRoxieMetricsManager::~CRoxieMetricsManager()
 {
-    ticker.stop();
-    if (started)
-        dumpMetrics();
 }
 
 void CRoxieMetricsManager::dumpMetrics()
