@@ -1589,31 +1589,36 @@ public:
             queryFactory->noteQuery(startTime, failed, elapsed, memused, agentsReplyLen, bytesOut);
             queryFactory.clear();
         }
-        if (logctx && logctx->queryTraceLevel() && (logFullQueries() || logctx->intercept))
+        if (logctx)
         {
-            if (queryName.get())
+            if (logctx->queryTraceLevel() && (logFullQueries() || logctx->intercept))
             {
-                StringBuffer s;
-                logctx->getStats(s);
-
-                const char * callerId = logctx->queryCallerId();
-                StringBuffer txIds;
-                if (!isEmptyString(callerId))
-                    txIds.appendf("caller: %s", callerId);
-                const char *localId = logctx->queryLocalId();
-                if (localId && *localId)
+                if (queryName.get())
                 {
+                    StringBuffer s;
+                    logctx->getStats(s);
+
+                    const char * callerId = logctx->queryCallerId();
+                    StringBuffer txIds;
+                    if (!isEmptyString(callerId))
+                        txIds.appendf("caller: %s", callerId);
+                    const char *localId = logctx->queryLocalId();
+                    if (localId && *localId)
+                    {
+                        if (txIds.length())
+                            txIds.append(", ");
+                        txIds.append("local: ").append(localId);
+                    }
                     if (txIds.length())
-                        txIds.append(", ");
-                    txIds.append("local: ").append(localId);
+                        txIds.insert(0, '[').append(']');
+                    if (requestArraySize > 1)
+                        logctx->CTXLOG("COMPLETE: %s(x%u) %s%s from %s complete in %u msecs memory=%u Mb priority=%d agentsreply=%u duplicatePackets=%u resentPackets=%u resultsize=%u continue=%d%s", queryName.get(), requestArraySize, uid.get(), txIds.str(), peer, elapsed, memused, getQueryPriority(), agentsReplyLen, agentsDuplicates, agentsResends, bytesOut, continuationNeeded, s.str());
+                    else
+                        logctx->CTXLOG("COMPLETE: %s %s%s from %s complete in %u msecs memory=%u Mb priority=%d agentsreply=%u duplicatePackets=%u resentPackets=%u resultsize=%u continue=%d%s", queryName.get(), uid.get(), txIds.str(), peer, elapsed, memused, getQueryPriority(), agentsReplyLen, agentsDuplicates, agentsResends, bytesOut, continuationNeeded, s.str());
+
                 }
-                if (txIds.length())
-                    txIds.insert(0, '[').append(']');
-                if (requestArraySize > 1)
-                    logctx->CTXLOG("COMPLETE: %s(x%u) %s%s from %s complete in %u msecs memory=%u Mb priority=%d agentsreply=%u duplicatePackets=%u resentPackets=%u resultsize=%u continue=%d%s", queryName.get(), requestArraySize, uid.get(), txIds.str(), peer, elapsed, memused, getQueryPriority(), agentsReplyLen, agentsDuplicates, agentsResends, bytesOut, continuationNeeded, s.str());
-                else
-                    logctx->CTXLOG("COMPLETE: %s %s%s from %s complete in %u msecs memory=%u Mb priority=%d agentsreply=%u duplicatePackets=%u resentPackets=%u resultsize=%u continue=%d%s", queryName.get(), uid.get(), txIds.str(), peer, elapsed, memused, getQueryPriority(), agentsReplyLen, agentsDuplicates, agentsResends, bytesOut, continuationNeeded, s.str());
             }
+            logctx->setSpanAttribute("stats.time_elapsed", elapsed);
         }
     }
 };

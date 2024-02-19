@@ -296,6 +296,10 @@ public:
     {
         ctx->setSpanAttribute(name, value);
     }
+    virtual void setSpanAttribute(const char *name, __uint64 value) const override
+    {
+        ctx->setSpanAttribute(name, value);
+    }
     virtual const char *queryGlobalId() const
     {
         return ctx->queryGlobalId();
@@ -1441,6 +1445,10 @@ public:
         return ctx->getSpanContext();
     }
     virtual void setSpanAttribute(const char *name, const char *value) const override
+    {
+        ctx->setSpanAttribute(name, value);
+    }
+    virtual void setSpanAttribute(const char *name, __uint64 value) const override
     {
         ctx->setSpanAttribute(name, value);
     }
