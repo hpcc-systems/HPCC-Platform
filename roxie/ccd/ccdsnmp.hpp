@@ -86,7 +86,6 @@ extern RoxieQueryStats combinedQueryStats;
 
 interface IRoxieMetricsManager : extends IInterface
 {
-    virtual void dumpMetrics() = 0;
     virtual void addUserMetric(const char *name, const char *regex) = 0;
     virtual StringBuffer &getMetrics(StringBuffer &) = 0;
     virtual void resetMetrics() = 0;

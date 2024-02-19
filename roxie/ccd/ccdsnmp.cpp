@@ -200,7 +200,6 @@ public:
     ~CRoxieMetricsManager();
 
     virtual long getValue(const char * name);
-    void dumpMetrics();
     StringBuffer &getMetrics(StringBuffer &xml);
     void resetMetrics();
 
@@ -317,22 +316,6 @@ long CRoxieMetricsManager::getValue(const char * name)
 
 CRoxieMetricsManager::~CRoxieMetricsManager()
 {
-}
-
-void CRoxieMetricsManager::dumpMetrics()
-{
-    HashIterator metrics(metricMap);
-    ForEach(metrics)
-    {           
-        IMapping &cur = metrics.query();
-        INamedMetric *m = (INamedMetric *) *metricMap.mapToValue(&cur);
-        if (m->isCumulative())
-        {
-            const char *name = (const char *) cur.getKey();
-            long val = m->getValue();
-            DBGLOG("TOTALS: %s = %ld", name, val);
-        }
-    }
 }
 
 StringBuffer &CRoxieMetricsManager::getMetrics(StringBuffer &xml)
