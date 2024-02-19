@@ -22,6 +22,7 @@
 
 #include "TpWrapper.hpp"
 #include <stdio.h>
+#include "jconfig.hpp"
 #include "workunit.hpp"
 #include "exception_util.hpp"
 #include "portlist.h"
@@ -702,7 +703,7 @@ extern TPWRAPPER_API void getRoxieTargetsSupportingPublishedQueries(StringArray&
 
 extern TPWRAPPER_API unsigned getThorClusterNames(StringArray& targetNames, StringArray& queueNames)
 {
-    Owned<IStringIterator> targets = getContainerTargetClusters("thor", nullptr);
+    Owned<IStringIterator> targets = config::getContainerTargets("thor", nullptr);
     ForEach(*targets)
     {
         SCMStringBuffer target;
@@ -722,7 +723,7 @@ static CriticalSection configUpdateSect;
 static void refreshValidTargets()
 {
     validTargets.clear();
-    Owned<IStringIterator> it = getContainerTargetClusters(nullptr, nullptr);
+    Owned<IStringIterator> it = config::getContainerTargets(nullptr, nullptr);
     ForEach(*it)
     {
         SCMStringBuffer s;

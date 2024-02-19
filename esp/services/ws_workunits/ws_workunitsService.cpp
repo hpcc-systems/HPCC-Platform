@@ -19,6 +19,7 @@
 #include "ws_fs.hpp"
 
 #include "jlib.hpp"
+#include "jconfig.hpp"
 #include "jflz.hpp"
 #include "daclient.hpp"
 #include "dadfs.hpp"
@@ -3723,7 +3724,7 @@ bool CWsWorkunitsEx::onWUShowScheduled(IEspContext &context, IEspWUShowScheduled
         unsigned i = 0;
         IArrayOf<IEspServerInfo> servers;
 #ifdef _CONTAINERIZED
-        Owned<IStringIterator> targets = getContainerTargetClusters(nullptr, nullptr);
+        Owned<IStringIterator> targets = config::getContainerTargets(nullptr, nullptr);
         ForEach(*targets)
         {
             SCMStringBuffer target;

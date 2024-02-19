@@ -18,6 +18,7 @@
 #include "ws_workunitsService.hpp"
 #include "ws_fs.hpp"
 #include "jlib.hpp"
+#include "jconfig.hpp"
 #include "jcontainerized.hpp"
 #include "jflz.hpp"
 #include "daclient.hpp"
@@ -410,7 +411,7 @@ void QueryFilesInUse::loadTarget(IPropertyTree *t, const char *target, unsigned 
 void QueryFilesInUse::loadTargets(IPropertyTree *t, unsigned flags)
 {
 #ifdef _CONTAINERIZED
-    Owned<IStringIterator> targets = getContainerTargetClusters("roxie", nullptr);
+    Owned<IStringIterator> targets = config::getContainerTargets("roxie", nullptr);
 #else
     Owned<IStringIterator> targets = getTargetClusters("RoxieCluster", nullptr);
 #endif
@@ -428,7 +429,7 @@ void QueryFilesInUse::updateUsers()
     SCMStringBuffer target;
 
 #ifdef _CONTAINERIZED
-    Owned<IStringIterator> clusters = getContainerTargetClusters("roxie", nullptr);
+    Owned<IStringIterator> clusters = config::getContainerTargets("roxie", nullptr);
 #else
     Owned<IStringIterator> clusters = getTargetClusters("RoxieCluster", nullptr);
 #endif
@@ -1088,7 +1089,7 @@ bool CWsWorkunitsEx::onWUQuerysets(IEspContext &context, IEspWUQuerysetsRequest 
 {
     IArrayOf<IEspQuerySet> querySets;
 #ifdef _CONTAINERIZED
-    Owned<IStringIterator> targets = getContainerTargetClusters(nullptr, nullptr);
+    Owned<IStringIterator> targets = config::getContainerTargets(nullptr, nullptr);
 #else
     Owned<IStringIterator> targets = getTargetClusters(nullptr, nullptr);
 #endif
@@ -1898,7 +1899,7 @@ bool CWsWorkunitsEx::onWUListQueriesUsingFile(IEspContext &context, IEspWUListQu
     {
         SCMStringBuffer targetStr;
 #ifdef _CONTAINERIZED
-        Owned<IStringIterator> targetClusters = getContainerTargetClusters("roxie", process);
+        Owned<IStringIterator> targetClusters = config::getContainerTargets("roxie", process);
 #else
         Owned<IStringIterator> targetClusters = getTargetClusters("RoxieCluster", process);
 #endif

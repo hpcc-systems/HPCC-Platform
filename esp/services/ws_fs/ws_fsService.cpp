@@ -19,6 +19,7 @@
 #pragma warning (disable : 4129)
 
 #include <math.h>
+#include "jconfig.hpp"
 #include "jsocket.hpp"
 #include "dasds.hpp"
 #include "dadfs.hpp"
@@ -892,7 +893,7 @@ bool CFileSprayEx::getOneDFUWorkunit(IEspContext& context, const char* wuid, IEs
     if (clusterName && *clusterName)
     {
 #ifdef _CONTAINERIZED
-        Owned<IStringIterator> targets = getContainerTargetClusters(nullptr, clusterName);
+        Owned<IStringIterator> targets = config::getContainerTargets(nullptr, clusterName);
 #else
         Owned<IStringIterator> targets = getTargetClusters(nullptr, clusterName);
 #endif

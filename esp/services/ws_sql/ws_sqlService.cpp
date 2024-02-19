@@ -17,6 +17,7 @@ limitations under the License.
 
 #include "ws_sqlService.hpp"
 #include "exception_util.hpp"
+#include "jconfig.hpp"
 
 void CwssqlEx::init(IPropertyTree *_cfg, const char *_process, const char *_service)
 {
@@ -63,7 +64,7 @@ bool CwssqlEx::onGetDBMetaData(IEspContext &context, IEspGetDBMetaDataRequest &r
         const char * querysetfilter = req.getQuerySet();
 #ifdef _CONTAINERIZED
         ESPLOG(LogNormal, "WsSQL: getting containerTargetClusters...");
-        Owned<IStringIterator> targets = getContainerTargetClusters(nullptr, nullptr);
+        Owned<IStringIterator> targets = config::getContainerTargets(nullptr, nullptr);
 #else
         ESPLOG(LogNormal, "WsSQL-legacy: getting targetClusters...");
         Owned<IStringIterator> targets = getTargetClusters(nullptr, nullptr);
@@ -205,7 +206,7 @@ bool CwssqlEx::onGetDBMetaData(IEspContext &context, IEspGetDBMetaDataRequest &r
             StringArray dfuclusters;
 #ifdef _CONTAINERIZED
             ESPLOG(LogNormal, "WsSQL: getting containerTargetClusters...");
-            Owned<IStringIterator> targets = getContainerTargetClusters(nullptr, nullptr);
+            Owned<IStringIterator> targets = config::getContainerTargets(nullptr, nullptr);
             SCMStringBuffer target;
             ForEach(*targets)
             {
