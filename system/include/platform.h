@@ -346,7 +346,7 @@ typedef int socklen_t;
 #define _lclose     _close
 #define _lwrite     _write
 #define _lopen      _open
-#define DeleteFile(name)    (unlink(name)==0)
+inline bool DeleteFile(const char * name) { return unlink(name)==0; }
 #define wvsprintf   vsprintf
 #define _close      ::close
 #define _stat       stat
@@ -357,11 +357,7 @@ typedef int socklen_t;
 
 #define TRUE    1
 #define FALSE   0
-//#define false FALSE
-//#define true  TRUE
 #define HFILE   int
-//#define bool  unsigned char
-#define BOOL    bool
 #define UINT    unsigned int
 #define DWORD   unsigned long
 #define VOID    void
