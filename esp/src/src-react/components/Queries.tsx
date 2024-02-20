@@ -6,6 +6,7 @@ import nlsHPCC from "src/nlsHPCC";
 import { QuerySortItem } from "src/store/Store";
 import { useConfirm } from "../hooks/confirm";
 import { useMyAccount } from "../hooks/user";
+import { useHasFocus, useIsMounted } from "../hooks/util";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
 import { FluentPagedGrid, FluentPagedFooter, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
@@ -75,6 +76,16 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
         refreshTable } = useFluentStoreState({ page });
 
     const hasFilter = React.useMemo(() => Object.keys(filter).length > 0, [filter]);
+
+    //  Refresh on focus  ---
+    const isMounted = useIsMounted();
+    const hasFocus = useHasFocus();
+    React.useEffect(() => {
+        if (isMounted && hasFocus) {
+            refreshTable.call();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [hasFocus]);
 
     //  Grid ---
     const gridStore = React.useMemo(() => {
