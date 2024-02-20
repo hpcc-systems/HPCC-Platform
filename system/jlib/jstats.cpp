@@ -1930,6 +1930,8 @@ public:
         assertex(getStatistic(kind,debugTest)==false);
 #endif
         Statistic s(kind, value);
+        unsigned __int64 debugTest;
+        assertex(getStatistic(kind,debugTest)==false);
         stats.append(s);
     }
 
