@@ -364,6 +364,20 @@ void initializeMetrics(CEspConfig* config)
         pMetricsTree.setown(getComponentConfigSP()->getPropTree("metrics"));
     }
 
+#ifdef _DEBUG
+    if (!pMetricsTree)
+    {
+        const char * defaultMetricsYaml = R"!!(
+sinks:
+  - type: log
+    name: loggingsink
+    settings:
+      period: 60
+)!!";
+        pMetricsTree.setown(createPTreeFromYAMLString(defaultMetricsYaml));
+    }
+#endif
+
     if (pMetricsTree != nullptr)
     {
         PROGLOG("Metrics initializing...");
