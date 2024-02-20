@@ -9877,6 +9877,7 @@ bool CLocalWorkUnit::switchThorQueue(const char *newCluster, IQueueSwitcher *qs,
         item = tmpItem;
     }
 
+    PROGLOG("Workunit '%s' switched from Thor queue '%s' to '%s'", p->queryName(), curqname.str(), newqname.str());
     setClusterName(newCluster);
 
     bool res = false;

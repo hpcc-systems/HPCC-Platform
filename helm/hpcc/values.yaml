@@ -499,6 +499,12 @@ sasha:
     #expiryDefault: 4
     #user: sasha
 
+  thor-qmon: {} # NB: no properties defined, use defaults
+    #disabled: true
+    #switchMinTime: 1
+    #queues: "*"
+
+
 dfuserver:
 - name: dfuserver
   maxJobs: 1

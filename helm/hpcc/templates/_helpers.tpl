@@ -1378,6 +1378,10 @@ data:
  {{- $_ := set .me "plane" $sashaStoragePlane }}
       storagePath: {{ include "hpcc.getPlanePrefix" (dict "root" .root "planeName" $sashaStoragePlane) }}
 {{- end }}
+{{- if (has "queues" .me.access) }}
+      queues:
+{{ include "hpcc.generateConfigMapQueues" .root | indent 6 }}
+{{- end }}
     global:
 {{ include "hpcc.generateGlobalConfigMap" .root | indent 6 }}
 {{- end -}}
@@ -1576,6 +1580,8 @@ dali
 dali
 {{- else if (eq "file-expiry" .name) -}}
 dali data
+{{- else if (eq "thor-qmon" .name) -}}
+dali queues
 {{- else -}}
 {{- $_ := fail (printf "Unknown sasha service:" .name ) -}}
 {{- end -}}

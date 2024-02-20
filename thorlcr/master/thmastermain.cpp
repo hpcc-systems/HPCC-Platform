@@ -48,6 +48,7 @@
 #include "daclient.hpp"
 #include "dadfs.hpp"
 #include "dalienv.hpp"
+#include "daqueue.hpp"
 #include "dasds.hpp"
 #include "dllserver.hpp"
 #include "workunit.hpp"
@@ -960,13 +961,17 @@ int main( int argc, const char *argv[]  )
     bool workerNSInstalled = false;
     bool workerJobInstalled = false;
 
-#ifndef _CONTAINERIZED
-    SCMStringBuffer _queueNames;
     const char *thorName = globals->queryProp("@name");
-    if (!thorName) thorName = "thor";
-    getThorQueueNames(_queueNames, thorName);
-    queueName.set(_queueNames.str());
+#ifdef _CONTAINERIZED
+    StringBuffer queueNames;
+    getClusterThorQueueName(queueNames, thorName);
+#else
+    if (!thorName)
+        thorName = "thor";
+    SCMStringBuffer queueNames;
+    getThorQueueNames(queueNames, thorName);
 #endif
+    queueName.set(queueNames.str());
 
     Owned<IException> exception;
     try
