@@ -9878,6 +9878,7 @@ class CInitGroups
     StringArray clusternames;
     unsigned defaultTimeout;
     bool machinesLoaded;
+    bool writeLock;
 
     GroupType getGroupType(const char *type)
     {
@@ -9953,6 +9954,8 @@ class CInitGroups
 
     void addClusterGroup(const char *name, IPropertyTree *newClusterGroup, bool realCluster)
     {
+        if (!writeLock)
+            throw makeStringException(0, "CInitGroups::addClusterGroup called in read-only mode");
         VStringBuffer prop("Group[@name=\"%s\"]", name);
         IPropertyTree *root = groupsconnlock.conn->queryRoot();
         IPropertyTree *old = root->queryPropTree(prop.str());
@@ -10274,11 +10277,12 @@ class CInitGroups
         return root->queryPropTree(xpath.str());
     }
 public:
-    CInitGroups(unsigned _defaultTimeout)
-        : groupsconnlock("constructGroup",SDS_GROUPSTORE_ROOT,true,false,false,_defaultTimeout)
+    CInitGroups(unsigned _defaultTimeout, bool _writeLock)
+        : groupsconnlock("constructGroup",SDS_GROUPSTORE_ROOT,_writeLock,false,false,_defaultTimeout)
     {
         defaultTimeout = _defaultTimeout;
         machinesLoaded = false;
+        writeLock = _writeLock;
     }
 
     IPropertyTree *queryCluster(const IPropertyTree *env, const char *_clusterName, const char *type, const char *msg, StringBuffer &messages)
@@ -10591,13 +10595,13 @@ public:
 
 void initClusterGroups(bool force, StringBuffer &response, IPropertyTree *oldEnvironment, unsigned timems)
 {
-    CInitGroups init(timems);
+    CInitGroups init(timems, true);
     init.constructGroups(force, response, oldEnvironment);
 }
 
 void initClusterAndStoragePlaneGroups(bool force, IPropertyTree *oldEnvironment, unsigned timems)
 {
-    CInitGroups init(timems);
+    CInitGroups init(timems, true);
 
     StringBuffer response;
     init.constructGroups(force, response, oldEnvironment);
@@ -10612,19 +10616,19 @@ void initClusterAndStoragePlaneGroups(bool force, IPropertyTree *oldEnvironment,
 
 bool resetClusterGroup(const char *clusterName, const char *type, bool spares, StringBuffer &response, unsigned timems)
 {
-    CInitGroups init(timems);
+    CInitGroups init(timems, true);
     return init.resetClusterGroup(clusterName, type, spares, response);
 }
 
 bool addClusterSpares(const char *clusterName, const char *type, const std::vector<std::string> &hosts, StringBuffer &response, unsigned timems)
 {
-    CInitGroups init(timems);
+    CInitGroups init(timems, true);
     return init.addSpares(clusterName, type, hosts, response);
 }
 
 bool removeClusterSpares(const char *clusterName, const char *type, const std::vector<std::string> &hosts, StringBuffer &response, unsigned timems)
 {
-    CInitGroups init(timems);
+    CInitGroups init(timems, true);
     return init.removeSpares(clusterName, type, hosts, response);
 }
 
@@ -10648,7 +10652,7 @@ static IGroup *getClusterNodeGroup(const char *clusterName, const char *type, bo
      * to DFS and elsewhere.
      */
     Owned<IGroup> nodeGroup = queryNamedGroupStore().lookup(nodeGroupName);
-    CInitGroups init(timems);
+    CInitGroups init(timems, false);
     Owned<IGroup> expandedClusterGroup = init.getGroupFromCluster(type, cluster, true);
     if (!expandedClusterGroup)
         throwStringExceptionV(0, "Failed to get group for '%s' cluster '%s'", type, clusterName);
