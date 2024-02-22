@@ -711,14 +711,15 @@ public:
         }
     }
 // IFileIO impl.
-    virtual size32_t read(offset_t pos, size32_t len, void * data) { return primaryio->read(pos, len, data); }
-    virtual offset_t size() { return primaryio->size(); }
-    virtual size32_t write(offset_t pos, size32_t len, const void * data) { return primaryio->write(pos, len, data); }
-    virtual offset_t appendFile(IFile *file,offset_t pos=0,offset_t len=-1) { return primaryio->appendFile(file, pos, len); }
-    virtual unsigned __int64 getStatistic(StatisticKind kind) { return primaryio->getStatistic(kind); }
-    virtual void setSize(offset_t size) { primaryio->setSize(size); }
-    virtual void flush() { primaryio->flush(); }
-    virtual void close() 
+    virtual size32_t read(offset_t pos, size32_t len, void * data) override { return primaryio->read(pos, len, data); }
+    virtual offset_t size() override { return primaryio->size(); }
+    virtual size32_t write(offset_t pos, size32_t len, const void * data) override { return primaryio->write(pos, len, data); }
+    virtual offset_t appendFile(IFile *file,offset_t pos=0,offset_t len=-1) override { return primaryio->appendFile(file, pos, len); }
+    virtual unsigned __int64 getStatistic(StatisticKind kind) override { return primaryio->getStatistic(kind); }
+    virtual void setSize(offset_t size) override { primaryio->setSize(size); }
+    virtual void flush() override{ primaryio->flush(); }
+    virtual void flushToStorage() override { flush(); }
+    virtual void close() override
     {
         checkAndHandleClose();
     }

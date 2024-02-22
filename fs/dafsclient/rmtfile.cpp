@@ -1296,7 +1296,7 @@ public:
             parent->disconnect();
     }
 
-    void close()
+    void close() override
     {
         if (handle)
         {
@@ -1379,7 +1379,7 @@ public:
     }
 
 
-    offset_t size()
+    offset_t size() override
     {
         MemoryBuffer sendBuffer;
         initSendBuffer(sendBuffer);
@@ -1393,7 +1393,7 @@ public:
         return ret;
     }
 
-    virtual unsigned __int64 getStatistic(StatisticKind kind)
+    virtual unsigned __int64 getStatistic(StatisticKind kind) override
     {
         switch (kind)
         {
@@ -1419,7 +1419,7 @@ public:
         return 0;
     }
 
-    size32_t read(offset_t pos, size32_t len, void * data)
+    size32_t read(offset_t pos, size32_t len, void * data) override
     {
         size32_t got;
         MemoryBuffer replyBuffer;
@@ -1442,8 +1442,13 @@ public:
         return got;
     }
 
-    virtual void flush()
+    virtual void flush() override
     {
+    }
+
+    virtual void flushToStorage() override
+    {
+        flush();
     }
 
     const void *doRead(offset_t pos, size32_t len, MemoryBuffer &replyBuffer, size32_t &got, void *dstbuf)
@@ -1514,7 +1519,7 @@ public:
     }
 
 
-    size32_t write(offset_t pos, size32_t len, const void * data)
+    size32_t write(offset_t pos, size32_t len, const void * data) override
     {
         unsigned tries=0;
         size32_t ret = 0;
@@ -1580,7 +1585,7 @@ public:
     }
 
 
-    void setSize(offset_t size)
+    void setSize(offset_t size) override
     {
         MemoryBuffer sendBuffer;
         initSendBuffer(sendBuffer);
@@ -2336,6 +2341,11 @@ public:
          */
         return 0;
     }
+    virtual void flushToStorage() override
+    {
+        flush();
+    }
+
 // IRemoteFileIO
     virtual void addVirtualFieldMapping(const char *fieldName, const char *fieldValue) override
     {

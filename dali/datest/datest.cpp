@@ -2900,9 +2900,9 @@ NULL
         CSplitIFileIO() { }
         void addIFileIO(IFileIO *iFileIO) { iFileIOs.append(*iFileIO); }
     // IFileIO
-        virtual size32_t read(offset_t pos, size32_t len, void * data) { UNIMPLEMENTED; return 0; }
-        virtual offset_t size() { UNIMPLEMENTED; return 0; }
-        virtual size32_t write(offset_t pos, size32_t len, const void * data)
+        virtual size32_t read(offset_t pos, size32_t len, void * data) override { UNIMPLEMENTED; return 0; }
+        virtual offset_t size() override { UNIMPLEMENTED; return 0; }
+        virtual size32_t write(offset_t pos, size32_t len, const void * data) override
         {
             size32_t sz = iFileIOs.item(0).write(pos, len, data);
             unsigned i=1;
@@ -2910,11 +2910,12 @@ NULL
                 verifyex(sz == iFileIOs.item(i).write(pos, len, data));
             return sz;
         }
-        virtual unsigned __int64 getStatistic(StatisticKind kind) { return 0; }
-        virtual offset_t appendFile(IFile *file,offset_t pos=0,offset_t len=-1) { UNIMPLEMENTED; return 0; }
-        virtual void setSize(offset_t size) { UNIMPLEMENTED; }
-        virtual void flush() { }
-        virtual void close() { }
+        virtual unsigned __int64 getStatistic(StatisticKind kind) override { return 0; }
+        virtual offset_t appendFile(IFile *file,offset_t pos=0,offset_t len=-1) override { UNIMPLEMENTED; return 0; }
+        virtual void setSize(offset_t size) override { UNIMPLEMENTED; }
+        virtual void flush() override { }
+        virtual void flushToStorage() override { }
+        virtual void close() override { }
     };
 
     const char *newFileName = "xpathTests.out";

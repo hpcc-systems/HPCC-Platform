@@ -73,14 +73,15 @@ class CFailingFileIO : implements IFileIO, public CInterface
 
 public:
     IMPLEMENT_IINTERFACE;
-    virtual size32_t read(offset_t pos, size32_t len, void * data) { THROWNOTOPEN; }
-    virtual offset_t size() { THROWNOTOPEN; }
-    virtual void flush() { THROWNOTOPEN; }
-    virtual size32_t write(offset_t pos, size32_t len, const void * data) { THROWNOTOPEN; }
-    virtual void setSize(offset_t size) { UNIMPLEMENTED; }
-    virtual offset_t appendFile(IFile *file,offset_t pos,offset_t len) { UNIMPLEMENTED; return 0; }
-    virtual void close() { }
-    virtual unsigned __int64 getStatistic(StatisticKind kind) { return 0; }
+    virtual size32_t read(offset_t pos, size32_t len, void * data) override { THROWNOTOPEN; }
+    virtual offset_t size() override { THROWNOTOPEN; }
+    virtual void flush() override { THROWNOTOPEN; }
+    virtual size32_t write(offset_t pos, size32_t len, const void * data) override { THROWNOTOPEN; }
+    virtual void setSize(offset_t size) override { UNIMPLEMENTED; }
+    virtual offset_t appendFile(IFile *file,offset_t pos,offset_t len) override { UNIMPLEMENTED; return 0; }
+    virtual void close() override { }
+    virtual unsigned __int64 getStatistic(StatisticKind kind) override { return 0; }
+    virtual void flushToStorage() override { THROWNOTOPEN; }
 } failure;
 
 class CRoxieLazyFileIO : implements ILazyFileIO, implements IDelayedFile, public CInterface
@@ -198,7 +199,7 @@ public:
         return lastAccess;
     }
 
-    virtual void close()
+    virtual void close() override
     {
         CriticalBlock b(crit);
         setFailure();
@@ -345,7 +346,7 @@ public:
         }
     }
 
-    virtual size32_t read(offset_t pos, size32_t len, void * data) 
+    virtual size32_t read(offset_t pos, size32_t len, void * data) override
     {
         unsigned activeIdx;
         Owned<IFileIO> active = getCheckOpen(activeIdx);
@@ -386,7 +387,7 @@ public:
         }
     }
 
-    virtual void flush()
+    virtual void flush() override
     {
         Linked<IFileIO> active;
         {
@@ -397,7 +398,7 @@ public:
             active->flush();
     }
 
-    virtual offset_t size() 
+    virtual offset_t size() override
     { 
         unsigned activeIdx;
         Owned<IFileIO> active = getCheckOpen(activeIdx);
@@ -405,15 +406,18 @@ public:
         return active->size();
     }
 
-    virtual unsigned __int64 getStatistic(StatisticKind kind)
+    virtual unsigned __int64 getStatistic(StatisticKind kind) override
     {
         unsigned __int64 v = fileStats.getStatisticValue(kind);
         CriticalBlock b(crit); // don't bother with linking current and performing getStatistic outside of crit, because getStatistic is very quick
         return v + current->getStatistic(kind);
     }
-
-    virtual size32_t write(offset_t pos, size32_t len, const void * data) { throwUnexpected(); }
-    virtual void setSize(offset_t size) { throwUnexpected(); }
+    virtual void flushToStorage() override
+    {
+        flush();
+    }
+    virtual size32_t write(offset_t pos, size32_t len, const void * data) override { throwUnexpected(); }
+    virtual void setSize(offset_t size) override { throwUnexpected(); }
     virtual offset_t appendFile(IFile *file,offset_t pos,offset_t len) { throwUnexpected(); return 0; }
 
     virtual const char *queryFilename() const { return logical->queryFilename(); }

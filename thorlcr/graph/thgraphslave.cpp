@@ -2117,6 +2117,10 @@ public:
     {
         throwUnexpectedX("CDelayedFileWrapper::flush() called for a cached IFileIO object");
     }
+    virtual void flushToStorage() override
+    {
+        throwUnexpectedX("CDelayedFileWrapper::flushToStorage() called for a cached IFileIO object");
+    }
 };
 
 class CFileCache : public CSimpleInterfaceOf<IThorFileCache>

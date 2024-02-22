@@ -182,6 +182,7 @@ interface IFileIO : public IInterface
     virtual void flush() = 0;
     virtual void close() = 0;       // no other access is allowed after this call
     virtual unsigned __int64 getStatistic(StatisticKind kind) = 0;
+    virtual void flushToStorage() = 0;
 };
 
 interface IFileIOCache : extends IInterface

@@ -135,6 +135,10 @@ public:
         //Could implement if we use the async version of the putObject call.
     }
     unsigned __int64 getStatistic(StatisticKind kind) override;
+    virtual void flushToStorage() override
+    {
+        flush();
+    }
 
 protected:
     size_t extractDataFromResult(size_t offset, size_t length, void * target);
@@ -169,7 +173,7 @@ public:
     virtual size32_t write(offset_t pos, size32_t len, const void * data) override;
     virtual void setSize(offset_t size) override;
     virtual void flush() override;
-
+    virtual void flushToStorage() override;
     virtual unsigned __int64 getStatistic(StatisticKind kind) override;
 
 protected:
@@ -429,6 +433,10 @@ void S3FileWriteIO::setSize(offset_t size)
 }
 
 void S3FileWriteIO::flush()
+{
+}
+
+void S3FileWriteIO::flushToStorage()
 {
 }
 

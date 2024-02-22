@@ -188,7 +188,7 @@ public:
         if (isLFSfile())
             readLfsContents(gitDirectory, gitUser);
     }
-    virtual size32_t read(offset_t pos, size32_t len, void * data)
+    virtual size32_t read(offset_t pos, size32_t len, void * data) override
     {
         if (pos >= buf.length())
             return 0;
@@ -197,35 +197,39 @@ public:
         memcpy_iflen(data, buf.toByteArray()+pos, len);
         return len;
     }
-    virtual offset_t size()
+    virtual offset_t size() override
     {
         return buf.length();
     }
-    virtual void close()
+    virtual void close() override
     {
     }
 
     // Write methods not implemented - this is a read-only file
-    virtual size32_t write(offset_t pos, size32_t len, const void * data)
+    virtual size32_t write(offset_t pos, size32_t len, const void * data) override
     {
         throwUnexpected();
     }
-    virtual offset_t appendFile(IFile *file,offset_t pos=0,offset_t len=(offset_t)-1)
+    virtual offset_t appendFile(IFile *file,offset_t pos=0,offset_t len=(offset_t)-1) override
     {
         throwUnexpected();
     }
-    virtual void setSize(offset_t size)
+    virtual void setSize(offset_t size) override
     {
         throwUnexpected();
     }
-    virtual void flush()
+    virtual void flush() override
     {
         throwUnexpected();
     }
-    unsigned __int64 getStatistic(StatisticKind kind)
+    unsigned __int64 getStatistic(StatisticKind kind) override
     {
         //This could be implemented, but not likely to be useful so currently return nothing.
         return 0;
+    }
+    virtual void flushToStorage() override
+    {
+        throwUnexpected();
     }
 
 protected:

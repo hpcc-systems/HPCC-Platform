@@ -1659,7 +1659,7 @@ IFileIO *_createIFileIO(const void *buffer, unsigned sz, bool readOnly)
             buffer = (void *)mb.toByteArray();
             sz = mb.length();
         }
-        virtual size32_t read(offset_t pos, size32_t len, void * data)
+        virtual size32_t read(offset_t pos, size32_t len, void * data) override
         {
             if (pos>sz)
                 throw MakeStringException(-1, "CMemoryBufferIO: read beyond end of buffer pos=%" I64F "d, len=%d, buffer length=%d", pos, len, mb.length());
@@ -1670,7 +1670,7 @@ IFileIO *_createIFileIO(const void *buffer, unsigned sz, bool readOnly)
         }
 
         virtual offset_t size() { return sz; }
-        virtual size32_t write(offset_t pos, size32_t len, const void * data)
+        virtual size32_t write(offset_t pos, size32_t len, const void * data) override
         {
             assertex(!readOnly);
             if (pos+len>sz)
@@ -1678,18 +1678,19 @@ IFileIO *_createIFileIO(const void *buffer, unsigned sz, bool readOnly)
             memcpy((byte *)buffer+pos, data, len);
             return len;
         }
-        virtual void flush() {}
-        virtual void close() {}
-        virtual unsigned __int64 getStatistic(StatisticKind kind)
+        virtual void flush() override {}
+        virtual void close() override {}
+        virtual unsigned __int64 getStatistic(StatisticKind kind) override
         {
             return 0;
         }
-        virtual void setSize(offset_t size)
+        virtual void setSize(offset_t size) override
         {
             if (size > mb.length())
                 throw MakeStringException(-1, "CMemoryBufferIO: UNIMPLEMENTED, setting size %" I64F "d beyond end of buffer, buffer length=%d", size, mb.length());
             mb.setLength((size32_t)size);
         }
+        virtual void flushToStorage() override {}
 
         offset_t appendFile(IFile *file,offset_t pos,offset_t len)
         {
@@ -1870,6 +1871,11 @@ offset_t CFileIO::appendFile(IFile *file,offset_t pos,offset_t len)
 unsigned __int64 CFileIO::getStatistic(StatisticKind kind)
 {
     return stats.getStatistic(kind);
+}
+
+void CFileIO::flushToStorage()
+{
+    flush();
 }
 
 #ifdef _WIN32
@@ -2309,6 +2315,11 @@ unsigned __int64 CFileAsyncIO::getStatistic(StatisticKind kind)
     return 0;
 }
 
+void CFileAsyncIO::flushToStorage()
+{
+    flush();
+}
+
 #ifdef _WIN32
 
 //-- Windows implementation -------------------------------------------------
@@ -2470,8 +2481,6 @@ IFileAsyncResult *CFileAsyncIO::writeAsync(offset_t pos, size32_t len, const voi
     }
     return res;
 }
-
-
 
 #else
 
@@ -7029,7 +7038,7 @@ public:
 
     virtual bool Release(void) const;
     
-    unsigned __int64 getStatistic(StatisticKind kind)
+    unsigned __int64 getStatistic(StatisticKind kind) override
     {
         CriticalBlock block(sect);
         unsigned __int64 openValue = cachedio ? cachedio->getStatistic(kind) : 0;
@@ -7038,35 +7047,39 @@ public:
 
     IFileIO *open();
 
-    size32_t read(offset_t pos, size32_t len, void * data)
+    size32_t read(offset_t pos, size32_t len, void * data) override
     {
         CriticalBlock block(sect);
         Owned<IFileIO> io = open();
         return io->read(pos,len,data);
     }
-    offset_t size() 
+    offset_t size() override
     {
         CriticalBlock block(sect);
         Owned<IFileIO> io = open();
         return io->size();
     }
-    size32_t write(offset_t pos, size32_t len, const void * data) 
+    size32_t write(offset_t pos, size32_t len, const void * data) override
     {
         CriticalBlock block(sect);
         Owned<IFileIO> io = open();
         return io->write(pos,len,data);
     }
-    virtual void flush()
+    virtual void flush() override
     {
         CriticalBlock block(sect);
         if (cachedio)
             cachedio->flush();
     }
-    virtual void close()
+    virtual void close() override
     {
         CriticalBlock block(sect);
         if (cachedio)
             forceClose();
+    }
+    virtual void flushToStorage() override
+    {
+        flush();
     }
     offset_t appendFile(IFile *file,offset_t pos,offset_t len)
     {
@@ -7750,6 +7763,7 @@ public:
     virtual void flush() override { throwUnexpected(); }
     virtual void close() override { io->close(); }
     virtual unsigned __int64 getStatistic(StatisticKind kind) override { return io->getStatistic(kind); }
+    virtual void flushToStorage() override { throwUnexpected(); }
 };
 
 extern IFileIO *createBlockedIO(IFileIO *base, size32_t blockSize)

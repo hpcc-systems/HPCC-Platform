@@ -2425,6 +2425,11 @@ public:
     {
         return fileio->getStatistic(kind);
     }
+    virtual void flushToStorage() override
+    {
+        flush(); // flush the CCompressedFile buffers to the underlying IFileIO
+        fileio->flushToStorage(); // have the underlying IFile flush it's buffers to storage
+    }
 
 // CCompressedFile impl.
     virtual unsigned dataCRC() override

@@ -86,7 +86,10 @@ public:
     {
     }
     unsigned __int64 getStatistic(StatisticKind kind) override;
-
+    virtual void flushToStorage() override
+    {
+        flush();
+    }
 protected:
     size_t extractDataFromResult(size_t offset, size_t length, void * target);
 
@@ -116,7 +119,7 @@ public:
     virtual void flush() override;
 
     virtual unsigned __int64 getStatistic(StatisticKind kind) override;
-
+    virtual void flushToStorage() override;
 protected:
     Linked<AzureFile> file;
     CriticalSection cs;
@@ -422,6 +425,10 @@ unsigned __int64 AzureFileWriteIO::getStatistic(StatisticKind kind)
     return stats.getStatistic(kind);
 }
 
+void AzureFileWriteIO::flushToStorage()
+{
+    flush();
+}
 //---------------------------------------------------------------------------------------------------------------------
 
 AzureFileAppendBlobWriteIO::AzureFileAppendBlobWriteIO(AzureFile * _file) : AzureFileWriteIO(_file)
