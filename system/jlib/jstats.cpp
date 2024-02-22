@@ -439,6 +439,16 @@ StringBuffer & formatStatistic(StringBuffer & out, unsigned __int64 value, Stati
     return formatStatistic(out, value, queryMeasure(kind));
 }
 
+constexpr static stat_type usTimestampThreshold = 100ULL * 365ULL * 24ULL * 3600'000000ULL; // 100 years in us
+// Support the gradual conversion of timestamps from us to ns.  If a timestamp is in the old format (before 2070)
+// then it is assumed to be in us, otherwise ns.
+stat_type normalizeTimestampToNs(stat_type value)
+{
+    if (value < usTimestampThreshold)
+        return value * 1000;
+    return value;
+}
+
 //--------------------------------------------------------------------------------------------------------------------
 
 stat_type readStatisticValue(const char * cur, const char * * end, StatisticMeasure measure)
@@ -963,6 +973,7 @@ static const constexpr StatisticMeta statsMetaData[StMax] = {
     { NUMSTAT(AckRetries), "The number of times the server failed to receive a response from an agent within the expected time" },
     { SIZESTAT(ContinuationData), "The total size of continuation data sent from agent to the server\nA large number may indicate a poor filter, or merging from many different index locations" },
     { NUMSTAT(ContinuationRequests), "The number of times the agent indicated there was more data to be returned" },
+    { NUMSTAT(Failures), "The number of times a query has failed" },
 };
 
 static MapStringTo<StatisticKind, StatisticKind> statisticNameMap(true);
@@ -2646,6 +2657,42 @@ StringBuffer & CRuntimeStatisticCollection::toStr(StringBuffer &str) const
     return str;
 }
 
+//MORE: This could be commoned up with the toStr() method by using a visitor pattern
+void CRuntimeStatisticCollection::exportToSpan(ISpan * span, StringBuffer & prefix) const
+{
+    unsigned lenPrefix = prefix.length();
+    ForEachItem(iStat)
+    {
+        StatisticKind kind = getKind(iStat);
+        StatisticKind serialKind = querySerializedKind(kind);
+        if (kind != serialKind)
+            continue; // ignore - we will roll this one into the corresponding serialized value's output
+        unsigned __int64 value = values[iStat].get();
+        StatisticKind rawKind = queryRawKind(kind);
+        if (kind != rawKind)
+        {
+            // roll raw values into the corresponding serialized value, if present...
+            unsigned __int64 rawValue = getStatisticValue(rawKind);
+            if (rawValue)
+                value += convertMeasure(rawKind, kind, rawValue);
+        }
+        if (value)
+        {
+            //Convert timestamp to nanoseconds so it is reported consistently.
+            if (queryMeasure(serialKind) == SMeasureTimestampUs)
+                value = normalizeTimestampToNs(value);
+
+            const char * name = queryStatisticName(serialKind);
+            getSnakeCase(prefix, name);
+            span->setSpanAttribute(prefix, value);
+            prefix.setLength(lenPrefix);
+        }
+    }
+    CNestedRuntimeStatisticMap *qn = queryNested();
+    if (qn)
+        qn->exportToSpan(span, prefix);
+}
+
 void CRuntimeStatisticCollection::deserialize(MemoryBuffer& in)
 {
     unsigned numValid;
@@ -3054,6 +3101,14 @@ StringBuffer & CNestedRuntimeStatisticCollection::toStr(StringBuffer &str) const
     return str.append(" }");
 }
 
+void CNestedRuntimeStatisticCollection::exportToSpan(ISpan * span, StringBuffer & prefix) const
+{
+    unsigned lenPrefix = prefix.length();
+    scope.getScopeText(prefix).append(".");
+    stats->exportToSpan(span, prefix);
+    prefix.setLength(lenPrefix);
+}
+
 StringBuffer & CNestedRuntimeStatisticCollection::toXML(StringBuffer &str) const
 {
     str.append("<Scope id=\"");
@@ -3193,6 +3248,13 @@ StringBuffer & CNestedRuntimeStatisticMap::toStr(StringBuffer &str) const
     ForEachItemIn(i, map)
         map.item(i).toStr(str);
     return str;
+}
+
+void CNestedRuntimeStatisticMap::exportToSpan(ISpan * span, StringBuffer & prefix) const
+{
+    ReadLockBlock b(lock);
+    ForEachItemIn(i, map)
+        map.item(i).exportToSpan(span, prefix);
 }
 
 StringBuffer & CNestedRuntimeStatisticMap::toXML(StringBuffer &str) const

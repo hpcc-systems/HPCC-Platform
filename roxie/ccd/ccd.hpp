@@ -622,7 +622,7 @@ public:
             log.item(idx).writeXML(writer);
         }
         writer.outputEndArray("Log");
-    };
+    }
 
     virtual void CTXLOGva(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char *format, va_list args) const override  __attribute__((format(printf,5,0))) 
     {
@@ -786,6 +786,7 @@ public:
     {
         stats.recordStatistics(progress, false);
     }
+    void exportStatsToSpan(bool failed, unsigned elapsed, unsigned memused, unsigned agentsDuplicates, unsigned agentsResends);
 };
 
 class StringContextLogger : public ContextLogger

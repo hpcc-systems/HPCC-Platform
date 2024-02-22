@@ -730,6 +730,11 @@ public:
         }
     }
 
+    virtual bool isRecording() const override
+    {
+        return span ? span->IsRecording() : false;
+    }
+
 protected:
     CSpan(const char * spanName)
     {
@@ -833,6 +838,7 @@ public:
 
     virtual void toString(StringBuffer & out) const override {}
     virtual void getLogPrefix(StringBuffer & out) const override {}
+    virtual bool isRecording() const { return false; }
 
     virtual const char* queryGlobalId() const override { return nullptr; }
     virtual const char* queryCallerId() const override { return nullptr; }

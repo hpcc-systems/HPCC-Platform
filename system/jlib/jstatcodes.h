@@ -298,6 +298,7 @@ enum StatisticKind
     StNumAckRetries,
     StSizeContinuationData,
     StNumContinuationRequests,
+    StNumFailures,
     StMax,
 
     //For any quantity there is potentially the following variants.
