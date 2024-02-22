@@ -146,12 +146,12 @@
         </div>
     </div>
     <div id="${id}FilePermissionDialog" data-dojo-type="dijit.Dialog" title="${i18n.CheckFilePermissions}">
-        <div id="${id}FilePermissionForm" style="width:460px" data-dojo-type="dijit.form.Form">
-            <div data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
+        <div id="${id}FilePermissionForm" style="width:560px" data-dojo-type="dijit.form.Form">
+            <div data-dojo-props="cols:4" data-dojo-type="hpcc.TableContainer">
                 <p>${i18n.PleaseSelectAUserOrGroup}</p>
-                <input id="${id}NameSelect" title="${i18n.Name}:" name="FileName" required="true" colspan="2" data-dojo-props="trim: true, required: true" data-dojo-type="dijit.form.ValidationTextBox" />
-                <input id="${id}UsersSelect" title="${i18n.Users}:" name="UserName" colspan="2" data-dojo-type="TargetSelectWidget" />
-                <input id="${id}GroupsSelect" title="${i18n.Groups}:" name="GroupName" colspan="2" data-dojo-type="TargetSelectWidget" />
+                <input id="${id}NameSelect" title="${i18n.Scope}:" name="FileName" required="true" colspan="4" data-dojo-props="trim: true, required: true" data-dojo-type="dijit.form.ValidationTextBox" style="width:420px" />
+                <input id="${id}UsersSelect" title="${i18n.Users}:" name="UserName" colspan="4" data-dojo-type="TargetSelectWidget" />
+                <input id="${id}GroupsSelect" title="${i18n.Groups}:" name="GroupName" colspan="4" data-dojo-type="TargetSelectWidget" />
             </div>
             <div data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer" style="margin-top:10px;">
                 <div id="PermissionResponse" colspan="1"></div>
