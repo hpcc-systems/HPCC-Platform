@@ -45,6 +45,32 @@
 
 static const unsigned oneMinute = 60000; // msec
 
+class JTraceThreader : public Thread
+{
+public:
+    JTraceThreader(const char * name, ISpan * _parentSpan, bool _declareSubSpan) : parentSpan(_parentSpan), declareSubSpan(_declareSubSpan), Thread(name) {}
+
+    virtual int run()
+    {
+        DBGLOG("JTraceThreader: '%s' running...", this->getName());
+        if (declareSubSpan)
+        {
+            VStringBuffer subspanName("%s_subspan", this->getName());
+
+            Owned<ISpan> subSpan = parentSpan->createInternalSpan(subspanName.str());
+            DBGLOG("JTraceThreader: '%s' running...", subspanName.str());
+            DBGLOG("JTraceThreader: '%s' ending...", subspanName.str());
+        }
+        DBGLOG("JTraceThreader: '%s' ending...", this->getName());
+        
+        return 0;
+    }
+
+private:
+    ISpan * parentSpan = nullptr;
+    bool declareSubSpan = false;
+};
+
 class JlibTraceTest : public CppUnit::TestFixture
 {
 public:
@@ -59,6 +85,7 @@ public:
         CPPUNIT_TEST(testPropegatedServerSpan);
         CPPUNIT_TEST(testInvalidPropegatedServerSpan);
         CPPUNIT_TEST(testInternalSpan);
+        CPPUNIT_TEST(manualTestTraceInfoLogging);
         CPPUNIT_TEST(testMultiNestedSpanTraceOutput);
         CPPUNIT_TEST(testNullSpan);
         CPPUNIT_TEST(testClientSpanGlobalID);
@@ -504,42 +531,112 @@ protected:
             strsame("4b960b3e4647da3f", retrievedSpanCtxAttributes->queryProp("remoteParentSpanID")));
     }
 
+    void manualTestTraceInfoLogging()
+    {
+        queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_time|MSGFIELD_microTime|MSGFIELD_milliTime| MSGFIELD_trace | MSGFIELD_span);
+
+        Owned<IProperties> mockHTTPHeaders = createProperties();
+        createMockHTTPHeaders(mockHTTPHeaders, true);
+
+        {
+            Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("level1Span", mockHTTPHeaders);
+            DBGLOG("Level 1 span active!: '%s'", "level1Span");
+            //Log output should include traceID and spanID columns
+            {
+                Owned<ISpan> clientSpan = serverSpan->createClientSpan("level2Span");
+                DBGLOG("Level 2 span active!: '%s'", "level2Span");
+                //Log output should include same traceID as level1, new spanid
+                {
+                    Owned<ISpan> internalSpan = clientSpan->createInternalSpan("level3Span");
+                    DBGLOG("Level 3 span active!: '%s'", "level3Span");
+                    //Log output should include same traceID as level1, new spanid
+                    {
+                        Owned<ISpan> internalSpan2 = internalSpan->createInternalSpan("level4Span");
+                        DBGLOG("Level 4 span active!: '%s'", "level4Span");
+                        //Log output should include same traceID as level1, new spanid
+                        LOG(MCdebugProgress, unknownJob, "Level 4 log event");
+                        //Log output should include same traceID as level1, same spanid as level4span
+                    }
+                    DBGLOG("Level 4 span complete!: '%s'", "level4Span");
+                    //Log output should include same traceID as level1, level3span spanid
+
+                    JTraceThreader * traceThread = new JTraceThreader("level3SpanSubThread", internalSpan.get(), false);
+                    traceThread->start();
+                    traceThread->join();
+                    //Thread output should include same traceID as level1, level3span spanid
+                }
+                DBGLOG("Level 3 span complete!: '%s'", "level3Span");
+                //Log output should include same traceID as level1, level2span spanid
+                JTraceThreader * traceThread = new JTraceThreader("level3SpanSubThread", clientSpan.get(), true);
+                traceThread->start();
+                traceThread->join();
+                //Thread output should include same traceID as level1, new spanid
+            }
+            DBGLOG("Level 2 span complete!: '%s'", "level2Span");
+            //Log output should include same traceID and spanID as level1
+        }
+        DBGLOG("Level 1 span complete!: '%s'", "level1Span");
+        //Log output should include report UNK traceID and spanID
+        {
+            Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("level1Span", mockHTTPHeaders);
+            DBGLOG("New Level 1 span active!: '%s'", "level1Span");
+            //Log output should include traceID and spanID columns with new span value
+        }
+    }
+
     void testMultiNestedSpanTraceOutput()
     {
         Owned<IProperties> mockHTTPHeaders = createProperties();
         createMockHTTPHeaders(mockHTTPHeaders, true);
-
-        Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("propegatedServerSpan", mockHTTPHeaders);
-        Owned<ISpan> clientSpan = serverSpan->createClientSpan("clientSpan");
-        Owned<ISpan> internalSpan = clientSpan->createInternalSpan("internalSpan");
-        Owned<ISpan> internalSpan2 = internalSpan->createInternalSpan("internalSpan2");
-
         StringBuffer out;
-        out.set("{");
-        internalSpan2->toString(out);
-        out.append("}");
         {
-            Owned<IPropertyTree> jtraceAsTree;
-            try
+            Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("propegatedServerSpan", mockHTTPHeaders);
+            DBGLOG("Top level span active!: '%s'", "propegatedServerSpan");
             {
-                jtraceAsTree.setown(createPTreeFromJSONString(out.str()));
-            }
-            catch (IException *e)
-            {
-                StringBuffer msg;
-                msg.append("Unexpected toString format failure detected: ");
-                e->errorMessage(msg);
-                e->Release();
-                CPPUNIT_ASSERT_MESSAGE(msg.str(), false);
-            }
+                Owned<ISpan> clientSpan = serverSpan->createClientSpan("clientSpan");
+                DBGLOG("2nd level span active!: '%s'", "clientSpan");
+                {
+                    Owned<ISpan> internalSpan = clientSpan->createInternalSpan("internalSpan");
+                    DBGLOG("3rd level span active!: '%s'", "internalSpan");
+                    {
+                        Owned<ISpan> internalSpan2 = internalSpan->createInternalSpan("internalSpan2");
+                        DBGLOG("4th level span active!: '%s'", "internalSpan2");
 
-            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected toString format failure detected", true, jtraceAsTree != nullptr);
-            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing 'TraceID' entry in toString output", true, jtraceAsTree->hasProp("TraceID"));
-            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing 'SpanID' entry in toString output", true, jtraceAsTree->hasProp("SpanID"));
-            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing 'Name' entry in toString output", true, jtraceAsTree->hasProp("Name"));
-            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing 'Type' entry in toString output", true, jtraceAsTree->hasProp("Type"));
-            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing 'ParentSpan/SpanID' entry in toString output", true, jtraceAsTree->hasProp("ParentSpan/SpanID"));
+                        out.set("{");
+                        internalSpan2->toString(out);
+                        out.append("}");
+                    }
+
+                    DBGLOG("4th level span complete!: '%s'", "internalSpan2");
+
+                    {
+                        Owned<IPropertyTree> jtraceAsTree;
+                        try
+                        {
+                            jtraceAsTree.setown(createPTreeFromJSONString(out.str()));
+                        }
+                        catch (IException *e)
+                        {
+                            StringBuffer msg;
+                            msg.append("Unexpected toString format failure detected: ");
+                            e->errorMessage(msg);
+                            e->Release();
+                            CPPUNIT_ASSERT_MESSAGE(msg.str(), false);
+                        }
+
+                        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected toString format failure detected", true, jtraceAsTree != nullptr);
+                        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing 'TraceID' entry in toString output", true, jtraceAsTree->hasProp("TraceID"));
+                        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing 'SpanID' entry in toString output", true, jtraceAsTree->hasProp("SpanID"));
+                        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing 'Name' entry in toString output", true, jtraceAsTree->hasProp("Name"));
+                        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing 'Type' entry in toString output", true, jtraceAsTree->hasProp("Type"));
+                        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing 'ParentSpan/SpanID' entry in toString output", true, jtraceAsTree->hasProp("ParentSpan/SpanID"));
+                    }
+                }
+                DBGLOG("3rd level span complete!: '%s'", "internalSpan");
+            }
+            DBGLOG("2nd level span complete!: '%s'", "clientSpan");
         }
+        DBGLOG("Top level span complete!: '%s'", "propegatedServerSpan");
     }
 
     void testClientSpanGlobalID()

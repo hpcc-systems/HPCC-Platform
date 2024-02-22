@@ -100,6 +100,7 @@ protected:
     StringAttr cthreadname;
     const IContextLogger *logctx = nullptr;
     TraceFlags traceFlags = queryDefaultTraceFlags();
+    unsigned __int64 traceInfoId = 0;
 public:
 #ifndef _WIN32
     Semaphore suspend;
@@ -121,7 +122,7 @@ public:
     bool isAlive() { return alive; }
     bool join(unsigned timeout=INFINITE);
     void getThreadLoggingInfo();                    // Capture current thread logging context to be used by this thread when started
-    void setThreadLoggingInfo(const IContextLogger * _logctx, TraceFlags _traceFlags);  // Set a specified thread logging context to be used when this thread is started
+    void setThreadLoggingInfo(const IContextLogger * _logctx, TraceFlags _traceFlags, unsigned __int64 _traceInfoId);  // Set a specified thread logging context to be used when this thread is started
 
     virtual void start();
     virtual void startRelease();        
@@ -269,7 +270,7 @@ interface IThreadPool : extends IInterface
         virtual void setStartDelayTracing(unsigned secs) = 0;        // set start delay tracing period
         virtual bool waitAvailable(unsigned timeout) = 0;            // wait until a pool member is available
         virtual void getThreadLoggingInfo() = 0;                     // Capture current thread logging context to be used by thread in pool when started
-        virtual void setThreadLoggingInfo(const IContextLogger * _logctx, TraceFlags _traceFlags) = 0;  // Set a specified thread logging context to be used by thredas in pool when started
+        virtual void setThreadLoggingInfo(const IContextLogger * _logctx, TraceFlags _traceFlags, unsigned __int64 _traceInfoId) = 0;  // Set a specified thread logging context to be used by threads in pool when started
 };
 
 extern jlib_decl IThreadPool *createThreadPool(
