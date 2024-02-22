@@ -106,6 +106,7 @@ protected:
 interface IStatisticCollectionIterator;
 interface IStatisticGatherer;
 interface IStatisticVisitor;
+interface ISpan;
 
 class jlib_decl StatisticsMapping;
 typedef std::function<void(const char * scope, StatisticScopeType sst, StatisticKind kind, stat_type value)> AggregateUpdatedCallBackFunc;
@@ -631,6 +632,9 @@ public:
     void merge(const CRuntimeStatisticCollection & other, unsigned node = 0);
     void updateDelta(CRuntimeStatisticCollection & target, const CRuntimeStatisticCollection & source);
 
+    // Add the statistics to a span
+    void exportToSpan(ISpan * span, StringBuffer & prefix) const;
+
     // Print out collected stats to string
     StringBuffer &toStr(StringBuffer &str) const;
     // Print out collected stats to string as XML
@@ -754,6 +758,7 @@ public:
     void set(const CNestedRuntimeStatisticCollection & other, unsigned node);
     void merge(const CNestedRuntimeStatisticCollection & other, unsigned node);
     void recordStatistics(IStatisticGatherer & target, bool clear) const;
+    void exportToSpan(ISpan * span, StringBuffer & prefix) const;
     StringBuffer & toStr(StringBuffer &str) const;
     StringBuffer & toXML(StringBuffer &str) const;
     void updateDelta(CNestedRuntimeStatisticCollection & target, const CNestedRuntimeStatisticCollection & source);
@@ -776,6 +781,7 @@ public:
     void merge(const CNestedRuntimeStatisticMap & other, unsigned node);
     void set(const CNestedRuntimeStatisticMap & other, unsigned node);
     void recordStatistics(IStatisticGatherer & target, bool clear) const;
+    void exportToSpan(ISpan * span, StringBuffer & prefix) const;
     StringBuffer & toStr(StringBuffer &str) const;
     StringBuffer & toXML(StringBuffer &str) const;
     void updateDelta(CNestedRuntimeStatisticMap & target, const CNestedRuntimeStatisticMap & source);
@@ -879,12 +885,14 @@ extern jlib_decl StringBuffer & formatStatistic(StringBuffer & out, unsigned __i
 extern jlib_decl StringBuffer & formatStatistic(StringBuffer & out, unsigned __int64 value, StatisticKind kind);
 extern jlib_decl void formatTimeStampAsLocalTime(StringBuffer & out, unsigned __int64 value);
 extern jlib_decl stat_type readStatisticValue(const char * cur, const char * * end, StatisticMeasure measure);
+extern jlib_decl stat_type normalizeTimestampToNs(stat_type value);
 
 extern jlib_decl unsigned __int64 mergeStatisticValue(unsigned __int64 prevValue, unsigned __int64 newValue, StatsMergeAction mergeAction);
 
 extern jlib_decl StatisticMeasure queryMeasure(StatisticKind kind);
 extern jlib_decl const char * queryStatisticName(StatisticKind kind);
 extern jlib_decl void queryLongStatisticName(StringBuffer & out, StatisticKind kind);
+extern jlib_decl const char * queryStatisticDescription(StatisticKind kind);
 extern jlib_decl const char * queryTreeTag(StatisticKind kind);
 extern jlib_decl const char * queryCreatorTypeName(StatisticCreatorType sct);
 extern jlib_decl const char * queryScopeTypeName(StatisticScopeType sst);

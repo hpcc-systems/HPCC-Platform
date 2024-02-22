@@ -106,9 +106,6 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
             id: "eclsummary",
             label: nlsHPCC.ECL
         }, {
-            id: "eclsummaryold",
-            label: "L" + nlsHPCC.ECL
-        }, {
             id: "xml",
             label: nlsHPCC.XML
         }];

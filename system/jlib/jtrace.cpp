@@ -288,14 +288,42 @@ public:
                 else
                     first = false;
 
+                const auto & value = kv.second;
                 std::ostringstream attsOS; //used to exploit OTel convenience functions for printing attribute values
-                opentelemetry::exporter::ostream_common::print_value(kv.second, attsOS);
+                opentelemetry::exporter::ostream_common::print_value(value, attsOS);
                 std::string val = attsOS.str();
                 if (val.size() > 0)
                 {
-                    StringBuffer encoded;
-                    encodeJSON(encoded, val.c_str());
-                    out.appendf("\"%s\": \"%s\"", kv.first.c_str(), encoded.str());
+                    switch (value.index())
+                    {
+                    case opentelemetry::sdk::common::kTypeBool:
+                    case opentelemetry::sdk::common::kTypeInt:
+                    case opentelemetry::sdk::common::kTypeUInt:
+                    case opentelemetry::sdk::common::kTypeInt64:
+                    case opentelemetry::sdk::common::kTypeDouble:
+                    case opentelemetry::sdk::common::kTypeUInt64:
+                        out.appendf("\"%s\": %s", kv.first.c_str(), val.c_str());
+                        break;
+                    case opentelemetry::sdk::common::kTypeString:
+                        {
+                            StringBuffer encoded;
+                            encodeJSON(encoded, val.c_str());
+                            out.appendf("\"%s\": \"%s\"", kv.first.c_str(), encoded.str());
+                            break;
+                        }
+                    case opentelemetry::sdk::common::kTypeSpanBool:
+                    case opentelemetry::sdk::common::kTypeSpanInt:
+                    case opentelemetry::sdk::common::kTypeSpanUInt:
+                    case opentelemetry::sdk::common::kTypeSpanInt64:
+                    case opentelemetry::sdk::common::kTypeSpanDouble:
+                    case opentelemetry::sdk::common::kTypeSpanString:
+                    case opentelemetry::sdk::common::kTypeSpanUInt64:
+                    case opentelemetry::sdk::common::kTypeSpanByte:
+                        //MORE: These should be output as lists of values.
+                        //Implement when we have a need.
+                    default:
+                        UNIMPLEMENTED;
+                    }
                 }
             }
             out.append(" }");
@@ -558,6 +586,12 @@ public:
             span->SetAttribute(key, val);
     }
 
+    void setSpanAttribute(const char *name, __uint64 value) override
+    {
+        if (span && !isEmptyString(name))
+            span->SetAttribute(name, value);
+    }
+
     void addSpanEvent(const char * eventName, IProperties * attributes) override 
     {
         if (span && !isEmptyString(eventName))
@@ -696,6 +730,11 @@ public:
         }
     }
 
+    virtual bool isRecording() const override
+    {
+        return span ? span->IsRecording() : false;
+    }
+
 protected:
     CSpan(const char * spanName)
     {
@@ -790,6 +829,7 @@ public:
     CNullSpan() = default;
 
     virtual void setSpanAttribute(const char * key, const char * val) override {}
+    virtual void setSpanAttribute(const char *name, __uint64 value) override {}
     virtual void setSpanAttributes(const IProperties * attributes) override {}
     virtual void addSpanEvent(const char * eventName) override {}
     virtual void addSpanEvent(const char * eventName, IProperties * attributes) override {};
@@ -798,6 +838,7 @@ public:
 
     virtual void toString(StringBuffer & out) const override {}
     virtual void getLogPrefix(StringBuffer & out) const override {}
+    virtual bool isRecording() const { return false; }
 
     virtual const char* queryGlobalId() const override { return nullptr; }
     virtual const char* queryCallerId() const override { return nullptr; }

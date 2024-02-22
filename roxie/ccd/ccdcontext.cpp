@@ -1403,6 +1403,10 @@ public:
     {
         logctx.setSpanAttribute(name, value);
     }
+    virtual void setSpanAttribute(const char *name, __uint64 value) const override
+    {
+        logctx.setSpanAttribute(name, value);
+    }
     virtual const char *queryGlobalId() const override
     {
         return logctx.queryGlobalId();

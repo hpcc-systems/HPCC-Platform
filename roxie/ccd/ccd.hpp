@@ -621,7 +621,7 @@ public:
             log.item(idx).writeXML(writer);
         }
         writer.outputEndArray("Log");
-    };
+    }
 
     virtual void CTXLOGva(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char *format, va_list args) const override  __attribute__((format(printf,5,0))) 
     {
@@ -761,6 +761,10 @@ public:
     {
         activeSpan->setSpanAttribute(name, value);
     }
+    virtual void setSpanAttribute(const char *name, __uint64 value) const override
+    {
+        activeSpan->setSpanAttribute(name, value);
+    }
     virtual const char *queryGlobalId() const override
     {
         return activeSpan->queryGlobalId();
@@ -781,6 +785,7 @@ public:
     {
         stats.recordStatistics(progress, false);
     }
+    void exportStatsToSpan(bool failed, unsigned elapsed, unsigned memused, unsigned agentsDuplicates, unsigned agentsResends);
 };
 
 class StringContextLogger : public ContextLogger

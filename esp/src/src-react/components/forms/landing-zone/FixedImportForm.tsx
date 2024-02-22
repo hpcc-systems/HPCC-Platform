@@ -85,9 +85,8 @@ export const FixedImportForm: React.FunctionComponent<FixedImportFormProps> = ({
                     request = data;
                     if (!isContainer) {
                         request["sourceIP"] = file.SourceIP;
-                    } else {
-                        request["sourcePlane"] = file.SourcePlane;
                     }
+                    request["sourcePlane"] = file.SourcePlane;
                     request["sourcePath"] = file.SourceFile;
                     request["sourceRecordSize"] = file.RecordSize;
                     request["destLogicalName"] = data.namePrefix + ((

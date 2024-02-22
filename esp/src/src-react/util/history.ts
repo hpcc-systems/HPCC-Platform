@@ -53,7 +53,8 @@ export function parseSearch<T = ParsedQuery<string | boolean | number>>(_: strin
     return { ...parsed } as unknown as T;
 }
 
-export function parseSort(_: string): QuerySortItem {
+export function parseSort(_?: string): QuerySortItem | undefined {
+    if (!_) return undefined;
     const filter = parse(pick(_.substring(1), ["sortBy"]));
     let descending = false;
     let sortBy = filter?.sortBy?.toString();

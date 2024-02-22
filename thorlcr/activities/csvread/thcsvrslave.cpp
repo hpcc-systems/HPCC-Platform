@@ -249,17 +249,27 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase
             if (sentHeaderLines->testSet(subFile))
                 return;
 
-            /* Before we can send state of headerLines of subfiles,
-             * need to have received any updates from previous worker.
-             * The previous worker will have sent updates as it progressed,
-             * and info. re. all files it is not dealing with (and all remaining if stopped) */
-            while (true)
+            /* NB: we are here because this worker has consumed all remaining header lines for this subfile.
+             * It must now inform the next worker so it can make progress on this subfile asap.
+             *
+             * The other subfile header line info. will be communicated as this worker makes progress
+             * through the subfiles, or when it stops (see sendRemainingHeaderLines()).
+             */
+
+            // JCSMORE: only left in for testing, should be removed (see HPCC-31160)
+            if (getOptBool("csvWaitAllSubs"))
             {
-                unsigned which = gotHeaderLines->scan(0, false);
-                if (which == subFiles) // all received
-                    break;
-                getHeaderLines(which);
+                // This causes this worker to block until the previous worker has processed the headerlines for all subfiles.
+                // In effect, causing workers to process the csv read sequentially, massively slowing down throughput.
+                while (true)
+                {
+                    unsigned which = gotHeaderLines->scan(0, false);
+                    if (which >= subFiles) // all received
+                        break;
+                    getHeaderLines(which);
+                }
             }
+
             bool someLeft=false;
             unsigned hL=0;
             for (; hL<subFiles; hL++)

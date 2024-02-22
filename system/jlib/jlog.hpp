@@ -1276,6 +1276,7 @@ interface jlib_decl IContextLogger : extends IInterface
     virtual IProperties * getSpanContext() const = 0;
     virtual IProperties * getClientHeaders() const = 0;
     virtual void setSpanAttribute(const char *name, const char *value) const = 0;
+    virtual void setSpanAttribute(const char *name, __uint64 value) const = 0;
     virtual void recordStatistics(IStatisticGatherer &progress) const = 0;
     virtual const LogMsgJobInfo & queryJob() const { return unknownJob; }
 };

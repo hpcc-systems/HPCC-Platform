@@ -439,6 +439,16 @@ StringBuffer & formatStatistic(StringBuffer & out, unsigned __int64 value, Stati
     return formatStatistic(out, value, queryMeasure(kind));
 }
 
+constexpr static stat_type usTimestampThreshold = 100ULL * 365ULL * 24ULL * 3600'000000ULL; // 100 years in us
+// Support the gradual conversion of timestamps from us to ns.  If a timestamp is in the old format (before 2070)
+// then it is assumed to be in us, otherwise ns.
+stat_type normalizeTimestampToNs(stat_type value)
+{
+    if (value < usTimestampThreshold)
+        return value * 1000;
+    return value;
+}
+
 //--------------------------------------------------------------------------------------------------------------------
 
 stat_type readStatisticValue(const char * cur, const char * * end, StatisticMeasure measure)
@@ -759,7 +769,7 @@ StatisticMeasure queryMeasure(const char * measure, StatisticMeasure dft)
 #define NODESTAT(y) STAT(Node, y, SMeasureNode, StatsMergeKeepNonZero)
 #define PERSTAT(y) STAT(Per, y, SMeasurePercent, StatsMergeReplace)
 #define IPV4STAT(y) STAT(IPV4, y, SMeasureIPV4, StatsMergeKeepNonZero)
-#define CYCLESTAT(y) St##Cycle##y##Cycles, SMeasureCycle, StatsMergeSum, St##Time##y, St##Cycle##y##Cycles, { NAMES(Cycle, y##Cycles) }, { TAGS(Cycle, y##Cycles) }
+#define CYCLESTAT(y) St##Cycle##y##Cycles, SMeasureCycle, StatsMergeSum, St##Time##y, St##Cycle##y##Cycles, { NAMES(Cycle, y##Cycles) }, { TAGS(Cycle, y##Cycles) }, "<cycles>"
 #define ENUMSTAT(y) STAT(Enum, y, SMeasureEnum, StatsMergeKeepNonZero)
 #define COSTSTAT(y) STAT(Cost, y, SMeasureCost, StatsMergeSum)
 #define PEAKSIZESTAT(y) STAT(Size, y, SMeasureSize, StatsMergeMax)
@@ -775,190 +785,195 @@ public:
     StatisticKind rawKind;
     const char * names[StNextModifier/StVariantScale];
     const char * tags[StNextModifier/StVariantScale];
+    const char * description;
 };
+
+constexpr const char * UNUSED = "<unused>";
 
 //The order of entries in this table must match the order in the enumeration
 static const constexpr StatisticMeta statsMetaData[StMax] = {
-    { StKindNone, SMeasureNone, StatsMergeSum, StKindNone, StKindNone, { "none" }, { "@none" } },
-    { StKindAll, SMeasureAll, StatsMergeSum, StKindAll, StKindAll, { "all" }, { "@all" } },
-    { WHENFIRSTSTAT(GraphStarted) }, // Deprecated - use WhenStart
-    { WHENLASTSTAT(GraphFinished) }, // Deprecated - use WhenFinished
-    { WHENFIRSTSTAT(FirstRow) },
-    { WHENFIRSTSTAT(QueryStarted) }, // Deprecated - use WhenStart
-    { WHENLASTSTAT(QueryFinished) }, // Deprecated - use WhenFinished
-    { WHENFIRSTSTAT(Created) },
-    { WHENFIRSTSTAT(Compiled) },
-    { WHENFIRSTSTAT(WorkunitModified) },
-    { TIMESTAT(Elapsed) },
-    { TIMESTAT(LocalExecute) },
-    { TIMESTAT(TotalExecute) },
-    { TIMESTAT(Remaining) },
-    { SIZESTAT(GeneratedCpp) },
-    { SIZESTAT(PeakMemory) },
-    { SIZESTAT(MaxRowSize) },
-    { NUMSTAT(RowsProcessed) },
-    { NUMSTAT(Slaves) },
-    { NUMSTAT(Starts) },
-    { NUMSTAT(Stops) },
-    { NUMSTAT(IndexSeeks) },
-    { NUMSTAT(IndexScans) },
-    { NUMSTAT(IndexWildSeeks) },
-    { NUMSTAT(IndexSkips) },
-    { NUMSTAT(IndexNullSkips) },
-    { NUMSTAT(IndexMerges) },
-    { NUMSTAT(IndexMergeCompares) },
-    { NUMSTAT(PreFiltered) },
-    { NUMSTAT(PostFiltered) },
-    { NUMSTAT(BlobCacheHits) },
-    { NUMSTAT(LeafCacheHits) },
-    { NUMSTAT(NodeCacheHits) },
-    { NUMSTAT(BlobCacheAdds) },
-    { NUMSTAT(LeafCacheAdds) },
-    { NUMSTAT(NodeCacheAdds) },
-    { NUMSTAT(PreloadCacheHits) },
-    { NUMSTAT(PreloadCacheAdds) },
-    { NUMSTAT(ServerCacheHits) },
-    { NUMSTAT(IndexAccepted) },
-    { NUMSTAT(IndexRejected) },
-    { NUMSTAT(AtmostTriggered) },
-    { NUMSTAT(DiskSeeks) },
-    { NUMSTAT(Iterations) },
-    { LOADSTAT(WhileSorting) },
-    { NUMSTAT(LeftRows) },
-    { NUMSTAT(RightRows) },
-    { PERSTAT(Replicated) },
-    { NUMSTAT(DiskRowsRead) },
-    { NUMSTAT(IndexRowsRead) },
-    { NUMSTAT(DiskAccepted) },
-    { NUMSTAT(DiskRejected) },
-    { TIMESTAT(Soapcall) },
-    { TIMESTAT(FirstExecute) },
-    { TIMESTAT(DiskReadIO) },
-    { TIMESTAT(DiskWriteIO) },
-    { SIZESTAT(DiskRead) },
-    { SIZESTAT(DiskWrite) },
+    { StKindNone, SMeasureNone, StatsMergeSum, StKindNone, StKindNone, { "none" }, { "@none" }, nullptr },
+    { StKindAll, SMeasureAll, StatsMergeSum, StKindAll, StKindAll, { "all" }, { "@all" }, nullptr },
+    { WHENFIRSTSTAT(GraphStarted), "The time when a graph started./nDeprecated" }, // Deprecated - use WhenStart
+    { WHENLASTSTAT(GraphFinished), "The time when a graph finished./nDeprecated"  }, // Deprecated - use WhenFinished
+    { WHENFIRSTSTAT(FirstRow), "The time when the first row is processed by an activity"  },
+    { WHENFIRSTSTAT(QueryStarted), "The time when a query started./nDeprecated" }, // Deprecated - use WhenStart
+    { WHENLASTSTAT(QueryFinished), "The time when a query finished./nDeprecated" }, // Deprecated - use WhenFinished
+    { WHENFIRSTSTAT(Created), "The time when an item was created" },
+    { WHENFIRSTSTAT(Compiled), "The time a workunit started being compiled" },
+    { WHENFIRSTSTAT(WorkunitModified), UNUSED },
+    { TIMESTAT(Elapsed), "The elapsed time between starting and finishing\nFor child queries this may be significantly larger than TimeTotalExecute" },
+    { TIMESTAT(LocalExecute), "The time spent executing this activity not including its inputs\nSort activities by local execute time to help isolate potential processing bottlenecks" },
+    { TIMESTAT(TotalExecute), "The time spent executing this activity and its inputs\nSort activities by total execute time to find sections of a query that are a bottleneck" },
+    { TIMESTAT(Remaining), UNUSED },
+    { SIZESTAT(GeneratedCpp), "The size of the generated c++ file" },
+    { SIZESTAT(PeakMemory), "The peak memory used while processing this item" },
+    { SIZESTAT(MaxRowSize), "The high water mark of the memory used for representing rows (roxiemem)" },
+    { NUMSTAT(RowsProcessed), "The number of rows processed" },
+    { NUMSTAT(Slaves), "The number of parallel execution processes used to execute an activity" },
+    { NUMSTAT(Starts), "The number of times the activity has started executing\nAn activity is active if this does not match NumStops" },
+    { NUMSTAT(Stops), "The number of times the activity has stopped executing\nAn activity is active if this is less than NumStarts" },
+    { NUMSTAT(IndexSeeks), "The number of keyed lookups on an index\nThese correspond to KEYED() filters on indexes.  A single keyed filter may result in multiple seeks if a leading component is not single-valued" },
+    { NUMSTAT(IndexScans), "The number of index scans\nHow many entries are sequentially examined after an initial seek (including wild seeks).  Large numbers compared to the number of seeks may indicate extra keyed filters would be worthwhile" },
+    { NUMSTAT(IndexWildSeeks), "The number of seeks caused by WILD() filters\nThe number of keyed lookups that had to search for the next potential match.  If this is a high proportion of NumIndexScans it may suggest poor key design" },
+    { NUMSTAT(IndexSkips), "The number of smart-stepping operations that increment the next match" },
+    { NUMSTAT(IndexNullSkips), "The number of smart-stepping operations that had no effect\nIf this is large compare to NumIndexSkips it suggests the priority may not be set correctly" },
+    { NUMSTAT(IndexMerges), "The number of merges set up when smart stepping"},
+    { NUMSTAT(IndexMergeCompares), "The number of merge comparisons when smart stepping" },
+    { NUMSTAT(PreFiltered), "The number of LEFT rows filtered before performing a keyed lookup" },
+    { NUMSTAT(PostFiltered), "The number of index matches filtered by the transform and the non-keyed filter" },
+    { NUMSTAT(BlobCacheHits), "The number of times a blob was resolved in the cache" },
+    { NUMSTAT(LeafCacheHits), "The number of times a leaf node was resolved in the cache" },
+    { NUMSTAT(NodeCacheHits), "The number of times a branch node was resolved in the cache" },
+    { NUMSTAT(BlobCacheAdds), "The number of times a blob was read from disk rather than the cache" },
+    { NUMSTAT(LeafCacheAdds), "The number of times a leaf node was read from disk rather than the cache\nIf this number is high it may be worth experimenting with the leaf cache size (the branch cache size is more important)" },
+    { NUMSTAT(NodeCacheAdds), "The number of times a branch node was read from disk rather than the cache\nBranch cache hits are significant for performance.  If this number is high it is likely to be worth increasing the node cache size.  If this number does not increase once the system is warmed up it may be worth reducing the cache size" },
+    { NUMSTAT(PreloadCacheHits), UNUSED },
+    { NUMSTAT(PreloadCacheAdds), UNUSED },
+    { NUMSTAT(ServerCacheHits), UNUSED },
+    { NUMSTAT(IndexAccepted), "The number of KEYED JOIN matches that return a result from the TRANSFORM" },
+    { NUMSTAT(IndexRejected), "The number of KEYED JOIN matches that are skipped by the TRANSFORM" },
+    { NUMSTAT(AtmostTriggered), "The number of times ATMOST on a JOIN causes it to fail to match" },
+    { NUMSTAT(DiskSeeks), "The number of FETCHES from disk" },
+    { NUMSTAT(Iterations), "The number of LOOP iterations executed" },
+    { LOADSTAT(WhileSorting), UNUSED },
+    { NUMSTAT(LeftRows), "The number of LEFT rows processed" },
+    { NUMSTAT(RightRows), "The number of RIGHT rows processed"  },
+    { PERSTAT(Replicated), "The percentage replication complete" },
+    { NUMSTAT(DiskRowsRead), "The number of rows read from the file" },
+    { NUMSTAT(IndexRowsRead), "The number of rows read from the index" },
+    { NUMSTAT(DiskAccepted), "The number of disk rows that return a result from the TRANSFORM" },
+    { NUMSTAT(DiskRejected), "The number of disk rows that are skipped by the TRANSFORM" },
+    { TIMESTAT(Soapcall), "The time taken to execute a SOAPCALL" },
+    { TIMESTAT(FirstExecute), "The time taken to return the first row from this activity" },
+    { TIMESTAT(DiskReadIO), "Total time spent reading from disk" },
+    { TIMESTAT(DiskWriteIO), "Total time spent writing to disk" },
+    { SIZESTAT(DiskRead), "Total size of data read from disk" },
+    { SIZESTAT(DiskWrite), "Total size of data written to disk" },
     { CYCLESTAT(DiskReadIO) },
     { CYCLESTAT(DiskWriteIO) },
-    { NUMSTAT(DiskReads) },
-    { NUMSTAT(DiskWrites) },
-    { NUMSTAT(Spills) },
-    { TIMESTAT(SpillElapsed) },
-    { TIMESTAT(SortElapsed) },
-    { NUMSTAT(Groups) },
-    { NUMSTAT(GroupMax) },
-    { SIZESTAT(SpillFile) },
+    { NUMSTAT(DiskReads), "The number of disk read operations" },
+    { NUMSTAT(DiskWrites), "The number of disk write operations" },
+    { NUMSTAT(Spills), "The number of times the activity spilt to disk"},
+    { TIMESTAT(SpillElapsed), "Time spent spilling rows from memory to disk" }, //MORE: Do we have a similar stat for SpillRead?
+    { TIMESTAT(SortElapsed), "Time spent sorting rows in memory" },
+    { NUMSTAT(Groups), "The number of groups processed by this activity" },
+    { NUMSTAT(GroupMax), "The size of the largest group processed by this activity\nA skew in group size can cause a skew in processing time.  A large skew may indicate some special values would benefit from special casing" },
+    { SIZESTAT(SpillFile), "Total size of data spilled to disk" },
     { CYCLESTAT(SpillElapsed) },
     { CYCLESTAT(SortElapsed) },
-    { NUMSTAT(Strands) },
+    { NUMSTAT(Strands), "The number of parallel execution strands\n(A partially implemented feature to allow parallel execution within an activity)" },
     { CYCLESTAT(TotalExecute) },
-    { NUMSTAT(Executions) },
-    { TIMESTAT(TotalNested) },
+    { NUMSTAT(Executions), "The number of times a graph has been executed" },
+    { TIMESTAT(TotalNested), UNUSED },
     { CYCLESTAT(LocalExecute) },
-    { NUMSTAT(Compares) },
-    { NUMSTAT(ScansPerRow) },
-    { NUMSTAT(Allocations) },
-    { NUMSTAT(AllocationScans) },
-    { NUMSTAT(DiskRetries) },
+    { NUMSTAT(Compares), UNUSED },
+    { NUMSTAT(ScansPerRow), UNUSED },
+    { NUMSTAT(Allocations), "The number of allocations from the row memory" },
+    { NUMSTAT(AllocationScans), "The number of scans within the memory manager when allocating row memory\nOnly applies to the scanning heap manager (not used by default)" },
+    { NUMSTAT(DiskRetries), "The number of times an I/O operation was retried\nIf this is non-zero it may suggest a problem with the underlying disk storage" },
     { CYCLESTAT(Elapsed) },
     { CYCLESTAT(Remaining) },
     { CYCLESTAT(Soapcall) },
     { CYCLESTAT(FirstExecute) },
     { CYCLESTAT(TotalNested) },
-    { TIMESTAT(Generate) },
+    { TIMESTAT(Generate), "Time taken to generate the c++ code from the parsed ECL" },
     { CYCLESTAT(Generate) },
-    { WHENFIRSTSTAT(Started) },
-    { WHENLASTSTAT(Finished) },
-    { NUMSTAT(AnalyseExprs) },
-    { NUMSTAT(TransformExprs) },
-    { NUMSTAT(UniqueAnalyseExprs) },
-    { NUMSTAT(UniqueTransformExprs) },
-    { NUMSTAT(DuplicateKeys) },
-    { NUMSTAT(AttribsProcessed) },
-    { NUMSTAT(AttribsSimplified) },
-    { NUMSTAT(AttribsFromCache) },
-    { NUMSTAT(SmartJoinDegradedToLocal) },
-    { NUMSTAT(SmartJoinSlavesDegradedToStd) },
-    { NUMSTAT(AttribsSimplifiedTooComplex) },
-    { NUMSTAT(SysContextSwitches) },
-    { TIMESTAT(OsUser) },
-    { TIMESTAT(OsSystem) },
-    { TIMESTAT(OsTotal) },
+    { WHENFIRSTSTAT(Started), "Time when this activity or operation started" },
+    { WHENLASTSTAT(Finished), "Time when this activity or operation finished" },
+    { NUMSTAT(AnalyseExprs), "Code generator internal\nThe number of expressions that were processed by transformer::analyse()" },
+    { NUMSTAT(TransformExprs), "Code generator internal\nThe number of expressions that were processed by transformer::transform()" },
+    { NUMSTAT(UniqueAnalyseExprs), "Code generator internal\nThe number of unique expressions that were processed by transformer::analyse()" },
+    { NUMSTAT(UniqueTransformExprs), "Code generator internal\nThe number of unique expressions that were processed by transformer::transform()" },
+    { NUMSTAT(DuplicateKeys), "The number of duplicate keys that were present in the index" },
+    { NUMSTAT(AttribsProcessed), "The number of attributes processed when parsing the ECL" },
+    { NUMSTAT(AttribsSimplified), UNUSED },
+    { NUMSTAT(AttribsFromCache), UNUSED },
+    { NUMSTAT(SmartJoinDegradedToLocal), "The number of times a global smart-join switched to a LOCAL JOIN (with distribute)\nThis will be 0 or 1 unless the activity is within a LOOP" },
+    { NUMSTAT(SmartJoinSlavesDegradedToStd), "The number of times a global smart-join degraded to a standard join" },
+    { NUMSTAT(AttribsSimplifiedTooComplex), UNUSED },
+    { NUMSTAT(SysContextSwitches), "The number of context switches that occurred when processing" },
+    { TIMESTAT(OsUser), "Total elapsed user-space time" },
+    { TIMESTAT(OsSystem), "Total time spent in the system/kernel" },
+    { TIMESTAT(OsTotal), "Total elapsed time according to the OS\nIncludes system, user, idle and iowait times" },
     { CYCLESTAT(OsUser) },
     { CYCLESTAT(OsSystem) },
     { CYCLESTAT(OsTotal) },
-    { NUMSTAT(ContextSwitches) },
-    { TIMESTAT(User) },
-    { TIMESTAT(System) },
-    { TIMESTAT(Total) },
+    //The following seem to be duplicates of the values above
+    { NUMSTAT(ContextSwitches), "The number of context switches that occurred when processing" },
+    { TIMESTAT(User), "Total elapsed user-space time" },
+    { TIMESTAT(System), "Total time spent in the system/kernel" },
+    { TIMESTAT(Total), "Total elapsed time according to the OS\nInclude system,user,idle and iowait times" },
     { CYCLESTAT(User) },
     { CYCLESTAT(System) },
     { CYCLESTAT(Total) },
-    { SIZESTAT(OsDiskRead) },
-    { SIZESTAT(OsDiskWrite) },
-    { TIMESTAT(Blocked) },
+    { SIZESTAT(OsDiskRead), UNUSED },
+    { SIZESTAT(OsDiskWrite), UNUSED },
+    { TIMESTAT(Blocked), "Time spent blocked waiting for another operation to complete" },
     { CYCLESTAT(Blocked) },
-    { COSTSTAT(Execute) },
-    { SIZESTAT(AgentReply) },
-    { TIMESTAT(AgentWait) },
+    { COSTSTAT(Execute), "The CPU cost of executing" },
+    { SIZESTAT(AgentReply), "Size of data sent from the workers to the agent" },
+    { TIMESTAT(AgentWait), "Time that the agent spent waiting for a reply from the workers" },
     { CYCLESTAT(AgentWait) },
-    { COSTSTAT(FileAccess) },
-    { NUMSTAT(Pods) },
-    { COSTSTAT(Compile) },
-    { TIMESTAT(NodeLoad) },
+    { COSTSTAT(FileAccess), "The transactional cost of any file operations" },
+    { NUMSTAT(Pods), "The number of pods used" },
+    { COSTSTAT(Compile), "The cost to compile this workunit"},
+    { TIMESTAT(NodeLoad), "Time spent reading branch nodes from disk and decompressing them" },
     { CYCLESTAT(NodeLoad) },
-    { TIMESTAT(LeafLoad) },
+    { TIMESTAT(LeafLoad), "Time spent reading leaf nodes from disk and decompressing them\nIf this is a high proportion of the time (especially compared to TimeLeafRead) then consider using the new index compression formats" },
     { CYCLESTAT(LeafLoad) },
-    { TIMESTAT(BlobLoad) },
+    { TIMESTAT(BlobLoad), "Time spent reading blob nodes from disk and decompressing them" },
     { CYCLESTAT(BlobLoad) },
-    { TIMESTAT(Dependencies) },
+    { TIMESTAT(Dependencies), "Time spent processing dependencies for this activity"},
     { CYCLESTAT(Dependencies) },
-    { TIMESTAT(Start) },
+    { TIMESTAT(Start), "Time taken to start an activity\nThis includes the time spent processing dependencies" },
     { CYCLESTAT(Start) },
-    { ENUMSTAT(ActivityCharacteristics) },
-    { TIMESTAT(NodeRead) },
+    { ENUMSTAT(ActivityCharacteristics), "A bitfield describing characteristics of the activity\nurgentStart = 0x01, hasRowLatency = 0x02, hasDependencies = 0x04, slowDependencies = 0x08" },
+    { TIMESTAT(NodeRead), "Time spent reading branch nodes from disk (including linux page cache)" },
     { CYCLESTAT(NodeRead) },
-    { TIMESTAT(LeafRead) },
+    { TIMESTAT(LeafRead), "Time spent reading leaf nodes from disk (including linux page cache)" },
     { CYCLESTAT(LeafRead) },
-    { TIMESTAT(BlobRead) },
+    { TIMESTAT(BlobRead), "Time spent reading blob from disk (including linux page cache)" },
     { CYCLESTAT(BlobRead) },
-    { NUMSTAT(NodeDiskFetches) },
-    { NUMSTAT(LeafDiskFetches) },
-    { NUMSTAT(BlobDiskFetches) },
-    { TIMESTAT(NodeFetch) },
+    { NUMSTAT(NodeDiskFetches), "Number of times a branch node was read from disk rather than the linux page cache" },
+    { NUMSTAT(LeafDiskFetches), "Number of times a leaf node was read from disk rather than the linux page cache\nIf this is a significant proportion of NumLeafAdds then consider allocating more memory, or reducing the leaf cache size" },
+    { NUMSTAT(BlobDiskFetches), "Number of times a blob was read from disk rather than the linux page cache" },
+    { TIMESTAT(NodeFetch), "Time spent reading branch nodes from disk (EXCLUDING the linux page cache)" },
     { CYCLESTAT(NodeFetch) },
-    { TIMESTAT(LeafFetch) },
+    { TIMESTAT(LeafFetch), "Time spent reading leaf nodes from disk (EXCLUDING the linux page cache)" },
     { CYCLESTAT(LeafFetch) },
-    { TIMESTAT(BlobFetch) },
+    { TIMESTAT(BlobFetch), "Time spent reading blobs from disk (EXCLUDING the linux page cache)" },
     { CYCLESTAT(BlobFetch) },
-    { PEAKSIZESTAT(GraphSpill) },
-    { TIMESTAT(AgentQueue) },
+    { PEAKSIZESTAT(GraphSpill), "Peak size of spill memory usage" },
+    { TIMESTAT(AgentQueue), "Time worker items were received and queued before being processed\nThis may indicate that the primary node on a channel was down, or that the workers are overloaded with requests" },
     { CYCLESTAT(AgentQueue) },
-    { TIMESTAT(IBYTIDelay) },
+    { TIMESTAT(IBYTIDelay), "Time spent waiting for another worker to start processing a request\nA non-zero value indicates that the primary node on a channel was down or very busy" },
     { CYCLESTAT(IBYTIDelay) },
-    { WHENFIRSTSTAT(Queued) },
-    { WHENFIRSTSTAT(Dequeued) },
-    { WHENFIRSTSTAT(K8sLaunched) },
-    { WHENFIRSTSTAT(K8sStarted) },
-    { WHENFIRSTSTAT(K8sReady) },
-    { NUMSTAT(SocketWrites) },
-    { SIZESTAT(SocketWrite) },
-    { TIMESTAT(SocketWriteIO) },
+    { WHENFIRSTSTAT(Queued), "The time when this item was added to a queue" },
+    { WHENFIRSTSTAT(Dequeued), "The time when this item was removed from a queue" },
+    { WHENFIRSTSTAT(K8sLaunched), "The time when the K8s job to process this item was launched" },
+    { WHENFIRSTSTAT(K8sStarted), "The time when the K8s job to process this item started executing/nThe difference between the K8sStarted and K8sLaunched indicates how long Kubernetes took to resource and initialised the job" },
+    { WHENFIRSTSTAT(K8sReady), "The time when the Thor job is ready to process\nThe difference with K8sStarted indicates how long it took to resource and start the slave processes" },
+    { NUMSTAT(SocketWrites), "The number of writes to the client socket" },
+    { SIZESTAT(SocketWrite), "The size of data written to the client socket" },
+    { TIMESTAT(SocketWriteIO), "The total time spent writing data to the client socket" },
     { CYCLESTAT(SocketWriteIO) },
-    { NUMSTAT(SocketReads) },
-    { SIZESTAT(SocketRead) },
-    { TIMESTAT(SocketReadIO) },
+    { NUMSTAT(SocketReads), "The number of reads from the client socket" },
+    { SIZESTAT(SocketRead), "The size of data read from the client socket" },
+    { TIMESTAT(SocketReadIO), "The total time spent reading data from the client socket" },
     { CYCLESTAT(SocketReadIO) },
-    { SIZESTAT(Memory) },
-    { SIZESTAT(RowMemory) },
-    { SIZESTAT(PeakRowMemory) },
-    { SIZESTAT(AgentSend) },
-    { TIMESTAT(IndexCacheBlocked) },
+    { SIZESTAT(Memory), "The total memory allocated from the system" },
+    { SIZESTAT(RowMemory), "The size of memory used to store rows" },
+    { SIZESTAT(PeakRowMemory), "The peak memory used to store rows" },
+    { SIZESTAT(AgentSend), "The size of data sent to the agent from the server" },
+    { TIMESTAT(IndexCacheBlocked), "The time spent waiting to access the index page cache" },
     { CYCLESTAT(IndexCacheBlocked) },
-    { TIMESTAT(AgentProcess) },
+    { TIMESTAT(AgentProcess), "The total time spent by the agents processing requests" },
     { CYCLESTAT(AgentProcess) },
-    { NUMSTAT(AckRetries) },
-    { SIZESTAT(ContinuationData) },
-    { NUMSTAT(ContinuationRequests) },
+    { NUMSTAT(AckRetries), "The number of times the server failed to receive a response from an agent within the expected time" },
+    { SIZESTAT(ContinuationData), "The total size of continuation data sent from agent to the server\nA large number may indicate a poor filter, or merging from many different index locations" },
+    { NUMSTAT(ContinuationRequests), "The number of times the agent indicated there was more data to be returned" },
+    { NUMSTAT(Failures), "The number of times a query has failed" },
 };
 
 static MapStringTo<StatisticKind, StatisticKind> statisticNameMap(true);
@@ -1066,6 +1081,14 @@ const char * queryStatisticName(StatisticKind kind)
     return "Unknown";
 }
 
+
+const char * queryStatisticDescription(StatisticKind kind)
+{
+    StatisticKind rawkind = (StatisticKind)(kind & StKindMask);
+    if (rawkind >= StKindNone && rawkind < StMax)
+        return statsMetaData[rawkind].description;
+    return nullptr;
+}
 
 unsigned __int64 convertMeasure(StatisticMeasure from, StatisticMeasure to, unsigned __int64 value)
 {
@@ -2796,6 +2819,42 @@ StringBuffer & CRuntimeStatisticCollection::toStr(StringBuffer &str) const
     return str;
 }
 
+//MORE: This could be commoned up with the toStr() method by using a visitor pattern
+void CRuntimeStatisticCollection::exportToSpan(ISpan * span, StringBuffer & prefix) const
+{
+    unsigned lenPrefix = prefix.length();
+    ForEachItem(iStat)
+    {
+        StatisticKind kind = getKind(iStat);
+        StatisticKind serialKind = querySerializedKind(kind);
+        if (kind != serialKind)
+            continue; // ignore - we will roll this one into the corresponding serialized value's output
+        unsigned __int64 value = values[iStat].get();
+        StatisticKind rawKind = queryRawKind(kind);
+        if (kind != rawKind)
+        {
+            // roll raw values into the corresponding serialized value, if present...
+            unsigned __int64 rawValue = getStatisticValue(rawKind);
+            if (rawValue)
+                value += convertMeasure(rawKind, kind, rawValue);
+        }
+        if (value)
+        {
+            //Convert timestamp to nanoseconds so it is reported consistently.
+            if (queryMeasure(serialKind) == SMeasureTimestampUs)
+                value = normalizeTimestampToNs(value);
+
+            const char * name = queryStatisticName(serialKind);
+            getSnakeCase(prefix, name);
+            span->setSpanAttribute(prefix, value);
+            prefix.setLength(lenPrefix);
+        }
+    }
+    CNestedRuntimeStatisticMap *qn = queryNested();
+    if (qn)
+        qn->exportToSpan(span, prefix);
+}
+
 void CRuntimeStatisticCollection::deserialize(MemoryBuffer& in)
 {
     unsigned numValid;
@@ -3204,6 +3263,14 @@ StringBuffer & CNestedRuntimeStatisticCollection::toStr(StringBuffer &str) const
     return str.append(" }");
 }
 
+void CNestedRuntimeStatisticCollection::exportToSpan(ISpan * span, StringBuffer & prefix) const
+{
+    unsigned lenPrefix = prefix.length();
+    scope.getScopeText(prefix).append(".");
+    stats->exportToSpan(span, prefix);
+    prefix.setLength(lenPrefix);
+}
+
 StringBuffer & CNestedRuntimeStatisticCollection::toXML(StringBuffer &str) const
 {
     str.append("<Scope id=\"");
@@ -3343,6 +3410,13 @@ StringBuffer & CNestedRuntimeStatisticMap::toStr(StringBuffer &str) const
     ForEachItemIn(i, map)
         map.item(i).toStr(str);
     return str;
+}
+
+void CNestedRuntimeStatisticMap::exportToSpan(ISpan * span, StringBuffer & prefix) const
+{
+    ReadLockBlock b(lock);
+    ForEachItemIn(i, map)
+        map.item(i).exportToSpan(span, prefix);
 }
 
 StringBuffer & CNestedRuntimeStatisticMap::toXML(StringBuffer &str) const

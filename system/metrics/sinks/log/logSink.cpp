@@ -47,57 +47,85 @@ void LogMetricSink::doCollection()
 
 void LogMetricSink::writeLogEntry(const std::shared_ptr<IMetric> &pMetric)
 {
-    std::string name = pMetric->queryName();
+    const std::string & name = pMetric->queryName();
+    __uint64 metricValue = pMetric->queryValue();
+    if (ignoreZeroMetrics && (metricValue == 0))
+        return;
+
     const auto & metaData = pMetric->queryMetaData();
+    const std::string * searchKey = &name;
+    //Create a unique id from a combination of the name and the labels so that we can check whether this metric instance has changed since the last time it was logged
+    std::string uid;
+    if (!metaData.empty())
+    {
+        uid.append(name);
+        for (auto &metaDataIt: metaData)
+            uid.append("/").append(metaDataIt.value.c_str());
+        searchKey = &uid;
+    }
+
+    auto match = alreadySeen.find(*searchKey);
+    const auto notFound = alreadySeen.end();
+    //If the values haven't changed then avoid logging an update to the logs
+    if ((match != notFound) && (match->second == metricValue))
+        return;
+
+    StringBuffer output;
+
+    StringBuffer labels;
     for (auto &metaDataIt: metaData)
     {
-        name.append(".").append(metaDataIt.value);
+        if (labels.length() > 0)
+            labels.append(",");
+        labels.appendf("{ \"name\":\"%s\", \"value\": \"%s\" }", metaDataIt.key.c_str(), metaDataIt.value.c_str());
     }
+
+    if (labels.length())
+        output.appendf("\"labels\": [%s], ", labels.str());
 
     const char *unitsStr = pManager->queryUnitsString(pMetric->queryUnits());
 
     if (pMetric->queryMetricType() != METRICS_HISTOGRAM)
     {
-        __uint64 metricValue = pMetric->queryValue();
-        if (!ignoreZeroMetrics || metricValue)
-        {
-            if (!isEmptyString(unitsStr))
-            {
-                name.append(".").append(unitsStr);
-            }
-            LOG(MCmonitorMetric, "name=%s,value=%" I64F "d", name.c_str(), metricValue);
-        }
+        output.appendf("\"value\": %" I64F "d", metricValue);
     }
     else
     {
+        output.append("\"sum\": ").append(metricValue).append(", ");
+
+        StringBuffer valueText;
         std::vector<__uint64> values = pMetric->queryHistogramValues();
-        std::vector<__uint64> limits = pMetric->queryHistogramBucketLimits();
-        size_t countBucketValues = values.size();
-
-        // If not ignoring or measurements exist, output the log entries
-        __uint64 sum = pMetric->queryValue();
-        if (!ignoreZeroMetrics || sum)
+        __uint64 cumulative = 0;
+        for (size_t i=0; i < values.size(); ++i)
         {
-            __uint64 cumulative = 0;
-            for (size_t i=0; i < countBucketValues - 1; ++i)
+            if (valueText.length() > 0)
+                valueText.append(", ");
+            cumulative += values[i];
+            valueText.appendf("%" I64F "d", values[i]);
+        }
+        output.append("\"count\": ").append(cumulative).append(", ");
+
+        output.append("\"counts\": [").append(valueText).append("]");
+
+        //Only output the limits the first time this metric is traced
+        if (match == notFound)
+        {
+            std::vector<__uint64> limits = pMetric->queryHistogramBucketLimits();
+            StringBuffer limitText;
+            for (size_t i=0; i < limits.size(); ++i)
             {
-                cumulative += values[i];
-                if (!ignoreZeroMetrics || values[i])
-                {
-                    LOG(MCmonitorMetric, "name=%s, bucket le %" I64F "d=%" I64F "d", name.c_str(), limits[i], cumulative);
-                }
+                if (limitText.length() > 0)
+                    limitText.append(", ");
+                limitText.appendf("%" I64F "d", limits[i]);
             }
-
-            // The inf bucket count is the last element in the array of values returned.
-            // Add it to the cumulative count and print the value
-            cumulative += values[countBucketValues - 1];
-            LOG(MCmonitorMetric, "name=%s, bucket inf=%" I64F "d", name.c_str(), cumulative);
-
-            // sum - total of all observations
-            LOG(MCmonitorMetric, "name=%s, sum=%" I64F "d", name.c_str(), sum);
-
-            // count - total of all bucket counts (same as inf)
-            LOG(MCmonitorMetric, "name=%s, count=%" I64F "d", name.c_str(), cumulative);
+            output.append(", \"limits\": [").append(limitText).append("]");
         }
     }
+
+    LOG(MCmonitorMetric, "{ \"type\": \"metric\", \"name\": \"%s%s%s\", %s }", name.c_str(), unitsStr ? "." : "", unitsStr ? unitsStr : "",  output.str());
+
+    if (match == notFound)
+        alreadySeen.insert({ *searchKey, metricValue});
+    else
+        match->second = metricValue;
 }

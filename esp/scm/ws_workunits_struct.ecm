@@ -864,6 +864,7 @@ ESPStruct WUDetailsMetaProperty
 {
     string Name;
     ESPenum WUDetailsAttrValueType ValueType;
+    [min_ver("1.99")] string Description;
 };
 
 ESPStruct WUDetailsActivityInfo

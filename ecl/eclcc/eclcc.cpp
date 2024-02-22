@@ -1602,9 +1602,9 @@ void EclCC::processSingleQuery(const EclRepositoryManager & localRepositoryManag
     {
         const BlockIoStats summaryIo = systemIoFinishInfo->querySummaryStats() - systemIoStartInfo->querySummaryStats();
         if (summaryIo.rd_sectors)
-            updateWorkunitStat(instance.wu, SSToperation, scopeName, StSizeOsDiskRead, NULL, summaryIo.rd_sectors * summaryIo.getSectorSize());
+            updateWorkunitStat(instance.wu, SSToperation, scopeName, StSizeDiskRead, NULL, summaryIo.rd_sectors * summaryIo.getSectorSize());
         if (summaryIo.wr_sectors)
-            updateWorkunitStat(instance.wu, SSToperation, scopeName, StSizeOsDiskWrite, NULL, summaryIo.wr_sectors * summaryIo.getSectorSize());
+            updateWorkunitStat(instance.wu, SSToperation, scopeName, StSizeDiskWrite, NULL, summaryIo.wr_sectors * summaryIo.getSectorSize());
     }
 }
 

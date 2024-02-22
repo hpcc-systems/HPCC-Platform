@@ -157,7 +157,7 @@ jobs:
           path: ${{ needs.preamble.outputs.folder_platform }}
 
       - name: Checkout LN
-        if: ${{ matrix.ln }}
+        if: ${{ matrix.ln || matrix.ee }} 
         uses: actions/checkout@v4
         with:
           repository: ${{ github.repository_owner }}/LN
