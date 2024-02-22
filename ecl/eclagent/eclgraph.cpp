@@ -764,6 +764,7 @@ EclSubGraph::EclSubGraph(IAgentContext & _agent, EclGraph & _parent, EclSubGraph
     elapsedGraphCycles = 0;
 
     subgraphCodeContext.set(_agent.queryCodeContext());
+    subgraphCodeContext.setWfid(parent.queryWfid());
     subgraphCodeContext.setContainer(this);
     subgraphAgentContext.setCodeContext(&subgraphCodeContext);
     subgraphAgentContext.set(&_agent);

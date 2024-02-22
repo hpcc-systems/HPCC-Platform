@@ -944,19 +944,28 @@ private:
     class SubGraphCodeContext : public IndirectCodeContextEx
     {
     public:
-        virtual IEclGraphResults * resolveLocalQuery(__int64 activityId)
+        void setContainer(EclSubGraph * _container)
+        {
+            container = _container;
+        }
+        void setWfid(unsigned _wfid)
+        {
+            wfid = _wfid;
+        }
+    // ICodeContext
+        virtual IEclGraphResults * resolveLocalQuery(__int64 activityId) override
         {
             if ((unsigned __int64)activityId == container->queryId())
                 return container;
             return ctx->resolveLocalQuery(activityId);
         }
-        void setContainer(EclSubGraph * _container)
+        virtual unsigned getWorkflowId() const override
         {
-            container = _container;
+            return wfid;
         }
-
     protected:
-        EclSubGraph * container;
+        EclSubGraph * container = nullptr;
+        unsigned wfid = 0;
     } subgraphCodeContext;
 
 public:
@@ -1037,22 +1046,30 @@ class EclGraph : public CInterface
     class SubGraphCodeContext : public IndirectCodeContextEx
     {
     public:
-        IThorChildGraph * resolveChildQuery(__int64 subgraphId, IHThorArg * colocal)
-        {
-            return container->resolveChildQuery((unsigned)subgraphId);
-        }
-
-        IEclGraphResults * resolveLocalQuery(__int64 activityId)
-        {
-            return container->resolveLocalQuery((unsigned)activityId);
-        }
         void setContainer(EclGraph * _container)
         {
             container = _container;
         }
-
+        void setWfid(unsigned _wfid)
+        {
+            wfid = _wfid;
+        }
+    // ICodeContext
+        virtual IThorChildGraph * resolveChildQuery(__int64 subgraphId, IHThorArg * colocal) override
+        {
+            return container->resolveChildQuery((unsigned)subgraphId);
+        }
+        virtual IEclGraphResults * resolveLocalQuery(__int64 activityId) override
+        {
+            return container->resolveLocalQuery((unsigned)activityId);
+        }
+        virtual unsigned getWorkflowId() const override
+        {
+            return wfid;
+        }
     protected:
-        EclGraph * container;
+        EclGraph * container = nullptr;
+        unsigned wfid = 0;
     } graphCodeContext;
 
 public:
@@ -1061,6 +1078,7 @@ public:
     {
         isLibrary = _isLibrary;
         graphCodeContext.set(_agent.queryCodeContext());
+        graphCodeContext.setWfid(wfid);
         graphCodeContext.setContainer(this);
         graphAgentContext.setCodeContext(&graphCodeContext);
         graphAgentContext.set(&_agent);
