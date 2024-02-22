@@ -769,15 +769,25 @@ public:
     std::shared_ptr<parquet::arrow::RowGroupReader> queryCurrentTable(__int64 currTable);
     arrow::Result<std::shared_ptr<arrow::Table>> queryRows();
 
+    bool getCursor(MemoryBuffer & cursor);
+    void setCursor(MemoryBuffer & cursor);
+
 private:
+    // Count of processed rows and tables for both partitioned and regular files.
     __int64 tablesProcessed = 0;                                       // The number of tables processed when reading parquet files.
-    __int64 totalRowsProcessed = 0;                                    // Total number of rows processed of partitioned dataset. We cannot get the total number of chunks and they are variable sizes.
-    __int64 totalRowCount = 0;                                         // Total number of rows in a partition dataset.
-    __int64 startRow = 0;                                              // The starting row in a partitioned dataset.
+    __int64 totalRowsProcessed = 0;                                    // Total number of rows processed.
     __int64 rowsProcessed = 0;                                         // Current Row that has been read from the RowGroup.
-    __int64 startRowGroup = 0;                                         // The beginning RowGroup that is read by a worker.
-    __int64 tableCount = 0;                                            // The number of RowGroups to be read by the worker from the file that was opened for reading.
     __int64 rowsCount = 0;                                             // The number of result rows in a given RowGroup read from the parquet file.
+
+    // Partitioned file read location and size in rows.
+    __int64 totalRowCount = 0;                                         // Total number of rows in a partition dataset to be read by the worker.
+    __int64 startRow = 0;                                              // The starting row in a partitioned dataset.
+
+    // Regular file read location and size in tables.
+    __int64 tableCount = 0;                                            // The number of RowGroups to be read by the worker from the file that was opened for reading.
+    __int64 startRowGroup = 0;                                         // The beginning RowGroup that is read by a worker.
+
+    bool restoredCursor = false;                                       // True if reading from a restored file location. Skips check rowsProcessed == rowsCount to open the table at the current row location.
     size_t maxRowCountInTable = 0;                                     // Max table size set by user.
     std::string partOption;                                            // Begins with either read or write and ends with the partitioning type if there is one i.e. 'readhivepartition'.
     std::string location;                                              // Full path to location for reading parquet files. Can be a filename or directory.

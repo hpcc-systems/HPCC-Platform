@@ -1312,8 +1312,8 @@ public:
     virtual const void * nextRow() override;
     virtual const void * nextRow(size32_t & resultSize) override;
     virtual const void * nextRow(MemoryBufferBuilder & builder) override;
-    virtual bool getCursor(MemoryBuffer & cursor) override;
-    virtual void setCursor(MemoryBuffer & cursor) override;
+    virtual bool getCursor(MemoryBuffer & cursor) override { return parquetFileReader->getCursor(cursor); }
+    virtual void setCursor(MemoryBuffer & cursor) override { parquetFileReader->setCursor(cursor); }
     virtual void stop() override;
 
     virtual void clearInput() override;
@@ -1418,15 +1418,6 @@ const void * ParquetDiskRowReader::nextRow(MemoryBufferBuilder & builder)
         }
     }
     return nullptr;
-}
-
-bool ParquetDiskRowReader::getCursor(MemoryBuffer & cursor)
-{
-    return false;
-}
-
-void ParquetDiskRowReader::setCursor(MemoryBuffer & cursor)
-{
 }
 
 void ParquetDiskRowReader::stop()
