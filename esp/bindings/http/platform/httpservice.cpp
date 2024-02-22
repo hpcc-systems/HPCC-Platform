@@ -153,6 +153,33 @@ static bool authenticateOptionalFailed(IEspContext& ctx, IEspHttpBinding* bindin
     return false;
 }
 
+static bool checkHttpPathStaysWithinBounds(const char *path)
+{
+    if (isEmptyString(path))
+        return true;
+    //The path that follows /esp/files should be relative, not absolute - reject immediately if it is.
+    if (isAbsolutePath(path))
+        return false;
+    int depth = 0;
+    StringArray nodes;
+    nodes.appendList(path, "/");
+    ForEachItemIn(i, nodes)
+    {
+        const char *node = nodes.item(i);
+        if (!*node || streq(node, ".")) //empty or "." doesn't advance
+            continue;
+        if (!streq(node, ".."))
+            depth++;
+        else
+        {
+            depth--;
+            if (depth<0)  //only really care that the relative http path doesn't position itself above its own root node
+                return false;
+        }
+    }
+    return true;
+}
+
 EspHttpBinding* CEspHttpServer::getBinding()
 {
     EspHttpBinding* thebinding=NULL;
@@ -408,7 +435,16 @@ int CEspHttpServer::processRequest()
                         m_response->redirect(*m_request.get(),url);
                     }
                     else
+                    {
+                        if (strieq(methodName.str(), "files_") && !checkHttpPathStaysWithinBounds(pathEx))
+                        {
+                            AERRLOG("Get File %s: attempted access outside of %sfiles/", pathEx.str(), getCFD());
+                            m_response->setStatus(HTTP_STATUS_NOT_FOUND);
+                            m_response->send();
+                            return 0;
+                        }
                         thebinding->onGet(m_request.get(), m_response.get());
+                    }
                 }
                 else
                     unsupported();
@@ -724,33 +760,6 @@ static void httpGetDirectory(CHttpRequest* request, CHttpResponse* response, con
     response->send();
 }
 
-static bool checkHttpPathStaysWithinBounds(const char *path)
-{
-    if (!path || !*path)
-        return true;
-    //The path that follows /esp/files should be relative, not absolute - reject immediately if it is.
-    if (isAbsolutePath(path))
-        return false;
-    int depth = 0;
-    StringArray nodes;
-    nodes.appendList(path, "/");
-    ForEachItemIn(i, nodes)
-    {
-        const char *node = nodes.item(i);
-        if (!*node || streq(node, ".")) //empty or "." doesn't advance
-            continue;
-        if (!streq(node, ".."))
-            depth++;
-        else
-        {
-            depth--;
-            if (depth<0)  //only really care that the relative http path doesn't position itself above its own root node
-                return false;
-        }
-    }
-    return true;
-}
-
 int CEspHttpServer::onGetFile(CHttpRequest* request, CHttpResponse* response, const char *urlpath)
 {
         if (!request || !response || !urlpath)
@@ -801,6 +810,14 @@ int CEspHttpServer::onGetXslt(CHttpRequest* request, CHttpResponse* response, co
         if (!request || !response || !path)
             return -1;
         
+        if (!checkHttpPathStaysWithinBounds(path))
+        {
+            AERRLOG("Get File %s: attempted access outside of %sxslt/", path, getCFD());
+            response->setStatus(HTTP_STATUS_NOT_FOUND);
+            response->send();
+            return 0;
+        }
+
         StringBuffer mimetype, etag, lastModified;
         MemoryBuffer content;
         bool modified = true;
