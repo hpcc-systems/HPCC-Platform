@@ -520,40 +520,49 @@ const StringArray &HelperDll::queryManifestFiles(const char *type, const char *w
         {
             unsigned start = msTick();
             IPropertyTree &resourceFile = resourceFiles->query();
-            unsigned id = resourceFile.getPropInt("@id", 0);
-            size32_t len = 0;
-            const void *data = nullptr;
-            if (!getResource(len, data, type, id, false))
-                throwUnexpected();
-            MemoryBuffer decompressed;
-            if (resourceFile.getPropBool("@compressed"))
+            if (resourceFile.hasProp("@jfrogUser"))
             {
-                // MORE - would be better to try to spot files that are not worth recompressing (like jar files)?
-                decompressResource(len, data, decompressed);
-                data = decompressed.toByteArray();
-                len = decompressed.length();
+                StringBuffer localpath(tempDir.append(PATHSEPCHAR).append(resourceFile.queryProp("@filename")));
+                getResourceFromJfrog(localpath, resourceFile);
+                list->append(localpath);
             }
             else
             {
-                // Data is preceded by the resource header
-                // MORE - does this depend on whether @header is set? is that what @header means?
-                data = ((const byte *) data) + resourceHeaderLength;
-                len -= resourceHeaderLength;
+                unsigned id = resourceFile.getPropInt("@id", 0);
+                size32_t len = 0;
+                const void *data = nullptr;
+                if (!getResource(len, data, type, id, false))
+                    throwUnexpected();
+                MemoryBuffer decompressed;
+                if (resourceFile.getPropBool("@compressed"))
+                {
+                    // MORE - would be better to try to spot files that are not worth recompressing (like jar files)?
+                    decompressResource(len, data, decompressed);
+                    data = decompressed.toByteArray();
+                    len = decompressed.length();
+                }
+                else
+                {
+                    // Data is preceded by the resource header
+                    // MORE - does this depend on whether @header is set? is that what @header means?
+                    data = ((const byte *) data) + resourceHeaderLength;
+                    len -= resourceHeaderLength;
+                }
+                StringBuffer extractName(tempDir);
+                extractName.append(PATHSEPCHAR);
+                if (resourceFile.hasProp("@filename"))
+                    resourceFile.getProp("@filename", extractName);
+                else
+                    extractName.append(id).append('.').append(type);
+                recursiveCreateDirectoryForFile(extractName);
+                OwnedIFile f = createIFile(extractName);
+                OwnedIFileIO o = f->open(IFOcreate);
+                assertex(o.get() != nullptr);
+                o->write(0, len, data);
+                list->append(extractName);
+                if (doTrace(traceJava) && streq(type, "jar"))
+                    DBGLOG("Extracted jar resource %u size %u to %s in %u ms", id, len, extractName.str(), msTick() - start);
             }
-            StringBuffer extractName(tempDir);
-            extractName.append(PATHSEPCHAR);
-            if (resourceFile.hasProp("@filename"))
-                resourceFile.getProp("@filename", extractName);
-            else
-                extractName.append(id).append('.').append(type);
-            recursiveCreateDirectoryForFile(extractName);
-            OwnedIFile f = createIFile(extractName);
-            OwnedIFileIO o = f->open(IFOcreate);
-            assertex(o.get() != nullptr);
-            o->write(0, len, data);
-            list->append(extractName);
-            if (doTrace(traceJava) && streq(type, "jar"))
-                DBGLOG("Extracted jar resource %u size %u to %s in %u ms", id, len, extractName.str(), msTick() - start);
         }
         manifestFiles.replaceOwn(*list.getLink());
     }

@@ -25,6 +25,7 @@
 #include "hqlcerrors.hpp"
 #include "thorplugin.hpp"
 #include "codesigner.hpp"
+#include "hqlmanifest.hpp"
 
 #define BIGSTRING_BASE 101
 #define MANIFEST_BASE 1000
@@ -238,42 +239,50 @@ void ResourceManager::addManifestFile(const char *filename, ICodegenContextCallb
     ForEach(*resources)
     {
         IPropertyTree &item = resources->query();
-        const char *resourceFilename = item.queryProp("@originalFilename");
-        const char *md5 = item.queryProp("@md5");
-        if (md5)
-        {
-            StringBuffer calculated;
-            md5_filesum(resourceFilename, calculated);
-            if (!strieq(calculated, md5))
-                throw makeStringExceptionV(0, "MD5 mismatch on file %s in manifest %s", item.queryProp("@filename"), filename);
-        }
-        else if (isSigned)
-            throw makeStringExceptionV(0, "MD5 must be supplied for file %s in signed manifest %s", item.queryProp("@filename"), filename);
 
-        if (!item.hasProp("@type"))
-            item.setProp("@type", "UNKNOWN");
-        int id;
-        if (getDuplicateResourceId(item.queryProp("@type"), item.queryProp("@resourcePath"), NULL, id))
+        if (item.hasProp("@jfrogUser"))
         {
-            item.setPropInt("@id", id);
             manifest->addPropTree("Resource", LINK(&item));
         }
         else
         {
-            const char *type = item.queryProp("@type");
-            if (strieq(type, "CPP") || strieq(type, "C"))
+            const char *resourceFilename = item.queryProp("@originalFilename");
+            const char *md5 = item.queryProp("@md5");
+            if (md5)
             {
-                if (!ctxCallback->allowAccess("cpp", isSigned))
-                    throw makeStringExceptionV(0, "Embedded code via manifest file not allowed");
-                cppInstance.useSourceFile(resourceFilename, item.queryProp("@compileFlags"), false);
+                StringBuffer calculated;
+                md5_filesum(resourceFilename, calculated);
+                if (!strieq(calculated, md5))
+                    throw makeStringExceptionV(0, "MD5 mismatch on file %s in manifest %s", item.queryProp("@filename"), filename);
+            }
+            else if (isSigned)
+                throw makeStringExceptionV(0, "MD5 must be supplied for file %s in signed manifest %s", item.queryProp("@filename"), filename);
+
+            if (!item.hasProp("@type"))
+                item.setProp("@type", "UNKNOWN");
+            int id;
+            if (getDuplicateResourceId(item.queryProp("@type"), item.queryProp("@resourcePath"), NULL, id))
+            {
+                item.setPropInt("@id", id);
+                manifest->addPropTree("Resource", LINK(&item));
             }
             else
             {
-                if ((strieq(type, "jar") || strieq(type, "pyzip")) && !ctxCallback->allowAccess(type, isSigned))
-                    throw makeStringExceptionV(0, "Embedded %s files via manifest file not allowed", type);
-                MemoryBuffer content;
-                loadResource(resourceFilename, content);
-                addCompress(type, content.length(), content.toByteArray(), &item); // MORE - probably should not recompress files known to be compressed, like jar
+                const char *type = item.queryProp("@type");
+                if (strieq(type, "CPP") || strieq(type, "C"))
+                {
+                    if (!ctxCallback->allowAccess("cpp", isSigned))
+                        throw makeStringExceptionV(0, "Embedded code via manifest file not allowed");
+                    cppInstance.useSourceFile(resourceFilename, item.queryProp("@compileFlags"), false);
+                }
+                else
+                {
+                    if ((strieq(type, "jar") || strieq(type, "pyzip")) && !ctxCallback->allowAccess(type, isSigned))
+                        throw makeStringExceptionV(0, "Embedded %s files via manifest file not allowed", type);
+                    MemoryBuffer content;
+                    loadResource(resourceFilename, content);
+                    addCompress(type, content.length(), content.toByteArray(), &item); // MORE - probably should not recompress files known to be compressed, like jar
+                }
             }
         }
     }
@@ -359,7 +368,15 @@ void ResourceManager::addManifestsFromArchive(IPropertyTree *archive, ICodegenCo
                 else
                     filename = item.queryProp("@filename");
                 int id;
-                if (getDuplicateResourceId(item.queryProp("@type"), NULL, filename, id))
+                if (item.hasProp("@jfrogUser"))
+                {
+                    MemoryBuffer content;
+                    getTempFilePath(tempDir, "jfrog", nullptr);
+                    getResourceFromJfrog(tempDir.append(PATHSEPCHAR).append(item.queryProp("@filename")), item);
+                    loadResource(tempDir, content);
+                    addCompress(item.queryProp("@type"), content.length(), content.toByteArray(), &item);
+                }
+                else if (getDuplicateResourceId(item.queryProp("@type"), NULL, filename, id))
                 {
                     item.setPropInt("@id", (int)id);
                     manifest->addPropTree("Resource", LINK(&item));
