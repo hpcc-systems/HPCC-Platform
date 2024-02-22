@@ -540,10 +540,19 @@ class CDFUengine: public CInterface, implements IDFUengine
         return result;
     }
 
-    void ensureFilePermissions(const char * fileName, SecAccessFlags perm, bool write)
+    void ensureFilePermissions(const char * planeName, const char * fileName, SecAccessFlags perm, bool write)
     {
         if ((write && !HASWRITEPERMISSION(perm)) || (!write && !HASREADPERMISSION(perm)))
         {
+            if (!isEmptyString(planeName))
+            {
+                CDfsLogicalFileName dlfn;
+                dlfn.setPlaneExternal(planeName, fileName);
+                if (write)
+                    throw makeStringExceptionV(DFSERR_CreateAccessDenied, "Create permission denied for file scope: %s on DropZone: %s", dlfn.get(), planeName);
+                else
+                    throw makeStringExceptionV(DFSERR_LookupAccessDenied, "Lookup permission denied for file scope: %s on DropZone: %s", dlfn.get(), planeName);
+            }
             if (write)
                 throw makeStringExceptionV(DFSERR_CreateAccessDenied, "Create permission denied for physical file(s): %s", fileName);
             else
@@ -614,7 +623,7 @@ public:
 
         SecAccessFlags perm = queryDistributedFileDirectory().getFDescPermissions(fd,user,auditflags);
         StringBuffer name;
-        ensureFilePermissions(getFDescName(fd,name),perm,write);
+        ensureFilePermissions(nullptr,getFDescName(fd,name),perm,write);
     }
 
     void checkForeignFilePermissions(IConstDFUfileSpec *fSpec,IFileDescriptor *fd,IUserDescriptor *user)
@@ -688,6 +697,7 @@ public:
             {
                 if (getGlobalConfigSP()->getPropBool("expert/@failOverToLegacyPhysicalPerms",!isContainerized()))
                     perm = queryDistributedFileDirectory().getFDescPermissions(fd,user,auditflags);
+                ensureFilePermissions(planeName,relativePath,perm,write);
             }
         }
         else
@@ -702,8 +712,6 @@ public:
             throw makeStringException(-1,"Unexpected empty plane name."); // should never be the case in containerized setups
 #endif
         }
-        StringBuffer name;
-        ensureFilePermissions(getFDescName(fd,name),perm,write);
     }
 
     void monitorCycle(bool &cancelling)
