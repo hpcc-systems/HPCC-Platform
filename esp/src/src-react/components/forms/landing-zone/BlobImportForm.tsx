@@ -85,9 +85,8 @@ export const BlobImportForm: React.FunctionComponent<BlobImportFormProps> = ({
                     request = data;
                     if (!isContainer) {
                         request["sourceIP"] = file.SourceIP;
-                    } else {
-                        request["sourcePlane"] = file.SourcePlane;
                     }
+                    request["sourcePlane"] = file.SourcePlane;
                     request["sourcePath"] = file.SourceFile;
                     request["fullPath"] = file.SourceFile;
                     requests.push(FileSpray.SprayFixed({

@@ -84,9 +84,8 @@ export const VariableImportForm: React.FunctionComponent<VariableImportFormProps
                     request = data;
                     if (!isContainer) {
                         request["sourceIP"] = file.SourceIP;
-                    } else {
-                        request["sourcePlane"] = file.SourcePlane;
                     }
+                    request["sourcePlane"] = file.SourcePlane;
                     request["sourcePath"] = file.SourceFile;
                     request["destLogicalName"] = data.namePrefix + ((
                         data.namePrefix && data.namePrefix.substring(-2) !== "::" &&
