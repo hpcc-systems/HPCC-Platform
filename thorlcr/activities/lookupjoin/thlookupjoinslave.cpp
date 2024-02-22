@@ -905,6 +905,7 @@ protected:
             {
                 exception.setown(e);
                 EXCLOG(e, "CRowProcessor");
+                owner.broadcaster->cancel(e);
             }
         }
     } *rowProcessor;
