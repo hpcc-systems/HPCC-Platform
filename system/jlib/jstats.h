@@ -870,6 +870,7 @@ extern jlib_decl unsigned __int64 mergeStatisticValue(unsigned __int64 prevValue
 extern jlib_decl StatisticMeasure queryMeasure(StatisticKind kind);
 extern jlib_decl const char * queryStatisticName(StatisticKind kind);
 extern jlib_decl void queryLongStatisticName(StringBuffer & out, StatisticKind kind);
+extern jlib_decl const char * queryStatisticDescription(StatisticKind kind);
 extern jlib_decl const char * queryTreeTag(StatisticKind kind);
 extern jlib_decl const char * queryCreatorTypeName(StatisticCreatorType sct);
 extern jlib_decl const char * queryScopeTypeName(StatisticScopeType sst);
