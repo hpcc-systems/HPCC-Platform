@@ -112,6 +112,13 @@ include_directories (
          ${HPCC_SOURCE_DIR}/fs/dafsclient
     )
 
+if (USE_PARQUET)
+    include_directories (
+         ${HPCC_SOURCE_DIR}/esp/platform
+         ${HPCC_SOURCE_DIR}/plugins/parquet
+    )
+endif()
+
 ADD_DEFINITIONS( -DTHORHELPER_EXPORTS -D_USRDLL )
 
 HPCC_ADD_LIBRARY( thorhelper SHARED ${SRCS} )
@@ -125,6 +132,10 @@ target_link_libraries ( thorhelper
          deftype 
          dalibase
     )
+
+if (USE_PARQUET)
+    target_link_libraries( thorhelper parquetembed )
+endif()
 
 if (USE_NUMA)
  target_link_libraries ( thorhelper ${NUMA_LIBRARIES} )

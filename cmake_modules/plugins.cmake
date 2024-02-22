@@ -80,6 +80,10 @@ if (USE_MYSQL_REPOSITORY)
     set(VCPKG_MYSQLEMBED "${VCPKG_INCLUDE}")
 endif()
 
+if (USE_PARQUET)
+    set(VCPKG_PARQUETEMBED "${VCPKG_INCLUDE}")
+endif()
+
 #  vcpkg.json options  ---
 set(VCPKG_APR "${VCPKG_SUPPRESS}")
 if (USE_APR)

@@ -38,7 +38,6 @@
 #include "hqlplugins.hpp"
 #include "eclrtl_imp.hpp"
 #include "eclhelper.hpp"
-#include "tokenserialization.hpp"
 #include "rtlfield.hpp"
 #include "roxiemem.hpp"
 
@@ -78,36 +77,6 @@ static int getNumFields(const RtlTypeInfo *record)
     while (*fields++)
         count++;
     return count;
-}
-
-static void handleDeserializeOutcome(DeserializationResult resultcode, const char *targetype, const char *culpritvalue)
-{
-    switch (resultcode)
-    {
-    case Deserialization_SUCCESS:
-        break;
-    case Deserialization_BAD_TYPE:
-        failx("Deserialization error (%s): value cannot be const", targetype);
-        break;
-    case Deserialization_UNSUPPORTED:
-        failx("Deserialization error (%s): encountered value type not supported", targetype);
-        break;
-    case Deserialization_INVALID_TOKEN:
-        failx("Deserialization error (%s): token cannot be NULL, empty, or all whitespace", targetype);
-        break;
-    case Deserialization_NOT_A_NUMBER:
-        failx("Deserialization error (%s): non-numeric characters found in numeric conversion: '%s'", targetype, culpritvalue);
-        break;
-    case Deserialization_OVERFLOW:
-        failx("Deserialization error (%s): number too large to be represented by receiving value", targetype);
-        break;
-    case Deserialization_UNDERFLOW:
-        failx("Deserialization error (%s): number too small to be represented by receiving value", targetype);
-        break;
-    default:
-        typeError(targetype, culpritvalue);
-        break;
-    }
 }
 
 enum PathNodeType {CPNTScalar, CPNTDataset, CPNTSet};
@@ -787,7 +756,7 @@ using TableColumns = std::unordered_map<std::string, std::shared_ptr<arrow::Arra
  * The next function returns the index to read and the table to read from. shouldRead will return true as long as
  * the worker can read another row.
  */
-class ParquetReader
+class PARQUETEMBED_PLUGIN_API ParquetReader
 {
 public:
     ParquetReader(const char *option, const char *_location, int _maxRowCountInTable, const char *_partitionFields, const IThorActivityContext *_activityCtx);
@@ -817,7 +786,7 @@ private:
     std::shared_ptr<arrow::RecordBatchReader> rbatchReader = nullptr;                           // RecordBatchReader reads a dataset one record batch at a time. Must be kept alive for rbatchItr.
     arrow::RecordBatchReader::RecordBatchReaderIterator rbatchItr;                              // Iterator of RecordBatches when reading a partitioned dataset.
     std::vector<__int64> fileTableCounts;                                                       // Count of RowGroups in each open file to get the correct row group when reading specific parts of the file.
-    std::vector<std::unique_ptr<parquet::arrow::FileReader>> parquetFileReaders;                // Vector of FileReaders that match the target file name. data0.parquet, data1.parquet, etc.
+    std::vector<std::shared_ptr<parquet::arrow::FileReader>> parquetFileReaders;                // Vector of FileReaders that match the target file name. data0.parquet, data1.parquet, etc.
     TableColumns parquetTable;                                                                  // The current table being read broken up into columns. Unordered map where the left side is a string of the field name and the right side is an array of the values.
     std::vector<std::string> partitionFields;                                                   // The partitioning schema for reading Directory Partitioned files.
     arrow::MemoryPool *pool = nullptr;                                                          // Memory pool for reading parquet files.
@@ -829,7 +798,7 @@ private:
  * target directory or matching the file mask will be deleted and writing will continue. openWriteFile opens the write file or sets the
  * partitioning options. writeRecordBatch utilizes the open write streams and writes the data to the target location.
  */
-class ParquetWriter
+class PARQUETEMBED_PLUGIN_API ParquetWriter
 {
 public:
     ParquetWriter(const char *option, const char *_destination, int _maxRowCountInBatch, bool _overwrite, arrow::Compression::type _compressionOption, const char *_partitionFields, const IThorActivityContext *_activityCtx);
@@ -896,7 +865,7 @@ private:
  * @brief Builds ECL records for ParquetRowStream.
  *
  */
-class ParquetRowBuilder : public CInterfaceOf<IFieldSource>
+class PARQUETEMBED_PLUGIN_API ParquetRowBuilder : public CInterfaceOf<IFieldSource>
 {
 public:
     ParquetRowBuilder(TableColumns *_resultRows, int64_t _currentRow)
@@ -931,8 +900,6 @@ protected:
 
 private:
     __int64 currentRow;                                                             // The index in the arrow Array to read the current value.
-    TokenDeserializer tokenDeserializer;                                            // Deseralize string type values to numeric types when returning results.
-    TokenSerializer tokenSerializer;                                                // serialize numeric types to string types when returning results.
     StringBuffer serialized;                                                        // Output string from serialization.
     TableColumns *resultRows = nullptr;                                             // A pointer to the result rows map where the left side are the field names for the columns and the right is an array of values.
     std::vector<PathTracker> pathStack;                                             // PathTracker keeps track of nested data when reading sets.
@@ -1005,7 +972,6 @@ protected:
     int firstParam;
     RtlFieldStrInfo dummyField;
     int thisParam;
-    TokenSerializer tokenSerializer;
     std::shared_ptr<ParquetWriter> parquetWriter;
 };
 

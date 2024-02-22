@@ -14,7 +14,6 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 ############################################################################## */
-
 #include "jliball.hpp"
 
 #include "thorfile.hpp"
@@ -35,6 +34,10 @@
 #include "thorcommon.hpp"
 #include "csvsplitter.hpp"
 #include "thormeta.hpp"
+
+#ifdef _USE_PARQUET
+    #include "parquetembed.hpp"
+#endif
 
 //---------------------------------------------------------------------------------------------------------------------
 
@@ -1272,7 +1275,208 @@ protected:
     IDiskRowReader * activeReader = nullptr;
 };
 
+//---------------------------------------------------------------------------------------------------------------------
+#ifdef _USE_PARQUET
+class CParquetActivityContext : public IThorActivityContext
+{
+public:
+    CParquetActivityContext(bool _local, unsigned _numWorkers, unsigned _curWorker)
+    : local(_local), workers(_local ? 1 : _numWorkers), curWorker(_local ? 0 : _curWorker)
+    {
+        assertex(curWorker < workers);
+    }
 
+    virtual bool isLocal() const override { return local; };
+    virtual unsigned numSlaves() const override { return workers; };
+    virtual unsigned numStrands() const override { return 1; };
+    virtual unsigned querySlave() const override { return curWorker; };
+    virtual unsigned queryStrand() const override { return 0; }; // 0 based 0..numStrands-1
+protected:
+    unsigned workers;
+    unsigned curWorker;
+    bool local;
+};
+
+/*
+ * Base class for reading a Parquet local file
+ */
+class ParquetDiskRowReader : public CInterfaceOf<IDiskRowStream>, implements IDiskRowReader
+{
+public:
+    ParquetDiskRowReader(IDiskReadMapping * _mapping);
+    ~ParquetDiskRowReader();
+    IMPLEMENT_IINTERFACE_USING(CInterfaceOf<IDiskRowStream>)
+
+    virtual IDiskRowStream * queryAllocatedRowStream(IEngineRowAllocator * _outputAllocator) override;
+
+    virtual const void * nextRow() override;
+    virtual const void * nextRow(size32_t & resultSize) override;
+    virtual const void * nextRow(MemoryBufferBuilder & builder) override;
+    virtual bool getCursor(MemoryBuffer & cursor) override;
+    virtual void setCursor(MemoryBuffer & cursor) override;
+    virtual void stop() override;
+
+    virtual void clearInput() override;
+    virtual bool matches(const char * _format, bool _streamRemote, IDiskReadMapping * _mapping) override;
+
+// IDiskRowReader
+    virtual bool setInputFile(const char * localFilename, const char * logicalFilename, unsigned partNumber, offset_t baseOffset, const IPropertyTree * inputOptions, const FieldFilterArray & expectedFilter) override;
+    virtual bool setInputFile(const RemoteFilename & filename, const char * logicalFilename, unsigned partNumber, offset_t baseOffset, const IPropertyTree * inputOptions, const FieldFilterArray & expectedFilter) override;
+    virtual bool setInputFile(const CLogicalFileSlice & slice, const FieldFilterArray & expectedFilter, unsigned copy) override;
+
+protected:
+    IDiskReadMapping * mapping = nullptr;
+    Owned<IEngineRowAllocator> outputAllocator;
+
+    MemoryBuffer tempOutputBuffer;
+    MemoryBufferBuilder bufferBuilder;
+
+    parquetembed::ParquetReader * parquetFileReader = nullptr;
+    CParquetActivityContext * parquetActivityCtx = nullptr;
+    StringAttr format;
+    RecordTranslationMode translationMode;
+    bool eogPending = false;
+};
+
+ParquetDiskRowReader::ParquetDiskRowReader(IDiskReadMapping * _mapping)
+ : mapping(_mapping), bufferBuilder(tempOutputBuffer, 0), parquetActivityCtx(new CParquetActivityContext(true, 1, 0))
+{
+    translationMode = mapping->queryTranslationMode();
+}
+
+ParquetDiskRowReader::~ParquetDiskRowReader()
+{
+    if (parquetFileReader)
+    {
+        delete parquetFileReader;
+    }
+
+    if (parquetActivityCtx)
+    {
+        delete parquetActivityCtx;
+    }
+}
+
+IDiskRowStream * ParquetDiskRowReader::queryAllocatedRowStream(IEngineRowAllocator * _outputAllocator)
+{
+    outputAllocator.set(_outputAllocator);
+    return this;
+}
+
+// Returns rows to the engine for the next stage in the processing
+const void * ParquetDiskRowReader::nextRow()
+{
+    while (parquetFileReader->shouldRead())
+    {
+        parquetembed::TableColumns * table = nullptr;
+        auto index = parquetFileReader->next(table);
+
+        if (table && !table->empty())
+        {
+            parquetembed::ParquetRowBuilder pRowBuilder(table, index);
+
+            RtlDynamicRowBuilder rowBuilder(outputAllocator);
+            const RtlTypeInfo * typeInfo = outputAllocator->queryOutputMeta()->queryTypeInfo();
+            assertex(typeInfo);
+            RtlFieldStrInfo dummyField("<row>", NULL, typeInfo);
+            size32_t sizeRead = typeInfo->build(rowBuilder, 0, &dummyField, pRowBuilder);
+            roxiemem::OwnedConstRoxieRow next = rowBuilder.finalizeRowClear(sizeRead);
+            return next.getClear();
+        }
+    }
+    return eofRow;
+}
+
+// Returns temporary rows for filtering/counting etc.
+// Row is built in temporary buffer and reused.
+const void * ParquetDiskRowReader::nextRow(size32_t & resultSize)
+{
+    const void * next = nextRow(bufferBuilder);
+    resultSize = tempOutputBuffer.length();
+    return next;
+}
+
+// Returns rows to any output buffer in dafilesrv
+const void * ParquetDiskRowReader::nextRow(MemoryBufferBuilder & builder)
+{
+    while (parquetFileReader->shouldRead())
+    {
+        parquetembed::TableColumns * table = nullptr;
+        auto index = parquetFileReader->next(table);
+
+        if (table && !table->empty())
+        {
+            parquetembed::ParquetRowBuilder pRowBuilder(table, index);
+
+            const RtlTypeInfo * typeInfo = outputAllocator->queryOutputMeta()->queryTypeInfo();
+            assertex(typeInfo);
+            RtlFieldStrInfo dummyField("<row>", NULL, typeInfo);
+            size32_t resultSize = typeInfo->build(builder, 0, &dummyField, pRowBuilder);
+            const void * next = builder.getSelf();
+            builder.finishRow(resultSize);
+            return next;
+        }
+    }
+    return nullptr;
+}
+
+bool ParquetDiskRowReader::getCursor(MemoryBuffer & cursor)
+{
+    return false;
+}
+
+void ParquetDiskRowReader::setCursor(MemoryBuffer & cursor)
+{
+}
+
+void ParquetDiskRowReader::stop()
+{
+}
+
+void ParquetDiskRowReader::clearInput()
+{
+    eogPending = false;
+}
+
+bool ParquetDiskRowReader::matches(const char * _format, bool _streamRemote, IDiskReadMapping * _mapping)
+{
+    if (!strieq(format, "parquet"))
+        return false;
+    return true; // TO DO add additional check
+}
+
+bool ParquetDiskRowReader::setInputFile(const char * localFilename, const char * logicalFilename, unsigned partNumber, offset_t baseOffset, const IPropertyTree * inputOptions, const FieldFilterArray & expectedFilter)
+{
+    DBGLOG(0, "Opening File: %s", localFilename);
+    parquetFileReader = new parquetembed::ParquetReader("read", localFilename, 50000, nullptr, parquetActivityCtx);
+    auto st = parquetFileReader->processReadFile();
+    if (!st.ok())
+        throw MakeStringException(0, "%s: %s.", st.CodeAsString().c_str(), st.message().c_str());
+    return true;
+}
+
+bool ParquetDiskRowReader::setInputFile(const RemoteFilename & filename, const char * logicalFilename, unsigned partNumber, offset_t baseOffset, const IPropertyTree * inputOptions, const FieldFilterArray & expectedFilter)
+{
+    throwUnexpected();
+}
+
+bool ParquetDiskRowReader::setInputFile(const CLogicalFileSlice & slice, const FieldFilterArray & expectedFilter, unsigned copy)
+{
+    StringBuffer localPath;
+    slice.getURL(localPath, copy);
+
+    // getURL returns a filename in the format ./file/127.0.0.1/path/to/file/data.parquet
+    // To use it with the ParquetReader constructor we need just the file path
+    // Skip leading .
+    const char * slash = strstr(localPath, "/");
+    // Skip file
+    slash = strstr(slash+1, "/");
+    // Skip ip
+    slash = strstr(slash+1, "/");
+
+    return setInputFile(slash, slice.queryLogicalFilename(), slice.queryPartNumber(), slice.queryStartOffset(), slice.queryFileMeta(), expectedFilter);
+}
+#endif
 //---------------------------------------------------------------------------------------------------------------------
 
 
@@ -1507,6 +1711,10 @@ void RemoteDiskRowReader::stop()
 
 IDiskRowReader * doCreateLocalDiskReader(const char * format, IDiskReadMapping * _mapping)
 {
+#ifdef _USE_PARQUET
+    if (strieq(format, "parquet"))
+        return new ParquetDiskRowReader(_mapping);
+#endif
     if (strieq(format, "flat"))
         return new BinaryDiskRowReader(_mapping);
     if (strieq(format, "csv"))
