@@ -2726,7 +2726,7 @@ FILESERVICES_API char *  FILESERVICES_CALL fsfResolveHostName(const char *hostna
     return ret.detach();
 }
 
-static void checkExternalFileRights(ICodeContext *ctx, CDfsLogicalFileName &lfn, bool rd,bool wr)
+static void checkExternalFileRights(ICodeContext *ctx,const char *scope,bool rd,bool wr)
 {
     Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
     unsigned auditflags = 0;
@@ -2734,34 +2734,90 @@ static void checkExternalFileRights(ICodeContext *ctx, CDfsLogicalFileName &lfn,
         auditflags |= (DALI_LDAP_AUDIT_REPORT|DALI_LDAP_READ_WANTED);
     if (wr)
         auditflags |= (DALI_LDAP_AUDIT_REPORT|DALI_LDAP_WRITE_WANTED);
-    SecAccessFlags perm = queryDistributedFileDirectory().getFilePermissions(lfn.get(),udesc,auditflags);
+    SecAccessFlags perm = queryDistributedFileDirectory().getFScopePermissions(scope,udesc,auditflags);
     if (wr) {
         if (!HASWRITEPERMISSION(perm)) {
-            throw MakeStringException(-1,"Write permission denied for %s", lfn.get());
+            throw makeStringExceptionV(-1,"Write permission denied for scope %s", scope);
         }
     }
     if (rd) {
         if (!HASREADPERMISSION(perm)) {
-            throw MakeStringException(-1,"Read permission denied for %s", lfn.get());
+            throw makeStringExceptionV(-1,"Read permission denied for scope %s", scope);
         }
     }
 }
 
-FILESERVICES_API void  FILESERVICES_CALL fsMoveExternalFile(ICodeContext * ctx,const char *location,const char *frompath,const char *topath)
+static void checkExternalFilePath(ICodeContext *ctx,IPropertyTree *plane,const char *host,
+    const char *path,bool rd,bool wr,RemoteFilename &rfn)
 {
-    SocketEndpoint ep(location);
-    if (ep.isNull())
-        throw MakeStringException(-1,"fsMoveExternalFile: Cannot resolve location %s",location);
-    CDfsLogicalFileName from;
-    from.setExternal(location,frompath);
-    CDfsLogicalFileName to;
-    to.setExternal(location,topath);
-    checkExternalFileRights(ctx,from,true,true);
-    checkExternalFileRights(ctx,to,false,true);
-    RemoteFilename fromrfn;
-    fromrfn.setPath(ep,frompath);
-    RemoteFilename torfn;
-    torfn.setPath(ep,topath);
+    if (containsRelPaths(path)) //Detect a path like: a/../../../f
+        throw makeStringExceptionV(-1,"Invalid file path %s",path);
+
+    CDfsLogicalFileName dlfn;
+    if (plane)
+    {
+        //allow relative path if a plane name is specified.
+        if (isAbsolutePath(path))
+        {
+            const char *relativePath = getRelativePath(path,plane->queryProp("@prefix"));
+            if (nullptr == relativePath)
+                throw makeStringExceptionV(-1,"Invalid plane path %s.",path);
+            path = relativePath;
+        }
+        dlfn.setPlaneExternal(plane->queryProp("@name"),path);
+    }
+    else
+        dlfn.setExternal(host,path); //for backward compatibility
+    dlfn.getExternalFilename(rfn);
+
+    Owned<IFile> f = createIFile(rfn);
+    if (f->exists() && (f->isDirectory()==fileBool::foundYes))
+        checkExternalFileRights(ctx,dlfn.get(),rd,wr);
+    else
+    {
+        StringBuffer scopes;
+        checkExternalFileRights(ctx,dlfn.getScopes(scopes),rd,wr);
+    }
+}
+
+//this function is very similar to getDropZoneAndValidateHostAndPath in TpCommon, and both should be replaced/moved so common.
+static IPropertyTree *checkPlaneOrHost(const char *planeName,const char *host,const char *path)
+{
+    if (!isEmptyString(planeName))
+    {
+        Owned<IPropertyTree> plane = getDropZonePlane(planeName); //Only support DropZone for now.
+        if (!plane)
+            throw makeStringExceptionV(-1,"DropZone %s not found.",planeName);
+        return plane.getClear();
+    }
+
+    if (!isAbsolutePath(path)) //Relative paths permitted, check host only
+        path = nullptr;
+
+    Owned<IPropertyTree> plane = findDropZonePlane(path,host,true,isContainerized());
+    if (plane)
+        return plane.getClear();
+
+#ifndef _CONTAINERIZED
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
+    Owned<IConstEnvironment> env = factory->openEnvironment();
+    if (env->isDropZoneRestrictionEnabled())
+        throw makeStringExceptionV(-1,"DropZone Plane not found for host %s path %s.",host,path);
+
+    LOG(MCdebugInfo, unknownJob, "No matching drop zone path on '%s' to file path: '%s'",host,path);
+#endif
+
+    return nullptr;
+}
+
+static void implementMoveExternalFile(ICodeContext *ctx,const char *location,
+    const char *frompath,const char *topath,const char *planename)
+{
+    Owned<IPropertyTree> plane = checkPlaneOrHost(planename,location,frompath);
+    RemoteFilename fromrfn,torfn;
+    checkExternalFilePath(ctx,plane,location,frompath,true,true,fromrfn);
+    checkExternalFilePath(ctx,plane,location,topath,false,true,torfn);
+
     Owned<IFile> fileto = createIFile(torfn);
     if (fileto->exists())
         throw MakeStringException(-1,"fsMoveExternalFile: Destination %s already exists", topath);
@@ -2774,16 +2830,22 @@ FILESERVICES_API void  FILESERVICES_CALL fsMoveExternalFile(ICodeContext * ctx,c
     AuditMessage(ctx,"MoveExternalFile",frompath,topath);
 }
 
-FILESERVICES_API void  FILESERVICES_CALL fsDeleteExternalFile(ICodeContext * ctx,const char *location,const char *path)
+FILESERVICES_API void  FILESERVICES_CALL fsMoveExternalFile(ICodeContext *ctx,const char *location,const char *frompath,const char *topath)
 {
-    SocketEndpoint ep(location);
-    if (ep.isNull())
-        throw MakeStringException(-1,"fsDeleteExternalFile: Cannot resolve location %s",location);
-    CDfsLogicalFileName lfn;
-    lfn.setExternal(location,path);
-    checkExternalFileRights(ctx,lfn,false,true);
+    implementMoveExternalFile(ctx,location,frompath,topath,nullptr);
+}
+
+FILESERVICES_API void  FILESERVICES_CALL fsMoveExternalFile_v2(ICodeContext *ctx,const char *location,
+    const char *frompath,const char *topath,const char *planename)
+{
+    implementMoveExternalFile(ctx,location,frompath,topath,planename);
+}
+
+static void implementDeleteExternalFile(ICodeContext *ctx,const char *location,const char *path,const char *planename)
+{
+    Owned<IPropertyTree> plane = checkPlaneOrHost(planename,location,path);
     RemoteFilename rfn;
-    rfn.setPath(ep,path);
+    checkExternalFilePath(ctx,plane,location,path,false,true,rfn);
     Owned<IFile> file = createIFile(rfn);
     file->remove();
     StringBuffer s("DeleteExternalFile ('");
@@ -2792,28 +2854,37 @@ FILESERVICES_API void  FILESERVICES_CALL fsDeleteExternalFile(ICodeContext * ctx
     AuditMessage(ctx,"DeleteExternalFile",path);
 }
 
-FILESERVICES_API void  FILESERVICES_CALL fsCreateExternalDirectory(ICodeContext * ctx,const char *location,const char *_path)
+FILESERVICES_API void FILESERVICES_CALL fsDeleteExternalFile(ICodeContext *ctx,const char *location,const char *path)
 {
-    SocketEndpoint ep(location);
-    if (ep.isNull())
-        throw MakeStringException(-1, "fsCreateExternalDirectory: Cannot resolve location %s",location);
-    CDfsLogicalFileName lfn;
-    StringBuffer path(_path);
-    if (0 == path.length())
-        throw MakeStringException(-1, "fsCreateExternalDirectory: empty directory");
-    // remove trailing path separator if present to make it look like a regular LFN after lfn.setExternal
-    if (isPathSepChar(path.charAt(path.length()-1)))
-        path.remove(path.length()-1, 1);
-    lfn.setExternal(location,path);
-    checkExternalFileRights(ctx,lfn,false,true);
+    implementDeleteExternalFile(ctx,location,path,nullptr);
+}
+
+FILESERVICES_API void FILESERVICES_CALL fsDeleteExternalFile_v2(ICodeContext *ctx,const char *location,const char *path,const char *planename)
+{
+    implementDeleteExternalFile(ctx,location,path,planename);
+}
+
+static void implementCreateExternalDirectory(ICodeContext *ctx,const char *location,const char *path,const char *planename)
+{
+    Owned<IPropertyTree> plane = checkPlaneOrHost(planename,location,path);
     RemoteFilename rfn;
-    rfn.setPath(ep,path);
+    checkExternalFilePath(ctx,plane,location,path,false,true,rfn);
     Owned<IFile> file = createIFile(rfn);
     file->createDirectory();
     StringBuffer s("CreateExternalDirectory ('");
     s.append(location).append(',').append(path).append(") done");
     WUmessage(ctx,SeverityInformation,NULL,s.str());
     AuditMessage(ctx,"CreateExternalDirectory",path);
+}
+
+FILESERVICES_API void FILESERVICES_CALL fsCreateExternalDirectory(ICodeContext *ctx,const char *location,const char *path)
+{
+    implementCreateExternalDirectory(ctx,location,path,nullptr);
+}
+
+FILESERVICES_API void FILESERVICES_CALL fsCreateExternalDirectory_v2(ICodeContext *ctx,const char *location,const char *path,const char *planename)
+{
+    implementCreateExternalDirectory(ctx,location,path,planename);
 }
 
 FILESERVICES_API char * FILESERVICES_CALL fsfGetLogicalFileAttribute(ICodeContext * ctx,const char *_lfn,const char *attrname)

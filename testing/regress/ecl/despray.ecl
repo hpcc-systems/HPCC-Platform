@@ -315,11 +315,13 @@ SEQUENTIAL(
     // Clean-up
     FileServices.DeleteLogicalFile(SourceFile),
     FileServices.DeleteExternalFile('.', DestFile1),
-    FileServices.DeleteExternalFile('.', DestFile4),
-    FileServices.DeleteExternalFile('.', DestFile5),
-    FileServices.DeleteExternalFile('.', DestFile6),
-    FileServices.DeleteExternalFile('.', DestFile7),
-    FileServices.DeleteExternalFile('.', DestFile8),
+    // The follow files should not exist (see expected failed tests above).
+    // Calling DeleteExternalFile on malformed filenames will result in another error.
+    // FileServices.DeleteExternalFile('.', DestFile4),
+    // FileServices.DeleteExternalFile('.', DestFile5),
+    // FileServices.DeleteExternalFile('.', DestFile6),
+    // FileServices.DeleteExternalFile('.', DestFile7),
+    // FileServices.DeleteExternalFile('.', DestFile8),
     FileServices.DeleteExternalFile('.', DestFile9),
     FileServices.DeleteExternalFile('.', DestFile11),
 );

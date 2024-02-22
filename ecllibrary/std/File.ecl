@@ -358,9 +358,10 @@ EXPORT RfsAction(varstring server, varstring query) :=
  * @param location      The IP address of the remote machine.
  * @param frompath      The path/name of the file to move.
  * @param topath        The path/name of the target file.
+ * @param planename     The name of the data plane containing the file.
  */
-EXPORT MoveExternalFile(varstring location, varstring frompath, varstring topath) :=
-    lib_fileservices.FileServices.MoveExternalFile(location, frompath, topath);
+EXPORT MoveExternalFile(varstring location, varstring frompath, varstring topath, varstring planename='') :=
+    lib_fileservices.FileServices.MoveExternalFile(location, frompath, topath, planename);
 
 /**
  * Removes a single physical file from a remote machine. The
@@ -368,9 +369,10 @@ EXPORT MoveExternalFile(varstring location, varstring frompath, varstring topath
  *
  * @param location      The IP address of the remote machine.
  * @param path          The path/name of the file to remove.
+ * @param planename     The name of the data plane containing the file.
  */
-EXPORT DeleteExternalFile(varstring location, varstring path) :=
-    lib_fileservices.FileServices.DeleteExternalFile(location, path);
+EXPORT DeleteExternalFile(varstring location, varstring path, varstring planename='') :=
+    lib_fileservices.FileServices.DeleteExternalFile(location, path, planename);
 
 /**
  * Creates the path on the location (if it does not already exist). The
@@ -378,9 +380,10 @@ EXPORT DeleteExternalFile(varstring location, varstring path) :=
  *
  * @param location      The IP address of the remote machine.
  * @param path          The path/name of the file to remove.
+ * @param planename     The name of the data plane containing the directory.
  */
-EXPORT CreateExternalDirectory(varstring location, varstring path) :=
-    lib_fileservices.FileServices.CreateExternalDirectory(location, path);
+EXPORT CreateExternalDirectory(varstring location, varstring path, varstring planename='') :=
+    lib_fileservices.FileServices.CreateExternalDirectory(location, path, planename);
 
 /**
  * Returns the value of the given attribute for the specified logicalfilename.

@@ -99,9 +99,9 @@ export FileServices := SERVICE : plugin('fileservices'), time
   RfsAction( const varstring server, const varstring query): c,entrypoint='fsRfsAction';
   varstring GetHostName( const varstring ipaddress ): c,entrypoint='fsfGetHostName';
   varstring ResolveHostName( const varstring hostname ): c,entrypoint='fsfResolveHostName';
-  MoveExternalFile(const varstring location, const varstring frompath, const varstring topath): c,action,context,entrypoint='fsMoveExternalFile';
-  DeleteExternalFile(const varstring location, const varstring path): c,action,context,entrypoint='fsDeleteExternalFile';
-  CreateExternalDirectory(const varstring location, const varstring path): c,action,context,entrypoint='fsCreateExternalDirectory';
+  MoveExternalFile(const varstring location, const varstring frompath, const varstring topath, const varstring planename=''): c,action,context,entrypoint='fsMoveExternalFile_v2';
+  DeleteExternalFile(const varstring location, const varstring path, const varstring planename=''): c,action,context,entrypoint='fsDeleteExternalFile_v2';
+  CreateExternalDirectory(const varstring location, const varstring path, const varstring planename=''): c,action,context,entrypoint='fsCreateExternalDirectory_v2';
   varstring GetLogicalFileAttribute(const varstring lfn,const varstring attrname) : c,context,entrypoint='fsfGetLogicalFileAttribute';
   ProtectLogicalFile(const varstring lfn,boolean set=true) : c,context,entrypoint='fsProtectLogicalFile';
   DfuPlusExec(const varstring cmdline) : c,context,entrypoint='fsDfuPlusExec';

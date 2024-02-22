@@ -183,8 +183,11 @@ FILESERVICES_API void FILESERVICES_CALL fsRfsAction(const char *server, const ch
 FILESERVICES_API char *  FILESERVICES_CALL fsfGetHostName(const char *ipaddress);
 FILESERVICES_API char *  FILESERVICES_CALL fsfResolveHostName(const char *hostname);
 FILESERVICES_API void  FILESERVICES_CALL fsMoveExternalFile(ICodeContext * ctx,const char *location,const char *frompath,const char *topath);
+FILESERVICES_API void  FILESERVICES_CALL fsMoveExternalFile_v2(ICodeContext *ctx,const char *location,const char *frompath,const char *topath,const char *planename);
 FILESERVICES_API void  FILESERVICES_CALL fsDeleteExternalFile(ICodeContext * ctx,const char *location,const char *path);
+FILESERVICES_API void  FILESERVICES_CALL fsDeleteExternalFile_v2(ICodeContext * ctx,const char *location,const char *path,const char *planename);
 FILESERVICES_API void  FILESERVICES_CALL fsCreateExternalDirectory(ICodeContext * ctx,const char *location,const char *path);
+FILESERVICES_API void  FILESERVICES_CALL fsCreateExternalDirectory_v2(ICodeContext * ctx,const char *location,const char *path,const char *planename);
 FILESERVICES_API char * FILESERVICES_CALL fsfGetLogicalFileAttribute(ICodeContext * ctx,const char *lfn,const char *attrname);
 FILESERVICES_API void FILESERVICES_CALL fsProtectLogicalFile(ICodeContext * ctx,const char *lfn,bool set);
 FILESERVICES_API void FILESERVICES_CALL fsDfuPlusExec(ICodeContext * ctx,const char *_cmd);
