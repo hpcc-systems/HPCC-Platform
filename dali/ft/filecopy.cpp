@@ -3826,7 +3826,7 @@ void FileSprayer::updateTargetProperties()
         curProps.setPropInt64(getDFUQResultFieldName(DFUQRFnumDiskReads), prevNumReads + totalNumReads);
         curProps.setPropInt64(getDFUQResultFieldName(DFUQRFreadCost), legacyReadCost + prevReadCost + totalReadCost);
     }
-    progressReport->setFileAccessCost(cost_type2money(totalReadCost+totalWriteCost));
+    progressReport->setFileAccessCost(totalReadCost+totalWriteCost);
     if (error)
         throw error.getClear();
 }
