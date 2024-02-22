@@ -788,4 +788,9 @@ extern jlib_decl IPropertyTreeIterator * getPlanesIterator(const char * category
 extern jlib_decl IFileIO *createBlockedIO(IFileIO *base, size32_t blockSize);
 extern jlib_decl size32_t getBlockedFileIOSize(const char *planeName, size32_t defaultSize=0);
 
+//---- Pluggable file type related functions ----------------------------------------------
+
+extern jlib_decl void addAvailableGenericFileTypeName(const char * name);
+extern jlib_decl bool hasGenericFiletypeName(const char * name);
+
 #endif

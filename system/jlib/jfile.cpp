@@ -7757,6 +7757,32 @@ extern IFileIO *createBlockedIO(IFileIO *base, size32_t blockSize)
     return new CBlockedFileIO(base, blockSize);
 }
 
+///---------------------------------------------------------------------------------------------------------------------
+
+// Module-level global that will contain a list of pluggable file type
+// names (e.g. "parquet", "csv") that are supported through the
+// generic disk reader
+static StringArray genericFileTypeNameList;
+
+void addAvailableGenericFileTypeName(const char * name)
+{
+    genericFileTypeNameList.append(name);
+}
+
+// Determine if file type is defined; used by the ECL parser
+bool hasGenericFiletypeName(const char * name)
+{
+    ForEachItemIn(idx, genericFileTypeNameList)
+    {
+        if (strieq(genericFileTypeNameList.item(idx), name))
+            return true;
+    }
+
+    return false;
+}
+
+///---------------------------------------------------------------------------------------------------------------------
+
 // Cache/update plane index blocked IO settings
 static unsigned planeBlockIOMapCBId = 0;
 static std::unordered_map<std::string, size32_t> planeBlockedIOMap;
