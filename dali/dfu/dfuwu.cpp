@@ -1376,7 +1376,7 @@ public:
     {
         queryRoot()->setProp("@partmask",val);
     }
-    void setNumParts(unsigned val)
+    virtual void setNumParts(unsigned val) override
     {
         queryRoot()->setPropInt("@numparts",val);
 

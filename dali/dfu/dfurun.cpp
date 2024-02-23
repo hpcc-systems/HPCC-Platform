@@ -1427,15 +1427,19 @@ public:
                     // keys default wrap for copy
                     if (destination->getWrap()||(iskey&&(cmd==DFUcmd_copy)))
                     {
-                        if (destination->getNumPartsOverride())
-                            throw makeStringExceptionV(-1, "DestinationNumPartOverride is provided but %s", destination->getWrap()?"getWrap is true":"is copying a key");
-                        dst->setNumPartsOverride(srcFile->numParts());
+                        unsigned numOverrideParts = destination->getNumPartsOverride();
+                        if (numOverrideParts)
+                        {
+                            if (srcFile->numParts() != numOverrideParts)
+                                throw makeStringExceptionV(-1, "Destination NumPartsOverride is provided but %s", (iskey&&(cmd==DFUcmd_copy))?"not supported when copying a key":"getWrap is true");
+                        }
+                        dst->setNumParts(srcFile->numParts());
                     }
                     else if (plane)
                     {
                         // use destination defaultSprayParts if requestor doesn't provide num parts
                         if (plane->hasProp("@defaultSprayParts") && destination->getNumPartsOverride()==0)
-                            dst->setNumPartsOverride(plane->getPropInt("@defaultSprayParts"));
+                            dst->setNumParts(plane->getPropInt("@defaultSprayParts"));
                     }
                 }
                 break;
