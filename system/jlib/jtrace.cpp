@@ -589,7 +589,7 @@ public:
     void setSpanAttribute(const char *name, __uint64 value) override
     {
         if (span && !isEmptyString(name))
-            span->SetAttribute(name, value);
+            span->SetAttribute(name, (int64_t)value); // (uint64_t) would be even better but comments in attribute_value.h indicate that it is not supported by the standard.
     }
 
     void addSpanEvent(const char * eventName, IProperties * attributes) override 
