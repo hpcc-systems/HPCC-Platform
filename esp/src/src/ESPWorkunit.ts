@@ -568,7 +568,7 @@ const Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
         return this._action("Restore");
     },
 
-    publish(jobName, remoteDali, sourceProcess, priority, comment, allowForeign, updateSupers) {
+    publish(jobName, remoteDali, remoteStorage, sourceProcess, priority, comment, allowForeign, updateSupers) {
         this._assertHasWuid();
         const context = this;
         WsWorkunits.WUPublishWorkunit({
@@ -576,6 +576,7 @@ const Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
                 Wuid: this.Wuid,
                 JobName: jobName,
                 RemoteDali: remoteDali,
+                RemoteStorage: remoteStorage,
                 SourceProcess: sourceProcess,
                 Priority: priority,
                 Comment: comment,
