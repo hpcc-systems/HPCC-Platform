@@ -281,6 +281,7 @@ interface IDFUfileSpec: extends IConstDFUfileSpec
     virtual void setFromXML(const char *xml) = 0;
     virtual void setCompressed(bool set) = 0;
     virtual void setWrap(bool val) = 0;
+    virtual void setNumParts(unsigned val) = 0;
     virtual void setNumPartsOverride(unsigned num) = 0;
     virtual void setReplicateOffset(int val) = 0;           // sets for all clusters
     virtual void setDiffKey(const char *keyname) = 0;
