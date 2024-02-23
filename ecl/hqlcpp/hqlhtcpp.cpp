@@ -18242,7 +18242,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySOAP(BuildCtx & ctx, IHqlExpre
         else if (matchesBoolean(persistArg, true))
             persistArg = nullptr;
         else if (!matchesConstantValue(persistArg, 0)) // Avoid generating 0 since that is the default implementation
-            doBuildUnsignedFunction(instance->createctx, "getPersistMaxRequests", persistArg);
+            doBuildUnsignedFunction(instance->startctx, "getPersistMaxRequests", persistArg);
     }
 
     //virtual unsigned getFlags()
