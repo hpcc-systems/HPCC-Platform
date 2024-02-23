@@ -251,14 +251,14 @@ jobs:
           builder: ${{ steps.buildx.outputs.name }}
           file: ${{ needs.preamble.outputs.folder_platform }}/dockerfiles/vcpkg/platform-core-${{ matrix.os }}/Dockerfile
           context: ${{ needs.preamble.outputs.folder_build }}
-          push: ${{ github.repository_owner == 'hpcc-systems' }}
+          push: true
           build-args: |
             PKG_FILE=${{ steps.container.outputs.k8s_pkg_file }}
           tags: |
-            hpccsystems/platform-core-${{ matrix.os }}:${{ needs.preamble.outputs.community_tag }}
-            hpccsystems/platform-core-${{ matrix.os }}:${{ needs.preamble.outputs.candidate_base_branch }}
+            ${{secrets.DOCKER_USERNAME}}/platform-core-${{ matrix.os }}:${{ needs.preamble.outputs.community_tag }}
+            ${{secrets.DOCKER_USERNAME}}/platform-core-${{ matrix.os }}:${{ needs.preamble.outputs.candidate_base_branch }}
           cache-from: |
-            type=registry,ref=hpccsystems/platform-core-${{ matrix.os }}:${{ needs.preamble.outputs.candidate_base_branch }}
+            type=registry,ref=${{secrets.DOCKER_USERNAME}}/platform-core-${{ matrix.os }}:${{ needs.preamble.outputs.candidate_base_branch }}
 
       #  Internal Build  ---
       - name: Login to JFrog (internal)
