@@ -39,6 +39,9 @@
             "name": "azure-storage-files-shares-cpp",
             "platform": "@VCPKG_AZURE@"
         },
+        {
+            "name": "boost-circular-buffer"
+        },
         "boost-property-tree",
         {
             "name": "boost-regex",

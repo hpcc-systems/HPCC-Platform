@@ -30,4 +30,5 @@ export AddrCleanLib := SERVICE : plugin('addrcleanlib'),time
   string34 Zip9ToGeo34(const string zip9, const string server = '', unsigned2 port = 0) : c, pure, context, entrypoint='aclZip9ToGeo34Ctx';
   boolean SetTracing(boolean trace=true) : c, action, context, entrypoint='aclSetTracingCtx';
   boolean SetTiming(boolean timing=true) : c, action, context, entrypoint='aclSetTimingCtx';
+  CleanUtil(unsigned4 flags = 0) : c, pure, context, entrypoint='aclCleanUtilCtx';
 END;
