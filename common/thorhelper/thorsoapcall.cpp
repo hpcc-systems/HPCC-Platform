@@ -254,6 +254,24 @@ public:
     }
 };
 
+//if Url was globally accessible we could define this in jtrace instead
+//http span standards documented here: https://opentelemetry.io/docs/specs/semconv/http/http-spans/
+void setSpanURLAttributes(ISpan * clientSpan, const Url & url)
+{
+    if (clientSpan == nullptr)
+        return;
+
+    clientSpan->setSpanAttribute("http.request.method", "POST"); //apparently hardcoded to post
+                                                                 //Even though a "service" and 
+                                                                 //a "method" are tracked and sometimes
+                                                                 //the target service name is used
+                                                                 //and there's code and comments suggesting only
+                                                                 //GET is supported...
+    clientSpan->setSpanAttribute("network.peer.address", url.host.get());
+    clientSpan->setSpanAttribute("network.peer.port", url.port);
+    clientSpan->setSpanAttribute("network.protocol.name", url.method.get());
+}
+
 typedef IArrayOf<Url> UrlArray;
 
 //=================================================================================================
@@ -963,12 +981,14 @@ protected:
     WSCType wscType;
 
 public:
+    Owned<ISpan> activitySpanScope;
     IMPLEMENT_IINTERFACE;
 
     CWSCHelper(IWSCRowProvider *_rowProvider, IEngineRowAllocator * _outputAllocator, const char *_authToken, WSCMode _wscMode, ClientCertificate *_clientCert,
                const IContextLogger &_logctx, IRoxieAbortMonitor *_roxieAbortMonitor, WSCType _wscType)
         : logctx(_logctx), outputAllocator(_outputAllocator), clientCert(_clientCert), roxieAbortMonitor(_roxieAbortMonitor)
     {
+        activitySpanScope.setown(logctx.queryActiveSpan()->createInternalSpan(_wscType == STsoap ? "SoapCall Activity": "HTTPCall Activity"));
         wscMode = _wscMode;
         wscType = _wscType;
         done = 0;
@@ -1034,7 +1054,6 @@ public:
             s.setown(helper->getXpathHintsXml());
             xpathHints.setown(createPTreeFromXMLString(s.get()));
         }
-
         if (wscType == STsoap)
         {
             soapaction.set(s.setown(helper->getSoapAction()));
@@ -1972,7 +1991,7 @@ private:
         if (!httpHeaderBlockContainsHeader(httpheaders, ACCEPT_ENCODING))
             request.appendf("%s: gzip, deflate\r\n", ACCEPT_ENCODING);
 #endif
-        Owned<IProperties> traceHeaders = master->logctx.getClientHeaders();
+        Owned<IProperties> traceHeaders = ::getClientHeaders(master->activitySpanScope);
         if (traceHeaders)
         {
             Owned<IPropertyIterator> iter = traceHeaders->getIterator();
@@ -2457,6 +2476,7 @@ public:
                     checkTimeLimitExceeded(&remainingMS);  // after ep.set which might make a potentially long getaddrinfo lookup ...
                     if (strieq(url.method, "https"))
                         proto = PersistentProtocol::ProtoTLS;
+
                     bool shouldClose = false;
                     Owned<ISocket> psock = master->usePersistConnections() ? persistentHandler->getAvailable(&ep, &shouldClose, proto) : nullptr;
                     if (psock)
@@ -2504,6 +2524,7 @@ public:
                 {
                     if (master->timeLimitExceeded)
                     {
+                        master->activitySpanScope->recordError(SpanError("Time Limit Exceeded", e->errorCode(), true, true));
                         master->logctx.CTXLOG("%s exiting: time limit (%ums) exceeded", getWsCallTypeName(master->wscType), master->timeLimitMS);
                         processException(url, inputRows, e);
                         return;
@@ -2511,6 +2532,7 @@ public:
 
                     if (e->errorCode() == ROXIE_ABORT_EVENT)
                     {
+                        master->activitySpanScope->recordError(SpanError("Aborted", e->errorCode(), true, true));
                         StringBuffer s;
                         master->logctx.CTXLOG("%s exiting: Roxie Abort : %s", getWsCallTypeName(master->wscType),e->errorMessage(s).str());
                         throw;
@@ -2523,19 +2545,25 @@ public:
                             idx = 0;
                         if (idx==startidx)
                         {
+                            master->activitySpanScope->recordException(e, true, true);
                             StringBuffer s;
                             master->logctx.CTXLOG("Exception %s", e->errorMessage(s).str());
                             processException(url, inputRows, e);
                             return;
                         }
                     } while (blacklist->blacklisted(url.port, url.host));
+
+                    master->activitySpanScope->recordException(e, false, false); //Record the exception, but don't set failure
                 }
             }
             try
             {
                 checkTimeLimitExceeded(&remainingMS);
                 checkRoxieAbortMonitor(master->roxieAbortMonitor);
+                OwnedSpanScope socketOperationSpan = master->activitySpanScope->createClientSpan("Socket Write");
+                setSpanURLAttributes(socketOperationSpan, url);
                 socket->write(request.str(), request.length());
+
                 if (soapTraceLevel > 4)
                     master->logctx.CTXLOG("%s: sent request (%s) to %s:%d", getWsCallTypeName(master->wscType),master->service.str(), url.host.str(), url.port);
                 checkTimeLimitExceeded(&remainingMS);
@@ -2544,6 +2572,7 @@ public:
                 bool keepAlive2;
                 StringBuffer contentType;
                 int rval = readHttpResponse(response, socket, keepAlive2, contentType);
+                socketOperationSpan->setSpanAttribute("http.response.status_code", (int64_t)rval);
                 keepAlive = keepAlive && keepAlive2;
 
                 if (soapTraceLevel > 4)
@@ -2551,16 +2580,22 @@ public:
 
                 if (rval != 200)
                 {
+                    socketOperationSpan->setSpanStatusSuccess(false);
                     if (rval == 503)
+                    {
+                        socketOperationSpan->recordError(SpanError("Server Too Busy", 1001, true, true));
                         throw new ReceivedRoxieException(1001, "Server Too Busy");
+                    }
 
                     StringBuffer text;
                     text.appendf("HTTP error (%d) in processQuery",rval);
                     rtlAddExceptionTag(text, "soapresponse", response.str());
+                    socketOperationSpan->recordError(SpanError(text.str(), -1, true, true));
                     throw MakeStringExceptionDirect(-1, text.str());
                 }
                 if (response.length() == 0)
                 {
+                    socketOperationSpan->recordError(SpanError("Zero length response in processQuery", -1, true, true));
                     throw MakeStringException(-1, "Zero length response in processQuery");
                 }
                 checkTimeLimitExceeded(&remainingMS);
@@ -2575,6 +2610,8 @@ public:
                     else if (keepAlive)
                         persistentHandler->add(socket, &ep, proto);
                 }
+
+                socketOperationSpan->setSpanStatusSuccess(true);
                 break;
             }
             catch (IReceivedRoxieException *e)
@@ -2606,6 +2643,8 @@ public:
                         processException(url, e->errorRow(), e);
                     else
                         processException(url, inputRows, e);
+
+                    master->activitySpanScope->recordException(e, true, true);
                     break;
                 }
             }
@@ -2616,7 +2655,9 @@ public:
                 if (master->timeLimitExceeded)
                 {
                     processException(url, inputRows, e);
-                    master->logctx.CTXLOG("%s exiting: time limit (%ums) exceeded", getWsCallTypeName(master->wscType), master->timeLimitMS);
+                    VStringBuffer msg("%s exiting: time limit (%ums) exceeded", getWsCallTypeName(master->wscType), master->timeLimitMS);
+                    master->logctx.CTXLOG("%s", msg.str());
+                    master->activitySpanScope->recordError(SpanError(msg.str(), e->errorCode(), true, true));
                     break;
                 }
 
@@ -2624,6 +2665,7 @@ public:
                 {
                     StringBuffer s;
                     master->logctx.CTXLOG("%s exiting: Roxie Abort : %s", getWsCallTypeName(master->wscType),e->errorMessage(s).str());
+                    master->activitySpanScope->recordError(SpanError("Aborted", e->errorCode(), true, true));
                     throw;
                 }
 
@@ -2634,12 +2676,15 @@ public:
                 if (numRetries >= master->maxRetries)
                 {
                     // error affects all inputRows
-                    master->logctx.CTXLOG("Exiting: maxRetries %d exceeded", master->maxRetries);
+                    VStringBuffer msg("Exiting: maxRetries %d exceeded", master->maxRetries);
+                    master->logctx.CTXLOG("%s", msg.str());
+                    master->activitySpanScope->recordError(SpanError(msg.str(), e->errorCode(), true, true));
                     processException(url, inputRows, e);
                     break;
                 }
                 numRetries++;
                 master->logctx.CTXLOG("Retrying: attempt %d of %d", numRetries, master->maxRetries);
+                master->activitySpanScope->recordException(e, false, false);
                 e->Release();
             }
             catch (std::exception & es)
@@ -2647,13 +2692,20 @@ public:
                 if (master->usePersistConnections() && isReused)
                     persistentHandler->doneUsing(socket, false);
                 if(dynamic_cast<std::bad_alloc *>(&es))
+                {
+                    master->activitySpanScope->recordError("std::exception: out of memory (std::bad_alloc) in CWSCAsyncFor processQuery");
                     throw MakeStringException(-1, "std::exception: out of memory (std::bad_alloc) in CWSCAsyncFor processQuery");
+                }
+
+                master->activitySpanScope->recordError(es.what());
                 throw MakeStringException(-1, "std::exception: standard library exception (%s) in CWSCAsyncFor processQuery",es.what());
             }
             catch (...)
             {
                 if (master->usePersistConnections() && isReused)
                     persistentHandler->doneUsing(socket, false);
+
+                master->activitySpanScope->recordError(SpanError("Unknown exception in processQuery", -1, true, true));
                 throw MakeStringException(-1, "Unknown exception in processQuery");
             }
         }
