@@ -220,9 +220,9 @@ public:
     {
         ctx->setStatistic(kind, value);
     }
-    virtual void mergeStats(const CRuntimeStatisticCollection &from) const override
+    virtual void mergeStats(unsigned activityId, const CRuntimeStatisticCollection &from) const override
     {
-        ctx->mergeStats(from);
+        ctx->mergeStats(activityId, from);
     }
     virtual StringBuffer &getStats(StringBuffer &ret) const override
     {
@@ -681,7 +681,7 @@ public:
         throwUnexpected();
     }
 
-    virtual void mergeStats(const CRuntimeStatisticCollection &from) const
+    virtual void mergeStats(const CRuntimeStatisticCollection &from) const override
     {
         CActivityFactory::mergeStats(from);
     }
@@ -1265,7 +1265,7 @@ public:
 
         //Updates the query summary statistics
         if (ctx)
-            ctx->queryCodeContext()->queryContextLogger().mergeStats(mergedStats);
+            ctx->queryCodeContext()->queryContextLogger().mergeStats(activityId, mergedStats);
 
         ForEachItemIn(i, childGraphs)
             childGraphs.item(i).gatherStatistics(statsBuilder);
@@ -1287,7 +1287,7 @@ public:
     {
         stats.deserializeMerge(buf);
     }
-    virtual void mergeStats(const CRuntimeStatisticCollection & childStats)
+    virtual void mergeStats(unsigned activityId, const CRuntimeStatisticCollection & childStats)
     {
         CriticalBlock b(statscrit);
         stats.merge(childStats);
@@ -1383,7 +1383,7 @@ public:
     {
         stats.setStatistic(kind, value);
     }
-    virtual void mergeStats(const CRuntimeStatisticCollection &from) const
+    virtual void mergeStats(unsigned activityId, const CRuntimeStatisticCollection &from) const
     {
         stats.merge(from);
     }
@@ -5212,7 +5212,7 @@ public:
                                         CRuntimeStatisticCollection childStats(allStatistics);
                                         childStats.deserialize(buf);
                                         //activity.queryContext()->mergeActivityStats(childStats, graphId, childId);
-                                        activity.mergeStats(childStats);
+                                        activity.mergeStats(0, childStats);
                                     }
                                 }
                                 ReleaseRoxieRow(logInfo);

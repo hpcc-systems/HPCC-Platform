@@ -4000,6 +4000,116 @@ CPPUNIT_TEST_SUITE_REGISTRATION( JLibOpensslAESTest );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JLibOpensslAESTest, "JLibOpensslAESTest" );
 #endif
 
+class TopNStressTest : public CppUnit::TestFixture
+{
+public:
+    CPPUNIT_TEST_SUITE(TopNStressTest);
+        CPPUNIT_TEST(testTop5a);
+        CPPUNIT_TEST(testTop5b);
+    CPPUNIT_TEST_SUITE_END();
+
+    struct x
+    {
+    static constexpr const unsigned MaxSlowActivities = 5;
+    mutable unsigned slowActivityIds[MaxSlowActivities] = {};
+    mutable stat_type slowActivityTimes[MaxSlowActivities] = {};
+    unsigned cnt = 0;
+
+        __attribute__((noinline))
+        void noteTime(unsigned activityId, stat_type localTime)
+        {
+            if (localTime > slowActivityTimes[MaxSlowActivities-1])
+            {
+                unsigned pos = MaxSlowActivities-1;
+                while (pos > 0)
+                {
+                    if (localTime <= slowActivityTimes[pos-1])
+                        break;
+                    slowActivityIds[pos] = slowActivityIds[pos-1];
+                    slowActivityTimes[pos] = slowActivityTimes[pos-1];
+                    pos--;
+                }
+                slowActivityIds[pos] = activityId;
+                slowActivityTimes[pos] = localTime;
+                cnt++;
+            }
+        }
+        __attribute__((noinline))
+        void noteTime2(unsigned activityId, stat_type localTime)
+        {
+            if (localTime > slowActivityTimes[0])
+            {
+                unsigned pos = 1;
+                while (pos < MaxSlowActivities)
+                {
+                    if (localTime <= slowActivityTimes[pos])
+                        break;
+                    slowActivityIds[pos-1] = slowActivityIds[pos];
+                    slowActivityTimes[pos-1] = slowActivityTimes[pos];
+                    pos++;
+                }
+                slowActivityIds[pos-1] = activityId;
+                slowActivityTimes[pos-1] = localTime;
+                cnt++;
+            }
+        }
+        void report(__uint64 elapsedNs)
+        {
+            StringBuffer ids, times;
+            for (unsigned i=0; i < MaxSlowActivities; i++)
+            {
+                if (!slowActivityIds[i])
+                    break;
+
+                if (i)
+                {
+                    ids.append(",");
+                    times.append(",");
+                }
+                ids.append(slowActivityIds[i]);
+                formatStatistic(times, cycle_to_nanosec(slowActivityTimes[i]), SMeasureTimeNs);
+            }
+            DBGLOG("SlowActivities={ ids=[%s] times=[%s] } in %llu (x%u)", ids.str(), times.str(), elapsedNs, cnt);
+
+        }
+    };
+
+    static constexpr const unsigned NumIters = 5000;
+
+    void testTop5a()
+    {
+        CCycleTimer timer;
+        stat_type value = 0;
+        x tally;
+        for (unsigned activityId = 1; activityId <= NumIters; activityId++)
+        {
+            value = value * 0x100000001b3ULL + 99;
+            tally.noteTime(activityId, value);
+        }
+
+        __uint64 elapsedNs = timer.elapsedNs();
+        tally.report(elapsedNs);
+    }
+    void testTop5b()
+    {
+        CCycleTimer timer;
+        stat_type value = 0;
+        x tally;
+        for (unsigned activityId = 1; activityId <= NumIters; activityId++)
+        {
+            value = value * 0x100000001b3ULL + 99;
+            tally.noteTime2(activityId, value);
+        }
+
+        __uint64 elapsedNs = timer.elapsedNs();
+        tally.report(elapsedNs);
+    }
+
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( TopNStressTest );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( TopNStressTest, "TopNStressTest" );
+
 class JLibSecretsTest : public CppUnit::TestFixture
 {
 public:
@@ -4324,7 +4434,5 @@ protected:
 
 CPPUNIT_TEST_SUITE_REGISTRATION( JLibSecretsTest );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JLibSecretsTest, "JLibSecretsTest" );
-
-
 
 #endif // _USE_CPPUNIT
