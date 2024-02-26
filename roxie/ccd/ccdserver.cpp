@@ -176,55 +176,55 @@ public:
 
 //    void set(IRoxieAgentContext * _ctx) { ctx = _ctx; }
 
-    virtual ICodeContext *queryCodeContext()
+    virtual ICodeContext *queryCodeContext() override
     {
         return ctx->queryCodeContext();
     }
-    virtual void checkAbort() 
+    virtual void checkAbort() override
     {
         ctx->checkAbort();
     }
-    virtual unsigned checkInterval() const
+    virtual unsigned checkInterval() const override
     {
         return ctx->checkInterval();
     }
-    virtual void notifyAbort(IException *E) 
+    virtual void notifyAbort(IException *E) override
     {
         ctx->notifyAbort(E);
     }
-    virtual void notifyException(IException *E)
+    virtual void notifyException(IException *E) override
     {
         ctx->notifyException(E);
     }
-    virtual void throwPendingException()
+    virtual void throwPendingException() override
     {
         ctx->throwPendingException();
     }
-    virtual IActivityGraph * queryChildGraph(unsigned id) 
+    virtual IActivityGraph * queryChildGraph(unsigned id) override
     {
         return ctx->queryChildGraph(id);
     }
-    virtual void noteChildGraph(unsigned id, IActivityGraph *childGraph) 
+    virtual void noteChildGraph(unsigned id, IActivityGraph *childGraph) override
     {
         ctx->noteChildGraph(id, childGraph) ;
     }
-    virtual IRowManager &queryRowManager() 
+    virtual IRowManager &queryRowManager() override
     {
         return ctx->queryRowManager();
     }
-    virtual void noteStatistic(StatisticKind kind, unsigned __int64 value) const
+    virtual void noteStatistic(StatisticKind kind, unsigned __int64 value) const override
     {
         ctx->noteStatistic(kind, value);
     }
-    virtual void setStatistic(StatisticKind kind, unsigned __int64 value) const
+    virtual void setStatistic(StatisticKind kind, unsigned __int64 value) const override
     {
         ctx->setStatistic(kind, value);
     }
-    virtual void mergeStats(const CRuntimeStatisticCollection &from) const
+    virtual void mergeStats(const CRuntimeStatisticCollection &from) const override
     {
         ctx->mergeStats(from);
     }
-    virtual StringBuffer &getStats(StringBuffer &ret) const
+    virtual StringBuffer &getStats(StringBuffer &ret) const override
     {
         return ctx->getStats(ret);
     }
@@ -236,7 +236,7 @@ public:
     {
         ctx->recordStatistics(progress);
     }
-    virtual bool collectingDetailedStatistics() const
+    virtual bool collectingDetailedStatistics() const override
     {
         return ctx->collectingDetailedStatistics();
     }
@@ -248,15 +248,15 @@ public:
     {
         ctx->CTXLOGa(category, cat, job, code, prefix, text);
     }
-    virtual void logOperatorExceptionVA(IException *E, const char *file, unsigned line, const char *format, va_list args) const __attribute__((format(printf,5,0)))
+    virtual void logOperatorExceptionVA(IException *E, const char *file, unsigned line, const char *format, va_list args) const override __attribute__((format(printf,5,0)))
     {
         ctx->logOperatorExceptionVA(E, file, line, format, args);
     }
-    virtual void CTXLOGaeva(IException *E, const char *file, unsigned line, const char *prefix, const char *format, va_list args) const __attribute__((format(printf,6,0)))
+    virtual void CTXLOGaeva(IException *E, const char *file, unsigned line, const char *prefix, const char *format, va_list args) const override __attribute__((format(printf,6,0)))
     {
         ctx->CTXLOGaeva(E, file, line, prefix, format, args);
     }
-    virtual void CTXLOGl(LogItem *log) const
+    virtual void CTXLOGl(LogItem *log) const override
     {
         ctx->CTXLOGl(log);
     }
@@ -264,15 +264,15 @@ public:
     {
         return ctx->getLogPrefix(ret);
     }
-    virtual unsigned queryTraceLevel() const
+    virtual unsigned queryTraceLevel() const override
     {
         return ctx->queryTraceLevel();
     }
-    virtual bool isIntercepted() const
+    virtual bool isIntercepted() const override
     {
         return ctx->isIntercepted();
     }
-    virtual bool isBlind() const
+    virtual bool isBlind() const override
     {
         return ctx->isBlind();
     }
@@ -300,7 +300,7 @@ public:
     {
         ctx->setSpanAttribute(name, value);
     }
-    virtual const char *queryGlobalId() const
+    virtual const char *queryGlobalId() const override
     {
         return ctx->queryGlobalId();
     }
@@ -308,83 +308,83 @@ public:
     {
         return ctx->queryCallerId();
     }
-    virtual const char *queryLocalId() const
+    virtual const char *queryLocalId() const override
     {
         return ctx->queryLocalId();
     }
-    virtual const QueryOptions &queryOptions() const
+    virtual const QueryOptions &queryOptions() const override
     {
         return ctx->queryOptions();
     }
-    virtual void addAgentsReplyLen(unsigned len, unsigned duplicates, unsigned resends)
+    virtual void addAgentsReplyLen(unsigned len, unsigned duplicates, unsigned resends) override
     {
         ctx->addAgentsReplyLen(len, duplicates, resends);
     }
-    virtual const char *queryAuthToken() 
+    virtual const char *queryAuthToken() override
     {
         return ctx->queryAuthToken();
     }
-    virtual const IResolvedFile *resolveLFN(const char *filename, bool isOpt, bool isPrivilegedUser)
+    virtual const IResolvedFile *resolveLFN(const char *filename, bool isOpt, bool isPrivilegedUser) override
     {
         return ctx->resolveLFN(filename, isOpt, isPrivilegedUser);
     }
-    virtual IRoxieWriteHandler *createWriteHandler(const char *filename, bool overwrite, bool extend, const StringArray &clusters, bool isPrivilegedUser)
+    virtual IRoxieWriteHandler *createWriteHandler(const char *filename, bool overwrite, bool extend, const StringArray &clusters, bool isPrivilegedUser) override
     {
         return ctx->createWriteHandler(filename, overwrite, extend, clusters, isPrivilegedUser);
     }
-    virtual void onFileCallback(const RoxiePacketHeader &header, const char *lfn, bool isOpt, bool isLocal, bool isPrivilegedUser)
+    virtual void onFileCallback(const RoxiePacketHeader &header, const char *lfn, bool isOpt, bool isLocal, bool isPrivilegedUser) override
     {
         ctx->onFileCallback(header, lfn, isOpt, isLocal, isPrivilegedUser);
     }
-    virtual IActivityGraph *getLibraryGraph(const LibraryCallFactoryExtra &extra, IRoxieServerActivity *parentActivity)
+    virtual IActivityGraph *getLibraryGraph(const LibraryCallFactoryExtra &extra, IRoxieServerActivity *parentActivity) override
     {
         return ctx->getLibraryGraph(extra, parentActivity);
     }
-    virtual IProbeManager *queryProbeManager() const
+    virtual IProbeManager *queryProbeManager() const override
     {
         return ctx->queryProbeManager();
     }
-    virtual IDebuggableContext *queryDebugContext() const
+    virtual IDebuggableContext *queryDebugContext() const override
     {
         return ctx->queryDebugContext();
     }
-    virtual void printResults(IXmlWriter *output, const char *name, unsigned sequence)
+    virtual void printResults(IXmlWriter *output, const char *name, unsigned sequence) override
     {
         ctx->printResults(output, name, sequence);
     }
-    virtual void setWUState(WUState state)
+    virtual void setWUState(WUState state) override
     {
         ctx->setWUState(state);
     }
-    virtual bool checkWuAborted()
+    virtual bool checkWuAborted() override
     {
         return ctx->checkWuAborted();
     }
-    virtual IWorkUnit *updateWorkUnit() const
+    virtual IWorkUnit *updateWorkUnit() const override
     {
         return ctx->updateWorkUnit();
     }
-    virtual IConstWorkUnit *queryWorkUnit() const
+    virtual IConstWorkUnit *queryWorkUnit() const override
     {
         return ctx->queryWorkUnit();
     }
-    virtual IRoxieServerContext *queryServerContext()
+    virtual IRoxieServerContext *queryServerContext() override
     {
         return ctx->queryServerContext();
     }
-    virtual IWorkUnitRowReader *getWorkunitRowReader(const char *wuid, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, IEngineRowAllocator *rowAllocator, bool isGrouped)
+    virtual IWorkUnitRowReader *getWorkunitRowReader(const char *wuid, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, IEngineRowAllocator *rowAllocator, bool isGrouped) override
     {
         return ctx->getWorkunitRowReader(wuid, name, sequence, xmlTransformer, rowAllocator, isGrouped);
     }
-    virtual IEngineRowAllocator *getRowAllocatorEx(IOutputMetaData * meta, unsigned activityId, roxiemem::RoxieHeapFlags flags) const
+    virtual IEngineRowAllocator *getRowAllocatorEx(IOutputMetaData * meta, unsigned activityId, roxiemem::RoxieHeapFlags flags) const override
     {
         return ctx->getRowAllocatorEx(meta, activityId, flags);
     }
-    virtual void noteLibrary(IQueryFactory *library)
+    virtual void noteLibrary(IQueryFactory *library) override
     {
         ctx->noteLibrary(library);
     }
-    virtual const CRuntimeStatisticCollection & queryStats() const
+    virtual const CRuntimeStatisticCollection & queryStats() const override
     {
         return ctx->queryStats();
     }
