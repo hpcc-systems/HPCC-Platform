@@ -588,6 +588,9 @@ public: // Not very clean but I don't care
     bool blind;
     mutable bool aborted;
     mutable CIArrayOf<LogItem> log;
+    static constexpr const unsigned MaxSlowActivities = 5;
+    mutable unsigned slowActivityIds[MaxSlowActivities] = {};
+    mutable stat_type slowActivityTimes[MaxSlowActivities] = {};
 private:
     Owned<ISpan> activeSpan = getNullSpan();
     ContextLogger(const ContextLogger &);  // Disable copy constructor
@@ -689,11 +692,7 @@ public:
         ctxTraceLevel = _level;
     }
 
-    StringBuffer &getStats(StringBuffer &s) const
-    {
-        CriticalBlock block(statsCrit);
-        return stats.toStr(s);
-    }
+    StringBuffer &getStats(StringBuffer &s) const;
 
     virtual bool isIntercepted() const
     {
@@ -717,18 +716,8 @@ public:
         stats.setStatistic(kind, value);
     }
 
-    virtual void mergeStats(const CRuntimeStatisticCollection &from) const
-    {
-        if (from.isThreadSafeMergeSource())
-        {
-            stats.merge(from);
-        }
-        else
-        {
-            CriticalBlock block(statsCrit);
-            stats.merge(from);
-        }
-    }
+    virtual void mergeStats(unsigned activityId, const CRuntimeStatisticCollection &from) const;
+
     virtual void gatherStats(CRuntimeStatisticCollection & merged) const override
     {
         merged.merge(stats);

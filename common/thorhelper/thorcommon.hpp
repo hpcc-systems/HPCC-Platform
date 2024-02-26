@@ -712,7 +712,7 @@ public:
     {
         stats.setStatistic(kind, value);
     }
-    virtual void mergeStats(const CRuntimeStatisticCollection &from) const override
+    virtual void mergeStats(unsigned activityId, const CRuntimeStatisticCollection &from) const override
     {
         stats.merge(from);
     }
