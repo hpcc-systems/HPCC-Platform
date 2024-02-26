@@ -330,6 +330,7 @@ arrow::Status ParquetReader::processReadFile()
 
         divide_row_groups(activityCtx, totalTables, tableCount, startRowGroup);
     }
+    tablesProcessed = 0;
     totalRowsProcessed = 0;
     rowsProcessed = 0;
     rowsCount = 0;
@@ -385,18 +386,21 @@ arrow::Result<std::shared_ptr<arrow::Table>> ParquetReader::queryRows()
  */
 __int64 ParquetReader::next(TableColumns *&nextTable)
 {
-    if (rowsProcessed == rowsCount)
+    if (rowsProcessed == rowsCount || restoredCursor)
     {
+        if (restoredCursor)
+            restoredCursor = false;
+        else
+            rowsProcessed = 0;
         std::shared_ptr<arrow::Table> table;
         if (endsWithIgnoreCase(partOption.c_str(), "partition"))
         {
-            PARQUET_ASSIGN_OR_THROW(table, queryRows());
+            PARQUET_ASSIGN_OR_THROW(table, queryRows()); // Sets rowsProcessed to current row in table corresponding to startRow
         }
         else
         {
             reportIfFailure(queryCurrentTable(tablesProcessed + startRowGroup)->ReadTable(&table));
         }
-        rowsProcessed = 0;
         tablesProcessed++;
         rowsCount = table->num_rows();
         splitTable(table);
@@ -404,6 +408,70 @@ __int64 ParquetReader::next(TableColumns *&nextTable)
     nextTable = &parquetTable;
     totalRowsProcessed++;
     return rowsProcessed++;
+}
+
+/**
+ * @brief Gets the information about the next row to be read from a Parquet file. A boolean is stored at the
+ * beginning of the memory buffer for the partition status. If the file is a partitioned dataset, the next row
+ * and the number of remaining rows are stored in the memory buffer. If the file is a regular Parquet file, the
+ * current and remaining tables are stored in the memory buffer. Additionally, the number of rows processed within
+ * the current table is stored in the memory buffer.
+ *
+ * @param cursor MemoryBuffer where file processing information is stored
+ * @return true If building the buffer succeeds
+ */
+bool ParquetReader::getCursor(MemoryBuffer & cursor)
+{
+    bool partition = endsWithIgnoreCase(partOption.c_str(), "partition");
+    cursor.append(partition);
+
+    // Adjust starting positions to current read position and remove
+    // already processed rows from the total count for the workers
+    if (partition)
+    {
+        cursor.append(startRow + totalRowsProcessed);
+        cursor.append(totalRowCount - totalRowsProcessed);
+    }
+    else
+    {
+        cursor.append(startRowGroup + tablesProcessed);
+        cursor.append(tableCount - tablesProcessed);
+        cursor.append(rowsProcessed);
+    }
+
+    return true;
+}
+
+/**
+ * @brief Resets the current access row in the Parquet file based on the information stored in a memory buffer
+ * created by getCursor. Sets restoredCursor to true for reading from the middle of the table in non-partitioned
+ * datasets. Resets the file read process trackers and reads the partition flag from the beginning of the buffer.
+ * If the file is a partitioned dataset then only the starting and remaining rows are read. Otherwise the
+ * starting and remaining tables are read as well as the current row within the table.
+ *
+ * @param cursor MemoryBuffer where file processing information is stored
+ */
+void ParquetReader::setCursor(MemoryBuffer & cursor)
+{
+    restoredCursor = true;
+    tablesProcessed = 0;
+    totalRowsProcessed = 0;
+    rowsProcessed = 0;
+    rowsCount = 0;
+
+    bool partition;
+    cursor.read(partition);
+    if (partition)
+    {
+        cursor.read(startRow);
+        cursor.read(totalRowCount);
+    }
+    else
+    {
+        cursor.read(startRowGroup);
+        cursor.read(tableCount);
+        cursor.read(rowsProcessed);
+    }
 }
 
 /**
