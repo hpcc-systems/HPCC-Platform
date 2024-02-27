@@ -31,14 +31,18 @@
 import ^ as root;
 
 //Simplified configuration
-roxieIP := '.' : STORED('TargetIP');
-espIP :=  '.' : STORED('TargetIP');
+string roxieIP := '.' : STORED('remoteRoxieService');
+string espIP :=  '.' : STORED('remoteEspService');
+boolean defaultEncryptConnection :=     false : stored('encryptConnection');
+boolean defaultPersistConnection := false : stored('persistConnection');
+boolean defaultCallDirect := false : stored('callDirect');
+boolean defaultCallViaEsp := false : stored('callViaEsp');
 
 //Simplified call options - doesn't provide all combinations that should be tested eventually
-boolean encryptConnection := #IFDEFINED(root.encryptConnection, false);
-boolean persistConnection := #IFDEFINED(root.persistConnection, false);
-boolean callDirect := #IFDEFINED(root.callDirect, false);
-boolean callViaEsp := #IFDEFINED(root.callViaEsp, false);
+boolean encryptConnection := #IFDEFINED(root.encryptConnection, defaultEncryptConnection);
+boolean persistConnection := #IFDEFINED(root.persistConnection, defaultPersistConnection);
+boolean callDirect := #IFDEFINED(root.callDirect, defaultCallDirect);
+boolean callViaEsp := #IFDEFINED(root.callViaEsp, defaultCallViaEsp);
 
 //--- end of version configuration ---
 
