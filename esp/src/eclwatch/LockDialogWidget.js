@@ -153,7 +153,7 @@ define([
                 cookie("Status", "Locked");
                 context.storage.setItem("Status", "Locked");
             } else if (cookie("Status") === "Unlocked") {
-                xhr("esp/lock", {
+                xhr("/esp/lock", {
                     method: "post"
                 }).then(function (response) {
                     if (response) {
