@@ -1425,7 +1425,7 @@ ITraceManager & queryTraceManager()
     return *theTraceManager.query([] () { return new CTraceManager; }); //throws if not initialized
 }
 
-#if WIN32 && _MSC_VER < 1939 // _MSC_VER < VS 2022 17.9
+#if defined(_MSC_VER) && _MSC_VER < 1939 // _MSC_VER < VS 2022 17.9
 extern "C" void __stdcall _Thrd_sleep_for(const unsigned long ms) noexcept { // suspend current thread for `ms` milliseconds
     Sleep(ms);
 }
