@@ -1300,7 +1300,7 @@ protected:
 /*
  * Base class for reading a Parquet local file
  */
-class ParquetDiskRowReader : public CInterfaceOf<IDiskRowStream>, implements IDiskRowReader
+class ParquetDiskRowReader : public ExternalFormatDiskRowReader
 {
 public:
     ParquetDiskRowReader(IDiskReadMapping * _mapping);
@@ -1325,23 +1325,13 @@ public:
     virtual bool setInputFile(const CLogicalFileSlice & slice, const FieldFilterArray & expectedFilter, unsigned copy) override;
 
 protected:
-    IDiskReadMapping * mapping = nullptr;
-    Owned<IEngineRowAllocator> outputAllocator;
-
-    MemoryBuffer tempOutputBuffer;
-    MemoryBufferBuilder bufferBuilder;
-
     parquetembed::ParquetReader * parquetFileReader = nullptr;
     CParquetActivityContext * parquetActivityCtx = nullptr;
-    StringAttr format;
-    RecordTranslationMode translationMode;
-    bool eogPending = false;
 };
 
 ParquetDiskRowReader::ParquetDiskRowReader(IDiskReadMapping * _mapping)
- : mapping(_mapping), bufferBuilder(tempOutputBuffer, 0), parquetActivityCtx(new CParquetActivityContext(true, 1, 0))
+ : ExternalFormatDiskRowReader(_mapping), parquetActivityCtx(new CParquetActivityContext(true, 1, 0))
 {
-    translationMode = mapping->queryTranslationMode();
 }
 
 ParquetDiskRowReader::~ParquetDiskRowReader()
@@ -1426,12 +1416,11 @@ void ParquetDiskRowReader::stop()
 
 void ParquetDiskRowReader::clearInput()
 {
-    eogPending = false;
 }
 
 bool ParquetDiskRowReader::matches(const char * _format, bool _streamRemote, IDiskReadMapping * _mapping)
 {
-    if (!strieq(format, "parquet"))
+    if (!strieq(_format, PARQUET_FILE_TYPE_NAME))
         return false;
     return true; // TO DO add additional check
 }
@@ -1699,17 +1688,18 @@ void RemoteDiskRowReader::stop()
 
 ///---------------------------------------------------------------------------------------------------------------------
 
+// Lookup to map the names of file types/formats to their object constructors;
+// map will be initialized within MODULE_INIT
+static std::map<std::string, std::function<DiskRowReader*(IDiskReadMapping*)>> genericFileTypeMap;
 
+
+// format is assumed to be lowercase
 IDiskRowReader * doCreateLocalDiskReader(const char * format, IDiskReadMapping * _mapping)
 {
-#ifdef _USE_PARQUET
-    if (strieq(format, "parquet"))
-        return new ParquetDiskRowReader(_mapping);
-#endif
-    if (strieq(format, "flat"))
-        return new BinaryDiskRowReader(_mapping);
-    if (strieq(format, "csv"))
-        return new CsvDiskRowReader(_mapping);
+    auto foundReader = genericFileTypeMap.find(format);
+
+    if (foundReader != genericFileTypeMap.end())
+        return foundReader->second(_mapping);
 
     UNIMPLEMENTED;
 }
@@ -1745,6 +1735,27 @@ IDiskRowReader * createDiskReader(const char * format, bool streamRemote, IDiskR
         return createRemoteDiskReader(format, _mapping);
     else
         return createLocalDiskReader(format, _mapping);
+}
+
+MODULE_INIT(INIT_PRIORITY_STANDARD)
+{
+    // All pluggable file types that use the generic disk reader
+    // should be defined here; the key is the lowecase name of the format,
+    // as will be used in ECL, and the value should be a lambda
+    // that creates the appropriate disk row reader object
+    genericFileTypeMap.emplace("flat", [](IDiskReadMapping * _mapping) { return new BinaryDiskRowReader(_mapping); });
+    genericFileTypeMap.emplace("csv", [](IDiskReadMapping * _mapping) { return new CsvDiskRowReader(_mapping); });
+#ifdef _USE_PARQUET
+    genericFileTypeMap.emplace(PARQUET_FILE_TYPE_NAME, [](IDiskReadMapping * _mapping) { return new ParquetDiskRowReader(_mapping); });
+#endif
+
+    // Stuff the file type names that were just instantiated into a list;
+    // list will be accessed by the ECL compiler to validate the names
+    // at compile time
+    for (auto iter = genericFileTypeMap.begin(); iter != genericFileTypeMap.end(); iter++)
+        addAvailableGenericFileTypeName(iter->first.c_str());
+
+    return true;
 }
 
 

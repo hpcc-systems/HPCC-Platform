@@ -8995,13 +8995,8 @@ bool HqlGram::convertAllToAttribute(attribute &atr)
 void HqlGram::setPluggableModeExpr(attribute & targetAttr, attribute & pluginAttr, attribute & options)
 {
     const char * fileFormatStr = str(pluginAttr.getId());
-    bool isSupportedFileType = false;
 
-    // TODO: Hardcoded tests for known filetype plugins; should be
-    // an iteration through a list of available types, checking for names
-    isSupportedFileType = strisame(fileFormatStr, "parquet");
-
-    if (isSupportedFileType)
+    if (hasGenericFiletypeName(fileFormatStr))
     {
         // Do we just cite the name of the plugin, or perhaps something
         // like a unique ID from the plugin's factory (assuming there is one)?
