@@ -2709,7 +2709,7 @@ public:
             compressed.append(siLen);  // Leaving space to patch when size known
             compressed.append(true);
             compressed.append(lastRowCompleteMatch);  // This field is not compressed - see above!
-            compressToBuffer(compressed, si.length() - compressed.length(), si.toByteArray() + compressed.length());
+            compressToBuffer(compressed, si.length() - compressed.length(), si.toByteArray() + compressed.length(), COMPRESS_METHOD_LZ4HC, "hclevel=3");
             bool report = logctx.queryTraceLevel() && (doTrace(traceRoxiePackets) || si.length() >= continuationWarnThreshold);
             if (report)
                 logctx.CTXLOG("ERROR: continuation data size %u for %d cursor positions is large - compressed to %u", si.length(), tlk->numActiveKeys(), compressed.length());
@@ -4122,7 +4122,7 @@ class CRoxieKeyedJoinIndexActivity : public CRoxieKeyedActivity
             MemoryBuffer compressed;
             compressed.append(siLen);  // Leaving space to patch when size known
             compressed.append(true);
-            compressToBuffer(compressed, si.length() - compressed.length(), si.toByteArray() + compressed.length());
+            compressToBuffer(compressed, si.length() - compressed.length(), si.toByteArray() + compressed.length(), COMPRESS_METHOD_LZ4HC, "hclevel=3");
             bool report = logctx.queryTraceLevel() && (doTrace(traceRoxiePackets) || si.length() >= continuationWarnThreshold);
             if (report)
                 DBGLOG("ERROR: continuation data size %u for %d cursor positions is large - compressed to %u", si.length(), tlk->numActiveKeys(), compressed.length());
