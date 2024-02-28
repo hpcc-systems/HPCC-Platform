@@ -73,6 +73,42 @@ Pass in dict with root and warnings
    {{- $_ := set $ctx "warnings" (append $ctx.warnings $warning) -}}
   {{- end -}}
  {{- end -}}
+ {{- /* Warn if any tracing flags are set in Roxie */ -}}
+ {{- range $roxie := .root.Values.roxie -}}
+  {{- if not $roxie.disabled -}}
+   {{- range $key, $value := $roxie -}}
+    {{- if or (eq "traceLevel" $key) (eq "udpTraceLevel" $key) -}}
+     {{- if gt (int $value) 1 -}}
+      {{- $warning := dict "source" "helm" "severity" "warning" -}}
+      {{- $_ := set $warning "msg" (printf "Roxie %s tracing option %s: %s may result in excessive logging" $roxie.name $key (toString $value)) -}}
+      {{- $_ := set $ctx "warnings" (append $ctx.warnings $warning) -}}
+     {{- end -}}
+    {{- else if or (hasPrefix "trace" $key) (hasPrefix "udpTrace" $key) -}}
+     {{- if $value -}}
+      {{- $warning := dict "source" "helm" "severity" "warning" -}}
+      {{- $_ := set $warning "msg" (printf "Roxie %s tracing option %s: %s may result in excessive logging" $roxie.name $key (toString $value)) -}}
+      {{- $_ := set $ctx "warnings" (append $ctx.warnings $warning) -}}
+     {{- end -}}
+    {{- end -}}
+   {{- end -}}
+  {{- end -}}
+ {{- end -}}
+ {{- /* Warn if any expert flags are set */ -}}
+ {{- range $cname, $ctypes := .root.Values -}}
+  {{- range $id, $component := $ctypes -}}
+   {{- if kindIs "map" $component -}}
+    {{- if not $component.disabled -}}
+     {{- range $key, $value := $component.expert -}}
+      {{- if $value -}}
+       {{- $warning := dict "source" "helm" "severity" "warning" -}}
+       {{- $_ := set $warning "msg" (printf "%s %s expert option %s: %s is set" (title $cname) $component.name $key (toString $value)) -}}
+       {{- $_ := set $ctx "warnings" (append $ctx.warnings $warning) -}}
+      {{- end -}}
+     {{- end -}}
+    {{- end -}}
+   {{- end -}}
+  {{- end -}}
+ {{- end -}}
  {{- /* Warn when resources not provided, default cpu rate used and components requiring resources for cost calcs */ -}}
  {{- if eq .root.Values.global.cost.perCpu 0.0565000000001 -}}
   {{- $_ := set $ctx "usingDefaultCpuCost" "true" -}}
