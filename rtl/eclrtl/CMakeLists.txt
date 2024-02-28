@@ -87,12 +87,7 @@ endif ()
 
 HPCC_ADD_LIBRARY( eclrtl SHARED ${SRCS} )
 
-if(CENTOS_6_BOOST)
-  add_dependencies(eclrtl boost-regex)
-  target_link_libraries( eclrtl boost-regex)
-elseif(USE_BOOST_REGEX)
-  target_link_libraries( eclrtl Boost::boost Boost::regex )
-endif()
+target_link_libraries( eclrtl Boost::boost Boost::regex )
 
 target_link_libraries ( eclrtl 
       jlib

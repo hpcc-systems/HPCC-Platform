@@ -17,11 +17,6 @@ option(SIGN_MODULES "Enable signing of ecl standard library modules" OFF)
 option(USE_CPPUNIT "Enable unit tests (requires cppunit)" OFF)
 option(USE_OPENLDAP "Enable OpenLDAP support (requires OpenLDAP)" ON)
 option(USE_ICU "Enable unicode support (requires ICU)" ON)
-option(USE_BOOST_REGEX "Configure use of boost regex" ON)
-option(CENTOS_6_BOOST "Supply regex library on CentOS 6" OFF)
-# USE_C11_REGEX is only checked if USE_BOOST_REGEX is OFF
-# to disable REGEX altogether turn both off
-option(USE_C11_REGEX "Configure use of c++11 std::regex" ON)
 option(Boost_USE_STATIC_LIBS "Use boost_regex static library for RPM BUILD" OFF)
 option(USE_OPENSSL "Configure use of OpenSSL" ON)
 option(USE_OPENSSLV3 "Configure use of OpenSSL Version 3 or newer" ON)

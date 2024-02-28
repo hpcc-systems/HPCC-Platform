@@ -16,11 +16,7 @@
 ############################################################################## */
 
 #include "limits.h"
-#if defined(_USE_BOOST_REGEX)
 #include "boost/regex.hpp" // must precede platform.h ; n.b. this uses a #pragma comment(lib, ...) to link the appropriate .lib in MSVC
-#elif defined(_USE_C11_REGEX)
-#include <regex>
-#endif
 #include "platform.h"
 #include "eclrtl.hpp"
 #include "eclrtl_imp.hpp"
@@ -31,23 +27,12 @@
 #define UTF8_CODEPAGE "UTF-8"
 #define UTF8_MAXSIZE     4
 
-#if defined(_USE_BOOST_REGEX) || defined(_USE_C11_REGEX)
-
-#if defined(_USE_BOOST_REGEX)
 using boost::regex;
 using boost::regex_search;
 using boost::regex_replace;
 using boost::regex_iterator;
 using boost::cmatch;
 using boost::match_results;
-#else
-using std::regex;
-using std::regex_search;
-using std::regex_replace;
-using std::regex_iterator;
-using std::cmatch;
-using std::match_results;
-#endif
 
 class CStrRegExprFindInstance : implements IStrRegExprFindInstance
 {
@@ -81,11 +66,9 @@ public:
         {
             std::string msg = "Error in regex search: ";
             msg += e.what();
-#if defined(_USE_BOOST_REGEX)
             msg += "(regex: ";
             msg += regEx->str();
             msg += ")";
-#endif
             rtlFail(0, msg.c_str());
         }
 
@@ -145,23 +128,12 @@ public:
     {
         try
         {
-#if defined(_USE_BOOST_REGEX)
             if (_isCaseSensitive)
                 regEx.assign(_regExp, regex::perl);
             else
                 regEx.assign(_regExp, regex::perl | regex::icase);
-#else
-            if (_isCaseSensitive)
-                regEx.assign(_regExp, regex::ECMAScript);
-            else
-                regEx.assign(_regExp, regex::ECMAScript | regex::icase);
-#endif
         }
-#if defined(_USE_BOOST_REGEX)
         catch(const boost::bad_expression & e)
-#else
-        catch(const std::regex_error & e)
-#endif
         {
             std::string msg = "Bad regular expression: ";
             msg += e.what();
@@ -181,21 +153,15 @@ public:
         try
         {
 //          tgt = boost::regex_merge(src, cre->regEx, fmt, boost::format_perl); //Algorithm regex_merge has been renamed regex_replace, existing code will continue to compile, but new code should use regex_replace instead.
-#if defined(_USE_BOOST_REGEX)
             tgt = regex_replace(src, regEx, fmt, boost::format_perl);
-#else
-            tgt = regex_replace(src, regEx, fmt);
-#endif
         }
         catch(const std::runtime_error & e)
         {
             std::string msg = "Error in regex replace: ";
             msg += e.what();
-#if defined(_USE_BOOST_REGEX)
             msg += "(regex: ";
             msg += regEx.str();
             msg += ")";
-#endif
             rtlFail(0, msg.c_str());
         }
         outlen = tgt.length();
@@ -469,31 +435,3 @@ ECLRTL_API void rtlDestroyUStrRegExprFindInstance(IUStrRegExprFindInstance * fin
 {
 }
 #endif
-
-#else // _USE_BOOST_REGEX or _USE_C11_REGEX not set
-ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledStrRegExpr(const char * regExpr, bool isCaseSensitive)
-{
-    rtlFail(0, "Boost/C++11 regex disabled");
-}
-
-ECLRTL_API void rtlDestroyCompiledStrRegExpr(ICompiledStrRegExpr * compiledExpr)
-{
-}
-
-ECLRTL_API void rtlDestroyStrRegExprFindInstance(IStrRegExprFindInstance * findInst)
-{
-}
-
-ECLRTL_API ICompiledUStrRegExpr * rtlCreateCompiledUStrRegExpr(const UChar * regExpr, bool isCaseSensitive)
-{
-    rtlFail(0, "Boost/C++11 regex disabled");
-}
-
-ECLRTL_API void rtlDestroyCompiledUStrRegExpr(ICompiledUStrRegExpr * compiledExpr)
-{
-}
-
-ECLRTL_API void rtlDestroyUStrRegExprFindInstance(IUStrRegExprFindInstance * findInst)
-{
-}
-#endif // _USE_BOOST_REGEX or _USE_C11_REGEX
