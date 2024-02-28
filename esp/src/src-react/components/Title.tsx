@@ -67,7 +67,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
 
     const titlebarColorSet = React.useMemo(() => {
         return titlebarColor && titlebarColor !== theme.palette.themeLight;
-    }, [theme.palette, titlebarColor]);    
+    }, [theme.palette, titlebarColor]);
 
     const personaProps: IPersonaSharedProps = React.useMemo(() => {
         return {
@@ -139,7 +139,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
                 { key: "divider_2", itemType: ContextualMenuItemType.Divider },
                 {
                     key: "lock", text: nlsHPCC.Lock, disabled: !currentUser?.username, onClick: () => {
-                        fetch("esp/lock", {
+                        fetch("/esp/lock", {
                             method: "post"
                         }).then(() => {
                             setUserSession({ ...userSession, Status: "Locked" });
@@ -287,7 +287,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
                         </DefaultButton>
                     </Stack.Item>
                     <Stack.Item align="center">
-                        <IconButton title={nlsHPCC.Advanced} iconProps={collapseMenuIcon} menuProps={advMenuProps} style={{color: titlebarColorSet ? Utility.textColor(titlebarColor) : theme.palette.themeDarker }}/>
+                        <IconButton title={nlsHPCC.Advanced} iconProps={collapseMenuIcon} menuProps={advMenuProps} style={{ color: titlebarColorSet ? Utility.textColor(titlebarColor) : theme.palette.themeDarker }} />
                     </Stack.Item>
                 </Stack>
                 <Toaster position="top-right" gutter={8 - (90 - toasterScale(90))} containerStyle={{
