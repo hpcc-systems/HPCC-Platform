@@ -554,7 +554,7 @@ public:
                 }
                 try
                 {
-                    if (encrypted && !resending)
+                    if (encrypted && !resending && udpEncryptOnSendThread)
                     {
                         length -= sizeof(UdpPacketHeader);
                         const MemoryAttr &udpkey = getSecretUdpKey(true);
@@ -1188,11 +1188,21 @@ public:
 
     // Interface ISendManager
 
-    virtual void writeOwn(IUdpReceiverEntry &receiver, DataBuffer *buffer, unsigned len, unsigned queue) override
+    virtual void writeOwn(IUdpReceiverEntry &receiver, DataBuffer *buffer, unsigned length, unsigned queue) override
     {
         // NOTE: takes ownership of the DataBuffer
         assert(queue < numQueues);
         assert(buffer);
+        if (encrypted && !udpEncryptOnSendThread)
+        {
+            UdpPacketHeader *header = (UdpPacketHeader*) buffer->data;
+            length -= sizeof(UdpPacketHeader);
+            const MemoryAttr &udpkey = getSecretUdpKey(true);
+            size_t encryptedLength = aesEncryptInPlace(udpkey.get(), udpkey.length(), buffer->data + sizeof(UdpPacketHeader), length, DATA_PAYLOAD - sizeof(UdpPacketHeader));
+            length = encryptedLength + sizeof(UdpPacketHeader);
+            header->length = length;
+            assertex(length <= DATA_PAYLOAD);
+        }
         static_cast<UdpReceiverEntry &>(receiver).pushData(queue, buffer);
     }
 
