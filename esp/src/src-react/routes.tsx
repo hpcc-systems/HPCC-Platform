@@ -390,7 +390,17 @@ export const routes: RoutesEx = [
                     },
                 ]
             },
-        ]
+            {
+                path: "/sasha",
+                        children: [
+                            {
+                                path: "", action: (ctx, params) => import("./components/Sasha").then(_ => {
+                                    return <_.Sasha />;
+                                })
+                            },
+                        ]
+                    },
+                ]
     },
     {
         mainNav: ["operations"],

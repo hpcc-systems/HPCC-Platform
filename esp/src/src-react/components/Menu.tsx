@@ -162,6 +162,7 @@ const subMenuItems: SubMenuItems = {
         { headerText: nlsHPCC.Security + " (L)", itemKey: "/topology/security" },
         { headerText: nlsHPCC.DESDL + " (L)", itemKey: "/topology/desdl" },
         { headerText: nlsHPCC.DaliAdmin, itemKey: "/topology/daliadmin" },
+        { headerText: nlsHPCC.Sasha, itemKey: "/topology/sasha" },
     ],
     "operations": [
         { headerText: nlsHPCC.Topology + " (L)", itemKey: "/operations" },
