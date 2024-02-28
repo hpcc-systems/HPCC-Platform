@@ -821,6 +821,7 @@ IEclSourceCollection * EclRepositoryManager::resolveGitCollection(const char * r
     }
 
     bool ok = false;
+    Owned<IError> error;
     CCycleTimer gitDownloadTimer;
     if (alreadyExists)
     {
@@ -828,7 +829,10 @@ IEclSourceCollection * EclRepositoryManager::resolveGitCollection(const char * r
         {
             unsigned retCode = runGitCommand(nullptr, "fetch origin", repoPath, true);
             if (retCode != 0)
-                DBGLOG("Failed to download the latest version of %s", defaultUrl);
+            {
+                VStringBuffer msg("Failed to download the latest version of '%s' error code (%u)", defaultUrl, retCode);
+                error.setown(createError(CategoryError, SeverityError, ERR_FAIL_UPDATE_REPO, msg.str(), nullptr, 0, 0, 0));
+            }
         }
 
         ok = true;
@@ -844,17 +848,30 @@ IEclSourceCollection * EclRepositoryManager::resolveGitCollection(const char * r
             VStringBuffer params("clone %s \"%s\" --no-checkout", repoUrn.str(), repo.str());
             unsigned retCode = runGitCommand(nullptr, params, options.eclRepoPath, true);
             if (retCode != 0)
-                throw makeStringExceptionV(99, "Failed to clone dependency '%s'", defaultUrl);
+            {
+                VStringBuffer msg("Failed to clone dependency '%s' error code (%u)", defaultUrl, retCode);
+                error.setown(createError(CategoryError, SeverityError, ERR_FAIL_CLONE_REPO, msg.str(), nullptr, 0, 0, 0));
+            }
             ok = true;
         }
     }
     gitDownloadCycles += gitDownloadTimer.elapsedCycles();
+    if (error)
+    {
+        if (errorReceiver)
+        {
+            error.setown(errorReceiver->mapError(error)); // MORE: This mapping should really be done within reportError()
+            errorReceiver->report(error);
+        }
+        else
+            throw error.getClear();
+    }
 
     if (!ok)
         throw makeStringExceptionV(99, "Cannot locate the source code for dependency '%s'.  --fetchrepos not enabled", defaultUrl);
 
     if (startsWith(version, "semver:"))
-        throw makeStringExceptionV(99, "Semantic versioning not yet supported for dependency '%s'.", defaultUrl);
+        throw makeStringExceptionV(ERR_CANNOT_RESOLVE_BRANCH, "Semantic versioning not yet supported for dependency '%s'.", defaultUrl);
 
     // Really the version should be a SHA, but for flexibility version could be a sha, a tag or a branch (on origin).
     // Check for a remote branch first - because it appears that when git clones a repo, it creates a local branch for
@@ -879,7 +896,7 @@ IEclSourceCollection * EclRepositoryManager::resolveGitCollection(const char * r
         DBGLOG("Version '%s' resolved to sha '%s'", version.str(), sha.str());
 
     if (sha.isEmpty())
-        throw makeStringExceptionV(99, "Branch/tag '%s' could not be found for dependency '%s'.", version.str(), defaultUrl);
+        throw makeStringExceptionV(ERR_CANNOT_RESOLVE_BRANCH, "Branch/tag '%s' could not be found for dependency '%s'.", version.str(), defaultUrl);
 
     path.append(repoPath).appendf("/.git/{%s", sha.str());
     if (options.gitUser)
