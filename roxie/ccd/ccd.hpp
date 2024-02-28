@@ -786,7 +786,7 @@ public:
     {
         stats.recordStatistics(progress, false);
     }
-    void exportStatsToSpan(bool failed, unsigned elapsed, unsigned memused, unsigned agentsDuplicates, unsigned agentsResends);
+    void exportStatsToSpan(bool failed, stat_type elapsedNs, unsigned memused, unsigned agentsDuplicates, unsigned agentsResends);
 };
 
 class StringContextLogger : public ContextLogger

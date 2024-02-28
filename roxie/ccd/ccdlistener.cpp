@@ -945,11 +945,11 @@ extern void updateAffinity(unsigned __int64 affinity)
 
 //--------------------------------------------------------------------------------------------------------------------
 
-void ContextLogger::exportStatsToSpan(bool failed, unsigned elapsed, unsigned memused, unsigned agentsDuplicates, unsigned agentsResends)
+void ContextLogger::exportStatsToSpan(bool failed, stat_type elapsedNs, unsigned memused, unsigned agentsDuplicates, unsigned agentsResends)
 {
     if (activeSpan->isRecording())
     {
-        setSpanAttribute("time_elapsed", elapsed*1000000ULL);
+        setSpanAttribute("time_elapsed", elapsedNs);
         if (failed)
             setSpanAttribute("num_failures", 1);
         if (memused)
@@ -1001,7 +1001,7 @@ public:
         worker->threadmain();
     }
 
-    virtual void noteQuery(IHpccProtocolMsgContext *msgctx, const char *peer, bool failed, unsigned bytesOut, unsigned elapsed, unsigned memused, unsigned agentsReplyLen, unsigned agentsDuplicates, unsigned agentsResends, bool continuationNeeded, unsigned requestArraySize)
+    virtual void noteQuery(IHpccProtocolMsgContext *msgctx, const char *peer, bool failed, unsigned bytesOut, stat_type elapsedNs, unsigned memused, unsigned agentsReplyLen, unsigned agentsDuplicates, unsigned agentsResends, bool continuationNeeded, unsigned requestArraySize)
     {
     }
 
@@ -1110,14 +1110,14 @@ public:
     RoxieQueryWorker(RoxieListener *_pool)
     {
         pool = _pool;
-        qstart = msTick();
+        startNs = nsTick();
         time(&startTime);
     }
 
     //  interface IPooledThread
     virtual void init(void *) override
     {
-        qstart = msTick();
+        startNs = nsTick();
         time(&startTime);
     }
 
@@ -1135,7 +1135,7 @@ public:
 
 protected:
     RoxieListener *pool;
-    unsigned qstart;
+    stat_type startNs;
     time_t startTime;
 
 };
@@ -1316,9 +1316,10 @@ public:
             reportUnknownException(wu, logctx);
         }
 #endif
-        unsigned elapsed = msTick() - qstart;
-        noteQuery(failed, elapsed, priority);
-        queryFactory->noteQuery(startTime, failed, elapsed, memused, agentsReplyLen, 0);
+        unsigned elapsedNs = nsTick() - startNs;
+        unsigned elapsedMs = nanoToMilli(elapsedNs);
+        noteQuery(failed, elapsedMs, priority);
+        queryFactory->noteQuery(startTime, failed, elapsedMs, memused, agentsReplyLen, 0);
         if (logctx.queryTraceLevel() && (logFullQueries || logctx.intercept))
         {
             StringBuffer s;
@@ -1340,9 +1341,9 @@ public:
                 txidInfo.append(']');
             }
 
-            logctx.CTXLOG("COMPLETE: %s%s complete in %u msecs memory=%u Mb priority=%d agentsreply=%u duplicatePackets=%u resentPackets=%u%s", wuid.get(), txidInfo.str(), elapsed, memused, priority, agentsReplyLen, agentsDuplicates, agentsResends, s.str());
+            logctx.CTXLOG("COMPLETE: %s%s complete in %u msecs memory=%u Mb priority=%d agentsreply=%u duplicatePackets=%u resentPackets=%u%s", wuid.get(), txidInfo.str(), elapsedMs, memused, priority, agentsReplyLen, agentsDuplicates, agentsResends, s.str());
         }
-        logctx.exportStatsToSpan(failed, elapsed, memused, agentsDuplicates, agentsResends);
+        logctx.exportStatsToSpan(failed, elapsedNs, memused, agentsDuplicates, agentsResends);
     }
 
 private:
@@ -1603,12 +1604,13 @@ public:
             combinedQueryStats.noteQuery(failed, elapsedTime);
         }
     }
-    void noteQuery(const char *peer, bool failed, unsigned elapsed, unsigned memused, unsigned agentsReplyLen, unsigned agentsDuplicates, unsigned agentsResends, unsigned bytesOut, bool continuationNeeded, unsigned requestArraySize)
+    void noteQuery(const char *peer, bool failed, stat_type elapsedNs, unsigned memused, unsigned agentsReplyLen, unsigned agentsDuplicates, unsigned agentsResends, unsigned bytesOut, bool continuationNeeded, unsigned requestArraySize)
     {
-        noteQueryStats(failed, elapsed);
+        unsigned elapsedMs = nanoToMilli(elapsedNs);
+        noteQueryStats(failed, elapsedMs);
         if (queryFactory)
         {
-            queryFactory->noteQuery(startTime, failed, elapsed, memused, agentsReplyLen, bytesOut);
+            queryFactory->noteQuery(startTime, failed, elapsedMs, memused, agentsReplyLen, bytesOut);
             queryFactory.clear();
         }
         if (logctx)
@@ -1634,14 +1636,14 @@ public:
                     if (txIds.length())
                         txIds.insert(0, '[').append(']');
                     if (requestArraySize > 1)
-                        logctx->CTXLOG("COMPLETE: %s(x%u) %s%s from %s complete in %u msecs memory=%u Mb priority=%d agentsreply=%u duplicatePackets=%u resentPackets=%u resultsize=%u continue=%d%s", queryName.get(), requestArraySize, uid.get(), txIds.str(), peer, elapsed, memused, getQueryPriority(), agentsReplyLen, agentsDuplicates, agentsResends, bytesOut, continuationNeeded, s.str());
+                        logctx->CTXLOG("COMPLETE: %s(x%u) %s%s from %s complete in %u msecs memory=%u Mb priority=%d agentsreply=%u duplicatePackets=%u resentPackets=%u resultsize=%u continue=%d%s", queryName.get(), requestArraySize, uid.get(), txIds.str(), peer, elapsedMs, memused, getQueryPriority(), agentsReplyLen, agentsDuplicates, agentsResends, bytesOut, continuationNeeded, s.str());
                     else
-                        logctx->CTXLOG("COMPLETE: %s %s%s from %s complete in %u msecs memory=%u Mb priority=%d agentsreply=%u duplicatePackets=%u resentPackets=%u resultsize=%u continue=%d%s", queryName.get(), uid.get(), txIds.str(), peer, elapsed, memused, getQueryPriority(), agentsReplyLen, agentsDuplicates, agentsResends, bytesOut, continuationNeeded, s.str());
+                        logctx->CTXLOG("COMPLETE: %s %s%s from %s complete in %u msecs memory=%u Mb priority=%d agentsreply=%u duplicatePackets=%u resentPackets=%u resultsize=%u continue=%d%s", queryName.get(), uid.get(), txIds.str(), peer, elapsedMs, memused, getQueryPriority(), agentsReplyLen, agentsDuplicates, agentsResends, bytesOut, continuationNeeded, s.str());
 
                 }
             }
 
-            logctx->exportStatsToSpan(failed, elapsed, memused, agentsDuplicates, agentsResends);
+            logctx->exportStatsToSpan(failed, elapsedNs, memused, agentsDuplicates, agentsResends);
         }
     }
 };
@@ -1922,10 +1924,10 @@ public:
         roxieMsgCtx->ensureDebugCommandHandler().doDebugCommand(msg, &roxieMsgCtx->ensureDebuggerContext(uid), out);
     }
 
-    virtual void noteQuery(IHpccProtocolMsgContext *msgctx, const char *peer, bool failed, unsigned bytesOut, unsigned elapsed, unsigned memused, unsigned agentsReplyLen, unsigned agentsDuplicates, unsigned agentsResends, bool continuationNeeded, unsigned requestArraySize)
+    virtual void noteQuery(IHpccProtocolMsgContext *msgctx, const char *peer, bool failed, unsigned bytesOut, stat_type elapsedNs, unsigned memused, unsigned agentsReplyLen, unsigned agentsDuplicates, unsigned agentsResends, bool continuationNeeded, unsigned requestArraySize)
     {
         RoxieProtocolMsgContext *roxieMsgCtx = checkGetRoxieMsgContext(msgctx);
-        roxieMsgCtx->noteQuery(peer, failed, elapsed, memused, agentsReplyLen, agentsDuplicates, agentsResends, bytesOut, continuationNeeded, requestArraySize);
+        roxieMsgCtx->noteQuery(peer, failed, elapsedNs, memused, agentsReplyLen, agentsDuplicates, agentsResends, bytesOut, continuationNeeded, requestArraySize);
     }
 
 };

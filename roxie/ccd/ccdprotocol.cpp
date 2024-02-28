@@ -366,14 +366,14 @@ public:
 
     ProtocolQueryWorker(ProtocolListener *_listener) : listener(_listener)
     {
-        qstart = msTick();
+        startNs = nsTick();
         time(&startTime);
     }
 
     //  interface IPooledThread
     virtual void init(void *) override
     {
-        qstart = msTick();
+        startNs = nsTick();
         time(&startTime);
     }
 
@@ -391,7 +391,7 @@ public:
 
 protected:
     ProtocolListener *listener;
-    unsigned qstart;
+    stat_type startNs;
     time_t startTime;
 
 };
@@ -1733,7 +1733,7 @@ readAnother:
             if (resetQstart)
             {
                 resetQstart = false;
-                qstart = msTick();
+                startNs = nsTick();
                 time(&startTime);
                 msgctx.setown(sink->createMsgContext(startTime));
             }
@@ -1846,7 +1846,7 @@ readAnother:
                 Owned<IHpccProtocolResponse> protocol = createProtocolResponse(queryPT->queryName(), client, httpHelper, logctx, protocolFlags | HPCC_PROTOCOL_CONTROL, global->defaultXmlReadFlags);
                 sink->onControlMsg(msgctx, queryPT, protocol);
                 protocol->finalize(0);
-                if (streq(queryName, "lock") || streq(queryName, "childlock")) //don't reset qstart, lock time should be included
+                if (streq(queryName, "lock") || streq(queryName, "childlock")) //don't reset startNs, lock time should be included
                     goto readAnother;
             }
             else if (isStatus)
@@ -2107,7 +2107,8 @@ readAnother:
             }
         }
         unsigned bytesOut = client? client->bytesOut() : 0;
-        unsigned elapsed = msTick() - qstart;
+        stat_type elapsedNs = nsTick() - startNs;
+        unsigned elapsedMs = nanoToMilli(elapsedNs);
         if (client)
         {
             logctx.noteStatistic(StTimeSocketReadIO, client->getStatistic(StTimeSocketReadIO));
@@ -2118,7 +2119,7 @@ readAnother:
             logctx.noteStatistic(StNumSocketWrites, client->getStatistic(StNumSocketWrites));
         }
 
-        sink->noteQuery(msgctx.get(), peerStr, failed, bytesOut, elapsed,  memused, agentsReplyLen, agentsDuplicates, agentsResends, continuationNeeded, requestArraySize);
+        sink->noteQuery(msgctx.get(), peerStr, failed, bytesOut, elapsedNs,  memused, agentsReplyLen, agentsDuplicates, agentsResends, continuationNeeded, requestArraySize);
         if (continuationNeeded)
         {
             rawText.clear();
@@ -2158,7 +2159,7 @@ readAnother:
                         {
                             FlushingStringBuffer response(client, (protocolFlags & HPCC_PROTOCOL_BLOCKED), mlResponseFmt, (protocolFlags & HPCC_PROTOCOL_NATIVE_RAW), false, logctx);
                             response.startDataset("SummaryStats", NULL, (unsigned) -1);
-                            VStringBuffer s(" COMPLETE: %s %s complete in %u msecs memory=%u Mb agentsreply=%u duplicatePackets=%u resentPackets=%u resultsize=%u continue=%d", queryName.get(), uid, elapsed, memused, agentsReplyLen, agentsDuplicates, agentsResends, bytesOut, continuationNeeded);
+                            VStringBuffer s(" COMPLETE: %s %s complete in %u msecs memory=%u Mb agentsreply=%u duplicatePackets=%u resentPackets=%u resultsize=%u continue=%d", queryName.get(), uid, elapsedMs, memused, agentsReplyLen, agentsDuplicates, agentsResends, bytesOut, continuationNeeded);
                             logctx.getStats(s).newline();
                             response.flushXML(s, true);
                         }
