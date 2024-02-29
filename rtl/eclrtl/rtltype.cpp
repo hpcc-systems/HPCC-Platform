@@ -62,7 +62,7 @@ void rtlPadTruncString(unsigned & tgtLen, char * & tgt, unsigned newLen, unsigne
 {
     if (len > newLen)
         len = newLen;
-    char * buff = (char *)malloc(len);
+    char * buff = (char *)malloc(newLen);
     memcpy(buff, src, len);
     if (len < newLen)
         memset(buff+len, ' ', newLen - len);
