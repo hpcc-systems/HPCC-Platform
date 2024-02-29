@@ -76,6 +76,7 @@ bool udpAdjustThreadPriorities = false; // Adjust the priorities for the UDP rec
                                         // Enabling tends to cause a big rise in context switches from other threads, so disabled by default
 bool udpAllowAsyncPermits = false;      // Allow requests to send more data to overtake the data packets that are being sent.
 bool udpRemoveDuplicatePermits = true;
+bool udpEncryptOnSendThread = false;
 
 unsigned multicastTTL = 1;
 

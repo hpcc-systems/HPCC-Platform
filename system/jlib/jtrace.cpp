@@ -15,7 +15,6 @@
     limitations under the License.
 ############################################################################## */
 
-
 #include "opentelemetry/trace/semantic_conventions.h" //known span defines
 #include "opentelemetry/context/propagation/global_propagator.h" // context::propagation::GlobalTextMapPropagator::GetGlobalPropagator
 #include "opentelemetry/sdk/trace/tracer_provider_factory.h" //opentelemetry::sdk::trace::TracerProviderFactory::Create(context)
@@ -1425,3 +1424,9 @@ ITraceManager & queryTraceManager()
 {
     return *theTraceManager.query([] () { return new CTraceManager; }); //throws if not initialized
 }
+
+#if defined(_MSC_VER) && _MSC_VER < 1939 // _MSC_VER < VS 2022 17.9
+extern "C" void __stdcall _Thrd_sleep_for(const unsigned long ms) noexcept { // suspend current thread for `ms` milliseconds
+    Sleep(ms);
+}
+#endif

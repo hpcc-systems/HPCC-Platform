@@ -15,18 +15,63 @@
     limitations under the License.
 ############################################################################## */
 
-//xversion url='http://.:9876'
 //nothor
 //nohthor
 
-TargetIP := '.' : STORED('TargetIP');
-serviceUrl := 'http://'+TargetIP+':9876';
+//version callDirect=true
+//version callViaEsp=false,persistConnection=false,encryptConnection=false
+//version callViaEsp=false,persistConnection=true,encryptConnection=false
+//xversion callViaEsp=false,persistConnection=false,encryptConnection=true
+//xversion callViaEsp=false,persistConnection=true,encryptConnection=true
+//version callViaEsp=true,persistConnection=false,encryptConnection=false
+//version callViaEsp=true,persistConnection=true,encryptConnection=false
+//xversion callViaEsp=true,persistConnection=false,encryptConnection=true
+//xversion callViaEsp=true,persistConnection=true,encryptConnection=true
+
+import ^ as root;
+
+//Simplified configuration
+roxieIP := '.' : STORED('TargetIP');
+espIP :=  '.' : STORED('TargetIP');
+
+//Simplified call options - doesn't provide all combinations that should be tested eventually
+boolean encryptConnection := #IFDEFINED(root.encryptConnection, false);
+boolean persistConnection := #IFDEFINED(root.persistConnection, false);
+boolean callDirect := #IFDEFINED(root.callDirect, false);
+boolean callViaEsp := #IFDEFINED(root.callViaEsp, false);
 
 //--- end of version configuration ---
 
 import common.SoapTextTest;
 
 #stored ('searchWords', 'one,and,sheep,when,richard,king');
-#stored ('url', serviceUrl);
 
-SoapTextTest.mainService();
+string searchWords := '' : stored('searchWords');
+unsigned documentLimit := 3 : stored('documentLimit');
+unsigned maxResults := 50;
+
+//----------------
+
+ConnectionType := SoapTextTest.ConnectionType;
+
+SoapTextTest.CallOptionsRecord initCallOptions() := TRANSFORM
+    SELF.connectionToRoxie := IF(encryptConnection, ConnectionType.Encrypted, ConnectionType.Plain);
+    SELF.connectionToEsp := IF(encryptConnection, ConnectionType.Encrypted, ConnectionType.Plain);
+    SELF.persistConnectToRoxie := persistConnection;
+    SELF.persistConnectToEsp := persistConnection;
+    SELF.connectDirectToRoxie := NOT callViaEsp;
+    SELF.embedServiceCalls := callDirect;
+    SELF := [];
+END;
+
+SoapTextTest.ConfigOptionsRecord initConfigOptions() := TRANSFORM
+    SELF.remoteEspUrl := espIP;
+    SELF.remoteRoxieUrl := roxieIP;
+    SELF := [];
+END;
+
+
+callOptions := ROW(initCallOptions());
+configOptions := ROW(initConfigOptions());
+
+SoapTextTest.runMainService(searchWords, documentLimit, maxResults, callOptions, configOptions);

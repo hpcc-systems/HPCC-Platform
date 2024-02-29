@@ -40,7 +40,7 @@ function fromString<T>(value: string, defaultValue: T): T {
 
 function useStore<T>(store: IKeyValStore, key: string, defaultValue: T, monitor: boolean = false): [value: T, setValue: (value: T) => void, reset: () => void] {
 
-    const [value, setValue] = React.useState<T>(defaultValue);
+    const [value, setValue] = React.useState<T>();
 
     React.useEffect(() => {
         if (!store) return;

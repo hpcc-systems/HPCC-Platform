@@ -158,13 +158,13 @@ export interface FluentStoreStateResponse {
     setPageSize: (pageSize: number) => void;
     total: number;
     setTotal: (total: number) => void;
-    refreshTable: RefreshTable
+    refreshTable: RefreshTable;
 }
 
 export function useFluentStoreState({ page }: FluentStoreStateProps): FluentStoreStateResponse {
     const [selection, setSelection] = React.useState([]);
     const [pageNum, setPageNum] = React.useState(page);
-    const [pageSize, setPageSize] = React.useState(25);
+    const [pageSize, setPageSize] = React.useState<number>();
     const [total, setTotal] = React.useState(0);
     const refreshTable = useRefreshTable();
 

@@ -169,6 +169,15 @@
             "platform": "@VCPKG_OPENSSL@"
         },
         {
+            "name": "opentelemetry-cpp",
+            "default-features": false,
+            "features": [
+                "otlp",
+                "otlp-http",
+                "otlp-grpc"
+            ]
+        },
+        {
             "name": "python3",
             "platform": "@VCPKG_PYTHON3@ & windows"
         },
@@ -192,14 +201,6 @@
         {
             "name": "zlib",
             "platform": "@VCPKG_ZLIB@"
-        },
-        {
-            "name": "opentelemetry-cpp",
-            "features": [
-                "otlp",
-                "otlp-http",
-                "otlp-grpc"
-            ]
         }
     ]
 }

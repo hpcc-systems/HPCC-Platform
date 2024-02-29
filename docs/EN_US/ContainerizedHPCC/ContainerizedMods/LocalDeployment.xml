@@ -453,7 +453,7 @@ OUTPUT(allPeople,,'MyData::allPeople',THOR,OVERWRITE);
     <emphasis role="strong">C:\hpccdata\hpcc-data\tutorial</emphasis>, you can
     then reference the file using this syntax:</para>
 
-    <para><programlisting>'~plane::data::tutorial::originalperson'</programlisting><variablelist>
+    <para><programlisting>'~plane::hpcc-data::tutorial::originalperson'</programlisting><variablelist>
         <varlistentry>
           <term>Note:</term>
 

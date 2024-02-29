@@ -3837,7 +3837,7 @@ soapFlag
                             if ($3.queryExprType()->isBoolean())
                                 parser->normalizeExpression($3, type_boolean, true);
                             else
-                                parser->normalizeExpression($3, type_int, true);
+                                parser->normalizeExpression($3, type_int, false);
                             $$.setExpr(createExprAttribute(persistAtom, $3.getExpr()), $1);
                         }
     ;

@@ -11,6 +11,7 @@ const logger = scopedLogger("../components/forms/PublishQuery.tsx");
 interface PublishFormValues {
     jobName: string;
     remoteDali: string;
+    remoteStorage: string;
     sourceProcess: string;
     comment: string;
     priority: string;
@@ -21,6 +22,7 @@ interface PublishFormValues {
 const defaultValues: PublishFormValues = {
     jobName: "",
     remoteDali: "",
+    remoteStorage: "",
     sourceProcess: "",
     comment: "",
     priority: "",
@@ -52,7 +54,20 @@ export const PublishQueryForm: React.FunctionComponent<PublishFormProps> = ({
     const onSubmit = React.useCallback(() => {
         handleSubmit(
             (data, evt) => {
-                workunit.publish(data.jobName).then(() => {
+                const request = {
+                    Wuid: workunit?.Wuid,
+                    Cluster: workunit?.Cluster,
+
+                    JobName: data.jobName,
+                    RemoteDali: data?.remoteDali ?? "",
+                    RemoteStorage: data?.remoteStorage ?? "",
+                    Comment: data?.comment ?? "",
+                    SourceProcess: data?.sourceProcess ?? "",
+                    Priority: data?.priority,
+                    AllowForeignFiles: data?.allowForeignFiles,
+                    UpdateSuperFiles: data?.updateSuperFiles
+                };
+                workunit.publishEx(request).then(() => {
                     return workunit.update({ Jobname: data.jobName });
                 }).then(() => {
                     closeForm();
@@ -100,6 +115,19 @@ export const PublishQueryForm: React.FunctionComponent<PublishFormProps> = ({
                     name={fieldName}
                     onChange={onChange}
                     label={nlsHPCC.RemoteDali}
+                    value={value}
+                    errorMessage={error && error?.message}
+                />}
+        />
+        <Controller
+            control={control} name="remoteStorage"
+            render={({
+                field: { onChange, name: fieldName, value },
+                fieldState: { error }
+            }) => <TextField
+                    name={fieldName}
+                    onChange={onChange}
+                    label={nlsHPCC.RemoteStorage}
                     value={value}
                     errorMessage={error && error?.message}
                 />}

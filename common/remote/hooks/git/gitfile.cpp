@@ -174,19 +174,19 @@ class GitRepositoryFileIO : implements CSimpleInterfaceOf<IFileIO>
         return buf.length() > LFSsiglen && memcmp(buf.toByteArray(), LFSsig, LFSsiglen)==0;
     }
 public:
-    GitRepositoryFileIO(GitCommitTree * commitTree, const char *gitDirectory, const git_oid * oid, const char * gitUser)
+    GitRepositoryFileIO(const char * filename, GitCommitTree * commitTree, const char *gitDirectory, const git_oid * oid, const char * gitUser)
     {
         git_blob *blob = nullptr;
         int error = git_blob_lookup(&blob, git_tree_owner(commitTree->queryTree()), oid);
         if (error)
-            throw MakeStringException(0, "git git_blob_lookup returned exit status %d", error);
+            throw MakeStringException(0, "git git_blob_lookup for '%s' returned exit status %d", filename, error);
 
         git_object_size_t blobsize = git_blob_rawsize(blob);
         const void * data = git_blob_rawcontent(blob);
         buf.append(blobsize, data);
         git_blob_free(blob);
         if (isLFSfile())
-            readLfsContents(gitDirectory, gitUser);
+            readLfsContents(filename, gitDirectory, gitUser);
     }
     virtual size32_t read(offset_t pos, size32_t len, void * data)
     {
@@ -229,16 +229,21 @@ public:
     }
 
 protected:
-    void readLfsContents(const char *gitDirectory, const char * gitUser)
+    void readLfsContents(const char * filename, const char *gitDirectory, const char * gitUser)
     {
         EnvironmentVector env;
         Owned<IFile> extractedKey;
 
         //If fetching from git and the username is specified then use the script file to provide the username/password
         //Only support retrieving the password as a secret - not as a filename
+        //NB: This code should be kept in sync with runGitCommand() in hqlrepository.cpp (and ideally combined)
         if (!isEmptyString(gitUser))
         {
+            env.emplace_back("HPCC_GIT_USERNAME", gitUser);
+
+            // If gituser is specified never prompt for credentials, otherwise the server can hang.
             env.emplace_back("GIT_TERMINAL_PROMPT", "0");
+
             StringBuffer scriptPath;
             getPackageFolder(scriptPath);
             addPathSepChar(scriptPath).append("bin/hpccaskpass.sh");
@@ -254,8 +259,10 @@ protected:
                     env.emplace_back("HPCC_GIT_PASSPATH", extractedKey->queryFilename());
                 }
                 else
-                    DBGLOG("Secret doesn't contain password for git user %s", gitUser);
+                    OWARNLOG("Secret doesn't contain password for git user %s", gitUser);
             }
+            else
+                OWARNLOG("No secret found for git user %s", gitUser);
         }
         Owned<IPipeProcess> pipe = createPipeProcess();
         for (const auto & cur : env)
@@ -275,7 +282,7 @@ protected:
         if (retcode)
         {
             buf.clear();  // Can't rely on destructor to clean this for me
-            throw MakeStringException(0, "git-lfs returned exit status %d", retcode);
+            throw MakeStringException(0, "git-lfs for '%s' (user %s) returned exit status %d", filename, gitUser ? gitUser : "", retcode);
         }
     }
 
@@ -388,12 +395,12 @@ public:
     virtual IFileIO * open(IFOmode mode, IFEflags extraFlags) override
     {
         assertex(mode==IFOread && isExisting && !isDir);
-        return new GitRepositoryFileIO(commitTree, gitDirectory, &oid, gitUser);
+        return new GitRepositoryFileIO(fullName, commitTree, gitDirectory, &oid, gitUser);
     }
     virtual IFileIO * openShared(IFOmode mode, IFSHmode shmode, IFEflags extraFlags) override
     {
         assertex(mode==IFOread && isExisting && !isDir);
-        return new GitRepositoryFileIO(commitTree, gitDirectory, &oid, gitUser);
+        return new GitRepositoryFileIO(fullName, commitTree, gitDirectory, &oid, gitUser);
     }
 
 

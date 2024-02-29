@@ -74,12 +74,14 @@ using roxiemem::DataBuffer;
  */
 
 // UdpResentList keeps a copy of up to TRACKER_BITS previously sent packets so we can send them again
+RelaxedAtomic<unsigned> okToSendTimeouts;
 RelaxedAtomic<unsigned> packetsResent;
 RelaxedAtomic<unsigned> flowRequestsSent;
 RelaxedAtomic<unsigned> flowPermitsReceived;
 RelaxedAtomic<unsigned> dataPacketsSent;
 
 static unsigned lastResentReport = 0;
+static unsigned lastOkToSendTimeouts = 0;
 static unsigned lastPacketsResent = 0;
 static unsigned lastFlowRequestsSent = 0;
 static unsigned lastFlowPermitsReceived = 0;
@@ -384,11 +386,12 @@ public:
     void resendRequestToSend()
     {
         // This is called from the timeout thread when a previously-send request has had no response
+        okToSendTimeouts.fastInc();
         timeouts++;
         if (udpTraceLevel || udpTraceFlow || udpTraceTimeouts)
         {
             //Avoid tracing too many times - otherwise might get large number 5000+ messages
-            if (timeouts == 1 || maxRequestDeadTimeouts < 10 || (timeouts % (maxRequestDeadTimeouts / 10) == 0))
+            if (maxRequestDeadTimeouts < 10 || (timeouts % (maxRequestDeadTimeouts / 10) == 0))
             {
                 int timeExpired = msTick()-requestExpiryTime;
                 StringBuffer s;
@@ -554,7 +557,7 @@ public:
                 }
                 try
                 {
-                    if (encrypted && !resending)
+                    if (encrypted && !resending && udpEncryptOnSendThread)
                     {
                         length -= sizeof(UdpPacketHeader);
                         const MemoryAttr &udpkey = getSecretUdpKey(true);
@@ -894,7 +897,12 @@ class CSendManager : implements ISendManager, public CInterface
                 if (udpStatsReportInterval && (now-lastResentReport > udpStatsReportInterval))
                 {
                     // MORE - some of these should really be tracked per destination
-                    lastResentReport = now;
+                    if (okToSendTimeouts > lastOkToSendTimeouts)
+                    {
+                        EXCLOG(MCoperatorError,"ERROR: UdpSender: timed out %u more times waiting for ok_to_send msg in last %u seconds",
+                            okToSendTimeouts - lastOkToSendTimeouts, (now-lastResentReport)/1000);
+                        lastOkToSendTimeouts = okToSendTimeouts;
+                    }
                     if (packetsResent > lastPacketsResent)
                     {
                         DBGLOG("Sender: %u more packets resent by this agent (%u total)", packetsResent-lastPacketsResent, packetsResent-0);
@@ -915,6 +923,7 @@ class CSendManager : implements ISendManager, public CInterface
                         DBGLOG("Sender: %u more data packets sent by this agent (%u total)", dataPacketsSent - lastDataPacketsSent, dataPacketsSent-0);
                         lastDataPacketsSent = dataPacketsSent;
                     }
+                    lastResentReport = now;
                 }
             }
             return 0;
@@ -1188,11 +1197,21 @@ public:
 
     // Interface ISendManager
 
-    virtual void writeOwn(IUdpReceiverEntry &receiver, DataBuffer *buffer, unsigned len, unsigned queue) override
+    virtual void writeOwn(IUdpReceiverEntry &receiver, DataBuffer *buffer, unsigned length, unsigned queue) override
     {
         // NOTE: takes ownership of the DataBuffer
         assert(queue < numQueues);
         assert(buffer);
+        if (encrypted && !udpEncryptOnSendThread)
+        {
+            UdpPacketHeader *header = (UdpPacketHeader*) buffer->data;
+            length -= sizeof(UdpPacketHeader);
+            const MemoryAttr &udpkey = getSecretUdpKey(true);
+            size_t encryptedLength = aesEncryptInPlace(udpkey.get(), udpkey.length(), buffer->data + sizeof(UdpPacketHeader), length, DATA_PAYLOAD - sizeof(UdpPacketHeader));
+            length = encryptedLength + sizeof(UdpPacketHeader);
+            header->length = length;
+            assertex(length <= DATA_PAYLOAD);
+        }
         static_cast<UdpReceiverEntry &>(receiver).pushData(queue, buffer);
     }
 
