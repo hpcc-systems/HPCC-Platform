@@ -237,6 +237,7 @@ define([
                 this.wu.publish(
                     dom.byId(this.id + "Jobname2").value,
                     dom.byId(this.id + "RemoteDali").value,
+                    dom.byId(this.id + "RemoteStorage").value,
                     dom.byId(this.id + "SourceProcess").value,
                     registry.byId(this.id + "Priority").value,
                     dom.byId(this.id + "Comment").value,

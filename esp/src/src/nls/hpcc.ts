@@ -770,6 +770,7 @@ export = {
         RemoteCopy: "Remote Copy",
         RemoteDali: "Remote Dali",
         RemoteDaliIP: "Remote Dali IP Address",
+        RemoteStorage: "Remote Storage",
         Remove: "Remove",
         RemoveAtttributes: "Remove Attribute(s)",
         RemoveAttributeQ: "You are about to remove this attribute. Are you sure you want to do this?",

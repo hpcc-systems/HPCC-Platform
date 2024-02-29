@@ -8,8 +8,9 @@ import { formatCost } from "src/Session";
 import nlsHPCC from "src/nlsHPCC";
 import { useConfirm } from "../hooks/confirm";
 import { useMyAccount } from "../hooks/user";
-import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
+import { useHasFocus, useIsMounted } from "../hooks/util";
+import { HolyGrail } from "../layouts/HolyGrail";
 import { FluentPagedGrid, FluentPagedFooter, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { Fields } from "./forms/Fields";
 import { Filter } from "./forms/Filter";
@@ -102,6 +103,16 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
         pageSize, setPageSize,
         total, setTotal,
         refreshTable } = useFluentStoreState({ page });
+
+    //  Refresh on focus  ---
+    const isMounted = useIsMounted();
+    const hasFocus = useHasFocus();
+    React.useEffect(() => {
+        if (isMounted && hasFocus) {
+            refreshTable.call();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [hasFocus]);
 
     //  Grid ---
     const query = React.useMemo(() => {
