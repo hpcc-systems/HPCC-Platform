@@ -2810,9 +2810,12 @@ void CJobBase::startJob()
             IWARNLOG("Failed to capture process stacks: %s", output.str());
     }
 
-    constexpr unsigned defaultNumRenameRetries = 10;
+    // NB: these defaults match defaults in jfile rename retry mechanism
+    constexpr unsigned defaultNumRenameRetries = 4;
+    constexpr bool defaultManualRenameChk = true;
     unsigned numRenameRetries = getOptInt64("numRenameRetries", getGlobalConfigSP()->getPropInt("expert/@numRenameRetries", defaultNumRenameRetries));
-    setRenameRetries(numRenameRetries);
+    unsigned manualRenameChk = getOptBool("manualRenameChk", getGlobalConfigSP()->getPropBool("expert/@manualRenameChk", defaultManualRenameChk));
+    setRenameRetries(numRenameRetries, manualRenameChk);
 }
 
 void CJobBase::endJob()

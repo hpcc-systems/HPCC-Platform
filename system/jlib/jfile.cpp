@@ -749,74 +749,100 @@ bool CFile::remove()
 #endif
 }
 
-static std::atomic<unsigned> renameRetries{(unsigned)-1}; // initially uninitialized, set on 1st use (in rename)
+static std::atomic<unsigned> renameRetries = (unsigned)-1; // initially uninitialized, set on 1st use (in rename)
+static std::atomic<bool> manualRenameChk = false;
+static constexpr bool defaultManualRenameChk = true;
+static constexpr unsigned defaultNumRetries = 4;
 
-void setRenameRetries(unsigned numRetries)
+void setRenameRetries(unsigned _renameRetries, bool _manualRenameChk)
 {
-    renameRetries = numRetries;
+    manualRenameChk = _manualRenameChk;
+    renameRetries = _renameRetries;
 }
 
-static unsigned getRenameRetries()
+static void initRenameRetrySettings()
 {
-    unsigned retries;
+    if ((unsigned)-1 != renameRetries)
+        return;
     // NB: potentially could be >1 thread here, but that's ok.
     try
     {
-        retries = getGlobalConfigSP()->getPropInt("expert/@numRenameRetries");
+        Owned<IPropertyTree> globalConfig = getGlobalConfigSP();
+        Owned<IPropertyTree> config = getComponentConfigSP();
+        manualRenameChk = config->getPropBool("expert/@manualRenameChk", globalConfig->getPropBool("expert/@manualRenameChk", defaultManualRenameChk));
+        renameRetries = config->getPropInt("expert/@numRenameRetries", globalConfig->getPropInt("expert/@numRenameRetries", defaultNumRetries));
     }
     catch (IException *e) // handle cases where config. not available
     {
         EXCLOG(e, "doRename");
         e->Release();
-        retries = 0;
+        renameRetries = 0;
+        manualRenameChk = false;
     }
-    dbgassertex((unsigned)-1 != retries);
-    setRenameRetries(retries);
-    return retries;
 }
 
 static void doRename(const char *src, const char *dst, const char *callerName)
 {
+    initRenameRetrySettings();
+
     unsigned retriesLeft = renameRetries;
     unsigned retry = 0;
     while (true)
     {
+        // NB: if 'manualRenameChk' is on, since we don't explicitly check the existence of 'src' and 'dst' before rename
+        // it's theoretically possible the rename failure is legitimate because src does not exist and dst does.
+        // In this situation, we continue and return success below.
         if (-1 != ::rename(src, dst))
             return; // success
 
-        if ((unsigned)-1 == retriesLeft)
-            retriesLeft = getRenameRetries();
-
         int err = errno; // preserve to use after tracing if exhausted retry attempts
 
-#ifndef _WIN32 // NB: this is primary here to help track down the issue reported in HPCC-28454
-        // why did rename fail? - check that src and path of dst exists (and/or is accessible), and trace it's gid and uid, size and is_dir status.
+#ifndef _WIN32 // NB: this is primarily here to help track down the issues reported in HPCC-28454 and HPCC-29812
+        /*
+         * In testing 2 [rare] issues have been seen after rename returned -1:
+         * 1) The file was renamed (dst exists and src does not).
+         *    If 'manualRenameChk' is on, we check for this and return success.
+         * 2) Neither src nor dst exist, however, after a short time, dst appears.
+         *    Assuming 'numRenameRetries'is >0, this case is covered below by looping and trying again.
+         */
 
-        DBGLOG("%s-doRename(%s, %s) FAILED (attempt %u)", callerName, src, dst, retry+1);
-
-        struct stat statInfo;
         CDateTime modTime;
-        StringBuffer modTimeStr;
-        if (0 != stat(src, &statInfo))
-            DBGLOG("src stat[error=%d ('%s')]", errno, strerror(errno));
-        else
+        struct stat statInfo;
+        StringBuffer srcModTimeStr, dstModTimeStr;
+        int srcStatErr = stat(src, &statInfo);
+        if (0 == srcStatErr)
         {
             timetToIDateTime(&modTime, statInfo.st_mtime);
-            modTime.getString(modTimeStr);
-            DBGLOG("src stat[uid=%u, gid=%u, size=%" I64F "u, dir=%s, modtime=%s]", (unsigned)statInfo.st_uid, (unsigned)statInfo.st_gid, (offset_t)statInfo.st_size, boolToStr(S_ISDIR(statInfo.st_mode)), modTimeStr.str());
+            modTime.getString(srcModTimeStr);
         }
-
-        StringBuffer dstPath;
-        splitDirTail(dst, dstPath);
-
-        if (0 != stat(dstPath, &statInfo))
-            DBGLOG("dst-path stat[error (%d) : %s", errno, strerror(errno));
-        else
+        int dstStatErr = stat(dst, &statInfo);
+        if (0 == dstStatErr)
         {
             timetToIDateTime(&modTime, statInfo.st_mtime);
-            modTime.getString(modTimeStr.clear());
-            DBGLOG("dst-path stat[uid=%u, gid=%u, size=%" I64F "u, dir=%s, modtime=%s]", (unsigned)statInfo.st_uid, (unsigned)statInfo.st_gid, (offset_t)statInfo.st_size, boolToStr(S_ISDIR(statInfo.st_mode)), modTimeStr.str());
+            modTime.getString(dstModTimeStr);
         }
+
+        if (0 != srcStatErr) // probably means src does now not exist
+        {
+            if (manualRenameChk) // manually validate if rename() actually succeeded
+            {
+                if (0 == dstStatErr) // dst now exists
+                {
+                    DBGLOG("%s-doRename(%s, %s) FAILED BUT DID RENAME (dst modtime=%s)", callerName, src, dst, dstModTimeStr.str());
+                    return;
+                }
+            }
+        }
+        VStringBuffer errMsg("%s-doRename(%s, %s) FAILED [err=%d] ", callerName, src, dst, err);
+        errMsg.appendf("src stat:[err=%d", srcStatErr);
+        if (0 == srcStatErr)
+            errMsg.appendf(",modTime=%s", srcModTimeStr.str());
+        errMsg.append("]");
+        errMsg.appendf(", dst stat:[err=%d", dstStatErr);
+        if (0 == dstStatErr)
+            errMsg.appendf(",modTime=%s", dstModTimeStr.str());
+        errMsg.append("]");
+        DBGLOG("%s", errMsg.str());
 #endif
 
         if (0 == retriesLeft)
