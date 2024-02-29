@@ -236,9 +236,14 @@ protected:
 
         //If fetching from git and the username is specified then use the script file to provide the username/password
         //Only support retrieving the password as a secret - not as a filename
+        //NB: This code should be kept in sync with runGitCommand() in hqlrepository.cpp (and ideally combined)
         if (!isEmptyString(gitUser))
         {
+            env.emplace_back("HPCC_GIT_USERNAME", gitUser);
+
+            // If gituser is specified never prompt for credentials, otherwise the server can hang.
             env.emplace_back("GIT_TERMINAL_PROMPT", "0");
+
             StringBuffer scriptPath;
             getPackageFolder(scriptPath);
             addPathSepChar(scriptPath).append("bin/hpccaskpass.sh");
