@@ -937,6 +937,7 @@ unsigned EclRepositoryManager::runGitCommand(StringBuffer * output, const char *
     Owned<IFile> extractedKey;
     EnvironmentVector env;
     //If fetching from git and the username is specified then use the script file to provide the username/password
+    //NB: This code should be kept in sync with readLfsContents() in gitfile.cpp (and ideally combined)
     if (needCredentials)
     {
         //If the username is supplied, then get the secret and write it to a temporary location.
