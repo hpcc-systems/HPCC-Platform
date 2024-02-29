@@ -1175,7 +1175,9 @@ Generate instance queue names
 {{- range $auxQueue := $auxThorQueues }}
  {{- $combinedList = append $combinedList $auxQueue -}}
 {{- end -}}
-{{- toYaml $combinedList -}}
+{{- if $combinedList -}}
+ {{- toYaml $combinedList -}}
+{{- end -}}
 {{- end -}}
 
 {{- define "hpcc.usesRemoteIssuer" -}}
