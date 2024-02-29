@@ -5549,7 +5549,9 @@ void EclResourcer::removeDuplicateIndependentLinks(CSplitterInfo & connections, 
                 ResourcerInfo & sinkInfo = *queryResourceInfo(sink);
                 if (allInputsPulledIndependently(sink))
                 {
+#ifdef TRACE_BALANCED
                     unsigned numRemoved = 0;
+#endif
                     for (unsigned j=info.balancedLinks.ordinality()-1; j > i; j--)
                     {
                         CSplitterLink & next = info.balancedLinks.item(j);
@@ -5557,7 +5559,9 @@ void EclResourcer::removeDuplicateIndependentLinks(CSplitterInfo & connections, 
                         {
                             info.balancedLinks.remove(j);
                             sinkInfo.balancedLinks.zap(next);
+#ifdef TRACE_BALANCED
                             numRemoved++;
+#endif
                         }
                     }
 

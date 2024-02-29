@@ -3286,7 +3286,6 @@ void printProcMap(const char *fn, bool printbody, bool printsummary, StringBuffe
     }
     while (reader.nextln()) {
         const char *ln = reader.ln;
-        unsigned n=0;
         if (*ln) {
             offset_t start = readHexNum(ln);
             if (last&&(last!=start)) {
@@ -3360,7 +3359,6 @@ void printProcMap(const char *fn, bool printbody, bool printsummary, StringBuffe
                 recs[t].total += ssz;
                 if (ssz>recs[t].largest)
                     recs[t].largest = ssz;
-                n++;
                 last = end;
 #ifndef __64BIT__
                 if ((end<0xffffffff)&&(end>=0xc0000000))    // rest is OS (32-bit only)
