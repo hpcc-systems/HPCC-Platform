@@ -1260,9 +1260,12 @@ void CTraceManager::initTracerProviderAndGlobalInternals(const IPropertyTree * t
         processors.push_back(opentelemetry::sdk::trace::SimpleSpanProcessorFactory::Create(std::move(exporter)));
     }
 
+    opentelemetry::sdk::resource::ResourceAttributes resourceAtts = {{"service.name", moduleName.get()}};
+    auto jtraceResource = opentelemetry::sdk::resource::Resource::Create(resourceAtts);
+
     // Default is an always-on sampler.
     std::shared_ptr<opentelemetry::sdk::trace::TracerContext> context =
-        opentelemetry::sdk::trace::TracerContextFactory::Create(std::move(processors));
+        opentelemetry::sdk::trace::TracerContextFactory::Create(std::move(processors), jtraceResource);
     std::shared_ptr<opentelemetry::trace::TracerProvider> provider =
         opentelemetry::sdk::trace::TracerProviderFactory::Create(context);
 
