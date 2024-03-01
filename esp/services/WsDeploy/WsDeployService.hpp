@@ -127,7 +127,7 @@ private:
         {
             m_pWorkerThread = new CThreaded("CGenerateJSFactoryThread");
             IThreaded* pIThreaded = this;
-            m_pWorkerThread->init(pIThreaded);
+            m_pWorkerThread->init(pIThreaded, false);
         }
 
         void refresh(IConstEnvironment* pConstEnv)
@@ -258,7 +258,7 @@ private:
         {
           m_pWorkerThread = new CThreaded("CConfigFileMonitorThread");
           IThreaded* pIThreaded = this;
-          m_pWorkerThread->init(pIThreaded);
+          m_pWorkerThread->init(pIThreaded, false);
         }
       };
 
@@ -324,7 +324,7 @@ private:
             m_quitThread = false;
             m_pWorkerThread = new CThreaded("CClientAliveThread");
             IThreaded* pIThreaded = this;
-            m_pWorkerThread->init(pIThreaded);
+            m_pWorkerThread->init(pIThreaded, false);
         }
 
         void signal()
@@ -376,7 +376,7 @@ private:
       m_quitThread = false;
       m_pWorkerThread = new CThreaded("CLockerAliveThread");
       IThreaded* pIThreaded = this;
-      m_pWorkerThread->init(pIThreaded);
+      m_pWorkerThread->init(pIThreaded, false);
     }
 
     void signal()
@@ -650,7 +650,7 @@ public:
             if (m_threadPool == NULL)
             {
                 IThreadFactory* pThreadFactory = new CCloudTaskThreadFactory();
-                m_threadPool.setown(createThreadPool("WsDeploy Cloud Task Thread Pool", pThreadFactory, NULL, pComputers->numChildren()));
+                m_threadPool.setown(createThreadPool("WsDeploy Cloud Task Thread Pool", pThreadFactory, false, nullptr, pComputers->numChildren()));
                 pThreadFactory->Release();
             }
             else

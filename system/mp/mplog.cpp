@@ -75,7 +75,7 @@ CLogMsgLinkToChild::CLogMsgLinkToChild(MPLogId _cid, MPLogId _pid, INode * _chil
     : childNode(_childNode), cid(_cid), pid(_pid), connected(_connected)
 {
     receiverThread.setown(new LogMsgLogReceiverThread(cid, childNode));
-    receiverThread->start();
+    receiverThread->start(false);
 }
 
 CLogMsgLinkToChild::~CLogMsgLinkToChild()
@@ -280,7 +280,7 @@ bool disconnectLogMsgManagerFromChildOwn(INode * childNode)
 void startLogMsgChildReceiver()
 {
     childReceiver = new LogMsgChildReceiverThread();
-    childReceiver->start();
+    childReceiver->start(false);
 }
 
 // CHILD-SIDE CLASSES
@@ -559,7 +559,7 @@ bool disconnectLogMsgManagerFromParentOwn(INode * parentNode)
 void startLogMsgParentReceiver()
 {
     parentReceiver = new LogMsgParentReceiverThread();
-    parentReceiver->start();
+    parentReceiver->start(false);
 }
 
 // MISC. HELPER FUNCTION

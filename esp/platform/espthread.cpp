@@ -67,12 +67,6 @@ CEspProtocolThread::~CEspProtocolThread()
 {
 }
 
-void CEspProtocolThread::start()
-{
-    Thread::start();
-}
-
-
 const char *CEspProtocolThread::getServiceName()
 {
     return m_name.get();

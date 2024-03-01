@@ -192,7 +192,7 @@ class CWorkUnitWriteLocalActivityMaster : public CWorkUnitWriteMasterBase
         CMessageHandler(CWorkUnitWriteLocalActivityMaster &_act) : act(_act), threaded("CWorkUnitWriteLocalActivityMaster::CMessageHandler")
         {
             started = waiting = stopped = false;
-            threaded.init(this);
+            threaded.init(this, true);
         }
         ~CMessageHandler()
         {

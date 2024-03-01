@@ -4336,7 +4336,7 @@ public:
         if (!backgroundReleaseBuffersThread)
         {
             backgroundReleaseBuffersThread.setown(new BackgroundReleaseBufferThread(this));
-            backgroundReleaseBuffersThread->start();
+            backgroundReleaseBuffersThread->start(false);
         }
     }
 
@@ -4360,7 +4360,7 @@ public:
             if (!releaseBuffersThread)
             {
                 releaseBuffersThread.setown(new ReleaseBufferThread(*this));
-                releaseBuffersThread->start();
+                releaseBuffersThread->start(false);
             }
         }
         else
@@ -7481,7 +7481,7 @@ protected:
         for (unsigned i1 = 0; i1 < numThreads; i1++)
             threads[i1] = new BitmapAllocatorThread(sem, size, numThreads);
         for (unsigned i2 = 0; i2 < numThreads; i2++)
-            threads[i2]->start();
+            threads[i2]->start(false);
 
         unsigned startTime = msTick();
         sem.signal(numThreads);
@@ -7931,7 +7931,7 @@ protected:
     {
         for (unsigned i2 = 0; i2 < numCasThreads; i2++)
         {
-            threads[i2]->start();
+            threads[i2]->start(false);
         }
 
         bool aborted = false;
@@ -8888,8 +8888,8 @@ protected:
         callback.rows = (const void * *)rowManager->allocate(1, 0);
         Owned<ReleaseThread> releaser = new ReleaseThread(callback, rowManager);
         Owned<ResizeThread> resizer = new ResizeThread(callback, rowManager);
-        releaser->start();
-        resizer->start();
+        releaser->start(false);
+        resizer->start(false);
         resizer->join();
         releaser->join();
         CPPUNIT_ASSERT(!callback.failed);

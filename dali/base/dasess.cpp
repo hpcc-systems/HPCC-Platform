@@ -198,7 +198,7 @@ public:
     CdelayedTerminate(byte _err) 
     {
         err = _err;
-        start();
+        start(false);
         Release();
         Sleep(100);
     }
@@ -1176,7 +1176,7 @@ public:
         ret = CLDAPE_ldapfailure;
         if (!running) {
             running = true;
-            Thread::start();
+            Thread::start(false);
         }
         contsem.signal();
     }
@@ -1283,7 +1283,7 @@ public:
 
     void start()
     {
-        sessionrequestserver.start();
+        sessionrequestserver.start(false);
     }
 
     void stop()
@@ -1927,7 +1927,7 @@ bool registerClientProcess(ICommunicator *comm, IGroup *& retcoven,unsigned time
                     return 0;
                 }
             } *t = new cThread(comm,r,remaining);
-            t->start();
+            t->start(false);
             t->sem.wait(remaining);
             ok = t->ok;
             if (t->exc.get()) {

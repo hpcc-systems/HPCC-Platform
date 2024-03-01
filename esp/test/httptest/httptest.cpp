@@ -411,7 +411,7 @@ int HttpClient::sendRequest(StringBuffer& req)
             thrdlist[i] = new CHttpClientThread(it_per_thrd, this, req);
 
         for(i = 0; i < thrds; i++)
-            thrdlist[i]->start();
+            thrdlist[i]->start(false);
         for(i = 0; i < thrds; i++)
             thrdlist[i]->join();
 
@@ -946,7 +946,7 @@ CHttpProxyThread::CHttpProxyThread(ISocket* client, FILE* ofile)
 
 void CHttpProxyThread::start()
 {
-    Thread::start();
+    Thread::start(false);
 }
 
 int CHttpProxyThread::run()
@@ -1008,8 +1008,8 @@ int CHttpProxyThread::run()
             m_remotesocket->set_nonblock(false);
             CReadWriteThread t1(m_client.get(), m_remotesocket.get());
             CReadWriteThread t2(m_remotesocket.get(), m_client.get());
-            t1.start();
-            t2.start();
+            t1.start(false);
+            t2.start(false);
             t1.join();
             t2.join();
             //printf("read/write threads returned\n");

@@ -118,7 +118,7 @@ class CBroadcaster : public CSimpleInterface
         void start()
         {
             aborted = false;
-            threaded.start();
+            threaded.start(true);
         }
         void abort(bool join)
         {
@@ -188,7 +188,7 @@ class CBroadcaster : public CSimpleInterface
         {
             aborted = false;
             exception.clear();
-            threaded.start();
+            threaded.start(true);
         }
         void abort(bool join)
         {
@@ -556,7 +556,7 @@ class CMarker
             chunkUnique = 0;
         }
         rowidx_t getUnique() const { return chunkUnique; }
-        void start() { threaded.start(); }
+        void start() { threaded.start(true); }
         void join() { threaded.join(); }
     // IThreaded
         virtual void threadmain() override
@@ -860,7 +860,7 @@ protected:
             stopped = false;
             clearQueue();
             exception.clear();
-            threaded.start();
+            threaded.start(true);
         }
         void abort()
         {

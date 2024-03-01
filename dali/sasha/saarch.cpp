@@ -1416,7 +1416,7 @@ public:
     }
     virtual void start() override
     {
-        threaded.start();
+        threaded.start(false);
     }
     virtual void ready() override
     {

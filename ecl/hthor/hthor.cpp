@@ -1690,7 +1690,7 @@ public:
             OwnedRoxieString pipeProgram(helper.getPipeProgram());
             openPipe(pipeProgram);
         }
-        puller.start();
+        puller.start(true);
     }
 
     void stop()

@@ -146,7 +146,7 @@ public:
 
         // YMA: there'll be a leak here, but it's ok.
         CEspTerminator* terminator = new CEspTerminator;  
-        terminator->start();
+        terminator->start(false);
 
         m_exiting=true;
         if(!m_useDali)

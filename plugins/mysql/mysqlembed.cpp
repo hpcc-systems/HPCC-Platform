@@ -245,7 +245,7 @@ public:
                     if (!connectionCloserThread)
                     {
                         connectionCloserThread = new MySQLConnectionCloserThread;
-                        connectionCloserThread->start();
+                        connectionCloserThread->start(false);
                     }
                 }
             }

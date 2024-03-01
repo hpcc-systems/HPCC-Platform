@@ -189,8 +189,8 @@ public:
 
     virtual void start()
     {
-        puller->start();
-        timer->start();
+        puller->start(false);
+        timer->start(false);
     }
 
     virtual void stop()

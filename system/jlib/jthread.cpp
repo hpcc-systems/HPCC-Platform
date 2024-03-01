@@ -381,8 +381,10 @@ void Thread::captureThreadLoggingInfo()
     ::saveThreadContext(savedCtx);
 }
 
-void Thread::start()
+void Thread::start(bool inheritThreadContext)
 {
+    if (inheritThreadContext)
+        captureThreadLoggingInfo();
     if (alive) {
         IWARNLOG("Thread::start(%s) - Thread already started!",getName());
         PrintStackReport();
@@ -551,7 +553,7 @@ unsigned getThreadCount()
 CThreadedPersistent::CThreadedPersistent(const char *name, IThreaded *_owner) : athread(*this, name), owner(_owner), state(s_ready)
 {
     halt = false;
-    athread.start();
+    athread.start(false);
 }
 
 CThreadedPersistent::~CThreadedPersistent()
@@ -593,7 +595,7 @@ void CThreadedPersistent::threadmain()
     }
 }
 
-void CThreadedPersistent::start()
+void CThreadedPersistent::start(bool inheritThreadContext)
 {
     unsigned expected = s_ready;
     if (!state.compare_exchange_strong(expected, s_running))
@@ -603,6 +605,8 @@ void CThreadedPersistent::start()
         PrintStackReport();
         throw MakeStringExceptionDirect(-1, msg.str());
     }
+    if (inheritThreadContext)
+        athread.captureThreadLoggingInfo();
     sem.signal();
 }
 
@@ -682,7 +686,6 @@ void CAsyncFor::For(unsigned num,unsigned maxatonce,bool abortFollowingException
                 {
                     idx = _idx;
                     self = _self;
-                    captureThreadLoggingInfo();
                 }
                 int run()
                 {
@@ -712,7 +715,7 @@ void CAsyncFor::For(unsigned num,unsigned maxatonce,bool abortFollowingException
                 ready.wait();
                 if (abortFollowingException && e.isSet()) break;
                 Owned<Thread> thread = new cdothread(this,shuffled?shuffler->lookup(i):i,ready,e);
-                thread->start();
+                thread->start(true);
                 started.append(*thread.getClear());
             }
             ForEachItemIn(idx, started)
@@ -735,7 +738,6 @@ void CAsyncFor::For(unsigned num,unsigned maxatonce,bool abortFollowingException
                 {
                     idx = _idx;
                     self = _self;
-                    captureThreadLoggingInfo();
                 }
                 int run()
                 {
@@ -760,7 +762,7 @@ void CAsyncFor::For(unsigned num,unsigned maxatonce,bool abortFollowingException
             for (i=0;i<num-1;i++)
             {
                 Owned<Thread> thread = new cdothread(this,i,e);
-                thread->start();
+                thread->start(true);
                 started.append(*thread.getClear());
             }
 
@@ -815,21 +817,23 @@ class CPooledThreadWrapper;
 class CThreadPoolBase
 {
 public:
-    CThreadPoolBase() {}
+    CThreadPoolBase(bool _inheritThreadContext)
+    : inheritThreadContext(_inheritThreadContext)
+    {
+    }
     virtual ~CThreadPoolBase() {}
 protected: friend class CPooledThreadWrapper;
     IExceptionHandler *exceptionHandler;
     CriticalSection crit;
     StringAttr poolname;
-    int donewaiting;
     Semaphore donesem;
     PointerArray waitingsems;
     UnsignedArray waitingids;
     bool stopall;
+    const bool inheritThreadContext;
     unsigned defaultmax;
     unsigned targetpoolsize;
     unsigned delay;
-    SavedThreadContext savedCtx;
     Semaphore availsem;
     std::atomic_uint numrunning{0};
     virtual void notifyStarted(CPooledThreadWrapper *item)=0;
@@ -850,7 +854,6 @@ public:
                          IPooledThread *_thread) // takes ownership of thread
         : Thread(StringBuffer("Member of thread pool: ").append(_parent.poolname).str()), parent(_parent)
     {
-        savedCtx = parent.savedCtx;
         thread = _thread;
         handle = _handle;
         runningName.set(_parent.poolname); 
@@ -890,7 +893,8 @@ public:
                 if (parent.stopall)
                     break;
             }
-            restoreThreadContext(savedCtx);
+            if (parent.inheritThreadContext)
+                restoreThreadContext(savedCtx);
             parent.notifyStarted(this);
             try
             {
@@ -990,9 +994,9 @@ class CThreadPool: public CThreadPoolBase, implements IThreadPool, public CInter
     IThreadFactory *factory;
     unsigned stacksize;
     unsigned timeoutOnRelease;
-    unsigned traceStartDelayPeriod;
-    unsigned startsInPeriod;
-    cycle_t startDelayInPeriod;
+    unsigned traceStartDelayPeriod = 0;
+    unsigned startsInPeriod = 0;
+    cycle_t startDelayInPeriod = 0;
     CCycleTimer overAllTimer;
 
     PooledThreadHandle _start(void *param,const char *name, bool noBlock, unsigned timeout=0)
@@ -1033,6 +1037,8 @@ class CThreadPool: public CThreadPoolBase, implements IThreadPool, public CInter
             CPooledThreadWrapper &t = allocThread();
             if (name)
                 t.setName(name);
+            if (inheritThreadContext)
+                t.captureThreadLoggingInfo();
             t.go(param);
             ret = t.queryHandle();
         }
@@ -1042,7 +1048,8 @@ class CThreadPool: public CThreadPoolBase, implements IThreadPool, public CInter
 
 public:
     IMPLEMENT_IINTERFACE;
-    CThreadPool(IThreadFactory *_factory,IExceptionHandler *_exceptionHandler,const char *_poolname,unsigned _defaultmax, unsigned _delay, unsigned _stacksize, unsigned _timeoutOnRelease, unsigned _targetpoolsize)
+    CThreadPool(IThreadFactory *_factory,bool _inheritThreadContext, IExceptionHandler *_exceptionHandler,const char *_poolname,unsigned _defaultmax, unsigned _delay, unsigned _stacksize, unsigned _timeoutOnRelease, unsigned _targetpoolsize)
+    : CThreadPoolBase(_inheritThreadContext)
     {
         poolname.set(_poolname);
         factory = LINK(_factory);
@@ -1056,9 +1063,6 @@ public:
         stacksize = _stacksize;
         timeoutOnRelease = _timeoutOnRelease;
         targetpoolsize = _targetpoolsize?_targetpoolsize:defaultmax;
-        traceStartDelayPeriod = 0;
-        startsInPeriod = 0;
-        startDelayInPeriod = 0;
     }
 
     ~CThreadPool()
@@ -1104,7 +1108,7 @@ public:
         CPooledThreadWrapper &ret = *new CPooledThreadWrapper(*this,newid,factory->createNew());
         if (stacksize)
             ret.setStackSize(stacksize);
-        ret.start();
+        ret.start(false);
         threadwrappers.append(ret);
         return ret;
     }
@@ -1282,16 +1286,12 @@ public:
         }
         return false;
     }
-    void captureThreadLoggingInfo()
-    {
-        ::saveThreadContext(savedCtx);
-    }
 };
 
 
-IThreadPool *createThreadPool(const char *poolname,IThreadFactory *factory,IExceptionHandler *exceptionHandler,unsigned defaultmax, unsigned delay, unsigned stacksize, unsigned timeoutOnRelease, unsigned targetpoolsize)
+IThreadPool *createThreadPool(const char *poolname,IThreadFactory *factory,bool inheritThreadContext, IExceptionHandler *exceptionHandler,unsigned defaultmax, unsigned delay, unsigned stacksize, unsigned timeoutOnRelease, unsigned targetpoolsize)
 {
-    return new CThreadPool(factory,exceptionHandler,poolname,defaultmax,delay,stacksize,timeoutOnRelease,targetpoolsize);
+    return new CThreadPool(factory,inheritThreadContext,exceptionHandler,poolname,defaultmax,delay,stacksize,timeoutOnRelease,targetpoolsize);
 }
 
 //=======================================================================================================
@@ -2194,7 +2194,7 @@ public:
             forkthread.clear();
         }
         forkthread.setown(new cForkThread(this));
-        forkthread->start();
+        forkthread->start(true);
         bool joined = false;
         {
             CriticalUnblock unblock(sect); 
@@ -2216,7 +2216,7 @@ public:
                 delete stderrbufferthread;
             }
             stderrbufferthread = new cStdErrorBufferThread(stderrbufsize,hError,sect);
-            stderrbufferthread->start();
+            stderrbufferthread->start(true);
         }
         return true;
     }
@@ -2523,7 +2523,9 @@ public:
                 }
                 if (!work)
                     break;
+
                 try {
+                    //If the thread context needs to be preserved - it should be done inside the IWorkQueueItem implementation.
                     work->execute();
                     work->Release();
                 }
@@ -2554,7 +2556,7 @@ public:
         CriticalBlock block(crit);
         if (!worker) {
             worker.setown(new cWorkerThread(this,crit,persisttime));
-            worker->start();
+            worker->start(false);
         }
         worker->queue.enqueue(packet);
         worker->sem.signal();
@@ -2673,21 +2675,19 @@ void PerfTracer::dostop()
 }
 
 //---------------------------------------------------------------------------------------------------------------------
-#include "jlog.hpp"
 
-static LogMsgJobInfo globalDefaultJobInfo(UnknownJob, UnknownUser);
+//Global defaults used to initialize thread local variables
+static TraceFlags defaultTraceFlags = TraceFlags::Standard;
 
 // NOTE - extern thread_local variables are very inefficient - don't be tempted to expose the variables directly
 
-static  TraceFlags defaultTraceFlags = TraceFlags::Standard;
-static thread_local LogMsgJobInfo defaultJobInfo;
+static thread_local LogMsgJobId defaultJobId = UnknownJob;
 static thread_local TraceFlags threadTraceFlags = TraceFlags::Standard;
 static thread_local const IContextLogger *default_thread_logctx = nullptr;
 
-const LogMsgJobInfo unknownJob(UnknownJob, UnknownUser);
-
 void saveThreadContext(SavedThreadContext & saveCtx)
 {
+    saveCtx.jobId = defaultJobId;
     saveCtx.logctx = default_thread_logctx;
     saveCtx.traceFlags = threadTraceFlags;
 }
@@ -2697,25 +2697,20 @@ void restoreThreadContext(const SavedThreadContext & saveCtx)
     // Note - as implemented the thread default job info is determined by what the global one was when the thread was created.
     // There is an alternative interpretation, that an unset thread-local one should default to whatever the global one is at the time the thread one is used.
     // In practice I doubt there's a lot of difference as global one is likely to be set once at program startup
-    defaultJobInfo = globalDefaultJobInfo;
+    defaultJobId = saveCtx.jobId;
     default_thread_logctx = saveCtx.logctx;
     threadTraceFlags = saveCtx.traceFlags;
 }
 
-const LogMsgJobInfo & checkDefaultJobInfo(const LogMsgJobInfo & _jobInfo)
+
+LogMsgJobId queryThreadedJobId()
 {
-    if (&_jobInfo == &unknownJob)
-    {
-        return defaultJobInfo;
-    }
-    return _jobInfo;
+    return defaultJobId;
 }
 
-void setDefaultJobId(LogMsgJobId id, bool threaded)
+void setDefaultJobId(LogMsgJobId id)
 {
-    if (!threaded)
-        globalDefaultJobInfo.setJobID(id);
-    defaultJobInfo.setJobID(id);
+    defaultJobId = id;
 }
 
 const IContextLogger * queryThreadedContextLogger()

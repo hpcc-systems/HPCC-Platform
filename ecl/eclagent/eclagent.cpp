@@ -135,7 +135,7 @@ void logGetResult(const char * name, const char * stepname, unsigned sequence)
 
 interface IHThorDebugSocketListener : extends IInterface
 {
-    virtual void start() = 0;
+    virtual void start(bool inheritThreadContext) = 0;
     virtual bool stop(unsigned timeout) = 0;
     virtual void stopListening() = 0;
     virtual unsigned queryPort() const = 0;
@@ -166,13 +166,13 @@ public:
         unsigned poolSize = 10;//MORE : What is a good threadcoutn?
 
         // Note we allow a few additional threads than requested - these are the threads that return "Too many active queries" responses
-        pool.setown(createThreadPool("HThorSocketWorkerPool", this, NULL, poolSize+5, INFINITE));
+        pool.setown(createThreadPool("HThorSocketWorkerPool", this, false, nullptr, poolSize+5, INFINITE));
     }
 
-    virtual void start()
+    virtual void start(bool inheritThreadContext) override
     {
         assertex(!running);
-        Thread::start();
+        Thread::start(inheritThreadContext);
         started.wait();
     }
 
@@ -454,7 +454,7 @@ void CHThorDebugContext::debugInitialize(const char *_id, const char *_queryName
 
     //Start debug socket listener thread
     listener.setown(new CHThorDebugSocketListener(this));
-    listener->start();
+    listener->start(false);
 }
 
 void CHThorDebugContext::debugInterrupt(IXmlWriter *output)
@@ -524,7 +524,7 @@ EclAgent::EclAgent(IConstWorkUnit *wu, const char *_wuid, bool _checkVersion, bo
     clusterNames.append(wuRead->queryClusterName());
     clusterWidth = -1;
     abortmonitor = new cAbortMonitor(*this);
-    abortmonitor->start();
+    abortmonitor->start(false);
     EnableSEHtoExceptionMapping();
     setSEHtoExceptionHandler(abortmonitor);
     retcode = 0;
@@ -3771,7 +3771,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], Owned<ILocalWor
             uid.append("WLOCAL_").append((unsigned)GetCurrentProcessId());
             wuid.set(uid);
         }
-        setDefaultJobId(wuid.str());
+        setDefaultJobName(wuid.str());
         LOG(MCoperatorInfo, "hthor build %s", hpccBuildInfo.buildTag);
 
 #ifdef MONITOR_ECLAGENT_STATUS

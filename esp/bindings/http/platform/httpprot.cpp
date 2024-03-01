@@ -89,7 +89,7 @@ void CHttpProtocol::init(IPropertyTree * cfg, const char * process, const char *
             if(!http_pool_factory)
                 http_pool_factory = new CHttpThreadPoolFactory();
             if(!http_thread_pool)
-                http_thread_pool = createThreadPool("Http Thread", http_pool_factory, NULL, m_maxConcurrentThreads, INFINITE);
+                http_thread_pool = createThreadPool("Http Thread", http_pool_factory, false, nullptr, m_maxConcurrentThreads, INFINITE);
         }
     }
 
@@ -175,7 +175,8 @@ bool CHttpProtocol::notifySelected(ISocket *sock,unsigned selected, IPersistentH
                     CHttpThread *workthread = new CHttpThread(accepted.getLink(), apport, CEspProtocol::getViewConfig(), false, nullptr, persistentHandler);
                     workthread->setMaxRequestEntityLength(getMaxRequestEntityLength());
                     workthread->setShouldClose(shouldClose);
-                    workthread->start();
+                    workthread->start(false);
+                    //MORE: The caller should wait for the thread to finish, otherwise the program can crash on exit
                     workthread->Release();
                 }
             }
@@ -284,7 +285,7 @@ void CSecureHttpProtocol::init(IPropertyTree * cfg, const char * process, const 
             if(!http_pool_factory)
                 http_pool_factory = new CHttpThreadPoolFactory();
             if(!http_thread_pool)
-                http_thread_pool = createThreadPool("Http Thread", http_pool_factory, NULL, m_maxConcurrentThreads, INFINITE);
+                http_thread_pool = createThreadPool("Http Thread", http_pool_factory, false, nullptr, m_maxConcurrentThreads, INFINITE);
         }
     }
 
@@ -348,8 +349,9 @@ bool CSecureHttpProtocol::notifySelected(ISocket *sock,unsigned selected, IPersi
                         CHttpThread *workthread = new CHttpThread(accepted.getLink(), apport, CEspProtocol::getViewConfig(), true, m_ssctx.get(), persistentHandler);
                         workthread->setMaxRequestEntityLength(getMaxRequestEntityLength());
                         workthread->setShouldClose(shouldClose);
-                        workthread->start();
+                        workthread->start(false);
                         ESPLOG(LogMax, "Request processing thread started.");
+                        //MORE: The caller should wait for the thread to finish, otherwise the program can crash on exit
                         workthread->Release();
                     }
                 }

@@ -71,7 +71,7 @@ public:
     {
         tree.setown(createPTree("QueryFilesInUse"));
         updateUsers();
-        threaded.init(this);
+        threaded.init(this, false);
     }
 
     ~QueryFilesInUse()

@@ -185,7 +185,7 @@ void CFileSprayEx::init(IPropertyTree *cfg, const char *process, const char *ser
         throw MakeStringException(-1, "No Dali Connection Active. Please Specify a Dali to connect to in your configuration file");
     }
 
-    m_sched.start();
+    m_sched.start(false);
 
 }
 

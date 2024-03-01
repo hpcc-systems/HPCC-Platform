@@ -91,7 +91,7 @@ CEclAgentExecutionServer::CEclAgentExecutionServer(IPropertyTree *_config) : con
     if (isContainerized()) // JCS - the pool approach would also work in bare-metal if it could be configured.
     {
         unsigned poolSize = config->getPropInt("@maxActive", 100);
-        pool.setown(createThreadPool("agentPool", this, NULL, poolSize, INFINITE));
+        pool.setown(createThreadPool("agentPool", this, false, nullptr, poolSize, INFINITE));
     }
 }
 

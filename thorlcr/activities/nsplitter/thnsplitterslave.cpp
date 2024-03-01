@@ -126,7 +126,7 @@ class NSplitterSlaveActivity : public CSlaveActivity, implements ISharedSmartBuf
         void start()
         {
             stopped = false;
-            threaded.start();
+            threaded.start(true);
         }
         virtual void stop()
         {

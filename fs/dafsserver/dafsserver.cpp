@@ -467,7 +467,8 @@ class CAsyncCommandManager
         void start()
         {
             parent.wait();
-            thread->start();
+            //These are async jobs - so do not preserve the active thread context because it will go out of scope
+            thread->start(false);
         }
         void join()
         {
@@ -3710,7 +3711,7 @@ public:
             }
         };
         Owned<IThreadFactory> factory = new CCommandFactory(*this); // NB: pool links factory, so takes ownership
-        threads.setown(createThreadPool("CRemoteFileServerPool", factory, NULL, maxThreads, maxThreadsDelayMs,
+        threads.setown(createThreadPool("CRemoteFileServerPool", factory, false, nullptr, maxThreads, maxThreadsDelayMs,
 #ifdef __64BIT__
             0, // Unlimited stack size
 #else
@@ -6002,7 +6003,7 @@ protected:
         public:
             CServerThread(CRemoteFileServer *_server, ISocket *_socket) : server(_server), socket(_socket), threaded("CServerThread")
             {
-                threaded.init(this);
+                threaded.init(this, false);
             }
             ~CServerThread()
             {
@@ -6199,7 +6200,7 @@ protected:
         public:
             CDelayedFileCreate(const char *_filePath) : filePath(_filePath), threaded("CDelayedFileCreate")
             {
-                threaded.init(this);
+                threaded.init(this, false);
             }
             ~CDelayedFileCreate()
             {

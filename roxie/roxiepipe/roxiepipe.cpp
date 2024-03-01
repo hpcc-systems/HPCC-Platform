@@ -694,7 +694,7 @@ int main(int argc, char *argv[])
                 {
                     rt[i] = new RoxieThread(query.str(), resultName.str());
                     PROGLOG("Starting thread %d", i);
-                    rt[i]->start();
+                    rt[i]->start(true);
                 }
 
                 unsigned totalRead = 0;

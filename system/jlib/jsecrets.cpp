@@ -1400,7 +1400,7 @@ void startSecretUpdateThread(const unsigned lookaheadMs)
     if (!refreshThread)
     {
         refreshThread.setown(new SecretRefreshThread());
-        refreshThread->start();
+        refreshThread->start(false);
     }
 }
 

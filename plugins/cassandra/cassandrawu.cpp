@@ -3316,7 +3316,7 @@ public:
             E->Release();
             DBGLOG("WARNING: repository version could not be retrieved (repository not yet created?)");
         }
-        cacheRetirer.start();
+        cacheRetirer.start(false);
         LINK(_dll);  // Yes, this leaks. Not really sure how to avoid that.
     }
 

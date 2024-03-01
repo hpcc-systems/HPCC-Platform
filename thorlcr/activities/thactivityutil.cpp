@@ -159,7 +159,7 @@ public:
         public:
             CNotifyThread(CRowStreamLookAhead &_owner) : threaded("Lookahead-CNotifyThread"), owner(_owner)
             {
-                threaded.init(this);
+                threaded.init(this, true);
             }
             ~CNotifyThread()
             {
@@ -236,7 +236,7 @@ public:
 #endif
         started = true;
         running = true;
-        thread.start();
+        thread.start(true);
         startSem.wait();
     }
 // IEngineRowStream

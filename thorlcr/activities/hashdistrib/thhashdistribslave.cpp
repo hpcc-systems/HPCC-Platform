@@ -496,7 +496,7 @@ protected:
             stoppedTargets = 0;
             dedupSamples = dedupSuccesses = 0;
             doDedup = owner.doDedup;
-            writerPool.setown(createThreadPool("HashDist writer pool", this, this, owner.writerPoolSize, 5*60*1000));
+            writerPool.setown(createThreadPool("HashDist writer pool", this, true, this, owner.writerPoolSize, 5*60*1000));
             self = owner.activity->queryJobChannel().queryMyRank()-1;
 
             sendersFinished = new std::atomic<bool>[owner.numnodes];
@@ -943,7 +943,7 @@ protected:
         {
             parent = _parent;
         }
-        void start() { threaded.start(); }
+        void start() { threaded.start(true); }
         void join(unsigned timeout=INFINITE) { threaded.join(timeout); }
         void stop()
         {
@@ -967,7 +967,7 @@ protected:
         {
             parent = _parent;
         }
-        void start() { threaded.start(); }
+        void start() { threaded.start(true); }
         void join(unsigned timeout=INFINITE) { threaded.join(timeout); }
     // IThreaded impl.
         virtual void threadmain() override
@@ -1973,7 +1973,7 @@ public:
         stopped = false;
         stopping = false;
         txthread = new cTxThread(*this);
-        txthread->start();
+        txthread->start(true);
     }
 
     virtual void join() // probably does nothing

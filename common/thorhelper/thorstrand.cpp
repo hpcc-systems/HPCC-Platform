@@ -41,7 +41,7 @@ public:
     {
         CThreaded * thread = new CThreaded("Strand", &strand);
         threads.append(*thread);
-        thread->start();
+        thread->start(true);
     }
 
     virtual void waitForStrands()
@@ -109,7 +109,7 @@ public:
     {
         CThreaded * thread = new CThreaded("ReadAheadThread", &mainthread);
         threads.append(*thread);
-        thread->start();
+        thread->start(true);
     }
 
     void processConsumerStop()

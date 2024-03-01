@@ -14433,7 +14433,7 @@ void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IP
             }
         } pollthread(jq, &workunit, timelimit*1000);
 
-        pollthread.start();
+        pollthread.start(false);
 
         {
             Owned<IWorkUnit> w = &workunit.lock();

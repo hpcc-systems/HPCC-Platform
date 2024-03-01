@@ -167,7 +167,7 @@ public:
     {
         owner = _owner;
         finished = false;
-        start();
+        start(false);
     }
 
     ~CNamedQueueSubscriptionProxy();
@@ -292,7 +292,7 @@ public:
                 return 0;
             }
         } timeoutthread(this,timeout);
-        timeoutthread.start();
+        timeoutthread.start(false);
         bool ret = handler.get(buf);
         timeoutthread.sem.signal();
         timeoutthread.join();
@@ -493,7 +493,7 @@ public:
 
     void start()
     {
-        Thread::start();
+        Thread::start(false);
     }
 
     void ready()

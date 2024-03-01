@@ -764,9 +764,9 @@ class ThreadedPersistStressTest : public CppUnit::TestFixture
             CThreadedPersistent thread1("1", &t1), thread2("2", &t2), thread3("3", &t3);
             for (unsigned i = 0; i < iters; i++)
             {
-                thread1.start();
-                thread2.start();
-                thread3.start();
+                thread1.start(false);
+                thread2.start(false);
+                thread3.start(false);
                 ret = call_from_thread(count);
                 thread1.join(INFINITE);
                 thread2.join(INFINITE);
@@ -792,9 +792,9 @@ class ThreadedPersistStressTest : public CppUnit::TestFixture
             CThreaded tthread1("1", &t1), tthread2("2", &t2), tthread3("3", &t3);
             for (unsigned i = 0; i < iters; i++)
             {
-                tthread1.start();
-                tthread2.start();
-                tthread3.start();
+                tthread1.start(false);
+                tthread2.start(false);
+                tthread3.start(false);
                 ret = call_from_thread(count);
                 tthread1.join();
                 tthread2.join();
@@ -828,9 +828,9 @@ class ThreadedPersistStressTest : public CppUnit::TestFixture
             CPersistentTask task1("1", &t1), task2("2", &t2), task3("3", &t3);
             for (unsigned i = 0; i < iters; i++)
             {
-                task1.start();
-                task2.start();
-                task3.start();
+                task1.start(false);
+                task2.start(false);
+                task3.start(false);
                 ret = call_from_thread(count);
                 task1.join(INFINITE);
                 task2.join(INFINITE);
@@ -844,9 +844,9 @@ class ThreadedPersistStressTest : public CppUnit::TestFixture
             MyThread thread1(count), thread2(count), thread3(count);
             for (unsigned i = 0; i < iters; i++)
             {
-                thread1.start();
-                thread2.start();
-                thread3.start();
+                thread1.start(false);
+                thread2.start(false);
+                thread3.start(false);
                 ret = call_from_thread(count);
                 thread1.join(INFINITE);
                 thread2.join(INFINITE);
@@ -867,9 +867,9 @@ class ThreadedPersistStressTest : public CppUnit::TestFixture
                 threads.append(*thread2);
                 threads.append(*thread3);
 
-                thread1->start();
-                thread2->start();
-                thread3->start();
+                thread1->start(false);
+                thread2->start(false);
+                thread3->start(false);
                 ret = call_from_thread(count);
                 thread1->join(INFINITE);
                 thread2->join(INFINITE);
@@ -1020,9 +1020,9 @@ class RelaxedAtomicTimingTest : public CppUnit::TestFixture
           t1b(count, ra[0], lock[0], mode), t2b(count, ra[1], lock[1], mode), t3b(count, ra[2], lock[2], mode),
           t1c(count, ra[0], lock[0], mode), t2c(count, ra[100], lock[100], mode), t3c(count, ra[200], lock[200], mode);;  
         DBGLOG("Testing RelaxedAtomics (test mode %u)", mode);
-        t1a.start();
-        t2a.start();
-        t3a.start();
+        t1a.start(false);
+        t2a.start(false);
+        t3a.start(false);
         t1a.join();
         t2a.join();
         t3a.join();
@@ -1030,9 +1030,9 @@ class RelaxedAtomicTimingTest : public CppUnit::TestFixture
         for (int a = 0; a < 201; a++)
             ra[a] = 0;
         timer.reset();
-        t1b.start();
-        t2b.start();
-        t3b.start();
+        t1b.start(false);
+        t2b.start(false);
+        t3b.start(false);
         t1b.join();
         t2b.join();
         t3b.join();
@@ -1040,9 +1040,9 @@ class RelaxedAtomicTimingTest : public CppUnit::TestFixture
         for (int a = 0; a < 201; a++)
             ra[a] = 0;
         timer.reset();
-        t1c.start();
-        t2c.start();
-        t3c.start();
+        t1c.start(false);
+        t2c.start(false);
+        t3c.start(false);
         t1c.join();
         t2c.join();
         t3c.join();

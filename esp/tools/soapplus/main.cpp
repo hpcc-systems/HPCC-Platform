@@ -339,7 +339,7 @@ int processRequest(IProperties* globals, SoapPlusAction action, const char* url,
                         }
 
                         ThreadedSimpleServer server(globals, port, sfname.str(), writeToFiles?outpath.str():NULL, writeToFiles,  1);
-                        server.start();
+                        server.start(false);
                         HttpClient client(globals, url, file.queryFilename(), writeToFiles?outpath.str():NULL, outfilename, writeToFiles);
                         client.start();
                         if(http_tracelevel >= 5)
@@ -360,7 +360,7 @@ int processRequest(IProperties* globals, SoapPlusAction action, const char* url,
                 return -1;
             }
             ThreadedSimpleServer server(globals, port, server_in_fname, writeToFiles?outpath.str():NULL, writeToFiles,  1);
-            server.start();
+            server.start(false);
             HttpClient client(globals, url, in_fname, writeToFiles?outpath.str():NULL, outfilename, writeToFiles);
             client.start();
             if(http_tracelevel >= 5)

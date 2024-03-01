@@ -1189,7 +1189,7 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
     void setupProcessorPool()
     {
         Owned<CProcessorFactory> factory = new CProcessorFactory(*this);
-        processorPool.setown(createThreadPool("KJService processor pool", factory, this, keyLookupMaxProcessThreads, 10000));
+        processorPool.setown(createThreadPool("KJService processor pool", factory, true, this, keyLookupMaxProcessThreads, 10000));
         processorPool->setStartDelayTracing(60000);
     }
 public:
@@ -1571,7 +1571,7 @@ public:
     virtual void start() override
     {
         aborted = false;
-        threaded.start();
+        threaded.start(false);
     }
     virtual void stop() override
     {
@@ -1735,7 +1735,7 @@ public:
                     start();
                 }
                 ~CVerifyThread() { join(); }
-                void start() { threaded.start(); }
+                void start() { threaded.start(false); }
                 void join() { threaded.join(); }
                 virtual void threadmain() override
                 {

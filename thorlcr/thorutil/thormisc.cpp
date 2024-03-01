@@ -1310,7 +1310,7 @@ public:
     {
         fetchBuffSize = DEFAULT_ROWSERVER_BUFF_SIZE;
         running = true;
-        threaded.init(this);
+        threaded.init(this, true);
     }
     ~CRowServer()
     {

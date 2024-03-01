@@ -610,7 +610,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             CKeyedFetchResultProcessor(CKeyedJoinSlave &_owner, ICommunicator &_comm, mptag_t _mpTag) : threaded("CKeyedFetchResultProcessor", this), owner(_owner), comm(_comm), resultMpTag(_mpTag)
             {
                 aborted = false;
-                threaded.start();
+                threaded.start(true);
             }
             ~CKeyedFetchResultProcessor()
             {
@@ -722,7 +722,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             CKeyedFetchRequestProcessor(CKeyedJoinSlave &_owner, ICommunicator &_comm, mptag_t _requestMpTag, mptag_t _resultMpTag) : threaded("CKeyedFetchRequestProcessor", this), owner(_owner), comm(_comm), requestMpTag(_requestMpTag), resultMpTag(_resultMpTag)
             {
                 aborted = false;
-                threaded.start();
+                threaded.start(true);
                 unsigned expectedFormatCrc = owner.helper->getDiskFormatCrc();
                 unsigned projectedFormatCrc = owner.helper->getProjectedFormatCrc();
                 IOutputMetaData *projectedFormat = owner.helper->queryProjectedDiskRecordSize();
@@ -946,7 +946,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             requestProcessor = new CKeyedFetchRequestProcessor(owner, owner.queryJobChannel().queryJobComm(), requestMpTag, resultMpTag); // remote receive of fetch fpos'
             resultProcessor = new CKeyedFetchResultProcessor(owner, owner.queryJobChannel().queryJobComm(), resultMpTag); // asynchronously receiving results back
 
-            threaded.start();
+            threaded.start(true);
         }
         ~CKeyedFetchHandler()
         {
@@ -1587,7 +1587,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             queueSize = _queueSize<maxPoolSize?maxPoolSize:_queueSize;
             lookupQ.setLimit(queueSize);
 
-            keyLookupPool.setown(createThreadPool("KeyLookupPool", this, &owner, maxPoolSize));
+            keyLookupPool.setown(createThreadPool("KeyLookupPool", this, true, &owner, maxPoolSize));
             unsigned i=0;
             for (; i<maxPoolSize; i++)
                 keyLookupPool->start(NULL);

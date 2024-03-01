@@ -522,7 +522,7 @@ TaskScheduler::TaskScheduler(unsigned _numThreads) : numThreads(_numThreads)
     for (unsigned i = 0; i < numThreads; i++)
         processors[i] = new CTaskProcessor(this, i);
     for (unsigned i2 = 0; i2 < numThreads; i2++)
-        processors[i2]->start();
+        processors[i2]->start(false);
 }
 
 TaskScheduler::~TaskScheduler()

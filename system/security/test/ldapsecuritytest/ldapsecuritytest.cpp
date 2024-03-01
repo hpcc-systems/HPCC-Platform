@@ -305,7 +305,7 @@ int main(int argc, char* argv[])
                 for(int i = 0; i < numthrds; i++)   
                     thrds[i] = new CPermissionCheckThread(secmgr, username, passwd, resource, rtype, numrounds);
                 for(int j = 0; j < numthrds; j++)
-                    thrds[j]->start();
+                    thrds[j]->start(false);
                 for(int k = 0; k < numthrds; k++)
                     thrds[k]->join();
             }

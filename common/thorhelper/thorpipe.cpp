@@ -75,7 +75,7 @@ public:
     void run(IPipeProcess *_pipe)
     {
         pipe.set(_pipe);
-        this->start();
+        this->start(true);
     }
 
     void wait()

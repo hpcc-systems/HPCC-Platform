@@ -7540,7 +7540,7 @@ public:
         if (stopped)
         {
             stopped = false;
-            threaded.start();
+            threaded.start(false);
         }
     }
     virtual void stop() override

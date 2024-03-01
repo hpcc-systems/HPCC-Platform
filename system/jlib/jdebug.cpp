@@ -3080,7 +3080,7 @@ void startPerformanceMonitor(unsigned interval, PerfMonMode traceMode, IPerfMonH
     stopPerformanceMonitor();
     if (!MemoryUsageReporter) {
         MemoryUsageReporter = new CMemoryUsageReporter(interval, traceMode, hook, (traceMode&PerfMonExtended)!=0);
-        MemoryUsageReporter->start();
+        MemoryUsageReporter->start(false);
     }
 }
 

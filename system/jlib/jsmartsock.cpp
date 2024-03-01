@@ -238,7 +238,7 @@ CSmartSocketFactory::CSmartSocketFactory(IPropertyTree &service, bool _retry, un
     if (retry)
     {
         retryInterval = _retryInterval;
-        this->start();
+        this->start(false);
     }
 }
 
@@ -258,7 +258,7 @@ CSmartSocketFactory::CSmartSocketFactory(const char *_socklist, bool _retry, uns
     if (retry)
     {
         retryInterval = _retryInterval;
-        this->start();
+        this->start(false);
     }
 }
 

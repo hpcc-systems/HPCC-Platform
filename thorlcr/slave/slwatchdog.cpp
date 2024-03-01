@@ -68,7 +68,7 @@ public:
     void start()
     {
         stopped = false;
-        threaded.start();
+        threaded.start(false);
     }
     virtual void beforeDispose() override
     {

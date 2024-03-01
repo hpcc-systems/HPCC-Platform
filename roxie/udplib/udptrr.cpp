@@ -980,7 +980,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
             }
         }
 
-        virtual void start()
+        virtual void start(bool inheritThreadContext) override
         {
             running = true;
             if (check_max_socket_read_buffer(udpFlowSocketsSize) < 0)
@@ -997,7 +997,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
             flow_socket->set_receive_buffer_size(udpFlowSocketsSize);
             size32_t actualSize = flow_socket->get_receive_buffer_size();
             DBGLOG("UdpReceiver: receive_receive_flow created port=%d sockbuffsize=%d actual %d", flow_port, udpFlowSocketsSize, actualSize);
-            Thread::start();
+            Thread::start(inheritThreadContext);
         }
 
         void doFlowRequest(const UdpRequestToSendMsg &msg)
@@ -1297,10 +1297,10 @@ class CReceiveManager : implements IReceiveManager, public CInterface
             running = false;
         }
 
-        virtual void start()
+        virtual void start(bool inheritThreadContext) override
         {
             running = true;
-            Thread::start();
+            Thread::start(inheritThreadContext);
             started.wait();
         }
 
@@ -1509,9 +1509,9 @@ public:
         receive_flow = new receive_receive_flow(*this, server_flow_port, maxSlotsPerClient);
 
         running = true;
-        collatorThread.start();
-        data->start();
-        receive_flow->start();
+        collatorThread.start(false);
+        data->start(false);
+        receive_flow->start(false);
         MilliSleep(15);
     }
 

@@ -50,7 +50,7 @@ public:
         parent = _parent;
         handler = _handler;
         name = strdup(_name);
-        pool = createThreadPool(name,this,exceptionHandler,maxthreads,lowThreadsDelay,0,timeoutOnRelease); // this will cause this to be linked
+        pool = createThreadPool(name,this,false,exceptionHandler,maxthreads,lowThreadsDelay,0,timeoutOnRelease); // this will cause this to be linked
         hasexceptionhandler = exceptionHandler!=NULL;
     }
     ~CMessageHandler()

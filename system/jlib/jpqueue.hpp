@@ -127,6 +127,7 @@ interface IErrorListener: extends IInterface
     virtual void reportError(const char* err,...)=0;
 };
 
+//MORE: This class is barely used - I think it is only used by some ancient windows specific code.
 class TaskQueue
 {
 public:
@@ -149,7 +150,7 @@ public:
             if(workers.size()<maxsize)
             {
                 workers.push_back(new WorkerThread(*this));
-                workers.back()->start();
+                workers.back()->start(false);
             }
 //            DBGLOG("%d threads",workers.size());
         }

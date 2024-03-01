@@ -155,7 +155,7 @@ bool CDfuPlusHelper::runLocalDaFileSvr(SocketEndpoint &listenep,bool requireauth
         progress("Started local Dali file server on %s%s\n", printep.getEndpointHostText(eps).str(), addlPort.str());
     }
 
-    thr->start();
+    thr->start(false);
 
     if (timeout==0) {
         setDafsTrace(nullptr,0); // disable client tracing

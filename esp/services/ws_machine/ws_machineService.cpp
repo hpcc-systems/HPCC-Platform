@@ -198,7 +198,7 @@ void Cws_machineEx::init(IPropertyTree *cfg, const char *process, const char *se
     //Start thread pool
     Owned<IThreadFactory> pThreadFactory = new CWsMachineThreadFactory();
     m_threadPool.setown(createThreadPool("WsMachine Thread Pool", pThreadFactory,
-        NULL, m_threadPoolSize, 10000, m_threadPoolStackSize)); //10 sec timeout for available thread; use stack size of 2MB
+         false, nullptr, m_threadPoolSize, 10000, m_threadPoolStackSize)); //10 sec timeout for available thread; use stack size of 2MB
 
     setupLegacyFilters();
 

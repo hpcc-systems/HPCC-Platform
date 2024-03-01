@@ -229,7 +229,9 @@ struct ReplicateFileItem: extends CInterface
     {
         CriticalBlock block(sect);
         stopping = false;
-        thread.start();
+        //MORE: This seems inefficient to create a thread for each item being replicated
+        //rather than using a thread pool.  Should possibly pass true to start() to link to the dfuwu.
+        thread.start(false);
     }
 
     void stop()
@@ -471,7 +473,7 @@ public:
     {
         stopping = false;
         thread.setown(new CThreaded("ReplicateServerThread"));
-        thread->init(this);
+        thread->init(this, false);
     }
 
     virtual void threadmain() override

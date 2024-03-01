@@ -234,7 +234,7 @@ void FileTransferThread::go(Semaphore & _sem)
     else
     {
 #ifdef RUN_SLAVES_ON_THREADS
-        start();
+        start(true);
 #else
         transferAndSignal();
 #endif
@@ -2021,7 +2021,7 @@ void FileSprayer::gatherFileSizes(FilePartInfoArray & fileSizeQueue, bool errorI
         for (idx = 0; idx < numThreads; idx++)
             threads.append(*new FileSizeThread(fileSizeQueue, fileSizeCS, compressedInput&&!copyCompressed, errorIfMissing));
         for (idx = 0; idx < numThreads; idx++)
-            threads.item(idx).start();
+            threads.item(idx).start(true);
         for (;;) {
             bool alldone = true;
             StringBuffer err;

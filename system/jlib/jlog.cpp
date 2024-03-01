@@ -293,6 +293,22 @@ void LogMsgJobInfo::deserialize(MemoryBuffer & in)
 
 //--------------------------------------------------------------------------------------------------------------------
 
+const LogMsgJobInfo unknownJob(UnknownJob, UnknownUser);
+
+static thread_local LogMsgJobInfo tempJobInfo;
+const LogMsgJobInfo & checkDefaultJobInfo(const LogMsgJobInfo & _jobInfo)
+{
+    if (&_jobInfo != &unknownJob)
+        return _jobInfo;
+
+    //Using a thread local as a temporary is a short term change
+    //the next step is to remove the parameter and always return a stack object
+    LogMsgJobInfo & result = tempJobInfo;
+    result.setJobID(queryThreadedJobId());
+    return result;
+}
+
+
 LogMsg::LogMsg(LogMsgJobId id, const char *job) : category(MSGAUD_programmer, job ? MSGCLS_addid : MSGCLS_removeid), sysInfo(), jobInfo(id), remoteFlag(false)
 {
     if (job)
@@ -1497,7 +1513,7 @@ void CLogMsgManager::enterQueueingMode()
     if(processor) return;
     processor.setown(new MsgProcessor(this));
     processor->setBlockingLimit(defaultMsgQueueLimit);
-    processor->start();
+    processor->start(false);
 }
 
 void CLogMsgManager::setQueueBlockingLimit(unsigned lim)
@@ -3314,10 +3330,33 @@ IRemoteLogAccess *queryRemoteLogAccessor()
     );
 }
 
-void setDefaultJobId(const char *id, bool threaded)
+void setDefaultJobName(const char * name)
 {
-    setDefaultJobId(theManager->addJobId(id), threaded);
+    setDefaultJobId(theManager->addJobId(name));
 }
+
+
+JobNameTranslator::JobNameTranslator(const char * name)
+{
+    set(name);
+}
+
+void JobNameTranslator::clear()
+{
+    if (id)
+    {
+        theManager->removeJobId(id);
+        id = 0;
+    }
+}
+
+void JobNameTranslator::set(const char * name)
+{
+    clear();
+    id = theManager->addJobId(name);
+}
+
+//---------------------------------------------------------------------------------------------------------------------
 
 TraceFlags loadTraceFlags(const IPropertyTree *ptree, const std::initializer_list<TraceOption> &optNames, TraceFlags dft)
 {

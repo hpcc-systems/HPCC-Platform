@@ -135,7 +135,7 @@ public:
     RestartableThread(const char *_name) : name(_name)
     {
     }
-    virtual void start(const char *namePrefix)
+    virtual void start(const char *namePrefix, bool inheritThreadContext)
     {
         StringBuffer s(namePrefix);
         s.append(name);
@@ -143,7 +143,7 @@ public:
             CriticalBlock b(crit);
             assertex(!thread);
             thread.setown(new MyThread(this, s));
-            thread->start();
+            thread->start(inheritThreadContext);
         }
     }
 
@@ -2617,7 +2617,7 @@ public:
                     StringBuffer logPrefix("[");
                     if (ctx) ctx->getLogPrefix(logPrefix);
                     logPrefix.append("] ");
-                    RestartableThread::start(logPrefix);
+                    RestartableThread::start(logPrefix, true);
                 }
             }
         }
@@ -16044,7 +16044,7 @@ void LoopExecutorThread::start(unsigned parentExtractSize, const byte *parentExt
     eof = false;
     StringBuffer logPrefix("[");
     ctx->getLogPrefix(logPrefix).append("] ");
-    RestartableThread::start(logPrefix);
+    RestartableThread::start(logPrefix, true);
 }
 
 int LoopExecutorThread::run()
@@ -28049,7 +28049,7 @@ protected:
         {
             parentExtract = _parentExtract;
             parentExtractSize = _parentExtractSize;
-            thread.start();
+            thread.start(true);
         }
         inline void join()
         {

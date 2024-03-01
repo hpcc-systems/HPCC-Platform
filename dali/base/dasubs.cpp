@@ -162,7 +162,7 @@ public:
     void start()
     {
         running = true;
-        Thread::start();
+        Thread::start(false);
     }
     void ready()
     {
@@ -552,7 +552,7 @@ public:
         :   Thread("CDaliPublisherClient")
     {
         running = true;
-        start();
+        start(false);
     }
 
     ~CDaliPublisherClient()

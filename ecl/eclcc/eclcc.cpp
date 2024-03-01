@@ -2860,7 +2860,7 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         }
         else if (iter.matchOption(tempArg, "--jobid"))
         {
-            setDefaultJobId(tempArg, false);
+            setDefaultJobName(tempArg);
         }
         else if (iter.matchFlag(optKeywords, "--keywords"))
         {
@@ -3408,7 +3408,7 @@ void EclCC::processBatchFiles()
         for (unsigned i = 0; i < optThreads; i++)
         {
             threads[i] = new BatchThread(*this, queue, fileReady);
-            threads[i]->start();
+            threads[i]->start(false);
         }
     }
 

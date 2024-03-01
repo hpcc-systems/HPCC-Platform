@@ -1855,7 +1855,7 @@ void CRemotePartitioner::calcPartitions(Semaphore * _sem)
     sem = _sem;
 
 #ifdef RUN_SLAVES_ON_THREADS
-    start();
+    start(true);
 #else
     run();
 #endif

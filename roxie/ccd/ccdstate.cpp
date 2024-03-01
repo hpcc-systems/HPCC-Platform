@@ -217,7 +217,7 @@ public:
             CriticalBlock b(lock);
             if (!started)
             {
-                start();
+                start(false);
                 started = true;
             }
             queue.append(*new DelayedReleaseQueueItem(goer, delaySeconds));
@@ -2002,7 +2002,7 @@ public:
             reload(false);
             daliHelper->commitCache();
             controlSem.signal();
-            autoReloadThread.start();   // Don't want to overlap auto-reloads with the initial load
+            autoReloadThread.start(false);   // Don't want to overlap auto-reloads with the initial load
         }
         catch(IException *E)
         {

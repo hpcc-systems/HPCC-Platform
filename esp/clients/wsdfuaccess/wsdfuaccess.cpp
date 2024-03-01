@@ -655,7 +655,7 @@ protected:
         public:
             CServerThread(IRemoteFileServer *_server, ISocket *_socket) : server(_server), socket(_socket), threaded("CServerThread")
             {
-                threaded.init(this);
+                threaded.init(this, false);
             }
             ~CServerThread()
             {

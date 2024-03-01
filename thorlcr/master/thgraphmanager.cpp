@@ -191,7 +191,7 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
             unsigned defaultThorDebugPort = getFixedPort(getMasterPortBase(), TPORT_debug);
             port = globals->getPropInt("DebugPort", defaultThorDebugPort);
             running = true;
-            threaded.start();
+            threaded.start(false);
         }
         ~CThorDebugListener()
         {
@@ -460,7 +460,7 @@ class CIdleShutdown : public CSimpleInterface, implements IThreaded
     Semaphore sem;
     CThreaded threaded;
 public:
-    CIdleShutdown(unsigned _timeout) : timeout(_timeout*60000), threaded("CIdleShutdown") { threaded.init(this); }
+    CIdleShutdown(unsigned _timeout) : timeout(_timeout*60000), threaded("CIdleShutdown") { threaded.init(this, false); }
     ~CIdleShutdown() { stop(); threaded.join(); }
     virtual void threadmain() override
     {
@@ -634,7 +634,7 @@ void CJobManager::run()
     public:
         CThorListener(mptag_t _mptag) : threaded("CDaliConnectionValidator"), mptag(_mptag)
         {
-            threaded.init(this);
+            threaded.init(this, false);
         }
         ~CThorListener() { stop(); threaded.join(); }
         void stop()
@@ -887,6 +887,10 @@ bool CJobManager::doit(IConstWorkUnit *workunit, const char *graphName, const So
     StringAttr wuid(workunit->queryWuid());
     StringAttr user(workunit->queryUser());
 
+    LogMsgJobId thorJobId = queryLogMsgManager()->addJobId(wuid);
+    thorJob.setJobID(thorJobId);
+    setDefaultJobId(thorJobId);
+
     LOG(MCdebugInfo, thorJob, "Processing wuid=%s, graph=%s from agent: %s", wuid.str(), graphName, agentep.getEndpointHostText(s).str());
     LOG(MCauditInfo,",Progress,Thor,Start,%s,%s,%s,%s,%s,%s",
             queryServerStatus().queryProperties()->queryProp("@thorname"),
@@ -909,6 +913,11 @@ bool CJobManager::doit(IConstWorkUnit *workunit, const char *graphName, const So
             user.str(),
             queryServerStatus().queryProperties()->queryProp("@nodeGroup"),
             queryServerStatus().queryProperties()->queryProp("@queue"));
+
+    thorJob.setJobID(UnknownJob);
+    setDefaultJobId(UnknownJob);
+    queryLogMsgManager()->removeJobId(thorJobId);
+
     if (e.get()) throw e.getClear();
     return allDone;
 }
@@ -1243,7 +1252,7 @@ class CDaliConnectionValidator : public CSimpleInterface, implements IThreaded
     Semaphore poll;
     CThreaded threaded;
 public:
-    CDaliConnectionValidator(unsigned _pollDelay) : threaded("CDaliConnectionValidator") { pollDelay = _pollDelay*1000; stopped = false; threaded.init(this); }
+    CDaliConnectionValidator(unsigned _pollDelay) : threaded("CDaliConnectionValidator") { pollDelay = _pollDelay*1000; stopped = false; threaded.init(this, false); }
     ~CDaliConnectionValidator() { stop(); threaded.join(); }
     virtual void threadmain() override
     {

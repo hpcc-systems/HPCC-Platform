@@ -98,7 +98,7 @@ class CAsyncCall : implements IThreaded
     std::function<void()> func;
 public:
     CAsyncCall(std::function<void()> _func) : threaded("CAsyncCall", this), func(_func) { }
-    void start() { threaded.start(); }
+    void start() { threaded.start(true); }
     void wait() { threaded.join(); }
 // IThreaded
     virtual void threadmain() override { func(); }

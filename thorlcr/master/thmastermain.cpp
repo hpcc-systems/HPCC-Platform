@@ -87,7 +87,7 @@ class CThorEndHandler : implements IThreaded
 public:
     CThorEndHandler() : threaded("CThorEndHandler")
     {
-        threaded.init(this); // starts thread
+        threaded.init(this, false); // starts thread
     }
     ~CThorEndHandler()
     {
@@ -161,7 +161,7 @@ class CRegistryServer : public CSimpleInterface
         {
             stop();
         }
-        void start() { threaded.init(this); }
+        void start() { threaded.init(this, false); }
         void stop()
         {
             if (running)

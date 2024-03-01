@@ -160,7 +160,7 @@ public:
         constructEnvptTemplate();
         m_pCentralStore.setown(getEsdlCentralStore(true));
         m_esdlShare.setown(new CEsdlShare());
-        m_esdlShare->start();
+        m_esdlShare->start(false);
         DBGLOG("EsdlMonitor started.");
     }
 

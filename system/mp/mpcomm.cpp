@@ -472,7 +472,7 @@ class CMPConnectThread: public Thread
         void start()
         {
             stopped = false;
-            threaded.init(this);
+            threaded.init(this, false);
         }
         void stop()
         {
@@ -2330,10 +2330,10 @@ void CMPConnectThread::startPort(unsigned short port)
             }
         };
         Owned<IThreadFactory> factory = new CMPConnectThreadFactory(*this);
-        threadPool.setown(createThreadPool("MPConnectPool", factory, nullptr, acceptThreadPoolSize, INFINITE));
+        threadPool.setown(createThreadPool("MPConnectPool", factory, false, nullptr, acceptThreadPoolSize, INFINITE));
         slowClientProcessor.start();
     }
-    Thread::start();
+    Thread::start(false);
 }
 
 // only returns true if !failOnTimeout and times out
@@ -2654,7 +2654,7 @@ CMPServer::CMPServer(unsigned __int64 _role, unsigned _port, bool _listen)
     broadcastpackethandler = new BroadcastPacketHandler;    // TAG_SYS_BCAST
     userpackethandler = new UserPacketHandler(this);        // default
     notifyclosedthread = new CMPNotifyClosedThread(this);
-    notifyclosedthread->start();
+    notifyclosedthread->start(false);
     selecthandler->start();
     rettag = (int)TAG_REPLY_BASE; // NB negative
 

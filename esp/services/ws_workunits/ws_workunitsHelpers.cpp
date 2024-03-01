@@ -4033,7 +4033,7 @@ void CWsWuFileHelper::createThorSlaveLogfile(IConstWorkUnit* cwu, WsWuInfo& winf
 
     Owned<IThreadFactory> threadFactory = new CGetThorSlaveLogToFileThreadFactory();
     Owned<IThreadPool> threadPool = createThreadPool("WsWuFileHelper GetThorSlaveLogToFile Thread Pool",
-        threadFactory, NULL, thorSlaveLogThreadPoolSize, INFINITE);
+        threadFactory, false, nullptr, thorSlaveLogThreadPoolSize, INFINITE);
 
     unsigned numberOfSlaveLogs = clusterInfo->getNumberOfSlaveLogs();
     BoolHash uniqueProcesses;

@@ -1114,7 +1114,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                             limiter->dec(); // normally handled at end of thread
                         return;
                     }
-                    threaded.start();
+                    threaded.start(true);
                     break;
                 }
                 else if (state == ts_stopping)
@@ -2125,7 +2125,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         }
         void start()
         {
-            threaded.start();
+            threaded.start(true);
         }
         void join()
         {

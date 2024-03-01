@@ -761,7 +761,7 @@ int main(int argc, const char* argv[])
             {
                 PROGLOG(DAFS_SERVICE_DISPLAY_NAME " Initialized");
                 started = true;
-                pollthread.start();
+                pollthread.start(false);
                 return true;
             }
 

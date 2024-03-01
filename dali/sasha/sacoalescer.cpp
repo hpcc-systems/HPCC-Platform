@@ -188,7 +188,7 @@ public:
     {
         CriticalBlock b(suspendResumeCrit);
         stopped = false;
-        Thread::start();
+        Thread::start(false);
     }
 
     void ready()
@@ -221,7 +221,7 @@ public:
         if (!stopped) return;
         PROGLOG("COALESCER: resume");
         stopped = false;
-        Thread::start();
+        Thread::start(false);
         ready();
     }
 
