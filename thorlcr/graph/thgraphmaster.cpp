@@ -2925,10 +2925,6 @@ bool CMasterGraph::deserializeStats(unsigned node, MemoryBuffer &mb)
 void CMasterGraph::getStats(IStatisticGatherer &stats)
 {
     stats.addStatistic(StNumSlaves, queryClusterWidth());
-    cost_type costDiskAccess = getDiskAccessCost();
-    if (costDiskAccess)
-        stats.addStatistic(StCostFileAccess, costDiskAccess);
-
     // graph specific stats
     graphStats.getStats(stats);
 
@@ -2957,6 +2953,9 @@ void CMasterGraph::getStats(IStatisticGatherer &stats)
             activity->getActivityStats(stats);
         }
     }
+    cost_type costDiskAccess = getDiskAccessCost();
+    if (costDiskAccess)
+        stats.addStatistic(StCostFileAccess, costDiskAccess);
 }
 
 cost_type CMasterGraph::getDiskAccessCost()
