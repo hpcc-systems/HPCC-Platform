@@ -1565,11 +1565,10 @@ void CHttpRequest::parseCookieHeader(char* cookiestr)
         if(name.charAt(0) != '$')
         {
             cookie = new CEspCookie(name.str(), value.str());
+            cookie->setPath("/");
             cookie->setVersion(version);
             m_cookies.append(*cookie);
         }
-        else if(stricmp(name.str(), "$Path") == 0 && cookie != NULL)
-            cookie->setPath(value.str());
         else if(stricmp(name.str(), "$Domain") == 0 && cookie != NULL)
             cookie->setDomain(value.str());
         else if(stricmp(name.str(), "$Port") == 0 && cookie != NULL)
