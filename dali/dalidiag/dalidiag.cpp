@@ -65,7 +65,7 @@ void usage(const char *exe)
     printf("-disconnect <ip>:<port> -- forcably disconnect a clients connection\n");
     printf("-permissions <logicalname> <user> <password> -- get file permissions\n");
     printf("-unlock <connection_id> [close] -- forcibly disconnect an sds lock\n"); 
-    printf("                                   (use id's given by '-locks'\n");
+    printf("                                   (use the ConnectionId in hex given by '-locks'\n");
     printf("-settracetransactions    -- trace dali transactions\n");
     printf("-settraceslowtransactions <millisecond-threshold> -- trace slow dali transactions\n");
     printf("-cleartracetransactions  -- stop tracing dali transactions\n");

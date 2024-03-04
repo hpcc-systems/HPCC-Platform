@@ -601,15 +601,15 @@ bool CWSDaliEx::onDisconnectClientConnection(IEspContext& context, IEspDisconnec
     {
         checkAccess(context);
 
-        const char* url = req.getURL();
-        if (isEmptyString(url))
-            throw makeStringException(ECLWATCH_INVALID_INPUT, "URL not specified.");
+        const char* ep = req.getEndpoint();
+        if (isEmptyString(ep))
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "Endpoint not specified.");
 
         MemoryBuffer mb;
-        mb.append("disconnect").append(url);
+        mb.append("disconnect").append(ep);
         getDaliDiagnosticValue(mb);
 
-        VStringBuffer result("DisconnectClientConnection called for %s.", url);
+        VStringBuffer result("DisconnectClientConnection called for %s.", ep);
         resp.setResult(result);
     }
     catch(IException* e)
