@@ -247,11 +247,6 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
         }
     }, [currentUser]);
 
-    React.useEffect(() => {
-        if (!environmentTitle) return;
-        document.title = environmentTitle;
-    }, [environmentTitle]);
-
     return <div style={{ backgroundColor: titlebarColorSet ? titlebarColor : theme.palette.themeLight }}>
         <BannerMessageBar />
         <Stack horizontal verticalAlign="center" horizontalAlign="space-between">
@@ -264,7 +259,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
                         <Link href="#/activities">
                             <Text variant="large" nowrap block >
                                 <b title="ECL Watch" style={{ color: titlebarColorSet ? Utility.textColor(titlebarColor) : theme.palette.themeDarker }}>
-                                    {showEnvironmentTitle && environmentTitle.length ? environmentTitle : "ECL Watch"}
+                                    {(showEnvironmentTitle && environmentTitle) ? environmentTitle : "ECL Watch"}
                                 </b>
                             </Text>
                         </Link>
