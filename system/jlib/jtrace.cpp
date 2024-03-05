@@ -179,76 +179,85 @@ public:
     opentelemetry::sdk::common::ExportResult Export(
       const nostd::span<std::unique_ptr<opentelemetry::sdk::trace::Recordable>> &recordables) noexcept override
     {
-        if (isShutDown())
-            return opentelemetry::sdk::common::ExportResult::kFailure;
-
-        for (auto &recordable : recordables)
+        try
         {
-            //Casting the recordable object to the type of the object that was previously created by
-            //JLogSpanExporter::MakeRecordable() - 
-            auto span = std::unique_ptr<opentelemetry::sdk::trace::SpanData>(
-            static_cast<opentelemetry::sdk::trace::SpanData *>(recordable.release()));
+            if (isShutDown())
+                return opentelemetry::sdk::common::ExportResult::kFailure;
 
-            if (span != nullptr)
+            for (auto &recordable : recordables)
             {
-                char traceID[32]       = {0};
-                char spanID[16]        = {0};
+                //Casting the recordable object to the type of the object that was previously created by
+                //JLogSpanExporter::MakeRecordable() - 
+                auto span = std::unique_ptr<opentelemetry::sdk::trace::SpanData>(
+                static_cast<opentelemetry::sdk::trace::SpanData *>(recordable.release()));
 
-                span->GetTraceId().ToLowerBase16(traceID);
-                span->GetSpanId().ToLowerBase16(spanID);
-
-                StringBuffer out("{ \"type\": \"span\""); //for simple identification in log scraping
-                out.appendf(", \"name\": \"%s\"", span->GetName().data());
-                out.append(", \"trace_id\": \"").append(32, traceID).append("\"");
-                out.append(", \"span_id\": \"").append(16, spanID).append("\"");
-                out.appendf(", \"start\": %lld", (long long)(span->GetStartTime().time_since_epoch()).count());
-                out.appendf(", \"duration\": %lld", (long long)span->GetDuration().count());
-
-                if (hasMask(logFlags, SpanLogFlags::LogParentInfo))
+                if (span != nullptr)
                 {
-                    if (span->GetParentSpanId().IsValid())
+                    char traceID[32]       = {0};
+                    char spanID[16]        = {0};
+
+                    span->GetTraceId().ToLowerBase16(traceID);
+                    span->GetSpanId().ToLowerBase16(spanID);
+
+                    StringBuffer out("{ \"type\": \"span\""); //for simple identification in log scraping
+                    out.appendf(", \"name\": \"%s\"", span->GetName().data());
+                    out.append(", \"trace_id\": \"").append(32, traceID).append("\"");
+                    out.append(", \"span_id\": \"").append(16, spanID).append("\"");
+                    out.appendf(", \"start\": %lld", (long long)(span->GetStartTime().time_since_epoch()).count());
+                    out.appendf(", \"duration\": %lld", (long long)span->GetDuration().count());
+
+                    if (hasMask(logFlags, SpanLogFlags::LogParentInfo))
                     {
-                        char parentSpanID[16]  = {0};
-                        span->GetParentSpanId().ToLowerBase16(parentSpanID);
-                        out.append(", \"parent_span_id\": \"").append(16, parentSpanID).append("\"");
+                        if (span->GetParentSpanId().IsValid())
+                        {
+                            char parentSpanID[16]  = {0};
+                            span->GetParentSpanId().ToLowerBase16(parentSpanID);
+                            out.append(", \"parent_span_id\": \"").append(16, parentSpanID).append("\"");
+                        }
+
+                        std::string traceStatestr = span->GetSpanContext().trace_state()->ToHeader();
+                        if (!traceStatestr.empty())
+                            out.appendf(", \"trace_state\": \"%s\"", traceStatestr.c_str());
                     }
 
-                    std::string traceStatestr = span->GetSpanContext().trace_state()->ToHeader();
-                    if (!traceStatestr.empty())
-                        out.appendf(", \"trace_state\": \"%s\"", traceStatestr.c_str());
-                }
-
-                if (hasMask(logFlags, SpanLogFlags::LogSpanDetails))
-                {
-                    out.appendf(", \"status\": \"%s\"", spanStatusToString(span->GetStatus()));
-                    out.appendf(", \"kind\": \"%s\"", spanKindToString(span->GetSpanKind()));
-                    const char * description = span->GetDescription().data();
-                    if (!isEmptyString(description))
+                    if (hasMask(logFlags, SpanLogFlags::LogSpanDetails))
                     {
-                        StringBuffer encoded;
-                        encodeJSON(encoded, description);
-                        out.appendf(", \"description\": \"%s\"", encoded.str());
+                        out.appendf(", \"status\": \"%s\"", spanStatusToString(span->GetStatus()));
+                        out.appendf(", \"kind\": \"%s\"", spanKindToString(span->GetSpanKind()));
+                        const char * description = span->GetDescription().data();
+                        if (!isEmptyString(description))
+                        {
+                            StringBuffer encoded;
+                            encodeJSON(encoded, description);
+                            out.appendf(", \"description\": \"%s\"", encoded.str());
+                        }
+                        printInstrumentationScope(out, span->GetInstrumentationScope());
                     }
-                    printInstrumentationScope(out, span->GetInstrumentationScope());
+
+                    if (hasMask(logFlags, SpanLogFlags::LogAttributes))
+                        printAttributes(out, span->GetAttributes());
+
+                    if (hasMask(logFlags, SpanLogFlags::LogEvents))
+                        printEvents(out, span->GetEvents());
+
+                    if (hasMask(logFlags, SpanLogFlags::LogLinks))
+                        printLinks(out, span->GetLinks());
+
+                    if (hasMask(logFlags, SpanLogFlags::LogResources))
+                        printResources(out, span->GetResource());
+
+                    out.append(" }");
+                    LOG(MCmonitorEvent, "%s",out.str());
                 }
-
-                if (hasMask(logFlags, SpanLogFlags::LogAttributes))
-                    printAttributes(out, span->GetAttributes());
-
-                if (hasMask(logFlags, SpanLogFlags::LogEvents))
-                    printEvents(out, span->GetEvents());
-
-                if (hasMask(logFlags, SpanLogFlags::LogLinks))
-                    printLinks(out, span->GetLinks());
-
-                if (hasMask(logFlags, SpanLogFlags::LogResources))
-                    printResources(out, span->GetResource());
-
-                out.append(" }");
-                LOG(MCmonitorEvent, "%s",out.str());
             }
+            return opentelemetry::sdk::common::ExportResult::kSuccess;
         }
-        return opentelemetry::sdk::common::ExportResult::kSuccess;
+        catch (IException * e)
+        {
+            EXCLOG(e, "JLogSpanExporter::Export");
+            e->Release();
+            return opentelemetry::sdk::common::ExportResult::kFailure;
+        }
     }
 
    /**
