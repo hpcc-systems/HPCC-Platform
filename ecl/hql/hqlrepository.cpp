@@ -827,11 +827,11 @@ IEclSourceCollection * EclRepositoryManager::resolveGitCollection(const char * r
     {
         if (options.updateRepos)
         {
-            unsigned retCode = runGitCommand(nullptr, "fetch origin", repoPath, true);
+            unsigned retCode = runGitCommand(nullptr, "fetch origin --prune", repoPath, true);
             if (retCode != 0)
             {
                 VStringBuffer msg("Failed to download the latest version of '%s' error code (%u)", defaultUrl, retCode);
-                error.setown(createError(CategoryError, SeverityError, ERR_FAIL_UPDATE_REPO, msg.str(), nullptr, 0, 0, 0));
+                error.setown(createError(CategoryError, SeverityWarning, ERR_FAIL_UPDATE_REPO, msg.str(), nullptr, 0, 0, 0));
             }
         }
 
