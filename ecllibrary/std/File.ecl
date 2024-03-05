@@ -209,9 +209,10 @@ EXPORT SetFileDescription(varstring lfn, varstring val) :=
  *                      system running on the remote machine.
  * @param mask          The filemask specifying which files to include in the result. Defaults to '*' (all files).
  * @param recurse       Whether to include files from subdirectories under the directory. Defaults to FALSE.
+ * @param planeName     The name of the data plane containing the file.
  */
-EXPORT dataset(FsFilenameRecord) RemoteDirectory(varstring machineIP, varstring dir, varstring mask='*', boolean recurse=FALSE) :=
-    lib_fileservices.FileServices.RemoteDirectory(machineIP, dir, mask, recurse);
+EXPORT dataset(FsFilenameRecord) RemoteDirectory(varstring machineIP, varstring dir, varstring mask='*', boolean recurse=FALSE, varstring planeName='') :=
+    lib_fileservices.FileServices.RemoteDirectory(machineIP, dir, mask, recurse, planeName);
 
 /**
  * Returns a dataset of information about the logical files known to the system.
