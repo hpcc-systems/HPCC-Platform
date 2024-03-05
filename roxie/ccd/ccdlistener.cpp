@@ -1316,7 +1316,7 @@ public:
             reportUnknownException(wu, logctx);
         }
 #endif
-        unsigned elapsedNs = nsTick() - startNs;
+        stat_type elapsedNs = nsTick() - startNs;
         unsigned elapsedMs = nanoToMilli(elapsedNs);
         noteQuery(failed, elapsedMs, priority);
         queryFactory->noteQuery(startTime, failed, elapsedMs, memused, agentsReplyLen, 0);
