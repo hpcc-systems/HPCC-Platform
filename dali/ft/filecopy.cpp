@@ -3573,17 +3573,30 @@ void FileSprayer::updateTargetProperties()
             }
 
             // Update @writeCost and @numWrites in subfile properties and update totalWriteCost
-            if (superTgt)
+            if (superTgt && superTgt->numSubFiles() > 0)
             {
                 if (cur.whichOutput != (unsigned)-1)
                 {
-                    unsigned targetPartNum = targets.item(cur.whichOutput).partNum;
-                    IDistributedFile &subfile = superTgt->querySubFile(targetPartNum, true);
-                    DistributedFilePropertyLock lock(&subfile);
+                    IDistributedFile *subfile;
+                    if (superTgt->numSubFiles() > 1)
+                    {
+                        Owned<IFileDescriptor> fDesc = superTgt->getFileDescriptor();
+                        ISuperFileDescriptor *superFDesc = fDesc->querySuperFileDescriptor();
+                        unsigned subfileNum, subFilePartNum;
+                        superFDesc->mapSubPart(targets.item(cur.whichOutput).partNum, subfileNum, subFilePartNum);
+                        subfile = superTgt->querySubPart(subfileNum, subFilePartNum);
+                    }
+                    else
+                    {
+                        // If there is a single subfile, it is not necessary to map part to subfile
+                        // (also, querySuperFileDescriptor return nullptr if num subfile == 1)
+                        subfile = &superTgt->querySubFile(0);
+                    }
+                    DistributedFilePropertyLock lock(subfile);
                     IPropertyTree &subFileProps = lock.queryAttributes();
                     cost_type prevNumWrites = subFileProps.getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskWrites));
                     cost_type prevWriteCost = subFileProps.getPropInt64(getDFUQResultFieldName(DFUQRFwriteCost));
-                    cost_type curWriteCost = calcFileAccessCost(&subfile, curProgress.numWrites, 0);
+                    cost_type curWriteCost = calcFileAccessCost(subfile, curProgress.numWrites, 0);
                     subFileProps.setPropInt64(getDFUQResultFieldName(DFUQRFwriteCost), prevWriteCost + curWriteCost);
                     subFileProps.setPropInt64(getDFUQResultFieldName(DFUQRFnumDiskWrites), prevNumWrites + curProgress.numWrites);
                     totalWriteCost += curWriteCost;
@@ -3786,23 +3799,35 @@ void FileSprayer::updateTargetProperties()
     if (distributedSource)
     {
         IDistributedSuperFile * superSrc = distributedSource->querySuperFile();
-        if (superSrc)
+        if (superSrc && superSrc->numSubFiles() > 0)
         {
+            Owned<IFileDescriptor> fDesc = superSrc->getFileDescriptor();
+            ISuperFileDescriptor *superFDesc = fDesc->querySuperFileDescriptor();
             ForEachItemIn(idx, partition)
             {
                 PartitionPoint & cur = partition.item(idx);
                 OutputProgress & curProgress = progress.item(idx);
-
                 if (cur.whichInput != (unsigned)-1)
                 {
-                    unsigned sourcePartNum = sources.item(cur.whichInput).partNum;
-                    IDistributedFile &subfile = superSrc->querySubFile(sourcePartNum, true);
-                    DistributedFilePropertyLock lock(&subfile);
+                    IDistributedFile *subfile;
+                    if (superFDesc)
+                    {
+                        unsigned subfileNum, subFilePartNum;
+                        superFDesc->mapSubPart(sources.item(cur.whichInput).partNum, subfileNum, subFilePartNum);
+                        subfile = superSrc->querySubPart(subfileNum, subFilePartNum);
+                    }
+                    else
+                    {
+                        // superFDesc==nullptr if there is a single file
+                        // so query the first (and only) subfile
+                        subfile = &superSrc->querySubFile(0);
+                    }
+                    DistributedFilePropertyLock lock(subfile);
                     IPropertyTree &subFileProps = lock.queryAttributes();
                     stat_type prevNumReads = subFileProps.getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskReads), 0);
-                    cost_type legacyReadCost = getLegacyReadCost(subfile.queryAttributes(), &subfile);
+                    cost_type legacyReadCost = getLegacyReadCost(subfile->queryAttributes(), subfile);
                     cost_type prevReadCost = subFileProps.getPropInt64(getDFUQResultFieldName(DFUQRFreadCost), 0);
-                    cost_type curReadCost = calcFileAccessCost(&subfile, 0, curProgress.numReads);
+                    cost_type curReadCost = calcFileAccessCost(subfile, 0, curProgress.numReads);
                     subFileProps.setPropInt64(getDFUQResultFieldName(DFUQRFnumDiskReads), prevNumReads + curProgress.numReads);
                     subFileProps.setPropInt64(getDFUQResultFieldName(DFUQRFreadCost), legacyReadCost + prevReadCost + curReadCost);
                     totalReadCost += curReadCost;
