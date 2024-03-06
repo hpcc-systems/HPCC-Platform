@@ -6,7 +6,6 @@ on:
       os:
         type: choice
         options:
-          - 'ubuntu-23.10'
           - 'ubuntu-22.04'
           - 'ubuntu-20.04'
           - 'centos-8'
@@ -63,13 +62,6 @@ jobs:
     with:
       os: ${{ inputs.os }}
       asset-name: 'docker-package'
-    secrets: inherit
-
-  build-docker-ubuntu-23_10:
-    if: ${{ contains('pull_request,push', github.event_name) }}
-    uses: ./.github/workflows/build-docker.yml
-    with:
-      os: ubuntu-23.10
     secrets: inherit
 
   build-docker-ubuntu-22_04:
@@ -185,11 +177,3 @@ jobs:
       cmake-configuration-ex: '-DUSE_CPPUNIT=OFF -DCLIENTTOOLS_ONLY=ON -DINCLUDE_PLUGINS=OFF -DUSE_AZURE=OFF -DUSE_CASSANDRA=OFF -DSUPPRESS_CASSANDRAEMBED=ON -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
     secrets: inherit
 
-  build-gh_runner-macos-11:
-    if: ${{ contains('schedule,push', github.event_name) }}
-    uses: ./.github/workflows/build-gh_runner.yml
-    with:
-      os: macos-11
-      build-type: 'Release'
-      cmake-configuration-ex: '-DUSE_CPPUNIT=OFF -DCLIENTTOOLS_ONLY=ON -DINCLUDE_PLUGINS=OFF -DUSE_AZURE=OFF -DUSE_CASSANDRA=OFF -DSUPPRESS_CASSANDRAEMBED=ON -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
-    secrets: inherit

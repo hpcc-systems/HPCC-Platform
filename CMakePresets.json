@@ -1,0 +1,220 @@
+{
+    "version": 3,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 22,
+        "patch": 1
+    },
+    "configurePresets": [
+        {
+            "name": "default"
+        },
+        {
+            "name": "vcpkg",
+            "displayName": "vcpkg",
+            "toolchainFile": "${sourceDir}/vcpkg/scripts/buildsystems/vcpkg.cmake",
+            "binaryDir": "${sourceDir}/build",
+            "installDir": "${sourceDir}/build/stage",
+            "cacheVariables": {},
+            "hidden": true
+        },
+        {
+            "name": "ninja",
+            "generator": "Ninja",
+            "hidden": true
+        },
+        {
+            "name": "debug",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug"
+            },
+            "hidden": true
+        },
+        {
+            "name": "release",
+            "binaryDir": "${sourceDir}/build/Release",
+            "installDir": "${sourceDir}/build/Release/stage",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            },
+            "hidden": true
+        },
+        {
+            "name": "relwithdebinfo",
+            "binaryDir": "${sourceDir}/build/RelWithDebInfo",
+            "installDir": "${sourceDir}/build/RelWithDebInfo/stage",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+            },
+            "hidden": true
+        },
+        {
+            "name": "ubuntu",
+            "cacheVariables": {
+                "USE_OPTIONAL": "OFF",
+                "USE_CPPUNIT": "ON",
+                "INCLUDE_PLUGINS": "ON",
+                "SUPPRESS_V8EMBED": "ON",
+                "SUPPRESS_REMBED": "ON"
+            },
+            "hidden": true
+        },
+        {
+            "name": "windows",
+            "cacheVariables": {
+                "USE_OPTIONAL": "OFF",
+                "CLIENTTOOLS_ONLY": "ON",
+                "USE_AZURE": "OFF",
+                "USE_CASSANDRA": "OFF",
+                "USE_JAVA": "OFF",
+                "USE_OPENLDAP": "OFF"
+            },
+            "hidden": true
+        },
+        {
+            "name": "ubuntu-ninja",
+            "inherits": [
+                "vcpkg",
+                "ninja",
+                "ubuntu"
+            ]
+        },
+        {
+            "name": "ubuntu-ninja-debug",
+            "inherits": [
+                "ubuntu-ninja",
+                "debug"
+            ]
+        },
+        {
+            "name": "ubuntu-ninja-debug-minimal",
+            "inherits": [
+                "ubuntu-ninja",
+                "debug"
+            ],
+            "cacheVariables": {
+                "USE_CPPUNIT": "OFF",
+                "INCLUDE_PLUGINS": "OFF"
+            }
+        },
+        {
+            "name": "ubuntu-ninja-release",
+            "inherits": [
+                "ubuntu-ninja",
+                "release"
+            ]
+        },
+        {
+            "name": "ubuntu-ninja-relwithdebinfo",
+            "inherits": [
+                "ubuntu-ninja",
+                "relwithdebinfo"
+            ]
+        },
+        {
+            "name": "VS-16",
+            "generator": "Visual Studio 16 2019",
+            "architecture": {
+                "strategy": "set",
+                "value": "x64"
+            },
+            "hidden": true
+        },
+        {
+            "name": "VS-17",
+            "generator": "Visual Studio 17 2022",
+            "architecture": {
+                "strategy": "set",
+                "value": "x64"
+            },
+            "toolset": {
+                "strategy": "set",
+                "value": "host=x64"
+            },
+            "hidden": true
+        },
+        {
+            "name": "vcpkg-VS-16",
+            "inherits": [
+                "vcpkg",
+                "windows",
+                "VS-16"
+            ]
+        },
+        {
+            "name": "vcpkg-VS-17",
+            "inherits": [
+                "vcpkg",
+                "windows",
+                "VS-17"
+            ]
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "ninja-linux",
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Linux"
+            },
+            "hidden": true,
+            "nativeToolOptions": []
+        },
+        {
+            "name": "Ninja-Linux-Debug",
+            "inherits": "Ninja-Linux",
+            "configuration": "Debug"
+        },
+        {
+            "name": "Ninja-Linux-Release",
+            "inherits": "Ninja-Linux",
+            "configuration": "Release"
+        },
+        {
+            "name": "VS-16-Debug",
+            "configurePreset": "vcpkg-VS-16",
+            "configuration": "Debug",
+            "jobs": 0,
+            "nativeToolOptions": [
+                "-m"
+            ]
+        },
+        {
+            "name": "VS-16-Release",
+            "configurePreset": "vcpkg-VS-16",
+            "configuration": "Release",
+            "jobs": 0,
+            "nativeToolOptions": [
+                "-m"
+            ]
+        },
+        {
+            "name": "VS-17-Debug",
+            "configurePreset": "vcpkg-VS-17",
+            "configuration": "Debug",
+            "jobs": 0,
+            "nativeToolOptions": [
+                "-m"
+            ]
+        },
+        {
+            "name": "VS-17-Release",
+            "configurePreset": "vcpkg-VS-17",
+            "configuration": "Release",
+            "jobs": 0,
+            "nativeToolOptions": [
+                "-m"
+            ]
+        },
+        {
+            "name": "VS-17-RelWithDebInfo",
+            "configurePreset": "vcpkg-VS-17",
+            "configuration": "RelWithDebInfo",
+            "jobs": 0,
+            "nativeToolOptions": [
+                "-m"
+            ]
+        }
+    ]
+}
