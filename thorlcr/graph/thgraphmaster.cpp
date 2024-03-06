@@ -1502,10 +1502,10 @@ CJobMaster::CJobMaster(IConstWorkUnit &_workunit, const char *graphName, ILoaded
     init();
 
     Owned<IProperties> traceHeaders = extractTraceDebugOptions(workunit);
-    Owned<ISpan> requestSpan = queryTraceManager().createServerSpan("run_graph", traceHeaders);
+    OwnedSpanScope requestSpan = queryTraceManager().createServerSpan("run_graph", traceHeaders);
+    ContextSpanScope spanScope(*logctx, requestSpan);
     requestSpan->setSpanAttribute("hpcc.wuid", workunit->queryWuid());
     requestSpan->setSpanAttribute("hpcc.graph", graphName);
-    ContextSpanScope spanScope(*logctx, requestSpan);
 
     resumed = WUActionResume == workunit->getAction();
     fatalHandler.setown(new CFatalHandler(globals->getPropInt("@fatal_timeout", FATAL_TIMEOUT)));

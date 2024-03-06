@@ -1680,10 +1680,10 @@ CJobSlave::CJobSlave(ISlaveWatchdog *_watchdog, IPropertyTree *_workUnitInfo, co
     init();
 
     Owned<IProperties> traceHeaders = deserializeTraceDebugOptions(workUnitInfo->queryPropTree("Debug"));
-    Owned<ISpan> requestSpan = queryTraceManager().createServerSpan("run_graph", traceHeaders);
+    OwnedSpanScope requestSpan = queryTraceManager().createServerSpan("run_graph", traceHeaders);
+    ContextSpanScope spanScope(*logctx, requestSpan);
     requestSpan->setSpanAttribute("hpcc.wuid", wuid);
     requestSpan->setSpanAttribute("hpcc.graph", graphName);
-    ContextSpanScope spanScope(*logctx, requestSpan);
 
     oldNodeCacheMem = 0;
     slavemptag = _slavemptag;
