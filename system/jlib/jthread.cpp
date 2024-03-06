@@ -171,7 +171,7 @@ void *Thread::_threadmain(void *v)
 #endif
 {
     Thread * t = (Thread *)v;
-    resetThreadLogging(t->logctx, t->traceFlags);
+    restoreThreadContext(t->savedCtx);
 #ifdef _WIN32
     if (SEHHandling) 
         EnableSEHtranslation();
@@ -376,15 +376,9 @@ void Thread::init(const char *_name)
     stacksize = 0; // default is EXE default stack size  (set by /STACK)
 }
 
-void Thread::getThreadLoggingInfo()
+void Thread::captureThreadLoggingInfo()
 {
-    ::getThreadLoggingInfo(logctx, traceFlags);
-}
-
-void Thread::setThreadLoggingInfo(const IContextLogger *_logctx, TraceFlags _traceFlags)
-{
-    logctx = _logctx;
-    traceFlags = _traceFlags;
+    ::saveThreadContext(savedCtx);
 }
 
 void Thread::start()
@@ -577,7 +571,7 @@ void CThreadedPersistent::threadmain()
             break;
         try
         {
-            resetThreadLogging(athread.logctx, athread.traceFlags);
+            restoreThreadContext(athread.savedCtx);
             owner->threadmain();
             // Note we do NOT call the thread reset hook here - these threads are expected to be able to preserve state, I think
         }
@@ -688,7 +682,7 @@ void CAsyncFor::For(unsigned num,unsigned maxatonce,bool abortFollowingException
                 {
                     idx = _idx;
                     self = _self;
-                    getThreadLoggingInfo();
+                    captureThreadLoggingInfo();
                 }
                 int run()
                 {
@@ -741,7 +735,7 @@ void CAsyncFor::For(unsigned num,unsigned maxatonce,bool abortFollowingException
                 {
                     idx = _idx;
                     self = _self;
-                    getThreadLoggingInfo();
+                    captureThreadLoggingInfo();
                 }
                 int run()
                 {
@@ -835,8 +829,7 @@ protected: friend class CPooledThreadWrapper;
     unsigned defaultmax;
     unsigned targetpoolsize;
     unsigned delay;
-    const IContextLogger *logctx = nullptr;
-    TraceFlags traceFlags = queryDefaultTraceFlags();
+    SavedThreadContext savedCtx;
     Semaphore availsem;
     std::atomic_uint numrunning{0};
     virtual void notifyStarted(CPooledThreadWrapper *item)=0;
@@ -857,8 +850,7 @@ public:
                          IPooledThread *_thread) // takes ownership of thread
         : Thread(StringBuffer("Member of thread pool: ").append(_parent.poolname).str()), parent(_parent)
     {
-        logctx = parent.logctx;
-        traceFlags = parent.traceFlags;
+        savedCtx = parent.savedCtx;
         thread = _thread;
         handle = _handle;
         runningName.set(_parent.poolname); 
@@ -898,7 +890,7 @@ public:
                 if (parent.stopall)
                     break;
             }
-            resetThreadLogging(logctx, traceFlags);
+            restoreThreadContext(savedCtx);
             parent.notifyStarted(this);
             try
             {
@@ -1290,14 +1282,9 @@ public:
         }
         return false;
     }
-    void getThreadLoggingInfo()
+    void captureThreadLoggingInfo()
     {
-        ::getThreadLoggingInfo(logctx, traceFlags);
-    }
-    void setThreadLoggingInfo(const IContextLogger *_logctx, TraceFlags _traceFlags)
-    {
-        logctx = _logctx;
-        traceFlags = _traceFlags;
+        ::saveThreadContext(savedCtx);
     }
 };
 
@@ -2683,4 +2670,102 @@ void PerfTracer::dostop()
 #else
     UNIMPLEMENTED;
 #endif
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+#include "jlog.hpp"
+
+static LogMsgJobInfo globalDefaultJobInfo(UnknownJob, UnknownUser);
+
+// NOTE - extern thread_local variables are very inefficient - don't be tempted to expose the variables directly
+
+static  TraceFlags defaultTraceFlags = TraceFlags::Standard;
+static thread_local LogMsgJobInfo defaultJobInfo;
+static thread_local TraceFlags threadTraceFlags = TraceFlags::Standard;
+static thread_local const IContextLogger *default_thread_logctx = nullptr;
+
+const LogMsgJobInfo unknownJob(UnknownJob, UnknownUser);
+
+void saveThreadContext(SavedThreadContext & saveCtx)
+{
+    saveCtx.logctx = default_thread_logctx;
+    saveCtx.traceFlags = threadTraceFlags;
+}
+
+void restoreThreadContext(const SavedThreadContext & saveCtx)
+{
+    // Note - as implemented the thread default job info is determined by what the global one was when the thread was created.
+    // There is an alternative interpretation, that an unset thread-local one should default to whatever the global one is at the time the thread one is used.
+    // In practice I doubt there's a lot of difference as global one is likely to be set once at program startup
+    defaultJobInfo = globalDefaultJobInfo;
+    default_thread_logctx = saveCtx.logctx;
+    threadTraceFlags = saveCtx.traceFlags;
+}
+
+const LogMsgJobInfo & checkDefaultJobInfo(const LogMsgJobInfo & _jobInfo)
+{
+    if (&_jobInfo == &unknownJob)
+    {
+        return defaultJobInfo;
+    }
+    return _jobInfo;
+}
+
+void setDefaultJobId(LogMsgJobId id, bool threaded)
+{
+    if (!threaded)
+        globalDefaultJobInfo.setJobID(id);
+    defaultJobInfo.setJobID(id);
+}
+
+const IContextLogger * queryThreadedContextLogger()
+{
+    return default_thread_logctx;
+}
+
+//---------------------------
+
+bool doTrace(TraceFlags featureFlag, TraceFlags level)
+{
+    if ((threadTraceFlags & TraceFlags::LevelMask) < level)
+        return false;
+    return (threadTraceFlags & featureFlag) == featureFlag;
+}
+
+void updateTraceFlags(TraceFlags flag, bool global)
+{
+    if (global)
+        defaultTraceFlags = flag;
+    threadTraceFlags = flag;
+}
+
+TraceFlags queryTraceFlags()
+{
+    return threadTraceFlags;
+}
+
+TraceFlags queryDefaultTraceFlags()
+{
+    return defaultTraceFlags;
+}
+
+//---------------------------
+
+LogContextScope::LogContextScope(const IContextLogger *ctx)
+{
+    prevFlags = threadTraceFlags;
+    prev = default_thread_logctx;
+    default_thread_logctx = ctx;
+}
+LogContextScope::LogContextScope(const IContextLogger *ctx, TraceFlags traceFlags)
+{
+    prevFlags = threadTraceFlags;
+    threadTraceFlags = traceFlags;
+    prev = default_thread_logctx;
+    default_thread_logctx = ctx;
+}
+LogContextScope::~LogContextScope()
+{
+    default_thread_logctx = prev;
+    threadTraceFlags = prevFlags;
 }
