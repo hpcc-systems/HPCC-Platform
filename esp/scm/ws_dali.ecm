@@ -156,6 +156,10 @@ ESPrequest [nil_remove] DisconnectClientConnectionRequest
     string Endpoint;
 };
 
+ESPrequest [nil_remove] ListSDSLocksRequest
+{
+};
+
 ESPrequest [nil_remove] UnlockSDSLockRequest
 {
     string ConnectionID;
@@ -180,7 +184,7 @@ ESPrequest [nil_remove] ClearTraceTransactionsRequest
 };
 
 ESPservice [auth_feature("NONE"), //This declares that the method logic handles feature level authorization
-    version("1.06"), default_client_version("1.06"), exceptions_inline("./smc_xslt/exceptions.xslt")] WSDali
+    version("1.07"), default_client_version("1.07"), exceptions_inline("./smc_xslt/exceptions.xslt")] WSDali
 {
     ESPmethod [min_ver("1.01")] SetValue(SetValueRequest, ResultResponse);
     ESPmethod [min_ver("1.01")] GetValue(GetValueRequest, ResultResponse);
@@ -205,6 +209,7 @@ ESPservice [auth_feature("NONE"), //This declares that the method logic handles 
     ESPmethod [min_ver("1.05")] GetSDSStats(GetSDSStatsRequest, ResultResponse);
     ESPmethod [min_ver("1.05")] GetSDSSubscribers(GetSDSSubscribersRequest, ResultResponse);
     ESPmethod [min_ver("1.06")] DisconnectClientConnection(DisconnectClientConnectionRequest, ResultResponse);
+    ESPmethod [min_ver("1.07")] ListSDSLocks(ListSDSLocksRequest, ResultResponse);
     ESPmethod [min_ver("1.06")] UnlockSDSLock(UnlockSDSLockRequest, ResultResponse);
     ESPmethod [min_ver("1.06")] SaveSDSStore(SaveSDSStoreRequest, ResultResponse);
     ESPmethod [min_ver("1.06")] SetTraceTransactions(SetTraceTransactionsRequest, ResultResponse);
