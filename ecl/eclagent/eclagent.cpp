@@ -2128,9 +2128,9 @@ void EclAgent::runProcess(IEclProcess *process)
     allocatorMetaCache.setown(createRowAllocatorCache(this));
 
     Owned<IProperties> traceHeaders = extractTraceDebugOptions(queryWorkUnit());
-    Owned<ISpan> requestSpan = queryTraceManager().createServerSpan("run_workunit", traceHeaders);
-    requestSpan->setSpanAttribute("hpcc.wuid", queryWorkUnit()->queryWuid());
+    OwnedSpanScope requestSpan = queryTraceManager().createServerSpan("run_workunit", traceHeaders);
     ContextSpanScope spanScope(updateDummyContextLogger(), requestSpan);
+    requestSpan->setSpanAttribute("hpcc.wuid", queryWorkUnit()->queryWuid());
 
     // a component may specify an alternate name for the agent/workflow memory area,
     // e.g. Thor specifies in "eclAgentMemory"

@@ -62,6 +62,7 @@ interface ISpan : extends IInterface
     virtual void setSpanAttributes(const IProperties * attributes) = 0;
     virtual void addSpanEvent(const char * eventName) = 0;
     virtual void addSpanEvent(const char * eventName, IProperties * attributes) = 0;
+    virtual void endSpan() = 0; // Indicate that the span has ended even if it has not yet been destroyed
     virtual void getSpanContext(IProperties * ctxProps) const = 0;
     virtual void getClientHeaders(IProperties * clientHeaders) const = 0;
     virtual void toString(StringBuffer & out) const = 0;
@@ -75,6 +76,18 @@ interface ISpan : extends IInterface
     virtual const char* queryGlobalId() const = 0;
     virtual const char* queryCallerId() const = 0;
     virtual const char* queryLocalId() const = 0;
+};
+
+class OwnedSpanScope : public Owned<ISpan>
+{
+public:
+    inline OwnedSpanScope() { }
+    inline OwnedSpanScope(ISpan * _ptr) : Owned<ISpan>(_ptr) { }
+    ~OwnedSpanScope()
+    {
+        if (get())
+            get()->endSpan();
+    }
 };
 
 extern jlib_decl IProperties * getClientHeaders(const ISpan * span);

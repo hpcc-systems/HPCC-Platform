@@ -412,13 +412,10 @@ int CEspHttpServer::processRequest()
                 return 0;
             }
 
-            //The context will be destroyed when this request is destroyed. So rather than using
-            //EspContextSpanScope spanContext(*ctx, serverSpan);
-            //which would remove the activeSpan when this function exits, use
-            //setActiveSpan()
-            //It is possible that using EspContextSpanScope would be better
+            //The context will be destroyed when this request is destroyed. So initialise a SpanScope in the context to
+            //ensure the span is also terminated at the same time.
             Owned<ISpan> serverSpan = m_request->createServerSpan(serviceName, methodName);
-            ctx->setActiveSpan(serverSpan);
+            ctx->setRequestSpan(serverSpan);
 
             if (thebinding!=NULL)
             {

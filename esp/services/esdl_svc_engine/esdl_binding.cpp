@@ -1571,9 +1571,8 @@ void EsdlServiceImpl::sendTargetSOAP(IEspContext & context,
         httpclient->setPassword(password.str());
     }
 
-    Owned<ISpan> clientSpan;
     ISpan * activeSpan = context.queryActiveSpan();
-    clientSpan.setown(activeSpan->createClientSpan("soapcall"));
+    OwnedSpanScope clientSpan(activeSpan->createClientSpan("soapcall"));
 
     Owned<IProperties> headers = ::getClientHeaders(clientSpan);
     StringBuffer status;
