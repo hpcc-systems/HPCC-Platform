@@ -63,6 +63,7 @@ public:
         CPPUNIT_TEST(testNullSpan);
         CPPUNIT_TEST(testClientSpanGlobalID);
         CPPUNIT_TEST(testEnsureTraceID);
+        CPPUNIT_TEST(manualTestsEventsOutput);
 
         //CPPUNIT_TEST(testJTraceJLOGExporterprintResources);
         //CPPUNIT_TEST(testJTraceJLOGExporterprintAttributes);
@@ -189,6 +190,31 @@ protected:
         CPPUNIT_ASSERT_EQUAL_MESSAGE("Missing resource attribute detected", true, jtraceAsTree->hasProp("resources/telemetry.sdk.name"));
     }*/
 
+    //not able to programmatically test yet, but can visually inspect trace output
+    void manualTestsEventsOutput()
+    {
+        Owned<IProperties> emptyMockHTTPHeaders = createProperties();
+        {
+            Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("spanWithEventsNoAtts", emptyMockHTTPHeaders);
+            Owned<IProperties> emptyEventAtts = createProperties();
+            serverSpan->addSpanEvent("event1", emptyEventAtts);
+        }
+
+        Owned<IProperties> twoEventAtt = createProperties();
+        twoEventAtt->setProp("key", "value");
+        twoEventAtt->setProp("key2", "");
+
+        {
+            Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("spanWithEvent1Att", emptyMockHTTPHeaders);
+            serverSpan->addSpanEvent("event2", twoEventAtt);
+        }//{ "type": "span", "name": "spanWithEvents1Att", "trace_id": "3b9f55aaf8fab51fb0d73a32db7d704f", "span_id": "2a25a44ae0b3abe0", "start": 1709696036335278770, "duration": 3363911469, "events":[ { "name": "event2", "time_stamp": 1709696038413023245, "attributes": {"key": "value" } } ] }
+
+        {
+            Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("spanWith2Events", emptyMockHTTPHeaders);
+            serverSpan->addSpanEvent("event1", twoEventAtt);
+            serverSpan->addSpanEvent("event2", twoEventAtt);
+        }//{ "type": "span", "name": "spanWith2Events", "trace_id": "ff5c5919b9c5f85913652b77f289bf0b", "span_id": "82f91ca1f9d469c1", "start": 1709698012480805016, "duration": 2811601377, "events":[ { "name": "event1", "time_stamp": 1709698013294323139, "attributes": {"key": "value" } },{ "name": "event2", "time_stamp": 1709698014500350802, "attributes": {"key": "value" } } ] }
+    }
     //not able to programmatically test yet, but can visually inspect trace output
     void manualTestsDeclaredSpanStartTime()
     {
