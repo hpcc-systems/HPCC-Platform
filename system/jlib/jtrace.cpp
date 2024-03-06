@@ -291,17 +291,17 @@ public:
             bool first = true;
             for (const auto &kv : map)
             {
-                if (!first)
-                    out.append(",");
-                else
-                    first = false;
-
                 const auto & value = kv.second;
                 std::ostringstream attsOS; //used to exploit OTel convenience functions for printing attribute values
                 opentelemetry::exporter::ostream_common::print_value(value, attsOS);
                 std::string val = attsOS.str();
                 if (val.size() > 0)
                 {
+                    if (!first)
+                        out.append(",");
+                    else
+                        first = false;
+
                     switch (value.index())
                     {
                     case opentelemetry::sdk::common::kTypeBool:
@@ -335,7 +335,6 @@ public:
                 }
             }
             out.append(" }");
-
         }
         catch(const std::bad_variant_access & e)
         {
