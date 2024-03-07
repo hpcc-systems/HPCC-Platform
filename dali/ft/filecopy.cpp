@@ -2034,6 +2034,8 @@ void FileSprayer::gatherFileSizes(FilePartInfoArray & fileSizeQueue, bool errorI
                 break;
         }
         for (idx = 0; idx < numThreads; idx++)
+            threads.item(idx).join();
+        for (idx = 0; idx < numThreads; idx++)
             threads.item(idx).queryThrowError();
     }
 }
@@ -2565,6 +2567,12 @@ void FileSprayer::performTransfer()
         waitForTransferSem(sem);
         numSlavesCompleted++;
     }
+
+#ifdef RUN_SLAVES_ON_THREADS
+    //Ensure that the transfer slave threads have terminated before continuing
+    ForEachItemIn(idx4, transferSlaves)
+        transferSlaves.item(idx4).join();
+#endif
 
     if (error)
         throw LINK(error);
