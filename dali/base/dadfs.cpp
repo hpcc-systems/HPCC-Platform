@@ -6271,22 +6271,27 @@ public:
     virtual IDistributedFile &querySubFile(unsigned idx,bool sub) override
     {
         CriticalBlock block (sect);
-        if (sub) {
-            ForEachItemIn(i,subfiles) {
+        if (sub)
+        {
+            unsigned subfilen = idx;
+            ForEachItemIn(i,subfiles)
+            {
                 IDistributedFile &f=subfiles.item(i);
                 IDistributedSuperFile *super = f.querySuperFile();
-                if (super) {
+                if (super)
+                {
                     unsigned ns = super->numSubFiles(true);
-                    if (ns>idx)
-                        return super->querySubFile(idx,true);
-                    idx -= ns;
+                    if (ns>subfilen)
+                        return super->querySubFile(subfilen,true);
+                    subfilen -= ns;
                 }
-                else if (idx--==0)
+                else if (subfilen--==0)
                     return f;
             }
-            // fall through to error
+            throw makeStringExceptionV(-1,"CDistributedSuperFile::querySubFile(%u) for superfile %s - subfile doesn't exist ", idx, logicalName.get());
         }
-        return subfiles.item(idx);
+        else
+            return subfiles.item(idx);
     }
 
     virtual IDistributedFile *querySubFileNamed(const char *name, bool sub) override
