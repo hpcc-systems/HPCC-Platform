@@ -949,9 +949,9 @@ void ContextLogger::exportStatsToSpan(bool failed, stat_type elapsedNs, unsigned
 {
     if (activeSpan->isRecording())
     {
+        activeSpan->setSpanStatus(failed);
         setSpanAttribute("time_elapsed", elapsedNs);
-        if (failed)
-            setSpanAttribute("num_failures", 1);
+
         if (memused)
             setSpanAttribute("size_peak_row_memory", memused * 0x100000);
 
@@ -1316,7 +1316,7 @@ public:
             reportUnknownException(wu, logctx);
         }
 #endif
-        unsigned elapsedNs = nsTick() - startNs;
+        stat_type elapsedNs = nsTick() - startNs;
         unsigned elapsedMs = nanoToMilli(elapsedNs);
         noteQuery(failed, elapsedMs, priority);
         queryFactory->noteQuery(startTime, failed, elapsedMs, memused, agentsReplyLen, 0);

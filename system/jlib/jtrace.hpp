@@ -55,6 +55,59 @@ enum class SpanFlags : unsigned
 };
 BITMASK_ENUM(SpanFlags);
 
+static constexpr const char * NO_STATUS_MESSAGE = "";
+static constexpr int UNKNOWN_ERROR_CODE = -1;
+
+struct SpanError
+/**
+ * @brief Represents an error that occurred during a span.
+ * 
+ * Used to store information about an error that occurred during the execution of a span.
+ * It includes the error message, error code, 
+ * and flags indicating whether the span failed and whether the exception escaped the span's scope.
+ */
+{
+    const char * errorMessage = NO_STATUS_MESSAGE; /**< The error message associated with the error. */
+    int errorCode = UNKNOWN_ERROR_CODE; /**< The error code associated with the error. */
+    bool spanFailed = true; /**< Flag indicating whether the span failed. */
+    bool escapeScope = false; /**< Flag indicating whether the exception escaped the scope of the span. */
+
+    /**
+     * @brief Default constructor.
+     */
+    SpanError() = default;
+
+    /**
+     * @brief Constructor with error message.
+     * @param _errorMessage The error message.
+     */
+    SpanError(const char * _errorMessage) : errorMessage(_errorMessage) {}
+
+    /**
+     * @brief Constructor with error message, error code, span failure flag, and scope escape flag.
+     * @param _errorMessage The error message.
+     * @param _errorCode The error code.
+     * @param _spanFailed Flag indicating whether the span failed.
+     * @param _escapeScope Flag indicating whether the exception escaped the scope of the span.
+     */
+    SpanError(const char * _errorMessage, int _errorCode, bool _spanFailed, bool _escapeScope) 
+     : errorMessage(_errorMessage), errorCode(_errorCode), spanFailed(_spanFailed), escapeScope(_escapeScope) {}
+
+    /**
+     * @brief Sets the span status.
+     * @param _spanFailed Flag indicating whether the span failed.
+     * @param _spanScopeEscape Flag indicating whether the exception escaped the scope of the span.
+     */
+    void setSpanStatus(bool _spanFailed, bool _spanScopeEscape) { spanFailed = _spanFailed; escapeScope = _spanScopeEscape;}
+
+    /**
+     * @brief Sets the error message and error code.
+     * @param _errorMessage The error message.
+     * @param _errorCode The error code.
+     */
+    void setError(const char * _errorMessage, int _errorCode) { errorMessage = _errorMessage; errorCode = _errorCode; }
+};
+
 interface ISpan : extends IInterface
 {
     virtual void setSpanAttribute(const char * key, const char * val) = 0;
@@ -68,6 +121,9 @@ interface ISpan : extends IInterface
     virtual void toString(StringBuffer & out) const = 0;
     virtual void getLogPrefix(StringBuffer & out) const = 0;
     virtual bool isRecording() const = 0;   // Is it worth adding any events/attributes to this span?
+    virtual void recordException(IException * e, bool spanFailed = true, bool escapedScope = true) = 0;
+    virtual void recordError(const SpanError & error = SpanError()) = 0;
+    virtual void setSpanStatus(bool spanFailed, const char * statusMessage = NO_STATUS_MESSAGE) = 0;
 
     virtual ISpan * createClientSpan(const char * name) = 0;
     virtual ISpan * createInternalSpan(const char * name) = 0;

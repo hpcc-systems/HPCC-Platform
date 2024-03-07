@@ -626,7 +626,7 @@ class CNodeCacheEntry : public CInterface
 public:
     CriticalSection cs;
 private:
-    std::atomic<const CJHTreeNode *> node = nullptr;
+    std::atomic<const CJHTreeNode *> node{nullptr};
 public:
     ~CNodeCacheEntry()
     {

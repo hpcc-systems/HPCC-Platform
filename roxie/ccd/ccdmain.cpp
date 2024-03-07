@@ -1560,7 +1560,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
 
                                 const char *passPhrase = roxieFarm.queryProp("@passphrase");
                                 if (!isEmptyString(passPhrase))
-                                    decrypt(passPhraseStr, passPhrase);
+                                    passPhraseStr.append(passPhrase); // NB passphrase is decrypted in CSecureSocketContext::createNewContext()
 
                                 const char *certFile = roxieFarm.queryProp("@certificateFileName");
                                 if (!certFile)

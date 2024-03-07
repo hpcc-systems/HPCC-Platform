@@ -179,76 +179,85 @@ public:
     opentelemetry::sdk::common::ExportResult Export(
       const nostd::span<std::unique_ptr<opentelemetry::sdk::trace::Recordable>> &recordables) noexcept override
     {
-        if (isShutDown())
-            return opentelemetry::sdk::common::ExportResult::kFailure;
-
-        for (auto &recordable : recordables)
+        try
         {
-            //Casting the recordable object to the type of the object that was previously created by
-            //JLogSpanExporter::MakeRecordable() - 
-            auto span = std::unique_ptr<opentelemetry::sdk::trace::SpanData>(
-            static_cast<opentelemetry::sdk::trace::SpanData *>(recordable.release()));
+            if (isShutDown())
+                return opentelemetry::sdk::common::ExportResult::kFailure;
 
-            if (span != nullptr)
+            for (auto &recordable : recordables)
             {
-                char traceID[32]       = {0};
-                char spanID[16]        = {0};
+                //Casting the recordable object to the type of the object that was previously created by
+                //JLogSpanExporter::MakeRecordable() - 
+                auto span = std::unique_ptr<opentelemetry::sdk::trace::SpanData>(
+                static_cast<opentelemetry::sdk::trace::SpanData *>(recordable.release()));
 
-                span->GetTraceId().ToLowerBase16(traceID);
-                span->GetSpanId().ToLowerBase16(spanID);
-
-                StringBuffer out("{ \"type\": \"span\""); //for simple identification in log scraping
-                out.appendf(", \"name\": \"%s\"", span->GetName().data());
-                out.append(", \"trace_id\": \"").append(32, traceID).append("\"");
-                out.append(", \"span_id\": \"").append(16, spanID).append("\"");
-                out.appendf(", \"start\": %lld", (long long)(span->GetStartTime().time_since_epoch()).count());
-                out.appendf(", \"duration\": %lld", (long long)span->GetDuration().count());
-
-                if (hasMask(logFlags, SpanLogFlags::LogParentInfo))
+                if (span != nullptr)
                 {
-                    if (span->GetParentSpanId().IsValid())
+                    char traceID[32]       = {0};
+                    char spanID[16]        = {0};
+
+                    span->GetTraceId().ToLowerBase16(traceID);
+                    span->GetSpanId().ToLowerBase16(spanID);
+
+                    StringBuffer out("{ \"type\": \"span\""); //for simple identification in log scraping
+                    out.appendf(", \"name\": \"%s\"", span->GetName().data());
+                    out.append(", \"trace_id\": \"").append(32, traceID).append("\"");
+                    out.append(", \"span_id\": \"").append(16, spanID).append("\"");
+                    out.appendf(", \"start\": %lld", (long long)(span->GetStartTime().time_since_epoch()).count());
+                    out.appendf(", \"duration\": %lld", (long long)span->GetDuration().count());
+
+                    if (hasMask(logFlags, SpanLogFlags::LogParentInfo))
                     {
-                        char parentSpanID[16]  = {0};
-                        span->GetParentSpanId().ToLowerBase16(parentSpanID);
-                        out.append(", \"parent_span_id\": \"").append(16, parentSpanID).append("\"");
+                        if (span->GetParentSpanId().IsValid())
+                        {
+                            char parentSpanID[16]  = {0};
+                            span->GetParentSpanId().ToLowerBase16(parentSpanID);
+                            out.append(", \"parent_span_id\": \"").append(16, parentSpanID).append("\"");
+                        }
+
+                        std::string traceStatestr = span->GetSpanContext().trace_state()->ToHeader();
+                        if (!traceStatestr.empty())
+                            out.appendf(", \"trace_state\": \"%s\"", traceStatestr.c_str());
                     }
 
-                    std::string traceStatestr = span->GetSpanContext().trace_state()->ToHeader();
-                    if (!traceStatestr.empty())
-                        out.appendf(", \"trace_state\": \"%s\"", traceStatestr.c_str());
-                }
-
-                if (hasMask(logFlags, SpanLogFlags::LogSpanDetails))
-                {
-                    out.appendf(", \"status\": \"%s\"", spanStatusToString(span->GetStatus()));
-                    out.appendf(", \"kind\": \"%s\"", spanKindToString(span->GetSpanKind()));
-                    const char * description = span->GetDescription().data();
-                    if (!isEmptyString(description))
+                    if (hasMask(logFlags, SpanLogFlags::LogSpanDetails))
                     {
-                        StringBuffer encoded;
-                        encodeJSON(encoded, description);
-                        out.appendf(", \"description\": \"%s\"", encoded.str());
+                        out.appendf(", \"status\": \"%s\"", spanStatusToString(span->GetStatus()));
+                        out.appendf(", \"kind\": \"%s\"", spanKindToString(span->GetSpanKind()));
+                        const char * description = span->GetDescription().data();
+                        if (!isEmptyString(description))
+                        {
+                            StringBuffer encoded;
+                            encodeJSON(encoded, description);
+                            out.appendf(", \"description\": \"%s\"", encoded.str());
+                        }
+                        printInstrumentationScope(out, span->GetInstrumentationScope());
                     }
-                    printInstrumentationScope(out, span->GetInstrumentationScope());
+
+                    if (hasMask(logFlags, SpanLogFlags::LogAttributes))
+                        printAttributes(out, span->GetAttributes());
+
+                    if (hasMask(logFlags, SpanLogFlags::LogEvents))
+                        printEvents(out, span->GetEvents());
+
+                    if (hasMask(logFlags, SpanLogFlags::LogLinks))
+                        printLinks(out, span->GetLinks());
+
+                    if (hasMask(logFlags, SpanLogFlags::LogResources))
+                        printResources(out, span->GetResource());
+
+                    out.append(" }");
+                    LOG(MCmonitorEvent, "%s",out.str());
                 }
-
-                if (hasMask(logFlags, SpanLogFlags::LogAttributes))
-                    printAttributes(out, span->GetAttributes());
-
-                if (hasMask(logFlags, SpanLogFlags::LogEvents))
-                    printEvents(out, span->GetEvents());
-
-                if (hasMask(logFlags, SpanLogFlags::LogLinks))
-                    printLinks(out, span->GetLinks());
-
-                if (hasMask(logFlags, SpanLogFlags::LogResources))
-                    printResources(out, span->GetResource());
-
-                out.append(" }");
-                LOG(MCmonitorEvent, "%s",out.str());
             }
+            return opentelemetry::sdk::common::ExportResult::kSuccess;
         }
-        return opentelemetry::sdk::common::ExportResult::kSuccess;
+        catch (IException * e)
+        {
+            EXCLOG(e, "JLogSpanExporter::Export");
+            e->Release();
+            return opentelemetry::sdk::common::ExportResult::kFailure;
+        }
     }
 
    /**
@@ -282,17 +291,17 @@ public:
             bool first = true;
             for (const auto &kv : map)
             {
-                if (!first)
-                    out.append(",");
-                else
-                    first = false;
-
                 const auto & value = kv.second;
                 std::ostringstream attsOS; //used to exploit OTel convenience functions for printing attribute values
                 opentelemetry::exporter::ostream_common::print_value(value, attsOS);
                 std::string val = attsOS.str();
                 if (val.size() > 0)
                 {
+                    if (!first)
+                        out.append(",");
+                    else
+                        first = false;
+
                     switch (value.index())
                     {
                     case opentelemetry::sdk::common::kTypeBool:
@@ -326,7 +335,6 @@ public:
                 }
             }
             out.append(" }");
-
         }
         catch(const std::bad_variant_access & e)
         {
@@ -740,6 +748,44 @@ public:
         return span ? span->IsRecording() : false;
     }
 
+    virtual void setSpanStatus(bool spanFailed, const char * statusMessage)
+    {
+        if (span != nullptr)
+        {
+            span->SetStatus(spanFailed ? opentelemetry::trace::StatusCode::kError :  opentelemetry::trace::StatusCode::kOk, statusMessage);
+        }
+    }
+
+    virtual void recordError(const SpanError & error)
+    {
+        if (span != nullptr)
+        {
+            if (error.spanFailed)
+                span->SetStatus(opentelemetry::trace::StatusCode::kError, error.errorMessage);
+
+            //https://opentelemetry.io/docs/specs/semconv/exceptions/exceptions-spans/
+            //The event name MUST be "exception".
+            //The table below indicates which attributes should be added to the Event and their types.
+            //exception.escaped	boolean	SHOULD be set to true if the exception event is recorded at a point where it is known that the exception is escaping the scope of the span. [1]		Recommended
+            //exception.message	string	The exception message.	Division by zero; Can't convert 'int' object to str implicitly	See below
+            //exception.stacktrace	string	A stacktrace as a string in the natural representation for the language runtime. The representation is to be determined and documented by each language SIG.
+            //	Exception in thread "main" java.lang.RuntimeException: Test exception\n at com.example.GenerateTrace.methodB(GenerateTrace.java:13)\n at com.example.GenerateTrace.methodA(GenerateTrace.java:9)
+            //exception.type	string	The type of the exception (its fully-qualified class name, if applicable). The dynamic type of the exception should be preferred over the static type in languages that support it.	java.net.ConnectException; OSError	See below
+
+            if (error.errorCode != 0 && error.errorCode != -1)
+                span->AddEvent("Exception", {{"message", error.errorMessage}, {"escaped", error.escapeScope}, {"code", error.errorCode}});
+            else
+                span->AddEvent("Exception", {{"message", error.errorMessage}, {"escaped", error.escapeScope}});
+        }
+    }
+
+    virtual void recordException(IException * e, bool spanFailed, bool escapedScope)
+    {
+        StringBuffer msg;
+        e->errorMessage(msg);
+        recordError(SpanError(msg.str(), e->errorCode(), spanFailed, escapedScope));
+    };
+
 protected:
     CSpan(const char * spanName)
     {
@@ -845,6 +891,10 @@ public:
     virtual void toString(StringBuffer & out) const override {}
     virtual void getLogPrefix(StringBuffer & out) const override {}
     virtual bool isRecording() const { return false; }
+
+    virtual void recordException(IException * e, bool spanFailed, bool escapedScope) override {}
+    virtual void recordError(const SpanError & error) override {};
+    virtual void setSpanStatus(bool spanFailed, const char * statusMessage) override {}
 
     virtual const char* queryGlobalId() const override { return nullptr; }
     virtual const char* queryCallerId() const override { return nullptr; }
@@ -1267,9 +1317,12 @@ void CTraceManager::initTracerProviderAndGlobalInternals(const IPropertyTree * t
         processors.push_back(opentelemetry::sdk::trace::SimpleSpanProcessorFactory::Create(std::move(exporter)));
     }
 
+    opentelemetry::sdk::resource::ResourceAttributes resourceAtts = {{"service.name", moduleName.get()}};
+    auto jtraceResource = opentelemetry::sdk::resource::Resource::Create(resourceAtts);
+
     // Default is an always-on sampler.
     std::shared_ptr<opentelemetry::sdk::trace::TracerContext> context =
-        opentelemetry::sdk::trace::TracerContextFactory::Create(std::move(processors));
+        opentelemetry::sdk::trace::TracerContextFactory::Create(std::move(processors), jtraceResource);
     std::shared_ptr<opentelemetry::trace::TracerProvider> provider =
         opentelemetry::sdk::trace::TracerProviderFactory::Create(context);
 
