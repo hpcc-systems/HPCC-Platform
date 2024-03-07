@@ -377,9 +377,14 @@ static StringBuffer &getSubTaskParentXPath(StringBuffer &wuRoot, const char *wui
     return wuRoot.append('/').append(wuid);
 }
 
+static bool isSubTaskWuid(const char *subtaskWuid)
+{
+    return (!isEmptyString(subtaskWuid) && 'P'==*subtaskWuid && strchr(subtaskWuid, 'T')!=nullptr);
+}
+
 static bool notePublisherSubTaskState(const char *subtaskWuid, DFUstate state)
 {
-    if (!subtaskWuid || 'P'!=*subtaskWuid || !strchr(subtaskWuid, 'T'))
+    if (!isSubTaskWuid(subtaskWuid))
         return false;
     switch (state)
     {
@@ -699,6 +704,7 @@ public:
         queryRoot()->removeProp("@kbpersecave");
         queryRoot()->removeProp("@kbpersec");
         queryRoot()->removeProp("@slavesdone");
+        queryRoot()->removeProp("@noted");
         parent->commit();
     }
     void setDone(const char * timeTaken, unsigned kbPerSec, bool set100pc)
@@ -718,6 +724,8 @@ public:
     {
         CriticalBlock block(parent->crit);
         CDateTime dt;
+        bool noted = queryRoot()->getPropBool("@noted", false);
+        bool subtask = isSubTaskWuid(parent->queryId());
         switch (state) {
         case DFUstate_started:
             dt.setNow();
@@ -737,13 +745,17 @@ public:
                 state = DFUstate_aborted;
             dt.setNow();
             setTimeStopped(dt);
+            if (subtask && !noted)
+                queryRoot()->setPropBool("@noted", true);
             break;
         }
         StringBuffer s;
         encodeDFUstate(state,s);
         queryRoot()->setProp("@state",s.str());
+
         parent->commit();
-        notePublisherSubTaskState(parent->queryId(), state);
+        if (subtask && !noted)
+            notePublisherSubTaskState(parent->queryId(), state);
     }
     void setTimeStarted(const CDateTime &val)
     {
