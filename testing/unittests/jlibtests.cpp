@@ -199,7 +199,7 @@ protected:
 
         {
             //duration should be at least 125 milliseconds
-            Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("declaredSpanStartTime", emptyMockHTTPHeaders, &declaredSpanStartTime);
+            OwnedSpanScope serverSpan = queryTraceManager().createServerSpan("declaredSpanStartTime", emptyMockHTTPHeaders, &declaredSpanStartTime);
             //{ "type": "span", "name": "declaredSpanStartTime", "trace_id": "0a2eff24e1996540056745aaeb2f5824", "span_id": "46d0faf8b4da893e",
             //"start": 1702672311203213259, "duration": 125311051 }
         }
@@ -217,7 +217,7 @@ protected:
             SpanTimeStamp nowTimeStamp; //not used, printed out as "start" time for manual comparison
             nowTimeStamp.now();
             {
-                Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("msTickOffsetStartTime", emptyMockHTTPHeaders, &msTickOffsetTimeStamp);
+                OwnedSpanScope serverSpan = queryTraceManager().createServerSpan("msTickOffsetStartTime", emptyMockHTTPHeaders, &msTickOffsetTimeStamp);
             }
 
             DBGLOG("MsTickOffset span actual start-time timestamp: %lld", (long long)(nowTimeStamp.systemClockTime).count());
@@ -233,7 +233,7 @@ protected:
         CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected initialized spanTimeStamp", true, uninitializedTS.systemClockTime == std::chrono::nanoseconds::zero());
         CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected initialized spanTimeStamp", true, uninitializedTS.steadyClockTime == std::chrono::nanoseconds::zero());
         {
-            Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("uninitializeddeclaredSpanStartTime", emptyMockHTTPHeaders, &uninitializedTS);
+            OwnedSpanScope serverSpan = queryTraceManager().createServerSpan("uninitializeddeclaredSpanStartTime", emptyMockHTTPHeaders, &uninitializedTS);
             //sleep for 75 milliseconds after span creation, expect at least 75 milliseconds duration output
             MilliSleep(75);
 
@@ -256,7 +256,7 @@ protected:
     {
         SpanFlags flags = SpanFlags::EnsureTraceId;
         Owned<IProperties> emptyMockHTTPHeaders = createProperties();
-        Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("noRemoteParentEnsureTraceID", emptyMockHTTPHeaders, flags);
+        OwnedSpanScope serverSpan = queryTraceManager().createServerSpan("noRemoteParentEnsureTraceID", emptyMockHTTPHeaders, flags);
 
         Owned<IProperties> retrievedSpanCtxAttributes = createProperties();
         serverSpan->getSpanContext(retrievedSpanCtxAttributes.get());
@@ -270,7 +270,7 @@ protected:
         Owned<IProperties> mockHTTPHeaders = createProperties();
         createMockHTTPHeaders(mockHTTPHeaders, true);
 
-        Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("propegatedServerSpan", mockHTTPHeaders);
+        OwnedSpanScope serverSpan = queryTraceManager().createServerSpan("propegatedServerSpan", mockHTTPHeaders);
         //at this point the serverSpan should have the following context attributes
         //traceID, spanID, remoteParentSpanID, traceFlags, traceState, globalID, callerID
 
@@ -322,7 +322,7 @@ protected:
             return;
         }
 
-        Owned<ISpan> nullSpan = getNullSpan();
+        OwnedSpanScope nullSpan = getNullSpan();
         CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected nullptr nullspan detected", true, nullSpan != nullptr);
 
         {
@@ -330,14 +330,14 @@ protected:
             nullSpan->getClientHeaders(headers);
         }
 
-        Owned<ISpan> nullSpanChild = nullSpan->createClientSpan("nullSpanChild");
+        OwnedSpanScope nullSpanChild = nullSpan->createClientSpan("nullSpanChild");
         CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected nullptr nullSpanChild detected", true, nullSpanChild != nullptr);
     }
 
     void testClientSpan()
     {
         Owned<IProperties> emptyMockHTTPHeaders = createProperties();
-        Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("propegatedServerSpan", emptyMockHTTPHeaders);
+        OwnedSpanScope serverSpan = queryTraceManager().createServerSpan("propegatedServerSpan", emptyMockHTTPHeaders);
 
         Owned<IProperties> retrievedSpanCtxAttributes = createProperties();
         serverSpan->getSpanContext(retrievedSpanCtxAttributes);
@@ -348,7 +348,7 @@ protected:
         const char * serverTraceID = retrievedSpanCtxAttributes->queryProp("traceID");
 
         {
-            Owned<ISpan> internalSpan = serverSpan->createClientSpan("clientSpan");
+            OwnedSpanScope internalSpan = serverSpan->createClientSpan("clientSpan");
 
             //retrieve clientSpan context with the intent to propogate otel and HPCC context
             {
@@ -384,7 +384,7 @@ protected:
     void testInternalSpan()
     {
         Owned<IProperties> emptyMockHTTPHeaders = createProperties();
-        Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("propegatedServerSpan", emptyMockHTTPHeaders);
+        OwnedSpanScope serverSpan = queryTraceManager().createServerSpan("propegatedServerSpan", emptyMockHTTPHeaders);
 
         Owned<IProperties> retrievedSpanCtxAttributes = createProperties();
         serverSpan->getSpanContext(retrievedSpanCtxAttributes);
@@ -395,7 +395,7 @@ protected:
         const char * serverTraceID = retrievedSpanCtxAttributes->queryProp("traceID");
 
         {
-            Owned<ISpan> internalSpan = serverSpan->createInternalSpan("internalSpan");
+            OwnedSpanScope internalSpan = serverSpan->createInternalSpan("internalSpan");
 
             //retrieve internalSpan context with the intent to interrogate attributes
             {
@@ -429,7 +429,7 @@ protected:
     void testRootServerSpan()
     {
         Owned<IProperties> emptyMockHTTPHeaders = createProperties();
-        Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("propegatedServerSpan", emptyMockHTTPHeaders);
+        OwnedSpanScope serverSpan = queryTraceManager().createServerSpan("propegatedServerSpan", emptyMockHTTPHeaders);
 
         //retrieve serverSpan context with the intent to propagate it to a remote child span
         {
@@ -467,7 +467,7 @@ protected:
     {
         Owned<IProperties> mockHTTPHeaders = createProperties();
         createMockHTTPHeaders(mockHTTPHeaders, false);
-        Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("invalidPropegatedServerSpan", mockHTTPHeaders);
+        OwnedSpanScope serverSpan = queryTraceManager().createServerSpan("invalidPropegatedServerSpan", mockHTTPHeaders);
 
         Owned<IProperties> retrievedSpanCtxAttributes = createProperties();
         serverSpan->getClientHeaders(retrievedSpanCtxAttributes.get());
@@ -488,7 +488,7 @@ protected:
         Owned<IProperties> mockHTTPHeaders = createProperties();
         createMockHTTPHeaders(mockHTTPHeaders, true);
 
-        Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("propegatedServerSpan", mockHTTPHeaders);
+        OwnedSpanScope serverSpan = queryTraceManager().createServerSpan("propegatedServerSpan", mockHTTPHeaders);
         //at this point the serverSpan should have the following context attributes
         //remoteParentSpanID, globalID, callerID
 
@@ -509,10 +509,10 @@ protected:
         Owned<IProperties> mockHTTPHeaders = createProperties();
         createMockHTTPHeaders(mockHTTPHeaders, true);
 
-        Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("propegatedServerSpan", mockHTTPHeaders);
-        Owned<ISpan> clientSpan = serverSpan->createClientSpan("clientSpan");
-        Owned<ISpan> internalSpan = clientSpan->createInternalSpan("internalSpan");
-        Owned<ISpan> internalSpan2 = internalSpan->createInternalSpan("internalSpan2");
+        OwnedSpanScope serverSpan = queryTraceManager().createServerSpan("propegatedServerSpan", mockHTTPHeaders);
+        OwnedSpanScope clientSpan = serverSpan->createClientSpan("clientSpan");
+        OwnedSpanScope internalSpan = clientSpan->createInternalSpan("internalSpan");
+        OwnedSpanScope internalSpan2 = internalSpan->createInternalSpan("internalSpan2");
 
         StringBuffer out;
         out.set("{");
@@ -547,8 +547,8 @@ protected:
         Owned<IProperties> mockHTTPHeaders = createProperties();
         createMockHTTPHeaders(mockHTTPHeaders, true); //includes global ID
 
-        Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("propegatedServerSpan", mockHTTPHeaders);
-        Owned<ISpan> clientSpan = serverSpan->createClientSpan("clientSpanWithGlobalID");
+        OwnedSpanScope serverSpan = queryTraceManager().createServerSpan("propegatedServerSpan", mockHTTPHeaders);
+        OwnedSpanScope clientSpan = serverSpan->createClientSpan("clientSpanWithGlobalID");
 
         //retrieve serverSpan context with the intent to interrogate attributes
         {
@@ -570,7 +570,7 @@ protected:
         Owned<IProperties> mockHTTPHeaders = createProperties();
         createMockHTTPHeaders(mockHTTPHeaders, true);
 
-        Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("propegatedServerSpan", mockHTTPHeaders);
+        OwnedSpanScope serverSpan = queryTraceManager().createServerSpan("propegatedServerSpan", mockHTTPHeaders);
         //at this point the serverSpan should have the following context attributes
         //traceID, spanID, remoteParentSpanID, traceFlags, traceState, globalID, callerID
 
@@ -616,7 +616,7 @@ protected:
         mockHTTPHeadersSA.append("HPCC-Global-Id:someGlobalID");
         mockHTTPHeadersSA.append("HPCC-Caller-Id:IncomingCID");
 
-        Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("StringArrayPropegatedServerSpan", mockHTTPHeadersSA);
+        OwnedSpanScope serverSpan = queryTraceManager().createServerSpan("StringArrayPropegatedServerSpan", mockHTTPHeadersSA);
         //at this point the serverSpan should have the following context attributes
         //traceID, spanID, remoteParentSpanID, traceFlags, traceState, globalID, callerID
 

@@ -3779,7 +3779,7 @@ void WsWuHelpers::submitWsWorkunit(IEspContext& context, IConstWorkUnit* cw, con
     }
 
     ISpan * activeSpan = context.queryActiveSpan();
-    Owned<ISpan> clientSpan(activeSpan->createClientSpan("run_workunit"));
+    OwnedSpanScope clientSpan(activeSpan->createClientSpan("run_workunit"));
     Owned<IProperties> httpHeaders = ::getClientHeaders(clientSpan);
     recordTraceDebugOptions(wu, httpHeaders);
 

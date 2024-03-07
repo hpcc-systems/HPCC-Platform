@@ -89,7 +89,7 @@ private:
     Owned<IEspSecureContextEx> m_secureContext;
 
     StringAttr   m_transactionID;
-    Owned<ISpan> m_activeSpan;
+    OwnedSpanScope m_requestSpan;    // When the context is destroy the span will end.
     IHttpMessage* m_request;
 
 public:
@@ -114,7 +114,7 @@ public:
         updateTraceSummaryHeader();
         m_secureContext.setown(secureContext);
         m_SecurityHandler.setSecureContext(secureContext);
-        m_activeSpan.set(getNullSpan());
+        m_requestSpan.setown(getNullSpan());
     }
 
     ~CEspContext()
@@ -626,30 +626,30 @@ public:
     {
         return m_request;
     }
-    virtual void setActiveSpan(ISpan * span) override
+    virtual void setRequestSpan(ISpan * span) override
     {
-        m_activeSpan.set(span);
+        m_requestSpan.set(span);
     }
     virtual ISpan * queryActiveSpan() const override
     {
-        return m_activeSpan;
+        return m_requestSpan;
     }
 
     virtual const char* getGlobalId() const override
     {
-        return m_activeSpan->queryGlobalId();
+        return m_requestSpan->queryGlobalId();
     }
     virtual const char* getCallerId() const override
     {
-        return m_activeSpan->queryCallerId();
+        return m_requestSpan->queryCallerId();
     }
     virtual const char* getLocalId() const override
     {
-        return m_activeSpan->queryLocalId();
+        return m_requestSpan->queryLocalId();
     }
     virtual IProperties * getClientSpanHeaders() const override
     {
-        return ::getClientHeaders(m_activeSpan);
+        return ::getClientHeaders(m_requestSpan);
     }
 };
 

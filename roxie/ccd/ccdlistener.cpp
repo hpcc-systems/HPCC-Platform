@@ -1200,7 +1200,7 @@ public:
         Owned<StringContextLogger> logctx = new StringContextLogger(wuid.get());
 
         Owned<IProperties> traceHeaders = extractTraceDebugOptions(wu);
-        Owned<ISpan> requestSpan = queryTraceManager().createServerSpan("run_workunit", traceHeaders);
+        OwnedSpanScope requestSpan = queryTraceManager().createServerSpan("run_workunit", traceHeaders);
         requestSpan->setSpanAttribute("hpcc.wuid", wuid);
         ContextSpanScope spanScope(*logctx, requestSpan);
 
@@ -1381,6 +1381,7 @@ public:
     Owned<CDebugCommandHandler> debugCmdHandler;
     Owned<StringContextLogger> logctx;
     Owned<IQueryFactory> queryFactory;
+    OwnedSpanScope requestSpan;
 
     SocketEndpoint ep;
     time_t startTime;
@@ -1484,8 +1485,7 @@ public:
         if (spanName.length())
             spanName.append('/');
         spanName.append(spanQueryName);
-        Owned<ISpan> requestSpan = queryTraceManager().createServerSpan(spanName, allHeaders, flags);
-        //The span has a lifetime the same length as the logctx, so no need to restore it at the end of the query
+        requestSpan.setown(queryTraceManager().createServerSpan(spanName, allHeaders, flags));
         logctx->setActiveSpan(requestSpan);
 
         const char * globalId = requestSpan->queryGlobalId();

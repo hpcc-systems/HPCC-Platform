@@ -536,8 +536,7 @@ public:
     virtual void beforeDispose() override
     {
         //Record the span as complete before we output the logging for the end of the span
-        if (span != nullptr)
-            span->End();
+        endSpan();
     }
 
     const char * getSpanID() const
@@ -547,6 +546,13 @@ public:
 
     ISpan * createClientSpan(const char * name) override;
     ISpan * createInternalSpan(const char * name) override;
+
+    virtual void endSpan() final override
+    {
+        //It is legal to call endSpan multiple times, but only the first call will have any effect
+        if (span != nullptr)
+            span->End();
+    }
 
     virtual void toString(StringBuffer & out) const
     {
@@ -822,7 +828,7 @@ protected:
 
 };
 
-class CNullSpan : public CInterfaceOf<ISpan>
+class CNullSpan final : public CInterfaceOf<ISpan>
 {
 public:
     CNullSpan() = default;
@@ -832,6 +838,7 @@ public:
     virtual void setSpanAttributes(const IProperties * attributes) override {}
     virtual void addSpanEvent(const char * eventName) override {}
     virtual void addSpanEvent(const char * eventName, IProperties * attributes) override {};
+    virtual void endSpan() override {}
     virtual void getSpanContext(IProperties * ctxProps) const override {}
     virtual void getClientHeaders(IProperties * clientHeaders) const override {}
 
