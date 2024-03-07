@@ -949,9 +949,9 @@ void ContextLogger::exportStatsToSpan(bool failed, stat_type elapsedNs, unsigned
 {
     if (activeSpan->isRecording())
     {
+        activeSpan->setSpanStatus(failed);
         setSpanAttribute("time_elapsed", elapsedNs);
-        if (failed)
-            setSpanAttribute("num_failures", 1);
+
         if (memused)
             setSpanAttribute("size_peak_row_memory", memused * 0x100000);
 

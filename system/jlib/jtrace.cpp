@@ -742,6 +742,44 @@ public:
         return span ? span->IsRecording() : false;
     }
 
+    virtual void setSpanStatus(bool spanFailed, const char * statusMessage)
+    {
+        if (span != nullptr)
+        {
+            span->SetStatus(spanFailed ? opentelemetry::trace::StatusCode::kError :  opentelemetry::trace::StatusCode::kOk, statusMessage);
+        }
+    }
+
+    virtual void recordError(const SpanError & error)
+    {
+        if (span != nullptr)
+        {
+            if (error.spanFailed)
+                span->SetStatus(opentelemetry::trace::StatusCode::kError, error.errorMessage);
+
+            //https://opentelemetry.io/docs/specs/semconv/exceptions/exceptions-spans/
+            //The event name MUST be "exception".
+            //The table below indicates which attributes should be added to the Event and their types.
+            //exception.escaped	boolean	SHOULD be set to true if the exception event is recorded at a point where it is known that the exception is escaping the scope of the span. [1]		Recommended
+            //exception.message	string	The exception message.	Division by zero; Can't convert 'int' object to str implicitly	See below
+            //exception.stacktrace	string	A stacktrace as a string in the natural representation for the language runtime. The representation is to be determined and documented by each language SIG.
+            //	Exception in thread "main" java.lang.RuntimeException: Test exception\n at com.example.GenerateTrace.methodB(GenerateTrace.java:13)\n at com.example.GenerateTrace.methodA(GenerateTrace.java:9)
+            //exception.type	string	The type of the exception (its fully-qualified class name, if applicable). The dynamic type of the exception should be preferred over the static type in languages that support it.	java.net.ConnectException; OSError	See below
+
+            if (error.errorCode != 0 && error.errorCode != -1)
+                span->AddEvent("Exception", {{"message", error.errorMessage}, {"escaped", error.escapeScope}, {"code", error.errorCode}});
+            else
+                span->AddEvent("Exception", {{"message", error.errorMessage}, {"escaped", error.escapeScope}});
+        }
+    }
+
+    virtual void recordException(IException * e, bool spanFailed, bool escapedScope)
+    {
+        StringBuffer msg;
+        e->errorMessage(msg);
+        recordError(SpanError(msg.str(), e->errorCode(), spanFailed, escapedScope));
+    };
+
 protected:
     CSpan(const char * spanName)
     {
@@ -846,6 +884,10 @@ public:
     virtual void toString(StringBuffer & out) const override {}
     virtual void getLogPrefix(StringBuffer & out) const override {}
     virtual bool isRecording() const { return false; }
+
+    virtual void recordException(IException * e, bool spanFailed, bool escapedScope) override {}
+    virtual void recordError(const SpanError & error) override {};
+    virtual void setSpanStatus(bool spanFailed, const char * statusMessage) override {}
 
     virtual const char* queryGlobalId() const override { return nullptr; }
     virtual const char* queryCallerId() const override { return nullptr; }
