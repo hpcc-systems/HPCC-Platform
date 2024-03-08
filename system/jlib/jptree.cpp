@@ -48,8 +48,9 @@
 #define WARNLEGACYCOMPARE
 #define XMLTAG_CONTENT "<>"
 
-#undef UNIMPLEMENTED
-#define UNIMPLEMENTED throw MakeIPTException(-1, "UNIMPLEMENTED")
+#define UNIMPLEMENTED_IPT throw MakeIPTException(-1, "UNIMPLEMENTED feature in function %s() at %s(%d)", __func__, sanitizeSourceFile(__FILE__), __LINE__)
+
+
 #define CHECK_ATTRIBUTE(X) if (X && isAttribute(X)) throw MakeIPTException(PTreeExcpt_XPath_Unsupported, "Attribute usage invalid here");
 #define AMBIGUOUS_PATH(X,P) { StringBuffer buf; buf.append(X": ambiguous xpath \"").append(P).append("\"");  throw MakeIPTException(PTreeExcpt_XPath_Ambiguity,"%s",buf.str()); }
 
@@ -1914,7 +1915,7 @@ bool PTree::renameProp(const char *xpath, const char *newName)
     if (strcmp(xpath,"/")==0)   // rename of self allowed assuming no parent
         setName(newName);
     else if ('[' == *xpath)
-        UNIMPLEMENTED;
+        UNIMPLEMENTED_IPT;
     else if (isAttribute(xpath))
     {
         StringBuffer val;
@@ -3506,7 +3507,7 @@ bool PTree::checkPattern(const char *&xxpath) const
             for (;;)
             {
                 if (matchElem->isBinary(tProp))
-                    UNIMPLEMENTED;
+                    UNIMPLEMENTED_IPT;
                 const char *rhs;
                 unsigned rhslength;
                 if (quoteEnd)
@@ -6290,7 +6291,7 @@ class CStringBufferMarkupIOAdapter : public CInterfaceOf<IIOStream>
 public:
     CStringBufferMarkupIOAdapter(StringBuffer &_out) : out(_out) { }
     virtual void flush() override { }
-    virtual size32_t read(size32_t len, void * data) override { UNIMPLEMENTED; return 0; }
+    virtual size32_t read(size32_t len, void * data) override { UNIMPLEMENTED_IPT; }
     virtual size32_t write(size32_t len, const void * data) override { out.append(len, (const char *)data); return len; }
 };
 

@@ -799,6 +799,24 @@ void throwUnexpectedException(const char * what, const char * function, const ch
     throw makeStringExceptionV(9999, "Internal Error '%s' in %s() at %s(%d)", what, function, sanitizeSourceFile(file), line);
 }
 
+void jlib_decl throwUnimplementedException(const char * function, const char * file, unsigned line)
+{
+    printStackReport();
+    throw makeStringExceptionV(9999, "UNIMPLEMENTED feature in function %s() at %s(%d)", function, sanitizeSourceFile(file), line);
+}
+
+void jlib_decl throwUnimplementedException(const char * what, const char * function, const char * file, unsigned line)
+{
+    printStackReport();
+    throw makeStringExceptionV(-1, "UNIMPLEMENTED feature [%s] in function %s() at %s(%d)", what, function, sanitizeSourceFile(file), line);
+}
+
+void jlib_decl throwUnimplementedException(const char * what, const char *what2, const char * function, const char * file, unsigned line)
+{
+    printStackReport();
+    throw makeStringExceptionV(-1, "UNIMPLEMENTED feature [%s %s] in function %s() at %s(%d)", what, what2, function, sanitizeSourceFile(file), line);
+}
+
 void raiseAssertException(const char *assertion, const char *file, unsigned line)
 {
     StringBuffer s;

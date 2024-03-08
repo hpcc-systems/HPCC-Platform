@@ -23,15 +23,10 @@
 #include "opentelemetry/sdk/trace/batch_span_processor_factory.h"
 #include "opentelemetry/exporters/ostream/span_exporter_factory.h"// auto exporter = opentelemetry::exporter::trace::OStreamSpanExporterFactory::Create();
 #include "opentelemetry/exporters/ostream/common_utils.h"
-//#define oldForEach ForEach // error: ‘ForEach’ was not declared in this scope
-#undef ForEach //opentelemetry defines ForEach
 #include "opentelemetry/exporters/memory/in_memory_span_exporter_factory.h"
 #include "opentelemetry/trace/propagation/http_trace_context.h" //opentel_trace::propagation::kTraceParent
-#undef UNIMPLEMENTED //opentelemetry defines UNIMPLEMENTED
 #include "opentelemetry/trace/provider.h" //StartSpanOptions
 #include "opentelemetry/exporters/otlp/otlp_grpc_exporter.h"
-#define UNIMPLEMENTED throw makeStringExceptionV(-1, "UNIMPLEMENTED feature at %s(%d)", sanitizeSourceFile(__FILE__), __LINE__)
-#define ForEach(i)              for((i).first();(i).isValid();(i).next())
 
 #include "opentelemetry/exporters/otlp/otlp_grpc_exporter_factory.h"
 #include "opentelemetry/exporters/otlp/otlp_http_exporter_factory.h"
@@ -40,6 +35,11 @@
 
 #include "opentelemetry/sdk/trace/exporter.h"
 #include "opentelemetry/sdk/trace/span_data.h"
+
+// NB: undefine after opentelemetry includes, and before HPCC includes where we define.
+#undef ForEach //opentelemetry defines ForEach
+#undef UNIMPLEMENTED //opentelemetry defines UNIMPLEMENTED
+
 
 #include "platform.h"
 #include "jlib.hpp"
