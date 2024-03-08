@@ -134,16 +134,24 @@ interface ISpan : extends IInterface
     virtual const char* queryLocalId() const = 0;
 };
 
-class OwnedSpanScope : public Owned<ISpan>
+class jlib_decl OwnedSpanScope
 {
 public:
-    inline OwnedSpanScope() { }
-    inline OwnedSpanScope(ISpan * _ptr) : Owned<ISpan>(_ptr) { }
-    ~OwnedSpanScope()
-    {
-        if (get())
-            get()->endSpan();
-    }
+    OwnedSpanScope() = default;
+    OwnedSpanScope(ISpan * _ptr);
+    ~OwnedSpanScope();
+
+    inline ISpan * operator -> () const         { return span; }
+    inline operator ISpan *() const             { return span; }
+
+    void clear();
+    ISpan * query() const { return span; }
+    void set(ISpan * _span);
+    void setown(ISpan * _span);
+
+private:
+    Owned<ISpan> span;
+    ISpan * prevSpan = nullptr;
 };
 
 extern jlib_decl IProperties * getClientHeaders(const ISpan * span);
@@ -180,6 +188,7 @@ interface ITraceManager : extends IInterface
     virtual bool isTracingEnabled() const = 0;
  };
 
+extern jlib_decl ISpan * queryNullSpan();
 extern jlib_decl ISpan * getNullSpan();
 extern jlib_decl void initTraceManager(const char * componentName, const IPropertyTree * componentConfig, const IPropertyTree * globalConfig);
 extern jlib_decl ITraceManager & queryTraceManager();

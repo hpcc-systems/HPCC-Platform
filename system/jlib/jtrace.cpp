@@ -1458,6 +1458,43 @@ ISpan * CTraceManager::createServerSpan(const char * name, const IProperties * h
 
 //---------------------------------------------------------------------------------------------------------------------
 
+OwnedSpanScope::OwnedSpanScope(ISpan * _ptr) : span(_ptr)
+{
+    if (_ptr)
+        prevSpan = setThreadedActiveSpan(_ptr);
+}
+
+void OwnedSpanScope::setown(ISpan * _span)
+{
+    assertex(_span);
+    //Just in case the span is already set, ensure it is ended and that the previous span is restored.
+    clear();
+    span.setown(_span);
+    prevSpan = setThreadedActiveSpan(_span);
+}
+
+void OwnedSpanScope::set(ISpan * _span)
+{
+    setown(LINK(_span));
+}
+
+void OwnedSpanScope::clear()
+{
+    if (span)
+    {
+        setThreadedActiveSpan(prevSpan);
+        span->endSpan();
+        span.clear();
+    }
+}
+
+OwnedSpanScope::~OwnedSpanScope()
+{
+    clear();
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
     return true;
@@ -1473,6 +1510,11 @@ static Owned<ISpan> nullSpan = new CNullSpan();
 ISpan * getNullSpan()
 {
     return nullSpan.getLink();
+}
+
+ISpan * queryNullSpan()
+{
+    return nullSpan;
 }
 
 void initTraceManager(const char * componentName, const IPropertyTree * componentConfig, const IPropertyTree * globalConfig)
