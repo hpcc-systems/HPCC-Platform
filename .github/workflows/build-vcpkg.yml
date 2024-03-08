@@ -118,21 +118,21 @@ jobs:
     secrets: inherit
 
   build-docker-ubuntu-20_04:
-    if: ${{ contains('schedule,push', github.event_name) }}
+    if: ${{ contains('pull_request,schedule,push', github.event_name) }}
     uses: ./.github/workflows/build-docker.yml
     with:
       os: ubuntu-20.04
     secrets: inherit
 
   build-docker-rockylinux-8:
-    if: ${{ contains('schedule,push', github.event_name) }}
+    if: ${{ contains('pull_request,schedule,push', github.event_name) }}
     uses: ./.github/workflows/build-docker.yml
     with:
       os: rockylinux-8
     secrets: inherit
 
   build-docker-centos-8:
-    if: ${{ contains('schedule,push', github.event_name) }}
+    if: ${{ contains('pull_request,schedule,push', github.event_name) }}
     uses: ./.github/workflows/build-docker.yml
     with:
       os: centos-8
@@ -147,7 +147,7 @@ jobs:
     secrets: inherit
 
   build-docker-amazonlinux:
-    if: ${{ contains('schedule,push', github.event_name) }}
+    if: ${{ contains('pull_request,schedule,push', github.event_name) }}
     uses: ./.github/workflows/build-docker.yml
     with:
       os: amazonlinux
@@ -155,14 +155,14 @@ jobs:
     secrets: inherit
 
   build-gh_runner-ubuntu-22_04:
-    if: ${{ contains('schedule,push', github.event_name) }}
+    if: ${{ contains('pull_request,schedule,push', github.event_name) }}
     uses: ./.github/workflows/build-gh_runner.yml
     with:
       os: ubuntu-22.04
     secrets: inherit
 
   build-gh_runner-ubuntu-20_04:
-    if: ${{ contains('schedule,push', github.event_name) }}
+    if: ${{ contains('pull_request,schedule,push', github.event_name) }}
     uses: ./.github/workflows/build-gh_runner.yml
     with:
       os: ubuntu-20.04
@@ -177,7 +177,7 @@ jobs:
     secrets: inherit
 
   build-gh_runner-windows-2019:
-    if: ${{ contains('schedule,push', github.event_name) }}
+    if: ${{ contains('pull_request,schedule,push', github.event_name) }}
     uses: ./.github/workflows/build-gh_runner.yml
     with:
       os: windows-2019
@@ -194,7 +194,7 @@ jobs:
     secrets: inherit
 
   build-gh_runner-macos-12:
-    if: ${{ contains('schedule,push', github.event_name) }}
+    if: ${{ contains('pull_request,schedule,push', github.event_name) }}
     uses: ./.github/workflows/build-gh_runner.yml
     with:
       os: macos-12
