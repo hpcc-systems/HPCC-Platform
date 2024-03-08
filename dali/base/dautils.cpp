@@ -2442,7 +2442,7 @@ public:
 
     void start()
     {
-        thread.start();
+        thread.start(false);
     }
 
     void stop()

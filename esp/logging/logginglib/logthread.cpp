@@ -128,7 +128,7 @@ CLogThread::~CLogThread()
 
 void CLogThread::start()
 {
-    Thread::start();
+    Thread::start(false);
 }
 
 int CLogThread::run()

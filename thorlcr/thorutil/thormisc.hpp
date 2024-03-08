@@ -252,7 +252,7 @@ public:
     {
         running = (timeout!=0);
         if (running)
-            threaded.start();
+            threaded.start(false);
     }
     virtual void beforeDispose() override
     {

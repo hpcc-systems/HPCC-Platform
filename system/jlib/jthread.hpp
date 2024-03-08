@@ -34,10 +34,12 @@
 #endif
 
 // Functions used to reset thread-local context variables, when a threadpool starts
+typedef unsigned __int64 LogMsgJobId;
 interface IContextLogger;
 struct jlib_decl SavedThreadContext
 {
     const IContextLogger * logctx = nullptr;
+    LogMsgJobId jobId = (LogMsgJobId)-1;
     TraceFlags traceFlags = queryDefaultTraceFlags();
 };
 
@@ -48,7 +50,7 @@ extern void saveThreadContext(SavedThreadContext & saveCtx);
 
 interface jlib_decl IThread : public IInterface
 {
-    virtual void start() = 0;
+    virtual void start(bool inheritThreadContext) = 0;
     virtual int run() = 0;
 };
 
@@ -134,7 +136,7 @@ public:
     bool join(unsigned timeout=INFINITE);
     void captureThreadLoggingInfo();                // Capture current thread logging context to be used by this thread when started
 
-    virtual void start();
+    virtual void start(bool inheritThreadContext);
     virtual void startRelease();        
 
     StringBuffer &getInfo(StringBuffer &str);
@@ -168,7 +170,7 @@ class CThreaded : public Thread
 public:
     inline CThreaded(const char *name, IThreaded *_owner) : Thread(name), owner(_owner) { }
     inline CThreaded(const char *name) : Thread(name) { owner = NULL; }
-    inline void init(IThreaded *_owner) { owner = _owner; start(); }
+    inline void init(IThreaded *_owner, bool inheritThreadContext) { owner = _owner; start(inheritThreadContext); }
     virtual int run() { owner->threadmain(); return 1; }
 };
 
@@ -192,7 +194,7 @@ class jlib_decl CThreadedPersistent
 public:
     CThreadedPersistent(const char *name, IThreaded *_owner);
     ~CThreadedPersistent();
-    void start();
+    void start(bool inheritThreadContext);
     bool join(unsigned timeout, bool throwException = true);
 };
 
@@ -279,13 +281,13 @@ interface IThreadPool : extends IInterface
         virtual PooledThreadHandle startNoBlock(void *param)=0; // starts a new thread if it can do so without blocking, else throws exception
         virtual void setStartDelayTracing(unsigned secs) = 0;        // set start delay tracing period
         virtual bool waitAvailable(unsigned timeout) = 0;            // wait until a pool member is available
-        virtual void captureThreadLoggingInfo() = 0;                 // Capture current thread logging context to be used by thread in pool when started
 };
 
 extern jlib_decl IThreadPool *createThreadPool(
                                 const char *poolname,       // trace name of pool
                                 IThreadFactory *factory,    // factory for creating new thread instances
-                                IExceptionHandler *exceptionHandler=NULL, // optional exception handler
+                                bool inheritThreadContext,  // Are threads run independent of the calling context(false), or within the calling context(true)
+                                IExceptionHandler *exceptionHandler, // optional exception handler
                                 unsigned defaultmax=50,     // maximum number of threads before starts blocking
                                 unsigned delay=1000,        // maximum delay on each block
                                 unsigned stacksize=0,       // stack size (bytes) 0 is default
@@ -374,11 +376,8 @@ extern jlib_decl IWorkQueueThread *createWorkQueueThread(unsigned persisttime=10
 
 //--- Functions that manage the current thread state =- for context, tracing, spans etc.
 
-typedef unsigned __int64 LogMsgJobId;
-class LogMsgJobInfo;
-
-const LogMsgJobInfo & checkDefaultJobInfo(const LogMsgJobInfo & _jobInfo);
-extern jlib_decl void setDefaultJobId(LogMsgJobId id, bool threaded = false);
+extern jlib_decl LogMsgJobId queryThreadedJobId();
+extern jlib_decl void setDefaultJobId(LogMsgJobId id);
 
 extern const IContextLogger * queryThreadedContextLogger();
 

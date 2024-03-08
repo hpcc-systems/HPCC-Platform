@@ -990,7 +990,7 @@ protected:
             setValue = !initial;
             clearValue = initial;
         }
-        void start() { threaded.start(); }
+        void start() { threaded.start(false); }
         void join()
         {
             threaded.join();
@@ -1704,14 +1704,14 @@ public:
         for (unsigned i2 = 0; i2 < numConsumers; i2++)
         {
             consumers[i2] = new Reader(queue, stopSem, readerWork);
-            consumers[i2]->start();
+            consumers[i2]->start(false);
         }
 
         WriterBase * * producers = new WriterBase *[numProducers];
         for (unsigned i1 = 0; i1 < numProducers; i1++)
         {
             producers[i1] = new Writer(queue, sizePerProducer, buffer + i1 * sizePerProducer, startSem, writerDoneSem, writerWork);
-            producers[i1]->start();
+            producers[i1]->start(false);
         }
 
         cycle_t startTime = get_cycles_now();
@@ -3096,7 +3096,7 @@ public:
             {
                 LockTestThread * next = new LockTestThread(startSem, endSem, lock, value1, lock, extraValues, numIterations);
                 threads.append(*next);
-                next->start();
+                next->start(false);
             }
 
             cycle_t startCycles = get_cycles_now();

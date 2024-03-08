@@ -1158,7 +1158,7 @@ public:
     {
         headRegionSize = _headRegionSize;
         numWorkers = _numWorkers;
-        workers.setown(createThreadPool("RoxieWorkers", this, NULL, numWorkers));
+        workers.setown(createThreadPool("RoxieWorkers", this, false, nullptr, numWorkers));
         started = 0;
         idle = 0;
         if (IBYTIbufferSize)
@@ -2046,7 +2046,7 @@ public:
     RoxieThrottledPacketSender(TokenBucket &_bucket, unsigned _maxPacketSize)
         : Thread("RoxieThrottledPacketSender"), bucket(_bucket), maxPacketSize(_maxPacketSize)
     {
-        start();
+        start(false);
         started.wait();
     }
 
@@ -2891,7 +2891,7 @@ public:
     {
         RoxieReceiverBase::start();
         running = true;
-        readThread.start(); 
+        readThread.start(false);
     }
 
     void stop() 
@@ -3830,9 +3830,9 @@ public:
         return 0;
     }
 
-    virtual void start()
+    virtual void start() override
     {
-        Thread::start();
+        Thread::start(false);
     }
 
     virtual void stop()
@@ -3983,7 +3983,7 @@ extern void startPingTimer()
     if (!pingTimer)
     {
         pingTimer = new PingTimer();
-        pingTimer->start();
+        pingTimer->start(false);
     }
 }
 

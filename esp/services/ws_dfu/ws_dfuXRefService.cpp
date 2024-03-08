@@ -121,7 +121,7 @@ void CWsDfuXRefEx::init(IPropertyTree *cfg, const char *process, const char *ser
 
     //Start out builder thread......
     m_XRefbuilder.setown(new CXRefExBuilderThread());
-    m_XRefbuilder->start();
+    m_XRefbuilder->start(false);
 }
 
 bool CWsDfuXRefEx::onDFUXRefArrayAction(IEspContext &context, IEspDFUXRefArrayActionRequest &req, IEspDFUXRefArrayActionResponse &resp)

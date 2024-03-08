@@ -103,7 +103,7 @@ public:
 CSlaveMessageHandler::CSlaveMessageHandler(CJobMaster &_job, mptag_t _mptag) : threaded("CSlaveMessageHandler"), job(_job), mptag(_mptag)
 {
     stopped = false;
-    threaded.init(this);
+    threaded.init(this, false);
     childGraphInitTimeout = job.getOptUInt(THOROPT_CHILD_GRAPH_INIT_TIMEOUT, 5*60) * 1000; // default 5 minutes
 }
 
@@ -545,7 +545,7 @@ void CMasterActivity::startProcess(bool async)
     if (async)
     {
         asyncStart = true;
-        threaded.start();
+        threaded.start(true);
     }
     else
         threadmain();
@@ -2016,7 +2016,7 @@ void CJobMaster::pause(bool doAbort)
         public:
             CAbortThread(CJobMaster &_owner, IException *_exception) : owner(_owner), exception(_exception), threaded("SaveSpillThread", this)
             {
-                threaded.start();
+                threaded.start(true);
             }
             ~CAbortThread()
             {

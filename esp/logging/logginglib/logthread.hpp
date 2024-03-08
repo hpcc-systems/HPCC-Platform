@@ -87,7 +87,7 @@ public:
     CLogRequestReader(CLogRequestReaderSettings* _settings, CLogThread* _logThread)
         : settings(_settings), logThread(_logThread), threaded("LogRequestReader")
     {
-        threaded.init(this);
+        threaded.init(this, false);
     };
 
     ~CLogRequestReader();

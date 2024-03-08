@@ -1410,7 +1410,7 @@ public:
         PROGLOG("%s", msg.str());
 
         if ((transactionQueueLimit > 1) && (transactionMaxMem > 0))
-            threaded.init(this);
+            threaded.init(this, false);
         else
             PROGLOG("All transactions will be committed synchronously");
     }
@@ -5075,7 +5075,7 @@ class CLightCoalesceThread : implements ICoalesce, public CInterface
         CLightCoalesceThread *coalesce;
     public:
         CThreaded() : Thread("CLightCoalesceThread") { coalesce = NULL; }
-        void init(CLightCoalesceThread *_coalesce) { coalesce = _coalesce; start(); }
+        void init(CLightCoalesceThread *_coalesce) { coalesce = _coalesce; start(false); }
         virtual int run() { coalesce->threadmain(); return 1; }
     } threaded;
 public:
@@ -7269,7 +7269,7 @@ unsigned CCovenSDSManager::queryCount(const char *xpath)
 
 void CCovenSDSManager::start()
 {
-    server.start();
+    server.start(false);
     if (coalesce) coalesce->start();
 }
 
@@ -8367,7 +8367,7 @@ void CCovenSDSManager::handleNotify(CSubscriberContainerBase *_subscriber, Memor
     if (!notifyPool)
     {
         CNotifyPoolFactory *factory = new CNotifyPoolFactory;
-        notifyPool.setown(createThreadPool("SDS Notification Pool", factory, this, SUBNTFY_POOL_SIZE));
+        notifyPool.setown(createThreadPool("SDS Notification Pool", factory, false, this, SUBNTFY_POOL_SIZE));
         factory->Release();
     }
 
@@ -8699,7 +8699,7 @@ void CCovenSDSManager::startNotification(IPropertyTree &changeTree, CPTStack &st
     if (!scanNotifyPool)
     {
         CScanNotifyPoolFactory *factory = new CScanNotifyPoolFactory;
-        scanNotifyPool.setown(createThreadPool("SDS Scan-Notification Pool", factory, this, SUBSCAN_POOL_SIZE));
+        scanNotifyPool.setown(createThreadPool("SDS Scan-Notification Pool", factory, false, this, SUBSCAN_POOL_SIZE));
         factory->Release();
     }
 

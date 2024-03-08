@@ -455,8 +455,8 @@ void nqPingPong(const char *q,const char *q2)
     threads[0].num = 1;
     threads[1].q = q;
     threads[1].num = 2;
-    threads[0].start();
-    threads[1].start();
+    threads[0].start(false);
+    threads[1].start(false);
     threads[0].join();
     threads[1].join();
 }

@@ -404,7 +404,7 @@ public:
 
     BlackLister()
     {
-        pool.setown(createThreadPool("SocketBlacklistPool", this, NULL, 0, 0));
+        pool.setown(createThreadPool("SocketBlacklistPool", this, false, nullptr, 0, 0));
     }
 
     ISocket* connect(SocketEndpoint &ep,
@@ -1244,7 +1244,7 @@ public:
         complete = aborted = timeLimitExceeded = false;
 
         ForEachItemIn(i,threads)
-            threads.item(i).start();
+            threads.item(i).start(true); // inherit context because the threads always have a shorter lifetime than the caller.
     }
     void abort()
     {

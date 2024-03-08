@@ -481,12 +481,12 @@ void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *s
 #ifdef _CONTAINERIZED
     initContainerRoxieTargets(roxieConnMap);
 #endif
-    m_sched.start();
+    m_sched.start(false);
 
     //Start thread pool
     xpath.setf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/ClusterQueryStateThreadPoolSize", process, service);
     Owned<CClusterQueryStateThreadFactory> threadFactory = new CClusterQueryStateThreadFactory();
-    clusterQueryStatePool.setown(createThreadPool("CheckAndSetClusterQueryState Thread Pool", threadFactory, NULL,
+    clusterQueryStatePool.setown(createThreadPool("CheckAndSetClusterQueryState Thread Pool", threadFactory, false, nullptr,
             cfg->getPropInt(xpath.str(), CHECK_QUERY_STATUS_THREAD_POOL_SIZE)));
 }
 

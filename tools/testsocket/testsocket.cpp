@@ -629,7 +629,8 @@ int doSendQuery(const char * ip, unsigned port, const char * base)
         if (sendToSocket)
         {
             Thread * receive = new ReceiveThread();
-            receive->start();
+            //MORE: The caller should really join this thread before terminating
+            receive->start(false);
             receive->Release();
         }
 
@@ -800,7 +801,8 @@ int sendQuery(const char * ip, unsigned port, const char * base)
 
     runningQueries++;
     Thread * thread = new QueryThread(ip, port, base);
-    thread->start();
+    //MORE: The caller should really join this thread before terminating
+    thread->start(false);
     thread->Release();
 
     if (multiThread && queryAbsDelayMS && !multiThreadMax)

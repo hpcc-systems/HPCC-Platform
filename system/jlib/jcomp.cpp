@@ -485,7 +485,7 @@ bool CppCompiler::compile()
 
     TIME_SECTION(!verbose ? NULL : ">compile");
 
-    Owned<IThreadPool> pool = createThreadPool("CCompilerWorker", this, this, maxCompileThreads && !reportOnly() ? maxCompileThreads : 1, INFINITE);
+    Owned<IThreadPool> pool = createThreadPool("CCompilerWorker", this, false, this, maxCompileThreads && !reportOnly() ? maxCompileThreads : 1, INFINITE);
     addCompileOption(COMPILE_ONLY[targetCompiler]);
 
     bool ret = false;

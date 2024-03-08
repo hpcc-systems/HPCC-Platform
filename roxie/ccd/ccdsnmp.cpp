@@ -321,7 +321,7 @@ CRoxieMetricsManager::CRoxieMetricsManager()
     addMetric(flowRequestsSent, 1000);
     addMetric(flowPermitsReceived, 1000);
     addMetric(dataPacketsSent, 1000);
-    ticker.start();
+    ticker.start(false);
 }
 
 void CRoxieMetricsManager::doAddMetric(RelaxedAtomic<unsigned> &counter, const char *name, unsigned interval, bool isMinVal)

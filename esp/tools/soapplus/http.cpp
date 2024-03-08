@@ -1012,7 +1012,7 @@ int HttpClient::sendStressRequests(HttpStat* overall_stat)
 
     //__int64 start = msTick();
     for(i = 0; i < m_stressthreads; i++)
-        thrdlist[i]->start();
+        thrdlist[i]->start(false);
 
     if(http_tracelevel > 0)
         fprintf(m_logfile, "Started %d stress test threads.\n", m_stressthreads);

@@ -851,7 +851,7 @@ class CDaliSDSStressTests : public CppUnit::TestFixture
             }
             void start()
             {
-                threaded.init(this);
+                threaded.init(this, false);
             }
             void join()
             {
@@ -1069,7 +1069,7 @@ public:
                     id[i] = querySDS().subscribe(s.str(),*sub,false,true);
                 }
                 count = 0;
-                start();
+                start(false);
             }
 
             virtual int run()
@@ -2627,7 +2627,7 @@ public:
 
             PROGLOG("Unlocking file: %s", fileName.get());
         }
-        void start() { threaded.start(); }
+        void start() { threaded.start(false); }
     };
 
     void testDFSAddFailReAdd()

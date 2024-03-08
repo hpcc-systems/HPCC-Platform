@@ -589,7 +589,7 @@ public:
         PROGLOG("DFU server waiting on queue %s",queuename);
         cDFUlistener *lt = new cDFUlistener(this,queuename,false,serverstatus);
         listeners.append(*lt);
-        lt->start();
+        lt->start(false);
     }
 
     void startMonitor(const char *queuename,CSDSServerStatus *serverstatus,unsigned timeout)
@@ -599,7 +599,7 @@ public:
         PROGLOG("DFU monitor waiting on queue %s timeout %d",queuename,timeout);
         cDFUlistener *lt = new cDFUmonitor(this,queuename,serverstatus,timeout);
         listeners.append(*lt);
-        lt->start();
+        lt->start(false);
     }
 
     void joinListeners()

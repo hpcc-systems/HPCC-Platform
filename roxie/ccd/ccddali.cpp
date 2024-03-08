@@ -216,10 +216,6 @@ private:
             aborted = true;
             abortSem.signal();
         }
-        virtual void start()
-        {
-            Thread::start();
-        }
         virtual void join()
         {
             if (isAlive())
@@ -497,7 +493,7 @@ public:
 #endif
         }
         if (fileNameServiceDali.length())
-            connectWatcher.start();
+            connectWatcher.start(false);
         else
             initMyNode(1); // Hack
     }

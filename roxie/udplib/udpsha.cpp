@@ -815,10 +815,10 @@ public:
         }
         return 0;
     }
-    virtual void start()
+    virtual void start(bool inheritThreadContext) override
     {
         running = true;
-        Thread::start();
+        Thread::start(inheritThreadContext);
     }
     void stop()
     {
@@ -835,7 +835,7 @@ CSimulatedQueueWriteSocket::CSimulatedQueueWriteSocket(const SocketEndpoint &ep)
     {
         CriticalBlock b(allWriteSocketsCrit);
         if (!allWriteSockets.length())
-            delayedWriter.start();
+            delayedWriter.start(false);
         allWriteSockets.append(*this);
     }
 }

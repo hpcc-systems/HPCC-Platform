@@ -2183,7 +2183,7 @@ public:
         nodeComm.set(&queryNodeComm());
         if (nodeComm->queryGroup().rank(queryMyNode())==0) { // master so start thread
             thread.setown(new cMultiThorResourceMutexThread(*this));
-            thread->start();
+            thread->start(false);
             StringBuffer mname("thorres:");
             mname.append(groupname);
             mutex.setown(createDaliMutex(mname.str()));

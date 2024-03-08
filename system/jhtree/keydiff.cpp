@@ -1438,7 +1438,7 @@ private:
         oldcurr.init(rowsize, oldInput->isVariableWidth());
         oldprev.init(rowsize, oldInput->isVariableWidth());
         if(tlkGen)
-            tlkGen->start();
+            tlkGen->start(false);
     }
 
     bool readOld(unsigned count)

@@ -120,12 +120,12 @@ public:
 #endif
     }
 
-    virtual void start()
+    virtual void start() override
     {
         // Note we allow a few additional threads than requested - these are the threads that return "Too many active queries" responses
-        pool.setown(createThreadPool("RoxieSocketWorkerPool", this, NULL, sink->getPoolSize()+5, INFINITE));
+        pool.setown(createThreadPool("RoxieSocketWorkerPool", this, false, nullptr, sink->getPoolSize()+5, INFINITE));
         assertex(!running);
-        Thread::start();
+        Thread::start(false);
         started.wait();
     }
 

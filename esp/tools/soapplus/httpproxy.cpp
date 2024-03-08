@@ -315,7 +315,7 @@ CHttpProxyThread::CHttpProxyThread(ISocket* client, FILE* ofile)
 
 void CHttpProxyThread::start()
 {
-    Thread::start();
+    Thread::start(false);
 }
 
 int CHttpProxyThread::run()
@@ -377,8 +377,8 @@ int CHttpProxyThread::run()
             m_remotesocket->set_nonblock(false);
             CReadWriteThread t1(m_client.get(), m_remotesocket.get(), m_ofile);
             CReadWriteThread t2(m_remotesocket.get(), m_client.get(), m_ofile);
-            t1.start();
-            t2.start();
+            t1.start(true);
+            t2.start(true);
             t1.join();
             t2.join();
             //printf("read/write threads returned\n");
@@ -643,7 +643,7 @@ public:
 
     virtual void start()
     {
-        Thread::start();
+        Thread::start(false);
     }
 
     virtual int run()
@@ -716,8 +716,8 @@ public:
             m_remotesocket->set_nonblock(false);
             CReadWriteThread t1(m_client.get(), m_remotesocket.get(), m_ofile);
             CReadWriteThread t2(m_remotesocket.get(), m_client.get(), m_ofile);
-            t1.start();
-            t2.start();
+            t1.start(true);
+            t2.start(true);
             t1.join();
             t2.join();
             m_remotesocket->close();

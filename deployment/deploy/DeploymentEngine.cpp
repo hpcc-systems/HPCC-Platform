@@ -1454,7 +1454,7 @@ void CDeploymentEngine::copyInstallFiles(const char* instanceName, int instanceI
     if (m_threadPool == NULL)
     {
         IThreadFactory* pThreadFactory = createDeployTaskThreadFactory();
-        m_threadPool.setown(createThreadPool("Deploy Task Thread Pool", pThreadFactory, this, DEPLOY_THREAD_POOL_SIZE));
+        m_threadPool.setown(createThreadPool("Deploy Task Thread Pool", pThreadFactory, false, this, DEPLOY_THREAD_POOL_SIZE));
         pThreadFactory->Release();
     }
     else

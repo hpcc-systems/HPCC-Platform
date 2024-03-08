@@ -404,7 +404,7 @@ public:
             openPipe(pipeProgram, "PIPETHROUGH");
         }
         pipeWriter = new PipeWriterThread(*this);
-        pipeWriter->start();
+        pipeWriter->start(true);
     }
     CATCH_NEXTROW()
     {

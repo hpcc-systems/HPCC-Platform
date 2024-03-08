@@ -266,7 +266,7 @@ void CEspConfig::initSDSSessionCleaner(bool detachedFromDali)
         Owned<IPropertyTree> proc_cfg = getProcessConfig(m_envpt, m_process);
         m_sessionCleaner.setown(new CSessionCleaner(espSessionSDSPath.str(), detachedFromDali,
             proc_cfg->getPropInt("@checkSessionTimeoutSeconds", ESP_CHECK_SESSION_TIMEOUT)));
-        m_sessionCleaner->start();
+        m_sessionCleaner->start(false);
     }
 }
 

@@ -4969,7 +4969,7 @@ public:
         if (!started) {
             started = true;
             ForEachItemIn(i,threads) {
-                threads.item(i).start();
+                threads.item(i).start(false);
             }
         }
             
@@ -4992,7 +4992,7 @@ public:
             CSocketSelectThread *thread = new CSocketSelectThread(selecttrace);
             threads.append(*thread);
             if (started)
-                thread->start();
+                thread->start(false);
         }
     }
     void remove(ISocket *sock)
@@ -5559,7 +5559,7 @@ public:
             started = true;
             ForEachItemIn(i,threads)
             {
-                threads.item(i).start();
+                threads.item(i).start(false);
             }
         }
     }
@@ -5600,7 +5600,7 @@ public:
         CSocketEpollThread *thread = new CSocketEpollThread(epolltrace, hdlPerThrd);
         threads.append(*thread);
         if (started)
-            thread->start();
+            thread->start(false);
         thread->add(sock,mode,nfy);
     }
 

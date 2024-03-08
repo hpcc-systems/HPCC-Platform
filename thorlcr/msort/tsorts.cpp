@@ -848,7 +848,7 @@ public:
             }
         }
 #endif
-        threaded.start();
+        threaded.start(true);
     }
     ~CThorSorter()
     {

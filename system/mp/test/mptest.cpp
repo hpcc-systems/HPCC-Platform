@@ -488,7 +488,7 @@ void MultiTest(ICommunicator *_comm)
     Owned<ICommunicator> comm;
     comm.set(_comm); 
 
-    server.start();
+    server.start(false);
 
     CMessageBuffer mb;
     CRandomBuffer *buff = new CRandomBuffer();
@@ -675,7 +675,7 @@ void MPAlltoAll(IGroup *group, ICommunicator *mpicomm, size32_t buffsize=0, unsi
 
     unsigned startTime = msTick();
 
-    sender.start();
+    sender.start(false);
 
     // ---------
 
@@ -982,7 +982,7 @@ void MPMultiMTSendRecv(ICommunicator* comm, int counter)
         }
         for(int i=0;i<workers.size(); i++)
         {
-            workers[i]->start();
+            workers[i]->start(false);
         }
         for(int i=0;i<workers.size(); i++)
         {
@@ -1061,7 +1061,7 @@ void MPNxN(ICommunicator *comm, unsigned numStreams, size32_t perStreamMBSize, s
                 CriticalBlock b(cs);
                 expectedHashes[tgt].push(hash);
             }
-            void start() { threaded.start(); }
+            void start() { threaded.start(false); }
             void join()
             {
                 threaded.join();
@@ -1177,7 +1177,7 @@ void MPNxN(ICommunicator *comm, unsigned numStreams, size32_t perStreamMBSize, s
             replyTag = createReplyTag();
             if (async)
                 ackThread.start();
-            threaded.start();
+            threaded.start(false);
         }
         ~CSendStream()
         {
@@ -1297,7 +1297,7 @@ void MPNxN(ICommunicator *comm, unsigned numStreams, size32_t perStreamMBSize, s
         CRecvServer(ICommunicator *_comm, rank_t _myRank, unsigned _grpSize, mptag_t _mpTag, unsigned _numStreams)
             : threaded("CSendStream", this), comm(_comm), myRank(_myRank), grpSize(_grpSize), mpTag(_mpTag), numStreams(_numStreams)
         {
-            threaded.start();
+            threaded.start(false);
         }
         ~CRecvServer()
         {

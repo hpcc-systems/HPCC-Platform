@@ -1420,12 +1420,12 @@ public:
         delete activeCacheReportingBuffer;
     }
 
-    virtual void start()
+    virtual void start() override
     {
         if (!started)
         {
-            bct.start();
-            hct.start();
+            bct.start(false);
+            hct.start(false);
             bctStarted.wait();
             hctStarted.wait();
         }
@@ -1440,7 +1440,7 @@ public:
 #endif
         if (activeCacheReportingBuffer && cacheReportPeriodSeconds)
         {
-            cidt.start();
+            cidt.start(false);
             cidtStarted.wait();
             cidtActive = true;
         }

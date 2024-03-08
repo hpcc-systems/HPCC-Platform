@@ -163,7 +163,7 @@ class CLoopSlaveActivity : public CLoopSlaveActivityBase
             stopped = true;
             stopping = false;
             smartbuf.setown(createSmartInMemoryBuffer(activity, activity, SMALL_SMART_BUFFER_SIZE));
-            threaded.init(this);
+            threaded.init(this, true);
         }
         ~CNextRowFeeder()
         {

@@ -176,7 +176,7 @@ class CPrefetchProjectSlaveActivity : public CSlaveActivity
             eoi = true;
             return NULL;
         }
-        void start() { recordCount = 0; full = blocked = eoq = eoi = stopped = false; eog = true; threaded.start(); }
+        void start() { recordCount = 0; full = blocked = eoq = eoi = stopped = false; eog = true; threaded.start(true); }
         void stop()
         {
             stopped = true;

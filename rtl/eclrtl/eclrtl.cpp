@@ -6581,9 +6581,9 @@ protected:
         RegexTestThread t1;
         RegexTestThread t2;
         RegexTestThread t3;
-        t1.start();
-        t2.start();
-        t3.start();
+        t1.start(false);
+        t2.start(false);
+        t3.start(false);
         t1.join();
         t2.join();
         t3.join();

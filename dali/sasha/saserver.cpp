@@ -250,7 +250,7 @@ void SashaMain()
             return new CSashaCmdThread;
         }
     } factory;
-    Owned<IThreadPool> threadpool = createThreadPool("sashaCmdPool",&factory);
+    Owned<IThreadPool> threadpool = createThreadPool("sashaCmdPool",&factory, false, nullptr);
     CMessageBuffer mb;
     while (!stopped) {
         try {
@@ -461,7 +461,7 @@ int main(int argc, const char* argv[])
                 {
                     CThreaded threaded;
                 public:
-                    CStopThread() : threaded("CStopThread") { threaded.init(this); } 
+                    CStopThread() : threaded("CStopThread") { threaded.init(this, false); }
                     ~CStopThread() { threaded.join(); }
                     virtual void threadmain() override
                     {

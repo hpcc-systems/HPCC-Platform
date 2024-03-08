@@ -549,7 +549,7 @@ int main( int argc, const char *argv[]  )
                 CServerThread() : threaded("CServerThread")
                 {
                     dafsInstance.setown(createRemoteFileServer());
-                    threaded.init(this);
+                    threaded.init(this, false);
                 }
                 ~CServerThread()
                 {

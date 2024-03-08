@@ -236,7 +236,7 @@ public:
         }
         delete [] intertags;
         provider.init(this,queryRowSerializer(),intertag);
-        provider.start();
+        provider.start(true);
         if (!streams.ordinality())
             return NULL;
         if (streams.ordinality()==1)

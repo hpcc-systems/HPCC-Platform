@@ -158,7 +158,7 @@ public:
 
     virtual void start()
     {
-        Thread::start();
+        Thread::start(false);
         started.wait();
     }
 
@@ -395,7 +395,7 @@ void rawSendTest()
     {
         DBGLOG("Starting sender %d on port %d", senders+1, startPort);
         SendAsFastAsPossible *newSender = new SendAsFastAsPossible(startPort++, rawBufferSize);
-        newSender->start();
+        newSender->start(false);
         Sleep(10000);
     }
 }
@@ -592,7 +592,7 @@ void sortSimulator()
     for (unsigned i = 0; i < numSortSlaves; i++)
     {
         slaves[i].init(&master, i);
-        slaves[i].start();
+        slaves[i].start(false);
     }
     for (unsigned j = 0; j < numSortSlaves; j++)
     {

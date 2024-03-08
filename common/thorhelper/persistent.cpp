@@ -378,10 +378,10 @@ public:
     }
 
     //Thread
-    virtual void start() override
+    virtual void start(bool inheritThreadContext) override
     {
         m_selectHandler->start();
-        Thread::start();
+        Thread::start(inheritThreadContext);
         PERSILOG(PersistentLogLevel::PLogNormal, "PERSISTENT: Handler %d started with max idle time %d and max requests %d", m_id, m_maxIdleTime, m_maxReqs);
     }
 
@@ -462,6 +462,6 @@ int CPersistentHandler::CurID = 0;
 IPersistentHandler* createPersistentHandler(IPersistentSelectNotify* notify, int maxIdleTime, int maxReqs, PersistentLogLevel loglevel, bool enableDoNotReuseList)
 {
     Owned<CPersistentHandler> handler = new CPersistentHandler(notify, maxIdleTime, maxReqs, loglevel, enableDoNotReuseList);
-    handler->start();
+    handler->start(false);
     return handler.getClear();
 }

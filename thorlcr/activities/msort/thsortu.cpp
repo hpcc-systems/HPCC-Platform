@@ -1752,8 +1752,8 @@ public:
             return false;
         stopped = false;
         for (unsigned i=0;i<numworkers;i++)
-            workers[i]->start();
-        reader.start();
+            workers[i]->start(true);
+        reader.start(true);
         return true;
     }
     virtual const void *nextRow()
@@ -1948,8 +1948,8 @@ public:
         workqueue.setLimit(numworkers+1);
         rowWriter.setown(multiWriter->getWriter());
         for (unsigned i=0;i<numworkers;i++)
-            workers[i]->start();
-        reader.start();
+            workers[i]->start(true);
+        reader.start(true);
         return true;
     }
     virtual const void *nextRow()

@@ -142,7 +142,7 @@ public:
     unsigned                  queryMessageFields() const { return MSGFIELD_all; }
     void                      setMessageFields(unsigned _fields = MSGFIELD_all) {}
     ILogMsgFilter *           receiveFilter() const;
-    void                      startReceiver() { receiverThread->start(); }
+    void                      startReceiver() { receiverThread->start(false); }
     void                      connect();
     void                      disconnect();
     bool                      queryConnected() const { return connected; }

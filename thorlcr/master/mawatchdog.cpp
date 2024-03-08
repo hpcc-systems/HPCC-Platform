@@ -88,7 +88,7 @@ void CMasterWatchdog::start()
     {
         PROGLOG("Starting watchdog");
         stopped = false;
-        threaded.init(this);
+        threaded.init(this, false);
 #ifdef _WIN32
         threaded.adjustPriority(+1); // it is critical that watchdog packets get through.
 #endif

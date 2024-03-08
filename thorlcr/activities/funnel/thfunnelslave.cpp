@@ -59,7 +59,7 @@ class CParallelFunnel : implements IRowStream, public CSimpleInterface
         void start()
         {
             // NB don't start in constructor
-            threaded.start();
+            threaded.start(true);
         }
         void stop()
         {

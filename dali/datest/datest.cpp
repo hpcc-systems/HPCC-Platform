@@ -1178,7 +1178,7 @@ public:
 class CQPutTest : public Thread
 {
 public:
-    CQPutTest() : Thread("CQPutTest") { start(); }
+    CQPutTest() : Thread("CQPutTest") { start(false); }
     virtual int run()
     {
         try {
@@ -1193,7 +1193,7 @@ public:
 class CQGetTest : public Thread
 {
 public:
-    CQGetTest() : Thread("CQPutTest") { start(); }
+    CQGetTest() : Thread("CQPutTest") { start(false); }
     virtual int run()
     {
         try {
@@ -1319,7 +1319,7 @@ public:
         conn.setown(querySDS().connect(_path, myProcessSession(), RTM_CREATE_QUERY, 1000000));
 
         id1 = id2 = 0;
-        start();
+        start(false);
     }
     virtual int run()
     {
@@ -1407,7 +1407,7 @@ void TestStress()
         getTest.setown(new CQGetTest());
     }
     TSDSTestPool poolFactory;
-    Owned<IThreadPool> pool = createThreadPool("TSDSTest", &poolFactory);
+    Owned<IThreadPool> pool = createThreadPool("TSDSTest", &poolFactory, false, nullptr);
 
     unsigned path = 0;
     while (count)
@@ -1628,7 +1628,7 @@ void TestStress2()
     conn->changeMode(RTM_LOCK_READ);
     
     Owned<CStressPoolFactory> factory = new CStressPoolFactory();
-    Owned<IThreadPool> threadPool = createThreadPool("Stress2 Thread Pool", factory, NULL, 60);
+    Owned<IThreadPool> threadPool = createThreadPool("Stress2 Thread Pool", factory, false, nullptr, 60);
 
     unsigned totalCount = 0;
     unsigned subCount = 1;
@@ -1818,7 +1818,7 @@ void TestExternal()
 class CSubTest : public Thread
 {
 public:
-    CSubTest(const char *_path) : path(_path) { start(); }
+    CSubTest(const char *_path) : path(_path) { start(false); }
 
     virtual int run()
     {
@@ -2562,8 +2562,8 @@ void TestSDS2()
     CClientTestSDS *t1 = new CClientTestSDS();
     CClientTestSDS *t2 = new CClientTestSDS();
 
-    t1->start();
-    t2->start();
+    t1->start(false);
+    t2->start(false);
 
     t1->join();
     t2->join();
@@ -2694,7 +2694,7 @@ void TestSDS3(IGroup *group)
 
     unsigned nthreads = testParams.ordinality()?atoi(testParams.item(0)):10;
     ReadWriteLock reinitLock;
-    Owned<IThreadPool> pool = createThreadPool("TSDS1", &poolFactory, NULL, nthreads);
+    Owned<IThreadPool> pool = createThreadPool("TSDS1", &poolFactory, false, nullptr, nthreads);
 
     SDS3Params params;
     params.reinitLock = &reinitLock;
@@ -2817,7 +2817,7 @@ void TestNodeSubs()
         }
     } poolFactory;
 
-    Owned<IThreadPool> pool = createThreadPool("TSDSTest", &poolFactory, NULL, 100, 100000);
+    Owned<IThreadPool> pool = createThreadPool("TSDSTest", &poolFactory, false, nullptr, 100, 100000);
 
     unsigned tests = testParams.ordinality() ? atoi(testParams.item(0)) : 10;
     for (unsigned t=0; t<tests; t++)
@@ -3179,7 +3179,7 @@ static void TestCriticalSection()
     }
     unsigned k;
     for (k=0;k<NCCSTHREAD; k++) 
-        threads[k]->start();
+        threads[k]->start(false);
     for (k=0;k<NCCSTHREAD; k++) 
         threads[k]->join();
 }
@@ -3225,7 +3225,7 @@ static void TestMemThreads()
     }
     unsigned k;
     for (k=0;k<NCCSTHREAD; k++) 
-        threads[k]->start();
+        threads[k]->start(false);
     for (k=0;k<NCCSTHREAD; k++) 
         threads[k]->join();
 }
@@ -3345,7 +3345,7 @@ int main(int argc, char* argv[])
 #if defined(TEST_MEMTHREADS)
         printf("start...\n");
         TestMemThread2 t("test");
-        t.start();
+        t.start(false);
         t.join();
         printf("end...\n");
         return 0;

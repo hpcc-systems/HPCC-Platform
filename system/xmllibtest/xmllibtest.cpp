@@ -260,9 +260,9 @@ void doTransformUseThead()
     }
     for(i = 0; i < NUMTHREADS; i++)
     {
-        t1s[i]->start();
-        t2s[i]->start();
-        t3s[i]->start();
+        t1s[i]->start(false);
+        t2s[i]->start(false);
+        t3s[i]->start(false);
     }
     
     for(i = 0; i < NUMTHREADS; i++)

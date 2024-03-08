@@ -49,7 +49,7 @@ class CKeepAliveThread : public CSimpleInterface, implements IThreaded
 public:
     CKeepAliveThread(unsigned _periodSecs) : threaded("CKeepAliveThread", this), periodMs(_periodSecs * 1000)
     {
-        threaded.start();
+        threaded.start(false);
     }
     void stop()
     {

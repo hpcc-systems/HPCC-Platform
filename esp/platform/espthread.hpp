@@ -48,7 +48,6 @@ public:
    CEspProtocolThread(ISocket *sock, const char *name = "Unknown service type");
 
    virtual ~CEspProtocolThread();
-   virtual void start();
    void setSocket(ISocket *sock);
     void stop(bool wait);
    

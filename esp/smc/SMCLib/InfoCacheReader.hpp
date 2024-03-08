@@ -79,7 +79,7 @@ public:
 
     void init()
     {
-        threaded.init(this);
+        threaded.init(this, false);
     }
 
     virtual void threadmain() override;

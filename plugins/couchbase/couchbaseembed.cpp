@@ -636,7 +636,7 @@ namespace couchbaseembed
                 if (!isAlive())
                 {
                     shouldRun = true;
-                    Thread::start();
+                    Thread::start(false);
                 }
             }
 

@@ -216,7 +216,7 @@ public:
         }
         if (async)
         {
-            threaded.init(this);
+            threaded.init(this, false);
             sem.signal();
         }
     }

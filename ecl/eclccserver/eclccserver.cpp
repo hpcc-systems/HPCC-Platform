@@ -700,8 +700,8 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
             cycle_t startCompile = get_cycles_now();
             if (!pipe->run(eclccProgName, eclccCmd, ".", true, false, true, 0, true))
                 throw makeStringExceptionV(999, "Failed to run eclcc command %s", eclccCmd.str());
-            errorReader->start();
-            abortWaiter.start();
+            errorReader->start(true);
+            abortWaiter.start(true);
             try
             {
                 pipe->write(eclQuery.s.length(), eclQuery.s.str());
@@ -892,7 +892,7 @@ public:
 
     virtual void threadmain() override
     {
-        setDefaultJobId(wuid, true);
+        setDefaultJobName(wuid);
 
         DBGLOG("Compile request processing for workunit %s", wuid.get());
         Owned<IPropertyTree> config = getComponentConfig();
@@ -1079,7 +1079,7 @@ static void generatePrecompiledHeader()
         cmd.append("eclcc -pch");
         if (pipe->run("eclcc", cmd, ".", false, false, true, 0))
         {
-            errorReader->start();
+            errorReader->start(true);
             unsigned retcode = pipe->wait();
             errorReader->join();
             if (retcode != 0 || errorReader->errCount() != 0)
@@ -1182,7 +1182,7 @@ public:
     {
         threadsActive = 0;
         running = false;
-        pool.setown(createThreadPool("eclccServerPool", this, NULL, poolSize, INFINITE));
+        pool.setown(createThreadPool("eclccServerPool", this, false, nullptr, poolSize, INFINITE));
         serverstatus.queryProperties()->setProp("@cluster", getComponentConfigSP()->queryProp("@name"));
         serverstatus.commitProperties();
         reloadConfigHook.installOnce(std::bind(&EclccServer::configUpdate, this), false);

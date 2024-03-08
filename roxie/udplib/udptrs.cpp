@@ -833,10 +833,10 @@ class CSendManager : implements ISendManager, public CInterface
             }
         }
 
-        virtual void start()
+        virtual void start(bool inheritThreadContext) override
         {
             running = true;
-            Thread::start();
+            Thread::start(inheritThreadContext);
             started.wait();
         }
 
@@ -933,7 +933,7 @@ class CSendManager : implements ISendManager, public CInterface
         send_resend_flow(CSendManager &_parent)
             : StartedThread("UdpLib::send_resend_flow"), parent(_parent)
         {
-            start();
+            start(false);
         }
 
         ~send_resend_flow()
@@ -970,7 +970,7 @@ class CSendManager : implements ISendManager, public CInterface
             flow_socket->set_receive_buffer_size(udpFlowSocketsSize);
             size32_t actualSize = flow_socket->get_receive_buffer_size();
             DBGLOG("UdpSender[%s]: rcv_flow_socket created port=%d sockbuffsize=%d actualsize=%d", parent.myId, receive_port, udpFlowSocketsSize, actualSize);
-            start();
+            start(false);
         }
         
         ~send_receive_flow() 
@@ -1057,7 +1057,7 @@ class CSendManager : implements ISendManager, public CInterface
         {
             if (check_max_socket_write_buffer(udpLocalWriteSocketSize) < 0) 
                 throw MakeStringException(ROXIE_UDP_ERROR, "System Socket max write buffer is less than %i", udpLocalWriteSocketSize);
-            start();
+            start(false);
         }
         
         ~send_data()

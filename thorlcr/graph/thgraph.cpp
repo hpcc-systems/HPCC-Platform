@@ -2472,7 +2472,7 @@ public:
         waitOnRunning = 0;
         stopped = false;
         factory = new CGraphExecutorFactory();
-        graphPool.setown(createThreadPool("CGraphExecutor pool", factory, &jobChannel, limit));
+        graphPool.setown(createThreadPool("CGraphExecutor pool", factory, true, &jobChannel, limit));
     }
     ~CGraphExecutor()
     {

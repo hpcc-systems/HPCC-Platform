@@ -545,7 +545,7 @@ public:
         }
         StringBuffer errors;
         Owned<EclCmdErrorReader> errorReader = new EclCmdErrorReader(pipe, errors);
-        errorReader->start();
+        errorReader->start(false);
 
         if (pipe->hasInput())
         {

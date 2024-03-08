@@ -70,7 +70,7 @@ void ProcessSlaveActivity::beforeDispose()
 void ProcessSlaveActivity::startProcess(bool async)
 {
     if (async)
-        threaded.start();
+        threaded.start(true);
     else
         threadmain();
 }

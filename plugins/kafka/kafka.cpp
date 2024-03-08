@@ -261,7 +261,7 @@ namespace KafkaPlugin
         if (!isAlive() && parentPtr)
         {
             shouldRun = true;
-            Thread::start();
+            Thread::start(false);
         }
     }
 
@@ -860,7 +860,7 @@ namespace KafkaPlugin
                 if (!isAlive())
                 {
                     shouldRun = true;
-                    Thread::start();
+                    Thread::start(false);
                 }
             }
 

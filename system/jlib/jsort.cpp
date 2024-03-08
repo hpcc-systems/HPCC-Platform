@@ -338,7 +338,7 @@ public:
     void start()
     {
         for (unsigned i=0;i<numsubthreads;i++) 
-            threads[i]->start();
+            threads[i]->start(true);
     }
 
     void subsort(unsigned s, unsigned n)

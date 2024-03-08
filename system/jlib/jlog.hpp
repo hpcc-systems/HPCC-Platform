@@ -880,7 +880,23 @@ extern jlib_decl void setupContainerizedLogMsgHandler();
 
 //extern jlib_decl ILogMsgManager * createLogMsgManager(); // use with care! (needed by mplog listener facility)
 
-extern jlib_decl void setDefaultJobId(const char *id, bool threaded = false);
+extern jlib_decl void setDefaultJobName(const char *id);
+
+//A class for mapping job names to ids
+class jlib_decl JobNameTranslator
+{
+public:
+    JobNameTranslator() = default;
+    JobNameTranslator(const char * name);
+    ~JobNameTranslator() { clear(); }
+
+    void clear();
+    void set(const char * name);
+    LogMsgJobId queryId() const { return id; }
+
+protected:
+    LogMsgJobId id = 0;
+};
 
 // Macros to make logging as simple as possible
 
