@@ -2254,10 +2254,8 @@ void ModuleInfo::write_body_class()
     }
     outf("}, %d };\n\n",version);
 
-    int fn=0;
     for (ProcInfo *pi=procs; pi; pi=pi->next)
     {
-        fn++;
         pi->write_body_method_structs2(name);
     }
     outs("\n");

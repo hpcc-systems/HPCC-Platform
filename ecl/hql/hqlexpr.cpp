@@ -1146,8 +1146,8 @@ void HqlParseContext::finishMeta(bool isSeparateFile, bool success, bool generat
     {
 #if 0
         IPropertyTree* tos = curMeta().meta;
-# This is disabled as the location of the cache file needs to be
-# in the original location for now.  This may re-visited in the future.
+// This is disabled as the location of the cache file needs to be
+// in the original location for now.  This may re-visited in the future.
         if (isSeparateFile && hasCacheLocation())
         {
             StringBuffer fullName;
