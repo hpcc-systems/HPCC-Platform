@@ -65,6 +65,7 @@ public:
         CPPUNIT_TEST(testEnsureTraceID);
         CPPUNIT_TEST(manualTestsEventsOutput);
         CPPUNIT_TEST(manualTestsDeclaredFailures);
+        CPPUNIT_TEST(manualTestScopeEnd);
 
         //CPPUNIT_TEST(testJTraceJLOGExporterprintResources);
         //CPPUNIT_TEST(testJTraceJLOGExporterprintAttributes);
@@ -196,7 +197,7 @@ protected:
     {
         Owned<IProperties> emptyMockHTTPHeaders = createProperties();
         {
-            Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("spanWithEventsNoAtts", emptyMockHTTPHeaders);
+            OwnedSpanScope serverSpan = queryTraceManager().createServerSpan("spanWithEventsNoAtts", emptyMockHTTPHeaders);
             Owned<IProperties> emptyEventAtts = createProperties();
             serverSpan->addSpanEvent("event1", emptyEventAtts);
         }
@@ -206,12 +207,12 @@ protected:
         twoEventAtt->setProp("key2", "");
 
         {
-            Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("spanWithEvent1Att", emptyMockHTTPHeaders);
+            OwnedSpanScope serverSpan = queryTraceManager().createServerSpan("spanWithEvent1Att", emptyMockHTTPHeaders);
             serverSpan->addSpanEvent("event2", twoEventAtt);
         }//{ "type": "span", "name": "spanWithEvents1Att", "trace_id": "3b9f55aaf8fab51fb0d73a32db7d704f", "span_id": "2a25a44ae0b3abe0", "start": 1709696036335278770, "duration": 3363911469, "events":[ { "name": "event2", "time_stamp": 1709696038413023245, "attributes": {"key": "value" } } ] }
 
         {
-            Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("spanWith2Events", emptyMockHTTPHeaders);
+            OwnedSpanScope serverSpan = queryTraceManager().createServerSpan("spanWith2Events", emptyMockHTTPHeaders);
             serverSpan->addSpanEvent("event1", twoEventAtt);
             serverSpan->addSpanEvent("event2", twoEventAtt);
         }//{ "type": "span", "name": "spanWith2Events", "trace_id": "ff5c5919b9c5f85913652b77f289bf0b", "span_id": "82f91ca1f9d469c1", "start": 1709698012480805016, "duration": 2811601377, "events":[ { "name": "event1", "time_stamp": 1709698013294323139, "attributes": {"key": "value" } },{ "name": "event2", "time_stamp": 1709698014500350802, "attributes": {"key": "value" } } ] }
@@ -275,25 +276,25 @@ protected:
     {
         Owned<IProperties> emptyMockHTTPHeaders = createProperties();
         {
-            Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("defaultErrorSpan", emptyMockHTTPHeaders);
+            OwnedSpanScope serverSpan = queryTraceManager().createServerSpan("defaultErrorSpan", emptyMockHTTPHeaders);
             serverSpan->recordError();
         }//{ "type": "span", "name": "defaultErrorSpan", "trace_id": "209b5d8cea0aec9785d2dfa3117e37ad", "span_id": "ab72e76c2f2466c2", "start": 1709675278129335702, "duration": 188292867932, "status": "Error", "kind": "Server", "instrumented_library": "unittests", "events":[ { "name": "Exception", "time_stamp": 1709675465508149013, "attributes": {"escaped": 0 } } ] }
 
         {
-            Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("defaultErrorSpanStruct", emptyMockHTTPHeaders);
+            OwnedSpanScope serverSpan = queryTraceManager().createServerSpan("defaultErrorSpanStruct", emptyMockHTTPHeaders);
             SpanError error;
             serverSpan->recordError(error);
         }//{ "type": "span", "name": "defaultErrorSpanStruct", "trace_id": "19803a446b971f2e0bdddc9c00db50fe", "span_id": "04c93a91ab8785a2", "start": 1709675487767044352, "duration": 2287497219, "status": "Error", "kind": "Server", "instrumented_library": "unittests", "events":[ { "name": "Exception", "time_stamp": 1709675489216412154, "attributes": {"escaped": 0 } } ] }
 
         {
-            Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("failedErrorSpanEscaped", emptyMockHTTPHeaders);
+            OwnedSpanScope serverSpan = queryTraceManager().createServerSpan("failedErrorSpanEscaped", emptyMockHTTPHeaders);
             SpanError * error = new SpanError("hello");
             error->setSpanStatus(true, true);
             serverSpan->recordError(*error);
         }//{ "type": "span", "name": "failedErrorSpanEscaped", "trace_id": "634f386c18a6140544c980e0d5a15905", "span_id": "e2f59c48f63a8f82", "start": 1709675508231168974, "duration": 7731717678, "status": "Error", "kind": "Server", "description": "hello", "instrumented_library": "unittests", "events":[ { "name": "Exception", "time_stamp": 1709675512164430668, "attributes": {"escaped": 1,"message": "hello" } } ] }
 
         {
-            Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("failedErrEscapedMsgErrCode", emptyMockHTTPHeaders);
+            OwnedSpanScope serverSpan = queryTraceManager().createServerSpan("failedErrEscapedMsgErrCode", emptyMockHTTPHeaders);
             SpanError * error = new SpanError();
             error->setSpanStatus(true, true);
             error->setError("hello", 34);
@@ -301,22 +302,22 @@ protected:
         }//failedErrEscapedMsgErrCode
 
         {
-            Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("containsErrorAndMessageSpan", emptyMockHTTPHeaders);
+            OwnedSpanScope serverSpan = queryTraceManager().createServerSpan("containsErrorAndMessageSpan", emptyMockHTTPHeaders);
             serverSpan->recordError(SpanError("Error Message!!"));
         }//{ "type": "span", "name": "containsErrorAndMessageSpan", "trace_id": "9a6e00ea309bc0427733f9b2d452f9e2", "span_id": "de63e9c69b64e411", "start": 1709675552302360510, "duration": 5233037523, "status": "Error", "kind": "Server", "description": "Error Message!!", "instrumented_library": "unittests", "events":[ { "name": "Exception", "time_stamp": 1709675555149852711, "attributes": {"escaped": 0,"message": "Error Message!!" } }
 
         {
-            Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("containsErrorAndMessageFailedNotEscapedSpan", emptyMockHTTPHeaders);
+            OwnedSpanScope serverSpan = queryTraceManager().createServerSpan("containsErrorAndMessageFailedNotEscapedSpan", emptyMockHTTPHeaders);
             serverSpan->recordError(SpanError("Error Message!!", 23, true, false)); 
         }//{ "type": "span", "name": "containsErrorAndMessageFailedNotEscapedSpan", "trace_id": "02f4b2d215f8230b15063862f8a91e41", "span_id": "c665ec371d6db147", "start": 1709675573581678954, "duration": 3467489486, "status": "Error", "kind": "Server", "description": "Error Message!!", "instrumented_library": "unittests", "events":[ { "name": "Exception", "time_stamp": 1709675576145074240, "attributes": {"code": 23,"escaped": 0,"message": "Error Message!!" } } ] }
 
         {
-            Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("mockExceptionSpanNotFailedNotEscaped", emptyMockHTTPHeaders);
+            OwnedSpanScope serverSpan = queryTraceManager().createServerSpan("mockExceptionSpanNotFailedNotEscaped", emptyMockHTTPHeaders);
             serverSpan->recordException( makeStringExceptionV(76,"Mock exception"), false, false);
         }//{ "type": "span", "name": "mockExceptionSpanNotFailedNotEscaped", "trace_id": "e01766474db05ce9085943fa3955cd73", "span_id": "7da620e96e10e42c", "start": 1709675595987480704, "duration": 2609091267, "status": "Unset", "kind": "Server", "instrumented_library": "unittests", "events":[ { "name": "Exception", "time_stamp": 1709675597728975355, "attributes": {"code": 76,"escaped": 0,"message": "Mock exception" } } ] 
 
         {
-            Owned<ISpan> serverSpan = queryTraceManager().createServerSpan("thrownExceptionSpan", emptyMockHTTPHeaders);
+            OwnedSpanScope serverSpan = queryTraceManager().createServerSpan("thrownExceptionSpan", emptyMockHTTPHeaders);
             try
             {
                 throw makeStringExceptionV( 356, "Mock thrown exception");
@@ -327,6 +328,28 @@ protected:
                 e->Release();
             }
         }//{ "type": "span", "name": "thrownExceptionSpan", "trace_id": "4d6225e1cefdc6823d1134c71c522426", "span_id": "07f7bd070e008f53", "start": 1709675614823881961, "duration": 4665288686, "status": "Unset", "kind": "Server", "instrumented_library": "unittests", "events":[ { "name": "Exception", "time_stamp": 1709675616485586471, "attributes": {"code": 356,"escaped": 1,"message": "Mock thrown exception" } } ] }
+    }
+    //not able to programmatically test yet, but can visually inspect trace output
+    void manualTestScopeEnd()
+    {
+        Owned<ISpan> savedSpan;
+        {
+            SpanFlags flags = SpanFlags::EnsureTraceId;
+            Owned<IProperties> emptyMockHTTPHeaders = createProperties();
+            OwnedSpanScope serverSpan = queryTraceManager().createServerSpan("mySpan", emptyMockHTTPHeaders, flags);
+            DBGLOG("mySpan is alive");
+            savedSpan.set(serverSpan);
+        }//{ "type": "span", "name": "mySpan", "trace_id": "fe266416e7d588113a5131394d913ab4", "span_id": "7ac62328b04442c5", "start": 1709824793826023368, "duration": 16952 }
+        //NB: Duration for the span should be << 100,000,000ns
+        //If logging is asynchronous the log message may appear after the following logging line
+        DBGLOG("mySpan is finished");
+        Sleep(100);
+
+        //Check that the attributes are still accessible even though the span has ended
+        Owned<IProperties> retrievedSpanCtxAttributes = createProperties();
+        savedSpan->getSpanContext(retrievedSpanCtxAttributes.get());
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected empty TraceID detected", false, isEmptyString(retrievedSpanCtxAttributes->queryProp("traceID")));
+        savedSpan.clear();
     }
 
     void testTraceDisableConfig()

@@ -1262,7 +1262,6 @@ public:
 
     bool remove(RoxiePacketHeader &x)
     {
-        unsigned scanLength = 0;
         ISerializedRoxieQueryPacket *found = nullptr;
         {
             CriticalBlock qc(qcrit);
@@ -1273,7 +1272,6 @@ public:
                 ISerializedRoxieQueryPacket *queued = waiting.item(i);
                 if (queued)
                 {
-                    scanLength++;
                     if (queued->queryHeader().matchPacket(x))
                     {
                         waiting.set(i, NULL);
