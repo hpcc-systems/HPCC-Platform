@@ -2093,6 +2093,85 @@ extern TPWRAPPER_API void initContainerRoxieTargets(MapStringToMyClass<ISmartSoc
     }
 }
 
+void appendServerAddress(StringBuffer& list, IPropertyTree& env, IPropertyTree& server, const char* farmerPort)
+{
+    //just in case, for backward compatability with old environment.xml files, allow server rather than farmer to specify port
+    const char *port = server.queryProp("@port");
+    if (!port)
+        port = farmerPort;
+    if (port && streq(port, "0")) //0 == roxie listening on queue rather than port
+        return;
+
+    const char *netAddress = server.queryProp("@netAddress");
+    if (!netAddress && server.hasProp("@computer"))
+    {
+        VStringBuffer xpath("Hardware/Computer[@name='%s']/@netAddress", server.queryProp("@computer"));
+        netAddress = env.queryProp(xpath.str());
+    }
+    if (!netAddress || !*netAddress)
+        return;
+    if (list.length())
+        list.append('|');
+    list.append(netAddress).append(':').append(port);
+}
+
+class TlsSmartSocketFactory : public CSmartSocketFactory
+{
+public:
+    TlsSmartSocketFactory(const char *_socklist) : CSmartSocketFactory(_socklist)
+    {
+        tlsService  = true;
+    }
+};
+
+extern TPWRAPPER_API void initBareMetalRoxieTargets(MapStringToMyClass<ISmartSocketFactory>& connMap)
+{
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(false);
+    Owned<IConstEnvironment> env = factory->openEnvironment();
+    Owned<IPropertyTree> envRoot = &env->getPTree();
+
+    Owned<IPropertyTreeIterator> roxieClusters = envRoot->getElements("Software/RoxieCluster");
+    ForEach(*roxieClusters)
+    {
+        IPropertyTree& roxieCluster = roxieClusters->query();
+        const char* name = roxieCluster.queryProp("@name");
+        if (isEmptyString(name))
+            continue;
+
+        StringBuffer addressList;
+        StringBuffer port("");
+        bool useTls = false;
+
+        Owned<IPropertyTreeIterator> roxieFarms = roxieCluster.getElements("RoxieFarmProcess");
+        ForEach(*roxieFarms)
+        {
+            IPropertyTree& farm = roxieFarms->query();
+            const char* farmPort = farm.queryProp("@port");
+            if (!isEmptyString(farmPort) && !streq(farmPort, "0"))
+            {
+                const char *protocol = farm.queryProp("@protocol");
+                if (!isEmptyString(protocol) && strieq(protocol, "ssl"))
+                {
+                    port.set(farmPort);
+                    useTls = true;
+                    break;
+                }
+                else if (isEmptyString(port.str()))
+                {
+                    port.set(farmPort);
+                }
+            }
+        }
+
+        Owned<IPropertyTreeIterator> roxieServers = roxieCluster.getElements("RoxieServerProcess");
+        ForEach(*roxieServers)
+            appendServerAddress(addressList, *envRoot, roxieServers->query(), port.str());
+
+        Owned<ISmartSocketFactory> sf = useTls ? new TlsSmartSocketFactory(addressList) : createSmartSocketFactory(addressList);
+        connMap.setValue(name, sf.get());
+    }
+}
+
 extern TPWRAPPER_API void getRoxieTargetsSupportingPublishedQueries(StringArray& names)
 {
     CConstWUClusterInfoArray clusters;
