@@ -192,14 +192,14 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                     if (key === "AbsoluteTimeRange") {
                         const startDate = logFilter.AbsoluteTimeRange.StartDate ? new Date(logFilter.AbsoluteTimeRange.StartDate).toISOString() : "";
                         const endDate = logFilter.AbsoluteTimeRange.EndDate ? new Date(logFilter.AbsoluteTimeRange.EndDate).toISOString() : "";
-                        formData.append("LogFilter.AbsoluteTimeRange.StartDate", startDate);
-                        formData.append("LogFilter.AbsoluteTimeRange.EndDate", endDate);
+                        formData.append("LogFilter_AbsoluteTimeRange_StartDate", startDate);
+                        formData.append("LogFilter_AbsoluteTimeRange_EndDate", endDate);
                     } else {
-                        formData.append(`LogFilter.${key}`, logFilter[key]);
+                        formData.append(`LogFilter_${key}`, logFilter[key]);
                     }
                 }
 
-                fetch("/WsWorkunits/WUCreateZAPInfo", {
+                fetch("/WsWorkunits/WUCreateAndDownloadZAPInfo", {
                     method: "POST",
                     body: formData
                 })
@@ -630,7 +630,7 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
             <Controller
                 control={control} name="LogFilter.Format"
                 render={({
-                    field: { onChange, name: fieldName, value }
+                    field: { name: fieldName }
                 }) => <Dropdown
                         key={fieldName}
                         label={nlsHPCC.LogFormat}
@@ -671,7 +671,7 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
             <Controller
                 control={control} name="LogFilter.sortByTimeDirection"
                 render={({
-                    field: { name: fieldName }
+                    field: { onChange, name: fieldName, value }
                 }) => <Dropdown
                         key={fieldName}
                         label={`${nlsHPCC.Sort} (${nlsHPCC.TimeStamp})`}
@@ -679,19 +679,23 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                             { key: "0", text: "ASC" },
                             { key: "1", text: "DESC" },
                         ]}
-                        defaultSelectedKey="1"
+                        defaultSelectedKey={"1"}
+                        selectedKey={value}
                         onRenderLabel={(props: CustomLabelProps) => <CustomLabel
                             id={`${fieldName}_Label`}
                             tooltip={nlsHPCC.LogFilterSortByTooltip}
                             {...props}
                         />}
+                        onChange={(evt, option) => {
+                            onChange(option.key);
+                        }}
                     />
                 }
             />
             <Controller
                 control={control} name="LogFilter.LogEventType"
                 render={({
-                    field: { name: fieldName }
+                    field: { onChange, name: fieldName, value }
                 }) => <Dropdown
                         key={fieldName}
                         label={nlsHPCC.LogEventType}
@@ -704,12 +708,15 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                             { key: LogType.Progress, text: "Progress" },
                             { key: LogType.Metric, text: "Metric" },
                         ]}
-                        defaultSelectedKey="ALL"
+                        selectedKey={value}
                         onRenderLabel={(props: CustomLabelProps) => <CustomLabel
                             id={`${fieldName}_Label`}
                             tooltip={nlsHPCC.LogFilterEventTypeTooltip}
                             {...props}
                         />}
+                        onChange={(evt, option) => {
+                            onChange(option.key);
+                        }}
                     />
                 }
             />
