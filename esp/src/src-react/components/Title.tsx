@@ -1,6 +1,6 @@
 import * as React from "react";
-import { ContextualMenuItemType, DefaultButton, IconButton, IContextualMenuItem, IIconProps, IPersonaSharedProps, Link, mergeStyleSets, Persona, PersonaSize, SearchBox, Stack, Text, useTheme } from "@fluentui/react";
-import { CounterBadgeProps, CounterBadge } from "@fluentui/react-components";
+import { ContextualMenuItemType, DefaultButton, IconButton, IContextualMenuItem, IIconProps, IPersonaSharedProps, Link, mergeStyleSets, Persona, PersonaSize, SearchBox, Stack, Text, ThemeProvider, } from "@fluentui/react";
+import { CounterBadgeProps, CounterBadge, FluentProvider } from "@fluentui/react-components";
 import { Level, scopedLogger } from "@hpcc-js/util";
 import { useBoolean } from "@fluentui/react-hooks";
 import { Toaster } from "react-hot-toast";
@@ -16,6 +16,7 @@ import { useGlobalStore } from "../hooks/store";
 import { useMyAccount, useUserSession } from "../hooks/user";
 import { replaceUrl } from "../util/history";
 import { useCheckFeatures } from "../hooks/platform";
+import { useUserTheme, useToolbarTheme } from "../hooks/theme";
 
 import { TitlebarConfig } from "./forms/TitlebarConfig";
 import { switchTechPreview } from "./controls/ComingSoon";
@@ -47,9 +48,10 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
 }) => {
 
     const [, { opsCategory }] = useBuildInfo();
-    const theme = useTheme();
+    const { themeV9 } = useUserTheme();
+    const { toolbarTheme, toolbarThemeV9 } = useToolbarTheme();
     const { userSession, setUserSession, deleteUserSession } = useUserSession();
-    const toolbarThemeDefaults = { active: false, text: "", color: theme.palette.themeLight };
+    const toolbarThemeDefaults = { active: false, text: "", color: themeV9.colorBrandBackground };
     const [logIconColor, setLogIconColor] = React.useState<CounterBadgeProps["color"]>();
 
     const [showAbout, setShowAbout] = React.useState(false);
@@ -60,14 +62,9 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
     const [showTitlebarConfig, setShowTitlebarConfig] = React.useState(false);
     const [showEnvironmentTitle] = useGlobalStore("HPCCPlatformWidget_Toolbar_Active", toolbarThemeDefaults.active, true);
     const [environmentTitle] = useGlobalStore("HPCCPlatformWidget_Toolbar_Text", toolbarThemeDefaults.text, true);
-    const [titlebarColor] = useGlobalStore("HPCCPlatformWidget_Toolbar_Color", toolbarThemeDefaults.color, true);
 
     const [showBannerConfig, setShowBannerConfig] = React.useState(false);
     const [BannerMessageBar, BannerConfig] = useBanner({ showForm: showBannerConfig, setShowForm: setShowBannerConfig });
-
-    const titlebarColorSet = React.useMemo(() => {
-        return titlebarColor && titlebarColor !== theme.palette.themeLight;
-    }, [theme.palette, titlebarColor]);
 
     const personaProps: IPersonaSharedProps = React.useMemo(() => {
         return {
@@ -185,12 +182,12 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
             background: "transparent",
             minWidth: 48,
             padding: "0 10px 0 4px",
-            color: titlebarColor ? Utility.textColor(titlebarColor) : theme.semanticColors.link
+            color: toolbarThemeV9.colorBrandForegroundLink
         },
         errorsWarningsCount: {
             margin: "-3px 0 0 -3px"
         }
-    }), [theme.semanticColors.link, titlebarColor]);
+    }), [toolbarThemeV9.colorBrandForegroundLink]);
 
     React.useEffect(() => {
         switch (log.reduce((prev, cur) => Math.max(prev, cur.level), Level.debug)) {
@@ -212,7 +209,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
                 setLogIconColor("informative");
                 break;
         }
-    }, [log, logLastUpdated, theme]);
+    }, [log, logLastUpdated, toolbarThemeV9]);
 
     const features = useCheckFeatures();
 
@@ -247,50 +244,56 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
         }
     }, [currentUser]);
 
-    return <div style={{ backgroundColor: titlebarColorSet ? titlebarColor : theme.palette.themeLight }}>
-        <BannerMessageBar />
-        <Stack horizontal verticalAlign="center" horizontalAlign="space-between">
-            <Stack.Item align="center">
-                <Stack horizontal>
-                    <Stack.Item>
-                        <IconButton iconProps={waffleIcon} onClick={openAppPanel} style={{ width: 48, height: 48, color: titlebarColorSet ? Utility.textColor(titlebarColor) : theme.palette.themeDarker }} />
-                    </Stack.Item>
-                    <Stack.Item align="center">
-                        <Link href="#/activities">
-                            <Text variant="large" nowrap block >
-                                <b title="ECL Watch" style={{ color: titlebarColorSet ? Utility.textColor(titlebarColor) : theme.palette.themeDarker }}>
-                                    {(showEnvironmentTitle && environmentTitle) ? environmentTitle : "ECL Watch"}
-                                </b>
-                            </Text>
-                        </Link>
-                    </Stack.Item>
-                </Stack>
-            </Stack.Item>
-            <Stack.Item align="center">
-                <SearchBox onSearch={newValue => { window.location.href = `#/search/${newValue.trim()}`; }} placeholder={nlsHPCC.PlaceholderFindText} styles={{ root: { minWidth: 320 } }} />
-            </Stack.Item>
-            <Stack.Item align="center" >
-                <Stack horizontal>
-                    {currentUser?.username &&
-                        <Stack.Item styles={personaStyles}>
-                            <Persona {...personaProps} onClick={() => setShowMyAccount(true)} />
+    return <div>
+        <FluentProvider theme={toolbarThemeV9}>
+            <ThemeProvider theme={toolbarTheme}>
+                <div style={{ backgroundColor: toolbarThemeV9.colorBrandBackground2 }}>
+                    <BannerMessageBar />
+                    <Stack horizontal verticalAlign="center" horizontalAlign="space-between">
+                        <Stack.Item align="center">
+                            <Stack horizontal>
+                                <Stack.Item>
+                                    <IconButton iconProps={waffleIcon} onClick={openAppPanel} style={{ width: 48, height: 48 }} />
+                                </Stack.Item>
+                                <Stack.Item align="center">
+                                    <Link href="#/activities">
+                                        <Text variant="large" nowrap block >
+                                            <b title="ECL Watch" style={{ color: toolbarThemeV9.colorBrandForegroundLink }}>
+                                                {showEnvironmentTitle && environmentTitle.length ? environmentTitle : "ECL Watch"}
+                                            </b>
+                                        </Text>
+                                    </Link>
+                                </Stack.Item>
+                            </Stack>
                         </Stack.Item>
-                    }
-                    <Stack.Item align="center">
-                        <DefaultButton href="#/log" title={nlsHPCC.ErrorWarnings} iconProps={{ iconName: logCount > 0 ? "RingerSolid" : "Ringer" }} className={btnStyles.errorsWarnings}>
-                            <CounterBadge appearance="filled" size="small" color={logIconColor} count={logCount} />
-                        </DefaultButton>
-                    </Stack.Item>
-                    <Stack.Item align="center">
-                        <IconButton title={nlsHPCC.Advanced} iconProps={collapseMenuIcon} menuProps={advMenuProps} style={{ color: titlebarColorSet ? Utility.textColor(titlebarColor) : theme.palette.themeDarker }} />
-                    </Stack.Item>
-                </Stack>
-                <Toaster position="top-right" gutter={8 - (90 - toasterScale(90))} containerStyle={{
-                    top: toasterScale(57),
-                    right: 8 - (180 - toasterScale(180))
-                }} />
-            </Stack.Item>
-        </Stack>
+                        <Stack.Item align="center">
+                            <SearchBox onSearch={newValue => { window.location.href = `#/search/${newValue.trim()}`; }} placeholder={nlsHPCC.PlaceholderFindText} styles={{ root: { minWidth: 320 } }} />
+                        </Stack.Item>
+                        <Stack.Item align="center" >
+                            <Stack horizontal>
+                                {currentUser?.username &&
+                                    <Stack.Item styles={personaStyles}>
+                                        <Persona {...personaProps} onClick={() => setShowMyAccount(true)} />
+                                    </Stack.Item>
+                                }
+                                <Stack.Item align="center">
+                                    <DefaultButton href="#/log" title={nlsHPCC.ErrorWarnings} iconProps={{ iconName: logCount > 0 ? "RingerSolid" : "Ringer" }} className={btnStyles.errorsWarnings}>
+                                        <CounterBadge appearance="filled" size="small" color={logIconColor} count={logCount} />
+                                    </DefaultButton>
+                                </Stack.Item>
+                                <Stack.Item align="center">
+                                    <IconButton title={nlsHPCC.Advanced} iconProps={collapseMenuIcon} menuProps={advMenuProps} />
+                                </Stack.Item>
+                            </Stack>
+                            <Toaster position="top-right" gutter={8 - (90 - toasterScale(90))} containerStyle={{
+                                top: toasterScale(57),
+                                right: 8 - (180 - toasterScale(180))
+                            }} />
+                        </Stack.Item>
+                    </Stack>
+                </div>
+            </ThemeProvider>
+        </FluentProvider>
         <AppPanel show={showAppPanel} onDismiss={dismissAppPanel} />
         <About eclwatchVersion="9" show={showAbout} onClose={() => setShowAbout(false)} ></About>
         <MyAccount currentUser={currentUser} show={showMyAccount} onClose={() => setShowMyAccount(false)}></MyAccount>

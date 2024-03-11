@@ -32,6 +32,14 @@ const lightThemeOld: PartialTheme = {
         neutralDark: "#222222",
         black: "#000000",
         white: "#ffffff",
+    },
+    semanticColors: {
+        infoIcon: "#605e5c",
+        errorIcon: "#A80000",
+        blockingIcon: "#FDE7E9",
+        warningIcon: "#D1B331",
+        severeWarningIcon: "#D83B01",
+        successIcon: "#107C10",
     }
 };
 
@@ -59,6 +67,14 @@ const darkThemeOld: PartialTheme = {
         neutralDark: "#f0f0f0",
         black: "#ffffff",
         white: "#222222",
+    },
+    semanticColors: {
+        infoIcon: "#605e5c",
+        errorIcon: "#A80000",
+        blockingIcon: "#FDE7E9",
+        warningIcon: "#D1B331",
+        severeWarningIcon: "#D83B01",
+        successIcon: "#107C10",
     }
 };
 
@@ -136,8 +152,8 @@ namespace current {
 namespace next {
     export const lightThemeV9 = createLightTheme(brand);
     export const darkThemeV9 = createDarkTheme(brand);
-    export const lightTheme = createV8Theme(brand, lightThemeV9, false, current.lightTheme);
-    export const darkTheme = createV8Theme(brand, darkThemeV9, true, current.darkTheme);
+    export const lightTheme = createV8Theme(brand, lightThemeV9, false);
+    export const darkTheme = createV8Theme(brand, darkThemeV9, true);
 }
 
 const useNext = false;

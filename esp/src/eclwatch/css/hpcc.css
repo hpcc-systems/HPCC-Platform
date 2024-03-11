@@ -27,11 +27,6 @@ body {
     padding: 0;
 }
 
-button:hover {
-    color: rgb(0, 0, 0);
-    background-color: rgb(175, 217, 255);
-}
-
 h1 {
     font-size: 1.5em;
 }
