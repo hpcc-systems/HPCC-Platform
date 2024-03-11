@@ -155,7 +155,7 @@ export const JsonImportForm: React.FunctionComponent<JsonImportFormProps> = ({
                     TargetRowPath: "/",
                     NumParts: "",
                     SourceFile: file["fullPath"],
-                    SourcePlane: file?.DropZone?.Name ?? "",
+                    SourcePlane: file["SourcePlane"] ?? "",
                     SourceIP: file["NetAddress"]
                 };
             });

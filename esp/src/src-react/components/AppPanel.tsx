@@ -33,7 +33,7 @@ export const AppPanel: React.FunctionComponent<AppPanelProps> = ({
         const retVal = [];
         webLinks?.forEach(webLink => {
             webLink.Annotations.NamedValue.forEach(nv => {
-                retVal.push(<DefaultButton text={`${webLink.ServiceName} - ${nv.Name}`} href={`/${nv.Value}`} target="_blank" />);
+                retVal.push(<DefaultButton key={nv.Name} text={`${webLink.ServiceName} - ${nv.Name}`} href={`/${nv.Value}`} target="_blank" />);
             });
         });
         // Include HPCC Systems link when there are no other web links available

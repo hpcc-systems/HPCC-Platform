@@ -165,7 +165,7 @@ export const DelimitedImportForm: React.FunctionComponent<DelimitedImportFormPro
                     TargetName: file["name"],
                     NumParts: file["NumParts"],
                     SourceFile: file["fullPath"],
-                    SourcePlane: file?.DropZone?.Name ?? "",
+                    SourcePlane: file["SourcePlane"] ?? "",
                     SourceIP: file["NetAddress"]
                 };
             });
