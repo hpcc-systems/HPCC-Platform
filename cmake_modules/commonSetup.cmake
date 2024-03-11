@@ -839,10 +839,8 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
         endif()
       endif(USE_URIPARSER)
 
-      find_package(Boost COMPONENTS regex)
-	  if (NOT Boost_REGEX_FOUND)
-		message(FATAL_ERROR "BOOST_REGEX required but package not found")
-	  endif()
+      # Do we need this at the top level or just within the components that use it?
+      # find_package(pcre2 CONFIG REQUIRED)
 
       if(USE_PARQUET)
         message(STATUS "Parquet enabled")
