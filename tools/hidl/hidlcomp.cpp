@@ -5980,7 +5980,7 @@ void EspServInfo::write_esp_service_ipp()
     outf("\timplements IEsp%s\n", name_);
     outs("{\n");
     outs("private:\n");
-    outs("\tIEspContainer* m_container;\n");
+    outs("\tIEspContainer* m_container = nullptr;\n");
     outs("public:\n");
     outs("\tIMPLEMENT_IINTERFACE;\n\n");
     outf("\tC%s(){}\n\tvirtual ~C%s(){}\n", name_, name_);
