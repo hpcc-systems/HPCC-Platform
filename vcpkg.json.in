@@ -40,7 +40,6 @@
             "platform": "@VCPKG_AZURE@"
         },
         "boost-property-tree",
-        "boost-regex",
         {
             "name": "cpp-driver",
             "platform": "@VCPKG_CASSANDRAEMBED@"
@@ -165,6 +164,7 @@
             "name": "openssl",
             "platform": "@VCPKG_OPENSSL@"
         },
+        "pcre2",
         {
             "name": "opentelemetry-cpp",
             "default-features": false,
