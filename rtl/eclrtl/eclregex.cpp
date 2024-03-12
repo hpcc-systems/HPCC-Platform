@@ -201,8 +201,10 @@ public:
     void replace(size32_t & outlen, char * & out, size32_t slen, char const * str, size32_t rlen, char const * replace) const
     {
         PCRE2_SIZE pcreLen = 0;
+        outlen = 0;
 
-        // Call it once to get the size of the output, then allocate memory for it
+        // Call it once to get the size of the output, then allocate memory for it;
+        // Note that pcreLen will include the terminating null character
         int replaceResult = pcre2_substitute_8(compiledRegex, (PCRE2_SPTR8)str, slen, 0, PCRE2_SUBSTITUTE_GLOBAL|PCRE2_SUBSTITUTE_OVERFLOW_LENGTH, matchData, pcre2MatchContext8, (PCRE2_SPTR8)replace, rlen, nullptr, &pcreLen);
 
         if (replaceResult < 0 && replaceResult != PCRE2_ERROR_NOMEMORY)
@@ -210,14 +212,20 @@ public:
             failOnPCRE2Error(replaceResult, "Error in regex replace: ");
         }
 
-        outlen = pcreLen;
-        out = (char *)rtlMalloc(outlen);
-
-        replaceResult = pcre2_substitute_8(compiledRegex, (PCRE2_SPTR8)str, slen, 0, PCRE2_SUBSTITUTE_GLOBAL, matchData, pcre2MatchContext8, (PCRE2_SPTR8)replace, rlen, (PCRE2_UCHAR8 *)out, &pcreLen);
-
-        if (replaceResult < 0)
+        if (pcreLen > 0)
         {
-            failOnPCRE2Error(replaceResult, "Error in regex replace: ");
+            out = (char *)rtlMalloc(pcreLen);
+
+            // Note that, weirdly, pcreLen will contain the number of bytes
+            // in the result *excluding* the null terminator
+            replaceResult = pcre2_substitute_8(compiledRegex, (PCRE2_SPTR8)str, slen, 0, PCRE2_SUBSTITUTE_GLOBAL, matchData, pcre2MatchContext8, (PCRE2_SPTR8)replace, rlen, (PCRE2_UCHAR8 *)out, &pcreLen);
+
+            if (replaceResult < 0)
+            {
+                failOnPCRE2Error(replaceResult, "Error in regex replace: ");
+            }
+
+            outlen = pcreLen;
         }
     }
 
