@@ -2525,6 +2525,7 @@ int CMPConnectThread::run()
 #ifdef _TRACE
     LOG(MCdebugInfo, unknownJob, "MP: Connect Thread Starting - accept loop");
 #endif
+    Owned<IException> exception;
     while (running)
     {
         Owned<ISocket> sock;
@@ -2535,8 +2536,7 @@ int CMPConnectThread::run()
         }
         catch (IException *e)
         {
-            LOG(MCdebugInfo, unknownJob, e,"MP accept failed");
-            throw; // error handling TBD
+            exception.setown(e);
         }
         if (sock)
         {
@@ -2552,7 +2552,19 @@ int CMPConnectThread::run()
         else
         {
             if (running)
-                LOG(MCdebugInfo, unknownJob, "MP Connect Thread accept returned NULL");
+            {
+                if (exception)
+                {
+                    constexpr unsigned sleepSecs = 5;
+                    // Log and pause for a few seconds, because accept loop may have failed due to handle exhaustion.
+                    VStringBuffer msg("MP accept failed. Accept loop will be paused for %u seconds", sleepSecs);
+                    EXCLOG(exception, msg.str());
+                    exception.clear();
+                    MilliSleep(sleepSecs * 1000);
+                }
+                else // not sure this can ever happen (no exception, still running, and sock==nullptr)
+                    LOG(MCdebugInfo, unknownJob, "MP Connect Thread accept returned NULL");
+            }
         }
     }
 #ifdef _TRACE
