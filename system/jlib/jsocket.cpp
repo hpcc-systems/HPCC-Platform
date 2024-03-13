@@ -513,7 +513,7 @@ public:
     void        readtms(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read, unsigned timedelaysecs);
     void        read(void* buf, size32_t size);
     size32_t    write(void const* buf, size32_t size);
-    size32_t    writetms(void const* buf, size32_t size, unsigned timeoutms=WAIT_FOREVER);
+    size32_t    writetms(void const* buf, size32_t minSize, size32_t size, unsigned timeoutms=WAIT_FOREVER);
     size32_t    write_multiple(unsigned num,void const**buf, size32_t *size);
     size32_t    udp_write_to(const SocketEndpoint &ep,void const* buf, size32_t size);
     void        close();
@@ -880,6 +880,16 @@ inline void getSockAddrEndpoint(const J_SOCKADDR &u, socklen_t ul, SocketEndpoin
     }
 }
 
+
+static inline unsigned getRemainingMs(unsigned timeoutMs, unsigned elapsedMs)
+{
+    if (INFINITE == timeoutMs)
+        return INFINITE;
+    unsigned eMs = elapsedMs;
+    if (eMs >= timeoutMs)
+        return 0;
+    return timeoutMs - eMs;
+}
 
 
 /* might need fcntl(F_SETFL), or ioctl(FIONBIO) */
@@ -1921,257 +1931,141 @@ int CSocket::wait_write(unsigned timeout)
     return ret;
 }
 
-void CSocket::readtms(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read,
-                     unsigned timeoutms)
+void CSocket::readtms(void* buf, size32_t min_size, size32_t max_size, size32_t &_sizeRead, unsigned timeoutms)
 {
-    if (timeoutms == WAIT_FOREVER) {
-        read(buf,min_size, max_size, size_read,WAIT_FOREVER);
+    size32_t sizeRead = 0;
+    if (0 == max_size)
+    {
+        _sizeRead = 0;
         return;
     }
-        
-
-    cycle_t startcycles=get_cycles_now();
-    size_read = 0;
-    if (state != ss_open) {
+    if (state != ss_open)
         THROWJSOCKEXCEPTION(JSOCKERR_not_opened);
-    }
-    unsigned start;
-    unsigned timeleft;
-    start = msTick();
-    timeleft = timeoutms;
 
-    do {
-        int rc = wait_read(timeleft);
-        if (rc < 0) {
-            THROWJSOCKEXCEPTION(SOCKETERRNO());
-        }
-        if (rc == 0) {
-            THROWJSOCKEXCEPTION(JSOCKERR_timeout_expired);
-        }
-        unsigned elapsed = (msTick()-start);
-        if (elapsed<timeoutms)
-            timeleft = timeoutms-elapsed;
-        else
-            timeleft = 0;
+    CCycleTimer timer;
+    while (true)
+    {
         unsigned retrycount=100;
 EintrRetry:
-        if (sockmode==sm_udp_server) { // udp server        
+        int rc;
+        if (sockmode==sm_udp_server) // udp server
+        {
             DEFINE_SOCKADDR(u);
             socklen_t ul=sizeof(u);
-            rc = recvfrom(sock, (char*)buf + size_read, max_size - size_read, 0, &u.sa,&ul);
+            rc = recvfrom(sock, (char*)buf + sizeRead, max_size - sizeRead, 0, &u.sa,&ul);
             getSockAddrEndpoint(u,ul,returnep);
         }
-        else {
-            rc = recv(sock, (char*)buf + size_read, max_size - size_read, 0);
+        else
+            rc = recv(sock, (char*)buf + sizeRead, max_size - sizeRead, 0);
+
+        if (rc > 0)
+        {
+            sizeRead += rc;
+            if (sizeRead >= min_size)
+                break;
         }
-        if (rc < 0) {
-            int err = SOCKETERRNO();
-            if (BADSOCKERR(err)) {
-                // don't think this should happen but convert to same as shutdown while investigation
-                LOGERR2(err,1,"Socket closed during read");
-                rc = 0;
-            }
-            else if ((err==JSE_INTR)&&(retrycount--!=0)) {
-                if (sock==INVALID_SOCKET)
-                    rc = 0;         // convert an EINTR after closed to a graceful close
+        else
+        {
+            if (rc < 0)
+            {
+                int err = SOCKETERRNO();
+                if (BADSOCKERR(err))
+                {
+                    // don't think this should happen but convert to same as shutdown while investigation
+                    LOGERR2(err,1,"Socket closed during read");
+                    rc = 0;
+                }
+                else if ((err==JSE_INTR)&&(retrycount--!=0))
+                {
+                    if (sock==INVALID_SOCKET)
+                        rc = 0;         // convert an EINTR after closed to a graceful close
+                    else
+                    {
+                        LOGERR2(err,1,"EINTR retrying");
+                        goto EintrRetry;
+                    }
+                }
                 else
                 {
-                    LOGERR2(err,1,"EINTR retrying");
-                    goto EintrRetry;
+                    if (nonblocking && (err == JSE_WOULDBLOCK || err == EAGAIN)) // if EGAIN or EWOULDBLOCK - no more data to read
+                    {
+                        if (0 == min_size) // if min_read is 0, then whatever we have read so far is good enough (even if 0)
+                            break;
+                        unsigned remainingMs = getRemainingMs(timeoutms, timer.elapsedMs());
+                        rc = wait_read(remainingMs);
+                        if (rc < 0)
+                        {
+                            THROWJSOCKEXCEPTION(SOCKETERRNO());
+                        }
+                        else if (rc == 0)
+                        {
+                            THROWJSOCKEXCEPTION(JSOCKERR_timeout_expired);
+                        }
+                        // fall through. NB: rc != 0
+                    }
+                    else
+                    {
+                        VStringBuffer errMsg("readtms(timeoutms=%d)", timeoutms);
+                        LOGERR2(err,1,errMsg.str());
+                        if ((err==JSE_CONNRESET)||(err==JSE_INTR)||(err==JSE_CONNABORTED))
+                        {
+                            errclose();
+                            err = JSOCKERR_broken_pipe;
+                        }
+                        THROWJSOCKEXCEPTION(err);
+                    }
                 }
             }
-            else {
-                VStringBuffer errMsg("readtms(timeoutms=%d)", timeoutms);
-                LOGERR2(err,1,errMsg.str());
-                if ((err==JSE_CONNRESET)||(err==JSE_INTR)||(err==JSE_CONNABORTED)) {
-                    errclose();
-                    err = JSOCKERR_broken_pipe;
-                }
-                THROWJSOCKEXCEPTION(err);
+            if (rc == 0)
+            {
+                state = ss_shutdown;
+                if (min_size==0) 
+                    break;                      // if min_read is 0 return 0 if socket closed
+                THROWJSOCKEXCEPTION(JSOCKERR_graceful_close);
             }
         }
-        if (rc == 0) {
-            state = ss_shutdown;
-            if (min_size==0) 
-                break;                      // if min_read is 0 return 0 if socket closed
-            THROWJSOCKEXCEPTION(JSOCKERR_graceful_close);
-        }
-        size_read += rc;
-    } while (size_read < min_size);
+    }
 
-    cycle_t elapsedCycles = get_cycles_now()-startcycles;
+    _sizeRead = sizeRead;
+    cycle_t elapsedCycles = timer.elapsedCycles();
     STATS.reads++;
-    STATS.readsize += size_read;
+    STATS.readsize += sizeRead;
     STATS.readtimecycles += elapsedCycles;
     stats.ioReads++;
-    stats.ioReadBytes += size_read;
+    stats.ioReadBytes += sizeRead;
     stats.ioReadCycles += elapsedCycles;
 }
 
-void CSocket::read(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read,
-                     unsigned timeoutsecs)
+void CSocket::read(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read, unsigned timeoutsecs)
 {
-    cycle_t startcycles=get_cycles_now();
-    size_read = 0;
-    unsigned start = 0;
-    unsigned timeleft = 0;
-    if (state != ss_open) {
-        THROWJSOCKEXCEPTION(JSOCKERR_not_opened);
-    }
-    if (timeoutsecs != WAIT_FOREVER) {
-        start = (unsigned)time(NULL);
-        timeleft = timeoutsecs;
-    }
-
-    do {
-        int rc;
-        if (timeoutsecs != WAIT_FOREVER) {
-            rc = wait_read(timeleft*1000);
-            if (rc < 0) {
-                THROWJSOCKEXCEPTION(SOCKETERRNO());
-            }
-            if (rc == 0) {
-                THROWJSOCKEXCEPTION(JSOCKERR_timeout_expired);
-            }
-            unsigned elapsed = ((unsigned)time(NULL))-start;
-            if (elapsed<timeoutsecs)
-                timeleft = timeoutsecs-elapsed;
-            else
-                timeleft = 0;
-        }
-        unsigned retrycount=100;
-EintrRetry:
-        if (sockmode==sm_udp_server) { // udp server
-            DEFINE_SOCKADDR(u);
-            socklen_t ul=sizeof(u.sin);     
-            rc = recvfrom(sock, (char*)buf + size_read, max_size - size_read, 0, &u.sa,&ul);
-            getSockAddrEndpoint(u,ul,returnep);
-        }
-        else {
-            rc = recv(sock, (char*)buf + size_read, max_size - size_read, 0);
-        }
-        if (rc < 0) {
-            int err = SOCKETERRNO();
-            if (BADSOCKERR(err)) {
-                // don't think this should happen but convert to same as shutdown while investigation
-                LOGERR2(err,3,"Socket closed during read");
-                rc = 0;
-            }
-            else if ((err==JSE_INTR)&&(retrycount--!=0)) {
-                if (sock==INVALID_SOCKET)
-                    rc = 0;         // convert an EINTR after closed to a graceful close
-                else {
-                    LOGERR2(err,3,"EINTR retrying");
-                    goto EintrRetry;
-                }
-            }
-            else {
-                LOGERR2(err,3,"read");
-                if ((err==JSE_CONNRESET)||(err==JSE_INTR)||(err==JSE_CONNABORTED)) {
-                    errclose();
-                    err = JSOCKERR_broken_pipe;
-                }
-                THROWJSOCKEXCEPTION(err);
-            }
-        }
-        if (rc == 0) {
-            state = ss_shutdown;
-            if (min_size==0) 
-                break;                      // if min_read is 0 return 0 if socket closed
-            THROWJSOCKEXCEPTION(JSOCKERR_graceful_close);
-        }
-        size_read += rc;
-    } while (size_read < min_size);
-
-    cycle_t elapsedCycles = get_cycles_now()-startcycles;
-    STATS.reads++;
-    STATS.readsize += size_read;
-    STATS.readtimecycles += elapsedCycles;
-    stats.ioReads++;
-    stats.ioReadBytes += size_read;
-    stats.ioReadCycles += elapsedCycles;
+    unsigned timeoutMs = (timeoutsecs==WAIT_FOREVER) ? WAIT_FOREVER : (timeoutsecs * 1000);
+    readtms(buf, min_size, max_size, size_read, timeoutMs);
 }
 
 void CSocket::read(void* buf, size32_t size)
 {
-    if (!size)
-        return;
-    cycle_t startcycles=get_cycles_now();
-    size32_t size_read=size;
-    if (state != ss_open) {
-        THROWJSOCKEXCEPTION(JSOCKERR_not_opened);
-    }
-
-    do {
-        unsigned retrycount=100;
-EintrRetry:
-        int rc;
-        if (sockmode==sm_udp_server) { // udp server
-            DEFINE_SOCKADDR(u);
-            socklen_t ul=sizeof(u.sin);
-            rc = recvfrom(sock, (char*)buf, size, 0, &u.sa,&ul);
-            getSockAddrEndpoint(u,ul,returnep);
-        }
-        else {
-            rc = recv(sock, (char*)buf, size, 0);
-        }
-        if (rc < 0) {
-            int err = SOCKETERRNO();
-            if (BADSOCKERR(err)) {
-                // don't think this should happen but convert to same as shutdown while investigation
-                LOGERR2(err,5,"Socket closed during read");
-                rc = 0;
-            }
-            else if ((err==JSE_INTR)&&(retrycount--!=0)) {
-                LOGERR2(err,5,"EINTR retrying");
-                goto EintrRetry;
-            }
-            else {
-                LOGERR2(err,5,"read");
-                if ((err==JSE_CONNRESET)||(err==JSE_INTR)||(err==JSE_CONNABORTED)) {
-                    errclose();
-                    err = JSOCKERR_broken_pipe;
-                }
-                THROWJSOCKEXCEPTION(err);
-            }
-        }
-        if (rc == 0) {
-            state = ss_shutdown;
-            THROWJSOCKEXCEPTION(JSOCKERR_graceful_close);
-        }
-        buf = (char*)buf + rc;
-        size -= rc;
-    } while (size != 0);
-
-    cycle_t elapsedCycles = get_cycles_now()-startcycles;
-    STATS.reads++;
-    STATS.readsize += size_read;
-    STATS.readtimecycles +=elapsedCycles;
-    stats.ioReads++;
-    stats.ioReadBytes += size_read;
-    stats.ioReadCycles += elapsedCycles;
+    size32_t size_read;
+    readtms(buf, size, size, size_read, WAIT_FOREVER);
 }
 
-
-
-size32_t CSocket::write(void const* buf, size32_t size)
+size32_t CSocket::writetms(void const* buf, size32_t minSize, size32_t size, unsigned timeoutms)
 {
     if (size==0)
         return 0;
-    cycle_t startcycles=get_cycles_now();
-    size32_t size_writ = size;
-    if (state != ss_open) {
+    size32_t sizeWritten = 0;
+    CCycleTimer timer;
+    if (state != ss_open)
         THROWJSOCKEXCEPTION(JSOCKERR_not_opened);
-    }
-    size32_t res=0;
-    do {
+    while (true)
+    {
         unsigned retrycount=100;
 EintrRetry:
         int rc;
-        if (sockmode==sm_udp_server) { // udp server
+        if (sockmode==sm_udp_server) // udp server
+        {
             DEFINE_SOCKADDR(u);
-            socklen_t  ul = setSockAddr(u,returnep,returnep.port);
-            rc = sendto(sock, (char*)buf, size, 0, &u.sa, ul);
+            socklen_t ul = setSockAddr(u,returnep,returnep.port);
+            rc = sendto(sock, (char*)buf + sizeWritten, size - sizeWritten, 0, &u.sa, ul);
         }
 #ifdef SIMULATE_LOST_UDP_PACKETS
         else if (sockmode==sm_udp && size <= 24 && dropCounter++ >= dropThreshold)
@@ -2181,20 +2075,30 @@ EintrRetry:
             rc = size;
         }
 #endif
-        else {
-            rc = send(sock, (char*)buf, size, SEND_FLAGS);
+        else
+            rc = send(sock, (char*)buf + sizeWritten, size - sizeWritten, SEND_FLAGS);
+
+        if (rc > 0)
+        {
+            sizeWritten += rc;
+            if (sizeWritten >= minSize)
+                break;
         }
-        if (rc < 0) {
+        else if (rc < 0)
+        {
             int err=SOCKETERRNO();
-            if (BADSOCKERR(err)) {
+            if (BADSOCKERR(err))
+            {
                 LOGERR2(err,7,"Socket closed during write");
                 rc = 0;
             }
-            else if ((err==JSE_INTR)&&(retrycount--!=0)) {
+            else if ((err==JSE_INTR)&&(retrycount--!=0)&&(timer.elapsedMs() < timeoutms))
+            {
                 LOGERR2(err,7,"EINTR retrying");
                 goto EintrRetry;
             }
-            else {
+            else
+            {
                 if (((sockmode==sm_multicast)||(sockmode==sm_udp))&&(err==JSE_CONNREFUSED))
                     break; // ignore
                 LOGERR2(err,7,"write");
@@ -2202,90 +2106,54 @@ EintrRetry:
 #ifndef _WIN32
                     ||(err==EPIPE)||(err==JSE_TIMEDOUT)  // linux can raise these on broken pipe
 #endif
-                    ) {
+                    )
+                {
                     errclose();
                     err = JSOCKERR_broken_pipe;
                 }
                 if ((err == JSE_WOULDBLOCK) && nonblocking)
-                    break;
+                {
+                    unsigned remainingMs = getRemainingMs(timeoutms, timer.elapsedMs());
+                    rc = wait_write(remainingMs);
+                    if (rc < 0)
+                    {
+                        THROWJSOCKEXCEPTION(SOCKETERRNO());
+                    }
+                    else if (rc == 0)
+                    {
+                        THROWJSOCKEXCEPTION(JSOCKERR_timeout_expired);
+                    }
+
+                    goto EintrRetry;
+                }
                 THROWJSOCKEXCEPTION(err);
             }
-        }   
-        res += rc;
-        if (rc == 0) {
+        }
+        if (rc == 0)
+        {
             state = ss_shutdown;
             THROWJSOCKEXCEPTION(JSOCKERR_graceful_close);
         }
-        if (nonblocking)
-            break;
-        buf = (char*)buf + rc;
-        size -= rc;
-    } while (size != 0);
+        if (timer.elapsedMs() >= timeoutms)
+        {
+            IERRLOG("writetms timed out; timeout: %u, nwritten: %u, size: %u", timeoutms, sizeWritten, size);
+            THROWJSOCKEXCEPTION(JSOCKERR_timeout_expired);
+        }
+    }
 
-    cycle_t elapsedCycles = get_cycles_now()-startcycles;
+    cycle_t elapsedCycles = timer.elapsedCycles();
     STATS.writes++;
-    STATS.writesize += size_writ;
+    STATS.writesize += size;
     STATS.writetimecycles += elapsedCycles;
     stats.ioWrites++;
-    stats.ioWriteBytes += size_writ;
+    stats.ioWriteBytes += size;
     stats.ioWriteCycles += elapsedCycles;
-    return res;
+    return sizeWritten;
 }
 
-size32_t CSocket::writetms(void const* buf, size32_t size, unsigned timeoutms)
+size32_t CSocket::write(void const* buf, size32_t size)
 {
-    if (size==0)
-        return 0;
-
-    if (state != ss_open)
-    {
-        THROWJSOCKEXCEPTION(JSOCKERR_not_opened);
-    }
-
-    if (timeoutms == WAIT_FOREVER)
-        return write(buf, size);
-
-    const char *p = (const char *)buf;
-    unsigned start, elapsed;
-    start = msTick();
-    elapsed = 0;
-    size32_t nwritten = 0;
-    size32_t nleft = size;
-    unsigned rollover = 0;
-
-    bool prevblock = set_nonblock(true);
-
-    while ( (nwritten < size) && (elapsed <= timeoutms) )
-    {
-        size32_t amnt = write(p,nleft);
-
-        // can nonblock mode write() return -1 ?
-        if ( (amnt == 0) || (amnt == (size32_t)-1) )
-        {
-            if (++rollover >= 20)
-            {
-                rollover = 0;
-                Sleep(20);
-            }
-        }
-        else
-        {
-            nwritten += amnt;
-            nleft -= amnt;
-            p += amnt;
-        }
-        elapsed = msTick() - start;
-    }
-
-    set_nonblock(prevblock);
-
-    if (nwritten < size)
-    {
-        IERRLOG("writetms timed out; timeout: %u, nwritten: %u, size: %u", timeoutms, nwritten, size);
-        THROWJSOCKEXCEPTION(JSOCKERR_timeout_expired);
-    }
-
-    return nwritten;
+    return writetms(buf, size, size, WAIT_FOREVER);
 }
 
 bool CSocket::check_connection()
