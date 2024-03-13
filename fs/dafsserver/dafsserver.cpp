@@ -2838,13 +2838,14 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
     class CRemoteClientHandler : implements ISocketSelectNotify, public CInterface
     {
         bool calledByRowService;
+        byte *msgWritePtr = nullptr;
     public:
         CRemoteFileServer *parent;
         Owned<ISocket> socket;
         StringAttr peerName;
         MemoryBuffer msg;
-        bool selecthandled;
         size32_t left;
+        bool gotSize = false;
         StructArrayOf<OpenFileInfo> openFiles;
         Owned<IDirectoryIterator> opendir;
         unsigned            lasttick, lastInactiveTick;
@@ -2893,7 +2894,6 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
             parent = _parent;
             left = 0;
             msg.setEndian(__BIG_ENDIAN);
-            selecthandled = false;
             touch();
         }
         ~CRemoteClientHandler()
@@ -2915,93 +2915,95 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
             }
         }
         bool isRowServiceClient() const { return calledByRowService; }
-        bool notifySelected(ISocket *sock,unsigned selected)
+        bool notifySelected(ISocket *sock, unsigned selected)
         {
             if (TF_TRACE_FULL)
                 PROGLOG("notifySelected(%p)",this);
             if (sock!=socket)
                 WARNLOG("notifySelected - invalid socket passed");
-            size32_t avail = (size32_t)socket->avail_read();
-            if (avail)
-                touch();
-            else if (left)
+            touch();
+            try
             {
-                WARNLOG("notifySelected: Closing mid packet, %d remaining", left);
-                msg.clear();
-                parent->notify(this, msg); // notifying of graceful close
-                return false;
-            }
-            if (left==0)
-            {
-                try
+                if (!gotSize)
                 {
-                    left = avail?receiveDaFsBufferSize(socket):0;
-                }
-                catch (IException *e)
-                {
-                    EXCLOG(e,"notifySelected(1)");
-                    e->Release();
-                    left = 0;
-                }
-                if (left)
-                {
-                    // TLS TODO: avail_read() may not return accurate amount of pending bytes
-                    avail = (size32_t)socket->avail_read();
-                    try
+                    // left represents amount we have read of leading size32_t (normally expect to be read in 1 go)
+                    if (0 == msg.length()) // 1st time
+                        msgWritePtr = (byte *)msg.reserveTruncate(sizeof(size32_t));
+                    size32_t szRead;
+                    sock->read(msgWritePtr, 1, sizeof(size32_t)-left, szRead);
+                    left += szRead;
+                    msgWritePtr += szRead;
+                    if (left == sizeof(size32_t))
                     {
-                        msg.ensureCapacity(left);
-                    }
-                    catch (IException *e)
-                    {
-                        EXCLOG(e,"notifySelected(2)");
-                        e->Release();
-                        left = 0;
-                        // if too big then corrupted packet so read avail to try and consume
-                        char fbuf[1024];
-                        while (avail)
+                        gotSize = true;
+                        msg.read(left);
+                        msg.clear();
+                        try
                         {
-                            size32_t rd = avail>sizeof(fbuf)?sizeof(fbuf):avail;
-                            try
+                            msgWritePtr = (byte *)msg.reserveTruncate(left);
+                        }
+                        catch (IException *e)
+                        {
+                            EXCLOG(e,"notifySelected(1)");
+                            e->Release();
+                            left = 0;
+                            // if too big then suggest corrupted packet, try to consume
+                            // JCSMORE this seems a bit pointless, and it used to only read last 'avail',
+                            // which is not necessarily everything that was sent
+                            char fbuf[1024];
+                            while (true)
                             {
-                                socket->read(fbuf, rd); // don't need timeout here
-                                avail -= rd;
-                            }
-                            catch (IException *e)
-                            {
-                                EXCLOG(e,"notifySelected(2) flush");
-                                e->Release();
-                                break;
+                                try
+                                {
+                                    size32_t szRead;
+                                    sock->read(fbuf, 1, 1024, szRead);
+                                }
+                                catch (IException *e)
+                                {
+                                    EXCLOG(e,"notifySelected(2)");
+                                    e->Release();
+                                    break;
+                                }
                             }
                         }
-                        avail = 0;
-                        left = 0;
+                        if (0 == left)
+                        {
+                            gotSize = false;
+                            msg.clear();
+                            parent->onCloseSocket(this, 5);
+                            return true;
+                        }
+                    }
+                }
+                else // left represents length of message remaining to receive
+                {
+                    size32_t szRead;
+                    sock->read(msgWritePtr, 1, left, szRead);
+                    msgWritePtr += szRead;
+                    left -= szRead;
+                    if (0 == left) // NB: only ever here if original size was >0
+                    {
+                        gotSize = false; // reset for next packet
+                        parent->handleCompleteMessage(this, msg); // consumes msg
                     }
                 }
             }
-            size32_t toread = left>avail?avail:left;
-            if (toread)
+            catch (IJSOCK_Exception *e)
             {
-                try
+                if (JSOCKERR_graceful_close == e->errorCode())
                 {
-                    socket->read(msg.reserve(toread), toread);  // don't need timeout here
+                    if (gotSize)
+                        WARNLOG("notifySelected: Closing mid packet, %u remaining", left);
                 }
-                catch (IException *e)
-                {
-                    EXCLOG(e,"notifySelected(3)");
-                    e->Release();
-                    toread = left;
-                    msg.clear();
-                }
+                else
+                    EXCLOG(e, "notifySelected(3)");
+                e->Release();
+                parent->onCloseSocket(this, 5);
+                left = 0;
+                gotSize = false;
+                msg.clear();
             }
-            if (TF_TRACE_FULL)
-                PROGLOG("notifySelected %d,%d",toread,left);
-            left -= toread;
-            if (left==0)
-            {
-                // DEBUG
-                parent->notify(this, msg); // consumes msg
-            }
-            return false;
+            return true;
         }
 
         void logPrevHandle()
@@ -3046,75 +3048,6 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
             // some commands (i.e. RFCFtSlaveCmd), reply early, so should not reply again here.
             if (!hasMask(cmdFlags, CommandRetFlags::replyHandled))
                 sendDaFsBuffer(socket, reply, hasMask(cmdFlags, CommandRetFlags::testSocket));
-        }
-
-        bool immediateCommand() // returns false if socket closed or failure
-        {
-            MemoryBuffer msg;
-            msg.setEndian(__BIG_ENDIAN);
-            touch();
-            size32_t avail = (size32_t)socket->avail_read();
-            if (avail==0)
-                return false;
-            receiveDaFsBuffer(socket, msg, 5);   // shouldn't timeout as data is available
-            touch();
-            if (msg.length()==0)
-                return false;
-            return throttleCommand(msg);
-        }
-
-        void process(MemoryBuffer &msg)
-        {
-            if (selecthandled)
-                throttleCommand(msg);
-            else
-            {
-                // msg only used/filled if process() has been triggered by notify()
-                while (parent->threadRunningCount()<=parent->targetActiveThreads) // if too many threads add to select handler
-                {
-                    int w;
-                    try
-                    {
-                        w = socket->wait_read(1000);
-                    }
-                    catch (IException *e)
-                    {
-                        EXCLOG(e, "CRemoteClientHandler::main wait_read error");
-                        e->Release();
-                        parent->onCloseSocket(this,1);
-                        return;
-                    }
-                    if (w==0)
-                        break;
-                    if ((w<0)||!immediateCommand())
-                    {
-                        if (w<0)
-                            WARNLOG("CRemoteClientHandler::main wait_read error");
-                        parent->onCloseSocket(this,1);
-                        return;
-                    }
-                }
-
-                /* This is a bit confusing..
-                 * The addClient below, adds this request to a selecthandler handled by another thread
-                 * and passes ownership of 'this' (CRemoteClientHandler)
-                 *
-                 * When notified, the selecthandler will launch a new pool thread to handle the request
-                 * If the pool thread limit is hit, the selecthandler will be blocked [ see comment in CRemoteFileServer::notify() ]
-                 *
-                 * Either way, a thread pool slot is occupied when processing a request.
-                 * Blocked threads, will be blocked for up to 1 minute (as defined by createThreadPool call)
-                 * IOW, if there are lots of incoming clients that can't be serviced by the CThrottler limit,
-                 * a large number of pool threads will build up after a while.
-                 *
-                 * The CThrottler mechanism, imposes a further hard limit on how many concurrent request threads can be active.
-                 * If the thread pool had an absolute limit (instead of just introducing a delay), then I don't see the point
-                 * in this additional layer of throttling..
-                 */
-                selecthandled = true;
-                parent->addClient(this);    // add to select handler
-                // NB: this (CRemoteClientHandler) is now linked by the selecthandler and owned by the 'clients' list
-            }
         }
 
         bool timedOut()
@@ -3628,7 +3561,7 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
         virtual void init(void *_params) override
         {
             cCommandProcessorParams &params = *(cCommandProcessorParams *)_params;
-            client.setown(params.client);
+            client.set(params.client);
             msg.swapWith(params.msg);
         }
 
@@ -3637,7 +3570,7 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
             // idea is that initially we process commands inline then pass over to select handler
             try
             {
-                client->process(msg);
+                client->throttleCommand(msg);
             }
             catch (IException *e)
             {
@@ -5574,7 +5507,7 @@ public:
                             // disabled cert verification, because stream requests will authenticate via signed opaque blob
                             bool disableClientCertVerification = (featureSupport == FeatureSupport::stream);
 
-                            ssock.setown(createSecureSocket(sockSSL.getClear(), disableClientCertVerification));
+                            ssock.setown(createSecureSocket(sockSSL.getLink(), disableClientCertVerification));
                             int status = ssock->secure_accept();
                             if (status < 0)
                             {
@@ -5661,11 +5594,7 @@ public:
                     eps.getEndpointHostText(peerURL);
                     PROGLOG("Server accepting from %s", peerURL.str());
 #endif
-                    /* NB: if it hits the thread pool limit, it will start throttling (introducing delays),
-                     * whilst it is blocked/delaying here, the accept loop will not be listening for new
-                     * connections.
-                     */
-                    runClient(sock.getClear(), false);
+                    addClient(sock.getClear(), false);
                 }
 
                 if (securesockavail)
@@ -5675,7 +5604,7 @@ public:
                     eps.getEndpointHostText(peerURL.clear());
                     PROGLOG("Server accepting SECURE from %s", peerURL.str());
 #endif
-                    runClient(sockSSL.getClear(), false);
+                    addClient(sockSSL.getClear(), false);
                 }
 
                 if (rowServiceSockAvail)
@@ -5685,7 +5614,7 @@ public:
                     eps.getEndpointHostText(peerURL.clear());
                     PROGLOG("Server accepting row service socket from %s", peerURL.str());
 #endif
-                    runClient(acceptedRSSock.getClear(), true);
+                    addClient(acceptedRSSock.getClear(), true);
                 }
             }
             else
@@ -5709,16 +5638,15 @@ public:
             sendDaFsBuffer(socket, reply, hasMask(cmdFlags, CommandRetFlags::testSocket));
     }
 
-    void runClient(ISocket *sock, bool rowService) // rowService used to distinguish client calls
+    void addClient(ISocket *sock, bool rowService) // rowService used to distinguish client calls
     {
-        cCommandProcessor::cCommandProcessorParams params;
-        params.client = new CRemoteClientHandler(this, sock, globallasttick, rowService);
+        Owned<CRemoteClientHandler> client = new CRemoteClientHandler(this, sock, globallasttick, rowService);
         {
             CriticalBlock block(sect);
-            clients.append(*LINK(params.client));
+            clients.append(*client.getLink());
         }
-        // NB: This could be blocked, by thread pool limit
-        threads->start(&params);
+        // JCSMORE - perhaps cap # added here... ?
+        selecthandler->add(sock, SELECTMODE_READ, client);
     }
 
     void stop()
@@ -5734,35 +5662,21 @@ public:
         threads->joinAll(true,60*1000);
     }
 
-    bool notify(CRemoteClientHandler *_client, MemoryBuffer &msg)
+    bool handleCompleteMessage(CRemoteClientHandler *client, MemoryBuffer &msg)
     {
-        Linked<CRemoteClientHandler> client;
-        client.set(_client);
         if (TF_TRACE_FULL)
-            PROGLOG("notify %d", msg.length());
-        if (msg.length())
-        {
-            if (TF_TRACE_FULL)
-                PROGLOG("notify CRemoteClientHandler(%p), msg length=%u", _client, msg.length());
-            cCommandProcessor::cCommandProcessorParams params;
-            params.client = client.getClear();
-            params.msg.swapWith(msg);
+            PROGLOG("notify CRemoteClientHandler(%p), msg length=%u", client, msg.length());
+        cCommandProcessor::cCommandProcessorParams params;
+        params.client = client; // NB: IPooledThread::init will link 'client' (called before this function exits)
+        params.msg.swapWith(msg);
 
-            /* This can block because the thread pool is full and therefore block the selecthandler
-             * This is akin to the main server blocking post accept() for the same reason.
-             */
-            threads->start(&params);
-        }
-        else
-            onCloseSocket(client,3);    // removes owned handles
+        /* NB: if it hits the thread pool limit, it will start throttling (introducing delays),
+         * whilst it is blocked/delaying here, the accept loop will not be listening for new
+         * connections.
+         */
+        threads->start(&params);
 
         return false;
-    }
-
-    void addClient(CRemoteClientHandler *client)
-    {
-        if (client&&client->socket)
-            selecthandler->add(client->socket,SELECTMODE_READ,client);
     }
 
     void checkTimeout()

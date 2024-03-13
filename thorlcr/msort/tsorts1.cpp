@@ -78,7 +78,7 @@ public:
             {
                 ssock->close();
                 VStringBuffer errmsg("Secure connect failed: %d", status);
-                throw createJSocketException(JSOCKERR_connection_failed, errmsg);
+                THROWJSOCKEXCEPTION_MSG(JSOCKERR_connection_failed, errmsg);
             }
             socket.setown(ssock.getClear());
         }
@@ -378,7 +378,7 @@ public:
                     {
                         ssock->close();
                         VStringBuffer errmsg("Secure accept failed: %d", status);
-                        throw createJSocketException(JSOCKERR_connection_failed, errmsg);
+                        THROWJSOCKEXCEPTION_MSG(JSOCKERR_connection_failed, errmsg);
                     }
                     socket.setown(ssock.getClear());
                 }

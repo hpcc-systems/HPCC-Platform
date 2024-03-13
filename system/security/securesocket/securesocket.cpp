@@ -73,12 +73,6 @@ static JSocketStatistics *SSTATS;
 #define CHK_ERR(err, s) if((err)==-1){perror(s);exit(1);}
 #define CHK_SSL(err) if((err) ==-1){ERR_print_errors_fp(stderr); exit(2);}
 
-#define THROWSECURESOCKETEXCEPTION(err, errMsg) \
-    { \
-        VStringBuffer msg("SecureSocket Exception Raised in: %s, line %d - %s", sanitizeSourceFile(__FILE__), __LINE__, errMsg); \
-        throw createJSocketException(err, msg); \
-    }
-
 static int pem_passwd_cb(char* buf, int size, int rwflag, void* password)
 {
     strncpy(buf, (char*)password, size);
@@ -143,9 +137,18 @@ public:
 class CSecureSocket : implements ISecureSocket, public CInterface
 {
 private:
+    struct ScopedNonBlockingMode
+    {
+        CSecureSocket *socket = nullptr;
+        bool prevMode = false;
+        void init(CSecureSocket *_socket) { socket = _socket; prevMode = socket->set_nonblock(true); }
+        ~ScopedNonBlockingMode() { if (socket) socket->set_nonblock(prevMode); }
+    };
+
     SSL*        m_ssl;
     Linked<ISecureSocketContextCallback> contextCallback;
     Owned<ISocket> m_socket;
+    bool        nonBlocking;
     bool        m_verify;
     bool        m_address_match;
     CStringSet* m_peers;
@@ -178,9 +181,8 @@ public:
     virtual void read(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read,unsigned timeoutsecs);
     virtual void readtms(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read, unsigned timeoutms);
     virtual size32_t write(void const* buf, size32_t size);
-    virtual size32_t writetms(void const* buf, size32_t size, unsigned timeoutms=WAIT_FOREVER);
+    virtual size32_t writetms(void const* buf, size32_t minSize, size32_t size, unsigned timeoutms=WAIT_FOREVER);
 
-    void readTimeout(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read, unsigned timeout, bool useSeconds);
     void checkForUpdatedContext()
     {
         //Check if a new ssl context should be created.
@@ -207,14 +209,14 @@ public:
     //The following are the functions from ISocket that haven't been implemented.
 
 
-    virtual void   read(void* buf, size32_t size)
+    virtual void read(void* buf, size32_t size)
     {
         size32_t size_read;
         // MCK - this was:
         // readTimeout(buf, size, size, size_read, 0, false);
         // but that is essentially a non-blocking read() and we want a blocking read() ...
         // read() is always expecting size bytes so min_size should be size
-        readTimeout(buf, size, size, size_read, WAIT_FOREVER, false);
+        readtms(buf, size, size, size_read, WAIT_FOREVER);
     }
 
     virtual size32_t get_max_send_size()
@@ -244,7 +246,13 @@ public:
     //
     virtual bool set_nonblock(bool on) // returns old state
     {
-        throw MakeStringException(-1, "CSecureSocket::set_nonblock: not implemented");
+        if (on == nonBlocking)
+            return nonBlocking;
+        if (on == m_socket->set_nonblock(on)) // this call should return opposite state, if it doesn't it failed
+            return nonBlocking;
+
+        nonBlocking = on;
+        return !nonBlocking; // previous state
     }
 
     // enable 'nagling' - small packet coalescing (implies delayed transmission)
@@ -505,6 +513,11 @@ CSecureSocket::CSecureSocket(ISocket* sock, int sockfd, ISecureSocketContextCall
     m_peers = peers;;
     m_loglevel = loglevel;
     m_isSecure = false;
+    int flags = fcntl(sockfd, F_GETFL, 0);
+    if (-1 == flags) // unknown
+        nonBlocking = false;
+    else
+        nonBlocking = 0 != (flags & O_NONBLOCK);
 
     if(m_ssl == NULL)
     {
@@ -801,132 +814,128 @@ int CSecureSocket::wait_read(unsigned timeoutms)
     return m_socket->wait_read(timeoutms);
 }
 
-inline unsigned socketTime(bool useSeconds)
+void CSecureSocket::readtms(void* buf, size32_t min_size, size32_t max_size, size32_t &sizeRead, unsigned timeoutMs)
 {
-    if (useSeconds)
+    sizeRead = 0;
+    CCycleTimer timer;
+
+    ScopedNonBlockingMode scopedNonBlockingMode;
+    if (WAIT_FOREVER != timeoutMs)
+        scopedNonBlockingMode.init(this);
+
+    int ssl_err = SSL_ERROR_WANT_READ; // initially call will be wait_read
+    while (true)
     {
-        time_t timenow;
-        return (unsigned) time(&timenow);
-    }
-    return msTick();
-}
-
-inline unsigned socketTimeRemaining(bool useSeconds, unsigned start, unsigned timeout)
-{
-    unsigned elapsed = socketTime(useSeconds) - start;
-    if (elapsed < timeout)
-    {
-        unsigned timeleft = timeout - elapsed;
-        if (useSeconds)
-            timeleft *= 1000;
-        return timeleft;
-    }
-    return 0;
-}
-
-void CSecureSocket::readTimeout(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read, unsigned timeout, bool useSeconds)
-{
-    size_read = 0;
-    unsigned start;
-    unsigned timeleft;
-
-    if (timeout != WAIT_FOREVER) {
-        start = socketTime(useSeconds);
-        timeleft = timeout;
-        if (useSeconds)
-            timeleft *= 1000;
-    }
-
-    do {
         int rc;
-        if (timeout != WAIT_FOREVER) {
-            rc = wait_read(timeleft);
-            if (rc < 0) {
-                THROWSECURESOCKETEXCEPTION(SOCKETERRNO(), "wait_read error"); 
-            }
-            if (rc == 0) {
-                THROWSECURESOCKETEXCEPTION(JSOCKERR_timeout_expired, "timeout expired"); 
-            }
-            timeleft = socketTimeRemaining(useSeconds, start, timeout);
-        }
+        unsigned remainingMs = timer.remainingMs(timeoutMs);
+        if (ssl_err == SSL_ERROR_WANT_READ)
+            rc = wait_read(remainingMs);
+        else // SSL_ERROR_WANT_WRITE
+            rc = wait_write(remainingMs);
+        if (rc < 0)
+            THROWJSOCKEXCEPTION_MSG(SOCKETERRNO(), "wait_read error");
+        if (rc == 0)
+            THROWJSOCKEXCEPTION_MSG(JSOCKERR_timeout_expired, "timeout expired");
 
         ERR_clear_error();
-        rc = SSL_read(m_ssl, (char*)buf + size_read, max_size - size_read);
+        rc = SSL_read(m_ssl, (char*)buf + sizeRead, max_size - sizeRead);
+
         if (rc > 0)
         {
-            size_read += rc;
+            sizeRead += rc;
+            if (sizeRead >= min_size)
+                break;
+        }
+        else if (0 == rc)
+        {
+            if (sizeRead >= min_size)
+                break; // suppress graceful close exception if have already read minimum
+            THROWJSOCKEXCEPTION(JSOCKERR_graceful_close);
         }
         else
         {
-            int err = SSL_get_error(m_ssl, rc);
-            char errbuf[512];
-            ERR_error_string_n(err, errbuf, 512);
-            ERR_clear_error();
-            VStringBuffer errmsg("SSL_read error %d - %s", err, errbuf);
-            if (m_loglevel >= SSLogMax)
-                DBGLOG("Warning: %s", errmsg.str());
-            if (min_size > 0)
-                throw createJSocketException(JSOCKERR_graceful_close, errmsg);
+            ssl_err = SSL_get_error(m_ssl, rc);
+            if (nonBlocking && (ssl_err == SSL_ERROR_WANT_READ || ssl_err == SSL_ERROR_WANT_WRITE)) // NB: SSL_read can cause SSL_ERROR_WANT_WRITE
+            {
+                if (0 == min_size) // if here, implies nothing read, since it would have exited already in (rc > 0) block.
+                    break;
+            }
+            else
+            {
+                char errbuf[512];
+                ERR_error_string_n(ssl_err, errbuf, 512);
+                ERR_clear_error();
+                VStringBuffer errmsg("SSL_read error %d - %s", ssl_err, errbuf);
+                if (m_loglevel >= SSLogMax)
+                    DBGLOG("Warning: %s", errmsg.str());
+                THROWJSOCKEXCEPTION_MSG(ssl_err, errmsg);
+            }
+            // here only if nonBlocking && WANT_READ or WANT_WRITE
+            // since we do not have size_min yet, loop around and wait for more.
         }
-    } while (size_read < min_size);
-}
-
-
-void CSecureSocket::readtms(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read, unsigned timeoutms)
-{
-    readTimeout(buf, min_size, max_size, size_read, timeoutms, false);
+    }
 }
 
 void CSecureSocket::read(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read,unsigned timeoutsecs)
 {
-    readTimeout(buf, min_size, max_size, size_read, timeoutsecs, true);
+    unsigned timeoutMs = (timeoutsecs==WAIT_FOREVER) ? WAIT_FOREVER : (timeoutsecs * 1000);
+    readtms(buf, min_size, max_size, size_read, timeoutMs);
+}
+
+size32_t CSecureSocket::writetms(void const* buf, size32_t minSize, size32_t size, unsigned timeoutMs)
+{
+    if (size == 0)
+        return 0;
+
+    CCycleTimer timer;
+
+    ScopedNonBlockingMode scopedNonBlockingMode;
+    if (WAIT_FOREVER != timeoutMs)
+        scopedNonBlockingMode.init(this);
+
+    while (true)
+    {
+        int rc = SSL_write(m_ssl, buf, size);
+        if (rc > 0)
+        {
+            // NB: minSize not used here, because not using SSL_MODE_ENABLE_PARTIAL_WRITE
+            dbgassertex(size == rc);
+            return rc;
+        }
+        int ssl_err = SSL_get_error(m_ssl, rc);
+        if (nonBlocking && (ssl_err == SSL_ERROR_WANT_READ || ssl_err == SSL_ERROR_WANT_WRITE)) // NB: SSL_write can cause SSL_ERROR_WANT_READ
+        {
+            unsigned remainingMs = timer.remainingMs(timeoutMs);
+            if (ssl_err == SSL_ERROR_WANT_READ)
+                rc = wait_read(remainingMs);
+            else // SSL_ERROR_WANT_WRITE
+                rc = wait_write(remainingMs);
+            if (rc < 0)
+            {
+                const char *msg = (ssl_err == SSL_ERROR_WANT_READ) ? "wait_read error" : "wait_write error";
+                THROWJSOCKEXCEPTION_MSG(SOCKETERRNO(), msg);
+            }
+            if (rc == 0)
+                THROWJSOCKEXCEPTION_MSG(JSOCKERR_timeout_expired, "timeout expired");
+        }
+        else
+        {
+            char errbuf[512];
+            ERR_error_string_n(ssl_err, errbuf, 512);
+            ERR_clear_error();
+            VStringBuffer errmsg("SSL_write error %d - %s", ssl_err, errbuf);
+            if (ssl_err == SSL_ERROR_ZERO_RETURN)
+                THROWJSOCKEXCEPTION(JSOCKERR_graceful_close);
+            else
+                THROWJSOCKEXCEPTION_MSG(JSOCKERR_broken_pipe, errmsg);
+        }
+    }
+    throwUnexpected(); // should never get here
 }
 
 size32_t CSecureSocket::write(void const* buf, size32_t size)
 {
-    if (size == 0)
-        return 0;
-    int numwritten = SSL_write(m_ssl, buf, size);
-    // 0 is an error
-    if (numwritten <= 0)
-    {
-        int err = SSL_get_error(m_ssl, numwritten);
-        // SSL_ERROR_WANT_READ/WRITE errors and retry should not be required
-        // b/c of blocking bio and SSL_MODE_ENABLE_PARTIAL_WRITE is not set
-        char errbuf[512];
-        ERR_error_string_n(err, errbuf, 512);
-        ERR_clear_error();
-        VStringBuffer errmsg("SSL_write error %d - %s", err, errbuf);
-        if (err == SSL_ERROR_ZERO_RETURN)
-            throw createJSocketException(JSOCKERR_graceful_close, errmsg);
-        else
-            throw createJSocketException(JSOCKERR_broken_pipe, errmsg);
-    }
-    return numwritten;
-}
-
-size32_t CSecureSocket::writetms(void const* buf, size32_t size, unsigned timeoutms)
-{
-    // timeoutms not implemented yet ...
-    if (size == 0)
-        return 0;
-    int numwritten = SSL_write(m_ssl, buf, size);
-    // 0 is an error
-    if (numwritten <= 0)
-    {
-        int err = SSL_get_error(m_ssl, numwritten);
-        // SSL_ERROR_WANT_READ/WRITE errors and retry should not be required
-        // b/c of blocking bio and SSL_MODE_ENABLE_PARTIAL_WRITE is not set
-        char errbuf[512];
-        ERR_error_string_n(err, errbuf, 512);
-        ERR_clear_error();
-        VStringBuffer errmsg("SSL_write (tms) error %d - %s", err, errbuf);
-        if (err == SSL_ERROR_ZERO_RETURN)
-            throw createJSocketException(JSOCKERR_graceful_close, errmsg);
-        else
-            throw createJSocketException(JSOCKERR_broken_pipe, errmsg);
-    }
-    return numwritten;
+    return writetms(buf, size, size, WAIT_FOREVER);
 }
 
 // ----------------------------
