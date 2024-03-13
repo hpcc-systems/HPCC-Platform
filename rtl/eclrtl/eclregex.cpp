@@ -102,14 +102,14 @@ public:
             subject = _str + _from;
         }
 
-        int matchCode = pcre2_match_8(compiledRegex, (PCRE2_SPTR8)subject, _len, 0, 0, matchData, pcre2MatchContext8);
+        int numMatches = pcre2_match_8(compiledRegex, (PCRE2_SPTR8)subject, _len, 0, 0, matchData, pcre2MatchContext8);
 
-        matched = matchCode > 0;
+        matched = numMatches > 0;
 
-        if (matchCode < 0 && matchCode != PCRE2_ERROR_NOMATCH)
+        if (numMatches < 0 && numMatches != PCRE2_ERROR_NOMATCH)
         {
             // Treat everything else as an error
-            failOnPCRE2Error(matchCode, "Error in regex search: ");
+            failOnPCRE2Error(numMatches, "Error in regex search: ");
         }
 
     }
@@ -129,13 +129,11 @@ public:
     {
         if (matched && (n < pcre2_get_ovector_count_8(matchData)))
         {
-            PCRE2_SIZE pcreLen;
             PCRE2_SIZE * ovector = pcre2_get_ovector_pointer_8(matchData);
-            PCRE2_UCHAR8 * matchStart = (PCRE2_UCHAR8 *)subject + ovector[2 * n];
-            pcre2_substring_length_bynumber_8(matchData, n, &pcreLen);
-            out = (char *)rtlMalloc(pcreLen);
-            memcpy(out, matchStart, pcreLen);
-            outlen = pcreLen;
+            const char * matchStart = subject + ovector[2 * n];
+            outlen = ovector[2 * n + 1] - ovector[2 * n];
+            out = (char *)rtlMalloc(outlen);
+            memcpy(out, matchStart, outlen);
         }
         else
         {
@@ -148,14 +146,13 @@ public:
     {
         if (matched && (n < pcre2_get_ovector_count_8(matchData)))
         {
-            PCRE2_SIZE pcreLen;
             PCRE2_SIZE * ovector = pcre2_get_ovector_pointer_8(matchData);
-            PCRE2_UCHAR8 * matchStart = (PCRE2_UCHAR8 *)subject + ovector[2 * n];
-            pcre2_substring_length_bynumber_8(matchData, n, &pcreLen);
-            if (pcreLen >= outlen)
-                pcreLen = outlen - 1;
-            memcpy(out, matchStart, pcreLen);
-            out[pcreLen] = 0;
+            const char * matchStart = subject + ovector[2 * n];
+            unsigned substrLen = ovector[2 * n + 1] - ovector[2 * n];
+            if (substrLen >= outlen)
+                substrLen = outlen - 1;
+            memcpy(out, matchStart, substrLen);
+            out[substrLen] = 0;
         }
         else
         {
@@ -204,7 +201,7 @@ public:
         outlen = 0;
 
         // Call it once to get the size of the output, then allocate memory for it;
-        // Note that pcreLen will include the terminating null character
+        // Note that pcreLen will include space for a terminating null character
         int replaceResult = pcre2_substitute_8(compiledRegex, (PCRE2_SPTR8)str, slen, 0, PCRE2_SUBSTITUTE_GLOBAL|PCRE2_SUBSTITUTE_OVERFLOW_LENGTH, matchData, pcre2MatchContext8, (PCRE2_SPTR8)replace, rlen, nullptr, &pcreLen);
 
         if (replaceResult < 0 && replaceResult != PCRE2_ERROR_NOMEMORY)
@@ -212,14 +209,14 @@ public:
             failOnPCRE2Error(replaceResult, "Error in regex replace: ");
         }
 
-        if (pcreLen > 0)
+        if (pcreLen > 1)
         {
-            out = (char *)rtlMalloc(pcreLen);
+            out = (char *)rtlMalloc(pcreLen - 1);
 
-            // Note that, weirdly, pcreLen will contain the number of bytes
-            // in the result *excluding* the null terminator
             replaceResult = pcre2_substitute_8(compiledRegex, (PCRE2_SPTR8)str, slen, 0, PCRE2_SUBSTITUTE_GLOBAL, matchData, pcre2MatchContext8, (PCRE2_SPTR8)replace, rlen, (PCRE2_UCHAR8 *)out, &pcreLen);
 
+            // Note that, weirdly, pcreLen will now contain the number of bytes
+            // in the result *excluding* the null terminator
             if (replaceResult < 0)
             {
                 failOnPCRE2Error(replaceResult, "Error in regex replace: ");
@@ -239,34 +236,49 @@ public:
     {
         rtlRowBuilder out;
         size32_t outBytes = 0;
+        PCRE2_SIZE offset = 0;
 
-        int matchCode = pcre2_match_8(compiledRegex, (PCRE2_SPTR8)_subject, _subjectLen, 0, 0, matchData, pcre2MatchContext8);
+        // Capture groups are ignored when gathering match results into a set;
+        // we need to repeatedly match, adjusting the offset into the
+        // subject string each time, until no more matches are found
 
-        if (matchCode < 0)
+        while (offset < _subjectLen)
         {
-            if (matchCode != PCRE2_ERROR_NOMATCH)
+            int numMatches = pcre2_match_8(compiledRegex, (PCRE2_SPTR8)_subject, _subjectLen, offset, 0, matchData, pcre2MatchContext8);
+
+            if (numMatches < 0)
             {
-                // Treat everything else as an error
-                failOnPCRE2Error(matchCode, "Error in regex getMatchSet: ");
+                if (numMatches == PCRE2_ERROR_NOMATCH)
+                {
+                    // No more matches; bail out of loop
+                    break;
+                }
+                else
+                {
+                    // Treat everything else as an error
+                    failOnPCRE2Error(numMatches, "Error in regex getMatchSet: ");
+                }
             }
-        }
-        else if (matchCode > 0 )
-        {
-            PCRE2_SIZE pcreLen = 0;
-            PCRE2_SIZE * ovector = pcre2_get_ovector_pointer_8(matchData);
-
-            for (unsigned int n = 0; n < pcre2_get_ovector_count_8(matchData); n++)
+            else if (numMatches > 0)
             {
-                PCRE2_UCHAR8 * matchStart = (PCRE2_UCHAR8 *)_subject + ovector[2 * n];
-                pcre2_substring_length_bynumber_8(matchData, n, &pcreLen);
+                PCRE2_SIZE * ovector = pcre2_get_ovector_pointer_8(matchData);
+                const char * matchStart = _subject + ovector[0];
+                unsigned matchLen = ovector[1] - ovector[0];
 
-                out.ensureAvailable(outBytes + pcreLen + sizeof(size32_t));
-                byte *outData = out.getbytes() + outBytes;
+                // Copy match to output buffer
+                out.ensureAvailable(outBytes + matchLen + sizeof(size32_t));
+                byte * outData = out.getbytes() + outBytes;
+                * (size32_t *) outData = matchLen;
+                memcpy(outData + sizeof(size32_t), matchStart, matchLen);
+                outBytes += matchLen + sizeof(size32_t);
 
-                * (size32_t *) outData = pcreLen;
-                memcpy(outData + sizeof(size32_t), matchStart, pcreLen);
-
-                outBytes += pcreLen + sizeof(size32_t);
+                // Update offset
+                offset += matchLen + 1;
+            }
+            else
+            {
+                // This should never happen
+                break;
             }
         }
         
