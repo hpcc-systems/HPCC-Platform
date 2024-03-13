@@ -57,7 +57,7 @@ export const ECLArchiveTree: React.FunctionComponent<ECLArchiveTreeProps> = ({
                 fileTimePct: isAttribute(modAttr) && Math.round((archive?.sourcePathTime(modAttr.sourcePath) / archive?.timeTotalExecute) * 100),
             });
         });
-        setFlatTreeItems(flatTreeItems);
+        setFlatTreeItems(flatTreeItems.sort((a, b) => a.value.toString().localeCompare(b.value.toString(), undefined, { sensitivity: "base" })));
     }, [archive, archive?.modAttrs, archive?.timeTotalExecute]);
 
     const onClick = React.useCallback(evt => {
