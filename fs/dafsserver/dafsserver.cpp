@@ -2016,11 +2016,13 @@ class CRemoteJsonReadActivity : public CRemoteMarkupReadActivity
 public:
     CRemoteJsonReadActivity(IPropertyTree &config, IFileDescriptor *fileDesc) : PARENT(config, fileDesc, TAKjsonread)
     {
-        xpath.set("/");
         if (customRowTag.isEmpty()) // no override
             fileDesc->queryProperties().getProp("@rowTag", xpath);
         else
+        {
+            xpath.set("/");
             xpath.append(customRowTag);
+        }
     }
 };
 
