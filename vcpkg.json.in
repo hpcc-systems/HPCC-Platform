@@ -40,10 +40,7 @@
             "platform": "@VCPKG_AZURE@"
         },
         "boost-property-tree",
-        {
-            "name": "boost-regex",
-            "platform": "@VCPKG_BOOST_REGEX@"
-        },
+        "boost-regex",
         {
             "name": "cpp-driver",
             "platform": "@VCPKG_CASSANDRAEMBED@"
