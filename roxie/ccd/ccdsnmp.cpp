@@ -29,26 +29,19 @@
 #include "roxiemem.hpp"
 #include "udplib.hpp"
 
-#define DEFAULT_PULSE_INTERVAL 30
-
 RoxieQueryStats unknownQueryStats;
 RoxieQueryStats loQueryStats;
 RoxieQueryStats hiQueryStats;
 RoxieQueryStats slaQueryStats;
 RoxieQueryStats combinedQueryStats;
 
-#define addMetric(a, b) doAddMetric(a, #a, b)
+#define addMetric(a) doAddMetric(a, #a)
 
 interface INamedMetric : extends IInterface
 {
     virtual long getValue() = 0;
     virtual bool isCumulative() = 0;
     virtual void resetValue() = 0;
-};
-
-interface ITimerCallback : extends IInterface
-{
-    virtual void onTimer() = 0;
 };
 
 class RelaxedAtomicMetric : implements INamedMetric, public CInterface
@@ -123,101 +116,6 @@ public:
 
 };
 
-class TickProvider : public Thread
-{
-    IArrayOf<ITimerCallback> listeners;
-    CriticalSection crit;
-    Semaphore stopped;
-
-    void doTicks()
-    {
-        CriticalBlock c(crit);
-        ForEachItemIn(idx, listeners)
-        {
-            listeners.item(idx).onTimer();
-        }
-    }
-
-public:
-    TickProvider() : Thread("TickProvider") 
-    {
-    }
-    int run()
-    {
-        for (;;)
-        {
-            if (stopped.wait(10000))
-                break;
-            doTicks();
-        }
-        return 0;
-    }
-
-    void addListener(ITimerCallback *l)
-    {
-        CriticalBlock c(crit);
-        listeners.append(*LINK(l));
-    }
-
-    void stop()
-    {
-        stopped.signal();
-        join();
-    }
-};
-
-class IntervalMetric : implements INamedMetric, implements ITimerCallback, public CInterface
-{
-    Linked<INamedMetric> base;
-    CriticalSection crit;
-    unsigned lastSnapshotTime;
-    long lastSnapshotValue;
-    unsigned minInterval;
-    long value;
-
-    void takeSnapshot()
-    {
-        CriticalBlock c(crit);
-        unsigned now = msTick();
-        unsigned period = now - lastSnapshotTime;
-        if (period >= minInterval)
-        {
-            long newValue = base->getValue();
-            value = ((newValue - lastSnapshotValue) * 1000) / period;
-            lastSnapshotTime = now;
-            lastSnapshotValue = newValue;
-        }
-    }
-
-public:
-    IMPLEMENT_IINTERFACE;
-    IntervalMetric(INamedMetric *_base, unsigned _minInterval=1000) : base(_base), minInterval(_minInterval)
-    {
-        lastSnapshotTime = msTick();
-        lastSnapshotValue = 0;
-        value = 0;
-    }
-    virtual void onTimer()
-    {
-        takeSnapshot();
-    }
-    virtual long getValue() 
-    {
-        takeSnapshot();
-        return value;
-    }
-    virtual bool isCumulative() { return false; }
-
-    virtual void resetValue()
-    {
-        CriticalBlock c(crit);
-        lastSnapshotTime = msTick();
-        lastSnapshotValue = 0;
-        value = 0;
-    }
-
-};
-
 class UnsignedRatioMetric : implements INamedMetric, public CInterface
 {
     RelaxedAtomic<unsigned> &counter;
@@ -252,31 +150,27 @@ public:
     ~CRoxieMetricsManager();
 
     virtual long getValue(const char * name);
-    void dumpMetrics();
     StringBuffer &getMetrics(StringBuffer &xml);
     void resetMetrics();
 
-    void doAddMetric(RelaxedAtomic<unsigned> &counter, const char *name, unsigned interval, bool isMinVal = false);
-    void doAddMetric(INamedMetric *n, const char *name, unsigned interval);
-    void doAddMetric(AccessorFunction function, const char *name, unsigned interval);
+    void doAddMetric(RelaxedAtomic<unsigned> &counter, const char *name, bool isMinVal = false);
+    void doAddMetric(INamedMetric *n, const char *name);
+    void doAddMetric(AccessorFunction function, const char *name);
     void addRatioMetric(RelaxedAtomic<unsigned> &counter, const char *name, RelaxedAtomic<unsigned __int64> &elapsed);
     void addUserMetric(const char *name, const char *regex);
 
 private:
     MapStringToMyClassViaBase<INamedMetric, INamedMetric> metricMap;
-    bool started;
-
-    TickProvider ticker;
 };
 
-void RoxieQueryStats::addMetrics(CRoxieMetricsManager *snmpManager, const char *prefix, unsigned interval)
+void RoxieQueryStats::addMetrics(CRoxieMetricsManager *snmpManager, const char *prefix)
 {
     StringBuffer name;
-    snmpManager->doAddMetric(count, name.clear().append(prefix).append("QueryCount"), interval, false);
-    snmpManager->doAddMetric(failedCount, name.clear().append(prefix).append("QueryFailed"), interval, false);
-    snmpManager->doAddMetric(active, name.clear().append(prefix).append("QueryActive"), 0, false);
-    snmpManager->doAddMetric(maxTime, name.clear().append(prefix).append("QueryMaxTime"), 0, false);
-    snmpManager->doAddMetric(minTime, name.clear().append(prefix).append("QueryMinTime"), 0, true);
+    snmpManager->doAddMetric(count, name.clear().append(prefix).append("QueryCount"), false);
+    snmpManager->doAddMetric(failedCount, name.clear().append(prefix).append("QueryFailed"), false);
+    snmpManager->doAddMetric(active, name.clear().append(prefix).append("QueryActive"), false);
+    snmpManager->doAddMetric(maxTime, name.clear().append(prefix).append("QueryMaxTime"), false);
+    snmpManager->doAddMetric(minTime, name.clear().append(prefix).append("QueryMinTime"), true);
     snmpManager->addRatioMetric(count, name.clear().append(prefix).append("QueryAverageTime"), totalTime);
 }
 
@@ -287,77 +181,65 @@ using roxiemem::getDataBuffersActive;
 
 CRoxieMetricsManager::CRoxieMetricsManager()
 {
-    started = false;
-    unknownQueryStats.addMetrics(this, "unknown", 1000);
-    loQueryStats.addMetrics(this, "lo", 1000);
-    hiQueryStats.addMetrics(this, "hi", 1000);
-    slaQueryStats.addMetrics(this, "sla", 1000);
-    combinedQueryStats.addMetrics(this, "all", 1000);
-    addMetric(restarts, 0);
+    unknownQueryStats.addMetrics(this, "unknown");
+    loQueryStats.addMetrics(this, "lo");
+    hiQueryStats.addMetrics(this, "hi");
+    slaQueryStats.addMetrics(this, "sla");
+    combinedQueryStats.addMetrics(this, "all");
+    addMetric(restarts);
 
-    addMetric(nodesLoaded, 1000);
+    addMetric(nodesLoaded);
 
-    addMetric(blobCacheHits, 1000);
-    addMetric(blobCacheAdds, 1000);
-    addMetric(blobCacheDups, 1000);
-    addMetric(leafCacheHits, 1000);
-    addMetric(leafCacheAdds, 1000);
-    addMetric(leafCacheDups, 1000);
-    addMetric(nodeCacheHits, 1000);
-    addMetric(nodeCacheAdds, 1000);
-    addMetric(nodeCacheDups, 1000);
+    addMetric(blobCacheHits);
+    addMetric(blobCacheAdds);
+    addMetric(blobCacheDups);
+    addMetric(leafCacheHits);
+    addMetric(leafCacheAdds);
+    addMetric(leafCacheDups);
+    addMetric(nodeCacheHits);
+    addMetric(nodeCacheAdds);
+    addMetric(nodeCacheDups);
 
-    addMetric(unwantedDiscarded, 1000);
+    addMetric(unwantedDiscarded);
 
-    addMetric(getHeapAllocated, 0);
-    addMetric(getHeapPercentAllocated, 0);
-    addMetric(getDataBufferPages, 0);
-    addMetric(getDataBuffersActive, 0);
+    addMetric(getHeapAllocated);
+    addMetric(getHeapPercentAllocated);
+    addMetric(getDataBufferPages);
+    addMetric(getDataBuffersActive);
     
-    addMetric(packetsResent, 1000);
-    addMetric(flowPermitsSent, 1000);
-    addMetric(flowRequestsReceived, 1000);
-    addMetric(dataPacketsReceived, 1000);
-    addMetric(flowRequestsSent, 1000);
-    addMetric(flowPermitsReceived, 1000);
-    addMetric(dataPacketsSent, 1000);
-    ticker.start();
+    addMetric(packetsResent);
+    addMetric(flowPermitsSent);
+    addMetric(flowRequestsReceived);
+    addMetric(dataPacketsReceived);
+    addMetric(flowRequestsSent);
+    addMetric(flowPermitsReceived);
+    addMetric(dataPacketsSent);
 }
 
-void CRoxieMetricsManager::doAddMetric(RelaxedAtomic<unsigned> &counter, const char *name, unsigned interval, bool isMinVal)
+void CRoxieMetricsManager::doAddMetric(RelaxedAtomic<unsigned> &counter, const char *name, bool isMinVal)
 {
-    doAddMetric(new RelaxedAtomicMetric(counter, interval != 0, isMinVal), name, interval);
+    doAddMetric(new RelaxedAtomicMetric(counter, false, isMinVal), name);
 }
 
-void CRoxieMetricsManager::doAddMetric(INamedMetric *n, const char *name, unsigned interval)
+void CRoxieMetricsManager::doAddMetric(INamedMetric *n, const char *name)
 {
-    if (interval)
-    {
-        StringBuffer fname(name);
-        fname.append("/s");
-        IntervalMetric *im = new IntervalMetric(n, interval);
-        ticker.addListener(im);
-        metricMap.setValue(fname.str(), im);
-        im->Release();
-    }
     metricMap.setValue(name, n);
     n->Release();
 }
 
-void CRoxieMetricsManager::doAddMetric(AccessorFunction function, const char *name, unsigned interval)
+void CRoxieMetricsManager::doAddMetric(AccessorFunction function, const char *name)
 {
-    assertex(interval==0);
-    doAddMetric(new FunctionMetric(function), name, interval);
+    doAddMetric(new FunctionMetric(function), name);
 }
 
 void CRoxieMetricsManager::addRatioMetric(RelaxedAtomic<unsigned> &counter, const char *name, RelaxedAtomic<unsigned __int64> &elapsed)
 {
-    doAddMetric(new UnsignedRatioMetric(counter, elapsed), name, 0);
+    doAddMetric(new UnsignedRatioMetric(counter, elapsed), name);
 }
 
 void CRoxieMetricsManager::addUserMetric(const char *name, const char *regex)
 {
-    doAddMetric(new UserMetric(name, regex), name, 0);
+    doAddMetric(new UserMetric(name, regex), name);
 }
 
 long CRoxieMetricsManager::getValue(const char * name)
@@ -375,25 +257,6 @@ long CRoxieMetricsManager::getValue(const char * name)
 
 CRoxieMetricsManager::~CRoxieMetricsManager()
 {
-    ticker.stop();
-    if (started)
-        dumpMetrics();
-}
-
-void CRoxieMetricsManager::dumpMetrics()
-{
-    HashIterator metrics(metricMap);
-    ForEach(metrics)
-    {           
-        IMapping &cur = metrics.query();
-        INamedMetric *m = (INamedMetric *) *metricMap.mapToValue(&cur);
-        if (m->isCumulative())
-        {
-            const char *name = (const char *) cur.getKey();
-            long val = m->getValue();
-            DBGLOG("TOTALS: %s = %ld", name, val);
-        }
-    }
 }
 
 StringBuffer &CRoxieMetricsManager::getMetrics(StringBuffer &xml)
