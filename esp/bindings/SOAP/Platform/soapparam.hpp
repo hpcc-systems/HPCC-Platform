@@ -1079,32 +1079,6 @@ public:
         UNIMPLEMENTED;
     }
 
-    void getXsdDefinition_(IEspContext &context, IHttpMessage *request, StringBuffer &schema, BoolHash &added, const char* descriptions[])
-    {
-        if (added.getValue(typeName_))
-            return;
-
-        added.setValue(typeName_, 1);
-
-        schema.appendf("<xsd:simpleType name=\"%s\">", typeName_.get());
-
-        if ( descriptions && ((context.queryOptions()&ESPCTX_NO_ANNOTATION) == 0) )
-        {
-            schema.append("<xsd:annotation><xsd:appinfo>");
-            for (unsigned i=0; i<enumstrings.length(); i++)
-            {
-                const char* desc = descriptions[i];
-                if (desc && *desc)
-                    schema.appendf("<item name=\"%s\" description=\"%s\"/>", enumstrings.item(i), desc);
-            }
-            schema.append("</xsd:appinfo></xsd:annotation>");
-        }
-
-        schema.appendf("<xsd:restriction base=\"xsd:%s\">", baseType_.get());
-        for (unsigned i=0; i<enumstrings.length(); i++)
-            schema.appendf("<xsd:enumeration value=\"%s\"/>", enumstrings.item(i));
-        schema.append("</xsd:restriction></xsd:simpleType>");
-    }
 };
 
 template <class enumtype, class cxtype, class arraytype>
