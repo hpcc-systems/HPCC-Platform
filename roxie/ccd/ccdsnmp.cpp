@@ -213,7 +213,7 @@ CRoxieMetricsManager::CRoxieMetricsManager()
     addMetric(dataPacketsReceived);
     addMetric(flowRequestsSent);
     addMetric(flowPermitsReceived);
-    addMetric(dataPacketsSentfalse);
+    addMetric(dataPacketsSent);
 }
 
 void CRoxieMetricsManager::doAddMetric(RelaxedAtomic<unsigned> &counter, const char *name, bool isMinVal)
