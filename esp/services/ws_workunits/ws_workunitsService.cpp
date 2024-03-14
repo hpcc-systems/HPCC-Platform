@@ -4926,6 +4926,11 @@ bool CWsWorkunitsEx::onWUCreateZAPInfo(IEspContext &context, IEspWUCreateZAPInfo
         zapInfoReq.includeThorSlaveLog = req.getIncludeThorSlaveLog();
         zapInfoReq.zapFileName = req.getZAPFileName();
         zapInfoReq.password = req.getZAPPassword();
+        if (isContainerized() && (version >= 2.00))
+        {
+            zapInfoReq.includeRelatedLogs = req.getIncludeRelatedLogs();
+            zapInfoReq.includePerComponentLogs = req.getIncludePerComponentLogs();
+        }
 
         Owned<IFile> tempDir = createUniqueTempDirectory();
 
@@ -5004,6 +5009,8 @@ bool CWsWorkunitsEx::onWUGetZAPInfo(IEspContext &context, IEspWUGetZAPInfoReques
         {
             resp.setEmailTo(zapEmailTo.get());
             resp.setEmailFrom(zapEmailFrom.get());
+            if (version >= 2.00)
+                resp.setIsContainerized(true);
             return true;
         }
 

@@ -4233,8 +4233,13 @@ void CWsWuFileHelper::readWULogToFiles(IConstWorkUnit *cwu, WsWuInfo &winfo, con
     ILogAccessFilter *logFetchFilter = getJobIDLogAccessFilter(wuid);
     zapLogFilterOptions.logFilter.logFetchOptions.setFilter(logFetchFilter);
 
-    VStringBuffer componentLog("%s%c%s-log.%s", path, PATHSEPCHAR, wuid, logfileextension.str());
-    readWULogToFile(componentLog, winfo, zapLogFilterOptions);
+    if (zapLogFilterOptions.includeRelatedLogs)
+    {
+        VStringBuffer componentLog("%s%c%s-log.%s", path, PATHSEPCHAR, wuid, logfileextension.str());
+        readWULogToFile(componentLog, winfo, zapLogFilterOptions);
+    }
+    if (!zapLogFilterOptions.includePerComponentLogs)
+        return;
 
     Owned<IPropertyTreeIterator> iter = cwu->getProcesses("*", nullptr);
     ForEach(*iter)
