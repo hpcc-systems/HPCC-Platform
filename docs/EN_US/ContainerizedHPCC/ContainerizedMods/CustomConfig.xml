@@ -7,12 +7,11 @@
   <sect1 id="CustTechniques" role="nobrk">
     <title>Customization Techniques</title>
 
-    <para>In this section, we will walk through creating a custom
-    configuration YAML file and deploying an HPCC
-    Systems<superscript>®</superscript> platform using the default
-    configuration plus the customizations. Once you understand the concepts in
-    this chapter, you can refer to the next chapter for a reference to all
-    configuration value settings.</para>
+    <para>This section walks through creating a customized configuration YAML
+    file and deploying an HPCC Systems<superscript>®</superscript> platform
+    using the default configuration plus the customizations. Once you
+    understand the concepts in this chapter, you can refer to the next chapter
+    for a reference to all configuration value settings.</para>
 
     <para>There are several ways to customize a platform deployment. We
     recommend using methods that allow you to best take advantage of the
@@ -989,6 +988,183 @@ eclagent:
 
         <para>The storage cost parameters under the global section are only
         used if no cost parameters are specified on the storage plane.</para>
+      </sect3>
+    </sect2>
+  </sect1>
+
+  <sect1 id="SecureLDAPaminCreds_forConatiners">
+    <title>Securing Credentials</title>
+
+    <para>Utilizing HPCC Systems in a containerized environment has some
+    unique security concerns by externalizing typically internalized
+    components, such as the LDAP administrators credentials.</para>
+
+    <para>Securing the LDAP administrators credentials is accomplished by
+    using either Kubernetes or Hashicorp Vault secrets. As a prerequisite you
+    should be familiar with setting up Kubernetes and/or Hashicorp Vault
+    secrets.</para>
+
+    <para>The LDAP administrators account must have administrator rights to
+    all of the Base DNs used by the HPCC Systems platform. In a cloud
+    deployment these credentials can be exposed. A good practice then, for
+    these administrator credentials is to be secured either using Kubernetes
+    secrets or the Hashicorp Vault.</para>
+
+    <sect2 id="SecuringCredentials_For_KubernetesSecrets">
+      <title>Securing Credentials in Kubernetes</title>
+
+      <para>To create a secret in Kubernetes to store the LDAP administrators
+      user account credentials, use a command line interface to Kubernetes,
+      and execute a command similar to the following example:</para>
+
+      <programlisting lang="bash">kubectl create secret generic admincredssecretname --from-literal=username=hpcc_admin \
+  --from-literal=password=t0pS3cr3tP@ssw0rd
+</programlisting>
+
+      <para>In the above example, the Kubernetes secret name, is
+      "admincredssecretname" and it contains the LDAP administrators account
+      "username" and "password" key/values. This stores the LDAP
+      administrators username and password as a Kubernetes secret. Any
+      additional properties are ignored.</para>
+
+      <para>You can verify the secret you just created by executing the
+      following Kubernetes command.</para>
+
+      <programlisting lang="bash">kubectl get secret admincredssecretname</programlisting>
+
+      <para>For more information about Kubernetes see the appropriate
+      Kubernetes documentation for your implementation.</para>
+
+      <sect3 id="Using_TheKubernetesSecret">
+        <title>Using the Kubernetes Secret</title>
+
+        <para>To deploy the Kubernetes secrets override the "secrets:" section
+        in HPCC-Platform/helm/hpcc/values.yaml, or deploy with your own
+        customized chart. For more information about customizing your HPCC
+        Systems containerized deployment see the above sections on
+        customization techniques.</para>
+
+        <para>In your chart, create a unique key name used to reference the
+        secret, and set it to the name of secret that you created in the
+        previous step. In the above example it was
+        "admincredssecretname".</para>
+
+        <para>You can optionally define additional secrets as required by your
+        platform security configuration. Each of these secrets would be
+        created as described above and given unique names. The example below
+        indicates how you can add any additional credentials or secrets to
+        your Helm chart(s) if necessary.</para>
+
+        <para>The "admincredsmountname" key/value pair already exists by
+        default in the delivered HPCC Systems values.yaml file. The key is
+        referenced in the component's ldap.yaml file. You may override these
+        and add additional key/values as needed. The following example
+        illustrates adding "additionalsecretname" and that name must match the
+        name of the additional secret created using the steps above.</para>
+
+        <programlisting lang="bash">  secrets:
+     authn:
+       admincredsmountname: "admincredssecretname"   #exernalize HPCC Admin creds
+       additionalmountname: "additionalsecretname"   #alternate HPCC Admin creds
+</programlisting>
+      </sect3>
+
+      <sect3 id="ENABLE_k8S_LDAP">
+        <title>Enable LDAP Authentication</title>
+
+        <para>In the delivered
+        HPCC-Platform/esp/applications/common/ldap/ldap.yaml file, the
+        "ldapAdminSecretKey" is already set to the key mount name illustrated
+        in the example above. To enable LDAP authentication and to modify this
+        value, you or your systems administrator can override the ESP/ECLWatch
+        Helm component located in values.yaml chart as illustrated in the
+        following example:</para>
+
+        <programlisting lang="YAML">esp:
+- name: eclwatch
+  application: eclwatch
+  auth: ldap
+  ldap:
+    ldapAddress: "myldapserver"
+    ldapAdminSecretKey: "additionaltmountname"  # use alternate secrets creds
+</programlisting>
+
+        <para></para>
+      </sect3>
+    </sect2>
+
+    <sect2 id="SecuringCreds_For_HashoCorpVault">
+      <title>Securing credentials in HashiCorp Vault</title>
+
+      <para>To create and store secrets in the HashiCorp Vault, from the
+      command command line interface, execute the following Vault commands.
+      The secret name used in the example below is "myvaultadmincreds" and
+      must be prefixed with "secret/authn/" as illustrated. The LDAP
+      administrator "username" and "password" key/values are required.
+      Additional properties are ignored.</para>
+
+      <programlisting>vault kv put secret/authn/myvaultadmincreds username=hpcc_admin password=t0pS3cr3tP@ssw0rd </programlisting>
+
+      <para>Where the "secret/authn/myvaultadmincreds" is the name of the
+      secret containing the LDAP administrator username and password.</para>
+
+      <para>To verify and confirm the secret values, execute the following
+      command:</para>
+
+      <programlisting lang="bash">vault kv get secret/authn/myvaultadmincreds</programlisting>
+
+      <para>For more information about creating secrets for HashiCorp Vault
+      see the appropriate HashiCorp documentation for your
+      implementation.</para>
+
+      <sect3 id="Deploying_HashiCorpVault">
+        <title id="DeployingTheHashiCorpVault">Deploy the HashiCorp
+        Vault</title>
+
+        <para>Deploy the HashiCorp Vault secrets when you override the
+        "secrets:" section in HPCC-Platform/helm/hpcc/values.yaml, or in your
+        customized configuration chart. For more information about customizing
+        your HPCC Systems containerized deployment see the above sections on
+        customization techniques.</para>
+
+        <para>The Vault name value is defined for this example in the
+        values-secrets.yaml configuration chart. You can find an example of
+        this chart in the HPCC-Platform repository under
+        /helm/examples/secrets/values-secrets.yaml.</para>
+
+        <programlisting lang="YAML">  vaults:
+  authn:
+    - name: my-authn-vault
+      #The data node in the URL is there for use by the REST API 
+      #The path inside the vault starts after /data
+      url: http://${env.VAULT_SERVICE_HOST}:${env.VAULT_SERVICE_PORT}/v1/secret/data/authn/${secret}
+      kind: kv-v2
+</programlisting>
+
+        <para>You could put this into your own customization chart where you
+        supply your deployment with the name of the vault containing the
+        credentials.</para>
+      </sect3>
+
+      <sect3 id="REF_HASHICORPVault_LDAP">
+        <title>Referencing Vault Stored Authentication</title>
+
+        <para>The key names "ldapAdminSecretKey" and "ldapAdminVaultId" are
+        used by the HPCC Systems security manager to resolve the secrets, and
+        must match exactly when using the Vault name set up in the previous
+        steps.</para>
+
+        <programlisting lang="YAML">esp:
+- name: eclwatch
+  application: eclwatch
+  auth: ldap
+  ldap:
+    ldapAddress: "myldapserver"
+    ldapAdminSecretKey: "myvaultadmincreds"
+    ldapAdminVaultId: "my-authn-vault"
+</programlisting>
+
+        <para></para>
       </sect3>
     </sect2>
   </sect1>
