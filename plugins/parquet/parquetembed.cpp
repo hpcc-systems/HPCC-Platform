@@ -52,8 +52,6 @@ extern "C" PARQUETEMBED_PLUGIN_API bool getECLPluginDefinition(ECLPluginDefiniti
 
 namespace parquetembed
 {
-static thread_local rapidjson::MemoryPoolAllocator<> jsonAlloc;
-
 // //--------------------------------------------------------------------------
 // Plugin Classes
 //--------------------------------------------------------------------------
@@ -419,7 +417,6 @@ ParquetWriter::ParquetWriter(const char *option, const char *_destination, int _
     : partOption(option), destination(_destination), maxRowCountInBatch(_maxRowCountInBatch), overwrite(_overwrite), compressionOption(_compressionOption), activityCtx(_activityCtx)
 {
     pool = arrow::default_memory_pool();
-    parquetDoc = std::vector<rapidjson::Document>(maxRowCountInBatch);
     if (activityCtx->querySlave() == 0 && startsWithIgnoreCase(partOption.c_str(), "write"))
     {
         reportIfFailure(checkDirContents());
@@ -438,7 +435,6 @@ ParquetWriter::ParquetWriter(const char *option, const char *_destination, int _
 ParquetWriter::~ParquetWriter()
 {
     pool->ReleaseUnused();
-    jsonAlloc.Clear();
 }
 
 /**
@@ -515,16 +511,14 @@ arrow::Status ParquetWriter::writePartition(std::shared_ptr<arrow::Table> table)
 }
 
 /**
- * @brief Converts the vector of rapidjson::Documents into an arrow::RecordBatch and writes it to
- * a file or partitioned dataset.
+ * @brief Flushes all of the column builders and creates a record batch for writing to the file.
  */
 void ParquetWriter::writeRecordBatch()
 {
-    // Convert row_batch vector to RecordBatch and write to file.
-    PARQUET_ASSIGN_OR_THROW(auto recordBatch, convertToRecordBatch(parquetDoc, schema));
-    // Write each batch as a row_groups
-    PARQUET_ASSIGN_OR_THROW(auto table, arrow::Table::FromRecordBatches(schema, {recordBatch}));
+    PARQUET_ASSIGN_OR_THROW(auto recordBatch, recordBatchBuilder->Flush());
+    reportIfFailure(recordBatch->ValidateFull());
 
+    PARQUET_ASSIGN_OR_THROW(auto table, arrow::Table::FromRecordBatches(schema, {recordBatch}));
     if (endsWithIgnoreCase(partOption.c_str(), "partition"))
     {
         reportIfFailure(writePartition(table));
@@ -533,28 +527,6 @@ void ParquetWriter::writeRecordBatch()
     {
         reportIfFailure(writer->WriteTable(*(table.get()), recordBatch->num_rows()));
     }
-}
-
-/**
- * @brief Converts the vector of rapidjson::Documents into an arrow::RecordBatch and writes it to
- * a file or partitioned dataset. Resizes the vector before converting to a RecordBatch.
- *
- * @param newSize The new size of the vector.
- */
-void ParquetWriter::writeRecordBatch(std::size_t newSize)
-{
-    parquetDoc.resize(newSize);
-    writeRecordBatch();
-}
-
-/**
- * @brief Returns a pointer to the top of the stack for the current row being built.
- *
- * @return A pointer to the rapidjson::Value containing the row
- */
-rapidjson::Value *ParquetWriter::queryCurrentRow()
-{
-    return &rowStack[rowStack.size() - 1];
 }
 
 /**
@@ -568,37 +540,8 @@ void ParquetWriter::updateRow()
 }
 
 /**
- * @brief Convert a vector of rapidjson::Documents containing single rows to an arrow::RecordBatch
- *
- * @param rows The vector of rows to be converted.
- * @param schema The arrow::Schema of the rows being converted.
- * @return An arrow::Result object containing the new RecordBatch.
- */
-arrow::Result<std::shared_ptr<arrow::RecordBatch>> ParquetWriter::convertToRecordBatch(const std::vector<rapidjson::Document> &rows, std::shared_ptr<arrow::Schema> schema)
-{
-    // Create RecordBatchBuilder from schema and set the size
-    std::unique_ptr<arrow::RecordBatchBuilder> batchBuilder;
-    ARROW_ASSIGN_OR_RAISE(batchBuilder, arrow::RecordBatchBuilder::Make(schema, pool, rows.size()));
-
-    JsonValueConverter converter(rows);
-    for (int i = 0; i < batchBuilder->num_fields(); ++i)
-    {
-        std::shared_ptr<arrow::Field> field = schema->field(i);
-        arrow::ArrayBuilder *builder = batchBuilder->GetField(i);
-        ARROW_RETURN_NOT_OK(converter.Convert(*field.get(), builder));
-    }
-
-    std::shared_ptr<arrow::RecordBatch> batch;
-    ARROW_ASSIGN_OR_RAISE(batch, batchBuilder->Flush());
-
-    // Use RecordBatch::ValidateFull() to make sure arrays were correctly constructed.
-    reportIfFailure(batch->ValidateFull());
-    return batch;
-}
-
-/**
  * @brief Creates the child record for an array or dataset type. This method is used for converting
- * the ECL RtlFieldInfo object into arrow::Fields for creating a rapidjson document object.
+ * the ECL RtlFieldInfo object into arrow::Fields for creating a RecordBatchBuilder.
  *
  * @param field The field containing metadata for the record.
  * @returns An arrow::NestedType holding the schema and fields of the child records.
@@ -695,7 +638,7 @@ arrow::Status ParquetWriter::fieldToNode(const std::string &name, const RtlField
         arrowFields.push_back(std::make_shared<arrow::Field>(name, arrow::utf8()));
         break;
     case type_decimal:
-        arrowFields.push_back(std::make_shared<arrow::Field>(name, arrow::utf8()));
+        arrowFields.push_back(std::make_shared<arrow::Field>(name, arrow::utf8())); //TODO add decimal encoding
         break;
     case type_data:
         arrowFields.push_back(std::make_shared<arrow::Field>(name, arrow::large_binary()));
@@ -758,66 +701,52 @@ arrow::Status ParquetWriter::fieldsToSchema(const RtlTypeInfo *typeInfo)
 }
 
 /**
- * @brief Creates a rapidjson::Value with an array type and adds it to the stack
+ * @brief Gets the child ArrayBuilder from the recordBatchBuilder and adds it to the stack.
  */
-void ParquetWriter::beginSet()
+void ParquetWriter::beginSet(const char *fieldName)
 {
-    rapidjson::Value row(rapidjson::kArrayType);
-    rowStack.push_back(std::move(row));
-}
-
-/**
- * @brief Creates a rapidjson::Value with an object type and adds it to the stack
- */
-void ParquetWriter::beginRow()
-{
-    rapidjson::Value row(rapidjson::kObjectType);
-    rowStack.push_back(std::move(row));
-}
-
-/**
- * @brief Removes the value from the top of the stack and adds it the parent row.
- * If there is only one value on the stack then it converts it to a rapidjson::Document.
- *
- * @param name The name of the row field.
- */
-void ParquetWriter::endRow(const char *name)
-{
-    if (rowStack.size() > 1)
+    if (!recordBatchBuilder)
     {
-        rapidjson::Value child = std::move(rowStack[rowStack.size() - 1]);
-        rowStack.pop_back();
-        rowStack[rowStack.size() - 1].AddMember(rapidjson::StringRef(name), child, jsonAlloc);
+        PARQUET_ASSIGN_OR_THROW(recordBatchBuilder, arrow::RecordBatchBuilder::Make(schema, pool, maxRowCountInBatch));
     }
-    else
+    arrow::ArrayBuilder *childBuilder;
+    arrow::FieldPath match = getNestedFieldBuilder(fieldName, childBuilder);
+    fieldBuilderStack.push_back(std::make_shared<ArrayBuilderTracker>(fieldName, childBuilder, CPNTSet, match));
+
+    arrow::ListBuilder *listBuilder = static_cast<arrow::ListBuilder *>(childBuilder);
+    reportIfFailure(listBuilder->Append());
+}
+
+/**
+ * @brief Gets the child ArrayBuilder from the recordBatchBuilder and adds it to the stack.
+ */
+void ParquetWriter::beginRow(const char *fieldName)
+{
+    if (!recordBatchBuilder)
     {
-        parquetDoc[currentRow].SetObject();
+        PARQUET_ASSIGN_OR_THROW(recordBatchBuilder, arrow::RecordBatchBuilder::Make(schema, pool, maxRowCountInBatch));
+    }
+    else if (!strieq(fieldName, "<row>"))
+    {
+        arrow::ArrayBuilder *childBuilder;
+        arrow::FieldPath match = getNestedFieldBuilder(fieldName, childBuilder);
+        fieldBuilderStack.push_back(std::make_shared<ArrayBuilderTracker>(fieldName, childBuilder, CPNTDataset, match));
 
-        rapidjson::Value parent = std::move(rowStack[rowStack.size() - 1]);
-        rowStack.pop_back();
-
-        for (auto itr = parent.MemberBegin(); itr != parent.MemberEnd(); ++itr)
-        {
-            parquetDoc[currentRow].AddMember(itr->name, itr->value, jsonAlloc);
-        }
+        arrow::StructBuilder *structBuilder = static_cast<arrow::StructBuilder *>(childBuilder);
+        reportIfFailure(structBuilder->Append());
     }
 }
 
 /**
- * @brief Adds a key value pair to the current row being built for writing to parquet.
- *
- * @param key Field name of the column.
- * @param value Value of the field.
+ * @brief Removes the value from the top of the stack and if the stack is still not empty
+ * updates the number of children that has been processed for the parent structure.
  */
-void ParquetWriter::addMember(rapidjson::Value &key, rapidjson::Value &value)
+void ParquetWriter::endRow()
 {
-    rapidjson::Value *row = &rowStack[rowStack.size() - 1];
-    if(!row)
-        failx("Failed to add member to rapidjson row");
-    if (row->GetType() == rapidjson::kObjectType)
-        row->AddMember(key, value, jsonAlloc);
-    else
-        row->PushBack(value, jsonAlloc);
+    if (!fieldBuilderStack.empty())
+        fieldBuilderStack.pop_back();
+    if (!fieldBuilderStack.empty())
+        fieldBuilderStack.back()->childrenProcessed++;
 }
 
 /**
@@ -871,6 +800,74 @@ arrow::Status ParquetWriter::checkDirContents()
         }
     }
     return arrow::Status::OK();
+}
+
+/**
+ * @brief Finds the correct field builder from the stack of nested field builders or from the RecordBatchBuilder.
+ */
+arrow::ArrayBuilder *ParquetWriter::getFieldBuilder(const char *fieldName)
+{
+    if (fieldBuilderStack.empty())
+        return recordBatchBuilder->GetField(schema->GetFieldIndex(fieldName));
+    else if (fieldBuilderStack.back()->nodeType == CPNTSet)
+        return static_cast<arrow::ListBuilder *>(fieldBuilderStack.back()->structPtr)->value_builder();
+    else
+        return fieldBuilderStack.back()->structPtr->child(fieldBuilderStack.back()->childrenProcessed++);
+}
+
+/**
+ * @brief Finds a nested field builder from a field name for pushing onto the stack of nested field builders.
+ *
+ * @param fieldName Field name of the nested field.
+ * @param childBuilder Child builder for the nested field
+ * @return arrow::FieldPath A vector of indices to the nested field.
+ */
+arrow::FieldPath ParquetWriter::getNestedFieldBuilder(const char *fieldName, arrow::ArrayBuilder *&childBuilder)
+{
+    arrow::FieldPath match;
+    if (fieldBuilderStack.empty())
+    {
+        PARQUET_ASSIGN_OR_THROW(match, arrow::FieldRef(fieldName).FindOne(*schema.get()));
+    }
+    else
+    {
+        PARQUET_ASSIGN_OR_THROW(match, arrow::FieldRef(fieldBuilderStack.back()->nodePath, fieldName).FindOne(*schema.get()));
+    }
+
+    childBuilder = nullptr;
+    for (int index : match.indices())
+    {
+        if (!childBuilder)
+            childBuilder = recordBatchBuilder->GetField(index);
+        else
+            childBuilder = childBuilder->child(index);
+    }
+    return match;
+}
+
+/**
+ * @brief Helper method for adding string type fields to the ArrayBuilder
+ */
+void ParquetWriter::addFieldToBuilder(const char *fieldName, unsigned len, const char *data)
+{
+    arrow::ArrayBuilder *fieldBuilder = getFieldBuilder(fieldName);
+    switch(fieldBuilder->type()->id())
+    {
+        case arrow::Type::type::STRING:
+        {
+            arrow::StringBuilder *stringBuilder = static_cast<arrow::StringBuilder *>(fieldBuilder);
+            reportIfFailure(stringBuilder->Append(data, len));
+            break;
+        }
+        case arrow::Type::type::LARGE_BINARY:
+        {
+            arrow::LargeBinaryBuilder *largeBinaryBuilder = static_cast<arrow::LargeBinaryBuilder *>(fieldBuilder);
+            reportIfFailure(largeBinaryBuilder->Append(data, len));
+            break;
+        }
+        default:
+            failx("Incorrect type for String/Large_Binary addFieldToBuilder: %s", fieldBuilder->type()->ToString().c_str());
+    }
 }
 
 /**
@@ -1361,7 +1358,7 @@ void ParquetRowBuilder::processBeginSet(const RtlFieldInfo *field, bool &isAll)
 
     if (arrayVisitor->type == ListType)
     {
-        PathTracker newPathNode(field->name, arrayVisitor->listArr, CPNTSet);
+        ParquetColumnTracker newPathNode(field->name, arrayVisitor->listArr, CPNTSet);
         newPathNode.childCount = arrayVisitor->listArr->value_slice(currentRow)->length();
         pathStack.push_back(newPathNode);
     }
@@ -1410,7 +1407,7 @@ void ParquetRowBuilder::processBeginRow(const RtlFieldInfo *field)
             nextField(field);
             if (arrayVisitor->type == StructType)
             {
-                pathStack.push_back(PathTracker(field->name, arrayVisitor->structArr, CPNTScalar));
+                pathStack.push_back(ParquetColumnTracker(field->name, arrayVisitor->structArr, CPNTScalar));
             }
             else
             {
@@ -1521,21 +1518,26 @@ void ParquetRowBuilder::nextFromStruct(const RtlFieldInfo *field)
 void ParquetRowBuilder::nextField(const RtlFieldInfo *field)
 {
     if (!field->name)
-    {
         failx("Field name is empty.");
-    }
-    if (pathStack.size() > 0)
+
+    if (!pathStack.empty())
     {
         nextFromStruct(field);
         return;
     }
-    arrayVisitor = std::make_shared<ParquetArrayVisitor>();
-    auto column = resultRows->find(field->xpath ? field->xpath : field->name);
+
+    StringBuffer xpath;
+    xpathOrName(xpath, field);
+    auto column = resultRows->find(xpath.str());
+
     if (column != resultRows->end())
     {
+        arrayVisitor = std::make_shared<ParquetArrayVisitor>();
         reportIfFailure(column->second->Accept(arrayVisitor.get()));
-        return;
     }
+    else
+        failx("Field %s not found in file.", xpath.str());
+    return;
 }
 
 /**
@@ -1572,7 +1574,7 @@ int ParquetRecordBinder::numFields()
  * @param len Number of chars in value.
  * @param value Pointer to value of parameter.
  * @param field RtlFieldInfo holds metadata about the field.
- * @param parquetWriter ParquetWriter object that holds the rapidjson::Value vector for building the rows
+ * @param parquetWriter ParquetWriter object that holds the ArrayBuilders for each of the fields in the schema.
  */
 void bindStringParam(unsigned len, const char *value, const RtlFieldInfo *field, std::shared_ptr<ParquetWriter> parquetWriter)
 {
@@ -1580,10 +1582,7 @@ void bindStringParam(unsigned len, const char *value, const RtlFieldInfo *field,
     rtlDataAttr utf8;
     rtlStrToUtf8X(utf8chars, utf8.refstr(), len, value);
 
-    rapidjson::Value key = rapidjson::Value(field->name, jsonAlloc);
-    rapidjson::Value val = rapidjson::Value(std::string(utf8.getstr(), rtlUtf8Size(utf8chars, utf8.getdata())), jsonAlloc);
-
-    parquetWriter->addMember(key, val);
+    parquetWriter->addFieldToBuilder(field->name, rtlUtf8Size(utf8chars, utf8.getdata()), utf8.getstr());
 }
 
 /**
@@ -1618,10 +1617,14 @@ void ParquetRecordBinder::processString(unsigned len, const char *value, const R
  */
 void ParquetRecordBinder::processBool(bool value, const RtlFieldInfo *field)
 {
-    rapidjson::Value key = rapidjson::Value(field->name, jsonAlloc);
-    rapidjson::Value val = rapidjson::Value(value);
-
-    parquetWriter->addMember(key, val);
+    arrow::ArrayBuilder *fieldBuilder = parquetWriter->getFieldBuilder(field->name);
+    if (fieldBuilder->type()->id() == arrow::Type::type::BOOL)
+    {
+        arrow::BooleanBuilder *boolBuilder = static_cast<arrow::BooleanBuilder *>(fieldBuilder);
+        reportIfFailure(boolBuilder->Append(value));
+    }
+    else
+        failx("Incorrect type for boolean field %s: %s", field->name, fieldBuilder->type()->ToString().c_str());
 }
 
 /**
@@ -1633,10 +1636,7 @@ void ParquetRecordBinder::processBool(bool value, const RtlFieldInfo *field)
  */
 void ParquetRecordBinder::processData(unsigned len, const void *value, const RtlFieldInfo *field)
 {
-    rapidjson::Value key = rapidjson::Value(field->name, jsonAlloc);
-    rapidjson::Value val = rapidjson::Value((const char *)value, len, jsonAlloc);
-
-    parquetWriter->addMember(key, val);
+    parquetWriter->addFieldToBuilder(field->name, len, (const char *)value);
 }
 
 /**
@@ -1647,11 +1647,24 @@ void ParquetRecordBinder::processData(unsigned len, const void *value, const Rtl
  */
 void ParquetRecordBinder::processInt(__int64 value, const RtlFieldInfo *field)
 {
-    int64_t val = value;
-    rapidjson::Value key = rapidjson::Value(field->name, jsonAlloc);
-    rapidjson::Value num(val);
-
-    parquetWriter->addMember(key, num);
+    arrow::ArrayBuilder *fieldBuilder = parquetWriter->getFieldBuilder(field->name);
+    switch(fieldBuilder->type()->id())
+    {
+        case arrow::Type::type::INT32:
+        {
+            arrow::Int32Builder *int32Builder = static_cast<arrow::Int32Builder *>(fieldBuilder);
+            reportIfFailure(int32Builder->Append(value));
+            break;
+        }
+        case arrow::Type::type::INT64:
+        {
+            arrow::Int64Builder *int64Builder = static_cast<arrow::Int64Builder *>(fieldBuilder);
+            reportIfFailure(int64Builder->Append(value));
+            break;
+        }
+        default:
+            failx("Incorrect type for int field %s: %s", field->name, fieldBuilder->type()->ToString().c_str());
+    }
 }
 
 /**
@@ -1662,11 +1675,24 @@ void ParquetRecordBinder::processInt(__int64 value, const RtlFieldInfo *field)
  */
 void ParquetRecordBinder::processUInt(unsigned __int64 value, const RtlFieldInfo *field)
 {
-    uint64_t val = value;
-    rapidjson::Value key = rapidjson::Value(field->name, jsonAlloc);
-    rapidjson::Value num(val);
-
-    parquetWriter->addMember(key, num);
+    arrow::ArrayBuilder *fieldBuilder = parquetWriter->getFieldBuilder(field->name);
+    switch(fieldBuilder->type()->id())
+    {
+        case arrow::Type::type::UINT32:
+        {
+            arrow::UInt32Builder *uInt32Builder = static_cast<arrow::UInt32Builder *>(fieldBuilder);
+            reportIfFailure(uInt32Builder->Append(value));
+            break;
+        }
+        case arrow::Type::type::UINT64:
+        {
+            arrow::UInt64Builder *uInt64Builder = static_cast<arrow::UInt64Builder *>(fieldBuilder);
+            reportIfFailure(uInt64Builder->Append(value));
+            break;
+        }
+        default:
+            failx("Incorrect type for unsigned int field %s: %s", field->name, fieldBuilder->type()->ToString().c_str());
+    }
 }
 
 /**
@@ -1677,10 +1703,14 @@ void ParquetRecordBinder::processUInt(unsigned __int64 value, const RtlFieldInfo
  */
 void ParquetRecordBinder::processReal(double value, const RtlFieldInfo *field)
 {
-    rapidjson::Value key = rapidjson::Value(field->name, jsonAlloc);
-    rapidjson::Value val = rapidjson::Value(value);
-
-    parquetWriter->addMember(key, val);
+    arrow::ArrayBuilder *fieldBuilder = parquetWriter->getFieldBuilder(field->name);
+    if (fieldBuilder->type()->id() == arrow::Type::type::DOUBLE)
+    {
+        arrow::DoubleBuilder *doubleBuilder = static_cast<arrow::DoubleBuilder *>(fieldBuilder);
+        reportIfFailure(doubleBuilder->Append(value));
+    }
+    else
+        failx("Incorrect type for real field %s: %s", field->name, fieldBuilder->type()->ToString().c_str());
 }
 
 /**
@@ -1699,9 +1729,7 @@ void ParquetRecordBinder::processDecimal(const void *value, unsigned digits, uns
     val.setDecimal(digits, precision, value);
     val.getStringX(bytes, decText.refstr());
 
-    rapidjson::Value key = rapidjson::Value(field->name, jsonAlloc);
-    rapidjson::Value dValue = rapidjson::Value(std::string(decText.getstr(), bytes), jsonAlloc);
-    parquetWriter->addMember(key, dValue);
+    parquetWriter->addFieldToBuilder(field->name, bytes, decText.getstr());
 }
 
 /**
@@ -1717,9 +1745,7 @@ void ParquetRecordBinder::processUnicode(unsigned chars, const UChar *value, con
     char *utf8;
     rtlUnicodeToUtf8X(utf8chars, utf8, chars, value);
 
-    rapidjson::Value key = rapidjson::Value(field->name, jsonAlloc);
-    rapidjson::Value val = rapidjson::Value(utf8, rtlUtf8Size(utf8chars, utf8), jsonAlloc);
-    parquetWriter->addMember(key, val);
+    parquetWriter->addFieldToBuilder(field->name, rtlUtf8Size(utf8chars, utf8), utf8);
 }
 
 /**
@@ -1747,10 +1773,7 @@ void ParquetRecordBinder::processQString(unsigned len, const char *value, const 
  */
 void ParquetRecordBinder::processUtf8(unsigned chars, const char *value, const RtlFieldInfo *field)
 {
-    rapidjson::Value key = rapidjson::Value(field->name, jsonAlloc);
-    rapidjson::Value val = rapidjson::Value(value, rtlUtf8Size(chars, value), jsonAlloc);
-
-    parquetWriter->addMember(key, val);
+    parquetWriter->addFieldToBuilder(field->name, rtlUtf8Size(chars, value), value);
 }
 
 /**
@@ -2081,10 +2104,8 @@ void ParquetDatasetBinder::executeAll()
         do
         {
             if (i % maxRowCountInBatch == 0)
-            {
                 parquetWriter->writeRecordBatch();
-                jsonAlloc.Clear();
-            }
+
             parquetWriter->updateRow();
             i++;
         }
@@ -2092,10 +2113,7 @@ void ParquetDatasetBinder::executeAll()
 
         i--;
         if (i % maxRowCountInBatch != 0)
-        {
-            parquetWriter->writeRecordBatch(i % maxRowCountInBatch);
-            jsonAlloc.Clear();
-        }
+            parquetWriter->writeRecordBatch();
     }
 }
 
