@@ -823,17 +823,17 @@ public:
     }
     virtual ~CThreadPoolBase() {}
 protected: friend class CPooledThreadWrapper;
-    IExceptionHandler *exceptionHandler;
+    IExceptionHandler *exceptionHandler = nullptr;
     CriticalSection crit;
     StringAttr poolname;
     Semaphore donesem;
     PointerArray waitingsems;
     UnsignedArray waitingids;
-    bool stopall;
+    std::atomic<bool> stopall{false};
     const bool inheritThreadContext;
-    unsigned defaultmax;
-    unsigned targetpoolsize;
-    unsigned delay;
+    unsigned defaultmax = 0;
+    unsigned targetpoolsize = 0;
+    unsigned delay = 0;
     Semaphore availsem;
     std::atomic_uint numrunning{0};
     virtual void notifyStarted(CPooledThreadWrapper *item)=0;
