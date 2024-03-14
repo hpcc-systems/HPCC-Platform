@@ -641,6 +641,10 @@ extern TPWRAPPER_API unsigned getContainerWUClusterInfo(CConstWUClusterInfoArray
     ForEach(*queues)
     {
         IPropertyTree& queue = queues->query();
+
+        // auxillary queues are additional queues and do not have a 1:1 mapping to clusters
+        if (queue.getPropBool("@isAuxQueue"))
+            continue;
         Owned<IConstWUClusterInfo> cluster = new CContainerWUClusterInfo(queue.queryProp("@name"),
             queue.queryProp("@type"), queue.queryProp("@ldapUser"), (unsigned) queue.getPropInt("@width", 1),
             queue.getPropBool("@queriesOnly"));
