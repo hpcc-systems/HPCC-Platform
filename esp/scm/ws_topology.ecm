@@ -415,14 +415,10 @@ ESPresponse [exceptions_inline,encode(0)] TpClusterInfoResponse
 };
 
 
-ESPenum TpMachineType : int
-{
-    TPMACHINECLUSTER(0, "TPMACHINECLUSTER")
-};
 ESPrequest [] TpMachineQueryRequest
 {
     //Type of Node the parent is....
-    TpMachineType Type;
+    string        Type;
     string        Cluster;
     string        OldIP;
     //Path to Parent within Dali(Encoded to prevent back-engineering)
@@ -437,7 +433,7 @@ ESPresponse [exceptions_inline] TpMachineQueryResponse
 {
     bool   EnablePreflightInfo;
     [min_ver("1.15")] bool   HasThorSpareProcess;
-    TpMachineType Type;
+    string        Type;
     string        Cluster;
     string        OldIP;
     string       LogDirectory;

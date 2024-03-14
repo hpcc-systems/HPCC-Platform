@@ -32,7 +32,7 @@ ESPStruct ActiveWorkunit
     string Owner;
     string Jobname;
     string Server;
-    strint Instance;
+    string Instance;
     string Priority;
     [min_ver("1.01")] string Extra;
     [min_ver("1.02")] string GraphName;
