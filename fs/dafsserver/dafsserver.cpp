@@ -2002,11 +2002,13 @@ class CRemoteXmlReadActivity : public CRemoteMarkupReadActivity
 public:
     CRemoteXmlReadActivity(IPropertyTree &config, IFileDescriptor *fileDesc) : PARENT(config, fileDesc, TAKxmlread)
     {
-        xpath.set("/Dataset/");
         if (customRowTag.isEmpty()) // no override
             fileDesc->queryProperties().getProp("@rowTag", xpath);
         else
+        {
+            xpath.set("/Dataset/");
             xpath.append(customRowTag);
+        }
     }
 };
 

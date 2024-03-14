@@ -1164,6 +1164,7 @@ Generate instance queue names
   {{- else -}}
    {{- $newQueueItem := deepCopy $queueItem -}}
    {{- $_ := set $newQueueItem "name" $auxQueueName -}}
+   {{- $_ := set $newQueueItem "isAuxQueue" true -}}
    {{- $_ := set $auxThorQueues $auxQueueName $newQueueItem -}}
   {{- end -}}
  {{- end -}}
