@@ -17,7 +17,9 @@
 
 #include "opentelemetry/trace/semantic_conventions.h" //known span defines
 #include "opentelemetry/context/propagation/global_propagator.h" // context::propagation::GlobalTextMapPropagator::GetGlobalPropagator
+#include "opentelemetry/sdk/trace/batch_span_processor_options.h" //opentelemetry::sdk::trace::TracerProviderFactory::Create(context)
 #include "opentelemetry/sdk/trace/tracer_provider_factory.h" //opentelemetry::sdk::trace::TracerProviderFactory::Create(context)
+#include "opentelemetry/sdk/trace/tracer_context.h" //opentelemetry::sdk::trace::TracerContextFactory::Create(std::move(processors));
 #include "opentelemetry/sdk/trace/tracer_context_factory.h" //opentelemetry::sdk::trace::TracerContextFactory::Create(std::move(processors));
 #include "opentelemetry/sdk/trace/simple_processor_factory.h"
 #include "opentelemetry/sdk/trace/batch_span_processor_factory.h"
@@ -47,6 +49,9 @@
 #include "jtrace.hpp"
 #include "lnuid.h"
 #include <variant>
+
+//This seems to be defined in some window builds - avoid conflicts with the functions below
+#undef max
 
 namespace context     = opentelemetry::context;
 namespace nostd       = opentelemetry::nostd;
@@ -1321,10 +1326,10 @@ void CTraceManager::initTracerProviderAndGlobalInternals(const IPropertyTree * t
     auto jtraceResource = opentelemetry::sdk::resource::Resource::Create(resourceAtts);
 
     // Default is an always-on sampler.
-    std::shared_ptr<opentelemetry::sdk::trace::TracerContext> context =
+    std::unique_ptr<opentelemetry::sdk::trace::TracerContext> context =
         opentelemetry::sdk::trace::TracerContextFactory::Create(std::move(processors), jtraceResource);
     std::shared_ptr<opentelemetry::trace::TracerProvider> provider =
-        opentelemetry::sdk::trace::TracerProviderFactory::Create(context);
+        opentelemetry::sdk::trace::TracerProviderFactory::Create(std::move(context));
 
     // Set the global trace provider
     opentelemetry::trace::Provider::SetTracerProvider(provider);
