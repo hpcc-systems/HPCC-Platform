@@ -45,7 +45,7 @@ class CWscRowCallSlaveActivity : public CSlaveActivity, implements IWSCRowProvid
 public:
     IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
-    CWscRowCallSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container, soapcallActivityStatistics), contextLogger(soapcallStatistics, thorJob), statsUpdater(soapcallStatistics, *this, contextLogger)
+    CWscRowCallSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container, soapcallActivityStatistics), contextLogger(soapcallStatistics), statsUpdater(soapcallStatistics, *this, contextLogger)
     {
         buildAuthToken(queryJob().queryUserDescriptor(), authToken);
         setRequireInitData(false);
@@ -141,7 +141,7 @@ class SoapDatasetCallSlaveActivity : public CSlaveActivity, implements IWSCRowPr
 public:
     IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
-    SoapDatasetCallSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container, soapcallActivityStatistics), contextLogger(soapcallStatistics, thorJob), statsUpdater(soapcallStatistics, *this, contextLogger)
+    SoapDatasetCallSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container, soapcallActivityStatistics), contextLogger(soapcallStatistics), statsUpdater(soapcallStatistics, *this, contextLogger)
     {
         setRequireInitData(false);
         appendOutputLinked(this);
@@ -235,7 +235,7 @@ class SoapRowActionSlaveActivity : public ProcessSlaveActivity, implements IWSCR
 public:
     IMPLEMENT_IINTERFACE_USING(PARENT);
 
-    SoapRowActionSlaveActivity(CGraphElementBase *_container) : ProcessSlaveActivity(_container, soapcallActivityStatistics), contextLogger(soapcallStatistics, thorJob), statsUpdater(soapcallStatistics, *this, contextLogger)
+    SoapRowActionSlaveActivity(CGraphElementBase *_container) : ProcessSlaveActivity(_container, soapcallActivityStatistics), contextLogger(soapcallStatistics), statsUpdater(soapcallStatistics, *this, contextLogger)
     {
         setRequireInitData(false);
     }
@@ -294,7 +294,7 @@ class SoapDatasetActionSlaveActivity : public ProcessSlaveActivity, implements I
 public:
     IMPLEMENT_IINTERFACE_USING(PARENT);
 
-    SoapDatasetActionSlaveActivity(CGraphElementBase *_container) : ProcessSlaveActivity(_container, soapcallActivityStatistics), contextLogger(soapcallStatistics, thorJob), statsUpdater(soapcallStatistics, *this, contextLogger)
+    SoapDatasetActionSlaveActivity(CGraphElementBase *_container) : ProcessSlaveActivity(_container, soapcallActivityStatistics), contextLogger(soapcallStatistics), statsUpdater(soapcallStatistics, *this, contextLogger)
     {
         setRequireInitData(false);
     }

@@ -632,7 +632,7 @@ ILoadedDllEntry * DllServerBase::doLoadDll(const char * name, DllLocationType ty
     location->getDllFilename(rfile);
     StringBuffer x;
     rfile.getPath(x);
-    LOG(MCdebugInfo, unknownJob, "Loading dll (%s) from location %s", name, x.str());
+    LOG(MCdebugInfo, "Loading dll (%s) from location %s", name, x.str());
     return createDllEntry(x.str(), false, NULL, resourcesOnly);
 }
 

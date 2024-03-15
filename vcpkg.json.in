@@ -103,7 +103,9 @@
         },
         {
             "name": "libmysql",
-            "platform": "@VCPKG_MYSQLEMBED@ & !(windows & x86)"
+            "platform": "@VCPKG_MYSQLEMBED@ & !(windows & x86)",
+            "default-features": false,
+            "features": []
         },
         {
             "name": "librdkafka",

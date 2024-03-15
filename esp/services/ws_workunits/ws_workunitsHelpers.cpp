@@ -467,7 +467,7 @@ unsigned WsWuInfo::sendComponentLogContent(IEspContext* context, IRemoteLogAcces
 
         if (abortCallback.abortRequested())
         {
-            LOG(MCdebugInfo, unknownJob, "WsWuInfo::sendComponentLogContent(): abort requested via callback");
+            LOG(MCdebugInfo, "WsWuInfo::sendComponentLogContent(): abort requested via callback");
             break;
         }
     }

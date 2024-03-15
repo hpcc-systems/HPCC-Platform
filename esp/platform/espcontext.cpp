@@ -1029,7 +1029,7 @@ void ESPLOG(LogLevel level, const char* fmt, ...)
     {
         va_list args;
         va_start(args,fmt);
-        VALOG(MCdebugInfo, unknownJob, fmt, args);
+        VALOG(MCdebugInfo, fmt, args);
         va_end(args);
     }
 }
@@ -1040,7 +1040,7 @@ void ESPLOG(IEspContext* ctx, LogLevel level, const char* fmt, ...)
     {
         va_list args;
         va_start(args,fmt);
-        VALOG(MCdebugInfo, unknownJob, fmt, args);
+        VALOG(MCdebugInfo, fmt, args);
         va_end(args);
     }
 }

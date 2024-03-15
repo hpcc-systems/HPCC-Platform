@@ -119,7 +119,7 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
 {
     StringBuffer slfStr;
     StringBuffer masterStr;
-    LOG(MCdebugProgress, thorJob, "registering %s - master %s",slfEp.getEndpointHostText(slfStr).str(),masterEp.getEndpointHostText(masterStr).str());
+    LOG(MCdebugProgress, "registering %s - master %s",slfEp.getEndpointHostText(slfStr).str(),masterEp.getEndpointHostText(masterStr).str());
     try
     {
         SocketEndpoint ep = masterEp;
@@ -234,11 +234,11 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
             OERRLOG("Failed to connect to all nodes");
         else
             PROGLOG("verified mp connection to rest of cluster");
-        LOG(MCdebugProgress, thorJob, "registered %s",slfStr.str());
+        LOG(MCdebugProgress, "registered %s",slfStr.str());
     }
     catch (IException *e)
     {
-        FLLOG(MCexception(e), thorJob, e,"slave registration error");
+        FLLOG(MCexception(e), e,"slave registration error");
         e->Release();
         return false;
     }
@@ -258,7 +258,7 @@ bool UnregisterSelf(IException *e)
 
     StringBuffer slfStr;
     slfEp.getEndpointHostText(slfStr);
-    LOG(MCdebugProgress, thorJob, "Unregistering slave : %s", slfStr.str());
+    LOG(MCdebugProgress, "Unregistering slave : %s", slfStr.str());
     try
     {
         CMessageBuffer msg;
@@ -266,16 +266,16 @@ bool UnregisterSelf(IException *e)
         serializeException(e, msg); // NB: allows exception to be NULL
         if (!queryWorldCommunicator().send(msg, masterNode, MPTAG_THORREGISTRATION, 60*1000))
         {
-            LOG(MCerror, thorJob, "Failed to unregister slave : %s", slfStr.str());
+            LOG(MCerror, "Failed to unregister slave : %s", slfStr.str());
             return false;
         }
-        LOG(MCdebugProgress, thorJob, "Unregistered slave : %s", slfStr.str());
+        LOG(MCdebugProgress, "Unregistered slave : %s", slfStr.str());
         isRegistered = false;
         return true;
     }
     catch (IException *e) {
         if (!jobListenerStopped)
-            FLLOG(MCexception(e), thorJob, e,"slave unregistration error");
+            FLLOG(MCexception(e), e,"slave unregistration error");
         e->Release();
     }
     return false;
@@ -284,9 +284,9 @@ bool UnregisterSelf(IException *e)
 bool ControlHandler(ahType type)
 {
     if (ahInterrupt == type)
-        LOG(MCdebugProgress, thorJob, "CTRL-C detected");
+        LOG(MCdebugProgress, "CTRL-C detected");
     else if (!jobListenerStopped)
-        LOG(MCdebugProgress, thorJob, "SIGTERM detected");
+        LOG(MCdebugProgress, "SIGTERM detected");
     bool unregOK = false;
     if (!jobListenerStopped)
     {
@@ -330,7 +330,7 @@ ILogMsgHandler *startSlaveLog()
         queryLogMsgManager()->removeMonitor(queryStderrLogMsgHandler());
 #endif
 
-        LOG(MCdebugProgress, thorJob, "Opened log file %s", lf->queryLogFileSpec());
+        LOG(MCdebugProgress, "Opened log file %s", lf->queryLogFileSpec());
     }
     else
     {
@@ -340,13 +340,12 @@ ILogMsgHandler *startSlaveLog()
         if (getComponentConfigSP()->getProp("@workunit", wuid))
         {
             LogMsgJobId thorJobId = queryLogMsgManager()->addJobId(wuid);
-            thorJob.setJobID(thorJobId);
             setDefaultJobId(thorJobId);
         }
     }
 
     //setupContainerizedStorageLocations();
-    LOG(MCdebugProgress, thorJob, "Build %s", hpccBuildInfo.buildTag);
+    LOG(MCdebugProgress, "Build %s", hpccBuildInfo.buildTag);
     return logHandler;
 }
 
@@ -427,7 +426,7 @@ int main( int argc, const char *argv[]  )
 
 #ifdef USE_MP_LOG
         startLogMsgParentReceiver();
-        LOG(MCdebugProgress, thorJob, "MPServer started on port %d", getFixedPort(TPORT_mp));
+        LOG(MCdebugProgress, "MPServer started on port %d", getFixedPort(TPORT_mp));
 #endif
 
         SocketEndpoint masterEp(master);
@@ -456,7 +455,7 @@ int main( int argc, const char *argv[]  )
             if (err)
             {
                 IException *e = makeErrnoExceptionV(-1, "Failed to change dir to '%s'", thorPath.str());
-                FLLOG(MCexception(e), thorJob, e);
+                FLLOG(MCexception(e), e);
                 throw e;
             }
 
@@ -507,16 +506,16 @@ int main( int argc, const char *argv[]  )
 
             useMemoryMappedRead(globals->getPropBool("@useMemoryMappedRead"));
 
-            LOG(MCdebugProgress, thorJob, "ThorSlave Version LCR - %d.%d started",THOR_VERSION_MAJOR,THOR_VERSION_MINOR);
+            LOG(MCdebugProgress, "ThorSlave Version LCR - %d.%d started",THOR_VERSION_MAJOR,THOR_VERSION_MINOR);
 #ifdef _WIN32
             ULARGE_INTEGER userfree;
             ULARGE_INTEGER total;
             ULARGE_INTEGER free;
             if (GetDiskFreeSpaceEx("c:\\",&userfree,&total,&free)&&total.QuadPart) {
                 unsigned pc = (unsigned)(free.QuadPart*100/total.QuadPart);
-                LOG(MCdebugInfo, thorJob, "Total disk space = %" I64F "d k", total.QuadPart/1000);
-                LOG(MCdebugInfo, thorJob, "Free  disk space = %" I64F "d k", free.QuadPart/1000);
-                LOG(MCdebugInfo, thorJob, "%d%% disk free\n",pc);
+                LOG(MCdebugInfo, "Total disk space = %" I64F "d k", total.QuadPart/1000);
+                LOG(MCdebugInfo, "Free  disk space = %" I64F "d k", free.QuadPart/1000);
+                LOG(MCdebugInfo, "%d%% disk free\n",pc);
             }
 #endif
      
@@ -581,12 +580,12 @@ int main( int argc, const char *argv[]  )
             slaveMain(jobListenerStopped, slaveLogHandler);
         }
 
-        LOG(MCdebugProgress, thorJob, "ThorSlave terminated OK");
+        LOG(MCdebugProgress, "ThorSlave terminated OK");
     }
     catch (IException *e) 
     {
         if (!jobListenerStopped)
-            FLLOG(MCexception(e), thorJob, e,"ThorSlave");
+            FLLOG(MCexception(e), e,"ThorSlave");
         unregisterException.setown(e);
     }
 #ifndef _CONTAINERIZED

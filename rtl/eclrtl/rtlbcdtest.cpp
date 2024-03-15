@@ -36,7 +36,7 @@ static bool check(bool condition, const char *fmt, ...)
     {
         va_list args;
         va_start(args, fmt);
-        VALOG(MCdebugInfo, unknownJob, fmt, args);
+        VALOG(MCdebugInfo, fmt, args);
         va_end(args);
     }
     return condition;
@@ -50,7 +50,7 @@ static void cppunit_assert(bool condition, const char *fmt, ...)
     {
         va_list args;
         va_start(args, fmt);
-        VALOG(MCdebugInfo, unknownJob, fmt, args);
+        VALOG(MCdebugInfo, fmt, args);
         va_end(args);
         CPPUNIT_ASSERT(!"Please refer to the errors above");
     }

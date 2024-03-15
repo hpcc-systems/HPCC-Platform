@@ -2795,7 +2795,7 @@ static IPropertyTree *checkPlaneOrHost(const char *planeName,const char *host,co
     if (env->isDropZoneRestrictionEnabled())
         throw makeStringExceptionV(-1,"DropZone Plane not found for host %s path %s.",host,path);
 
-    LOG(MCdebugInfo, unknownJob, "No matching drop zone path on '%s' to file path: '%s'",host,path);
+    LOG(MCdebugInfo, "No matching drop zone path on '%s' to file path: '%s'",host,path);
 #endif
 
     return nullptr;

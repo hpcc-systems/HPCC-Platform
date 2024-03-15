@@ -6607,7 +6607,7 @@ void printJSON(const IPropertyTree *tree, unsigned indent, byte flags)
     printf("%s", json.str());
 }
 
-void dbglogJSON(const IPropertyTree *tree, unsigned indent, unsigned flags)
+void dbglogJSON(const IPropertyTree *tree, unsigned indent, byte flags)
 {
     StringBuffer json;
     toJSON(tree, json, indent, flags);

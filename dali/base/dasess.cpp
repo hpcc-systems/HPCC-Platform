@@ -1191,7 +1191,7 @@ public:
                 ret = ldapconn->getPermissions(key,obj,udesc,flags);
             }
             catch(IException *e) {
-                LOG(MCoperatorError, unknownJob, e, "CLdapWorkItem"); 
+                LOG(MCoperatorError, e, "CLdapWorkItem");
                 e->Release();
             }
             ready.signal();

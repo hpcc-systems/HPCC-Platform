@@ -1022,7 +1022,7 @@ void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char 
 void EclCC::getComplexity(IWorkUnit *wu, IHqlExpression * query, IErrorReceiver & errs)
 {
     double complexity = getECLcomplexity(query, &errs, wu, optTargetClusterType);
-    LOG(MCoperatorProgress, unknownJob, "Complexity = %g", complexity);
+    LOG(MCoperatorProgress, "Complexity = %g", complexity);
 }
 
 //=========================================================================================
@@ -2317,7 +2317,7 @@ void EclCC::traceError(char const * format, ...)
         UERRLOG("<exception msg='%s'/>", encoded.str());
     }
     else
-        VALOG(MCuserError, unknownJob, format, args);
+        VALOG(MCuserError, format, args);
 
     va_end(args);
 }

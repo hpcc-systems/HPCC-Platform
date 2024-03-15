@@ -623,15 +623,15 @@ public:
         writer.outputEndArray("Log");
     }
 
-    virtual void CTXLOGva(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char *format, va_list args) const override  __attribute__((format(printf,5,0))) 
+    virtual void CTXLOGva(const LogMsgCategory & cat, LogMsgCode code, const char *format, va_list args) const override  __attribute__((format(printf,4,0)))
     {
         StringBuffer text, prefix;
         getLogPrefix(prefix);
         text.valist_appendf(format, args);
-        CTXLOGa(LOG_TRACING, cat, job, code, prefix.str(), text.str());
+        CTXLOGa(LOG_TRACING, cat, code, prefix.str(), text.str());
     }
 
-    virtual void CTXLOGa(TracingCategory category, const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char *prefix, const char *text) const override
+    virtual void CTXLOGa(TracingCategory category, const LogMsgCategory & cat, LogMsgCode code, const char *prefix, const char *text) const override
     {
         LogContextScope ls(nullptr);
         if (category == LOG_TRACING)
@@ -659,7 +659,7 @@ public:
         {
             text.append(": ").valist_appendf(format, args);
         }
-        LOG(MCoperatorProgress, unknownJob, "[%s] %s", prefix, text.str());
+        LOG(MCoperatorProgress, "[%s] %s", prefix, text.str());
         if (intercept)
         {
             CriticalBlock b(crit);

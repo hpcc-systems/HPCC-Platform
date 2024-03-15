@@ -159,7 +159,7 @@ void coalesceDatastore(IPropertyTree *coalesceProps, bool force)
     }
     catch (IException *e)
     {
-        LOG(MCoperatorError, unknownJob, e, "COALESCER: Unexpected exception, coalesce component halted");
+        LOG(MCoperatorError, e, "COALESCER: Unexpected exception, coalesce component halted");
         throw;
     }
 }

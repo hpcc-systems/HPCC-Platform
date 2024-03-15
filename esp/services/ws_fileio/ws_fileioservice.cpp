@@ -159,13 +159,13 @@ bool CWsFileIOEx::onReadFileData(IEspContext &context, IEspReadFileDataRequest &
     if (io->read(offset, (int)dataToRead, buf) != dataToRead)
     {
         resp.setResult("ReadFileData error.");
-        LOG(MCprogress, unknownJob, "ReadFileData error: %s: %s %s", context.getUserID(user).str(), server, destRelativePath);
+        LOG(MCprogress, "ReadFileData error: %s: %s %s", context.getUserID(user).str(), server, destRelativePath);
     }
     else
     {
         resp.setData(membuf);
         resp.setResult("ReadFileData done.");
-        LOG(MCprogress, unknownJob, "ReadFileData done: %s: %s %s", context.getUserID(user).str(), server, destRelativePath);
+        LOG(MCprogress, "ReadFileData done: %s: %s %s", context.getUserID(user).str(), server, destRelativePath);
     }
 
     return true;
@@ -237,12 +237,12 @@ bool CWsFileIOEx::onWriteFileData(IEspContext &context, IEspWriteFileDataRequest
     if (fileio->write(offset, len, srcdata.readDirect(len)) != len)
     {
         resp.setResult("WriteFileData error.");
-        LOG(MCprogress, unknownJob, "WriteFileData error: %s: %s %s", context.getUserID(user).str(), server, destRelativePath);
+        LOG(MCprogress, "WriteFileData error: %s: %s %s", context.getUserID(user).str(), server, destRelativePath);
     }
     else
     {
         resp.setResult("WriteFileData done.");
-        LOG(MCprogress, unknownJob, "WriteFileData done: %s: %s %s", context.getUserID(user).str(), server, destRelativePath);
+        LOG(MCprogress, "WriteFileData done: %s: %s %s", context.getUserID(user).str(), server, destRelativePath);
     }
 
     return true;

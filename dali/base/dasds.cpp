@@ -1219,7 +1219,7 @@ class CDeltaWriter : implements IThreaded
             {
                 exception.setown(e);
                 StringBuffer err("Saving external (backup): ");
-                LOG(MCoperatorError, unknownJob, e, err.append(rL).str());
+                LOG(MCoperatorError, e, err.append(rL).str());
             }
             if (!exception.get())
                 break;
@@ -1252,7 +1252,7 @@ class CDeltaWriter : implements IThreaded
             {
                 exception.setown(e);
                 StringBuffer err("Removing external (backup): ");
-                LOG(MCoperatorWarning, unknownJob, e, err.append(rL).str());
+                LOG(MCoperatorWarning, e, err.append(rL).str());
             }
             if (!exception.get())
                 break;
@@ -1580,7 +1580,7 @@ public:
             if (*_name)
                 s.append("in property ").append(_name);
             Owned<IException> e = MakeSDSException(SDSExcpt_MissingExternalFile, "%s", filename.str());
-            LOG(MCoperatorWarning, unknownJob, e, s.str());
+            LOG(MCoperatorWarning, e, s.str());
             if (withValue)
             {
                 StringBuffer str("EXTERNAL BINARY FILE: \"");
@@ -1662,7 +1662,7 @@ public:
             if (name && *name)
                 s.append("in property ").append(name);
             Owned<IException> e = MakeSDSException(SDSExcpt_MissingExternalFile, "%s", filename.str());
-            LOG(MCoperatorWarning, unknownJob, e, s.str());
+            LOG(MCoperatorWarning, e, s.str());
             StringBuffer str("EXTERNAL XML FILE: \"");
             str.append(filename.str()).append("\" MISSING");
             tree.setown(createPTree(owner.queryName()));
@@ -2190,7 +2190,7 @@ void CBinaryFileExternal::readValue(const char *name, MemoryBuffer &mb)
     {
         StringBuffer s("Missing external file ");
         Owned<IException> e = MakeSDSException(SDSExcpt_MissingExternalFile, "%s", filename.str());
-        LOG(MCoperatorWarning, unknownJob, e, s.str());
+        LOG(MCoperatorWarning, e, s.str());
         StringBuffer str("EXTERNAL BINARY FILE: \"");
         str.append(filename.str()).append("\" MISSING");
         CPTValue v(str.length()+1, str.str(), false);
@@ -2236,7 +2236,7 @@ void CBinaryFileExternal::read(const char *name, IPropertyTree &owner, MemoryBuf
             if (*_name)
                 s.append("in property ").append(_name);
             Owned<IException> e = MakeSDSException(SDSExcpt_MissingExternalFile, "%s", filename.str());
-            LOG(MCoperatorWarning, unknownJob, e, s.str());
+            LOG(MCoperatorWarning, e, s.str());
             StringBuffer str("EXTERNAL BINARY FILE: \"");
             str.append(filename.str()).append("\" MISSING");
             CPTValue v(str.length()+1, str.str(), false);
@@ -2468,7 +2468,7 @@ CServerConnection::~CServerConnection()
 
 void CServerConnection::aborted(SessionId id)
 {
-    LOG(MCdebugInfo, unknownJob, "CServerConnection: connection aborted (%" I64F "x) sessId=%" I64F "x",connectionId, id);
+    LOG(MCdebugInfo, "CServerConnection: connection aborted (%" I64F "x) sessId=%" I64F "x",connectionId, id);
 #if 0 // JCSMORE - think this is ok, but concerned about deadlock, change later.
     Owned<CLCLockBlock> lockBlock = new CLCLockBlock(((CCovenSDSManager &)manager).dataRWLock, false, readWriteTimeout, __FILE__, __LINE__);
     SDSManager->disconnect(connectionId, false);
@@ -2685,7 +2685,7 @@ public:
             try { SDSManager->deleteExternal(index); }
             catch (IException *e)
             {
-                LOG(MCoperatorWarning, unknownJob, e, StringBuffer("Deleting external reference for ").append(queryName()).str());
+                LOG(MCoperatorWarning, e, StringBuffer("Deleting external reference for ").append(queryName()).str());
                 e->Release();
             }
         }
@@ -4811,7 +4811,7 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
         mb.append(e->errorMessage(s).str());
         StringBuffer clientUrl("EXCEPTION in reply to client ");
         mb.getSender().getEndpointHostText(clientUrl);
-        LOG(MCoperatorError, unknownJob, e);
+        LOG(MCoperatorError, e);
     }
     try {
         CheckTime block10("DAMP_REQUEST reply");
@@ -4837,7 +4837,7 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
         try
         {
             coven.reply(mb);
-            LOG(MCdebugInfo, unknownJob, "Failed to reply, but succeeded sending initial reply error to client");
+            LOG(MCdebugInfo, "Failed to reply, but succeeded sending initial reply error to client");
         }
         catch (IException *e)
         {
@@ -5047,7 +5047,7 @@ IPropertyTree *loadStore(const char *storeFilename, unsigned edition, IPTreeMake
     catch (DALI_CATCHALL)
     {
         IException *e = MakeStringException(0, "Unknown exception - loading store file : %s", storeFilename);
-        LOG(MCoperatorDisaster, unknownJob, e, "");
+        LOG(MCoperatorDisaster, e, "");
         if (!logErrorsOnly)
             throw;
         e->Release();
@@ -5715,7 +5715,7 @@ public:
     }
     virtual void saveStore(IPropertyTree *root, unsigned *_newEdition, bool currentEdition=false)
     {
-        LOG(MCdebugProgress, unknownJob, "Saving store");
+        LOG(MCdebugProgress, "Saving store");
 
         refreshStoreInfo();
 
@@ -5798,7 +5798,7 @@ public:
                     try { renameDelta(edition, newEdition, remoteBackupLocation); }
                     catch (IException *e)
                     {
-                        LOG(MCoperatorError, unknownJob, e, "Failure handling backup");
+                        LOG(MCoperatorError, e, "Failure handling backup");
                         e->Release();
                     }
                 }
@@ -5828,7 +5828,7 @@ public:
             catch (IException *e)
             {
                 StringBuffer s;
-                LOG(MCoperatorError, unknownJob, e, s.append("Failure to backup dali to remote location: ").append(remoteBackupLocation));
+                LOG(MCoperatorError, e, s.append("Failure to backup dali to remote location: ").append(remoteBackupLocation));
                 e->Release();
             }
 
@@ -5836,7 +5836,7 @@ public:
                 *_newEdition = newEdition;
             done = true;
 
-            LOG(MCdebugProgress, unknownJob, "Store saved");
+            LOG(MCdebugProgress, "Store saved");
         }
         catch (IException *e)
         {
@@ -6247,7 +6247,7 @@ void CCovenSDSManager::loadStore(const char *storeName, const bool *abort)
         if (!root)
         {
             StringBuffer s(storeName);
-            LOG(MCdebugInfo, unknownJob, "Store %d does not exist, creating new store", iStoreHelper->queryCurrentEdition());
+            LOG(MCdebugInfo, "Store %d does not exist, creating new store", iStoreHelper->queryCurrentEdition());
             root = new CServerRemoteTree("SDS");
         }
         bool errors;
@@ -6260,12 +6260,12 @@ void CCovenSDSManager::loadStore(const char *storeName, const bool *abort)
             if (deltaE.get())
                 throw LINK(deltaE);
         }
-        LOG(MCdebugInfo, unknownJob, "store and deltas loaded");
+        LOG(MCdebugInfo, "store and deltas loaded");
         const char *environment = config.queryProp("@environment");
 
         if (environment && *environment)
         {
-            LOG(MCdebugInfo, unknownJob, "loading external Environment from: %s", environment);
+            LOG(MCdebugInfo, "loading external Environment from: %s", environment);
             Owned<IFile> envFile = createIFile(environment);
             if (!envFile->exists())
                 throw MakeStringException(0, "'%s' does not exist", environment);
@@ -6559,14 +6559,14 @@ void CCovenSDSManager::loadStore(const char *storeName, const bool *abort)
         unsigned items = treeMaker.convertQueue.ordinality();
         if (items)
         {
-            LOG(MCdebugInfo, unknownJob, "Converting %d items larger than threshold size %d, to external definitions", items, externalSizeThreshold);
+            LOG(MCdebugInfo, "Converting %d items larger than threshold size %d, to external definitions", items, externalSizeThreshold);
             ForEachItemIn(i, treeMaker.convertQueue)
                 SDSManager->writeExternal(treeMaker.convertQueue.item(i), true);
             saveNeeded = true;
         }
         if (saveNeeded)
         {
-            LOG(MCdebugInfo, unknownJob, "Saving converted store");
+            LOG(MCdebugInfo, "Saving converted store");
             SDSManager->saveStore();
         }
     }
@@ -6591,7 +6591,7 @@ void CCovenSDSManager::loadStore(const char *storeName, const bool *abort)
     if (remoteBackupLocation.length())
     {
         try { validateBackup(); }
-        catch (IException *e) { LOG(MCoperatorError, unknownJob, e, "Validating backup"); e->Release(); }
+        catch (IException *e) { LOG(MCoperatorError, e, "Validating backup"); e->Release(); }
 
         StringBuffer deltaFilename(dataPath);
         iStoreHelper->getCurrentDeltaFilename(deltaFilename);
@@ -8785,7 +8785,7 @@ bool CCovenSDSManager::fireException(IException *e)
         {
             if (handled)
             {
-                LOG(MCoperatorDisaster, unknownJob, e, "FATAL, too many exceptions");
+                LOG(MCoperatorDisaster, e, "FATAL, too many exceptions");
                 return false; // did not successfully handle.
             }
             IERRLOG(e, "Exception while restarting or shutting down");
@@ -8822,7 +8822,7 @@ bool CCovenSDSManager::fireException(IException *e)
                 }
                 manager.unhandledThread.clear();
             }
-            catch (IException *_e) { LOG(MCoperatorError, unknownJob, _e, "Exception while restarting or shutting down"); _e->Release(); }
+            catch (IException *_e) { LOG(MCoperatorError, _e, "Exception while restarting or shutting down"); _e->Release(); }
             catch (DALI_CATCHALL) { IERRLOG("Unknown exception while restarting or shutting down"); }
             if (!restart)
             {
@@ -8914,7 +8914,7 @@ public:
         try { manager->loadStore(NULL, &cancelLoad); }
         catch (IException *)
         {
-            LOG(MCdebugInfo, unknownJob, "Failed to load main store");
+            LOG(MCdebugInfo, "Failed to load main store");
             throw;
         }
         storeLoaded = true;

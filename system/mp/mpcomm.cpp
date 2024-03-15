@@ -755,7 +755,7 @@ public:
                 }
             }
             catch (IException *e) {
-                FLLOG(MCoperatorWarning, unknownJob, e,"MP writepacket");
+                FLLOG(MCoperatorWarning, e,"MP writepacket");
                 e->Release();
             }
         }
@@ -969,7 +969,7 @@ protected: friend class CMPPacketReader;
             {
                 StringBuffer str;
 #ifdef _TRACE
-                LOG(MCdebugInfo, unknownJob, "MP: connecting to %s role: %" I64F "u", remoteep.getEndpointHostText(str).str(), parent->getRole());
+                LOG(MCdebugInfo, "MP: connecting to %s role: %" I64F "u", remoteep.getEndpointHostText(str).str(), parent->getRole());
 #endif
                 if (((int)tm.timeout)<0)
                     remaining = CONNECT_TIMEOUT;
@@ -1005,7 +1005,7 @@ protected: friend class CMPPacketReader;
                 newsock->set_keep_alive(true);
 
 #ifdef _FULLTRACE
-                LOG(MCdebugInfo, unknownJob, "MP: connect after socket connect, retrycount = %d", retrycount);
+                LOG(MCdebugInfo, "MP: connect after socket connect, retrycount = %d", retrycount);
 #endif
 
                 SocketEndpoint hostep;
@@ -1024,13 +1024,13 @@ protected: friend class CMPPacketReader;
                 connectHdr.id[0].getEndpointHostText(tmp1);
                 tmp1.append(' ');
                 connectHdr.id[1].getEndpointHostText(tmp1);
-                LOG(MCdebugInfo, unknownJob, "MP: connect after socket write %s",tmp1.str());
+                LOG(MCdebugInfo, "MP: connect after socket write %s",tmp1.str());
 #endif
 
                 size32_t rd = 0;
 
 #ifdef _TRACE
-                LOG(MCdebugInfo, unknownJob, "MP: connect after socket write, waiting for read");
+                LOG(MCdebugInfo, "MP: connect after socket write, waiting for read");
 #endif
 
                 // Wait for connection reply but also check for A<->B deadlock (where both processes are here
@@ -1110,7 +1110,7 @@ protected: friend class CMPPacketReader;
                             // if other side closes, connect again
                             if (e->errorCode() == JSOCKERR_graceful_close)
                             {
-                                LOG(MCdebugInfo, unknownJob, "MP: Retrying (other side closed connection, probably due to clash)");
+                                LOG(MCdebugInfo, "MP: Retrying (other side closed connection, probably due to clash)");
                                 e->Release();
                                 break;
                             }
@@ -1118,7 +1118,7 @@ protected: friend class CMPPacketReader;
                             e->Release();
 
 #ifdef _TRACE
-                            LOG(MCdebugInfo, unknownJob, "MP: Retrying connection to %s, %d attempts left",remoteep.getEndpointHostText(str).str(),retrycount+1);
+                            LOG(MCdebugInfo, "MP: Retrying connection to %s, %d attempts left",remoteep.getEndpointHostText(str).str(),retrycount+1);
 #endif
                         }
                         else
@@ -1145,7 +1145,7 @@ protected: friend class CMPPacketReader;
                     size32_t replyVal;
                     memcpy(&replyVal, (size32_t *)replyBuf, sizeof(size32_t));
 #ifdef _TRACE
-                    LOG(MCdebugInfo, unknownJob, "MP: connect after socket read replyVal=%u, sizeof(connectHdr)=%lu", replyVal, sizeof(connectHdr));
+                    LOG(MCdebugInfo, "MP: connect after socket read replyVal=%u, sizeof(connectHdr)=%lu", replyVal, sizeof(connectHdr));
 #endif
                     if (replyVal > sizeof(ConnectHdr))
                     {
@@ -1191,7 +1191,7 @@ protected: friend class CMPPacketReader;
                     if (attachSocket(newsock,remoteep,hostep,true,NULL,addrval))
                     {
 #ifdef _TRACE
-                        LOG(MCdebugInfo, unknownJob, "MP: connected to %s",str.str());
+                        LOG(MCdebugInfo, "MP: connected to %s",str.str());
 #endif
                         lastxfer = msTick();
                         closed = false;
@@ -1222,7 +1222,7 @@ protected: friend class CMPPacketReader;
 #ifdef _TRACE
                 StringBuffer str;
                 str.clear();
-                LOG(MCdebugInfo, unknownJob, "MP: Retrying connection to %s, %d attempts left",remoteep.getEndpointHostText(str).str(),retrycount+1);
+                LOG(MCdebugInfo, "MP: Retrying connection to %s, %d attempts left",remoteep.getEndpointHostText(str).str(),retrycount+1);
 #endif
             }
 
@@ -1276,7 +1276,7 @@ public:
             CriticalBlock block(connectsect);
             if (closed) {
 #ifdef _TRACELINKCLOSED
-                LOG(MCdebugInfo, unknownJob, "WritePacket closed on entry");
+                LOG(MCdebugInfo, "WritePacket closed on entry");
                 PrintStackReport();
 #endif
                 if (!checkReconnect(tm))
@@ -1285,7 +1285,7 @@ public:
             if (!channelsock) {
                 if (!connect(tm)) {
 #ifdef _FULLTRACE
-                    LOG(MCdebugInfo, unknownJob, "WritePacket connect failed");
+                    LOG(MCdebugInfo, "WritePacket connect failed");
 #endif
                     return false;
                 }
@@ -1311,7 +1311,7 @@ public:
 #ifdef _FULLTRACE
             StringBuffer ep1;
             StringBuffer ep2;
-            LOG(MCdebugInfo, unknownJob, "WritePacket(target=%s,(%d,%d,%d))",remoteep.getEndpointHostText(ep1).str(),hdrsize,hdr2size,bodysize);
+            LOG(MCdebugInfo, "WritePacket(target=%s,(%d,%d,%d))",remoteep.getEndpointHostText(ep1).str(),hdrsize,hdr2size,bodysize);
             unsigned t2 = msTick();
 #endif
             unsigned n = 0;
@@ -1330,17 +1330,17 @@ public:
                 sizes[n++] = bodysize;
             }
             if (!dest) {
-                LOG(MCdebugInfo, unknownJob, "MP Warning: WritePacket unexpected NULL socket");
+                LOG(MCdebugInfo, "MP Warning: WritePacket unexpected NULL socket");
                 return false;
             }
             dest->write_multiple(n,bufs,sizes);  
             lastxfer = msTick();
 #ifdef _FULLTRACE
-            LOG(MCdebugInfo, unknownJob, "WritePacket(timewaiting=%d,timesending=%d)",t2-t1,lastxfer-t2);
+            LOG(MCdebugInfo, "WritePacket(timewaiting=%d,timesending=%d)",t2-t1,lastxfer-t2);
 #endif
         }
         catch (IException *e) {
-            FLLOG(MCoperatorWarning, unknownJob, e,"MP writepacket");
+            FLLOG(MCoperatorWarning, e,"MP writepacket");
             closeSocket(false, true);
             throw;
         }
@@ -1383,11 +1383,11 @@ public:
                     return false;
             }
             if (tm.timedout()) {
-                LOG(MCdebugInfo, unknownJob, "MP: verify, ping failed to %s",ep.str());
+                LOG(MCdebugInfo, "MP: verify, ping failed to %s",ep.str());
                 closeSocket();
                 return false;
             }
-            LOG(MCdebugInfo, unknownJob, "MP: verify, ping failed to %s, retrying",ep.str());
+            LOG(MCdebugInfo, "MP: verify, ping failed to %s, retrying",ep.str());
             unsigned remaining;
             if (!pingtm.timedout(&remaining)&&remaining) 
                 Sleep(remaining);
@@ -1501,7 +1501,7 @@ public:
 #ifdef _FULLTRACE
         StringBuffer ep1;
         StringBuffer ep2;
-        LOG(MCdebugInfo, unknownJob, "MP: send(target=%s,sender=%s,tag=%d,replytag=%d,size=%d)",hdr.target.getEndpointHostText(ep1).str(),hdr.sender.getEndpointHostText(ep2).str(),hdr.tag,hdr.replytag,hdr.size);
+        LOG(MCdebugInfo, "MP: send(target=%s,sender=%s,tag=%d,replytag=%d,size=%d)",hdr.target.getEndpointHostText(ep1).str(),hdr.sender.getEndpointHostText(ep2).str(),hdr.tag,hdr.replytag,hdr.size);
 #endif
         return channel->writepacket(&hdr,sizeof(hdr),mb.toByteArray(),mb.length(),tm);
     }
@@ -1565,7 +1565,7 @@ class MultiPacketHandler // TAG_SYS_MULTI
                 otherMhdr->getDetails(errorMsg).newline();
             }
             msg.getDetails(errorMsg);
-            LOG(MCerror, unknownJob, "MultiPacketHandler: protocol error (%d) %s", code, errorMsg.str());
+            LOG(MCerror, "MultiPacketHandler: protocol error (%d) %s", code, errorMsg.str());
         }
         lastErrMs = ms;
     }
@@ -1633,7 +1633,7 @@ public:
 #ifdef _FULLTRACE
         StringBuffer ep1;
         StringBuffer ep2;
-        LOG(MCdebugInfo, unknownJob, "MP: multi-send(target=%s,sender=%s,tag=%d,replytag=%d,size=%d)",hdr.target.getEndpointHostText(ep1).str(),hdr.sender.getEndpointHostText(ep2).str(),hdr.tag,hdr.replytag,hdr.size);
+        LOG(MCdebugInfo, "MP: multi-send(target=%s,sender=%s,tag=%d,replytag=%d,size=%d)",hdr.target.getEndpointHostText(ep1).str(),hdr.sender.getEndpointHostText(ep2).str(),hdr.tag,hdr.replytag,hdr.size);
 #endif
         PacketHeader outhdr;
         outhdr = hdr;
@@ -1651,13 +1651,13 @@ public:
             if (i+1==mhdr.numparts) 
                 mhdr.size = mhdr.total-mhdr.ofs;
 #ifdef _FULLTRACE
-            LOG(MCdebugInfo, unknownJob, "MP: multi-send block=%d, num blocks=%d, ofs=%d, size=%d",i,mhdr.numparts,mhdr.ofs,mhdr.size);
+            LOG(MCdebugInfo, "MP: multi-send block=%d, num blocks=%d, ofs=%d, size=%d",i,mhdr.numparts,mhdr.ofs,mhdr.size);
 #endif
             outhdr.initseq();
             outhdr.size = sizeof(outhdr)+sizeof(mhdr)+mhdr.size;
             if (!channel->writepacket(&outhdr,sizeof(outhdr),&mhdr,sizeof(mhdr),p,mhdr.size,tm)) {
 #ifdef _FULLTRACE
-                LOG(MCdebugInfo, unknownJob, "MP: multi-send failed");
+                LOG(MCdebugInfo, "MP: multi-send failed");
 #endif
                 return false;
             }
@@ -1746,7 +1746,7 @@ public:
                 if (pc) 
                 {
 #ifdef _TRACELINKCLOSED
-                    LOG(MCdebugInfo, unknownJob, "CMPPacketReader::notifySelected() about to close socket, mode = 0x%x", selected);
+                    LOG(MCdebugInfo, "CMPPacketReader::notifySelected() about to close socket, mode = 0x%x", selected);
 #endif
                     pc->closeSocket(false, true);
                 }
@@ -1766,7 +1766,7 @@ public:
                     // assumes packet header will arrive in one go
                     if (sizeavail<sizeof(hdr)) {
 #ifdef _FULLTRACE
-                        LOG(MCdebugInfo, unknownJob, "Selected stalled on header %u %lu",sizeavail,sizeavail-sizeof(hdr));
+                        LOG(MCdebugInfo, "Selected stalled on header %u %lu",sizeavail,sizeavail-sizeof(hdr));
 #endif
                         size32_t szread;
                         sock->read(&hdr,sizeof(hdr),sizeof(hdr),szread,60); // I don't *really* want to block here but not much else can do
@@ -1787,7 +1787,7 @@ public:
 #ifdef _FULLTRACE
                     StringBuffer ep1;
                     StringBuffer ep2;
-                    LOG(MCdebugInfo, unknownJob, "MP: ReadPacket(sender=%s,target=%s,tag=%d,replytag=%d,size=%d)",hdr.sender.getEndpointHostText(ep1).str(),hdr.target.getEndpointHostText(ep2).str(),hdr.tag,hdr.replytag,hdr.size);
+                    LOG(MCdebugInfo, "MP: ReadPacket(sender=%s,target=%s,tag=%d,replytag=%d,size=%d)",hdr.sender.getEndpointHostText(ep1).str(),hdr.target.getEndpointHostText(ep2).str(),hdr.tag,hdr.replytag,hdr.size);
 #endif
                     remaining = hdr.size-sizeof(hdr);
                     activemsg = new CMessageBuffer(remaining); // will get from low level IO at some stage
@@ -1807,7 +1807,7 @@ public:
                 if (remaining==0) { // we have the packet so process
 
 #ifdef _FULLTRACE
-                    LOG(MCdebugInfo, unknownJob, "MP: ReadPacket(timetaken = %d,select iterations=%d)",msTick()-parent->startxfer,parent->numiter);
+                    LOG(MCdebugInfo, "MP: ReadPacket(timetaken = %d,select iterations=%d)",msTick()-parent->startxfer,parent->numiter);
 #endif
                     do {
                         switch (activemsg->getTag()) {
@@ -1843,7 +1843,7 @@ public:
         }
         catch (IException *e) {
             if (e->errorCode()!=JSOCKERR_graceful_close)
-                FLLOG(MCoperatorWarning, unknownJob, e,"MP(Packet Reader)");
+                FLLOG(MCoperatorWarning, e,"MP(Packet Reader)");
             e->Release();
         }
         // error here, so close socket (ignore error as may be closed already)
@@ -1939,30 +1939,30 @@ bool CMPChannel::attachSocket(ISocket *newsock,const SocketEndpoint &_remoteep,c
         StringBuffer ep2;
         _localep.getEndpointHostText(ep1);
         _remoteep.getEndpointHostText(ep2);
-        LOG(MCdebugInfo, unknownJob, "MP: Possible clash between %s->%s %d(%d)",ep1.str(),ep2.str(),(int)ismaster,(int)master);
+        LOG(MCdebugInfo, "MP: Possible clash between %s->%s %d(%d)",ep1.str(),ep2.str(),(int)ismaster,(int)master);
 
         try {
             if (ismaster!=master) {
                 if (ismaster) {
-                    LOG(MCdebugInfo, unknownJob, "MP: resolving socket attach clash (master)");
+                    LOG(MCdebugInfo, "MP: resolving socket attach clash (master)");
                     return false;
                 }
                 else {
                     Sleep(50);  // give the other side some time to close
                     CTimeMon tm(10000);
                     if (verifyConnection(tm,false)) {
-                        LOG(MCdebugInfo, unknownJob, "MP: resolving socket attach clash (verified)");
+                        LOG(MCdebugInfo, "MP: resolving socket attach clash (verified)");
                         return false;
                     }
                 }
             }
         }
         catch (IException *e) {
-            FLLOG(MCoperatorWarning, unknownJob, e,"MP attachsocket(1)");
+            FLLOG(MCoperatorWarning, e,"MP attachsocket(1)");
             e->Release();
         }
         try {
-            LOG(MCdebugInfo, unknownJob, "Message Passing - removing stale socket to %s",ep2.str());
+            LOG(MCdebugInfo, "Message Passing - removing stale socket to %s",ep2.str());
             CriticalUnblock unblock(connectsect);
             closeSocket(true, true);
 #ifdef REFUSE_STALE_CONNECTION
@@ -1972,7 +1972,7 @@ bool CMPChannel::attachSocket(ISocket *newsock,const SocketEndpoint &_remoteep,c
             Sleep(100); // pause to allow close socket triggers to run
         }
         catch (IException *e) {
-            FLLOG(MCoperatorWarning, unknownJob, e,"MP attachsocket(2)");
+            FLLOG(MCoperatorWarning, e,"MP attachsocket(2)");
             e->Release();
         }
     }
@@ -2010,7 +2010,7 @@ bool CMPChannel::send(MemoryBuffer &mb, mptag_t tag, mptag_t replytag, CTimeMon 
     if (closed||(reply&&!isConnected()))  // flag error if has been disconnected
     {
 #ifdef _TRACELINKCLOSED
-        LOG(MCdebugInfo, unknownJob, "CMPChannel::send closed on entry %d",(int)closed);
+        LOG(MCdebugInfo, "CMPChannel::send closed on entry %d",(int)closed);
         PrintStackReport();
 #endif
         if (!checkReconnect(tm))
@@ -2087,7 +2087,7 @@ bool CMPChannel::sendPing(CTimeMon &tm)
         ret = parent->pingpackethandler->send(this,hdr,tm)&&!tm.timedout(&remaining);
     }
     catch (IException *e) {         
-        FLLOG(MCoperatorWarning, unknownJob, e,"MP ping(1)");
+        FLLOG(MCoperatorWarning, e,"MP ping(1)");
         e->Release();
     }
     sendmutex.unlock();
@@ -2117,7 +2117,7 @@ bool CMPChannel::sendPingReply(unsigned timeout,bool identifyself)
         ret = parent->pingreplypackethandler->send(this,hdr,mb,mon);
     }
     catch (IException *e) {         
-        FLLOG(MCoperatorWarning, unknownJob, e,"MP ping reply(1)");
+        FLLOG(MCoperatorWarning, e,"MP ping reply(1)");
         e->Release();
         ret = false;
     }
@@ -2225,7 +2225,7 @@ CMPConnectThread::CMPConnectThread(CMPServer *_parent, unsigned port, bool _list
         listensock = NULL;  // delay create till running
     parent->setPort(port);
 #ifdef _TRACE
-    LOG(MCdebugInfo, unknownJob, "MP Connect Thread Init Port = %d", port);
+    LOG(MCdebugInfo, "MP Connect Thread Init Port = %d", port);
 #endif
     running = false;
 
@@ -2415,7 +2415,7 @@ bool CMPConnectThread::handleAcceptedSocket(ISocket *_sock, unsigned timeoutMs, 
                 // not sure how to get here as this is not one of the possible outcomes of above: rd == 0 or rd == sizeof(id) or an exception
                 StringBuffer errMsg("MP Connect Thread: invalid number of connection bytes serialized from ");
                 peerEp.getEndpointHostText(errMsg);
-                FLLOG(MCoperatorWarning, unknownJob, "%s", errMsg.str());
+                FLLOG(MCoperatorWarning, "%s", errMsg.str());
                 sock->close();
                 return false; // did not timeout
             }
@@ -2472,7 +2472,7 @@ bool CMPConnectThread::handleAcceptedSocket(ISocket *_sock, unsigned timeoutMs, 
                 // JCSMORE, I think _remoteep really must/should match a IP of this local host
                 errMsg.append("MP Connect Thread: invalid remote and/or host ep serialized from ");
                 peerEp.getEndpointHostText(errMsg);
-                FLLOG(MCoperatorWarning, unknownJob, "%s", errMsg.str());
+                FLLOG(MCoperatorWarning, "%s", errMsg.str());
             }
             else if (parent->mpTraceLevel >= MPVerboseMsgThreshold)
             {
@@ -2504,7 +2504,7 @@ bool CMPConnectThread::handleAcceptedSocket(ISocket *_sock, unsigned timeoutMs, 
 #ifdef _TRACE
             StringBuffer str1;
             StringBuffer str2;
-            LOG(MCdebugInfo, unknownJob, "MP Connect Thread: connected to %s",_remoteep.getEndpointHostText(str1).str());
+            LOG(MCdebugInfo, "MP Connect Thread: connected to %s",_remoteep.getEndpointHostText(str1).str());
 #endif
         }
 #ifdef _FULLTRACE       
@@ -2513,7 +2513,7 @@ bool CMPConnectThread::handleAcceptedSocket(ISocket *_sock, unsigned timeoutMs, 
     }
     catch (IException *e)
     {
-        FLLOG(MCoperatorWarning, unknownJob, e,"MP Connect Thread: Failed to make connection(1)");
+        FLLOG(MCoperatorWarning, e,"MP Connect Thread: Failed to make connection(1)");
         sock->close();
         e->Release();
     }
@@ -2523,8 +2523,9 @@ bool CMPConnectThread::handleAcceptedSocket(ISocket *_sock, unsigned timeoutMs, 
 int CMPConnectThread::run()
 {
 #ifdef _TRACE
-    LOG(MCdebugInfo, unknownJob, "MP: Connect Thread Starting - accept loop");
+    LOG(MCdebugInfo, "MP: Connect Thread Starting - accept loop");
 #endif
+    Owned<IException> exception;
     while (running)
     {
         Owned<ISocket> sock;
@@ -2535,8 +2536,7 @@ int CMPConnectThread::run()
         }
         catch (IException *e)
         {
-            LOG(MCdebugInfo, unknownJob, e,"MP accept failed");
-            throw; // error handling TBD
+            exception.setown(e);
         }
         if (sock)
         {
@@ -2552,11 +2552,23 @@ int CMPConnectThread::run()
         else
         {
             if (running)
-                LOG(MCdebugInfo, unknownJob, "MP Connect Thread accept returned NULL");
+            {
+                if (exception)
+                {
+                    constexpr unsigned sleepSecs = 5;
+                    // Log and pause for a few seconds, because accept loop may have failed due to handle exhaustion.
+                    VStringBuffer msg("MP accept failed. Accept loop will be paused for %u seconds", sleepSecs);
+                    EXCLOG(exception, msg.str());
+                    exception.clear();
+                    MilliSleep(sleepSecs * 1000);
+                }
+                else // not sure this can ever happen (no exception, still running, and sock==nullptr)
+                    LOG(MCdebugInfo, "MP Connect Thread accept returned NULL");
+            }
         }
     }
 #ifdef _TRACE
-    LOG(MCdebugInfo, unknownJob, "MP Connect Thread Stopping");
+    LOG(MCdebugInfo, "MP Connect Thread Stopping");
 #endif
     return 0;
 }
@@ -2668,7 +2680,7 @@ CMPServer::~CMPServer()
     StringBuffer buf;
     getReceiveQueueDetails(buf);
     if (buf.length())
-        LOG(MCdebugInfo, unknownJob, "MP: Orphan check\n%s",buf.str());
+        LOG(MCdebugInfo, "MP: Orphan check\n%s",buf.str());
 #endif
     _releaseAll();
     selecthandler->stop(true);
@@ -2746,7 +2758,7 @@ bool CMPServer::recv(CMessageBuffer &mbuf, const SocketEndpoint *ep, mptag_t tag
     }
     if (nfy.aborted) {
 #ifdef _TRACELINKCLOSED
-        LOG(MCdebugInfo, unknownJob, "CMPserver::recv closed on notify");
+        LOG(MCdebugInfo, "CMPserver::recv closed on notify");
         PrintStackReport();
 #endif
         IMP_Exception *e=new CMPException(MPERR_link_closed,*nfy.ep);
@@ -2832,7 +2844,7 @@ unsigned CMPServer::probe(const SocketEndpoint *ep, mptag_t tag,CTimeMon &tm,Soc
     }
     if (nfy.aborted) {
 #ifdef _TRACELINKCLOSED
-        LOG(MCdebugInfo, unknownJob, "CMPserver::probe closed on notify");
+        LOG(MCdebugInfo, "CMPserver::probe closed on notify");
         PrintStackReport();
 #endif
         IMP_Exception *e=new CMPException(MPERR_link_closed,*ep);
@@ -2920,7 +2932,7 @@ void CMPServer::notifyClosed(SocketEndpoint &ep, bool trace)
     if (trace)
     {
         StringBuffer url;
-        LOG(MCdebugInfo, unknownJob, "MP: CMPServer::notifyClosed %s",ep.getEndpointHostText(url).str());
+        LOG(MCdebugInfo, "MP: CMPServer::notifyClosed %s",ep.getEndpointHostText(url).str());
         PrintStackReport();
     }
 #endif
@@ -3621,7 +3633,7 @@ void stopMPServer()
         {
             stopLogMsgReceivers();
 #ifdef _TRACE
-            LOG(MCdebugInfo, unknownJob, "MP: Stopping MP Server");
+            LOG(MCdebugInfo, "MP: Stopping MP Server");
 #endif
             _globalMPServer = globalMPServer;
             globalMPServer = NULL;
@@ -3632,7 +3644,7 @@ void stopMPServer()
     _globalMPServer->stop();
     _globalMPServer->Release();
 #ifdef _TRACE
-    LOG(MCdebugInfo, unknownJob, "MP: Stopped MP Server");
+    LOG(MCdebugInfo, "MP: Stopped MP Server");
 #endif
     CriticalBlock block(CGlobalMPServer::sect);
     initMyNode(0);

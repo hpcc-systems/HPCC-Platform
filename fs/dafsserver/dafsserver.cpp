@@ -2002,11 +2002,13 @@ class CRemoteXmlReadActivity : public CRemoteMarkupReadActivity
 public:
     CRemoteXmlReadActivity(IPropertyTree &config, IFileDescriptor *fileDesc) : PARENT(config, fileDesc, TAKxmlread)
     {
-        xpath.set("/Dataset/");
         if (customRowTag.isEmpty()) // no override
             fileDesc->queryProperties().getProp("@rowTag", xpath);
         else
+        {
+            xpath.set("/Dataset/");
             xpath.append(customRowTag);
+        }
     }
 };
 
@@ -3879,7 +3881,7 @@ public:
             file->setShareMode((IFSHmode)sMode);
         }
         if (TF_TRACE_PRE_IO)
-            PROGLOG("before open file '%s',  (%d,%d,%d,%d,0%o)",name->text.get(),(int)mode,(int)share,extraFlags,sMode,cFlags);
+            PROGLOG("before open file '%s', (%d,%d,%d,%d,0%o)",name->text.get(),(int)mode,(int)share,extraFlags,sMode,cFlags);
 
         Owned<IFileIO> fileio;
 #ifndef _WIN32
@@ -3941,9 +3943,9 @@ public:
         if (TF_TRACE)
         {
 #ifndef _WIN32
-            PROGLOG("open file '%s',  (%d,%d) handle = %d",name->text.get(),(int)mode,(int)share,handle);
+            PROGLOG("open file '%s', (%d,%d) handle = %d",name->text.get(),(int)mode,(int)share,handle);
 #else
-            PROGLOG("open file '%s',  (%d,%d) handle = %d, retries = %u, time(ms) = %u",name->text.get(),(int)mode,(int)share,handle,retries,timer.elapsedMs());
+            PROGLOG("open file '%s', (%d,%d) handle = %d, retries = %u, time(ms) = %u",name->text.get(),(int)mode,(int)share,handle,retries,timer.elapsedMs());
 #endif
         }
         return true;
@@ -3956,7 +3958,7 @@ public:
         IFileIO *fileio;
         checkFileIOHandle(reply, handle, fileio, true);
         if (TF_TRACE)
-            PROGLOG("close file,  handle = %d",handle);
+            PROGLOG("close file, handle = %d",handle);
         reply.append(RFEnoerror);
         return true;
     }
@@ -3976,13 +3978,13 @@ public:
         size32_t numRead;
         unsigned posOfLength = reply.length();
         if (TF_TRACE_PRE_IO)
-            PROGLOG("before read file,  handle = %d, toread = %d",handle,len);
+            PROGLOG("before read file, handle = %d, toread = %d",handle,len);
         reply.reserve(sizeof(numRead));
         void *data = reply.reserve(len);
         numRead = fileio->read(pos,len,data);
         stats.addRead(len);
         if (TF_TRACE)
-            PROGLOG("read file,  handle = %d, pos = %" I64F "d, toread = %d, read = %d",handle,pos,len,numRead);
+            PROGLOG("read file, handle = %d, pos = %" I64F "d, toread = %d, read = %d",handle,pos,len,numRead);
         reply.setLength(posOfLength + sizeof(numRead) + numRead);
         reply.writeEndianDirect(posOfLength,sizeof(numRead),&numRead);
     }
@@ -3996,7 +3998,7 @@ public:
         __int64 size = fileio->size();
         reply.append((unsigned)RFEnoerror).append(size);
         if (TF_TRACE)
-            PROGLOG("size file,  handle = %d, size = %" I64F "d",handle,size);
+            PROGLOG("size file, handle = %d, size = %" I64F "d",handle,size);
     }
 
     void cmdSetSize(MemoryBuffer & msg, MemoryBuffer & reply)
@@ -4006,7 +4008,7 @@ public:
         msg.read(handle).read(size);
         IFileIO *fileio;
         if (TF_TRACE)
-            PROGLOG("set size file,  handle = %d, size = %" I64F "d",handle,size);
+            PROGLOG("set size file, handle = %d, size = %" I64F "d",handle,size);
         checkFileIOHandle(reply, handle, fileio);
         fileio->setSize(size);
         reply.append((unsigned)RFEnoerror);
@@ -4022,11 +4024,11 @@ public:
         checkFileIOHandle(reply, handle, fileio);
         const byte *data = (const byte *)msg.readDirect(len);
         if (TF_TRACE_PRE_IO)
-            PROGLOG("before write file,  handle = %d, towrite = %d",handle,len);
+            PROGLOG("before write file, handle = %d, towrite = %d",handle,len);
         size32_t numWritten = fileio->write(pos,len,data);
         stats.addWrite(numWritten);
         if (TF_TRACE)
-            PROGLOG("write file,  handle = %d, towrite = %d, written = %d",handle,len,numWritten);
+            PROGLOG("write file, handle = %d, towrite = %d, written = %d",handle,len,numWritten);
         reply.append((unsigned)RFEnoerror).append(numWritten);
     }
 
@@ -4035,7 +4037,7 @@ public:
         StringAttr name;
         msg.read(name);
         if (TF_TRACE)
-            PROGLOG("exists,  '%s'",name.get());
+            PROGLOG("exists, '%s'",name.get());
         Owned<IFile> file=createIFile(name);
         bool e = file->exists();
         reply.append((unsigned)RFEnoerror).append(e);
@@ -4046,7 +4048,7 @@ public:
         StringAttr name;
         msg.read(name);
         if (TF_TRACE)
-            PROGLOG("remove,  '%s'",name.get());
+            PROGLOG("remove, '%s'",name.get());
         Owned<IFile> file=createIFile(name);
         bool e = file->remove();
         reply.append((unsigned)RFEnoerror).append(e);
@@ -4075,7 +4077,7 @@ public:
         StringAttr toname;
         msg.read(toname);
         if (TF_TRACE)
-            PROGLOG("rename,  '%s' to '%s'",fromname.get(),toname.get());
+            PROGLOG("rename, '%s' to '%s'",fromname.get(),toname.get());
         Owned<IFile> file=createIFile(fromname);
         file->rename(toname);
         reply.append((unsigned)RFEnoerror);
@@ -4088,7 +4090,7 @@ public:
         StringAttr toname;
         msg.read(toname);
         if (TF_TRACE)
-            PROGLOG("move,  '%s' to '%s'",fromname.get(),toname.get());
+            PROGLOG("move, '%s' to '%s'",fromname.get(),toname.get());
         Owned<IFile> file=createIFile(fromname);
         file->move(toname);
         reply.append((unsigned)RFEnoerror);
@@ -4101,7 +4103,7 @@ public:
         StringAttr toname;
         msg.read(toname);
         if (TF_TRACE)
-            PROGLOG("copy,  '%s' to '%s'",fromname.get(),toname.get());
+            PROGLOG("copy, '%s' to '%s'",fromname.get(),toname.get());
         copyFile(toname, fromname);
         reply.append((unsigned)RFEnoerror);
     }
@@ -4120,7 +4122,7 @@ public:
         __int64 written = fileio->appendFile(file,pos,len);
         stats.addWrite(written);
         if (TF_TRACE)
-            PROGLOG("append file,  handle = %d, file=%s, pos = %" I64F "d len = %" I64F "d written = %" I64F "d",handle,srcname.get(),pos,len,written);
+            PROGLOG("append file, handle = %d, file=%s, pos = %" I64F "d len = %" I64F "d written = %" I64F "d",handle,srcname.get(),pos,len,written);
         reply.append((unsigned)RFEnoerror).append(written);
     }
 
@@ -4129,7 +4131,7 @@ public:
         StringAttr name;
         msg.read(name);
         if (TF_TRACE)
-            PROGLOG("isFile,  '%s'",name.get());
+            PROGLOG("isFile, '%s'",name.get());
         Owned<IFile> file=createIFile(name);
         unsigned ret = (unsigned)file->isFile();
         reply.append((unsigned)RFEnoerror).append(ret);
@@ -4140,7 +4142,7 @@ public:
         StringAttr name;
         msg.read(name);
         if (TF_TRACE)
-            PROGLOG("isDir,  '%s'",name.get());
+            PROGLOG("isDir, '%s'",name.get());
         Owned<IFile> file=createIFile(name);
         unsigned ret = (unsigned)file->isDirectory();
         reply.append((unsigned)RFEnoerror).append(ret);
@@ -4151,7 +4153,7 @@ public:
         StringAttr name;
         msg.read(name);
         if (TF_TRACE)
-            PROGLOG("isReadOnly,  '%s'",name.get());
+            PROGLOG("isReadOnly, '%s'",name.get());
         Owned<IFile> file=createIFile(name);
         unsigned ret = (unsigned)file->isReadOnly();
         reply.append((unsigned)RFEnoerror).append(ret);
@@ -4164,7 +4166,7 @@ public:
         msg.read(name).read(set);
 
         if (TF_TRACE)
-            PROGLOG("setReadOnly,  '%s' %d",name.get(),(int)set);
+            PROGLOG("setReadOnly, '%s' %d",name.get(),(int)set);
         Owned<IFile> file=createIFile(name);
         file->setReadOnly(set);
         reply.append((unsigned)RFEnoerror);
@@ -4176,7 +4178,7 @@ public:
         unsigned fPerms;
         msg.read(name).read(fPerms);
         if (TF_TRACE)
-            PROGLOG("setFilePerms,  '%s' 0%o",name.get(),fPerms);
+            PROGLOG("setFilePerms, '%s' 0%o",name.get(),fPerms);
         Owned<IFile> file=createIFile(name);
         file->setFilePermissions(fPerms);
         reply.append((unsigned)RFEnoerror);
@@ -4187,7 +4189,7 @@ public:
         StringAttr name;
         msg.read(name);
         if (TF_TRACE)
-            PROGLOG("getTime,  '%s'",name.get());
+            PROGLOG("getTime, '%s'",name.get());
         Owned<IFile> file=createIFile(name);
         CDateTime createTime;
         CDateTime modifiedTime;
@@ -4223,7 +4225,7 @@ public:
             accessedTime.deserialize(msg);
 
         if (TF_TRACE)
-            PROGLOG("setTime,  '%s'",name.get());
+            PROGLOG("setTime, '%s'",name.get());
         Owned<IFile> file=createIFile(name);
 
         bool ret = file->setTime(creategot?&createTime:NULL,modifiedgot?&modifiedTime:NULL,accessedgot?&accessedTime:NULL);
@@ -4235,7 +4237,7 @@ public:
         StringAttr name;
         msg.read(name);
         if (TF_TRACE)
-            PROGLOG("CreateDir,  '%s'",name.get());
+            PROGLOG("CreateDir, '%s'",name.get());
         Owned<IFile> dir=createIFile(name);
         bool ret = dir->createDirectory();
         reply.append((unsigned)RFEnoerror).append(ret);
@@ -4256,7 +4258,7 @@ public:
                 client.opendir.clear();
         }
         if (TF_TRACE)
-            PROGLOG("GetDir,  '%s', '%s', stream='%u'",name.get(),mask.get(),stream);
+            PROGLOG("GetDir, '%s', '%s', stream='%u'",name.get(),mask.get(),stream);
         if (!stream && !containsFileWildcard(mask))
         {
             // if no streaming, and mask contains no wildcard, it is much more efficient to get the info without a directory iterator!
@@ -4331,7 +4333,7 @@ public:
             prev.setown(createRemoteDirectorIterator(ep, name, msg));
         }
         if (TF_TRACE)
-            PROGLOG("MonitorDir,  '%s' '%s'",name.get(),mask.get());
+            PROGLOG("MonitorDir, '%s' '%s'",name.get(),mask.get());
         Owned<IFile> dir=createIFile(name);
         Owned<IDirectoryDifferenceIterator> iter=dir->monitorDirectory(prev,mask.length()?mask.get():NULL,sub,includedir,checkinterval,timeout);
         reply.append((unsigned)RFEnoerror);
@@ -4524,7 +4526,7 @@ public:
         StringAttr name;
         msg.read(name);
         if (TF_TRACE)
-            PROGLOG("getCRC,  '%s'",name.get());
+            PROGLOG("getCRC, '%s'",name.get());
         Owned<IFile> file=createIFile(name);
         unsigned ret = file->getCRC();
         reply.append((unsigned)RFEnoerror).append(ret);
@@ -5103,7 +5105,7 @@ public:
         msg.append(results);
         catchWriteBuffer(client.socket, msg);
 
-        LOG(MCdebugProgress, unknownJob, "Results sent from slave: %s", client.peerName.str());
+        LOG(MCdebugProgress, "Results sent from slave: %s", client.peerName.str());
     }
 
     void formatException(MemoryBuffer &reply, IException *e, RemoteFileCommandType cmd, bool testSocketFlag, unsigned _dfsErrorCode, CRemoteClientHandler *client)

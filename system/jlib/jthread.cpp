@@ -2684,12 +2684,14 @@ static TraceFlags defaultTraceFlags = TraceFlags::Standard;
 static thread_local LogMsgJobId defaultJobId = UnknownJob;
 static thread_local TraceFlags threadTraceFlags = TraceFlags::Standard;
 static thread_local const IContextLogger *default_thread_logctx = nullptr;
+static thread_local ISpan * threadActiveSpan = nullptr;
 
 void saveThreadContext(SavedThreadContext & saveCtx)
 {
     saveCtx.jobId = defaultJobId;
     saveCtx.logctx = default_thread_logctx;
     saveCtx.traceFlags = threadTraceFlags;
+    saveCtx.activeSpan = threadActiveSpan;
 }
 
 void restoreThreadContext(const SavedThreadContext & saveCtx)
@@ -2700,8 +2702,8 @@ void restoreThreadContext(const SavedThreadContext & saveCtx)
     defaultJobId = saveCtx.jobId;
     default_thread_logctx = saveCtx.logctx;
     threadTraceFlags = saveCtx.traceFlags;
+    threadActiveSpan = saveCtx.activeSpan;
 }
-
 
 LogMsgJobId queryThreadedJobId()
 {
@@ -2716,6 +2718,21 @@ void setDefaultJobId(LogMsgJobId id)
 const IContextLogger * queryThreadedContextLogger()
 {
     return default_thread_logctx;
+}
+
+ISpan * queryThreadedActiveSpan()
+{
+    ISpan * result = threadActiveSpan;
+    if (!result)
+        result = queryNullSpan();
+    return result;
+}
+
+ISpan * setThreadedActiveSpan(ISpan * span)
+{
+    ISpan * ret = threadActiveSpan;
+    threadActiveSpan = span;
+    return ret;
 }
 
 //---------------------------
