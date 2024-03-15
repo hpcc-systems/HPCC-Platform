@@ -2642,7 +2642,7 @@ public:
                     if (drops > ret->drops)
                     {
                         if (!firstTime)
-                            LOG(MCoperatorError, unknownJob, "DROPPED UDP PACKETS: port %d rx_queue=%u (peak %u) drops=%u (total %i)", port, queue, ret->rx_queue, drops-ret->drops, drops);
+                            LOG(MCoperatorError, "DROPPED UDP PACKETS: port %d rx_queue=%u (peak %u) drops=%u (total %i)", port, queue, ret->rx_queue, drops-ret->drops, drops);
                         ret->drops = drops;
                     }
                 }
@@ -2709,10 +2709,10 @@ public:
                         {
                             firstCall = false;
                             if (errors)
-                                LOG(MCoperatorWarning, unknownJob, "UDP Initial InError total: %u", errors);
+                                LOG(MCoperatorWarning, "UDP Initial InError total: %u", errors);
                         }
                         else if (errors > prevErrors)
-                            LOG(MCoperatorError, unknownJob, "UDP InErrors: %u (total %u)", errors-prevErrors, errors);
+                            LOG(MCoperatorError, "UDP InErrors: %u (total %u)", errors-prevErrors, errors);
                         prevErrors = errors;
                     }
                 }
@@ -3001,7 +3001,7 @@ public:
                 udpStats.reportUdpInfo(0);
             }
             if(traceMode&&str.length()) {
-                MLOG(MCdebugInfo, unknownJob, "SYS: %s", str.str());
+                MLOG(MCdebugInfo, "SYS: %s", str.str());
 #ifndef _WIN32
                 if (traceMode&PerfMonExtended)
                 {

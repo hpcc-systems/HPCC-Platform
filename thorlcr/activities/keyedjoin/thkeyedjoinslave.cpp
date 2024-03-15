@@ -1030,7 +1030,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         {
             StringBuffer log;
             getInfo(log).append(": ").append(msg);
-            LOG(MCthorDetailedDebugInfo, thorJob, "%s", log.str());
+            LOG(MCthorDetailedDebugInfo, "%s", log.str());
         }
         virtual StringBuffer &getInfo(StringBuffer &info) const
         {
@@ -1377,7 +1377,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             else
             {
                 for (unsigned i=0; i<parts.size(); i++)
-                    contextLoggers.push_back(new CStatsContextLogger(jhtreeCacheStatistics, thorJob));
+                    contextLoggers.push_back(new CStatsContextLogger(jhtreeCacheStatistics));
             }
         }
         virtual void addPartNum(unsigned partNum) override
@@ -1426,7 +1426,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         CStatsContextLogger contextLogger;
         std::atomic<IKeyManager *> keyManager{nullptr};
     public:
-        CKeyLookupMergeHandler(CKeyedJoinSlave &_activity) : CKeyLookupLocalBase(_activity), contextLogger(jhtreeCacheStatistics, thorJob)
+        CKeyLookupMergeHandler(CKeyedJoinSlave &_activity) : CKeyLookupLocalBase(_activity), contextLogger(jhtreeCacheStatistics)
         {
             limiter = &activity.lookupThreadLimiter;
             translators.push_back(nullptr);
@@ -1646,7 +1646,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             else
             {
                 for (unsigned i=0; i<parts.size(); i++)
-                    contextLoggers.push_back(new CStatsContextLogger(jhtreeCacheStatistics, thorJob));
+                    contextLoggers.push_back(new CStatsContextLogger(jhtreeCacheStatistics));
             }
         }
         virtual StringBuffer &getInfo(StringBuffer &info) const override

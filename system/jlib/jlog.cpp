@@ -293,19 +293,9 @@ void LogMsgJobInfo::deserialize(MemoryBuffer & in)
 
 //--------------------------------------------------------------------------------------------------------------------
 
-const LogMsgJobInfo unknownJob(UnknownJob, UnknownUser);
-
-static thread_local LogMsgJobInfo tempJobInfo;
-const LogMsgJobInfo & checkDefaultJobInfo(const LogMsgJobInfo & _jobInfo)
+static const LogMsgJobInfo queryDefaultJobInfo()
 {
-    if (&_jobInfo != &unknownJob)
-        return _jobInfo;
-
-    //Using a thread local as a temporary is a short term change
-    //the next step is to remove the parameter and always return a stack object
-    LogMsgJobInfo & result = tempJobInfo;
-    result.setJobID(queryThreadedJobId());
-    return result;
+    return LogMsgJobInfo(queryThreadedJobId(), UnknownUser);
 }
 
 
@@ -315,21 +305,21 @@ LogMsg::LogMsg(LogMsgJobId id, const char *job) : category(MSGAUD_programmer, jo
         text.append(job);
 }
 
-LogMsg::LogMsg(const LogMsgCategory & _cat, LogMsgId _id, const LogMsgJobInfo & _jobInfo, LogMsgCode _code, const char * _text, unsigned port, LogMsgSessionId session)
-  : category(_cat), sysInfo(_id, port, session), jobInfo(checkDefaultJobInfo(_jobInfo)), msgCode(_code), remoteFlag(false)
+LogMsg::LogMsg(const LogMsgCategory & _cat, LogMsgId _id, LogMsgCode _code, const char * _text, unsigned port, LogMsgSessionId session)
+  : category(_cat), sysInfo(_id, port, session), jobInfo(queryDefaultJobInfo()), msgCode(_code), remoteFlag(false)
 {
     text.append(_text);
 }
 
-LogMsg::LogMsg(const LogMsgCategory & _cat, LogMsgId _id, const LogMsgJobInfo & _jobInfo, LogMsgCode _code, size32_t sz, const char * _text, unsigned port, LogMsgSessionId session)
-  : category(_cat), sysInfo(_id, port, session), jobInfo(checkDefaultJobInfo(_jobInfo)), msgCode(_code), remoteFlag(false)
+LogMsg::LogMsg(const LogMsgCategory & _cat, LogMsgId _id, LogMsgCode _code, size32_t sz, const char * _text, unsigned port, LogMsgSessionId session)
+  : category(_cat), sysInfo(_id, port, session), jobInfo(queryDefaultJobInfo()), msgCode(_code), remoteFlag(false)
 {
     text.append(sz, _text);
 }
 
-LogMsg::LogMsg(const LogMsgCategory & _cat, LogMsgId _id, const LogMsgJobInfo & _jobInfo, LogMsgCode _code, const char * format, va_list args,
+LogMsg::LogMsg(const LogMsgCategory & _cat, LogMsgId _id, LogMsgCode _code, const char * format, va_list args,
        unsigned port, LogMsgSessionId session)
-  : category(_cat), sysInfo(_id, port, session), jobInfo(checkDefaultJobInfo(_jobInfo)), msgCode(_code), remoteFlag(false)
+  : category(_cat), sysInfo(_id, port, session), jobInfo(queryDefaultJobInfo()), msgCode(_code), remoteFlag(false)
 {
     text.valist_appendf(format, args);
 }
@@ -1259,7 +1249,7 @@ void LogMsgPrepender::report(const LogMsgCategory & cat, const char * format, ..
     buff.append(file).append("(").append(line).append(") : ").append(format);
     va_list args;
     va_start(args, format);
-    queryLogMsgManager()->report_va(cat, unknownJob, buff.str(), args);
+    queryLogMsgManager()->report_va(cat, buff.str(), args);
     va_end(args);
 }
 
@@ -1267,7 +1257,7 @@ void LogMsgPrepender::report_va(const LogMsgCategory & cat, const char * format,
 {
     StringBuffer buff;
     buff.append(file).append("(").append(line).append(") : ").append(format);
-    queryLogMsgManager()->report_va(cat, unknownJob, buff.str(), args);
+    queryLogMsgManager()->report_va(cat, buff.str(), args);
 }
 
 void LogMsgPrepender::report(const LogMsgCategory & cat, LogMsgCode code, const char * format, ...)
@@ -1276,7 +1266,7 @@ void LogMsgPrepender::report(const LogMsgCategory & cat, LogMsgCode code, const 
     buff.append(file).append("(").append(line).append(") : ").append(format);
     va_list args;
     va_start(args, format);
-    queryLogMsgManager()->report_va(cat, unknownJob, buff.str(), args);
+    queryLogMsgManager()->report_va(cat, buff.str(), args);
     va_end(args);
 }
 
@@ -1284,7 +1274,7 @@ void LogMsgPrepender::report_va(const LogMsgCategory & cat, LogMsgCode code, con
 {
     StringBuffer buff;
     buff.append(file).append("(").append(line).append(") : ").append(format);
-    queryLogMsgManager()->report_va(cat, unknownJob, buff.str(), args);
+    queryLogMsgManager()->report_va(cat, buff.str(), args);
 }
 
 void LogMsgPrepender::report(const LogMsgCategory & cat, const IException * exception, const char * prefix)
@@ -1293,55 +1283,12 @@ void LogMsgPrepender::report(const LogMsgCategory & cat, const IException * exce
     buff.append(file).append("(").append(line).append(") : ");
     if(prefix) buff.append(prefix).append(" : ");
     exception->errorMessage(buff);
-    queryLogMsgManager()->report(cat, unknownJob, exception->errorCode(), "%s", buff.str());
-}
-
-void LogMsgPrepender::report(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, ...)
-{
-    StringBuffer buff;
-    buff.append(file).append("(").append(line).append(") : ").append(format);
-    va_list args;
-    va_start(args, format);
-    queryLogMsgManager()->report_va(cat, job, buff.str(), args);
-    va_end(args);
-}
-
-void LogMsgPrepender::report_va(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, va_list args)
-{
-    StringBuffer buff;
-    buff.append(file).append("(").append(line).append(") : ").append(format);
-    queryLogMsgManager()->report_va(cat, job, buff.str(), args);
-}
-
-void LogMsgPrepender::report(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char * format, ...)
-{
-    StringBuffer buff;
-    buff.append(file).append("(").append(line).append(") : ").append(format);
-    va_list args;
-    va_start(args, format);
-    queryLogMsgManager()->report_va(cat, job, buff.str(), args);
-    va_end(args);
-}
-
-void LogMsgPrepender::report_va(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char * format, va_list args)
-{
-    StringBuffer buff;
-    buff.append(file).append("(").append(line).append(") : ").append(format);
-    queryLogMsgManager()->report_va(cat, job, buff.str(), args);
-}
-
-void LogMsgPrepender::report(const LogMsgCategory & cat, const LogMsgJobInfo & job, const IException * exception, const char * prefix)
-{
-    StringBuffer txt;
-    if (prefix) 
-        txt.append(prefix).append(" : ");
-    exception->errorMessage(txt);
-    queryLogMsgManager()->report(cat, job, exception->errorCode(), "%s(%d) : %s", file, line, txt.str());
+    queryLogMsgManager()->report(cat, exception->errorCode(), "%s", buff.str());
 }
 
 IException * LogMsgPrepender::report(IException * e, const char * prefix, LogMsgClass cls)
 {
-    report(MCexception(e, cls), unknownJob, e, prefix);
+    report(MCexception(e, cls), e, prefix);
     return e;
 }
 
@@ -1542,14 +1489,14 @@ void CLogMsgManager::report(const LogMsgCategory & cat, const char * format, ...
     if(rejectsCategory(cat)) return;
     va_list args;
     va_start(args, format);
-    pushMsg(new LogMsg(cat, getNextID(), unknownJob, NoLogMsgCode, format, args, port, session));
+    pushMsg(new LogMsg(cat, getNextID(), NoLogMsgCode, format, args, port, session));
     va_end(args);
 }
 
 void CLogMsgManager::report_va(const LogMsgCategory & cat, const char * format, va_list args)
 {
     if(rejectsCategory(cat)) return;
-    pushMsg(new LogMsg(cat, getNextID(), unknownJob, NoLogMsgCode, format, args, port, session));
+    pushMsg(new LogMsg(cat, getNextID(), NoLogMsgCode, format, args, port, session));
 }
 
 void CLogMsgManager::report(const LogMsgCategory & cat, LogMsgCode code, const char * format, ...)
@@ -1557,17 +1504,17 @@ void CLogMsgManager::report(const LogMsgCategory & cat, LogMsgCode code, const c
     if(rejectsCategory(cat)) return;
     va_list args;
     va_start(args, format);
-    pushMsg(new LogMsg(cat, getNextID(), unknownJob, code, format, args, port, session));
+    pushMsg(new LogMsg(cat, getNextID(), code, format, args, port, session));
     va_end(args);
 }
 
 void CLogMsgManager::report_va(const LogMsgCategory & cat, LogMsgCode code, const char * format, va_list args)
 {
     if(rejectsCategory(cat)) return;
-    pushMsg(new LogMsg(cat, getNextID(), unknownJob, code, format, args, port, session));
+    pushMsg(new LogMsg(cat, getNextID(), code, format, args, port, session));
 }
 
-void CLogMsgManager::mreport_direct(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * msg)
+void CLogMsgManager::mreport_direct(const LogMsgCategory & cat, const char * msg)
 {
     if(rejectsCategory(cat)) return;
     const char *cursor = msg;
@@ -1578,17 +1525,17 @@ void CLogMsgManager::mreport_direct(const LogMsgCategory & cat, const LogMsgJobI
         {
             case '\0':
                 if (cursor != lineStart || cursor==msg)
-                    pushMsg(new LogMsg(cat, getNextID(), job, NoLogMsgCode, (int)(cursor-lineStart), lineStart, port, session));
+                    pushMsg(new LogMsg(cat, getNextID(), NoLogMsgCode, (int)(cursor-lineStart), lineStart, port, session));
                 return;
             case '\r':
                 // NB: \r or \r\n translated into newline
-                pushMsg(new LogMsg(cat, getNextID(), job, NoLogMsgCode, (int)(cursor-lineStart), lineStart, port, session));
+                pushMsg(new LogMsg(cat, getNextID(), NoLogMsgCode, (int)(cursor-lineStart), lineStart, port, session));
                 if ('\n' == *(cursor+1))
                     cursor++;
                 lineStart = cursor+1;
                 break;
             case '\n':
-                pushMsg(new LogMsg(cat, getNextID(), job, NoLogMsgCode, (int)(cursor-lineStart), lineStart, port, session));
+                pushMsg(new LogMsg(cat, getNextID(), NoLogMsgCode, (int)(cursor-lineStart), lineStart, port, session));
                 lineStart = cursor+1;
                 break;
         }
@@ -1596,12 +1543,12 @@ void CLogMsgManager::mreport_direct(const LogMsgCategory & cat, const LogMsgJobI
     }
 }
 
-void CLogMsgManager::mreport_va(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, va_list args)
+void CLogMsgManager::mreport_va(const LogMsgCategory & cat, const char * format, va_list args)
 {
     if(rejectsCategory(cat)) return;
     StringBuffer log;
     log.limited_valist_appendf(1024*1024, format, args);
-    mreport_direct(cat, job, log);
+    mreport_direct(cat, log);
 }
 
 void CLogMsgManager::report(const LogMsgCategory & cat, const IException * exception, const char * prefix)
@@ -1610,46 +1557,7 @@ void CLogMsgManager::report(const LogMsgCategory & cat, const IException * excep
     StringBuffer buff;
     if(prefix) buff.append(prefix).append(" : ");
     exception->errorMessage(buff);
-    pushMsg(new LogMsg(cat, getNextID(), unknownJob, exception->errorCode(), buff.str(), port, session));
-}
-
-void CLogMsgManager::report(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, ...)
-{
-    if(rejectsCategory(cat)) return;
-    va_list args;
-    va_start(args, format);
-    pushMsg(new LogMsg(cat, getNextID(), job, NoLogMsgCode, format, args, port, session));
-    va_end(args);
-}
-
-void CLogMsgManager::report_va(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, va_list args)
-{
-    if(rejectsCategory(cat)) return;
-    pushMsg(new LogMsg(cat, getNextID(), job, NoLogMsgCode, format, args, port, session));
-}
-
-void CLogMsgManager::report(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char * format, ...)
-{
-    if(rejectsCategory(cat)) return;
-    va_list args;
-    va_start(args, format);
-    pushMsg(new LogMsg(cat, getNextID(), job, code, format, args, port, session));
-    va_end(args);
-}
-
-void CLogMsgManager::report_va(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char * format, va_list args)
-{
-    if(rejectsCategory(cat)) return;
-    pushMsg(new LogMsg(cat, getNextID(), job, code, format, args, port, session));
-}
-
-void CLogMsgManager::report(const LogMsgCategory & cat, const LogMsgJobInfo & job, const IException * exception, const char * prefix)
-{
-    if(rejectsCategory(cat)) return;
-    StringBuffer buff;
-    if(prefix) buff.append(prefix).append(" : ");
-    exception->errorMessage(buff);
-    pushMsg(new LogMsg(cat, getNextID(), job, exception->errorCode(), buff.str(), port, session));
+    pushMsg(new LogMsg(cat, getNextID(), exception->errorCode(), buff.str(), port, session));
 }
 
 void CLogMsgManager::pushMsg(LogMsg * _msg)
@@ -2295,13 +2203,8 @@ public:
     virtual void              report(const LogMsgCategory & cat, LogMsgCode code , const char * format, ...) override {}
     virtual void              report_va(const LogMsgCategory & cat, LogMsgCode code , const char * format, va_list args) override {}
     virtual void              report(const LogMsgCategory & cat, const IException * e, const char * prefix = NULL) override {}
-    virtual void              report(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, ...) override {}
-    virtual void              report_va(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, va_list args) override {}
-    virtual void              report(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code , const char * format, ...) override {}
-    virtual void              report_va(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code , const char * format, va_list args) override {}
-    virtual void              report(const LogMsgCategory & cat, const LogMsgJobInfo & job, const IException * e, const char * prefix = NULL) override {}
-    virtual void              mreport_direct(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * msg) override {}
-    virtual void              mreport_va(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, va_list args) override {}
+    virtual void              mreport_direct(const LogMsgCategory & cat, const char * msg) override {}
+    virtual void              mreport_va(const LogMsgCategory & cat, const char * format, va_list args) override {}
     virtual void              report(const LogMsg & msg) const override {}
     virtual LogMsgId          getNextID() override { return 0; }
     virtual bool              rejectsCategory(const LogMsgCategory & cat) const override { return true; }
@@ -2751,7 +2654,7 @@ void IContextLogger::CTXLOG(const char *format, ...) const
 {
     va_list args;
     va_start(args, format);
-    CTXLOGva(MCdebugInfo, queryJob(), NoLogMsgCode, format, args);
+    CTXLOGva(MCdebugInfo, NoLogMsgCode, format, args);
     va_end(args);
 }
 
@@ -2812,9 +2715,9 @@ public:
     virtual void Link() const {}
     virtual bool Release() const { return false; }
 
-    virtual void CTXLOGva(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char *format, va_list args) const override  __attribute__((format(printf,5,0)))
+    virtual void CTXLOGva(const LogMsgCategory & cat, LogMsgCode code, const char *format, va_list args) const override  __attribute__((format(printf,4,0)))
     {
-        VALOG(cat, job, code, format, args);
+        VALOG(cat, code, format, args);
     }
     virtual void logOperatorExceptionVA(IException *E, const char *file, unsigned line, const char *format, va_list args) const __attribute__((format(printf,5,0)))
     {
@@ -2828,7 +2731,7 @@ public:
             E->errorMessage(ss.append(": "));
         if (format)
             ss.append(": ").valist_appendf(format, args);
-        LOG(MCoperatorProgress, queryJob(), "%s", ss.str());
+        LOG(MCoperatorProgress, "%s", ss.str());
     }
     virtual void noteStatistic(StatisticKind kind, unsigned __int64 value) const
     {
@@ -3336,24 +3239,27 @@ void setDefaultJobName(const char * name)
 }
 
 
-JobNameTranslator::JobNameTranslator(const char * name)
+JobNameScope::JobNameScope(const char * name)
 {
     set(name);
 }
 
-void JobNameTranslator::clear()
+void JobNameScope::clear()
 {
-    if (id)
+    if (id != UnknownJob)
     {
         theManager->removeJobId(id);
-        id = 0;
+        id = prevId;
+        setDefaultJobId(prevId);
     }
 }
 
-void JobNameTranslator::set(const char * name)
+void JobNameScope::set(const char * name)
 {
     clear();
     id = theManager->addJobId(name);
+    prevId = queryThreadedJobId();
+    setDefaultJobId(id);
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -3389,65 +3295,39 @@ void ctxlogReport(const LogMsgCategory & cat, const char * format, ...)
 {
     va_list args;
     va_start(args, format);
-    ctxlogReportVA(cat, unknownJob, NoLogMsgCode, format, args); 
+    ctxlogReportVA(cat, NoLogMsgCode, format, args);
     va_end(args);
 }
 
 void ctxlogReportVA(const LogMsgCategory & cat, const char * format, va_list args) 
 {
-    ctxlogReportVA(cat, unknownJob, NoLogMsgCode, format, args); 
+    ctxlogReportVA(cat, NoLogMsgCode, format, args);
 }
 void ctxlogReport(const LogMsgCategory & cat, LogMsgCode code, const char * format, ...)
 {
     va_list args;
     va_start(args, format);
-    ctxlogReportVA(cat, unknownJob, code, format, args); 
+    ctxlogReportVA(cat, code, format, args);
     va_end(args);
 }
 void ctxlogReportVA(const LogMsgCategory & cat, LogMsgCode code, const char * format, va_list args)
 {
-    ctxlogReportVA(cat, unknownJob, code, format, args); 
-}
-void ctxlogReport(const LogMsgCategory & cat, const IException * e, const char * prefix)
-{
-    ctxlogReport(cat, unknownJob, e, prefix);
-}
-void ctxlogReport(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, ...)
-{
-    va_list args;
-    va_start(args, format);
-    ctxlogReportVA(cat, job, NoLogMsgCode, format, args); 
-    va_end(args);
-}
-void ctxlogReportVA(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, va_list args)
-{
-    ctxlogReportVA(cat, job, NoLogMsgCode, format, args); 
-}
-void ctxlogReport(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char * format, ...)
-{
-    va_list args;
-    va_start(args, format);
-    ctxlogReportVA(cat, job, code, format, args); 
-    va_end(args);
-}
-void ctxlogReportVA(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char * format, va_list args) 
-{
     if (queryThreadedContextLogger())
     {
         LogContextScope ls(nullptr);
-        ls.prev->CTXLOGva(cat, job, code, format, args);
+        ls.prev->CTXLOGva(cat, code, format, args);
     }
     else
-        queryLogMsgManager()->report_va(cat, job, code, format, args);
+        queryLogMsgManager()->report_va(cat, code, format, args);
 }
-void ctxlogReport(const LogMsgCategory & cat, const LogMsgJobInfo & job, const IException * e, const char * prefix)
+void ctxlogReport(const LogMsgCategory & cat, const IException * e, const char * prefix)
 {
     StringBuffer buff;
     e->errorMessage(buff);
-    ctxlogReport(cat, job, e->errorCode(), "%s%s%s", prefix ? prefix : "", prefix ? prefix : " : ", buff.str());
+    ctxlogReport(cat, e->errorCode(), "%s%s%s", prefix ? prefix : "", prefix ? prefix : " : ", buff.str());
 }
 IException * ctxlogReport(IException * e, const char * prefix, LogMsgClass cls)
 {
-    ctxlogReport(MCexception(e, cls), unknownJob, e, prefix);
+    ctxlogReport(MCexception(e, cls), e, prefix);
     return e;
 }

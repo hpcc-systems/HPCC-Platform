@@ -543,9 +543,9 @@ public:
                         ep.getEndpointHostText(epstr);
                         CriticalBlock block(sect);
                         if (failurelimit) {
-                            LOG(MCoperatorError, unknownJob,"DAFSMON: dafilesrv on %s cannot be contacted",epstr.str());
+                            LOG(MCoperatorError, "DAFSMON: dafilesrv on %s cannot be contacted",epstr.str());
                             if (--failurelimit==0) 
-                                LOG(MCoperatorError, unknownJob,"DAFSMON: monitoring suspended for cluster %s (too many failures)",clustername);
+                                LOG(MCoperatorError, "DAFSMON: monitoring suspended for cluster %s (too many failures)",clustername);
                         }
                     }
                 }
@@ -557,7 +557,7 @@ public:
                     ep.getEndpointHostText(epstr);
                     StringBuffer s;
                     s.appendf("DAFSMON: dafilesrv %s",epstr.str());
-                    LOG(MCoperatorError, unknownJob, e, s.str());
+                    LOG(MCoperatorError, e, s.str());
                     e->Release();
                     return;
                 }

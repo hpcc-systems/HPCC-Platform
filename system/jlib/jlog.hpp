@@ -593,10 +593,10 @@ class jlib_decl LogMsg : public CInterface
 public:
     LogMsg() : category(), sysInfo(), jobInfo(), remoteFlag(false) {}
     LogMsg(LogMsgJobId id, const char *job);  // Used for tracking job ids
-    LogMsg(const LogMsgCategory & _cat, LogMsgId _id, const LogMsgJobInfo & _jobInfo, LogMsgCode _code, const char * _text, unsigned port, LogMsgSessionId session);
-    LogMsg(const LogMsgCategory & _cat, LogMsgId _id, const LogMsgJobInfo & _jobInfo, LogMsgCode _code, size32_t sz, const char * _text, unsigned port, LogMsgSessionId session);
-    LogMsg(const LogMsgCategory & _cat, LogMsgId _id, const LogMsgJobInfo & _jobInfo, LogMsgCode _code, const char * format, va_list args,
-           unsigned port, LogMsgSessionId session)  __attribute__((format(printf,6, 0)));
+    LogMsg(const LogMsgCategory & _cat, LogMsgId _id, LogMsgCode _code, const char * _text, unsigned port, LogMsgSessionId session);
+    LogMsg(const LogMsgCategory & _cat, LogMsgId _id, LogMsgCode _code, size32_t sz, const char * _text, unsigned port, LogMsgSessionId session);
+    LogMsg(const LogMsgCategory & _cat, LogMsgId _id, LogMsgCode _code, const char * format, va_list args,
+           unsigned port, LogMsgSessionId session)  __attribute__((format(printf,5, 0)));
     StringBuffer &            toStringPlain(StringBuffer & out, unsigned fields) const;
     StringBuffer &            toStringXML(StringBuffer & out, unsigned fields) const;
     StringBuffer &            toStringJSON(StringBuffer & out, unsigned fields) const;
@@ -722,13 +722,8 @@ interface jlib_decl ILogMsgManager : public ILogMsgListener
     virtual void              report(const LogMsgCategory & cat, LogMsgCode code , const char * format, ...) __attribute__((format(printf, 4, 5))) = 0;
     virtual void              report_va(const LogMsgCategory & cat, LogMsgCode code , const char * format, va_list args) = 0;
     virtual void              report(const LogMsgCategory & cat, const IException * e, const char * prefix = NULL) = 0;
-    virtual void              report(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, ...) __attribute__((format(printf, 4, 5))) = 0;
-    virtual void              report_va(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, va_list args) = 0;
-    virtual void              report(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code , const char * format, ...) __attribute__((format(printf, 5, 6))) = 0;
-    virtual void              report_va(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code , const char * format, va_list args) = 0;
-    virtual void              report(const LogMsgCategory & cat, const LogMsgJobInfo & job, const IException * e, const char * prefix = NULL) = 0;
-    virtual void              mreport_direct(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * msg) = 0;
-    virtual void              mreport_va(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, va_list args) = 0;
+    virtual void              mreport_direct(const LogMsgCategory & cat, const char * msg) = 0;
+    virtual void              mreport_va(const LogMsgCategory & cat, const char * format, va_list args) = 0;
     virtual void              report(const LogMsg & msg) const = 0;
     virtual LogMsgId          getNextID() = 0;
     virtual bool              rejectsCategory(const LogMsgCategory & cat) const = 0;
@@ -751,12 +746,7 @@ public:
     void                      report(const LogMsgCategory & cat, LogMsgCode code, const char * format, ...) __attribute__((format(printf, 4, 5)));
     void                      report_va(const LogMsgCategory & cat, LogMsgCode code, const char * format, va_list args);
     void                      report(const LogMsgCategory & cat, const IException * e, const char * prefix = NULL);
-    void                      report(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, ...) __attribute__((format(printf, 4, 5)));
-    void                      report_va(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, va_list args);
-    void                      report(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char * format, ...) __attribute__((format(printf, 5, 6)));
-    void                      report_va(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char * format, va_list args);
-    void                      report(const LogMsgCategory & cat, const LogMsgJobInfo & job, const IException * e, const char * prefix = NULL);
-    IException *              report(IException * e, const char * prefix = NULL, LogMsgClass cls = MSGCLS_error); // uses MCexception(e, cls), unknownJob, handy for EXCLOG
+    IException *              report(IException * e, const char * prefix = NULL, LogMsgClass cls = MSGCLS_error); // uses MCexception(e, cls),  handy for EXCLOG
 private:
     char const *              file;
     unsigned                  line;
@@ -870,8 +860,6 @@ inline LogMsgCategory MCexception(IException * e, LogMsgClass cls = MSGCLS_error
 #define MCwarning MCuserWarning
 #define MCprogress MCuserProgress
 
-extern jlib_decl const LogMsgJobInfo unknownJob;
-
 // Function to return manager, standard handler and the reporters, and the handler's message fields
 
 extern jlib_decl ILogMsgManager * queryLogMsgManager();
@@ -883,19 +871,20 @@ extern jlib_decl void setupContainerizedLogMsgHandler();
 extern jlib_decl void setDefaultJobName(const char *id);
 
 //A class for mapping job names to ids
-class jlib_decl JobNameTranslator
+class jlib_decl JobNameScope
 {
 public:
-    JobNameTranslator() = default;
-    JobNameTranslator(const char * name);
-    ~JobNameTranslator() { clear(); }
+    JobNameScope() = default;
+    JobNameScope(const char * name);
+    ~JobNameScope() { clear(); }
 
     void clear();
     void set(const char * name);
     LogMsgJobId queryId() const { return id; }
 
 protected:
-    LogMsgJobId id = 0;
+    LogMsgJobId id = UnknownJob;
+    LogMsgJobId prevId = UnknownJob;
 };
 
 // Macros to make logging as simple as possible
@@ -926,29 +915,9 @@ inline void LOG(const LogMsgCategory & cat, LogMsgCode code , const char * forma
     LOGMSGREPORTER->report_va(cat, code , format, args);
     va_end(args);
 }
-inline void LOG(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, ...) __attribute__((format(printf, 3, 4)));
-inline void LOG(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, ...)
-{
-    va_list args;
-    va_start(args, format);
-    LOGMSGREPORTER->report_va(cat, job, format, args);
-    va_end(args);
-}
-inline void LOG(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code , const char * format, ...) __attribute__((format(printf, 4, 5)));
-inline void LOG(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code , const char * format, ...)
-{
-    va_list args;
-    va_start(args, format);
-    LOGMSGREPORTER->report_va(cat, job, code , format, args);
-    va_end(args);
-}
 inline void LOG(const LogMsgCategory & cat, const IException * e, const char * prefix = NULL)
 {
     LOGMSGREPORTER->report(cat, e, prefix);
-}
-inline void LOG(const LogMsgCategory & cat, const LogMsgJobInfo & job, const IException * e, const char * prefix = NULL)
-{
-    LOGMSGREPORTER->report(cat, job, e, prefix);
 }
 inline void VALOG(const LogMsgCategory & cat, const char * format, va_list args)
 {
@@ -957,14 +926,6 @@ inline void VALOG(const LogMsgCategory & cat, const char * format, va_list args)
 inline void VALOG(const LogMsgCategory & cat, LogMsgCode code , const char * format, va_list args)
 {
     LOGMSGREPORTER->report_va(cat, code , format, args);
-}
-inline void VALOG(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, va_list args)
-{
-    LOGMSGREPORTER->report_va(cat, job, format, args);
-}
-inline void VALOG(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code , const char * format, va_list args)
-{
-    LOGMSGREPORTER->report_va(cat, job, code , format, args);
 }
 #else
 #define LOG LOGMSGREPORTER->report
@@ -976,12 +937,7 @@ extern jlib_decl void ctxlogReportVA(const LogMsgCategory & cat, const char * fo
 extern jlib_decl void ctxlogReport(const LogMsgCategory & cat, LogMsgCode code, const char * format, ...) __attribute__((format(printf, 3, 4)));
 extern jlib_decl void ctxlogReportVA(const LogMsgCategory & cat, LogMsgCode code, const char * format, va_list args) __attribute__((format(printf, 3, 0)));
 extern jlib_decl void ctxlogReport(const LogMsgCategory & cat, const IException * e, const char * prefix = NULL);
-extern jlib_decl void ctxlogReport(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, ...) __attribute__((format(printf, 3, 4)));
-extern jlib_decl void ctxlogReportVA(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, va_list args) __attribute__((format(printf, 3, 0)));
-extern jlib_decl void ctxlogReport(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char * format, ...) __attribute__((format(printf, 4, 5)));
-extern jlib_decl void ctxlogReportVA(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char * format, va_list args) __attribute__((format(printf, 4, 0)));
-extern jlib_decl void ctxlogReport(const LogMsgCategory & cat, const LogMsgJobInfo & job, const IException * e, const char * prefix = NULL);
-extern jlib_decl IException * ctxlogReport(IException * e, const char * prefix = NULL, LogMsgClass cls = MSGCLS_error); // uses MCexception(e, cls), unknownJob, handy for EXCLOG
+extern jlib_decl IException * ctxlogReport(IException * e, const char * prefix = NULL, LogMsgClass cls = MSGCLS_error); // uses MCexception(e, cls),  handy for EXCLOG
 #define LOG ::ctxlogReport
 #define VALOG ::ctxlogReportVA
 
@@ -992,7 +948,7 @@ inline void DBGLOG(char const * format, ...)
 {
     va_list args;
     va_start(args, format);
-    VALOG(MCdebugInfo, unknownJob, format, args);
+    VALOG(MCdebugInfo, format, args);
     va_end(args);
 }
 
@@ -1001,7 +957,7 @@ inline void DISLOG(char const * format, ...)
 {
     va_list args;
     va_start(args, format);
-    VALOG(MCoperatorDisaster, unknownJob, format, args);
+    VALOG(MCoperatorDisaster, format, args);
     va_end(args);
 }
 
@@ -1010,7 +966,7 @@ inline void UERRLOG(char const * format, ...)
 {
     va_list args;
     va_start(args, format);
-    VALOG(MCuserError, unknownJob, format, args);
+    VALOG(MCuserError, format, args);
     va_end(args);
 }
 
@@ -1022,7 +978,7 @@ inline void OERRLOG(char const * format, ...)
 {
     va_list args;
     va_start(args, format);
-    VALOG(MCoperatorError, unknownJob, format, args);
+    VALOG(MCoperatorError, format, args);
     va_end(args);
 }
 
@@ -1031,7 +987,7 @@ inline void IERRLOG(char const * format, ...)
 {
     va_list args;
     va_start(args, format);
-    VALOG(MCdebugError, unknownJob, format, args);
+    VALOG(MCdebugError, format, args);
     va_end(args);
 }
 
@@ -1040,7 +996,7 @@ inline void AERRLOG(char const * format, ...)
 {
     va_list args;
     va_start(args, format);
-    VALOG(MCauditError, unknownJob, format, args);
+    VALOG(MCauditError, format, args);
     va_end(args);
 }
 
@@ -1050,7 +1006,7 @@ inline void UWARNLOG(char const * format, ...)
 {
     va_list args;
     va_start(args, format);
-    VALOG(MCuserWarning, unknownJob, format, args);
+    VALOG(MCuserWarning, format, args);
     va_end(args);
 }
 
@@ -1062,7 +1018,7 @@ inline void OWARNLOG(char const * format, ...)
 {
     va_list args;
     va_start(args, format);
-    VALOG(MCoperatorWarning, unknownJob, format, args);
+    VALOG(MCoperatorWarning, format, args);
     va_end(args);
 }
 
@@ -1071,7 +1027,7 @@ inline void IWARNLOG(char const * format, ...)
 {
     va_list args;
     va_start(args, format);
-    VALOG(MCdebugWarning, unknownJob, format, args);
+    VALOG(MCdebugWarning, format, args);
     va_end(args);
 }
 
@@ -1080,28 +1036,20 @@ inline void PROGLOG(const char * format, ...)
 {
     va_list args;
     va_start(args, format);
-    VALOG(MCuserProgress, unknownJob, format, args);
+    VALOG(MCuserProgress, format, args);
     va_end(args);
 }
 
 inline void MLOG(const LogMsgCategory & cat, const char * msg)
 {
-    LOGMSGREPORTER->mreport_direct(cat, unknownJob, msg);
-}
-
-inline void MLOG(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, ...)
-{
-    va_list args;
-    va_start(args, format);
-    LOGMSGREPORTER->mreport_va(cat, job, format, args);
-    va_end(args);
+    LOGMSGREPORTER->mreport_direct(cat, msg);
 }
 
 inline void MLOG(const LogMsgCategory & cat, const char * format, ...)
 {
     va_list args;
     va_start(args, format);
-    LOGMSGREPORTER->mreport_va(cat, unknownJob, format, args);
+    LOGMSGREPORTER->mreport_va(cat, format, args);
     va_end(args);
 }
 
@@ -1110,7 +1058,7 @@ inline void MLOG(const char * format, ...)
 {
     va_list args;
     va_start(args, format);
-    LOGMSGREPORTER->mreport_va(MCuserProgress, unknownJob, format, args);
+    LOGMSGREPORTER->mreport_va(MCuserProgress, format, args);
     va_end(args);
 }
 
@@ -1119,7 +1067,7 @@ inline void DBGLOG(LogMsgCode code, char const * format, ...)
 {
     va_list args;
     va_start(args, format);
-    VALOG(MCdebugInfo, unknownJob, code, format, args);
+    VALOG(MCdebugInfo, code, format, args);
     va_end(args);
 }
 
@@ -1128,7 +1076,7 @@ inline void DISLOG(LogMsgCode code, char const * format, ...)
 {
     va_list args;
     va_start(args, format);
-    VALOG(MCoperatorDisaster, unknownJob, code, format, args);
+    VALOG(MCoperatorDisaster, code, format, args);
     va_end(args);
 }
 
@@ -1137,7 +1085,7 @@ inline void UWARNLOG(LogMsgCode code, char const * format, ...)
 {
     va_list args;
     va_start(args, format);
-    VALOG(MCuserWarning, unknownJob, code, format, args);
+    VALOG(MCuserWarning, code, format, args);
     va_end(args);
 }
 
@@ -1146,7 +1094,7 @@ inline void OWARNLOG(LogMsgCode code, char const * format, ...)
 {
     va_list args;
     va_start(args, format);
-    VALOG(MCoperatorWarning, unknownJob, code, format, args);
+    VALOG(MCoperatorWarning, code, format, args);
     va_end(args);
 }
 
@@ -1155,7 +1103,7 @@ inline void IWARNLOG(LogMsgCode code, char const * format, ...)
 {
     va_list args;
     va_start(args, format);
-    VALOG(MCdebugWarning, unknownJob, code, format, args);
+    VALOG(MCdebugWarning, code, format, args);
     va_end(args);
 }
 
@@ -1179,7 +1127,7 @@ inline void OERRLOG(LogMsgCode code, char const * format, ...)
 {
     va_list args;
     va_start(args, format);
-    VALOG(MCoperatorError, unknownJob, code, format, args);
+    VALOG(MCoperatorError, code, format, args);
     va_end(args);
 }
 
@@ -1188,7 +1136,7 @@ inline void IERRLOG(LogMsgCode code, char const * format, ...)
 {
     va_list args;
     va_start(args, format);
-    VALOG(MCdebugError, unknownJob, code, format, args);
+    VALOG(MCdebugError, code, format, args);
     va_end(args);
 }
 
@@ -1197,7 +1145,7 @@ inline void UERRLOG(LogMsgCode code, char const * format, ...)
 {
     va_list args;
     va_start(args, format);
-    VALOG(MCuserError, unknownJob, code, format, args);
+    VALOG(MCuserError, code, format, args);
     va_end(args);
 }
 
@@ -1206,7 +1154,7 @@ inline void PROGLOG(LogMsgCode code, char const * format, ...)
 {
     va_list args;
     va_start(args, format);
-    VALOG(MCuserProgress, unknownJob, code, format, args);
+    VALOG(MCuserProgress, code, format, args);
     va_end(args);
 }
 
@@ -1274,7 +1222,7 @@ interface jlib_decl IContextLogger : extends IInterface
 {
     virtual void CTXLOG(const char *format, ...) const  __attribute__((format(printf, 2, 3)));
     virtual void mCTXLOG(const char *format, ...) const  __attribute__((format(printf, 2, 3)));
-    virtual void CTXLOGva(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char *format, va_list args) const __attribute__((format(printf,5,0))) = 0;
+    virtual void CTXLOGva(const LogMsgCategory & cat, LogMsgCode code, const char *format, va_list args) const __attribute__((format(printf,4,0))) = 0;
     void logOperatorException(IException *E, const char *file, unsigned line, const char *format, ...) const  __attribute__((format(printf, 5, 6)));
     virtual void logOperatorExceptionVA(IException *E, const char *file, unsigned line, const char *format, va_list args) const __attribute__((format(printf,5,0))) = 0;
     virtual void noteStatistic(StatisticKind kind, unsigned __int64 value) const = 0;
@@ -1293,7 +1241,6 @@ interface jlib_decl IContextLogger : extends IInterface
     virtual void setSpanAttribute(const char *name, const char *value) const = 0;
     virtual void setSpanAttribute(const char *name, __uint64 value) const = 0;
     virtual void recordStatistics(IStatisticGatherer &progress) const = 0;
-    virtual const LogMsgJobInfo & queryJob() const { return unknownJob; }
 };
 
 using ContextSpanScope = ContextSpanScopeImp<IContextLogger>;

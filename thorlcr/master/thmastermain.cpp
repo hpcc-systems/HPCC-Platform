@@ -556,7 +556,7 @@ bool checkClusterRelicateDAFS(IGroup &grp)
         ep.port = 0;
         StringBuffer ips;
         ep.getHostText(ips);
-        FLLOG(MCoperatorError, thorJob, "VALIDATE FAILED(%d) %s : %s",failedcodes.item(i),ips.str(),failedmessages.item(i));
+        FLLOG(MCoperatorError, "VALIDATE FAILED(%d) %s : %s",failedcodes.item(i),ips.str(),failedmessages.item(i));
     }
     PROGLOG("Cluster replicate nodes check completed in %dms",msTick()-start);
     return (failures.ordinality()==0);
@@ -579,7 +579,7 @@ bool ControlHandler(ahType type)
     {
         if (firstCtrlC)
         {
-            LOG(MCdebugProgress, thorJob, "CTRL-C detected");
+            LOG(MCdebugProgress, "CTRL-C detected");
             firstCtrlC = false;
             {
                 Owned<CRegistryServer> registry = CRegistryServer::getRegistryServer();
@@ -590,7 +590,7 @@ bool ControlHandler(ahType type)
         }
         else
         {
-            LOG(MCdebugProgress, thorJob, "2nd CTRL-C detected - terminating process");
+            LOG(MCdebugProgress, "2nd CTRL-C detected - terminating process");
 
             if (auditStartLogged)
             {
@@ -607,7 +607,7 @@ bool ControlHandler(ahType type)
     // ahTerminate
     else
     {
-        LOG(MCdebugProgress, thorJob, "SIGTERM detected, shutting down");
+        LOG(MCdebugProgress, "SIGTERM detected, shutting down");
         Owned<CRegistryServer> registry = CRegistryServer::getRegistryServer();
         if (registry)
             registry->stop();
@@ -653,7 +653,7 @@ int main( int argc, const char *argv[]  )
     StringBuffer daliServer;
     if (!globals->getProp("@daliServers", daliServer)) 
     {
-        LOG(MCerror, thorJob, "No Dali server list specified in THOR.XML (daliServers=iport,iport...)\n");
+        LOG(MCerror, "No Dali server list specified in THOR.XML (daliServers=iport,iport...)\n");
         return 0; // no recycle
     }
 
@@ -712,14 +712,14 @@ int main( int argc, const char *argv[]  )
             queryLogMsgManager()->removeMonitor(queryStderrLogMsgHandler());
 #endif
 
-            LOG(MCdebugProgress, thorJob, "Opened log file %s", logUrl.str());
+            LOG(MCdebugProgress, "Opened log file %s", logUrl.str());
         }
 #else
         setupContainerizedLogMsgHandler();
         logHandler = queryStderrLogMsgHandler();
         logUrl.set("stderr");
 #endif
-        LOG(MCdebugProgress, thorJob, "Build %s", hpccBuildInfo.buildTag);
+        LOG(MCdebugProgress, "Build %s", hpccBuildInfo.buildTag);
 
         Owned<IGroup> serverGroup = createIGroupRetry(daliServer.str(), DALI_SERVER_PORT);
 
@@ -728,7 +728,7 @@ int main( int argc, const char *argv[]  )
         {
             try
             {
-                LOG(MCdebugProgress, thorJob, "calling initClientProcess %d", thorEp.port);
+                LOG(MCdebugProgress, "calling initClientProcess %d", thorEp.port);
                 initClientProcess(serverGroup, DCR_ThorMaster, thorEp.port, nullptr, nullptr, MP_WAIT_FOREVER, true);
                 if (0 == thorEp.port)
                     thorEp.port = queryMyNode()->endpoint().port;
@@ -742,11 +742,11 @@ int main( int argc, const char *argv[]  )
             { 
                 if ((e->errorCode()!=JSOCKERR_port_in_use))
                     throw;
-                FLLOG(MCexception(e), thorJob, e,"InitClientProcess");
+                FLLOG(MCexception(e), e,"InitClientProcess");
                 if (retry++>10) 
                     throw;
                 e->Release();
-                LOG(MCdebugProgress, thorJob, "Retrying");
+                LOG(MCdebugProgress, "Retrying");
                 Sleep(retry*2000);  
             }
         }
@@ -950,7 +950,7 @@ int main( int argc, const char *argv[]  )
     }
     catch (IException *e)
     {
-        FLLOG(MCexception(e), thorJob, e,"ThorMaster");
+        FLLOG(MCexception(e), e,"ThorMaster");
         e->Release();
         return -1;
     }
@@ -995,12 +995,11 @@ int main( int argc, const char *argv[]  )
         if (isContainerized())
         {
             saveWuidToFile(workunit);
-            LogMsgJobId thorJobId = queryLogMsgManager()->addJobId(workunit);
-            thorJob.setJobID(thorJobId);
-            setDefaultJobId(thorJobId);
+            JobNameScope activeJobName(workunit);
+
             StringBuffer thorEpStr;
-            LOG(MCdebugProgress, thorJob, "ThorMaster version %d.%d, Started on %s", THOR_VERSION_MAJOR,THOR_VERSION_MINOR,thorEp.getEndpointHostText(thorEpStr).str());
-            LOG(MCdebugProgress, thorJob, "Thor name = %s, queue = %s, nodeGroup = %s",thorname,queueName.str(),nodeGroup.str());
+            LOG(MCdebugProgress, "ThorMaster version %d.%d, Started on %s", THOR_VERSION_MAJOR,THOR_VERSION_MINOR,thorEp.getEndpointHostText(thorEpStr).str());
+            LOG(MCdebugProgress, "Thor name = %s, queue = %s, nodeGroup = %s",thorname,queueName.str(),nodeGroup.str());
 
             unsigned numWorkersPerPod = 1;
             if (!globals->hasProp("@numWorkers"))
@@ -1045,8 +1044,8 @@ int main( int argc, const char *argv[]  )
         else
         {
             StringBuffer thorEpStr;
-            LOG(MCdebugProgress, thorJob, "ThorMaster version %d.%d, Started on %s", THOR_VERSION_MAJOR,THOR_VERSION_MINOR,thorEp.getEndpointHostText(thorEpStr).str());
-            LOG(MCdebugProgress, thorJob, "Thor name = %s, queue = %s, nodeGroup = %s",thorname,queueName.str(),nodeGroup.str());
+            LOG(MCdebugProgress, "ThorMaster version %d.%d, Started on %s", THOR_VERSION_MAJOR,THOR_VERSION_MINOR,thorEp.getEndpointHostText(thorEpStr).str());
+            LOG(MCdebugProgress, "Thor name = %s, queue = %s, nodeGroup = %s",thorname,queueName.str(),nodeGroup.str());
             unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_SLAVEPORTINC);
             unsigned slaveBasePort = globals->getPropInt("@slaveport", DEFAULT_THORSLAVEPORT);
             Owned<IGroup> rawGroup = getClusterNodeGroup(thorname, "ThorCluster");
@@ -1069,7 +1068,7 @@ int main( int argc, const char *argv[]  )
             // bare-metal - check health of dafilesrv's on the Thor cluster.
             if (globals->getPropBool("@replicateOutputs")&&globals->getPropBool("@validateDAFS",true)&&!checkClusterRelicateDAFS(queryNodeGroup()))
             {
-                FLLOG(MCoperatorError, thorJob, "ERROR: Validate failure(s) detected, exiting Thor");
+                FLLOG(MCoperatorError, "ERROR: Validate failure(s) detected, exiting Thor");
                 return globals->getPropBool("@validateDAFSretCode"); // default is no recycle!
             }
         }
@@ -1141,11 +1140,11 @@ int main( int argc, const char *argv[]  )
         // NB: workunit/graphName only set in one-shot mode (if isCloud())
         thorMain(logHandler, workunit, graphName);
         LOG(MCauditInfo, ",Progress,Thor,Terminate,%s,%s,%s",thorname,nodeGroup.str(),queueName.str());
-        LOG(MCdebugProgress, thorJob, "ThorMaster terminated OK");
+        LOG(MCdebugProgress, "ThorMaster terminated OK");
     }
     catch (IException *e) 
     {
-        FLLOG(MCexception(e), thorJob, e,"ThorMaster");
+        FLLOG(MCexception(e), e,"ThorMaster");
         exception.setown(e);
     }
     if (isContainerized())

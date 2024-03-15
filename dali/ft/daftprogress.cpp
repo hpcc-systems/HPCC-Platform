@@ -136,11 +136,11 @@ void DemoProgress::displayProgress(unsigned percentDone, unsigned secsLeft, cons
                             unsigned kbPerSecondAve, unsigned kbPerSecondRate, unsigned numNodes)
 {
 
-    LOG(MCdebugProgress, unknownJob, "Progress: %d%% done, %s left.  (%" I64F "d/%" I64F "d%s @Ave(%dKB/s) Rate(%dKB/s) [%d/%d]",
+    LOG(MCdebugProgress, "Progress: %d%% done, %s left.  (%" I64F "d/%" I64F "d%s @Ave(%dKB/s) Rate(%dKB/s) [%d/%d]",
             percentDone, timeLeft, scaledDone, scaledTotal, scale, kbPerSecondAve, kbPerSecondRate, numNodes, totalNodes);
 }
 
 void DemoProgress::displaySummary(const char * timeTaken, unsigned kbPerSecond)
 {
-    LOG(MCdebugProgress, unknownJob, "Summary: Total time taken %s, Average transfer %dKB/sec", timeTaken, kbPerSecond);
+    LOG(MCdebugProgress, "Summary: Total time taken %s, Average transfer %dKB/sec", timeTaken, kbPerSecond);
 }

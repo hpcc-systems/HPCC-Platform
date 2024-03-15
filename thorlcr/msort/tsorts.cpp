@@ -106,7 +106,7 @@ class CWriteIntercept : public CSimpleInterface
                 {
                     StringBuffer err;
                     err.append("Cannot create ").append(idxFile->queryFilename());
-                    LOG(MCerror, thorJob, "%s", err.str());
+                    LOG(MCerror, "%s", err.str());
                     throw MakeActivityException(&activity, -1, "%s", err.str());
                 }
                 idxFileStream.setown(createBufferedIOStream(idxFileIO,0x100000));
@@ -1155,10 +1155,10 @@ public:
         startmergesem.signal();
         ActPrintLog(activity, "StartMiniSort output started");
         traceWait("finishedmergesem(2)",finishedmergesem);
-        LOG(MCthorDetailedDebugInfo, thorJob, "StartMiniSort output done");
+        LOG(MCthorDetailedDebugInfo, "StartMiniSort output done");
         merger.clear();
         intercept.clear();
-        LOG(MCthorDetailedDebugInfo, thorJob, "StartMiniSort exit");
+        LOG(MCthorDetailedDebugInfo, "StartMiniSort exit");
     }
     virtual void Close()
     {

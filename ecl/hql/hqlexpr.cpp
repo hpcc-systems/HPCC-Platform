@@ -15469,7 +15469,7 @@ extern HQL_API IHqlExpression * getFileViewerRecord(IHqlExpression * record, boo
     }
     catch (IException * e)
     {
-        LOG(MCwarning, unknownJob, e);
+        LOG(MCwarning, e);
         e->Release();
     }
     return NULL;

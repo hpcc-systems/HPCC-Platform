@@ -60,7 +60,7 @@ public:
         endpoint = targetep;
         char url[100];
         targetep.getEndpointHostText(url,sizeof(url));
-        LOG(MCthorDetailedDebugInfo, thorJob, "SORT Merge READ: Stream(%u) %s, pos=%" RCPF "d len=%" RCPF "u",streamno,url,startrec,numrecs);
+        LOG(MCthorDetailedDebugInfo, "SORT Merge READ: Stream(%u) %s, pos=%" RCPF "d len=%" RCPF "u",streamno,url,startrec,numrecs);
         SocketEndpoint mergeep = targetep;
         mergeep.port+=SOCKETSERVERINC; 
 
@@ -86,7 +86,7 @@ public:
 
         stream = ConnectMergeRead(streamno,rowif,mergeep,startrec,numrecs,socket);
 
-        LOG(MCthorDetailedDebugInfo, thorJob, "SORT Merge READ: Stream(%u) connected to %s",streamno,url);
+        LOG(MCthorDetailedDebugInfo, "SORT Merge READ: Stream(%u) connected to %s",streamno,url);
     }
     virtual ~CMergeReadStream()
     {
@@ -108,7 +108,7 @@ public:
 #ifdef _FULL_TRACE
             char url[100];
             endpoint.getEndpointHostText(url,sizeof(url));
-            LOG(MCthorDetailedDebugInfo, thorJob, "SORT Merge READ: EOS for %s",url);
+            LOG(MCthorDetailedDebugInfo, "SORT Merge READ: EOS for %s",url);
 #endif
             eos();
         }
@@ -121,7 +121,7 @@ public:
 #ifdef _FULL_TRACE
             char url[100];
             endpoint.getEndpointHostText(url,sizeof(url));
-            LOG(MCthorDetailedDebugInfo, thorJob, "SORT Merge READ: stop for %s",url);
+            LOG(MCthorDetailedDebugInfo, "SORT Merge READ: stop for %s",url);
 #endif
             stream->stop();
             eos();
@@ -163,12 +163,12 @@ public:
     ~CSortMerge()
     {
 #ifdef _FULL_TRACE
-        LOG(MCthorDetailedDebugInfo, thorJob, "~CSortMerge in");
+        LOG(MCthorDetailedDebugInfo, "~CSortMerge in");
 #endif
         if (started)
             closedown();
 #ifdef _FULL_TRACE
-        LOG(MCthorDetailedDebugInfo, thorJob, "~CSortMerge out");
+        LOG(MCthorDetailedDebugInfo, "~CSortMerge out");
 #endif
     }
     void init()
@@ -178,7 +178,7 @@ public:
         char name[64];
         int port = socket->peer_name(name,sizeof(name));
         url.append(name).append(':').append(port);
-        LOG(MCthorDetailedDebugInfo, thorJob, "SORT Merge WRITE: start %s, pos=%" RCPF "d, len=%" RCPF "d",url.str(),poscount,numrecs);
+        LOG(MCthorDetailedDebugInfo, "SORT Merge WRITE: start %s, pos=%" RCPF "d, len=%" RCPF "d",url.str(),poscount,numrecs);
         rowcount_t pos=poscount;
         try
         {
@@ -228,7 +228,7 @@ public:
         char peer[16];
         if (socket) {
             socket->peer_name(peer,sizeof(peer)-1);
-            LOG(MCthorDetailedDebugInfo, thorJob, "waitdone %s",peer);
+            LOG(MCthorDetailedDebugInfo, "waitdone %s",peer);
         }
         else
             peer[0] = 0;
@@ -237,7 +237,7 @@ public:
         if (exception)
             throw exception.getClear();
         if (peer[0])
-            LOG(MCthorDetailedDebugInfo, thorJob, "waitdone exit");
+            LOG(MCthorDetailedDebugInfo, "waitdone exit");
     }
     bool notifySelected(ISocket *sock,unsigned selected)
     {
@@ -246,11 +246,11 @@ public:
                 if (closing) {
                     closing = false;
 #ifdef _FULL_TRACE
-                    LOG(MCthorDetailedDebugInfo, thorJob, "notifySelected calling closedown");
+                    LOG(MCthorDetailedDebugInfo, "notifySelected calling closedown");
 #endif
                     closedown();
 #ifdef _FULL_TRACE
-                    LOG(MCthorDetailedDebugInfo, thorJob, "notifySelected called closedown");
+                    LOG(MCthorDetailedDebugInfo, "notifySelected called closedown");
 #endif
                     done = true;
                     donesem.signal();
@@ -515,7 +515,7 @@ public:
                 respos += vMAPL(j,i)-vMAPL(j,i-1);      // note we are adding up all of the lower as we want start
 
         rowcount_t totalrows = resnum;
-        LOG(MCthorDetailedDebugInfo, thorJob, "Output start = %" RCPF "d, num = %" RCPF "u",respos,resnum);
+        LOG(MCthorDetailedDebugInfo, "Output start = %" RCPF "d, num = %" RCPF "u",respos,resnum);
 
         IArrayOf<IRowStream> readers;
         IException *exc = NULL;
@@ -530,7 +530,7 @@ public:
                 {
                     if (i==partno)
                     {
-                        LOG(MCthorDetailedDebugInfo, thorJob, "SORT Merge READ: Stream(%u) local, pos=%" RCPF "u len=%" RCPF "u",i,sstart,snum);
+                        LOG(MCthorDetailedDebugInfo, "SORT Merge READ: Stream(%u) local, pos=%" RCPF "u len=%" RCPF "u",i,sstart,snum);
                         readers.append(*slave.createMergeInputStream(sstart,snum));
                     }
                     else
@@ -576,7 +576,7 @@ void CSortMerge::closedown()
 {
     CriticalBlock block(crit);
 #ifdef _FULL_TRACE
-    LOG(MCthorDetailedDebugInfo, thorJob, "SORT Merge: closing %s",url.str());
+    LOG(MCthorDetailedDebugInfo, "SORT Merge: closing %s",url.str());
 #endif
     if (!socket)
         return;
@@ -611,7 +611,7 @@ void CSortMerge::closedown()
         throw;
     }
     started = false;
-    LOG(MCthorDetailedDebugInfo, thorJob, "SORT Merge: finished %s, %d rows merged",url.str(),ndone);
+    LOG(MCthorDetailedDebugInfo, "SORT Merge: finished %s, %d rows merged",url.str(),ndone);
 }
 
 IMergeTransferServer *createMergeTransferServer(ISortSlaveBase *parent)

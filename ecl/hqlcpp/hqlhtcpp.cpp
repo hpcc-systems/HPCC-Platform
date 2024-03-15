@@ -19562,11 +19562,11 @@ static void logECL(const LogMsgCategory & category, size32_t len, const char * e
         unsigned size = next-ecl;
         if (ecl[size-1] == '\r')
             size--;
-        LOG(category, unknownJob, "%.*s", size, ecl);
+        LOG(category, "%.*s", size, ecl);
         len -= (next+1-ecl);
         ecl = next+1;
     }
-    LOG(category, unknownJob, "%s", ecl);
+    LOG(category, "%s", ecl);
 }
 
 
@@ -19580,7 +19580,7 @@ void HqlCppTranslator::traceExpression(const char * title, IHqlExpression * expr
     if (!queryTrace(title))
         return;
 
-    LOG(MCdebugInfo, unknownJob, "Tracing expressions: %s", title);
+    LOG(MCdebugInfo, "Tracing expressions: %s", title);
     if (options.traceIR)
     {
         EclIR::dbglogIR(expr);
@@ -19607,7 +19607,7 @@ void HqlCppTranslator::traceExpressions(const char * title, WorkflowArray & work
     if (!queryTrace(title))
         return;
 
-    LOG(MCdebugInfo, unknownJob, "Tracing expressions: %s", title);
+    LOG(MCdebugInfo, "Tracing expressions: %s", title);
     ForEachItemIn(idx1, workflow)
     {
         WorkflowItem & cur = workflow.item(idx1);
@@ -19615,7 +19615,7 @@ void HqlCppTranslator::traceExpressions(const char * title, WorkflowArray & work
 
         if (compound)
         {
-            LOG(MCdebugInfo, unknownJob, "%s: #%d: id[%d]", title, idx1, cur.queryWfid());
+            LOG(MCdebugInfo, "%s: #%d: id[%d]", title, idx1, cur.queryWfid());
 
             if (options.traceIR)
             {

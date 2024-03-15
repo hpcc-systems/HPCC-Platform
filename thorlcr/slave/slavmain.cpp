@@ -71,7 +71,7 @@ void enableThorSlaveAsDaliClient()
     {
         try
         {
-            LOG(MCdebugProgress, thorJob, "calling initClientProcess");
+            LOG(MCdebugProgress, "calling initClientProcess");
             initClientProcess(serverGroup,DCR_ThorSlave, getFixedPort(TPORT_mp));
             break;
         }
@@ -79,11 +79,11 @@ void enableThorSlaveAsDaliClient()
         {
             if ((e->errorCode()!=JSOCKERR_port_in_use))
                 throw;
-            FLLOG(MCexception(e), thorJob, e,"InitClientProcess");
+            FLLOG(MCexception(e), e,"InitClientProcess");
             if (retry++>10)
                 throw;
             e->Release();
-            LOG(MCdebugProgress, thorJob, "Retrying");
+            LOG(MCdebugProgress, "Retrying");
             Sleep(retry*2000);
         }
     }
@@ -450,7 +450,7 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
 
     public:
         CKMContainer(CKJService &_service, CKeyLookupContext *_ctx)
-            : service(_service), ctx(_ctx), contextLogger(jhtreeCacheStatistics, thorJob)
+            : service(_service), ctx(_ctx), contextLogger(jhtreeCacheStatistics)
         {
             keyManager.setown(ctx->createKeyManager(&contextLogger));
             StringBuffer tracing;
@@ -1562,11 +1562,11 @@ public:
     }
     virtual void reset() override
     {
-        LOG(MCthorDetailedDebugInfo, thorJob, "KJService reset()");
+        LOG(MCthorDetailedDebugInfo, "KJService reset()");
         processorPool->stopAll(true);
         processorPool->joinAll(false);
         clearAll();
-        LOG(MCthorDetailedDebugInfo, thorJob, "KJService reset() done");
+        LOG(MCthorDetailedDebugInfo, "KJService reset() done");
     }
     virtual void start() override
     {
@@ -1577,7 +1577,7 @@ public:
     {
         if (aborted)
             return;
-        LOG(MCthorDetailedDebugInfo, thorJob, "KJService stop()");
+        LOG(MCthorDetailedDebugInfo, "KJService stop()");
         queryNodeComm().cancel(RANK_ALL, keyLookupMpTag);
         processorPool->stopAll(true);
         processorPool->joinAll(true);
@@ -1774,6 +1774,7 @@ public:
         bool doReply;
 
         OwnedPtr<CThorPerfTracer> perf;
+        JobNameScope activeJobName;
         while (!stopped && queryNodeComm().recv(msg, 0, masterSlaveMpTag))
         {
             doReply = true;
@@ -1892,10 +1893,8 @@ public:
                         ILogMsgFilter *existingLogHandler = queryLogMsgManager()->queryMonitorFilter(logHandler);
                         dbgassertex(existingLogHandler);
                         verifyex(queryLogMsgManager()->changeMonitorFilterOwn(logHandler, getCategoryLogMsgFilter(existingLogHandler->queryAudienceMask(), existingLogHandler->queryClassMask(), maxLogDetail)));
-                        queryLogMsgManager()->removeJobId(thorJob.queryJobID());
-                        LogMsgJobId thorJobId = queryLogMsgManager()->addJobId(wuid);
-                        thorJob.setJobID(thorJobId);
-                        setDefaultJobId(thorJobId);
+
+                        activeJobName.set(wuid);
 
                         PROGLOG("Started wuid=%s, user=%s, graph=%s [log detail level=%u]\n", wuid.get(), user.str(), graphName.get(), maxLogDetail);
                         PROGLOG("Using query: %s", soPath.str());
