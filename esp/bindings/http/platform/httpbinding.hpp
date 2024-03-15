@@ -25,6 +25,7 @@
 #include "bindutil.hpp"
 #include "seclib.hpp"
 
+
 class CMethodInfo : public CInterface
 {
 public:
@@ -112,6 +113,7 @@ interface IEspWsdlSections
 //  virtual MethodInfoArray & queryQualifiedNames(IEspContext& ctx)=0;
     virtual int getQualifiedNames(IEspContext& ctx, MethodInfoArray & methods)=0;
     virtual int getXsdDefinition(IEspContext &context, CHttpRequest *request, StringBuffer &content, const char *service, const char *method, bool mda)=0;
+    virtual int getServiceXmlFilename(StringBuffer &filename)=0;
     virtual int getWsdlMessages(IEspContext &context, CHttpRequest *request, StringBuffer &content, const char *service, const char *method, bool mda)=0;
     virtual int getWsdlPorts(IEspContext &context, CHttpRequest *request, StringBuffer &content, const char *service, const char *method, bool mda)=0;
     virtual int getWsdlBindings(IEspContext &context, CHttpRequest *request, StringBuffer &content, const char *service, const char *method, bool mda)=0;
@@ -192,7 +194,6 @@ private:
 
     Owned<IEspCorsHelper> corsHelper;
 
-
     void getXMLMessageTag(IEspContext& ctx, bool isRequest, const char *method, StringBuffer& tag);
 
 protected:
@@ -201,7 +202,6 @@ protected:
     bool                    m_includeJsonTest;
     StringBuffer            m_challenge_realm;
     StringAttr              m_defaultSvcVersion;
-    StringBuffer            serviceXmlFilename;
 
 public:
     EspHttpBinding(IPropertyTree* cfg, const char *bindname=NULL, const char *procname=NULL);
@@ -348,6 +348,7 @@ public:
 //  MethodInfoArray &queryQualifiedNames(IEspContext& ctx) { m_methods.popAll(); getQualifiedNames(ctx,m_methods); return m_methods;};
 
     int getXsdDefinition(IEspContext &context, CHttpRequest *request, StringBuffer &content, const char *service, const char *method, bool mda){return 0;};
+    int getServiceXmlFilename(StringBuffer &filename) {return 0;};
     int getWsdlMessages(IEspContext &context, CHttpRequest *request, StringBuffer &content, const char *service, const char *method, bool mda);
     int getWsdlPorts(IEspContext &context, CHttpRequest *request, StringBuffer &content, const char *service, const char *method, bool mda);
     int getWsdlBindings(IEspContext &context, CHttpRequest *request, StringBuffer &content, const char *service, const char *method, bool mda);
@@ -356,7 +357,6 @@ public:
     virtual int getMethodHelp(IEspContext &context, const char *serv, const char *method, StringBuffer &page);
     bool isMethodInService(IEspContext& context, const char *servname, const char *methname);
 
-    virtual int getMethodHtmlForm(IEspContext &context, CHttpRequest* request, const char *serv, const char *method, StringBuffer &page, bool bIncludeFormTag){return 0;}
     virtual bool hasSubService(IEspContext &context, const char *name);
 
     virtual IRpcRequestBinding *createReqBinding(IEspContext &context, IHttpMessage *ireq, const char *service, const char *method){return NULL;}
@@ -445,7 +445,6 @@ public:
 
 protected:
     virtual bool basicAuth(IEspContext* ctx);
-    int getWsdlOrXsd(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method, bool isWsdl);
     int getServiceWsdlOrXsd(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method, bool isWsdl);
     virtual bool getSchema(StringBuffer& schema, IEspContext &ctx, CHttpRequest* req, const char *service, const char *method,bool standalone);
     virtual void appendSchemaNamespaces(IPropertyTree *namespaces, IEspContext &ctx, CHttpRequest* req, const char *service, const char *method){}

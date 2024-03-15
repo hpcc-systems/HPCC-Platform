@@ -9569,7 +9569,7 @@ void CLocalWorkUnit::deleteTempFiles(const char *graph, bool deleteOwned, bool d
         if(needDelete)
         {
             const char *name = file.queryProp("@name");
-            LOG(MCdebugProgress, unknownJob, "Removing workunit file %s from DFS", name);
+            LOG(MCdebugProgress, "Removing workunit file %s from DFS", name);
             queryDistributedFileDirectory().removeEntry(name, queryUserDescriptor());
             toRemove.append(file);
         }
@@ -9705,7 +9705,7 @@ void CLocalWorkUnit::releaseFile(const char *fileName)
                 if (!name.isEmpty()&&(1 == usageCount))
                 {
                     if (queryDistributedFileDirectory().removeEntry(fileName, queryUserDescriptor()))
-                        LOG(MCdebugProgress, unknownJob, "Removed (released) file %s from DFS", name.get());
+                        LOG(MCdebugProgress, "Removed (released) file %s from DFS", name.get());
                 }
             }
             if (!more)

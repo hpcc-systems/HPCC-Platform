@@ -78,7 +78,7 @@ public:
     virtual bool action() override
     {
         StringBuffer s("FAILED TO RECOVER FROM EXCEPTION, STOPPING THOR");
-        FLLOG(MCoperatorWarning, thorJob, exception, s.str());
+        FLLOG(MCoperatorWarning, exception, s.str());
         Owned<IJobManager> jobManager = getJobManager();
         if (jobManager)
         {
@@ -298,7 +298,7 @@ void CSlaveMessageHandler::threadmain()
                 }
                 case smt_getPhysicalName:
                 {
-                    LOG(MCdebugProgress, thorJob, "getPhysicalName called from node %d", sender-1);
+                    LOG(MCdebugProgress, "getPhysicalName called from node %d", sender-1);
                     StringAttr logicalName;
                     unsigned partNo;
                     bool create;
@@ -317,7 +317,7 @@ void CSlaveMessageHandler::threadmain()
                 }
                 case smt_getFileOffset:
                 {
-                    LOG(MCdebugProgress, thorJob, "getFileOffset called from node %d", sender-1);
+                    LOG(MCdebugProgress, "getFileOffset called from node %d", sender-1);
                     StringAttr logicalName;
                     unsigned partNo;
                     msg.read(logicalName);
@@ -330,7 +330,7 @@ void CSlaveMessageHandler::threadmain()
                 }
                 case smt_actMsg:
                 {
-                    LOG(MCdebugProgress, thorJob, "smt_actMsg called from node %d", sender-1);
+                    LOG(MCdebugProgress, "smt_actMsg called from node %d", sender-1);
                     graph_id gid;
                     msg.read(gid);
                     activity_id id;
@@ -348,7 +348,7 @@ void CSlaveMessageHandler::threadmain()
                 {
                     unsigned slave;
                     msg.read(slave);
-                    LOG(MCdebugProgress, thorJob, "smt_getresult called from slave %d", slave);
+                    LOG(MCdebugProgress, "smt_getresult called from slave %d", slave);
                     graph_id gid;
                     msg.read(gid);
                     activity_id ownerId;
@@ -1001,7 +1001,7 @@ class CThorCodeContextMaster : public CThorCodeContextBase
         return getWorkUnitResult(workunit, name, sequence);
     }
     #define PROTECTED_GETRESULT(STEPNAME, SEQUENCE, KIND, KINDTEXT, ACTION) \
-        LOG(MCdebugProgress, thorJob, "getResult%s(%s,%d)", KIND, STEPNAME?STEPNAME:"", SEQUENCE); \
+        LOG(MCdebugProgress, "getResult%s(%s,%d)", KIND, STEPNAME?STEPNAME:"", SEQUENCE); \
         Owned<IConstWUResult> r = getResultForGet(STEPNAME, SEQUENCE); \
         try \
         { \
@@ -1266,7 +1266,7 @@ public:
     {
         try
         {
-            LOG(MCdebugProgress, thorJob, "getExternalResultRaw %s", stepname);
+            LOG(MCdebugProgress, "getExternalResultRaw %s", stepname);
 
             Owned<IConstWUResult> r = getExternalResult(wuid, stepname, sequence);
             return r->getResultHash();
@@ -1308,7 +1308,7 @@ public:
         tgt = NULL;
         try
         {
-            LOG(MCdebugProgress, thorJob, "getExternalResultRaw %s", stepname);
+            LOG(MCdebugProgress, "getExternalResultRaw %s", stepname);
 
             Variable2IDataVal result(&tlen, &tgt);
             Owned<IConstWUResult> r = getExternalResult(wuid, stepname, sequence);
@@ -1586,7 +1586,7 @@ mptag_t CJobMaster::allocateMPTag()
 {
     mptag_t tag = allocateClusterMPTag();
     queryJobChannel(0).queryJobComm().flush(tag);
-    LOG(MCthorDetailedDebugInfo, thorJob, "allocateMPTag: tag = %d", (int)tag);
+    LOG(MCthorDetailedDebugInfo, "allocateMPTag: tag = %d", (int)tag);
     return tag;
 }
 
@@ -1595,7 +1595,7 @@ void CJobMaster::freeMPTag(mptag_t tag)
     if (TAG_NULL != tag)
     {
         freeClusterMPTag(tag);
-        LOG(MCthorDetailedDebugInfo, thorJob, "freeMPTag: tag = %d", (int)tag);
+        LOG(MCthorDetailedDebugInfo, "freeMPTag: tag = %d", (int)tag);
         queryJobChannel(0).queryJobComm().flush(tag);
     }
 }
@@ -1869,7 +1869,7 @@ bool CJobMaster::go()
                 Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
                 if (factory->isAborting(wu.queryWuid()))
                 {
-                    LOG(MCwarning, thorJob, "ABORT detected from user");
+                    LOG(MCwarning, "ABORT detected from user");
 
                     unsigned code = TE_WorkUnitAborting; // default
                     if (job.getOptBool("dumpInfoOnUserAbort", false))
@@ -2089,13 +2089,13 @@ bool CJobMaster::fireException(IException *e)
     {
         case tea_warning:
         {
-            LOG(MCwarning, thorJob, e);
+            LOG(MCwarning, e);
             reportExceptionToWorkunitCheckIgnore(*workunit, e);
             break;
         }
         default:
         {
-            LOG(MCerror, thorJob, e);
+            LOG(MCerror, e);
             queryJobManager().replyException(*this, e); 
             fatalHandler->inform(LINK(e));
             try { abort(e); }
@@ -2341,13 +2341,13 @@ bool CMasterGraph::fireException(IException *e)
     {
         case tea_warning:
         {
-            LOG(MCwarning, thorJob, e);
+            LOG(MCwarning, e);
             reportExceptionToWorkunitCheckIgnore(job.queryWorkUnit(), e);
             break;
         }
         default:
         {
-            LOG(MCerror, thorJob, e);
+            LOG(MCerror, e);
             if (NULL != fatalHandler)
                 fatalHandler->inform(LINK(e));
             if (owner)

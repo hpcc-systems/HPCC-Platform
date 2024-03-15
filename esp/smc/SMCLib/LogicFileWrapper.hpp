@@ -95,7 +95,7 @@ struct DeleteTask: public CInterface, implements ITask
                 {
                     StringBuffer e;
                     e.appendf("Failed to remove file part %s\n",file->queryFilename());
-                    LOG(MCerror, unknownJob, "%s", e.str());
+                    LOG(MCerror, "%s", e.str());
                     errs.append(e);
                 }
             }

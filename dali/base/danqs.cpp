@@ -646,7 +646,7 @@ public:
                 catch (IException *e)
                 {
                     // should just be aborted exceptions, but remove subscription whatever the error.
-                    LOG(MCdebugInfo, unknownJob, e, "Named Queue Server - MQR_ADD_QUEUE notify");
+                    LOG(MCdebugInfo, e, "Named Queue Server - MQR_ADD_QUEUE notify");
                     e->Release();
                     stubs.remove(i,true);
                     toremove.append(stub);

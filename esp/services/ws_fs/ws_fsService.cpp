@@ -1904,7 +1904,7 @@ IPropertyTree *CFileSprayEx::getAndValidateDropZone(const char *path, const char
     if (env->isDropZoneRestrictionEnabled())
         throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "DropZone Plane not found for host %s path %s.", host, path);
 
-    LOG(MCdebugInfo, unknownJob, "No matching drop zone path on '%s' to file path: '%s'", host, path);
+    LOG(MCdebugInfo, "No matching drop zone path on '%s' to file path: '%s'", host, path);
 #endif
     return nullptr;
 }

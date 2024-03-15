@@ -1950,7 +1950,7 @@ private:
         if (httpheaders && *httpheaders)
         {
             if (soapTraceLevel > 6 || master->logXML)
-                master->logctx.mCTXLOG("%s: Adding HTTP Headers(%s)",  master->wscCallTypeText(), httpheaders);
+                master->logctx.mCTXLOG("%s: Adding HTTP Headers(%s)", master->wscCallTypeText(), httpheaders);
             request.append(httpheaders);
         }
 

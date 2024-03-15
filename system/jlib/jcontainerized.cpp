@@ -319,13 +319,13 @@ void runKubectlCommand(const char *title, const char *cmd, const char *input, St
         output = &_output;
     unsigned ret = runExternalCommand(title, *output, error, cmd, input, ".", nullptr);
     if (output->length())
-        MLOG(MCdebugInfo, unknownJob, "%s: ret=%u, stdout=%s", cmd, ret, output->trimRight().str());
+        MLOG(MCdebugInfo, "%s: ret=%u, stdout=%s", cmd, ret, output->trimRight().str());
     if (error.length())
-        MLOG(MCdebugError, unknownJob, "%s: ret=%u, stderr=%s", cmd, ret, error.trimRight().str());
+        MLOG(MCdebugError, "%s: ret=%u, stderr=%s", cmd, ret, error.trimRight().str());
     if (ret)
     {
         if (input)
-            MLOG(MCdebugError, unknownJob, "Using input %s", input);
+            MLOG(MCdebugError, "Using input %s", input);
         throw makeStringExceptionV(0, "Failed to run %s: error %u: %s", cmd, ret, error.str());
     }
 }

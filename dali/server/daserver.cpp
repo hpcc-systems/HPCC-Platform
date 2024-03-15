@@ -95,13 +95,13 @@ static void stopServer()
     ForEachItemInRev(h,servers)
     {
         IDaliServer &server=servers.item(h);
-        LOG(MCprogress, unknownJob, "Suspending %d",h);
+        LOG(MCprogress, "Suspending %d",h);
         server.suspend();
     }
     ForEachItemInRev(i,servers)
     {
         IDaliServer &server=servers.item(i);
-        LOG(MCprogress, unknownJob, "Stopping %d",i);
+        LOG(MCprogress, "Stopping %d",i);
         server.stop();
     }
     closeCoven();
@@ -649,7 +649,7 @@ int main(int argc, const char* argv[])
             catch (IException *e)
             {
                 StringBuffer s("Failure whilst preparing dali backup location: ");
-                LOG(MCoperatorError, unknownJob, e, s.append(mirrorPath).append(". Backup disabled").str());
+                LOG(MCoperatorError, e, s.append(mirrorPath).append(". Backup disabled").str());
                 serverConfig->removeProp("SDS/@remoteBackupLocation");
                 e->Release();
             }

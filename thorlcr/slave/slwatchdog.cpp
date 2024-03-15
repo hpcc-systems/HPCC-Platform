@@ -106,7 +106,7 @@ public:
         CriticalBlock b(crit);
         activeGraphs.append(*LINK(&graph));
         StringBuffer str("Watchdog: Start Job ");
-        LOG(MCthorDetailedDebugInfo, thorJob, "%s", str.append(graph.queryGraphId()).str());
+        LOG(MCthorDetailedDebugInfo, "%s", str.append(graph.queryGraphId()).str());
     }
     virtual void stopGraph(CGraphBase &graph, MemoryBuffer *mb) override
     {
@@ -119,7 +119,7 @@ public:
         else
         {
             StringBuffer str("Watchdog: Stop Job ");
-            LOG(MCthorDetailedDebugInfo, thorJob, "%s", str.append(graph.queryGraphId()).str());
+            LOG(MCthorDetailedDebugInfo, "%s", str.append(graph.queryGraphId()).str());
             if (mb)
             {
                 DelayedSizeMarker sizeMark(*mb);
@@ -138,7 +138,7 @@ public:
 #endif
             stopped = true;
             threaded.join();
-            LOG(MCdebugProgress, thorJob, "Stopped watchdog");
+            LOG(MCdebugProgress, "Stopped watchdog");
         }
     }
     virtual void debugRequest(MemoryBuffer &msg, const char *request) const override
@@ -173,7 +173,7 @@ public:
 // IThreaded
     virtual void threadmain() override
     {
-        LOG(MCthorDetailedDebugInfo, thorJob, "Watchdog: thread running");
+        LOG(MCthorDetailedDebugInfo, "Watchdog: thread running");
         gatherAndSend(); // send initial data
         assertex(HEARTBEAT_INTERVAL>=8);
         unsigned count = HEARTBEAT_INTERVAL+getRandom()%8-4;

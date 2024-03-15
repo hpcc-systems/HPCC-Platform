@@ -137,7 +137,7 @@ ISocket *spawnRemoteChild(SpawnKind kind, const char * exe, const SocketEndpoint
 
     if (abort && abort->abortRequested())
     {
-        LOG(MCdetailDebugInfo, unknownJob, "Action aborted before connecting to slave (%3d)", replyTag);
+        LOG(MCdetailDebugInfo, "Action aborted before connecting to slave (%3d)", replyTag);
         return NULL;
     }
 
@@ -169,7 +169,7 @@ ISocket *spawnRemoteChild(SpawnKind kind, const char * exe, const SocketEndpoint
     unsigned attempts = 20;
     SocketEndpoint connectEP(childEP);
     connectEP.port = port;
-    LOG(MCdetailDebugInfo, unknownJob, "Start connect to correct slave (%3d)", replyTag);
+    LOG(MCdetailDebugInfo, "Start connect to correct slave (%3d)", replyTag);
     IException * error = NULL;
     ISocket * result = NULL;
     while (!result && attempts)
@@ -178,7 +178,7 @@ ISocket *spawnRemoteChild(SpawnKind kind, const char * exe, const SocketEndpoint
         {
             StringBuffer tmp;
             connectEP.getEndpointHostText(tmp);
-            LOG(MCdetailDebugInfo, unknownJob, "Try to connect to slave %s",tmp.str());
+            LOG(MCdetailDebugInfo, "Try to connect to slave %s",tmp.str());
             Owned<ISocket> socket = ISocket::connect_wait(connectEP,MASTER_CONNECT_SLAVE_TIMEOUT);
             if (socket)
             {
@@ -202,7 +202,7 @@ ISocket *spawnRemoteChild(SpawnKind kind, const char * exe, const SocketEndpoint
                     if (connected)
                     {
                         assertex(slaveTag == replyTag);
-                        LOG(MCdetailDebugInfo, unknownJob, "Connected to correct slave (%3d)", replyTag);
+                        LOG(MCdetailDebugInfo, "Connected to correct slave (%3d)", replyTag);
                         result = socket.getClear();
                         break;
                     }
@@ -218,9 +218,9 @@ ISocket *spawnRemoteChild(SpawnKind kind, const char * exe, const SocketEndpoint
                         break;
                     }
                     if (slaveKind != kind)
-                        LOG(MCdetailDebugInfo, unknownJob, "Connected to wrong kind of slave (%d,%d/%d) - try again later",connected,replyTag,slaveTag);
+                        LOG(MCdetailDebugInfo, "Connected to wrong kind of slave (%d,%d/%d) - try again later",connected,replyTag,slaveTag);
                     else
-                        LOG(MCdetailDebugInfo, unknownJob, "Failed to connect to correct slave (%d,%d/%d) - try again later",connected,replyTag,slaveTag);
+                        LOG(MCdetailDebugInfo, "Failed to connect to correct slave (%d,%d/%d) - try again later",connected,replyTag,slaveTag);
 
                     //Wrong slave listening, need to leave time for the other, don't count as an attempt
                     MilliSleep(fastRand() % 5000 + 5000);
@@ -230,7 +230,7 @@ ISocket *spawnRemoteChild(SpawnKind kind, const char * exe, const SocketEndpoint
                     StringBuffer s;
                     s.appendf("Retry after exception talking to slave (%d): ",replyTag);
                     e->errorMessage(s);
-                    LOG(MCdetailDebugInfo, unknownJob, "%s", s.str());
+                    LOG(MCdetailDebugInfo, "%s", s.str());
                     e->Release();
                     //Probably another element just connected, and the listening socket has just been killed.
                     //So try again.  Wait just long enough to give another thread a chance.
@@ -241,7 +241,7 @@ ISocket *spawnRemoteChild(SpawnKind kind, const char * exe, const SocketEndpoint
         catch (IException * e)
         {
             StringBuffer s;
-            LOG(MCdetailDebugInfo, unknownJob, e, s.appendf("Failed to connect to slave (%d) (try again): ", replyTag).str());
+            LOG(MCdetailDebugInfo, e, s.appendf("Failed to connect to slave (%d) (try again): ", replyTag).str());
             e->Release();
             // No socket listening or contention - try again fairly soon
             MilliSleep(fastRand()%400+100);
@@ -288,7 +288,7 @@ bool CRemoteParentInfo::processCommandLine(int argc, const char * * argv, String
 void CRemoteParentInfo::log()
 {
     StringBuffer temp;
-    LOG(MCdebugProgress, unknownJob, "Starting remote slave.  Master=%s reply=%d port=%d", parent.getEndpointHostText(temp).str(), replyTag, port);
+    LOG(MCdebugProgress, "Starting remote slave.  Master=%s reply=%d port=%d", parent.getEndpointHostText(temp).str(), replyTag, port);
 }
 
 bool CRemoteParentInfo::sendReply(unsigned version)
@@ -300,7 +300,7 @@ bool CRemoteParentInfo::sendReply(unsigned version)
     {
         try
         {
-            LOG(MCdetailDebugInfo, unknownJob, "Ready to listen. reply=%d port=%d", replyTag, port);
+            LOG(MCdetailDebugInfo, "Ready to listen. reply=%d port=%d", replyTag, port);
             Owned<ISocket> listen = ISocket::create(port, 1);
             if (listen)
             {
@@ -313,11 +313,11 @@ bool CRemoteParentInfo::sendReply(unsigned version)
                 {
                     try
                     {
-                        LOG(MCdetailDebugInfo, unknownJob, "Ready to accept connection. reply=%d", replyTag);
+                        LOG(MCdetailDebugInfo, "Ready to accept connection. reply=%d", replyTag);
 
                         if (!listen->wait_read(SLAVE_LISTEN_FOR_MASTER_TIMEOUT))
                         {
-                            LOG(MCdetailDebugInfo, unknownJob, "Gave up waiting for a connection. reply=%d", replyTag);
+                            LOG(MCdetailDebugInfo, "Gave up waiting for a connection. reply=%d", replyTag);
                             return false;
                         }
 
@@ -333,7 +333,7 @@ bool CRemoteParentInfo::sendReply(unsigned version)
                             buffer.read(connectTag);
                             masterIP.getHostText(masterIPtext.clear());
 
-                            LOG(MCdetailDebugInfo, unknownJob, "Process incoming connection. reply=%d got(%d,%s)", replyTag,connectTag,masterIPtext.str());
+                            LOG(MCdetailDebugInfo, "Process incoming connection. reply=%d got(%d,%s)", replyTag,connectTag,masterIPtext.str());
 
                             same = (kind == connectKind) && masterIP.ipequals(parent) && (connectTag == replyTag);
                         }
@@ -344,7 +344,7 @@ bool CRemoteParentInfo::sendReply(unsigned version)
                             //can remove when all .exes have new code.
                             if (connectKind != kind)
                             {
-                                LOG(MCdetailDebugInfo, unknownJob, "Connection for wrong slave kind (%u vs %u)- ignore", connectKind, kind);
+                                LOG(MCdetailDebugInfo, "Connection for wrong slave kind (%u vs %u)- ignore", connectKind, kind);
                             }
                         }
 
@@ -358,12 +358,12 @@ bool CRemoteParentInfo::sendReply(unsigned version)
                         if (same)
                         {
                             socket.setown(connect.getClear());
-                            LOG(MCdetailDebugInfo, unknownJob, "Connection matched - continue....");
+                            LOG(MCdetailDebugInfo, "Connection matched - continue....");
                             return true;
                         }
                         if ((connectKind == kind) && (version != connectVersion))
                         {
-                            LOG(MCdebugInfo, unknownJob, "Version mismatch - terminating slave process expected %d got %d", version, connectVersion);
+                            LOG(MCdebugInfo, "Version mismatch - terminating slave process expected %d got %d", version, connectVersion);
                             return false;
                         }
                     }
@@ -419,7 +419,7 @@ void CRemoteSlave::run(int argc, const char * * argv)
     logFile.append(".log");
     attachStandardFileLogMsgMonitor(logFile.str(), 0, MSGFIELD_STANDARD, MSGAUD_all, MSGCLS_all, TopDetail, LOGFORMAT_table, true, true);
     queryLogMsgManager()->removeMonitor(queryStderrLogMsgHandler());        // no point logging output to screen if run remote!
-    LOG(MCdebugProgress, unknownJob, "Starting %s %s %s %s %s %s %s",slaveName.get(),(argc>1)?argv[1]:"",(argc>2)?argv[2]:"",(argc>3)?argv[3]:"",(argc>4)?argv[4]:"",(argc>5)?argv[5]:"",(argc>6)?argv[6]:"");
+    LOG(MCdebugProgress, "Starting %s %s %s %s %s %s %s",slaveName.get(),(argc>1)?argv[1]:"",(argc>2)?argv[2]:"",(argc>3)?argv[3]:"",(argc>4)?argv[4]:"",(argc>5)?argv[5]:"",(argc>6)?argv[6]:"");
 #else
     setupContainerizedLogMsgHandler();
 #endif
@@ -485,7 +485,7 @@ void CRemoteSlave::run(int argc, const char * * argv)
                     }
                     catch (RELEASE_CATCH_ALL)
                     {
-                        LOG(MCwarning, unknownJob, "Server seems to have crashed - close done gracefully");
+                        LOG(MCwarning, "Server seems to have crashed - close done gracefully");
                         error.setown(MakeStringException(999, "Server seems to have crashed - close done gracefully"));
                     }
 
@@ -495,25 +495,25 @@ void CRemoteSlave::run(int argc, const char * * argv)
                     msg.append(results);
                     catchWriteBuffer(masterSocket, msg);
 
-                    LOG(MCdebugProgress, unknownJob, "Results sent from slave %d", info.replyTag);
+                    LOG(MCdebugProgress, "Results sent from slave %d", info.replyTag);
 
                     //Acknowledgement before closing down...
                     msg.clear();
                     if (catchReadBuffer(masterSocket, msg, RMTTIME_RESPONSE_MASTER))
                     {
-                        LOG(MCdebugProgress, unknownJob, "Terminate acknowledgement received from master for slave %d", info.replyTag);
+                        LOG(MCdebugProgress, "Terminate acknowledgement received from master for slave %d", info.replyTag);
                         msg.read(ok);
                         assertex(ok);
                     }
                     else
-                        LOG(MCdebugProgress, unknownJob, "No terminate acknowledgement received from master for slave %d", info.replyTag);
+                        LOG(MCdebugProgress, "No terminate acknowledgement received from master for slave %d", info.replyTag);
 
                     if (error)
                         break;
                     timeOut = 24*60*60*1000;
                 } while (stayAlive);
 
-                LOG(MCdebugProgress, unknownJob, "Terminate acknowledgement received from master for slave %d", info.replyTag);
+                LOG(MCdebugProgress, "Terminate acknowledgement received from master for slave %d", info.replyTag);
             }
         }
         catch (IException * e)
@@ -522,7 +522,7 @@ void CRemoteSlave::run(int argc, const char * * argv)
             e->Release();
         }
     }
-    LOG(MCdebugProgress, unknownJob, "Stopping %s", slaveName.get());
+    LOG(MCdebugProgress, "Stopping %s", slaveName.get());
 }
 
 
@@ -570,7 +570,7 @@ void checkForRemoteAbort(ISocket * socket)
 
 bool sendRemoteAbort(ISocket * socket)
 {
-    LOG(MCdebugInfo, unknownJob, "Send abort to remote slave (%d)", isAborting());
+    LOG(MCdebugInfo, "Send abort to remote slave (%d)", isAborting());
 
     MemoryBuffer msg;
     msg.append(true);

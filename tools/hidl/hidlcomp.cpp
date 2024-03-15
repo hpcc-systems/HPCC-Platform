@@ -633,40 +633,6 @@ esp_xlate_info *esp_xlat(const char *from, bool defaultToString)
     return (defaultToString) ? &esp_xlate_table[0] : NULL;
 }
 
-//TODO: this is not bullet proof. better idea??
-// Return: NULL if no need to be defined, otherwise the type to be defined
-// Note: the caller needs to free memory
-static char* getToBeDefinedType(const char* type)
-{
-    const char* colon = strchr(type, ':');
-    const char* bareType = colon ? colon+1 : type;
-
-    if (strnicmp(type, "xsd",colon-type)==0)
-        return NULL;
-
-    /*
-    for (unsigned i=0; esp_xlate_table[i].meta_type!=NULL; i++)
-    {
-        if (stricmp(bareType,esp_xlate_table[i].xsd_type)==0)
-            return NULL;
-    }
-    */
-
-    if (strnicmp(type, "tns", colon-type)!=0)
-    {
-        char msg[128];
-        sprintf(msg, "*** unhandled type: %s", type);
-        outs(msg);
-        yyerror(msg);
-        return NULL;
-    }
-
-    if (strncmp(bareType, "ArrayOf", sizeof("ArrayOf")-1)==0)
-        return strdup(bareType+sizeof("ArrayOf")-1);
-    else
-        return strdup(bareType);
-}
-
 static const char *MetaTypeToXsdType(const char *val)
 {
     esp_xlate_info *xlation=esp_xlat(val);
@@ -2484,11 +2450,6 @@ void EspMessageInfo::write_esp_ipp()
         outf("\tCX%s(const char* defvalue_) : SoapEnumParamNew<C%s>()\n", name_, name_);
         outf("\t{ doInit(); setDefaultValue(defvalue_); }\n");
 
-
-        // getXsdDefinition
-        outs("\tstatic  void getXsdDefinition(IEspContext &context, CHttpRequest* request, StringBuffer &schema, BoolHash &added)\n");
-        outs("\t{ getSharedInstance().getXsdDefinitionInternal(context,request,schema,added); }\n");
-
         // getMapInfo()
         outs("\tstatic void getMapInfo(IMapInfo& info, BoolHash& added) { getSharedInstance().getMapInfo_(info,added); }\n\n");
         outf("\tstatic const char* stringOf(C%s val) { return getSharedInstance().toString(val); }\n\n",name_);
@@ -2503,47 +2464,9 @@ void EspMessageInfo::write_esp_ipp()
         // TODO: getMapInfo_() internal implementation
         outs("\tvoid getMapInfo_(IMapInfo& info, BoolHash& added) {  }\n");
 
-        // handle descriptions
-        {
-            outs("\tvoid getXsdDefinitionInternal(IEspContext &context, CHttpRequest* request, StringBuffer &schema, BoolHash &added)\n");
-            bool hasDesc = false;
-            for (pi = getParams(); pi!=NULL; pi=pi->next)
-            {
-                const char* desc = pi->getMetaString("desc",NULL);
-                if (desc) { hasDesc = true; break; }
-            }
-            if (hasDesc)
-            {
-                outs("\t{\n\t\tconst char* descriptions [] = {");
-                for (pi = getParams(); pi!=NULL; pi=pi->next)
-                {
-                    const char* desc = pi->getMetaString("desc",NULL);
-                    outf("%s,", desc ? desc : "NULL");
-                }
-                outs("};\n");
-                outs("\t\tgetXsdDefinition_(context,request,schema,added,descriptions);\n\t}\n");
-            }
-            else
-                outf("\t{ getXsdDefinition_(context,request,schema,added,NULL); }\n");
-        }
-
         outf("\tvoid doInit();\n");
 
         outs("};\n\n");
-
-        // array
-#if 0
-        //outf("MAKEValueArray(C%s,  %sArray);\n\n", name_, name_);
-        outf("inline C%s Array__Member2Param(C%s &src)              { return src; }\n", name_, name_);
-        outf("inline void Array__Assign(C%s & dest, C%s const & src){ dest = src; }\n", name_, name_);
-        outf("inline bool Array__Equal(C%s const & m, C%s const p)  { return m==p; }\n", name_, name_);
-        outf("inline void Array__Destroy(C%s & /*next* /) { }\n", name_);
-        //outf("MAKECopyArrayOf(simple, simple, array)
-        outf("MAKEArrayOf(C%s, C%s, %sArray)\n\n", name_,name_,name_);
-        //outf("class %sArray : public ArrayOf<C%s, C%s> {};\n\n",name_,name_,name_);
-        outs("\n");
-#endif
-
         return;
     }
 
@@ -2639,21 +2562,9 @@ void EspMessageInfo::write_esp_ipp()
     outf("\t\treturn \"%s\";\n", name_);
     outs("\t}\n\n");
 
-    //method ==> getXsdDefinition
-    outs("\tstatic StringBuffer &getXsdDefinition(IEspContext &context, CHttpRequest* request, StringBuffer &schema, BoolHash&added, const char *xns=\"xsd\", const char *wsns=\"tns\", unsigned flags=1)\n");
-    outs("\t{\n");
-    outs("\t\treturn getXsdDefinition(context, request, queryXsdElementName(), schema, added, xns, wsns, flags);\n");
-    outs("\t}\n");
-
-    //method ==> getXsdDefinition
-    outs("\tstatic StringBuffer &getXsdDefinition(IEspContext &context, CHttpRequest* request, const char *msgTypeName, StringBuffer &schema, BoolHash&added, const char *xns=\"xsd\", const char *wsns=\"tns\", unsigned flags=1);\n");
-
     //method ==> getMapInfo
     outs("\tstatic void getMapInfo(IMapInfo& info);\n");
     outs("\tstatic void getMapInfo(IMapInfo& info, BoolHash& added);\n");
-
-    //method ==> getHtmlForm
-    outs("\tstatic StringBuffer &getHtmlForm(IEspContext &context, CHttpRequest* request, const char *serv, const char *method, StringBuffer &form, bool includeFormTag=true, const char *prefix=NULL);\n");
 
     //method ==> hasCustomHttpContent
     outs("\tstatic bool hasCustomHttpContent()\n");
@@ -2663,9 +2574,6 @@ void EspMessageInfo::write_esp_ipp()
     else
         outs("\t\treturn false;\n");
     outs("\t}\n");
-
-    //method ==> serializeHtml
-    outs("\tStringBuffer &serializeHtml(IEspContext &context, const char *serv, const char *method, StringBuffer &html);\n");
 
     //method ==> serialize (IRpcMessage&)
     outs("\n\tvoid serialize(IRpcMessage& rpc_resp);\n");
@@ -2720,8 +2628,6 @@ void EspMessageInfo::write_esp_ipp()
         outs("\n\tbool unserialize(IEspContext* ctx, CSoapValue& soapval);\n");
         outs("\n\tbool unserialize(IEspContext* ctx, IProperties& params, MapStrToBuf *attachments, const char *basepath=NULL);\n");
     }
-
-    //outs("\n\tvoid unserialize(const char * msg);\n");
 
     if (espm_type_==espm_response)
     {
@@ -2960,516 +2866,6 @@ void EspMessageInfo::write_esp()
     }
 
     //=======================================================================================
-    //method ==> getXsdDefinition
-    // @context: the context could affect the schema, e.g., the version, the URL parameters
-    // @flags: 0x001 - define the struct/enum as complexType.
-    //         0x010 - do not include group-type enclosure (i.e., just define the fields, e.g., as part of other complex type definition)
-    //         0x100 - do not include fields at all (only to include definitions of fields, recursively)
-    bool isExtSimpleType = getMetaInt("element", 0)!=0;
-    outf("\nStringBuffer &C%s::getXsdDefinition(IEspContext &context, CHttpRequest* request, const char *msgTypeName, StringBuffer &schema, BoolHash &added, const char *xns, const char *wsns, unsigned flags)\n", name_);
-    outs("{\n");
-
-    indentReset(1);
-    indentOuts("if (!(flags & 0x100))\n\t{\n");
-
-    indentOuts(1,"IProperties *props = request->queryParameters();\n");
-    indentOuts("if(msgTypeName) {\n");
-    indentOuts(1,"if(added.getValue(msgTypeName))\n");
-    indentOuts1(1,"return schema;\n");
-    indentOuts("else\n");
-    indentOuts1(1,"added.setValue(msgTypeName, 1);\n");
-    indentOuts(-1,"}\n");
-
-    indentOuts("if (flags & 0x01) {\n");
-    bool isEmptyComplexType = true; //a complex type with no children, no attribute and no parent
-    if (isExtSimpleType || getParentName() || hasNonAttributeChild() || (espm_type_==espm_response && getMetaInt("exceptions_inline", 0)))
-        isEmptyComplexType = false;
-    else
-    {
-        for (pi=getParams();pi!=NULL;pi=pi->next)
-        {
-            if (!pi->getMetaInt("attribute", 0) && !pi->getMetaInt("hidden", 0) && !pi->getMetaInt("hidden_soap", 0))
-                isEmptyComplexType = false;
-        }
-    }
-
-    if (isEmptyComplexType)
-    {
-        if (espm_type_==espm_struct)
-            indentOuts(1,"schema.appendf(\"<xsd:complexType name=\\\"%s\\\"><xsd:all/></xsd:complexType>\\n\", msgTypeName);\n");
-        else
-            indentOuts(1,"schema.appendf(\"<xsd:element name=\\\"%s\\\"><xsd:complexType><xsd:all/></xsd:complexType></xsd:element>\\n\", msgTypeName);\n");
-    }
-    else if (espm_type_==espm_struct)
-        indentOuts(1,"schema.appendf(\"<xsd:complexType name=\\\"%s\\\">\\n\", msgTypeName);\n");
-    else
-        indentOuts(1,"schema.appendf(\"<xsd:element name=\\\"%s\\\"><xsd:complexType>\\n\", msgTypeName);\n");
-
-    if (isExtSimpleType)
-        indentOuts("schema.append(\"<xsd:simpleContent><xsd:extension base=\\\"xsd:string\\\">\\n\");\n");
-    indentOuts(-1, "}\n");
-
-    // native arrays
-    typedef std::map<std::string,std::string> EspNativeArrays;
-    EspNativeArrays nativeArrays;
-    // esp struct arrays
-    typedef std::set<std::string> EspStructArrays;
-    EspStructArrays structArrays;
-
-    //no element children for extended simple type
-    if (!isEmptyComplexType && !isExtSimpleType)
-    {
-        const char *xsdGroupType = getXsdGroupType();
-
-        bool hasChild = hasNonAttributeChild();
-        bool exceptions = espm_type_==espm_response && getMetaInt("exceptions_inline", 0);
-        bool needGroupType = exceptions || hasChild || parent;
-        if (needGroupType)
-        {
-            indentOuts("if (!(flags & 0x10)) {\n");
-            indentOutf1(1,"schema.append(\"<xsd:%s>\");\n", xsdGroupType);
-            if (exceptions)
-                indentOuts("schema.append(\"<xsd:element name=\\\"Exceptions\\\" type=\\\"tns:ArrayOfEspException\\\" minOccurs=\\\"0\\\" maxOccurs=\\\"1\\\"/>\");\n");
-            indentOuts("}\n");
-        }
-
-        if (parent)
-            indentOutf("C%s::getXsdDefinition(context, request, NULL, schema, added, xns, wsns, 0x10);\n", parent);
-
-        for (pi=getParams();pi!=NULL;pi=pi->next)
-        {
-            if (!pi->getMetaInt("attribute", 0) && !pi->getMetaInt("hidden", 0) && !pi->getMetaInt("hidden_soap", 0))
-            {
-                enum {definedtype, inline_primitive_array, inline_array, complextype} complexity=definedtype;
-                StrBuffer buffer;
-
-                const char *xsd_type = pi->getMetaXsdType();
-                if (xsd_type)
-                {
-                    buffer.append(xsd_type);
-                }
-                else if (pi->flags & PF_TEMPLATE)
-                {
-                    if (!strcmp(pi->templ, "ESParray"))
-                    {
-                        if (pi->isPrimitiveArray())
-                        {
-                            if (pi->getMetaString("item_tag",  NULL))
-                                complexity=inline_primitive_array;
-                            else {
-                                const char* type = pi->getArrayImplType();
-                                nativeArrays[pi->getArrayItemXsdType()] = VStrBuffer("Esp%s", type).str();
-                                buffer.appendf("tns:Esp%s", type);
-                            }
-                        }
-                        else
-                        {
-                            buffer.append("tns:");
-
-                            if (pi->getMetaString("item_tag",  NULL))
-                                complexity=inline_array;
-                            else {
-                                structArrays.insert(pi->typname);
-                                buffer.append("ArrayOf");
-                            }
-                            buffer.append(pi->typname);
-                        }
-                    }
-                    else
-                        buffer.append("xsd:string");
-                }
-                else if (pi->kind==TK_ESPSTRUCT || pi->kind==TK_ESPENUM)
-                {
-                    buffer.appendf("tns:%s",pi->typname);
-                }
-                else
-                {
-                    buffer.append(pi->getXsdType());
-                }
-
-
-                const char *xsdtype = buffer.str();
-                const char *xsdns = "";
-
-                if (xsdtype)
-                {
-                    int count= buffer.length();
-                    if (count>0 && buffer.charAt(count-1)=='\"')
-                        buffer.setCharAt(count-1,0);
-                    if (*xsdtype=='\"')
-                        xsdtype++;
-                    if (strchr(xsdtype, ':')==NULL)
-                        xsdns="xsd:";
-                }
-
-                bool hasMapInfo = pi->hasMapInfo();
-                if (hasMapInfo)
-                {
-                    indentOutf("if (!context.suppressed(\"%s\",\"%s\")) {\n", this->name_, pi->name);
-                    indentInc(1);
-                }
-
-                const char *access=pi->getMetaString("access", NULL);
-                if (access)
-                {
-                    indentOuts("SecAccessFlags acc;\n");
-                    indentOutf("if (context.authorizeFeature(%s, acc) && acc>=SecAccess_Read) {\n", access);
-                    indentInc(1);
-                }
-
-                StrBuffer xmlTag;
-                const char* tagName = pi->getMetaStringValue(xmlTag,"xml_tag") ? xmlTag.str() : pi->name;
-
-                switch (complexity)
-                {
-                case inline_array:
-                    {
-                        indentOutf("schema.append(\"<xsd:element minOccurs=\\\"0\\\" name=\\\"%s\\\">\\n\");\n", tagName);
-                        indentOuts("schema.append(\"<xsd:complexType><xsd:sequence>\\n\");\n");
-                        indentOutf("schema.append(\"<xsd:element minOccurs=\\\"0\\\" maxOccurs=\\\"unbounded\\\" name=\\\"%s\\\" type=\\\"%s\\\"/>\");\n", pi->getMetaString("item_tag",  "Item"), xsdtype);
-                        indentOuts("schema.append(\"</xsd:sequence></xsd:complexType>\");\n");
-                        indentOutf("schema.append(\"</xsd:element>\");\n");
-                        break;
-                    }
-                case inline_primitive_array:
-                    {
-                        indentOutf("schema.append(\"<xsd:element minOccurs=\\\"0\\\" name=\\\"%s\\\">\");\n", tagName);
-                        indentOuts("schema.append(\"<xsd:complexType><xsd:sequence>\");\n");
-                        indentOutf("schema.append(\"<xsd:element name=\\\"%s\\\" type=\\\"xsd:%s\\\" minOccurs=\\\"0\\\" maxOccurs=\\\"unbounded\\\"", pi->getMetaString("item_tag",  "Item"), pi->getArrayItemXsdType());
-
-                        int cols = pi->getMetaInt("cols",0);
-                        int rows = pi->getMetaInt("rows",0);
-                        if (cols>0 || rows>0)
-                        {
-                            outs("\");\n");
-                            indentOuts("if (context.queryOptions()&ESPCTX_ALL_ANNOTATION)\n");
-                            indentOuts(1,"schema.append(\"> <xsd:annotation><xsd:appinfo><form");
-                            if (cols>0)
-                                outf(" formCols=\\\"%d\\\"", cols);
-                            if (rows>0)
-                                outf(" formRows=\\\"%d\\\"", rows);
-                            outs("/></xsd:appinfo></xsd:annotation></xsd:element>\\n\");\n");
-                            indentOuts(-1,"else\n");
-                            indentOuts("\tschema.append(\"/>\\n\");\n");
-                        }
-                        else
-                            outs("/>\\n\");\n");
-
-                        indentOuts("schema.append(\"</xsd:sequence></xsd:complexType>\\n\");\n");
-                        indentOutf("schema.append(\"</xsd:element>\\n\");\n");
-                        break;
-                    }
-                case definedtype:
-                    {
-                        indentOutf("schema.append(\"<xsd:element");
-
-                        // min occurs
-                        int minOccurs = (pi->getMetaInt("required", 0)) ? 1 : 0;
-                        if (minOccurs==0)
-                            outs(" minOccurs=\\\"0\\\"");
-
-                        // default value
-                        if (pi->hasMetaTag("default"))
-                        {
-                            if (pi->kind==TK_CHAR || pi->kind==TK_UNSIGNEDCHAR || strcmp(xsdtype,"string")==0)
-                            {
-                                const char* val = pi->getMetaString("default",NULL);
-                                if (val && *val)
-                                {
-                                    // remove quotes
-                                    if (*val=='"' || *val=='\'')
-                                    {
-                                        char* s = strdup(val);
-                                        *(s+strlen(s)-1) = 0;
-                                        outf(" default=\\\"%s\\\"", s+1);
-                                        free(s);
-                                    }
-                                    else
-                                        outf(" default=\\\"%s\\\"", val);
-                                }
-                            }
-                            else if (pi->kind==TK_DOUBLE || pi->kind==TK_FLOAT || strcmp(xsdtype,"double")==0)
-                            {
-                                double val = pi->getMetaDouble("default");
-                                if (val==0)
-                                    val = pi->getMetaInt("default"); // auto conversion
-                                if (val!=0)
-                                    outf(" default=\\\"%g\\\"", val);
-                            }
-                            else if (pi->kind==TK_BOOL || strcmp(xsdtype,"bool")==0)
-                            {
-                                outf(" default=\\\"%s\\\"", pi->getMetaInt("default") ? "true" : "false");
-                            }
-                            else if (pi->kind==TK_ESPENUM)
-                            {
-                                const char* val = pi->getMetaString("default",NULL);
-                                if (val && *val)
-                                {
-                                    // remove quotes
-                                    if (*val=='"' || *val=='\'')
-                                    {
-                                        char* s = strdup(val);
-                                        *(s+strlen(s)-1) = 0;
-                                        outf(" default=\\\"%s\\\"", s+1);
-                                        free(s);
-                                    }
-                                    else
-                                        outf(" default=\\\"%s\\\"", val);
-                                }
-                                else
-                                {
-                                    int value = pi->getMetaInt("default", -1);
-                                    if (value != -1)
-                                        outf(" default=\\\"%d\\\"", value);
-                                }
-                            }
-                            else// assume it is integer
-                            {
-                                int val = pi->getMetaInt("default");
-                                if (val)
-                                    outf(" default=\\\"%d\\\"", val);
-                            }
-                        }
-
-                        // name & type
-                        outf(" name=\\\"%s\\\" type=\\\"%s%s\\\"", tagName, xsdns, xsdtype);
-
-                        // check for annotations
-                        StrBuffer annot;
-
-                        const char* formType = pi->getMetaInt("password") ? "password" : NULL;
-                        if (formType)
-                            annot.appendf(" formType=\\\"%s\\\"",formType);
-
-                        bool collapsed = pi->getMetaInt("collapsed")?true:false;;
-                        if (collapsed)
-                            annot.append(" collapsed=\\\"true\\\"");
-
-                        int cols = pi->getMetaInt("cols",0);
-                        if (cols>0)
-                            annot.appendf(" formCols=\\\"%d\\\"", cols);
-
-                        int rows = pi->getMetaInt("rows",0);
-                        if (rows>0)
-                            annot.appendf(" formRows=\\\"%d\\\"", rows);
-
-                        StrBuffer tmp;
-                        pi->getMetaStringValue(tmp,"form_ui");
-                        if (tmp.length()) {
-                            StrBuffer encoded;
-                            encodeXML(tmp.str(),encoded);
-                            annot.appendf(" ui=\\\"%s\\\"", printfEncode(encoded.str(), tmp.clear()).str());
-                        }
-
-                        pi->getMetaStringValue(tmp.clear(), "html_head");
-                        if (tmp.length()) {
-                            StrBuffer encoded;
-                            encodeXML(tmp.str(),encoded);
-                            annot.appendf(" html_head=\\\"%s\\\"", printfEncode(encoded.str(), tmp.clear()).str());
-                        }
-
-                        if (annot.length())
-                        {
-                            outs("\");\n");
-                            indentOuts("if (context.queryOptions()&ESPCTX_ALL_ANNOTATION)\n");
-                            indentOuts(1,"schema.append(\"> <xsd:annotation><xsd:appinfo><form");
-                            outf("%s", annot.str());
-                            outs("/></xsd:appinfo></xsd:annotation></xsd:element>\\n\");\n");
-                            indentOuts(-1,"else\n");
-                            indentOuts("\tschema.append(\"/>\\n\");\n");
-                        }
-                        else
-                            outs("/>\\n\");\n");
-
-                        break;
-                    }
-                default:
-                    break;
-                }
-
-                if (access)
-                    indentOuts(-1,"}\n");
-
-                //if (optional)
-                if (hasMapInfo)
-                    indentOuts(-1,"}\n");
-            }
-        }
-
-        if (needGroupType)
-        {
-            indentOuts("if (!(flags & 0x10))\n");
-                indentOutf1(1,"schema.append(\"</xsd:%s>\\n\");\n", xsdGroupType);
-        }
-
-    } //!isEmptyComplexType && !isExtSimpleType
-
-    if (!isEmptyComplexType)
-    {
-        //attributes last
-        for (pi=getParams();pi!=NULL;pi=pi->next)
-        {
-            if (pi->getMetaInt("attribute")!=0 && !pi->getMetaInt("hidden"))
-            {
-                StrBuffer tmp;
-                const char* tagName = pi->getMetaStringValue(tmp,"xml_tag") ? tmp.str() : pi->name;
-                indentOutf("schema.append(\"<xsd:attribute name=\\\"%s\\\" type=\\\"xsd:%s\\\"/>\");\n", tagName, pi->getXsdType());
-            }
-        }
-
-        indentOuts("if (flags & 0x01) {\n");
-        if (isExtSimpleType)
-            indentOuts1(1,"schema.append(\"</xsd:extension></xsd:simpleContent>\\n\");\n");
-        if (espm_type_==espm_struct)
-            indentOuts1(1,"schema.append(\"</xsd:complexType>\\n\");\n");
-        else
-            indentOuts1(1,"schema.append(\"</xsd:complexType></xsd:element>\\n\");\n");
-        indentOuts("}\n");
-    }
-
-    indentOuts(-1,"}\n"); // if (flags & 0x100)
-    //-------------------------------------------------------------------------
-    // try to figure out structs without ESPuses
-    // true if it is with map info, once a STRUCT or ENUM is there without map info, it is false
-    const int MIT_HasMap = 0x01;
-    const int MIT_IsEnum = 0x02;
-    const int MIT_IsStruct = 0x04;
-    enum MapInfoType {  MIT_EnumFalse=MIT_IsEnum, MIT_EnumTrue=MIT_HasMap|MIT_IsEnum,
-        MIT_StructFalse=MIT_IsStruct,MIT_StructTrue=MIT_IsStruct|MIT_HasMap };
-    typedef std::map<std::string, int> TypeMap;
-    TypeMap typesNeeded;
-
-    bool parenthesisOpened = false;
-    if (parent)
-    {
-        outs("\tif (!(flags & 0x10) || (flags & 0x100))\n");
-        outs("\t{\n");
-        parenthesisOpened = true;
-        outf("\t\tC%s::getXsdDefinition(context, request, schema, added, xns, wsns, 0x110);\n", parent);
-        typesNeeded[parent] = false;
-    }
-    for (pi=getParams();pi!=NULL;pi=pi->next)
-    {
-        // we still need to make it usable for the service writer
-        //if (pi->getMetaInt("hidden", 0) || pi->getMetaInt("hidden_soap", 0))
-        //  continue;
-        std::string thisType;
-
-        const char *xsd_type=pi->getMetaXsdType();
-        if (xsd_type)
-        {
-            char* buf = strdup(xsd_type[0]=='"' ? xsd_type+1 : xsd_type);
-            size_t count= strlen(buf);
-            if (count>0 && buf[count-1]=='\"')
-                buf[count-1]=0;
-
-            char* typeName = getToBeDefinedType(buf);
-            if (typeName)
-            {
-                thisType = typeName;
-                free(typeName);
-            }
-            free(buf);
-        }
-
-        else if (pi->kind==TK_ESPSTRUCT || pi->kind==TK_ESPENUM)
-        {
-            if (pi->typname)
-                thisType = pi->typname;
-            else
-                outs("\t\t*** pi->typname is empty!!\n");
-        }
-
-        else if (pi->flags & PF_TEMPLATE)
-        {
-            if (strcmp(pi->templ, "ESParray")==0)
-            {
-                if (pi->typname && strcmp(pi->typname, "string")!=0 && strcmp(pi->typname, "EspTextFile")!=0)
-                    thisType = pi->typname;
-            }
-            else
-                outf("\t\t// *** skip field: name=%s, type=%s\n", pi->name, pi->typname);
-        }
-
-        if (thisType.length() && strcmp(thisType.c_str(),name_)!=0)
-        {
-            TypeMap::const_iterator it = typesNeeded.find(thisType);
-            if (it==typesNeeded.end() || (*it).second & MIT_HasMap) // thisType is not in typesNeeded or it is there with version info
-            {
-                if (!parenthesisOpened)
-                {
-                    outs("\tif (!(flags & 0x10)  || (flags & 0x100))\n\t{\n");
-                    parenthesisOpened = true;
-                }
-
-
-                if (pi->hasMapInfo())
-                {
-                    outf("\t\tif (!context.suppressed(\"%s\",\"%s\"))\n\t", this->name_, pi->name);
-                    typesNeeded[thisType] = (pi->kind==TK_ESPENUM) ? MIT_EnumTrue : MIT_StructTrue;
-                }
-                else
-                    typesNeeded[thisType] = (pi->kind==TK_ESPENUM) ? MIT_EnumFalse : MIT_StructFalse;
-                if (pi->kind == TK_ESPENUM)
-                    outf("\t\tCX%s::getXsdDefinition(context, request, schema, added);\n", thisType.c_str());
-                else
-                    outf("\t\tC%s::getXsdDefinition(context, request, schema, added);\n", thisType.c_str());
-            }
-        }
-    }
-
-    if (parenthesisOpened)
-        outs("\t}\n");
-
-    // native arrays
-    for (EspNativeArrays::const_iterator it = nativeArrays.begin(); it!=nativeArrays.end(); it++)
-    {
-        outf("\tif (added.getValue(\"%s\")==NULL) {\n", (*it).second.c_str());
-        outf("\t\taddEspNativeArray(schema,\"%s\",\"%s\");\n", (*it).first.c_str(), (*it).second.c_str());
-        outf("\t\tadded.setValue(\"%s\",1);\n", (*it).second.c_str());
-        outf("\t}\n");
-    }
-
-    // struct arrays
-    for (EspStructArrays::const_iterator it2 = structArrays.begin(); it2!=structArrays.end(); it2++)
-    {
-        const char* type = (*it2).c_str();
-        outf("\tif (added.getValue(\"%s\") && added.getValue(\"ArrayOf%s\")==NULL) {\n", type, type);
-        outf("\t\tschema.append(\"<xsd:complexType name=\\\"ArrayOf%s\\\">\\n\");\n",type);
-        outf("\t\tschema.append(\"<xsd:sequence>\\n\");\n");
-        outf("\t\tschema.append(\"<xsd:element minOccurs=\\\"0\\\" maxOccurs=\\\"unbounded\\\" name=\\\"%s\\\" type=\\\"tns:%s\\\"/>\\n\");\n", type, type);
-        outf("\t\tschema.append(\"</xsd:sequence>\\n\");\n");
-        outf("\t\tschema.append(\"</xsd:complexType>\\n\");\n");
-        outf("\t\tadded.setValue(\"ArrayOf%s\",1);\n", type);
-        outf("\t}\n");
-    }
-
-    /*
-    //typesNeeded.erase(name_); // Do not include self: avoid recursive call
-
-    if (typesNeeded.size()>0)
-    {
-        outs("\tif (!(flags & 0x10))\n");
-        outs("\t{\n");
-        for (TypeMap::const_iterator it = typesNeeded.begin(); it!=typesNeeded.end(); ++it)
-        {
-            const char* type = (*it).first.c_str();
-            const char* fld = (*it).second.c_str();
-            if (fld[0] != 0)
-            {
-                outf("\t\tif (!context.suppressed(\"%s\",\"%s\"))\n\t", this->name_, fld);
-                outf("\t\t\tC%s::getXsdDefinition(context, request, schema, added);\n", type);
-            }
-            else
-                outf("\t\tC%s::getXsdDefinition(context, request, schema, added);\n", type);
-        }
-        outs("\t}\n");
-    }
-    */
-    outs("\treturn schema;\n");
-    outs("}\n");
-
-    //=======================================================================================
     //method ==> getMapInfo
     outf("\nvoid C%s::getMapInfo(IMapInfo& info) {  BoolHash added; getMapInfo(info, added); }\n",name_);
 
@@ -3502,224 +2898,9 @@ void EspMessageInfo::write_esp()
         }
     }
 
-    if (typesNeeded.size()>0)
-    {
-        for (TypeMap::const_iterator it = typesNeeded.begin(); it!=typesNeeded.end(); ++it)
-        {
-            outf("\tif (!added.getValue(\"%s\"))\n", (*it).first.c_str());
-            outf("\t{\n");
-            outf("\t\tadded.setValue(\"%s\",1);\n", (*it).first.c_str());
-            outf("\t\tC%s%s::getMapInfo(info,added);\n",((*it).second & MIT_IsEnum)?"X":"",(*it).first.c_str());
-            outf("\t}\n");
-        }
-    }
-
     outs("}\n");
 
-    //=======================================================================================
-    //method ==> getHtmlForm
-    //TODO: move includeFormTag into onGetForm() to reduce significant generated code
     indentReset();
-    indentOutf("\nStringBuffer &C%s::getHtmlForm(IEspContext &context, CHttpRequest* request, const char *serv, const char *method, StringBuffer &form, bool includeFormTag, const char *prefix)\n", name_);
-
-    indentOuts("{\n");
-    indentOuts(1,"IProperties *props = request->queryParameters();\n");
-    bool hasAttachment=false;
-    for (pi=getParams();pi;pi=pi->next)
-    {
-        if (pi->typname && !stricmp("EspTextFile", pi->typname))
-            hasAttachment=true;
-    }
-
-    indentOuts("if (includeFormTag) {\n");
-    indentOutf(1,"StringBuffer params, versionTag;\n");
-    indentOuts("bool hasVersion = getUrlParams(props,params);\n");
-    indentOuts("if (!hasVersion) versionTag.appendf(\"%cver_=%g\",params.length()?'&':'?',context.getClientVersion());\n");
-    indentOutf("form.appendf(\"\\n<form name=\\\"esp_form\\\" method=\\\"POST\\\" enctype=\\\"%s\\\" action=\\\"/%%s/%%s%%s%%s\\\">\\n\", serv, method, params.str(), versionTag.str());\n",
-            hasAttachment ? "multipart/form-data" : "application/x-www-form-urlencoded");
-    indentOutf(-1,"}\n");
-    if (parent)
-        indentOutf("C%s::getHtmlForm(context, request, serv, method, form, false, prefix);\n", parent);
-
-    indentOuts("StringBuffer extfix;\n");
-    indentOuts("form.append(\" <table>\\n\");\n");
-
-    for (pi=getParams();pi!=NULL;pi=pi->next)
-    {
-        bool hasMapInfo = pi->hasMapInfo();
-        if (hasMapInfo)
-        {
-            indentOutf("if (!context.suppressed(\"%s\",\"%s\")) {\n", this->name_, pi->name);
-            indentInc(1);
-        }
-
-        if (!pi->getMetaInt("hidden"))
-        {
-            int rows = pi->getMetaInt("rows", 5);
-
-            StrBuffer label;
-            if (!pi->getMetaStringValue(label,"label"))
-                if (!pi->getMetaStringValue(label,"xml_tag"))
-                    label = pi->name;
-
-            if (pi->getMetaInt("rows") || (pi->flags & PF_TEMPLATE))
-            {
-                int cols = pi->getMetaInt("cols", 50);
-
-                indentOuts("extfix.clear();\n");
-                indentOuts("if (prefix && *prefix)\n");
-                indentOuts1(1,"extfix.append(prefix).append(\".\");\n");
-                indentOutf("extfix.append(\"%s\");\n", pi->name);
-                indentOutf("form.appendf(\"<tr><td><b>%s: </b></td><td>\");\n", label.str());
-                if (!pi->isEspStringArray())
-                {
-                    // handle default value
-                    StrBuffer tmp;
-                    const char* def = pi->getMetaStringValue(tmp,"default") ? tmp.str() : "";
-
-                    indentOutf("form.appendf(\"<table><tr><td><textarea name=\\\"%%s\\\" cols=\\\"%d\\\" rows=\\\"%d\\\">%s</textarea></td>\", extfix.str());\n",
-                        cols, rows, def);
-
-                    indentOutf("form.append(\"</tr></table>\");\n");
-                }
-                else
-                {
-                    indentOutf("form.appendf(\"<textarea name=\\\"%%s\\\" cols=\\\"%d\\\" rows=\\\"%d\\\"></textarea>\", extfix.str());\n", cols, rows);
-                }
-
-                indentOutf("form.append(\"</td></tr>\");\n");
-            }
-            else
-            {
-                esp_xlate_info *espinfo = esp_xlat(pi);
-                if (pi->kind==TK_ESPSTRUCT)
-                {
-                    indentOuts("extfix.clear();\n");
-                    indentOuts("if (prefix && *prefix)\n");
-                    indentOuts1(1,"extfix.append(prefix).append(\".\");\n");
-                    indentOutf("extfix.append(\"%s\");\n", pi->getXmlTag());
-                    indentOutf("form.append(\"<tr>\").append(\"<td><b>%s: </b></td><td><hr/>\");\n", label.str());
-                    indentOutf("C%s::getHtmlForm(context, request, serv, method, form, false, extfix.str());\n", pi->typname);
-                    indentOuts("form.append(\"<hr/></td></tr>\");\n");
-                }
-                else if (espinfo->access_kind==TK_BOOL)
-                {
-                    indentOuts("extfix.clear();\n");
-                    indentOuts("if (prefix && *prefix)\n");
-                    indentOuts1(1,"extfix.append(prefix).append(\".\");\n");
-                    indentOutf("extfix.append(\"%s\");\n", pi->getXmlTag());
-
-                    // handle default value
-                    indentOutf("\n\tform.appendf(\"  <tr><td><b>%s? </b></td><td><input type=\\\"checkbox\\\" name=\\\"%%s\\\" value=\\\"1\\\" %s /></td></tr>\\n\", extfix.str());\n",
-                        label.str(), pi->getMetaInt("default",0)?"checked=\\\"1\\\"":"");
-                }
-                else if (espinfo->access_kind==TK_INT || espinfo->access_kind==TK_UNSIGNED
-                    || espinfo->access_kind==TK_SHORT || espinfo->access_kind==TK_UNSIGNEDSHORT)
-                {
-                    indentOuts("extfix.clear();\n");
-                    indentOuts("if (prefix && *prefix) extfix.append(prefix).append(\".\");\n");
-                    indentOutf("\textfix.append(\"%s\");\n", pi->getXmlTag());
-
-                    int cols = pi->getMetaInt("cols", 20);
-                    indentOutf("form.appendf(\"  <tr><td><b>%s: </b></td><td><input type=\\\"text\\\" name=\\\"%%s\\\" size=\\\"%d\\\"", label.str(), cols);
-
-                    int defValue = pi->getMetaInt("default");
-                    if (defValue!=0)
-                        indentOutf(" value=\\\"%d\\\"", defValue);
-
-                    outs("/>\", extfix.str());\n");
-                    indentOuts("form.append(\"</td></tr>\\n\");\n");
-                }
-                //TODO: handle default value for float, double, long, longlong etc
-                else
-                {
-                    const char *xsdtype = pi->getXsdType();
-                    bool isDate = (!stricmp(xsdtype, "date"));
-                    const char *inputType = "text";
-                    if (pi->typname && !strcmp(pi->typname, "EspTextFile"))
-                        inputType="file";
-                    else if (pi->getMetaInt("password"))
-                        inputType="password";
-
-                    indentOuts("extfix.clear();\n");
-                    indentOuts("if (prefix && *prefix)\n");
-                    indentOuts1(1,"extfix.append(prefix).append(\".\");\n");
-                    indentOutf("extfix.append(\"%s\");\n", pi->getXmlTag());
-
-                    // handle default value
-                    StrBuffer tmp;
-                    const char* def = pi->getMetaStringValue(tmp,"default") ? tmp.str() : "";
-
-                    int cols = pi->getMetaInt("cols", isDate ? 20 : 50);
-                                        indentOutf("form.appendf(\"  <tr><td><b>%s: </b></td><td><input type=\\\"%s\\\" name=\\\"%%s\\\" size=\\\"%d\\\" value=\\\"%s\\\" />\", extfix.str());\n", label.str(), inputType, cols, def);
-                    if (isDate)
-                        indentOutf("form.append(\"<a href=\\\"javascript:show_calendar('%s');\\\"><img src=\\\"files_/img/cal.gif\\\" width=\\\"16\\\" height=\\\"16\\\" border=\\\"0\\\" alt=\\\"Pick Date\\\"/><br/>\");\n", pi->name);
-                    indentOuts("form.append(\"</td></tr>\\n\");\n");
-                }
-            }
-        }
-        if (hasMapInfo)
-            indentOuts(-1,"}\n");
-    }
-
-    indentReset(1);
-    indentOuts("if (includeFormTag) {\n");
-    indentOuts(1,"form.append(\"<tr><td></td><td><input type=\\\"submit\\\" value=\\\"Submit\\\" name=\\\"S1\\\" />\");\n");
-    indentOuts("form.append(\" &nbsp; <input type=\\\"reset\\\" value=\\\"Clear\\\"/> </td> </tr>\");\n");
-    indentOuts(-1,"}\n");
-
-    indentOuts("form.append(\"</table>\");\n");
-    indentOuts("if (includeFormTag)\n");
-    indentOuts(1,"form.append(\"</form>\");\n");
-    indentOuts(-1,"return form;\n");
-    indentOuts(-1,"}\n");
-
-    //method ==> serializeHtml
-    outf("\nStringBuffer &C%s::serializeHtml(IEspContext &context, const char *serv, const char *method, StringBuffer &html)\n", name_);
-    outs("{\n");
-    if (getMetaInt("serialize_html"))
-    {
-        outs("\thtml.append(\"<p align=\\\"left\\\">\");\n");
-
-        if (contentVar)
-        {
-            if (!(contentVar->flags & PF_TEMPLATE))
-            {
-                if (contentVar->typname!=NULL && strcmp(contentVar->typname, "EspResultSet")==0)
-                {
-                    outf("\thtml.appendf(\"<br/><b>%s: </b><br/>\");\n", contentVar->name);
-                    outf("\tEspHttpBinding::formatHtmlResultSet(context, serv, method, m_%s->str(), html);", contentVar->name);
-                }
-                else if (contentVar->typname==NULL || strcmp(contentVar->typname, "binary")!=0)
-                {
-                    outf("\thtml.appendf(\"<br/><b>%s: </b><br/><input type=\\\"text\\\" name=\\\"%s\\\" size=\\\"50\\\" readonly=\\\"1\\\" value=\\\"\").append(m_%s.getValue()).append(\"\\\"/>\");\n", contentVar->name, contentVar->name, contentVar->name);
-                }
-            }
-        }
-        else
-        {
-            for (pi=getParams();pi!=NULL;pi=pi->next)
-            {
-                if (!(pi->flags & PF_TEMPLATE) && (pi->kind!=TK_ESPSTRUCT))
-                {
-                    if (pi->typname!=NULL && strcmp(pi->typname, "EspResultSet")==0)
-                    {
-                        outf("\thtml.appendf(\"<br/><b>%s: </b><br/>\");\n", pi->name);
-                        outf("\tEspHttpBinding::formatHtmlResultSet(context, serv, method, m_%s->str(), html);", pi->name);
-                    }
-                    else if (pi->typname==NULL || strcmp(pi->typname, "binary")!=0)
-                    {
-                        outf("\thtml.appendf(\"<br/><b>%s: </b><br/><input type=\\\"text\\\" name=\\\"%s\\\" size=\\\"50\\\" readonly=\\\"1\\\" value=\\\"\").append(m_%s.getValue()).append(\"\\\"/>\");\n", pi->name, pi->name, pi->name);
-                    }
-                }
-            }
-        }
-
-        outs("\thtml.append(\"</p>\");\n");
-    }
-    outs("\treturn html;\n");
-    outs("}\n");
-
 
     //method ==> serialize (IRpcMessage&)
     outf("\nvoid C%s::serialize(IRpcMessage& rpc_resp)\n{\n", name_);
@@ -3988,9 +3169,7 @@ void EspMessageInfo::write_esp()
         outf("\tdouble clientVer = ctx ? ctx->getClientVersion() : -1;\n");
     }
 
-#if 1
     // not respecting nil_remove: backward compatible
-
     for (pi=getParams();pi!=NULL;pi=pi->next)
     {
         if (pi->getMetaInt("attribute"))
@@ -4182,232 +3361,6 @@ void EspMessageInfo::write_esp()
         free(uname);
     }
 
-#else
-    // respect nil_remove: may cause backward compatibility problem
-
-    bool nilRemove = getMetaInt("nil_remove", 0)!=0;
-
-    indentReset(1);
-    for (pi=getParams();pi!=NULL;pi=pi->next)
-    {
-        char *uname=strdup(pi->name);
-        *uname = upperchar(*uname);
-
-        if (pi->hasMapInfo())
-            pi->write_mapinfo_check(1,"ctx");
-
-        if (pi->flags & PF_TEMPLATE) // array
-        {
-            indentOutf("{\n");
-            indentInc(1);
-            if (pi->isPrimitiveArray())
-            {
-                const char *item_tag = pi->getMetaString("item_tag", "Item");
-                const char *type = pi->getArrayImplType();
-                indentOutf("%s& v = src.get%s();\n",type,uname);
-                indentOutf("int size = v.length();\n");
-                if (nilRemove)
-                {
-                    indentOutf("if (size>0)\n");
-                    indentOutf1(1,"buffer.append(\"<%s>\");\n", pi->getXmlTag());
-                }
-                else
-                    indentOutf("buffer.append(\"<%s>\");\n", pi->getXmlTag());
-                indentOuts("for (int i=0;i<size;i++)\n");
-
-                const char* fmt;
-                switch(pi->kind)
-                {
-                case TK_BOOL:
-                case TK_SHORT:
-                case TK_INT: fmt = "d"; break;
-                case TK_UNSIGNED: fmt = "u"; break;
-                case TK_LONG: fmt = "ld"; break;
-                case TK_UNSIGNEDLONG: fmt = "lu"; break;
-                case TK_FLOAT:
-                case TK_DOUBLE: fmt = "g"; break;
-                case TK_null:
-                case TK_CHAR: fmt = "s"; break;
-                default:
-                    {
-                        char buf[128];
-                        sprintf(buf,"Unhandled array type: %s (%s)", getTypeKindName(pi->kind), name_);
-                        yyerror(buf);
-                    }
-                }
-
-                indentOutf1(1,"buffer.appendf(\"<%s>%%%s</%s>\",v.item(i));\n",item_tag,fmt,item_tag);
-                if (nilRemove)
-                {
-                    indentOutf("if (size>0)\n");
-                    indentOutf1(1,"buffer.append(\"</%s>\");\n", pi->getXmlTag());
-                }
-                else
-                    indentOutf("buffer.append(\"</%s>\");\n", pi->getXmlTag());
-            }
-            else if (pi->typname)
-            {
-                indentOutf("IArrayOf<IConst%s>& v = src.get%s();\n",pi->typname,uname);
-                indentOuts("int size = v.length();\n");
-                const char *item_tag = pi->getMetaString("item_tag", pi->typname);
-                if (nilRemove)
-                {
-                    indentOutf("if (size>0)\n");
-                    indentOutf1(1,"buffer.append(\"<%s>\");\n", pi->getXmlTag());
-                }
-                else
-                    indentOutf("buffer.append(\"<%s>\");\n", pi->getXmlTag());
-                indentOutf("for (int i=0;i<size;i++)\n");
-                indentOutf("{\n");
-                indentOutf(1,"buffer.append(\"<%s>\");\n",item_tag);
-                indentOutf("C%s::serializer(ctx,v.item(i),buffer,false);\n",pi->typname);
-                indentOutf("buffer.append(\"</%s>\");\n",item_tag);
-                indentOutf(-1,"}\n");
-                if (nilRemove)
-                {
-                    indentOutf("if (size>0)\n");
-                    indentOutf1(1,"buffer.append(\"</%s>\");\n", pi->getXmlTag());
-                }
-                else
-                    indentOutf("buffer.append(\"</%s>\");\n", pi->getXmlTag());
-            }
-            else
-            {
-                indentOutf("**** TODO: unhandled array: type=%s, name=%s, xsd-type=%s\n", pi->typname, uname, pi->getXsdType());
-            }
-            indentOutf(-1,"}\n");
-        }
-        else if (pi->kind == TK_ESPSTRUCT)
-        {
-            indentOutf("{\n");
-            indentInc(1);
-            if (nilRemove)
-            {
-                indentOutf("StringBuffer tmp;\n");
-                indentOutf("C%s::serializer(ctx,src.get%s(), tmp, false);\n", pi->typname, uname);
-                indentOutf("if (tmp.length()>0)\n");
-                const char* tag = pi->getXmlTag();
-                indentOutf1(1,"buffer.appendf(\"<%s>%%s</%s>\",tmp.str());\n", tag, tag);
-            }
-            else
-            {
-                indentOutf("buffer.append(\"<%s>\");\n", pi->getXmlTag());
-                indentOutf("C%s::serializer(ctx,src.get%s(), buffer, false);\n", pi->typname, uname);
-                indentOutf("buffer.append(\"</%s>\");\n", pi->getXmlTag());
-            }
-            indentOutf(-1,"}\n");
-        }
-        else
-        {
-            esp_xlate_info* info = esp_xlat(pi);
-            switch(info->access_kind)
-            {
-            case TK_CHAR:
-                indentOuts("{\n");
-                indentOutf(1,"const char* s = src.get%s();\n", uname);
-                if (nilRemove)
-                {
-                    indentOutf("if (s && *s)\n");
-                    indentInc(1);
-                }
-
-                if (!getMetaInt("encode",1))
-                {
-                    indentOutf("buffer.appendf(\"<%s>%%s</%s>\",s);\n",pi->name,pi->name);
-                }
-                else
-                {
-                    if (nilRemove)
-                        indentOutf1(-1,"{\n");
-                    indentOutf("buffer.append(\"<%s>\");\n", pi->getXmlTag());
-                    indentOutf("encodeUtf8XML(s,buffer);\n");
-                    indentOutf("buffer.append(\"</%s>\");\n", pi->getXmlTag());
-                    if (nilRemove)
-                        indentOutf1(-1,"}\n");
-                }
-                if (nilRemove)
-                    indentInc(-1);
-                indentOuts(-1,"}\n");
-                break;
-
-            case TK_INT:
-            case TK_LONG:
-            case TK_SHORT:
-                indentOuts("{\n");
-                indentOutf(1,"%s n = src.get%s();\n", esp_xlat(pi)->access_type, uname);
-                if (nilRemove)
-                {
-                    indentOuts("if (n)\n");
-                    indentInc(1);
-                }
-                indentOutf("buffer.appendf(\"<%s>%%d</%s>\", n);\n", pi->name,pi->name);
-                if (nilRemove)
-                    indentInc(-1);
-                indentOuts(-1,"}\n");
-                break;
-
-            case TK_BOOL:
-                indentOuts("{\n");
-                indentOutf(1,"%s b = src.get%s();\n", esp_xlat(pi)->access_type, uname);
-                if (nilRemove)
-                {
-                    indentOuts("if (b)\n");
-                    indentInc(1);
-                }
-                const char* tag = pi->getXmlTag();
-                indentOutf("buffer.append(\"<%s>1</%s>\");\n", tag,tag);
-                if (nilRemove)
-                    indentInc(-1);
-                indentOuts(-1,"}\n");
-                break;
-
-            default:
-                if (pi->kind == TK_STRUCT && info->eam_type == EAM_jmbin) // binary
-                {
-                    //TODO: should we encode binary data?
-                    indentOuts("{\n");
-                    if (nilRemove)
-                    {
-                        indentOutf(1,"StringBuffer tmp;\n");
-                        indentOutf("JBASE64_Encode(src.get%s().toByteArray(), src.get%s().length(), tmp, true);\n", uname, uname);
-                        indentOutf("if (tmp.length()>0)\n");
-                        const char* tag = pi->getXmlTag();
-                        indentOutf1(1,"buffer.appendf(\"<%s>%%s</%s>\",tmp.str());\n", tag,tag);
-                    }
-                    else
-                    {
-                        indentOutf(1,"buffer.append(\"<%s>\");\n", pi->getXmlTag());
-                        indentOutf("JBASE64_Encode(src.get%s().toByteArray(), src.get%s().length(), buffer, ture);\n", uname, uname);
-                        indentOutf("buffer.append(\"</%s>\");\n", pi->getXmlTag());
-                    }
-                    indentOuts(-1,"}\n");
-                }
-                else
-                {
-                    indentOuts("{\n");
-                    if (nilRemove)
-                    {
-                        indentOutf(1,"//*** default kind: %s; type=%s, name=%s\n", getTypeKindName(pi->kind), pi->typname, uname);
-                        indentOutf("StringBuffer tmp(src.get%s());\n",uname);
-                        indentOutf("if (tmp.length()>0)\n");
-                        indentOutf1(1,"buffer.appendf(\"<%s>%%s</%s>\",tmp.str());\n", pi->name,pi->name);
-                    }
-                    else
-                    {
-                        indentOutf(1,"//*** default kind: %s; type=%s, name=%s\n", getTypeKindName(pi->kind), pi->typname, uname);
-                        indentOutf("buffer.append(\"<%s>\");\n", pi->getXmlTag());
-                        indentOutf("buffer.append(src.get%s());\n", uname);
-                        indentOutf("buffer.append(\"</%s>\");\n", pi->getXmlTag());
-                    }
-                    indentOuts(-1,"}\n");
-                }
-                break;
-            }
-        }
-
-        free(uname);
-    }
-#endif
 
     outf("\tif (keepRootTag)\n\t\tbuffer.append(\"</%s>\");\n", name_);
     outs("}\n");
@@ -4993,11 +3946,8 @@ void EspServInfo::write_esp_binding_ipp()
     //method ==> processRequest
     outs("\tvirtual int processRequest(IRpcMessage* rpc_call, IRpcMessage* rpc_response);\n");
 
-    //method ==> getXsdDefinition
-    outs("\tint getXsdDefinition(IEspContext &context, CHttpRequest* request, StringBuffer &content, const char *service, const char *method, bool mda);\n");
-
-    //method ==> getMethodHtmlForm
-    outs("\tvirtual int getMethodHtmlForm(IEspContext &context, CHttpRequest* request, const char *serv, const char *method, StringBuffer &page, bool bIncludeFormTag);\n");
+    // method ===> getServiceXmlFilename
+    outs("\tint getServiceXmlFilename(StringBuffer &filename);\n");
 
     //method ==> getQualifiedNames
     outs("\tint getQualifiedNames(IEspContext& ctx, MethodInfoArray & methods);\n");
@@ -5021,7 +3971,6 @@ void EspServInfo::write_esp_binding_ipp()
     outs("\tvirtual int onGetForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method);\n");
 
     //Method ==> onGetXForm
-    //if (getMetaInt("use_new_form",0))
     outs("\tvirtual int onGetXForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method);\n");
 
     //Method ==> supportGeneratedForms
@@ -5117,7 +4066,6 @@ void EspServInfo::write_esp_binding_ipp()
 void EspServInfo::write_esp_binding(const char *packagename)
 {
     EspMethodInfo *mthi=NULL;
-    int useMethodName = getMetaInt("use_method_name", 0);
     StrBuffer wsdlVer;
     bool hasVersion = getMetaVerInfo(tags,"version",wsdlVer);
     if (!hasVersion)
@@ -5136,7 +4084,6 @@ void EspServInfo::write_esp_binding(const char *packagename)
     outf("{\n");
     outf("\tinit_strings();\n");
     outf("\tsetWsdlVersion(%s);\n", wsdlVer.str());
-    outf("\tserviceXmlFilename.append(\"%s.xml\");\n", packagename);
     outf("}\n");
 
     outf("\nC%sSoapBinding::C%sSoapBinding(IPropertyTree* cfg, const char *bindname, const char *procname, http_soap_log_level level):CHttpSoapBinding(cfg, bindname, procname, level)\n", name_, name_);
@@ -5144,7 +4091,6 @@ void EspServInfo::write_esp_binding(const char *packagename)
     outf("\tinit_strings();\n");
     outf("\tinit_metrics();\n");
     outf("\tsetWsdlVersion(%s);\n", wsdlVer.str());
-    outf("\tserviceXmlFilename.append(\"%s.xml\");\n", packagename);
     outf("}\n");
 
     outf("\nvoid C%sSoapBinding::init_strings()\n", name_);
@@ -5360,89 +4306,12 @@ void EspServInfo::write_esp_binding(const char *packagename)
     outs("\treturn -1;\n");
     outs("}\n");
 
-    //method ==> getXsdDefinition  packagename is the base ecm filename
-    outf("\nint C%sSoapBinding::getXsdDefinition(IEspContext &context, CHttpRequest* request, StringBuffer &content, const char *service, const char *method, bool mda)\n", name_);
+
+    //method ==> getServiceXmlFilename for xsd and wsdl transformations
+    outf("\nint C%sSoapBinding::getServiceXmlFilename(StringBuffer &filename)\n", name_);
     outs("{\n");
-
-    outs("\tBoolHash added;\n");
-
-
-    // version
-    if (hasVersion)
-    {
-        outs("\tif (context.getClientVersion()<=0)\n");
-        outf("\t\tcontext.setClientVersion(%s);\n\n", wsdlVer.str());
-    }
-    outs("\tDBGLOG(\"Client version: %g\", context.getClientVersion());\n");
-
-    // getXSDDefinition(StringBuffer &content, const char *packageName, const char *serviceName, double version, const char *method);
-//    outf( "getXSDDefinition(content, \"%s\", \"%s\", context.getClientVersion(), method);\n\n", packagename, name_);
-
-    indentReset(1);
-    outf(1, "bool fullservice = (!Utils::strcasecmp(service, \"%s\"));\n", name_);
-    indentOuts("bool allMethods = (method==NULL || *method==0);\n");
-    bool needPropsDeclare = true;
-    bool needAccessFlagDeclare = true;
-    for (mthi=methods;mthi!=NULL;mthi=mthi->next)
-    {
-        const char *requestName = (useMethodName) ? mthi->getName() : mthi->getReq();
-        const char *optional=mthi->getMetaString("optional", NULL);
-        const char *access=mthi->getMetaString("access", NULL);
-
-        if (optional)
-        {
-            if (needPropsDeclare)
-            {
-                indentOuts("IProperties *props = request->queryParameters();\n");
-                needPropsDeclare = false;
-            }
-            indentOutf("if (props && props->hasProp(%s)) {\n", optional);
-            indentInc(1);
-        }
-        if (access)
-        {
-            if (needAccessFlagDeclare)
-            {
-                indentOuts("SecAccessFlags acc;\n");
-                needAccessFlagDeclare = false;
-            }
-            indentOutf("if (context.authorizeFeature(%s, acc) && acc>=SecAccess_Read) {\n", access);
-            indentInc(1);
-        }
-
-        indentOutf("if ((allMethods&&(fullservice||isMethodInSubService(context, service, \"%s\"))) || Utils::strcasecmp(method, \"%s\")==0)\n", mthi->getName(), mthi->getName());
-        indentOuts("{\n");
-        indentInc(1);
-        bool hasMap = mthi->write_mapinfo_check("context");
-        indentOutf("C%s::getMapInfo(context.queryMapInfo());\n", mthi->getReq());
-        indentOutf("C%s::getMapInfo(context.queryMapInfo());\n", mthi->getResp());
-        indentOutf("C%s::getXsdDefinition(context, request, \"%s\", content, added);\n", mthi->getReq(), requestName);
-        indentOutf("C%s::getXsdDefinition(context, request, content, added);\n", mthi->getResp());
-        if (hasMap)
-            indentOuts(-1,"}\n");
-        indentOuts(-1,"}\n");
-        if (access)
-            indentOuts(-1,"}\n");
-        if (optional)
-            indentOuts(-1,"}\n");
-    }
-    indentOuts("return 0;\n");
-    indentOuts(-1,"}\n");
-
-    //method ==> getMethodHtmlForm
-    outf("\nint C%sSoapBinding::getMethodHtmlForm(IEspContext &context, CHttpRequest* request, const char *serv, const char *method, StringBuffer &page, bool bIncludeFormTag)\n", name_);
-    outs("{\n");
-
-    outf("\tDBGLOG(\"Client version: %%g\", context.getClientVersion());\n");
-
-    for (mthi=methods;mthi!=NULL;mthi=mthi->next)
-    {
-        outf("\tif (Utils::strcasecmp(method, \"%s\")==0)\n", mthi->getName());
-        outs("\t{\n");
-        outf("\t\tC%s::getHtmlForm(context, request, serv, method, page);\n", mthi->getReq());
-        outs("\t}\n");
-    }
-    outs("\treturn 0;\n");
+    outf("\tfilename.append(\"%s.xml\");\n", packagename);
+    outs("\treturn 1;\n");
     outs("}\n");
 
     //method ==> getQualifiedNames
@@ -5980,7 +4849,7 @@ void EspServInfo::write_esp_service_ipp()
     outf("\timplements IEsp%s\n", name_);
     outs("{\n");
     outs("private:\n");
-    outs("\tIEspContainer* m_container;\n");
+    outs("\tIEspContainer* m_container = nullptr;\n");
     outs("public:\n");
     outs("\tIMPLEMENT_IINTERFACE;\n\n");
     outf("\tC%s(){}\n\tvirtual ~C%s(){}\n", name_, name_);
@@ -6035,13 +4904,11 @@ void EspServInfo::write_esp_client_ipp()
     outs("\tStringBuffer soap_url;\n");
     //dom
 
-
     outs("\tStringBuffer soap_userid;\n");
     outs("\tStringBuffer soap_password;\n");
     outs("\tStringBuffer soap_realm;\n");
     outs("\tStringBuffer soap_action;\n");
     outs("\tlong soap_reqid = 0;\n");
-
 
     outs("\npublic:\n");
     outs("\tIMPLEMENT_IINTERFACE;\n\n");

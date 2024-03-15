@@ -155,11 +155,11 @@ void testEnqueue(unsigned nthreads,const char *qname)
                 {
                     unsigned start = msTick();
                     if (!partfile->remove()&&(copy==0)) // only warn about missing primary files
-                        LOG(MCwarning, unknownJob, "Failed to remove file part %s from %s", partfile->queryFilename(),rfn.queryEndpoint().getEndpointHostText(eps).str());
+                        LOG(MCwarning, "Failed to remove file part %s from %s", partfile->queryFilename(),rfn.queryEndpoint().getEndpointHostText(eps).str());
                     else {
                         unsigned t = msTick()-start;
                         if (t>5*1000) 
-                            LOG(MCwarning, unknownJob, "Removing %s from %s took %ds", partfile->queryFilename(), rfn.queryEndpoint().getEndpointHostText(eps).str(), t/1000);
+                            LOG(MCwarning, "Removing %s from %s took %ds", partfile->queryFilename(), rfn.queryEndpoint().getEndpointHostText(eps).str(), t/1000);
                     }
 
                 }

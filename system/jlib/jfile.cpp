@@ -2287,7 +2287,7 @@ void CCheckingFileIO::report(const char * format, ...)
 {
     va_list args;
     va_start(args, format);
-    VALOG(MCdebugError, unknownJob, format, args);
+    VALOG(MCdebugError, format, args);
     va_end(args);
     if (!traced)
     {

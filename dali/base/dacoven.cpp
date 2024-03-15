@@ -254,7 +254,7 @@ public:
         if (server)
         {
             _ServerVersion.set(ServerVersion);
-            LOG(MCdebugProgress, unknownJob, "Server Version = %s, required minimum client version %s", ServerVersion, MinClientVersion);
+            LOG(MCdebugProgress, "Server Version = %s, required minimum client version %s", ServerVersion, MinClientVersion);
         }
         else
         {

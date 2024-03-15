@@ -89,7 +89,7 @@ bool processPartitionCommand(ISocket * masterSocket, MemoryBuffer & msg, MemoryB
 
     StringBuffer text;
     fullPath.getRemotePath(text);
-    LOG(MCdebugProgress, unknownJob, "Process partition %d(%s)", whichInput, text.str());
+    LOG(MCdebugProgress, "Process partition %d(%s)", whichInput, text.str());
     Owned<IFormatProcessor> processor = createFormatProcessor(srcFormat, tgtFormat, true);
     Owned<IOutputProcessor> target = createOutputProcessor(tgtFormat);
     processor->setTarget(target);

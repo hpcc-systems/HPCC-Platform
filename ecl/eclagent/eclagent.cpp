@@ -128,7 +128,7 @@ static const char * getResultText(StringBuffer & s, const char * stepname, unsig
 
 void logGetResult(const char * name, const char * stepname, unsigned sequence)
 {
-    LOG(MCgetresult, unknownJob, "getResult%s(%s,%d)", name, nullText(stepname), sequence);
+    LOG(MCgetresult, "getResult%s(%s,%d)", name, nullText(stepname), sequence);
 }
 
 //=======================================================================================
@@ -725,7 +725,7 @@ IConstWUResult *EclAgent::getResultForGet(const char *name, unsigned sequence)
 
 IConstWUResult *EclAgent::getExternalResult(const char * wuid, const char *name, unsigned sequence)
 {
-    LOG(MCsetresult, unknownJob, "EclAgent::getExternalResult(wuid:'%s',name='%s',sequence:%d)", nullText(wuid), nullText(name), sequence);
+    LOG(MCsetresult, "EclAgent::getExternalResult(wuid:'%s',name='%s',sequence:%d)", nullText(wuid), nullText(name), sequence);
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
     Owned<IConstWorkUnit> externalWU = factory->openWorkUnit(wuid);
     if (externalWU)
@@ -774,7 +774,7 @@ void EclAgent::outputFormattedResult(const char * name, unsigned sequence, bool 
 
 void EclAgent::setResultInt(const char * name, unsigned sequence, __int64 val, unsigned size)
 {
-    LOG(MCsetresult, unknownJob, "setResultInt(%s,%d,%" I64F "d)", nullText(name), sequence, val);
+    LOG(MCsetresult, "setResultInt(%s,%d,%" I64F "d)", nullText(name), sequence, val);
     WorkunitUpdate w = updateWorkUnit();
     Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
     if (r)
@@ -798,7 +798,7 @@ void EclAgent::setResultInt(const char * name, unsigned sequence, __int64 val, u
 
 void EclAgent::setResultUInt(const char * name, unsigned sequence, unsigned __int64 val, unsigned size)
 {
-    LOG(MCsetresult, unknownJob, "setResultUInt(%s,%d,%" I64F "u)", nullText(name), sequence, val);
+    LOG(MCsetresult, "setResultUInt(%s,%d,%" I64F "u)", nullText(name), sequence, val);
     WorkunitUpdate w = updateWorkUnit();
     Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
     if (r)
@@ -823,7 +823,7 @@ void EclAgent::setResultUInt(const char * name, unsigned sequence, unsigned __in
 void EclAgent::setResultReal(const char *name, unsigned sequence, double val)
 {
     // Still a bit of a mess - variables vs results
-    LOG(MCsetresult, unknownJob, "setResultReal(%s,%d,%6f)", nullText(name), sequence, val);
+    LOG(MCsetresult, "setResultReal(%s,%d,%6f)", nullText(name), sequence, val);
     WorkunitUpdate w = updateWorkUnit();
     Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
     if (r)
@@ -1123,7 +1123,7 @@ void EclAgent::setResultData(const char * stepname, unsigned sequence, int len, 
 
 void EclAgent::doSetResultString(type_t type, const char *name, unsigned sequence, int len, const char *val)
 {
-    LOG(MCsetresult, unknownJob, "setResultString(%s,%d,(%d bytes))", nullText(name), sequence, len);
+    LOG(MCsetresult, "setResultString(%s,%d,(%d bytes))", nullText(name), sequence, len);
     WorkunitUpdate w = updateWorkUnit();
     Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
     if (r)
@@ -1148,7 +1148,7 @@ void EclAgent::doSetResultString(type_t type, const char *name, unsigned sequenc
 //used to output a row
 void EclAgent::setResultRaw(const char * name, unsigned sequence, int len, const void *val)
 {
-    LOG(MCsetresult, unknownJob, "setResultRaw(%s,%d,(%d bytes))", nullText(name), sequence, len);
+    LOG(MCsetresult, "setResultRaw(%s,%d,(%d bytes))", nullText(name), sequence, len);
     WorkunitUpdate w = updateWorkUnit();
     Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
     if (r)
@@ -1172,7 +1172,7 @@ void EclAgent::setResultRaw(const char * name, unsigned sequence, int len, const
 
 void EclAgent::setResultSet(const char * name, unsigned sequence, bool isAll, size32_t len, const void *val, ISetToXmlTransformer *xform)
 {
-    LOG(MCsetresult, unknownJob, "setResultSet(%s,%d)", nullText(name), sequence);
+    LOG(MCsetresult, "setResultSet(%s,%d)", nullText(name), sequence);
     WorkunitUpdate w = updateWorkUnit();
     Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
     if (r)
@@ -1232,7 +1232,7 @@ void EclAgent::setResultSet(const char * name, unsigned sequence, bool isAll, si
 
 void EclAgent::setResultUnicode(const char * name, unsigned sequence, int len, UChar const * val)
 {
-    LOG(MCsetresult, unknownJob, "setResultUnicode(%s,%d)", nullText(name), sequence);
+    LOG(MCsetresult, "setResultUnicode(%s,%d)", nullText(name), sequence);
 
     WorkunitUpdate w = updateWorkUnit();
     Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
@@ -1260,7 +1260,7 @@ void EclAgent::setResultUnicode(const char * name, unsigned sequence, int len, U
 
 void EclAgent::setResultBool(const char *name, unsigned sequence, bool val)
 {
-    LOG(MCsetresult, unknownJob, "setResultBool(%s,%d,%s)", nullText(name), sequence, val ? "true" : "false");
+    LOG(MCsetresult, "setResultBool(%s,%d,%s)", nullText(name), sequence, val ? "true" : "false");
 
     WorkunitUpdate w = updateWorkUnit();
     Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
@@ -1285,7 +1285,7 @@ void EclAgent::setResultBool(const char *name, unsigned sequence, bool val)
 
 void EclAgent::setResultDecimal(const char *name, unsigned sequence, int len, int precision, bool isSigned, const void *val)
 {
-    LOG(MCsetresult, unknownJob, "setResultDecimal(%s,%d)", nullText(name), sequence);
+    LOG(MCsetresult, "setResultDecimal(%s,%d)", nullText(name), sequence);
     WorkunitUpdate w = updateWorkUnit();
     Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
     if (r)
@@ -1314,7 +1314,7 @@ void EclAgent::setResultDecimal(const char *name, unsigned sequence, int len, in
 
 void EclAgent::setResultDataset(const char * name, unsigned sequence, size32_t len, const void *val, unsigned numRows, bool extend)
 {
-    LOG(MCsetresult, unknownJob, "setResultDataset(%s,%d)", nullText(name), sequence);
+    LOG(MCsetresult, "setResultDataset(%s,%d)", nullText(name), sequence);
     WorkunitUpdate w = updateWorkUnit();
     Owned<IWUResult> result = updateWorkUnitResult(w, name, sequence);
     if (!result)
@@ -1866,11 +1866,11 @@ void EclAgent::doProcess()
     CCycleTimer elapsedTimer;
     try
     {
-        LOG(MCrunlock, unknownJob, "Waiting for workunit lock");
+        LOG(MCrunlock, "Waiting for workunit lock");
         unsigned eclccCodeVersion;
         {
             WorkunitUpdate w = updateWorkUnit();
-            LOG(MCrunlock, unknownJob, "Obtained workunit lock");
+            LOG(MCrunlock, "Obtained workunit lock");
             if (w->hasDebugValue("traceLevel"))
                 traceLevel = w->getDebugValueInt("traceLevel", 10);
             w->setTracingValue("EclAgentBuild", hpccBuildInfo.buildTag);
@@ -2266,9 +2266,9 @@ void EclAgent::runProcess(IEclProcess *process)
         debugContext->checkBreakpoint(DebugStateFinished, NULL, NULL);
         debugContext->debugTerminate();
     }
-    LOG(MCrunlock, unknownJob, "Releasing persist read locks");
+    LOG(MCrunlock, "Releasing persist read locks");
     persistReadLocks.kill();
-    LOG(MCrunlock, unknownJob, "Released persist read locks");
+    LOG(MCrunlock, "Released persist read locks");
 }
 
 unsigned EclAgent::getWorkflowIdDeprecated()
@@ -2301,7 +2301,7 @@ IRemoteConnection *EclAgentWorkflowMachine::startPersist(const char * logicalNam
     {
         persistLock = persistCache.getValue(logicalName);
         persistCache.setValue(logicalName, NULL);
-        LOG(MCrunlock, unknownJob, "Decached persist read lock for %s", logicalName);
+        LOG(MCrunlock, "Decached persist read lock for %s", logicalName);
     }
     else
         persistLock = agent.startPersist(logicalName);
@@ -2383,7 +2383,7 @@ void EclAgentWorkflowMachine::prelockPersists()
         char const * name = names.item(idx);
         Owned<IRemoteConnection> persistLock = agent.startPersist(name);
         persistCache.setValue(name, persistLock);
-        LOG(MCrunlock, unknownJob, "Cached persist read lock for %s", name);
+        LOG(MCrunlock, "Cached persist read lock for %s", name);
     }
     persistsPrelocked = true;
 }
@@ -2424,16 +2424,16 @@ void EclAgentWorkflowMachine::obtainRunlock()
 {
     StringBuffer xpath;
     xpath.append("/WorkUnitRunLocks/").append(agent.wuid.get());
-    LOG(MCrunlock, unknownJob, "Waiting for run lock");
+    LOG(MCrunlock, "Waiting for run lock");
     runlock.setown(querySDS().connect(xpath.str(), myProcessSession(), RTM_CREATE | RTM_LOCK_WRITE | RTM_DELETE_ON_DISCONNECT, INFINITE));
-    LOG(MCrunlock, unknownJob, "Obtained run lock");
+    LOG(MCrunlock, "Obtained run lock");
     if(!runlock)
         agent.fail(0, "EclAgent could not get a lock to run the workunit");
 }
 
 void EclAgentWorkflowMachine::releaseRunlock()
 {
-    LOG(MCrunlock, unknownJob, "Releasing run lock");
+    LOG(MCrunlock, "Releasing run lock");
     if(runlock && queryDaliServerVersion().compare("1.3") < 0)
         runlock->close(true);
     runlock.clear();
@@ -2448,7 +2448,7 @@ IRemoteConnection *EclAgentWorkflowMachine::obtainCriticalLock(const char *name)
 
 void EclAgentWorkflowMachine::releaseCriticalLock(IRemoteConnection *criticalLock)
 {
-    LOG(MCrunlock, unknownJob, "Releasing critical lock");
+    LOG(MCrunlock, "Releasing critical lock");
     if(criticalLock && queryDaliServerVersion().compare("1.3") < 0)
         criticalLock->close(true);
 }
@@ -2546,7 +2546,7 @@ void EclAgentWorkflowMachine::doExecutePersistItem(IRuntimeWorkflowItem & item)
     {
         persistLock.set(persistCache.getValue(logicalName));
         persistCache.setValue(logicalName, NULL);
-        LOG(MCrunlock, unknownJob, "Decached persist read lock for %s", logicalName);
+        LOG(MCrunlock, "Decached persist read lock for %s", logicalName);
     }
     else
         persistLock.setown(agent.startPersist(logicalName));
@@ -2804,7 +2804,7 @@ bool EclAgent::checkPersistUptoDate(IRuntimeWorkflowItem & item, const char * lo
 
 bool EclAgent::changePersistLockMode(IRemoteConnection *persistLock, unsigned mode, const char * name, bool repeat)
 {
-    LOG(MCrunlock, unknownJob, "Waiting to change persist lock to %s for %s", (mode == RTM_LOCK_WRITE) ? "write" : "read", name);
+    LOG(MCrunlock, "Waiting to change persist lock to %s for %s", (mode == RTM_LOCK_WRITE) ? "write" : "read", name);
     //When converting a read lock to a write lock so the persist can be rebuilt hold onto the lock as short as
     //possible.  Otherwise lots of workunits each trying to convert read locks to write locks will mean
     //that the read lock is never released by all the workunits at the same time, so no workunit can progress.
@@ -2850,7 +2850,7 @@ IRemoteConnection *EclAgent::getPersistReadLock(const char * logicalName)
     for (const char * cur = name;*cur;cur++)
         xpath.append(isalnum(*cur) ? *cur : '_');
 
-    LOG(MCrunlock, unknownJob, "Waiting for persist read lock for %s", name);
+    LOG(MCrunlock, "Waiting for persist read lock for %s", name);
     Owned<IRemoteConnection> persistLock;
     for (;;)
     {
@@ -2972,7 +2972,7 @@ bool EclAgent::alreadyLockedPersist(const char * persistName)
 
 void EclAgent::finishPersist(const char * persistName, IRemoteConnection *persistLock)
 {
-    LOG(MCrunlock, unknownJob, "Finished persists - add to read lock list");
+    LOG(MCrunlock, "Finished persists - add to read lock list");
     processedPersists.append(persistName);
     persistReadLocks.append(*persistLock);
 }
@@ -3289,7 +3289,7 @@ void EclAgent::reportProgress(const char *progress, unsigned flags)
     if (progress)
     {
         // MORE - think about how to best do this
-        LOG(MCdebugProgress, unknownJob,"%s", progress);
+        LOG(MCdebugProgress, "%s", progress);
 //      WorkunitUpdate wu = updateWorkUnit();
 //      wu->reportProgress(progress, flags);
     }

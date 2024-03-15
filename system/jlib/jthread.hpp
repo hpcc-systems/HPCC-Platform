@@ -34,17 +34,26 @@
 #endif
 
 // Functions used to reset thread-local context variables, when a threadpool starts
+//NOTE: Currently activeSpan is not linked in the SavedThreadContext.
+//That will not cause any problems as long as the lifetime of the thread executing with that saved span value is less than the lifetime of the span.
+//It would be trivial to use a linked pointer inside the savedthread context, at the expense of a little inefficiency.
+//Revisit when this feature starts being used in anger.
 typedef unsigned __int64 LogMsgJobId;
 interface IContextLogger;
+interface ISpan;
 struct jlib_decl SavedThreadContext
 {
     const IContextLogger * logctx = nullptr;
     LogMsgJobId jobId = (LogMsgJobId)-1;
     TraceFlags traceFlags = queryDefaultTraceFlags();
+    ISpan * activeSpan = nullptr;
 };
 
 extern void restoreThreadContext(const SavedThreadContext & saveCtx);
 extern void saveThreadContext(SavedThreadContext & saveCtx);
+
+extern jlib_decl ISpan * queryThreadedActiveSpan();
+extern jlib_decl ISpan * setThreadedActiveSpan(ISpan * span);
 
 //--------------------------------------------------------------
 

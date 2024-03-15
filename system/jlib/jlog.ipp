@@ -740,16 +740,11 @@ public:
     bool                      flushQueue(unsigned timeout) { if(processor) return processor->flush(timeout); else return true; }
     void                      report(const LogMsgCategory & cat, const char * format, ...) __attribute__((format(printf,3,4)));
     void                      report_va(const LogMsgCategory & cat, const char * format, va_list args) __attribute__((format(printf,3,0)));
-    void                      mreport_direct(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * msg);
-    void                      mreport_va(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, va_list args) __attribute__((format(printf,4,0)));
+    void                      mreport_direct(const LogMsgCategory & cat, const char * msg);
+    void                      mreport_va(const LogMsgCategory & cat, const char * format, va_list args) __attribute__((format(printf,3,0)));
     void                      report(const LogMsgCategory & cat, LogMsgCode code, const char * format, ...) __attribute__((format(printf,4,5)));
     void                      report_va(const LogMsgCategory & cat, LogMsgCode code, const char * format, va_list args) __attribute__((format(printf,4,0)));
     void                      report(const LogMsgCategory & cat, const IException * e, const char * prefix = NULL);
-    void                      report(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, ...) __attribute__((format(printf,4,5)));
-    void                      report_va(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, va_list args) __attribute__((format(printf,4,0)));
-    void                      report(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char * format, ...) __attribute__((format(printf,5,6)));
-    void                      report_va(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char * format, va_list args) __attribute__((format(printf,5,0)));
-    void                      report(const LogMsgCategory & cat, const LogMsgJobInfo & job, const IException * e, const char * prefix = NULL);
     void                      report(const LogMsg & msg) const { if(prefilter.includeCategory(msg.queryCategory())) doReport(msg); }
     bool                      addMonitor(ILogMsgHandler * handler, ILogMsgFilter * filter);
     bool                      addMonitorOwn(ILogMsgHandler * handler, ILogMsgFilter * filter);
@@ -814,7 +809,7 @@ private:
 class DropLogMsg : public LogMsg
 {
 public:
-    DropLogMsg(CLogMsgManager * owner, LogMsgId id, unsigned _count) : LogMsg(dropWarningCategory, id, unknownJob, NoLogMsgCode, "MISSING LOG MESSAGES: ", owner->port, owner->session), count(_count)
+    DropLogMsg(CLogMsgManager * owner, LogMsgId id, unsigned _count) : LogMsg(dropWarningCategory, id,  NoLogMsgCode, "MISSING LOG MESSAGES: ", owner->port, owner->session), count(_count)
     {
         text.append("message queue length exceeded, dropped ").append(count).append(" messages");
     }

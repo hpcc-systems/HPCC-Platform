@@ -670,11 +670,11 @@ public:
             {
                 // Only superfiles required multiple context loggers to track sublevel stats
                 for(unsigned i = 0; i < parts; ++i)
-                    contextLoggers.push_back(new CStatsContextLogger(jhtreeCacheStatistics, thorJob));
+                    contextLoggers.push_back(new CStatsContextLogger(jhtreeCacheStatistics));
             }
             else
             {
-                contextLoggers.push_back(new CStatsContextLogger(jhtreeCacheStatistics, thorJob));
+                contextLoggers.push_back(new CStatsContextLogger(jhtreeCacheStatistics));
             }
         }
     }

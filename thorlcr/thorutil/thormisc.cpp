@@ -144,7 +144,7 @@ void ActPrintLogArgs(const CGraphElementBase *container, const ActLogEnum flags,
         return; // suppress logging child activities unless thorlog_all flag
     StringBuffer res;
     ActPrintLogArgsPrep(res, container, flags, format, args);
-    LOG(logCat, thorJob, "%s", res.str());
+    LOG(logCat, "%s", res.str());
 }
 
 void ActPrintLogArgs(const CGraphElementBase *container, IException *e, const ActLogEnum flags, const LogMsgCategory &logCat, const char *format, va_list args)
@@ -156,7 +156,7 @@ void ActPrintLogArgs(const CGraphElementBase *container, IException *e, const Ac
         res.append(" : ");
         e->errorMessage(res);
     }
-    LOG(logCat, thorJob, "%s", res.str());
+    LOG(logCat, "%s", res.str());
 }
 
 void ActPrintLogEx(const CGraphElementBase *container, const ActLogEnum flags, const LogMsgCategory &logCat, const char *format, ...)
@@ -168,7 +168,7 @@ void ActPrintLogEx(const CGraphElementBase *container, const ActLogEnum flags, c
     va_start(args, format);
     ActPrintLogArgsPrep(res, container, flags, format, args);
     va_end(args);
-    LOG(logCat, thorJob, "%s", res.str());
+    LOG(logCat, "%s", res.str());
 }
 
 void ActPrintLog(const CActivityBase *activity, const char *format, ...)
@@ -213,7 +213,7 @@ void GraphPrintLogArgs(CGraphBase *graph, const ActLogEnum flags, const LogMsgCa
         return; // suppress logging from child graph unless thorlog_all flag
     StringBuffer res;
     GraphPrintLogArgsPrep(res, graph, flags, logCat, format, args);
-    LOG(logCat, thorJob, "%s", res.str());
+    LOG(logCat, "%s", res.str());
 }
 
 void GraphPrintLogArgs(CGraphBase *graph, IException *e, const ActLogEnum flags, const LogMsgCategory &logCat, const char *format, va_list args)
@@ -227,7 +227,7 @@ void GraphPrintLogArgs(CGraphBase *graph, IException *e, const ActLogEnum flags,
         res.append(" : ");
         e->errorMessage(res);
     }
-    LOG(logCat, thorJob, "%s", res.str());
+    LOG(logCat, "%s", res.str());
 }
 
 void GraphPrintLog(CGraphBase *graph, IException *e, const char *format, ...)
@@ -659,12 +659,12 @@ public:
             if (file.isFile()==fileBool::foundYes)
             {
                 if (log)
-                    LOG(MCdebugInfo, thorJob, "Deleting %s", file.queryFilename());
+                    LOG(MCdebugInfo, "Deleting %s", file.queryFilename());
                 try { file.remove(); }
                 catch (IException *e)
                 {
                     if (log)
-                        FLLOG(MCwarning, thorJob, e);
+                        FLLOG(MCwarning, e);
                     e->Release();
                 }
             }
@@ -717,7 +717,7 @@ public:
         catch (IException *e)
         {
             if (log)
-                FLLOG(MCwarning, thorJob, e);
+                FLLOG(MCwarning, e);
             e->Release();
         }
         subDirPath.clear();
@@ -756,7 +756,7 @@ void GetTempFilePath(StringBuffer &name, const char *suffix)
 void SetTempDir(const char *rootTempDir, const char *uniqueSubDir, const char *tempPrefix, bool clearDir)
 {
     TempNameHandler.setTempDir(rootTempDir, uniqueSubDir, tempPrefix, clearDir);
-    LOG(MCdebugProgress, thorJob, "temporary rootTempdir: %s, uniqueSubDir: %s, prefix: %s", rootTempDir, uniqueSubDir, tempPrefix);
+    LOG(MCdebugProgress, "temporary rootTempdir: %s, uniqueSubDir: %s, prefix: %s", rootTempDir, uniqueSubDir, tempPrefix);
 }
 
 void ClearTempDir()
@@ -764,7 +764,7 @@ void ClearTempDir()
     try
     {
         TempNameHandler.clear(true);
-        LOG(MCthorDetailedDebugInfo, thorJob, "temp directory cleared");
+        LOG(MCthorDetailedDebugInfo, "temp directory cleared");
     }
     catch (IException *e)
     {
@@ -812,8 +812,6 @@ void loadCmdProp(IPropertyTree *tree, const char *cmdProp)
     }
 }
 
-LogMsgJobInfo thorJob(UnknownJob, UnknownUser); // configured at job start (in manager and workers)
-
 void ensureDirectoryForFile(const char *fName)
 {
     if (!recursiveCreateDirectoryForFile(fName))
@@ -823,7 +821,7 @@ void ensureDirectoryForFile(const char *fName)
 // Not recommended to be used from slaves as tend to be one or more trying at same time.
 void reportExceptionToWorkunit(IConstWorkUnit &workunit,IException *e, ErrorSeverity severity)
 {
-    LOG(MCwarning, thorJob, e, "Reporting exception to WU");
+    LOG(MCwarning, e, "Reporting exception to WU");
     Owned<IWorkUnit> wu = &workunit.lock();
     if (wu)
     {
@@ -1160,12 +1158,12 @@ void CFifoFileCache::deleteFile(IFile &ifile)
     try 
     {
         if (!ifile.remove())
-            FLLOG(MCoperatorWarning, thorJob, "CFifoFileCache: Failed to remove file (missing) : %s", ifile.queryFilename());
+            FLLOG(MCoperatorWarning, "CFifoFileCache: Failed to remove file (missing) : %s", ifile.queryFilename());
     }
     catch (IException *e)
     {
         StringBuffer s("Failed to remove file: ");
-        FLLOG(MCoperatorWarning, thorJob, e, s.append(ifile.queryFilename()));
+        FLLOG(MCoperatorWarning, e, s.append(ifile.queryFilename()));
     }
 }
 

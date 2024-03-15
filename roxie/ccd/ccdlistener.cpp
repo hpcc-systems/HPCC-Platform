@@ -1197,6 +1197,8 @@ public:
             daliHelper.setown(connectToDali());
             wu.setown(daliHelper->attachWorkunit(wuid.get()));
         }
+
+        JobNameScope jobName(wuid);
         Owned<StringContextLogger> logctx = new StringContextLogger(wuid.get());
 
         Owned<IProperties> traceHeaders = extractTraceDebugOptions(wu);

@@ -122,8 +122,6 @@
 #define THOR_SEM_RETRY_TIMEOUT 2
 
 // Logging
-extern graph_decl LogMsgJobInfo thorJob;
-
 enum ThorExceptionAction { tea_null, tea_warning, tea_abort, tea_shutdown };
 
 enum RegistryCode:unsigned { rc_register, rc_deregister };
@@ -284,7 +282,7 @@ public:
     void stop() { running = false; todo.signal(); }
     void inform(IException *e)
     {
-        LOG(MCdebugProgress, thorJob, "INFORM [%s]", description.get());
+        LOG(MCdebugProgress, "INFORM [%s]", description.get());
         CriticalBlock block(crit);
         if (exception.get())
             e->Release();
@@ -299,7 +297,7 @@ public:
         CriticalBlock block(crit);
         IException *e = exception.getClear();
         if (e)
-            LOG(MCdebugProgress, thorJob, "CLEARING TIMEOUT [%s]", description.get());
+            LOG(MCdebugProgress, "CLEARING TIMEOUT [%s]", description.get());
         todo.signal();
         return e;
     }

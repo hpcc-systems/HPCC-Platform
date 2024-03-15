@@ -689,7 +689,7 @@ void CEspConfig::loadBinding(binding_cfg &xcfg)
             {
                 IEspRpcBinding* bind = xproc(xcfg.name.str(), xcfg.type.str(), m_envpt.get(), m_process.str());
                 if (bind)
-                    LOG(MCoperatorInfo, unknownJob,"Load binding %s (type: %s, process: %s) succeeded", xcfg.name.str(), xcfg.type.str(), m_process.str());
+                    LOG(MCoperatorInfo, "Load binding %s (type: %s, process: %s) succeeded", xcfg.name.str(), xcfg.type.str(), m_process.str());
                 else
                     OERRLOG("Failed to load binding %s (type: %s, process: %s)", xcfg.name.str(), xcfg.type.str(), m_process.str());
                 xcfg.bind.setown(bind);

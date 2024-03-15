@@ -57,7 +57,7 @@ export const ECLArchiveTree: React.FunctionComponent<ECLArchiveTreeProps> = ({
                 fileTimePct: isAttribute(modAttr) && Math.round((archive?.sourcePathTime(modAttr.sourcePath) / archive?.timeTotalExecute) * 100),
             });
         });
-        setFlatTreeItems(flatTreeItems);
+        setFlatTreeItems(flatTreeItems.sort((a, b) => a.value.toString().localeCompare(b.value.toString(), undefined, { sensitivity: "base" })));
     }, [archive, archive?.modAttrs, archive?.timeTotalExecute]);
 
     const onClick = React.useCallback(evt => {
@@ -69,28 +69,29 @@ export const ECLArchiveTree: React.FunctionComponent<ECLArchiveTreeProps> = ({
     }, [archive, setSelectedItem]);
 
     const { ...treeProps } = flatTree.getTreeProps();
-    return <FlatTree {...treeProps} size="small">
-        {
-            Array.from(flatTree.items(), flatTreeItem => {
-                console.log(flatTreeItem.getTreeItemProps());
-                const { fileTimePct, content, ...treeItemProps } = flatTreeItem.getTreeItemProps();
-                return <TreeItem {...treeItemProps} onClick={onClick}>
-                    <TreeItemLayout
-                        iconBefore={
-                            flatTreeItem.itemType === "branch" ?
-                                (treeProps.openItems.has(flatTreeItem.value) ?
-                                    selectedAttrIDs.some(attrId => attrId.startsWith(content)) ? <FolderOpen20Filled /> : <FolderOpen20Regular /> :
-                                    selectedAttrIDs.some(attrId => attrId.startsWith(content)) ? <Folder20Filled /> : <Folder20Regular />) :
-                                selectedAttrIDs.some(attrId => attrId === flatTreeItem.value) ?
-                                    <Document20Filled /> :
-                                    <Document20Regular />
-                        }
-                        aside={<AsideContent isImportant={false} messageCount={fileTimePct} />}
-                    >
-                        {content}
-                    </TreeItemLayout>
-                </TreeItem>;
-            })
-        }
-    </FlatTree >;
+    return <div style={{ height: "100%", overflow: "auto" }}>
+        <FlatTree {...treeProps} size="small">
+            {
+                Array.from(flatTree.items(), flatTreeItem => {
+                    const { fileTimePct, content, ...treeItemProps } = flatTreeItem.getTreeItemProps();
+                    return <TreeItem {...treeItemProps} onClick={onClick}>
+                        <TreeItemLayout
+                            iconBefore={
+                                flatTreeItem.itemType === "branch" ?
+                                    (treeProps.openItems.has(flatTreeItem.value) ?
+                                        selectedAttrIDs.some(attrId => attrId.startsWith(content)) ? <FolderOpen20Filled /> : <FolderOpen20Regular /> :
+                                        selectedAttrIDs.some(attrId => attrId.startsWith(content)) ? <Folder20Filled /> : <Folder20Regular />) :
+                                    selectedAttrIDs.some(attrId => attrId === flatTreeItem.value) ?
+                                        <Document20Filled /> :
+                                        <Document20Regular />
+                            }
+                            aside={<AsideContent isImportant={false} messageCount={fileTimePct} />}
+                        >
+                            {content}
+                        </TreeItemLayout>
+                    </TreeItem>;
+                })
+            }
+        </FlatTree >
+    </div>;
 };

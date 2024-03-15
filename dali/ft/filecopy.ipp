@@ -88,7 +88,6 @@ protected:
     Semaphore *                 sem;
     byte                        action;
     bool                        calcCRC;
-    LogMsgJobInfo               job;
     bool                        allDone;
     bool                        started;
     StringAttr                  wuid;
@@ -318,7 +317,6 @@ protected:
     OutputProgressArray     progress;
     IDaftProgress *         progressReport;
     IAbortRequestCallback * abortChecker;
-    LogMsgJobInfo           job;
     offset_t                totalSize;
     unsigned __int64        sizeToBeRead;
     bool                    replicate;

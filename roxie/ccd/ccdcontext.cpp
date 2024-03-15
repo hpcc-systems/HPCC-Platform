@@ -1332,9 +1332,9 @@ public:
     {
         globalStats.recordStatistics(progress, false);
     }
-    virtual void CTXLOGa(TracingCategory category, const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char *prefix, const char *text) const override
+    virtual void CTXLOGa(TracingCategory category, const LogMsgCategory & cat, LogMsgCode code, const char *prefix, const char *text) const override
     {
-        logctx.CTXLOGa(category, cat, job, code, prefix, text);
+        logctx.CTXLOGa(category, cat, code, prefix, text);
     }
 
     virtual void CTXLOGaeva(IException *E, const char *file, unsigned line, const char *prefix, const char *format, va_list args) const
