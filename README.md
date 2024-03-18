@@ -9,6 +9,41 @@ HPCC Systems offers an enterprise ready, open source supercomputing platform to 
 * [Installation and Running](https://hpccsystems.com/training/documentation/installation-and-administration)
 * [Developer Documentation](https://hpcc-systems.github.io/HPCC-Platform/)
 
+# Release + Support Policy
+
+In general, a new version of the HPCC Platform is released every 3 months. These releases can be either Major (with breaking changes) or Minor (with new features). Maintenance and security releases (point releases) are typically made weekly, and may occasionally include technical previews.
+
+Maintenance releases are supported for the current and previous release, while security releases are supported for the current and previous two releases:
+
+```mermaid
+---
+displayMode: compact
+---
+gantt
+    title Release Schedule
+    axisFormat %Y-Q%q
+    tickInterval 3month
+    dateFormat YYYY-MM-DD
+    section v8.12.x
+        Active:          done, 2023-02-07, 6M
+        Security:        done, 9M
+    section v9.0.x
+        Active:          done, 2023-04-01, 9M
+        Security:        active, 6M
+    section v9.2.x
+        Active:          active, 2023-07-01, 6M
+        Security:        6M
+    section v9.4.x
+        Active:          active, 2023-10-01, 9M
+        Security:        6M
+    section v9.6.x
+        Active:          2024-04-01, 1y
+        Security:        6M
+    section v10.0.x
+        Active:          2024-10-01, 1y
+        Security:        6M
+```
+
 # Architecture
 
 The HPCC Systems architecture incorporates the Thor and Roxie clusters as well as common middleware components, an external communications layer, client interfaces which provide both end-user services and system management tools, and auxiliary components to support monitoring and to facilitate loading and storing of filesystem data from external sources. An HPCC environment can include only Thor clusters, or both Thor and Roxie clusters. Each of these cluster types is described in more detail in the following sections below the architecture diagram.
