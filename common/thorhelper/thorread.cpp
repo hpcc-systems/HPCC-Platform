@@ -34,6 +34,7 @@
 #include "thorcommon.hpp"
 #include "csvsplitter.hpp"
 #include "thormeta.hpp"
+#include "thorxmlread.hpp"
 
 #ifdef _USE_PARQUET
     #include "parquetembed.hpp"
@@ -814,6 +815,19 @@ public:
 
 protected:
     virtual bool isBinary() const { return false; }
+    inline bool fieldFilterMatchProjected(const void * buffer)
+    {
+        if (projectedFilter.numFilterFields())
+        {
+            unsigned numOffsets = projectedRecord->getNumVarFields() + 1;
+            size_t * variableOffsets = (size_t *)alloca(numOffsets * sizeof(size_t));
+            RtlRow row(*projectedRecord, nullptr, numOffsets, variableOffsets);
+            row.setRow(buffer, 0);  // Use lazy offset calculation
+            return projectedFilter.matches(row);
+        }
+        else
+            return true;
+    }
 
 protected:
     Owned<const IDynamicFieldValueFetcher> fieldFetcher;
@@ -879,22 +893,6 @@ protected:
     virtual bool setInputFile(IFile * inputFile, const char * _logicalFilename, unsigned _partNumber, offset_t _baseOffset, offset_t startOffset, offset_t length, const IPropertyTree * inputOptions, const FieldFilterArray & expectedFilter) override;
 
     void processOption(CSVSplitter::MatchItem element, const IPropertyTree & csvOptions, const char * option, const char * dft, const char * dft2 = nullptr);
-
-    inline bool fieldFilterMatchProjected(const void * buffer)
-    {
-        if (projectedFilter.numFilterFields())
-        {
-            unsigned numOffsets = projectedRecord->getNumVarFields() + 1;
-            size_t * variableOffsets = (size_t *)alloca(numOffsets * sizeof(size_t));
-            RtlRow row(*projectedRecord, nullptr, numOffsets, variableOffsets);
-            row.setRow(buffer, 0);  // Use lazy offset calculation
-            return projectedFilter.matches(row);
-        }
-        else
-            return true;
-    }
-
-    size32_t getFixedDiskRecordSize();
 
 protected:
     constexpr static unsigned defaultMaxCsvRowSizeMB = 10;
@@ -1054,24 +1052,364 @@ const void * CsvDiskRowReader::nextRow(MemoryBufferBuilder & builder)
     return nullptr;
 }
 
-
-
-
 void CsvDiskRowReader::stop()
 {
 }
 
+//---------------------------------------------------------------------------------------------------------------------
 
-// IDiskRowReader
-
-size32_t CsvDiskRowReader::getFixedDiskRecordSize()
+class MarkupDiskRowReader : public ExternalFormatDiskRowReader, implements IXMLSelect
 {
-    size32_t fixedDiskRecordSize = actualDiskMeta->getFixedSize();
-    if (fixedDiskRecordSize && grouped)
-        fixedDiskRecordSize += 1;
-    return fixedDiskRecordSize;
+private:
+    // JCSMORE - it would be good if these were cached/reused (anything using fetcher is single threaded)
+    class CFieldFetcher : public CSimpleInterfaceOf<IDynamicFieldValueFetcher>
+    {
+        unsigned numInputFields;
+        const RtlRecord &recInfo;
+        Linked<IColumnProvider> currentMatch;
+        const char **compoundXPaths = nullptr;
+
+        const char *queryCompoundXPath(unsigned fieldNum) const
+        {
+            if (compoundXPaths && compoundXPaths[fieldNum])
+                return compoundXPaths[fieldNum];
+            else
+                return recInfo.queryXPath(fieldNum);
+        }
+    public:
+        CFieldFetcher(const RtlRecord &_recInfo, IColumnProvider *_currentMatch) : recInfo(_recInfo), currentMatch(_currentMatch)
+        {
+            numInputFields = recInfo.getNumFields();
+
+            // JCSMORE - should this be done (optionally) when RtlRecord is created?
+            for (unsigned fieldNum=0; fieldNum<numInputFields; fieldNum++)
+            {
+                if (recInfo.queryType(fieldNum)->queryChildType())
+                {
+                    const char *xpath = recInfo.queryXPath(fieldNum);
+                    dbgassertex(xpath);
+                    const char *ptr = xpath;
+                    char *expandedXPath = nullptr;
+                    char *expandedXPathPtr = nullptr;
+                    while (true)
+                    {
+                        if (*ptr == xpathCompoundSeparatorChar)
+                        {
+                            if (!compoundXPaths)
+                            {
+                                compoundXPaths = new const char *[numInputFields];
+                                memset(compoundXPaths, 0, sizeof(const char *)*numInputFields);
+                            }
+
+                            size_t sz = strlen(xpath)+1;
+                            expandedXPath = new char[sz];
+                            expandedXPathPtr = expandedXPath;
+                            if (ptr == xpath) // if leading char, just skip
+                                ++ptr;
+                            else
+                            {
+                                size32_t len = ptr-xpath;
+                                memcpy(expandedXPath, xpath, len);
+                                expandedXPathPtr = expandedXPath + len;
+                                *expandedXPathPtr++ = '/';
+                                ++ptr;
+                            }
+                            while (*ptr)
+                            {
+                                if (*ptr == xpathCompoundSeparatorChar)
+                                {
+                                    *expandedXPathPtr++ = '/';
+                                    ++ptr;
+                                }
+                                else
+                                    *expandedXPathPtr++ = *ptr++;
+                            }
+                        }
+                        else
+                            ptr++;
+                        if ('\0' == *ptr)
+                        {
+                            if (expandedXPath)
+                            {
+                                *expandedXPathPtr = '\0';
+                                compoundXPaths[fieldNum] = expandedXPath;
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        ~CFieldFetcher()
+        {
+            if (compoundXPaths)
+            {
+                for (unsigned fieldNum=0; fieldNum<numInputFields; fieldNum++)
+                    delete [] compoundXPaths[fieldNum];
+                delete [] compoundXPaths;
+            }
+        }
+        void setCurrentMatch(IColumnProvider *_currentMatch)
+        {
+            currentMatch.set(_currentMatch);
+        }
+    // IDynamicFieldValueFetcher impl.
+        virtual const byte *queryValue(unsigned fieldNum, size_t &sz) const override
+        {
+            dbgassertex(fieldNum < numInputFields);
+            dbgassertex(currentMatch);
+
+            size32_t rawSz;
+            const char *ret = currentMatch->readRaw(recInfo.queryXPath(fieldNum), rawSz);
+            sz = rawSz;
+            return (const byte *)ret;
+        }
+        virtual IDynamicRowIterator *getNestedIterator(unsigned fieldNum) const override
+        {
+            dbgassertex(fieldNum < numInputFields);
+            dbgassertex(currentMatch);
+
+            const RtlRecord *nested = recInfo.queryNested(fieldNum);
+            if (!nested)
+                return nullptr;
+
+            class CIterator : public CSimpleInterfaceOf<IDynamicRowIterator>
+            {
+                XmlChildIterator xmlIter;
+                Linked<IDynamicFieldValueFetcher> curFieldValueFetcher;
+                Linked<IColumnProvider> parentMatch;
+                const RtlRecord &nestedRecInfo;
+            public:
+                CIterator(const RtlRecord &_nestedRecInfo, IColumnProvider *_parentMatch, const char *xpath) : nestedRecInfo(_nestedRecInfo), parentMatch(_parentMatch)
+                {
+                    xmlIter.initOwn(parentMatch->getChildIterator(xpath));
+                }
+                virtual bool first() override
+                {
+                    IColumnProvider *child = xmlIter.first();
+                    if (!child)
+                    {
+                        curFieldValueFetcher.clear();
+                        return false;
+                    }
+                    curFieldValueFetcher.setown(new CFieldFetcher(nestedRecInfo, child));
+
+                    return true;
+                }
+                virtual bool next() override
+                {
+                    IColumnProvider *child = xmlIter.next();
+                    if (!child)
+                    {
+                        curFieldValueFetcher.clear();
+                        return false;
+                    }
+                    curFieldValueFetcher.setown(new CFieldFetcher(nestedRecInfo, child));
+                    return true;
+                }
+                virtual bool isValid() override
+                {
+                    return nullptr != curFieldValueFetcher.get();
+                }
+                virtual IDynamicFieldValueFetcher &query() override
+                {
+                    assertex(curFieldValueFetcher);
+                    return *curFieldValueFetcher;
+                }
+            };
+            // JCSMORE - it would be good if these were cached/reused (can I assume anything using parent fetcher is single threaded?)
+            return new CIterator(*nested, currentMatch, queryCompoundXPath(fieldNum));
+        }
+        virtual size_t getSize(unsigned fieldNum) const override { throwUnexpected(); }
+        virtual size32_t getRecordSize() const override { throwUnexpected(); }
+    };
+
+public:
+    IMPLEMENT_IINTERFACE_USING(ExternalFormatDiskRowReader);
+    MarkupDiskRowReader(IDiskReadMapping * _mapping, ThorActivityKind _kind);
+
+    virtual const void *nextRow() override;
+    virtual const void *nextRow(size32_t & resultSize) override;
+    virtual const void *nextRow(MemoryBufferBuilder & builder) override;
+
+    virtual void stop() override;
+    virtual bool matches(const char * format, bool streamRemote, IDiskReadMapping * otherMapping) override;
+    // IXMLSelect impl.
+    virtual void match(IColumnProvider &entry, offset_t startOffset, offset_t endOffset) { lastMatch.set(&entry); }
+
+    bool checkOpen();
+    IColumnProvider *queryMatch() const { return lastMatch; }
+
+protected:
+    virtual bool setInputFile(IFile * inputFile, const char * _logicalFilename, unsigned _partNumber, offset_t _baseOffset, offset_t startOffset, offset_t length, const IPropertyTree * inputOptions, const FieldFilterArray & expectedFilter) override;
+
+protected:
+    StringBuffer xpath;
+    StringBuffer rowTag;
+
+    ThorActivityKind kind;
+    IXmlToRowTransformer *xmlTransformer;
+    Linked<IColumnProvider> lastMatch;
+    Owned<IXMLParse> xmlParser;
+
+    bool noRoot = false;
+    bool useXmlContents = false;
+
+    const RtlRecord *record = nullptr;
+    bool opened = false;
+};
+
+MarkupDiskRowReader::MarkupDiskRowReader(IDiskReadMapping * _mapping, ThorActivityKind _kind)
+: ExternalFormatDiskRowReader(_mapping), kind(_kind)
+{
+    const IPropertyTree & fileOptions = *mapping->queryFileOptions();
+    const IPropertyTree & markupOptions = *fileOptions.queryPropTree("formatOptions");
+
+    markupOptions.getProp("ActivityOptions/rowTag", rowTag);
+    noRoot = markupOptions.getPropBool("noRoot");
+
+    record = &actualDiskMeta->queryRecordAccessor(true);
 }
 
+bool MarkupDiskRowReader::setInputFile(IFile * inputFile, const char * _logicalFilename, unsigned _partNumber, offset_t _baseOffset, offset_t startOffset, offset_t length, const IPropertyTree * inputOptions, const FieldFilterArray & _expectedFilter)
+{
+    return ExternalFormatDiskRowReader::setInputFile(inputFile, _logicalFilename, _partNumber, _baseOffset, startOffset, length, inputOptions, _expectedFilter);
+}
+
+//Implementation of IAllocRowStream
+const void *MarkupDiskRowReader::nextRow()
+{
+    checkOpen();
+    while (xmlParser->next())
+    {
+        if (lastMatch)
+        {
+            RtlDynamicRowBuilder builder(outputAllocator);
+            ((CFieldFetcher *)fieldFetcher.get())->setCurrentMatch(lastMatch);
+            size32_t sizeRead = translator->translate(builder, *this, *fieldFetcher);
+            dbgassertex(sizeRead);
+            lastMatch.clear();
+            roxiemem::OwnedConstRoxieRow next = builder.finalizeRowClear(sizeRead);
+
+            if (fieldFilterMatchProjected(next))
+                return next.getClear();
+        }
+    }
+    return eofRow;
+}
+
+//Implementation of IRawRowStream
+const void *MarkupDiskRowReader::nextRow(size32_t & resultSize)
+{
+    tempOutputBuffer.clear();
+    const void * next = nextRow(bufferBuilder);
+    resultSize = tempOutputBuffer.length();
+    return next;
+}
+
+const void * MarkupDiskRowReader::nextRow(MemoryBufferBuilder & builder)
+{
+    checkOpen();
+    while (xmlParser->next())
+    {
+        if (lastMatch)
+        {
+            ((CFieldFetcher *)fieldFetcher.get())->setCurrentMatch(lastMatch);
+            size32_t resultSize = translator->translate(builder, *this, *fieldFetcher);
+            dbgassertex(resultSize);
+            lastMatch.clear();
+            const void *ret = builder.getSelf();
+
+            if (fieldFilterMatchProjected(ret))
+            {
+                builder.finishRow(resultSize);
+                return ret;
+            }
+            else
+                builder.removeBytes(resultSize);
+        }
+    }
+    return eofRow;
+}
+
+void MarkupDiskRowReader::stop()
+{
+    opened = false;
+}
+
+bool MarkupDiskRowReader::matches(const char * format, bool streamRemote, IDiskReadMapping * otherMapping)
+{
+    return ExternalFormatDiskRowReader::matches(format, streamRemote, otherMapping);
+}
+
+bool MarkupDiskRowReader::checkOpen()
+{
+    class CSimpleStream : public CSimpleInterfaceOf<ISimpleReadStream>
+    {
+        Linked<ISerialStream> stream;
+    public:
+        CSimpleStream(ISerialStream *_stream) : stream(_stream)
+        {
+        }
+    // ISimpleReadStream impl.
+        virtual size32_t read(size32_t max_len, void * data) override
+        {
+            size32_t got;
+            const void *res = stream->peek(max_len, got);
+            if (got)
+            {
+                if (got>max_len)
+                    got = max_len;
+                memcpy(data, res, got);
+                stream->skip(got);
+            }
+            return got;
+        }
+    };
+
+    if (!opened)
+    {
+        Owned<ISimpleReadStream> simpleStream = new CSimpleStream(inputStream);
+        if (kind==TAKjsonread)
+            xmlParser.setown(createJSONParse(*simpleStream, xpath, *this, noRoot?ptr_noRoot:ptr_none, useXmlContents));
+        else
+            xmlParser.setown(createXMLParse(*simpleStream, xpath, *this, noRoot?ptr_noRoot:ptr_none, useXmlContents));
+
+        if (!fieldFetcher)
+            fieldFetcher.setown(new CFieldFetcher(*record, nullptr));
+
+        opened = true;
+        return true;
+    }
+    return false;
+}
+
+
+class XmlDiskRowReader : public MarkupDiskRowReader
+{
+public:
+    XmlDiskRowReader(IDiskReadMapping * _mapping)
+    : MarkupDiskRowReader(_mapping, TAKxmlread)
+    {
+        const IPropertyTree & fileOptions = *mapping->queryFileOptions();
+        const IPropertyTree & xmlOptions = *fileOptions.queryPropTree("formatOptions");
+
+        if (rowTag.isEmpty()) // no override
+            xmlOptions.getProp("xpath", xpath);
+        else
+        {
+            xpath.set("/Dataset/");
+            xpath.append(rowTag);
+        }
+    }
+
+    bool matches(const char * format, bool streamRemote, IDiskReadMapping * otherMapping)
+    {
+        if (!strieq(format, "xml"))
+            return false;
+        return MarkupDiskRowReader::matches(format, streamRemote, otherMapping);
+    }
+};
 
 //---------------------------------------------------------------------------------------------------------------------
 
@@ -1381,6 +1719,7 @@ const void * ParquetDiskRowReader::nextRow()
 // Row is built in temporary buffer and reused.
 const void * ParquetDiskRowReader::nextRow(size32_t & resultSize)
 {
+    tempOutputBuffer.clear();
     const void * next = nextRow(bufferBuilder);
     resultSize = tempOutputBuffer.length();
     return next;
@@ -1745,6 +2084,7 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     // that creates the appropriate disk row reader object
     genericFileTypeMap.emplace("flat", [](IDiskReadMapping * _mapping) { return new BinaryDiskRowReader(_mapping); });
     genericFileTypeMap.emplace("csv", [](IDiskReadMapping * _mapping) { return new CsvDiskRowReader(_mapping); });
+    genericFileTypeMap.emplace("xml", [](IDiskReadMapping * _mapping) { return new XmlDiskRowReader(_mapping); });
 #ifdef _USE_PARQUET
     genericFileTypeMap.emplace(PARQUET_FILE_TYPE_NAME, [](IDiskReadMapping * _mapping) { return new ParquetDiskRowReader(_mapping); });
 #endif
