@@ -1897,7 +1897,7 @@ public:
                         thorJob.setJobID(thorJobId);
                         setDefaultJobId(thorJobId);
 
-                        PROGLOG("Started wuid=%s, user=%s, graph=%s [log detail level=%u]\n", wuid.get(), user.str(), graphName.get(), maxLogDetail);
+                        PROGLOG("Started wuid=%s, user=%s, graph=%s [log detail level=%u]", wuid.get(), user.str(), graphName.get(), maxLogDetail);
                         PROGLOG("Using query: %s", soPath.str());
 
                         if (!getExpertOptBool("slaveDaliClient") && workUnitInfo->getPropBool("Debug/slavedaliclient", false))
