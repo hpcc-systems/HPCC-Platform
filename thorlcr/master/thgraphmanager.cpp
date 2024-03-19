@@ -1092,7 +1092,7 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
     SCMStringBuffer eclstr;
     StringAttr user(workunit.queryUser());
 
-    PROGLOG("Started wuid=%s, user=%s, graph=%s\n", wuid.str(), user.str(), graphName);
+    PROGLOG("Started wuid=%s, user=%s, graph=%s", wuid.str(), user.str(), graphName);
 
     PROGLOG("Query %s loaded", soPath.str());
     Owned<CJobMaster> job = createThorGraph(graphName, workunit, querySo, sendSo, agentEp);
