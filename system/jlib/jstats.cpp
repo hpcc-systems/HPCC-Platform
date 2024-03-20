@@ -2730,7 +2730,7 @@ void CRuntimeStatisticCollection::deserializeMerge(MemoryBuffer& in)
     in.read(hasNested);
     if (hasNested)
     {
-        ensureNested().deserializeMerge(in);
+        ensureNested().deserialize(in);
     }
 }
 
