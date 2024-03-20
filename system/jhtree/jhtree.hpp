@@ -90,7 +90,7 @@ interface jhtree_decl IKeyIndex : public IKeyIndexBase
     virtual unsigned querySeeks() = 0;
     virtual size32_t keyedSize() = 0;
     virtual bool hasPayload() = 0;
-    virtual const char *queryFileName() = 0;
+    virtual const char *queryFileName() const = 0;
     virtual offset_t queryBlobHead() = 0;
     virtual void resetCounts() = 0;
     virtual offset_t queryLatestGetNodeOffset() const = 0;
