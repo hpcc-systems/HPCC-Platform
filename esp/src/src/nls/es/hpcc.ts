@@ -1110,6 +1110,7 @@ export = {
     WSDL: "WSDL",
     WUID: "WUID",
     Wuidcannotbeempty: "Wuid no puede estar vacío.",
+    WuSnapshot: "Captura de Unidad de trabajo",
     WUSnapShot: "Captura de Unidad de trabajo",
     WUSnapshots: "Captura de Unidades de trabajo",
     XGMML: "XGMML",

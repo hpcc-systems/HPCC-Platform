@@ -1131,6 +1131,7 @@ export = {
         WUID: "WUID",
         Wuidcannotbeempty: "Wuid Cannot Be Empty.",
         WUSnapshot: "WU Snapshot",
+        WUSnapShot: "WU Snapshot",
         WUSnapshots: "WU Snapshots",
         XGMML: "XGMML",
         XLS: "XLS",
