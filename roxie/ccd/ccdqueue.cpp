@@ -1041,6 +1041,8 @@ struct PingRecord
 {
     unsigned tick;
     IpAddress senderIP;
+    unsigned __int64 currentTopoHash;
+    unsigned __int64 originalTopoHash;
 };
 
 void doPing(IRoxieQueryPacket *packet, const IRoxieContextLogger &logctx)
@@ -1058,6 +1060,16 @@ void doPing(IRoxieQueryPacket *packet, const IRoxieContextLogger &logctx)
     {
         StringBuffer s;
         throw MakeStringException(ROXIE_UNKNOWN_SERVER, "Message received from unknown Roxie server %s", header.toString(s).str());
+    }
+    if (originalTopologyHash != data->originalTopoHash)
+    {
+        StringBuffer s;
+        EXCLOG(MCoperatorError,"ERROR: Configuration file mismatch detected with Roxie server %s", header.toString(s).str());
+    }
+    if (currentTopologyHash != data->currentTopoHash)
+    {
+        StringBuffer s;
+        DBGLOG("WARNING: Temporary configuration mismatch detected with Roxie server %s", header.toString(s).str());
     }
     RoxiePacketHeader newHeader(header, ROXIE_PING, 0);  // subchannel not relevant
     Owned<IMessagePacker> output = ROQ->createOutputStream(newHeader, true, logctx);
@@ -3904,6 +3916,8 @@ class PingTimer : public Thread
             PingRecord data;
             data.senderIP.ipset(myNode.getIpAddress());
             data.tick = usTick();
+            data.originalTopoHash = originalTopologyHash;
+            data.currentTopoHash = currentTopologyHash;
             mb.append(sizeof(PingRecord), &data);
             if (doTrace(traceRoxiePings))
                 DBGLOG("PING sent");
