@@ -631,6 +631,7 @@ bool ResourceManager::flush(StringBuffer &filename, const char *basename, bool f
         }
         fwrite(s.data.get(), 1, s.data.length(), bin);
         fclose(bin);
+        fprintf(f, " .size %s,%u\n", label.str(), (unsigned)s.data.length());
     }
     fclose(f);
 #endif
