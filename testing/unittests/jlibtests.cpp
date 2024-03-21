@@ -4252,8 +4252,8 @@ protected:
         CPPUNIT_ASSERT(!secret6->isValid());
         CPPUNIT_ASSERT(!secret6->isStale());
 
-        //Sleep so the cache entry should have expired and the value reread since reading ahead
-        MilliSleep(60); // elapsed=110 = 80 + 30
+        //Sleep so the cache entry should have expired (between 80 and 85ms) and the value reread since reading ahead
+        MilliSleep(60); // elapsed=110 = 50 + 60
         CPPUNIT_ASSERT(secret6->isValid());
         CPPUNIT_ASSERT(!secret6->isStale());
         unsigned version1 = secret6->getVersion(); // Mark the value as accessed, but too early to be refreshed

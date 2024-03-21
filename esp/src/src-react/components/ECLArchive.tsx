@@ -1,6 +1,7 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
-import { WUDetails, IScope } from "@hpcc-js/comms";
+import { Workunit, WUDetails, IScope } from "@hpcc-js/comms";
+import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import { useWorkunitArchive } from "../hooks/workunit";
 import { useWorkunitMetrics } from "../hooks/metrics";
@@ -11,6 +12,8 @@ import { ShortVerticalDivider } from "./Common";
 import { ECLArchiveTree } from "./ECLArchiveTree";
 import { ECLArchiveEditor } from "./ECLArchiveEditor";
 import { MetricsPropertiesTables } from "./MetricsPropertiesTables";
+
+const logger = scopedLogger("src-react/components/ECLArchive.tsx");
 
 const scopeFilterDefault: WUDetails.RequestNS.ScopeFilter = {
     MaxDepth: 999999,
@@ -54,8 +57,15 @@ export const ECLArchive: React.FunctionComponent<ECLArchiveProps> = ({
             setSelectionText(archive?.content(selection) ?? "");
             setMarkers(archive?.markers(selection) ?? []);
             setSelectedMetrics(archive?.metrics(selection) ?? []);
+        } else {
+            if (archive && !archive.build) {
+                const wu = Workunit.attach({ baseUrl: "" }, wuid);
+                wu.fetchQuery().then(function (query) {
+                    setSelectionText(query?.Text ?? "");
+                }).catch(err => logger.error(err));
+            }
         }
-    }, [archive, metrics.length, selection]);
+    }, [archive, metrics.length, selection, wuid]);
 
     const setSelectedItem = React.useCallback((selId: string) => {
         pushUrl(`${parentUrl}/${selId}`);

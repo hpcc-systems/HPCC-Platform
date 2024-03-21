@@ -59,6 +59,9 @@ int main(int argc, const char *argv[])
     try
     {
         ret = eclagent_main(argc, argv);
+        //Do not return a non-zero error code in containerized mode - otherwise the system will think it failed to run
+        if (isContainerized())
+            ret = 0;
     }
     catch (IException *E)
     {

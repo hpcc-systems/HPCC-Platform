@@ -17,21 +17,18 @@
 
 #include "opentelemetry/trace/semantic_conventions.h" //known span defines
 #include "opentelemetry/context/propagation/global_propagator.h" // context::propagation::GlobalTextMapPropagator::GetGlobalPropagator
+#include "opentelemetry/sdk/trace/batch_span_processor_options.h" //opentelemetry::sdk::trace::TracerProviderFactory::Create(context)
 #include "opentelemetry/sdk/trace/tracer_provider_factory.h" //opentelemetry::sdk::trace::TracerProviderFactory::Create(context)
+#include "opentelemetry/sdk/trace/tracer_context.h" //opentelemetry::sdk::trace::TracerContextFactory::Create(std::move(processors));
 #include "opentelemetry/sdk/trace/tracer_context_factory.h" //opentelemetry::sdk::trace::TracerContextFactory::Create(std::move(processors));
 #include "opentelemetry/sdk/trace/simple_processor_factory.h"
 #include "opentelemetry/sdk/trace/batch_span_processor_factory.h"
 #include "opentelemetry/exporters/ostream/span_exporter_factory.h"// auto exporter = opentelemetry::exporter::trace::OStreamSpanExporterFactory::Create();
 #include "opentelemetry/exporters/ostream/common_utils.h"
-//#define oldForEach ForEach // error: ‘ForEach’ was not declared in this scope
-#undef ForEach //opentelemetry defines ForEach
 #include "opentelemetry/exporters/memory/in_memory_span_exporter_factory.h"
 #include "opentelemetry/trace/propagation/http_trace_context.h" //opentel_trace::propagation::kTraceParent
-#undef UNIMPLEMENTED //opentelemetry defines UNIMPLEMENTED
 #include "opentelemetry/trace/provider.h" //StartSpanOptions
 #include "opentelemetry/exporters/otlp/otlp_grpc_exporter.h"
-#define UNIMPLEMENTED throw makeStringExceptionV(-1, "UNIMPLEMENTED feature at %s(%d)", sanitizeSourceFile(__FILE__), __LINE__)
-#define ForEach(i)              for((i).first();(i).isValid();(i).next())
 
 #include "opentelemetry/exporters/otlp/otlp_grpc_exporter_factory.h"
 #include "opentelemetry/exporters/otlp/otlp_http_exporter_factory.h"
@@ -41,12 +38,20 @@
 #include "opentelemetry/sdk/trace/exporter.h"
 #include "opentelemetry/sdk/trace/span_data.h"
 
+// NB: undefine after opentelemetry includes, and before HPCC includes where we define.
+#undef ForEach //opentelemetry defines ForEach
+#undef UNIMPLEMENTED //opentelemetry defines UNIMPLEMENTED
+
+
 #include "platform.h"
 #include "jlib.hpp"
 #include "jmisc.hpp"
 #include "jtrace.hpp"
 #include "lnuid.h"
 #include <variant>
+
+//This seems to be defined in some window builds - avoid conflicts with the functions below
+#undef max
 
 namespace context     = opentelemetry::context;
 namespace nostd       = opentelemetry::nostd;
@@ -1321,10 +1326,10 @@ void CTraceManager::initTracerProviderAndGlobalInternals(const IPropertyTree * t
     auto jtraceResource = opentelemetry::sdk::resource::Resource::Create(resourceAtts);
 
     // Default is an always-on sampler.
-    std::shared_ptr<opentelemetry::sdk::trace::TracerContext> context =
+    std::unique_ptr<opentelemetry::sdk::trace::TracerContext> context =
         opentelemetry::sdk::trace::TracerContextFactory::Create(std::move(processors), jtraceResource);
     std::shared_ptr<opentelemetry::trace::TracerProvider> provider =
-        opentelemetry::sdk::trace::TracerProviderFactory::Create(context);
+        opentelemetry::sdk::trace::TracerProviderFactory::Create(std::move(context));
 
     // Set the global trace provider
     opentelemetry::trace::Provider::SetTracerProvider(provider);

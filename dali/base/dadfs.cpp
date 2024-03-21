@@ -11215,23 +11215,22 @@ public:
                 Owned<IPropertyTree> tree = getNamedPropTree(sroot,queryDfsXmlBranchName(DXB_File),"@name",tail.str(),false);
                 if (tree)
                 {
-                    if (isContainerized())
+                    // This is for bare-metal clients using ~foreign pointing at a containerized/k8s setup,
+                    // asking for the returned meta data to be remapped to point to the dafilesrv service.
+                    if (isContainerized() && hasMask(opts, GetFileTreeOpts::remapToService))
                     {
-                        // This is for bare-metal clients using ~foreign pointing at a containerized/k8s setup,
-                        // asking for the returned meta data to be remapped to point to the dafilesrv service.
-                        if (hasMask(opts, GetFileTreeOpts::remapToService))
-                        {
-                            tree.setown(createPTreeFromIPT(tree)); // copy live Dali tree, because it is about to be altered by remapGroupsToDafilesrv
-                            remapGroupsToDafilesrv(tree, true, secureService);
-                            groupResolver = nullptr; // do not attempt to resolve remapped group (it will not exist and cause addUnique to create a new anon one)
+                        tree.setown(createPTreeFromIPT(tree)); // copy live Dali tree, because it is about to be altered by remapGroupsToDafilesrv
+                        remapGroupsToDafilesrv(tree, true, secureService);
+                        groupResolver = nullptr; // do not attempt to resolve remapped group (it will not exist and cause addUnique to create a new anon one)
 
-                            const char *remotePlaneName = tree->queryProp("@group");
-                            Owned<IPropertyTree> filePlane = getStoragePlane(remotePlaneName);
-                            assertex(filePlane);
-                            // Used by DFS clients to determine if stripe and/or alias translation needed
-                            tree->setPropTree("Attr/_remoteStoragePlane", createPTreeFromIPT(filePlane));
-                        }
+                        const char *remotePlaneName = tree->queryProp("@group");
+                        Owned<IPropertyTree> filePlane = getStoragePlane(remotePlaneName);
+                        assertex(filePlane);
+                        // Used by DFS clients to determine if stripe and/or alias translation needed
+                        tree->setPropTree("Attr/_remoteStoragePlane", createPTreeFromIPT(filePlane));
                     }
+                    else
+                        tree->removeProp("Attr/_remoteStoragePlane");
 
                     Owned<IFileDescriptor> fdesc = deserializeFileDescriptorTree(tree,groupResolver,IFDSF_EXCLUDE_CLUSTERNAMES);
                     mb.append((int)1); // 1 == standard file

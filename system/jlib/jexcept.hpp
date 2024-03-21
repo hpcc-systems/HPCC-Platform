@@ -135,7 +135,7 @@ void jlib_decl setTerminateOnSEH(bool set=true);
 void jlib_decl setProcessAborted(bool _abortVal);
 
 __declspec(noreturn) void jlib_decl throwUnexpectedException(const char * function, const char * file, unsigned line) __attribute__((noreturn));
-__declspec(noreturn) void jlib_decl throwUnexpectedException(const char * function, const char * where, const char * file, unsigned line) __attribute__((noreturn));
+__declspec(noreturn) void jlib_decl throwUnexpectedException(const char * what, const char * function, const char * file, unsigned line) __attribute__((noreturn));
 
 const char jlib_decl *sanitizeSourceFile(const char *file);
 
@@ -144,9 +144,16 @@ const char jlib_decl *sanitizeSourceFile(const char *file);
 #define throwUnexpectedX(x)        throwUnexpectedException(x, __func__, sanitizeSourceFile(__FILE__), __LINE__)
 #define assertThrow(x)             assertex(x)
 
-#define UNIMPLEMENTED throw makeStringExceptionV(-1, "UNIMPLEMENTED feature at %s(%d)", sanitizeSourceFile(__FILE__), __LINE__)
-#define UNIMPLEMENTED_X(reason) throw makeStringExceptionV(-1, "UNIMPLEMENTED '" reason "' at %s(%d)", sanitizeSourceFile(__FILE__), __LINE__)
-#define UNIMPLEMENTED_XY(a,b) throw makeStringExceptionV(-1, "UNIMPLEMENTED " a " %s at %s(%d)", b, sanitizeSourceFile(__FILE__), __LINE__)
+__declspec(noreturn) void jlib_decl throwUnimplementedException(const char * function, const char * file, unsigned line) __attribute__((noreturn));
+__declspec(noreturn) void jlib_decl throwUnimplementedException(const char * what, const char * function, const char * file, unsigned line) __attribute__((noreturn));
+__declspec(noreturn) void jlib_decl throwUnimplementedException(const char * what, const char *what2, const char * function, const char * file, unsigned line) __attribute__((noreturn));
+#define throwUnimplemented()        throwUnimplementedException(__func__, sanitizeSourceFile(__FILE__), __LINE__)
+#define throwUnimplementedX(x)      throwUnimplementedException(x, __func__, sanitizeSourceFile(__FILE__), __LINE__)
+
+#define UNIMPLEMENTED throwUnimplementedException(__func__, sanitizeSourceFile(__FILE__), __LINE__)
+#define UNIMPLEMENTED_C throwUnimplementedException("CLASSTYPE:", typeid(*this).name(), __func__, sanitizeSourceFile(__FILE__), __LINE__)
+#define UNIMPLEMENTED_X(reason) throwUnimplementedException(reason, __func__, sanitizeSourceFile(__FILE__), __LINE__)
+#define UNIMPLEMENTED_XY(a,b) throwUnimplementedException(a, b, __func__, sanitizeSourceFile(__FILE__), __LINE__)
 
 IException jlib_decl * deserializeException(MemoryBuffer & in); 
 void jlib_decl serializeException(IException * e, MemoryBuffer & out); 

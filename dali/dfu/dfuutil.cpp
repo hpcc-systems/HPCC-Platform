@@ -419,17 +419,20 @@ public:
             // for now, only use source file descriptor as cloned source if it's from
             // wsdfs file backed by remote storage using dafilesrv (NB: if it is '_remoteStoragePlane' will be set)
             // JCSMORE: it may be this can replace the need for the other 'clone*' attributes altogether.
-            if (srcfdesc->queryProperties().hasProp("_remoteStoragePlane"))
+            if (srcfdesc->queryProperties().hasProp("_remoteStoragePlane") && srcdali && !srcdali->endpoint().isNull())
             {
-                if (srcdali && !srcdali->endpoint().isNull())
-                {
-                    attrs.setPropTree("cloneFromFDesc", createPTreeFromIPT(srcTree));
-                    StringBuffer host;
-                    attrs.setProp("@cloneFrom", srcdali->endpoint().getEndpointHostText(host).str());
-                    if (prefix.length())
-                        attrs.setProp("@cloneFromPrefix", prefix.get());
-                    return;
-                }
+                attrs.setPropTree("cloneFromFDesc", createPTreeFromIPT(srcTree));
+                StringBuffer host;
+                attrs.setProp("@cloneFrom", srcdali->endpoint().getEndpointHostText(host).str());
+                if (prefix.length())
+                    attrs.setProp("@cloneFromPrefix", prefix.get());
+                return;
+            }
+            else
+            {
+                attrs.removeProp("cloneFromFDesc");
+                attrs.removeProp("@cloneFrom");
+                attrs.removeProp("@cloneFromPrefix");
             }
 
             while(attrs.removeProp("cloneFromGroup"));

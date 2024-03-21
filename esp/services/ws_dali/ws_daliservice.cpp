@@ -619,6 +619,24 @@ bool CWSDaliEx::onDisconnectClientConnection(IEspContext& context, IEspDisconnec
     return true;
 }
 
+bool CWSDaliEx::onListSDSLocks(IEspContext& context, IEspListSDSLocksRequest& req, IEspResultResponse& resp)
+{
+    try
+    {
+        checkAccess(context);
+
+        Owned<ILockInfoCollection> lockInfoCollection = querySDS().getLocks();
+        StringBuffer result;
+        lockInfoCollection->toString(result);
+        resp.setResult(result);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
 bool CWSDaliEx::onUnlockSDSLock(IEspContext& context, IEspUnlockSDSLockRequest& req, IEspResultResponse& resp)
 {
     try
