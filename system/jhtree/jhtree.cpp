@@ -2441,7 +2441,7 @@ public:
     virtual IKeyIndex *queryPart(unsigned idx) { return idx ? NULL : this; }
     virtual unsigned queryScans() { return realKey ? realKey->queryScans() : 0; }
     virtual unsigned querySeeks() { return realKey ? realKey->querySeeks() : 0; }
-    virtual const char *queryFileName() { return keyfile.get(); }
+    virtual const char *queryFileName() const { return keyfile.get(); }
     virtual offset_t queryBlobHead() { return checkOpen().queryBlobHead(); }
     virtual void resetCounts() { if (realKey) realKey->resetCounts(); }
     virtual offset_t queryLatestGetNodeOffset() const { return realKey ? realKey->queryLatestGetNodeOffset() : 0; }
@@ -2659,7 +2659,14 @@ const CJHTreeNode *CNodeCache::getNode(const INodeLoader *keyIndex, unsigned iD,
             if (!ownedCacheEntry->isReady())
             {
                 const CJHTreeNode *node = keyIndex->loadNode(&fetchCycles, pos);
-                assertex(type == node->getNodeType());
+                if (unlikely(type != node->getNodeType()))
+                {
+                    //This should never happen, but if it does, report as much information as possible to diagnose the issue.
+                    StringBuffer msg;
+                    msg.appendf("Node type mismatch for node %s@%llx (expected %s, got %s)", keyIndex->queryFileName(), pos, cacheTypeText[type], cacheTypeText[node->getNodeType()]);
+                    node->Release();
+                    throwUnexpectedX(msg);
+                }
 
                 //Update the associated size of the entry in the hash table before setting isReady (never evicted until isReady is set)
                 curCache.noteReady(*node);

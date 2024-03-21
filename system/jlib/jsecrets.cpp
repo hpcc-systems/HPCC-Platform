@@ -425,10 +425,9 @@ class SecretCacheEntry : public CInterface
     friend class SecretCache;
 
 public:
-    //A cache entry is initally created that has a create and access time of now, but the checkTimestamp
-    //is set so that needsRefresh() will return true.
+    //A cache entry is initally created that has a create and access,and check time of now
     SecretCacheEntry(cache_timestamp _now, const char * _secretKey)
-    : secretKey(_secretKey), contentTimestamp(_now), accessedTimestamp(_now), checkedTimestamp(_now - 2 * secretTimeoutNs)
+    : secretKey(_secretKey), contentTimestamp(_now), accessedTimestamp(_now), checkedTimestamp(_now)
     {
     }
 
@@ -530,9 +529,10 @@ public:
     }
 
     //Check to see if a secret exists, and if not add a null entry that has expired.
-    SecretCacheEntry * getSecret(const std::string & secretKey, cache_timestamp now)
+    SecretCacheEntry * getSecret(const std::string & secretKey, cache_timestamp now, bool & isNewEntry)
     {
         SecretCacheEntry * result;
+        isNewEntry = false;
         CriticalBlock block(cs);
         auto match = secrets.find(secretKey);
         if (match != secrets.cend())
@@ -542,9 +542,10 @@ public:
         }
         else
         {
-            //Insert an entry with a null value that is marked as out of date
+            //Insert an entry with a null value
             result = new SecretCacheEntry(now, secretKey.c_str());
             secrets.emplace(secretKey, result);
+            isNewEntry = true;
         }
         return result;
     }
@@ -1170,8 +1171,9 @@ static SecretCacheEntry * getSecretEntry(const char * category, const char * nam
 
     std::string key(buildSecretKey(category, name, optVaultId, optVersion));
 
-    SecretCacheEntry * match = globalSecretCache.getSecret(key, now);
-    if (!match->needsRefresh(now))
+    bool isNewEntry;
+    SecretCacheEntry * match = globalSecretCache.getSecret(key, now, isNewEntry);
+    if (!isNewEntry && !match->needsRefresh(now))
         return match;
 
     Owned<IPropertyTree> resolved(resolveSecret(category, name, optVaultId, optVersion));
@@ -1314,7 +1316,7 @@ void CSecret::checkUptoDate() const
     if (secret->needsRefresh(now))
     {
 #ifdef TRACE_SECRETS
-        DBGLOG("Secret %s is stale updating from %u...", secret->queryTraceName(), secretHash);
+        DBGLOG("Secret %s is stale updating...", secret->queryTraceName());
 #endif
         //MORE: This could block or fail - in roxie especially it would be better to return the old value
         try

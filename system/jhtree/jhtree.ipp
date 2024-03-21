@@ -78,6 +78,7 @@ interface INodeLoader
     virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset) const = 0;
     virtual const CJHSearchNode *locateFirstLeafNode(IContextLogger *ctx) const = 0;
     virtual const CJHSearchNode *locateLastLeafNode(IContextLogger *ctx) const = 0;
+    virtual const char *queryFileName() const = 0;
 };
 
 class jhtree_decl CKeyIndex : implements IKeyIndex, implements INodeLoader, public CInterface
@@ -161,6 +162,8 @@ public:
     virtual const CJHSearchNode *locateLastLeafNode(IContextLogger *ctx) const override;
 
     virtual void mergeStats(CRuntimeStatisticCollection & stats) const override {}
+
+    virtual const char *queryFileName() const = 0;
 };
 
 class jhtree_decl CMemKeyIndex : public CKeyIndex
@@ -170,7 +173,7 @@ private:
 public:
     CMemKeyIndex(unsigned _iD, IMemoryMappedFile *_io, const char *_name, bool _isTLK);
 
-    virtual const char *queryFileName() { return name.get(); }
+    virtual const char *queryFileName() const { return name.get(); }
     virtual const IFileIO *queryFileIO() const override { return nullptr; }
 // INodeLoader impl.
     virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset) const override;
@@ -186,7 +189,7 @@ private:
 public:
     CDiskKeyIndex(unsigned _iD, IFileIO *_io, const char *_name, bool _isTLK);
 
-    virtual const char *queryFileName() { return name.get(); }
+    virtual const char *queryFileName() const { return name.get(); }
     virtual const IFileIO *queryFileIO() const override { return io; }
 // INodeLoader impl.
     virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset) const override;
