@@ -140,16 +140,6 @@ public:
     }
 };
 
-static inline unsigned getRemainingMs(unsigned timeoutMs, unsigned elapsedMs)
-{
-    if (INFINITE == timeoutMs)
-        return INFINITE;
-    unsigned eMs = elapsedMs;
-    if (eMs >= timeoutMs)
-        return 0;
-    return timeoutMs - eMs;
-}
-
 class CSecureSocket : implements ISecureSocket, public CInterface
 {
 private:
@@ -849,7 +839,7 @@ void CSecureSocket::readtms(void* buf, size32_t min_size, size32_t max_size, siz
                 if (0 == min_size) // if min_read is 0, then whatever we have read so far is good enough (even if 0)
                     break;
 
-                unsigned remainingMs = getRemainingMs(timeoutMs, timer.elapsedMs());
+                unsigned remainingMs = timer.remainingMs(timeoutMs);
                 rc = wait_read(remainingMs);
                 if (rc < 0)
                     THROWSECURESOCKETEXCEPTION(SOCKETERRNO(), "wait_read error");
@@ -906,7 +896,7 @@ size32_t CSecureSocket::writetms(void const* buf, size32_t minSize, size32_t siz
             else
                 throw createJSocketException(JSOCKERR_broken_pipe, errmsg);
         }
-        unsigned remainingMs = getRemainingMs(timeoutms, timer.elapsedMs());
+        unsigned remainingMs = timer.remainingMs(timeoutms);
         int rc = wait_write(remainingMs);
         if (rc < 0)
             throw createJSocketException(SOCKETERRNO(), "wait_read error");

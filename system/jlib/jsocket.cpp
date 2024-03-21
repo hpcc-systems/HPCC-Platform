@@ -881,16 +881,6 @@ inline void getSockAddrEndpoint(const J_SOCKADDR &u, socklen_t ul, SocketEndpoin
 }
 
 
-static inline unsigned getRemainingMs(unsigned timeoutMs, unsigned elapsedMs)
-{
-    if (INFINITE == timeoutMs)
-        return INFINITE;
-    unsigned eMs = elapsedMs;
-    if (eMs >= timeoutMs)
-        return 0;
-    return timeoutMs - eMs;
-}
-
 
 /* might need fcntl(F_SETFL), or ioctl(FIONBIO) */
 /* Posix.1g says fcntl */
@@ -1991,7 +1981,7 @@ EintrRetry:
                     {
                         if (0 == min_size) // if min_read is 0, then whatever we have read so far is good enough (even if 0)
                             break;
-                        unsigned remainingMs = getRemainingMs(timeoutms, timer.elapsedMs());
+                        unsigned remainingMs = timer.remainingMs(timeoutms);
                         rc = wait_read(remainingMs);
                         if (rc < 0)
                         {
@@ -2113,7 +2103,7 @@ EintrRetry:
                 }
                 if ((err == JSE_WOULDBLOCK) && nonblocking)
                 {
-                    unsigned remainingMs = getRemainingMs(timeoutms, timer.elapsedMs());
+                    unsigned remainingMs = timer.remainingMs(timeoutms);
                     rc = wait_write(remainingMs);
                     if (rc < 0)
                     {
