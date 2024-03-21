@@ -136,8 +136,8 @@ const AsyncDropdown: React.FunctionComponent<AsyncDropdownProps> = ({
     }, [onChange, selectedItem, selectedIdx, selectedKey]);
 
     return options === undefined ?
-        <DropdownBase label={label} options={[]} placeholder={nlsHPCC.loadingMessage} disabled={true} /> :
-        <DropdownBase label={label} options={selOptions} selectedKey={selectedItem?.key} onChange={(_, item: IDropdownOption) => setSelectedItem(item)} placeholder={placeholder} disabled={disabled} required={required} errorMessage={errorMessage} className={className} />;
+        <DropdownBase label={label} dropdownWidth="auto" options={[]} placeholder={nlsHPCC.loadingMessage} disabled={true} /> :
+        <DropdownBase label={label} dropdownWidth="auto" options={selOptions} selectedKey={selectedItem?.key} onChange={(_, item: IDropdownOption) => setSelectedItem(item)} placeholder={placeholder} disabled={disabled} required={required} errorMessage={errorMessage} className={className} />;
 };
 
 interface DropdownMultiProps {

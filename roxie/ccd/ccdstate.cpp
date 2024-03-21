@@ -2580,7 +2580,7 @@ private:
                 topology->setPropBool("@lockDali", true);
                 if (daliHelper)
                     daliHelper->disconnect();
-                saveTopology();
+                saveTopology(true);
             }
             else if (stricmp(queryName, "control:logfullqueries")==0)
             {
@@ -2825,13 +2825,13 @@ private:
                     reply.appendf("<Dali connected='1'/>");
                 else
                     reply.appendf("<Dali connected='0'/>");
-                unsigned __int64 thash = getTopologyHash();
                 unsigned __int64 shash;
                 {
                     ReadLockBlock readBlock(packageCrit);
                     shash = allQueryPackages->queryHash();
                 }
-                reply.appendf("<State hash='%" I64F "u' topologyHash='%" I64F "u'/>", shash, thash);
+                reply.appendf("<State hash='%" I64F "u' topologyHash='%" I64F "u' originalTopologyHash='%" I64F "u'/>", 
+                  shash, currentTopologyHash, originalTopologyHash);
             }
             else if (stricmp(queryName, "control:resetcache")==0)
             {
@@ -2936,13 +2936,13 @@ private:
                     reply.appendf("<Dali connected='1'/>");
                 else
                     reply.appendf("<Dali connected='0'/>");
-                unsigned __int64 thash = getTopologyHash();
                 unsigned __int64 shash;
                 {
                     ReadLockBlock readBlock(packageCrit);
                     shash = allQueryPackages->queryHash();
                 }
-                reply.appendf("<State hash='%" I64F "u' topologyHash='%" I64F "u'/>", shash, thash);
+                reply.appendf("<State hash='%" I64F "u' topologyHash='%" I64F "u' originalTopologyHash='%" I64F "u'/>", 
+                  shash, currentTopologyHash, originalTopologyHash);
             }
             else if (stricmp(queryName, "control:steppingEnabled")==0)
             {
@@ -3029,7 +3029,7 @@ private:
             {
                 topology->setPropBool("@lockDali", false);
                 // Dali will reattach via the timer that checks every so often if can reattach...
-                saveTopology();
+                saveTopology(false);
             }
             else if (stricmp(queryName, "control:unsuspend")==0)
             {
@@ -3068,6 +3068,7 @@ private:
             unknown = true;
             break;
         }
+        currentTopologyHash = getTopologyHash();
         if (unknown)
             throw MakeStringException(ROXIE_UNKNOWN_QUERY, "Unknown query %s", queryName);
     }
@@ -3075,13 +3076,6 @@ private:
     void badFormat()
     {
         throw MakeStringException(ROXIE_INVALID_INPUT, "Badly formated control query");
-    }
-
-    hash64_t getTopologyHash()
-    {
-        StringBuffer xml;
-        toXML(topology, xml, 0, XML_SortTags);
-        return rtlHash64Data(xml.length(), xml.str(), 707018);
     }
 };
 
