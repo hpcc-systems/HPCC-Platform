@@ -73,12 +73,6 @@ static JSocketStatistics *SSTATS;
 #define CHK_ERR(err, s) if((err)==-1){perror(s);exit(1);}
 #define CHK_SSL(err) if((err) ==-1){ERR_print_errors_fp(stderr); exit(2);}
 
-#define THROWSECURESOCKETEXCEPTION(err, errMsg) \
-    { \
-        VStringBuffer msg("SecureSocket Exception Raised in: %s, line %d - %s", sanitizeSourceFile(__FILE__), __LINE__, errMsg); \
-        throw createJSocketException(err, msg); \
-    }
-
 static int pem_passwd_cb(char* buf, int size, int rwflag, void* password)
 {
     strncpy(buf, (char*)password, size);
@@ -829,7 +823,7 @@ void CSecureSocket::readtms(void* buf, size32_t min_size, size32_t max_size, siz
         {
             if (0 == min_size) // mirror behviour of jsocket impl.
                 break;
-            THROWSECURESOCKETEXCEPTION(JSOCKERR_graceful_close, "graceful close");
+            THROWJSOCKEXCEPTION(JSOCKERR_graceful_close);
         }
         else
         {
@@ -842,9 +836,9 @@ void CSecureSocket::readtms(void* buf, size32_t min_size, size32_t max_size, siz
                 unsigned remainingMs = timer.remainingMs(timeoutMs);
                 rc = wait_read(remainingMs);
                 if (rc < 0)
-                    THROWSECURESOCKETEXCEPTION(SOCKETERRNO(), "wait_read error");
+                    THROWJSOCKEXCEPTION_X(SOCKETERRNO(), "wait_read error");
                 if (rc == 0)
-                    THROWSECURESOCKETEXCEPTION(JSOCKERR_timeout_expired, "timeout expired");
+                    THROWJSOCKEXCEPTION_X(JSOCKERR_timeout_expired, "timeout expired");
             }
             else
             {
@@ -854,7 +848,7 @@ void CSecureSocket::readtms(void* buf, size32_t min_size, size32_t max_size, siz
                 VStringBuffer errmsg("SSL_read error %d - %s", ssl_err, errbuf);
                 if (m_loglevel >= SSLogMax)
                     DBGLOG("Warning: %s", errmsg.str());
-                THROWSECURESOCKETEXCEPTION(ssl_err, errmsg);
+                THROWJSOCKEXCEPTION_X(ssl_err, errmsg);
             }
             // here only if nonBlocking && WANT_READ or WANT_WRITE
             // since we do not have size_min yet, loop around and wait for more.
@@ -892,16 +886,16 @@ size32_t CSecureSocket::writetms(void const* buf, size32_t minSize, size32_t siz
             ERR_clear_error();
             VStringBuffer errmsg("SSL_write error %d - %s", err, errbuf);
             if (err == SSL_ERROR_ZERO_RETURN)
-                throw createJSocketException(JSOCKERR_graceful_close, errmsg);
+                THROWJSOCKEXCEPTION(JSOCKERR_graceful_close);
             else
-                throw createJSocketException(JSOCKERR_broken_pipe, errmsg);
+                THROWJSOCKEXCEPTION_X(JSOCKERR_broken_pipe, errmsg);
         }
         unsigned remainingMs = timer.remainingMs(timeoutms);
         int rc = wait_write(remainingMs);
         if (rc < 0)
-            throw createJSocketException(SOCKETERRNO(), "wait_read error");
+            THROWJSOCKEXCEPTION_X(SOCKETERRNO(), "wait_read error");
         else if (rc == 0)
-            throw createJSocketException(JSOCKERR_timeout_expired, "timeout expired");
+            THROWJSOCKEXCEPTION(JSOCKERR_timeout_expired);
     }
     throwUnexpected(); // should never get here
 }

@@ -688,8 +688,10 @@ extern jlib_decl int wait_write_multiple(UnsignedArray  &socks,     //IN   socke
                                         unsigned timeoutMS,         //IN   timeout
                                         UnsignedArray  &readySocks);//OUT  sockets ready to be written
 
-extern jlib_decl void throwJSocketException(int jsockErr);
-extern jlib_decl IJSOCK_Exception* createJSocketException(int jsockErr, const char *_msg);
+extern jlib_decl IJSOCK_Exception* createJSocketException(int jsockErr, const char *_msg, const char *file, unsigned line);
+extern jlib_decl void throwJSockException(int jsockErr, const char *_msg, const char *file, unsigned line);
+#define THROWJSOCKEXCEPTION(exc) throwJSockException(exc, nullptr, __FILE__, __LINE__)
+#define THROWJSOCKEXCEPTION_X(exc, msg) throwJSockException(exc, msg, __FILE__, __LINE__)
 
 extern jlib_decl bool isIPV4(const char *ip);
 extern jlib_decl bool isIPV6(const char *ip);
