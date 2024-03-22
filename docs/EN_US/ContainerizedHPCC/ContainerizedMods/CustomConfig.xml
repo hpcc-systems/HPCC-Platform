@@ -992,39 +992,41 @@ eclagent:
     </sect2>
   </sect1>
 
-  <sect1 id="LDAPSecurity_forConatiners">
-    <title>LDAP Security for Containers</title>
+  <sect1 id="SecureHPCCAdminCreds_forConatiners">
+    <title>Securing Credentials Containers</title>
 
-    <para>Containerized LDAP support for HPCC Systems is accomplished by
-    externalizing the LDAP Active Directory Security Manager administrators
-    account credentials using Kubernetes or Hashicorp Vault secrets. As a
-    prerequisite to use these externalized credentials, you should be familiar
-    with setting up Kubernetes and/or Hashicorp Vault secrets.</para>
+    <para>Utilizing HPCC Systems in a containerized environment has some
+    unique security concerns by externalizing typically internalized
+    components, such as HPCC Systems administrator credentials. Securing the
+    HPCC Systems administrator credentials is accomplished by using either
+    Kubernetes or Hashicorp Vault secrets. As a prerequisite you should be
+    familiar with setting up Kubernetes and/or Hashicorp Vault secrets.</para>
 
-    <para>The HPCC Administrator does not have Active Directory administrator
-    rights. Instead, it must have administrator rights to all of the Base DNs
-    used by the HPCC Systems platform. The credentials for that HPCC Systems
-    administrators account therefore must be secured either using Kubernetes
-    secrets or the Hashicorp Vault. </para>
+    <para>The HPCC Systems administrator account must have administrator
+    rights to all of the Base DNs used by the HPCC Systems platform. In a
+    cloud deployment these credentials can be exposed. A good practice then,
+    for these HPCC Systems administrator credentials is to be secured either
+    using Kubernetes secrets or the Hashicorp Vault.</para>
 
-    <sect2 id="Configuring_For_KubernetesSecrets">
+    <sect2 id="SecuringCredentials_For_KubernetesSecrets">
       <title>Securing Credentials in Kubernetes</title>
 
-      <para>To create a secret in Kubernetes for the HPCC Administrators user
-      account from a command line interface to Kubernetes, execute a command
-      similar to the following example. Note the secret name, is
-      "admincredssecretname" in this example. The HPCC Administrators user
-      account "username" and "password" key/values are required, and
-      additional properties are ignored.</para>
+      <para>To create a secret in Kubernetes to store the HPCC Systems
+      administrator user account, use a command line interface to Kubernetes,
+      and execute a command similar to the following example: </para>
 
       <programlisting lang="bash">kubectl create secret generic admincredssecretname --from-literal=username=hpcc_admin \
   --from-literal=password=t0pS3cr3tP@ssw0rd
 </programlisting>
 
-      <para>This sets the values for the Administrator's username and password
-      in Kubernetes and sets them as secrets. At this point you can verify the
-      secret you just created by executing the following command on the
-      Kubernetes command line interface.</para>
+      <para>In the above example, the Kubernetes secret name, is
+      "admincredssecretname" and it contains the HPCC Systems administrator
+      account "username" and "password" key/values. This sets the values for
+      the HPCC Systems administrator username and password in Kubernetes and
+      sets them as secrets. Any additional properties are ignored.</para>
+
+      <para>You can verify the secret you just created by executing the
+      following command on the Kubernetes command line interface.</para>
 
       <programlisting lang="bash">kubectl get secret admincredssecretname</programlisting>
 
@@ -1046,12 +1048,13 @@ eclagent:
         "admincredssecretname".</para>
 
         <para>You can optionally define an additional alternate name, such as,
-        "admincredsaltmountname" which can be used with another Active
-        Directory server. The alternate name is illustrated in the example
-        below and should be added to your chart if necessary.</para>
+        "admincredsaltmountname" which can be used, for instance, with another
+        Active Directory server. The alternate name as illustrated in the
+        example below and indicates how you can add any additional credentials
+        or secrets to your Helm chart(s) if necessary.</para>
 
         <para>The "admincredsmountname" key/value pair already exists by
-        default in the HPCC Systems delivered values.yaml file. The key is
+        default in the delivered HPCC Systems values.yaml file. The key is
         referenced in the component's ldap.yaml file. You may override these
         and add additional key/values as needed.</para>
 
@@ -1069,8 +1072,9 @@ eclagent:
         HPCC-Platform/esp/applications/common/ldap/ldap.yaml file, the
         "ldapAdminSecretKey" is already set to the key mount name illustrated
         in the example above. To enable LDAP authentication and to modify this
-        value, override the ESP/ECLWatch helm component located in values.yaml
-        as illustrated in the following example:</para>
+        value, you or your systems administrator can override the ESP/ECLWatch
+        Helm component located in values.yaml chart as illustrated in the
+        following example:</para>
 
         <programlisting lang="YAML">esp:
 - name: eclwatch
@@ -1081,24 +1085,25 @@ eclagent:
     ldapAdminSecretKey: "admincredsaltmountname"   # use alternate secrets creds
 </programlisting>
 
-        <para> </para>
+        <para></para>
       </sect3>
     </sect2>
 
-    <sect2 id="Configuring_For_HashoCorpVault">
-      <title>Configuring LDAP in HashiCorp Vault</title>
+    <sect2 id="SecuringCreds_For_HashoCorpVault">
+      <title>Securing credentials in HashiCorp Vault</title>
 
       <para>To create and store secrets in the HashiCorp Vault, from the
       command command line interface, execute the following Vault commands.
       The secret name used in the example below is "myvaultadmincreds" and
       must be prefixed with "secret/authn/" as illustrated. The HPCC Systems
-      administrator "username" and "password" key/values are required; and
-      additional properties are ignored.</para>
+      administrator "username" and "password" key/values are required.
+      Additional properties are ignored.</para>
 
       <programlisting>vault kv put secret/authn/myvaultadmincreds username=hpcc_admin password=t0pS3cr3tP@ssw0rd </programlisting>
 
-      <para>This stores the values for the HPCC Systems administrator username
-      and password into the HashiCorp Vault.</para>
+      <para>Where the "secret/authn/myvaultadmincreds" is the name of the
+      secret containing the HPCC Systems administrator username and password.
+      </para>
 
       <para>To verify and confirm the secret values, execute the following
       command:</para>
@@ -1110,10 +1115,10 @@ eclagent:
       implementation.</para>
 
       <sect3 id="Deploying_HashiCorpVault">
-        <title id="DeployingTheHashiCorpVault">Deploying the HashiCorp
+        <title id="DeployingTheHashiCorpVault">Deploy the HashiCorp
         Vault</title>
 
-        <para>You can deploy the HashiCorp Vault secrets when you override the
+        <para>Deploy the HashiCorp Vault secrets when you override the
         "secrets:" section in HPCC-Platform/helm/hpcc/values.yaml, or in your
         customized configuration chart. For more information about customizing
         your HPCC Systems containerized deployment see the above sections on
@@ -1132,6 +1137,10 @@ eclagent:
       url: http://${env.VAULT_SERVICE_HOST}:${env.VAULT_SERVICE_PORT}/v1/secret/data/authn/${secret}
       kind: kv-v2
 </programlisting>
+
+        <para>You could put this into your own customization chart where you
+        supply your deployment with the name of the vault containing the
+        credentials. </para>
       </sect3>
 
       <sect3 id="REF_HASHICORPVault_LDAP">
@@ -1152,7 +1161,7 @@ eclagent:
     ldapAdminVaultId: "my-authn-vault"
 </programlisting>
 
-        <para> </para>
+        <para></para>
       </sect3>
     </sect2>
   </sect1>
