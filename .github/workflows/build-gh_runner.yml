@@ -123,10 +123,17 @@ jobs:
           sudo apt-get -yq install -f mono-complete
 
       - name: OSX Dependencies
-        if: ${{ contains(inputs.os, 'macos') }}
+        if: ${{ contains(inputs.os, 'macos-12') }}
         shell: "bash"
         run: |
           brew install bison flex pkg-config autoconf autoconf-archive automake libtool cmake openjdk@11 ninja
+  
+      - name: OSX Dependencies
+        if: ${{ contains(inputs.os, 'macos-13') }}
+        shell: "bash"
+        run: |
+          brew install bison flex autoconf autoconf-archive automake libtool ninja
+          brew install --ignore-dependencies openjdk@11
 
       - name: "Remove builtin vcpkg (old)"
         working-directory: .
