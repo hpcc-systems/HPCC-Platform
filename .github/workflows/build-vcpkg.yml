@@ -16,6 +16,11 @@ on:
         description: 'Operating System'
         required: false
         default: 'ubuntu-22.04'
+      docs:
+        type: boolean
+        description: 'Build Documentation (skips platform build)'
+        required: false
+        default: false
       ln:
         type: boolean
         description: 'Internal Build'
@@ -48,13 +53,24 @@ on:
 jobs:
 
   build-workflow-dispatch:
-    if: ${{ contains('workflow_dispatch', github.event_name) }}
+    if: ${{ contains('workflow_dispatch', github.event_name) && inputs.docs != true }}
     uses: ./.github/workflows/build-docker.yml
     with:
       os: ${{ inputs.os }}
       ln: ${{ inputs.ln }}
       upload-package: true
       asset-name: 'docker-package'
+    secrets: inherit
+
+  build-workflow-dispatch-docs:
+    if: ${{ contains('workflow_dispatch', github.event_name) && inputs.docs == true }}
+    uses: ./.github/workflows/build-gh_runner.yml
+    with:
+      os: ${{ inputs.os }}
+      ln: false
+      upload-package: false
+      asset-name: ''
+      cmake-configuration-ex: '-DMAKE_DOCS_ONLY=ON'
     secrets: inherit
 
   test-workflow-dispatch:
@@ -159,6 +175,14 @@ jobs:
     uses: ./.github/workflows/build-gh_runner.yml
     with:
       os: ubuntu-22.04
+    secrets: inherit
+
+  build-gh_runner-ubuntu-22_04-docs:
+    if: ${{ contains('schedule,push', github.event_name) }}
+    uses: ./.github/workflows/build-gh_runner.yml
+    with:
+      os: ubuntu-22.04
+      cmake-configuration-ex: '-DMAKE_DOCS_ONLY=ON'
     secrets: inherit
 
   build-gh_runner-ubuntu-20_04:
