@@ -29,6 +29,7 @@ import signal
 import argparse
 
 from hpcc.regression.regress import Regression
+from hpcc.regression import cleanup
 from hpcc.util.util import checkClusters, checkHpccStatus
 from hpcc.util.util import setConfig, checkPqParam, getVersionNumbers, checkXParam, convertPath, isPositiveIntNum
 from hpcc.util.util import getEclRunArgs, isSudoer, getCodeInfo
@@ -273,8 +274,10 @@ class RegressMain:
         parser_run.add_argument('--publish', '-p', help="Publish compiled query instead of run.",
                                 action='store_true')
         parser_run.add_argument('--handleEclccWarningFile', '-w', help="Create/overwrite/delete ECLCC warning file.",
-                                action='store_true')
-
+                                action='store_true')                                                   
+        parser_run.add_argument('--cleanup', '-c', choices=['all', 'workunits', 'passed', 'none'], help="Select the cleanup mode: none(default)/all/workunits/passed",
+                                nargs='?', type=str, metavar="all | workunits | passed | none", default='none')
+                                       
 
         self.parser_query = subparsers.add_parser('query', help='Query help',  parents=[helperParser, commonParser, executionParser])
         self.parser_query.set_defaults(func='query')
@@ -285,9 +288,11 @@ class RegressMain:
         self.parser_query.add_argument('--publish', '-p', help="Publish compiled query instead of run.",
                                 action='store_true')
         self.parser_query.add_argument('--handleEclccWarningFile', '-w', help="Create/overwrite/delete ECLCC warning file.",
-                                action='store_true')
-
-
+                                action='store_true')  
+        self.parser_query.add_argument('--cleanup', '-c', choices=['all', 'workunits', 'passed', 'none'], help="Select the cleanup mode: none(default)/all/workunits/passed",
+                                nargs='?', type=str, metavar="all | workunits | passed | none", default='none')
+                                
+       
         try:
             self.args = parser.parse_args()
         except Error as e:
@@ -479,6 +484,16 @@ class RegressMain:
                 self.setup()
             elif self.args.func == 'run':
                 self.run()
+
+            #Process automatic deletion of workunits after test
+            if 'cleanup' in self.args:
+                cleanupMode = self.args.cleanup
+                if(cleanupMode == 'none'):
+                    logging.warning("Automatic cleanup of workunits has not been enabled.")       	    
+                else:
+                    logging.warning("Automatic Cleanup Routine\n")
+                    cleanup.checkCleanupMode(cleanupMode)
+        
         except Error as e:
             logging.critical(e)
             logging.critical(traceback.format_exc())
@@ -496,6 +511,7 @@ class RegressMain:
             if self.regress:
                 self.regress.close()
                 self.regress = None
+
         exit()
 
 
