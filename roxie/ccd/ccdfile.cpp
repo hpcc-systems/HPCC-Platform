@@ -3013,6 +3013,8 @@ public:
                             }
                             if (!translator || !translator->canTranslate())
                                 throw MakeStringException(ROXIE_MISMATCH, "Untranslatable record layout mismatch detected for file %s", subname);
+                            else if (mode == RecordTranslationMode::PayloadRemoveOnly && translator->hasNewFields())
+                                throw MakeStringException(0, "Translatable file layout mismatch reading file %s but translation disabled when expected fields are missing from source.", subname);
                             else if (translator->needsTranslate())
                             {
                                 if (fileMode==FileFormatMode::index && translator->keyedTranslated())

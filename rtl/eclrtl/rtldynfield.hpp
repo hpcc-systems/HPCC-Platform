@@ -110,7 +110,8 @@ enum class RecordTranslationMode : byte
     Payload = 2,    // Translate all fields in datasets, and only payload fields in indexes
     AlwaysDisk = 3, // Always translate - even if wouldn't normally (e.g. csv/xml source read as binary), or crcs happen to match
     AlwaysECL = 4,  // Ignore the published format - can make sense to force no translation e.g. when field names have changed
-    Unspecified = 5
+    PayloadRemoveOnly = 5, // Allow fields to be removed from the incoming dataset, but not allow fields to be missing
+    Unspecified = 6
 };  // AlwaysDisk and AlwaysECL are for testing purposes only, and can only be set per file (not globally)
 
 extern ECLRTL_API RecordTranslationMode getTranslationMode(const char *modeStr, bool isLocal);
@@ -139,6 +140,7 @@ interface IDynamicTransform : public IInterface
     virtual bool needsTranslate() const = 0;
     virtual bool keyedTranslated() const = 0;
     virtual bool needsNonVirtualTranslate() const = 0;
+    virtual bool hasNewFields() const = 0;
 };
 
 interface IKeyTranslator : public IInterface

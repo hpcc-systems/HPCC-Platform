@@ -22,6 +22,8 @@ multiPart := #IFDEFINED(root.multiPart, false);
 
 //--- end of version configuration ---
 
+#option('layoutTranslation', 'payload');
+
 //check that compound disk read activities workcorrectly when the input file is translated
 //include keyed filters to ensure they are also translated correctly
 

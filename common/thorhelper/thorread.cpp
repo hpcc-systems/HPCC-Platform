@@ -176,6 +176,9 @@ void DiskReadMapping::ensureTranslators() const
         if (!translator->canTranslate())
             throw MakeStringException(0, "Untranslatable record layout mismatch detected for file %s", filename);
 
+        if (mode == RecordTranslationMode::PayloadRemoveOnly && translator->hasNewFields())
+            throw MakeStringException(0, "Translatable file layout mismatch reading file %s but translation disabled when expected fields are missing from source.", filename);
+
         if (translator->needsTranslate())
         {
             if (sourceMeta != expectedMeta)

@@ -103,7 +103,7 @@ unsigned defaultTraceLimit = 10;
 unsigned watchActivityId = 0;
 unsigned testAgentFailure = 0;
 RelaxedAtomic<unsigned> restarts;
-RecordTranslationMode fieldTranslationEnabled = RecordTranslationMode::Payload;
+RecordTranslationMode fieldTranslationEnabled = RecordTranslationMode::PayloadRemoveOnly;
 bool mergeAgentStatistics = true;
 PTreeReaderOptions defaultXmlReadFlags = ptr_ignoreWhiteSpace;
 bool runOnce = false;
@@ -1181,7 +1181,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         agentQueryReleaseDelaySeconds = topology->getPropInt("@agentQueryReleaseDelaySeconds", topology->getPropInt("@slaveQueryReleaseDelaySeconds", 60));  // legacy name
         coresPerQuery = topology->getPropInt("@coresPerQuery", 0);
 
-        fieldTranslationEnabled = RecordTranslationMode::Payload;
+        fieldTranslationEnabled = RecordTranslationMode::PayloadRemoveOnly;
         const char *val = topology->queryProp("@fieldTranslationEnabled");
         if (val)
             fieldTranslationEnabled = getTranslationMode(val, false);
