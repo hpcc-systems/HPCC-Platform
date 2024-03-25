@@ -8,8 +8,9 @@ define([
     "hpcc/GridDetailsWidget",
     "src/WsTopology",
     "hpcc/DelayLoadWidget",
-    "src/ESPUtil"
+    "src/ESPUtil",
 
+    "dijit/Dialog",
 ], function (declare, lang, nlsHPCCMod,
     selector,
     GridDetailsWidget, WsTopology, DelayLoadWidget, ESPUtil) {
