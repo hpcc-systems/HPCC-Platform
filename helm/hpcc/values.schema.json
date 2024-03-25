@@ -1865,7 +1865,7 @@
           "description": "Should the index node memory allocation flush the cache and retry if memory allocation fails"
         },
         "fieldTranslationEnabled": {
-          "default": "payload",
+          "default": "payloadRemoveOnly",
           "enum": ["false", "true", "payload", "payloadRemoveOnly"],
           "description": "Enables translation (where possible) of mismatched file layouts on-the-fly. Specify 'payload' to attempt to translate payload fields only"
         },
