@@ -12,6 +12,7 @@ cd vcpkg
 VCPKG_REF=$(git rev-parse --short=8 HEAD)
 cd ..
 GITHUB_BRANCH=$(git log -50 --pretty=format:"%D" | tr ',' '\n' | grep 'upstream/' | awk 'NR==1 {sub("upstream/", ""); print}' | xargs)
+GITHUB_BRANCH=${GITHUB_BRANCH:-master}
 DOCKER_USERNAME="${DOCKER_USERNAME:-hpccbuilds}"
 DOCKER_PASSWORD="${DOCKER_PASSWORD:-none}"
 
@@ -26,7 +27,9 @@ echo "DOCKER_PASSWORD: $DOCKER_PASSWORD"
 
 docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
 
-CMAKE_OPTIONS="-G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DVCPKG_FILES_DIR=/hpcc-dev -DCPACK_THREADS=0 -DUSE_OPTIONAL=OFF -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON"
+CMAKE_ALL_OPTIONS="-G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DHPCC_SOURCE_DIR=/hpcc-dev/HPCC-Platform -DCONTAINERIZED=OFF -DCPACK_STRIP_FILES=ON -DINCLUDE_PLUGINS=ON -DVCPKG_FILES_DIR=/hpcc-dev -DCPACK_THREADS=0 -DUSE_OPTIONAL=OFF -DUSE_CPPUNIT=ON -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
+CMAKE_OPENBLAS_OPTIONS="-G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DHPCC_SOURCE_DIR=/hpcc-dev/HPCC-Platform -DCONTAINERIZED=OFF -DCPACK_STRIP_FILES=OFF -DECLBLAS=ON -DVCPKG_FILES_DIR=/hpcc-dev -DCPACK_THREADS=0 -DUSE_OPTIONAL=OFF -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
+CMAKE_PLATFORM_OPTIONS="-G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DHPCC_SOURCE_DIR=/hpcc-dev/HPCC-Platform -DCONTAINERIZED=OFF -DCPACK_STRIP_FILES=ON -DPLATFORM=ON -DVCPKG_FILES_DIR=/hpcc-dev -DCPACK_THREADS=0 -DUSE_OPTIONAL=OFF -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
 
 function doBuild() {
     docker pull "hpccsystems/platform-build-base-$1:$VCPKG_REF" || true
@@ -46,7 +49,7 @@ function doBuild() {
     # docker push hpccsystems/platform-build-$1:$GITHUB_BRANCH
 
     CMAKE_OPTIONS_EXTRA=""
-    if [ "$1" == "centos-7" ]; then
+    if [ "$1" == "centos-7*" ]; then
         CMAKE_OPTIONS_EXTRA="-DVCPKG_TARGET_TRIPLET=x64-centos-7-dynamic"
     elif [ "$1" == "amazonlinux" ]; then
         CMAKE_OPTIONS_EXTRA="-DVCPKG_TARGET_TRIPLET=x64-amazonlinux-dynamic"
@@ -54,22 +57,35 @@ function doBuild() {
     mkdir -p $HOME/.ccache
     docker run --rm \
         --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached \
+        --mount source="$(realpath ~)/.cache/vcpkg",target=/root/.cache/vcpkg,type=bind,consistency=cached \
         --mount source="$HOME/.ccache",target=/root/.ccache,type=bind,consistency=cached \
         hpccsystems/platform-build-$1:$VCPKG_REF \
-        "cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/HPCC-Platform/build-$1 ${CMAKE_OPTIONS} ${CMAKE_OPTIONS_EXTRA} -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache && \
-        cmake --build /hpcc-dev/HPCC-Platform/build-$1 --target install --parallel $(nproc) && \
-        /etc/init.d/hpcc-init start"
+        "rm -rf /hpcc-dev/HPCC-Platform/build-$1/CMakeCache.txt /hpcc-dev/HPCC-Platform/build-$1/CMakeFiles && \
+        cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/HPCC-Platform/build-$1 ${CMAKE_ALL_OPTIONS} ${CMAKE_OPTIONS_EXTRA} -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache && \
+        cmake --build /hpcc-dev/HPCC-Platform/build-$1 --parallel && \
+        echo 'Done'"
 
-    sudo chown -R $(id -u):$(id -g) ./build-$1
+# sudo chown -R $(id -u):$(id -g) ./build-$1
 # docker run -it --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached build-ubuntu-22.04:latest bash
 }
 
-# doBuild ubuntu-23.10
-# doBuild ubuntu-20.04
-# doBuild amazonlinux
-# doBuild ubuntu-22.04
-# doBuild centos-8
-doBuild centos-7
+trap 'kill $(jobs -p)' EXIT
+
+# ./vcpkg/bootstrap-vcpkg.sh
+mkdir -p ./vcpkg-logs
+
+if [ "$1" != "" ]; then
+    doBuild $1 &
+else
+    # doBuild ubuntu-24.04 &> vcpkg-logs/ubuntu-24.04.log &
+    doBuild ubuntu-22.04 &> vcpkg-logs/ubuntu-22.04.log &
+    doBuild ubuntu-20.04 &> vcpkg-logs/ubuntu-20.04.log &
+    # doBuild rockylinux-8 &> vcpkg-logs/rockylinux-8.log &
+    doBuild centos-8 &> vcpkg-logs/centos-8.log &
+    doBuild amazonlinux &> vcpkg-logs/amazonlinux.log &
+    doBuild centos-7-rh-python38 &> vcpkg-logs/centos-7-rh-python38.log & 
+    doBuild centos-7 &> vcpkg-logs/centos-7.log & 
+fi
 
 wait
 
