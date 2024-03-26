@@ -103,6 +103,7 @@ protected:
     unsigned fileIdx = 0;
     unsigned crc = 0;
     CRuntimeStatisticCollection fileStats;
+    size32_t blockedIOsize = 0;
 
 #ifdef FAIL_20_READ
     unsigned readCount;
@@ -111,8 +112,8 @@ protected:
 public:
     IMPLEMENT_IINTERFACE;
 
-    CRoxieLazyFileIO(IFile *_logical, offset_t size, const CDateTime &_date, bool _isCompressed, bool _isKey, unsigned _crc)
-        : logical(_logical), fileSize(size), isCompressed(_isCompressed), isKey(_isKey), crc(_crc), fileStats(diskLocalStatistics)
+    CRoxieLazyFileIO(IFile *_logical, offset_t size, const CDateTime &_date, bool _isCompressed, bool _isKey, unsigned _crc, size32_t _blockedIOsize)
+        : logical(_logical), fileSize(size), isCompressed(_isCompressed), isKey(_isKey), crc(_crc), fileStats(diskLocalStatistics), blockedIOsize(_blockedIOsize)
     {
         fileDate.set(_date);
         currentIdx = 0;
@@ -288,7 +289,11 @@ public:
                         if (isCompressed && !isKey)
                             current.setown(createCompressedFileReader(f));
                         else
+                        {
                             current.setown(f->open(IFOread));
+                            if (current && blockedIOsize)
+                                current.setown(createBlockedIO(current.getClear(), blockedIOsize));
+                        }
                         if (current)
                         {
                             if (doTrace(traceRoxieFiles))
@@ -1051,6 +1056,7 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
         unsigned crc = 0;
         bool isCompressed = false;
         bool isKey = false;
+        size32_t blockedSize = 0;
         if (!selfTestMode)
         {
             pdesc->getCrc(crc);
@@ -1059,9 +1065,12 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
             const char *kind = fdesc.queryKind();
             if (kind && streq(kind, "key"))
                 isKey = true;
+            StringBuffer planeName;
+            fdesc.getClusterLabel(pdesc->copyClusterNum(0), planeName);
+            blockedSize = getBlockedFileIOSize(planeName);
         }
 
-        Owned<CRoxieLazyFileIO> ret = new CRoxieLazyFileIO(local.getLink(), size, modified, isCompressed, isKey, crc);
+        Owned<CRoxieLazyFileIO> ret = new CRoxieLazyFileIO(local.getLink(), size, modified, isCompressed, isKey, crc, blockedSize);
         RoxieFileStatus fileStatus = fileUpToDate(local, size, modified, isCompressed);
         if (fileStatus == FileIsValid)
         {
