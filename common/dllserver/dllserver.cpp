@@ -785,7 +785,10 @@ void initDllServer(const char * localRoot)
 {
     CriticalBlock b(dllServerCrit);
     ::Release(dllServer);
-    dllServer = new DllServer(localRoot);
+    if (isContainerized())
+        dllServer = new SharedVolumeDllServer(localRoot);
+    else
+        dllServer = new DllServer(localRoot);
 }
 
 
