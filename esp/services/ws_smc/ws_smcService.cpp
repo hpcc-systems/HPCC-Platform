@@ -143,6 +143,8 @@ void CWsSMCEx::init(IPropertyTree *cfg, const char *process, const char *service
 
 #ifdef _CONTAINERIZED
     initContainerRoxieTargets(roxieConnMap);
+#else
+    initBareMetalRoxieTargets(roxieConnMap);
 #endif
 
     xpath.setf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/ActivityInfoCacheSeconds", process, service);
@@ -2305,18 +2307,18 @@ bool CWsSMCEx::onRoxieControlCmd(IEspContext &context, IEspRoxieControlCmdReques
     if (isEmptyString(process))
         throw makeStringException(ECLWATCH_MISSING_PARAMS, "Process cluster not specified.");
 
-    SocketEndpointArray addrs;
-    getRoxieProcessServers(process, addrs);
-    if (!addrs.length())
-        throw makeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Process cluster not found.");
-    Owned<IPropertyTree> controlResp = sendRoxieControlAllNodes(addrs.item(0), controlReq, true, req.getWait());
+    ISmartSocketFactory *conn = roxieConnMap.getValue(process);
+    if (!conn)
+        throw makeStringExceptionV(ECLWATCH_CANNOT_GET_ENV_INFO, "Connection info for '%s' process cluster not found.", process);
+    
+    Owned<IPropertyTree> controlResp = sendRoxieControlAllNodes(conn, controlReq, true, req.getWait(), ROXIECONNECTIONTIMEOUT);
 #else
     const char *target = req.getTargetCluster();
     if (isEmptyString(target))
         target = req.getProcessCluster(); //backward compatible
     if (isEmptyString(target))
         throw makeStringException(ECLWATCH_MISSING_PARAMS, "Target cluster not specified.");
-
+ 
     ISmartSocketFactory *conn = roxieConnMap.getValue(target);
     if (!conn)
         throw makeStringExceptionV(ECLWATCH_CANNOT_GET_ENV_INFO, "roxie target cluster not mapped: %s", target);
