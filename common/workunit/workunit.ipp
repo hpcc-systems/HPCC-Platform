@@ -241,6 +241,7 @@ public:
     virtual IConstWUPluginIterator & getPlugins() const;
     virtual IConstWULibraryIterator & getLibraries() const;
     virtual WUPriorityClass getPriority() const;
+    virtual double getCost() const;
     virtual const char *queryPriorityDesc() const;
     virtual int getPriorityLevel() const;
     virtual int getPriorityValue() const;
@@ -328,6 +329,7 @@ public:
     void setDebugValueInt(const char * propname, int value, bool overwrite);
     void setJobName(const char * value);
     void setPriority(WUPriorityClass cls);
+    void setCost(double cost);
     void setPriorityLevel(int level);
     void setRescheduleFlag(bool value);
     void setResultLimit(unsigned value);

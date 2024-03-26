@@ -202,6 +202,8 @@ WsWUExceptions::WsWUExceptions(IConstWorkUnit& wu): numerr(0), numwrn(0), numinf
             e->setActivity(cur.getActivityId());
         if (cur.getPriority())
             e->setPriority(cur.getPriority());
+        if (cur.getCost())
+            e->setCost(cur.getCost());
         e->setScope(cur.queryScope());
 
         const char * label = "";
