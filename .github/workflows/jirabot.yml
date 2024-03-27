@@ -82,14 +82,18 @@ jobs:
 
                 if prAuthor:
                     assignee = issueFields['assignee']
-                    assigneeId = assignee['accountId']
-                    assigneeEmail = assignee["emailAddress"]
+                    if assignee is None:
+                        assigneeId = ''
+                        assigneeEmail = ''
+                    else:
+                        assigneeId = assignee['accountId']
+                        assigneeEmail = assignee["emailAddress"]
 
                     prAuthorId = prAuthor["accountId"]
                     prAuthorEmail = prAuthor["emailAddress"]
                     if assigneeId is None or assigneeId == '':
                         jira.assign_issue(issueName, prAuthorId)
-                        result += 'Assigning user: ' + prAuthor + '\n'
+                        result += 'Assigning user: ' + prAuthorEmail + '\n'
                     elif assigneeId != prAuthorId:
                         result += 'Changing assignee from: ' + assigneeEmail + ' to: ' + prAuthorEmail + '\n'
                         jira.assign_issue(issueName, prAuthorId)
