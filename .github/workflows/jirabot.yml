@@ -123,13 +123,13 @@ jobs:
                 jira = Jira(url=jira_url, username= jirabot_user, password= jirabot_pass, cloud=True)
 
                 jiraUser = None
-                userSearchResults = jira.find_user_by_user_string(query=prAuthor)
+                userSearchResults = jira.user_find_by_user_string(query=prAuthor)
                 if userSearchResults and len(userSearchResults) > 0:
                     jiraUser = userSearchResults[0]
                 else:
                     print('Error: Unable to find Jira user: ' + prAuthor + ' continuing without assigning')
 
-                if !jira.issue_exists(issue_name):
+                if not jira.issue_exists(issue_name):
                     sys.exit('Error: Unable to find Jira issue: ' + issue_name)
                 else:
                     issue = jira.issue(issue_name)
