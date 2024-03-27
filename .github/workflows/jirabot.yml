@@ -118,7 +118,7 @@ jobs:
 
                 if prAuthor in userDict:
                     prAuthor = userDict.get(prAuthor)
-                    print('Mapped Github user to Jira user: ' + prAuthor)
+                    print('Mapped Github user to Jira user email: ' + prAuthor)
 
                 jira = Jira(url=jira_url, username= jirabot_user, password= jirabot_pass, cloud=True)
 
