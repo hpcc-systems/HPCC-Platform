@@ -54,13 +54,13 @@ private:
             return useId;
         return ++nextId;
     }
-    IKeyIndex *doload(const char *fileName, unsigned crc, IReplicatedFile *part, IFileIO *iFileIO, unsigned fileIdx, IMemoryMappedFile *iMappedFile, bool isTLK);
+    IKeyIndex *doload(const char *fileName, unsigned crc, IReplicatedFile *part, IFileIO *iFileIO, unsigned fileIdx, IMemoryMappedFile *iMappedFile, bool isTLK, size32_t blockedIOSize);
 public:
     CKeyStore();
     ~CKeyStore();
-    IKeyIndex *load(const char *fileName, unsigned crc, bool isTLK);
-    IKeyIndex *load(const char *fileName, unsigned crc, IFileIO *iFileIO, unsigned fileIdx, bool isTLK);
-    IKeyIndex *load(const char *fileName, unsigned crc, IMemoryMappedFile *iMappedFile, bool isTLK);
+    IKeyIndex *load(const char *fileName, unsigned crc, bool isTLK, size32_t blockedIOSize);
+    IKeyIndex *load(const char *fileName, unsigned crc, IFileIO *iFileIO, unsigned fileIdx, bool isTLK, size32_t blockedIOSize);
+    IKeyIndex *load(const char *fileName, unsigned crc, IMemoryMappedFile *iMappedFile, bool isTLK, size32_t blockedIOSize);
     void clearCache(bool killAll);
     void clearCacheEntry(const char *name);
     void clearCacheEntry(const IFileIO *io);
@@ -75,7 +75,7 @@ enum request { LTE, GTE };
 // INodeLoader impl.
 interface INodeLoader
 {
-    virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset) const = 0;
+    virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset, IFileIO *useIO) const = 0;
     virtual const CJHSearchNode *locateFirstLeafNode(IContextLogger *ctx) const = 0;
     virtual const CJHSearchNode *locateLastLeafNode(IContextLogger *ctx) const = 0;
     virtual const char *queryFileName() const = 0;
@@ -97,6 +97,7 @@ protected:
     CIArrayOf<IndexBloomFilter> bloomFilters;
     std::atomic<bool> bloomFiltersLoaded = {0};
     offset_t cachedBlobNodePos;
+    size32_t blockedIOSize = 0;
 
     CKeyHdr *keyHdr;
     CNodeCache *cache;
@@ -107,7 +108,8 @@ protected:
 
     CJHTreeNode *_loadNode(char *nodeData, offset_t pos, bool needsCopy) const;
     CJHTreeNode *_createNode(const NodeHdr &hdr) const;
-    const CJHSearchNode *getNode(offset_t offset, NodeType type, IContextLogger *ctx) const;
+    const CJHSearchNode *getIndexNode(offset_t offset, NodeType type, IContextLogger *ctx) const;
+    const CJHSearchNode *getIndexNodeUsingLoader(const INodeLoader *nodeLoader, offset_t offset, NodeType type, IContextLogger *ctx) const;
     const CJHTreeBlobNode *getBlobNode(offset_t nodepos, IContextLogger *ctx);
 
     CKeyIndex(unsigned _iD, const char *_name);
@@ -157,7 +159,7 @@ public:
     virtual offset_t queryFirstBranchOffset() override;
 
  // INodeLoader impl.
-    virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset) const override = 0;  // Must be implemented in derived classes
+    virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset, IFileIO *useIO) const override = 0;  // Must be implemented in derived classes
     virtual const CJHSearchNode *locateFirstLeafNode(IContextLogger *ctx) const override;
     virtual const CJHSearchNode *locateLastLeafNode(IContextLogger *ctx) const override;
 
@@ -176,7 +178,7 @@ public:
     virtual const char *queryFileName() const { return name.get(); }
     virtual const IFileIO *queryFileIO() const override { return nullptr; }
 // INodeLoader impl.
-    virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset) const override;
+    virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset, IFileIO *useIO) const override;
     virtual void mergeStats(CRuntimeStatisticCollection & stats) const override {}
 };
 
@@ -187,16 +189,16 @@ private:
     void cacheNodes(CNodeCache *cache, offset_t firstnode, bool isTLK);
     
 public:
-    CDiskKeyIndex(unsigned _iD, IFileIO *_io, const char *_name, bool _isTLK);
+    CDiskKeyIndex(unsigned _iD, IFileIO *_io, const char *_name, bool _isTLK, size32_t _blockedIOSize);
 
     virtual const char *queryFileName() const { return name.get(); }
     virtual const IFileIO *queryFileIO() const override { return io; }
 // INodeLoader impl.
-    virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset) const override;
+    virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset, IFileIO *useIO) const override;
     virtual void mergeStats(CRuntimeStatisticCollection & stats) const override { ::mergeStats(stats, io); }
 };
 
-class jhtree_decl CKeyCursor : public CInterfaceOf<IKeyCursor>
+class jhtree_decl CKeyCursor : public CInterfaceOf<IKeyCursor>, implements INodeLoader
 {
 protected:
     CKeyIndex &key;
@@ -209,8 +211,9 @@ protected:
     bool eof=false;
     bool matched=false; //MORE - this should probably be renamed. It's tracking state from one call of lookup to the next.
     bool logExcessiveSeeks = false;
+    Owned<IFileIO> myIO;  // This should be a blockedIO based on key.IO if blocking is enabled, else nullptr
 public:
-    CKeyCursor(CKeyIndex &_key, const IIndexFilterList *filter, bool _logExcessiveSeeks);
+    CKeyCursor(CKeyIndex &_key, const IIndexFilterList *filter, bool _logExcessiveSeeks, unsigned _blockedIOSize);
     ~CKeyCursor();
 
     virtual const char *queryName() const override;
@@ -234,6 +237,25 @@ public:
     virtual bool nextRange(unsigned groupSegCount) override;
     virtual const byte *queryRecordBuffer() const override;
     virtual const byte *queryKeyedBuffer() const override;
+
+ // INodeLoader impl.
+    virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset, IFileIO *useIO) const override
+    {
+        return key.loadNode(fetchCycles, offset, myIO);
+    }
+    virtual const CJHSearchNode *locateFirstLeafNode(IContextLogger *ctx) const override
+    {
+        return key.locateFirstLeafNode(ctx);
+    }
+    virtual const CJHSearchNode *locateLastLeafNode(IContextLogger *ctx) const override
+    {
+        return key.locateLastLeafNode(ctx);
+    }
+    const CJHSearchNode *getCursorNode(offset_t offset, NodeType type, IContextLogger *ctx) const
+    {
+        return key.getIndexNodeUsingLoader(this, offset, type, ctx);
+    }
+
 protected:
     CKeyCursor(const CKeyCursor &from);
 
@@ -267,6 +289,10 @@ protected:
     virtual void mergeStats(CRuntimeStatisticCollection & stats) const override
     {
         key.mergeStats(stats);
+    }
+    virtual const char *queryFileName() const override
+    {
+        return key.queryFileName();
     }
 };
 

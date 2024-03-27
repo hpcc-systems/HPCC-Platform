@@ -80,6 +80,9 @@ protected:
     mutable CriticalSection keyManagersCS;  // CS for any updates to keyManagers
     unsigned fileTableStart = NotFound;
     std::vector<Owned<CStatsContextLogger>> contextLoggers;
+    size32_t configSequentialIOSize = (size32_t)-1;
+    size32_t configRandomIOSize = (size32_t)-1;
+
 
     class TransformCallback : implements IThorIndexCallback , public CSimpleInterface
     {
@@ -287,22 +290,30 @@ public:
                 }
 
                 // local key handling
-
-                size32_t blockedSize = 0;
-                if (!helper->hasSegmentMonitors()) // unfiltered
-                {
-                    StringBuffer planeName;
-                    part.queryOwner().getClusterLabel(0, planeName);
-                    blockedSize = getBlockedFileIOSize(planeName);
-                }
-                lazyIFileIO.setown(queryThor().queryFileCache().lookupIFileIO(*this, logicalFilename, part, nullptr, indexReadFileStatistics, blockedSize));
+                lazyIFileIO.setown(queryThor().queryFileCache().lookupIFileIO(*this, logicalFilename, part, nullptr, indexReadFileStatistics));
 
                 RemoteFilename rfn;
                 part.getFilename(0, rfn);
                 StringBuffer path;
                 rfn.getPath(path); // NB: use for tracing only, IDelayedFile uses IPartDescriptor and any copy
+                StringBuffer planeName;
+                part.queryOwner().getClusterLabel(0, planeName);
 
-                Owned<IKeyIndex> keyIndex = createKeyIndex(path, crc, *lazyIFileIO, (unsigned) -1, false);
+                size32_t blockedIOSize = getPlaneAttributeValue(planeName, BlockedRandomIO, configRandomIOSize);
+                if (!helper->hasSegmentMonitors()) // unfiltered
+                {
+                    // If unfiltered, use the sequential block size if defined in the plane, or component config.
+                    // If not, default to the random block size defined in the plane, or component config.
+                    size32_t blockedSequentialIOSize = getPlaneAttributeValue(planeName, BlockedSequentialIO, (size32_t)-1);
+                    if ((size32_t)-1 != blockedSequentialIOSize)
+                        blockedIOSize = blockedSequentialIOSize; // sequential from plane
+                    else if ((size32_t)-1 == configSequentialIOSize)
+                        blockedIOSize = configSequentialIOSize; // sequential from component config
+                }
+                if ((size32_t)-1 == blockedIOSize)
+                    blockedIOSize = 0;
+
+                Owned<IKeyIndex> keyIndex = createKeyIndex(path, crc, *lazyIFileIO, (unsigned) -1, false, blockedIOSize);
                 IContextLogger * contextLogger = isSuperFile?contextLoggers[p]:contextLoggers[0];
                 Owned<IKeyManager> klManager = createLocalKeyManager(helper->queryDiskRecordSize()->queryRecordAccessor(true), keyIndex, contextLogger, helper->hasNewSegmentMonitors(), false);
                 if (localMerge)
@@ -677,6 +688,12 @@ public:
                 contextLoggers.push_back(new CStatsContextLogger(jhtreeCacheStatistics, thorJob));
             }
         }
+        configSequentialIOSize = (size32_t)getExpertOptInt64(getPlaneAttributeString(BlockedSequentialIO), (size32_t)-1);
+        if ((size32_t)-1 != configSequentialIOSize)
+            configSequentialIOSize *= 1024;
+        configRandomIOSize = (size32_t)getExpertOptInt64(getPlaneAttributeString(BlockedRandomIO), (size32_t)-1);
+        if ((size32_t)-1 != configRandomIOSize)
+            configRandomIOSize *= 1024;
     }
     // IThorDataLink
     virtual void start() override

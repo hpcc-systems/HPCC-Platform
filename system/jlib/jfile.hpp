@@ -786,6 +786,15 @@ extern jlib_decl IPropertyTreeIterator * getRemoteStoragesIterator();
 extern jlib_decl IPropertyTreeIterator * getPlanesIterator(const char * category, const char *name);
 
 extern jlib_decl IFileIO *createBlockedIO(IFileIO *base, size32_t blockSize);
+enum PlaneAttributeType
+{
+    BlockedSequentialIO,
+    BlockedRandomIO,
+    PlaneAttributeCount
+};
+extern jlib_decl const char *getPlaneAttributeString(PlaneAttributeType attr);
+extern jlib_decl unsigned __int64 getPlaneAttributeValue(const char *planeName, PlaneAttributeType planeAttrType, unsigned __int64 defaultValue);
 extern jlib_decl size32_t getBlockedFileIOSize(const char *planeName, size32_t defaultSize=0);
+extern jlib_decl size32_t getBlockedRandomIOSize(const char *planeName, size32_t defaultSize=0);
 
 #endif
