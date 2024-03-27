@@ -3838,12 +3838,6 @@ public:
         addWuExceptionEx(text, code, 2, MSGAUD_user, "user");
     }
 
-    virtual unsigned getWorkflowId() const override
-    {
-        logctx.CTXLOG("Trying to access WFID from workflow");
-        throwUnexpected();
-    }
-
     void doNotify(char const * name, char const * text)
     {
         doNotify(name, text, NULL);
