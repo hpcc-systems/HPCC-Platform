@@ -573,6 +573,13 @@ unsigned unicodeEditDistanceV3(UnicodeString & left, UnicodeString & right, unsi
     leftLen = leftCEs.length();
     rightLen = rightCEs.length();
 
+    // Check lengths again in case some pathological characters cause codepoints to be skipped/ignored
+    if (leftLen == 0)
+        return rightLen;
+
+    if (rightLen == 0)
+        return leftLen;
+
     /*
     This function applies two optimizations over the function above.
     a) Adding a charcter (next row) can at most decrease the edit distance by 1, so short circuit when
