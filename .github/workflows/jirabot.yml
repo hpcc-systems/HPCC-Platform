@@ -152,6 +152,15 @@ jobs:
 
                 result += updateIssue(jira, issue, jiraUser, transitionMap, jiraIssuePropertyMap, pull_url)
                 jira.issue_add_comment(issue_name, result)
+
+                result = 'Jira Issue: ' + jira_url + '/browse/' + issue_name + '\n\n' + result
+
+                # Escape the result for JSON
+                result = json.dumps(result)
+
+                curlCommand = 'curl -X POST %s -H "Content-Type: application/json" -H "Authorization: token %s" --data \'{ "body": %s }\'' % ( comments_url, github_token, result )
+                print(curlCommand)
+                os.system(curlCommand)
             else:
                 print('Unable to find Jira issue name in title')
 
