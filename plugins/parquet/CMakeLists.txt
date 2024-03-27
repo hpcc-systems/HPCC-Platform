@@ -59,7 +59,8 @@ if(PARQUETEMBED OR USE_PARQUET)
 
         install(
             TARGETS parquetembed
-            DESTINATION ${LIB_DIR}
+            RUNTIME DESTINATION ${EXEC_DIR}
+            LIBRARY DESTINATION ${LIB_DIR}
             COMPONENT Runtime CALC_DEPS
         )
 
