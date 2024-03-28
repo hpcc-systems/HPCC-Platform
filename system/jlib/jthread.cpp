@@ -1006,36 +1006,42 @@ class CThreadPool: public CThreadPoolBase, implements IThreadPool, public CInter
     PooledThreadHandle _start(void *param,const char *name, bool noBlock, unsigned timeout=0)
     {
         CCycleTimer startTimer;
-        bool timedout = defaultmax && !availsem.wait(noBlock ? 0 : (timeout>0?timeout:delay));
+        bool waited = false;
+        bool timedout = false;
+        if (defaultmax)
+        {
+            waited = !availsem.wait(0);
+            if (noBlock)
+                timedout = waited;
+            else if (waited)
+                timedout = !availsem.wait(timeout>0?timeout:delay);
+        }
         PooledThreadHandle ret;
         {
             CriticalBlock block(crit);
             if (timedout)
             {
-                if (!availsem.wait(0)) {  // make sure take allocated sem if has become available
+                if (!availsem.wait(0)) // make sure take allocated sem if has become available
+                {
                     if (noBlock || timeout > 0)
                         throw MakeStringException(0, "No threads available in pool %s", poolname.get());
                     IWARNLOG("Pool limit exceeded for %s", poolname.get());
                 }
-                else
-                    timedout = false;
             }
             if (traceStartDelayPeriod)
             {
                 ++startsInPeriod;
-                if (timedout)
-                {
+                if (waited)
                     startDelayInPeriod += startTimer.elapsedCycles();
-                    if (overAllTimer.elapsedCycles() >= queryOneSecCycles()*traceStartDelayPeriod) // check avg. delay per minute
-                    {
-                        double totalDelayMs = (static_cast<double>(cycle_to_nanosec(startDelayInPeriod)))/1000000;
-                        double avgDelayMs = (static_cast<double>(cycle_to_nanosec(startDelayInPeriod/startsInPeriod)))/1000000;
-                        unsigned totalElapsedSecs = overAllTimer.elapsedMs()/1000;
-                        PROGLOG("%s: %u threads started in last %u seconds, total delay = %0.2f milliseconds, average delay = %0.2f milliseconds, currently running = %u", poolname.get(), startsInPeriod, totalElapsedSecs, totalDelayMs, avgDelayMs, runningCount());
-                        startsInPeriod = 0;
-                        startDelayInPeriod = 0;
-                        overAllTimer.reset();
-                    }
+                if (overAllTimer.elapsedCycles() >= queryOneSecCycles()*traceStartDelayPeriod) // check avg. delay per minute
+                {
+                    double totalDelayMs = (static_cast<double>(cycle_to_nanosec(startDelayInPeriod)))/1000000;
+                    double avgDelayMs = (static_cast<double>(cycle_to_nanosec(startDelayInPeriod/startsInPeriod)))/1000000;
+                    unsigned totalElapsedSecs = overAllTimer.elapsedMs()/1000;
+                    PROGLOG("%s: %u threads started in last %u seconds, total delay = %0.2f milliseconds, average delay = %0.2f milliseconds, currently running = %u", poolname.get(), startsInPeriod, totalElapsedSecs, totalDelayMs, avgDelayMs, runningCount());
+                    startsInPeriod = 0;
+                    startDelayInPeriod = 0;
+                    overAllTimer.reset();
                 }
             }
             CPooledThreadWrapper &t = allocThread();
