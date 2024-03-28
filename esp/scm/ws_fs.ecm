@@ -734,7 +734,7 @@ ESPservice [
     ESPmethod [resp_xsl_default("/esp/xslt/showresult.xslt")] ShowResult(ShowResultRequest, ShowResultResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/dfuwu_search.xslt")] DFUWUSearch(DFUWUSearchRequest, DFUWUSearchResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/dfu_workunits.xslt")] GetDFUWorkunits(GetDFUWorkunits, GetDFUWorkunitsResponse);
-    ESPmethod [resp_xsl_default("/esp/xslt/dfu_wuid.xslt")] GetDFUWorkunit(GetDFUWorkunit, GetDFUWorkunitResponse);
+    ESPmethod [min_ver("1.26"), resp_xsl_default("/esp/xslt/dfu_wuid.xslt")] GetDFUWorkunit(GetDFUWorkunit, GetDFUWorkunitResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/dfu_progress.xslt")] GetDFUProgress(ProgressRequest, ProgressResponse);
 
     ESPmethod [resp_xsl_default("/esp/xslt/dfu_wuid.xslt")] CreateDFUWorkunit(CreateDFUWorkunit, CreateDFUWorkunitResponse);
