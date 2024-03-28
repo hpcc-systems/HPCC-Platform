@@ -1536,12 +1536,13 @@ bool CWsTopologyEx::onTpMachineQuery(IEspContext &context, IEspTpMachineQueryReq
         const char* directory = req.getDirectory();
 
         bool hasThorSpareProcess = false;
-        const char* type = req.getType();
-        if (!type || !*type || (strcmp(eqAllNodes,type) == 0))
+        const CTpMachineType type = req.getType();
+//        if (!type || !*type || (strcmp(eqAllNodes,type) == 0))
+        if (type == TpMachineType_Undefined || type == CTpMachineType_All )
         {
-            m_TpWrapper.getClusterMachineList(version, eqTHORMACHINES, path, directory, MachineList, hasThorSpareProcess);
-            m_TpWrapper.getClusterMachineList(version, eqHOLEMACHINES, path, directory, MachineList, hasThorSpareProcess);
-            m_TpWrapper.getClusterMachineList(version, eqROXIEMACHINES,path, directory, MachineList, hasThorSpareProcess);
+            m_TpWrapper.getClusterMachineList(version, CTpMachineType_Thor, path, directory, MachineList, hasThorSpareProcess);
+            m_TpWrapper.getClusterMachineList(version, CTpMachineType_Hole, path, directory, MachineList, hasThorSpareProcess);
+            m_TpWrapper.getClusterMachineList(version, CTpMachineType_Roxie,path, directory, MachineList, hasThorSpareProcess);
         }
         else
         {

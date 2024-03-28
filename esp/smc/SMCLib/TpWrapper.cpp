@@ -55,7 +55,7 @@ IPropertyTree* CTpWrapper::getEnvironment(const char* xpath)
 }
 
 void CTpWrapper::getClusterMachineList(double clientVersion,
-                                       const char* ClusterType,
+                                       CTpMachineType ClusterType,
                                        const char* ClusterPath,
                                        const char* ClusterDirectory,
                                        IArrayOf<IEspTpMachine> &MachineList,
@@ -68,7 +68,7 @@ void CTpWrapper::getClusterMachineList(double clientVersion,
         getAttPath(ClusterPath,path);
         set<string> machineNames; //used for checking duplicates
 
-        if (strcmp(eqTHORMACHINES,ClusterType) == 0)
+        if (ClusterType == CTpMachineType_Thor)
         {
             bool multiSlaves = false;
             getMachineList(clientVersion, eqThorMasterProcess, path.str(), "", ClusterDirectory, MachineList);
@@ -81,7 +81,7 @@ void CTpWrapper::getClusterMachineList(double clientVersion,
             if (!checkMultiSlavesFlag(ClusterName) &&(count < MachineList.length()))
                 hasThorSpareProcess = true;
         }
-        else if (strcmp(eqHOLEMACHINES,ClusterType) == 0)
+        else if (ClusterType == CTpMachineType_Hole)
         {
             getMachineList(clientVersion, eqHoleSocketProcess, path.str(), "", ClusterDirectory, MachineList);
             getMachineList(clientVersion, eqHoleProcessorProcess, path.str(), "", ClusterDirectory, MachineList);
@@ -89,33 +89,33 @@ void CTpWrapper::getClusterMachineList(double clientVersion,
             getMachineList(clientVersion, eqHoleCollatorProcess, path.str(), "", ClusterDirectory, MachineList);
             getMachineList(clientVersion, eqHoleStandbyProcess, path.str(), "", ClusterDirectory, MachineList);
         }
-        else if (strcmp(eqROXIEMACHINES,ClusterType) == 0)
+        else if (ClusterType == CTpMachineType_Roxie)
         {
             getMachineList(clientVersion, "RoxieServerProcess", path.str(), "", ClusterDirectory, MachineList, &machineNames);
         }
-        else if (strcmp(eqMACHINES,ClusterType) == 0)
+        else if (ClusterType == CTpMachineType_Machines)
         {
             //load a list of available machines.......
             getMachineList(clientVersion, "Computer", "/Environment/Hardware", "", ClusterDirectory, MachineList);
         }
-        else if (strcmp("AVAILABLEMACHINES",ClusterType) == 0)
+        else if (ClusterType == CTpMachineType_Available)
         {
             getMachineList(clientVersion, "Computer", "/Environment/Hardware", eqMachineAvailablability, ClusterDirectory, MachineList);
         }
-        else if (strcmp("DROPZONE",ClusterType) == 0)
+        else if (ClusterType == CTpMachineType_DropZone)
         {
             getDropZoneMachineList(clientVersion, false, MachineList);
         }
-        else if (strcmp("STANDBYNNODE",ClusterType) == 0)
+        else if (ClusterType == CTpMachineType_StandBy)
         {
             getThorSpareMachineList(clientVersion, ClusterName, ClusterDirectory, MachineList);
             getMachineList(clientVersion, eqHoleStandbyProcess, path.str(), "", ClusterDirectory, MachineList);
         }
-        else if (strcmp("THORSPARENODES",ClusterType) == 0)
+        else if (ClusterType == CTpMachineType_ThorSpare)
         {
             getThorSpareMachineList(clientVersion, ClusterName, ClusterDirectory, MachineList);
         }
-        else if (strcmp("HOLESTANDBYNODES",ClusterType) == 0)
+        else if (ClusterType == CTpMachineType_HoleStandby)
         {
             getMachineList(clientVersion, eqHoleStandbyProcess, path.str(), "", ClusterDirectory, MachineList);
         }
@@ -756,23 +756,23 @@ void CTpWrapper::queryTargetClusterProcess(double version, const char* processNa
     OS_TYPE os = OS_WINDOWS;
     unsigned int clusterTypeLen = strlen(clusterType);
     const char* childType = NULL;
-    const char* clusterType0 = NULL;
+    CTpMachineType clusterType0 = TpMachineType_Undefined;
     if (clusterTypeLen > 4)
     {
         if (!strnicmp(clusterType, "roxie", 4))
         {
             childType = "RoxieServerProcess[1]";
-            clusterType0 = eqROXIEMACHINES;
+            clusterType0 = CTpMachineType_Roxie;
         }
         else if (!strnicmp(clusterType, "thor", 4))
         {
             childType = "ThorMasterProcess";
-            clusterType0 = eqTHORMACHINES;
+            clusterType0 = CTpMachineType_Thor;
         }
         else
         {
             childType = "HoleControlProcess";
-            clusterType0 = eqHOLEMACHINES;
+            clusterType0 = CTpMachineType_Hole;
         }
     }
 
@@ -800,7 +800,7 @@ void CTpWrapper::queryTargetClusterProcess(double version, const char* processNa
     }
     clusterInfo->setOS(os);
 
-    if (clusterType0 && *clusterType0)
+    if (clusterType0 != TpMachineType_Undefined)
     {
         bool hasThorSpareProcess = false;
         IArrayOf<IEspTpMachine> machineList;
