@@ -2159,12 +2159,14 @@ void RowFilter::addFilter(const IFieldFilter & filter)
 
 const IFieldFilter & RowFilter::addFilter(const RtlRecord & record, const char * filterText)
 {
-    IFieldFilter & filter = *deserializeFieldFilter(record, filterText);
-    filters.append(filter);
-    unsigned fieldNum = filter.queryFieldIndex();
+    IFieldFilter * filter = deserializeFieldFilter(record, filterText);
+    if (!filter)
+        throw makeStringExceptionV(0, "Could not process filter %s", filterText);
+    filters.append(*filter);
+    unsigned fieldNum = filter->queryFieldIndex();
     if (fieldNum >= numFieldsRequired)
         numFieldsRequired = fieldNum+1;
-    return filter;
+    return *filter;
 }
 
 bool RowFilter::matches(const RtlRow & row) const
