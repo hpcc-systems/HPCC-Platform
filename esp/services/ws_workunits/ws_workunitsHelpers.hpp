@@ -365,6 +365,7 @@ struct CWsWuZAPInfoReq
     StringBuffer emailFrom, emailTo, emailServer, emailSubject, emailBody;
 
     bool sendEmail, attachZAPReportToEmail;
+    bool includeRelatedLogs = true, includePerComponentLogs = false;
     unsigned maxAttachmentSize, port;
 
     WUComponentLogOptions logFilter;

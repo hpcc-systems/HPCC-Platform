@@ -907,6 +907,7 @@ ESPresponse [exceptions_inline] WUGetZAPInfoResponse
     [min_ver("1.73")] string EmailTo;
     [min_ver("1.73")] string EmailFrom;
     [min_ver("1.96")] string Message;
+    [min_ver("2.00")] bool IsContainerized(false);
 };
 
 ESPrequest [nil_remove] WUCreateZAPInfoRequest
@@ -930,6 +931,8 @@ ESPrequest [nil_remove] WUCreateZAPInfoRequest
     [min_ver("1.73")] string EmailSubject;
     [min_ver("1.73")] string EmailBody;
     [min_ver("1.97")] ESPStruct LogAccessFilter LogFilter;
+    [min_ver("2.00")] bool IncludeRelatedLogs(true);
+    [min_ver("2.00")] bool IncludePerComponentLogs(false);
 };
 
 ESPresponse [exceptions_inline] WUCreateZAPInfoResponse

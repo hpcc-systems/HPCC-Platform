@@ -1456,6 +1456,14 @@ void CWsWorkunitsSoapBindingEx::createAndDownloadWUZAPFile(IEspContext& context,
         request->getParameter("ZAPPassword", zapInfoReq.password);
     else
         request->getParameter("Password", zapInfoReq.password);
+    if (isContainerized() && (version >= 2.00))
+    {
+        StringBuffer s;
+        request->getParameter("IncludeRelatedLogs", s);
+        zapInfoReq.includeRelatedLogs = strToBool(s.str());
+        request->getParameter("IncludePerComponentLogs", s.clear());
+        zapInfoReq.includePerComponentLogs = strToBool(s.str());
+    }
 
     Owned<IFile> tempDir = createUniqueTempDirectory();
 
