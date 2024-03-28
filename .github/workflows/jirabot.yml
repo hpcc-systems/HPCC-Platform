@@ -23,81 +23,146 @@ jobs:
           python -VV
           python -m site
           python -m pip install --upgrade pip setuptools wheel
-          python -m pip install --upgrade jira
+          python -m pip install --upgrade atlassian-python-api
+          python -m pip --version
       - name: "Run"
-        env: 
+        env:
           JIRABOT_USERNAME : ${{ secrets.JIRABOT_USERNAME }}
           JIRABOT_PASSWORD : ${{ secrets.JIRABOT_PASSWORD }}
-          JIRA_URL : ${{ secrets.JIRA_URL }}
+          JIRA_URL : ${{ vars.JIRA_URL }}
           PULL_REQUEST_NUMBER : ${{ github.event.pull_request.number }}
           PULL_REQUEST_TITLE : ${{ github.event.pull_request.title }}
           PULL_REQUEST_AUTHOR_NAME : ${{ github.event.pull_request.user.login }}
           PULL_URL: ${{ github.event.pull_request.html_url }}
           COMMENTS_URL: ${{ github.event.pull_request.comments_url }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          
+          GHUB_JIRA_USER_MAP: ${{ vars.GHUB_JIRA_USER_MAP }}
+          JIRA_ISSUE_PROPERTY_MAP: ${{ vars.JIRA_ISSUE_PROPERTY_MAP }}
+          JIRA_ISSUE_TRANSITION_MAP: ${{ vars.JIRA_ISSUE_TRANSITION_MAP }}
         run: |
             import os
             import re
-            from jira.client import JIRA
-            
+            import time
+            import sys
+            import json
+            from atlassian.jira import Jira
+
+            def updateIssue(jira, issue, prAuthor : str, transitionMap: dict, propertyMap: dict, pull_url: str) -> str:
+                result = ''
+
+                issueName = issue['key']
+                issueFields = issue['fields']
+
+                statusName = str(issueFields['status']['name'])
+                transition = transitionMap.get(statusName, None)
+
+                if transition == None:
+                    print('Error: Unable to find transition for status: ' + statusName)
+                elif transition != '':
+                    try:
+                        jira.issue_transition(issueName, transition)
+                        result += 'Workflow Transition: ' + transition + '\n'
+                    except Exception as error:
+                        transitions = jira.get_issue_transitions(issueName)
+                        result += 'Error: Transition: "' + transition + '" failed with: "' + str(error) + '" Valid transitions=' + str(transitions) + '\n'
+
+                prFieldName = propertyMap.get('pullRequestFieldName', 'customfield_10010')
+
+                if prFieldName in issueFields:
+                    currentPR = issueFields[prFieldName]
+                else:
+                    print('Error: Unable to find pull request field with field name: ' + prFieldName)
+                    currentPR = None
+
+                if currentPR is None:
+                    jira.update_issue_field(issueName, {prFieldName: pull_url})
+                    result += 'Updated PR\n'
+                elif currentPR is not None and currentPR != pull_url:
+                    result += 'Additional PR: ' + pull_url + '\n'
+
+                if prAuthor:
+                    assignee = issueFields['assignee']
+                    if assignee is None:
+                        assigneeId = ''
+                        assigneeEmail = ''
+                    else:
+                        assigneeId = assignee['accountId']
+                        assigneeEmail = assignee["emailAddress"]
+
+                    prAuthorId = prAuthor["accountId"]
+                    prAuthorEmail = prAuthor["emailAddress"]
+                    if assigneeId is None or assigneeId == '':
+                        jira.assign_issue(issueName, prAuthorId)
+                        result += 'Assigning user: ' + prAuthorEmail + '\n'
+                    elif assigneeId != prAuthorId:
+                        result += 'Changing assignee from: ' + assigneeEmail + ' to: ' + prAuthorEmail + '\n'
+                        jira.assign_issue(issueName, prAuthorId)
+
+                return result
+
             jirabot_user = os.environ['JIRABOT_USERNAME']
             jirabot_pass = os.environ['JIRABOT_PASSWORD']
             jira_url = os.environ['JIRA_URL']
             pr = os.environ['PULL_REQUEST_NUMBER']
             title = os.environ['PULL_REQUEST_TITLE']
-            user = os.environ['PULL_REQUEST_AUTHOR_NAME']
-            comments_url = os.environ['COMMENTS_URL']
+            prAuthor = os.environ['PULL_REQUEST_AUTHOR_NAME']
             pull_url = os.environ['PULL_URL']
             github_token = os.environ['GITHUB_TOKEN']
-        
-            print("%s %s %s" % (title, user, comments_url))
-            status = ''
-            issuem = re.search("(HPCC|HH|IDE|EPE|ML|JAPI)-[0-9]+", title)
+            comments_url = os.environ['COMMENTS_URL']
+
+            print("%s %s %s" % (title, prAuthor, comments_url))
+            result = ''
+            issuem = re.search("(HPCC|HH|IDE|EPE|ML|HPCC4J|JAPI)-[0-9]+", title)
             if issuem:
                 issue_name = issuem.group()
-                if user == 'dehilsterlexis':
-                    user = 'dehilster'
-                if user == 'kunalaswani':
-                    user = 'kunal.aswani'
-                if user == 'timothyklemm':
-                    user = 'klemti01'
-                if user == 'jpmcmu':
-                    user = 'mcmuja01'
-                if user == 'asselitx':
-                    user = 'terrenceasselin'
-                if user == 'jeclrsg':
-                    user = 'clemje01'
-                if user == 'jackdelv':
-                    user = 'delvecja'
-                options = {
-                  'server': jira_url
-                }
-                jira = JIRA(options=options, basic_auth=(jirabot_user, jirabot_pass))
-                issue = jira.issue(issue_name)
-                status = jira_url + '/browse/' + issue_name + '\\n'
-                if False and issue.fields.status.name != 'Active' and issue.fields.status.name != 'Open' and issue.fields.status.name != 'New' and issue.fields.status.name != 'Discussing' and issue.fields.status.name != 'Awaiting Information':
-                    status += 'Jira not updated (state was not active or new)'
-                elif issue.fields.customfield_10010 != None:
-                    if issue.fields.customfield_10010 != pull_url:
-                        status += 'Jira not updated (pull request "%s" already registered)' % issue.fields.customfield_10010
-                    else:
-                        status += 'This pull request is already registered'
-                elif issue.fields.assignee is not None and issue.fields.assignee.name.lower() != user.lower():
-                    status += 'Jira not updated (user does not match)'
+
+                userDict = json.loads(os.environ['GHUB_JIRA_USER_MAP'])
+                if not isinstance(userDict, dict):
+                    userDict = {}
+
+                if prAuthor in userDict:
+                    prAuthor = userDict.get(prAuthor)
+                    print('Mapped Github user to Jira user: ' + prAuthor)
+
+                jira = Jira(url=jira_url, username= jirabot_user, password= jirabot_pass, cloud=True)
+
+                jiraUser = None
+                userSearchResults = jira.user_find_by_user_string(query=prAuthor)
+                if userSearchResults and len(userSearchResults) > 0:
+                    jiraUser = userSearchResults[0]
                 else:
-                    if issue.fields.assignee is None:
-                        jira.assign_issue(issue, user)
-                    issue.update(fields={'customfield_10010': pull_url})
+                    print('Error: Unable to find Jira user: ' + prAuthor + ' continuing without assigning')
+
+                if not jira.issue_exists(issue_name):
+                    sys.exit('Error: Unable to find Jira issue: ' + issue_name)
+                else:
                     issue = jira.issue(issue_name)
-                    try:
-                      transitions = jira.transitions(issue)
-                      jira.transition_issue(issue, '291')   # Attach Pull Request
-                    except:
-                      status += 'Failed to set to merge pending: transitions=%s' % transitions
-                    status += 'Jira updated'
-                print('curl -X POST %s -H "Content-Type: application/json" -H "Authorization: token %s" --data \'{ "body": "%s" }\'' % ( comments_url, github_token, status ))
-                os.system('curl -X POST %s -H "Content-Type: application/json" -H "Authorization: token %s" --data \'{ "body": "%s" }\'' % ( comments_url, github_token, status ))
-                
-            print(status)
+
+                result = 'Jirabot Action Result:\n'
+
+                transitionMap = json.loads(os.environ['JIRA_ISSUE_TRANSITION_MAP'])
+                if not isinstance(transitionMap, dict):
+                    print('Error: JIRA_ISSUE_TRANSITION_MAP is not a valid JSON object, ignoring.')
+                    transitionMap = {}
+
+                jiraIssuePropertyMap = json.loads(os.environ['JIRA_ISSUE_PROPERTY_MAP'])
+                if not isinstance(jiraIssuePropertyMap, dict):
+                    print('Error: JIRA_ISSUE_PROPERTY_MAP is not a valid JSON object, ignoring.')
+                    jiraIssuePropertyMap = {}
+
+                result += updateIssue(jira, issue, jiraUser, transitionMap, jiraIssuePropertyMap, pull_url)
+                jira.issue_add_comment(issue_name, result)
+
+                result = 'Jira Issue: ' + jira_url + '/browse/' + issue_name + '\n\n' + result
+
+                # Escape the result for JSON
+                result = json.dumps(result)
+
+                curlCommand = 'curl -X POST %s -H "Content-Type: application/json" -H "Authorization: token %s" --data \'{ "body": %s }\'' % ( comments_url, github_token, result )
+                print(curlCommand)
+                os.system(curlCommand)
+            else:
+                print('Unable to find Jira issue name in title')
+
+            print(result)
         shell: python
