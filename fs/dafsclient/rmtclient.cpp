@@ -733,7 +733,7 @@ void CRemoteBase::connectSocket(SocketEndpoint &ep, unsigned connectTimeoutMs, u
             {
                 unsigned remaining;
                 if (tm.timemon->timedout(&remaining))
-                    throwJSocketException(JSOCKERR_connection_failed);
+                    THROWJSOCKEXCEPTION(JSOCKERR_connection_failed);
                 socket.setown(ISocket::connect_timeout(ep,remaining));
             }
             else
