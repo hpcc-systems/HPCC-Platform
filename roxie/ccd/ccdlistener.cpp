@@ -949,7 +949,7 @@ void ContextLogger::exportStatsToSpan(bool failed, stat_type elapsedNs, unsigned
 {
     if (activeSpan->isRecording())
     {
-        activeSpan->setSpanStatus(failed);
+        activeSpan->setSpanStatusSuccess(!failed);
         setSpanAttribute("time_elapsed", elapsedNs);
 
         if (memused)
