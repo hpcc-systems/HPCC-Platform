@@ -1974,6 +1974,10 @@ void CRemotePartitioner::callRemote()
 
 void CRemotePartitioner::getResults(PartitionPointArray & partition)
 {
+#ifdef RUN_SLAVES_ON_THREADS
+    join();
+#endif
+
     if (error)
         throw error.getLink();
 
