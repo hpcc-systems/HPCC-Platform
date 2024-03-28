@@ -520,6 +520,7 @@ interface IConstWUException : extends IInterface
     virtual unsigned getActivityId() const = 0;
     virtual const char * queryScope() const = 0;
     virtual unsigned getPriority() const = 0;  // For ordering within a severity - e.g. warnings about inefficiency
+    virtual double getCost() const = 0; // cost optimizer cost saving estimate.
 };
 
 
@@ -536,6 +537,7 @@ interface IWUException : extends IConstWUException
     virtual void setActivityId(unsigned _id) = 0;
     virtual void setScope(const char * _scope) = 0;
     virtual void setPriority(unsigned _priority) = 0;
+    virtual void setCost(double cost) = 0; // cost optimizer cost saving estimate.
 };
 
 
