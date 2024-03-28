@@ -690,7 +690,7 @@ public:
 };
 
 typedef OwningSimpleHashTableOf<CNodeMapping, CKeyIdAndPos> CNodeTable;
-class CNodeMRUCache : public CMRUCacheOf<CKeyIdAndPos, CNodeCacheEntry, CNodeMapping, CNodeTable>
+class CNodeMRUCache final : public CMRUCacheOf<CKeyIdAndPos, CNodeCacheEntry, CNodeMapping, CNodeTable>
 {
     std::atomic<size32_t> sizeInMem{0};
     size32_t memLimit = 0;
@@ -706,15 +706,31 @@ public:
     virtual void makeSpace()
     {
         // remove LRU until !full
+        // This code could walk the list, rather than restarting at the end each time - but there are unlikely to be
+        // many entries that have no associated node, and nodes could have been associated in the meantime.
         do
         {
-            //Never evict an entry that hasn't yet loaded - otherwise the sizeInMem can become inconsistent
             CNodeMapping *tail = mruList.tail();
-            assertex(tail);
-            if (!tail->queryElement().isReady() )
-                break;
+            if (unlikely(!tail))
+                throw makeStringExceptionV(9999, "Index cache appears full but contains no entries size=%x limit=%x", sizeInMem.load(), memLimit);
 
-            clear(1);
+            //Never evict an entry that hasn't yet loaded - otherwise the sizeInMem can become inconsistent
+            //When running with slow remote storage this can take a long time to be ready - so we need
+            //to walk on to the next entry in the lrulist, otherwise we can run out of memory since nothing
+            //would be removed.
+            while (!tail->queryElement().isReady())
+            {
+                tail = tail->prev;
+                if (!tail)
+                {
+                     // no pages in the cache are ready - this could possibly happen in a tiny race-window where
+                     // sizes in the cache have been updated, but no nodes have yet been associated with the entries.
+                    return;
+                }
+            }
+
+            mruList.remove(tail);
+            table.removeExact(tail);
         }
         while (full());
     }
