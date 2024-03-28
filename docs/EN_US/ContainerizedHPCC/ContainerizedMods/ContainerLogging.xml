@@ -527,8 +527,8 @@ myelk-kibana LoadBalancer 10.110.129.199 localhost 5601:31465/TCP 68m
         <para>Example use:</para>
 
         <programlisting>helm install myhpcc hpcc/hpcc \
-  -f HPCC-Platform/helm/examples/azure/log-analytics/loganalytics-hpcc-logaccess.yaml \
-  -f HPCC-Platform/helm/examples/az</programlisting>
+  -f HPCC-Platform/helm/examples/azure/log-analytics/loganalytics-hpcc-logaccess.yaml
+</programlisting>
       </sect3>
     </sect2>
 
