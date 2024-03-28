@@ -340,11 +340,11 @@ if(TOP_LEVEL_PROJECT)
         message("-- distro uses ${packageManagement}, revision is ${packageRevisionArch}")
 
         if("${packageManagement}" STREQUAL "DEB")
-            set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}-${stagever}${packageRevisionArch}${packageStrippedLabel}${packageContainerizedLabel}")
+            set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}-${stagever}${packageRevisionArch}${packageStrippedLabel}${packageContainerizedLabel}${CUSTOM_LABEL}")
         elseif("${packageManagement}" STREQUAL "RPM")
-            set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}-${stagever}.${packageRevisionArch}${packageStrippedLabel}${packageContainerizedLabel}")
+            set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}-${stagever}.${packageRevisionArch}${packageStrippedLabel}${packageContainerizedLabel}${CUSTOM_LABEL}")
         else()
-            set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}_${stagever}${CPACK_SYSTEM_NAME}${packageStrippedLabel}${packageContainerizedLabel}")
+            set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}_${stagever}${CPACK_SYSTEM_NAME}${packageStrippedLabel}${packageContainerizedLabel}${CUSTOM_LABEL}")
         endif()
     endif ()
 
@@ -500,7 +500,7 @@ if(TOP_LEVEL_PROJECT)
             set(CPACK_GENERATOR "productbuild")
         endif ()
         if(APPLE OR WIN32)
-            set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${version}-${stagever}${CPACK_SYSTEM_NAME}${packageStrippedLabel}${packageContainerizedLabel}")
+            set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${version}-${stagever}${CPACK_SYSTEM_NAME}${packageStrippedLabel}${packageContainerizedLabel}${CUSTOM_LABEL}")
         endif()
         file(WRITE "${PROJECT_BINARY_DIR}/welcome.txt"
             "HPCC Systems® - Client Tools\r"
