@@ -771,14 +771,9 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
                     {
                         countMarker.write(rowNum-rowStart);
 
-                        CRuntimeStatisticCollection deltaStats(startStats.queryMapping());
-                        contextLogger.updateStatsDeltaTo(deltaStats, startStats);
-                        replyMb.append(deltaStats.getStatisticValue(StNumIndexSeeks));
-                        replyMb.append(deltaStats.getStatisticValue(StNumIndexScans));
-                        replyMb.append(deltaStats.getStatisticValue(StNumIndexWildSeeks));
-                        replyMb.append(deltaStats.getStatisticValue(StNumNodeDiskFetches));
-                        replyMb.append(deltaStats.getStatisticValue(StNumLeafDiskFetches));
-                        replyMb.append(deltaStats.getStatisticValue(StNumBlobDiskFetches));
+                        CRuntimeStatisticCollection statsDelta(startStats.queryMapping());
+                        contextLogger.updateStatsDeltaTo(statsDelta, startStats);
+                        statsDelta.serialize(replyMb);
                         if (activityCtx->useMessageCompression())
                         {
                             fastLZCompressToBuffer(replyMsg, tmpMB.length(), tmpMB.toByteArray());
