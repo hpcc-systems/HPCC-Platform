@@ -965,6 +965,17 @@ void CJHLegacySearchNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _
         else {
             keyBuf = NULL;
             expandedSize = 0;
+            if (hdr.nodeType == NodeBranch)
+            {
+                if ((hdr.leftSib == 0) && (hdr.rightSib == 0))
+                {
+                    //Sanity check to catch error where a section of the file has unexpectedly been zeroed.
+                    //which is otherwise tricky to track down.
+                    //This can only legally happen if there is an index with 0 entries
+                    if (keyHdr->getNumRecords() != 0)
+                        throw MakeStringException(0, "Zeroed index node detected at offset %llu", getFpos());
+                }
+            }
         }
     }
 }
