@@ -75,6 +75,12 @@ public:
     HashDistributeActivityMaster(DistributeMode mode, CMasterGraphElement *info) : HashDistributeMasterBase(mode, info) { }
 };
 
+class HashDedupActivityMaster : public HashDistributeMasterBase
+{
+public:
+    HashDedupActivityMaster(DistributeMode mode, CMasterGraphElement *info) : HashDistributeMasterBase(mode, info, hashDedupActivityStatistics) { }
+};
+
 class HashJoinDistributeActivityMaster : public HashDistributeMasterBase
 {
 public:
@@ -233,7 +239,7 @@ CActivityBase *createHashDedupMergeActivityMaster(CMasterGraphElement *container
     if (container->queryLocalOrGrouped())
         return new CMasterActivity(container);
     else
-        return new HashDistributeActivityMaster(DM_dedup, container);
+        return new HashDedupActivityMaster(DM_dedup, container);
 }
 
 CActivityBase *createHashJoinActivityMaster(CMasterGraphElement *container)

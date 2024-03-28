@@ -20,10 +20,12 @@ define([
     "dijit/layout/BorderContainer",
     "dijit/Toolbar",
     "dijit/form/Button",
+    "dijit/form/TextBox",
     "dijit/form/ToggleButton",
     "dijit/ToolbarSeparator",
-    "dijit/layout/ContentPane"
+    "dijit/layout/ContentPane",
 
+    "hpcc/TableContainer"
 ], function (declare, lang, nlsHPCCMod, MemoryMod, Observable,
     registry, Menu, MenuItem, MenuSeparator,
     _TabContainerWidget, Utility, ESPUtil,

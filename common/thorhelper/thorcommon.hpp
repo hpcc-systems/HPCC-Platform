@@ -172,6 +172,7 @@ interface IExtRowWriter: extends IRowWriter
     virtual offset_t getPosition() = 0;
     using IRowWriter::flush;
     virtual void flush(CRC32 *crcout) = 0;
+    virtual unsigned __int64 getStatistic(StatisticKind kind) = 0;
 };
 
 enum EmptyRowSemantics { ers_forbidden, ers_allow, ers_eogonly };
@@ -210,7 +211,7 @@ extern THORHELPER_API IExtRowStream *createRowStream(IFile *file, IRowInterfaces
 extern THORHELPER_API IExtRowStream *createRowStreamEx(IFile *file, IRowInterfaces *rowif, offset_t offset=0, offset_t len=(offset_t)-1, unsigned __int64 maxrows=(unsigned __int64)-1, unsigned flags=DEFAULT_RWFLAGS, IExpander *eexp=nullptr, ITranslator *translatorContainer=nullptr, IVirtualFieldCallback * _fieldCallback = nullptr);
 interface ICompressor;
 extern THORHELPER_API IExtRowWriter *createRowWriter(IFile *file, IRowInterfaces *rowIf, unsigned flags=DEFAULT_RWFLAGS, ICompressor *compressor=NULL, size32_t compressorBlkSz=0);
-extern THORHELPER_API IExtRowWriter *createRowWriter(IFileIO *fileIO, IRowInterfaces *rowIf, unsigned flags=DEFAULT_RWFLAGS, size32_t compressorBlkSz=0);
+extern THORHELPER_API IExtRowWriter *createRowWriter(IFileIO *iFileIO, IRowInterfaces *rowIf, unsigned flags=DEFAULT_RWFLAGS, ICompressor *compressor=nullptr, size32_t compressorBlkSz=0);
 extern THORHELPER_API IExtRowWriter *createRowWriter(IFileIOStream *strm, IRowInterfaces *rowIf, unsigned flags=DEFAULT_RWFLAGS); // strm should be unbuffered
 
 interface THORHELPER_API IDiskMerger : extends IInterface

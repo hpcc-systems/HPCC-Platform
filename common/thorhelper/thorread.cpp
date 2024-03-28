@@ -1248,7 +1248,7 @@ protected:
     StringBuffer rowTag;
 
     ThorActivityKind kind;
-    IXmlToRowTransformer *xmlTransformer;
+    IXmlToRowTransformer *xmlTransformer = nullptr;
     Linked<IColumnProvider> lastMatch;
     Owned<IXMLParse> xmlParser;
 

@@ -65,12 +65,12 @@ void PerformanceIssue::createException(IWorkUnit * wu, double costRate)
         we->setExceptionFileName(filename);
     StringBuffer s(comment);        // Append scope to comment as scope column is not visible in ECLWatch
     s.appendf(" (%s)", scope.str());
+    we->setExceptionMessage(s.str());
     if (costRate!=0.0)
     {
         double timePenaltyPerHour = (double)statUnits2seconds(timePenalty) / 3600;
-        s.appendf(" cost %.2f", timePenaltyPerHour*costRate);
+        we->setCost(timePenaltyPerHour*costRate);
     }
-    we->setExceptionMessage(s.str());
     we->setExceptionSource(CostOptimizerName);
 }
 

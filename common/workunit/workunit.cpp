@@ -4846,6 +4846,7 @@ public:
     virtual unsigned    getSequence() const override;
     virtual const char * queryScope() const override;
     virtual unsigned    getPriority() const override;
+    virtual double      getCost() const override;
     virtual void        setExceptionSource(const char *str) override;
     virtual void        setExceptionMessage(const char *str) override;
     virtual void        setExceptionCode(unsigned code) override;
@@ -4857,6 +4858,7 @@ public:
     virtual void        setActivityId(unsigned _id) override;
     virtual void        setScope(const char * _scope) override;
     virtual void        setPriority(unsigned _priority) override;
+    virtual void        setCost(double cost) override;
 };
 
 //==========================================================================================
@@ -7627,6 +7629,18 @@ WUPriorityClass CLocalWorkUnit::getPriority() const
 {
     CriticalBlock block(crit);
     return (WUPriorityClass) getEnum(p, "@priorityClass", priorityClasses);
+}
+
+void CLocalWorkUnit::setCost(double cost)
+{
+    CriticalBlock block(crit);
+    p->setPropReal("@cost", cost);
+}
+
+double CLocalWorkUnit::getCost() const
+{
+    CriticalBlock block(crit);
+    return p->getPropReal("@cost", 0);
 }
 
 const char *CLocalWorkUnit::queryPriorityDesc() const
@@ -11926,6 +11940,11 @@ unsigned CLocalWUException::getPriority() const
     return p->getPropInt("@prio", 0);
 }
 
+double CLocalWUException::getCost() const
+{
+    return p->getPropReal("@cost", 0);
+}
+
 void CLocalWUException::setExceptionSource(const char *str)
 {
     p->setProp("@source", str);
@@ -11981,6 +12000,10 @@ void CLocalWUException::setPriority(unsigned _priority)
     p->setPropInt("@prio", _priority);
 }
 
+void CLocalWUException::setCost(double _cost)
+{
+    p->setPropReal("@cost", _cost);
+}
 //==========================================================================================
 
 CLocalWUAppValue::CLocalWUAppValue(const IPropertyTree *_owner, const IPropertyTree *_props) : owner(_owner), props(_props)
