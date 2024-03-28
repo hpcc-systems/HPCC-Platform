@@ -10530,10 +10530,10 @@ public:
         if (!writeLock)
             throw makeStringException(0, "CInitGroups::clearLZGroups called in read-only mode");
         IPropertyTree *root = groupsconnlock.conn->queryRoot();
-        std::vector<Owned<IPropertyTree>> toDelete;
+        std::vector<IPropertyTree *> toDelete;
         Owned<IPropertyTreeIterator> groups = root->getElements("Group[@kind='dropzone']");
         ForEach(*groups)
-            toDelete.push_back(&groups->get());
+            toDelete.push_back(&groups->query());
         for (auto &group: toDelete)
             root->removeTree(group);
     }
