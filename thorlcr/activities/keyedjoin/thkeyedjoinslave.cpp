@@ -1765,17 +1765,10 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                     }
                     joinGroup->decPending(); // Every queued lookup row triggered an inc., this is the corresponding dec.
                 }
-                unsigned __int64 seeks, scans, wildseeks;
-                unsigned __int64 nodeDiskFetches, leafDiskFetches, blobDiskFetches;
-                mb.read(seeks).read(scans).read(wildseeks);
-                mb.read(nodeDiskFetches).read(leafDiskFetches).read(blobDiskFetches);
+                CRuntimeStatisticCollection statsDelta(jhtreeCacheStatistics);
+                statsDelta.deserialize(mb);
                 CStatsContextLogger * contextLogger(contextLoggers[selected]);
-                contextLogger->noteStatistic(StNumIndexSeeks, seeks);
-                contextLogger->noteStatistic(StNumIndexScans, scans);
-                contextLogger->noteStatistic(StNumIndexWildSeeks, wildseeks);
-                contextLogger->noteStatistic(StNumNodeDiskFetches, nodeDiskFetches);
-                contextLogger->noteStatistic(StNumLeafDiskFetches, leafDiskFetches);
-                contextLogger->noteStatistic(StNumBlobDiskFetches, blobDiskFetches);
+                contextLogger->mergeStats(statsDelta);
                 if (received == numRows)
                     break;
             }
