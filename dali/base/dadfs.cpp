@@ -10525,6 +10525,18 @@ public:
         }
         return true;
     }
+    void clearLZGroups()
+    {
+        if (!writeLock)
+            throw makeStringException(0, "CInitGroups::clearLZGroups called in read-only mode");
+        IPropertyTree *root = groupsconnlock.conn->queryRoot();
+        std::vector<IPropertyTree *> toDelete;
+        Owned<IPropertyTreeIterator> groups = root->getElements("Group[@kind='dropzone']");
+        ForEach(*groups)
+            toDelete.push_back(&groups->query());
+        for (auto &group: toDelete)
+            root->removeTree(group);
+    }
     void constructGroups(bool force, StringBuffer &messages, IPropertyTree *oldEnvironment)
     {
         Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Software", myProcessSession(), RTM_LOCK_READ, SDS_CONNECT_TIMEOUT);
@@ -10717,12 +10729,14 @@ public:
 void initClusterGroups(bool force, StringBuffer &response, IPropertyTree *oldEnvironment, unsigned timems)
 {
     CInitGroups init(timems, true);
+    init.clearLZGroups(); // clear existing LZ groups, current ones will be recreated
     init.constructGroups(force, response, oldEnvironment);
 }
 
 void initClusterAndStoragePlaneGroups(bool force, IPropertyTree *oldEnvironment, unsigned timems)
 {
     CInitGroups init(timems, true);
+    init.clearLZGroups(); // clear existing LZ groups, current ones will be recreated
 
     StringBuffer response;
     init.constructGroups(force, response, oldEnvironment);
