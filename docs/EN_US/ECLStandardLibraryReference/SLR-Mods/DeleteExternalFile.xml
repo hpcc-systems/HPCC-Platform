@@ -10,7 +10,9 @@
       <primary>File.DeleteExternalFile</primary>
     </indexterm><indexterm>
       <primary>DeleteExternalFile</primary>
-    </indexterm>(</emphasis> <emphasis> location, path </emphasis> <emphasis
+    </indexterm>(</emphasis> <emphasis> location, path <emphasis
+  role="bold">[</emphasis> <emphasis>, planename</emphasis> <emphasis
+  role="bold">]</emphasis> </emphasis> <emphasis
   role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
@@ -24,7 +26,8 @@
           <entry><emphasis>location</emphasis></entry>
 
           <entry>A null-terminated string containing the IP address of the
-          remote machine.</entry>
+          remote machine. Optional if <emphasis>planename</emphasis> is
+          provided. </entry>
         </row>
 
         <row>
@@ -32,6 +35,14 @@
 
           <entry>A null-terminated string containing the path/name of the file
           to remove.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>planename</emphasis></entry>
+
+          <entry>A null-terminated string containing name of the data plane
+          containing the file. Optional if <emphasis>location</emphasis> is
+          provided, but <emphasis>planename</emphasis> is preferred.</entry>
         </row>
       </tbody>
     </tgroup>
@@ -44,8 +55,10 @@
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">IP   := '10.150.254.6';
-infile := '/c$/training/import/AdvancedECL/people';
-STD.File.DeleteExternalFile(IP,infile);
+  <programlisting format="linespecific">IMPORT STD;
+IP   := '';
+infile := '/var/lib/HPCCSystems/dropzone/originalperson';
+planename := 'mydropzone';
+STD.File.DeleteExternalFile(IP,infile,planename);
 </programlisting>
 </sect1>

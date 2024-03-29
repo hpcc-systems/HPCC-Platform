@@ -4,17 +4,19 @@
 <sect1 id="RemoteDirectory">
   <title>RemoteDirectory</title>
 
-  <para><emphasis role="bold">STD.File.RemoteDirectory<indexterm>
+  <para><emphasis role="bold">STD.File.RemoteDirectory(</emphasis> <emphasis>
+  machineIP, dir </emphasis> <emphasis role="bold">[</emphasis> <emphasis>,
+  mask </emphasis> <emphasis role="bold">][</emphasis> <emphasis>, recurse
+  </emphasis> <emphasis role="bold">]</emphasis><emphasis
+  role="bold">[</emphasis> <emphasis>, planeName</emphasis> <emphasis
+  role="bold">]</emphasis> <emphasis> </emphasis> <emphasis role="bold">)
+  <indexterm>
       <primary>STD.File.RemoteDirectory</primary>
     </indexterm><indexterm>
       <primary>File.RemoteDirectory</primary>
     </indexterm><indexterm>
       <primary>RemoteDirectory</primary>
-    </indexterm>(</emphasis> <emphasis> machineIP, dir </emphasis> <emphasis
-  role="bold">[</emphasis> <emphasis>, mask </emphasis> <emphasis
-  role="bold">][</emphasis> <emphasis>, recurse </emphasis> <emphasis
-  role="bold">]</emphasis> <emphasis> </emphasis> <emphasis
-  role="bold">)</emphasis></para>
+    </indexterm></emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -27,7 +29,8 @@
           <entry><emphasis>machineIP</emphasis></entry>
 
           <entry>A null-terminated string containing the IP address of the
-          remote machine.</entry>
+          remote machine. Optional if <emphasis>planeName</emphasis> is
+          provided. </entry>
         </row>
 
         <row>
@@ -52,6 +55,14 @@
           <entry>Optional. A boolean flag indicating whether to include files
           from sub-directories under the <emphasis>directory</emphasis>. If
           omitted, the default is FALSE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>planeName</emphasis></entry>
+
+          <entry>A null-terminated string containing name of the data plane
+          containing the file. Optional if <emphasis>machineIP</emphasis> is
+          provided, but <emphasis>planeName</emphasis> is preferred.</entry>
         </row>
 
         <row>
@@ -84,7 +95,10 @@ END;</programlisting>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">OUTPUT(STD.File.RemoteDirectory('edata12','\in','*.d00'));
-OUTPUT(STD.File.RemoteDirectory('10.150.254.6',
-      '/var/lib/HPCCSystems/hpcc-data/thor/','acc*',TRUE));</programlisting>
+  <programlisting format="linespecific">IMPORT STD;
+machineIP   := '';
+dir := '/var/lib/HPCCSystems/dropzone/training';
+recurse:= FALSE;
+planeName := 'mydropzone';
+OUTPUT(STD.File.RemoteDirectory(machineIP,dir,'*.csv',recurse,planeName));</programlisting>
 </sect1>
