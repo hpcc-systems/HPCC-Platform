@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Checkbox, DefaultButton, mergeStyleSets, PrimaryButton, Stack, TextField, } from "@fluentui/react";
+import { Checkbox, DefaultButton, IDropdownOption, mergeStyleSets, PrimaryButton, Stack, TextField, } from "@fluentui/react";
 import { useForm, Controller } from "react-hook-form";
 import { FileSpray, FileSprayService } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
@@ -151,7 +151,7 @@ export const DesprayFile: React.FunctionComponent<DesprayFileProps> = ({
                         required={true}
                         selectedKey={value}
                         placeholder={nlsHPCC.SelectValue}
-                        onChange={(evt, option) => {
+                        onChange={(evt, option: IDropdownOption) => {
                             setDropzone(option.key as string);
                             setDirectory(option["path"] as string);
                             if (option["path"].indexOf("\\") > -1) {
@@ -179,7 +179,7 @@ export const DesprayFile: React.FunctionComponent<DesprayFileProps> = ({
                             label={nlsHPCC.IPAddress}
                             selectedKey={value}
                             placeholder={nlsHPCC.SelectValue}
-                            onChange={(evt, option) => {
+                            onChange={(evt, option: IDropdownOption) => {
                                 setMachine(option.key as string);
                                 setOs(option["OS"] as number);
                                 onChange(option.key);

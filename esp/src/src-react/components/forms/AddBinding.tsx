@@ -1,5 +1,5 @@
 import * as React from "react";
-import { DefaultButton, PrimaryButton, TextField, } from "@fluentui/react";
+import { DefaultButton, IDropdownOption, PrimaryButton, TextField, } from "@fluentui/react";
 import { scopedLogger } from "@hpcc-js/util";
 import { useForm, Controller } from "react-hook-form";
 import { EsdlDefinitionsTextField, EsdlEspProcessesTextField } from "./Fields";
@@ -76,7 +76,7 @@ export const AddBindingForm: React.FunctionComponent<AddBindingFormProps> = ({
                 fieldState: { error }
             }) => <EsdlEspProcessesTextField
                     key={fieldName}
-                    onChange={(evt, option) => {
+                    onChange={(evt, option: IDropdownOption) => {
                         onChange(option.key);
                     }}
                     required={true}
@@ -108,7 +108,7 @@ export const AddBindingForm: React.FunctionComponent<AddBindingFormProps> = ({
                 fieldState: { error }
             }) => <EsdlDefinitionsTextField
                     key={fieldName}
-                    onChange={(evt, option) => {
+                    onChange={(evt, option: IDropdownOption) => {
                         onChange(option.key);
                     }}
                     required={true}

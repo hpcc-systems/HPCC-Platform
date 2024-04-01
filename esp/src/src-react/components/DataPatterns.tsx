@@ -1,5 +1,5 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, mergeStyleSets, ScrollablePane, ScrollbarVisibility, Sticky, StickyPositionType } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, IDropdownOption, mergeStyleSets, ScrollablePane, ScrollbarVisibility, Sticky, StickyPositionType } from "@fluentui/react";
 import nlsHPCC from "src/nlsHPCC";
 import { DPWorkunit } from "src/DataPatterns/DPWorkunit";
 import { Report } from "src/DataPatterns/Report";
@@ -87,7 +87,7 @@ export const DataPatterns: React.FunctionComponent<DataPatternsProps> = ({
                 className={dpStyles.inlineDropdown}
                 required={true}
                 selectedKey={targetCluster}
-                onChange={(ev, row) => {
+                onChange={(ev, row: IDropdownOption) => {
                     setTargetCluster(row.key as string);
                 }}
             />
