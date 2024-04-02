@@ -173,7 +173,7 @@ jobs:
     uses: ./.github/workflows/build-gh_runner.yml
     with:
       os: windows-2022
-      cmake-configuration-ex: '-T host=x64 -A x64 -DUSE_CPPUNIT=OFF -DCLIENTTOOLS_ONLY=ON -DUSE_AZURE=OFF -DINCLUDE_PLUGINS=OFF -DUSE_CASSANDRA=OFF -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
+      cmake-configuration-ex: '-T host=x64 -A x64 -DUSE_CPPUNIT=OFF -DCLIENTTOOLS_ONLY=ON -DUSE_AZURE=OFF -DINCLUDE_PLUGINS=OFF -DUSE_CASSANDRA=OFF -DUSE_PARQUET=OFF -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
     secrets: inherit
 
   build-gh_runner-windows-2019:
@@ -181,7 +181,7 @@ jobs:
     uses: ./.github/workflows/build-gh_runner.yml
     with:
       os: windows-2019
-      cmake-configuration-ex: '-T host=x64 -A x64 -DUSE_CPPUNIT=OFF -DCLIENTTOOLS_ONLY=ON -DINCLUDE_PLUGINS=OFF -DUSE_AZURE=OFF -DUSE_CASSANDRA=OFF -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
+      cmake-configuration-ex: '-T host=x64 -A x64 -DUSE_CPPUNIT=OFF -DCLIENTTOOLS_ONLY=ON -DINCLUDE_PLUGINS=OFF -DUSE_AZURE=OFF -DUSE_CASSANDRA=OFF -DUSE_PARQUET=OFF -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
     secrets: inherit
 
   build-gh_runner-macos-13:
@@ -190,7 +190,7 @@ jobs:
     with:
       os: macos-13
       build-type: 'Release'
-      cmake-configuration-ex: '-DUSE_CPPUNIT=OFF -DCLIENTTOOLS_ONLY=ON -DINCLUDE_PLUGINS=OFF -DUSE_AZURE=OFF -DUSE_CASSANDRA=OFF -DSUPPRESS_CASSANDRAEMBED=ON -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
+      cmake-configuration-ex: '-DUSE_CPPUNIT=OFF -DCLIENTTOOLS_ONLY=ON -DINCLUDE_PLUGINS=OFF -DUSE_AZURE=OFF -DUSE_CASSANDRA=OFF -DUSE_PARQUET=OFF -DSUPPRESS_CASSANDRAEMBED=ON -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
     secrets: inherit
 
   build-gh_runner-macos-12:
@@ -199,6 +199,6 @@ jobs:
     with:
       os: macos-12
       build-type: 'Release'
-      cmake-configuration-ex: '-DUSE_CPPUNIT=OFF -DCLIENTTOOLS_ONLY=ON -DINCLUDE_PLUGINS=OFF -DUSE_AZURE=OFF -DUSE_CASSANDRA=OFF -DSUPPRESS_CASSANDRAEMBED=ON -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
+      cmake-configuration-ex: '-DUSE_CPPUNIT=OFF -DCLIENTTOOLS_ONLY=ON -DINCLUDE_PLUGINS=OFF -DUSE_AZURE=OFF -DUSE_CASSANDRA=OFF -DUSE_PARQUET=OFF -DSUPPRESS_CASSANDRAEMBED=ON -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
     secrets: inherit
 
