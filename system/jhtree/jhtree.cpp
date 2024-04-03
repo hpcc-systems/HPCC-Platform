@@ -862,7 +862,7 @@ unsigned CKeyStore::setKeyCacheLimit(unsigned limit)
     return keyIndexCache.setCacheLimit(limit);
 }
 
-IKeyIndex *CKeyStore::doload(const char *fileName, unsigned crc, IReplicatedFile *part, IFileIO *iFileIO, unsigned fileIdx, IMemoryMappedFile *iMappedFile, bool isTLK)
+IKeyIndex *CKeyStore::doload(const char *fileName, unsigned crc, IReplicatedFile *part, IFileIO *iFileIO, unsigned fileIdx, IMemoryMappedFile *iMappedFile, bool isTLK, size32_t blockedIOSize)
 {
     // isTLK provided by caller since flags in key header unreliable. If either say it's a TLK, I believe it.
     IKeyIndex *keyIndex;
@@ -882,7 +882,7 @@ IKeyIndex *CKeyStore::doload(const char *fileName, unsigned crc, IReplicatedFile
         else if (iFileIO)
         {
             assert(!part);
-            keyIndex = new CDiskKeyIndex(getUniqId(fileIdx), LINK(iFileIO), fname, isTLK);
+            keyIndex = new CDiskKeyIndex(getUniqId(fileIdx), LINK(iFileIO), fname, isTLK, blockedIOSize);
         }
         else
         {
@@ -898,7 +898,7 @@ IKeyIndex *CKeyStore::doload(const char *fileName, unsigned crc, IReplicatedFile
                 iFile.setown(createIFile(fileName));
             IFileIO *fio = iFile->open(IFOread);
             if (fio)
-                keyIndex = new CDiskKeyIndex(getUniqId(fileIdx), fio, fname, isTLK);
+                keyIndex = new CDiskKeyIndex(getUniqId(fileIdx), fio, fname, isTLK, blockedIOSize);
             else
                 throw MakeStringException(0, "Failed to open index file %s", fileName);
         }
@@ -912,19 +912,19 @@ IKeyIndex *CKeyStore::doload(const char *fileName, unsigned crc, IReplicatedFile
     return keyIndex;
 }
 
-IKeyIndex *CKeyStore::load(const char *fileName, unsigned crc, IFileIO *iFileIO, unsigned fileIdx, bool isTLK)
+IKeyIndex *CKeyStore::load(const char *fileName, unsigned crc, IFileIO *iFileIO, unsigned fileIdx, bool isTLK, size32_t blockedIOSize)
 {
-    return doload(fileName, crc, NULL, iFileIO, fileIdx, NULL, isTLK);
+    return doload(fileName, crc, NULL, iFileIO, fileIdx, NULL, isTLK, blockedIOSize);
 }
 
-IKeyIndex *CKeyStore::load(const char *fileName, unsigned crc, IMemoryMappedFile *iMappedFile, bool isTLK)
+IKeyIndex *CKeyStore::load(const char *fileName, unsigned crc, IMemoryMappedFile *iMappedFile, bool isTLK, size32_t blockedIOSize)
 {
-    return doload(fileName, crc, NULL, NULL, (unsigned) -1, iMappedFile, isTLK);
+    return doload(fileName, crc, NULL, NULL, (unsigned) -1, iMappedFile, isTLK, blockedIOSize);
 }
 
-IKeyIndex *CKeyStore::load(const char *fileName, unsigned crc, bool isTLK)
+IKeyIndex *CKeyStore::load(const char *fileName, unsigned crc, bool isTLK, size32_t blockedIOSize)
 {
-    return doload(fileName, crc, NULL, NULL, (unsigned) -1, NULL, isTLK);
+    return doload(fileName, crc, NULL, NULL, (unsigned) -1, NULL, isTLK, blockedIOSize);
 }
 
 StringBuffer &CKeyStore::getMetrics(StringBuffer &xml)
@@ -1161,9 +1161,10 @@ const CJHTreeNode *CMemKeyIndex::loadNode(cycle_t * fetchCycles, offset_t pos, I
     return CKeyIndex::_loadNode(nodeData, pos, false);
 }
 
-CDiskKeyIndex::CDiskKeyIndex(unsigned _iD, IFileIO *_io, const char *_name, bool isTLK)
+CDiskKeyIndex::CDiskKeyIndex(unsigned _iD, IFileIO *_io, const char *_name, bool isTLK, size32_t _blockedIOSize)
     : CKeyIndex(_iD, _name)
 {
+    blockedIOSize = _blockedIOSize;
     io.setown(_io);
     KeyHdr hdr;
     if (io->read(0, sizeof(hdr), &hdr) != sizeof(hdr))
@@ -1294,7 +1295,7 @@ unsigned CKeyIndex::numPartitions()
 
 IKeyCursor *CKeyIndex::getCursor(const IIndexFilterList *filter, bool logExcessiveSeeks)
 {
-    return new CKeyCursor(*this, filter, logExcessiveSeeks);
+    return new CKeyCursor(*this, filter, logExcessiveSeeks, blockedIOSize);
 }
 
 const CJHSearchNode *CKeyIndex::getIndexNode(offset_t offset, NodeType type, IContextLogger *ctx) const
@@ -1594,12 +1595,15 @@ const CJHSearchNode *CKeyIndex::locateLastLeafNode(IContextLogger *ctx) const
     }
 }
 
-CKeyCursor::CKeyCursor(CKeyIndex &_key, const IIndexFilterList *_filter, bool _logExcessiveSeeks)
+CKeyCursor::CKeyCursor(CKeyIndex &_key, const IIndexFilterList *_filter, bool _logExcessiveSeeks, size32_t _blockedIOSize)
     : key(OLINK(_key)), filter(_filter), logExcessiveSeeks(_logExcessiveSeeks)
 {
-    IFileIO *baseIO = const_cast<IFileIO *>(key.queryFileIO());  // I suspect createBlockedIO should take const...
-    if (baseIO)
-        myIO.setown(createBlockedIO(LINK(baseIO), 64*1024));
+    if (_blockedIOSize)
+    {
+        IFileIO *baseIO = const_cast<IFileIO *>(key.queryFileIO());  // I suspect createBlockedIO should take const...
+        if (baseIO)
+            myIO.setown(createBlockedIO(LINK(baseIO), _blockedIOSize));
+    }
     nodeKey = 0;
     recordBuffer = (char *) malloc(key.keySize());  // MORE - would be nice to know real max - is it stored in metadata?
 }
@@ -2407,6 +2411,7 @@ class CLazyKeyIndex : implements IKeyIndex, public CInterface
     mutable Owned<IKeyIndex> realKey;
     mutable CriticalSection c;
     bool isTLK;
+    size32_t blockedIOSize = 0;
 
     inline IKeyIndex &checkOpen() const
     {
@@ -2419,7 +2424,7 @@ class CLazyKeyIndex : implements IKeyIndex, public CInterface
             else
             {
                 iFileIO.setown(delayedFile->getFileIO());
-                realKey.setown(queryKeyStore()->load(keyfile, crc, iFileIO, fileIdx, isTLK));
+                realKey.setown(queryKeyStore()->load(keyfile, crc, iFileIO, fileIdx, isTLK, blockedIOSize));
             }
             if (!realKey)
             {
@@ -2432,8 +2437,8 @@ class CLazyKeyIndex : implements IKeyIndex, public CInterface
 
 public:
     IMPLEMENT_IINTERFACE;
-    CLazyKeyIndex(const char *_keyfile, unsigned _crc, IDelayedFile *_delayedFile, unsigned _fileIdx, bool _isTLK)
-        : keyfile(_keyfile), crc(_crc), fileIdx(_fileIdx), delayedFile(_delayedFile), isTLK(_isTLK)
+    CLazyKeyIndex(const char *_keyfile, unsigned _crc, IDelayedFile *_delayedFile, unsigned _fileIdx, bool _isTLK, size32_t _blockedIOSize)
+        : keyfile(_keyfile), crc(_crc), fileIdx(_fileIdx), delayedFile(_delayedFile), isTLK(_isTLK), blockedIOSize(_blockedIOSize)
     {}
 
     virtual bool IsShared() const { return CInterface::IsShared(); }
@@ -2474,19 +2479,19 @@ public:
     virtual offset_t queryFirstBranchOffset() override { return checkOpen().queryFirstBranchOffset(); }
 };
 
-extern jhtree_decl IKeyIndex *createKeyIndex(const char *keyfile, unsigned crc, IFileIO &iFileIO, unsigned fileIdx, bool isTLK)
+extern jhtree_decl IKeyIndex *createKeyIndex(const char *keyfile, unsigned crc, IFileIO &iFileIO, unsigned fileIdx, bool isTLK, size32_t blockedIOSize)
 {
-    return queryKeyStore()->load(keyfile, crc, &iFileIO, fileIdx, isTLK);
+    return queryKeyStore()->load(keyfile, crc, &iFileIO, fileIdx, isTLK, blockedIOSize);
 }
 
-extern jhtree_decl IKeyIndex *createKeyIndex(const char *keyfile, unsigned crc, bool isTLK)
+extern jhtree_decl IKeyIndex *createKeyIndex(const char *keyfile, unsigned crc, bool isTLK, size32_t blockedIOSize)
 {
-    return queryKeyStore()->load(keyfile, crc, isTLK);
+    return queryKeyStore()->load(keyfile, crc, isTLK, blockedIOSize);
 }
 
-extern jhtree_decl IKeyIndex *createKeyIndex(const char *keyfile, unsigned crc, IDelayedFile &iFileIO, unsigned fileIdx, bool isTLK)
+extern jhtree_decl IKeyIndex *createKeyIndex(const char *keyfile, unsigned crc, IDelayedFile &iFileIO, unsigned fileIdx, bool isTLK, size32_t blockedIOSize)
 {
-    return new CLazyKeyIndex(keyfile, crc, &iFileIO, fileIdx, isTLK);
+    return new CLazyKeyIndex(keyfile, crc, &iFileIO, fileIdx, isTLK, blockedIOSize);
 }
 
 extern jhtree_decl void clearKeyStoreCache(bool killAll)
@@ -3391,8 +3396,8 @@ class IKeyManagerTest : public CppUnit::TestFixture
         buildTestKeys(false, true, false, false, nullptr, nullptr);
         {
             // We are going to treat as a 7-byte field then a 3-byte field, and request the datasorted by the 3-byte...
-            Owned <IKeyIndex> index1 = createKeyIndex("keyfile1.$$$", 0, false);
-            Owned <IKeyIndex> index2 = createKeyIndex("keyfile2.$$$", 0, false);
+            Owned <IKeyIndex> index1 = createKeyIndex("keyfile1.$$$", 0, false, 0);
+            Owned <IKeyIndex> index2 = createKeyIndex("keyfile2.$$$", 0, false, 0);
             Owned<IKeyIndexSet> keyset = createKeyIndexSet();
             keyset->addIndex(index1.getClear());
             keyset->addIndex(index2.getClear());
@@ -3615,7 +3620,7 @@ protected:
         const RtlRecord &recInfo = meta->queryRecordAccessor(true);
         buildTestKeys(variable, useTrailingHeader, noSeek, quickCompressed, meta, compression);
         {
-            Owned <IKeyIndex> index1 = createKeyIndex("keyfile1.$$$", 0, false);
+            Owned <IKeyIndex> index1 = createKeyIndex("keyfile1.$$$", 0, false, 0);
             Owned <IKeyManager> tlk1 = createLocalKeyManager(recInfo, index1, NULL, false, false);
             Owned<IStringSet> sset1 = createStringSet(10);
             sset1->addRange("0000000001", "0000000100");
@@ -3646,7 +3651,7 @@ protected:
             ASSERT(ssetx->numValues() == (unsigned) -1);
 
 
-            Owned <IKeyIndex> index2 = createKeyIndex("keyfile2.$$$", 0, false);
+            Owned <IKeyIndex> index2 = createKeyIndex("keyfile2.$$$", 0, false, 0);
             Owned <IKeyManager> tlk2 = createLocalKeyManager(recInfo, index2, NULL, false, false);
             Owned<IStringSet> sset2 = createStringSet(10);
             sset2->addRange("0000000001", "0000000100");

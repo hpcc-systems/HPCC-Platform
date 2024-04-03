@@ -302,7 +302,7 @@ public:
                 StringBuffer path;
                 rfn.getPath(path); // NB: use for tracing only, IDelayedFile uses IPartDescriptor and any copy
 
-                Owned<IKeyIndex> keyIndex = createKeyIndex(path, crc, *lazyIFileIO, (unsigned) -1, false);
+                Owned<IKeyIndex> keyIndex = createKeyIndex(path, crc, *lazyIFileIO, (unsigned) -1, false, 0);
                 IContextLogger * contextLogger = isSuperFile?contextLoggers[p]:contextLoggers[0];
                 Owned<IKeyManager> klManager = createLocalKeyManager(helper->queryDiskRecordSize()->queryRecordAccessor(true), keyIndex, contextLogger, helper->hasNewSegmentMonitors(), false);
                 if (localMerge)

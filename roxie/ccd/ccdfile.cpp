@@ -103,7 +103,6 @@ protected:
     unsigned fileIdx = 0;
     unsigned crc = 0;
     CRuntimeStatisticCollection fileStats;
-    size32_t blockedIOsize = 0;
 
 #ifdef FAIL_20_READ
     unsigned readCount;
@@ -112,8 +111,8 @@ protected:
 public:
     IMPLEMENT_IINTERFACE;
 
-    CRoxieLazyFileIO(IFile *_logical, offset_t size, const CDateTime &_date, bool _isCompressed, bool _isKey, unsigned _crc, size32_t _blockedIOsize)
-        : logical(_logical), fileSize(size), isCompressed(_isCompressed), isKey(_isKey), crc(_crc), fileStats(diskLocalStatistics), blockedIOsize(_blockedIOsize)
+    CRoxieLazyFileIO(IFile *_logical, offset_t size, const CDateTime &_date, bool _isCompressed, bool _isKey, unsigned _crc)
+        : logical(_logical), fileSize(size), isCompressed(_isCompressed), isKey(_isKey), crc(_crc), fileStats(diskLocalStatistics)
     {
         fileDate.set(_date);
         currentIdx = 0;
@@ -289,11 +288,7 @@ public:
                         if (isCompressed && !isKey)
                             current.setown(createCompressedFileReader(f));
                         else
-                        {
                             current.setown(f->open(IFOread));
-                            if (current && blockedIOsize)
-                                current.setown(createBlockedIO(current.getClear(), blockedIOsize));
-                        }
                         if (current)
                         {
                             if (doTrace(traceRoxieFiles))
@@ -831,7 +826,7 @@ public:
         if (nodeType != NodeNone && !keyFailed && localFile && !keyIndex)
         {
             //Pass false for isTLK - it will be initialised from the index header
-            keyIndex.setown(createKeyIndex(filename, localFile->getCrc(), *localFile.get(), fileIdx, false));
+            keyIndex.setown(createKeyIndex(filename, localFile->getCrc(), *localFile.get(), fileIdx, false, 0));
             if (!keyIndex)
                 keyFailed = true;
         }
@@ -1070,7 +1065,7 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
             blockedSize = getBlockedFileIOSize(planeName);
         }
 
-        Owned<CRoxieLazyFileIO> ret = new CRoxieLazyFileIO(local.getLink(), size, modified, isCompressed, isKey, crc, blockedSize);
+        Owned<CRoxieLazyFileIO> ret = new CRoxieLazyFileIO(local.getLink(), size, modified, isCompressed, isKey, crc);
         RoxieFileStatus fileStatus = fileUpToDate(local, size, modified, isCompressed);
         if (fileStatus == FileIsValid)
         {
@@ -3140,6 +3135,7 @@ public:
 
                         Owned <ILazyFileIO> part;
                         unsigned crc = 0;
+                        size32_t blockedIOSize = 0;
                         if (fdesc) // NB there may be no parts for this channel 
                         {
                             IPartDescriptor *pdesc = fdesc->queryPart(partNo-1);
@@ -3148,6 +3144,9 @@ public:
                                 IPartDescriptor *remotePDesc = queryMatchingRemotePart(pdesc, remoteFDesc, partNo-1);
                                 part.setown(createPhysicalFile(subNames.item(idx), pdesc, remotePDesc, ROXIE_KEY, fdesc->numParts(), cached != NULL, channel));
                                 pdesc->getCrc(crc);
+                                StringBuffer planeName;
+                                fdesc->getClusterLabel(pdesc->copyClusterNum(0), planeName);
+                                blockedIOSize = getBlockedFileIOSize(planeName);
                             }
                         }
                         if (part)
@@ -3155,10 +3154,10 @@ public:
                             if (lazyOpen)
                             {
                                 // We pass the IDelayedFile interface to createKeyIndex, so that it does not open the file immediately
-                                keyset->addIndex(createKeyIndex(part->queryFilename(), crc, *QUERYINTERFACE(part.get(), IDelayedFile), part->getFileIdx(), false));
+                                keyset->addIndex(createKeyIndex(part->queryFilename(), crc, *QUERYINTERFACE(part.get(), IDelayedFile), part->getFileIdx(), false, blockedIOSize));
                             }
                             else
-                                keyset->addIndex(createKeyIndex(part->queryFilename(), crc, *part.get(), part->getFileIdx(), false));
+                                keyset->addIndex(createKeyIndex(part->queryFilename(), crc, *part.get(), part->getFileIdx(), false, blockedIOSize));
                         }
                         else
                             keyset->addIndex(NULL);
@@ -3189,13 +3188,16 @@ public:
                     pdesc->getCrc(crc);
                     StringBuffer pname;
                     pdesc->getPath(pname);
+                    StringBuffer planeName;
+                    fdesc->getClusterLabel(pdesc->copyClusterNum(0), planeName);
+                    size32_t blockedIOSize = getBlockedFileIOSize(planeName);
                     if (lazyOpen)
                     {
                         // We pass the IDelayedFile interface to createKeyIndex, so that it does not open the file immediately
-                        key.setown(createKeyIndex(pname.str(), crc, *QUERYINTERFACE(keyFile.get(), IDelayedFile), keyFile->getFileIdx(), numParts>1));
+                        key.setown(createKeyIndex(pname.str(), crc, *QUERYINTERFACE(keyFile.get(), IDelayedFile), keyFile->getFileIdx(), numParts>1, blockedIOSize));
                     }
                     else
-                        key.setown(createKeyIndex(pname.str(), crc, *keyFile.get(), keyFile->getFileIdx(), numParts>1));
+                        key.setown(createKeyIndex(pname.str(), crc, *keyFile.get(), keyFile->getFileIdx(), numParts>1, blockedIOSize));
                     keyset->addIndex(LINK(key->queryPart(0)));
                 }
                 else

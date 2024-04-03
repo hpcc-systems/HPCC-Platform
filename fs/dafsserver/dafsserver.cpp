@@ -2236,7 +2236,7 @@ protected:
         crc32.tally(sizeof(time_t), &modTimeTT);
         unsigned crc = crc32.get();
 
-        keyIndex.setown(createKeyIndex(fileName, crc, isTlk));
+        keyIndex.setown(createKeyIndex(fileName, crc, isTlk, 0));
         keyManager.setown(createLocalKeyManager(*record, keyIndex, nullptr, true, false));
         filters.createSegmentMonitors(keyManager);
         keyManager->finishSegmentMonitors();

@@ -54,13 +54,13 @@ private:
             return useId;
         return ++nextId;
     }
-    IKeyIndex *doload(const char *fileName, unsigned crc, IReplicatedFile *part, IFileIO *iFileIO, unsigned fileIdx, IMemoryMappedFile *iMappedFile, bool isTLK);
+    IKeyIndex *doload(const char *fileName, unsigned crc, IReplicatedFile *part, IFileIO *iFileIO, unsigned fileIdx, IMemoryMappedFile *iMappedFile, bool isTLK, size32_t blockedIOSize);
 public:
     CKeyStore();
     ~CKeyStore();
-    IKeyIndex *load(const char *fileName, unsigned crc, bool isTLK);
-    IKeyIndex *load(const char *fileName, unsigned crc, IFileIO *iFileIO, unsigned fileIdx, bool isTLK);
-    IKeyIndex *load(const char *fileName, unsigned crc, IMemoryMappedFile *iMappedFile, bool isTLK);
+    IKeyIndex *load(const char *fileName, unsigned crc, bool isTLK, size32_t blockedIOSize);
+    IKeyIndex *load(const char *fileName, unsigned crc, IFileIO *iFileIO, unsigned fileIdx, bool isTLK, size32_t blockedIOSize);
+    IKeyIndex *load(const char *fileName, unsigned crc, IMemoryMappedFile *iMappedFile, bool isTLK, size32_t blockedIOSize);
     void clearCache(bool killAll);
     void clearCacheEntry(const char *name);
     void clearCacheEntry(const IFileIO *io);
@@ -96,6 +96,7 @@ protected:
     CIArrayOf<IndexBloomFilter> bloomFilters;
     std::atomic<bool> bloomFiltersLoaded = {0};
     offset_t cachedBlobNodePos;
+    size32_t blockedIOSize = 0;
 
     CKeyHdr *keyHdr;
     CNodeCache *cache;
@@ -185,7 +186,7 @@ private:
     void cacheNodes(CNodeCache *cache, offset_t firstnode, bool isTLK);
     
 public:
-    CDiskKeyIndex(unsigned _iD, IFileIO *_io, const char *_name, bool _isTLK);
+    CDiskKeyIndex(unsigned _iD, IFileIO *_io, const char *_name, bool _isTLK, size32_t _blockedIOSize);
 
     virtual const char *queryFileName() { return name.get(); }
     virtual const IFileIO *queryFileIO() const override { return io; }
@@ -209,7 +210,7 @@ protected:
     bool logExcessiveSeeks = false;
     Owned<IFileIO> myIO;  // This should be a blockedIO based on key.IO if blocking is enabled, else nullptr
 public:
-    CKeyCursor(CKeyIndex &_key, const IIndexFilterList *filter, bool _logExcessiveSeeks);
+    CKeyCursor(CKeyIndex &_key, const IIndexFilterList *filter, bool _logExcessiveSeeks, unsigned _blockedIOSize);
     ~CKeyCursor();
 
     virtual const char *queryName() const override;
