@@ -38,7 +38,7 @@ let rewrite = [
     { from: "/esp/files/dist/(.*)", to: "/build/dist/$1" },
     { from: "/esp/files/img/(.*)", to: "build/esp/files/img/$1" },
     { from: "/esp/files/(.*/*.css)", to: "/build/esp/files/$1" },
-    { from: "/esp/files/(.*)", to: "/$1" },
+    { from: "/esp/files/(.*)", to: "/build/$1" },
     { from: "/main", to: protocol + "://" + ip + ":" + port + "/main" },
     { from: "/FileSpray/(.*)", to: protocol + "://" + ip + ":" + port + "/FileSpray/$1" },
     { from: "/WsCloud/(.*)", to: protocol + "://" + ip + ":" + port + "/WsCloud/$1" },
