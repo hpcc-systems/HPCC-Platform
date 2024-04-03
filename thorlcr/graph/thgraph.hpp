@@ -1104,6 +1104,7 @@ class graph_decl CActivityBase : implements CInterfaceOf<IThorRowInterfaces>, im
     CSingletonLock CABserializerlock;
     CSingletonLock CABdeserializerlock;
     roxiemem::RoxieHeapFlags defaultRoxieMemHeapFlags = roxiemem::RHFnone;
+    Owned<CFileSizeTracker> tempFileSizeTracker;
 
 protected:
     CGraphElementBase &container;
@@ -1170,6 +1171,21 @@ public:
 
     IThorRowInterfaces * createRowInterfaces(IOutputMetaData * meta, byte seq=0);
     IThorRowInterfaces * createRowInterfaces(IOutputMetaData * meta, roxiemem::RoxieHeapFlags heapFlags, byte seq=0);
+
+    CFileSizeTracker * queryTempFileSizeTracker()
+    {
+        if (!tempFileSizeTracker)
+            tempFileSizeTracker.setown(new CFileSizeTracker);
+        return tempFileSizeTracker;
+    }
+    offset_t queryActiveTempSize() const
+    {
+        return tempFileSizeTracker ? tempFileSizeTracker->queryActiveSize() : 0;
+    }
+    offset_t queryPeakTempSize() const
+    {
+        return tempFileSizeTracker ? tempFileSizeTracker->queryPeakSize() : 0;
+    }
 
 // IExceptionHandler
     bool fireException(IException *e);
