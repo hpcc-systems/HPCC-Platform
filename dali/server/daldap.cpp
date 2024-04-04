@@ -124,15 +124,14 @@ public:
         }
         else
         {
-            DBGLOG("NULL UserDescriptor in daldap.cpp getPermissions('%s')", key ? key : "NULL");
+            DBGLOG("NULL UserDescriptor in daldap.cpp getPermissions('%s')", key);
         }
 
         if (0 == username.length())
         {
             username.append(filesdefaultuser);
             decrypt(password, filesdefaultpassword);
-            OWARNLOG("Missing credentials, injecting deprecated filesdefaultuser for request %s %s", nullText(key),
-                     nullText(obj));
+            OWARNLOG("Missing credentials, injecting deprecated filesdefaultuser for request %s %s", key, nullText(obj));
             logNullUser(nullptr);
         }
 
@@ -148,7 +147,7 @@ public:
         if (perm == SecAccess_Unavailable)
         {
             OWARNLOG("LDAP: getPermissions(%s) Unable to get perms for scope=%s user=%s, setting 'SecAccess_None'",
-                     nullText(key), nullText(obj), username.str());
+                     key, nullText(obj), username.str());
             perm = SecAccess_None;
         }
         unsigned taken = msTick() - start;
@@ -156,7 +155,7 @@ public:
         if (taken>100)
 #endif
         {
-            PROGLOG("LDAP: getPermissions(%s) scope=%s user=%s returns %d in %d ms", nullText(key), nullText(obj),
+            PROGLOG("LDAP: getPermissions(%s) scope=%s user=%s returns %d in %d ms", key, nullText(obj),
                     username.str(), perm, taken);
         }
         if (auditflags & DALI_LDAP_AUDIT_REPORT)
@@ -176,6 +175,7 @@ public:
         }
         return perm;
     }
+
     bool clearPermissionsCache(IUserDescriptor *udesc)
     {
         if (!ldapsecurity || ((getLDAPflags() & DLF_ENABLED) == 0))

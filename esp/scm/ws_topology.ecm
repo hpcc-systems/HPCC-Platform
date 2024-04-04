@@ -24,6 +24,20 @@ ESPenum RoxieQueueFilter : string
     WorkunitsOnly("WorkunitsOnly")
 };
 
+ESPenum TpMachineType : string
+{
+    All("ALLNODES"),
+    Thor("THORMACHINES"),
+    Hole("HOLEMACHINES"),
+    Roxie("ROXIEMACHINES"),
+    Machines("MACHINES"),
+    Available("AVAILABLEMACHINES"),
+    DropZone("DROPZONE"),
+    StandBy("STANDBYNNODE"),
+    ThorSpare("THORSPARENODES"),
+    HoleStandby("HOLESTANDBYNODES")
+};
+
 //  ===========================================================================
 
 ESPStruct TpMachine
@@ -418,7 +432,7 @@ ESPresponse [exceptions_inline,encode(0)] TpClusterInfoResponse
 ESPrequest [] TpMachineQueryRequest
 {
     //Type of Node the parent is....
-    string        Type;
+    ESPenum TpMachineType Type;
     string        Cluster;
     string        OldIP;
     //Path to Parent within Dali(Encoded to prevent back-engineering)
@@ -433,7 +447,7 @@ ESPresponse [exceptions_inline] TpMachineQueryResponse
 {
     bool   EnablePreflightInfo;
     [min_ver("1.15")] bool   HasThorSpareProcess;
-    string        Type;
+    ESPenum TpMachineType Type;
     string        Cluster;
     string        OldIP;
     string       LogDirectory;
