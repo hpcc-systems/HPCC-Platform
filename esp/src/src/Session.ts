@@ -3,10 +3,10 @@ import * as xhr from "dojo/request/xhr";
 import * as topic from "dojo/topic";
 import { format as d3Format } from "@hpcc-js/common";
 import { SMCService } from "@hpcc-js/comms";
+import { scopedLogger } from "@hpcc-js/util";
 import { cookieKeyValStore } from "src/KeyValStore";
 import { singletonDebounce } from "../src-react/util/throttle";
 import * as ESPUtil from "./ESPUtil";
-import { scopedLogger } from "@hpcc-js/util";
 
 const logger = scopedLogger("src/Session.ts");
 
@@ -72,21 +72,16 @@ export function initSession() {
         });
 
         idleWatcher.start();
-        if (!cookie("Status")) {
-            document.cookie = "Status=Unlocked;Path=/";
-        }
     } else if (cookie("ECLWatchUser")) {
         window.location.replace(dojoConfig.urlInfo.basePath + "/Login.html");
     }
 }
 
 export function lock() {
-    cookie("Status", "Locked");
     idleWatcher.stop();
 }
 
 export function unlock() {
-    cookie("Status", "Unlocked");
     idleWatcher.start();
 }
 

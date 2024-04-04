@@ -116,7 +116,6 @@ export const Login: React.FunctionComponent<LoginProps> = ({
                     setErrorMessage(cookies.ESPAuthenticationMSG);
                     setShowError(true);
                 } else {
-                    cookies["Status"] = "Unlocked";
                     cookies["ESPAuthenticated"] = "true";
                     createUserSession(cookies).then(() => {
                         setErrorMessage("");
