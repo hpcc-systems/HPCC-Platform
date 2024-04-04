@@ -50,7 +50,7 @@ enum LfnMetaOpts : byte
     LfnMOptTls    = 0x02,
 };
 BITMASK_ENUM(LfnMetaOpts);
-static void populateLFNMeta(const char *logicalName, unsigned __int64 leaseId, LfnMetaOpts opts, IPropertyTree *metaRoot, IPropertyTree *meta)
+static void populateLFNMeta(IUserDescriptor *userDesc, const char *logicalName, unsigned __int64 leaseId, LfnMetaOpts opts, IPropertyTree *metaRoot, IPropertyTree *meta)
 {
     CDfsLogicalFileName lfn;
     lfn.set(logicalName);
@@ -59,7 +59,7 @@ static void populateLFNMeta(const char *logicalName, unsigned __int64 leaseId, L
 
     assertex(!lfn.isMulti()); // not supported, don't think needs to be/will be.
 
-    Owned<IPropertyTree> tree = queryDistributedFileDirectory().getFileTree(logicalName, nullptr);
+    Owned<IPropertyTree> tree = queryDistributedFileDirectory().getFileTree(logicalName, userDesc);
     if (!tree)
         return;
     if (hasMask(opts, LfnMOptRemap))
@@ -111,7 +111,7 @@ static void populateLFNMeta(const char *logicalName, unsigned __int64 leaseId, L
             {
                 IPropertyTree &sub = *(orderedSubFiles[f]);
                 sub.getProp("@name", subname.clear());
-                populateLFNMeta(subname, leaseId, opts, metaRoot, fileMeta);
+                populateLFNMeta(userDesc, subname, leaseId, opts, metaRoot, fileMeta);
             }
         }
     }
@@ -182,7 +182,7 @@ bool CWsDfsEx::onDFSFileLookup(IEspContext &context, IEspDFSFileLookupRequest &r
             opts |= LfnMOptTls;
 
         Owned<IPropertyTree> responseTree = createPTree();
-        populateLFNMeta(logicalName, leaseId, opts, responseTree, responseTree);
+        populateLFNMeta(userDesc, logicalName, leaseId, opts, responseTree, responseTree);
 
         // serialize response
         MemoryBuffer respMb, compressedRespMb;
@@ -198,7 +198,7 @@ bool CWsDfsEx::onDFSFileLookup(IEspContext &context, IEspDFSFileLookupRequest &r
             //    Really this should be done at end (or at end as well), but this is same as existing DFS lookup.
             CDateTime dt;
             dt.setNow();
-            queryDistributedFileDirectory().setFileAccessed(logicalName, dt);
+            queryDistributedFileDirectory().setFileAccessed(userDesc, logicalName, dt);
 
             LOG(MCauditInfo,",FileAccess,EspProcess,READ,%s,%u,%s", logicalName, timeoutSecs, userID.str());
         }
