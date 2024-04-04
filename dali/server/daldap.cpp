@@ -131,7 +131,8 @@ public:
         {
             username.append(filesdefaultuser);
             decrypt(password, filesdefaultpassword);
-            OWARNLOG("Missing credentials, injecting deprecated filesdefaultuser for request %s %s", key, nullText(obj));
+            OWARNLOG("Missing credentials, injecting deprecated filesdefaultuser (%s) for request %s %s", filesdefaultuser.str(), key,
+                     nullText(obj));
             logNullUser(nullptr);
         }
 
