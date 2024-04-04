@@ -619,6 +619,158 @@ eclagent:
         </listitem>
       </orderedlist>
     </sect2>
+
+    <sect2 id="threeiThorsOneQueue" role="nobrk">
+      <title>Create a Custom Configuration Chart for Multiple Thors Listening
+      to a Common Queue</title>
+
+      <para>In this section, we will create three Thors that listen to a
+      common queue (in addition to their own queue). This provides the ability
+      to define distinct Thor cluster configurations but allow them to form a
+      single target behind a single queue. These clusters can be bound to
+      certain node pools in different availability zones, if desired. You can
+      use this example as a starting point and adjust the number of Thor
+      clusters you want.</para>
+
+      <para>This is accomplished by defining additional auxiliary target
+      queues for each Thor definition and using a common name as an auxiliary
+      queue.</para>
+
+      <orderedlist>
+        <listitem>
+          <para>If you have not already added the HPCC Systems repository to
+          the helm repository list, add it now.</para>
+
+          <para><programlisting>helm repo add hpcc https://hpcc-systems.github.io/helm-chart/</programlisting></para>
+
+          <para>If you have added it, update to the latest charts:</para>
+
+          <para><programlisting>helm repo update</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Create a new text file and name it <emphasis
+          role="bold">threethorsonequeue.yaml</emphasis> and open it in a text
+          editor.</para>
+
+          <para>You can use any text editor.</para>
+        </listitem>
+
+        <listitem>
+          <para>Open the default values file that you saved earlier
+          (myvalues.yaml) in a text editor.</para>
+        </listitem>
+
+        <listitem>
+          <para>Copy the entire <emphasis role="bold">thor:</emphasis> section
+          and paste it into the new threethorsonequeue.yaml file.</para>
+        </listitem>
+
+        <listitem>
+          <para>Copy the entire contents of the new yaml file, except the
+          first line (thor:), and paste it at the end of the file <emphasis
+          role="bold">twice</emphasis>.</para>
+
+          <para>This creates three - name: sections.</para>
+        </listitem>
+
+        <listitem>
+          <para>Edit the file in the following manner:</para>
+
+          <para><orderedlist>
+              <listitem>
+                <para>Give each Thor a unique value for <emphasis
+                role="bold">name:</emphasis>.</para>
+
+                <para>In this example, we use <emphasis role="bold">thor1,
+                thor2, </emphasis>and <emphasis
+                role="bold">thor3</emphasis>.</para>
+              </listitem>
+
+              <listitem>
+                <para>Add an <emphasis role="bold">auxQueues:</emphasis> entry
+                to each Thor block using a common name</para>
+
+                <para>In this example, we are using</para>
+
+                <para><emphasis role="bold">auxQueues: [ thorQ
+                ]</emphasis></para>
+              </listitem>
+
+              <listitem>
+                <para>Make sure the <emphasis role="bold">prefix:</emphasis>
+                is the same in each Thor block.</para>
+              </listitem>
+            </orderedlist></para>
+        </listitem>
+
+        <listitem>
+          <para>Save the file and close the text editor.</para>
+
+          <para>The resulting threethorsonequeue.yaml file should look like
+          this:</para>
+
+          <para><emphasis role="bold">Note:</emphasis> The comments have been
+          removed to simplify the example:</para>
+
+          <para><programlisting>thor:
+- name: thor1
+  auxQueues: [ thorQ ]
+  maxGraphs: 2
+  maxJobs: 2
+  numWorkers: 4
+  numWorkersPerPod: 2
+  prefix: thor
+- name: thor2
+  maxGraphs: 2
+  maxJobs: 2
+  numWorkers: 4
+  numWorkersPerPod: 2
+  prefix: thor
+  auxQueues: [ thorQ ]
+- name: thor3
+  maxGraphs: 2
+  maxJobs: 2
+  numWorkers: 4
+  numWorkersPerPod: 2
+  prefix: thor
+  auxQueues: [ thorQ ]</programlisting></para>
+        </listitem>
+      </orderedlist>
+
+      <para><emphasis role="bold">Deploy using the new custom configuration
+      chart.</emphasis></para>
+
+      <orderedlist>
+        <listitem>
+          <para>Open a terminal and navigate to the folder where you saved the
+          threethorsonequeue.yaml file.</para>
+        </listitem>
+
+        <listitem>
+          <para>Deploy your HPCC Systems Platform, adding the new
+          configuration to your command:</para>
+
+          <para><programlisting># If you have previously stopped your cluster
+
+helm install mycluster hpcc/hpcc -f threethorsonequeue.yaml
+
+# To upgrade without stopping
+
+helm upgrade mycluster hpcc/hpcc -f threethorsonequeue.yaml
+</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>After you confirm that your deployment is running, open ECL
+          Watch.</para>
+
+          <para>You should see four Thor clusters available as Targets --
+          thor1, thor2, thor3, and a fourth queue that all three Thors listen
+          to-- thorQ.</para>
+        </listitem>
+      </orderedlist>
+    </sect2>
   </sect1>
 
   <sect1 id="CostTracking1">
