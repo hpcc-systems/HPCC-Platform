@@ -41,7 +41,7 @@ const char* MSG_FAILED_GET_ENVIRONMENT_INFO = "Failed to get environment informa
 //////////////////////////////////////////////////////////////////////
 
 void CTpWrapper::getClusterMachineList(double clientVersion,
-                                       const char* ClusterType,
+                                       CTpMachineType ClusterType,
                                        const char* ClusterPath,
                                        const char* ClusterDirectory,
                                        IArrayOf<IEspTpMachine> &MachineList,
