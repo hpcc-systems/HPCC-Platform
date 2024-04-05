@@ -731,7 +731,7 @@ interface IDistributedFileDirectory: extends IInterface
     // useful to clearup after temporary unpublished file.
     virtual bool removePhysicalPartFiles(const char *logicalName, IFileDescriptor *fileDesc, IMultiException *mexcept, unsigned numParallelDeletes=0) = 0;
 
-    virtual void setFileAccessed(const char *logicalName, const CDateTime &dt, const INode *foreigndali=nullptr, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT) = 0;
+    virtual void setFileAccessed(IUserDescriptor* udesc, const char *logicalName, const CDateTime &dt, const INode *foreigndali=nullptr, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT) = 0;
 };
 
 

@@ -232,8 +232,7 @@
               "$ref" : "#/definitions/egress"
           },
           "expert": {
-            "description": "Custom internal options usually reserved for internal testing",
-            "type": "object"
+            "$ref": "#/definitions/expert"
           },
           "hpa": {
             "$ref": "#/definitions/hpa"
@@ -342,7 +341,7 @@
           }
         },
         "expert": {
-          "description": "Settings for developers, debugging and testing"
+          "$ref": "#/definitions/expert"
         },
         "misc": {
           "description": "Miscellaneous settings",
@@ -1341,6 +1340,9 @@
         "terminationGracePeriodSeconds": {
           "$ref": "#/definitions/terminationGracePeriodSeconds",
           "default": 3600
+        },
+        "expert": {
+          "$ref": "#/definitions/expert"
         }
       }
     },
@@ -1429,6 +1431,9 @@
         },
         "hpa": {
           "$ref": "#/definitions/hpa"
+        },
+        "expert": {
+          "$ref": "#/definitions/expert"
         }
       }
     },
@@ -1466,6 +1471,9 @@
         },
         "terminationGracePeriodSeconds": {
           "$ref": "#/definitions/terminationGracePeriodSeconds"
+        },
+        "expert": {
+          "$ref": "#/definitions/expert"
         }
       }
     },
@@ -1543,8 +1551,7 @@
           "$ref": "#/definitions/hpa"
         },
         "expert": {
-          "description": "Custom internal options usually reserved for internal testing",
-          "type": "object"
+          "$ref": "#/definitions/expert"
         }
       }
     },
@@ -1634,6 +1641,9 @@
           "type": "boolean",
           "default": false,
           "description": "Require SOAPCALL and HTTPCALL URLs are secrets or mapped to secrets"
+        },
+        "expert": {
+          "$ref": "#/definitions/expert"
         }
       }
     },
@@ -2339,8 +2349,7 @@
           "description": "Preemptively update secrets that are active and about to expire in the background"
         },
         "expert": {
-          "description": "Custom internal options usually reserved for internal testing",
-          "type": "object"
+          "$ref": "#/definitions/expert"
         },
         "egress": {
           "$ref" : "#/definitions/egress"
@@ -2388,6 +2397,9 @@
         },
         "hpa": {
           "$ref": "#/definitions/hpa"
+        },
+        "expert": {
+          "$ref": "#/definitions/expert"
         }
       }
     },
@@ -2581,8 +2593,7 @@
           "$ref" : "#/definitions/componentCost"
         },
         "expert": {
-          "description": "Custom internal options usually reserved for internal testing",
-          "type": "object"
+          "$ref": "#/definitions/expert"
         },
         "egress": {
           "$ref" : "#/definitions/egress"
@@ -2675,6 +2686,9 @@
         },
         "egress": {
           "$ref" : "#/definitions/egress"
+        },
+        "expert": {
+          "$ref": "#/definitions/expert"
         }
       }
     },
@@ -2714,7 +2728,8 @@
             "env": {},
             "annotations": {},
             "labels": {},
-            "egress": {}
+            "egress": {},
+            "expert": {}
           },
           "additionalProperties": false
         }
@@ -2762,7 +2777,8 @@
             "labels": {},
             "limit": {},
             "cutoff": {},
-            "egress": {}    
+            "egress": {},
+            "expert": {}
           },
           "additionalProperties": false
         }
@@ -2790,7 +2806,8 @@
             "labels": {},
             "limit": {},
             "cutoff": {},
-            "egress": {}
+            "egress": {},
+            "expert": {}
           },
           "additionalProperties": false
         }
@@ -2816,7 +2833,8 @@
             "labels": {},
             "limit": {},
             "cutoff": {},
-            "egress": {}
+            "egress": {},
+            "expert": {}
           },
           "additionalProperties": false
         }
@@ -2850,7 +2868,8 @@
         "resources": {},
         "annotations": {},
         "labels": {},
-        "egress": {}
+        "egress": {},
+        "expert": {}
       },
       "additionalProperties": false
     },
@@ -2964,6 +2983,9 @@
         },
         "hpa": {
           "$ref": "#/definitions/hpa"
+        },
+        "expert": {
+          "$ref": "#/definitions/expert"
         }
       }
     },
@@ -3393,6 +3415,10 @@
       "description": "Period permitted for component to terminate gracefully before being killed by Kubernetes",
       "default": 600,
       "minimum": 0
+    },
+    "expert": {
+      "description": "Settings for developers, debugging and testing",
+      "type": "object"
     }
   }
 }

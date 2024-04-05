@@ -37,7 +37,7 @@
       similarity to actual persons, living or dead, is purely
       coincidental.</para>
 
-      <para></para>
+      <para />
     </legalnotice>
 
     <xi:include href="common/Version.xml"
@@ -64,10 +64,10 @@
   <chapter id="ContainerizedHPCCOverview">
     <title>Containerized HPCC Overview</title>
 
-    <para>Starting with version 8.0, the HPCC
-    Systems<superscript>®</superscript> Platform is focusing on containerized
-    deployments. This is useful for cloud-based deployments (large or small)
-    or local testing/development deployments.</para>
+    <para>Since version 8.0, the HPCC Systems<superscript>®</superscript>
+    Platform started focusing significantly on containerized deployments. This
+    is useful for cloud-based deployments (large or small) or local
+    testing/development deployments.</para>
 
     <para>Docker containers managed by Kubernetes (K8s) is a new target
     operating environment, alongside continued support for traditional
@@ -81,10 +81,10 @@
     to run, but a significant change in how components are configured, how and
     when they start up, and where they store their data.</para>
 
-    <para>This book focuses on containerized deployments. The first section is
-    about using Docker containers and Helm charts locally. Docker and Helm do
-    a lot of the work for you. The second part uses the same techniques in the
-    cloud.</para>
+    <para>This book focuses on these containerized deployments. The first
+    section is about using Docker containers and Helm charts locally. Docker
+    and Helm do a lot of the work for you. The second part uses the same
+    techniques in the cloud.</para>
 
     <para>For local small deployments (for development and testing), we
     suggest using Docker Desktop and Helm. This is useful for learning,
@@ -92,8 +92,7 @@
 
     <para>For Cloud deployments, you can use any flavor of Cloud services, if
     it supports Docker, Kubernetes, and Helm. This book, however, will focus
-    on Microsoft Azure for Cloud Services. Future versions may include
-    specifics for other Cloud providers.</para>
+    on Microsoft Azure for Cloud Services. </para>
 
     <para>If you want to manually manage your local or Cloud deployment, you
     can still use the traditional installers and Configuration Manager, but
@@ -106,28 +105,12 @@
     be easy for someone familiar with Kubernetes and Helm to install and
     manage the HPCC Systems platform.</para>
 
-    <variablelist>
-      <varlistentry>
-        <term>Note:</term>
-
-        <listitem>
-          <para>The traditional bare-metal version of the HPCC Systems
-          platform is mature and has been heavily used in commercial
-          applications for almost two decades and is fully intended for
-          production use. The containerized version is new and is not yet 100%
-          ready for production. In addition, aspects of that version could
-          change without notice. We encourage you to use it and provide
-          feedback so we can make this version as robust as a bare-metal
-          installation.</para>
-        </listitem>
-      </varlistentry>
-    </variablelist>
-
     <sect1 id="barevscontainer">
       <title>Bare-metal vs Containers</title>
 
-      <para>If you are familiar with the HPCC Systems platform, there are a
-      few fundamental changes to note.</para>
+      <para>If you are familiar with the traditional bare-metal HPCC Systems
+      platform deployments, there are a few fundamental changes to
+      note.</para>
 
       <sect2 id="processesandpods">
         <title>Processes and Pods, not Machines</title>
