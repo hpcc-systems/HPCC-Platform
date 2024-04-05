@@ -1185,7 +1185,7 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
     {
         Owned<CProcessorFactory> factory = new CProcessorFactory(*this);
         processorPool.setown(createThreadPool("KJService processor pool", factory, true, this, keyLookupMaxProcessThreads, 10000));
-        processorPool->setStartDelayTracing(60000);
+        processorPool->setStartDelayTracing(60);
     }
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterfaceOf<IKJService>);

@@ -3367,7 +3367,7 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
                          */
                         unsigned ms = timer.elapsedMs();
                         totalThrottleDelay += ms;
-                        PROGLOG("Throttler(%s): transaction delayed [cmd=%s] for : %u milliseconds, proceeding as cpu(%u)<throttleCPULimit(%u)", title.get(), getRFCText(cmd), cpu, ms, cpuThreshold);
+                        PROGLOG("Throttler(%s): transaction delayed [cmd=%s] for : %u milliseconds, proceeding as cpu(%u)<throttleCPULimit(%u)", title.get(), getRFCText(cmd), ms, cpu, cpuThreshold);
                         hadSem = false;
                     }
                     else
