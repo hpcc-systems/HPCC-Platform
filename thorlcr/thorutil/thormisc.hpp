@@ -115,6 +115,7 @@
 #define THOROPT_SOAP_TRACE_LEVEL "soapTraceLevel"               // The trace SOAP level (default=1)
 #define THOROPT_SORT_ALGORITHM "sortAlgorithm"                  // The algorithm used to sort records (quicksort/mergesort)
 #define THOROPT_COMPRESS_ALLFILES "compressAllOutputs"          // Compress all output files (default: bare-metal=off, cloud=on)
+#define THOROPT_AVOID_RENAME "avoidRename"                      // Avoid rename, write directly to target physical filenames (no temp file)
 
 
 #define INITIAL_SELFJOIN_MATCH_WARNING_LEVEL 20000  // max of row matches before selfjoin emits warning

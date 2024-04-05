@@ -7423,12 +7423,31 @@ void FileIOStats::trace()
 
 static constexpr FileSystemProperties linuxFileSystemProperties     {true, true, true, true, 0x10000};             // 64K
 static constexpr FileSystemProperties defaultUrlFileSystemProperties{false, false, false, false, 0x400000};        // 4Mb
+static constexpr FileSystemProperties linuxFileSystemNoRenameProperties{false, true, true, true, 0x10000};         // 64K
+
+static std::atomic<int> avoidRename{-1};
+static CriticalSection avoidRenameCS;
+static bool isAvoidRenameEnabled()
+{
+    if (-1 == avoidRename)
+    {
+        CriticalBlock b(avoidRenameCS);
+        if (-1 == avoidRename)
+        {
+            avoidRename = getComponentConfigSP()->getPropBool("expert/@avoidRename");
+            DBGLOG("FileSystemProperties.canRename = %s", boolToStr(!avoidRename)); // NB: canRename if !avoidRename
+        }
+    }
+    return avoidRename;
+}
 
 //This implementation should eventually make use of the file hook.
 const FileSystemProperties & queryFileSystemProperties(const char * filename)
 {
     if (isUrl(filename))
         return defaultUrlFileSystemProperties;
+    else if (isAvoidRenameEnabled())
+        return linuxFileSystemNoRenameProperties;
     else
         return linuxFileSystemProperties;
 }
