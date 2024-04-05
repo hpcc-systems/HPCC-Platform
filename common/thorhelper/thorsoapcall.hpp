@@ -43,6 +43,7 @@ interface IWSCRowProvider : extends IInterface
     virtual unsigned getBLRetries() const { return DEBLACKLIST_RETRIES; };
     virtual unsigned getBLDelay() const { return DEBLACKLIST_RETRY_DELAY; };
     virtual const char * getBLerror() const { return "connection failed"; }
+    virtual unsigned queryActivityId() const = 0;
 };
 
 typedef IWSCRowProvider ISoapCallRowProvider;//DEPRECATED
