@@ -10,8 +10,10 @@
       <primary>File.MoveExternalFile</primary>
     </indexterm><indexterm>
       <primary>MoveExternalFile</primary>
-    </indexterm>(</emphasis> <emphasis> location, frompath, topath </emphasis>
-  <emphasis role="bold">)</emphasis></para>
+    </indexterm>(</emphasis> <emphasis> location, frompath, topath <emphasis
+  role="bold">[</emphasis> <emphasis>, planename</emphasis> <emphasis
+  role="bold">]</emphasis> </emphasis> <emphasis
+  role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -24,7 +26,8 @@
           <entry><emphasis>location</emphasis></entry>
 
           <entry>A null-terminated string containing the IP address of the
-          remote machine.</entry>
+          remote machine. Optional if <emphasis>planename</emphasis> is
+          provided. </entry>
         </row>
 
         <row>
@@ -40,6 +43,14 @@
           <entry>A null-terminated string containing the path/name of the
           target file.</entry>
         </row>
+
+        <row>
+          <entry><emphasis>planeName</emphasis></entry>
+
+          <entry>A null-terminated string containing name of the data plane
+          containing the file. Optional if <emphasis>location</emphasis> is
+          provided, but <emphasis>planename</emphasis> is preferred.</entry>
+        </row>
       </tbody>
     </tgroup>
   </informaltable>
@@ -53,8 +64,10 @@
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">IP      := '10.150.254.6';
-infile  := '/c$/training/import/AdvancedECL/people';
-outfile := '/c$/training/import/DFUtest/people';
-STD.File.MoveExternalFile(IP,infile,outfile);</programlisting>
+  <programlisting format="linespecific">IMPORT STD;
+IP      := '';
+infile  := '/var/lib/HPCCSystems/dropzone/originalperson';
+outfile := '/var/lib/HPCCSystems/dropzone/originalperson_bak';
+planename := 'mydropzone';
+STD.File.MoveExternalFile(IP,infile,outfile,planename);</programlisting>
 </sect1>
