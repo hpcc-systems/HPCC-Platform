@@ -85,7 +85,7 @@ elif [ -e /etc/redhat-release ]; then
     OS_GROUP=`/bin/rpm -q --qf "%{NAME}" --whatprovides /etc/redhat-release | sed 's/-release.*//' |  tr '[A-Z]' '[a-z]'`
     REDHAT_VERSION=`/bin/rpm -q --qf "%{VERSION}" --whatprovides /etc/redhat-release | cut -f1 -d"."`
     case "$OS_GROUP" in
-      "centos"* | "fedora")
+      "centos"* | "fedora" | "rocky"* )
         if [ ${NOARCH} -eq 0 ]; then
             OUTPUT="el${REDHAT_VERSION}.${ARCH}"
         else
