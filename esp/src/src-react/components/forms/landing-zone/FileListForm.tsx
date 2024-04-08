@@ -8,11 +8,16 @@ import { TargetDropzoneTextField, TargetFolderTextField, TargetServerTextField }
 import { joinPath } from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
 import { MessageBox } from "../../../layouts/MessageBox";
+import { debounce } from "../../../util/throttle";
 import * as FormStyles from "./styles";
 
 const logger = scopedLogger("src-react/components/forms/landing-zone/FileListForm.tsx");
 
 const myFileSprayService = new FileSprayService({ baseUrl: "" });
+
+const targetFolderTextChange = debounce((text, directory, onChange) => {
+    onChange(directory + text);
+}, 200);
 
 interface FileListFormValues {
     dropzone: string;
@@ -61,6 +66,8 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
 
     const closeForm = React.useCallback(() => {
         setShowForm(false);
+        const uploaderBtn = document.querySelector("#uploaderBtn");
+        uploaderBtn["value"] = null;
     }, [setShowForm]);
 
     const doSubmit = React.useCallback((data) => {
@@ -235,8 +242,11 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
                         machineOS={os}
                         required={true}
                         placeholder={nlsHPCC.SelectValue}
+                        onInputValueChange={(text) => targetFolderTextChange(text, directory, onChange)}
                         onChange={(evt, option) => {
-                            onChange(option.key);
+                            if (option?.key) {
+                                onChange(option.key);
+                            }
                         }}
                         errorMessage={error && error?.message}
                     />}
