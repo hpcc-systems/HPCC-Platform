@@ -676,7 +676,7 @@ public:
             ip.getHostText(ipstr);
 
             char inbuf2[16];
-            m_client->read(inbuf2, 0, 16, lenread);
+            readtmsAllowClose(m_client, inbuf2, 1, 16, lenread, WAIT_FOREVER);
             StringBuffer username;
             while(lenread > 0)
             {
@@ -694,7 +694,7 @@ public:
                 if (done)
                     break;
                 username.append(lenread, inbuf2);
-                m_client->read(inbuf2, 0, 16, lenread);
+                readtmsAllowClose(m_client, inbuf2, 1, 16, lenread, WAIT_FOREVER);
             }
 
             if(http_tracelevel >= 5)

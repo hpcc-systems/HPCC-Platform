@@ -227,7 +227,6 @@ public:
     }
 };
 
-
 class jlib_decl ISocket : extends IInterface
 {
 public:
@@ -289,13 +288,15 @@ public:
     //
     static ISocket*  attach(int s,bool tcpip=true);
 
-
+    // suppresGCIfMinSize - if true, will suppress graceful close if size_read >= min_size
+    // This is the default behavior for backwards compatibility.
+    // Set to false, to allow caller to see graceful close even if size_read >= min_size
     virtual void   read(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read,
-                        unsigned timeoutsecs = WAIT_FOREVER) = 0;
+                        unsigned timeoutsecs = WAIT_FOREVER, bool suppresGCIfMinSize = true) = 0;
     virtual void   readtms(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read,
-                           unsigned timeout) = 0;
+                           unsigned timeout, bool suppresGCIfMinSize = true) = 0;
     virtual void   read(void* buf, size32_t size) = 0;
-    virtual size32_t write(void const* buf, size32_t size) = 0; // returns amount written normally same as in size (see set_nonblock)
+    virtual size32_t write(void const* buf, size32_t size) = 0;
     virtual size32_t writetms(void const* buf, size32_t minSize, size32_t size, unsigned timeoutms=WAIT_FOREVER) = 0;
 
     virtual size32_t get_max_send_size() = 0;
@@ -456,6 +457,9 @@ Exceptions raised: (when set_raise_exceptions(TRUE))
 
 };
 
+// helper function that allows a graceful close on a readtms to return with less than min_size.
+// A common pattern is to read >=1 byte(s), but allow graceful close to return less (e.g. 0) 
+extern jlib_decl void readtmsAllowClose(ISocket *sock, void* buf, size32_t min_size, size32_t max_size, size32_t &sizeRead, unsigned timeoutMs);
 
 interface jlib_thrown_decl IJSOCK_Exception: extends IException
 {
@@ -741,6 +745,15 @@ public:
 };
 
 extern jlib_decl void shutdownAndCloseNoThrow(ISocket * optSocket);     // Safely shutdown and close a socket without throwing an exception.
+
+struct jlib_decl ScopedNonBlockingMode
+{
+    ISocket *socket = nullptr;
+    void init(ISocket *_socket);
+    ScopedNonBlockingMode(ISocket *_socket) { init(_socket); }
+    ~ScopedNonBlockingMode();
+};
+
 
 #ifdef _WIN32
 #define SOCKETERRNO() WSAGetLastError()

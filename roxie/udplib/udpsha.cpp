@@ -986,14 +986,14 @@ void CSimulatedQueueReadSocket::writeOwnSimulatedPacket(void const* buf, size32_
     avail.signal();
 }
 
-void CSimulatedQueueReadSocket::read(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read, unsigned timeoutsecs)
+void CSimulatedQueueReadSocket::read(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read, unsigned timeoutsecs, bool suppresGCIfMinSize)
 {
     unsigned tms = timeoutsecs == WAIT_FOREVER ? WAIT_FOREVER : timeoutsecs * 1000;
     readtms(buf, min_size, max_size, size_read, tms);
 }
 
 void CSimulatedQueueReadSocket::readtms(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read,
-                     unsigned timeout)
+                     unsigned timeout, bool suppresGCIfMinSize)
 {
     size_read = 0;
     if (!timeout || wait_read(timeout))
@@ -1054,11 +1054,11 @@ CSimulatedUdpReadSocket::~CSimulatedUdpReadSocket()
 
 size32_t CSimulatedUdpReadSocket::get_receive_buffer_size() { return realSocket->get_receive_buffer_size(); }
 void CSimulatedUdpReadSocket::set_receive_buffer_size(size32_t sz) { realSocket->set_receive_buffer_size(sz); }
-void CSimulatedUdpReadSocket::read(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read, unsigned timeoutsecs)
+void CSimulatedUdpReadSocket::read(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read, unsigned timeoutsecs, bool suppresGCIfMinSize)
 {
     realSocket->read(buf, min_size, max_size, size_read, timeoutsecs);
 }
-void CSimulatedUdpReadSocket::readtms(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read, unsigned timeout)
+void CSimulatedUdpReadSocket::readtms(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read, unsigned timeout, bool suppresGCIfMinSize)
 {
     realSocket->readtms(buf, min_size, max_size, size_read, timeout);
 }

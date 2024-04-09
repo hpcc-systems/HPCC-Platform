@@ -100,7 +100,7 @@ int BufferedSocket::readline(char* buf, int maxlen, bool keepcrlf, IMultiExcepti
                         m_curptr = 0;
                         m_endptr = 0;
                         unsigned readlen;
-                        m_socket->read(m_buf, 0, BSOCKET_BUFSIZE, readlen, m_timeout);
+                        readtmsAllowClose(m_socket, m_buf, 1, BSOCKET_BUFSIZE, readlen, m_timeout*1000);
                         if(readlen > 0)
                         {
                             m_endptr = readlen;
@@ -111,7 +111,6 @@ int BufferedSocket::readline(char* buf, int maxlen, bool keepcrlf, IMultiExcepti
                                     buf[ptr++] = '\n';
                             }
                         }
-                        
                     }
                     break;
                 }
@@ -136,7 +135,7 @@ int BufferedSocket::readline(char* buf, int maxlen, bool keepcrlf, IMultiExcepti
                 m_curptr = 0;
                 m_endptr = 0;
                 unsigned readlen;
-                m_socket->read(m_buf, 0, BSOCKET_BUFSIZE, readlen, m_timeout);
+                readtmsAllowClose(m_socket, m_buf, 1, BSOCKET_BUFSIZE, readlen, m_timeout*1000);
                 if(readlen <= 0)
                     break;
                 m_endptr = readlen;
@@ -218,7 +217,7 @@ int BufferedSocket::read(char* buf, int maxlen)
             unsigned readlen;
             try
             {
-                m_socket->read(m_buf, 0, BSOCKET_BUFSIZE, readlen, m_timeout);
+                m_socket->read(m_buf, 1, BSOCKET_BUFSIZE, readlen, m_timeout);
             }
             catch (IException *e) 
             {

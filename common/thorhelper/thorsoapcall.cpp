@@ -1814,27 +1814,16 @@ class CWSCAsyncFor : implements IWSCAsyncFor, public CInterface, public CAsyncFo
             }
             else if (curPosn >= currLen)
             {   //nothing in buffer, read from socket
-                size32_t bytesRead=0;
-                count = 0;
-                do
-                {
-                    socket->readtms(buf + count, 0, len - count, bytesRead, timeoutMS);
-                    count += bytesRead;
-                } while (count != len);
+                socket->readtms(buf, len, len, count, timeoutMS);
                 currLen = curPosn = 0;
             }
             else
             {   //only some is in buffer, read rest from socket
-                size32_t bytesRead=0;
                 size32_t avail = currLen - curPosn;
                 memcpy(buf, (buffer + curPosn), avail);
                 count = avail;
-                do
-                {
-                    size32_t read;
-                    socket->readtms(buf+avail+bytesRead, 0, len-avail-bytesRead, read, timeoutMS);
-                    bytesRead += read;
-                } while (len != (bytesRead + avail));
+                size32_t bytesRead;
+                socket->readtms(buf+avail, len-avail, len-avail, bytesRead, timeoutMS);
                 count += bytesRead;
                 currLen = curPosn = 0;
             }
@@ -2096,7 +2085,7 @@ private:
         do {
             checkTimeLimitExceeded(&remainingMS);
             checkRoxieAbortMonitor(master->roxieAbortMonitor);
-            socket->readtms(buffer+read, 0, WSCBUFFERSIZE-read, bytesRead, MIN(master->timeoutMS,remainingMS));
+            readtmsAllowClose(socket, buffer+read, 1, WSCBUFFERSIZE-read, bytesRead, MIN(master->timeoutMS, remainingMS));
             checkTimeLimitExceeded(&remainingMS);
             checkRoxieAbortMonitor(master->roxieAbortMonitor);
 
@@ -2216,7 +2205,7 @@ private:
                 while (read<payloadsize) {
                     checkTimeLimitExceeded(&remainingMS);
                     checkRoxieAbortMonitor(master->roxieAbortMonitor);
-                    socket->readtms(response.reserve(payloadsize-read), 0, payloadsize-read, bytesRead, MIN(master->timeoutMS,remainingMS));
+                    readtmsAllowClose(socket, response.reserve(payloadsize-read), 1, payloadsize-read, bytesRead, MIN(master->timeoutMS, remainingMS));
                     checkTimeLimitExceeded(&remainingMS);
                     checkRoxieAbortMonitor(master->roxieAbortMonitor);
 
@@ -2232,7 +2221,7 @@ private:
                 for (;;) {
                     checkTimeLimitExceeded(&remainingMS);
                     checkRoxieAbortMonitor(master->roxieAbortMonitor);
-                    socket->readtms(buffer, 0, WSCBUFFERSIZE, bytesRead, MIN(master->timeoutMS,remainingMS));
+                    readtmsAllowClose(socket, buffer, 1, WSCBUFFERSIZE, bytesRead, MIN(master->timeoutMS, remainingMS));
                     checkTimeLimitExceeded(&remainingMS);
                     checkRoxieAbortMonitor(master->roxieAbortMonitor);
 
