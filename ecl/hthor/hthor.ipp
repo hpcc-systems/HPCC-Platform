@@ -2106,6 +2106,7 @@ public:
     virtual IHThorWebServiceCallArg * queryCallHelper() { return callHelper; };
     virtual const void * getNextRow() { return NULL; };
     virtual void releaseRow(const void * r) { ReleaseRoxieRow(r); }
+    virtual unsigned queryActivityId() const override { return activityId; }
 
 protected:
     Owned<IWSCHelper> WSChelper;
