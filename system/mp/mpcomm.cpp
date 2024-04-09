@@ -26,6 +26,8 @@
 
 #include <future>
 #include <vector>
+#include <list>
+#include <array>
 
 #include "platform.h"
 #include "portlist.h"
@@ -75,8 +77,9 @@
 #define CONNECT_TIMEOUT_MINSLEEP 2000        // random range: CONNECT_TIMEOUT_MINSLEEP to CONNECT_TIMEOUT_MAXSLEEP milliseconds
 #define CONNECT_TIMEOUT_MAXSLEEP 5000
 
-#define CONFIRM_TIMEOUT          (90*1000) // 1.5 mins
-#define CONFIRM_TIMEOUT_INTERVAL 5000 // 5 secs
+#define PING_CONFIRM_TIMEOUT     (90*1000) // 1.5 mins
+#define HEADER_CONFIRM_TIMEOUT   (90*1000) // 1.5 mins
+#define HEADER_CONFIRM_TIMEOUT_INTERVAL 5000 // 5 secs
 #define TRACESLOW_THRESHOLD      1000 // 1 sec
 
 #define VERIFY_DELAY            (1*60*1000)  // 1 Minute
@@ -441,14 +444,315 @@ class CMPServer;
 class CMPChannel;
 
 
+static CriticalSection portProbeCS;
+static cycle_t portProbeLastLog = 0;
+enum CloseType { CloseType_graceful, CloseType_error, CloseType_timeout, CloseType_COUNT };
+static std::array<unsigned __int64, CloseType_COUNT> portProbeCloseCounts = {};
+static std::array<unsigned __int64, CloseType_COUNT> portProbeCloseCycles = {};
+
+
+static void trackPortProbe(cycle_t elapsedCycles, const char *peerEndpointTest, CloseType closeType)
+{
+     // this should be based on a logging feature flag
+    CriticalBlock b(portProbeCS);
+    portProbeCloseCounts[closeType]++;
+    portProbeCloseCycles[closeType] += elapsedCycles;
+    if ((0 == portProbeLastLog))
+        portProbeLastLog = get_cycles_now();
+    else
+    {
+        cycle_t nowCycles = get_cycles_now();
+        cycle_t cyclesSinceLastLog = nowCycles - portProbeLastLog;
+        if ((cyclesSinceLastLog >= (queryOneSecCycles()*60))) // log max every minute
+        {
+            portProbeLastLog = nowCycles;
+            unsigned __int64 totalProbes = portProbeCloseCounts[CloseType_graceful] + portProbeCloseCounts[CloseType_error] + portProbeCloseCounts[CloseType_timeout];
+            DBGLOG("Port probes: %" I64F "u [graceful=%" I64F "u (%" I64F "u ms),error=%" I64F "u (%" I64F "u ms),timedout=%" I64F "u (%" I64F "u ms). Last: %s, type=%s, time: %" I64F "u",
+                totalProbes,
+                portProbeCloseCounts[CloseType_graceful], cycle_to_millisec(portProbeCloseCycles[CloseType_graceful]),
+                portProbeCloseCounts[CloseType_error], cycle_to_millisec(portProbeCloseCycles[CloseType_error]),
+                portProbeCloseCounts[CloseType_timeout], cycle_to_millisec(portProbeCloseCycles[CloseType_timeout]),
+                peerEndpointTest, CloseType_graceful==closeType?"graceful":CloseType_error==closeType?"error":"timeout", cycle_to_millisec(elapsedCycles));
+        }
+    }
+}
+
+// Legacy header sent id[2] only (but legacy clients are no longer supported since 9.6.4, i.e. they will fail during connection process)
+struct ConnectHdr
+{
+    ConnectHdr(const SocketEndpoint &hostEp, const SocketEndpoint &remoteEp, unsigned __int64 role)
+    {
+        id[0].set(hostEp);
+        id[1].set(remoteEp);
+
+        hdr.size = sizeof(PacketHeader);
+        hdr.tag = TAG_SYS_BCAST;
+        hdr.flags = 0;
+        hdr.version = MP_PROTOCOL_VERSION;
+        setRole(role);
+    }
+    ConnectHdr()
+    {
+    }
+    SocketEndpointV4 id[2];
+    PacketHeader hdr;
+    inline void setRole(unsigned __int64 role)
+    {
+        hdr.replytag = (mptag_t) (role >> 32);
+        hdr.sequence = (unsigned) (role & 0xffffffff);
+    }
+    inline unsigned __int64 getRole() const
+    {
+        return (((unsigned __int64)hdr.replytag)<<32) | ((unsigned __int64)hdr.sequence);
+    }
+};
+
+
 class CMPConnectThread: public Thread
 {
+    class CConnectSelectHandler
+    {
+        CMPConnectThread &owner;
+        Owned<ISocketSelectHandler> selectHandler = createSocketSelectHandler();
+        unsigned mode = SELECTMODE_READ;
+    public:
+        class CSocketHandler : public CInterfaceOf<ISocketSelectNotify>
+        {
+            CConnectSelectHandler &selectHandler;
+            Owned<ISocket> sock;
+            SocketEndpoint peerEP;
+            mutable StringBuffer peerHostText, peerEndpointText;
+            ConnectHdr hdr;
+            cycle_t createTime = 0;
+            size32_t readSoFar = 0;
+            CriticalSection crit;
+            bool closedOrHandled = false;
+        public:
+            CSocketHandler(CConnectSelectHandler &_selectHandler, ISocket *_sock, const SocketEndpoint &_peerEP) : selectHandler(_selectHandler), sock(_sock), peerEP(_peerEP)
+            {
+                createTime = get_cycles_now();
+            }
+            ISocket *querySocket()
+            {
+                return sock;
+            }
+            ConnectHdr &queryHdr()
+            {
+                return hdr;
+            }
+            cycle_t queryCreateTime() const
+            {
+                return createTime;
+            }
+            size32_t queryReadSoFar() const
+            {
+                return readSoFar;
+            }
+            const char *queryPeerHostText() const
+            {
+                if (0 == peerHostText.length())
+                    peerEP.getHostText(peerHostText);
+                return peerHostText;
+            }
+            const char *queryPeerEndpointText() const
+            {
+                if (0 == peerEndpointText.length())
+                    peerEP.getEndpointHostText(peerEndpointText);
+                return peerEndpointText;
+            }
+            bool closeIfTimedout(cycle_t now)
+            {
+                return false;
+                if (cycle_to_millisec(now - createTime) >= HEADER_CONFIRM_TIMEOUT)
+                {
+                    // will block any pending notifySelected on this socket
+                    CriticalBlock b(crit);
+                    if (!closedOrHandled)
+                    {
+                        closedOrHandled = true;
+                        return true;
+                    }
+                }
+                return false;
+            }
+            // ISocketSelectNotify impl.
+            virtual bool notifySelected(ISocket *sock, unsigned selected) override
+            {
+                CLeavableCriticalBlock b(crit);
+                if (closedOrHandled)
+                    return false;
+                size32_t rd = 0;
+                void *p = (byte *)&hdr + readSoFar;
+
+                Owned<IJSOCK_Exception> exception;
+                try
+                {
+                    sock->readtms(p, 0, sizeof(ConnectHdr)-readSoFar, rd, 60000); // long enough!
+                    readSoFar += rd;
+                    if (sizeof(ConnectHdr) == readSoFar)
+                    {
+                        closedOrHandled = true;
+                        // process() will remove itself from handler, and need to avoid it doing so while in 'crit'
+                        // since the maintenance thread could also be tyring to manipulate handlers and calling closeIfTimedout()
+                        b.leave();
+                        selectHandler.process(*this);
+                    }
+                }
+                catch (IJSOCK_Exception *e)
+                {
+                    exception.setown(e);
+                }
+                if (exception)
+                    selectHandler.close(*this, exception);
+
+                return false;
+            }
+        };
+    private:
+        // NB: Linked vs Owned, because methods will implicitly construct an object of this type
+        // which can be problematic/confusing, for example if Owned and std::list->remove is called
+        // with a pointer, it will auto instantiate a OWned<CSocketHandler> and cause -ve leak.
+        std::list<Linked<CSocketHandler>> handlers;
+
+        CriticalSection handlersCS;
+
+        std::thread maintenanceThread;
+        Semaphore maintenanceSem;
+
+        void clearupSocketHandlers()
+        {
+            std::vector<Owned<CSocketHandler>> toClose;
+            {
+                CriticalBlock b(handlersCS);
+                auto it = handlers.begin();
+                while (true)
+                {
+                    if (it == handlers.end())
+                        break;
+                    CSocketHandler *socketHandler = *it;
+                    if (socketHandler->closeIfTimedout(get_cycles_now()))
+                    {
+                        toClose.push_back(LINK(socketHandler));
+                        it = handlers.erase(it);
+                    }
+                    else
+                        ++it;
+                }
+            }
+            for (auto &socketHandler: toClose)
+            {
+                try
+                {
+                    Owned<IJSOCK_Exception> e = createJSocketException(JSOCKERR_timeout_expired, "Connect timeout expired", __FILE__, __LINE__);
+                    close(*socketHandler, e);
+                }
+                catch (IException *e)
+                {
+                    EXCLOG(e, "CConnectSelectHandler::maintenanceFunc");
+                    e->Release();
+                }
+            }
+        }
+    public:
+        CConnectSelectHandler(CMPConnectThread &_owner) : owner(_owner)
+        {
+            selectHandler.setown(createSocketSelectHandler());
+            selectHandler->start();
+
+            auto maintenanceFunc = [&]
+            {
+                while (owner.running)
+                {
+                    if (maintenanceSem.wait(10000)) // check every 10s
+                        break;
+                    clearupSocketHandlers();
+                }
+            };
+            maintenanceThread = std::thread(maintenanceFunc);
+        }
+        ~CConnectSelectHandler()
+        {
+            maintenanceSem.signal();
+            maintenanceThread.join();
+        }
+        void add(ISocket *sock, const SocketEndpoint &peerEP)
+        {
+            while (true)
+            {
+                unsigned numHandlers;
+                {
+                    CriticalBlock b(handlersCS);
+                    numHandlers = handlers.size();
+                }
+                if (numHandlers < owner.maxListenHandlerSockets)
+                    break;
+                DBGLOG("Too many handlers (%u), waiting for some to be processed (max limit: %u)", numHandlers, owner.maxListenHandlerSockets);
+                MilliSleep(1000);
+            }
+
+            Owned<CSocketHandler> socketHandler = new CSocketHandler(*this, LINK(sock), peerEP);
+
+            size_t numHandlers;
+            {
+                CriticalBlock b(handlersCS);
+                selectHandler->add(sock, mode, socketHandler); // NB: sock and handler linked by select handler
+                handlers.emplace_back(socketHandler);
+                numHandlers = handlers.size();
+            }
+            if (0 == (numHandlers % 100)) // for info. log at each 100 boundary
+                DBGLOG("handlers = %u", (unsigned)numHandlers);
+        }
+        void close(CSocketHandler &socketHandler, IJSOCK_Exception *exception)
+        {
+            if (socketHandler.queryReadSoFar()) // read something
+            {
+                VStringBuffer errMsg("MP Connect Thread: invalid number of connection bytes serialized from: %s", socketHandler.queryPeerHostText());
+                FLLOG(MCoperatorWarning, "%s", errMsg.str());
+            }
+            int exceptionCode = exception->errorCode();
+            switch (exceptionCode)
+            {
+                case JSOCKERR_timeout_expired:
+                    trackPortProbe(get_cycles_now() - socketHandler.queryCreateTime(), socketHandler.queryPeerEndpointText(), CloseType_timeout);
+                    break;
+                case JSOCKERR_graceful_close:
+                    trackPortProbe(get_cycles_now() - socketHandler.queryCreateTime(), socketHandler.queryPeerEndpointText(), CloseType_graceful);
+                    break;
+                default:
+                    trackPortProbe(get_cycles_now() - socketHandler.queryCreateTime(), socketHandler.queryPeerEndpointText(), CloseType_error);
+                    break;
+            }
+
+            Linked<CSocketHandler> handler = &socketHandler;
+            {
+                CriticalBlock b(handlersCS);
+                selectHandler->remove(socketHandler.querySocket());
+                handlers.remove(&socketHandler);
+            }
+            handler->querySocket()->close();
+        }
+        void process(CSocketHandler &socketHandler)
+        {
+            Linked<CSocketHandler> handler = &socketHandler;
+            {
+                CriticalBlock b(handlersCS);
+                selectHandler->remove(socketHandler.querySocket());
+                handlers.remove(&socketHandler);
+            }
+
+            if (owner.threadPool)
+                owner.threadPool->start(handler.getClear());
+            else
+                owner.handleAcceptedSocket(handler.getClear());
+        }
+    };
     std::atomic<bool> running;
     bool listen;
     ISocket *listensock;
     CMPServer *parent;
     int mpSoMaxConn;
     unsigned acceptThreadPoolSize = 0;
+    unsigned maxListenHandlerSockets = 60000; // what is a sensible default limit?
     Owned<IThreadPool> threadPool;
 
     Owned<IAllowListHandler> allowListCallback;
@@ -456,82 +760,6 @@ class CMPConnectThread: public Thread
 
     Owned<ISecureSocketContext> secureContextServer;
 
-    class CSlowClientProcessor : implements IThreaded
-    {
-        CMPConnectThread &owner;
-        CThreaded threaded;
-        std::vector<Owned<ISocket>> slowClientsSocks;
-        CriticalSection crit;
-        Semaphore sem;
-        std::atomic<bool> stopped = true;
-
-    public:
-        CSlowClientProcessor(CMPConnectThread &_owner) : threaded("CSlowClientProcessor"), owner(_owner)
-        {
-        }
-        void start()
-        {
-            stopped = false;
-            threaded.init(this, false);
-        }
-        void stop()
-        {
-            if (stopped)
-                return;
-
-            {
-                CriticalBlock b(crit);
-                stopped = true;
-                for (auto &sock : slowClientsSocks)
-                    sock->close();
-                slowClientsSocks.clear();
-            }
-
-            sem.signal();
-            if (!threaded.join(1000*60*5))
-                printf("CSlowClientProcessor::stop timed out\n");
-        }
-        void add(ISocket *sock) // NB: takes ownership
-        {
-            {
-                CriticalBlock b(crit);
-                if (stopped)
-                {
-                    sock->Release();
-                    return;
-                }
-                slowClientsSocks.emplace_back(sock);
-            }
-            sem.signal();
-        }
-    // IThreaded
-        virtual void threadmain() override
-        {
-            // The slow client processor deals with each queued slow client socket in turn, waiting the standard CONFIRM_TIMEOUT for each.
-            // An alternative would be to try each for shorter periods, shuffling them to the end if they still haven't been handled.
-            // But this is all probably OTT. The main thing is to avoid a slow client blocking the accept loop.
-            while (true)
-            {
-                sem.wait();
-
-                Owned<ISocket> sock;
-
-                {
-                    CriticalBlock b(crit);
-                    if (stopped)
-                        break;
-                    if (slowClientsSocks.empty()) // guard, but should never happen
-                    {
-                        WARNLOG("slowClientsSocks list empty");
-                        continue;
-                    }
-                    sock.set(slowClientsSocks.back());
-                    slowClientsSocks.pop_back();
-                }
-                owner.handleAcceptedSocket(sock.getClear(), CONFIRM_TIMEOUT, true);
-            }
-        }
-    } slowClientProcessor;
 public:
     CMPConnectThread(CMPServer *_parent, unsigned port, bool _listen);
     ~CMPConnectThread()
@@ -555,7 +783,6 @@ public:
             {
                 if (!threadPool->joinAll(true, 1000*60*5))
                     printf("CMPConnectThread::stop threadPool->joinAll timed out\n");
-                slowClientProcessor.stop();
             }
         }
     }
@@ -567,7 +794,7 @@ public:
     {
         return allowListCallback;
     }
-    bool handleAcceptedSocket(ISocket *sock, unsigned timeoutMs, bool failOnTimeout);
+    bool handleAcceptedSocket(CConnectSelectHandler::CSocketHandler *handler);
 };
 
 class PingPacketHandler;
@@ -755,7 +982,7 @@ public:
                 }
             }
             catch (IException *e) {
-                FLLOG(MCoperatorWarning, e,"MP writepacket");
+                FLLOG(MCoperatorWarning, e, "MP writepacket");
                 e->Release();
             }
         }
@@ -782,131 +1009,6 @@ public:
                 PROGLOG("MP: %d waiting to close",workq.ordinality());
             workq.enqueue(createINode(ep));
         }
-    }
-};
-
-
-void traceSlowReadTms(const char *msg, ISocket *sock, void *dst, size32_t minSize, size32_t maxSize, size32_t &sizeRead, unsigned timeoutMs, unsigned timeoutChkIntervalMs)
-{
-    dbgassertex(timeoutChkIntervalMs <= timeoutMs);
-    StringBuffer epStr;
-    CCycleTimer readTmsTimer;
-    unsigned intervalTimeoutMs = 500;
-    CCycleTimer intvlTimer;
-
-    // legacy client sends minSize, recent client sends maxSize
-    // if read < maxSize, keep trying for maxSize, but if its exactly minSize
-    // somewhat quickly (without waiting full timeout) settle for minSize ...
-
-    if (intervalTimeoutMs > timeoutChkIntervalMs)
-        intervalTimeoutMs = timeoutChkIntervalMs;
-
-    sizeRead = 0;
-
-    unsigned firstReadTime = 0;
-    size32_t maxRead = maxSize;
-    for (;;)
-    {
-        try
-        {
-            size32_t amtRead = 0;
-            sock->readtms((char *)dst+sizeRead, 0, maxRead, amtRead, intervalTimeoutMs);
-            sizeRead += amtRead;
-            if (sizeRead == maxSize)
-                break;
-            maxRead -= amtRead;
-        }
-        catch (IJSOCK_Exception *e)
-        {
-            if (JSOCKERR_graceful_close == e->errorCode())
-            {
-                e->Release();
-                return;
-            }
-            else if (JSOCKERR_timeout_expired != e->errorCode())
-                throw;
-            // interval read timed out ...
-            unsigned elapsedMs = readTmsTimer.elapsedMs();
-            if (sizeRead == minSize)
-            {
-                if (firstReadTime == 0)
-                    firstReadTime = elapsedMs;
-                else if ((elapsedMs - firstReadTime) >= 5000) // max wait if minSize sent
-                {
-                    e->Release();
-                    break;
-                }
-            }
-            if (elapsedMs >= timeoutMs)
-            {
-                if (sizeRead >= minSize)
-                {
-                    e->Release();
-                    break;
-                }
-                throw;
-            }
-            unsigned remainingMs = timeoutMs-elapsedMs;
-            if (remainingMs < intervalTimeoutMs)
-                intervalTimeoutMs = remainingMs;
-            if (intvlTimer.elapsedMs() >= timeoutChkIntervalMs)
-            {
-                intvlTimer.reset();
-                if (0 == epStr.length())
-                {
-                    SocketEndpoint ep;
-                    sock->getPeerEndpoint(ep);
-                    ep.getEndpointHostText(epStr);
-                }
-                WARNLOG("%s %s, stalled for %d ms so far", msg, epStr.str(), elapsedMs);
-            }
-            e->Release();
-        }
-    }
-    if (readTmsTimer.elapsedMs() >= TRACESLOW_THRESHOLD)
-    {
-        if (0 == epStr.length())
-        {
-            SocketEndpoint ep;
-            sock->getPeerEndpoint(ep);
-            ep.getEndpointHostText(epStr);
-        }
-        WARNLOG("%s %s, took: %d ms", msg, epStr.str(), readTmsTimer.elapsedMs());
-    }
-}
-
-/* Legacy header sent id[2] only.
- * To remain backward compatible (when new MP clients are connecting to old Dali),
- * we send a regular empty PacketHeader as well that has the 'role' embedded within it,
- * in unused fields. TAG_SYS_BCAST is used as the message tag, because it is an
- * unused feature that all Dali's simply receive and delete.
- */
-struct ConnectHdr
-{
-    ConnectHdr(const SocketEndpoint &hostEp, const SocketEndpoint &remoteEp, unsigned __int64 role)
-    {
-        id[0].set(hostEp);
-        id[1].set(remoteEp);
-
-        hdr.size = sizeof(PacketHeader);
-        hdr.tag = TAG_SYS_BCAST;
-        hdr.flags = 0;
-        hdr.version = MP_PROTOCOL_VERSION;
-        setRole(role);
-    }
-    ConnectHdr()
-    {
-    }
-    SocketEndpointV4 id[2];
-    PacketHeader hdr;
-    inline void setRole(unsigned __int64 role)
-    {
-        hdr.replytag = (mptag_t) (role >> 32);
-        hdr.sequence = (unsigned) (role & 0xffffffff);
-    }
-    inline unsigned __int64 getRole() const
-    {
-        return (((unsigned __int64)hdr.replytag)<<32) | ((unsigned __int64)hdr.sequence);
     }
 };
 
@@ -983,6 +1085,7 @@ protected: friend class CMPPacketReader;
                 if (remaining<10000)
                     remaining = 10000; // 10s min granularity for MP
                 newsock.setown(ISocket::connect_timeout(remoteep,remaining));
+                newsock->set_nonblock(true);
 
 #if defined(_USE_OPENSSL)
                 if (parent->useTLS)
@@ -1073,7 +1176,7 @@ protected: friend class CMPPacketReader;
                         // if its an exception or legacy and not in allowlist the other side closes its socket after sending this msg ...
 
                         size32_t amtRead = 0;
-                        newsock->readtms(&replyBuf[totRead], 0, maxRead, amtRead, CONNECT_TIMEOUT_INTERVAL);
+                        newsock->readtms(&replyBuf[totRead], 1, maxRead, amtRead, CONNECT_TIMEOUT_INTERVAL);
                         totRead += amtRead;
                         if (totRead == sizeof(size32_t))
                         {
@@ -1512,7 +1615,7 @@ class PingPacketHandler // TAG_SYS_PING
 public:
     void handle(CMPChannel *channel,bool identifyself)
     {
-        channel->sendPingReply(CONFIRM_TIMEOUT,identifyself); 
+        channel->sendPingReply(PING_CONFIRM_TIMEOUT, identifyself);
     }
     bool send(CMPChannel *channel,PacketHeader &hdr,CTimeMon &tm)
     {
@@ -1700,11 +1803,12 @@ public:
 
 class CMPPacketReader: public ISocketSelectNotify, public CInterface
 {
-    CMessageBuffer *activemsg;
-    byte * activeptr;
-    size32_t remaining;
-    CMPChannel *parent;
+    CMessageBuffer *activemsg = nullptr;
+    byte * activeptr = nullptr;
+    size32_t remaining = 0;
+    CMPChannel *parent = nullptr;
     CriticalSection sect;
+    bool gotPacketHdr = false;
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -1725,136 +1829,130 @@ public:
         parent = NULL;
     }
 
-    bool notifySelected(ISocket *sock,unsigned selected)
+    bool notifySelected(ISocket *sock, unsigned selected)
     {
         if (!parent)
             return false;
-        try {
-            // try and mop up all data on socket 
-            // TLS TODO: avail_read() may not return accurate amount of pending bytes
-            size32_t sizeavail = sock->avail_read(); 
-            if (sizeavail==0) {
-                // graceful close
-                Linked<CMPChannel> pc;
-                {
-                    CriticalBlock block(sect);
-                    if (parent) {
-                        pc.set(parent);     // don't want channel to disappear during call
-                        parent = NULL;
-                    }
-                }
-                if (pc) 
-                {
-#ifdef _TRACELINKCLOSED
-                    LOG(MCdebugInfo, "CMPPacketReader::notifySelected() about to close socket, mode = 0x%x", selected);
-#endif
-                    pc->closeSocket(false, true);
-                }
-                return false;
-            }
-            do {
+        try
+        {
+            while (true) // NB: breaks out if blocked (if (remaining) ..)
+            {
+                // try and mop up all data on socket
                 parent->lastxfer = msTick();
 #ifdef _FULLTRACE
                 parent->numiter++;
 #endif
-                if (!activemsg) { // no message in progress
-                    PacketHeader hdr; // header for active message
+                if (!activemsg) // no message in progress
+                {
 #ifdef _FULLTRACE
                     parent->numiter = 1;
                     parent->startxfer = msTick();
 #endif
-                    // assumes packet header will arrive in one go
-                    if (sizeavail<sizeof(hdr)) {
-#ifdef _FULLTRACE
-                        LOG(MCdebugInfo, "Selected stalled on header %u %lu",sizeavail,sizeavail-sizeof(hdr));
-#endif
-                        size32_t szread;
-                        sock->read(&hdr,sizeof(hdr),sizeof(hdr),szread,60); // I don't *really* want to block here but not much else can do
-                    }
-                    else
-                        sock->read(&hdr,sizeof(hdr));
-                    if (hdr.version/0x100 != MP_PROTOCOL_VERSION/0x100) {
+                    remaining = sizeof(PacketHeader);
+                    gotPacketHdr = false;
+                    activemsg = new CMessageBuffer(remaining);
+                    activeptr = (byte *)activemsg->bufferBase();
+                }
+                size32_t szRead;
+                if (!gotPacketHdr)
+                {
+                    CCycleTimer timer;
+                    sock->readtms(activeptr, 0, remaining, szRead, timer.remainingMs(60000));
+                    remaining -= szRead;
+                    activeptr += szRead;
+                    if (remaining) // only possible if blocked.
+                        return false; // wait for next notification
+
+                    PacketHeader &hdr = *(PacketHeader *)activemsg->bufferBase();
+                    if (hdr.version/0x100 != MP_PROTOCOL_VERSION/0x100)
+                    {
                         // TBD IPV6 here
                         SocketEndpoint ep;
                         sock->getPeerEndpoint(ep);
                         IMP_Exception *e=new CMPException(MPERR_protocol_version_mismatch,ep);
                         throw e;
                     }
-                    if (sizeavail<=sizeof(hdr))
-                        sizeavail = sock->avail_read(); 
-                    else
-                        sizeavail -= sizeof(hdr);
-#ifdef _FULLTRACE
+                    hdr.setMessageFields(*activemsg);
+    #ifdef _FULLTRACE
                     StringBuffer ep1;
                     StringBuffer ep2;
                     LOG(MCdebugInfo, "MP: ReadPacket(sender=%s,target=%s,tag=%d,replytag=%d,size=%d)",hdr.sender.getEndpointHostText(ep1).str(),hdr.target.getEndpointHostText(ep2).str(),hdr.tag,hdr.replytag,hdr.size);
-#endif
+    #endif
                     remaining = hdr.size-sizeof(hdr);
-                    activemsg = new CMessageBuffer(remaining); // will get from low level IO at some stage
-                    activeptr = (byte *)activemsg->reserveTruncate(remaining);
-                    hdr.setMessageFields(*activemsg);
+                    activeptr = (byte *)activemsg->clear().reserveTruncate(remaining);
+                    gotPacketHdr = true;
                 }
-                
-                size32_t toread = sizeavail;
-                if (toread>remaining)
-                    toread = remaining;
-                if (toread) {
-                    sock->read(activeptr,toread);
-                    remaining -= toread;
-                    sizeavail -= toread;
-                    activeptr += toread;
+
+                if (remaining)
+                {
+                    sock->readtms(activeptr, 0, remaining, szRead, WAIT_FOREVER);
+                    remaining -= szRead;
+                    activeptr += szRead;
                 }
-                if (remaining==0) { // we have the packet so process
+                if (remaining) // only possible if blocked.
+                    return false; // wait for next notification
 
 #ifdef _FULLTRACE
-                    LOG(MCdebugInfo, "MP: ReadPacket(timetaken = %d,select iterations=%d)",msTick()-parent->startxfer,parent->numiter);
+                LOG(MCdebugInfo, "MP: ReadPacket(timetaken = %d,select iterations=%d)",msTick()-parent->startxfer,parent->numiter);
 #endif
-                    do {
-                        switch (activemsg->getTag()) {
+                do
+                {
+                    switch (activemsg->getTag())
+                    {
                         case TAG_SYS_MULTI:
-                             activemsg = parent->queryServer().multipackethandler->handle(activemsg); // activemsg in/out
-                             break;
+                            activemsg = parent->queryServer().multipackethandler->handle(activemsg); // activemsg in/out
+                            break;
                         case TAG_SYS_PING:
-                             parent->queryServer().pingpackethandler->handle(parent,false); //,activemsg); 
-                             delete activemsg;
-                             activemsg = NULL;
-                             break;
+                            parent->queryServer().pingpackethandler->handle(parent,false); //,activemsg);
+                            delete activemsg;
+                            activemsg = NULL;
+                            break;
                         case TAG_SYS_PING_REPLY:
-                             parent->queryServer().pingreplypackethandler->handle(parent); 
-                             delete activemsg;
-                             activemsg = NULL;
-                             break;
+                            parent->queryServer().pingreplypackethandler->handle(parent);
+                            delete activemsg;
+                            activemsg = NULL;
+                            break;
                         case TAG_SYS_BCAST:
-                             activemsg = parent->queryServer().broadcastpackethandler->handle(activemsg); 
-                             break;
+                            activemsg = parent->queryServer().broadcastpackethandler->handle(activemsg);
+                            break;
                         case TAG_SYS_FORWARD:
-                             activemsg = parent->queryServer().forwardpackethandler->handle(activemsg); 
-                             break;
+                            activemsg = parent->queryServer().forwardpackethandler->handle(activemsg);
+                            break;
                         default:
-                             parent->queryServer().userpackethandler->handle(activemsg); // takes ownership
-                             activemsg = NULL;
-                        }
-                    } while (activemsg);
+                            parent->queryServer().userpackethandler->handle(activemsg); // takes ownership
+                            activemsg = NULL;
+                    }
                 }
-                if (!sizeavail)
-                    sizeavail = sock->avail_read();
-            } while (sizeavail);
-            return false; // ok
+                while (activemsg);
+            }
         }
-        catch (IException *e) {
+        catch (IException *e)
+        {
             if (e->errorCode()!=JSOCKERR_graceful_close)
                 FLLOG(MCoperatorWarning, e,"MP(Packet Reader)");
             e->Release();
+            gotPacketHdr = false;
         }
-        // error here, so close socket (ignore error as may be closed already)
-        try {
-            if(parent)
-                parent->closeSocket(false, true);
+
+        // here due to error or graceful close, so close socket (ignore error as may be closed already)
+        try
+        {
+            Linked<CMPChannel> pc;
+            {
+                CriticalBlock block(sect);
+                if (parent)
+                {
+                    pc.set(parent);     // don't want channel to disappear during call
+                    parent = NULL;
+                }
+            }
+            if (pc)
+                pc->closeSocket(false, true);
         }
-        catch (IException *e) {
+        catch (IException *e)
+        {
             e->Release();
         }
-        parent = NULL;
         return false;
     }
 };
@@ -1988,7 +2086,7 @@ bool CMPChannel::attachSocket(ISocket *newsock,const SocketEndpoint &_remoteep,c
     PROGLOG("MP: attachSocket before select add");
 #endif
 
-    parent->querySelectHandler().add(channelsock,SELECTMODE_READ,reader);
+    parent->querySelectHandler().add(channelsock, SELECTMODE_READ, reader);
 
 #ifdef _FULLTRACE       
     PROGLOG("MP: attachSocket after select add");
@@ -2128,7 +2226,7 @@ bool CMPChannel::sendPingReply(unsigned timeout,bool identifyself)
 static constexpr unsigned defaultAcceptThreadPoolSize = 100;
 // --------------------------------------------------------
 CMPConnectThread::CMPConnectThread(CMPServer *_parent, unsigned port, bool _listen)
-    : Thread("MP Connection Thread"), slowClientProcessor(*this)
+    : Thread("MP Connection Thread")
 {
     parent = _parent;
     listen = _listen;
@@ -2293,7 +2391,7 @@ void CMPConnectThread::startPort(unsigned short port)
                 class CMPConnectionThread : public CInterfaceOf<IPooledThread>
                 {
                     CMPConnectThread &owner;
-                    Owned<ISocket> sock;
+                    Owned<CConnectSelectHandler::CSocketHandler> handler;
                 public:
                     CMPConnectionThread(CMPConnectThread &_owner) : owner(_owner)
                     {
@@ -2301,21 +2399,11 @@ void CMPConnectThread::startPort(unsigned short port)
                 // IPooledThread
                     virtual void init(void *param) override
                     {
-                        sock.set((ISocket *)param);
+                        handler.setown((CConnectSelectHandler::CSocketHandler *)param);
                     }
                     virtual void threadmain() override
                     {
-                        constexpr unsigned timeoutMs = 5000;
-
-                        // detach from this pooled thread, and own locally, so that we ensure that
-                        // the pooled thread object does not retain it until the next init() call.
-                        Owned<ISocket> handledSock = sock.getClear();
-
-                        if (owner.handleAcceptedSocket(handledSock.getLink(), timeoutMs, false))
-                        {
-                            // handoff to slowClientProcessor, which will retry for standard CONFIRM_TIMEOUT period
-                            owner.slowClientProcessor.add(handledSock.getClear());
-                        }
+                        owner.handleAcceptedSocket(handler.getClear());
                     }
                     virtual bool stop() override
                     {
@@ -2331,129 +2419,39 @@ void CMPConnectThread::startPort(unsigned short port)
         };
         Owned<IThreadFactory> factory = new CMPConnectThreadFactory(*this);
         threadPool.setown(createThreadPool("MPConnectPool", factory, false, nullptr, acceptThreadPoolSize, INFINITE));
-        slowClientProcessor.start();
     }
     Thread::start(false);
 }
 
-// only returns true if !failOnTimeout and times out
-bool CMPConnectThread::handleAcceptedSocket(ISocket *_sock, unsigned timeoutMs, bool failOnTimeout)
+bool CMPConnectThread::handleAcceptedSocket(CConnectSelectHandler::CSocketHandler *_handler)
 {
-    SocketEndpoint peerEp;
-    _sock->getPeerEndpoint(peerEp);
-    Owned<ISocket> sock = _sock;
+    Owned<CConnectSelectHandler::CSocketHandler> handler = _handler;
+    ISocket *sock = handler->querySocket();
+    ConnectHdr &connectHdr = handler->queryHdr();
     try
     {
-#if defined(_USE_OPENSSL)
-        if (parent->useTLS)
-        {
-            Owned<ISecureSocket> ssock = secureContextServer->createSecureSocket(sock.getClear());
-            int tlsTraceLevel = SSLogMin;
-            if (parent->mpTraceLevel >= MPVerboseMsgThreshold)
-                tlsTraceLevel = SSLogMax;
-            int status = ssock->secure_accept(tlsTraceLevel);
-            if (status < 0)
-            {
-                ssock->close();
-                PROGLOG("MP Connect Thread: failed to accept secure connection");
-                return false; // did not timeout
-            }
-            sock.setown(ssock.getClear());
-        }
-#endif // OPENSSL
-
-#ifdef _FULLTRACE
-        StringBuffer s;
-        SocketEndpoint ep1;
-        sock->getPeerEndpoint(ep1);
-        PROGLOG("MP: Connect Thread: socket accepted from %s",ep1.getEndpointHostText(s).str());
-#endif
-
-        sock->set_keep_alive(true);
-
-        size32_t rd = 0;
-        SocketEndpoint _remoteep;
-        SocketEndpoint hostep;
-        ConnectHdr connectHdr;
-        bool legacyClient = false;
-
-        // NB: min size is ConnectHdr.id for legacy clients, can thus distinguish old from new
-        try
-        {
-            traceSlowReadTms("MP: initial accept packet from", sock, &connectHdr, sizeof(connectHdr.id), sizeof(connectHdr), rd, timeoutMs, CONFIRM_TIMEOUT_INTERVAL);
-        }
-        catch (IJSOCK_Exception *e)
-        {
-            if (JSOCKERR_timeout_expired != e->errorCode())
-                throw;
-            if (!failOnTimeout)
-                return true; // timedout (socket kept open)
-        }
-        if (0 == rd)
-        {
-            if (parent->mpTraceLevel >= MPVerboseMsgThreshold)
-            {
-                // cannot get peer addresss as socket state is now ss_shutdown (unless we want to allow this in getPeerEndpoint())
-                PROGLOG("MP Connect Thread: connect with no msg received, assumed port monitor check");
-            }
-            sock->close();
-            return false; // did not timeout
-        }
-        else
-        {
-            if (rd == sizeof(connectHdr.id)) // legacy client
-            {
-                legacyClient = true;
-                connectHdr.hdr.size = sizeof(PacketHeader);
-                connectHdr.hdr.tag = TAG_SYS_BCAST;
-                connectHdr.hdr.flags = 0;
-                connectHdr.hdr.version = MP_PROTOCOL_VERSION;
-                connectHdr.setRole(0); // unknown
-            }
-            else if (rd < sizeof(connectHdr.id) || rd > sizeof(connectHdr))
-            {
-                // not sure how to get here as this is not one of the possible outcomes of above: rd == 0 or rd == sizeof(id) or an exception
-                StringBuffer errMsg("MP Connect Thread: invalid number of connection bytes serialized from ");
-                peerEp.getEndpointHostText(errMsg);
-                FLLOG(MCoperatorWarning, "%s", errMsg.str());
-                sock->close();
-                return false; // did not timeout
-            }
-        }
-
         if (allowListCallback)
         {
-            StringBuffer ipStr;
-            peerEp.getHostText(ipStr);
             StringBuffer responseText; // filled if denied, NB: if amount sent is > sizeof(ConnectHdr) we can differentiate exception from success
-            if (!allowListCallback->isAllowListed(ipStr, connectHdr.getRole(), &responseText))
+            if (!allowListCallback->isAllowListed(handler->queryPeerHostText(), connectHdr.getRole(), &responseText))
             {
                 Owned<IException> e = makeStringException(-1, responseText);
                 OWARNLOG(e, nullptr);
 
-                if (legacyClient)
-                {
-                    /* NB: legacy client can't handle exception response
-                        * Acknowledge legacy connection, then close socket
-                        * The effect will be the client sees an MPERR_link_closed
-                        */
-                    size32_t reply = sizeof(connectHdr.id);
-                    sock->write(&reply, sizeof(reply));
-                }
-                else
-                {
-                    MemoryBuffer mb;
-                    DelayedSizeMarker marker(mb);
-                    serializeException(e, mb);
-                    marker.write();
-                    sock->write(mb.toByteArray(), mb.length());
-                }
+                // NB: from 9.6 legacy clients are no longer supported (legacy clients in this context are older than 7.4.2)
+                MemoryBuffer mb;
+                DelayedSizeMarker marker(mb);
+                serializeException(e, mb);
+                marker.write();
+                sock->write(mb.toByteArray(), mb.length());
 
                 sock->close();
                 return false; // did not timeout
             }
         }
 
+        SocketEndpoint _remoteep;
+        SocketEndpoint hostep;
         connectHdr.id[0].get(_remoteep);
         connectHdr.id[1].get(hostep);
 
@@ -2470,19 +2468,17 @@ bool CMPConnectThread::handleAcceptedSocket(ISocket *_sock, unsigned timeoutMs, 
             if (memcmp(connectHdr.id, zeroTest, sizeof(connectHdr.id)))
             {
                 // JCSMORE, I think _remoteep really must/should match a IP of this local host
-                errMsg.append("MP Connect Thread: invalid remote and/or host ep serialized from ");
-                peerEp.getEndpointHostText(errMsg);
+                errMsg.appendf("MP Connect Thread: invalid remote and/or host ep serialized from %s", handler->queryPeerEndpointText());
                 FLLOG(MCoperatorWarning, "%s", errMsg.str());
             }
             else if (parent->mpTraceLevel >= MPVerboseMsgThreshold)
             {
                 // all zeros msg received
-                errMsg.append("MP Connect Thread: connect with empty msg received, assumed port monitor check from ");
-                peerEp.getEndpointHostText(errMsg);
+                errMsg.appendf("MP Connect Thread: connect with empty msg received, assumed port monitor check from %s", handler->queryPeerEndpointText());
                 PROGLOG("%s", errMsg.str());
             }
             sock->close();
-            return false; // did not timeout
+            return false;
         }
 #ifdef _FULLTRACE       
         StringBuffer tmp1;
@@ -2493,7 +2489,8 @@ bool CMPConnectThread::handleAcceptedSocket(ISocket *_sock, unsigned timeoutMs, 
 #endif
         checkSelfDestruct(&connectHdr.id[0],sizeof(connectHdr.id));
         Owned<CMPChannel> channel = parent->lookup(_remoteep);
-        if (!channel->attachSocket(sock.getClear(),_remoteep,hostep,false,&rd,addrval))
+        size32_t rd = sizeof(connectHdr);
+        if (!channel->attachSocket(LINK(sock),_remoteep,hostep,false,&rd,addrval))
         {
 #ifdef _FULLTRACE       
             PROGLOG("MP Connect Thread: lookup failed");
@@ -2517,7 +2514,7 @@ bool CMPConnectThread::handleAcceptedSocket(ISocket *_sock, unsigned timeoutMs, 
         sock->close();
         e->Release();
     }
-    return false; // did not timeout
+    return false;
 }
 
 int CMPConnectThread::run()
@@ -2526,13 +2523,15 @@ int CMPConnectThread::run()
     LOG(MCdebugInfo, "MP: Connect Thread Starting - accept loop");
 #endif
     Owned<IException> exception;
+
+    CConnectSelectHandler connectSelectHandler(*this);
     while (running)
     {
         Owned<ISocket> sock;
-        SocketEndpoint peerEp;
+        SocketEndpoint peerEP;
         try
         {
-            sock.setown(listensock->accept(true, &peerEp));
+            sock.setown(listensock->accept(true, &peerEP));
         }
         catch (IException *e)
         {
@@ -2540,14 +2539,39 @@ int CMPConnectThread::run()
         }
         if (sock)
         {
-            if (threadPool)
+#if defined(_USE_OPENSSL)
+            if (parent->useTLS)
             {
-                // if enabled, handle initial connection protocol on a separate thread
-                // if any block for more than a short period (5 seconds), then they are handed off to slowClientProcessor
-                threadPool->start(sock);
+                Owned<ISecureSocket> ssock = secureContextServer->createSecureSocket(sock.getClear());
+                int tlsTraceLevel = SSLogMin;
+                if (parent->mpTraceLevel >= MPVerboseMsgThreshold)
+                    tlsTraceLevel = SSLogMax;
+                int status = ssock->secure_accept(tlsTraceLevel);
+                if (status < 0)
+                {
+                    ssock->close();
+                    PROGLOG("MP Connect Thread: failed to accept secure connection");
+                    continue;
+                }
+                sock.setown(ssock.getClear());
             }
-            else
-                handleAcceptedSocket(sock.getClear(), CONFIRM_TIMEOUT, true);
+#endif // OPENSSL
+
+#ifdef _FULLTRACE
+            StringBuffer s;
+            SocketEndpoint ep1;
+            sock->getPeerEndpoint(ep1);
+            PROGLOG("MP: Connect Thread: socket accepted from %s",ep1.getEndpointHostText(s).str());
+#endif
+            sock->set_keep_alive(true);
+            sock->set_nonblock(true);
+
+            // NB: creates a CSocketHandler that is added to the select handler.
+            // it will manage the handling of the incoming ConnectHdr header only.
+            // After that, the socket will be removed from the connectSelectHamndler,
+            // a CMPChannel will be estalbished, and the socket will be added to the MP CMPPacketReader select handler.
+            // See handleAcceptedSocket.
+            connectSelectHandler.add(sock, peerEP);
         }
         else
         {

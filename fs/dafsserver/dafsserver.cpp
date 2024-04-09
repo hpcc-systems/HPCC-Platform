@@ -2934,68 +2934,77 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
             touch();
             try
             {
-                if (!gotSize)
+                while (true)
                 {
-                    // left represents amount we have read of leading size32_t (normally expect to be read in 1 go)
-                    if (0 == msg.length()) // 1st time
-                        msgWritePtr = (byte *)msg.reserveTruncate(sizeof(size32_t));
-                    size32_t szRead;
-                    sock->read(msgWritePtr, 1, sizeof(size32_t)-left, szRead);
-                    left += szRead;
-                    msgWritePtr += szRead;
-                    if (left == sizeof(size32_t))
+                    if (!gotSize)
                     {
-                        gotSize = true;
-                        msg.read(left);
-                        msg.clear();
-                        try
+                        // left represents amount we have read of leading size32_t (normally expect to be read in 1 go)
+                        if (0 == msg.length()) // 1st time
+                            msgWritePtr = (byte *)msg.reserveTruncate(sizeof(size32_t));
+                        size32_t szRead;
+                        sock->read(msgWritePtr, 0, sizeof(size32_t)-left, szRead); // can fire graceful close
+                        left += szRead;
+                        msgWritePtr += szRead;
+                        if (left == sizeof(size32_t)) // if not, we exit, and rely on next notifySelected
                         {
-                            msgWritePtr = (byte *)msg.reserveTruncate(left);
-                        }
-                        catch (IException *e)
-                        {
-                            EXCLOG(e,"notifySelected(1)");
-                            e->Release();
-                            left = 0;
-                            // if too big then suggest corrupted packet, try to consume
-                            // JCSMORE this seems a bit pointless, and it used to only read last 'avail',
-                            // which is not necessarily everything that was sent
-                            char fbuf[1024];
-                            while (true)
+                            gotSize = true;
+                            msg.read(left);
+                            msg.clear();
+                            try
                             {
-                                try
+                                msgWritePtr = (byte *)msg.reserveTruncate(left);
+                            }
+                            catch (IException *e)
+                            {
+                                EXCLOG(e,"notifySelected(1)");
+                                e->Release();
+                                left = 0;
+                                // if too big then suggest corrupted packet, try to consume
+                                // JCSMORE this seems a bit pointless, and it used to only read last 'avail',
+                                // which is not necessarily everything that was sent
+                                char fbuf[1024];
+                                while (true)
                                 {
-                                    size32_t szRead;
-                                    sock->read(fbuf, 1, 1024, szRead);
-                                }
-                                catch (IException *e)
-                                {
-                                    EXCLOG(e,"notifySelected(2)");
-                                    e->Release();
-                                    break;
+                                    try
+                                    {
+                                        size32_t szRead;
+                                        sock->read(fbuf, 0, 1024, szRead);
+                                    }
+                                    catch (IException *e)
+                                    {
+                                        EXCLOG(e,"notifySelected(2)");
+                                        e->Release();
+                                        break;
+                                    }
                                 }
                             }
+                            if (0 == left)
+                            {
+                                gotSize = false;
+                                msg.clear();
+                                parent->onCloseSocket(this, 5);
+                                return true;
+                            }
                         }
-                        if (0 == left)
-                        {
-                            gotSize = false;
-                            msg.clear();
-                            parent->onCloseSocket(this, 5);
-                            return true;
-                        }
+                        else
+                            break; // wait for rest via subsequent notifySelected's
                     }
-                }
-                else // left represents length of message remaining to receive
-                {
-                    size32_t szRead;
-                    sock->read(msgWritePtr, 1, left, szRead);
-                    msgWritePtr += szRead;
-                    left -= szRead;
-                    if (0 == left) // NB: only ever here if original size was >0
+                    if (gotSize) // left represents length of message remaining to receive
                     {
-                        gotSize = false; // reset for next packet
-                        parent->handleCompleteMessage(this, msg); // consumes msg
+                        size32_t szRead;
+                        sock->read(msgWritePtr, 0, left, szRead); // can fire graceful close
+                        msgWritePtr += szRead;
+                        left -= szRead;
+                        if (0 == left) // NB: only ever here if original size was >0
+                        {
+                            gotSize = false; // reset for next packet
+                            parent->handleCompleteMessage(this, msg); // consumes msg
+                        }
+                        else
+                            break; // wait for rest via subsequent notifySelected's
                     }
+                    // to be here, implies handled full message, loop around to see if more on the wire.
+                    // will break out if nothing/partial.
                 }
             }
             catch (IJSOCK_Exception *e)
@@ -5624,7 +5633,12 @@ public:
                     eps.getEndpointHostText(peerURL.clear());
                     PROGLOG("Server accepting row service socket from %s", peerURL.str());
 #endif
-                    addClient(acceptedRSSock.getClear(), true, true);
+                    bool secure = false;
+                    if (isContainerized())
+                        secure = true;
+                    else if (_connectMethod != SSLNone)
+                        secure = true;
+                    addClient(acceptedRSSock.getClear(), secure, true);
                 }
             }
             else
@@ -5656,10 +5670,7 @@ public:
             clients.append(*client.getLink());
         }
         // JCSMORE - perhaps cap # added here... ?
-        unsigned mode = SELECTMODE_READ;
-        if (secure)
-            mode |= SELECTMODE_WRITE;
-        selecthandler->add(sock, mode, client);
+        selecthandler->add(sock, SELECTMODE_READ, client);
     }
 
     void stop()

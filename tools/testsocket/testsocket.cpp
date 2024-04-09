@@ -301,7 +301,7 @@ int readResults(ISocket * socket, bool readBlocked, bool useHTTP, StringBuffer &
             {
                 try
                 {
-                    socket->read(t, 0, len, sendlen);
+                    socket->read(t, 1, len, sendlen);
                 }
                 catch (IException *E)
                 {
