@@ -137,15 +137,8 @@ public:
 class CSecureSocket : implements ISecureSocket, public CInterface
 {
 private:
-    struct ScopedNonBlockingMode
-    {
-        CSecureSocket *socket = nullptr;
-        bool prevMode = false;
-        void init(CSecureSocket *_socket) { socket = _socket; prevMode = socket->set_nonblock(true); }
-        ~ScopedNonBlockingMode() { if (socket) socket->set_nonblock(prevMode); }
-    };
-
     SSL*        m_ssl;
+    StringBuffer epStr;
     Linked<ISecureSocketContextCallback> contextCallback;
     Owned<ISocket> m_socket;
     bool        nonBlocking;
@@ -166,11 +159,12 @@ private:
 private:
     StringBuffer& get_cn(X509* cert, StringBuffer& cn);
     bool verify_cert(X509* cert);
+    void handleError(int ssl_err, bool writing, bool wait, unsigned timeoutMs, const char *opStr);
 
 public:
     IMPLEMENT_IINTERFACE;
 
-    CSecureSocket(ISocket* sock, int sockfd, ISecureSocketContextCallback * callback, bool verify = false, bool addres_match = false, CStringSet* m_peers = NULL, int loglevel=SSLogNormal, const char *fqdn = nullptr);
+    CSecureSocket(ISocket* sock, ISecureSocketContextCallback * callback, bool verify = false, bool addres_match = false, CStringSet* m_peers = NULL, int loglevel=SSLogNormal, const char *fqdn = nullptr);
     ~CSecureSocket();
 
     virtual int secure_accept(int logLevel);
@@ -178,8 +172,8 @@ public:
 
     virtual int logPollError(unsigned revents, const char *rwstr);
     virtual int wait_read(unsigned timeoutms);
-    virtual void read(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read,unsigned timeoutsecs);
-    virtual void readtms(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read, unsigned timeoutms);
+    virtual void read(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read,unsigned timeoutsecs, bool suppresGCIfMinSize=true);
+    virtual void readtms(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read, unsigned timeoutms, bool suppresGCIfMinSize=true);
     virtual size32_t write(void const* buf, size32_t size);
     virtual size32_t writetms(void const* buf, size32_t minSize, size32_t size, unsigned timeoutms=WAIT_FOREVER);
 
@@ -499,12 +493,14 @@ Semaphore CSecureSocket::receiveblocksem(2);
 /**************************************************************************
  *  CSecureSocket -- secure socket layer implementation using openssl     *
  **************************************************************************/
-CSecureSocket::CSecureSocket(ISocket* sock, int sockfd, ISecureSocketContextCallback * callback, bool verify, bool address_match, CStringSet* peers, int loglevel, const char *fqdn)
+CSecureSocket::CSecureSocket(ISocket* sock, ISecureSocketContextCallback * callback, bool verify, bool address_match, CStringSet* peers, int loglevel, const char *fqdn)
     : contextCallback(callback)
 {
-    if (sock)
-        sockfd = sock->OShandle();
     m_socket.setown(sock);
+    int sockfd = sock->OShandle();
+    SocketEndpoint ep;
+    sock->getPeerEndpoint(ep);
+    ep.getEndpointHostText(epStr);
     contextVersion = callback->getVersion();
     m_ssl = callback->createActiveSSL();
 
@@ -682,82 +678,156 @@ int CSecureSocket::secure_accept(int logLevel)
 {
     checkForUpdatedContext();
     int err;
-    err = SSL_accept(m_ssl);
-    if(err == 0)
+    while (true)
     {
-        int ret = SSL_get_error(m_ssl, err);
-        // if err == 0 && ret == SSL_ERROR_SYSCALL
-        // then client closed connection gracefully before ssl neg
-        // which can happen with port scan / VIP ...
-        // NOTE: ret could also be SSL_ERROR_ZERO_RETURN if client closed
-        // gracefully after ssl neg initiated ...
-        if ( (logLevel > SSLogNormal) || (ret != SSL_ERROR_SYSCALL) )
+        err = SSL_accept(m_ssl);
+        if (err > 0)
+        {
+            if (logLevel > SSLogNormal)
+                DBGLOG("SSL accept ok, using %s", SSL_get_cipher(m_ssl));
+
+            if (m_verify)
+            {
+                bool verified = false;
+                // Get client's certificate (note: beware of dynamic allocation) - opt 
+                X509* client_cert = SSL_get_peer_certificate (m_ssl);
+                if (client_cert != NULL) 
+                {
+                    // We could do all sorts of certificate verification stuff here before
+                    // deallocating the certificate.
+                    verified = verify_cert(client_cert);
+                    X509_free (client_cert);
+                }
+
+                if (!verified)
+                    throw MakeStringException(-1, "certificate verification failed");
+            }
+
+            m_isSecure = true;
+            return 0;
+        }
+        else
+        {
+            int ret = SSL_get_error(m_ssl, err);
+            if (err == 0)
+            {
+                // if err == 0 && ret == SSL_ERROR_SYSCALL
+                // then client closed connection gracefully before ssl neg
+                // which can happen with port scan / VIP ...
+                // NOTE: ret could also be SSL_ERROR_ZERO_RETURN if client closed
+                // gracefully after ssl neg initiated ...
+                if ( (logLevel > SSLogNormal) || (ret != SSL_ERROR_SYSCALL) )
+                {
+                    char errbuf[512];
+                    ERR_error_string_n(ERR_get_error(), errbuf, 512);
+                    DBGLOG("SSL_accept returned 0, error - %s", errbuf);
+                }
+                if (ret == SSL_ERROR_SYSCALL)
+                    return PORT_CHECK_SSL_ACCEPT_ERROR;
+                return -1;
+            }
+
+            unsigned long errnum = ERR_get_error();
+            // Since err < 0 we call ERR_get_error() for additional info
+            // if ret == SSL_ERROR_SYSCALL and ERR_get_error() == 0 then
+            // its most likely a port scan / load balancer check so do not log
+            // with SSL 1.1.1e and 3.0 if ret == SSL_ERROR_SSL and ERR_get_error reason is EOF
+            // its also most likely a port scan / load balancer check so do not log
+            int srtn = err;
+            if ( (ret == SSL_ERROR_SYSCALL) && (errnum == 0) )
+                srtn = PORT_CHECK_SSL_ACCEPT_ERROR;
+            // if ctx option SSL_OP_IGNORE_UNEXPECTED_EOF is set then will get SSL_ERROR_ZERO_RETURN ...
+            if ( (ret == SSL_ERROR_ZERO_RETURN) && (errnum == 0) )
+                srtn = PORT_CHECK_SSL_ACCEPT_ERROR;
+            // otherwise will get SSL_ERROR_SSL and unexpected eof ...
+#if defined(SSL_R_UNEXPECTED_EOF_WHILE_READING)
+            if ( (ret == SSL_ERROR_SSL) && (ERR_GET_REASON(errnum) == SSL_R_UNEXPECTED_EOF_WHILE_READING) )
+                srtn = PORT_CHECK_SSL_ACCEPT_ERROR;
+#endif
+            // JCSMORE this should really handle accept_cancel_pending
+            if (PORT_CHECK_SSL_ACCEPT_ERROR != srtn)
+                handleError(ret, false, true, WAIT_FOREVER, "SSL_accept");
+            else
+            {
+                if ((logLevel <= SSLogNormal) && (srtn == PORT_CHECK_SSL_ACCEPT_ERROR))
+                    return srtn;
+                char errbuf[512];
+                ERR_error_string_n(errnum, errbuf, 512);
+                errbuf[511] = '\0';
+                DBGLOG("SSL_accept returned %d, SSL_get_error=%d, error - %s", err, ret, errbuf);
+                if(strstr(errbuf, "error:1408F455:") != NULL)
+                {
+                    DBGLOG("Unrecoverable SSL library error.");
+                    _exit(0);
+                }
+                return srtn;
+            }
+        }
+    }
+}
+
+void CSecureSocket::handleError(int ssl_err, bool writing, bool wait, unsigned timeoutMs, const char *opStr)
+{
+    // if !wait, then we only perform ssl_err checking, we do not wait_read/wait_write or timeout
+    int rc = 0;
+    switch (ssl_err)
+    {
+        case SSL_ERROR_ZERO_RETURN:
+        {
+            THROWJSOCKEXCEPTION(JSOCKERR_graceful_close);
+        }
+        case SSL_ERROR_WANT_READ: // NB: SSL_write can provoke SSL_ERROR_WANT_READ
+        {
+            if (wait)
+                rc = wait_read(timeoutMs);
+            break;
+        }
+        case SSL_ERROR_WANT_WRITE: // NB: SSL_read can provoke SSL_ERROR_WANT_WRITE
+        {
+            if (wait)
+                rc = wait_write(timeoutMs);
+            break;
+        }
+        case SSL_ERROR_SYSCALL:
+        {
+            int sockErr = SOCKETERRNO();
+            if (sockErr == EAGAIN || sockErr == EWOULDBLOCK)
+            {
+                if (wait)
+                {
+                    if (writing)
+                        rc = wait_write(timeoutMs);
+                    else
+                        rc = wait_read(timeoutMs);
+                }
+                break;
+            }
+            // fall through to default error handling below
+        }
+        default:
         {
             char errbuf[512];
-            ERR_error_string_n(ERR_get_error(), errbuf, 512);
-            DBGLOG("SSL_accept returned 0, error - %s", errbuf);
+            ERR_error_string_n(ssl_err, errbuf, 512);
+            ERR_clear_error();
+            VStringBuffer errmsg("%s error %d - %s", opStr, ssl_err, errbuf);
+            if (m_loglevel >= SSLogMax)
+                DBGLOG("Warning: %s", errmsg.str());
+            THROWJSOCKEXCEPTION_MSG(ssl_err, errmsg);
         }
-        if (ret == SSL_ERROR_SYSCALL)
-            return PORT_CHECK_SSL_ACCEPT_ERROR;
-        return -1;
     }
-    else if(err < 0)
+    if (wait && rc <= 0)
     {
-        int ret = SSL_get_error(m_ssl, err);
-        unsigned long errnum = ERR_get_error();
-        // Since err < 0 we call ERR_get_error() for additional info
-        // if ret == SSL_ERROR_SYSCALL and ERR_get_error() == 0 then
-        // its most likely a port scan / load balancer check so do not log
-        // with SSL 1.1.1e and 3.0 if ret == SSL_ERROR_SSL and ERR_get_error reason is EOF
-        // its also most likely a port scan / load balancer check so do not log
-        int srtn = err;
-        if ( (ret == SSL_ERROR_SYSCALL) && (errnum == 0) )
-            srtn = PORT_CHECK_SSL_ACCEPT_ERROR;
-        // if ctx option SSL_OP_IGNORE_UNEXPECTED_EOF is set then will get SSL_ERROR_ZERO_RETURN ...
-        if ( (ret == SSL_ERROR_ZERO_RETURN) && (errnum == 0) )
-            srtn = PORT_CHECK_SSL_ACCEPT_ERROR;
-        // otherwise will get SSL_ERROR_SSL and unexpected eof ...
-#if defined(SSL_R_UNEXPECTED_EOF_WHILE_READING)
-        if ( (ret == SSL_ERROR_SSL) && (ERR_GET_REASON(errnum) == SSL_R_UNEXPECTED_EOF_WHILE_READING) )
-            srtn = PORT_CHECK_SSL_ACCEPT_ERROR;
-#endif
-        if ((logLevel <= SSLogNormal) && (srtn == PORT_CHECK_SSL_ACCEPT_ERROR))
-            return srtn;
-        char errbuf[512];
-        ERR_error_string_n(errnum, errbuf, 512);
-        errbuf[511] = '\0';
-        DBGLOG("SSL_accept returned %d, SSL_get_error=%d, error - %s", err, ret, errbuf);
-        if(strstr(errbuf, "error:1408F455:") != NULL)
+        int code = SOCKETERRNO();
+        VStringBuffer errorMsg("%s: %s ", opStr, (SSL_ERROR_WANT_WRITE == ssl_err) ? "wait_write" : "wait_read");
+        if (rc == 0)
         {
-            DBGLOG("Unrecoverable SSL library error.");
-            _exit(0);
+            code = JSOCKERR_timeout_expired;
+            errorMsg.append("timeout expired");
         }
-        return srtn;
+        else
+            errorMsg.append("error");
+        THROWJSOCKEXCEPTION_MSG(code, errorMsg.str());
     }
-
-    if (logLevel > SSLogNormal)
-        DBGLOG("SSL accept ok, using %s", SSL_get_cipher(m_ssl));
-
-    if(m_verify)
-    {
-        bool verified = false;
-        // Get client's certificate (note: beware of dynamic allocation) - opt 
-        X509* client_cert = SSL_get_peer_certificate (m_ssl);
-        if (client_cert != NULL) 
-        {
-            // We could do all sorts of certificate verification stuff here before
-            // deallocating the certificate.
-            verified = verify_cert(client_cert);
-            X509_free (client_cert);
-        }
-
-        if(!verified)
-            throw MakeStringException(-1, "certificate verification failed");
-
-    }
-
-    m_isSecure = true;
-    return 0;
 }
 
 int CSecureSocket::secure_connect(int logLevel)
@@ -768,14 +838,16 @@ int CSecureSocket::secure_connect(int logLevel)
             SSL_set_tlsext_host_name(m_ssl, m_fqdn.str());
     }
 
-    int err = SSL_connect (m_ssl);                     
-    if(err <= 0)
+    unsigned timeoutMs = 60*1000; // more than enough, used to be infinite
+    CCycleTimer timer;
+    while (true)
     {
-        int ret = SSL_get_error(m_ssl, err);
-        char errbuf[512];
-        ERR_error_string_n(ERR_get_error(), errbuf, 512);
-        DBGLOG("SSL_connect error - %s, SSL_get_error=%d, error - %d", errbuf,ret, err);
-        throw MakeStringException(-1, "SSL_connect failed: %s", errbuf);
+        int rc = SSL_connect(m_ssl);
+        if (rc > 0)
+            break;
+        int ssl_err = SSL_get_error(m_ssl, rc);
+        unsigned remainingMs = timer.remainingMs(timeoutMs);
+        handleError(ssl_err, true, true, remainingMs, "SSL_connect");
     }
     
     if (logLevel > SSLogNormal)
@@ -829,81 +901,53 @@ int CSecureSocket::wait_read(unsigned timeoutms)
     return m_socket->wait_read(timeoutms);
 }
 
-void CSecureSocket::readtms(void* buf, size32_t min_size, size32_t max_size, size32_t &sizeRead, unsigned timeoutMs)
+void CSecureSocket::readtms(void* buf, size32_t min_size, size32_t max_size, size32_t &sizeRead, unsigned timeoutMs, bool suppresGCIfMinSize)
 {
+    // Adheres to same semantics as CSocket::readtms
+    // NB: when handling poll notifications, we must read until SSL_read indicates would block
+    // because we may not get another poll notification because SSL internally has read everything.
     sizeRead = 0;
     CCycleTimer timer;
-
-    // for semantics to work with a timeout, have to be non-blocking when reading SSL
-    // because wait_read can't guarantee that there are bytes ready to read, only that
-    // there are bytes pending on the underlying socket.
-    // We put in non-blocking mode, so that if after wait_read says there's something,
-    // SSL_read won't block and will respond with a SSL_ERROR_WANT_READ/SSL_ERROR_WANT_WRITE
-    // if not ready.
-    ScopedNonBlockingMode scopedNonBlockingMode;
-    if (WAIT_FOREVER != timeoutMs)
-        scopedNonBlockingMode.init(this);
-
-    int ssl_err = SSL_ERROR_WANT_READ; // initially call will be wait_read
     while (true)
     {
-        int rc;
-        unsigned remainingMs = timer.remainingMs(timeoutMs);
-        if (ssl_err == SSL_ERROR_WANT_READ)
-            rc = wait_read(remainingMs);
-        else // SSL_ERROR_WANT_WRITE
-            rc = wait_write(remainingMs);
-        if (rc < 0)
-            THROWJSOCKEXCEPTION_MSG(SOCKETERRNO(), "wait_read error");
-        if (rc == 0)
-            THROWJSOCKEXCEPTION_MSG(JSOCKERR_timeout_expired, "timeout expired");
-
         ERR_clear_error();
-        rc = SSL_read(m_ssl, (char*)buf + sizeRead, max_size - sizeRead);
-
+        int rc = SSL_read(m_ssl, (char*)buf + sizeRead, max_size - sizeRead);
+        unsigned remainingMs = timer.remainingMs(timeoutMs);
         if (rc > 0)
         {
             sizeRead += rc;
-            if (sizeRead >= min_size)
+            if (sizeRead == max_size)
                 break;
+            if (0 == remainingMs)
+            {
+                if (sizeRead >= min_size)
+                    break;
+                THROWJSOCKEXCEPTION_MSG(JSOCKERR_timeout_expired, "timeout expired");
+            }
+            // loop around to read more, or detect blocked (and exit if sizeRead >= min_size)
         }
         else if (0 == rc)
         {
-            if (sizeRead >= min_size)
-                break; // suppress graceful close exception if have already read minimum
+            if (suppresGCIfMinSize && (sizeRead >= min_size))
+                break;
             THROWJSOCKEXCEPTION(JSOCKERR_graceful_close);
         }
         else
         {
-            ssl_err = SSL_get_error(m_ssl, rc);
-            // NB: if timeout != WAIT_FOREVER, nonBlocking should always be true here
-            if (nonBlocking && (ssl_err == SSL_ERROR_WANT_READ || ssl_err == SSL_ERROR_WANT_WRITE)) // NB: SSL_read can cause SSL_ERROR_WANT_WRITE
-            {
-                // NB: we must be below min_size if here (otherwise would have exited in (rc > 0) block above)
-
-                // To maintain consistent semantics with jsocket, we continue waiting even in the min_size = 0 case.
-                // NB: jsocket::readtms always blocks (wait_read) initially, meaning in effect min_size is always treated as >0
-            }
-            else
-            {
-                char errbuf[512];
-                ERR_error_string_n(ssl_err, errbuf, 512);
-                ERR_clear_error();
-                VStringBuffer errmsg("SSL_read error %d - %s", ssl_err, errbuf);
-                if (m_loglevel >= SSLogMax)
-                    DBGLOG("Warning: %s", errmsg.str());
-                THROWJSOCKEXCEPTION_MSG(ssl_err, errmsg);
-            }
-            // here only if nonBlocking && WANT_READ or WANT_WRITE
-            // since we do not have size_min yet, loop around and wait for more.
+            // NB: if blocked, return if sizeRead >= min_size
+            int ssl_err = SSL_get_error(m_ssl, rc);
+            bool wait = sizeRead < min_size; // if >= min_size, then handleError will validate errors only
+            handleError(ssl_err, false, wait, remainingMs, "SSL_read");
+            if (sizeRead >= min_size)
+                break;
         }
     }
 }
 
-void CSecureSocket::read(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read,unsigned timeoutsecs)
+void CSecureSocket::read(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read, unsigned timeoutsecs, bool suppresGCIfMinSize)
 {
     unsigned timeoutMs = (timeoutsecs==WAIT_FOREVER) ? WAIT_FOREVER : (timeoutsecs * 1000);
-    readtms(buf, min_size, max_size, size_read, timeoutMs);
+    readtms(buf, min_size, max_size, size_read, timeoutMs, suppresGCIfMinSize);
 }
 
 size32_t CSecureSocket::writetms(void const* buf, size32_t minSize, size32_t size, unsigned timeoutMs)
@@ -912,11 +956,6 @@ size32_t CSecureSocket::writetms(void const* buf, size32_t minSize, size32_t siz
         return 0;
 
     CCycleTimer timer;
-
-    ScopedNonBlockingMode scopedNonBlockingMode;
-    if (WAIT_FOREVER != timeoutMs)
-        scopedNonBlockingMode.init(this);
-
     while (true)
     {
         int rc = SSL_write(m_ssl, buf, size);
@@ -927,32 +966,8 @@ size32_t CSecureSocket::writetms(void const* buf, size32_t minSize, size32_t siz
             return rc;
         }
         int ssl_err = SSL_get_error(m_ssl, rc);
-        if (nonBlocking && (ssl_err == SSL_ERROR_WANT_READ || ssl_err == SSL_ERROR_WANT_WRITE)) // NB: SSL_write can cause SSL_ERROR_WANT_READ
-        {
-            unsigned remainingMs = timer.remainingMs(timeoutMs);
-            if (ssl_err == SSL_ERROR_WANT_READ)
-                rc = wait_read(remainingMs);
-            else // SSL_ERROR_WANT_WRITE
-                rc = wait_write(remainingMs);
-            if (rc < 0)
-            {
-                const char *msg = (ssl_err == SSL_ERROR_WANT_READ) ? "wait_read error" : "wait_write error";
-                THROWJSOCKEXCEPTION_MSG(SOCKETERRNO(), msg);
-            }
-            if (rc == 0)
-                THROWJSOCKEXCEPTION_MSG(JSOCKERR_timeout_expired, "timeout expired");
-        }
-        else
-        {
-            char errbuf[512];
-            ERR_error_string_n(ssl_err, errbuf, 512);
-            ERR_clear_error();
-            VStringBuffer errmsg("SSL_write error %d - %s", ssl_err, errbuf);
-            if (ssl_err == SSL_ERROR_ZERO_RETURN)
-                THROWJSOCKEXCEPTION(JSOCKERR_graceful_close);
-            else
-                THROWJSOCKEXCEPTION_MSG(JSOCKERR_broken_pipe, errmsg);
-        }
+        unsigned remainingMs = timer.remainingMs(timeoutMs);
+        handleError(ssl_err, true, true, remainingMs, "SSL_write");
     }
     throwUnexpected(); // should never get here
 }
@@ -1514,12 +1529,13 @@ public:
 //interface ISecureSocketContext
     ISecureSocket* createSecureSocket(ISocket* sock, int loglevel, const char *fqdn)
     {
-        return new CSecureSocket(sock, 0, this, m_verify, m_address_match, m_peers, loglevel, fqdn);
+        return new CSecureSocket(sock, this, m_verify, m_address_match, m_peers, loglevel, fqdn);
     }
 
     ISecureSocket* createSecureSocket(int sockfd, int loglevel, const char *fqdn)
     {
-        return new CSecureSocket(nullptr, sockfd, this, m_verify, m_address_match, m_peers, loglevel, fqdn);
+        Owned<ISocket> sock = ISocket::attach(sockfd);
+        return new CSecureSocket(sock.getClear(), this, m_verify, m_address_match, m_peers, loglevel, fqdn);
     }
 
 //interface ISecureSocketContextCallback

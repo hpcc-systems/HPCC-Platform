@@ -339,9 +339,9 @@ class CSocketSimulator : public CInterfaceOf<ISocket>
 {
 private:
     virtual void   read(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read,
-                        unsigned timeoutsecs = WAIT_FOREVER) override { UNIMPLEMENTED; }
+                        unsigned timeoutsecs = WAIT_FOREVER, bool suppresGCIfMinSize = true) override { UNIMPLEMENTED; }
     virtual void   readtms(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read,
-                           unsigned timeout) override { UNIMPLEMENTED; }
+                           unsigned timeout, bool suppresGCIfMinSize = true) override { UNIMPLEMENTED; }
     virtual void   read(void* buf, size32_t size) override { UNIMPLEMENTED; }
     virtual size32_t write(void const* buf, size32_t size) override { UNIMPLEMENTED; }
     virtual size32_t writetms(void const* buf, size32_t minSize, size32_t size, unsigned timeoutms=WAIT_FOREVER) override { UNIMPLEMENTED; }
@@ -442,9 +442,9 @@ public:
     virtual size32_t get_receive_buffer_size() override { return max; }
     virtual void set_receive_buffer_size(size32_t sz) override { max = sz; }
     virtual void read(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read,
-                      unsigned timeoutsecs = WAIT_FOREVER) override;
+                      unsigned timeoutsecs = WAIT_FOREVER, bool suppresGCIfMinSize = true) override;
     virtual void readtms(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read,
-                         unsigned timeout) override;
+                         unsigned timeout, bool suppresGCIfMinSize = true) override;
     virtual int wait_read(unsigned timeout) override;
     virtual void close() override {}
     virtual void  shutdown(unsigned mode) override { }
@@ -491,8 +491,8 @@ public:
 
     virtual size32_t get_receive_buffer_size() override;
     virtual void set_receive_buffer_size(size32_t sz) override;
-    virtual void read(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read, unsigned timeoutsecs = WAIT_FOREVER) override;
-    virtual void readtms(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read, unsigned timeout) override;
+    virtual void read(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read, unsigned timeoutsecs = WAIT_FOREVER, bool suppresGCIfMinSize = true) override;
+    virtual void readtms(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read, unsigned timeout, bool suppresGCIfMinSize = true) override;
     virtual int wait_read(unsigned timeout) override;
     virtual void close() override;
 
