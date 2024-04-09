@@ -310,6 +310,7 @@ incr() {
 install() {
     if [ -d $DEB_FILE ]; then
         MODE=debug
+        create_build_image
         create_platform_core_image $RELEASE_BASE_IMAGE
         finalize_platform_core_image_from_folder $DEB_FILE
     elif [ -f $DEB_FILE ]; then
