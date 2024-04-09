@@ -2551,7 +2551,7 @@ Pass in value
  {{- else -}}
   {{- $_ := fail (printf "Invalid size suffix on memory resource specification: %s" .) -}}
  {{- end -}}
- {{- $_ := set $ctx "number" (substr 0 (sub (len .) 1) .) -}}
+ {{- $_ := set $ctx "number" (substr 0 (int (sub (len .) 1)) .) -}}
 {{- end -}}
 {{- printf "%d" (mul $ctx.number $ctx.scale) -}}
 {{- end -}}
