@@ -88,13 +88,13 @@ jobs:
             event_name: "schedule"
           - os: centos-7
             event_name: "pull_request"
-            cmake_options_extra: ""
+            cmake_options_extra: "-DVCPKG_TARGET_TRIPLET=x64-centos-7-dynamic"
           - os: amazonlinux
             event_name: "schedule"
-            cmake_options_extra: ""
+            cmake_options_extra: "-DVCPKG_TARGET_TRIPLET=x64-amazonlinux-dynamic"
           - os: centos-7
             name: LN
-            cmake_options_extra: ""
+            cmake_options_extra: "-DVCPKG_TARGET_TRIPLET=x64-centos-7-dynamic"
             ln: true
             event_name: "schedule"
       fail-fast: false
