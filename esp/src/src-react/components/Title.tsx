@@ -142,7 +142,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
                         fetch("/esp/lock", {
                             method: "post"
                         }).then(() => {
-                            setUserSession({ ...userSession, Status: "Locked" });
+                            setUserSession({ ...userSession });
                             replaceUrl("/login", true);
                         });
                     }
@@ -235,7 +235,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
         if (!currentUser.username) return;
         if (!cookie("PasswordExpiredCheck")) {
             // cookie expires option expects whole number of days, use a decimal < 1 for hours
-            cookie("PasswordExpiredCheck", "true", { expires: 0.5 });
+            cookie("PasswordExpiredCheck", "true", { expires: 0.5, path: "/" });
             if (currentUser.passwordIsExpired) {
                 alert(nlsHPCC.PasswordExpired);
                 setShowMyAccount(true);

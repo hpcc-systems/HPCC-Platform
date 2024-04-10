@@ -1144,8 +1144,7 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
         updateWorkunitStat(wu, SSTgraph, graphName, StTimeElapsed, graphTimeStr, graphTimeNs, wfid);
 
         addTimeStamp(wu, SSTgraph, graphName, StWhenFinished, wfid);
-        unsigned numberOfMachines = queryNodeClusterWidth() / globals->getPropInt("@numWorkersPerPod", 1); // Number of Pods or physical machines
-        cost_type cost = money2cost_type(calculateThorCost(nanoToMilli(graphTimeNs), numberOfMachines));
+        cost_type cost = money2cost_type(calculateThorCost(nanoToMilli(graphTimeNs), queryNodeClusterWidth()));
         if (cost)
             wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTgraph, graphScope, StCostExecute, NULL, cost, 1, 0, StatsMergeReplace);
         updateSpillSize(wu, graphScope, SSTgraph);
