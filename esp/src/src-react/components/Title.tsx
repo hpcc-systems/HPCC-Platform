@@ -111,7 +111,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
                         fetch("esp/lock", {
                             method: "post"
                         }).then(() => {
-                            setUserSession({ ...userSession, Status: "Locked" });
+                            setUserSession({ ...userSession });
                             replaceUrl("/login", null, true);
                         });
                     }

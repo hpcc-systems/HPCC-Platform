@@ -122,7 +122,6 @@ class RequestHelper {
                             status: "DoIdle"
                         });
                     }
-                    cookie("Status", "Locked");
                     ESPUtil.LocalStorage.removeItem("Status");
                 }
             }

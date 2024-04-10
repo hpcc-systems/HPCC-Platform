@@ -7,7 +7,6 @@ const defaults = {
     ESPSessionTimeout: 7200,
     ESPAuthenticated: false,
     ECLWatchUser: false,
-    Status: "Unlocked",
     ESPSessionState: false
 };
 
@@ -17,7 +16,6 @@ export interface UserSession {
     ESPSessionTimeout: number;
     ESPAuthenticated: boolean;
     ECLWatchUser: boolean;
-    Status: string;
     ESPAuthenticationMSG?: string;
     ESPSessionState: boolean;
 }
@@ -47,6 +45,7 @@ export function useUserSession(): {
                 case "Mixed":
                 case "PerSessionOnly":
                     store.set("ESPSessionState", "true");
+                    store.set("ESPAuthenticated", "true");
                     break;
                 case "PerRequestOnly":
                 case "UserNameOnly":
@@ -56,7 +55,6 @@ export function useUserSession(): {
                 default:
                     store.set("ESPSessionState", "false");
             }
-            store.set("Status", "Unlocked");
             store.set("ECLWatchUser", "true");
         }).catch(err => console.log("Unable to create user session."));
     }, [store]);

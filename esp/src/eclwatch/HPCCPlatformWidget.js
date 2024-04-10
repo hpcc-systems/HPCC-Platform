@@ -227,7 +227,7 @@ define([
                     context.checkIfAdmin(context.userName);
                     context.refreshUserName();
                     if (!cookie("PasswordExpiredCheck")) {
-                        cookie("PasswordExpiredCheck", "true", { expires: 1 });
+                        cookie("PasswordExpiredCheck", "true", { expires: 1, path: "/" });
                         if (lang.exists("MyAccountResponse.passwordDaysRemaining", response)) {
                             switch (response.MyAccountResponse.passwordDaysRemaining) {
                                 case null:
@@ -462,7 +462,7 @@ define([
         },
 
         _ondebugLanguageFiles: function () {
-            /* DEBUG_ONLY 
+            /* DEBUG_ONLY
             var context = this;
             require(["src/nls/hpcc"], function (lang) {
                 var languageID = [];

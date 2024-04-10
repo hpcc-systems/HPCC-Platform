@@ -1058,7 +1058,7 @@ export function parseCookies(): Record<string, any> {
 export function deleteCookie(name: string) {
     const expireDate = new Date();
     expireDate.setSeconds(expireDate.getSeconds() + 1);
-    document.cookie = `${name}=; domain=${window.location.hostname}; path=/; expires=${expireDate.toUTCString()}`;
+    document.cookie = `${name}=; domain=${window.location.hostname}; expires=${expireDate.toUTCString()}`;
 }
 
 const d3FormatDecimal = d3Format(",.2f");
