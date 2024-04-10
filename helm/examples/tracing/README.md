@@ -90,7 +90,7 @@ Tracing information can be exported to various Open Telemetry compatible endpoin
 
 Sample span reported as log event:
 ```console
-00000165 MON EVT 2023-12-01 17:19:07.270     8   688 UNK     "{ "name": "HTTPRequest", "trace_id": "891070fc4a9ef5a3751c19c555d7d4a8", "span_id": "23a47b5bb486ce58", "start": 1701451147269962337, "duration": 652093, "Attributes": {"http.request.method": "GET","hpcc.localid": "JJmSnTeFWTQL8ft9DcbYDK","hpcc.globalid": "JJmSnTedcRZ99RtnwWGwPN" } }""
+00000165 MON EVT 2023-12-01 17:19:07.270     8   688 UNK     "{ "name": "HTTPRequest", "trace_id": "891070fc4a9ef5a3751c19c555d7d4a8", "span_id": "23a47b5bb486ce58", "start": 1701451147269962337, "duration": 652093, "Attributes": {"http.request.method": "GET","hpcc.localid": "JJmSnTeFWTQL8ft9DcbYDK","id.global": "JJmSnTedcRZ99RtnwWGwPN" } }""
 ```
 
 Each log statement includes a timestamp denoting the span start time, and a duration along with  the span name, trace and span id, and any HPCC specific attribute such as legacy GlobalID (if any), HPCC CallerID (if any), LocalID (if any).
@@ -108,8 +108,8 @@ Sample exported span data:
   "duration": 1002426,
   "attributes": {
     "http.request.method": "GET",
-    "hpcc.localid": "JJmvRRBJ1QYU8o4xe1sgxJ",
-    "hpcc.globalid": "JJmvRRBjnJGY6vgkjkAjJc"
+    "id.local": "JJmvRRBJ1QYU8o4xe1sgxJ",
+    "id.global": "JJmvRRBjnJGY6vgkjkAjJc"
   },
   "events": [
     {
