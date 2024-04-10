@@ -156,17 +156,6 @@ extern jhtree_decl StringBuffer &getIndexMetrics(StringBuffer &);
 extern jhtree_decl void resetIndexMetrics();
 
 extern jhtree_decl RelaxedAtomic<unsigned> nodesLoaded;
-extern jhtree_decl RelaxedAtomic<unsigned> cacheHits;
-extern jhtree_decl RelaxedAtomic<unsigned> cacheAdds;
-extern jhtree_decl RelaxedAtomic<unsigned> blobCacheHits;
-extern jhtree_decl RelaxedAtomic<unsigned> blobCacheAdds;
-extern jhtree_decl RelaxedAtomic<unsigned> blobCacheDups;
-extern jhtree_decl RelaxedAtomic<unsigned> leafCacheHits;
-extern jhtree_decl RelaxedAtomic<unsigned> leafCacheAdds;
-extern jhtree_decl RelaxedAtomic<unsigned> leafCacheDups;
-extern jhtree_decl RelaxedAtomic<unsigned> nodeCacheHits;
-extern jhtree_decl RelaxedAtomic<unsigned> nodeCacheAdds;
-extern jhtree_decl RelaxedAtomic<unsigned> nodeCacheDups;
 
 extern std::atomic<unsigned __int64> branchSearchCycles;
 extern std::atomic<unsigned __int64> leafSearchCycles;
@@ -175,7 +164,7 @@ extern std::atomic<unsigned __int64> leafSearchCycles;
 extern jhtree_decl bool linuxYield;
 extern jhtree_decl bool flushJHtreeCacheOnOOM;
 extern jhtree_decl bool useMemoryMappedIndexes;
-extern jhtree_decl void clearNodeStats();
+extern jhtree_decl void logNodeCacheStats(const char *prefix);
 
 
 #define CHEAP_UCHAR_DEF

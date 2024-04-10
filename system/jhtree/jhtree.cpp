@@ -63,6 +63,7 @@
 #include "rtlrecord.hpp"
 #include "rtldynfield.hpp"
 #include "eclhelper_base.hpp"
+#include "jmetrics.hpp"
 
 constexpr __uint64 defaultFetchThresholdNs = 20000; // Assume anything < 20us comes from the page cache, everything above probably went to disk
 
@@ -603,10 +604,6 @@ constexpr StatisticKind readStatId[CacheMax] = { StCycleNodeReadCycles, StCycleL
 constexpr StatisticKind fetchStatId[CacheMax] = { StNumNodeDiskFetches, StNumLeafDiskFetches, StNumBlobDiskFetches };
 constexpr StatisticKind fetchTimeId[CacheMax] = { StCycleNodeFetchCycles, StCycleLeafFetchCycles, StCycleBlobFetchCycles };
 
-constexpr RelaxedAtomic<unsigned> * hitMetric[CacheMax] = { &nodeCacheHits, &leafCacheHits, &blobCacheHits };
-constexpr RelaxedAtomic<unsigned> * addMetric[CacheMax] = { &nodeCacheAdds, &leafCacheAdds, &blobCacheAdds };
-constexpr RelaxedAtomic<unsigned> * dupMetric[CacheMax] = { &nodeCacheDups, &leafCacheDups, &blobCacheDups };
-
 ///////////////////////////////////////////////////////////////////////////////
 
 // For some reason #pragma pack does not seem to work here. Force all elements to 8 bytes
@@ -672,9 +669,36 @@ class CNodeMRUCache final : public CMRUCacheOf<CKeyIdAndPos, CNodeCacheEntry, CN
 {
     std::atomic<size32_t> sizeInMem{0};
     size32_t memLimit = 0;
+    std::shared_ptr<hpccMetrics::CustomMetric<RelaxedAtomic<__uint64>>> pNumHits = nullptr;
+    std::shared_ptr<hpccMetrics::CustomMetric<RelaxedAtomic<__uint64>>> pNumAdds = nullptr;
+    std::shared_ptr<hpccMetrics::CustomMetric<RelaxedAtomic<__uint64>>> pNumDups = nullptr;
+    std::shared_ptr<hpccMetrics::CustomMetric<RelaxedAtomic<__uint64>>> pNumEvicts = nullptr;
 public:
+    RelaxedAtomic<__uint64> numHits;
+    RelaxedAtomic<__uint64> numAdds;
+    RelaxedAtomic<__uint64> numDups;
+    RelaxedAtomic<__uint64> numEvicts;
+    bool enabled = false;
+    CNodeMRUCache(CacheType cacheType)
+    {
+        StringBuffer name, desc;
+        const char *typeText = cacheTypeText[cacheType];
+        name.appendf("jhtree.cache.%s.hits", typeText);
+        desc.appendf("The number of cache hits on the jhtree %s cache", typeText);
+        pNumHits = hpccMetrics::registerCustomMetric(name, desc, hpccMetrics::METRICS_COUNTER, numHits, SMeasureCount);
+        name.clear().appendf("jhtree.cache.%s.adds", typeText);
+        desc.clear().appendf("The number of cache adds to the jhtree %s cache", typeText);
+        pNumAdds = hpccMetrics::registerCustomMetric(name, desc, hpccMetrics::METRICS_COUNTER, numAdds, SMeasureCount);
+        name.clear().appendf("jhtree.cache.%s.dups", typeText);
+        desc.clear().appendf("The number of cache add collisions on the jhtree %s cache", typeText);
+        pNumDups = hpccMetrics::registerCustomMetric(name, desc, hpccMetrics::METRICS_COUNTER, numDups, SMeasureCount);
+        name.clear().appendf("jhtree.cache.%s.evictions", typeText);
+        desc.clear().appendf("The number of nodes evicted from the jhtree %s cache", typeText);
+        pNumEvicts = hpccMetrics::registerCustomMetric(name, desc, hpccMetrics::METRICS_COUNTER, numEvicts, SMeasureCount);
+    }
     size32_t setMemLimit(size32_t _memLimit)
     {
+        enabled = _memLimit != 0;
         size32_t oldMemLimit = memLimit;
         memLimit = _memLimit;
         if (full())
@@ -686,6 +710,7 @@ public:
         // remove LRU until !full
         // This code could walk the list, rather than restarting at the end each time - but there are unlikely to be
         // many entries that have no associated node, and nodes could have been associated in the meantime.
+        // Note that we are called inside a lock
         do
         {
             CNodeMapping *tail = mruList.tail();
@@ -708,6 +733,7 @@ public:
             }
 
             mruList.remove(tail);
+            numEvicts.fastAdd(1);
             table.removeExact(tail);
         }
         while (full());
@@ -746,7 +772,15 @@ public:
     void traceState(StringBuffer & out)
     {
         //Should be safe to call outside of a critical section, but values may be inconsistent
-        out.append(table.ordinality()).append(":").append(sizeInMem);
+        if (enabled)
+        {
+            out.append(table.ordinality()).append(":").append(sizeInMem);
+            out.appendf(" [%" I64F "u:%" I64F "u:%" I64F "u:%" I64F "u]", numHits.load(), numAdds.load(), numDups.load(), numEvicts.load());
+        }
+        else
+        {
+            out.append("[disabled]");
+        }
     }
 };
 
@@ -755,8 +789,7 @@ class CNodeCache : public CInterface
 {
 private:
     mutable CriticalSection lock[CacheMax];
-    CNodeMRUCache cache[CacheMax];
-    bool cacheEnabled[CacheMax] = { false, false, false };
+    CNodeMRUCache cache[CacheMax] = { CacheBranch, CacheLeaf, CacheBlob };
 public:
     CNodeCache(size32_t maxNodeMem, size32_t maxLeaveMem, size32_t maxBlobMem)
     {
@@ -767,7 +800,6 @@ public:
     }
     const CJHTreeNode *getCachedNode(const INodeLoader *key, unsigned keyID, offset_t pos, NodeType type, IContextLogger *ctx, bool isTLK);
     void getCacheInfo(ICacheInfoRecorder &cacheInfo);
-
 
     inline size32_t setNodeCacheMem(size32_t newSize)
     {
@@ -795,7 +827,6 @@ public:
         {
             out.append(cacheTypeText[i]).append('(');
             cache[i].traceState(out);
-            out.appendf(" [%u:%u:%u]", hitMetric[i]->load(), addMetric[i]->load(), dupMetric[i]->load());
             out.append(") ");
         }
     }
@@ -811,7 +842,6 @@ protected:
     {
         CriticalBlock block(lock[type]);
         unsigned oldV = cache[type].setMemLimit(newSize);
-        cacheEnabled[type] = (newSize != 0);
         return oldV;
     }
 };
@@ -829,6 +859,15 @@ void clearNodeCache()
     queryNodeCache()->clear();
 }
 
+void logNodeCacheStats(const char *prefix)
+{
+    if (nodeCache)
+    {
+        StringBuffer str(prefix);
+        nodeCache->traceState(str);
+        DBGLOG("%s", str.str());
+    }
+}
 
 void logCacheState()
 {
@@ -2609,7 +2648,8 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader *keyIndex, unsign
     CacheType cacheType = isTLK ? CacheBranch : (CacheType)type;
 
     // check cacheEnabled[cacheType] avoid the critical section (and testing the flag within the critical section)
-    if (unlikely(!cacheEnabled[cacheType]))
+    CNodeMRUCache & curCache = cache[cacheType];
+    if (unlikely(!curCache.enabled))
         return keyIndex->loadNode(nullptr, pos, nullptr);
 
     //Previously, this was implemented as:
@@ -2618,7 +2658,6 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader *keyIndex, unsign
     //  Lock, add if missing, unlock.  Lock a page-dependent-cr load() release lock.
     //There will be the same number of critical section locks, but loading a page will contend on a different lock - so it should reduce contention.
     CKeyIdAndPos key(iD, pos);
-    CNodeMRUCache & curCache = cache[cacheType];
     CriticalSection & cacheLock = lock[cacheType];
     Owned<CNodeCacheEntry> ownedCacheEntry; // ensure node gets cleaned up if it fails to load
     bool alreadyExists = true;
@@ -2630,6 +2669,7 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader *keyIndex, unsign
         cacheEntry = curCache.query(hashcode, &key);
         if (likely(cacheEntry))
         {
+            curCache.numHits.fastAdd(1);
             const CJHTreeNode * fastPathMatch = cacheEntry->queryNode();
             if (likely(fastPathMatch))
             {
@@ -2638,8 +2678,7 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader *keyIndex, unsign
                 fastPathMatch->Link();
                 block.leave();
 
-                //Update any stats outside of the critical section.
-                (*hitMetric[cacheType])++;
+                //Update ctx stats outside of the critical section.
                 if (ctx) ctx->noteStatistic(hitStatId[cacheType], 1);
                 return fastPathMatch;
             }
@@ -2649,6 +2688,7 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader *keyIndex, unsign
             cacheEntry = new CNodeCacheEntry;
             curCache.replace(key, *cacheEntry);
             alreadyExists = false;
+            curCache.numAdds.fastAdd(1);
         }
 
         //same as ownedcacheEntry.set(cacheEntry), but avoids a null check or two
@@ -2665,12 +2705,10 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader *keyIndex, unsign
         if (likely(alreadyExists))
         {
             if (ctx) ctx->noteStatistic(hitStatId[cacheType], 1);
-            (*hitMetric[cacheType])++;
         }
         else
         {
             if (ctx) ctx->noteStatistic(addStatId[cacheType], 1);
-            (*addMetric[cacheType])++;
         }
 
         //The common case is that this flag has already been set (by a previous add).
@@ -2705,7 +2743,9 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader *keyIndex, unsign
                 ownedCacheEntry->noteReady(node);
             }
             else
-                (*dupMetric[cacheType])++;
+            {
+                curCache.numDups++;
+            }
         }
         cycle_t endLoadCycles = get_cycles_now();
         cycle_t lockingCycles = startLoadCycles - startCycles;
@@ -2768,29 +2808,6 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader *keyIndex, unsign
 }
 
 RelaxedAtomic<unsigned> nodesLoaded;
-RelaxedAtomic<unsigned> blobCacheHits;
-RelaxedAtomic<unsigned> blobCacheAdds;
-RelaxedAtomic<unsigned> blobCacheDups;
-RelaxedAtomic<unsigned> leafCacheHits;
-RelaxedAtomic<unsigned> leafCacheAdds;
-RelaxedAtomic<unsigned> leafCacheDups;
-RelaxedAtomic<unsigned> nodeCacheHits;
-RelaxedAtomic<unsigned> nodeCacheAdds;
-RelaxedAtomic<unsigned> nodeCacheDups;
-
-void clearNodeStats()
-{
-    nodesLoaded.store(0);
-    blobCacheHits.store(0);
-    blobCacheAdds.store(0);
-    blobCacheDups.store(0);
-    leafCacheHits.store(0);
-    leafCacheAdds.store(0);
-    leafCacheDups.store(0);
-    nodeCacheHits.store(0);
-    nodeCacheAdds.store(0);
-    nodeCacheDups.store(0);
-}
 
 //------------------------------------------------------------------------------------------------
 

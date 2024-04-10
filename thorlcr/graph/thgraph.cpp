@@ -1315,8 +1315,6 @@ void CGraphBase::reset()
         }
         dependentSubGraphs.kill();
     }
-    if (!queryOwner())
-        clearNodeStats();
 }
 
 void CGraphBase::addChildGraph(CGraphStub *stub)
