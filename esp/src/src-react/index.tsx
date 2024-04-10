@@ -43,7 +43,7 @@ async function loadUI() {
     const authType = await authTypeResp?.text() ?? "None";
     const userStore = cookieKeyValStore();
     const userSession = await userStore.getAll();
-    if (authType.indexOf("None") < 0 && (userSession["ESPSessionState"] === "false" || userSession["ECLWatchUser"] === "false" || (!userSession["Status"] || userSession["Status"] === "Locked"))) {
+    if (authType.indexOf("None") < 0 && (userSession["ESPSessionState"] === "false" || userSession["ECLWatchUser"] === "false")) {
         if (window.location.hash.indexOf("login") < 0) {
             replaceUrl("/login");
         }

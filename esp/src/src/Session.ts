@@ -3,12 +3,12 @@ import * as xhr from "dojo/request/xhr";
 import * as topic from "dojo/topic";
 import { format as d3Format } from "@hpcc-js/common";
 import { SMCService } from "@hpcc-js/comms";
+import { scopedLogger } from "@hpcc-js/util";
 import { cookieKeyValStore, sessionKeyValStore, userKeyValStore } from "src/KeyValStore";
 import { singletonDebounce } from "../src-react/util/throttle";
 import { parseSearch } from "../src-react/util/history";
 import { ModernMode } from "./BuildInfo";
 import * as ESPUtil from "./ESPUtil";
-import { scopedLogger } from "@hpcc-js/util";
 
 const logger = scopedLogger("src/Session.ts");
 
@@ -41,6 +41,10 @@ const isV9DirectURL = () => window.location.hash && window.location.hash.indexOf
 export async function needsRedirectV5(): Promise<boolean> {
     if (isV9DirectURL()) {
         window.location.replace(`/esp/files/index.html${window.location.hash}`);
+        return true;
+    }
+    if (window.location.pathname.indexOf("/esp/files/stub.htm") < 0) {
+        window.location.replace(`/esp/files/stub.htm${window.location.search}${window.location.hash}`);
         return true;
     }
     if (isV5DirectURL()) {
@@ -141,21 +145,16 @@ export function initSession() {
         });
 
         idleWatcher.start();
-        if (!cookie("Status")) {
-            document.cookie = "Status=Unlocked;Path=/";
-        }
     } else if (cookie("ECLWatchUser")) {
         window.location.replace(dojoConfig.urlInfo.basePath + "/Login.html");
     }
 }
 
 export function lock() {
-    cookie("Status", "Locked");
     idleWatcher.stop();
 }
 
 export function unlock() {
-    cookie("Status", "Unlocked");
     idleWatcher.start();
 }
 

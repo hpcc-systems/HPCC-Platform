@@ -65,7 +65,7 @@ export const Frame: React.FunctionComponent<FrameProps> = () => {
                 fireIdle();
             } else if (publishedMessage.status === "Idle") {
                 window.localStorage.setItem("pageOnLock", window.location.hash.substring(1));
-                setUserSession({ ...userSession, Status: "Locked" });
+                setUserSession({ ...userSession });
                 window.location.reload();
             }
         });
