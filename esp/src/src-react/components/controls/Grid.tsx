@@ -165,7 +165,7 @@ export function useFluentStoreState({ page }: FluentStoreStateProps): FluentStor
     const [selection, setSelection] = React.useState([]);
     const [pageNum, setPageNum] = React.useState(page);
     const [pageSize, setPageSize] = React.useState<number>();
-    const [total, setTotal] = React.useState(0);
+    const [total, setTotal] = React.useState(-1);
     const refreshTable = useRefreshTable();
 
     return { selection, setSelection, pageNum, setPageNum, pageSize, setPageSize, total, setTotal, refreshTable };
@@ -462,7 +462,7 @@ export const FluentPagedFooter: React.FunctionComponent<FluentPagedFooterProps> 
     return <Stack horizontal className={paginationStyles.root}>
         <Stack.Item className={paginationStyles.pageControls}>
             <Pagination
-                selectedPageIndex={page} itemsPerPage={pageSize} totalItemCount={total}
+                selectedPageIndex={page} itemsPerPage={pageSize} totalItemCount={total >= 0 ? total : -1}
                 pageCount={Math.ceil(total / pageSize)} format="buttons" onPageChange={index => {
                     setPage(Math.round(index));
                     updatePage(Math.round(index + 1).toString());
@@ -471,7 +471,7 @@ export const FluentPagedFooter: React.FunctionComponent<FluentPagedFooterProps> 
                     const start = props.totalItemCount === 0 ? 0 : props.selectedPageIndex === 0 ? 1 : (props.selectedPageIndex * props.itemsPerPage) + 1;
                     const end = (props.itemsPerPage * (props.selectedPageIndex + 1)) > props.totalItemCount ? props.totalItemCount : props.itemsPerPage * (props.selectedPageIndex + 1);
                     return <div className={paginationStyles.paginationLabel}>
-                        {start} {props.strings.divider} {end} {nlsHPCC.Of.toLowerCase()} {props.totalItemCount} {nlsHPCC.Rows} {selectionCount ? `(${selectionCount} ${nlsHPCC.Selected})` : ""}
+                        {start} {props.strings.divider} {end >= 0 ? end : 1} {nlsHPCC.Of.toLowerCase()} {props.totalItemCount >= 0 ? props.totalItemCount : "???"} {nlsHPCC.Rows} {selectionCount ? `(${selectionCount} ${nlsHPCC.Selected})` : ""}
                     </div>;
                 }}
             />

@@ -14022,13 +14022,16 @@ extern WORKUNIT_API double getThorManagerRate()
 
 extern WORKUNIT_API double getThorWorkerRate()
 {
+    // Note: (bare-metal) the use of getAffinityCpus to get the number of CPUs used by workers
+    // doesn't really make sense since the caller is likely to be running on thor manager (so it will
+    // return cpu affinity for the manager, rather than for the worker).  This needs rethinking.
     double numCpus = isContainerized() ? getResourcedCpus("workerResources") : getAffinityCpus();
     return getCostCpuHour() * numCpus;
 }
 
-extern WORKUNIT_API double calculateThorCost(unsigned __int64 ms, unsigned numberOfMachines)
+extern WORKUNIT_API double calculateThorCost(unsigned __int64 ms, unsigned numberOfWorkers)
 {
-    return calcCost(getThorManagerRate(), ms) + calcCost(getThorWorkerRate(), ms) * numberOfMachines;
+    return calcCost(getThorManagerRate(), ms) + calcCost(getThorWorkerRate(), ms) * numberOfWorkers;
 }
 
 void aggregateStatistic(StatsAggregation & result, IConstWorkUnit * wu, const WuScopeFilter & filter, StatisticKind search)
