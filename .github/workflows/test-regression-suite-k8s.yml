@@ -42,6 +42,12 @@ jobs:
           os: ${{ inputs.os }}
           asset-name: ${{ inputs.asset-name }}
           platform-folder: ./HPCC-Platform
+      - name: Run ESP Regression Suite
+        with:
+          branch-name: ${{ github.base_ref }}
+          comments-url: ${{ github.event.pull_request.comments_url }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+        uses: ./HPCC-Platform/.github/actions/hpcc4j-esp-regression-suite
 
   succeeded:
     runs-on: ${{ inputs.os }}
