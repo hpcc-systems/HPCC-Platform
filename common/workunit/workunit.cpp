@@ -10411,8 +10411,11 @@ IPropertyTree * CLocalWUGraph::getXGMMLTreeRaw() const
     return p->getPropTree("xgmml");
 }
 
+bool workunitGraphCacheEnabled = true;
+
 IPropertyTree * CLocalWUGraph::getXGMMLTree(bool doMergeProgress, bool doFormatStats) const
 {
+    Owned<IPropertyTree> localGraph;
     {
         CriticalBlock block(owner.crit);
         if (!graph)
@@ -10421,18 +10424,22 @@ IPropertyTree * CLocalWUGraph::getXGMMLTree(bool doMergeProgress, bool doFormatS
             // daliadmin can retrospectively compress existing graphs, so need to check for all versions
             MemoryBuffer mb;
             if (p->getPropBin("xgmml/graphBin", mb))
-                graph.setown(createPTree(mb, ipt_lowmem));
+                localGraph.setown(createPTree(mb, ipt_lowmem));
             else
-                graph.setown(p->getBranch("xgmml/graph"));
-            if (!graph)
+                localGraph.setown(p->getBranch("xgmml/graph"));
+            if (!localGraph)
                 return NULL;
+            if (workunitGraphCacheEnabled)
+                graph.set(localGraph);
         }
+        else
+            localGraph.set(graph);
     }
     if (!doMergeProgress)
-        return graph.getLink();
+        return localGraph.getClear();
     else
     {
-        Owned<IPropertyTree> copy = createPTreeFromIPT(graph, ipt_lowmem);
+        Owned<IPropertyTree> copy = workunitGraphCacheEnabled ? createPTreeFromIPT(localGraph, ipt_lowmem) : LINK(localGraph) ;
         Owned<IConstWUGraphProgress> progress = owner.getGraphProgress(p->queryProp("@name"));
         if (progress)
         {

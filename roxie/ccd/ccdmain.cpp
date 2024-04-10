@@ -1147,6 +1147,8 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         else
             multicastTTL = ttlTmp;
 
+        workunitGraphCacheEnabled = topology->getPropBool("expert/@workunitGraphCacheEnabled", workunitGraphCacheEnabled);
+
         indexReadChunkSize = topology->getPropInt("@indexReadChunkSize", 60000);
         numAgentThreads = topology->getPropInt("@agentThreads", topology->getPropInt("@slaveThreads", 30));  // legacy name
         numServerThreads = topology->getPropInt("@serverThreads", 30);

@@ -559,7 +559,7 @@ bool CJobManager::execute(IConstWorkUnit *workunit, const char *wuid, const char
             wu->setDebugAgentListenerIP(sb); //tells debugger what IP to write commands to
             wu->setDebugAgentListenerPort(debugListener->getPort());
         }
-
+        workunitGraphCacheEnabled = getExpertOptBool("workunitGraphCacheEnabled", workunitGraphCacheEnabled);
         return doit(workunit, graphName, agentep);
     }
     catch (IException *e)

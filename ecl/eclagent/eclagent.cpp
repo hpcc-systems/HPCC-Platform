@@ -3593,6 +3593,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], Owned<ILocalWor
         printStart(argc, argv);
         DBGLOG("Build %s", hpccBuildInfo.buildTag);
     }
+    workunitGraphCacheEnabled = agentTopology->getPropBool("expert/@workunitGraphCacheEnabled", workunitGraphCacheEnabled);
 
     // Extract any params into stored - primarily for standalone case but handy for debugging eclagent sometimes too
     Owned<IPropertyTree> query;

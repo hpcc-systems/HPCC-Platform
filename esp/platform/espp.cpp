@@ -48,6 +48,8 @@
 #include "dafdesc.hpp"
 
 #include "jmetrics.hpp"
+#include "workunit.hpp"
+
 using namespace hpccMetrics;
 
 void CEspServer::sendSnmpMessage(const char* msg) { throwUnexpected(); }
@@ -488,6 +490,7 @@ int init_main(int argc, const char* argv[])
         Owned<IPropertyTree> procpt = NULL;
         if (envpt)
         {
+            workunitGraphCacheEnabled = envpt->getPropBool("expert/@workunitGraphCacheEnabled", workunitGraphCacheEnabled);
             envpt->addProp("@config", cfgfile);
             StringBuffer xpath;
             if (procname==NULL || strcmp(procname, ".")==0)
