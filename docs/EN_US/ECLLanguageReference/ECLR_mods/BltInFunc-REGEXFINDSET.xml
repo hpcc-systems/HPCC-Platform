@@ -55,9 +55,9 @@
   expression<indexterm>
       <primary>Perl regular expression</primary>
     </indexterm>. We use third-party libraries to support this, so for
-  non-unicode <emphasis>text</emphasis>, see boost docs at <ulink
-  url="http://www.boost.org/doc/libs/1_58_0/libs/regex/doc/html/index.html">http://www.boost.org/doc/libs/1_58_0/libs/regex/doc/html/index.html</ulink>.
-  Note that the version of Boost library may vary depending on your distro.
+  non-unicode <emphasis>text</emphasis>, see the Perl-compatible Regular
+  Expressions (PCRE2) documentation at <ulink
+  url="https://www.pcre.org/current/doc/html/pcre2pattern.html">https://www.pcre.org/current/doc/html/pcre2pattern.html</ulink>.
   For unicode <emphasis>text</emphasis>, see the ICU docs, the sections
   'Regular Expression Metacharacters' and 'Regular Expression Operators' at
   <emphasis
@@ -66,6 +66,9 @@
   <emphasis
   role="underline">http://userguide.icu-project.org/strings/unicodeset</emphasis>.
   We use version 2.6 which should support all listed features.</para>
+
+  <para>REGEXFINDSET ignores capture groups. REGEXFINDSET repeatedly extracts
+  the text matching the entire <emphasis>regex</emphasis> pattern.</para>
 
   <para>Example:</para>
 
