@@ -567,6 +567,13 @@ const char * cppSystemText[]  = {
     "   unicode regexNewUStrReplaceX(const unicode _search, const unicode _replace) : method,pure,entrypoint='replace',time('REGEXREPLACE');"
     "   set of unicode regexUStrMatchSet(const unicode _search) : method,pure,entrypoint='getMatchSet',time('REGEXFINDSET');"
 
+    "   regexNewSetU8StrPattern(const utf8 _pattern, boolean isCaseSensitive) : omethod,entrypoint='setPattern',time('CompileUTF8Regex');"
+    "   regexNewU8StrFind(boolean _compiled, const utf8 _search, boolean _cloneSearch) : omethod,entrypoint='find',time('REGEXFIND');"
+    "   boolean regexNewU8StrFound() : method,pure,entrypoint='found';"
+    "   utf8 regexNewU8StrFoundX(unsigned4 idx) : method,pure,entrypoint='getMatchX';"
+    "   utf8 regexNewU8StrReplaceX(const utf8 _search, const utf8 _replace) : method,pure,entrypoint='replace',time('REGEXREPLACE');"
+    "   set of utf8 regexU8StrMatchSet(const utf8 _search) : method,pure,entrypoint='getMatchSet',time('REGEXFINDSET');"
+
     //clibrary functions that are called from the code generation
     "   free(noconst data1 src) : eclrtl,library='eclrtl',entrypoint='rtlFree';",
     "   integer4 memcmp(const data1 target, const data1 src, unsigned4 len) : sys,pure,entrypoint='memcmp';",

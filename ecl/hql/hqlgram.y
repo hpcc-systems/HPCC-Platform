@@ -6440,26 +6440,47 @@ primexpr1
                         }
     | REGEXFIND '(' expression ',' expression regexOpt ')'
                         {
-                            parser->normalizeExpression($3, type_stringorunicode, false);
-                            parser->checkRegex($3);
-                            if(isUnicodeType($3.queryExprType()))
+                            if(isUTF8Type($3.queryExprType()))
+                            {
+                                parser->normalizeExpression($3, type_utf8, false);
+                                parser->checkRegex($3);
+                                parser->normalizeExpression($5, type_utf8, false);
+                            }
+                            else if(isUnicodeType($3.queryExprType()))
+                            {
+                                parser->normalizeExpression($3, type_unicode, false);
+                                parser->checkRegex($3);
                                 parser->normalizeExpression($5, type_unicode, false);
+                            }
                             else
+                            {
+                                parser->normalizeExpression($3, type_string, false);
+                                parser->checkRegex($3);
                                 parser->normalizeExpression($5, type_string, false);
+                            }
                             $$.setExpr(createValue(no_regex_find, makeBoolType(), $3.getExpr(), $5.getExpr(), $6.getExpr()));
                         }
     | REGEXFIND '(' expression ',' expression ',' expression regexOpt ')'
                         {
-                            parser->normalizeExpression($3, type_stringorunicode, false);
-                            parser->checkRegex($3);
                             Owned<ITypeInfo> subType;
-                            if(isUnicodeType($3.queryExprType()))
+                            if(isUTF8Type($3.queryExprType()))
                             {
+                                parser->normalizeExpression($3, type_utf8, false);
+                                parser->checkRegex($3);
+                                parser->normalizeExpression($5, type_utf8, false);
+                                subType.setown(makeUtf8Type(UNKNOWN_LENGTH, 0));
+                            }
+                            else if(isUnicodeType($3.queryExprType()))
+                            {
+                                parser->normalizeExpression($3, type_unicode, false);
+                                parser->checkRegex($3);
                                 parser->normalizeExpression($5, type_unicode, false);
                                 subType.setown(makeUnicodeType(UNKNOWN_LENGTH, 0));
                             }
                             else
                             {
+                                parser->normalizeExpression($3, type_string, false);
+                                parser->checkRegex($3);
                                 parser->normalizeExpression($5, type_string, false);
                                 subType.setown(makeStringType(UNKNOWN_LENGTH));
                             }
@@ -6468,16 +6489,25 @@ primexpr1
                         }
     | REGEXFINDSET '(' expression ',' expression regexOpt ')'
                         {
-                            parser->normalizeExpression($3, type_stringorunicode, false);
-                            parser->checkRegex($3);
                             Owned<ITypeInfo> retType;
-                            if(isUnicodeType($3.queryExprType()))
+                            if(isUTF8Type($3.queryExprType()))
                             {
+                                parser->normalizeExpression($3, type_utf8, false);
+                                parser->checkRegex($3);
+                                parser->normalizeExpression($5, type_utf8, false);
+                                retType.setown(makeUtf8Type(UNKNOWN_LENGTH, $3.queryExprType()->queryLocale()));
+                            }
+                            else if(isUnicodeType($3.queryExprType()))
+                            {
+                                parser->normalizeExpression($3, type_unicode, false);
+                                parser->checkRegex($3);
                                 parser->normalizeExpression($5, type_unicode, false);
                                 retType.setown(makeUnicodeType(UNKNOWN_LENGTH, $3.queryExprType()->queryLocale()));
                             }
                             else
                             {
+                                parser->normalizeExpression($3, type_string, false);
+                                parser->checkRegex($3);
                                 parser->normalizeExpression($5, type_string, false);
                                 retType.setown(makeStringType(UNKNOWN_LENGTH));
                             }
@@ -6486,16 +6516,27 @@ primexpr1
                         }
     | REGEXREPLACE '(' expression ',' expression ',' expression regexOpt ')'
                         {
-                            parser->normalizeExpression($3, type_stringorunicode, false);
                             Owned<ITypeInfo> retType;
-                            if(isUnicodeType($3.queryExprType()))
+                            if(isUTF8Type($3.queryExprType()))
                             {
+                                parser->normalizeExpression($3, type_utf8, false);
+                                parser->checkRegex($3);
+                                parser->normalizeExpression($5, type_utf8, false);
+                                parser->normalizeExpression($7, type_utf8, false);
+                                retType.setown(makeUtf8Type(UNKNOWN_LENGTH, 0));
+                            }
+                            else if(isUnicodeType($3.queryExprType()))
+                            {
+                                parser->normalizeExpression($3, type_unicode, false);
+                                parser->checkRegex($3);
                                 parser->normalizeExpression($5, type_unicode, false);
                                 parser->normalizeExpression($7, type_unicode, false);
                                 retType.setown(makeUnicodeType(UNKNOWN_LENGTH, 0));
                             }
                             else
                             {
+                                parser->normalizeExpression($3, type_string, false);
+                                parser->checkRegex($3);
                                 parser->normalizeExpression($5, type_string, false);
                                 parser->normalizeExpression($7, type_string, false);
                                 retType.setown(makeStringType(UNKNOWN_LENGTH));

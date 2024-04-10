@@ -2135,6 +2135,11 @@ bool isPatternType(ITypeInfo * type)
     }
 }
 
+bool isUTF8Type(ITypeInfo * type)
+{
+    return (type->getTypeCode() == type_utf8);
+}
+
 bool isUnicodeType(ITypeInfo * type)
 {
     switch(type->getTypeCode())

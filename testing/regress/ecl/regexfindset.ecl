@@ -28,6 +28,12 @@ REGEXFINDSET(NOFOLD(U'(([[:alpha:]]|(-))+)|([[:digit:]]+([.][[:digit:]]+)?)'), u
 
 REGEXFINDSET(U'(([[:alpha:]]|(-))+)|([[:digit:]]+([.][[:digit:]]+)?)', ustr);
 
+/* UTF-8 strings */
+u8str := U8'add-subtract 123.90, or 123';
+REGEXFINDSET(NOFOLD(U8'(([[:alpha:]]|(-))+)|([[:digit:]]+([.][[:digit:]]+)?)'), u8str);
+
+REGEXFINDSET(U8'(([[:alpha:]]|(-))+)|([[:digit:]]+([.][[:digit:]]+)?)', u8str);
+
 /* in Project test */
 RecLayout := RECORD
     STRING50 rawstr;
@@ -78,3 +84,40 @@ urecTable2 := NOFOLD(dataset([
     ], URecLayout));
 
 PROJECT(urecTable2, uparseThem(LEFT));
+
+U8RecLayout := RECORD
+    UTF8 rawstr;
+END;
+U8ParsedLayout := RECORD
+    SET OF UTF8 parsed;
+END;
+
+U8ParsedLayout u8parseThem(U8RecLayout L) := TRANSFORM
+    SELF.parsed := REGEXFINDSET(U8'(([[:alpha:]]|(-))+)|([[:digit:]]+([.][[:digit:]]+)?)', l.rawstr);
+END;
+
+u8recTable := dataset([
+    {U8'subtract 35 from 50'},
+    {U8'divide 100 by 25 and add 5'}
+    ], U8RecLayout);
+
+PROJECT(u8recTable, u8parseThem(LEFT));
+
+u8recTable2 := NOFOLD(dataset([
+    {U8'subtract 35 from 50'},
+    {U8'divide 100 by 25 and add 5'}
+    ], U8RecLayout));
+
+PROJECT(u8recTable2, u8parseThem(LEFT));
+
+/* Unicode multi-byte strings */
+multiUstr := U'Tschüss, bis zum nächsten Mal';
+REGEXFINDSET(NOFOLD(U'(\\p{L}+)|(\\p{N}+([.]\\p{N}+)?)'), multiUstr);
+
+REGEXFINDSET(U'(\\p{L}+)|(\\p{N}+([.]\\p{N}+)?)', multiUstr);
+
+/* UTF-8 multi-byte strings */
+multiU8str := U8'Tschüss, bis zum nächsten Mal';
+REGEXFINDSET(NOFOLD(U8'(\\p{L}+)|(\\p{N}+([.]\\p{N}+)?)'), multiU8str);
+
+REGEXFINDSET(U8'(\\p{L}+)|(\\p{N}+([.]\\p{N}+)?)', multiU8str);

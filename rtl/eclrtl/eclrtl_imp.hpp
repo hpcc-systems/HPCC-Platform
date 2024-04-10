@@ -121,9 +121,18 @@ public:
     inline ~rtlCompiledStrRegex()           { rtlDestroyCompiledStrRegExpr(regex); }
 
     inline ICompiledStrRegExpr * operator -> () const { return regex; }
+
     inline void setPattern(const char * pattern, bool isCaseSensitive)
     {
         ICompiledStrRegExpr * compiled = rtlCreateCompiledStrRegExpr(pattern, isCaseSensitive);
+        if (regex)
+            rtlDestroyCompiledStrRegExpr(regex);
+        regex = compiled;
+    }
+
+    inline void setPattern(unsigned int patternLen, const char * pattern, bool isCaseSensitive)
+    {
+        ICompiledStrRegExpr * compiled = rtlCreateCompiledStrRegExpr(patternLen, pattern, isCaseSensitive);
         if (regex)
             rtlDestroyCompiledStrRegExpr(regex);
         regex = compiled;
@@ -163,6 +172,7 @@ public:
     inline ~rtlCompiledUStrRegex()          { rtlDestroyCompiledUStrRegExpr(regex); }
 
     inline ICompiledUStrRegExpr * operator -> () const { return regex; }
+
     inline void setPattern(const UChar * pattern, bool isCaseSensitive)
     {
         ICompiledUStrRegExpr * compiled = rtlCreateCompiledUStrRegExpr(pattern, isCaseSensitive);
@@ -173,6 +183,38 @@ public:
 
 private:
     ICompiledUStrRegExpr * regex;
+};
+
+class ECLRTL_API rtlCompiledU8StrRegex
+{
+public:
+    inline rtlCompiledU8StrRegex()           { regex = 0; }
+    inline rtlCompiledU8StrRegex(const char * pattern, bool isCaseSensitive)
+    {
+        regex = rtlCreateCompiledU8StrRegExpr(pattern, isCaseSensitive);
+    }
+    inline ~rtlCompiledU8StrRegex()          { rtlDestroyCompiledU8StrRegExpr(regex); }
+
+    inline ICompiledStrRegExpr * operator -> () const { return regex; }
+
+    inline void setPattern(const char * pattern, bool isCaseSensitive)
+    {
+        ICompiledStrRegExpr * compiled = rtlCreateCompiledU8StrRegExpr(pattern, isCaseSensitive);
+        if (regex)
+            rtlDestroyCompiledU8StrRegExpr(regex);
+        regex = compiled;
+    }
+    
+    inline void setPattern(unsigned int patternLen, const char * pattern, bool isCaseSensitive)
+    {
+        ICompiledStrRegExpr * compiled = rtlCreateCompiledU8StrRegExpr(patternLen, pattern, isCaseSensitive);
+        if (regex)
+            rtlDestroyCompiledU8StrRegExpr(regex);
+        regex = compiled;
+    }
+
+private:
+    ICompiledStrRegExpr * regex;
 };
 
 class ECLRTL_API rtlUStrRegexFindInstance
@@ -192,6 +234,25 @@ public:
 
 private:
     IUStrRegExprFindInstance * instance;
+};
+
+class ECLRTL_API rtlU8StrRegexFindInstance
+{
+public:
+    inline rtlU8StrRegexFindInstance()           { instance = 0; }
+    inline ~rtlU8StrRegexFindInstance()          { rtlDestroyU8StrRegExprFindInstance(instance); }
+    inline IStrRegExprFindInstance * operator -> () const { return instance; }
+    
+    void find(const rtlCompiledU8StrRegex & regex, size32_t len, const char * str, bool needToKeepSearchString)
+    {
+        IStrRegExprFindInstance * search = regex->find(str, 0, len, needToKeepSearchString);
+        if (instance)
+            rtlDestroyU8StrRegExprFindInstance(instance);
+        instance = search;
+    }
+
+private:
+    IStrRegExprFindInstance * instance;
 };
 
 class ECLRTL_API RtlCInterface
