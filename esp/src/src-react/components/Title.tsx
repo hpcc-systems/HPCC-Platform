@@ -113,10 +113,10 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
                 { key: "divider_2", itemType: ContextualMenuItemType.Divider },
                 {
                     key: "lock", text: nlsHPCC.Lock, disabled: !currentUser?.username, onClick: () => {
-                        fetch("esp/lock", {
+                        fetch("/esp/lock", {
                             method: "post"
                         }).then(() => {
-                            setUserSession({ ...userSession, Status: "Locked" });
+                            setUserSession({ ...userSession });
                             replaceUrl("/login", null, true);
                         });
                     }
@@ -209,7 +209,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
         if (!currentUser.username) return;
         if (!cookie("PasswordExpiredCheck")) {
             // cookie expires option expects whole number of days, use a decimal < 1 for hours
-            cookie("PasswordExpiredCheck", "true", { expires: 0.5 });
+            cookie("PasswordExpiredCheck", "true", { expires: 0.5, path: "/" });
             if (currentUser.passwordIsExpired) {
                 alert(nlsHPCC.PasswordExpired);
                 setShowMyAccount(true);

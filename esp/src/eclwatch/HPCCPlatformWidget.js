@@ -253,7 +253,7 @@ define([
                     context.checkIfAdmin(context.userName);
                     context.refreshUserName();
                     if (!cookie("PasswordExpiredCheck")) {
-                        cookie("PasswordExpiredCheck", "true", { expires: 1 });
+                        cookie("PasswordExpiredCheck", "true", { expires: 1, path: "/" });
                         if (lang.exists("MyAccountResponse.passwordDaysRemaining", response)) {
                             switch (response.MyAccountResponse.passwordDaysRemaining) {
                                 case null:
