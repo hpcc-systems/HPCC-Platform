@@ -1897,10 +1897,6 @@ ParquetEmbedFunctionContext::ParquetEmbedFunctionContext(const IContextLogger &_
                     compressionOption = arrow::Compression::BROTLI;
                 else if (strieq(val, "lz4"))
                     compressionOption = arrow::Compression::LZ4;
-                else if (strieq(val, "lz4frame"))
-                    compressionOption = arrow::Compression::LZ4_FRAME;
-                else if (strieq(val, "lz4hadoop"))
-                    compressionOption = arrow::Compression::LZ4_HADOOP;
                 else if (strieq(val, "zstd"))
                     compressionOption = arrow::Compression::ZSTD;
                 else if (strieq(val, "uncompressed"))
