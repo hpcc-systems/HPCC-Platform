@@ -466,7 +466,7 @@ class CAllocatorCache : public CSimpleInterfaceOf<IRowAllocatorMetaActIdCache>
 {
     OwningSimpleHashTableOf<CAllocatorCacheItem, AllocatorKey> cache;
     IArrayOf<IEngineRowAllocator> allAllocators;
-    mutable SpinLock allAllocatorsLock;
+    mutable CriticalSection allAllocatorsLock;
     Owned<roxiemem::IRowManager> rowManager;
     IRowAllocatorMetaActIdCacheCallback *callback;
 
@@ -482,7 +482,7 @@ public:
 // IRowAllocatorMetaActIdCache
     virtual IEngineRowAllocator *ensure(IOutputMetaData * meta, unsigned activityId, roxiemem::RoxieHeapFlags flags)
     {
-        SpinBlock b(allAllocatorsLock);
+        CLeavableCriticalBlock block(allAllocatorsLock);
         for (;;)
         {
             CAllocatorCacheItem *container = _lookup(meta, activityId, flags);
@@ -494,7 +494,7 @@ public:
                 // If blocked the allocator must not be commoned up!  (The underlying heap will be within roxiemem.)
                 // This is very unusual, but can happen if a library is used more than once within the same query
                 // since you will have multiple activity instances with the same activityId.
-                SpinUnblock b(allAllocatorsLock);
+                block.leave();
                 return callback->createAllocator(this, meta, activityId, container->queryAllocatorId(), flags);
             }
             // NB: a RHFunique allocator, will cause 1st to be added to 'allAllocators'
@@ -505,9 +505,10 @@ public:
             unsigned allocatorId = allAllocators.ordinality();
             IEngineRowAllocator *ret;
             {
-                SpinUnblock b(allAllocatorsLock);
+                block.leave();
                 ret = callback->createAllocator(this, meta, activityId, allocatorId, flags);
                 assertex(ret);
+                block.enter();
             }
             if (allocatorId == allAllocators.ordinality())
             {
@@ -533,7 +534,7 @@ public:
     virtual unsigned getActivityId(unsigned cacheId) const
     {
         unsigned allocatorIndex = (cacheId & ALLOCATORID_MASK);
-        SpinBlock b(allAllocatorsLock);
+        CriticalBlock block(allAllocatorsLock);
         if (allAllocators.isItem(allocatorIndex))
             return allAllocators.item(allocatorIndex).queryActivityId();
         else
@@ -545,7 +546,7 @@ public:
     virtual StringBuffer &getActivityDescriptor(unsigned cacheId, StringBuffer &out) const
     {
         unsigned allocatorIndex = (cacheId & ALLOCATORID_MASK);
-        SpinBlock b(allAllocatorsLock);
+        CriticalBlock block(allAllocatorsLock);
         if (allAllocators.isItem(allocatorIndex))
             return allAllocators.item(allocatorIndex).getId(out);
         else
@@ -559,7 +560,7 @@ public:
         IEngineRowAllocator *allocator;
         unsigned allocatorIndex = (cacheId & ALLOCATORID_MASK);
         {
-            SpinBlock b(allAllocatorsLock); // just protect the access to the array - don't keep locked for the call of destruct or may deadlock
+            CriticalBlock block(allAllocatorsLock); // just protect the access to the array - don't keep locked for the call of destruct or may deadlock
             if (allAllocators.isItem(allocatorIndex))
                 allocator = &allAllocators.item(allocatorIndex);
             else
@@ -579,7 +580,7 @@ public:
         IEngineRowAllocator *allocator;
         unsigned allocatorIndex = (cacheId & ALLOCATORID_MASK);
         {
-            SpinBlock b(allAllocatorsLock); // just protect the access to the array - don't keep locked for the call of destruct or may deadlock
+            CriticalBlock block(allAllocatorsLock); // just protect the access to the array - don't keep locked for the call of destruct or may deadlock
             if (allAllocators.isItem(allocatorIndex))
                 allocator = &allAllocators.item(allocatorIndex);
             else
