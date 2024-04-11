@@ -70,6 +70,8 @@ option(INSTALL_VCPKG_CATALOG "Install vcpkg-catalog.txt" ON)
 option(PORTALURL "Set url to hpccsystems portal download page")
 option(PROFILING "Set to true if planning to profile so stacks are informative" OFF)
 
+set(CUSTOM_LABEL "" CACHE STRING "Appends a custom label to the final package name")
+
 if ( NOT PORTALURL )
   set( PORTALURL "http://hpccsystems.com/download" )
 endif()
