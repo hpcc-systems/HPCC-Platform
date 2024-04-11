@@ -1408,7 +1408,10 @@ Pass in dict with root, me and dali if container in dali pod
           "--service={{ .me.name }}",
 {{ include "hpcc.daliArg" (dict "root" .root "component" "Sasha" "optional" false "overrideDaliHost" $overrideDaliHost "overrideDaliPort" $overrideDaliPort) | indent 10 }}
         ]
+{{- $omitResources := hasKey .root.Values.global "omitResources" | ternary .root.Values.global.omitResources .root.Values.global.privileged }}
+{{- if not $omitResources }}
 {{- include "hpcc.addResources" (dict "me" .me.resources) | indent 2 }}
+{{- end }}
 {{- include "hpcc.addSecurityContext" . | indent 2 }}
   env:
 {{ include "hpcc.mergeEnvironments" $env | indent 2 -}}
@@ -2557,7 +2560,7 @@ Pass in value
  {{- else -}}
   {{- $_ := fail (printf "Invalid size suffix on memory resource specification: %s" .) -}}
  {{- end -}}
- {{- $_ := set $ctx "number" (substr 0 (sub (len .) 1) .) -}}
+ {{- $_ := set $ctx "number" (substr 0 (int (sub (len .) 1)) .) -}}
 {{- end -}}
 {{- printf "%d" (mul $ctx.number $ctx.scale) -}}
 {{- end -}}

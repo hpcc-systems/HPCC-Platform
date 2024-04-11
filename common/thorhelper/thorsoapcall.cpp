@@ -756,7 +756,7 @@ interface IWSCAsyncFor: public IInterface
     virtual void processException(const Url &url, ConstPointerArray &inputRows, IException *e) = 0;
     virtual void checkTimeLimitExceeded(unsigned * _remainingMS) = 0;
 
-    virtual void createHttpRequest(Url &url, StringBuffer &request) = 0;
+    virtual void createHttpRequest(StringBuffer &request, const Url &url, const IProperties * traceHeaders) = 0;
     virtual int readHttpResponse(StringBuffer &response, ISocket *socket, bool &keepAlive, StringBuffer &contentType) = 0;
     virtual void processResponse(Url &url, StringBuffer &response, ColumnProvider * meta, const char *contentType) = 0;
 
@@ -1958,7 +1958,7 @@ private:
         }
     }
 
-    void createHttpRequest(Url &url, StringBuffer &request)
+    void createHttpRequest(StringBuffer &request, const Url &url, const IProperties * traceHeaders)
     {
         // Create the HTTP POST request
         if (master->wscType == STsoap)
@@ -1992,7 +1992,6 @@ private:
         if (!httpHeaderBlockContainsHeader(httpheaders, ACCEPT_ENCODING))
             request.appendf("%s: gzip, deflate\r\n", ACCEPT_ENCODING);
 #endif
-        Owned<IProperties> traceHeaders = ::getClientHeaders(master->activitySpanScope);
         if (traceHeaders)
         {
             Owned<IPropertyIterator> iter = traceHeaders->getIterator();
@@ -2454,7 +2453,6 @@ public:
         unsigned retryInterval = 0;
 
         Url &url = master->urlArray.item(idx);
-        createHttpRequest(url, request);
         unsigned startidx = idx;
         while (!master->aborted)
         {
@@ -2563,6 +2561,10 @@ public:
                 checkRoxieAbortMonitor(master->roxieAbortMonitor);
                 OwnedSpanScope socketOperationSpan = master->activitySpanScope->createClientSpan("Socket Write");
                 setSpanURLAttributes(socketOperationSpan, url);
+
+                Owned<IProperties> traceHeaders = ::getClientHeaders(socketOperationSpan);
+                createHttpRequest(request, url, traceHeaders);
+
                 socket->write(request.str(), request.length());
 
                 if (soapTraceLevel > 4)

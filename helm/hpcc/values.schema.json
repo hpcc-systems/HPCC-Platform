@@ -269,6 +269,10 @@
     "global": {
       "type": "object",
       "properties": {
+        "omitResources": {
+          "description": "if set, no resource definitions are generated from the helm charts",
+          "type": "boolean"
+        },
         "privileged": {
           "type": "boolean"
         },
