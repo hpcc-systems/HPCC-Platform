@@ -109,7 +109,10 @@ data:
           - name: {{ $eclAgentJobName }}
 {{- include "hpcc.addSecurityContext" . | indent 12 }}
 {{ include "hpcc.addImageAttrs" . | indent 12 }}
+{{- $omitResources := hasKey .root.Values.global "omitResources" | ternary .root.Values.global.omitResources .root.Values.global.privileged }}
+{{- if not $omitResources }}
 {{- include "hpcc.addResources" (dict "me" .eclAgentResources) | indent 12 }}
+{{- end }}
 {{- $agentCmd := printf "%s %s %s _HPCC_ARGS_" $eclAgentType (include "hpcc.configArg" .me) (include "hpcc.daliArg" (dict "root" .root "component" "Thor" "optional" false)) }}
 {{ include "hpcc.addCommandAndLifecycle" (. | merge (dict "command" $agentCmd)) | indent 12 }}
             env:
@@ -176,7 +179,10 @@ data:
           - name: {{ $thorManagerJobName }}
 {{- include "hpcc.addSecurityContext" . | indent 12 }}
 {{ include "hpcc.addImageAttrs" . | indent 12 }}
+{{- $omitResources := hasKey .root.Values.global "omitResources" | ternary .root.Values.global.omitResources .root.Values.global.privileged }}
+{{- if not $omitResources }}
 {{- include "hpcc.addResources" (dict "me" $thorScope.managerResources) | indent 12 }}
+{{- end }}
 {{- $thorManagerCmd := printf "thormaster_lcr %s %s _HPCC_ARGS_" (include "hpcc.configArg" .me) (include "hpcc.daliArg" (dict "root" .root "component" "Thor" "optional" false)) }}
 {{ include "hpcc.addCommandAndLifecycle" (. | merge (dict "command" $thorManagerCmd)) | indent 12 }}
             env:
@@ -245,7 +251,10 @@ data:
           - name: {{ $thorWorkerJobName }}-{{ $containerNum }}
 {{- include "hpcc.addSecurityContext" $configCtx | indent 12 }}
 {{ include "hpcc.addImageAttrs" $configCtx | indent 12 }}
+{{- $omitResources := hasKey $configCtx.root.Values.global "omitResources" | ternary $configCtx.root.Values.global.omitResources $configCtx.root.Values.global.privileged }}
+{{- if not $omitResources }}
 {{- include "hpcc.addResources" (dict "me" $thorScope.workerResources) | indent 12 }}
+{{- end }}
 {{- $thorWorkerCmd := printf "thorslave_lcr %s %s _HPCC_ARGS_ --slaveport=%d" (include "hpcc.configArg" $configCtx.me) (include "hpcc.daliArg" (dict "root" $configCtx.root "component" "Thor" "optional" false)) $slavePort }}
 {{ include "hpcc.addCommandAndLifecycle" ($configCtx | merge (dict "command" $thorWorkerCmd)) | indent 12 }}
             env:
@@ -381,10 +390,13 @@ spec:
         - name: "SENTINEL"
           value: "/tmp/{{ $commonCtx.eclAgentName }}.sentinel"
 {{- include "hpcc.addSecurityContext" $commonCtx | indent 8 }}
-{{- if $commonCtx.eclAgentUseChildProcesses }}
-{{- include "hpcc.addResources" (dict "me" .eclAgentResources) | indent 8 }}
-{{- else if not $.Values.global.privileged }}
-{{- include "hpcc.addStubResources" ($commonCtx | merge (dict "instances" .maxJobs)) | indent 8 }}
+{{- $omitResources := hasKey $.Values.global "omitResources" | ternary $.Values.global.omitResources $.Values.global.privileged }}
+{{- if not $omitResources }}
+{{-  if $commonCtx.eclAgentUseChildProcesses }}
+{{-   include "hpcc.addResources" (dict "me" .eclAgentResources) | indent 8 }}
+{{-  else }}
+{{-   include "hpcc.addStubResources" ($commonCtx | merge (dict "instances" .maxJobs)) | indent 8 }}
+{{-  end }}
 {{- end }}
 {{ include "hpcc.addImageAttrs" $commonCtx | indent 8 }}
         volumeMounts:
@@ -444,7 +456,8 @@ spec:
         - name: "SENTINEL"
           value: "/tmp/{{ $commonCtx.thorAgentName }}.sentinel"
 {{- include "hpcc.addSecurityContext" $commonCtx | indent 8 }}
-{{- if not $.Values.global.privileged }}
+{{- $omitResources := hasKey $.Values.global "omitResources" | ternary $.Values.global.omitResources $.Values.global.privileged }}
+{{- if not $omitResources }}
 {{- include "hpcc.addStubResources" ($commonCtx | merge (dict "instances" .maxGraphs)) | indent 8 }}
 {{- end }}
 {{ include "hpcc.addImageAttrs" $commonCtx | indent 8 }}

@@ -40,7 +40,6 @@ private:
     UnsignedArray graphStarts;
     double thorManagerRate = 0;
     double thorWorkerRate = 0;
-    unsigned numberOfMachines = 0;
     cost_type costLimit = 0;
     cost_type workunitCost = 0;
     StatisticsAggregator statsAggregator;
@@ -91,7 +90,7 @@ private:
         updateWorkunitStat(wu, SSTsubgraph, graphScope, StTimeElapsed, timer, milliToNano(duration));
         if (costLimit || finished)
         {
-            const cost_type sgCost = money2cost_type(calcCost(thorManagerRate, duration) + calcCost(thorWorkerRate, duration) * numberOfMachines);
+            const cost_type sgCost = money2cost_type(calcCost(thorManagerRate, duration) + calcCost(thorWorkerRate, duration) * queryNodeClusterWidth());
             if (finished)
             {
                 if (sgCost)
@@ -270,7 +269,6 @@ public:
             costLimit = money2cost_type(hardLimit);
         else
             costLimit = money2cost_type(tmpcostLimit);
-        numberOfMachines = queryNodeClusterWidth() / globals->getPropInt("@numWorkersPerPod", 1); // Number of Pods or physical machines
         activeGraphs.append(*LINK(graph));
         unsigned startTime = msTick();
         graphStarts.append(startTime);

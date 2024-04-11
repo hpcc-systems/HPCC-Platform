@@ -166,6 +166,15 @@ public:
     {
         return static_cast<unsigned>(cycle_to_millisec(elapsedCycles()));
     }
+    inline unsigned remainingMs(unsigned timeoutMs) const
+    {
+        if (INFINITE == timeoutMs)
+            return INFINITE;
+        unsigned eMs = elapsedMs();
+        if (eMs >= timeoutMs)
+            return 0;
+        return timeoutMs - eMs;
+    }
 };
 inline cycle_t queryOneSecCycles() { return oneSecInCycles; }
 

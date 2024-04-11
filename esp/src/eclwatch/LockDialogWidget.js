@@ -58,7 +58,6 @@ define([
         show: function (event) {
             var context = this;
             if (!dojoConfig.username) {
-                cookie("Status", "Unlocked");
                 context.storage.setItem("Status", "Unlocked");
                 topic.publish("hpcc/session_management_status", {
                     status: "Unlocked"
@@ -96,7 +95,6 @@ define([
             var context = this;
 
             if (this.unlockForm.validate()) {
-                cookie("Status", "login_attempt");
                 WsAccount.Unlock({
                     request: {
                         username: this.unlockUserName.get("value"),
@@ -113,7 +111,6 @@ define([
                         topic.publish("hpcc/session_management_status", {
                             status: "Unlocked"
                         });
-                        cookie("Status", "Unlocked");
                         context.storage.setItem("Status", "Unlocked");
                         if (context.idleFired) {
                             dojo.publish("hpcc/brToaster", {
@@ -127,7 +124,6 @@ define([
                         }
                     } else {
                         context.unlockStatus.innerHTML = response.UnlockResponse.Message;
-                        cookie("Status", "Locked");
                     }
                 });
             }
@@ -150,9 +146,8 @@ define([
                 topic.publish("hpcc/session_management_status", {
                     status: "Locked"
                 });
-                cookie("Status", "Locked");
                 context.storage.setItem("Status", "Locked");
-            } else if (cookie("Status") === "Unlocked") {
+            } else {
                 xhr("/esp/lock", {
                     method: "post"
                 }).then(function (response) {
@@ -163,7 +158,6 @@ define([
                         topic.publish("hpcc/session_management_status", {
                             status: "Locked"
                         });
-                        cookie("Status", "Locked");
                         context.storage.setItem("Status", "Locked");
                     }
                 });

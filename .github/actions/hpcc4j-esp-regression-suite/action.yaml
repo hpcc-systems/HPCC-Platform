@@ -1,0 +1,86 @@
+name: 'HPCC4j ESP Regression Suite'
+description: 'Runs the HPCC4j ESP Regression Suite'
+inputs:
+  repository:
+    description: 'Repository'
+    required: false
+    default: 'hpcc-systems/hpcc4j'
+  branch-name:
+    description: 'Branch Name'
+    required: true
+  comments-url:
+    description: 'Comments URL'
+    required: true
+  github-token:
+    description: 'GitHub Token'
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout HPCC4j
+      uses: actions/checkout@v3
+      with:
+        repository: ${{ inputs.repository }}
+        ref: ${{ inputs.branch-name }}
+        path: ./HPCC4j
+
+    - name: Run HPCC4j ESP Regression Suite
+      shell: bash
+      run: |
+        cd ./HPCC4j
+        mvn -B --activate-profiles jenkins-on-demand -Dmaven.gpg.skip=true \
+              -Dmaven.javadoc.skip=true -Dmaven.test.failure.ignore=true -Dhpccconn=https://eclwatch.default:8010 \
+              -Dwssqlconn=https://sql2ecl.default:8510 -DHPCC30117=open -pl '!dfsclient' install
+
+    - name: Process errors
+      env:
+        comments_url: ${{ inputs.comments-url }}
+        github_token: ${{ inputs.github-token }}
+        branch_name: ${{ inputs.branch-name }}
+        repository: ${{ inputs.repository }}
+      shell: python
+      run: |
+        import os
+        import csv
+        import textwrap
+        import json
+
+        branch_name = os.getenv('branch_name')
+        comments_url = os.getenv('comments_url')
+        github_token  = os.getenv('github_token')
+        repository = os.getenv('repository')
+
+        file_path = "./HPCC4j/wsclient/FailedTests.csv"
+        if os.path.exists(file_path):
+          with open(file_path, 'r') as file:
+            testFailureMessages = ""
+            csv_reader = csv.reader(file)
+            for row in csv_reader:
+              # Each row in the CSV file is a failed test with: TestClass,Test,Error
+              testFailureMessages += textwrap.dedent(f"""\
+              ## {row[0]}.{row[1]} Failed
+              **Error:** ```{row[2]}```
+              **Test Command:** ```mvn -B -Dhpccconn=https://eclwatch.default:8010 -Dtest={row[0]}#{row[1]} test```
+              """)
+
+            if testFailureMessages:
+              message = textwrap.dedent(f"""\
+              # ESP Regression Suite Test Failures:
+              The following tests failed; checkout a copy of the HPCC4j project with the following command and run the individual test commands below to debug the failures.
+              ```
+              git clone https://github.com/{repository}.git hpcc4j
+              cd hpcc4j && git checkout {branch_name}
+              ```
+              """)
+              message += testFailureMessages
+
+              # Escape result for json
+              message = json.dumps(message)
+              curlCommand = 'curl -X POST %s -H "Content-Type: application/json" -H "Authorization: token %s" --data \'{ "body": %s }\'' % ( comments_url, github_token, message)
+              os.system(curlCommand)
+
+              sys.exit(1)
+        else:
+          print(f"FailedTests.csv does not exist at {file_path}")
+
+

@@ -123,6 +123,7 @@ public:
     }
     virtual const void * getNextRow() override { return NULL; }
     virtual void releaseRow(const void *r) override { }
+    virtual unsigned queryActivityId() const override { return queryId(); }
 };
 
 //---------------------------------------------------------------------------
@@ -220,6 +221,7 @@ public:
     {
         ReleaseThorRow(r);
     }
+    virtual unsigned queryActivityId() const override { return queryId(); }
 };
 
 //---------------------------------------------------------------------------
@@ -277,6 +279,7 @@ public:
     virtual IHThorWebServiceCallArg * queryCallHelper() override { return NULL; }
     virtual const void * getNextRow() override { return NULL; }
     virtual void releaseRow(const void *r) override { }
+    virtual unsigned queryActivityId() const override { return queryId(); }
 };
 
 //---------------------------------------------------------------------------
@@ -359,6 +362,7 @@ public:
     {
         ReleaseThorRow(r);
     }
+    virtual unsigned queryActivityId() const override { return queryId(); }
 };
 
 //---------------------------------------------------------------------------
