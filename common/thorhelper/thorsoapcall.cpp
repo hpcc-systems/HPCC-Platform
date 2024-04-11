@@ -989,6 +989,7 @@ public:
         : logctx(_logctx), outputAllocator(_outputAllocator), clientCert(_clientCert), roxieAbortMonitor(_roxieAbortMonitor)
     {
         activitySpanScope.setown(logctx.queryActiveSpan()->createInternalSpan(_wscType == STsoap ? "SoapCall Activity": "HTTPCall Activity"));
+        activitySpanScope->setSpanAttribute("activity_id", _rowProvider->queryActivityId());
         wscMode = _wscMode;
         wscType = _wscType;
         done = 0;

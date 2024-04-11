@@ -143,6 +143,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
             },
             Wuid: {
                 label: nlsHPCC.WUID, width: 120,
+                sortable: true,
                 formatter: (Wuid, row) => {
                     const wu = Get(Wuid);
                     return <>
