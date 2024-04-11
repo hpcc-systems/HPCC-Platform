@@ -361,17 +361,22 @@ class PARQUETEMBED_PLUGIN_API ParquetReader
 {
 public:
     ParquetReader(const char *option, const char *_location, int _maxRowCountInTable, const char *_partitionFields, const IThorActivityContext *_activityCtx);
+    ParquetReader(const char *option, const char *_location, int _maxRowCountInTable, const char *_partitionFields, const IThorActivityContext *_activityCtx, const RtlRecord *_expectedRecord);
     ~ParquetReader();
-    arrow::Status openReadFile();
+
     arrow::Status processReadFile();
-    void splitTable(std::shared_ptr<arrow::Table> &table);
     bool shouldRead();
     __int64 next(TableColumns *&nextTable);
-    std::shared_ptr<parquet::arrow::RowGroupReader> queryCurrentTable(__int64 currTable);
-    arrow::Result<std::shared_ptr<arrow::Table>> queryRows();
 
     bool getCursor(MemoryBuffer & cursor);
     void setCursor(MemoryBuffer & cursor);
+
+private:
+    arrow::Status openReadFile();
+    __int64 readColumns(__int64 currTable);
+    void splitTable(std::shared_ptr<arrow::Table> &table);
+    std::shared_ptr<parquet::arrow::RowGroupReader> queryCurrentTable(__int64 currTable);
+    arrow::Result<std::shared_ptr<arrow::Table>> queryRows();
 
 private:
     // Count of processed rows and tables for both partitioned and regular files.
@@ -392,12 +397,14 @@ private:
     size_t maxRowCountInTable = 0;                                     // Max table size set by user.
     std::string partOption;                                            // Begins with either read or write and ends with the partitioning type if there is one i.e. 'readhivepartition'.
     std::string location;                                              // Full path to location for reading parquet files. Can be a filename or directory.
+    const RtlRecord *expectedRecord = nullptr;                         // Expected record layout of Parquet file. Only available when used in the platform i.e. not available when used as a plugin.
     const IThorActivityContext *activityCtx = nullptr;                 // Context about the thor worker configuration.
     std::shared_ptr<arrow::dataset::Scanner> scanner = nullptr;        // Scanner for reading through partitioned files.
     std::shared_ptr<arrow::RecordBatchReader> rbatchReader = nullptr;                           // RecordBatchReader reads a dataset one record batch at a time. Must be kept alive for rbatchItr.
     arrow::RecordBatchReader::RecordBatchReaderIterator rbatchItr;                              // Iterator of RecordBatches when reading a partitioned dataset.
     std::vector<__int64> fileTableCounts;                                                       // Count of RowGroups in each open file to get the correct row group when reading specific parts of the file.
     std::vector<std::shared_ptr<parquet::arrow::FileReader>> parquetFileReaders;                // Vector of FileReaders that match the target file name. data0.parquet, data1.parquet, etc.
+    std::shared_ptr<parquet::FileMetaData> currentTableMetadata = nullptr;                      // Parquet metadata for the current table.
     TableColumns parquetTable;                                                                  // The current table being read broken up into columns. Unordered map where the left side is a string of the field name and the right side is an array of the values.
     std::vector<std::string> partitionFields;                                                   // The partitioning schema for reading Directory Partitioned files.
     arrow::MemoryPool *pool = nullptr;                                                          // Memory pool for reading parquet files.

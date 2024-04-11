@@ -20,6 +20,7 @@
 #include "rtlembed.hpp"
 #include "rtlds_imp.hpp"
 #include "jfile.hpp"
+#include "rtlrecord.hpp"
 
 static constexpr const char *MODULE_NAME = "parquet";
 static constexpr const char *MODULE_DESCRIPTION = "Parquet Embed Helper";
@@ -103,7 +104,11 @@ extern void fail(const char *message)
  * @param _activityCtx Additional context about the thor workers running.
  */
 ParquetReader::ParquetReader(const char *option, const char *_location, int _maxRowCountInTable, const char *_partitionFields, const IThorActivityContext *_activityCtx)
-    : partOption(option), location(_location)
+    : ParquetReader(option, _location, _maxRowCountInTable, _partitionFields, _activityCtx, nullptr) {}
+
+// Constructs a ParquetReader with the expected record layout of the Parquet file
+ParquetReader::ParquetReader(const char *option, const char *_location, int _maxRowCountInTable, const char *_partitionFields, const IThorActivityContext *_activityCtx, const RtlRecord *_expectedRecord)
+    : partOption(option), location(_location), expectedRecord(_expectedRecord)
 {
     maxRowCountInTable = _maxRowCountInTable;
     activityCtx = _activityCtx;
@@ -261,6 +266,29 @@ void divide_row_groups(const IThorActivityContext *activityCtx, __int64 totalRow
 }
 
 /**
+ * @brief Reads selected columns from the current Table in the Parquet file.
+ *
+ * @param currTable The index of the Table to read columns from.
+ * @return __int64 The number of rows in the current Table.
+ */
+__int64 ParquetReader::readColumns(__int64 currTable)
+{
+    auto rowGroupReader = queryCurrentTable(currTable); // Sets currentTableMetadata
+    for (int i = 0; i < expectedRecord->getNumFields(); i++)
+    {
+        int columnIndex = currentTableMetadata->schema()->ColumnIndex(expectedRecord->queryName(i));
+        if (columnIndex >= 0)
+        {
+            std::shared_ptr<arrow::ChunkedArray> column;
+            reportIfFailure(rowGroupReader->Column(columnIndex)->Read(&column));
+            parquetTable.insert(std::make_pair(expectedRecord->queryName(i), column->chunk(0)));
+        }
+    }
+
+    return currentTableMetadata->num_rows();
+}
+
+/**
  * @brief Splits an arrow table into an unordered map with the left side containing the
  * column names and the right side containing an Array of the column values.
  *
@@ -291,6 +319,7 @@ std::shared_ptr<parquet::arrow::RowGroupReader> ParquetReader::queryCurrentTable
         tables += fileTableCounts[i];
         if (currTable < tables)
         {
+            currentTableMetadata = parquetFileReaders[i]->parquet_reader()->metadata()->Subset({static_cast<int>(currTable - offset)});
             return parquetFileReaders[i]->RowGroup(currTable - offset);
         }
         offset = tables;
@@ -397,11 +426,16 @@ __int64 ParquetReader::next(TableColumns *&nextTable)
         }
         else
         {
-            reportIfFailure(queryCurrentTable(tablesProcessed + startRowGroup)->ReadTable(&table));
+            if (expectedRecord)
+                rowsCount = readColumns(tablesProcessed + startRowGroup);
+            else
+            {
+                reportIfFailure(queryCurrentTable(tablesProcessed + startRowGroup)->ReadTable(&table));
+                rowsCount = table->num_rows();
+                splitTable(table);
+            }
         }
         tablesProcessed++;
-        rowsCount = table->num_rows();
-        splitTable(table);
     }
     nextTable = &parquetTable;
     totalRowsProcessed++;
