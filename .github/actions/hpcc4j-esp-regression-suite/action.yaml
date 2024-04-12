@@ -38,17 +38,20 @@ runs:
         github_token: ${{ inputs.github-token }}
         branch_name: ${{ inputs.branch-name }}
         repository: ${{ inputs.repository }}
+        actions_run_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
       shell: python
       run: |
         import os
         import csv
         import textwrap
         import json
+        import sys
 
         branch_name = os.getenv('branch_name')
         comments_url = os.getenv('comments_url')
         github_token  = os.getenv('github_token')
         repository = os.getenv('repository')
+        actions_run_url = os.getenv('actions_run_url')
 
         file_path = "./HPCC4j/wsclient/FailedTests.csv"
         if os.path.exists(file_path):
@@ -60,17 +63,19 @@ runs:
               testFailureMessages += textwrap.dedent(f"""\
               ## {row[0]}.{row[1]} Failed
               **Error:** ```{row[2]}```
-              **Test Command:** ```mvn -B -Dhpccconn=https://eclwatch.default:8010 -Dtest={row[0]}#{row[1]} test```
+              **Test Command:** ```mvn -B --activate-profiles jenkins-on-demand -pl wsclient -Dhpccconn=https://eclwatch.default:8010 -Dtest={row[0]}#{row[1]} test```
               """)
 
             if testFailureMessages:
               message = textwrap.dedent(f"""\
               # ESP Regression Suite Test Failures:
+              **Action Run:** {actions_run_url}
               The following tests failed; checkout a copy of the HPCC4j project with the following command and run the individual test commands below to debug the failures.
               ```
               git clone https://github.com/{repository}.git hpcc4j
               cd hpcc4j && git checkout {branch_name}
               ```
+              **See:** https://github.com/hpcc-systems/hpcc4j/wiki/Running-Individual-Unit-Tests for detailed information on running the tests below.
               """)
               message += testFailureMessages
 
