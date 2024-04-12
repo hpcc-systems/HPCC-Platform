@@ -102,9 +102,9 @@ jobs:
           - os: ubuntu-20.04
           - os: centos-8
           - os: centos-7
-            cmake_options_extra: ""
+            cmake_options_extra: "-DVCPKG_TARGET_TRIPLET=x64-centos-7-dynamic"
           - os: amazonlinux
-            cmake_options_extra: ""
+            cmake_options_extra: "-DVCPKG_TARGET_TRIPLET=x64-amazonlinux-dynamic"
           - os: ubuntu-22.04
             name: LN k8s
             ln: true
@@ -118,7 +118,7 @@ jobs:
             ln: true
           - os: centos-7
             name: LN
-            cmake_options_extra: ""
+            cmake_options_extra: "-DVCPKG_TARGET_TRIPLET=x64-centos-7-dynamic"
             ln: true
       fail-fast: false
 
