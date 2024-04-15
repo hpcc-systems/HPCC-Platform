@@ -125,8 +125,7 @@
                 elastic4hpcclogs chart does not enable any security. The
                 responsibility of determining the need for security and
                 enabling security on any deployed Elastic Stack instance or
-                components is entirely your organization and your
-                responsibility.</entry>
+                components is up to you and your organization. </entry>
               </row>
             </tbody>
           </tgroup>
