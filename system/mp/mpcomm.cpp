@@ -2380,7 +2380,7 @@ bool CMPConnectThread::handleAcceptedSocket(ISocket *_sock, unsigned timeoutMs, 
         // NB: min size is ConnectHdr.id for legacy clients, can thus distinguish old from new
         try
         {
-            traceSlowReadTms("MP: initial accept packet from", _sock, &connectHdr, sizeof(connectHdr.id), sizeof(connectHdr), rd, timeoutMs, CONFIRM_TIMEOUT_INTERVAL);
+            traceSlowReadTms("MP: initial accept packet from", sock, &connectHdr, sizeof(connectHdr.id), sizeof(connectHdr), rd, timeoutMs, CONFIRM_TIMEOUT_INTERVAL);
         }
         catch (IJSOCK_Exception *e)
         {
