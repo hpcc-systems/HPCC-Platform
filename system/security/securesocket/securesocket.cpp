@@ -513,12 +513,27 @@ CSecureSocket::CSecureSocket(ISocket* sock, int sockfd, ISecureSocketContextCall
     m_peers = peers;;
     m_loglevel = loglevel;
     m_isSecure = false;
-    int flags = fcntl(sockfd, F_GETFL, 0);
-    if (-1 == flags) // unknown
-        nonBlocking = false;
-    else
-        nonBlocking = 0 != (flags & O_NONBLOCK);
 
+    nonBlocking = false;
+#if defined(O_NONBLOCK) 
+    int flags = fcntl(sockfd, F_GETFL, 0);
+    if (-1 != flags)
+        nonBlocking = 0 != (flags & O_NONBLOCK);
+#elif defined(_WIN32)
+    u_long flags;
+    if (ioctlsocket(sockfd, FIONBIO, &flags)==0)
+    {
+        if (flags)
+            nonBlocking = true;
+    }
+#else
+    int flags;
+    if (ioctl(sock, FIONBIO, &flags)==0)
+    {
+        if (flags)
+            nonBlocking = true;
+    }
+#endif
     if(m_ssl == NULL)
     {
         throw MakeStringException(-1, "Can't create ssl");
