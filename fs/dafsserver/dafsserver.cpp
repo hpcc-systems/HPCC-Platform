@@ -5604,7 +5604,7 @@ public:
                     eps.getEndpointHostText(peerURL);
                     PROGLOG("Server accepting from %s", peerURL.str());
 #endif
-                    addClient(sock.getClear(), false);
+                    addClient(sock.getClear(), false, false);
                 }
 
                 if (securesockavail)
@@ -5614,7 +5614,7 @@ public:
                     eps.getEndpointHostText(peerURL.clear());
                     PROGLOG("Server accepting SECURE from %s", peerURL.str());
 #endif
-                    addClient(sockSSL.getClear(), false);
+                    addClient(sockSSL.getClear(), true, false);
                 }
 
                 if (rowServiceSockAvail)
@@ -5624,7 +5624,7 @@ public:
                     eps.getEndpointHostText(peerURL.clear());
                     PROGLOG("Server accepting row service socket from %s", peerURL.str());
 #endif
-                    addClient(acceptedRSSock.getClear(), true);
+                    addClient(acceptedRSSock.getClear(), true, true);
                 }
             }
             else
@@ -5648,7 +5648,7 @@ public:
             sendDaFsBuffer(socket, reply, hasMask(cmdFlags, CommandRetFlags::testSocket));
     }
 
-    void addClient(ISocket *sock, bool rowService) // rowService used to distinguish client calls
+    void addClient(ISocket *sock, bool secure, bool rowService) // rowService used to distinguish client calls
     {
         Owned<CRemoteClientHandler> client = new CRemoteClientHandler(this, sock, globallasttick, rowService);
         {
@@ -5656,7 +5656,10 @@ public:
             clients.append(*client.getLink());
         }
         // JCSMORE - perhaps cap # added here... ?
-        selecthandler->add(sock, SELECTMODE_READ, client);
+        unsigned mode = SELECTMODE_READ;
+        if (secure)
+            mode |= SELECTMODE_WRITE;
+        selecthandler->add(sock, mode, client);
     }
 
     void stop()
