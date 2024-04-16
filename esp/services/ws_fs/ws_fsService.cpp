@@ -331,19 +331,13 @@ static void DeepAssign(IEspContext &context, IConstDFUWorkUnit *src, IEspDFUWork
         dest.setStateMessage(statemsg.str());
 
         CDateTime startAt;
-        CDateTime stoppAt;
+        CDateTime stopAt;
         prog->getTimeStarted(startAt);
-        prog->getTimeStopped(stoppAt);
+        prog->getTimeStopped(stopAt);
+
         StringBuffer tmpstr;
-        startAt.getDateString(tmpstr);
-        tmpstr.append(" ");
-        startAt.getTimeString(tmpstr);
-        dest.setTimeStarted(tmpstr.str());
-        tmpstr.clear();
-        stoppAt.getDateString(tmpstr);
-        tmpstr.append(" ");
-        stoppAt.getTimeString(tmpstr);
-        dest.setTimeStopped(tmpstr.str());
+        dest.setTimeStarted(startAt.getString(tmpstr).str());
+        dest.setTimeStopped(stopAt.getString(tmpstr.clear()).str());
 
         StringBuffer prgmsg;
         prog->formatProgressMessage(prgmsg);
