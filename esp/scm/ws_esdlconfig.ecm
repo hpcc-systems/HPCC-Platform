@@ -306,7 +306,7 @@ ESPresponse [exceptions_inline] ListESDLBindingsResponse
 };
 
 #define VERSION_FOR_ESDLCMD "1.5"
-ESPservice [auth_feature("ESDLConfigAccess:ACCESS"), version("1.5"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsESDLConfig
+ESPservice [auth_feature("ESDLConfigAccess:ACCESS"), version("1.5"), generated_client_version("0.0"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsESDLConfig
 {
     ESPmethod Echo(EchoRequest, EchoResponse);
     ESPmethod [auth_feature("ESDLConfigAccess:WRITE")] PublishESDLDefinition(PublishESDLDefinitionRequest, PublishESDLDefinitionResponse);

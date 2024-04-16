@@ -25,7 +25,7 @@ ESPresponse OrangeResponse
   bool Peels;
 };
 
-ESPservice[version("1"), use_method_name] WsUseMethodName
+ESPservice[version("1"), generated_client_version("0.0"), use_method_name] WsUseMethodName
 {
   ESPmethod Unique(FooRequest, FooResponse);
   ESPmethod Apple(FruitRequest, FruitResponse);

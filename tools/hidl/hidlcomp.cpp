@@ -4914,12 +4914,15 @@ void EspServInfo::write_esp_client_ipp()
     outs("\tIMPLEMENT_IINTERFACE;\n\n");
 
     outf("\tCClient%s()\n\t{\n", name_);
-    outs("\t\tsoap_reqid=0;\n\t");
-    outf("\t\tsoap_action.append(\"%s\");\n\t", name_);
-    const char *ver = getMetaString("default_client_version", NULL);
+    outs("\t\tsoap_reqid=0;\n");
+    outf("\t\tsoap_action.append(\"%s\");\n", name_);
+    // use latest 'version' unless 'generated_client_version' provided
+    const char *ver = getMetaString("generated_client_version", nullptr);
+    if (!ver || !*ver)
+        ver = getMetaString("version", nullptr);
     if (ver && *ver)
-        outf("\t\tsoap_action.append(\"?ver_=\").append(%s);\n\t", ver);
-    outf("}\n\tvirtual ~CClient%s(){}\n", name_);
+        outf("\t\tsoap_action.append(\"?ver_=\").append(%s);\n", ver);
+    outf("\t}\n\tvirtual ~CClient%s(){}\n", name_);
 
     outs("\tvirtual void setProxyAddress(const char *address)\n\t{\n\t\tsoap_proxy.set(address);\n\t}\n");
     outs("\tvirtual void addServiceUrl(const char *url)\n\t{\n\t\tsoap_url.set(url);\n\t}\n");

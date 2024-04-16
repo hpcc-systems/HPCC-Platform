@@ -457,7 +457,7 @@ ESPresponse [encode(0), nil_remove, exceptions_inline] GetNodeGroupUsageResponse
 };
 
 //-------- service ---------
-ESPservice [auth_feature("DEFERRED"), version("1.18")] ws_machine
+ESPservice [auth_feature("DEFERRED"), version("1.18"), generated_client_version("0.0")] ws_machine
 {
     ESPmethod [resp_xsl_default("./smc_xslt/clusterprocesses.xslt"), exceptions_inline("./smc_xslt/exceptions.xslt")]
        GetTargetClusterInfo(GetTargetClusterInfoRequest, GetTargetClusterInfoResponse);
