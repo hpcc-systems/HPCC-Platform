@@ -117,24 +117,33 @@ time_t timelocal(struct tm * local)
 
 #endif //__GNUC__
 
-static unsigned readDigits(char const * & str, unsigned numDigits)
+static unsigned readDigits(char const *startstr, char const * & str, unsigned numDigits)
 {
     unsigned ret = 0;
     while(numDigits--)
     {
         char c = *str++;
         if(!isdigit(c))
-            throwError1(JLIBERR_BadlyFormedDateTime, str);
+            throwError1(JLIBERR_BadlyFormedDateTime, startstr);
         ret  = ret * 10 + (c - '0');
     }
     return ret;
 }
 
-static void checkChar(char const * & str, char required)
+static void checkChar(char const *startstr, char const * & str, char required)
 {
     char c = *str++;
     if(c != required)
-        throwError1(JLIBERR_BadlyFormedDateTime, str);
+        throwError1(JLIBERR_BadlyFormedDateTime, startstr);
+}
+
+static void checkChars(char const *startstr, char const * & str, char const * any)
+{
+    char c = *str++;
+    while (*any && c != *any)
+        any++;
+    if(c != *any)
+        throwError1(JLIBERR_BadlyFormedDateTime, startstr);
 }
 
 void CDateTime::setFromUtcTm(struct tm const & ts)
@@ -226,42 +235,44 @@ void CDateTime::setString(char const * str, char const * * end, bool local)
         clear();
         return;
     }
-    unsigned year = readDigits(str, 4);
-    checkChar(str, '-');
-    unsigned month = readDigits(str, 2);
-    checkChar(str, '-');
-    unsigned day = readDigits(str, 2);
-    checkChar(str, 'T');
-    unsigned hour = readDigits(str, 2);
-    checkChar(str, ':');
-    unsigned minute = readDigits(str, 2);
-    checkChar(str, ':');
-    unsigned sec = readDigits(str, 2);
+    char const * ptr = str;
+    unsigned year = readDigits(str, ptr, 4);
+    checkChar(str, ptr, '-');
+    unsigned month = readDigits(str, ptr, 2);
+    checkChar(str, ptr, '-');
+    unsigned day = readDigits(str, ptr, 2);
+    checkChars(str, ptr, "T ");
+    unsigned hour = readDigits(str, ptr, 2);
+    checkChar(str, ptr, ':');
+    unsigned minute = readDigits(str, ptr, 2);
+    checkChar(str, ptr, ':');
+    unsigned sec = readDigits(str, ptr, 2);
     unsigned nano = 0;
-    if(*str == '.')
+    if(*ptr == '.')
     {
         unsigned digits;
         for(digits = 0; digits < 9; digits++)
         {
-            char c = *++str;
+            char c = *++ptr;
             if(!isdigit(c)) break;
             nano = nano * 10 + (c - '0');
         }
         while(digits++<9)
             nano *= 10;
     }
-    if(end) *end = str;
+    if(end) *end = ptr;
     set(year, month, day, hour, minute, sec, nano, local);
 }
 
 void CDateTime::setDateString(char const * str, char const * * end)
 {
-    unsigned year = readDigits(str, 4);
-    checkChar(str, '-');
-    unsigned month = readDigits(str, 2);
-    checkChar(str, '-');
-    unsigned day = readDigits(str, 2);
-    if(end) *end = str;
+    char const * ptr = str;
+    unsigned year = readDigits(str, ptr, 4);
+    checkChar(str, ptr, '-');
+    unsigned month = readDigits(str, ptr, 2);
+    checkChar(str, ptr, '-');
+    unsigned day = readDigits(str, ptr, 2);
+    if(end) *end = ptr;
     set(year, month, day, 0, 0, 0, 0, false);
 }
 
@@ -271,13 +282,14 @@ void CDateTime::setTimeString(char const * str, char const * * end, bool local)
     unsigned month;
     unsigned day;
     getDate(year, month, day, false);
-    unsigned hour = readDigits(str, 2);
-    checkChar(str, ':');
-    unsigned minute = readDigits(str, 2);
-    checkChar(str, ':');
-    unsigned sec = readDigits(str, 2);
+    char const * ptr = str;
+    unsigned hour = readDigits(str, ptr, 2);
+    checkChar(str, ptr, ':');
+    unsigned minute = readDigits(str, ptr, 2);
+    checkChar(str, ptr, ':');
+    unsigned sec = readDigits(str, ptr, 2);
     unsigned nano = 0;
-    if(*str == '.')
+    if(*ptr == '.')
     {
         unsigned digits;
         for(digits = 0; digits < 9; digits++)
@@ -289,7 +301,7 @@ void CDateTime::setTimeString(char const * str, char const * * end, bool local)
         while(digits++<9)
             nano *= 10;
     }
-    if(end) *end = str;
+    if(end) *end = ptr;
     set(year, month, day, hour, minute, sec, nano, local);
 }
 
@@ -668,10 +680,10 @@ void CScmDateTime::setString(const char * pstr)
     else if ((sign == '-') || (sign == '+'))
     {
         end++;
-        int delta = readDigits(end, 2);
+        int delta = readDigits(pstr, end, 2);
         if (*end++ != ':')
             throwError1(JLIBERR_BadlyFormedDateTime, pstr);
-        delta = delta * 60 + readDigits(end, 2);
+        delta = delta * 60 + readDigits(pstr, end, 2);
         if (sign == '-')
             delta = -delta;
         utcToLocalDelta = delta;
