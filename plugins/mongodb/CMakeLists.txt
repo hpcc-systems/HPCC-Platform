@@ -63,7 +63,7 @@ IF(MONGODBEMBED)
             FILES ${LIBMONGOCXX_LIB} ${LIBMONGOCXX_LIB_ABI}
             DESTINATION ${LIB_DIR}
             COMPONENT Runtime)
-            
+
         install(
             FILES ${LIBBSONCXX_LIB_REAL}
             DESTINATION ${LIB_DIR}
