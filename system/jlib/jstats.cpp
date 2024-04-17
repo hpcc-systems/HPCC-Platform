@@ -1633,6 +1633,26 @@ void StatsScopeId::setId(StatisticScopeType _scopeType, unsigned _id, unsigned _
 
 bool StatsScopeId::setScopeText(const char * text, const char * * _next)
 {
+    auto setScope = [&](StatisticScopeType _scopeType, const char *text, const char * *next)
+    {
+        if (!*text)
+            return false;
+        scopeType = _scopeType;
+        const char * endScopeNamePtr = strchr(text, ':');
+        if (endScopeNamePtr)
+        {
+            name.set(text, endScopeNamePtr-text);
+            if (next)
+                * next = endScopeNamePtr;
+        }
+        else
+        {
+            name.set(text);
+            if (next)
+                *next = text + strlen(text);
+        }
+        return true;
+    };
     char * * next = (char * *)_next;
     switch (*text)
     {
@@ -1683,21 +1703,11 @@ bool StatsScopeId::setScopeText(const char * text, const char * * _next)
         break;
     case FunctionScopePrefix[0]:
         if (MATCHES_CONST_PREFIX(text, FunctionScopePrefix))
-        {
-            setFunctionId(text+ strlen(FunctionScopePrefix));
-            if (_next)
-                *_next = text + strlen(text);
-            return true;
-        }
+            return setScope(SSTfunction, text+strlen(FunctionScopePrefix), _next);
         break;
     case FileScopePrefix[0]:
         if (MATCHES_CONST_PREFIX(text, FileScopePrefix))
-        {
-            setFileId(text+strlen(FileScopePrefix));
-            if (_next)
-                *_next = text + strlen(text);
-            return true;
-        }
+            return setScope(SSTfile, text+strlen(FileScopePrefix), _next);
         break;
     case WorkflowScopePrefix[0]:
         if (MATCHES_CONST_PREFIX(text, WorkflowScopePrefix) && isdigit(text[strlen(WorkflowScopePrefix)]))
@@ -1727,30 +1737,15 @@ bool StatsScopeId::setScopeText(const char * text, const char * * _next)
         break;
     case DFUWorkunitScopePrefix[0]:
         if (MATCHES_CONST_PREFIX(text, DFUWorkunitScopePrefix))
-        {
-            setDfuWorkunitId(text+ strlen(DFUWorkunitScopePrefix));
-            if (_next)
-                *_next = text + strlen(text);
-            return true;
-        }
+            return setScope(SSTdfuworkunit, text+strlen(DFUWorkunitScopePrefix), _next);
         break;
     case SectionScopePrefix[0]:
         if (MATCHES_CONST_PREFIX(text, SectionScopePrefix))
-        {
-            setSectionId(text+strlen(SectionScopePrefix));
-            if (_next)
-                *_next = text + strlen(text);
-            return true;
-        }
+            return setScope(SSTsection, text+strlen(SectionScopePrefix), _next);
         break;
     case OperationScopePrefix[0]:
         if (MATCHES_CONST_PREFIX(text, OperationScopePrefix))
-        {
-            setOperationId(text+strlen(OperationScopePrefix));
-            if (_next)
-                *_next = text + strlen(text);
-            return true;
-        }
+            return setScope(SSToperation, text+strlen(OperationScopePrefix), _next);
         break;
     case '\0':
         setId(SSTglobal, 0);
