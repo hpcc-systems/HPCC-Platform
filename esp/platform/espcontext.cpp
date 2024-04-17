@@ -123,7 +123,7 @@ public:
         if (m_txSummary)
         {
             m_txSummary->tailor(this);
-            m_txSummary->log(getTxSummaryLevel(), getTxSummaryGroup(), getTxSummaryStyle());
+            m_txSummary->log(getTxSummaryLevel(), getTxSummaryGroup(), getTxSummaryStyle() | TXSUMMARY_FWD_OTEL);
         }
     }
     virtual void addOptions(unsigned opts){options|=opts;}
@@ -513,27 +513,58 @@ public:
 
     virtual void addTraceSummaryValue(LogLevel logLevel, const char *name, const char *value, const unsigned int group = TXSUMMARY_GRP_CORE)
     {
+        addTraceSummaryValue(logLevel, name, value, nullptr, group);
+    }
+
+    virtual void addTraceSummaryValue(LogLevel logLevel, const char *name, const char *value, const char* otName, const unsigned int group = TXSUMMARY_GRP_CORE)
+    {
         if (m_txSummary && !isEmptyString(name))
-            m_txSummary->append(name, value, logLevel, group);
+            m_txSummary->append(name, value, otName, TxUnits::NA, logLevel, group);
     }
 
     virtual void addTraceSummaryValue(LogLevel logLevel, const char *name, __int64 value, const unsigned int group = TXSUMMARY_GRP_CORE)
     {
+        addTraceSummaryValue(logLevel, name, value, nullptr, TxUnits::NA, group);
+    }
+
+    virtual void addTraceSummaryValue(LogLevel logLevel, const char *name, __int64 value, const char* otName, unsigned group = TXSUMMARY_GRP_CORE) override
+    {
+        addTraceSummaryValue(logLevel, name, value, otName, TxUnits::NA, group);
+    }
+
+    virtual void addTraceSummaryValue(LogLevel logLevel, const char *name, __int64 value, TxUnits units, unsigned group = TXSUMMARY_GRP_CORE) override
+    {
+        addTraceSummaryValue(logLevel, name, value, nullptr, units, group);
+    }
+
+    virtual void addTraceSummaryValue(LogLevel logLevel, const char *name, __int64 value, const char* otName, TxUnits units, unsigned group = TXSUMMARY_GRP_CORE) override
+    {
         if (m_txSummary && !isEmptyString(name))
-            m_txSummary->append(name, value, logLevel, group);
+            m_txSummary->append(name, value, otName, units, logLevel, group);
     }
 
     virtual void addTraceSummaryDoubleValue(LogLevel logLevel, const char *name, double value, const unsigned int group = TXSUMMARY_GRP_CORE)
     {
+        addTraceSummaryDoubleValue(logLevel, name, value, nullptr, group);
+    }
+
+    virtual void addTraceSummaryDoubleValue(LogLevel logLevel, const char *name, double value, const char* otName, unsigned group = TXSUMMARY_GRP_CORE)
+    {
         if (m_txSummary && !isEmptyString(name))
-            m_txSummary->append(name, value, logLevel, group);
+            m_txSummary->append(name, value, otName, TxUnits::NA, logLevel, group);
     }
 
     virtual void addTraceSummaryTimeStamp(LogLevel logLevel, const char *name, const unsigned int group = TXSUMMARY_GRP_CORE)
     {
-        if (m_txSummary && !isEmptyString(name))
-            m_txSummary->append(name, m_txSummary->getElapsedTime(), logLevel, group, "ms");
+        addTraceSummaryTimeStamp(logLevel, name, nullptr, group);
     }
+
+    virtual void addTraceSummaryTimeStamp(LogLevel logLevel, const char *name, const char* otName, unsigned group = TXSUMMARY_GRP_CORE) override
+    {
+        if (m_txSummary && !isEmptyString(name))
+            m_txSummary->append(name, m_txSummary->getElapsedTime(), otName, TxUnits::millis, logLevel, group, "ms");
+    }
+
     virtual void flushTraceSummary()
     {
         updateTraceSummaryHeader();
