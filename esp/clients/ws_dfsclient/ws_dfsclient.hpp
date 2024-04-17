@@ -53,6 +53,8 @@ WS_DFSCLIENT_API IDistributedFile *lookupLegacyDFSFile(const char *logicalName, 
 
 WS_DFSCLIENT_API IDistributedFile *lookup(CDfsLogicalFileName &lfn, IUserDescriptor *user, AccessMode accessMode, bool hold, bool lockSuperOwner, IDistributedFileTransaction *transaction, bool priviledged, unsigned timeout);
 WS_DFSCLIENT_API IDistributedFile *lookup(const char *logicalFilename, IUserDescriptor *user, AccessMode accessMode, bool hold, bool lockSuperOwner, IDistributedFileTransaction *transaction, bool priviledged, unsigned timeout);
+WS_DFSCLIENT_API bool exists(CDfsLogicalFileName &lfn, IUserDescriptor *user, bool notSuper, bool superonly, unsigned timeout);
+WS_DFSCLIENT_API bool exists(const char *logicalFilename, IUserDescriptor *user, bool notWuper, bool superOnly, unsigned timeout);
 
 
 } // end of namespace wsdfs
