@@ -108,6 +108,29 @@
       The next sections will show you how to install and set up the Elastic
       stack logging solution for HPCC Systems.</para>
 
+      <para><informaltable colsep="1" frame="all" rowsep="1">
+          <?dbfo keep-together="always"?>
+
+          <tgroup cols="2">
+            <colspec colwidth="49.50pt" />
+
+            <colspec />
+
+            <tbody>
+              <row>
+                <entry><inlinegraphic
+                fileref="../../images/caution.png" /></entry>
+
+                <entry><emphasis role="bold">NOTE: </emphasis>The
+                elastic4hpcclogs chart does not enable any security. The
+                responsibility of determining the need for security and
+                enabling security on any deployed Elastic Stack instance or
+                components is up to you and your organization. </entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+
       <sect3 id="logs_Add_theHPCC_Systems_Repo">
         <title>Add the HPCC Systems Repository</title>
 
