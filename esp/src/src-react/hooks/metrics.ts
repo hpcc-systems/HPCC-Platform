@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useConst, useForceUpdate } from "@fluentui/react-hooks";
-import { WUDetails, WUDetailsMeta, WorkunitsService, IScope } from "@hpcc-js/comms";
+import { WsWorkunits, WorkunitsService, IScope } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import { userKeyValStore } from "src/KeyValStore";
 import { useWorkunit } from "./workunit";
@@ -102,27 +102,27 @@ export enum FetchStatus {
     COMPLETE
 }
 
-const scopeFilterDefault: WUDetails.RequestNS.ScopeFilter = {
+const scopeFilterDefault: Partial<WsWorkunits.ScopeFilter> = {
     MaxDepth: 999999,
-    ScopeTypes: []
+    ScopeTypes: { ScopeType: [] }
 };
 
-const nestedFilterDefault: WUDetails.RequestNS.NestedFilter = {
+const nestedFilterDefault: WsWorkunits.NestedFilter = {
     Depth: 0,
-    ScopeTypes: []
+    ScopeTypes: { ScopeType: [] }
 };
 
 export function useWorkunitMetrics(
     wuid: string,
-    scopeFilter: WUDetails.RequestNS.ScopeFilter = scopeFilterDefault,
-    nestedFilter: WUDetails.RequestNS.NestedFilter = nestedFilterDefault
-): [IScope[], { [id: string]: any }, WUDetailsMeta.Activity[], WUDetailsMeta.Property[], string[], string[], FetchStatus, () => void] {
+    scopeFilter: Partial<WsWorkunits.ScopeFilter> = scopeFilterDefault,
+    nestedFilter: WsWorkunits.NestedFilter = nestedFilterDefault
+): [IScope[], { [id: string]: any }, WsWorkunits.Activity2[], WsWorkunits.Property2[], string[], string[], FetchStatus, () => void] {
 
     const [workunit, state] = useWorkunit(wuid);
     const [data, setData] = React.useState<IScope[]>([]);
     const [columns, setColumns] = React.useState<{ [id: string]: any }>([]);
-    const [activities, setActivities] = React.useState<WUDetailsMeta.Activity[]>([]);
-    const [properties, setProperties] = React.useState<WUDetailsMeta.Property[]>([]);
+    const [activities, setActivities] = React.useState<WsWorkunits.Activity2[]>([]);
+    const [properties, setProperties] = React.useState<WsWorkunits.Property2[]>([]);
     const [measures, setMeasures] = React.useState<string[]>([]);
     const [scopeTypes, setScopeTypes] = React.useState<string[]>([]);
     const [status, setStatus] = React.useState<FetchStatus>(FetchStatus.COMPLETE);
@@ -175,15 +175,15 @@ export function useWorkunitMetrics(
 export function useQueryMetrics(
     querySet: string,
     queryId: string,
-    scopeFilter: WUDetails.RequestNS.ScopeFilter = scopeFilterDefault,
-    nestedFilter: WUDetails.RequestNS.NestedFilter = nestedFilterDefault
-): [IScope[], { [id: string]: any }, WUDetailsMeta.Activity[], WUDetailsMeta.Property[], string[], string[], FetchStatus, () => void] {
+    scopeFilter: Partial<WsWorkunits.ScopeFilter> = scopeFilterDefault,
+    nestedFilter: WsWorkunits.NestedFilter = nestedFilterDefault
+): [IScope[], { [id: string]: any }, WsWorkunits.Activity2[], WsWorkunits.Property2[], string[], string[], FetchStatus, () => void] {
 
     const [query, state, _refresh] = useQuery(querySet, queryId);
     const [data, setData] = React.useState<IScope[]>([]);
     const [columns, setColumns] = React.useState<{ [id: string]: any }>([]);
-    const [activities, setActivities] = React.useState<WUDetailsMeta.Activity[]>([]);
-    const [properties, setProperties] = React.useState<WUDetailsMeta.Property[]>([]);
+    const [activities, setActivities] = React.useState<WsWorkunits.Activity2[]>([]);
+    const [properties, setProperties] = React.useState<WsWorkunits.Property2[]>([]);
     const [measures, setMeasures] = React.useState<string[]>([]);
     const [scopeTypes, setScopeTypes] = React.useState<string[]>([]);
     const [status, setStatus] = React.useState<FetchStatus>(FetchStatus.COMPLETE);
@@ -237,9 +237,9 @@ export function useWUQueryMetrics(
     wuid: string,
     querySet: string,
     queryId: string,
-    scopeFilter: WUDetails.RequestNS.ScopeFilter = scopeFilterDefault,
-    nestedFilter: WUDetails.RequestNS.NestedFilter = nestedFilterDefault
-): [IScope[], { [id: string]: any }, WUDetailsMeta.Activity[], WUDetailsMeta.Property[], string[], string[], FetchStatus, () => void] {
+    scopeFilter: Partial<WsWorkunits.ScopeFilter> = scopeFilterDefault,
+    nestedFilter: WsWorkunits.NestedFilter = nestedFilterDefault
+): [IScope[], { [id: string]: any }, WsWorkunits.Activity2[], WsWorkunits.Property2[], string[], string[], FetchStatus, () => void] {
     const wuMetrics = useWorkunitMetrics(wuid, scopeFilter, nestedFilter);
     const queryMetrics = useQueryMetrics(querySet, queryId, scopeFilter, nestedFilter);
     return querySet && queryId ? [...queryMetrics] : [...wuMetrics];

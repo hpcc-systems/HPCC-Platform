@@ -6,7 +6,7 @@ import * as all from "dojo/promise/all";
 import * as Observable from "dojo/store/Observable";
 import * as topic from "dojo/topic";
 
-import { Workunit as HPCCWorkunit, WorkunitsService, WUQuery, WUUpdate } from "@hpcc-js/comms";
+import { Workunit as HPCCWorkunit, WorkunitsService, WsWorkunits as WsWorkunitsNS, WUUpdate } from "@hpcc-js/comms";
 import { IEvent } from "@hpcc-js/util";
 
 import * as ESPRequest from "./ESPRequest";
@@ -888,7 +888,7 @@ const Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
         return (this._hpccWU as HPCCWorkunit).fetchDetails({
             ScopeFilter: {
                 MaxDepth: 999999,
-                ScopeTypes: ["graph"]
+                ScopeTypes: { ScopeType: ["graph"] }
             },
             ScopeOptions: {
                 IncludeMatchedScopesInResults: true,
@@ -906,7 +906,7 @@ const Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
             },
             NestedFilter: {
                 Depth: 999999,
-                ScopeTypes: ["activity"]
+                ScopeTypes: { ScopeType: ["activity"] }
             },
             PropertiesToReturn: {
                 AllStatistics: false,
@@ -1043,10 +1043,10 @@ export function CreateWUQueryStoreLegacy(options) {
 
 const service = new WorkunitsService({ baseUrl: "" });
 
-export type WUQueryStore = BaseStore<WUQuery.Request, typeof Workunit>;
+export type WUQueryStore = BaseStore<WsWorkunitsNS.WUQuery, typeof Workunit>;
 
-export function CreateWUQueryStore(): BaseStore<WUQuery.Request, typeof Workunit> {
-    const store = new Paged<WUQuery.Request, typeof Workunit>({
+export function CreateWUQueryStore(): BaseStore<WsWorkunitsNS.WUQuery, typeof Workunit> {
+    const store = new Paged<WsWorkunitsNS.WUQuery, typeof Workunit>({
         start: "PageStartFrom",
         count: "PageSize",
         sortBy: "Sortby",

@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useConst } from "@fluentui/react-hooks";
-import { Workunit, DFUWorkunit, Result, WUDetails, WUStateID, WUInfo, WorkunitsService } from "@hpcc-js/comms";
+import { Workunit, DFUWorkunit, Result, WsWorkunits, WUStateID, WorkunitsService } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import * as Utility from "src/Utility";
@@ -122,7 +122,7 @@ export function useWorkunitVariables(wuid: string): [Variable[], Workunit, WUSta
     return [variables, workunit, state, inc];
 }
 
-export interface SourceFile extends WUInfo.ECLSourceFile {
+export interface SourceFile extends WsWorkunits.ECLSourceFile {
     __hpcc_parentName: string;
 }
 
@@ -159,10 +159,10 @@ export function useWorkunitSourceFiles(wuid: string): [SourceFile[], Workunit, W
     return [sourceFiles, workunit, state, inc];
 }
 
-export function useWorkunitWorkflows(wuid: string): [WUInfo.ECLWorkflow[], Workunit, () => void] {
+export function useWorkunitWorkflows(wuid: string): [WsWorkunits.ECLWorkflow[], Workunit, () => void] {
 
     const [workunit, state] = useWorkunit(wuid);
-    const [workflows, setWorkflows] = React.useState<WUInfo.ECLWorkflow[]>([]);
+    const [workflows, setWorkflows] = React.useState<WsWorkunits.ECLWorkflow[]>([]);
     const [count, increment] = useCounter();
 
     React.useEffect(() => {
@@ -186,7 +186,7 @@ export function useWorkunitXML(wuid: string): [string] {
     const [xml, setXML] = React.useState("");
 
     React.useEffect(() => {
-        service.WUFile({
+        service.WUFileEx({
             Wuid: wuid,
             Type: "XML"
         }).then(response => {
@@ -197,10 +197,10 @@ export function useWorkunitXML(wuid: string): [string] {
     return [xml];
 }
 
-export function useWorkunitExceptions(wuid: string): [WUInfo.ECLException[], Workunit, () => void] {
+export function useWorkunitExceptions(wuid: string): [WsWorkunits.ECLException[], Workunit, () => void] {
 
     const [workunit, state] = useWorkunit(wuid);
-    const [exceptions, setExceptions] = React.useState<WUInfo.ECLException[]>([]);
+    const [exceptions, setExceptions] = React.useState<WsWorkunits.ECLException[]>([]);
     const [count, increment] = useCounter();
 
     React.useEffect(() => {
@@ -285,7 +285,7 @@ export interface HelperRow {
     workunit: Workunit;
 }
 
-function mapHelpers(workunit: Workunit, helpers: WUInfo.ECLHelpFile[] = []): HelperRow[] {
+function mapHelpers(workunit: Workunit, helpers: WsWorkunits.ECLHelpFile[] = []): HelperRow[] {
     return helpers.map((helper, i): HelperRow => {
         return {
             id: "H:" + i,
@@ -298,7 +298,7 @@ function mapHelpers(workunit: Workunit, helpers: WUInfo.ECLHelpFile[] = []): Hel
     });
 }
 
-function mapThorLogInfo(workunit: Workunit, thorLogInfo: WUInfo.ThorLogInfo[] = []): HelperRow[] {
+function mapThorLogInfo(workunit: Workunit, thorLogInfo: WsWorkunits.ThorLogInfo[] = []): HelperRow[] {
     const retVal: HelperRow[] = [];
     for (let i = 0; i < thorLogInfo.length; ++i) {
         for (let j = 0; j < thorLogInfo[i].NumberSlaves; ++j) {
@@ -352,9 +352,9 @@ export function useWorkunitHelpers(wuid: string): [HelperRow[], () => void] {
     return [helpers, incCounter];
 }
 
-export function useGlobalWorkunitNotes(): [WUDetails.Note[]] {
+export function useGlobalWorkunitNotes(): [WsWorkunits.Note[]] {
 
-    const [notes, setNotes] = React.useState<WUDetails.Note[]>([]);
+    const [notes, setNotes] = React.useState<WsWorkunits.Note[]>([]);
 
     React.useEffect(() => {
         const workunit = Workunit.attach({ baseUrl: "" }, "");
