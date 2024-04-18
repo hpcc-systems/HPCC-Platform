@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Checkbox, DefaultButton, mergeStyleSets, MessageBar, MessageBarType, PrimaryButton, Stack, TextField } from "@fluentui/react";
+import { Checkbox, DefaultButton, IDropdownOption, mergeStyleSets, MessageBar, MessageBarType, PrimaryButton, Stack, TextField } from "@fluentui/react";
 import { Controller, useForm } from "react-hook-form";
 import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
@@ -187,7 +187,7 @@ export const RemoteCopy: React.FunctionComponent<RemoteCopyProps> = ({
                         key={fieldName}
                         label={nlsHPCC.Group}
                         required={true}
-                        onChange={(evt, option) => {
+                        onChange={(evt, option: IDropdownOption) => {
                             setSelectedDestGroup(option.key.toString());
                             onChange(option.key);
                         }}

@@ -170,7 +170,7 @@ size_t stringCallback(char *contents, size_t size, size_t nmemb, void *userp)
     return size * nmemb;
 }
 
-static void submitKQLQuery(std::string & readBuffer, const char * token, const char * kql, const char * workspaceID)
+static void submitKQLQuery(std::string & readBuffer, const char * token, const char * kql, const char * workspaceID, const char * timeSpan)
 {
     if (isEmptyString(token))
         throw makeStringExceptionV(-1, "%s KQL request: Empty LogAnalytics Workspace Token detected!", COMPONENT_NAME);
@@ -181,6 +181,9 @@ static void submitKQLQuery(std::string & readBuffer, const char * token, const c
     if (isEmptyString(workspaceID))
         throw makeStringExceptionV(-1, "%s KQL request: Empty WorkspaceID detected!", COMPONENT_NAME);
 
+    if (isEmptyString(timeSpan))
+        throw makeStringExceptionV(-1, "%s KQL request: Empty timeSpan detected!", COMPONENT_NAME);
+
     OwnedPtrCustomFree<CURL, curl_easy_cleanup> curlHandle = curl_easy_init();
     if (curlHandle)
     {
@@ -190,14 +193,18 @@ static void submitKQLQuery(std::string & readBuffer, const char * token, const c
         curlErrBuffer[0] = '\0';
 
         char * encodedKQL = curl_easy_escape(curlHandle, kql, strlen(kql));
-        VStringBuffer tokenRequestURL("https://api.loganalytics.io/v1/workspaces/%s/query?query=%s", workspaceID, encodedKQL);
+        char * encodedTimeSpan = curl_easy_escape(curlHandle, timeSpan, strlen(timeSpan));
+        VStringBuffer kqlQueryString("https://api.loganalytics.azure.com/v1/workspaces/%s/query?query=%s&timespan=%s", workspaceID, encodedKQL, encodedTimeSpan);
+        curl_free(encodedTimeSpan);
         curl_free(encodedKQL);
+
+        DBGLOG("%s: Full ALA API query request: '%s'", COMPONENT_NAME, kqlQueryString.str());
 
         VStringBuffer bearerHeader("Authorization: Bearer %s", token);
 
         /*curl -X GET 
         -H "Authorization: Bearer <TOKEN>"
-            "https://api.loganalytics.io/v1/workspaces/<workspaceID>/query?query=ContainerLog20%7C%20limit%20100"
+            "https://api.loganalytics.azure.com/v1/workspaces/<workspaceID>/query?query=ContainerLog20%7C%20limit%20100&timespan=2022-05-11T06:45:00.000Z%2F2022-05-11T13:00:00.000Z"
         */
 
         headers = curl_slist_append(headers, bearerHeader.str());
@@ -205,8 +212,8 @@ static void submitKQLQuery(std::string & readBuffer, const char * token, const c
         if (curl_easy_setopt(curlHandle, CURLOPT_HTTPHEADER, headers.getClear()) != CURLE_OK)
             throw makeStringExceptionV(-1, "%s: Log query request: Could not set 'CURLOPT_HTTPHEADER'", COMPONENT_NAME);
 
-        if (curl_easy_setopt(curlHandle, CURLOPT_URL, tokenRequestURL.str()) != CURLE_OK)
-            throw makeStringExceptionV(-1, "%s: Log query request: Could not set 'CURLOPT_URL' (%s)!", COMPONENT_NAME, tokenRequestURL.str());
+        if (curl_easy_setopt(curlHandle, CURLOPT_URL, kqlQueryString.str()) != CURLE_OK)
+            throw makeStringExceptionV(-1, "%s: Log query request: Could not set 'CURLOPT_URL' (%s)!", COMPONENT_NAME, kqlQueryString.str());
 
         if (curl_easy_setopt(curlHandle, CURLOPT_POST, 0) != CURLE_OK)
             throw makeStringExceptionV(-1, "%s: Log query request: Could not disable 'CURLOPT_POST' option!", COMPONENT_NAME);
@@ -581,6 +588,23 @@ void AzureLogAnalyticsCurlClient::searchMetaData(StringBuffer & search, const Lo
     | where _row > 20
     */
     search.appendf("\n| limit %s", std::to_string(size).c_str());
+}
+
+void AzureLogAnalyticsCurlClient::azureLogAnalyticsQueryTimeSpanString(StringBuffer & queryTimeSpan, std::time_t from, std::time_t to)
+{
+    if (from == -1)
+        throw makeStringExceptionV(-1, "%s: Invalid 'from' timestamp detected", COMPONENT_NAME);
+
+    char fromTimeStr[40];
+    std::strftime(fromTimeStr, sizeof(fromTimeStr), "%Y-%m-%dT%H:%M:%S", std::gmtime(&from));
+    queryTimeSpan.set(fromTimeStr);
+
+    if (to != -1)
+    {
+        char toTimeStr[40];
+        std::strftime(toTimeStr, sizeof(toTimeStr), "%Y-%m-%dT%H:%M:%S", std::gmtime(&to));
+        queryTimeSpan.appendf("/%s", toTimeStr);
+    }
 }
 
 void AzureLogAnalyticsCurlClient::azureLogAnalyticsTimestampQueryRangeString(StringBuffer & range, const char * timeStampField, std::time_t from, std::time_t to)
@@ -978,7 +1002,10 @@ bool AzureLogAnalyticsCurlClient::fetchLog(LogQueryResultDetails & resultDetails
     populateKQLQueryString(queryString, queryIndex, options);
 
     std::string readBuffer;
-    submitKQLQuery(readBuffer, token.str(), queryString.str(), m_logAnalyticsWorkspaceID.str());
+    StringBuffer queryTimeSpan;
+    const LogAccessTimeRange & trange = options.getTimeRange();
+    azureLogAnalyticsQueryTimeSpanString(queryTimeSpan, trange.getStartt().getSimple(), trange.getEndt().isNull() ? -1 : trange.getEndt().getSimple());
+    submitKQLQuery(readBuffer, token.str(), queryString.str(), m_logAnalyticsWorkspaceID.str(), queryTimeSpan.str());
 
     return processSearchJsonResp(resultDetails, readBuffer, returnbuf, format, true);
 }

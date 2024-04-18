@@ -862,6 +862,35 @@ IDistributedFile *lookup(const char *logicalFilename, IUserDescriptor *user, Acc
     return lookup(lfn, user, accessMode, hold, lockSuperOwner, transaction, priviledged, timeout);
 }
 
+bool exists(CDfsLogicalFileName &lfn, IUserDescriptor *user, bool notSuper, bool superOnly, unsigned timeout)
+{
+    if (!lfn.isRemote())
+        return queryDistributedFileDirectory().exists(lfn.get(), user, notSuper, superOnly);
+
+    Owned<IDistributedFile> file = lookup(lfn, user, AccessMode::read, false, false, nullptr, false, timeout);
+    if (!file)
+        return false;
+    bool isSuper = nullptr != file->querySuperFile();
+    if (superOnly)
+    {
+        if (!isSuper)
+            return false;
+    }
+    else if (notSuper)
+    {
+        if (isSuper)
+            return false;
+    }
+    return true;
+}
+
+bool exists(const char *logicalFilename, IUserDescriptor *user, bool notSuper, bool superOnly, unsigned timeout)
+{
+    CDfsLogicalFileName lfn;
+    lfn.set(logicalFilename);
+    return exists(lfn, user, notSuper, superOnly, timeout);
+}
+
 
 } // namespace wsdfs
 

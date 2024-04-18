@@ -81,8 +81,9 @@ interface AsyncDropdownProps {
     selectedKey?: string;
     required?: boolean;
     disabled?: boolean;
+    multiSelect?: boolean;
     errorMessage?: string;
-    onChange?: (event: React.FormEvent<HTMLDivElement>, option?: IDropdownOption, index?: number) => void;
+    onChange?: (event: React.FormEvent<HTMLDivElement>, option?: IDropdownOption | IDropdownOption[], index?: number) => void;
     placeholder?: string;
     className?: string;
 }
@@ -93,6 +94,7 @@ const AsyncDropdown: React.FunctionComponent<AsyncDropdownProps> = ({
     selectedKey,
     required = false,
     disabled,
+    multiSelect = false,
     errorMessage,
     onChange,
     placeholder,
@@ -101,43 +103,96 @@ const AsyncDropdown: React.FunctionComponent<AsyncDropdownProps> = ({
 
     const selOptions = React.useMemo<IDropdownOption[]>(() => {
         if (options !== undefined) {
-            return !required ? [{ key: "", text: "" }, ...options] : options;
+            return !required && !multiSelect ? [{ key: "", text: "" }, ...options] : options;
         }
         return [];
-    }, [options, required]);
+    }, [multiSelect, options, required]);
     const [selectedItem, setSelectedItem] = React.useState<IDropdownOption>();
     const [selectedIdx, setSelectedIdx] = React.useState<number>();
 
-    React.useEffect(() => {
-        let item;
-        if (selectedItem?.key) {
-            item = selOptions?.find(row => row.key === selectedItem?.key) ?? selOptions[0];
-        } else {
-            item = selOptions?.find(row => row.key === selectedKey) ?? selOptions[0];
-        }
-        if (!item) return;
-        if (item.key === selectedKey) {
+    const [selectedItems, setSelectedItems] = React.useState<IDropdownOption[]>([]);
+
+    const changeSelectedItems = React.useCallback(() => {
+        let items = [...selectedItems];
+        if (selectedKey === "") return;
+        const keys = selectedKey.split("|");
+        items = keys.map(key => { return { key: key, text: key }; });
+        if (!items.length) return;
+        if (items.map(item => item.key).join("|") === selectedKey) {
             // do nothing, unless
-            if (!selectedItem) {
+            if (!selectedItems.length) {
+                setSelectedItems(items);
+            }
+        } else {
+            setSelectedItems(items);
+        }
+    }, [selectedKey, selectedItems]);
+
+    React.useEffect(() => {
+        // only on mount, pre-populate selectedItems from url
+        if (multiSelect) {
+            changeSelectedItems();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    React.useEffect(() => {
+        if (multiSelect) {
+            if (!selectedItems.length) return;
+            changeSelectedItems();
+        } else {
+            let item;
+            if (selectedItem?.key) {
+                item = selOptions?.find(row => row.key === selectedItem?.key) ?? selOptions[0];
+            } else {
+                item = selOptions?.find(row => row.key === selectedKey) ?? selOptions[0];
+            }
+            if (!item) return;
+            if (item.key === selectedKey) {
+                // do nothing, unless
+                if (!selectedItem) {
+                    setSelectedItem(item);
+                    setSelectedIdx(selOptions.indexOf(item));
+                }
+            } else {
                 setSelectedItem(item);
                 setSelectedIdx(selOptions.indexOf(item));
             }
-        } else {
-            setSelectedItem(item);
-            setSelectedIdx(selOptions.indexOf(item));
         }
-    }, [selectedKey, selOptions, selectedItem]);
+    }, [changeSelectedItems, multiSelect, selectedKey, selOptions, selectedItem, selectedItems]);
 
     React.useEffect(() => {
-        if (!selectedItem || selectedItem?.key === selectedKey) return;
-        if (selectedItem !== undefined) {
-            onChange(undefined, selectedItem, selectedIdx);
+        if (multiSelect) {
+            if (!selectedItems.length && selectedKey === "") return;
+            if (selectedItems.map(item => item.key).join("|") === selectedKey) return;
+            onChange(undefined, selectedItems, null);
+        } else {
+            if (!selectedItem || selectedItem?.key === selectedKey) return;
+            if (selectedItem !== undefined) {
+                onChange(undefined, selectedItem, selectedIdx);
+            }
         }
-    }, [onChange, selectedItem, selectedIdx, selectedKey]);
+    }, [onChange, multiSelect, selectedItem, selectedIdx, selectedKey, selectedItems]);
 
-    return options === undefined ?
-        <DropdownBase label={label} dropdownWidth="auto" options={[]} placeholder={nlsHPCC.loadingMessage} disabled={true} /> :
-        <DropdownBase label={label} dropdownWidth="auto" options={selOptions} selectedKey={selectedItem?.key} onChange={(_, item: IDropdownOption) => setSelectedItem(item)} placeholder={placeholder} disabled={disabled} required={required} errorMessage={errorMessage} className={className} />;
+    if (multiSelect) {
+        return options === undefined ?
+            <DropdownBase label={label} multiSelect dropdownWidth="auto" options={[]} placeholder={nlsHPCC.loadingMessage} disabled={true} /> :
+            <DropdownBase label={label} multiSelect dropdownWidth="auto" options={selOptions} selectedKeys={selectedItems.map(item => item.key as string)} onChange={
+                (_, item: IDropdownOption) => {
+                    if (item) {
+                        let selected = selectedItems.filter(i => i.key !== item.key);
+                        if (item.selected) {
+                            selected = [...selectedItems, item];
+                        }
+                        setSelectedItems(selected);
+                    }
+                }
+            } placeholder={placeholder} disabled={disabled} required={required} errorMessage={errorMessage} className={className} />;
+    } else {
+        return options === undefined ?
+            <DropdownBase label={label} dropdownWidth="auto" options={[]} placeholder={nlsHPCC.loadingMessage} disabled={true} /> :
+            <DropdownBase label={label} dropdownWidth="auto" options={selOptions} selectedKey={selectedItem?.key} onChange={(_, item: IDropdownOption) => setSelectedItem(item)} placeholder={placeholder} disabled={disabled} required={required} errorMessage={errorMessage} className={className} />;
+    }
 };
 
 interface DropdownMultiProps {
@@ -286,6 +341,7 @@ interface QueriesActiveStateField extends BaseField {
 
 interface TargetClusterField extends BaseField {
     type: "target-cluster";
+    multiSelect?: boolean;
     value?: string;
 }
 
@@ -992,7 +1048,9 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                                 text: state
                             };
                         })}
-                        onChange={(ev, row) => onChange(fieldID, row.key)}
+                        onChange={(ev, row) => {
+                            onChange(fieldID, row.key);
+                        }}
                         placeholder={field.placeholder}
                     />
                 });
@@ -1101,8 +1159,15 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     label: field.label,
                     field: <TargetClusterTextField
                         key={fieldID}
+                        multiSelect={field.multiSelect}
                         selectedKey={field.value}
-                        onChange={(ev, row) => onChange(fieldID, row.key)}
+                        onChange={(ev, row) => {
+                            if (field.multiSelect) {
+                                onChange(fieldID, (row as IDropdownOption[]).map(i => i.key).join("|"));
+                            } else {
+                                onChange(fieldID, (row as IDropdownOption).key);
+                            }
+                        }}
                         placeholder={field.placeholder}
                     />
                 });
@@ -1115,7 +1180,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     field: <TargetDropzoneTextField
                         key={fieldID}
                         selectedKey={field.value}
-                        onChange={(ev, row) => {
+                        onChange={(ev, row: IDropdownOption) => {
                             onChange(fieldID, row.key);
                             setDropzone(row.key as string);
                         }}
@@ -1131,7 +1196,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     field: <TargetServerTextLinkedField
                         key={fieldID}
                         selectedKey={field.value}
-                        onChange={(ev, row) => onChange(fieldID, row.key)}
+                        onChange={(ev, row: IDropdownOption) => onChange(fieldID, row.key)}
                         placeholder={field.placeholder}
                         setSetDropzone={_ => setDropzone = _}
                     />
@@ -1146,7 +1211,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                         key={fieldID}
                         required={field.required}
                         selectedKey={field.value}
-                        onChange={(ev, row) => onChange(fieldID, row.key)}
+                        onChange={(ev, row: IDropdownOption) => onChange(fieldID, row.key)}
                         placeholder={field.placeholder}
                     />
                 });
@@ -1161,7 +1226,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                         username={field.username}
                         required={field.required}
                         selectedKey={field.value}
-                        onChange={(ev, row) => onChange(fieldID, row.key)}
+                        onChange={(ev, row: IDropdownOption) => onChange(fieldID, row.key)}
                         placeholder={field.placeholder}
                     />
                 });
@@ -1176,7 +1241,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                         groupname={field.groupname}
                         required={field.required}
                         selectedKey={field.value}
-                        onChange={(ev, row) => onChange(fieldID, row.key)}
+                        onChange={(ev, row: IDropdownOption) => onChange(fieldID, row.key)}
                         placeholder={field.placeholder}
                     />
                 });
@@ -1190,7 +1255,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                         key={fieldID}
                         required={field.required}
                         selectedKey={field.value}
-                        onChange={(ev, row) => onChange(fieldID, row.key)}
+                        onChange={(ev, row: IDropdownOption) => onChange(fieldID, row.key)}
                         placeholder={field.placeholder}
                     />
                 });
@@ -1203,7 +1268,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     field: <TargetDfuSprayQueueTextField
                         key={fieldID}
                         selectedKey={field.value}
-                        onChange={(ev, row) => onChange(fieldID, row.key)}
+                        onChange={(ev, row: IDropdownOption) => onChange(fieldID, row.key)}
                         placeholder={field.placeholder}
                     />
                 });
@@ -1216,7 +1281,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     field: <EsdlEspProcessesTextField
                         key={fieldID}
                         selectedKey={field.value}
-                        onChange={(ev, row) => onChange(fieldID, row.key)}
+                        onChange={(ev, row: IDropdownOption) => onChange(fieldID, row.key)}
                         placeholder={field.placeholder}
                     />
                 });
@@ -1229,7 +1294,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     field: <EsdlDefinitionsTextField
                         key={fieldID}
                         selectedKey={field.value}
-                        onChange={(ev, row) => onChange(fieldID, row.key)}
+                        onChange={(ev, row: IDropdownOption) => onChange(fieldID, row.key)}
                         placeholder={field.placeholder}
                     />
                 });
