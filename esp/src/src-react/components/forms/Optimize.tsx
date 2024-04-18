@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Checkbox, DefaultButton, PrimaryButton, TextField, } from "@fluentui/react";
+import { Checkbox, DefaultButton, IDropdownOption, PrimaryButton, TextField, } from "@fluentui/react";
 import { scopedLogger } from "@hpcc-js/util";
 import { useForm, Controller } from "react-hook-form";
 import { DPWorkunit } from "src/DataPatterns/DPWorkunit";
@@ -70,7 +70,7 @@ export const Optimize: React.FunctionComponent<OptimizeProps> = ({
                 placeholder={nlsHPCC.Target}
                 selectedKey={value}
                 required={true}
-                onChange={(ev, row) => {
+                onChange={(ev, row: IDropdownOption) => {
                     return onChange(row.key);
                 }}
                 errorMessage={error && error?.message}

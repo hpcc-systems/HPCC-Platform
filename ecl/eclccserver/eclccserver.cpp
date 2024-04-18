@@ -778,7 +778,7 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
                 }
                 else
                 {
-                    if (processKilled)
+                    if (processKilled && !workunit->aborting())
                         addExceptionToWorkunit(workunit, SeverityError, "eclccserver", 9999, "eclcc killed - likely to be out of memory - see compile log for details", nullptr, 0, 0, 0);
 #ifndef _CONTAINERIZED
                     Owned<IWUQuery> query = workunit->updateQuery();

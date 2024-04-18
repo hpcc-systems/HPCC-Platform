@@ -1273,7 +1273,20 @@ std::unique_ptr<opentelemetry::sdk::trace::SpanExporter> CTraceManager::createEx
 
 std::unique_ptr<opentelemetry::sdk::trace::SpanProcessor> CTraceManager::createProcessor(const IPropertyTree * exportConfig)
 {
-    auto exporter = createExporter(exportConfig);
+    std::unique_ptr<opentelemetry::v1::sdk::trace::SpanExporter> exporter;
+    try
+    {
+        exporter = createExporter(exportConfig);
+    }
+    catch(const std::exception& e) //polymorphic type std::exception
+    {
+        LOG(MCoperatorError, "JTRACE: Error creating Tracing exporter: %s", e.what());
+    }
+    catch (...)
+    {
+        LOG(MCoperatorError, "JTRACE: Unknown error creating Tracing exporter");
+    }
+
     if (!exporter)
         return nullptr;
 

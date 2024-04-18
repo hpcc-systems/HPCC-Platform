@@ -25,7 +25,7 @@ const FilterFields: Fields = {
     "Wuid": { type: "string", label: nlsHPCC.WUID, placeholder: "W20200824-060035" },
     "Owner": { type: "string", label: nlsHPCC.Owner, placeholder: nlsHPCC.jsmi },
     "Jobname": { type: "string", label: nlsHPCC.JobName, placeholder: nlsHPCC.log_analysis_1 },
-    "Cluster": { type: "target-cluster", label: nlsHPCC.Cluster, placeholder: "" },
+    "Cluster": { type: "target-cluster", label: nlsHPCC.Cluster, placeholder: "", multiSelect: true },
     "State": { type: "workunit-state", label: nlsHPCC.State, placeholder: "" },
     "ECL": { type: "string", label: nlsHPCC.ECL, placeholder: nlsHPCC.dataset },
     "LogicalFile": { type: "string", label: nlsHPCC.LogicalFile, placeholder: nlsHPCC.somefile },

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Checkbox, DefaultButton, keyframes, mergeStyleSets, PrimaryButton, Stack } from "@fluentui/react";
+import { Checkbox, DefaultButton, IDropdownOption, keyframes, mergeStyleSets, PrimaryButton, Stack } from "@fluentui/react";
 import { ProgressRingDotsIcon } from "@fluentui/react-icons-mdl2";
 import { FileSprayService } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
@@ -189,7 +189,7 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
                         label={nlsHPCC.LandingZone}
                         required={true}
                         placeholder={nlsHPCC.SelectValue}
-                        onChange={(evt, option) => {
+                        onChange={(evt, option: IDropdownOption) => {
                             setDirectory(option["path"] as string);
                             if (option["path"].indexOf("\\") > -1) {
                                 setPathSep("\\");
@@ -214,7 +214,7 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
                         dropzone={dropzone}
                         required={true}
                         placeholder={nlsHPCC.SelectValue}
-                        onChange={(evt, option) => {
+                        onChange={(evt, option: IDropdownOption) => {
                             if (option) {
                                 setMachine(option.key as string);
                                 setOs(option["OS"] as number);

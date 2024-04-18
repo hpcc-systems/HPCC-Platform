@@ -760,8 +760,8 @@ IFileIO *createMultipleWrite(CActivityBase *activity, IPartDescriptor &partDesc,
             GetTempFilePath(outLocationName, "partial");
 
         assertex(outLocationName.length());
-        ensureDirectoryForFile(outLocationName.str());
     }
+    ensureDirectoryForFile(outLocationName.str());
     OwnedIFile file = createIFile(outLocationName.str());
     Owned<IFileIO> fileio;
     if (compress)

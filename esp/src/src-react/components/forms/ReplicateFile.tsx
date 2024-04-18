@@ -1,5 +1,5 @@
 import * as React from "react";
-import { DefaultButton, PrimaryButton, Stack, TextField, } from "@fluentui/react";
+import { DefaultButton, IDropdownOption, PrimaryButton, Stack, TextField, } from "@fluentui/react";
 import { useForm, Controller } from "react-hook-form";
 import nlsHPCC from "src/nlsHPCC";
 import * as FileSpray from "src/FileSpray";
@@ -115,7 +115,7 @@ export const ReplicateFile: React.FunctionComponent<ReplicateFileProps> = ({
                         required={true}
                         selectedKey={value}
                         placeholder={nlsHPCC.SelectValue}
-                        onChange={(evt, option) => {
+                        onChange={(evt, option: IDropdownOption) => {
                             onChange(option.key);
                         }}
                         errorMessage={error && error.message}

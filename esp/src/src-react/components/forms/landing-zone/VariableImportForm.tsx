@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Checkbox, DefaultButton, Dropdown, mergeStyleSets, PrimaryButton, Stack, TextField } from "@fluentui/react";
+import { Checkbox, DefaultButton, Dropdown, IDropdownOption, mergeStyleSets, PrimaryButton, Stack, TextField } from "@fluentui/react";
 import { scopedLogger } from "@hpcc-js/util";
 import { useForm, Controller } from "react-hook-form";
 import * as FileSpray from "src/FileSpray";
@@ -170,7 +170,7 @@ export const VariableImportForm: React.FunctionComponent<VariableImportFormProps
                         required={true}
                         selectedKey={value}
                         placeholder={nlsHPCC.SelectValue}
-                        onChange={(evt, option) => {
+                        onChange={(evt, option: IDropdownOption) => {
                             onChange(option.key);
                         }}
                         errorMessage={error && error?.message}
@@ -190,7 +190,7 @@ export const VariableImportForm: React.FunctionComponent<VariableImportFormProps
                         required={true}
                         selectedKey={value}
                         placeholder={nlsHPCC.SelectValue}
-                        onChange={(evt, option) => {
+                        onChange={(evt, option: IDropdownOption) => {
                             onChange(option.key);
                         }}
                         errorMessage={error && error?.message}

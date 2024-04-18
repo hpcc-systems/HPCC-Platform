@@ -1647,6 +1647,7 @@ EXPORT TZ_DATA := DATASET
             {'CHAST', 45900, ['PACIFIC']}, // Chatham Island Standard Time
             {'CHOST', 32400, ['ASIA']}, // Choibalsan Summer Time
             {'CHOT', 28800, ['ASIA']}, // Choibalsan Time
+            {'CHST', 36000, ['PACIFIC']}, // Chamorro Standard Time
             {'ChST', 36000, ['PACIFIC']}, // Chamorro Standard Time
             {'CHUT', 36000, ['PACIFIC']}, // Chuuk Time
             {'CIDST', -14400, ['CARIBBEAN']}, // Cayman Islands Daylight Saving Time

@@ -5527,7 +5527,7 @@ public:
                                 if (newName.charAt(i)==':')
                                     newName.setCharAt(i,'_');
                             newName.append(".unused");
-                            PROGLOG("Detected spurious data file : '%s' - renaming to %s", file.queryFilename(), newName.str());
+                            PROGLOG("Detected spurious data file : '%s' - renaming to %s (current edition=%u, file edition=%u)", file.queryFilename(), newName.str(), edition, fileEdition);
                             try
                             {
                                 file.rename(newName.str());
