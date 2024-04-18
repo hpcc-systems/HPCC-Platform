@@ -1,6 +1,6 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
-import { Workunit, WUDetails, IScope } from "@hpcc-js/comms";
+import { Workunit, WsWorkunits, IScope } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import { useWorkunitArchive } from "../hooks/workunit";
@@ -15,14 +15,14 @@ import { MetricsPropertiesTables } from "./MetricsPropertiesTables";
 
 const logger = scopedLogger("src-react/components/ECLArchive.tsx");
 
-const scopeFilterDefault: WUDetails.RequestNS.ScopeFilter = {
+const scopeFilterDefault: Partial<WsWorkunits.ScopeFilter> = {
     MaxDepth: 999999,
-    ScopeTypes: ["graph"]
+    ScopeTypes: { ScopeType: ["graph"] }
 };
 
-const nestedFilterDefault: WUDetails.RequestNS.NestedFilter = {
+const nestedFilterDefault: WsWorkunits.NestedFilter = {
     Depth: 999999,
-    ScopeTypes: ["activity"]
+    ScopeTypes: { ScopeType: ["activity"] }
 };
 
 interface ECLArchiveProps {
