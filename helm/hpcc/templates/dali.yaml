@@ -91,13 +91,11 @@ spec:
 {{- if hasKey $dali "labels" }}
 {{ toYaml $dali.labels | indent 8 }}
 {{- end }}
-{{- if or (hasKey $dali "annotations") (hasKey $.Values.global "metrics") }}
       annotations:
- {{- if hasKey $.Values.global "metrics" }}
-  {{- include "hpcc.addPrometheusScrapeAnnotations" $.Values.global.metrics | nindent 8 }}
- {{- end }}
- {{- include "hpcc.generateAnnotations" $commonCtx | indent 8 }}
-{{- end }}
+        {{- include "hpcc.generateAnnotations" $commonCtx | indent 8 }}
+        {{- if hasKey $.Values.global "metrics" }}
+          {{- include "hpcc.addPrometheusScrapeAnnotations" $.Values.global.metrics | nindent 8 }}
+        {{- end }}
     spec:
       {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" $dali.name "type" "dali") | indent 6 }}
       serviceAccountName: "hpcc-dali"
