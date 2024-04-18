@@ -187,20 +187,20 @@ namespace mongodbembed
 
     /**
      * @brief Holds information about where to send the query, how to query, and the results of the query.
-     * 
+     *
      */
     class MongoDBQuery
     {
     public:
         /**
          * @brief Stores the databaseName and CollectionName for executing the operations.
-         * 
+         *
          * @param database MongoDB database to connect to.
          * @param collection MongoDB collection to connect to.
          * @param _connectionString Connection string for creating the mongocxx::uri.
          * @param _batchSize The number of documents MongoDB should return per batch.
          */
-        MongoDBQuery(const char *database, const char *collection, const char *_connectionString, std::int32_t _batchSize, std::int32_t _limit) 
+        MongoDBQuery(const char *database, const char *collection, const char *_connectionString, std::int32_t _batchSize, std::int32_t _limit)
         {
             databaseName = database;
             collectionName = collection;
@@ -211,10 +211,10 @@ namespace mongodbembed
 
         /**
          * @brief Set the Embed object and remove leading characters.
-         * 
+         *
          * @param eScript pointer to beginning of the script.
          */
-        void setEmbed(const char *eScript) 
+        void setEmbed(const char *eScript)
         {
             const char *script = eScript;
             const char *end;
@@ -237,7 +237,7 @@ namespace mongodbembed
 
         /**
          * @brief Gets pointer to database name.
-         * 
+         *
          * @return const char* Name of the database.
          */
         const char* database()
@@ -247,57 +247,57 @@ namespace mongodbembed
 
         /**
          * @brief Gets pointer to collection name.
-         * 
+         *
          * @return const char* Name of the collection.
          */
-        const char* collection() 
+        const char* collection()
         {
             return collectionName.c_str();
         }
 
         /**
          * @brief Gets pointer to script.
-         * 
+         *
          * @return const char* Beginning of the script.
          */
-        const char*& script() 
+        const char*& script()
         {
             return cursor;
         }
 
         /**
          * @brief Gets pointer to command.
-         * 
+         *
          * @return const char* Beginning of the command.
          */
-        const char* cmd() 
+        const char* cmd()
         {
             return queryCMD.c_str();
         }
-        
+
         /**
          * @brief Returns a pointer to the basic builder used for binding ECL datasets and rows.
-         * 
+         *
          * @return bsoncxx::builder::basic::document* Pointer to builder.
          */
-        bsoncxx::builder::basic::document* build() 
+        bsoncxx::builder::basic::document* build()
         {
             return &builder;
-        } 
+        }
 
         /**
          * @brief Returns a pointer to the result rows from the MongoDB operation.
-         * 
+         *
          * @return StringArray* Result rows in standard json.
          */
-        StringArray* result() 
+        StringArray* result()
         {
             return &result_rows;
         }
 
         /**
          * @brief Returns a copy of the batch size to use in mongocxx::options
-         * 
+         *
          * @return std::int32_t Batch Size
          */
         std::int32_t size()
@@ -308,7 +308,7 @@ namespace mongodbembed
         /**
          * @brief Returns a const char pointer to the connection string for
          * creating the uri.
-         * 
+         *
          * @return The connection string as a const char pointer.
          */
         const char * queryConnectionString()
@@ -318,7 +318,7 @@ namespace mongodbembed
 
         /**
          * @brief Returns the query string for building the key to the hash.
-         * 
+         *
          * @return const char* Query string for hashing.
          */
         const char * queryQueryString()
@@ -328,7 +328,7 @@ namespace mongodbembed
 
         /**
          * @brief Returns the maximum number of documents return by the cursor
-         * 
+         *
          * @return std::int32_t argument for the mongocxx::cursor::limit() function.
          */
         std::int32_t queryLimit()
@@ -352,7 +352,7 @@ namespace mongodbembed
 
     /**
      * @brief Builds ECL Records from MongoDB result rows.
-     * 
+     *
      */
     class MongoDBRowStream : public RtlCInterface, implements IRowStream
     {
@@ -374,35 +374,35 @@ namespace mongodbembed
      * @brief Class for keeping a heap allocated MongoDB instance. The reason this is important is because
      * MongoDB only allows one instance to be created at any one time, so we create an instance on the heap
      * for every thread to share.
-     * 
+     *
      */
-    class MongoDBConnection 
+    class MongoDBConnection
     {
     private:
         typedef std::map<hash64_t, std::shared_ptr<mongocxx::client>> ObjMap;
-        
+
     public:
         /**
          * @brief Creates a static reference to a MongoDB instance that is alive
          * for the entire time MongoDBEmbedFunctionContext is used.
-         * 
+         *
          * @return MongoDBConnection& A reference to a MongoDBConnection
          * instance used for connecting to a database.
          */
-        static MongoDBConnection& createInstance() 
+        static MongoDBConnection& createInstance()
         {
             static MongoDBConnection _instance;
             return _instance;
         }
 
         /**
-         * @brief Configures the MongoDB instance for the client objects to use for connections. It 
+         * @brief Configures the MongoDB instance for the client objects to use for connections. It
          * should only be called once because only one instance object is allowed per program.
-         * 
+         *
          * @param instance The instance object that is to be kept alive for multiple
          * threads to have access to.
          */
-        void configure(std::unique_ptr<mongocxx::instance> && _instance) 
+        void configure(std::unique_ptr<mongocxx::instance> && _instance)
         {
             instance = std::move(_instance);
         }
@@ -415,18 +415,18 @@ namespace mongodbembed
          * Replica Set: mongodb://<username>:<password>@mongodb0.example.com:27017,mongodb1.example.com:27017/?authSource=admin&replicaSet=myRepl
          * Sharded: mongodb://<username>:<password>@mongos0.example.com:27017,mongos1.example.com:27017/?authSource=admin
          * Additional arguments can be passed after the server name/s are added via ?<option0>=<setting0>&<option1>=<setting1>
-         * 
+         *
          * @param connectionString The connection string for constructing the client object.
-         * 
+         *
          * @param queryString A const char * holding the query string for hashing.
          */
-        void create_connection(const char *connectionString, const char * queryString) 
+        void create_connection(const char *connectionString, const char * queryString)
         {
             // Use a hash of the connection string as the key to finding
             // any connection objects
             hash64_t key = rtlHash64VStr(queryString, rtlHash64VStr(connectionString, 0));
 
-            std::shared_ptr<mongocxx::client> client_ptr = std::make_shared<mongocxx::client>(mongocxx::uri{connectionString}); 
+            std::shared_ptr<mongocxx::client> client_ptr = std::make_shared<mongocxx::client>(mongocxx::uri{connectionString});
 
             {
                 CriticalBlock block(connLock);
@@ -437,16 +437,16 @@ namespace mongodbembed
 
         /**
          * @brief Acquires a mongocxx client from the connections map.
-         * 
+         *
          * @param connectionString A const char * holding the connection parameters.
-         * 
+         *
          * @param queryString A const char * holding the query string for hashing.
-         * 
+         *
          * @return A shared pointer to the mongocxx:client object for connecting to the database.
          */
         std::shared_ptr<mongocxx::client> get_connection(const char *connectionString, const char * queryString)
         {
-            // Get key for client object 
+            // Get key for client object
             hash64_t key = rtlHash64VStr(queryString, rtlHash64VStr(connectionString, 0));
 
             {
@@ -466,7 +466,7 @@ namespace mongodbembed
 
     /**
      * @brief Builds ECL records for MongoDBRowStream.
-     * 
+     *
      */
     class MongoDBRowBuilder : public CInterfaceOf<IFieldSource>
     {
@@ -509,13 +509,13 @@ namespace mongodbembed
 
     /**
      * @brief Binds ECL records to bson Documents
-     * 
+     *
      */
     class MongoDBRecordBinder : public CInterfaceOf<IFieldProcessor>
     {
     public:
         MongoDBRecordBinder(const IContextLogger &_logctx, const RtlTypeInfo *_typeInfo, std::shared_ptr<MongoDBQuery> _query, int _firstParam)
-         : logctx(_logctx), typeInfo(_typeInfo), firstParam(_firstParam), dummyField("<row>", NULL, typeInfo), thisParam(_firstParam) 
+         : logctx(_logctx), typeInfo(_typeInfo), firstParam(_firstParam), dummyField("<row>", NULL, typeInfo), thisParam(_firstParam)
         {
             query = _query;
         }
@@ -576,14 +576,14 @@ namespace mongodbembed
 
     /**
      * @brief Binds an ECL dataset to a vector of bson documents.
-     * 
+     *
      */
     class MongoDBDatasetBinder : public MongoDBRecordBinder
     {
     public:
         /**
          * @brief Construct a new MongoDBDataset Binder object
-         * 
+         *
          * @param _logctx logger for building the dataset.
          * @param _input Stream of input of dataset.
          * @param _typeInfo Field type info.
@@ -597,7 +597,7 @@ namespace mongodbembed
 
         /**
          * @brief Gets the next ECL row and binds it to a MongoDB document.
-         * 
+         *
          * @return true If there is a row to process.
          * @return false If there are no rows left.
          */
@@ -612,7 +612,7 @@ namespace mongodbembed
 
         /**
          * @brief Binds all the rows of the dataset to bson documents and adds them to an array for calling insert many.
-         * 
+         *
          * @param m_oMDBConnection Connection object for getting acces to the mongocxx::instance object.
          */
         void executeAll(MongoDBConnection * m_oMDBConnection)
@@ -635,11 +635,11 @@ namespace mongodbembed
             }
             if(cmd != "insert") failx("Only insert operations are supported for Dataset arguments.");
 
-            try 
+            try
             {
                 result = coll.insert_many(documents);
-            } 
-            catch (const mongocxx::exception &e) 
+            }
+            catch (const mongocxx::exception &e)
             {
                 failx("insert_many execution error: %s", e.what());
             }
@@ -655,10 +655,10 @@ namespace mongodbembed
     protected:
         Owned<IRowStream> input;
     };
-    
+
     /**
-     * @brief Main interface for the engine to interact with the plugin. The get functions return results to the engine and the Rowstream and 
-     * 
+     * @brief Main interface for the engine to interact with the plugin. The get functions return results to the engine and the Rowstream and
+     *
      */
     class MongoDBEmbedFunctionContext : public CInterfaceOf<IEmbedFunctionContext>
     {
@@ -753,7 +753,7 @@ namespace mongodbembed
            Owned<MongoDBDatasetBinder> m_oInputStream;      //! Input Stream used for building a dataset.
            MongoDBConnection * m_oMDBConnection;            //! Pointer to a heap allocated mongocxx::instance.
            std::shared_ptr<MongoDBQuery> query;             //! Holds the script for performing query ,and the database and collection to operate on.
-           
+
            TokenDeserializer m_tokenDeserializer;
            TokenSerializer m_tokenSerializer;
            unsigned m_nextParam;                            //! Index of the next parameter to process.
