@@ -1,5 +1,5 @@
 import * as React from "react";
-import { DefaultButton, MessageBar, MessageBarType, PrimaryButton, TextField, } from "@fluentui/react";
+import { DefaultButton, IDropdownOption, MessageBar, MessageBarType, PrimaryButton, TextField, } from "@fluentui/react";
 import { scopedLogger } from "@hpcc-js/util";
 import { useForm, Controller } from "react-hook-form";
 import nlsHPCC from "src/nlsHPCC";
@@ -82,7 +82,7 @@ export const AddPermissionForm: React.FunctionComponent<AddPermissionFormProps> 
                     required={true}
                     label={nlsHPCC.Type}
                     selectedKey={value}
-                    onChange={(evt, option) => {
+                    onChange={(evt, option: IDropdownOption) => {
                         onChange(option.key);
                     }}
                     errorMessage={error && error?.message}
