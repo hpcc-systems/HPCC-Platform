@@ -73,5 +73,5 @@ target_link_libraries ( xmllib
     )
 
 IF (USE_CPPUNIT)
-  target_link_libraries (xmllib ${CPPUNIT_LIBRARIES})
+  target_link_libraries (xmllib ${CppUnit_LIBRARIES})
 ENDIF()

@@ -185,7 +185,7 @@ target_link_libraries ( hql
          nbcd
          eclrtl
          deftype
-         ${CPPUNIT_LIBRARIES}
+         ${CppUnit_LIBRARIES}
     )
 
 IF (USE_ZLIB)

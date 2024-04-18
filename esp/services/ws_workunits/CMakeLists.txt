@@ -135,7 +135,7 @@ target_link_libraries ( ws_workunits
          pkgfiles
          wuanalysis
          ws_dfsclient
-         ${CPPUNIT_LIBRARIES}
+         ${CppUnit_LIBRARIES}
          ${COMMON_ESP_SERVICE_LIBS}
     )
 

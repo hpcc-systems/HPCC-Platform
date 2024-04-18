@@ -110,7 +110,7 @@ target_link_libraries ( unittests
          esphttp
          esdllib
          logginglib
-         ${CPPUNIT_LIBRARIES}
+         ${CppUnit_LIBRARIES}
     )
 
 if (NOT CONTAINERIZED)

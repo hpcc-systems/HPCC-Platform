@@ -47,7 +47,6 @@ include_directories (
 	     ./../../../dali/base
 	     ./../../../system/mp
 	     ./../../../common/workunit
-         ${OPENLDAP_INCLUDE_DIR}
     )
 
 ADD_DEFINITIONS( -DLDAPSECURITY_EXPORTS -D_USRDLL )
@@ -58,7 +57,7 @@ target_link_libraries ( LdapSecurity
          jlib
          dalibase
          workunit
-         ${OPENLDAP_LIBRARIES}
+         PkgConfig::OPENLDAP
     )
 
 

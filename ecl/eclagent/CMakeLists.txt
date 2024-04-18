@@ -48,7 +48,7 @@ install ( TARGETS hthor RUNTIME DESTINATION ${EXEC_DIR} )
 target_link_libraries ( hthor
       hthorlib
       wuanalysis
-      ${CPPUNIT_LIBRARIES}
+      ${CppUnit_LIBRARIES}
     )
 
 Install ( PROGRAMS ${CMAKE_CURRENT_SOURCE_DIR}/start_eclagent DESTINATION ${EXEC_DIR} COMPONENT Runtime )

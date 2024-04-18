@@ -57,7 +57,7 @@ endif()
 
 target_link_libraries ( roxiemem
          jlib
-         ${CPPUNIT_LIBRARIES}
+         ${CppUnit_LIBRARIES}
     )
 
 
