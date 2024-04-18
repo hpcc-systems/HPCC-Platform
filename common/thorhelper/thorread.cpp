@@ -2037,7 +2037,7 @@ IDiskRowReader * doCreateLocalDiskReader(const char * format, IDiskReadMapping *
 {
     auto foundReader = genericFileTypeMap.find(format);
 
-    if (foundReader != genericFileTypeMap.end())
+    if (foundReader != genericFileTypeMap.end() && foundReader->second)
         return foundReader->second(_mapping);
 
     UNIMPLEMENTED;
@@ -2087,6 +2087,8 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     genericFileTypeMap.emplace("xml", [](IDiskReadMapping * _mapping) { return new XmlDiskRowReader(_mapping); });
 #ifdef _USE_PARQUET
     genericFileTypeMap.emplace(PARQUET_FILE_TYPE_NAME, [](IDiskReadMapping * _mapping) { return new ParquetDiskRowReader(_mapping); });
+#else
+    genericFileTypeMap.emplace(PARQUET_FILE_TYPE_NAME, [](IDiskReadMapping * _mapping) { return nullptr; });
 #endif
 
     // Stuff the file type names that were just instantiated into a list;
