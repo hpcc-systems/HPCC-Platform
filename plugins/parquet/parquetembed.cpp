@@ -814,7 +814,7 @@ void ParquetWriter::beginSet(const char *fieldName)
     }
     arrow::ArrayBuilder *childBuilder;
     arrow::FieldPath match = getNestedFieldBuilder(fieldName, childBuilder);
-    fieldBuilderStack.push_back(std::make_shared<ArrayBuilderTracker>(fieldName, childBuilder, CPNTSet, match));
+    fieldBuilderStack.push_back(std::make_shared<ArrayBuilderTracker>(fieldName, childBuilder, CPNTSet, std::move(match)));
 
     arrow::ListBuilder *listBuilder = static_cast<arrow::ListBuilder *>(childBuilder);
     reportIfFailure(listBuilder->Append());
@@ -833,7 +833,7 @@ void ParquetWriter::beginRow(const char *fieldName)
     {
         arrow::ArrayBuilder *childBuilder;
         arrow::FieldPath match = getNestedFieldBuilder(fieldName, childBuilder);
-        fieldBuilderStack.push_back(std::make_shared<ArrayBuilderTracker>(fieldName, childBuilder, CPNTDataset, match));
+        fieldBuilderStack.push_back(std::make_shared<ArrayBuilderTracker>(fieldName, childBuilder, CPNTDataset, std::move(match)));
 
         arrow::StructBuilder *structBuilder = static_cast<arrow::StructBuilder *>(childBuilder);
         reportIfFailure(structBuilder->Append());
