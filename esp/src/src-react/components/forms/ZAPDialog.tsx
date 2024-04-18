@@ -56,6 +56,8 @@ interface ZAPDialogValues {
     WhereSlow: string;
     Password: string;
     IncludeThorSlaveLog: boolean;
+    IncludeRelatedLogs: boolean;
+    IncludePerComponentLogs: boolean;
     SendEmail: boolean;
     EmailTo: string;
     EmailFrom: string;
@@ -92,6 +94,8 @@ const defaultValues: ZAPDialogValues = {
     WhereSlow: "",
     Password: "",
     IncludeThorSlaveLog: true,
+    IncludeRelatedLogs: true,
+    IncludePerComponentLogs: false,
     SendEmail: false,
     EmailTo: "",
     EmailFrom: "",
@@ -378,6 +382,22 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                     render={({
                         field: { onChange, name: fieldName, value }
                     }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.IncludeSlaveLogs} />}
+                />
+            </div>
+            <div style={{ marginTop: 2, marginBottom: 2 }}>
+                <Controller
+                    control={control} name="IncludeRelatedLogs"
+                    render={({
+                        field: { onChange, name: fieldName, value }
+                    }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.IncludeRelatedLogs} />}
+                />
+            </div>
+            <div>
+                <Controller
+                    control={control} name="IncludePerComponentLogs"
+                    render={({
+                        field: { onChange, name: fieldName, value }
+                    }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.IncludePerComponentLogs} />}
                 />
             </div>
             <div style={{ paddingTop: "10px" }}>

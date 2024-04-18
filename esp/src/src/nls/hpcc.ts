@@ -413,6 +413,8 @@ export = {
         IgnoreGlobalStoreOutEdges: "Ignore Global Store Out Edges",
         Import: "Import",
         Inactive: "Inactive",
+        IncludePerComponentLogs: "Include per-component logs",
+        IncludeRelatedLogs: "Include related logs",
         IncludeSlaveLogs: "Include worker logs",
         IncludeSubFileInfo: "Include sub file info?",
         Index: "Index",
