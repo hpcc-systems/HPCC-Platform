@@ -1,5 +1,5 @@
 import * as React from "react";
-import { DefaultButton, MessageBar, MessageBarType, PrimaryButton, } from "@fluentui/react";
+import { DefaultButton, IDropdownOption, MessageBar, MessageBarType, PrimaryButton, } from "@fluentui/react";
 import { scopedLogger } from "@hpcc-js/util";
 import { useForm, Controller } from "react-hook-form";
 import nlsHPCC from "src/nlsHPCC";
@@ -83,7 +83,7 @@ export const UserAddGroupForm: React.FunctionComponent<UserAddGroupProps> = ({
                     required={true}
                     label={nlsHPCC.GroupName}
                     selectedKey={value}
-                    onChange={(evt, option) => {
+                    onChange={(evt, option: IDropdownOption) => {
                         onChange(option.key);
                     }}
                     errorMessage={error && error?.message}

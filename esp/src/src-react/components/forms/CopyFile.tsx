@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Checkbox, DefaultButton, mergeStyleSets, PrimaryButton, Stack, TextField, } from "@fluentui/react";
+import { Checkbox, DefaultButton, IDropdownOption, mergeStyleSets, PrimaryButton, Stack, TextField, } from "@fluentui/react";
 import { useForm, Controller } from "react-hook-form";
 import nlsHPCC from "src/nlsHPCC";
 import * as FileSpray from "src/FileSpray";
@@ -130,7 +130,7 @@ export const CopyFile: React.FunctionComponent<CopyFileProps> = ({
                         required={true}
                         selectedKey={value}
                         placeholder={nlsHPCC.SelectValue}
-                        onChange={(evt, option) => {
+                        onChange={(evt, option: IDropdownOption) => {
                             onChange(option.key);
                         }}
                         errorMessage={error && error.message}
