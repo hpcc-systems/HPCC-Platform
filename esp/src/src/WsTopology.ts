@@ -1,4 +1,7 @@
-import { Connection } from "@hpcc-js/comms";
+import { Connection, ResourcesService, Topology } from "@hpcc-js/comms";
+import { scopedLogger } from "@hpcc-js/util";
+import { containerized } from "src/BuildInfo";
+import { Memory } from "src/store/Memory";
 import * as arrayUtil from "dojo/_base/array";
 import * as Deferred from "dojo/_base/Deferred";
 import * as lang from "dojo/_base/lang";
@@ -9,7 +12,8 @@ import * as aspect from "dojo/aspect";
 
 import * as ESPRequest from "./ESPRequest";
 import * as Utility from "./Utility";
-import { Memory } from "src/store/Memory";
+
+const logger = scopedLogger("src/ESPRequest.ts");
 
 declare const dojoConfig;
 
@@ -119,61 +123,68 @@ export function TpClusterQuery(params) {
     return ESPRequest.send("WsTopology", "TpClusterQuery", params);
 }
 
-export function GetESPServiceBaseURL(type) {
-    const deferred = new Deferred();
-    this.TpServiceQuery({}).then(function (response) {
+const eclqueriesPromise: { [id: string]: Promise<string> } = {};
+export function GetESPServiceBaseURL(type: string): Promise<string> {
+    if (!eclqueriesPromise[type]) {
         let retVal = ESPRequest.getURL({
             port: window.location.protocol === "https:" ? 18002 : 8002,
             pathname: ""
         });
-        if (lang.exists("TpServiceQueryResponse.ServiceList.TpEspServers.TpEspServer", response)) {
-            arrayUtil.forEach(response.TpServiceQueryResponse.ServiceList.TpEspServers.TpEspServer, function (item, idx) {
-                if (lang.exists("TpBindings.TpBinding", item)) {
-                    arrayUtil.forEach(item.TpBindings.TpBinding, function (binding, idx) {
-                        if (binding.Service === type && binding.Protocol + ":" === location.protocol) {
-                            retVal = ESPRequest.getURL({
-                                port: binding.Port,
-                                pathname: ""
-                            });
-                            return true;
-                        }
+        if (containerized) {
+            const resources = new ResourcesService({ baseUrl: "" });
+            eclqueriesPromise[type] = resources.ServiceQuery({ Type: type }).then(response => {
+                const service = response?.Services?.Service?.find(s => s.Type === type);
+                if (service) {
+                    retVal = ESPRequest.getURL({
+                        protocol: service.TLSSecure ? "https:" : "http:",
+                        port: service.Port,
+                        pathname: ""
                     });
                 }
-                if (retVal !== "")
-                    return true;
+                return retVal;
+            }).catch(e => {
+                logger.error(e);
+                return retVal;
+            });
+        } else {
+            const topology = Topology.attach({ baseUrl: "" });
+            eclqueriesPromise[type] = topology.fetchServices({ Type: type }).then(response => {
+                const service = response?.TpEspServers?.TpEspServer?.find(s => s.Type === type);
+                if (service) {
+                    const binding = service.TpBindings?.TpBinding?.find(b => b.Service === type && b.Protocol + ":" === location.protocol);
+                    if (binding) {
+                        retVal = ESPRequest.getURL({
+                            port: binding.Port,
+                            pathname: ""
+                        });
+                    }
+                }
+                return retVal;
+            }).catch(e => {
+                logger.error(e);
+                return retVal;
             });
         }
-        deferred.resolve(retVal);
-    });
-    return deferred.promise;
-}
-export const WsEclURL = "";
-export function GetWsEclURL(type) {
-    const deferred = new Deferred();
-    if (this.WsEclURL === "") {
-        const context = this;
-        this.GetESPServiceBaseURL("ws_ecl").then(function (response) {
-            context.WsEclURL = response + "/WsEcl/";
-            deferred.resolve(context.WsEclURL + type + "/query/");
-        });
-    } else {
-        deferred.resolve(this.WsEclURL + type + "/query/");
     }
-    return deferred.promise;
+    return eclqueriesPromise[type];
 }
-export const WsEclIFrameURL = "";
-export function GetWsEclIFrameURL(type) {
-    const deferred = new Deferred();
-    if (this.WsEclIFrameURL === "") {
-        const context = this;
-        this.GetESPServiceBaseURL("ws_ecl").then(function (response) {
-            context.WsEclIFrameURL = response + dojoConfig.urlInfo.basePath + "/stub.htm?Widget=IFrameWidget&src=" + encodeURIComponent("/WsEcl/");
-            deferred.resolve(context.WsEclIFrameURL + encodeURIComponent(type + "/query/"));
+let WsEclURL: Promise<string>;
+export function GetWsEclURL(type): Promise<string> {
+    if (!WsEclURL) {
+        WsEclURL = GetESPServiceBaseURL(containerized ? "eclqueries" : "ws_ecl").then(response => {
+            return response + "/WsEcl/";
         });
-    } else {
-        deferred.resolve(this.WsEclIFrameURL + encodeURIComponent(type + "/query/"));
     }
-    return deferred.promise;
+    return this.WsEclURL.then(response => response + type + "/query/");
+}
+let WsEclIFrameURL: Promise<string>;
+export function GetWsEclIFrameURL(type): Promise<string> {
+    if (!WsEclIFrameURL) {
+        WsEclIFrameURL = GetESPServiceBaseURL(containerized ? "eclqueries" : "ws_ecl").then(response => {
+            return response + dojoConfig.urlInfo.basePath + "/stub.htm?Widget=IFrameWidget&src=" + encodeURIComponent("/WsEcl/");
+        });
+    }
+    return WsEclIFrameURL.then(url => url + encodeURIComponent(type + "/query/"));
 }
 export function TpTargetClusterQuery(params) {
     return ESPRequest.send("WsTopology", "TpTargetClusterQuery", params);
