@@ -124,6 +124,8 @@ interface ISpan : extends IInterface
     virtual void recordException(IException * e, bool spanFailed = true, bool escapedScope = true) = 0;
     virtual void recordError(const SpanError & error = SpanError()) = 0;
     virtual void setSpanStatusSuccess(bool spanSucceeded, const char * statusMessage = NO_STATUS_MESSAGE) = 0;
+    virtual const char * queryTraceId() const = 0;
+    virtual const char * querySpanId() const = 0;
 
     virtual ISpan * createClientSpan(const char * name) = 0;
     virtual ISpan * createInternalSpan(const char * name) = 0;

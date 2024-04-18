@@ -177,7 +177,7 @@ int main(int argc, const char *argv[])
         }
     }
     if (verbose)
-        queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_time|MSGFIELD_microTime|MSGFIELD_milliTime|MSGFIELD_thread);
+        queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_trace|MSGFIELD_span|MSGFIELD_time|MSGFIELD_microTime|MSGFIELD_milliTime|MSGFIELD_thread);
     else
         removeLog();
 

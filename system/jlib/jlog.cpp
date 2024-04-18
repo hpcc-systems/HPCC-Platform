@@ -131,7 +131,7 @@ void LogMsgSysInfo::deserialize(MemoryBuffer & in)
 
 class LoggingFieldColumns
 {
-    const EnumMapping MsgFieldMap[16] =
+    const EnumMapping MsgFieldMap[18] =
     {
         { MSGFIELD_msgID,     "MsgID    " },
         { MSGFIELD_audience,  "Audience " },
@@ -148,6 +148,8 @@ class LoggingFieldColumns
         { MSGFIELD_job,       "JobID  " },
         { MSGFIELD_user,      "UserID  " },
         { MSGFIELD_component, "Compo " },
+        { MSGFIELD_trace,     "Trace " },
+        { MSGFIELD_span,      "Span " },
         { MSGFIELD_quote,     "Quoted "}
     };
     const unsigned sizeMsgFieldMap = arraysize(MsgFieldMap);
@@ -298,6 +300,10 @@ static const LogMsgJobInfo queryDefaultJobInfo()
     return LogMsgJobInfo(queryThreadedJobId(), UnknownUser);
 }
 
+static const LogMsgTraceInfo queryActiveTraceInfo()
+{
+    return LogMsgTraceInfo(queryThreadedActiveSpan());
+}
 
 LogMsg::LogMsg(LogMsgJobId id, const char *job) : category(MSGAUD_programmer, job ? MSGCLS_addid : MSGCLS_removeid), sysInfo(), jobInfo(id), remoteFlag(false)
 {
@@ -306,20 +312,20 @@ LogMsg::LogMsg(LogMsgJobId id, const char *job) : category(MSGAUD_programmer, jo
 }
 
 LogMsg::LogMsg(const LogMsgCategory & _cat, LogMsgId _id, LogMsgCode _code, const char * _text, unsigned port, LogMsgSessionId session)
-  : category(_cat), sysInfo(_id, port, session), jobInfo(queryDefaultJobInfo()), msgCode(_code), remoteFlag(false)
+  : category(_cat), sysInfo(_id, port, session), jobInfo(queryDefaultJobInfo()), traceInfo(queryActiveTraceInfo()),  msgCode(_code), remoteFlag(false)
 {
     text.append(_text);
 }
 
 LogMsg::LogMsg(const LogMsgCategory & _cat, LogMsgId _id, LogMsgCode _code, size32_t sz, const char * _text, unsigned port, LogMsgSessionId session)
-  : category(_cat), sysInfo(_id, port, session), jobInfo(queryDefaultJobInfo()), msgCode(_code), remoteFlag(false)
+  : category(_cat), sysInfo(_id, port, session), jobInfo(queryDefaultJobInfo()), traceInfo(queryActiveTraceInfo()), msgCode(_code), remoteFlag(false)
 {
     text.append(sz, _text);
 }
 
 LogMsg::LogMsg(const LogMsgCategory & _cat, LogMsgId _id, LogMsgCode _code, const char * format, va_list args,
        unsigned port, LogMsgSessionId session)
-  : category(_cat), sysInfo(_id, port, session), jobInfo(queryDefaultJobInfo()), msgCode(_code), remoteFlag(false)
+  : category(_cat), sysInfo(_id, port, session), jobInfo(queryDefaultJobInfo()), traceInfo(queryActiveTraceInfo()), msgCode(_code), remoteFlag(false)
 {
     text.valist_appendf(format, args);
 }
@@ -386,6 +392,16 @@ StringBuffer & LogMsg::toStringPlain(StringBuffer & out, unsigned fields) const
             out.append("usr=unknown ");
         else
             out.appendf("usr=%" I64F "u ", jobInfo.queryUserID());
+    }
+    if(fields & MSGFIELD_trace)
+    {
+        //it seems the existing convention is to use 3 char abbreviation
+        out.appendf("trc=%s ", traceInfo.queryTraceID());
+    }
+    if (fields & MSGFIELD_span)
+    {
+        //it seems the existing convention is to use 3 char abbreviation
+        out.appendf("spn=%s ", traceInfo.querySpanID());
     }
     if (fields & MSGFIELD_quote)
         out.append('"');
@@ -471,6 +487,14 @@ StringBuffer & LogMsg::toStringXML(StringBuffer & out, unsigned fields) const
         else
             out.append("UserID=\"").append(jobInfo.queryUserID()).append("\" ");
     }
+    if(fields & MSGFIELD_trace)
+    {
+        out.append("TraceID=\"").append(traceInfo.queryTraceID()).append("\" ");
+    }
+    if (fields & MSGFIELD_span)
+    {
+        out.append("SpanID=\"").append(traceInfo.querySpanID()).append("\" ");
+    }
 #ifdef LOG_MSG_NEWLINE
     if(fields & MSGFIELD_allJobInfo) out.append("\n     ");
 #endif
@@ -546,6 +570,14 @@ StringBuffer & LogMsg::toStringJSON(StringBuffer & out, unsigned fields) const
         else
             out.append(", \"USER\": \"").append(jobInfo.queryUserID()).append("\"");
     }
+    if(fields & MSGFIELD_trace)
+    {
+        out.appendf("\"TRACEID\"=\"%s\"", traceInfo.queryTraceID());
+    }
+    if (fields & MSGFIELD_span)
+    {
+        out.appendf("\"SPANID\"=\"%s\"",traceInfo.querySpanID());
+    }
     if((fields & MSGFIELD_code) && (msgCode != NoLogMsgCode))
         out.append(", \"CODE\": \"").append(msgCode).append("\"");
 
@@ -609,6 +641,14 @@ StringBuffer & LogMsg::toStringTable(StringBuffer & out, unsigned fields) const
     if(fields & MSGFIELD_job)
     {
         out.appendf("%-7s ", jobInfo.queryJobIDStr());
+    }
+    if(fields & MSGFIELD_trace)
+    {
+        out.appendf("%s ", traceInfo.queryTraceID());
+    }
+    if(fields & MSGFIELD_span)
+    {
+        out.appendf("%s ", traceInfo.querySpanID());
     }
     if(fields & MSGFIELD_user)
     {
@@ -2300,7 +2340,7 @@ void setupContainerizedLogMsgHandler()
 
         if (logConfig->hasProp(logFieldsAtt))
         {
-            //Supported logging fields: AUD,CLS,DET,MID,TIM,DAT,PID,TID,NOD,JOB,USE,SES,COD,MLT,MCT,NNT,COM,QUO,PFX,ALL,STD
+            //Supported logging fields: TRC,SPN,AUD,CLS,DET,MID,TIM,DAT,PID,TID,NOD,JOB,USE,SES,COD,MLT,MCT,NNT,COM,QUO,PFX,ALL,STD
             const char *logFields = logConfig->queryProp(logFieldsAtt);
             if (!isEmptyString(logFields))
                 theStderrHandler->setMessageFields(logMsgFieldsFromAbbrevs(logFields));
