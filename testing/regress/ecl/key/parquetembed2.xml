@@ -1,0 +1,1315 @@
+<Dataset name='BooleanIntegration'>
+ <Row><testid>0</testid><testname>aaa</testname><value>false</value></Row>
+ <Row><testid>1</testid><testname>aab</testname><value>false</value></Row>
+ <Row><testid>2</testid><testname>aac</testname><value>true</value></Row>
+ <Row><testid>3</testid><testname>aad</testname><value>true</value></Row>
+ <Row><testid>4</testid><testname>aae</testname><value>true</value></Row>
+ <Row><testid>5</testid><testname>aaf</testname><value>true</value></Row>
+ <Row><testid>6</testid><testname>aag</testname><value>true</value></Row>
+ <Row><testid>7</testid><testname>aah</testname><value>false</value></Row>
+ <Row><testid>8</testid><testname>aai</testname><value>true</value></Row>
+ <Row><testid>9</testid><testname>aaj</testname><value>true</value></Row>
+</Dataset>
+<Dataset name='IntegerIntegration'>
+ <Row><testid>10</testid><testname>aai</testname><value>123</value></Row>
+ <Row><testid>11</testid><testname>aaj</testname><value>-987</value></Row>
+ <Row><testid>12</testid><testname>aak</testname><value>0</value></Row>
+ <Row><testid>13</testid><testname>aal</testname><value>42</value></Row>
+ <Row><testid>14</testid><testname>aam</testname><value>-500</value></Row>
+ <Row><testid>15</testid><testname>aan</testname><value>999</value></Row>
+ <Row><testid>16</testid><testname>aao</testname><value>7</value></Row>
+ <Row><testid>17</testid><testname>aap</testname><value>-12345</value></Row>
+ <Row><testid>18</testid><testname>aaq</testname><value>987654</value></Row>
+ <Row><testid>19</testid><testname>aar</testname><value>1000000</value></Row>
+</Dataset>
+<Dataset name='RealIntegration'>
+ <Row><testid>20</testid><testname>aas</testname><value>3.14</value></Row>
+ <Row><testid>21</testid><testname>aat</testname><value>-0.5</value></Row>
+ <Row><testid>22</testid><testname>aau</testname><value>123.456</value></Row>
+ <Row><testid>23</testid><testname>aav</testname><value>-987.654</value></Row>
+ <Row><testid>24</testid><testname>aaw</testname><value>0.001</value></Row>
+ <Row><testid>25</testid><testname>aax</testname><value>999.99</value></Row>
+ <Row><testid>26</testid><testname>aay</testname><value>7.5</value></Row>
+ <Row><testid>27</testid><testname>aaz</testname><value>-1234.5678</value></Row>
+ <Row><testid>28</testid><testname>aba</testname><value>98765.43210000001</value></Row>
+ <Row><testid>29</testid><testname>abb</testname><value>1e-05</value></Row>
+</Dataset>
+<Dataset name='DecimalIntegration'>
+ <Row><testid>30</testid><testname>abc</testname><value>123.456789</value></Row>
+ <Row><testid>31</testid><testname>abd</testname><value>-987.6543209999999</value></Row>
+ <Row><testid>32</testid><testname>abe</testname><value>0.000001</value></Row>
+ <Row><testid>33</testid><testname>abf</testname><value>42.424242</value></Row>
+ <Row><testid>34</testid><testname>abg</testname><value>-500.5050499999999</value></Row>
+ <Row><testid>35</testid><testname>abh</testname><value>999.9999989999999</value></Row>
+ <Row><testid>36</testid><testname>abi</testname><value>7.777777</value></Row>
+ <Row><testid>37</testid><testname>abj</testname><value>-12345.6789</value></Row>
+ <Row><testid>38</testid><testname>abk</testname><value>987654.3209999999</value></Row>
+ <Row><testid>39</testid><testname>abl</testname><value>0.0000001</value></Row>
+</Dataset>
+<Dataset name='StringIntegration'>
+ <Row><testid>40</testid><testname>abm</testname><value>Hello, World!</value></Row>
+ <Row><testid>41</testid><testname>abn</testname><value>Data Science</value></Row>
+ <Row><testid>42</testid><testname>abo</testname><value>12345</value></Row>
+ <Row><testid>43</testid><testname>abp</testname><value>Python is fun!</value></Row>
+ <Row><testid>44</testid><testname>abq</testname><value>Strings rock!</value></Row>
+ <Row><testid>45</testid><testname>abr</testname><value>Testing 1, 2, 3...</value></Row>
+ <Row><testid>46</testid><testname>abs</testname><value>Let&apos;s code!</value></Row>
+ <Row><testid>47</testid><testname>abt</testname><value>Strings and more strings</value></Row>
+ <Row><testid>48</testid><testname>abu</testname><value>&#169;&#170;&#171;&#171;&#174;</value></Row>
+ <Row><testid>49</testid><testname>abv</testname><value>Special characters: !@#$%^&amp;*</value></Row>
+</Dataset>
+<Dataset name='QStringIntegration'>
+ <Row><testid>50</testid><testname>abw</testname><value>THIS IS A &quot;Q&quot; STRING.</value></Row>
+ <Row><testid>51</testid><testname>abx</testname><value>ANOTHER &quot;EXAMPLE&quot; HERE.</value></Row>
+ <Row><testid>52</testid><testname>aby</testname><value>QSTRINGS ARE USEFUL!</value></Row>
+ <Row><testid>53</testid><testname>abz</testname><value>ESCAPING QUOTES: \&quot;</value></Row>
+ <Row><testid>54</testid><testname>aca</testname><value>SPECIAL CHARACTERS ! &quot; # $</value></Row>
+ <Row><testid>55</testid><testname>acb</testname><value>TESTING STRING</value></Row>
+ <Row><testid>56</testid><testname>acc</testname><value>QSTRINGS ROCK!</value></Row>
+ <Row><testid>57</testid><testname>acd</testname><value>TESTING &quot;()*+,-)&quot; CHARACTERS.</value></Row>
+ <Row><testid>58</testid><testname>ace</testname><value>!&quot;#$&amp;&apos;()*+,-./;&lt;&gt;_[\]</value></Row>
+ <Row><testid>59</testid><testname>acf</testname><value>&lt;@@[[[[&apos;\&apos;\&apos;&apos;\]]]]</value></Row>
+</Dataset>
+<Dataset name='UnicodeIntegration'>
+ <Row><testid>60</testid><testname>acg</testname><value>こんにちは、世界！</value></Row>
+ <Row><testid>61</testid><testname>ach</testname><value>Unicode characters: ḸḹḾ</value></Row>
+ <Row><testid>62</testid><testname>aci</testname><value>Ṏ Beautiful Unicode Ṙ</value></Row>
+ <Row><testid>63</testid><testname>acj</testname><value>Unicode is fascinating!</value></Row>
+ <Row><testid>64</testid><testname>ack</testname><value>Ṙ Unicode Symbols ẫ</value></Row>
+ <Row><testid>65</testid><testname>acl</testname><value>Special characters: ©®™</value></Row>
+ <Row><testid>66</testid><testname>acm</testname><value>Unicode magic ⊗⊘⊙⊚⊛⊜⊝</value></Row>
+ <Row><testid>67</testid><testname>acn</testname><value>Testing Unicode: ⋖⋗⋙⋚⋛⋜⋝</value></Row>
+ <Row><testid>68</testid><testname>aco</testname><value>∭∮∯ More Unicode Fun ∐∑−∓∔</value></Row>
+ <Row><testid>69</testid><testname>acp</testname><value>∆∇∈∉∊∋∌ Unicode Everywhere ⋸⋹⋺⋻</value></Row>
+</Dataset>
+<Dataset name='UTF8Integration'>
+ <Row><testid>70</testid><testname>acq</testname><value>Café au lait ☕</value></Row>
+ <Row><testid>71</testid><testname>acr</testname><value>🎉 UTF-8 Characters 🎉  </value></Row>
+ <Row><testid>72</testid><testname>acs</testname><value>Special characters: ©®™</value></Row>
+ <Row><testid>73</testid><testname>act</testname><value>UTF-8 magic ✨</value></Row>
+ <Row><testid>74</testid><testname>acu</testname><value>🌟 More UTF-8 Fun 🌟  </value></Row>
+ <Row><testid>75</testid><testname>acv</testname><value>Testing UTF-8: 💡🔍🌐   </value></Row>
+ <Row><testid>76</testid><testname>acw</testname><value>🌟 UTF-8 Everywhere 🌟  </value></Row>
+ <Row><testid>77</testid><testname>acx</testname><value>UTF-8 is versatile!</value></Row>
+ <Row><testid>78</testid><testname>acy</testname><value>UTF-8 for the win!</value></Row>
+ <Row><testid>79</testid><testname>acz</testname><value>🌟 UTF-8 Symbols 🌟  </value></Row>
+</Dataset>
+<Dataset name='DataIntegration'>
+ <Row><testid>80</testid><testname>ada</testname><value>01A48D8414D848E900</value></Row>
+ <Row><testid>81</testid><testname>adb</testname><value>01F48AB446A76F8923</value></Row>
+ <Row><testid>82</testid><testname>adc</testname><value>01A48EC793A76F9400</value></Row>
+ <Row><testid>83</testid><testname>add</testname><value>01A48ECD6E65D8E803</value></Row>
+ <Row><testid>84</testid><testname>ade</testname><value>01A48ED1BB70D84C01</value></Row>
+ <Row><testid>85</testid><testname>adf</testname><value>01A48ED8F40385BA01</value></Row>
+ <Row><testid>86</testid><testname>adg</testname><value>01A4901558D7C91900</value></Row>
+ <Row><testid>87</testid><testname>adh</testname><value>01A490101D3DE9AC02</value></Row>
+ <Row><testid>88</testid><testname>adi</testname><value>01A49155D1CAF41500</value></Row>
+ <Row><testid>89</testid><testname>adj</testname><value>01A49156089FCE5A02</value></Row>
+</Dataset>
+<Dataset name='VarstringIntegration'>
+ <Row><testid>90</testid><testname>adk</testname><value>Short text</value></Row>
+ <Row><testid>91</testid><testname>adl</testname><value>A longer variable-length string</value></Row>
+ <Row><testid>92</testid><testname>adm</testname><value>Strings are flexible!</value></Row>
+ <Row><testid>93</testid><testname>adn</testname><value>Variable-length strings rock!</value></Row>
+ <Row><testid>94</testid><testname>ado</testname><value>Testing varstrings: &#169;&#170;</value></Row>
+ <Row><testid>95</testid><testname>adp</testname><value>Varstrings everywhere!</value></Row>
+ <Row><testid>96</testid><testname>adq</testname><value>%$ More Varstring Fun ^*</value></Row>
+ <Row><testid>97</testid><testname>adr</testname><value>Varstrings for the win!</value></Row>
+ <Row><testid>98</testid><testname>ads</testname><value>Varstrings galore!</value></Row>
+ <Row><testid>99</testid><testname>adt</testname><value>*** Varstring Universe ***</value></Row>
+</Dataset>
+<Dataset name='VarunicodeIntegration'>
+ <Row><testid>100</testid><testname>adu</testname><value>Variable-length Unicode: こんにちは、世界！</value></Row>
+ <Row><testid>101</testid><testname>adv</testname><value>🌟 Variable-length Unicode Symbols 🌟</value></Row>
+ <Row><testid>102</testid><testname>adw</testname><value>Unicode flexibility is awesome!</value></Row>
+ <Row><testid>103</testid><testname>adx</testname><value>Testing varunicodes: 🌈🌐</value></Row>
+ <Row><testid>104</testid><testname>ady</testname><value>Varunicodes everywhere!</value></Row>
+ <Row><testid>105</testid><testname>adz</testname><value>🌟 More Varunicode Fun 🌟</value></Row>
+ <Row><testid>106</testid><testname>aea</testname><value>Varunicodes for the win!</value></Row>
+ <Row><testid>107</testid><testname>aeb</testname><value>Varunicodes galore!</value></Row>
+ <Row><testid>108</testid><testname>aec</testname><value>🌟 Varunicode Universe 🌟</value></Row>
+ <Row><testid>109</testid><testname>aed</testname><value>🌟 Varunicode Magic 🌟</value></Row>
+</Dataset>
+<Dataset name='SetofBooleanIntegration'>
+ <Row><testid>110</testid><testname>aee</testname><value><Item>true</Item></value></Row>
+ <Row><testid>111</testid><testname>aef</testname><value><Item>false</Item></value></Row>
+ <Row><testid>112</testid><testname>aeg</testname><value><Item>true</Item><Item>false</Item><Item>true</Item><Item>false</Item><Item>true</Item></value></Row>
+ <Row><testid>113</testid><testname>aeh</testname><value><Item>true</Item><Item>true</Item><Item>true</Item><Item>true</Item><Item>false</Item></value></Row>
+ <Row><testid>114</testid><testname>aei</testname><value><Item>true</Item><Item>true</Item><Item>false</Item><Item>true</Item><Item>true</Item></value></Row>
+</Dataset>
+<Dataset name='SetofIntegerIntegration'>
+ <Row><testid>115</testid><testname>aej</testname><value><Item>42</Item></value></Row>
+ <Row><testid>116</testid><testname>aek</testname><value><Item>-10</Item></value></Row>
+ <Row><testid>117</testid><testname>ael</testname><value><Item>0</Item><Item>34</Item><Item>367</Item><Item>-12</Item></value></Row>
+ <Row><testid>118</testid><testname>aem</testname><value><Item>100</Item><Item>89</Item><Item>12</Item></value></Row>
+ <Row><testid>119</testid><testname>aen</testname><value><Item>1</Item><Item>2</Item><Item>3</Item><Item>4</Item><Item>5</Item></value></Row>
+</Dataset>
+<Dataset name='SetofRealIntegration'>
+ <Row><testid>120</testid><testname>aeo</testname><value><Item>3.14</Item><Item>-2.718</Item></value></Row>
+ <Row><testid>121</testid><testname>aep</testname><value><Item>0.0</Item></value></Row>
+ <Row><testid>122</testid><testname>aeq</testname><value><Item>2.5</Item><Item>-0.5</Item><Item>1.618</Item></value></Row>
+ <Row><testid>123</testid><testname>aer</testname><value><Item>7.77</Item><Item>-3.33</Item></value></Row>
+ <Row><testid>124</testid><testname>aes</testname><value><Item>4.2</Item><Item>9.99</Item><Item>3.1415926</Item></value></Row>
+</Dataset>
+<Dataset name='SetofDecimalIntegration'>
+ <Row><testid>125</testid><testname>aej</testname><value><Item>1.23456789</Item></value></Row>
+ <Row><testid>126</testid><testname>aek</testname><value><Item>3.14159265</Item><Item>2.71828183</Item></value></Row>
+ <Row><testid>127</testid><testname>ael</testname><value><Item>0</Item><Item>-1.23456789</Item><Item>-0.98765432</Item></value></Row>
+ <Row><testid>128</testid><testname>aem</testname><value><Item>0.12345678</Item><Item>-0.12345678</Item><Item>19.12389555</Item></value></Row>
+ <Row><testid>129</testid><testname>aen</testname><value><Item>9.876543209999999</Item><Item>-5.43210987</Item></value></Row>
+</Dataset>
+<Dataset name='SetofStringIntegration'>
+ <Row><testid>130</testid><testname>aeo</testname><value><Item>Hello</Item><Item>World</Item></value></Row>
+ <Row><testid>131</testid><testname>aep</testname><value><Item>Parquet</Item></value></Row>
+ <Row><testid>132</testid><testname>aeq</testname><value><Item>SET</Item><Item>OF</Item><Item>Test</Item></value></Row>
+ <Row><testid>133</testid><testname>aer</testname><value><Item>String</Item><Item>Data</Item><Item>ECL</Item></value></Row>
+ <Row><testid>134</testid><testname>aes</testname><value><Item>string</Item><Item>STRING</Item></value></Row>
+</Dataset>
+<Dataset name='SetofQStringIntegration'>
+ <Row><testid>135</testid><testname>aet</testname><value><Item>&quot;QSTRING 1&quot;</Item></value></Row>
+ <Row><testid>136</testid><testname>aeu</testname><value><Item>AKJDCNA</Item><Item>(&amp;*^%$)</Item></value></Row>
+ <Row><testid>137</testid><testname>aev</testname><value><Item>SLK0934</Item><Item>32415</Item><Item>123VDER</Item></value></Row>
+ <Row><testid>138</testid><testname>aew</testname><value><Item>(*^&amp;^&amp;%$)</Item><Item>^%$#</Item></value></Row>
+ <Row><testid>139</testid><testname>aex</testname><value><Item>!@*^$</Item><Item>1234754</Item></value></Row>
+</Dataset>
+<Dataset name='SetofUnicodeIntegration'>
+ <Row><testid>140</testid><testname>aey</testname><value><Item>こんにちは、世界！</Item></value></Row>
+ <Row><testid>141</testid><testname>aez</testname><value><Item>Unicode flexibility is awesome!</Item><Item>Testing unicodes: 🌈🌐</Item></value></Row>
+ <Row><testid>142</testid><testname>afa</testname><value><Item>🌟 UTF8 Universe 🌟</Item><Item>Unicodes everywhere!</Item><Item>🌟 More Unicode Fun 🌟</Item></value></Row>
+ <Row><testid>143</testid><testname>afb</testname><value><Item>Unicodes for the win!</Item><Item>Unicodes galore!</Item><Item>🌟 Unicode Symbols 🌟</Item></value></Row>
+ <Row><testid>144</testid><testname>afc</testname><value><Item>🌟 Unicode Universe 🌟</Item><Item>🌟 Unicode Magic 🌟</Item></value></Row>
+</Dataset>
+<Dataset name='SetofUTF8Integration'>
+ <Row><testid>145</testid><testname>afd</testname><value><Item>こんにちは、世界！</Item><Item>🌟 UTF8 Symbols 🌟  </Item><Item>🌟 More UTF8 Fun 🌟  </Item></value></Row>
+ <Row><testid>146</testid><testname>afe</testname><value><Item>UTF8 flexibility is awesome!</Item><Item>Testing utf8: 🌈🌐  </Item></value></Row>
+ <Row><testid>147</testid><testname>aff</testname><value><Item>UTF8 everywhere!</Item></value></Row>
+ <Row><testid>148</testid><testname>afg</testname><value><Item>UTF8 for the win!</Item><Item>UTF8 galore!</Item></value></Row>
+ <Row><testid>149</testid><testname>afh</testname><value><Item>🌟 UTF8 Magic 🌟  </Item></value></Row>
+</Dataset>
+<Dataset name='SetofDataIntegration'>
+ <Row><testid>150</testid><testname>afi</testname><value><Item>01A48D8414D848E900</Item><Item>01A48EC793A76F9400</Item><Item>01A48ED1BB70D84C01</Item><Item>01A4901558D7C91900</Item></value></Row>
+ <Row><testid>151</testid><testname>afj</testname><value><Item>01F48AB446A76F8923</Item><Item>01A48ECD6E65D8E803</Item><Item>01A49156089FCE5A02</Item></value></Row>
+ <Row><testid>152</testid><testname>afk</testname><value><Item>01A48D8414D848E900</Item><Item>01A48EC793A76F9400</Item></value></Row>
+ <Row><testid>153</testid><testname>afl</testname><value><Item>01F48AB446A76F8923</Item></value></Row>
+ <Row><testid>154</testid><testname>afm</testname><value><Item>01A48D8414D848E900</Item><Item>01A48EC793A76F9400</Item><Item>01A48ED8F40385BA01</Item></value></Row>
+</Dataset>
+<Dataset name='SetofVarstringIntegration'>
+ <Row><testid>155</testid><testname>afo</testname><value><Item>Hello</Item><Item>World</Item></value></Row>
+ <Row><testid>156</testid><testname>afp</testname><value><Item>Parquet</Item></value></Row>
+ <Row><testid>157</testid><testname>afq</testname><value><Item>SET</Item><Item>OF</Item><Item>Test</Item></value></Row>
+ <Row><testid>158</testid><testname>afr</testname><value><Item>String</Item><Item>Data</Item><Item>ECL</Item></value></Row>
+ <Row><testid>159</testid><testname>afs</testname><value><Item>string</Item><Item>STRING</Item></value></Row>
+</Dataset>
+<Dataset name='SetofVarunicodeIntegration'>
+ <Row><testid>160</testid><testname>aft</testname><value><Item>こんにちは、世界！</Item></value></Row>
+ <Row><testid>161</testid><testname>afu</testname><value><Item>Unicode flexibility is awesome!</Item><Item>Testing unicodes: 🌈🌐</Item></value></Row>
+ <Row><testid>162</testid><testname>afv</testname><value><Item>🌟 UTF8 Universe 🌟</Item><Item>Unicodes everywhere!</Item><Item>🌟 More Unicode Fun 🌟</Item></value></Row>
+ <Row><testid>163</testid><testname>afw</testname><value><Item>Unicodes for the win!</Item><Item>Unicodes galore!</Item><Item>🌟 Unicode Symbols 🌟</Item></value></Row>
+ <Row><testid>164</testid><testname>afx</testname><value><Item>🌟 Unicode Universe 🌟</Item><Item>🌟 Unicode Magic 🌟</Item></value></Row>
+</Dataset>
+<Dataset name='ChildDatasetIntegration'>
+ <Row><testid>165</testid><testname>afy</testname><value><b>true</b><i>42</i><r>3.14</r><de>1.23456789</de><s>Hello</s><q>QSTRING</q><u>こんにちは、世界！</u><u8>🌟 UTF8 Symbols 🌟  </u8><da>01010101</da><soi><Item>1</Item><Item>2</Item><Item>3</Item></soi></value></Row>
+ <Row><testid>166</testid><testname>afz</testname><value><b>false</b><i>-10</i><r>-2.718</r><de>-0.98765432</de><s>World</s><q>ANOTHERQSTRING</q><u>こんばんは、世界！</u><u8>🌟 More UTF8 Fun 🌟  </u8><da>FF00FF00</da><soi><Item>4</Item><Item>5</Item><Item>6</Item></soi></value></Row>
+ <Row><testid>167</testid><testname>aga</testname><value><b>true</b><i>0</i><r>0.0</r><de>0</de><s>Parquet</s><q>YETANOTHERQSTRING</q><u>おはよう、世界！</u><u8>🌟 Unicode Magic 🌟  </u8><da>AABBCCDD</da><soi><Item>7</Item><Item>8</Item><Item>9</Item></soi></value></Row>
+ <Row><testid>168</testid><testname>agb</testname><value><b>false</b><i>100</i><r>1.618</r><de>2.5</de><s>ECL</s><q>LASTQSTRING</q><u>こんばんは、日本！</u><u8>🌟 Unicode Universe 🌟  </u8><da>12345678</da><soi><Item>10</Item><Item>11</Item><Item>12</Item></soi></value></Row>
+ <Row><testid>169</testid><testname>agc</testname><value><b>true</b><i>-5</i><r>-0.5</r><de>3.14159265</de><s>SET</s><q>FINALQSTRING</q><u>おやすみ、世界！</u><u8>🌟 More Unicode Fun 🌟  </u8><da>FEDCBA98</da><soi><Item>13</Item><Item>14</Item><Item>15</Item></soi></value></Row>
+ <Row><testid>170</testid><testname>agd</testname><value><b>false</b><i>7</i><r>7.77</r><de>0.12345678</de><s>Test</s><q>ONEMOREQSTRING</q><u>さようなら、世界！</u><u8>🌟 Unicode Symbols 🌟  </u8><da>12345678</da><soi><Item>16</Item><Item>17</Item><Item>18</Item></soi></value></Row>
+ <Row><testid>171</testid><testname>age</testname><value><b>true</b><i>-20</i><r>-3.33</r><de>8.880000000000001</de><s>String</s><q>FINALQSTRING</q><u>おやすみ、日本！</u><u8>🌟 UTF8 Symbols 🌟  </u8><da>FEDCBA98</da><soi><Item>19</Item><Item>20</Item><Item>21</Item></soi></value></Row>
+ <Row><testid>172</testid><testname>agf</testname><value><b>false</b><i>15</i><r>4.2</r><de>0.123</de><s>Data</s><q>YETANOTHERQSTRING</q><u>おはよう、日本！</u><u8>🌟 Unicode Magic 🌟  </u8><da>12345678</da><soi><Item>22</Item><Item>23</Item><Item>24</Item></soi></value></Row>
+ <Row><testid>173</testid><testname>agg</testname><value><b>true</b><i>8</i><r>9.99</r><de>-0.12345678</de><s>Varstring</s><q>ANOTHERQSTRING</q><u>こんにちは、日本！</u><u8>🌟 More UTF8 Fun 🌟  </u8><da>FEDCBA98</da><soi><Item>25</Item><Item>26</Item><Item>27</Item></soi></value></Row>
+ <Row><testid>174</testid><testname>agh</testname><value><b>false</b><i>0</i><r>-7.77</r><de>0.123</de><s>Unicode</s><q>LASTQSTRING</q><u>さようなら、日本！</u><u8>🌟 Unicode Universe 🌟  </u8><da>12345678</da><soi><Item>28</Item><Item>29</Item><Item>30</Item></soi></value></Row>
+</Dataset>
+<Dataset name='XPathIntegration1'>
+ <Row><testid>175</testid><testname>agi</testname><value><B>true</B><I>42</I><R>3.14</R><DE>1.23456789</DE><S>Hello</S><Q>QSTRING</Q><U>こんにちは、世界！</U><U8>🌟 UTF8 Symbols 🌟  </U8><DA>01010101</DA><SOI>1</SOI><SOI>2</SOI><SOI>3</SOI></value></Row>
+ <Row><testid>176</testid><testname>agj</testname><value><B>false</B><I>-10</I><R>-2.718</R><DE>-0.98765432</DE><S>World</S><Q>ANOTHERQSTRING</Q><U>こんばんは、世界！</U><U8>🌟 More UTF8 Fun 🌟  </U8><DA>FF00FF00</DA><SOI>4</SOI><SOI>5</SOI><SOI>6</SOI></value></Row>
+ <Row><testid>177</testid><testname>agk</testname><value><B>false</B><I>15</I><R>4.2</R><DE>0.123</DE><S>Data</S><Q>YETANOTHERQSTRING</Q><U>おはよう、日本！</U><U8>🌟 Unicode Magic 🌟  </U8><DA>12345678</DA><SOI>22</SOI><SOI>23</SOI><SOI>24</SOI></value></Row>
+ <Row><testid>178</testid><testname>agl</testname><value><B>true</B><I>8</I><R>9.99</R><DE>-0.12345678</DE><S>Varstring</S><Q>ANOTHERQSTRING</Q><U>こんにちは、日本！</U><U8>🌟 More UTF8 Fun 🌟  </U8><DA>FEDCBA98</DA><SOI>25</SOI><SOI>26</SOI><SOI>27</SOI></value></Row>
+ <Row><testid>179</testid><testname>agm</testname><value><B>false</B><I>0</I><R>-7.77</R><DE>0.123</DE><S>Unicode</S><Q>LASTQSTRING</Q><U>さようなら、日本！</U><U8>🌟 Unicode Universe 🌟  </U8><DA>12345678</DA><SOI>28</SOI><SOI>29</SOI><SOI>30</SOI></value></Row>
+</Dataset>
+<Dataset name='XPathIntegration2'>
+ <Row><testid>180</testid><testname>agn</testname><B>true</B><I>42</I><R>3.14</R><DE>1.23456789</DE><S>Hello</S><Q>QSTRING</Q><U>こんにちは、世界！</U><U8>🌟 UTF8 Symbols 🌟  </U8><DA>01010101</DA><SOI>1</SOI><SOI>2</SOI><SOI>3</SOI></Row>
+ <Row><testid>181</testid><testname>ago</testname><B>false</B><I>-10</I><R>-2.718</R><DE>-0.98765432</DE><S>World</S><Q>ANOTHERQSTRING</Q><U>こんばんは、世界！</U><U8>🌟 More UTF8 Fun 🌟  </U8><DA>FF00FF00</DA><SOI>4</SOI><SOI>5</SOI><SOI>6</SOI></Row>
+ <Row><testid>182</testid><testname>agp</testname><B>false</B><I>15</I><R>4.2</R><DE>0.123</DE><S>Data</S><Q>YETANOTHERQSTRING</Q><U>おはよう、日本！</U><U8>🌟 Unicode Magic 🌟  </U8><DA>12345678</DA><SOI>22</SOI><SOI>23</SOI><SOI>24</SOI></Row>
+ <Row><testid>183</testid><testname>agq</testname><B>true</B><I>8</I><R>9.99</R><DE>-0.12345678</DE><S>Varstring</S><Q>ANOTHERQSTRING</Q><U>こんにちは、日本！</U><U8>🌟 More UTF8 Fun 🌟  </U8><DA>FEDCBA98</DA><SOI>25</SOI><SOI>26</SOI><SOI>27</SOI></Row>
+ <Row><testid>184</testid><testname>agr</testname><B>false</B><I>0</I><R>-7.77</R><DE>0.123</DE><S>Unicode</S><Q>LASTQSTRING</Q><U>さようなら、日本！</U><U8>🌟 Unicode Universe 🌟  </U8><DA>12345678</DA><SOI>28</SOI><SOI>29</SOI><SOI>30</SOI></Row>
+</Dataset>
+<Dataset name='BooleanToIntegerIntegration'>
+ <Row><testid>0</testid><testname>aaa</testname><value>0</value></Row>
+ <Row><testid>1</testid><testname>aab</testname><value>0</value></Row>
+ <Row><testid>2</testid><testname>aac</testname><value>1</value></Row>
+ <Row><testid>3</testid><testname>aad</testname><value>1</value></Row>
+ <Row><testid>4</testid><testname>aae</testname><value>1</value></Row>
+ <Row><testid>5</testid><testname>aaf</testname><value>1</value></Row>
+ <Row><testid>6</testid><testname>aag</testname><value>1</value></Row>
+ <Row><testid>7</testid><testname>aah</testname><value>0</value></Row>
+ <Row><testid>8</testid><testname>aai</testname><value>1</value></Row>
+ <Row><testid>9</testid><testname>aaj</testname><value>1</value></Row>
+</Dataset>
+<Dataset name='BooleanToRealIntegration'>
+ <Row><testid>0</testid><testname>aaa</testname><value>0.0</value></Row>
+ <Row><testid>1</testid><testname>aab</testname><value>0.0</value></Row>
+ <Row><testid>2</testid><testname>aac</testname><value>1.0</value></Row>
+ <Row><testid>3</testid><testname>aad</testname><value>1.0</value></Row>
+ <Row><testid>4</testid><testname>aae</testname><value>1.0</value></Row>
+ <Row><testid>5</testid><testname>aaf</testname><value>1.0</value></Row>
+ <Row><testid>6</testid><testname>aag</testname><value>1.0</value></Row>
+ <Row><testid>7</testid><testname>aah</testname><value>0.0</value></Row>
+ <Row><testid>8</testid><testname>aai</testname><value>1.0</value></Row>
+ <Row><testid>9</testid><testname>aaj</testname><value>1.0</value></Row>
+</Dataset>
+<Dataset name='BooleanToDecimalIntegration'>
+ <Row><testid>0</testid><testname>aaa</testname><value>0</value></Row>
+ <Row><testid>1</testid><testname>aab</testname><value>0</value></Row>
+ <Row><testid>2</testid><testname>aac</testname><value>1</value></Row>
+ <Row><testid>3</testid><testname>aad</testname><value>1</value></Row>
+ <Row><testid>4</testid><testname>aae</testname><value>1</value></Row>
+ <Row><testid>5</testid><testname>aaf</testname><value>1</value></Row>
+ <Row><testid>6</testid><testname>aag</testname><value>1</value></Row>
+ <Row><testid>7</testid><testname>aah</testname><value>0</value></Row>
+ <Row><testid>8</testid><testname>aai</testname><value>1</value></Row>
+ <Row><testid>9</testid><testname>aaj</testname><value>1</value></Row>
+</Dataset>
+<Dataset name='BooleanToStringIntegration'>
+ <Row><testid>0</testid><testname>aaa</testname><value>0</value></Row>
+ <Row><testid>1</testid><testname>aab</testname><value>0</value></Row>
+ <Row><testid>2</testid><testname>aac</testname><value>1</value></Row>
+ <Row><testid>3</testid><testname>aad</testname><value>1</value></Row>
+ <Row><testid>4</testid><testname>aae</testname><value>1</value></Row>
+ <Row><testid>5</testid><testname>aaf</testname><value>1</value></Row>
+ <Row><testid>6</testid><testname>aag</testname><value>1</value></Row>
+ <Row><testid>7</testid><testname>aah</testname><value>0</value></Row>
+ <Row><testid>8</testid><testname>aai</testname><value>1</value></Row>
+ <Row><testid>9</testid><testname>aaj</testname><value>1</value></Row>
+</Dataset>
+<Dataset name='BooleanToQStringIntegration'>
+ <Row><testid>0</testid><testname>aaa</testname><value>0</value></Row>
+ <Row><testid>1</testid><testname>aab</testname><value>0</value></Row>
+ <Row><testid>2</testid><testname>aac</testname><value>1</value></Row>
+ <Row><testid>3</testid><testname>aad</testname><value>1</value></Row>
+ <Row><testid>4</testid><testname>aae</testname><value>1</value></Row>
+ <Row><testid>5</testid><testname>aaf</testname><value>1</value></Row>
+ <Row><testid>6</testid><testname>aag</testname><value>1</value></Row>
+ <Row><testid>7</testid><testname>aah</testname><value>0</value></Row>
+ <Row><testid>8</testid><testname>aai</testname><value>1</value></Row>
+ <Row><testid>9</testid><testname>aaj</testname><value>1</value></Row>
+</Dataset>
+<Dataset name='BooleanToUnicodeIntegration'>
+ <Row><testid>0</testid><testname>aaa</testname><value>0</value></Row>
+ <Row><testid>1</testid><testname>aab</testname><value>0</value></Row>
+ <Row><testid>2</testid><testname>aac</testname><value>1</value></Row>
+ <Row><testid>3</testid><testname>aad</testname><value>1</value></Row>
+ <Row><testid>4</testid><testname>aae</testname><value>1</value></Row>
+ <Row><testid>5</testid><testname>aaf</testname><value>1</value></Row>
+ <Row><testid>6</testid><testname>aag</testname><value>1</value></Row>
+ <Row><testid>7</testid><testname>aah</testname><value>0</value></Row>
+ <Row><testid>8</testid><testname>aai</testname><value>1</value></Row>
+ <Row><testid>9</testid><testname>aaj</testname><value>1</value></Row>
+</Dataset>
+<Dataset name='BooleanToUTF8Integration'>
+ <Row><testid>0</testid><testname>aaa</testname><value>0</value></Row>
+ <Row><testid>1</testid><testname>aab</testname><value>0</value></Row>
+ <Row><testid>2</testid><testname>aac</testname><value>1</value></Row>
+ <Row><testid>3</testid><testname>aad</testname><value>1</value></Row>
+ <Row><testid>4</testid><testname>aae</testname><value>1</value></Row>
+ <Row><testid>5</testid><testname>aaf</testname><value>1</value></Row>
+ <Row><testid>6</testid><testname>aag</testname><value>1</value></Row>
+ <Row><testid>7</testid><testname>aah</testname><value>0</value></Row>
+ <Row><testid>8</testid><testname>aai</testname><value>1</value></Row>
+ <Row><testid>9</testid><testname>aaj</testname><value>1</value></Row>
+</Dataset>
+<Dataset name='BooleanToDataIntegration'>
+ <Row><testid>0</testid><testname>aaa</testname><value>30</value></Row>
+ <Row><testid>1</testid><testname>aab</testname><value>30</value></Row>
+ <Row><testid>2</testid><testname>aac</testname><value>31</value></Row>
+ <Row><testid>3</testid><testname>aad</testname><value>31</value></Row>
+ <Row><testid>4</testid><testname>aae</testname><value>31</value></Row>
+ <Row><testid>5</testid><testname>aaf</testname><value>31</value></Row>
+ <Row><testid>6</testid><testname>aag</testname><value>31</value></Row>
+ <Row><testid>7</testid><testname>aah</testname><value>30</value></Row>
+ <Row><testid>8</testid><testname>aai</testname><value>31</value></Row>
+ <Row><testid>9</testid><testname>aaj</testname><value>31</value></Row>
+</Dataset>
+<Dataset name='IntegerToIntegerIntegration'>
+ <Row><testid>10</testid><testname>aai</testname><value>true</value></Row>
+ <Row><testid>11</testid><testname>aaj</testname><value>true</value></Row>
+ <Row><testid>12</testid><testname>aak</testname><value>false</value></Row>
+ <Row><testid>13</testid><testname>aal</testname><value>true</value></Row>
+ <Row><testid>14</testid><testname>aam</testname><value>true</value></Row>
+ <Row><testid>15</testid><testname>aan</testname><value>true</value></Row>
+ <Row><testid>16</testid><testname>aao</testname><value>true</value></Row>
+ <Row><testid>17</testid><testname>aap</testname><value>true</value></Row>
+ <Row><testid>18</testid><testname>aaq</testname><value>true</value></Row>
+ <Row><testid>19</testid><testname>aar</testname><value>true</value></Row>
+</Dataset>
+<Dataset name='IntegerToRealIntegration'>
+ <Row><testid>10</testid><testname>aai</testname><value>123.0</value></Row>
+ <Row><testid>11</testid><testname>aaj</testname><value>-987.0</value></Row>
+ <Row><testid>12</testid><testname>aak</testname><value>0.0</value></Row>
+ <Row><testid>13</testid><testname>aal</testname><value>42.0</value></Row>
+ <Row><testid>14</testid><testname>aam</testname><value>-500.0</value></Row>
+ <Row><testid>15</testid><testname>aan</testname><value>999.0</value></Row>
+ <Row><testid>16</testid><testname>aao</testname><value>7.0</value></Row>
+ <Row><testid>17</testid><testname>aap</testname><value>-12345.0</value></Row>
+ <Row><testid>18</testid><testname>aaq</testname><value>987654.0</value></Row>
+ <Row><testid>19</testid><testname>aar</testname><value>1000000.0</value></Row>
+</Dataset>
+<Dataset name='IntegerToDecimalIntegration'>
+ <Row><testid>10</testid><testname>aai</testname><value>123</value></Row>
+ <Row><testid>11</testid><testname>aaj</testname><value>-987</value></Row>
+ <Row><testid>12</testid><testname>aak</testname><value>0</value></Row>
+ <Row><testid>13</testid><testname>aal</testname><value>42</value></Row>
+ <Row><testid>14</testid><testname>aam</testname><value>-500</value></Row>
+ <Row><testid>15</testid><testname>aan</testname><value>999</value></Row>
+ <Row><testid>16</testid><testname>aao</testname><value>7</value></Row>
+ <Row><testid>17</testid><testname>aap</testname><value>-12345</value></Row>
+ <Row><testid>18</testid><testname>aaq</testname><value>987654</value></Row>
+ <Row><testid>19</testid><testname>aar</testname><value>1000000</value></Row>
+</Dataset>
+<Dataset name='IntegerToStringIntegration'>
+ <Row><testid>10</testid><testname>aai</testname><value>123</value></Row>
+ <Row><testid>11</testid><testname>aaj</testname><value>-987</value></Row>
+ <Row><testid>12</testid><testname>aak</testname><value>0</value></Row>
+ <Row><testid>13</testid><testname>aal</testname><value>42</value></Row>
+ <Row><testid>14</testid><testname>aam</testname><value>-500</value></Row>
+ <Row><testid>15</testid><testname>aan</testname><value>999</value></Row>
+ <Row><testid>16</testid><testname>aao</testname><value>7</value></Row>
+ <Row><testid>17</testid><testname>aap</testname><value>-12345</value></Row>
+ <Row><testid>18</testid><testname>aaq</testname><value>987654</value></Row>
+ <Row><testid>19</testid><testname>aar</testname><value>1000000</value></Row>
+</Dataset>
+<Dataset name='IntegerToQStringIntegration'>
+ <Row><testid>10</testid><testname>aai</testname><value>123</value></Row>
+ <Row><testid>11</testid><testname>aaj</testname><value>-987</value></Row>
+ <Row><testid>12</testid><testname>aak</testname><value>0</value></Row>
+ <Row><testid>13</testid><testname>aal</testname><value>42</value></Row>
+ <Row><testid>14</testid><testname>aam</testname><value>-500</value></Row>
+ <Row><testid>15</testid><testname>aan</testname><value>999</value></Row>
+ <Row><testid>16</testid><testname>aao</testname><value>7</value></Row>
+ <Row><testid>17</testid><testname>aap</testname><value>-12345</value></Row>
+ <Row><testid>18</testid><testname>aaq</testname><value>987654</value></Row>
+ <Row><testid>19</testid><testname>aar</testname><value>1000000</value></Row>
+</Dataset>
+<Dataset name='IntegerToUnicodeIntegration'>
+ <Row><testid>10</testid><testname>aai</testname><value>123</value></Row>
+ <Row><testid>11</testid><testname>aaj</testname><value>-987</value></Row>
+ <Row><testid>12</testid><testname>aak</testname><value>0</value></Row>
+ <Row><testid>13</testid><testname>aal</testname><value>42</value></Row>
+ <Row><testid>14</testid><testname>aam</testname><value>-500</value></Row>
+ <Row><testid>15</testid><testname>aan</testname><value>999</value></Row>
+ <Row><testid>16</testid><testname>aao</testname><value>7</value></Row>
+ <Row><testid>17</testid><testname>aap</testname><value>-12345</value></Row>
+ <Row><testid>18</testid><testname>aaq</testname><value>987654</value></Row>
+ <Row><testid>19</testid><testname>aar</testname><value>1000000</value></Row>
+</Dataset>
+<Dataset name='IntegerToUTF8Integration'>
+ <Row><testid>10</testid><testname>aai</testname><value>123</value></Row>
+ <Row><testid>11</testid><testname>aaj</testname><value>-987</value></Row>
+ <Row><testid>12</testid><testname>aak</testname><value>0</value></Row>
+ <Row><testid>13</testid><testname>aal</testname><value>42</value></Row>
+ <Row><testid>14</testid><testname>aam</testname><value>-500</value></Row>
+ <Row><testid>15</testid><testname>aan</testname><value>999</value></Row>
+ <Row><testid>16</testid><testname>aao</testname><value>7</value></Row>
+ <Row><testid>17</testid><testname>aap</testname><value>-12345</value></Row>
+ <Row><testid>18</testid><testname>aaq</testname><value>987654</value></Row>
+ <Row><testid>19</testid><testname>aar</testname><value>1000000</value></Row>
+</Dataset>
+<Dataset name='IntegerToDataIntegration'>
+ <Row><testid>10</testid><testname>aai</testname><value>313233</value></Row>
+ <Row><testid>11</testid><testname>aaj</testname><value>2D393837</value></Row>
+ <Row><testid>12</testid><testname>aak</testname><value>30</value></Row>
+ <Row><testid>13</testid><testname>aal</testname><value>3432</value></Row>
+ <Row><testid>14</testid><testname>aam</testname><value>2D353030</value></Row>
+ <Row><testid>15</testid><testname>aan</testname><value>393939</value></Row>
+ <Row><testid>16</testid><testname>aao</testname><value>37</value></Row>
+ <Row><testid>17</testid><testname>aap</testname><value>2D3132333435</value></Row>
+ <Row><testid>18</testid><testname>aaq</testname><value>393837363534</value></Row>
+ <Row><testid>19</testid><testname>aar</testname><value>31303030303030</value></Row>
+</Dataset>
+<Dataset name='RealToIntegerIntegration'>
+ <Row><testid>20</testid><testname>aas</testname><value>3</value></Row>
+ <Row><testid>21</testid><testname>aat</testname><value>0</value></Row>
+ <Row><testid>22</testid><testname>aau</testname><value>123</value></Row>
+ <Row><testid>23</testid><testname>aav</testname><value>-987</value></Row>
+ <Row><testid>24</testid><testname>aaw</testname><value>0</value></Row>
+ <Row><testid>25</testid><testname>aax</testname><value>999</value></Row>
+ <Row><testid>26</testid><testname>aay</testname><value>7</value></Row>
+ <Row><testid>27</testid><testname>aaz</testname><value>-1234</value></Row>
+ <Row><testid>28</testid><testname>aba</testname><value>98765</value></Row>
+ <Row><testid>29</testid><testname>abb</testname><value>0</value></Row>
+</Dataset>
+<Dataset name='RealToBooleanIntegration'>
+ <Row><testid>20</testid><testname>aas</testname><value>true</value></Row>
+ <Row><testid>21</testid><testname>aat</testname><value>false</value></Row>
+ <Row><testid>22</testid><testname>aau</testname><value>true</value></Row>
+ <Row><testid>23</testid><testname>aav</testname><value>true</value></Row>
+ <Row><testid>24</testid><testname>aaw</testname><value>false</value></Row>
+ <Row><testid>25</testid><testname>aax</testname><value>true</value></Row>
+ <Row><testid>26</testid><testname>aay</testname><value>true</value></Row>
+ <Row><testid>27</testid><testname>aaz</testname><value>true</value></Row>
+ <Row><testid>28</testid><testname>aba</testname><value>true</value></Row>
+ <Row><testid>29</testid><testname>abb</testname><value>false</value></Row>
+</Dataset>
+<Dataset name='RealToDecimalIntegration'>
+ <Row><testid>20</testid><testname>aas</testname><value>3.14</value></Row>
+ <Row><testid>21</testid><testname>aat</testname><value>-0.5</value></Row>
+ <Row><testid>22</testid><testname>aau</testname><value>123.456</value></Row>
+ <Row><testid>23</testid><testname>aav</testname><value>-987.654</value></Row>
+ <Row><testid>24</testid><testname>aaw</testname><value>0.001</value></Row>
+ <Row><testid>25</testid><testname>aax</testname><value>999.99</value></Row>
+ <Row><testid>26</testid><testname>aay</testname><value>7.5</value></Row>
+ <Row><testid>27</testid><testname>aaz</testname><value>-1234.5678</value></Row>
+ <Row><testid>28</testid><testname>aba</testname><value>98765.43210000001</value></Row>
+ <Row><testid>29</testid><testname>abb</testname><value>1</value></Row>
+</Dataset>
+<Dataset name='RealToStringIntegration'>
+ <Row><testid>20</testid><testname>aas</testname><value>3.14</value></Row>
+ <Row><testid>21</testid><testname>aat</testname><value>-0.5</value></Row>
+ <Row><testid>22</testid><testname>aau</testname><value>123.456</value></Row>
+ <Row><testid>23</testid><testname>aav</testname><value>-987.654</value></Row>
+ <Row><testid>24</testid><testname>aaw</testname><value>0.001</value></Row>
+ <Row><testid>25</testid><testname>aax</testname><value>999.99</value></Row>
+ <Row><testid>26</testid><testname>aay</testname><value>7.5</value></Row>
+ <Row><testid>27</testid><testname>aaz</testname><value>-1234.5678</value></Row>
+ <Row><testid>28</testid><testname>aba</testname><value>98765.43210000001</value></Row>
+ <Row><testid>29</testid><testname>abb</testname><value>1e-05</value></Row>
+</Dataset>
+<Dataset name='RealToQStringIntegration'>
+ <Row><testid>20</testid><testname>aas</testname><value>3.14</value></Row>
+ <Row><testid>21</testid><testname>aat</testname><value>-0.5</value></Row>
+ <Row><testid>22</testid><testname>aau</testname><value>123.456</value></Row>
+ <Row><testid>23</testid><testname>aav</testname><value>-987.654</value></Row>
+ <Row><testid>24</testid><testname>aaw</testname><value>0.001</value></Row>
+ <Row><testid>25</testid><testname>aax</testname><value>999.99</value></Row>
+ <Row><testid>26</testid><testname>aay</testname><value>7.5</value></Row>
+ <Row><testid>27</testid><testname>aaz</testname><value>-1234.5678</value></Row>
+ <Row><testid>28</testid><testname>aba</testname><value>98765.43210000001</value></Row>
+ <Row><testid>29</testid><testname>abb</testname><value>1E-05</value></Row>
+</Dataset>
+<Dataset name='RealToUnicodeIntegration'>
+ <Row><testid>20</testid><testname>aas</testname><value>3.14</value></Row>
+ <Row><testid>21</testid><testname>aat</testname><value>-0.5</value></Row>
+ <Row><testid>22</testid><testname>aau</testname><value>123.456</value></Row>
+ <Row><testid>23</testid><testname>aav</testname><value>-987.654</value></Row>
+ <Row><testid>24</testid><testname>aaw</testname><value>0.001</value></Row>
+ <Row><testid>25</testid><testname>aax</testname><value>999.99</value></Row>
+ <Row><testid>26</testid><testname>aay</testname><value>7.5</value></Row>
+ <Row><testid>27</testid><testname>aaz</testname><value>-1234.5678</value></Row>
+ <Row><testid>28</testid><testname>aba</testname><value>98765.43210000001</value></Row>
+ <Row><testid>29</testid><testname>abb</testname><value>1e-05</value></Row>
+</Dataset>
+<Dataset name='RealToUTF8Integration'>
+ <Row><testid>20</testid><testname>aas</testname><value>3.14</value></Row>
+ <Row><testid>21</testid><testname>aat</testname><value>-0.5</value></Row>
+ <Row><testid>22</testid><testname>aau</testname><value>123.456</value></Row>
+ <Row><testid>23</testid><testname>aav</testname><value>-987.654</value></Row>
+ <Row><testid>24</testid><testname>aaw</testname><value>0.001</value></Row>
+ <Row><testid>25</testid><testname>aax</testname><value>999.99</value></Row>
+ <Row><testid>26</testid><testname>aay</testname><value>7.5</value></Row>
+ <Row><testid>27</testid><testname>aaz</testname><value>-1234.5678</value></Row>
+ <Row><testid>28</testid><testname>aba</testname><value>98765.43210000001</value></Row>
+ <Row><testid>29</testid><testname>abb</testname><value>1e-05</value></Row>
+</Dataset>
+<Dataset name='RealToDataIntegration'>
+ <Row><testid>20</testid><testname>aas</testname><value>332E3134</value></Row>
+ <Row><testid>21</testid><testname>aat</testname><value>2D302E35</value></Row>
+ <Row><testid>22</testid><testname>aau</testname><value>3132332E343536</value></Row>
+ <Row><testid>23</testid><testname>aav</testname><value>2D3938372E363534</value></Row>
+ <Row><testid>24</testid><testname>aaw</testname><value>302E303031</value></Row>
+ <Row><testid>25</testid><testname>aax</testname><value>3939392E3939</value></Row>
+ <Row><testid>26</testid><testname>aay</testname><value>372E35</value></Row>
+ <Row><testid>27</testid><testname>aaz</testname><value>2D313233342E35363738</value></Row>
+ <Row><testid>28</testid><testname>aba</testname><value>39383736352E3433323130303030303031</value></Row>
+ <Row><testid>29</testid><testname>abb</testname><value>31652D3035</value></Row>
+</Dataset>
+<Dataset name='DecimalToIntegerIntegration'>
+ <Row><testid>30</testid><testname>abc</testname><value>123</value></Row>
+ <Row><testid>31</testid><testname>abd</testname><value>-987</value></Row>
+ <Row><testid>32</testid><testname>abe</testname><value>0</value></Row>
+ <Row><testid>33</testid><testname>abf</testname><value>42</value></Row>
+ <Row><testid>34</testid><testname>abg</testname><value>-500</value></Row>
+ <Row><testid>35</testid><testname>abh</testname><value>999</value></Row>
+ <Row><testid>36</testid><testname>abi</testname><value>7</value></Row>
+ <Row><testid>37</testid><testname>abj</testname><value>-12345</value></Row>
+ <Row><testid>38</testid><testname>abk</testname><value>987654</value></Row>
+ <Row><testid>39</testid><testname>abl</testname><value>0</value></Row>
+</Dataset>
+<Dataset name='DecimalToRealIntegration'>
+ <Row><testid>30</testid><testname>abc</testname><value>123.456789</value></Row>
+ <Row><testid>31</testid><testname>abd</testname><value>-987.6543209999999</value></Row>
+ <Row><testid>32</testid><testname>abe</testname><value>1e-06</value></Row>
+ <Row><testid>33</testid><testname>abf</testname><value>42.424242</value></Row>
+ <Row><testid>34</testid><testname>abg</testname><value>-500.5050499999999</value></Row>
+ <Row><testid>35</testid><testname>abh</testname><value>999.9999989999999</value></Row>
+ <Row><testid>36</testid><testname>abi</testname><value>7.777777</value></Row>
+ <Row><testid>37</testid><testname>abj</testname><value>-12345.6789</value></Row>
+ <Row><testid>38</testid><testname>abk</testname><value>987654.3209999999</value></Row>
+ <Row><testid>39</testid><testname>abl</testname><value>1e-07</value></Row>
+</Dataset>
+<Dataset name='DecimalToBooleanIntegration'>
+ <Row><testid>30</testid><testname>abc</testname><value>true</value></Row>
+ <Row><testid>31</testid><testname>abd</testname><value>true</value></Row>
+ <Row><testid>32</testid><testname>abe</testname><value>false</value></Row>
+ <Row><testid>33</testid><testname>abf</testname><value>true</value></Row>
+ <Row><testid>34</testid><testname>abg</testname><value>true</value></Row>
+ <Row><testid>35</testid><testname>abh</testname><value>true</value></Row>
+ <Row><testid>36</testid><testname>abi</testname><value>true</value></Row>
+ <Row><testid>37</testid><testname>abj</testname><value>true</value></Row>
+ <Row><testid>38</testid><testname>abk</testname><value>true</value></Row>
+ <Row><testid>39</testid><testname>abl</testname><value>false</value></Row>
+</Dataset>
+<Dataset name='DecimalToStringIntegration'>
+ <Row><testid>30</testid><testname>abc</testname><value>123.456789</value></Row>
+ <Row><testid>31</testid><testname>abd</testname><value>-987.6543209999999</value></Row>
+ <Row><testid>32</testid><testname>abe</testname><value>0.000001</value></Row>
+ <Row><testid>33</testid><testname>abf</testname><value>42.424242</value></Row>
+ <Row><testid>34</testid><testname>abg</testname><value>-500.5050499999999</value></Row>
+ <Row><testid>35</testid><testname>abh</testname><value>999.9999989999999</value></Row>
+ <Row><testid>36</testid><testname>abi</testname><value>7.777777</value></Row>
+ <Row><testid>37</testid><testname>abj</testname><value>-12345.6789</value></Row>
+ <Row><testid>38</testid><testname>abk</testname><value>987654.3209999999</value></Row>
+ <Row><testid>39</testid><testname>abl</testname><value>0.0000001</value></Row>
+</Dataset>
+<Dataset name='DecimalToQStringIntegration'>
+ <Row><testid>30</testid><testname>abc</testname><value>123.456789</value></Row>
+ <Row><testid>31</testid><testname>abd</testname><value>-987.6543209999999</value></Row>
+ <Row><testid>32</testid><testname>abe</testname><value>0.000001</value></Row>
+ <Row><testid>33</testid><testname>abf</testname><value>42.424242</value></Row>
+ <Row><testid>34</testid><testname>abg</testname><value>-500.5050499999999</value></Row>
+ <Row><testid>35</testid><testname>abh</testname><value>999.9999989999999</value></Row>
+ <Row><testid>36</testid><testname>abi</testname><value>7.777777</value></Row>
+ <Row><testid>37</testid><testname>abj</testname><value>-12345.6789</value></Row>
+ <Row><testid>38</testid><testname>abk</testname><value>987654.3209999999</value></Row>
+ <Row><testid>39</testid><testname>abl</testname><value>0.0000001</value></Row>
+</Dataset>
+<Dataset name='DecimalToUnicodeIntegration'>
+ <Row><testid>30</testid><testname>abc</testname><value>123.456789</value></Row>
+ <Row><testid>31</testid><testname>abd</testname><value>-987.6543209999999</value></Row>
+ <Row><testid>32</testid><testname>abe</testname><value>0.000001</value></Row>
+ <Row><testid>33</testid><testname>abf</testname><value>42.424242</value></Row>
+ <Row><testid>34</testid><testname>abg</testname><value>-500.5050499999999</value></Row>
+ <Row><testid>35</testid><testname>abh</testname><value>999.9999989999999</value></Row>
+ <Row><testid>36</testid><testname>abi</testname><value>7.777777</value></Row>
+ <Row><testid>37</testid><testname>abj</testname><value>-12345.6789</value></Row>
+ <Row><testid>38</testid><testname>abk</testname><value>987654.3209999999</value></Row>
+ <Row><testid>39</testid><testname>abl</testname><value>0.0000001</value></Row>
+</Dataset>
+<Dataset name='DecimalToUTF8Integration'>
+ <Row><testid>30</testid><testname>abc</testname><value>123.456789</value></Row>
+ <Row><testid>31</testid><testname>abd</testname><value>-987.6543209999999</value></Row>
+ <Row><testid>32</testid><testname>abe</testname><value>0.000001</value></Row>
+ <Row><testid>33</testid><testname>abf</testname><value>42.424242</value></Row>
+ <Row><testid>34</testid><testname>abg</testname><value>-500.5050499999999</value></Row>
+ <Row><testid>35</testid><testname>abh</testname><value>999.9999989999999</value></Row>
+ <Row><testid>36</testid><testname>abi</testname><value>7.777777</value></Row>
+ <Row><testid>37</testid><testname>abj</testname><value>-12345.6789</value></Row>
+ <Row><testid>38</testid><testname>abk</testname><value>987654.3209999999</value></Row>
+ <Row><testid>39</testid><testname>abl</testname><value>0.0000001</value></Row>
+</Dataset>
+<Dataset name='DecimalToDataIntegration'>
+ <Row><testid>30</testid><testname>abc</testname><value>3132332E343536373839</value></Row>
+ <Row><testid>31</testid><testname>abd</testname><value>2D3938372E36353433323039393939393939</value></Row>
+ <Row><testid>32</testid><testname>abe</testname><value>302E303030303031</value></Row>
+ <Row><testid>33</testid><testname>abf</testname><value>34322E343234323432</value></Row>
+ <Row><testid>34</testid><testname>abg</testname><value>2D3530302E35303530343939393939393939</value></Row>
+ <Row><testid>35</testid><testname>abh</testname><value>3939392E39393939393839393939393939</value></Row>
+ <Row><testid>36</testid><testname>abi</testname><value>372E373737373737</value></Row>
+ <Row><testid>37</testid><testname>abj</testname><value>2D31323334352E36373839</value></Row>
+ <Row><testid>38</testid><testname>abk</testname><value>3938373635342E33323039393939393939</value></Row>
+ <Row><testid>39</testid><testname>abl</testname><value>302E30303030303031</value></Row>
+</Dataset>
+<Dataset name='StringToIntegerIntegration'>
+ <Row><testid>40</testid><testname>abm</testname><value>0</value></Row>
+ <Row><testid>41</testid><testname>abn</testname><value>0</value></Row>
+ <Row><testid>42</testid><testname>abo</testname><value>12345</value></Row>
+ <Row><testid>43</testid><testname>abp</testname><value>0</value></Row>
+ <Row><testid>44</testid><testname>abq</testname><value>0</value></Row>
+ <Row><testid>45</testid><testname>abr</testname><value>0</value></Row>
+ <Row><testid>46</testid><testname>abs</testname><value>0</value></Row>
+ <Row><testid>47</testid><testname>abt</testname><value>0</value></Row>
+ <Row><testid>48</testid><testname>abu</testname><value>0</value></Row>
+ <Row><testid>49</testid><testname>abv</testname><value>0</value></Row>
+</Dataset>
+<Dataset name='StringToRealIntegration'>
+ <Row><testid>40</testid><testname>abm</testname><value>0.0</value></Row>
+ <Row><testid>41</testid><testname>abn</testname><value>0.0</value></Row>
+ <Row><testid>42</testid><testname>abo</testname><value>12345.0</value></Row>
+ <Row><testid>43</testid><testname>abp</testname><value>0.0</value></Row>
+ <Row><testid>44</testid><testname>abq</testname><value>0.0</value></Row>
+ <Row><testid>45</testid><testname>abr</testname><value>0.0</value></Row>
+ <Row><testid>46</testid><testname>abs</testname><value>0.0</value></Row>
+ <Row><testid>47</testid><testname>abt</testname><value>0.0</value></Row>
+ <Row><testid>48</testid><testname>abu</testname><value>0.0</value></Row>
+ <Row><testid>49</testid><testname>abv</testname><value>0.0</value></Row>
+</Dataset>
+<Dataset name='StringToDecimalIntegration'>
+ <Row><testid>40</testid><testname>abm</testname><value>0</value></Row>
+ <Row><testid>41</testid><testname>abn</testname><value>0</value></Row>
+ <Row><testid>42</testid><testname>abo</testname><value>12345</value></Row>
+ <Row><testid>43</testid><testname>abp</testname><value>0</value></Row>
+ <Row><testid>44</testid><testname>abq</testname><value>0</value></Row>
+ <Row><testid>45</testid><testname>abr</testname><value>0</value></Row>
+ <Row><testid>46</testid><testname>abs</testname><value>0</value></Row>
+ <Row><testid>47</testid><testname>abt</testname><value>0</value></Row>
+ <Row><testid>48</testid><testname>abu</testname><value>0</value></Row>
+ <Row><testid>49</testid><testname>abv</testname><value>0</value></Row>
+</Dataset>
+<Dataset name='StringToBooleanIntegration'>
+ <Row><testid>40</testid><testname>abm</testname><value>false</value></Row>
+ <Row><testid>41</testid><testname>abn</testname><value>false</value></Row>
+ <Row><testid>42</testid><testname>abo</testname><value>true</value></Row>
+ <Row><testid>43</testid><testname>abp</testname><value>false</value></Row>
+ <Row><testid>44</testid><testname>abq</testname><value>false</value></Row>
+ <Row><testid>45</testid><testname>abr</testname><value>false</value></Row>
+ <Row><testid>46</testid><testname>abs</testname><value>false</value></Row>
+ <Row><testid>47</testid><testname>abt</testname><value>false</value></Row>
+ <Row><testid>48</testid><testname>abu</testname><value>false</value></Row>
+ <Row><testid>49</testid><testname>abv</testname><value>false</value></Row>
+</Dataset>
+<Dataset name='StringToQStringIntegration'>
+ <Row><testid>40</testid><testname>abm</testname><value>HELLO, WORLD!</value></Row>
+ <Row><testid>41</testid><testname>abn</testname><value>DATA SCIENCE</value></Row>
+ <Row><testid>42</testid><testname>abo</testname><value>12345</value></Row>
+ <Row><testid>43</testid><testname>abp</testname><value>PYTHON IS FUN!</value></Row>
+ <Row><testid>44</testid><testname>abq</testname><value>STRINGS ROCK!</value></Row>
+ <Row><testid>45</testid><testname>abr</testname><value>TESTING 1, 2, 3...</value></Row>
+ <Row><testid>46</testid><testname>abs</testname><value>LET&apos;S CODE!</value></Row>
+ <Row><testid>47</testid><testname>abt</testname><value>STRINGS AND MORE STRINGS</value></Row>
+ <Row><testid>48</testid><testname>abu</testname><value>     </value></Row>
+ <Row><testid>49</testid><testname>abv</testname><value>SPECIAL CHARACTERS: !@#$%^&amp;*</value></Row>
+</Dataset>
+<Dataset name='StringToUnicodeIntegration'>
+ <Row><testid>40</testid><testname>abm</testname><value>Hello, World!</value></Row>
+ <Row><testid>41</testid><testname>abn</testname><value>Data Science</value></Row>
+ <Row><testid>42</testid><testname>abo</testname><value>12345</value></Row>
+ <Row><testid>43</testid><testname>abp</testname><value>Python is fun!</value></Row>
+ <Row><testid>44</testid><testname>abq</testname><value>Strings rock!</value></Row>
+ <Row><testid>45</testid><testname>abr</testname><value>Testing 1, 2, 3...</value></Row>
+ <Row><testid>46</testid><testname>abs</testname><value>Let&apos;s code!</value></Row>
+ <Row><testid>47</testid><testname>abt</testname><value>Strings and more strings</value></Row>
+ <Row><testid>48</testid><testname>abu</testname><value>©ª««®</value></Row>
+ <Row><testid>49</testid><testname>abv</testname><value>Special characters: !@#$%^&amp;*</value></Row>
+</Dataset>
+<Dataset name='StringToUTF8Integration'>
+ <Row><testid>40</testid><testname>abm</testname><value>Hello, World!</value></Row>
+ <Row><testid>41</testid><testname>abn</testname><value>Data Science</value></Row>
+ <Row><testid>42</testid><testname>abo</testname><value>12345</value></Row>
+ <Row><testid>43</testid><testname>abp</testname><value>Python is fun!</value></Row>
+ <Row><testid>44</testid><testname>abq</testname><value>Strings rock!</value></Row>
+ <Row><testid>45</testid><testname>abr</testname><value>Testing 1, 2, 3...</value></Row>
+ <Row><testid>46</testid><testname>abs</testname><value>Let&apos;s code!</value></Row>
+ <Row><testid>47</testid><testname>abt</testname><value>Strings and more strings</value></Row>
+ <Row><testid>48</testid><testname>abu</testname><value>©ª««®</value></Row>
+ <Row><testid>49</testid><testname>abv</testname><value>Special characters: !@#$%^&amp;*</value></Row>
+</Dataset>
+<Dataset name='StringToDataIntegration'>
+ <Row><testid>40</testid><testname>abm</testname><value>48656C6C6F2C20576F726C6421</value></Row>
+ <Row><testid>41</testid><testname>abn</testname><value>4461746120536369656E6365</value></Row>
+ <Row><testid>42</testid><testname>abo</testname><value>3132333435</value></Row>
+ <Row><testid>43</testid><testname>abp</testname><value>507974686F6E2069732066756E21</value></Row>
+ <Row><testid>44</testid><testname>abq</testname><value>537472696E677320726F636B21</value></Row>
+ <Row><testid>45</testid><testname>abr</testname><value>54657374696E6720312C20322C20332E2E2E</value></Row>
+ <Row><testid>46</testid><testname>abs</testname><value>4C6574277320636F646521</value></Row>
+ <Row><testid>47</testid><testname>abt</testname><value>537472696E677320616E64206D6F726520737472696E6773</value></Row>
+ <Row><testid>48</testid><testname>abu</testname><value>C2A9C2AAC2ABC2ABC2AE</value></Row>
+ <Row><testid>49</testid><testname>abv</testname><value>5370656369616C20636861726163746572733A2021402324255E262A</value></Row>
+</Dataset>
+<Dataset name='QStringToIntegerIntegration'>
+ <Row><testid>50</testid><testname>abw</testname><value>0</value></Row>
+ <Row><testid>51</testid><testname>abx</testname><value>0</value></Row>
+ <Row><testid>52</testid><testname>aby</testname><value>0</value></Row>
+ <Row><testid>53</testid><testname>abz</testname><value>0</value></Row>
+ <Row><testid>54</testid><testname>aca</testname><value>0</value></Row>
+ <Row><testid>55</testid><testname>acb</testname><value>0</value></Row>
+ <Row><testid>56</testid><testname>acc</testname><value>0</value></Row>
+ <Row><testid>57</testid><testname>acd</testname><value>0</value></Row>
+ <Row><testid>58</testid><testname>ace</testname><value>0</value></Row>
+ <Row><testid>59</testid><testname>acf</testname><value>0</value></Row>
+</Dataset>
+<Dataset name='QStringToRealIntegration'>
+ <Row><testid>50</testid><testname>abw</testname><value>0.0</value></Row>
+ <Row><testid>51</testid><testname>abx</testname><value>0.0</value></Row>
+ <Row><testid>52</testid><testname>aby</testname><value>0.0</value></Row>
+ <Row><testid>53</testid><testname>abz</testname><value>0.0</value></Row>
+ <Row><testid>54</testid><testname>aca</testname><value>0.0</value></Row>
+ <Row><testid>55</testid><testname>acb</testname><value>0.0</value></Row>
+ <Row><testid>56</testid><testname>acc</testname><value>0.0</value></Row>
+ <Row><testid>57</testid><testname>acd</testname><value>0.0</value></Row>
+ <Row><testid>58</testid><testname>ace</testname><value>0.0</value></Row>
+ <Row><testid>59</testid><testname>acf</testname><value>0.0</value></Row>
+</Dataset>
+<Dataset name='QStringToDecimalIntegration'>
+ <Row><testid>50</testid><testname>abw</testname><value>0</value></Row>
+ <Row><testid>51</testid><testname>abx</testname><value>0</value></Row>
+ <Row><testid>52</testid><testname>aby</testname><value>0</value></Row>
+ <Row><testid>53</testid><testname>abz</testname><value>0</value></Row>
+ <Row><testid>54</testid><testname>aca</testname><value>0</value></Row>
+ <Row><testid>55</testid><testname>acb</testname><value>0</value></Row>
+ <Row><testid>56</testid><testname>acc</testname><value>0</value></Row>
+ <Row><testid>57</testid><testname>acd</testname><value>0</value></Row>
+ <Row><testid>58</testid><testname>ace</testname><value>0</value></Row>
+ <Row><testid>59</testid><testname>acf</testname><value>0</value></Row>
+</Dataset>
+<Dataset name='QStringToStringIntegration'>
+ <Row><testid>50</testid><testname>abw</testname><value>THIS IS A &quot;Q&quot; STRING.</value></Row>
+ <Row><testid>51</testid><testname>abx</testname><value>ANOTHER &quot;EXAMPLE&quot; HERE.</value></Row>
+ <Row><testid>52</testid><testname>aby</testname><value>QSTRINGS ARE USEFUL!</value></Row>
+ <Row><testid>53</testid><testname>abz</testname><value>ESCAPING QUOTES: \&quot;</value></Row>
+ <Row><testid>54</testid><testname>aca</testname><value>SPECIAL CHARACTERS ! &quot; # $</value></Row>
+ <Row><testid>55</testid><testname>acb</testname><value>TESTING STRING</value></Row>
+ <Row><testid>56</testid><testname>acc</testname><value>QSTRINGS ROCK!</value></Row>
+ <Row><testid>57</testid><testname>acd</testname><value>TESTING &quot;()*+,-)&quot; CHARACTERS.</value></Row>
+ <Row><testid>58</testid><testname>ace</testname><value>!&quot;#$&amp;&apos;()*+,-./;&lt;&gt;_[\]</value></Row>
+ <Row><testid>59</testid><testname>acf</testname><value>&lt;@@[[[[&apos;\&apos;\&apos;&apos;\]]]]</value></Row>
+</Dataset>
+<Dataset name='QStringToBooleanIntegration'>
+ <Row><testid>50</testid><testname>abw</testname><value>false</value></Row>
+ <Row><testid>51</testid><testname>abx</testname><value>false</value></Row>
+ <Row><testid>52</testid><testname>aby</testname><value>false</value></Row>
+ <Row><testid>53</testid><testname>abz</testname><value>false</value></Row>
+ <Row><testid>54</testid><testname>aca</testname><value>false</value></Row>
+ <Row><testid>55</testid><testname>acb</testname><value>false</value></Row>
+ <Row><testid>56</testid><testname>acc</testname><value>false</value></Row>
+ <Row><testid>57</testid><testname>acd</testname><value>false</value></Row>
+ <Row><testid>58</testid><testname>ace</testname><value>false</value></Row>
+ <Row><testid>59</testid><testname>acf</testname><value>false</value></Row>
+</Dataset>
+<Dataset name='QStringToUnicodeIntegration'>
+ <Row><testid>50</testid><testname>abw</testname><value>THIS IS A &quot;Q&quot; STRING.</value></Row>
+ <Row><testid>51</testid><testname>abx</testname><value>ANOTHER &quot;EXAMPLE&quot; HERE.</value></Row>
+ <Row><testid>52</testid><testname>aby</testname><value>QSTRINGS ARE USEFUL!</value></Row>
+ <Row><testid>53</testid><testname>abz</testname><value>ESCAPING QUOTES: \&quot;</value></Row>
+ <Row><testid>54</testid><testname>aca</testname><value>SPECIAL CHARACTERS ! &quot; # $</value></Row>
+ <Row><testid>55</testid><testname>acb</testname><value>TESTING STRING</value></Row>
+ <Row><testid>56</testid><testname>acc</testname><value>QSTRINGS ROCK!</value></Row>
+ <Row><testid>57</testid><testname>acd</testname><value>TESTING &quot;()*+,-)&quot; CHARACTERS.</value></Row>
+ <Row><testid>58</testid><testname>ace</testname><value>!&quot;#$&amp;&apos;()*+,-./;&lt;&gt;_[\]</value></Row>
+ <Row><testid>59</testid><testname>acf</testname><value>&lt;@@[[[[&apos;\&apos;\&apos;&apos;\]]]]</value></Row>
+</Dataset>
+<Dataset name='QStringToUTF8Integration'>
+ <Row><testid>50</testid><testname>abw</testname><value>THIS IS A &quot;Q&quot; STRING.</value></Row>
+ <Row><testid>51</testid><testname>abx</testname><value>ANOTHER &quot;EXAMPLE&quot; HERE.</value></Row>
+ <Row><testid>52</testid><testname>aby</testname><value>QSTRINGS ARE USEFUL!</value></Row>
+ <Row><testid>53</testid><testname>abz</testname><value>ESCAPING QUOTES: \&quot;</value></Row>
+ <Row><testid>54</testid><testname>aca</testname><value>SPECIAL CHARACTERS ! &quot; # $</value></Row>
+ <Row><testid>55</testid><testname>acb</testname><value>TESTING STRING</value></Row>
+ <Row><testid>56</testid><testname>acc</testname><value>QSTRINGS ROCK!</value></Row>
+ <Row><testid>57</testid><testname>acd</testname><value>TESTING &quot;()*+,-)&quot; CHARACTERS.</value></Row>
+ <Row><testid>58</testid><testname>ace</testname><value>!&quot;#$&amp;&apos;()*+,-./;&lt;&gt;_[\]</value></Row>
+ <Row><testid>59</testid><testname>acf</testname><value>&lt;@@[[[[&apos;\&apos;\&apos;&apos;\]]]]</value></Row>
+</Dataset>
+<Dataset name='QStringToDataIntegration'>
+ <Row><testid>50</testid><testname>abw</testname><value>5448495320495320412022512220535452494E472E</value></Row>
+ <Row><testid>51</testid><testname>abx</testname><value>414E4F5448455220224558414D504C452220484552452E</value></Row>
+ <Row><testid>52</testid><testname>aby</testname><value>51535452494E4753204152452055534546554C21</value></Row>
+ <Row><testid>53</testid><testname>abz</testname><value>4553434150494E472051554F5445533A205C22</value></Row>
+ <Row><testid>54</testid><testname>aca</testname><value>5350454349414C20434841524143544552532021202220232024</value></Row>
+ <Row><testid>55</testid><testname>acb</testname><value>54455354494E4720535452494E47</value></Row>
+ <Row><testid>56</testid><testname>acc</testname><value>51535452494E475320524F434B21</value></Row>
+ <Row><testid>57</testid><testname>acd</testname><value>54455354494E47202228292A2B2C2D292220434841524143544552532E</value></Row>
+ <Row><testid>58</testid><testname>ace</testname><value>21222324262728292A2B2C2D2E2F3B3C3E5F5B5C5D</value></Row>
+ <Row><testid>59</testid><testname>acf</testname><value>3C40405B5B5B5B275C275C27275C5D5D5D5D</value></Row>
+</Dataset>
+<Dataset name='UnicodeToIntegerIntegration'>
+ <Row><testid>60</testid><testname>acg</testname><value>0</value></Row>
+ <Row><testid>61</testid><testname>ach</testname><value>0</value></Row>
+ <Row><testid>62</testid><testname>aci</testname><value>0</value></Row>
+ <Row><testid>63</testid><testname>acj</testname><value>0</value></Row>
+ <Row><testid>64</testid><testname>ack</testname><value>0</value></Row>
+ <Row><testid>65</testid><testname>acl</testname><value>0</value></Row>
+ <Row><testid>66</testid><testname>acm</testname><value>0</value></Row>
+ <Row><testid>67</testid><testname>acn</testname><value>0</value></Row>
+ <Row><testid>68</testid><testname>aco</testname><value>0</value></Row>
+ <Row><testid>69</testid><testname>acp</testname><value>0</value></Row>
+</Dataset>
+<Dataset name='UnicodeToRealIntegration'>
+ <Row><testid>60</testid><testname>acg</testname><value>0.0</value></Row>
+ <Row><testid>61</testid><testname>ach</testname><value>0.0</value></Row>
+ <Row><testid>62</testid><testname>aci</testname><value>0.0</value></Row>
+ <Row><testid>63</testid><testname>acj</testname><value>0.0</value></Row>
+ <Row><testid>64</testid><testname>ack</testname><value>0.0</value></Row>
+ <Row><testid>65</testid><testname>acl</testname><value>0.0</value></Row>
+ <Row><testid>66</testid><testname>acm</testname><value>0.0</value></Row>
+ <Row><testid>67</testid><testname>acn</testname><value>0.0</value></Row>
+ <Row><testid>68</testid><testname>aco</testname><value>0.0</value></Row>
+ <Row><testid>69</testid><testname>acp</testname><value>0.0</value></Row>
+</Dataset>
+<Dataset name='UnicodeToDecimalIntegration'>
+ <Row><testid>60</testid><testname>acg</testname><value>0</value></Row>
+ <Row><testid>61</testid><testname>ach</testname><value>0</value></Row>
+ <Row><testid>62</testid><testname>aci</testname><value>0</value></Row>
+ <Row><testid>63</testid><testname>acj</testname><value>0</value></Row>
+ <Row><testid>64</testid><testname>ack</testname><value>0</value></Row>
+ <Row><testid>65</testid><testname>acl</testname><value>0</value></Row>
+ <Row><testid>66</testid><testname>acm</testname><value>0</value></Row>
+ <Row><testid>67</testid><testname>acn</testname><value>0</value></Row>
+ <Row><testid>68</testid><testname>aco</testname><value>0</value></Row>
+ <Row><testid>69</testid><testname>acp</testname><value>0</value></Row>
+</Dataset>
+<Dataset name='UnicodeToStringIntegration'>
+ <Row><testid>60</testid><testname>acg</testname><value>&#xe01a;&#xe01a;&#xe01a;&#xe01a;&#xe01a;&#xe01a;&#xe01a;&#xe01a;&#xe01a;</value></Row>
+ <Row><testid>61</testid><testname>ach</testname><value>Unicode characters: &#xe01a;&#xe01a;&#xe01a;</value></Row>
+ <Row><testid>62</testid><testname>aci</testname><value>&#xe01a; Beautiful Unicode &#xe01a;</value></Row>
+ <Row><testid>63</testid><testname>acj</testname><value>Unicode is fascinating!</value></Row>
+ <Row><testid>64</testid><testname>ack</testname><value>&#xe01a; Unicode Symbols &#xe01a;</value></Row>
+ <Row><testid>65</testid><testname>acl</testname><value>Special characters: &#169;&#174;&#xe01a;</value></Row>
+ <Row><testid>66</testid><testname>acm</testname><value>Unicode magic &#xe01a;&#xe01a;&#xe01a;&#xe01a;&#xe01a;&#xe01a;&#xe01a;</value></Row>
+ <Row><testid>67</testid><testname>acn</testname><value>Testing Unicode: &#xe01a;&#xe01a;&#xe01a;&#xe01a;&#xe01a;&#xe01a;&#xe01a;</value></Row>
+ <Row><testid>68</testid><testname>aco</testname><value>&#xe01a;&#xe01a;&#xe01a; More Unicode Fun &#xe01a;&#xe01a;&#xe01a;&#xe01a;&#xe01a;</value></Row>
+ <Row><testid>69</testid><testname>acp</testname><value>&#xe01a;&#xe01a;&#xe01a;&#xe01a;&#xe01a;&#xe01a;&#xe01a; Unicode Everywhere &#xe01a;&#xe01a;&#xe01a;&#xe01a;</value></Row>
+</Dataset>
+<Dataset name='UnicodeToQStringIntegration'>
+ <Row><testid>60</testid><testname>acg</testname><value>         </value></Row>
+ <Row><testid>61</testid><testname>ach</testname><value>UNICODE CHARACTERS:    </value></Row>
+ <Row><testid>62</testid><testname>aci</testname><value>  BEAUTIFUL UNICODE  </value></Row>
+ <Row><testid>63</testid><testname>acj</testname><value>UNICODE IS FASCINATING!</value></Row>
+ <Row><testid>64</testid><testname>ack</testname><value>  UNICODE SYMBOLS  </value></Row>
+ <Row><testid>65</testid><testname>acl</testname><value>SPECIAL CHARACTERS:    </value></Row>
+ <Row><testid>66</testid><testname>acm</testname><value>UNICODE MAGIC        </value></Row>
+ <Row><testid>67</testid><testname>acn</testname><value>TESTING UNICODE:        </value></Row>
+ <Row><testid>68</testid><testname>aco</testname><value>    MORE UNICODE FUN      </value></Row>
+ <Row><testid>69</testid><testname>acp</testname><value>        UNICODE EVERYWHERE     </value></Row>
+</Dataset>
+<Dataset name='UnicodeToUnicodeIntegration'>
+ <Row><testid>60</testid><testname>acg</testname><value>false</value></Row>
+ <Row><testid>61</testid><testname>ach</testname><value>false</value></Row>
+ <Row><testid>62</testid><testname>aci</testname><value>false</value></Row>
+ <Row><testid>63</testid><testname>acj</testname><value>false</value></Row>
+ <Row><testid>64</testid><testname>ack</testname><value>false</value></Row>
+ <Row><testid>65</testid><testname>acl</testname><value>false</value></Row>
+ <Row><testid>66</testid><testname>acm</testname><value>false</value></Row>
+ <Row><testid>67</testid><testname>acn</testname><value>false</value></Row>
+ <Row><testid>68</testid><testname>aco</testname><value>false</value></Row>
+ <Row><testid>69</testid><testname>acp</testname><value>false</value></Row>
+</Dataset>
+<Dataset name='UnicodeToUTF8Integration'>
+ <Row><testid>60</testid><testname>acg</testname><value>こんにちは、世界！</value></Row>
+ <Row><testid>61</testid><testname>ach</testname><value>Unicode characters: ḸḹḾ</value></Row>
+ <Row><testid>62</testid><testname>aci</testname><value>Ṏ Beautiful Unicode Ṙ</value></Row>
+ <Row><testid>63</testid><testname>acj</testname><value>Unicode is fascinating!</value></Row>
+ <Row><testid>64</testid><testname>ack</testname><value>Ṙ Unicode Symbols ẫ</value></Row>
+ <Row><testid>65</testid><testname>acl</testname><value>Special characters: ©®™</value></Row>
+ <Row><testid>66</testid><testname>acm</testname><value>Unicode magic ⊗⊘⊙⊚⊛⊜⊝</value></Row>
+ <Row><testid>67</testid><testname>acn</testname><value>Testing Unicode: ⋖⋗⋙⋚⋛⋜⋝</value></Row>
+ <Row><testid>68</testid><testname>aco</testname><value>∭∮∯ More Unicode Fun ∐∑−∓∔</value></Row>
+ <Row><testid>69</testid><testname>acp</testname><value>∆∇∈∉∊∋∌ Unicode Everywhere ⋸⋹⋺⋻</value></Row>
+</Dataset>
+<Dataset name='UnicodeToDataIntegration'>
+ <Row><testid>60</testid><testname>acg</testname><value>E38193E38293E381ABE381A1E381AFE38081E4B896E7958CEFBC81</value></Row>
+ <Row><testid>61</testid><testname>ach</testname><value>556E69636F646520636861726163746572733A20E1B8B8E1B8B9E1B8BE</value></Row>
+ <Row><testid>62</testid><testname>aci</testname><value>E1B98E2042656175746966756C20556E69636F646520E1B998</value></Row>
+ <Row><testid>63</testid><testname>acj</testname><value>556E69636F64652069732066617363696E6174696E6721</value></Row>
+ <Row><testid>64</testid><testname>ack</testname><value>E1B99820556E69636F64652053796D626F6C7320E1BAAB</value></Row>
+ <Row><testid>65</testid><testname>acl</testname><value>5370656369616C20636861726163746572733A20C2A9C2AEE284A2</value></Row>
+ <Row><testid>66</testid><testname>acm</testname><value>556E69636F6465206D6167696320E28A97E28A98E28A99E28A9AE28A9BE28A9CE28A9D</value></Row>
+ <Row><testid>67</testid><testname>acn</testname><value>54657374696E6720556E69636F64653A20E28B96E28B97E28B99E28B9AE28B9BE28B9CE28B9D</value></Row>
+ <Row><testid>68</testid><testname>aco</testname><value>E288ADE288AEE288AF204D6F726520556E69636F64652046756E20E28890E28891E28892E28893E28894</value></Row>
+ <Row><testid>69</testid><testname>acp</testname><value>E28886E28887E28888E28889E2888AE2888BE2888C20556E69636F6465204576657279776865726520E28BB8E28BB9E28BBAE28BBB</value></Row>
+</Dataset>
+<Dataset name='UTF8ToIntegerIntegration'>
+ <Row><testid>70</testid><testname>acq</testname><value>0</value></Row>
+ <Row><testid>71</testid><testname>acr</testname><value>0</value></Row>
+ <Row><testid>72</testid><testname>acs</testname><value>0</value></Row>
+ <Row><testid>73</testid><testname>act</testname><value>0</value></Row>
+ <Row><testid>74</testid><testname>acu</testname><value>0</value></Row>
+ <Row><testid>75</testid><testname>acv</testname><value>0</value></Row>
+ <Row><testid>76</testid><testname>acw</testname><value>0</value></Row>
+ <Row><testid>77</testid><testname>acx</testname><value>0</value></Row>
+ <Row><testid>78</testid><testname>acy</testname><value>0</value></Row>
+ <Row><testid>79</testid><testname>acz</testname><value>0</value></Row>
+</Dataset>
+<Dataset name='UTF8ToRealIntegration'>
+ <Row><testid>70</testid><testname>acq</testname><value>0.0</value></Row>
+ <Row><testid>71</testid><testname>acr</testname><value>0.0</value></Row>
+ <Row><testid>72</testid><testname>acs</testname><value>0.0</value></Row>
+ <Row><testid>73</testid><testname>act</testname><value>0.0</value></Row>
+ <Row><testid>74</testid><testname>acu</testname><value>0.0</value></Row>
+ <Row><testid>75</testid><testname>acv</testname><value>0.0</value></Row>
+ <Row><testid>76</testid><testname>acw</testname><value>0.0</value></Row>
+ <Row><testid>77</testid><testname>acx</testname><value>0.0</value></Row>
+ <Row><testid>78</testid><testname>acy</testname><value>0.0</value></Row>
+ <Row><testid>79</testid><testname>acz</testname><value>0.0</value></Row>
+</Dataset>
+<Dataset name='UTF8ToDecimalIntegration'>
+ <Row><testid>70</testid><testname>acq</testname><value>0</value></Row>
+ <Row><testid>71</testid><testname>acr</testname><value>0</value></Row>
+ <Row><testid>72</testid><testname>acs</testname><value>0</value></Row>
+ <Row><testid>73</testid><testname>act</testname><value>0</value></Row>
+ <Row><testid>74</testid><testname>acu</testname><value>0</value></Row>
+ <Row><testid>75</testid><testname>acv</testname><value>0</value></Row>
+ <Row><testid>76</testid><testname>acw</testname><value>0</value></Row>
+ <Row><testid>77</testid><testname>acx</testname><value>0</value></Row>
+ <Row><testid>78</testid><testname>acy</testname><value>0</value></Row>
+ <Row><testid>79</testid><testname>acz</testname><value>0</value></Row>
+</Dataset>
+<Dataset name='UTF8ToStringIntegration'>
+ <Row><testid>70</testid><testname>acq</testname><value>Caf&#233; au lait &#xe01a;</value></Row>
+ <Row><testid>71</testid><testname>acr</testname><value>&#xe01a; UTF-8 Characters &#xe01a;  </value></Row>
+ <Row><testid>72</testid><testname>acs</testname><value>Special characters: &#169;&#174;&#xe01a;</value></Row>
+ <Row><testid>73</testid><testname>act</testname><value>UTF-8 magic &#xe01a;</value></Row>
+ <Row><testid>74</testid><testname>acu</testname><value>&#xe01a; More UTF-8 Fun &#xe01a;  </value></Row>
+ <Row><testid>75</testid><testname>acv</testname><value>Testing UTF-8: &#xe01a;&#xe01a;&#xe01a;   </value></Row>
+ <Row><testid>76</testid><testname>acw</testname><value>&#xe01a; UTF-8 Everywhere &#xe01a;  </value></Row>
+ <Row><testid>77</testid><testname>acx</testname><value>UTF-8 is versatile!</value></Row>
+ <Row><testid>78</testid><testname>acy</testname><value>UTF-8 for the win!</value></Row>
+ <Row><testid>79</testid><testname>acz</testname><value>&#xe01a; UTF-8 Symbols &#xe01a;  </value></Row>
+</Dataset>
+<Dataset name='UTF8ToQStringIntegration'>
+ <Row><testid>70</testid><testname>acq</testname><value>CAF  AU LAIT  </value></Row>
+ <Row><testid>71</testid><testname>acr</testname><value>  UTF-8 CHARACTERS    </value></Row>
+ <Row><testid>72</testid><testname>acs</testname><value>SPECIAL CHARACTERS:    </value></Row>
+ <Row><testid>73</testid><testname>act</testname><value>UTF-8 MAGIC  </value></Row>
+ <Row><testid>74</testid><testname>acu</testname><value>  MORE UTF-8 FUN    </value></Row>
+ <Row><testid>75</testid><testname>acv</testname><value>TESTING UTF-8:       </value></Row>
+ <Row><testid>76</testid><testname>acw</testname><value>  UTF-8 EVERYWHERE    </value></Row>
+ <Row><testid>77</testid><testname>acx</testname><value>UTF-8 IS VERSATILE!</value></Row>
+ <Row><testid>78</testid><testname>acy</testname><value>UTF-8 FOR THE WIN!</value></Row>
+ <Row><testid>79</testid><testname>acz</testname><value>  UTF-8 SYMBOLS    </value></Row>
+</Dataset>
+<Dataset name='UTF8ToUnicodeIntegration'>
+ <Row><testid>70</testid><testname>acq</testname><value>Café au lait ☕</value></Row>
+ <Row><testid>71</testid><testname>acr</testname><value>🎉 UTF-8 Characters 🎉  </value></Row>
+ <Row><testid>72</testid><testname>acs</testname><value>Special characters: ©®™</value></Row>
+ <Row><testid>73</testid><testname>act</testname><value>UTF-8 magic ✨</value></Row>
+ <Row><testid>74</testid><testname>acu</testname><value>🌟 More UTF-8 Fun 🌟  </value></Row>
+ <Row><testid>75</testid><testname>acv</testname><value>Testing UTF-8: 💡🔍🌐   </value></Row>
+ <Row><testid>76</testid><testname>acw</testname><value>🌟 UTF-8 Everywhere 🌟  </value></Row>
+ <Row><testid>77</testid><testname>acx</testname><value>UTF-8 is versatile!</value></Row>
+ <Row><testid>78</testid><testname>acy</testname><value>UTF-8 for the win!</value></Row>
+ <Row><testid>79</testid><testname>acz</testname><value>🌟 UTF-8 Symbols 🌟  </value></Row>
+</Dataset>
+<Dataset name='UTF8ToBooleanIntegration'>
+ <Row><testid>70</testid><testname>acq</testname><value>false</value></Row>
+ <Row><testid>71</testid><testname>acr</testname><value>false</value></Row>
+ <Row><testid>72</testid><testname>acs</testname><value>false</value></Row>
+ <Row><testid>73</testid><testname>act</testname><value>false</value></Row>
+ <Row><testid>74</testid><testname>acu</testname><value>false</value></Row>
+ <Row><testid>75</testid><testname>acv</testname><value>false</value></Row>
+ <Row><testid>76</testid><testname>acw</testname><value>false</value></Row>
+ <Row><testid>77</testid><testname>acx</testname><value>false</value></Row>
+ <Row><testid>78</testid><testname>acy</testname><value>false</value></Row>
+ <Row><testid>79</testid><testname>acz</testname><value>false</value></Row>
+</Dataset>
+<Dataset name='UTF8ToDataIntegration'>
+ <Row><testid>70</testid><testname>acq</testname><value>436166C3A9206175206C61697420E29895</value></Row>
+ <Row><testid>71</testid><testname>acr</testname><value>F09F8E89205554462D38204368617261637465727320F09F8E892020</value></Row>
+ <Row><testid>72</testid><testname>acs</testname><value>5370656369616C20636861726163746572733A20C2A9C2AEE284A2</value></Row>
+ <Row><testid>73</testid><testname>act</testname><value>5554462D38206D6167696320E29CA8</value></Row>
+ <Row><testid>74</testid><testname>acu</testname><value>F09F8C9F204D6F7265205554462D382046756E20F09F8C9F2020</value></Row>
+ <Row><testid>75</testid><testname>acv</testname><value>54657374696E67205554462D383A20F09F92A1F09F948DF09F8C90202020</value></Row>
+ <Row><testid>76</testid><testname>acw</testname><value>F09F8C9F205554462D38204576657279776865726520F09F8C9F2020</value></Row>
+ <Row><testid>77</testid><testname>acx</testname><value>5554462D3820697320766572736174696C6521</value></Row>
+ <Row><testid>78</testid><testname>acy</testname><value>5554462D3820666F72207468652077696E21</value></Row>
+ <Row><testid>79</testid><testname>acz</testname><value>F09F8C9F205554462D382053796D626F6C7320F09F8C9F2020</value></Row>
+</Dataset>
+<Dataset name='DataToIntegerIntegration'>
+ <Row><testid>80</testid><testname>ada</testname><value>0</value></Row>
+ <Row><testid>81</testid><testname>adb</testname><value>0</value></Row>
+ <Row><testid>82</testid><testname>adc</testname><value>0</value></Row>
+ <Row><testid>83</testid><testname>add</testname><value>0</value></Row>
+ <Row><testid>84</testid><testname>ade</testname><value>0</value></Row>
+ <Row><testid>85</testid><testname>adf</testname><value>0</value></Row>
+ <Row><testid>86</testid><testname>adg</testname><value>0</value></Row>
+ <Row><testid>87</testid><testname>adh</testname><value>0</value></Row>
+ <Row><testid>88</testid><testname>adi</testname><value>0</value></Row>
+ <Row><testid>89</testid><testname>adj</testname><value>0</value></Row>
+</Dataset>
+<Dataset name='DataToRealIntegration'>
+ <Row><testid>80</testid><testname>ada</testname><value>0.0</value></Row>
+ <Row><testid>81</testid><testname>adb</testname><value>0.0</value></Row>
+ <Row><testid>82</testid><testname>adc</testname><value>0.0</value></Row>
+ <Row><testid>83</testid><testname>add</testname><value>0.0</value></Row>
+ <Row><testid>84</testid><testname>ade</testname><value>0.0</value></Row>
+ <Row><testid>85</testid><testname>adf</testname><value>0.0</value></Row>
+ <Row><testid>86</testid><testname>adg</testname><value>0.0</value></Row>
+ <Row><testid>87</testid><testname>adh</testname><value>0.0</value></Row>
+ <Row><testid>88</testid><testname>adi</testname><value>0.0</value></Row>
+ <Row><testid>89</testid><testname>adj</testname><value>0.0</value></Row>
+</Dataset>
+<Dataset name='DataToDecimalIntegration'>
+ <Row><testid>80</testid><testname>ada</testname><value>0</value></Row>
+ <Row><testid>81</testid><testname>adb</testname><value>0</value></Row>
+ <Row><testid>82</testid><testname>adc</testname><value>0</value></Row>
+ <Row><testid>83</testid><testname>add</testname><value>0</value></Row>
+ <Row><testid>84</testid><testname>ade</testname><value>0</value></Row>
+ <Row><testid>85</testid><testname>adf</testname><value>0</value></Row>
+ <Row><testid>86</testid><testname>adg</testname><value>0</value></Row>
+ <Row><testid>87</testid><testname>adh</testname><value>0</value></Row>
+ <Row><testid>88</testid><testname>adi</testname><value>0</value></Row>
+ <Row><testid>89</testid><testname>adj</testname><value>0</value></Row>
+</Dataset>
+<Dataset name='DataToStringIntegration'>
+ <Row><testid>80</testid><testname>ada</testname><value>&#xe001;&#xe01a;&#xe01a;&#xe01a;&#xe014;&#xe01a;H</value></Row>
+ <Row><testid>81</testid><testname>adb</testname><value>&#xe001;&#xe01a;F&#xe01a;o&#xe01a;</value></Row>
+ <Row><testid>82</testid><testname>adc</testname><value>&#xe001;&#xe01a;&#xe01a;&#xe01a;&#xe01a;o&#xe01a;&#xe000;</value></Row>
+ <Row><testid>83</testid><testname>add</testname><value>&#xe001;&#xe01a;&#xe01a;&#xe01a;ne&#xe01a;</value></Row>
+ <Row><testid>84</testid><testname>ade</testname><value>&#xe001;&#xe01a;&#xe01a;&#xe01a;p&#xe01a;L</value></Row>
+ <Row><testid>85</testid><testname>adf</testname><value>&#xe001;&#xe01a;&#xe01a;&#xe01a;&#xe01a;&#xe003;&#xe01a;&#xe01a;</value></Row>
+ <Row><testid>86</testid><testname>adg</testname><value>&#xe001;&#xe01a;&#xe01a;&#xe015;X&#xe01a;&#xe01a;&#xe019;</value></Row>
+ <Row><testid>87</testid><testname>adh</testname><value>&#xe001;&#xe01a;&#xe01a;&#xe010;&#xe01d;=&#xe01a;</value></Row>
+ <Row><testid>88</testid><testname>adi</testname><value>&#xe001;&#xe01a;&#xe01a;U&#xe01a;&#xe01a;</value></Row>
+ <Row><testid>89</testid><testname>adj</testname><value>&#xe001;&#xe01a;&#xe01a;V&#xe008;&#xe01a;&#xe01a;Z</value></Row>
+</Dataset>
+<Dataset name='DataToQStringIntegration'>
+ <Row><testid>80</testid><testname>ada</testname><value>      H</value></Row>
+ <Row><testid>81</testid><testname>adb</testname><value>  F O </value></Row>
+ <Row><testid>82</testid><testname>adc</testname><value>     O  </value></Row>
+ <Row><testid>83</testid><testname>add</testname><value>    NE </value></Row>
+ <Row><testid>84</testid><testname>ade</testname><value>    P L</value></Row>
+ <Row><testid>85</testid><testname>adf</testname><value>        </value></Row>
+ <Row><testid>86</testid><testname>adg</testname><value>    X   </value></Row>
+ <Row><testid>87</testid><testname>adh</testname><value>     = </value></Row>
+ <Row><testid>88</testid><testname>adi</testname><value>   U  </value></Row>
+ <Row><testid>89</testid><testname>adj</testname><value>   V   Z</value></Row>
+</Dataset>
+<Dataset name='DataToUnicodeIntegration'>
+ <Row><testid>80</testid><testname>ada</testname><value>&#xe001;���&#xe014;�H�&#xe000;&#xe001;</value></Row>
+ <Row><testid>81</testid><testname>adb</testname><value>&#xe001;�F�o�#</value></Row>
+ <Row><testid>82</testid><testname>adc</testname><value>&#xe001;��Ǔ�o�&#xe000;</value></Row>
+ <Row><testid>83</testid><testname>add</testname><value>&#xe001;���ne��&#xe003;</value></Row>
+ <Row><testid>84</testid><testname>ade</testname><value>&#xe001;��ѻp�L&#xe001;</value></Row>
+ <Row><testid>85</testid><testname>adf</testname><value>&#xe001;����&#xe003;��&#xe001;</value></Row>
+ <Row><testid>86</testid><testname>adg</testname><value>&#xe001;��&#xe015;X��&#xe019;&#xe000;</value></Row>
+ <Row><testid>87</testid><testname>adh</testname><value>&#xe001;��&#xe010;&#xe01d;=�&#xe002;</value></Row>
+ <Row><testid>88</testid><testname>adi</testname><value>&#xe001;��U���&#xe015;&#xe000;&#xe001;</value></Row>
+ <Row><testid>89</testid><testname>adj</testname><value>&#xe001;��V&#xe008;��Z&#xe002;</value></Row>
+</Dataset>
+<Dataset name='DataToUTF8Integration'>
+ <Row><testid>80</testid><testname>ada</testname><value>&#xe001;&#164;&#141;&#132;&#xe014;&#216;H&#233;&#xe000;&#xe001;</value></Row>
+ <Row><testid>81</testid><testname>adb</testname><value>&#xe001;&#244;&#138;&#180;F&#167;o&#137;#</value></Row>
+ <Row><testid>82</testid><testname>adc</testname><value>&#xe001;&#164;&#142;Ǔ&#167;o&#148;&#xe000;</value></Row>
+ <Row><testid>83</testid><testname>add</testname><value>&#xe001;&#164;&#142;&#205;ne&#216;&#232;&#xe003;</value></Row>
+ <Row><testid>84</testid><testname>ade</testname><value>&#xe001;&#164;&#142;ѻp&#216;L&#xe001;</value></Row>
+ <Row><testid>85</testid><testname>adf</testname><value>&#xe001;&#164;&#142;&#216;&#244;&#xe003;&#133;&#186;&#xe001;</value></Row>
+ <Row><testid>86</testid><testname>adg</testname><value>&#xe001;&#164;&#144;&#xe015;X&#215;&#201;&#xe019;&#xe000;</value></Row>
+ <Row><testid>87</testid><testname>adh</testname><value>&#xe001;&#164;&#144;&#xe010;&#xe01d;=&#233;&#172;&#xe002;</value></Row>
+ <Row><testid>88</testid><testname>adi</testname><value>&#xe001;&#164;&#145;U&#209;&#202;&#244;&#xe015;&#xe000;&#xe001;</value></Row>
+ <Row><testid>89</testid><testname>adj</testname><value>&#xe001;&#164;&#145;V&#xe008;&#159;&#206;Z&#xe002;</value></Row>
+</Dataset>
+<Dataset name='DataToBooleanIntegration'>
+ <Row><testid>80</testid><testname>ada</testname><value>false</value></Row>
+ <Row><testid>81</testid><testname>adb</testname><value>false</value></Row>
+ <Row><testid>82</testid><testname>adc</testname><value>false</value></Row>
+ <Row><testid>83</testid><testname>add</testname><value>false</value></Row>
+ <Row><testid>84</testid><testname>ade</testname><value>false</value></Row>
+ <Row><testid>85</testid><testname>adf</testname><value>false</value></Row>
+ <Row><testid>86</testid><testname>adg</testname><value>false</value></Row>
+ <Row><testid>87</testid><testname>adh</testname><value>false</value></Row>
+ <Row><testid>88</testid><testname>adi</testname><value>false</value></Row>
+ <Row><testid>89</testid><testname>adj</testname><value>false</value></Row>
+</Dataset>
+<Dataset name='VarstringToBooleanIntegration'>
+ <Row><testid>90</testid><testname>adk</testname><value>false</value></Row>
+ <Row><testid>91</testid><testname>adl</testname><value>false</value></Row>
+ <Row><testid>92</testid><testname>adm</testname><value>false</value></Row>
+ <Row><testid>93</testid><testname>adn</testname><value>false</value></Row>
+ <Row><testid>94</testid><testname>ado</testname><value>false</value></Row>
+ <Row><testid>95</testid><testname>adp</testname><value>false</value></Row>
+ <Row><testid>96</testid><testname>adq</testname><value>false</value></Row>
+ <Row><testid>97</testid><testname>adr</testname><value>false</value></Row>
+ <Row><testid>98</testid><testname>ads</testname><value>false</value></Row>
+ <Row><testid>99</testid><testname>adt</testname><value>false</value></Row>
+</Dataset>
+<Dataset name='VarstringToIntegerIntegration'>
+ <Row><testid>90</testid><testname>adk</testname><value>0</value></Row>
+ <Row><testid>91</testid><testname>adl</testname><value>0</value></Row>
+ <Row><testid>92</testid><testname>adm</testname><value>0</value></Row>
+ <Row><testid>93</testid><testname>adn</testname><value>0</value></Row>
+ <Row><testid>94</testid><testname>ado</testname><value>0</value></Row>
+ <Row><testid>95</testid><testname>adp</testname><value>0</value></Row>
+ <Row><testid>96</testid><testname>adq</testname><value>0</value></Row>
+ <Row><testid>97</testid><testname>adr</testname><value>0</value></Row>
+ <Row><testid>98</testid><testname>ads</testname><value>0</value></Row>
+ <Row><testid>99</testid><testname>adt</testname><value>0</value></Row>
+</Dataset>
+<Dataset name='VarstringToRealIntegration'>
+ <Row><testid>90</testid><testname>adk</testname><value>0.0</value></Row>
+ <Row><testid>91</testid><testname>adl</testname><value>0.0</value></Row>
+ <Row><testid>92</testid><testname>adm</testname><value>0.0</value></Row>
+ <Row><testid>93</testid><testname>adn</testname><value>0.0</value></Row>
+ <Row><testid>94</testid><testname>ado</testname><value>0.0</value></Row>
+ <Row><testid>95</testid><testname>adp</testname><value>0.0</value></Row>
+ <Row><testid>96</testid><testname>adq</testname><value>0.0</value></Row>
+ <Row><testid>97</testid><testname>adr</testname><value>0.0</value></Row>
+ <Row><testid>98</testid><testname>ads</testname><value>0.0</value></Row>
+ <Row><testid>99</testid><testname>adt</testname><value>0.0</value></Row>
+</Dataset>
+<Dataset name='VarstringToDecimalIntegration'>
+ <Row><testid>90</testid><testname>adk</testname><value>0</value></Row>
+ <Row><testid>91</testid><testname>adl</testname><value>0</value></Row>
+ <Row><testid>92</testid><testname>adm</testname><value>0</value></Row>
+ <Row><testid>93</testid><testname>adn</testname><value>0</value></Row>
+ <Row><testid>94</testid><testname>ado</testname><value>0</value></Row>
+ <Row><testid>95</testid><testname>adp</testname><value>0</value></Row>
+ <Row><testid>96</testid><testname>adq</testname><value>0</value></Row>
+ <Row><testid>97</testid><testname>adr</testname><value>0</value></Row>
+ <Row><testid>98</testid><testname>ads</testname><value>0</value></Row>
+ <Row><testid>99</testid><testname>adt</testname><value>0</value></Row>
+</Dataset>
+<Dataset name='VarstringToStringIntegration'>
+ <Row><testid>90</testid><testname>adk</testname><value>Short text</value></Row>
+ <Row><testid>91</testid><testname>adl</testname><value>A longer variable-length string</value></Row>
+ <Row><testid>92</testid><testname>adm</testname><value>Strings are flexible!</value></Row>
+ <Row><testid>93</testid><testname>adn</testname><value>Variable-length strings rock!</value></Row>
+ <Row><testid>94</testid><testname>ado</testname><value>Testing varstrings: &#169;&#170;</value></Row>
+ <Row><testid>95</testid><testname>adp</testname><value>Varstrings everywhere!</value></Row>
+ <Row><testid>96</testid><testname>adq</testname><value>%$ More Varstring Fun ^*</value></Row>
+ <Row><testid>97</testid><testname>adr</testname><value>Varstrings for the win!</value></Row>
+ <Row><testid>98</testid><testname>ads</testname><value>Varstrings galore!</value></Row>
+ <Row><testid>99</testid><testname>adt</testname><value>*** Varstring Universe ***</value></Row>
+</Dataset>
+<Dataset name='VarstringToQStringIntegration'>
+ <Row><testid>90</testid><testname>adk</testname><value>SHORT TEXT</value></Row>
+ <Row><testid>91</testid><testname>adl</testname><value>A LONGER VARIABLE-LENGTH STRING</value></Row>
+ <Row><testid>92</testid><testname>adm</testname><value>STRINGS ARE FLEXIBLE!</value></Row>
+ <Row><testid>93</testid><testname>adn</testname><value>VARIABLE-LENGTH STRINGS ROCK!</value></Row>
+ <Row><testid>94</testid><testname>ado</testname><value>TESTING VARSTRINGS:   </value></Row>
+ <Row><testid>95</testid><testname>adp</testname><value>VARSTRINGS EVERYWHERE!</value></Row>
+ <Row><testid>96</testid><testname>adq</testname><value>%$ MORE VARSTRING FUN ^*</value></Row>
+ <Row><testid>97</testid><testname>adr</testname><value>VARSTRINGS FOR THE WIN!</value></Row>
+ <Row><testid>98</testid><testname>ads</testname><value>VARSTRINGS GALORE!</value></Row>
+ <Row><testid>99</testid><testname>adt</testname><value>*** VARSTRING UNIVERSE ***</value></Row>
+</Dataset>
+<Dataset name='VarstringToUnicodeIntegration'>
+ <Row><testid>90</testid><testname>adk</testname><value>Short text</value></Row>
+ <Row><testid>91</testid><testname>adl</testname><value>A longer variable-length string</value></Row>
+ <Row><testid>92</testid><testname>adm</testname><value>Strings are flexible!</value></Row>
+ <Row><testid>93</testid><testname>adn</testname><value>Variable-length strings rock!</value></Row>
+ <Row><testid>94</testid><testname>ado</testname><value>Testing varstrings: ©ª</value></Row>
+ <Row><testid>95</testid><testname>adp</testname><value>Varstrings everywhere!</value></Row>
+ <Row><testid>96</testid><testname>adq</testname><value>%$ More Varstring Fun ^*</value></Row>
+ <Row><testid>97</testid><testname>adr</testname><value>Varstrings for the win!</value></Row>
+ <Row><testid>98</testid><testname>ads</testname><value>Varstrings galore!</value></Row>
+ <Row><testid>99</testid><testname>adt</testname><value>*** Varstring Universe ***</value></Row>
+</Dataset>
+<Dataset name='VarstringToUTF8Integration'>
+ <Row><testid>90</testid><testname>adk</testname><value>Short text</value></Row>
+ <Row><testid>91</testid><testname>adl</testname><value>A longer variable-length string</value></Row>
+ <Row><testid>92</testid><testname>adm</testname><value>Strings are flexible!</value></Row>
+ <Row><testid>93</testid><testname>adn</testname><value>Variable-length strings rock!</value></Row>
+ <Row><testid>94</testid><testname>ado</testname><value>Testing varstrings: ©ª</value></Row>
+ <Row><testid>95</testid><testname>adp</testname><value>Varstrings everywhere!</value></Row>
+ <Row><testid>96</testid><testname>adq</testname><value>%$ More Varstring Fun ^*</value></Row>
+ <Row><testid>97</testid><testname>adr</testname><value>Varstrings for the win!</value></Row>
+ <Row><testid>98</testid><testname>ads</testname><value>Varstrings galore!</value></Row>
+ <Row><testid>99</testid><testname>adt</testname><value>*** Varstring Universe ***</value></Row>
+</Dataset>
+<Dataset name='VarstringToDataIntegration'>
+ <Row><testid>90</testid><testname>adk</testname><value>53686F72742074657874</value></Row>
+ <Row><testid>91</testid><testname>adl</testname><value>41206C6F6E676572207661726961626C652D6C656E67746820737472696E67</value></Row>
+ <Row><testid>92</testid><testname>adm</testname><value>537472696E67732061726520666C657869626C6521</value></Row>
+ <Row><testid>93</testid><testname>adn</testname><value>5661726961626C652D6C656E67746820737472696E677320726F636B21</value></Row>
+ <Row><testid>94</testid><testname>ado</testname><value>54657374696E6720766172737472696E67733A20C2A9C2AA</value></Row>
+ <Row><testid>95</testid><testname>adp</testname><value>566172737472696E6773206576657279776865726521</value></Row>
+ <Row><testid>96</testid><testname>adq</testname><value>2524204D6F726520566172737472696E672046756E205E2A</value></Row>
+ <Row><testid>97</testid><testname>adr</testname><value>566172737472696E677320666F72207468652077696E21</value></Row>
+ <Row><testid>98</testid><testname>ads</testname><value>566172737472696E67732067616C6F726521</value></Row>
+ <Row><testid>99</testid><testname>adt</testname><value>2A2A2A20566172737472696E6720556E697665727365202A2A2A</value></Row>
+</Dataset>
+<Dataset name='VarunicodeToBooleanIntegration'>
+ <Row><testid>100</testid><testname>adu</testname><value>false</value></Row>
+ <Row><testid>101</testid><testname>adv</testname><value>false</value></Row>
+ <Row><testid>102</testid><testname>adw</testname><value>false</value></Row>
+ <Row><testid>103</testid><testname>adx</testname><value>false</value></Row>
+ <Row><testid>104</testid><testname>ady</testname><value>false</value></Row>
+ <Row><testid>105</testid><testname>adz</testname><value>false</value></Row>
+ <Row><testid>106</testid><testname>aea</testname><value>false</value></Row>
+ <Row><testid>107</testid><testname>aeb</testname><value>false</value></Row>
+ <Row><testid>108</testid><testname>aec</testname><value>false</value></Row>
+ <Row><testid>109</testid><testname>aed</testname><value>false</value></Row>
+</Dataset>
+<Dataset name='VarunicodeToIntegerIntegration'>
+ <Row><testid>100</testid><testname>adu</testname><value>0</value></Row>
+ <Row><testid>101</testid><testname>adv</testname><value>0</value></Row>
+ <Row><testid>102</testid><testname>adw</testname><value>0</value></Row>
+ <Row><testid>103</testid><testname>adx</testname><value>0</value></Row>
+ <Row><testid>104</testid><testname>ady</testname><value>0</value></Row>
+ <Row><testid>105</testid><testname>adz</testname><value>0</value></Row>
+ <Row><testid>106</testid><testname>aea</testname><value>0</value></Row>
+ <Row><testid>107</testid><testname>aeb</testname><value>0</value></Row>
+ <Row><testid>108</testid><testname>aec</testname><value>0</value></Row>
+ <Row><testid>109</testid><testname>aed</testname><value>0</value></Row>
+</Dataset>
+<Dataset name='VarunicodeToRealIntegration'>
+ <Row><testid>100</testid><testname>adu</testname><value>0.0</value></Row>
+ <Row><testid>101</testid><testname>adv</testname><value>0.0</value></Row>
+ <Row><testid>102</testid><testname>adw</testname><value>0.0</value></Row>
+ <Row><testid>103</testid><testname>adx</testname><value>0.0</value></Row>
+ <Row><testid>104</testid><testname>ady</testname><value>0.0</value></Row>
+ <Row><testid>105</testid><testname>adz</testname><value>0.0</value></Row>
+ <Row><testid>106</testid><testname>aea</testname><value>0.0</value></Row>
+ <Row><testid>107</testid><testname>aeb</testname><value>0.0</value></Row>
+ <Row><testid>108</testid><testname>aec</testname><value>0.0</value></Row>
+ <Row><testid>109</testid><testname>aed</testname><value>0.0</value></Row>
+</Dataset>
+<Dataset name='VarunicodeToDecimalIntegration'>
+ <Row><testid>100</testid><testname>adu</testname><value>0</value></Row>
+ <Row><testid>101</testid><testname>adv</testname><value>0</value></Row>
+ <Row><testid>102</testid><testname>adw</testname><value>0</value></Row>
+ <Row><testid>103</testid><testname>adx</testname><value>0</value></Row>
+ <Row><testid>104</testid><testname>ady</testname><value>0</value></Row>
+ <Row><testid>105</testid><testname>adz</testname><value>0</value></Row>
+ <Row><testid>106</testid><testname>aea</testname><value>0</value></Row>
+ <Row><testid>107</testid><testname>aeb</testname><value>0</value></Row>
+ <Row><testid>108</testid><testname>aec</testname><value>0</value></Row>
+ <Row><testid>109</testid><testname>aed</testname><value>0</value></Row>
+</Dataset>
+<Dataset name='VarunicodeToStringIntegration'>
+ <Row><testid>100</testid><testname>adu</testname><value>Variable-length Unicode: &#xe01a;&#xe01a;&#xe01a;&#xe01a;&#xe01a;&#xe01a;&#xe01a;&#xe01a;&#xe01a;</value></Row>
+ <Row><testid>101</testid><testname>adv</testname><value>&#xe01a; Variable-length Unicode Symbols &#xe01a;</value></Row>
+ <Row><testid>102</testid><testname>adw</testname><value>Unicode flexibility is awesome!</value></Row>
+ <Row><testid>103</testid><testname>adx</testname><value>Testing varunicodes: &#xe01a;&#xe01a;</value></Row>
+ <Row><testid>104</testid><testname>ady</testname><value>Varunicodes everywhere!</value></Row>
+ <Row><testid>105</testid><testname>adz</testname><value>&#xe01a; More Varunicode Fun &#xe01a;</value></Row>
+ <Row><testid>106</testid><testname>aea</testname><value>Varunicodes for the win!</value></Row>
+ <Row><testid>107</testid><testname>aeb</testname><value>Varunicodes galore!</value></Row>
+ <Row><testid>108</testid><testname>aec</testname><value>&#xe01a; Varunicode Universe &#xe01a;</value></Row>
+ <Row><testid>109</testid><testname>aed</testname><value>&#xe01a; Varunicode Magic &#xe01a;</value></Row>
+</Dataset>
+<Dataset name='VarunicodeToQStringIntegration'>
+ <Row><testid>100</testid><testname>adu</testname><value>VARIABLE-LENGTH UNICODE:          </value></Row>
+ <Row><testid>101</testid><testname>adv</testname><value>  VARIABLE-LENGTH UNICODE SYMBOLS  </value></Row>
+ <Row><testid>102</testid><testname>adw</testname><value>UNICODE FLEXIBILITY IS AWESOME!</value></Row>
+ <Row><testid>103</testid><testname>adx</testname><value>TESTING VARUNICODES:   </value></Row>
+ <Row><testid>104</testid><testname>ady</testname><value>VARUNICODES EVERYWHERE!</value></Row>
+ <Row><testid>105</testid><testname>adz</testname><value>  MORE VARUNICODE FUN  </value></Row>
+ <Row><testid>106</testid><testname>aea</testname><value>VARUNICODES FOR THE WIN!</value></Row>
+ <Row><testid>107</testid><testname>aeb</testname><value>VARUNICODES GALORE!</value></Row>
+ <Row><testid>108</testid><testname>aec</testname><value>  VARUNICODE UNIVERSE  </value></Row>
+ <Row><testid>109</testid><testname>aed</testname><value>  VARUNICODE MAGIC  </value></Row>
+</Dataset>
+<Dataset name='VarunicodeToUnicodeIntegration'>
+ <Row><testid>100</testid><testname>adu</testname><value>Variable-length Unicode: こんにちは、世界！</value></Row>
+ <Row><testid>101</testid><testname>adv</testname><value>🌟 Variable-length Unicode Symbols 🌟</value></Row>
+ <Row><testid>102</testid><testname>adw</testname><value>Unicode flexibility is awesome!</value></Row>
+ <Row><testid>103</testid><testname>adx</testname><value>Testing varunicodes: 🌈🌐</value></Row>
+ <Row><testid>104</testid><testname>ady</testname><value>Varunicodes everywhere!</value></Row>
+ <Row><testid>105</testid><testname>adz</testname><value>🌟 More Varunicode Fun 🌟</value></Row>
+ <Row><testid>106</testid><testname>aea</testname><value>Varunicodes for the win!</value></Row>
+ <Row><testid>107</testid><testname>aeb</testname><value>Varunicodes galore!</value></Row>
+ <Row><testid>108</testid><testname>aec</testname><value>🌟 Varunicode Universe 🌟</value></Row>
+ <Row><testid>109</testid><testname>aed</testname><value>🌟 Varunicode Magic 🌟</value></Row>
+</Dataset>
+<Dataset name='VarunicodeToUTF8Integration'>
+ <Row><testid>100</testid><testname>adu</testname><value>Variable-length Unicode: こんにちは、世界！</value></Row>
+ <Row><testid>101</testid><testname>adv</testname><value>🌟 Variable-length Unicode Symbols 🌟</value></Row>
+ <Row><testid>102</testid><testname>adw</testname><value>Unicode flexibility is awesome!</value></Row>
+ <Row><testid>103</testid><testname>adx</testname><value>Testing varunicodes: 🌈🌐</value></Row>
+ <Row><testid>104</testid><testname>ady</testname><value>Varunicodes everywhere!</value></Row>
+ <Row><testid>105</testid><testname>adz</testname><value>🌟 More Varunicode Fun 🌟</value></Row>
+ <Row><testid>106</testid><testname>aea</testname><value>Varunicodes for the win!</value></Row>
+ <Row><testid>107</testid><testname>aeb</testname><value>Varunicodes galore!</value></Row>
+ <Row><testid>108</testid><testname>aec</testname><value>🌟 Varunicode Universe 🌟</value></Row>
+ <Row><testid>109</testid><testname>aed</testname><value>🌟 Varunicode Magic 🌟</value></Row>
+</Dataset>
+<Dataset name='VarunicodeToDataIntegration'>
+ <Row><testid>100</testid><testname>adu</testname><value>5661726961626C652D6C656E67746820556E69636F64653A20E38193E38293E381ABE381A1E381AFE38081E4B896E7958CEFBC81</value></Row>
+ <Row><testid>101</testid><testname>adv</testname><value>F09F8C9F205661726961626C652D6C656E67746820556E69636F64652053796D626F6C7320F09F8C9F</value></Row>
+ <Row><testid>102</testid><testname>adw</testname><value>556E69636F646520666C65786962696C69747920697320617765736F6D6521</value></Row>
+ <Row><testid>103</testid><testname>adx</testname><value>54657374696E6720766172756E69636F6465733A20F09F8C88F09F8C90</value></Row>
+ <Row><testid>104</testid><testname>ady</testname><value>566172756E69636F646573206576657279776865726521</value></Row>
+ <Row><testid>105</testid><testname>adz</testname><value>F09F8C9F204D6F726520566172756E69636F64652046756E20F09F8C9F</value></Row>
+ <Row><testid>106</testid><testname>aea</testname><value>566172756E69636F64657320666F72207468652077696E21</value></Row>
+ <Row><testid>107</testid><testname>aeb</testname><value>566172756E69636F6465732067616C6F726521</value></Row>
+ <Row><testid>108</testid><testname>aec</testname><value>F09F8C9F20566172756E69636F646520556E69766572736520F09F8C9F</value></Row>
+ <Row><testid>109</testid><testname>aed</testname><value>F09F8C9F20566172756E69636F6465204D6167696320F09F8C9F</value></Row>
+</Dataset>

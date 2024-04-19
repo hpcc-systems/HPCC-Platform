@@ -1,0 +1,875 @@
+<Dataset name='BooleanTest'>
+ <Row><testid>0</testid><testname>aaa</testname><value>false</value></Row>
+ <Row><testid>1</testid><testname>aab</testname><value>false</value></Row>
+ <Row><testid>2</testid><testname>aac</testname><value>true</value></Row>
+ <Row><testid>3</testid><testname>aad</testname><value>true</value></Row>
+ <Row><testid>4</testid><testname>aae</testname><value>true</value></Row>
+ <Row><testid>5</testid><testname>aaf</testname><value>true</value></Row>
+ <Row><testid>6</testid><testname>aag</testname><value>true</value></Row>
+ <Row><testid>7</testid><testname>aah</testname><value>false</value></Row>
+ <Row><testid>8</testid><testname>aai</testname><value>true</value></Row>
+ <Row><testid>9</testid><testname>aaj</testname><value>true</value></Row>
+</Dataset>
+<Dataset name='IntegerTest'>
+ <Row><testid>10</testid><testname>aai</testname><value>123</value></Row>
+ <Row><testid>11</testid><testname>aaj</testname><value>-987</value></Row>
+ <Row><testid>12</testid><testname>aak</testname><value>0</value></Row>
+ <Row><testid>13</testid><testname>aal</testname><value>42</value></Row>
+ <Row><testid>14</testid><testname>aam</testname><value>-500</value></Row>
+ <Row><testid>15</testid><testname>aan</testname><value>999</value></Row>
+ <Row><testid>16</testid><testname>aao</testname><value>7</value></Row>
+ <Row><testid>17</testid><testname>aap</testname><value>-12345</value></Row>
+ <Row><testid>18</testid><testname>aaq</testname><value>987654</value></Row>
+ <Row><testid>19</testid><testname>aar</testname><value>1000000</value></Row>
+</Dataset>
+<Dataset name='RealTest'>
+ <Row><testid>20</testid><testname>aas</testname><value>3.14</value></Row>
+ <Row><testid>21</testid><testname>aat</testname><value>-0.5</value></Row>
+ <Row><testid>22</testid><testname>aau</testname><value>123.456</value></Row>
+ <Row><testid>23</testid><testname>aav</testname><value>-987.654</value></Row>
+ <Row><testid>24</testid><testname>aaw</testname><value>0.001</value></Row>
+ <Row><testid>25</testid><testname>aax</testname><value>999.99</value></Row>
+ <Row><testid>26</testid><testname>aay</testname><value>7.5</value></Row>
+ <Row><testid>27</testid><testname>aaz</testname><value>-1234.5678</value></Row>
+ <Row><testid>28</testid><testname>aba</testname><value>98765.43210000001</value></Row>
+ <Row><testid>29</testid><testname>abb</testname><value>1e-05</value></Row>
+</Dataset>
+<Dataset name='DecimalTest'>
+ <Row><testid>30</testid><testname>abc</testname><value>123.456789</value></Row>
+ <Row><testid>31</testid><testname>abd</testname><value>-987.6543209999999</value></Row>
+ <Row><testid>32</testid><testname>abe</testname><value>0.000001</value></Row>
+ <Row><testid>33</testid><testname>abf</testname><value>42.424242</value></Row>
+ <Row><testid>34</testid><testname>abg</testname><value>-500.5050499999999</value></Row>
+ <Row><testid>35</testid><testname>abh</testname><value>999.9999989999999</value></Row>
+ <Row><testid>36</testid><testname>abi</testname><value>7.777777</value></Row>
+ <Row><testid>37</testid><testname>abj</testname><value>-12345.6789</value></Row>
+ <Row><testid>38</testid><testname>abk</testname><value>987654.3209999999</value></Row>
+ <Row><testid>39</testid><testname>abl</testname><value>0.0000001</value></Row>
+</Dataset>
+<Dataset name='StringTest'>
+ <Row><testid>40</testid><testname>abm</testname><value>Hello, World!</value></Row>
+ <Row><testid>41</testid><testname>abn</testname><value>Data Science</value></Row>
+ <Row><testid>42</testid><testname>abo</testname><value>12345</value></Row>
+ <Row><testid>43</testid><testname>abp</testname><value>Python is fun!</value></Row>
+ <Row><testid>44</testid><testname>abq</testname><value>Strings rock!</value></Row>
+ <Row><testid>45</testid><testname>abr</testname><value>Testing 1, 2, 3...</value></Row>
+ <Row><testid>46</testid><testname>abs</testname><value>Let&apos;s code!</value></Row>
+ <Row><testid>47</testid><testname>abt</testname><value>Strings and more strings</value></Row>
+ <Row><testid>48</testid><testname>abu</testname><value>&#169;&#170;&#171;&#171;&#174;</value></Row>
+ <Row><testid>49</testid><testname>abv</testname><value>Special characters: !@#$%^&amp;*</value></Row>
+</Dataset>
+<Dataset name='QStringTest'>
+ <Row><testid>50</testid><testname>abw</testname><value>THIS IS A &quot;Q&quot; STRING.</value></Row>
+ <Row><testid>51</testid><testname>abx</testname><value>ANOTHER &quot;EXAMPLE&quot; HERE.</value></Row>
+ <Row><testid>52</testid><testname>aby</testname><value>QSTRINGS ARE USEFUL!</value></Row>
+ <Row><testid>53</testid><testname>abz</testname><value>ESCAPING QUOTES: \&quot;</value></Row>
+ <Row><testid>54</testid><testname>aca</testname><value>SPECIAL CHARACTERS ! &quot; # $</value></Row>
+ <Row><testid>55</testid><testname>acb</testname><value>TESTING STRING</value></Row>
+ <Row><testid>56</testid><testname>acc</testname><value>QSTRINGS ROCK!</value></Row>
+ <Row><testid>57</testid><testname>acd</testname><value>TESTING &quot;()*+,-)&quot; CHARACTERS.</value></Row>
+ <Row><testid>58</testid><testname>ace</testname><value>!&quot;#$&amp;&apos;()*+,-./;&lt;&gt;_[\]</value></Row>
+ <Row><testid>59</testid><testname>acf</testname><value>&lt;@@[[[[&apos;\&apos;\&apos;&apos;\]]]]</value></Row>
+</Dataset>
+<Dataset name='UnicodeTest'>
+ <Row><testid>60</testid><testname>acg</testname><value>こんにちは、世界！</value></Row>
+ <Row><testid>61</testid><testname>ach</testname><value>Unicode characters: ḸḹḾ</value></Row>
+ <Row><testid>62</testid><testname>aci</testname><value>Ṏ Beautiful Unicode Ṙ</value></Row>
+ <Row><testid>63</testid><testname>acj</testname><value>Unicode is fascinating!</value></Row>
+ <Row><testid>64</testid><testname>ack</testname><value>Ṙ Unicode Symbols ẫ</value></Row>
+ <Row><testid>65</testid><testname>acl</testname><value>Special characters: ©®™</value></Row>
+ <Row><testid>66</testid><testname>acm</testname><value>Unicode magic ⊗⊘⊙⊚⊛⊜⊝</value></Row>
+ <Row><testid>67</testid><testname>acn</testname><value>Testing Unicode: ⋖⋗⋙⋚⋛⋜⋝</value></Row>
+ <Row><testid>68</testid><testname>aco</testname><value>∭∮∯ More Unicode Fun ∐∑−∓∔</value></Row>
+ <Row><testid>69</testid><testname>acp</testname><value>∆∇∈∉∊∋∌ Unicode Everywhere ⋸⋹⋺⋻</value></Row>
+</Dataset>
+<Dataset name='UTF8Test'>
+ <Row><testid>70</testid><testname>acq</testname><value>Café au lait ☕</value></Row>
+ <Row><testid>71</testid><testname>acr</testname><value>🎉 UTF-8 Characters 🎉  </value></Row>
+ <Row><testid>72</testid><testname>acs</testname><value>Special characters: ©®™</value></Row>
+ <Row><testid>73</testid><testname>act</testname><value>UTF-8 magic ✨</value></Row>
+ <Row><testid>74</testid><testname>acu</testname><value>🌟 More UTF-8 Fun 🌟  </value></Row>
+ <Row><testid>75</testid><testname>acv</testname><value>Testing UTF-8: 💡🔍🌐   </value></Row>
+ <Row><testid>76</testid><testname>acw</testname><value>🌟 UTF-8 Everywhere 🌟  </value></Row>
+ <Row><testid>77</testid><testname>acx</testname><value>UTF-8 is versatile!</value></Row>
+ <Row><testid>78</testid><testname>acy</testname><value>UTF-8 for the win!</value></Row>
+ <Row><testid>79</testid><testname>acz</testname><value>🌟 UTF-8 Symbols 🌟  </value></Row>
+</Dataset>
+<Dataset name='DataTest'>
+ <Row><testid>80</testid><testname>ada</testname><value>01A48D8414D848E900</value></Row>
+ <Row><testid>81</testid><testname>adb</testname><value>01F48AB446A76F8923</value></Row>
+ <Row><testid>82</testid><testname>adc</testname><value>01A48EC793A76F9400</value></Row>
+ <Row><testid>83</testid><testname>add</testname><value>01A48ECD6E65D8E803</value></Row>
+ <Row><testid>84</testid><testname>ade</testname><value>01A48ED1BB70D84C01</value></Row>
+ <Row><testid>85</testid><testname>adf</testname><value>01A48ED8F40385BA01</value></Row>
+ <Row><testid>86</testid><testname>adg</testname><value>01A4901558D7C91900</value></Row>
+ <Row><testid>87</testid><testname>adh</testname><value>01A490101D3DE9AC02</value></Row>
+ <Row><testid>88</testid><testname>adi</testname><value>01A49155D1CAF41500</value></Row>
+ <Row><testid>89</testid><testname>adj</testname><value>01A49156089FCE5A02</value></Row>
+</Dataset>
+<Dataset name='VarstringTest'>
+ <Row><testid>90</testid><testname>adk</testname><value>Short text</value></Row>
+ <Row><testid>91</testid><testname>adl</testname><value>A longer variable-length string</value></Row>
+ <Row><testid>92</testid><testname>adm</testname><value>Strings are flexible!</value></Row>
+ <Row><testid>93</testid><testname>adn</testname><value>Variable-length strings rock!</value></Row>
+ <Row><testid>94</testid><testname>ado</testname><value>Testing varstrings: &#169;&#170;</value></Row>
+ <Row><testid>95</testid><testname>adp</testname><value>Varstrings everywhere!</value></Row>
+ <Row><testid>96</testid><testname>adq</testname><value>%$ More Varstring Fun ^*</value></Row>
+ <Row><testid>97</testid><testname>adr</testname><value>Varstrings for the win!</value></Row>
+ <Row><testid>98</testid><testname>ads</testname><value>Varstrings galore!</value></Row>
+ <Row><testid>99</testid><testname>adt</testname><value>*** Varstring Universe ***</value></Row>
+</Dataset>
+<Dataset name='VarunicodeTest'>
+ <Row><testid>100</testid><testname>adu</testname><value>Variable-length Unicode: こんにちは、世界！</value></Row>
+ <Row><testid>101</testid><testname>adv</testname><value>🌟 Variable-length Unicode Symbols 🌟</value></Row>
+ <Row><testid>102</testid><testname>adw</testname><value>Unicode flexibility is awesome!</value></Row>
+ <Row><testid>103</testid><testname>adx</testname><value>Testing varunicodes: 🌈🌐</value></Row>
+ <Row><testid>104</testid><testname>ady</testname><value>Varunicodes everywhere!</value></Row>
+ <Row><testid>105</testid><testname>adz</testname><value>🌟 More Varunicode Fun 🌟</value></Row>
+ <Row><testid>106</testid><testname>aea</testname><value>Varunicodes for the win!</value></Row>
+ <Row><testid>107</testid><testname>aeb</testname><value>Varunicodes galore!</value></Row>
+ <Row><testid>108</testid><testname>aec</testname><value>🌟 Varunicode Universe 🌟</value></Row>
+ <Row><testid>109</testid><testname>aed</testname><value>🌟 Varunicode Magic 🌟</value></Row>
+</Dataset>
+<Dataset name='SetofBooleanTest'>
+ <Row><testid>110</testid><testname>aee</testname><value><Item>true</Item></value></Row>
+ <Row><testid>111</testid><testname>aef</testname><value><Item>false</Item></value></Row>
+ <Row><testid>112</testid><testname>aeg</testname><value><Item>true</Item><Item>false</Item><Item>true</Item><Item>false</Item><Item>true</Item></value></Row>
+ <Row><testid>113</testid><testname>aeh</testname><value><Item>true</Item><Item>true</Item><Item>true</Item><Item>true</Item><Item>false</Item></value></Row>
+ <Row><testid>114</testid><testname>aei</testname><value><Item>true</Item><Item>true</Item><Item>false</Item><Item>true</Item><Item>true</Item></value></Row>
+</Dataset>
+<Dataset name='SetofIntegerTest'>
+ <Row><testid>115</testid><testname>aej</testname><value><Item>42</Item></value></Row>
+ <Row><testid>116</testid><testname>aek</testname><value><Item>-10</Item></value></Row>
+ <Row><testid>117</testid><testname>ael</testname><value><Item>0</Item><Item>34</Item><Item>367</Item><Item>-12</Item></value></Row>
+ <Row><testid>118</testid><testname>aem</testname><value><Item>100</Item><Item>89</Item><Item>12</Item></value></Row>
+ <Row><testid>119</testid><testname>aen</testname><value><Item>1</Item><Item>2</Item><Item>3</Item><Item>4</Item><Item>5</Item></value></Row>
+</Dataset>
+<Dataset name='SetofRealTest'>
+ <Row><testid>120</testid><testname>aeo</testname><value><Item>3.14</Item><Item>-2.718</Item></value></Row>
+ <Row><testid>121</testid><testname>aep</testname><value><Item>0.0</Item></value></Row>
+ <Row><testid>122</testid><testname>aeq</testname><value><Item>2.5</Item><Item>-0.5</Item><Item>1.618</Item></value></Row>
+ <Row><testid>123</testid><testname>aer</testname><value><Item>7.77</Item><Item>-3.33</Item></value></Row>
+ <Row><testid>124</testid><testname>aes</testname><value><Item>4.2</Item><Item>9.99</Item><Item>3.1415926</Item></value></Row>
+</Dataset>
+<Dataset name='SetofDecimalTest'>
+ <Row><testid>125</testid><testname>aej</testname><value><Item>1.23456789</Item></value></Row>
+ <Row><testid>126</testid><testname>aek</testname><value><Item>3.14159265</Item><Item>2.71828183</Item></value></Row>
+ <Row><testid>127</testid><testname>ael</testname><value><Item>0</Item><Item>-1.23456789</Item><Item>-0.98765432</Item></value></Row>
+ <Row><testid>128</testid><testname>aem</testname><value><Item>0.12345678</Item><Item>-0.12345678</Item><Item>19.12389555</Item></value></Row>
+ <Row><testid>129</testid><testname>aen</testname><value><Item>9.876543209999999</Item><Item>-5.43210987</Item></value></Row>
+</Dataset>
+<Dataset name='SetofStringTest'>
+ <Row><testid>130</testid><testname>aeo</testname><value><Item>Hello</Item><Item>World</Item></value></Row>
+ <Row><testid>131</testid><testname>aep</testname><value><Item>Parquet</Item></value></Row>
+ <Row><testid>132</testid><testname>aeq</testname><value><Item>SET</Item><Item>OF</Item><Item>Test</Item></value></Row>
+ <Row><testid>133</testid><testname>aer</testname><value><Item>String</Item><Item>Data</Item><Item>ECL</Item></value></Row>
+ <Row><testid>134</testid><testname>aes</testname><value><Item>string</Item><Item>STRING</Item></value></Row>
+</Dataset>
+<Dataset name='SetofQStringTest'>
+ <Row><testid>135</testid><testname>aet</testname><value><Item>&quot;QSTRING 1&quot;</Item></value></Row>
+ <Row><testid>136</testid><testname>aeu</testname><value><Item>AKJDCNA</Item><Item>(&amp;*^%$)</Item></value></Row>
+ <Row><testid>137</testid><testname>aev</testname><value><Item>SLK0934</Item><Item>32415</Item><Item>123VDER</Item></value></Row>
+ <Row><testid>138</testid><testname>aew</testname><value><Item>(*^&amp;^&amp;%$)</Item><Item>^%$#</Item></value></Row>
+ <Row><testid>139</testid><testname>aex</testname><value><Item>!@*^$</Item><Item>1234754</Item></value></Row>
+</Dataset>
+<Dataset name='SetofUnicodeTest'>
+ <Row><testid>140</testid><testname>aey</testname><value><Item>こんにちは、世界！</Item></value></Row>
+ <Row><testid>141</testid><testname>aez</testname><value><Item>Unicode flexibility is awesome!</Item><Item>Testing unicodes: 🌈🌐</Item></value></Row>
+ <Row><testid>142</testid><testname>afa</testname><value><Item>🌟 UTF8 Universe 🌟</Item><Item>Unicodes everywhere!</Item><Item>🌟 More Unicode Fun 🌟</Item></value></Row>
+ <Row><testid>143</testid><testname>afb</testname><value><Item>Unicodes for the win!</Item><Item>Unicodes galore!</Item><Item>🌟 Unicode Symbols 🌟</Item></value></Row>
+ <Row><testid>144</testid><testname>afc</testname><value><Item>🌟 Unicode Universe 🌟</Item><Item>🌟 Unicode Magic 🌟</Item></value></Row>
+</Dataset>
+<Dataset name='SetofUTF8Test'>
+ <Row><testid>145</testid><testname>afd</testname><value><Item>こんにちは、世界！</Item><Item>🌟 UTF8 Symbols 🌟  </Item><Item>🌟 More UTF8 Fun 🌟  </Item></value></Row>
+ <Row><testid>146</testid><testname>afe</testname><value><Item>UTF8 flexibility is awesome!</Item><Item>Testing utf8: 🌈🌐  </Item></value></Row>
+ <Row><testid>147</testid><testname>aff</testname><value><Item>UTF8 everywhere!</Item></value></Row>
+ <Row><testid>148</testid><testname>afg</testname><value><Item>UTF8 for the win!</Item><Item>UTF8 galore!</Item></value></Row>
+ <Row><testid>149</testid><testname>afh</testname><value><Item>🌟 UTF8 Magic 🌟  </Item></value></Row>
+</Dataset>
+<Dataset name='SetofDataTest'>
+ <Row><testid>150</testid><testname>afi</testname><value><Item>01A48D8414D848E900</Item><Item>01A48EC793A76F9400</Item><Item>01A48ED1BB70D84C01</Item><Item>01A4901558D7C91900</Item></value></Row>
+ <Row><testid>151</testid><testname>afj</testname><value><Item>01F48AB446A76F8923</Item><Item>01A48ECD6E65D8E803</Item><Item>01A49156089FCE5A02</Item></value></Row>
+ <Row><testid>152</testid><testname>afk</testname><value><Item>01A48D8414D848E900</Item><Item>01A48EC793A76F9400</Item></value></Row>
+ <Row><testid>153</testid><testname>afl</testname><value><Item>01F48AB446A76F8923</Item></value></Row>
+ <Row><testid>154</testid><testname>afm</testname><value><Item>01A48D8414D848E900</Item><Item>01A48EC793A76F9400</Item><Item>01A48ED8F40385BA01</Item></value></Row>
+</Dataset>
+<Dataset name='SetofVarstringTest'>
+ <Row><testid>155</testid><testname>afo</testname><value><Item>Hello</Item><Item>World</Item></value></Row>
+ <Row><testid>156</testid><testname>afp</testname><value><Item>Parquet</Item></value></Row>
+ <Row><testid>157</testid><testname>afq</testname><value><Item>SET</Item><Item>OF</Item><Item>Test</Item></value></Row>
+ <Row><testid>158</testid><testname>afr</testname><value><Item>String</Item><Item>Data</Item><Item>ECL</Item></value></Row>
+ <Row><testid>159</testid><testname>afs</testname><value><Item>string</Item><Item>STRING</Item></value></Row>
+</Dataset>
+<Dataset name='SetofVarunicodeTest'>
+ <Row><testid>160</testid><testname>aft</testname><value><Item>こんにちは、世界！</Item></value></Row>
+ <Row><testid>161</testid><testname>afu</testname><value><Item>Unicode flexibility is awesome!</Item><Item>Testing unicodes: 🌈🌐</Item></value></Row>
+ <Row><testid>162</testid><testname>afv</testname><value><Item>🌟 UTF8 Universe 🌟</Item><Item>Unicodes everywhere!</Item><Item>🌟 More Unicode Fun 🌟</Item></value></Row>
+ <Row><testid>163</testid><testname>afw</testname><value><Item>Unicodes for the win!</Item><Item>Unicodes galore!</Item><Item>🌟 Unicode Symbols 🌟</Item></value></Row>
+ <Row><testid>164</testid><testname>afx</testname><value><Item>🌟 Unicode Universe 🌟</Item><Item>🌟 Unicode Magic 🌟</Item></value></Row>
+</Dataset>
+<Dataset name='ChildDatasetTest'>
+ <Row><testid>165</testid><testname>afy</testname><value><b>true</b><i>42</i><r>3.14</r><de>1.23456789</de><s>Hello</s><q>QSTRING</q><u>こんにちは、世界！</u><u8>🌟 UTF8 Symbols 🌟  </u8><da>01010101</da><soi><Item>1</Item><Item>2</Item><Item>3</Item></soi></value></Row>
+ <Row><testid>166</testid><testname>afz</testname><value><b>false</b><i>-10</i><r>-2.718</r><de>-0.98765432</de><s>World</s><q>ANOTHERQSTRING</q><u>こんばんは、世界！</u><u8>🌟 More UTF8 Fun 🌟  </u8><da>FF00FF00</da><soi><Item>4</Item><Item>5</Item><Item>6</Item></soi></value></Row>
+ <Row><testid>167</testid><testname>aga</testname><value><b>true</b><i>0</i><r>0.0</r><de>0</de><s>Parquet</s><q>YETANOTHERQSTRING</q><u>おはよう、世界！</u><u8>🌟 Unicode Magic 🌟  </u8><da>AABBCCDD</da><soi><Item>7</Item><Item>8</Item><Item>9</Item></soi></value></Row>
+ <Row><testid>168</testid><testname>agb</testname><value><b>false</b><i>100</i><r>1.618</r><de>2.5</de><s>ECL</s><q>LASTQSTRING</q><u>こんばんは、日本！</u><u8>🌟 Unicode Universe 🌟  </u8><da>12345678</da><soi><Item>10</Item><Item>11</Item><Item>12</Item></soi></value></Row>
+ <Row><testid>169</testid><testname>agc</testname><value><b>true</b><i>-5</i><r>-0.5</r><de>3.14159265</de><s>SET</s><q>FINALQSTRING</q><u>おやすみ、世界！</u><u8>🌟 More Unicode Fun 🌟  </u8><da>FEDCBA98</da><soi><Item>13</Item><Item>14</Item><Item>15</Item></soi></value></Row>
+ <Row><testid>170</testid><testname>agd</testname><value><b>false</b><i>7</i><r>7.77</r><de>0.12345678</de><s>Test</s><q>ONEMOREQSTRING</q><u>さようなら、世界！</u><u8>🌟 Unicode Symbols 🌟  </u8><da>12345678</da><soi><Item>16</Item><Item>17</Item><Item>18</Item></soi></value></Row>
+ <Row><testid>171</testid><testname>age</testname><value><b>true</b><i>-20</i><r>-3.33</r><de>8.880000000000001</de><s>String</s><q>FINALQSTRING</q><u>おやすみ、日本！</u><u8>🌟 UTF8 Symbols 🌟  </u8><da>FEDCBA98</da><soi><Item>19</Item><Item>20</Item><Item>21</Item></soi></value></Row>
+ <Row><testid>172</testid><testname>agf</testname><value><b>false</b><i>15</i><r>4.2</r><de>0.123</de><s>Data</s><q>YETANOTHERQSTRING</q><u>おはよう、日本！</u><u8>🌟 Unicode Magic 🌟  </u8><da>12345678</da><soi><Item>22</Item><Item>23</Item><Item>24</Item></soi></value></Row>
+ <Row><testid>173</testid><testname>agg</testname><value><b>true</b><i>8</i><r>9.99</r><de>-0.12345678</de><s>Varstring</s><q>ANOTHERQSTRING</q><u>こんにちは、日本！</u><u8>🌟 More UTF8 Fun 🌟  </u8><da>FEDCBA98</da><soi><Item>25</Item><Item>26</Item><Item>27</Item></soi></value></Row>
+ <Row><testid>174</testid><testname>agh</testname><value><b>false</b><i>0</i><r>-7.77</r><de>0.123</de><s>Unicode</s><q>LASTQSTRING</q><u>さようなら、日本！</u><u8>🌟 Unicode Universe 🌟  </u8><da>12345678</da><soi><Item>28</Item><Item>29</Item><Item>30</Item></soi></value></Row>
+</Dataset>
+<Dataset name='SNAPPYBooleanTest'>
+ <Row><testid>175</testid><testname>agi</testname><value>false</value></Row>
+ <Row><testid>176</testid><testname>agj</testname><value>false</value></Row>
+ <Row><testid>177</testid><testname>agk</testname><value>true</value></Row>
+ <Row><testid>178</testid><testname>agl</testname><value>true</value></Row>
+ <Row><testid>179</testid><testname>agm</testname><value>true</value></Row>
+</Dataset>
+<Dataset name='SNAPPYIntegerTest'>
+ <Row><testid>180</testid><testname>agn</testname><value>123</value></Row>
+ <Row><testid>181</testid><testname>ago</testname><value>-987</value></Row>
+ <Row><testid>182</testid><testname>agp</testname><value>0</value></Row>
+ <Row><testid>183</testid><testname>agq</testname><value>987654</value></Row>
+ <Row><testid>184</testid><testname>agr</testname><value>1000000</value></Row>
+</Dataset>
+<Dataset name='SNAPPYRealTest'>
+ <Row><testid>185</testid><testname>ags</testname><value>3.14</value></Row>
+ <Row><testid>186</testid><testname>agt</testname><value>-0.5</value></Row>
+ <Row><testid>187</testid><testname>agu</testname><value>123.456</value></Row>
+ <Row><testid>188</testid><testname>agv</testname><value>-987.654</value></Row>
+ <Row><testid>189</testid><testname>agw</testname><value>1e-05</value></Row>
+</Dataset>
+<Dataset name='SNAPPYDecimalTest'>
+ <Row><testid>190</testid><testname>agx</testname><value>123.456789</value></Row>
+ <Row><testid>191</testid><testname>agy</testname><value>-987.6543209999999</value></Row>
+ <Row><testid>192</testid><testname>agz</testname><value>0.000001</value></Row>
+ <Row><testid>193</testid><testname>aha</testname><value>987654.3209999999</value></Row>
+ <Row><testid>194</testid><testname>ahb</testname><value>0.0000001</value></Row>
+</Dataset>
+<Dataset name='SNAPPYStringTest'>
+ <Row><testid>195</testid><testname>ahc</testname><value>Hello, World!</value></Row>
+ <Row><testid>196</testid><testname>ahd</testname><value>Data Science</value></Row>
+ <Row><testid>197</testid><testname>ahe</testname><value>12345</value></Row>
+ <Row><testid>198</testid><testname>ahf</testname><value>&#169;&#170;&#171;&#171;&#174;</value></Row>
+ <Row><testid>199</testid><testname>ahg</testname><value>Special characters: !@#$%^&amp;*</value></Row>
+</Dataset>
+<Dataset name='SNAPPYQStringTest'>
+ <Row><testid>200</testid><testname>ahh</testname><value>THIS IS A &quot;Q&quot; STRING.</value></Row>
+ <Row><testid>201</testid><testname>ahi</testname><value>ANOTHER &quot;EXAMPLE&quot; HERE.</value></Row>
+ <Row><testid>202</testid><testname>ahj</testname><value>TESTING &quot;()*+,-)&quot; CHARACTERS.</value></Row>
+ <Row><testid>203</testid><testname>ahk</testname><value>!&quot;#$&amp;&apos;()*+,-./;&lt;&gt;_[\]</value></Row>
+ <Row><testid>204</testid><testname>ahl</testname><value>&lt;@@[[[[&apos;\&apos;\&apos;&apos;\]]]]</value></Row>
+</Dataset>
+<Dataset name='SNAPPYUnicodeTest'>
+ <Row><testid>205</testid><testname>ahm</testname><value>こんにちは、世界！</value></Row>
+ <Row><testid>206</testid><testname>ahn</testname><value>Unicode characters: ḸḹḾ</value></Row>
+ <Row><testid>207</testid><testname>aho</testname><value>Testing Unicode: ⋖⋗⋙⋚⋛⋜⋝</value></Row>
+ <Row><testid>208</testid><testname>ahp</testname><value>∭∮∯ More Unicode Fun ∐∑−∓∔</value></Row>
+ <Row><testid>209</testid><testname>ahq</testname><value>∆∇∈∉∊∋∌ Unicode Everywhere ⋸⋹⋺⋻</value></Row>
+</Dataset>
+<Dataset name='SNAPPYUTF8Test'>
+ <Row><testid>210</testid><testname>ahr</testname><value>Café au lait ☕</value></Row>
+ <Row><testid>211</testid><testname>ahs</testname><value>🎉 UTF-8 Characters 🎉  </value></Row>
+ <Row><testid>212</testid><testname>aht</testname><value>Special characters: ©®™</value></Row>
+ <Row><testid>213</testid><testname>ahu</testname><value>UTF-8 for the win!</value></Row>
+ <Row><testid>214</testid><testname>ahv</testname><value>🌟 UTF-8 Symbols 🌟  </value></Row>
+</Dataset>
+<Dataset name='SNAPPYDataTest'>
+ <Row><testid>215</testid><testname>ahw</testname><value>01A48D8414D848E900</value></Row>
+ <Row><testid>216</testid><testname>ahx</testname><value>01F48AB446A76F8923</value></Row>
+ <Row><testid>217</testid><testname>ahy</testname><value>01A490101D3DE9AC02</value></Row>
+ <Row><testid>218</testid><testname>ahz</testname><value>01A49155D1CAF41500</value></Row>
+ <Row><testid>219</testid><testname>aia</testname><value>01A49156089FCE5A02</value></Row>
+</Dataset>
+<Dataset name='SNAPPYVarstringTest'>
+ <Row><testid>220</testid><testname>aib</testname><value>Short text</value></Row>
+ <Row><testid>221</testid><testname>aic</testname><value>A longer variable-length string</value></Row>
+ <Row><testid>222</testid><testname>aid</testname><value>Strings are flexible!</value></Row>
+ <Row><testid>223</testid><testname>aie</testname><value>Varstrings galore!</value></Row>
+ <Row><testid>224</testid><testname>aif</testname><value>*** Varstring Universe ***</value></Row>
+</Dataset>
+<Dataset name='SNAPPYVarunicodeTest'>
+ <Row><testid>225</testid><testname>aig</testname><value>Variable-length Unicode: こんにちは、世界！</value></Row>
+ <Row><testid>226</testid><testname>aih</testname><value>🌟 Variable-length Unicode Symbols 🌟</value></Row>
+ <Row><testid>227</testid><testname>aii</testname><value>Unicode flexibility is awesome!</value></Row>
+ <Row><testid>228</testid><testname>aij</testname><value>🌟 Varunicode Universe 🌟</value></Row>
+ <Row><testid>229</testid><testname>aik</testname><value>🌟 Varunicode Magic 🌟</value></Row>
+</Dataset>
+<Dataset name='SNAPPYSetofBooleanTest'>
+ <Row><testid>230</testid><testname>ail</testname><value><Item>true</Item></value></Row>
+ <Row><testid>231</testid><testname>aim</testname><value><Item>true</Item><Item>true</Item><Item>false</Item><Item>true</Item><Item>true</Item></value></Row>
+</Dataset>
+<Dataset name='SNAPPYSetofIntegerTest'>
+ <Row><testid>232</testid><testname>ain</testname><value><Item>42</Item></value></Row>
+ <Row><testid>233</testid><testname>aio</testname><value><Item>1</Item><Item>2</Item><Item>3</Item><Item>4</Item><Item>5</Item></value></Row>
+</Dataset>
+<Dataset name='SNAPPYSetofRealTest'>
+ <Row><testid>234</testid><testname>aip</testname><value><Item>3.14</Item><Item>-2.718</Item></value></Row>
+ <Row><testid>235</testid><testname>aiq</testname><value><Item>4.2</Item><Item>9.99</Item><Item>3.1415926</Item></value></Row>
+</Dataset>
+<Dataset name='SNAPPYSetofDecimalTest'>
+ <Row><testid>236</testid><testname>air</testname><value><Item>1.23456789</Item></value></Row>
+ <Row><testid>237</testid><testname>ais</testname><value><Item>9.876543209999999</Item><Item>-5.43210987</Item></value></Row>
+</Dataset>
+<Dataset name='SNAPPYSetofStringTest'>
+ <Row><testid>238</testid><testname>ait</testname><value><Item>Hello</Item><Item>World</Item></value></Row>
+ <Row><testid>239</testid><testname>aiu</testname><value><Item>string</Item><Item>STRING</Item></value></Row>
+</Dataset>
+<Dataset name='SNAPPYSetofQStringTest'>
+ <Row><testid>240</testid><testname>aiv</testname><value><Item>&quot;QSTRING 1&quot;</Item></value></Row>
+ <Row><testid>241</testid><testname>aiw</testname><value><Item>!@*^$</Item><Item>1234754</Item></value></Row>
+</Dataset>
+<Dataset name='SNAPPYSetofUnicodeTest'>
+ <Row><testid>242</testid><testname>aix</testname><value><Item>こんにちは、世界！</Item></value></Row>
+ <Row><testid>243</testid><testname>aiy</testname><value><Item>🌟 Unicode Universe 🌟</Item><Item>🌟 Unicode Magic 🌟</Item></value></Row>
+</Dataset>
+<Dataset name='SNAPPYSetofUTF8Test'>
+ <Row><testid>244</testid><testname>aiz</testname><value><Item>こんにちは、世界！</Item><Item>🌟 UTF8 Symbols 🌟  </Item><Item>🌟 More UTF8 Fun 🌟  </Item></value></Row>
+ <Row><testid>245</testid><testname>aja</testname><value><Item>🌟 UTF8 Magic 🌟  </Item></value></Row>
+</Dataset>
+<Dataset name='SNAPPYSetofDataTest'>
+ <Row><testid>246</testid><testname>ajb</testname><value><Item>01A48D8414D848E900</Item><Item>01A48EC793A76F9400</Item><Item>01A48ED1BB70D84C01</Item><Item>01A4901558D7C91900</Item></value></Row>
+ <Row><testid>247</testid><testname>ajc</testname><value><Item>01A48D8414D848E900</Item><Item>01A48EC793A76F9400</Item><Item>01A48ED8F40385BA01</Item></value></Row>
+</Dataset>
+<Dataset name='SNAPPYSetofVarstringTest'>
+ <Row><testid>248</testid><testname>ajd</testname><value><Item>Hello</Item><Item>World</Item></value></Row>
+ <Row><testid>249</testid><testname>aje</testname><value><Item>string</Item><Item>STRING</Item></value></Row>
+</Dataset>
+<Dataset name='SNAPPYSetofVarunicodeTest'>
+ <Row><testid>250</testid><testname>ajf</testname><value><Item>こんにちは、世界！</Item></value></Row>
+ <Row><testid>251</testid><testname>ajg</testname><value><Item>🌟 Unicode Universe 🌟</Item><Item>🌟 Unicode Magic 🌟</Item></value></Row>
+</Dataset>
+<Dataset name='SNAPPYChildDatasetTest'>
+ <Row><testid>252</testid><testname>ajh</testname><value><b>true</b><i>42</i><r>3.14</r><de>1.23456789</de><s>Hello</s><q>QSTRING</q><u>こんにちは、世界！</u><u8>🌟 UTF8 Symbols 🌟  </u8><da>01010101</da><soi><Item>1</Item><Item>2</Item><Item>3</Item></soi></value></Row>
+ <Row><testid>253</testid><testname>aji</testname><value><b>false</b><i>-10</i><r>-2.718</r><de>-0.98765432</de><s>World</s><q>ANOTHERQSTRING</q><u>こんばんは、世界！</u><u8>🌟 More UTF8 Fun 🌟  </u8><da>FF00FF00</da><soi><Item>4</Item><Item>5</Item><Item>6</Item></soi></value></Row>
+ <Row><testid>254</testid><testname>ajj</testname><value><b>false</b><i>15</i><r>4.2</r><de>0.123</de><s>Data</s><q>YETANOTHERQSTRING</q><u>おはよう、日本！</u><u8>🌟 Unicode Magic 🌟  </u8><da>12345678</da><soi><Item>22</Item><Item>23</Item><Item>24</Item></soi></value></Row>
+ <Row><testid>255</testid><testname>ajk</testname><value><b>true</b><i>8</i><r>9.99</r><de>-0.12345678</de><s>Varstring</s><q>ANOTHERQSTRING</q><u>こんにちは、日本！</u><u8>🌟 More UTF8 Fun 🌟  </u8><da>FEDCBA98</da><soi><Item>25</Item><Item>26</Item><Item>27</Item></soi></value></Row>
+ <Row><testid>256</testid><testname>ajl</testname><value><b>false</b><i>0</i><r>-7.77</r><de>0.123</de><s>Unicode</s><q>LASTQSTRING</q><u>さようなら、日本！</u><u8>🌟 Unicode Universe 🌟  </u8><da>12345678</da><soi><Item>28</Item><Item>29</Item><Item>30</Item></soi></value></Row>
+</Dataset>
+<Dataset name='GZIPBooleanTest'>
+ <Row><testid>257</testid><testname>ajm</testname><value>false</value></Row>
+ <Row><testid>258</testid><testname>ajn</testname><value>false</value></Row>
+ <Row><testid>259</testid><testname>ajo</testname><value>true</value></Row>
+ <Row><testid>260</testid><testname>ajp</testname><value>true</value></Row>
+ <Row><testid>261</testid><testname>ajq</testname><value>true</value></Row>
+</Dataset>
+<Dataset name='GZIPIntegerTest'>
+ <Row><testid>262</testid><testname>ajr</testname><value>123</value></Row>
+ <Row><testid>263</testid><testname>ajs</testname><value>-987</value></Row>
+ <Row><testid>264</testid><testname>ajt</testname><value>0</value></Row>
+ <Row><testid>265</testid><testname>aju</testname><value>987654</value></Row>
+ <Row><testid>266</testid><testname>ajv</testname><value>1000000</value></Row>
+</Dataset>
+<Dataset name='GZIPRealTest'>
+ <Row><testid>267</testid><testname>ajw</testname><value>3.14</value></Row>
+ <Row><testid>268</testid><testname>ajx</testname><value>-0.5</value></Row>
+ <Row><testid>269</testid><testname>ajy</testname><value>123.456</value></Row>
+ <Row><testid>270</testid><testname>ajz</testname><value>-987.654</value></Row>
+ <Row><testid>271</testid><testname>aka</testname><value>1e-05</value></Row>
+</Dataset>
+<Dataset name='GZIPDecimalTest'>
+ <Row><testid>272</testid><testname>akb</testname><value>123.456789</value></Row>
+ <Row><testid>273</testid><testname>akc</testname><value>-987.6543209999999</value></Row>
+ <Row><testid>274</testid><testname>akd</testname><value>0.000001</value></Row>
+ <Row><testid>275</testid><testname>ake</testname><value>987654.3209999999</value></Row>
+ <Row><testid>276</testid><testname>akf</testname><value>0.0000001</value></Row>
+</Dataset>
+<Dataset name='GZIPStringTest'>
+ <Row><testid>277</testid><testname>akg</testname><value>Hello, World!</value></Row>
+ <Row><testid>278</testid><testname>akh</testname><value>Data Science</value></Row>
+ <Row><testid>279</testid><testname>aki</testname><value>12345</value></Row>
+ <Row><testid>280</testid><testname>akj</testname><value>&#169;&#170;&#171;&#171;&#174;</value></Row>
+ <Row><testid>181</testid><testname>akk</testname><value>Special characters: !@#$%^&amp;*</value></Row>
+</Dataset>
+<Dataset name='GZIPQStringTest'>
+ <Row><testid>282</testid><testname>akl</testname><value>THIS IS A &quot;Q&quot; STRING.</value></Row>
+ <Row><testid>283</testid><testname>akm</testname><value>ANOTHER &quot;EXAMPLE&quot; HERE.</value></Row>
+ <Row><testid>284</testid><testname>akn</testname><value>TESTING &quot;()*+,-)&quot; CHARACTERS.</value></Row>
+ <Row><testid>285</testid><testname>ako</testname><value>!&quot;#$&amp;&apos;()*+,-./;&lt;&gt;_[\]</value></Row>
+ <Row><testid>286</testid><testname>akp</testname><value>&lt;@@[[[[&apos;\&apos;\&apos;&apos;\]]]]</value></Row>
+</Dataset>
+<Dataset name='GZIPUnicodeTest'>
+ <Row><testid>287</testid><testname>akq</testname><value>こんにちは、世界！</value></Row>
+ <Row><testid>288</testid><testname>akr</testname><value>Unicode characters: ḸḹḾ</value></Row>
+ <Row><testid>289</testid><testname>aks</testname><value>Testing Unicode: ⋖⋗⋙⋚⋛⋜⋝</value></Row>
+ <Row><testid>290</testid><testname>akt</testname><value>∭∮∯ More Unicode Fun ∐∑−∓∔</value></Row>
+ <Row><testid>291</testid><testname>aku</testname><value>∆∇∈∉∊∋∌ Unicode Everywhere ⋸⋹⋺⋻</value></Row>
+</Dataset>
+<Dataset name='GZIPUTF8Test'>
+ <Row><testid>292</testid><testname>akv</testname><value>Café au lait ☕</value></Row>
+ <Row><testid>293</testid><testname>akw</testname><value>🎉 UTF-8 Characters 🎉  </value></Row>
+ <Row><testid>294</testid><testname>akx</testname><value>Special characters: ©®™</value></Row>
+ <Row><testid>295</testid><testname>aky</testname><value>UTF-8 for the win!</value></Row>
+ <Row><testid>296</testid><testname>akz</testname><value>🌟 UTF-8 Symbols 🌟  </value></Row>
+</Dataset>
+<Dataset name='GZIPDataTest'>
+ <Row><testid>297</testid><testname>ala</testname><value>01A48D8414D848E900</value></Row>
+ <Row><testid>298</testid><testname>alb</testname><value>01F48AB446A76F8923</value></Row>
+ <Row><testid>299</testid><testname>alc</testname><value>01A490101D3DE9AC02</value></Row>
+ <Row><testid>300</testid><testname>ald</testname><value>01A49155D1CAF41500</value></Row>
+ <Row><testid>309</testid><testname>ale</testname><value>01A49156089FCE5A02</value></Row>
+</Dataset>
+<Dataset name='GZIPVarstringTest'>
+ <Row><testid>300</testid><testname>alf</testname><value>Short text</value></Row>
+ <Row><testid>301</testid><testname>alg</testname><value>A longer variable-length string</value></Row>
+ <Row><testid>302</testid><testname>alh</testname><value>Strings are flexible!</value></Row>
+ <Row><testid>303</testid><testname>ali</testname><value>Varstrings galore!</value></Row>
+ <Row><testid>304</testid><testname>alj</testname><value>*** Varstring Universe ***</value></Row>
+</Dataset>
+<Dataset name='GZIPVarunicodeTest'>
+ <Row><testid>305</testid><testname>alk</testname><value>Variable-length Unicode: こんにちは、世界！</value></Row>
+ <Row><testid>306</testid><testname>all</testname><value>🌟 Variable-length Unicode Symbols 🌟</value></Row>
+ <Row><testid>307</testid><testname>alm</testname><value>Unicode flexibility is awesome!</value></Row>
+ <Row><testid>308</testid><testname>aln</testname><value>🌟 Varunicode Universe 🌟</value></Row>
+ <Row><testid>309</testid><testname>alo</testname><value>🌟 Varunicode Magic 🌟</value></Row>
+</Dataset>
+<Dataset name='GZIPSetofBooleanTest'>
+ <Row><testid>310</testid><testname>alp</testname><value><Item>true</Item></value></Row>
+ <Row><testid>311</testid><testname>alq</testname><value><Item>true</Item><Item>true</Item><Item>false</Item><Item>true</Item><Item>true</Item></value></Row>
+</Dataset>
+<Dataset name='GZIPSetofIntegerTest'>
+ <Row><testid>312</testid><testname>alr</testname><value><Item>42</Item></value></Row>
+ <Row><testid>313</testid><testname>als</testname><value><Item>1</Item><Item>2</Item><Item>3</Item><Item>4</Item><Item>5</Item></value></Row>
+</Dataset>
+<Dataset name='GZIPSetofRealTest'>
+ <Row><testid>314</testid><testname>alt</testname><value><Item>3.14</Item><Item>-2.718</Item></value></Row>
+ <Row><testid>315</testid><testname>alu</testname><value><Item>4.2</Item><Item>9.99</Item><Item>3.1415926</Item></value></Row>
+</Dataset>
+<Dataset name='GZIPSetofDecimalTest'>
+ <Row><testid>316</testid><testname>alv</testname><value><Item>1.23456789</Item></value></Row>
+ <Row><testid>317</testid><testname>alw</testname><value><Item>9.876543209999999</Item><Item>-5.43210987</Item></value></Row>
+</Dataset>
+<Dataset name='GZIPSetofStringTest'>
+ <Row><testid>318</testid><testname>alx</testname><value><Item>Hello</Item><Item>World</Item></value></Row>
+ <Row><testid>319</testid><testname>aly</testname><value><Item>string</Item><Item>STRING</Item></value></Row>
+</Dataset>
+<Dataset name='GZIPSetofQStringTest'>
+ <Row><testid>320</testid><testname>alz</testname><value><Item>&quot;QSTRING 1&quot;</Item></value></Row>
+ <Row><testid>321</testid><testname>ama</testname><value><Item>!@*^$</Item><Item>1234754</Item></value></Row>
+</Dataset>
+<Dataset name='GZIPSetofUnicodeTest'>
+ <Row><testid>322</testid><testname>amb</testname><value><Item>こんにちは、世界！</Item></value></Row>
+ <Row><testid>323</testid><testname>amc</testname><value><Item>🌟 Unicode Universe 🌟</Item><Item>🌟 Unicode Magic 🌟</Item></value></Row>
+</Dataset>
+<Dataset name='GZIPSetofUTF8Test'>
+ <Row><testid>324</testid><testname>amd</testname><value><Item>こんにちは、世界！</Item><Item>🌟 UTF8 Symbols 🌟  </Item><Item>🌟 More UTF8 Fun 🌟  </Item></value></Row>
+ <Row><testid>325</testid><testname>ame</testname><value><Item>🌟 UTF8 Magic 🌟  </Item></value></Row>
+</Dataset>
+<Dataset name='GZIPSetofDataTest'>
+ <Row><testid>326</testid><testname>amf</testname><value><Item>01A48D8414D848E900</Item><Item>01A48EC793A76F9400</Item><Item>01A48ED1BB70D84C01</Item><Item>01A4901558D7C91900</Item></value></Row>
+ <Row><testid>327</testid><testname>amg</testname><value><Item>01A48D8414D848E900</Item><Item>01A48EC793A76F9400</Item><Item>01A48ED8F40385BA01</Item></value></Row>
+</Dataset>
+<Dataset name='GZIPSetofVarstringTest'>
+ <Row><testid>328</testid><testname>amh</testname><value><Item>Hello</Item><Item>World</Item></value></Row>
+ <Row><testid>329</testid><testname>ami</testname><value><Item>string</Item><Item>STRING</Item></value></Row>
+</Dataset>
+<Dataset name='GZIPSetofVarunicodeTest'>
+ <Row><testid>330</testid><testname>amj</testname><value><Item>こんにちは、世界！</Item></value></Row>
+ <Row><testid>331</testid><testname>amk</testname><value><Item>🌟 Unicode Universe 🌟</Item><Item>🌟 Unicode Magic 🌟</Item></value></Row>
+</Dataset>
+<Dataset name='GZIPChildDatasetTest'>
+ <Row><testid>332</testid><testname>aml</testname><value><b>true</b><i>42</i><r>3.14</r><de>1.23456789</de><s>Hello</s><q>QSTRING</q><u>こんにちは、世界！</u><u8>🌟 UTF8 Symbols 🌟  </u8><da>01010101</da><soi><Item>1</Item><Item>2</Item><Item>3</Item></soi></value></Row>
+ <Row><testid>333</testid><testname>amm</testname><value><b>false</b><i>-10</i><r>-2.718</r><de>-0.98765432</de><s>World</s><q>ANOTHERQSTRING</q><u>こんばんは、世界！</u><u8>🌟 More UTF8 Fun 🌟  </u8><da>FF00FF00</da><soi><Item>4</Item><Item>5</Item><Item>6</Item></soi></value></Row>
+ <Row><testid>334</testid><testname>amn</testname><value><b>false</b><i>15</i><r>4.2</r><de>0.123</de><s>Data</s><q>YETANOTHERQSTRING</q><u>おはよう、日本！</u><u8>🌟 Unicode Magic 🌟  </u8><da>12345678</da><soi><Item>22</Item><Item>23</Item><Item>24</Item></soi></value></Row>
+ <Row><testid>335</testid><testname>amo</testname><value><b>true</b><i>8</i><r>9.99</r><de>-0.12345678</de><s>Varstring</s><q>ANOTHERQSTRING</q><u>こんにちは、日本！</u><u8>🌟 More UTF8 Fun 🌟  </u8><da>FEDCBA98</da><soi><Item>25</Item><Item>26</Item><Item>27</Item></soi></value></Row>
+ <Row><testid>336</testid><testname>amp</testname><value><b>false</b><i>0</i><r>-7.77</r><de>0.123</de><s>Unicode</s><q>LASTQSTRING</q><u>さようなら、日本！</u><u8>🌟 Unicode Universe 🌟  </u8><da>12345678</da><soi><Item>28</Item><Item>29</Item><Item>30</Item></soi></value></Row>
+</Dataset>
+<Dataset name='BROTLIBooleanTest'>
+ <Row><testid>337</testid><testname>amq</testname><value>false</value></Row>
+ <Row><testid>338</testid><testname>amr</testname><value>false</value></Row>
+ <Row><testid>339</testid><testname>ams</testname><value>true</value></Row>
+ <Row><testid>340</testid><testname>amt</testname><value>true</value></Row>
+ <Row><testid>341</testid><testname>amu</testname><value>true</value></Row>
+</Dataset>
+<Dataset name='BROTLIIntegerTest'>
+ <Row><testid>342</testid><testname>amv</testname><value>123</value></Row>
+ <Row><testid>343</testid><testname>amw</testname><value>-987</value></Row>
+ <Row><testid>344</testid><testname>amx</testname><value>0</value></Row>
+ <Row><testid>345</testid><testname>amy</testname><value>987654</value></Row>
+ <Row><testid>346</testid><testname>amz</testname><value>1000000</value></Row>
+</Dataset>
+<Dataset name='BROTLIRealTest'>
+ <Row><testid>347</testid><testname>ana</testname><value>3.14</value></Row>
+ <Row><testid>348</testid><testname>anb</testname><value>-0.5</value></Row>
+ <Row><testid>349</testid><testname>anc</testname><value>123.456</value></Row>
+ <Row><testid>350</testid><testname>and</testname><value>-987.654</value></Row>
+ <Row><testid>351</testid><testname>ane</testname><value>1e-05</value></Row>
+</Dataset>
+<Dataset name='BROTLIDecimalTest'>
+ <Row><testid>352</testid><testname>anf</testname><value>123.456789</value></Row>
+ <Row><testid>353</testid><testname>ang</testname><value>-987.6543209999999</value></Row>
+ <Row><testid>354</testid><testname>anh</testname><value>0.000001</value></Row>
+ <Row><testid>355</testid><testname>ani</testname><value>987654.3209999999</value></Row>
+ <Row><testid>356</testid><testname>anj</testname><value>0.0000001</value></Row>
+</Dataset>
+<Dataset name='BROTLIStringTest'>
+ <Row><testid>357</testid><testname>ank</testname><value>Hello, World!</value></Row>
+ <Row><testid>358</testid><testname>anl</testname><value>Data Science</value></Row>
+ <Row><testid>359</testid><testname>anm</testname><value>12345</value></Row>
+ <Row><testid>360</testid><testname>ann</testname><value>&#169;&#170;&#171;&#171;&#174;</value></Row>
+ <Row><testid>361</testid><testname>ano</testname><value>Special characters: !@#$%^&amp;*</value></Row>
+</Dataset>
+<Dataset name='BROTLIQStringTest'>
+ <Row><testid>362</testid><testname>anp</testname><value>THIS IS A &quot;Q&quot; STRING.</value></Row>
+ <Row><testid>363</testid><testname>anq</testname><value>ANOTHER &quot;EXAMPLE&quot; HERE.</value></Row>
+ <Row><testid>364</testid><testname>anr</testname><value>TESTING &quot;()*+,-)&quot; CHARACTERS.</value></Row>
+ <Row><testid>365</testid><testname>ans</testname><value>!&quot;#$&amp;&apos;()*+,-./;&lt;&gt;_[\]</value></Row>
+ <Row><testid>366</testid><testname>ant</testname><value>&lt;@@[[[[&apos;\&apos;\&apos;&apos;\]]]]</value></Row>
+</Dataset>
+<Dataset name='BROTLIUnicodeTest'>
+ <Row><testid>367</testid><testname>anu</testname><value>こんにちは、世界！</value></Row>
+ <Row><testid>368</testid><testname>anv</testname><value>Unicode characters: ḸḹḾ</value></Row>
+ <Row><testid>369</testid><testname>anw</testname><value>Testing Unicode: ⋖⋗⋙⋚⋛⋜⋝</value></Row>
+ <Row><testid>370</testid><testname>anx</testname><value>∭∮∯ More Unicode Fun ∐∑−∓∔</value></Row>
+ <Row><testid>371</testid><testname>any</testname><value>∆∇∈∉∊∋∌ Unicode Everywhere ⋸⋹⋺⋻</value></Row>
+</Dataset>
+<Dataset name='BROTLIUTF8Test'>
+ <Row><testid>372</testid><testname>anz</testname><value>Café au lait ☕</value></Row>
+ <Row><testid>373</testid><testname>aoa</testname><value>🎉 UTF-8 Characters 🎉  </value></Row>
+ <Row><testid>374</testid><testname>aob</testname><value>Special characters: ©®™</value></Row>
+ <Row><testid>375</testid><testname>aoc</testname><value>UTF-8 for the win!</value></Row>
+ <Row><testid>376</testid><testname>aod</testname><value>🌟 UTF-8 Symbols 🌟  </value></Row>
+</Dataset>
+<Dataset name='BROTLIDataTest'>
+ <Row><testid>377</testid><testname>aoe</testname><value>01A48D8414D848E900</value></Row>
+ <Row><testid>378</testid><testname>aof</testname><value>01F48AB446A76F8923</value></Row>
+ <Row><testid>379</testid><testname>aog</testname><value>01A490101D3DE9AC02</value></Row>
+ <Row><testid>380</testid><testname>aoh</testname><value>01A49155D1CAF41500</value></Row>
+ <Row><testid>381</testid><testname>aoi</testname><value>01A49156089FCE5A02</value></Row>
+</Dataset>
+<Dataset name='BROTLIVarstringTest'>
+ <Row><testid>382</testid><testname>aoj</testname><value>Short text</value></Row>
+ <Row><testid>383</testid><testname>aok</testname><value>A longer variable-length string</value></Row>
+ <Row><testid>384</testid><testname>aol</testname><value>Strings are flexible!</value></Row>
+ <Row><testid>385</testid><testname>aom</testname><value>Varstrings galore!</value></Row>
+ <Row><testid>386</testid><testname>aon</testname><value>*** Varstring Universe ***</value></Row>
+</Dataset>
+<Dataset name='BROTLIVarunicodeTest'>
+ <Row><testid>387</testid><testname>aoo</testname><value>Variable-length Unicode: こんにちは、世界！</value></Row>
+ <Row><testid>388</testid><testname>aop</testname><value>🌟 Variable-length Unicode Symbols 🌟</value></Row>
+ <Row><testid>389</testid><testname>aoq</testname><value>Unicode flexibility is awesome!</value></Row>
+ <Row><testid>390</testid><testname>aor</testname><value>🌟 Varunicode Universe 🌟</value></Row>
+ <Row><testid>391</testid><testname>aos</testname><value>🌟 Varunicode Magic 🌟</value></Row>
+</Dataset>
+<Dataset name='BROTLISetofBooleanTest'>
+ <Row><testid>392</testid><testname>aot</testname><value><Item>true</Item></value></Row>
+ <Row><testid>393</testid><testname>aou</testname><value><Item>true</Item><Item>true</Item><Item>false</Item><Item>true</Item><Item>true</Item></value></Row>
+</Dataset>
+<Dataset name='BROTLISetofIntegerTest'>
+ <Row><testid>394</testid><testname>aov</testname><value><Item>42</Item></value></Row>
+ <Row><testid>395</testid><testname>aow</testname><value><Item>1</Item><Item>2</Item><Item>3</Item><Item>4</Item><Item>5</Item></value></Row>
+</Dataset>
+<Dataset name='BROTLISetofRealTest'>
+ <Row><testid>396</testid><testname>aox</testname><value><Item>3.14</Item><Item>-2.718</Item></value></Row>
+ <Row><testid>397</testid><testname>aoy</testname><value><Item>4.2</Item><Item>9.99</Item><Item>3.1415926</Item></value></Row>
+</Dataset>
+<Dataset name='BROTLISetofDecimalTest'>
+ <Row><testid>398</testid><testname>aoz</testname><value><Item>1.23456789</Item></value></Row>
+ <Row><testid>399</testid><testname>apa</testname><value><Item>9.876543209999999</Item><Item>-5.43210987</Item></value></Row>
+</Dataset>
+<Dataset name='BROTLISetofStringTest'>
+ <Row><testid>400</testid><testname>apb</testname><value><Item>Hello</Item><Item>World</Item></value></Row>
+ <Row><testid>401</testid><testname>apc</testname><value><Item>string</Item><Item>STRING</Item></value></Row>
+</Dataset>
+<Dataset name='BROTLISetofQStringTest'>
+ <Row><testid>402</testid><testname>apd</testname><value><Item>&quot;QSTRING 1&quot;</Item></value></Row>
+ <Row><testid>403</testid><testname>ape</testname><value><Item>!@*^$</Item><Item>1234754</Item></value></Row>
+</Dataset>
+<Dataset name='BROTLISetofUnicodeTest'>
+ <Row><testid>404</testid><testname>apf</testname><value><Item>こんにちは、世界！</Item></value></Row>
+ <Row><testid>405</testid><testname>apg</testname><value><Item>🌟 Unicode Universe 🌟</Item><Item>🌟 Unicode Magic 🌟</Item></value></Row>
+</Dataset>
+<Dataset name='BROTLISetofUTF8Test'>
+ <Row><testid>406</testid><testname>aph</testname><value><Item>こんにちは、世界！</Item><Item>🌟 UTF8 Symbols 🌟  </Item><Item>🌟 More UTF8 Fun 🌟  </Item></value></Row>
+ <Row><testid>407</testid><testname>api</testname><value><Item>🌟 UTF8 Magic 🌟  </Item></value></Row>
+</Dataset>
+<Dataset name='BROTLISetofDataTest'>
+ <Row><testid>408</testid><testname>apj</testname><value><Item>01A48D8414D848E900</Item><Item>01A48EC793A76F9400</Item><Item>01A48ED1BB70D84C01</Item><Item>01A4901558D7C91900</Item></value></Row>
+ <Row><testid>409</testid><testname>apk</testname><value><Item>01A48D8414D848E900</Item><Item>01A48EC793A76F9400</Item><Item>01A48ED8F40385BA01</Item></value></Row>
+</Dataset>
+<Dataset name='BROTLISetofVarstringTest'>
+ <Row><testid>410</testid><testname>apl</testname><value><Item>Hello</Item><Item>World</Item></value></Row>
+ <Row><testid>411</testid><testname>apm</testname><value><Item>string</Item><Item>STRING</Item></value></Row>
+</Dataset>
+<Dataset name='BROTLISetofVarunicodeTest'>
+ <Row><testid>412</testid><testname>apn</testname><value><Item>こんにちは、世界！</Item></value></Row>
+ <Row><testid>413</testid><testname>apo</testname><value><Item>🌟 Unicode Universe 🌟</Item><Item>🌟 Unicode Magic 🌟</Item></value></Row>
+</Dataset>
+<Dataset name='BROTLIChildDatasetTest'>
+ <Row><testid>414</testid><testname>app</testname><value><b>true</b><i>42</i><r>3.14</r><de>1.23456789</de><s>Hello</s><q>QSTRING</q><u>こんにちは、世界！</u><u8>🌟 UTF8 Symbols 🌟  </u8><da>01010101</da><soi><Item>1</Item><Item>2</Item><Item>3</Item></soi></value></Row>
+ <Row><testid>415</testid><testname>apq</testname><value><b>false</b><i>-10</i><r>-2.718</r><de>-0.98765432</de><s>World</s><q>ANOTHERQSTRING</q><u>こんばんは、世界！</u><u8>🌟 More UTF8 Fun 🌟  </u8><da>FF00FF00</da><soi><Item>4</Item><Item>5</Item><Item>6</Item></soi></value></Row>
+ <Row><testid>416</testid><testname>apr</testname><value><b>false</b><i>15</i><r>4.2</r><de>0.123</de><s>Data</s><q>YETANOTHERQSTRING</q><u>おはよう、日本！</u><u8>🌟 Unicode Magic 🌟  </u8><da>12345678</da><soi><Item>22</Item><Item>23</Item><Item>24</Item></soi></value></Row>
+ <Row><testid>417</testid><testname>aps</testname><value><b>true</b><i>8</i><r>9.99</r><de>-0.12345678</de><s>Varstring</s><q>ANOTHERQSTRING</q><u>こんにちは、日本！</u><u8>🌟 More UTF8 Fun 🌟  </u8><da>FEDCBA98</da><soi><Item>25</Item><Item>26</Item><Item>27</Item></soi></value></Row>
+ <Row><testid>418</testid><testname>apt</testname><value><b>false</b><i>0</i><r>-7.77</r><de>0.123</de><s>Unicode</s><q>LASTQSTRING</q><u>さようなら、日本！</u><u8>🌟 Unicode Universe 🌟  </u8><da>12345678</da><soi><Item>28</Item><Item>29</Item><Item>30</Item></soi></value></Row>
+</Dataset>
+<Dataset name='LZ4BooleanTest'>
+ <Row><testid>419</testid><testname>apu</testname><value>false</value></Row>
+ <Row><testid>420</testid><testname>apv</testname><value>false</value></Row>
+ <Row><testid>421</testid><testname>apw</testname><value>true</value></Row>
+ <Row><testid>422</testid><testname>apx</testname><value>true</value></Row>
+ <Row><testid>423</testid><testname>apy</testname><value>true</value></Row>
+</Dataset>
+<Dataset name='LZ4IntegerTest'>
+ <Row><testid>424</testid><testname>apz</testname><value>123</value></Row>
+ <Row><testid>425</testid><testname>aqa</testname><value>-987</value></Row>
+ <Row><testid>426</testid><testname>aqb</testname><value>0</value></Row>
+ <Row><testid>427</testid><testname>aqc</testname><value>987654</value></Row>
+ <Row><testid>428</testid><testname>aqd</testname><value>1000000</value></Row>
+</Dataset>
+<Dataset name='LZ4RealTest'>
+ <Row><testid>429</testid><testname>aqe</testname><value>3.14</value></Row>
+ <Row><testid>430</testid><testname>aqf</testname><value>-0.5</value></Row>
+ <Row><testid>431</testid><testname>aqg</testname><value>123.456</value></Row>
+ <Row><testid>432</testid><testname>aqh</testname><value>-987.654</value></Row>
+ <Row><testid>433</testid><testname>aqi</testname><value>1e-05</value></Row>
+</Dataset>
+<Dataset name='LZ4DecimalTest'>
+ <Row><testid>434</testid><testname>aqj</testname><value>123.456789</value></Row>
+ <Row><testid>435</testid><testname>aqk</testname><value>-987.6543209999999</value></Row>
+ <Row><testid>436</testid><testname>aql</testname><value>0.000001</value></Row>
+ <Row><testid>437</testid><testname>aqm</testname><value>987654.3209999999</value></Row>
+ <Row><testid>438</testid><testname>aqn</testname><value>0.0000001</value></Row>
+</Dataset>
+<Dataset name='LZ4StringTest'>
+ <Row><testid>439</testid><testname>aqo</testname><value>Hello, World!</value></Row>
+ <Row><testid>440</testid><testname>aqp</testname><value>Data Science</value></Row>
+ <Row><testid>441</testid><testname>aqq</testname><value>12345</value></Row>
+ <Row><testid>442</testid><testname>aqr</testname><value>&#169;&#170;&#171;&#171;&#174;</value></Row>
+ <Row><testid>443</testid><testname>aqs</testname><value>Special characters: !@#$%^&amp;*</value></Row>
+</Dataset>
+<Dataset name='LZ4QStringTest'>
+ <Row><testid>444</testid><testname>aqt</testname><value>THIS IS A &quot;Q&quot; STRING.</value></Row>
+ <Row><testid>445</testid><testname>aqu</testname><value>ANOTHER &quot;EXAMPLE&quot; HERE.</value></Row>
+ <Row><testid>446</testid><testname>aqv</testname><value>TESTING &quot;()*+,-)&quot; CHARACTERS.</value></Row>
+ <Row><testid>447</testid><testname>aqw</testname><value>!&quot;#$&amp;&apos;()*+,-./;&lt;&gt;_[\]</value></Row>
+ <Row><testid>448</testid><testname>aqx</testname><value>&lt;@@[[[[&apos;\&apos;\&apos;&apos;\]]]]</value></Row>
+</Dataset>
+<Dataset name='LZ4UnicodeTest'>
+ <Row><testid>449</testid><testname>aqy</testname><value>こんにちは、世界！</value></Row>
+ <Row><testid>450</testid><testname>aqz</testname><value>Unicode characters: ḸḹḾ</value></Row>
+ <Row><testid>451</testid><testname>ara</testname><value>Testing Unicode: ⋖⋗⋙⋚⋛⋜⋝</value></Row>
+ <Row><testid>452</testid><testname>arb</testname><value>∭∮∯ More Unicode Fun ∐∑−∓∔</value></Row>
+ <Row><testid>453</testid><testname>arc</testname><value>∆∇∈∉∊∋∌ Unicode Everywhere ⋸⋹⋺⋻</value></Row>
+</Dataset>
+<Dataset name='LZ4UTF8Test'>
+ <Row><testid>454</testid><testname>ard</testname><value>Café au lait ☕</value></Row>
+ <Row><testid>455</testid><testname>are</testname><value>🎉 UTF-8 Characters 🎉  </value></Row>
+ <Row><testid>456</testid><testname>arf</testname><value>Special characters: ©®™</value></Row>
+ <Row><testid>457</testid><testname>arg</testname><value>UTF-8 for the win!</value></Row>
+ <Row><testid>458</testid><testname>arh</testname><value>🌟 UTF-8 Symbols 🌟  </value></Row>
+</Dataset>
+<Dataset name='LZ4DataTest'>
+ <Row><testid>459</testid><testname>ari</testname><value>01A48D8414D848E900</value></Row>
+ <Row><testid>460</testid><testname>arj</testname><value>01F48AB446A76F8923</value></Row>
+ <Row><testid>461</testid><testname>ark</testname><value>01A490101D3DE9AC02</value></Row>
+ <Row><testid>462</testid><testname>arl</testname><value>01A49155D1CAF41500</value></Row>
+ <Row><testid>463</testid><testname>arm</testname><value>01A49156089FCE5A02</value></Row>
+</Dataset>
+<Dataset name='LZ4VarstringTest'>
+ <Row><testid>464</testid><testname>arn</testname><value>Short text</value></Row>
+ <Row><testid>465</testid><testname>aro</testname><value>A longer variable-length string</value></Row>
+ <Row><testid>466</testid><testname>arp</testname><value>Strings are flexible!</value></Row>
+ <Row><testid>467</testid><testname>arq</testname><value>Varstrings galore!</value></Row>
+ <Row><testid>468</testid><testname>arr</testname><value>*** Varstring Universe ***</value></Row>
+</Dataset>
+<Dataset name='LZ4VarunicodeTest'>
+ <Row><testid>469</testid><testname>ars</testname><value>Variable-length Unicode: こんにちは、世界！</value></Row>
+ <Row><testid>470</testid><testname>art</testname><value>🌟 Variable-length Unicode Symbols 🌟</value></Row>
+ <Row><testid>471</testid><testname>aru</testname><value>Unicode flexibility is awesome!</value></Row>
+ <Row><testid>472</testid><testname>arv</testname><value>🌟 Varunicode Universe 🌟</value></Row>
+ <Row><testid>473</testid><testname>arw</testname><value>🌟 Varunicode Magic 🌟</value></Row>
+</Dataset>
+<Dataset name='LZ4SetofBooleanTest'>
+ <Row><testid>474</testid><testname>arx</testname><value><Item>true</Item></value></Row>
+ <Row><testid>475</testid><testname>ary</testname><value><Item>true</Item><Item>true</Item><Item>false</Item><Item>true</Item><Item>true</Item></value></Row>
+</Dataset>
+<Dataset name='LZ4SetofIntegerTest'>
+ <Row><testid>476</testid><testname>arz</testname><value><Item>42</Item></value></Row>
+ <Row><testid>477</testid><testname>asa</testname><value><Item>1</Item><Item>2</Item><Item>3</Item><Item>4</Item><Item>5</Item></value></Row>
+</Dataset>
+<Dataset name='LZ4SetofRealTest'>
+ <Row><testid>478</testid><testname>asb</testname><value><Item>3.14</Item><Item>-2.718</Item></value></Row>
+ <Row><testid>479</testid><testname>asc</testname><value><Item>4.2</Item><Item>9.99</Item><Item>3.1415926</Item></value></Row>
+</Dataset>
+<Dataset name='LZ4SetofDecimalTest'>
+ <Row><testid>480</testid><testname>asd</testname><value><Item>1.23456789</Item></value></Row>
+ <Row><testid>481</testid><testname>ase</testname><value><Item>9.876543209999999</Item><Item>-5.43210987</Item></value></Row>
+</Dataset>
+<Dataset name='LZ4SetofStringTest'>
+ <Row><testid>482</testid><testname>asf</testname><value><Item>Hello</Item><Item>World</Item></value></Row>
+ <Row><testid>483</testid><testname>asg</testname><value><Item>string</Item><Item>STRING</Item></value></Row>
+</Dataset>
+<Dataset name='LZ4SetofQStringTest'>
+ <Row><testid>484</testid><testname>ash</testname><value><Item>&quot;QSTRING 1&quot;</Item></value></Row>
+ <Row><testid>485</testid><testname>asi</testname><value><Item>!@*^$</Item><Item>1234754</Item></value></Row>
+</Dataset>
+<Dataset name='LZ4SetofUnicodeTest'>
+ <Row><testid>486</testid><testname>asj</testname><value><Item>こんにちは、世界！</Item></value></Row>
+ <Row><testid>487</testid><testname>ask</testname><value><Item>🌟 Unicode Universe 🌟</Item><Item>🌟 Unicode Magic 🌟</Item></value></Row>
+</Dataset>
+<Dataset name='LZ4SetofUTF8Test'>
+ <Row><testid>488</testid><testname>asl</testname><value><Item>こんにちは、世界！</Item><Item>🌟 UTF8 Symbols 🌟  </Item><Item>🌟 More UTF8 Fun 🌟  </Item></value></Row>
+ <Row><testid>489</testid><testname>asm</testname><value><Item>🌟 UTF8 Magic 🌟  </Item></value></Row>
+</Dataset>
+<Dataset name='LZ4SetofDataTest'>
+ <Row><testid>490</testid><testname>asn</testname><value><Item>01A48D8414D848E900</Item><Item>01A48EC793A76F9400</Item><Item>01A48ED1BB70D84C01</Item><Item>01A4901558D7C91900</Item></value></Row>
+ <Row><testid>491</testid><testname>aso</testname><value><Item>01A48D8414D848E900</Item><Item>01A48EC793A76F9400</Item><Item>01A48ED8F40385BA01</Item></value></Row>
+</Dataset>
+<Dataset name='LZ4SetofVarstringTest'>
+ <Row><testid>492</testid><testname>asp</testname><value><Item>Hello</Item><Item>World</Item></value></Row>
+ <Row><testid>493</testid><testname>asq</testname><value><Item>string</Item><Item>STRING</Item></value></Row>
+</Dataset>
+<Dataset name='LZ4SetofVarunicodeTest'>
+ <Row><testid>494</testid><testname>asr</testname><value><Item>こんにちは、世界！</Item></value></Row>
+ <Row><testid>495</testid><testname>zzz</testname><value><Item>🌟 Unicode Universe 🌟</Item><Item>🌟 Unicode Magic 🌟</Item></value></Row>
+</Dataset>
+<Dataset name='LZ4ChildDatasetTest'>
+ <Row><testid>496</testid><testname>ast</testname><value><b>true</b><i>42</i><r>3.14</r><de>1.23456789</de><s>Hello</s><q>QSTRING</q><u>こんにちは、世界！</u><u8>🌟 UTF8 Symbols 🌟  </u8><da>01010101</da><soi><Item>1</Item><Item>2</Item><Item>3</Item></soi></value></Row>
+ <Row><testid>497</testid><testname>asu</testname><value><b>false</b><i>-10</i><r>-2.718</r><de>-0.98765432</de><s>World</s><q>ANOTHERQSTRING</q><u>こんばんは、世界！</u><u8>🌟 More UTF8 Fun 🌟  </u8><da>FF00FF00</da><soi><Item>4</Item><Item>5</Item><Item>6</Item></soi></value></Row>
+ <Row><testid>498</testid><testname>asv</testname><value><b>false</b><i>15</i><r>4.2</r><de>0.123</de><s>Data</s><q>YETANOTHERQSTRING</q><u>おはよう、日本！</u><u8>🌟 Unicode Magic 🌟  </u8><da>12345678</da><soi><Item>22</Item><Item>23</Item><Item>24</Item></soi></value></Row>
+ <Row><testid>499</testid><testname>asw</testname><value><b>true</b><i>8</i><r>9.99</r><de>-0.12345678</de><s>Varstring</s><q>ANOTHERQSTRING</q><u>こんにちは、日本！</u><u8>🌟 More UTF8 Fun 🌟  </u8><da>FEDCBA98</da><soi><Item>25</Item><Item>26</Item><Item>27</Item></soi></value></Row>
+ <Row><testid>500</testid><testname>asx</testname><value><b>false</b><i>0</i><r>-7.77</r><de>0.123</de><s>Unicode</s><q>LASTQSTRING</q><u>さようなら、日本！</u><u8>🌟 Unicode Universe 🌟  </u8><da>12345678</da><soi><Item>28</Item><Item>29</Item><Item>30</Item></soi></value></Row>
+</Dataset>
+<Dataset name='ZSTDBooleanTest'>
+ <Row><testid>501</testid><testname>asy</testname><value>false</value></Row>
+ <Row><testid>502</testid><testname>asz</testname><value>false</value></Row>
+ <Row><testid>503</testid><testname>ata</testname><value>true</value></Row>
+ <Row><testid>504</testid><testname>atb</testname><value>true</value></Row>
+ <Row><testid>505</testid><testname>atc</testname><value>true</value></Row>
+</Dataset>
+<Dataset name='ZSTDIntegerTest'>
+ <Row><testid>506</testid><testname>atd</testname><value>123</value></Row>
+ <Row><testid>507</testid><testname>ate</testname><value>-987</value></Row>
+ <Row><testid>508</testid><testname>atf</testname><value>0</value></Row>
+ <Row><testid>509</testid><testname>atg</testname><value>987654</value></Row>
+ <Row><testid>510</testid><testname>ath</testname><value>1000000</value></Row>
+</Dataset>
+<Dataset name='ZSTDRealTest'>
+ <Row><testid>511</testid><testname>ati</testname><value>3.14</value></Row>
+ <Row><testid>512</testid><testname>atj</testname><value>-0.5</value></Row>
+ <Row><testid>513</testid><testname>atk</testname><value>123.456</value></Row>
+ <Row><testid>514</testid><testname>atl</testname><value>-987.654</value></Row>
+ <Row><testid>515</testid><testname>atm</testname><value>1e-05</value></Row>
+</Dataset>
+<Dataset name='ZSTDDecimalTest'>
+ <Row><testid>516</testid><testname>atn</testname><value>123.456789</value></Row>
+ <Row><testid>517</testid><testname>ato</testname><value>-987.6543209999999</value></Row>
+ <Row><testid>518</testid><testname>atp</testname><value>0.000001</value></Row>
+ <Row><testid>519</testid><testname>atq</testname><value>987654.3209999999</value></Row>
+ <Row><testid>520</testid><testname>atr</testname><value>0.0000001</value></Row>
+</Dataset>
+<Dataset name='ZSTDStringTest'>
+ <Row><testid>521</testid><testname>ats</testname><value>Hello, World!</value></Row>
+ <Row><testid>522</testid><testname>att</testname><value>Data Science</value></Row>
+ <Row><testid>523</testid><testname>atu</testname><value>12345</value></Row>
+ <Row><testid>524</testid><testname>atv</testname><value>&#169;&#170;&#171;&#171;&#174;</value></Row>
+ <Row><testid>525</testid><testname>atw</testname><value>Special characters: !@#$%^&amp;*</value></Row>
+</Dataset>
+<Dataset name='ZSTDQStringTest'>
+ <Row><testid>526</testid><testname>atx</testname><value>THIS IS A &quot;Q&quot; STRING.</value></Row>
+ <Row><testid>527</testid><testname>aty</testname><value>ANOTHER &quot;EXAMPLE&quot; HERE.</value></Row>
+ <Row><testid>528</testid><testname>atz</testname><value>TESTING &quot;()*+,-)&quot; CHARACTERS.</value></Row>
+ <Row><testid>529</testid><testname>aua</testname><value>!&quot;#$&amp;&apos;()*+,-./;&lt;&gt;_[\]</value></Row>
+ <Row><testid>530</testid><testname>aub</testname><value>&lt;@@[[[[&apos;\&apos;\&apos;&apos;\]]]]</value></Row>
+</Dataset>
+<Dataset name='ZSTDUnicodeTest'>
+ <Row><testid>531</testid><testname>auc</testname><value>こんにちは、世界！</value></Row>
+ <Row><testid>532</testid><testname>aud</testname><value>Unicode characters: ḸḹḾ</value></Row>
+ <Row><testid>533</testid><testname>aue</testname><value>Testing Unicode: ⋖⋗⋙⋚⋛⋜⋝</value></Row>
+ <Row><testid>534</testid><testname>auf</testname><value>∭∮∯ More Unicode Fun ∐∑−∓∔</value></Row>
+ <Row><testid>535</testid><testname>aug</testname><value>∆∇∈∉∊∋∌ Unicode Everywhere ⋸⋹⋺⋻</value></Row>
+</Dataset>
+<Dataset name='ZSTDUTF8Test'>
+ <Row><testid>536</testid><testname>auh</testname><value>Café au lait ☕</value></Row>
+ <Row><testid>537</testid><testname>aui</testname><value>🎉 UTF-8 Characters 🎉  </value></Row>
+ <Row><testid>538</testid><testname>auj</testname><value>Special characters: ©®™</value></Row>
+ <Row><testid>539</testid><testname>auk</testname><value>UTF-8 for the win!</value></Row>
+ <Row><testid>540</testid><testname>aul</testname><value>🌟 UTF-8 Symbols 🌟  </value></Row>
+</Dataset>
+<Dataset name='ZSTDDataTest'>
+ <Row><testid>541</testid><testname>aum</testname><value>01A48D8414D848E900</value></Row>
+ <Row><testid>542</testid><testname>aun</testname><value>01F48AB446A76F8923</value></Row>
+ <Row><testid>543</testid><testname>auo</testname><value>01A490101D3DE9AC02</value></Row>
+ <Row><testid>544</testid><testname>aup</testname><value>01A49155D1CAF41500</value></Row>
+ <Row><testid>545</testid><testname>auq</testname><value>01A49156089FCE5A02</value></Row>
+</Dataset>
+<Dataset name='ZSTDVarstringTest'>
+ <Row><testid>546</testid><testname>aur</testname><value>Short text</value></Row>
+ <Row><testid>547</testid><testname>aus</testname><value>A longer variable-length string</value></Row>
+ <Row><testid>548</testid><testname>aut</testname><value>Strings are flexible!</value></Row>
+ <Row><testid>549</testid><testname>auu</testname><value>Varstrings galore!</value></Row>
+ <Row><testid>550</testid><testname>auv</testname><value>*** Varstring Universe ***</value></Row>
+</Dataset>
+<Dataset name='ZSTDVarunicodeTest'>
+ <Row><testid>551</testid><testname>auw</testname><value>Variable-length Unicode: こんにちは、世界！</value></Row>
+ <Row><testid>552</testid><testname>aux</testname><value>🌟 Variable-length Unicode Symbols 🌟</value></Row>
+ <Row><testid>553</testid><testname>auy</testname><value>Unicode flexibility is awesome!</value></Row>
+ <Row><testid>554</testid><testname>auz</testname><value>🌟 Varunicode Universe 🌟</value></Row>
+ <Row><testid>555</testid><testname>ava</testname><value>🌟 Varunicode Magic 🌟</value></Row>
+</Dataset>
+<Dataset name='ZSTDSetofBooleanTest'>
+ <Row><testid>556</testid><testname>avb</testname><value><Item>true</Item></value></Row>
+ <Row><testid>557</testid><testname>avc</testname><value><Item>true</Item><Item>true</Item><Item>false</Item><Item>true</Item><Item>true</Item></value></Row>
+</Dataset>
+<Dataset name='ZSTDSetofIntegerTest'>
+ <Row><testid>558</testid><testname>avd</testname><value><Item>42</Item></value></Row>
+ <Row><testid>559</testid><testname>ave</testname><value><Item>1</Item><Item>2</Item><Item>3</Item><Item>4</Item><Item>5</Item></value></Row>
+</Dataset>
+<Dataset name='ZSTDSetofRealTest'>
+ <Row><testid>560</testid><testname>avf</testname><value><Item>3.14</Item><Item>-2.718</Item></value></Row>
+ <Row><testid>561</testid><testname>avg</testname><value><Item>4.2</Item><Item>9.99</Item><Item>3.1415926</Item></value></Row>
+</Dataset>
+<Dataset name='ZSTDSetofDecimalTest'>
+ <Row><testid>562</testid><testname>avh</testname><value><Item>1.23456789</Item></value></Row>
+ <Row><testid>563</testid><testname>avi</testname><value><Item>9.876543209999999</Item><Item>-5.43210987</Item></value></Row>
+</Dataset>
+<Dataset name='ZSTDSetofStringTest'>
+ <Row><testid>564</testid><testname>avj</testname><value><Item>Hello</Item><Item>World</Item></value></Row>
+ <Row><testid>565</testid><testname>avk</testname><value><Item>string</Item><Item>STRING</Item></value></Row>
+</Dataset>
+<Dataset name='ZSTDSetofQStringTest'>
+ <Row><testid>566</testid><testname>avl</testname><value><Item>&quot;QSTRING 1&quot;</Item></value></Row>
+ <Row><testid>567</testid><testname>avm</testname><value><Item>!@*^$</Item><Item>1234754</Item></value></Row>
+</Dataset>
+<Dataset name='ZSTDSetofUnicodeTest'>
+ <Row><testid>568</testid><testname>avn</testname><value><Item>こんにちは、世界！</Item></value></Row>
+ <Row><testid>569</testid><testname>avo</testname><value><Item>🌟 Unicode Universe 🌟</Item><Item>🌟 Unicode Magic 🌟</Item></value></Row>
+</Dataset>
+<Dataset name='ZSTDSetofUTF8Test'>
+ <Row><testid>570</testid><testname>avp</testname><value><Item>こんにちは、世界！</Item><Item>🌟 UTF8 Symbols 🌟  </Item><Item>🌟 More UTF8 Fun 🌟  </Item></value></Row>
+ <Row><testid>571</testid><testname>avq</testname><value><Item>🌟 UTF8 Magic 🌟  </Item></value></Row>
+</Dataset>
+<Dataset name='ZSTDSetofDataTest'>
+ <Row><testid>572</testid><testname>avr</testname><value><Item>01A48D8414D848E900</Item><Item>01A48EC793A76F9400</Item><Item>01A48ED1BB70D84C01</Item><Item>01A4901558D7C91900</Item></value></Row>
+ <Row><testid>573</testid><testname>avs</testname><value><Item>01A48D8414D848E900</Item><Item>01A48EC793A76F9400</Item><Item>01A48ED8F40385BA01</Item></value></Row>
+</Dataset>
+<Dataset name='ZSTDSetofVarstringTest'>
+ <Row><testid>574</testid><testname>avt</testname><value><Item>Hello</Item><Item>World</Item></value></Row>
+ <Row><testid>575</testid><testname>avu</testname><value><Item>string</Item><Item>STRING</Item></value></Row>
+</Dataset>
+<Dataset name='ZSTDSetofVarunicodeTest'>
+ <Row><testid>576</testid><testname>avv</testname><value><Item>こんにちは、世界！</Item></value></Row>
+ <Row><testid>577</testid><testname>avw</testname><value><Item>🌟 Unicode Universe 🌟</Item><Item>🌟 Unicode Magic 🌟</Item></value></Row>
+</Dataset>
+<Dataset name='ZSTDChildDatasetTest'>
+ <Row><testid>578</testid><testname>avx</testname><value><b>true</b><i>42</i><r>3.14</r><de>1.23456789</de><s>Hello</s><q>QSTRING</q><u>こんにちは、世界！</u><u8>🌟 UTF8 Symbols 🌟  </u8><da>01010101</da><soi><Item>1</Item><Item>2</Item><Item>3</Item></soi></value></Row>
+ <Row><testid>579</testid><testname>avy</testname><value><b>false</b><i>-10</i><r>-2.718</r><de>-0.98765432</de><s>World</s><q>ANOTHERQSTRING</q><u>こんばんは、世界！</u><u8>🌟 More UTF8 Fun 🌟  </u8><da>FF00FF00</da><soi><Item>4</Item><Item>5</Item><Item>6</Item></soi></value></Row>
+ <Row><testid>580</testid><testname>avz</testname><value><b>false</b><i>15</i><r>4.2</r><de>0.123</de><s>Data</s><q>YETANOTHERQSTRING</q><u>おはよう、日本！</u><u8>🌟 Unicode Magic 🌟  </u8><da>12345678</da><soi><Item>22</Item><Item>23</Item><Item>24</Item></soi></value></Row>
+ <Row><testid>581</testid><testname>awa</testname><value><b>true</b><i>8</i><r>9.99</r><de>-0.12345678</de><s>Varstring</s><q>ANOTHERQSTRING</q><u>こんにちは、日本！</u><u8>🌟 More UTF8 Fun 🌟  </u8><da>FEDCBA98</da><soi><Item>25</Item><Item>26</Item><Item>27</Item></soi></value></Row>
+ <Row><testid>582</testid><testname>awb</testname><value><b>false</b><i>0</i><r>-7.77</r><de>0.123</de><s>Unicode</s><q>LASTQSTRING</q><u>さようなら、日本！</u><u8>🌟 Unicode Universe 🌟  </u8><da>12345678</da><soi><Item>28</Item><Item>29</Item><Item>30</Item></soi></value></Row>
+</Dataset>
+<Dataset name='XPathTest1'>
+ <Row><testid>583</testid><testname>awc</testname><value><B>true</B><I>42</I><R>3.14</R><DE>1.23456789</DE><S>Hello</S><Q>QSTRING</Q><U>こんにちは、世界！</U><U8>🌟 UTF8 Symbols 🌟  </U8><DA>01010101</DA><SOI>1</SOI><SOI>2</SOI><SOI>3</SOI></value></Row>
+ <Row><testid>584</testid><testname>awd</testname><value><B>false</B><I>-10</I><R>-2.718</R><DE>-0.98765432</DE><S>World</S><Q>ANOTHERQSTRING</Q><U>こんばんは、世界！</U><U8>🌟 More UTF8 Fun 🌟  </U8><DA>FF00FF00</DA><SOI>4</SOI><SOI>5</SOI><SOI>6</SOI></value></Row>
+ <Row><testid>585</testid><testname>awe</testname><value><B>false</B><I>15</I><R>4.2</R><DE>0.123</DE><S>Data</S><Q>YETANOTHERQSTRING</Q><U>おはよう、日本！</U><U8>🌟 Unicode Magic 🌟  </U8><DA>12345678</DA><SOI>22</SOI><SOI>23</SOI><SOI>24</SOI></value></Row>
+ <Row><testid>586</testid><testname>awf</testname><value><B>true</B><I>8</I><R>9.99</R><DE>-0.12345678</DE><S>Varstring</S><Q>ANOTHERQSTRING</Q><U>こんにちは、日本！</U><U8>🌟 More UTF8 Fun 🌟  </U8><DA>FEDCBA98</DA><SOI>25</SOI><SOI>26</SOI><SOI>27</SOI></value></Row>
+ <Row><testid>587</testid><testname>awg</testname><value><B>false</B><I>0</I><R>-7.77</R><DE>0.123</DE><S>Unicode</S><Q>LASTQSTRING</Q><U>さようなら、日本！</U><U8>🌟 Unicode Universe 🌟  </U8><DA>12345678</DA><SOI>28</SOI><SOI>29</SOI><SOI>30</SOI></value></Row>
+</Dataset>
+<Dataset name='XPathTest2'>
+ <Row><testid>588</testid><testname>awh</testname><B>true</B><I>42</I><R>3.14</R><DE>1.23456789</DE><S>Hello</S><Q>QSTRING</Q><U>こんにちは、世界！</U><U8>🌟 UTF8 Symbols 🌟  </U8><DA>01010101</DA><SOI>1</SOI><SOI>2</SOI><SOI>3</SOI></Row>
+ <Row><testid>589</testid><testname>awi</testname><B>false</B><I>-10</I><R>-2.718</R><DE>-0.98765432</DE><S>World</S><Q>ANOTHERQSTRING</Q><U>こんばんは、世界！</U><U8>🌟 More UTF8 Fun 🌟  </U8><DA>FF00FF00</DA><SOI>4</SOI><SOI>5</SOI><SOI>6</SOI></Row>
+ <Row><testid>590</testid><testname>awj</testname><B>false</B><I>15</I><R>4.2</R><DE>0.123</DE><S>Data</S><Q>YETANOTHERQSTRING</Q><U>おはよう、日本！</U><U8>🌟 Unicode Magic 🌟  </U8><DA>12345678</DA><SOI>22</SOI><SOI>23</SOI><SOI>24</SOI></Row>
+ <Row><testid>591</testid><testname>awk</testname><B>true</B><I>8</I><R>9.99</R><DE>-0.12345678</DE><S>Varstring</S><Q>ANOTHERQSTRING</Q><U>こんにちは、日本！</U><U8>🌟 More UTF8 Fun 🌟  </U8><DA>FEDCBA98</DA><SOI>25</SOI><SOI>26</SOI><SOI>27</SOI></Row>
+ <Row><testid>592</testid><testname>awl</testname><B>false</B><I>0</I><R>-7.77</R><DE>0.123</DE><S>Unicode</S><Q>LASTQSTRING</Q><U>さようなら、日本！</U><U8>🌟 Unicode Universe 🌟  </U8><DA>12345678</DA><SOI>28</SOI><SOI>29</SOI><SOI>30</SOI></Row>
+</Dataset>
