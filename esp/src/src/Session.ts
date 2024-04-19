@@ -120,7 +120,7 @@ getBuildInfo().then(info => {
     dojoConfig.currencyCode = info["currencyCode"] ?? "";
 });
 
-const formatTwoDigits = d3Format(",.2f");
+export const formatTwoDigits = d3Format(",.2f");
 const formatSixDigits = d3Format(",.6f");
 export function formatCost(value): string {
     if (isNaN(value)) {
