@@ -584,6 +584,17 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         }
     ], [dot, formatColumns, fullscreen, metrics, wuid]);
 
+    const setShowMetricOptionsHook = React.useCallback((show: boolean) => {
+        setShowMetricOptions(show);
+        scopesTable
+            .metrics(metrics, options, timelineFilter, scopeFilter)
+            .render(() => {
+                updateScopesTable(selectedMetrics);
+            })
+            ;
+
+    }, [metrics, options, scopeFilter, scopesTable, selectedMetrics, timelineFilter, updateScopesTable]);
+
     return <HolyGrail fullscreen={fullscreen}
         header={<>
             <CommandBar items={buttons} farItems={rightButtons} />
@@ -624,7 +635,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                         <AutosizeHpccJSComponent widget={propsTable2}></AutosizeHpccJSComponent>
                     </DockPanelItem>
                 </DockPanel>
-                <MetricsOptions show={showMetricOptions} setShow={setShowMetricOptions} />
+                <MetricsOptions show={showMetricOptions} setShow={setShowMetricOptionsHook} />
             </ErrorBoundary>
         }
     />;
