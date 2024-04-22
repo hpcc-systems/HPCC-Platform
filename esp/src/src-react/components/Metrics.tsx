@@ -226,6 +226,10 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         })
         .on("click", (row, col, sel) => {
             setTimelineFilter(sel ? row[7].ScopeName : "");
+            if (sel) {
+                setSelectedMetricsSource("scopesTable");
+                pushUrl(`${parentUrl}/${row[7].Id}`);
+            }
         })
     );
 
