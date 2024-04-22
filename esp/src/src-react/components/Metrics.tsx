@@ -618,7 +618,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                         />
                     </DockPanelItem>
                     <DockPanelItem key="propsTable" title={nlsHPCC.Properties} location="split-bottom" relativeTo="scopesTable" >
-                        <MetricsPropertiesTables scopes={selectedMetrics}></MetricsPropertiesTables>
+                        <MetricsPropertiesTables scopesTableColumns={scopesTable.columns()} scopes={selectedMetrics}></MetricsPropertiesTables>
                     </DockPanelItem>
                     <DockPanelItem key="propsTable2" title={nlsHPCC.CrossTab} location="tab-after" relativeTo="propsTable" >
                         <AutosizeHpccJSComponent widget={propsTable2}></AutosizeHpccJSComponent>
