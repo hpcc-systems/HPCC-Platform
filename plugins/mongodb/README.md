@@ -125,10 +125,14 @@ Not every ECL or MongoDB datatype translates seemlessly to the other side.
 | MongoDB datatypes | ECL equivalent |
 | ----------------- | -------------- |
 | b_date | STRING, INTEGER |
-| b_regex |  Unsupported |
-| b_timestamp | Unsupported |
+| b_regex |  {String pattern, String options} |
+| b_timestamp | {Unsigned t, Unsigned i} |
 
-The MongoDB date datatype can be converted to an integer in MongoDB or it will automatically be converted to a STRING by the plugin. Typically Dates before 1970 get returned by MongoDB as INTEGERS. Also, Unsigned Integers are unsupported in MongoDB. This means that in order to insert UINTEGERs into the database the plugin converts them to b_int64 which is a 64 bit signed integer.
+The MongoDB date datatype can be converted to an integer in MongoDB or it will automatically be converted to a STRING by the plugin. Typically Dates before 1970 get returned by MongoDB as INTEGERS.
+
+Due to regex and timestamp types being returned by MongoDB as objects, ECL records that map to these types are defined in the mongodb.ecllib file for your use. For information about the regex and timestamp types: [Manual](https://www.mongodb.com/docs/manual/reference/mongodb-extended-json/#bson-data-types-and-associated-representations)
+
+Unsigned Integers are unsupported in MongoDB. This means that in order to insert UINTEGERs into the database the plugin converts them to b_int64 which is a 64 bit signed integer.
 
 ### Inserting Documents
 

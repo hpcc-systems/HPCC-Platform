@@ -149,17 +149,16 @@ namespace mongodbembed
         std::string key = std::string(start, end - start); // Get datatype
         result += std::string(row, lastBrkt - row); // Add everything before we went into nested document
         // Some data types are unsupported as they are not straightforward to deserialize
-        if (key == "$regularExpression")
+        // Regex and timestamp both get deserialized to their child objects
+        if (key == "$regularExpression" || key == "$timestamp")
         {
-            UNSUPPORTED("Regular Expressions"); // TO DO handle unsupported types by not throwing an exception.
-        }
-        else if (key == "$timestamp")
-        {
-            while (*end && *end != '}')
-                end++; // Skip over timestamp
-            row = ++end;
+            // remove type identifier and create a nested object for the regex or timestamp values
+            while (*end && *end != '{')
+                end++;
             start = end;
-            result += "\"\"";
+            while (*end && *end != '}')
+                end++;
+            result += std::string(start, ++end - start);
         }
         // Both of these get deserialized to strings and are surround by quotation marks
         else if (key == "$date" || key == "$oid")
@@ -192,14 +191,6 @@ namespace mongodbembed
                 while (*end && *end != '}')
                     end++; // Get out of both nested documents
                 end++;
-
-                while (*end && *end != '}')
-                    end++;
-                end++;
-
-                depth--;
-                row = end; // Set row to just after the nested document
-                start = end; // move start to the next place for parsing
             }
             else
             {
@@ -208,13 +199,6 @@ namespace mongodbembed
                     end++;
 
                 result += std::string(start, ++end - start); // Only add the data inside the quotation marks to result string
-
-                while (*end && *end != '}')
-                    end++; // Only have to get out of one nested document
-                end++;
-                depth--;
-                row = end; // Set row to just after the nested document
-                start = end; // move start to the next place for parsing
             }
         }
         else if (key == "$numberDouble" || key == "$numberDecimal" || key == "$numberLong")
@@ -229,17 +213,23 @@ namespace mongodbembed
                 end++;
 
             result += std::string(start, end++ - start); // Only add the data inside the quotation marks to result string
-            while (*end && *end != '}')
-                end++; // Only have to get out of one nested document
-            end++;
-            depth--;
-            row = end;
-            start = end;
         }
         else
         {
             failx("EJSON datatype error: '%s' is not supported in the current version.", key.c_str());
         }
+
+        // Get out of nested object.
+        while (*end && *end != '}')
+            end++;
+
+        if (*end)
+            end++;
+        else
+            failx("Read past the end of stream while converting EJSON types to ECL.");
+        depth--;
+        row = end; // Set row to just after the nested document
+        start = end; // move start to the next place for parsing
     }
 
     /**
