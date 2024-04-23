@@ -1961,7 +1961,6 @@ ParquetEmbedFunctionContext::ParquetEmbedFunctionContext(const IContextLogger &_
 bool ParquetEmbedFunctionContext::getBooleanResult()
 {
     UNIMPLEMENTED_X("Parquet Scalar Return Type BOOLEAN");
-    return false;
 }
 
 void ParquetEmbedFunctionContext::getDataResult(size32_t &len, void *&result)
@@ -1972,19 +1971,16 @@ void ParquetEmbedFunctionContext::getDataResult(size32_t &len, void *&result)
 double ParquetEmbedFunctionContext::getRealResult()
 {
     UNIMPLEMENTED_X("Parquet Scalar Return Type REAL");
-    return 0.0;
 }
 
 __int64 ParquetEmbedFunctionContext::getSignedResult()
 {
     UNIMPLEMENTED_X("Parquet Scalar Return Type SIGNED");
-    return 0;
 }
 
 unsigned __int64 ParquetEmbedFunctionContext::getUnsignedResult()
 {
     UNIMPLEMENTED_X("Parquet Scalar Return Type UNSIGNED");
-    return 0;
 }
 
 void ParquetEmbedFunctionContext::getStringResult(size32_t &chars, char *&result)
@@ -2036,7 +2032,6 @@ byte *ParquetEmbedFunctionContext::getRowResult(IEngineRowAllocator *_resultAllo
 size32_t ParquetEmbedFunctionContext::getTransformResult(ARowBuilder &rowBuilder)
 {
     UNIMPLEMENTED_X("Parquet Transform Result");
-    return 0;
 }
 
 /**
@@ -2229,10 +2224,7 @@ public:
     virtual IEmbedFunctionContext *createFunctionContextEx(ICodeContext *ctx, const IThorActivityContext *activityCtx, unsigned flags, const char *options) override
     {
         if (flags & EFimport)
-        {
             UNSUPPORTED("IMPORT");
-            return nullptr;
-        }
         else
             return new ParquetEmbedFunctionContext(ctx ? ctx->queryContextLogger() : queryDummyContextLogger(), activityCtx, options, flags);
     }
@@ -2240,7 +2232,6 @@ public:
     virtual IEmbedServiceContext *createServiceContext(const char *service, unsigned flags, const char *options) override
     {
         throwUnexpected();
-        return nullptr;
     }
 };
 
