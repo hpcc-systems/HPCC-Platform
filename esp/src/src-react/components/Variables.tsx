@@ -61,7 +61,7 @@ export const Variables: React.FunctionComponent<VariablesProps> = ({
         <FluentGrid
             data={data}
             primaryID={"__hpcc_id"}
-            alphaNumColumns={{ Name: true, Value: true }}
+            alphaNumColumns={{ Value: true }}
             sort={sort}
             columns={columns}
             setSelection={setSelection}
