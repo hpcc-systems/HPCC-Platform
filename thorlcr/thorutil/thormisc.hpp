@@ -356,9 +356,14 @@ public:
     }
     void noteSize(offset_t size)
     {
+        if (fileSizeTracker && fileSize!=size)
+        {
+            if (size > fileSize)
+                fileSizeTracker->growSize(size-fileSize);
+            else
+                fileSizeTracker->shrinkSize(fileSize-size);
+        }
         fileSize = size;
-        if (fileSizeTracker)
-            fileSizeTracker->growSize(fileSize);
     }
     IFile &queryIFile() const { return *iFile; }
 };
