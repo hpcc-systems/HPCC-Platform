@@ -45,8 +45,6 @@ extern void UNSUPPORTED(const char *feature) __attribute__((noreturn));
 extern void failx(const char *msg, ...) __attribute__((noreturn)) __attribute__((format(printf, 1, 2)));
 extern void fail(const char *msg) __attribute__((noreturn));
 
-#define PARQUET_FILE_TYPE_NAME "parquet"
-
 #define reportIfFailure(st)                                                \
     if (!st.ok())                                                          \
     {                                                                      \

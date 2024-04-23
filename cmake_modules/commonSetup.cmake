@@ -135,6 +135,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   if ( CLIENTTOOLS_ONLY )
       set(PLATFORM OFF)
       set(DEVEL OFF)
+      set(USE_PARQUET OFF)
   endif()
 
   # The following options need to be set after the project() command

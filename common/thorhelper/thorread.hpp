@@ -27,6 +27,8 @@
 #include "jrowstream.hpp"
 #include "rtlkey.hpp"
 
+#define PARQUET_FILE_TYPE_NAME "parquet"
+
 //--- Classes and interfaces for reading instances of files
 //The following is constant for the life of a disk read activity
 interface IDiskReadOutputMapping : public IInterface
