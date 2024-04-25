@@ -1931,6 +1931,8 @@ void CSocket::readtms(void* buf, size32_t min_size, size32_t max_size, size32_t 
     if (state != ss_open)
         THROWJSOCKEXCEPTION(JSOCKERR_not_opened);
 
+    // NB: The semantics here, effectively mean min_size is always >0, because it first waits on wait_read
+    // i.e. something has to be on socket to continue (or error/graceful close).
     CCycleTimer timer;
     while (true)
     {
