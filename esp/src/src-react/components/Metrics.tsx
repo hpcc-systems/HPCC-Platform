@@ -516,6 +516,10 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
             onClick: () => {
                 refresh();
+                timeline
+                    .clear()
+                    .lazyRender()
+                    ;
             }
         },
         {
@@ -536,7 +540,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                 setShowMetricOptions(true);
             }
         }
-    ], [dockpanel, hotspots, onHotspot, options, refresh, setOptions, showTimeline]);
+    ], [dockpanel, hotspots, onHotspot, options, refresh, setOptions, showTimeline, timeline]);
 
     const formatColumns = React.useMemo((): Utility.ColumnMap => {
         const copyColumns: Utility.ColumnMap = {};
