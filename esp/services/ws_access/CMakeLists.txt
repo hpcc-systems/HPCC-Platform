@@ -51,11 +51,6 @@ include_directories (
          ${HPCC_SOURCE_DIR}/common/thorhelper
     )
 
-if(USE_OPENLDAP)
-    # NOTE - this should not be needed, it's the result of poor encapsulation and using CLdapSecManager directly
-    include_directories ( ${OPENLDAP_INCLUDE_DIR} )
-endif()
-
 ADD_DEFINITIONS( -D_USRDLL -Dws_access_API_LOCAL -DESP_SERVICE_ws_access)
 
 HPCC_ADD_LIBRARY( ws_access SHARED ${SRCS} )

@@ -51,7 +51,7 @@ target_link_libraries ( datest
          eclrtl
          wsdfuaccess 
          dalibase 
-         ${CPPUNIT_LIBRARIES}
+         ${CppUnit_LIBRARIES}
     )
 
 

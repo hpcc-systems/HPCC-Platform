@@ -68,7 +68,7 @@ target_link_libraries ( jhtree
          eclrtl
          zcrypt
          jlib
-         ${CPPUNIT_LIBRARIES}
+         ${CppUnit_LIBRARIES}
     )
 
 

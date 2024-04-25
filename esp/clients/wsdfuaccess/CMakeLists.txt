@@ -73,7 +73,7 @@ target_link_libraries ( wsdfuaccess
          dafsstream
          thorhelper
          dalibase
-         ${CPPUNIT_LIBRARIES}
+         ${CppUnit_LIBRARIES}
     )
 
 if (NOT CONTAINERIZED)
