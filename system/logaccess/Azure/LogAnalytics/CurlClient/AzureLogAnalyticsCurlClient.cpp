@@ -192,8 +192,8 @@ static void submitKQLQuery(std::string & readBuffer, const char * token, const c
         char                    curlErrBuffer[CURL_ERROR_SIZE];
         curlErrBuffer[0] = '\0';
 
-        char * encodedKQL = curl_easy_escape(curlHandle, kql, strlen(kql));
-        char * encodedTimeSpan = curl_easy_escape(curlHandle, timeSpan, strlen(timeSpan));
+        char * encodedKQL = curl_easy_escape(curlHandle, kql, strlen(kql)+1);
+        char * encodedTimeSpan = curl_easy_escape(curlHandle, timeSpan, strlen(timeSpan)+1);
         VStringBuffer kqlQueryString("https://api.loganalytics.azure.com/v1/workspaces/%s/query?query=%s&timespan=%s", workspaceID, encodedKQL, encodedTimeSpan);
         curl_free(encodedTimeSpan);
         curl_free(encodedKQL);
