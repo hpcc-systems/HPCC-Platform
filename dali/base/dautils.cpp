@@ -3785,3 +3785,118 @@ void logNullUser(IUserDescriptor * userDesc)
     }
 }
 #endif
+
+// takes filename and creates mask filename with $P$ extension
+extern da_decl void parseFileName(const char *name,StringBuffer &mname,unsigned &num,unsigned &max,unsigned &stripeNum,unsigned &dirPerPart,bool &replicate)
+{
+    StringBuffer nonrepdir;
+    if (!isContainerized())
+    {
+        replicate = setReplicateDir(name,nonrepdir,false);
+        if (replicate)
+            name = nonrepdir.str();
+    }
+    else
+        replicate = false; // Replicate dir is not supported in containerized environment
+
+    const char *filename = name;
+    Owned<IPropertyTreeIterator> planesIter = getPlanesIterator("data", nullptr);
+    ForEach(*planesIter)
+    {
+        const IPropertyTree &plane = planesIter->query();
+        const char *prefix = plane.queryProp("@prefix");
+        size_t prefixLen = strlen(prefix);
+        if (startsWith(name, prefix) && name[prefixLen] == PATHSEPCHAR)
+        {
+            mname.ensureCapacity(strlen(name)-prefixLen);
+            mname.append(PATHSEPCHAR);
+            name += prefixLen + 1;
+            stripeNum = 0;
+            if (isContainerized() && plane.getPropInt("@numDevices") > 1)
+            {
+                if (*name!='d')
+                    throw makeStringExceptionV(-1, "In storage plane definition numDevices>1, but no stripe sub-directory found in file %s", filename);
+                name++;
+                if (*name==PATHSEPCHAR)
+                    throw makeStringExceptionV(-1, "In storage plane definition numDevices>1, but no stripe sub-directory found in file %s", filename);
+                while (*name&&isdigit(*name))
+                {
+                    stripeNum = stripeNum*10+(*name-'0');
+                    name++;
+                }
+                if (*name!=PATHSEPCHAR)
+                    throw makeStringExceptionV(-1, "In storage plane definition numDevices>1, but no stripe sub-directory found in file %s", filename);
+                name++;
+                if (stripeNum>=plane.getPropInt("@numDevices"))
+                    throw makeStringExceptionV(-1, "Stripe number in file %s is greater than numDevices in storage plane definition", filename);
+            }
+            break;
+        }
+    }
+
+    if (mname.isEmpty())
+        throw makeStringExceptionV(-1, "Could not find matching prefix in plane definition for file %s", filename);
+
+    num = 0;
+    max = 0;
+    dirPerPart = 0;
+    const char * cur = name;
+    for (;;)
+    {
+        char c=*cur;
+        if (!c)
+            break;
+        if ((c=='.')&&(cur[1]=='_'))
+        {
+            unsigned pn = 0;
+            const char *s = cur+2;
+            while (*s&&isdigit(*s))
+            {
+                pn = pn*10+(*s-'0');
+                s++;
+            }
+
+            // Check for dir-per-part number
+            const char *tailSlash = cur;
+            while (tailSlash!=filename&&*tailSlash!='/')
+                tailSlash--;
+            const char *d = tailSlash-1;
+            for (int i=1;d!=filename&&isdigit(*d);i*=10,d--)
+                dirPerPart += (*d-'0')*i;
+            // If a dir-per-part number was found, check that it matches the part number
+            if (*d=='/')
+            {
+                if (dirPerPart!=pn)
+                    throw makeStringExceptionV(-1, "Dir-per-part # (%d) does not match part # (%d) of file %s", dirPerPart, pn, filename);
+                mname.append((d+1)-name, name).append(cur-(tailSlash+1), tailSlash+1);
+            }
+            else
+                mname.append(cur-name,name);
+
+            if (pn&&(memicmp(s,"_of_",4)==0))
+            {
+                unsigned mn = 0;
+                s += 4;
+                while (*s&&isdigit(*s))
+                {
+                    mn = mn*10+(*s-'0');
+                    s++;
+                }
+                if ((mn!=0)&&((*s==0)||(*s=='.'))&&(mn>=pn))
+                {
+                    // NB allow trailing extension
+                    mname.append("._$P$_of_").append(mn);
+                    if (*s)
+                        mname.append(s);
+                    num = pn;
+                    max = mn;
+                }
+                else
+                    throw makeStringExceptionV(-1, "Incorrect max part number(%d) and part number (%d) in file %s", mn, pn, filename);
+            }
+            else
+                throw makeStringExceptionV(-1, "Missing part number in file %s", filename);
+        }
+        cur++;
+    }
+}

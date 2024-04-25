@@ -587,55 +587,29 @@ void CWsDfuXRefEx::addXRefNode(const char* name, IPropertyTree* pXRefNodeTree)
     }
 }
 
-bool CWsDfuXRefEx::addUniqueXRefNode(const char *processName, BoolHash &uniqueProcesses, IPropertyTree *xrefNodeTree)
-{
-    if (isEmptyString(processName))
-        return false;
-    bool *found = uniqueProcesses.getValue(processName);
-    if (found && *found)
-        return false;
-    uniqueProcesses.setValue(processName, true);
-    addXRefNode(processName, xrefNodeTree);
-    return true;
-}
-
 bool CWsDfuXRefEx::onDFUXRefList(IEspContext &context, IEspDFUXRefListRequest &req, IEspDFUXRefListResponse &resp)
 {
     try
     {
-#ifdef _CONTAINERIZED
-        IERRLOG("CONTAINERIZED(CWsDfuXRefEx::onDFUXRefList)");
-#else
         context.ensureFeatureAccess(XREF_FEATURE_URL, SecAccess_Read, ECLWATCH_DFU_XREF_ACCESS_DENIED, "WsDfuXRef::DFUXRefList: Permission denied.");
 
-        CConstWUClusterInfoArray clusters;
-        getEnvironmentClusterInfo(clusters);
-
-        BoolHash uniqueProcesses;
+        Owned<IPropertyTreeIterator> planesIter = getPlanesIterator("data", nullptr);
         Owned<IPropertyTree> xrefNodeTree = createPTree("XRefNodes");
-        ForEachItemIn(c, clusters)
+
+        ForEach(*planesIter)
         {
-            IConstWUClusterInfo &cluster = clusters.item(c);
-            switch (cluster.getPlatform())
-            {
-            case ThorLCRCluster:
-                {
-                    const StringArray &primaryThorProcesses = cluster.getPrimaryThorProcesses();
-                    ForEachItemIn(i, primaryThorProcesses)
-                        addUniqueXRefNode(primaryThorProcesses.item(i), uniqueProcesses, xrefNodeTree);
-                }
-                break;
-            case RoxieCluster:
-                SCMStringBuffer roxieProcess;
-                addUniqueXRefNode(cluster.getRoxieProcess(roxieProcess).str(), uniqueProcesses, xrefNodeTree);
-                break;
-            }
+            IPropertyTree &item = planesIter->query();
+            bool isNotCopy = !item.getPropBool("@copy", false);
+            bool isNotHthorPlane = !item.getPropBool("@hthorplane", false);
+            if (isNotCopy && isNotHthorPlane)
+                addXRefNode(item.queryProp("@name"), xrefNodeTree);
         }
-        addXRefNode("SuperFiles", xrefNodeTree);
+
+        if (!isContainerized())
+            addXRefNode("SuperFiles", xrefNodeTree);
 
         StringBuffer buf;
         resp.setDFUXRefListResult(formatResult(context, xrefNodeTree, buf));
-#endif
     }
     catch(IException *e)
     {   

@@ -276,9 +276,8 @@ extern da_decl cost_type updateCostAndNumReads(IDistributedFile *file, stat_type
     return curReadCost;
 }
 
-// JCSMORE - I suspect this function should be removed/deprecated. It does not deal with dirPerPart or striping.
-// makePhysicalPartName supports both, but does not deal with groups/endpoints)
-RemoteFilename &constructPartFilename(IGroup *grp,unsigned partno,unsigned partmax,const char *name,const char *partmask,const char *partdir,unsigned copy,ClusterPartDiskMapSpec &mspec,RemoteFilename &rfn)
+// Deprecated and should be removed and new feature tested
+RemoteFilename &deprecatedConstructPartFilename(IGroup *grp,unsigned partno,unsigned partmax,const char *name,const char *partmask,const char *partdir,unsigned copy,ClusterPartDiskMapSpec &mspec,RemoteFilename &rfn)
 {
     partno--;
     StringBuffer tmp;
@@ -301,6 +300,45 @@ RemoteFilename &constructPartFilename(IGroup *grp,unsigned partno,unsigned partm
     if (grp)
         ep=grp->queryNode(n).endpoint();
     rfn.setPath(ep,fullname.toLowerCase().str());
+    return rfn;
+}
+
+RemoteFilename &constructPartFilename(IGroup *grp,unsigned partNo,unsigned copy,unsigned max,unsigned lfnHash,int replicateOffset,bool dirPerPart,const char *lname,const char *prefix,const char *pmask,unsigned numDevices,RemoteFilename &rfn)
+{
+    partNo--;
+    StringBuffer partName;
+    if (!lname||!*lname)
+    {
+        if (!pmask)
+        {
+            pmask = "!ERROR!._$P$_of_$N$";
+            IERRLOG("No partmask for constructPartFilename");
+        }
+        lname = expandMask(partName, pmask, partNo, max);
+    }
+
+    unsigned stripeNum = calcStripeNumber(partNo+1, lfnHash, numDevices);
+
+    StringBuffer fullname;
+    makePhysicalPartName(lname, partNo+1, max, fullname, 0, DFD_OSdefault, prefix, dirPerPart, stripeNum);
+
+    // revisit: constructPartFilename should be refactored not to deal with replicate directories, by pre-determining the alternate prefix if copy>0
+    // If copy>0 it could do calPartLocation, find the replicate plane, get it's prefix, and pass to makePhysicalPartName
+    unsigned n = 0;
+    if (!isContainerized())
+    {
+        ClusterPartDiskMapSpec mspec;
+        mspec.replicateOffset = replicateOffset;
+        unsigned d;
+        mspec.calcPartLocation(partNo, max, copy, grp?grp->ordinality():max, n, d);
+        setReplicateFilename(fullname, d);
+    }
+
+    SocketEndpoint ep;
+    if (grp)
+        ep = grp->queryNode(n).endpoint();
+    rfn.setPath(ep, fullname.toLowerCase().str());
+
     return rfn;
 }
 

@@ -113,7 +113,9 @@ struct cMisplacedRec
 struct cFileDesc // no virtuals
 {
     unsigned hash;
-    unsigned short N;           // num parts 
+    unsigned short N;           // num parts
+    unsigned short sn;          // stripe number
+    bool dn;                    // dir-per-part number
     const char *owningfile;     // for crosslinked
     cMisplacedRec *misplaced;   // for files on the wrong node
     byte name[1];               // first byte length
@@ -123,7 +125,7 @@ struct cFileDesc // no virtuals
     // bitset markedc[N];
     // bitset markedd[N];
 
-    static cFileDesc * create(CLargeMemoryAllocator &mem,const char *_name,unsigned n)
+    static cFileDesc * create(CLargeMemoryAllocator &mem,const char *_name,unsigned n, unsigned sn, bool dn)
     {
         size32_t sl = strlen(_name); 
         if (sl>255) {
@@ -135,6 +137,8 @@ struct cFileDesc // no virtuals
         cFileDesc * ret = (cFileDesc *)mem.alloc(sz);
         ret->N = (unsigned short)n;
         ret->name[0] = (byte)sl;
+        ret->sn = (unsigned short)sn;
+        ret->dn = dn;
         ret->owningfile = NULL;
         ret->misplaced = NULL;
 
@@ -340,16 +344,20 @@ struct cDirDesc
     cFileDesc *addFile(unsigned drv,const char *name,__int64 sz,CDateTime &dt,unsigned node, const SocketEndpoint &ep, IGroup &grp, unsigned numnodes, CLargeMemoryAllocator *mem)
     {
 
-        unsigned nf;
-        unsigned pf;
-        StringAttr mask;
-        const char *fn = decodeName(drv,name,node,numnodes,mask,pf,nf);
-        bool misplaced = nf!=grp.ordinality() || pf>=grp.ordinality() || !grp.queryNode(pf).endpoint().equals(ep);
-        cFileDesc *file = files.find(fn,false);
+        unsigned nf;    // num parts
+        unsigned pf;    // part num
+        unsigned sn;    // stripe num
+        unsigned dn;    // dir-per-part num
+        bool replicate;
+        StringBuffer fn;
+        parseFileName(name, fn, pf, nf, sn, dn, replicate);
+        pf--;
+        bool misplaced = !isContainerized() && (nf!=grp.ordinality() || pf>=grp.ordinality() || !grp.queryNode(pf).endpoint().equals(ep));
+        cFileDesc *file = files.find(fn.str(),false);
         if (!file) {
             if (!mem)
                 return NULL;
-            file = cFileDesc::create(*mem,fn,nf);
+            file = cFileDesc::create(*mem,fn.str(),nf,sn,dn>0?true:false);
             files.add(file);
         }
         if (misplaced) {
@@ -755,12 +763,15 @@ public:
             OERRLOG(LOGPFX "Cluster %s node group %s not found",clustname.get(),grpstr.str());
             return false;
         }
-        ForEachItemIn(i1,done) {
-            GroupRelation gr = done.item(i1).compare(grp);
-            if ((gr==GRidentical)||(gr==GRsubset)) {
-                if (strcmp(basedir.str(),donedir.item(i1))==0) {
-                    OWARNLOG(LOGPFX "Node group %s already done",grpstr.str());
-                    return false;
+        // Group overlap doesn't apply to containerized. Should be cleaned up once planes are fully integrated
+        if (!isContainerized()) {
+            ForEachItemIn(i1,done) {
+                GroupRelation gr = done.item(i1).compare(grp);
+                if ((gr==GRidentical)||(gr==GRsubset)) {
+                    if (strcmp(basedir.str(),donedir.item(i1))==0) {
+                        OWARNLOG(LOGPFX "Node group %s already done",grpstr.str());
+                        return false;
+                    }
                 }
             }
         }
@@ -790,20 +801,32 @@ public:
         clusters.kill();
         clusterscsl.clear().append(grpstr);
         clusters.append(grpstr.str());
-        Owned<INamedGroupIterator> giter = queryNamedGroupStore().getIterator(rawgrp,false);
-        StringBuffer gname;
-        ForEach(*giter) {
-            giter->get(gname.clear());
-            if (strcmp(grpname,gname.str())!=0) {
-                clusters.append(gname.str());
-                clusterscsl.append(',').append(gname.str());
+        if (!isContainerized()) {
+            // This code is locating all other groups that are a subset of the group being scanned.
+            // and builds this list up into 'clustercsl', which is used when XREF identifies a lost
+            // file, tagging them with this list, as possible candidate clusters it may be part of.
+            Owned<INamedGroupIterator> giter = queryNamedGroupStore().getIterator(rawgrp,false);
+            StringBuffer gname;
+            ForEach(*giter) {
+                giter->get(gname.clear());
+                if (strcmp(grpname,gname.str())!=0) {
+                    clusters.append(gname.str());
+                    clusterscsl.append(',').append(gname.str());
+                }
             }
+            // add the first IP also
+            rawgrp->queryNode(0).endpoint().getHostText(gname.clear());
+            clusters.append(gname.str());
+            clusterscsl.append(',').append(gname.str());
         }
-        // add the first IP also
-        rawgrp->queryNode(0).endpoint().getHostText(gname.clear());
-        clusters.append(gname.str());
-        clusterscsl.append(',').append(gname.str());
-        if (basedir.length()==0) {
+        if (isContainerized()) {
+            Owned<IPropertyTree> plane = getStoragePlane(_clustname);
+            if (!plane)
+                throw makeStringExceptionV(-1, LOGPFX "Unknown data plane name: %s", _clustname);
+            rootdir.set(plane->queryProp("@prefix"));
+            assert(!rootdir.isEmpty());
+        }
+        else if (basedir.length()==0) {
             const char *ddir = "thor";
             const char *rdir = "thor";
             StringBuffer datadir;
@@ -921,7 +944,7 @@ public:
                 nsz += fsz;
                 iter->getModifiedTime(dt);
                 if (!fileFiltered(path.str(),dt)) {
-                    pdir->addFile(drv,fname.str(),fsz,dt,node,ep,*grp,numnodes,&mem);
+                    pdir->addFile(drv,path.str(),fsz,dt,node,ep,*grp,numnodes,&mem);
                 }
             }
             path.setLength(dsz);
@@ -1197,7 +1220,8 @@ public:
 #endif
 
         unsigned drv;
-        for (drv=0;drv<2;drv++) {
+        unsigned drvs = isContainerized() ? 1 : 2;
+        for (drv=0;drv<drvs;drv++) {
             unsigned i0;
             for (i0=0;i0<f->N;i0++) 
                 if (f->testpresent(drv,i0)&&!f->testmarked(drv,i0)) 
@@ -1205,10 +1229,9 @@ public:
             if (i0<f->N)
                 break;
         }
-        if (drv==2)
+        if (drv==drvs)
             return; // no orphans
-        StringBuffer mask(basedir);
-        addPathSepChar(mask);
+        StringBuffer mask(rootdir);
         f->getName(mask);
         CDfsLogicalFileName lfn;
         if (lfn.setFromMask(mask.str(),rootdir)) { // orphans are only orphans if there doesn't exist a valid file
@@ -1235,12 +1258,11 @@ public:
         unsigned ndone[2];
         ndone[0] = 0;
         ndone[1] = 0;
-        for (drv=0;drv<2;drv++) {
+        for (drv=0;drv<drvs;drv++) {
             if (abort)
                 return;
             bool warnnotexists = true;
-            StringBuffer path(basedir);
-            addPathSepChar(path);
+            StringBuffer path(rootdir);
             if (drv)
                 setReplicateFilename(path,drv);
             size32_t psz = path.length();
@@ -1295,9 +1317,7 @@ public:
                 if (!mp->marked) {
                     unsigned drv = mp->getDrv(numnodes);
                     unsigned n = mp->getNode(numnodes);
-                    StringBuffer path(basedir);
-                    if (*basedir)
-                        addPathSepChar(path);
+                    StringBuffer path(rootdir);
                     if (drv) 
                         setReplicateFilename(path,drv);
                     f->getPartName(path,mp->pn);
@@ -1325,7 +1345,7 @@ public:
         CDateTime now;
         now.setNow();
         StringBuffer tmp;
-        for (drv=0;drv<2;drv++) {
+        for (drv=0;drv<drvs;drv++) {
             if (abort)
                 return;
             if (branch[drv]) {
@@ -2086,14 +2106,28 @@ public:
                 list.remove(i0);
             }
         }
-        Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Software", myProcessSession(), RTM_LOCK_READ, SDS_CONNECT_TIMEOUT);
-        if (!conn) {
-            OERRLOG("Could not connect to /Environment/Software");
-            return;
-        }
+        // Revisit: XREF should really be plane centric only
         StringArray groups;
         StringArray cnames;
-        clustersToGroups(conn->queryRoot(),list,cnames,groups,NULL);
+        if (isContainerized()) {
+            // NB: must be a list of planes only
+            ForEachItemIn(i, list) {
+                const char *planeName = list.item(i);
+                Owned<IPropertyTree> plane = getStoragePlane(planeName);
+                if (!plane)
+                    throw makeStringExceptionV(-1, LOGPFX "Unknown data plane name: %s", planeName);
+                groups.append(planeName);
+                cnames.append(planeName);
+            }
+        }
+        else {
+            Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Software", myProcessSession(), RTM_LOCK_READ, SDS_CONNECT_TIMEOUT);
+            if (!conn) {
+                OERRLOG("Could not connect to /Environment/Software");
+                return;
+            }
+            clustersToGroups(conn->queryRoot(),list,cnames,groups,NULL);
+        }
         IArrayOf<IGroup> groupsdone;
         StringArray dirsdone;
         ForEachItemIn(i,groups) {
@@ -2178,14 +2212,21 @@ public:
 
     int run()
     {
-        Owned<IPropertyTree> props = serverConfig->getPropTree("DfuXRef");
-        if (!props)
-            props.setown(createPTree("DfuXRef"));
-        bool eclwatchprovider = props->getPropBool("@eclwatchProvider");
+        Owned<IPropertyTree> props;
+        if (isContainerized())
+            props.setown(getComponentConfig());
+        else
+        {
+            props.setown(serverConfig->getPropTree("DfuXRef"));
+            if (!props)
+                props.setown(createPTree("DfuXRef"));
+        }
+        bool eclwatchprovider = props->getPropBool("@eclwatchProvider",isContainerized()?true:false);
         unsigned interval = props->getPropInt("@interval",DEFAULT_XREF_INTERVAL);
         const char *clusters = props->queryProp("@clusterlist");
         StringBuffer clusttmp;
-        if (props->getPropBool("@checkSuperFiles",true)) {
+        if (props->getPropBool("@checkSuperFiles",isContainerized()?false:true))
+        {
             if (!clusters||!*clusters)
                 clusters = "SuperFiles";
             else
@@ -2199,7 +2240,7 @@ public:
         PROGLOG(LOGPFX "min interval = %d hr", interval);
         unsigned initinterval = (interval-1)/2+1;  // wait a bit til dali has started
         CSashaSchedule schedule;
-        if (interval) 
+        if (interval)
             schedule.init(props,interval,initinterval);
         initinterval *= 60*60*1000; // ms
         unsigned started = msTick();
@@ -2210,7 +2251,8 @@ public:
                 break;
             StringBuffer cname;
             bool byscheduler=false;
-            if (!eclwatchprovider||!checkClusterSubmitted(cname.clear())) {         
+            if (!eclwatchprovider||!checkClusterSubmitted(cname.clear()))
+            {
                 if (!interval||((started!=(unsigned)-1)&&(msTick()-started<initinterval)))
                     continue;
                 started = (unsigned)-1;
@@ -2218,7 +2260,8 @@ public:
                     continue;
                 byscheduler = true;
             }
-            try {
+            try
+            {
                 runXRef(cname.length()?cname.str():clusters,true,byscheduler);
                 cname.clear();
             }
