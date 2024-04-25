@@ -879,17 +879,10 @@ void CSecureSocket::readtms(void* buf, size32_t min_size, size32_t max_size, siz
             // NB: if timeout != WAIT_FOREVER, nonBlocking should always be true here
             if (nonBlocking && (ssl_err == SSL_ERROR_WANT_READ || ssl_err == SSL_ERROR_WANT_WRITE)) // NB: SSL_read can cause SSL_ERROR_WANT_WRITE
             {
-                if (0 == sizeRead)
-                {
-                    // special case. We have read nothing, but we are here because wait_read said there was something to read.
-                    // However, SSL_read returned SSL_ERROR_WANT_READ/SSL_ERROR_WANT_WRITE, indicating infact there is nothing
-                    // ready yet.
+                // NB: we must be below min_size if here (otherwise would have exited in (rc > 0) block above)
 
-                    // To maintain consistent semantics with jsocket. Continue waiting.
-                    // NB: jsocket::readtms always blocks (wait_read) initially, meaning in effect min_size is always >0
-                }
-                else if (sizeRead >= min_size) // could have read some before, but now would block and above min_size, exit.
-                    break;
+                // To maintain consistent semantics with jsocket, we continue waiting even in the min_size = 0 case.
+                // NB: jsocket::readtms always blocks (wait_read) initially, meaning in effect min_size is always treated as >0
             }
             else
             {
