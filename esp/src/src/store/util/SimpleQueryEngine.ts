@@ -2,7 +2,7 @@ import { alphanumCompare } from "../../Utility";
 import { BaseRow, QueryOptions, QueryRequest, QuerySort } from "../Store";
 
 function createSortFunc<T extends BaseRow>(sortSet: QuerySort<T>, alphanumColumns: { [id: string]: boolean }) {
-	return typeof sortSet == "function" ? sortSet : function (a, b) {
+	return typeof sortSet == "function" ? sortSet : function (a: any, b: any) {
 		for (let i = 0; sortSet[i]; i++) {
 			const sort = sortSet[i];
 			if (alphanumColumns[sort.attribute as string]) {
@@ -16,6 +16,9 @@ function createSortFunc<T extends BaseRow>(sortSet: QuerySort<T>, alphanumColumn
 				// valueOf enables proper comparison of dates
 				aValue = aValue != null ? aValue.valueOf() : aValue;
 				bValue = bValue != null ? bValue.valueOf() : bValue;
+				if (typeof aValue === "string" && typeof bValue === "string") {
+					return aValue.localeCompare(bValue, undefined, { sensitivity: "base" }) * (sort.descending ? -1 : 1);
+				}
 				if (aValue != bValue) {
 					return !!sort.descending == (aValue == null || aValue > bValue) ? -1 : 1;
 				}
