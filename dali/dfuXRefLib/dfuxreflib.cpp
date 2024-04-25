@@ -32,6 +32,7 @@
 #include "rmtfile.hpp"
 #include "dautils.hpp"
 #include "jptree.hpp"
+#include "jcontainerized.hpp"
 
 #include "XRefNodeManager.hpp"
 
@@ -942,6 +943,17 @@ static bool parseFileName(const char *name,StringBuffer &mname,unsigned &num,uns
                     s++;
                 }
                 if ((mn!=0)&&((*s==0)||(*s=='.'))&&(mn>=pn)) {          // NB allow trailing extension
+#ifdef _CONTAINERIZED
+                    if (mn>1)
+                    {
+                        StringBuffer stripeDir;
+                        stripeDir.append(getPathSepChar(mname)).append(pn).append(getPathSepChar(mname));
+                        StringBuffer stripeMask;
+                        stripeMask.append(getPathSepChar(mname)).append("$P$").append(getPathSepChar(mname));
+                        // Replace part number in stripe directory with mask
+                        mname.replaceString(stripeDir, stripeMask);
+                    }
+#endif
                     mname.append("._$P$_of_").append(mn);
                     if (*s)
                         mname.append(s);
@@ -1867,7 +1879,11 @@ class CXRefManager: public CXRefManagerBase
                     Owned<IPropertyTree> results;
                     {
                         CriticalUnblock unblock(manager.logsect);
+#ifdef _CONTAINERIZED
+                        unsigned short port = 0; // No need to connect to Dafs, data is available through mounted storage planes
+#else
                         unsigned short port = getDafsPort(node.endpoint(),numfails,&crit);
+#endif
                         results.setown(getDirectory(dirlist,&node,port));
                     }
                     manager.log("Crossreferencing %s",msg.str());
@@ -2600,7 +2616,11 @@ public:
         Owned<IGroup> g;
         unsigned j;
         if (!nclusters) {
+#ifdef _CONTAINERIZED
+            error("XREF","No storage planes specified\n");
+#else
             error("XREF","No clusters specified\n");
+#endif
             return NULL;
         }
         if (!numdirs) {
@@ -2618,18 +2638,29 @@ public:
             else
                 g.setown(g->combine(gsub.get()));
         }
-        totalSizeOrphans =0;
+        totalSizeOrphans = 0;
         totalNumOrphans = 0;
-
 
         logicalnamelist.kill();
         dirlist.kill();
         orphanlist.kill();
-        
+
+#ifdef _CONTAINERIZED
+        const char *storageDir[1];
+        for (int i = 0; i < nclusters; i++)
+        {
+            const char *storagePlane = clusters[i]; // clusters holds a list of storage plane names
+            storageDir[0] = dirbaselist[i]; // dirbaselist holds the storage plane directories
+
+            loadFromDFS(*this,g,1,storageDir,storagePlane);
+            xrefRemoteDirectories(g,numdirs,storageDir,numthreads);
+        }
+#else
         const char* cluster = clusters[0];
         loadFromDFS(*this,g,numdirs,dirbaselist,cluster);
 
         xrefRemoteDirectories(g,numdirs,dirbaselist,numthreads);
+#endif
         StringBuffer filename;
         filename.clear().append("xrefrpt");
         addFileTimestamp(filename, true);
@@ -2669,24 +2700,31 @@ IPropertyTree *  runXRef(unsigned nclusters,const char **clusters,IXRefProgressC
     if (nclusters==0)
         return NULL;
     CXRefManager xrefmanager;
-    const char *dirs[2];
-    unsigned numdirs;
 #ifdef _WIN32
     bool islinux = false;
 #else
     bool islinux = true;
 #endif
+#ifdef _CONTAINERIZED
+    DBGLOG("CONTAINERIZED(runXRef)");
+    const char *dirs[nclusters]; // nclusters is the number of storage planes
+    unsigned numdirs = nclusters;
+
+    for (int i = 0; i < numdirs; i++)
+    {
+        Owned<IPropertyTree> storagePlane = getStoragePlane(clusters[i]);
+        dirs[i] = storagePlane->queryProp("@prefix");
+    }
+#else
+    const char *dirs[2];
+    unsigned numdirs = 2;
     // assume all nodes same OS
     Owned<IGroup> group = queryNamedGroupStore().lookup(clusters[0]);
-#ifdef _CONTAINERIZED
-    WARNLOG("CONTAINERIZED(runXRef calls queryOS())");
-#else
     if (group)
         islinux = queryOS(group->queryNode(0).endpoint())==MachineOsLinux;
-#endif
     dirs[0] = queryBaseDirectory(grp_unknown, 0,islinux?DFD_OSunix:DFD_OSwindows);  // MORE - should use the info from the group store
     dirs[1] = queryBaseDirectory(grp_unknown, 1,islinux?DFD_OSunix:DFD_OSwindows);
-    numdirs = 2;
+#endif
     IPropertyTree *ret=NULL;
     try {
         ret = xrefmanager.process(nclusters,clusters,numdirs,dirs,PMtreeoutput,callback,numthreads);

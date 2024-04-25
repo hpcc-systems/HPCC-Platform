@@ -261,6 +261,10 @@ RemoteFilename &constructPartFilename(IGroup *grp,unsigned partno,unsigned partm
     StringBuffer fullname;
     if (findPathSepChar(name)==NULL)
         addPathSepChar(fullname.append(partdir));
+#ifdef _CONTAINERIZED
+    if (partmax>1)
+        addPathSepChar(fullname.append(partno+1)); // If there are multiple files they will be striped by part number
+#endif
     fullname.append(name);
     unsigned n;
     unsigned d;
