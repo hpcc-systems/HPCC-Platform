@@ -566,7 +566,10 @@ class ECLFile:
         #  'multiPart=false,useSequential=true'
         # to this
         #   'multiPart(false)-useSequential(true)'
-        self.jobnameVersion += '-' +version.replace('=', '(').replace(',', ')-')+')'
+        # need to handle this kind of value as well:
+        #  url='http://.:9876'
+        # where the ':', '.' and '/' can cause problem later in version result check 
+        self.jobnameVersion += '-' +version.replace('=', '(').replace(',', ')-').replace('.','-dot-').replace(':','-colon-').replace('/','-slash-').replace('?','-qmark-').replace('*','-star-')+')'
         pass
         
     def setJobname(self,  timestamp):
