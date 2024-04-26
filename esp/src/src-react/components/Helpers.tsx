@@ -230,7 +230,7 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
         <FluentGrid
             data={data}
             primaryID={"id"}
-            alphaNumColumns={{ Name: true, Value: true }}
+            alphaNumColumns={{ Value: true }}
             columns={columns}
             setSelection={setSelection}
             setTotal={setTotal}

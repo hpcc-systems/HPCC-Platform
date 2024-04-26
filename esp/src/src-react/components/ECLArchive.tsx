@@ -53,8 +53,9 @@ export const ECLArchive: React.FunctionComponent<ECLArchiveProps> = ({
     }, [archive, metrics]);
 
     React.useEffect(() => {
-        if (metrics.length) {
-            setSelectionText(archive?.content(selection) ?? "");
+        const text = archive?.content(selection) ?? "";
+        if (text) {
+            setSelectionText(text);
             setMarkers(archive?.markers(selection) ?? []);
             setSelectedMetrics(archive?.metrics(selection) ?? []);
         } else {
