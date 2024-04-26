@@ -148,7 +148,8 @@ spec:
 {{- include "hpcc.addSecurityContext" $commonCtx | indent 8 }}
 {{- $omitResources := hasKey $.Values.global "omitResources" | ternary $.Values.global.omitResources $.Values.global.privileged }}
 {{- if not $omitResources }}
-{{- include "hpcc.addStubResources" ($commonCtx | merge (dict "instances" 1)) | indent 8 }}
+{{- $defaultResources := dict "cpu" "500m" "memory" "200Mi" }}
+{{- include "hpcc.addResources" (dict "me" .topoResources "defaults" $defaultResources) | indent 8 }}
 {{- end }}
 {{ include "hpcc.addImageAttrs" $commonCtx | indent 8 }}
         workingDir: /var/lib/HPCCSystems
