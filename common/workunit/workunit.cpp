@@ -13909,7 +13909,7 @@ extern WORKUNIT_API void associateLocalFile(IWUQuery * query, WUFileType type, c
             OwnedIFile target = createIFile(destPathName);
             if (!target->exists())
             {
-                source->copyTo(target, 0, NULL, true);
+                source->copyTo(target, 0, NULL, false);
             }
             query->addAssociatedFile(type, destPathName, "localhost", description, crc, minActivity, maxActivity);
             // Should we delete the local files? No - they may not be finished with
