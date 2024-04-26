@@ -28,6 +28,20 @@ export const Security: React.FunctionComponent<SecurityProps> = ({
 
     const [, { opsCategory }] = useBuildInfo();
 
+    const [permissionTabTitle, setPermissionTabTitle] = React.useState(nlsHPCC.Permissions);
+
+    React.useEffect(() => {
+        setPermissionTabTitle(nlsHPCC.Permissions);
+        if (name === "_") {
+            if (baseDn === "File Scopes") setPermissionTabTitle(nlsHPCC.FileScopeDefaultPermissions);
+            else if (baseDn === "Workunit Scopes") setPermissionTabTitle(nlsHPCC.WorkUnitScopeDefaultPermissions);
+        } else if (name === "file") {
+            if (baseDn === "File Scopes") setPermissionTabTitle(nlsHPCC.PhysicalFiles);
+        } else if (name) {
+            setPermissionTabTitle(name);
+        }
+    }, [name, baseDn]);
+
     return <>
         <SizeMe monitorHeight>{({ size }) =>
             <Pivot
@@ -40,7 +54,7 @@ export const Security: React.FunctionComponent<SecurityProps> = ({
                 <PivotItem headerText={nlsHPCC.Groups} itemKey="groups" style={pivotItemStyle(size)}>
                     <Groups page={page} />
                 </PivotItem>
-                <PivotItem headerText={nlsHPCC.Permissions} itemKey="permissions" style={pivotItemStyle(size)}>
+                <PivotItem headerText={permissionTabTitle} itemKey="permissions" style={pivotItemStyle(size)}>
                     {!name && !baseDn &&
                         <Permissions />
                     }
