@@ -1448,7 +1448,7 @@ r := ROLLUP(fatIn, id, makeChildren(LEFT, RIGHT));</programlisting>
 
     <para><emphasis role="bold">Example:</emphasis></para>
 
-    <programlisting lang="ECL" role="runnable">MyRec := {STRING1 Letter};
+    <programlisting lang="ECL_Runnable">MyRec := {STRING1 Letter};
 SomeFile := DATASET([{'A'},{'B'},{'C'},{'D'},{'E'}],MyRec);
          
 //Passing a DATASET parameter
@@ -1554,7 +1554,7 @@ OUTPUT(b_Name);</programlisting>
 
     <para><emphasis role="bold">Example:</emphasis></para>
 
-    <programlisting lang="ECL" role="runnable">rec := {STRING color,UNSIGNED1 code, STRING name};
+    <programlisting lang="ECL_Runnable">rec := {STRING color,UNSIGNED1 code, STRING name};
 ColorCodes := DATASET([{'Black' ,0 , 'Fred'},
                        {'Brown' ,1 , 'Sam'},
                        {'Red'   ,2 , 'Sue'},
@@ -1589,7 +1589,7 @@ OUTPUT(ds);         </programlisting>
 
     <para><emphasis role="bold">Example:</emphasis></para>
 
-    <programlisting lang="ECL" role="runnable">IMPORT STD;
+    <programlisting lang="ECL_Runnable">IMPORT STD;
 msg(UNSIGNED c) := 'Rec ' + (STRING)c + ' on node ' + (STRING)(STD.system.Thorlib.Node()+1);
 
 // DISTRIBUTED example

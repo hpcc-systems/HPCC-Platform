@@ -39,7 +39,7 @@
 
   <para>Example:</para>
 
-  <programlisting lang="ECL" role="runnable">Deg2Rad := 0.0174532925199; //number of radians in a degree
+  <programlisting lang="ECL_Runnable">Deg2Rad := 0.0174532925199; //number of radians in a degree
 Angle45 := 45 * Deg2Rad;    //translate 45 degrees into radians
 HyperbolicCosine45 := COSH(Angle45); 
                            //get hyperbolic cosine of the 45 degree angle

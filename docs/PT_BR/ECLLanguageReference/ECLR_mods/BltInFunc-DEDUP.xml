@@ -269,7 +269,7 @@
 
   <para>Exemplo:</para>
 
-  <programlisting lang="ECL" role="runnable">SomeFile := DATASET([{'001','KC','G'}, 
+  <programlisting lang="ECL_Runnable">SomeFile := DATASET([{'001','KC','G'}, 
                      {'002','KC','Z'}, 
                      {'003','KC','Z'}, 
                      {'004','KC','C'}, 

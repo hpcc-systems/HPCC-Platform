@@ -50,7 +50,7 @@
 
   <para>Exemplo:</para>
 
-  <programlisting lang="ECL" role="runnable">X := 10;
+  <programlisting lang="ECL_Runnable">X := 10;
 Y := 20;
 Z := 15;
 

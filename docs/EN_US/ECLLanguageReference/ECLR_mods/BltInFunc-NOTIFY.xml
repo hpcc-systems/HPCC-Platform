@@ -66,7 +66,7 @@
 
     <para>Example:</para>
 
-    <programlisting lang="ECL" role="runnable">//run this first
+    <programlisting lang="ECL_Runnable">//run this first
 doMyService := FUNCTION
   O := OUTPUT('Did a Service for: ' + 'EVENTNAME=' + EVENTNAME);
   N := NOTIFY(EVENT('MyServiceComplete',
@@ -79,7 +79,7 @@ OUTPUT(doMyService) : WHEN('MyService');
 
     <para>Then:</para>
 
-    <programlisting lang="ECL" role="runnable">// run this in a separate workunit after the first part above completes:
+    <programlisting lang="ECL_Runnable">// run this in a separate workunit after the first part above completes:
 NOTIFY('MyService',
        '&lt;Event&gt;&lt;returnTo&gt;'+ WORKUNIT + '&lt;/returnTo&gt;&lt;/Event&gt;');
 WAIT('MyServiceComplete');

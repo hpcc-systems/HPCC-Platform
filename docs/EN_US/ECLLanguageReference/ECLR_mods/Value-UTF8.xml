@@ -28,7 +28,7 @@
 
   <para>Example:</para>
 
-  <programlisting lang="ECL" role="runnable">UTF8 FirstName := U8'Noël';                 // utf-8-encoded string
+  <programlisting lang="ECL_Runnable">UTF8 FirstName := U8'Noël';                 // utf-8-encoded string
 UTF8_de MyUnicodeString := U8'abcd\353';    // becomes 'abcdë' with a German locale
 UTF8_4 FirstName4 := U8'Noël';              // 4-character utf-8-encoded string
 UTF8_de_5 MyUnicodeString_de5 := U8'abcd\353'; // becomes 'abcdë' with a German locale

@@ -142,7 +142,7 @@ DATASET(s1,{STRING1 Ltr});  //a DATASET from the SET</programlisting>
 
   <para>Example:</para>
 
-  <programlisting lang="ECL" role="runnable">ds := DATASET([{'X',1},{'B',3},{'C',2},{'B',5},
+  <programlisting lang="ECL_Runnable">ds := DATASET([{'X',1},{'B',3},{'C',2},{'B',5},
                {'C',4},{'D',6},{'E',2}],
               {STRING1 Ltr, INTEGER1 Val});
 

@@ -136,7 +136,7 @@
 
   <para>Example:</para>
 
-  <programlisting lang="ECL" role="runnable">MaxVal2 := MAX(4,8,16,2,1); 
+  <programlisting lang="ECL_Runnable">MaxVal2 := MAX(4,8,16,2,1); 
 SetVals := [4,8,16,2,1];
 MaxVal3 := MAX(SetVals); 
 

@@ -1566,7 +1566,7 @@
 
     <para>Examples:</para>
 
-    <para><programlisting lang="ECL" role="runnable">#OPTION('traceRowXml', TRUE);
+    <para><programlisting lang="ECL_Runnable">#OPTION('traceRowXml', TRUE);
 #OPTION('_Probe', TRUE);
 
 my_rec := RECORD

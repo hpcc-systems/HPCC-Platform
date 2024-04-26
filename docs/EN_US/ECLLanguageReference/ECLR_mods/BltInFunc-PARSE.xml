@@ -422,7 +422,7 @@
 
     <para>Example:</para>
 
-    <programlisting lang="ECL" role="runnable">rec := {STRING10000 line};
+    <programlisting lang="ECL_Runnable">rec := {STRING10000 line};
 datafile := DATASET([
     {'Ge 34:2 And when Shechem the son of Hamor the Hivite, prince of the country, saw her,'+
      ' he took her, and lay with her, and defiled her.'},

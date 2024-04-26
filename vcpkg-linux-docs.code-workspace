@@ -1,0 +1,24 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"cmake.generator": "Ninja",
+		"cmake.configureArgs": [
+			"-DMAKE_DOCS_ONLY=ON"
+		],
+		"editor.formatOnSave": false,
+		"ecl.launchConfiguration": "not found",
+		"ecl.targetCluster": {}
+	},
+	"extensions": {
+		"recommendations": [
+			"ms-vscode.cpptools",
+			"ms-vscode.cpptools-extension-pack",
+			"ms-vscode.cmake-tools",
+			"twxs.cmake"
+		]
+	}
+}

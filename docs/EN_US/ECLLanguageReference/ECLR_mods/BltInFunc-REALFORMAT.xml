@@ -54,7 +54,7 @@
 
   <para>Example:</para>
 
-  <programlisting lang="ECL" role="runnable">REAL8 MyFloat := 1000.0063;
+  <programlisting lang="ECL_Runnable">REAL8 MyFloat := 1000.0063;
 STRING12 FloatStr12 := REALFORMAT(MyFloat,12,6);
 OUTPUT(FloatStr12); //results in ' 1000.006300'</programlisting>
 

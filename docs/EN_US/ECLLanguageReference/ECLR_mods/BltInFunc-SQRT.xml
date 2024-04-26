@@ -38,7 +38,7 @@
 
   <para>Example:</para>
 
-  <programlisting lang="ECL" role="runnable">MyRoot := SQRT(16.0);
+  <programlisting lang="ECL_Runnable">MyRoot := SQRT(16.0);
 OUTPUT(MyRoot); // result is 4.0
 </programlisting>
 

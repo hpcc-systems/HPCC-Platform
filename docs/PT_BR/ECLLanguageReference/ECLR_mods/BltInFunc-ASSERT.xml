@@ -166,7 +166,7 @@
 
   <para>Exemplo:</para>
 
-  <programlisting lang="ECL" role="runnable">val1 := 1;
+  <programlisting lang="ECL_Runnable">val1 := 1;
 val2 := 1;
 val3 := 2;
 val4 := 2 : STORED('val4');

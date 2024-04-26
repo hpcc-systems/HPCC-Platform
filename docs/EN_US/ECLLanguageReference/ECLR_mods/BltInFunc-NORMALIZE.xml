@@ -179,7 +179,7 @@
 
     <para>Example:</para>
 
-    <programlisting lang="ECL" role="runnable">//Form 1 example
+    <programlisting lang="ECL_Runnable">//Form 1 example
 NamesRec := RECORD
   
 UNSIGNED1 numRows;

@@ -20,7 +20,7 @@
 
   <para>Example:</para>
 
-  <programlisting lang="ECL" role="runnable">NormRec := RECORD
+  <programlisting lang="ECL_Runnable">NormRec := RECORD
   STRING20 thename;
   STRING20 addr;
 END;

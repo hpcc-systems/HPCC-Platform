@@ -136,7 +136,7 @@
 
     <para>Exemplo:</para>
 
-    <programlisting lang="ECL" role="runnable">ResType := RECORD
+    <programlisting lang="ECL_Runnable">ResType := RECORD
   INTEGER1 Val;
   INTEGER1 Rtot;
 END;

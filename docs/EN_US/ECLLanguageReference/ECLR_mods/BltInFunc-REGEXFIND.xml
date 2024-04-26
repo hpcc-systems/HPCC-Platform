@@ -81,7 +81,7 @@
 
   <para>Example:</para>
 
-  <programlisting lang="ECL" role="runnable">namesRecord := RECORD
+  <programlisting lang="ECL_Runnable">namesRecord := RECORD
 STRING20 surname;
 STRING10 forename;
 STRING10 userdate;

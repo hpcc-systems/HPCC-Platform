@@ -77,7 +77,7 @@
 
   <para>Example:</para>
 
-  <programlisting lang="ECL" role="runnable">MyRec := RECORD
+  <programlisting lang="ECL_Runnable">MyRec := RECORD
     STRING50 Value1;
     UNSIGNED Value2;
 END;

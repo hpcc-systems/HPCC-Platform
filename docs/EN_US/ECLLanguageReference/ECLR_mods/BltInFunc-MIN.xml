@@ -140,7 +140,7 @@
 
   <para>Example:</para>
 
-  <programlisting lang="ECL" role="runnable">MinVal2 := MIN(4,8,16,2,1); 
+  <programlisting lang="ECL_Runnable">MinVal2 := MIN(4,8,16,2,1); 
 SetVals := [4,8,16,2,1];
 MinVal3 := MIN(SetVals); 
 

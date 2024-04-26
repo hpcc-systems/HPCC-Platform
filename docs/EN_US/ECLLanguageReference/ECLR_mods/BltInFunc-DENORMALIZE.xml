@@ -221,7 +221,7 @@
 
     <para>Form 1 example:</para>
 
-    <programlisting lang="ECL" role="runnable">NormRec := RECORD
+    <programlisting lang="ECL_Runnable">NormRec := RECORD
   STRING20  thename;
   STRING20  addr;
 END;
@@ -258,7 +258,7 @@ OUTPUT(DeNormedRecs);
 
     <para>Form 2 example:</para>
 
-    <programlisting lang="ECL" role="runnable">NormRec := RECORD
+    <programlisting lang="ECL_Runnable">NormRec := RECORD
   STRING20  thename;
   STRING20  addr;
 END;
@@ -291,7 +291,7 @@ OUTPUT(DeNormedRecs);
 
     <para>NOSORT example:</para>
 
-    <programlisting lang="ECL" role="runnable">MyRec := RECORD
+    <programlisting lang="ECL_Runnable">MyRec := RECORD
   STRING1 Value1;
   STRING1 Value2;
 END;

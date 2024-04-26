@@ -109,7 +109,7 @@
 
   <para>Example:</para>
 
-  <programlisting lang="ECl" role="runnable">personRecord := RECORD
+  <programlisting lang="ECL_Runnable">personRecord := RECORD
 STRING UID;
 STRING first_name;
 STRING last_name;

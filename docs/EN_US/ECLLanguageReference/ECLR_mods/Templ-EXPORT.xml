@@ -59,7 +59,7 @@
 
   <para>Example:</para>
 
-  <programlisting lang="ECL" role="runnable">NamesRecord := RECORD
+  <programlisting lang="ECL_Runnable">NamesRecord := RECORD
   STRING10 first;
   STRING20 last;
 END;

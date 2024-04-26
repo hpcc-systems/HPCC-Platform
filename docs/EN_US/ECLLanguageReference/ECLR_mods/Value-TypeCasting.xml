@@ -23,7 +23,7 @@
     keep the same bit-pattern, see the <emphasis
     role="bold">TRANSFER</emphasis> built-in function).</para>
 
-    <programlisting lang="ECL" role="runnable">SomeAttribute :=11;
+    <programlisting lang="ECL_Runnable">SomeAttribute :=11;
 MyBoolean := (BOOLEAN) IF(SomeAttribute &gt; 10,1,0);
           // casts the INTEGER values 1 and 0 to a BOOLEAN TRUE or FALSE
 MyString := (STRING1) IF(SomeAttribute &gt; 10,1,0);
@@ -87,7 +87,7 @@ OUTPUT(MySet);
     syntax, which is similar to type casting syntax with the addition of angle
     brackets (&gt;<emphasis>valuetype</emphasis>&lt;).</para>
 
-    <programlisting lang="ECL" role="runnable">INTEGER1 MyInt := 65; //MyInt is an integer value 65
+    <programlisting lang="ECL_Runnable">INTEGER1 MyInt := 65; //MyInt is an integer value 65
 STRING1 MyVal := (&gt;STRING1&lt;) MyInt; //MyVal is "A" (ASCII 65)
 OUTPUT(MyInt);
 OUTPUT(MyVal);

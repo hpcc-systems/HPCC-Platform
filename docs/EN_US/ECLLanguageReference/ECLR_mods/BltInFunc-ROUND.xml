@@ -49,7 +49,7 @@
 
   <para>Example:</para>
 
-  <programlisting lang="ECL" role="runnable">SomeRealValue1 := 3.14159;
+  <programlisting lang="ECL_Runnable">SomeRealValue1 := 3.14159;
 INTEGER4 MyVal1 := ROUND(SomeRealValue1);   // MyVal1 is 3
 REAL     MyVal2 := ROUND(SomeRealValue1,2); // MyVal2 is 3.14
 

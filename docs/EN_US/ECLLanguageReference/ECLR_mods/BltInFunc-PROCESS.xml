@@ -175,7 +175,7 @@
 
     <para>Examples:</para>
 
-    <programlisting lang="ECL" role="runnable">DSrec := RECORD
+    <programlisting lang="ECL_Runnable">DSrec := RECORD
   STRING4 Letter;
   STRING4 LeftRecIn := '';
   STRING4 RightRecIn := '';
@@ -211,7 +211,7 @@ EEDC EE DC */
 
     <para></para>
 
-    <programlisting lang="ECL" role="runnable">/* *****************************************************************
+    <programlisting lang="ECL_Runnable">/* *****************************************************************
  This example uses different information for state tracking
  (the point of the PROCESS function) through the input record set.
 ******************************************************************** */

@@ -149,7 +149,7 @@
 
   <para>Example:</para>
 
-  <programlisting lang="ECL" role="runnable">SomeFile := DATASET([{'C','G'},{'C','C'},{'A','X'},{'B','G'}],
+  <programlisting lang="ECL_Runnable">SomeFile := DATASET([{'C','G'},{'C','C'},{'A','X'},{'B','G'}],
      {STRING1 Value1,STRING1 Value2});
 DISTRIBUTION(SomeFile);
 /* The result comes back looking like this:

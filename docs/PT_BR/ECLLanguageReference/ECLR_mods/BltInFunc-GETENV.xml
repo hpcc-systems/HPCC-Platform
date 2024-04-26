@@ -49,7 +49,7 @@
 
   <para>Exemplo:</para>
 
-  <programlisting lang="ECL" role="runnable">g1 := GETENV('namesTable');
+  <programlisting lang="ECL_Runnable">g1 := GETENV('namesTable');
 g2 := GETENV('myPort','25');
 
 OUTPUT(GETENV('HPCC_DEPLOYMENT', 'unknown'));

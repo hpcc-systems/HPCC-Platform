@@ -31,7 +31,7 @@
 
   <para>Exemplo:</para>
 
-  <programlisting lang="ECL" role="runnable">STRING1 MyString := IF(SomeAttribute &gt; 10,'1','0');
+  <programlisting lang="ECL_Runnable">STRING1 MyString := IF(SomeAttribute &gt; 10,'1','0');
         // declares MyString a 1-byte ASCII string
 
 EBCDIC STRING3 MyString1 := 'ABC';

@@ -46,7 +46,7 @@
 
   <para>Exemplo:</para>
 
-  <programlisting lang="ECL" role="runnable">DATA5 x := FROMUNICODE(u'ABCDE','UTF-8'); //results in 4142434445
+  <programlisting lang="ECL_Runnable">DATA5 x := FROMUNICODE(u'ABCDE','UTF-8'); //results in 4142434445
 OUTPUT(x);
 </programlisting>
 

@@ -40,7 +40,7 @@
 
   <para>Example:</para>
 
-  <programlisting lang="ECL" role="runnable">definitions := MODULE
+  <programlisting lang="ECL_Runnable">definitions := MODULE
   EXPORT val1 := 'hi';
 END;
 root := MODULE

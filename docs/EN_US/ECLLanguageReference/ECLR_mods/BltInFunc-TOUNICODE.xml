@@ -46,7 +46,7 @@
 
   <para>Example:</para>
 
-  <programlisting lang="ECL" role="runnable">DATA5 x := FROMUNICODE(u'ABCDE','UTF-8');
+  <programlisting lang="ECL_Runnable">DATA5 x := FROMUNICODE(u'ABCDE','UTF-8');
 y := TOUNICODE(x,'US-ASCII');
 
 OUTPUT(x); //results in 4142434445

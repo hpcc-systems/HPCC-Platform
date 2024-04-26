@@ -79,7 +79,7 @@
 
   <para>Example:</para>
 
-  <programlisting lang="ECL" role="runnable">REGEXREPLACE('(.a)t', 'the cat sat on the mat', '$1p');
+  <programlisting lang="ECL_Runnable">REGEXREPLACE('(.a)t', 'the cat sat on the mat', '$1p');
         //ASCII
 REGEXREPLACE(u'(.a)t', u'the cat sat on the mat', u'$1p');
         //UNICODE

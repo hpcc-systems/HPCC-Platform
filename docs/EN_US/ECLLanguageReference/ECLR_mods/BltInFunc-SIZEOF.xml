@@ -51,7 +51,7 @@
 
   <para>Example:</para>
 
-  <programlisting lang="ECL" role="runnable">MyRec := RECORD
+  <programlisting lang="ECL_Runnable">MyRec := RECORD
 INTEGER1 F1;
 INTEGER5 F2;
 STRING1 F3;

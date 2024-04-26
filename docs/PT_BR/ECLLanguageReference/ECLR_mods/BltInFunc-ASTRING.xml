@@ -41,7 +41,7 @@
 
   <para>Exemplo:</para>
 
-  <programlisting lang="ECL" role="runnable">INTEGER1 MyInt := 65; //MyInt is an integer whose value is 65
+  <programlisting lang="ECL_Runnable">INTEGER1 MyInt := 65; //MyInt is an integer whose value is 65
 MyVal1 := ASSTRING(MyInt); //MyVal1 is "A" (ASCII 65)
 OUTPUT(MyVal1);
  // this is directly equivalent to:

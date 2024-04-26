@@ -59,7 +59,7 @@
 
   <para>Example:</para>
 
-  <programlisting lang="ECL" role="runnable">UNICODE1 x := u'a';
+  <programlisting lang="ECL_Runnable">UNICODE1 x := u'a';
 UNICODE1 y := u'b';
 UNICODE1 z := u'a';
 a := UNICODEORDER(x , y, 'es'); // returns -1

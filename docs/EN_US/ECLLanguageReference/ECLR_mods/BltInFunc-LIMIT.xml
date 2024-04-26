@@ -186,7 +186,7 @@
 
   <para>Example:</para>
 
-  <programlisting lang="ECL" role="runnable">RecStruct := RECORD
+  <programlisting lang="ECL_Runnable">RecStruct := RECORD
   INTEGER1 Number;
   STRING1  Letter;
 END;

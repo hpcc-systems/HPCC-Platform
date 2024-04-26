@@ -38,7 +38,7 @@
 
   <para>Example:</para>
 
-  <para><programlisting lang="ECL" role="runnable">Rad2Deg := 57.295779513082; //number of degrees in a radian
+  <para><programlisting lang="ECL_Runnable">Rad2Deg := 57.295779513082; //number of degrees in a radian
 SineAngle := .25;
 ArcSine := ASIN(SineAngle)*Rad2Deg;
 OUTPUT(ArcSine); // degrees

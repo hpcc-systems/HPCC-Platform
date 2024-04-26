@@ -45,7 +45,7 @@
 
   <para>Example:</para>
 
-  <programlisting lang="ECL" role="runnable">INTEGER1 MyInt := 65; //MyInt is an integer whose value is 65
+  <programlisting lang="ECL_Runnable">INTEGER1 MyInt := 65; //MyInt is an integer whose value is 65
 STRING1 MyVal1 := TRANSFER(MyInt,STRING1); //MyVal is "A" (ASCII 65)
 INTEGER1 MyVal2 := (INTEGER)MyVal1; //MyVal2 is 0 (zero) because
                                    // "A" is not a numeric character

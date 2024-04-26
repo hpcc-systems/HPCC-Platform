@@ -83,7 +83,7 @@
 
   <para>Example:</para>
 
-  <programlisting lang="ECL" role="runnable">HeaderRec := RECORD
+  <programlisting lang="ECL_Runnable">HeaderRec := RECORD
   UNSIGNED4 RecID;
   STRING20  company;
   STRING25  address;
