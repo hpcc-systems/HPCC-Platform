@@ -611,7 +611,7 @@ static void blockUntilComplete(const char * label, IClientFileSpray &server, ICo
 
     VStringBuffer reason("Blocked by fileservice activity: %s, workunit: %s", label, wuid);
     setWorkunitState(ctx, WUStateBlocked, reason.str());
-
+    bool isStartTimeRecorded = false;
     while(true)
     {
 
@@ -630,6 +630,7 @@ static void blockUntilComplete(const char * label, IClientFileSpray &server, ICo
         }
 
         IConstDFUWorkunit & dfuwu = result->getResult();
+        DFUstate state = (DFUstate)dfuwu.getState();
         bool aborting = false;
         Owned<IWorkUnit> wu = ctx->updateWorkUnit(); // may return NULL
         if (wu.get()) { // if updatable (e.g. not hthor with no agent context)
@@ -645,11 +646,32 @@ static void blockUntilComplete(const char * label, IClientFileSpray &server, ICo
             stat_type costFileAccess = money2cost_type(dfuwu.getFileAccessCost());
             updateWorkunitStat(wu, SSTdfuworkunit, wuScope, StCostFileAccess, "", costFileAccess);
             wu->setApplicationValue(label, dfuwu.getID(), dfuwu.getSummaryMessage(), true);
+            if (!isStartTimeRecorded)
+            {
+                switch (state)
+                {
+                case DFUstate_started:
+                case DFUstate_aborting:
+                case DFUstate_monitoring:
+                case DFUstate_aborted:
+                case DFUstate_failed:
+                case DFUstate_finished:
+
+                    const char * whenStarted = dfuwu.getTimeStarted();
+                    if (!isEmptyString(whenStarted))
+                    {
+                        CDateTime startedAt;
+                        startedAt.setString(whenStarted);
+                        updateWorkunitStat(wu, SSTdfuworkunit, wuScope, StWhenStarted, 0, startedAt.getTimeStamp());
+                        isStartTimeRecorded = true;
+                    }
+                    break;
+                }
+            }
             wu->commit();
             wu.clear();
         }
 
-        DFUstate state = (DFUstate)dfuwu.getState();
         if (stateout)
             stateout->clear().append(dfuwu.getStateMessage());
         switch(state)
