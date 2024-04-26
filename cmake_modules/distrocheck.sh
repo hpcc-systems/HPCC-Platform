@@ -70,6 +70,14 @@ if [ $VALUE -ge 1 ]; then
     exit 1;
 fi
 
+# Distribution is Rocky
+VALUE=`grep -c -i 'rocky' temp.txt`
+if [ $VALUE -ge 1 ]; then
+    echo -n "RPM"
+    rm temp.txt
+    exit 1;
+fi
+
 ############### DEB DISTROS ##################
 
 # Distribution is Ubuntu
