@@ -103,7 +103,8 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
             key: "next", iconOnly: true, tooltipHostProps: { content: nlsHPCC.NextWorkunit }, iconProps: { iconName: "Previous" },
             onClick: () => {
                 const now = new Date(Date.now());
-                workunitService.WUQuery({ StartDate: `${wuidToDate(wuid)}T${wuidToTime(wuid)}Z`, EndDate: now.toISOString(), Sortby: "Wuid", Descending: false, Count: 2 } as WUQuery.Request).then(response => {
+                const tomorrow = new Date(now.getTime() + (24 * 60 * 60 * 1000));
+                workunitService.WUQuery({ StartDate: `${wuidToDate(wuid)}T${wuidToTime(wuid)}Z`, EndDate: tomorrow.toISOString(), Sortby: "Wuid", Descending: false, Count: 2 } as WUQuery.Request).then(response => {
                     nextWuid(response?.Workunits?.ECLWorkunit || []);
                 }).catch(err => logger.error(err));
             }
