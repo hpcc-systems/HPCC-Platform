@@ -113,7 +113,7 @@ ESPresponse [nil_remove, exceptions_inline] TargetQueryResponse
     ESParray<string> Roxies;
 };
 
-ESPservice [auth_feature("ResourceQueryAccess:ACCESS"), version("1.03"), exceptions_inline("./smc_xslt/exceptions.xslt"), disable_profile_execution] WsResources
+ESPservice [auth_feature("ResourceQueryAccess:ACCESS"), version("1.03"), generated_client_version("0.0"), exceptions_inline("./smc_xslt/exceptions.xslt"), disable_profile_execution] WsResources
 {
     ESPmethod [auth_feature("ResourceQueryAccess:READ"), min_ver("1.03")] TargetQuery(TargetQueryRequest, TargetQueryResponse);
     ESPmethod [auth_feature("ResourceQueryAccess:READ")] ServiceQuery(ServiceQueryRequest, ServiceQueryResponse);

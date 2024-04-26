@@ -52,7 +52,7 @@ ESPresponse [exceptions_inline] UpdateLogResponse
     string StatusMessage;
 };
 
-ESPService [auth_feature("DEFERRED"), version("1.0"), noforms, use_method_name] WsLoggingService
+ESPService [auth_feature("DEFERRED"), version("1.0"), generated_client_version("0.0"), noforms, use_method_name] WsLoggingService
 {
     ESPmethod GetTransactionSeed(GetTransactionSeedRequest, GetTransactionSeedResponse);
     ESPmethod UpdateLog(UpdateLogRequest, UpdateLogResponse);
