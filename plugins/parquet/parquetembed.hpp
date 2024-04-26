@@ -105,8 +105,12 @@ struct ArrayBuilderTracker
     unsigned int childCount = 0;
     unsigned int childrenProcessed = 0;
 
-    ArrayBuilderTracker(const char *_nodeName, arrow::ArrayBuilder *_struct, PathNodeType _nodeType, arrow::FieldPath  _nodePath)
-        : nodeName(_nodeName), nodeType(_nodeType), structPtr(_struct), nodePath(_nodePath) { if (nodeType == CPNTDataset) childCount == structPtr->num_children(); }
+    ArrayBuilderTracker(const char *_nodeName, arrow::ArrayBuilder *_struct, PathNodeType _nodeType, arrow::FieldPath && _nodePath)
+        : nodeName(_nodeName), nodeType(_nodeType), structPtr(_struct), nodePath(std::move(_nodePath))
+    {
+        if (nodeType == CPNTDataset)
+            childCount = structPtr->num_children();
+    }
 
     bool finishedChildren() { return childrenProcessed < childCount; }
 };
