@@ -363,7 +363,7 @@ class PARQUETEMBED_PLUGIN_API ParquetReader
 {
 public:
     ParquetReader(const char *option, const char *_location, int _maxRowCountInTable, const char *_partitionFields, const IThorActivityContext *_activityCtx);
-    ParquetReader(const char *option, const char *_location, int _maxRowCountInTable, const char *_partitionFields, const IThorActivityContext *_activityCtx, const RtlRecord *_expectedRecord);
+    ParquetReader(const char *option, const char *_location, int _maxRowCountInTable, const char *_partitionFields, const IThorActivityContext *_activityCtx, const RtlTypeInfo *_expectedRecord);
     ~ParquetReader();
 
     arrow::Status processReadFile();
@@ -399,7 +399,7 @@ private:
     size_t maxRowCountInTable = 0;                                     // Max table size set by user.
     std::string partOption;                                            // Begins with either read or write and ends with the partitioning type if there is one i.e. 'readhivepartition'.
     std::string location;                                              // Full path to location for reading parquet files. Can be a filename or directory.
-    const RtlRecord *expectedRecord = nullptr;                         // Expected record layout of Parquet file. Only available when used in the platform i.e. not available when used as a plugin.
+    const RtlTypeInfo * expectedRecord = nullptr;                      // Expected record layout of Parquet file. Only available when used in the platform i.e. not available when used as a plugin.
     const IThorActivityContext *activityCtx = nullptr;                 // Context about the thor worker configuration.
     std::shared_ptr<arrow::dataset::Scanner> scanner = nullptr;        // Scanner for reading through partitioned files.
     std::shared_ptr<arrow::RecordBatchReader> rbatchReader = nullptr;                           // RecordBatchReader reads a dataset one record batch at a time. Must be kept alive for rbatchItr.
@@ -515,7 +515,6 @@ protected:
     double getCurrRealValue(const RtlFieldInfo *field);
     void nextField(const RtlFieldInfo *field);
     void nextFromStruct(const RtlFieldInfo *field);
-    void xpathOrName(StringBuffer &outXPath, const RtlFieldInfo *field) const;
     int64_t currArrayIndex();
 
 private:
