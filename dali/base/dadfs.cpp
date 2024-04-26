@@ -3566,23 +3566,33 @@ protected:
 
         offset_t maxPartSz = 0, minPartSz = (offset_t)-1, totalPartSz = 0;
 
-        maxSkewPart = 0;
-        minSkewPart = 0;
-        for (unsigned p=0; p<np; p++)
+        try
         {
-            IDistributedFilePart &part = queryPart(p);
-            offset_t size = part.getFileSize(true, false);
-            if (size > maxPartSz)
+            maxSkewPart = 0;
+            minSkewPart = 0;
+            for (unsigned p=0; p<np; p++)
             {
-                maxPartSz = size;
-                maxSkewPart = p;
+                IDistributedFilePart &part = queryPart(p);
+                offset_t size = part.getFileSize(true, false);
+                if (size > maxPartSz)
+                {
+                    maxPartSz = size;
+                    maxSkewPart = p;
+                }
+                if (size < minPartSz)
+                {
+                    minPartSz = size;
+                    minSkewPart = p;
+                }
+                totalPartSz += size;
             }
-            if (size < minPartSz)
-            {
-                minPartSz = size;
-                minSkewPart = p;
-            }
-            totalPartSz += size;
+        }
+        catch (IException *e)
+        {
+            // guard against getFileSize throwing an exception (if parts missing)
+            EXCLOG(e);
+            e->Release();
+            return false;
         }
         offset_t avgPartSz = totalPartSz / np;
         if (0 == avgPartSz)
