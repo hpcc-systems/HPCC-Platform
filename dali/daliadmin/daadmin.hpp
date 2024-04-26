@@ -73,6 +73,7 @@ extern DALIADMIN_API void listmatches(const char *path, const char *match, const
 extern DALIADMIN_API void dfsreplication(const char *clusterMask, const char *lfnMask, unsigned redundancy, bool dryRun);
 extern DALIADMIN_API void migrateFiles(const char *srcGroup, const char *tgtGroup, const char *filemask, const char *_options);
 extern DALIADMIN_API void getxref(const char *dst);
+extern DALIADMIN_API void checkFileSize(IUserDescriptor *user, const char *lfnPattern, bool fix);
 
 extern DALIADMIN_API void listworkunits(const char *test, const char *min, const char *max);
 extern DALIADMIN_API void workunittimings(const char *wuid);
