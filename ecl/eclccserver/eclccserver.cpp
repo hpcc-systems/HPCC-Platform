@@ -897,26 +897,29 @@ public:
         DBGLOG("Compile request processing for workunit %s", wuid.get());
         Owned<IPropertyTree> config = getComponentConfig();
 
-        if (isContainerized())
-        {
-            if (!useChildProcesses && !childProcessTimeLimit && !config->hasProp("@workunit"))
-            {
-                {
-                    Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-                    Owned<IWorkUnit> wu = factory->updateWorkUnit(wuid.get());
-                    wu->setContainerizedProcessInfo("EclCCServer", getComponentConfigSP()->queryProp("@name"), k8s::queryMyPodName(), nullptr);
-                }
-                compileViaK8sJob(true);
-                return;
-            }
-        }
-
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
         workunit.setown(factory->updateWorkUnit(wuid.get()));
         if (!workunit)
         {
             DBGLOG("Workunit %s no longer exists", wuid.get());
             return;
+        }
+
+        if (isContainerized())
+        {
+            if (!useChildProcesses && !config->hasProp("@workunit"))
+            {
+                //If the timelimit for child processes is 0, or a workunit is explicitly defined as slow to compile
+                //then start the compile immediately using a K8s job.
+                if ((childProcessTimeLimit == 0) || workunit->getDebugValueBool("isComplexCompile", false))
+                {
+                    //NOTE: This call does not modify the workunit itself, so no need to commit afterwards
+                    workunit->setContainerizedProcessInfo("EclCCServer", getComponentConfigSP()->queryProp("@name"), k8s::queryMyPodName(), nullptr);
+                    workunit.clear();
+                    compileViaK8sJob(true);
+                    return;
+                }
+            }
         }
 
         if (isContainerized())
@@ -927,7 +930,6 @@ public:
             workunit->setState(WUStateAborted);
             DBGLOG("Workunit %s aborted", wuid.get());
             workunit->commit();
-            workunit.clear();
             return;
         }
 
