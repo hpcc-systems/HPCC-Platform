@@ -1,9 +1,11 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, MessageBar, MessageBarType, ScrollablePane, ScrollbarVisibility, Sticky, StickyPositionType } from "@fluentui/react";
+import { WUQuery, WorkunitsService } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import { WUStatus } from "src/react/index";
 import { formatCost } from "src/Session";
+import { isNumeric, wuidToDate, wuidToTime } from "src/Utility";
 import { useConfirm } from "../hooks/confirm";
 import { useWorkunit, useWorkunitExceptions } from "../hooks/workunit";
 import { ReflexContainer, ReflexElement, ReflexSplitter } from "../layouts/react-reflex";
@@ -15,9 +17,15 @@ import { SlaveLogs } from "./forms/SlaveLogs";
 import { ZAPDialog } from "./forms/ZAPDialog";
 import { InfoGrid } from "./InfoGrid";
 import { WorkunitPersona } from "./controls/StateIcon";
-import { isNumeric } from "src/Utility";
 
 const logger = scopedLogger("../components/WorkunitDetails.tsx");
+
+const workunitService = new WorkunitsService({ baseUrl: "" });
+
+interface MessageBarContent {
+    type: MessageBarType;
+    message: string;
+}
 
 interface WorkunitSummaryProps {
     wuid: string;
@@ -36,8 +44,15 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
     const [showZapForm, setShowZapForm] = React.useState(false);
     const [showThorSlaveLogs, setShowThorSlaveLogs] = React.useState(false);
 
-    const [showMessageBar, setShowMessageBar] = React.useState(false);
-    const dismissMessageBar = React.useCallback(() => setShowMessageBar(false), []);
+    const [messageBarContent, setMessageBarContent] = React.useState<MessageBarContent | undefined>();
+    const dismissMessageBar = React.useCallback(() => setMessageBarContent(undefined), []);
+    const showMessageBar = React.useCallback((content: MessageBarContent) => {
+        setMessageBarContent(content);
+        const t = window.setTimeout(function () {
+            dismissMessageBar();
+            window.clearTimeout(t);
+        }, 2400);
+    }, [dismissMessageBar]);
 
     React.useEffect(() => {
         setJobname(workunit?.Jobname);
@@ -69,7 +84,40 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
         }, [workunit])
     });
 
+    const nextWuid = React.useCallback((wuids: WUQuery.ECLWorkunit[]) => {
+        let found = false;
+        for (const wu of wuids) {
+            if (wu.Wuid !== wuid) {
+                pushUrl(`/workunits/${wu.Wuid}`);
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            showMessageBar({ type: MessageBarType.warning, message: nlsHPCC.WorkunitNotFound });
+        }
+    }, [showMessageBar, wuid]);
+
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
+        {
+            key: "next", iconOnly: true, tooltipHostProps: { content: nlsHPCC.NextWorkunit }, iconProps: { iconName: "Previous" },
+            onClick: () => {
+                const now = new Date(Date.now());
+                const tomorrow = new Date(now.getTime() + (24 * 60 * 60 * 1000));
+                workunitService.WUQuery({ StartDate: `${wuidToDate(wuid)}T${wuidToTime(wuid)}Z`, EndDate: tomorrow.toISOString(), Sortby: "Wuid", Descending: false, Count: 2 } as WUQuery.Request).then(response => {
+                    nextWuid(response?.Workunits?.ECLWorkunit || []);
+                }).catch(err => logger.error(err));
+            }
+        },
+        {
+            key: "previous", iconOnly: true, tooltipHostProps: { content: nlsHPCC.PreviousWorkunit }, iconProps: { iconName: "Next" },
+            onClick: () => {
+                workunitService.WUQuery({ EndDate: `${wuidToDate(wuid)}T${wuidToTime(wuid)}Z`, Count: 2 } as WUQuery.Request).then(response => {
+                    nextWuid(response?.Workunits?.ECLWorkunit || []);
+                }).catch(err => logger.error(err));
+            }
+        },
+        { key: "divider_0", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
             onClick: () => {
@@ -91,15 +139,9 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
                     Jobname: jobname,
                     Description: description,
                     Protected: _protected
-                })
-                    .then(_ => {
-                        setShowMessageBar(true);
-                        const t = window.setTimeout(function () {
-                            setShowMessageBar(false);
-                            window.clearTimeout(t);
-                        }, 2400);
-                    })
-                    .catch(err => logger.error(err));
+                }).then(_ => {
+                    showMessageBar({ type: MessageBarType.success, message: nlsHPCC.SuccessfullySaved });
+                }).catch(err => logger.error(err));
             }
         },
         {
@@ -163,7 +205,7 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
             key: "slaveLogs", text: nlsHPCC.SlaveLogs, disabled: !workunit?.ThorLogList,
             onClick: () => setShowThorSlaveLogs(true)
         },
-    ], [_protected, canDelete, canDeschedule, canReschedule, canSave, description, jobname, refresh, refreshSavings, setShowDeleteConfirm, workunit, wuid]);
+    ], [_protected, canDelete, canDeschedule, canReschedule, canSave, description, jobname, nextWuid, refresh, refreshSavings, setShowDeleteConfirm, showMessageBar, workunit, wuid]);
 
     const serviceNames = React.useMemo(() => {
         return workunit?.ServiceNames?.Item?.join("\n") || "";
@@ -177,8 +219,8 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
 
     const potentialSavings = React.useMemo(() => {
         return exceptions.reduce((prev, cur) => {
-            if (isNumeric(cur.Priority)) {
-                prev += cur.Priority;
+            if (isNumeric(cur.Cost)) {
+                prev += cur.Cost;
             }
             return prev;
         }, 0) || 0;
@@ -191,13 +233,9 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
                     <ScrollablePane scrollbarVisibility={ScrollbarVisibility.auto}>
                         <Sticky stickyPosition={StickyPositionType.Header}>
                             <CommandBar items={buttons} />
-                            {showMessageBar &&
-                                <MessageBar
-                                    messageBarType={MessageBarType.success}
-                                    dismissButtonAriaLabel={nlsHPCC.Close}
-                                    onDismiss={dismissMessageBar}
-                                >
-                                    {nlsHPCC.SuccessfullySaved}
+                            {messageBarContent &&
+                                <MessageBar messageBarType={messageBarContent.type} dismissButtonAriaLabel={nlsHPCC.Close} onDismiss={dismissMessageBar} >
+                                    {messageBarContent.message}
                                 </MessageBar>
                             }
                         </Sticky>

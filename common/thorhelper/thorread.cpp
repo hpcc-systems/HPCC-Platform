@@ -1767,7 +1767,7 @@ bool ParquetDiskRowReader::matches(const char * _format, bool _streamRemote, IDi
 bool ParquetDiskRowReader::setInputFile(const char * localFilename, const char * logicalFilename, unsigned partNumber, offset_t baseOffset, const IPropertyTree * inputOptions, const FieldFilterArray & expectedFilter)
 {
     DBGLOG(0, "Opening File: %s", localFilename);
-    parquetFileReader = new parquetembed::ParquetReader("read", localFilename, 50000, nullptr, parquetActivityCtx, &mapping->queryExpectedMeta()->queryRecordAccessor(true));
+    parquetFileReader = new parquetembed::ParquetReader("read", localFilename, 50000, nullptr, parquetActivityCtx, mapping->queryExpectedMeta()->queryTypeInfo());
     auto st = parquetFileReader->processReadFile();
     if (!st.ok())
         throw MakeStringException(0, "%s: %s.", st.CodeAsString().c_str(), st.message().c_str());
@@ -2037,7 +2037,7 @@ IDiskRowReader * doCreateLocalDiskReader(const char * format, IDiskReadMapping *
 {
     auto foundReader = genericFileTypeMap.find(format);
 
-    if (foundReader != genericFileTypeMap.end())
+    if (foundReader != genericFileTypeMap.end() && foundReader->second)
         return foundReader->second(_mapping);
 
     UNIMPLEMENTED;
@@ -2087,6 +2087,8 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     genericFileTypeMap.emplace("xml", [](IDiskReadMapping * _mapping) { return new XmlDiskRowReader(_mapping); });
 #ifdef _USE_PARQUET
     genericFileTypeMap.emplace(PARQUET_FILE_TYPE_NAME, [](IDiskReadMapping * _mapping) { return new ParquetDiskRowReader(_mapping); });
+#else
+    genericFileTypeMap.emplace(PARQUET_FILE_TYPE_NAME, [](IDiskReadMapping * _mapping) { return nullptr; });
 #endif
 
     // Stuff the file type names that were just instantiated into a list;

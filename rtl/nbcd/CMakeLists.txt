@@ -46,7 +46,7 @@ if (NOT PLUGIN)
 endif()
 target_link_libraries ( nbcd 
       jlib
-      ${CPPUNIT_LIBRARIES}
+      ${CppUnit_LIBRARIES}
     )
 
 

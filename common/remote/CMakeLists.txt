@@ -71,7 +71,7 @@ target_link_libraries ( remote
     hql   
     mp
     ${URIPARSER_LIBRARIES}
-    ${CPPUNIT_LIBRARIES}
+    ${CppUnit_LIBRARIES}
     )
 
 IF (USE_OPENSSL)

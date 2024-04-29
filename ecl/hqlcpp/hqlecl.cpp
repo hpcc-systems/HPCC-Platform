@@ -150,6 +150,8 @@ public:
     virtual bool allowAccess(const char * category, bool isSigned) override { return true; }
     virtual IHqlExpression *lookupDFSlayout(const char *filename, IErrorReceiver &errs, const ECLlocation &location, bool isOpt) const override { return nullptr; }
     virtual unsigned lookupClusterSize() const override { return 0; }
+    virtual IInterface * getGitUpdateLock(const char * key) override { return nullptr; }
+
     virtual void getTargetPlatform(StringBuffer & result) override
     {
         workunit->getDebugValue("targetClusterType", StringBufferAdaptor(result));

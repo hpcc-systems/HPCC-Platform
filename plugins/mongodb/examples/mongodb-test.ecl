@@ -57,6 +57,18 @@ layoutDates := {STRING bucket_start_date, STRING bucket_end_date};
 layoutEmployee := {INTEGER1 id, STRING25 first, STRING25 last, REAL salary};
 layoutperson := {String username, String address, String email};
 
+layoutRegex := RECORD
+    STRING name;
+    INTEGER uniqueID;
+    mongodb.regexType regex;
+END;
+
+layoutTimestamp := RECORD
+    STRING name;
+    INTEGER uniqueID;
+    mongodb.timestampType timestamp;
+END;
+
 // Example/Test functions
 
 // Returns the unique _id and name every document in the listingsAndReviews collection
@@ -161,6 +173,16 @@ dataset(layoutEmployee) findInfo(BOOLEAN mybool) := EMBED(mongodb : user(user), 
     );
 ENDEMBED;
 
+// Gets all the documents from the regexTest collection for testing the coversion of MongoDB regex data to ECL
+dataset(layoutRegex) getRegex() := EMBED(mongodb : user(user), password(pwd), server(server), database('mydb'),  collection('regexTest'))
+    find({});
+ENDEMBED;
+
+// Gets all the documents from the timestampTest collection for testing the coversion of MongoDB timestamp data to ECL
+dataset(layoutTimestamp) getTimestamp() := EMBED(mongodb : user(user), password(pwd), server(server), database('mydb'),  collection('timestampTest'))
+    find({});
+ENDEMBED;
+
 // $or is not allowed in the M0 tier of MongoDB atlas
 INTEGER ppl := 8;
 // Matches all the documents that match either expression. Then it groups them by the number of beds they have and counts the number of documents in each group.
@@ -193,6 +215,8 @@ SEQUENTIAL
     OUTPUT(insertMany(employeeDS), NAMED('InsertMany'));
     createIndex(1);
     OUTPUT(findInfo(mybool), NAMED('RemoveOnQuery'));
+    OUTPUT(getRegex(), NAMED('TestRegexSupport'));
+    OUTPUT(getTimestamp(), NAMED('TestTimestampSupport'));
     OUTPUT(findCountOR(nights,ppl), NAMED('OrCountAggregate'));
     OUTPUT('Done', Named('Status'));
 );

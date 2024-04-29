@@ -1421,10 +1421,17 @@
           "type": "string",
           "description": "The default repo version used if not supplied for the defaultRepo"
         },
+        "guardGitUpdates": {
+          "type": "boolean",
+          "description": "If enabled all updates of the git repositories are protected by holding a lock in dali"
+        },
         "terminationGracePeriodSeconds": {
           "$ref": "#/definitions/terminationGracePeriodSeconds"
         },
         "resources": {
+          "$ref": "#/definitions/resources"
+        },
+        "timedChildResources": {
           "$ref": "#/definitions/resources"
         },
         "cost": {
@@ -1613,6 +1620,9 @@
         "resources": {
           "$ref": "#/definitions/resources"
         },
+        "stubResources": {
+          "$ref": "#/definitions/resources"
+        },
         "jobMemory": {
           "$ref": "#/definitions/memory"
         },
@@ -1719,6 +1729,9 @@
           "$ref": "#/definitions/resources"
         },
         "channelResources": {
+          "$ref": "#/definitions/resources"
+        },
+        "topoResources": {
           "$ref": "#/definitions/resources"
         },
         "annotations": {
@@ -2591,6 +2604,9 @@
           "$ref": "#/definitions/resources"
         },
         "eclAgentResources": {
+          "$ref": "#/definitions/resources"
+        },
+        "stubResources": {
           "$ref": "#/definitions/resources"
         },
         "cost": {

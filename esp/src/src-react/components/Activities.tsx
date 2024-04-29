@@ -178,10 +178,18 @@ export const Activities: React.FunctionComponent<ActivitiesProps> = ({
             key: "open", text: nlsHPCC.Open, disabled: !uiState.wuSelected && !uiState.thorClusterSelected, iconProps: { iconName: "WindowEdit" },
             onClick: () => {
                 if (selection.length === 1) {
-                    window.location.href = `#/operations/clusters/${selection[0].ClusterName}`;
+                    let url = `#/operations/clusters/${selection[0].ClusterName}`;
+                    if (selection[0].Wuid) {
+                        url = `#/workunits/${selection[0].Wuid}`;
+                    }
+                    window.location.href = url;
                 } else {
                     for (let i = selection.length - 1; i >= 0; --i) {
-                        window.open(`#/operations/clusters/${selection[i].ClusterName}`, "_blank");
+                        let url = `#/operations/clusters/${selection[i].ClusterName}`;
+                        if (selection[i].Wuid) {
+                            url = `#/workunits/${selection[i].Wuid}`;
+                        }
+                        window.open(url, "_blank");
                     }
                 }
             }

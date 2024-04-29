@@ -141,7 +141,7 @@ export const SourceFiles: React.FunctionComponent<SourceFilesProps> = ({
         <FluentGrid
             data={data}
             primaryID={"Name"}
-            alphaNumColumns={{ Name: true, Value: true }}
+            alphaNumColumns={{ Value: true }}
             sort={sort}
             columns={columns}
             setSelection={setSelection}

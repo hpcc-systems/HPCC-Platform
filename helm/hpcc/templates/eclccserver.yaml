@@ -27,6 +27,7 @@ Pass in dict with root and me
 */}}
 {{- define "hpcc.eclccServerConfigMap" -}}
 {{- $compileJobName := printf "compile-job-_HPCC_JOBNAME_" }}
+{{- $gitPlane := .me.gitPlane | default (include "hpcc.getDefaultGitPlane" .root) }}
 apiVersion: v1
 metadata:
   name: {{ .me.name }}-configmap
@@ -37,6 +38,9 @@ data:
 {{ toYaml (omit .me "logging" "tracing") | indent 6 }}
 {{- include "hpcc.generateLoggingConfig" . | indent 6 }}
 {{- include "hpcc.generateTracingConfig" . | indent 6 }}
+{{- if $gitPlane }}
+      gitPlane: {{ $gitPlane }}
+{{- end }}
       queues:
 {{ include "hpcc.generateConfigMapQueues" .root | indent 6 }}
 {{ include "hpcc.generateVaultConfig" . | indent 6 }}
@@ -180,7 +184,8 @@ spec:
 {{-  if .useChildProcesses }}
 {{-   include "hpcc.addResources" (dict "me" .resources) | indent 8 }}
 {{-  else }}
-{{-   include "hpcc.addStubResources" ($commonCtx | merge (dict "instances" .maxActive)) | indent 8 }}
+{{-   $defaultResources := dict "cpu" "1" "memory" "1Gi" }}
+{{-   include "hpcc.addResources" (dict "me" .timedChildResources "defaults" $defaultResources) | indent 8 }}
 {{-  end }}
 {{- end }}
 {{ include "hpcc.addImageAttrs" $commonCtx | indent 8 }}

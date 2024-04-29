@@ -207,6 +207,8 @@ public:
     virtual IHqlExpression *lookupDFSlayout(const char *filename, IErrorReceiver &errs, const ECLlocation &location, bool isOpt) const override;
     virtual unsigned lookupClusterSize() const override;
     virtual void getTargetPlatform(StringBuffer & result) override;
+    virtual IInterface * getGitUpdateLock(const char * key) override;
+
 
 public:
     EclCC & eclcc;
@@ -239,11 +241,11 @@ protected:
     Linked<IErrorReceiver> errorProcessor;
 };
 
-class EclCC
+class EclCC final : implements CUnsharedInterfaceOf<ICodegenContextCallback>
 {
 public:
     EclCC(int _argc, const char **_argv)
-        : programName(_argv[0])
+        : programName(_argv[0]), repositoryManager(this)
     {
         argc = _argc;
         argv = _argv;
@@ -284,12 +286,14 @@ public:
 
     // interface ICodegenContextCallback
 
-    void pushCluster(const char *clusterName);
-    void popCluster();
-    bool allowAccess(const char * category, bool isSigned);
-    IHqlExpression *lookupDFSlayout(const char *filename, IErrorReceiver &errs, const ECLlocation &location, bool isOpt) const;
-    unsigned lookupClusterSize() const;
-    void getTargetPlatform(StringBuffer & result);
+    virtual void noteCluster(const char *clusterName) override;
+    virtual void pushCluster(const char *clusterName) override;
+    virtual void popCluster() override;
+    virtual bool allowAccess(const char * category, bool isSigned) override;
+    virtual IHqlExpression *lookupDFSlayout(const char *filename, IErrorReceiver &errs, const ECLlocation &location, bool isOpt) const override;
+    virtual unsigned lookupClusterSize() const override;
+    virtual void getTargetPlatform(StringBuffer & result) override;
+    virtual IInterface * getGitUpdateLock(const char * key) override;
 
 protected:
     void appendNeverSimplifyList(const char *attribsList);
@@ -387,6 +391,7 @@ protected:
     StringAttr optMetaLocation;
     StringBuffer neverSimplifyRegEx;
     StringAttr optDefaultGitPrefix;
+    StringAttr optGitLock; // A key used to lock access to git updates
     StringAttr optGitUser;
     StringAttr optGitPasswordPath;
 
@@ -1719,7 +1724,7 @@ void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML
     if (optCheckEclVersion)
         instance.checkEclVersionCompatible();
 
-    EclRepositoryManager localRepositoryManager;
+    EclRepositoryManager localRepositoryManager(&instance);
     processDefinitions(localRepositoryManager);
     localRepositoryManager.inherit(repositoryManager); // Definitions, plugins, std library etc.
     Owned<IFileContents> contents;
@@ -1839,7 +1844,7 @@ void EclCC::processFile(EclCompileInstance & instance)
                 attributePackage = optDefaultRepo.str();
         }
 
-        EclRepositoryManager localRepositoryManager;
+        EclRepositoryManager localRepositoryManager(&instance);
         processDefinitions(localRepositoryManager);
         localRepositoryManager.inherit(repositoryManager); // don't include -I
         if (!optNoBundles)
@@ -2066,7 +2071,7 @@ void EclCC::processReference(EclCompileInstance & instance, const char * queryAt
     if (optArchive || optGenerateDepend || optSaveQueryArchive)
         instance.archive.setown(createAttributeArchive());
 
-    EclRepositoryManager localRepositoryManager;
+    EclRepositoryManager localRepositoryManager(&instance);
     processDefinitions(localRepositoryManager);
     localRepositoryManager.inherit(repositoryManager);
     if (!optNoBundles)
@@ -2381,6 +2386,7 @@ bool EclCompileInstance::reportErrorSummary()
 
 void EclCompileInstance::noteCluster(const char *clusterName)
 {
+    eclcc.noteCluster(clusterName);
 }
 
 void EclCompileInstance::pushCluster(const char *clusterName)
@@ -2397,6 +2403,12 @@ unsigned EclCompileInstance::lookupClusterSize() const
 {
     return eclcc.lookupClusterSize();
 }
+
+IInterface * EclCompileInstance::getGitUpdateLock(const char * key)
+{
+    return eclcc.getGitUpdateLock(key);
+}
+
 
 bool EclCompileInstance::allowAccess(const char * category, bool isSigned)
 {
@@ -2443,6 +2455,10 @@ void EclCC::appendNeverSimplifyList(const char *attribsList)
     }
 }
 
+void EclCC::noteCluster(const char *clusterName)
+{
+}
+
 void EclCC::pushCluster(const char *clusterName)
 {
     clusters.append(clusterName);
@@ -2460,6 +2476,9 @@ bool EclCC::checkDaliConnected() const
 {
     if (!daliConnected)
     {
+        if (isEmptyString(optDFS) || disconnectReported)
+            return false;
+
         try
         {
             Owned<IGroup> serverGroup = createIGroup(optDFS.str(), DALI_SERVER_PORT);
@@ -2489,7 +2508,7 @@ unsigned EclCC::lookupClusterSize() const
 {
     CriticalBlock b(dfsCrit);  // Overkill at present but maybe one day codegen will start threading? If it does the stack is also iffy!
 #ifndef _CONTAINERIZED
-    if (!optDFS || disconnectReported || !checkDaliConnected())
+    if (!checkDaliConnected())
         return 0;
 #endif
     if (prevClusterSize != -1)
@@ -2515,10 +2534,56 @@ unsigned EclCC::lookupClusterSize() const
     return prevClusterSize;
 }
 
+IInterface * EclCC::getGitUpdateLock(const char * path)
+{
+    if (optGitLock.isEmpty())
+        return nullptr;
+
+    VStringBuffer lockPath("/GitUpdateLocks/%s/hash%llx", optGitLock.str(), rtlHash64VStr(path, HASH64_INIT));
+
+    CriticalBlock b(dfsCrit);
+    if (!checkDaliConnected())
+        return nullptr;
+
+    DBGLOG("Get git update lock for '%s':'%s'", optGitLock.str(), path);
+    const unsigned lockTimeout = 30 * 60 * 1000; // 30 minutes - fetches from git can take a long time
+    const unsigned connectTimeout = 3 * 1000;
+    unsigned traceTimeout = connectTimeout * 2;
+    CCycleTimer elapsed;
+    for (;;)
+    {
+        try
+        {
+            unsigned remaining = elapsed.remainingMs(lockTimeout);
+            if (remaining == 0)
+                break;
+
+            Owned<IInterface> connection = querySDS().connect(lockPath, myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, connectTimeout);
+            if (connection)
+                return connection.getClear();
+        }
+        catch (IException * e)
+        {
+            unsigned errcode = e->errorCode();
+            e->Release();
+            if (errcode != SDSExcpt_LockTimeout)
+                break;
+        }
+        if (elapsed.elapsedMs() >= traceTimeout)
+        {
+            DBGLOG("Blocked waiting for a git update lock on '%s' for %u seconds", path, elapsed.elapsedMs() / 1000);
+            traceTimeout *= 2;
+        }
+    }
+    DBGLOG("Failed to get git update lock for '%s'", path);
+    return nullptr;
+}
+
+
 IHqlExpression *EclCC::lookupDFSlayout(const char *filename, IErrorReceiver &errs, const ECLlocation &location, bool isOpt) const
 {
     CriticalBlock b(dfsCrit);  // Overkill at present but maybe one day codegen will start threading?
-    if (!optDFS || disconnectReported)
+    if (isEmptyString(optDFS) || disconnectReported)
     {
         // Dali lookup disabled, yet translation requested. Should we report if OPT set?
         if (!(optArchive || optGenerateDepend || optSyntax || optGenerateMeta || optEvaluateResult || disconnectReported))
@@ -2841,6 +2906,9 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         else if (iter.matchOption(tempArg, "-scope"))
         {
             optScope.set(tempArg);
+        }
+        else if (iter.matchOption(optGitLock, "--gitlock"))
+        {
         }
         else if (iter.matchOption(optGitUser, "--gituser"))
         {

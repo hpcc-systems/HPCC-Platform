@@ -64,7 +64,7 @@ target_link_libraries ( dafsserver
     dalibase
     thorhelper
     ftslavelib
-    ${CPPUNIT_LIBRARIES}
+    ${CppUnit_LIBRARIES}
     )
 
 IF (USE_OPENSSL)

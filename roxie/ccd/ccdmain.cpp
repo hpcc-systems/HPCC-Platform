@@ -1537,22 +1537,29 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                     if (!numThreads)
                         numThreads = numServerThreads;
                     unsigned port = roxieFarm.getPropInt("@port", roxieFarm.getPropInt("@servicePort", ROXIE_SERVER_PORT));
+                    const char *protocol = roxieFarm.queryProp("@protocol");
+                    bool serviceTLS = roxieFarm.getPropBool("@tls") || (protocol && streq(protocol, "ssl"));
                     //unsigned requestArrayThreads = roxieFarm.getPropInt("@requestArrayThreads", 5);
                     // NOTE: farmer name [@name=] is not copied into topology
                     const IpAddress ip = myNode.getIpAddress();
                     if (!roxiePort)
                     {
                         roxiePort = port;
-                        if (roxieFarm.getPropBool("@tls"))
-                            roxiePortTlsClientConfig = createIssuerTlsConfig(roxieFarm.queryProp("@issuer"), nullptr, true, roxieFarm.getPropBool("@selfSigned"), true, false);
+                        if (serviceTLS)
+                        {
+#ifdef _USE_OPENSSL
+                            const char *certIssuer = roxieFarm.queryProp("@issuer");
+                            if (isEmptyString(certIssuer))
+                                certIssuer = roxieFarm.getPropBool("@public", true) ? "public" : "local";
+                            roxiePortTlsClientConfig = createIssuerTlsConfig(certIssuer, nullptr, true, roxieFarm.getPropBool("@selfSigned"), true, false);
+#endif
+                        }
                         debugEndpoint.set(roxiePort, ip);
                     }
                     bool suspended = roxieFarm.getPropBool("@suspended", false);
                     Owned <IHpccProtocolListener> roxieServer;
                     if (port)
                     {
-                        const char *protocol = roxieFarm.queryProp("@protocol");
-                        bool serviceTLS  = roxieFarm.getPropBool("@tls") || (protocol && streq(protocol, "ssl"));
                         StringBuffer certFileName;
                         StringBuffer keyFileName;
                         StringBuffer passPhraseStr;

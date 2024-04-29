@@ -49,7 +49,7 @@ target_link_libraries ( daunittest
          hrpc 
          remote 
          dalibase 
-         ${CPPUNIT_LIBRARIES}
+         ${CppUnit_LIBRARIES}
     )
 
 

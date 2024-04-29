@@ -615,9 +615,9 @@ EXPORT Profile(inFile,
         // Pattern mapping a UNICODE datatype; using regex due to the complexity
         // of the character set
         #UNIQUENAME(_MapUpperCharUni);
-        LOCAL %_MapUpperCharUni%(UNICODE s) := REGEXREPLACE(u'\\p{Uppercase_Letter}', s, u'A');
+        LOCAL %_MapUpperCharUni%(UNICODE s) := REGEXREPLACE(u'\\p{Lu}', s, u'A');
         #UNIQUENAME(_MapLowerCharUni);
-        LOCAL %_MapLowerCharUni%(UNICODE s) := REGEXREPLACE(u'[[\\p{Lowercase_Letter}][\\p{Titlecase_Letter}][\\p{Modifier_Letter}][\\p{Other_Letter}]]', s, u'a');
+        LOCAL %_MapLowerCharUni%(UNICODE s) := REGEXREPLACE(u'[[\\p{Ll}][\\p{Lt}][\\p{Lm}][\\p{Lo}]]', s, u'a');
         #UNIQUENAME(_MapDigitUni);
         LOCAL %_MapDigitUni%(UNICODE s) := REGEXREPLACE(u'[1-9]', s, u'9'); // Leave '0' as-is and replace with '9' later
         #UNIQUENAME(_MapAllUni);

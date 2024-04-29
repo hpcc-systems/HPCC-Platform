@@ -26,3 +26,7 @@ EXPORT boolean supportsScript := true;
 EXPORT updateResultRecord := {INTEGER matched_count, INTEGER modified_count};
 EXPORT insertManyResultRecord := {INTEGER inserted_count};
 EXPORT deleteResultRecord := {INTEGER deleted_count};
+
+// For information about the regex and timestamp types: https://www.mongodb.com/docs/manual/reference/mongodb-extended-json/#bson-data-types-and-associated-representations
+EXPORT regexType := {STRING pattern, STRING options};
+EXPORT timestampType := {UNSIGNED t, UNSIGNED i};

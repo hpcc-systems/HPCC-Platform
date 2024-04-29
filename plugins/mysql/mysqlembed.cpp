@@ -16,8 +16,8 @@
 ############################################################################## */
 
 #include "platform.h"
-#include "mysql.h"
-#include "mysqld_error.h"
+#include <mysql/mysql.h>
+#include <mysql/mysqld_error.h>
 #include "jexcept.hpp"
 #include "jthread.hpp"
 #include "hqlplugins.hpp"

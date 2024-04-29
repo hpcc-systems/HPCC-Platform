@@ -55,34 +55,35 @@ void usage(const char *exe)
   printf("  count <xpath>              -- counts xpath matches\n");
   printf("\n");
   printf("Logical File meta information commands:\n");
-  printf("  dfsfile <logicalname>          -- get meta information for file\n");
-  printf("  dfsmeta <logicalname> <storage> -- get new meta information for file\n");
-  printf("  setdfspartattr <logicalname> <part> <attribute> [<value>] -- set attribute of a file part to value, or delete the attribute if not provided\n");
-  printf("  dfspart <logicalname> <part>   -- get meta information for part num\n");
-  printf("  dfscheck                       -- verify dfs file information is valid\n");
-  printf("  dfscsv <logicalnamemask>       -- get csv info. for files matching mask\n");
-  printf("  dfsgroup <logicalgroupname> [filename] -- get IPs for logical group (aka cluster). Written to optional filename if provided\n");
-  printf("  clusternodes <clustername> [filename] -- get IPs for cluster group. Written to optional filename if provided\n");
-  printf("  dfsls [<logicalname>] [options]-- get list of files within a scope (options=lrs)\n");
-  printf("  dfsmap <logicalname>           -- get part files (primary and replicates)\n");
-  printf("  dfsexists <logicalname>        -- sets return value to 0 if file exists\n");
-  printf("  dfsparents <logicalname>       -- list superfiles containing file\n");
-  printf("  dfsunlink <logicalname>        -- unlinks file from all super parents\n");
-  printf("  dfsverify <logicalname>        -- verifies parts exist, returns 0 if ok\n");
-  printf("  setprotect <logicalname> <id>  -- overwrite protects logical file\n");
-  printf("  unprotect <logicalname> <id>   -- unprotect (if id=* then clear all)\n");
-  printf("  listprotect <logicalnamemask>  <id-mask> -- list protected files\n");
   printf("  checksuperfile <superfilename> [fix=true|false] -- check superfile links consistent and optionally fix\n");
   printf("  checksubfile <subfilename>     -- check subfile links to parent consistent\n");
-  printf("  listexpires <logicalnamemask>  -- lists logical files with expiry value\n");
-  printf("  listrelationships <primary> <secondary>\n");
-  printf("  dfsperm <logicalname>           -- returns LDAP permission for file\n");
-  printf("  dfscompratio <logicalname>      -- returns compression ratio of file\n");
-  printf("  dfsscopes <mask>                -- lists logical scopes (mask = * for all)\n");
-  printf("  cleanscopes                     -- remove empty scopes\n");
-  printf("  normalizefilenames [<logicalnamemask>] -- normalize existing logical filenames that match, e.g. .::.::scope::.::name -> scope::name\n");
+  printf("  checkfilesize <logicalfilemask> [fix=true|false] -- check file size attributes and optionally fix");
+  printf("  cleanscopes                    -- remove empty scopes\n");
+  printf("  clusternodes <clustername> [filename] -- get IPs for cluster group. Written to optional filename if provided\n");
+  printf("  dfscheck                       -- verify dfs file information is valid\n");
+  printf("  dfscompratio <logicalname>     -- returns compression ratio of file\n");
+  printf("  dfscsv <logicalnamemask>       -- get csv info. for files matching mask\n");
+  printf("  dfsexists <logicalname>        -- sets return value to 0 if file exists\n");
+  printf("  dfsfile <logicalname>          -- get meta information for file\n");
+  printf("  dfsgroup <logicalgroupname> [filename] -- get IPs for logical group (aka cluster). Written to optional filename if provided\n");
+  printf("  dfsls [<logicalname>] [options]-- get list of files within a scope (options=lrs)\n");
+  printf("  dfsmap <logicalname>           -- get part files (primary and replicates)\n");
+  printf("  dfsmeta <logicalname> <storage> -- get new meta information for file\n");
+  printf("  dfsparents <logicalname>       -- list superfiles containing file\n");
+  printf("  dfspart <logicalname> <part>   -- get meta information for part num\n");
+  printf("  dfsperm <logicalname>          -- returns LDAP permission for file\n");
   printf("  dfsreplication <clustermask> <logicalnamemask> <redundancy-count> [dryrun] -- set redundancy for files matching mask, on specified clusters only\n");
+  printf("  dfsscopes <mask>               -- lists logical scopes (mask = * for all)\n");
+  printf("  dfsunlink <logicalname>        -- unlinks file from all super parents\n");
+  printf("  dfsverify <logicalname>        -- verifies parts exist, returns 0 if ok\n");
   printf("  holdlock <logicalfile> <read|write> -- hold a lock to the logical-file until a key is pressed");
+  printf("  listexpires <logicalnamemask>  -- lists logical files with expiry value\n");
+  printf("  listprotect <logicalnamemask>  <id-mask> -- list protected files\n");
+  printf("  listrelationships <primary> <secondary>\n");
+  printf("  normalizefilenames [<logicalnamemask>] -- normalize existing logical filenames that match, e.g. .::.::scope::.::name -> scope::name\n");
+  printf("  setdfspartattr <logicalname> <part> <attribute> [<value>] -- set attribute of a file part to value, or delete the attribute if not provided\n");
+  printf("  setprotect <logicalname> <id>  -- overwrite protects logical file\n");
+  printf("  unprotect <logicalname> <id>   -- unprotect (if id=* then clear all)\n");
   printf("\n");
   printf("Workunit commands:\n");
   printf("  listworkunits [<prop>=<val> [<lower> [<upper>]]] -- list workunits that match prop=val in workunit name range lower to upper\n");
@@ -90,14 +91,17 @@ void usage(const char *exe)
   printf("  workunittimings <WUID>\n");
   printf("\n");
   printf("Other dali server and misc commands:\n");
-  printf("  serverlist <mask>               -- list server IPs (mask optional)\n");
-  printf("  clusterlist <mask>              -- list clusters   (mask optional)\n");
   printf("  auditlog <fromdate> <todate> <match>\n");
+  printf("  cleanglobalwuid [dryrun] [noreconstruct]\n");
+  printf("  clusterlist <mask>              -- list clusters   (mask optional)\n");
   printf("  coalesce                        -- force transaction coalesce\n");
-  printf("  mpping <server-ip>              -- time MP connect\n");
+  printf("  dalilocks [ <ip-pattern> ] [ files ] -- get all locked files/xpaths\n");
   printf("  daliping [ <num> ]              -- time dali server connect\n");
   printf("  getxref <destxmlfile>           -- get all XREF information\n");
-  printf("  dalilocks [ <ip-pattern> ] [ files ] -- get all locked files/xpaths\n");
+  printf("  migratefiles <src-group> <target-group> [<filemask>] [dryrun] [createmaps] [listonly] [verbose]\n");
+  printf("  mpping <server-ip>              -- time MP connect\n");
+  printf("  serverlist <mask>               -- list server IPs (mask optional)\n");
+  printf("  translatetoxpath logicalfile [File|SuperFile|Scope]\n");
   printf("  unlock <xpath or logicalfile> <[path|file]> --  unlocks either matching xpath(s) or matching logical file(s), can contain wildcards\n");
   printf("  validatestore [fix=<true|false>]\n"
          "                [verbose=<true|false>]\n"
@@ -106,9 +110,6 @@ void usage(const char *exe)
   printf("  wuidcompress <wildcard> <type>  --  scan workunits that match <wildcard> and compress resources of <type>\n");
   printf("  wuiddecompress <wildcard> <type> --  scan workunits that match <wildcard> and decompress resources of <type>\n");
   printf("  xmlsize <filename> [<percentage>] --  analyse size usage in xml file, display individual items above 'percentage' \n");
-  printf("  migratefiles <src-group> <target-group> [<filemask>] [dryrun] [createmaps] [listonly] [verbose]\n");
-  printf("  translatetoxpath logicalfile [File|SuperFile|Scope]\n");
-  printf("  cleanglobalwuid [dryrun] [noreconstruct]\n");
   printf("\n");
   printf("Common options\n");
   printf("  server=<dali-server-ip>         -- server ip\n");
@@ -148,6 +149,8 @@ int main(int argc, const char* argv[])
     StringBuffer tmps;
     for (int i=1;i<argc;i++) {
         const char *param = argv[i];
+        if (startsWith(param, "--"))
+            continue; // handled by loadConfiguration
         if ((memcmp(param,"server=",7)==0)||
             (memcmp(param,"logfile=",8)==0)||
             (memcmp(param,"rawlog=",7)==0)||
@@ -473,6 +476,11 @@ int main(int argc, const char* argv[])
                     else if (strieq(cmd,"getxref")) {
                         CHECKPARAMS(1,1);
                         getxref(params.item(1));
+                    }
+                    else if (strieq(cmd,"checkfilesize")) {
+                        CHECKPARAMS(1,1);
+                        bool fix = props->getPropBool("fix");
+                        checkFileSize(userDesc, params.item(1), fix);
                     }
                     else if (strieq(cmd,"dalilocks")) {
                         CHECKPARAMS(0,2);

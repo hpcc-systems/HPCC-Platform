@@ -29,7 +29,7 @@ namespace repositoryCommon {
 IEclPackage * loadPlugins(const char * pluginPath)
 {
     MultiErrorReceiver errs;
-    EclRepositoryManager collection;
+    EclRepositoryManager collection(nullptr);
     collection.addQuerySourceFileEclRepository(&errs, pluginPath, ESFallowplugins|ESFnodependencies, (unsigned) -1);//Preload implicits/dlls
     if (errs.errCount())
     {

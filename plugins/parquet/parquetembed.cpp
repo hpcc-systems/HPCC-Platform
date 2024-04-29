@@ -96,6 +96,42 @@ extern void fail(const char *message)
 }
 
 /**
+ * @brief Utility function for getting the xpath or field name from an RtlFieldInfo object.
+ *
+ * @param outXPath The buffer for storing output.
+ * @param field RtlFieldInfo object storing metadata for field.
+ */
+void xpathOrName(StringBuffer &outXPath, const RtlFieldInfo *field)
+{
+    outXPath.clear();
+
+    if (field->xpath)
+    {
+        if (field->xpath[0] == xpathCompoundSeparatorChar)
+        {
+            outXPath.append(field->xpath + 1);
+        }
+        else
+        {
+            const char *sep = strchr(field->xpath, xpathCompoundSeparatorChar);
+
+            if (!sep)
+            {
+                outXPath.append(field->xpath);
+            }
+            else
+            {
+                outXPath.append(field->xpath, 0, static_cast<size32_t>(sep - field->xpath));
+            }
+        }
+    }
+    else
+    {
+        outXPath.append(field->name);
+    }
+}
+
+/**
  * @brief Contructs a ParquetReader for a specific file location.
  *
  * @param option The read or write option as well as information about partitioning.
@@ -107,7 +143,7 @@ ParquetReader::ParquetReader(const char *option, const char *_location, int _max
     : ParquetReader(option, _location, _maxRowCountInTable, _partitionFields, _activityCtx, nullptr) {}
 
 // Constructs a ParquetReader with the expected record layout of the Parquet file
-ParquetReader::ParquetReader(const char *option, const char *_location, int _maxRowCountInTable, const char *_partitionFields, const IThorActivityContext *_activityCtx, const RtlRecord *_expectedRecord)
+ParquetReader::ParquetReader(const char *option, const char *_location, int _maxRowCountInTable, const char *_partitionFields, const IThorActivityContext *_activityCtx, const RtlTypeInfo * _expectedRecord)
     : partOption(option), location(_location), expectedRecord(_expectedRecord)
 {
     maxRowCountInTable = _maxRowCountInTable;
@@ -274,14 +310,17 @@ void divide_row_groups(const IThorActivityContext *activityCtx, __int64 totalRow
 __int64 ParquetReader::readColumns(__int64 currTable)
 {
     auto rowGroupReader = queryCurrentTable(currTable); // Sets currentTableMetadata
-    for (int i = 0; i < expectedRecord->getNumFields(); i++)
+    int numFields = getNumFields(expectedRecord);
+    for (int i = 0; i < numFields; i++)
     {
-        int columnIndex = currentTableMetadata->schema()->ColumnIndex(expectedRecord->queryName(i));
+        StringBuffer fieldName;
+        xpathOrName(fieldName, expectedRecord->queryFields()[i]);
+        int columnIndex = currentTableMetadata->schema()->group_node()->FieldIndex(fieldName.str());
         if (columnIndex >= 0)
         {
             std::shared_ptr<arrow::ChunkedArray> column;
             reportIfFailure(rowGroupReader->Column(columnIndex)->Read(&column));
-            parquetTable.insert(std::make_pair(expectedRecord->queryName(i), column->chunk(0)));
+            parquetTable.insert(std::make_pair(fieldName.str(), column->chunk(0)));
         }
     }
 
@@ -814,7 +853,7 @@ void ParquetWriter::beginSet(const char *fieldName)
     }
     arrow::ArrayBuilder *childBuilder;
     arrow::FieldPath match = getNestedFieldBuilder(fieldName, childBuilder);
-    fieldBuilderStack.push_back(std::make_shared<ArrayBuilderTracker>(fieldName, childBuilder, CPNTSet, match));
+    fieldBuilderStack.push_back(std::make_shared<ArrayBuilderTracker>(fieldName, childBuilder, CPNTSet, std::move(match)));
 
     arrow::ListBuilder *listBuilder = static_cast<arrow::ListBuilder *>(childBuilder);
     reportIfFailure(listBuilder->Append());
@@ -833,7 +872,7 @@ void ParquetWriter::beginRow(const char *fieldName)
     {
         arrow::ArrayBuilder *childBuilder;
         arrow::FieldPath match = getNestedFieldBuilder(fieldName, childBuilder);
-        fieldBuilderStack.push_back(std::make_shared<ArrayBuilderTracker>(fieldName, childBuilder, CPNTDataset, match));
+        fieldBuilderStack.push_back(std::make_shared<ArrayBuilderTracker>(fieldName, childBuilder, CPNTDataset, std::move(match)));
 
         arrow::StructBuilder *structBuilder = static_cast<arrow::StructBuilder *>(childBuilder);
         reportIfFailure(structBuilder->Append());
@@ -1011,42 +1050,6 @@ void ParquetRowStream::stop()
 {
     resultAllocator.clear();
     shouldRead = false;
-}
-
-/**
- * @brief Utility function for getting the xpath or field name from an RtlFieldInfo object.
- *
- * @param outXPath The buffer for storing output.
- * @param field RtlFieldInfo object storing metadata for field.
- */
-void ParquetRowBuilder::xpathOrName(StringBuffer &outXPath, const RtlFieldInfo *field) const
-{
-    outXPath.clear();
-
-    if (field->xpath)
-    {
-        if (field->xpath[0] == xpathCompoundSeparatorChar)
-        {
-            outXPath.append(field->xpath + 1);
-        }
-        else
-        {
-            const char *sep = strchr(field->xpath, xpathCompoundSeparatorChar);
-
-            if (!sep)
-            {
-                outXPath.append(field->xpath);
-            }
-            else
-            {
-                outXPath.append(field->xpath, 0, static_cast<size32_t>(sep - field->xpath));
-            }
-        }
-    }
-    else
-    {
-        outXPath.append(field->name);
-    }
 }
 
 /**
@@ -1961,7 +1964,6 @@ ParquetEmbedFunctionContext::ParquetEmbedFunctionContext(const IContextLogger &_
 bool ParquetEmbedFunctionContext::getBooleanResult()
 {
     UNIMPLEMENTED_X("Parquet Scalar Return Type BOOLEAN");
-    return false;
 }
 
 void ParquetEmbedFunctionContext::getDataResult(size32_t &len, void *&result)
@@ -1972,19 +1974,16 @@ void ParquetEmbedFunctionContext::getDataResult(size32_t &len, void *&result)
 double ParquetEmbedFunctionContext::getRealResult()
 {
     UNIMPLEMENTED_X("Parquet Scalar Return Type REAL");
-    return 0.0;
 }
 
 __int64 ParquetEmbedFunctionContext::getSignedResult()
 {
     UNIMPLEMENTED_X("Parquet Scalar Return Type SIGNED");
-    return 0;
 }
 
 unsigned __int64 ParquetEmbedFunctionContext::getUnsignedResult()
 {
     UNIMPLEMENTED_X("Parquet Scalar Return Type UNSIGNED");
-    return 0;
 }
 
 void ParquetEmbedFunctionContext::getStringResult(size32_t &chars, char *&result)
@@ -2036,7 +2035,6 @@ byte *ParquetEmbedFunctionContext::getRowResult(IEngineRowAllocator *_resultAllo
 size32_t ParquetEmbedFunctionContext::getTransformResult(ARowBuilder &rowBuilder)
 {
     UNIMPLEMENTED_X("Parquet Transform Result");
-    return 0;
 }
 
 /**
@@ -2229,10 +2227,7 @@ public:
     virtual IEmbedFunctionContext *createFunctionContextEx(ICodeContext *ctx, const IThorActivityContext *activityCtx, unsigned flags, const char *options) override
     {
         if (flags & EFimport)
-        {
             UNSUPPORTED("IMPORT");
-            return nullptr;
-        }
         else
             return new ParquetEmbedFunctionContext(ctx ? ctx->queryContextLogger() : queryDummyContextLogger(), activityCtx, options, flags);
     }
@@ -2240,7 +2235,6 @@ public:
     virtual IEmbedServiceContext *createServiceContext(const char *service, unsigned flags, const char *options) override
     {
         throwUnexpected();
-        return nullptr;
     }
 };
 

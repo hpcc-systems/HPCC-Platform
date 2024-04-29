@@ -331,19 +331,13 @@ static void DeepAssign(IEspContext &context, IConstDFUWorkUnit *src, IEspDFUWork
         dest.setStateMessage(statemsg.str());
 
         CDateTime startAt;
-        CDateTime stoppAt;
+        CDateTime stopAt;
         prog->getTimeStarted(startAt);
-        prog->getTimeStopped(stoppAt);
+        prog->getTimeStopped(stopAt);
+
         StringBuffer tmpstr;
-        startAt.getDateString(tmpstr);
-        tmpstr.append(" ");
-        startAt.getTimeString(tmpstr);
-        dest.setTimeStarted(tmpstr.str());
-        tmpstr.clear();
-        stoppAt.getDateString(tmpstr);
-        tmpstr.append(" ");
-        stoppAt.getTimeString(tmpstr);
-        dest.setTimeStopped(tmpstr.str());
+        dest.setTimeStarted(startAt.getString(tmpstr).str());
+        dest.setTimeStopped(stopAt.getString(tmpstr.clear()).str());
 
         StringBuffer prgmsg;
         prog->formatProgressMessage(prgmsg);
@@ -1115,7 +1109,14 @@ bool CFileSprayEx::onGetDFUWorkunits(IEspContext &context, IEspGetDFUWorkunits &
             resultWU->setID(wu->queryId());
             StringBuffer jobname, user, cluster;
             resultWU->setJobName(wu->getJobName(jobname).str());
-            resultWU->setCommand(wu->getCommand());
+            DFUcmd command = wu->getCommand();
+            resultWU->setCommand(command);
+            if (version >= 1.03)
+            {
+                StringBuffer cmdStr;
+                encodeDFUcommand(command, cmdStr);
+                resultWU->setCommandMessage(cmdStr.str());
+            }
             resultWU->setUser(wu->getUser(user).str());
 
             const char* clusterName = wu->getClusterName(cluster).str();

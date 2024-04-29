@@ -64,7 +64,7 @@ target_link_libraries ( wutool
          deftype
          workunit
          wuanalysis
-         ${CPPUNIT_LIBRARIES}
+         ${CppUnit_LIBRARIES}
     )
     
 if ( USE_CPPUNIT )

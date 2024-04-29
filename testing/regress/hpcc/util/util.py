@@ -142,7 +142,8 @@ def queryWuid(jobname,  taskId):
             result = 'OK'
             for resultItem in resultItems:
                 resultItem = resultItem.strip()
-                [key, val] = resultItem.split(':')
+                logger.debug("%3d. resultItem: '%s'",  taskId,  resultItem)
+                [key, val] = resultItem.split(':', 1)
                 if key == 'ID':
                     wuid = val
                 if key == 'state':
