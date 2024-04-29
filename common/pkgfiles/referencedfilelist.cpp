@@ -228,7 +228,7 @@ public:
     ReferencedFileList(const char *username, const char *pw, bool allowForeignFiles, bool allowFileSizeCalc, const char *_jobname)
         : jobName(_jobname), allowForeign(allowForeignFiles), allowSizeCalc(allowFileSizeCalc)
     {
-        if (username && pw)
+        if (username)
         {
             user.setown(createUserDescriptor());
             user->set(username, pw);
