@@ -80,7 +80,7 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
                     return "";
                 }
             },
-            Priority: {
+            Cost: {
                 label: `${nlsHPCC.Source} / ${nlsHPCC.Cost}`, width: 144,
                 formatter: (Source, row) => {
                     if (Source === "Cost Optimizer") {
