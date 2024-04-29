@@ -1,6 +1,5 @@
 # Tagging new versions
 
-
 ## General
 
 The file tools/git/aliases.sh contains various git aliases which are useful when using git, and may be used by the merge scripts.
@@ -14,6 +13,13 @@ Before running any of the other scripts, process the contents of that file as a 
 ```
 
 to initialize the common environment variables.
+
+## Pre-requisites
+
+The following tools are required:
+
+* **git**
+* **helm**
 
 The following repositories should be checked out in a directory reserved for merging and tagging (default for scripts is ~/git):
 
