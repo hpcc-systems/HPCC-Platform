@@ -55,9 +55,6 @@ function formatQuery(_filter): { [id: string]: any } {
     if (filter.Type === true) {
         filter.Type = "archived workunits";
     }
-    if (filter.Type === true) {
-        filter.Type = "archived workunits";
-    }
     if (filter.Protected === true) {
         filter.Protected = "Protected";
     }

@@ -65,7 +65,7 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
     const columns = React.useMemo((): FluentColumns => {
         return {
             Severity: {
-                label: nlsHPCC.Severity, field: "", width: 72, sortable: false,
+                label: nlsHPCC.Severity, width: 72, sortable: false,
                 className: (value, row) => {
                     switch (value) {
                         case "Error":
@@ -80,8 +80,8 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
                     return "";
                 }
             },
-            Source: {
-                label: `${nlsHPCC.Source} / ${nlsHPCC.Cost}`, field: "", width: 144, sortable: false,
+            Priority: {
+                label: `${nlsHPCC.Source} / ${nlsHPCC.Cost}`, width: 144,
                 formatter: (Source, row) => {
                     if (Source === "Cost Optimizer") {
                         return formatCost(+row.Cost);
@@ -90,7 +90,7 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
                 }
             },
             Priority: {
-                label: `${nlsHPCC.Priority} / ${nlsHPCC.TimePenalty}`, field: "", width: 144, sortable: false,
+                label: `${nlsHPCC.Priority} / ${nlsHPCC.TimePenalty}`, width: 144, sortable: false,
                 formatter: (Priority, row) => {
                     if (row.Source === "Cost Optimizer") {
                         return `${formatTwoDigits(+row.Priority / 1000)} (${nlsHPCC.Seconds})`;
@@ -98,10 +98,10 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
                     return Priority;
                 }
             },
-            Code: { label: nlsHPCC.Code, field: "", width: 45, sortable: false },
+            Code: { label: nlsHPCC.Code, width: 45 },
             Message: {
-                label: nlsHPCC.Message, field: "",
-                sortable: false,
+                label: nlsHPCC.Message,
+                sortable: true,
                 formatter: (Message, idx) => {
                     const info = extractGraphInfo(Message);
                     if (info.graphID && info.subgraphID) {
@@ -114,15 +114,15 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
                     return Message;
                 }
             },
-            Column: { label: nlsHPCC.Col, field: "", width: 36, sortable: false },
-            LineNo: { label: nlsHPCC.Line, field: "", width: 36, sortable: false },
+            Column: { label: nlsHPCC.Col, width: 36 },
+            LineNo: { label: nlsHPCC.Line, width: 36 },
             Activity: {
-                label: nlsHPCC.Activity, field: "", width: 56, sortable: false,
+                label: nlsHPCC.Activity, width: 56,
                 formatter: (activityId, row) => {
                     return activityId ? <Link href={`#/workunits/${wuid}/metrics/a${activityId}`}>a{activityId}</Link> : "";
                 }
             },
-            FileName: { label: nlsHPCC.FileName, field: "", width: 360, sortable: false }
+            FileName: { label: nlsHPCC.FileName, width: 360 }
         };
     }, [wuid]);
 
@@ -220,7 +220,6 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
                 <FluentGrid
                     data={data}
                     primaryID={"id"}
-                    alphaNumColumns={{ Name: true, Value: true }}
                     columns={columns}
                     setSelection={setSelection}
                     setTotal={setTotal}

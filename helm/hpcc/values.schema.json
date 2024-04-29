@@ -1431,6 +1431,9 @@
         "resources": {
           "$ref": "#/definitions/resources"
         },
+        "timedChildResources": {
+          "$ref": "#/definitions/resources"
+        },
         "cost": {
           "$ref" : "#/definitions/componentCost"
         },
@@ -1617,6 +1620,9 @@
         "resources": {
           "$ref": "#/definitions/resources"
         },
+        "stubResources": {
+          "$ref": "#/definitions/resources"
+        },
         "jobMemory": {
           "$ref": "#/definitions/memory"
         },
@@ -1723,6 +1729,9 @@
           "$ref": "#/definitions/resources"
         },
         "channelResources": {
+          "$ref": "#/definitions/resources"
+        },
+        "topoResources": {
           "$ref": "#/definitions/resources"
         },
         "annotations": {
@@ -2595,6 +2604,9 @@
           "$ref": "#/definitions/resources"
         },
         "eclAgentResources": {
+          "$ref": "#/definitions/resources"
+        },
+        "stubResources": {
           "$ref": "#/definitions/resources"
         },
         "cost": {

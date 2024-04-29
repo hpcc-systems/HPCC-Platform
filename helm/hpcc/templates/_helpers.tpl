@@ -1315,9 +1315,10 @@ Add resource object
 Pass in a dictionary with me defined
 */}}
 {{- define "hpcc.addResources" }}
-{{- if .me }}
- {{- $limits := omit .me "cpu" }}
- {{- $requests := pick .me "cpu" }}
+{{- $resources := .me | default .defaults }}
+{{- if $resources }}
+ {{- $limits := omit $resources "cpu" }}
+ {{- $requests := pick $resources "cpu" }}
 resources:
  {{- if $limits }}
   limits:
@@ -1335,17 +1336,16 @@ Add resources object for stub pods
 Pass in dict with root, me and instances defined
 */}}
 {{- define "hpcc.addStubResources" -}}
-{{- $stubInstanceResources := .root.Values.global.stubInstanceResources | default dict -}}
-{{- $milliCPUPerInstance := $stubInstanceResources.cpu | default "50m" -}}
-{{- $memPerInstance := $stubInstanceResources.memory | default "200Mi" -}}
-{{- $milliCPUs := int (include "hpcc.k8sCPUStringToMilliCPU" $milliCPUPerInstance) -}}
-{{- $bytes := int64 (include "hpcc.k8sMemoryStringToBytes" $memPerInstance) -}}
-{{- $totalBytes := mul .instances $bytes }}
+{{- $stubInstanceResources := .stubResources | default .root.Values.global.stubInstanceResources | default dict }}
+{{- $milliCPUText := $stubInstanceResources.cpu | default "200m" }}
+{{- $milliCPUs := int (include "hpcc.k8sCPUStringToMilliCPU" $milliCPUText) }}
+{{- $memoryText := $stubInstanceResources.memory | default "50Mi" }}
+{{- $memory := int64 (include "hpcc.k8sMemoryStringToBytes" $memoryText) }}
 resources:
   limits:
-    memory: {{ include "hpcc.bytesToK8sMemoryString" $totalBytes | quote }}
+    memory: {{ include "hpcc.bytesToK8sMemoryString" $memory | quote }}
   requests:
-    cpu: {{ printf "%dm" (mul .instances $milliCPUs) | quote }}
+    cpu: {{ printf "%dm" $milliCPUs | quote }}
 {{- end -}}
 
 {{/*

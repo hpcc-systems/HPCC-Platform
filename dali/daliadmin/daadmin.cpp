@@ -2264,6 +2264,101 @@ void getxref(const char *dst)
     conn->close();
 }
 
+void checkFileSizeOne(IUserDescriptor *user, const char *lfn, bool fix)
+{
+    try
+    {
+        CDfsLogicalFileName dlfn;
+        dlfn.set(lfn);
+        Owned<IDistributedFile> dFile = queryDistributedFileDirectory().lookup(dlfn, user, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser, 30000); // 30 sec timeout
+        if (dFile)
+        {
+            if (dFile->querySuperFile())
+                WARNLOG("Skipping: file '%s' is a superfile", lfn);
+            else
+            {
+                bool fileLocked = false;
+                COnScopeExit ensureFileUnlock([&]() { if (fileLocked) dFile->unlockProperties(); });
+                unsigned numParts = dFile->numParts();
+                for (unsigned p=0; p<numParts; p++)
+                {
+                    IDistributedFilePart &part = dFile->queryPart(p);
+                    IPropertyTree &attrs = part.queryAttributes();
+                    if (!attrs.hasProp("@size"))
+                    {
+                        if (fix)
+                        {
+                            offset_t partSize;
+                            try
+                            {
+                                partSize = part.getFileSize(true, true);
+                                if (!fileLocked)
+                                {
+                                    // we lock the file once, so that the individual part lock/unlocks are effectively a NOP
+                                    dFile->lockProperties(30000);
+                                    fileLocked = true;
+                                    PROGLOG("File '%s' has missing @size attributes", lfn);
+                                }
+                                part.lockProperties(30000);
+                            }
+                            catch (IException *e)
+                            {
+                                EXCLOG(e);
+                                e->Release();
+                                continue;
+                            }
+                            COnScopeExit ensurePartUnlock([&]() { part.unlockProperties(); });
+                            PROGLOG("Part %u: Setting @size to %" I64F "u", p+1, partSize);
+                            attrs.setPropInt64("@size", partSize);
+                        }
+                        else
+                            PROGLOG("File '%s' missing @size on part %u", lfn, p+1);
+                    }
+                }
+            }
+        }
+        else
+            WARNLOG("File '%s' not found", lfn);
+    }
+    catch (IException *e)
+    {
+        EXCLOG(e);
+        e->Release();
+    }
+}
+
+void checkFileSize(IUserDescriptor *user, const char *lfnPattern, bool fix)
+{
+    if (containsWildcard(lfnPattern))
+    {
+        unsigned count = 0;
+        Owned<IDFAttributesIterator> iter = queryDistributedFileDirectory().getDFAttributesIterator(lfnPattern, user, true, false); // no supers
+        CCycleTimer timer;
+        if (iter->first())
+        {
+            while (true)
+            {
+                IPropertyTree &attr = iter->query();
+                const char *lfn = attr.queryProp("@name");
+                checkFileSizeOne(user, lfn, fix);
+                ++count;
+
+                if (!iter->next())
+                    break;
+                else if (timer.elapsedCycles() >= queryOneSecCycles()*10) // log every 10 secs
+                {
+                    PROGLOG("Processed %u files", count);
+                    timer.reset();
+                }
+            }
+        }
+        PROGLOG("Total files processed %u files", count);
+    }
+    else
+        checkFileSizeOne(user, lfnPattern, fix);
+}
+
+
 struct CTreeItem : public CInterface
 {
     String *tail;
