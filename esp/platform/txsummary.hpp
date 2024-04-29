@@ -32,7 +32,7 @@
 
 // Using the existing esp_cfg_decl in this package required including
 // espcfg.ipp which has additional includes that weren't found by all
-// other packagates including txsummary.hpp, triggering changes to
+// other packages including txsummary.hpp, triggering changes to
 // several other CMakeLists.txt files. This seemed cleaner.
 #ifdef TXSUMMARY_EXPORTS
     #define txsummary_decl DECL_EXPORT
@@ -41,7 +41,7 @@
 #endif
 
 interface ITxSummaryProfile;
-class CTxOpenTelemetryConnector;
+class CTxSummarySpanForwarder;
 
 /**
  * @brief Indication of what an instrumented value represents.
@@ -55,7 +55,7 @@ class CTxOpenTelemetryConnector;
  * conventions, or similar strategies, cannot be relied upon for the platform to deduce correct
  * behavior.
  */
-enum class TxUnits
+enum class SummaryValueUnits
 {
     NA,     /// no scaling required
     millis, /// milliseconds to be scaled to nanoseconds
@@ -103,13 +103,13 @@ public:
     // alternate key may be specified for use as the attribute name. A units identifier may be
     // given to force value scaling.
     template <typename TValue, typename TSuffix = const char*, class TSerializer = TokenSerializer>
-        bool append(const char* key, const TValue& value, const LogLevel logLevel = LogMin, const unsigned int group = TXSUMMARY_GRP_CORE, const TSuffix& suffix = "", const TSerializer& serializer = TSerializer());
+        bool append(const char* summaryKey, const TValue& value, const LogLevel logLevel = LogMin, const unsigned int group = TXSUMMARY_GRP_CORE, const TSuffix& suffix = "", const TSerializer& serializer = TSerializer());
     template <typename TValue, typename TSuffix = const char*, class TSerializer = TokenSerializer>
-        bool append(const char* key, const TValue& value, const char* otKey, LogLevel logLevel = LogMin, const unsigned int group = TXSUMMARY_GRP_CORE, const TSuffix& suffix = "", const TSerializer& serializer = TSerializer());
+        bool append(const char* summaryKey, const TValue& value, const char* spanKey, LogLevel logLevel = LogMin, const unsigned int group = TXSUMMARY_GRP_CORE, const TSuffix& suffix = "", const TSerializer& serializer = TSerializer());
     template <typename TValue, typename TSuffix = const char*, class TSerializer = TokenSerializer>
-        bool append(const char* key, const TValue& value, TxUnits units, LogLevel logLevel = LogMin, const unsigned int group = TXSUMMARY_GRP_CORE, const TSuffix& suffix = "", const TSerializer& serializer = TSerializer());
+        bool append(const char* summaryKey, const TValue& value, SummaryValueUnits units, LogLevel logLevel = LogMin, const unsigned int group = TXSUMMARY_GRP_CORE, const TSuffix& suffix = "", const TSerializer& serializer = TSerializer());
     template <typename TValue, typename TSuffix = const char*, class TSerializer = TokenSerializer>
-        bool append(const char* key, const TValue& value, const char* otKey, TxUnits units, LogLevel logLevel = LogMin, const unsigned int group = TXSUMMARY_GRP_CORE, const TSuffix& suffix = "", const TSerializer& serializer = TSerializer());
+        bool append(const char* summaryKey, const TValue& value, const char* spanKey, SummaryValueUnits units, LogLevel logLevel = LogMin, const unsigned int group = TXSUMMARY_GRP_CORE, const TSuffix& suffix = "", const TSerializer& serializer = TSerializer());
 
     // Updates the value, logLevel, group and suffix associated with an existing
     // key, or appends the keyand value to the summary if it is not already
@@ -119,13 +119,13 @@ public:
     // alternate key may be specified for use as the attribute name. A unitsidentifier may be
     // given to force value scaling.
     template <typename TValue, typename TSuffix = const char*, class TSerializer = TokenSerializer>
-        bool set(const char* key, const TValue& value, const LogLevel logLevel = LogMin, const unsigned int group = TXSUMMARY_GRP_CORE, const TSuffix& suffix = "", const TSerializer& serializer = TSerializer());
+        bool set(const char* summaryKey, const TValue& value, const LogLevel logLevel = LogMin, const unsigned int group = TXSUMMARY_GRP_CORE, const TSuffix& suffix = "", const TSerializer& serializer = TSerializer());
     template <typename TValue, typename TSuffix = const char*, class TSerializer = TokenSerializer>
-        bool set(const char* key, const TValue& value, const char* otKey, const LogLevel logLevel = LogMin, const unsigned int group = TXSUMMARY_GRP_CORE, const TSuffix& suffix = "", const TSerializer& serializer = TSerializer());
+        bool set(const char* summaryKey, const TValue& value, const char* spanKey, const LogLevel logLevel = LogMin, const unsigned int group = TXSUMMARY_GRP_CORE, const TSuffix& suffix = "", const TSerializer& serializer = TSerializer());
     template <typename TValue, typename TSuffix = const char*, class TSerializer = TokenSerializer>
-        bool set(const char* key, const TValue& value, TxUnits units, const LogLevel logLevel = LogMin, const unsigned int group = TXSUMMARY_GRP_CORE, const TSuffix& suffix = "", const TSerializer& serializer = TSerializer());
+        bool set(const char* summaryKey, const TValue& value, SummaryValueUnits units, const LogLevel logLevel = LogMin, const unsigned int group = TXSUMMARY_GRP_CORE, const TSuffix& suffix = "", const TSerializer& serializer = TSerializer());
     template <typename TValue, typename TSuffix = const char*, class TSerializer = TokenSerializer>
-        bool set(const char* key, const TValue& value, const char* otKey, TxUnits units, const LogLevel logLevel = LogMin, const unsigned int group = TXSUMMARY_GRP_CORE, const TSuffix& suffix = "", const TSerializer& serializer = TSerializer());
+        bool set(const char* summaryKey, const TValue& value, const char* spanKey, SummaryValueUnits units, const LogLevel logLevel = LogMin, const unsigned int group = TXSUMMARY_GRP_CORE, const TSuffix& suffix = "", const TSerializer& serializer = TSerializer());
 
     // Similar to the above set functions, but pulls the value from an existing entry
     // named 'sourceKey'
@@ -313,7 +313,7 @@ private:
     unsigned m_creationTime;
     EntriesInOrder m_entries;
     Linked<ITxSummaryProfile> m_profile;
-    Owned<CTxOpenTelemetryConnector> connector;
+    Owned<CTxSummarySpanForwarder> forwarder;
 };
 
 /**
@@ -330,7 +330,7 @@ private:
  * Where `CTxSummary` serializes all values to text, this acts only on the original, unserialized,
  * values.
  */
-class txsummary_decl CTxOpenTelemetryConnector : public CInterface
+class txsummary_decl CTxSummarySpanForwarder : public CInterface
 {
 public:
     /**
@@ -340,53 +340,55 @@ public:
      * are used to support other types.
      *
      * @tparam TValue data type of the value to be forwarded
-     * @param txKey required key used for trace summary output
-     * @param otKey optional key used only for Open Telemtry output
+     * @param summaryKey required key used for trace summary output
+     * @param spanKey optional key used only for Open Telemetry output
      * @param value the original value
      * @param units indicator of what scaling, if any, is required
      * @param logLevel minimum requested log level needed to forward the value
      * @param groupMask set of goups that include the value
      */
     template <typename TValue>
-    void forwardAttribute(const char* txKey, const char* otKey, TValue value, TxUnits units, LogLevel logLevel, unsigned groupMask) const;
+    void forwardAttribute(const char* summaryKey, const char* spanKey, TValue value, SummaryValueUnits units, LogLevel logLevel, unsigned groupMask) const;
 
     /**
      * @brief Type-specific overload for string values.
      * 
      * @tparam  
-     * @param txKey required key used for trace summary output
-     * @param otKey optional key used only for Open Telemtry output
+     * @param summaryKey required key used for trace summary output
+     * @param spanKey optional key used only for Open Telemetry output
      * @param value the original value
      * @param logLevel minimum requested log level needed to forward the value
      * @param groupMask set of goups that include the value
      */
-    void forwardAttribute(const char* txKey, const char* otKey, const char* value, TxUnits, LogLevel logLevel, unsigned groupMask) const;
+    void forwardAttribute(const char* summaryKey, const char* spanKey, const char* value, SummaryValueUnits, LogLevel logLevel, unsigned groupMask) const;
 
     /**
      * @brief Type-specific overload for Boolean values.
      * 
      * @tparam  
-     * @param txKey required key used for trace summary output
-     * @param otKey optional key used only for Open Telemtry output
+     * @param summaryKey required key used for trace summary output
+     * @param spanKey optional key used only for Open Telemetry output
      * @param value the original value
      * @param logLevel minimum requested log level needed to forward the value
      * @param groupMask set of goups that include the value
      */
-    void forwardAttribute(const char* txKey, const char* otKey, bool value, TxUnits, LogLevel logLevel, unsigned groupMask) const;
+    void forwardAttribute(const char* summaryKey, const char* spanKey, bool value, SummaryValueUnits, LogLevel logLevel, unsigned groupMask) const;
 
 protected:
+    ISpan* prepareToForward(const char* summaryKey, const char* spanKey, StringBuffer& actualKey, LogLevel logLevel, unsigned groupMask) const;
+
     /**
-     * @brief Assemble the correct Open Telemtry attribute name from them input.
+     * @brief Assemble the correct Open Telemetry attribute name from them input.
      *
-     * An `otKey` value takes precedence over `tcKey`. All keys are converted to snake case. Other
-     * changes may be applied as needed.
+     * An `spanKey` value takes precedence over `summaryKey`. All keys are converted to snake case.
+     * Other changes may be applied as needed.
      *
-     * @param txKey required key used for trace summary output
-     * @param otKey optional key used only for Open Telemtry output
-     * @param normalized effective key for Open Telemetry output
+     * @param summaryKey required key used for trace summary output
+     * @param spanKey optional key used only for Open Telemetry output
+     * @param actualKey effective key for Open Telemetry output
      * @return StringBuffer& the effective key
      */
-    StringBuffer& normalizeKey(const char* txKey, const char* otKey, StringBuffer& normalized) const;
+    StringBuffer& normalizeKey(const char* summaryKey, const char* spanKey, StringBuffer& actualKey) const;
 
     /**
      * @brief Determine if the value should not be forwarded to Open Telemetry.
@@ -408,11 +410,11 @@ protected:
      */
     bool isExcluded(const char* key, LogLevel logLevel, unsigned groupMask) const;
 
-    void forwardUnsigned(const char* txKey, const char* otKey, uint64_t value, TxUnits units, LogLevel logLevel, unsigned groupMask) const;
-    void forwardSigned(const char* txKey, const char* otKey, int64_t value, TxUnits units, LogLevel logLevel, unsigned groupMask) const;
-    void forwardDouble(const char* txKey, const char* otKey, double value, LogLevel logLevel, unsigned groupMask) const;
-    void forwardBool(const char* txKey, const char* otKey, bool value, LogLevel logLevel, unsigned groupMask) const;
-    void forwardString(const char* txKey, const char* otKey, const char* value, LogLevel logLevel, unsigned groupMask) const;
+    void forwardUnsigned(const char* summaryKey, const char* spanKey, uint64_t value, SummaryValueUnits units, LogLevel logLevel, unsigned groupMask) const;
+    void forwardSigned(const char* summaryKey, const char* spanKey, int64_t value, SummaryValueUnits units, LogLevel logLevel, unsigned groupMask) const;
+    void forwardDouble(const char* summaryKey, const char* spanKey, double value, LogLevel logLevel, unsigned groupMask) const;
+    void forwardBool(const char* summaryKey, const char* spanKey, bool value, LogLevel logLevel, unsigned groupMask) const;
+    void forwardString(const char* summaryKey, const char* spanKey, const char* value, LogLevel logLevel, unsigned groupMask) const;
     
     /**
      * @brief Apply required arithmetic svaling of values before forwarding.
@@ -423,110 +425,110 @@ protected:
      * @return TValue potentially scaled value
      */
     template <typename TValue>
-    TValue scale(TValue& value, TxUnits units) const;
+    TValue scale(TValue& value, SummaryValueUnits units) const;
 
 private:
     LogLevel     maxLogLevel = LogMin; /// configured log level filter constraint
     unsigned     groupSelector = TXSUMMARY_GRP_CORE; /// configured value group constraint
 public:
-    CTxOpenTelemetryConnector();
+    CTxSummarySpanForwarder();
 };
 
 template <typename TValue, typename TSuffix, class TSerializer>
-inline bool CTxSummary::append(const char* key, const TValue& value, const LogLevel logLevel, const unsigned int group, const TSuffix& suffix,  const TSerializer& serializer)
+inline bool CTxSummary::append(const char* summaryKey, const TValue& value, const LogLevel logLevel, const unsigned int group, const TSuffix& suffix,  const TSerializer& serializer)
 {
-    return append(key, value, nullptr, TxUnits::NA, logLevel, group, suffix, serializer);
+    return append(summaryKey, value, nullptr, SummaryValueUnits::NA, logLevel, group, suffix, serializer);
 }
 
 template <typename TValue, typename TSuffix, class TSerializer>
-inline bool CTxSummary::append(const char* key, const TValue& value, const char* otKey, const LogLevel logLevel, const unsigned int group, const TSuffix& suffix,  const TSerializer& serializer)
+inline bool CTxSummary::append(const char* summaryKey, const TValue& value, const char* spanKey, const LogLevel logLevel, const unsigned int group, const TSuffix& suffix,  const TSerializer& serializer)
 {
-    return append(key, value, otKey, TxUnits::NA, logLevel, group, suffix, serializer);
+    return append(summaryKey, value, spanKey, SummaryValueUnits::NA, logLevel, group, suffix, serializer);
 }
 
 template <typename TValue, typename TSuffix, class TSerializer>
-inline bool CTxSummary::append(const char* key, const TValue& value, TxUnits units, const LogLevel logLevel, const unsigned int group, const TSuffix& suffix,  const TSerializer& serializer)
+inline bool CTxSummary::append(const char* summaryKey, const TValue& value, SummaryValueUnits units, const LogLevel logLevel, const unsigned int group, const TSuffix& suffix,  const TSerializer& serializer)
 {
-    return append(key, value, nullptr, units, logLevel, group, suffix, serializer);
+    return append(summaryKey, value, nullptr, units, logLevel, group, suffix, serializer);
 }
 
 template <typename TValue, typename TSuffix, class TSerializer>
-inline bool CTxSummary::append(const char* key, const TValue& value, const char* otKey, TxUnits units, LogLevel logLevel, const unsigned int group, const TSuffix& suffix,  const TSerializer& serializer)
+inline bool CTxSummary::append(const char* summaryKey, const TValue& value, const char* spanKey, SummaryValueUnits units, LogLevel logLevel, const unsigned int group, const TSuffix& suffix,  const TSerializer& serializer)
 {
-    connector->forwardAttribute(key, otKey, value, units, logLevel, group);
+    forwarder->forwardAttribute(summaryKey, spanKey, value, units, logLevel, group);
     StringBuffer buffer, suffixBuf;
     serializer.serialize(value, buffer);
     serializer.serialize(suffix, suffixBuf);
     bool shouldQuote = true;
     if(std::is_arithmetic<TValue>())
         shouldQuote = false;
-    return appendSerialized(key, serializer.str(buffer), logLevel, group, shouldQuote, serializer.str(suffixBuf));
+    return appendSerialized(summaryKey, serializer.str(buffer), logLevel, group, shouldQuote, serializer.str(suffixBuf));
 }
 
 template <typename TValue, typename TSuffix, class TSerializer>
-inline bool CTxSummary::set(const char* key, const TValue& value, const LogLevel logLevel, const unsigned int group, const TSuffix& suffix, const TSerializer& serializer)
+inline bool CTxSummary::set(const char* summaryKey, const TValue& value, const LogLevel logLevel, const unsigned int group, const TSuffix& suffix, const TSerializer& serializer)
 {
-    return set(key, value, nullptr, TxUnits::NA, logLevel, group, suffix, serializer);
+    return set(summaryKey, value, nullptr, SummaryValueUnits::NA, logLevel, group, suffix, serializer);
 }
 
 template <typename TValue, typename TSuffix, class TSerializer>
-inline bool CTxSummary::set(const char* key, const TValue& value, const char* otKey, const LogLevel logLevel, const unsigned int group, const TSuffix& suffix,  const TSerializer& serializer)
+inline bool CTxSummary::set(const char* summaryKey, const TValue& value, const char* spanKey, const LogLevel logLevel, const unsigned int group, const TSuffix& suffix,  const TSerializer& serializer)
 {
-    return set(key, value, otKey, TxUnits::NA, logLevel, group, suffix, serializer);
+    return set(summaryKey, value, spanKey, SummaryValueUnits::NA, logLevel, group, suffix, serializer);
 }
 
 template <typename TValue, typename TSuffix, class TSerializer>
-inline bool CTxSummary::set(const char* key, const TValue& value, TxUnits units, const LogLevel logLevel, const unsigned int group, const TSuffix& suffix,  const TSerializer& serializer)
+inline bool CTxSummary::set(const char* summaryKey, const TValue& value, SummaryValueUnits units, const LogLevel logLevel, const unsigned int group, const TSuffix& suffix,  const TSerializer& serializer)
 {
-    return set(key, value, nullptr, units, logLevel, group, suffix, serializer);
+    return set(summaryKey, value, nullptr, units, logLevel, group, suffix, serializer);
 }
 
 template <typename TValue, typename TSuffix, class TSerializer>
-inline bool CTxSummary::set(const char* key, const TValue& value, const char* otKey, TxUnits units, LogLevel logLevel, const unsigned int group, const TSuffix& suffix,  const TSerializer& serializer)
+inline bool CTxSummary::set(const char* summaryKey, const TValue& value, const char* spanKey, SummaryValueUnits units, LogLevel logLevel, const unsigned int group, const TSuffix& suffix,  const TSerializer& serializer)
 {
-    connector->forwardAttribute(key, otKey, value, units, logLevel, group);
+    forwarder->forwardAttribute(summaryKey, spanKey, value, units, logLevel, group);
     StringBuffer buffer, suffixBuf;
     serializer.serialize(value, buffer);
     serializer.serialize(suffix, suffixBuf);
     bool shouldQuote = true;
     if(std::is_arithmetic<TValue>())
         shouldQuote = false;
-    return setSerialized(key, serializer.str(buffer), logLevel, group, shouldQuote, serializer.str(suffixBuf));
+    return setSerialized(summaryKey, serializer.str(buffer), logLevel, group, shouldQuote, serializer.str(suffixBuf));
 }
 
 template <typename TValue>
-inline void CTxOpenTelemetryConnector::forwardAttribute(const char* txKey, const char* otKey, TValue value, TxUnits units, LogLevel logLevel, unsigned groupMask) const
+inline void CTxSummarySpanForwarder::forwardAttribute(const char* summaryKey, const char* spanKey, TValue value, SummaryValueUnits units, LogLevel logLevel, unsigned groupMask) const
 {
     if (std::is_unsigned<TValue>())
-        forwardUnsigned(txKey, otKey, value, units, logLevel, groupMask);
+        forwardUnsigned(summaryKey, spanKey, value, units, logLevel, groupMask);
     else if (std::is_signed<TValue>())
-        forwardSigned(txKey, otKey, value, units, logLevel, groupMask);
+        forwardSigned(summaryKey, spanKey, value, units, logLevel, groupMask);
     else if (std::is_floating_point<TValue>())
-        forwardDouble(txKey, otKey, value, logLevel, groupMask);
+        forwardDouble(summaryKey, spanKey, value, logLevel, groupMask);
 }
 
-inline void CTxOpenTelemetryConnector::forwardAttribute(const char* txKey, const char* otKey, const char* value, TxUnits, LogLevel logLevel, unsigned groupMask) const
+inline void CTxSummarySpanForwarder::forwardAttribute(const char* summaryKey, const char* spanKey, const char* value, SummaryValueUnits, LogLevel logLevel, unsigned groupMask) const
 {
-    forwardString(txKey, otKey, value, logLevel, groupMask);
+    forwardString(summaryKey, spanKey, value, logLevel, groupMask);
 }
 
-inline void CTxOpenTelemetryConnector::forwardAttribute(const char* txKey, const char* otKey, bool value, TxUnits, LogLevel logLevel, unsigned groupMask) const
+inline void CTxSummarySpanForwarder::forwardAttribute(const char* summaryKey, const char* spanKey, bool value, SummaryValueUnits, LogLevel logLevel, unsigned groupMask) const
 {
-    forwardBool(txKey, otKey, value, logLevel, groupMask);
+    forwardBool(summaryKey, spanKey, value, logLevel, groupMask);
 }
 
 template <typename TValue>
-inline TValue CTxOpenTelemetryConnector::scale(TValue& value, TxUnits units) const
+inline TValue CTxSummarySpanForwarder::scale(TValue& value, SummaryValueUnits units) const
 {
     switch (units)
     {
-    case TxUnits::NA:
+    case SummaryValueUnits::NA:
         break;
-    case TxUnits::millis:
+    case SummaryValueUnits::millis:
         value *= 1000000;
         break;
     default:
-        IERRLOG("unhandled TxUnits %d for value scaling", int(units));
+        IERRLOG("unhandled SummaryValueUnits %d for value scaling", int(units));
         break;
     }
     return value;

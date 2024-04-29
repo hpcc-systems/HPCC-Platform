@@ -91,9 +91,12 @@ typedef enum LogRequest_
 #define TXSUMMARY_GRP_CORE        0x00000001
 #define TXSUMMARY_GRP_ENTERPRISE  0x00000002
 
+/// Generate original trace summary contnet.
 #define TXSUMMARY_OUT_TEXT      0x00000001
+/// Generate JSON-formatted trace summary content.
 #define TXSUMMARY_OUT_JSON      0x00000002
-#define TXSUMMARY_FWD_OTEL      0x80000000
+/// Forward cumulative timer values to a JTrace span using the serialization interface. No serialization.
+#define TXSUMMARY_FWD_TIMERS    0x80000000
 
 #define ESPCTX_NO_NAMESPACES    0x00000001
 #define ESPCTX_WSDL             0x00000010
@@ -105,7 +108,7 @@ class CTxSummary;
 interface IEspSecureContext;
 interface IEspSecureContextEx;
 class CumulativeTimer;
-enum class TxUnits;
+enum class SummaryValueUnits;
 
 interface IEspContext : extends IInterface
 {
@@ -199,15 +202,15 @@ interface IEspContext : extends IInterface
 
     virtual CTxSummary* queryTxSummary()=0;
     virtual void addTraceSummaryValue(unsigned logLevel, const char *name, const char *value, const unsigned int group = TXSUMMARY_GRP_CORE)=0;
-    virtual void addTraceSummaryValue(unsigned logLevel, const char *name, const char *value, const char* otName, unsigned group = TXSUMMARY_GRP_CORE)=0;
+    virtual void addTraceSummaryValue(unsigned logLevel, const char *name, const char *value, const char* spanAttrName, unsigned group = TXSUMMARY_GRP_CORE)=0;
     virtual void addTraceSummaryValue(unsigned logLevel, const char *name, __int64 value, const unsigned int group = TXSUMMARY_GRP_CORE)=0;
-    virtual void addTraceSummaryValue(unsigned logLevel, const char *name, __int64 value, const char* otName, unsigned group = TXSUMMARY_GRP_CORE)=0;
-    virtual void addTraceSummaryValue(unsigned logLevel, const char *name, __int64 value, TxUnits units, unsigned group = TXSUMMARY_GRP_CORE)=0;
-    virtual void addTraceSummaryValue(unsigned logLevel, const char *name, __int64 value, const char* otName, TxUnits units, unsigned group = TXSUMMARY_GRP_CORE)=0;
+    virtual void addTraceSummaryValue(unsigned logLevel, const char *name, __int64 value, const char* spanAttrName, unsigned group = TXSUMMARY_GRP_CORE)=0;
+    virtual void addTraceSummaryValue(unsigned logLevel, const char *name, __int64 value, SummaryValueUnits units, unsigned group = TXSUMMARY_GRP_CORE)=0;
+    virtual void addTraceSummaryValue(unsigned logLevel, const char *name, __int64 value, const char* spanAttrName, SummaryValueUnits units, unsigned group = TXSUMMARY_GRP_CORE)=0;
     virtual void addTraceSummaryDoubleValue(unsigned logLevel, const char *name, double value, const unsigned int group = TXSUMMARY_GRP_CORE)=0;
-    virtual void addTraceSummaryDoubleValue(unsigned logLevel, const char *name, double value, const char* otName, unsigned group = TXSUMMARY_GRP_CORE)=0;
+    virtual void addTraceSummaryDoubleValue(unsigned logLevel, const char *name, double value, const char* spanAttrName, unsigned group = TXSUMMARY_GRP_CORE)=0;
     virtual void addTraceSummaryTimeStamp(unsigned logLevel, const char *name, const unsigned int group = TXSUMMARY_GRP_CORE)=0;
-    virtual void addTraceSummaryTimeStamp(unsigned logLevel, const char *name, const char* otName, unsigned group = TXSUMMARY_GRP_CORE)=0;
+    virtual void addTraceSummaryTimeStamp(unsigned logLevel, const char *name, const char* spanAttrName, unsigned group = TXSUMMARY_GRP_CORE)=0;
     virtual void addTraceSummaryCumulativeTime(unsigned logLevel, const char* name, unsigned __int64 time, const unsigned int group = TXSUMMARY_GRP_CORE)=0;
     virtual CumulativeTimer* queryTraceSummaryCumulativeTimer(unsigned logLevel, const char *name, const unsigned int group = TXSUMMARY_GRP_CORE)=0;
     virtual void cancelTxSummary()=0;

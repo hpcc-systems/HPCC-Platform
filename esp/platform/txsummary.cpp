@@ -30,8 +30,17 @@ static auto pRequestCount = hpccMetrics::registerCounterMetric("esp.requests.rec
 
 namespace
 {
-    // Iteration of summary entries occurs without knowledge of the summary or its connector.
-    static thread_local CTxOpenTelemetryConnector* otelConnector = nullptr;
+    // Summary entries iterated for serialization lack awareness of the summary that contains them.
+    // Forwarding cumulative timers, which piggy-backs on the serialization logic, needs to know
+    // the summary's span forawarder. The forwarder is set immediately beforo, and cleared after,
+    // the forwarding iteration.
+    static thread_local CTxSummarySpanForwarder* spanForwarder = nullptr;
+
+    struct ForwarderScope
+    {
+        ForwarderScope(CTxSummarySpanForwarder* forwarder) { spanForwarder = forwarder; }
+        ~ForwarderScope() { spanForwarder = nullptr; }
+    };
 }
 
 inline bool validate(const char* k)
@@ -132,10 +141,10 @@ StringBuffer& CTxSummary::TxEntryTimer::serialize(StringBuffer& buf, const LogLe
         buf.append(fullname);
         buf.appendf("=%" I64F "u;", value->getTotalMillis());
     }
-    else if (requestedStyle & TXSUMMARY_FWD_OTEL)
+    else if (requestedStyle & TXSUMMARY_FWD_TIMERS)
     {
-        if (otelConnector)
-            otelConnector->forwardAttribute(name, nullptr, value->getTotalMillis(), TxUnits::millis, queryLogLevel(), queryGroup());
+        if (spanForwarder)
+            spanForwarder->forwardAttribute(name, nullptr, value->getTotalMillis(), SummaryValueUnits::millis, queryLogLevel(), queryGroup());
     }
 
     return buf;
@@ -343,7 +352,7 @@ StringBuffer& CTxSummary::TxEntryObject::serialize(StringBuffer& buf, const LogL
 
 CTxSummary::CTxSummary(unsigned creationTime)
 : m_creationTime(creationTime ? creationTime : msTick())
-, connector(new CTxOpenTelemetryConnector)
+, forwarder(new CTxSummarySpanForwarder)
 {
 #ifdef _SOLVED_DYNAMIC_METRIC_PROBLEM
     pRequestCount->inc(1);
@@ -604,13 +613,12 @@ void CTxSummary::log(const LogLevel logLevel, const unsigned int requestedGroup,
             DBGLOG("%s", summary.str());
         }
 
-        if (requestedStyle & TXSUMMARY_FWD_OTEL)
+        if (requestedStyle & TXSUMMARY_FWD_TIMERS)
         {
             // String values have already been forwarded and should ignore this serialization
             // request. Timer values have not been forwarded, and should forward their values.
-            otelConnector = connector.get();
-            serialize(summary.clear(), logLevel, requestedGroup, TXSUMMARY_FWD_OTEL);
-            otelConnector = nullptr;
+            ForwarderScope scope(forwarder);
+            serialize(summary.clear(), logLevel, requestedGroup, TXSUMMARY_FWD_TIMERS);
         }
     }
 }
@@ -685,14 +693,25 @@ CTxSummary::TxEntryBase* CTxSummary::queryEntry(const char* key)
     return nullptr;
 }
 
-StringBuffer& CTxOpenTelemetryConnector::normalizeKey(const char* txKey, const char* otKey, StringBuffer& normalized) const
+ISpan* CTxSummarySpanForwarder::prepareToForward(const char* summaryKey, const char* spanKey, StringBuffer& actualKey, LogLevel logLevel, unsigned groupMask) const
 {
-    getSnakeCase(normalized, isEmptyString(otKey) ? txKey : otKey);
-    // Keys for custom attributes may be annotated to reflect the source here.
-    return normalized;
+    if (!isExcluded(normalizeKey(summaryKey, spanKey, actualKey), logLevel, groupMask))
+    {
+        ISpan* target = queryThreadedActiveSpan();
+        if (target && target->isRecording())
+            return target;
+    }
+    return nullptr;
 }
 
-bool CTxOpenTelemetryConnector::isExcluded(const char* key, LogLevel logLevel, unsigned groupMask) const
+StringBuffer& CTxSummarySpanForwarder::normalizeKey(const char* summaryKey, const char* spanKey, StringBuffer& actualKey) const
+{
+    getSnakeCase(actualKey, isEmptyString(spanKey) ? summaryKey : spanKey);
+    // Keys for custom attributes may be annotated to reflect the source here.
+    return actualKey;
+}
+
+bool CTxSummarySpanForwarder::isExcluded(const char* key, LogLevel logLevel, unsigned groupMask) const
 {
     if ((logLevel > maxLogLevel) || ((groupMask & groupSelector) != groupSelector) || isEmptyString(key))
         return true;
@@ -701,49 +720,51 @@ bool CTxOpenTelemetryConnector::isExcluded(const char* key, LogLevel logLevel, u
     return false;
 }
 
-#define ENSURE_TARGET_AND_NAME \
-    StringBuffer name; \
-    if (isExcluded(normalizeKey(txKey, otKey, name), logLevel, groupMask)) \
-        return; \
-    ISpan* target = queryThreadedActiveSpan(); \
-    if (!target) \
-        return
-
-void CTxOpenTelemetryConnector::forwardUnsigned(const char* txKey, const char* otKey, uint64_t value, TxUnits units, LogLevel logLevel, unsigned groupMask) const
+void CTxSummarySpanForwarder::forwardUnsigned(const char* summaryKey, const char* spanKey, uint64_t value, SummaryValueUnits units, LogLevel logLevel, unsigned groupMask) const
 {
-    ENSURE_TARGET_AND_NAME;
-    target->setSpanAttribute(name, scale(value, units));
+    StringBuffer attrName;
+    ISpan* target = prepareToForward(summaryKey, spanKey, attrName, logLevel, groupMask);
+    if (target)
+        target->setSpanAttribute(attrName, scale(value, units));
 }
 
-void CTxOpenTelemetryConnector::forwardSigned(const char* txKey, const char* otKey, int64_t value, TxUnits units, LogLevel logLevel, unsigned groupMask) const
+void CTxSummarySpanForwarder::forwardSigned(const char* summaryKey, const char* spanKey, int64_t value, SummaryValueUnits units, LogLevel logLevel, unsigned groupMask) const
 {
-    ENSURE_TARGET_AND_NAME;
-    target->setSpanAttribute(name, uint64_t(scale(value, units)));
+    StringBuffer attrName;
+    ISpan* target = prepareToForward(summaryKey, spanKey, attrName, logLevel, groupMask);
+    if (target)
+        target->setSpanAttribute(attrName, uint64_t(scale(value, units)));
 }
 
-void CTxOpenTelemetryConnector::forwardDouble(const char* txKey, const char* otKey, double value, LogLevel logLevel, unsigned groupMask) const
+void CTxSummarySpanForwarder::forwardDouble(const char* summaryKey, const char* spanKey, double value, LogLevel logLevel, unsigned groupMask) const
 {
-    ENSURE_TARGET_AND_NAME;
-    StringBuffer tmp;
-    tmp.append(value);
-    target->setSpanAttribute(name, tmp);
+    StringBuffer attrName;
+    ISpan* target = prepareToForward(summaryKey, spanKey, attrName, logLevel, groupMask);
+    if (target)
+    {
+        StringBuffer tmp;
+        tmp.append(value);
+        target->setSpanAttribute(attrName, tmp);
+    }
 }
 
-void CTxOpenTelemetryConnector::forwardBool(const char* txKey, const char* otKey, bool value, LogLevel logLevel, unsigned groupMask) const
+void CTxSummarySpanForwarder::forwardBool(const char* summaryKey, const char* spanKey, bool value, LogLevel logLevel, unsigned groupMask) const
 {
-    ENSURE_TARGET_AND_NAME;
-    target->setSpanAttribute(name, uint64_t(value));
+    StringBuffer attrName;
+    ISpan* target = prepareToForward(summaryKey, spanKey, attrName, logLevel, groupMask);
+    if (target)
+        target->setSpanAttribute(attrName, uint64_t(value));
 }
 
-void CTxOpenTelemetryConnector::forwardString(const char* txKey, const char* otKey, const char* value, LogLevel logLevel, unsigned groupMask) const
+void CTxSummarySpanForwarder::forwardString(const char* summaryKey, const char* spanKey, const char* value, LogLevel logLevel, unsigned groupMask) const
 {
-    ENSURE_TARGET_AND_NAME;
-    target->setSpanAttribute(name, value);
+    StringBuffer attrName;
+    ISpan* target = prepareToForward(summaryKey, spanKey, attrName, logLevel, groupMask);
+    if (target)
+        target->setSpanAttribute(attrName, value);
 }
 
-#undef ENSURE_TARGET_AND_NAME
-
-CTxOpenTelemetryConnector::CTxOpenTelemetryConnector()
+CTxSummarySpanForwarder::CTxSummarySpanForwarder()
     : maxLogLevel(getTxSummaryLevel())
     , groupSelector(getTxSummaryGroup())
 {
