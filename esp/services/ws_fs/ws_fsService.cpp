@@ -1109,7 +1109,14 @@ bool CFileSprayEx::onGetDFUWorkunits(IEspContext &context, IEspGetDFUWorkunits &
             resultWU->setID(wu->queryId());
             StringBuffer jobname, user, cluster;
             resultWU->setJobName(wu->getJobName(jobname).str());
-            resultWU->setCommand(wu->getCommand());
+            DFUcmd command = wu->getCommand();
+            resultWU->setCommand(command);
+            if (version >= 1.03)
+            {
+                StringBuffer cmdStr;
+                encodeDFUcommand(command, cmdStr);
+                resultWU->setCommandMessage(cmdStr.str());
+            }
             resultWU->setUser(wu->getUser(user).str());
 
             const char* clusterName = wu->getClusterName(cluster).str();
