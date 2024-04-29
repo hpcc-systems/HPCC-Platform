@@ -38,7 +38,9 @@ public:
 class HQL_API EclRepositoryManager
 {
 public:
-    EclRepositoryManager() = default;
+    EclRepositoryManager(ICodegenContextCallback * _callback) : callback(_callback)
+    {
+    }
     EclRepositoryManager(const EclRepositoryManager & other) = delete;
 
     void addNestedRepository(IIdAtom * scopeId, IEclSourceCollection * source, bool includeInArchive);
@@ -86,10 +88,17 @@ protected:
 
     unsigned runGitCommand(StringBuffer * output, const char *args, const char * cwd, bool needCredentials);
     IEclPackage * queryRepository(IIdAtom * name, const char * defaultUrl, IEclSourceCollection * overrideSource, bool includeDefinitions);
+    IInterface * getGitUpdateLock(const char * path)
+    {
+        if (!callback)
+            return nullptr;
+        return callback->getGitUpdateLock(path);
+    }
 
 private:
     mutable IErrorReceiver * errorReceiver = nullptr; // mutable to allow const methods to set it, it logically doesn't change the object
     using DependencyInfo = std::pair<std::string, Shared<IEclPackage>>;
+    ICodegenContextCallback * callback;
     CIArrayOf<EclRepositoryMapping> repos;
     std::vector<DependencyInfo> dependencies;
     IArrayOf<IEclRepository> sharedSources;     // plugins, std library, bundles

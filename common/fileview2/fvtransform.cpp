@@ -295,7 +295,7 @@ void ViewTransformerRegistry::addPlugins(const char * name)
     loadedPlugins->loadFromList(name);
 
     Owned<IErrorReceiver> errorReporter = createThrowingErrorReceiver();
-    EclRepositoryManager collection;
+    EclRepositoryManager collection(nullptr);
     collection.addSharedSourceFileEclRepository(errorReporter, name, ESFallowplugins|ESFnodependencies, 0, false);
     dataServer.setown(collection.createPackage(nullptr));
 

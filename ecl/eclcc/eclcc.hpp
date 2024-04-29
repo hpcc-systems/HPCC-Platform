@@ -96,6 +96,7 @@ const char * const helpText[] = {
     "?!  --fastsyntax  Delay expanding functions when parsing.  May speed up processing for some queries",
     "?   --fetchrepos  Automatically download missing repositories associated with dependencies",
     "!   --gituser=x   Which user should be used for accessing git repositories (for servers)",
+    "!   --gitlock=key The dali key (e.g. plane name) that should be used to protect updates to git repositories",
     "    -help, --help Display this message",
     "    -help -v      Display verbose help message",
     "!   --ignoresimplified Do not use simplified expressions when syntax checking",
