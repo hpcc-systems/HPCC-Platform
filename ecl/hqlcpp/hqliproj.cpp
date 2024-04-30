@@ -1927,6 +1927,7 @@ void ImplicitProjectTransformer::gatherFieldsUsed(IHqlExpression * expr, Implici
                 {
                 case no_csv:
                 case no_xml:
+                case no_json:
                     break;
                 default:
                     {
