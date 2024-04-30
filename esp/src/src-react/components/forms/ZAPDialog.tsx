@@ -376,30 +376,34 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                 />}
         />
         <div style={{ padding: "15px 0 7px 0" }}>
-            <div>
-                <Controller
-                    control={control} name="IncludeThorSlaveLog"
-                    render={({
-                        field: { onChange, name: fieldName, value }
-                    }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.IncludeSlaveLogs} />}
-                />
-            </div>
-            <div style={{ marginTop: 2, marginBottom: 2 }}>
-                <Controller
-                    control={control} name="IncludeRelatedLogs"
-                    render={({
-                        field: { onChange, name: fieldName, value }
-                    }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.IncludeRelatedLogs} />}
-                />
-            </div>
-            <div>
-                <Controller
-                    control={control} name="IncludePerComponentLogs"
-                    render={({
-                        field: { onChange, name: fieldName, value }
-                    }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.IncludePerComponentLogs} />}
-                />
-            </div>
+            {!isContainer
+                ? <div>
+                    <Controller
+                        control={control} name="IncludeThorSlaveLog"
+                        render={({
+                            field: { onChange, name: fieldName, value }
+                        }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.IncludeSlaveLogs} />}
+                    />
+                </div>
+                : <div>
+                    <div style={{ marginBottom: 4 }}>
+                        <Controller
+                            control={control} name="IncludeRelatedLogs"
+                            render={({
+                                field: { onChange, name: fieldName, value }
+                            }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.IncludeRelatedLogs} />}
+                        />
+                    </div>
+                    <div>
+                        <Controller
+                            control={control} name="IncludePerComponentLogs"
+                            render={({
+                                field: { onChange, name: fieldName, value }
+                            }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.IncludePerComponentLogs} />}
+                        />
+                    </div>
+                </div>
+            }
             <div style={{ paddingTop: "10px" }}>
                 <Controller
                     control={control} name="SendEmail"
