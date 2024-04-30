@@ -273,6 +273,14 @@
           "description": "if set, no resource definitions are generated from the helm charts",
           "type": "boolean"
         },
+        "resourceCpusWithLimits": {
+          "description": "if set, cpu resources are provided as limits rather than requests.  Not recommended because this can lead to painful throttling on roxie and thor",
+          "type": "boolean"
+        },
+        "resourceWholeCpusWithLimits": {
+          "description": "if set, whole cpu resource are provided as limits rather than requests.  On K8s systems where cpuManagerPolicy=static this allows binding using affinities.",
+          "type": "boolean"
+        },
         "privileged": {
           "type": "boolean"
         },
