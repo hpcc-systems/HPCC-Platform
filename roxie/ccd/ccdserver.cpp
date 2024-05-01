@@ -4674,7 +4674,7 @@ public:
         return true;
     }
 
-    virtual void onCreate(IHThorArg *_colocalArg)
+    virtual void onCreate(IHThorArg *_colocalArg, bool forceDeferred)
     {
         debugContext = ctx->queryDebugContext();
         colocalArg = _colocalArg;
@@ -4683,7 +4683,7 @@ public:
             deserializer.setown(meta.createDiskDeserializer(ctx->queryCodeContext(), activity.queryId()));
             rowAllocator.setown(activity.createRowAllocator(meta.queryOriginal()));
         }
-        if (ctx->queryDebugContext() && ctx->queryDebugContext()->getExecuteSequentially())
+        if (forceDeferred || (ctx->queryDebugContext() && ctx->queryDebugContext()->getExecuteSequentially()))
             deferredStart = true;
         timeActivities = ctx->queryOptions().timeActivities;
     }
@@ -18026,7 +18026,7 @@ public:
     virtual void onCreate(IHThorArg *_colocalParent)
     {
         CRoxieServerActivity::onCreate(_colocalParent);
-        remote.onCreate(_colocalParent);
+        remote.onCreate(_colocalParent, false);
     }
 
     virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -22433,7 +22433,7 @@ public:
     {
         CRoxieServerActivity::onCreate(_colocalParent);
         if (remote)
-            remote->onCreate(_colocalParent);
+            remote->onCreate(_colocalParent, variableFileName);
     }
 
     virtual bool needsAllocator() const { return true; }
@@ -23614,7 +23614,7 @@ public:
     virtual void onCreate(IHThorArg *_colocalParent)
     {
         CRoxieServerActivity::onCreate(_colocalParent);
-        remote.onCreate(_colocalParent);
+        remote.onCreate(_colocalParent, variableFileName);
     }
 
     virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -25394,7 +25394,7 @@ public:
     virtual void onCreate(IHThorArg *_colocalParent)
     {
         CRoxieServerActivity::onCreate(_colocalParent);
-        remote.onCreate(_colocalParent);
+        remote.onCreate(_colocalParent, variableFileName);
     }
 
     virtual void setInput(unsigned idx, unsigned _sourceIdx, IFinalRoxieInput *_in)
@@ -25920,9 +25920,9 @@ public:
         eof = false;
     }
 
-    virtual void onCreate(IHThorArg *_colocalArg)
+    virtual void onCreate(IHThorArg *_colocalArg, bool forceDeferred) override
     {
-        CRemoteResultAdaptor::onCreate(_colocalArg);
+        CRemoteResultAdaptor::onCreate(_colocalArg, forceDeferred);
         ccdRecordAllocator.setown(activity.createRowAllocator(helper.queryJoinFieldsRecordSize()));
     }
 
@@ -26088,7 +26088,7 @@ public:
     virtual void onCreate(IHThorArg *_colocalParent)
     {
         CRoxieServerActivity::onCreate(_colocalParent);
-        remote.onCreate(_colocalParent);
+        remote.onCreate(_colocalParent, variableIndexFileName);
         indexReadAllocator.setown(createRowAllocator(indexReadMeta));
     }
 
@@ -26460,12 +26460,6 @@ public:
         unsigned allocatorFlags = roxiemem::RHFblocked;
         joinGroupAllocator.setown(ctx->queryRowManager().createFixedRowHeap(sizeof(CJoinGroup), activityId, allocatorFlags));
         // MORE - code would be easier to read if I got more values from helper rather than passing from factory
-    }
-
-    virtual void onCreate(IHThorArg *_colocalParent)
-    {
-        CRoxieServerActivity::onCreate(_colocalParent);
-        remote.onCreate(_colocalParent);
     }
 
     virtual void setInput(unsigned idx, unsigned _sourceIdx, IFinalRoxieInput *_in)
@@ -26860,6 +26854,7 @@ public:
     virtual void onCreate(IHThorArg *_colocalParent)
     {
         CRoxieServerKeyedJoinBase::onCreate(_colocalParent);
+        remote.onCreate(_colocalParent, variableFetchFileName);
         head.onCreate(_colocalParent);
         fetchInputFields.set(helper.queryFetchInputRecordSize());
         fetchInputAllocator.setown(createRowAllocator(helper.queryFetchInputRecordSize()));
@@ -27008,6 +27003,7 @@ public:
     virtual void onCreate(IHThorArg *_colocalParent)
     {
         CRoxieServerKeyedJoinBase::onCreate(_colocalParent);
+        remote.onCreate(_colocalParent, variableIndexFileName);
         //The index read allocator->allocate() is only ever called from a single thread => we can allocate rows in blocks
         indexReadAllocator.setown(createRowAllocatorEx(indexReadMeta, roxiemem::RHFblocked));
 
