@@ -38,6 +38,8 @@ extern ECLRTL_API RecordTranslationMode getTranslationMode(const char *val, bool
 {
     if (isEmptyString(val) || strToBool(val) || strieq(val, "payload"))
         return RecordTranslationMode::Payload;
+    else if (strieq(val, "payloadRemoveOnly"))
+        return RecordTranslationMode::PayloadRemoveOnly;
     else if (strieq(val, "alwaysDisk") || strieq(val, "disk"))
     {
         if (!isLocal)
@@ -60,6 +62,7 @@ extern ECLRTL_API const char *getTranslationModeText(RecordTranslationMode val)
     case RecordTranslationMode::AlwaysDisk: return "alwaysDisk";
     case RecordTranslationMode::AlwaysECL: return "alwaysECL";
     case RecordTranslationMode::Payload: return "payload";
+    case RecordTranslationMode::PayloadRemoveOnly: return "payloadRemoveOnly";
     case RecordTranslationMode::None: return "off";
     }
     throwUnexpected();
@@ -1085,6 +1088,10 @@ public:
     {
         return (matchFlags & match_keychange) != 0;
     }
+    virtual bool hasNewFields() const override
+    {
+        return (matchFlags & match_none) != 0;
+    }
 private:
     void doDescribe(unsigned indent) const
     {
@@ -1945,6 +1952,10 @@ public:
         return false;
     }
     virtual bool keyedTranslated() const override
+    {
+        return false;
+    }
+    virtual bool hasNewFields() const override
     {
         return false;
     }
