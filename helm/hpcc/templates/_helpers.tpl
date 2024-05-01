@@ -1339,7 +1339,7 @@ Pass in dict with root, me and instances defined
 {{- $stubInstanceResources := .stubResources | default .root.Values.global.stubInstanceResources | default dict }}
 {{- $milliCPUText := $stubInstanceResources.cpu | default "200m" }}
 {{- $milliCPUs := int (include "hpcc.k8sCPUStringToMilliCPU" $milliCPUText) }}
-{{- $memoryText := $stubInstanceResources.memory | default "50Mi" }}
+{{- $memoryText := $stubInstanceResources.memory | default "400Mi" }}
 {{- $memory := int64 (include "hpcc.k8sMemoryStringToBytes" $memoryText) }}
 resources:
   limits:
