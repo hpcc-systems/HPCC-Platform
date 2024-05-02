@@ -197,7 +197,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         .baseUrl("")
         .request({
             ScopeFilter: {
-                MaxDepth: 3,
+                MaxDepth: 4,
                 ScopeTypes: { ScopeType: [] }
             },
             NestedFilter: {

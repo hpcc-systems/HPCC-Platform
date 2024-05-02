@@ -54,8 +54,10 @@ export class WUTimelinePatched extends WUTimeline {
             }
             row[5] = null;
             row.push(row[6]);
-            row[6] = (row[6]?.ScopeName?.split(":")?.length - 1) || 0;
+            row[6] = (row[6]?.ScopeName?.split(":")?.length ?? 1) - 1;
             return row;
+        }).filter(row => {
+            return row[7].ScopeType !== "subgraph" && row[7].ScopeType !== "activity" && row[7].ScopeType !== "edge";
         }));
         return this;
     }
