@@ -180,6 +180,42 @@ public:
 
 
 /*
+ * A metric where the value is provided by an atomic that is external to the class.
+ * To avoid a pointer dereference when updating the value.
+*/
+class jlib_decl ExternalMetric : public MetricBase
+{
+public:
+    virtual __uint64 queryValue() const override { return value; }
+
+public:
+    ExternalMetric(const char *_name, const char *_description, StatisticMeasure _units, RelaxedAtomic<__uint64> & _value, const MetricMetaData &_metaData = MetricMetaData()) :
+        MetricBase{_name, _description, MetricType::METRICS_COUNTER, _units, _metaData}, value(_value)  { }
+
+protected:
+    RelaxedAtomic<__uint64> & value;
+};
+
+using MetricValueCallback = std::function<__uint64()>;
+/*
+ * A metric where the value is provided by an atomic that is external to the class.
+ * To avoid a pointer dereference when updating the value.
+*/
+class jlib_decl ExternalCallbackMetric : public MetricBase
+{
+public:
+    virtual __uint64 queryValue() const override { return callback(); }
+
+public:
+    ExternalCallbackMetric(const char *_name, const char *_description, StatisticMeasure _units, MetricValueCallback & _callback, const MetricMetaData &_metaData = MetricMetaData()) :
+        MetricBase{_name, _description, MetricType::METRICS_COUNTER, _units, _metaData}, callback(_callback)  { }
+
+protected:
+    MetricValueCallback callback;
+};
+
+
+/*
  * Metric used to track the current state of some internal measurement.
  */
 class jlib_decl GaugeMetric : public MetricVal
@@ -384,6 +420,8 @@ protected:
 };
 
 jlib_decl std::shared_ptr<CounterMetric> registerCounterMetric(const char *name, const char* desc, StatisticMeasure units, const MetricMetaData &metaData = MetricMetaData());
+jlib_decl std::shared_ptr<IMetric> registerExternalMetric(const char *name, const char* desc, StatisticMeasure units, RelaxedAtomic<__uint64> & value, const MetricMetaData &metaData = MetricMetaData());
+jlib_decl std::shared_ptr<IMetric> registerExternalMetric(const char *name, const char* desc, StatisticMeasure units, MetricValueCallback & callback, const MetricMetaData &metaData = MetricMetaData());
 jlib_decl std::shared_ptr<GaugeMetric> registerGaugeMetric(const char *name, const char* desc, StatisticMeasure units, const MetricMetaData &metaData = MetricMetaData());
 jlib_decl std::shared_ptr<GaugeMetricFromCounters> registerGaugeFromCountersMetric(const char *name, const char* desc, StatisticMeasure units,
                                                                          const std::shared_ptr<CounterMetric> &pBeginCounter, const std::shared_ptr<CounterMetric> &pEndCounter,

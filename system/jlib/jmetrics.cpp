@@ -442,6 +442,22 @@ std::shared_ptr<CounterMetric> hpccMetrics::registerCounterMetric(const char *na
 }
 
 
+std::shared_ptr<IMetric> hpccMetrics::registerExternalMetric(const char *name, const char* desc, StatisticMeasure units, RelaxedAtomic<__uint64> & value, const MetricMetaData &metaData)
+{
+    std::shared_ptr<IMetric> pMetric = std::shared_ptr<IMetric>(new ExternalMetric(name, desc, units, value, metaData));
+    queryMetricsManager().addMetric(pMetric);
+    return pMetric;
+}
+
+
+std::shared_ptr<IMetric> hpccMetrics::registerExternalMetric(const char *name, const char* desc, StatisticMeasure units, MetricValueCallback & callback, const MetricMetaData &metaData)
+{
+    std::shared_ptr<IMetric> pMetric = std::shared_ptr<IMetric>(new ExternalCallbackMetric(name, desc, units, callback, metaData));
+    queryMetricsManager().addMetric(pMetric);
+    return pMetric;
+}
+
+
 std::shared_ptr<GaugeMetric> hpccMetrics::registerGaugeMetric(const char *name, const char* desc, StatisticMeasure units, const MetricMetaData &metaData)
 {
     return createMetricAndAddToManager<GaugeMetric>(name, desc, units, metaData);
