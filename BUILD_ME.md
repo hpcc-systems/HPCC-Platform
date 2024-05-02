@@ -26,7 +26,7 @@ https://hpccsystems.com
 #### Ubuntu 19.10/19.04/18.04
 
     sudo apt-get install cmake bison flex build-essential binutils-dev libldap2-dev libcppunit-dev libicu-dev libxslt1-dev \
-    zlib1g-dev libboost-regex-dev libarchive-dev python-dev libv8-dev default-jdk libapr1-dev libaprutil1-dev libiberty-dev \
+    zlib1g-dev libpcre2-dev libarchive-dev python-dev libv8-dev default-jdk libapr1-dev libaprutil1-dev libiberty-dev \
     libhiredis-dev libtbb-dev libxalan-c-dev libnuma-dev nodejs libevent-dev libatlas-base-dev libblas-dev python3-dev \
     default-libmysqlclient-dev libsqlite3-dev r-base-dev r-cran-rcpp r-cran-rinside r-cran-inline libmemcached-dev \
     libcurl4-openssl-dev pkg-config libtool autotools-dev automake libssl-dev
@@ -34,7 +34,7 @@ https://hpccsystems.com
 #### Ubuntu 16.04
 
     sudo apt-get install cmake bison flex build-essential binutils-dev libldap2-dev libcppunit-dev libicu-dev libxslt1-dev \
-    zlib1g-dev libboost-regex-dev libssl-dev libarchive-dev python-dev libv8-dev default-jdk libapr1-dev libaprutil1-dev \
+    zlib1g-dev libpcre2-dev libssl-dev libarchive-dev python-dev libv8-dev default-jdk libapr1-dev libaprutil1-dev \
     libiberty-dev libhiredis-dev libtbb-dev libxalan-c-dev libnuma-dev libevent-dev libatlas-base-dev libblas-dev \
     libatlas-dev python3-dev libcurl4-openssl-dev libtool autotools-dev automake
 
@@ -65,31 +65,31 @@ sudo yum install -y epel-release
 #### CentOS 7:
 
     sudo yum install gcc-c++ gcc make bison flex binutils-devel openldap-devel libicu-devel libxslt-devel libarchive-devel \
-    boost-devel openssl-devel apr-devel apr-util-devel hiredis-devel numactl-devel mariadb-devel libevent-devel tbb-devel \
+    pcre2-devel openssl-devel apr-devel apr-util-devel hiredis-devel numactl-devel mariadb-devel libevent-devel tbb-devel \
     atlas-devel python34 libmemcached-devel sqlite-devel v8-devel python-devel python34-devel java-1.8.0-openjdk-devel \
     R-core-devel R-Rcpp-devel R-inline R-RInside-devel nodejs cmake3 rpm-build libcurl-devel
 
 #### CentOS 6.4:
 
     sudo yum install gcc-c++ gcc make bison flex binutils-devel openldap-devel libicu-devel libxslt-devel libarchive-devel \
-    boost-devel openssl-devel apr-devel apr-util-devel hiredis-devel numactl-devel libmysqlclient-dev libevent-devel \
+    pcre2-devel openssl-devel apr-devel apr-util-devel hiredis-devel numactl-devel libmysqlclient-dev libevent-devel \
     tbb-devel atlas-devel python34 R-core-devel R-Rcpp-devel R-inline R-RInside-devel nodejs libcurl-devel
 
 ### Other Platforms
 #### Fedora 19:
 
     sudo yum install gcc-c++ gcc make fedora-packager cmake bison flex binutils-devel openldap-devel libicu-devel  \
-    xerces-c-devel xalan-c-devel libarchive-devel boost-devel openssl-devel apr-devel apr-util-devel
+    xerces-c-devel xalan-c-devel libarchive-devel pcre2-devel openssl-devel apr-devel apr-util-devel
 
 #### Fedora 23:
 
     sudo dnf install gcc-c++ gcc make fedora-packager cmake bison flex binutils-devel openldap-devel libicu-devel \
-    xerces-c-devel xalan-c-devel libarchive-devel boost-devel openssl-devel apr-devel apr-util-devel numactl-devel \
+    xerces-c-devel xalan-c-devel libarchive-devel pcre2-devel openssl-devel apr-devel apr-util-devel numactl-devel \
     tbb-devel libxslt-devel nodejs
 
 #### Mac (Snow Leopard):
 
-    sudo port install bison flex binutils openldap icu xalanc zlib boost openssl libarchive
+    sudo port install bison flex binutils openldap icu xalanc zlib pcre2 openssl libarchive
 
 You can disable some functionality in order to reduce the list of required components, if necessary. Optional components, such as the plugins for interfacing to external languages, will be disabled automatically if the required libraries and headers are not found at build time.
 
@@ -123,7 +123,7 @@ bootstrap-vcpkg
 Use vcpkg to install various packages:
 ```
 vcpkg install zlib
-vcpkg install boost
+vcpkg install pcre2
 vcpkg install icu
 vcpkg install libxslt
 vcpkg install tbb
@@ -226,7 +226,7 @@ To enable signing of the ecl standard library, ensure you have a gpg private key
 In some cases, users have found that when packaging for Ubuntu, the dpkg-shlibdeps portion of the packaging adds an exceptional amount of time to the build process.  To turn this off (and to create a package without dynamic dependency generation) do:
     cmake -DUSE_SHLIBDEPS=OFF ../src
 
-CMake will check for necessary dependencies like binutils, boost regex, cppunit, pthreads, etc. If everything is correct, it'll create the necessary Makefiles and you're ready to build HPCC.
+CMake will check for necessary dependencies like binutils, PCRE2, cppunit, pthreads, etc. If everything is correct, it'll create the necessary Makefiles and you're ready to build HPCC.
 
 #### NOTE:
 We default to using libxslt in place of Xalan for xslt support. Should you prefer to use libxalan, you can specify -DUSE_LIBXALAN on the cmake command line.
@@ -289,7 +289,7 @@ Install the package:
 
 ```
    brew install icu4c
-   brew install boost
+   brew install pcre2
    brew install libarchive
    brew install bison
    brew install openldap
@@ -311,7 +311,6 @@ Install the package:
    cmake ../ -DICU_LIBRARIES=/usr/local/opt/icu4c/lib/libicuuc.dylib -DICU_INCLUDE_DIR=/usr/local/opt/icu4c/include \
    -DLIBARCHIVE_INCLUDE_DIR=/usr/local/opt/libarchive/include \
    -DLIBARCHIVE_LIBRARIES=/usr/local/opt/libarchive/lib/libarchive.dylib \
-   -DBOOST_REGEX_LIBRARIES=/usr/local/opt/boost/lib -DBOOST_REGEX_INCLUDE_DIR=/usr/local/opt/boost/include \
    -DCLIENTTOOLS_ONLY=true \
    -DUSE_OPENLDAP=true -DOPENLDAP_INCLUDE_DIR=/usr/local/opt/openldap/include \
    -DOPENLDAP_LIBRARIES=/usr/local/opt/openldap/lib/libldap_r.dylib
