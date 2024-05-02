@@ -319,7 +319,7 @@ public:
     }
     void setUser(const char *user, const char *password, IEspContext *context)
     {
-        if (user && *user && password && *password)
+        if (user && *user)
         {
             userdesc.setown(createUserDescriptor());
             userdesc->set(user, password);
