@@ -761,24 +761,13 @@ arrow::Status ParquetWriter::fieldToNode(const std::string &name, const RtlField
     case type_real:
         arrowFields.push_back(std::make_shared<arrow::Field>(name, arrow::float64()));
         break;
-    case type_string:
-        arrowFields.push_back(std::make_shared<arrow::Field>(name, arrow::utf8()));
-        break;
     case type_char:
-        arrowFields.push_back(std::make_shared<arrow::Field>(name, arrow::utf8()));
-        break;
+    case type_string:
     case type_varstring:
-        arrowFields.push_back(std::make_shared<arrow::Field>(name, arrow::utf8()));
-        break;
     case type_qstring:
-        arrowFields.push_back(std::make_shared<arrow::Field>(name, arrow::utf8()));
-        break;
-    case type_unicode:
-        arrowFields.push_back(std::make_shared<arrow::Field>(name, arrow::utf8()));
-        break;
     case type_utf8:
-        arrowFields.push_back(std::make_shared<arrow::Field>(name, arrow::utf8()));
-        break;
+    case type_unicode:
+    case type_varunicode:
     case type_decimal:
         arrowFields.push_back(std::make_shared<arrow::Field>(name, arrow::utf8())); //TODO add decimal encoding
         break;

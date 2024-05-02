@@ -718,7 +718,7 @@ bool CWSDaliEx::onSetTraceSlowTransactions(IEspContext& context, IEspSetTraceSlo
 
         StringAttr result;
         mb.read(result);
-        resp.setResult(result.isEmpty() ? "SetTraceSlowTransactions called." : result);
+        resp.setResult(result.isEmpty() ? "SetTraceSlowTransactions called." : result.get());
     }
     catch(IException* e)
     {
