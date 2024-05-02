@@ -1125,8 +1125,6 @@ void EspHttpBinding::handleHttpPost(CHttpRequest *request, CHttpResponse *respon
     IEspCache *cacheClient = nullptr;
     IEspContext &context = *request->queryContext();
 
-    request->annotateSpan("http.request.method", "POST");
-
     IEspContainer *espContainer = getESPContainer();
     if (espContainer->hasCacheClient() && (cacheMethods > 0)
         && queryCacheSeconds(request->queryServiceMethod(), cacheSeconds)) //ESP cache is needed for this method
@@ -1193,7 +1191,6 @@ int EspHttpBinding::onGet(CHttpRequest* request, CHttpResponse* response)
 {
     IEspContext& context = *request->queryContext();
 
-    request->annotateSpan("http.request.method", "GET");
     // At this time, the request is already received and fully passed, and
     // the user authenticated
     LogLevel level = getEspLogLevel(&context);
