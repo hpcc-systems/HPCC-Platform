@@ -1,11 +1,11 @@
 import * as React from "react";
 import { Checkbox, CommandBar, ICommandBarItemProps, Link } from "@fluentui/react";
 import { SizeMe } from "react-sizeme";
+import { formatCost, formatTwoDigits } from "src/Session";
 import nlsHPCC from "src/nlsHPCC";
 import { useWorkunitExceptions } from "../hooks/workunit";
 import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { pivotItemStyle } from "../layouts/pivot";
-import { formatCost } from "src/Session";
 
 function extractGraphInfo(msg) {
     const regex = /^([a-zA-Z0-9 :]+: )(graph graph(\d+)\[(\d+)\], )(([a-zA-Z]+)\[(\d+)\]: )?(.*)$/gmi;
@@ -24,6 +24,7 @@ function extractGraphInfo(msg) {
 
 interface FilterCounts {
     cost: number,
+    penalty: number,
     error: number,
     warning: number,
     info: number,
@@ -43,7 +44,7 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
     const [warningChecked, setWarningChecked] = React.useState(true);
     const [infoChecked, setInfoChecked] = React.useState(true);
     const [otherChecked, setOtherChecked] = React.useState(true);
-    const [filterCounts, setFilterCounts] = React.useState<FilterCounts>({ cost: 0, error: 0, warning: 0, info: 0, other: 0 });
+    const [filterCounts, setFilterCounts] = React.useState<FilterCounts>({ cost: 0, penalty: 0, error: 0, warning: 0, info: 0, other: 0 });
     const [exceptions] = useWorkunitExceptions(wuid);
     const [data, setData] = React.useState<any[]>([]);
     const {
@@ -79,16 +80,25 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
                     return "";
                 }
             },
-            Priority: {
+            Cost: {
                 label: `${nlsHPCC.Source} / ${nlsHPCC.Cost}`, width: 144,
                 formatter: (Source, row) => {
                     if (Source === "Cost Optimizer") {
-                        return formatCost(+row.Priority);
+                        return formatCost(+row.Cost);
                     }
                     return Source;
                 }
             },
-            Code: { label: nlsHPCC.Code, width: 45 },
+            Priority: {
+                label: `${nlsHPCC.Priority} / ${nlsHPCC.TimePenalty}`, width: 144, sortable: false,
+                formatter: (Priority, row) => {
+                    if (row.Source === "Cost Optimizer") {
+                        return `${formatTwoDigits(+row.Priority / 1000)} (${nlsHPCC.Seconds})`;
+                    }
+                    return Priority;
+                }
+            },
+            Code: { label: nlsHPCC.Code, width: 45, sortable: false },
             Message: {
                 label: nlsHPCC.Message,
                 sortable: true,
@@ -121,6 +131,7 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
     React.useEffect(() => {
         const filterCounts: FilterCounts = {
             cost: 0,
+            penalty: 0,
             error: 0,
             warning: 0,
             info: 0,

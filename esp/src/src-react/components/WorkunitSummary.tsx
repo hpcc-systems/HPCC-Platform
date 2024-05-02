@@ -1,6 +1,6 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, MessageBar, MessageBarType, ScrollablePane, ScrollbarVisibility, Sticky, StickyPositionType } from "@fluentui/react";
-import { WUQuery, WorkunitsService } from "@hpcc-js/comms";
+import { WsWorkunits, WorkunitsService } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import { WUStatus } from "src/react/index";
@@ -84,7 +84,7 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
         }, [workunit])
     });
 
-    const nextWuid = React.useCallback((wuids: WUQuery.ECLWorkunit[]) => {
+    const nextWuid = React.useCallback((wuids: WsWorkunits.ECLWorkunit[]) => {
         let found = false;
         for (const wu of wuids) {
             if (wu.Wuid !== wuid) {
@@ -104,7 +104,7 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
             onClick: () => {
                 const now = new Date(Date.now());
                 const tomorrow = new Date(now.getTime() + (24 * 60 * 60 * 1000));
-                workunitService.WUQuery({ StartDate: `${wuidToDate(wuid)}T${wuidToTime(wuid)}Z`, EndDate: tomorrow.toISOString(), Sortby: "Wuid", Descending: false, Count: 2 } as WUQuery.Request).then(response => {
+                workunitService.WUQuery({ StartDate: `${wuidToDate(wuid)}T${wuidToTime(wuid)}Z`, EndDate: tomorrow.toISOString(), Sortby: "Wuid", Descending: false, Count: 2 } as WsWorkunits.WUQuery).then(response => {
                     nextWuid(response?.Workunits?.ECLWorkunit || []);
                 }).catch(err => logger.error(err));
             }
@@ -112,7 +112,7 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
         {
             key: "previous", iconOnly: true, tooltipHostProps: { content: nlsHPCC.PreviousWorkunit }, iconProps: { iconName: "Next" },
             onClick: () => {
-                workunitService.WUQuery({ EndDate: `${wuidToDate(wuid)}T${wuidToTime(wuid)}Z`, Count: 2 } as WUQuery.Request).then(response => {
+                workunitService.WUQuery({ EndDate: `${wuidToDate(wuid)}T${wuidToTime(wuid)}Z`, Count: 2 } as WsWorkunits.WUQuery).then(response => {
                     nextWuid(response?.Workunits?.ECLWorkunit || []);
                 }).catch(err => logger.error(err));
             }
@@ -219,8 +219,8 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
 
     const potentialSavings = React.useMemo(() => {
         return exceptions.reduce((prev, cur) => {
-            if (isNumeric(cur.Priority)) {
-                prev += cur.Priority;
+            if (isNumeric(cur.Cost)) {
+                prev += cur.Cost;
             }
             return prev;
         }, 0) || 0;

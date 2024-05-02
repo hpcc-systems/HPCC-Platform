@@ -37,7 +37,7 @@ export const RecentFilters: React.FunctionComponent<RecentFilterProps> = ({
 
     const handleClick = (e) => {
         const tempObj = JSON.parse(decodeURIComponent(e.currentTarget.value));
-        widget.NewPage.onClick(tempObj);
+        widget.NewPage.onClick(e, tempObj);
     };
 
     const shimmerElements = React.useMemo(() => [
