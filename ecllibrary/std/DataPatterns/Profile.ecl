@@ -617,7 +617,7 @@ EXPORT Profile(inFile,
         #UNIQUENAME(_MapUpperCharUni);
         LOCAL %_MapUpperCharUni%(UNICODE s) := REGEXREPLACE(u'\\p{Lu}', s, u'A');
         #UNIQUENAME(_MapLowerCharUni);
-        LOCAL %_MapLowerCharUni%(UNICODE s) := REGEXREPLACE(u'[[\\p{Ll}][\\p{Lt}][\\p{Lm}][\\p{Lo}]]', s, u'a');
+        LOCAL %_MapLowerCharUni%(UNICODE s) := REGEXREPLACE(u'[\\p{Ll}\\p{Lt}\\p{Lm}\\p{Lo}]', s, u'a');
         #UNIQUENAME(_MapDigitUni);
         LOCAL %_MapDigitUni%(UNICODE s) := REGEXREPLACE(u'[1-9]', s, u'9'); // Leave '0' as-is and replace with '9' later
         #UNIQUENAME(_MapAllUni);
