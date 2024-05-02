@@ -2,7 +2,7 @@ import * as React from "react";
 import { Dropdown, IStackItemStyles, IStackStyles, IStackTokens, Overlay, Spinner, SpinnerSize, Stack, Text } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
 import { Card, CardHeader, CardPreview } from "@fluentui/react-components";
-import { WorkunitsService, WUQuery } from "@hpcc-js/comms";
+import { WorkunitsService, WsWorkunits } from "@hpcc-js/comms";
 import { Area, Column, Pie, Bar } from "@hpcc-js/chart";
 import { chain, filter, group, map, sort } from "@hpcc-js/dataflow";
 import * as Observable from "dojo/store/Observable";
@@ -33,7 +33,7 @@ const innerStackTokens: IStackTokens = {
 
 const service = new WorkunitsService({ baseUrl: "" });
 
-interface WorkunitEx extends WUQuery.ECLWorkunit {
+interface WorkunitEx extends WsWorkunits.ECLWorkunit {
     Day: string;
 }
 
@@ -72,7 +72,7 @@ export const WorkunitsDashboard: React.FunctionComponent<WorkunitsDashboardProps
             EndDate: end.toISOString(),
             PageSize: 999999
         }).then(response => {
-            setWorkunits([...map(response.Workunits.ECLWorkunit, (row: WUQuery.ECLWorkunit) => ({ ...row, Day: wuidToDate(row.Wuid) }))]);
+            setWorkunits([...map(response.Workunits.ECLWorkunit, (row: WsWorkunits.ECLWorkunit) => ({ ...row, Day: wuidToDate(row.Wuid) }))]);
             setLoading(false);
         });
     }, [filterProps.lastNDays]);

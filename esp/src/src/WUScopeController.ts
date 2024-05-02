@@ -225,7 +225,8 @@ export abstract class WUScopeControllerBase<ISubgraph, IVertex, IEdge, IGraphDat
                         Properties: {
                             Property: [vertex._.attr("Label")]
                         },
-                        Notes: vertex._.Notes
+                        Notes: vertex._.Notes,
+                        SinkActivity: undefined
                     });
                 });
             }
@@ -672,7 +673,8 @@ export class WUScopeController extends WUScopeControllerBase<Subgraph, VertexTyp
                                     CreatorType: ""
                                 }]
                             },
-                            Notes: subgraph._.Notes
+                            Notes: subgraph._.Notes,
+                            SinkActivity: undefined
                         };
                         const dummyScope = new BaseScope(dummyDetails);
                         const dummyVertex = subgraph.createVertex(dummyScope);
@@ -687,7 +689,8 @@ export class WUScopeController extends WUScopeControllerBase<Subgraph, VertexTyp
                                         Properties: {
                                             Property: []
                                         },
-                                        Notes: edge.source._.Notes
+                                        Notes: edge.source._.Notes,
+                                        SinkActivity: undefined
                                     });
                                     console.log(dummyEdgeScope.Id);
                                     subgraph.createEdge(edge.source, dummyVertex, dummyEdgeScope);
@@ -702,7 +705,8 @@ export class WUScopeController extends WUScopeControllerBase<Subgraph, VertexTyp
                                         Properties: {
                                             Property: []
                                         },
-                                        Notes: edge.target._.Notes
+                                        Notes: edge.target._.Notes,
+                                        SinkActivity: undefined
                                     });
                                     console.log(dummyEdgeScope.Id);
                                     subgraph.createEdge(dummyVertex, edge.target, dummyEdgeScope);

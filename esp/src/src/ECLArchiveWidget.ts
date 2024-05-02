@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-unsafe-declaration-merging */
 import { ECLEditor } from "@hpcc-js/codemirror";
 import { extent, Palette } from "@hpcc-js/common";
-import { Workunit } from "@hpcc-js/comms";
+import { Workunit, WsWorkunits } from "@hpcc-js/comms";
 import { Table } from "@hpcc-js/dgrid";
 import { SplitPanel } from "@hpcc-js/phosphor";
 import { DirectoryTree } from "@hpcc-js/tree";
-import { xml2json } from "@hpcc-js/util";
+import { RecursivePartial, xml2json } from "@hpcc-js/util";
 import "dijit/form/Button";
 import "dijit/layout/BorderContainer";
 import "dijit/layout/ContentPane";
@@ -168,10 +168,10 @@ export class ECLArchiveWidget {
                     .relativeSizes([0.2, 0.8])
                     .lazyRender()
                     ;
-                const scopesOptions = {
+                const scopesOptions: RecursivePartial<WsWorkunits.WUDetails> = {
                     ScopeFilter: {
                         MaxDepth: 999999,
-                        ScopeTypes: ["graph"]
+                        ScopeTypes: { ScopeType: ["graph"] }
                     },
                     ScopeOptions: {
                         IncludeMatchedScopesInResults: true,
@@ -189,7 +189,7 @@ export class ECLArchiveWidget {
                     },
                     NestedFilter: {
                         Depth: 999999,
-                        ScopeTypes: ["activity"]
+                        ScopeTypes: { ScopeType: ["activity"] }
                     },
                     PropertiesToReturn: {
                         AllStatistics: true,
