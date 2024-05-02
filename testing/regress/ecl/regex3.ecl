@@ -20,13 +20,18 @@
 //these should be const-folded, and give 'the cap sap on the map'
 REGEXREPLACE(NOFOLD('(.a)t'), 'the cat sat on the mat', '$1p');
 REGEXREPLACE(NOFOLD(u'(.a)t'), u'the cat sat on the mat', u'$1p');
+REGEXREPLACE(NOFOLD(u8'(.a)t'), u8'the cat sat on the mat', u8'$1p');
 
 inrec := RECORD
     STRING10 str;
     UNICODE10 ustr;
+    UTF8 u8str;
 END;
 
-inset := nofold(DATASET([{'She', u'Eins'}, {'Sells', u'Zwei'}, {'Sea', u'Drei'}, {'Shells', u'Vier'}], inrec));
+inset := nofold(DATASET([{'She', u'Eins', u8'Eins'},
+                         {'Sells', u'Zwei', u8'Zwei'},
+                         {'Sea', u'Drei', u8'Drei'},
+                         {'Shells', u'Vier', u8'Vier'}], inrec));
 
 outrec := RECORD
     STRING10 orig;
@@ -35,6 +40,9 @@ outrec := RECORD
     UNICODE10 uorig;
     UNICODE10 uwithcase;
     UNICODE10 uwocase;
+    UTF8 u8orig;
+    UTF8 u8withcase;
+    UTF8 u8wocase;
 END;
 
 outrec trans(inrec l) := TRANSFORM
@@ -44,6 +52,9 @@ outrec trans(inrec l) := TRANSFORM
     SELF.uorig := l.ustr;
     SELF.uwithcase := REGEXREPLACE(u'e', l.ustr, u'\u00EB');
     SELF.uwocase := REGEXREPLACE(u'e', l.ustr, u'\u00EB', NOCASE);
+    SELF.u8orig := l.u8str;
+    SELF.u8withcase := REGEXREPLACE(u8'e', l.u8str, u8'ë');
+    SELF.u8wocase := REGEXREPLACE(u8'e', l.u8str, u8'ë', NOCASE);
 END;
 
 outset := PROJECT(inset, trans(LEFT));

@@ -245,6 +245,7 @@ extern DEFTYPE_API bool isSimpleStringType(ITypeInfo * type);
 extern DEFTYPE_API bool isSimpleIntegralType(ITypeInfo * type);
 extern DEFTYPE_API bool isIntegralType(ITypeInfo * type);
 extern DEFTYPE_API bool isPatternType(ITypeInfo * type);
+extern DEFTYPE_API bool isUTF8Type(ITypeInfo * type);
 extern DEFTYPE_API bool isUnicodeType(ITypeInfo * type);
 extern DEFTYPE_API bool isLittleEndian(ITypeInfo * type);
 extern DEFTYPE_API bool isDatasetType(ITypeInfo * type);

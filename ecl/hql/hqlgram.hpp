@@ -555,6 +555,7 @@ public:
     void ensureString(attribute &a);
     void ensureTypeCanBeIndexed(attribute &a);
     void ensureUnicode(attribute &a);
+    void ensureUTF8(attribute &a);
     void ensureData(attribute &a);
     void ensureTransformTypeMatch(attribute & tattr, IHqlExpression * ds);
     bool checkTransformTypeMatch(const attribute & errpos, IHqlExpression * ds, IHqlExpression * transform);

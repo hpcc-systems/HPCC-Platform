@@ -77,7 +77,7 @@ enum DBZaction { DBZnone, DBZzero, DBZnan, DBZfail }; // Different actions on di
 
 //-----------------------------------------------------------------------------
 
-// RegEx Compiler for ansii  strings (uses PCRE2)
+// RegEx Compiler for ansii and utf-8 strings
 interface IStrRegExprFindInstance
 {
     virtual bool found() const = 0;
@@ -704,8 +704,14 @@ ECLRTL_API void rtlUtf8SpaceFill(unsigned tlne, char * tgt, unsigned idx);
 
 
 ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledStrRegExpr(const char * regExpr, bool isCaseSensitive);
+ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledStrRegExpr(int regExprLength, const char * regExpr, bool isCaseSensitive);
 ECLRTL_API void rtlDestroyCompiledStrRegExpr(ICompiledStrRegExpr * compiled);
 ECLRTL_API void rtlDestroyStrRegExprFindInstance(IStrRegExprFindInstance * compiled);
+
+ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledU8StrRegExpr(const char * regExpr, bool isCaseSensitive);
+ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledU8StrRegExpr(int regExprLength, const char * regExpr, bool isCaseSensitive);
+ECLRTL_API void rtlDestroyCompiledU8StrRegExpr(ICompiledStrRegExpr * compiled);
+ECLRTL_API void rtlDestroyU8StrRegExprFindInstance(IStrRegExprFindInstance * compiled);
 
 ECLRTL_API ICompiledUStrRegExpr * rtlCreateCompiledUStrRegExpr(const UChar * regExpr, bool isCaseSensitive);
 ECLRTL_API void rtlDestroyCompiledUStrRegExpr(ICompiledUStrRegExpr * compiled);

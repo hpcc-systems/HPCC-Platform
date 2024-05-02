@@ -2700,7 +2700,31 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
             if (t0 && t1 && (!c2 || t2))
             {
                 IValue * result;
-                if(isUnicodeType(t0->queryType()))
+                if (isUTF8Type(t0->queryType()))
+                {
+                    StringBuffer pattern, search;
+                    t0->getUTF8Value(pattern);
+                    t1->getUTF8Value(search);
+                    ICompiledStrRegExpr * compiled = rtlCreateCompiledU8StrRegExpr(pattern, !expr->hasAttribute(noCaseAtom));
+                    IStrRegExprFindInstance * match = compiled->find(search, 0, search.lengthUtf8(), false);
+                    ITypeInfo * type = expr->queryType();
+                    if(type->getTypeCode() == type_boolean)
+                    {
+                        result = createBoolValue(match->found());
+                    }
+                    else
+                    {
+                        assertex(c2 && t2);
+                        size32_t len;
+                        char * data;
+                        match->getMatchX(len, data, (unsigned)t2->getIntValue());
+                        result = type->castFrom(len, data);
+                        rtlFree(data);
+                    }
+                    rtlDestroyU8StrRegExprFindInstance(match);
+                    rtlDestroyCompiledU8StrRegExpr(compiled);
+                }
+                else if(isUnicodeType(t0->queryType()))
                 {
                     unsigned plen = t0->queryType()->getStringLen();
                     unsigned slen = t1->queryType()->getStringLen();
@@ -2767,7 +2791,16 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
                 size32_t resultBytes;
                 rtlDataAttr matchResults;
 
-                if(isUnicodeType(v0->queryType()))
+                if (isUTF8Type(v0->queryType()))
+                {
+                    StringBuffer pattern, search;
+                    v0->getUTF8Value(pattern);
+                    v1->getUTF8Value(search);
+                    ICompiledStrRegExpr * compiled = rtlCreateCompiledU8StrRegExpr(pattern, !expr->hasAttribute(noCaseAtom));
+                    compiled->getMatchSet(isAllResult, resultBytes, matchResults.refdata(), search.lengthUtf8(), search.str());
+                    rtlDestroyCompiledU8StrRegExpr(compiled);
+                }
+                else if(isUnicodeType(v0->queryType()))
                 {
                     size32_t plen = v0->queryType()->getStringLen();
                     OwnedMalloc<UChar> pattern (plen+1);
@@ -2800,7 +2833,21 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
             if (t0 && t1 && t2)
             {
                 IValue * result;
-                if(isUnicodeType(t0->queryType()))
+                if (isUTF8Type(t0->queryType()))
+                {
+                    StringBuffer pattern, search, replace;
+                    t0->getUTF8Value(pattern);
+                    t1->getUTF8Value(search);
+                    t2->getUTF8Value(replace);
+                    size32_t outlen;
+                    char * out;
+                    ICompiledStrRegExpr * compiled = rtlCreateCompiledU8StrRegExpr(pattern, !expr->hasAttribute(noCaseAtom));
+                    compiled->replace(outlen, out, search.length(), search.str(), replace.length(), replace.str());
+                    result = createUtf8Value(outlen, out, makeUtf8Type(outlen, NULL));
+                    rtlFree(out);
+                    rtlDestroyCompiledU8StrRegExpr(compiled);
+                }
+                else if(isUnicodeType(t0->queryType()))
                 {
                     unsigned plen = t0->queryType()->getStringLen();
                     unsigned slen = t1->queryType()->getStringLen();

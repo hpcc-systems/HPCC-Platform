@@ -53,3 +53,21 @@ NOT(REGEXFIND(NOFOLD(u'.ook(?!ahead)'), u'lookahead'));
 REGEXFIND(NOFOLD(u'.ook(?!ahead)'), u'bookmarks');
 REGEXFIND(NOFOLD(u'.ook(?!ahead)'), u'bookmarks', 0) = u'book';
 
+REGEXFIND(NOFOLD(u8's.t'), u8'set');
+NOT(REGEXFIND(NOFOLD(u8's.t'), u8'select'));
+REGEXFIND(NOFOLD(u8's.*t'), u8'select');
+REGEXFIND(NOFOLD(u8'^((..)?(s ?.t)* )+'), u8'upset sot resets it should match');
+NOT(REGEXFIND(NOFOLD(u8'^((..)?(s ?.t)* )+'), u8'UPSET SOT RESETS IT should match only with NOCASE'));
+REGEXFIND(NOFOLD(u8'^((..)?(s ?.t)* )+'), u8'UPSET SOT RESETS IT should match only with NOCASE', NOCASE);
+REGEXFIND(NOFOLD(u8'^((..)?(s ?.t)* )+'), u8'UPSET SOT RESETS IT should match only with NOCASE', 0, NOCASE) = u8'UPSET SOT RESETS IT ';
+REGEXFIND(NOFOLD(u8'^((..)?(s ?.t)* )+'), u8'UPSET SOT RESETS IT should match only with NOCASE', 1, NOCASE) = u8'RESETS IT ';
+REGEXFIND(NOFOLD(u8'^((..)?(s ?.t)* )+'), u8'UPSET SOT RESETS IT should match only with NOCASE', 2, NOCASE) = u8'RE';
+REGEXFIND(NOFOLD(u8'^((..)?(s ?.t)* )+'), u8'UPSET SOT RESETS IT should match only with NOCASE', 3, NOCASE) = u8'S IT';
+REGEXFIND(NOFOLD(u8'^((..)?(s ?.t)* )+'), u8'UPSET SOT RESETS IT should match only with NOCASE', 4, NOCASE) = u8'';
+REGEXFIND(NOFOLD(u8'.ook(?=ahead)'), u8'lookahead');
+REGEXFIND(NOFOLD(u8'.ook(?=ahead)'), u8'lookahead', 0) = u8'look';
+NOT(REGEXFIND(NOFOLD(u8'.ook(?=ahead)'), u8'bookmarks'));
+NOT(REGEXFIND(NOFOLD(u8'.ook(?!ahead)'), u8'lookahead'));
+REGEXFIND(NOFOLD(u8'.ook(?!ahead)'), u8'bookmarks');
+REGEXFIND(NOFOLD(u8'.ook(?!ahead)'), u8'bookmarks', 0) = u8'book';
+

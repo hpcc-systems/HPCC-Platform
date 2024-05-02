@@ -61,7 +61,9 @@ static void pcre2Free(void * block, void * /*userData*/)
 /// @param msgPrefix    Prefix for error message; can be an empty string;
 ///                     include a trailing space if a non-empty message is passed
 /// @param regex        OPTIONAL; regex pattern that was in play when error occurred
-static void failWithPCRE2Error(int errCode, const char * msgPrefix, const char * regex = nullptr)
+/// @param errOffset    OPTIONAL; offset in regex pattern where error occurred;
+///                     ignored if regex is null
+static void failWithPCRE2Error(int errCode, const char * msgPrefix, const char * regex = nullptr, int errOffset = -1)
 {
     const int errBuffSize = 120;
     char errBuff[errBuffSize];
@@ -79,8 +81,14 @@ static void failWithPCRE2Error(int errCode, const char * msgPrefix, const char *
     }
     if (regex && regex[0])
     {
-        msg += " (regex: ";
+        msg += " (regex: '";
         msg += regex;
+        msg += "'";
+        if (errOffset >= 0)
+        {
+            msg += " at offset ";
+            msg += std::to_string(errOffset);
+        }
         msg += ")";
     }
     rtlFail(0, msg.c_str());
@@ -105,19 +113,26 @@ public:
         sample = nullptr;
         matchData = pcre2_match_data_create_from_pattern_8(compiledRegex, pcre2GeneralContext8);
 
+        // See if UTF-8 is enabled on this compiled regex
+        uint32_t option_bits;
+        pcre2_pattern_info_8(compiledRegex, PCRE2_INFO_ALLOPTIONS, &option_bits);
+        bool utf8Enabled = (option_bits & PCRE2_UTF) != 0;
+        size32_t from = (utf8Enabled ? rtlUtf8Size(_from, _subject) : _from);
+        size32_t len = (utf8Enabled ? rtlUtf8Size(_len, _subject) : _len);
+
         if (_keep)
         {
-            sample = (char *)rtlMalloc(_len + 1);  //required for findstr
-            memcpy(sample, _subject + _from, _len);
-            sample[_len] = '\0';
+            sample = (char *)rtlMalloc(len + 1);  //required for findstr
+            memcpy(sample, _subject + from, len);
+            sample[len] = '\0';
             subject = sample;
         }
         else
         {
-            subject = _subject + _from;
+            subject = _subject + from;
         }
 
-        int numMatches = pcre2_match_8(compiledRegex, (PCRE2_SPTR8)subject, _len, 0, 0, matchData, pcre2MatchContext8);
+        int numMatches = pcre2_match_8(compiledRegex, (PCRE2_SPTR8)subject, len, 0, 0, matchData, pcre2MatchContext8);
 
         matched = numMatches > 0;
 
@@ -183,19 +198,37 @@ class CCompiledStrRegExpr : implements ICompiledStrRegExpr
 {
 private:
     pcre2_code_8 * compiledRegex = nullptr;
+    bool isUTF8Enabled = false;
 
 public:
-    CCompiledStrRegExpr(const char * _regex, bool _isCaseSensitive = false)
+    CCompiledStrRegExpr(const char * _regex, bool _isCaseSensitive, bool _enableUTF8)
+    : isUTF8Enabled(_enableUTF8)
     {
         int errNum = 0;
         PCRE2_SIZE errOffset;
-        uint32_t options = (_isCaseSensitive ? 0 : PCRE2_CASELESS);
+        uint32_t options = ((_isCaseSensitive ? 0 : PCRE2_CASELESS) | (_enableUTF8 ? PCRE2_UTF : 0));
 
         compiledRegex = pcre2_compile_8((PCRE2_SPTR8)_regex, PCRE2_ZERO_TERMINATED, options, &errNum, &errOffset, pcre2CompileContext8);
 
         if (compiledRegex == nullptr)
         {
-            failWithPCRE2Error(errNum, "Error in regex pattern: ", _regex);
+            failWithPCRE2Error(errNum, "Error in regex pattern: ", _regex, errOffset);
+        }
+    }
+
+    CCompiledStrRegExpr(int _regexLength, const char * _regex, bool _isCaseSensitive, bool _enableUTF8)
+    : isUTF8Enabled(_enableUTF8)
+    {
+        int errNum = 0;
+        PCRE2_SIZE errOffset;
+        uint32_t options = ((_isCaseSensitive ? 0 : PCRE2_CASELESS) | (_enableUTF8 ? PCRE2_UTF : 0));
+        size32_t regexSize = (isUTF8Enabled ? rtlUtf8Size(_regexLength, _regex) : _regexLength);
+
+        compiledRegex = pcre2_compile_8((PCRE2_SPTR8)_regex, regexSize, options, &errNum, &errOffset, pcre2CompileContext8);
+
+        if (compiledRegex == nullptr)
+        {
+            failWithPCRE2Error(errNum, "Error in regex pattern: ", _regex, errOffset);
         }
     }
 
@@ -212,11 +245,17 @@ public:
         outlen = 0;
         pcre2_match_data_8 * matchData = pcre2_match_data_create_from_pattern_8(compiledRegex, pcre2GeneralContext8);
 
+        // This method is often called through an ECL interface and the provided lengths
+        // (slen and rlen) are in characters, not bytes; we need to convert these to a
+        // byte count for PCRE2
+        size32_t sourceSize = (isUTF8Enabled ? rtlUtf8Size(slen, str) : slen);
+        size32_t replaceSize = (isUTF8Enabled ? rtlUtf8Size(rlen, replace) : rlen);
+
         // Call it once to get the size of the output, then allocate memory for it;
         // Note that pcreLen will include space for a terminating null character;
         // we have to allocate memory for that byte to avoid a buffer overrun,
         // but we won't count that terminating byte
-        int replaceResult = pcre2_substitute_8(compiledRegex, (PCRE2_SPTR8)str, slen, 0, PCRE2_SUBSTITUTE_GLOBAL|PCRE2_SUBSTITUTE_OVERFLOW_LENGTH, matchData, pcre2MatchContext8, (PCRE2_SPTR8)replace, rlen, nullptr, &pcreLen);
+        int replaceResult = pcre2_substitute_8(compiledRegex, (PCRE2_SPTR8)str, sourceSize, 0, PCRE2_SUBSTITUTE_GLOBAL|PCRE2_SUBSTITUTE_OVERFLOW_LENGTH, matchData, pcre2MatchContext8, (PCRE2_SPTR8)replace, replaceSize, nullptr, &pcreLen);
 
         if (replaceResult < 0 && replaceResult != PCRE2_ERROR_NOMEMORY)
         {
@@ -229,7 +268,7 @@ public:
         {
             out = (char *)rtlMalloc(pcreLen);
 
-            replaceResult = pcre2_substitute_8(compiledRegex, (PCRE2_SPTR8)str, slen, 0, PCRE2_SUBSTITUTE_GLOBAL, matchData, pcre2MatchContext8, (PCRE2_SPTR8)replace, rlen, (PCRE2_UCHAR8 *)out, &pcreLen);
+            replaceResult = pcre2_substitute_8(compiledRegex, (PCRE2_SPTR8)str, sourceSize, 0, PCRE2_SUBSTITUTE_GLOBAL, matchData, pcre2MatchContext8, (PCRE2_SPTR8)replace, replaceSize, (PCRE2_UCHAR8 *)out, &pcreLen);
 
             // Note that, weirdly, pcreLen will now contain the number of bytes
             // in the result *excluding* the null terminator, so pcreLen will
@@ -243,7 +282,8 @@ public:
         }
 
         pcre2_match_data_free_8(matchData);
-        outlen = pcreLen;
+        // We need to return the number of characters here, not the byte count
+        outlen = (isUTF8Enabled ? rtlUtf8Length(pcreLen, out) : pcreLen);
     }
 
     IStrRegExprFindInstance * find(const char * str, size32_t from, size32_t len, bool needToKeepSearchString) const
@@ -257,6 +297,7 @@ public:
         rtlRowBuilder out;
         size32_t outBytes = 0;
         PCRE2_SIZE offset = 0;
+        PCRE2_SIZE subjectSize = (isUTF8Enabled ? rtlUtf8Size(_subjectLen, _subject) : _subjectLen);
         pcre2_match_data_8 * matchData = pcre2_match_data_create_from_pattern_8(compiledRegex, pcre2GeneralContext8);
 
         // Capture groups are ignored when gathering match results into a set,
@@ -264,9 +305,9 @@ public:
         // then we need to repeatedly match, adjusting the offset into the
         // subject string each time, until no more matches are found
 
-        while (offset < _subjectLen)
+        while (offset < subjectSize)
         {
-            int numMatches = pcre2_match_8(compiledRegex, (PCRE2_SPTR8)_subject, _subjectLen, offset, 0, matchData, pcre2MatchContext8);
+            int numMatches = pcre2_match_8(compiledRegex, (PCRE2_SPTR8)_subject, subjectSize, offset, 0, matchData, pcre2MatchContext8);
 
             if (numMatches < 0)
             {
@@ -286,17 +327,19 @@ public:
             {
                 PCRE2_SIZE * ovector = pcre2_get_ovector_pointer_8(matchData);
                 const char * matchStart = _subject + ovector[0];
-                unsigned matchLen = ovector[1] - ovector[0];
+                unsigned matchSize = ovector[1] - ovector[0]; // code units
 
                 // Copy match to output buffer
-                out.ensureAvailable(outBytes + matchLen + sizeof(size32_t));
+                out.ensureAvailable(outBytes + matchSize + sizeof(size32_t));
                 byte * outData = out.getbytes() + outBytes;
-                * (size32_t *) outData = matchLen;
-                memcpy(outData + sizeof(size32_t), matchStart, matchLen);
-                outBytes += matchLen + sizeof(size32_t);
+                // Append the number of characters in the match
+                * (size32_t *) outData = (isUTF8Enabled ? rtlUtf8Length(matchSize, matchStart) : matchSize);
+                // Copy the bytes
+                memcpy(outData + sizeof(size32_t), matchStart, matchSize);
+                outBytes += matchSize + sizeof(size32_t);
 
-                // Update offset
-                offset += matchLen + 1;
+                // Update search offset (which is in code units)
+                offset = ovector[1];
             }
             else
             {
@@ -318,7 +361,13 @@ public:
 
 ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledStrRegExpr(const char * regExpr, bool isCaseSensitive)
 {
-    CCompiledStrRegExpr * expr = new CCompiledStrRegExpr(regExpr, isCaseSensitive);
+    CCompiledStrRegExpr * expr = new CCompiledStrRegExpr(regExpr, isCaseSensitive, false);
+    return expr;
+}
+
+ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledStrRegExpr(int regExprLength, const char * regExpr, bool isCaseSensitive)
+{
+    CCompiledStrRegExpr * expr = new CCompiledStrRegExpr(regExprLength, regExpr, isCaseSensitive, false);
     return expr;
 }
 
@@ -329,6 +378,32 @@ ECLRTL_API void rtlDestroyCompiledStrRegExpr(ICompiledStrRegExpr * compiledExpr)
 }
 
 ECLRTL_API void rtlDestroyStrRegExprFindInstance(IStrRegExprFindInstance * findInst)
+{
+    if (findInst)
+        delete (CStrRegExprFindInstance*)findInst;
+}
+
+//---------------------------------------------------------------------------
+
+ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledU8StrRegExpr(const char * regExpr, bool isCaseSensitive)
+{
+    CCompiledStrRegExpr * expr = new CCompiledStrRegExpr(regExpr, isCaseSensitive, true);
+    return expr;
+}
+
+ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledU8StrRegExpr(int regExprLength, const char * regExpr, bool isCaseSensitive)
+{
+    CCompiledStrRegExpr * expr = new CCompiledStrRegExpr(regExprLength, regExpr, isCaseSensitive, true);
+    return expr;
+}
+
+ECLRTL_API void rtlDestroyCompiledU8StrRegExpr(ICompiledStrRegExpr * compiledExpr)
+{
+    if (compiledExpr)
+        delete (CCompiledStrRegExpr*)compiledExpr;
+}
+
+ECLRTL_API void rtlDestroyU8StrRegExprFindInstance(IStrRegExprFindInstance * findInst)
 {
     if (findInst)
         delete (CStrRegExprFindInstance*)findInst;
