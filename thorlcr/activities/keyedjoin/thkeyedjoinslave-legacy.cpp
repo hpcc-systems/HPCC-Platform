@@ -442,7 +442,6 @@ public:
             CJoinGroup *finger = head.next;
             if (preserveGroups)
             {
-                unsigned cnt=0;
                 while (finger != &head)
                 {
                     if (finger->complete())
@@ -450,7 +449,6 @@ public:
                         CJoinGroup *next = processRemoveGroup(finger);
                         notify.addJoinGroup(finger); // means doneQueue owns linked list
                         finger = next;
-                        ++cnt;
                     }
                     else
                         break;

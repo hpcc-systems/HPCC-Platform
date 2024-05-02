@@ -3454,7 +3454,9 @@ public:
                 // NB: when preserveGroups, the lhs group will always be complete at same time, so this will traverse whole group
                 if (!joinGroup->hasFlag(GroupFlags::gf_head))
                     return; // intermediate rows are completing, but can't output any of those until head finishes, at which point head marker will shift to next if necessary (see below)
+#ifdef _DEBUG
                 unsigned numProcessed = 0;
+#endif
                 CJoinGroup *current = joinGroup;
                 do
                 {
@@ -3470,7 +3472,9 @@ public:
                     if (transferToDoneList(doneJG, !doneListMaxHit)) // 2nd param(markBlocked), record this thread will block once only
                         doneListMaxHit = true;
                     current = next;
+#ifdef _DEBUG
                     ++numProcessed;
+#endif
                 } while (current);
             }
             else

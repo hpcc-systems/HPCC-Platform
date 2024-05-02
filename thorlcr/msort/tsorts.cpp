@@ -220,13 +220,11 @@ public:
 
         bool overflowed = false;
         ActPrintLog(&activity, "Local Overflow Merge start");
-        unsigned ret=0;
         for (;;)
         {
             const void *_row = input->nextRow();
             if (!_row)
                 break;
-            ret++;
 
             OwnedConstThorRow row = _row;
             offset_t start = output->getPosition();

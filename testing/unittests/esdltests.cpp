@@ -2022,7 +2022,7 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
       LogMsgAudience msgAudience;
       LogMsgClass    msgClass;
       StringBuffer   msg;
-      HistoricalEvent(const LogMsgCategory& category, const char* format, va_list arguments)
+      HistoricalEvent(const LogMsgCategory& category, const char* format, va_list arguments) __attribute__((format(printf, 3, 0)))
       {
         msgAudience = category.queryAudience();
         msgClass = category.queryClass();
