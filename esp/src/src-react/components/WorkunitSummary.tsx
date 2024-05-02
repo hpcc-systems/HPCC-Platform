@@ -219,8 +219,8 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
 
     const potentialSavings = React.useMemo(() => {
         return exceptions.reduce((prev, cur) => {
-            if (isNumeric(cur.Priority)) {
-                prev += cur.Priority;
+            if (isNumeric(cur.Cost)) {
+                prev += cur.Cost;
             }
             return prev;
         }, 0) || 0;
