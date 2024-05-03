@@ -209,4 +209,9 @@ Pass in dict with root and warnings
   {{- $_ := set $warning "msg" "egress is not restricted to minimum required" -}}
   {{- $_ := set $ctx "warnings" (append $ctx.warnings $warning) -}}
  {{- end -}}
+ {{- if .root.Values.global.privileged -}}
+  {{- $warning := dict "source" "helm" "severity" "warning" -}}
+  {{- $_ := set $warning "msg" "privileged access should only be enabled for development systems" -}}
+  {{- $_ := set $ctx "warnings" (append $ctx.warnings $warning) -}}
+ {{- end -}}
 {{- end -}}
