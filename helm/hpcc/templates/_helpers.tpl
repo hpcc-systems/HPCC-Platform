@@ -1404,7 +1404,7 @@ Pass in dict with root, me and dali if container in dali pod
           "--service={{ .me.name }}",
 {{ include "hpcc.daliArg" (dict "root" .root "component" "Sasha" "optional" false "overrideDaliHost" $overrideDaliHost "overrideDaliPort" $overrideDaliPort) | indent 10 }}
         ]
-{{- $omitResources := hasKey .root.Values.global "omitResources" | ternary .root.Values.global.omitResources .root.Values.global.privileged }}
+{{- $omitResources := .root.Values.global.omitResources | default false }}
 {{- if not $omitResources }}
 {{- include "hpcc.addResources" (dict "me" .me.resources) | indent 2 }}
 {{- end }}

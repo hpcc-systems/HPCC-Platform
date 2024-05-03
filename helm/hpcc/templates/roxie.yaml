@@ -146,7 +146,7 @@ spec:
       - name: {{ $commonCtx.toponame | quote }}
 {{ include "hpcc.addSentinelProbes" $toposerver | indent 8 }}
 {{- include "hpcc.addSecurityContext" $commonCtx | indent 8 }}
-{{- $omitResources := hasKey $.Values.global "omitResources" | ternary $.Values.global.omitResources $.Values.global.privileged }}
+{{- $omitResources := $.Values.global.omitResources | default false }}
 {{- if not $omitResources }}
 {{- $defaultResources := dict "cpu" "500m" "memory" "200Mi" }}
 {{- include "hpcc.addResources" (dict "me" .topoResources "defaults" $defaultResources) | indent 8 }}
@@ -300,7 +300,7 @@ spec:
               command: ["testsocket", ".", "control:closedown"]        
 {{ include "hpcc.addSentinelProbes" ( $roxie | merge (dict "readyProbeName" ".ready" )) | indent 8 }}
 {{ include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
-{{- $omitResources := hasKey $.Values.global "omitResources" | ternary $.Values.global.omitResources $.Values.global.privileged }}
+{{- $omitResources := $.Values.global.omitResources | default false }}
 {{- if not $omitResources }}
 {{- include "hpcc.addResources" (dict "me"  ($roxie.serverResources | default $roxie.resources)) | indent 8 }}
 {{- end }}
@@ -411,7 +411,7 @@ spec:
 {{ include "hpcc.addSentinelProbes" ( $roxie | merge (dict "readyProbeName" ".ready" )) | indent 8 }}
 {{- end }}
 {{ include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
-{{- $omitResources := hasKey $.Values.global "omitResources" | ternary $.Values.global.omitResources $.Values.global.privileged }}
+{{- $omitResources := $.Values.global.omitResources | default false }}
 {{- if not $omitResources }}
 {{- include "hpcc.addResources" (dict "me" ($roxie.channelResources | default $roxie.resources)) | indent 8 }}
 {{- end }}

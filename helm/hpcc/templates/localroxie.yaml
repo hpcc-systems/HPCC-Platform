@@ -114,7 +114,7 @@ spec:
 {{- end }}
 {{- end }}
 {{- include "hpcc.addSecurityContext" $commonCtx | indent 8 }}
-{{- $omitResources := hasKey $.Values.global "omitResources" | ternary $.Values.global.omitResources $.Values.global.privileged }}
+{{- $omitResources := $.Values.global.omitResources | default false }}
 {{- if not $omitResources }}
 {{- include "hpcc.addResources" (dict "me" $roxie.resources) | indent 8 }}
 {{- end }}
