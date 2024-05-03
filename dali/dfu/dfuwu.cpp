@@ -728,7 +728,7 @@ public:
         bool subtask = isSubTaskWuid(parent->queryId());
         switch (state) {
         case DFUstate_started:
-            dt.setNow();
+            dt.setTimeStamp(getTimeStampNowValue());
             setTimeStarted(dt);
             break;
         case DFUstate_aborting:
@@ -743,7 +743,7 @@ public:
         case DFUstate_finished:
             if (parent->removeQueue()&&(state==DFUstate_aborting))
                 state = DFUstate_aborted;
-            dt.setNow();
+            dt.setTimeStamp(getTimeStampNowValue());
             setTimeStopped(dt);
             if (subtask && !noted)
                 queryRoot()->setPropBool("@noted", true);
