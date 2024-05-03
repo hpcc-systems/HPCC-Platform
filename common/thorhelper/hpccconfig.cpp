@@ -109,7 +109,11 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
         {
             Owned<IPropertyTreeIterator> iter = config->getElements("allowedPipePrograms");
             ForEach(*iter)
-                configuredList.appendUniq(iter->query().queryProp(nullptr));
+            {
+                const char *prog = iter->query().queryProp(nullptr);
+                if (!isEmptyString(prog))
+                    configuredList.appendUniq(prog);
+            }
         }
         else
             configuredList.appendListUniq(config->queryProp("@allowedPipePrograms"), ",");
