@@ -117,7 +117,8 @@ Pass in dict with root and warnings
  {{- $_ := set $ctx "missingResourcesForCosts" list -}}
  {{- $_ := set $ctx "defaultCpuRateComponents" list -}}
  {{- $_ := set $ctx "components" (pick .root.Values "dafilesrv" "dali" "sasha" "dfuserver" "eclagent" "eclccserver" "esp" "roxie" "thor" "eclscheduler") -}}
- {{- if (.root.Values.sasha.disabled|default false) -}}
+ {{- $sasha := .root.Values.sasha | dict -}}
+ {{- if ($sasha.disabled|default false) -}}
   {{- $_ := set $ctx "components" (omit $ctx.components "sasha") -}}
  {{- end -}}
  {{- range $cname, $ctypes := $ctx.components -}}
@@ -207,6 +208,11 @@ Pass in dict with root and warnings
  {{- if not $egressRestricted -}}
   {{- $warning := dict "source" "helm" "severity" "warning" -}}
   {{- $_ := set $warning "msg" "egress is not restricted to minimum required" -}}
+  {{- $_ := set $ctx "warnings" (append $ctx.warnings $warning) -}}
+ {{- end -}}
+ {{- if .root.Values.global.privileged -}}
+  {{- $warning := dict "source" "helm" "severity" "warning" -}}
+  {{- $_ := set $warning "msg" "privileged access should only be enabled for development systems" -}}
   {{- $_ := set $ctx "warnings" (append $ctx.warnings $warning) -}}
  {{- end -}}
 {{- end -}}

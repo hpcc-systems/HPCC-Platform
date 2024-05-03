@@ -1316,18 +1316,38 @@ Pass in a dictionary with me defined
 */}}
 {{- define "hpcc.addResources" }}
 {{- $resources := .me | default .defaults }}
-{{- if $resources }}
- {{- $limits := omit $resources "cpu" }}
- {{- $requests := pick $resources "cpu" }}
+{{- $omitResources := .root.Values.global.omitResources | default false }}
+{{- $resourceCpusWithLimits := hasKey .root.Values.global "resourceCpusWithLimits" | ternary .root.Values.global.resourceCpusWithLimits false -}}
+{{- $resourceWholeCpusWithLimits := hasKey .root.Values.global "resourceWholeCpusWithLimits" | ternary .root.Values.global.resourceWholeCpusWithLimits false -}}
+{{- if not $omitResources }}
+{{-  if $resources }}
+{{-   $limits := omit $resources "cpu" }}
+{{-   $requests := dict }}
+{{-   if hasKey $resources "cpu"  -}}
+{{-    $cpu := $resources.cpu }}
+{{-    if $resourceCpusWithLimits -}}
+{{-     $_ := set $limits "cpu" $cpu -}}
+{{-    else if $resourceWholeCpusWithLimits -}}
+{{-     $milliCPUs := int (include "hpcc.k8sCPUStringToMilliCPU" $cpu) }}
+{{-     if eq (mod $milliCPUs 1000) 0 -}}
+{{-      $_ := set $limits "cpu" $cpu -}}
+{{-     else -}}
+{{-      $_ := set $requests "cpu" $cpu -}}
+{{-     end -}}
+{{-    else -}}
+{{-     $_ := set $requests "cpu" $cpu -}}
+{{-    end -}}
+{{-   end }}
 resources:
- {{- if $limits }}
+{{-   if $limits }}
   limits:
-  {{- toYaml $limits | nindent 4 }}
- {{- end -}}
- {{- if $requests }}
+{{-    toYaml $limits | nindent 4 }}
+{{-   end -}}
+{{-   if $requests }}
   requests:
-  {{- toYaml $requests | nindent 4 -}}
- {{- end -}}
+{{-    toYaml $requests | nindent 4 -}}
+{{-   end -}}
+{{-  end -}}
 {{- end -}}
 {{- end -}}
 
@@ -1336,16 +1356,11 @@ Add resources object for stub pods
 Pass in dict with root, me and instances defined
 */}}
 {{- define "hpcc.addStubResources" -}}
-{{- $stubInstanceResources := .stubResources | default .root.Values.global.stubInstanceResources | default dict }}
-{{- $milliCPUText := $stubInstanceResources.cpu | default "200m" }}
-{{- $milliCPUs := int (include "hpcc.k8sCPUStringToMilliCPU" $milliCPUText) }}
-{{- $memoryText := $stubInstanceResources.memory | default "400Mi" }}
-{{- $memory := int64 (include "hpcc.k8sMemoryStringToBytes" $memoryText) }}
-resources:
-  limits:
-    memory: {{ include "hpcc.bytesToK8sMemoryString" $memory | quote }}
-  requests:
-    cpu: {{ printf "%dm" $milliCPUs | quote }}
+{{- $stubInstanceResources := .me | default .root.Values.global.stubInstanceResources | default dict }}
+{{- $cpuResource := $stubInstanceResources.cpu | default "200m" }}
+{{- $memoryResource := $stubInstanceResources.memory | default "400Mi" }}
+{{- $resources := dict "memory" $memoryResource "cpu" $cpuResource -}}
+{{- include "hpcc.addResources" (dict "me" $resources "root" .root) }}
 {{- end -}}
 
 {{/*
@@ -1408,10 +1423,7 @@ Pass in dict with root, me and dali if container in dali pod
           "--service={{ .me.name }}",
 {{ include "hpcc.daliArg" (dict "root" .root "component" "Sasha" "optional" false "overrideDaliHost" $overrideDaliHost "overrideDaliPort" $overrideDaliPort) | indent 10 }}
         ]
-{{- $omitResources := hasKey .root.Values.global "omitResources" | ternary .root.Values.global.omitResources .root.Values.global.privileged }}
-{{- if not $omitResources }}
-{{- include "hpcc.addResources" (dict "me" .me.resources) | indent 2 }}
-{{- end }}
+{{- include "hpcc.addResources" (dict "me" .me.resources "root" .root) | indent 2 }}
 {{- include "hpcc.addSecurityContext" . | indent 2 }}
   env:
 {{ include "hpcc.mergeEnvironments" $env | indent 2 -}}
