@@ -1017,10 +1017,13 @@ void FileSprayer::beforeTransfer()
                 if (headerSize)
                     io->write(0, headerSize, getHeaderText(tgtFormat.type));
 
-                if ((lastOutputOffset != 0)&&!compressOutput)
+                if (remote.queryFileSystemProperties().preExtendOutput)
                 {
-                    char null = 0;
-                    io->write(lastOutputOffset-sizeof(null), sizeof(null), &null);
+                    if ((lastOutputOffset != 0)&&!compressOutput)
+                    {
+                        char null = 0;
+                        io->write(lastOutputOffset-sizeof(null), sizeof(null), &null);
+                    }
                 }
             }
         }

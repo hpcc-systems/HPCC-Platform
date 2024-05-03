@@ -75,7 +75,7 @@ dependency_update () {
 }
 
 CMD="install"
-DEVELOPER_OPTIONS="--set global.privileged=true"
+DEVELOPER_OPTIONS="--set global.privileged=true --set global.omitResources=true"
 while [ "$#" -gt 0 ]; do
   arg=$1
   if [[ ${arg:0:1} == '-' ]]; then

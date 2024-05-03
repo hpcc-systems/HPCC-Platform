@@ -7421,9 +7421,9 @@ void FileIOStats::trace()
 
 //--------------------------------------------------------------------------------------------------------------------
 
-static constexpr FileSystemProperties linuxFileSystemProperties     {true, true, true, true, 0x10000};             // 64K
+static constexpr FileSystemProperties linuxFileSystemProperties     {true, true, true, false, 0x10000};             // 64K
 static constexpr FileSystemProperties defaultUrlFileSystemProperties{false, false, false, false, 0x400000};        // 4Mb
-static constexpr FileSystemProperties linuxFileSystemNoRenameProperties{false, true, true, true, 0x10000};         // 64K
+static constexpr FileSystemProperties linuxFileSystemNoRenameProperties{false, true, true, false, 0x10000};         // 64K
 
 static std::atomic<int> avoidRename{-1};
 static CriticalSection avoidRenameCS;

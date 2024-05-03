@@ -77,10 +77,7 @@ data:
 {{- end }}
           - name: {{ $compileJobName }}
 {{- include "hpcc.addSecurityContext" . | indent 12 }}
-{{- $omitResources := hasKey .root.Values.global "omitResources" | ternary .root.Values.global.omitResources .root.Values.global.privileged }}
-{{- if not $omitResources }}
-{{- include "hpcc.addResources" (dict "me" .me.resources) | indent 12 }}
-{{- end }}
+{{- include "hpcc.addResources" (dict "me" .me.resources "root" .root) | indent 12 }}
 {{ include "hpcc.addImageAttrs" . | indent 12 }}
 {{- $misc := .root.Values.global.misc | default dict -}}
 {{- $postJobCommand := $misc.postJobCommand | default "" }}
@@ -175,14 +172,11 @@ spec:
           value: "/tmp/{{ .name }}.sentinel"
 {{ include "hpcc.addSentinelProbes" . | indent 8 }}
 {{- include "hpcc.addSecurityContext" $commonCtx | indent 8 }}
-{{- $omitResources := hasKey $.Values.global "omitResources" | ternary $.Values.global.omitResources $.Values.global.privileged }}
-{{- if not $omitResources }}
-{{-  if .useChildProcesses }}
-{{-   include "hpcc.addResources" (dict "me" .resources) | indent 8 }}
-{{-  else }}
-{{-   $defaultResources := dict "cpu" "1" "memory" "1Gi" }}
-{{-   include "hpcc.addResources" (dict "me" .timedChildResources "defaults" $defaultResources) | indent 8 }}
-{{-  end }}
+{{- if .useChildProcesses }}
+{{-  include "hpcc.addResources" (dict "me" .resources "root" $) | indent 8 }}
+{{- else }}
+{{-  $defaultResources := dict "cpu" "1" "memory" "1Gi" }}
+{{-  include "hpcc.addResources" (dict "me" .timedChildResources "defaults" $defaultResources "root" $) | indent 8 }}
 {{- end }}
 {{ include "hpcc.addImageAttrs" $commonCtx | indent 8 }}
         volumeMounts:
