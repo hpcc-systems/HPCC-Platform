@@ -1,5 +1,5 @@
 ###############################################################################
-#    HPCC SYSTEMS software Copyright (C) 2021 HPCC Systems®.
+#    HPCC SYSTEMS software Copyright (C) 2022 HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -14,10 +14,32 @@
 #    limitations under the License.
 ################################################################################
 
-IF(NOT CLIENTTOOLS_ONLY)
-  IF((NOT WIN32) AND USE_ELASTICSTACK_CLIENT)
-    HPCC_ADD_SUBDIRECTORY (ElasticStack)
-  ENDIF()
-  HPCC_ADD_SUBDIRECTORY (Azure)
-  HPCC_ADD_SUBDIRECTORY (Grafana)
-ENDIF()
+project(GrafanaCurllogaccess)
+
+# Required installed libraries
+find_package(CURL REQUIRED)
+
+set(srcs
+  ${CMAKE_CURRENT_SOURCE_DIR}/GrafanaCurlClient.cpp
+)
+
+include_directories(
+  ${HPCC_SOURCE_DIR}/system/include
+  ${HPCC_SOURCE_DIR}/system/jlib
+  ${CURL_INCLUDE_DIR}
+)
+
+add_definitions(-DGRAFANA_CURL_LOGACCESS_EXPORTS)
+
+HPCC_ADD_LIBRARY(${PROJECT_NAME} SHARED ${srcs})
+
+target_link_libraries(${PROJECT_NAME}
+   PRIVATE jlib
+   PRIVATE ${CURL_LIBRARIES}
+)
+
+install(TARGETS ${PROJECT_NAME}
+  RUNTIME DESTINATION ${EXEC_DIR}
+  LIBRARY DESTINATION ${LIB_DIR}
+  CALC_DEPS
+)
