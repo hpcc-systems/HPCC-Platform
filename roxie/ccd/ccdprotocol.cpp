@@ -1624,7 +1624,7 @@ private:
             throw MakeStringException(ROXIE_DATA_ERROR, "Malformed request");
     }
 
-    void sanitizeQuery(Owned<IPropertyTree> &queryPT, StringAttr &queryName, StringBuffer &saniText, HttpHelper &httpHelper, const char *&uid, bool &isBlind, bool &isDebug)
+    void sanitizeQuery(Owned<IPropertyTree> &queryPT, StringAttr &queryName, StringBuffer &saniText, HttpHelper &httpHelper, const char *&uid, bool &isBlind, bool &isDebug, IProperties * inlineTraceHeaders)
     {
         if (queryPT)
         {
@@ -1634,6 +1634,16 @@ private:
                 uid = queryPT->queryProp("_TransactionId");
             isBlind = queryPT->getPropBool("@blind", false) || queryPT->getPropBool("_blind", false);
             isDebug = queryPT->getPropBool("@debug");
+            if (queryPT->hasProp("_trace") && inlineTraceHeaders)
+            {
+                if (queryPT->hasProp("_trace/traceparent"))
+                    inlineTraceHeaders->setProp("traceparent", queryPT->queryProp("_trace/traceparent"));
+                if (queryPT->hasProp("_trace/Global-Id"))
+                    inlineTraceHeaders->setProp("Global-Id", queryPT->queryProp("_trace/Global-Id"));
+                if (queryPT->hasProp("_trace/Caller-Id"))
+                    inlineTraceHeaders->setProp("Caller-Id", queryPT->queryProp("_trace/Caller-Id"));
+            }
+
             toXML(queryPT, saniText, 0, isBlind ? (XML_SingleQuoteAttributeValues | XML_Sanitize) : XML_SingleQuoteAttributeValues);
         }
     }
@@ -1889,9 +1899,10 @@ readAnother:
                 }
 
                 uid = NULL;
-                sanitizeQuery(queryPT, queryName, sanitizedText, httpHelper, uid, isBlind, isDebug);
+                Owned<IProperties> inlineTraceHeaders = createProperties(true);
+                sanitizeQuery(queryPT, queryName, sanitizedText, httpHelper, uid, isBlind, isDebug, inlineTraceHeaders);
 
-                msgctx->startSpan(uid, querySetName, queryName, httpHelper.queryRequestHeaders());
+                msgctx->startSpan(uid, querySetName, queryName, isHTTP ? httpHelper.queryRequestHeaders() : inlineTraceHeaders);
 
                 if (!uid)
                     uid = "-";
