@@ -434,7 +434,9 @@ dafilesrv:
   service:
     servicePort: 7300
     visibility: cluster
-    
+  # example expert section. A disableIFileMask of 0x1 will disable the IFEnocache option
+  # expert:
+  #   disableIFileMask: 0x1
 
 dali:
 - name: mydali

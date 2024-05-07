@@ -3788,7 +3788,10 @@ public:
         }
         IFEflags extraFlags = (IFEflags)extra;
         // none => nocache for remote (hint)
-        // can revert to previous behavior with conf file setting "allow_pgcache_flush=false"
+        // can change this default setting with:
+        //  bare-metal legacy - conf file setting: allow_pgcache_flush=false
+        //  bare-metal - environment.xml dafilesrv expert setting: disableIFileMask=0x1 (IFEnocache)
+        //  containerized - values.yaml dafilesrv expert setting: disableIFileMask: 0x1 (IFEnocache)
         if (extraFlags == IFEnone)
             extraFlags = IFEnocache;
         Owned<IFile> file = createIFile(name->text);
