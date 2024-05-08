@@ -1242,10 +1242,14 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         useHardLink = topology->getPropBool("@useHardLink", false);
         maxFileAgeNS[false] = milliToNano(topology->getPropInt("@localFilesExpire", (unsigned) -1));
         maxFileAgeNS[true] = milliToNano(topology->getPropInt("@remoteFilesExpire", 60*60*1000));
-        minFilesOpen[false] = topology->getPropInt("@minLocalFilesOpen", 2000);
-        minFilesOpen[true] = topology->getPropInt("@minRemoteFilesOpen", 500);
         maxFilesOpen[false] = topology->getPropInt("@maxLocalFilesOpen", 4000);
         maxFilesOpen[true] = topology->getPropInt("@maxRemoteFilesOpen", 1000);
+        minFilesOpen[false] = topology->getPropInt("@minLocalFilesOpen", maxFilesOpen[false]/2);
+        if (minFilesOpen[false] >= maxFilesOpen[false])
+           throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid settings - minLocalFilesOpen should be less than maxLocalFilesOpen");
+        minFilesOpen[true] = topology->getPropInt("@minRemoteFilesOpen", maxFilesOpen[true]/2);
+        if (minFilesOpen[true] >= maxFilesOpen[true])
+           throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid settings - minRemoteFilesOpen should be less than maxRemoteFilesOpen");
         dafilesrvLookupTimeout = topology->getPropInt("@dafilesrvLookupTimeout", 10000);
         setRemoteFileTimeouts(dafilesrvLookupTimeout, 0);
         trapTooManyActiveQueries = topology->getPropBool("@trapTooManyActiveQueries", true);
