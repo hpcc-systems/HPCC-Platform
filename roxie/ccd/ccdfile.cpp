@@ -2049,6 +2049,7 @@ public:
     void doCloseExpired(bool remote)
     {
         closePending[remote] = false;
+        IArrayOf<ILazyFileIO> expired;
         IArrayOf<ILazyFileIO> goers;
         {
             if (files.ordinality() > maxFilesOpen[remote] || maxFileAgeNS[remote] != (unsigned __int64) -1)
@@ -2065,17 +2066,7 @@ public:
                         {
                             unsigned __int64 age = nsTick() - f->getLastAccessed();
                             if (age > maxFileAgeNS[remote])
-                            {
-                                if (doTrace(traceRoxieFiles))
-                                {
-                                    // NOTE - querySource will cause the file to be opened if not already open
-                                    // That's OK here, since we know the file is open and remote.
-                                    // But don't be tempted to move this line outside these if's (eg. to trace the idle case)
-                                    const char *fname = remote ? f->querySource()->queryFilename() : f->queryFilename();
-                                    DBGLOG("Closing inactive %s file %s (last accessed %" I64F "u ms ago)", remote ? "remote" : "local",  fname, nanoToMilli(age));
-                                }
-                                f->close();
-                            }
+                                expired.append(*f.getClear());
                             else if (files.ordinality() > maxFilesOpen[remote])
                                 // No point adding to goers if there's no chance goers will get longer than limit
                                 goers.append(*f.getClear());
@@ -2083,6 +2074,20 @@ public:
                     }
                 }
             }
+        }
+        ForEachItemIn(expiredIdx, expired)
+        {
+            ILazyFileIO &f = expired.item(expiredIdx);
+            if (doTrace(traceRoxieFiles))
+            {
+                // NOTE - querySource will cause the file to be opened if not already open
+                // That's OK here, since we know the file is open and remote.
+                // But don't be tempted to move this line outside these if's (eg. to trace the idle case)
+                unsigned __int64 age = nsTick() - f.getLastAccessed();
+                const char *fname = remote ? f.querySource()->queryFilename() : f.queryFilename();
+                DBGLOG("Closing inactive %s file %s (last accessed %" I64F "u ms ago)", remote ? "remote" : "local",  fname, nanoToMilli(age));
+            }
+            f.close();
         }
         unsigned numFilesLeft = goers.ordinality(); 
         if (numFilesLeft > maxFilesOpen[remote])
