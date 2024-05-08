@@ -93,11 +93,12 @@ protected:
     mutable CriticalSection crit;
     offset_t fileSize;
     unsigned currentIdx;
-    unsigned lastAccess;
+    std::atomic<unsigned> lastAccess;
     CDateTime fileDate;
-    bool copying = false;
+    std::atomic<bool> copying = false;
     bool isCompressed = false;
-    bool remote = false;
+    std::atomic<bool> remote = false;
+    std::atomic<bool> open = false;
     bool isKey = false;
     IRoxieFileCache *cached = nullptr;
     unsigned fileIdx = 0;
@@ -117,6 +118,7 @@ public:
         fileDate.set(_date);
         currentIdx = 0;
         current.set(&failure);
+        open = false;
 #ifdef FAIL_20_READ
         readCount = 0;
 #endif
@@ -182,19 +184,17 @@ public:
     }
     virtual bool isCopying() const
     {
-        CriticalBlock b(crit);
         return copying; 
     }
 
     virtual bool isOpen() const 
     {
         CriticalBlock b(crit);
-        return current.get() != &failure; 
+        return open; 
     }
 
     virtual unsigned getLastAccessed() const
     {
-        CriticalBlock b(crit);
         return lastAccess;
     }
 
@@ -206,7 +206,6 @@ public:
 
     virtual bool isRemote()
     {
-        CriticalBlock b(crit);
         return remote;
     }
 
@@ -218,7 +217,8 @@ public:
                 return;
             numFilesOpen[remote]--;
             mergeStats(fileStats, current);
-            current.set(&failure); 
+            current.set(&failure);
+            open = false;
         }
         catch (IException *E) 
         {
@@ -291,12 +291,15 @@ public:
                             current.setown(f->open(IFOread));
                         if (current)
                         {
+                            open = true;
                             if (doTrace(traceRoxieFiles))
                                 DBGLOG("Opening %s", sourceName);
                             if (useRemoteResources)
                                 disconnectRemoteIoOnExit(current);
                             break;
                         }
+                        else
+                            setFailure();
     //                  throwUnexpected();  - try another location if this one has the wrong version of the file
                     }
                     if (useRemoteResources)
@@ -468,6 +471,7 @@ public:
                             DBGLOG("Trying to create Hard Link for %s", sourceName);
                             createHardLink(logical->queryFilename(), sourceName);
                             current.setown(sources.item(currentIdx).open(IFOread));
+                            open = true;
                             return true;
                         }
                         catch(IException *E)
