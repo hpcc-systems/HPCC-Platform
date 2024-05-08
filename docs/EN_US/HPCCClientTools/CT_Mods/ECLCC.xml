@@ -463,6 +463,13 @@
               </row>
 
               <row>
+                <entry>-fisComplexCompile</entry>
+
+                <entry>Prevents attempts to compile as a child process when a
+                query is complex. </entry>
+              </row>
+
+              <row>
                 <entry>-b</entry>
 
                 <entry>Batch mode. Each source file is processed in turn.
