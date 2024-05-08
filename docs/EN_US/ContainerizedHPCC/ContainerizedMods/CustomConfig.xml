@@ -770,6 +770,91 @@ helm upgrade mycluster hpcc/hpcc -f threethorsonequeue.yaml
         </listitem>
       </orderedlist>
     </sect2>
+
+    <sect2 id="configwithlzonly" role="nobrk">
+      <title>Create a Custom Configuration Chart for a Landing Zone
+      only</title>
+
+      <para>In this section, we will create a custom configuration that
+      deploys a "platform" containing only a Landing Zone. This can be useful
+      if all you need is a landing zone server with dafilesrv running.</para>
+
+      <para><emphasis role="bold">Note:</emphasis> This can only be deployed
+      to a different namespace than any other platform instance.</para>
+
+      <orderedlist>
+        <listitem>
+          <para>If you have not already added the HPCC Systems repository to
+          the helm repository list, add it now.</para>
+
+          <para><programlisting>helm repo add hpcc https://hpcc-systems.github.io/helm-chart/</programlisting></para>
+
+          <para>If you have added it, update to the latest charts:</para>
+
+          <para><programlisting>helm repo update</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Create a new text file and name it <emphasis
+          role="bold">lz.yaml</emphasis> and open it in a text editor.</para>
+
+          <para>You can use any text editor.</para>
+        </listitem>
+
+        <listitem>
+          <para>Copy and paste this code into the file:</para>
+
+          <para><programlisting>dafilesrv:
+- name: direct-access
+  application: directio
+  service:
+    servicePort: 7100
+    visibility: local
+    tls: false
+  resources:
+    cpu: "2"
+    memory: "8G"
+dali: []
+dfuserver: []
+eclagent: []
+eclccserver: []
+eclscheduler: []
+esp: []
+roxie: []
+sasha: null
+thor: []
+</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Save the file and close the text editor.</para>
+        </listitem>
+      </orderedlist>
+
+      <para><emphasis role="bold">Deploy using the new custom configuration
+      chart.</emphasis></para>
+
+      <orderedlist>
+        <listitem>
+          <para>Open a terminal and navigate to the folder where you saved the
+          lz.yaml file.</para>
+        </listitem>
+
+        <listitem>
+          <para>Deploy this LZ only "platform" with the the new configuration
+          added to your command:</para>
+
+          <para><programlisting>helm install mylz hpcc/hpcc -f lz.yaml
+</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Confirm it is installed using this command:</para>
+
+          <para><programlisting>helm list </programlisting></para>
+        </listitem>
+      </orderedlist>
+    </sect2>
   </sect1>
 
   <sect1 id="CostTracking1">
