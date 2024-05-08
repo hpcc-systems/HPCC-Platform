@@ -93,7 +93,7 @@ protected:
     mutable CriticalSection crit;
     offset_t fileSize;
     unsigned currentIdx;
-    std::atomic<unsigned> lastAccess;
+    std::atomic<unsigned __int64> lastAccess;
     CDateTime fileDate;
     std::atomic<bool> copying = false;
     bool isCompressed = false;
@@ -122,7 +122,7 @@ public:
 #ifdef FAIL_20_READ
         readCount = 0;
 #endif
-        lastAccess = msTick();
+        lastAccess = nsTick();
     }
     
     ~CRoxieLazyFileIO()
@@ -193,7 +193,7 @@ public:
         return open; 
     }
 
-    virtual unsigned getLastAccessed() const
+    virtual unsigned __int64 getLastAccessed() const
     {
         return lastAccess;
     }
@@ -331,7 +331,7 @@ public:
                     }
                 }
             }
-            lastAccess = msTick();
+            lastAccess = nsTick();
             if (++numFilesOpen[remote] > maxFilesOpen[remote])
                 queryFileCache().closeExpired(remote); // NOTE - this does not actually do the closing of expired files (which could deadlock, or could close the just opened file if we unlocked crit)
         }
@@ -358,7 +358,7 @@ public:
             try
             {
                 size32_t ret = active->read(pos, len, data);
-                lastAccess = msTick();
+                lastAccess = nsTick();
                 if (cached && !remote)
                     cached->noteRead(fileIdx, pos, ret);
                 return ret;
@@ -404,7 +404,7 @@ public:
     { 
         unsigned activeIdx;
         Owned<IFileIO> active = getCheckOpen(activeIdx);
-        lastAccess = msTick();
+        lastAccess = nsTick();
         return active->size();
     }
 
@@ -534,7 +534,9 @@ public:
     {
         ILazyFileIO *LL = (ILazyFileIO *) *L;
         ILazyFileIO *RR = (ILazyFileIO *) *R;
-        return LL->getLastAccessed() - RR->getLastAccessed();
+        auto Lla = LL->getLastAccessed();
+        auto Rla = RR->getLastAccessed();
+        return Lla > Rla ? 1 : Lla == Rla ? 0 : -1;
     }
 };
 
@@ -2059,8 +2061,8 @@ public:
                     Owned<ILazyFileIO> f = match;
                     if (f->isOpen() && f->isRemote()==remote && !f->isCopying())
                     {
-                        unsigned age = msTick() - f->getLastAccessed();
-                        if (age > maxFileAge[remote])
+                        unsigned __int64 age = nsTick() - f->getLastAccessed();
+                        if (age > maxFileAgeNS[remote])
                         {
                             if (doTrace(traceRoxieFiles))
                             {
@@ -2068,7 +2070,7 @@ public:
                                 // That's OK here, since we know the file is open and remote.
                                 // But don't be tempted to move this line outside these if's (eg. to trace the idle case)
                                 const char *fname = remote ? f->querySource()->queryFilename() : f->queryFilename();
-                                DBGLOG("Closing inactive %s file %s (last accessed %u ms ago)", remote ? "remote" : "local",  fname, age);
+                                DBGLOG("Closing inactive %s file %s (last accessed %" I64F "u ms ago)", remote ? "remote" : "local",  fname, nanoToMilli(age));
                             }
                             f->close();
                         }
@@ -2091,8 +2093,8 @@ public:
                 {
                     if (doTrace(traceRoxieFiles))
                     {
-                        unsigned age = msTick() - f.getLastAccessed();
-                        DBGLOG("Closing %s (last accessed %u ms ago)", f.queryFilename(), age);
+                        unsigned __int64 age = nsTick() - f.getLastAccessed();
+                        DBGLOG("Closing %s (last accessed %" I64F "u ms ago)", f.queryFilename(), nanoToMilli(age));
                     }
                     f.close();
                 }
