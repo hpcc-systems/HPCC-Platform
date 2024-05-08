@@ -879,11 +879,10 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
     InterruptableSemaphore cidtSleep;
     mutable CopyMapStringToMyClass<ILazyFileIO> files;
     mutable CriticalSection crit;
-    CriticalSection cpcrit;
     bool started;
     bool aborting;
     std::atomic<bool> closing;
-    bool closePending[2];
+    std::atomic<bool> closePending[2];
     StringAttrMapping fileErrorList;
     bool cidtActive = false;
     Semaphore cidtStarted;
@@ -1919,10 +1918,9 @@ public:
     virtual void closeExpired(bool remote)
     {
         // This schedules a close at the next available opportunity
-        CriticalBlock b(cpcrit); // paranoid...
-        if (!closePending[remote])
+        bool expected = false;
+        if (closePending[remote].compare_exchange_strong(expected, true))
         {
-            closePending[remote] = true;
             DBGLOG("closeExpired %s scheduled - %d files open", remote ? "remote" : "local", (int) numFilesOpen[remote]);
             toClose.signal();
         }
@@ -2044,10 +2042,7 @@ public:
 
     void doCloseExpired(bool remote)
     {
-        {
-            CriticalBlock b(cpcrit); // paranoid...
-            closePending[remote] = false;
-        }
+        closePending[remote] = false;
         IArrayOf<ILazyFileIO> goers;
         {
             CriticalBlock b(crit);
