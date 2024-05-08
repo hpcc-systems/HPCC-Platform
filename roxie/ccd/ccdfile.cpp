@@ -1586,7 +1586,7 @@ public:
 #else
                 unsigned checkPeriod = 10*60;  // check expired file handles every 10 minutes, buddyCopying a little more often
 #endif
-                toClose.wait(checkPeriod * 1000);
+                bool forceElapsedCheck = toClose.wait(checkPeriod * 1000);
                 if (closing)
                     break;
 #ifdef _CONTAINERIZED
@@ -1636,7 +1636,7 @@ public:
                 }
 #endif
                 unsigned elapsed = msTick()-lastCloseCheck;
-                if (elapsed >= 10*60*1000)
+                if (forceElapsedCheck || elapsed >= 10*60*1000)
                 {
                     doCloseExpired(true);
                     doCloseExpired(false);
