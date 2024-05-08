@@ -2051,31 +2051,35 @@ public:
         closePending[remote] = false;
         IArrayOf<ILazyFileIO> goers;
         {
-            CriticalBlock b(crit);
-            HashIterator h(files);
-            ForEach(h)
+            if (files.ordinality() > maxFilesOpen[remote] || maxFileAgeNS[remote] != (unsigned __int64) -1)
             {
-                ILazyFileIO * match = files.mapToValue(&h.query());
-                if (match->isAliveAndLink())
+                CriticalBlock b(crit);   // Does it matter that we test files.ordinality() outside the critblock?
+                HashIterator h(files);
+                ForEach(h)
                 {
-                    Owned<ILazyFileIO> f = match;
-                    if (f->isOpen() && f->isRemote()==remote && !f->isCopying())
+                    ILazyFileIO * match = files.mapToValue(&h.query());
+                    if (match->isAliveAndLink())
                     {
-                        unsigned __int64 age = nsTick() - f->getLastAccessed();
-                        if (age > maxFileAgeNS[remote])
+                        Owned<ILazyFileIO> f = match;
+                        if (f->isOpen() && f->isRemote()==remote && !f->isCopying())
                         {
-                            if (doTrace(traceRoxieFiles))
+                            unsigned __int64 age = nsTick() - f->getLastAccessed();
+                            if (age > maxFileAgeNS[remote])
                             {
-                                // NOTE - querySource will cause the file to be opened if not already open
-                                // That's OK here, since we know the file is open and remote.
-                                // But don't be tempted to move this line outside these if's (eg. to trace the idle case)
-                                const char *fname = remote ? f->querySource()->queryFilename() : f->queryFilename();
-                                DBGLOG("Closing inactive %s file %s (last accessed %" I64F "u ms ago)", remote ? "remote" : "local",  fname, nanoToMilli(age));
+                                if (doTrace(traceRoxieFiles))
+                                {
+                                    // NOTE - querySource will cause the file to be opened if not already open
+                                    // That's OK here, since we know the file is open and remote.
+                                    // But don't be tempted to move this line outside these if's (eg. to trace the idle case)
+                                    const char *fname = remote ? f->querySource()->queryFilename() : f->queryFilename();
+                                    DBGLOG("Closing inactive %s file %s (last accessed %" I64F "u ms ago)", remote ? "remote" : "local",  fname, nanoToMilli(age));
+                                }
+                                f->close();
                             }
-                            f->close();
+                            else if (files.ordinality() > maxFilesOpen[remote])
+                                // No point adding to goers if there's no chance goers will get longer than limit
+                                goers.append(*f.getClear());
                         }
-                        else
-                            goers.append(*f.getClear());
                     }
                 }
             }
