@@ -1330,7 +1330,11 @@ void CTraceManager::initTracerProviderAndGlobalInternals(const IPropertyTree * t
         processors.push_back(opentelemetry::sdk::trace::SimpleSpanProcessorFactory::Create(std::move(exporter)));
     }
 
-    opentelemetry::sdk::resource::ResourceAttributes resourceAtts = {{"service.name", moduleName.get()}};
+    opentelemetry::sdk::resource::ResourceAttributes resourceAtts = 
+        {
+            {"service.name", moduleName.get()},
+            {"service.version", hpccBuildInfo.buildVersion}
+        };
     auto jtraceResource = opentelemetry::sdk::resource::Resource::Create(resourceAtts);
 
     // Default is an always-on sampler.
