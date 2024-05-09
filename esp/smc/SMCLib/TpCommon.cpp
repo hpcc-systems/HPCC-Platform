@@ -78,7 +78,8 @@ extern TPWRAPPER_API bool matchNetAddressRequest(const char* netAddressReg, bool
     return streq(netAddressReg, tpMachine.getConfigNetaddress());
 }
 
-extern TPWRAPPER_API void throwOrLogDropZoneLookUpError(int code, char const* format, ...)
+extern TPWRAPPER_API void throwOrLogDropZoneLookUpError(int code, char const* format, ...) __attribute__((format(printf, 2, 3)));
+TPWRAPPER_API void throwOrLogDropZoneLookUpError(int code, char const* format, ...)
 {
     va_list args;
     va_start(args, format);

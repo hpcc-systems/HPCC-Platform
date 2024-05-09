@@ -134,7 +134,7 @@ bool CWSSashaEx::onRestoreWU(IEspContext& context, IEspRestoreWURequest& req, IE
 
         ISashaCmdExecutor* executor = querySashaCommandExecutor(wuType);
         bool sashaCmdSuccess = false;
-        if ((wuType == CWUTypes_ECL))
+        if (wuType == CWUTypes_ECL)
             sashaCmdSuccess = executor->restoreECLWorkUnit(isEmptyString(wuid) ? "*" : wuid);
         else
             sashaCmdSuccess = executor->restoreDFUWorkUnit(isEmptyString(wuid) ? "*" : wuid);
@@ -175,7 +175,7 @@ bool CWSSashaEx::onListWU(IEspContext& context, IEspListWURequest& req, IEspResu
         ISashaCmdExecutor* executor = querySashaCommandExecutor(wuType);
 
         bool sashaCmdSuccess = false;
-        if ((wuType == CWUTypes_ECL))
+        if (wuType == CWUTypes_ECL)
             sashaCmdSuccess = executor->listECLWorkUnit(listWURequests);
         else
             sashaCmdSuccess = executor->listDFUWorkUnit(listWURequests);
