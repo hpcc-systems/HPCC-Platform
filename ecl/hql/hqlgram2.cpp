@@ -7304,6 +7304,9 @@ IHqlExpression * HqlGram::createBuildFileFromTable(IHqlExpression * table, const
     case no_xml:
         args.append(*createAttribute(xmlAtom, LINK(mode->queryChild(0))));
         break;
+    case no_json:
+        args.append(*createAttribute(jsonAtom, LINK(mode->queryChild(0))));
+        break;
     }
 
     ForEachItemIn(i, buildOptions)
@@ -8574,6 +8577,7 @@ void HqlGram::checkJoinFlags(const attribute &err, IHqlExpression * join)
                         {
                         case no_csv:
                         case no_xml:
+                        case no_json:
                             reportError(ERR_KEYEDNOTMATCHDATASET,err,"RIGHT side of a full keyed join must be a THOR disk file (CSV/XML) not currently supported");
                             break;
                         }
@@ -9051,6 +9055,10 @@ void HqlGram::checkValidRecordMode(IHqlExpression * dataset, attribute & atr, at
     case no_xml:
         if (!isValidXmlRecord(dataset->queryRecord()))
             reportError(ERR_INVALID_XML_RECORD, atr, "XML cannot be used on this record structure");
+        break;
+    case no_json:
+        if (!isValidXmlRecord(dataset->queryRecord()))
+            reportError(ERR_INVALID_JSON_RECORD, atr, "JSON cannot be used on this record structure");
         break;
     }
 }

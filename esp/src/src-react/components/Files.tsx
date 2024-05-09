@@ -201,6 +201,12 @@ export const Files: React.FunctionComponent<FilesProps> = ({
                     return Utility.convertedSize(row.IntSize);
                 },
             },
+            CompressedFileSizeString: {
+                label: nlsHPCC.CompressedSize,
+                formatter: (value, row) => {
+                    return Utility.convertedSize(row.CompressedFileSize);
+                }
+            },
             Parts: {
                 label: nlsHPCC.Parts, width: 40,
             },

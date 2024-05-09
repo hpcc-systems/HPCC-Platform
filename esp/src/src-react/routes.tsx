@@ -87,8 +87,8 @@ export const routes: RoutesEx = [
         path: ["/play", "/playground"],
         children: [
             {
-                path: "", action: () => import("./components/ECLPlayground").then(_ => {
-                    return <_.ECLPlayground />;
+                path: "", action: (ctx, params) => import("./components/ECLPlayground").then(_ => {
+                    return <_.ECLPlayground ecl={parseSearch(ctx.search)?.ecl as string} />;
                 })
             },
             {

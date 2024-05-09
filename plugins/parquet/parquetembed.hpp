@@ -81,14 +81,14 @@ enum PathNodeType {CPNTScalar, CPNTDataset, CPNTSet};
  */
 struct ParquetColumnTracker
 {
-    const char *nodeName;
+    const RtlFieldInfo * field;
     PathNodeType nodeType;
     const arrow::Array *structPtr;
     unsigned int childCount = 0;
     unsigned int childrenProcessed = 0;
 
-    ParquetColumnTracker(const char *_nodeName, const arrow::Array *_struct, PathNodeType _nodeType)
-        : nodeName(_nodeName), nodeType(_nodeType), structPtr(_struct) {}
+    ParquetColumnTracker(const RtlFieldInfo * _field, const arrow::Array *_struct, PathNodeType _nodeType)
+        : field(_field), nodeType(_nodeType), structPtr(_struct) {}
 
     bool finishedChildren() { return childrenProcessed < childCount; }
 };
@@ -98,15 +98,15 @@ struct ParquetColumnTracker
  */
 struct ArrayBuilderTracker
 {
-    const char *nodeName;
+    const RtlFieldInfo * field;
     PathNodeType nodeType;
     arrow::FieldPath nodePath;
     arrow::ArrayBuilder *structPtr;
     unsigned int childCount = 0;
     unsigned int childrenProcessed = 0;
 
-    ArrayBuilderTracker(const char *_nodeName, arrow::ArrayBuilder *_struct, PathNodeType _nodeType, arrow::FieldPath && _nodePath)
-        : nodeName(_nodeName), nodeType(_nodeType), structPtr(_struct), nodePath(std::move(_nodePath))
+    ArrayBuilderTracker(const RtlFieldInfo *_field, arrow::ArrayBuilder *_struct, PathNodeType _nodeType, arrow::FieldPath && _nodePath)
+        : field(_field), nodeType(_nodeType), structPtr(_struct), nodePath(std::move(_nodePath))
     {
         if (nodeType == CPNTDataset)
             childCount = structPtr->num_children();
@@ -429,16 +429,16 @@ public:
     void writeRecordBatch(std::size_t newSize);
     void updateRow();
     std::shared_ptr<arrow::NestedType> makeChildRecord(const RtlFieldInfo *field);
-    arrow::Status fieldToNode(const std::string &name, const RtlFieldInfo *field, std::vector<std::shared_ptr<arrow::Field>> &arrowFields);
+    arrow::Status fieldToNode(const RtlFieldInfo *field, std::vector<std::shared_ptr<arrow::Field>> &arrowFields);
     arrow::Status fieldsToSchema(const RtlTypeInfo *typeInfo);
-    void beginSet(const char *fieldName);
-    void beginRow(const char *fieldName);
+    void beginSet(const RtlFieldInfo *field);
+    void beginRow(const RtlFieldInfo *field);
     void endRow();
     arrow::Status checkDirContents();
     __int64 getMaxRowSize() {return maxRowCountInBatch;}
-    arrow::ArrayBuilder *getFieldBuilder(const char *fieldName);
-    arrow::FieldPath getNestedFieldBuilder(const char *fieldName, arrow::ArrayBuilder *&childBuilder);
-    void addFieldToBuilder(const char *fieldName, unsigned len, const char *data);
+    arrow::ArrayBuilder *getFieldBuilder(const RtlFieldInfo *field);
+    arrow::FieldPath getNestedFieldBuilder(const RtlFieldInfo *field, arrow::ArrayBuilder *&childBuilder);
+    void addFieldToBuilder(const RtlFieldInfo *field, unsigned len, const char *data);
 
 private:
     __int64 currentRow = 0;
@@ -553,17 +553,16 @@ public:
     virtual void processUtf8(unsigned chars, const char *value, const RtlFieldInfo *field);
     virtual bool processBeginSet(const RtlFieldInfo *field, unsigned numElements, bool isAll, const byte *data)
     {
-        parquetWriter->beginSet(field->name);
+        parquetWriter->beginSet(field);
         return true;
     }
     virtual bool processBeginDataset(const RtlFieldInfo *field, unsigned rowsCount)
     {
         UNSUPPORTED("DATASET");
-        return false;
     }
     virtual bool processBeginRow(const RtlFieldInfo *field)
     {
-        parquetWriter->beginRow(field->name);
+        parquetWriter->beginRow(field);
         return true;
     }
     virtual void processEndSet(const RtlFieldInfo *field)
