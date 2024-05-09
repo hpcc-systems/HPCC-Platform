@@ -20,6 +20,7 @@ const logger = scopedLogger("../components/ECLPlayground.tsx");
 
 interface ECLPlaygroundProps {
     wuid?: string;
+    ecl?: string;
 }
 
 const enum OutputMode {
@@ -339,7 +340,7 @@ const ECLEditorToolbar: React.FunctionComponent<ECLEditorToolbarProps> = ({
 
 export const ECLPlayground: React.FunctionComponent<ECLPlaygroundProps> = (props) => {
 
-    const { wuid } = props;
+    const { wuid, ecl } = props;
     const theme = useTheme();
 
     const [outputMode, setOutputMode] = React.useState<OutputMode>(OutputMode.ERRORS);
@@ -363,13 +364,17 @@ export const ECLPlayground: React.FunctionComponent<ECLPlaygroundProps> = (props
                     setOutputMode(OutputMode.RESULTS);
                 }
             });
+        } else if (ecl) {
+            setEclContent(ecl);
         }
 
         fetch("/esp/files/eclwatch/ecl/ECLPlaygroundSamples.json")
             .then(response => response.json())
             .then(json => setEclSamples(
                 json.items.map(item => {
-                    if (item.selected && !wuid) setSelectedEclSample(item.filename);
+                    if (item.selected && !wuid && !ecl) {
+                        setSelectedEclSample(item.filename);
+                    }
                     return { key: item.filename, text: item.name };
                 })
             ));
@@ -381,7 +386,7 @@ export const ECLPlayground: React.FunctionComponent<ECLPlaygroundProps> = (props
                 editor.option("theme", "default");
             }
         }
-    }, [wuid, editor, theme]);
+    }, [wuid, editor, theme, ecl]);
 
     React.useEffect(() => {
         fetch(`/esp/files/eclwatch/ecl/${selectedEclSample}`)
