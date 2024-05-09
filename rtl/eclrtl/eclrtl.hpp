@@ -714,6 +714,7 @@ ECLRTL_API void rtlDestroyCompiledU8StrRegExpr(ICompiledStrRegExpr * compiled);
 ECLRTL_API void rtlDestroyU8StrRegExprFindInstance(IStrRegExprFindInstance * compiled);
 
 ECLRTL_API ICompiledUStrRegExpr * rtlCreateCompiledUStrRegExpr(const UChar * regExpr, bool isCaseSensitive);
+ECLRTL_API ICompiledUStrRegExpr * rtlCreateCompiledUStrRegExpr(int regExprLength, const UChar * regExpr, bool isCaseSensitive);
 ECLRTL_API void rtlDestroyCompiledUStrRegExpr(ICompiledUStrRegExpr * compiled);
 ECLRTL_API void rtlDestroyUStrRegExprFindInstance(IUStrRegExprFindInstance * compiled);
 

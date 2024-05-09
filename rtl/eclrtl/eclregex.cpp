@@ -29,21 +29,22 @@
 #include "eclrtl.hpp"
 #include "eclrtl_imp.hpp"
 #include "jlib.hpp"
-#ifdef _USE_ICU
-#include "unicode/regex.h"
-#endif
-
-#define UTF8_CODEPAGE "UTF-8"
-#define UTF8_MAXSIZE 4
 
 //---------------------------------------------------------------------------
 
-// PCRE2 8-bit context module variables
+// PCRE2 8-bit context module variables, used for STRING and UTF-8 support
 static pcre2_general_context_8 * pcre2GeneralContext8;
 static pcre2_compile_context_8 * pcre2CompileContext8;
 static pcre2_match_context_8 * pcre2MatchContext8;
 
-// PCRE2 memory allocation hook
+#ifdef _USE_ICU
+// PCRE2 16-bit context module variables, used for UNICODE support
+static pcre2_general_context_16 * pcre2GeneralContext16;
+static pcre2_compile_context_16 * pcre2CompileContext16;
+static pcre2_match_context_16 * pcre2MatchContext16;
+#endif // _USE_ICU
+
+// PCRE2 memory allocation hook; size will always be in bytes
 static void * pcre2Malloc(size_t size, void * /*userData*/)
 {
     return rtlMalloc(size);
@@ -62,7 +63,7 @@ static void pcre2Free(void * block, void * /*userData*/)
 ///                     include a trailing space if a non-empty message is passed
 /// @param regex        OPTIONAL; regex pattern that was in play when error occurred
 /// @param errOffset    OPTIONAL; offset in regex pattern where error occurred;
-///                     ignored if regex is null
+///                     ignored if regex is null or empty
 static void failWithPCRE2Error(int errCode, const char * msgPrefix, const char * regex = nullptr, int errOffset = -1)
 {
     const int errBuffSize = 120;
@@ -94,6 +95,27 @@ static void failWithPCRE2Error(int errCode, const char * msgPrefix, const char *
     rtlFail(0, msg.c_str());
 }
 
+/// @brief Convert a PCRE2 error code to a string and throw an exception
+/// @param errCode      PCRE2 error code
+/// @param msgPrefix    Prefix for error message; can be an empty string;
+///                     include a trailing space if a non-empty message is passed
+/// @param regex        OPTIONAL; Unicode regex pattern that was in play when error occurred
+/// @param errOffset    OPTIONAL; offset in regex pattern where error occurred;
+///                     ignored if regex is null or empty
+static void failWithUPCRE2Error(int errCode, const char * msgPrefix, const UChar * regex = nullptr, int errOffset = -1)
+{
+    std::string regexPattern;
+    if (regex)
+    {
+        char * regexStr = nullptr;
+        unsigned regexStrLen;
+        rtlUnicodeToEscapedStrX(regexStrLen, regexStr, rtlUnicodeStrlen(regex), regex);
+        regexPattern += regexStr;
+        rtlFree(regexStr);
+    }
+    failWithPCRE2Error(errCode, msgPrefix, regexPattern.c_str(), errOffset);
+}
+
 //---------------------------------------------------------------------------
 
 class CStrRegExprFindInstance : implements IStrRegExprFindInstance
@@ -109,30 +131,30 @@ public:
     CStrRegExprFindInstance(pcre2_code_8 * _compiledRegex, const char * _subject, size32_t _from, size32_t _len, bool _keep)
         : compiledRegex(_compiledRegex)
     {
-        matched = false;
-        sample = nullptr;
-        matchData = pcre2_match_data_create_from_pattern_8(compiledRegex, pcre2GeneralContext8);
-
         // See if UTF-8 is enabled on this compiled regex
         uint32_t option_bits;
         pcre2_pattern_info_8(compiledRegex, PCRE2_INFO_ALLOPTIONS, &option_bits);
         bool utf8Enabled = (option_bits & PCRE2_UTF) != 0;
-        size32_t from = (utf8Enabled ? rtlUtf8Size(_from, _subject) : _from);
-        size32_t len = (utf8Enabled ? rtlUtf8Size(_len, _subject) : _len);
+        // Make sure the offset and length is in code points (bytes), not characters
+        size32_t subjectOffset = (utf8Enabled ? rtlUtf8Size(_from, _subject) : _from);
+        size32_t subjectSize = (utf8Enabled ? rtlUtf8Size(_len, _subject) : _len);
 
         if (_keep)
         {
-            sample = (char *)rtlMalloc(len + 1);  //required for findstr
-            memcpy(sample, _subject + from, len);
-            sample[len] = '\0';
+            sample = (char *)rtlMalloc(subjectSize + 1);  //required for findstr
+            memcpy(sample, _subject + subjectOffset, subjectSize);
+            sample[subjectSize] = '\0';
             subject = sample;
         }
         else
         {
-            subject = _subject + from;
+            subject = _subject + subjectOffset;
         }
 
-        int numMatches = pcre2_match_8(compiledRegex, (PCRE2_SPTR8)subject, len, 0, 0, matchData, pcre2MatchContext8);
+        matched = false;
+        matchData = pcre2_match_data_create_from_pattern_8(compiledRegex, pcre2GeneralContext8);
+
+        int numMatches = pcre2_match_8(compiledRegex, (PCRE2_SPTR8)subject, subjectSize, 0, 0, matchData, pcre2MatchContext8);
 
         matched = numMatches > 0;
 
@@ -270,7 +292,7 @@ public:
 
             replaceResult = pcre2_substitute_8(compiledRegex, (PCRE2_SPTR8)str, sourceSize, 0, PCRE2_SUBSTITUTE_GLOBAL, matchData, pcre2MatchContext8, (PCRE2_SPTR8)replace, replaceSize, (PCRE2_UCHAR8 *)out, &pcreLen);
 
-            // Note that, weirdly, pcreLen will now contain the number of bytes
+            // Note that, weirdly, pcreLen will now contain the number of code points
             // in the result *excluding* the null terminator, so pcreLen will
             // become our final result length
 
@@ -297,6 +319,7 @@ public:
         rtlRowBuilder out;
         size32_t outBytes = 0;
         PCRE2_SIZE offset = 0;
+        uint32_t matchOptions = 0;
         PCRE2_SIZE subjectSize = (isUTF8Enabled ? rtlUtf8Size(_subjectLen, _subject) : _subjectLen);
         pcre2_match_data_8 * matchData = pcre2_match_data_create_from_pattern_8(compiledRegex, pcre2GeneralContext8);
 
@@ -307,7 +330,7 @@ public:
 
         while (offset < subjectSize)
         {
-            int numMatches = pcre2_match_8(compiledRegex, (PCRE2_SPTR8)_subject, subjectSize, offset, 0, matchData, pcre2MatchContext8);
+            int numMatches = pcre2_match_8(compiledRegex, (PCRE2_SPTR8)_subject, subjectSize, offset, matchOptions, matchData, pcre2MatchContext8);
 
             if (numMatches < 0)
             {
@@ -340,6 +363,9 @@ public:
 
                 // Update search offset (which is in code units)
                 offset = ovector[1];
+
+                // Update options for subsequent matches; these are for performance reasons
+                matchOptions = (isUTF8Enabled ? PCRE2_NO_UTF_CHECK : 0);
             }
             else
             {
@@ -357,6 +383,8 @@ public:
 
 };
 
+//---------------------------------------------------------------------------
+// STRING implementation
 //---------------------------------------------------------------------------
 
 ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledStrRegExpr(const char * regExpr, bool isCaseSensitive)
@@ -383,6 +411,8 @@ ECLRTL_API void rtlDestroyStrRegExprFindInstance(IStrRegExprFindInstance * findI
         delete (CStrRegExprFindInstance*)findInst;
 }
 
+//---------------------------------------------------------------------------
+// UTF8 implementation
 //---------------------------------------------------------------------------
 
 ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledU8StrRegExpr(const char * regExpr, bool isCaseSensitive)
@@ -414,33 +444,37 @@ ECLRTL_API void rtlDestroyU8StrRegExprFindInstance(IStrRegExprFindInstance * fin
 // RegEx Compiler for unicode strings
 
 #ifdef _USE_ICU
-using icu::RegexMatcher;
-using icu::RegexPattern;
-using icu::UnicodeString;
 
 class CUStrRegExprFindInstance : implements IUStrRegExprFindInstance
 {
 private:
-    bool            matched;
-    RegexMatcher *  matcher;
-    UnicodeString   sample;
-    unsigned        matchedSize;
+    bool matched = false;
+    pcre2_code_16 * compiledRegex = nullptr; // do not free; this will be owned by caller
+    pcre2_match_data_16 * matchData = nullptr;
+    const UChar * subject = nullptr; // points to current subject of regex; do not free
 
 public:
-    CUStrRegExprFindInstance(RegexMatcher * _matcher, const UChar * _str, size32_t _from, size32_t _len)
-        : matcher(_matcher), matchedSize(0)
+    CUStrRegExprFindInstance(pcre2_code_16 * _compiledRegex, const UChar * _subject, size32_t _from, size32_t _len)
+        : compiledRegex(_compiledRegex)
     {
+        subject = _subject + _from;
         matched = false;
+        matchData = pcre2_match_data_create_from_pattern_16(compiledRegex, pcre2GeneralContext16);
+        int numMatches = pcre2_match_16(compiledRegex, (PCRE2_SPTR16)subject, _len, 0, 0, matchData, pcre2MatchContext16);
 
-#if U_ICU_VERSION_MAJOR_NUM>=59
-        sample.setTo((const char16_t *) (_str + _from), _len);
-#else
-        sample.setTo(_str + _from, _len);
-#endif
-        matcher->reset(sample);
-        matched = matcher->find() != FALSE;
-        if (matched)
-            matchedSize = (unsigned)matcher->groupCount() + 1;
+        matched = numMatches > 0;
+
+        if (numMatches < 0 && numMatches != PCRE2_ERROR_NOMATCH)
+        {
+            // Treat everything else as an error
+            failWithUPCRE2Error(numMatches, "Error in regex search: ");
+        }
+
+    }
+
+    ~CUStrRegExprFindInstance() //CAVEAT non-virtual destructor !
+    {
+        pcre2_match_data_free_16(matchData);
     }
 
     //IUStrRegExprFindInstance
@@ -449,15 +483,14 @@ public:
 
     void getMatchX(unsigned & outlen, UChar * & out, unsigned n = 0) const
     {
-        if(matched && (n < matchedSize))
+        if (matched && (n < pcre2_get_ovector_count_16(matchData)))
         {
-            UErrorCode uerr = U_ZERO_ERROR;
-            int32_t start = n ? matcher->start(n, uerr) : matcher->start(uerr);
-            int32_t end = n ? matcher->end(n, uerr) : matcher->end(uerr);
-            outlen = end - start;
-
-            out = (UChar *)rtlMalloc(outlen*2);
-            sample.extract(start, outlen, out);
+            PCRE2_SIZE * ovector = pcre2_get_ovector_pointer_16(matchData);
+            const UChar * matchStart = subject + ovector[2 * n];
+            outlen = ovector[2 * n + 1] - ovector[2 * n];
+            PCRE2_SIZE outSize = outlen * sizeof(UChar);
+            out = (UChar *)rtlMalloc(outSize);
+            memcpy(out, matchStart, outSize);
         }
         else
         {
@@ -468,16 +501,15 @@ public:
 
     UChar const * findvstr(unsigned outlen, UChar * out, unsigned n = 0)
     {
-        if(matched && (n < matchedSize))
+        if (matched && (n < pcre2_get_ovector_count_16(matchData)))
         {
-            UErrorCode uerr = U_ZERO_ERROR;
-            int32_t start = n ? matcher->start(n, uerr) : matcher->start(uerr);
-            int32_t end = n ? matcher->end(n, uerr) : matcher->end(uerr);
-            unsigned sublen = end - start;
-            if(sublen >= outlen)
-                sublen = outlen - 1;
-            sample.extract(start, sublen, out);
-            out[sublen] = 0;
+            PCRE2_SIZE * ovector = pcre2_get_ovector_pointer_16(matchData);
+            const UChar * matchStart = subject + ovector[2 * n];
+            unsigned substrLen = ovector[2 * n + 1] - ovector[2 * n];
+            if (substrLen >= outlen)
+                substrLen = outlen - 1;
+            memcpy(out, matchStart, substrLen * sizeof(UChar));
+            out[substrLen] = 0;
         }
         else
         {
@@ -485,7 +517,6 @@ public:
         }
         return out;
     }
-
 };
 
 //---------------------------------------------------------------------------
@@ -493,105 +524,169 @@ public:
 class CCompiledUStrRegExpr : implements ICompiledUStrRegExpr
 {
 private:
-    RegexPattern *  pattern;
-    RegexMatcher *  matcher;
+    pcre2_code_16 * compiledRegex = nullptr;
 
 public:
-    CCompiledUStrRegExpr(const UChar * _UregExp, bool _isCaseSensitive = false)
+    CCompiledUStrRegExpr(const UChar * _regex, bool _isCaseSensitive = false)
     {
-        UErrorCode uerr = U_ZERO_ERROR;
-        UParseError uperr;
-        if (_isCaseSensitive)
-            pattern = RegexPattern::compile(_UregExp, uperr, uerr);
-        else
-            pattern = RegexPattern::compile(_UregExp, UREGEX_CASE_INSENSITIVE, uperr, uerr);
+        int errNum = 0;
+        PCRE2_SIZE errOffset;
+        uint32_t options = (PCRE2_UCP | (_isCaseSensitive ? 0 : PCRE2_CASELESS));
 
-        matcher = pattern ? pattern->matcher(uerr) : NULL;
-        if (U_FAILURE(uerr))
+        compiledRegex = pcre2_compile_16((PCRE2_SPTR16)_regex, PCRE2_ZERO_TERMINATED, options, &errNum, &errOffset, pcre2CompileContext16);
+
+        if (compiledRegex == nullptr)
         {
-            char * expAscii;
-            unsigned expAsciiLen;
-            rtlUnicodeToEscapedStrX(expAsciiLen, expAscii, rtlUnicodeStrlen(_UregExp), _UregExp);
-            std::string msg = "Bad regular expression: ";
-            msg += u_errorName(uerr);
-            msg += ": ";
-            msg.append(expAscii, expAsciiLen);
-            rtlFree(expAscii);
-            delete matcher;
-            delete pattern;
-            matcher = NULL;
-            pattern = NULL;
-            rtlFail(0, msg.c_str());  //throws
+            failWithUPCRE2Error(errNum, "Error in regex pattern: ", _regex, errOffset);
+        }
+    }
+
+    CCompiledUStrRegExpr(int _regexLength, const UChar * _regex, bool _isCaseSensitive = false)
+    {
+        int errNum = 0;
+        PCRE2_SIZE errOffset;
+        uint32_t options = (PCRE2_UCP | (_isCaseSensitive ? 0 : PCRE2_CASELESS));
+
+        compiledRegex = pcre2_compile_16((PCRE2_SPTR16)_regex, _regexLength, options, &errNum, &errOffset, pcre2CompileContext16);
+
+        if (compiledRegex == nullptr)
+        {
+            failWithUPCRE2Error(errNum, "Error in regex pattern: ", _regex, errOffset);
         }
     }
 
     ~CCompiledUStrRegExpr()
     {
-        if (matcher)
-            delete matcher;
-        if (pattern)
-            delete pattern;
+        pcre2_code_free_16(compiledRegex);
     }
 
     void replace(size32_t & outlen, UChar * & out, size32_t slen, const UChar * str, size32_t rlen, UChar const * replace) const
     {
-        UnicodeString const src(str, slen);
-        UErrorCode err = U_ZERO_ERROR;
-        RegexMatcher * replacer = pattern->matcher(src, err);
-        UnicodeString const fmt(replace, rlen);
-        UnicodeString const tgt = replacer->replaceAll(fmt, err);
-        outlen = tgt.length();
-        out = (UChar *)rtlMalloc(outlen*2);
-        tgt.extract(0, outlen, out);
-        delete replacer;
+        PCRE2_SIZE pcreLen = 0;
+        outlen = 0;
+        pcre2_match_data_16 * matchData = pcre2_match_data_create_from_pattern_16(compiledRegex, pcre2GeneralContext16);
+
+        // Call it once to get the size of the output, then allocate memory for it;
+        // Note that pcreLen will include space for a terminating null character;
+        // we have to allocate memory for that byte to avoid a buffer overrun,
+        // but we won't count that terminating byte
+        int replaceResult = pcre2_substitute_16(compiledRegex, (PCRE2_SPTR16)str, slen, 0, PCRE2_SUBSTITUTE_GLOBAL|PCRE2_SUBSTITUTE_OVERFLOW_LENGTH, matchData, pcre2MatchContext16, (PCRE2_SPTR16)replace, rlen, nullptr, &pcreLen);
+
+        if (replaceResult < 0 && replaceResult != PCRE2_ERROR_NOMEMORY)
+        {
+            // PCRE2_ERROR_NOMEMORY is a normal result when we're just asking for the size of the output
+            pcre2_match_data_free_16(matchData);
+            failWithUPCRE2Error(replaceResult, "Error in regex replace: ");
+        }
+
+        if (pcreLen > 0)
+        {
+            out = (UChar *)rtlMalloc(pcreLen * sizeof(UChar));
+
+            replaceResult = pcre2_substitute_16(compiledRegex, (PCRE2_SPTR16)str, slen, 0, PCRE2_SUBSTITUTE_GLOBAL, matchData, pcre2MatchContext16, (PCRE2_SPTR16)replace, rlen, (PCRE2_UCHAR16 *)out, &pcreLen);
+
+            // Note that, weirdly, pcreLen will now contain the number of code points
+            // in the result *excluding* the null terminator, so pcreLen will
+            // become our final result length
+
+            if (replaceResult < 0)
+            {
+                pcre2_match_data_free_16(matchData);
+                failWithUPCRE2Error(replaceResult, "Error in regex replace: ");
+            }
+        }
+
+        pcre2_match_data_free_16(matchData);
+        // We need to return the number of characters here, not the byte count
+        outlen = pcreLen;
     }
 
     IUStrRegExprFindInstance * find(const UChar * str, size32_t from, size32_t len) const
     {
-        CUStrRegExprFindInstance * findInst = new CUStrRegExprFindInstance(matcher, str, from, len);
+        CUStrRegExprFindInstance * findInst = new CUStrRegExprFindInstance(compiledRegex, str, from, len);
         return findInst;
     }
 
-    void getMatchSet(bool  & __isAllResult, size32_t & __resultBytes, void * & __result, size32_t _srcLen, const UChar * _search)
+    void getMatchSet(bool  & __isAllResult, size32_t & __resultBytes, void * & __result, size32_t _subjectLen, const UChar * _subject)
     {
         rtlRowBuilder out;
         size32_t outBytes = 0;
-        UErrorCode uerr = U_ZERO_ERROR;
-        UnicodeString uStrSearch;
+        PCRE2_SIZE offset = 0;
+        uint32_t matchOptions = 0;
+        pcre2_match_data_16 * matchData = pcre2_match_data_create_from_pattern_16(compiledRegex, pcre2GeneralContext16);
 
-#if U_ICU_VERSION_MAJOR_NUM>=59
-        uStrSearch.setTo((const char16_t *) _search, _srcLen);
-#else
-        uStrSearch.setTo(_search, _srcLen);
-#endif
-        matcher->reset(uStrSearch);
-        while (matcher->find())
+        // Capture groups are ignored when gathering match results into a set,
+        // so we will focus on only the first match (the entire matched string);
+        // then we need to repeatedly match, adjusting the offset into the
+        // subject string each time, until no more matches are found
+
+        while (offset < _subjectLen)
         {
-            uerr = U_ZERO_ERROR;
-            int32_t start = matcher->start(uerr);
-            if ((size32_t) start==_srcLen) break;
-            int32_t end = matcher->end(uerr);
-            int32_t numUChars = end - start;
+            int numMatches = pcre2_match_16(compiledRegex, (PCRE2_SPTR16)_subject, _subjectLen, offset, matchOptions, matchData, pcre2MatchContext16);
 
-            out.ensureAvailable(outBytes+numUChars*sizeof(UChar)+sizeof(size32_t));
-            byte *outData = out.getbytes()+outBytes;
-            * (size32_t *) outData = numUChars;
-            uStrSearch.extract(start,numUChars,(UChar *) (outData+sizeof(size32_t)));
+            if (numMatches < 0)
+            {
+                if (numMatches == PCRE2_ERROR_NOMATCH)
+                {
+                    // No more matches; bail out of loop
+                    break;
+                }
+                else
+                {
+                    // Treat everything else as an error
+                    pcre2_match_data_free_16(matchData);
+                    failWithUPCRE2Error(numMatches, "Error in regex getMatchSet: ");
+                }
+            }
+            else if (numMatches > 0)
+            {
+                PCRE2_SIZE * ovector = pcre2_get_ovector_pointer_16(matchData);
+                const UChar * matchStart = _subject + ovector[0];
+                unsigned matchLen = ovector[1] - ovector[0];
+                unsigned matchSize = matchLen * sizeof(UChar);
 
-            outBytes += numUChars*sizeof(UChar) + sizeof(size32_t);
+                // Copy match to output buffer; this is number of characters used
+                // by the string, not the number of bytes
+                out.ensureAvailable(outBytes + matchSize + sizeof(size32_t));
+                byte * outData = out.getbytes() + outBytes;
+                * (size32_t *) outData = matchLen;
+                memcpy(outData + sizeof(size32_t), matchStart, matchSize);
+                outBytes += matchSize + sizeof(size32_t);
+
+                // Update offset
+                offset = ovector[1];
+
+                // Update options for subsequent matches; these are for performance reasons
+                matchOptions = PCRE2_NO_UTF_CHECK;
+            }
+            else
+            {
+                // This should never happen
+                break;
+            }
         }
+
+        pcre2_match_data_free_16(matchData);
+
         __isAllResult = false;
         __resultBytes = outBytes;
         __result = out.detachdata();
     }
-
 };
 
+//---------------------------------------------------------------------------
+// UNICODE implementation
 //---------------------------------------------------------------------------
 
 ECLRTL_API ICompiledUStrRegExpr * rtlCreateCompiledUStrRegExpr(const UChar * regExpr, bool isCaseSensitive)
 {
     CCompiledUStrRegExpr * expr = new CCompiledUStrRegExpr(regExpr, isCaseSensitive);
+    return expr;
+}
+
+ECLRTL_API ICompiledUStrRegExpr * rtlCreateCompiledUStrRegExpr(int regExprLength, const UChar * regExpr, bool isCaseSensitive)
+{
+    CCompiledUStrRegExpr * expr = new CCompiledUStrRegExpr(regExprLength, regExpr, isCaseSensitive);
     return expr;
 }
 
@@ -606,10 +701,17 @@ ECLRTL_API void rtlDestroyUStrRegExprFindInstance(IUStrRegExprFindInstance * fin
     if (findInst)
         delete (CUStrRegExprFindInstance*)findInst;
 }
-#else
+
+#else // _USE_ICU
+
 ECLRTL_API ICompiledUStrRegExpr * rtlCreateCompiledUStrRegExpr(const UChar * regExpr, bool isCaseSensitive)
 {
-    rtlFail(0, "ICU regex disabled");
+    rtlFail(0, "ICU disabled");
+}
+
+ECLRTL_API ICompiledUStrRegExpr * rtlCreateCompiledUStrRegExpr(int regExprLength, const UChar * regExpr, bool isCaseSensitive)
+{
+    rtlFail(0, "ICU disabled");
 }
 
 ECLRTL_API void rtlDestroyCompiledUStrRegExpr(ICompiledUStrRegExpr * compiledExpr)
@@ -619,13 +721,18 @@ ECLRTL_API void rtlDestroyCompiledUStrRegExpr(ICompiledUStrRegExpr * compiledExp
 ECLRTL_API void rtlDestroyUStrRegExprFindInstance(IUStrRegExprFindInstance * findInst)
 {
 }
-#endif
+#endif // _USE_ICU
 
 MODULE_INIT(INIT_PRIORITY_ECLRTL_ECLRTL)
 {
     pcre2GeneralContext8 = pcre2_general_context_create_8(pcre2Malloc, pcre2Free, NULL);
     pcre2CompileContext8 = pcre2_compile_context_create_8(pcre2GeneralContext8);
     pcre2MatchContext8 = pcre2_match_context_create_8(pcre2GeneralContext8);
+#ifdef _USE_ICU
+    pcre2GeneralContext16 = pcre2_general_context_create_16(pcre2Malloc, pcre2Free, NULL);
+    pcre2CompileContext16 = pcre2_compile_context_create_16(pcre2GeneralContext16);
+    pcre2MatchContext16 = pcre2_match_context_create_16(pcre2GeneralContext16);
+#endif // _USE_ICU
     return true;
 }
 
@@ -634,4 +741,9 @@ MODULE_EXIT()
     pcre2_match_context_free_8(pcre2MatchContext8);
     pcre2_compile_context_free_8(pcre2CompileContext8);
     pcre2_general_context_free_8(pcre2GeneralContext8);
+#ifdef _USE_ICU
+    pcre2_match_context_free_16(pcre2MatchContext16);
+    pcre2_compile_context_free_16(pcre2CompileContext16);
+    pcre2_general_context_free_16(pcre2GeneralContext16);
+#endif // _USE_ICU
 }

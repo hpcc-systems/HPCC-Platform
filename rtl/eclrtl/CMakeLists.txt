@@ -87,7 +87,7 @@ endif ()
 HPCC_ADD_LIBRARY( eclrtl SHARED ${SRCS} )
 
 find_package(pcre2 CONFIG REQUIRED)
-target_link_libraries( eclrtl PCRE2::8BIT PCRE2::16BIT )
+target_link_libraries( eclrtl PCRE2::8BIT )
 
 target_link_libraries ( eclrtl 
       jlib
@@ -101,6 +101,7 @@ if (USE_ICU)
         )
     target_link_libraries ( eclrtl
           ${ICU_LIBRARIES}
+          PCRE2::16BIT
         )
 endif ()
 
