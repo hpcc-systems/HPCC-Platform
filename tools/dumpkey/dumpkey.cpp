@@ -418,7 +418,7 @@ int main(int argc, const char **argv)
                         outFileIO.setown(outFile->openShared(IFOcreate, IFSHfull));
                         if(!outFileIO)
                             throw MakeStringException(0, "Could not write index file %s", filename);
-                        outFileStream.setown(createIOStream(outFileIO));
+                        outFileStream.setown(createBufferedIOStream(outFileIO, 0x200000));
                     }
                     else
                         outFileStream.setown(new DummyFileIOStream);
