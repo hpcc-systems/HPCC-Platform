@@ -2681,13 +2681,12 @@ void StatisticsAggregator::loadExistingAggregates(const IConstWorkUnit &workunit
     };
 
     WuScopeFilter filter;
-    filter.addScopeType(SSTglobal).addScopeType(SSTworkflow).addScopeType(SSTgraph);
+    filter.addScopeType(SSTglobal).addScopeType(SSTworkflow).addScopeType(SSTgraph).addScopeType(SSToperation);
     const unsigned numStats = mapping.numStatistics();
     for (unsigned i=0; i<numStats; ++i)
         filter.addOutputStatistic(mapping.getKind(i));
-    filter.setDepth(1,3); // 1=global, 2=workflow, 3=graph
+    filter.setDepth(0,3); // 0=global, 1=workflow, (2=graph, 3=subgraph | 2=>dfu)
     filter.setSources(SSFsearchGlobalStats);
-    filter.setIncludeNesting(0);
     filter.finishedFilter();
 
     StatsCollectionAggregatesLoader aggregatesLoader(statsCollection);
@@ -8941,7 +8940,7 @@ void CLocalWorkUnit::setStatistic(StatisticCreatorType creatorType, const char *
     if (mergeAction != StatsMergeAppend)
     {
         StringBuffer xpath;
-        xpath.append("Statistic[@creator='").append(creator).append("'][@scope='").append(scope).append("'][@kind='").append(kindName).append("']");
+        xpath.append("Statistic[@scope='").append(scope).append("'][@kind='").append(kindName).append("']");
         statTree = stats->queryPropTree(xpath.str());
     }
 
@@ -8969,6 +8968,7 @@ void CLocalWorkUnit::setStatistic(StatisticCreatorType creatorType, const char *
         mergeAction = StatsMergeAppend;
     }
 
+    unsigned __int64 deltaValue = 0;
     if (mergeAction != StatsMergeAppend) // RKC->GH Is this right??
     {
         unsigned __int64 oldValue = statTree->getPropInt64("@value", 0);
@@ -8977,14 +8977,18 @@ void CLocalWorkUnit::setStatistic(StatisticCreatorType creatorType, const char *
         if (oldMax < oldValue)
             oldMax = oldValue;
 
-        statTree->setPropInt64("@value", mergeStatisticValue(oldValue, value, mergeAction));
+        unsigned __int64 newValue = mergeStatisticValue(oldValue, value, mergeAction);
+        statTree->setPropInt64("@value", newValue);
         statTree->setPropInt64("@count", count + oldCount);
         if (maxValue > oldMax)
             statTree->setPropInt64("@max", maxValue);
+        deltaValue = newValue - oldValue;
     }
     else
     {
         statTree->setPropInt64("@value", value);
+        deltaValue = value;
+
         statTree->setPropInt64("@count", count);
         if (maxValue)
             statTree->setPropInt64("@max", maxValue);
@@ -9016,6 +9020,22 @@ void CLocalWorkUnit::setStatistic(StatisticCreatorType creatorType, const char *
     }
     if (kind == StCostCompile)
         p->setPropInt64("@costCompile", value);
+
+    // Special case - update aggregates for dfu FileAccessCost.  This is needed because although
+    // fileservices can update dfu cost in the workunit, it does not have a mechanism to update
+    // the aggregates for this stat.
+    if (scopeType == SSTdfuworkunit && kind == StCostFileAccess && deltaValue)
+    {
+        StringBuffer currentScope(scope), parent;
+        while (getParentScope(parent.clear(), currentScope.str()))
+        {
+            currentScope.set(parent);
+            StatisticScopeType sst = getScopeType(queryScopeTail(currentScope.str()));
+            if (sst!=SSTnone)
+                setStatistic(creatorType, creator, sst, currentScope.str(), StCostFileAccess, "", deltaValue, 1, 0, StatsMergeSum);
+        }
+        setStatistic(creatorType, creator, SSTglobal, "", StCostFileAccess, "", deltaValue, 1, 0, StatsMergeSum);
+    }
 }
 
 void CLocalWorkUnit::_loadStatistics() const
