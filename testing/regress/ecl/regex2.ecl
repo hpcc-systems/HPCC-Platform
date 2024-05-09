@@ -71,3 +71,7 @@ NOT(REGEXFIND(NOFOLD(u8'.ook(?!ahead)'), u8'lookahead'));
 REGEXFIND(NOFOLD(u8'.ook(?!ahead)'), u8'bookmarks');
 REGEXFIND(NOFOLD(u8'.ook(?!ahead)'), u8'bookmarks', 0) = u8'book';
 
+// HPCC-31699
+REGEXFIND('\\w+', u8'abcdef', 0) = u8'abcdef';
+REGEXFIND(NOFOLD('\\w+'), u8'abcdef', 0) = u8'abcdef';
+

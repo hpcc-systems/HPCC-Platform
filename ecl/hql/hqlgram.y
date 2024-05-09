@@ -6440,13 +6440,13 @@ primexpr1
                         }
     | REGEXFIND '(' expression ',' expression regexOpt ')'
                         {
-                            if(isUTF8Type($3.queryExprType()))
+                            if(isUTF8Type($5.queryExprType()))
                             {
                                 parser->normalizeExpression($3, type_utf8, false);
                                 parser->checkRegex($3);
                                 parser->normalizeExpression($5, type_utf8, false);
                             }
-                            else if(isUnicodeType($3.queryExprType()))
+                            else if(isUnicodeType($5.queryExprType()))
                             {
                                 parser->normalizeExpression($3, type_unicode, false);
                                 parser->checkRegex($3);
@@ -6463,14 +6463,14 @@ primexpr1
     | REGEXFIND '(' expression ',' expression ',' expression regexOpt ')'
                         {
                             Owned<ITypeInfo> subType;
-                            if(isUTF8Type($3.queryExprType()))
+                            if(isUTF8Type($5.queryExprType()))
                             {
                                 parser->normalizeExpression($3, type_utf8, false);
                                 parser->checkRegex($3);
                                 parser->normalizeExpression($5, type_utf8, false);
                                 subType.setown(makeUtf8Type(UNKNOWN_LENGTH, 0));
                             }
-                            else if(isUnicodeType($3.queryExprType()))
+                            else if(isUnicodeType($5.queryExprType()))
                             {
                                 parser->normalizeExpression($3, type_unicode, false);
                                 parser->checkRegex($3);
@@ -6490,14 +6490,14 @@ primexpr1
     | REGEXFINDSET '(' expression ',' expression regexOpt ')'
                         {
                             Owned<ITypeInfo> retType;
-                            if(isUTF8Type($3.queryExprType()))
+                            if(isUTF8Type($5.queryExprType()))
                             {
                                 parser->normalizeExpression($3, type_utf8, false);
                                 parser->checkRegex($3);
                                 parser->normalizeExpression($5, type_utf8, false);
                                 retType.setown(makeUtf8Type(UNKNOWN_LENGTH, $3.queryExprType()->queryLocale()));
                             }
-                            else if(isUnicodeType($3.queryExprType()))
+                            else if(isUnicodeType($5.queryExprType()))
                             {
                                 parser->normalizeExpression($3, type_unicode, false);
                                 parser->checkRegex($3);
@@ -6517,7 +6517,7 @@ primexpr1
     | REGEXREPLACE '(' expression ',' expression ',' expression regexOpt ')'
                         {
                             Owned<ITypeInfo> retType;
-                            if(isUTF8Type($3.queryExprType()))
+                            if(isUTF8Type($5.queryExprType()))
                             {
                                 parser->normalizeExpression($3, type_utf8, false);
                                 parser->checkRegex($3);
@@ -6525,7 +6525,7 @@ primexpr1
                                 parser->normalizeExpression($7, type_utf8, false);
                                 retType.setown(makeUtf8Type(UNKNOWN_LENGTH, 0));
                             }
-                            else if(isUnicodeType($3.queryExprType()))
+                            else if(isUnicodeType($5.queryExprType()))
                             {
                                 parser->normalizeExpression($3, type_unicode, false);
                                 parser->checkRegex($3);

@@ -57,3 +57,7 @@ REGEXFIND(NOFOLD(u'GAVIN'),u'Gavin x Halliday') AND REGEXFIND(NOFOLD(u'GAVIN'),u
 REGEXFIND(NOFOLD(u'GAVIN'),u'Gavin x Halliday',NOCASE) AND REGEXFIND(NOFOLD(u'GAVIN'),u'Gavin x Halliday',1,NOCASE) <> 'x';
 REGEXFIND(NOFOLD(u'GAVIN'),u'Gavin x Halliday') AND REGEXFIND(NOFOLD(u'GAVIN'),u'Gavin x Halliday',1,NOCASE) <> 'x';
 REGEXFIND(NOFOLD(u'GAVIN'),u'Gavin x Halliday',NOCASE) AND REGEXFIND(NOFOLD(u'GAVIN'),u'Gavin x Halliday',1) <> 'x';
+
+// HPCC-31699
+REGEXFIND('\\w+', u'abcdef', 0) = u'abcdef';
+REGEXFIND(NOFOLD('\\w+'), u'abcdef', 0) = u'abcdef';

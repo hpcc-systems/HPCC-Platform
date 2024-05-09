@@ -113,11 +113,15 @@ PROJECT(u8recTable2, u8parseThem(LEFT));
 /* Unicode multi-byte strings */
 multiUstr := U'Tschüss, bis zum nächsten Mal';
 REGEXFINDSET(NOFOLD(U'(\\p{L}+)|(\\p{N}+([.]\\p{N}+)?)'), multiUstr);
-
 REGEXFINDSET(U'(\\p{L}+)|(\\p{N}+([.]\\p{N}+)?)', multiUstr);
 
 /* UTF-8 multi-byte strings */
 multiU8str := U8'Tschüss, bis zum nächsten Mal';
 REGEXFINDSET(NOFOLD(U8'(\\p{L}+)|(\\p{N}+([.]\\p{N}+)?)'), multiU8str);
-
 REGEXFINDSET(U8'(\\p{L}+)|(\\p{N}+([.]\\p{N}+)?)', multiU8str);
+
+// HPCC-31699
+REGEXFINDSET(NOFOLD('(\\p{L}+)|(\\p{N}+([.]\\p{N}+)?)'), multiUstr);
+REGEXFINDSET('(\\p{L}+)|(\\p{N}+([.]\\p{N}+)?)', multiUstr);
+REGEXFINDSET(NOFOLD('(\\p{L}+)|(\\p{N}+([.]\\p{N}+)?)'), multiU8str);
+REGEXFINDSET('(\\p{L}+)|(\\p{N}+([.]\\p{N}+)?)', multiU8str);
