@@ -26,7 +26,7 @@ version := #IFDEFINED(root.version, 1);
 
 //--- end of version configuration ---
 
-#option ('layoutTranslation', true);
+#option ('layoutTranslation', 'payload');
 #onwarning (4515, ignore);
 #onwarning (4522, ignore);
 #onwarning (4523, ignore);
