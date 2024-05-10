@@ -655,6 +655,8 @@ struct HPCCBuildInfo
 extern jlib_decl HPCCBuildInfo hpccBuildInfo;
 extern jlib_decl bool checkCreateDaemon(unsigned argc, const char * * argv);
 
+extern jlib_decl unsigned readDigits(char const * & str, unsigned numDigits, bool throwOnFailure = true);
+
 //Createpassword of specified length, containing UpperCaseAlphas, LowercaseAlphas, numerics and symbols
 extern jlib_decl const char * generatePassword(StringBuffer &pwd, int pwdLen);
 
