@@ -232,7 +232,7 @@ export function pushParamExact(key: string, val?: string | string[] | number | b
     pushParams({ [key]: val }, true);
 }
 
-export function pushParams(search: { [key: string]: string | string[] | number | boolean }, keepEmpty: boolean = false) {
+function calcParams(search: { [key: string]: string | string[] | number | boolean }, keepEmpty: boolean = false) {
     const params = parseQuery(hashHistory.location.search);
     for (const key in search) {
         const val = search[key];
@@ -243,7 +243,15 @@ export function pushParams(search: { [key: string]: string | string[] | number |
             params[key] = val;
         }
     }
-    pushSearch(params);
+    return params;
+}
+
+export function calcSearch(search: { [key: string]: string | string[] | number | boolean }, keepEmpty: boolean = false) {
+    return stringify(calcParams(search, keepEmpty));
+}
+
+export function pushParams(search: { [key: string]: string | string[] | number | boolean }, keepEmpty: boolean = false) {
+    pushSearch(calcParams(search, keepEmpty));
 }
 
 export function updateParam(key: string, val?: string | string[] | number | boolean) {

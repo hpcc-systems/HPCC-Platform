@@ -1,17 +1,21 @@
 import * as React from "react";
 import { Icon } from "@fluentui/react";
+import { WsWorkunits, WorkunitsService } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import { SizeMe } from "react-sizeme";
 import nlsHPCC from "src/nlsHPCC";
 import { hasLogAccess } from "src/ESPLog";
+import { wuidToDate, wuidToTime } from "src/Utility";
+import { emptyFilter, formatQuery } from "src/ESPWorkunit";
 import { useWorkunit } from "../hooks/workunit";
 import { useDeepEffect } from "../hooks/deepHooks";
 import { DojoAdapter } from "../layouts/DojoAdapter";
-import { pushUrl } from "../util/history";
+import { parseQuery, pushUrl } from "../util/history";
 import { WorkunitPersona } from "./controls/StateIcon";
 import { Helpers } from "./Helpers";
 import { IFrame } from "./IFrame";
 import { Logs } from "./Logs";
+import { useNextPrev } from "./Menu";
 import { Metrics } from "./Metrics";
 import { Queries } from "./Queries";
 import { Resources } from "./Resources";
@@ -27,9 +31,13 @@ import { ECLArchive } from "./ECLArchive";
 
 const logger = scopedLogger("src-react/components/WorkunitDetails.tsx");
 
+const workunitService = new WorkunitsService({ baseUrl: "" });
+
 type StringStringMap = { [key: string]: string };
+
 interface WorkunitDetailsProps {
     wuid: string;
+    parentUrl?: string;
     tab?: string;
     state?: { outputs?: string, metrics?: string, resources?: string, helpers?: string, eclsummary?: string };
     queryParams?: { outputs?: StringStringMap, inputs?: StringStringMap, resources?: StringStringMap, helpers?: StringStringMap, logs?: StringStringMap };
@@ -37,6 +45,7 @@ interface WorkunitDetailsProps {
 
 export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
     wuid,
+    parentUrl = "/workunits",
     tab = "summary",
     state,
     queryParams = {}
@@ -45,6 +54,62 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
     const [workunit] = useWorkunit(wuid, true);
     const [logCount, setLogCount] = React.useState<number | string>("*");
     const [logsDisabled, setLogsDisabled] = React.useState(true);
+    const [_nextPrev, setNextPrev] = useNextPrev();
+
+    const query = React.useMemo(() => {
+        const parentUrlParts = parentUrl.split("!");
+        if (parentUrlParts.length <= 1) {
+            return emptyFilter;
+        }
+        return parseQuery("?" + parentUrlParts[1]);
+    }, [parentUrl]);
+
+    const nextWuid = React.useCallback((wuids: WsWorkunits.ECLWorkunit[]) => {
+        let found = false;
+        for (const wu of wuids) {
+            if (wu.Wuid !== wuid) {
+                const oldUrl = window.location.hash;
+                const newUrl = oldUrl.replace(wuid, wu.Wuid);
+                pushUrl(newUrl);
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            // showMessageBar({ type: MessageBarType.warning, message: nlsHPCC.WorkunitNotFound });
+        }
+    }, [wuid]);
+
+    React.useEffect(() => {
+        setNextPrev({
+            next: () => {
+                const now = new Date(Date.now());
+                const tomorrow = new Date(now.getTime() + (24 * 60 * 60 * 1000));
+                workunitService.WUQuery(formatQuery({
+                    ...query,
+                    StartDate: `${wuidToDate(wuid)}T${wuidToTime(wuid)}Z`,
+                    EndDate: tomorrow.toISOString(),
+                    Sortby: "Wuid",
+                    Descending: false,
+                    Count: 2
+                }) as WsWorkunits.WUQuery).then(response => {
+                    nextWuid(response?.Workunits?.ECLWorkunit || []);
+                }).catch(err => logger.error(err));
+            },
+            previous: () => {
+                workunitService.WUQuery(formatQuery({
+                    ...query,
+                    EndDate: `${wuidToDate(wuid)}T${wuidToTime(wuid)}Z`,
+                    Count: 2
+                }) as WsWorkunits.WUQuery).then(response => {
+                    nextWuid(response?.Workunits?.ECLWorkunit || []);
+                }).catch(err => logger.error(err));
+            }
+        });
+        return () => {
+            setNextPrev(undefined);
+        };
+    }, [nextWuid, query, setNextPrev, wuid]);
 
     useDeepEffect(() => {
         hasLogAccess().then(response => {
@@ -57,8 +122,8 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
     }, [wuid], [queryParams]);
 
     const onTabSelect = React.useCallback((tab: TabInfo) => {
-        pushUrl(tab.__state ?? `/workunits/${wuid}/${tab.id}`);
-    }, [wuid]);
+        pushUrl(tab.__state ?? `${parentUrl}/${wuid}/${tab.id}`);
+    }, [parentUrl, wuid]);
 
     const tabs = React.useMemo((): TabInfo[] => {
         return [{
@@ -156,7 +221,7 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
                 <Logs wuid={wuid} filter={queryParams.logs} setLogCount={setLogCount} />
             </DelayLoadedPanel>
             <DelayLoadedPanel visible={tab === "eclsummary"} size={size}>
-                <ECLArchive wuid={wuid} selection={state?.eclsummary} />
+                <ECLArchive wuid={wuid} parentUrl={`${parentUrl}/${wuid}`} selection={state?.eclsummary} />
             </DelayLoadedPanel>
             <DelayLoadedPanel visible={tab === "xml"} size={size}>
                 <WUXMLSourceEditor wuid={wuid} />
