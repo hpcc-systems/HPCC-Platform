@@ -1,0 +1,58 @@
+name: Cleanup Artifacts
+
+on:
+  schedule:
+    - cron: '30 4 * * 5'
+    # Friday, 4:30 AM UTC
+
+jobs:
+    jfrog:
+        name: "Cleanup Jfrog hpccpl-docker-local"
+        runs-on: ubuntu-22.04
+        if: ${{ github.repository == 'hpcc-systems/HPCC-Platform' }}
+        steps:
+
+            - uses: actions/checkout@v4
+              with:
+                submodules: false
+
+            - name: Login to JFrog
+              uses: docker/login-action@v3
+              with:
+                registry: ${{ secrets.JFROG_REGISTRY }}
+                username: ${{ secrets.JFROG_USERNAME }}
+                password: ${{ secrets.JFROG_PASSWORD }}
+
+            - name: Setup JFrog CLI
+              uses: jfrog/setup-jfrog-cli@v3
+              with:
+                version: 2.56.0
+              env:
+                JF_URL: https://${{ secrets.JFROG_REGISTRY }}
+                JF_USER: ${{ secrets.JFROG_USERNAME }}
+                JF_PASSWORD: ${{ secrets.JFROG_PASSWORD }}
+
+            - name: 'Cleanup release-candidates over 1 month old'
+              shell: bash
+              run: |
+                jf rt del --quiet --spec ${{ github.workspace }}/dockerfiles/rule-hpccpl-docker-local-rcs-over-1mo.spec |& tee -a rc-deletion.log
+
+            - name: 'Cleanup point releases over 6 months old'
+              # sortBy, sortOrder necessary for offset=1 to remove latest point release from stack
+              shell: bash
+              run: |
+                declare -a versions=("8.6" "8.8" "8.10" "8.12" "9.0" "9.2" "9.4" "9.6" "9.8" "9.10")
+                for version in "${versions[@]}"
+                do
+                  jf rt del --quiet --spec-vars "key1=${version}" --spec ${{ github.workspace }}/dockerfiles/rule-hpccpl-docker-local-point-over-6mo.spec --sort-by=created --sort-order=desc --offset=1 |& tee -a point-deletion-${version}.log
+                done
+
+            - name: Upload Deletion Logs
+              uses: actions/upload-artifact@v4
+              with:
+                name: deletion-logs
+                path: |
+                  ${{ github.workspace }}/rc-deletion.log
+                  ${{ github.workspace }}/point-deletion-*.log
+                compression-level: 0
+
