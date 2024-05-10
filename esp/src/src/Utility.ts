@@ -235,6 +235,7 @@ export function espSkew2NumberTests() {
 export interface Column {
     selectorType?: string;
     id?: string;
+    csvFormatter?: (value: any, row: any) => string;
     field: string;
     label: string;
 }
@@ -260,7 +261,11 @@ export function formatAsDelim(columns: ColumnMap, rows: any, delim = ",") {
         const cells: any[] = [];
         for (const key in columns) {
             if (key !== columns[key].id && columns[key].selectorType !== "checkbox") {
-                const cell = row[columns[key].field] ?? row[key];
+                let value = row[key];
+                if (columns[key].hasOwnProperty("csvFormatter")) {
+                    value = columns[key].csvFormatter(row[key], row);
+                }
+                const cell = row[columns[key].field] ?? value;
                 cells.push(csvEncode(cell ?? ""));
             }
         }
@@ -338,7 +343,7 @@ export function isObjectEmpty(obj) {
 }
 //  -----------------------------------------------------------------------------------------------
 //  Modified from alphanum-sort:  https://github.com/TrySound/alphanum-sort © Bogdan Chadkin
-//  The MIT License (MIT) 
+//  The MIT License (MIT)
 const zero = "0".charCodeAt(0);
 const plus = "+".charCodeAt(0);
 const minus = "-".charCodeAt(0);
