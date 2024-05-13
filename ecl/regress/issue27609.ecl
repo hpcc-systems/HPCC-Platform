@@ -1,4 +1,4 @@
-IMPORT Python AS Python;
+IMPORT Python3 AS Python;
 
 anyInput := 5;
 
