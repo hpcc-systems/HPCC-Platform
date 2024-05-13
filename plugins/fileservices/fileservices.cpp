@@ -3125,7 +3125,7 @@ FILESERVICES_API void FILESERVICES_CALL fsGetLandingZones(ICodeContext *ctx, siz
     MemoryBuffer mb;
     size32_t sz;
     Owned<IPropertyTree> global = getGlobalConfig();
-    Owned<IPropertyTreeIterator> dropZones = global->getElements("storage/planes[labels='lz']");
+    Owned<IPropertyTreeIterator> dropZones = global->getElements("storage/planes[@category='lz']");
     ForEach(*dropZones)
     {
         const IPropertyTree &dropZone = dropZones->query();
