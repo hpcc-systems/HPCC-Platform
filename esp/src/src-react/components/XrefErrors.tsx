@@ -26,8 +26,8 @@ export const XrefErrors: React.FunctionComponent<XrefErrorsProps> = ({
 
     const columns = React.useMemo((): FluentColumns => {
         return {
-            file: { width: 100, label: nlsHPCC.File },
-            text: { width: 50, label: nlsHPCC.Message },
+            file: { width: 600, label: nlsHPCC.File },
+            text: { width: 400, label: nlsHPCC.Message },
             status: {
                 label: nlsHPCC.Status, width: 10, sortable: true,
                 className: (value, row) => {
@@ -48,22 +48,39 @@ export const XrefErrors: React.FunctionComponent<XrefErrorsProps> = ({
     const refreshData = React.useCallback(() => {
         WsDFUXref.DFUXRefMessages({ request: { Cluster: name } })
             .then(({ DFUXRefMessagesQueryResponse }) => {
-                const { Error = [], Warning = [] } = DFUXRefMessagesQueryResponse?.DFUXRefMessagesQueryResult ?? {};
+                const results = DFUXRefMessagesQueryResponse?.DFUXRefMessagesQueryResult ?? {};
+                const { Error = [], Warning = [] } = results;
                 const rows = [];
-                Warning.map((item, idx) => {
+                if (Warning.length) {
+                    Warning.forEach((item, idx) => {
+                        rows.push({
+                            file: item.File,
+                            text: item.Text,
+                            status: nlsHPCC.Warning
+                        });
+                    });
+                } else {
                     rows.push({
-                        file: item.File,
-                        text: item.Text,
+                        file: results.Warning.File,
+                        text: results.Warning.Text,
                         status: nlsHPCC.Warning
                     });
-                });
-                Error.map((item, idx) => {
-                    rows.push({
-                        file: item.File,
-                        text: item.Text,
-                        status: nlsHPCC.Error
+                }
+                if (Error.length) {
+                    Error.forEach((item, idx) => {
+                        rows.push({
+                            file: item.File,
+                            text: item.Text,
+                            status: nlsHPCC.Error
+                        });
                     });
-                });
+                } else {
+                    rows.push({
+                        file: results.Error.File,
+                        text: results.Error.Text,
+                        status: nlsHPCC.Warning
+                    });
+                }
                 if (rows.length > 0) {
                     setData(rows);
                 }
