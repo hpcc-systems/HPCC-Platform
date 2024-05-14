@@ -38,7 +38,7 @@ class HashDistributeMasterBase : public CMasterActivity
     mptag_t mptag;
     mptag_t mptag2; // for tag 2
 public:
-    HashDistributeMasterBase(DistributeMode _mode, CMasterGraphElement *info, const StatisticsMapping &actStatsMapping = basicActivityStatistics) 
+    HashDistributeMasterBase(DistributeMode _mode, CMasterGraphElement *info, const StatisticsMapping &actStatsMapping = hashDistribActivityStatistics) 
         : CMasterActivity(info, actStatsMapping), mode(_mode) 
     {
         mptag = TAG_NULL;
