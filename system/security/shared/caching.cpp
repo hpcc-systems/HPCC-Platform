@@ -549,7 +549,8 @@ inline void CPermissionsCache::removeAllManagedFileScopes()
 
     etc. Until full scope path checked, or no read permissions hit on ancestor scope.
 */
-static CriticalSection msCacheSyncCS;//for managed scopes cache syncronization
+static CriticalSection msCacheSyncCS;//for managed scopes cache synchronization
+static CriticalSection syncDefaultScopePermissions;//for cached default file scope permissions
 bool CPermissionsCache::queryPermsManagedFileScope(ISecUser& sec_user, const char * fullScope, StringBuffer& managedScope, SecAccessFlags * accessFlags)
 {
     unsigned start = msTick();
@@ -572,7 +573,15 @@ bool CPermissionsCache::queryPermsManagedFileScope(ISecUser& sec_user, const cha
             aindex_t count = m_secMgr->getManagedScopeTree(RT_FILE_SCOPE, nullptr, scopes);
             if (count)
                 addManagedFileScopes(scopes);
-            m_defaultPermission = SecAccess_Unknown;//trigger refresh
+            if (m_useLegacyDefaultFileScopePermissionCache)
+            {
+                m_defaultPermission = SecAccess_Unknown;
+            }
+            else
+            {
+                CriticalBlock defaultScopePermissionBlock(syncDefaultScopePermissions);
+                m_userDefaultFileScopePermissions.clear();
+            }
             time(&m_lastManagedFileScopesRefresh);
         }
     }
@@ -672,16 +681,47 @@ bool CPermissionsCache::queryPermsManagedFileScope(ISecUser& sec_user, const cha
 
 SecAccessFlags CPermissionsCache::queryDefaultPermission(ISecUser& user)
 {
-    if (m_defaultPermission == SecAccess_Unknown)
-    {
-        if (m_secMgr)
-            m_defaultPermission = m_secMgr->queryDefaultPermission(user);
-        else
-            m_defaultPermission = SecAccess_None;
-    }
-    return m_defaultPermission;
+    if (!m_secMgr)
+        return SecAccess_Full; // if no security manager, all full access to all scopes
 
+    if (m_useLegacyDefaultFileScopePermissionCache)
+    {
+        if (m_defaultPermission == SecAccess_Unknown)
+        {
+            m_defaultPermission = m_secMgr->queryDefaultPermission(user);
+            DBGLOG("Legacy default file scope permission set to %s(%d) for all users, based on User '%s'", getSecAccessFlagName(m_defaultPermission),
+                   m_defaultPermission, user.getName());
+        }
+        return m_defaultPermission;
+    }
+
+    SecAccessFlags defaultPermission = SecAccess_None;
+    const std::string username(user.getName());
+    bool addedToCache = false;
+    {
+        CriticalBlock defaultScopePermissionBlock(syncDefaultScopePermissions);
+        auto it = m_userDefaultFileScopePermissions.find(username);
+        if (it == m_userDefaultFileScopePermissions.end())
+        {
+            defaultPermission = m_secMgr->queryDefaultPermission(user);
+            m_userDefaultFileScopePermissions.emplace(username, defaultPermission);
+            addedToCache = true;
+        }
+        else
+        {
+            defaultPermission = it->second;
+        }
+    }
+
+    if (addedToCache)
+    {
+        DBGLOG("Added user '%s' to default file scope permissions with access %s(%d)", username.c_str(), getSecAccessFlagName(defaultPermission),
+               defaultPermission);
+    }
+
+    return defaultPermission;
 }
+
 void CPermissionsCache::flush()
 {
     // MORE - is this safe? m_defaultPermossion and m_lastManagedFileScopesRefresh are unprotected,
@@ -702,8 +742,16 @@ void CPermissionsCache::flush()
             delete (*ui).second;
         m_userCache.clear();
     }
+    if (m_useLegacyDefaultFileScopePermissionCache)
+    {
+        m_defaultPermission = SecAccess_Unknown;
+    }
+    else
+    {
+        CriticalBlock defaultScopePermissionBlock(syncDefaultScopePermissions);
+        m_userDefaultFileScopePermissions.clear();
+    }
     m_lastManagedFileScopesRefresh = 0;
-    m_defaultPermission = SecAccess_Unknown;//trigger refresh
 }
 
 CPermissionsCache* CPermissionsCache::getInstance(const char * _secMgrClass)

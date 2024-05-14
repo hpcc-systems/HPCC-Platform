@@ -203,6 +203,12 @@ public:
     bool queryPermsManagedFileScope(ISecUser& sec_user, const char * fullScope, StringBuffer& managedScope, SecAccessFlags * accessFlags);
     void setSecManager(ISecManager * secMgr) { m_secMgr = secMgr; }
     SecAccessFlags  queryDefaultPermission(ISecUser& user);
+    void setUseLegacyDefaultFileScopePermissionCache(bool useLegacy)
+    {
+        if (useLegacy)
+            DBGLOG("*** Setting default file scope permissions to use legacy mode which uses first retrieved permission for all users.");
+        m_useLegacyDefaultFileScopePermissionCache = useLegacy;
+    }
 private:
 
     typedef std::map<string, CResPermissionsCache*> MapResPermissionsCache;
@@ -221,11 +227,14 @@ private:
     StringAttr                  m_secMgrClass;
 
     //Managed File Scope support
+    std::map<std::string, SecAccessFlags> m_userDefaultFileScopePermissions;
     SecAccessFlags              m_defaultPermission;
     map<string, ISecResource*>  m_managedFileScopesMap;
     mutable ReadWriteLock       m_scopesRWLock;//guards m_managedFileScopesMap
     ISecManager *               m_secMgr;
     time_t                      m_lastManagedFileScopesRefresh;
+
+    bool m_useLegacyDefaultFileScopePermissionCache = false;
 };
 
 time_t getThreadCreateTime();
