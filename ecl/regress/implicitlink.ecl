@@ -1,4 +1,4 @@
-IMPORT Python;
+IMPORT Python3 as Python;
 
 nested := RECORD
   integer value;
@@ -22,7 +22,7 @@ ENDEMBED;
 pcode(DATASET(parent) p) := EMBED(Python)
   for child in p:
    for c2 in child.nest:
-    print c2.value,
+    print (c2.value),
 ENDEMBED;
 
 ds := getp(); 
