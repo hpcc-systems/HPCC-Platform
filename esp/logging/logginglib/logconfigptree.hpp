@@ -32,7 +32,7 @@ namespace LogConfigPTree
      * casting the intended value correctly.
      */
     template <typename value_t, typename default_t>
-    value_t applyDefault(const default_t& defaultValue, const char* xpath)
+    inline value_t applyDefault(const default_t& defaultValue, const char* xpath)
     {
         auto report = [&](bool isError)
         {
@@ -79,6 +79,12 @@ namespace LogConfigPTree
         }
 
         return value_t(defaultValue);
+    }
+
+    template <>
+    inline bool applyDefault(const bool& defaultValue, const char* xpath)
+    {
+        return defaultValue;
     }
 
     /**
