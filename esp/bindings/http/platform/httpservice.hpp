@@ -83,6 +83,7 @@ protected:
     time_t lastSessionCleanUpTime = 0;
 
     int unsupported();
+    int unsupported(StringBuffer& httpRequestMethod);
     EspHttpBinding* getBinding();
     EspAuthState checkUserAuth();
     void readAuthRequest(EspAuthRequest& req);
