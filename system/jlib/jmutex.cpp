@@ -133,7 +133,7 @@ MODULE_EXIT()
     }
 }
 
-thread_local CriticalBlockInstrumentation *__cbinst = nullptr;
+thread_local CriticalBlockInstrumentation *__cbinst = nullptr;   // Used as an extra parameter to CriticalBlock macro, so we don't have to change every call
 
 std::size_t CriticalBlockInstrumentation::StackHash::operator()(const Stack& k) const
 {

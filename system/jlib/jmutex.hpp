@@ -46,7 +46,8 @@ extern jlib_decl void spinUntilReady(std::atomic_uint &value);
 #endif
 
 #if defined(_PROFILING)
-#define USE_INSTRUMENTED_CRITSECS
+// Instrumented critsecs work best if PROFILING Cmake option is in use
+//#define USE_INSTRUMENTED_CRITSECS
 #endif
 
 #ifdef SPINLOCK_USE_MUTEX
@@ -711,6 +712,14 @@ public:
 typedef CLeavableCriticalBlockOf<UninstrumentedCriticalSection> UninstrumentedLeavableCriticalBlock;
 typedef CLeavableCriticalBlockOf<InstrumentedCriticalSection> InstrumentedLeavableCriticalBlock;
 
+// The CriticalBlock instrumentation works by replacing all references to the normal CriticalBlock constructor with a macro
+// that instantiates a new (local static) CriticalBlockInstrumentation object, and passes it in to the constructor via a thread-local variable.
+// It's done this way to avoid any overhead or code changes in the uninstrumented case, at the expense of some complexity and size overhead in the
+// instrumented case.
+//
+// Because CriticalBlock may be a macro in the instrumented case, any place that a parameter or member variable of type CriticalBlock is needed
+// must ust CCriticalBlock rather than CriticalBlock to avoid the macro expansion.
+
 #ifdef USE_INSTRUMENTED_CRITSECS
 #define __glue(a,b) a ## b
 #define glue(a,b) __glue(a,b)
@@ -718,14 +727,14 @@ typedef CLeavableCriticalBlockOf<InstrumentedCriticalSection> InstrumentedLeavab
 extern thread_local CriticalBlockInstrumentation* __cbinst;
 
 typedef InstrumentedCriticalSection CriticalSection;
-typedef InstrumentedCriticalBlock ICriticalBlock;
-#define CriticalBlock static CriticalBlockInstrumentation *glue(instrumenter,__LINE__) = new CriticalBlockInstrumentation(__FILE__, __func__, __LINE__); __cbinst = glue(instrumenter,__LINE__); ICriticalBlock
+typedef InstrumentedCriticalBlock CCriticalBlock;
+#define CriticalBlock static CriticalBlockInstrumentation *glue(instrumenter,__LINE__) = new CriticalBlockInstrumentation(__FILE__, __func__, __LINE__); __cbinst = glue(instrumenter,__LINE__); CCriticalBlock
 typedef InstrumentedCriticalUnblock CriticalUnblock;
 typedef InstrumentedLeavableCriticalBlock CLeavableCriticalBlock;
 #else
 typedef UninstrumentedCriticalSection CriticalSection;
-typedef UninstrumentedCriticalBlock ICriticalBlock;
-typedef ICriticalBlock CriticalBlock;
+typedef UninstrumentedCriticalBlock CCriticalBlock;
+typedef CCriticalBlock CriticalBlock;   // Use in place of CriticalBlock when declaring members/parameters, to avoid macro expansion
 typedef UninstrumentedCriticalUnblock CriticalUnblock;
 typedef UninstrumentedLeavableCriticalBlock CLeavableCriticalBlock;
 #endif
