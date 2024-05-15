@@ -87,7 +87,9 @@ static Owned<IPropertyTree> configuration;
 
 #include <signal.h>
 
-#if defined(_WIN32) && defined(_DEBUG)
+#if defined(_WIN32)
+
+#if defined(_DEBUG)
 static HANDLE leakHandle;
 static void appendLeaks(size32_t len, const void * data)
 {
@@ -132,6 +134,18 @@ static void installSignalHandlers()
 {
     signal(SIGINT, IntHandler);
 }
+
+#else
+
+void initLeakCheck(const char *)
+{
+}
+
+static void installSignalHandlers()
+{
+}
+
+#endif
 
 static void restoreSignalHandlers()
 {
