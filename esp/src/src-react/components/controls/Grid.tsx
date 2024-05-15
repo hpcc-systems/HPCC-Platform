@@ -1,5 +1,5 @@
 import * as React from "react";
-import { DetailsList, DetailsListLayoutMode, Dropdown, IColumn as _IColumn, ICommandBarItemProps, IDetailsHeaderProps, IDetailsListStyles, mergeStyleSets, Selection, Stack, TooltipHost, TooltipOverflowMode, IDetailsList } from "@fluentui/react";
+import { DetailsList, DetailsListLayoutMode, Dropdown, IColumn as _IColumn, ICommandBarItemProps, IDetailsHeaderProps, IDetailsListStyles, mergeStyleSets, Selection, Stack, TooltipHost, TooltipOverflowMode, IDetailsList, IRenderFunction, IDetailsRowProps } from "@fluentui/react";
 import { Pagination } from "@fluentui/react-experiments/lib/Pagination";
 import { useConst, useId, useMount, useOnEvent } from "@fluentui/react-hooks";
 import { BaseStore, Memory, QueryRequest, QuerySortItem } from "src/store/Memory";
@@ -193,6 +193,7 @@ interface FluentStoreGridProps {
     refresh: RefreshTable,
     setSelection: (selection: any[]) => void,
     setTotal: (total: number) => void,
+    onRenderRow?: IRenderFunction<IDetailsRowProps>
 }
 
 const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
@@ -206,6 +207,7 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
     refresh,
     setSelection,
     setTotal,
+    onRenderRow
 }) => {
     const memoizedColumns = useDeepMemo(() => columns, [], [columns]);
     const [sorted, setSorted] = React.useState<QuerySortItem>(sort);
@@ -320,6 +322,7 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
             onColumnHeaderClick={onColumnClick}
             onRenderDetailsHeader={renderDetailsHeader}
             onColumnResize={columnResize}
+            onRenderRow={onRenderRow}
             styles={gridStyles(height)}
         />
     </div>;
@@ -334,7 +337,8 @@ interface FluentGridProps {
     height?: string,
     setSelection: (selection: any[]) => void,
     setTotal: (total: number) => void,
-    refresh: RefreshTable
+    refresh: RefreshTable,
+    onRenderRow?: IRenderFunction<IDetailsRowProps>
 }
 
 export const FluentGrid: React.FunctionComponent<FluentGridProps> = ({
@@ -346,7 +350,8 @@ export const FluentGrid: React.FunctionComponent<FluentGridProps> = ({
     height,
     setSelection,
     setTotal,
-    refresh
+    refresh,
+    onRenderRow
 }) => {
 
     const constStore = useConst(() => new Memory(primaryID, alphaNumColumns));
@@ -357,7 +362,7 @@ export const FluentGrid: React.FunctionComponent<FluentGridProps> = ({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [constStore, data, /*refresh*/]);
 
-    return <FluentStoreGrid store={constStore} columns={columns} sort={sort} start={0} count={data.length} height={height} setSelection={setSelection} setTotal={setTotal} refresh={refresh}>
+    return <FluentStoreGrid store={constStore} columns={columns} sort={sort} start={0} count={data.length} height={height} setSelection={setSelection} setTotal={setTotal} refresh={refresh} onRenderRow={onRenderRow}>
     </FluentStoreGrid>;
 };
 
@@ -372,7 +377,8 @@ interface FluentPagedGridProps {
     height?: string,
     setSelection: (selection: any[]) => void,
     setTotal: (total: number) => void,
-    refresh: RefreshTable
+    refresh: RefreshTable,
+    onRenderRow?: IRenderFunction<IDetailsRowProps>
 }
 
 export const FluentPagedGrid: React.FunctionComponent<FluentPagedGridProps> = ({
@@ -386,7 +392,8 @@ export const FluentPagedGrid: React.FunctionComponent<FluentPagedGridProps> = ({
     height,
     setSelection,
     setTotal,
-    refresh
+    refresh,
+    onRenderRow
 }) => {
     const [page, setPage] = React.useState(pageNum - 1);
     const [sortBy, setSortBy] = React.useState(sort);
@@ -407,7 +414,7 @@ export const FluentPagedGrid: React.FunctionComponent<FluentPagedGridProps> = ({
         setPage(_page);
     }, [pageNum]);
 
-    return <FluentStoreGrid store={store} query={query} columns={columns} sort={sortBy} start={page * pageSize} count={pageSize} height={height} setSelection={setSelection} setTotal={setTotal} refresh={refresh}>
+    return <FluentStoreGrid store={store} query={query} columns={columns} sort={sortBy} start={page * pageSize} count={pageSize} height={height} setSelection={setSelection} setTotal={setTotal} refresh={refresh} onRenderRow={onRenderRow}>
     </FluentStoreGrid>;
 };
 
