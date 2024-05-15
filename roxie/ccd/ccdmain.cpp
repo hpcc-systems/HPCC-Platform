@@ -220,7 +220,7 @@ StringBuffer tempDirectory;
 ClientCertificate clientCert;
 bool useHardLink;
 
-unsigned __int64 maxFileAgeNS[2] = {0xffffffffffffffff, 60*60*1000*1000000L}; // local files don't expire, remote expire in 1 hour, by default
+unsigned __int64 maxFileAgeNS[2] = {0xffffffffffffffffULL, 60*60*1000*1000000ULL}; // local files don't expire, remote expire in 1 hour, by default
 unsigned minFilesOpen[2] = {2000, 500};
 unsigned maxFilesOpen[2] = {4000, 1000};
 
@@ -1240,8 +1240,16 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         clientCert.privateKey.set(topology->queryProp("@privateKeyFileName"));
         clientCert.passphrase.set(topology->queryProp("@passphrase"));
         useHardLink = topology->getPropBool("@useHardLink", false);
-        maxFileAgeNS[false] = milliToNano(topology->getPropInt("@localFilesExpire", (unsigned) -1));
-        maxFileAgeNS[true] = milliToNano(topology->getPropInt("@remoteFilesExpire", 60*60*1000));
+        unsigned temp = topology->getPropInt("@localFilesExpire", (unsigned) -1);
+        if (temp && temp != (unsigned) -1)
+            maxFileAgeNS[false] = milliToNano(temp);
+        else
+            maxFileAgeNS[false] = (unsigned __int64) -1;
+        temp = topology->getPropInt("@remoteFilesExpire", 60*60*1000);
+        if (temp && temp != (unsigned) -1)
+            maxFileAgeNS[true] = milliToNano(temp);
+        else
+            maxFileAgeNS[true] = (unsigned __int64) -1;
         maxFilesOpen[false] = topology->getPropInt("@maxLocalFilesOpen", 4000);
         maxFilesOpen[true] = topology->getPropInt("@maxRemoteFilesOpen", 1000);
         minFilesOpen[false] = topology->getPropInt("@minLocalFilesOpen", maxFilesOpen[false]/2);

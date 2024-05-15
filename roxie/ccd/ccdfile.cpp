@@ -191,7 +191,6 @@ public:
 
     virtual bool isOpen() const 
     {
-        CriticalBlock b(crit);
         return open; 
     }
 
@@ -2080,10 +2079,11 @@ public:
         closePending[remote] = false;
         IArrayOf<ILazyFileIO> expired;
         IArrayOf<ILazyFileIO> goers;
+        unsigned openLimit = maxFilesOpen[remote];
         {
-            if (files.ordinality() > maxFilesOpen[remote] || maxFileAgeNS[remote] != (unsigned __int64) -1)
+            CriticalBlock b(crit);
+            if (files.ordinality() > openLimit || maxFileAgeNS[remote] != (unsigned __int64) -1)
             {
-                CriticalBlock b(crit);   // Does it matter that we test files.ordinality() outside the critblock?
                 HashIterator h(files);
                 ForEach(h)
                 {
@@ -2096,7 +2096,7 @@ public:
                             unsigned __int64 age = nsTick() - f->getLastAccessed();
                             if (age > maxFileAgeNS[remote])
                                 expired.append(*f.getClear());
-                            else if (files.ordinality() > maxFilesOpen[remote])
+                            else if (files.ordinality() > openLimit)
                                 // No point adding to goers if there's no chance goers will get longer than limit
                                 goers.append(*f.getClear());
                         }
@@ -2123,7 +2123,7 @@ public:
             }
         }
         unsigned numFilesLeft = goers.ordinality(); 
-        if (numFilesLeft > maxFilesOpen[remote])
+        if (numFilesLeft > openLimit)
         {
             goers.sort(CRoxieLazyFileIO::compareAccess);
             unsigned idx = minFilesOpen[remote];
