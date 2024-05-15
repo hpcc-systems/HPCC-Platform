@@ -110,7 +110,7 @@ static void failWithUPCRE2Error(int errCode, const char * msgPrefix, const UChar
         char * regexStr = nullptr;
         unsigned regexStrLen;
         rtlUnicodeToEscapedStrX(regexStrLen, regexStr, rtlUnicodeStrlen(regex), regex);
-        regexPattern += regexStr;
+        regexPattern = std::string(regexStr, regexStrLen);
         rtlFree(regexStr);
     }
     failWithPCRE2Error(errCode, msgPrefix, regexPattern.c_str(), errOffset);
