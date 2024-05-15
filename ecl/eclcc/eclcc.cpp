@@ -952,7 +952,8 @@ void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char 
         try
         {
             bool optSaveTemps = wu->getDebugValueBool("saveEclTempFiles", false);
-            bool optSaveCpp = optSaveTemps || optNoCompile || !optCompileBatchOut.isEmpty() || wu->getDebugValueBool("saveCppTempFiles", false) || wu->getDebugValueBool("saveCpp", false);
+            bool optPublishCpp = optSaveTemps || optNoCompile || wu->getDebugValueBool("saveCppTempFiles", false) || wu->getDebugValueBool("saveCpp", false);
+            bool optSaveCpp = optPublishCpp || !optCompileBatchOut.isEmpty();
             //New scope - testing things are linked correctly
             {
                 Owned<IHqlExprDllGenerator> generator = createDllGenerator(&errorProcessor, processName.str(), NULL, wu, optTargetClusterType, &instance, false, false);
@@ -972,7 +973,7 @@ void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char 
                     ForEachItemIn(i, resourceManifestFiles)
                         generator->addManifest(resourceManifestFiles.item(i));
                 }
-                generator->setSaveGeneratedFiles(optSaveCpp);
+                generator->setSaveGeneratedFiles(optSaveCpp, optPublishCpp);
 
                 if (optSaveQueryArchive && instance.wu && instance.archive)
                 {

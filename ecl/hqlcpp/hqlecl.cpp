@@ -170,7 +170,6 @@ public:
         defaultMaxCompileThreads = 1;
         generateTarget = EclGenerateNone;
         code.setown(createCppInstance(wu, wuname));
-        deleteGenerated = false;
         totalGeneratedSize = 0;
     }
     IMPLEMENT_IINTERFACE
@@ -184,7 +183,7 @@ public:
     virtual void addManifest(const char *filename) override { code->addManifest(filename, ctxCallback); }
     virtual void addManifestsFromArchive(IPropertyTree *archive) override { code->addManifestsFromArchive(archive, ctxCallback); }
     virtual void addWebServiceInfo(IPropertyTree *wsinfo) override { code->addWebServiceInfo(wsinfo); }
-    virtual void setSaveGeneratedFiles(bool value) override { deleteGenerated = !value; }
+    virtual void setSaveGeneratedFiles(bool save, bool publish) override { deleteGenerated = !save; publishGenerated = publish; }
 
     double getECLcomplexity(IHqlExpression * exprs);
 
@@ -225,7 +224,8 @@ protected:
     bool checkForLocalFileUploads;
     bool noOutput;
     EclGenerateTarget generateTarget;
-    bool deleteGenerated;
+    bool deleteGenerated = false;
+    bool publishGenerated = false;
     bool okToAbort;
 };
 
@@ -326,7 +326,7 @@ void HqlDllGenerator::expandCode(StringBuffer & filename, const char * codeTempl
 
     totalGeneratedSize += out->size();
 
-    if (!deleteGenerated)
+    if (!publishGenerated)
     {
         unsigned minActivity, maxActivity;
         code->getActivityRange(pass, minActivity, maxActivity);
@@ -579,7 +579,7 @@ bool HqlDllGenerator::generateCode(HqlQueryContext & query)
         }
 
         if (wu->getDebugValueBool("saveEclTempFiles", false) || wu->getDebugValueBool("saveCppTempFiles", false) || wu->getDebugValueBool("saveCpp", false))
-            setSaveGeneratedFiles(true);
+            setSaveGeneratedFiles(true, true);
 
         doExpand(translator);
         unsigned __int64 elapsed = cycle_to_nanosec(get_cycles_now() - startCycles);
