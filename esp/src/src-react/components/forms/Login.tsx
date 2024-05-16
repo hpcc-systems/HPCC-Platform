@@ -116,7 +116,6 @@ export const Login: React.FunctionComponent<LoginProps> = ({
                     setErrorMessage(cookies.ESPAuthenticationMSG);
                     setShowError(true);
                 } else {
-                    cookies["ESPAuthenticated"] = "true";
                     createUserSession(cookies).then(() => {
                         setErrorMessage("");
                         const lastUrl = window.localStorage.getItem("pageOnLock") ?? "/";
