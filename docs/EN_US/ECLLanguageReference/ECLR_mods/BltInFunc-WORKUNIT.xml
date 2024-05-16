@@ -56,7 +56,7 @@
 
   <para>Example:</para>
 
-  <programlisting lang="ECL" role="runnable">wuid := WORKUNIT; //get WUID
+  <programlisting lang="ECL_Runnable">wuid := WORKUNIT; //get WUID
 namesRecord := RECORD
   STRING20 surname;
   STRING10 forename;

@@ -34,7 +34,7 @@
 
   <para>Example:</para>
 
-  <programlisting lang="ECL" role="runnable">a := TRUE; // pick one of these
+  <programlisting lang="ECL_Runnable">a := TRUE; // pick one of these
 //a := FALSE;
 #IF(a)
   #ERROR('broken');

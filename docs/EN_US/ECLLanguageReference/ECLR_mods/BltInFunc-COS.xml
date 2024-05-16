@@ -38,7 +38,7 @@
 
   <para>Example:</para>
 
-  <programlisting lang="ECL" role="runnable">
+  <programlisting lang="ECL_Runnable">
 Deg2Rad := 0.0174532925199; //number of radians in a degree
 Angle45 := 45 * Deg2Rad;    //translate 45 degrees into radians
 Cosine45 := COS(Angle45);   //get cosine of the 45 degree angle

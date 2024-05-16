@@ -41,7 +41,7 @@
 
   <para>Example:</para>
 
-  <programlisting lang="ECL" role="runnable">STRING3 Fred := 'ABC'; //declare Fred as a 3-byte string
+  <programlisting lang="ECL_Runnable">STRING3 Fred := 'ABC'; //declare Fred as a 3-byte string
 TYPEOF(Fred) Sue := Fred; //declare Sue as "just like" Fred
 OUTPUT(Fred);
 OUTPUT(Sue);</programlisting>

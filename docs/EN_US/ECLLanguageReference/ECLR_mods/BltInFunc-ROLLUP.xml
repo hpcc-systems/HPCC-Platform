@@ -271,7 +271,7 @@ XtabOut := ROLLUP(SortedTable,
 
     <para>Example:</para>
 
-    <programlisting lang="ECL" role="runnable">rec := {STRING1 str1,STRING1 str2,STRING1 str3};
+    <programlisting lang="ECL_Runnable">rec := {STRING1 str1,STRING1 str2,STRING1 str3};
 ds := DATASET([{'a', 'b', 'c'},{'a', 'b', 'c'},
                {'a', 'c', 'c'},{'a', 'c', 'd'}], rec);
 rec tr(rec L, rec R) := TRANSFORM
@@ -322,7 +322,7 @@ OUTPUT(r7);
 
     <para>Example:</para>
 
-    <programlisting lang="ECL" role="runnable">inrec := RECORD
+    <programlisting lang="ECL_Runnable">inrec := RECORD
   UNSIGNED6 did;
 END;
 

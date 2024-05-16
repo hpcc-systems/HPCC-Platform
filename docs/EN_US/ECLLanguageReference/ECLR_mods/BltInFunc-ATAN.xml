@@ -39,7 +39,7 @@
 
   <para>Example:</para>
 
-  <programlisting lang="ECL" role="runnable">Rad2Deg := 57.295779513082; //number of degrees in a radian
+  <programlisting lang="ECL_Runnable">Rad2Deg := 57.295779513082; //number of degrees in a radian
 TangentAngle := 57.74;
 ArcTangent := ATAN(TangentAngle) * Rad2Deg; 
 OUTPUT(ArcTangent);</programlisting>

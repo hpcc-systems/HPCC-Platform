@@ -41,7 +41,7 @@
 
   <para>Exemplo:</para>
 
-  <programlisting lang="ECL" role="runnable">AbsVal1 := ABS(1); // returns 1
+  <programlisting lang="ECL_Runnable">AbsVal1 := ABS(1); // returns 1
 AbsVal2 := ABS(-1); // returns 1
 OUTPUT(AbsVal1);
 OUTPUT(AbsVal2);

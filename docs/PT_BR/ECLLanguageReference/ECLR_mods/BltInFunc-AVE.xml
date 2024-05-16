@@ -148,7 +148,7 @@
 
   <para>Exemplo:</para>
 
-  <programlisting lang="ECL" role="runnable">AvgVal1 := AVE(4,8,16,2,1); //returns 6.2
+  <programlisting lang="ECL_Runnable">AvgVal1 := AVE(4,8,16,2,1); //returns 6.2
 SetVals := [4,8,16,2,1];
 AvgVal2 := AVE(SetVals);    //returns 6.2
 OUTPUT(AvgVal1);

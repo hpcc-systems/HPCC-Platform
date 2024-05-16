@@ -95,7 +95,7 @@
 
     <para>Example:</para>
 
-    <programlisting lang="ECL" role="runnable">AkaRec := {STRING20 forename,STRING20 surname};
+    <programlisting lang="ECL_Runnable">AkaRec := {STRING20 forename,STRING20 surname};
 outputRec := RECORD
   UNSIGNED id;
   DATASET(AkaRec) kids;
@@ -129,7 +129,7 @@ OUTPUT(r);
 
     <para>Example:</para>
 
-    <programlisting lang="ECL" role="runnable">AkaRec := {STRING20 forename,STRING20 surname};
+    <programlisting lang="ECL_Runnable">AkaRec := {STRING20 forename,STRING20 surname};
 outputRec := RECORD
 UNSIGNED id;
 DATASET(AkaRec) children;

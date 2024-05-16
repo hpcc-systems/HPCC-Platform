@@ -67,7 +67,7 @@ z := 'D' IN x;  //results in TRUE
 
   <para>DICTIONARY examples:</para>
 
-  <programlisting lang="ECL" role="runnable">//DICTIONARY examples:
+  <programlisting lang="ECL_Runnable">//DICTIONARY examples:
 
 //DICTIONARY examples:
 rec := {STRING color,UNSIGNED1 code};

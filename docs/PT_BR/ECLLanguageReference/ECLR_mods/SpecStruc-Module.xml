@@ -158,7 +158,7 @@
     <emphasis>definition</emphasis> as
     MyModule.MyModuleStructure.MyDefinition:</para>
 
-    <para><programlisting lang="ECL" role="runnable">MyMod := MODULE
+    <para><programlisting lang="ECL_Runnable">MyMod := MODULE
 
 MyMod := MODULE
   SHARED x := 88;
@@ -295,7 +295,7 @@ IF (doIt, OUTPUT(customerNames.File));
 
     <para>Exemplo:</para>
 
-    <programlisting lang="ECL" role="runnable">namesRecord := RECORD
+    <programlisting lang="ECL_Runnable">namesRecord := RECORD
   STRING20 surname;
   STRING10 forename;
   INTEGER2 age := 25;

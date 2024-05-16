@@ -79,7 +79,7 @@
 
   <para>Example:</para>
 
-  <programlisting format="linespecific" lang="ECL" role="runnable">IMPORT STD; 
+  <programlisting format="linespecific" lang="ECL_Runnable">IMPORT STD; 
 STD.Date.TimestampToString(1048998120000000, '%A %B %d, %Y T%H:%M:%S.%#'); 
                                 // returns Sunday March 30, 2003 T04:22:00.000
 </programlisting>

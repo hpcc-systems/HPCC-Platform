@@ -102,7 +102,7 @@
   context. It also shows how the FUNCTIONMACRO may be called multiple times
   without name clashes from its internal definitions:</para>
 
-  <programlisting lang="ECL" role="runnable">EXPORT Field_Population(infile,infield,compareval) := FUNCTIONMACRO
+  <programlisting lang="ECL_Runnable">EXPORT Field_Population(infile,infield,compareval) := FUNCTIONMACRO
   c1 := COUNT(infile(infield=compareval));
   c2 := COUNT(infile);
   RETURN DATASET([{'Total Records',c2},
@@ -121,7 +121,7 @@ OUTPUT(Field_Population(ds2,Gender,''));</programlisting>
   clashes with external definitions within the same visibility scope as the
   FUNCTIONMACRO:</para>
 
-  <programlisting lang="ECL" role="runnable">numPlus := 'this creates a syntax error without LOCAL in the FUNCTIONMACRO';
+  <programlisting lang="ECL_Runnable">numPlus := 'this creates a syntax error without LOCAL in the FUNCTIONMACRO';
 AddOne(num) := FUNCTIONMACRO
   LOCAL numPlus := num + 1;   //LOCAL required here
   RETURN numPlus;

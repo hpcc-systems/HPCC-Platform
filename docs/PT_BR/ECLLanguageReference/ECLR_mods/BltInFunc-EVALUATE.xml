@@ -87,7 +87,7 @@ APPLY(ds, EVALUATE(doSomething(ds.text)));
 
     <para>Form 2 example:</para>
 
-    <programlisting lang="ECL" role="runnable">M := MODULE
+    <programlisting lang="ECL_Runnable">M := MODULE
   EXPORT a := OUTPUT(10);
   EXPORT b := OUTPUT('Hello');
 END;
@@ -169,7 +169,7 @@ EVALUATE(M2);
 
     <para>Exemplo:</para>
 
-    <programlisting lang="ECL" role="runnable">TrdRec := RECORD
+    <programlisting lang="ECL_Runnable">TrdRec := RECORD
   UNSIGNED2 Trd_ID;
   INTEGER4 Trd_bal;
   INTEGER4 Trd_hc;

@@ -33,7 +33,7 @@
 
   <para>Example:</para>
 
-  <programlisting lang="ECL" role="runnable">#DECLARE(MySymbol); //declare a symbol named "MySymbol"
+  <programlisting lang="ECL_Runnable">#DECLARE(MySymbol); //declare a symbol named "MySymbol"
 #SET(MySymbol,11); //initialize MySymbol to 11
 OUTPUT(%'MySymbol'%)
 </programlisting>

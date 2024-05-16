@@ -75,7 +75,7 @@
 
   <para>Example:</para>
 
-  <programlisting lang="ECL" role="runnable">I := RANDOM() : INDEPENDENT(LABEL('CalcRandom'));  //calculated once, period
+  <programlisting lang="ECL_Runnable">I := RANDOM() : INDEPENDENT(LABEL('CalcRandom'));  //calculated once, period
 G := RANDOM() : GLOBAL;       //calculated once in each graph
 
 ds := 

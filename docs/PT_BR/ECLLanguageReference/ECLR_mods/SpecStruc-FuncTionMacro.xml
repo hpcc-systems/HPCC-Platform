@@ -104,7 +104,7 @@
   expressão. O exemplo também mostra como FUNCTIONMACRO pode ser chamada
   várias vezes de suas definições internas sem conflitos de nome:</para>
 
-  <programlisting lang="ECL" role="runnable">EXPORT Field_Population(infile,infield,compareval) := FUNCTIONMACRO
+  <programlisting lang="ECL_Runnable">EXPORT Field_Population(infile,infield,compareval) := FUNCTIONMACRO
   c1 := COUNT(infile(infield=compareval));
   c2 := COUNT(infile);
   RETURN DATASET([{'Total Records',c2},
@@ -123,7 +123,7 @@ OUTPUT(Field_Population(ds2,Gender,''));</programlisting>
   conflitos de nome com definições externas dentro do mesmo escopo de
   visibilidade de FUNCTIONMACRO:</para>
 
-  <programlisting lang="ECL" role="runnable">numPlus := 'this creates a syntax error without LOCAL in the FUNCTIONMACRO';
+  <programlisting lang="ECL_Runnable">numPlus := 'this creates a syntax error without LOCAL in the FUNCTIONMACRO';
 AddOne(num) := FUNCTIONMACRO
   LOCAL numPlus := num + 1;   //LOCAL required here
   RETURN numPlus;

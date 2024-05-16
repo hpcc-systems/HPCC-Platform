@@ -39,7 +39,7 @@
 
   <para>Example:</para>
 
-  <programlisting lang="ECL" role="runnable">Deg2Rad := 0.0174532925199; //number of radians in a degree
+  <programlisting lang="ECL_Runnable">Deg2Rad := 0.0174532925199; //number of radians in a degree
 cosineAngle := 0.75;
 acos(cosineAngle) * Deg2Rad; 
 </programlisting>

@@ -28,7 +28,7 @@
 
   <para>Example:</para>
 
-  <programlisting lang="ECL" role="runnable">UNICODE16 MyUNIString := U'1234567890ABCDEF';
+  <programlisting lang="ECL_Runnable">UNICODE16 MyUNIString := U'1234567890ABCDEF';
         // utf-16-encoded string
 UNICODE4 MyUnicodeString := U'abcd';
         // same as: (UNICODE)'abcd'

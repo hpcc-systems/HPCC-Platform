@@ -12,7 +12,7 @@ h4,
 h5,
 h6 {
     color: #394986;
-    font-height: bold;
+    font-weight: bold;
     margin-top: 1.33ex;
     margin-bottom: 1.33ex;
 }
@@ -62,7 +62,7 @@ tfoot {
 th,
 td {
     padding: 0 0.5ex;
-    vertical-align: top; 
+    vertical-align: top;
 }
 
 blockquote {
@@ -109,7 +109,7 @@ li {
     margin-bottom: 1.33ex;
 }
 
-*[compact] > li {
+*[compact]>li {
     margin-top: 0;
     margin-bottom: 0;
 }
@@ -124,11 +124,11 @@ dd {
     margin-bottom: 1.33ex;
 }
 
-*[compact] > dt {
+*[compact]>dt {
     margin-top: 0;
 }
 
-*[compact] > dd {
+*[compact]>dd {
     margin-bottom: 0;
 }
 
@@ -195,15 +195,15 @@ div.sidebar {
     margin-bottom: 1.33ex;
 }
 
-div.sidebar > p.title {
+div.sidebar>p.title {
     margin-top: 0.33ex;
 }
 
-div.example > p.title,
-div.figure > p.title,
-div.table > p.title,
-div.procedure > p.title,
-div.equation > p.title {
+div.example>p.title,
+div.figure>p.title,
+div.table>p.title,
+div.procedure>p.title,
+div.equation>p.title {
     color: #394986;
     font-weight: bold;
 }
@@ -214,13 +214,13 @@ div.calloutlist {
     margin-bottom: 1.33ex;
 }
 
-div.orderedlist > table,
-div.calloutlist > table {
+div.orderedlist>table,
+div.calloutlist>table {
     margin: 0;
 }
 
-div.orderedlist > table td,
-div.calloutlist > table td {
+div.orderedlist>table td,
+div.calloutlist>table td {
     vertical-align: baseline;
 }
 
@@ -257,10 +257,12 @@ span.bluebold {
     font-weight: bold;
     color: #00008B;
 }
+
 span.blueital {
-    font-style:italic;
+    font-style: italic;
     color: #00008B;
 }
+
 span.blue {
     color: #00008B;
 }
@@ -269,42 +271,53 @@ span.redbold {
     font-weight: bold;
     color: #FF0000;
 }
+
 span.redital {
-    font-style:italic;
+    font-style: italic;
     color: #FF0000;
 }
+
 span.red {
     color: #FF0000;
 }
+
 span.greenbold {
     font-weight: bold;
     color: #008000;
 }
+
 span.greenital {
-    font-style:italic;
+    font-style: italic;
     color: #008000;
 }
+
 span.green {
     color: #008000;
 }
+
 span.whitebold {
     font-weight: bold;
     color: #FFFFFF;
 }
+
 span.whiteital {
-    font-style:italic;
+    font-style: italic;
     color: #FFFFFF;
 }
+
 span.white {
     color: #FFFFFF;
 }
+
 span.code {
     font-family: monospace;
 }
+
 span.codebold {
     font-family: monospace;
     font-weight: bold;
 }
+
 span.keycap,
 span.keycode,
 span.keysym,
@@ -324,12 +337,13 @@ span.interface,
 span.guilabel {
     font-weight: bold;
 }
-span.term
-{
-      font-family: sans-serif;
+
+span.term {
+    font-family: sans-serif;
 }
+
 pre.programlisting {
-  margin-left: 3.25em;
+    margin-left: 3.25em;
 }
 
 pre.pl-tab {
@@ -339,9 +353,11 @@ pre.pl-tab {
     color: black;
     background-color: white;
 }
-img { 
-  margin-left: 3.25em;
-} 
-img.noin { 
-  margin-left: 0em;
-} 
+
+img {
+    margin-left: 3.25em;
+}
+
+img.noin {
+    margin-left: 0em;
+}

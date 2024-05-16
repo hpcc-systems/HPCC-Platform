@@ -803,7 +803,7 @@
   <para>Examplo:</para>
 
   <para>
-    <programlisting lang="ECL" role="runnable">//this example demos the implicit DEDUP of the lookup dataset
+    <programlisting lang="ECL_Runnable">//this example demos the implicit DEDUP of the lookup dataset
 r1 := {INTEGER1 fred};
 r2 := {INTEGER1 fred,INTEGER1 sue};
 ds1 := DATASET([1,2,3,4],r1);

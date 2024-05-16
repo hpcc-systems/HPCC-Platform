@@ -90,7 +90,7 @@
 
   <para>Exemplo:</para>
 
-  <programlisting lang="ECL" role="runnable">//a coordinated set of 3 examples
+  <programlisting lang="ECL_Runnable">//a coordinated set of 3 examples
 IMPORT Std;
 NameRec := RECORD
   STRING5 title := '';

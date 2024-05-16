@@ -45,7 +45,7 @@
 
   <para>Example:</para>
 
-  <programlisting lang="ECL" role="runnable">OUTPUT(2 * 2);  // is normally constant folded to:
+  <programlisting lang="ECL_Runnable">OUTPUT(2 * 2);  // is normally constant folded to:
 OUTPUT(4);      // at compile time. 
 
   //However adding NOFOLD() around one argument prevents that 

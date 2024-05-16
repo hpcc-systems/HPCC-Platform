@@ -21,7 +21,7 @@
 
   <para>Example:</para>
 
-  <programlisting lang="ECL" role="runnable">VARSTRING3 MyString := 'ABC';
+  <programlisting lang="ECL_Runnable">VARSTRING3 MyString := 'ABC';
        // declares MyString a 3-byte null-terminated string
 OUTPUT(MyString);
 </programlisting>

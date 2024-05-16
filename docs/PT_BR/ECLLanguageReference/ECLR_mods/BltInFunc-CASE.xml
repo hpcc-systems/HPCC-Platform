@@ -84,7 +84,7 @@
 
   <para>Exemplo:</para>
 
-  <programlisting lang="ECL" role="runnable">//simple example
+  <programlisting lang="ECL_Runnable">//simple example
 MyExp := 1+2; 
 MyChoice := CASE(MyExp, 1 =&gt; 9, 2 =&gt; 8, 3 =&gt; 7, 4 =&gt; 6, 5);
   // returns a value of 7 for the value of MyExp=3

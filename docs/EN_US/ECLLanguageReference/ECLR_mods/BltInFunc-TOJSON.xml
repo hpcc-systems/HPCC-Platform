@@ -39,7 +39,7 @@
 
   <para>Example:</para>
 
-  <programlisting lang="ECL" role="runnable">namesRec1 := RECORD  
+  <programlisting lang="ECL_Runnable">namesRec1 := RECORD  
  UNSIGNED2 EmployeeID{xpath('EmpID')};  
  STRING10 Firstname{xpath('FName')};  
  STRING10 Lastname{xpath('LName')}; 

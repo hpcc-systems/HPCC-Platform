@@ -18,3 +18,6 @@
 
 configure_file(Version.xml.in ${CMAKE_CURRENT_BINARY_DIR}/Version.xml)
 
+file(COPY
+    ${CMAKE_CURRENT_SOURCE_DIR}/eclipsehelp.css
+    DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

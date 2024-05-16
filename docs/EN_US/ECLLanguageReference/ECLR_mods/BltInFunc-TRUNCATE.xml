@@ -38,7 +38,7 @@
 
   <para>Example:</para>
 
-  <programlisting lang="ECL" role="runnable">MyRealValue := 3.75;
+  <programlisting lang="ECL_Runnable">MyRealValue := 3.75;
 INTEGER4 MyValue := TRUNCATE(MyRealValue); 
 OUTPUT(MyValue); // MyValue is 3
 </programlisting>

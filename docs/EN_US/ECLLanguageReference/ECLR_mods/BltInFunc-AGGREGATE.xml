@@ -240,7 +240,7 @@
     <emphasis>maintransform</emphasis>. If it can't, then the user will need
     to specify one.</para>
 
-    <programlisting lang="ECL" role="runnable">//Example 1: Produce a list of box contents by concatenating a string: 
+    <programlisting lang="ECL_Runnable">//Example 1: Produce a list of box contents by concatenating a string: 
 IMPORT Std;
 inRec := RECORD 
   UNSIGNED box; 

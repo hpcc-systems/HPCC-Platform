@@ -162,7 +162,7 @@
 
   <para>Example:</para>
 
-  <programlisting lang="ECL" role="runnable">//This simple example demonstrates text searching 
+  <programlisting lang="ECL_Runnable">//This simple example demonstrates text searching 
 // for a variable number of search terms.
 //For simplicity's sake this example uses sets,
 // whereas in a production query you would most likely

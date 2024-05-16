@@ -20,7 +20,7 @@
 
   <para>Exemplo:</para>
 
-  <programlisting lang="ECL" role="runnable">BooleanTrue := TRUE;
+  <programlisting lang="ECL_Runnable">BooleanTrue := TRUE;
 Booleanfalse := FALSE;
 
 OUTPUT(BooleanTrue);

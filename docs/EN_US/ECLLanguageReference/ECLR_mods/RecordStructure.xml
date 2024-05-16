@@ -972,7 +972,7 @@ END;
 
     <para>an example using {XPATH('tag')}</para>
 
-    <programlisting lang="ECL" role="runnable">R := RECORD
+    <programlisting lang="ECL_Runnable">R := RECORD
      STRING10 fname;
      STRING12 lname;
      SET OF STRING1 MySet{XPATH('Set/Element')}; //define set tags
@@ -997,7 +997,7 @@ OUTPUT(B,,'~LR::test.xml', XML,OVERWRITE);
 
     <para>another XML example with a 1-field child dataset</para>
 
-    <programlisting lang="ECL" role="runnable">cr := RECORD,MAXLENGTH(1024)
+    <programlisting lang="ECL_Runnable">cr := RECORD,MAXLENGTH(1024)
   STRING phoneEx{XPATH('')};
 END;
 r := RECORD,MAXLENGTH(4096)
