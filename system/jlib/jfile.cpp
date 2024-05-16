@@ -7753,6 +7753,7 @@ class CBlockedFileIO : public CSimpleInterfaceOf<IFileIO>
     void *buffer = nullptr;
     offset_t lastReadPos = (offset_t)-1;
     MemoryBuffer mb;
+    std::atomic<bool> isActive{false};
 public:
     CBlockedFileIO(IFileIO *_io, size32_t _blockSize) : io(_io), blockSize(_blockSize)
     {
@@ -7760,32 +7761,47 @@ public:
     }
     virtual size32_t read(offset_t pos, size32_t len, void *data) override
     {
-        if (len > blockSize)
+        if (unlikely(len > blockSize))
             return io->read(pos, len, data);
+
+        //A sanity check to catch calls from multiple threads - (see HPCC-31852).
+        if (unlikely(isActive))
+            throw makeStringExceptionV(99, "Reentrant call to CBlockedFileIO::read(%llu, %u) [%llu]", pos, len, lastReadPos);
+        isActive = true;
+
         size32_t totalCopied = 0;
-        byte *dest = (byte *) data;
-        while (len)
+        try
         {
-            offset_t readPos = (pos / blockSize) * blockSize; // NB: could be beyond end of file
-            if (readPos != lastReadPos)
+            byte *dest = (byte *) data;
+            while (len)
             {
-                readLen = io->read(readPos, blockSize, buffer); // NB: can be less than blockSize (and 0 if beyond end of file)
-                lastReadPos = readPos;
+                offset_t readPos = (pos / blockSize) * blockSize; // NB: could be beyond end of file
+                if (readPos != lastReadPos)
+                {
+                    readLen = io->read(readPos, blockSize, buffer); // NB: can be less than blockSize (and 0 if beyond end of file)
+                    lastReadPos = readPos;
+                }
+                offset_t endPos = readPos+readLen;
+                size32_t copyNow;
+                if (pos+len <= endPos) // common case hopefully
+                    copyNow = len;
+                else if (pos < endPos)
+                    copyNow = endPos-pos;
+                else // nothing to copy
+                    break;
+                memcpy(dest, ((byte *)buffer) + pos-readPos, copyNow);
+                len -= copyNow;
+                pos += copyNow;
+                dest += copyNow;
+                totalCopied += copyNow;
             }
-            offset_t endPos = readPos+readLen;
-            size32_t copyNow;
-            if (pos+len <= endPos) // common case hopefully
-                copyNow = len;
-            else if (pos < endPos)
-                copyNow = endPos-pos;
-            else // nothing to copy
-                break;
-            memcpy(dest, ((byte *)buffer) + pos-readPos, copyNow);
-            len -= copyNow;
-            pos += copyNow;
-            dest += copyNow;
-            totalCopied += copyNow;
         }
+        catch (...)
+        {
+            isActive = false;
+            throw;
+        }
+        isActive = false;
         return totalCopied;
     }
     virtual offset_t size() override { return io->size(); }
