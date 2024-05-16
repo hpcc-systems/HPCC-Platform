@@ -1985,6 +1985,16 @@ struct WinCompressedFileTrailer
 
 #pragma pack(pop)
 
+static size32_t countZeros(size32_t size, const byte * data)
+{
+    size32_t len;
+    for (len = 0; len < size; len++)
+    {
+        if (data[len])
+            break;
+    }
+    return len;
+}
 
 class CCompressedFile : implements ICompressedFileIO, public CInterface
 {
@@ -2069,7 +2079,7 @@ class CCompressedFile : implements ICompressedFileIO, public CInterface
             {
                 size32_t nextSize = expander->expandNext(curblockbuf);
                 if (nextSize == 0)
-                    throwUnexpected(); // Should have failed the outer block test if nextSize is 0
+                    throw makeStringExceptionV(-1, "Unexpected zero length compression block at position %llu", curblockpos);
 
                 curblockpos = nextExpansionPos;
                 nextExpansionPos = nextExpansionPos+nextSize;
@@ -2093,11 +2103,11 @@ class CCompressedFile : implements ICompressedFileIO, public CInterface
 
             size32_t r = fileio->read(p,toread,b);
             assertex(r==toread);
-            expand(b,curblockbuf,expsize);
+            expand(b,curblockbuf,expsize,p);
         }
         else { // memory mapped
             assertex((memsize_t)p==p);
-            expand(mmfile->base()+(memsize_t)p,curblockbuf,expsize);
+            expand(mmfile->base()+(memsize_t)p,curblockbuf,expsize,p);
         }
     }
     void checkedwrite(offset_t pos, size32_t len, const void * data) 
@@ -2110,7 +2120,7 @@ class CCompressedFile : implements ICompressedFileIO, public CInterface
 
     }
 
-    void expand(const void *compbuf,MemoryBuffer &expbuf,size32_t expsize)
+    void expand(const void *compbuf,MemoryBuffer &expbuf,size32_t expsize, offset_t compressedPos)
     {
         size32_t rs = trailer.recordSize;
         if (rs) { // diff expand
@@ -2133,6 +2143,13 @@ class CCompressedFile : implements ICompressedFileIO, public CInterface
         else { // lzw or fastlz or lz4
             assertex(expander.get());
             size32_t exp = expander->expandFirst(expbuf, compbuf);
+            if (exp == 0)
+            {
+                unsigned numZeros = countZeros(trailer.blockSize, (const byte *)compbuf);
+                if (numZeros >= 16)
+                    throw makeStringExceptionV(-1, "Unexpected zero fill in compressed file at position %llu length %u", compressedPos, numZeros);
+            }
+
             startBlockPos = curblockpos;
             nextExpansionPos = startBlockPos + exp;
             fullBlockSize = expsize;
