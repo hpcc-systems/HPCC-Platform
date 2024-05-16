@@ -239,19 +239,21 @@ export const Result: React.FunctionComponent<ResultProps> = ({
 
     const resultTable: ResultWidget = useConst(() => new ResultWidget()
         .baseUrl("")
-        .wuid(wuid)
-        .resultName(resultName)
-        .nodeGroup(cluster)
-        .logicalFile(logicalFile)
         .pagination(true)
         .pageSize(50) as ResultWidget
     );
 
-    resultTable
-        .filter(filter)
-        .renderHtml(renderHTML)
-        .lazyRender()
-        ;
+    React.useEffect(() => {
+        resultTable
+            .wuid(wuid)
+            .resultName(resultName)
+            .nodeGroup(cluster)
+            .logicalFile(logicalFile)
+            .filter(filter)
+            .renderHtml(renderHTML)
+            .lazyRender()
+            ;
+    }, [cluster, filter, logicalFile, renderHTML, resultName, resultTable, wuid]);
 
     const { currentUser } = useMyAccount();
     const [wu] = useWorkunit(wuid);

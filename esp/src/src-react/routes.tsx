@@ -10,6 +10,34 @@ export interface RouteEx<R = any, C extends RouterContext = RouterContext> exten
 
 type RoutesEx<R = any, C extends RouterContext = RouterContext> = Array<RouteEx<R, C>>;
 
+const workunitsChildren: Route[] = [
+    {
+        path: "", action: (ctx) => import("./components/Workunits").then(_ => {
+            return <_.Workunits filter={parseSearch(ctx.search) as any} sort={parseSort(ctx.search)} page={parsePage(ctx.search)} />;
+        })
+    },
+    {
+        path: "/dashboard", action: (ctx) => import("./components/WorkunitsDashboard").then(_ => {
+            return <_.WorkunitsDashboard filterProps={parseSearch(ctx.search) as any} />;
+        })
+    },
+    {
+        path: "/:Wuid", action: (ctx, params) => import("./components/WorkunitDetails").then(_ => {
+            return <_.WorkunitDetails wuid={params.Wuid as string} parentUrl={params.parentUrl as string} />;
+        })
+    },
+    {
+        path: "/:Wuid/:Tab", action: (ctx, params) => import("./components/WorkunitDetails").then(_ => {
+            return <_.WorkunitDetails wuid={params.Wuid as string} parentUrl={params.parentUrl as string} tab={params.Tab as string} queryParams={{ [params.Tab as string]: parseSearch(ctx.search) as any }} />;
+        })
+    },
+    {
+        path: "/:Wuid/:Tab/:State", action: (ctx, params) => import("./components/WorkunitDetails").then(_ => {
+            return <_.WorkunitDetails wuid={params.Wuid as string} parentUrl={params.parentUrl as string} tab={params.Tab as string} state={{ [params.Tab as string]: (params.State as string) }} queryParams={{ [params.Tab as string]: parseSearch(ctx.search) as any }} />;
+        })
+    },
+];
+
 export const routes: RoutesEx = [
     {
         mainNav: [],
@@ -54,33 +82,15 @@ export const routes: RoutesEx = [
     {
         mainNav: ["workunits"],
         path: "/workunits",
-        children: [
-            {
-                path: "", action: (ctx) => import("./components/Workunits").then(_ => {
-                    return <_.Workunits filter={parseSearch(ctx.search) as any} sort={parseSort(ctx.search)} page={parsePage(ctx.search)} />;
-                })
-            },
-            {
-                path: "/dashboard", action: (ctx) => import("./components/WorkunitsDashboard").then(_ => {
-                    return <_.WorkunitsDashboard filterProps={parseSearch(ctx.search) as any} />;
-                })
-            },
-            {
-                path: "/:Wuid", action: (ctx, params) => import("./components/WorkunitDetails").then(_ => {
-                    return <_.WorkunitDetails wuid={params.Wuid as string} />;
-                })
-            },
-            {
-                path: "/:Wuid/:Tab", action: (ctx, params) => import("./components/WorkunitDetails").then(_ => {
-                    return <_.WorkunitDetails wuid={params.Wuid as string} tab={params.Tab as string} queryParams={{ [params.Tab as string]: parseSearch(ctx.search) as any }} />;
-                })
-            },
-            {
-                path: "/:Wuid/:Tab/:State", action: (ctx, params) => import("./components/WorkunitDetails").then(_ => {
-                    return <_.WorkunitDetails wuid={params.Wuid as string} tab={params.Tab as string} state={{ [params.Tab as string]: (params.State as string) }} queryParams={{ [params.Tab as string]: parseSearch(ctx.search) as any }} />;
-                })
-            },
-        ]
+        children: workunitsChildren
+    },
+    {
+        mainNav: ["workunits"],
+        path: "/workunits!:context",
+        action: (ctx, params) => {
+            params.parentUrl = `/workunits!${params.context}`;
+        },
+        children: workunitsChildren
     },
     {
         mainNav: ["workunits"],
