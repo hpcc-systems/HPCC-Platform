@@ -2211,7 +2211,8 @@ public:
             id.append('_').append(blockedFileIOSize);
         CriticalBlock b(crit);
         CLazyFileIO * file = files.find(id);
-        if (!file || !file->isAliveAndLink())
+        // NB: blockedFileIO is not thread safe, create new instance if enabled and existing one is in use.
+        if (!file || !file->isAliveAndLink() || (blockedFileIOSize && file->IsShared()))
         {
             Owned<IActivityReplicatedFile> repFile = createEnsurePrimaryPartFile(logicalFilename, &partDesc);
             bool compressed = partDesc.queryOwner().isCompressed();
