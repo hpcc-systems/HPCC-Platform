@@ -54,12 +54,12 @@ private:
             return useId;
         return ++nextId;
     }
-    IKeyIndex *doload(const char *fileName, unsigned crc, IReplicatedFile *part, IFileIO *iFileIO, unsigned fileIdx, IMemoryMappedFile *iMappedFile, bool isTLK);
+    IKeyIndex *doload(const char *fileName, unsigned crc, IReplicatedFile *part, IFileIO *iFileIO, unsigned fileIdx, IMemoryMappedFile *iMappedFile, bool isTLK, bool ignoreCache);
 public:
     CKeyStore();
     ~CKeyStore();
     IKeyIndex *load(const char *fileName, unsigned crc, bool isTLK);
-    IKeyIndex *load(const char *fileName, unsigned crc, IFileIO *iFileIO, unsigned fileIdx, bool isTLK);
+    IKeyIndex *load(const char *fileName, unsigned crc, IFileIO *iFileIO, unsigned fileIdx, bool isTLK, bool doNotShare=false);
     IKeyIndex *load(const char *fileName, unsigned crc, IMemoryMappedFile *iMappedFile, bool isTLK);
     void clearCache(bool killAll);
     void clearCacheEntry(const char *name);

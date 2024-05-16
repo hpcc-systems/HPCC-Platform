@@ -900,7 +900,7 @@ unsigned CKeyStore::setKeyCacheLimit(unsigned limit)
     return keyIndexCache.setCacheLimit(limit);
 }
 
-IKeyIndex *CKeyStore::doload(const char *fileName, unsigned crc, IReplicatedFile *part, IFileIO *iFileIO, unsigned fileIdx, IMemoryMappedFile *iMappedFile, bool isTLK)
+IKeyIndex *CKeyStore::doload(const char *fileName, unsigned crc, IReplicatedFile *part, IFileIO *iFileIO, unsigned fileIdx, IMemoryMappedFile *iMappedFile, bool isTLK, bool doNotShare)
 {
     // isTLK provided by caller since flags in key header unreliable. If either say it's a TLK, I believe it.
     IKeyIndex *keyIndex;
@@ -910,6 +910,15 @@ IKeyIndex *CKeyStore::doload(const char *fileName, unsigned crc, IReplicatedFile
     // MORE - holds onto the mutex way too long
     synchronized block(mutex);
     keyIndex = keyIndexCache.query(fname);
+    bool cacheIt = true;
+    if (keyIndex)
+    {
+        if (doNotShare)
+        {
+            cacheIt = false;
+            keyIndex = nullptr;
+        }
+    }
     if (NULL == keyIndex)
     {
         if (iMappedFile)
@@ -940,7 +949,8 @@ IKeyIndex *CKeyStore::doload(const char *fileName, unsigned crc, IReplicatedFile
             else
                 throw MakeStringException(0, "Failed to open index file %s", fileName);
         }
-        keyIndexCache.replace(fname, *LINK(keyIndex));
+        if (cacheIt)
+            keyIndexCache.replace(fname, *LINK(keyIndex));
     }
     else
     {
@@ -950,19 +960,19 @@ IKeyIndex *CKeyStore::doload(const char *fileName, unsigned crc, IReplicatedFile
     return keyIndex;
 }
 
-IKeyIndex *CKeyStore::load(const char *fileName, unsigned crc, IFileIO *iFileIO, unsigned fileIdx, bool isTLK)
+IKeyIndex *CKeyStore::load(const char *fileName, unsigned crc, IFileIO *iFileIO, unsigned fileIdx, bool isTLK, bool doNotShare)
 {
-    return doload(fileName, crc, NULL, iFileIO, fileIdx, NULL, isTLK);
+    return doload(fileName, crc, NULL, iFileIO, fileIdx, NULL, isTLK, doNotShare);
 }
 
 IKeyIndex *CKeyStore::load(const char *fileName, unsigned crc, IMemoryMappedFile *iMappedFile, bool isTLK)
 {
-    return doload(fileName, crc, NULL, NULL, (unsigned) -1, iMappedFile, isTLK);
+    return doload(fileName, crc, NULL, NULL, (unsigned) -1, iMappedFile, isTLK, false);
 }
 
 IKeyIndex *CKeyStore::load(const char *fileName, unsigned crc, bool isTLK)
 {
-    return doload(fileName, crc, NULL, NULL, (unsigned) -1, NULL, isTLK);
+    return doload(fileName, crc, NULL, NULL, (unsigned) -1, NULL, isTLK, false);
 }
 
 StringBuffer &CKeyStore::getMetrics(StringBuffer &xml)
@@ -2489,9 +2499,9 @@ public:
     virtual offset_t queryFirstBranchOffset() override { return checkOpen().queryFirstBranchOffset(); }
 };
 
-extern jhtree_decl IKeyIndex *createKeyIndex(const char *keyfile, unsigned crc, IFileIO &iFileIO, unsigned fileIdx, bool isTLK)
+extern jhtree_decl IKeyIndex *createKeyIndex(const char *keyfile, unsigned crc, IFileIO &iFileIO, unsigned fileIdx, bool isTLK, bool doNotShare)
 {
-    return queryKeyStore()->load(keyfile, crc, &iFileIO, fileIdx, isTLK);
+    return queryKeyStore()->load(keyfile, crc, &iFileIO, fileIdx, isTLK, doNotShare);
 }
 
 extern jhtree_decl IKeyIndex *createKeyIndex(const char *keyfile, unsigned crc, bool isTLK)

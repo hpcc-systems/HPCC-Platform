@@ -162,7 +162,7 @@ extern jhtree_decl void setIndexWarningThresholds(IPropertyTree * options);
 extern jhtree_decl void getNodeCacheInfo(ICacheInfoRecorder &cacheInfo);
 
 extern jhtree_decl IKeyIndex *createKeyIndex(const char *filename, unsigned crc, bool isTLK);
-extern jhtree_decl IKeyIndex *createKeyIndex(const char *filename, unsigned crc, IFileIO &ifile, unsigned fileIdx, bool isTLK);
+extern jhtree_decl IKeyIndex *createKeyIndex(const char *filename, unsigned crc, IFileIO &ifile, unsigned fileIdx, bool isTLK, bool doNotShare=false);
 extern jhtree_decl IKeyIndex *createKeyIndex(const char *filename, unsigned crc, IDelayedFile &ifile, unsigned fileIdx, bool isTLK);
 
 extern jhtree_decl bool isIndexFile(const char *fileName);

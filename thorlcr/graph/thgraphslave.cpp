@@ -2197,8 +2197,10 @@ public:
         CriticalBlock b(crit);
         return _remove(id);
     }
-    virtual IFileIO *lookupIFileIO(CActivityBase &activity, const char *logicalFilename, IPartDescriptor &partDesc, IExpander *expander, const StatisticsMapping & _statMapping, size32_t blockedFileIOSize) override
+    virtual IFileIO *lookupIFileIO(CActivityBase &activity, const char *logicalFilename, IPartDescriptor &partDesc, IExpander *expander, const StatisticsMapping & _statMapping, size32_t blockedFileIOSize, bool *contended) override
     {
+        if (contended)
+            *contended = false;
         StringBuffer filename;
         RemoteFilename rfn;
         partDesc.getFilename(0, rfn);
@@ -2212,22 +2214,41 @@ public:
         CriticalBlock b(crit);
         CLazyFileIO * file = files.find(id);
         // NB: blockedFileIO is not thread safe, create new instance if enabled and existing one is in use.
-        if (!file || !file->isAliveAndLink() || (blockedFileIOSize && file->IsShared()))
+        bool addToCache = true; // default
+        bool createNew = false; // default
+        if (!file || !file->isAliveAndLink())
+            createNew = true;
+        else if (blockedFileIOSize && (file->getLinkCount() > 2)) // NB: 2 because we have just checked and linked via isAliveAndLink()
+        {
+            // If exists and in use and using blockedFileIO, create a new instance, but do not replace the cached entry.
+            // NB: This new instance will not be reused.
+
+            file->Release(); // NB: isAliveAndLink() just linked it, but we will not be using this cached item
+            addToCache = false;
+            createNew = true;
+            if (contended)
+                *contended = true;
+        }
+        if (createNew)
         {
             Owned<IActivityReplicatedFile> repFile = createEnsurePrimaryPartFile(logicalFilename, &partDesc);
             bool compressed = partDesc.queryOwner().isCompressed();
             file = new CLazyFileIO(*this, filename, id, repFile.getClear(), compressed, expander, _statMapping, blockedFileIOSize);
-            files.replace(* file); // NB: files does not own 'file', CLazyFileIO will remove itself from cache on destruction
 
-            /* NB: there will be 1 CLazyFileIO per physical file part name
-             * They will be linked by multiple lookups
-             *
-             * When the file cache hits the limit, it will calll CLazyFileIO.close()
-             * This does not actually close the file, but releases CLazyFileIO's underlying real IFileIO
-             * Each active CLazyFileIO file op. has a link to the underlying IFileIO.
-             * Meaning, that only when there are no active ops. and close() has exited, is the underlying
-             * real IFileIO actually freed and the file handle closed.
-             */
+            if (addToCache)
+            {
+                files.replace(* file); // NB: files does not own 'file', CLazyFileIO will remove itself from cache on destruction
+
+                /* NB: there will be 1 CLazyFileIO per physical file part name
+                * They will be linked by multiple lookups
+                *
+                * When the file cache hits the limit, it will call CLazyFileIO.close()
+                * This does not actually close the file, but releases CLazyFileIO's underlying real IFileIO
+                * Each active CLazyFileIO file op. has a link to the underlying IFileIO.
+                * Meaning, that only when there are no active ops. and close() has exited, is the underlying
+                * real IFileIO actually freed and the file handle closed.
+                */
+            }
         }
         file->setActivity(&activity); // an activity needed by IActivityReplicatedFile, mainly for logging purposes.
         return file;
