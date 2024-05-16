@@ -50,6 +50,9 @@ static constexpr const char * DEFAULT_HPCC_LOG_COMPONENT_COL   = "kubernetes.con
 static constexpr const char * DEFAULT_HPCC_LOG_TYPE_COL        = "hpcc.log.class";
 static constexpr const char * DEFAULT_HPCC_LOG_AUD_COL         = "hpcc.log.audience";
 static constexpr const char * DEFAULT_HPCC_LOG_POD_COL         = "kubernetes.pod.name";
+static constexpr const char * DEFAULT_HPCC_LOG_TRACE_COL       = "hpcc.log.traceid";
+static constexpr const char * DEFAULT_HPCC_LOG_SPAN_COL        = "hpcc.log.spanid";
+
 
 static constexpr const char * LOGMAP_INDEXPATTERN_ATT = "@storeName";
 static constexpr const char * LOGMAP_SEARCHCOL_ATT = "@searchColumn";
@@ -167,6 +170,20 @@ ElasticStackLogAccess::ElasticStackLogAccess(const std::vector<std::string> &hos
             }
             else
                 OERRLOG("%s: Possible LogMap collision detected, 'host' and 'node' refer to same log column!", COMPONENT_NAME); 
+        }
+        else if (streq(logMapType, "trace"))
+        {
+            if (logMap.hasProp(LOGMAP_INDEXPATTERN_ATT))
+                m_traceIndexSearchPattern = logMap.queryProp(LOGMAP_INDEXPATTERN_ATT);
+
+            m_traceSearchColName = logMap.hasProp(LOGMAP_SEARCHCOL_ATT) ? logMap.queryProp(LOGMAP_SEARCHCOL_ATT) : DEFAULT_HPCC_LOG_TRACE_COL; 
+        }
+        else if (streq(logMapType, "span"))
+        {
+            if (logMap.hasProp(LOGMAP_INDEXPATTERN_ATT))
+                m_spanIndexSearchPattern = logMap.queryProp(LOGMAP_INDEXPATTERN_ATT);
+
+            m_spanSearchColName = logMap.hasProp(LOGMAP_SEARCHCOL_ATT) ? logMap.queryProp(LOGMAP_SEARCHCOL_ATT) : DEFAULT_HPCC_LOG_SPAN_COL;
         }
         else
         {

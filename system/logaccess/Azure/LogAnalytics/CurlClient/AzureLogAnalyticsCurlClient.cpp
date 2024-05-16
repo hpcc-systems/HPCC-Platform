@@ -38,6 +38,8 @@ static constexpr const char * defaultHPCCLogJobIDCol       = "hpcc_log_jobid";
 static constexpr const char * defaultHPCCLogComponentCol   = "hpcc_log_component";
 static constexpr const char * defaultHPCCLogTypeCol        = "hpcc_log_class";
 static constexpr const char * defaultHPCCLogAudCol         = "hpcc_log_audience";
+static constexpr const char * defaultHPCCLogTraceIDCol     = "hpcc_log_traceid";
+static constexpr const char * defaultHPCCLogSpanIDCol      = "hpcc_log_spanid";
 static constexpr const char * defaultHPCCLogComponentTSCol = "TimeGenerated";
 static constexpr const char * defaultPodHPCCLogCol         = "PodName";
 
@@ -441,6 +443,20 @@ AzureLogAnalyticsCurlClient::AzureLogAnalyticsCurlClient(IPropertyTree & logAcce
             if (logMap.hasProp(logMapSearchColAtt))
                 m_podSearchColName = logMap.queryProp(logMapSearchColAtt);
         }
+        else if (streq(logMapType, "trace"))
+        {
+            if (logMap.hasProp(logMapIndexPatternAtt))
+                m_traceIndexSearchPattern = logMap.queryProp(logMapIndexPatternAtt);
+
+            m_traceSearchColName = logMap.hasProp(logMapSearchColAtt) ? logMap.queryProp(logMapSearchColAtt) : defaultHPCCLogTraceIDCol; 
+        }
+        else if (streq(logMapType, "span"))
+        {
+            if (logMap.hasProp(logMapIndexPatternAtt))
+                m_spanIndexSearchPattern = logMap.queryProp(logMapIndexPatternAtt);
+
+            m_spanSearchColName = logMap.hasProp(logMapSearchColAtt) ? logMap.queryProp(logMapSearchColAtt) : defaultHPCCLogSpanIDCol;
+        }
         else
         {
             ERRLOG("Encountered invalid LogAccess field map type: '%s'", logMapType);
@@ -497,9 +513,9 @@ void AzureLogAnalyticsCurlClient::getDefaultReturnColumns(StringBuffer & columns
     if (!isEmptyString(m_podSearchColName))
         columns.appendf("%s, ", m_podSearchColName.str());
 
-    columns.appendf("%s, %s, %s, %s, %s, %s, %s, %s",
+    columns.appendf("%s, %s, %s, %s, %s, %s, %s, %s, %s, %s",
     m_globalIndexTimestampField.str(), defaultHPCCLogMessageCol, m_classSearchColName.str(),
-    m_audienceSearchColName.str(), m_workunitSearchColName.str(), defaultHPCCLogSeqCol, defaultHPCCLogThreadIDCol, defaultHPCCLogProcIDCol);
+    m_audienceSearchColName.str(), m_workunitSearchColName.str(), m_traceSearchColName.str(), m_spanSearchColName.str(), defaultHPCCLogSeqCol, defaultHPCCLogThreadIDCol, defaultHPCCLogProcIDCol);
 }
 
 bool generateHPCCLogColumnstAllColumns(StringBuffer & kql, const char * colName, bool targetsV2)
@@ -518,7 +534,7 @@ bool generateHPCCLogColumnstAllColumns(StringBuffer & kql, const char * colName,
     else
         throw makeStringExceptionV(-1, "%s: Invalid Azure Log Analytics log message column name detected: '%s'. Review logAccess configuration.", COMPONENT_NAME, colName);
 
-    kql.appendf("\n| extend hpcclogfields = extract_all(@\'^([0-9A-Fa-f]+)\\s+(OPR|USR|PRG|AUD|UNK)\\s+(DIS|ERR|WRN|INF|PRO|MET|UNK)\\s+(\\d{4}-\\d{2}-\\d{2}\\s\\d{2}:\\d{2}:\\d{2}\\.\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(UNK|[A-Z]\\d{8}-\\d{6}(?:-\\d+)?)\\s+\\\"(.*)\\\"$', %s)[0]", sourceCol.str());
+    kql.appendf("\n| extend hpcclogfields = extract_all(@\'^([0-9A-Fa-f]+)\\s+(OPR|USR|PRG|AUD|UNK)\\s+(DIS|ERR|WRN|INF|PRO|MET|UNK)\\s+(\\d{4}-\\d{2}-\\d{2}\\s\\d{2}:\\d{2}:\\d{2}\\.\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(UNK|[A-Z]\\d{8}-\\d{6}(?:-\\d+)?)\\s*([0-9a-fA-F]{32}|UNK)?\\s*([0-9a-fA-F]{16}|UNK)?\\s+)?\\\"(.*)\\\"$', %s)[0]", sourceCol.str());
     kql.appendf("\n| extend %s = tostring(hpcclogfields.[0])", defaultHPCCLogSeqCol);
     kql.appendf("\n| extend %s = tostring(hpcclogfields.[1])", defaultHPCCLogAudCol);
     kql.appendf("\n| extend %s = tostring(hpcclogfields.[2])", defaultHPCCLogTypeCol);
@@ -526,7 +542,9 @@ bool generateHPCCLogColumnstAllColumns(StringBuffer & kql, const char * colName,
     kql.appendf("\n| extend %s = toint(hpcclogfields.[4])", defaultHPCCLogProcIDCol);
     kql.appendf("\n| extend %s = toint(hpcclogfields.[5])",  defaultHPCCLogThreadIDCol);
     kql.appendf("\n| extend %s = tostring(hpcclogfields.[6])", defaultHPCCLogJobIDCol);
-    kql.appendf("\n| extend %s = tostring(hpcclogfields.[7])", defaultHPCCLogMessageCol);
+    kql.appendf("\n| extend %s = tostring(hpcclogfields.[7])", defaultHPCCLogTraceIDCol);
+    kql.appendf("\n| extend %s = tostring(hpcclogfields.[8])", defaultHPCCLogSpanIDCol);
+    kql.appendf("\n| extend %s = tostring(hpcclogfields.[9])", defaultHPCCLogMessageCol);
     kql.appendf("\n| project-away hpcclogfields, Type, TenantId, _ResourceId, %s, ", colName);
 
     if (targetsV2)

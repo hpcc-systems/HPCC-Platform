@@ -62,6 +62,12 @@ private:
     StringBuffer m_instanceSearchColName;
     StringBuffer m_instanceIndexSearchPattern;
 
+    StringBuffer m_traceSearchColName;
+    StringBuffer m_traceIndexSearchPattern;
+
+    StringBuffer m_spanSearchColName;
+    StringBuffer m_spanIndexSearchPattern;
+
     StringBuffer m_hostSearchColName;
     StringBuffer m_hostIndexSearchPattern;
 

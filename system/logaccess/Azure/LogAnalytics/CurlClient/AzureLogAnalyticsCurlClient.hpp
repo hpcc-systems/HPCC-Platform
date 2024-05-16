@@ -62,6 +62,12 @@ private:
     StringBuffer m_podIndexSearchPattern;
     StringBuffer m_podSearchColName;
 
+    StringBuffer m_traceIndexSearchPattern;
+    StringBuffer m_traceSearchColName;
+
+    StringBuffer m_spanIndexSearchPattern;
+    StringBuffer m_spanSearchColName;
+
     StringBuffer m_logAnalyticsWorkspaceID;
     StringBuffer m_aadTenantID;
     StringBuffer m_aadClientID;
