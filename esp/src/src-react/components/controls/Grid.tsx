@@ -32,6 +32,7 @@ export interface FluentColumn {
     hidden?: boolean;
     justify?: JustifyType;
     formatter?: (value: any, row: any) => any;
+    csvFormatter?: (value: any, row: any) => string;
     className?: (value: any, row: any) => string;
 }
 
