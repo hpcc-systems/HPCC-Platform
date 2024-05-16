@@ -57,6 +57,7 @@ interface jlib_decl IPropertiesOf : extends serializable
     virtual void saveFile(const char *filename) const = 0;
     virtual bool removeProp(PTYPE propname) = 0;
     virtual bool getPropBool(PTYPE propname, bool dft=false) const = 0;
+    virtual __int64 getPropInt64(PTYPE propname, int dft=0) const = 0;
 };
 
 #ifdef _MSC_VER
