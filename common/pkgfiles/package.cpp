@@ -69,6 +69,8 @@ ISimpleSuperFileEnquiry *CPackageNode::resolveSuperFile(const char *superFileNam
     {
         if (*superFileName=='~')
             superFileName++;
+        else if (memcmp(superFileName, ".::", 3) == 0)
+            superFileName += 3;
         StringBuffer xpath;
         Owned<IPropertyTreeIterator> subFiles = lookupElements(makeSuperFileXPath(xpath, superFileName), "SubFile");
         if (subFiles)
