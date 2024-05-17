@@ -43,7 +43,7 @@ interface ILazyFileIO : extends IFileIO
     virtual void copyComplete() = 0;
     virtual bool createHardFileLink() = 0;
 
-    virtual unsigned getLastAccessed() const = 0;
+    virtual unsigned __int64 getLastAccessed() const = 0;
     virtual bool isOpen() const = 0;
     virtual void close() = 0;
     virtual void setCopying(bool copying) = 0;

@@ -42,6 +42,7 @@ include_directories (
          ./../../system/jlib 
          ./../bindings/http/platform 
          ./../../common/environment 
+         ./../../common/workunit
          ./../../system/mp 
          ./../../fs/dafsclient
          ${CMAKE_BINARY_DIR}
@@ -61,6 +62,7 @@ target_link_libraries ( esp
          hrpc 
          remote 
          dalibase 
+         workunit
     ) 
 
 if (NOT CONTAINERIZED)

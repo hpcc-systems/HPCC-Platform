@@ -1159,11 +1159,10 @@ class CDeltaWriter : implements IThreaded
             StringBuffer deltaFilename(dataPath);
             iStoreHelper->getCurrentDeltaFilename(deltaFilename);
             OwnedIFile iFile = createIFile(deltaFilename.str());
-            writeDelta(deltaXml, *iFile);
+            writeDelta(deltaXml, *iFile, "writeXml", 1, INFINITE);
         }
         catch (IException *e)
         {
-            // NB: writeDelta retries a few times before giving up.
             VStringBuffer errMsg("writeXml: failed to save delta data, blockedDelta size=%d", deltaXml.length());
             OWARNLOG(e, errMsg.str());
             e->Release();
@@ -1186,7 +1185,7 @@ class CDeltaWriter : implements IThreaded
                     StringBuffer deltaFilename(backupPath);
                     constructStoreName(DELTANAME, iStoreHelper->queryCurrentEdition(), deltaFilename);
                     OwnedIFile iFile = createIFile(deltaFilename.str());
-                    ::writeDelta(deltaXml, *iFile, "backup - ", 60, 30);
+                    ::writeDelta(deltaXml, *iFile, "backup - ", 1, 10); // backup is less critical - will be synched at startup
                 }
             }
             catch (IException *e)
@@ -1225,10 +1224,13 @@ class CDeltaWriter : implements IThreaded
                 break;
             if (0 == retrySecs)
                 return;
-            if (0 == --_retryAttempts)
+            if (_retryAttempts != INFINITE)
             {
-                IWARNLOG("writeExt, too many retry attempts [%d]", retryAttempts);
-                return;
+                if (0 == --_retryAttempts)
+                {
+                    IWARNLOG("writeExt, too many retry attempts [%d]", retryAttempts);
+                    return;
+                }
             }
             exception.clear();
             DBGLOG("writeExt, retrying");
@@ -1258,114 +1260,20 @@ class CDeltaWriter : implements IThreaded
                 break;
             if (0 == retrySecs)
                 return;
-            if (0 == --_retryAttempts)
+            if (_retryAttempts != INFINITE)
             {
-                IWARNLOG("deleteExt, too many retry attempts [%d]", retryAttempts);
-                return;
+                if (0 == --_retryAttempts)
+                {
+                    IWARNLOG("deleteExt, too many retry attempts [%d]", retryAttempts);
+                    return;
+                }
             }
             exception.clear();
             DBGLOG("deleteExt, retrying");
             MilliSleep(retrySecs*1000);
         }
     }
-    bool save(std::queue<Owned<CTransactionItem>> &todo)
-    {
-        StringBuffer fname(dataPath);
-        OwnedIFile deltaIPIFile = createIFile(fname.append(DELTAINPROGRESS).str());
-        touchFile(deltaIPIFile);
-        struct RemoveDIPBlock
-        {
-            IFile &iFile;
-            bool done;
-            void doit() { done = true; iFile.remove(); }
-            RemoveDIPBlock(IFile &_iFile) : iFile(_iFile), done(false) { }
-            ~RemoveDIPBlock () { if (!done) doit(); }
-        } removeDIP(*deltaIPIFile);
-        StringBuffer detachIPStr(dataPath);
-        OwnedIFile detachIPIFile = createIFile(detachIPStr.append(DETACHINPROGRESS).str());
-        if (detachIPIFile->exists()) // very small window where this can happen.
-        {
-            // implies other operation about to access current delta
-            // CHECK session is really alive, otherwise it has been orphaned, so remove it.
-            try
-            {
-                SessionId sessId = 0;
-                OwnedIFileIO detachIPIO = detachIPIFile->open(IFOread);
-                if (detachIPIO)
-                {
-                    size_t s = detachIPIO->read(0, sizeof(sessId), &sessId);
-                    detachIPIO.clear();
-                    if (sizeof(sessId) == s)
-                    {
-                        // double check session is really alive
-                        if (querySessionManager().sessionStopped(sessId, 0))
-                            detachIPIFile->remove();
-                        else
-                        {
-                            // *cannot block* because other op (sasha) accessing remote dali files, can access dali.
-                            removeDIP.doit();
-                            PROGLOG("blocked");
-                            return false;
-                        }
-                    }
-                }
-            }
-            catch (IException *e) { EXCLOG(e, NULL); e->Release(); }
-        }
-
-        std::vector<std::string> pendingExtDeletes;
-        while (!todo.empty())
-        {
-            CTransactionItem *item = todo.front();
-            if (CTransactionItem::f_delta == item->type)
-            {
-                Owned<IPropertyTree> changeTree = item->deltaTree;
-                item->deltaTree = nullptr;
-                cleanChangeTree(*changeTree);
-
-                // write out with header details (i.e. path)
-                deltaXml.appendf("<Header path=\"%s\">\n  <Delta>\n", item->name);
-                toXML(changeTree, deltaXml, 4);
-                deltaXml.append("  </Delta>\n</Header>");
-            }
-            else
-            {
-                // external file
-
-                if (CTransactionItem::f_addext == item->type)
-                {
-                    // NB: the XML referring to these externals will not be written until the pending xml is built up and saved,
-                    // meaning if there's a cold restart at this point, there will be unreferenced ext files on disk (and ensuing warnings)
-                    // However, that is better than committing the xml that references externals, before they exist in the event of 
-                    // a cold restart between the two.
-                    // NB2: It is also important to ensure that these externals are committed to disk, in the event of a Dali saveStore
-                    // because the saved in-memory store has been altered at this point, i.e. it depends on the external file (see flush())
-                    writeExt(dataPath, item->name, item->ext.dataLength, item->ext.data);
-                    if (backupPath.length())
-                        writeExt(backupPath, item->name, item->ext.dataLength, item->ext.data, 60, 30);
-                    item->ext.pendingWrite = false;
-                }
-                else
-                {
-                    // track externals to delete / don't delete until xml is committed. See below.
-                    dbgassertex(CTransactionItem::f_delext == item->type);
-                    pendingExtDeletes.push_back(item->name);
-                }
-            }
-            todo.pop();
-        }
-        if (deltaXml.length())
-            writeXml();
-        for (auto &ext : pendingExtDeletes)
-        {
-            deleteExt(dataPath, ext.c_str());
-            if (backupPath.length())
-                deleteExt(backupPath, ext.c_str(), 60, 30);
-        }
-        if (thresholdDuration)
-            lastSaveTime = get_cycles_now();
-        return true;
-    }
+    bool save(std::queue<Owned<CTransactionItem>> &todo);
     void requestAsyncWrite()
     {
         // must be called whilst pendingCrit is held + writeRequested == false
@@ -1511,6 +1419,10 @@ public:
                 // of other transactions building up in addToQueue
                 CHECKEDCRITICALBLOCK(blockedSaveCrit, fakeCritTimeout); // because if Dali is saving state (::blockingSave), it will clear pending
                 b.leave();
+
+                // Because blockedSaveCrit is held, it will also block 'synchronous save' (see addToQueue)
+                // i.e. if stuck here, the transactions will start building up, and trigger a 'Forced synchronous save',
+                // which will in turn block. This must complete!
                 while (!save(todo)) // if temporarily blocked, wait a bit (blocking window is short)
                     MilliSleep(1000);
             }
@@ -2004,7 +1916,7 @@ public:
     void restart(IException * e);
 
     void loadStore(const char *store=NULL, const bool *abort=NULL);
-    void saveStore(const char *store=NULL, bool currentEdition=false);
+    void saveStore(const char *store=NULL, bool currentEdition=false, bool flush=true);
     void checkEnvironment(IPropertyTree *oldEnv, IPropertyTree *newEnv);
     bool unlock(__int64 treeId, ConnectionId connectionId, bool delayDelete=false);
     void unlockAll(__int64 treeId);
@@ -6616,15 +6528,18 @@ void CCovenSDSManager::loadStore(const char *storeName, const bool *abort)
     initializeStorageGroups(oldEnvironment);
 }
 
-void CCovenSDSManager::saveStore(const char *storeName, bool currentEdition)
+void CCovenSDSManager::saveStore(const char *storeName, bool currentEdition, bool flush)
 {
     struct CIgnore
     {
         CIgnore() { SDSManager->ignoreExternals=true; }
         ~CIgnore() { SDSManager->ignoreExternals=false; }
     } ignore;
-    // lock blockingaveCrit after flush, since deltaWriter itself blocks on blockedSaveCrit
-    deltaWriter.flush(); // transactions will be blocked at this stage, no new deltas will be added to writer
+    if (flush)
+    {
+        // lock blockingaveCrit after flush, since deltaWriter itself blocks on blockedSaveCrit
+        deltaWriter.flush(); // transactions will be blocked at this stage, no new deltas will be added to writer
+    }
     CHECKEDCRITICALBLOCK(blockedSaveCrit, fakeCritTimeout);
     iStoreHelper->saveStore(root, NULL, currentEdition);
     unsigned initNodeTableSize = allNodes.maxElements()+OVERFLOWSIZE;
@@ -8878,6 +8793,137 @@ void CCovenSDSManager::notifyNodeDelete(CServerRemoteTree &node)
 void CCovenSDSManager::notifyNode(CServerRemoteTree &node, PDState state)
 {
     nodeSubscriptionManager->notify(node, state);
+}
+
+///////////////////////
+
+bool CDeltaWriter::save(std::queue<Owned<CTransactionItem>> &todo)
+{
+    StringBuffer fname(dataPath);
+    OwnedIFile deltaIPIFile = createIFile(fname.append(DELTAINPROGRESS).str());
+    struct RemoveDIPBlock
+    {
+        IFile &iFile;
+        bool done;
+        void doit() { done = true; iFile.remove(); }
+        RemoveDIPBlock(IFile &_iFile) : iFile(_iFile), done(false) { }
+        ~RemoveDIPBlock () { if (!done) doit(); }
+    } removeDIP(*deltaIPIFile);
+
+    while (true)
+    {
+        try
+        {
+            touchFile(deltaIPIFile);
+            StringBuffer detachIPStr(dataPath);
+            OwnedIFile detachIPIFile = createIFile(detachIPStr.append(DETACHINPROGRESS).str());
+            if (detachIPIFile->exists()) // very small window where this can happen.
+            {
+                // implies other operation about to access current delta
+                // CHECK session is really alive, otherwise it has been orphaned, so remove it.
+                SessionId sessId = 0;
+                OwnedIFileIO detachIPIO = detachIPIFile->open(IFOread);
+                if (detachIPIO)
+                {
+                    size_t s = detachIPIO->read(0, sizeof(sessId), &sessId);
+                    detachIPIO.clear();
+                    if (sizeof(sessId) == s)
+                    {
+                        // double check session is really alive
+                        if (querySessionManager().sessionStopped(sessId, 0))
+                            detachIPIFile->remove();
+                        else
+                        {
+                            // *cannot block* because other op (sasha) accessing remote dali files, can access dali.
+                            removeDIP.doit();
+                            PROGLOG("blocked");
+                            return false;
+                        }
+                    }
+                }
+            }
+            break;
+        }
+        catch (IException *e)
+        {
+            LOG(MCoperatorWarning, unknownJob, e, "save: failed to touch delta in progress file");
+            e->Release();
+        }
+        // here if exception only
+        MilliSleep(1000);
+    }
+
+    bool forceBlockingSave = false;
+    // NB: once we reach this point, this function must complete
+    try
+    {
+        std::vector<std::string> pendingExtDeletes;
+        while (!todo.empty())
+        {
+            CTransactionItem *item = todo.front();
+            if (CTransactionItem::f_delta == item->type)
+            {
+                Owned<IPropertyTree> changeTree = item->deltaTree;
+                item->deltaTree = nullptr;
+                cleanChangeTree(*changeTree);
+
+                // write out with header details (i.e. path)
+                deltaXml.appendf("<Header path=\"%s\">\n  <Delta>\n", item->name);
+                toXML(changeTree, deltaXml, 4);
+                deltaXml.append("  </Delta>\n</Header>");
+            }
+            else
+            {
+                // external file
+
+                if (CTransactionItem::f_addext == item->type)
+                {
+                    // NB: the XML referring to these externals will not be written until the pending xml is built up and saved,
+                    // meaning if there's a cold restart at this point, there will be unreferenced ext files on disk (and ensuing warnings)
+                    // However, that is better than committing the xml that references externals, before they exist in the event of
+                    // a cold restart between the two.
+                    // NB2: It is also important to ensure that these externals are committed to disk, in the event of a Dali saveStore
+                    // because the saved in-memory store has been altered at this point, i.e. it depends on the external file (see flush())
+                    writeExt(dataPath, item->name, item->ext.dataLength, item->ext.data, 1, INFINITE);
+                    if (backupPath.length())
+                        writeExt(backupPath, item->name, item->ext.dataLength, item->ext.data, 1, 10); // backup is less critical - will be synched at startup
+                    item->ext.pendingWrite = false;
+                }
+                else
+                {
+                    // track externals to delete / don't delete until xml is committed. See below.
+                    dbgassertex(CTransactionItem::f_delext == item->type);
+                    pendingExtDeletes.push_back(item->name);
+                }
+            }
+            todo.pop();
+        }
+        if (deltaXml.length())
+            writeXml();
+        for (auto &ext : pendingExtDeletes)
+        {
+            deleteExt(dataPath, ext.c_str(), 1, INFINITE);
+            if (backupPath.length())
+                deleteExt(backupPath, ext.c_str(), 1, 10); // backup is less critical - will be synched at startup
+        }
+    }
+    catch (IException *e)
+    {
+        LOG(MCoperatorWarning, unknownJob, e, "save: failure whilst committing deltas to disk! Remedial action must be taken");
+        e->Release();
+        // this is really an attempt at disaster recovery at this point
+        forceBlockingSave = true;
+    }
+    if (forceBlockingSave)
+    {
+        LOG(MCoperatorWarning, unknownJob, "Due to earlier failures, attempting forced/blocking save of Dali store");
+        while (todo.size())
+            todo.pop();
+        SDSManager->saveStore(nullptr, false, false);
+    }
+    if (thresholdDuration)
+        lastSaveTime = get_cycles_now();
+    return true;
 }
 
 ///////////////////////

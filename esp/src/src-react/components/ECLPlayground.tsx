@@ -21,6 +21,7 @@ const logger = scopedLogger("../components/ECLPlayground.tsx");
 interface ECLPlaygroundProps {
     wuid?: string;
     ecl?: string;
+    filter?: { [id: string]: any };
 }
 
 const enum OutputMode {
@@ -340,7 +341,7 @@ const ECLEditorToolbar: React.FunctionComponent<ECLEditorToolbarProps> = ({
 
 export const ECLPlayground: React.FunctionComponent<ECLPlaygroundProps> = (props) => {
 
-    const { wuid, ecl } = props;
+    const { wuid, ecl, filter = {} } = props;
     const theme = useTheme();
 
     const [outputMode, setOutputMode] = React.useState<OutputMode>(OutputMode.ERRORS);
@@ -455,7 +456,7 @@ export const ECLPlayground: React.FunctionComponent<ECLPlaygroundProps> = (props
                     <InfoGrid wuid={workunit?.Wuid} />
 
                 ) : outputMode === OutputMode.RESULTS ? (
-                    <TabbedResults wuid={workunit?.Wuid} />
+                    <TabbedResults wuid={workunit?.Wuid} filter={filter} />
 
                 ) : outputMode === OutputMode.VIS ? (
                     <div style={{ height: "calc(100% - 25px)" }}>

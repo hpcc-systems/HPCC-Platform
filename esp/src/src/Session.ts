@@ -140,9 +140,13 @@ export function initSession() {
         });
         idleWatcher.on("idle", function (idleCreator) {
             idleWatcher.stop();
-            topic.publish("hpcc/session_management_status", {
-                status: "Idle",
-                idleCreator
+            fetch("/esp/lock", {
+                method: "post"
+            }).then(() => {
+                topic.publish("hpcc/session_management_status", {
+                    status: "Idle",
+                    idleCreator
+                });
             });
         });
 

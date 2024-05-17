@@ -386,7 +386,7 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
         CKeyLookupContext(CKJService &_service, CActivityContext *_activityCtx, const CLookupKey &_key)
             : CContext(_service, _activityCtx), key(_key)
         {
-            keyIndex.setown(createKeyIndex(key.fname, key.crc, false));
+            keyIndex.setown(createKeyIndex(key.fname, key.crc, false, 0));
             expectedFormat.set(activityCtx->queryHelper()->queryIndexRecordSize());
             expectedFormatCrc = activityCtx->queryHelper()->getIndexFormatCrc();
         }

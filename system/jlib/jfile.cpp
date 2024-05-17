@@ -17,6 +17,7 @@
 #include "platform.h"
 
 #include <atomic>
+#include <array>
 #include <unordered_set>
 #include <unordered_map>
 
@@ -7753,6 +7754,7 @@ class CBlockedFileIO : public CSimpleInterfaceOf<IFileIO>
     void *buffer = nullptr;
     offset_t lastReadPos = (offset_t)-1;
     MemoryBuffer mb;
+    std::atomic<bool> isActive{false};
 public:
     CBlockedFileIO(IFileIO *_io, size32_t _blockSize) : io(_io), blockSize(_blockSize)
     {
@@ -7760,32 +7762,47 @@ public:
     }
     virtual size32_t read(offset_t pos, size32_t len, void *data) override
     {
-        if (len > blockSize)
+        if (unlikely(len > blockSize))
             return io->read(pos, len, data);
+
+        //A sanity check to catch calls from multiple threads - (see HPCC-31852).
+        if (unlikely(isActive))
+            throw makeStringExceptionV(99, "Reentrant call to CBlockedFileIO::read(%llu, %u) [%llu]", pos, len, lastReadPos);
+        isActive = true;
+
         size32_t totalCopied = 0;
-        byte *dest = (byte *) data;
-        while (len)
+        try
         {
-            offset_t readPos = (pos / blockSize) * blockSize; // NB: could be beyond end of file
-            if (readPos != lastReadPos)
+            byte *dest = (byte *) data;
+            while (len)
             {
-                readLen = io->read(readPos, blockSize, buffer); // NB: can be less than blockSize (and 0 if beyond end of file)
-                lastReadPos = readPos;
+                offset_t readPos = (pos / blockSize) * blockSize; // NB: could be beyond end of file
+                if (readPos != lastReadPos)
+                {
+                    readLen = io->read(readPos, blockSize, buffer); // NB: can be less than blockSize (and 0 if beyond end of file)
+                    lastReadPos = readPos;
+                }
+                offset_t endPos = readPos+readLen;
+                size32_t copyNow;
+                if (pos+len <= endPos) // common case hopefully
+                    copyNow = len;
+                else if (pos < endPos)
+                    copyNow = endPos-pos;
+                else // nothing to copy
+                    break;
+                memcpy(dest, ((byte *)buffer) + pos-readPos, copyNow);
+                len -= copyNow;
+                pos += copyNow;
+                dest += copyNow;
+                totalCopied += copyNow;
             }
-            offset_t endPos = readPos+readLen;
-            size32_t copyNow;
-            if (pos+len <= endPos) // common case hopefully
-                copyNow = len;
-            else if (pos < endPos)
-                copyNow = endPos-pos;
-            else // nothing to copy
-                break;
-            memcpy(dest, ((byte *)buffer) + pos-readPos, copyNow);
-            len -= copyNow;
-            pos += copyNow;
-            dest += copyNow;
-            totalCopied += copyNow;
         }
+        catch (...)
+        {
+            isActive = false;
+            throw;
+        }
+        isActive = false;
         return totalCopied;
     }
     virtual offset_t size() override { return io->size(); }
@@ -7828,40 +7845,65 @@ bool hasGenericFiletypeName(const char * name)
 
 ///---------------------------------------------------------------------------------------------------------------------
 
-// Cache/update plane index blocked IO settings
-static unsigned planeBlockIOMapCBId = 0;
-static std::unordered_map<std::string, size32_t> planeBlockedIOMap;
-static CriticalSection planeBlockedIOMapCrit;
+// Cache/update plane attributes settings
+static unsigned planeAttributeCBId = 0;
+static const std::array<const char*, PlaneAttributeCount> planeAttributeTypeStrings =
+{
+    "blockedFileIOKB",
+    "blockedRandomIOKB"
+};
+
+static std::unordered_map<std::string, std::array<unsigned __int64, PlaneAttributeCount>> planeAttributesMap;
+static CriticalSection planeAttriubuteMapCrit;
+
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
     auto updateFunc = [&](const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
     {
-        CriticalBlock b(planeBlockedIOMapCrit);
-        planeBlockedIOMap.clear();
+        CriticalBlock b(planeAttriubuteMapCrit);
+        planeAttributesMap.clear();
         Owned<IPropertyTreeIterator> planesIter = getPlanesIterator(nullptr, nullptr);
         ForEach(*planesIter)
         {
             const IPropertyTree &plane = planesIter->query();
-            size32_t blockedFileIOSize = plane.getPropInt("@blockedFileIOKB") * 1024;
-            planeBlockedIOMap[plane.queryProp("@name")] = blockedFileIOSize;
+            auto &values = planeAttributesMap[plane.queryProp("@name")];
+            values[BlockedSequentialIO] = plane.getPropInt(("@" + std::string(planeAttributeTypeStrings[BlockedSequentialIO])).c_str()) * 1024;
+            values[BlockedRandomIO] = plane.getPropInt(("@" + std::string(planeAttributeTypeStrings[BlockedRandomIO])).c_str()) * 1024;
         }
     };
-    planeBlockIOMapCBId = installConfigUpdateHook(updateFunc, true);
+    planeAttributeCBId = installConfigUpdateHook(updateFunc, true);
     return true;
 }
 
 MODULE_EXIT()
 {
-    removeConfigUpdateHook(planeBlockIOMapCBId);
+    removeConfigUpdateHook(planeAttributeCBId);
 }
 
+const char *getPlaneAttributeString(PlaneAttributeType attr)
+{
+    assertex(attr < PlaneAttributeCount);
+    return planeAttributeTypeStrings[attr];
+}
+
+unsigned __int64 getPlaneAttributeValue(const char *planeName, PlaneAttributeType planeAttrType, unsigned __int64 defaultValue)
+{
+    assertex(planeAttrType < PlaneAttributeCount);
+    CriticalBlock b(planeAttriubuteMapCrit);
+    auto it = planeAttributesMap.find(planeName);
+    if (it != planeAttributesMap.end())
+        return it->second[planeAttrType];
+    else
+        return defaultValue;
+}
 
 size32_t getBlockedFileIOSize(const char *planeName, size32_t defaultSize)
 {
-    CriticalBlock b(planeBlockedIOMapCrit);
-    auto it = planeBlockedIOMap.find(planeName);
-    if (it != planeBlockedIOMap.end())
-        return it->second;
-    else
-        return defaultSize;
+    return (size32_t)getPlaneAttributeValue(planeName, BlockedSequentialIO, defaultSize);
 }
+
+size32_t getBlockedRandomIOSize(const char *planeName, size32_t defaultSize)
+{
+    return (size32_t)getPlaneAttributeValue(planeName, BlockedRandomIO, defaultSize);
+}
+

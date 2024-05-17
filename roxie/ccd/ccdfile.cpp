@@ -48,6 +48,8 @@
 #include "rtldynfield.hpp"
 
 std::atomic<unsigned> numFilesOpen[2];
+std::atomic<unsigned> filesReopened = 0;
+std::atomic<unsigned __int64> reopenedDelay = 0;
 
 #define MAX_READ_RETRIES 2
 
@@ -93,11 +95,12 @@ protected:
     mutable CriticalSection crit;
     offset_t fileSize;
     unsigned currentIdx;
-    unsigned lastAccess;
+    std::atomic<unsigned __int64> lastAccess;
     CDateTime fileDate;
-    bool copying = false;
+    std::atomic<bool> copying = false;
     bool isCompressed = false;
-    bool remote = false;
+    std::atomic<bool> remote = false;
+    std::atomic<bool> open = false;
     bool isKey = false;
     IRoxieFileCache *cached = nullptr;
     unsigned fileIdx = 0;
@@ -117,10 +120,11 @@ public:
         fileDate.set(_date);
         currentIdx = 0;
         current.set(&failure);
+        open = false;
 #ifdef FAIL_20_READ
         readCount = 0;
 #endif
-        lastAccess = msTick();
+        lastAccess = 0;
     }
     
     ~CRoxieLazyFileIO()
@@ -182,31 +186,28 @@ public:
     }
     virtual bool isCopying() const
     {
-        CriticalBlock b(crit);
         return copying; 
     }
 
     virtual bool isOpen() const 
     {
-        CriticalBlock b(crit);
-        return current.get() != &failure; 
+        return open; 
     }
 
-    virtual unsigned getLastAccessed() const
+    virtual unsigned __int64 getLastAccessed() const
     {
-        CriticalBlock b(crit);
         return lastAccess;
     }
 
     virtual void close()
     {
         CriticalBlock b(crit);
+        lastAccess = nsTick();
         setFailure();
     }
 
     virtual bool isRemote()
     {
-        CriticalBlock b(crit);
         return remote;
     }
 
@@ -218,7 +219,8 @@ public:
                 return;
             numFilesOpen[remote]--;
             mergeStats(fileStats, current);
-            current.set(&failure); 
+            current.set(&failure);
+            open = false;
         }
         catch (IException *E) 
         {
@@ -291,12 +293,15 @@ public:
                             current.setown(f->open(IFOread));
                         if (current)
                         {
+                            open = true;
                             if (doTrace(traceRoxieFiles))
                                 DBGLOG("Opening %s", sourceName);
                             if (useRemoteResources)
                                 disconnectRemoteIoOnExit(current);
                             break;
                         }
+                        else
+                            setFailure();
     //                  throwUnexpected();  - try another location if this one has the wrong version of the file
                     }
                     if (useRemoteResources)
@@ -328,7 +333,14 @@ public:
                     }
                 }
             }
-            lastAccess = msTick();
+            auto now = nsTick();
+            if (lastAccess)
+            {
+                // Reopening a previously closed file - interesting to know how long it was closed for
+                filesReopened++;
+                reopenedDelay += now - lastAccess;
+            }
+            lastAccess = now;
             if (++numFilesOpen[remote] > maxFilesOpen[remote])
                 queryFileCache().closeExpired(remote); // NOTE - this does not actually do the closing of expired files (which could deadlock, or could close the just opened file if we unlocked crit)
         }
@@ -355,7 +367,7 @@ public:
             try
             {
                 size32_t ret = active->read(pos, len, data);
-                lastAccess = msTick();
+                lastAccess = nsTick();
                 if (cached && !remote)
                     cached->noteRead(fileIdx, pos, ret);
                 return ret;
@@ -401,7 +413,7 @@ public:
     { 
         unsigned activeIdx;
         Owned<IFileIO> active = getCheckOpen(activeIdx);
-        lastAccess = msTick();
+        lastAccess = nsTick();
         return active->size();
     }
 
@@ -468,6 +480,7 @@ public:
                             DBGLOG("Trying to create Hard Link for %s", sourceName);
                             createHardLink(logical->queryFilename(), sourceName);
                             current.setown(sources.item(currentIdx).open(IFOread));
+                            open = true;
                             return true;
                         }
                         catch(IException *E)
@@ -530,7 +543,9 @@ public:
     {
         ILazyFileIO *LL = (ILazyFileIO *) *L;
         ILazyFileIO *RR = (ILazyFileIO *) *R;
-        return LL->getLastAccessed() - RR->getLastAccessed();
+        auto Lla = LL->getLastAccessed();
+        auto Rla = RR->getLastAccessed();
+        return Lla > Rla ? 1 : Lla == Rla ? 0 : -1;
     }
 };
 
@@ -826,7 +841,7 @@ public:
         if (nodeType != NodeNone && !keyFailed && localFile && !keyIndex)
         {
             //Pass false for isTLK - it will be initialised from the index header
-            keyIndex.setown(createKeyIndex(filename, localFile->getCrc(), *localFile.get(), fileIdx, false));
+            keyIndex.setown(createKeyIndex(filename, localFile->getCrc(), *localFile.get(), fileIdx, false, 0));
             if (!keyIndex)
                 keyFailed = true;
         }
@@ -879,11 +894,10 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
     InterruptableSemaphore cidtSleep;
     mutable CopyMapStringToMyClass<ILazyFileIO> files;
     mutable CriticalSection crit;
-    CriticalSection cpcrit;
     bool started;
     bool aborting;
     std::atomic<bool> closing;
-    bool closePending[2];
+    std::atomic<bool> closePending[2];
     StringAttrMapping fileErrorList;
     bool cidtActive = false;
     Semaphore cidtStarted;
@@ -1573,69 +1587,88 @@ public:
             DBGLOG("HandleCloser thread %p starting", this);
         try
         {
-            unsigned lastCloseCheck = msTick();
+            unsigned now = msTick();
+#ifdef _CONTAINERIZED
+            unsigned lastBuddyCheck = now;
+#endif
+            unsigned lastCloseCheck = now;
+            unsigned lastReopenReport = now;
+            unsigned lastFilesReopened = filesReopened;
+            unsigned __int64 lastReopenedDelay = reopenedDelay;
             for (;;)
             {
-#ifdef _CONTAINERIZED
-                unsigned checkPeriod = topology->getPropInt("@copyCheckPeriod", 60);
-#else
-                unsigned checkPeriod = 10*60;  // check expired file handles every 10 minutes, buddyCopying a little more often
-#endif
-                toClose.wait(checkPeriod * 1000);
+                bool forceElapsedCheck = toClose.wait(60 * 1000);
                 if (closing)
                     break;
-#ifdef _CONTAINERIZED
-                // Periodically recheck the list to see what is now local, and remove them from the buddyCopying list
-                IArrayOf<ILazyFileIO> checkBuddies;
+                now = msTick();
+                if (now - lastReopenReport >= 60*1000)
                 {
-                    CriticalBlock b(crit);
-                    while (buddyCopying.length())
+                    unsigned newReopened = filesReopened - lastFilesReopened;
+                    if (newReopened)
                     {
-                        ILazyFileIO *popped = &buddyCopying.popGet();
-                        if (popped->isAliveAndLink())
-                        {
-                            checkBuddies.append(*popped);
-                        }
+                        DBGLOG("%u files reopened in last %u seconds (average closed time %" I64F "u ms)", 
+                               newReopened, (now - lastReopenReport)/1000, 
+                               nanoToMilli((reopenedDelay - lastReopenedDelay)/newReopened));
+                        lastFilesReopened = filesReopened;
+                        lastReopenedDelay = reopenedDelay;
                     }
-                    buddyChecking = true;
+                    lastReopenReport = now;
                 }
-                if (checkBuddies.length())
+#ifdef _CONTAINERIZED
+                if (now - lastBuddyCheck >= 60*1000)
                 {
-                    ForEachItemIn(idx, checkBuddies)
+                    // Periodically recheck the list to see what is now local, and remove them from the buddyCopying list
+                    lastBuddyCheck = now;
+                    IArrayOf<ILazyFileIO> checkBuddies;
                     {
-                        ILazyFileIO &check = checkBuddies.item(idx);
-                        if (traceRemoteFiles)
-                            DBGLOG("Checking whether someone has copied file %s for me", check.queryFilename());
-                        if (check.isRemote())
+                        CriticalBlock b(crit);
+                        while (buddyCopying.length())
                         {
-                            if (traceRemoteFiles)
-                                check.dump();
-                            if (!check.checkCopyComplete())   // Recheck whether there is a local file we can open
+                            ILazyFileIO *popped = &buddyCopying.popGet();
+                            if (popped->isAliveAndLink())
                             {
-                                CriticalBlock b1(crit);
-                                buddyCopying.append(check);
+                                checkBuddies.append(*popped);
+                            }
+                        }
+                        buddyChecking = true;
+                    }
+                    if (checkBuddies.length())
+                    {
+                        ForEachItemIn(idx, checkBuddies)
+                        {
+                            ILazyFileIO &check = checkBuddies.item(idx);
+                            if (traceRemoteFiles)
+                                DBGLOG("Checking whether someone has copied file %s for me", check.queryFilename());
+                            if (check.isRemote())
+                            {
+                                if (traceRemoteFiles)
+                                    check.dump();
+                                if (!check.checkCopyComplete())   // Recheck whether there is a local file we can open
+                                {
+                                    CriticalBlock b1(crit);
+                                    buddyCopying.append(check);
+                                }
+                            }
+                        }
+                        CriticalBlock b2(crit);
+                        buddyChecking = false;
+                        if (buddyCopying.length()==0)
+                        {
+                            DBGLOG("No more data files being copied by other nodes");
+                            if (todo.ordinality()==0 && reportedFilesToCopy)
+                            {
+                                DBGLOG("No more data files to copy");
+                                reportedFilesToCopy = false;
                             }
                         }
                     }
-                    CriticalBlock b2(crit);
-                    buddyChecking = false;
-                    if (buddyCopying.length()==0)
-                    {
-                        DBGLOG("No more data files being copied by other nodes");
-                        if (todo.ordinality()==0 && reportedFilesToCopy)
-                        {
-                            DBGLOG("No more data files to copy");
-                            reportedFilesToCopy = false;
-                        }
-                    }
                 }
 #endif
-                unsigned elapsed = msTick()-lastCloseCheck;
-                if (elapsed >= 10*60*1000)
+                if (forceElapsedCheck || now - lastCloseCheck >= 10*60*1000)
                 {
                     doCloseExpired(true);
                     doCloseExpired(false);
-                    lastCloseCheck = msTick();
+                    lastCloseCheck = now;
                 }
             }
         }
@@ -1919,10 +1952,9 @@ public:
     virtual void closeExpired(bool remote)
     {
         // This schedules a close at the next available opportunity
-        CriticalBlock b(cpcrit); // paranoid...
-        if (!closePending[remote])
+        bool expected = false;
+        if (closePending[remote].compare_exchange_strong(expected, true))
         {
-            closePending[remote] = true;
             DBGLOG("closeExpired %s scheduled - %d files open", remote ? "remote" : "local", (int) numFilesOpen[remote]);
             toClose.signal();
         }
@@ -2044,47 +2076,62 @@ public:
 
     void doCloseExpired(bool remote)
     {
-        {
-            CriticalBlock b(cpcrit); // paranoid...
-            closePending[remote] = false;
-        }
+        closePending[remote] = false;
+        IArrayOf<ILazyFileIO> expired;
         IArrayOf<ILazyFileIO> goers;
+        unsigned openLimit = maxFilesOpen[remote];
         {
             CriticalBlock b(crit);
-            HashIterator h(files);
-            ForEach(h)
+            if (files.ordinality() > openLimit || maxFileAgeNS[remote] != (unsigned __int64) -1)
             {
-                ILazyFileIO * match = files.mapToValue(&h.query());
-                if (match->isAliveAndLink())
+                HashIterator h(files);
+                ForEach(h)
                 {
-                    Owned<ILazyFileIO> f = match;
-                    if (f->isOpen() && f->isRemote()==remote && !f->isCopying())
+                    ILazyFileIO * match = files.mapToValue(&h.query());
+                    if (match->isAliveAndLink())
                     {
-                        unsigned age = msTick() - f->getLastAccessed();
-                        if (age > maxFileAge[remote])
+                        Owned<ILazyFileIO> f = match;
+                        if (f->isOpen() && f->isRemote()==remote && !f->isCopying())
                         {
-                            if (doTrace(traceRoxieFiles))
-                            {
-                                // NOTE - querySource will cause the file to be opened if not already open
-                                // That's OK here, since we know the file is open and remote.
-                                // But don't be tempted to move this line outside these if's (eg. to trace the idle case)
-                                const char *fname = remote ? f->querySource()->queryFilename() : f->queryFilename();
-                                DBGLOG("Closing inactive %s file %s (last accessed %u ms ago)", remote ? "remote" : "local",  fname, age);
-                            }
-                            f->close();
+                            unsigned __int64 age = nsTick() - f->getLastAccessed();
+                            if (age > maxFileAgeNS[remote])
+                                expired.append(*f.getClear());
+                            else if (files.ordinality() > openLimit)
+                                // No point adding to goers if there's no chance goers will get longer than limit
+                                goers.append(*f.getClear());
                         }
-                        else
-                            goers.append(*f.getClear());
                     }
                 }
             }
         }
+        if (expired.ordinality())
+        {
+            DBGLOG("Closing %d expired %s files", expired.ordinality(), remote ? "remote" : "local");
+            ForEachItemIn(expiredIdx, expired)
+            {
+                ILazyFileIO &f = expired.item(expiredIdx);
+                if (doTrace(traceRoxieFiles))
+                {
+                    // NOTE - querySource will cause the file to be opened if not already open
+                    // That's OK here, since we know the file is open and remote.
+                    // But don't be tempted to move this line outside these if's (eg. to trace the idle case)
+                    unsigned __int64 age = nsTick() - f.getLastAccessed();
+                    const char *fname = remote ? f.querySource()->queryFilename() : f.queryFilename();
+                    DBGLOG("Closing inactive %s file %s (last accessed %" I64F "u ms ago)", remote ? "remote" : "local",  fname, nanoToMilli(age));
+                }
+                f.close();
+            }
+        }
         unsigned numFilesLeft = goers.ordinality(); 
-        if (numFilesLeft > maxFilesOpen[remote])
+        if (numFilesLeft > openLimit)
         {
             goers.sort(CRoxieLazyFileIO::compareAccess);
-            DBGLOG("Closing LRU %s files, %d files are open", remote ? "remote" : "local",  numFilesLeft);
             unsigned idx = minFilesOpen[remote];
+            if (idx < numFilesLeft)  // Sanity check, should always be true!
+            {
+                ILazyFileIO &f = goers.item(idx);
+                DBGLOG("Closing LRU %s files, %d files are open, %d will be closed, last accessed %" I64F "u ms ago or more", remote ? "remote" : "local",  numFilesLeft, numFilesLeft - minFilesOpen[remote], nanoToMilli(nsTick() - f.getLastAccessed()));
+            }
             while (idx < numFilesLeft)
             {
                 ILazyFileIO &f = goers.item(idx++);
@@ -2092,8 +2139,8 @@ public:
                 {
                     if (doTrace(traceRoxieFiles))
                     {
-                        unsigned age = msTick() - f.getLastAccessed();
-                        DBGLOG("Closing %s (last accessed %u ms ago)", f.queryFilename(), age);
+                        unsigned __int64 age = nsTick() - f.getLastAccessed();
+                        DBGLOG("Closing %s (last accessed %" I64F "u ms ago)", f.queryFilename(), nanoToMilli(age));
                     }
                     f.close();
                 }
@@ -2633,6 +2680,7 @@ protected:
     offset_t fileSize;
     unsigned fileCheckSum;
     RoxieFileType fileType;
+    size32_t configRandomIOSize = 0;
     bool isSuper;
 
     StringArray subNames;
@@ -2766,6 +2814,8 @@ public:
                     remoteFDesc.setown(daliHelper->checkClonedFromRemote(_lfn, fDesc, cacheIt, defaultPrivilegedUser));
                 addFile(dFile->queryLogicalName(), fDesc.getClear(), remoteFDesc.getClear());
             }
+            // could do globally once, not sure worth it though.
+            configRandomIOSize = (size32_t)getExpertOptInt64(getPlaneAttributeString(BlockedRandomIO), 0) * 1024;
         }
     }
     virtual void beforeDispose()
@@ -3133,6 +3183,7 @@ public:
 
                         Owned <ILazyFileIO> part;
                         unsigned crc = 0;
+                        size32_t blockedIOSize = 0;
                         if (fdesc) // NB there may be no parts for this channel 
                         {
                             IPartDescriptor *pdesc = fdesc->queryPart(partNo-1);
@@ -3141,6 +3192,12 @@ public:
                                 IPartDescriptor *remotePDesc = queryMatchingRemotePart(pdesc, remoteFDesc, partNo-1);
                                 part.setown(createPhysicalFile(subNames.item(idx), pdesc, remotePDesc, ROXIE_KEY, fdesc->numParts(), cached != NULL, channel));
                                 pdesc->getCrc(crc);
+                                bool local = pdesc->queryProperties().getPropBool("@local");
+                                if (!local) // do not buffer local files used by standaloe roxie
+                                {
+                                    unsigned replicationLevel = getReplicationLevel(channel);
+                                    blockedIOSize = getPartPlaneAttr(*pdesc, replicationLevel, BlockedRandomIO, configRandomIOSize);
+                                }
                             }
                         }
                         if (part)
@@ -3148,10 +3205,10 @@ public:
                             if (lazyOpen)
                             {
                                 // We pass the IDelayedFile interface to createKeyIndex, so that it does not open the file immediately
-                                keyset->addIndex(createKeyIndex(part->queryFilename(), crc, *QUERYINTERFACE(part.get(), IDelayedFile), part->getFileIdx(), false));
+                                keyset->addIndex(createKeyIndex(part->queryFilename(), crc, *QUERYINTERFACE(part.get(), IDelayedFile), part->getFileIdx(), false, blockedIOSize));
                             }
                             else
-                                keyset->addIndex(createKeyIndex(part->queryFilename(), crc, *part.get(), part->getFileIdx(), false));
+                                keyset->addIndex(createKeyIndex(part->queryFilename(), crc, *part.get(), part->getFileIdx(), false, blockedIOSize));
                         }
                         else
                             keyset->addIndex(NULL);
@@ -3182,13 +3239,20 @@ public:
                     pdesc->getCrc(crc);
                     StringBuffer pname;
                     pdesc->getPath(pname);
+                    size32_t blockedIOSize = 0;
+                    bool local = pdesc->queryProperties().getPropBool("@local");
+                    if (!local) // do not buffer local files used by standaloe roxie
+                    {
+                        unsigned replicationLevel = getReplicationLevel(channel);
+                        blockedIOSize = getPartPlaneAttr(*pdesc, replicationLevel, BlockedRandomIO, configRandomIOSize);
+                    }
                     if (lazyOpen)
                     {
                         // We pass the IDelayedFile interface to createKeyIndex, so that it does not open the file immediately
-                        key.setown(createKeyIndex(pname.str(), crc, *QUERYINTERFACE(keyFile.get(), IDelayedFile), keyFile->getFileIdx(), numParts>1));
+                        key.setown(createKeyIndex(pname.str(), crc, *QUERYINTERFACE(keyFile.get(), IDelayedFile), keyFile->getFileIdx(), numParts>1, blockedIOSize));
                     }
                     else
-                        key.setown(createKeyIndex(pname.str(), crc, *keyFile.get(), keyFile->getFileIdx(), numParts>1));
+                        key.setown(createKeyIndex(pname.str(), crc, *keyFile.get(), keyFile->getFileIdx(), numParts>1, blockedIOSize));
                     keyset->addIndex(LINK(key->queryPart(0)));
                 }
                 else

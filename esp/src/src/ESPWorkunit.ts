@@ -113,6 +113,35 @@ export function getStateImageHTML(stateID: number, complete: boolean, archived: 
     return Utility.getImageHTML(getStateImageName(stateID, complete, archived));
 }
 
+export function formatQuery(_filter): { [id: string]: any } {
+    const filter = { ..._filter };
+    if (filter.LastNDays) {
+        const end = new Date();
+        const start = new Date();
+        start.setDate(end.getDate() - filter.LastNDays);
+        filter.StartDate = start.toISOString();
+        filter.EndDate = end.toISOString();
+        delete filter.LastNDays;
+    } else {
+        if (filter.StartDate) {
+            filter.StartDate = new Date(filter.StartDate).toISOString();
+        }
+        if (filter.EndDate) {
+            filter.EndDate = new Date(filter.EndDate).toISOString();
+        }
+    }
+    if (filter.Type === true) {
+        filter.Type = "archived workunits";
+    }
+    if (filter.Protected === true) {
+        filter.Protected = "Protected";
+    }
+    return filter;
+}
+
+export const emptyFilter: { [id: string]: any } = {};
+export const defaultSort = { attribute: "Wuid", descending: true };
+
 class Store extends ESPRequest.Store {
 
     service = "WsWorkunits";

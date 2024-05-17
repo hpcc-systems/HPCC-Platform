@@ -184,6 +184,7 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
         getExpertOptPath(nullptr, xpath); // 'expert' in container world, or 'Debug' in bare-metal
         ensurePTree(globals, xpath);
         unsigned numStrands, blockSize;
+        workunitGraphCacheEnabled = getExpertOptBool("workunitGraphCacheEnabled", workunitGraphCacheEnabled);
         getExpertOptPath("forceNumStrands", xpath.clear());
         if (globals->hasProp(xpath))
             numStrands = globals->getPropInt(xpath);

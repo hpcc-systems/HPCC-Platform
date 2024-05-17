@@ -27,7 +27,7 @@ optRemoteRead := #IFDEFINED(root.optRemoteRead, true);
 
 #onwarning(2036, ignore);
 #onwarning(4522, ignore);
-#option ('layoutTranslation', true);
+#option ('layoutTranslation', 'payload');
 #option('forceRemoteRead', optRemoteRead);
 import $.Setup;
 

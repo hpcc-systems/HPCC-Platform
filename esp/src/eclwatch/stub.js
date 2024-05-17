@@ -61,7 +61,7 @@ define([
                 Session.fireIdle();
             } else if (publishedMessage.status === "Idle") {
                 var LockDialog = new LockDialogWidget({});
-                LockDialog._onLock(publishedMessage.idleCreator);
+                LockDialog._onLock(publishedMessage);
             }
         });
 

@@ -134,5 +134,6 @@ extern HQL_API IHqlScope * getResolveDottedScope(const char * modname, unsigned 
 extern HQL_API IHqlExpression * getResolveAttributeFullPath(const char * attrname, unsigned lookupFlags, HqlLookupContext & ctx, IEclPackage * optPackage);
 extern HQL_API bool looksLikeGitPackage(const char * urn);
 extern HQL_API bool canReadPackageFrom(const char * urn);
+extern HQL_API bool checkAbortGitFetch();  // Return false if a git operation is in process (and force an abort when it finishes)
 
 #endif

@@ -7,8 +7,20 @@ import { containerized, bare_metal } from "src/BuildInfo";
 import { MainNav, routes } from "../routes";
 import { useFavorite, useFavorites, useHistory } from "../hooks/favorite";
 import { useUserTheme } from "../hooks/theme";
+import { useSessionStore } from "../hooks/store";
 import { usePivotItemDisable } from "../layouts/pivot";
 import { Breadcrumbs } from "./Breadcrumbs";
+
+export interface NextPrevious {
+    next: () => void;
+    previous: () => void;
+}
+export type NextPreviousT = NextPrevious | undefined;
+
+export function useNextPrev(val?: NextPrevious): [NextPreviousT, (val: NextPrevious) => void] {
+    const [nextPrev, setNextPrev] = useSessionStore<NextPreviousT>("NEXT_PREV_KEY", val, true);
+    return [nextPrev, setNextPrev];
+}
 
 //  Top Level Nav  ---
 function navLinkGroups(): INavLinkGroup[] {
@@ -59,14 +71,19 @@ function navLinkGroups(): INavLinkGroup[] {
     return [{ links }];
 }
 
-const navIdx: { [id: string]: MainNav[] } = {};
+const _navIdx: { [id: string]: MainNav[] } = {};
+
+function navIdx(id) {
+    id = id.split("!")[0];
+    if (!_navIdx[id]) {
+        _navIdx[id] = [];
+    }
+    return _navIdx[id];
+}
 
 function append(route, path) {
-    if (!navIdx[path]) {
-        navIdx[path] = [];
-    }
     route.mainNav?.forEach(item => {
-        navIdx[path].push(item);
+        navIdx(path).push(item);
     });
 }
 
@@ -81,7 +98,7 @@ routes.forEach((route: any) => {
 });
 
 function navSelectedKey(hashPath) {
-    const rootPath = navIdx[`/${hashPath?.split("/")[1]}`];
+    const rootPath = navIdx(`/${hashPath?.split("/")[1]}`);
     if (rootPath?.length) {
         return rootPath[0];
     }
@@ -175,21 +192,31 @@ const subMenuItems: SubMenuItems = {
     ],
 };
 
-const subNavIdx: { [id: string]: string[] } = {};
+const _subNavIdx: { [id: string]: string[] } = {};
+
+function subNavIdx(id) {
+    const indexOfExclamation = id.indexOf("!");
+    const indexOfSlash = id.indexOf("/", indexOfExclamation);
+    if (indexOfExclamation !== -1 && indexOfSlash !== -1) {
+        id = id.substring(0, indexOfExclamation) + id.substring(indexOfSlash);
+    }
+
+    if (!_subNavIdx[id]) {
+        _subNavIdx[id] = [];
+    }
+    return _subNavIdx[id];
+}
 
 for (const key in subMenuItems) {
     const subNav = subMenuItems[key];
     subNav.forEach(item => {
-        if (!subNavIdx[item.itemKey]) {
-            subNavIdx[item.itemKey] = [];
-        }
-        subNavIdx[item.itemKey].push(key);
+        subNavIdx(item.itemKey).push(key);
     });
 }
 
 function subNavSelectedKey(hashPath) {
     const hashCategory = hashPath.split("/").slice(0, 3).join("/");
-    return !!subNavIdx[hashCategory] ? hashCategory : null;
+    return subNavIdx(hashCategory).length ? hashCategory : null;
 }
 
 interface SubNavigationProps {
@@ -197,7 +224,7 @@ interface SubNavigationProps {
 }
 
 export const SubNavigation: React.FunctionComponent<SubNavigationProps> = ({
-    hashPath,
+    hashPath
 }) => {
 
     const { theme } = useUserTheme();
@@ -206,6 +233,8 @@ export const SubNavigation: React.FunctionComponent<SubNavigationProps> = ({
     const [favoriteCount, setFavoriteCount] = React.useState(0);
     const [isFavorite, addFavorite, removeFavorite] = useFavorite(window.location.hash);
     const [history] = useHistory();
+
+    const [nextPrev] = useNextPrev();
 
     React.useEffect(() => {
         setFavoriteCount(Object.keys(favorites).length);
@@ -318,6 +347,8 @@ export const SubNavigation: React.FunctionComponent<SubNavigationProps> = ({
                 </Stack>
             </Stack.Item>
             <Stack.Item align="center" grow={0}>
+                {nextPrev?.next && <IconButton title={nlsHPCC.NextWorkunit} iconProps={{ iconName: "Movers" }} onClick={() => nextPrev.next()} />}
+                {nextPrev?.previous && <IconButton title={nlsHPCC.PreviousWorkunit} iconProps={{ iconName: "Sell" }} onClick={() => nextPrev.previous()} />}
                 <IconButton title={nlsHPCC.History} iconProps={{ iconName: "History" }} menuProps={{ items: history }} />
                 <IconButton
                     title={isFavorite ? nlsHPCC.RemoveFromFavorites : nlsHPCC.AddToFavorites}
