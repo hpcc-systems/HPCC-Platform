@@ -66,22 +66,16 @@
   find matches. The <emphasis>regex</emphasis> must be a standard Perl regular
   expression<indexterm>
       <primary>Perl regular expression</primary>
-    </indexterm>. We use third-party libraries to support this, so for
-  non-unicode <emphasis>text</emphasis>, see the Perl-compatible Regular
-  Expressions (PCRE2) documentation at <ulink
-  url="https://www.pcre.org/current/doc/html/pcre2pattern.html">https://www.pcre.org/current/doc/html/pcre2pattern.html</ulink>.
-  For unicode <emphasis>text</emphasis>, see the ICU docs, the sections
-  'Regular Expression Metacharacters' and 'Regular Expression Operators' at
-  <emphasis
-  role="underline">http://userguide.icu-project.org/strings/regexp</emphasis>
-  and the links from there, in particular the section 'UnicodeSet patterns' at
-  <emphasis
-  role="underline">http://userguide.icu-project.org/strings/unicodeset</emphasis>.
-  We use version 2.6 which should support all listed features.</para>
+    </indexterm>. </para>
+
+  <para>We use a third-party library -- Perl-compatible Regular Expressions
+  (PCRE2) to support this. See <ulink
+  url="https://www.pcre.org/current/doc/html/pcre2syntax.html">https://www.pcre.org/current/doc/html/pcre2syntax.html</ulink>
+  for details on the PCRE2 pattern syntax.</para>
 
   <para>Example:</para>
 
-  <programlisting lang="ECL" role="runnable">namesRecord := RECORD
+  <programlisting lang="ECL_Runnable">namesRecord := RECORD
 STRING20 surname;
 STRING10 forename;
 STRING10 userdate;
