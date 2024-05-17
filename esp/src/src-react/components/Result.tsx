@@ -255,6 +255,10 @@ export const Result: React.FunctionComponent<ResultProps> = ({
             ;
     }, [cluster, filter, logicalFile, renderHTML, resultName, resultTable, wuid]);
 
+    React.useEffect(() => {
+        resultTable.filter(filter);
+    }, [filter, resultTable]);
+
     const { currentUser } = useMyAccount();
     const [wu] = useWorkunit(wuid);
     const [result] = React.useState<CommsResult>(resultTable.calcResult());

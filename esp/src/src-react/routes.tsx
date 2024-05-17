@@ -103,7 +103,7 @@ export const routes: RoutesEx = [
             },
             {
                 path: "/:Wuid", action: (ctx, params) => import("./components/ECLPlayground").then(_ => {
-                    return <_.ECLPlayground wuid={params.Wuid as string} />;
+                    return <_.ECLPlayground wuid={params.Wuid as string} filter={parseSearch(ctx.search) as any} />;
                 })
             },
         ]
