@@ -66,6 +66,8 @@ public:
         CPPUNIT_TEST(manualTestsEventsOutput);
         CPPUNIT_TEST(manualTestsDeclaredFailures);
         CPPUNIT_TEST(manualTestScopeEnd);
+        CPPUNIT_TEST(testActiveSpans);
+        CPPUNIT_TEST(testSpanFetchMethods);
 
         //CPPUNIT_TEST(testJTraceJLOGExporterprintResources);
         //CPPUNIT_TEST(testJTraceJLOGExporterprintAttributes);
@@ -369,6 +371,25 @@ protected:
         CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected empty SpanID detected", false, isEmptyString(retrievedSpanCtxAttributes->queryProp("spanID")));
     }
 
+    void testSpanFetchMethods()
+    {
+        SpanFlags flags = SpanFlags::EnsureTraceId;
+        Owned<IProperties> emptyMockHTTPHeaders = createProperties();
+        OwnedSpanScope serverSpan = queryTraceManager().createServerSpan("noRemoteParentEnsureTraceID", emptyMockHTTPHeaders, flags);
+
+        Owned<IProperties> retrievedSpanCtxAttributes = createProperties();
+        serverSpan->getSpanContext(retrievedSpanCtxAttributes.get());
+
+        const char * traceID = retrievedSpanCtxAttributes->queryProp("traceID");
+        const char * spanID = retrievedSpanCtxAttributes->queryProp("spanID");
+
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected empty TraceID detected", false, isEmptyString(traceID));
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected empty SpanID detected", false, isEmptyString(spanID));
+
+        CPPUNIT_ASSERT_MESSAGE("Queried traceID mismatch vs traceID from attributes",  strsame(serverSpan->queryTraceId(), traceID));
+        CPPUNIT_ASSERT_MESSAGE("Queried spanID mismatch vs spanID from attributes",  strsame(serverSpan->querySpanId(), spanID));
+}
+
     void testIDPropegation()
     {
         Owned<IProperties> mockHTTPHeaders = createProperties();
@@ -442,7 +463,6 @@ protected:
     {
         Owned<IProperties> emptyMockHTTPHeaders = createProperties();
         OwnedSpanScope serverSpan = queryTraceManager().createServerSpan("propegatedServerSpan", emptyMockHTTPHeaders);
-
         Owned<IProperties> retrievedSpanCtxAttributes = createProperties();
         serverSpan->getSpanContext(retrievedSpanCtxAttributes);
 
@@ -453,12 +473,10 @@ protected:
 
         {
             OwnedSpanScope internalSpan = serverSpan->createClientSpan("clientSpan");
-
             //retrieve clientSpan context with the intent to propogate otel and HPCC context
             {
                 Owned<IProperties> retrievedSpanCtxAttributes = createProperties();
                 internalSpan->getSpanContext(retrievedSpanCtxAttributes);
-
                 CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing localParentSpanID detected", true,
                  retrievedSpanCtxAttributes->hasProp("localParentSpanID"));
 
@@ -567,6 +585,71 @@ protected:
         }
     }
 
+    void testActiveSpans()
+    {
+        {
+            Owned<IProperties> spanContext = createProperties();
+            ISpan * activeSpan =  queryThreadedActiveSpan();
+            
+            CPPUNIT_ASSERT_MESSAGE("Threaded Active Span == nullptr!", activeSpan != nullptr);
+
+            activeSpan->getSpanContext(spanContext);
+
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected TraceID detected when no active trace/span expected", false, spanContext->hasProp("traceID"));
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected SpanID detected when no active trace/span expected", false, spanContext->hasProp("spanID"));
+        }
+
+        {
+            Owned<IProperties> mockHTTPHeaders = createProperties();
+            createMockHTTPHeaders(mockHTTPHeaders, false);
+            ISpan * notActiveSpan = queryTraceManager().createServerSpan("notActiveSpan", mockHTTPHeaders);
+
+            CPPUNIT_ASSERT_MESSAGE("Not Active Span == nullptr!", notActiveSpan != nullptr);
+            Owned<IProperties> spanContext = createProperties();
+            notActiveSpan->getSpanContext(spanContext);
+
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing TraceID detected", true, spanContext->hasProp("traceID"));
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing SpanID detected", true, spanContext->hasProp("spanID"));
+
+            ISpan * activeSpan2 =  queryThreadedActiveSpan();
+
+            CPPUNIT_ASSERT_MESSAGE("Threaded Active Span == nullptr!", activeSpan2 != nullptr);
+
+            Owned<IProperties> spanContext2 = createProperties();
+            activeSpan2->getSpanContext(spanContext2);
+
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected TraceID detected when no active trace/span expected", false, spanContext2->hasProp("traceID"));
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected SpanID detected when no active trace/span expected", false, spanContext2->hasProp("spanID"));
+        }
+
+        {
+            Owned<IProperties> mockHTTPHeaders = createProperties();
+            createMockHTTPHeaders(mockHTTPHeaders, false);
+            OwnedSpanScope currentSpanScope = queryTraceManager().createServerSpan("currentSpanScope", mockHTTPHeaders);
+
+            CPPUNIT_ASSERT_MESSAGE("currentSpanScope Span == nullptr!", currentSpanScope != nullptr);
+
+            Owned<IProperties> currentSpanContext = createProperties();
+            currentSpanScope->getSpanContext(currentSpanContext);
+
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing TraceID detected when active trace/span expected", true, currentSpanContext->hasProp("traceID"));
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing SpanID detected when active trace/span expected", true, currentSpanContext->hasProp("spanID"));
+
+            ISpan * activeSpan =  queryThreadedActiveSpan();
+
+            CPPUNIT_ASSERT_MESSAGE("Threaded Active Span == nullptr!", activeSpan != nullptr);
+
+            Owned<IProperties> activeSpanContext = createProperties();
+            activeSpan->getSpanContext(activeSpanContext);
+
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing TraceID detected when active trace/span expected", true, activeSpanContext->hasProp("traceID"));
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing SpanID detected when active trace/span expected", true, activeSpanContext->hasProp("spanID"));
+
+            DBGLOG("This log entry should report traceID: '%s' and spanID: '%s'", currentSpanContext->queryProp("traceID"), currentSpanContext->queryProp("spanID"));
+            //15:07:56.490232  3788 720009f32a9db04f68f2b6545717ebe5 a7ef8749b5926acf This log entry should report traceID: '720009f32a9db04f68f2b6545717ebe5' and spanID: 'a7ef8749b5926acf'
+        }
+    }
+    
     void testInvalidPropegatedServerSpan()
     {
         Owned<IProperties> mockHTTPHeaders = createProperties();

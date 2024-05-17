@@ -318,7 +318,9 @@ typedef enum
     MSGFIELD_component   = 0x010000,
     MSGFIELD_quote       = 0x020000,
     MSGFIELD_prefix      = 0x040000,
-    MSGFIELD_last        = 0x040000,
+    MSGFIELD_trace       = 0x080000,
+    MSGFIELD_span        = 0x100000,
+    MSGFIELD_last        = 0x100000,
     MSGFIELD_all         = 0xFFFFFF
 } LogMsgField;
 
@@ -326,11 +328,10 @@ typedef enum
 #define MSGFIELD_STANDARD LogMsgField(MSGFIELD_timeDate | MSGFIELD_msgID | MSGFIELD_process | MSGFIELD_thread | MSGFIELD_code | MSGFIELD_quote | MSGFIELD_prefix | MSGFIELD_audience)
 #define MSGFIELD_LEGACY LogMsgField(MSGFIELD_timeDate | MSGFIELD_milliTime | MSGFIELD_msgID | MSGFIELD_process | MSGFIELD_thread | MSGFIELD_code | MSGFIELD_quote | MSGFIELD_prefix)
 #else
-
 #ifdef _CONTAINERIZED
-#define MSGFIELD_STANDARD LogMsgField(MSGFIELD_job | MSGFIELD_timeDate | MSGFIELD_milliTime | MSGFIELD_msgID | MSGFIELD_process | MSGFIELD_thread | MSGFIELD_code | MSGFIELD_quote | MSGFIELD_class | MSGFIELD_audience)
+#define MSGFIELD_STANDARD LogMsgField( MSGFIELD_job | MSGFIELD_timeDate | MSGFIELD_milliTime | MSGFIELD_msgID | MSGFIELD_process | MSGFIELD_thread | MSGFIELD_code | MSGFIELD_quote | MSGFIELD_class | MSGFIELD_audience)
 #else
-#define MSGFIELD_STANDARD LogMsgField(MSGFIELD_timeDate | MSGFIELD_milliTime | MSGFIELD_msgID | MSGFIELD_process | MSGFIELD_thread | MSGFIELD_code | MSGFIELD_quote | MSGFIELD_prefix | MSGFIELD_audience)
+#define MSGFIELD_STANDARD LogMsgField( MSGFIELD_timeDate | MSGFIELD_milliTime | MSGFIELD_msgID | MSGFIELD_process | MSGFIELD_thread | MSGFIELD_code | MSGFIELD_quote | MSGFIELD_prefix | MSGFIELD_audience)
 #endif
 #define MSGFIELD_LEGACY LogMsgField(MSGFIELD_timeDate | MSGFIELD_milliTime | MSGFIELD_msgID | MSGFIELD_process | MSGFIELD_thread | MSGFIELD_code | MSGFIELD_quote | MSGFIELD_prefix)
 #endif
@@ -375,6 +376,10 @@ inline const char * LogMsgFieldToString(LogMsgField field)
         return("Component");
     case MSGFIELD_quote:
         return("Quote");
+    case MSGFIELD_trace:
+        return("Trace ID");
+    case MSGFIELD_span:
+        return("Span ID");
     default:
         return("UNKNOWN");
     }
@@ -404,6 +409,10 @@ inline unsigned LogMsgFieldFromAbbrev(char const * abbrev)
         return MSGFIELD_job;
     if(strnicmp(abbrev, "USE", 3)==0)
         return MSGFIELD_user;
+    if(strnicmp(abbrev, "TRC", 3)==0)
+        return MSGFIELD_trace;
+    if(strnicmp(abbrev, "SPN", 3)==0)
+        return MSGFIELD_span;
     if(strnicmp(abbrev, "SES", 3)==0)
         return MSGFIELD_session;
     if(strnicmp(abbrev, "COD", 3)==0)
@@ -588,6 +597,41 @@ private:
     bool                      isDeserialized = false;
 };
 
+#define UNK_LOG_ENTRY "UNK"
+class jlib_decl LogMsgTraceInfo
+{
+public:
+    LogMsgTraceInfo() = default;
+    LogMsgTraceInfo(ISpan * _span) : span(_span)
+    {
+    }
+
+    const char * queryTraceID() const
+    {
+        if (span)
+        {
+            const char * traceId = span->queryTraceId();
+            if (traceId)
+                return traceId;
+        }
+        return UNK_LOG_ENTRY;
+    }
+
+    const char * querySpanID() const
+    {
+        if (span)
+        {
+            const char * spanId = span->querySpanId();
+            if (spanId)
+                return spanId;
+        }
+        return UNK_LOG_ENTRY;
+    }
+
+private:
+    Linked<ISpan> span;
+};
+
 class jlib_decl LogMsg : public CInterface
 {
 public:
@@ -615,6 +659,7 @@ protected:
     LogMsgCategory            category;
     LogMsgSysInfo             sysInfo;
     LogMsgJobInfo             jobInfo;
+    LogMsgTraceInfo           traceInfo;
     LogMsgCode                msgCode = NoLogMsgCode;
     StringBuffer              text;
     bool                      remoteFlag = false;
