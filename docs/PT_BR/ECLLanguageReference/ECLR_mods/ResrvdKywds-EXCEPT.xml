@@ -21,7 +21,7 @@
 
   <para>Exemplo:</para>
 
-  <programlisting lang="ECL" role="runnable">x := DATASET([{'Taylor','Richard','Jackson' ,'M'},
+  <programlisting lang="ECL_Runnable">x := DATASET([{'Taylor','Richard','Jackson' ,'M'},
             {'Taylor','David' ,'Boca' ,'M'},
             {'Taylor','Rita' ,'Boca' ,'F'},
             {'Smith' ,'Richard','Mansfield','M'},

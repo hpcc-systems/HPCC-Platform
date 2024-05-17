@@ -116,7 +116,7 @@
 
   <para>Example:</para>
 
-  <programlisting lang="ECL" role="runnable">r := {STRING1 Letter};
+  <programlisting lang="ECL_Runnable">r := {STRING1 Letter};
 ds1 := DATASET([{'A'},{'B'},{'C'},{'D'},{'E'}],r);
 ds2 := DATASET([{'F'},{'G'},{'H'},{'I'},{'J'}],r);
 ds3 := DATASET([{'K'},{'L'},{'M'},{'N'},{'O'}],r);

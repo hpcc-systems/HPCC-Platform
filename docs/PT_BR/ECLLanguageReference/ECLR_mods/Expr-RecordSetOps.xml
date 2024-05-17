@@ -46,7 +46,7 @@
 
   <para>Exemplo:</para>
 
-  <programlisting lang="ECL" role="runnable">MyLayout := RECORD
+  <programlisting lang="ECL_Runnable">MyLayout := RECORD
   UNSIGNED Num;
   STRING Number;
 END;

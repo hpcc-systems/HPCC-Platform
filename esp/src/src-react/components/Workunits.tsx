@@ -1,14 +1,13 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Icon, Image, Link } from "@fluentui/react";
 import { SizeMe } from "react-sizeme";
-import { scopedLogger } from "@hpcc-js/util";
-import { CreateWUQueryStore, Get, WUQueryStore } from "src/ESPWorkunit";
+import { CreateWUQueryStore, defaultSort, emptyFilter, Get, WUQueryStore, formatQuery } from "src/ESPWorkunit";
 import * as WsWorkunits from "src/WsWorkunits";
 import { formatCost } from "src/Session";
 import nlsHPCC from "src/nlsHPCC";
 import { useConfirm } from "../hooks/confirm";
 import { useMyAccount } from "../hooks/user";
-import { pushParams } from "../util/history";
+import { calcSearch, pushParams } from "../util/history";
 import { useHasFocus, useIsMounted } from "../hooks/util";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { FluentPagedGrid, FluentPagedFooter, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
@@ -16,8 +15,6 @@ import { Fields } from "./forms/Fields";
 import { Filter } from "./forms/Filter";
 import { ShortVerticalDivider } from "./Common";
 import { QuerySortItem } from "src/store/Store";
-
-const logger = scopedLogger("src-react/components/Workunits.tsx");
 
 const FilterFields: Fields = {
     "Type": { type: "checkbox", label: nlsHPCC.ArchivedOnly },
@@ -35,33 +32,6 @@ const FilterFields: Fields = {
     "EndDate": { type: "datetime", label: nlsHPCC.ToDate },
 };
 
-function formatQuery(_filter): { [id: string]: any } {
-    const filter = { ..._filter };
-    if (filter.LastNDays) {
-        const end = new Date();
-        const start = new Date();
-        start.setDate(end.getDate() - filter.LastNDays);
-        filter.StartDate = start.toISOString();
-        filter.EndDate = end.toISOString();
-        delete filter.LastNDays;
-    } else {
-        if (filter.StartDate) {
-            filter.StartDate = new Date(filter.StartDate).toISOString();
-        }
-        if (filter.EndDate) {
-            filter.EndDate = new Date(filter.EndDate).toISOString();
-        }
-    }
-    if (filter.Type === true) {
-        filter.Type = "archived workunits";
-    }
-    if (filter.Protected === true) {
-        filter.Protected = "Protected";
-    }
-    logger.debug(filter);
-    return filter;
-}
-
 const defaultUIState = {
     hasSelection: false,
     hasProtected: false,
@@ -78,9 +48,6 @@ interface WorkunitsProps {
     store?: WUQueryStore;
     page?: number;
 }
-
-const emptyFilter: { [id: string]: any } = {};
-export const defaultSort = { attribute: "Wuid", descending: true };
 
 export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
     filter = emptyFilter,
@@ -143,10 +110,11 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
                 sortable: true,
                 formatter: (Wuid, row) => {
                     const wu = Get(Wuid);
+                    const search = calcSearch(filter);
                     return <>
                         <Image src={wu.getStateImage()} styles={{ root: { minWidth: "16px" } }} />
                         &nbsp;
-                        <Link href={`#/workunits/${Wuid}`}>{Wuid}</Link>
+                        <Link href={search ? `#/workunits!${calcSearch(filter)}/${Wuid}` : `#/workunits/${Wuid}`}>{Wuid}</Link >
                     </>;
                 }
             },
@@ -181,7 +149,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
                 }
             }
         };
-    }, []);
+    }, [filter]);
 
     const copyButtons = useCopyButtons(columns, selection, "workunits");
 

@@ -113,6 +113,9 @@ MACRO(DOCBOOK_TO_HTML _xsl_file _xml_file _out_dir _html_target _css_path _zip_t
        set(_portaljs_path "${CMAKE_BINARY_DIR}/docs/portal-js/dist/index.js")
        get_filename_component(portaljs_file_name ${_portaljs_path} NAME)
 
+       set(_portalcss_path "${CMAKE_BINARY_DIR}/docs/portal-js/dist/index.css")
+       get_filename_component(portalcss_file_name ${_portalcss_path} NAME)
+
        STRING(REGEX REPLACE "(.+)/([^/]+)$" "\\1" _out_dir1 "${_out_dir}")
        STRING(REGEX REPLACE ".+/([^/]+)$" "\\1" _out_dir2 "${_out_dir}")
 
@@ -123,11 +126,12 @@ MACRO(DOCBOOK_TO_HTML _xsl_file _xml_file _out_dir _html_target _css_path _zip_t
            COMMAND mkdir -p ${_out_dir}
            COMMAND cp ${_css_path} ${_out_dir}/
            COMMAND cp ${_portaljs_path} ${_out_dir}/
-           OUTPUT ${_out_dir}/${css_file_name} ${_out_dir}/${portaljs_file_name}
+           COMMAND cp ${_portalcss_path} ${_out_dir}/
+           OUTPUT ${_out_dir}/${css_file_name} ${_out_dir}/${portaljs_file_name} ${_out_dir}/${portalcss_file_name}
            DEPENDS portal-js
        )
        ADD_CUSTOM_TARGET(${_html_target}
-           COMMAND ${XSLTPROC_EXECUTABLE} --nonet --xinclude --stringparam html.stylesheet ${css_file_name} --stringparam generate.toc "book toc"  --param chapter.autolabel 0  ${_xsl_file} ${_xml_file}
+           COMMAND ${XSLTPROC_EXECUTABLE} --nonet --xinclude --stringparam html.stylesheet ${portalcss_file_name} --stringparam generate.toc "book toc"  --param chapter.autolabel 0  ${_xsl_file} ${_xml_file}
            WORKING_DIRECTORY ${_out_dir}
            DEPENDS docbook-expand ${_out_dir}/${css_file_name} ${HELP_DEPENDENCIES}
            #SOURCES ${_xsl_file}

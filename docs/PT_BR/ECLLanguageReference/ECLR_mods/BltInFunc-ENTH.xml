@@ -156,7 +156,7 @@
 
   <para>Exemplo:</para>
 
-  <programlisting lang="ECL" role="runnable">SomeFile := DATASET([{'A'},{'B'},{'C'},{'D'},{'E'},
+  <programlisting lang="ECL_Runnable">SomeFile := DATASET([{'A'},{'B'},{'C'},{'D'},{'E'},
                      {'F'},{'G'},{'H'},{'I'},{'J'},
                      {'K'},{'L'},{'M'},{'N'},{'O'},
                      {'P'},{'Q'},{'R'},{'S'},{'T'},

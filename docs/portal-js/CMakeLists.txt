@@ -12,6 +12,8 @@ file(COPY
 
 set ( SRCS
     ${CMAKE_CURRENT_BINARY_DIR}/src/index.ts
+    ${CMAKE_CURRENT_BINARY_DIR}/src/ECLEditorPlay.ts
+    ${CMAKE_CURRENT_BINARY_DIR}/src/ECLEditorPlay.css
     ${CMAKE_CURRENT_SOURCE_DIR}/package-lock.json
     ${CMAKE_CURRENT_SOURCE_DIR}/package.json
 )

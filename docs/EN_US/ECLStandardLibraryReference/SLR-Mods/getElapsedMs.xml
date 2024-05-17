@@ -47,7 +47,7 @@
 
   <para>Example:</para>
 
-  <programlisting format="linespecific" lang="ECL" role="runnable">IMPORT STD;
+  <programlisting format="linespecific" lang="ECL_Runnable">IMPORT STD;
 STD.System.Debug.Sleep (1054);      // pause processing for 1054 milliseconds.
 OUTPUT(STD.System.Log.getElapsedMs(), NAMED('Elapsed')); //returns total time elapsed
 </programlisting>

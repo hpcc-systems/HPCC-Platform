@@ -28,7 +28,7 @@
 
   <para>Exemplo:</para>
 
-  <programlisting lang="ECL" role="runnable">DATA8 MyHexString := x'1234567890ABCDEF'; 
+  <programlisting lang="ECL_Runnable">DATA8 MyHexString := x'1234567890ABCDEF'; 
         // an 8-byte data block - hex values 12 34 56 78 90 AB CD EF
 OUTPUT(MyHexString);
 </programlisting>

@@ -79,7 +79,7 @@
 
     <para>Example:</para>
 
-    <programlisting lang="ECL" role="runnable">ColorCodes := DATASET([{'Black' ,0 },
+    <programlisting lang="ECL_Runnable">ColorCodes := DATASET([{'Black' ,0 },
                        {'Brown' ,1 },
                        {'Red'   ,2 },
                        {'Orange',3 },

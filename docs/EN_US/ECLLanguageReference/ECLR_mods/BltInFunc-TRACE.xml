@@ -135,7 +135,7 @@
 
     <para>Example:</para>
 
-    <para><programlisting lang="ECL" role="runnable">#OPTION ('traceEnabled', TRUE); //TRACE writes to log only if TRUE
+    <para><programlisting lang="ECL_Runnable">#OPTION ('traceEnabled', TRUE); //TRACE writes to log only if TRUE
 FilterValue := 4;
 myRec := { STRING Name, REAL x, REAL y };
 ds := DATASET([ {'Jim' , 1, 1.00039},

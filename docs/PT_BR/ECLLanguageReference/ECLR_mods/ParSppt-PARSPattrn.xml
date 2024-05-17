@@ -475,7 +475,7 @@ PATTERN AnyChar    := PATTERN(U'[\u0001-\u7fff]');
 
     <para>Exemplos:</para>
 
-    <programlisting lang="ECL" role="runnable">rs := RECORD
+    <programlisting lang="ECL_Runnable">rs := RECORD
 STRING100 line;
 END;
 ds := DATASET([{'the fox; and the hen'}], rs);

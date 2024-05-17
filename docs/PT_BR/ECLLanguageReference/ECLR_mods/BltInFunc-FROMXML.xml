@@ -61,7 +61,7 @@
 
   <para>Exemplo:</para>
 
-  <programlisting lang="ECL" role="runnable">namesRec := RECORD
+  <programlisting lang="ECL_Runnable">namesRec := RECORD
   UNSIGNED2 EmployeeID{xpath('EmpID')};
   STRING10  Firstname{xpath('FName')};
   STRING10  Lastname{xpath('LName')};
@@ -72,7 +72,7 @@ OUTPUT(rec);</programlisting>
 
   <para>Exemplo com manuseio do Error e XML inválido:</para>
 
-  <programlisting lang="ECL" role="runnable">namesRec := RECORD
+  <programlisting lang="ECL_Runnable">namesRec := RECORD
   UNSIGNED2 EmployeeID{xpath('EmpID')};
   STRING20  Firstname{xpath('FName')};
   STRING20  Lastname{xpath('LName')};

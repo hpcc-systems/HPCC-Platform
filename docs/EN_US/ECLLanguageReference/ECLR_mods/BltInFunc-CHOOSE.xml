@@ -59,7 +59,7 @@
 
   <para>Example:</para>
 
-  <programlisting lang="ECL" role="runnable">MyExp := 1+2;
+  <programlisting lang="ECL_Runnable">MyExp := 1+2;
 MyChoice := CHOOSE(MyExp,9,8,7,6,5); // returns 7
 MyChoice2 := CHOOSE(MyExp,1,2,3,4,5);  // returns 3
 MyChoice3 := CHOOSE(MyExp,15,14,13,12,11);  // returns 13

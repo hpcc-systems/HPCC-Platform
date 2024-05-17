@@ -1,13 +1,13 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link } from "@fluentui/react";
-import { SizeMe } from "react-sizeme";
+import { WorkunitsService } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
-import { CreateEventScheduleStore, EventScheduleStore } from "src/WsWorkunits";
+import { EventScheduleStore } from "src/WsWorkunits";
 import nlsHPCC from "src/nlsHPCC";
 import * as WsWorkunits from "src/WsWorkunits";
 import { useConfirm } from "../hooks/confirm";
 import { HolyGrail } from "../layouts/HolyGrail";
-import { FluentPagedGrid, FluentPagedFooter, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
+import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { pushParams } from "../util/history";
 import { Fields } from "./forms/Fields";
 import { Filter } from "./forms/Filter";
@@ -18,6 +18,8 @@ import { useMyAccount } from "../hooks/user";
 
 const logger = scopedLogger("src-react/components/EventScheduler.tsx");
 
+const wuService = new WorkunitsService({ baseUrl: "" });
+
 const FilterFields: Fields = {
     "EventName": { type: "string", label: nlsHPCC.EventName, placeholder: nlsHPCC.EventNamePH },
     "JobName": { type: "string", label: nlsHPCC.JobName, placeholder: nlsHPCC.log_analysis_1 },
@@ -27,26 +29,19 @@ const FilterFields: Fields = {
     "Cluster": { type: "target-cluster", label: nlsHPCC.Cluster, placeholder: "" },
 };
 
-function formatQuery(_filter) {
-    const filter = { ..._filter };
-    logger.debug(filter);
-    return filter;
-}
-
 interface EventSchedulerProps {
-    filter?: object;
+    filter?: { [key: string]: any };
     sort?: QuerySortItem;
     page?: number;
     store?: EventScheduleStore;
 }
 
-const emptyFilter = {};
+const emptyFilter: { [key: string]: any } = {};
 const defaultSort = { attribute: "Wuid", descending: true };
 
 export const EventScheduler: React.FunctionComponent<EventSchedulerProps> = ({
     filter = emptyFilter,
     sort = defaultSort,
-    page = 1,
     store
 }) => {
 
@@ -57,20 +52,12 @@ export const EventScheduler: React.FunctionComponent<EventSchedulerProps> = ({
     const { currentUser } = useMyAccount();
     const {
         selection, setSelection,
-        pageNum, setPageNum,
-        pageSize, setPageSize,
         total, setTotal,
-        refreshTable } = useFluentStoreState({ page });
+        refreshTable } = useFluentStoreState({});
+
+    const [data, setData] = React.useState<any[]>([]);
 
     //  Grid ---
-    const query = React.useMemo(() => {
-        return formatQuery(filter);
-    }, [filter]);
-
-    const gridStore = React.useMemo(() => {
-        return store ? store : CreateEventScheduleStore({});
-    }, [store]);
-
     const columns = React.useMemo((): FluentColumns => {
         return {
             col1: {
@@ -91,6 +78,27 @@ export const EventScheduler: React.FunctionComponent<EventSchedulerProps> = ({
             State: { label: nlsHPCC.State, width: 60 }
         };
     }, []);
+
+    const refreshData = React.useCallback(() => {
+        wuService.WUShowScheduled(filter).then(({ Workunits }) => {
+            const workunits = Workunits?.ScheduledWU;
+            if (workunits) {
+                setData(workunits.map((wu, idx) => {
+                    return {
+                        Wuid: wu.Wuid,
+                        Cluster: wu.Cluster,
+                        JobName: wu.JobName,
+                        EventName: wu.EventName,
+                        EventText: wu.EventText,
+                        Owner: wu.Owner,
+                        State: wu.State
+                    };
+                }));
+            }
+        });
+    }, [filter]);
+
+    React.useEffect(() => refreshData(), [refreshData]);
 
     const copyButtons = useCopyButtons(columns, selection, "events");
 
@@ -161,38 +169,19 @@ export const EventScheduler: React.FunctionComponent<EventSchedulerProps> = ({
         header={<CommandBar items={buttons} farItems={copyButtons} />}
         main={
             <>
-                <SizeMe monitorHeight>{({ size }) =>
-                    <div style={{ width: "100%", height: "100%" }}>
-                        <div style={{ position: "absolute", width: "100%", height: `${size.height}px` }}>
-                            <FluentPagedGrid
-                                store={gridStore}
-                                query={query}
-                                sort={sort}
-                                pageNum={pageNum}
-                                pageSize={pageSize}
-                                total={total}
-                                columns={columns}
-                                height={`${size.height}px`}
-                                setSelection={setSelection}
-                                setTotal={setTotal}
-                                refresh={refreshTable}
-                            ></FluentPagedGrid>
-                        </div>
-                    </div>
-                }</SizeMe>
+                <FluentGrid
+                    data={data}
+                    primaryID={"Wuid"}
+                    sort={sort}
+                    columns={columns}
+                    setSelection={setSelection}
+                    setTotal={setTotal}
+                    refresh={refreshTable}
+                ></FluentGrid>
                 <Filter showFilter={showFilter} setShowFilter={setShowFilter} filterFields={filterFields} onApply={pushParams} />
                 <DescheduleConfirm />
                 <PushEventForm showForm={showPushEvent} setShowForm={setShowPushEvent} />
             </>
         }
-        footer={<FluentPagedFooter
-            persistID={"events"}
-            pageNum={pageNum}
-            selectionCount={selection.length}
-            setPageNum={setPageNum}
-            setPageSize={setPageSize}
-            total={total}
-        ></FluentPagedFooter>}
-        footerStyles={{}}
     />;
 };

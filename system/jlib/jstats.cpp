@@ -974,6 +974,9 @@ static const constexpr StatisticMeta statsMetaData[StMax] = {
     { SIZESTAT(ContinuationData), "The total size of continuation data sent from agent to the server\nA large number may indicate a poor filter, or merging from many different index locations" },
     { NUMSTAT(ContinuationRequests), "The number of times the agent indicated there was more data to be returned" },
     { NUMSTAT(Failures), "The number of times a query has failed" },
+    { NUMSTAT(LocalRows), "Number of rows handled locally"},
+    { NUMSTAT(RemoteRows), "Number of rows sent to remote workers"},
+    { SIZESTAT(RemoteWrite), "Size of data sent to remote workers"},
 };
 
 static MapStringTo<StatisticKind, StatisticKind> statisticNameMap(true);

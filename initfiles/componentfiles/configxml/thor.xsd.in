@@ -688,6 +688,7 @@
           <xs:enumeration value="false"/>
           <xs:enumeration value="true"/>
           <xs:enumeration value="payload"/>
+          <xs:enumeration value="payloadRemoveOnly"/>
         </xs:restriction>
       </xs:simpleType>
     </xs:attribute>

@@ -37,7 +37,7 @@
   rounded integer of the <emphasis>realvalue </emphasis>by rounding any
   decimal portion to the next larger integer value, regardless of sign.</para>
 
-  <para lang="ECL" role="runnable">Example:</para>
+  <para lang="ECL_Runnable">Example:</para>
 
   <programlisting>SomeRealValue := 3.14159;
 INTEGER4 MyVal1 := ROUNDUP(SomeRealValue); // MyVal is 4

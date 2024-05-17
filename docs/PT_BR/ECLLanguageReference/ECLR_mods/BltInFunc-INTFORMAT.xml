@@ -54,7 +54,7 @@
 
   <para>Exemplo:</para>
 
-  <programlisting lang="ECL" role="runnable">val := 123456789;
+  <programlisting lang="ECL_Runnable">val := 123456789;
 OUTPUT(INTFORMAT(val,20,1));
   //formats as '00000000000123456789'
 OUTPUT(INTFORMAT(val,20,0));

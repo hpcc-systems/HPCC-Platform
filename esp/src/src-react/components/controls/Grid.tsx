@@ -1,7 +1,7 @@
 import * as React from "react";
-import { DetailsList, DetailsListLayoutMode, Dropdown, IColumn as _IColumn, ICommandBarItemProps, IDetailsHeaderProps, IDetailsListStyles, mergeStyleSets, Selection, Stack, TooltipHost, TooltipOverflowMode } from "@fluentui/react";
+import { DetailsList, DetailsListLayoutMode, Dropdown, IColumn as _IColumn, ICommandBarItemProps, IDetailsHeaderProps, IDetailsListStyles, mergeStyleSets, Selection, Stack, TooltipHost, TooltipOverflowMode, IDetailsList } from "@fluentui/react";
 import { Pagination } from "@fluentui/react-experiments/lib/Pagination";
-import { useConst } from "@fluentui/react-hooks";
+import { useConst, useId, useMount, useOnEvent } from "@fluentui/react-hooks";
 import { BaseStore, Memory, QueryRequest, QuerySortItem } from "src/store/Memory";
 import nlsHPCC from "src/nlsHPCC";
 import { createCopyDownloadSelection } from "../Common";
@@ -32,6 +32,7 @@ export interface FluentColumn {
     hidden?: boolean;
     justify?: JustifyType;
     formatter?: (value: any, row: any) => any;
+    csvFormatter?: (value: any, row: any) => string;
     className?: (value: any, row: any) => string;
 }
 
@@ -171,6 +172,16 @@ export function useFluentStoreState({ page }: FluentStoreStateProps): FluentStor
     return { selection, setSelection, pageNum, setPageNum, pageSize, setPageSize, total, setTotal, refreshTable };
 }
 
+interface IListEx {
+    _scrollElement?: HTMLElement;
+    _onScroll?: () => void;
+    _onAsyncScrollDebounced?: () => void;
+
+}
+interface IDetailsListEx extends IDetailsList {
+    _list?: React.RefObject<IListEx>;
+}
+
 interface FluentStoreGridProps {
     store: any,
     query?: QueryRequest,
@@ -275,20 +286,43 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
         columnWidths.set(column.key, newWidth);
     }, [columnWidths]);
 
-    return <DetailsList
-        compact={true}
-        items={items}
-        columns={fluentColumns}
-        setKey="set"
-        layoutMode={DetailsListLayoutMode.justified}
-        selection={selectionHandler}
-        isSelectedOnFocus={false}
-        selectionPreservedOnEmptyClick={true}
-        onColumnHeaderClick={onColumnClick}
-        onRenderDetailsHeader={renderDetailsHeader}
-        onColumnResize={columnResize}
-        styles={gridStyles(height)}
-    />;
+    /*  Monitor Scroll Events (hack)
+
+        Essentially we are setting the scrollElement of the DetailsList to the div that contains the DetailsList (rather than a scrollable pane host).
+        See:  https://github.com/microsoft/fluentui/blob/55d3a31042e8972ea373841bef616c68e6ab69f9/packages/react/src/components/List/List.tsx#L355-L369
+
+        Note: Not sure if `_onScroll` call is needed, but excluding for now as it seems to work without it and is more performant.
+    */
+    const id = useId("fluent-store-grid-");
+    const detailListComponent = React.useRef<IDetailsListEx | null>(null);
+    const [detailListElement, setDetailListElement] = React.useState<HTMLDivElement | null>(null);
+    useMount(() => {
+        const detailListElement = document.querySelector<HTMLDivElement>(`#${id} .ms-DetailsList`);
+        setDetailListElement(detailListElement);
+        if (detailListComponent.current?._list?.current) {
+            detailListComponent.current._list.current._scrollElement = detailListElement;
+        }
+    });
+    useOnEvent(detailListElement, "scroll", () => {
+        detailListComponent.current?._list?.current?._onAsyncScrollDebounced();
+    });
+
+    return <div id={id} data-is-scrollable={"true"} style={{ overflow: "auto" }}>
+        <DetailsList
+            componentRef={detailListComponent}
+            compact={true}
+            items={items}
+            columns={fluentColumns}
+            layoutMode={DetailsListLayoutMode.justified}
+            selection={selectionHandler}
+            isSelectedOnFocus={false}
+            selectionPreservedOnEmptyClick={true}
+            onColumnHeaderClick={onColumnClick}
+            onRenderDetailsHeader={renderDetailsHeader}
+            onColumnResize={columnResize}
+            styles={gridStyles(height)}
+        />
+    </div>;
 };
 
 interface FluentGridProps {

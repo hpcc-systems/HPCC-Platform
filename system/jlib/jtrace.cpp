@@ -791,6 +791,16 @@ public:
         recordError(SpanError(msg.str(), e->errorCode(), spanFailed, escapedScope));
     };
 
+    virtual const char * queryTraceId() const override
+    {
+        return traceID.get(); 
+    }
+
+    virtual const char * querySpanId() const override
+    {
+        return spanID.get();
+    }
+
 protected:
     CSpan(const char * spanName)
     {
@@ -900,6 +910,9 @@ public:
     virtual void recordException(IException * e, bool spanFailed, bool escapedScope) override {}
     virtual void recordError(const SpanError & error) override {};
     virtual void setSpanStatusSuccess(bool spanSucceeded, const char * statusMessage) override {}
+
+    virtual const char * queryTraceId() const override { return nullptr; }
+    virtual const char * querySpanId() const override { return nullptr; }
 
     virtual const char* queryGlobalId() const override { return nullptr; }
     virtual const char* queryCallerId() const override { return nullptr; }
@@ -1504,8 +1517,8 @@ void OwnedSpanScope::clear()
 {
     if (span)
     {
-        setThreadedActiveSpan(prevSpan);
         span->endSpan();
+        setThreadedActiveSpan(prevSpan);
         span.clear();
     }
 }

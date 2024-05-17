@@ -1,0 +1,190 @@
+<html>
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+    <title>A Real World Example</title>
+    <link rel="stylesheet" type="text/css" href="eclipsehelp.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@hpcc-js/common/font-awesome/css/font-awesome.min.css">
+    <link rel="stylesheet" type="text/css" href="./dist/index.css">
+    <meta name="generator" content="DocBook XSL Stylesheets V1.76.1">
+    <link rel="home" href="index.html" title="ECL Programmers Guide">
+    <link rel="up" href="SOAPCALL_from_Thor_to_Roxie.html" title="SOAPCALL from Thor to Roxie">
+    <link rel="prev" href="Performance_Considerations_MERGE.html" title="Performance Considerations: MERGE">
+    <link rel="next" href="Controlling_Roxie_Queries.html" title="Controlling Roxie Queries">
+</head>
+
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+    <div class="navheader">
+        <table width="100%" summary="Navigation header">
+            <tr>
+                <th colspan="3" align="center">A Real World Example</th>
+            </tr>
+            <tr>
+                <td width="20%" align="left"><a accesskey="p" href="Performance_Considerations_MERGE.html">Prev</a>�</td>
+                <th width="60%" align="center">SOAPCALL from Thor to Roxie</th>
+                <td width="20%" align="right">�<a accesskey="n" href="Controlling_Roxie_Queries.html">Next</a></td>
+            </tr>
+        </table>
+        <hr>
+    </div>
+    <div class="sect2" title="A Real World Example">
+        <div class="titlepage">
+            <div>
+                <div>
+                    <h3 class="title"><a name="A_Real_World_Example"></a>A Real World Example</h3>
+                </div>
+            </div>
+        </div>
+        <p>A customer asked for help with a problem--how to compare two strings
+            and determine if the first contains every word in the second, in any
+            order, when there are an indeterminate number of words in each string.
+            This is a fairly straight-forward problem in ECL. Using JOIN and ROLLUP
+            would be one approach, or nested child dataset queries (not supported in
+            Thor at the time of the request for help, though they may be by the time
+            you read this). All the following code is contained in the Soapcall3.ECL
+            file.</p>
+        <p>The first need was to create a function that would extract all the
+            discrete words from a string. This is the kind of job that the PARSE
+            function excels at, so that's exactly what this code does:</p>
+        <pre class="programlisting">ParseWords(STRING LineIn) := FUNCTION
+  PATTERN Ltrs := PATTERN('[A-Za-z]');
+  PATTERN Char := Ltrs | '-' | '\'';
+  TOKEN   Word := Char+;
+          ds   := DATASET([{LineIn}],{STRING line});
+  RETURN PARSE(ds,line,Word,{STRING Pword := MATCHTEXT(Word)});
+END;</pre>
+        <p>This FUNCTION (contained in Soapcall3.ECL) receives an input string
+            and produces a record set result of all the words contained in that
+            string. It defines a PATTERN attribute (Char) of allowable characters in a
+            word as the set of all upper and lower case letters (defined by the Ltrs
+            PATTERN), the hyphen, and the apostrophe. Any other character than these
+            will be ignored.</p>
+        <p>Next, it defines a Word as one or more allowable Char pattern
+            characters. This pattern is defined as a TOKEN so that only the full word
+            match is returned and not all the possible alternative matches (i.e.
+            returning just SOAP, instead of SOAP, SOA, SO, and S--all the possible
+            alternative matches that a PATTERN would generate).</p>
+        <p>The one record in-line DATASET attribute (ds) creates the input
+            "file" for the PARSE function to work on, producing the result record set
+            of all the discrete words from the input string.</p>
+        <p>Next, we need a Roxie query to compare the two strings (also
+            contained in Soapcall3.ECL):</p>
+        <pre class="programlisting" role="runnable">EXPORT Soapcall3() := FUNCTION
+  STRING UID     := '' : STORED('UIDstr');
+  STRING LeftIn  := '' : STORED('LeftInStr');
+  STRING RightIn := '' : STORED('RightInStr');
+  BOOLEAN TokenMatch := FUNCTION
+    P1 := ParseWords(LeftIn);
+    P2 := ParseWords(RightIn);
+    SetSrch := SET(P1,Pword);
+    ProjRes := PROJECT(P2,
+                       TRANSFORM({BOOLEAN Fnd},
+                                 SELF.Fnd := LEFT.Pword IN SetSrch));
+    AllRes  := DEDUP(SORT(ProjRes,Fnd));
+    RETURN COUNT(AllRes) = 1 AND AllRes[1].Fnd = TRUE;
+  END;
+  RETURN OUTPUT(DATASET([{UID,TokenMatch}],{STRING UID,BOOLEAN res}));
+END;</pre>
+        <p>There are three pieces of data this query expects to receive: a
+            string containing an identifier for the comparison (for context purposes
+            in the result), and the two strings whose words to compare.</p>
+        <p>The FUNCTION passes the input strings to the ParseWords function to
+            create two recordsets of words from those strings. The SET function then
+            re-defines the first recordset as a SET so the the IN operator may be
+            used.</p>
+        <p>The PROJECT operation does all the real work. It passes each word in
+            turn from the second input string to its inline TRANSFORM function, which
+            produces a Boolean result for that word--TRUE or FALSE, is it present in
+            the set of words from the first input string or not?</p>
+        <p>To determine if all the words in the second string were contained in
+            the first, the SORT/DEDUP sorts all the resulting Boolean values then
+            removes all the duplicate entries. There will only be one or two records
+            left: either a TRUE and a FALSE, or a single TRUE or FALSE record.</p>
+        <p>The RETURN expression detects which of the three scenarios has
+            occurred. Two records left indicates some, but not all, of the words were
+            present. One record indicates either all or none of the words were
+            present, and if the value of that record is TRUE, then all words were
+            present and the FUNCTION returns TRUE. All other cases return
+            FALSE.</p>
+        <p>The OUTPUT uses a one-record inline DATASET to format the result.
+            The identifier that was passed in is passed back along with the Boolean
+            result of the compare. The identifier becomes important when the query is
+            called multiple times in Roxie to process through a dataset of strings to
+            compare in a batch mode because the results may not be returned in the
+            same order as the input records. If it were only ever used interactively,
+            this identifier would not be necessary.</p>
+        <p>Once you've saved the query to the Repository, you can test it with
+            hThor and/or deploy it to Roxie (hThor will work for testing, but Roxie is
+            much faster for production). Either way, you can use SOAPCALL to access it
+            like this (the only difference would be the IP and port you target for the
+            query (contained in Soapcall4.ECL)):</p>
+        <pre class="programlisting">RoxieIP := 'http://127.0.0.1:8002/WsEcl/soap/query/roxie/soapcall3.1'; //Roxie
+svc     := 'soapcall3.1';
+
+InRec := RECORD
+  STRING UIDstr{XPATH('UIDstr')}; 
+  STRING LeftInStr{XPATH('LeftInStr')};
+  STRING RightInStr{XPATH('RightInStr')};
+END;
+InDS := DATASET([
+   {'1','the quick brown fox jumped over the lazy red dog','quick fox red dog'},
+   {'2','the quick brown fox jumped over the lazy red dog','quick fox black dog'},
+   {'3','george of the jungle lives here','fox black dog'},
+   {'4','fred and wilma flintstone','fred flintstone'},
+   {'5','yomama comeonah','brake chill'} ],InRec);
+
+RS := SOAPCALL(InDS,
+               RoxieIP,
+               svc,
+               InRec,
+               TRANSFORM(LEFT),
+               DATASET({STRING UIDval{XPATH('uid')},BOOLEAN CompareResult{XPATH('res')}}));
+
+OUTPUT(RS);
+</pre>
+        <p>Of course, <span class="bold"><strong>you must first change the IP and
+                    port in this code to the correct values for your environment</strong></span>.
+            You can find the proper IP and port to use by looking at the System
+            Servers page of your ECL Watch. To target Doxie (aka ECL Agent or hthor),
+            use the IP of your Thor's ESP Server and the port for its wsecl service.
+            To target Roxie, use the IP of your Roxie's ESP Server and the port for
+            its wsecl service. It's possible that both ESP servers could be on the
+            same box. If so, then the difference will only be in the port assignment
+            for each.</p>
+        <p>The key to this SOAPCALL query is the InRec RECORD structure with
+            its XPATH definitions. These must exactly match the part names and the
+            STORED names of the query's parameter receiving attributes (NB that these
+            are case sensitive, since XPATH is XML and XML is always case sensitive).
+            This is what maps the input data fields through the SOAP interface to the
+            query's attributes.</p>
+        <p>This SOAPCALL receives a recordset as input and produces a recordset
+            as its result, making it very similar to the second example above. One
+            small change from that previous example of this type is the use of the
+            shorthand TRANSFORM instead of an inline TRANSFORM function. Also, note
+            that the XPATH for the first field in the DATASET parameter's inline
+            RECORD structure contains lower case "uid" while it is obviously
+            referencing the query's OUTPUT field named "UID"--the XML returned from the
+            SOAP service uses lower case tag names for the returned data
+            fields.</p>
+        <p>When you run this you'll get a TRUE result for records one and four,
+            and FALSE for all others.</p>
+    </div>
+    <script src="./dist/index.js"></script>
+    <div class="navfooter">
+        <hr>
+        <table width="100%" summary="Navigation footer">
+            <tr>
+                <td width="40%" align="left"><a accesskey="p" href="Performance_Considerations_MERGE.html">Prev</a>�</td>
+                <td width="20%" align="center"><a accesskey="u" href="SOAPCALL_from_Thor_to_Roxie.html">Up</a></td>
+                <td width="40%" align="right">�<a accesskey="n" href="Controlling_Roxie_Queries.html">Next</a></td>
+            </tr>
+            <tr>
+                <td width="40%" align="left" valign="top">Performance Considerations: MERGE�</td>
+                <td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td>
+                <td width="40%" align="right" valign="top">�Controlling Roxie Queries</td>
+            </tr>
+        </table>
+    </div>
+</body>
+
+</html>

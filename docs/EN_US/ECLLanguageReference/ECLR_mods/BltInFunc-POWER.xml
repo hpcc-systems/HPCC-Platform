@@ -45,7 +45,7 @@
 
   <para>Example:</para>
 
-  <programlisting lang="ECL" role="runnable">MyCube := POWER(2.0,3.0); // = 8.0
+  <programlisting lang="ECL_Runnable">MyCube := POWER(2.0,3.0); // = 8.0
 MySquare := POWER(3.0,2.0); // = 9.0
 OUTPUT(MyCube);
 OUTPUT(MySquare);

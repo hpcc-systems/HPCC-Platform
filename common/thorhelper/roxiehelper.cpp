@@ -2767,7 +2767,7 @@ StringBuffer & expandLogicalFilename(StringBuffer & logicalName, const char * fn
         CDfsLogicalFileName dlfn;
         dlfn.setAllowWild(true);
         dlfn.setAllowTrailingEmptyScope(true);
-        dlfn.set(fname+1);
+        dlfn.set(fname+1, false, true);
         logicalName.append(dlfn.get(ignoreForeignPrefix));
     }
     else if (resolveLocally)
@@ -2793,7 +2793,7 @@ StringBuffer & expandLogicalFilename(StringBuffer & logicalName, const char * fn
         CDfsLogicalFileName dlfn;
         dlfn.setAllowWild(true);
         dlfn.setAllowTrailingEmptyScope(true);
-        dlfn.set(lfn.str());
+        dlfn.set(lfn.str(), false, true);
         logicalName.append(dlfn.get());
     }
     return logicalName;

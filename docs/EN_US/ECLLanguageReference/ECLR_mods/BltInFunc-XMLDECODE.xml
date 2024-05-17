@@ -40,7 +40,7 @@
 
   <para>Example:</para>
 
-  <programlisting lang="ECL" role="runnable">encoded := XMLENCODE('&lt;xml version 1&gt;&lt;tag&gt;data&lt;/tag&gt;');
+  <programlisting lang="ECL_Runnable">encoded := XMLENCODE('&lt;xml version 1&gt;&lt;tag&gt;data&lt;/tag&gt;');
 decoded := XMLDECODE(encoded);
 
 OUTPUT(encoded); //results in '&amp;lt;xml version 1&amp;gt;&amp;lt;tag&amp;gt;data&amp;lt;/tag&amp;gt;'

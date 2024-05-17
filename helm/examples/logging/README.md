@@ -94,9 +94,12 @@ Log output verbosity can be adjusted from "critical messages only" (1) up to "re
     
 ### Log Data Column Configuration
 
-The available log data columns include messageid(MID), audience(AUD), class(CLS), date(DAT), time(TIM), millitime(MLT), microtime(MCT), nanotime(NNT), processid(PID), threadid(TID), node(NOD), job(JOB), use(USE), session(SES), code(COD), component(COM), quotedmessage(QUO), prefix(PFX), all(ALL), and standard(STD). The log data columns (or fields) configuration is controlled by the `<section>`.logging.fields value, comprised of 3 letter codes delimited by the aggregation operator (+) or the removal operator (-).
+The available log data columns include traceid(TRC), spanid(SPN), messageid(MID), audience(AUD), class(CLS), date(DAT), time(TIM), millitime(MLT), microtime(MCT), nanotime(NNT), processid(PID), threadid(TID), node(NOD), job(JOB), use(USE), session(SES), code(COD), component(COM), quotedmessage(QUO), prefix(PFX), all(ALL), and standard(STD). The log data columns (or fields) configuration is controlled by the `<section>`.logging.fields value, comprised of 3 letter codes delimited by the aggregation operator (+) or the removal operator (-).
     
-    For example, all component log output should include the standard columns except the job ID column:
+    Example: all component log output should include the standard columns except the job ID column:
+    helm install myhpcc ./hpcc --set global.logging.fields="STD-JOB"
+    
+    Example: Include trace and span info in addition to the standard columns:
     helm install myhpcc ./hpcc --set global.logging.fields="STD-JOB"
     
 Adjustment of per-component logging values can require assertion of multiple component specific values, which can be inconvinient to do via the --set command line parameter. In these cases, a custom values file could be used to set all required fields.

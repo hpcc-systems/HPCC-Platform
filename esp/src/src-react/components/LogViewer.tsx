@@ -45,7 +45,8 @@ export const LogViewer: React.FunctionComponent<LogViewerProps> = ({
                     const colors = logColor(level);
                     const styles = { backgroundColor: colors.background, padding: "2px 6px", color: colors.foreground };
                     return <span style={styles}>{Level[level].toUpperCase()}</span>;
-                }
+                },
+                csvFormatter: level => Level[level].toUpperCase()
             },
             id: { label: nlsHPCC.Source, width: 212, sortable: false },
             message: { label: nlsHPCC.Message, sortable: false }

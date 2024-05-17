@@ -232,7 +232,7 @@ int main(int argc, const char **argv)
                 continue;
             }
             Owned <IKeyIndex> index;
-            index.setown(createKeyIndex(keyName, 0, false));
+            index.setown(createKeyIndex(keyName, 0, false, 0));
             size32_t key_size = index->keySize();  // NOTE - in variable size case, this may be 32767 + sizeof(offset_t)
             size32_t keyedSize = index->keyedSize();
             unsigned nodeSize = index->getNodeSize();
@@ -418,7 +418,7 @@ int main(int argc, const char **argv)
                         outFileIO.setown(outFile->openShared(IFOcreate, IFSHfull));
                         if(!outFileIO)
                             throw MakeStringException(0, "Could not write index file %s", filename);
-                        outFileStream.setown(createIOStream(outFileIO));
+                        outFileStream.setown(createBufferedIOStream(outFileIO, 0x200000));
                     }
                     else
                         outFileStream.setown(new DummyFileIOStream);

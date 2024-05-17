@@ -33,7 +33,7 @@
 
   <para>Example:</para>
 
-  <programlisting lang="ECL" role="runnable">#DECLARE (mstg);
+  <programlisting lang="ECL_Runnable">#DECLARE (mstg);
 #DECLARE (dmstg);
 #SET (mstg, #MANGLE('SECTION_STATES/AREACODES'));
 EXPORT res1 := %'mstg'%;

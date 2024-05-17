@@ -41,7 +41,7 @@
 
   <para>Example:</para>
 
-  <programlisting lang="ECL" role="runnable">MyLogPI := LN(3.14159); //1.144729041185178
+  <programlisting lang="ECL_Runnable">MyLogPI := LN(3.14159); //1.144729041185178
 OUTPUT(MyLogPI);</programlisting>
 
   <para>See Also: <link linkend="EXP">EXP</link>, <link

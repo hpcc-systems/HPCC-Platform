@@ -132,9 +132,7 @@ IKeyIndex *openKeyFile(IDistributedFilePart & keyFile, size32_t blockedIndexIOSi
                 Owned<IFileIO> iFileIO = iFile->open(IFOread);
                 if (nullptr == iFileIO)
                     throw makeStringExceptionV(0, "Failed to open index file %s", remotePath.str());
-                if (blockedIndexIOSize)
-                    iFileIO.setown(createBlockedIO(iFileIO.getClear(), blockedIndexIOSize));
-                return createKeyIndex(remotePath.str(), crc, *iFileIO, (unsigned) -1, false);
+                return createKeyIndex(remotePath.str(), crc, *iFileIO, (unsigned) -1, false, blockedIndexIOSize);
             }
         }
         catch (IException *E)

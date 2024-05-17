@@ -3181,7 +3181,7 @@ char * EclAgent::queryIndexMetaData(char const * lfn, char const * xpath)
                 rfn.getPath(remotePath);
                 unsigned crc;
                 part->getCrc(crc);
-                key.setown(createKeyIndex(remotePath.str(), crc, false));
+                key.setown(createKeyIndex(remotePath.str(), crc, false, 0));
                 break;
             }
         }
@@ -3592,6 +3592,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], Owned<ILocalWor
         printStart(argc, argv);
         DBGLOG("Build %s", hpccBuildInfo.buildTag);
     }
+    workunitGraphCacheEnabled = agentTopology->getPropBool("expert/@workunitGraphCacheEnabled", workunitGraphCacheEnabled);
 
     // Extract any params into stored - primarily for standalone case but handy for debugging eclagent sometimes too
     Owned<IPropertyTree> query;

@@ -30,6 +30,7 @@ interface IHashDistributor : extends IInterface
     virtual void disconnect(bool stop)=0;
     virtual void join()=0;
     virtual void setBufferSizes(unsigned sendBufferSize, unsigned outputBufferSize, unsigned pullBufferSize) = 0;
+    virtual void mergeStats(CRuntimeStatisticCollection &stats) const = 0;
     virtual void abort()=0;
 };
 

@@ -53,7 +53,7 @@
 
   <para>Exemplo:</para>
 
-  <programlisting lang="ECL" role="runnable">GenderEnum := ENUM(UNSIGNED1,Male,Female,NonBinary,Unknown);
+  <programlisting lang="ECL_Runnable">GenderEnum := ENUM(UNSIGNED1,Male,Female,NonBinary,Unknown);
         //values are 1, 2, 3, 4
 personFlag := ENUM(None=0,Dead=1,Foreign=2,Terrorist=4,Wanted=Terrorist*2);
         //values are 0, 1, 2, 4, 8

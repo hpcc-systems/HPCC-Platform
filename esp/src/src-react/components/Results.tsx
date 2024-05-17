@@ -160,10 +160,12 @@ export const Results: React.FunctionComponent<ResultsProps> = ({
 
 interface TabbedResultsProps {
     wuid: string;
+    filter?: { [id: string]: any };
 }
 
 export const TabbedResults: React.FunctionComponent<TabbedResultsProps> = ({
-    wuid
+    wuid,
+    filter = {}
 }) => {
 
     const [results] = useWorkunitResults(wuid);
@@ -172,7 +174,7 @@ export const TabbedResults: React.FunctionComponent<TabbedResultsProps> = ({
         <Pivot overflowBehavior="menu" style={{ height: "100%" }}>
             {results.map(result => {
                 return <PivotItem key={`${result?.ResultName}_${result?.Sequence}`} headerText={result?.ResultName} style={pivotItemStyle(size)}>
-                    <Result wuid={wuid} resultName={result?.ResultName} />
+                    <Result wuid={wuid} resultName={result?.ResultName} filter={filter} />
                 </PivotItem>;
             })}
         </Pivot>

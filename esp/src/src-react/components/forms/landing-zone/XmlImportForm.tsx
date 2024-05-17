@@ -40,7 +40,7 @@ const defaultValues: XmlImportFormValues = {
     destGroup: "",
     DFUServerQueue: "",
     namePrefix: "",
-    sourceFormat: "1",
+    sourceFormat: "2",
     sourceMaxRecordSize: "",
     overwrite: false,
     replicate: false,
@@ -312,7 +312,6 @@ export const XmlImportForm: React.FunctionComponent<XmlImportFormProps> = ({
                                 key={fieldName}
                                 label={nlsHPCC.Format}
                                 options={[
-                                    { key: "1", text: "ASCII" },
                                     { key: "2", text: "UTF-8" },
                                     { key: "3", text: "UTF-8N" },
                                     { key: "4", text: "UTF-16" },

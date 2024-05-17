@@ -177,7 +177,7 @@
 
     <para>Exemplo:</para>
 
-    <programlisting lang="ECL" role="runnable">inrec := RECORD
+    <programlisting lang="ECL_Runnable">inrec := RECORD
   UNSIGNED6 uid;
 END;
 outrec := RECORD(inrec)
@@ -231,7 +231,7 @@ OUTPUT(combined2);
 
     <para>Exemplo:</para>
 
-    <programlisting lang="ECL" role="runnable">inrec := {UNSIGNED6 udid};
+    <programlisting lang="ECL_Runnable">inrec := {UNSIGNED6 udid};
 outrec := RECORD(inrec)
   STRING20 name;
   UNSIGNED score;

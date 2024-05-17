@@ -302,6 +302,9 @@ enum StatisticKind
     StSizeContinuationData,
     StNumContinuationRequests,
     StNumFailures,
+    StNumLocalRows,
+    StNumRemoteRows,
+    StSizeRemoteWrite,
     StMax,
 
     //For any quantity there is potentially the following variants.

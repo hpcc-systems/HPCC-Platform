@@ -26,6 +26,36 @@
 #include "hqlutil.hpp"
 #include "jsecrets.hpp"
 
+static std::atomic<unsigned> fetchNesting{0};
+static std::atomic<bool> abortPending{false};
+
+extern HQL_API bool checkAbortGitFetch()
+{
+    abortPending = true;
+    return fetchNesting == 0;
+}
+
+class GitFetchTracker
+{
+public:
+    GitFetchTracker()
+    {
+        fetchNesting++;
+    }
+    ~GitFetchTracker()
+    {
+        if (--fetchNesting == 0)
+        {
+            //Check if an abort was requested while the git action was in progress.  If so terminate when it completes.
+            if (abortPending)
+            {
+                UERRLOG("Process terminated after git operation.");
+                _exit(2);
+            }
+        }
+    }
+};
+
 static const char * queryExtractFilename(const char * urn)
 {
     if (hasPrefix(urn, "file:", true))
@@ -1010,6 +1040,7 @@ unsigned EclRepositoryManager::runGitCommand(StringBuffer * output, const char *
         }
     }
 
+    GitFetchTracker gitFetchBlock;
     const char * cmd = "git";
     VStringBuffer runcmd("%s %s", cmd, args);
     StringBuffer error;

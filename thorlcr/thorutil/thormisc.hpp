@@ -155,6 +155,7 @@ extern graph_decl const StatisticsMapping soapcallActivityStatistics;
 
 extern graph_decl const StatisticsMapping indexReadFileStatistics;
 extern graph_decl const StatisticsMapping hashDedupActivityStatistics;
+extern graph_decl const StatisticsMapping hashDistribActivityStatistics;
 
 class BooleanOnOff
 {

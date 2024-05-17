@@ -287,6 +287,11 @@ private:
         {
             result = Deserialization_NOT_A_NUMBER;
         }
+        else if (sizeof(value) == sizeof(tmp))
+        {
+            value = tmp;
+            result = Deserialization_SUCCESS;
+        }
 #if defined(_WIN32)
 // VS2015 generates this sign mismatch warning when TValue is unsigned, and
 // unsigned values are not process here.
@@ -335,6 +340,11 @@ private:
         else if ('-' == buffer[0])
         {
             result = Deserialization_UNDERFLOW;
+        }
+        else if (sizeof(value) == sizeof(tmp))
+        {
+            value = tmp;
+            result = Deserialization_SUCCESS;
         }
 #if defined(_WIN32)
 // VS2015 generates this sign mismatch warning when TValue is unsigned, and tmp
@@ -414,7 +424,9 @@ private:
         switch (result)
         {
         case Deserialization_UNKNOWN:       resultStr = "unknown"; break;
+#ifdef _DEBUG
         case Deserialization_SUCCESS:       resultStr = "success"; break;
+#endif
         case Deserialization_BAD_TYPE:      resultStr = "bad type"; break;
         case Deserialization_UNSUPPORTED:   resultStr = "unsupported"; break;
         case Deserialization_INVALID_TOKEN: resultStr = "invalid token"; break;

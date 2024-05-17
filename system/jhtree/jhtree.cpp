@@ -765,7 +765,7 @@ public:
         setBlobCacheMem(maxBlobMem);
         // note that each index caches the last blob it unpacked so that sequential blobfetches are still ok
     }
-    const CJHTreeNode *getNode(const INodeLoader *key, unsigned keyID, offset_t pos, NodeType type, IContextLogger *ctx, bool isTLK);
+    const CJHTreeNode *getCachedNode(const INodeLoader *key, unsigned keyID, offset_t pos, NodeType type, IContextLogger *ctx, bool isTLK);
     void getCacheInfo(ICacheInfoRecorder &cacheInfo);
 
 
@@ -878,12 +878,12 @@ unsigned CKeyStore::setKeyCacheLimit(unsigned limit)
     return keyIndexCache.setCacheLimit(limit);
 }
 
-IKeyIndex *CKeyStore::doload(const char *fileName, unsigned crc, IReplicatedFile *part, IFileIO *iFileIO, unsigned fileIdx, IMemoryMappedFile *iMappedFile, bool isTLK)
+IKeyIndex *CKeyStore::doload(const char *fileName, unsigned crc, IReplicatedFile *part, IFileIO *iFileIO, unsigned fileIdx, IMemoryMappedFile *iMappedFile, bool isTLK, size32_t blockedIOSize)
 {
     // isTLK provided by caller since flags in key header unreliable. If either say it's a TLK, I believe it.
     IKeyIndex *keyIndex;
     StringBuffer fname;
-    fname.append(fileName).append('/').append(crc);
+    fname.append(fileName).append('/').append(crc).append('/').append(blockedIOSize);
 
     // MORE - holds onto the mutex way too long
     synchronized block(mutex);
@@ -898,7 +898,7 @@ IKeyIndex *CKeyStore::doload(const char *fileName, unsigned crc, IReplicatedFile
         else if (iFileIO)
         {
             assert(!part);
-            keyIndex = new CDiskKeyIndex(getUniqId(fileIdx), LINK(iFileIO), fname, isTLK);
+            keyIndex = new CDiskKeyIndex(getUniqId(fileIdx), LINK(iFileIO), fname, isTLK, blockedIOSize);
         }
         else
         {
@@ -914,7 +914,7 @@ IKeyIndex *CKeyStore::doload(const char *fileName, unsigned crc, IReplicatedFile
                 iFile.setown(createIFile(fileName));
             IFileIO *fio = iFile->open(IFOread);
             if (fio)
-                keyIndex = new CDiskKeyIndex(getUniqId(fileIdx), fio, fname, isTLK);
+                keyIndex = new CDiskKeyIndex(getUniqId(fileIdx), fio, fname, isTLK, blockedIOSize);
             else
                 throw MakeStringException(0, "Failed to open index file %s", fileName);
         }
@@ -928,19 +928,19 @@ IKeyIndex *CKeyStore::doload(const char *fileName, unsigned crc, IReplicatedFile
     return keyIndex;
 }
 
-IKeyIndex *CKeyStore::load(const char *fileName, unsigned crc, IFileIO *iFileIO, unsigned fileIdx, bool isTLK)
+IKeyIndex *CKeyStore::load(const char *fileName, unsigned crc, IFileIO *iFileIO, unsigned fileIdx, bool isTLK, size32_t blockedIOSize)
 {
-    return doload(fileName, crc, NULL, iFileIO, fileIdx, NULL, isTLK);
+    return doload(fileName, crc, NULL, iFileIO, fileIdx, NULL, isTLK, blockedIOSize);
 }
 
-IKeyIndex *CKeyStore::load(const char *fileName, unsigned crc, IMemoryMappedFile *iMappedFile, bool isTLK)
+IKeyIndex *CKeyStore::load(const char *fileName, unsigned crc, IMemoryMappedFile *iMappedFile, bool isTLK, size32_t blockedIOSize)
 {
-    return doload(fileName, crc, NULL, NULL, (unsigned) -1, iMappedFile, isTLK);
+    return doload(fileName, crc, NULL, NULL, (unsigned) -1, iMappedFile, isTLK, blockedIOSize);
 }
 
-IKeyIndex *CKeyStore::load(const char *fileName, unsigned crc, bool isTLK)
+IKeyIndex *CKeyStore::load(const char *fileName, unsigned crc, bool isTLK, size32_t blockedIOSize)
 {
-    return doload(fileName, crc, NULL, NULL, (unsigned) -1, NULL, isTLK);
+    return doload(fileName, crc, NULL, NULL, (unsigned) -1, NULL, isTLK, blockedIOSize);
 }
 
 StringBuffer &CKeyStore::getMetrics(StringBuffer &xml)
@@ -1095,7 +1095,7 @@ const CJHSearchNode *CKeyIndex::getRootNode() const
     Linked<CNodeCache> nodeCache = queryNodeCache();
     // The root node may be a branch or a leaf (on TLK nodes)
     NodeType type = getBranchDepth() != 0 ? NodeBranch : NodeLeaf;
-    Owned<const CJHSearchNode> root = (const CJHSearchNode *) nodeCache->getNode(this, iD, rootPos, type, NULL, isTopLevelKey());
+    Owned<const CJHSearchNode> root = (const CJHSearchNode *) nodeCache->getCachedNode(this, iD, rootPos, type, NULL, isTopLevelKey());
 
     // It's not uncommon for a TLK to have a "root node" that has a single entry in it pointing to a leaf node
     // with all the info in. In such cases we can avoid a lot of cache lookups by pointing the "root" in the
@@ -1107,7 +1107,7 @@ const CJHSearchNode *CKeyIndex::getRootNode() const
     {
         Owned<const CJHSearchNode> oldRoot = root;
         rootPos = root->getFPosAt(0);
-        root.setown((const CJHSearchNode *) nodeCache->getNode(this, iD, rootPos, NodeLeaf, NULL, true));
+        root.setown((const CJHSearchNode *) nodeCache->getCachedNode(this, iD, rootPos, NodeLeaf, NULL, true));
     }
     return root.getClear();
 }
@@ -1162,7 +1162,7 @@ CMemKeyIndex::CMemKeyIndex(unsigned _iD, IMemoryMappedFile *_io, const char *_na
     init(hdr, isTLK);
 }
 
-const CJHTreeNode *CMemKeyIndex::loadNode(cycle_t * fetchCycles, offset_t pos) const
+const CJHTreeNode *CMemKeyIndex::loadNode(cycle_t * fetchCycles, offset_t pos, IFileIO *) const
 {
     nodesLoaded++;
     if (pos + keyHdr->getNodeSize() > io->fileSize())
@@ -1177,9 +1177,10 @@ const CJHTreeNode *CMemKeyIndex::loadNode(cycle_t * fetchCycles, offset_t pos) c
     return CKeyIndex::_loadNode(nodeData, pos, false);
 }
 
-CDiskKeyIndex::CDiskKeyIndex(unsigned _iD, IFileIO *_io, const char *_name, bool isTLK)
+CDiskKeyIndex::CDiskKeyIndex(unsigned _iD, IFileIO *_io, const char *_name, bool isTLK, size32_t _blockedIOSize)
     : CKeyIndex(_iD, _name)
 {
+    blockedIOSize = _blockedIOSize;
     io.setown(_io);
     KeyHdr hdr;
     if (io->read(0, sizeof(hdr), &hdr) != sizeof(hdr))
@@ -1199,15 +1200,16 @@ CDiskKeyIndex::CDiskKeyIndex(unsigned _iD, IFileIO *_io, const char *_name, bool
     init(hdr, isTLK);
 }
 
-const CJHTreeNode *CDiskKeyIndex::loadNode(cycle_t * fetchCycles, offset_t pos) const
+const CJHTreeNode *CDiskKeyIndex::loadNode(cycle_t * fetchCycles, offset_t pos, IFileIO *useIO) const
 {
     nodesLoaded++;
+    if (!useIO) useIO = io;
     unsigned nodeSize = keyHdr->getNodeSize();
     MemoryAttr ma;
     char *nodeData = (char *) ma.allocate(nodeSize);
 
     CCycleTimer fetchTimer(fetchCycles != nullptr);
-    if (io->read(pos, nodeSize, nodeData) != nodeSize)
+    if (useIO->read(pos, nodeSize, nodeData) != nodeSize)
     {
         IException *E = MakeStringException(errno, "Error %d reading node at position %" I64F "x", errno, pos); 
         StringBuffer m;
@@ -1309,19 +1311,26 @@ unsigned CKeyIndex::numPartitions()
 
 IKeyCursor *CKeyIndex::getCursor(const IIndexFilterList *filter, bool logExcessiveSeeks)
 {
-    return new CKeyCursor(*this, filter, logExcessiveSeeks);
+    return new CKeyCursor(*this, filter, logExcessiveSeeks, blockedIOSize);
 }
 
-const CJHSearchNode *CKeyIndex::getNode(offset_t offset, NodeType type, IContextLogger *ctx) const
+const CJHSearchNode *CKeyIndex::getIndexNode(offset_t offset, NodeType type, IContextLogger *ctx) const
 { 
     latestGetNodeOffset = offset;
     //Call isTLK() rather than isTopLevelKey() so the test is inlined (rather than a virtual)
-    return (CJHSearchNode *)cache->getNode(this, iD, offset, type, ctx, isTLK());
+    return (CJHSearchNode *)cache->getCachedNode(this, iD, offset, type, ctx, isTLK());
+}
+
+const CJHSearchNode *CKeyIndex::getIndexNodeUsingLoader(const INodeLoader *nodeLoader, offset_t offset, NodeType type, IContextLogger *ctx) const
+{
+    latestGetNodeOffset = offset;
+    //Call isTLK() rather than isTopLevelKey() so the test is inlined (rather than a virtual)
+    return (CJHSearchNode *)cache->getCachedNode(nodeLoader, iD, offset, type, ctx, isTLK());
 }
 
 void CKeyIndex::dumpNode(FILE *out, offset_t pos, unsigned count, bool isRaw)
 {
-    Owned<const CJHTreeNode> node = loadNode(nullptr, pos);
+    Owned<const CJHTreeNode> node = loadNode(nullptr, pos, nullptr);
     node->dump(out, keySize(), count, isRaw);
 }
 
@@ -1362,7 +1371,7 @@ const CJHTreeBlobNode *CKeyIndex::getBlobNode(offset_t nodepos, IContextLogger *
         {
 
             CCycleTimer blobLoadTimer;
-            Owned<const CJHTreeNode> node = loadNode(&fetchCycles, nodepos); // note - don't use the cache
+            Owned<const CJHTreeNode> node = loadNode(&fetchCycles, nodepos, nullptr); // note - don't use the cache
             assertex(node->isBlob());
             cachedBlobNode.setown(static_cast<const CJHTreeBlobNode *>(node.getClear()));
             cachedBlobNodePos = nodepos;
@@ -1437,7 +1446,7 @@ offset_t CKeyIndex::queryFirstBranchOffset()
         if (nextBranch == branchDepth)
             return branchOffset;
         IContextLogger * ctx = nullptr;
-        cur.setown(getNode(branchOffset, NodeBranch, ctx));
+        cur.setown(getIndexNode(branchOffset, NodeBranch, ctx));
     }
 }
 
@@ -1452,7 +1461,7 @@ void CKeyIndex::loadBloomFilters()
 
     while (bloomAddr)
     {
-        Owned<const CJHTreeNode> node = loadNode(nullptr, bloomAddr);
+        Owned<const CJHTreeNode> node = loadNode(nullptr, bloomAddr, nullptr);
         assertex(node->isBloom());
         CJHTreeBloomTableNode &bloomNode = *(CJHTreeBloomTableNode *)node.get();
         bloomAddr = bloomNode.get8();
@@ -1467,7 +1476,7 @@ void CKeyIndex::loadBloomFilters()
             offset_t next = node->getRightSib();
             if (!next)
                 break;
-            node.setown(loadNode(nullptr, next));
+            node.setown(loadNode(nullptr, next, nullptr));
             assertex(node->isBloom());
         }
         assertex(bloomTable.length()==bloomTableSize);
@@ -1506,7 +1515,7 @@ IPropertyTree * CKeyIndex::getMetadata()
     StringBuffer xml;
     while(nodepos)
     {
-        node.setown(QUERYINTERFACE(loadNode(nullptr, nodepos), const CJHTreeMetadataNode));
+        node.setown(QUERYINTERFACE(loadNode(nullptr, nodepos, nullptr), const CJHTreeMetadataNode));
         node->get(xml);
         nodepos = node->getRightSib();
     }
@@ -1529,7 +1538,7 @@ bool CKeyIndex::prewarmPage(offset_t offset, NodeType type)
 {
     try
     {
-        Owned<const CJHTreeNode> page = getNode(offset, type, nullptr);
+        Owned<const CJHTreeNode> page = getIndexNode(offset, type, nullptr);
         return page != nullptr;
     }
     catch(IException *E)
@@ -1548,7 +1557,7 @@ const CJHSearchNode *CKeyIndex::locateFirstLeafNode(IContextLogger *ctx) const
     {
         if (leafOffset == 0)
             return nullptr;
-        return getNode(leafOffset, NodeLeaf, ctx);
+        return getIndexNode(leafOffset, NodeLeaf, ctx);
     }
 
     //Unusual - an index with no elements
@@ -1562,7 +1571,7 @@ const CJHSearchNode *CKeyIndex::locateFirstLeafNode(IContextLogger *ctx) const
         const CJHTreeNode * prev = cur;
         depth++;
         NodeType type = (depth < getBranchDepth()) ? NodeBranch : NodeLeaf;
-        cur = getNode(cur->getFPosAt(0), type, ctx);
+        cur = getIndexNode(cur->getFPosAt(0), type, ctx);
         assertex(cur);
         prev->Release();
     }
@@ -1586,7 +1595,7 @@ const CJHSearchNode *CKeyIndex::locateLastLeafNode(IContextLogger *ctx) const
         const CJHSearchNode * prev = cur;
         depth++;
         NodeType type = (depth < getBranchDepth()) ? NodeBranch : NodeLeaf;
-        cur = getNode(cur->nextNodeFpos(), type, ctx);
+        cur = getIndexNode(cur->nextNodeFpos(), type, ctx);
         assertex(cur);
         prev->Release();
     }
@@ -1595,16 +1604,22 @@ const CJHSearchNode *CKeyIndex::locateLastLeafNode(IContextLogger *ctx) const
     for (;;)
     {
         const CJHSearchNode * last = cur;
-        cur = getNode(cur->nextNodeFpos(), NodeLeaf, ctx);
+        cur = getIndexNode(cur->nextNodeFpos(), NodeLeaf, ctx);
         if (!cur)
             return last;
         ::Release(last);
     }
 }
 
-CKeyCursor::CKeyCursor(CKeyIndex &_key, const IIndexFilterList *_filter, bool _logExcessiveSeeks)
+CKeyCursor::CKeyCursor(CKeyIndex &_key, const IIndexFilterList *_filter, bool _logExcessiveSeeks, size32_t _blockedIOSize)
     : key(OLINK(_key)), filter(_filter), logExcessiveSeeks(_logExcessiveSeeks)
 {
+    if (_blockedIOSize)
+    {
+        IFileIO *baseIO = const_cast<IFileIO *>(key.queryFileIO());  // I suspect createBlockedIO should take const...
+        if (baseIO)
+            myIO.setown(createBlockedIO(LINK(baseIO), _blockedIOSize));
+    }
     nodeKey = 0;
     recordBuffer = (char *) malloc(key.keySize());  // MORE - would be nice to know real max - is it stored in metadata?
 }
@@ -1662,7 +1677,7 @@ bool CKeyCursor::_next(IContextLogger *ctx)
             node.clear();
             if (rsib != 0)
             {
-                node.setown(key.getNode(rsib, type, ctx));
+                node.setown(getCursorNode(rsib, type, ctx));
                 if (node != NULL)
                 {
                     nodeKey = 0;
@@ -1774,7 +1789,7 @@ bool CKeyCursor::_gtEqual(IContextLogger *ctx)
             else
             {
                 offset_t nextPos = node->nextNodeFpos();  // This can happen at eof because of key peculiarity where level above reports ffff as last
-                node.setown(key.getNode(nextPos, NodeLeaf, ctx));
+                node.setown(getCursorNode(nextPos, NodeLeaf, ctx));
                 nodeKey = 0;
             }
             if (node)
@@ -1789,7 +1804,7 @@ bool CKeyCursor::_gtEqual(IContextLogger *ctx)
                 offset_t npos = node->getFPosAt(a);
                 depth++;
                 NodeType type = (depth < branchDepth) ? NodeBranch : NodeLeaf;
-                node.setown(key.getNode(npos, type, ctx));
+                node.setown(getCursorNode(npos, type, ctx));
             }
             else
                 return false;
@@ -1844,7 +1859,7 @@ bool CKeyCursor::_ltEqual(IContextLogger *ctx)
             else
             {
                 offset_t prevPos = node->prevNodeFpos();
-                node.setown(key.getNode(prevPos, NodeLeaf, ctx));
+                node.setown(getCursorNode(prevPos, NodeLeaf, ctx));
                 if (node)
                     nodeKey = node->getNumKeys()-1;
             }
@@ -1863,7 +1878,7 @@ bool CKeyCursor::_ltEqual(IContextLogger *ctx)
             offset_t npos = node->getFPosAt(a);
             depth++;
             NodeType type = (depth < branchDepth) ? NodeBranch : NodeLeaf;
-            node.setown(key.getNode(npos, type, ctx));
+            node.setown(getCursorNode(npos, type, ctx));
             if (!node)
                 throw MakeStringException(0, "Invalid key %s: child node pointer should never be NULL", key.name.get());
         }
@@ -1904,7 +1919,7 @@ void CKeyCursor::deserializeCursorPos(MemoryBuffer &mb, IContextLogger *ctx)
         fullBufferValid = false;
         if (nodeAddress)
         {
-            node.setown(key.getNode(nodeAddress, NodeLeaf, ctx));
+            node.setown(getCursorNode(nodeAddress, NodeLeaf, ctx));
             if (node && recordBuffer)
                 node->getKeyAt(nodeKey, recordBuffer);
         }
@@ -2412,6 +2427,7 @@ class CLazyKeyIndex : implements IKeyIndex, public CInterface
     mutable Owned<IKeyIndex> realKey;
     mutable CriticalSection c;
     bool isTLK;
+    size32_t blockedIOSize = 0;
 
     inline IKeyIndex &checkOpen() const
     {
@@ -2424,7 +2440,7 @@ class CLazyKeyIndex : implements IKeyIndex, public CInterface
             else
             {
                 iFileIO.setown(delayedFile->getFileIO());
-                realKey.setown(queryKeyStore()->load(keyfile, crc, iFileIO, fileIdx, isTLK));
+                realKey.setown(queryKeyStore()->load(keyfile, crc, iFileIO, fileIdx, isTLK, blockedIOSize));
             }
             if (!realKey)
             {
@@ -2437,8 +2453,8 @@ class CLazyKeyIndex : implements IKeyIndex, public CInterface
 
 public:
     IMPLEMENT_IINTERFACE;
-    CLazyKeyIndex(const char *_keyfile, unsigned _crc, IDelayedFile *_delayedFile, unsigned _fileIdx, bool _isTLK)
-        : keyfile(_keyfile), crc(_crc), fileIdx(_fileIdx), delayedFile(_delayedFile), isTLK(_isTLK)
+    CLazyKeyIndex(const char *_keyfile, unsigned _crc, IDelayedFile *_delayedFile, unsigned _fileIdx, bool _isTLK, size32_t _blockedIOSize)
+        : keyfile(_keyfile), crc(_crc), fileIdx(_fileIdx), delayedFile(_delayedFile), isTLK(_isTLK), blockedIOSize(_blockedIOSize)
     {}
 
     virtual bool IsShared() const { return CInterface::IsShared(); }
@@ -2479,19 +2495,19 @@ public:
     virtual offset_t queryFirstBranchOffset() override { return checkOpen().queryFirstBranchOffset(); }
 };
 
-extern jhtree_decl IKeyIndex *createKeyIndex(const char *keyfile, unsigned crc, IFileIO &iFileIO, unsigned fileIdx, bool isTLK)
+extern jhtree_decl IKeyIndex *createKeyIndex(const char *keyfile, unsigned crc, IFileIO &iFileIO, unsigned fileIdx, bool isTLK, size32_t blockedIOSize)
 {
-    return queryKeyStore()->load(keyfile, crc, &iFileIO, fileIdx, isTLK);
+    return queryKeyStore()->load(keyfile, crc, &iFileIO, fileIdx, isTLK, blockedIOSize);
 }
 
-extern jhtree_decl IKeyIndex *createKeyIndex(const char *keyfile, unsigned crc, bool isTLK)
+extern jhtree_decl IKeyIndex *createKeyIndex(const char *keyfile, unsigned crc, bool isTLK, size32_t blockedIOSize)
 {
-    return queryKeyStore()->load(keyfile, crc, isTLK);
+    return queryKeyStore()->load(keyfile, crc, isTLK, blockedIOSize);
 }
 
-extern jhtree_decl IKeyIndex *createKeyIndex(const char *keyfile, unsigned crc, IDelayedFile &iFileIO, unsigned fileIdx, bool isTLK)
+extern jhtree_decl IKeyIndex *createKeyIndex(const char *keyfile, unsigned crc, IDelayedFile &iFileIO, unsigned fileIdx, bool isTLK, size32_t blockedIOSize)
 {
-    return new CLazyKeyIndex(keyfile, crc, &iFileIO, fileIdx, isTLK);
+    return new CLazyKeyIndex(keyfile, crc, &iFileIO, fileIdx, isTLK, blockedIOSize);
 }
 
 extern jhtree_decl void clearKeyStoreCache(bool killAll)
@@ -2578,7 +2594,7 @@ static std::atomic<unsigned> countExcessiveLock_x1{0};
 static std::atomic<unsigned> countExcessiveLock_x10{0};
 static std::atomic<unsigned> countExcessiveLock_x100{0};
 
-const CJHTreeNode *CNodeCache::getNode(const INodeLoader *keyIndex, unsigned iD, offset_t pos, NodeType type, IContextLogger *ctx, bool isTLK)
+const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader *keyIndex, unsigned iD, offset_t pos, NodeType type, IContextLogger *ctx, bool isTLK)
 {
     // MORE - could probably be improved - I think having the cache template separate is not helping us here
     // Also one cache per key would surely be faster, and could still use a global total
@@ -2587,14 +2603,14 @@ const CJHTreeNode *CNodeCache::getNode(const INodeLoader *keyIndex, unsigned iD,
 
     // No benefit in caching the following, especially since they will evict useful pages
     if ((type == NodeMeta) || (type == NodeBloom))
-        return keyIndex->loadNode(nullptr, pos);
+        return keyIndex->loadNode(nullptr, pos, nullptr);
 
     //NOTE: TLK leaf nodes are currently cached along with branches, not with leaves.  It might be better if this was a separate cache.
     CacheType cacheType = isTLK ? CacheBranch : (CacheType)type;
 
     // check cacheEnabled[cacheType] avoid the critical section (and testing the flag within the critical section)
     if (unlikely(!cacheEnabled[cacheType]))
-        return keyIndex->loadNode(nullptr, pos);
+        return keyIndex->loadNode(nullptr, pos, nullptr);
 
     //Previously, this was implemented as:
     //  Lock, unlock.  Load the page.  Lock, check if it has been added, otherwise add.
@@ -2674,7 +2690,7 @@ const CJHTreeNode *CNodeCache::getNode(const INodeLoader *keyIndex, unsigned iD,
             startLoadCycles = get_cycles_now();
             if (!ownedCacheEntry->isReady())
             {
-                const CJHTreeNode *node = keyIndex->loadNode(&fetchCycles, pos);
+                const CJHTreeNode *node = keyIndex->loadNode(&fetchCycles, pos, nullptr);
                 if (unlikely(type != node->getNodeType()))
                 {
                     //This should never happen, but if it does, report as much information as possible to diagnose the issue.
@@ -3403,8 +3419,8 @@ class IKeyManagerTest : public CppUnit::TestFixture
         buildTestKeys(false, true, false, false, nullptr, nullptr);
         {
             // We are going to treat as a 7-byte field then a 3-byte field, and request the datasorted by the 3-byte...
-            Owned <IKeyIndex> index1 = createKeyIndex("keyfile1.$$$", 0, false);
-            Owned <IKeyIndex> index2 = createKeyIndex("keyfile2.$$$", 0, false);
+            Owned <IKeyIndex> index1 = createKeyIndex("keyfile1.$$$", 0, false, 0);
+            Owned <IKeyIndex> index2 = createKeyIndex("keyfile2.$$$", 0, false, 0);
             Owned<IKeyIndexSet> keyset = createKeyIndexSet();
             keyset->addIndex(index1.getClear());
             keyset->addIndex(index2.getClear());
@@ -3627,7 +3643,7 @@ protected:
         const RtlRecord &recInfo = meta->queryRecordAccessor(true);
         buildTestKeys(variable, useTrailingHeader, noSeek, quickCompressed, meta, compression);
         {
-            Owned <IKeyIndex> index1 = createKeyIndex("keyfile1.$$$", 0, false);
+            Owned <IKeyIndex> index1 = createKeyIndex("keyfile1.$$$", 0, false, 0);
             Owned <IKeyManager> tlk1 = createLocalKeyManager(recInfo, index1, NULL, false, false);
             Owned<IStringSet> sset1 = createStringSet(10);
             sset1->addRange("0000000001", "0000000100");
@@ -3658,7 +3674,7 @@ protected:
             ASSERT(ssetx->numValues() == (unsigned) -1);
 
 
-            Owned <IKeyIndex> index2 = createKeyIndex("keyfile2.$$$", 0, false);
+            Owned <IKeyIndex> index2 = createKeyIndex("keyfile2.$$$", 0, false, 0);
             Owned <IKeyManager> tlk2 = createLocalKeyManager(recInfo, index2, NULL, false, false);
             Owned<IStringSet> sset2 = createStringSet(10);
             sset2->addRange("0000000001", "0000000100");

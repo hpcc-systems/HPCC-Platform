@@ -1472,7 +1472,7 @@ rptErrMsg(102, 'And again');
 
     <para>Example:</para>
 
-    <programlisting lang="ECL" role="runnable">OUTPUT(10) // scalar value output
+    <programlisting lang="ECL_Runnable">OUTPUT(10) // scalar value output
 OUTPUT('Fred') // scalar value output
 </programlisting>
   </sect2>

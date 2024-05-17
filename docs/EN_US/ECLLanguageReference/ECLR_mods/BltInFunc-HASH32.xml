@@ -63,7 +63,7 @@ OUTPUT(Person,{SSN,HASH32(SSN)});
     //output SSN and its 32-bit hash value
 </programlisting>
 
-  <para lang="ECL" role="runnable">See Also: <link
+  <para lang="ECL_Runnable">See Also: <link
   linkend="DISTRIBUTE">DISTRIBUTE</link>, <link linkend="HASH">HASH</link>,
   <link linkend="HASH64">HASH64</link>, <link
   linkend="HASHCRC">HASHCRC</link>, <link

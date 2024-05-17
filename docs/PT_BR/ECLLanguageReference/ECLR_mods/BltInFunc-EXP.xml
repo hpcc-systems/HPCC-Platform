@@ -41,7 +41,7 @@
 
   <para>Exemplo:</para>
 
-  <programlisting lang="ECL" role="runnable">MyPI := EXP(3.14159);
+  <programlisting lang="ECL_Runnable">MyPI := EXP(3.14159);
 Interim := ROUND(1000 * (EXP(MyPI)/(1 + EXP(MyPI))));
 OUTPUT(Interim);
 </programlisting>

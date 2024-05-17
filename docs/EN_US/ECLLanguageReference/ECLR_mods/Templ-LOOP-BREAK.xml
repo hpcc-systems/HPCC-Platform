@@ -59,7 +59,7 @@
 
   <para>Example:</para>
 
-  <programlisting lang="ECL" role="runnable">// This script creates a set attribute definition of the 1st 10
+  <programlisting lang="ECL_Runnable">// This script creates a set attribute definition of the 1st 10
 // natural numbers and defines an attribute named "Set10"
 
 #DECLARE (SetString)

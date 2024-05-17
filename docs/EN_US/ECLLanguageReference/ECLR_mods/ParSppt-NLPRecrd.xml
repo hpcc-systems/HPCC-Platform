@@ -108,7 +108,7 @@ END;
 
     <para>Tomita Example:</para>
 
-    <programlisting lang="ECL" role="runnable">// This example demonstrates the use of productions in PARSE code
+    <programlisting lang="ECL_Runnable">// This example demonstrates the use of productions in PARSE code
 //(only supported in the tomita version of PARSE).
 PATTERN ws := [' ','\t'];
 TOKEN number := PATTERN('[0-9]+');

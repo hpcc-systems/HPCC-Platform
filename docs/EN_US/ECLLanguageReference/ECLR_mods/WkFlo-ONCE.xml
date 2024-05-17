@@ -42,7 +42,7 @@
 
   <para>Example:</para>
 
-  <programlisting lang="ECL" role="runnable">InlineDCT := DICTIONARY([{0 =&gt; 'Black' , 'Greys'},
+  <programlisting lang="ECL_Runnable">InlineDCT := DICTIONARY([{0 =&gt; 'Black' , 'Greys'},
                          {1 =&gt; 'Brown' , 'Earth'},
                          {2 =&gt; 'Red'   , 'Reds'},
                          {3 =&gt; 'White' , 'Greys'} ], 

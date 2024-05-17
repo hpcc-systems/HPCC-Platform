@@ -39,7 +39,7 @@
 
   <para>Example:</para>
 
-  <programlisting lang="ECL" role="runnable">#DECLARE (mod)
+  <programlisting lang="ECL_Runnable">#DECLARE (mod)
 #DECLARE (attr)
 #DECLARE (stg)
   

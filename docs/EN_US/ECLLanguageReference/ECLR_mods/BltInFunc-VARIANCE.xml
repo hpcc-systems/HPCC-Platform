@@ -139,7 +139,7 @@
 
   <para>Example:</para>
 
-  <programlisting lang="ECL" role="runnable">pointRec := {REAL x, REAL y};
+  <programlisting lang="ECL_Runnable">pointRec := {REAL x, REAL y};
 analyse( ds) := MACRO
   #uniquename(stats)
   %stats% := TABLE(ds, { c := COUNT(GROUP),

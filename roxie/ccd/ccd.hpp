@@ -338,7 +338,7 @@ extern unsigned defaultThorConnectTimeout;
 extern bool pretendAllOpt;
 extern ClientCertificate clientCert;
 extern bool useHardLink;
-extern unsigned maxFileAge[2];
+extern unsigned __int64 maxFileAgeNS[2];
 extern unsigned minFilesOpen[2];
 extern unsigned maxFilesOpen[2];
 extern RelaxedAtomic<unsigned> restarts;

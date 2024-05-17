@@ -329,7 +329,7 @@ protected:
             activeWriters = 0;
         }
         void send(CMessageBuffer &mb); // Not used for ALL
-        void sendToOthers(CMessageBuffer &mb); // Only used by ALL
+        unsigned sendToOthers(CMessageBuffer &mb); // Only used by ALL
         inline unsigned getNumPendingBuckets() const
         {
             return pendingBuckets.ordinality();
@@ -406,32 +406,39 @@ protected:
             {
                 Owned<CSendBucket> sendBucket = _sendBucket.getClear();
                 size32_t writerTotalSz = 0;
-                size32_t sendSz = 0;
+                size32_t remoteSendSz = 0;
+                unsigned remoteRowCount = 0;
                 CMessageBuffer msg;
                 while (!owner.aborted)
                 {
                     writerTotalSz += sendBucket->querySize(); // NB: This size is pre-dedup, and is the correct amount to pass to decTotal
                     owner.dedup(sendBucket); // conditional
-
                     if (target->isSelf())
                     {
                         HDSendPrintLog2("CWriteHandler, sending raw=%d to LOCAL", writerTotalSz);
                         if (!owner.getSelfFinished())
+                        {
+                            owner.addLocalRowCount(sendBucket->count());
                             distributor.addLocalClear(sendBucket);
+                        }
                     }
                     else // remote
                     {
                         if (owner.owner.isAll)
                         {
                             if (!owner.getSelfFinished())
+                            {
+                                owner.addLocalRowCount(sendBucket->count());
                                 distributor.addLocal(sendBucket);
+                            }
                         }
+                        remoteRowCount += sendBucket->count();
                         if (compressor)
-                            sendSz += sendBucket->serializeCompressClear(msg, *compressor);
+                            remoteSendSz += sendBucket->serializeCompressClear(msg, *compressor);
                         else
-                            sendSz += sendBucket->serializeClear(msg);
+                            remoteSendSz += sendBucket->serializeClear(msg);
                         // NB: buckets will typically be large enough already, if not check pending buckets
-                        if (sendSz < distributor.bucketSendSize)
+                        if (remoteSendSz < distributor.bucketSendSize)
                         {
                             // more added to target I'm processing?
                             sendBucket.setown(target->dequeuePendingBucket());
@@ -442,11 +449,18 @@ protected:
                                 continue; // NB: it will flow into else "remote" arm
                             }
                         }
+                        unsigned numSent = 0;
                         if (owner.owner.isAll)
-                            target->sendToOthers(msg);
+                            numSent = target->sendToOthers(msg);
                         else
+                        {
                             target->send(msg);
-                        sendSz = 0;
+                            numSent = 1;
+                        }
+                        owner.addRemoteRowCount(numSent*remoteRowCount);
+                        owner.addRemoteWriteSize(numSent*remoteSendSz);
+                        remoteSendSz = 0;
+                        remoteRowCount = 0;
                         msg.clear();
                     }
                     // see if others to process
@@ -487,6 +501,9 @@ protected:
         unsigned totalActiveWriters;
         PointerArrayOf<CTarget> targets;
         std::atomic<bool> *sendersFinished = nullptr;
+        RelaxedAtomic<stat_type> numLocalRows {0};
+        RelaxedAtomic<stat_type> numRemoteRows {0};
+        RelaxedAtomic<size_t> sizeRemoteWrite {0};
 
         void init()
         {
@@ -622,6 +639,19 @@ protected:
                 }
             }
         }
+        inline void addLocalRowCount(stat_type numRows)
+        {
+            numLocalRows += numRows;
+        }
+        inline void addRemoteRowCount(stat_type numRows)
+        {
+            numRemoteRows += numRows;
+        }
+        inline void addRemoteWriteSize(size_t size)
+        {
+            sizeRemoteWrite += size;
+        }
+
     public:
         IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
@@ -910,6 +940,12 @@ protected:
             }
         }
         void markSelfStopped() { markStopped(self); }
+        void mergeStats(CRuntimeStatisticCollection &stats) const
+        {
+            stats.setStatistic(StNumLocalRows, numLocalRows.load());
+            stats.setStatistic(StNumRemoteRows, numRemoteRows.load());
+            stats.setStatistic(StSizeRemoteWrite, sizeRemoteWrite.load());
+        }
     // IThreadFactory impl.
         virtual IPooledThread *createNew()
         {
@@ -1395,6 +1431,10 @@ public:
     virtual void stopRecv() = 0;
     virtual bool sendBlock(unsigned i,CMessageBuffer &mb) = 0;
 
+    virtual void mergeStats(CRuntimeStatisticCollection &stats) const
+    {
+        sender.mergeStats(stats);
+    }
     // IExceptionHandler impl.
     virtual bool fireException(IException *e)
     {
@@ -1413,17 +1453,22 @@ void CDistributorBase::CTarget::send(CMessageBuffer &mb) // Not used for ALL
         owner.sendBlock(destination, mb);
 }
 
-void CDistributorBase::CTarget::sendToOthers(CMessageBuffer &mb) // Only used by ALL
+unsigned CDistributorBase::CTarget::sendToOthers(CMessageBuffer &mb) // Only used by ALL
 {
+    unsigned numSent = 0;
     CriticalBlock b(crit); // protects against multiple parallel sender threads sending to ALL clashing
     for (unsigned dest=0; dest<owner.owner.numnodes; dest++)
     {
         if (dest != owner.self)
         {
             if (!owner.getSenderFinished(dest))
+            {
                 owner.sendBlock(dest, mb);
+                ++numSent;
+            }
         }
     }
+    return numSent;
 }
 
 void CDistributorBase::CTarget::incActiveWriters()
@@ -2057,7 +2102,7 @@ protected:
     bool setupDist = true;
     bool isAll = false;
 public:
-    HashDistributeSlaveBase(CGraphElementBase *_container, const StatisticsMapping &statsMapping = basicActivityStatistics)
+    HashDistributeSlaveBase(CGraphElementBase *_container, const StatisticsMapping &statsMapping = hashDistribActivityStatistics)
         : CSlaveActivity(_container, statsMapping)
     {
         appendOutputLinked(this);
@@ -2146,6 +2191,11 @@ public:
         initMetaInfo(info);
         info.canStall = true; // currently
         info.unknownRowsOutput = true; // mixed about
+    }
+    virtual void gatherActiveStats(CRuntimeStatisticCollection &activeStats) const
+    {
+        PARENT::gatherActiveStats(activeStats);
+        distributor->mergeStats(activeStats);
     }
 };
 
@@ -2508,7 +2558,7 @@ public:
         // NB: this TLK is an in-memory TLK serialized from the master - the name is for tracing by the key code only
         VStringBuffer name("index");
         name.append(queryId()).append("_tlk");
-        lookup = new CKeyLookup(*this, helper, createKeyIndex(name.str(), 0, *iFileIO, (unsigned) -1, true)); // MORE - crc is not 0...
+        lookup = new CKeyLookup(*this, helper, createKeyIndex(name.str(), 0, *iFileIO, (unsigned) -1, true, 0)); // MORE - crc is not 0...
         ihash = lookup;
     }
     virtual void stop() override

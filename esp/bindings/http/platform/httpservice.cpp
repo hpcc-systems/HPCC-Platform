@@ -420,9 +420,13 @@ int CEspHttpServer::processRequest()
             if (thebinding!=NULL)
             {
                 if(stricmp(method.str(), POST_METHOD)==0)
+                {
+                    serverSpan->setSpanAttribute("http.request.method", POST_METHOD);
                     thebinding->handleHttpPost(m_request.get(), m_response.get());
+                }
                 else if(!stricmp(method.str(), GET_METHOD))
                 {
+                    serverSpan->setSpanAttribute("http.request.method", GET_METHOD);
                     if (stype==sub_serv_index_redirect)
                     {
                         StringBuffer url;
@@ -453,16 +457,23 @@ int CEspHttpServer::processRequest()
                     }
                 }
                 else
-                    unsupported();
+                    unsupported(method);
             }
             else
             {
+                serverSpan->setSpanAttribute("http.unbound_target", 1);
                 if(!stricmp(method.str(), POST_METHOD))
+                {
+                    serverSpan->setSpanAttribute("http.request.method", POST_METHOD);
                     onPost();
+                }
                 else if(!stricmp(method.str(), GET_METHOD))
+                {
+                    serverSpan->setSpanAttribute("http.request.method", GET_METHOD);
                     onGet();
+                }
                 else
-                    unsupported();
+                    unsupported(method);
             }
             ctx->addTraceSummaryTimeStamp(LogMin, "handleHttp");
         }
@@ -846,6 +857,16 @@ int CEspHttpServer::onGetXslt(CHttpRequest* request, CHttpResponse* response, co
         return 0;
 }
 
+
+int CEspHttpServer::unsupported(StringBuffer& httpRequestMethod)
+{
+
+    // Per https://opentelemetry.io/docs/specs/semconv/attributes-registry/http/, the value
+    // of http.request.method must be "known to the instrumentation" and is case sensitive.
+    // Accept any value, converted to upper case, for improved performance.
+    queryThreadedActiveSpan()->setSpanAttribute("http.request.method", httpRequestMethod.toUpperCase().str());
+    return unsupported();
+}
 
 int CEspHttpServer::unsupported()
 {

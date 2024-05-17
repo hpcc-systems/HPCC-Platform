@@ -115,8 +115,9 @@
                         <xs:simpleType>
                             <xs:restriction base="xs:string">
                                 <xs:enumeration value="false" hpcc:displayName="False" hpcc:desciption=""/>
-                                <xs:enumeration value="true" hpcc:displayName="true" hpcc:description=""/>
+                                <xs:enumeration value="true" hpcc:displayName="True" hpcc:description=""/>
                                 <xs:enumeration value="payload" hpcc:displayName="Payload" hpcc:description=""/>
+                                <xs:enumeration value="payloadRemoveOnly" hpcc:displayName="PayloadRemoveOnly" hpcc:description=""/>
                             </xs:restriction>
                         </xs:simpleType>
                     </xs:attribute>

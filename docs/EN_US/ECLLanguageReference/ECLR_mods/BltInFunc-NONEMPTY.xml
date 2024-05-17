@@ -40,7 +40,7 @@
 
   <para>Example:</para>
 
-  <programlisting lang="ECL" role="runnable">SalesRecord := RECORD
+  <programlisting lang="ECL_Runnable">SalesRecord := RECORD
   INTEGER OrderNumber;
   INTEGER SaleAmount;
 END;

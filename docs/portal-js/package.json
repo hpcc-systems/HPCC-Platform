@@ -8,16 +8,16 @@
   "scripts": {
     "clean": "rimraf ./dist",
     "build-dev": "esbuild ./src/index.ts --format=iife --bundle --outfile=./dist/index.js",
-    "build": "esbuild ./src/index.ts --format=iife --bundle --minify --outfile=./dist/index.js",
-    "watch": "esbuild ./src/index.ts --format=iife --bundle --watch --outfile=./dist/index.js",
+    "build": "esbuild ./src/index.ts --format=iife --bundle --minify --tree-shaking=true --outfile=./dist/index.js",
+    "watch": "esbuild ./src/index.ts --format=iife --bundle --sourcemap=inline --watch --outfile=./dist/index.js",
+    "serve": "npx -y http-server --port=8888",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
-  "license": "ISC",
   "devDependencies": {
-    "@hpcc-js/common": "2.71.9",
-    "@hpcc-js/codemirror": "2.60.9",
-    "esbuild": "0.18.14",
-    "rimraf": "5.0.1"
+    "@hpcc-js/common": "2.71.16",
+    "@hpcc-js/codemirror": "2.61.3",
+    "esbuild": "0.20.2",
+    "rimraf": "5.0.5"
   }
 }
