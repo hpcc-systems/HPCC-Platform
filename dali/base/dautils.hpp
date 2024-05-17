@@ -71,7 +71,7 @@ public:
     ~CDfsLogicalFileName();
 
     CDfsLogicalFileName & operator = (CDfsLogicalFileName const &from);
-    void set(const char *lfn, bool removeForeign=false); // throws an exception on invalid filenames
+    void set(const char *lfn, bool removeForeign=false, bool skipAddRootScopeIfNone=false); // throws an exception on invalid filenames
     bool setValidate(const char *lfn, bool removeForeign=false); // returns false for invalid filenames
     void set(const CDfsLogicalFileName &lfn);
     void set(const char *scopes,const char *tail);
