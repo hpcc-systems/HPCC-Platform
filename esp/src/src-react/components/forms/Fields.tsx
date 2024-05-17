@@ -110,12 +110,17 @@ const AsyncDropdown: React.FunctionComponent<AsyncDropdownProps> = ({
     const [selectedItem, setSelectedItem] = React.useState<IDropdownOption>();
     const [selectedIdx, setSelectedIdx] = React.useState<number>();
 
+    const [selectedKeys, setSelectedKeys] = React.useState(selectedKey ?? "");
     const [selectedItems, setSelectedItems] = React.useState<IDropdownOption[]>([]);
 
     const changeSelectedItems = React.useCallback(() => {
+        const keys = selectedKey !== "" ? selectedKey.split("|") : [];
         let items = [...selectedItems];
-        if (selectedKey === "") return;
-        const keys = selectedKey.split("|");
+        if (keys.length === items.length) return;
+        if (selectedKeys !== "" && selOptions.length && selectedKey === "") {
+            setSelectedItems([]);
+            return;
+        }
         items = keys.map(key => { return { key: key, text: key }; });
         if (!items.length) return;
         if (items.map(item => item.key).join("|") === selectedKey) {
@@ -124,9 +129,10 @@ const AsyncDropdown: React.FunctionComponent<AsyncDropdownProps> = ({
                 setSelectedItems(items);
             }
         } else {
+            setSelectedKeys(items.map(item => item.key).join("|"));
             setSelectedItems(items);
         }
-    }, [selectedKey, selectedItems]);
+    }, [selectedKey, selectedKeys, selectedItems, selOptions]);
 
     React.useEffect(() => {
         // only on mount, pre-populate selectedItems from url

@@ -1,11 +1,10 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, MessageBar, MessageBarType, ScrollablePane, ScrollbarVisibility, Sticky, StickyPositionType } from "@fluentui/react";
-import { WsWorkunits, WorkunitsService } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import { WUStatus } from "src/react/index";
 import { formatCost } from "src/Session";
-import { isNumeric, wuidToDate, wuidToTime } from "src/Utility";
+import { isNumeric } from "src/Utility";
 import { useConfirm } from "../hooks/confirm";
 import { useWorkunit, useWorkunitExceptions } from "../hooks/workunit";
 import { ReflexContainer, ReflexElement, ReflexSplitter } from "../layouts/react-reflex";
@@ -19,8 +18,6 @@ import { InfoGrid } from "./InfoGrid";
 import { WorkunitPersona } from "./controls/StateIcon";
 
 const logger = scopedLogger("../components/WorkunitDetails.tsx");
-
-const workunitService = new WorkunitsService({ baseUrl: "" });
 
 interface MessageBarContent {
     type: MessageBarType;
@@ -84,40 +81,7 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
         }, [workunit])
     });
 
-    const nextWuid = React.useCallback((wuids: WsWorkunits.ECLWorkunit[]) => {
-        let found = false;
-        for (const wu of wuids) {
-            if (wu.Wuid !== wuid) {
-                pushUrl(`/workunits/${wu.Wuid}`);
-                found = true;
-                break;
-            }
-        }
-        if (!found) {
-            showMessageBar({ type: MessageBarType.warning, message: nlsHPCC.WorkunitNotFound });
-        }
-    }, [showMessageBar, wuid]);
-
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
-        {
-            key: "next", iconOnly: true, tooltipHostProps: { content: nlsHPCC.NextWorkunit }, iconProps: { iconName: "Previous" },
-            onClick: () => {
-                const now = new Date(Date.now());
-                const tomorrow = new Date(now.getTime() + (24 * 60 * 60 * 1000));
-                workunitService.WUQuery({ StartDate: `${wuidToDate(wuid)}T${wuidToTime(wuid)}Z`, EndDate: tomorrow.toISOString(), Sortby: "Wuid", Descending: false, Count: 2 } as WsWorkunits.WUQuery).then(response => {
-                    nextWuid(response?.Workunits?.ECLWorkunit || []);
-                }).catch(err => logger.error(err));
-            }
-        },
-        {
-            key: "previous", iconOnly: true, tooltipHostProps: { content: nlsHPCC.PreviousWorkunit }, iconProps: { iconName: "Next" },
-            onClick: () => {
-                workunitService.WUQuery({ EndDate: `${wuidToDate(wuid)}T${wuidToTime(wuid)}Z`, Count: 2 } as WsWorkunits.WUQuery).then(response => {
-                    nextWuid(response?.Workunits?.ECLWorkunit || []);
-                }).catch(err => logger.error(err));
-            }
-        },
-        { key: "divider_0", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
             onClick: () => {
@@ -205,7 +169,7 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
             key: "slaveLogs", text: nlsHPCC.SlaveLogs, disabled: !workunit?.ThorLogList,
             onClick: () => setShowThorSlaveLogs(true)
         },
-    ], [_protected, canDelete, canDeschedule, canReschedule, canSave, description, jobname, nextWuid, refresh, refreshSavings, setShowDeleteConfirm, showMessageBar, workunit, wuid]);
+    ], [_protected, canDelete, canDeschedule, canReschedule, canSave, description, jobname, refresh, refreshSavings, setShowDeleteConfirm, showMessageBar, workunit, wuid]);
 
     const serviceNames = React.useMemo(() => {
         return workunit?.ServiceNames?.Item?.join("\n") || "";

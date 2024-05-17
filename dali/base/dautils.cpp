@@ -922,7 +922,7 @@ bool CDfsLogicalFileName::normalizeExternal(const char * name, StringAttr &res, 
     return true;
 }
 
-void CDfsLogicalFileName::set(const char *name, bool removeForeign)
+void CDfsLogicalFileName::set(const char *name, bool removeForeign, bool skipAddRootScopeIfNone)
 {
     clear();
     if (!name)
@@ -968,7 +968,7 @@ void CDfsLogicalFileName::set(const char *name, bool removeForeign)
         external = true;
     else
     {
-        normalizeName(name, lfn, false, true);
+        normalizeName(name, lfn, false, !skipAddRootScopeIfNone);
         if (removeForeign)
         {
             StringAttr _lfn = get(true);

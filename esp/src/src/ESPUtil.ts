@@ -333,7 +333,7 @@ export const IdleWatcher = dojo.declare([Evented], {
 
     start() {
         this.stop();
-        if (document.cookie.indexOf("ESPSessionState=true") > -1) {
+        if (document.cookie.indexOf("ESPAuthenticated=true") > -1) {
             const context = this;
             this._keydownHandle = on(document, "keydown", function (item, index, array) {
                 context.emit("active", {});
