@@ -1250,7 +1250,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             maxFileAgeNS[true] = milliToNano(temp);
         else
             maxFileAgeNS[true] = (unsigned __int64) -1;
-        maxFilesOpen[false] = topology->getPropInt("@maxLocalFilesOpen", 4000);
+        maxFilesOpen[false] = topology->getPropInt("@maxLocalFilesOpen", 20000);
         maxFilesOpen[true] = topology->getPropInt("@maxRemoteFilesOpen", 1000);
         minFilesOpen[false] = topology->getPropInt("@minLocalFilesOpen", maxFilesOpen[false]/2);
         if (minFilesOpen[false] >= maxFilesOpen[false])
