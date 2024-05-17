@@ -220,7 +220,7 @@ StringBuffer tempDirectory;
 ClientCertificate clientCert;
 bool useHardLink;
 
-unsigned maxFileAge[2] = {0xffffffff, 60*60*1000}; // local files don't expire, remote expire in 1 hour, by default
+unsigned __int64 maxFileAgeNS[2] = {0xffffffffffffffffULL, 60*60*1000*1000000ULL}; // local files don't expire, remote expire in 1 hour, by default
 unsigned minFilesOpen[2] = {2000, 500};
 unsigned maxFilesOpen[2] = {4000, 1000};
 
@@ -1240,12 +1240,24 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         clientCert.privateKey.set(topology->queryProp("@privateKeyFileName"));
         clientCert.passphrase.set(topology->queryProp("@passphrase"));
         useHardLink = topology->getPropBool("@useHardLink", false);
-        maxFileAge[false] = topology->getPropInt("@localFilesExpire", (unsigned) -1);
-        maxFileAge[true] = topology->getPropInt("@remoteFilesExpire", 60*60*1000);
-        minFilesOpen[false] = topology->getPropInt("@minLocalFilesOpen", 2000);
-        minFilesOpen[true] = topology->getPropInt("@minRemoteFilesOpen", 500);
+        unsigned temp = topology->getPropInt("@localFilesExpire", (unsigned) -1);
+        if (temp && temp != (unsigned) -1)
+            maxFileAgeNS[false] = milliToNano(temp);
+        else
+            maxFileAgeNS[false] = (unsigned __int64) -1;
+        temp = topology->getPropInt("@remoteFilesExpire", 60*60*1000);
+        if (temp && temp != (unsigned) -1)
+            maxFileAgeNS[true] = milliToNano(temp);
+        else
+            maxFileAgeNS[true] = (unsigned __int64) -1;
         maxFilesOpen[false] = topology->getPropInt("@maxLocalFilesOpen", 4000);
         maxFilesOpen[true] = topology->getPropInt("@maxRemoteFilesOpen", 1000);
+        minFilesOpen[false] = topology->getPropInt("@minLocalFilesOpen", maxFilesOpen[false]/2);
+        if (minFilesOpen[false] >= maxFilesOpen[false])
+           throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid settings - minLocalFilesOpen should be less than maxLocalFilesOpen");
+        minFilesOpen[true] = topology->getPropInt("@minRemoteFilesOpen", maxFilesOpen[true]/2);
+        if (minFilesOpen[true] >= maxFilesOpen[true])
+           throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid settings - minRemoteFilesOpen should be less than maxRemoteFilesOpen");
         dafilesrvLookupTimeout = topology->getPropInt("@dafilesrvLookupTimeout", 10000);
         setRemoteFileTimeouts(dafilesrvLookupTimeout, 0);
         trapTooManyActiveQueries = topology->getPropBool("@trapTooManyActiveQueries", true);
