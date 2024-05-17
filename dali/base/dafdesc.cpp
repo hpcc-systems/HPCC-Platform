@@ -3983,3 +3983,12 @@ AccessMode getAccessModeFromString(const char *access)
         return AccessMode::none;
     throwUnexpectedX("getAccessModeFromString : unrecognized access mode string");
 }
+
+unsigned __int64 getPartPlaneAttr(IPartDescriptor &part, unsigned copy, PlaneAttributeType attr, size32_t defaultValue)
+{
+    unsigned clusterNum = part.copyClusterNum(copy);
+    StringBuffer planeName;
+    part.queryOwner().getClusterLabel(clusterNum, planeName);
+    return getPlaneAttributeValue(planeName, attr, defaultValue);
+}
+

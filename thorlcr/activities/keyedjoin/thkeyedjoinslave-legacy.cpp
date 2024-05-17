@@ -1641,7 +1641,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
 
             Owned<IFileIO> lazyFileIO = queryThor().queryFileCache().lookupIFileIO(*this, indexName, filePart);
             Owned<IDelayedFile> delayedFile = createDelayedFile(lazyFileIO);
-            Owned<IKeyIndex> keyIndex = createKeyIndex(filename, crc, *delayedFile, (unsigned) -1, false);
+            Owned<IKeyIndex> keyIndex = createKeyIndex(filename, crc, *delayedFile, (unsigned) -1, false, 0);
             keyIndexes.append(*keyIndex.getClear());
         }
     }
@@ -1964,7 +1964,7 @@ public:
                     Owned<IFileIO> iFileIO = createIFileI(lenArray.item(p), tlkMb.toByteArray()+posArray.item(p));
                     StringBuffer name("TLK");
                     name.append('_').append(container.queryId()).append('_');
-                    tlkKeySet->addIndex(createKeyIndex(name.append(p).str(), 0, *iFileIO, (unsigned) -1, true)); // MORE - not the right crc
+                    tlkKeySet->addIndex(createKeyIndex(name.append(p).str(), 0, *iFileIO, (unsigned) -1, true, 0)); // MORE - not the right crc
                 }
             }
             if (needsDiskRead)

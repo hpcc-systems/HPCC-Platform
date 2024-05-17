@@ -2032,7 +2032,6 @@ class CLazyFileIO : public CInterfaceOf<IFileIO>
     Owned<IFileIO> iFileIO; // real IFileIO
     CActivityBase *activity = nullptr;
     StringAttr filename, id;
-    size32_t blockedFileIOSize = 0;
 
     IFileIO *getFileIO()
     {
@@ -2045,15 +2044,10 @@ class CLazyFileIO : public CInterfaceOf<IFileIO>
         return iFileIO.getClear();
     }
 public:
-    CLazyFileIO(CFileCache &_cache, const char *_filename, const char *_id, IActivityReplicatedFile *_repFile, bool _compressed, IExpander *_expander, const StatisticsMapping & _statMapping, size32_t _blockedFileIOSize)
+    CLazyFileIO(CFileCache &_cache, const char *_filename, const char *_id, IActivityReplicatedFile *_repFile, bool _compressed, IExpander *_expander, const StatisticsMapping & _statMapping)
         : cache(_cache), filename(_filename), id(_id), repFile(_repFile), compressed(_compressed), expander(_expander),
-          fileStats(_statMapping), blockedFileIOSize(_blockedFileIOSize)
+          fileStats(_statMapping)
     {
-        if (blockedFileIOSize) // enabled
-        {
-            if (compressed || expander)
-                blockedFileIOSize = 0; // ignore. Compressed files use their own blocked format, but may want to revisit this area.
-        }
     }
     virtual void beforeDispose() override;
     void setActivity(CActivityBase *_activity)
@@ -2185,7 +2179,7 @@ public:
         CriticalBlock b(crit);
         return _remove(id);
     }
-    virtual IFileIO *lookupIFileIO(CActivityBase &activity, const char *logicalFilename, IPartDescriptor &partDesc, IExpander *expander, const StatisticsMapping & _statMapping, size32_t blockedFileIOSize) override
+    virtual IFileIO *lookupIFileIO(CActivityBase &activity, const char *logicalFilename, IPartDescriptor &partDesc, IExpander *expander, const StatisticsMapping & _statMapping) override
     {
         StringBuffer filename;
         RemoteFilename rfn;
@@ -2195,15 +2189,13 @@ public:
         unsigned crc = partDesc.queryProperties().getPropInt("@fileCrc");
         if (crc)
             id.append(crc);
-        if (blockedFileIOSize)
-            id.append('_').append(blockedFileIOSize);
         CriticalBlock b(crit);
         CLazyFileIO * file = files.find(id);
         if (!file || !file->isAliveAndLink())
         {
             Owned<IActivityReplicatedFile> repFile = createEnsurePrimaryPartFile(logicalFilename, &partDesc);
             bool compressed = partDesc.queryOwner().isCompressed();
-            file = new CLazyFileIO(*this, filename, id, repFile.getClear(), compressed, expander, _statMapping, blockedFileIOSize);
+            file = new CLazyFileIO(*this, filename, id, repFile.getClear(), compressed, expander, _statMapping);
             files.replace(* file); // NB: files does not own 'file', CLazyFileIO will remove itself from cache on destruction
 
             /* NB: there will be 1 CLazyFileIO per physical file part name
@@ -2243,11 +2235,7 @@ IFileIO *CLazyFileIO::getOpenFileIO(CActivityBase &activity)
         else if (compressed)
             iFileIO.setown(createCompressedFileReader(iFile));
         else
-        {
             iFileIO.setown(iFile->open(IFOread));
-            if (blockedFileIOSize)
-                iFileIO.setown(createBlockedIO(iFileIO.getClear(), blockedFileIOSize));
-        }
         if (!iFileIO.get())
             throw MakeThorException(0, "CLazyFileIO: failed to open: %s", filename.get());
     }

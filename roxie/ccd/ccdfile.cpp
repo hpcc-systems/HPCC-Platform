@@ -841,7 +841,7 @@ public:
         if (nodeType != NodeNone && !keyFailed && localFile && !keyIndex)
         {
             //Pass false for isTLK - it will be initialised from the index header
-            keyIndex.setown(createKeyIndex(filename, localFile->getCrc(), *localFile.get(), fileIdx, false));
+            keyIndex.setown(createKeyIndex(filename, localFile->getCrc(), *localFile.get(), fileIdx, false, 0));
             if (!keyIndex)
                 keyFailed = true;
         }
@@ -2664,6 +2664,7 @@ protected:
     offset_t fileSize;
     unsigned fileCheckSum;
     RoxieFileType fileType;
+    size32_t configRandomIOSize = 0;
     bool isSuper;
 
     StringArray subNames;
@@ -2797,6 +2798,8 @@ public:
                     remoteFDesc.setown(daliHelper->checkClonedFromRemote(_lfn, fDesc, cacheIt, defaultPrivilegedUser));
                 addFile(dFile->queryLogicalName(), fDesc.getClear(), remoteFDesc.getClear());
             }
+            // could do globally once, not sure worth it though.
+            configRandomIOSize = (size32_t)getExpertOptInt64(getPlaneAttributeString(BlockedRandomIO), 0) * 1024;
         }
     }
     virtual void beforeDispose()
@@ -3162,6 +3165,7 @@ public:
 
                         Owned <ILazyFileIO> part;
                         unsigned crc = 0;
+                        size32_t blockedIOSize = 0;
                         if (fdesc) // NB there may be no parts for this channel 
                         {
                             IPartDescriptor *pdesc = fdesc->queryPart(partNo-1);
@@ -3170,6 +3174,12 @@ public:
                                 IPartDescriptor *remotePDesc = queryMatchingRemotePart(pdesc, remoteFDesc, partNo-1);
                                 part.setown(createPhysicalFile(subNames.item(idx), pdesc, remotePDesc, ROXIE_KEY, fdesc->numParts(), cached != NULL, channel));
                                 pdesc->getCrc(crc);
+                                bool local = pdesc->queryProperties().getPropBool("@local");
+                                if (!local) // do not buffer local files used by standaloe roxie
+                                {
+                                    unsigned replicationLevel = getReplicationLevel(channel);
+                                    blockedIOSize = getPartPlaneAttr(*pdesc, replicationLevel, BlockedRandomIO, configRandomIOSize);
+                                }
                             }
                         }
                         if (part)
@@ -3177,10 +3187,10 @@ public:
                             if (lazyOpen)
                             {
                                 // We pass the IDelayedFile interface to createKeyIndex, so that it does not open the file immediately
-                                keyset->addIndex(createKeyIndex(part->queryFilename(), crc, *QUERYINTERFACE(part.get(), IDelayedFile), part->getFileIdx(), false));
+                                keyset->addIndex(createKeyIndex(part->queryFilename(), crc, *QUERYINTERFACE(part.get(), IDelayedFile), part->getFileIdx(), false, blockedIOSize));
                             }
                             else
-                                keyset->addIndex(createKeyIndex(part->queryFilename(), crc, *part.get(), part->getFileIdx(), false));
+                                keyset->addIndex(createKeyIndex(part->queryFilename(), crc, *part.get(), part->getFileIdx(), false, blockedIOSize));
                         }
                         else
                             keyset->addIndex(NULL);
@@ -3211,13 +3221,20 @@ public:
                     pdesc->getCrc(crc);
                     StringBuffer pname;
                     pdesc->getPath(pname);
+                    size32_t blockedIOSize = 0;
+                    bool local = pdesc->queryProperties().getPropBool("@local");
+                    if (!local) // do not buffer local files used by standaloe roxie
+                    {
+                        unsigned replicationLevel = getReplicationLevel(channel);
+                        blockedIOSize = getPartPlaneAttr(*pdesc, replicationLevel, BlockedRandomIO, configRandomIOSize);
+                    }
                     if (lazyOpen)
                     {
                         // We pass the IDelayedFile interface to createKeyIndex, so that it does not open the file immediately
-                        key.setown(createKeyIndex(pname.str(), crc, *QUERYINTERFACE(keyFile.get(), IDelayedFile), keyFile->getFileIdx(), numParts>1));
+                        key.setown(createKeyIndex(pname.str(), crc, *QUERYINTERFACE(keyFile.get(), IDelayedFile), keyFile->getFileIdx(), numParts>1, blockedIOSize));
                     }
                     else
-                        key.setown(createKeyIndex(pname.str(), crc, *keyFile.get(), keyFile->getFileIdx(), numParts>1));
+                        key.setown(createKeyIndex(pname.str(), crc, *keyFile.get(), keyFile->getFileIdx(), numParts>1, blockedIOSize));
                     keyset->addIndex(LINK(key->queryPart(0)));
                 }
                 else

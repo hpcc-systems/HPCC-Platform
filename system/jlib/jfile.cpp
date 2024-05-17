@@ -17,6 +17,7 @@
 #include "platform.h"
 
 #include <atomic>
+#include <array>
 #include <unordered_set>
 #include <unordered_map>
 
@@ -7818,40 +7819,65 @@ extern IFileIO *createBlockedIO(IFileIO *base, size32_t blockSize)
     return new CBlockedFileIO(base, blockSize);
 }
 
-// Cache/update plane index blocked IO settings
-static unsigned planeBlockIOMapCBId = 0;
-static std::unordered_map<std::string, size32_t> planeBlockedIOMap;
-static CriticalSection planeBlockedIOMapCrit;
+// Cache/update plane attributes settings
+static unsigned planeAttributeCBId = 0;
+static const std::array<const char*, PlaneAttributeCount> planeAttributeTypeStrings =
+{
+    "blockedFileIOKB",
+    "blockedRandomIOKB"
+};
+
+static std::unordered_map<std::string, std::array<unsigned __int64, PlaneAttributeCount>> planeAttributesMap;
+static CriticalSection planeAttriubuteMapCrit;
+
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
     auto updateFunc = [&](const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
     {
-        CriticalBlock b(planeBlockedIOMapCrit);
-        planeBlockedIOMap.clear();
+        CriticalBlock b(planeAttriubuteMapCrit);
+        planeAttributesMap.clear();
         Owned<IPropertyTreeIterator> planesIter = getPlanesIterator(nullptr, nullptr);
         ForEach(*planesIter)
         {
             const IPropertyTree &plane = planesIter->query();
-            size32_t blockedFileIOSize = plane.getPropInt("@blockedFileIOKB") * 1024;
-            planeBlockedIOMap[plane.queryProp("@name")] = blockedFileIOSize;
+            auto &values = planeAttributesMap[plane.queryProp("@name")];
+            values[BlockedSequentialIO] = plane.getPropInt(("@" + std::string(planeAttributeTypeStrings[BlockedSequentialIO])).c_str()) * 1024;
+            values[BlockedRandomIO] = plane.getPropInt(("@" + std::string(planeAttributeTypeStrings[BlockedRandomIO])).c_str()) * 1024;
         }
     };
-    planeBlockIOMapCBId = installConfigUpdateHook(updateFunc, true);
+    planeAttributeCBId = installConfigUpdateHook(updateFunc, true);
     return true;
 }
 
 MODULE_EXIT()
 {
-    removeConfigUpdateHook(planeBlockIOMapCBId);
+    removeConfigUpdateHook(planeAttributeCBId);
 }
 
+const char *getPlaneAttributeString(PlaneAttributeType attr)
+{
+    assertex(attr < PlaneAttributeCount);
+    return planeAttributeTypeStrings[attr];
+}
+
+unsigned __int64 getPlaneAttributeValue(const char *planeName, PlaneAttributeType planeAttrType, unsigned __int64 defaultValue)
+{
+    assertex(planeAttrType < PlaneAttributeCount);
+    CriticalBlock b(planeAttriubuteMapCrit);
+    auto it = planeAttributesMap.find(planeName);
+    if (it != planeAttributesMap.end())
+        return it->second[planeAttrType];
+    else
+        return defaultValue;
+}
 
 size32_t getBlockedFileIOSize(const char *planeName, size32_t defaultSize)
 {
-    CriticalBlock b(planeBlockedIOMapCrit);
-    auto it = planeBlockedIOMap.find(planeName);
-    if (it != planeBlockedIOMap.end())
-        return it->second;
-    else
-        return defaultSize;
+    return (size32_t)getPlaneAttributeValue(planeName, BlockedSequentialIO, defaultSize);
 }
+
+size32_t getBlockedRandomIOSize(const char *planeName, size32_t defaultSize)
+{
+    return (size32_t)getPlaneAttributeValue(planeName, BlockedRandomIO, defaultSize);
+}
+
