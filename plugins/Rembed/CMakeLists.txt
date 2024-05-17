@@ -43,9 +43,9 @@ if(REMBED)
             ./../../system/mp
             ./../../system/jlib)
 
-        set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wno-error=format-nonliteral -Wno-error=format-security")
-        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error=format-nonliteral -Wno-error=format-security")
-        set_property (SOURCE Rembed.cpp APPEND_STRING PROPERTY COMPILE_FLAGS " -Wno-format-nonliteral -Wno-format-security")
+        set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wno-error=format-nonliteral -Wno-error=format-security -Wno-error=format=")
+        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error=format-nonliteral -Wno-error=format-security -Wno-error=format=")
+        set_property (SOURCE Rembed.cpp APPEND_STRING PROPERTY COMPILE_FLAGS " -Wno-format-nonliteral -Wno-format-security -Wno-error-format=")
         add_definitions(-D_USRDLL -DREMBED_EXPORTS)
         if(RCPP_LIBRARY STREQUAL "")
             add_definitions(-DRCPP_HEADER_ONLY)
