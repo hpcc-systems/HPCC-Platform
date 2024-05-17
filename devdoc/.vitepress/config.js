@@ -38,6 +38,7 @@ export default {
                     { text: 'Code Review Guidelines', link: '/devdoc/CodeReviews' },
                     { text: 'Writing Developer Documentation', link: '/devdoc/DevDocs' },
                     { text: 'User Guides', link: '/devdoc/userdoc/README' },
+                    { text: 'Build on Github Actions', link: '/devdoc/UserBuildAssets' },
                 ]
             },
             {
