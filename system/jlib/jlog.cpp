@@ -3194,6 +3194,16 @@ ILogAccessFilter * getJobIDLogAccessFilter(const char * jobId)
     return new FieldLogAccessFilter(jobId, LOGACCESS_FILTER_jobid);
 }
 
+ILogAccessFilter * getTraceIDLogAccessFilter(const char * traceId)
+{
+    return new FieldLogAccessFilter(traceId, LOGACCESS_FILTER_trace);
+}
+
+ILogAccessFilter * getSpanIDLogAccessFilter(const char * spanId)
+{
+    return new FieldLogAccessFilter(spanId, LOGACCESS_FILTER_span);
+}
+
 ILogAccessFilter * getColumnLogAccessFilter(const char * columnName, const char * value)
 {
     return new ColumnLogAccessFilter(columnName, value, LOGACCESS_FILTER_column);

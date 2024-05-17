@@ -25,7 +25,9 @@ ESPenum LogAccessType : int
     BySourceInstance(5, "BySourceInstance"),
     BySourceNode(6, "BySourceNode"),
     ByFieldName(7, "ByFieldName"),
-    ByPod(8, "ByPod")
+    ByPod(8, "ByPod"),
+    ByTraceID(9, "ByTraceID"),
+    BySpanID(10, "BySpanID")
 };
 
 ESPenum LogAccessLogFormat : int
@@ -67,7 +69,9 @@ ESPenum LogColumnType : string
     processid("processid"),
     threadid("threadid"),
     timestamp("timestamp"),
-    pod("pod")
+    pod("pod"),
+    traceid("traceid"),
+    spanid("spanid")
 };
 
 ESPenum LogColumnValueType : string
@@ -191,7 +195,9 @@ ESPenum SortColumType : int
     BySourceInstance(5, "BySourceInstance"),
     BySourceNode(6, "BySourceNode"),
     ByFieldName(7, "ByFieldName"),
-    ByPod(8, "ByPod")
+    ByPod(8, "ByPod"),
+    ByTraceID(9, "ByTraceID"),
+    BySpanID(10, "BySpanID")
 };
 
 ESPStruct SortCondition
@@ -222,7 +228,7 @@ ESPResponse GetLogsResponse
     [min_ver("1.02")] unsigned int TotalLogLinesAvailable;
 };
 
-ESPservice [auth_feature("WsLogAccess:READ"), version("1.05"), default_client_version("1.05"), exceptions_inline("xslt/exceptions.xslt")] ws_logaccess
+ESPservice [auth_feature("WsLogAccess:READ"), version("1.06"), default_client_version("1.06"), exceptions_inline("xslt/exceptions.xslt")] ws_logaccess
 {
     ESPmethod GetLogAccessInfo(GetLogAccessInfoRequest, GetLogAccessInfoResponse);
     ESPmethod GetLogs(GetLogsRequest, GetLogsResponse);
