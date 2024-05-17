@@ -1788,5 +1788,6 @@ extern WORKUNIT_API void executeThorGraph(const char * graphName, IConstWorkUnit
 extern WORKUNIT_API TraceFlags loadTraceFlags(IConstWorkUnit * wu, const std::initializer_list<TraceOption> & y, TraceFlags dft);
 
 extern WORKUNIT_API bool executeGraphOnLingeringThor(IConstWorkUnit &workunit, unsigned wfid, const char *graphName);
+extern WORKUNIT_API bool workunitGraphCacheEnabled;
 
 #endif
