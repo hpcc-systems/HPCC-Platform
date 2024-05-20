@@ -1598,7 +1598,16 @@ void EclAgent::executeGraph(const char * graphName, bool realThor, size32_t pare
     {
         if (isStandAloneExe)
             throw MakeStringException(0, "Cannot execute Thor Graph in standalone mode");
-        executeThorGraph(graphName, *wuRead, *agentTopology);
+        try
+        {
+            executeThorGraph(graphName, *wuRead, *agentTopology);
+            runWorkunitAnalyserAfterGraph(graphName);
+        }
+        catch (...)
+        {
+            runWorkunitAnalyserAfterGraph(graphName);
+            throw;
+        }
     }
     else
     {
