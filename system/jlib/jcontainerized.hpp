@@ -27,6 +27,7 @@ namespace k8s {
 // returns a vector of {pod-name, node-name} vectors,
 jlib_decl std::vector<std::vector<std::string>> getPodNodes(const char *selector);
 jlib_decl const char *queryMyPodName();
+jlib_decl const char *queryMyContainerName();
 
 enum class KeepJobs { none, podfailures, all };
 jlib_decl KeepJobs translateKeepJobs(const char *keepJobs);

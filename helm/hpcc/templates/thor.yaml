@@ -249,7 +249,7 @@ data:
 {{- $thorWorkerCmd := printf "thorslave_lcr %s %s _HPCC_ARGS_ --slaveport=%d" (include "hpcc.configArg" $configCtx.me) (include "hpcc.daliArg" (dict "root" $configCtx.root "component" "Thor" "optional" false)) $slavePort }}
 {{ include "hpcc.addCommandAndLifecycle" ($configCtx | merge (dict "command" $thorWorkerCmd)) | indent 12 }}
             env:
-{{ include "hpcc.mergeEnvironments" $configCtx.me.env | indent 12 }}
+{{ include "hpcc.mergeEnvironments" (append ($configCtx.me.env | default list) (dict "name" "MY_CONTAINER_NAME" "value" (printf "%s-%d" $thorWorkerJobName $containerNum))) | indent 12 }}
             workingDir: /var/lib/HPCCSystems
             volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" (deepCopy $configCtx.me | merge (dict "tmpSubPath" $containerNum)) | indent 12 }}
