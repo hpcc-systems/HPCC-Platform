@@ -8846,7 +8846,7 @@ bool CDeltaWriter::save(std::queue<Owned<CTransactionItem>> &todo)
         }
         catch (IException *e)
         {
-            LOG(MCoperatorWarning, unknownJob, e, "save: failed to touch delta in progress file");
+            LOG(MCoperatorWarning, e, "save: failed to touch delta in progress file");
             e->Release();
         }
         // here if exception only
@@ -8909,14 +8909,14 @@ bool CDeltaWriter::save(std::queue<Owned<CTransactionItem>> &todo)
     }
     catch (IException *e)
     {
-        LOG(MCoperatorWarning, unknownJob, e, "save: failure whilst committing deltas to disk! Remedial action must be taken");
+        LOG(MCoperatorWarning, e, "save: failure whilst committing deltas to disk! Remedial action must be taken");
         e->Release();
         // this is really an attempt at disaster recovery at this point
         forceBlockingSave = true;
     }
     if (forceBlockingSave)
     {
-        LOG(MCoperatorWarning, unknownJob, "Due to earlier failures, attempting forced/blocking save of Dali store");
+        LOG(MCoperatorWarning, "Due to earlier failures, attempting forced/blocking save of Dali store");
         while (todo.size())
             todo.pop();
         SDSManager->saveStore(nullptr, false, false);
