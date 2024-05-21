@@ -836,6 +836,7 @@ ESPstruct [nil_remove] WUResponseNote
     nonNegativeInteger ErrorCode;
     string Severity;
     nonNegativeInteger Cost;
+    [min_ver("1.95")] uint64 Id; // unique identifier for note
 };
 
 ESPstruct [nil_remove] WUResponseScope

@@ -16,7 +16,6 @@
 ############################################################################## */
 
 #include "sysinfologger.hpp"
-#include "daclient.hpp"
 #include "jutil.hpp"
 
 #define SDS_LOCK_TIMEOUT (5*60*1000) // 5 minutes
@@ -144,12 +143,12 @@ public:
         const char *msg = msgPtree->queryProp(nullptr);
         return msg ? msg : "";
     }
-    void setHidden(bool _hidden)
+    virtual void setHidden(bool _hidden) override
     {
         ensureUpdateable();
         msgPtree->setPropBool(ATTR_HIDDEN, _hidden);
     }
-    StringBuffer & getXpath(StringBuffer & xpath)
+    virtual StringBuffer & getXpath(StringBuffer & xpath) const override
     {
         unsigned year, month, day;
         extractDate(queryTimeStamp(), year, month, day);
@@ -422,10 +421,10 @@ ISysInfoLoggerMsgFilter * createSysInfoLoggerMsgFilter(unsigned __int64 msgId, c
 
 class CSysInfoLoggerMsgIterator : public CSimpleInterfaceOf<ISysInfoLoggerMsgIterator>
 {
-    Linked<IConstSysInfoLoggerMsgFilter> filter;
     // N.b. IRemoteConnection exists for the duration of the iterator so if this iterator exists for too long, it could cause
     // performance issues for other clients:  consider caching some messages and releasing connection (and reopening as necessary).
-    Owned<IRemoteConnection> conn;
+    Linked<IRemoteConnection> conn;
+    Linked<IConstSysInfoLoggerMsgFilter> filter;
     bool updateable = false;
     Owned<IPropertyTreeIterator> msgIter;
     CSysInfoLoggerMsg infoMsg;
@@ -446,15 +445,8 @@ class CSysInfoLoggerMsgIterator : public CSimpleInterfaceOf<ISysInfoLoggerMsgIte
     }
 
 public:
-    CSysInfoLoggerMsgIterator(IConstSysInfoLoggerMsgFilter * _filter, bool _updateable=false, IRemoteConnection *_conn=nullptr) : filter(_filter), conn(_conn), updateable(_updateable)
+    CSysInfoLoggerMsgIterator(IRemoteConnection *_conn, IConstSysInfoLoggerMsgFilter * _filter, bool _updateable = false) : conn(_conn), filter(_filter), updateable(_updateable)
     {
-        if (!conn)
-        {
-            unsigned mode = updateable ? RTM_LOCK_WRITE : RTM_LOCK_READ;
-            conn.setown(querySDS().connect(SYS_INFO_ROOT, myProcessSession(), mode, SDS_LOCK_TIMEOUT));
-            if (!conn)
-                throw makeStringExceptionV(-1, "CSysInfoLoggerMsgIterator: unable to create connection to '%s'", SYS_INFO_ROOT);
-        }
     }
     CSysInfoLoggerMsg & queryInfoLoggerMsg()
     {
@@ -485,17 +477,53 @@ public:
         return msgIter ? msgIter->isValid() : false;
     }
 };
+class NullSysInfoLoggerMsgIterator : public CSimpleInterfaceOf<ISysInfoLoggerMsgIterator>
+{
+public:
+    virtual ISysInfoLoggerMsg & query() override
+    {
+        UNIMPLEMENTED;
+    }
+    virtual bool first() override
+    {
+        return false;
+    }
+    virtual bool next() override
+    {
+        return false;
+    }
+    virtual bool isValid() override
+    {
+        return false;
+    }
+};
 
-ISysInfoLoggerMsgIterator * createSysInfoLoggerMsgIterator(bool visibleOnly, bool hiddenOnly, unsigned year, unsigned month, unsigned day, const char *source)
+ISysInfoLoggerMsgIterator * createSysInfoLoggerMsgIterator(IRemoteConnection * conn, IConstSysInfoLoggerMsgFilter * msgFilter, bool updateable)
+{
+    return new CSysInfoLoggerMsgIterator(conn, msgFilter, updateable);
+}
+
+ISysInfoLoggerMsgIterator * createSysInfoLoggerMsgIterator(IConstSysInfoLoggerMsgFilter * msgFilter, bool updateable)
+{
+    unsigned mode = updateable ? RTM_LOCK_WRITE : RTM_LOCK_READ;
+    Owned<IRemoteConnection> conn = querySDS().connect(SYS_INFO_ROOT, myProcessSession(), mode, SDS_LOCK_TIMEOUT);
+    if (!conn)
+        return new NullSysInfoLoggerMsgIterator();
+    return createSysInfoLoggerMsgIterator(conn, msgFilter, updateable);
+}
+
+ISysInfoLoggerMsgIterator * createSysInfoLoggerMsgIterator(IRemoteConnection * conn, bool visibleOnly, bool hiddenOnly, unsigned year, unsigned month, unsigned day, const char *source, bool updateable)
 {
     Owned<CSysInfoLoggerMsgFilter> filter = new CSysInfoLoggerMsgFilter(visibleOnly, hiddenOnly, year, month, day, source);
-    return new CSysInfoLoggerMsgIterator(filter, false);
+    return createSysInfoLoggerMsgIterator(conn, filter, updateable);
 }
 
-ISysInfoLoggerMsgIterator * createSysInfoLoggerMsgIterator(IConstSysInfoLoggerMsgFilter * msgFilter)
+ISysInfoLoggerMsgIterator * createSysInfoLoggerMsgIterator(bool visibleOnly, bool hiddenOnly, unsigned year, unsigned month, unsigned day, const char *source, bool updateable)
 {
-    return new CSysInfoLoggerMsgIterator(msgFilter, false);
+    Owned<CSysInfoLoggerMsgFilter> filter = new CSysInfoLoggerMsgFilter(visibleOnly, hiddenOnly, year, month, day, source);
+    return createSysInfoLoggerMsgIterator(filter, updateable);
 }
+
 
 // returns messageId
 unsigned __int64 logSysInfoError(const LogMsgCategory & cat, LogMsgCode code, const char *source, const char * msg, timestamp_type ts)
@@ -530,20 +558,20 @@ unsigned __int64 logSysInfoError(const LogMsgCategory & cat, LogMsgCode code, co
     return makeMessageId(ts, seqn);
 }
 
-unsigned updateMessage(IConstSysInfoLoggerMsgFilter * msgFilter, std::function<void (CSysInfoLoggerMsg &)> updateOp)
+unsigned updateMessage(IConstSysInfoLoggerMsgFilter * msgFilter, std::function<void (ISysInfoLoggerMsg &)> updateOp)
 {
     unsigned count = 0;
-    Owned<CSysInfoLoggerMsgIterator> iter = new CSysInfoLoggerMsgIterator(msgFilter, true);
+    Owned<ISysInfoLoggerMsgIterator> iter = createSysInfoLoggerMsgIterator(msgFilter, true);
     ForEach(*iter)
     {
-        CSysInfoLoggerMsg & sysInfoMsg = iter->queryInfoLoggerMsg();
+        ISysInfoLoggerMsg & sysInfoMsg = iter->query();
         updateOp(sysInfoMsg);
         ++count;
     }
     return count;
 }
 
-unsigned updateMessage(unsigned __int64 msgId, const char *source, std::function<void (CSysInfoLoggerMsg &)> updateOp)
+unsigned updateMessage(unsigned __int64 msgId, const char *source, std::function<void (ISysInfoLoggerMsg &)> updateOp)
 {
     Owned<IConstSysInfoLoggerMsgFilter> msgFilter = createSysInfoLoggerMsgFilter(msgId, source);
     return updateMessage(msgFilter, updateOp);
@@ -551,22 +579,22 @@ unsigned updateMessage(unsigned __int64 msgId, const char *source, std::function
 
 unsigned hideLogSysInfoMsg(IConstSysInfoLoggerMsgFilter * msgFilter)
 {
-    return updateMessage(msgFilter, [](CSysInfoLoggerMsg & sysInfoMsg){sysInfoMsg.setHidden(true);});
+    return updateMessage(msgFilter, [](ISysInfoLoggerMsg & sysInfoMsg){sysInfoMsg.setHidden(true);});
 }
 
 bool hideLogSysInfoMsg(unsigned __int64 msgId, const char *source)
 {
-    return updateMessage(msgId, source, [](CSysInfoLoggerMsg & sysInfoMsg){sysInfoMsg.setHidden(true);})==1;
+    return updateMessage(msgId, source, [](ISysInfoLoggerMsg & sysInfoMsg){sysInfoMsg.setHidden(true);})==1;
 }
 
 unsigned unhideLogSysInfoMsg(IConstSysInfoLoggerMsgFilter * msgFilter)
 {
-    return updateMessage(msgFilter, [](CSysInfoLoggerMsg & sysInfoMsg){sysInfoMsg.setHidden(false);});
+    return updateMessage(msgFilter, [](ISysInfoLoggerMsg & sysInfoMsg){sysInfoMsg.setHidden(false);});
 }
 
 bool unhideLogSysInfoMsg(unsigned __int64 msgId, const char *source)
 {
-    return updateMessage(msgId, source, [](CSysInfoLoggerMsg & sysInfoMsg){sysInfoMsg.setHidden(false);})==1;
+    return updateMessage(msgId, source, [](ISysInfoLoggerMsg & sysInfoMsg){sysInfoMsg.setHidden(false);})==1;
 }
 
 unsigned deleteLogSysInfoMsg(IConstSysInfoLoggerMsgFilter * msgFilter)
@@ -574,10 +602,10 @@ unsigned deleteLogSysInfoMsg(IConstSysInfoLoggerMsgFilter * msgFilter)
     std::vector<std::string> deleteXpathList;
     Owned<IRemoteConnection> conn = querySDS().connect(SYS_INFO_ROOT, myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT);
     {
-        Owned<CSysInfoLoggerMsgIterator> iter = new CSysInfoLoggerMsgIterator(msgFilter, false, conn.getLink());
+        Owned<ISysInfoLoggerMsgIterator> iter = createSysInfoLoggerMsgIterator(conn, msgFilter, false);
         ForEach(*iter)
         {
-            CSysInfoLoggerMsg & sysInfoMsg = iter->queryInfoLoggerMsg();
+            IConstSysInfoLoggerMsg & sysInfoMsg = iter->query();
             StringBuffer xpath;
             sysInfoMsg.getXpath(xpath);
             deleteXpathList.push_back(xpath.str());
@@ -702,4 +730,82 @@ unsigned deleteOlderThanLogSysInfoMsg(bool visibleOnly, bool hiddenOnly, unsigne
         throw innerException.getClear();
 
     return count;
+}
+
+class DaliMsgLoggerHandler : public CSimpleInterfaceOf<ILogMsgHandler>
+{
+public:
+    DaliMsgLoggerHandler(unsigned _messageFields=MSGFIELD_all) : messageFields(_messageFields)
+    {
+    }
+    virtual void handleMessage(const LogMsg & msg) override
+    {
+        LogMsgSysInfo sysInfo = msg.querySysInfo();
+        time_t timeNum = sysInfo.queryTime();
+        unsigned __int64 ts = sysInfo.queryTime() * 1000000 + sysInfo.queryUSecs();
+        logSysInfoError(msg.queryCategory(), msg.queryCode(), queryComponentName(), msg.queryText(), ts);
+    }
+    virtual bool needsPrep() const override
+    {
+        return false;
+    }
+    virtual void prep() override
+    {
+    }
+    virtual unsigned queryMessageFields() const override
+    {
+        return messageFields;
+    }
+    virtual void setMessageFields(unsigned _fields = MSGFIELD_all) override
+    {
+        messageFields = _fields;
+    }
+    virtual void addToPTree(IPropertyTree * parent) const override
+    {
+        IPropertyTree * handlerTree = createPTree(ipt_caseInsensitive);
+        handlerTree->setProp("@type", "globalmessages");
+        handlerTree->setPropInt("@fields", messageFields);
+        parent->addPropTree("handler", handlerTree);
+    }
+    virtual int flush() override
+    {
+        return 0;
+    }
+    virtual bool getLogName(StringBuffer &name) const override
+    {
+        return false;
+    }
+    virtual offset_t getLogPosition(StringBuffer &logFileName) const override
+    {
+        return 0;
+    }
+private:
+    unsigned messageFields = MSGFIELD_all;
+};
+
+static Owned<ILogMsgHandler> msgHandler;
+
+void useDaliForOperatorMessages(bool use)
+{
+    if (use)
+    {
+        if (!msgHandler)
+        {
+            msgHandler.setown(getDaliMsgLoggerHandler());
+            Owned<ILogMsgFilter> operatorFilter = getCategoryLogMsgFilter(MSGAUD_operator,
+                                                                    MSGCLS_disaster|MSGCLS_error|MSGCLS_warning,
+                                                                    WarnMsgThreshold);
+            queryLogMsgManager()->addMonitor(msgHandler, operatorFilter);
+        }
+    }
+    else if (msgHandler)
+    {
+        queryLogMsgManager()->removeMonitor(msgHandler);
+        msgHandler.clear();
+    }
+}
+
+ILogMsgHandler * getDaliMsgLoggerHandler()
+{
+    return new DaliMsgLoggerHandler();
 }
