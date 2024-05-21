@@ -110,6 +110,13 @@ jobs:
           wget http://www.java2s.com/Code/JarDownload/testng/testng-6.8.7.jar.zip
           unzip testng-6.8.7.jar.zip
 
+      - name: Install ML_Core bundle
+        shell: "bash"
+        run: |
+          ecl bundle install --update --force https://github.com/hpcc-systems/ML_Core.git
+          ecl bundle list
+          find / -iname 'ToField.ecl' -type
+
       - name: Run Tests
         timeout-minutes: 10 # generous, current runtime is ~1min, this should be increased if new tests are added
         if: steps.check.outputs.runtests
