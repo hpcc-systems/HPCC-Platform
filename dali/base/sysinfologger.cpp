@@ -703,3 +703,79 @@ unsigned deleteOlderThanLogSysInfoMsg(bool visibleOnly, bool hiddenOnly, unsigne
 
     return count;
 }
+
+class DaliMsgLoggerHandler : public CInterfaceOf<ILogMsgHandler>
+{
+public:
+    DaliMsgLoggerHandler(unsigned _messageFields=MSGFIELD_all) : messageFields(_messageFields)
+    {
+    }
+    virtual void handleMessage(const LogMsg & msg) override
+    {
+        LogMsgSysInfo sysInfo = msg.querySysInfo();
+        time_t timeNum = sysInfo.queryTime();
+        unsigned __int64 ts = sysInfo.queryTime() * 1000000 + sysInfo.queryUSecs();
+        logSysInfoError(msg.queryCategory(), msg.queryCode(), queryComponentName(), msg.queryText(), ts);
+    }
+    virtual bool needsPrep() const  override
+    {
+        return false;
+    }
+    virtual void prep() override
+    {
+    }
+    virtual unsigned queryMessageFields() const override
+    {
+        return messageFields;
+    }
+    virtual void setMessageFields(unsigned _fields = MSGFIELD_all) override
+    {
+        messageFields = _fields;
+    }
+    virtual void addToPTree(IPropertyTree * parent) const override
+    {
+        IPropertyTree * handlerTree = createPTree(ipt_caseInsensitive);
+        handlerTree->setProp("@type", "globalmessages");
+        handlerTree->setPropInt("@fields", messageFields);
+        parent->addPropTree("handler", handlerTree);
+    }
+    virtual int flush() override
+    {
+        return 0;
+    }
+    virtual bool getLogName(StringBuffer &name) const override
+    {
+        return false;
+    }
+    virtual offset_t getLogPosition(StringBuffer &logFileName) const override
+    {
+        return 0;
+    }
+private:
+    unsigned messageFields = MSGFIELD_all;
+};
+
+void UseDaliForOperatorMessages(bool use)
+{
+    static ILogMsgHandler *msgHandler=NULL;
+    if (use==(msgHandler!=NULL))
+        return;
+    if (use)
+    {
+        msgHandler = getDaliMsgLoggerHandler();
+        ILogMsgFilter * operatorFilter = getCategoryLogMsgFilter(MSGAUD_operator,
+                                                                 MSGCLS_disaster|MSGCLS_error|MSGCLS_warning,
+                                                                 WarnMsgThreshold);
+        queryLogMsgManager()->addMonitorOwn(msgHandler, operatorFilter);
+    }
+    else
+    {
+        queryLogMsgManager()->removeMonitor(msgHandler);
+        msgHandler = NULL;
+    }
+}
+
+ILogMsgHandler * getDaliMsgLoggerHandler()
+{
+    return new DaliMsgLoggerHandler();
+}
