@@ -22,6 +22,9 @@
 #include "workunit.hpp"
 #include "jset.hpp"
 #include "jstatcodes.h"
+#include "sysinfologger.hpp"
+
+#define COMPONENT_NOTE_MASK 0xFFFFFC0
 
 typedef std::pair<WuAttr, StringBuffer> AttribValuePair;
 bool operator==(const AttribValuePair & p1, const AttribValuePair & p2)
@@ -487,8 +490,13 @@ void WUDetails::processRequest(IEspWUDetailsRequest &req, IEspWUDetailsResponse 
         {
             Owned<IPropertyTree> componentConfig = getComponentConfig();
             IArrayOf<IEspWUResponseNote> espWuResponseNotes;
-
+            // Global messages
+            // Note: there are 2 types of 'notes':
+            // 1) static component warnings (usual from Helm templates)
+            // 2) dynamic global messages generated from executing components
+            // Static component messages will have COMPONENT_NOTE_MASK.
             Owned<IPropertyTreeIterator> iter = componentConfig->getElements("warnings");
+            unsigned __int64 id=1;
             ForEach(*iter)
             {
                 IPropertyTree & cur = iter->query();
@@ -502,6 +510,27 @@ void WUDetails::processRequest(IEspWUDetailsRequest &req, IEspWUDetailsResponse 
                     espWuResponseNote->setErrorCode_null();
                 espWuResponseNote->setSeverity(cur.queryProp("@severity"));
                 espWuResponseNote->setCost(0);
+                VStringBuffer idstr("%" I64F "u", id|COMPONENT_NOTE_MASK);
+                espWuResponseNote->setId(idstr.str());
+                espWuResponseNotes.append(*espWuResponseNote.getClear());
+                id++;
+            }
+            Owned<ISysInfoLoggerMsgFilter> msgFilter = createSysInfoLoggerMsgFilter();
+            msgFilter->setVisibleOnly();
+            Owned<ISysInfoLoggerMsgIterator> msgIter = createSysInfoLoggerMsgIterator(msgFilter);
+            ForEach(*msgIter)
+            {
+                ISysInfoLoggerMsg & sysInfoMsg = msgIter->query();
+                Owned<IEspWUResponseNote> espWuResponseNote = createWUResponseNote("","");
+                StringBuffer tmpbuf;
+                encodeXML(sysInfoMsg.queryMsg(), tmpbuf, ENCODE_NEWLINES, strlen(sysInfoMsg.queryMsg()), true);
+                espWuResponseNote->setSource(sysInfoMsg.querySource());
+                espWuResponseNote->setMessage(tmpbuf.str());
+                espWuResponseNote->setErrorCode(sysInfoMsg.queryLogMsgCode());
+                espWuResponseNote->setSeverity(LogMsgClassToVarString(sysInfoMsg.queryClass()));
+                espWuResponseNote->setCost(0);
+                VStringBuffer idstr("%" I64F "u", sysInfoMsg.queryLogMsgId());
+                espWuResponseNote->setId(idstr.str());
                 espWuResponseNotes.append(*espWuResponseNote.getClear());
             }
             Owned<IEspWUResponseScope> respScope = createWUResponseScope("","");
