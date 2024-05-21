@@ -596,10 +596,7 @@ bool ControlHandler(ahType type)
             if (auditStartLogged)
             {
                 auditStartLogged = false;
-                LOG(MCauditInfo,",Progress,Thor,Terminate,%s,%s,%s,ctrlc",
-                    queryServerStatus().queryProperties()->queryProp("@thorname"),
-                    queryServerStatus().queryProperties()->queryProp("@nodeGroup"),
-                    queryServerStatus().queryProperties()->queryProp("@queue"));
+                auditThorSystemEvent("Terminate", {"ctrlc"});
             }
             queryLogMsgManager()->flushQueue(10*1000);
             _exit(TEC_CtrlC);
@@ -968,7 +965,10 @@ int main( int argc, const char *argv[]  )
     getClusterThorQueueName(queueNames, thorName);
 #else
     if (!thorName)
+    {
         thorName = "thor";
+        globals->setProp("@name", thorName);
+    }
     SCMStringBuffer queueNames;
     getThorQueueNames(queueNames, thorName);
 #endif
@@ -992,6 +992,7 @@ int main( int argc, const char *argv[]  )
         masterSlaveMpTag = allocateClusterMPTag();
         kjServiceMpTag = allocateClusterMPTag();
 
+        auditThorSystemEvent("Initializing");
         unsigned numWorkers = 0;
         if (isContainerized())
         {
@@ -1000,7 +1001,6 @@ int main( int argc, const char *argv[]  )
 
             StringBuffer thorEpStr;
             LOG(MCdebugProgress, "ThorMaster version %d.%d, Started on %s", THOR_VERSION_MAJOR,THOR_VERSION_MINOR,thorEp.getEndpointHostText(thorEpStr).str());
-            LOG(MCdebugProgress, "Thor name = %s, queue = %s, nodeGroup = %s",thorname,queueName.str(),nodeGroup.str());
 
             unsigned numWorkersPerPod = 1;
             if (!globals->hasProp("@numWorkers"))
@@ -1126,7 +1126,7 @@ int main( int argc, const char *argv[]  )
             PROGLOG("Persistent Thor group created with group name: %s", uniqueGrpName.str());
         }
 #endif
-        LOG(MCauditInfo, ",Progress,Thor,Startup,%s,%s,%s,%s",nodeGroup.str(),thorname,queueName.str(),logUrl.str());
+        auditThorSystemEvent("Startup");
         auditStartLogged = true;
 
         writeSentinelFile(sentinelFile);
@@ -1140,7 +1140,7 @@ int main( int argc, const char *argv[]  )
 
         // NB: workunit/graphName only set in one-shot mode (if isCloud())
         thorMain(logHandler, workunit, graphName);
-        LOG(MCauditInfo, ",Progress,Thor,Terminate,%s,%s,%s",thorname,nodeGroup.str(),queueName.str());
+        auditThorSystemEvent("Terminate");
         LOG(MCdebugProgress, "ThorMaster terminated OK");
     }
     catch (IException *e) 

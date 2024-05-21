@@ -423,10 +423,7 @@ void CJobManager::fatal(IException *e)
     {
         IERRLOG("Unknown exception in CJobManager::fatal");
     }
-    LOG(MCauditInfo,",Progress,Thor,Terminate,%s,%s,%s,exception",
-            queryServerStatus().queryProperties()->queryProp("@thorname"),
-            queryServerStatus().queryProperties()->queryProp("@nodeGroup"),
-            queryServerStatus().queryProperties()->queryProp("@queue"));
+    auditThorSystemEvent("Terminate", {"exception"});
 
     queryLogMsgManager()->flushQueue(10*1000);
 
@@ -890,13 +887,8 @@ bool CJobManager::doit(IConstWorkUnit *workunit, const char *graphName, const So
     JobNameScope activeJobName(wuid);
 
     LOG(MCdebugInfo, "Processing wuid=%s, graph=%s from agent: %s", wuid.str(), graphName, agentep.getEndpointHostText(s).str());
-    LOG(MCauditInfo,",Progress,Thor,Start,%s,%s,%s,%s,%s,%s",
-            queryServerStatus().queryProperties()->queryProp("@thorname"),
-            wuid.str(),
-            graphName,
-            user.str(),
-            queryServerStatus().queryProperties()->queryProp("@nodeGroup"),
-            queryServerStatus().queryProperties()->queryProp("@queue"));
+    auditThorJobEvent("Start", wuid, graphName, user);
+
     Owned<IException> e;
     bool allDone = false;
     try
@@ -904,13 +896,7 @@ bool CJobManager::doit(IConstWorkUnit *workunit, const char *graphName, const So
         allDone = executeGraph(*workunit, graphName, agentep);
     }
     catch (IException *_e) { e.setown(_e); }
-    LOG(MCauditInfo,",Progress,Thor,Stop,%s,%s,%s,%s,%s,%s",
-            queryServerStatus().queryProperties()->queryProp("@thorname"),
-            wuid.str(),
-            graphName,
-            user.str(),
-            queryServerStatus().queryProperties()->queryProp("@nodeGroup"),
-            queryServerStatus().queryProperties()->queryProp("@queue"));
+    auditThorJobEvent("Stop", wuid, graphName, user);
 
     if (e.get()) throw e.getClear();
     return allDone;
@@ -1285,7 +1271,6 @@ void closeThorServerStatus()
     }
 }
 
-
 /*
  * Waits on recv for another wuid/graph to run.
  * Return values:
@@ -1356,6 +1341,42 @@ void publishPodNames(IWorkUnit *workunit, const char *graphName)
             workunit->setContainerizedProcessInfo("ThorWorker", globals->queryProp("@name"), workerPodName, workerContainerName, nullptr, std::to_string(workerNum+1).c_str());
         }
     }
+}
+
+static void auditThorSystemEventBuilder(std::string &msg, const char *eventName, std::initializer_list<const char*> args)
+{
+    msg += std::string(",Progress,Thor,") + eventName + "," + getComponentConfigSP()->queryProp("@name");
+    for (auto arg : args)
+        msg += "," + std::string(arg);
+    if (isContainerized())
+        msg += std::string(",") + k8s::queryMyPodName() + "," + k8s::queryMyContainerName();
+    else
+    {
+        const char *nodeGroup = queryServerStatus().queryProperties()->queryProp("@nodeGroup");
+        const char *queueName = queryServerStatus().queryProperties()->queryProp("@queue");
+        msg += std::string(",") + nodeGroup + "," + queueName;
+    }
+}
+
+void auditThorSystemEvent(const char *eventName)
+{
+    std::string msg;
+    auditThorSystemEventBuilder(msg, eventName, {});
+    LOG(MCauditInfo, "%s", msg.c_str());
+}
+
+void auditThorSystemEvent(const char *eventName, std::initializer_list<const char*> args)
+{
+    std::string msg;
+    auditThorSystemEventBuilder(msg, eventName, args);
+    LOG(MCauditInfo, "%s", msg.c_str());
+}
+
+void auditThorJobEvent(const char *eventName, const char *wuid, const char *graphName, const char *user)
+{
+    std::string msg;
+    auditThorSystemEventBuilder(msg, eventName, { wuid, graphName, nullText(user) });
+    LOG(MCauditInfo, "%s", msg.c_str());
 }
 
 void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphName)
