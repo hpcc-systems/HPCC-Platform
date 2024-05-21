@@ -2420,7 +2420,6 @@ class CGraphExecutor : implements IGraphExecutor, public CInterface
                         Owned<IException> e;
                         try
                         {
-                            PROGLOG("CGraphExecutor: Running graph, graphId=%" GIDPF "d", graph->queryGraphId());
                             graphInfo->callback.runSubgraph(*graph, graphInfo->parentExtractMb.length(), (const byte *)graphInfo->parentExtractMb.toByteArray());
                         }
                         catch (IException *_e)
@@ -2462,13 +2461,17 @@ class CGraphExecutor : implements IGraphExecutor, public CInterface
         }
         return NULL;
     }
+
+    inline bool traceExecution() const { return false; }
+
 public:
     IMPLEMENT_IINTERFACE;
 
     CGraphExecutor(CJobChannel &_jobChannel) : jobChannel(_jobChannel), job(_jobChannel.queryJob())
     {
         limit = (unsigned)job.getWorkUnitValueInt("concurrentSubGraphs", globals->getPropInt("@concurrentSubGraphs", 1));
-        PROGLOG("CGraphExecutor: limit = %d", limit);
+        if (limit != 1)
+            PROGLOG("CGraphExecutor: limit = %d", limit);
         waitOnRunning = 0;
         stopped = false;
         factory = new CGraphExecutorFactory();
@@ -2616,7 +2619,8 @@ public:
             if (running.ordinality()<limit)
             {
                 running.append(*LINK(graphInfo));
-                PROGLOG("Add: Launching graph thread for graphId=%" GIDPF "d", subGraph->queryGraphId());
+                if (traceExecution())
+                    PROGLOG("Add: Launching graph thread for graphId=%" GIDPF "d", subGraph->queryGraphId());
                 graphPool->start(graphInfo.getClear());
             }
             else
@@ -2628,9 +2632,11 @@ public:
     virtual IThreadPool &queryGraphPool() { return *graphPool; }
     virtual void wait()
     {
-        PROGLOG("CGraphExecutor exiting, waiting on graph pool");
+        if (traceExecution())
+            PROGLOG("CGraphExecutor exiting, waiting on graph pool");
         graphPool->joinAll();
-        PROGLOG("CGraphExecutor graphPool finished");
+        if (traceExecution())
+            PROGLOG("CGraphExecutor graphPool finished");
     }
 };
 

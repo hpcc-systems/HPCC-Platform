@@ -879,20 +879,22 @@ protected:
                     unsigned dest=iter->get();
                     CTarget *target = targets.item(dest);
                     Owned<CSendBucket> bucket = target->getBucketClear();
-                    HDSendPrintLog3("Looking at last bucket: target=%s, size=%u", target->queryInfo(), bucket.get()?bucket->querySize():-1);
                     if (bucket && bucket->querySize())
                     {
-                        HDSendPrintLog3("Sending last bucket(s): target=%s, size=%u", target->queryInfo(), bucket->querySize());
+                        //HDSendPrintLog3("Sending last bucket(s): target=%s, size=%u", target->queryInfo(), bucket->querySize());
                         add(bucket.getClear());
                     }
                 }
             }
-            owner.ActPrintLog("HDIST: waiting for threads");
+            if (owner.traceActivity())
+                owner.ActPrintLog("HDIST: waiting for threads");
             writerPool->joinAll();
-            owner.ActPrintLog("HDIST: calling closeWrite()");
+            if (owner.traceActivity())
+                owner.ActPrintLog("HDIST: calling closeWrite()");
             closeWrite();
 
-            owner.ActPrintLog("HDIST: Send loop %s %" RCPF "d rows sent", exception.get()?"aborted":"finished", totalSent);
+            if (owner.traceActivity())
+                owner.ActPrintLog("HDIST: Send loop %s %" RCPF "d rows sent", exception.get()?"aborted":"finished", totalSent);
         }
         void abort()
         {
@@ -1022,6 +1024,9 @@ protected:
         va_end(args);
         ::ActPrintLogEx(&activity->queryContainer(), e, thorlog_all, MCexception(e), "%s", msg.str());
     }
+
+    inline bool traceActivity() const { return false; }
+
 protected:
     CActivityBase *activity;
     size32_t inputBufferSize, pullBufferSize;
@@ -1293,7 +1298,8 @@ public:
         if (piperd)
             piperd->stop();
         pipewr.clear();
-        ActPrintLog("HDIST: Read loop done");
+        if (traceActivity())
+            ActPrintLog("HDIST: Read loop done");
     }
 
     void sendloop()

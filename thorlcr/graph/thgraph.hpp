@@ -1134,6 +1134,7 @@ public:
     inline void setInitialized(bool tf) { initialized = tf; }
     inline bool queryTimeActivities() const { return timeActivities; }
     inline roxiemem::RoxieHeapFlags queryHeapFlags() const { return defaultRoxieMemHeapFlags; }
+    inline bool traceStartStop() const { return false; }
 
     bool receiveMsg(ICommunicator &comm, CMessageBuffer &mb, const rank_t rank, const mptag_t mpTag, rank_t *sender=NULL, unsigned timeout=MP_WAIT_FOREVER);
     bool receiveMsg(CMessageBuffer &mb, const rank_t rank, const mptag_t mpTag, rank_t *sender=NULL, unsigned timeout=MP_WAIT_FOREVER);

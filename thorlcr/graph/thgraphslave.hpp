@@ -63,7 +63,8 @@ public:
 
     inline void dataLinkStart()
     {
-        owner.ActPrintLog("ITDL starting for output %d", outputId);
+        if (owner.traceStartStop())
+            owner.ActPrintLog("ITDL starting for output %d", outputId);
         if (hasStarted())
         {
             if (!hasStopped())
@@ -79,7 +80,8 @@ public:
     {
         if (hasStarted())
             count = (count & THORDATALINK_COUNT_MASK) | THORDATALINK_STOPPED;
-        owner.ActPrintLog("ITDL output %d stopped, count was %" RCPF "d", outputId, getDataLinkCount());
+        if (owner.traceStartStop())
+            owner.ActPrintLog("ITDL output %d stopped, count was %" RCPF "d", outputId, getDataLinkCount());
     }
     inline void dataLinkIncrement() { dataLinkIncrement(1); }
     inline void dataLinkIncrement(rowcount_t v)

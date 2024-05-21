@@ -405,10 +405,13 @@ void CSlaveActivity::startAllInputs()
 
 void CSlaveActivity::startInput(unsigned index, const char *extra)
 {
-    VStringBuffer s("Starting input %u", index);
-    if (extra)
-        s.append(" ").append(extra);
-    ActPrintLog("%s", s.str());
+    if (traceStartStop())
+    {
+        VStringBuffer s("Starting input %u", index);
+        if (extra)
+            s.append(" ").append(extra);
+        ActPrintLog("%s", s.str());
+    }
 
     CThorInput &_input = inputs.item(index);
 #ifdef TRACE_STARTSTOP_EXCEPTIONS
@@ -443,10 +446,13 @@ void CSlaveActivity::stopInput(unsigned index, const char *extra)
     CThorInput &_input = inputs.item(index);
     if (_input.stopped)
         return;
-    VStringBuffer s("Stopping input %u for", index);
-    if (extra)
-        s.append(" ").append(extra);
-    ActPrintLog("%s", s.str());
+    if (traceStartStop())
+    {
+        VStringBuffer s("Stopping input %u for", index);
+        if (extra)
+            s.append(" ").append(extra);
+        ActPrintLog("%s", s.str());
+    }
 
 #ifdef TRACE_STARTSTOP_EXCEPTIONS
     try
@@ -1723,7 +1729,6 @@ CJobSlave::CJobSlave(ISlaveWatchdog *_watchdog, IPropertyTree *_workUnitInfo, co
 
     unsigned sharedMemoryLimitPercentage = (unsigned)getWorkUnitValueInt("globalMemoryLimitPC", globals->getPropInt("@sharedMemoryLimit", 90));
     unsigned sharedMemoryMB = queryMemoryMB*sharedMemoryLimitPercentage/100;
-    PROGLOG("Shared memory = %d%%", sharedMemoryLimitPercentage);
 
     sharedAllocator.setown(::createThorAllocator(queryMemoryMB, sharedMemoryMB, numChannels, memorySpillAtPercentage, *logctx, crcChecking, usePackedAllocator));
 
