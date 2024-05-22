@@ -10433,7 +10433,7 @@ IPropertyTree * CLocalWUGraph::getXGMMLTreeRaw() const
     return p->getPropTree("xgmml");
 }
 
-bool workunitGraphCacheEnabled = true;
+bool workunitGraphCacheEnabled = false;
 
 IPropertyTree * CLocalWUGraph::getXGMMLTree(bool doMergeProgress, bool doFormatStats) const
 {
