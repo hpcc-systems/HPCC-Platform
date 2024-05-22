@@ -328,7 +328,7 @@ void HqlDllGenerator::expandCode(StringBuffer & filename, const char * codeTempl
 
     totalGeneratedSize += out->size();
 
-    if (!publishGenerated)
+    if (publishGenerated)
     {
         unsigned minActivity, maxActivity;
         code->getActivityRange(pass, minActivity, maxActivity);
