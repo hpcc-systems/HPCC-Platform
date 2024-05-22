@@ -39,8 +39,6 @@ function formatQuery(_filter): { [id: string]: any } {
     if (filter.Type === true) {
         filter.Type = "archived workunits";
     }
-    filter.includeTimings = true;
-    filter.includeTransferRate = true;
     return filter;
 }
 
@@ -83,7 +81,7 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
 
     //  Grid ---
     const gridStore = React.useMemo(() => {
-        return store || ESPDFUWorkunit.CreateWUQueryStore({});
+        return store || ESPDFUWorkunit.CreateWUQueryStore();
     }, [store]);
 
     const query = React.useMemo(() => {

@@ -327,6 +327,8 @@ export function CreateLandingZonesFilterStore(options) {
 }
 
 export function GetDFUWorkunits(params) {
+    params.request.includeTimings = true;
+    params.request.includeTransferRate = true;
     return ESPRequest.send("FileSpray", "GetDFUWorkunits", params);
 }
 
