@@ -412,6 +412,14 @@ public:
     CSysInfoLoggerMsgIterator(ISysInfoLoggerMsgFilter * _filter, bool _updateable=false) : filter(_filter), updateable(_updateable)
     {
     }
+    ~CSysInfoLoggerMsgIterator()
+    {
+        if (conn)
+        {
+            conn->close();
+            conn.clear();
+        }
+    }
     CSysInfoLoggerMsg & queryInfoLoggerMsg()
     {
         return infoMsg.set(msgIter->get(), *(root.get()), updateable);
@@ -429,7 +437,7 @@ public:
             if (filter->queryMatchDay())
                 xpath.appendf("/d%02u", filter->queryMatchDay());
         }
-        unsigned mode = RTM_LOCK_READ | (updateable?RTM_LOCK_WRITE : 0);
+        unsigned mode = updateable ? RTM_LOCK_WRITE : RTM_LOCK_READ;
         conn.setown(querySDS().connect(xpath.str(), myProcessSession(), mode, SDS_LOCK_TIMEOUT));
         if (!conn)
             return false;
@@ -605,10 +613,11 @@ unsigned deleteOlderThanLogSysInfoMsg(bool visibleOnly, bool hiddenOnly, unsigne
             }
         }
     }
+    conn->close();
     return count;
 }
 
-#ifdef DISABLE_USE_CPPUNIT
+#ifdef _USE_CPPUNIT
 #include "unittests.hpp"
 
 #define SOURCE_CPPUNIT "cppunit"
