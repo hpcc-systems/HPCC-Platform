@@ -440,9 +440,12 @@ public:
                 xpath.appendf("/d%02u", filter->queryMatchDay());
         }
         unsigned mode = updateable ? RTM_LOCK_WRITE : RTM_LOCK_READ;
+        printf("querySDS().connect first() connecting\n");
         conn.setown(querySDS().connect(xpath.str(), myProcessSession(), mode, SDS_LOCK_TIMEOUT));
         if (!conn)
             return false;
+        printf("querySDS().connect first() connected\n");
+
         xpath.set("//" MSG_NODE);
         if (filter->queryHiddenOnly())
             xpath.append("[" ATTR_HIDDEN "='1')]");
@@ -509,9 +512,12 @@ void logSysInfoError(const LogMsgId msgId, const LogMsgCategory & cat, LogMsgCod
     timeStamp.getDate(year, month, day);
     xpath.appendf("/m%04u%02u/d%02u", year, month, day);
 
+    printf("logSysInfoError msgID %u\n", msgId);
+    printf("querySDS().connect connecting\n");
     Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
     if (!conn)
         throw makeStringExceptionV(-1, "logSysInfoError: unable to create connection to '%s'", xpath.str());
+    printf("querySDS().connect connected\n");
     IPropertyTree * root = conn->queryRoot();
     if (!root->hasProp(ATTR_VERSION))
         root->addProp(ATTR_VERSION, SYS_INFO_VERSION);
@@ -562,9 +568,11 @@ unsigned deleteOlderThanLogSysInfoMsg(bool visibleOnly, bool hiddenOnly, unsigne
     }
     // With only date range, use this quicker method to remove whole subtrees
     unsigned count = 0;
+    printf("querySDS().connect deleteOlderThanLogSysInfoMsg connecting\n");
     Owned<IRemoteConnection> conn = querySDS().connect(SYS_INFO_ROOT, myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT);
     if (!conn)
         return 0;
+    printf("querySDS().connect deleteOlderThanLogSysInfoMsg connected\n");
 
     Owned<IPropertyTreeIterator> monthIter = conn->queryRoot()->getElements("./*");
     ForEach(*monthIter)
@@ -626,31 +634,38 @@ unsigned deleteOlderThanLogSysInfoMsg(bool visibleOnly, bool hiddenOnly, unsigne
 
 #define BOOL_STR(b) (b?"true":"false")
 
-std::atomic_bool initialized {false};
-CriticalSection crit;
+static unsigned initCounter = 0; // counter for initialiser
 
 void daliClientInit()
 {
-    CriticalBlock b(crit);
-    if (initialized.load()==true)
+   // Only initialise on first pass
+    if (initCounter != 0)
         return;
     InitModuleObjects();
+    // Connect to local Dali
     SocketEndpoint ep;
     ep.set(".", 7070);
     SocketEndpointArray epa;
     epa.append(ep);
     Owned<IGroup> group = createIGroup(epa);
     initClientProcess(group, DCR_Testing);
-    initialized.store(true);
+
+    initCounter++;
 }
 
 void daliClientEnd()
 {
-    CriticalBlock b(crit);
-    if (initialized.load()==false)
+    if (!initCounter)
         return;
-    closedownClientProcess();
-    initialized.store(false);
+    else if (1 == initCounter) // Only destroy on last pass
+    {
+        // Cleanup
+        releaseAtoms();
+        closedownClientProcess();
+        setNodeCaching(false);
+    }
+    else
+        initCounter--;
 }
 
 class CSysInfoLoggerTester : public CppUnit::TestFixture
