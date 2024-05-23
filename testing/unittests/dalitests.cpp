@@ -385,6 +385,8 @@ class CDaliTestsStress : public CppUnit::TestFixture
 public:
     CDaliTestsStress() : logctx(queryDummyContextLogger())
     {
+        daliClientInit();
+
     }
     ~CDaliTestsStress()
     {
@@ -392,7 +394,7 @@ public:
     }
     void testInit()
     {
-        daliClientInit();
+        //daliClientInit();
     }
 #ifndef COMPAT
     void testDF1()
@@ -961,6 +963,8 @@ class CDaliSDSStressTests : public CppUnit::TestFixture
 public:
     CDaliSDSStressTests() : logctx(queryDummyContextLogger())
     {
+        daliClientInit();
+
     }
     ~CDaliSDSStressTests()
     {
@@ -968,7 +972,7 @@ public:
     }
     void testInit()
     {
-        daliClientInit();
+        // daliClientInit();
     }
     void testSDSRW()
     {
@@ -1883,6 +1887,7 @@ class CDaliDFSStressTests : public CppUnit::TestFixture
 public:
     CDaliDFSStressTests() : logctx(queryDummyContextLogger())
     {
+        daliClientInit();
     }
     ~CDaliDFSStressTests()
     {
@@ -1890,7 +1895,7 @@ public:
     }
     void testInit()
     {
-        daliClientInit();
+        // daliClientInit();
     }
     void testDFSTrans()
     {
@@ -2593,6 +2598,7 @@ class CDaliDFSRetrySlowTests : public CppUnit::TestFixture
 public:
     CDaliDFSRetrySlowTests() : logctx(queryDummyContextLogger())
     {
+        daliClientInit();
     }
     ~CDaliDFSRetrySlowTests()
     {
@@ -2600,7 +2606,7 @@ public:
     }
     void testInit()
     {
-        daliClientInit();
+        // daliClientInit();
     }
     class CShortLock : implements IThreaded
     {
@@ -3191,15 +3197,20 @@ class CSysInfoLoggerTester : public CppUnit::TestFixture
 public:
     CSysInfoLoggerTester()
     {
-        printf("CSysInfoLoggerTester\n");
+        printf("CSysInfoLoggerTesterXXX\n");
+        daliClientInit();
     }
     ~CSysInfoLoggerTester()
     {
+        printf("CSysInfoLoggerTesterXXX daliClientEnd\n");
         daliClientEnd();
     }
     void testInit()
     {
-         daliClientInit();
+        printf("CSysInfoLoggerTesterXXX testInit\n");
+//        daliClientInit();
+        printf("CSysInfoLoggerTesterXXX testInit End\n");
+
     }
     void testWrite()
     {
