@@ -608,7 +608,7 @@ unsigned deleteOlderThanLogSysInfoMsg(bool visibleOnly, bool hiddenOnly, unsigne
     return count;
 }
 
-#ifdef DISABLE_USE_CPPUNIT
+#ifdef _USE_CPPUNIT
 #include "unittests.hpp"
 
 #define SOURCE_CPPUNIT "cppunit"
