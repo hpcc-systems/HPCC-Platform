@@ -492,8 +492,7 @@ public:
                 {
                     eoi = true;
                     StringBuffer s;
-                    e->errorMessage(s);
-                    s.append(" - handling file: ").append(filename.get());
+                    s.append("handling file: ").append(filename.get());
                     IException *e2 = MakeActivityException(&activity, e, "%s", s.str());
                     e->Release();
                     throw e2;
@@ -851,8 +850,7 @@ public:
             catch (IException *e)
             {
                 StringBuffer s;
-                e->errorMessage(s);
-                s.append(" - handling file: ").append(filename.get());
+                s.append("handling file: ").append(filename.get());
                 IException *e2 = MakeActivityException(&activity, e, "%s", s.str());
                 e->Release();
                 eoi = true;
