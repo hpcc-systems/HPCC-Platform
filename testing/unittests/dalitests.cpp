@@ -385,8 +385,6 @@ class CDaliTestsStress : public CppUnit::TestFixture
 public:
     CDaliTestsStress() : logctx(queryDummyContextLogger())
     {
-        daliClientInit();
-
     }
     ~CDaliTestsStress()
     {
@@ -394,7 +392,7 @@ public:
     }
     void testInit()
     {
-        //daliClientInit();
+        daliClientInit();
     }
 #ifndef COMPAT
     void testDF1()
@@ -963,8 +961,6 @@ class CDaliSDSStressTests : public CppUnit::TestFixture
 public:
     CDaliSDSStressTests() : logctx(queryDummyContextLogger())
     {
-        daliClientInit();
-
     }
     ~CDaliSDSStressTests()
     {
@@ -972,7 +968,7 @@ public:
     }
     void testInit()
     {
-        // daliClientInit();
+        daliClientInit();
     }
     void testSDSRW()
     {
@@ -1887,7 +1883,6 @@ class CDaliDFSStressTests : public CppUnit::TestFixture
 public:
     CDaliDFSStressTests() : logctx(queryDummyContextLogger())
     {
-        daliClientInit();
     }
     ~CDaliDFSStressTests()
     {
@@ -1895,7 +1890,7 @@ public:
     }
     void testInit()
     {
-        // daliClientInit();
+        daliClientInit();
     }
     void testDFSTrans()
     {
@@ -2598,7 +2593,6 @@ class CDaliDFSRetrySlowTests : public CppUnit::TestFixture
 public:
     CDaliDFSRetrySlowTests() : logctx(queryDummyContextLogger())
     {
-        daliClientInit();
     }
     ~CDaliDFSRetrySlowTests()
     {
@@ -2606,7 +2600,7 @@ public:
     }
     void testInit()
     {
-        // daliClientInit();
+        daliClientInit();
     }
     class CShortLock : implements IThreaded
     {
@@ -3041,257 +3035,256 @@ public:
 CPPUNIT_TEST_SUITE_REGISTRATION( CFileNameNormalizeUnitTest );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( CFileNameNormalizeUnitTest, "CFileNameNormalizeUnitTest" );
 
-#define SOURCE_CPPUNIT "cppunit"
+// #define SOURCE_CPPUNIT "cppunit"
 
-#define BOOL_STR(b) (b?"true":"false")
+// #define BOOL_STR(b) (b?"true":"false")
 
-class CSysInfoLoggerTester : public CppUnit::TestFixture
-{
-    /* Note: global messages will be written for dates between 2000-02-04 and 2000-02-05 */
-    /* Note: All global messages with time stamp before before 2000-02-29 will be deleted */
-    CPPUNIT_TEST_SUITE(CSysInfoLoggerTester);
-        CPPUNIT_TEST(testInit);
-        CPPUNIT_TEST(testSysInfoLogger);
-    CPPUNIT_TEST_SUITE_END();
+// class CSysInfoLoggerTester : public CppUnit::TestFixture
+// {
+//     /* Note: global messages will be written for dates between 2000-02-04 and 2000-02-05 */
+//     /* Note: All global messages with time stamp before before 2000-02-29 will be deleted */
+//     CPPUNIT_TEST_SUITE(CSysInfoLoggerTester);
+//         CPPUNIT_TEST(testInit);
+//         CPPUNIT_TEST(testSysInfoLogger);
+//     CPPUNIT_TEST_SUITE_END();
 
-    struct TestCase
-    {
-        LogMsgId msgId;
-        LogMsgCategory cat;
-        LogMsgCode code;
-        bool hidden;
-        const char * dateTimeStamp;
-        const char * msg;
-    };
+//     struct TestCase
+//     {
+//         LogMsgId msgId;
+//         LogMsgCategory cat;
+//         LogMsgCode code;
+//         bool hidden;
+//         const char * dateTimeStamp;
+//         const char * msg;
+//     };
 
-    std::vector<TestCase> testCases =
-    {
-        {
-            1,
-            LogMsgCategory(MSGAUD_operator, MSGCLS_information, DefaultDetail),
-            42301,
-            false,
-            "2000-02-03T10:01:22.342343",
-            "CSysInfoLogger Unit test message 1"
-        },
-        {
-            2,
-            LogMsgCategory(MSGAUD_operator, MSGCLS_information, DefaultDetail),
-            42302,
-            false,
-            "2000-02-03T12:03:42.114233",
-            "CSysInfoLogger Unit test message 2"
-        },
-        {
-            3,
-            LogMsgCategory(MSGAUD_operator, MSGCLS_information, DefaultDetail),
-            42303,
-            true,
-            "2000-02-03T14:02:13.678443",
-            "CSysInfoLogger Unit test message 3"
-        },
-        {
-            4,
-            LogMsgCategory(MSGAUD_operator, MSGCLS_information, DefaultDetail),
-            42304,
-            true,
-            "2000-02-03T16:05:18.8324832",
-            "CSysInfoLogger Unit test message 4"
-        },
-        {
-            5,
-            LogMsgCategory(MSGAUD_operator, MSGCLS_information, DefaultDetail),
-            42301,
-            false,
-            "2000-02-04T03:01:42.5754",
-            "CSysInfoLogger Unit test message 5"
-        },
-        {
-            6,
-            LogMsgCategory(MSGAUD_operator, MSGCLS_information, DefaultDetail),
-            42302,
-            false,
-            "2000-02-04T09:06:25.133132",
-            "CSysInfoLogger Unit test message 6"
-        },
-        {
-            7,
-            LogMsgCategory(MSGAUD_operator, MSGCLS_information, DefaultDetail),
-            42303,
-            false,
-            "2000-02-04T11:09:32.78439",
-            "CSysInfoLogger Unit test message 7"
-        },
-        {
-            8,
-            LogMsgCategory(MSGAUD_operator, MSGCLS_information, DefaultDetail),
-            42304,
-            true,
-            "2000-02-04T13:02:12.82821",
-            "CSysInfoLogger Unit test message 8"
-        },
-        {
-            9,
-            LogMsgCategory(MSGAUD_operator, MSGCLS_information, DefaultDetail),
-            42304,
-            true,
-            "2000-02-04T18:32:11.23421",
-            "CSysInfoLogger Unit test message 9"
-        }
-    };
+//     std::vector<TestCase> testCases =
+//     {
+//         {
+//             1,
+//             LogMsgCategory(MSGAUD_operator, MSGCLS_information, DefaultDetail),
+//             42301,
+//             false,
+//             "2000-02-03T10:01:22.342343",
+//             "CSysInfoLogger Unit test message 1"
+//         },
+//         {
+//             2,
+//             LogMsgCategory(MSGAUD_operator, MSGCLS_information, DefaultDetail),
+//             42302,
+//             false,
+//             "2000-02-03T12:03:42.114233",
+//             "CSysInfoLogger Unit test message 2"
+//         },
+//         {
+//             3,
+//             LogMsgCategory(MSGAUD_operator, MSGCLS_information, DefaultDetail),
+//             42303,
+//             true,
+//             "2000-02-03T14:02:13.678443",
+//             "CSysInfoLogger Unit test message 3"
+//         },
+//         {
+//             4,
+//             LogMsgCategory(MSGAUD_operator, MSGCLS_information, DefaultDetail),
+//             42304,
+//             true,
+//             "2000-02-03T16:05:18.8324832",
+//             "CSysInfoLogger Unit test message 4"
+//         },
+//         {
+//             5,
+//             LogMsgCategory(MSGAUD_operator, MSGCLS_information, DefaultDetail),
+//             42301,
+//             false,
+//             "2000-02-04T03:01:42.5754",
+//             "CSysInfoLogger Unit test message 5"
+//         },
+//         {
+//             6,
+//             LogMsgCategory(MSGAUD_operator, MSGCLS_information, DefaultDetail),
+//             42302,
+//             false,
+//             "2000-02-04T09:06:25.133132",
+//             "CSysInfoLogger Unit test message 6"
+//         },
+//         {
+//             7,
+//             LogMsgCategory(MSGAUD_operator, MSGCLS_information, DefaultDetail),
+//             42303,
+//             false,
+//             "2000-02-04T11:09:32.78439",
+//             "CSysInfoLogger Unit test message 7"
+//         },
+//         {
+//             8,
+//             LogMsgCategory(MSGAUD_operator, MSGCLS_information, DefaultDetail),
+//             42304,
+//             true,
+//             "2000-02-04T13:02:12.82821",
+//             "CSysInfoLogger Unit test message 8"
+//         },
+//         {
+//             9,
+//             LogMsgCategory(MSGAUD_operator, MSGCLS_information, DefaultDetail),
+//             42304,
+//             true,
+//             "2000-02-04T18:32:11.23421",
+//             "CSysInfoLogger Unit test message 9"
+//         }
+//     };
 
-    struct WrittenLogMessage
-    {
-        unsigned __int64 ts;
-        unsigned testCaseIndex;
-    };
-    std::vector<WrittenLogMessage> writtenMessages;
+//     struct WrittenLogMessage
+//     {
+//         unsigned __int64 ts;
+//         unsigned testCaseIndex;
+//     };
+//     std::vector<WrittenLogMessage> writtenMessages;
 
-    unsigned testRead(bool hiddenOnly=false, bool visibleOnly=false, unsigned year=0, unsigned month=0, unsigned day=0)
-    {
-        printf("testRead\n");
-        unsigned readCount=0;
-        try
-        {
-            std::set<unsigned> matchedMessages; // used to make sure every message written has been read back
-            // Test cases for this day only
-            Owned<ISysInfoLoggerMsgIterator> iter = createSysInfoLoggerMsgIterator(visibleOnly, hiddenOnly, year, month, day);
-            ForEach(*iter)
-            {
-                const ISysInfoLoggerMsg & sysInfoMsg = iter->query();
+//     unsigned testRead(bool hiddenOnly=false, bool visibleOnly=false, unsigned year=0, unsigned month=0, unsigned day=0)
+//     {
+//         printf("testRead\n");
+//         unsigned readCount=0;
+//         try
+//         {
+//             std::set<unsigned> matchedMessages; // used to make sure every message written has been read back
+//             // Test cases for this day only
+//             Owned<ISysInfoLoggerMsgIterator> iter = createSysInfoLoggerMsgIterator(visibleOnly, hiddenOnly, year, month, day);
+//             ForEach(*iter)
+//             {
+//                 const ISysInfoLoggerMsg & sysInfoMsg = iter->query();
 
-                if (strcmp(sysInfoMsg.querySource(), SOURCE_CPPUNIT)!=0)
-                    continue; // not a message written by this unittest so ignore
+//                 if (strcmp(sysInfoMsg.querySource(), SOURCE_CPPUNIT)!=0)
+//                     continue; // not a message written by this unittest so ignore
 
-                // Lookup messages in writtenMessages using timestamp
-                unsigned __int64 msgTs = sysInfoMsg.queryTimeStamp();
-                auto matched = std::find_if(writtenMessages.begin(), writtenMessages.end(), [msgTs] (const auto & wm){ return (wm.ts == msgTs); });
-                if (matched==writtenMessages.end())
-                    throw makeStringExceptionV(-1, "Message read doesn't match a message written by unittest (ts=%" I64F "u)", msgTs);
+//                 // Lookup messages in writtenMessages using timestamp
+//                 unsigned __int64 msgTs = sysInfoMsg.queryTimeStamp();
+//                 auto matched = std::find_if(writtenMessages.begin(), writtenMessages.end(), [msgTs] (const auto & wm){ return (wm.ts == msgTs); });
+//                 if (matched==writtenMessages.end())
+//                     throw makeStringExceptionV(-1, "Message read doesn't match a message written by unittest (ts=%" I64F "u)", msgTs);
 
-                // Make sure written messages matches message read back
-                matchedMessages.insert(matched->testCaseIndex);
-                TestCase & testCase = testCases[matched->testCaseIndex];
-                ASSERT(testCase.hidden==sysInfoMsg.queryIsHidden());
-                ASSERT(testCase.code==sysInfoMsg.queryLogMsgCode());
-                ASSERT(strcmp(testCase.msg,sysInfoMsg.queryMsg())==0);
-                ASSERT(testCase.cat.queryAudience()==sysInfoMsg.queryAudience());
-                ASSERT(testCase.cat.queryClass()==sysInfoMsg.queryClass());
+//                 // Make sure written messages matches message read back
+//                 matchedMessages.insert(matched->testCaseIndex);
+//                 TestCase & testCase = testCases[matched->testCaseIndex];
+//                 ASSERT(testCase.hidden==sysInfoMsg.queryIsHidden());
+//                 ASSERT(testCase.code==sysInfoMsg.queryLogMsgCode());
+//                 ASSERT(strcmp(testCase.msg,sysInfoMsg.queryMsg())==0);
+//                 ASSERT(testCase.cat.queryAudience()==sysInfoMsg.queryAudience());
+//                 ASSERT(testCase.cat.queryClass()==sysInfoMsg.queryClass());
 
-                readCount++;
-            }
-            ASSERT(readCount==matchedMessages.size()); // make sure there are no duplicates
-        }
-        catch (IException *e)
-        {
-            StringBuffer msg;
-            msg.appendf("testRead(hidden=%s, visible=%s) failed: ", BOOL_STR(hiddenOnly), BOOL_STR(visibleOnly));
-            e->errorMessage(msg);
-            msg.appendf("(code %d)", e->errorCode());
-            e->Release();
-            CPPUNIT_FAIL(msg.str());
-        }
-        return readCount;
-    }
+//                 readCount++;
+//             }
+//             ASSERT(readCount==matchedMessages.size()); // make sure there are no duplicates
+//         }
+//         catch (IException *e)
+//         {
+//             StringBuffer msg;
+//             msg.appendf("testRead(hidden=%s, visible=%s) failed: ", BOOL_STR(hiddenOnly), BOOL_STR(visibleOnly));
+//             e->errorMessage(msg);
+//             msg.appendf("(code %d)", e->errorCode());
+//             e->Release();
+//             CPPUNIT_FAIL(msg.str());
+//         }
+//         return readCount;
+//     }
 
-public:
-    CSysInfoLoggerTester()
-    {
-        printf("CSysInfoLoggerTesterXXX\n");
-        daliClientInit();
-    }
-    ~CSysInfoLoggerTester()
-    {
-        printf("CSysInfoLoggerTesterXXX daliClientEnd\n");
-        daliClientEnd();
-    }
-    void testInit()
-    {
-        printf("CSysInfoLoggerTesterXXX testInit\n");
-//        daliClientInit();
-        printf("CSysInfoLoggerTesterXXX testInit End\n");
+// public:
+//     CSysInfoLoggerTester()
+//     {
+//         printf("CSysInfoLoggerTesterXXX\n");
+//     }
+//     ~CSysInfoLoggerTester()
+//     {
+//         printf("CSysInfoLoggerTesterXXX daliClientEnd\n");
+//         daliClientEnd();
+//     }
+//     void testInit()
+//     {
+//         printf("CSysInfoLoggerTesterXXX testInit\n");
+//         daliClientInit();
+//         printf("CSysInfoLoggerTesterXXX testInit End");
 
-    }
-    void testWrite()
-    {
-        printf("testWrite\n");
-        writtenMessages.clear();
-        unsigned testCaseIndex=0;
-        for (auto testCase: testCases)
-        {
-            try
-            {
-                CDateTime dateTime;
-                dateTime.setString(testCase.dateTimeStamp);
+//     }
+//     void testWrite()
+//     {
+//         printf("testWrite\n");
+//         writtenMessages.clear();
+//         unsigned testCaseIndex=0;
+//         for (auto testCase: testCases)
+//         {
+//             try
+//             {
+//                 CDateTime dateTime;
+//                 dateTime.setString(testCase.dateTimeStamp);
 
-                unsigned __int64 ts = dateTime.getTimeStamp();
-                logSysInfoError(testCase.msgId, testCase.cat, testCase.code, SOURCE_CPPUNIT, testCase.msg, ts);
-                writtenMessages.push_back({ts, testCaseIndex++});
-                if (testCase.hidden)
-                {
-                    Owned<ISysInfoLoggerMsgFilter> msgFilter = createSysInfoLoggerMsgFilter();
-                    msgFilter->setMatchMsgId(testCase.msgId);
-                    msgFilter->setMatchTimeStamp(ts);
-                    ASSERT(hideLogSysInfoMsg(msgFilter)==1);
-                }
-            }
-            catch (IException *e)
-            {
-                StringBuffer msg;
-                msg.append("logSysInfoError failed: ");
-                e->errorMessage(msg);
-                msg.appendf("(code %d)", e->errorCode());
-                e->Release();
-                CPPUNIT_FAIL(msg.str());
-            }
-        }
-        ASSERT(testCases.size()==writtenMessages.size());
-    }
-    void testSysInfoLogger()
-    {
-        printf("testSysInfoLogger\n");
-        // cleanup - remove messages that may have been left over from previous run
-        deleteOlderThanLogSysInfoMsg(false, false, 2001, 03, 00);
-        // Start of tests
-        testWrite();
-        ASSERT(testRead(false, false)==9);
-        ASSERT(testRead(false, false, 2000, 02, 03)==4);
-        ASSERT(testRead(false, false, 2000, 02, 04)==5);
-        ASSERT(testRead(false, true)==5); //all visible messages
-        ASSERT(testRead(true, false)==4); //all hidden messages
-        ASSERT(deleteOlderThanLogSysInfoMsg(false, true, 2000, 02, 03)==2);
-        ASSERT(deleteOlderThanLogSysInfoMsg(true, false, 2000, 02, 04)==5);
+//                 unsigned __int64 ts = dateTime.getTimeStamp();
+//                 logSysInfoError(testCase.msgId, testCase.cat, testCase.code, SOURCE_CPPUNIT, testCase.msg, ts);
+//                 writtenMessages.push_back({ts, testCaseIndex++});
+//                 if (testCase.hidden)
+//                 {
+//                     Owned<ISysInfoLoggerMsgFilter> msgFilter = createSysInfoLoggerMsgFilter();
+//                     msgFilter->setMatchMsgId(testCase.msgId);
+//                     msgFilter->setMatchTimeStamp(ts);
+//                     ASSERT(hideLogSysInfoMsg(msgFilter)==1);
+//                 }
+//             }
+//             catch (IException *e)
+//             {
+//                 StringBuffer msg;
+//                 msg.append("logSysInfoError failed: ");
+//                 e->errorMessage(msg);
+//                 msg.appendf("(code %d)", e->errorCode());
+//                 e->Release();
+//                 CPPUNIT_FAIL(msg.str());
+//             }
+//         }
+//         ASSERT(testCases.size()==writtenMessages.size());
+//     }
+//     void testSysInfoLogger()
+//     {
+//         printf("testSysInfoLogger\n");
+//         // cleanup - remove messages that may have been left over from previous run
+//         deleteOlderThanLogSysInfoMsg(false, false, 2001, 03, 00);
+//         // Start of tests
+//         testWrite();
+//         ASSERT(testRead(false, false)==9);
+//         ASSERT(testRead(false, false, 2000, 02, 03)==4);
+//         ASSERT(testRead(false, false, 2000, 02, 04)==5);
+//         ASSERT(testRead(false, true)==5); //all visible messages
+//         ASSERT(testRead(true, false)==4); //all hidden messages
+//         ASSERT(deleteOlderThanLogSysInfoMsg(false, true, 2000, 02, 03)==2);
+//         ASSERT(deleteOlderThanLogSysInfoMsg(true, false, 2000, 02, 04)==5);
 
-        // testCase[7] and [8] are the only 2 remaining
-        // Delete single message test: delete testCase[7]
-        TestCase & testCase = testCases[7];
-        CDateTime dateTime;
-        dateTime.setString(testCase.dateTimeStamp);
-        Owned<ISysInfoLoggerMsgFilter> msgFilter = createSysInfoLoggerMsgFilter();
-        msgFilter->setMatchMsgId(testCase.msgId);
-        msgFilter->setMatchTimeStamp(dateTime.getTimeStamp());
-        ASSERT(deleteLogSysInfoMsg(msgFilter)==1);
+//         // testCase[7] and [8] are the only 2 remaining
+//         // Delete single message test: delete testCase[7]
+//         TestCase & testCase = testCases[7];
+//         CDateTime dateTime;
+//         dateTime.setString(testCase.dateTimeStamp);
+//         Owned<ISysInfoLoggerMsgFilter> msgFilter = createSysInfoLoggerMsgFilter();
+//         msgFilter->setMatchMsgId(testCase.msgId);
+//         msgFilter->setMatchTimeStamp(dateTime.getTimeStamp());
+//         ASSERT(deleteLogSysInfoMsg(msgFilter)==1);
 
-        // Verify only 1 message remaining
-        ASSERT(testRead(false, false)==1);
-        // Delete 2000/02/04 and 2000/02/03 (one message but there are 2 parents remaining)
-        ASSERT(deleteOlderThanLogSysInfoMsg(false, false, 2000, 02, 05)==2);
-        // There shouldn't be any records remaining
-        ASSERT(testRead(false, false)==0);
+//         // Verify only 1 message remaining
+//         ASSERT(testRead(false, false)==1);
+//         // Delete 2000/02/04 and 2000/02/03 (one message but there are 2 parents remaining)
+//         ASSERT(deleteOlderThanLogSysInfoMsg(false, false, 2000, 02, 05)==2);
+//         // There shouldn't be any records remaining
+//         ASSERT(testRead(false, false)==0);
 
-        testWrite();
+//         testWrite();
 
-        // delete all messages with MsgCode 42303 -> 3 messages
-        msgFilter.setown(createSysInfoLoggerMsgFilter());
-        msgFilter->setMatchCode(42304);
-        ASSERT(deleteLogSysInfoMsg(msgFilter)==3);
+//         // delete all messages with MsgCode 42303 -> 3 messages
+//         msgFilter.setown(createSysInfoLoggerMsgFilter());
+//         msgFilter->setMatchCode(42304);
+//         ASSERT(deleteLogSysInfoMsg(msgFilter)==3);
 
-        // delete all messages matching source=SOURCE_CPPUNIT
-        msgFilter.setown(createSysInfoLoggerMsgFilter());
-        msgFilter->setMatchSource(SOURCE_CPPUNIT);
-        ASSERT(deleteLogSysInfoMsg(msgFilter)==6);
-    }
-};
+//         // delete all messages matching source=SOURCE_CPPUNIT
+//         msgFilter.setown(createSysInfoLoggerMsgFilter());
+//         msgFilter->setMatchSource(SOURCE_CPPUNIT);
+//         ASSERT(deleteLogSysInfoMsg(msgFilter)==6);
+//     }
+// };
 
 // CPPUNIT_TEST_SUITE_REGISTRATION( CSysInfoLoggerTester );
 // CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( CSysInfoLoggerTester, "CSysInfoLogger" );
