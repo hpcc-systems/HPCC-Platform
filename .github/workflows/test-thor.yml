@@ -1,7 +1,8 @@
 name: Thor ML Test
 
 on:
-  workflow_call:
+  #workflow_call:
+  workflow_dispatch:
     inputs:
       os:
         type: string
