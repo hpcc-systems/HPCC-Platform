@@ -189,7 +189,8 @@ CRoxieMetricsManager::CRoxieMetricsManager()
     addMetric(restarts);
 
     addMetric(nodesLoaded);
-
+#if 0
+    // If we were actually using these metrics, we'd have to find another way to fetch them.
     addMetric(blobCacheHits);
     addMetric(blobCacheAdds);
     addMetric(blobCacheDups);
@@ -199,7 +200,7 @@ CRoxieMetricsManager::CRoxieMetricsManager()
     addMetric(nodeCacheHits);
     addMetric(nodeCacheAdds);
     addMetric(nodeCacheDups);
-
+#endif
     addMetric(unwantedDiscarded);
 
     addMetric(getHeapAllocated);
