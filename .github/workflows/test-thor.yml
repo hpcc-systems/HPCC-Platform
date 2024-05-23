@@ -85,10 +85,10 @@ jobs:
         shell: "bash"
         run: |  
           sudo apt install -y libsvm-dev libsvm-tools 
-          sudo pip install GLM GNN Kmeans tensorflow numpy keras 
-          wget https://cdn.hpccsystems.com/releases/CE-Candidate-9.6.12/bin/clienttools/hpccsystems-clienttools-community_9.6.12-1jammy_amd64_withsymbols.deb
-          wget https://cdn.hpccsystems.com/releases/CE-Candidate-9.6.10/bin/plugins/hpccsystems-plugin-eclblas_9.6.10-1jammy_amd64_withsymbols.deb
-          sudo dpkg -i --force-all hpccsystems-plugin-eclblas_9.6.10-1jammy_amd64_withsymbols.deb 
+          #sudo pip install GLM GNN Kmeans tensorflow numpy keras 
+          #wget https://cdn.hpccsystems.com/releases/CE-Candidate-9.6.12/bin/clienttools/hpccsystems-clienttools-community_9.6.12-1jammy_amd64_withsymbols.deb
+          #wget https://cdn.hpccsystems.com/releases/CE-Candidate-9.6.10/bin/plugins/hpccsystems-plugin-eclblas_9.6.10-1jammy_amd64_withsymbols.deb
+          #sudo dpkg -i --force-all hpccsystems-plugin-eclblas_9.6.10-1jammy_amd64_withsymbols.deb 
         continue-on-error: true
 
       - name: Start HPCC-Platform
