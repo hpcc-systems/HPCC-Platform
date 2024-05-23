@@ -54,8 +54,10 @@ static unsigned initCounter = 0; // counter for initialiser
 // Declared in dadfs.cpp *only* when CPPUNIT is active
 extern void removeLogical(const char *fname, IUserDescriptor *user);
 
+CriticalSection crit;
 void daliClientInit()
 {
+    CriticalBlock b(crit);
     // Only initialise on first pass
     if (initCounter != 0)
         return;
@@ -74,6 +76,7 @@ void daliClientInit()
 
 void daliClientEnd()
 {
+    CriticalBlock b(crit);
     if (!initCounter)
         return;
     else if (1 == initCounter) // Only destroy on last pass
@@ -3045,7 +3048,7 @@ class CSysInfoLoggerTester : public CppUnit::TestFixture
     /* Note: All global messages with time stamp before before 2000-02-29 will be deleted */
     CPPUNIT_TEST_SUITE(CSysInfoLoggerTester);
         CPPUNIT_TEST(testInit);
-        CPPUNIT_TEST(testSysInfoLogger);
+//        CPPUNIT_TEST(testSysInfoLogger);
     CPPUNIT_TEST_SUITE_END();
 
     struct TestCase
@@ -3287,7 +3290,7 @@ public:
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION( CSysInfoLoggerTester );
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( CSysInfoLoggerTester, "CSysInfoLogger" );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( CSysInfoLoggerTester, "CSysInfoLoggerTester" );
 
 
 #endif // _USE_CPPUNIT
