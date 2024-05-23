@@ -416,13 +416,15 @@ public:
     {
         if (conn)
         {
+            root.clear();
+            msgIter.clear();
             conn->close();
             conn.clear();
         }
     }
     CSysInfoLoggerMsg & queryInfoLoggerMsg()
     {
-        return infoMsg.set(msgIter->get(), *(root.get()), updateable);
+        return infoMsg.set(msgIter->get(), *(root.getLink()), updateable);
     }
     virtual ISysInfoLoggerMsg & query() override
     {
