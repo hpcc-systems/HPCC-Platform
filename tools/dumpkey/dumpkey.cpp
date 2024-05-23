@@ -279,14 +279,14 @@ int main(int argc, const char **argv)
                 }
                 else
                 {
-                    int node = globals->getPropInt("node");
+                    offset_t node = globals->getPropInt64("node");
                     if (node != 0)
                         index->dumpNode(stdout, node * nodeSize, globals->getPropInt("recs", 0), optRaw);
                 }
             }
             else if (globals->hasProp("fpos"))
             {
-                index->dumpNode(stdout, globals->getPropInt("fpos"), globals->getPropInt("recs", 0), optRaw);
+                index->dumpNode(stdout, globals->getPropInt64("fpos"), globals->getPropInt("recs", 0), optRaw);
             }
             else
             {
