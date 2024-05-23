@@ -20,6 +20,19 @@ on:
         required: false
         default: 'bison flex build-essential binutils-dev curl lsb-release libcppunit-dev python3-dev default-jdk r-base-dev r-cran-rcpp r-cran-rinside r-cran-inline pkg-config libtool autotools-dev automake git cmake xmlstarlet'
   push:
+
+  pull_request:
+    branches:
+      - "master"
+      - "candidate-*"
+      - "!candidate-7.10.*"
+      - "!candidate-7.8.*"
+      - "!candidate-7.6.*"
+      - "!candidate-7.4.*"
+      - "!candidate-7.2.*"
+      - "!candidate-7.0.*"
+      - "!candidate-6.*"
+
 jobs:
 
   main:
