@@ -558,6 +558,8 @@ bool disconnectLogMsgManagerFromParentOwn(INode * parentNode)
 
 void startLogMsgParentReceiver()
 {
+    if (isContainerized())
+        return; // we do not redirect logging between components in containerized environments (this is used for audit->dali in BM)
     parentReceiver = new LogMsgParentReceiverThread();
     parentReceiver->start(false);
 }

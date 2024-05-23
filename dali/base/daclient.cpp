@@ -260,6 +260,8 @@ void CSDSServerStatus::stop()
 
 void connectLogMsgManagerToDali()
 {
+    if (isContainerized())
+        return; // we do not redirect logging between components in containerized environments (this is used for audit->dali in BM)
     IGroup & servers = queryCoven().queryGroup();
     unsigned parentRank = getRandom() % servers.ordinality();    // PG: Not sure if logging to random parent is best?
     daliClientLoggingParent = &servers.queryNode(parentRank);

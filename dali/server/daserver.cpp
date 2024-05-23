@@ -81,7 +81,8 @@ void AddServers(const char *auditdir)
     servers.append(*createDaliSDSServer(serverConfig));
     servers.append(*createDaliNamedQueueServer());
     servers.append(*createDaliDFSServer(serverConfig));
-    servers.append(*createDaliAuditServer(auditdir));
+    if (!isContainerized()) // NB: audit logging is output locally by the container in containerized mode (and picked up by a logging backend)
+        servers.append(*createDaliAuditServer(auditdir));
     servers.append(*createDaliDiagnosticsServer());
     // add new coven servers here
 }
@@ -699,10 +700,10 @@ int main(int argc, const char* argv[])
         group->Release();
         epa.kill();
 
-// Audit logging
         StringBuffer auditDir;
+        if (!isContainerized()) // NB: audit logging is output locally by the container in containerized mode (and picked up by a logging backend)
         {
-            //MORE: Does this need to change in CONTAINERIZED mode?
+            // Audit logging
             Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(serverConfig, "dali");
             lf->setLogDirSubdir("audit");//add to tail of config log dir
             lf->setName("DaAudit");//override default filename
