@@ -39,9 +39,7 @@ export class WUTimelinePatched extends WUTimeline {
             ;
         this._gantt["_series_idx"] = -1;
         this.strokeWidth(0);
-        this.tooltipHTML(d => {
-            return d[d.length - 1].calcTooltip();
-        });
+        this.tooltipHTML(d => "");
     }
 
     data(): any;
