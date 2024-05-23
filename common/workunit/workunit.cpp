@@ -4448,8 +4448,8 @@ public:
             { return c->createException(); }
     virtual void addProcess(const char *type, const char *instance, unsigned pid, unsigned max, const char *pattern, bool singleLog, const char *log)
             { c->addProcess(type, instance, pid, max, pattern, singleLog, log); }
-    virtual bool setContainerizedProcessInfo(const char *type, const char *instance, const char *podName, const char *sequence)
-            { return c->setContainerizedProcessInfo(type, instance, podName, sequence); }
+    virtual bool setContainerizedProcessInfo(const char *type, const char *instance, const char *podName, const char *containerName, const char *graphName, const char *sequence)
+            { return c->setContainerizedProcessInfo(type, instance, podName, containerName, graphName, sequence); }
     virtual void protect(bool protectMode)
             { c->protect(protectMode); }
     virtual void setAction(WUAction action)
@@ -8664,7 +8664,7 @@ void CLocalWorkUnit::addProcess(const char *type, const char *instance, unsigned
     }
 }
 
-bool CLocalWorkUnit::setContainerizedProcessInfo(const char *type, const char *instance, const char *podName, const char *sequence)
+bool CLocalWorkUnit::setContainerizedProcessInfo(const char *type, const char *instance, const char *podName, const char *containerName, const char *graphName, const char *sequence)
 {
     VStringBuffer processType("Process/%s", type);
     CriticalBlock block(crit);
@@ -8675,20 +8675,32 @@ bool CLocalWorkUnit::setContainerizedProcessInfo(const char *type, const char *i
     if (sequence)
         instanceXPath.appendf("[@sequence='%s']", sequence);
 
-    VStringBuffer instancePodXPath("%s[@podName='%s']", instanceXPath.str(), podName);
+    VStringBuffer instancePodXPath("%s[@podName='%s'][@containerName='%s']", instanceXPath.str(), podName, containerName);
     IPropertyTree *instanceNode = node->queryPropTree(instancePodXPath);
-    if (instanceNode)
-        return false;
-
-    // NB: instanceNum represents separate instances of {type,instance,sequence}
-    // e.g. if there are multiple Thor instances, each will have a distinct "instanceNum"
-    unsigned instanceNum = node->getCount(instanceXPath)+1;
-    instanceNode = node->addPropTree(instance);
-    if (sequence)
-        instanceNode->setProp("@sequence", sequence); // instance specific, e.g. worker #
-    instanceNode->setPropInt("@instanceNum", instanceNum);
-    instanceNode->setProp("@podName", podName);
-    return true;
+    bool existingInstance = nullptr != instanceNode;
+    IPropertyTree *graphs = nullptr;
+    if (existingInstance)
+    {
+        if (graphName)
+            graphs = instanceNode->queryPropTree("graphs");
+    }
+    else
+    {
+        // NB: instanceNum represents separate instances of {type,instance,sequence}
+        // e.g. if there are multiple Thor instances, each will have a distinct "instanceNum"
+        unsigned instanceNum = node->getCount(instanceXPath)+1;
+        instanceNode = node->addPropTree(instance);
+        if (sequence)
+            instanceNode->setProp("@sequence", sequence); // instance specific, e.g. worker #
+        instanceNode->setPropInt("@instanceNum", instanceNum);
+        instanceNode->setProp("@podName", podName);
+        instanceNode->setProp("@containerName", containerName);
+        if (graphName)
+            graphs = ensurePTree(instanceNode, "graphs");
+    }
+    if (graphs)
+        graphs->setPropTree(graphName);
+    return !existingInstance;
 }
 
 void CLocalWorkUnit::setDebugValue(const char *propname, const char *value, bool overwrite)

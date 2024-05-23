@@ -128,7 +128,10 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
         CMessageBuffer msg;
         msg.append(mySlaveNum);
         if (isContainerized())
+        {
             msg.append(k8s::queryMyPodName());
+            msg.append(k8s::queryMyContainerName());
+        }
         queryWorldCommunicator().send(msg, masterNode, MPTAG_THORREGISTRATION);
         if (!queryWorldCommunicator().recv(msg, masterNode, MPTAG_THORREGISTRATION))
             return false;

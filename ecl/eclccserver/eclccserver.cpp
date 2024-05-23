@@ -962,7 +962,7 @@ public:
                 if ((childProcessTimeLimit == 0) || workunit->getDebugValueBool("isComplexCompile", false))
                 {
                     //NOTE: This call does not modify the workunit itself, so no need to commit afterwards
-                    workunit->setContainerizedProcessInfo("EclCCServer", getComponentConfigSP()->queryProp("@name"), k8s::queryMyPodName(), nullptr);
+                    workunit->setContainerizedProcessInfo("EclCCServer", getComponentConfigSP()->queryProp("@name"), k8s::queryMyPodName(), k8s::queryMyContainerName(), nullptr, nullptr);
                     workunit.clear();
                     compileViaK8sJob(true);
                     return;
@@ -971,7 +971,7 @@ public:
         }
 
         if (isContainerized())
-            workunit->setContainerizedProcessInfo("EclCC", getComponentConfigSP()->queryProp("@name"), k8s::queryMyPodName(), nullptr);
+            workunit->setContainerizedProcessInfo("EclCC", getComponentConfigSP()->queryProp("@name"), k8s::queryMyPodName(), k8s::queryMyContainerName(), nullptr, nullptr);
 
         if (workunit->aborting() || workunit->getState()==WUStateAborted)
         {
