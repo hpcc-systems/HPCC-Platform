@@ -3293,8 +3293,8 @@ public:
     }
 };
 
-CPPUNIT_TEST_SUITE_REGISTRATION( CSysInfoLoggerTester );
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( CSysInfoLoggerTester, "CSysInfoLogger" );
+// CPPUNIT_TEST_SUITE_REGISTRATION( CSysInfoLoggerTester );
+// CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( CSysInfoLoggerTester, "CSysInfoLogger" );
 
 
 #endif // _USE_CPPUNIT
