@@ -305,6 +305,8 @@ enum StatisticKind
     StNumLocalRows,
     StNumRemoteRows,
     StSizeRemoteWrite,
+    StSizePeakTempDisk,
+    StSizePeakEphemeralDisk,
     StMax,
 
     //For any quantity there is potentially the following variants.

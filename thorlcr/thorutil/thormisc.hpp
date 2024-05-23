@@ -308,18 +308,57 @@ public:
     virtual bool action() = 0;
 };
 
+// Tracks the current and peak storage used for some files
+class CFileSizeTracker: public CInterface
+{
+    RelaxedAtomic<offset_t> activeSize{0};
+    RelaxedAtomic<offset_t> peakSize{0};
+public:
+    void growSize(offset_t size)
+    {
+        if (size)
+        {
+            offset_t newActiveSize = activeSize.add_fetch(size);
+            peakSize.store_max(newActiveSize);
+        }
+    }
+    void shrinkSize(offset_t size)
+    {
+        if (size)
+            activeSize.fetch_sub(size);
+    }
+    offset_t queryActiveSize() const
+    {
+        return activeSize.load();
+    }
+    offset_t queryPeakSize() const
+    {
+        return peakSize.load();
+    }
+};
+
 // simple class which takes ownership of the underlying file and deletes it on destruction
 class graph_decl CFileOwner : public CSimpleInterface, implements IInterface
 {
     OwnedIFile iFile;
+    Linked<CFileSizeTracker> fileSizeTracker;
+    offset_t fileSize = 0;
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-    CFileOwner(IFile *_iFile) : iFile(_iFile)
+    CFileOwner(IFile *_iFile, CFileSizeTracker * _fileSizeTracker=nullptr) : iFile(_iFile), fileSizeTracker(_fileSizeTracker)
     {
     }
     ~CFileOwner()
     {
+        if (fileSizeTracker)
+            fileSizeTracker->shrinkSize(fileSize);
         iFile->remove();
+    }
+    void noteSize(offset_t size)
+    {
+        fileSize = size;
+        if (fileSizeTracker)
+            fileSizeTracker->growSize(fileSize);
     }
     IFile &queryIFile() const { return *iFile; }
 };
