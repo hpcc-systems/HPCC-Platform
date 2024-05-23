@@ -2080,6 +2080,7 @@ public:
         IArrayOf<ILazyFileIO> expired;
         IArrayOf<ILazyFileIO> goers;
         unsigned openLimit = maxFilesOpen[remote];
+        unsigned __int64 nowNs = nsTick();
         {
             CriticalBlock b(crit);
             if (files.ordinality() > openLimit || maxFileAgeNS[remote] != (unsigned __int64) -1)
@@ -2093,7 +2094,7 @@ public:
                         Owned<ILazyFileIO> f = match;
                         if (f->isOpen() && f->isRemote()==remote && !f->isCopying())
                         {
-                            unsigned __int64 age = nsTick() - f->getLastAccessed();
+                            unsigned __int64 age = nowNs - f->getLastAccessed();
                             if (age > maxFileAgeNS[remote])
                                 expired.append(*f.getClear());
                             else if (files.ordinality() > openLimit)
@@ -2115,7 +2116,7 @@ public:
                     // NOTE - querySource will cause the file to be opened if not already open
                     // That's OK here, since we know the file is open and remote.
                     // But don't be tempted to move this line outside these if's (eg. to trace the idle case)
-                    unsigned __int64 age = nsTick() - f.getLastAccessed();
+                    unsigned __int64 age = nowNs - f.getLastAccessed();
                     const char *fname = remote ? f.querySource()->queryFilename() : f.queryFilename();
                     DBGLOG("Closing inactive %s file %s (last accessed %" I64F "u ms ago)", remote ? "remote" : "local",  fname, nanoToMilli(age));
                 }
