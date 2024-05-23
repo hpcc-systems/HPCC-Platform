@@ -944,7 +944,7 @@ static const constexpr StatisticMeta statsMetaData[StMax] = {
     { CYCLESTAT(LeafFetch) },
     { TIMESTAT(BlobFetch), "Time spent reading blobs from disk (EXCLUDING the linux page cache)" },
     { CYCLESTAT(BlobFetch) },
-    { PEAKSIZESTAT(GraphSpill), "Peak size of spill memory usage" },
+    { PEAKSIZESTAT(GraphSpill), "High water mark for inter-subgraph spill size" },
     { TIMESTAT(AgentQueue), "Time worker items were received and queued before being processed\nThis may indicate that the primary node on a channel was down, or that the workers are overloaded with requests" },
     { CYCLESTAT(AgentQueue) },
     { TIMESTAT(IBYTIDelay), "Time spent waiting for another worker to start processing a request\nA non-zero value indicates that the primary node on a channel was down or very busy" },
@@ -977,6 +977,8 @@ static const constexpr StatisticMeta statsMetaData[StMax] = {
     { NUMSTAT(LocalRows), "Number of rows handled locally"},
     { NUMSTAT(RemoteRows), "Number of rows sent to remote workers"},
     { SIZESTAT(RemoteWrite), "Size of data sent to remote workers"},
+    { PEAKSIZESTAT(PeakTempDisk), "High water mark for temporary files"},
+    { PEAKSIZESTAT(PeakEphemeralDisk), "High water mark for emphemeral storage use"},
 };
 
 static MapStringTo<StatisticKind, StatisticKind> statisticNameMap(true);

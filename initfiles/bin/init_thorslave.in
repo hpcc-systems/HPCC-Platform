@@ -44,24 +44,14 @@ slavename=thorslave_${hpcc_compname}
 stop_slaves()
 {
     local timer=15
-    local isAlive=0
-
-    log "Attempting to kill $slavename with SIGTERM"
-    killall -SIGTERM $slavename > /dev/null 2>&1
-    while [[ $isAlive -eq 0 && $timer -gt 0 ]];do
-        killall -0 $slavename > /dev/null 2>&1
-        isAlive=$?
-        [[ $isAlive -eq 0 ]] && sleep 0.5
-        ((timer--))
+    local _pidarray
+    local _pidname
+    
+    _pidarray=($( ls -1 ${PID_DIR} | grep -E "${slavename}_[1-9][0-9]*\.pid" ))
+    for _pidname in ${_pidarray[@]}; do
+        kill_process ${PID_DIR}/$_pidname $slavename $timer
     done
-
-    if [[ $isAlive -eq 0 ]]; then
-        log "Failed to kill slaves with SIGTERM. Sending SIGKILL"
-        killall -SIGKILL $slavename > /dev/null
-    fi
-
-    # need regex here to prevent removing other Thor instance pid files
-    find ${PID_DIR} -maxdepth 1 -type f -regex ".*/${slavename}_[1-9][0-9]*\.pid" -delete > /dev/null 2>&1
+   
 }
 
 start_slaves()

@@ -214,6 +214,16 @@ public:
         }
         return dft;
     }
+    virtual __int64 getPropInt64(PTYPE propname, int dft) const override
+    {
+        if (propname)
+        {
+            const char *val = queryProp(propname);
+            if (val)
+                return _atoi64(val);
+        }
+        return dft;
+    }
     virtual bool getPropBool(PTYPE propname, bool dft) const override
     {
         if (propname)

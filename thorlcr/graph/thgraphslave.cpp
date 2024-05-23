@@ -1280,8 +1280,28 @@ bool CSlaveGraph::serializeStats(MemoryBuffer &mb)
     jobS->querySharedAllocator()->queryRowManager()->reportSummaryStatistics(stats);
 
     IGraphTempHandler *tempHandler = owner ? queryTempHandler(false) : queryJob().queryTempHandler();
+    offset_t sizeGraphSpill = tempHandler ? tempHandler->getActiveUsageSize() : 0;
     if (tempHandler)
-        stats.mergeStatistic(StSizeGraphSpill, tempHandler->getActiveUsageSize());
+        stats.mergeStatistic(StSizeGraphSpill, sizeGraphSpill);
+
+    // calculate peak spill size
+    if (started&&initialized)
+    {
+        offset_t activeTempSize = 0;
+        Owned<IThorActivityIterator> iter = getConnectedIterator();
+        ForEach (*iter)
+        {
+            CGraphElementBase &element = iter->query();
+            CSlaveActivity &activity = (CSlaveActivity &)*element.queryActivity();
+            activeTempSize += activity.queryActiveTempSize();
+        }
+        if (activeTempSize > peakTempSize)
+            peakTempSize = activeTempSize;
+    }
+    if (peakTempSize)
+        stats.mergeStatistic(StSizePeakTempDisk, peakTempSize);
+    if (peakTempSize + sizeGraphSpill)
+        stats.mergeStatistic(StSizePeakEphemeralDisk, peakTempSize + sizeGraphSpill);
     stats.serialize(mb);
 
     unsigned cPos = mb.length();
@@ -1795,9 +1815,10 @@ void CJobSlave::endJob()
 void CJobSlave::reportGraphEnd(graph_id gid)
 {
     if (nodesLoaded) // wouldn't mean much if parallel jobs running
-        PROGLOG("Graph[%" GIDPF "u] - JHTree node stats:\ncacheAdds=%d\ncacheHits=%d\nnodesLoaded=%d\nblobCacheHits=%d\nblobCacheAdds=%d\nleafCacheHits=%d\nleafCacheAdds=%d\nnodeCacheHits=%d\nnodeCacheAdds=%d\n",
-             gid, blobCacheAdds + leafCacheAdds + nodeCacheAdds, blobCacheHits + leafCacheHits + nodeCacheHits,
-             nodesLoaded.load(), blobCacheHits.load(), blobCacheAdds.load(), leafCacheHits.load(), leafCacheAdds.load(), nodeCacheHits.load(), nodeCacheAdds.load());
+    {
+        StringBuffer prefix("Graph[%" GIDPF "u] - JHTree node stats:");
+        logNodeCacheStats(prefix);
+    }
     if (!REJECTLOG(MCthorDetailedDebugInfo))
     {        
         JSocketStatistics stats;

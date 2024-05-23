@@ -224,7 +224,12 @@ protected:
     void startLookAhead(unsigned index);
     bool isLookAheadActive(unsigned index) const;
     void setupSpace4FileStats(unsigned where, bool statsForMultipleFiles, bool isSuper, unsigned numSubs, const StatisticsMapping & statsMapping);
-    virtual void gatherActiveStats(CRuntimeStatisticCollection &activeStats) const { }
+    virtual void gatherActiveStats(CRuntimeStatisticCollection &activeStats) const
+    {
+        offset_t peakTempSize = queryPeakTempSize();
+        if (peakTempSize)
+            activeStats.mergeStatistic(StSizePeakTempDisk, peakTempSize);
+    }
 public:
     IMPLEMENT_IINTERFACE_USING(CActivityBase)
 
@@ -261,7 +266,6 @@ public:
     void debugRequest(unsigned edgeIdx, MemoryBuffer &msg);
     bool canStall() const;
     bool isFastThrough() const;
-
 
 // IThorDataLink
     virtual CSlaveActivity *queryFromActivity() override { return this; }
@@ -516,6 +520,7 @@ class graphslave_decl CSlaveGraph : public CGraphBase
     bool doneInit = false;
     std::atomic_bool progressActive;
     ProcessInfo processStartInfo;
+    offset_t peakTempSize = 0;
 
 public:
 

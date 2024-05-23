@@ -1337,25 +1337,25 @@ static int recvNextGraph(unsigned timeoutMs, const char *wuid, StringBuffer &ret
 }
 
 
-static std::vector<std::string> connectedWorkerPods;
-void addConnectedWorkerPod(const char *podName)
+static std::vector<std::pair<std::string, std::string>> connectedWorkerPods;
+void addConnectedWorkerPod(const char *podName, const char *containerName)
 {
-    connectedWorkerPods.push_back(podName);
+    connectedWorkerPods.emplace_back(podName, containerName);
 }
 
-static bool podInfoPublished = false;
-void publishPodNames(IWorkUnit *workunit)
+void publishPodNames(IWorkUnit *workunit, const char *graphName)
 {
     // skip if Thor manager already published (implying worker pods already published too)
-    if (workunit->setContainerizedProcessInfo("Thor", globals->queryProp("@name"), k8s::queryMyPodName(), nullptr))
+    // NB: this will always associate the new 'graphName' with the manager pod meta info.
+    if (workunit->setContainerizedProcessInfo("Thor", globals->queryProp("@name"), k8s::queryMyPodName(), k8s::queryMyContainerName(), graphName, nullptr))
     {
         for (unsigned workerNum=0; workerNum<connectedWorkerPods.size(); workerNum++)
         {
-            const char *workerPodName = connectedWorkerPods[workerNum].c_str();
-            workunit->setContainerizedProcessInfo("ThorWorker", globals->queryProp("@name"), workerPodName, std::to_string(workerNum+1).c_str());
+            const char *workerPodName = connectedWorkerPods[workerNum].first.c_str();
+            const char *workerContainerName = connectedWorkerPods[workerNum].second.c_str();
+            workunit->setContainerizedProcessInfo("ThorWorker", globals->queryProp("@name"), workerPodName, workerContainerName, nullptr, std::to_string(workerNum+1).c_str());
         }
     }
-    podInfoPublished = true;
 }
 
 void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphName)
@@ -1427,10 +1427,9 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                         Owned<IConstWorkUnit> workunit;
                         factory.setown(getWorkUnitFactory());
                         workunit.setown(factory->openWorkUnit(currentWuid));
-                        if (!podInfoPublished)
                         {
                             Owned<IWorkUnit> wu = &workunit->lock();
-                            publishPodNames(wu);
+                            publishPodNames(wu, currentGraphName);
                         }
                         SocketEndpoint dummyAgentEp;
                         jobManager->execute(workunit, currentWuid, currentGraphName, dummyAgentEp);
@@ -1471,8 +1470,6 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                                     auto it = publishedPodWuids.find(wuid.str());
                                     if (it == publishedPodWuids.end())
                                     {                                        
-                                        podInfoPublished = false;
-
                                         // trivial safe-guard against growing too big
                                         // but unlikely to ever grow this big
                                         if (publishedPodWuids.size() > 10000)

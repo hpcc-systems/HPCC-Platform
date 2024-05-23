@@ -77,6 +77,12 @@ jobs:
           name: ${{ inputs.asset-name }}
           path: ${{ inputs.asset-name }}
 
+      - name: Download Support Files
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ inputs.asset-name }}-support-files
+          path: ${{ inputs.asset-name }}-support-files
+
       - name: Install Package
         if: steps.check.outputs.runtests
         shell: "bash"
@@ -86,6 +92,9 @@ jobs:
 
           sudo xmlstarlet ed -L -u 'Environment/Software/ThorCluster/@slavesPerNode' -v 2 -u 'Environment/Software/ThorCluster/@channelsPerSlave' -v 1 /etc/HPCCSystems/environment.xml
 
+          chmod +x ./${{ inputs.asset-name }}-support-files/*
+          sudo cp ./${{ inputs.asset-name }}-support-files/* /opt/HPCCSystems/bin
+
           chmod +x ./${{ inputs.asset-name }}-ui_test-files/*
 
       - name: Start HPCC-Platform
@@ -94,6 +103,32 @@ jobs:
           export LANG="en_US.UTF-8"
           sudo update-locale
           sudo /etc/init.d/hpcc-init start
+
+      - name: Run Setup
+        working-directory: /opt/HPCCSystems/testing/regress
+        shell: "bash"
+        run: |
+          /opt/HPCCSystems/bin/timeoutcmd $((8 * 60)) \
+              ./ecl-test setup --preAbort '/opt/HPCCSystems/bin/smoketest-preabort.sh' --pq 2 --generateStackTrace
+          grep Failure: /home/runner/HPCCSystems-regression/log/setup_*.log
+          if [[ "$(grep -ohP '(?<=^Failure: )[0-9]+$' /home/runner/HPCCSystems-regression/log/setup_*.log | awk '{s+=$1} END {print s}')" -gt 0 ]]; then exit 1; fi
+
+      - name: Run spray tests
+        working-directory: /opt/HPCCSystems/testing/regress
+        shell: "bash"
+        run: |
+          # force regression suite to timeout after 28 minutes, so it captures ZAP report of any inflight hung queries
+           /opt/HPCCSystems/bin/timeoutcmd $((28 * 60)) \
+           ./ecl-test query --preAbort /opt/HPCCSystems/bin/smoketest-preabort.sh --pq 2 --excludeclass python2,embedded-r,embedded-js,3rdpartyservice,mongodb --generateStackTrace *spray*
+           # In this stage we don't care about the test results
+
+      - name: Get content
+        working-directory:  /home/runner/HPCCSystems-regression/log
+        shell: "bash"
+        run: |
+                curl localhost:8010/WsWorkunits/WUQuery.json | python3 -m json.tool > workunits.json
+                curl localhost:8010/WsDfu/DFUQuery.json?PageSize=250 | python3 -m json.tool > files.json
+                curl localhost:8010/FileSpray/GetDFUWorkunits.json | python3 -m json.tool > dfu-workunits.json
 
       - name: Install UI Dependencies
         if: steps.check.outputs.runtests
@@ -125,8 +160,10 @@ jobs:
 
       - name: eclwatch-ui-test-logs-artifact
         if: ${{ failure() || cancelled() }}
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ inputs.asset-name }}-ui_test-logs
-          path: ${{ inputs.asset-name }}-ui_test-files/eclWatchUiTest.log
+          path: |
+            ${{ inputs.asset-name }}-ui_test-files/eclWatchUiTest.log
+            /home/runner/HPCCSystems-regression/log/*.json
           if-no-files-found: error
