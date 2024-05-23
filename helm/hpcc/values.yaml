@@ -438,6 +438,7 @@ dafilesrv:
 
 dali:
 - name: mydali
+  #hold: true # (for developers, can be used on any component). Component will enter a hold loop at config load time.
   auth: none
   services: # internal house keeping services
     coalescer:
@@ -810,6 +811,10 @@ roxie:
 ## [worker/manager]Memory.thirdParty.
 thor:
 - name: thor
+  #hold: true # (for developers, can be used on any component). Component will enter a hold loop at config load time.
+  #holdSlave: 0 # (for developers). Similar to hold, but 0 = master, 1-N = worker #.
+  #holdAgent: true # (for developers). Similar to hold, but for this Thor's eclagent.
+  #holdThorAgent: true # (for developers). Similar to hold, but for this Thor's thoragent.
   prefix: thor
   numWorkers: 2
   maxJobs: 4

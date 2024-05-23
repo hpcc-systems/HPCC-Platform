@@ -19,6 +19,7 @@
 #include <unordered_set>
 
 #include "jlib.hpp"
+#include "jconfig.hpp"
 #include "jcontainerized.hpp"
 #include "workunit.hpp"
 #include "jprop.hpp"
@@ -14313,17 +14314,36 @@ void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IP
         CCycleTimer elapsedTimer;
 
         bool multiJobLinger = config.getPropBool("@multiJobLinger", defaultThorMultiJobLinger);
+        bool thisThor = true;
+        const char *queue = config.queryProp("@queue");
+        const char *tgt = workunit.queryClusterName();
+        if (!isEmptyString(tgt)) // don't think should ever happen
+        {
+            if (!streq(tgt, queue))
+            {
+                Owned<IStringIterator> thorTarget = config::getContainerTargets("thor", tgt);
+                if (!thorTarget->first())
+                    throw makeStringExceptionV(0, "Thor target not found: %s", tgt);
+                thisThor = false;
+                queue = tgt;
+            }
+        }
 
         // NB: executeGraphOnLingeringThor looks for existing Thor instance that has been used for the same job,
         // and communicates with it directly
         if (!multiJobLinger && executeGraphOnLingeringThor(workunit, wfid, graphName))
+        {
+            if (!thisThor)
+                throw makeStringExceptionV(0, "multiJobLinger mode required to target other thor instances. Target: %s", tgt);
             PROGLOG("Existing lingering Thor handled graph: %s", graphName);
+        }
         else
         {
             // If no existing Thor instance, or for a multi linger configuration,
             // queue the graph, either the thor agent will pick it up and launch a new Thor (up to maxGraphs),
             // or an existing idle Thor listening on the same queue will pick it up.
-            VStringBuffer queueName("%s.thor", config.queryProp("@queue"));
+
+            VStringBuffer queueName("%s.thor", queue);
             DBGLOG("Queueing wuid=%s, graph=%s, on queue=%s, timelimit=%u seconds", wuid.str(), graphName, queueName.str(), timelimit);
 
             {
