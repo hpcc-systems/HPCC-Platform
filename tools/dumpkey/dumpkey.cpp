@@ -231,17 +231,18 @@ int main(int argc, const char **argv)
                 printf("%s does not appear to be an index file\n", keyName);
                 continue;
             }
-            Owned <IKeyIndex> index;
-            index.setown(createKeyIndex(keyName, 0, false, 0));
+            Owned<IFile> in = createIFile(keyName);
+            Owned<IFileIO> io = in->open(IFOread);
+            if (!io)
+                throw MakeStringException(999, "Failed to open file %s", keyName);
+
+            //read with a buffer size of 4MB - for optimal speed, and minimize azure read costs
+            Owned <IKeyIndex> index(createKeyIndex(keyName, 0, *io, 1, false, 0x400000));
             size32_t key_size = index->keySize();  // NOTE - in variable size case, this may be 32767 + sizeof(offset_t)
             size32_t keyedSize = index->keyedSize();
             unsigned nodeSize = index->getNodeSize();
             if (optFullHeader)
             {
-                Owned<IFile> in = createIFile(keyName);
-                Owned<IFileIO> io = in->open(IFOread);
-                if (!io)
-                    throw MakeStringException(999, "Failed to open file %s", keyName);
                 Owned<CKeyHdr> header = new CKeyHdr;
                 MemoryAttr block(sizeof(KeyHdr));
                 io->read(0, sizeof(KeyHdr), (void *)block.get());
