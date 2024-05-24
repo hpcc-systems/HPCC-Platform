@@ -70,22 +70,23 @@ interface ISysInfoLoggerMsgFilter : public IInterface
     virtual LogMsgAudience queryMatchAudience() const = 0;
     virtual LogMsgClass queryMatchClass() const = 0;
     virtual unsigned __int64 queryMatchMsgId() const = 0;
+    virtual StringBuffer & getQualifierXPathFilter(StringBuffer & xpath) const = 0;
 };
 
-interface ISysInfoLoggerMsgIterator :  implements IScmIterator
-{
-    virtual ISysInfoLoggerMsg & query() = 0;
-};
+typedef IIteratorOf<ISysInfoLoggerMsg> ISysInfoLoggerMsgIterator;
 
 SYSINFO_API ISysInfoLoggerMsgFilter * createSysInfoLoggerMsgFilter();
-
+SYSINFO_API ISysInfoLoggerMsgFilter * createSysInfoLoggerMsgFilter(unsigned __int64 msgId);
 SYSINFO_API ISysInfoLoggerMsgIterator * createSysInfoLoggerMsgIterator(bool _visibleOnly, bool _hiddenOnly, unsigned _year, unsigned _month, unsigned _day);
-SYSINFO_API ISysInfoLoggerMsgIterator * createSysInfoLoggerMsgIterator(unsigned __int64 msgId, unsigned __int64 ts);
 SYSINFO_API ISysInfoLoggerMsgIterator * createSysInfoLoggerMsgIterator(ISysInfoLoggerMsgFilter * msgFilter);
 
-SYSINFO_API void logSysInfoError(const LogMsgId msgId, const LogMsgCategory & cat, LogMsgCode code, const char *source, const char * msg, unsigned __int64 ts);
+SYSINFO_API unsigned __int64 logSysInfoError(const LogMsgCategory & cat, LogMsgCode code, const char *source, const char * msg, unsigned __int64 ts);
 SYSINFO_API unsigned hideLogSysInfoMsg(ISysInfoLoggerMsgFilter * msgFilter);
+SYSINFO_API bool hideLogSysInfoMsg(unsigned __int64 msgId);
+SYSINFO_API unsigned unhideLogSysInfoMsg(ISysInfoLoggerMsgFilter * msgFilter);
+SYSINFO_API bool unhideLogSysInfoMsg(unsigned __int64 msgId);
 SYSINFO_API unsigned deleteLogSysInfoMsg(ISysInfoLoggerMsgFilter * msgFilter);
+SYSINFO_API bool deleteLogSysInfoMsg(unsigned __int64 msgId);
 SYSINFO_API unsigned deleteOlderThanLogSysInfoMsg(bool visibleOnly, bool hiddenOnly, unsigned year, unsigned month, unsigned day);
 
 #endif

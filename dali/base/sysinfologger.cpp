@@ -19,19 +19,14 @@
 #include "daclient.hpp"
 #include "jutil.hpp"
 
-#ifdef _USE_CPPUNIT
-#include <cppunit/extensions/TestFactoryRegistry.h>
-#include <cppunit/ui/text/TestRunner.h>
-#include <algorithm>
-#endif
-
 #define SDS_LOCK_TIMEOUT (5*60*1000) // 5 minutes
 #define SYS_INFO_VERSION "1.0"
 
 #define SYS_INFO_ROOT  "/SysLogs"
+#define ATTR_LASTID    "@lastId"
 #define ATTR_VERSION   "@version"
 #define MSG_NODE       "msg"
-#define ATTR_MSGID     "@msgID"
+#define ATTR_ID        "@id"
 #define ATTR_TIMESTAMP "@ts"
 #define ATTR_AUDIENCE  "@audience"
 #define ATTR_CLASS     "@class"
@@ -39,36 +34,50 @@
 #define ATTR_HIDDEN    "@hidden"
 #define ATTR_SOURCE    "@source"
 
-
-static unsigned readDigits(char const * & p, unsigned numDigits)
+static void extractDate(unsigned __int64 ts, unsigned & year, unsigned & month, unsigned & day)
 {
-    unsigned num = 0;
-    for (unsigned n=0; n<numDigits; ++n, ++p)
-    {
-        if (!isdigit(*p))
-            return 0;
-        num = num * 10 + (*p - '0');
-    }
-    return num;
+    CDateTime timeStamp;
+    timeStamp.setTimeStamp(ts);
+    timeStamp.getDate(year, month, day);
+}
+
+static unsigned __int64 makeMessageId(unsigned year, unsigned month, unsigned day, unsigned id)
+{
+    return id<<21 | year<<9 | month<<5 | day;
+}
+
+static unsigned __int64 makeMessageId(unsigned __int64 ts, unsigned id)
+{
+    unsigned year, month, day;
+    extractDate(ts, year, month, day);
+    return makeMessageId(year, month, day, id);
+}
+
+static void decodeMessageId(unsigned __int64 msgId, unsigned & year, unsigned & month, unsigned & day, unsigned & id)
+{
+    day = msgId & 0x1F;
+    month = (msgId>>5) & 0x0F;
+    year = (msgId>>9) & 0xFFF;
+    id = (msgId>>21);
 }
 
 class CSysInfoLoggerMsg : implements ISysInfoLoggerMsg
 {
-    Owned<IPropertyTree> msgPtree = nullptr;
-    Linked<IPropertyTree> root = nullptr;
+    Owned<IPropertyTree> msgPtree;
+    IPropertyTree * root;
     bool updateable = false;
 
     inline void ensureUpdateable()
     {
         if (!updateable)
-            throw makeStringExceptionV(-1, "Unable to update ISysInfoLoggerMsg");
+            throw makeStringException(-1, "Unable to update ISysInfoLoggerMsg");
     }
 
 public:
-    CSysInfoLoggerMsg & set(IPropertyTree & ptree, IPropertyTree & _root, bool _updateable)
+    CSysInfoLoggerMsg & set(IPropertyTree * ptree, IPropertyTree * _root, bool _updateable)
     {
-        msgPtree.setown(&ptree);
-        root.set(LINK(&_root));
+        msgPtree.setown(ptree);
+        root = _root;
         updateable = _updateable;
         return * this;
     }
@@ -107,14 +116,12 @@ public:
     }
     virtual unsigned __int64 queryLogMsgId() const override
     {
-        return msgPtree->getPropInt64(ATTR_MSGID, 0);
+        return makeMessageId(queryTimeStamp(), msgPtree->getPropInt64(ATTR_ID, 0));
     }
     virtual const char * queryMsg() const override
     {
-        if (msgPtree->hasProp("."))
-            return msgPtree->queryProp(".");
-        else
-            return "";
+        const char *msg = msgPtree->queryProp(nullptr);
+        return msg ? msg : "";
     }
     virtual void setHidden(bool _hidden)
     {
@@ -124,38 +131,16 @@ public:
     virtual void remove()
     {
         ensureUpdateable();
-        const char *rootName = root->queryName();
-        assertex(rootName);
-
-        // if parent is not a 'day', then will need to get the day tree
-        if (rootName[0]!='d')
-        {
-            Owned<IPropertyTree> parent;
-            unsigned year, month, day;
-            CDateTime timeStamp;
-            timeStamp.setTimeStamp(queryTimeStamp());
-            timeStamp.getDate(year, month, day);
-
-            if (rootName[0]=='m') // have month, so need the 'day' child
-            {
-                VStringBuffer xpath("d%02u", day);
-                parent.setown(root->getPropTree(xpath.str()));
-            }
-            else // will need to specify for month/day child
-            {
-                VStringBuffer xpath("m%04u%02u/d%02u", year, month, day);
-                parent.setown(root->getPropTree(xpath.str()));
-            }
-            assertex(parent.get());
-            parent->removeTree(msgPtree);
-        }
-        else
-            root->removeTree(msgPtree);
+        unsigned year, month, day;
+        extractDate(queryTimeStamp(), year, month, day);
+        VStringBuffer xpath("m%04u%02u/d%02u", year, month, day);
+        IPropertyTree * parent = root->queryPropTree(xpath.str());
+        parent->removeTree(msgPtree);
     }
-    static IPropertyTree * createMsgPTree(LogMsgId msgId, const LogMsgCategory & cat, LogMsgCode code, const char * source, const char * msg, unsigned __int64 ts, bool hidden)
+    static IPropertyTree * createMsgPTree(unsigned id, const LogMsgCategory & cat, LogMsgCode code, const char * source, const char * msg, unsigned __int64 ts, bool hidden)
     {
         Owned<IPropertyTree> msgPtree = createPTree(MSG_NODE);
-        msgPtree->setPropInt64(ATTR_MSGID, msgId);
+        msgPtree->setPropInt64(ATTR_ID, id);
         msgPtree->setPropBool(ATTR_HIDDEN, false);
         msgPtree->setPropInt64(ATTR_TIMESTAMP, ts);
         msgPtree->setPropInt(ATTR_CODE, code);
@@ -169,7 +154,7 @@ public:
 
 class CSysInfoLoggerMsgFilter : public CInterfaceOf<ISysInfoLoggerMsgFilter>
 {
-    // (For numeric fields, match only if it has non-zero value)
+    // (For numeric fields, match only if it has a non-zero value)
     bool hiddenOnly = false;
     bool visibleOnly = false;
     unsigned __int64 matchTimeStamp = 0;
@@ -177,7 +162,6 @@ class CSysInfoLoggerMsgFilter : public CInterfaceOf<ISysInfoLoggerMsgFilter>
     LogMsgCode matchCode = 0;
     LogMsgAudience matchAudience = MSGAUD_all;
     LogMsgClass matchClass = MSGCLS_all;
-    unsigned __int64 matchMsgId = 0;
     bool haveDateRange = false;
     unsigned matchEndYear = 0;
     unsigned matchEndMonth = 0;
@@ -185,13 +169,15 @@ class CSysInfoLoggerMsgFilter : public CInterfaceOf<ISysInfoLoggerMsgFilter>
     unsigned matchStartYear = 0;
     unsigned matchStartMonth = 0;
     unsigned matchStartDay = 0;
+    unsigned matchId = 0;
 
 public:
     CSysInfoLoggerMsgFilter()
     {
     }
-    CSysInfoLoggerMsgFilter(unsigned __int64 msgId, unsigned __int64 ts) : matchMsgId(msgId), matchTimeStamp(ts)
+    CSysInfoLoggerMsgFilter(unsigned __int64 msgId)
     {
+        CSysInfoLoggerMsgFilter::setMatchMsgId(msgId);
     }
     CSysInfoLoggerMsgFilter(bool _visibleOnly, bool _hiddenOnly, unsigned _year, unsigned _month, unsigned _day) :
                             visibleOnly(_visibleOnly), hiddenOnly(_hiddenOnly),
@@ -236,7 +222,15 @@ public:
     }
     virtual void setMatchMsgId(unsigned __int64 msgId) override
     {
-        matchMsgId = msgId;
+        unsigned year, month, day, id;
+        decodeMessageId(msgId, year, month, day, id);
+        if (year==0 || month==0 || day==0 || id==0)
+            throw makeStringExceptionV(-1,"ISysInfoLoggerMsgFilter::setMatchMsgId invalid argument: %" I64F "u", msgId);
+        matchEndYear = matchStartYear = year;
+        matchEndMonth = matchStartMonth = month;
+        matchEndDay = matchStartDay = day;
+        matchId = id;
+        haveDateRange = false;
     }
     virtual void setDateRange(unsigned startYear, unsigned startMonth, unsigned startDay, unsigned endYear, unsigned endMonth, unsigned endDay) override
     {
@@ -246,7 +240,10 @@ public:
         matchStartYear = startYear;
         matchStartMonth = startMonth;
         matchStartDay = startDay;
-        haveDateRange = matchEndYear||matchStartYear||matchStartMonth|matchEndMonth||matchStartDay||matchEndDay;
+        if (matchEndYear||matchStartYear)
+            haveDateRange = (matchStartYear<matchEndYear)||(matchStartMonth<matchEndMonth)||(matchStartDay<matchEndDay);
+        else
+            haveDateRange = false;
     }
     virtual void setOlderThanDate(unsigned year, unsigned month, unsigned day) override
     {
@@ -256,7 +253,7 @@ public:
         matchStartYear = 0;
         matchStartMonth = 0;
         matchStartDay = 0;
-        haveDateRange = matchEndYear||matchStartYear||matchStartMonth|matchEndMonth||matchStartDay||matchEndDay;
+        haveDateRange = true;
     }
     virtual bool hasDateRange() const override
     {
@@ -264,10 +261,9 @@ public:
     }
     virtual bool isInDateRange(unsigned __int64 ts) const override
     {
-        CDateTime dt;
-        dt.setTimeStamp(ts);
         unsigned tyear, tmonth, tday;
-        dt.getDate(tyear, tmonth, tday);
+        extractDate(ts, tyear, tmonth, tday);
+
         if (matchStartYear)
         {
             if (tyear<matchStartYear)
@@ -369,12 +365,42 @@ public:
     virtual LogMsgClass queryMatchClass() const override
     {
         return matchClass;
-    };
+    }
     virtual unsigned __int64 queryMatchMsgId() const override
     {
-        return matchMsgId;
-    };
-
+        if (queryMatchYear() && queryMatchMonth() && queryMatchDay() && matchId)
+        {
+            return makeMessageId(queryMatchYear(), queryMatchMonth(), queryMatchDay(), matchId);
+        }
+        return 0;
+    }
+    virtual StringBuffer & getQualifierXPathFilter(StringBuffer & xpath) const override
+    {
+        if (queryMatchYear() && queryMatchMonth())
+        {
+            xpath.appendf("m%04u%02u", queryMatchYear(), queryMatchMonth());
+            if (queryMatchDay())
+                xpath.appendf("/d%02u", queryMatchDay());
+        }
+        xpath.appendf("//" MSG_NODE);
+        if (hiddenOnly)
+            xpath.append("[" ATTR_HIDDEN "='1')]");
+        if (visibleOnly)
+            xpath.append("[" ATTR_HIDDEN "='0')]");
+        if (!matchSource.isEmpty())
+            xpath.appendf("[" ATTR_SOURCE "='%s']", matchSource.str());
+        if (matchCode)
+            xpath.appendf("[" ATTR_CODE "='%d']", (int)matchCode);
+        if (matchAudience!=MSGAUD_all)
+            xpath.appendf("[" ATTR_AUDIENCE "='%s']", LogMsgAudienceToFixString(matchAudience));
+        if (matchClass!=MSGCLS_all)
+            xpath.appendf("[" ATTR_CLASS "='%s']", LogMsgClassToFixString(matchClass));
+        if (matchId)
+            xpath.appendf("[" ATTR_ID "='%u']", matchId);
+        if (matchTimeStamp)
+            xpath.appendf("[" ATTR_TIMESTAMP "='%" I64F "u']", matchTimeStamp);
+        return xpath;
+    }
 };
 
 ISysInfoLoggerMsgFilter * createSysInfoLoggerMsgFilter()
@@ -382,39 +408,41 @@ ISysInfoLoggerMsgFilter * createSysInfoLoggerMsgFilter()
     return new CSysInfoLoggerMsgFilter();
 }
 
-class CSysInfoLoggerMsgIterator : public CInterface, implements ISysInfoLoggerMsgIterator
+ISysInfoLoggerMsgFilter * createSysInfoLoggerMsgFilter(unsigned __int64 msgId)
+{
+    return new CSysInfoLoggerMsgFilter(msgId);
+}
+
+class CSysInfoLoggerMsgIterator : public CInterfaceOf<ISysInfoLoggerMsgIterator>
 {
     Linked<ISysInfoLoggerMsgFilter> filter;
-    Owned<IRemoteConnection> conn = nullptr;
+    Owned<IRemoteConnection> conn;
     bool updateable = false;
-    Owned<IPropertyTree> root = nullptr;
-    Owned<IPropertyTreeIterator> msgIter = nullptr;
+    Owned<IPropertyTree> root;
+    Owned<IPropertyTreeIterator> msgIter;
     CSysInfoLoggerMsg infoMsg;
 
     bool ensureMatch()
     {
         if (filter->hasDateRange())
         {
-            for (; msgIter && msgIter->isValid(); msgIter->next())
+            for (; msgIter->isValid(); msgIter->next())
             {
                 unsigned __int64 ts = msgIter->query().getPropInt64(ATTR_TIMESTAMP, 0);
-                if(!ts || !filter->isInDateRange(ts))
-                    continue;
-                break;
+                if (filter->isInDateRange(ts))
+                    return true;
             }
         }
         return msgIter->isValid();
     }
 
 public:
-    IMPLEMENT_IINTERFACE;
-
     CSysInfoLoggerMsgIterator(ISysInfoLoggerMsgFilter * _filter, bool _updateable=false) : filter(_filter), updateable(_updateable)
     {
     }
     CSysInfoLoggerMsg & queryInfoLoggerMsg()
     {
-        return infoMsg.set(msgIter->get(), *(root.get()), updateable);
+        return infoMsg.set(&(msgIter->get()), root.get(), updateable);
     }
     virtual ISysInfoLoggerMsg & query() override
     {
@@ -422,44 +450,25 @@ public:
     }
     virtual bool first() override
     {
-        StringBuffer xpath(SYS_INFO_ROOT);
-        if(filter->queryMatchYear() && filter->queryMatchMonth())
-        {
-            xpath.appendf("/m%04u%02u", filter->queryMatchYear(), filter->queryMatchMonth());
-            if (filter->queryMatchDay())
-                xpath.appendf("/d%02u", filter->queryMatchDay());
-        }
         unsigned mode = RTM_LOCK_READ | (updateable?RTM_LOCK_WRITE : 0);
-        conn.setown(querySDS().connect(xpath.str(), myProcessSession(), mode, SDS_LOCK_TIMEOUT));
+        conn.setown(querySDS().connect(SYS_INFO_ROOT, myProcessSession(), mode, SDS_LOCK_TIMEOUT));
         if (!conn)
             return false;
-        xpath.set("//" MSG_NODE);
-        if (filter->queryHiddenOnly())
-            xpath.append("[" ATTR_HIDDEN "='1')]");
-        if (filter->queryVisibleOnly())
-            xpath.append("[" ATTR_HIDDEN "='0')]");
-        if (!isEmptyString(filter->queryMatchSource()))
-            xpath.appendf("[" ATTR_SOURCE "='%s']", filter->queryMatchSource());
-        if (filter->queryMatchCode())
-            xpath.appendf("[" ATTR_CODE "='%d']", (int)filter->queryMatchCode());
-        if (filter->queryMatchAudience()!=MSGAUD_all)
-            xpath.appendf("[" ATTR_AUDIENCE "='%s']", LogMsgAudienceToFixString(filter->queryMatchAudience()));
-        if (filter->queryMatchClass()!=MSGCLS_all)
-            xpath.appendf("[" ATTR_CLASS "='%s']", LogMsgClassToFixString(filter->queryMatchClass()));
-        if (filter->queryMatchMsgId())
-            xpath.appendf("[" ATTR_MSGID "='%" I64F "u']", filter->queryMatchMsgId());
-        if (filter->queryMatchTimeStamp())
-            xpath.appendf("[" ATTR_TIMESTAMP "='%" I64F "u']", filter->queryMatchTimeStamp());
         root.setown(conn->getRoot());
+
+        StringBuffer xpath;
+        filter->getQualifierXPathFilter(xpath);
+
         msgIter.setown(root->getElements(xpath.str()));
-        msgIter->first();
+        if (!msgIter->first())
+            return false;
         return ensureMatch();
     }
     virtual bool next() override
     {
-        msgIter->next();
+        if (msgIter->next())
+            return false;
         return ensureMatch();
-
     }
     virtual bool isValid() override
     {
@@ -473,67 +482,97 @@ ISysInfoLoggerMsgIterator * createSysInfoLoggerMsgIterator(bool visibleOnly, boo
     return new CSysInfoLoggerMsgIterator(filter.getClear(), false);
 }
 
-ISysInfoLoggerMsgIterator * createSysInfoLoggerMsgIterator(unsigned __int64 msgId, unsigned __int64 ts)
-{
-    Owned<CSysInfoLoggerMsgFilter> filter = new CSysInfoLoggerMsgFilter(msgId, ts);
-    return new CSysInfoLoggerMsgIterator(filter.getClear(), false);
-}
-
 ISysInfoLoggerMsgIterator * createSysInfoLoggerMsgIterator(ISysInfoLoggerMsgFilter * msgFilter)
 {
     return new CSysInfoLoggerMsgIterator(msgFilter, false);
 }
 
-void logSysInfoError(const LogMsgId msgId, const LogMsgCategory & cat, LogMsgCode code, const char *source, const char * msg, unsigned __int64 ts)
+// returns messageId
+unsigned __int64 logSysInfoError(const LogMsgCategory & cat, LogMsgCode code, const char *source, const char * msg, unsigned __int64 ts)
 {
     if (ts==0)
         ts = getTimeStampNowValue();
 
     if (isEmptyString(source))
         source = "unknown";
-
-    StringBuffer xpath(SYS_INFO_ROOT);
-    unsigned year, month, day;
-    CDateTime timeStamp;
-    timeStamp.setTimeStamp(ts);
-    timeStamp.getDate(year, month, day);
-    xpath.appendf("/m%04u%02u/d%02u", year, month, day);
-
-    Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
+    Owned<IRemoteConnection> conn = querySDS().connect(SYS_INFO_ROOT, myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
     if (!conn)
-        throw makeStringExceptionV(-1, "logSysInfoError: unable to create connection to '%s'", xpath.str());
-    IPropertyTree * root = conn->queryRoot();
-    if (!root->hasProp(ATTR_VERSION))
-        root->addProp(ATTR_VERSION, SYS_INFO_VERSION);
+        throw makeStringExceptionV(-1, "logSysInfoLogger: unable to create connection to '%s'", SYS_INFO_ROOT);
 
-    root->addPropTree(MSG_NODE, CSysInfoLoggerMsg::createMsgPTree(msgId, cat, code, source, msg, ts, false));
-    conn->close();
-};
+    StringBuffer xpath;
+    unsigned year, month, day;
+    extractDate(ts, year, month, day);
+    xpath.appendf("m%04u%02u/d%02u[" ATTR_VERSION "='%s']", year, month, day, SYS_INFO_VERSION);
 
-unsigned hideLogSysInfoMsg(ISysInfoLoggerMsgFilter * msgFilter)
+    unsigned id = 0;
+    IPropertyTree * dayPT = conn->queryRoot()->queryPropTree(xpath.str());
+    if (dayPT)
+    {
+        id = dayPT->getPropInt(ATTR_LASTID, 0);
+    }
+    else
+    {
+        xpath.setf("m%04u%02u", year, month);
+        IPropertyTree * monthPT = conn->queryRoot()->queryPropTree(xpath.str());
+        if (!monthPT)
+            monthPT = conn->queryRoot()->addPropTree(xpath.str());
+        xpath.setf("d%02u", day);
+        dayPT = monthPT->addPropTree(xpath.str());
+        dayPT->addProp(ATTR_VERSION, SYS_INFO_VERSION);
+    }
+    dayPT->setPropInt(ATTR_LASTID, ++id);
+    dayPT->addPropTree(MSG_NODE, CSysInfoLoggerMsg::createMsgPTree(id, cat, code, source, msg, ts, false));
+
+    return makeMessageId(ts, id);
+}
+
+unsigned updateMessage(ISysInfoLoggerMsgFilter * msgFilter, std::function<void (CSysInfoLoggerMsg &)> updateOp)
 {
     unsigned count = 0;
     Owned<CSysInfoLoggerMsgIterator> iter = new CSysInfoLoggerMsgIterator(msgFilter, true);
     ForEach(*iter)
     {
         CSysInfoLoggerMsg & sysInfoMsg = iter->queryInfoLoggerMsg();
-        sysInfoMsg.setHidden(true);
+        updateOp(sysInfoMsg);
         ++count;
     }
     return count;
 }
 
+unsigned updateMessage(unsigned __int64 msgId, std::function<void (CSysInfoLoggerMsg &)> updateOp)
+{
+    Owned<ISysInfoLoggerMsgFilter> msgFilter = createSysInfoLoggerMsgFilter(msgId);
+    return updateMessage(msgFilter, updateOp);
+}
+
+unsigned hideLogSysInfoMsg(ISysInfoLoggerMsgFilter * msgFilter)
+{
+    return updateMessage(msgFilter, [](CSysInfoLoggerMsg & sysInfoMsg){sysInfoMsg.setHidden(true);});
+}
+
+bool hideLogSysInfoMsg(unsigned __int64 msgId)
+{
+    return updateMessage(msgId, [](CSysInfoLoggerMsg & sysInfoMsg){sysInfoMsg.setHidden(true);})==1;
+}
+
+unsigned unhideLogSysInfoMsg(ISysInfoLoggerMsgFilter * msgFilter)
+{
+    return updateMessage(msgFilter, [](CSysInfoLoggerMsg & sysInfoMsg){sysInfoMsg.setHidden(false);});
+}
+
+bool unhideLogSysInfoMsg(unsigned __int64 msgId)
+{
+    return updateMessage(msgId, [](CSysInfoLoggerMsg & sysInfoMsg){sysInfoMsg.setHidden(false);})==1;
+}
+
 unsigned deleteLogSysInfoMsg(ISysInfoLoggerMsgFilter * msgFilter)
 {
-    unsigned count = 0;
-    Owned<CSysInfoLoggerMsgIterator> iter = new CSysInfoLoggerMsgIterator(msgFilter, true);
-    ForEach(*iter)
-    {
-        CSysInfoLoggerMsg & sysInfoMsg = iter->queryInfoLoggerMsg();
-        sysInfoMsg.remove();
-        ++count;
-    }
-    return count;
+    return updateMessage(msgFilter, [](CSysInfoLoggerMsg & sysInfoMsg){sysInfoMsg.remove();});
+}
+
+bool deleteLogSysInfoMsg(unsigned __int64 msgId)
+{
+    return updateMessage(msgId, [](CSysInfoLoggerMsg & sysInfoMsg){sysInfoMsg.remove();})==1;
 }
 
 unsigned deleteOlderThanLogSysInfoMsg(bool visibleOnly, bool hiddenOnly, unsigned year, unsigned month, unsigned day)
@@ -556,7 +595,7 @@ unsigned deleteOlderThanLogSysInfoMsg(bool visibleOnly, bool hiddenOnly, unsigne
     if (!conn)
         return 0;
 
-    Owned<IPropertyTreeIterator> monthIter = conn->queryRoot()->getElements("./*");
+    Owned<IPropertyTreeIterator> monthIter = conn->queryRoot()->getElements("*");
     ForEach(*monthIter)
     {
         IPropertyTree & monthPT = monthIter->query();
@@ -571,7 +610,7 @@ unsigned deleteOlderThanLogSysInfoMsg(bool visibleOnly, bool hiddenOnly, unsigne
             if (*p++ == 'm')
             {
                 msgYear = readDigits(p, 4);
-                msgMonth= readDigits(p, 2);
+                msgMonth = readDigits(p, 2);
             }
             if (msgYear == 0 || msgMonth == 0)
                 throw makeStringExceptionV(-1, "child of " SYS_INFO_ROOT " is invalid: %s", monthPT.queryName());
@@ -586,7 +625,7 @@ unsigned deleteOlderThanLogSysInfoMsg(bool visibleOnly, bool hiddenOnly, unsigne
             }
             else // msgMonth==month
             {
-                Owned<IPropertyTreeIterator> dayIter = monthPT.getElements("./*");
+                Owned<IPropertyTreeIterator> dayIter = monthPT.getElements("*");
                 ForEach(*dayIter)
                 {
                     IPropertyTree & dayPT = dayIter->query();
@@ -607,285 +646,3 @@ unsigned deleteOlderThanLogSysInfoMsg(bool visibleOnly, bool hiddenOnly, unsigne
     }
     return count;
 }
-
-#ifdef DISABLE_USE_CPPUNIT
-#include "unittests.hpp"
-
-#define SOURCE_CPPUNIT "cppunit"
-
-#define BOOL_STR(b) (b?"true":"false")
-
-std::atomic_bool initialized {false};
-CriticalSection crit;
-
-void daliClientInit()
-{
-    CriticalBlock b(crit);
-    if (initialized.load()==true)
-        return;
-    InitModuleObjects();
-    SocketEndpoint ep;
-    ep.set(".", 7070);
-    SocketEndpointArray epa;
-    epa.append(ep);
-    Owned<IGroup> group = createIGroup(epa);
-    initClientProcess(group, DCR_Testing);
-    initialized.store(true);
-}
-
-void daliClientEnd()
-{
-    CriticalBlock b(crit);
-    if (initialized.load()==false)
-        return;
-    closedownClientProcess();
-    initialized.store(false);
-}
-
-class CSysInfoLoggerTester : public CppUnit::TestFixture
-{
-    /* Note: global messages will be written for dates between 2000-02-04 and 2000-02-05 */
-    /* Note: All global messages with time stamp before before 2000-02-29 will be deleted */
-    CPPUNIT_TEST_SUITE(CSysInfoLoggerTester);
-        CPPUNIT_TEST(testSysInfoLogger);
-    CPPUNIT_TEST_SUITE_END();
-
-    struct TestCase
-    {
-        LogMsgId msgId;
-        LogMsgCategory cat;
-        LogMsgCode code;
-        bool hidden;
-        const char * dateTimeStamp;
-        const char * msg;
-    };
-
-    std::vector<TestCase> testCases =
-    {
-        {
-            1,
-            LogMsgCategory(MSGAUD_operator, MSGCLS_information, DefaultDetail),
-            42301,
-            false,
-            "2000-02-03T10:01:22.342343",
-            "CSysInfoLogger Unit test message 1"
-        },
-        {
-            2,
-            LogMsgCategory(MSGAUD_operator, MSGCLS_information, DefaultDetail),
-            42302,
-            false,
-            "2000-02-03T12:03:42.114233",
-            "CSysInfoLogger Unit test message 2"
-        },
-        {
-            3,
-            LogMsgCategory(MSGAUD_operator, MSGCLS_information, DefaultDetail),
-            42303,
-            true,
-            "2000-02-03T14:02:13.678443",
-            "CSysInfoLogger Unit test message 3"
-        },
-        {
-            4,
-            LogMsgCategory(MSGAUD_operator, MSGCLS_information, DefaultDetail),
-            42304,
-            true,
-            "2000-02-03T16:05:18.8324832",
-            "CSysInfoLogger Unit test message 4"
-        },
-        {
-            5,
-            LogMsgCategory(MSGAUD_operator, MSGCLS_information, DefaultDetail),
-            42301,
-            false,
-            "2000-02-04T03:01:42.5754",
-            "CSysInfoLogger Unit test message 5"
-        },
-        {
-            6,
-            LogMsgCategory(MSGAUD_operator, MSGCLS_information, DefaultDetail),
-            42302,
-            false,
-            "2000-02-04T09:06:25.133132",
-            "CSysInfoLogger Unit test message 6"
-        },
-        {
-            7,
-            LogMsgCategory(MSGAUD_operator, MSGCLS_information, DefaultDetail),
-            42303,
-            false,
-            "2000-02-04T11:09:32.78439",
-            "CSysInfoLogger Unit test message 7"
-        },
-        {
-            8,
-            LogMsgCategory(MSGAUD_operator, MSGCLS_information, DefaultDetail),
-            42304,
-            true,
-            "2000-02-04T13:02:12.82821",
-            "CSysInfoLogger Unit test message 8"
-        },
-        {
-            9,
-            LogMsgCategory(MSGAUD_operator, MSGCLS_information, DefaultDetail),
-            42304,
-            true,
-            "2000-02-04T18:32:11.23421",
-            "CSysInfoLogger Unit test message 9"
-        }
-    };
-
-    struct WrittenLogMessage
-    {
-        unsigned __int64 ts;
-        unsigned testCaseIndex;
-    };
-    std::vector<WrittenLogMessage> writtenMessages;
-
-    unsigned testRead(bool hiddenOnly=false, bool visibleOnly=false, unsigned year=0, unsigned month=0, unsigned day=0)
-    {
-        unsigned readCount=0;
-        try
-        {
-            std::set<unsigned> matchedMessages; // used to make sure every message written has been read back
-            // Test cases for this day only
-            Owned<ISysInfoLoggerMsgIterator> iter = createSysInfoLoggerMsgIterator(visibleOnly, hiddenOnly, year, month, day);
-            ForEach(*iter)
-            {
-                const ISysInfoLoggerMsg & sysInfoMsg = iter->query();
-
-                if (strcmp(sysInfoMsg.querySource(), SOURCE_CPPUNIT)!=0)
-                    continue; // not a message written by this unittest so ignore
-
-                // Lookup messages in writtenMessages using timestamp
-                unsigned __int64 msgTs = sysInfoMsg.queryTimeStamp();
-                auto matched = std::find_if(writtenMessages.begin(), writtenMessages.end(), [msgTs] (const auto & wm){ return (wm.ts == msgTs); });
-                if (matched==writtenMessages.end())
-                    throw makeStringExceptionV(-1, "Message read doesn't match a message written by unittest (ts=%" I64F "u)", msgTs);
-
-                // Make sure written messages matches message read back
-                matchedMessages.insert(matched->testCaseIndex);
-                TestCase & testCase = testCases[matched->testCaseIndex];
-                ASSERT(testCase.hidden==sysInfoMsg.queryIsHidden());
-                ASSERT(testCase.code==sysInfoMsg.queryLogMsgCode());
-                ASSERT(strcmp(testCase.msg,sysInfoMsg.queryMsg())==0);
-                ASSERT(testCase.cat.queryAudience()==sysInfoMsg.queryAudience());
-                ASSERT(testCase.cat.queryClass()==sysInfoMsg.queryClass());
-
-                readCount++;
-            }
-            ASSERT(readCount==matchedMessages.size()); // make sure there are no duplicates
-        }
-        catch (IException *e)
-        {
-            StringBuffer msg;
-            msg.appendf("testRead(hidden=%s, visible=%s) failed: ", BOOL_STR(hiddenOnly), BOOL_STR(visibleOnly));
-            e->errorMessage(msg);
-            msg.appendf("(code %d)", e->errorCode());
-            e->Release();
-            CPPUNIT_FAIL(msg.str());
-        }
-        return readCount;
-    }
-
-public:
-    CSysInfoLoggerTester()
-    {
-        try
-        {
-            daliClientInit();
-        }
-        catch (IException *e)
-        {
-            StringBuffer msg;
-            e->errorMessage(msg);
-            printf("daliClientInit failed: %s (code %d)", msg.str(), e->errorCode());
-            e->Release();
-        }
-    }
-    ~CSysInfoLoggerTester()
-    {
-        daliClientEnd();
-    }
-    void testWrite()
-    {
-        writtenMessages.clear();
-        unsigned testCaseIndex=0;
-        for (auto testCase: testCases)
-        {
-            try
-            {
-                CDateTime dateTime;
-                dateTime.setString(testCase.dateTimeStamp);
-
-                unsigned __int64 ts = dateTime.getTimeStamp();
-                logSysInfoError(testCase.msgId, testCase.cat, testCase.code, SOURCE_CPPUNIT, testCase.msg, ts);
-                writtenMessages.push_back({ts, testCaseIndex++});
-                if (testCase.hidden)
-                {
-                    Owned<ISysInfoLoggerMsgFilter> msgFilter = createSysInfoLoggerMsgFilter();
-                    msgFilter->setMatchMsgId(testCase.msgId);
-                    msgFilter->setMatchTimeStamp(ts);
-                    ASSERT(hideLogSysInfoMsg(msgFilter)==1);
-                }
-            }
-            catch (IException *e)
-            {
-                StringBuffer msg;
-                msg.append("logSysInfoError failed: ");
-                e->errorMessage(msg);
-                msg.appendf("(code %d)", e->errorCode());
-                e->Release();
-                CPPUNIT_FAIL(msg.str());
-            }
-        }
-        ASSERT(testCases.size()==writtenMessages.size());
-    }
-    void testSysInfoLogger()
-    {
-        // cleanup - remove messages that may have been left over from previous run
-        deleteOlderThanLogSysInfoMsg(false, false, 2001, 03, 00);
-        // Start of tests
-        testWrite();
-        ASSERT(testRead(false, false)==9);
-        ASSERT(testRead(false, false, 2000, 02, 03)==4);
-        ASSERT(testRead(false, false, 2000, 02, 04)==5);
-        ASSERT(testRead(false, true)==5); //all visible messages
-        ASSERT(testRead(true, false)==4); //all hidden messages
-        ASSERT(deleteOlderThanLogSysInfoMsg(false, true, 2000, 02, 03)==2);
-        ASSERT(deleteOlderThanLogSysInfoMsg(true, false, 2000, 02, 04)==5);
-
-        // testCase[7] and [8] are the only 2 remaining
-        // Delete single message test: delete testCase[7]
-        TestCase & testCase = testCases[7];
-        CDateTime dateTime;
-        dateTime.setString(testCase.dateTimeStamp);
-        Owned<ISysInfoLoggerMsgFilter> msgFilter = new CSysInfoLoggerMsgFilter(testCase.msgId, dateTime.getTimeStamp());
-        ASSERT(deleteLogSysInfoMsg(msgFilter)==1);
-
-        // Verify only 1 message remaining
-        ASSERT(testRead(false, false)==1);
-        // Delete 2000/02/04 and 2000/02/03 (one message but there are 2 parents remaining)
-        ASSERT(deleteOlderThanLogSysInfoMsg(false, false, 2000, 02, 05)==2);
-        // There shouldn't be any records remaining
-        ASSERT(testRead(false, false)==0);
-
-        testWrite();
-
-        // delete all messages with MsgCode 42303 -> 3 messages
-        msgFilter.setown(new CSysInfoLoggerMsgFilter());
-        msgFilter->setMatchCode(42304);
-        ASSERT(deleteLogSysInfoMsg(msgFilter)==3);
-
-        // delete all messages matching source=SOURCE_CPPUNIT
-        msgFilter.setown(new CSysInfoLoggerMsgFilter());
-        msgFilter->setMatchSource(SOURCE_CPPUNIT);
-        ASSERT(deleteLogSysInfoMsg(msgFilter)==6);
-    }
-};
-
-CPPUNIT_TEST_SUITE_REGISTRATION( CSysInfoLoggerTester );
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( CSysInfoLoggerTester, "CSysInfoLogger" );
-
-#endif
