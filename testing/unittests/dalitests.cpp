@@ -61,8 +61,13 @@ void daliClientInit()
     // Only initialise on first pass
     if (initCounter != 0)
         return;
-    InitModuleObjects();
-    user->set("user", "passwd");
+    static bool modulesInitialized = false;
+    if (!modulesInitialized)
+    {
+        InitModuleObjects();
+        user->set("user", "passwd");
+        modulesInitialized = true;
+    }
     // Connect to local Dali
     SocketEndpoint ep;
     ep.set(".", 7070);
@@ -82,12 +87,11 @@ void daliClientEnd()
     else if (1 == initCounter) // Only destroy on last pass
     {
         // Cleanup
-        releaseAtoms();
+        //releaseAtoms();
         closedownClientProcess();
-        setNodeCaching(false);
+        //setNodeCaching(false);
     }
-    else
-        initCounter--;
+    initCounter--;
 }
 
 interface IChecker
