@@ -30,6 +30,7 @@
 #include <set>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 //-------------------------------------------------------------------------------------------------------------
 inline bool strieq(const char* s,const char* t) { return stricmp(s,t)==0; }
@@ -3931,7 +3932,7 @@ void EspServInfo::write_esp_binding_ipp()
 {
     EspMethodInfo *mthi=NULL;
 
-    outf("\n\nclass C%sSoapBinding : public CHttpSoapBinding\n", name_);
+    outf("\n\nclass C%sSoapBinding : public CHttpSoapHidlBinding\n", name_);
     outs("{\npublic:\n");
 
     //dom
@@ -3940,6 +3941,7 @@ void EspServInfo::write_esp_binding_ipp()
 
     outs("\tvirtual void init_strings();\n");
     outs("\tvoid init_metrics();\n");
+    outs("\tvoid init_maps();\n");
 
     outs("\tvirtual unsigned getCacheMethodCount(){return m_cacheMethodCount;}\n");
 
@@ -3957,9 +3959,6 @@ void EspServInfo::write_esp_binding_ipp()
 
     //method ==> isValidServiceName
     outs("\tbool isValidServiceName(IEspContext &context, const char *name);\n");
-
-    //method ==> qualifyMethodName
-    outs("\tbool qualifyMethodName(IEspContext &context, const char *methname, StringBuffer *methQName);\n");
 
     //method ==> qualifyServiceName
     outs("\tbool qualifyServiceName(IEspContext &context, const char *servname, const char *methname, StringBuffer &servQName, StringBuffer *methQName);\n");
@@ -4080,16 +4079,17 @@ void EspServInfo::write_esp_binding(const char *packagename)
     StrBuffer servicefeatureurl;
     getMetaStringValue(servicefeatureurl,FEATEACCESSATTRIBUTE);
 
-    outf("\nC%sSoapBinding::C%sSoapBinding(http_soap_log_level level):CHttpSoapBinding(NULL, NULL, NULL, level)\n", name_, name_);
+    outf("\nC%sSoapBinding::C%sSoapBinding(http_soap_log_level level):CHttpSoapHidlBinding(NULL, NULL, NULL, level)\n", name_, name_);
     outf("{\n");
     outf("\tinit_strings();\n");
     outf("\tsetWsdlVersion(%s);\n", wsdlVer.str());
     outf("}\n");
 
-    outf("\nC%sSoapBinding::C%sSoapBinding(IPropertyTree* cfg, const char *bindname, const char *procname, http_soap_log_level level):CHttpSoapBinding(cfg, bindname, procname, level)\n", name_, name_);
+    outf("\nC%sSoapBinding::C%sSoapBinding(IPropertyTree* cfg, const char *bindname, const char *procname, http_soap_log_level level):CHttpSoapHidlBinding(cfg, bindname, procname, level)\n", name_, name_);
     outf("{\n");
     outf("\tinit_strings();\n");
     outf("\tinit_metrics();\n");
+    outf("\tinit_maps();\n");
     outf("\tsetWsdlVersion(%s);\n", wsdlVer.str());
     outf("}\n");
 
@@ -4159,6 +4159,27 @@ void EspServInfo::write_esp_binding(const char *packagename)
         outf("#endif\n");
     }
     outs("}\n");
+
+    // init_maps implementation
+    outf("\nvoid C%sSoapBinding::init_maps()\n", name_);
+    outs("{\n");
+    outs("\tstd::initializer_list<const char *> names = {\n");
+    for (mthi=methods; mthi!= nullptr; mthi=mthi->next)
+    {
+        outf("\t\t\"%s\"", mthi->getName());
+        if (mthi->next != nullptr)
+        {
+            outs(",\n");
+        }
+        else
+        {
+            outs("\n");
+        }
+    }
+    outs("\t};\n");
+
+    outs("\tregisterMethodNames(names);\n");
+    outs("}");
 
     outf("\nint C%sSoapBinding::processRequest(IRpcMessage* rpc_call, IRpcMessage* rpc_response)\n", name_);
     outs("{\n");
@@ -4362,30 +4383,6 @@ void EspServInfo::write_esp_binding(const char *packagename)
     outs(1, "else\n");
     outs(2,     "return (hasSubService(context, name));\n");
     outs("}\n");
-
-    //method ==> qualifyMethodName
-    outf("\nbool C%sSoapBinding::qualifyMethodName(IEspContext &context, const char *methname, StringBuffer *methQName)\n", name_);
-    outs("{\n");
-
-    outs("\tif (!methname || !*methname)\n");
-    outs("\t{\n");
-    outs("\t\tif (methQName!=NULL)\n");
-    outs("\t\t\tmethQName->clear();\n");
-    outs("\t\treturn true;\n");
-    outs("\t}\n");
-
-    for (mthi=methods;mthi!=NULL;mthi=mthi->next)
-    {
-        outf("\tif (Utils::strcasecmp(methname, \"%s\")==0)\n", mthi->getName());
-        outs("\t{\n");
-        outs("\t\tif (methQName!=NULL)\n");
-        outf("\t\t\tmethQName->set(\"%s\");\n", mthi->getName());
-        outs("\t\treturn true;\n");
-        outs("\t}\n");
-    }
-    outs("\treturn false;\n");
-    outs("}\n");
-
 
     //method ==> qualifyServiceName
     outf("\nbool C%sSoapBinding::qualifyServiceName(IEspContext &context, const char *servname, const char *methname, StringBuffer &servQName, StringBuffer *methQName)\n", name_);
@@ -5548,6 +5545,7 @@ void HIDLcompiler::write_esp_ex_ipp()
     outs("#include \"SOAP/Platform/soapmacro.hpp\"\n");
     outs("#include \"SOAP/Platform/soapservice.hpp\"\n");
     outs("#include \"SOAP/Platform/soapparam.hpp\"\n");
+    outs("#include \"SOAP/Platform/soaphidlbind.hpp\"\n");
     outs("#include \"SOAP/client/soapclient.hpp\"\n");
     outs("\n\n");
 
