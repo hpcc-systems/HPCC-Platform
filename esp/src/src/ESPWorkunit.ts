@@ -917,7 +917,7 @@ const Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
         return (this._hpccWU as HPCCWorkunit).fetchDetails({
             ScopeFilter: {
                 MaxDepth: 999999,
-                ScopeTypes: { ScopeType: ["graph"] }
+                ScopeTypes: ["graph"]
             },
             ScopeOptions: {
                 IncludeMatchedScopesInResults: true,
@@ -935,7 +935,7 @@ const Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
             },
             NestedFilter: {
                 Depth: 999999,
-                ScopeTypes: { ScopeType: ["activity"] }
+                ScopeTypes: ["activity"]
             },
             PropertiesToReturn: {
                 AllStatistics: false,
