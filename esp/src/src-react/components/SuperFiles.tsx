@@ -43,11 +43,11 @@ export const SuperFiles: React.FunctionComponent<SuperFilesProps> = ({
                 label: nlsHPCC.Name,
                 sortable: true,
                 formatter: (name, row) => {
-                    return <Link href={`#/files/${cluster}/${name}`}>{name}</Link>;
+                    return <Link href={`#/files/${row.NodeGroup !== null ? row.NodeGroup : undefined}/${name}`}>{name}</Link>;
                 }
             }
         };
-    }, [cluster]);
+    }, []);
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
