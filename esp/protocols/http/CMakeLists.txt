@@ -37,6 +37,7 @@ set(SRCS
     ../../bindings/http/platform/msgbuilder.cpp
     ../../bindings/SOAP/client/soapclient.cpp
     ../../bindings/SOAP/Platform/soapbind.cpp
+    ../../bindings/SOAP/Platform/soaphidlbind.cpp
     ../../bindings/SOAP/Platform/soapmessage.cpp
     ../../bindings/SOAP/Platform/soapservice.cpp
     ../../bindings/SOAP/Platform/soapparam.cpp
