@@ -30,6 +30,7 @@
 #include <set>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 //-------------------------------------------------------------------------------------------------------------
 inline bool strieq(const char* s,const char* t) { return stricmp(s,t)==0; }
@@ -3940,6 +3941,7 @@ void EspServInfo::write_esp_binding_ipp()
 
     outs("\tvirtual void init_strings();\n");
     outs("\tvoid init_metrics();\n");
+    outs("\tvoid init_maps();\n");
 
     outs("\tvirtual unsigned getCacheMethodCount(){return m_cacheMethodCount;}\n");
 
@@ -4060,6 +4062,8 @@ void EspServInfo::write_esp_binding_ipp()
         outf("#endif\n");
     }
 
+    outs("\tstd::map<std::string, std::string> m_qualifiedMethodNames;\n");
+
     outs("};\n\n");
 }
 
@@ -4090,6 +4094,7 @@ void EspServInfo::write_esp_binding(const char *packagename)
     outf("{\n");
     outf("\tinit_strings();\n");
     outf("\tinit_metrics();\n");
+    outf("\tinit_maps();\n");
     outf("\tsetWsdlVersion(%s);\n", wsdlVer.str());
     outf("}\n");
 
@@ -4157,6 +4162,17 @@ void EspServInfo::write_esp_binding(const char *packagename)
             }
         }
         outf("#endif\n");
+    }
+    outs("}\n");
+
+    // init_maps implementation
+    outf("\nvoid C%sSoapBinding::init_maps()\n", name_);
+    outs("{\n");
+    for (mthi=methods; mthi!= nullptr; mthi=mthi->next)
+    {
+        std::string methodNameKey(mthi->getName());
+        std::transform(methodNameKey.cbegin(), methodNameKey.cend(), methodNameKey.begin(), tolower);
+        outf("\tm_qualifiedMethodNames.emplace(\"%s\", \"%s\");\n", methodNameKey.c_str(), mthi->getName());
     }
     outs("}\n");
 
@@ -4374,15 +4390,16 @@ void EspServInfo::write_esp_binding(const char *packagename)
     outs("\t\treturn true;\n");
     outs("\t}\n");
 
-    for (mthi=methods;mthi!=NULL;mthi=mthi->next)
-    {
-        outf("\tif (Utils::strcasecmp(methname, \"%s\")==0)\n", mthi->getName());
-        outs("\t{\n");
-        outs("\t\tif (methQName!=NULL)\n");
-        outf("\t\t\tmethQName->set(\"%s\");\n", mthi->getName());
-        outs("\t\treturn true;\n");
-        outs("\t}\n");
-    }
+    outs("\tstd::string methodName(methname);\n");
+    outs("\tstd::transform(methodName.cbegin(), methodName.cend(), methodName.begin(), tolower);\n");
+    outs("\tauto it = m_qualifiedMethodNames.find(methodName);\n");
+    outs("\tif (it != m_qualifiedMethodNames.end())\n");
+    outs("\t{\n");
+    outs("\t\tif (methQName != nullptr)\n");
+    outs("\t\t\tmethQName->set(it->second.c_str());\n");
+    outs("\t\treturn true;\n");
+    outs("\t}\n");
+
     outs("\treturn false;\n");
     outs("}\n");
 
