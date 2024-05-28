@@ -983,19 +983,22 @@ void ContextLogger::mergeStats(unsigned activityId, const CRuntimeStatisticColle
     if (activityId)
     {
         stat_type localTime = from.getStatisticValue(StCycleLocalExecuteCycles);
-        if (localTime > slowestActivityTimes[MaxSlowActivities-1])
+        if (localTime >= minimumInterestingActivityCycles)
         {
-            unsigned pos = MaxSlowActivities-1;
-            while (pos > 0)
+            if (localTime > slowestActivityTimes[MaxSlowActivities-1])
             {
-                if (localTime <= slowestActivityTimes[pos-1])
-                    break;
-                slowestActivityIds[pos] = slowestActivityIds[pos-1];
-                slowestActivityTimes[pos] = slowestActivityTimes[pos-1];
-                pos--;
+                unsigned pos = MaxSlowActivities-1;
+                while (pos > 0)
+                {
+                    if (localTime <= slowestActivityTimes[pos-1])
+                        break;
+                    slowestActivityIds[pos] = slowestActivityIds[pos-1];
+                    slowestActivityTimes[pos] = slowestActivityTimes[pos-1];
+                    pos--;
+                }
+                slowestActivityIds[pos] = activityId;
+                slowestActivityTimes[pos] = localTime;
             }
-            slowestActivityIds[pos] = activityId;
-            slowestActivityTimes[pos] = localTime;
         }
     }
 }

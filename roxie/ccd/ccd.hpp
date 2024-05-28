@@ -452,6 +452,8 @@ extern unsigned agentQueryReleaseDelaySeconds;
 extern unsigned coresPerQuery;
 
 extern unsigned cacheReportPeriodSeconds;
+extern stat_type minimumInterestingActivityCycles;
+
 
 extern StringBuffer logDirectory;
 extern StringBuffer pluginDirectory;
