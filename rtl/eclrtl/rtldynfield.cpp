@@ -36,10 +36,10 @@
 
 extern ECLRTL_API RecordTranslationMode getTranslationMode(const char *val, bool isLocal)
 {
-    if (isEmptyString(val) || strToBool(val) || strieq(val, "payload"))
-        return RecordTranslationMode::Payload;
-    else if (strieq(val, "payloadRemoveOnly"))
+    if (isEmptyString(val) || strToBool(val) || strieq(val, "payloadRemoveOnly"))
         return RecordTranslationMode::PayloadRemoveOnly;
+    else if (strieq(val, "payload"))
+        return RecordTranslationMode::Payload;
     else if (strieq(val, "alwaysDisk") || strieq(val, "disk"))
     {
         if (!isLocal)

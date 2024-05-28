@@ -65,7 +65,7 @@
                 enableKeyDiff="true"
                 enableSysLog="true"
                 fastLaneQueue="true"
-                fieldTranslationEnabled="payload"
+                fieldTranslationEnabled="payloadRemoveOnly"
                 flushJHtreeCacheOnOOM="true"
                 forceStdLog="false"
                 heapRetainMemory="false"
