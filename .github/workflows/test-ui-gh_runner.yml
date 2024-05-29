@@ -19,6 +19,12 @@ on:
         required: false
         default: 'bison flex build-essential binutils-dev curl lsb-release libcppunit-dev python3-dev default-jdk r-base-dev r-cran-rcpp r-cran-rinside r-cran-inline pkg-config libtool autotools-dev automake git cmake xmlstarlet'
 
+
+env:
+  ML_SUPPRESS_WARNING_FILES: ( "RegressionTestModified.ecl" "ClassificationTestModified.ecl" )
+  ML_EXCLUDE_FILES: "--ef ClassicTestModified.ecl,SVCTest.ecl,ClassificationTestModified.ecl"
+  BUNDLES_TO_TEST: ["ML_Core","PBblas","GLM","GNN","DBSCAN","LearningTrees","TextVectors","KMeans","SupportVectorMachines","LinearRegression","LogisticRegression"]
+   
 jobs:
 
   main:
@@ -117,6 +123,11 @@ jobs:
           ecl bundle list
           find /home/runner/ -iname 'ToField.ecl' -type f
           retCode=$?
+          echo "retCode: $retCode"
+          for i in  ${{ fromJSON(env.BUNDLES_TO_TEST) }}
+          do
+            echo "bundle: $i"
+          done
 
       - name: Run Tests
         timeout-minutes: 10 # generous, current runtime is ~1min, this should be increased if new tests are added
