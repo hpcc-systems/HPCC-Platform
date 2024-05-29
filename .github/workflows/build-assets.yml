@@ -321,6 +321,29 @@ jobs:
           tag: ${{ needs.preamble.outputs.internal_tag }}
           artifacts: "${{ needs.preamble.outputs.folder_build }}/hpccsystems-*-internal*.deb,${{ needs.preamble.outputs.folder_build }}/hpccsystems-*-internal*.rpm"
 
+      - name: Upload Assets to Jfrog (debian internal)
+        if: ${{ matrix.ln && !matrix.container && contains(matrix.os, 'ubuntu') && github.repository_owner == 'hpcc-systems'}}
+        shell: bash
+        run: |
+          cd ${{ needs.preamble.outputs.folder_build }}
+          version=$(echo "${{ needs.preamble.outputs.internal_tag }}" | sed 's/internal_//')
+          packages=($(ls -1 hpccsystems-*.deb ))
+          for _package in ${packages[@]}; do
+            distribution=$( echo "${_package}" | sed "s/^.*${version}//" | awk -F '_' '{print $1;}' )
+            curl -u${{ secrets.JFROG_USERNAME }}:${{ secrets.JFROG_PASSWORD }} -XPUT "https://${{ secrets.JFROG_REGISTRY }}/hpccpl-debian-local/pool/LN/${_package};deb.distribution=${distribution};deb.component=LN;deb.architecture=amd64" -T ${{ needs.preamble.outputs.folder_build }}/${_package} 
+          done
+
+      - name: Upload Assets to Jfrog (centos internal)
+        if: ${{ matrix.ln && !matrix.container && !contains(matrix.os, 'ubuntu') && github.repository_owner == 'hpcc-systems'}}
+        shell: bash
+        run: |
+          cd ${{ needs.preamble.outputs.folder_build }}
+          packages=($(ls -1 hpccsystems-*.rpm ))
+          for _package in ${packages[@]}; do
+            distribution=$( echo "${_package}" | awk -F '.' '{print $4;}' )
+            curl -u${{ secrets.JFROG_USERNAME }}:${{ secrets.JFROG_PASSWORD }} -XPUT "https://${{ secrets.JFROG_REGISTRY }}/hpccpl-rpm-local/LN/${distribution}/x86_64/${_package}" -T ${{ needs.preamble.outputs.folder_build }}/${_package} 
+          done
+
       - name: Locate k8s deb file (internal)
         if: ${{ matrix.ln && matrix.container && !matrix.documentation }}
         id: ln-container
@@ -469,6 +492,26 @@ jobs:
           token: ${{ secrets.LNB_TOKEN }}
           tag: ${{ needs.preamble.outputs.internal_tag }}
           artifacts: "./build/hpccsystems-clienttools-internal*.exe,./build/hpccsystems-clienttools-internal*.msi,./build/hpccsystems-clienttools-internal*.dmg,./build/hpccsystems-clienttools-internal*.pkg,./build/hpccsystems-clienttools-internal*.tar.gz"
+
+      - name: Upload Assets to Jfrog (windows)
+        if: ${{ contains(matrix.os, 'windows') && github.repository_owner == 'hpcc-systems' }}
+        shell: bash
+        run: |
+          cd ./build
+          packages=($(ls -1 hpccsystems-*.exe ))
+          for _package in ${packages[@]}; do
+            curl -u${{ secrets.JFROG_USERNAME }}:${{ secrets.JFROG_PASSWORD }} "https://${{ secrets.JFROG_REGISTRY }}/hpccpl-windows-local/LN/windows/x86_64/${_package}" -T ${_package}
+          done
+
+      - name: Upload Assets to Jfrog (macos)
+        if: ${{ contains(matrix.os, 'macos') && github.repository_owner == 'hpcc-systems' }}
+        shell: bash
+        run: |
+          cd ./build
+          packages=($(ls -1 hpccsystems-*.pkg ))
+          for _package in ${packages[@]}; do
+            curl -u${{ secrets.JFROG_USERNAME }}:${{ secrets.JFROG_PASSWORD }} "https://${{ secrets.JFROG_REGISTRY }}/hpccpl-macos-local/LN/macos/x86_64/${_package}" -T ${_package}
+          done
 
       - name: Upload error logs
         if: ${{ failure() || cancelled() }}
