@@ -1750,8 +1750,7 @@ void FileSprayer::analyseFileHeaders(bool setcurheadersize)
                     // Despray from distributed file
 
                     // Check XMLheader/footer in file level
-                    DistributedFilePropertyLock lock(distributedSource);
-                    IPropertyTree &curProps = lock.queryAttributes();
+                    IPropertyTree &curProps = distributedSource->queryAttributes();
                     if (curProps.hasProp(FPheaderLength) && curProps.hasProp(FPfooterLength))
                     {
                         cur.xmlHeaderLength = curProps.getPropInt(FPheaderLength, 0);
