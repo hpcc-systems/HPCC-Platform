@@ -804,10 +804,13 @@ void decompressToBuffer(MemoryBuffer & out, const void * src)
 
 void decompressToBuffer(MemoryBuffer & out, MemoryBuffer & in)
 {
-    bool compressed;
+    unsigned char method;
     size32_t srcLen;
-    in.read(compressed).read(srcLen);
-    if (compressed)
+    in.read(method).read(srcLen);
+    if (method > 1)
+        throw makeStringException(-1, "New compression format is not supported in this version");
+
+    if (method != 0)
         decompressToBuffer(out, in.readDirect(srcLen));
     else
         out.append(srcLen, in.readDirect(srcLen));
