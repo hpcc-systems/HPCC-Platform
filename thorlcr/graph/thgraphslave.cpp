@@ -1691,7 +1691,6 @@ CJobSlave::CJobSlave(ISlaveWatchdog *_watchdog, IPropertyTree *_workUnitInfo, co
     requestSpan->setSpanAttribute("hpcc.wuid", wuid);
     requestSpan->setSpanAttribute("hpcc.graph", graphName);
 
-    oldNodeCacheMem = 0;
     slavemptag = _slavemptag;
 
     IPropertyTree *plugins = workUnitInfo->queryPropTree("plugins");
@@ -1827,6 +1826,23 @@ StringBuffer &CJobSlave::getWorkUnitValue(const char *prop, StringBuffer &str) c
     return str;
 }
 
+TraceFlags CJobSlave::loadTraceFlags(TraceFlags dft) const
+{
+    const IPTree *dbt = workUnitInfo->queryPropTree("Debug");
+    for (auto &o: thorTraceOptions)
+    {
+        StringBuffer propName(o.name);
+        propName.toLowerCase();
+        if (dbt->hasProp(propName))
+        {
+            if (dbt->getPropBool(propName, false))
+                dft |= o.value;
+            else
+                dft &= ~o.value;
+        }
+    }
+    return dft;
+}
 bool CJobSlave::getWorkUnitValueBool(const char *prop, bool defVal) const
 {
     StringBuffer propName(prop);

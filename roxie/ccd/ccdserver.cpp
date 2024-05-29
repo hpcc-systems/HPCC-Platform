@@ -1337,7 +1337,7 @@ public:
             ctx->CTXLOGa(category, cat, job, code, prefix, text);
         else
         {
-            LogContextScope ls(nullptr);
+            LogContextScope ls(nullptr);   // prevent infinite recursion
             LOG(cat, job, code, "[%s] %s", prefix, text);
         }
     }
@@ -1348,7 +1348,7 @@ public:
             ctx->CTXLOGaeva(E, file, line, prefix, format, args);
         else
         {
-            LogContextScope ls(nullptr);
+            LogContextScope ls(nullptr);   // prevent infinite recursion
             StringBuffer ss;
             ss.appendf("[%s] ERROR", prefix);
             if (E)

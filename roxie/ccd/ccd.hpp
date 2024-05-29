@@ -638,7 +638,7 @@ public:
 
     virtual void CTXLOGa(TracingCategory category, const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char *prefix, const char *text) const override
     {
-        LogContextScope ls(nullptr);
+        LogContextScope ls(nullptr);   // prevent infinite recursion
         if (category == LOG_TRACING)
             DBGLOG("[%s] %s", prefix, text);
         else
@@ -651,7 +651,7 @@ public:
     }
     virtual void CTXLOGaeva(IException *E, const char *file, unsigned line, const char *prefix, const char *format, va_list args) const  __attribute__((format(printf,6,0)))
     {
-        LogContextScope ls(nullptr);
+        LogContextScope ls(nullptr);   // prevent infinite recursion
         StringBuffer text;
         text.append("ERROR");
         if (E)

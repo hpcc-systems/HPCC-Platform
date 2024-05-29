@@ -3479,7 +3479,7 @@ void ctxlogReportVA(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMs
 {
     if (default_thread_logctx)
     {
-        LogContextScope ls(nullptr);
+        LogContextScope ls(nullptr);   // prevent infinite recursion
         ls.prev->CTXLOGva(cat, job, code, format, args);
     }
     else

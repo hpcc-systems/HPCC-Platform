@@ -72,7 +72,8 @@ public:
         mptag_t barrierTag = container.queryJobChannel().deserializeMPTag(data);
         barrier.setown(container.queryJobChannel().createBarrier(barrierTag));
         portbase = queryJobChannel().allocPort(NUMSLAVEPORTS);
-        ActPrintLog("MSortSlaveActivity::init portbase = %d, mpTagRPC = %d",portbase,(int)mpTagRPC);
+        if (traceActivity())
+            ActPrintLog("MSortSlaveActivity::init portbase = %d, mpTagRPC = %d",portbase,(int)mpTagRPC);
         server.setLocalHost(portbase); 
         helper = (IHThorSortArg *)queryHelper();
         sorter.setown(CreateThorSorter(this, server, &queryJobChannel().queryJobComm(), mpTagRPC));
@@ -121,7 +122,8 @@ public:
             PARENT::stopInput(0);
             if (abortSoon)
             {
-                ActPrintLogEx(&queryContainer(), thorlog_null, MCwarning, "MSortSlaveActivity::start aborting");
+                if (traceActivity())
+                    ActPrintLogEx(&queryContainer(), thorlog_null, MCwarning, "MSortSlaveActivity::start aborting");
                 barrier->cancel();
                 return;
             }
@@ -139,12 +141,14 @@ public:
             barrier->cancel();
             throw;
         }
-        ActPrintLog("SORT waiting barrier.1");
+        if (traceActivity())
+            ActPrintLog("SORT waiting barrier.1");
         if (!barrier->wait(false)) {
             Sleep(1000); // let original error through
             throw MakeThorException(TE_BarrierAborted,"SORT: Barrier Aborted");
         }
-        ActPrintLog("SORT barrier.1 raised");
+        if (traceActivity())
+            ActPrintLog("SORT barrier.1 raised");
         output.setown(sorter->startMerge(totalrows));
     }
     virtual void stop() override
@@ -156,10 +160,14 @@ public:
         }
         if (hasStarted())
         {
-            ActPrintLog("SORT waiting barrier.2");
+            if (traceActivity())
+                ActPrintLog("SORT waiting barrier.2");
             barrier->wait(false);
-            ActPrintLog("SORT barrier.2 raised");
-            ActPrintLog("SORT waiting for merge");
+            if (traceActivity())
+            {
+                ActPrintLog("SORT barrier.2 raised");
+                ActPrintLog("SORT waiting for merge");
+            }
             sorter->stopMerge();
         }
         PARENT::stop();

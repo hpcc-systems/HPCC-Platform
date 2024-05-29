@@ -208,7 +208,7 @@ public:
     virtual StringBuffer &getWorkUnitValue(const char *prop, StringBuffer &str) const override;
     virtual bool getWorkUnitValueBool(const char *prop, bool defVal) const override;
     virtual double getWorkUnitValueReal(const char *prop, double defVal) const override;
-
+    virtual TraceFlags loadTraceFlags(TraceFlags dft) const override;
 
 // IExceptionHandler
     virtual bool fireException(IException *e);

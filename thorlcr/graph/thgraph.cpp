@@ -2717,6 +2717,8 @@ void CJobBase::init()
     key.set(tmp.str());
 
     StringBuffer user;
+    oldTraceFlags = queryDefaultTraceFlags();
+    updateTraceFlags(loadTraceFlags(oldTraceFlags), true);
     extractFromWorkunitDAToken(token.str(), nullptr, &user, nullptr);
     userDesc = createUserDescriptor();
     userDesc->set(user.str(), token.str());//use workunit token as password
@@ -2765,6 +2767,7 @@ void CJobBase::init()
 void CJobBase::beforeDispose()
 {
     endJob();
+    updateTraceFlags(oldTraceFlags, true);
 }
 
 CJobChannel &CJobBase::queryJobChannel(unsigned c) const

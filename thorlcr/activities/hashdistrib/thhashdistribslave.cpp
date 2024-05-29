@@ -1025,7 +1025,7 @@ protected:
         ::ActPrintLogEx(&activity->queryContainer(), e, thorlog_all, MCexception(e), "%s", msg.str());
     }
 
-    inline bool traceActivity() const { return false; }
+    inline bool traceActivity() const { return activity->traceActivity(); }
 
 protected:
     CActivityBase *activity;

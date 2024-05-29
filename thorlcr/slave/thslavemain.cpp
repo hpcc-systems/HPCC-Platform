@@ -438,6 +438,7 @@ int main( int argc, const char *argv[]  )
 
         if (RegisterSelf(masterEp))
         {
+            updateTraceFlags(loadTraceFlags(globals, thorTraceOptions, TraceFlags::Standard), true);
             if (globals->getPropBool("@MPChannelReconnect"))
                 getMPServer()->setOpt(mpsopt_channelreopen, "true");
 

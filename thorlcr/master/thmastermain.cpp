@@ -633,6 +633,7 @@ int main( int argc, const char *argv[]  )
     NoQuickEditSection xxx;
     {
         globals.setown(loadConfiguration(thorDefaultConfigYaml, argv, "thor", "THOR", "thor.xml", nullptr, nullptr, false));
+        updateTraceFlags(loadTraceFlags(globals, thorTraceOptions, TraceFlags::Standard), true);
     }
 #ifdef _DEBUG
     unsigned holdSlave = globals->getPropInt("@holdSlave", NotFound);

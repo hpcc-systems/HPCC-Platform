@@ -565,7 +565,6 @@ class graphslave_decl CJobSlave : public CJobBase
     typedef CJobBase PARENT;
     ISlaveWatchdog *watchdog;
     Owned<IPropertyTree> workUnitInfo;
-    size32_t oldNodeCacheMem;
     unsigned channelMemoryMB;
     unsigned actInitWaitTimeMins = DEFAULT_MAX_ACTINITWAITTIME_MINS;
 
@@ -587,6 +586,7 @@ public:
     virtual StringBuffer &getWorkUnitValue(const char *prop, StringBuffer &str) const override;
     virtual bool getWorkUnitValueBool(const char *prop, bool defVal) const override;
     virtual double getWorkUnitValueReal(const char *prop, double defVal) const override;
+    virtual TraceFlags loadTraceFlags(TraceFlags dft) const override;
     virtual IThorAllocator *getThorAllocator(unsigned channel) override;
     virtual void debugRequest(MemoryBuffer &msg, const char *request) const override;
 
