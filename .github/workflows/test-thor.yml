@@ -37,7 +37,7 @@ jobs:
   main:
     runs-on: ubuntu-22.04
     env:
-      #ML_SUPPRESS_WARNING_FILES: [ "RegressionTestModified.ecl" "ClassificationTestModified.ecl" ]
+      ML_SUPPRESS_WARNING_FILES: [ "RegressionTestModified.ecl" "ClassificationTestModified.ecl" ]
       ML_EXCLUDE_FILES: "--ef ClassicTestModified.ecl,SVCTest.ecl,ClassificationTestModified.ecl"
       #BUNDLES_TO_TEST: ["ML_Core","PBblas","GLM","GNN","DBSCAN","LearningTrees","TextVectors","KMeans","SupportVectorMachines","LinearRegression","LogisticRegression"]
     steps:
