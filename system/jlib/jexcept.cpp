@@ -37,7 +37,7 @@
 #include <sys/types.h>
 #include <stddef.h>
 #include <errno.h>
-#ifdef __linux__
+#if defined(__linux__) || defined(__APPLE__)
 #include <execinfo.h> // comment out if not present
 #endif
 #ifdef __APPLE__
@@ -1731,7 +1731,7 @@ void printStackReport(__int64 startIP)
 #ifdef _WIN32
     unsigned onstack=1234;
     doPrintStackReport(0, 0,(unsigned)&onstack);
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
     DBGLOG("Backtrace:");
     void *btarray[100];
     unsigned btn = backtrace (btarray, 100);

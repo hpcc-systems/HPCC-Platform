@@ -928,6 +928,7 @@ CPPUNIT_TEST_SUITE_REGISTRATION( PipeRunTest );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( PipeRunTest, "PipeRunTest" );
 #endif
 
+
 class RelaxedAtomicTimingTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE( RelaxedAtomicTimingTest  );
@@ -936,11 +937,12 @@ class RelaxedAtomicTimingTest : public CppUnit::TestFixture
 
     void testRun()
     {
-        testRunner(0);
-        testRunner(1);
+//        testRunner(0);
+//        testRunner(1);
         testRunner(2);
         testRunner(3);
-        testRunner(4);
+//        testRunner(4);
+//        testRunner(5);
     }
 
     void testRunner(unsigned mode)
@@ -948,7 +950,8 @@ class RelaxedAtomicTimingTest : public CppUnit::TestFixture
         CCycleTimer timer;
         unsigned count = 100000000;
         RelaxedAtomic<int> ra[201];
-        CriticalSection lock[201];
+        UninstrumentedCriticalSection lock[201];
+        InstrumentedCriticalSection ilock[201];
 
         for (int a = 0; a < 201; a++)
             ra[a] = 0;
@@ -956,7 +959,8 @@ class RelaxedAtomicTimingTest : public CppUnit::TestFixture
         class T : public CThreaded
         {
         public:
-            T(unsigned _count, RelaxedAtomic<int> &_ra, CriticalSection &_lock, unsigned _mode) : CThreaded(""), count(_count), ra(_ra), lock(_lock), mode(_mode) 
+            T(unsigned _count, RelaxedAtomic<int> &_ra, UninstrumentedCriticalSection &_lock, InstrumentedCriticalSection &_ilock, unsigned _mode)
+            : CThreaded(""), count(_count), ra(_ra), lock(_lock), ilock(_ilock), mode(_mode) 
             {}
             virtual int run() override
             {
@@ -964,10 +968,10 @@ class RelaxedAtomicTimingTest : public CppUnit::TestFixture
                 {
                     case 0: test0(); break;
                     case 1: test1(); break;
-                    // Disabled next two for now as slow and not especially interesting
-                    // case 2: test2(); break;
-                    // case 3: test3(); break;
-                    case 4: test4(); break;
+                    case 2: test2(); break;
+                    case 3: test3(); break;
+                    case 4: test4(); break;  
+                    case 5: test5(); break;
                 }
                 return 0;
             }
@@ -988,20 +992,29 @@ class RelaxedAtomicTimingTest : public CppUnit::TestFixture
                 int &a = (int &) ra;
                 while (count--)
                 {
-                    CriticalBlock b(lock);
+                    UninstrumentedCriticalBlock b(lock);
                     a++;
                 }
             }
             void test3()
             {
-                RelaxedAtomic<int> &a = ra;
+                int &a = (int &) ra;
                 while (count--)
                 {
-                    CriticalBlock b(lock);
-                    a.fastAdd(1);
+                    InstrumentedCriticalBlock b(ilock);
+                    a++;
                 }
             }
             void test4()
+            {
+                RelaxedAtomic<int> &a = ra;
+                while (count--)
+                {
+                    UninstrumentedCriticalBlock b(lock);
+                    a.fastAdd(1);
+                }
+            }
+            void test5()
             {
                 int &a = (int &) ra;
                 while (count--)
@@ -1015,10 +1028,11 @@ class RelaxedAtomicTimingTest : public CppUnit::TestFixture
             unsigned mode;
             unsigned count;
             RelaxedAtomic<int> &ra;
-            CriticalSection &lock;
-        } t1a(count, ra[0], lock[0], mode), t2a(count, ra[0], lock[0], mode), t3a(count, ra[0], lock[0], mode),
-          t1b(count, ra[0], lock[0], mode), t2b(count, ra[1], lock[1], mode), t3b(count, ra[2], lock[2], mode),
-          t1c(count, ra[0], lock[0], mode), t2c(count, ra[100], lock[100], mode), t3c(count, ra[200], lock[200], mode);;  
+            UninstrumentedCriticalSection &lock;
+            InstrumentedCriticalSection &ilock;
+        } t1a(count, ra[0], lock[0], ilock[0], mode), t2a(count, ra[0], lock[0], ilock[0], mode), t3a(count, ra[0], lock[0], ilock[0], mode),
+          t1b(count, ra[0], lock[1], ilock[1], mode), t2b(count, ra[1], lock[2], ilock[2], mode), t3b(count, ra[2], lock[3], ilock[3], mode),
+          t1c(count, ra[0], lock[4], ilock[4], mode), t2c(count, ra[100], lock[100], ilock[100], mode), t3c(count, ra[200], lock[200], ilock[200], mode);;  
         DBGLOG("Testing RelaxedAtomics (test mode %u)", mode);
         t1a.start(false);
         t2a.start(false);
