@@ -1668,6 +1668,9 @@ void FileSprayer::analyseFileHeaders(bool setcurheadersize)
     unsigned numEmptyXml = 0;
     ForEachItemIn(idx, sources)
     {
+        if (isAborting())
+            throwError(DFTERR_CopyAborted);
+
         FilePartInfo & cur = sources.item(idx);
         StringBuffer s;
         cur.filename.getPath(s);
