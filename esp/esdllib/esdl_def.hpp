@@ -191,6 +191,17 @@ interface IEsdlDefFileIterator : extends IIteratorOf<IEsdlDefFile>
 };
 
 interface IEsdlDefReporter;
+
+interface IEsdlDefServiceIterator : extends IInterface
+{
+    virtual bool        first(void)=0;
+    virtual bool        next(void)=0;
+    virtual bool        isValid(void)=0;
+    virtual unsigned    getFlags(void)=0;
+    virtual IEsdlDefService& query()=0;
+    //virtual IEsdlDefObjectIterator* queryBaseTypesIterator()=0;
+};
+
 interface IEsdlDefinition : extends IInterface
 {
     virtual void setReporter(IEsdlDefReporter* reporter)=0;
@@ -225,6 +236,9 @@ interface IEsdlDefinition : extends IInterface
     virtual EsdlBasicElementType translateSimpleType(const char *type)=0;
 
     virtual bool isShared() = 0;
+
+
+    virtual IEsdlDefServiceIterator* getServiceIterator() = 0;
 };
 
 typedef IEsdlDefReporter* (*EsdlDefReporterFactory)();
