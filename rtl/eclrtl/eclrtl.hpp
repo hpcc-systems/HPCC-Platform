@@ -667,6 +667,7 @@ ECLRTL_API void rtlStrToVUnicode(unsigned outlen, UChar * out, unsigned inlen, c
 
 ECLRTL_API unsigned rtlUtf8Size(const void * data);
 ECLRTL_API unsigned rtlUtf8Size(unsigned len, const void * data);
+ECLRTL_API unsigned rtlUtf8Length(const void * data);
 ECLRTL_API unsigned rtlUtf8Length(unsigned size, const void * data);
 ECLRTL_API unsigned rtlUtf8Char(const void * data);
 ECLRTL_API void rtlUtf8ToData(size32_t outlen, void * out, size32_t inlen, const char *in);
