@@ -61,3 +61,8 @@ outset := PROJECT(inset, trans(LEFT));
 
 output(outset);
 
+// HPCC-31954
+REGEXREPLACE('\'', 'Dan\'s', '\\\'') = 'Dan\'s';
+REGEXREPLACE(NOFOLD('\''), 'Dan\'s', '\\\'') = 'Dan\'s';
+REGEXREPLACE(u'\'', u'Dan\'s', u'\\\'') = u'Dan\'s';
+REGEXREPLACE(NOFOLD(u'\''), u'Dan\'s', u'\\\'') = u'Dan\'s';
