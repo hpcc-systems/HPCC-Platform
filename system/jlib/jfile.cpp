@@ -102,6 +102,10 @@ static inline bool isPCFlushAllowed();
 
 static char ShareChar='$';
 
+// defaults
+static IFEflags expertEnableIFileFlagsMask = IFEnone;
+static IFEflags expertDisableIFileFlagsMask = IFEnone;
+
 bool isShareChar(char c)
 {
     return (c==ShareChar)||(c=='$');
@@ -2055,11 +2059,17 @@ CFileIO::CFileIO(HANDLE handle, IFOmode _openmode, IFSHmode _sharemode, IFEflags
     sharemode = _sharemode;
     openmode = _openmode;
     extraFlags = _extraFlags;
+
+    // leave for compatibility
     if (extraFlags & IFEnocache)
         if (!isPCFlushAllowed())
             extraFlags = static_cast<IFEflags>(extraFlags & ~IFEnocache);
+
+    extraFlags = static_cast<IFEflags>(extraFlags | expertEnableIFileFlagsMask);
+    extraFlags = static_cast<IFEflags>(extraFlags & ~expertDisableIFileFlagsMask);
+
 #ifdef CFILEIOTRACE
-    DBGLOG("CFileIO::CfileIO(%d,%d,%d,%d)", handle, _openmode, _sharemode, _extraFlags);
+    DBGLOG("CFileIO::CfileIO(%d,%d,%d,%d)", handle, _openmode, _sharemode, extraFlags);
 #endif
 }
 
@@ -7846,7 +7856,8 @@ bool hasGenericFiletypeName(const char * name)
 ///---------------------------------------------------------------------------------------------------------------------
 
 // Cache/update plane attributes settings
-static unsigned planeAttributeCBId = 0;
+static unsigned jFileHookId = 0;
+
 static const std::array<const char*, PlaneAttributeCount> planeAttributeTypeStrings =
 {
     "blockedFileIOKB",
@@ -7870,14 +7881,26 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
             values[BlockedSequentialIO] = plane.getPropInt(("@" + std::string(planeAttributeTypeStrings[BlockedSequentialIO])).c_str()) * 1024;
             values[BlockedRandomIO] = plane.getPropInt(("@" + std::string(planeAttributeTypeStrings[BlockedRandomIO])).c_str()) * 1024;
         }
+
+        // reset defaults
+        expertEnableIFileFlagsMask = IFEnone;
+        expertDisableIFileFlagsMask = IFEnone;
+
+        StringBuffer fileFlagsStr;
+        if (getComponentConfigSP()->getProp("expert/@enableIFileMask", fileFlagsStr) || getGlobalConfigSP()->getProp("expert/@enableIFileMask", fileFlagsStr))
+            expertEnableIFileFlagsMask = (IFEflags)strtoul(fileFlagsStr, NULL, 0);
+
+        if (getComponentConfigSP()->getProp("expert/@disableIFileMask", fileFlagsStr.clear()) || getGlobalConfigSP()->getProp("expert/@disableIFileMask", fileFlagsStr))
+            expertDisableIFileFlagsMask = (IFEflags)strtoul(fileFlagsStr, NULL, 0);
     };
-    planeAttributeCBId = installConfigUpdateHook(updateFunc, true);
+    jFileHookId = installConfigUpdateHook(updateFunc, true);
+
     return true;
 }
 
 MODULE_EXIT()
 {
-    removeConfigUpdateHook(planeAttributeCBId);
+    removeConfigUpdateHook(jFileHookId);
 }
 
 const char *getPlaneAttributeString(PlaneAttributeType attr)

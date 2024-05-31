@@ -1668,6 +1668,9 @@ void FileSprayer::analyseFileHeaders(bool setcurheadersize)
     unsigned numEmptyXml = 0;
     ForEachItemIn(idx, sources)
     {
+        if (isAborting())
+            throwError(DFTERR_CopyAborted);
+
         FilePartInfo & cur = sources.item(idx);
         StringBuffer s;
         cur.filename.getPath(s);
@@ -1748,8 +1751,7 @@ void FileSprayer::analyseFileHeaders(bool setcurheadersize)
                     // Despray from distributed file
 
                     // Check XMLheader/footer in file level
-                    DistributedFilePropertyLock lock(distributedSource);
-                    IPropertyTree &curProps = lock.queryAttributes();
+                    IPropertyTree &curProps = distributedSource->queryAttributes();
                     if (curProps.hasProp(FPheaderLength) && curProps.hasProp(FPfooterLength))
                     {
                         cur.xmlHeaderLength = curProps.getPropInt(FPheaderLength, 0);

@@ -1314,9 +1314,9 @@ public:
         logctx.setStatistic(kind, value);
     }
 
-    virtual void mergeStats(const CRuntimeStatisticCollection &from) const override
+    virtual void mergeStats(unsigned activityId, const CRuntimeStatisticCollection &from) const override
     {
-        logctx.mergeStats(from);
+        logctx.mergeStats(activityId, from);
     }
 
     virtual void gatherStats(CRuntimeStatisticCollection & merged) const override
@@ -2379,7 +2379,7 @@ public:
     {
         // NOTE: This is needed to ensure that owned activities are destroyed BEFORE I am,
         // to avoid pure virtual calls when they come to call noteProcessed()
-        logctx.mergeStats(globalStats);
+        logctx.mergeStats(0, globalStats);
         if (factory)
             factory->mergeStats(logctx);
         childGraphs.releaseAll();
@@ -2611,7 +2611,7 @@ protected:
 
     void doPostProcess()
     {
-        logctx.mergeStats(globalStats);
+        logctx.mergeStats(0, globalStats);
         logctx.setStatistic(StTimeTotalExecute, elapsedTimer.elapsedNs());
         if (factory)
         {

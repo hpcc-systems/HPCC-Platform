@@ -385,6 +385,7 @@ int main(int argc, const char* argv[])
     bool locallisten = false;
     StringBuffer componentName;
 
+    // NB: bare-metal dafilesrv does not have a component specific xml
     Owned<IPropertyTree> config = loadConfiguration(defaultYaml, argv, "dafilesrv", "DAFILESRV", nullptr, nullptr);
 
     Owned<IPropertyTree> keyPairInfo; // NB: not used in containerized mode
@@ -516,6 +517,9 @@ int main(int argc, const char* argv[])
     Owned<IPropertyTree> _dafileSrvInstance;
     if (env)
     {
+        Owned<IPropertyTree> newConfig = createPTreeFromIPT(config); // clone
+        IPropertyTree *expert = ensurePTree(newConfig, "expert");
+
         StringBuffer dafilesrvPath("Software/DafilesrvProcess");
         if (componentName.length())
             dafilesrvPath.appendf("[@name=\"%s\"]", componentName.str());
@@ -523,6 +527,12 @@ int main(int argc, const char* argv[])
             dafilesrvPath.append("[1]"); // in absence of name, use 1st
         IPropertyTree *daFileSrv = env->queryPropTree(dafilesrvPath);
         Owned<IPropertyTree> _dafileSrv;
+
+        // merge in bare-metal global expert settings
+        IPropertyTree *globalExpert = nullptr;
+        globalExpert = env->queryPropTree("Software/Globals");
+        if (globalExpert)
+            synchronizePTree(expert, globalExpert, false, false);
 
         if (daFileSrv)
         {
@@ -562,6 +572,12 @@ int main(int argc, const char* argv[])
             if (daFileSrv->queryProp("@rowServiceConfiguration"))
                 rowServiceConfiguration = daFileSrv->queryProp("@rowServiceConfiguration");
 
+            // merge in bare-metal dafilesrv component expert settings
+            IPropertyTree *componentExpert = nullptr;
+            componentExpert = daFileSrv->queryPropTree("expert");
+            if (componentExpert)
+                synchronizePTree(expert, componentExpert, false, true);
+
             // any overrides by Instance definitions?
             Owned<IPropertyTreeIterator> iter = daFileSrv->getElements("Instance");
             ForEach(*iter)
@@ -587,7 +603,16 @@ int main(int argc, const char* argv[])
                     }
                 }
             }
+
+            // merge in bare-metal dafilesrv instance expert settings
+            IPropertyTree *instanceExpert = nullptr;
+            instanceExpert = dafileSrvInstance->queryPropTree("expert");
+            if (instanceExpert)
+                synchronizePTree(expert, instanceExpert, false, true);
         }
+
+        // update config and hook callback with dafilesrv expert PTree
+        replaceComponentConfig(newConfig, getGlobalConfigSP());
 
         // bare-metal gets it's certificate info. from environment at the moment, 'keyPairInfo' not used in containerized mode
         keyPairInfo.set(env->queryPropTree("EnvSettings/Keys"));

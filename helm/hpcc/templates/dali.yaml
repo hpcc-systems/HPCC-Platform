@@ -67,7 +67,7 @@ true
  {{- end -}}
 {{- end }}
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: {{ $dali.name | quote }}
 spec:
@@ -77,6 +77,10 @@ spec:
       run: {{ $dali.name | quote }}
       server: {{ $dali.name | quote }}
       app: dali
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
   template:
     metadata:
       labels:
@@ -97,6 +101,13 @@ spec:
           {{- include "hpcc.addPrometheusScrapeAnnotations" $.Values.global.metrics | nindent 8 }}
         {{- end }}
     spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: dali
+              topologyKey: "kubernetes.io/hostname"
       {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" $dali.name "type" "dali") | indent 6 }}
       serviceAccountName: "hpcc-dali"
       terminationGracePeriodSeconds: {{ .terminationGracePeriodSeconds | default 3600 }}

@@ -303,7 +303,8 @@ void CLZWCompressor::open(void *buf,size32_t max)
         outbuf = malloc(bufalloc);
     }
     outBufMb = NULL;
-    assertex(max>SAFETY_MARGIN+sizeof(size32_t)); // minimum required
+    if (max<=SAFETY_MARGIN+sizeof(size32_t)) // minimum required
+        throw makeStringException(0, "CLZWCompressor: target buffer too small");
     maxlen=max-SAFETY_MARGIN;
     initCommon();
 }
@@ -1386,7 +1387,8 @@ public:
             outbuf = malloc(bufalloc);
         }
         outBufMb = NULL;
-        assertex(max>2+sizeof(size32_t)*2); // minimum required (actually will need enough for recsize so only a guess)
+        if (max<=2+sizeof(size32_t)*2) // minimum required (actually will need enough for recsize so only a guess)
+            throw makeStringException(0, "CRDiffCompressor: target buffer too small");
         initCommon();
         remaining = max-outlen;
     }
@@ -1669,7 +1671,8 @@ public:
             outbuf = malloc(bufalloc);
         }
         outBufMb = NULL;
-        assertex(max>MIN_RRDHEADER_SIZE+sizeof(unsigned short)+3); // hopefully a lot bigger!
+        if (max<=MIN_RRDHEADER_SIZE+sizeof(unsigned short)+3) // hopefully a lot bigger!
+            throw makeStringException(0, "CRandRDiffCompressor: target buffer too small");
         initCommon();
     }
 

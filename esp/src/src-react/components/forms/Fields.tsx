@@ -82,6 +82,7 @@ interface AsyncDropdownProps {
     required?: boolean;
     disabled?: boolean;
     multiSelect?: boolean;
+    valueSeparator?: string;
     errorMessage?: string;
     onChange?: (event: React.FormEvent<HTMLDivElement>, option?: IDropdownOption | IDropdownOption[], index?: number) => void;
     placeholder?: string;
@@ -95,6 +96,7 @@ const AsyncDropdown: React.FunctionComponent<AsyncDropdownProps> = ({
     required = false,
     disabled,
     multiSelect = false,
+    valueSeparator = "|",
     errorMessage,
     onChange,
     placeholder,
@@ -114,7 +116,7 @@ const AsyncDropdown: React.FunctionComponent<AsyncDropdownProps> = ({
     const [selectedItems, setSelectedItems] = React.useState<IDropdownOption[]>([]);
 
     const changeSelectedItems = React.useCallback(() => {
-        const keys = selectedKey !== "" ? selectedKey.split("|") : [];
+        const keys = selectedKey !== "" ? selectedKey.split(valueSeparator) : [];
         let items = [...selectedItems];
         if (keys.length === items.length) return;
         if (selectedKeys !== "" && selOptions.length && selectedKey === "") {
@@ -123,16 +125,16 @@ const AsyncDropdown: React.FunctionComponent<AsyncDropdownProps> = ({
         }
         items = keys.map(key => { return { key: key, text: key }; });
         if (!items.length) return;
-        if (items.map(item => item.key).join("|") === selectedKey) {
+        if (items.map(item => item.key).join(valueSeparator) === selectedKey) {
             // do nothing, unless
             if (!selectedItems.length) {
                 setSelectedItems(items);
             }
         } else {
-            setSelectedKeys(items.map(item => item.key).join("|"));
+            setSelectedKeys(items.map(item => item.key).join(valueSeparator));
             setSelectedItems(items);
         }
-    }, [selectedKey, selectedKeys, selectedItems, selOptions]);
+    }, [selectedKey, selectedKeys, selectedItems, selOptions, valueSeparator]);
 
     React.useEffect(() => {
         // only on mount, pre-populate selectedItems from url
@@ -170,7 +172,7 @@ const AsyncDropdown: React.FunctionComponent<AsyncDropdownProps> = ({
     React.useEffect(() => {
         if (multiSelect) {
             if (!selectedItems.length && selectedKey === "") return;
-            if (selectedItems.map(item => item.key).join("|") === selectedKey) return;
+            if (selectedItems.map(item => item.key).join(valueSeparator) === selectedKey) return;
             onChange(undefined, selectedItems, null);
         } else {
             if (!selectedItem || selectedItem?.key === selectedKey) return;
@@ -178,7 +180,7 @@ const AsyncDropdown: React.FunctionComponent<AsyncDropdownProps> = ({
                 onChange(undefined, selectedItem, selectedIdx);
             }
         }
-    }, [onChange, multiSelect, selectedItem, selectedIdx, selectedKey, selectedItems]);
+    }, [onChange, multiSelect, selectedItem, selectedIdx, selectedKey, selectedItems, valueSeparator]);
 
     if (multiSelect) {
         return options === undefined ?
@@ -348,11 +350,14 @@ interface QueriesActiveStateField extends BaseField {
 interface TargetClusterField extends BaseField {
     type: "target-cluster";
     multiSelect?: boolean;
+    valueSeparator?: string;
     value?: string;
 }
 
 interface TargetGroupField extends BaseField {
     type: "target-group";
+    multiSelect?: boolean;
+    valueSeparator?: string;
     value?: string;
 }
 
@@ -1160,16 +1165,18 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                 break;
             case "target-cluster":
                 field.value = field.value !== undefined ? field.value : "";
+                field.valueSeparator = field.valueSeparator !== undefined ? field.valueSeparator : "|";
                 retVal.push({
                     id: fieldID,
                     label: field.label,
                     field: <TargetClusterTextField
                         key={fieldID}
                         multiSelect={field.multiSelect}
+                        valueSeparator={field.valueSeparator}
                         selectedKey={field.value}
                         onChange={(ev, row) => {
                             if (field.multiSelect) {
-                                onChange(fieldID, (row as IDropdownOption[]).map(i => i.key).join("|"));
+                                onChange(fieldID, (row as IDropdownOption[]).map(i => i.key).join(field.valueSeparator));
                             } else {
                                 onChange(fieldID, (row as IDropdownOption).key);
                             }
@@ -1210,6 +1217,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                 break;
             case "target-group":
                 field.value = field.value !== undefined ? field.value : "";
+                field.valueSeparator = field.valueSeparator !== undefined ? field.valueSeparator : ",";
                 retVal.push({
                     id: fieldID,
                     label: field.label,
@@ -1217,7 +1225,15 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                         key={fieldID}
                         required={field.required}
                         selectedKey={field.value}
-                        onChange={(ev, row: IDropdownOption) => onChange(fieldID, row.key)}
+                        multiSelect={field.multiSelect}
+                        valueSeparator={field.valueSeparator}
+                        onChange={(ev, row) => {
+                            if (field.multiSelect) {
+                                onChange(fieldID, (row as IDropdownOption[]).map(i => i.key).join(field.valueSeparator));
+                            } else {
+                                onChange(fieldID, (row as IDropdownOption).key);
+                            }
+                        }}
                         placeholder={field.placeholder}
                     />
                 });

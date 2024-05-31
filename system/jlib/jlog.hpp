@@ -1272,7 +1272,7 @@ interface jlib_decl IContextLogger : extends IInterface
     virtual void logOperatorExceptionVA(IException *E, const char *file, unsigned line, const char *format, va_list args) const __attribute__((format(printf,5,0))) = 0;
     virtual void noteStatistic(StatisticKind kind, unsigned __int64 value) const = 0;
     virtual void setStatistic(StatisticKind kind, unsigned __int64 value) const = 0;
-    virtual void mergeStats(const CRuntimeStatisticCollection &from) const = 0;
+    virtual void mergeStats(unsigned activityId, const CRuntimeStatisticCollection &from) const = 0;
     virtual unsigned queryTraceLevel() const = 0;
 
     virtual const char *queryGlobalId() const = 0;

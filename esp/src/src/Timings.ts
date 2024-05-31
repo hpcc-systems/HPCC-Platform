@@ -69,17 +69,17 @@ export class Timings {
         .request({
             ScopeFilter: {
                 MaxDepth: 3,
-                ScopeTypes: { ScopeType: [] }
+                ScopeTypes: []
             },
             NestedFilter: {
                 Depth: 0,
-                ScopeTypes: { ScopeType: [] }
+                ScopeTypes: []
             },
             PropertiesToReturn: {
                 AllProperties: false,
                 AllStatistics: true,
                 AllHints: false,
-                Properties: { Property: ["WhenStarted", "TimeElapsed"] }
+                Properties: ["WhenStarted", "TimeElapsed"]
             },
             ScopeOptions: {
                 IncludeId: true,
@@ -210,17 +210,17 @@ export class Timings {
             this.fetchDetailsNormalizedPromise = Promise.all([this.wu.fetchDetailsMeta(), this.wu.fetchDetailsRaw({
                 ScopeFilter: {
                     MaxDepth: 999999,
-                    ScopeTypes: { ScopeType: [] }
+                    ScopeTypes: []
                 },
                 NestedFilter: {
                     Depth: 0,
-                    ScopeTypes: { ScopeType: [] }
+                    ScopeTypes: []
                 },
                 PropertiesToReturn: {
                     AllProperties: false,
                     AllStatistics: true,
                     AllHints: false,
-                    Properties: { Property: [] }
+                    Properties: []
                 },
                 ScopeOptions: {
                     IncludeId: true,

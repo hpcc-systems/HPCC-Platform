@@ -1244,8 +1244,18 @@ const CJHTreeNode *CDiskKeyIndex::loadNode(cycle_t * fetchCycles, offset_t pos, 
     nodesLoaded++;
     if (!useIO) useIO = io;
     unsigned nodeSize = keyHdr->getNodeSize();
+
+    //Use alloca() to allocate a buffer on the stack if the node size is small enough.
+    //Often the data could be read directly from the input files's buffer and not even be copied.
+    //Should we have a io->peek(pos, size) which returns a pointer if supported?
+    constexpr const size_t maxStackSize = 8192; // Default node size
     MemoryAttr ma;
-    char *nodeData = (char *) ma.allocate(nodeSize);
+    char *nodeData;
+    if (nodeSize <= maxStackSize)
+        nodeData = (char *) alloca(nodeSize);
+    else
+        nodeData = (char *) ma.allocate(nodeSize);
+    assertex(nodeData);
 
     CCycleTimer fetchTimer(fetchCycles != nullptr);
     if (useIO->read(pos, nodeSize, nodeData) != nodeSize)
