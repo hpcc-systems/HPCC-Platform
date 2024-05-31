@@ -1590,7 +1590,7 @@ char *EclAgent::getEnv(const char *name, const char *defaultValue) const
 
 void EclAgent::selectCluster(const char *newCluster)
 {
-    const char *oldCluster = queryWorkUnit()->queryClusterName();
+    StringAttr oldCluster = queryWorkUnit()->queryClusterName();
     if (getClusterType(clusterType)==HThorCluster)
     {
         // If the current cluster is an hthor cluster, it's an error to change it...
