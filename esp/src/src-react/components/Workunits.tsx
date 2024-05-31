@@ -1,5 +1,6 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Icon, Image, Link } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, DetailsRow, ICommandBarItemProps, IDetailsRowProps, Icon, Image, Link } from "@fluentui/react";
+import { hsl as d3Hsl } from "@hpcc-js/common";
 import { SizeMe } from "react-sizeme";
 import { CreateWUQueryStore, defaultSort, emptyFilter, Get, WUQueryStore, formatQuery } from "src/ESPWorkunit";
 import * as WsWorkunits from "src/WsWorkunits";
@@ -7,6 +8,8 @@ import { formatCost } from "src/Session";
 import nlsHPCC from "src/nlsHPCC";
 import { useConfirm } from "../hooks/confirm";
 import { useMyAccount } from "../hooks/user";
+import { useUserStore } from "../hooks/store";
+import { useLogicalClustersPalette } from "../hooks/platform";
 import { calcSearch, pushParams } from "../util/history";
 import { useHasFocus, useIsMounted } from "../hooks/util";
 import { HolyGrail } from "../layouts/HolyGrail";
@@ -61,12 +64,14 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
     const [showFilter, setShowFilter] = React.useState(false);
     const { currentUser } = useMyAccount();
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
+    const [showTimeline, setShowTimeline] = useUserStore<boolean>("workunits_showTimeline", true);
     const {
         selection, setSelection,
         pageNum, setPageNum,
         pageSize, setPageSize,
         total, setTotal,
         refreshTable } = useFluentStoreState({ page });
+    const [, , palette] = useLogicalClustersPalette();
 
     //  Refresh on focus  ---
     const isMounted = useIsMounted();
@@ -243,7 +248,15 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
                 pushParams(filter);
             }
         },
-    ], [currentUser, filter, hasFilter, refreshTable, selection, setShowAbortConfirm, setShowDeleteConfirm, store, total, uiState.hasNotCompleted, uiState.hasNotProtected, uiState.hasProtected, uiState.hasSelection]);
+        { key: "divider_5", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        {
+            key: "timeline", text: nlsHPCC.Timeline, canCheck: true, checked: showTimeline, iconProps: { iconName: "TimelineProgress" },
+            onClick: () => {
+                setShowTimeline(!showTimeline);
+                refreshTable.call();
+            }
+        },
+    ], [currentUser.username, filter, hasFilter, refreshTable, selection, setShowAbortConfirm, setShowDeleteConfirm, setShowTimeline, showTimeline, store, total, uiState.hasNotCompleted, uiState.hasNotProtected, uiState.hasProtected, uiState.hasSelection]);
 
     //  Selection  ---
     React.useEffect(() => {
@@ -274,6 +287,34 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
         setUIState(state);
     }, [selection]);
 
+    const renderRowTimings = React.useCallback((props: IDetailsRowProps, size: { readonly width: number; readonly height: number; }) => {
+        if (showTimeline && props) {
+            const total = props.item.timings.page.end - props.item.timings.page.start;
+            const startPct = 100 - (props.item.timings.start - props.item.timings.page.start) / total * 100;
+            const endPct = 100 - (props.item.timings.end - props.item.timings.page.start) / total * 100;
+            const backgroundColor = palette(props.item.Cluster);
+            const borderColor = d3Hsl(backgroundColor).darker().toString();
+
+            return <div style={{ position: "relative", width: `${size.width - 4}px` }}>
+                <DetailsRow {...props} />
+                <div style={{
+                    position: "absolute",
+                    top: 4,
+                    bottom: 4,
+                    left: `${endPct}%`,
+                    width: `${startPct - endPct}%`,
+                    backgroundColor,
+                    borderColor,
+                    borderWidth: 1,
+                    borderStyle: "solid",
+                    opacity: .33,
+                    pointerEvents: "none"
+                }} />
+            </div>;
+        }
+        return <DetailsRow {...props} />;
+    }, [palette, showTimeline]);
+
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}
         main={
@@ -293,6 +334,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
                                 setSelection={setSelection}
                                 setTotal={setTotal}
                                 refresh={refreshTable}
+                                onRenderRow={showTimeline ? props => renderRowTimings(props, size) : undefined}
                             ></FluentPagedGrid>
                         </div>
                     </div>
@@ -309,7 +351,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
             setPageNum={setPageNum}
             setPageSize={setPageSize}
             total={total}
-        ></FluentPagedFooter>}
+        ></FluentPagedFooter >}
         footerStyles={{}}
     />;
 };
