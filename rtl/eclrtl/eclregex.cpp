@@ -273,11 +273,13 @@ public:
         size32_t sourceSize = (isUTF8Enabled ? rtlUtf8Size(slen, str) : slen);
         size32_t replaceSize = (isUTF8Enabled ? rtlUtf8Size(rlen, replace) : rlen);
 
+        uint32_t replaceOptions = PCRE2_SUBSTITUTE_GLOBAL|PCRE2_SUBSTITUTE_EXTENDED;
+
         // Call it once to get the size of the output, then allocate memory for it;
         // Note that pcreLen will include space for a terminating null character;
         // we have to allocate memory for that byte to avoid a buffer overrun,
         // but we won't count that terminating byte
-        int replaceResult = pcre2_substitute_8(compiledRegex, (PCRE2_SPTR8)str, sourceSize, 0, PCRE2_SUBSTITUTE_GLOBAL|PCRE2_SUBSTITUTE_OVERFLOW_LENGTH, matchData, pcre2MatchContext8, (PCRE2_SPTR8)replace, replaceSize, nullptr, &pcreLen);
+        int replaceResult = pcre2_substitute_8(compiledRegex, (PCRE2_SPTR8)str, sourceSize, 0, replaceOptions|PCRE2_SUBSTITUTE_OVERFLOW_LENGTH, matchData, pcre2MatchContext8, (PCRE2_SPTR8)replace, replaceSize, nullptr, &pcreLen);
 
         if (replaceResult < 0 && replaceResult != PCRE2_ERROR_NOMEMORY)
         {
@@ -290,7 +292,7 @@ public:
         {
             out = (char *)rtlMalloc(pcreLen);
 
-            replaceResult = pcre2_substitute_8(compiledRegex, (PCRE2_SPTR8)str, sourceSize, 0, PCRE2_SUBSTITUTE_GLOBAL, matchData, pcre2MatchContext8, (PCRE2_SPTR8)replace, replaceSize, (PCRE2_UCHAR8 *)out, &pcreLen);
+            replaceResult = pcre2_substitute_8(compiledRegex, (PCRE2_SPTR8)str, sourceSize, 0, replaceOptions, matchData, pcre2MatchContext8, (PCRE2_SPTR8)replace, replaceSize, (PCRE2_UCHAR8 *)out, &pcreLen);
 
             // Note that, weirdly, pcreLen will now contain the number of code points
             // in the result *excluding* the null terminator, so pcreLen will
@@ -566,11 +568,13 @@ public:
         outlen = 0;
         pcre2_match_data_16 * matchData = pcre2_match_data_create_from_pattern_16(compiledRegex, pcre2GeneralContext16);
 
+        uint32_t replaceOptions = PCRE2_SUBSTITUTE_GLOBAL|PCRE2_SUBSTITUTE_EXTENDED;
+
         // Call it once to get the size of the output, then allocate memory for it;
         // Note that pcreLen will include space for a terminating null character;
         // we have to allocate memory for that byte to avoid a buffer overrun,
         // but we won't count that terminating byte
-        int replaceResult = pcre2_substitute_16(compiledRegex, (PCRE2_SPTR16)str, slen, 0, PCRE2_SUBSTITUTE_GLOBAL|PCRE2_SUBSTITUTE_OVERFLOW_LENGTH, matchData, pcre2MatchContext16, (PCRE2_SPTR16)replace, rlen, nullptr, &pcreLen);
+        int replaceResult = pcre2_substitute_16(compiledRegex, (PCRE2_SPTR16)str, slen, 0, replaceOptions|PCRE2_SUBSTITUTE_OVERFLOW_LENGTH, matchData, pcre2MatchContext16, (PCRE2_SPTR16)replace, rlen, nullptr, &pcreLen);
 
         if (replaceResult < 0 && replaceResult != PCRE2_ERROR_NOMEMORY)
         {
@@ -583,7 +587,7 @@ public:
         {
             out = (UChar *)rtlMalloc(pcreLen * sizeof(UChar));
 
-            replaceResult = pcre2_substitute_16(compiledRegex, (PCRE2_SPTR16)str, slen, 0, PCRE2_SUBSTITUTE_GLOBAL, matchData, pcre2MatchContext16, (PCRE2_SPTR16)replace, rlen, (PCRE2_UCHAR16 *)out, &pcreLen);
+            replaceResult = pcre2_substitute_16(compiledRegex, (PCRE2_SPTR16)str, slen, 0, replaceOptions, matchData, pcre2MatchContext16, (PCRE2_SPTR16)replace, rlen, (PCRE2_UCHAR16 *)out, &pcreLen);
 
             // Note that, weirdly, pcreLen will now contain the number of code points
             // in the result *excluding* the null terminator, so pcreLen will
