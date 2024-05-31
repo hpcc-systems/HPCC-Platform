@@ -945,6 +945,64 @@ extern void updateAffinity(unsigned __int64 affinity)
 
 //--------------------------------------------------------------------------------------------------------------------
 
+StringBuffer & ContextLogger::getStats(StringBuffer &s) const
+{
+    CriticalBlock block(statsCrit);
+    stats.toStr(s);
+
+    if (slowestActivityIds[0])
+    {
+        StringBuffer ids;
+        StringBuffer times;
+        for (unsigned i=0; i < MaxSlowActivities; i++)
+        {
+            if (!slowestActivityIds[i])
+                break;
+
+            if (i)
+            {
+                ids.append(",");
+                times.append(",");
+            }
+            ids.append(slowestActivityIds[i]);
+            formatStatistic(times, cycle_to_nanosec(slowestActivityTimes[i]), SMeasureTimeNs);
+        }
+        s.appendf(", slowestActivities={ ids=[%s] times=[%s] }", ids.str(), times.str());
+    }
+    return s;
+}
+
+
+void ContextLogger::mergeStats(unsigned activityId, const CRuntimeStatisticCollection &from) const
+{
+    CLeavableCriticalBlock block(statsCrit, !from.isThreadSafeMergeSource());
+
+    stats.merge(from);
+
+    //Record the times of the slowest N activities
+    if (activityId)
+    {
+        stat_type localTime = from.getStatisticValue(StCycleLocalExecuteCycles);
+        if (localTime >= minimumInterestingActivityCycles)
+        {
+            if (localTime > slowestActivityTimes[MaxSlowActivities-1])
+            {
+                unsigned pos = MaxSlowActivities-1;
+                while (pos > 0)
+                {
+                    if (localTime <= slowestActivityTimes[pos-1])
+                        break;
+                    slowestActivityIds[pos] = slowestActivityIds[pos-1];
+                    slowestActivityTimes[pos] = slowestActivityTimes[pos-1];
+                    pos--;
+                }
+                slowestActivityIds[pos] = activityId;
+                slowestActivityTimes[pos] = localTime;
+            }
+        }
+    }
+}
+
 void ContextLogger::exportStatsToSpan(bool failed, stat_type elapsedNs, unsigned memused, unsigned agentsDuplicates, unsigned agentsResends)
 {
     if (activeSpan->isRecording())
@@ -957,6 +1015,29 @@ void ContextLogger::exportStatsToSpan(bool failed, stat_type elapsedNs, unsigned
 
         StringBuffer prefix("");
         stats.exportToSpan(activeSpan, prefix);
+
+        if (slowestActivityIds[0])
+        {
+            //Even better if these were exported as arrays - needs extensions to our api
+            //Not commoned up with the code above because it is likely to change to arrays in the future.
+            StringBuffer ids;
+            StringBuffer times;
+            for (unsigned i=0; i < MaxSlowActivities; i++)
+            {
+                if (!slowestActivityIds[i])
+                    break;
+
+                if (i)
+                {
+                    ids.append(",");
+                    times.append(",");
+                }
+                ids.append(slowestActivityIds[i]);
+                times.append(cycle_to_nanosec(slowestActivityTimes[i]));
+            }
+            setSpanAttribute("slowest_activities.ids", ids);
+            setSpanAttribute("slowest_activities.times", times);
+        }
     }
 }
 

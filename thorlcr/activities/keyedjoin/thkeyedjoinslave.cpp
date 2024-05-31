@@ -1768,7 +1768,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                 CRuntimeStatisticCollection statsDelta(jhtreeCacheStatistics);
                 statsDelta.deserialize(mb);
                 CStatsContextLogger * contextLogger(contextLoggers[selected]);
-                contextLogger->mergeStats(statsDelta);
+                contextLogger->mergeStats(activity.queryActivityId(), statsDelta);
                 if (received == numRows)
                     break;
             }
