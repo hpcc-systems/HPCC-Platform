@@ -78,6 +78,7 @@ if type kube-score >/dev/null 2> /dev/null; then
         --ignore-container-cpu-limit \
         --ignore-container-memory-limit \
         --ignore-test deployment-has-poddisruptionbudget \
+        --ignore-test statefulset-has-poddisruptionbudget \
         - >results.txt 2>errors.txt
    if [ $? -ne 0 ]
    then

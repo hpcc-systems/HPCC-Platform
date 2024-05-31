@@ -404,6 +404,11 @@
               "ingress": {
                 "$ref" : "#/definitions/ingress"
               },
+              "externalTrafficPolicy": {
+                "type": "string",
+                "enum": ["Cluster", "Local"],
+                "description": "Route clients to all (Cluster), or local VM only (Local). Preserves client source IPs."
+              },
               "loadBalancerSourceRanges": {
                 "type": "array",
                 "items": { "type": "string" },
@@ -1291,6 +1296,11 @@
         "labels": {
           "type": "object",
           "additionalProperties": { "type": "string" }
+        },
+        "externalTrafficPolicy": {
+          "type": "string",
+          "enum": ["Cluster", "Local"],
+          "description": "Route clients to all (Cluster), or local VM only (Local). Preserves client source IPs."
         },
         "loadBalancerSourceRanges": {
           "type": "array",

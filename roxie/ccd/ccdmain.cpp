@@ -208,6 +208,7 @@ unsigned __int64 minFreeDiskSpace = 1024 * 0x100000;  // default to 1 GB
 unsigned socketCheckInterval = 5000;
 
 unsigned cacheReportPeriodSeconds = 5*60;
+stat_type minimumInterestingActivityCycles;
 
 StringBuffer logDirectory;
 StringBuffer pluginDirectory;
@@ -1317,6 +1318,9 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
 
         unsigned __int64 affinity = topology->getPropInt64("@affinity", 0);
         updateAffinity(affinity);
+
+        unsigned __int64 minimumInterestingActivityMs = topology->getPropInt64("@minimumInterestingActivityMs", 10);
+        minimumInterestingActivityCycles = nanosec_to_cycle(minimumInterestingActivityMs * 1'000'000);
 
         minFreeDiskSpace = topology->getPropInt64("@minFreeDiskSpace", (1024 * 0x100000)); // default to 1 GB
         mtu_size = topology->getPropInt("@mtuPayload", 0);

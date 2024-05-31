@@ -917,7 +917,7 @@ const Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
         return (this._hpccWU as HPCCWorkunit).fetchDetails({
             ScopeFilter: {
                 MaxDepth: 999999,
-                ScopeTypes: { ScopeType: ["graph"] }
+                ScopeTypes: ["graph"]
             },
             ScopeOptions: {
                 IncludeMatchedScopesInResults: true,
@@ -935,7 +935,7 @@ const Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
             },
             NestedFilter: {
                 Depth: 999999,
-                ScopeTypes: { ScopeType: ["activity"] }
+                ScopeTypes: ["activity"]
             },
             PropertiesToReturn: {
                 AllStatistics: false,
@@ -1085,8 +1085,50 @@ export function CreateWUQueryStore(): BaseStore<WsWorkunitsNS.WUQuery, typeof Wo
             request.Sortby = "ClusterTime";
         }
         return service.WUQuery(request).then(response => {
+            const page = {
+                start: undefined,
+                end: undefined
+            };
+            const data = response.Workunits.ECLWorkunit.map(wu => {
+                const start = Utility.wuidToDateTime(wu.Wuid);
+                if (!page.start || page.start > start) {
+                    page.start = start;
+                }
+                let timePartsSection = 0;
+                const end = new Date(start);
+                const timeParts = wu.TotalClusterTime.split(":");
+                while (timeParts.length) {
+                    const timePart = timeParts.pop();
+                    switch (timePartsSection) {
+                        case 0:
+                            end.setSeconds(end.getSeconds() + +timePart);
+                            break;
+                        case 1:
+                            end.setMinutes(end.getMinutes() + +timePart);
+                            break;
+                        case 2:
+                            end.setHours(end.getHours() + +timePart);
+                            break;
+                        case 3:
+                            end.setDate(end.getDate() + +timePart);
+                            break;
+                    }
+                    ++timePartsSection;
+                }
+                if (!page.end || page.end < end) {
+                    page.end = end;
+                }
+                return {
+                    ...Get(wu.Wuid, wu),
+                    timings: {
+                        start,
+                        end,
+                        page
+                    }
+                };
+            });
             return {
-                data: response.Workunits.ECLWorkunit.map(wu => Get(wu.Wuid, wu)),
+                data,
                 total: response.NumWUs
             };
         });

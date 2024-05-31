@@ -1862,9 +1862,19 @@ public:
              * if there are a lot of spill files, the merge opens them all and causes excessive
              * memory usage.
              */
-            size32_t compBlkSz = activity.getOptUInt(THOROPT_SORT_COMPBLKSZ, DEFAULT_SORT_COMPBLKSZ);
-            ActPrintLog(&activity, thorDetailedLogLevel, "%sSpilling will use compressed block size = %u", tracingPrefix.str(), compBlkSz);
-            spillableRows.setCompBlockSize(compBlkSz);
+            /*
+             * However.... HPCC-29385 Changed the way that compressed files are decompressed, so they are only decompressed one
+             * compression buffer at a time.  For LZ4 this means they can only ever expand to the compressed block size (typically 1MB)
+             * rather than 10s of times that space.
+             * LZW could still expand many times its block size, but the default for LZW is already 64K which is low enough.
+             * Therefore only set the compress block size if it has been explicitly set.
+              */
+            size32_t compBlkSz = activity.getOptUInt(THOROPT_SORT_COMPBLKSZ, 0);
+            if (compBlkSz)
+            {
+                ActPrintLog(&activity, thorDetailedLogLevel, "%sSpilling will use compressed block size = %u", tracingPrefix.str(), compBlkSz);
+                spillableRows.setCompBlockSize(compBlkSz);
+            }
         }
     }
     ~CThorRowCollectorBase()

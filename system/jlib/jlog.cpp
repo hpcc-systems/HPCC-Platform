@@ -2779,7 +2779,7 @@ public:
     virtual void setStatistic(StatisticKind kind, unsigned __int64 value) const
     {
     }
-    virtual void mergeStats(const CRuntimeStatisticCollection &from) const
+    virtual void mergeStats(unsigned activityId, const CRuntimeStatisticCollection &from) const
     {
     }
     virtual unsigned queryTraceLevel() const
