@@ -171,7 +171,7 @@ export class ECLArchiveWidget {
                 const scopesOptions: RecursivePartial<WsWorkunits.WUDetails> = {
                     ScopeFilter: {
                         MaxDepth: 999999,
-                        ScopeTypes: { ScopeType: ["graph"] }
+                        ScopeTypes: ["graph"]
                     },
                     ScopeOptions: {
                         IncludeMatchedScopesInResults: true,
@@ -189,7 +189,7 @@ export class ECLArchiveWidget {
                     },
                     NestedFilter: {
                         Depth: 999999,
-                        ScopeTypes: { ScopeType: ["activity"] }
+                        ScopeTypes: ["activity"]
                     },
                     PropertiesToReturn: {
                         AllStatistics: true,

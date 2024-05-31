@@ -1304,3 +1304,7 @@ export function wuidToDate(wuid: string): string {
 export function wuidToTime(wuid: string): string {
     return `${wuid.substring(10, 12)}:${wuid.substring(12, 14)}:${wuid.substring(14, 16)}`;
 }
+
+export function wuidToDateTime(wuid: string): Date {
+    return new Date(`${wuidToDate(wuid)}T${wuidToTime(wuid)}Z`);
+}

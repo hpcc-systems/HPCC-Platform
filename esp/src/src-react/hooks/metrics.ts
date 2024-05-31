@@ -104,12 +104,12 @@ export enum FetchStatus {
 
 const scopeFilterDefault: Partial<WsWorkunits.ScopeFilter> = {
     MaxDepth: 999999,
-    ScopeTypes: { ScopeType: [] }
+    ScopeTypes: []
 };
 
 const nestedFilterDefault: WsWorkunits.NestedFilter = {
     Depth: 0,
-    ScopeTypes: { ScopeType: [] }
+    ScopeTypes: []
 };
 
 export function useWorkunitMetrics(

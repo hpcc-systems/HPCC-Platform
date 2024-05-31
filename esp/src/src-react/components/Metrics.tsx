@@ -198,17 +198,17 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         .request({
             ScopeFilter: {
                 MaxDepth: 3,
-                ScopeTypes: { ScopeType: [] }
+                ScopeTypes: []
             },
             NestedFilter: {
                 Depth: 0,
-                ScopeTypes: { ScopeType: [] }
+                ScopeTypes: []
             },
             PropertiesToReturn: {
                 AllProperties: false,
                 AllStatistics: true,
                 AllHints: false,
-                Properties: { Property: ["WhenStarted", "TimeElapsed", "TimeLocalExecute"] }
+                Properties: ["WhenStarted", "TimeElapsed", "TimeLocalExecute"]
             },
             ScopeOptions: {
                 IncludeId: true,

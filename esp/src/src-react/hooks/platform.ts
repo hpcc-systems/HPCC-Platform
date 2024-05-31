@@ -6,6 +6,7 @@ import { Topology, WsTopology, WorkunitsServiceEx } from "@hpcc-js/comms";
 import { getBuildInfo, BuildInfo, fetchModernMode } from "src/Session";
 import { cmake_build_type, containerized, ModernMode } from "src/BuildInfo";
 import { sessionKeyValStore, userKeyValStore } from "src/KeyValStore";
+import { Palette } from "@hpcc-js/common";
 
 const logger = scopedLogger("src-react/hooks/platform.ts");
 
@@ -36,14 +37,18 @@ export function useBuildInfo(): [BuildInfo, { isContainer: boolean, currencyCode
     return [buildInfo, { isContainer, currencyCode, opsCategory }];
 }
 
+let g_targetCluster: Promise<WsTopology.TpLogicalCluster[]>;
 export function useLogicalClusters(): [WsTopology.TpLogicalCluster[] | undefined, WsTopology.TpLogicalCluster | undefined] {
     const [targetClusters, setTargetClusters] = React.useState<WsTopology.TpLogicalCluster[]>();
     const [defaultCluster, setDefaultCluster] = React.useState<WsTopology.TpLogicalCluster>();
 
     React.useEffect(() => {
-        const topology = Topology.attach({ baseUrl: "" });
+        if (!g_targetCluster) {
+            const topology = Topology.attach({ baseUrl: "" });
+            g_targetCluster = topology.fetchLogicalClusters();
+        }
         let active = true;
-        topology.fetchLogicalClusters().then(response => {
+        g_targetCluster.then(response => {
             if (active) {
                 setTargetClusters(response);
                 let firstRow: WsTopology.TpLogicalCluster;
@@ -68,6 +73,22 @@ export function useLogicalClusters(): [WsTopology.TpLogicalCluster[] | undefined
     }, []);
 
     return [targetClusters, defaultCluster];
+}
+
+export function useLogicalClustersPalette(): [WsTopology.TpLogicalCluster[] | undefined, WsTopology.TpLogicalCluster | undefined, Palette.OrdinalPaletteFunc] {
+    const [targetClusters, defaultCluster] = useLogicalClusters();
+
+    const palette = useConst(() => Palette.ordinal("workunits", ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf"]));
+
+    React.useEffect(() => {
+        if (targetClusters) {
+            targetClusters.forEach(cluster => {
+                palette(cluster.Name);
+            });
+        }
+    }, [palette, targetClusters]);
+
+    return [targetClusters, defaultCluster, palette];
 }
 
 let wuCheckFeaturesPromise;
