@@ -1246,6 +1246,7 @@ const CJHTreeNode *CDiskKeyIndex::loadNode(cycle_t * fetchCycles, offset_t pos, 
     unsigned nodeSize = keyHdr->getNodeSize();
     MemoryAttr ma;
     char *nodeData = (char *) ma.allocate(nodeSize);
+    assertex(nodeData);
 
     CCycleTimer fetchTimer(fetchCycles != nullptr);
     if (useIO->read(pos, nodeSize, nodeData) != nodeSize)
