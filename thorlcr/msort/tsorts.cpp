@@ -211,8 +211,19 @@ public:
                 rwFlags |= rw_compress;
                 rwFlags |= spillCompInfo;
                 compressedOverflowFile = true;
-                compBlkSz = activity.getOptUInt(THOROPT_SORT_COMPBLKSZ, DEFAULT_SORT_COMPBLKSZ);
-                ActPrintLog(&activity, "Creating compressed merged overflow file (block size = %u)", compBlkSz);
+
+                /*
+                * NB: HPCC-29385 Changed the way that compressed files are decompressed, so they are only decompressed one
+                * compression buffer at a time.  For LZ4 this means they can only ever expand to the compressed block size (typically 1MB)
+                * rather than 10s of times that space.
+                * LZW could still expand many times its block size, but the default for LZW is already 64K which is low enough.
+                * Therefore we default to 0 here, which causes createRowWriter to use the default block size for the compressor type.
+                */
+                compBlkSz = activity.getOptUInt(THOROPT_SORT_COMPBLKSZ, 0);
+                if (compBlkSz)
+                    ActPrintLog(&activity, "Creating compressed merged overflow file (block size = %u)", compBlkSz);
+                else
+                    ActPrintLog(&activity, "Creating compressed merged overflow file");
             }
         }
 
