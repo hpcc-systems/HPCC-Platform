@@ -123,27 +123,29 @@ Pass in dict with root and warnings
  {{- end -}}
  {{- range $cname, $ctypes := $ctx.components -}}
   {{- range $id, $component := $ctypes -}}
-   {{- if and (kindIs "map" $component) (not $component.disabled) -}}
-    {{- $hasResources := "" -}}
-    {{- if eq $cname "thor" -}}
-     {{- $hasResources = include "hpcc.hasResources" (dict "resources" $component.managerResources) -}}
-     {{- $hasResources = (eq $hasResources "true") | ternary (include "hpcc.hasResources" (dict "resources" $component.workerResources)) $hasResources -}}
-     {{- $hasResources = (eq $hasResources "true") | ternary (include "hpcc.hasResources" (dict "resources" $component.eclAgentResources)) $hasResources -}}
-    {{- else -}}
-     {{- $hasResources = include "hpcc.hasResources" (dict "resources" $component.resources) -}}
-    {{- end -}}
-    {{- if not $hasResources -}}
-     {{- $_ := set $ctx "missingResources" (append $ctx.missingResources ($component.name | default $id)) -}}
-    {{- end -}}
-    {{- /* Checks related to components that are used for cost reporting */ -}}
-    {{- /* (n.b. cpuRate ignored for components other than thor, eclagent and eclccserver)*/ -}}
-    {{- if has $cname (list "thor" "eclagent" "eclccserver") -}}
-     {{- if and $ctx.usingDefaultCpuCost (not $component.cost) -}}
-      {{- $_ := set $ctx "defaultCpuRateComponents" (append $ctx.defaultCpuRateComponents $component.name) -}}
+   {{- if (kindIs "map" $component) -}}
+    {{- if (not $component.disabled) -}}
+     {{- $hasResources := "" -}}
+     {{- if eq $cname "thor" -}}
+      {{- $hasResources = include "hpcc.hasResources" (dict "resources" $component.managerResources) -}}
+      {{- $hasResources = (eq $hasResources "true") | ternary (include "hpcc.hasResources" (dict "resources" $component.workerResources)) $hasResources -}}
+      {{- $hasResources = (eq $hasResources "true") | ternary (include "hpcc.hasResources" (dict "resources" $component.eclAgentResources)) $hasResources -}}
+     {{- else -}}
+      {{- $hasResources = include "hpcc.hasResources" (dict "resources" $component.resources) -}}
      {{- end -}}
-     {{- /* Components that are used for cost reporting require resources: warn if resources missing*/ -}}
      {{- if not $hasResources -}}
-      {{- $_ := set $ctx "missingResourcesForCosts" (append $ctx.missingResourcesForCosts ($component.name | default $id)) -}}
+      {{- $_ := set $ctx "missingResources" (append $ctx.missingResources ($component.name | default $id)) -}}
+     {{- end -}}
+     {{- /* Checks related to components that are used for cost reporting */ -}}
+     {{- /* (n.b. cpuRate ignored for components other than thor, eclagent and eclccserver)*/ -}}
+     {{- if has $cname (list "thor" "eclagent" "eclccserver") -}}
+      {{- if and $ctx.usingDefaultCpuCost (not $component.cost) -}}
+       {{- $_ := set $ctx "defaultCpuRateComponents" (append $ctx.defaultCpuRateComponents $component.name) -}}
+      {{- end -}}
+      {{- /* Components that are used for cost reporting require resources: warn if resources missing*/ -}}
+      {{- if not $hasResources -}}
+       {{- $_ := set $ctx "missingResourcesForCosts" (append $ctx.missingResourcesForCosts ($component.name | default $id)) -}}
+      {{- end -}}
      {{- end -}}
     {{- end -}}
    {{- end -}}
