@@ -115,6 +115,8 @@ global:
       type: LoadBalancer
       ingress:
       - {}
+      ## route traffic to local VM only. Also preserves source IPs
+      #externalTrafficPolicy: Local
       ## CIDRS allowed to access this service.
       #loadBalancerSourceRanges: [1.2.3.4/32, 5.6.7.8/32]
 
@@ -636,6 +638,8 @@ esp:
     #  url: "http://abc.com/def?g=1"
     ## CIDRS allowed to access this service.
     #loadBalancerSourceRanges: [1.2.3.4/32, 5.6.7.8/32]
+    ## route traffic to local VM only. Also preserves source IPs
+    #externalTrafficPolicy: Local
   # Increase maxRequestEntityLength when query deployments (or similar actions) start to fail because they surpass the maximum size
   #  default for EclWatch is 60M, default for other services is 8M
   #maxRequestEntityLength: 70M
