@@ -612,6 +612,7 @@ arrow::Status ParquetWriter::openWriteFile()
             destination.insert(destination.find(".parquet"), std::to_string(activityCtx->querySlave()));
         }
 
+        recursiveCreateDirectoryForFile(destination.c_str());
         std::shared_ptr<arrow::io::FileOutputStream> outfile;
         PARQUET_ASSIGN_OR_THROW(outfile, arrow::io::FileOutputStream::Open(destination));
 
