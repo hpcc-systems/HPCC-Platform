@@ -406,8 +406,8 @@ protected:
             {
                 Owned<CSendBucket> sendBucket = _sendBucket.getClear();
                 size32_t writerTotalSz = 0;
-                size32_t remoteSendSz = 0;
-                unsigned remoteRowCount = 0;
+                offset_t remoteSendSz = 0;
+                offset_t remoteRowCount = 0;
                 CMessageBuffer msg;
                 while (!owner.aborted)
                 {
