@@ -1856,6 +1856,27 @@ void EclAgent::setRetcode(int code)
     retcode = code;
 }
 
+
+void EclAgent::runWorkunitAnalyser(IWorkUnit * w, const char * optGraph)
+{
+    if (w->getDebugValueBool("analyzeWorkunit", agentTopology->getPropBool("@analyzeWorkunit", true)))
+    {
+        double costPerMs = calculateThorCost(1, getNodes());
+        IPropertyTree *analyzerOptions = agentTopology->queryPropTree("analyzerOptions");
+        analyseWorkunit(w, optGraph, analyzerOptions, costPerMs);
+    }
+}
+
+static constexpr bool defaultAnalyzeWhenComplete = true;
+void EclAgent::runWorkunitAnalyserAfterGraph(const char * graph)
+{
+    if (!wuRead->getDebugValueBool("analyzeWhenComplete", agentTopology->getPropBool("@analyzeWhenComplete", defaultAnalyzeWhenComplete)))
+    {
+        Owned<IWorkUnit> wu(updateWorkUnit());
+        runWorkunitAnalyser(wu, graph);
+    }
+}
+
 void EclAgent::doProcess()
 {
 #ifdef _DEBUG
@@ -2026,15 +2047,22 @@ void EclAgent::doProcess()
             break;
         }
 
-        if (w->getState() == WUStateCompleted && getClusterType(clusterType)==ThorLCRCluster)
+
+        if (getClusterType(clusterType)==ThorLCRCluster)
         {
-            if (w->getDebugValueBool("analyzeWorkunit", agentTopology->getPropBool("@analyzeWorkunit", true)))
+            if (w->getDebugValueBool("analyzeWhenComplete", agentTopology->getPropBool("@analyzeWhenComplete", defaultAnalyzeWhenComplete)))
             {
-                double costPerMs = calculateThorCost(1, getNodes());
-                IPropertyTree *analyzerOptions = agentTopology->queryPropTree("analyzerOptions");
-                analyseWorkunit(w.get(), analyzerOptions, costPerMs);
+                switch (w->getState())
+                {
+                case WUStateFailed:
+                case WUStateAborted:
+                case WUStateCompleted:
+                    runWorkunitAnalyser(w, nullptr);
+                    break;
+                }
             }
         }
+
         if(w->queryEventScheduledCount() > 0)
             switch(w->getState())
             {
