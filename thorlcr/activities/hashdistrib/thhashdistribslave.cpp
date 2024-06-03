@@ -2727,7 +2727,7 @@ public:
         prefix.append(bucketN).append('_').append(desc);
         GetTempFilePath(tempname, prefix.str());
         OwnedIFile iFile = createIFile(tempname.str());
-        spillFile.setown(new CFileOwner(iFile.getLink(), tempFileSizeTracker));
+        spillFile.setown(new CFileOwner(iFile, tempFileSizeTracker));
         if (owner.getOptBool(THOROPT_COMPRESS_SPILLS, true))
         {
             rwFlags |= rw_compress;

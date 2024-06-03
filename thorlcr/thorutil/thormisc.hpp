@@ -340,7 +340,7 @@ public:
 // simple class which takes ownership of the underlying file and deletes it on destruction
 class graph_decl CFileOwner : public CSimpleInterface, implements IInterface
 {
-    OwnedIFile iFile;
+    Linked<IFile> iFile;
     Linked<CFileSizeTracker> fileSizeTracker;
     offset_t fileSize = 0;
 public:
