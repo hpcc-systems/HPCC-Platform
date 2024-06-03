@@ -808,7 +808,7 @@ public:
         unsigned __int64 startPos;
         cursor.read(startPos);
         if (inputStream->tell() != startPos)
-            inputStream->reset(startPos);
+            inputStream->reset(startPos, UnknownOffset);
     }
 
     virtual offset_t getLocalOffset() override

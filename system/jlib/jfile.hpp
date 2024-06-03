@@ -29,6 +29,7 @@
 #include "jtime.hpp"
 #include "jsocket.hpp"
 #include "jstatcodes.h"
+#include "jstream.hpp"
 
 interface IFile;
 interface IFileIO;
@@ -309,42 +310,6 @@ extern jlib_decl IDiscretionaryLock *createDiscretionaryLock(IFileIO *fileio);
 
 
 // useful stream based reader 
-interface ISerialStream: extends IInterface
-{
-    virtual const void * peek(size32_t wanted,size32_t &got) = 0;   // try and ensure wanted bytes are available. 
-                                                                    // if got<wanted then approaching eof
-                                                                    // if got>wanted then got is size available in buffer
-
-    virtual void get(size32_t len, void * ptr) = 0;                 // exception if no data available
-    virtual bool eos() = 0;                                         // no more data
-    virtual void skip(size32_t sz) = 0;
-    virtual offset_t tell() const = 0;
-    virtual void reset(offset_t _offset,offset_t _flen=(offset_t)-1) = 0;       // input stream has changed - restart reading
-};
-
-/* example of reading a nul terminated string using ISerialStream peek and skip
-{
-    for (;;) {
-        const char *s = peek(1,got);
-        if (!s)
-            break;  // eof before nul detected;
-        const char *p = s;
-        const char *e = p+got;
-        while (p!=e) {
-            if (!*p) {
-                out.append(p-s,s);
-                skip(p-s+1); // include nul
-                return;
-            }
-            p++;
-        }
-        out.append(got,s);
-        skip(got);
-    }
-}
-*/
-
-
 
 interface IFileSerialStreamCallback  // used for CRC tallying
 {
