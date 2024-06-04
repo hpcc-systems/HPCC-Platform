@@ -30,6 +30,7 @@ class CSplitterOutput : public CSimpleInterfaceOf<IStartableEngineRowStream>, pu
     NSplitterSlaveActivity &activity;
     Semaphore writeBlockSem;
     bool started = false, stopped = false;
+    IRowStream *splitterStream = nullptr;
 
     unsigned outIdx;
     rowcount_t rec = 0, max = 0;
@@ -43,6 +44,7 @@ public:
     {
         started = stopped = false;
         rec = max = 0;
+        splitterStream = nullptr;
     }
     inline bool isStopped() const { return stopped; }
 
@@ -80,6 +82,7 @@ class NSplitterSlaveActivity : public CSlaveActivity, implements ISharedSmartBuf
     typedef CSlaveActivity PARENT;
 
     bool spill = false;
+    bool newSplitter = false;
     bool eofHit = false;
     bool writeBlocked = false, pagedOut = false;
     CriticalSection connectLock, prepareInputLock, writeAheadCrit;
@@ -91,7 +94,8 @@ class NSplitterSlaveActivity : public CSlaveActivity, implements ISharedSmartBuf
     unsigned connectedOutputCount = (unsigned)-1; // uninitialized
     rowcount_t recsReady = 0;
     Owned<IException> writeAheadException;
-    Owned<ISharedSmartBuffer> smartBuf;
+    Owned<ISharedRowStreamReader> sharedRowStream;
+    Owned<ISharedSmartBufferRowWriter> sharedSmartRowWriter;
     bool inputPrepared = false;
     bool inputConnected = false;
     unsigned numOutputs = 0;
@@ -161,6 +165,12 @@ public:
             spill = dV>0;
         ForEachItemIn(o, container.outputs)
             appendOutput(new CSplitterOutput(*this, o));
+        newSplitter = getOptBool("newsplitter", false);
+        if (getOptBool("forcenewsplitter", false))
+        {
+            newSplitter = true;
+            spill = true;
+        }
     }
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
@@ -219,21 +229,50 @@ public:
                 assertex(activeOutputCount); // must be >=1, as an output start() invoked prepareInput
                 if (1 == activeOutputCount)
                     return; // single output in use which will be read directly
-                if (smartBuf)
-                    smartBuf->reset();
+                if (sharedRowStream)
+                    sharedRowStream->reset();
                 else
                 {
                     if (spill)
                     {
                         StringBuffer tempname;
                         GetTempFilePath(tempname, "nsplit");
-                        smartBuf.setown(createSharedSmartDiskBuffer(this, tempname.str(), numOutputs, queryRowInterfaces(input)));
-                        ActPrintLog("Using temp spill file: %s", tempname.str());
+                        if (newSplitter)
+                        {
+                            SharedRowStreamReaderOptions options;
+                            if (isContainerized())
+                            {
+                                StringBuffer planeName;
+                                if (!getDefaultPlane(planeName, "@tempPlane", "temp"))
+                                    getDefaultPlane(planeName, "@spillPlane", "spill");
+                                size32_t blockedSequentialIOSize = getPlaneAttributeValue(planeName, BlockedSequentialIO, (size32_t)-1);
+                                if ((size32_t)-1 != blockedSequentialIOSize)
+                                    options.storageBlockSize = blockedSequentialIOSize;
+                            }
+                            options.totalCompressionBufferSize = getOptInt(THOROPT_SPLITTER_COMPRESSIONTOALK, options.totalCompressionBufferSize / 1024) * 1024;
+                            options.inMemMaxMem = getOptInt(THOROPT_SPLITTER_MAXROWMEMK, options.inMemMaxMem / 1024) * 1024;
+                            options.spillWriteAheadSize = getOptInt64(THOROPT_SPLITTER_WRITEAHEADK, options.spillWriteAheadSize / 1024) * 1024;
+                            options.inMemReadAheadGranularity = getOptInt(THOROPT_SPLITTER_READAHEADGRANULARITYK, options.inMemReadAheadGranularity / 1024) * 1024;
+                            options.inMemReadAheadGranularityRows = getOptInt(THOROPT_SPLITTER_READAHEADGRANULARITYROWS, options.inMemReadAheadGranularity);
+                            options.heapFlags = getOptInt("spillheapflags", options.heapFlags);
+
+                            ICompressHandler *compressHandler = options.totalCompressionBufferSize ? queryDefaultCompressHandler() : nullptr;
+                            sharedRowStream.setown(createSharedFullSpillingWriteAhead(this, numOutputs, inputStream, isGrouped(), options, this, tempname.str(), compressHandler));
+                        }
+                        else
+                        {
+                            Owned<ISharedSmartBuffer> smartBuf = createSharedSmartDiskBuffer(this, tempname.str(), numOutputs, this);
+                            sharedRowStream.set(smartBuf);
+                            sharedSmartRowWriter.setown(smartBuf->getWriter());
+                            ActPrintLog("Using temp spill file: %s", tempname.str());
+                        }
                     }
                     else
                     {
                         ActPrintLog("Spill is 'balanced'");
-                        smartBuf.setown(createSharedSmartMemBuffer(this, numOutputs, queryRowInterfaces(input), NSPLITTER_SPILL_BUFFER_SIZE));
+                        Owned<ISharedSmartBuffer> smartBuf = createSharedSmartMemBuffer(this, numOutputs, this, NSPLITTER_SPILL_BUFFER_SIZE);
+                        sharedRowStream.set(smartBuf);
+                        sharedSmartRowWriter.setown(smartBuf->getWriter());
                         cachedMetaInfo.canStall = true;
                     }
                     // mark any outputs already stopped
@@ -241,7 +280,7 @@ public:
                     {
                         CSplitterOutput *output = (CSplitterOutput *)outputs.item(o);
                         if (output->isStopped() || !connectedOutputSet->test(o))
-                            smartBuf->queryOutput(o)->stop();
+                            sharedRowStream->queryOutput(o)->stop();
                     }
                 }
                 if (!spill)
@@ -261,7 +300,7 @@ public:
             return inputStream->nextRow();
         if (recsReady == current && writeAheadException.get())
             throw LINK(writeAheadException);
-        return smartBuf->queryOutput(outIdx)->nextRow(); // will block until available
+        return sharedRowStream->queryOutput(outIdx)->nextRow(); // will block until available
     }
     rowcount_t writeahead(rowcount_t current, const bool &stopped, Semaphore &writeBlockSem, unsigned outIdx)
     {
@@ -311,7 +350,7 @@ public:
                     row.setown(inputStream->nextRow());
                     if (row)
                     {
-                        smartBuf->putRow(nullptr, this); // may call blocked() (see ISharedSmartBufferCallback impl. below)
+                        sharedSmartRowWriter->putRow(nullptr, this); // may call blocked() (see ISharedSmartBufferCallback impl. below)
                         ++recsReady;
                     }
                 }
@@ -321,10 +360,10 @@ public:
             {
                 ActPrintLog("Splitter activity, hit end of input @ rec = %" RCPF "d", recsReady);
                 eofHit = true;
-                smartBuf->flush(); // signals no more rows will be written.
+                sharedSmartRowWriter->flush(); // signals no more rows will be written.
                 break;
             }
-            smartBuf->putRow(row.getClear(), this); // can block if mem limited, but other readers can progress which is the point
+            sharedSmartRowWriter->putRow(row.getClear(), this); // can block if mem limited, but other readers can progress which is the point
             ++recsReady;
         }
         return recsReady;
@@ -339,12 +378,12 @@ public:
         }
         else
         {
-            if (smartBuf)
+            if (sharedRowStream)
             {
                 /* If no output has started reading (nextRow()), then it will not have been prepared
                  * If only 1 output is left, it will bypass the smart buffer when it starts.
                  */
-                smartBuf->queryOutput(outIdx)->stop();
+                sharedRowStream->queryOutput(outIdx)->stop();
             }
             ++stoppedOutputs;
             if (stoppedOutputs == connectedOutputCount)
@@ -357,8 +396,8 @@ public:
     void abort()
     {
         CSlaveActivity::abort();
-        if (smartBuf)
-            smartBuf->cancel();
+        if (sharedRowStream)
+            sharedRowStream->cancel();
     }
 // ISharedSmartBufferCallback impl.
     virtual void paged() { pagedOut = true; }
@@ -460,6 +499,11 @@ void CSplitterOutput::start()
     activity.prepareInput();
     if (1 == activity.activeOutputCount)
         max = RCMAX; // signals that no writeahead required
+    else
+    {
+        if (activity.newSplitter)
+            splitterStream = activity.sharedRowStream->queryOutput(outIdx);
+    }
     dataLinkStart();
 }
 
@@ -476,10 +520,16 @@ void CSplitterOutput::stop()
 const void *CSplitterOutput::nextRow()
 {
     ActivityTimer t(slaveTimerStats, activity.queryTimeActivities());
-    if (rec == max) // NB: max will be RCMAX if activeOutputCount == 1
-        max = activity.writeahead(max, activity.queryAbortSoon(), writeBlockSem, outIdx);
-    const void *row = activity.nextRow(outIdx, rec); // pass ptr to max if need more
-    ++rec;
+    const void *row;
+    if (splitterStream)
+        row = splitterStream->nextRow();
+    else
+    {
+        if (rec == max) // NB: max will be RCMAX if activeOutputCount == 1
+            max = activity.writeahead(max, activity.queryAbortSoon(), writeBlockSem, outIdx);
+        row = activity.nextRow(outIdx, rec); // pass ptr to max if need more
+        ++rec;
+    }
     if (row)
         dataLinkIncrement();
     return row;
