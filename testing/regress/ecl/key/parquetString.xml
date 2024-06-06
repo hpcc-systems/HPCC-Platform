@@ -1,0 +1,8 @@
+<Dataset name='ComparisonResult'>
+ <Row><s1>Hello     </s1><s2>World               </s2><s3>Test Data 1                   </s3></Row>
+ <Row><s1>HPCC      </s1><s2>Systems             </s2><s3>Test Data 2                   </s3></Row>
+ <Row><s1>Parquet   </s1><s2>I/O                 </s2><s3>Test Data 3                   </s3></Row>
+</Dataset>
+<Dataset name='TestResult'>
+ <Row><TestResult>All records match</TestResult></Row>
+</Dataset>

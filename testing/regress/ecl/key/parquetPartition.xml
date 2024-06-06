@@ -1,0 +1,10 @@
+<Dataset name='HivePartitionedSampleData'>
+ <Row><id>1</id><name>Alice                    </name><age>30</age><city>New York                                          </city></Row>
+ <Row><id>2</id><name>Bob                      </name><age>25</age><city>Los Angeles                                       </city></Row>
+ <Row><id>3</id><name>Charlie                  </name><age>40</age><city>Chicago                                           </city></Row>
+</Dataset>
+<Dataset name='DirPartitionedSampleData'>
+ <Row><id>1</id><name>Alice                    </name><age>30</age><city>New York                                          </city></Row>
+ <Row><id>2</id><name>Bob                      </name><age>25</age><city>Los Angeles                                       </city></Row>
+ <Row><id>3</id><name>Charlie                  </name><age>40</age><city>Chicago                                           </city></Row>
+</Dataset>
