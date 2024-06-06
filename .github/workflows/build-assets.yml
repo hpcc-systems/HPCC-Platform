@@ -199,6 +199,11 @@ jobs:
             # docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} ${{ steps.vars.outputs.docker_tag_candidate_base }} "cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/build ${{ needs.preamble.outputs.cmake_docker_config }} -D$plugin=ON -DCONTAINERIZED=OFF -DCPACK_STRIP_FILES=ON"
             # docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} ${{ steps.vars.outputs.docker_tag_candidate_base }} "cmake --build /hpcc-dev/build --parallel $(nproc) --target package" 
           done
+          cd ${{ needs.preamble.outputs.folder_build }}
+          packages=($(ls -1 hpccsystems-*))
+          for i in "${packages[@]}"; do
+            md5sum "$i" > "$i.md5sum"
+          done
 
       - name: CMake Containerized Packages (community)
         if: ${{ !matrix.ln && matrix.container && !matrix.documentation }}
@@ -233,7 +238,16 @@ jobs:
           allowUpdates: true
           generateReleaseNotes: false
           prerelease: ${{ contains(github.ref, '-rc') }}
-          artifacts: "${{ needs.preamble.outputs.folder_build }}/*.deb,${{ needs.preamble.outputs.folder_build }}/*.rpm,${{ needs.preamble.outputs.folder_build }}/Release/docs/*.zip,${{ needs.preamble.outputs.folder_build }}/Release/docs/EN_US/*.zip,${{ needs.preamble.outputs.folder_build }}/Release/docs/PT_BR/*.zip,${{ needs.preamble.outputs.folder_build }}/docs/EN_US/EclipseHelp/*.zip,${{ needs.preamble.outputs.folder_build }}/docs/EN_US/HTMLHelp/*.zip,${{ needs.preamble.outputs.folder_build }}/docs/PT_BR/HTMLHelp/*.zip"
+          artifacts: |
+            ${{ needs.preamble.outputs.folder_build }}/*.deb,
+            ${{ needs.preamble.outputs.folder_build }}/*.rpm,
+            ${{ needs.preamble.outputs.folder_build }}/Release/docs/*.zip,
+            ${{ needs.preamble.outputs.folder_build }}/Release/docs/EN_US/*.zip,
+            ${{ needs.preamble.outputs.folder_build }}/Release/docs/PT_BR/*.zip,
+            ${{ needs.preamble.outputs.folder_build }}/docs/EN_US/EclipseHelp/*.zip,
+            ${{ needs.preamble.outputs.folder_build }}/docs/EN_US/HTMLHelp/*.zip,
+            ${{ needs.preamble.outputs.folder_build }}/docs/PT_BR/HTMLHelp/*.zip,
+            ${{ needs.preamble.outputs.folder_build }}/*.md5sum
 
       - name: Locate k8s deb file (community)
         if: ${{ !matrix.ln && matrix.container && !matrix.documentation }}
