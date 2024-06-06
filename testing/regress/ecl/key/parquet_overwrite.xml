@@ -1,0 +1,2 @@
+<Exception><Source>eclagent</Source><Message>Error: 0: parquet: The target file /var/lib/HPCCSystems/mydropzone/SingleRowTest.parquet already exists. To delete the file set the overwrite option to true.</Message></Exception>
+

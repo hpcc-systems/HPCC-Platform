@@ -131,8 +131,10 @@ enum ParquetArrayType
     LargeBinaryType,
     DecimalType,
     ListType,
+    LargeListType,
     StructType,
-    RealType
+    RealType,
+    FixedSizeBinaryType
 };
 
 /**
@@ -270,6 +272,15 @@ public:
         size = 8;
         return arrow::Status::OK();
     }
+
+    arrow::Status Visit(const arrow::FixedSizeBinaryArray &array)
+    {
+        fixedSizeBinaryArr = &array;
+        type = FixedSizeBinaryType;
+        size = array.byte_width();
+        return arrow::Status::OK();
+    }
+
     arrow::Status Visit(const arrow::StringArray &array)
     {
         stringArr = &array;
@@ -314,6 +325,12 @@ public:
         type = ListType;
         return arrow::Status::OK();
     }
+    arrow::Status Visit(const arrow::LargeListArray &array)
+    {
+        largeListArr = &array;
+        type = LargeListType;
+        return arrow::Status::OK();
+    }
     arrow::Status Visit(const arrow::StructArray &array)
     {
         structArr = &array;
@@ -341,6 +358,7 @@ public:
     const arrow::HalfFloatArray *halfFloatArr = nullptr;
     const arrow::FloatArray *floatArr = nullptr;
     const arrow::DoubleArray *doubleArr = nullptr;
+    const arrow::FixedSizeBinaryArray *fixedSizeBinaryArr = nullptr;
     const arrow::StringArray *stringArr = nullptr;
     const arrow::LargeStringArray *largeStringArr = nullptr;
     const arrow::BinaryArray *binArr = nullptr;
@@ -348,6 +366,7 @@ public:
     const arrow::Decimal128Array *decArr = nullptr;
     const arrow::Decimal256Array *largeDecArr = nullptr;
     const arrow::ListArray *listArr = nullptr;
+    const arrow::LargeListArray *largeListArr = nullptr;
     const arrow::StructArray *structArr = nullptr;
 };
 

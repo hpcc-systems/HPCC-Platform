@@ -2,7 +2,6 @@
 //noroxie
 //class=embedded
 //class=file
-//class=parquet
 //version compressionType='UNCOMPRESSED'
 //version compressionType='Snappy'
 //version compressionType='GZip'

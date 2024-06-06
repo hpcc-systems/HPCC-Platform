@@ -1,0 +1,25 @@
+<Dataset name='HiveData1'>
+ <Row><ID>2</ID><NAME>Bob</NAME><AGE>34</AGE></Row>
+ <Row><ID>4</ID><NAME>David</NAME><AGE>56</AGE></Row>
+</Dataset>
+<Dataset name='HiveData2'>
+ <Row><ID>1</ID><NAME>Alice</NAME><AGE>23</AGE></Row>
+ <Row><ID>3</ID><NAME>Charlie</NAME><AGE>45</AGE></Row>
+ <Row><ID>5</ID><NAME>Eve</NAME><AGE>67</AGE></Row>
+</Dataset>
+<Dataset name='DirData1'>
+ <Row><ID>1</ID><NAME>Alice</NAME><AGE>23</AGE><COUNTRY>US</COUNTRY></Row>
+ <Row><ID>3</ID><NAME>Charlie</NAME><AGE>45</AGE><COUNTRY>US</COUNTRY></Row>
+ <Row><ID>5</ID><NAME>Eve</NAME><AGE>67</AGE><COUNTRY>US</COUNTRY></Row>
+</Dataset>
+<Dataset name='DirData2'>
+ <Row><ID>1</ID><NAME>Alice</NAME><AGE>23</AGE><COUNTRY>US</COUNTRY></Row>
+ <Row><ID>3</ID><NAME>Charlie</NAME><AGE>45</AGE><COUNTRY>US</COUNTRY></Row>
+ <Row><ID>5</ID><NAME>Eve</NAME><AGE>67</AGE><COUNTRY>US</COUNTRY></Row>
+</Dataset>
+<Dataset name='HivePartitioningResult'>
+ <Row><HivePartitioningResult>Pass: Hive Partitioning</HivePartitioningResult></Row>
+</Dataset>
+<Dataset name='DirectoryPartitioningResult'>
+ <Row><DirectoryPartitioningResult>Pass: Directory Partitioning</DirectoryPartitioningResult></Row>
+</Dataset>

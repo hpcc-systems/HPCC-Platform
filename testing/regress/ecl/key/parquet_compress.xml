@@ -1,0 +1,55 @@
+<Dataset name='BooleanData'>
+ <Row><testid>0</testid><testname>aaa</testname><value>false</value></Row>
+ <Row><testid>1</testid><testname>aab</testname><value>false</value></Row>
+ <Row><testid>2</testid><testname>aac</testname><value>true</value></Row>
+</Dataset>
+<Dataset name='IntegerData'>
+ <Row><testid>10</testid><testname>aai</testname><value>123</value></Row>
+ <Row><testid>11</testid><testname>aaj</testname><value>-987</value></Row>
+ <Row><testid>12</testid><testname>aak</testname><value>0</value></Row>
+</Dataset>
+<Dataset name='RealData'>
+ <Row><testid>20</testid><testname>aas</testname><value>3.14</value></Row>
+ <Row><testid>21</testid><testname>aat</testname><value>-0.5</value></Row>
+ <Row><testid>22</testid><testname>aau</testname><value>123.456</value></Row>
+</Dataset>
+<Dataset name='DecimalData'>
+ <Row><testid>30</testid><testname>abc</testname><value>123.456789</value></Row>
+ <Row><testid>31</testid><testname>abd</testname><value>-987.6543209999999</value></Row>
+ <Row><testid>32</testid><testname>abe</testname><value>0.000001</value></Row>
+</Dataset>
+<Dataset name='StringData'>
+ <Row><testid>40</testid><testname>abm</testname><value>Hello, World!</value></Row>
+ <Row><testid>41</testid><testname>abn</testname><value>Data Science</value></Row>
+ <Row><testid>42</testid><testname>abo</testname><value>12345</value></Row>
+</Dataset>
+<Dataset name='QStringData'>
+ <Row><testid>50</testid><testname>abw</testname><value>THIS IS A &quot;Q&quot; STRING.</value></Row>
+ <Row><testid>51</testid><testname>abx</testname><value>ANOTHER &quot;EXAMPLE&quot; HERE.</value></Row>
+ <Row><testid>52</testid><testname>aby</testname><value>QSTRINGS ARE USEFUL!</value></Row>
+</Dataset>
+<Dataset name='UnicodeData'>
+ <Row><testid>60</testid><testname>acg</testname><value>こんにちは、世界！</value></Row>
+ <Row><testid>61</testid><testname>ach</testname><value>Unicode characters: ḸḹḾ</value></Row>
+ <Row><testid>62</testid><testname>aci</testname><value>Ṏ Beautiful Unicode Ṙ</value></Row>
+</Dataset>
+<Dataset name='UTF8Data'>
+ <Row><testid>70</testid><testname>acq</testname><value>Café au lait ☕</value></Row>
+ <Row><testid>71</testid><testname>acr</testname><value>🎉 UTF-8 Characters 🎉  </value></Row>
+ <Row><testid>72</testid><testname>acs</testname><value>Special characters: ©®™</value></Row>
+</Dataset>
+<Dataset name='DataData'>
+ <Row><testid>80</testid><testname>ada</testname><value>01A48D8414D848E900</value></Row>
+ <Row><testid>81</testid><testname>adb</testname><value>01F48AB446A76F8923</value></Row>
+ <Row><testid>82</testid><testname>adc</testname><value>01A48EC793A76F9400</value></Row>
+</Dataset>
+<Dataset name='VarstringData'>
+ <Row><testid>90</testid><testname>adk</testname><value>Short text</value></Row>
+ <Row><testid>91</testid><testname>adl</testname><value>A longer variable-length string</value></Row>
+ <Row><testid>92</testid><testname>adm</testname><value>Strings are flexible!</value></Row>
+</Dataset>
+<Dataset name='VarunicodeData'>
+ <Row><testid>100</testid><testname>adu</testname><value>Variable-length Unicode: こんにちは、世界！</value></Row>
+ <Row><testid>101</testid><testname>adv</testname><value>🌟 Variable-length Unicode Symbols 🌟</value></Row>
+ <Row><testid>102</testid><testname>adw</testname><value>Unicode flexibility is awesome!</value></Row>
+</Dataset>

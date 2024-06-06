@@ -1,0 +1,8 @@
+<Dataset name='InitialData'>
+ <Row><id>1</id><name>Alice</name></Row>
+ <Row><id>2</id><name>Bob</name></Row>
+</Dataset>
+<Dataset name='UpdatedData'>
+ <Row><id>1</id><name>Alice</name><age>25</age></Row>
+ <Row><id>2</id><name>Bob</name><age>30</age></Row>
+</Dataset>
