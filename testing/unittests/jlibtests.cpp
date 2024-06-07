@@ -4549,4 +4549,67 @@ public:
 CPPUNIT_TEST_SUITE_REGISTRATION( JLibStringTest );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JLibStringTest, "JLibStringTest" );
 
+// ========================================
+
+class getaddrinfotest : public CppUnit::TestFixture
+{
+public:
+    CPPUNIT_TEST_SUITE(getaddrinfotest);
+        CPPUNIT_TEST(testaddr);
+    CPPUNIT_TEST_SUITE_END();
+
+/*
+ *  can disable timeout with:
+ *
+ *  <Software>
+ *    <Globals disableDNSTimeout="true">
+ *
+ *  global:
+ *    expert:
+ *      disableDNSTimeout: true
+ */
+
+    void testaddr1(const char *_name, unsigned timeoutms)
+    {
+        StringBuffer name(_name);
+
+        SocketEndpoint ep;
+        int srtn = ep.ipset(name.str(), timeoutms);
+
+        if (srtn)
+        {
+            StringBuffer ipstr;
+            ep.getIpText(ipstr);
+            DBGLOG("%s (%d) -> %s", name.str(), (int)timeoutms, ipstr.str());
+        }
+        else
+        {
+            DBGLOG("%s (%d) -> %s", name.str(), (int)timeoutms, "failed");
+        }
+        DBGLOG(" ");
+    }
+
+    void testaddr()
+    {
+        fflush(NULL);
+        DBGLOG("testaddr:");
+
+        for (int i=0; i<10; i++)
+        {
+            testaddr1("mck1.com", INFINITE);
+            testaddr1("mck1.com", 5000);
+            testaddr1("mck1.com", 5);
+            testaddr1("mck101.com", INFINITE);
+            testaddr1("mck101.com", 500);
+        }
+
+        DBGLOG("testaddr complete");
+        fflush(NULL);
+        Sleep(7000);
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( getaddrinfotest );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( getaddrinfotest, "getaddrinfotest" );
+
 #endif // _USE_CPPUNIT
