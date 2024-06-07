@@ -509,7 +509,7 @@
 
               <entry>components</entry>
 
-              <entry></entry>
+              <entry/>
             </row>
           </tbody>
         </tgroup>
@@ -839,8 +839,43 @@
         format:</para>
 
         <programlisting>ds := DATASET('~remote::hpcc2::somescope1::somelfn1', rec);</programlisting>
+      </sect3>
 
-        <para></para>
+      <sect3>
+        <title>Preferred Storage</title>
+
+        <para>The <emphasis>preferredReadPlanes</emphasis> option is available
+        for each type of cluster--hThor, Thor, and Roxie. </para>
+
+        <para>This option is only significant for logical files which reside
+        on multiple storage planes. When specified, the HPCC Systems platform
+        will seek to read files from the preferred plane(s) if a file resides
+        on them. These preferred planes must exist and be defined in
+        <emphasis>storage.planes </emphasis></para>
+
+        <para>The following is an example of a Thor cluster configured with
+        the preferredDataReadPlanes option.</para>
+
+        <programlisting>thor: 
+- name: thor 
+  prefix: thor 
+  numWorkers: 2
+  maxJobs: 4
+  maxGraphs: 3 
+  preferredDataReadPlanes: 
+  - data-copy
+  - indexdata-copy
+</programlisting>
+
+        <para>In the above example, running a query that reads a file that
+        resides on both "data" and "data-copy" (in that order) normally would
+        read the first copy on "data". With that
+        <emphasis>preferredDataReadPlanes</emphasis> specified, if that file
+        also resides on "data-copy", Thor will read that copy.</para>
+
+        <para>This can be useful when there are multiple copies of files on
+        different planes with different characteristics that can impact
+        performance.</para>
       </sect3>
     </sect2>
 
@@ -1031,7 +1066,7 @@ thor:
         integrating applications in different domains. CORS defines how client
         web applications in one domain can interact with resources in another
         domain. You can configure CORS support settings in the ESP section of
-        the values.yaml file as illustrated below: </para>
+        the values.yaml file as illustrated below:</para>
 
         <programlisting>esp:
 - name: eclwatch
@@ -1297,9 +1332,9 @@ thor:
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
-            <colspec colwidth="125.55pt" />
+            <colspec colwidth="125.55pt"/>
 
-            <colspec />
+            <colspec/>
 
             <tbody>
               <row>

@@ -1027,7 +1027,7 @@ void writeDelta(StringBuffer &xml, IFile &iFile, const char *msg="", unsigned re
         {
             exception.setown(e);
             StringBuffer s(msg);
-            IERRLOG(e, s.append("writeDelta, failed").str());
+            OWARNLOG(e, s.append("writeDelta, failed").str());
         }
         if (!exception.get())
             break;
@@ -1035,7 +1035,7 @@ void writeDelta(StringBuffer &xml, IFile &iFile, const char *msg="", unsigned re
             return;
         if (0 == --_retryAttempts)
         {
-            IWARNLOG("writeDelta, too many retry attempts [%d]", retryAttempts);
+            DISLOG("writeDelta, too many retry attempts [%d]", retryAttempts);
             return;
         }
         exception.clear();
@@ -1218,7 +1218,7 @@ class CDeltaWriter : implements IThreaded
             {
                 exception.setown(e);
                 StringBuffer err("Saving external (backup): ");
-                LOG(MCoperatorError, e, err.append(rL).str());
+                OERRLOG(e, err.append(rL).str());
             }
             if (!exception.get())
                 break;
@@ -1254,7 +1254,7 @@ class CDeltaWriter : implements IThreaded
             {
                 exception.setown(e);
                 StringBuffer err("Removing external (backup): ");
-                LOG(MCoperatorWarning, e, err.append(rL).str());
+                OWARNLOG(e, err.append(rL).str());
             }
             if (!exception.get())
                 break;
@@ -1492,7 +1492,7 @@ public:
             if (*_name)
                 s.append("in property ").append(_name);
             Owned<IException> e = MakeSDSException(SDSExcpt_MissingExternalFile, "%s", filename.str());
-            LOG(MCoperatorWarning, e, s.str());
+            OWARNLOG(e, s.str());
             if (withValue)
             {
                 StringBuffer str("EXTERNAL BINARY FILE: \"");
@@ -1574,7 +1574,7 @@ public:
             if (name && *name)
                 s.append("in property ").append(name);
             Owned<IException> e = MakeSDSException(SDSExcpt_MissingExternalFile, "%s", filename.str());
-            LOG(MCoperatorWarning, e, s.str());
+            OWARNLOG(e, s.str());
             StringBuffer str("EXTERNAL XML FILE: \"");
             str.append(filename.str()).append("\" MISSING");
             tree.setown(createPTree(owner.queryName()));
@@ -2102,7 +2102,7 @@ void CBinaryFileExternal::readValue(const char *name, MemoryBuffer &mb)
     {
         StringBuffer s("Missing external file ");
         Owned<IException> e = MakeSDSException(SDSExcpt_MissingExternalFile, "%s", filename.str());
-        LOG(MCoperatorWarning, e, s.str());
+        OWARNLOG(e, s.str());
         StringBuffer str("EXTERNAL BINARY FILE: \"");
         str.append(filename.str()).append("\" MISSING");
         CPTValue v(str.length()+1, str.str(), false);
@@ -2148,7 +2148,7 @@ void CBinaryFileExternal::read(const char *name, IPropertyTree &owner, MemoryBuf
             if (*_name)
                 s.append("in property ").append(_name);
             Owned<IException> e = MakeSDSException(SDSExcpt_MissingExternalFile, "%s", filename.str());
-            LOG(MCoperatorWarning, e, s.str());
+            OWARNLOG(e, s.str());
             StringBuffer str("EXTERNAL BINARY FILE: \"");
             str.append(filename.str()).append("\" MISSING");
             CPTValue v(str.length()+1, str.str(), false);
@@ -2597,7 +2597,7 @@ public:
             try { SDSManager->deleteExternal(index); }
             catch (IException *e)
             {
-                LOG(MCoperatorWarning, e, StringBuffer("Deleting external reference for ").append(queryName()).str());
+                OWARNLOG(e, StringBuffer("Deleting external reference for ").append(queryName()).str());
                 e->Release();
             }
         }
@@ -4723,7 +4723,7 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
         mb.append(e->errorMessage(s).str());
         StringBuffer clientUrl("EXCEPTION in reply to client ");
         mb.getSender().getEndpointHostText(clientUrl);
-        LOG(MCoperatorError, e);
+        OERRLOG(e);
     }
     try {
         CheckTime block10("DAMP_REQUEST reply");
@@ -4959,7 +4959,7 @@ IPropertyTree *loadStore(const char *storeFilename, unsigned edition, IPTreeMake
     catch (DALI_CATCHALL)
     {
         IException *e = MakeStringException(0, "Unknown exception - loading store file : %s", storeFilename);
-        LOG(MCoperatorDisaster, e, "");
+        DISLOG(e);
         if (!logErrorsOnly)
             throw;
         e->Release();
@@ -5109,7 +5109,7 @@ public:
                             t += idlePeriodSecs;
                             if (t/3600 >= STORENOTSAVE_WARNING_PERIOD && ((t-lastWarning)/3600>(STORENOTSAVE_WARNING_PERIOD/2)))
                             {
-                                OWARNLOG("Store has not been saved for %d hours", t/3600);
+                                OERRLOG("Store has not been saved for %d hours", t/3600);
                                 lastWarning = t;
                             }
                         }
@@ -5662,7 +5662,7 @@ public:
             }
             catch (IException *e)
             {
-                OERRLOG(e, "Exception(1) - Error saving store file");
+                DISLOG(e, "Exception(1) - Error saving store file");
                 iFileIOTmpStore.clear();
                 iFileTmpStore->remove();
                 throw;
@@ -5675,7 +5675,7 @@ public:
             refreshStoreInfo();
             if (storeInfo.edition != edition)
             {
-                OWARNLOG("Another process has updated the edition whilst saving the store: %s", newStoreNamePath.str());
+                WARNLOG("Another process has updated the edition whilst saving the store: %s", newStoreNamePath.str());
                 iFileTmpStore->remove();
                 return;
             }
@@ -5701,7 +5701,7 @@ public:
                 catch (IException *e)
                 {
                     StringBuffer s("Exception(2) - Error saving store file");
-                    OERRLOG(e, s.str());
+                    DISLOG(e, s.str());
                     e->Release();
                     return;
                 }
@@ -5710,7 +5710,7 @@ public:
                     try { renameDelta(edition, newEdition, remoteBackupLocation); }
                     catch (IException *e)
                     {
-                        LOG(MCoperatorError, e, "Failure handling backup");
+                        OERRLOG(e, "Failure handling backup");
                         e->Release();
                     }
                 }
@@ -5740,7 +5740,7 @@ public:
             catch (IException *e)
             {
                 StringBuffer s;
-                LOG(MCoperatorError, e, s.append("Failure to backup dali to remote location: ").append(remoteBackupLocation));
+                OERRLOG(e, s.append("Failure to backup dali to remote location: ").append(remoteBackupLocation));
                 e->Release();
             }
 
@@ -5753,7 +5753,7 @@ public:
         catch (IException *e)
         {
             StringBuffer s("Exception(3) - Error saving store file");
-            OERRLOG(e, s.str());
+            DISLOG(e, s.str());
             e->Release();
         }
         if (done)
@@ -6484,12 +6484,12 @@ void CCovenSDSManager::loadStore(const char *storeName, const bool *abort)
     }
     catch (IException *e)
     {
-        OERRLOG(e, "Exception - Failed to load main store");
+        DISLOG(e, "Exception - Failed to load main store");
         throw;
     }
     catch (DALI_CATCHALL)
     {
-        OERRLOG("Unknown exception - Failed to load main store");
+        DISLOG("Unknown exception - Failed to load main store");
         throw;
     }
 
@@ -6503,7 +6503,7 @@ void CCovenSDSManager::loadStore(const char *storeName, const bool *abort)
     if (remoteBackupLocation.length())
     {
         try { validateBackup(); }
-        catch (IException *e) { LOG(MCoperatorError, e, "Validating backup"); e->Release(); }
+        catch (IException *e) { OERRLOG(e, "Validating backup"); e->Release(); }
 
         StringBuffer deltaFilename(dataPath);
         iStoreHelper->getCurrentDeltaFilename(deltaFilename);
@@ -8700,7 +8700,7 @@ bool CCovenSDSManager::fireException(IException *e)
         {
             if (handled)
             {
-                LOG(MCoperatorDisaster, e, "FATAL, too many exceptions");
+                DISLOG(e, "FATAL, too many exceptions");
                 return false; // did not successfully handle.
             }
             IERRLOG(e, "Exception while restarting or shutting down");
@@ -8737,7 +8737,7 @@ bool CCovenSDSManager::fireException(IException *e)
                 }
                 manager.unhandledThread.clear();
             }
-            catch (IException *_e) { LOG(MCoperatorError, _e, "Exception while restarting or shutting down"); _e->Release(); }
+            catch (IException *_e) { OERRLOG(_e, "Exception while restarting or shutting down"); _e->Release(); }
             catch (DALI_CATCHALL) { IERRLOG("Unknown exception while restarting or shutting down"); }
             if (!restart)
             {
@@ -8846,7 +8846,7 @@ bool CDeltaWriter::save(std::queue<Owned<CTransactionItem>> &todo)
         }
         catch (IException *e)
         {
-            LOG(MCoperatorWarning, e, "save: failed to touch delta in progress file");
+            OERRLOG(e, "save: failed to touch delta in progress file");
             e->Release();
         }
         // here if exception only
@@ -8909,14 +8909,14 @@ bool CDeltaWriter::save(std::queue<Owned<CTransactionItem>> &todo)
     }
     catch (IException *e)
     {
-        LOG(MCoperatorWarning, e, "save: failure whilst committing deltas to disk! Remedial action must be taken");
+        OERRLOG("save: failure whilst committing deltas to disk! Remedial action must be taken");
         e->Release();
         // this is really an attempt at disaster recovery at this point
         forceBlockingSave = true;
     }
     if (forceBlockingSave)
     {
-        LOG(MCoperatorWarning, "Due to earlier failures, attempting forced/blocking save of Dali store");
+        OWARNLOG("Due to earlier failures, attempting forced/blocking save of Dali store");
         while (todo.size())
             todo.pop();
         SDSManager->saveStore(nullptr, false, false);
