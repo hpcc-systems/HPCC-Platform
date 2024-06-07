@@ -2123,22 +2123,23 @@ int CHttpRequest::processHeaders(IMultiException *me)
 
 bool CHttpRequest::readContentToBuffer(MemoryBuffer& buffer, __int64& bytesNotRead)
 {
-    char buf[1024 + 1];
-    __int64 buflen = 1024;
-    if (buflen > bytesNotRead)
-        buflen = bytesNotRead;
+    constexpr size32_t readChunkSize = 0x100000;
+    size32_t sizeToRead = bytesNotRead > readChunkSize ? readChunkSize: (size32_t)bytesNotRead;
+    size32_t prevLen = buffer.length();
 
-    int readlen = m_bufferedsocket->read(buf, (int) buflen);
-    if(readlen < 0)
-        DBGLOG("Failed to read from socket");
+    // BufferedSocket::read buffer must be at least one larger than its maxlen argument
+    char * target = (char *)buffer.reserve(sizeToRead + 1);
+    int readLen = m_bufferedsocket->read(target, sizeToRead);
+    if(readLen <= 0)
+    {
+        if(readLen < 0)
+            DBGLOG("Failed to read from socket");
+        buffer.setLength(prevLen);
+        return false;
+    }
 
-    if(readlen <= 0)
-       return false;
-
-    buf[readlen] = 0;
-    buffer.append(readlen, buf);//'buffer' may have some left-over from previous read
-
-    bytesNotRead -= readlen;
+    buffer.setLength(prevLen + readLen);
+    bytesNotRead -= readLen;
     return true;
 }
 
