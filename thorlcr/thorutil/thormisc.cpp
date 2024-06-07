@@ -92,8 +92,10 @@ const StatisticsMapping graphStatistics({StNumExecutions, StSizeSpillFile, StSiz
 const StatisticsMapping diskReadPartStatistics({StNumDiskRowsRead}, diskReadRemoteStatistics);
 const StatisticsMapping indexDistribActivityStatistics({}, basicActivityStatistics, jhtreeCacheStatistics);
 const StatisticsMapping soapcallActivityStatistics({}, basicActivityStatistics, soapcallStatistics);
-const StatisticsMapping hashDedupActivityStatistics({StNumSpills, StSizeSpillFile, StTimeSortElapsed, StSizePeakTempDisk}, diskWriteRemoteStatistics, basicActivityStatistics);
+const StatisticsMapping hashDedupActivityStatistics({}, spillStatistics, diskWriteRemoteStatistics, basicActivityStatistics);
 const StatisticsMapping hashDistribActivityStatistics({StNumLocalRows, StNumRemoteRows, StSizeRemoteWrite}, basicActivityStatistics);
+const StatisticsMapping nsplitterActivityStatistics({}, spillStatistics, basicActivityStatistics);
+const StatisticsMapping spillingWriteAheadStatistics({}, spillStatistics);
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {

@@ -170,7 +170,6 @@ public:
             case TAKcase:
             case TAKchildcase:
             case TAKdegroup:
-            case TAKsplit:
             case TAKproject:
             case TAKprefetchproject:
             case TAKprefetchcountproject:
@@ -209,6 +208,9 @@ public:
             case TAKtrace:
             case TAKemptyaction:
                 ret = new CMasterActivity(this);
+                break;
+            case TAKsplit:
+                ret = new CMasterActivity(this, nsplitterActivityStatistics);
                 break;
             case TAKsoap_rowdataset:
             case TAKsoap_rowaction:
