@@ -674,10 +674,10 @@ class CNodeMRUCache final : public CMRUCacheOf<CKeyIdAndPos, CNodeCacheEntry, CN
     std::shared_ptr<hpccMetrics::CustomMetric<RelaxedAtomic<__uint64>>> pNumDups = nullptr;
     std::shared_ptr<hpccMetrics::CustomMetric<RelaxedAtomic<__uint64>>> pNumEvicts = nullptr;
 public:
-    RelaxedAtomic<__uint64> numHits;
-    RelaxedAtomic<__uint64> numAdds;
-    RelaxedAtomic<__uint64> numDups;
-    RelaxedAtomic<__uint64> numEvicts;
+    RelaxedAtomic<__uint64> numHits{0};
+    RelaxedAtomic<__uint64> numAdds{0};
+    RelaxedAtomic<__uint64> numDups{0};
+    RelaxedAtomic<__uint64> numEvicts{0};
     bool enabled = false;
     CNodeMRUCache(CacheType cacheType)
     {
