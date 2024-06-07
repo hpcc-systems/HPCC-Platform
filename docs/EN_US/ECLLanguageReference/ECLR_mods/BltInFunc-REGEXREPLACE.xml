@@ -64,18 +64,12 @@
   string. The <emphasis>regex</emphasis> must be a standard Perl regular
   expression<indexterm>
       <primary>Perl regular expression</primary>
-    </indexterm>. We use third-party libraries to support this, so for
-  non-unicode <emphasis>text</emphasis>, see the Perl-compatible Regular
-  Expressions (PCRE2) documentation at <ulink
-  url="https://www.pcre.org/current/doc/html/pcre2pattern.html">https://www.pcre.org/current/doc/html/pcre2pattern.html</ulink>.
-  For unicode <emphasis>text</emphasis>, see the ICU docs, the sections
-  'Regular Expression Metacharacters' and 'Regular Expression Operators' at
-  <emphasis
-  role="underline">http://userguide.icu-project.org/strings/regexp</emphasis>
-  and the links from there, in particular the section 'UnicodeSet patterns' at
-  <emphasis
-  role="underline">http://userguide.icu-project.org/strings/unicodeset</emphasis>.
-  We use version 2.6 which should support all listed features.</para>
+    </indexterm>. </para>
+
+  <para>We use a third-party library -- Perl-compatible Regular Expressions
+  (PCRE2) to support this. See <ulink
+  url="https://www.pcre.org/current/doc/html/pcre2syntax.html">https://www.pcre.org/current/doc/html/pcre2syntax.html</ulink>
+  for details on the PCRE2 pattern syntax.</para>
 
   <para>Example:</para>
 
@@ -87,28 +81,26 @@ REGEXREPLACE(u'(.a)t', u'the cat sat on the mat', u'$1p');
 
 inrec := {STRING10 str, UNICODE10 ustr};
 inset := DATASET([{'She', u'Eins'}, {'Sells', u'Zwei'},
-{'Sea', u'Drei'}, {'Shells', u'Vier'}], inrec);
-outrec := {STRING10 orig, STRING10 withcase, STRING10
-        wocase,
-UNICODE10 uorig,UNICODE10 uwithcase,UNICODE10 uwocase};
+                  {'Sea', u'Drei'}, {'Shells', u'Vier'}], inrec);
+outrec := {STRING10 orig, STRING10 withcase, STRING10 
+           wocase,UNICODE10 uorig,UNICODE10 uwithcase,UNICODE10 uwocase};
 
 outrec trans(inrec l) := TRANSFORM
-SELF.orig := l.str;
-SELF.withcase := REGEXREPLACE('s', l.str, 'f');
-SELF.wocase := REGEXREPLACE('s', l.str, 'f', NOCASE);
-SELF.uorig := l.ustr;
-SELF.uwithcase := REGEXREPLACE(u'e', l.ustr, u'\u00EB');
-SELF.uwocase := REGEXREPLACE(u'e', l.ustr, u'\u00EB',
-        NOCASE);
+  SELF.orig := l.str;
+  SELF.withcase := REGEXREPLACE('s', l.str, 'f');
+  SELF.wocase := REGEXREPLACE('s', l.str, 'f', NOCASE);
+  SELF.uorig := l.ustr;
+  SELF.uwithcase := REGEXREPLACE(u'e', l.ustr, u'\u00EB');
+  SELF.uwocase := REGEXREPLACE(u'e', l.ustr, u'\u00EB',NOCASE);
 END;
 OUTPUT(PROJECT(inset, trans(LEFT)));
 
 /* the result set is:
-orig withcase wocase uorig uwithcase uwocase
-She She fhe Eins Eins \xc3\xabins
-Sells Sellf fellf Zwei Zw\xc3\xabi Zw\xc3\xabi
-Sea Sea fea Drei Dr\xc3\xabi Dr\xc3\xabi
-Shells Shellf fhellf Vier Vi\xc3\xabr Vi\xc3\xabr */
+orig    withcase wocase uorig uwithcase    uwocase
+She     She      fhe    Eins  Eins         \xc3\xabins
+Sells   Sellf    fellf  Zwei  Zw\xc3\xabi  Zw\xc3\xabi
+Sea     Sea      fea    Drei  Dr\xc3\xabi  Dr\xc3\xabi
+Shells  Shellf   fhellf Vier  Vi\xc3\xabr  Vi\xc3\xabr */
 </programlisting>
 
   <para>See Also: <link linkend="PARSE">PARSE</link>, <link
