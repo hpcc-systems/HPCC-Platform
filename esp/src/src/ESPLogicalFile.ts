@@ -472,7 +472,7 @@ export function Get(Cluster, Name, data?) {
     }
     const store = new Store();
     const retVal = store.get(createID(Cluster, Name));
-    if (data) {
+    if (data && !retVal.__hpcc_id) {
         lang.mixin(data, {
             __hpcc_id: createID(data.NodeGroup, data.Name),
             __hpcc_isDir: false,

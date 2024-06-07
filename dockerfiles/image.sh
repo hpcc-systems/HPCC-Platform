@@ -97,6 +97,7 @@ finalize_platform_core_image() {
             hpccsystems/platform-core:$GIT_BRANCH-$MODE-$crc "tail -f /dev/null")
         docker exec --user root --workdir /hpcc-dev $CONTAINER /bin/bash -c "rm -rf /hpcc-dev/HPCC-Platform && mkdir /hpcc-dev/HPCC-Platform && chown -R hpcc:hpcc /hpcc-dev/HPCC-Platform"
         docker exec --workdir /hpcc-dev $CONTAINER /bin/bash -c "git config --global --add safe.directory /hpcc-dev/HPCC-Platform-local"
+        docker exec --workdir /hpcc-dev $CONTAINER /bin/bash -c "git config --global --add safe.directory /hpcc-dev/HPCC-Platform-local/.git"
         docker exec --workdir /hpcc-dev $CONTAINER /bin/bash -c "git clone --single-branch file:///hpcc-dev/HPCC-Platform-local /hpcc-dev/HPCC-Platform"
         docker exec --workdir /hpcc-dev/HPCC-Platform $CONTAINER /bin/bash -c "git reset --hard --recurse-submodules"
         docker exec --workdir /hpcc-dev/HPCC-Platform-local $CONTAINER /bin/bash -c "git ls-files --modified --exclude-standard -z | xargs -0 -I {} cp {} /hpcc-dev/HPCC-Platform/{}"

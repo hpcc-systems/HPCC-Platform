@@ -47,7 +47,7 @@ kind: Deployment
 metadata:
   name: {{ .name | quote }}
 spec:
-  replicas: 1
+  replicas: {{ .replicas | default 1 }}
   selector:
     matchLabels:
       run: {{ .name | quote }}

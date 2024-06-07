@@ -1963,11 +1963,11 @@ bool registerClientProcess(ICommunicator *comm, IGroup *& retcoven,unsigned time
                 return true;
             }
         }
-        StringBuffer str;
-        OERRLOG("Waiting for Dali to be available - server: %s", comm->queryGroup().queryNode(r).endpoint().getEndpointHostText(str).str());
+        StringBuffer str("Waiting for Dali to be available - server: ");
+        comm->queryGroup().queryNode(r).endpoint().getEndpointHostText(str);
         if (tm.timedout())
         {
-            PROGLOG("%s", str.append(" Timed out.").str());
+            OWARNLOG("%s", str.append(" Timed out.").str());
             break;
         }
         else if (0 == nextLog)
