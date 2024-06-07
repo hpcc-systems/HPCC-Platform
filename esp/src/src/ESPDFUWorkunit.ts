@@ -8,6 +8,11 @@ import * as FileSpray from "./FileSpray";
 import nlsHPCC from "./nlsHPCC";
 import * as Utility from "./Utility";
 
+import { FileSprayService, FileSpray as FileSprayNS } from "@hpcc-js/comms";
+
+import { Paged } from "./store/Paged";
+import { BaseStore } from "./store/Store";
+
 const i18n = nlsHPCC;
 
 class Store extends ESPRequest.Store {
@@ -297,14 +302,37 @@ export function isInstanceOfWorkunit(obj) {
 export function Get(wuid, data?) {
     const store = new Store();
     const retVal = store.get(wuid);
-    if (data) {
+    if (data && !retVal.__hpcc_id) {
         retVal.updateData(data);
     }
     return retVal;
 }
 
-export function CreateWUQueryStore(options) {
+export function CreateWUQueryStoreLegacy(options) {
     let store = new Store(options);
     store = new Observable(store);
     return store;
+}
+
+const service = new FileSprayService({ baseUrl: "" });
+
+export type WUQueryStore = BaseStore<FileSprayNS.GetDFUWorkunits, typeof Workunit>;
+
+export function CreateWUQueryStore(): BaseStore<FileSprayNS.GetDFUWorkunits, typeof Workunit> {
+    const store = new Paged<FileSprayNS.GetDFUWorkunits, typeof Workunit>({
+        start: "PageStartFrom",
+        count: "PageSize",
+        sortBy: "Sortby",
+        descending: "Descending"
+    }, "ID", request => {
+        request.includeTimings = true;
+        request.includeTransferRate = true;
+        return service.GetDFUWorkunits(request).then(response => {
+            return {
+                data: response.results.DFUWorkunit.map(wu => Get(wu.ID, wu)),
+                total: response.NumWUs
+            };
+        });
+    });
+    return new Observable(store);
 }
