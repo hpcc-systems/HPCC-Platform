@@ -369,8 +369,6 @@ define([
         initWorkunitsGrid: function () {
             var context = this;
             var filter = this.filter.toObject();
-            filter.includeTimings = true;
-            filter.includeTransferRate = true;
             var store = this.params.searchResults ? this.params.searchResults : new ESPDFUWorkunit.CreateWUQueryStore();
             this.workunitsGrid = new declare([ESPUtil.Grid(true, true, false, false, "GetDFUWorkunitsWidget")])({
                 store: store,
@@ -477,8 +475,6 @@ define([
 
         refreshGrid: function (clearSelection) {
             var filter = this.filter.toObject();
-            filter.includeTimings = true;
-            filter.includeTransferRate = true;
             this.workunitsGrid.set("query", filter);
             if (clearSelection) {
                 this.workunitsGrid.clearSelection();
