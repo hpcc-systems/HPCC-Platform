@@ -3095,9 +3095,9 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(JlibIPTTest, "JlibIPTTest");
 #include "jmutex.hpp"
 
 
-class AtomicTimingTest : public CppUnit::TestFixture
+class AtomicTimingStressTest : public CppUnit::TestFixture
 {
-    CPPUNIT_TEST_SUITE(AtomicTimingTest);
+    CPPUNIT_TEST_SUITE(AtomicTimingStressTest);
         CPPUNIT_TEST(runAllTests);
     CPPUNIT_TEST_SUITE_END();
 
@@ -3255,6 +3255,10 @@ public:
         DO_TEST(CriticalSection, CriticalBlock, unsigned __int64, 2, 1);
         DO_TEST(CriticalSection, CriticalBlock, unsigned __int64, 5, 1);
         DO_TEST(CriticalSection, CriticalBlock, unsigned __int64, 1, 2);
+        DO_TEST(Mutex, synchronized, unsigned __int64, 1, 1);
+        DO_TEST(Mutex, synchronized, unsigned __int64, 2, 1);
+        DO_TEST(Mutex, synchronized, unsigned __int64, 5, 1);
+        DO_TEST(Mutex, synchronized, unsigned __int64, 1, 2);
         DO_TEST(SpinLock, SpinBlock, unsigned __int64, 1, 1);
         DO_TEST(SpinLock, SpinBlock, unsigned __int64, 2, 1);
         DO_TEST(SpinLock, SpinBlock, unsigned __int64, 5, 1);
@@ -3303,8 +3307,8 @@ private:
     UInt64Array contendedTimes;
 };
 
-CPPUNIT_TEST_SUITE_REGISTRATION(AtomicTimingTest);
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(AtomicTimingTest, "AtomicTimingStressTest");
+CPPUNIT_TEST_SUITE_REGISTRATION(AtomicTimingStressTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(AtomicTimingStressTest, "AtomicTimingStressTest");
 
 
 //=====================================================================================================================
