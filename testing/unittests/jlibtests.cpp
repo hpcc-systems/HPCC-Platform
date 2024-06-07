@@ -4572,4 +4572,233 @@ public:
 CPPUNIT_TEST_SUITE_REGISTRATION( JLibStringTest );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JLibStringTest, "JLibStringTest" );
 
+// ========================================
+
+class CAddrThreadArgs : public CInterface, implements IInterface
+{
+public:
+    IMPLEMENT_IINTERFACE;
+    StringAttr name;
+    unsigned timeoutms;
+    bool logIt = true;
+
+    CAddrThreadArgs(const char *_name, unsigned _timeoutms) : name(_name), timeoutms(_timeoutms)
+    {
+    }
+
+    CAddrThreadArgs(const char *_name, unsigned _timeoutms, bool _logIt) : name(_name), timeoutms(_timeoutms), logIt(_logIt)
+    {
+    }
+};
+
+class CAddrPoolFactory : public CInterface, public IThreadFactory
+{
+    class CAddrPoolHandler : public CInterface, implements IPooledThread
+    {
+    public:
+        IMPLEMENT_IINTERFACE;
+
+        CAddrThreadArgs *args;
+
+        virtual void init(void *param) override
+        {
+            args = (CAddrThreadArgs *)param;
+        }
+
+        virtual void threadmain() override
+        {
+            StringBuffer name(args->name);
+            unsigned timeoutms = args->timeoutms;
+
+            SocketEndpoint ep;
+            CCycleTimer timer;
+            int srtn = ep.ipset(name.str(), timeoutms);
+            unsigned lookupTimeMS = timer.elapsedMs();
+
+            StringBuffer ipstr;
+            if (args->logIt && srtn)
+                ep.getIpText(ipstr);
+            else if (!srtn)
+                ipstr.append("failed");
+            if ((args->logIt && srtn) || (!srtn))
+            {
+                DBGLOG("%s (%d) -> %s (%u ms)", name.str(), (int)timeoutms, ipstr.str(), lookupTimeMS);
+                fflush(NULL);
+            }
+        }
+
+        virtual bool stop() override
+        {
+            return true;
+        }
+
+        virtual bool canReuse() const override
+        {
+            return true;
+        }
+    };
+
+public:
+    IMPLEMENT_IINTERFACE;
+
+    IPooledThread *createNew()
+    {
+        return new CAddrPoolHandler();
+    }
+};
+
+class getaddrinfotest : public CppUnit::TestFixture
+{
+public:
+    CPPUNIT_TEST_SUITE(getaddrinfotest);
+        CPPUNIT_TEST(testaddr);
+    CPPUNIT_TEST_SUITE_END();
+
+/*
+ *  can change settings with:
+ *
+ *  <Software>
+ *    <Globals disableDNSTimeout="true" maxDNSThreads="100">
+ *
+ *  global:
+ *    expert:
+ *      disableDNSTimeout: true
+ *      maxDNSThreads: 100
+ */
+
+    void testaddr1(const char *_name, unsigned timeoutms, bool logIt=true)
+    {
+        StringBuffer name(_name);
+
+        SocketEndpoint ep;
+        CCycleTimer timer;
+        int srtn = ep.ipset(name.str(), timeoutms);
+        unsigned lookupTimeMS = timer.elapsedMs();
+
+        StringBuffer ipstr;
+        if (logIt && srtn)
+            ep.getIpText(ipstr);
+        else if (!srtn)
+            ipstr.append("failed");
+        if ((logIt && srtn) || (!srtn))
+        {
+            DBGLOG("%s (%d) -> %s (%u ms)", name.str(), (int)timeoutms, ipstr.str(), lookupTimeMS);
+            fflush(NULL);
+        }
+    }
+
+    void testaddr()
+    {
+        fflush(NULL);
+        DBGLOG(" "); // to get past the "." ...
+        fflush(NULL);
+
+        testaddr1("google.com", 3);
+        testaddr1("google.com", 500);
+
+        Owned<CAddrPoolFactory> threadFactory = new CAddrPoolFactory();
+        Owned<IThreadPool> threadPool = createThreadPool("GetAddrThreadPool", threadFactory, true, nullptr, 60);
+
+        // -----------------
+
+        Owned<CAddrThreadArgs> t1a = new CAddrThreadArgs("mck1.com", 5);
+        Owned<CAddrThreadArgs> t2a = new CAddrThreadArgs("mck1.com", 5000);
+        Owned<CAddrThreadArgs> t3a = new CAddrThreadArgs("mck1.com", INFINITE);
+
+        Owned<CAddrThreadArgs> t1b = new CAddrThreadArgs("mck101.com", 5);
+        Owned<CAddrThreadArgs> t2b = new CAddrThreadArgs("mck101.com", 5000);
+        Owned<CAddrThreadArgs> t3b = new CAddrThreadArgs("mck101.com", INFINITE);
+
+        Owned<CAddrThreadArgs> t1c = new CAddrThreadArgs("google.com", 3);
+        Owned<CAddrThreadArgs> t2c = new CAddrThreadArgs("google.com", 500);
+        Owned<CAddrThreadArgs> t3c = new CAddrThreadArgs("google.com", 10000);
+
+        Owned<CAddrThreadArgs> t1d = new CAddrThreadArgs("localhost", 3);
+        Owned<CAddrThreadArgs> t2d = new CAddrThreadArgs("localhost", 500);
+        Owned<CAddrThreadArgs> t3d = new CAddrThreadArgs("localhost", 1000);
+
+        Owned<CAddrThreadArgs> t1e = new CAddrThreadArgs("127.0.0.1", 2000);
+        Owned<CAddrThreadArgs> t2e = new CAddrThreadArgs("1.2.3.4", 2000);
+
+        Owned<CAddrThreadArgs> t1f = new CAddrThreadArgs("mck2.com", INFINITE);
+
+        Owned<CAddrThreadArgs> t1g = new CAddrThreadArgs("mck103.com", INFINITE);
+
+        Owned<CAddrThreadArgs> t1h = new CAddrThreadArgs("*bogus+", INFINITE);
+
+        // -----------------
+
+        threadPool->startNoBlock(t1a);
+        threadPool->startNoBlock(t2a);
+        threadPool->startNoBlock(t3a);
+
+        threadPool->startNoBlock(t1b);
+        threadPool->startNoBlock(t2b);
+        threadPool->startNoBlock(t3b);
+
+        threadPool->startNoBlock(t1c);
+        threadPool->startNoBlock(t2c);
+        threadPool->startNoBlock(t3c);
+
+        threadPool->startNoBlock(t1d);
+        threadPool->startNoBlock(t2d);
+        threadPool->startNoBlock(t3d);
+
+        threadPool->startNoBlock(t1e);
+        threadPool->startNoBlock(t2e);
+
+        threadPool->startNoBlock(t1f);
+
+        threadPool->startNoBlock(t1g);
+
+        threadPool->startNoBlock(t1h);
+
+        threadPool->joinAll();
+
+        fflush(NULL);
+
+        threadPool->startNoBlock(t1c);
+        threadPool->startNoBlock(t2c);
+        threadPool->startNoBlock(t3c);
+
+        threadPool->joinAll(true);
+
+        fflush(NULL);
+
+        // ---------------
+
+        CCycleTimer timer;
+        for (int i=0; i<10000; i++)
+        {
+            testaddr1("google.com", 500, false);
+        }
+        unsigned lookupTimeMS = timer.elapsedMs();
+        DBGLOG("10k lookups (same thread) time = %u ms", lookupTimeMS);
+        fflush(NULL);
+
+        Owned<IThreadPool> threadPool1 = createThreadPool("GetAddrThreadPool1", threadFactory, true, nullptr, 1);
+
+        timer.reset();
+        Owned<CAddrThreadArgs> t10a = new CAddrThreadArgs("google.com", 500, false);
+        for (int i=0; i<10000; i++)
+        {
+            threadPool1->start(t10a, "threadpool-test", 99999999);
+        }
+
+        threadPool1->joinAll(true);
+
+        lookupTimeMS = timer.elapsedMs();
+        fflush(NULL);
+        DBGLOG("10k lookups (threadpool of 1) time = %u ms", lookupTimeMS);
+
+        fflush(NULL);
+        DBGLOG("testaddr complete");
+        fflush(NULL);
+        Sleep(7000);
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( getaddrinfotest );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( getaddrinfotest, "getaddrinfotest" );
+
 #endif // _USE_CPPUNIT
