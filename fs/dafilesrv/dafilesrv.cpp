@@ -707,6 +707,10 @@ int main(int argc, const char* argv[])
     dedicatedRowServiceSSL = dafileSrvInstance->getPropBool("@rowServiceSSL", dedicatedRowServiceSSL);
     rowServiceOnStdPort = dafileSrvInstance->getPropBool("@rowServiceOnStdPort", rowServiceOnStdPort);
 
+    unsigned listenQueueLimit = dafileSrvInstance->getPropInt("@maxBacklogQueueSize", DEFAULT_LISTEN_QUEUE_SIZE);
+    // NB: could check getComponentConfig()->getPropInt("expert/@maxBacklogQueueSize", DEFAULT_LISTEN_QUEUE_SIZE);
+    // but many other components have their own explcit setting for this ...
+
     installDefaultFileHooks(dafileSrvInstance);
 
 #ifndef _CONTAINERIZED
@@ -843,7 +847,7 @@ int main(int argc, const char* argv[])
                     {
                         SocketEndpoint rowServiceEp(listenep); // copy listenep, incase bound by -addr
                         rowServiceEp.port = dedicatedRowServicePort;
-                        server->run(config, connectMethod, listenep, sslport, &rowServiceEp, dedicatedRowServiceSSL, rowServiceOnStdPort);
+                        server->run(config, connectMethod, listenep, sslport, listenQueueLimit, &rowServiceEp, dedicatedRowServiceSSL, rowServiceOnStdPort);
                     }
                     else
                         server->run(config, connectMethod, listenep, sslport);
@@ -931,7 +935,7 @@ int main(int argc, const char* argv[])
         {
             SocketEndpoint rowServiceEp(listenep); // copy listenep, incase bound by -addr
             rowServiceEp.port = dedicatedRowServicePort;
-            server->run(config, connectMethod, listenep, sslport, &rowServiceEp, dedicatedRowServiceSSL, rowServiceOnStdPort);
+            server->run(config, connectMethod, listenep, sslport, listenQueueLimit, &rowServiceEp, dedicatedRowServiceSSL, rowServiceOnStdPort);
         }
         else
             server->run(config, connectMethod, listenep, sslport);
