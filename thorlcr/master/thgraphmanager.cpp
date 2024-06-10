@@ -372,6 +372,16 @@ CJobManager::CJobManager(ILogMsgHandler *_logHandler) : logHandler(_logHandler)
     activeTasks = 0;
     setJobManager(this);
     debugListener.setown(new CThorDebugListener(*this));
+
+    StringBuffer soPath;
+    globals->getProp("@query_so_dir", soPath);
+    StringBuffer soPattern("*.");
+#ifdef _WIN32
+    soPattern.append("dll");
+#else
+    soPattern.append("so");
+#endif
+    querySoCache.init(soPath.str(), DEFAULT_QUERYSO_LIMIT, soPattern);
 }
 
 CJobManager::~CJobManager()
@@ -582,16 +592,6 @@ void CJobManager::run()
 
     setWuid(NULL);
 #ifndef _CONTAINERIZED
-    StringBuffer soPath;
-    globals->getProp("@query_so_dir", soPath);
-    StringBuffer soPattern("*.");
-#ifdef _WIN32
-    soPattern.append("dll");
-#else
-    soPattern.append("so");
-#endif
-    querySoCache.init(soPath.str(), DEFAULT_QUERYSO_LIMIT, soPattern);
-
     SCMStringBuffer _queueNames;
     const char *thorName = globals->queryProp("@name");
     if (!thorName) thorName = "thor";
