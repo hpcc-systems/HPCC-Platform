@@ -3191,7 +3191,7 @@ public:
         unsigned __int64 run(const char * title, unsigned numThreads, unsigned numIterations)
         {
             value1 = 0;
-            for (unsigned ix = 1; ix < NUMVALUES; ix++)
+            for (unsigned ix = 0; ix < NUMVALUES; ix++)
                 extraValues[ix] = 0;
             for (unsigned i = 0; i < numThreads; i++)
             {
