@@ -117,19 +117,6 @@ time_t timelocal(struct tm * local)
 
 #endif //__GNUC__
 
-static unsigned readDigits(char const * & str, unsigned numDigits)
-{
-    unsigned ret = 0;
-    while(numDigits--)
-    {
-        char c = *str++;
-        if(!isdigit(c))
-            throwError1(JLIBERR_BadlyFormedDateTime, str);
-        ret  = ret * 10 + (c - '0');
-    }
-    return ret;
-}
-
 static void checkChar(char const * & str, char required)
 {
     char c = *str++;

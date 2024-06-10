@@ -186,6 +186,7 @@ int main(int argc, const char *argv[])
         excludeNames.append("*stress*");
         excludeNames.append("*timing*");
         excludeNames.append("*slow*");
+        excludeNames.append("CSysInfoLoggerTester"); // disabled by default as dali not available when executed within OBT
     }
 
     if (!includeNames.length())

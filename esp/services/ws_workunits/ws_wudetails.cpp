@@ -22,6 +22,7 @@
 #include "workunit.hpp"
 #include "jset.hpp"
 #include "jstatcodes.h"
+#include "sysinfologger.hpp"
 
 typedef std::pair<WuAttr, StringBuffer> AttribValuePair;
 bool operator==(const AttribValuePair & p1, const AttribValuePair & p2)
@@ -501,6 +502,22 @@ void WUDetails::processRequest(IEspWUDetailsRequest &req, IEspWUDetailsResponse 
                 else
                     espWuResponseNote->setErrorCode_null();
                 espWuResponseNote->setSeverity(cur.queryProp("@severity"));
+                espWuResponseNote->setCost(0);
+                espWuResponseNotes.append(*espWuResponseNote.getClear());
+            }
+            Owned<ISysInfoLoggerMsgFilter> msgFilter = createSysInfoLoggerMsgFilter();
+            msgFilter->setVisibleOnly();
+            Owned<ISysInfoLoggerMsgIterator> msgIter = createSysInfoLoggerMsgIterator(msgFilter);
+            ForEach(*msgIter)
+            {
+                ISysInfoLoggerMsg & sysInfoMsg = msgIter->query();
+                Owned<IEspWUResponseNote> espWuResponseNote = createWUResponseNote("","");
+                StringBuffer tmpbuf;
+                encodeXML(sysInfoMsg.queryMsg(), tmpbuf, ENCODE_NEWLINES, strlen(sysInfoMsg.queryMsg()), true);
+                espWuResponseNote->setSource(sysInfoMsg.querySource());
+                espWuResponseNote->setMessage(tmpbuf.str());
+                espWuResponseNote->setErrorCode(sysInfoMsg.queryLogMsgCode());
+                espWuResponseNote->setSeverity(LogMsgClassToVarString(sysInfoMsg.queryClass()));
                 espWuResponseNote->setCost(0);
                 espWuResponseNotes.append(*espWuResponseNote.getClear());
             }

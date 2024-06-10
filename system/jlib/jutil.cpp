@@ -3592,3 +3592,16 @@ extern jlib_decl void getResourceFromJfrog(StringBuffer &localPath, IPropertyTre
             throw makeStringExceptionV(0, "MD5 mismatch on file %s in manifest", filename.str());
     }
 }
+
+unsigned readDigits(char const * & str, unsigned numDigits)
+{
+    unsigned ret = 0;
+    while(numDigits--)
+    {
+        char c = *str++;
+        if(!isdigit(c))
+            throwError1(JLIBERR_BadlyFormedDateTime, str);
+        ret  = ret * 10 + (c - '0');
+    }
+    return ret;
+}
