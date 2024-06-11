@@ -178,3 +178,8 @@ ldap:
          -  path: SashaAccess
             resource: SashaAccess
             description: Access to HPCC Archive
+      ws_sysinfolog:
+         Feature:
+         -  path: SysInfoLogAccess
+            resource: SysInfoLogAccess
+            description: Access to System Information Log
