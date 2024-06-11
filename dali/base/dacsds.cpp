@@ -1108,13 +1108,12 @@ void CClientRemoteTree::resetState(unsigned _state, bool sub)
     serverId = 0;
     if (sub)
     {
-        IPropertyTreeIterator *iter = getElements("*");
+        Owned<IPropertyTreeIterator> iter = getElements("*");
         ForEach(*iter)
         {
             CClientRemoteTree &child = (CClientRemoteTree &)iter->query();
             child.resetState(state, sub);
         }
-        iter->Release();
     }
 }
 

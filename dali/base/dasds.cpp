@@ -2699,7 +2699,7 @@ public:
 
         if (cutoff < 0 || depth<cutoff)
         {
-            IPropertyTreeIterator *iter = getElements("*");
+            Owned<IPropertyTreeIterator> iter = getElements("*");
             iter->first();
             while (iter->isValid())
             {
@@ -2708,8 +2708,6 @@ public:
                 child->serializeCutOffRT(tgt, cutoff, depth+1, extValues);
                 iter->next();
             }
-            iter->Release();
-
         }
         tgt.append(""); // element terminator. i.e. blank child name.
     }
