@@ -37,7 +37,8 @@ jlib_decl void waitJob(const char *componentName, const char *resourceType, cons
 jlib_decl bool applyYaml(const char *componentName, const char *wuid, const char *job, const char *resourceType, const std::list<std::pair<std::string, std::string>> &extraParams, bool optional, bool autoCleanup);
 jlib_decl void runJob(const char *componentName, const char *wuid, const char *job, const std::list<std::pair<std::string, std::string>> &extraParams={});
 
-extern jlib_decl void runKubectlCommand(const char *title, const char *cmd, const char *input, StringBuffer *output);
+constexpr unsigned defaultKubectlRetrySecs = 60;
+extern jlib_decl void runKubectlCommand(const char *title, const char *cmd, const char *input, StringBuffer *output, unsigned retrySecs=defaultKubectlRetrySecs);
 
 // return the k8s external host and port for serviceName
 extern jlib_decl std::pair<std::string, unsigned> getExternalService(const char *serviceName);
