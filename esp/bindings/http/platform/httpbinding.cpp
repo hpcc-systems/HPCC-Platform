@@ -1764,7 +1764,9 @@ void  EspHttpBinding::getServiceSchema(IEspContext& context, CHttpRequest* reque
     StringBuffer xmlFilename;
     if (!getServiceXmlFilename(xmlFilename))
     {
-        throw MakeStringException(-1, "Unable to get service XML filename");
+        // Allow subclassed specialized implementation that doesn't use ESDL
+        getSchema(schema, context, request, serviceQName, methodQName, true);
+        return;
     }
 
     StringBuffer nstr;
@@ -1841,8 +1843,7 @@ int EspHttpBinding::getServiceWsdlOrXsd(IEspContext &context, CHttpRequest* requ
     }
 
     StringBuffer schema;
-    getServiceSchema(context, request, serviceQName, methodQName,
-                     version, isWsdl, false, schema);
+    getServiceSchema(context, request, serviceQName, methodQName, version, isWsdl, false, schema);
 
     response->setContent(schema.length(), schema.str());
     response->setContentType(HTTP_TYPE_APPLICATION_XML_UTF8);
@@ -1937,7 +1938,7 @@ void EspHttpBinding::generateSampleXml(bool isRequest, IEspContext &context, CHt
         content.appendf("<Error>generateSampleXml schema error: %s::%s</Error>", serv, method);
         return;
     }
-
+    
     getServiceSchema(context, request, serviceQName, methodQName, getVersion(context), false, false, schemaXml);
 
     Owned<IXmlSchema> schema;
