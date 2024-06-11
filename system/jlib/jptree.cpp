@@ -1368,9 +1368,8 @@ bool PTree::hasProp(const char * xpath) const
     }
     else
     {
-        IPropertyTreeIterator *iter = getElements(xpath);
+        Owned<IPropertyTreeIterator> iter = getElements(xpath);
         bool res = iter->first();
-        iter->Release();
         return res;
     }
 }
