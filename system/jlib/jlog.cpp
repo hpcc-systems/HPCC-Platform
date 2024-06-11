@@ -2403,8 +2403,6 @@ void setupContainerizedLogMsgHandler()
         if (logConfig->hasProp(logFormatAtt))
         {
             const char *logFormat = logConfig->queryProp(logFormatAtt);
-            LOG(MCdebugInfo, "JLog: log format configuration detected '%s'!", logFormat);
-
             bool newFormatDetected = false;
             if (streq(logFormat, "xml"))
             {
@@ -2416,9 +2414,7 @@ void setupContainerizedLogMsgHandler()
                 theStderrHandler = new HandleLogMsgHandlerJSON(stderr, MSGFIELD_STANDARD);
                 newFormatDetected = true;
             }
-            else if (streq(logFormat, "table"))
-                LOG(MCdebugInfo, "JLog: default log format detected: '%s'!", logFormat);
-            else
+            else if (!streq(logFormat, "table"))
                 LOG(MCoperatorWarning, "JLog: Invalid log format configuration detected '%s'!", logFormat);
 
             if (newFormatDetected)
