@@ -3845,7 +3845,7 @@ private:
             throw makeStringExceptionV(-1, "No container provided: path %s", path.str());
         return container;
     }
-    Linked<IPropertyTree> xml;
+    Owned<IPropertyTree> xml;
 };
 
 class CStoragePlaneInfo : public CInterfaceOf<IStoragePlane>
