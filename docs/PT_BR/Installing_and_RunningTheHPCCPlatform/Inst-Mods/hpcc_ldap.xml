@@ -293,6 +293,27 @@
     </sect3>
   </sect2>
 
+  <sect2 id="SingleUserSecMgr">
+    <title>Gerente de Segurança de Usuário Único</title>
+
+    <para>O gerenciador de segurança de usuário único é um gerenciador de
+    segurança especializado que permite que uma combinação de nome de
+    usuário/senha seja especificada na linha de comando de inicialização do
+    ESP. Em tempo de execução, quando você tenta acessar qualquer recurso do
+    ESP que exija autenticação, como o ECL Watch, deve especificar uma
+    combinação de nome de usuário/senha.</para>
+
+    <para>Um gerenciador de segurança de usuário único pode ser útil para uma
+    implantação personalizada onde você não deseja configurar um servidor LDAP
+    inteiro ou criar um arquivo HTPASSWD do Linux, como um ambiente de sala de
+    aula ou uma Máquina Virtual personalizada do HPCC Systems.</para>
+
+    <para>Veja o documento <ulink
+    url="https://hpccsystems.com/training/documentation/all/"><emphasis>Security
+    Manager Plugin Framework</emphasis></ulink> para maiores informações sobre
+    configurações e implantar os plugins Security Manager.</para>
+  </sect2>
+
   <sect2 id="Using_LDAP_Authentication" role="brk">
     <title>Utilizando Autenticação LDAP</title>
 

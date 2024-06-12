@@ -2,7 +2,7 @@
 <!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <chapter id="ContainerConfigurationValuesCHAPTER">
-  <title>Configuração dos Valores</title>
+  <title>Configuration Values</title>
 
   <para>Este capítulo descreve a configuração do HPCC Systems para uma
   implantação Kubernetes em contêineres. As seções a seguir detalham como as
@@ -71,9 +71,10 @@
       define quais valores são permitidos e valida o arquivo de valores em
       relação a eles. Todos os itens principais são declarados no arquivo de
       esquema, enquanto o arquivo default <emphasis>values.yaml</emphasis>
-      também contém comentários sobre os elementos mais importantes. Se você
-      quiser saber quais opções estão disponíveis para qualquer componente
-      específico, o esquema é um bom lugar para começar.</para>
+      também contém comentários sobre os elementos mais importantes.</para>
+
+      <para>Se você quiser saber quais opções estão disponíveis para qualquer
+      componente específico, o esquema é um bom lugar para começar.</para>
 
       <para>O arquivo de esquema normalmente contém (para uma propriedade) um
       nome e uma descrição. Muitas vezes, incluirá detalhes do tipo e os itens
@@ -125,7 +126,7 @@
     <title>Componentes HPCC Systems e o Arquivo
     <emphasis>values.yaml</emphasis></title>
 
-    <para>Os chart do Helm do HPCC Systems são enviados com valores de
+    <para>Os gráficos de Helm do HPCC Systems são enviados com valores de
     estoque/padrão. Esses charts do Helm têm um conjunto de valores padrão
     idealmente para serem usados como guia na configuração de sua implantação.
     Geralmente, cada componente do HPCC Systems é uma lista. Essa lista define
@@ -153,19 +154,18 @@
       componentes também.</para>
 
       <para>Cada componente deve ter uma entrada de recursos, no arquivo
-      <emphasis>valores.yaml</emphasis> entregues os recursos estão presentes,
+      <emphasis>values.yaml</emphasis> entregues os recursos estão presentes,
       mas comentados conforme indicado aqui.</para>
 
       <para><programlisting>  #resources:
   #  cpu: "1"
   #  memory: "4G"
-</programlisting>O arquivo de valores de estoque funcionará e permitirá que
-      você mantenha um sistema funcional, porém você deve definir os recursos
-      dos componentes da maneira que melhor corresponda à sua estratégia
-      operacional.</para>
+</programlisting>The stock values file will work and allow you to stand up a
+      functional system, however you should define the component resources in
+      a manner that corresponds best to your operational strategy.</para>
 
       <sect3 id="YML_HPCCSystemsServices">
-        <title>Os serviços do Sistema</title>
+        <title>Os Serviços do Sistema</title>
 
         <para>A maioria dos componentes do HPCC Systems tem uma entrada de
         definição de serviço, semelhante à entrada de recursos. Todos os
@@ -213,7 +213,7 @@
 - name: dfuserver
   maxJobs: 1</programlisting>
 
-        <para>Se você adicionar um mydfuserver da seguinte maneira:</para>
+        <para>If you were to add a mydfuserver as follows</para>
 
         <para><programlisting>dfuserver:
 - name: dfuserver
@@ -331,11 +331,11 @@
         descreva claramente, como <emphasis>thor_50</emphasis> como no exemplo
         a seguir.</para>
 
-        <para><programlisting>-name: thor_50</programlisting></para>
+        <para><programlisting>- name: thor_50</programlisting></para>
 
         <para>A atualização do valor <emphasis>numWorkers</emphasis>
         reiniciará o agente Thor ouvindo a fila, fazendo com que todos os
-        novos jobs usem a nova configuração.3</para>
+        novos jobs usem a nova configuração.</para>
 
         <para><emphasis role="bold">maxJobs</emphasis> -- Controla o número de
         jobs, especificamente <emphasis>maxJobs</emphasis> define o número
@@ -398,7 +398,7 @@
       </sect3>
 
       <sect3 id="YAML_Thor_and_hThor_Memory">
-        <title>Memórias Thor e hThor</title>
+        <title>Thor e Memória hThor</title>
 
         <para>As seções de <emphasis>memory</emphasis> Thor e hThor permitem
         que a memória de recursos do componente seja refinada em diferentes
@@ -443,14 +443,14 @@
         da memória com recursos disponíveis deve ser atribuído à memória de
         consulta e 500M para usos de "thirdParty".</para>
 
-        <para>Isso limita o uso de roxiemem de memória do HPCC Systems para
-        exatamente 3G, deixando 1G livre para outros propósitos. O
-        "thirdParty" não é realmente alocado, mas é usado apenas como parte do
-        total em execução, para garantir que a configuração não especifique um
-        total nesta seção maior que a seção de recursos, por exemplo, se
-        "thirdParty" foi definido como " 2G" na seção acima, haveria uma
-        reclamação de tempo de execução quando Thor executasse que a definição
-        excedeu o limite de recursos.</para>
+        <para>Isso limita o uso de memória <emphasis>roxiemem</emphasis> do
+        HPCC Systems a exatamente 3G, deixando 1G livre para outros
+        propósitos. O "thirdParty" não é realmente alocado, mas é usado
+        exclusivamente como parte do total em execução, para garantir que a
+        configuração não especifique um total nesta seção maior do que a seção
+        de recursos, por exemplo, se "thirdParty" fosse definido como "2G" na
+        seção acima, haveria uma reclamação de tempo de execução quando o Thor
+        fosse executado de que a definição excedeu o limite de recurso.</para>
 
         <para>Também é possível substituir a porcentagem recomendada padrão
         (90% por padrão), definindo <emphasis>maxMemPercentage</emphasis>. Se
@@ -473,7 +473,7 @@
         "consulta" (uso de HPCC roxiemem) e "thirdParty" para todos/qualquer
         uso de terceiros. É possível que outras categorias sejam adicionadas
         no futuro, como "python" ou "java" - que definem especificamente os
-        usos de memória para esses destinos.</para>
+        usos de memória para esses destinos..</para>
       </sect3>
     </sect2>
   </sect1>
@@ -591,7 +591,7 @@
   #   pvc: &lt;name&gt;                           # The name of the persistant volume claim
   #   forcePermissions: false
   #   hosts: [ &lt;host-list&gt; ]                 # Inline list of hosts
-  #   hostGroup: &lt;name&gt;                     # Name of the host group for bare metal 
+  #   hostGroup: &lt;name&gt;                     # Name of the host group for bare-metal 
   #                                         # must match the name of the storage plane..
   #
   # Other options:
@@ -762,7 +762,16 @@
         menores do host ou os mesmos hosts, mas armazenando partes diferentes
         em nós diferentes, por exemplo:</para>
 
-        <programlisting>Group: groupCDE 
+        <programlisting>storage: 
+  hostGroups: 
+  - name: groupABCDE # Explicit list of hosts 
+    hosts: [A, B, C, D, E] 
+  - name groupCDE # Subset of the group last 3 hosts 
+    hostGroup: groupABCDE 
+    count: 3 
+    offset: 2  
+  - name groupDEC # Same set of hosts, but different part-&gt;host mapping 
+    hostGroup: groupCDE 
     delta: 1</programlisting>
 
         <para>O segundo aspecto é adicionar uma propriedade à definição do
@@ -773,7 +782,7 @@
           <listitem>
             <para><emphasis role="bold">hostGroup: &lt;name&gt;</emphasis> O
             nome do grupo de hosts para bare metal. O nome do hostGroup deve
-            corresponder ao nome do plano de armazenamento..</para>
+            corresponder ao nome do plano de armazenamento.</para>
           </listitem>
 
           <listitem>
@@ -796,9 +805,97 @@
     prefix: "/home/demo/mydropzone" 
     hosts: [ 'mylandingzone.com' ] # Inline reference to an external host. </programlisting>
       </sect3>
+
+      <sect3 id="CV_RemoteStorage" role="brk">
+        <title>Armazenamento Remoto</title>
+
+        <para>Você pode configurar sua implantação em nuvem do HPCC Systems
+        para acessar arquivos lógicos de outros ambientes remotos. Você
+        configura esse armazenamento remoto adicionando uma seção "remota" ao
+        seu gráfico de helm.</para>
+
+        <para>A seção <emphasis>storage.remote</emphasis> é uma lista de
+        ambientes remotos nomeados que definem a URL do serviço remoto e uma
+        seção que mapeia os nomes dos planos remotos para os nomes dos planos
+        locais. Os planos locais referenciados são planos especiais com a
+        categoria 'remoto'. Eles são somente leitura e só estão disponíveis
+        para os motores que podem lê-los.</para>
+
+        <para>Por exemplo:</para>
+
+        <programlisting>storage:
+  planes:
+...
+  - name: hpcc2-stddata
+    pvc: hpcc2-stddata-pv
+    prefix: "/var/lib/HPCCSystems/hpcc2/hpcc-stddata"
+    category: remote
+  - name: hpcc2-fastdata
+    pvc: hpcc2-fastdata-pv
+    prefix: "/var/lib/HPCCSystems/hpcc2/hpcc-fastdata"
+    category: remote
+  remote:
+  - name: hpcc2
+    service: http://20.102.22.31:8010
+    planes:
+    - remote: data
+      local: hpcc2-stddata
+    - remote: fastdata
+      local: hpcc2-fastdata</programlisting>
+
+        <para>Este exemplo define um alvo remoto chamado "hpcc2" cuja URL do
+        serviço DFS é http://20.102.22.31:8010 e cujo plano local é
+        "hpcc2data". O plano local deve ser definido de modo que compartilhe o
+        mesmo armazenamento que o ambiente remoto. Espera-se que isso seja
+        feito através de um PVC que foi pré-configurado para usar o mesmo
+        armazenamento.</para>
+
+        <para>Para acessar o arquivo lógico em ECL use o seguinte
+        formato:</para>
+
+        <programlisting>ds := DATASET('~remote::hpcc2::somescope1::somelfn1', rec);</programlisting>
+      </sect3>
+
+      <sect3>
+        <title>Armazenamento Preferêncial</title>
+
+        <para>A opção <emphasis>preferredReadPlanes</emphasis> está disponível
+        para cada tipo de cluster - hThor, Thor e Roxie.</para>
+
+        <para>Esta opção é significativa apenas para arquivos lógicos que
+        residem em múltiplos planos de armazenamento. Quando especificado, a
+        plataforma HPCC Systems buscará ler arquivos do(s) plano(s)
+        preferido(s) se um arquivo residir neles. Estes planos preferenciais
+        devem existir e ser definidos em <emphasis>
+        storage.planes</emphasis>.</para>
+
+        <para>O próximo trecho é um exemplo de um cluster Thor configurado com
+        a opção preferredDataReadPlanes.</para>
+
+        <programlisting>thor: 
+- name: thor 
+  prefix: thor 
+  numWorkers: 2
+  maxJobs: 4
+  maxGraphs: 3 
+  preferredDataReadPlanes: 
+  - data-copy
+  - indexdata-copy
+</programlisting>
+
+        <para>No exemplo acima, ao executar uma consulta que lê um arquivo que
+        reside tanto em "data" quanto em "data-copy" (nessa ordem),
+        normalmente leria a primeira cópia em "data". Com
+        <emphasis>preferredDataReadPlanes</emphasis> especificado, se esse
+        arquivo também residir em "data-copy", Thor lerá essa cópia.</para>
+
+        <para>Isso pode ser útil quando existem múltiplas cópias de arquivos
+        em diferentes planos com características distintas que podem impactar
+        o desempenho.</para>
+      </sect3>
     </sect2>
 
-    <sect2 id="StorageItems_HPCC_Systems_Coomponents">
+    <sect2 id="StorageItems_HPCC_Systems_Coomponents" role="brk">
       <title>Itens de armazenamento para componentes de HPCC Systems</title>
 
       <sect3 id="YML-DOC_GenData-Storage">
@@ -835,10 +932,12 @@
 
         <para>Onde as consultas ECL compiladas são armazenadas. O
         armazenamento precisa permitir que objetos compartilhados sejam
-        carregados diretamente a partir dele de forma eficiente. Se você
-        quiser dados Dali e dll no mesmo plano, é possível usar o mesmo
-        prefixo para ambas as propriedades do subcaminho. Ambos usariam o
-        mesmo prefixo, mas deveriam ter subcaminhos diferentes.</para>
+        carregados diretamente a partir dele de forma eficiente.</para>
+
+        <para>Se você quiser dados Dali e dll no mesmo plano, é possível usar
+        o mesmo prefixo para ambas as propriedades do subcaminho. Ambos
+        usariam o mesmo prefixo, mas deveriam ter subcaminhos
+        diferentes.</para>
       </sect3>
 
       <sect3>
@@ -865,8 +964,76 @@
       </sect3>
     </sect2>
 
+    <sect2 id="Egress-HYAML" role="brk">
+      <title>Egresso</title>
+
+      <para>A fim de permitir que os clusters sejam trancados de forma segura,
+      mas ainda permitir o acesso aos serviços de que precisam, existe um
+      mecanismo de saída. O egresso fornece um mecanismo similar ao ingresso,
+      sendo capaz de definir quais endpoints e portas os componentes têm
+      permissão para se conectar.</para>
+
+      <para>A maioria dos componentes do HPCC Systems possui suas próprias
+      políticas de rede geradas automaticamente. As políticas de rede geradas
+      tipicamente trabalham para limitar o ingresso e egresso à comunicação
+      inter-componente, ou apenas ao ingresso de serviço externo
+      esperado.</para>
+
+      <para>Por exemplo, em um sistema implantado por padrão com políticas de
+      rede em vigor, uma consulta em execução (em hThor, Thor ou Roxie) não
+      será capaz de se conectar com um serviço de terceiros, como um serviço
+      LDAP ou pilha de log.</para>
+
+      <para>Na configuração padrão, qualquer pod com acesso à API do Kube
+      também terá acesso a qualquer endpoint externo. Isso ocorre porque uma
+      <emphasis>NetworkPolicy</emphasis> é gerada para acesso de egresso para
+      componentes que precisam de acesso à API do Kube. No entanto,
+      <emphasis>global.egress.kubeApiCidr</emphasis> e
+      <emphasis>global.egress.kubeApiPort</emphasis> no values.yaml devem ser
+      configurados em um sistema seguro para restringir esse acesso de
+      egresso, de modo que ele apenas exponha acesso de egresso para o
+      endpoint da API do Kube.</para>
+
+      <para>Adicionamos um mecanismo semelhante às definições de visibilidade,
+      que permite seções de saída nomeadas, que então podem ser referenciadas
+      por componente.</para>
+
+      <para>Por exemplo:</para>
+
+      <programlisting>global:
+  egress:
+    engineEgress:
+    - to:
+        - ipBlock:
+            cidr: 201.13.21.0/24
+        - ipBlock:
+            cidr: 142.250.187.0/24
+      ports:
+        - protocol: TCP
+          port: 6789
+        - protocol: TCP
+          port: 7890
+...
+
+thor:
+...
+  egress: engineEgress</programlisting>
+
+      <para>Note que o nome 'engineEgress' é um nome arbitrário, qualquer nome
+      pode ser escolhido, e qualquer número dessas seções de egresso nomeadas
+      pode ser definido.</para>
+
+      <para>Para mais informações, por favor, veja a seção
+      <emphasis>egress:</emphasis> no arquivo YAML padrão fornecido pelo HPCC
+      Systems. O arquivo <emphasis>values.yaml</emphasis> pode ser encontrado
+      no diretório helm/hpcc/ no repositório github do HPCC Systems:</para>
+
+      <para><ulink
+      url="https://github.com/hpcc-systems/HPCC-Platform">https://github.com/hpcc-systems/HPCC-Platform</ulink></para>
+    </sect2>
+
     <sect2>
-      <title>Valores de Segurança</title>
+      <title>Valores de segurança</title>
 
       <para>Esta seção examinará as seções de <emphasis>values.yaml</emphasis>
       que tratam dos componentes de segurança do sistema.</para>
@@ -917,24 +1084,60 @@
         incluindo a categoria "ecl", são lidas internamente pelos componentes
         do sistema e não expostas diretamente ao código ECL.</para>
       </sect3>
+
+      <sect3 id="CV_CrossOriginRes">
+        <title>Manipulação de Recursos de Origem Cruzada</title>
+
+        <para>O compartilhamento de recursos de origem cruzada (CORS) é um
+        mecanismo para integrar aplicativos em diferentes domínios. CORS
+        define como as aplicações web do cliente em um domínio podem interagir
+        com recursos em outro domínio. Você pode configurar as configurações
+        de suporte ao CORS na seção ESP do arquivo values.yaml, conforme
+        ilustrado abaixo:</para>
+
+        <programlisting>esp:
+- name: eclwatch
+  application: eclwatch
+  auth: ldap
+  replicas: 1
+  # The following 'corsAllowed' section is used to configure CORS support
+  #   origin - the origin to support CORS requests from
+  #   headers - the headers to allow for the given origin via CORS
+  #   methods - the HTTP methods to allow for the given origin via CORS
+  #
+  corsAllowed:
+  # origin starting with https will only allow https CORS
+  - origin: https://*.example2.com
+    headers:
+    - "X-Custom-Header"
+    methods:
+    - "GET"
+  # origin starting with http will allow http or https CORS
+  - origin: http://www.example.com
+    headers:
+    - "*"
+    methods:
+    - "GET"
+    - "POST" </programlisting>
+      </sect3>
     </sect2>
 
     <sect2>
-      <title>Visibilities</title>
+      <title>Visibilidades</title>
 
-      <para>A seção Visibilities pode ser usada para definir rótulos,
+      <para>A seção Visibilidades pode ser usada para definir rótulos,
       anotações e tipos de serviço para qualquer serviço com a visibilidade
       especificada.</para>
     </sect2>
 
-    <sect2>
-      <title>Replicas e Resources</title>
+    <sect2 id="Replicas-Resources-YAML">
+      <title>Réplicas e Recursos</title>
 
       <para>Outros valores dignos de nota nos charts que têm relação com a
       instalação e configuração do HPCC Systems.</para>
 
       <sect3 id="REPLICAS_">
-        <title>Replicas</title>
+        <title>Réplicas</title>
 
         <para>replicas: define quantos nós de réplica surgem, quantos pods são
         executados para equilibrar uma carga. Para ilustrar, se você tiver um
@@ -943,7 +1146,7 @@
       </sect3>
 
       <sect3 id="RESOURCES_ValuesYAML">
-        <title>Resources</title>
+        <title>Recursos</title>
 
         <para>A maioria dos componentes tem uma seção de recursos que define
         quantos recursos são atribuídos a esse componente. Nos arquivos de
@@ -969,202 +1172,711 @@
         manager, worker e eclagent têm requisitos de recursos
         diferentes.</para>
       </sect3>
+    </sect2>
 
-      <sect3 id="TAINTS_TOLERATIONS_PLACEMENTS">
-        <title>Taints, Tolerations e Placements</title>
+    <sect2 id="ENV_values_yaml">
+      <title>Valores do Ambiente</title>
 
-        <para>Esta é uma consideração importante para sistemas em contêineres.
-        Taints e Tolerations são tipos de restrições de nó do Kubernetes
-        também referidas por <emphasis role="bold">Node Affinity</emphasis>. A
-        afinidade do nó é uma maneira de restringir os pods aos nós. Apenas
-        uma "afinidade" pode ser aplicada a um pod. Se um pod corresponder a
-        várias listas de "pods" de canais, somente a última definição de
-        "afinidade" será aplicada.</para>
+      <para>Você pode definir variáveis de ambiente em um arquivo YAML. Os
+      valores do ambiente são definidos na seção
+      <emphasis>global.env</emphasis> do arquivo values.yaml fornecido
+      peloHPCC Systems. Esses valores são especificados como uma lista de
+      pares de nome-valor, conforme ilustrado abaixo.</para>
 
-        <para>Os taints e as tolerations trabalham juntos para garantir que os
-        pods não sejam agendados em nós inadequados. As tolerâncias são
-        aplicadas aos pods e permitem (mas não exigem) que os pods sejam
-        agendados em nós com taints correspondentes. Taints são o oposto -
-        elas permitem que um nó repele um conjunto de cápsulas.</para>
-
-        <para>Por exemplo, todos os workers Thor devem estar no tipo
-        apropriado de VM. Se um grande job de Thor aparecer – então o nível de
-        taints entra em jogo.</para>
-
-        <para>Para obter mais informações e exemplos de nossos Taints,
-        Tolerations e Placements, consulte nossa documentação do
-        desenvolvedor:</para>
-
-        <para><ulink
-        url="https://github.com/hpcc-systems/HPCC-Platform/blob/master/helm/hpcc/docs/placements.md">https://github.com/hpcc-systems/HPCC-Platform/blob/master/helm/hpcc/docs/placements.md</ulink></para>
-
-        <sect4 id="YAML_FileStruct_Placement">
-          <title>Placement</title>
-
-          <para>O Placement é responsável por encontrar o melhor nó para um
-          pod. Na maioria das vezes, o placement é tratado automaticamente
-          pelo Kubernetes. Você pode restringir um pod para que ele possa ser
-          executado apenas em um conjunto específico de nós. Usando canais,
-          você pode configurar o agendador do Kubernetes para usar uma lista
-          de "pods" para aplicar configurações aos pods. Por exemplo:</para>
-
-          <programlisting> placements:
-   - pods: [list]
-     placement:
-       &lt;supported configurations&gt;</programlisting>
-
-          <para>Os pods: [list] podem conter uma variedade de itens.</para>
-
-          <orderedlist>
-            <listitem>
-              <para>Tipos de componentes do HPCC Systems, usando o
-              <emphasis>tipo</emphasis> de prefixo: pode ser: dali, esp,
-              eclagent, eclccserver, roxie, thor. Por exemplo
-              "tipo:esp"</para>
-            </listitem>
-
-            <listitem>
-              <para>Alvo; o nome de um item de array dos tipos acima usando o
-              prefixo "target:" Por exemplo "target:roxie" ou
-              "target:thor".</para>
-            </listitem>
-
-            <listitem>
-              <para>Pod, nome de metadados "Implantação" do nome do item de
-              matriz de um tipo. Por exemplo, "eclwatch", "mydali",
-              "thor-thoragent"</para>
-            </listitem>
-
-            <listitem>
-              <para>Expressão regular do nome do trabalho: Por exemplo,
-              "compile-" ou "compile-". ou correspondência exata
-              "^compile-.$"</para>
-            </listitem>
-
-            <listitem>
-              <para>Todos: para solicitar todos os componentes do HPCC
-              Systems. Os canais padrão para os pods que entregamos são
-              [all]</para>
-            </listitem>
-          </orderedlist>
-
-          <para><emphasis role="bold">Placements</emphasis> – no Kubernetes, o
-          conceito de placement permite distribuir seus pods por tipos de nós
-          com características particulares. Os placements seriam usados para
-          garantir que os pods ou trabalhos que desejam nós com
-          características específicas sejam colocados neles.</para>
-
-          <para>Por exemplo, um cluster Thor pode ser direcionado para machine
-          learning usando nós com uma GPU. Outro trabalho pode querer nós com
-          uma boa quantidade de memória ou outro para mais CPU. Você pode usar
-          posicionamentos para garantir que os pods com requisitos específicos
-          sejam colocados nos nós apropriados.</para>
-        </sect4>
-      </sect3>
-
-      <sect3 id="ENV_values_yaml">
-        <title>Environment Values</title>
-
-        <para>Você pode definir variáveis de ambiente em um arquivo YAML. Os
-        valores do ambiente são definidos na parte <emphasis>global.env
-        </emphasis> do arquivo HPCC Systems values.yaml fornecido. Esses
-        valores são especificados como uma lista de pares de valor de nome
-        conforme ilustrado abaixo.</para>
-
-        <programlisting>global:
+      <programlisting>global:
   env:
   - name: SMTPserver 
     value: mysmtpserver</programlisting>
 
-        <para>A seção global.env do arquivo values.yaml fornecido adiciona
-        variáveis de ambiente padrão para todos os componentes. Você também
-        pode especificar variáveis de ambiente para os componentes
-        individuais. Consulte o schema para definir esse valor para
-        componentes individuais.</para>
+      <para>A seção global.env do arquivo values.yaml fornecido adiciona
+      variáveis de ambiente padrão para todos os componentes. Você também pode
+      especificar variáveis de ambiente para os componentes individuais.
+      Consulte o esquema para definir esse valor para componentes
+      individuais.</para>
 
-        <para>Para adicionar valores de ambiente, você pode inseri-los em seu
-        arquivo YAML de configuração de personalização ao implantar seu HPCC
-        Systems em contêineres.</para>
+      <para>Para adicionar valores de ambiente, você pode inseri-los no seu
+      arquivo YAML de configuração de personalização quando fizer o deploy do
+      seu HPCC Systems contêinerizado.</para>
+
+      <sect3>
+        <title>Variáveis de Ambiente para Sistemas Conteinerizados</title>
+
+        <para>Existem várias configurações em environment.conf para sistemas
+        bare-metal. Embora muitas configurações de environment.conf não sejam
+        válidas para contêineres, algumas podem ser úteis. Em uma implantação
+        na nuvem, essas configurações são herdadas de variáveis de ambiente.
+        Essas variáveis de ambiente são configuráveis usando o values yaml
+        globalmente ou no nível do componente.</para>
+
+        <para>Algumas dessas variáveis estão disponíveis para implantações em
+        contêineres e na nuvem e podem ser definidas usando o gráfico do Helm.
+        Os seguintes valores de environment.conf para sistemas bare-metal têm
+        valores equivalentes que podem ser definidos para instâncias
+        conteinerizadas.</para>
+
+        <para><informaltable>
+            <tgroup cols="2">
+              <tbody>
+                <row>
+                  <entry><emphasis role="bold">Environment.conf
+                  Value</emphasis></entry>
+
+                  <entry><emphasis role="bold">Helm Environment
+                  Variable</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>skipPythonCleanup</entry>
+
+                  <entry>SKIP_PYTHON_CLEANUP</entry>
+                </row>
+
+                <row>
+                  <entry>jvmlibpath</entry>
+
+                  <entry>JAVA_LIBRARY_PATH</entry>
+                </row>
+
+                <row>
+                  <entry>jvmoptions</entry>
+
+                  <entry>JVM_OPTIONS</entry>
+                </row>
+
+                <row>
+                  <entry>classpath</entry>
+
+                  <entry>CLASSPATH</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+
+        <para>O seguinte exemplo define a variável de ambiente para pular a
+        limpeza do Python no componente Thor:</para>
+
+        <para><programlisting>thor: 
+  env: 
+  - name: SKIP_PYTHON_CLEANUP 
+    value: true</programlisting></para>
+      </sect3>
+    </sect2>
+
+    <sect2 id="CNT_IndexBuildPlane">
+      <title>Index Build Plane</title>
+
+      <para>Defina o valor <emphasis>indexBuildPlane</emphasis> como uma opção
+      de gráfico de helm para permitir que arquivos de índice sejam escritos
+      por padrão em um plano de dados diferente. Ao contrário de arquivos
+      planos, os arquivos de índices têm requisitos diferentes. Os arquivos de
+      índice se beneficiam de armazenamento de acesso aleatório rápido.
+      Normalmente, arquivos planos e arquivos de índices são gravados nos
+      planos de dados padrão definidos. Usando esta opção, você pode definir
+      que os arquivos de índice são construídos em um plano de dados separado
+      de outros arquivos comuns. Este valor de gráfico pode ser fornecido em
+      um componente ou nível global.</para>
+
+      <para>Por exemplo, adicionando o valor a um nível global em
+      globlal.storage:</para>
+
+      <programlisting>global:
+  storage:
+    indexBuildPlane: myindexplane</programlisting>
+
+      <para>Optionally, you could add it at the component level, as
+      follows:</para>
+
+      <programlisting>thor:
+- name: thor
+  prefix: thor
+  numWorkers: 2
+  maxJobs: 4
+  maxGraphs: 2
+  indexBuildPlane: myindexplane</programlisting>
+
+      <para>Opcionalmente, você poderia adicioná-lo no nível do componente,
+      conforme segue:</para>
+    </sect2>
+  </sect1>
+
+  <sect1 id="CV_Pods-Nodes">
+    <title>Pods e Nós</title>
+
+    <para>Uma das principais características do Kubernetes é sua capacidade de
+    agendar pods nos nós do cluster. Um pod é a unidade mais pequena e simples
+    no ambiente Kubernetes que você pode criar ou implantar. Um nó é uma
+    máquina "trabalhadora", física ou virtual, no Kubernetes.</para>
+
+    <para>A tarefa de agendar pods para nós específicos no cluster é
+    gerenciada pelo kube-scheduler. O comportamento padrão deste componente é
+    filtrar os nós com base nas solicitações e limites de recursos de cada
+    recipiente no pod criado. Os nós viáveis são então pontuados para
+    encontrar o melhor candidato para a localização do pod. O agendador também
+    leva em conta outros fatores, como afinidade e anti-afinidade de pods,
+    marcas e tolerâncias, restrições de dispersão de topologia de pod, e os
+    rótulos de seleção de nó. O agendador pode ser configurado para usar esses
+    diferentes algoritmos e políticas para otimizar a colocação do pod de
+    acordo com as necessidades do seu cluster.</para>
+
+    <para>Você pode implantar esses valores usando o arquivo values.yaml ou
+    pode colocá-los em um arquivo e fazer com que o Kubernetes leia os valores
+    do arquivo fornecido. Veja a seção acima <emphasis>Técnicas de
+    personalização</emphasis> para mais informações sobre como personalizar
+    sua implantação.</para>
+
+    <sect2 id="YAML_FileStruct_Placement">
+      <title>Placements</title>
+
+      <para>O termo "Placements" é usado pelo HPCC Systems para descrever o
+      que o Kubernetes se refere como agendador ou agendamento/atribuição.
+      Para evitar confusão com a terminologia específica do agendador do HPCC
+      Systems e ECL, usamos o termo "Placements" para nos referir ao
+      agendamento do Kubernetes. Os Placements são um valor na configuração do
+      HPCC Systems que reside em um nível acima de entidades como
+      nodeSelector, Tolerância, Afinidade e Anti-Afinidade, e
+      TopologySpreadConstraints.</para>
+
+      <para>O Placement é responsável por encontrar o melhor nó para um pod.
+      Na maioria das vezes, a colocação é gerenciada automaticamente pelo
+      Kubernetes. Você pode restringir um Pod para que ele possa ser executado
+      apenas em um conjunto específico de Nós.</para>
+
+      <para>Placements, então, seriam usadas para garantir que pods ou jobs
+      que requerem nós com características específicas sejam alocados nestes
+      nós.</para>
+
+      <para>Por exemplo, um cluster Thor poderia ser direcionado para machine
+      learning usando nós com GPU. Outro job pode precisar de nós com uma
+      quantidade maior de memória ou outro para mais CPU.</para>
+
+      <para>Usando placements, você pode configurar o agendador do Kubernetes
+      para usar uma lista de "pods" para aplicar configurações aos
+      pods.</para>
+
+      <para>Por exemplo:</para>
+
+      <programlisting> placements:
+   - pods: [list]
+     placement:
+       &lt;supported configurations&gt;</programlisting>
+
+      <sect3 id="PlacementScope">
+        <title>Escope do Placement</title>
+
+        <para>Use padrões de pods para aplicar o escopo para os
+        placements.</para>
+
+        <para>Os pods: [list] podem conter uma variedade de itens.</para>
+
+        <informaltable colsep="1" frame="all" rowsep="1">
+          <tgroup cols="2">
+            <colspec colwidth="125.55pt"/>
+
+            <colspec/>
+
+            <tbody>
+              <row>
+                <entry>Tipo: &lt;component&gt;</entry>
+
+                <entry>Cobre todos os pods/trabalhos sob este tipo de
+                componente. Isso é comumente utilizado para os componentes do
+                HPCC Systems. Por exemplo, o <emphasis>type:thor
+                </emphasis>que se aplicará a qualquer componente do tipo Thor;
+                thoragent, thormanager, thoragent e thorworker, etc.</entry>
+              </row>
+
+              <row>
+                <entry>Destino: &lt;name&gt;</entry>
+
+                <entry>O campo "name" de cada componente, uso típico para
+                componentes do HPCC Systems refere-se ao nome do cluster. Por
+                exemplo,<emphasis> Roxie: -name: roxie</emphasis> que será o
+                destinoalvo "Roxie" (cluster). Você também pode definir vários
+                alvos, cada um com um nome único, como "roxie", "roxie2",
+                "roxie-web", etc.</entry>
+              </row>
+
+              <row>
+                <entry>Pod: &lt;name&gt;</entry>
+
+                <entry>Este é o nome dos metadados de "Implantação" a partir
+                do nome do item de array de um tipo. Por exemplo, "eclwatch-",
+                "mydali-", "thor-thoragent", o uso de uma expressão regular é
+                preferido, pois o Kubernetes usará o nome dos metadados como
+                prefixo e gerará dinamicamente o nome do pod, como,
+                eclwatch-7f4dd4dd44cb-c0w3x.</entry>
+              </row>
+
+              <row>
+                <entry>Nome do Job:</entry>
+
+                <entry>O nome do job é geralmente também uma expressão
+                regular, já que o nome do job é gerado dinamicamente. Por
+                exemplo, um job de compilação compile-54eB67e567e, pode usar
+                "compile-" ou "compile-.*" ou "^compile-.*$"</entry>
+              </row>
+
+              <row>
+                <entry>All:</entry>
+
+                <entry>Aplica para todos os componentes do HPCC Systems. O
+                padrão de implantação dos placements para pods é [all]</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable>
+
+        <para>Independentemente da ordem em que os placements aparecem na
+        configuração, eles serão processadas na seguinte ordem: "all", "type",
+        "target", e então "pod"/"job".</para>
+
+        <sect4>
+          <title>Combinações mistas</title>
+
+          <para>NodeSelector, taints e tolerations, e outros valores pode ser
+          colocado nos mesmos pods: [list] ambos por zona e por nós no Azure
+          <programlisting>placements:
+- pods: ["eclwatch","roxie-workunit","^compile-.*$","mydali"]
+  placement:
+    nodeSelector:
+      name: npone</programlisting></para>
+        </sect4>
+      </sect3>
+    </sect2>
+
+    <sect2 id="S2NodeSelection">
+      <title>Seleção de Nós</title>
+
+      <para>Em um ambiente de contêineres Kubernetes, existem várias maneiras
+      de agendar seus nós. As abordagens recomendadas utilizam seletores de
+      rótulos para facilitar a seleção. Geralmente, você pode não precisar
+      definir tais restrições, pois o agendador normalmente faz um
+      posicionamento razoavelmente aceitável automaticamente. No entanto, em
+      algumas implantações, você pode querer ter mais controle sobre pods
+      específicos.</para>
+
+      <para>O Kubernetes utiliza os seguintes métodos para escolher onde
+      agendar os pods:</para>
+
+      <para><itemizedlist>
+          <listitem>
+            <para>campo nodeSelector correspondendo aos rótulos dos nós</para>
+          </listitem>
+
+          <listitem>
+            <para>Afinidade e anti-afinidade</para>
+          </listitem>
+
+          <listitem>
+            <para>Taints and Tolerâncias</para>
+          </listitem>
+
+          <listitem>
+            <para>campo nodeName</para>
+          </listitem>
+
+          <listitem>
+            <para>restrições de dispersão topológica de pods</para>
+          </listitem>
+        </itemizedlist></para>
+
+      <sect3 id="CV_NodeLabels">
+        <title>Rótulo dos Nós</title>
+
+        <para>Os nós do Kubernetes possuem rótulos. Kubernetes possui um
+        conjunto padrão de rótulos utilizados para nós em um cluster. Você
+        também pode anexar rótulos manualmente, o que é recomendado, já que o
+        valor desses rótulos é específico do provedor de nuvem e não é
+        garantido ser confiável.</para>
+
+        <para>Adicionar rótulos aos nós permite agendar pods para nós ou
+        grupos de nós específicos. Você pode então usar essa funcionalidade
+        para garantir que pods específicos sejam executados apenas em nós com
+        determinadas propriedades.</para>
+      </sect3>
+
+      <sect3 id="CV_nodeSelector">
+        <title>O nodeSelector</title>
+
+        <para>O nodeSelector é um campo na especificação do Pod que permite
+        especificar um conjunto de rótulos de nó que devem estar presentes no
+        nó de destino para que o Pod seja agendado lá. É a forma mais simples
+        de restrição de seleção de nó. Ele seleciona nós com base nos rótulos,
+        mas possui algumas limitações. Suporta apenas uma chave de rótulo e um
+        valor de rótulo. Se você desejar corresponder a vários rótulos ou usar
+        expressões mais complexas, precisa usar a Afinidade de Nó (node
+        Affinity)</para>
+
+        <para>Adicione o campo nodeSelector à especificação do seu pod e
+        especifique os rótulos de nó que você deseja que o nó de destino
+        tenha. Você deve ter os rótulos de nó definidos no trabalho (job) e no
+        pod. Em seguida, você precisa especificar cada grupo de nós que o
+        rótulo de nó deve usar. O Kubernetes agendará o pod apenas nos nós que
+        possuem os rótulos que você especificar.</para>
+
+        <para>O exemplo a seguir mostra o nodeSelector colocado na lista de
+        pods. Este exemplo agenda todos os componentes do HPCC para usar o
+        grupo de nós com o rótulo "group: hpcc".</para>
+
+        <para><programlisting> placements:
+   - pods: ["all"]
+     placement:
+       nodeSelector:
+         group: "hpcc"</programlisting></para>
+
+        <para><emphasis role="bold">Nota:</emphasis> O rótulo group:hpcc
+        corresponde ao rótulo do grupo de nós hpcc.</para>
+
+        <para>Este próximo exemplo mostra como configurar um grupo de nós para
+        evitar o agendamento de um componente Dali neste grupo de nós rotulado
+        com a chave spot: com o valor false. Como esse tipo de nó nem sempre
+        está disponível e pode ser revogado, você não deseja usar o grupo de
+        nós spot para componentes Dali. Este é um exemplo de como configurar
+        um tipo específico (Dali) de componente do HPCC Systems para não usar
+        um determinado grupo de nós.</para>
+
+        <para><programlisting> placements:
+   - pods: ["type:dali"]
+     placement:
+       nodeSelector:
+         spot: "false"</programlisting></para>
+
+        <para>Ao usar nodeSelector, múltiplos nodeSelectors podem ser
+        aplicados. Se chaves duplicadas forem definidas, apenas a última
+        prevalecerá.</para>
+      </sect3>
+
+      <sect3 id="CV-TAINTS_TOLERATIONS">
+        <title>Taints e Tolerâncias</title>
+
+        <para>Taints e Tolerâncias são tipos de restrições de nó do
+        Kubernetes, também referidas como Afinidade de Nó. Apenas uma
+        afinidade pode ser aplicada a um pod. Se um pod corresponder a várias
+        listas de posicionamento ('pods'), então apenas a última definição de
+        afinidade será aplicada.</para>
+
+        <para>Taints e tolerâncias trabalham juntos para garantir que os pods
+        não sejam agendados em nós inadequados. Tolerâncias são aplicadas aos
+        pods e permitem (mas não exigem) que os pods sejam agendados em nós
+        com taints correspondentes. Taints funcionam de forma oposta - elas
+        permitem que um nó repila um conjunto de pods. Uma forma de implantar
+        usando taints é configurar para repelir todos os nós exceto um
+        específico. Então, esse pod pode ser agendado em outro nó que seja
+        tolerante.</para>
+
+        <para>Por exemplo, os jobs do Thor devem estar todos no tipo
+        apropriado de VM. Se um trabalho grande do Thor aparecer, então o
+        nível de taints repele qualquer pod que tente ser agendado em um nó
+        que não atenda aos requisitos.</para>
+
+        <para>Para mais informações e exemplos de nossos Taints, Tolerâncias,
+        e Placements, por favor verifique nossa documentação de
+        desenvolvimento:</para>
+
+        <para><ulink
+        url="https://github.com/hpcc-systems/HPCC-Platform/blob/master/helm/hpcc/docs/placements.md">https://github.com/hpcc-systems/HPCC-Platform/blob/master/helm/hpcc/docs/placements.md</ulink></para>
+
+        <sect4 id="CSP_TaintsandTolerationsExamples">
+          <title>Exemplos de Taints e tolerâncias</title>
+
+          <para>Os exemplos a seguir ilustram como alguns taints e tolerâncias
+          podem ser aplicados.</para>
+
+          <para>O Kubernetes pode agendar um pod para qualquer grupo de nós
+          sem um taint. Nos exemplos seguintes, o Kubernetes só pode agendar
+          os dois componentes para os grupos de nós com esses rótulos exatos,
+          group e gpu.</para>
+
+          <para><programlisting> placements:
+   - pods: ["all"]
+     tolerations:
+       key: "group"
+         operator: "Equal" 
+           value: "hpcc"
+             effect: "NoSchedule"         </programlisting></para>
+
+          <programlisting>placements:
+   - pods: ["type:thor"] 
+     tolerations: 
+        key: "gpu" 
+        operator: "Equal" 
+        value: "true" 
+        effect: "NoSchedule" </programlisting>
+
+          <para>Também é possível usar múltiplas tolerations. O exemplo a
+          seguir possui duas tolerations, group e gpu.</para>
+
+          <programlisting>#The settings will be applied to all thor pods/jobs and myeclccserver pod and job
+- pods: ["thorworker-", "thor-thoragent", "thormanager-","thor-eclagent","hthor-"]
+  placement:
+    nodeSelector:
+      app: tf-gpu
+    tolerations:
+    - key: "group"
+      operator: "Equal"
+      value: "hpcc"
+      effect: "NoSchedule" 
+    - key: "gpu"
+      operator: "Equal" 
+      value: "true"
+      effect: "NoSchedule"
+</programlisting>
+
+          <para>Neste exemplo, o nodeSelector está impedindo o agendador do
+          Kubernetes de implantar qualquer pod neste grupo de nós. Sem taints,
+          o agendador poderia implantar qualquer pod no grupo de nós. Ao
+          utilizar o nodeSelector, o taint forçará o pod a ser implantado
+          apenas nos nós que correspondem a esse rótulo de nó. Existem, então,
+          duas restrições neste exemplo: uma do grupo de nós e outra do
+          pod.</para>
+        </sect4>
+      </sect3>
+
+      <sect3 id="CV_TopologySpreadConstraints">
+        <title>Restrições de Dispersão Topológica</title>
+
+        <para>Você pode usar restrições de dispersão topológica para controlar
+        como os pods são distribuídos em seu cluster entre domínios de falha,
+        como regiões, zonas, nós e outros domínios de topologia definidos pelo
+        usuário. Isso pode ajudar a alcançar alta disponibilidade e utilização
+        eficiente de recursos. Você pode definir restrições de dispersão
+        topológica ao nível do cluster como padrão, ou configurá-las para
+        cargas de trabalho individuais. As restrições de dispersão topológica
+        <emphasis role="bold">topologySpreadConstraints</emphasis> requerem
+        Kubernetes v1.19 ou superior.</para>
+
+        <para>Para mais informações:</para>
+
+        <para><ulink
+        url="https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/">https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/</ulink>
+        and</para>
+
+        <para><ulink
+        url="https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/">https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/</ulink></para>
+
+        <para>Usando o exemplo de "topologySpreadConstraints", há dois grupos
+        de nós que têm "hpcc=nodepool1" e "hpcc=nodepool2", respectivamente.
+        Os pods do Roxie serão agendados de forma equitativa nos dois grupos
+        de nós.</para>
+
+        <para>Após a implantação, você pode verificar emitindo o seguinte
+        comando:</para>
+
+        <programlisting>kubectl get pod -o wide | grep roxie</programlisting>
+
+        <para>o código dos placements:</para>
+
+        <programlisting>- pods: ["type:roxie"]
+  placement:
+    topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: hpcc
+      whenUnsatisfiable: ScheduleAnyway
+      labelSelector:
+        matchLabels:
+          roxie-cluster: "roxie"</programlisting>
+      </sect3>
+
+      <sect3 id="CV_Affinity-AntiAffinity">
+        <title>Afinidade e Anti-Afinidade</title>
+
+        <para>A afinidade e anti-afinidade ampliam os tipos de restrições que
+        você pode definir. As regras de afinidade e anti-afinidade ainda são
+        baseadas nos rótulos. Além dos rótulos, elas fornecem regras que
+        orientam o agendador do Kubernetes sobre onde colocar pods com base em
+        critérios específicos. A linguagem de afinidade/anti-afinidade é mais
+        expressiva do que simples rótulos e oferece mais controle sobre a
+        lógica de seleção.</para>
+
+        <para>Existem dois tipos principais de afinidade: Afinidade de Nó
+        (Node Affinity) e Afinidade de Pod (Pod Affinity).</para>
+
+        <sect4 id="CS-Node-Affiniy">
+          <title>Afinidade de Nó</title>
+
+          <para>A afinidade de nó (Node Affinity) é semelhante ao conceito de
+          nodeSelector, que permite restringir em quais nós seu pod pode ser
+          agendado com base nos rótulos dos nós. Ela é usada para restringir
+          os nós que podem receber um pod, combinando os rótulos desses nós. A
+          afinidade de nó e anti-afinidade só podem ser usadas para definir
+          afinidades positivas que atraem pods para o nó.</para>
+
+          <para>Não há verificação de esquema para o conteúdo da afinidade.
+          Apenas uma afinidade pode ser aplicada a um pod ou job. Se um
+          pod/job corresponder a várias listas de posicionamento de pods,
+          então apenas a última definição de afinidade será aplicada.</para>
+
+          <para>Para maiores informações, veja <ulink
+          url="https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/">https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/</ulink></para>
+
+          <para>Existem dois tipos de afinidade de nós:</para>
+
+          <para><emphasis>requiredDuringSchedulingIgnoredDuringExecution:</emphasis>
+          O agendador não pode agendar o pod a menos que esta regra seja
+          cumprida. Essa função é semelhante ao nodeSelector, mas com uma
+          sintaxe mais expressiva.</para>
+
+          <para><emphasis>preferredDuringSchedulingIgnoredDuringExecution</emphasis>:
+          O agendador tenta encontrar um nó que atenda à regra. Se um nó
+          correspondente não estiver disponível, o agendador ainda assim
+          agenda o pod.</para>
+
+          <para>Você pode especificar afinidades de nó usando o campo
+          <emphasis>spec.affinity.nodeAffinity</emphasis> na especificação do
+          seu pod.</para>
+        </sect4>
+
+        <sect4>
+          <title>Afinidade de Pod</title>
+
+          <para>A afinidade de pod ou Inter-Pod Affinity é usada para
+          restringir os nós que podem receber um pod combinando os rótulos dos
+          pods existentes já em execução nesses nós. A afinidade de pod e
+          anti-afinidade pode ser tanto uma afinidade atrativa quanto uma
+          anti-afinidade repelente.</para>
+
+          <para>A afinidade inter-pod funciona de maneira muito semelhante à
+          afinidade de nó, mas apresenta algumas diferenças importantes. Os
+          modos "hard" e "soft" são indicados usando os mesmos campos
+          <emphasis>requiredDuringSchedulingIgnoredDuringExecution</emphasis>
+          e
+          <emphasis>preferredDuringSchedulingIgnoredDuringExecution</emphasis>.
+          No entanto, esses devem estar aninhados sob os campos
+          <emphasis>spec.affinity.podAffinity</emphasis> ou
+          <emphasis>preferredDuringSchedulingIgnoredDuringExecution</emphasis>,
+          dependendo se você deseja aumentar ou reduzir a afinidade do
+          pod.</para>
+        </sect4>
+
+        <sect4>
+          <title>Exemplo de Afinidade</title>
+
+          <para>O código a seguir ilustra um exemplo de afinidade:</para>
+
+          <programlisting>- pods: ["thorworker-.*"]
+  placement:
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: kubernetes.io/e2e-az-name
+              operator: In
+              values:
+              - e2e-az1
+              - e2e-az2</programlisting>
+
+          <para>Na seção `schedulerName` a seguir, as configurações de
+          "afinidade" também podem ser incluídas com esse exemplo.</para>
+
+          <para><emphasis role="bold">Nota:</emphasis> O valor "afinidade" no
+          campo "schedulerName" é suportado apenas nas versões beta do
+          Kubernetes 1.20.0 e posteriores.</para>
+        </sect4>
+      </sect3>
+
+      <sect3 id="CV_schedulerName">
+        <title>schedulerName</title>
+
+        <para>O campo <emphasis role="bold">schedulerName</emphasis>
+        especifica o nome do agendador responsável por agendar um pod ou uma
+        tarefa. No Kubernetes, você pode configurar vários agendadores com
+        nomes e perfis diferentes para serem executados simultaneamente no
+        cluster.</para>
+
+        <para>Apenas um "schedulerName" pode ser aplicado a qualquer pod ou
+        job.</para>
+
+        <para>Exemplo de schedulerName:</para>
+
+        <programlisting>- pods: ["target:roxie"]
+  placement:
+    schedulerName: "my-scheduler"
+#The settings will be applied to all thor pods/jobs and myeclccserver pod and job
+- pods: ["target:myeclccserver", "type:thor"]
+  placement:
+    nodeSelector:
+      app: "tf-gpu"
+    tolerations:
+    - key: "gpu"
+      operator: "Equal"
+      value: "true"
+      effect: "NoSchedule"
+</programlisting>
       </sect3>
     </sect2>
   </sect1>
 
-  <sect1 id="MoreHelmANDYAML" role="nobrk">
-    <title>Básico sobre Helm e Yaml</title>
+  <sect1 id="MoreHelmANDYAML">
+    <title>Fundamentos de Helm e YAML</title>
 
-    <para>Esta seção destina-se a fornecer algumas informações básicas para
-    ajudá-lo a começar a implantação em contêineres do HPCC Systems. Existem
-    vários recursos disponíveis para aprender sobre arquivos Kubernetes, Helm
-    e YAML. Para obter mais informações sobre como usar essas ferramentas ou
-    para implantações em nuvem ou contêiner, consulte a respectiva
-    documentação.</para>
+    <para>Esta seção destina-se a fornecer informações básicas para ajudá-lo a
+    iniciar sua implantação containerizada do HPCC Systems. Existem inúmeros
+    recursos disponíveis para aprender sobre Kubernetes, Helm e arquivos YAML.
+    Para mais informações sobre o uso dessas ferramentas, ou para implantações
+    em nuvem ou container, consulte a documentação respectiva.</para>
 
-    <para>In the previous section, we touched on the
-    <emphasis>values.yaml</emphasis> file and the
-    <emphasis>values-schema.json</emphasis> file. This section expands on some
-    of those concepts and how they might be applied when using the
-    containerized version of the HPCC Systems platform.</para>
-
-    <para>Anteriormente, abordamos o arquivo <emphasis>values.yaml</emphasis>
-    e o arquivo values-schema.json. Esta seção expande alguns desses conceitos
-    e como eles podem ser aplicados ao usar a versão em contêiner da
-    plataforma HPCC Systems.</para>
+    <para>Na seção anterior, mencionamos os arquivos
+    <emphasis>values.yaml</emphasis> e
+    <emphasis>values-schema.json</emphasis>. Esta seção expande alguns desses
+    conceitos e como eles podem ser aplicados ao usar a versão containerizada
+    da plataforma HPCC Systems.</para>
 
     <sect2 id="TheValuesYamlFileStruct">
-      <title>Estrutura do arquivo <emphasis>values.yaml</emphasis></title>
+      <title>A estrutura de arquivos <emphasis>values.yaml</emphasis></title>
 
-      <para>O arquivo <emphasis>values.yaml</emphasis> é um arquivo YAML que é
-      um formato frequentemente usado para arquivos de configuração. A
-      construção que compõe a maior parte de um arquivo YAML é o par
-      key-value, às vezes chamado de dicionário. A construção do par key-value
-      consiste em uma chave que aponta para alguns valores. Esses valores são
-      definidos pelo schema.</para>
+      <para>O arquivo <emphasis>values.yaml</emphasis> é um arquivo YAML, que
+      é um formato frequentemente usado para arquivos de configuração. A
+      estrutura que compõe a maior parte de um arquivo YAML é o par
+      chave-valor, às vezes referido como um dicionário. A construção de par
+      chave-valor consiste em uma chave que aponta para algum valor ou
+      valores. Esses valores são definidos pelo esquema.</para>
 
-      <para>Nesses arquivos de configuração, o recuo usado para representar o
-      relacionamento da estrutura do documento é muito importante. Os espaços
-      iniciais são significativos e as tabulações não são permitidas.</para>
+      <para>Nos arquivos de configuração, a indentação usada para representar
+      a estrutura do documento é bastante importante. Espaços à frente são
+      significativos e o uso de tabulações não é permitido.</para>
 
-      <para>Arquivos YAML são criados principalmente para dois tipos de
-      elementos: dictionários e listas.</para>
+      <para>Os arquivos YAML são compostos principalmente por dois tipos de
+      elementos: dicionários e listas.</para>
 
       <sect3 id="YAML_Dictionary">
-        <title>Dicitionary</title>
+        <title>Dicionário</title>
 
-        <para>Dicionários são coleções de mapeamentos de valores-chave. Todas
-        as chaves diferenciam maiúsculas de minúsculas e, como mencionamos
-        anteriormente, o recuo também é crucial. Essas chaves devem ser
-        seguidas por dois pontos (:) e um espaço. Os dicionários também podem
-        ser aninhados.</para>
+        <para>Dicionários são coleções de mapeamentos chave-valor. Todas as
+        chaves são sensíveis a maiúsculas e minúsculas, e a indentação também
+        é crucial. Essas chaves devem ser seguidas por dois pontos (:) e um
+        espaço.</para>
 
-        <para>Por examplo:</para>
+        <para>Por exemplo:</para>
 
         <programlisting>    logging: 
        detail: 80 
 </programlisting>
 
-        <para>Isso é uma exemplo de dicionário para registro.</para>
+        <para>Este é um exemplo de um dicionário para logging.</para>
 
-        <para>Os dicionários nos arquivos de valores passados, como os do
-        arquivo <emphasis>myoverrides.yaml</emphasis> no exemplo abaixo, serão
+        <para>Os dicionários nos arquivos de valores passados, como no arquivo
+        <emphasis>myoverrides.yaml</emphasis> no exemplo abaixo, serão
         mesclados nos dicionários correspondentes nos valores existentes,
-        começando com os valores padrão do chart helm entregue.</para>
+        começando pelos valores padrão do gráfico do Helm do HPCC
+        entregue.</para>
 
         <para><programlisting>helm install myhpcc hpcc/hpcc -f myoverrides.yaml</programlisting></para>
 
         <para>Quaisquer valores pré-existentes em um dicionário que não sejam
         substituídos continuarão presentes no resultado mesclado. No entanto,
-        você pode sobrepor o conteúdo de um dicionário definindo-o como
+        você pode substituir o conteúdo de um dicionário definindo-o como
         nulo.</para>
       </sect3>
 
       <sect3 id="YAML_Lists">
         <title>Listas</title>
 
-        <para>Listas são grupos de elementos começando no mesmo nível de recuo
-        começando com um - (um hifen e um espaço). Cada elemento da lista é
-        recuado no mesmo nível e começa com um hífen e um espaço. As listas
-        também podem ser aninhadas e podem ser listas de dicionários, que por
-        sua vez também podem ter propriedades de uma lista.</para>
+        <para>Listas são grupos de elementos que começam no mesmo nível de
+        indentação, iniciando com um hífen e um espaço (-). Cada elemento da
+        lista é indentado no mesmo nível e começa com um hífen e um espaço.
+        Listas também podem ser aninhadas, e até mesmo ser listas de
+        dicionários.</para>
 
         <para>Um exemplo de uma lista de dicionários, com
         placement.tolerations como uma lista aninhada.:</para>
@@ -1176,34 +1888,32 @@
     - key: "kubernetes.azure.com/scalesetpriority"
 </programlisting></para>
 
-        <para>A entrada da lista aqui é indicada usando o hífen, que é um item
-        de entrada na lista, que é um dicionário com atributos aninhados. Em
-        seguida, o próximo hífen (no mesmo nível de indentação) é a próxima
-        entrada nessa lista. Uma lista pode ser uma lista de elementos de
-        valor simples ou os próprios elementos podem ser listas ou
+        <para>A entrada da lista aqui é denotada usando o hífen, que é um item
+        de entrada na lista, que por sua vez é um dicionário com atributos
+        aninhados. Em seguida, o próximo hífen (no mesmo nível de indentação)
+        é a próxima entrada nessa lista. Uma lista pode ser uma lista de
+        elementos de valor simples, ou os elementos podem ser listas ou
         dicionários.</para>
       </sect3>
 
       <sect3 id="sections_OfHPCCValues">
-        <title>Seções do arquivo Values.yaml</title>
+        <title>Sessões do HPCC Systems Values.yaml</title>
 
-        <para>Primeira seção do arquivo <emphasis>values.yaml</emphasis>
-        descreve valores globais. Global normalmente se aplica a tudo.</para>
+        <para>A primeira seção do arquivo <emphasis>values.yaml</emphasis>
+        descreve valores globais. Global se aplica, em geral, a tudo.</para>
 
         <para><programlisting># Default values for hpcc.
-
 global:
   # Settings in the global section apply to all HPCC components in all subcharts
-
-</programlisting>No trecho de arquivo <emphasis>values.yaml</emphasis>
-        fornecido pelo HPCC Systems, <emphasis>global:</emphasis>(acima), é o
-        dicionário de nível superior. Conforme observado nos comentários, as
+</programlisting>No trecho do arquivo <emphasis>values.yaml</emphasis> do HPCC
+        Systems fornecido (acima), <emphasis>global:</emphasis> é o dicionário
+        de nível superior. Conforme observado nos comentários, as
         configurações na seção global se aplicam a todos os componentes do
-        HPCC Systems. Observe no nível de indentação que os outros valores
+        HPCC Systems. Note pelo nível de indentação que os outros valores
         estão aninhados nesse dicionário global.</para>
 
-        <para>Os itens definidos na seção global são compartilhados entre
-        todos os componentes.</para>
+        <para>Itens definidos na seção global são compartilhados entre todos
+        os componentes.</para>
 
         <para>Alguns exemplos de valores globais no arquivo values.yaml
         fornecido são as seções de armazenamento e segurança.</para>
@@ -1211,7 +1921,7 @@ global:
         <programlisting>storage:
   planes:</programlisting>
 
-        <para>and also</para>
+        <para>e também</para>
 
         <para><programlisting>security:
   eclSecurity:
@@ -1222,67 +1932,63 @@ global:
     embedded: "allow"
     pipe:  "allow"
     extern: "allow"
-    datafile: "allow"</programlisting>No exemplo acima,
+    datafile: "allow"</programlisting>Nos exemplos acima,
         <emphasis>storage:</emphasis> e <emphasis>security:</emphasis> são
-        valores globais.</para>
+        valores globais do gráfico.</para>
       </sect3>
     </sect2>
 
     <sect2 id="HPCCSystems_YAML_Usage">
-      <title>Uso do arquivo HPCC Systems Values.yaml</title>
+      <title>Utilização do HPCC Systems values.yaml</title>
 
       <para>O arquivo <emphasis>values.yaml</emphasis> do HPCC Systems é usado
-      pelo chart Helm para controlar como o HPCC Systems é implantado. O
-      arquivo de valores contém dicionários e listas, e eles podem ser
-      aninhados para criar estruturas mais complexas. O arquivo HPCC Systems
-      <emphasis>values.yaml</emphasis> destina-se a ser um guia de instalação
-      de demonstração de início rápido que não é apropriado para uso prático
-      não trivial. Você deve personalizar sua implantação para uma que seja
-      mais adequada às suas necessidades específicas.</para>
+      pelo Helm chart para controlar como o HPCC Systems é implantado. O
+      <emphasis>values.yaml</emphasis> do HPCC Systems fornecido é destinado a
+      ser um guia de instalação do tipo quick start, que não é apropriado para
+      uso prático não trivial. Você deve personalizar sua implantação para
+      algo mais adequado às suas necessidades específicas.</para>
 
-      <para>Mais informações sobre implantações personalizadas são abordadas
-      nas seções anteriores, bem como na documentação do Kubernetes e do
-      Helm.</para>
+      <para>Informações adicionais sobre implantações personalizadas são
+      abordadas em seções anteriores, assim como na documentação do Kubernetes
+      e Helm.</para>
 
       <sect3 id="merging_AND_Overrides">
-        <title>Mesclando e Sobrescrevendo</title>
+        <title>Mesclagem e Sobreposição</title>
 
-        <para>Tendo vários arquivos YAML, como um para registro, outro para
-        armazenamento, outro para secrects e assim por diante, permite uma
-        configuração granular. Esses arquivos de configuração podem estar
-        todos sob controle de versão. Podem ser versionados, verificados, etc.
-        e têm o benefício de apenas definir/alterar a área específica
-        necessária, garantindo que todas as áreas não alteradas sejam deixadas
+        <para>Ter vários arquivos YAML, como um para logging, outro para
+        armazenamento, e ainda outro para segredos, permite uma configuração
+        granular. Esses arquivos de configuração podem todos estar sob
+        controle de versão, onde podem ser versionados, verificados, etc. Isso
+        tem o benefício de definir/mudar apenas a área específica necessária,
+        enquanto garante que áreas não modificadas permaneçam
         intocadas.</para>
 
-        <para>A regra aqui é ter em mente onde vários arquivos YAML são
-        aplicados, os últimos sempre substituirão os valores dos anteriores.
-        Eles são sempre mesclados em sequência. Os valores são sempre
-        mesclados na ordem em que são fornecidos na linha de comando do
-        Helm.</para>
+        <para>A regra a ser lembrada aqui, ao aplicar vários arquivos YAML, é
+        que os últimos sempre sobrescreverão os valores nos primeiros. Eles
+        sempre são mesclados em sequência. Os valores são sempre mesclados na
+        ordem em que são fornecidos na linha de comando do Helm.</para>
 
-        <para>Outro ponto a considerar, onde existe um dicionário global como
-        root: e seu valor é redefinido no 2º arquivo (como um dicionário) ele
-        não seria sobrescrito. Você não pode simplesmente substituir um
-        dicionário. Você pode redefinir um dicionário e defini-lo como nulo
-        (como o exemplo Thor na seção anterior), o que efetivamente o
-        eliminará o primeiro.</para>
+        <para>Outro ponto a considerar é que, quando há um dicionário global
+        como root: e seu valor é redefinido em um segundo arquivo (como um
+        dicionário), ele não será sobrescrito. Você simplesmente não pode
+        sobrescrever um dicionário. Você pode redefinir um dicionário e
+        defini-lo como nulo, o que efetivamente apagará o primeiro.</para>
 
         <para><emphasis role="bold">ATENÇÃO</emphasis>: Se você tivesse uma
         definição global (como storage.planes) e a mesclasse onde ela fosse
-        redefinida, eliminaria todas as definições da lista.</para>
+        redefinida, isso apagaria todas as definições nessa lista.</para>
 
-        <para>Outro meio de eliminar todos os valores em uma lista é passar um
-        conjunto vazio denotado por um [ ], como este exemplo:</para>
+        <para>Another means to wipe out every value in a list is to pass in an
+        empty set denoted by a [ ] such as this example:</para>
 
-        <para><programlisting>bundles: []</programlisting>Isso eliminaria
-        quaisquer propriedades definidas para pacotes configuráveis.</para>
+        <para><programlisting>bundles: []</programlisting>Isso apagaria
+        quaisquer propriedades definidas para bundles.</para>
 
         <sect4 id="GenerallyApplicable">
-          <title>Geralmente aplicável</title>
+          <title>Aplicações gerais</title>
 
-          <para>Esses itens são geralmente aplicáveis para nossos arquivos
-          YALM do HPCC Systems Helm.</para>
+          <para>Esses itens são geralmente aplicáveis aos nossos arquivos YAML
+          do HPCC Systems Helm.</para>
 
           <itemizedlist>
             <listitem>
@@ -1294,68 +2000,140 @@ global:
             </listitem>
 
             <listitem>
-              <para>Os serviços devem ser únicos.</para>
+              <para>Serviços devem ser únicos.</para>
             </listitem>
 
             <listitem>
-              <para>YAML são mesclados em sequência.</para>
+              <para>Arquivos YAML são mesclados em sequência.</para>
             </listitem>
           </itemizedlist>
 
-          <para>Geralmente em relação aos componentes do HPCC Systems, os
-          componentes primeiramente são listas. Se você tiver uma lista de
-          valores vazia [ ], isso invalidaria essa lista em outro
-          lugar.</para>
+          <para>Em relação aos componentes do HPCC Systems, os componentes são
+          principalmente listas. Se você tiver uma lista de valores vazia
+          denotada por [ ], isso invalidaria essa lista em outros
+          lugares.</para>
         </sect4>
       </sect3>
-    </sect2>
 
-    <sect2 id="Additional_YMLUSage">
-      <title>Additional Usage</title>
+      <sect3 id="Additional_YMLUSage">
+        <title>Utilização adicional</title>
 
-      <para>Os componentes do HPCC Systems são adicionados ou modificados
-      passando valores de substituição. Os valores do gráfico do Helm são
-      substituídos, seja passando o(s) arquivo(s) de valores de usando -f,
-      (para o arquivo de substituição) ou via --set onde você pode substituir
-      um único valor. Os valores passados são sempre mesclados na mesma ordem
-      em que são fornecidos na linha de comando do helm.</para>
+        <para>Os componentes do HPCC Systems são adicionados ou modificados
+        passando valores de substituição. Os valores do Helm chart são
+        substituídos, seja passando arquivos de substituição usando -f (para
+        arquivo de substituição) ou via --set, onde você pode substituir um
+        único valor. Esses valores passados são sempre mesclados na mesma
+        ordem em que são fornecidos na linha de comando do Helm.</para>
 
-      <para>Por exemplo, você pode</para>
+        <para>Por exemplo:</para>
 
-      <para><programlisting>helm install myhpcc hpcc/hpcc -f myoverrides.yaml</programlisting>Para
-      sobrepor quaisquer valores entregues no <emphasis>values.yaml</emphasis>
-      passando por valores definidos em
-      <emphasis>myoverrides.yaml</emphasis></para>
+        <para><programlisting>helm install myhpcc hpcc/hpcc -f myoverrides.yaml</programlisting>Substitui
+        quaisquer valores no <emphasis>values.yaml</emphasis> fornecido,
+        passando valores definidos em
+        <emphasis>myoverrides.yaml</emphasis>.</para>
 
-      <para>Você também pode utilizar --set conforme o exemplo a
-      seguir:</para>
+        <para>Você também pode usar --set conforme o seguinte exemplo:</para>
 
-      <programlisting>helm install myhpcc hpcc/hpcc --set storage.daliStorage.plane=dali-plane</programlisting>
+        <programlisting>helm install myhpcc hpcc/hpcc --set storage.daliStorage.plane=dali-plane</programlisting>
 
-      <para>Para sobrepor somente um arquivo em específico.</para>
+        <para>Para sobrepor somente um valor em específico.</para>
 
-      <para>É até possível combinar substituições de arquivo e valor único,
-      por exemplo:</para>
+        <para>É até possível combinar substituições de arquivo e de valor
+        único, por exemplo:</para>
 
-      <para>Para substituir apenas o valor global.image.version. Novamente, a
-      ordem em que os valores são mesclados é a mesma em que são emitidos na
-      linha de comando. Agora considere:</para>
+        <programlisting>helm install myhpcc hpcc/hpcc -f myoverrides.yaml --set storage.daliStorage.plane=dali-plane</programlisting>
 
-      <programlisting>helm install myhpcc hpcc/hpcc -f myoverrides.yaml --set storage.daliStorage.plane=dali-plane</programlisting>
+        <para>No exemplo anterior, a flag --set substitui o valor para
+        storage.daliStorage.plane (se) definido no
+        <emphasis>myoverrides.yaml</emphasis>, que substituiria qualquer
+        configuração do arquivo <emphasis>values.yaml</emphasis> e resultaria
+        na definição de seu valor para <emphasis>dali-plane</emphasis>.</para>
 
-      <para>No exemplo anterior, a flag --set substitui o valor para
-      storage.daliStorage.plane (if) definido no
-      <emphasis>myoverrides.yaml</emphasis>, que substituiria qualquer
-      configuração do arquivo <emphasis>values.yaml</emphasis> e resultaria na
-      configuração de seu valor como <emphasis>dali-plane</emphasis>.</para>
+        <para>Se a flag <emphasis>--set</emphasis> for usada no comando helm
+        install ou helm upgrade, esses valores são simplesmente convertidos
+        para YAML no lado do cliente.</para>
 
-      <para>Se a flag <emphasis>--set</emphasis> for usada na instalação do
-      helm ou na atualização do helm, esses valores serão simplesmente
-      convertidos em YAML no lado do cliente.</para>
+        <para>Você pode especificar as flags de substituição várias vezes. A
+        prioridade será dada ao último (mais à direita) arquivo
+        especificado.</para>
+      </sect3>
 
-      <para>Você pode especificar as flags de substituição várias vezes. A
-      prioridade será dada ao último arquivo (mais à direita)
-      especificado.</para>
+      <sect3 id="YGlobalExpertsets">
+        <title>Configurações Global/Expert</title>
+
+        <para>A seção 'expert' em 'global' do values.yaml deve ser usada para
+        definir configurações de baixo nível, de teste ou de desenvolvedor.
+        Esta seção do helm chart é destinada a ser usada para opções
+        personalizadas, de baixo nível ou de depuração, portanto, na maioria
+        das implantações, deve permanecer vazia.</para>
+
+        <para>Este é um exemplo de como a seção global/avançada pode se
+        parecer:</para>
+
+        <programlisting>global:
+  expert:
+    numRenameRetries: 3 
+    maxConnections: 10 
+    keepalive: 
+      time: 200 
+      interval: 75 
+      probes: 9 
+</programlisting>
+
+        <para>NOTA: Alguns componentes (como o DfuServer e Thor) também
+        possuem uma área de configurações 'avançadas' (veja o esquema de
+        valores) que pode ser usada para configurações relevantes em uma base
+        por instância de componente, em vez de defini-las globalmente.</para>
+
+        <para>As seguintes opções estão disponíveis:</para>
+
+        <para><variablelist>
+            <varlistentry>
+              <term>numRenameRetries</term>
+
+              <listitem>
+                <para>(unsigned) Se definido para um número positivo, a
+                plataforma tentará novamente renomear um arquivo físico em
+                caso de falha (após um curto atraso). Normalmente, isso não
+                deveria ser necessário, mas em alguns sistemas de arquivos
+                pode ajudar a mitigar problemas onde o arquivo acabou de ser
+                fechado e não foi exposto corretamente na camada posix.</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>maxConnections</term>
+
+              <listitem>
+                <para>(unsigned) Esta é uma configuração do Servidor DFU. Se
+                definido, irá limitar o número máximo de conexões paralelas e
+                streams de partição que estarão ativas ao mesmo tempo. Por
+                padrão, um trabalho DFU executará tantas conexões/streams
+                ativas quanto houver partições envolvidas no spray, limitado a
+                um máximo absoluto de 800. A configuração maxConnections pode
+                ser usada para reduzir essa concorrência. Isso pode ser útil
+                em alguns cenários onde a concorrência está causando
+                congestionamento na rede e desempenho degradado.</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>keepalive</term>
+
+              <listitem>
+                <para>(time: sem sinal, interval: sem sinal, probes: sem
+                sinal) Veja o exemplo de keepalive acima. Se definido, essas
+                configurações irão substituir as configurações padrão de
+                keepalive do soquete do sistema cada vez que a plataforma
+                criar um soquete. Isso pode ser útil em alguns cenários se as
+                conexões forem fechadas prematuramente por fatores externos
+                (por exemplo, firewalls). Um exemplo disso é que instâncias do
+                Azure irão fechar soquetes que permaneceram ociosos por mais
+                de 4 minutos quando conectados fora de suas redes.</para>
+              </listitem>
+            </varlistentry>
+          </variablelist></para>
+      </sect3>
     </sect2>
   </sect1>
 </chapter>
