@@ -160,7 +160,7 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
         <listitem>
           <para>O WsSQL deve ser instalado na plataforma HPCC de destino para
           utilizar uma conexão JDBC. Veja <ulink
-          url="???">http://hpccsystems.com/permlink/wssql</ulink> para
+          url="http://hpccsystems.com/permlink/wssql">http://hpccsystems.com/permlink/wssql</ulink> para
           detalhes.</para>
 
           <para/>
