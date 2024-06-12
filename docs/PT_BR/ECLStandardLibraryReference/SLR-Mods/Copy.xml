@@ -28,6 +28,7 @@
   [</emphasis> <emphasis>,preserveCompression</emphasis> <emphasis
   role="bold">] [</emphasis> <emphasis>,noSplit</emphasis> <emphasis
   role="bold">] [</emphasis> <emphasis>,expireDays</emphasis> <emphasis
+  role="bold">] [</emphasis> <emphasis>,ensure</emphasis> <emphasis
   role="bold">]);</emphasis></para>
 
   <para><emphasis>dfuwuid</emphasis> <emphasis role="bold"> :=
@@ -55,7 +56,8 @@
   [</emphasis> <emphasis>,preserveCompression</emphasis> <emphasis
   role="bold">] [</emphasis> <emphasis>,noSplit</emphasis> <emphasis
   role="bold">] [</emphasis> <emphasis>,expireDays</emphasis> <emphasis
-  role="bold">]);</emphasis></para>
+  role="bold">] [</emphasis> <emphasis>,ensure</emphasis><emphasis
+  role="bold">]); </emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -193,9 +195,16 @@
         <row>
           <entry><emphasis>expireDays </emphasis></entry>
 
-          <entry>Opcional. Um valor inteiro indicando o número de dias
-                    antes de remover automaticamente o arquivo. Se omitido, o
-          padrão é           -1 (nunca expira).</entry>
+          <entry>Opcional. Um valor inteiro indicando o número de dias antes
+          de remover automaticamente o arquivo. Se omitido, o padrão é -1
+          (nunca expira).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>ensure</emphasis></entry>
+
+          <entry>Opcional. Copia o arquivo lógico, mas não copia partes do
+          arquivo se elas já existirem. O padrão é FALSO.</entry>
         </row>
 
         <row>

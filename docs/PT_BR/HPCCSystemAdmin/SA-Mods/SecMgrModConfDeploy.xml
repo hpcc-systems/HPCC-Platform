@@ -8,7 +8,8 @@
   <para>As seções a seguir detalham o processo de configuração de seu HPCC
   Systems para usar o Plugin do Gerenciador de Segurança.</para>
 
-  <sect1 id="how-to-configure-an-existing-security-manager-plugin">
+  <sect1 id="how-to-configure-an-existing-security-manager-plugin"
+         role="nobrk">
     <title>Como Configurar um Plugin do Gerenciador de Segurança</title>
 
     <para>Após ter sido instalado, o plugin pode ser configurado na plataforma

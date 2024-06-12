@@ -868,6 +868,14 @@ dfuplus action=despray srcname=mytest::test:spraytest
                   se a compactação do arquivo de origem deve ser preservada.
                   Se omitido, o padrão é 1.</entry>
                 </row>
+
+                <row>
+                  <entry><emphasis>ensure</emphasis></entry>
+
+                  <entry>Opcional. Copia o arquivo lógico, mas não copia
+                  partes do arquivo se eles já existirem. O padrão é
+                  FALSE.</entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable>
