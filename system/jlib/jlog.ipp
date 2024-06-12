@@ -722,7 +722,7 @@ private:
         CallbackInterThreadQueueOf<LogMsg, MsgProcessor, false> q;
         unsigned droppingLimit;
         unsigned numToDrop = 1;
-        Mutex pullCycleMutex;
+        TimedMutex pullCycleMutex;
     };
     Owned<MsgProcessor> processor;
 

@@ -1202,7 +1202,7 @@ ISecUser * CLdapSecManager::findUser(const char * username, IEspSecureContext* s
 
 ISecUserIterator * CLdapSecManager::getAllUsers(IEspSecureContext* secureContext)
 {
-    synchronized block(m_monitor);
+    MonitorBlock block(m_monitor);
     m_user_array.popAll(true);
     m_ldap_client->retrieveUsers(m_user_array);
     return new ArrayIIteratorOf<IUserArray, ISecUser, ISecUserIterator>(m_user_array);

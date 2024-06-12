@@ -173,7 +173,7 @@ void PermissionProcessor::getCachedSid(const char* name, MemoryBuffer& sid)
     StringBuffer buf;
     if(toXpath(name, buf))
     {
-        synchronized block(m_monitor);
+        MonitorBlock block(m_monitor);
         try
         {
             m_sidcache->getPropBin(buf.str(), sid);
@@ -200,7 +200,7 @@ void PermissionProcessor::cacheSid(const char* name, int len, const void* sidbuf
     StringBuffer buf;
     if(toXpath(name, buf))
     {
-        synchronized block(m_monitor);
+        MonitorBlock block(m_monitor);
         try
         {
             if(!m_sidcache->hasProp(buf.str()))
