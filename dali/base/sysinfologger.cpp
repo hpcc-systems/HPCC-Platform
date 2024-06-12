@@ -74,6 +74,22 @@ class CSysInfoLoggerMsg : implements ISysInfoLoggerMsg
     }
 
 public:
+    CSysInfoLoggerMsg()
+    {
+        msgPtree.setown(createPTree(MSG_NODE));
+    }
+    CSysInfoLoggerMsg(unsigned id, const LogMsgCategory & cat, LogMsgCode code, const char * source, const char * msg, unsigned __int64 ts, bool hidden)
+    {
+        msgPtree.setown(createPTree(MSG_NODE));
+        msgPtree->setPropInt64(ATTR_ID, id);
+        msgPtree->setPropBool(ATTR_HIDDEN, false);
+        msgPtree->setPropInt64(ATTR_TIMESTAMP, ts);
+        msgPtree->setPropInt(ATTR_CODE, code);
+        msgPtree->setProp(ATTR_AUDIENCE, LogMsgAudienceToFixString(cat.queryAudience()));
+        msgPtree->setProp(ATTR_CLASS, LogMsgClassToFixString(cat.queryClass()));
+        msgPtree->setProp(ATTR_SOURCE, source);
+        msgPtree->setProp(".", msg);
+    }
     CSysInfoLoggerMsg & set(IPropertyTree * ptree, IPropertyTree * _root, bool _updateable)
     {
         msgPtree.setown(ptree);
@@ -123,32 +139,22 @@ public:
         const char *msg = msgPtree->queryProp(nullptr);
         return msg ? msg : "";
     }
-    virtual void setHidden(bool _hidden)
+    void setHidden(bool _hidden)
     {
         ensureUpdateable();
         msgPtree->setPropBool(ATTR_HIDDEN, _hidden);
     }
-    virtual void remove()
+    StringBuffer & getXpath(StringBuffer & xpath)
     {
-        ensureUpdateable();
         unsigned year, month, day;
         extractDate(queryTimeStamp(), year, month, day);
-        VStringBuffer xpath("m%04u%02u/d%02u", year, month, day);
-        IPropertyTree * parent = root->queryPropTree(xpath.str());
-        parent->removeTree(msgPtree);
+        unsigned __int64 id = msgPtree->getPropInt64(ATTR_ID, 0);
+        xpath.appendf("m%04u%02u/d%02u/" MSG_NODE "[" ATTR_ID "='%" I64F "u']", year, month, day, id);
+        return xpath;
     }
-    static IPropertyTree * createMsgPTree(unsigned id, const LogMsgCategory & cat, LogMsgCode code, const char * source, const char * msg, unsigned __int64 ts, bool hidden)
+    IPropertyTree * getTree()
     {
-        Owned<IPropertyTree> msgPtree = createPTree(MSG_NODE);
-        msgPtree->setPropInt64(ATTR_ID, id);
-        msgPtree->setPropBool(ATTR_HIDDEN, false);
-        msgPtree->setPropInt64(ATTR_TIMESTAMP, ts);
-        msgPtree->setPropInt(ATTR_CODE, code);
-        msgPtree->setProp(ATTR_AUDIENCE, LogMsgAudienceToFixString(cat.queryAudience()));
-        msgPtree->setProp(ATTR_CLASS, LogMsgClassToFixString(cat.queryClass()));
-        msgPtree->setProp(ATTR_SOURCE, source);
-        msgPtree->setProp(".", msg);
-        return msgPtree.getClear();
+        return msgPtree.getLink();
     }
 };
 
@@ -177,7 +183,7 @@ public:
     }
     CSysInfoLoggerMsgFilter(unsigned __int64 msgId)
     {
-        CSysInfoLoggerMsgFilter::setMatchMsgId(msgId);
+        setMatchMsgId(msgId);
     }
     CSysInfoLoggerMsgFilter(bool _visibleOnly, bool _hiddenOnly, unsigned _year, unsigned _month, unsigned _day) :
                             visibleOnly(_visibleOnly), hiddenOnly(_hiddenOnly),
@@ -190,7 +196,7 @@ public:
             throw makeStringExceptionV(-1, "ISysInfoLoggerMsgFilter: month and year must be provided when filtering by day");
         if (!_year && _month)
             throw makeStringExceptionV(-1, "ISysInfoLoggerMsgFilter: year must be provided when filtering by month");
-       haveDateRange = matchEndYear||matchStartYear||matchStartMonth|matchEndMonth||matchStartDay||matchEndDay;
+       haveDateRange = false;
     }
     virtual void setHiddenOnly() override
     {
@@ -247,6 +253,7 @@ public:
     }
     virtual void setOlderThanDate(unsigned year, unsigned month, unsigned day) override
     {
+        assert(year);
         matchEndYear = year;
         matchEndMonth = month;
         matchEndDay = day;
@@ -366,23 +373,22 @@ public:
     {
         return matchClass;
     }
-    virtual unsigned __int64 queryMatchMsgId() const override
-    {
-        if (queryMatchYear() && queryMatchMonth() && queryMatchDay() && matchId)
-        {
-            return makeMessageId(queryMatchYear(), queryMatchMonth(), queryMatchDay(), matchId);
-        }
-        return 0;
-    }
     virtual StringBuffer & getQualifierXPathFilter(StringBuffer & xpath) const override
     {
+        bool fullDayMatch=false;
         if (queryMatchYear() && queryMatchMonth())
         {
             xpath.appendf("m%04u%02u", queryMatchYear(), queryMatchMonth());
             if (queryMatchDay())
+            {
                 xpath.appendf("/d%02u", queryMatchDay());
+                fullDayMatch = true;
+            }
         }
-        xpath.appendf("//" MSG_NODE);
+        if (fullDayMatch)
+            xpath.appendf("/" MSG_NODE);
+        else
+            xpath.appendf("//" MSG_NODE);
         if (hiddenOnly)
             xpath.append("[" ATTR_HIDDEN "='1')]");
         if (visibleOnly)
@@ -415,7 +421,7 @@ ISysInfoLoggerMsgFilter * createSysInfoLoggerMsgFilter(unsigned __int64 msgId)
 
 class CSysInfoLoggerMsgIterator : public CInterfaceOf<ISysInfoLoggerMsgIterator>
 {
-    Linked<ISysInfoLoggerMsgFilter> filter;
+    Linked<IConstSysInfoLoggerMsgFilter> filter;
     Owned<IRemoteConnection> conn;
     bool updateable = false;
     Owned<IPropertyTree> root;
@@ -432,12 +438,13 @@ class CSysInfoLoggerMsgIterator : public CInterfaceOf<ISysInfoLoggerMsgIterator>
                 if (filter->isInDateRange(ts))
                     return true;
             }
+            return false;
         }
         return msgIter->isValid();
     }
 
 public:
-    CSysInfoLoggerMsgIterator(ISysInfoLoggerMsgFilter * _filter, bool _updateable=false) : filter(_filter), updateable(_updateable)
+    CSysInfoLoggerMsgIterator(IConstSysInfoLoggerMsgFilter * _filter, bool _updateable=false) : filter(_filter), updateable(_updateable)
     {
     }
     CSysInfoLoggerMsg & queryInfoLoggerMsg()
@@ -482,7 +489,7 @@ ISysInfoLoggerMsgIterator * createSysInfoLoggerMsgIterator(bool visibleOnly, boo
     return new CSysInfoLoggerMsgIterator(filter.getClear(), false);
 }
 
-ISysInfoLoggerMsgIterator * createSysInfoLoggerMsgIterator(ISysInfoLoggerMsgFilter * msgFilter)
+ISysInfoLoggerMsgIterator * createSysInfoLoggerMsgIterator(IConstSysInfoLoggerMsgFilter * msgFilter)
 {
     return new CSysInfoLoggerMsgIterator(msgFilter, false);
 }
@@ -499,34 +506,28 @@ unsigned __int64 logSysInfoError(const LogMsgCategory & cat, LogMsgCode code, co
     if (!conn)
         throw makeStringExceptionV(-1, "logSysInfoLogger: unable to create connection to '%s'", SYS_INFO_ROOT);
 
+    IPropertyTree * root = conn->queryRoot();
+    unsigned id = root->getPropInt64(ATTR_LASTID, 1);
+    if (id==INT64_MAX)
+        id=0;
+    root->setPropInt64(ATTR_LASTID, id+1);
+
     StringBuffer xpath;
     unsigned year, month, day;
     extractDate(ts, year, month, day);
-    xpath.appendf("m%04u%02u/d%02u[" ATTR_VERSION "='%s']", year, month, day, SYS_INFO_VERSION);
+    xpath.appendf("%s/m%04u%02u/d%02u/%s", SYS_INFO_ROOT, year, month, day, MSG_NODE);
+    Owned<IRemoteConnection> connMsgRoot = querySDS().connect(xpath.str(), myProcessSession(), RTM_CREATE_ADD, SDS_LOCK_TIMEOUT);
+    if (!connMsgRoot)
+        throw makeStringExceptionV(-1, "logSysInfoLogger: unable to create connection to '%s'", xpath.str());
+    IPropertyTree * msgPT = connMsgRoot->queryRoot();
 
-    unsigned id = 0;
-    IPropertyTree * dayPT = conn->queryRoot()->queryPropTree(xpath.str());
-    if (dayPT)
-    {
-        id = dayPT->getPropInt(ATTR_LASTID, 0);
-    }
-    else
-    {
-        xpath.setf("m%04u%02u", year, month);
-        IPropertyTree * monthPT = conn->queryRoot()->queryPropTree(xpath.str());
-        if (!monthPT)
-            monthPT = conn->queryRoot()->addPropTree(xpath.str());
-        xpath.setf("d%02u", day);
-        dayPT = monthPT->addPropTree(xpath.str());
-        dayPT->addProp(ATTR_VERSION, SYS_INFO_VERSION);
-    }
-    dayPT->setPropInt(ATTR_LASTID, ++id);
-    dayPT->addPropTree(MSG_NODE, CSysInfoLoggerMsg::createMsgPTree(id, cat, code, source, msg, ts, false));
-
+    CSysInfoLoggerMsg sysInfoMsg(id, cat, code, source, msg, ts, false);
+    msgPT->setPropTree(nullptr, sysInfoMsg.getTree());
+    msgPT->setProp(".", msg); // previous setPropTree doesn't set the node value
     return makeMessageId(ts, id);
 }
 
-unsigned updateMessage(ISysInfoLoggerMsgFilter * msgFilter, std::function<void (CSysInfoLoggerMsg &)> updateOp)
+unsigned updateMessage(IConstSysInfoLoggerMsgFilter * msgFilter, std::function<void (CSysInfoLoggerMsg &)> updateOp)
 {
     unsigned count = 0;
     Owned<CSysInfoLoggerMsgIterator> iter = new CSysInfoLoggerMsgIterator(msgFilter, true);
@@ -541,11 +542,11 @@ unsigned updateMessage(ISysInfoLoggerMsgFilter * msgFilter, std::function<void (
 
 unsigned updateMessage(unsigned __int64 msgId, std::function<void (CSysInfoLoggerMsg &)> updateOp)
 {
-    Owned<ISysInfoLoggerMsgFilter> msgFilter = createSysInfoLoggerMsgFilter(msgId);
+    Owned<IConstSysInfoLoggerMsgFilter> msgFilter = createSysInfoLoggerMsgFilter(msgId);
     return updateMessage(msgFilter, updateOp);
 }
 
-unsigned hideLogSysInfoMsg(ISysInfoLoggerMsgFilter * msgFilter)
+unsigned hideLogSysInfoMsg(IConstSysInfoLoggerMsgFilter * msgFilter)
 {
     return updateMessage(msgFilter, [](CSysInfoLoggerMsg & sysInfoMsg){sysInfoMsg.setHidden(true);});
 }
@@ -555,7 +556,7 @@ bool hideLogSysInfoMsg(unsigned __int64 msgId)
     return updateMessage(msgId, [](CSysInfoLoggerMsg & sysInfoMsg){sysInfoMsg.setHidden(true);})==1;
 }
 
-unsigned unhideLogSysInfoMsg(ISysInfoLoggerMsgFilter * msgFilter)
+unsigned unhideLogSysInfoMsg(IConstSysInfoLoggerMsgFilter * msgFilter)
 {
     return updateMessage(msgFilter, [](CSysInfoLoggerMsg & sysInfoMsg){sysInfoMsg.setHidden(false);});
 }
@@ -565,18 +566,49 @@ bool unhideLogSysInfoMsg(unsigned __int64 msgId)
     return updateMessage(msgId, [](CSysInfoLoggerMsg & sysInfoMsg){sysInfoMsg.setHidden(false);})==1;
 }
 
-unsigned deleteLogSysInfoMsg(ISysInfoLoggerMsgFilter * msgFilter)
+unsigned deleteLogSysInfoMsg(IConstSysInfoLoggerMsgFilter * msgFilter)
 {
-    return updateMessage(msgFilter, [](CSysInfoLoggerMsg & sysInfoMsg){sysInfoMsg.remove();});
+    std::vector<std::string> deleteXpathList;
+    {
+        Owned<CSysInfoLoggerMsgIterator> iter = new CSysInfoLoggerMsgIterator(msgFilter, false);
+        ForEach(*iter)
+        {
+            CSysInfoLoggerMsg & sysInfoMsg = iter->queryInfoLoggerMsg();
+            StringBuffer xpath;
+            sysInfoMsg.getXpath(xpath);
+            deleteXpathList.push_back(xpath.str());
+        }
+    }
+    Owned<IRemoteConnection> conn = querySDS().connect(SYS_INFO_ROOT, myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT);
+    if (!conn)
+        throw makeStringExceptionV(-1, "deleteLogSysInfoMsg: unable to create connection to '%s'", SYS_INFO_ROOT);
+    IPropertyTree * root = conn->queryRoot();
+    unsigned count = 0;
+    for (auto xpath: deleteXpathList)
+    {
+        if (root->removeProp(xpath.c_str()));
+            ++count;
+    }
+    return count;
 }
 
 bool deleteLogSysInfoMsg(unsigned __int64 msgId)
 {
-    return updateMessage(msgId, [](CSysInfoLoggerMsg & sysInfoMsg){sysInfoMsg.remove();})==1;
+    Owned<ISysInfoLoggerMsgFilter> msgFilter = createSysInfoLoggerMsgFilter();
+    msgFilter->setMatchMsgId(msgId);
+    return deleteLogSysInfoMsg(msgFilter);
 }
 
 unsigned deleteOlderThanLogSysInfoMsg(bool visibleOnly, bool hiddenOnly, unsigned year, unsigned month, unsigned day)
 {
+    if (!year && month)
+        throw makeStringExceptionV(-1, "deleteOlderThanLogSysInfoMsg: year must be provided if month is specified (year=%u, month=%u, day=%u)", year, month, day);
+    if (!month && day)
+        throw makeStringExceptionV(-1, "deleteOlderThanLogSysInfoMsg: month must be provided if day is specified (year=%u, month=%u, day=%u)", year, month, day);
+    if (month>12)
+        throw makeStringExceptionV(-1, "deleteOlderThanLogSysInfoMsg: invalid month(year=%u, month=%u, day=%u)", year, month, day);
+    if (day>31)
+        throw makeStringExceptionV(-1, "deleteOlderThanLogSysInfoMsg: invalid day(year=%u, month=%u, day=%u)", year, month, day);
     // With visibleOnly/hiddenOnly option, use createSysInfoLoggerMsgFilter()
     if (visibleOnly || hiddenOnly)
     {
@@ -589,20 +621,20 @@ unsigned deleteOlderThanLogSysInfoMsg(bool visibleOnly, bool hiddenOnly, unsigne
         msgFilter->setOlderThanDate(year, month, day);
         return deleteLogSysInfoMsg(msgFilter);
     }
+
     // With only date range, use this quicker method to remove whole subtrees
-    unsigned count = 0;
     Owned<IRemoteConnection> conn = querySDS().connect(SYS_INFO_ROOT, myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT);
     if (!conn)
         return 0;
 
-    Owned<IPropertyTreeIterator> monthIter = conn->queryRoot()->getElements("*");
+    std::vector<std::string> deleteXpathList;
+    IPropertyTree * root = conn->queryRoot();
+    Owned<IPropertyTreeIterator> monthIter = root->getElements("*");
     ForEach(*monthIter)
     {
         IPropertyTree & monthPT = monthIter->query();
         if (year==0)
-        {
-            conn->queryRoot()->removeTree(&monthPT);
-        }
+            deleteXpathList.push_back(monthPT.queryName());
         else
         {
             unsigned msgYear = 0, msgMonth = 0;
@@ -616,33 +648,44 @@ unsigned deleteOlderThanLogSysInfoMsg(bool visibleOnly, bool hiddenOnly, unsigne
                 throw makeStringExceptionV(-1, "child of " SYS_INFO_ROOT " is invalid: %s", monthPT.queryName());
             if (msgYear > year)
                 continue;
-            if (msgYear == year && (msgMonth > month))
-                continue;
-            if (msgMonth < month)
+            if (msgYear < year)
+                deleteXpathList.push_back(monthPT.queryName());
+            else
             {
-                conn->queryRoot()->removeTree(&monthPT);
-                ++count;
-            }
-            else // msgMonth==month
-            {
-                Owned<IPropertyTreeIterator> dayIter = monthPT.getElements("*");
-                ForEach(*dayIter)
+                // msgYear matches year in this section
+                if (msgMonth > month)
+                    continue;
+                else if (msgMonth < month)
+                    deleteXpathList.push_back(monthPT.queryName());
+                else // msgMonth==month
                 {
-                    IPropertyTree & dayPT = dayIter->query();
-                    unsigned msgDay = 0;
-                    const char * d = dayPT.queryName();
-                    if (*d++ == 'd')
-                        msgDay = readDigits(d, 2);
-                    if (msgDay == 0)
-                        throw makeStringExceptionV(-1, "child of " SYS_INFO_ROOT "/%s is invalid: %s", monthPT.queryName(), dayPT.queryName());
-                    if (day && (msgDay >= day))
-                        continue;
+                    Owned<IPropertyTreeIterator> dayIter = monthPT.getElements("*");
+                    ForEach(*dayIter)
+                    {
+                        IPropertyTree & dayPT = dayIter->query();
+                        unsigned msgDay = 0;
+                        const char * d = dayPT.queryName();
+                        if (*d++ == 'd')
+                            msgDay = readDigits(d, 2);
+                        if (msgDay == 0)
+                            throw makeStringExceptionV(-1, "child of " SYS_INFO_ROOT "/%s is invalid: %s", monthPT.queryName(), dayPT.queryName());
+                        if (day && (msgDay >= day))
+                            continue;
 
-                    monthPT.removeTree(&dayPT);
-                    ++count;
+                        VStringBuffer xpath("%s/%s", monthPT.queryName(), dayPT.queryName());
+                        deleteXpathList.push_back(xpath.str());
+                    }
                 }
             }
         }
     }
+
+    unsigned count = 0;
+    for (auto xpath: deleteXpathList)
+    {
+        if (root->removeProp(xpath.c_str()));
+            ++count;
+    }
+
     return count;
 }

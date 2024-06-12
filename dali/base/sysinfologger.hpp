@@ -39,18 +39,8 @@ interface ISysInfoLoggerMsg
     virtual const char * queryMsg() const = 0;
 };
 
-interface ISysInfoLoggerMsgFilter : public IInterface
+interface IConstSysInfoLoggerMsgFilter : public IInterface
 {
-    virtual void setHiddenOnly() = 0;
-    virtual void setVisibleOnly() = 0;
-    virtual void setMatchTimeStamp(unsigned __int64 ts) = 0;
-    virtual void setMatchSource(const char * source) = 0;
-    virtual void setMatchCode(LogMsgCode code) = 0;
-    virtual void setMatchAudience(LogMsgAudience audience) = 0;
-    virtual void setMatchMsgClass(LogMsgClass msgClass) = 0;
-    virtual void setMatchMsgId(unsigned __int64 msgId) = 0;
-    virtual void setDateRange(unsigned startYear, unsigned startMonth, unsigned startDay, unsigned endYear, unsigned endMonth, unsigned endDay) = 0;
-    virtual void setOlderThanDate(unsigned year, unsigned month, unsigned day) = 0;
     virtual bool hasDateRange() const = 0;
     virtual bool isInDateRange(unsigned __int64 ts) const = 0;
     virtual bool queryHiddenOnly() const = 0;
@@ -69,8 +59,21 @@ interface ISysInfoLoggerMsgFilter : public IInterface
     virtual LogMsgCode queryMatchCode() const = 0;
     virtual LogMsgAudience queryMatchAudience() const = 0;
     virtual LogMsgClass queryMatchClass() const = 0;
-    virtual unsigned __int64 queryMatchMsgId() const = 0;
     virtual StringBuffer & getQualifierXPathFilter(StringBuffer & xpath) const = 0;
+};
+
+interface ISysInfoLoggerMsgFilter : extends IConstSysInfoLoggerMsgFilter
+{
+    virtual void setHiddenOnly() = 0;
+    virtual void setVisibleOnly() = 0;
+    virtual void setMatchTimeStamp(unsigned __int64 ts) = 0;
+    virtual void setMatchSource(const char * source) = 0;
+    virtual void setMatchCode(LogMsgCode code) = 0;
+    virtual void setMatchAudience(LogMsgAudience audience) = 0;
+    virtual void setMatchMsgClass(LogMsgClass msgClass) = 0;
+    virtual void setMatchMsgId(unsigned __int64 msgId) = 0;
+    virtual void setDateRange(unsigned startYear, unsigned startMonth, unsigned startDay, unsigned endYear, unsigned endMonth, unsigned endDay) = 0;
+    virtual void setOlderThanDate(unsigned year, unsigned month, unsigned day) = 0;
 };
 
 typedef IIteratorOf<ISysInfoLoggerMsg> ISysInfoLoggerMsgIterator;
@@ -81,11 +84,11 @@ SYSINFO_API ISysInfoLoggerMsgIterator * createSysInfoLoggerMsgIterator(bool _vis
 SYSINFO_API ISysInfoLoggerMsgIterator * createSysInfoLoggerMsgIterator(ISysInfoLoggerMsgFilter * msgFilter);
 
 SYSINFO_API unsigned __int64 logSysInfoError(const LogMsgCategory & cat, LogMsgCode code, const char *source, const char * msg, unsigned __int64 ts);
-SYSINFO_API unsigned hideLogSysInfoMsg(ISysInfoLoggerMsgFilter * msgFilter);
+SYSINFO_API unsigned hideLogSysInfoMsg(IConstSysInfoLoggerMsgFilter * msgFilter);
 SYSINFO_API bool hideLogSysInfoMsg(unsigned __int64 msgId);
-SYSINFO_API unsigned unhideLogSysInfoMsg(ISysInfoLoggerMsgFilter * msgFilter);
+SYSINFO_API unsigned unhideLogSysInfoMsg(IConstSysInfoLoggerMsgFilter * msgFilter);
 SYSINFO_API bool unhideLogSysInfoMsg(unsigned __int64 msgId);
-SYSINFO_API unsigned deleteLogSysInfoMsg(ISysInfoLoggerMsgFilter * msgFilter);
+SYSINFO_API unsigned deleteLogSysInfoMsg(IConstSysInfoLoggerMsgFilter * msgFilter);
 SYSINFO_API bool deleteLogSysInfoMsg(unsigned __int64 msgId);
 SYSINFO_API unsigned deleteOlderThanLogSysInfoMsg(bool visibleOnly, bool hiddenOnly, unsigned year, unsigned month, unsigned day);
 

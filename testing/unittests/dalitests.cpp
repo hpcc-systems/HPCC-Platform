@@ -3036,13 +3036,12 @@ CPPUNIT_TEST_SUITE_REGISTRATION( CFileNameNormalizeUnitTest );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( CFileNameNormalizeUnitTest, "CFileNameNormalizeUnitTest" );
 
 #define SOURCE_COMPONENT "sysinfologger-unittest"
-#define BOOL_STR(b) (b?"true":"false")
 
-class CSysInfoLoggerTester : public CppUnit::TestFixture
+class DaliSysInfoLoggerTester : public CppUnit::TestFixture
 {
     /* Note: global messages will be written for dates between 2000-02-04 and 2000-02-05 */
     /* Note: All global messages with time stamp before 2000-03-31 will be deleted */
-    CPPUNIT_TEST_SUITE(CSysInfoLoggerTester);
+    CPPUNIT_TEST_SUITE(DaliSysInfoLoggerTester);
         CPPUNIT_TEST(testInit);
         CPPUNIT_TEST(testSysInfoLogger);
     CPPUNIT_TEST_SUITE_END();
@@ -3166,7 +3165,7 @@ class CSysInfoLoggerTester : public CppUnit::TestFixture
         catch (IException *e)
         {
             StringBuffer msg;
-            msg.appendf("testRead(hidden=%s, visible=%s) failed: ", BOOL_STR(hiddenOnly), BOOL_STR(visibleOnly));
+            msg.appendf("testRead(hidden=%s, visible=%s) failed: ", boolToStr(hiddenOnly), boolToStr(visibleOnly));
             e->errorMessage(msg);
             msg.appendf("(code %d)", e->errorCode());
             e->Release();
@@ -3176,7 +3175,7 @@ class CSysInfoLoggerTester : public CppUnit::TestFixture
     }
 
 public:
-    ~CSysInfoLoggerTester()
+    ~DaliSysInfoLoggerTester()
     {
         daliClientEnd();
     }
@@ -3261,7 +3260,7 @@ public:
     }
 };
 
-CPPUNIT_TEST_SUITE_REGISTRATION( CSysInfoLoggerTester );
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( CSysInfoLoggerTester, "CSysInfoLogger" );
+CPPUNIT_TEST_SUITE_REGISTRATION( DaliSysInfoLoggerTester );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( DaliSysInfoLoggerTester, "DaliSysInfoLoggerTester" );
 
 #endif // _USE_CPPUNIT
