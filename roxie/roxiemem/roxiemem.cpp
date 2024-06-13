@@ -3356,6 +3356,7 @@ public:
 
     inline void updateDistanceScanned(unsigned __int64 distance)
     {
+        //Distance is the number of bytes, not the number of entries that have been skipped.
         stats.totalDistanceScanned += distance;
     }
 
@@ -3549,6 +3550,14 @@ public:
         : CHeap(_rowManager, _logctx, _allocatorCache, _flags), chunkSize(_chunkSize)
     {
         chunksPerPage  = FixedSizeHeaplet::dataAreaSize() / chunkSize;
+        if (flags & RHFscanning)
+        {
+            //Avoid pathological scans - limit the number of scans for an allocation to ~100.  At most this will waste 1% of memory
+            //although actual amount is likely to be much lower
+            const unsigned maxScanLength = 100;
+            //if 101..200 entries, then there should be at least 2 free slots to avoid an expected scan > 100
+            minScanFreeCount = ((chunksPerPage-1) / maxScanLength) + 1;
+        }
     }
 
     void * doAllocate(unsigned allocatorId, unsigned maxSpillCost);
@@ -3562,6 +3571,7 @@ public:
     const void * newCompactRow(const void * ptr, NewHeapCompactState & state);
 
     inline unsigned maxChunksPerPage() const { return chunksPerPage; }
+    inline unsigned minScanFree() const { return minScanFreeCount; }
 
     //No longer any external references to a unique heap.  Mark so it can be cleaned up early.
     void noteOrphaned()
@@ -3591,6 +3601,7 @@ protected:
     unsigned chunksPerPage;
     unsigned curCompactTarget = 0;
     unsigned __int64 totalAllocsLastScanCheck = 0;
+    unsigned minScanFreeCount = 0;
 };
 
 class CFixedChunkedHeap : public CChunkedHeap
@@ -3712,7 +3723,8 @@ char * ChunkedHeaplet::allocateSingle(unsigned allocated, bool incCounter, unsig
 
             CChunkedHeap * chunkHeap = static_cast<CChunkedHeap *>(heap);
             unsigned maxAllocs = chunkHeap->maxChunksPerPage();
-            if (numAllocs == maxAllocs)
+            unsigned minFree = chunkHeap->minScanFree(); // Scanning when there are only a few spare slots becomes pathological, so give up early.
+            if (numAllocs + minFree > maxAllocs)
             {
                 if (!(heapFlags & RHFdelayrelease))
                     return nullptr;
@@ -6964,6 +6976,9 @@ extern void setDataAlignmentSize(unsigned size)
 }
 
 } // namespace roxiemem
+
+//Worth knowning if the size of this object increases and reduces the memory available for rows.
+static_assert(sizeof(roxiemem::ChunkedHeaplet) <= 128);
 
 //============================================================================================================
 #ifdef _USE_CPPUNIT
