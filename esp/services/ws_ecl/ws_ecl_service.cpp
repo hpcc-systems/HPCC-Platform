@@ -271,7 +271,7 @@ void initBareMetalRoxieTargets(MapStringToMyClass<ISmartSocketFactory> &connMap,
                 includeTargetInURL = pc->getPropBool("@includeTargetInURL", true);
                 dnsInterval = (unsigned) pc->getPropInt("@dnsInterval", -1);
                 if (pc->getPropBool("@tls", false))
-                    tlsConfig.setown(createSecureSocketConfig(nullptr, nullptr, nullptr));
+                    tlsConfig.setown(createSecureSocketConfig(nullptr, nullptr, nullptr, true));
             }
         }
         StringBuffer list;
@@ -299,7 +299,7 @@ void initBareMetalRoxieTargets(MapStringToMyClass<ISmartSocketFactory> &connMap,
                     farmerPort = port;
                     const char *protocol = farmer.queryProp("@protocol");
                     if (protocol && streq(protocol, "ssl"))
-                        tlsConfig.setown(createSecureSocketConfig(farmer.queryProp("@certificateFileName"), farmer.queryProp("@privateKeyFileName"), nullptr));
+                        tlsConfig.setown(createSecureSocketConfig(farmer.queryProp("@certificateFileName"), farmer.queryProp("@privateKeyFileName"), nullptr, true));
                     break; //use the first one without port==0
                 }
                 Owned<IPropertyTreeIterator> servers = roxieCluster->getElements("RoxieServerProcess");

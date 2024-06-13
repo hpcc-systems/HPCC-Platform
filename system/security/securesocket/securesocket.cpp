@@ -2051,10 +2051,13 @@ SECURESOCKET_API ISecureSocketContext* createSecureSocketContextSecretSrv(const 
     return createSecureSocketContextSynced(info, ServerSocket);
 }
 
-IPropertyTree * createSecureSocketConfig(const char* certFileOrBuf, const char* privKeyFileOrBuf, const char* passphrase)
+IPropertyTree * createSecureSocketConfig(const char* certFileOrBuf, const char* privKeyFileOrBuf, const char* passphrase, bool createIfAllNull)
 {
-    if (!certFileOrBuf && !privKeyFileOrBuf && !passphrase)
-        return nullptr;
+    if (!createIfAllNull)
+    {
+        if (!certFileOrBuf && !privKeyFileOrBuf && !passphrase)
+            return nullptr;
+    }
 
     Owned<IPropertyTree> config = createPTree("ssl");
     if (certFileOrBuf)

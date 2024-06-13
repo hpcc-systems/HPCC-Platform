@@ -95,7 +95,7 @@ SECURESOCKET_API ISecureSocketContext* createSecureSocketContextSecretSrv(const 
 SECURESOCKET_API ISecureSocketContext* createSecureSocketContextSSF(ISmartSocketFactory* ssf);
 
 //Helper function to aid migration to the functions above.  This should eventually be removed.
-SECURESOCKET_API IPropertyTree * createSecureSocketConfig(const char* certFileOrBuf, const char* privKeyFileOrBuf, const char* passphrase);
+SECURESOCKET_API IPropertyTree * createSecureSocketConfig(const char* certFileOrBuf, const char* privKeyFileOrBuf, const char* passphrase, bool createIfAllNull);
 
 //Legacy factory methods - should be phased out.
 SECURESOCKET_API ISecureSocketContext* createSecureSocketContext(SecureSocketType);
