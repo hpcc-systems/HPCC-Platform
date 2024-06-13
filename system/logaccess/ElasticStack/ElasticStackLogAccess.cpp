@@ -560,6 +560,12 @@ void ElasticStackLogAccess::esSearchMetaData(std::string & search, const LogAcce
                 case LOGACCESS_MAPPEDFIELD_host:
                     sortByFieldName = m_hostSearchColName.str();
                     break;
+                case LOGACCESS_MAPPEDFIELD_traceid:
+                    sortByFieldName = m_traceSearchColName.str();
+                    break;
+                case LOGACCESS_MAPPEDFIELD_spanid:
+                    sortByFieldName = m_spanSearchColName.str();
+                    break;
                 case LOGACCESS_MAPPEDFIELD_unmapped:
                 default:
                     sortByFieldName = condition.fieldName.get();
@@ -628,6 +634,40 @@ void ElasticStackLogAccess::populateESQueryQueryString(std::string & queryString
         }
 
         DBGLOG("%s: Searching log entries by jobid: '%s'...", COMPONENT_NAME, queryValue.str() );
+        break;
+    }
+    case LOGACCESS_FILTER_trace:
+    {
+        if (m_traceSearchColName.isEmpty())
+            throw makeStringExceptionV(-1, "%s: 'traceid' log entry field not configured", COMPONENT_NAME);
+
+        queryField = m_traceSearchColName.str();
+
+        if (!m_traceIndexSearchPattern.isEmpty())
+        {
+            if (!queryIndex.empty() && queryIndex != m_traceIndexSearchPattern.str())
+                throw makeStringExceptionV(-1, "%s: Multi-index query not supported: '%s' - '%s'", COMPONENT_NAME, queryIndex.c_str(), m_workunitIndexSearchPattern.str());
+            queryIndex = m_traceIndexSearchPattern;
+        }
+
+        DBGLOG("%s: Searching log entries by traceid: '%s'...", COMPONENT_NAME, queryValue.str() );
+        break;
+    }
+    case LOGACCESS_FILTER_span:
+    {
+        if (m_spanSearchColName.isEmpty())
+            throw makeStringExceptionV(-1, "%s: 'spanid' log entry field not configured", COMPONENT_NAME);
+
+        queryField = m_spanSearchColName.str();
+
+        if (!m_spanIndexSearchPattern.isEmpty())
+        {
+            if (!queryIndex.empty() && queryIndex != m_spanIndexSearchPattern.str())
+                throw makeStringExceptionV(-1, "%s: Multi-index query not supported: '%s' - '%s'", COMPONENT_NAME, queryIndex.c_str(), m_workunitIndexSearchPattern.str());
+            queryIndex = m_spanIndexSearchPattern;
+        }
+
+        DBGLOG("%s: Searchingsort log entries by spanid: '%s'...", COMPONENT_NAME, queryValue.str() );
         break;
     }
     case LOGACCESS_FILTER_class:
