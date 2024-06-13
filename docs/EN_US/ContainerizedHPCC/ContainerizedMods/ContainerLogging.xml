@@ -112,20 +112,20 @@
           <?dbfo keep-together="always"?>
 
           <tgroup cols="2">
-            <colspec colwidth="49.50pt" />
+            <colspec colwidth="49.50pt"/>
 
-            <colspec />
+            <colspec/>
 
             <tbody>
               <row>
                 <entry><inlinegraphic
-                fileref="../../images/caution.png" /></entry>
+                fileref="../../images/caution.png"/></entry>
 
                 <entry><emphasis role="bold">NOTE: </emphasis>The
                 elastic4hpcclogs chart does not enable any security. The
                 responsibility of determining the need for security and
                 enabling security on any deployed Elastic Stack instance or
-                components is up to you and your organization. </entry>
+                components is up to you and your organization.</entry>
               </row>
             </tbody>
           </tgroup>
@@ -152,7 +152,7 @@
         Systems charts and repositories. The
         <emphasis>elastic4hpcclogs</emphasis> chart is among them.</para>
 
-        <para><graphic fileref="../../images/CL-Img01-1.jpg" /></para>
+        <para><graphic fileref="../../images/CL-Img01-1.jpg"/></para>
       </sect3>
 
       <sect3 id="Elastic4HPCC_Install_theChart">
@@ -186,14 +186,14 @@ PLEASE NOTE: Elastic Search declares PVC(s) which might require explicit manual 
             <?dbfo keep-together="always"?>
 
             <tgroup cols="2">
-              <colspec colwidth="49.50pt" />
+              <colspec colwidth="49.50pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
                   <entry><inlinegraphic
-                  fileref="../../images/caution.png" /></entry>
+                  fileref="../../images/caution.png"/></entry>
 
                   <entry><emphasis role="bold">IMPORTANT: </emphasis>PLEASE
                   NOTE: Elastic Search declares PVC(s) which might require
@@ -230,7 +230,7 @@ PLEASE NOTE: Elastic Search declares PVC(s) which might require explicit manual 
 myelk-filebeat-6wd2g                      1/1     Running            0          
 myelk-kibana-68688b4d4d-d489b             1/1     Running            0      </programlisting>
 
-        <para><graphic fileref="../../images/CL-Img02-1.jpg" /></para>
+        <para><graphic fileref="../../images/CL-Img02-1.jpg"/></para>
 
         <para>Once all the pods are indicating a 'ready' state and 'Running',
         including the three components for filebeats, Elastic Search, and
@@ -282,12 +282,13 @@ myelk-kibana LoadBalancer 10.110.129.199 localhost 5601:31465/TCP 68m
         interface. For more information about using the Elastic-Kibana
         interface please refer to the corresponding documentation:</para>
 
-        <para><ulink url="???">https://www.elastic.co/</ulink></para>
+        <para><ulink
+        url="https://www.elastic.co">https://www.elastic.co/</ulink></para>
 
         <para>and</para>
 
         <para><ulink
-        url="???">https://www.elastic.co/elastic-stack/</ulink></para>
+        url="https://www.elastic.co/elastic-stack/">https://www.elastic.co/elastic-stack/</ulink></para>
       </sect3>
 
       <sect3>
@@ -584,7 +585,7 @@ ContainerLog
 
       <para>Sample output</para>
 
-      <para><graphic fileref="../../images/CL-Img03-1.jpg" /></para>
+      <para><graphic fileref="../../images/CL-Img03-1.jpg"/></para>
 
       <para>More complex queries can be formulated to fetch specific
       information provided in any of the log columns including unformatted

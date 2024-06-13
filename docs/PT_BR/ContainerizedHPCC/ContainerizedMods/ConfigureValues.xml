@@ -996,7 +996,7 @@
         desenvolvedor:</para>
 
         <para><ulink
-        url="???">https://github.com/hpcc-systems/HPCC-Platform/blob/master/helm/hpcc/docs/placements.md</ulink></para>
+        url="https://github.com/hpcc-systems/HPCC-Platform/blob/master/helm/hpcc/docs/placements.md">https://github.com/hpcc-systems/HPCC-Platform/blob/master/helm/hpcc/docs/placements.md</ulink></para>
 
         <sect4 id="YAML_FileStruct_Placement">
           <title>Placement</title>
