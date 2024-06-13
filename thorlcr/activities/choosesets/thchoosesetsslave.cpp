@@ -308,7 +308,6 @@ public:
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
-        info.buffersInput = true;
         info.isSequential = true;
         info.canReduceNumRows = true;
         info.canBufferInput = true;

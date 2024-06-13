@@ -106,7 +106,7 @@ public:
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
-        info.buffersInput = true;
+        info.canBufferInput = true;
         calcMetaInfoSize(info, queryInput(0));
     }
 };
@@ -183,6 +183,7 @@ public:
     {
         initMetaInfo(info);
         calcMetaInfoSize(info, queryInput(0));
+        info.fastThrough = true;
     }
 // steppable
     virtual void setInputStream(unsigned index, CThorInput &input, bool consumerOrdered) override

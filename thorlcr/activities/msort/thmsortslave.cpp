@@ -206,7 +206,7 @@ public:
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
-        info.buffersInput = true;
+        info.canBufferInput = true;
         info.unknownRowsOutput = false; // shuffles rows
         if (totalrows!=RCUNSET) { // NB totalrows not available until after start
             info.totalRowsMin = totalrows;
