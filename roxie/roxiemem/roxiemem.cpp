@@ -2912,6 +2912,11 @@ public:
     {
     }
 
+    ~CRoxieDirectFixedBlockedRowHeap()
+    {
+        emptyCache();
+    }
+
     virtual void *allocate()
     {
         if (curRow == numRows)
