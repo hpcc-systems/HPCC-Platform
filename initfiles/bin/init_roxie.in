@@ -68,6 +68,9 @@ killed()
     exit 255
 }
 
+# Delete older *.stdout and *.stderr log files
+find . -name "[0-9]*_[0-9]*.std*" -mtime +3 -delete
+
 trap "killed" SIGINT SIGTERM SIGKILL
 log "Calling nohup roxie --topology=RoxieTopology.xml --logfile --restarts=$restarts --stdlog=0 2>>$logfilename.stderr 1>>$logfilename.stdout &"
 nohup roxie --topology=RoxieTopology.xml --logfile --restarts=$restarts --stdlog=0 2>>$logfilename.stderr 1>>$logfilename.stdout &
