@@ -2144,7 +2144,7 @@ extern TPWRAPPER_API void initBareMetalRoxieTargets(MapStringToMyClass<ISmartSoc
                 if (!isEmptyString(protocol) && strieq(protocol, "ssl"))
                 {
                     port.set(farmPort);
-                    tlsConfig.setown(createSecureSocketConfig(farm.queryProp("@certificateFileName"), farm.queryProp("@privateKeyFileName"), nullptr));
+                    tlsConfig.setown(createSecureSocketConfig(farm.queryProp("@certificateFileName"), farm.queryProp("@privateKeyFileName"), nullptr, true));
                     break;
                 }
                 else if (isEmptyString(port.str()))

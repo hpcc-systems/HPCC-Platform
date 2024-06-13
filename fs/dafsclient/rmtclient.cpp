@@ -115,7 +115,7 @@ public:
     const IPropertyTree * getSecureConfig()
     {
         //Later: return a synced tree...
-        return createSecureSocketConfig(queryCertificate(), queryPrivateKey(), queryPassPhrase());
+        return createSecureSocketConfig(queryCertificate(), queryPrivateKey(), queryPassPhrase(), false);
     }
 
 protected:

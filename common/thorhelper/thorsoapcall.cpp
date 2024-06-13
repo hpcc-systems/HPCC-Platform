@@ -1305,7 +1305,7 @@ public:
         {
             if (clientCert != NULL)
             {
-                Owned<IPropertyTree> config = createSecureSocketConfig(clientCert->certificate, clientCert->privateKey, clientCert->passphrase);
+                Owned<IPropertyTree> config = createSecureSocketConfig(clientCert->certificate, clientCert->privateKey, clientCert->passphrase, true);
                 ownedSC.setown(createSecureSocketContextEx2(config, ClientSocket));
             }
             else if (clientCertIssuer.length())
