@@ -1272,8 +1272,7 @@ IAuthMap * CLdapSecManager::createAuthMap(IPropertyTree * authconfig, IEspSecure
 {
     CAuthMap* authmap = new CAuthMap();
 
-    IPropertyTreeIterator *loc_iter = NULL;
-    loc_iter = authconfig->getElements(".//Location");
+    Owned<IPropertyTreeIterator> loc_iter(authconfig->getElements(".//Location"));
     if (loc_iter != NULL)
     {
         IPropertyTree *location = NULL;
@@ -1308,8 +1307,6 @@ IAuthMap * CLdapSecManager::createAuthMap(IPropertyTree * authconfig, IEspSecure
             }
             loc_iter->next();
         }
-        loc_iter->Release();
-        loc_iter = NULL;
     }
 
     authmap->shareWithManager(*this, secureContext);
@@ -1322,8 +1319,7 @@ IAuthMap * CLdapSecManager::createFeatureMap(IPropertyTree * authconfig, IEspSec
 {
     CAuthMap* feature_authmap = new CAuthMap();
 
-    IPropertyTreeIterator *feature_iter = NULL;
-    feature_iter = authconfig->getElements(".//Feature");
+    Owned<IPropertyTreeIterator> feature_iter(authconfig->getElements(".//Feature"));
     if (feature_iter != NULL)
     {
         IPropertyTree *feature = NULL;
@@ -1355,8 +1351,6 @@ IAuthMap * CLdapSecManager::createFeatureMap(IPropertyTree * authconfig, IEspSec
             }
             feature_iter->next();
         }
-        feature_iter->Release();
-        feature_iter = NULL;
     }
 
     feature_authmap->shareWithManager(*this, secureContext);
@@ -1652,9 +1646,7 @@ LDAPSECURITY_API IAuthMap *newDefaultAuthMap(IPropertyTree* config)
 {
     CAuthMap* authmap = new CAuthMap();
 
-    IPropertyTreeIterator *loc_iter = NULL;
-    loc_iter = config->getElements(".//Location");
-
+    Owned<IPropertyTreeIterator> loc_iter(config->getElements(".//Location"));
     if (loc_iter != NULL)
     {
         IPropertyTree *location = NULL;
@@ -1676,8 +1668,6 @@ LDAPSECURITY_API IAuthMap *newDefaultAuthMap(IPropertyTree* config)
             }
             loc_iter->next();
         }
-        loc_iter->Release();
-        loc_iter = NULL;
     }
 
     return authmap;
