@@ -879,6 +879,25 @@ class CDFUPartReader : public CDaFileSrvClientBase, implements IDFUFilePartReade
             currentReadPos += r;
         }
     }
+    virtual size32_t read(size32_t len, void * ptr) override
+    {
+        size32_t originalLen = len;
+        while (len)
+        {
+            if (0 == bufRemaining)
+            {
+                refill();
+                if (0 == bufRemaining)
+                    return originalLen-len;
+            }
+            size32_t r = len>bufRemaining ? bufRemaining : len;
+            memcpy(ptr, replyMb.readDirect(r), r);
+            len -= r;
+            bufRemaining -= r;
+            currentReadPos += r;
+        }
+        return originalLen;
+    }
     virtual bool eos() override
     {
         if (!eoi)

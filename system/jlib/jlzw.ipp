@@ -58,6 +58,7 @@ public:
     virtual bool supportsBlockCompression() const override { return false; }
     virtual bool supportsIncrementalCompression() const override { return true; }
     virtual size32_t compressBlock(size32_t destSize, void * dest, size32_t srcSize, const void * src) override { return 0; }
+    virtual size32_t compressDirect(size32_t destSize, void * dest, size32_t srcSize, const void * src, size32_t * numCompressed) override { throwUnimplemented(); }
 
 protected:
     void flushbuf();

@@ -37,6 +37,7 @@ set (    SRCS
          remotetests.cpp
          dalitests.cpp
          jlibtests.cpp
+         jstreamtests.cpp
          cryptotests.cpp
          hqltests.cpp
          esdltests.cpp

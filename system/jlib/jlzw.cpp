@@ -463,6 +463,16 @@ size32_t CExpanderBase::expandNext(MemoryBuffer & target)
     return 0;
 }
 
+size32_t CExpanderBase::expandDirect(size32_t destSize, void * dest, size32_t srcSize, const void * src)
+{
+    throwUnimplemented();
+}
+
+bool CExpanderBase::supportsBlockDecompression() const
+{
+    return false;
+}
+
 CLZWExpander::CLZWExpander(bool _supportbigendian)
 {
     outbuf = NULL;
@@ -1410,6 +1420,11 @@ public:
 
     virtual size32_t compressBlock(size32_t destSize, void * dest, size32_t srcSize, const void * src) override { return 0; }
 
+    virtual size32_t compressDirect(size32_t destSize, void * dest, size32_t srcSize, const void * src, size32_t * numCompressed) override
+    {
+        throwUnimplemented();
+    }
+
     virtual bool adjustLimit(size32_t newLimit) override
     {
         assertex(bufalloc == 0 && !outBufMb);       // Only supported when a fixed size buffer is provided
@@ -1722,6 +1737,11 @@ public:
     virtual bool supportsIncrementalCompression() const override { return true; }
 
     virtual size32_t compressBlock(size32_t destSize, void * dest, size32_t srcSize, const void * src) override { return 0; }
+
+    virtual size32_t compressDirect(size32_t destSize, void * dest, size32_t srcSize, const void * src, size32_t * numCompressed) override
+    {
+        throwUnimplemented();
+    }
 
     inline size32_t maxcompsize(size32_t s) { return s+((s+254)/255)*2; }
 
@@ -2720,6 +2740,11 @@ public:
     virtual bool supportsIncrementalCompression() const override { return true; }
 
     virtual size32_t compressBlock(size32_t destSize, void * dest, size32_t srcSize, const void * src) override { return 0; }
+
+    virtual size32_t compressDirect(size32_t destSize, void * dest, size32_t srcSize, const void * src, size32_t * numCompressed) override
+    {
+        throwUnimplemented();
+    }
 
     virtual void close() override
     {

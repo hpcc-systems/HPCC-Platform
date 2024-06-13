@@ -1301,7 +1301,7 @@ protected:
     {
         if (inputStream->tell() != startPos)
         {
-            inputStream->reset(startPos);
+            inputStream->reset(startPos, UnknownOffset);
             return true;
         }
         return false;
@@ -1411,7 +1411,7 @@ class CRemoteDiskReadActivity : public CRemoteStreamReadBaseActivity
     {
         if (prefetchBuffer.tell() != startPos)
         {
-            inputStream->reset(startPos);
+            inputStream->reset(startPos, UnknownOffset);
             prefetchBuffer.clearStream();
             prefetchBuffer.setStream(inputStream);
             return true;

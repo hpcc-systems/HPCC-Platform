@@ -3897,7 +3897,7 @@ public:
     virtual size32_t doFetch(ARowBuilder & rowBuilder, offset_t pos, offset_t rawpos, void *inputData)
     {
         IHThorCsvFetchArg *h = (IHThorCsvFetchArg *) helper;
-        rawStream->reset(pos);
+        rawStream->reset(pos, UnknownOffset);
         size32_t rowSize = 4096; // MORE - make configurable
         for (;;)
         {
