@@ -11,6 +11,7 @@
 #include "xsdparser.hpp"
 #include "httpclient.hpp"
 #include "jsonhelpers.hpp"
+#include "securesocket.hpp"
 
 #define SDS_LOCK_TIMEOUT (5*60*1000) // 5mins, 30s a bit short
 
@@ -211,9 +212,8 @@ public:
     {
     }
 
-    WsEclSocketFactory(const char *_socklist, bool _retry, bool includeTarget, const char *_alias, unsigned _dnsInterval, bool useTls) : CSmartSocketFactory(_socklist, _retry, 60, _dnsInterval), includeTargetInURL(includeTarget), alias(_alias)
+    WsEclSocketFactory(const char *_socklist, IPropertyTree *_tlsConfig, bool _retry, bool includeTarget, const char *_alias, unsigned _dnsInterval) : CSmartSocketFactory(_socklist, _tlsConfig, _retry, 60, _dnsInterval), includeTargetInURL(includeTarget), alias(_alias)
     {
-        tlsService  = useTls;
     }
 };
 
@@ -260,7 +260,8 @@ void initBareMetalRoxieTargets(MapStringToMyClass<ISmartSocketFactory> &connMap,
         const char *vip = NULL;
         bool includeTargetInURL = true;
         unsigned dnsInterval = (unsigned) -1;
-        bool useTls = false;
+
+        Owned<IPropertyTree> tlsConfig;
         if (vips)
         {
             IPropertyTree *pc = vips->queryPropTree(xpath.clear().appendf("ProcessCluster[@name='%s']", process.str()));
@@ -269,7 +270,8 @@ void initBareMetalRoxieTargets(MapStringToMyClass<ISmartSocketFactory> &connMap,
                 vip = pc->queryProp("@vip");
                 includeTargetInURL = pc->getPropBool("@includeTargetInURL", true);
                 dnsInterval = (unsigned) pc->getPropInt("@dnsInterval", -1);
-                useTls = pc->getPropBool("@tls", false);
+                if (pc->getPropBool("@tls", false))
+                    tlsConfig.setown(createSecureSocketConfig(nullptr, nullptr, nullptr));
             }
         }
         StringBuffer list;
@@ -297,7 +299,7 @@ void initBareMetalRoxieTargets(MapStringToMyClass<ISmartSocketFactory> &connMap,
                     farmerPort = port;
                     const char *protocol = farmer.queryProp("@protocol");
                     if (protocol && streq(protocol, "ssl"))
-                        useTls = true;
+                        tlsConfig.setown(createSecureSocketConfig(farmer.queryProp("@certificateFileName"), farmer.queryProp("@privateKeyFileName"), nullptr));
                     break; //use the first one without port==0
                 }
                 Owned<IPropertyTreeIterator> servers = roxieCluster->getElements("RoxieServerProcess");
@@ -308,7 +310,7 @@ void initBareMetalRoxieTargets(MapStringToMyClass<ISmartSocketFactory> &connMap,
         if (list.length())
         {
             StringAttr alias(clusterInfo->getAlias());
-            Owned<ISmartSocketFactory> sf = new WsEclSocketFactory(list.str(), !loadBalanced, includeTargetInURL, loadBalanced ? alias.str() : NULL, dnsInterval, useTls);
+            Owned<ISmartSocketFactory> sf = new WsEclSocketFactory(list.str(), tlsConfig, !loadBalanced, includeTargetInURL, loadBalanced ? alias.str() : NULL, dnsInterval);
             connMap.setValue(target.str(), sf.get());
             if (alias.length() && !connMap.getValue(alias.str())) //only need one vip per alias for routing purposes
                 connMap.setValue(alias.str(), sf.get());

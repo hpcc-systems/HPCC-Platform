@@ -2188,7 +2188,7 @@ class CSecureSmartSocketFactory : public CSmartSocketFactory
 public:
     Owned<ISecureSocketContext> secureContext;
 
-    CSecureSmartSocketFactory(const char *_socklist, bool _retry, unsigned _retryInterval, unsigned _dnsInterval) : CSmartSocketFactory(_socklist, _retry, _retryInterval, _dnsInterval)
+    CSecureSmartSocketFactory(const char *_socklist, IPropertyTree *_tlsConfig, bool _retry, unsigned _retryInterval, unsigned _dnsInterval) : CSmartSocketFactory(_socklist, _tlsConfig, _retry, _retryInterval, _dnsInterval)
     {
         secureContext.setown(createSecureSocketContext(ClientSocket));
     }
@@ -2221,9 +2221,9 @@ public:
     }
 };
 
-ISmartSocketFactory *createSecureSmartSocketFactory(const char *_socklist, bool _retry, unsigned _retryInterval, unsigned _dnsInterval)
+ISmartSocketFactory *createSecureSmartSocketFactory(const char *_socklist, IPropertyTree* _tlsConfig, bool _retry, unsigned _retryInterval, unsigned _dnsInterval)
 {
-    return new CSecureSmartSocketFactory(_socklist, _retry, _retryInterval, _dnsInterval);
+    return new CSecureSmartSocketFactory(_socklist, _tlsConfig, _retry, _retryInterval, _dnsInterval);
 }
 
 ISmartSocketFactory *createSecureSmartSocketFactory(IPropertyTree &service, bool _retry, unsigned _retryInterval, unsigned _dnsInterval)

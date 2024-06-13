@@ -242,12 +242,18 @@ CSmartSocketFactory::CSmartSocketFactory(IPropertyTree &service, bool _retry, un
     }
 }
 
-CSmartSocketFactory::CSmartSocketFactory(const char *_socklist, bool _retry, unsigned _retryInterval, unsigned _dnsInterval)
+CSmartSocketFactory::CSmartSocketFactory(const char *_socklist, IPropertyTree* _tlsConfig, bool _retry, unsigned _retryInterval, unsigned _dnsInterval)
 {
-    PROGLOG("CSmartSocketFactory::CSmartSocketFactory(%s)",_socklist?_socklist:"NULL");
+    PROGLOG("CSmartSocketFactory::CSmartSocketFactory(%s, tlsConfig(%s))",_socklist?_socklist:"NULL", _tlsConfig?"yes":"no");
     SmartSocketListParser slp(_socklist);
     if (slp.getSockets(sockArray) == 0)
         throw createSmartSocketException(0, "no endpoints defined");
+
+    if (_tlsConfig != nullptr)
+    {
+        tlsService = true;
+        tlsConfig.setown(createSyncedPropertyTree(_tlsConfig));
+    }
 
     shuffleEndpoints();
 
@@ -491,5 +497,5 @@ ISmartSocketFactory *createSmartSocketFactory(IPropertyTree &service, bool _retr
 
 ISmartSocketFactory *createSmartSocketFactory(const char *_socklist, bool _retry, unsigned _retryInterval, unsigned _dnsInterval)
 {
-    return new CSmartSocketFactory(_socklist, _retry, _retryInterval, _dnsInterval);
+    return new CSmartSocketFactory(_socklist, nullptr, _retry, _retryInterval, _dnsInterval);
 }

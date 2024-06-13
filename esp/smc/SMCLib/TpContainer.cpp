@@ -694,6 +694,11 @@ extern TPWRAPPER_API void initContainerRoxieTargets(MapStringToMyClass<ISmartSoc
     }
 }
 
+extern TPWRAPPER_API void initBareMetalRoxieTargets(MapStringToMyClass<ISmartSocketFactory>& connMap)
+{
+    IWARNLOG("UNIMPLEMENTED: CONTAINERIZED(CTpWrapper::initBareMetalRoxieTargets)");
+}
+
 extern TPWRAPPER_API void getRoxieTargetsSupportingPublishedQueries(StringArray& names)
 {
     Owned<IPropertyTreeIterator> queues = getComponentConfigSP()->getElements("queues[@type='roxie']");
