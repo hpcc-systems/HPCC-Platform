@@ -24,6 +24,7 @@ void slaveMain(bool &jobListenerStopped, ILogMsgHandler *logHandler);
 void enableThorSlaveAsDaliClient();
 void disableThorSlaveAsDaliClient();
 
+extern bool recvShutdown;
 #endif
 
 
