@@ -69,7 +69,7 @@ class CWriteIntercept : public CSimpleInterface
     CActivityBase &activity;
     CriticalSection crit;
     IThorRowInterfaces *rowIf;
-    Owned<IFile> dataFile, idxFile;
+    Owned<CFileOwner> dataFile, idxFile;
     Owned<IFileIO> dataFileIO, idxFileIO;
     Owned<ISerialStream> dataFileStream;
     Linked<IFileIOStream> idxFileStream;
@@ -100,12 +100,12 @@ class CWriteIntercept : public CSimpleInterface
                 // right create idx
                 StringBuffer tempname;
                 GetTempFilePath(tempname.clear(),"srtidx");
-                idxFile.setown(createIFile(tempname.str()));
-                idxFileIO.setown(idxFile->open(IFOcreaterw));
+                idxFile.setown(activity.createOwnedTempFile(tempname.str()));
+                idxFileIO.setown(idxFile->queryIFile().open(IFOcreaterw));
                 if (!idxFileIO.get())
                 {
                     StringBuffer err;
-                    err.append("Cannot create ").append(idxFile->queryFilename());
+                    err.append("Cannot create ").append(idxFile->queryIFile().queryFilename());
                     LOG(MCerror, "%s", err.str());
                     throw MakeActivityException(&activity, -1, "%s", err.str());
                 }
@@ -141,7 +141,7 @@ class CWriteIntercept : public CSimpleInterface
         if (!idxFileIO.get())
         {
             assertex(idxFile);
-            idxFileIO.setown(idxFile->open(IFOread));
+            idxFileIO.setown(idxFile->queryIFile().open(IFOread));
         }
         size32_t rd = idxFileIO->read((offset_t)pos*(offset_t)sizeof(offset_t),sizeof(*ofs)*n,ofs);
         if (closeIO)
@@ -161,12 +161,12 @@ class CWriteIntercept : public CSimpleInterface
         {
             if (parent->compressedOverflowFile)
             {
-                Owned<ICompressedFileIO> iFileIO = createCompressedFileReader(parent->dataFile);
+                Owned<ICompressedFileIO> iFileIO = createCompressedFileReader(&(parent->dataFile->queryIFile()));
                 assertex(iFileIO);
                 stream.setown(createRowStreamEx(iFileIO, parent->rowIf, startOffset, (offset_t)-1, max));
             }
             else
-                stream.setown(createRowStreamEx(parent->dataFile, parent->rowIf, startOffset, (offset_t)-1, max));
+                stream.setown(createRowStreamEx(&(parent->dataFile->queryIFile()), parent->rowIf, startOffset, (offset_t)-1, max));
         }
         virtual const void *nextRow() { return stream->nextRow(); }
         virtual void stop() { stream->stop(); }
@@ -187,16 +187,12 @@ public:
     ~CWriteIntercept()
     {
         closeFiles();
-        if (dataFile)
-            dataFile->remove();
-        if (idxFile)
-            idxFile->remove();
     }
     offset_t write(IRowStream *input)
     {
         StringBuffer tempname;
         GetTempFilePath(tempname,"srtmrg");
-        dataFile.setown(createIFile(tempname.str()));
+        dataFile.setown(activity.createOwnedTempFile(tempname.str()));
 
         unsigned rwFlags = DEFAULT_RWFLAGS;
         size32_t compBlkSz = 0;
@@ -227,7 +223,7 @@ public:
             }
         }
 
-        Owned<IExtRowWriter> output = createRowWriter(dataFile, rowIf, rwFlags, nullptr, compBlkSz);
+        Owned<IExtRowWriter> output = createRowWriter(&(dataFile->queryIFile()), rowIf, rwFlags, nullptr, compBlkSz);
 
         bool overflowed = false;
         ActPrintLog(&activity, "Local Overflow Merge start");
@@ -262,16 +258,18 @@ public:
         output->flush();
         offset_t end = output->getPosition();
         output.clear();
+        dataFile->noteSize(end);
         writeidxofs(end);
         if (idxFileIO)
         {
             idxFileStream->flush();
             idxFileStream.clear();
+            idxFile->noteSize(idxFileIO->getStatistic(StSizeDiskWrite));
             idxFileIO.clear();
         }
         if (overflowed)
             IWARNLOG("Overflowed by %" I64F "d", overflowsize);
-        ActPrintLog(&activity, "Local Overflow Merge done: overflow file '%s', size = %" I64F "d", dataFile->queryFilename(), dataFile->size());
+        ActPrintLog(&activity, "Local Overflow Merge done: overflow file '%s', size = %" I64F "d", dataFile->queryIFile().queryFilename(), dataFile->queryIFile().size());
         return end;
     }
     IRowStream *getStream(offset_t startOffset, rowcount_t max)
@@ -299,7 +297,7 @@ public:
         size32_t idxSz = (size32_t)(ofs[1]-ofs[0]);
         if (!dataFileIO)
         {
-            dataFileIO.setown(dataFile->open(IFOread));
+            dataFileIO.setown(dataFile->queryIFile().open(IFOread));
             if (compressedOverflowFile)
             {
                 dataFileIO.setown(createCompressedFileReader(dataFileIO));

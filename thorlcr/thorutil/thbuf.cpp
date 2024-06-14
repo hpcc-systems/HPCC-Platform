@@ -15,6 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
+#include <deque>
+#include <tuple>
 #include "platform.h"
 #include <limits.h>
 #include <stddef.h>
@@ -735,7 +737,7 @@ int chunkSizeCompare2(Chunk *lhs, Chunk *rhs)
 }
 
 #define MIN_POOL_CHUNKS 10
-class CSharedWriteAheadBase : public CSimpleInterface, implements ISharedSmartBuffer
+class CSharedWriteAheadBase : public CSimpleInterface, implements ISharedSmartBuffer, implements ISharedSmartBufferRowWriter
 {
     size32_t totalOutChunkSize;
     bool writeAtEof;
@@ -1104,7 +1106,12 @@ public:
     }
 
 // ISharedSmartBuffer
-    virtual void putRow(const void *row, ISharedSmartBufferCallback *callback)
+    virtual ISharedSmartBufferRowWriter *getWriter() override
+    {
+        return LINK(this);
+    }
+// ISharedSmartBufferRowWriter
+    virtual void putRow(const void *row, ISharedSmartBufferCallback *callback) override
     {
         if (stopped)
         {
@@ -1142,32 +1149,28 @@ public:
         if (!callback || paged)
             signalReaders();
     }
-    virtual void putRow(const void *row)
+    virtual void putRow(const void *row) override
     {
         return putRow(row, NULL);
     }
-    virtual void flush()
+    virtual void flush() override
     {
         CriticalBlock b(crit);
         writeAtEof = true;
         signalReaders();
     }
-    virtual offset_t getPosition()
-    {
-        throwUnexpected();
-        return 0;
-    }
-    virtual IRowStream *queryOutput(unsigned output)
+// ISharedRowStreamReader
+    virtual IRowStream *queryOutput(unsigned output) override
     {
         return &outputs.item(output);
     }
-    virtual void cancel()
+    virtual void cancel() override
     {
         CriticalBlock b(crit);
         stopAll();
         signalReaders();
     }
-    virtual void reset()
+    virtual void reset() override
     {
         init();
         unsigned c=0;
@@ -1193,6 +1196,29 @@ bool CRowSet::Release() const
             sharedWriteAhead.reuse((CRowSet *)this);
     }
     return CSimpleInterface::Release();
+}
+
+static StringBuffer &getFileIOStats(StringBuffer &output, IFileIO *iFileIO)
+{
+    __int64 readCycles = iFileIO->getStatistic(StCycleDiskReadIOCycles);
+    __int64 writeCycles = iFileIO->getStatistic(StCycleDiskWriteIOCycles);
+    __int64 numReads = iFileIO->getStatistic(StNumDiskReads);
+    __int64 numWrites = iFileIO->getStatistic(StNumDiskWrites);
+    offset_t bytesRead = iFileIO->getStatistic(StSizeDiskRead);
+    offset_t bytesWritten = iFileIO->getStatistic(StSizeDiskWrite);
+    if (readCycles)
+        output.appendf(", read-time(ms)=%" I64F "d", cycle_to_millisec(readCycles));
+    if (writeCycles)
+        output.appendf(", write-time(ms)=%" I64F "d", cycle_to_millisec(writeCycles));
+    if (numReads)
+        output.appendf(", numReads=%" I64F "d", numReads);
+    if (numWrites)
+        output.appendf(", numWrites=%" I64F "d", numWrites);
+    if (bytesRead)
+        output.appendf(", bytesRead=%" I64F "d", bytesRead);
+    if (bytesWritten)
+        output.appendf(", bytesWritten=%" I64F "d", bytesWritten);
+    return output;
 }
 
 class CSharedWriteAheadDisk : public CSharedWriteAheadBase
@@ -1514,10 +1540,14 @@ public:
     }
     ~CSharedWriteAheadDisk()
     {
-        spillFileIO.clear();
         if (spillFile)
+        {
+            StringBuffer tracing;
+            getFileIOStats(tracing, spillFileIO);
+            activity->ActPrintLog("CSharedWriteAheadDisk: removing spill file: %s%s", spillFile->queryFilename(), tracing.str());
+            spillFileIO.clear();
             spillFile->remove();
-
+        }
         for (;;)
         {
             Owned<Chunk> chunk = savedChunks.dequeue();
@@ -1655,6 +1685,478 @@ public:
 ISharedSmartBuffer *createSharedSmartMemBuffer(CActivityBase *activity, unsigned outputs, IThorRowInterfaces *rowIf, unsigned buffSize)
 {
     return new CSharedWriteAheadMem(activity, outputs, rowIf, buffSize);
+}
+
+
+// This implementation is supplied with the input, and reads from it on demand, initially to memory.
+// It will spill to disk if the configurable memory limit is exceeded.
+// The leading reader(output) causes the implementation to read more rows from the input.
+// Once the leader causes the rows in memory to exceed the memory limit, it will cause a output stream to be created.
+// From that point on, the leader will write blocks of rows out to disk,
+// and cause all readers to read from it, once they have exhaused the in-memory row set.
+
+class CSharedFullSpillingWriteAhead : public CInterfaceOf<ISharedRowStreamReader>
+{
+    typedef std::vector<const void *> Rows;
+    class COutputRowStream : public CSimpleInterfaceOf<IRowStream>
+    {
+        CSharedFullSpillingWriteAhead &owner;
+        unsigned whichOutput = 0;
+        size32_t localRowsIndex = 0;
+        rowcount_t lastKnownAvailable = 0;
+        rowcount_t currentRow = 0;
+        Rows rows;
+        OwnedIFileIO iFileIO;
+        Owned<IEngineRowAllocator> allocator;
+        Owned<IBufferedSerialInputStream> inputStream;
+        CThorStreamDeserializerSource ds;
+        std::atomic<bool> eof = false;
+
+        inline const void *getClearRow(unsigned i)
+        {
+            const void *row = rows[i];
+            rows[i] = nullptr;
+            return row;
+        }
+        void freeRows()
+        {
+            for (auto it = rows.begin() + localRowsIndex; it != rows.end(); ++it)
+                ReleaseThorRow(*it);
+            rows.clear();
+            localRowsIndex = 0;
+            allocator->emptyCache();
+        }
+        const void *getRowFromStream()
+        {
+            if (currentRow == lastKnownAvailable)
+            {
+                if (!owner.checkWriteAhead(lastKnownAvailable))
+                {
+                    eof = true;
+                    return nullptr;
+                }
+            }
+            if (owner.inputGrouped)
+            {
+                bool eog;
+                inputStream->read(sizeof(bool), &eog);
+                if (eog)
+                {
+                    currentRow++;
+                    return nullptr;
+                }
+            }
+            currentRow++;
+            RtlDynamicRowBuilder rowBuilder(allocator);
+            size32_t sz = owner.deserializer->deserialize(rowBuilder, ds);
+            return rowBuilder.finalizeRowClear(sz);
+        }
+    public:
+        explicit COutputRowStream(CSharedFullSpillingWriteAhead &_owner, unsigned _whichOutput)
+            : owner(_owner), whichOutput(_whichOutput)
+        {
+            allocator.setown(owner.activity.getRowAllocator(owner.meta, (roxiemem::RoxieHeapFlags)owner.options.heapFlags));
+        }
+        ~COutputRowStream()
+        {
+            freeRows();
+        }
+        rowcount_t queryLastKnownAvailable() const
+        {
+            return lastKnownAvailable;
+        }
+        void setLastKnownAvailable(rowcount_t _lastKnownWritten)
+        {
+            lastKnownAvailable = _lastKnownWritten;
+        }
+        void cancel()
+        {
+            eof = true;
+        }
+        void reset()
+        {
+            freeRows();
+            ds.setStream(nullptr);
+            iFileIO.clear();
+            inputStream.clear();
+            eof = false;
+            currentRow = 0;
+            lastKnownAvailable = 0;
+        }
+        virtual const void *nextRow() override
+        {
+            if (eof)
+                return nullptr;
+            else if (localRowsIndex < rows.size()) // NB: no longer used after inputStream is set
+            {
+                currentRow++;
+                return getClearRow(localRowsIndex++);
+            }
+            else if (inputStream)
+                return getRowFromStream(); // NB: will increment currentRow
+            else
+            {
+                localRowsIndex = 0;
+                rows.clear();
+
+                if (owner.getRowsInMem(rows, lastKnownAvailable))
+                {
+                    if (rows.empty())
+                    {
+                        eof = true;
+                        return nullptr;
+                    }
+                    else
+                    {
+                        currentRow++;
+                        return getClearRow(localRowsIndex++);
+                    }
+                }
+                else
+                {
+                    auto [_inputStream, _iFileIO] = owner.getReadStream();
+                    inputStream.setown(_inputStream);
+                    iFileIO.setown(_iFileIO);
+                    ds.setStream(inputStream);
+                    return getRowFromStream(); // NB: will increment currentRow
+                }
+            }
+        }
+        virtual void stop() override
+        {
+            freeRows();
+            ds.setStream(nullptr);
+
+            if (inputStream)
+            {
+                StringBuffer tracing;
+                getFileIOStats(tracing, iFileIO);
+                owner.activity.ActPrintLog("CSharedFullSpillingWriteAhead::COutputRowStream: input stream finished: output=%u%s", whichOutput, tracing.str());
+
+                iFileIO.clear();
+                inputStream.clear();
+            }
+
+            // NB: this will set lastKnownAvailable to max[(rowcount_t)-1] (within owner.readAheadCS) to prevent it being considered as lowest any longer
+            owner.outputStopped(whichOutput);
+
+            eof = true;
+        }
+    };
+    CActivityBase &activity;
+    Linked<IRowStream> input;
+    Linked<IOutputMetaData> meta;
+    Linked<IOutputRowSerializer> serializer;
+    Linked<IOutputRowDeserializer> deserializer;
+    Linked<IEngineRowAllocator> allocator;
+    std::vector<Owned<COutputRowStream>> outputs;
+    std::deque<std::tuple<const void *, size32_t>> rows;
+    memsize_t rowsMemUsage = 0;
+    std::atomic<rowcount_t> totalInputRowsRead = 0; // not used until spilling begins, represents count of all rows read
+    rowcount_t inMemTotalRows = 0; // whilst in memory, represents count of all rows seen
+    CriticalSection readAheadCS; // ensure single reader (leader), reads ahead (updates rows/totalInputRowsRead/inMemTotalRows)
+    Owned<IFile> iFile;
+    Owned<IFileIO> iFileIO;
+    Owned<IBufferedSerialOutputStream> outputStream;
+    Linked<ICompressHandler> compressHandler;
+    bool nextInputReadEog = false;
+    bool endOfInput = false;
+    bool inputGrouped = false;
+    SharedRowStreamReaderOptions options;
+    size32_t inMemReadAheadGranularity = 0;
+    size32_t compressionBlockSize = 0;
+
+    rowcount_t getLowestOutput()
+    {
+        // NB: must be called with readAheadCS held
+        rowcount_t trailingRowPos = (rowcount_t)-1;
+        for (auto &output: outputs)
+        {
+            rowcount_t outputLastKnownWritten = output->queryLastKnownAvailable();
+            if (outputLastKnownWritten < trailingRowPos)
+                trailingRowPos = outputLastKnownWritten;
+        }
+        return trailingRowPos;
+    }
+    inline rowcount_t getStartIndex()
+    {
+        rowcount_t nr = rows.size();
+        return inMemTotalRows - nr;
+    }
+    inline unsigned getRelativeIndex(rowcount_t index)
+    {
+        rowcount_t startIndex = getStartIndex();
+        return (unsigned)(index - startIndex);
+    }
+    void closeWriter()
+    {
+        iFileIO.clear();
+        outputStream.clear();
+    }
+    void createOutputStream()
+    {
+        // NB: Called once, when spilling starts.
+        iFileIO.setown(iFile->open(IFOcreate)); // kept for stats purposes
+        Owned<ISerialOutputStream> out = createSerialOutputStream(iFileIO);
+        outputStream.setown(createBufferedOutputStream(out, options.storageBlockSize)); //prefered plane block size
+        if (compressHandler)
+        {
+            const char *compressOptions = nullptr;
+            Owned<ICompressor> compressor = compressHandler->getCompressor(compressOptions);
+            Owned<ISerialOutputStream> compressed = createCompressingOutputStream(outputStream, compressor);
+            outputStream.setown(createBufferedOutputStream(compressed, compressionBlockSize));
+        }
+        totalInputRowsRead = inMemTotalRows;
+    }
+    void writeRowsFromInput()
+    {
+        // NB: the leading output will be calling this, and it could populate 'outputRows' as it reads ahead
+        // but we want to readahead + write to disk, more than we want to retain in memory, so keep it simple,
+        // flush all to disk, meaning this output will also read them back off disk (hopefully from Linux page cache)
+        rowcount_t newRowsWritten = 0;
+        offset_t serializedSz = 0;
+        COutputStreamSerializer outputStreamSerializer(outputStream);
+        while (!activity.queryAbortSoon())
+        {
+            OwnedConstThorRow row = input->nextRow();
+            if (nullptr == row)
+            {
+                if (!inputGrouped || nextInputReadEog)
+                {
+                    endOfInput = true;
+                    break;
+                }
+                nextInputReadEog = true;
+                outputStream->put(sizeof(bool), &nextInputReadEog);
+                newRowsWritten++;
+            }
+            else
+            {
+                if (inputGrouped)
+                {
+                    nextInputReadEog = false;
+                    outputStream->put(sizeof(bool), &nextInputReadEog);
+                }
+                serializer->serialize(outputStreamSerializer, (const byte *)row.get());
+                newRowsWritten++;
+                size32_t rowSz = thorRowMemoryFootprint(serializer, row);
+                serializedSz += rowSz;
+                if (serializedSz >= options.spillWriteAheadSize)
+                    break;
+            }
+        }
+        outputStream->flush();
+        totalInputRowsRead.fetch_add(newRowsWritten);
+
+        // JCSMORE - could track size written, and start new file at this point (e.g. every 100MB),
+        // and track their starting points (by row #) in a vector
+        // We could then tell if/when the readers catch up, and remove consumed files as they do.
+    }
+    void freeRows()
+    {
+        for (auto &row: rows)
+            ReleaseThorRow(std::get<0>(row));
+    }
+public:
+    explicit CSharedFullSpillingWriteAhead(CActivityBase *_activity, unsigned numOutputs, IRowStream *_input, bool _inputGrouped, const SharedRowStreamReaderOptions &_options, IThorRowInterfaces *rowIf, const char *tempFileName, ICompressHandler *_compressHandler)
+        : activity(*_activity), input(_input), inputGrouped(_inputGrouped), options(_options), compressHandler(_compressHandler),
+        meta(rowIf->queryRowMetaData()), serializer(rowIf->queryRowSerializer()), allocator(rowIf->queryRowAllocator()), deserializer(rowIf->queryRowDeserializer())
+    {
+        assertex(input);
+
+        // cap inMemReadAheadGranularity to inMemMaxMem
+        inMemReadAheadGranularity = options.inMemReadAheadGranularity;
+        if (inMemReadAheadGranularity > options.inMemMaxMem)
+            inMemReadAheadGranularity = options.inMemMaxMem;
+
+        constexpr size32_t minCompressionBlockSize = 256 * 1024;
+        memsize_t totalCompressionBufferSize = options.totalCompressionBufferSize;
+        if (totalCompressionBufferSize)
+        {
+            compressionBlockSize = (size32_t)(totalCompressionBufferSize / (numOutputs + 1)); // +1 for writer
+            if (compressionBlockSize < minCompressionBlockSize)
+            {
+                WARNLOG("Shared totalCompressionBufferSize=%" I64F "u, too small for number of outputs(%u). Using minCompressionBlockSize(%u) for writer and each reader.", (unsigned __int64)totalCompressionBufferSize, numOutputs, minCompressionBlockSize);
+                compressionBlockSize = minCompressionBlockSize;
+            }
+        }
+        for (unsigned o=0; o<numOutputs; o++)
+            outputs.push_back(new COutputRowStream(*this, o));
+        iFile.setown(createIFile(tempFileName));
+    }
+    ~CSharedFullSpillingWriteAhead()
+    {
+        if (outputStream) // should have already been closed when inputs all stopped
+        {
+            closeWriter();
+            iFile->remove();
+        }
+        freeRows();
+    }
+    void outputStopped(unsigned output)
+    {
+        bool allStopped = false;
+        {
+            // Mark finished output with max, so that it is not considered by getLowestOutput()
+            CriticalBlock b(readAheadCS); // read ahead could be active and considering this output
+            outputs[output]->setLastKnownAvailable((rowcount_t)-1);
+            if ((rowcount_t)-1 == getLowestOutput())
+                allStopped = true;
+        }
+        if (allStopped)
+        {
+            if (totalInputRowsRead) // only set if spilt
+            {
+                StringBuffer tracing;
+                getFileIOStats(tracing, iFileIO);
+                activity.ActPrintLog("CSharedFullSpillingWriteAhead: removing spill file: %s%s", iFile->queryFilename(), tracing.str());
+                closeWriter();
+                iFile->remove();
+            }
+        }
+    }
+    std::tuple<IBufferedSerialInputStream *, IFileIO *> getReadStream() // also pass back IFileIO for stats purposes
+    {
+        Owned<IFileIO> iFileIO = iFile->open(IFOread);
+        Owned<ISerialInputStream> in = createSerialInputStream(iFileIO);
+        Owned<IBufferedSerialInputStream> inputStream = createBufferedInputStream(in, options.storageBlockSize, 0);
+        if (compressHandler)
+        {
+            const char *decompressOptions = nullptr;
+            Owned<IExpander> decompressor = compressHandler->getExpander(decompressOptions);
+            Owned<ISerialInputStream> decompressed = createDecompressingInputStream(inputStream, decompressor);
+            inputStream.setown(createBufferedInputStream(decompressed, compressionBlockSize, 0));
+        }
+        return { inputStream.getClear(), iFileIO.getClear() };
+    }
+    bool checkWriteAhead(rowcount_t &outputRowsAvailable)
+    {
+        if (totalInputRowsRead == outputRowsAvailable)
+        {
+            CriticalBlock b(readAheadCS);
+            if (totalInputRowsRead == outputRowsAvailable) // if not, then since gaining the crit, totalInputRowsRead has changed
+            {
+                if (endOfInput)
+                    return false;
+                writeRowsFromInput();
+                if (totalInputRowsRead == outputRowsAvailable) // no more were written
+                {
+                    dbgassertex(endOfInput);
+                    return false;
+                }
+            }
+        }
+        outputRowsAvailable = totalInputRowsRead;
+        return true;
+    }
+    bool getRowsInMem(Rows &outputRows, rowcount_t &outputRowsAvailable)
+    {
+        CriticalBlock b(readAheadCS);
+        if (outputRowsAvailable == inMemTotalRows) // load more
+        {
+            // prune unused rows
+            rowcount_t trailingRowPosRelative = getRelativeIndex(getLowestOutput());
+            for (auto it = rows.begin(); it != rows.begin() + trailingRowPosRelative; ++it)
+            {
+                auto [row, rowSz] = *it;
+                rowsMemUsage -= rowSz;
+                ReleaseThorRow(row);
+            }
+            rows.erase(rows.begin(), rows.begin() + trailingRowPosRelative);
+
+            if (outputStream)
+            {
+                // this will be the last time this output calls getRowsInMem
+                // it has exhausted 'rows', and will from here on in read from outputStream
+                return false;
+            }
+
+            if (rowsMemUsage >= options.inMemMaxMem) // too much in memory, spill
+            {
+                // NB: this will reset rowMemUsage, however, each reader will continue to consume rows until they catch up (or stop)
+                ActPrintLog(&activity, "Spilling to temp storage [file = %s, outputRowsAvailable = %" I64F "u, start = %" I64F "u, end = %" I64F "u, count = %u]", iFile->queryFilename(), outputRowsAvailable, inMemTotalRows - rows.size(), inMemTotalRows, (unsigned)rows.size());
+                createOutputStream();
+                return false;
+            }
+
+            // read more, up to inMemReadAheadGranularity or inMemReadAheadGranularityRows before relinquishing
+            rowcount_t previousNumRows = rows.size();
+            while (true)
+            {
+                const void *row = input->nextRow();
+                if (row)
+                {
+                    nextInputReadEog = false;
+                    size32_t sz = thorRowMemoryFootprint(serializer, row);
+                    rows.emplace_back(row, sz);
+                    rowsMemUsage += sz;
+                    if ((rowsMemUsage >= options.inMemReadAheadGranularity) ||
+                        (rows.size() >= options.inMemReadAheadGranularityRows))
+                        break;
+                }
+                else
+                {
+                    if (!inputGrouped || nextInputReadEog)
+                        break;
+                    else
+                    {
+                        nextInputReadEog = true;
+                        rows.emplace_back(nullptr, 0);
+                    }
+                }
+            }
+            inMemTotalRows += rows.size() - previousNumRows;
+        }
+        else
+        {
+            // this output has not yet reached inMemTotalRows
+            dbgassertex(outputRowsAvailable < inMemTotalRows);
+        }
+
+        rowcount_t newRowsAdded = 0;
+        for (auto it = rows.begin() + getRelativeIndex(outputRowsAvailable); it != rows.end(); ++it)
+        {
+            const void *row = std::get<0>(*it);
+            LinkThorRow(row);
+            outputRows.push_back(row);
+            newRowsAdded++;
+        }
+        outputRowsAvailable = outputRowsAvailable+newRowsAdded;
+
+        return true;
+    }
+// ISharedRowStreamReader impl.
+    virtual IRowStream *queryOutput(unsigned output) override
+    {
+        return outputs[output];
+    }
+    virtual void cancel() override
+    {
+        for (auto &output: outputs)
+            output->cancel();
+    }
+    virtual void reset() override
+    {
+        if (outputStream) // should have already been closed when inputs all stopped
+        {
+            closeWriter();
+            iFile->remove();
+        }
+        for (auto &output: outputs)
+            output->reset();
+        freeRows();
+        rows.clear();
+        rowsMemUsage = 0;
+        totalInputRowsRead = 0;
+        inMemTotalRows = 0;
+        nextInputReadEog = false;
+        endOfInput = false;
+    }
+};
+
+ISharedRowStreamReader *createSharedFullSpillingWriteAhead(CActivityBase *_activity, unsigned numOutputs, IRowStream *_input, bool _inputGrouped, const SharedRowStreamReaderOptions &options, IThorRowInterfaces *_rowIf, const char *tempFileName, ICompressHandler *compressHandler)
+{
+    return new CSharedFullSpillingWriteAhead(_activity, numOutputs, _input, _inputGrouped, options, _rowIf, tempFileName, compressHandler);
 }
 
 

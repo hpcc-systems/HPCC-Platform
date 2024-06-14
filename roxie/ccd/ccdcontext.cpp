@@ -1658,6 +1658,7 @@ public:
         }
         else
         {
+            OwnedSpanScope graphScope = queryThreadedActiveSpan()->createInternalSpan(name);
             ProcessInfo startProcessInfo;
             if (workUnit || statsWu)
                 startProcessInfo.update(ReadAllInfo);

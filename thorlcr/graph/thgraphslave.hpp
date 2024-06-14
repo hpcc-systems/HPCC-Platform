@@ -186,6 +186,7 @@ public:
         stopped = true;
     }
     bool isFastThrough() const;
+    bool suppressLookAhead() const;
 };
 typedef IArrayOf<CThorInput> CThorInputArray;
 
@@ -266,6 +267,7 @@ public:
     void debugRequest(unsigned edgeIdx, MemoryBuffer &msg);
     bool canStall() const;
     bool isFastThrough() const;
+    bool suppressLookAhead() const;
 
 // IThorDataLink
     virtual CSlaveActivity *queryFromActivity() override { return this; }

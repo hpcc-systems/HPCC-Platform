@@ -1186,7 +1186,11 @@ public:
     {
         return tempFileSizeTracker ? tempFileSizeTracker->queryPeakSize() : 0;
     }
-
+    CFileOwner * createOwnedTempFile(const char *fileName)
+    {
+        Owned<IFile> iFile = createIFile(fileName);
+        return new CFileOwner(iFile, queryTempFileSizeTracker());
+    }
 // IExceptionHandler
     bool fireException(IException *e);
     __declspec(noreturn) void processAndThrowOwnedException(IException * e) __attribute__((noreturn));

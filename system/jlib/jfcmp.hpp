@@ -20,6 +20,7 @@
 
 #include "platform.h"
 #include "jlzw.hpp"
+#include "jexcept.hpp"
 
 #define COMMITTED ((size32_t)-1)
 
@@ -189,6 +190,11 @@ public:
     virtual size32_t compressBlock(size32_t destSize, void * dest, size32_t srcSize, const void * src) override
     {
         return 0;
+    }
+
+    virtual size32_t compressDirect(size32_t destSize, void * dest, size32_t srcSize, const void * src, size32_t * numCompressed) override
+    {
+        throwUnimplemented();
     }
 
     virtual void * bufptr() override

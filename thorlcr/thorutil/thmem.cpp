@@ -233,7 +233,7 @@ protected:
     EmptyRowSemantics emptyRowSemantics;
     unsigned spillCompInfo;
     CThorSpillableRowArray rows;
-    OwnedIFile spillFile;
+    Owned<CFileOwner> spillFile;
 
     bool spillRows()
     {
@@ -245,11 +245,11 @@ protected:
         StringBuffer tempName;
         VStringBuffer tempPrefix("streamspill_%d", activity.queryId());
         GetTempFilePath(tempName, tempPrefix.str());
-        spillFile.setown(createIFile(tempName.str()));
-
+        spillFile.setown(activity.createOwnedTempFile(tempName.str()));
         VStringBuffer spillPrefixStr("SpillableStream(%u)", spillPriority);
-        rows.save(*spillFile, spillCompInfo, false, spillPrefixStr.str()); // saves committed rows
+        rows.save(spillFile->queryIFile(), spillCompInfo, false, spillPrefixStr.str()); // saves committed rows
         rows.kill(); // no longer needed, readers will pull from spillFile. NB: ok to kill array as rows is never written to or expanded
+        spillFile->noteSize(spillFile->queryIFile().size());
         return true;
     }
 public:
@@ -264,8 +264,6 @@ public:
     ~CSpillableStreamBase()
     {
         ensureSpillingCallbackRemoved();
-        if (spillFile)
-            spillFile->remove();
     }
 // IBufferedRowCallback
     virtual bool freeBufferedRows(bool critical) override
@@ -338,7 +336,7 @@ class CSharedSpillableRowSet : public CSpillableStreamBase
                         block.clearCB = true;
                         assertex(((offset_t)-1) != outputOffset);
                         unsigned rwFlags = DEFAULT_RWFLAGS | mapESRToRWFlags(owner->emptyRowSemantics);
-                        spillStream.setown(::createRowStreamEx(owner->spillFile, owner->rowIf, outputOffset, (offset_t)-1, (unsigned __int64)-1, rwFlags));
+                        spillStream.setown(::createRowStreamEx(&(owner->spillFile->queryIFile()), owner->rowIf, outputOffset, (offset_t)-1, (unsigned __int64)-1, rwFlags));
                         owner->rows.unregisterWriteCallback(*this); // no longer needed
                         ret = spillStream->nextRow();
                     }
@@ -389,7 +387,7 @@ public:
         {
             block.clearCB = true;
             unsigned rwFlags = DEFAULT_RWFLAGS | mapESRToRWFlags(emptyRowSemantics);
-            return ::createRowStream(spillFile, rowIf, rwFlags);
+            return ::createRowStream(&spillFile->queryIFile(), rowIf, rwFlags);
         }
         rowidx_t toRead = rows.numCommitted();
         if (toRead)
@@ -450,7 +448,7 @@ public:
                     rwFlags |= spillCompInfo;
                 }
                 rwFlags |= mapESRToRWFlags(emptyRowSemantics);
-                spillStream.setown(createRowStream(spillFile, rowIf, rwFlags));
+                spillStream.setown(createRowStream(&spillFile->queryIFile(), rowIf, rwFlags));
                 ReleaseThorRow(readRows);
                 readRows = nullptr;
                 return spillStream->nextRow();
@@ -1656,13 +1654,15 @@ protected:
         }
         tempPrefix.appendf("spill_%d", activity.queryId());
         GetTempFilePath(tempName, tempPrefix.str());
-        Owned<IFile> iFile = createIFile(tempName.str());
         VStringBuffer spillPrefixStr("%sRowCollector(%d)", tracingPrefix.str(), spillPriority);
-        spillableRows.save(*iFile, spillCompInfo, false, spillPrefixStr.str()); // saves committed rows
-        spillFiles.append(new CFileOwner(iFile));
+        Owned<CFileOwner> tempFileOwner = activity.createOwnedTempFile(tempName.str());
+        spillableRows.save(tempFileOwner->queryIFile(), spillCompInfo, false, spillPrefixStr.str()); // saves committed rows
+        spillFiles.append(tempFileOwner.getLink());
         ++overflowCount;
         statOverflowCount.fastAdd(1); // NB: this is total over multiple uses of this class
-        statSizeSpill.fastAdd(iFile->size());
+        offset_t tempFileSize = tempFileOwner->queryIFile().size();
+        statSizeSpill.fastAdd(tempFileSize);
+        tempFileOwner->noteSize(tempFileSize);
         statSpillCycles.fastAdd(spillTimer.elapsedCycles());
         return true;
     }

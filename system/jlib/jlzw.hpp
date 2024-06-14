@@ -51,6 +51,8 @@ interface jlib_decl ICompressor : public IInterface
     virtual void   close()=0;
     virtual size32_t write(const void *buf,size32_t len)=0;
     virtual size32_t compressBlock(size32_t destSize, void * dest, size32_t srcSize, const void * src) = 0;
+     // Like compressBlock, but adds no internal header.  If numCompressed is not null, compress as much as will fit
+    virtual size32_t compressDirect(size32_t destSize, void * dest, size32_t srcSize, const void * src, size32_t * numCompressed) = 0;
                                                                             
     virtual void * bufptr()=0;
     virtual size32_t buflen()=0;
@@ -71,6 +73,8 @@ interface jlib_decl IExpander : public IInterface
     virtual size32_t buflen()=0;
     virtual size32_t expandFirst(MemoryBuffer & target, const void * src) = 0;
     virtual size32_t expandNext(MemoryBuffer & target) = 0;
+    virtual size32_t expandDirect(size32_t destSize, void * dest, size32_t srcSize, const void * src) = 0;
+    virtual bool supportsBlockDecompression() const = 0;
 };
 
 
@@ -93,6 +97,8 @@ public:
     //Provide default implementations
     virtual size32_t expandFirst(MemoryBuffer & target, const void * src) override;
     virtual size32_t expandNext(MemoryBuffer & target) override;
+    virtual size32_t expandDirect(size32_t destSize, void * dest, size32_t srcSize, const void * src) override;
+    virtual bool supportsBlockDecompression() const override;
 };
 
 

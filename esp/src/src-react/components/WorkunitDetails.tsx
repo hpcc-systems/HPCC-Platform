@@ -221,7 +221,7 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
                 <Logs wuid={wuid} filter={queryParams.logs} setLogCount={setLogCount} />
             </DelayLoadedPanel>
             <DelayLoadedPanel visible={tab === "eclsummary"} size={size}>
-                <ECLArchive wuid={wuid} parentUrl={`${parentUrl}/${wuid}`} selection={state?.eclsummary} />
+                <ECLArchive wuid={wuid} parentUrl={`${parentUrl}/${wuid}/eclsummary`} selection={state?.eclsummary} />
             </DelayLoadedPanel>
             <DelayLoadedPanel visible={tab === "xml"} size={size}>
                 <WUXMLSourceEditor wuid={wuid} />

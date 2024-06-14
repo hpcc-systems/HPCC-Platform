@@ -411,7 +411,7 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
 #endif
 #endif
 
-        IPropertyTreeIterator *pt_iter = NULL;
+        Owned<IPropertyTreeIterator> pt_iter;
         StringBuffer xpath;
 
         if (m_inputs->hasProp("SingleUserPass"))
@@ -421,7 +421,7 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
             m_inputs->getProp("SingleUserPass", plainesppass);
             encrypt(encesppass, plainesppass.str());
             xpath.setf("SecurityManagers/SecurityManager[@type=\"SingleUserSecurityManager\"]/SingleUserSecurityManager/");
-            pt_iter = m_cfg->getElements(xpath.str());
+            pt_iter.setown(m_cfg->getElements(xpath.str()));
             if (pt_iter!=NULL)
             {
                 IPropertyTree *ptree = NULL;
@@ -442,8 +442,6 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
                     }
                     pt_iter->next();
                 }
-                pt_iter->Release();
-                pt_iter=NULL;
             }
         }
 
@@ -470,7 +468,7 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
         xpath.clear();
         xpath.append("EspService");
 
-        pt_iter = m_cfg->getElements(xpath.str());
+        pt_iter.setown(m_cfg->getElements(xpath.str()));
 
         if (pt_iter!=NULL)
         {
@@ -495,15 +493,12 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
                 }               
                 pt_iter->next();
             }
-    
-            pt_iter->Release();
-            pt_iter=NULL;
         }
 
         xpath.clear();
         xpath.append("EspProtocol");
 
-        pt_iter = m_cfg->getElements(xpath.str());
+        pt_iter.setown(m_cfg->getElements(xpath.str()));
 
         if (pt_iter!=NULL)
         {
@@ -530,15 +525,12 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
 
                 pt_iter->next();
             }
-    
-            pt_iter->Release();
-            pt_iter=NULL;
         }
 
         xpath.clear();
         xpath.append("EspBinding");
  
-        pt_iter = m_cfg->getElements(xpath.str());
+        pt_iter.setown(m_cfg->getElements(xpath.str()));
 
         if (pt_iter!=NULL)
         {
@@ -588,9 +580,6 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
 
                 pt_iter->next();
             }
-    
-            pt_iter->Release();
-            pt_iter=NULL;
         }
     }
 }

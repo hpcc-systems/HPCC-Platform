@@ -11,6 +11,7 @@
 #include "xsdparser.hpp"
 #include "httpclient.hpp"
 #include "jsonhelpers.hpp"
+#include "securesocket.hpp"
 
 #define SDS_LOCK_TIMEOUT (5*60*1000) // 5mins, 30s a bit short
 
@@ -211,9 +212,8 @@ public:
     {
     }
 
-    WsEclSocketFactory(const char *_socklist, bool _retry, bool includeTarget, const char *_alias, unsigned _dnsInterval, bool useTls) : CSmartSocketFactory(_socklist, _retry, 60, _dnsInterval), includeTargetInURL(includeTarget), alias(_alias)
+    WsEclSocketFactory(const char *_socklist, IPropertyTree *_tlsConfig, bool _retry, bool includeTarget, const char *_alias, unsigned _dnsInterval) : CSmartSocketFactory(_socklist, _tlsConfig, _retry, 60, _dnsInterval), includeTargetInURL(includeTarget), alias(_alias)
     {
-        tlsService  = useTls;
     }
 };
 
@@ -260,7 +260,8 @@ void initBareMetalRoxieTargets(MapStringToMyClass<ISmartSocketFactory> &connMap,
         const char *vip = NULL;
         bool includeTargetInURL = true;
         unsigned dnsInterval = (unsigned) -1;
-        bool useTls = false;
+
+        Owned<IPropertyTree> tlsConfig;
         if (vips)
         {
             IPropertyTree *pc = vips->queryPropTree(xpath.clear().appendf("ProcessCluster[@name='%s']", process.str()));
@@ -269,7 +270,8 @@ void initBareMetalRoxieTargets(MapStringToMyClass<ISmartSocketFactory> &connMap,
                 vip = pc->queryProp("@vip");
                 includeTargetInURL = pc->getPropBool("@includeTargetInURL", true);
                 dnsInterval = (unsigned) pc->getPropInt("@dnsInterval", -1);
-                useTls = pc->getPropBool("@tls", false);
+                if (pc->getPropBool("@tls", false))
+                    tlsConfig.setown(createSecureSocketConfig(nullptr, nullptr, nullptr, true));
             }
         }
         StringBuffer list;
@@ -297,7 +299,7 @@ void initBareMetalRoxieTargets(MapStringToMyClass<ISmartSocketFactory> &connMap,
                     farmerPort = port;
                     const char *protocol = farmer.queryProp("@protocol");
                     if (protocol && streq(protocol, "ssl"))
-                        useTls = true;
+                        tlsConfig.setown(createSecureSocketConfig(farmer.queryProp("@certificateFileName"), farmer.queryProp("@privateKeyFileName"), nullptr, true));
                     break; //use the first one without port==0
                 }
                 Owned<IPropertyTreeIterator> servers = roxieCluster->getElements("RoxieServerProcess");
@@ -308,7 +310,7 @@ void initBareMetalRoxieTargets(MapStringToMyClass<ISmartSocketFactory> &connMap,
         if (list.length())
         {
             StringAttr alias(clusterInfo->getAlias());
-            Owned<ISmartSocketFactory> sf = new WsEclSocketFactory(list.str(), !loadBalanced, includeTargetInURL, loadBalanced ? alias.str() : NULL, dnsInterval, useTls);
+            Owned<ISmartSocketFactory> sf = new WsEclSocketFactory(list.str(), tlsConfig, !loadBalanced, includeTargetInURL, loadBalanced ? alias.str() : NULL, dnsInterval);
             connMap.setValue(target.str(), sf.get());
             if (alias.length() && !connMap.getValue(alias.str())) //only need one vip per alias for routing purposes
                 connMap.setValue(alias.str(), sf.get());
@@ -1403,7 +1405,7 @@ int CWsEclBinding::getXsdDefinition(IEspContext &context, CHttpRequest *request,
 }
 
 
-bool CWsEclBinding::getSchema(StringBuffer& schema, IEspContext &ctx, CHttpRequest* req, WsEclWuInfo &wsinfo)
+bool CWsEclBinding::getSimpleSchema(StringBuffer& schema, IEspContext &ctx, CHttpRequest* req, WsEclWuInfo &wsinfo)
 {
     Owned<IPropertyTree> namespaces = createPTree();
     appendSchemaNamespaces(namespaces, ctx, req, wsinfo);
@@ -1450,6 +1452,94 @@ bool CWsEclBinding::getSchema(StringBuffer& schema, IEspContext &ctx, CHttpReque
     schema.append("<xsd:element name=\"string\" nillable=\"true\" type=\"xsd:string\" />\n");
     schema.append("</xsd:schema>");
 
+    return true;
+}
+
+// Moved from the prior implementation in EspHttpBinding which now relies on ESDL to generate the schema.
+// However, since WsEcl is acting a front-end for roxie queries, it needs this custom implementation
+// that uses the information from the roxie instead of ESDL.
+bool CWsEclBinding::getSchema(StringBuffer& schema, IEspContext &ctx, CHttpRequest* req, const char *service, const char *method,bool standalone)
+{
+    StringBuffer serviceQName;
+    StringBuffer methodQName;
+
+    if (!qualifyServiceName(ctx, service, method, serviceQName, &methodQName))
+        return false;
+
+    const char *sqName = serviceQName.str();
+    const char *mqName = methodQName.str();
+
+    Owned<IPropertyTree> namespaces = createPTree();
+    appendSchemaNamespaces(namespaces, ctx, req, service, method);
+    Owned<IPropertyTreeIterator> nsiter = namespaces->getElements("namespace");
+
+    StringBuffer nstr;
+    generateNamespace(ctx, req, sqName, mqName, nstr);
+    schema.appendf("<xsd:schema elementFormDefault=\"qualified\" targetNamespace=\"%s\" ", nstr.str());
+    if (standalone)
+        schema.appendf(" xmlns:tns=\"%s\"  xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"", nstr.str());
+    ForEach(*nsiter)
+    {
+        IPropertyTree &ns = nsiter->query();
+        schema.appendf(" xmlns:%s=\"%s\"", ns.queryProp("@nsvar"), ns.queryProp("@ns"));
+    }
+    schema.append(">\n");
+    ForEach(*nsiter)
+    {
+        IPropertyTree &ns = nsiter->query();
+        if (ns.hasProp("@import"))
+            schema.appendf("<xsd:import namespace=\"%s\" schemaLocation=\"%s\"/>", ns.queryProp("@ns"), ns.queryProp("@location"));
+    }
+
+
+    schema.append(
+            "<xsd:complexType name=\"EspException\">"
+            "<xsd:all>"
+            "<xsd:element name=\"Code\" type=\"xsd:string\"  minOccurs=\"0\"/>"
+            "<xsd:element name=\"Audience\" type=\"xsd:string\" minOccurs=\"0\"/>"
+            "<xsd:element name=\"Source\" type=\"xsd:string\"  minOccurs=\"0\"/>"
+            "<xsd:element name=\"Message\" type=\"xsd:string\" minOccurs=\"0\"/>"
+            "</xsd:all>"
+            "</xsd:complexType>\n"
+            "<xsd:complexType name=\"ArrayOfEspException\">"
+            "<xsd:sequence>"
+            "<xsd:element name=\"Source\" type=\"xsd:string\"  minOccurs=\"0\"/>"
+            "<xsd:element name=\"Exception\" type=\"tns:EspException\" minOccurs=\"0\" maxOccurs=\"unbounded\"/>"
+            "</xsd:sequence>"
+            "</xsd:complexType>\n"
+            "<xsd:element name=\"Exceptions\" type=\"tns:ArrayOfEspException\"/>\n"
+    );
+
+    if (ctx.queryOptions()&ESPCTX_WSDL_EXT)
+    {
+        schema.append(
+                "<xsd:complexType name=\"EspSecurityInfo\">"
+                "<xsd:all>"
+                "<xsd:element name=\"UsernameToken\" minOccurs=\"0\">"
+                "<xsd:complexType>"
+                "<xsd:all>"
+                "<xsd:element name=\"Username\" minOccurs=\"0\"/>"
+                "<xsd:element name=\"Password\" minOccurs=\"0\"/>"
+                "</xsd:all>"
+                "</xsd:complexType>"
+                "</xsd:element>"
+                "<xsd:element name=\"RealmToken\" minOccurs=\"0\">"
+                "<xsd:complexType>"
+                "<xsd:all>"
+                "<xsd:element name=\"Realm\" minOccurs=\"0\"/>"
+                "</xsd:all>"
+                "</xsd:complexType>"
+                "</xsd:element>"
+                "</xsd:all>"
+                "</xsd:complexType>"
+                "<xsd:element name=\"Security\" type=\"tns:EspSecurityInfo\"/>\n"
+        );
+    }
+
+    bool mda=(req->queryParameters()->getPropInt("mda")!=0);
+    getXsdDefinition(ctx, req, schema, sqName, mqName, mda);
+    schema.append("<xsd:element name=\"string\" nillable=\"true\" type=\"xsd:string\" />\n");
+    schema.append("</xsd:schema>");
     return true;
 }
 
@@ -1513,7 +1603,7 @@ int CWsEclBinding::getGenForm(IEspContext &context, CHttpRequest* request, CHttp
         }
     }
     else
-        getSchema(formxml, context, request, wuinfo);
+        getSimpleSchema(formxml, context, request, wuinfo);
 
     formxml.append("<CustomViews>");
     if (web)
@@ -1621,7 +1711,7 @@ void CWsEclBinding::getWsEcl2XmlRequest(StringBuffer& soapmsg, IEspContext &cont
         element.append(wsinfo.queryname.str()).append("Request");
 
         StringBuffer schemaXml;
-        getSchema(schemaXml, context, request, wsinfo);
+        getSimpleSchema(schemaXml, context, request, wsinfo);
         ESPLOG(LogMax,"request schema: %s", schemaXml.str());
         Owned<IXmlSchema> schema = createXmlSchemaFromString(schemaXml);
         if (schema.get())
@@ -1657,7 +1747,7 @@ void CWsEclBinding::getWsEclJsonRequest(StringBuffer& jsonmsg, IEspContext &cont
             element.append("Request");
 
         StringBuffer schemaXml;
-        getSchema(schemaXml, context, request, wsinfo);
+        getSimpleSchema(schemaXml, context, request, wsinfo);
         ESPLOG(LogMax,"request schema: %s", schemaXml.str());
         Owned<IXmlSchema> schema = createXmlSchemaFromString(schemaXml);
         if (schema.get())
@@ -2290,7 +2380,7 @@ int CWsEclBinding::getWsdlBindings(IEspContext &context, CHttpRequest *request, 
 int CWsEclBinding::onGetWsdl(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsEclWuInfo &wsinfo)
 {
     context.setBindingValue(&wsinfo);
-    EspHttpBinding::onGetWsdl(context, request, response, wsinfo.qsetname.str(), wsinfo.queryname.str());
+    getWsdlOrXsd(context, request, response, wsinfo.qsetname.str(), wsinfo.queryname.str(), true);
     context.setBindingValue(NULL);
     return 0;
 }
@@ -2298,9 +2388,85 @@ int CWsEclBinding::onGetWsdl(IEspContext &context, CHttpRequest* request, CHttpR
 int CWsEclBinding::onGetXsd(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsEclWuInfo &wsinfo)
 {
     context.setBindingValue(&wsinfo);
-    EspHttpBinding::onGetXsd(context, request, response, wsinfo.qsetname.str(), wsinfo.queryname.str());
+    getWsdlOrXsd(context, request, response, wsinfo.qsetname.str(), wsinfo.queryname.str(), false);
     context.setBindingValue(NULL);
 
+    return 0;
+}
+
+int CWsEclBinding::getWsdlOrXsd(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method, bool isWsdl)
+{
+    bool mda=(request->queryParameters()->getPropInt("mda")!=0);
+    try
+    {
+        StringBuffer serviceQName;
+        StringBuffer methodQName;
+
+        if (!qualifyServiceName(context, service, method, serviceQName, &methodQName))
+        {
+            return onGetNotFound(context, request,  response, service);
+        }
+        else
+        {
+            const char *sqName = serviceQName.str();
+            const char *mqName = methodQName.str();
+            StringBuffer ns;
+            generateNamespace(context, request, serviceQName.str(), methodQName.str(), ns);
+
+            StringBuffer content("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+            if (context.queryRequestParameters()->hasProp("display"))
+                content.append("<?xml-stylesheet type=\"text/xsl\" href=\"/esp/xslt/xmlformatter.xsl\"?>");
+            else if (isWsdl && context.queryRequestParameters()->hasProp("wsdlviewer"))
+                content.append("<?xml-stylesheet type=\"text/xsl\" href=\"/esp/xslt/wsdl-viewer.xsl\"?>");
+            if (isWsdl)
+            {
+                content.appendf("<definitions xmlns=\"http://schemas.xmlsoap.org/wsdl/\" xmlns:soap=\"http://schemas.xmlsoap.org/wsdl/soap/\" xmlns:http=\"http://schemas.xmlsoap.org/wsdl/http/\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\""
+                                " xmlns:mime=\"http://schemas.xmlsoap.org/wsdl/mime/\" xmlns:tns=\"%s\""
+                                " targetNamespace=\"%s\">", ns.str(), ns.str());
+                content.append("<types>");
+            }
+
+            getSchema(content,context,request,service,method,!isWsdl);
+
+            if (isWsdl)
+            {
+                content.append("</types>");
+
+                getWsdlMessages(context, request, content, sqName, mqName, mda);
+                getWsdlPorts(context, request, content, sqName, mqName, mda);
+                getWsdlBindings(context, request, content, sqName, mqName, mda);
+
+                StringBuffer location(getWsdlAddress());
+                if (request->queryParameters()->hasProp("wsdl_destination_path"))
+                    location.append(request->queryParameters()->queryProp("wsdl_destination_path"));
+                else
+                    location.append('/').append(sqName).appendf("?ver_=%g", context.getClientVersion());
+
+                if (request->queryParameters()->hasProp("encode_results"))
+                {
+                    const char *encval = request->queryParameters()->queryProp("encode_results");
+                    location.append("&amp;").appendf("encode_=%s", (encval && *encval) ? encval : "1");
+                }
+
+                content.appendf("<service name=\"%s\">", sqName);
+                content.appendf("<port name=\"%sServiceSoap\" binding=\"tns:%sServiceSoap\">", sqName, sqName);
+                content.appendf("<soap:address location=\"%s\"/>", location.str());
+                content.append("</port>");
+                content.append("</service>");
+                content.append("</definitions>");
+            }
+
+            response->setContent(content.length(), content.str());
+            response->setContentType(HTTP_TYPE_APPLICATION_XML_UTF8);
+            response->setStatus(HTTP_STATUS_OK);
+        }
+    }
+    catch (IException *e)
+    {
+        return onGetException(context, request, response, *e);
+    }
+
+    response->send();
     return 0;
 }
 
@@ -2423,7 +2589,7 @@ int CWsEclBinding::getRestURL(IEspContext *ctx, CHttpRequest *request, CHttpResp
 
     StringBuffer schemaXml;
 
-    getSchema(schemaXml, *ctx, request, wsinfo);
+    getSimpleSchema(schemaXml, *ctx, request, wsinfo);
     Owned<IXmlSchema> schema = createXmlSchemaFromString(schemaXml);
     if (schema.get())
     {

@@ -41,15 +41,14 @@ struct ThorDataLinkMetaInfo
     __int64     totalRowsMax = -1;         // set to -1 if not known
     offset_t    spilled = (offset_t)-1;    // amount "spilled" to disk (approx) (offset_t)-1 for not known
 
-    bool        isSource = false;
-    bool        isSequential = false;
-    bool        canStall = false;
-    bool        fastThrough = false;
-    bool        buffersInput = false;
-    bool        canBufferInput = false;
-    bool        singleRowOutput = false;
-    bool        canIncreaseNumRows = false;
-    bool        canReduceNumRows = false;
+    bool        isSource = false;          // A source activity (disk read, index read, etc)
+    bool        isSequential = false;      // There is a sequential nature to the implementation, workers dependent on previous worker (e.g. global ChooseN)
+    bool        canStall = false;          // The activity may stall if its outputs are not pulled on each worker
+    bool        fastThrough = false;       // The activity will return rows quickly if it can (does not mean it can't block on its input)
+    bool        canBufferInput = false;    // The activity caches input rows
+    bool        suppressLookAhead = false; // Downstream activities should avoid inserting lookaheads
+    bool        canIncreaseNumRows = false; // The activity can produce more rows than it reads from its input (e.g. NORMALIZE)
+    bool        canReduceNumRows = false;  // The activity can produce less rows than it reads from its input (e.g. ENTH)
     bool        unknownRowsOutput = false; // cannot use input to deduce total
     offset_t    byteTotal = (offset_t)-1;  // total (uncompressed) byte count of all rows
 };

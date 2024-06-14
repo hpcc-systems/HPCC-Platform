@@ -31,22 +31,6 @@
 #define DAFILESRV_STREAMREAD_MINVERSION 22
 #define DAFILESRV_STREAMGENERAL_MINVERSION 25
 
-// RemoteFileServer throttling defaults
-#define DEFAULT_THREADLIMIT 100
-#define DEFAULT_THREADLIMITDELAYMS (60*1000)
-#define DEFAULT_ASYNCCOPYMAX 10
-
-#define DEFAULT_STDCMD_PARALLELREQUESTLIMIT 80
-#define DEFAULT_STDCMD_THROTTLEDELAYMS 1000
-#define DEFAULT_STDCMD_THROTTLECPULIMIT 85
-#define DEFAULT_STDCMD_THROTTLEQUEUELIMIT 1000
-
-#define DEFAULT_SLOWCMD_PARALLELREQUESTLIMIT 20
-#define DEFAULT_SLOWCMD_THROTTLEDELAYMS 5000
-#define DEFAULT_SLOWCMD_THROTTLECPULIMIT 75
-#define DEFAULT_SLOWCMD_THROTTLEQUEUELIMIT 1000
-
-
 enum RowServiceCfg
 {
     rs_off,     // No dedicated row service, allows row service commands on std. dafilesrv port.
@@ -58,7 +42,7 @@ enum RowServiceCfg
 
 interface IRemoteFileServer : extends IInterface
 {
-    virtual void run(IPropertyTree *componentConfig, DAFSConnectCfg connectMethod, const SocketEndpoint &listenep, unsigned sslPort=0, const SocketEndpoint *rowServiceEp=nullptr, bool rowServiceSSL=false, bool rowServiceOnStdPort=true) = 0;
+    virtual void run(IPropertyTree *componentConfig, DAFSConnectCfg connectMethod, const SocketEndpoint &listenep, unsigned sslPort=0, unsigned listenQueueLimit=DEFAULT_LISTEN_QUEUE_SIZE, const SocketEndpoint *rowServiceEp=nullptr, bool rowServiceSSL=false, bool rowServiceOnStdPort=true) = 0;
     virtual void run(IPropertyTree *componentConfig, DAFSConnectCfg _connectMethod, ISocket *listenSocket, ISocket *secureSocket, ISocket *rowServiceSocket) = 0;
     virtual void stop() = 0;
     virtual unsigned idleTime() = 0; // in ms

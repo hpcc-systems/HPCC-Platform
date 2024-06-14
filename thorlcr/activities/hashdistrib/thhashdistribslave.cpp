@@ -2703,13 +2703,12 @@ class CSpill : implements IRowWriter, public CSimpleInterface
     IRowWriter *writer;
     StringAttr desc;
     unsigned bucketN, rwFlags;
-    Linked<CFileSizeTracker> tempFileSizeTracker;
 
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CSpill(CActivityBase &_owner, IThorRowInterfaces *_rowIf, const char *_desc, unsigned _bucketN, CFileSizeTracker * _tempFileSizeTracker)
-        : owner(_owner), rowIf(_rowIf), desc(_desc), bucketN(_bucketN), tempFileSizeTracker(_tempFileSizeTracker)
+    CSpill(CActivityBase &_owner, IThorRowInterfaces *_rowIf, const char *_desc, unsigned _bucketN)
+        : owner(_owner), rowIf(_rowIf), desc(_desc), bucketN(_bucketN)
     {
         count = 0;
         writer = NULL;
@@ -2726,8 +2725,7 @@ public:
         StringBuffer tempname, prefix("hashdedup_bucket");
         prefix.append(bucketN).append('_').append(desc);
         GetTempFilePath(tempname, prefix.str());
-        OwnedIFile iFile = createIFile(tempname.str());
-        spillFile.setown(new CFileOwner(iFile, tempFileSizeTracker));
+        spillFile.setown(owner.createOwnedTempFile(tempname.str()));
         if (owner.getOptBool(THOROPT_COMPRESS_SPILLS, true))
         {
             rwFlags |= rw_compress;
@@ -2735,7 +2733,7 @@ public:
             owner.getOpt(THOROPT_COMPRESS_SPILL_TYPE, compType);
             setCompFlag(compType, rwFlags);
         }
-        spillFileIO.setown(iFile->open(IFOcreate));
+        spillFileIO.setown(spillFile->queryIFile().open(IFOcreate));
         writer = createRowWriter(spillFileIO, rowIf, rwFlags);
     }
     IRowStream *getReader(rowcount_t *_count=NULL) // NB: also detaches ownership of 'fileOwner'
@@ -3425,8 +3423,7 @@ void CHashTableRowTable::rehash(const void **newRows)
 
 CBucket::CBucket(HashDedupSlaveActivityBase &_owner, IThorRowInterfaces *_rowIf, IThorRowInterfaces *_keyIf, bool _extractKey, unsigned _bucketN, CHashTableRowTable *_htRows)
     : owner(_owner), keyIf(_keyIf), extractKey(_extractKey), bucketN(_bucketN), htRows(_htRows),
-      rowSpill(owner, _rowIf, "rows", _bucketN, _owner.queryTempFileSizeTracker()), keySpill(owner, _keyIf, "keys", _bucketN, _owner.queryTempFileSizeTracker())
-
+      rowSpill(owner, _rowIf, "rows", _bucketN), keySpill(owner, _keyIf, "keys", _bucketN)
 {
     spilt = false;
     /* Although, using a unique allocator per bucket would mean on a spill event, the pages could be freed,

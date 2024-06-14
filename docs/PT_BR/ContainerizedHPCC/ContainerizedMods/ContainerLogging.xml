@@ -273,12 +273,12 @@ myelk-kibana LoadBalancer 10.110.129.199 localhost 5601:31465/TCP 68m
       Kibana deve ser consultada para obter mais informações sobre como usar a
       interface do Kibana. Por favor, veja:</para>
 
-      <para><ulink url="???">https://www.elastic.co/</ulink></para>
+      <para><ulink url="https://www.elastic.co/">https://www.elastic.co/</ulink></para>
 
       <para>e</para>
 
       <para><ulink
-      url="???">https://www.elastic.co/elastic-stack/</ulink></para>
+      url="https://www.elastic.co/elastic-stack/">https://www.elastic.co/elastic-stack/</ulink></para>
 
       <para>Incluídos na documentação completa também estão vídeos de início
       rápido e outros recursos úteis.</para>

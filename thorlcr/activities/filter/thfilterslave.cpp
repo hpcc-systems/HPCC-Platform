@@ -157,6 +157,11 @@ public:
         CThorSteppable::setInputStream(index, input, consumerOrdered);
     }
     virtual IInputSteppingMeta *querySteppingMeta() { return CThorSteppable::inputStepping; }
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
+    {
+        PARENT::getMetaInfo(info);
+        info.fastThrough = true;
+    }
 };
 
 class CFilterProjectSlaveActivity : public CFilterSlaveActivityBase
@@ -229,6 +234,11 @@ public:
         }
         anyThisGroup = false;
         return NULL;
+    }
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
+    {
+        PARENT::getMetaInfo(info);
+        info.fastThrough = true;
     }
 };
 

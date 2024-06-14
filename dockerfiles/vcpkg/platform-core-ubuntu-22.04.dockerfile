@@ -59,7 +59,7 @@ RUN apt-get install -y \
     gdb \
     nano 
 
-RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.27.6/bin/linux/amd64/kubectl && \
+RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.28.10/bin/linux/amd64/kubectl && \
     chmod +x ./kubectl && \
     mv ./kubectl /usr/local/bin
 

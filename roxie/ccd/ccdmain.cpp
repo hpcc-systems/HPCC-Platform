@@ -1622,7 +1622,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                                 if (!checkFileExists(keyFileName.str()))
                                     throw MakeStringException(ROXIE_FILE_ERROR, "Roxie SSL Farm Listener on port %d missing privateKeyFile (%s)", port, keyFileName.str());
 
-                                Owned<IPropertyTree> staticConfig = createSecureSocketConfig(certFileName, keyFileName, passPhraseStr);
+                                Owned<IPropertyTree> staticConfig = createSecureSocketConfig(certFileName, keyFileName, passPhraseStr, false);
                                 tlsConfig.setown(createSyncedPropertyTree(staticConfig));
                             }
                             else

@@ -1527,7 +1527,7 @@ thor:
         and Placements please review our developer documentation:</para>
 
         <para><ulink
-        url="???">https://github.com/hpcc-systems/HPCC-Platform/blob/master/helm/hpcc/docs/placements.md</ulink></para>
+        url="https://github.com/hpcc-systems/HPCC-Platform/blob/master/helm/hpcc/docs/placements.md">https://github.com/hpcc-systems/HPCC-Platform/blob/master/helm/hpcc/docs/placements.md</ulink></para>
 
         <sect4 id="CSP_TaintsandTolerationsExamples">
           <title>Taints and Tolerations Examples</title>

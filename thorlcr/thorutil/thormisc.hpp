@@ -55,6 +55,11 @@
 #define THOROPT_HDIST_COMP            "hdCompressorType"        // Distribute compressor to use                                                  (default = "LZ4")
 #define THOROPT_HDIST_COMPOPTIONS     "hdCompressorOptions"     // Distribute compressor options, e.g. AES key                                   (default = "")
 #define THOROPT_SPLITTER_SPILL        "splitterSpill"           // Force splitters to spill or not, default is to adhere to helper setting       (default = -1)
+#define THOROPT_SPLITTER_MAXROWMEMK   "splitterRowMemK"         // Splitter max memory (K) to use before spilling                                (default = 2MB)
+#define THOROPT_SPLITTER_READAHEADGRANULARITYK "inMemReadAheadGranularityK" // Splitter in memory read ahead granularity (K)                     (default = 128K)
+#define THOROPT_SPLITTER_READAHEADGRANULARITYROWS "inMemReadAheadGranularityRows" // Splitter in memory read ahead granularity (# rows)          (default = 64)
+#define THOROPT_SPLITTER_WRITEAHEADK  "splitterWriteAheadK"     // Splitter spilling write ahead size (K)                                        (default = 2MB)
+#define THOROPT_SPLITTER_COMPRESSIONTOALK "splitterCompressionTotalK" // Splitter total compression buffer size (shared between writer and readers) (K) (default = 3MB)
 #define THOROPT_LOOP_MAX_EMPTY        "loopMaxEmpty"            // Max # of iterations that LOOP can cycle through with 0 results before errors  (default = 1000)
 #define THOROPT_SMALLSORT             "smallSortThreshold"      // Use minisort approach, if estimate size of data to sort is below this setting (default = 0)
 #define THOROPT_PARALLEL_FUNNEL       "parallelFunnel"          // Use parallel funnel impl. if !ordered                                         (default = true)
@@ -356,9 +361,14 @@ public:
     }
     void noteSize(offset_t size)
     {
+        if (fileSizeTracker && fileSize!=size)
+        {
+            if (size > fileSize)
+                fileSizeTracker->growSize(size-fileSize);
+            else
+                fileSizeTracker->shrinkSize(fileSize-size);
+        }
         fileSize = size;
-        if (fileSizeTracker)
-            fileSizeTracker->growSize(fileSize);
     }
     IFile &queryIFile() const { return *iFile; }
 };

@@ -110,7 +110,7 @@ public:
     void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
-        info.buffersInput = true;
+        info.canBufferInput = true;
         info.canReduceNumRows = true;
         calcMetaInfoSize(info, input);
     }

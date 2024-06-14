@@ -154,6 +154,36 @@ protected:
         return compressedSize + 3 * sizeof(size32_t);
     }
 
+    virtual size32_t compressDirect(size32_t destSize, void * dest, size32_t srcSize, const void * src, size32_t * numCompressed) override
+    {
+        dbgassertex(srcSize != 0);
+        int compressedSize;
+        if (numCompressed)
+        {
+            //Write as much data as possible into the target buffer - update numCompressed with size actually written
+            int numRead = srcSize;
+            if (hc)
+            {
+                MemoryAttr state(LZ4_sizeofStateHC());
+                compressedSize = LZ4_compress_HC_destSize(state.mem(), (const char *)src, (char *)dest, &numRead, destSize, hcLevel);
+            }
+            else
+            {
+                compressedSize = LZ4_compress_destSize((const char *)src, (char *)dest, &numRead, destSize);
+            }
+            *numCompressed = numRead;
+        }
+        else
+        {
+            if (hc)
+                compressedSize = LZ4_compress_HC((const char *)src, (char *)dest, srcSize, destSize, hcLevel);
+            else
+                compressedSize = LZ4_compress_default((const char *)src, (char *)dest, srcSize, destSize);
+        }
+
+        return compressedSize;
+    }
+
     virtual CompressionMethod getCompressionMethod() const override { return hc ? COMPRESS_METHOD_LZ4HC : COMPRESS_METHOD_LZ4; }
 public:
     CLZ4Compressor(const char * options, bool _hc) : hc(_hc)
@@ -274,6 +304,17 @@ public:
         if (totalExpanded > outlen)
             throw MakeStringException(0, "LZ4Expander - corrupt data(3) %d %d",written,szchunk);
         return written;
+    }
+
+    virtual size32_t expandDirect(size32_t destSize, void * dest, size32_t srcSize, const void * src) override
+    {
+        assertex(destSize != 0);
+        return LZ4_decompress_safe((const char *)src, (char *)dest, srcSize, destSize);
+    }
+
+    virtual bool supportsBlockDecompression() const override
+    {
+        return true;
     }
 };
 

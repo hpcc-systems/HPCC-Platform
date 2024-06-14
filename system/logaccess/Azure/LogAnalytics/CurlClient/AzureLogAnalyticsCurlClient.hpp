@@ -75,6 +75,7 @@ private:
 
     StringBuffer m_componentsLookupKeyColumn;
     StringBuffer m_instanceLookupKeyColumn;
+
     bool targetIsContainerLogV2 = false;
 
 public:

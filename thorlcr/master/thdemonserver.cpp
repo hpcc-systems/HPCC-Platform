@@ -273,14 +273,6 @@ public:
         unsigned startTime = msTick();
         graphStarts.append(startTime);
         reportGraph(graph, false, true, startTime, getTimeStampNowValue());
-        const char *graphname = graph->queryJob().queryGraphName();
-        if (memcmp(graphname,"graph",5)==0)
-            graphname+=5;
-        LOG(MCauditInfo,",Progress,Thor,StartSubgraph,%s,%s,%s,%u,%s,%s",
-                queryServerStatus().queryProperties()->queryProp("@thorname"),
-                graph->queryJob().queryWuid(),
-                graphname,
-                (unsigned)graph->queryGraphId(), queryServerStatus().queryProperties()->queryProp("@nodeGroup"), queryServerStatus().queryProperties()->queryProp("@queue"));
     }
     void endGraph(CGraphBase *graph, bool success)
     {
