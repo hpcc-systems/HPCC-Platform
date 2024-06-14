@@ -405,10 +405,13 @@ void CSlaveActivity::startAllInputs()
 
 void CSlaveActivity::startInput(unsigned index, const char *extra)
 {
-    VStringBuffer s("Starting input %u", index);
-    if (extra)
-        s.append(" ").append(extra);
-    ActPrintLog("%s", s.str());
+    if (traceStartStop())
+    {
+        VStringBuffer s("Starting input %u", index);
+        if (extra)
+            s.append(" ").append(extra);
+        ActPrintLog("%s", s.str());
+    }
 
     CThorInput &_input = inputs.item(index);
 #ifdef TRACE_STARTSTOP_EXCEPTIONS
@@ -443,10 +446,13 @@ void CSlaveActivity::stopInput(unsigned index, const char *extra)
     CThorInput &_input = inputs.item(index);
     if (_input.stopped)
         return;
-    VStringBuffer s("Stopping input %u for", index);
-    if (extra)
-        s.append(" ").append(extra);
-    ActPrintLog("%s", s.str());
+    if (traceStartStop())
+    {
+        VStringBuffer s("Stopping input %u for", index);
+        if (extra)
+            s.append(" ").append(extra);
+        ActPrintLog("%s", s.str());
+    }
 
 #ifdef TRACE_STARTSTOP_EXCEPTIONS
     try
@@ -1685,7 +1691,6 @@ CJobSlave::CJobSlave(ISlaveWatchdog *_watchdog, IPropertyTree *_workUnitInfo, co
     requestSpan->setSpanAttribute("hpcc.wuid", wuid);
     requestSpan->setSpanAttribute("hpcc.graph", graphName);
 
-    oldNodeCacheMem = 0;
     slavemptag = _slavemptag;
 
     IPropertyTree *plugins = workUnitInfo->queryPropTree("plugins");
@@ -1723,7 +1728,6 @@ CJobSlave::CJobSlave(ISlaveWatchdog *_watchdog, IPropertyTree *_workUnitInfo, co
 
     unsigned sharedMemoryLimitPercentage = (unsigned)getWorkUnitValueInt("globalMemoryLimitPC", globals->getPropInt("@sharedMemoryLimit", 90));
     unsigned sharedMemoryMB = queryMemoryMB*sharedMemoryLimitPercentage/100;
-    PROGLOG("Shared memory = %d%%", sharedMemoryLimitPercentage);
 
     sharedAllocator.setown(::createThorAllocator(queryMemoryMB, sharedMemoryMB, numChannels, memorySpillAtPercentage, *logctx, crcChecking, usePackedAllocator));
 
@@ -1822,6 +1826,23 @@ StringBuffer &CJobSlave::getWorkUnitValue(const char *prop, StringBuffer &str) c
     return str;
 }
 
+TraceFlags CJobSlave::loadTraceFlags(TraceFlags dft) const
+{
+    const IPTree *dbt = workUnitInfo->queryPropTree("Debug");
+    for (auto &o: thorTraceOptions)
+    {
+        StringBuffer propName(o.name);
+        propName.toLowerCase();
+        if (dbt->hasProp(propName))
+        {
+            if (dbt->getPropBool(propName, false))
+                dft |= o.value;
+            else
+                dft &= ~o.value;
+        }
+    }
+    return dft;
+}
 bool CJobSlave::getWorkUnitValueBool(const char *prop, bool defVal) const
 {
     StringBuffer propName(prop);

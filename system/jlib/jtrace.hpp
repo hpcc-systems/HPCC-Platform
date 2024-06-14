@@ -342,6 +342,8 @@ constexpr TraceFlags traceSmartStepping = TraceFlags::flag28;
 constexpr TraceFlags traceAborts = TraceFlags::flag29;
 constexpr TraceFlags traceAcknowledge = TraceFlags::flag30;
 
+// Specific to Thor
+constexpr TraceFlags traceThorActivities = TraceFlags::flag16;
 
 
 //========================================================================================= 
@@ -381,6 +383,23 @@ constexpr std::initializer_list<TraceOption> roxieTraceOptions
     TRACEOPT(traceSmartStepping),
     TRACEOPT(traceAborts),
     TRACEOPT(traceAcknowledge),
+};
+
+constexpr std::initializer_list<TraceOption> thorTraceOptions
+{ 
+    TRACEOPT(traceNone),
+    TRACEOPT(traceStandard),
+    TRACEOPT(traceDetailed),
+    TRACEOPT(traceMax),
+    TRACEOPT(traceHttp),
+    TRACEOPT(traceSockets),
+    TRACEOPT(traceCassandra),
+    TRACEOPT(traceMongoDB),
+    TRACEOPT(traceCouchbase),
+    TRACEOPT(traceFilters),
+    TRACEOPT(traceKafka),
+    TRACEOPT(traceJava),
+    TRACEOPT(traceThorActivities),
 };
 
 interface IPropertyTree;

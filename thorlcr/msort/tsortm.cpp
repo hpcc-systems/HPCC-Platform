@@ -397,7 +397,8 @@ public:
 
     virtual void SortDone()
     {
-        ActPrintLog(activity, "Sort Done in");
+        if (activity->traceActivity())
+            ActPrintLog(activity, "Sort Done in");
         synchronized proc(slavemutex);
         if (activity->queryAbortSoon())
             return;
@@ -425,7 +426,8 @@ public:
             return;
         afor.wait = true;
         afor.For(slaves.ordinality(), CLOSE_IN_PARALLEL);
-        ActPrintLog(activity, "Sort Done");
+        if (activity->traceActivity())
+            ActPrintLog(activity, "Sort Done");
     }
 
     unsigned __int64 CalcMinMax(OwnedConstThorRow &min, OwnedConstThorRow &max)

@@ -681,10 +681,10 @@ public:
         // NB: subDirPath will be empty, unless there was a problem during the job ctor. Either way ok to clear/set.
         subDirPath.setf("%s%s", rootDir.str(), subDirName.str());
         bool ret = recursiveCreateDirectory(subDirPath);
-        VStringBuffer msg("%s to create temp directory %s", ret ? "Succeeded" : "Failed", subDirPath.str());
-        DBGLOG("%s", msg.str());
         if (!ret)
         {
+            VStringBuffer msg("Failed to create temp directory %s", subDirPath.str());
+            DBGLOG("%s", msg.str());
             // temp dir. should not exist, but if it does issue warning only.
             if (checkDirExists(subDirPath))
                 WARNLOG("Existing temp directory %s already exists", subDirPath.str());

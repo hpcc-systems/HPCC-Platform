@@ -63,7 +63,8 @@ public:
 
     inline void dataLinkStart()
     {
-        owner.ActPrintLog("ITDL starting for output %d", outputId);
+        if (owner.traceStartStop())
+            owner.ActPrintLog("ITDL starting for output %d", outputId);
         if (hasStarted())
         {
             if (!hasStopped())
@@ -79,7 +80,8 @@ public:
     {
         if (hasStarted())
             count = (count & THORDATALINK_COUNT_MASK) | THORDATALINK_STOPPED;
-        owner.ActPrintLog("ITDL output %d stopped, count was %" RCPF "d", outputId, getDataLinkCount());
+        if (owner.traceStartStop())
+            owner.ActPrintLog("ITDL output %d stopped, count was %" RCPF "d", outputId, getDataLinkCount());
     }
     inline void dataLinkIncrement() { dataLinkIncrement(1); }
     inline void dataLinkIncrement(rowcount_t v)
@@ -563,7 +565,6 @@ class graphslave_decl CJobSlave : public CJobBase
     typedef CJobBase PARENT;
     ISlaveWatchdog *watchdog;
     Owned<IPropertyTree> workUnitInfo;
-    size32_t oldNodeCacheMem;
     unsigned channelMemoryMB;
     unsigned actInitWaitTimeMins = DEFAULT_MAX_ACTINITWAITTIME_MINS;
 
@@ -585,6 +586,7 @@ public:
     virtual StringBuffer &getWorkUnitValue(const char *prop, StringBuffer &str) const override;
     virtual bool getWorkUnitValueBool(const char *prop, bool defVal) const override;
     virtual double getWorkUnitValueReal(const char *prop, double defVal) const override;
+    virtual TraceFlags loadTraceFlags(TraceFlags dft) const override;
     virtual IThorAllocator *getThorAllocator(unsigned channel) override;
     virtual void debugRequest(MemoryBuffer &msg, const char *request) const override;
 

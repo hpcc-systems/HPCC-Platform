@@ -2069,6 +2069,11 @@ StringBuffer &CJobMaster::getWorkUnitValue(const char *prop, StringBuffer &str) 
     return str.append(scmStr.str());
 }
 
+TraceFlags CJobMaster::loadTraceFlags(TraceFlags dft) const
+{
+    return ::loadTraceFlags(&queryWorkUnit(), thorTraceOptions, dft);
+}
+
 IGraphTempHandler *CJobMaster::createTempHandler(bool errorOnMissing)
 {
     return new CMasterGraphTempHandler(*this, errorOnMissing);
