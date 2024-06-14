@@ -378,7 +378,7 @@ public:
             int count = trees.all->getCount("esxdl");
             if (trees.all->getCount("esxdl") > 0)
             {
-                IPropertyTree *file = trees.all->getPropTree("esxdl[1]");
+                Owned<IPropertyTree> file = trees.all->getPropTree("esxdl[1]");
                 if (file)
                 {
                     StringBuffer xmlfile;

@@ -690,6 +690,38 @@ void AzureLogAnalyticsCurlClient::populateKQLQueryString(StringBuffer & queryStr
         DBGLOG("%s: Searching log entries by class: '%s'...", COMPONENT_NAME, queryValue.str());
         break;
     }
+    case LOGACCESS_FILTER_trace:
+    {
+        if (m_traceSearchColName.isEmpty())
+            throw makeStringExceptionV(-1, "%s: 'Trace' log entry field not configured", COMPONENT_NAME);
+
+        queryField = m_traceSearchColName.str();
+
+        if (!m_traceIndexSearchPattern.isEmpty())
+        {
+            throwIfMultiIndexDetected(queryIndex.str(), m_traceIndexSearchPattern.str());
+            queryIndex = m_traceIndexSearchPattern.str();
+        }
+
+        DBGLOG("%s: Searching log entries by traceid: '%s'...", COMPONENT_NAME, queryValue.str());
+        break;
+    }
+    case LOGACCESS_FILTER_span:
+    {
+        if (m_spanSearchColName.isEmpty())
+            throw makeStringExceptionV(-1, "%s: 'Span' log entry field not configured", COMPONENT_NAME);
+
+        queryField = m_spanSearchColName.str();
+
+        if (!m_spanIndexSearchPattern.isEmpty())
+        {
+            throwIfMultiIndexDetected(queryIndex.str(), m_spanIndexSearchPattern.str());
+            queryIndex = m_spanIndexSearchPattern.str();
+        }
+
+        DBGLOG("%s: Searching log entries by spanid: '%s'...", COMPONENT_NAME, queryValue.str());
+        break;
+    }
     case LOGACCESS_FILTER_audience:
     {
         if (m_audienceSearchColName.isEmpty())

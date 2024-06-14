@@ -68,9 +68,7 @@
 #include "thexception.hpp"
 #include "thmem.hpp"
 
-#ifndef _CONTAINERIED
 #define DEFAULT_QUERY_SO_DIR "sodir"
-#endif
 #define MAX_SLAVEREG_DELAY 60*1000*15 // 15 mins
 #define SLAVEREG_VERIFY_DELAY 5*1000
 #define SHUTDOWN_IN_PARALLEL 20

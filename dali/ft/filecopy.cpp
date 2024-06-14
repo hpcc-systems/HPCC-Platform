@@ -2791,14 +2791,13 @@ bool FileSprayer::restorePartition()
 {
     if (allowRecovery && progressTree->getPropBool(ANhasPartition))
     {
-        IPropertyTreeIterator * iter = progressTree->getElements(PNpartition);
+        Owned<IPropertyTreeIterator> iter = progressTree->getElements(PNpartition);
         ForEach(*iter)
         {
             PartitionPoint & next = * new PartitionPoint;
             next.restore(&iter->query());
             partition.append(next);
         }
-        iter->Release();
         return (partition.ordinality() != 0);
     }
     return false;

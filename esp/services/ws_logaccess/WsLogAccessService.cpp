@@ -164,7 +164,14 @@ ILogAccessFilter * buildLogFilterByFields(CLogAccessType searchByCategory, const
         case CLogAccessType_BySourceNode:
         {
             return getHostLogAccessFilter(searchByValue);
-            break;
+        }
+        case CLogAccessType_ByTraceID:
+        {
+            return getTraceIDLogAccessFilter(searchByValue);
+        }
+        case CLogAccessType_BySpanID:
+        {
+            return getSpanIDLogAccessFilter(searchByValue);
         }
         case CLogAccessType_ByFieldName:
         {
@@ -342,6 +349,12 @@ bool Cws_logaccessEx::onGetLogs(IEspContext &context, IEspGetLogsRequest &req, I
                 break;
             case CSortColumType_BySourceNode:
                 mappedField = LOGACCESS_MAPPEDFIELD_host;
+                break;
+            case CSortColumType_ByTraceID:
+                mappedField = LOGACCESS_MAPPEDFIELD_traceid;
+                break;
+            case CSortColumType_BySpanID:
+                mappedField = LOGACCESS_MAPPEDFIELD_spanid;
                 break;
             case CSortColumType_ByFieldName:
                 if (isEmptyString(condition.getColumnName()))

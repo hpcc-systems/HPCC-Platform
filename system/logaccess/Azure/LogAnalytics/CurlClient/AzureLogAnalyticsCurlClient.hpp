@@ -75,6 +75,13 @@ private:
 
     StringBuffer m_componentsLookupKeyColumn;
     StringBuffer m_instanceLookupKeyColumn;
+
+    StringBuffer m_spanSearchColName;
+    StringBuffer m_spanIndexSearchPattern;
+
+    StringBuffer m_traceSearchColName;
+    StringBuffer m_traceIndexSearchPattern;
+
     bool targetIsContainerLogV2 = false;
 
 public:

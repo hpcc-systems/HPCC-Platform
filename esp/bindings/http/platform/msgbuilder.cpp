@@ -66,7 +66,7 @@ void CSoapMsgBuilder::setPropertyValueBool(const char * key, bool val)
 
 StringBuffer & CSoapMsgBuilder::getSoapResponse(StringBuffer & soapResponse)
 {
-    IPropertyTreeIterator * itr = m_properties->getElements("*");
+    Owned<IPropertyTreeIterator> itr = m_properties->getElements("*");
     itr->first();
     while(itr->isValid())
     {
@@ -77,7 +77,6 @@ StringBuffer & CSoapMsgBuilder::getSoapResponse(StringBuffer & soapResponse)
         soapResponse.appendf("<%s>%s</%s>", key.str(), val.str(), key.str()); 
         itr->next();
     }
-    itr->Release();
     return soapResponse;
 }
 
@@ -140,7 +139,7 @@ StringBuffer & CSoapMsgXsdBuilder::getXsd(StringBuffer & wsdlSchema)
     wsdlSchema.appendf("<%s:complexType name=\"%s\" >", m_var.str(), m_structLabel.str());
     wsdlSchema.appendf("<%s:sequence>", m_var.str());
 
-    IPropertyTreeIterator * itr = m_properties->getElements("*");
+    Owned<IPropertyTreeIterator> itr = m_properties->getElements("*");
     itr->first();
     while(itr->isValid())
     {
@@ -150,7 +149,6 @@ StringBuffer & CSoapMsgXsdBuilder::getXsd(StringBuffer & wsdlSchema)
         wsdlSchema.appendf("<%s:element minOccurs=\"0\" maxOccurs=\"1\" name=\"%s\" type=\"xsd:%s\"/>", m_var.str(), name.str(), getXsdTypeLabel(static_cast<XSD_TYPES>(m_properties->getPropInt(name.str()))));
         itr->next();
     }
-    itr->Release();
     wsdlSchema.appendf("</%s:sequence>", m_var.str());
     wsdlSchema.appendf("</%s:complexType>", m_var.str());
 
@@ -162,7 +160,7 @@ StringBuffer & CSoapMsgXsdBuilder::getXsd(StringBuffer & wsdlSchema)
 
     wsdlSchema.appendf("<%s:element name=\"%s\" nillable=\"true\" type=\"tns:%s\" />", m_var.str(), m_structLabel.str(), m_structLabel.str());
     wsdlSchema.appendf("<%s:element name=\"ArrayOf%s\" nillable=\"true\" type=\"tns:ArrayOf%s\" />", m_var.str(), m_structLabel.str(), m_structLabel.str()); 
-  return wsdlSchema;
+    return wsdlSchema;
 }
 
 const char * const XSD_STRING_DESC = "string";
@@ -188,7 +186,7 @@ CSoapMsgBuilder * CSoapMsgXsdBuilder::newMsgBuilder()
 {
     Owned<IPropertyTree>newXml = createPTree(m_structLabel.str());
 
-    IPropertyTreeIterator * itr = m_properties->getElements("*");
+    Owned<IPropertyTreeIterator> itr = m_properties->getElements("*");
     itr->first();
     while(itr->isValid())
     {
@@ -208,7 +206,6 @@ CSoapMsgBuilder * CSoapMsgXsdBuilder::newMsgBuilder()
         }
         itr->next();
     }
-    itr->Release();
 
     StringBuffer xml;
     return new CSoapMsgBuilder(toXML(newXml, xml).str());
