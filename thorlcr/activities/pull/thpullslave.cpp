@@ -54,7 +54,9 @@ public:
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
-        info.buffersInput = true;
+        info.canBufferInput = true;
+        info.suppressLookAhead = true;
+        info.fastThrough = true;
         calcMetaInfoSize(info, queryInput(0));
     }
 };

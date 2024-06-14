@@ -75,7 +75,6 @@ public:
     {
         initMetaInfo(info);
         info.canReduceNumRows = true;
-        info.canBufferInput = false;
         info.totalRowsMax = rowLimit;
         calcMetaInfoSize(info, queryInput(0));
     }

@@ -218,6 +218,8 @@ public:
 
                 PARENT::start();
                 initMetaInfo(cachedMetaInfo);
+                cachedMetaInfo.suppressLookAhead = true;
+
                 calcMetaInfoSize(cachedMetaInfo, queryInput(0));
 
                 ForEachItemIn(o, outputs)
