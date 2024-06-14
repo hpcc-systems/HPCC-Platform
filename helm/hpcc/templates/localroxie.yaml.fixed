@@ -74,13 +74,13 @@ spec:
         accessDali: "yes"
         accessEsp: "yes"
 <<<<<<< HEAD
-        helmVersion: 9.0.117-closedown0
+        helmVersion: 9.2.97-closedown0
 {{-    include "hpcc.addStandardLabels" (dict "root" $ "component" "roxie-server" "name" "roxie" "instance" $roxie.name) | indent 8 }}
 {{-    if hasKey . "labels" }}
 {{      toYaml .labels | indent 8 }}
 {{-    end }}
 =======
-        helmVersion: 9.0.117-closedown0
+        helmVersion: 9.2.97-closedown0
         {{- include "hpcc.addStandardLabels" (dict "root" $ "component" "roxie-server" "name" "roxie" "instance" $roxie.name) | indent 8 }}
 {{- if hasKey . "labels" }}
 {{ toYaml .labels | indent 8 }}
