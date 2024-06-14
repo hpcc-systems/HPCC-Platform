@@ -595,6 +595,7 @@ public:
     bool tryReopenChannel = false;
     bool useTLS = false;
     unsigned mpTraceLevel = 0;
+    bool dumpQueue = true;
 
 // packet handlers
     PingPacketHandler           *pingpackethandler;         // TAG_SYS_PING
@@ -2677,10 +2678,13 @@ CMPServer::CMPServer(unsigned __int64 _role, unsigned _port, bool _listen)
 CMPServer::~CMPServer()
 {
 #ifdef _TRACEORPHANS
-    StringBuffer buf;
-    getReceiveQueueDetails(buf);
-    if (buf.length())
-        LOG(MCdebugInfo, "MP: Orphan check\n%s",buf.str());
+    if (dumpQueue)
+    {
+        StringBuffer buf;
+        getReceiveQueueDetails(buf);
+        if (buf.length())
+            LOG(MCdebugInfo, "MP: Orphan check\n%s",buf.str());
+    }
 #endif
     _releaseAll();
     selecthandler->stop(true);
@@ -3578,6 +3582,7 @@ public:
     unsigned queryNest() { return nestLevel; }
     bool isPaused() const { return paused; }
     void setPaused(bool onOff) { paused = onOff; }
+    void setDumpQueue(bool onOff) { dumpQueue = onOff; }
 };
 CriticalSection CGlobalMPServer::sect;
 static CGlobalMPServer *globalMPServer;
@@ -3622,7 +3627,7 @@ void startMPServer(unsigned port, bool paused, bool listen)
     startMPServer(0, port, paused, listen);
 }
 
-void stopMPServer()
+void stopMPServer(bool dumpQueue)
 {
     CGlobalMPServer *_globalMPServer = NULL;
     {
@@ -3641,6 +3646,7 @@ void stopMPServer()
     }
     if (NULL == _globalMPServer)
         return;
+    _globalMPServer->setDumpQueue(dumpQueue);
     _globalMPServer->stop();
     _globalMPServer->Release();
 #ifdef _TRACE

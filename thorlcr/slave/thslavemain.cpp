@@ -50,8 +50,6 @@
 #include "dafdesc.hpp"
 #include "rmtfile.hpp"
 
-#include "slavmain.hpp"
-
 #ifdef _CONTAINERIZED
 #include "dafsserver.hpp"
 #endif
@@ -285,12 +283,49 @@ bool UnregisterSelf(IException *e)
     return false;
 }
 
+void signalInFuture(int signo, unsigned timeout)
+{
+#ifndef _WIN32
+    int ret;
+    timer_t timerId;
+    struct sigevent sigev;
+    struct itimerspec itSpec;
+
+    sigev.sigev_notify = SIGEV_SIGNAL;
+    sigev.sigev_signo = signo;
+    sigev.sigev_value.sival_ptr = &timerId;
+    sigev.sigev_notify_function = nullptr;
+    sigev.sigev_notify_attributes = NULL;
+
+    itSpec.it_value.tv_sec = timeout;
+    itSpec.it_value.tv_nsec = 0;
+    itSpec.it_interval.tv_sec = 0;
+    itSpec.it_interval.tv_nsec = 0;
+
+    ret = timer_create(CLOCK_MONOTONIC, &sigev, &timerId);
+    if (!ret)
+        timer_settime(timerId, 0, &itSpec, 0);
+#endif
+}
+
 bool ControlHandler(ahType type)
 {
+    static bool recvdSig = false;
+    if (recvdSig)
+    {
+        if (ahInterrupt == type)
+            _exit(128+SIGINT);
+        else
+            _exit(128+SIGTERM);
+    }
+    recvdSig = true;
+    signalInFuture(SIGTERM, 20);
+
     if (ahInterrupt == type)
         LOG(MCdebugProgress, "CTRL-C detected");
     else if (!jobListenerStopped)
         LOG(MCdebugProgress, "SIGTERM detected");
+
     bool unregOK = false;
     if (!jobListenerStopped)
     {
@@ -298,6 +333,8 @@ bool ControlHandler(ahType type)
             unregOK = UnregisterSelf(NULL);
         abortSlave();
     }
+    if (recvShutdown)
+        return false;
     return !unregOK;
 }
 
@@ -600,7 +637,7 @@ int main( int argc, const char *argv[]  )
         setMultiThorMemoryNotify(0,NULL);
     roxiemem::releaseRoxieHeap();
 
-    if (unregisterException.get())
+    if (!recvShutdown && unregisterException.get())
         UnregisterSelf(unregisterException);
 
     if (getExpertOptBool("slaveDaliClient"))
@@ -609,7 +646,7 @@ int main( int argc, const char *argv[]  )
 #ifdef USE_MP_LOG
     stopLogMsgReceivers();
 #endif
-    stopMPServer();
+    stopMPServer(!recvShutdown);
     releaseAtoms(); // don't know why we can't use a module_exit to destruct these...
 
     ExitModuleObjects(); // not necessary, atexit will call, but good for leak checking

@@ -53,6 +53,8 @@
 #include "rtlcommon.hpp"
 #include "../activities/keyedjoin/thkeyedjoincommon.hpp"
 
+bool recvShutdown = false;
+
 //---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
@@ -1497,7 +1499,8 @@ public:
             }
             catch (IMP_Exception *e)
             {
-                EXCLOG(e, nullptr);
+                if (!recvShutdown)
+                    EXCLOG(e, nullptr);
                 e->Release();
                 break;
             }
@@ -2094,6 +2097,7 @@ public:
                     case Shutdown:
                     {
                         stopped = true;
+                        recvShutdown = true;
                         PROGLOG("Shutdown received");
                         if (watchdog)
                             watchdog->stop();
