@@ -68,7 +68,6 @@ add_subdirectory(ECLProgrammersGuide)
 add_subdirectory(ECLStandardLibraryReference)
 add_subdirectory(ECLReference)
 
-add_subdirectory(EclipseHelp)
 add_subdirectory(HTMLHelp)
 add_subdirectory(ECLPlayground)
 add_subdirectory(HPCCClientTools)
