@@ -17,15 +17,15 @@
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
-      <colspec align="left" colwidth="175.55pt" />
+      <colspec align="left" colwidth="175.55pt"/>
 
-      <colspec />
+      <colspec/>
 
       <tbody>
         <row>
           <entry colsep="0"><emphasis role="bold">Actions</emphasis></entry>
 
-          <entry></entry>
+          <entry/>
         </row>
 
         <row>
@@ -80,6 +80,25 @@
           <entry>restore &lt;filenames&gt;</entry>
 
           <entry>Restore from xml files. [INCLUDEFILES=1]</entry>
+        </row>
+
+        <row>
+          <entry>importzap</entry>
+
+          <entry>Imports ZAP report to be able to recreate a workunit and
+          replicate the reported issue. <para>Importzap requires the following
+          parameters.
+          </para><para>&lt;zapreport-filename&gt;</para><para>&lt;output-helper-directory&gt;
+          temporary directory to unpack the zap report
+          into</para><para>&lt;zapreport-password&gt; [optional]
+          </para></entry>
+        </row>
+
+        <row>
+          <entry>postmortem &lt;workunit&gt;</entry>
+
+          <entry>&lt;workunit&gt; PMD=&lt;dir&gt; - Add post-mortem
+          info</entry>
         </row>
 
         <row>
@@ -171,16 +190,16 @@
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
-      <colspec align="left" colwidth="175.55pt" />
+      <colspec align="left" colwidth="175.55pt"/>
 
-      <colspec />
+      <colspec/>
 
       <tbody>
         <row>
           <entry colsep="0"><emphasis role="bold">info
           parameters</emphasis></entry>
 
-          <entry></entry>
+          <entry/>
         </row>
 
         <row>
@@ -193,7 +212,7 @@
         </row>
 
         <row>
-          <entry colsep="0"></entry>
+          <entry colsep="0"/>
 
           <entry><emphasis role="bold">Which scopes are
           matched</emphasis>:</entry>
@@ -220,7 +239,7 @@
         </row>
 
         <row>
-          <entry></entry>
+          <entry/>
 
           <entry><emphasis role="bold">NOTE</emphasis>: scope, stype and id
           cannot be specified in the same filter</entry>
@@ -249,7 +268,7 @@
         </row>
 
         <row rowsep="0">
-          <entry colsep="0"></entry>
+          <entry colsep="0"/>
 
           <entry><emphasis role="bold">Which scopes are include in the
           results:</emphasis></entry>
@@ -276,7 +295,7 @@
         </row>
 
         <row>
-          <entry colsep="0"></entry>
+          <entry colsep="0"/>
 
           <entry><emphasis role="bold">Which information about a scope is
           reported:</emphasis></entry>
@@ -286,25 +305,25 @@
           <entry><programlisting role="tab">  properties[statistics|hints|
 attributes|scope|all]*</programlisting></entry>
 
-          <entry></entry>
+          <entry/>
         </row>
 
         <row>
           <entry><programlisting role="tab">  statistic[&lt;statistic-kind&gt;|none|all]*</programlisting></entry>
 
-          <entry></entry>
+          <entry/>
         </row>
 
         <row>
           <entry><programlisting role="tab">  attribute[&lt;attribute-name&gt;|none|all]*</programlisting></entry>
 
-          <entry></entry>
+          <entry/>
         </row>
 
         <row>
           <entry><programlisting role="tab">  hint[&lt;hint-name&gt;]*</programlisting></entry>
 
-          <entry></entry>
+          <entry/>
         </row>
 
         <row>
