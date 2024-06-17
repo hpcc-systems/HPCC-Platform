@@ -734,6 +734,7 @@ int main(int argc, const char* argv[])
             unsigned throttleSlowDelayMs;
             unsigned throttleSlowCPULimit;
             unsigned sslport;
+            unsigned listenQueueLimit;
             Linked<IPropertyTree> keyPairInfo;
             StringAttr rowServiceConfiguration;
             unsigned dedicatedRowServicePort;
@@ -763,7 +764,7 @@ int main(int argc, const char* argv[])
                         unsigned _maxThreads, unsigned _maxThreadsDelayMs, unsigned _maxAsyncCopy,
                         unsigned _parallelRequestLimit, unsigned _throttleDelayMs, unsigned _throttleCPULimit,
                         unsigned _parallelSlowRequestLimit, unsigned _throttleSlowDelayMs, unsigned _throttleSlowCPULimit,
-                        unsigned _sslport,
+                        unsigned _sslport, unsigned _listenQueueLimit,
                         IPropertyTree *_keyPairInfo,
                         const char *_rowServiceConfiguration,
                         unsigned _dedicatedRowServicePort, bool _dedicatedRowServiceSSL, bool _rowServiceOnStdPort)
@@ -771,7 +772,7 @@ int main(int argc, const char* argv[])
                   maxThreads(_maxThreads), maxThreadsDelayMs(_maxThreadsDelayMs), maxAsyncCopy(_maxAsyncCopy),
                   parallelRequestLimit(_parallelRequestLimit), throttleDelayMs(_throttleDelayMs), throttleCPULimit(_throttleCPULimit),
                   parallelSlowRequestLimit(_parallelSlowRequestLimit), throttleSlowDelayMs(_throttleSlowDelayMs), throttleSlowCPULimit(_throttleSlowCPULimit),
-                  sslport(_sslport),
+                  sslport(_sslport), listenQueueLimit(_listenQueueLimit),
                   keyPairInfo(_keyPairInfo),
                   rowServiceConfiguration(_rowServiceConfiguration), dedicatedRowServicePort(_dedicatedRowServicePort), dedicatedRowServiceSSL(_dedicatedRowServiceSSL), rowServiceOnStdPort(_rowServiceOnStdPort)
             {
@@ -863,7 +864,7 @@ int main(int argc, const char* argv[])
         } service(config, connectMethod, listenep,
                 maxThreads, maxThreadsDelayMs, maxAsyncCopy,
                 parallelRequestLimit, throttleDelayMs, throttleCPULimit,
-                parallelSlowRequestLimit, throttleSlowDelayMs, throttleSlowCPULimit, sslport,
+                parallelSlowRequestLimit, throttleSlowDelayMs, throttleSlowCPULimit, sslport, listenQueueLimit,
                 keyPairInfo, rowServiceConfiguration, dedicatedRowServicePort, dedicatedRowServiceSSL, rowServiceOnStdPort);
         service.start();
         return 0;
