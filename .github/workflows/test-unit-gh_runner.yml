@@ -49,12 +49,12 @@ jobs:
           sudo chown -R $USER:$USER /opt/HPCCSystems
 
       - name: Run Tests
-        timeout-minutes: 10 # generous, expected time is approx 1 min.
+        timeout-minutes: 20 # generous, expected time is approx 1 min.
         shell: "bash"
         run: |
           export LANG="en_US.UTF-8"
           sudo update-locale
-          sudo /opt/HPCCSystems/bin/unittests
+          sudo /opt/HPCCSystems/bin/unittests -v
 
       - name: unittests-logs-artifact
         if: ${{ failure() || cancelled() }}

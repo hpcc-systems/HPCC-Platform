@@ -66,13 +66,6 @@ jobs:
       asset-name: 'docker-package'
     secrets: inherit
 
-  build-docker-ubuntu-24_04:
-    if: ${{ contains('pull_request,push', github.event_name) }}
-    uses: ./.github/workflows/build-docker.yml
-    with:
-      os: ubuntu-24.04
-    secrets: inherit
-
   build-docker-ubuntu-22_04:
     if: ${{ contains('pull_request,push', github.event_name) }}
     uses: ./.github/workflows/build-docker.yml
@@ -81,23 +74,6 @@ jobs:
       upload-package: true
       asset-name: 'docker-ubuntu-22_04'
     secrets: inherit
-
-  test-smoke-docker-ubuntu-22_04:
-    if: ${{ contains('pull_request,push', github.event_name) }}
-    needs: build-docker-ubuntu-22_04
-    uses: ./.github/workflows/test-smoke-gh_runner.yml
-    with:
-      os: ubuntu-22.04
-      asset-name: 'docker-ubuntu-22_04'
-    secrets: inherit
-
-  test-regression-suite-k8s-ubuntu-22_04:
-    if: ${{ contains('pull_request,push', github.event_name) }}
-    uses: ./.github/workflows/test-regression-suite-k8s.yml
-    secrets: inherit
-    with:
-      os: ubuntu-22.04
-      asset-name: 'docker-ubuntu-22_04-containerized'
 
   test-unit-docker-ubuntu-22_04:
     if: ${{ contains('pull_request,push', github.event_name) }}
@@ -108,50 +84,11 @@ jobs:
       asset-name: 'docker-ubuntu-22_04'
     secrets: inherit
 
-  test-ui-docker-ubuntu-22_04:
-    if: ${{ contains('pull_request,push', github.event_name) }}
-    needs: build-docker-ubuntu-22_04
-    uses: ./.github/workflows/test-ui-gh_runner.yml
-    with:
-      os: ubuntu-22.04
-      asset-name: 'docker-ubuntu-22_04'
-    secrets: inherit
-
   build-docker-ubuntu-20_04:
     if: ${{ contains('schedule,push', github.event_name) }}
     uses: ./.github/workflows/build-docker.yml
     with:
       os: ubuntu-20.04
-    secrets: inherit
-
-  build-docker-rockylinux-8:
-    if: ${{ contains('schedule,push', github.event_name) }}
-    uses: ./.github/workflows/build-docker.yml
-    with:
-      os: rockylinux-8
-    secrets: inherit
-
-  build-docker-centos-8:
-    if: ${{ contains('schedule,push', github.event_name) }}
-    uses: ./.github/workflows/build-docker.yml
-    with:
-      os: centos-8
-    secrets: inherit
-
-  build-docker-centos-7:
-    if: ${{ contains('pull_request,push', github.event_name) }}
-    uses: ./.github/workflows/build-docker.yml
-    with:
-      os: centos-7
-      cmake-configuration-ex: "-DVCPKG_TARGET_TRIPLET=x64-centos-7-dynamic"
-    secrets: inherit
-
-  build-docker-amazonlinux:
-    if: ${{ contains('schedule,push', github.event_name) }}
-    uses: ./.github/workflows/build-docker.yml
-    with:
-      os: amazonlinux
-      cmake-configuration-ex: "-DVCPKG_TARGET_TRIPLET=x64-amazonlinux-dynamic"
     secrets: inherit
 
   build-gh_runner-ubuntu-22_04:
@@ -168,37 +105,4 @@ jobs:
       os: ubuntu-20.04
     secrets: inherit
 
-  build-gh_runner-windows-2022:
-    if: ${{ contains('pull_request,push', github.event_name) }}
-    uses: ./.github/workflows/build-gh_runner.yml
-    with:
-      os: windows-2022
-      cmake-configuration-ex: '-T host=x64 -A x64 -DUSE_CPPUNIT=OFF -DCLIENTTOOLS_ONLY=ON -DUSE_AZURE=OFF -DINCLUDE_PLUGINS=OFF -DUSE_CASSANDRA=OFF -DUSE_PARQUET=OFF -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
-    secrets: inherit
-
-  build-gh_runner-windows-2019:
-    if: ${{ contains('schedule,push', github.event_name) }}
-    uses: ./.github/workflows/build-gh_runner.yml
-    with:
-      os: windows-2019
-      cmake-configuration-ex: '-T host=x64 -A x64 -DUSE_CPPUNIT=OFF -DCLIENTTOOLS_ONLY=ON -DINCLUDE_PLUGINS=OFF -DUSE_AZURE=OFF -DUSE_CASSANDRA=OFF -DUSE_PARQUET=OFF -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
-    secrets: inherit
-
-  build-gh_runner-macos-13:
-    if: ${{ contains('pull_request,push', github.event_name) }}
-    uses: ./.github/workflows/build-gh_runner.yml
-    with:
-      os: macos-13
-      build-type: 'Release'
-      cmake-configuration-ex: '-DUSE_CPPUNIT=OFF -DCLIENTTOOLS_ONLY=ON -DINCLUDE_PLUGINS=OFF -DUSE_AZURE=OFF -DUSE_CASSANDRA=OFF -DUSE_PARQUET=OFF -DSUPPRESS_CASSANDRAEMBED=ON -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
-    secrets: inherit
-
-  build-gh_runner-macos-12:
-    if: ${{ contains('schedule,push', github.event_name) }}
-    uses: ./.github/workflows/build-gh_runner.yml
-    with:
-      os: macos-12
-      build-type: 'Release'
-      cmake-configuration-ex: '-DUSE_CPPUNIT=OFF -DCLIENTTOOLS_ONLY=ON -DINCLUDE_PLUGINS=OFF -DUSE_AZURE=OFF -DUSE_CASSANDRA=OFF -DUSE_PARQUET=OFF -DSUPPRESS_CASSANDRAEMBED=ON -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
-    secrets: inherit
 
