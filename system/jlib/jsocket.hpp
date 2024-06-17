@@ -72,7 +72,6 @@ enum JSOCKET_ERROR_CODES {
 
 #ifndef _WIN32
 #define BLOCK_POLLED_SINGLE_CONNECTS  // NB this is much slower in windows
-#define CENTRAL_NODE_RANDOM_DELAY
 #else
 #define USERECVSEM      // to singlethread BF_SYNC_TRANSFER_PUSH
 #endif
@@ -632,8 +631,6 @@ public:
 };
 
 extern jlib_decl ISocketBufferReader *createSocketBufferReader(const char *trc=NULL);
-
-extern jlib_decl void markNodeCentral(SocketEndpoint &ep); // random delay for linux
 
 interface ISocketConnectNotify
 {
