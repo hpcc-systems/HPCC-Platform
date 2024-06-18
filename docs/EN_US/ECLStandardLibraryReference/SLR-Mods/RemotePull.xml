@@ -28,7 +28,7 @@
   role="bold">])</emphasis> <emphasis></emphasis></para>
 
   <para><emphasis>dfuwuid</emphasis> <emphasis role="bold"> :=
-  STD.File.RemotePull(</emphasis> <emphasis> remoteURL,
+  STD.File.fRemotePull(</emphasis> <emphasis> remoteURL,
   sourcelogicalname,</emphasis> <emphasis> destinationGroup </emphasis>
   <emphasis role="bold">, </emphasis> <emphasis>destinationlogicalname,
   </emphasis> <emphasis role="bold">[</emphasis> <emphasis>,timeout</emphasis>
