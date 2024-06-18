@@ -1,0 +1,277 @@
+name: BundleTest on Thor
+
+on:
+  workflow_call:
+    inputs:
+      os:
+        type: string
+        description: 'Operating System'
+        required: false
+        default: 'ubuntu-22.04'
+      asset-name:
+        type: string
+        description: 'Asset Name'
+        required: false
+        default: 'build-docker-package'
+      dependencies:
+        type: string
+        description: 'Dependencies'
+        required: false
+        default: 'bison flex build-essential binutils-dev curl lsb-release libcppunit-dev python3-dev default-jdk r-base-dev r-cran-rcpp r-cran-rinside r-cran-inline pkg-config libtool autotools-dev automake git cmake xmlstarlet'
+      get-stat: 
+        type: boolean
+        description: 'Run Query stat'
+        required: false
+        default: false
+      generate-zap:
+        type: string
+        description: 'Generate ZAP files'
+        required: false
+        default: ''
+      test-core-file-generation: 
+        type: boolean
+        description: 'Test core file generation'
+        required: false
+        default: false
+
+env:
+  ML_SUPPRESS_WARNING_FILES: "RegressionTestModified.ecl ClassificationTestModified.ecl"
+  ML_EXCLUDE_FILES: "--ef ClassicTestModified.ecl,SVCTest.ecl,ClassificationTestModified.ecl"
+  BUNDLES_TO_TEST: "ML_Core PBblas GLM  GNN DBSCAN LearningTrees TextVectors KMeans SupportVectorMachines LinearRegression LogisticRegression"       
+  uploadArtifact: false 
+  
+jobs:
+
+  main:
+    runs-on: ${{ inputs.os }}
+    steps:
+      - name: Free additional disk space (remove Android SDK + Tools)
+        run: |
+          sudo rm -rf /usr/local/lib/android
+
+      - name: Download Package
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ inputs.asset-name }}
+          path: ${{ inputs.asset-name }}
+
+      - name: Install Dependencies
+        shell: "bash"
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            git \
+            wget \
+            net-tools \
+            tzdata \
+            unzip \
+            xvfb \
+            libxi6 \
+            default-jdk \
+            gdb \
+            ${{ inputs.dependencies }}
+
+      - name: Install Package
+        shell: "bash"
+        run: |
+          sudo apt-get install -y -f ./${{ inputs.asset-name }}/*.deb
+          sudo chown -R $USER:$USER /opt/HPCCSystems
+          sudo xmlstarlet ed -L -u 'Environment/Software/ThorCluster/@slavesPerNode' -v 2 -u 'Environment/Software/ThorCluster/@channelsPerSlave' -v 1 /etc/HPCCSystems/environment.xml
+
+      - name: Install ML Dependencies
+        shell: "bash"
+        run: |  
+          sudo apt install libsvm-dev libsvm-tools 
+          sudo pip install tensorflow numpy keras
+          
+      - name: Start HPCC-Platform
+        shell: "bash"
+        run: |
+          ulimit -c 100
+          echo 'core_%e.%p' | sudo tee /proc/sys/kernel/core_pattern
+          export LANG="en_US.UTF-8"
+          sudo update-locale
+          sudo /etc/init.d/hpcc-init start
+          
+      - name: Core generation test
+        if: ${{ inputs.test-core-file-generation }}
+        shell: "bash"
+        run: |
+            echo """
+            boolean seg() := beginc++ #option action
+            #include <csignal>
+            #body
+            raise(SIGABRT);
+            return false;
+            endc++;
+            output(seg()); """ > crash.ecl
+            
+            ecl run -t hthor crash.ecl
+        continue-on-error: true
+
+      - name: Get test from Github
+        shell: "bash"
+        run: |
+          IFS=' ' read -a BUNDLES_TO_TEST <<< $BUNDLES_TO_TEST
+          BUNDLES_COUNT=${#BUNDLES_TO_TEST[@]}
+          for ((i=0; i<$BUNDLES_COUNT; i++))
+          do
+              BUNDLE_NAME=${BUNDLES_TO_TEST[i]}
+              BUNDLE_REPO="https://github.com/hpcc-systems/${BUNDLES_TO_TEST[i]}.git"
+              INSTALL_CMD="ecl bundle install --update --force ${BUNDLE_REPO}"
+              echo "Bundle Name : ${BUNDLE_NAME}"
+              echo "Bundle Repo : ${BUNDLE_REPO}"
+              tryCountMax=5
+              tryCount=$tryCountMax
+              tryDelay=1m
+
+              while true
+              do
+                  cRes=$( ${INSTALL_CMD} 2>&1 )
+                  retCode=$?
+                  if [[ $retCode -ne 0 ]]
+                  then
+                      tryCount=$(( $tryCount-1 ))
+
+                      if [[ $tryCount -ne 0 ]]
+                      then
+                          sleep ${tryDelay}
+                          continue
+                      else
+                          echo "Install $BUNDLE_NAME bundle was failed after ${tryCountMax} attempts. Result is: '${cRes}'" >> /home/runner/HPCCSystems-regression/log/Failed_bundle_install.summary
+                          echo "uploadArtifact=true" >> $GITHUB_ENV
+                          break;
+                      fi
+                  else
+                      echo "Install $BUNDLE_NAME bundle was success." 
+                      BUNDLE_VERSION=$( echo "${cRes}" | egrep "^$BUNDLE_NAME" | awk '{ print $2 }' )
+                      echo "Version: $BUNDLE_VERSION" 
+                      break
+                  fi
+              done
+          done
+
+      - name: Run Tests
+        id: run
+        shell: "bash"
+        working-directory: /home/runner/.HPCCSystems/bundles/_versions/
+        run: |
+          ProcessLog()
+          { 
+              BUNDLE=$1
+              TARGET=$2
+              logfilename=$( ls -clr /home/runner/HPCCSystems-regression/log/thor.*.log | head -1 | awk '{ print $9 }' )
+              failed=$(cat ${logfilename} | sed -n "s/^[[:space:]]*Failure:[[:space:]]*\([0-9]*\)[[:space:]]*$/\1/p")                           
+          
+              if [[ "$failed" -ne 0 ]]
+              then 
+                  echo "Bundle : ${BUNDLE}" >> /home/runner/HPCCSystems-regression/log/Failed_test.summary
+                  cat ${logfilename} >> /home/runner/HPCCSystems-regression/log/Failed_test.summary
+                  echo "uploadArtifact=true" >> $GITHUB_ENV
+              fi
+              # Rename result log file to name of the bundle
+              logname=$(basename $logfilename)
+              bundlelogfilename=${logname//$TARGET/$BUNDLE}
+              printf "%s, %s\n" "$logname" "$bundlelogfilename"
+              mv -v $logfilename /home/runner/HPCCSystems-regression/log/ml-$bundlelogfilename
+          }
+          IFS=' ' read -a BUNDLES_TO_TEST <<< $BUNDLES_TO_TEST
+          while read bundle
+          do
+              bundleRunPath=${bundle%/ecl}                         # remove '/ecl' from the end of the $bundle
+              bundlePath=${bundleRunPath%/OBTTests};       # remove '/OBTTests' from the end of the $bundleRunPath if exists
+              bundleName=${bundlePath%/test}                    # remove '/test' from the end of the $bundlePath if exists
+              bundleName=$(basename $bundleName )         # remove path from $bundleName
+              
+              if [[ "$bundle" =~ "LearningTrees" ]]
+              then
+                  # add a warning supression parameter in the file
+                  for file in $ML_SUPPRESS_WARNING_FILES
+                  do
+                      if [[ $( egrep -c '#ONWARNING\(30004' $bundle/$file ) -eq 0 ]]
+                      then
+                          pushd $bundle 
+                          cp -fv $file $file-back
+                          # Insert a comment and the "#ONWARNING" after the Copyright header
+                          sed -i '/## \*\//a \\n// Patched by the bundleTest on '"$( date '+%Y.%m.%d %H:%M:%S')"' \n#ONWARNING(30004, ignore); // Do not report execute time skew warning' $file
+                          popd
+                      fi
+                  done
+              fi
+              
+              if [[ ! "${BUNDLES_TO_TEST[*]}" =~ "$bundleName"  ]]
+              then
+                  continue
+              fi
+              
+              pushd $bundleRunPath
+          
+              /opt/HPCCSystems/testing/regress/ecl-test run -t thor --config /opt/HPCCSystems/testing/regress/ecl-test.json --timeout 3600 -fthorConnectTimeout=3600 --pq 1 $ML_EXCLUDE_FILES
+              
+              retCode=$( echo $? )
+          
+              if [ ${retCode} -eq 0 ] 
+              then
+                  ProcessLog "$bundleName" "thor"
+              fi
+            
+              popd
+  
+          done< <(find . -iname 'ecl' -type d | sort )
+
+      - name: Generate ZAP files
+        if: ${{ ! inputs.generate-zap == '' }} 
+        run: |  
+          IFS=' ' read -a ML_GENERATE_ZAP_FOR <<< ${{ inputs.generate-zap }}
+          if [  ${#ML_GENERATE_ZAP_FOR[@]} -ne 0 ]
+          then
+              for test in ${ML_GENERATE_ZAP_FOR[*]}
+              do 
+                  test=${test/.ecl/*}
+                  wuid=$(ecl getwuid -n $test --limit 1)
+                  if [[ -n $wuid ]]
+                  then
+                      ecl zapgen $wuid  --path /home/runner/HPCCSystems-regression/zap --inc-thor-slave-logs
+                      echo "testName : ${test}  wuid : ${wuid}" >> zap.summary
+                      cp zap.summary /home/runner/HPCCSystems-regression/zap 
+                      echo "uploadArtifact=true" >> $GITHUB_ENV
+                  fi
+              done 
+          fi
+
+      - name: Check for Core files
+        run: |
+          NUM_OF_ML_CORES=( $(sudo find /var/lib/HPCCSystems/ -iname 'core*' -mtime -1 -type f -exec printf "%s\n" '{}' \; ) )
+
+          if [ ${#NUM_OF_ML_CORES[@]} -ne 0 ]
+          then      
+              for  core in ${NUM_OF_ML_CORES[@]}
+              do
+                  base=$( dirname $core )
+                  lastSubdir=${base##*/}
+                  comp=${lastSubdir##my}
+                  sudo gdb --batch --quiet -ex "set interactive-mode off" -ex "echo \n Backtrace for all threads\n==========================" -ex "thread apply all bt" -ex "echo \n Registers:\n==========================\n" -ex "info reg" -ex "echo \n Disas:\n==========================\n" -ex "disas" -ex "quit" "/opt/HPCCSystems/bin/${comp}" $core | sudo tee "$core.trace" 2>&1
+                  cp "$core.trace" /home/runner/HPCCSystems-regression/log/ 
+              done
+              echo "uploadArtifact=true" >> $GITHUB_ENV
+          fi
+
+      - name: Get test stat
+        if: ${{ inputs.get-stat }}
+        run: |
+          ./QueryStat2.py -p /home/runner/HPCCSystems-regression/log/  -d '' -a --timestamp --compileTimeDetails 1 --graphTimings --allGraphItems --addHeader
+          NUM_OF_STAT_FILES=$( find /home/runner/HPCCSystems-regression/log/ -type f -iname "*.csv" -o -iname "*.cfg" | wc -l )
+          if [[ $NUM_OF_STAT_FILES -ne 0 ]]
+          then 
+              echo "uploadArtifact=true" >> $GITHUB_ENV
+          fi
+
+      - name: ml-thor-test-logs-artifact
+        if: ${{ failure() || cancelled() || env.uploadArtifact == 'true' }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ inputs.asset-name }}-bundle-test-logs
+          path: |
+             /home/runner/HPCCSystems-regression/log/*
+             /home/runner/HPCCSystems-regression/zap/*
+          if-no-files-found: ignore
