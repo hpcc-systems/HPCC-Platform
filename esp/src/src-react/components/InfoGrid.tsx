@@ -32,11 +32,13 @@ interface FilterCounts {
 }
 
 interface InfoGridProps {
-    wuid: string;
+    wuid?: string;
+    syntaxErrors?: any[];
 }
 
 export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
-    wuid
+    wuid = null,
+    syntaxErrors = []
 }) => {
 
     const [costChecked, setCostChecked] = React.useState(true);
@@ -46,6 +48,7 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
     const [otherChecked, setOtherChecked] = React.useState(true);
     const [filterCounts, setFilterCounts] = React.useState<FilterCounts>({ cost: 0, penalty: 0, error: 0, warning: 0, info: 0, other: 0 });
     const [exceptions] = useWorkunitExceptions(wuid);
+    const [errors, setErrors] = React.useState<any[]>([]);
     const [data, setData] = React.useState<any[]>([]);
     const {
         selection, setSelection,
@@ -60,6 +63,14 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
         { key: "infos", onRender: () => <Checkbox defaultChecked label={`${filterCounts.info || 0} ${nlsHPCC.Infos}`} onChange={(ev, value) => setInfoChecked(value)} styles={{ root: { paddingTop: 8, paddingRight: 8 } }} /> },
         { key: "others", onRender: () => <Checkbox defaultChecked label={`${filterCounts.other || 0} ${nlsHPCC.Others}`} onChange={(ev, value) => setOtherChecked(value)} styles={{ root: { paddingTop: 8, paddingRight: 8 } }} /> }
     ], [filterCounts.cost, filterCounts.error, filterCounts.info, filterCounts.other, filterCounts.warning]);
+
+    React.useEffect(() => {
+        if (syntaxErrors.length) {
+            setErrors(syntaxErrors);
+        } else {
+            setErrors(exceptions);
+        }
+    }, [syntaxErrors, exceptions]);
 
     //  Grid ---
     const columns = React.useMemo((): FluentColumns => {
@@ -137,7 +148,7 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
             info: 0,
             other: 0
         };
-        const filteredExceptions = exceptions.map((row, idx) => {
+        const filteredExceptions = errors?.map((row, idx) => {
             if (row.Source === "Cost Optimizer") {
                 row.Severity = "Cost";
             }
@@ -199,7 +210,7 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
         });
         setData(filteredExceptions);
         setFilterCounts(filterCounts);
-    }, [costChecked, errorChecked, exceptions, infoChecked, otherChecked, warningChecked]);
+    }, [costChecked, errorChecked, errors, infoChecked, otherChecked, warningChecked]);
 
     React.useEffect(() => {
         if (data.length) {
