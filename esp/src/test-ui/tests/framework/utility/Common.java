@@ -2,20 +2,21 @@ package framework.utility;
 
 import framework.config.Config;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.bidi.log.Log;
 
 import java.time.Duration;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class Common {
 
-    public static void checkTextPresent(WebDriver driver, String text, String page, Logger logger) {
+    public static void checkTextPresent(WebDriver driver, String text, String page, Logger errorLogger, Logger specificLogger) {
         if (driver.getPageSource().contains(text)) {
             String msg = "Success: " + page + ": Text present: " + text;
-            System.out.println(msg);
+            logDetail(specificLogger, msg);
         } else {
             String errorMsg = "Failure: " + page + ": Text not present: " + text;
-            System.err.println(errorMsg);
-            logger.severe(errorMsg);
+            logError(errorLogger, errorMsg);
         }
     }
 
@@ -41,5 +42,30 @@ public class Common {
     public static String getUrl(String url) {
 
         return isRunningOnLocal() ? Config.LOCAL_IP + url : Config.GITHUB_ACTION_IP + url;
+    }
+
+    public static void logError(Logger logger, String message) {
+        System.out.println(message);
+        logger.severe(message);
+    }
+
+    public static void logDebug(Logger logger, String message) {
+        System.out.println(message);
+
+        if(logger != null && logger.getLevel() == Level.INFO){
+            logger.info(message);
+        }
+
+        if(logger != null && logger.getLevel() == Level.FINE){
+            logger.fine(message);
+        }
+    }
+
+    public static void logDetail(Logger logger, String message) {
+        System.out.println(message);
+
+        if(logger != null && logger.getLevel() == Level.FINE){
+            logger.fine(message);
+        }
     }
 }
