@@ -1067,6 +1067,18 @@ public:
     }
     virtual void MultiMergeBetween(rowcount_t _globalCount, unsigned mapsize, rowcount_t * map, rowcount_t * mapupper, unsigned num, SocketEndpoint * endpoints)
     {
+        unsigned blockSortConnectActId = activity->getOptInt("blockSortConnectActId");
+        if (blockSortConnectActId == activity->queryContainer().queryId())
+        {
+            // NB: this is a testing option, see HPCC-xxxx for more detail
+            // This will prevent the sort from proceeding and connecting to the accept()'s on the other side.
+            DBGLOG("Blocking in MultiMergeBetween, blocking sort connect");
+            bool held = true;
+            while (held)
+            {
+                MilliSleep(30000);
+            }
+        }
         assertex(transferserver.get()!=NULL);
         globalCount = _globalCount;
         if (intercept)
