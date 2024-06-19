@@ -4437,6 +4437,8 @@ public:
             { return c->getFileAccessCost(); }
     virtual cost_type getCompileCost() const
             { return c->getCompileCost(); }
+    virtual bool getSummary(SummaryType type, SummaryMap &map) const override
+            { return c->getSummary(type, map); }
     virtual void import(IPropertyTree *wuTree, IPropertyTree *graphProgressTree)
             { return c->import(wuTree, graphProgressTree); }
 
@@ -4503,6 +4505,8 @@ public:
             { c->setUser(value); }
     virtual void setWuScope(const char * value)
             { c->setWuScope(value); }
+    virtual void setSummary(SummaryType type, const SummaryMap &map) override
+            { c->setSummary(type, map); }
     virtual IWorkflowItem* addWorkflowItem(unsigned wfid, WFType type, WFMode mode, unsigned success, unsigned failure, unsigned recovery, unsigned retriesAllowed, unsigned contingencyFor)
             { return c->addWorkflowItem(wfid, type, mode, success, failure, recovery, retriesAllowed, contingencyFor); }
     virtual void syncRuntimeWorkflow(IWorkflowItemArray * array)
@@ -8719,6 +8723,65 @@ void CLocalWorkUnit::setDebugValue(const char *propname, const char *value, bool
         p->setProp("Debug", "");
         p->setProp(prop.str(), value);
     }
+}
+
+static const char *summaryTypeName(SummaryType type)
+{
+    switch (type)
+    {
+    case SummaryType::ReadFile: return "ReadFile";
+    case SummaryType::ReadIndex: return "ReadIndex";
+    case SummaryType::WriteFile: return "WriteFile";
+    case SummaryType::WriteIndex: return "WriteIndex";
+    case SummaryType::PersistFile: return "PersistFile";
+    case SummaryType::SpillFile: return "SpillFile";
+    case SummaryType::JobTemp: return "JobTemp";
+    case SummaryType::Service: return "Service";
+    default:
+        throwUnexpected();
+    }
+};
+
+bool CLocalWorkUnit::getSummary(SummaryType type, SummaryMap &map) const
+{
+    VStringBuffer xpath("Summaries/%s", summaryTypeName(type));
+    CriticalBlock block(crit);
+    const char *list = p->queryProp(xpath);
+    if (!list)
+        return false;
+    StringArray s;
+    s.appendList(list, "\n");
+    ForEachItemIn(idx, s)
+    {
+        const char *name = s.item(idx);
+        if (name && *name)
+        {
+            char *end = nullptr;
+            SummaryFlags flags = (SummaryFlags) strtol(name, &end, 16);
+            if (*end!=':')
+                return false; // unrecognized format
+            name = end+1;
+            if (map.find(name) == map.end())
+                map[name] = flags;
+            else
+                map[name] = map[name] & flags;
+        }
+    }
+    return true;
+}
+
+void CLocalWorkUnit::setSummary(SummaryType type, const SummaryMap &map)
+{
+    StringBuffer list;
+    for (const auto& [name, flags] : map)
+    {
+        if (list.length())
+            list.append('\n');
+        list.appendf("%01x:%s", (unsigned) flags, name.c_str());    
+    }
+    CriticalBlock block(crit);
+    IPropertyTree *summaries = ensurePTree(p, "Summaries");
+    summaries->setProp(summaryTypeName(type), list);
 }
 
 void CLocalWorkUnit::setDebugValueInt(const char *propname, int value, bool overwrite)
@@ -13980,6 +14043,11 @@ extern WORKUNIT_API void descheduleWorkunit(char const * wuid)
         doDescheduleWorkkunit(wuid);
 }
 
+extern WORKUNIT_API void addWorkunitSummary(IWorkUnit * wu, SummaryType summaryType, SummaryMap &map)
+{
+    wu->setSummary(summaryType, map);
+}
+
 extern WORKUNIT_API void updateWorkunitStat(IWorkUnit * wu, StatisticScopeType scopeType, const char * scope, StatisticKind kind, const char * description, unsigned __int64 value, unsigned wfid)
 {
     StringBuffer scopestr;
@@ -14007,7 +14075,6 @@ protected:
     StatisticScopeType scopeType;
     StatisticKind kind;
 };
-
 
 extern WORKUNIT_API void updateWorkunitTimings(IWorkUnit * wu, ITimeReporter *timer)
 {
