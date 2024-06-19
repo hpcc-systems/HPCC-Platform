@@ -1086,6 +1086,10 @@
         "checkScopeScans": {
           "type": "boolean",
           "description": "Only return iterated logical file metadata for files that user has scope permission to access"
+        },
+        "useLegacyDefaultFileScopePermissionCache": {
+          "type": "boolean",
+          "description": "Use legacy default filescope permissions that cached value for first user"
         }
       }
     },
