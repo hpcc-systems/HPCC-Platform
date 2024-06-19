@@ -35,10 +35,10 @@ public class ActivitiesTest {
         WebDriver driver = WebDriverHolder.getDriver();
         Common.openWebPage(driver, Common.getUrl(Config.ACTIVITIES_URL));
 
-        Logger errorLogger = LoggerHolder.getErrorLogger();
-        Logger specificLogger = LoggerHolder.getSpecificLogger();
+        errorLogger = LoggerHolder.getErrorLogger();
+        specificLogger = LoggerHolder.getSpecificLogger();
 
-        Common.logDebug(specificLogger, " Tests started for: Activities page.");
+        Common.logDebug(specificLogger, "Tests started for: Activities page.");
 
         testForAllText(driver);
 
@@ -46,7 +46,7 @@ public class ActivitiesTest {
 
         testForNavigationLinks(driver, navWebElements);
 
-        Common.logDebug(specificLogger, " Tests finished for: Activities page.");
+        Common.logDebug(specificLogger, "Tests finished for: Activities page.");
     }
 
     private void testForNavigationLinks(WebDriver driver, List<NavigationWebElement> navWebElements) {

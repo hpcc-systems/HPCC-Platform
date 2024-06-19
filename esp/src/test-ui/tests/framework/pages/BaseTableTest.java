@@ -54,19 +54,19 @@ public abstract class BaseTableTest<T> {
         WebDriver driver = WebDriverHolder.getDriver();
         Common.openWebPage(driver, getPageUrl());
 
-        Logger errorLogger = LoggerHolder.getErrorLogger();
-        Logger specificLogger = LoggerHolder.getSpecificLogger();
+        errorLogger = LoggerHolder.getErrorLogger();
+        specificLogger = LoggerHolder.getSpecificLogger();
         
         try {
             //testingAttribute(driver);
 
-            Common.logDebug(specificLogger, " Tests started for: " + getPageName() + " page.");
+            Common.logDebug(specificLogger, "Tests started for: " + getPageName() + " page.");
 
             testForAllText(driver);
             testContentAndSortingOrder(driver);
             testLinksInTable(driver);
 
-            Common.logDebug(specificLogger, " Tests finished for: " + getPageName() + " page.");
+            Common.logDebug(specificLogger, "Tests finished for: " + getPageName() + " page.");
 
         } catch (Exception ex) {
             Common.logError(errorLogger, ex.getMessage());
