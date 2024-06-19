@@ -8,21 +8,18 @@ import org.testng.ITestResult;
 import java.util.logging.Logger;
 
 public class TestInjector implements IInvokedMethodListener {
-    private final Logger errorLogger;
-    private final Logger specificLogger;
+    private final Logger logger;
     private final WebDriver driver;
 
-    public TestInjector(Logger errorLogger, Logger specificLogger, WebDriver driver) {
-        this.errorLogger = errorLogger;
-        this.specificLogger = specificLogger;
+    public TestInjector(Logger logger, WebDriver driver) {
+        this.logger = logger;
         this.driver = driver;
     }
 
     @Override
     public void beforeInvocation(IInvokedMethod method, ITestResult testResult) {
         if (method.isTestMethod()) {
-            LoggerHolder.setErrorLogger(errorLogger);
-            LoggerHolder.setSpecificLogger(specificLogger);
+            LoggerHolder.setLogger(logger);
             WebDriverHolder.setDriver(driver);
         }
     }

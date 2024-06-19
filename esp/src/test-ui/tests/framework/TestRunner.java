@@ -24,28 +24,14 @@ import java.util.logging.SimpleFormatter;
 public class TestRunner {
     public static void main(String[] args) {
 
-        Logger errorLogger = setupLogger("error");
-        Logger specificLogger = setupLogger(args[0]);
-
+        Logger logger = setupLogger();
         WebDriver driver = setupWebDriver();
 
         TestNG testng = new TestNG();
         testng.setTestClasses(loadClasses());
-        testng.addListener(new TestInjector(errorLogger, specificLogger, driver));
+        testng.addListener(new TestInjector(logger, driver));
         testng.run();
         driver.quit();
-    }
-
-    private static Logger getSpecificLogger(String[] args) {
-
-        String logLevel = args.length > 0 ? args[0] : "error";
-        Logger specificLogger = null;
-
-        if (!logLevel.equalsIgnoreCase("error")) {
-            specificLogger = setupLogger(logLevel);
-        }
-
-        return specificLogger;
     }
 
     private static WebDriver setupWebDriver() {
@@ -93,38 +79,20 @@ public class TestRunner {
         return classes.toArray(new Class<?>[0]);
     }
 
-    private static Logger setupLogger(String logLevel) {
-
-        if (logLevel == null) {
-            return null;
-        }
-
-        Logger logger = Logger.getLogger(logLevel);
-        logger.setUseParentHandlers(false); // Disable console logging
-
+    private static Logger setupLogger() {
+        Logger logger = Logger.getLogger(TestRunner.class.getName());
         try {
-            if (logLevel.equalsIgnoreCase("error")) {
-                FileHandler errorFileHandler = new FileHandler(Config.LOG_FILE_ERROR);
-                errorFileHandler.setFormatter(new SimpleFormatter());
-                logger.addHandler(errorFileHandler);
-                logger.setLevel(Level.SEVERE);
-            } else if (logLevel.equalsIgnoreCase("debug")) {
-                FileHandler debugFileHandler = new FileHandler(Config.LOG_FILE_DEBUG);
-                debugFileHandler.setFormatter(new SimpleFormatter());
-                logger.addHandler(debugFileHandler);
-                logger.setLevel(Level.INFO);
-            } else if (logLevel.equalsIgnoreCase("detail")) {
-                FileHandler detailFileHandler = new FileHandler(Config.LOG_FILE_DETAIL);
-                detailFileHandler.setFormatter(new SimpleFormatter());
-                logger.addHandler(detailFileHandler);
-                logger.setLevel(Level.FINE);
-            }
-
+            FileHandler fileHandler = new FileHandler(Config.LOG_FILE);
+            SimpleFormatter formatter = new SimpleFormatter();
+            fileHandler.setFormatter(formatter);
+            logger.addHandler(fileHandler);
+            logger.setUseParentHandlers(false);
+            logger.setLevel(Level.ALL);
         } catch (IOException e) {
             System.err.println("Failed to setup logger: " + e.getMessage());
         }
 
-        Logger.getLogger("org.openqa.selenium").setLevel(Level.OFF); // Turn off all logging from the Selenium WebDriver.
+        Logger.getLogger("org.openqa.selenium").setLevel(Level.OFF); // turn off all logging from the Selenium WebDriver.
         return logger;
     }
 }
