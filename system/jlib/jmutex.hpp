@@ -22,6 +22,7 @@
 
 #include <assert.h>
 #include <atomic>
+#include <mutex>
 #include <functional>
 #include "jiface.hpp"
 #include "jsem.hpp"
@@ -46,10 +47,11 @@ extern jlib_decl void spinUntilReady(std::atomic_uint &value);
 #endif
 
 #ifdef _WIN32
-class jlib_decl Mutex
+class jlib_decl LegacyMutex
 {
+friend class Monitor;
 protected:
-    Mutex(const char *name)
+    LegacyMutex(const char *name)
     {
         mutex = CreateMutex(NULL, FALSE, name);
         assertex(mutex);
@@ -57,13 +59,13 @@ protected:
         owner = 0;
     }
 public:
-    Mutex()
+    LegacyMutex()
     {
         mutex = CreateMutex(NULL, FALSE, NULL);
         lockcount = 0;
         owner = 0;
     }
-    ~Mutex()
+    ~LegacyMutex()
     {
         if (owner != 0)
             printf("Warning - Owned mutex destroyed"); // can't use DBGLOG here!
@@ -123,25 +125,14 @@ private:
     int lockcount;
 };
 
-class jlib_decl NamedMutex: public Mutex
-{
-public:
-    NamedMutex(const char *name)
-        : Mutex(name)
-    {
-    }   
-};
-
-
-
 #else // posix
 
-class jlib_decl Mutex
+class jlib_decl LegacyMutex
 {
+    friend class Monitor;
 public:
-    Mutex();
-//  Mutex(const char *name);    //not supported
-    ~Mutex();
+    LegacyMutex();
+    ~LegacyMutex();
     void lock();
     bool lockWait(unsigned timeout);
     void unlock();
@@ -154,7 +145,35 @@ private:
     int lockcount;
     pthread_cond_t lock_free;
 };
+#endif
 
+class jlib_decl SimpleMutex
+{
+public:
+    void lock() { mutex.lock(); };
+    void unlock() { mutex.unlock(); };
+private:
+    std::mutex mutex;
+};
+
+class jlib_decl Mutex
+{
+public:
+    void lock() { mutex.lock(); };
+    void unlock() { mutex.unlock(); };
+private:
+    std::recursive_mutex mutex;
+};
+
+class jlib_decl TimedMutex
+{
+public:
+    void lock() { mutex.lock(); };
+    bool lockWait(unsigned timeout);
+    void unlock() { mutex.unlock(); };
+private:
+    std::recursive_timed_mutex mutex;
+};
 
 class jlib_decl NamedMutex
 {
@@ -165,23 +184,30 @@ public:
     bool lockWait(unsigned timeout);
     void unlock();
 private:
-    Mutex threadmutex;
+    TimedMutex threadmutex;
     char *mutexfname;
 };
 
-
-
-#endif
-
-class jlib_decl synchronized
+template<class T> class jlib_decl MutexBlock
 {
 private:
-    Mutex &mutex;
+    T &mutex;
+public:
+    MutexBlock(T &m) : mutex(m) { mutex.lock(); };
+    ~MutexBlock() { mutex.unlock(); };
+};
+
+typedef MutexBlock<Mutex> synchronized;
+
+class jlib_decl TimedMutexBlock
+{
+private:
+    TimedMutex &mutex;
     void throwLockException(unsigned timeout);
 public:
-    synchronized(Mutex &m) : mutex(m) { mutex.lock(); };
-    synchronized(Mutex &m,unsigned timeout) : mutex(m) { if(!mutex.lockWait(timeout)) throwLockException(timeout);  }
-    inline ~synchronized() { mutex.unlock(); };
+    TimedMutexBlock(TimedMutex &m) : mutex(m) { mutex.lock(); };
+    TimedMutexBlock(TimedMutex &m, unsigned timeout) : mutex(m) { if(!mutex.lockWait(timeout)) throwLockException(timeout);  }
+    inline ~TimedMutexBlock() { mutex.unlock(); };
 };
 
 #ifdef _WIN32
@@ -561,14 +587,16 @@ public:
 
 
 
-class jlib_decl Monitor: public Mutex
+class jlib_decl Monitor
 {
     // Like a java object - you can synchronize on it for a block, wait for a notify on it, or notify on it
+    friend class MonitorBlock;
     Semaphore *sem;
     int waiting;
     void *last;
+    LegacyMutex mutex;
 public:
-    Monitor() : Mutex() { sem = new Semaphore(); waiting = 0; last = NULL; }
+    Monitor() { sem = new Semaphore(); waiting = 0; last = NULL; }
 //  Monitor(const char *name) : Mutex(name) { sem = new Semaphore(name); waiting = 0; last = NULL; } // not supported
     ~Monitor() {delete sem;};
 
@@ -576,6 +604,16 @@ public:
     void notify();      // only called when locked
     void notifyAll();   // only called when locked -- notifys for all waiting threads
 };
+
+class jlib_decl MonitorBlock
+{
+private:
+    Monitor &monitor;
+public:
+    MonitorBlock(Monitor &m) : monitor(m) { monitor.mutex.lock(); };
+    inline ~MonitorBlock() { monitor.mutex.unlock(); };
+};
+
 
 //--------------------------------------------------------------------------------------------------------------------
 
@@ -838,7 +876,7 @@ public:
 #define USECHECKEDCRITICALSECTIONS
 #ifdef USECHECKEDCRITICALSECTIONS
 
-typedef Mutex CheckedCriticalSection;
+typedef TimedMutex CheckedCriticalSection;
 void jlib_decl checkedCritEnter(CheckedCriticalSection &crit, unsigned timeout, const char *fname, unsigned lnum);
 void jlib_decl checkedCritLeave(CheckedCriticalSection &crit);
 class  jlib_decl CheckedCriticalBlock

@@ -1437,7 +1437,7 @@ bool CLogMsgManager::MsgProcessor::flush(unsigned timeout)
         return false;
     try
     {
-        synchronized block(pullCycleMutex, timeout+start-now);
+        TimedMutexBlock block(pullCycleMutex, timeout+start-now);
     }
     catch(IException * e)
     {

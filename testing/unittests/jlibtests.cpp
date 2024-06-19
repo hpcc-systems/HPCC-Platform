@@ -3259,6 +3259,14 @@ public:
         DO_TEST(Mutex, synchronized, unsigned __int64, 2, 1);
         DO_TEST(Mutex, synchronized, unsigned __int64, 5, 1);
         DO_TEST(Mutex, synchronized, unsigned __int64, 1, 2);
+        DO_TEST(SimpleMutex, MutexBlock<SimpleMutex>, unsigned __int64, 1, 1);
+        DO_TEST(SimpleMutex, MutexBlock<SimpleMutex>, unsigned __int64, 2, 1);
+        DO_TEST(SimpleMutex, MutexBlock<SimpleMutex>, unsigned __int64, 5, 1);
+        DO_TEST(SimpleMutex, MutexBlock<SimpleMutex>, unsigned __int64, 1, 2);
+        DO_TEST(TimedMutex, TimedMutexBlock, unsigned __int64, 1, 1);
+        DO_TEST(TimedMutex, TimedMutexBlock, unsigned __int64, 2, 1);
+        DO_TEST(TimedMutex, TimedMutexBlock, unsigned __int64, 5, 1);
+        DO_TEST(TimedMutex, TimedMutexBlock, unsigned __int64, 1, 2);
         DO_TEST(SpinLock, SpinBlock, unsigned __int64, 1, 1);
         DO_TEST(SpinLock, SpinBlock, unsigned __int64, 2, 1);
         DO_TEST(SpinLock, SpinBlock, unsigned __int64, 5, 1);
@@ -3294,10 +3302,10 @@ public:
 
     void summariseTimings(const char * option, UInt64Array & times)
     {
-        DBGLOG("%11s 1x: cs(%3" I64F "u) spin(%3" I64F "u) atomic(%3" I64F "u) ratomic(%3" I64F "u) cas(%3" I64F "u) rd(%3" I64F "u) wr(%3" I64F "u)   "
-                    "5x: cs(%3" I64F "u) spin(%3" I64F "u) atomic(%3" I64F "u) ratomic(%3" I64F "u) cas(%3" I64F "u) rd(%3" I64F "u) wr(%3" I64F "u)", option,
-                    times.item(0), times.item(4), times.item(8), times.item(12), times.item(14), times.item(19), times.item(23),
-                    times.item(2), times.item(6), times.item(10), times.item(13), times.item(15), times.item(21), times.item(25));
+        DBGLOG("%11s 1x: cs(%3" I64F "u) mutex (%3" I64F "u) smutex (%3" I64F "u) tmutex (%3" I64F "u) spin(%3" I64F "u) atomic(%3" I64F "u) ratomic(%3" I64F "u) cas(%3" I64F "u) rd(%3" I64F "u) wr(%3" I64F "u)", option,
+                         times.item(0), times.item(4), times.item(8), times.item(12), times.item(16), times.item(20), times.item(24), times.item(26), times.item(31), times.item(35));
+        DBGLOG("%11s 5x: cs(%3" I64F "u) mutex (%3" I64F "u) smutex (%3" I64F "u) tmutex (%3" I64F "u) spin(%3" I64F "u) atomic(%3" I64F "u) ratomic(%3" I64F "u) cas(%3" I64F "u) rd(%3" I64F "u) wr(%3" I64F "u)", "",
+                         times.item(2), times.item(6), times.item(10), times.item(14), times.item(18), times.item(22), times.item(25), times.item(27), times.item(33), times.item(37));
     }
 
 private:

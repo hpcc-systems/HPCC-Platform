@@ -27,7 +27,7 @@
 //===========================================================================
 #ifndef _WIN32
 
-Mutex::Mutex()
+LegacyMutex::LegacyMutex()
 {
     pthread_mutex_init(&mutex, NULL);
     pthread_cond_init(&lock_free, NULL);
@@ -35,13 +35,13 @@ Mutex::Mutex()
     lockcount = 0;
 }
 
-Mutex::~Mutex()
+LegacyMutex::~LegacyMutex()
 {
     pthread_cond_destroy(&lock_free);
     pthread_mutex_destroy(&mutex);
 }
 
-void Mutex::lock()
+void LegacyMutex::lock()
 {
     pthread_mutex_lock(&mutex);
     while ((owner!=0) && !pthread_equal(owner, pthread_self()))
@@ -51,7 +51,7 @@ void Mutex::lock()
     pthread_mutex_unlock(&mutex);
 }
 
-bool Mutex::lockWait(unsigned timeout)
+bool LegacyMutex::lockWait(unsigned timeout)
 {
     if (timeout==(unsigned)-1) {
         lock();
@@ -76,7 +76,7 @@ bool Mutex::lockWait(unsigned timeout)
     return true;
 }
 
-void Mutex::unlock()
+void LegacyMutex::unlock()
 {
     pthread_mutex_lock(&mutex);
 #ifdef _DEBUG
@@ -90,7 +90,7 @@ void Mutex::unlock()
     pthread_mutex_unlock(&mutex);
 }
 
-void Mutex::lockAll(int count)
+void LegacyMutex::lockAll(int count)
 {
     if (count) {
         pthread_mutex_lock(&mutex);
@@ -102,7 +102,7 @@ void Mutex::lockAll(int count)
     }
 }
 
-int Mutex::unlockAll()
+int LegacyMutex::unlockAll()
 {
     pthread_mutex_lock(&mutex);
     int ret = lockcount;
@@ -117,9 +117,6 @@ int Mutex::unlockAll()
     pthread_mutex_unlock(&mutex);
     return ret;
 }
-
-
-
 
 inline bool read_data(int fd, void *buf, size_t nbytes) 
 {
@@ -268,7 +265,17 @@ void NamedMutex::unlock()
 
 #endif
 
-void synchronized::throwLockException(unsigned timeout)
+bool TimedMutex::lockWait(unsigned timeout)
+{
+    if (timeout==(unsigned)-1) {
+        lock();
+        return true;
+    }
+    std::chrono::milliseconds ms(timeout);
+    return mutex.try_lock_for(ms);
+}
+
+void TimedMutexBlock::throwLockException(unsigned timeout)
 {
     throw MakeStringException(0,"Can not lock - %d",timeout);
 }
@@ -279,14 +286,14 @@ void synchronized::throwLockException(unsigned timeout)
 
 void Monitor::wait()
 {
-    assertex(owner==GetCurrentThreadId());
+    assertex(mutex.owner==GetCurrentThreadId());
     waiting++;
     void *cur = last;
     last = &cur;
     while (1) {
-        int locked = unlockAll();
+        int locked = mutex.unlockAll();
         sem->wait();
-        lockAll(locked);
+        mutex.lockAll(locked);
         if (cur==NULL) { // i.e. first in
             void **p=(void **)&last;
             while (*p!=&cur)
@@ -300,7 +307,7 @@ void Monitor::wait()
 
 void Monitor::notify()
 {   // should always be locked
-    assertex(owner==GetCurrentThreadId());
+    assertex(mutex.owner==GetCurrentThreadId());
     if (waiting)
     {
         waiting--;
@@ -310,7 +317,7 @@ void Monitor::notify()
 
 void Monitor::notifyAll()
 {   // should always be locked
-    assertex(owner==GetCurrentThreadId());
+    assertex(mutex.owner==GetCurrentThreadId());
     if (waiting)
     {
         sem->signal(waiting);

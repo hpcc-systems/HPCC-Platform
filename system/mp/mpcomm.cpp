@@ -917,7 +917,7 @@ class CMPChannel: public CInterface
 {
     ISocket *channelsock = nullptr;
     CMPServer *parent;
-    Mutex sendmutex;
+    TimedMutex sendmutex;
     Semaphore sendwaitingsig;
     unsigned sendwaiting = 0;           // number waiting on sendwaitingsem (for multi/single clashes to resolve)
     CriticalSection connectsect;
@@ -1627,7 +1627,7 @@ public:
         }
         return msg;
     }
-    bool send(CMPChannel *channel,PacketHeader &hdr,MemoryBuffer &mb, CTimeMon &tm, Mutex &sendmutex)
+    bool send(CMPChannel *channel,PacketHeader &hdr,MemoryBuffer &mb, CTimeMon &tm, TimedMutex &sendmutex)
     {
         // must not adjust mb
 #ifdef _FULLTRACE
@@ -2045,12 +2045,12 @@ bool CMPChannel::send(MemoryBuffer &mb, mptag_t tag, mptag_t replytag, CTimeMon 
 
     struct Cpostcondition // can we start using eiffel
     {
-        Mutex &sendmutex;
+        TimedMutex &sendmutex;
         unsigned &sendwaiting;
         Semaphore &sendwaitingsig;
         mptag_t *multitag;
 
-        Cpostcondition(Mutex &_sendmutex,unsigned &_sendwaiting,Semaphore &_sendwaitingsig,mptag_t *_multitag)
+        Cpostcondition(TimedMutex &_sendmutex,unsigned &_sendwaiting,Semaphore &_sendwaitingsig,mptag_t *_multitag)
             : sendmutex(_sendmutex),sendwaiting(_sendwaiting),sendwaitingsig(_sendwaitingsig)
         {
             multitag = _multitag;
