@@ -28,9 +28,9 @@
   [</emphasis> <emphasis>,preserveCompression</emphasis> <emphasis
   role="bold">] [</emphasis> <emphasis>,noSplit</emphasis> <emphasis
   role="bold">] [</emphasis> <emphasis>,expireDays</emphasis> <emphasis
-  role="bold">] [</emphasis>
-  <emphasis>,ensure</emphasis> <emphasis
-  role="bold">]);</emphasis></para>
+  role="bold">] [</emphasis> <emphasis>,ensure</emphasis> <emphasis
+  role="bold">] [</emphasis> <emphasis>,wrap</emphasis> <emphasis
+  role="bold">] );</emphasis></para>
 
   <para><emphasis>dfuwuid</emphasis> <emphasis role="bold"> :=
   STD.File.fCopy<indexterm>
@@ -57,9 +57,9 @@
   [</emphasis> <emphasis>,preserveCompression</emphasis> <emphasis
   role="bold">] [</emphasis> <emphasis>,noSplit</emphasis> <emphasis
   role="bold">] [</emphasis> <emphasis>,expireDays</emphasis> <emphasis
-  role="bold">] [</emphasis>
-  <emphasis>,ensure</emphasis><emphasis role="bold">]);
-  </emphasis></para>
+  role="bold">] [</emphasis> <emphasis>,ensure</emphasis><emphasis
+  role="bold">] [</emphasis> <emphasis>,wrap</emphasis> <emphasis
+  role="bold">] );</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -213,6 +213,17 @@
 
           <entry>Optional. Copies logical file, but does not copy file parts
           if they already exist. Default is FALSE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>wrap</emphasis></entry>
+
+          <entry>Optional. A boolean TRUE or FALSE flag indicating whether to
+          automatically wrap the file parts when copying to smaller sized
+          clusters. For example, copying from a 6-node cluster to a 3-node
+          cluster, two file parts will end up on each node; the difference is
+          whether node 1 gets parts 1 and 2 or parts 1 and 4. If omitted, the
+          default is FALSE.</entry>
         </row>
 
         <row>
