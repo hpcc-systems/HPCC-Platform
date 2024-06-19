@@ -13,6 +13,7 @@ import org.testng.annotations.Test;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class ActivitiesTest {
@@ -28,33 +29,37 @@ public class ActivitiesTest {
             //"DummyNavName", List.of("DummyTab1", "DummyTab2")
     );
 
+    Logger errorLogger, specificLogger;
+
     @Test
     public void testActivitiesPage() {
         WebDriver driver = WebDriverHolder.getDriver();
         Common.openWebPage(driver, Common.getUrl(Config.ACTIVITIES_URL));
 
-        Logger logger = LoggerHolder.getLogger();
+        errorLogger = LoggerHolder.getErrorLogger();
+        specificLogger = LoggerHolder.getSpecificLogger();
 
-        testForAllText(logger, driver);
+        Common.logDebug(specificLogger, "Tests started for Activities Page");
+
+        testForAllText(driver);
 
         List<NavigationWebElement> navWebElements = getNavWebElements(driver);
 
-        testForNavigationLinks(driver, navWebElements, logger);
+        testForNavigationLinks(driver, navWebElements);
+
+        Common.logDebug(specificLogger, "Tests finished for Activities Page");
     }
 
-    private void testForNavigationLinks(WebDriver driver, List<NavigationWebElement> navWebElements, Logger logger) {
+    private void testForNavigationLinks(WebDriver driver, List<NavigationWebElement> navWebElements) {
 
         for (NavigationWebElement element : navWebElements) {
             element.webElement().click();
 
             if (testTabsForNavigationLinks(driver, element)) {
-                String msg = "Success: Navigation Menu Link for " + element.name() + ". URL : " + element.hrefValue();
-                System.out.println(msg);
+                Common.logDetail(specificLogger, "Success: Navigation Menu Link for " + element.name() + ". URL : " + element.hrefValue());
             } else {
                 String currentPage = getCurrentPage(driver);
-                String errorMsg = "Failure: Navigation Menu Link for " + element.name() + " page failed. The current navigation page that we landed on is " + currentPage + ". Current URL : " + element.hrefValue();
-                System.err.println(errorMsg);
-                logger.severe(errorMsg);
+                Common.logError(errorLogger, "Failure: Navigation Menu Link for " + element.name() + " page failed. The current navigation page that we landed on is " + currentPage + ". Current URL : " + element.hrefValue());
             }
         }
     }
@@ -108,10 +113,10 @@ public class ActivitiesTest {
         return navWebElements;
     }
 
-    private void testForAllText(Logger logger, WebDriver driver) {
+    private void testForAllText(WebDriver driver) {
 
         for (String text : textArray) {
-            Common.checkTextPresent(driver, text, "Activities Page", logger);
+            Common.checkTextPresent(driver, text, "Activities Page", errorLogger, specificLogger);
         }
     }
 }

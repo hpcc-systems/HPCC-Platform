@@ -94,15 +94,13 @@ public class ECLWorkUnitsTest extends BaseTableTest<ECLWorkunit> {
     }
 
     @Override
-    protected Object parseDataUIValue(Object dataUIValue, String columnName, Object dataIDUIValue, Logger logger) {
+    protected Object parseDataUIValue(Object dataUIValue, String columnName, Object dataIDUIValue, Logger errorLogger) {
         if (getCostColumns().contains(columnName)) {
             dataUIValue = Double.parseDouble(((String) dataUIValue).split(" ")[0]);
         } else if (columnName.equals("Total Cluster Time")) {
             long timeInMilliSecs = TimeUtils.convertToMilliseconds((String) dataUIValue);
             if (timeInMilliSecs == Config.MALFORMED_TIME_STRING) {
-                String errMsg = "Failure: " + getPageName() + ": Incorrect time format for " + columnName + " : " + dataUIValue + " in UI for " + getUniqueKeyName() + " : " + dataIDUIValue;
-                System.out.println(errMsg);
-                logger.severe(errMsg);
+                Common.logError(errorLogger, "Failure: " + getPageName() + ": Incorrect time format for " + columnName + " : " + dataUIValue + " in UI for " + getUniqueKeyName() + " : " + dataIDUIValue);
                 return dataUIValue;
             }
 
@@ -119,9 +117,7 @@ public class ECLWorkUnitsTest extends BaseTableTest<ECLWorkunit> {
         if (columnName.equals("Total Cluster Time")) {
             long timeInMilliSecs = (long) dataJSONValue;
             if (timeInMilliSecs == Config.MALFORMED_TIME_STRING) {
-                String errMsg = "Failure: " + getPageName() + ": Incorrect time format for " + columnName + " in JSON for " + getUniqueKeyName() + " : " + dataIDUIValue;
-                System.out.println(errMsg);
-                logger.severe(errMsg);
+                Common.logError(errorLogger, "Failure: " + getPageName() + ": Incorrect time format for " + columnName + " in JSON for " + getUniqueKeyName() + " : " + dataIDUIValue);
                 return dataJSONValue;
             }
 

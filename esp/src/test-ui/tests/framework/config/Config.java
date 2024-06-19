@@ -2,7 +2,9 @@ package framework.config;
 
 public class Config {
 
-    public static final String LOG_FILE = "errorLog.log";
+    public static final String LOG_FILE_ERROR = "error_ecl_test.log";
+    public static final String LOG_FILE_DEBUG = "debug_ecl_test.log";
+    public static final String LOG_FILE_DETAIL = "detail_ecl_test.log";
     public static final String LOCAL_OS = "Windows";
     public static final String LOCAL_USER_PROFILE = "C:\\Users\\nisha";
     public static final String PATH_LOCAL_CHROME_DRIVER = "C:/Users/nisha/Documents/Internship/Work/jars/chromeDriver";
