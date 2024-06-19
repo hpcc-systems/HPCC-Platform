@@ -1,72 +1,70 @@
 package framework.pages;
 
-import framework.config.Config;
+import framework.config.URLConfig;
 import framework.model.NavigationWebElement;
-import framework.setup.LoggerHolder;
-import framework.setup.WebDriverHolder;
+import framework.model.URLMapping;
 import framework.utility.Common;
 import org.openqa.selenium.By;
-import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebElement;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.logging.Logger;
+
+import static framework.config.URLConfig.urlMap;
 
 public class ActivitiesTest {
 
     static final String[] textArray = {"Target/Wuid", "Graph", "State", "Owner", "Job Name"};
-    static final String[] navNamesArray = {"Activities", "ECL", "Files", "Published Queries", "Operations"};
-    static final Map<String, List<String>> tabsListMap = Map.of(
-            "Activities", List.of("Activities", "Event Scheduler"),
-            "ECL", List.of("Workunits", "Playground"),
-            "Files", List.of("Logical Files", "Landing Zones", "Workunits", "XRef (L)"),
-            "Published Queries", List.of("Queries", "Package Maps"),
-            "Operations", List.of("Topology (L)", "Disk Usage (L)", "Target Clusters (L)", "Cluster Processes (L)", "System Servers (L)", "Security (L)", "Dynamic ESDL (L)")
-            //"DummyNavName", List.of("DummyTab1", "DummyTab2")
-    );
 
     @Test
     public void testActivitiesPage() {
-        WebDriver driver = WebDriverHolder.getDriver();
-        Common.openWebPage(driver, Common.getUrl(Config.ACTIVITIES_URL));
+        Common.openWebPage(urlMap.get(URLConfig.NAV_ACTIVITIES).getUrl());
 
-        Logger logger = LoggerHolder.getLogger();
+        Common.logDebug("Tests started for: Activities page.");
 
-        testForAllText(logger, driver);
+        testForAllText();
 
-        List<NavigationWebElement> navWebElements = getNavWebElements(driver);
+        List<NavigationWebElement> navWebElements = getNavWebElements();
 
-        testForNavigationLinks(driver, navWebElements, logger);
+        testForNavigationLinks(navWebElements);
+
+        Common.logDebug("Tests finished for: Activities page.");
+        Common.logDebug("URL Map Generated: " + urlMap);
     }
 
-    private void testForNavigationLinks(WebDriver driver, List<NavigationWebElement> navWebElements, Logger logger) {
+    private void testForNavigationLinks(List<NavigationWebElement> navWebElements) {
+
+        Common.logDebug("Tests started for: Activities page: Testing Navigation Links");
 
         for (NavigationWebElement element : navWebElements) {
-            element.webElement().click();
 
-            if (testTabsForNavigationLinks(driver, element)) {
-                String msg = "Success: Navigation Menu Link for " + element.name() + ". URL : " + element.hrefValue();
-                System.out.println(msg);
-            } else {
-                String currentPage = getCurrentPage(driver);
-                String errorMsg = "Failure: Navigation Menu Link for " + element.name() + " page failed. The current navigation page that we landed on is " + currentPage + ". Current URL : " + element.hrefValue();
-                System.err.println(errorMsg);
-                logger.severe(errorMsg);
+            try {
+                element.webElement().click();
+
+                if (testTabsForNavigationLinks(element)) {
+                    String msg = "Success: Navigation Menu Link for " + element.name() + ". URL : " + element.hrefValue();
+                    Common.logDetail(msg);
+                } else {
+                    String currentPage = getCurrentPage();
+                    String errorMsg = "Failure: Navigation Menu Link for " + element.name() + " page failed. The current navigation page that we landed on is " + currentPage + ". Current URL : " + element.hrefValue();
+                    Common.logError(errorMsg);
+                }
+            } catch (Exception ex) {
+                Common.logError("Failure: Exception in Navigation Link for " + element.name() + ". URL : " + element.hrefValue() + " Error: " + ex.getMessage());
             }
         }
     }
 
-    private String getCurrentPage(WebDriver driver) {
+    private String getCurrentPage() {
 
-        for (var entry : tabsListMap.entrySet()) {
+        for (var entry : URLConfig.tabsListMap.entrySet()) {
 
             List<String> tabs = entry.getValue();
             boolean allTabsPresent = true;
             for (String tab : tabs) {
-                if (!driver.getPageSource().contains(tab)) {
+                if (!Common.driver.getPageSource().contains(tab)) {
                     allTabsPresent = false;
                     break;
                 }
@@ -80,12 +78,14 @@ public class ActivitiesTest {
         return "Invalid Page";
     }
 
-    private boolean testTabsForNavigationLinks(WebDriver driver, NavigationWebElement element) {
-        List<String> tabsList = tabsListMap.get(element.name());
-        String pageSource = driver.getPageSource();
+    private boolean testTabsForNavigationLinks(NavigationWebElement element) {
+        List<String> tabsList = URLConfig.tabsListMap.get(element.name());
 
         for (String tab : tabsList) {
-            if (!pageSource.contains(tab)) {
+            try {
+                WebElement webElement = Common.waitForElement(By.xpath("//a[text()='" + tab + "']"));
+                urlMap.get(element.name()).getUrlMappings().put(tab, new URLMapping(tab, webElement.getAttribute("href")));
+            } catch (TimeoutException ex) {
                 return false;
             }
         }
@@ -93,25 +93,29 @@ public class ActivitiesTest {
         return true;
     }
 
-    private List<NavigationWebElement> getNavWebElements(WebDriver driver) {
+    private List<NavigationWebElement> getNavWebElements() {
 
         List<NavigationWebElement> navWebElements = new ArrayList<>();
 
-        for (String navName : navNamesArray) {
-            WebElement webElement = driver.findElement(By.name(navName)).findElement(By.tagName("a"));
-            String hrefValue = webElement.getAttribute("href");
-            navWebElements.add(new NavigationWebElement(navName, hrefValue, webElement));
-        }
+        for (String navName : URLConfig.navNamesArray) {
+            try {
+                WebElement webElement = Common.driver.findElement(By.name(navName)).findElement(By.tagName("a"));
+                String hrefValue = webElement.getAttribute("href");
+                navWebElements.add(new NavigationWebElement(navName, hrefValue, webElement));
 
-        //navWebElements.add(new NavigationWebElement("DummyNavName", "http://192.168.0.221:8010/esp/files/index.html#/files", navWebElements.get(2).webElement()));
+                urlMap.put(navName, new URLMapping(navName, hrefValue));
+            } catch (Exception ex) {
+                Common.logError("Failure: Activities Page for Navigation Element: " + navName + ": Error: " + ex.getMessage());
+            }
+        }
 
         return navWebElements;
     }
 
-    private void testForAllText(Logger logger, WebDriver driver) {
-
+    private void testForAllText() {
+        Common.logDebug("Tests started for: Activities page: Testing Text");
         for (String text : textArray) {
-            Common.checkTextPresent(driver, text, "Activities Page", logger);
+            Common.checkTextPresent(text, "Activities Page");
         }
     }
 }
