@@ -10,8 +10,10 @@
       <primary>File.MoveExternalFile</primary>
     </indexterm><indexterm>
       <primary>MoveExternalFile</primary>
-    </indexterm>(</emphasis> <emphasis> location, frompath, topath </emphasis>
-  <emphasis role="bold">)</emphasis></para>
+    </indexterm>(</emphasis> <emphasis> location, frompath, topath <emphasis
+  role="bold">[</emphasis> <emphasis>, planename</emphasis> <emphasis
+  role="bold">]</emphasis> </emphasis> <emphasis
+  role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -23,7 +25,9 @@
         <row>
           <entry><emphasis>location</emphasis></entry>
 
-          <entry>Uma string terminada por nulo que contém o endereço IP da
+          <entry>Uma string terminada em nulo contendo o endereço IP da
+          máquina remota. Opcional se <emphasis>planename</emphasis> for
+          fornecido.Uma string terminada por nulo que contém o endereço IP da
           máquina remota.</entry>
         </row>
 
@@ -40,6 +44,15 @@
           <entry>Uma string terminada por nulo que contém o caminho/nome do
           arquivo de destino.</entry>
         </row>
+
+        <row>
+          <entry><emphasis>planeName</emphasis></entry>
+
+          <entry>Uma string terminada em nulo contendo o nome do plano de
+          dados que contém o arquivo. Opcional se
+          <emphasis>machineIP</emphasis> for fornecido, mas
+          <emphasis>planeName</emphasis> é preferível.</entry>
+        </row>
       </tbody>
     </tgroup>
   </informaltable>
@@ -53,8 +66,10 @@
 
   <para>Exemplo:</para>
 
-  <programlisting format="linespecific">IP      := '10.150.254.6';
-infile  := '/c$/training/import/AdvancedECL/people';
-outfile := '/c$/training/import/DFUtest/people';
-STD.File.MoveExternalFile(IP,infile,outfile);</programlisting>
+  <programlisting format="linespecific">IMPORT STD;
+IP      := '';
+infile  := '/var/lib/HPCCSystems/dropzone/originalperson';
+outfile := '/var/lib/HPCCSystems/dropzone/originalperson_bak';
+planename := 'mydropzone';
+STD.File.MoveExternalFile(IP,infile,outfile,planename);</programlisting>
 </sect1>

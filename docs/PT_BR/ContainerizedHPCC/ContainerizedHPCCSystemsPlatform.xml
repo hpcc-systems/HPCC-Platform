@@ -65,10 +65,11 @@
   <chapter id="ContainerizedHPCCOverview">
     <title>Visão geral do HPCC em contêineres</title>
 
-    <para>A partir da versão 8.0, a plataforma HPCC
-    Systems<superscript>®</superscript> focará em deploys em contêineres. Isso
-    é útil para implantações baseadas em nuvem (grandes ou pequenas) ou
-    implantações de teste/desenvolvimento locais.</para>
+    <para>Desde a versão 8.0, a Plataforma HPCC
+    Systems<superscript>®</superscript> começou a focar significativamente em
+    implantações containerizadas. Isso é útil para implantações baseadas em
+    nuvem (grandes ou pequenas) ou implantações de teste/desenvolvimento
+    local.</para>
 
     <para>Os contêineres do Docker gerenciados pelo Kubernetes (K8s) são um
     novo ambiente operacional de destino, juntamente com o suporte contínuo
@@ -84,20 +85,19 @@
     em como os componentes são configurados, como e quando eles iniciam e onde
     armazenam seus dados.</para>
 
-    <para>Este livro se concentra em implantações em contêineres. A primeira
-    seção é sobre o uso de contêineres Docker e gráficos Helm localmente.
-    Docker e Helm fazem muito do trabalho para você. A segunda parte usa as
-    mesmas técnicas na nuvem.</para>
+    <para>Este livro se concentra nessas implantações containerizadas. A
+    primeira seção é sobre o uso de contêineres Docker e gráficos Helm
+    localmente. Docker e Helm fazem muito do trabalho por você. A segunda
+    parte usa as mesmas técnicas na nuvem.</para>
 
     <para>Para pequenas implantações locais (para desenvolvimento e teste),
     sugerimos o uso de Docker Desktop e Helm. Isto é útil para aprendizagem,
     desenvolvimento e teste.</para>
 
-    <para>Para implantações em nuvem, você pode usar qualquer tipo de serviço
-    em nuvem, se for compatível com Docker, Kubernetes e Helm. Este livro, no
-    entanto, se concentrará no Microsoft Azure para serviços em nuvem. As
-    versões futuras podem incluir especificações para outros provedores de
-    nuvem.</para>
+    <para>Para implantações em nuvem, você pode utilizar qualquer tipo de
+    serviços de Cloud, desde que suporte Docker, Kubernetes e Helm. Este
+    livro, no entanto, vai focar nos Serviços de Nuvem da Microsoft
+    Azure.</para>
 
     <para>Se você deseja gerenciar manualmente sua implantação local ou na
     nuvem, ainda pode usar os instaladores tradicionais e o Configuration
@@ -105,33 +105,17 @@
     Helm fornecem, como instrumentação, monitoramento, escalonamento e custo
     ao controle.</para>
 
-    <para>Os sistemas HPCC seguem as convenções padrão sobre como as
-    implantações do Kubernetes são normalmente configuradas e gerenciadas,
-    portanto, deve ser fácil para alguém familiarizado com o Kubernetes e o
-    Helm instalar e gerenciar a plataforma HPCC Systems.</para>
-
-    <variablelist>
-      <varlistentry>
-        <term>Note:</term>
-
-        <listitem>
-          <para>A versão tradicional bare-metal da plataforma de sistemas HPCC
-          está madura e tem sido amplamente usada em aplicativos comerciais
-          por quase duas décadas e é totalmente destinada para uso em
-          produção. A versão em contêiner é nova e ainda não está 100% pronta
-          para produção. Além disso, alguns aspectos dessa versão podem ser
-          alterados sem aviso prévio. Nós encorajamos você a usá-lo e fornecer
-          feedback para que possamos tornar esta versão tão robusta quanto uma
-          instalação bare-metal.</para>
-        </listitem>
-      </varlistentry>
-    </variablelist>
+    <para>O HPCC Systems segue as convenções padrão sobre como as implantações
+    do Kubernetes são normalmente configuradas e gerenciadas, portanto, deve
+    ser fácil para alguém familiarizado com o Kubernetes e o Helm instalar e
+    gerenciar a plataforma HPCC Systems.</para>
 
     <sect1 id="barevscontainer">
       <title>Bare-metal vs Containers</title>
 
-      <para>Se você estiver familiarizado com a plataforma HPCC Systems, há
-      algumas mudanças fundamentais a serem observadas.</para>
+      <para>Se você está familiarizado com as implantações tradicionais da
+      plataforma HPCC Systems em bare-metal, há algumas mudanças fundamentais
+      a serem observadas.</para>
 
       <sect2 id="processesandpods">
         <title>Processoss e pods, não máquinas</title>

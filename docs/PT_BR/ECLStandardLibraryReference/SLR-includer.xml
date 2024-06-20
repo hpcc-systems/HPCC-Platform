@@ -63,9 +63,7 @@
   </bookinfo>
 
   <chapter id="Logical_Files">
-    <title>
-      <emphasis>Arquivos lógicos</emphasis>
-    </title>
+    <title><emphasis>Arquivos lógicos</emphasis></title>
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/CompareFiles.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
@@ -401,7 +399,9 @@
               xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
   <chapter id="Date_Handling">
-    <title><emphasis>Manipulação de Data e Hora</emphasis></title>
+    <title>
+      <emphasis>Manipulação de Data e Hora</emphasis>
+    </title>
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/DateDataTypes.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
@@ -488,6 +488,9 @@
                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/YearWeekNumFromDate.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/TimestampToString.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
     <!-- TimeZone Module methods **** -->
@@ -581,7 +584,9 @@
   </chapter>
 
   <chapter id="Logging">
-    <title><emphasis>Logging</emphasis></title>
+    <title>
+      <emphasis>Logging</emphasis>
+    </title>
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/dbglog.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
@@ -602,6 +607,9 @@
                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/GenerateGloballyUniqueID.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/getElapsedMs.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
   </chapter>
 

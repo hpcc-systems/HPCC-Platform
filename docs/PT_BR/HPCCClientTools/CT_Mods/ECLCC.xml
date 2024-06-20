@@ -181,15 +181,6 @@
               </row>
 
               <row>
-                <entry>-checkDirty</entry>
-
-                <entry>Faz com que o eclcc gere um aviso para qualquer
-                atributo que tenha sido modificado (conforme o resultado do
-                status git) O uso dessa função exige que o git esteja
-                instalado e disponível no caminho.</entry>
-              </row>
-
-              <row>
                 <entry>-foption[=value]</entry>
 
                 <entry>Define uma opção ecl. Ver #OPTION em
@@ -347,13 +338,6 @@
               </row>
 
               <row>
-                <entry>-D<emphasis>name</emphasis>=<emphasis>value</emphasis></entry>
-
-                <entry>Substitui a definição do “nome” global do
-                atributo</entry>
-              </row>
-
-              <row>
                 <entry>-Wl,xx</entry>
 
                 <entry>Passa a opção xx para o vinculador</entry>
@@ -379,6 +363,12 @@
               </row>
 
               <row>
+                <entry>-save-temps</entry>
+
+                <entry>Não exclui arquivos intermediários</entry>
+              </row>
+
+              <row>
                 <entry>-shared</entry>
 
                 <entry>Gera objeto compartilhado da workunit em vez de um
@@ -389,6 +379,50 @@
         </informaltable></para>
 
       <?dbfo-need height="3in"?>
+
+      <para>Opções de resolução de arquivos:</para>
+
+      <para><informaltable colsep="1" frame="all" rowsep="1">
+          <?dbfo keep-together="always"?>
+
+          <tgroup cols="2">
+            <colspec align="left" colwidth="125.55pt"/>
+
+            <colspec/>
+
+            <tbody>
+              <row>
+                <entry>-dfs=ip</entry>
+
+                <entry>Use IP especificado para a resolução do nome do arquivo
+                DFS</entry>
+              </row>
+
+              <row>
+                <entry>-scope=prefix</entry>
+
+                <entry>Use o prefixo de escopo especificado na resolução do
+                nome do arquivo DFS</entry>
+              </row>
+
+              <row>
+                <entry>-user=id</entry>
+
+                <entry>Use o nome de usuário especificado na resolução do nome
+                do arquivo</entry>
+              </row>
+
+              <row>
+                <entry>-password=xxx</entry>
+
+                <entry>Use a senha especificada na resolução do nome do
+                arquivo DFS (em branco para solicitar)</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+
+      <?hard-pagebreak ?>
 
       <para>Outras Opções:</para>
 
@@ -402,6 +436,12 @@
 
             <tbody>
               <row>
+                <entry>-aoption[=value]</entry>
+
+                <entry>Configura opções da aplicação</entry>
+              </row>
+
+              <row>
                 <entry>--allow=str</entry>
 
                 <entry>Permite o recurso de nomeação (e.g., cpp, pipe,
@@ -412,6 +452,20 @@
                 dados para um programa externo.</para><para><emphasis
                 role="bold">all</emphasis>: Permite todos os
                 recursos</para></entry>
+              </row>
+
+              <row>
+                <entry>-allowsigned</entry>
+
+                <entry>Permite somente acesso a funcionalidade com código
+                assinado</entry>
+              </row>
+
+              <row>
+                <entry>-fisComplexCompile</entry>
+
+                <entry>Impede tentativas de compilação como um processo filho
+                quando uma consulta é complexa</entry>
               </row>
 
               <row>
@@ -427,6 +481,28 @@
 
                 <entry>Habilita/desabilita verificação da versão ecl dos
                 arquivos</entry>
+              </row>
+
+              <row>
+                <entry>-checkDirty</entry>
+
+                <entry>Faz com que o eclcc gere um aviso para qualquer
+                atributo que tenha sido modificado (conforme o resultado do
+                status git) O uso dessa função exige que o git esteja
+                instalado e disponível no caminho.</entry>
+              </row>
+
+              <row>
+                <entry>--component</entry>
+
+                <entry>Defina o nome do componente em nome do qual isso está
+                sendo executado</entry>
+              </row>
+
+              <row>
+                <entry>-D<emphasis>name</emphasis>=<emphasis>value</emphasis></entry>
+
+                <entry>Sobrepõem a definição global do atributo 'name'</entry>
               </row>
 
               <row>
@@ -464,12 +540,28 @@
 
                 <entry>Executa testes internos</entry>
               </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
 
+      <?hard-pagebreak ?>
+
+      <para>Other options (continued):</para>
+
+      <para><informaltable colsep="1" frame="all" rowsep="1">
+          <?dbfo keep-together="always"?>
+
+          <tgroup cols="2">
+            <colspec align="left" colwidth="125.55pt"/>
+
+            <colspec/>
+
+            <tbody>
               <row>
-                <entry>--legacy</entry>
+                <entry>--leakcheck</entry>
 
-                <entry>Usa semântica de importação antiga
-                (descontinuada)</entry>
+                <entry>Limpe a memória, pois está verificando se há vazamentos
+                de memória</entry>
               </row>
 
               <row>
@@ -477,6 +569,20 @@
 
                 <entry>Gera as listas de palavras reservadas do ECL para
                 stdout (formato XML)</entry>
+              </row>
+
+              <row>
+                <entry>-legacyimport</entry>
+
+                <entry>Utiliza semântica legado de importação
+                (descontinuado)</entry>
+              </row>
+
+              <row>
+                <entry>-legacywhen</entry>
+
+                <entry>Use semântica de legado quando/há efeitos colaterais
+                (descontinuado)</entry>
               </row>
 
               <row>
@@ -489,6 +595,67 @@
                 <entry>--logdetail=<emphasis>n</emphasis></entry>
 
                 <entry>Define o nível de detalhe no arquivo de log</entry>
+              </row>
+
+              <row>
+                <entry>--maxErrors=&lt;n&gt;</entry>
+
+                <entry>Número limite de erros, abortando no nth (padrão =
+                5)</entry>
+              </row>
+
+              <row>
+                <entry>--metacache=x</entry>
+
+                <entry>Especifique o diretório para armazenar as informações
+                meta distribuídas do indexador eclcc. Para desabilitar o
+                indexador, defina um valor vazio usando '--metacache='. Se
+                omitido, o local padrão é .eclcc/metacache.</entry>
+              </row>
+
+              <row>
+                <entry>--nologfile</entry>
+
+                <entry>Não registra nenhum log</entry>
+              </row>
+
+              <row>
+                <entry>--nogpg</entry>
+
+                <entry>Não execute o gpg para verificar assinaturas em códigos
+                assinados</entry>
+              </row>
+
+              <row>
+                <entry>--nosourcepath</entry>
+
+                <entry>Compila como se a fonte fosse de stdin</entry>
+              </row>
+
+              <row>
+                <entry>--nostdinc</entry>
+
+                <entry>Não inclui o diretório atual em -I</entry>
+              </row>
+
+              <row>
+                <entry>-pch</entry>
+
+                <entry>Generate precompiled header for eclinclude4.hpp</entry>
+              </row>
+
+              <row>
+                <entry>-P &lt;path&gt;</entry>
+
+                <entry>Especifica o caminho para os arquivos de saída (somente
+                com a opção -b)</entry>
+              </row>
+
+              <row>
+                <entry>-showpaths</entry>
+
+                <entry>Exibe informações sobre os caminhos de busca eclcc
+                utilizando</entry>
               </row>
 
               <row>
@@ -510,6 +677,16 @@
 
                 <entry>Exibe informações adicionais de rastreamento no momento
                 da compilação</entry>
+              </row>
+
+              <row>
+                <entry>-wxxxx=level</entry>
+
+                <entry>Configura a severidade para um warning code em
+                particular ou categoria. <para>Todas as opções para os níveis
+                são: all | ignore | log | warning | error | fail</para>
+                <emphasis role="bold">-wall</emphasis> aplica a severidade
+                padrão para todos os alertas</entry>
               </row>
 
               <row>

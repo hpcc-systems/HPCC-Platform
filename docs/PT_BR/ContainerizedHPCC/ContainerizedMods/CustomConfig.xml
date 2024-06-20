@@ -2,17 +2,17 @@
 <!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <chapter id="CustomConfig">
-  <title>Configurações Customizadas</title>
+  <title>Configurações Personalizadas</title>
 
   <sect1 id="CustTechniques" role="nobrk">
     <title>Técnicas de Customização</title>
 
-    <para>Nesta seção, nós vamos abordar a criação de uma configuração
-    customizada do arquivo YAML e do lançamento de uma plataforma HPCC
-    Systems<superscript>®</superscript> utilizando os configurações padrão mas
-    as customizações. Depois de entender os conceitos de deste capítulo, você
-    pode consultar o próximo para uma referência a todos as configurações de
-    valores de configuração.</para>
+    <para>Esta seção percorre a criação de um arquivo de configuração YAML
+    personalizado e a implantação de uma plataforma HPCC Systems
+    <superscript>®</superscript> usando a configuração padrão mais as
+    personalizações. Uma vez que você entenda os conceitos neste capítulo,
+    você pode se referir ao próximo capítulo para uma referência a todos os
+    ajustes de valor de configuração.</para>
 
     <para>Há várias maneiras de personalizar uma implantação da plataforma.
     Nós recomendamos o uso de métodos que permitem que você aproveite melhor o
@@ -220,8 +220,8 @@
 
         <listitem>
           <para>Crie um novo arquivo de texto e nomeie-o <emphasis
-          role="bold">twothors.yaml</emphasis>, em seguida abra em um editor
-          de texto.</para>
+          role="bold">twothors.yaml</emphasis> e abra-o em um editor de
+          texto.</para>
 
           <para>Você pode usar qualquer editor de texto.</para>
         </listitem>
@@ -312,6 +312,600 @@ helm upgrade mycluster hpcc/hpcc -f tworoxies.yaml -f twothors.yaml
 
           <para>Você deverá ver dois clusters Thor disponíveis como Targets --
           thor and thor10.</para>
+        </listitem>
+      </orderedlist>
+    </sect2>
+
+    <sect2 id="HelmAllowPipeProgramsThor" role="nobrk">
+      <title>Crie um Chart de Configuração Personalizado para
+      AllowPipePrograms</title>
+
+      <para>Você pode especificar mais de uma configuração personalizada
+      repetindo o parâmetro -f.</para>
+
+      <para>Por exemplo:</para>
+
+      <para><programlisting>helm install mycluster hpcc/hpcc  -f tworoxies.yaml -f thorWithPipe.yaml</programlisting></para>
+
+      <para>Nesta seção, modificaremos o Thor para permitir alguns Programas
+      PIPE. Na versão 9.2.0 e superior, os comandos usados ​​no PIPE são
+      restritos por padrão em implantações containerizadas a menos que sejam
+      explicitamente permitidos no Helm chart.</para>
+
+      <orderedlist>
+        <listitem>
+          <para>Se você ainda não adicionou o repositório HPCC Systems a lista
+          de repositórios Helm, faça agora.</para>
+
+          <para><programlisting>helm repo add hpcc https://hpcc-systems.github.io/helm-chart/</programlisting></para>
+
+          <para>Se você ja adicionou, atualiza os últimos:</para>
+
+          <para><programlisting>helm repo update</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Crie um novo arquivo de texto e o nomeie de <emphasis
+          role="bold">thorWithPipe.yaml</emphasis> e abra-o em um editor de
+          texto.</para>
+
+          <para>Você pode usar qualque editor de texto.</para>
+        </listitem>
+
+        <listitem>
+          <para>Abra o arquivo padrão de valores que você salvou previamente
+          (myvalues.yaml) em um editor de texto.</para>
+        </listitem>
+
+        <listitem>
+          <para>Copie a seção <emphasis role="bold">thor:</emphasis> toda e
+          cole no novo arquivo thorWithPipe.yaml.</para>
+        </listitem>
+
+        <listitem>
+          <para>Adicione um bloco no fim:</para>
+
+          <para><programlisting>  allowedPipePrograms: 
+  - sort 
+  - grep 
+  - echo</programlisting>Este exemplo habilita três programas. Você pode um
+          deles.</para>
+        </listitem>
+
+        <listitem>
+          <para>Salve o arquivo e feche o editor de texto.</para>
+
+          <para>O resultado deve do arquivo thorWithPipe.yaml deve ficar
+          assim</para>
+
+          <para><emphasis role="bold">Nota:</emphasis> Os comentários foram
+          removidos para simplificar o exemplo:</para>
+
+          <para><programlisting>thor:
+- name: thor
+  prefix: thor
+  numWorkers: 2
+  maxJobs: 4
+  maxGraphs: 2
+  allowedPipePrograms:
+  - sort
+  - grep
+  - echo</programlisting></para>
+        </listitem>
+      </orderedlist>
+
+      <para><emphasis role="bold">Faça o deploy utilizando o novo chart de
+      configuração customizado.</emphasis></para>
+
+      <orderedlist>
+        <listitem>
+          <para>Abra uma janela de terminal e navegue até o diretório onde o
+          arquivo thorWithPipe.yaml foi salvo.</para>
+        </listitem>
+
+        <listitem>
+          <para>Faça o deploy da sua plataforma HPCC Systems, adicionando o
+          novo arquivo de configuração por meio do comando:</para>
+
+          <para><programlisting># If you have previously stopped your cluster
+
+helm install mycluster hpcc/hpcc -f thorWithPipe.yaml
+
+# To upgrade without stopping
+
+helm upgrade mycluster hpcc/hpcc -f thorWithPipe.yaml
+</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Após confirmar o deploy em execução, execute um job que use
+          uma ação PIPE e especifica um dos programas especificado.</para>
+
+          <para><emphasis role="bold">Nota:</emphasis> Se o job for muito
+          simples, será executado no hThor ao inves do Thor e este exemplo não
+          habilita programas PIPE no hThor.</para>
+
+          <para>Você pode criar um novo arquivo yaml para permitir Programas
+          PIPE no ECL Agent ou pode utilizar:</para>
+
+          <para><programlisting>#OPTION('pickBestEngine',FALSE);</programlisting></para>
+
+          <para>para forçar o job ser executado no Thor.</para>
+        </listitem>
+      </orderedlist>
+    </sect2>
+  </sect1>
+
+  <sect1>
+    <sect2 id="CustTutorial3" role="nobrk">
+      <title>Criar uma Configuração Personalizada do Chart para o Thor</title>
+
+      <para>Nesta seção, criaremos um arquivo YAML para especificar uma
+      implementação de plataforma sem Thor.</para>
+
+      <orderedlist>
+        <listitem>
+          <para>Se você ainda não adicionou o repositório HPCC Systems
+          repository to a lista de repositórios do helm, faça agora.</para>
+
+          <para>
+            <programlisting>helm repo add hpcc https://hpcc-systems.github.io/helm-chart/</programlisting>
+          </para>
+
+          <para>Caso já tenha feito, atualize os últimos charts:</para>
+
+          <para>
+            <programlisting>helm repo update</programlisting>
+          </para>
+        </listitem>
+
+        <listitem>
+          <para>Crie um novo arquivo de texto e o nomeie para <emphasis
+          role="bold">nothor.yaml</emphasis> e abra-o em um editor de
+          texto.</para>
+
+          <para>Você pode usar qualquer editor.</para>
+        </listitem>
+
+        <listitem>
+          <para>Edite, conforme o exemplo a seguir, o arquivo para desabilitar
+          o Thor:</para>
+
+          <para>
+            <programlisting>thor: []</programlisting>
+          </para>
+        </listitem>
+
+        <listitem>
+          <para>Salve o arquivo e feche o editor de texto.</para>
+        </listitem>
+      </orderedlist>
+
+      <para>
+        <emphasis role="bold">Deploy utilizando um novo chart de configuração
+        customizado.</emphasis>
+      </para>
+
+      <orderedlist>
+        <listitem>
+          <para>Abra o terminal e navegue até o diretório onde está salvo o
+          arquivo nothor.yaml.</para>
+        </listitem>
+
+        <listitem>
+          <para>Faça o deploy do HPCC Systems, incluindo no seu comando a nova
+          configuração:</para>
+
+          <para>
+            <programlisting># If you have previously stopped your cluster
+
+helm install mycluster hpcc/hpcc -f nothor.yaml
+
+# To upgrade without stopping
+
+helm upgrade mycluster hpcc/hpcc -f nothor.yaml</programlisting>
+          </para>
+        </listitem>
+
+        <listitem>
+          <para>Após confirmar que seu deploy está em execução, abra o ECL
+          Watch.</para>
+
+          <para>Você não irá ver nenhum cluster Thor como destino.</para>
+        </listitem>
+      </orderedlist>
+    </sect2>
+
+    <sect2 id="CustTutorial4" role="brk">
+      <title>Crie um Chart de Configuração Personalizada para o Roxie</title>
+
+      <para>Nesta seção, criaremos um arquivo YAML para especificar uma
+      implementação de plataforma sem Roxie. Embora o resultado seja
+      semelhante ao que fizemos na seção anterior para sem Thor, a técnica é
+      diferente.</para>
+
+      <orderedlist>
+        <listitem>
+          <para>Se você ainda não adicionou o respositório do HPCC Systems a
+          lista de respositórios helm, faça agora.</para>
+
+          <para>
+            <programlisting>helm repo add hpcc https://hpcc-systems.github.io/helm-chart/</programlisting>
+          </para>
+
+          <para>Caso já tenha feito, atualize os últimos charts:</para>
+
+          <para>
+            <programlisting>helm repo update</programlisting>
+          </para>
+        </listitem>
+
+        <listitem>
+          <para>Crie um novo arquivo de texto e o nomeie para <emphasis
+          role="bold">noroxie.yaml</emphasis> e abra-o em um editor de
+          texto.</para>
+
+          <para>Você pode usar qualquer editor de texto.</para>
+        </listitem>
+
+        <listitem>
+          <para>Salve os valores padrão em um arquivo de texto:</para>
+
+          <para>
+            <programlisting>helm show values hpcc/hpcc &gt; myvalues.yaml</programlisting>
+          </para>
+        </listitem>
+
+        <listitem>
+          <para>Abra o arquivo salvo (myvalues.yaml) em um editor de
+          texto.</para>
+        </listitem>
+
+        <listitem>
+          <para>Copie a seção <emphasis role="bold">roxie:</emphasis> e cole
+          no novo arquivo noroxie.yaml.</para>
+        </listitem>
+
+        <listitem>
+          <para>Copie a seção <emphasis role="bold">eclagent:</emphasis> e
+          cole no novo arquivo noroxie.yaml.</para>
+        </listitem>
+
+        <listitem>
+          <para>No bloco <emphasis role="bold">roxie</emphasis>, edite o valor
+          para <emphasis role="bold">disabled</emphasis>: e mude para
+          <emphasis role="bold">true.</emphasis></para>
+
+          <para>Você pode remover todo o resto do bloco roxie: exceto o
+          nome.</para>
+        </listitem>
+
+        <listitem>
+          <para>No bloco <emphasis role="bold">eclagent</emphasis>, delete
+          todo o bloco <emphasis role="bold">name:
+          roxie-workunit</emphasis>.</para>
+
+          <para>Isso remove a instância de um Roxie atuando como um Agente
+          ECL.</para>
+        </listitem>
+
+        <listitem>
+          <para>Salve e feche o editor de texto.</para>
+
+          <para>O arquivo noroxie.yaml deverá parecer como este:</para>
+
+          <para><emphasis role="bold">Nota:</emphasis> Os comentários foram
+          removidos para simplificar o exemplo:</para>
+
+          <para>
+            <programlisting>roxie:
+- name: roxie
+  disabled: true
+  
+eclagent:
+- name: hthor
+  replicas: 1
+  maxActive: 4
+  prefix: hthor
+  useChildProcesses: false
+  type: hthor</programlisting>
+          </para>
+        </listitem>
+      </orderedlist>
+
+      <para>
+        <emphasis role="bold">Faça o deploy usando o novo chart de
+        configuração personalizada.</emphasis>
+      </para>
+
+      <orderedlist>
+        <listitem>
+          <para>Abra uma janela de terminal e navegue até o diretório onde
+          está salvo o arquivo noroxie.yaml.</para>
+        </listitem>
+
+        <listitem>
+          <para>Faça o deploy do HPCC Systems, incluindo no seu comando a nova
+          configuração:</para>
+
+          <para>
+            <programlisting>helm install mycluster hpcc/hpcc -f noroxie.yaml</programlisting>
+          </para>
+        </listitem>
+
+        <listitem>
+          <para>Após confirmar que seu deploy está em execução, abra o ECL
+          Watch.</para>
+
+          <para>Você não irá mais ver nenhum cluster Roxie disponível como
+          destino.</para>
+        </listitem>
+      </orderedlist>
+    </sect2>
+
+    <sect2 id="threeiThorsOneQueue" role="nobrk">
+      <title>Crie um Chart de Configuração Personalizado para Múltiplos Thors
+      Ouvindo uma Fila Comum.</title>
+
+      <para>Nesta seção, criaremos três Thors que escutam uma fila comum (além
+      de sua própria fila). Isso fornece a capacidade de definir configurações
+      distintas de cluster Thor, mas permite que eles formem um único alvo
+      atrás de uma única fila. Esses clusters podem ser vinculados a
+      determinados conjuntos de nós em diferentes zonas de disponibilidade, se
+      desejado. Você pode usar este exemplo como um ponto de partida e ajustar
+      o número de clusters Thor que deseja.</para>
+
+      <para>Isso é alcançado definindo filas de destino auxiliares adicionais
+      para cada definição de Thor e usando um nome comum como uma fila
+      auxiliar.</para>
+
+      <orderedlist>
+        <listitem>
+          <para>Se você ainda não adicionou o respositório do HPCC Systems a
+          lista de respositórios helm, faça agora.</para>
+
+          <para>
+            <programlisting>helm repo add hpcc https://hpcc-systems.github.io/helm-chart/</programlisting>
+          </para>
+
+          <para>Se já fez isso, atualize os últimos charts:</para>
+
+          <para>
+            <programlisting>helm repo update</programlisting>
+          </para>
+        </listitem>
+
+        <listitem>
+          <para>Crie um novo arquivo de texto e o nomeie para <emphasis
+          role="bold">threethorsonequeue.yaml </emphasis>e abra-o em um editor
+          de texto.</para>
+
+          <para>Você pode usar qualquer editor de texto.</para>
+        </listitem>
+
+        <listitem>
+          <para>Abra o arquivo padrão de valores que você salvou previamente
+          (myvalues.yaml) em um editor de texto.</para>
+        </listitem>
+
+        <listitem>
+          <para>Copie <emphasis role="bold">thor:</emphasis> e cole no novo
+          arquivo threethorsonequeue.yaml file.</para>
+        </listitem>
+
+        <listitem>
+          <para>Copie todo o conteúdo do novo arquivo yaml file, exceto a
+          primeira linha (thor:), e cole no final do arquivo <emphasis
+          role="bold">twice</emphasis>.</para>
+
+          <para>Isso cria três seções - name:.</para>
+        </listitem>
+
+        <listitem>
+          <para>Edite o arquivo da seguinte maneira:</para>
+
+          <para>
+            <orderedlist>
+              <listitem>
+                <para>De um único valor de <emphasis
+                role="bold">name</emphasis> para cada Thor<emphasis
+                role="bold">:</emphasis>.</para>
+
+                <para>Neste exemplo, utilizaremos <emphasis role="bold">thor1,
+                thor2, </emphasis>e <emphasis
+                role="bold">thor3</emphasis>.</para>
+              </listitem>
+
+              <listitem>
+                <para>Adicione a entrada <emphasis
+                role="bold">auxQueues:</emphasis> para cada block Thor block
+                utilizando um nome comum</para>
+
+                <para>Neste exemplo estamos utilizando:</para>
+
+                <para>
+                  <emphasis role="bold">auxQueues: [ thorQ ]</emphasis>
+                </para>
+              </listitem>
+
+              <listitem>
+                <para>Certifique-se que o <emphasis
+                role="bold">prefix:</emphasis> é o mesmo que cada bloco do
+                Thor.</para>
+              </listitem>
+            </orderedlist>
+          </para>
+        </listitem>
+
+        <listitem>
+          <para>Salve e feche o editor de texto.</para>
+
+          <para>O arquivo threethorsonequeue.yaml deverá ficar assim:</para>
+
+          <para><emphasis role="bold">Note:</emphasis> Os comentários foram
+          removidos para simplificar o exemplo:</para>
+
+          <para>
+            <programlisting>thor:
+- name: thor1
+  auxQueues: [ thorQ ]
+  maxGraphs: 2
+  maxJobs: 2
+  numWorkers: 4
+  numWorkersPerPod: 2
+  prefix: thor
+- name: thor2
+  maxGraphs: 2
+  maxJobs: 2
+  numWorkers: 4
+  numWorkersPerPod: 2
+  prefix: thor
+  auxQueues: [ thorQ ]
+- name: thor3
+  maxGraphs: 2
+  maxJobs: 2
+  numWorkers: 4
+  numWorkersPerPod: 2
+  prefix: thor
+  auxQueues: [ thorQ ]</programlisting>
+          </para>
+        </listitem>
+      </orderedlist>
+
+      <para>
+        <emphasis role="bold">Faça o deploy usando o novo chart de
+        configuração personalizada.</emphasis>
+      </para>
+
+      <orderedlist>
+        <listitem>
+          <para>Abra uma janela de terminal e navegue até o diretório onde
+          está salvo o arquivo threethorsonequeue.yaml.</para>
+        </listitem>
+
+        <listitem>
+          <para>Faça o deploy do HPCC Systems, incluindo no seu comando a nova
+          configuração:</para>
+
+          <para>
+            <programlisting># If you have previously stopped your cluster
+
+helm install mycluster hpcc/hpcc -f threethorsonequeue.yaml
+
+# To upgrade without stopping
+
+helm upgrade mycluster hpcc/hpcc -f threethorsonequeue.yaml
+</programlisting>
+          </para>
+        </listitem>
+
+        <listitem>
+          <para>Após confirmar que seu deploy está em execução, abra o ECL
+          Watch.</para>
+
+          <para>Você deve ver quatro clusters Thor disponíveis como Alvos -
+          thor1, thor2, thor3 e uma quarta fila que todos os três Thors ouvem
+          - thorQ.</para>
+        </listitem>
+      </orderedlist>
+    </sect2>
+
+    <sect2 id="configwithlzonly" role="nobrk">
+      <title>Crie um Chart de Configuração Personalizado somente para Landing
+      Zone</title>
+
+      <para>Nessa seção, nós iremos criar uma configuração personalizada que
+      implementa uma "plataforma" contendo apenas uma Landing Zone. Isso pode
+      ser útil se tudo o que você precisa é um servidor de landing zone com o
+      dafilesrv rodando.</para>
+
+      <para><emphasis role="bold">Nota:</emphasis> Isso só pode ser
+      implementado em um namespace diferente de qualquer outra instância de
+      plataforma.</para>
+
+      <orderedlist>
+        <listitem>
+          <para>Se você ainda não adicionou o respositório do HPCC Systems a
+          lista de respositórios helm, faça agora.</para>
+
+          <para>
+            <programlisting>helm repo add hpcc https://hpcc-systems.github.io/helm-chart/</programlisting>
+          </para>
+
+          <para>Se já fez isso, atualize os últimos charts:</para>
+
+          <para>
+            <programlisting>helm repo update</programlisting>
+          </para>
+        </listitem>
+
+        <listitem>
+          <para>Criar um novo arquivo de texto e o nomeie para <emphasis
+          role="bold">lz.yaml</emphasis> e abra-o em um editor de
+          texto.</para>
+
+          <para>Você pode usar qualquer editor de texto.</para>
+        </listitem>
+
+        <listitem>
+          <para>Copie e cole este código no arquivo:</para>
+
+          <para>
+            <programlisting>dafilesrv:
+- name: direct-access
+  application: directio
+  service:
+    servicePort: 7100
+    visibility: local
+    tls: false
+  resources:
+    cpu: "2"
+    memory: "8G"
+dali: []
+dfuserver: []
+eclagent: []
+eclccserver: []
+eclscheduler: []
+esp: []
+roxie: []
+sasha: null
+thor: []
+</programlisting>
+          </para>
+        </listitem>
+
+        <listitem>
+          <para>Salve e feche o editor de texto.</para>
+        </listitem>
+      </orderedlist>
+
+      <para>
+        <emphasis role="bold">Faça o deploy usando o novo chart de
+        configuração personalizada.</emphasis>
+      </para>
+
+      <orderedlist>
+        <listitem>
+          <para>Abra uma janela de terminal e navegue até o diretório onde
+          está salvo o arquivo lz.yaml file.</para>
+        </listitem>
+
+        <listitem>
+          <para>Implante esta "plataforma" LZ somente com a nova configuração
+          adicionada ao seu comando.</para>
+
+          <para>
+            <programlisting>helm install mylz hpcc/hpcc -f lz.yaml
+</programlisting>
+          </para>
+        </listitem>
+
+        <listitem>
+          <para>Confirme que está instalado usando este comando:</para>
+
+          <para>
+            <programlisting>helm list </programlisting>
+          </para>
         </listitem>
       </orderedlist>
     </sect2>
@@ -448,7 +1042,7 @@ helm upgrade mycluster hpcc/hpcc -f tworoxies.yaml -f twothors.yaml
 
         <para>Os custos de armazenamento não podem ser vistos como um valor
         separado no ECL Watch. Eles só podem ser visualizados como parte de um
-        campo de custo na página de resumo de um arquivo lógico. </para>
+        campo de custo na página de resumo de um arquivo lógico.</para>
       </sect3>
 
       <sect3 id="FileAccessCosts">
@@ -694,6 +1288,185 @@ helm upgrade mycluster hpcc/hpcc -f tworoxies.yaml -f twothors.yaml
         <para>Os parâmetros de custo de armazenamento na seção global são
         usados apenas se nenhum parâmetro de custo for especificado no plano
         de armazenamento.</para>
+      </sect3>
+    </sect2>
+  </sect1>
+
+  <sect1 id="SecureLDAPaminCreds_forConatiners">
+    <title>Protegendo Credenciais</title>
+
+    <para>Utilizar o HPCC Systems em um ambiente containerizado tem algumas
+    preocupações de segurança únicas, ao externalizar componentes normalmente
+    internalizados, como as credenciais dos administradores LDAP.</para>
+
+    <para>A proteção das credenciais dos administradores LDAP é realizada
+    usando os segredos do Kubernetes ou do Hashicorp Vault. Como
+    pré-requisito, você deve estar familiarizado com a configuração de
+    segredos do Kubernetes e/ou do Hashicorp Vault.</para>
+
+    <para>A conta dos administradores LDAP deve ter direitos de administrador
+    para todos os Base DNs usados pela plataforma HPCC Systems. Em uma
+    implantação na nuvem, essas credenciais podem ser expostas. Portanto, uma
+    boa prática para essas credenciais de administrador é serem protegidas
+    usando segredos do Kubernetes ou o HashiCorp Vault.</para>
+
+    <sect2 id="SecuringCredentials_For_KubernetesSecrets">
+      <title>Protegedo as credenciais no Kubernetes</title>
+
+      <para>Para criar um secret no Kubernetes para armazenar as credenciais
+      da conta do usuário do administrador do LDAP, use uma interface de linha
+      de comando para o Kubernetes e execute um comando semelhante ao seguinte
+      exemplo:</para>
+
+      <programlisting lang="bash">kubectl create secret generic admincredssecretname --from-literal=username=hpcc_admin \
+  --from-literal=password=t0pS3cr3tP@ssw0rd
+</programlisting>
+
+      <para>No exemplo acima, o nome do secret do Kubernetes é
+      "admincredssecretname", e ele contém as chaves/valores "username" e
+      "password" da conta do administrador do LDAP. Isso armazena o nome de
+      usuário e a senha do administrador do LDAP como um segredo do
+      Kubernetes. Quaisquer propriedades adicionais são ignoradas.</para>
+
+      <para>Você pode verificar o secret que acabou de criar executando o
+      seguinte comando no Kubernetes.</para>
+
+      <programlisting lang="bash">kubectl get secret admincredssecretname</programlisting>
+
+      <para>Para obter mais informações sobre o Kubernetes, consulte a
+      documentação específica para a sua implementação..</para>
+
+      <sect3 id="Using_TheKubernetesSecret">
+        <title>Utilizando secrets do Kubernetes</title>
+
+        <para>Para implementar os secrets do Kubernetes, substitua a seção
+        "secrets:" em HPCC-Platform/helm/hpcc/values.yaml, ou implemente com o
+        seu próprio gráfico personalizado. Para mais informações sobre como
+        personalizar sua implementação contêinerizada de Sistemas HPCC, veja
+        as seções acima sobre técnicas de personalização.</para>
+
+        <para>No seu chat, crie um nome de chave único usado para referenciar
+        o segredo, e defina-o como o nome do secret que você criou na etapa
+        anterior. No exemplo acima, era "admincredssecretname".</para>
+
+        <para>Você pode, opcionalmente, definir segredos adicionais conforme
+        necessário pela configuração de segurança da sua plataforma. Cada um
+        desses segredos seria criado conforme descrito acima e receberia nomes
+        únicos. O exemplo abaixo indica como você pode adicionar quaisquer
+        credenciais ou secrets adicionais aos seus chart Helm, se
+        necessário.</para>
+
+        <para>A chave/valor "admincredsmountname" já existe por padrão no
+        arquivo values.yaml fornecido pelo HPCC Systems. A chave é
+        referenciada no arquivo ldap.yaml do componente. Você pode substituir
+        estes e adicionar chaves/valores adicionais conforme necessário. O
+        seguinte exemplo ilustra a adição de "additionalsecretname" e esse
+        nome deve corresponder ao nome do segredo adicional criado usando as
+        etapas acima.</para>
+
+        <programlisting lang="bash">  secrets:
+     authn:
+       admincredsmountname: "admincredssecretname"   #exernalize HPCC Admin creds
+       additionalmountname: "additionalsecretname"   #alternate HPCC Admin creds
+</programlisting>
+      </sect3>
+
+      <sect3 id="ENABLE_k8S_LDAP">
+        <title>Habilitar autenticação LDAP</title>
+
+        <para>No arquivo ldap.yaml fornecido em
+        HPCC-Platform/esp/applications/common/ldap/, a "ldapAdminSecretKey" já
+        está configurada para o nome da chave de montagem ilustrado no exemplo
+        acima. Para habilitar a autenticação LDAP e modificar este valor, você
+        ou seu administrador de sistemas podem substituir o componente Helm
+        ESP/ECLWatch localizado no chart values.yaml, conforme ilustrado no
+        exemplo seguinte:</para>
+
+        <programlisting lang="YAML">esp:
+- name: eclwatch
+  application: eclwatch
+  auth: ldap
+  ldap:
+    ldapAddress: "myldapserver"
+    ldapAdminSecretKey: "additionaltmountname"  # use alternate secrets creds
+</programlisting>
+
+        <para/>
+      </sect3>
+    </sect2>
+
+    <sect2 id="SecuringCreds_For_HashoCorpVault">
+      <title>Protegendo crendeciais no HashiCorp Vault</title>
+
+      <para>Para criar e armazenar secrets no HashiCorp Vault, a partir da
+      linha de comando, execute os seguintes comandos Vault. O nome secreto
+      usado no exemplo abaixo é "myvaultadmincreds" e deve ser prefixado com
+      "secret/authn/" conforme ilustrado. As chaves/valores "username" e
+      "password" do administrador LDAP são necessários. Propriedades
+      adicionais são ignoradas.</para>
+
+      <programlisting>vault kv put secret/authn/myvaultadmincreds username=hpcc_admin password=t0pS3cr3tP@ssw0rd </programlisting>
+
+      <para>Onde "secret/authn/myvaultadmincreds" é o nome do secret que
+      contém o nome de usuário e a senha do administrador LDAP.</para>
+
+      <para>Para verificar e confirmar o valores do secret, execute o seguinte
+      comando:</para>
+
+      <programlisting lang="bash">vault kv get secret/authn/myvaultadmincreds</programlisting>
+
+      <para>Para obter mais informações sobre como criar segredos para o
+      HashiCorp Vault, consulte a documentação apropriada da HashiCorp para
+      sua implementação.</para>
+
+      <sect3 id="Deploying_HashiCorpVault">
+        <title id="DeployingTheHashiCorpVault">Deploy do HashiCorp
+        Vault</title>
+
+        <para>Deploy dos secrets do HashiCorp Vault quando você sobrescrever a
+        seção "secrets:" em HPCC-Platform/helm/hpcc/values.yaml, ou em seu
+        chart de configuração personalizado. Para mais informações sobre como
+        personalizar sua implantação containerizada do HPCC Systems, veja as
+        seções acima sobre técnicas de personalização.</para>
+
+        <para>O valor do nome do Vault é definido para este exemplo no chart
+        gráfico de configuração values-secrets.yaml. Você pode encontrar um
+        exemplo deste gráfico no repositório HPCC-Platform em
+        /helm/examples/secrets/values-secrets.yaml.</para>
+
+        <programlisting lang="YAML">  vaults:
+  authn:
+    - name: my-authn-vault
+      #The data node in the URL is there for use by the REST API 
+      #The path inside the vault starts after /data
+      url: http://${env.VAULT_SERVICE_HOST}:${env.VAULT_SERVICE_PORT}/v1/secret/data/authn/${secret}
+      kind: kv-v2
+</programlisting>
+
+        <para>Você pode inserir isso em seu próprio gráfico de personalização
+        onde você fornece à sua implantação o nome do cofre que contém as
+        credenciais.</para>
+      </sect3>
+
+      <sect3 id="REF_HASHICORPVault_LDAP">
+        <title>Referenciando Vault Stored Authentication</title>
+
+        <para>Os nomes de chave "ldapAdminSecretKey" e "ldapAdminVaultId" são
+        usados pelo gerente de segurança do HPCC Systems para resolver os
+        segredos, e devem corresponder exatamente quando se utiliza o nome do
+        Vault configurado nas etapas anteriores.</para>
+
+        <programlisting lang="YAML">esp:
+- name: eclwatch
+  application: eclwatch
+  auth: ldap
+  ldap:
+    ldapAddress: "myldapserver"
+    ldapAdminSecretKey: "myvaultadmincreds"
+    ldapAdminVaultId: "my-authn-vault"
+</programlisting>
+
+        <para/>
       </sect3>
     </sect2>
   </sect1>
