@@ -1,23 +1,28 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, DetailsRow, ICommandBarItemProps, IDetailsRowProps, Icon, Image, Link } from "@fluentui/react";
-import { hsl as d3Hsl } from "@hpcc-js/common";
+import { CommandBar, ContextualMenuItemType, /*DetailsRow,*/ ICommandBarItemProps, /*IDetailsRowProps,*/ Image, Link } from "@fluentui/react";
+import { TableCellLayout, TableColumnDefinition, TableRowId, createTableColumn, Tooltip } from "@fluentui/react-components";
+import { LockClosedFilled } from "@fluentui/react-icons";
+// import { hsl as d3Hsl } from "@hpcc-js/common";
+import { Workunit } from "@hpcc-js/comms";
 import { SizeMe } from "react-sizeme";
-import { CreateWUQueryStore, defaultSort, emptyFilter, Get, WUQueryStore, formatQuery } from "src/ESPWorkunit";
-import * as WsWorkunits from "src/WsWorkunits";
+import { CreateWUQueryStore, defaultSort, emptyFilter, formatQuery, Get, WUQueryStore } from "src/ESPWorkunit";
+import { ColumnMap } from "src/Utility";
 import { formatCost } from "src/Session";
+import * as WsWorkunits from "src/WsWorkunits";
+import { QuerySortItem } from "src/store/Store";
 import nlsHPCC from "src/nlsHPCC";
 import { useConfirm } from "../hooks/confirm";
+import { useUserTheme } from "../hooks/theme";
 import { useMyAccount } from "../hooks/user";
 import { useUserStore } from "../hooks/store";
-import { useLogicalClustersPalette } from "../hooks/platform";
-import { calcSearch, pushParams } from "../util/history";
-import { useHasFocus, useIsMounted } from "../hooks/util";
+// import { useLogicalClustersPalette } from "../hooks/platform";
 import { HolyGrail } from "../layouts/HolyGrail";
-import { FluentPagedGrid, FluentPagedFooter, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
+import { useHasFocus, useIsMounted } from "../hooks/util";
+import { pushParams } from "../util/history";
+import { FluentPagedDataGrid, FluentPagedFooter, useCopyButtons, useFluentStoreState } from "./controls/Grid";
 import { Fields } from "./forms/Fields";
 import { Filter } from "./forms/Filter";
 import { ShortVerticalDivider } from "./Common";
-import { QuerySortItem } from "src/store/Store";
 
 const FilterFields: Fields = {
     "Type": { type: "checkbox", label: nlsHPCC.ArchivedOnly },
@@ -59,6 +64,15 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
     store
 }) => {
 
+    const { themeV9 } = useUserTheme();
+    const footerStyles = React.useMemo(() => {
+        return {
+            zIndex: 2,
+            background: themeV9.colorNeutralBackground1,
+            borderTop: `1px solid ${themeV9.colorNeutralStroke1}`
+        };
+    }, [themeV9]);
+
     const hasFilter = React.useMemo(() => Object.keys(filter).length > 0, [filter]);
 
     const [showFilter, setShowFilter] = React.useState(false);
@@ -71,7 +85,13 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
         pageSize, setPageSize,
         total, setTotal,
         refreshTable } = useFluentStoreState({ page });
-    const [, , palette] = useLogicalClustersPalette();
+    // const [, , palette] = useLogicalClustersPalette();
+
+    const [selectedRows, setSelectedRows] = React.useState(new Set<TableRowId>());
+    const onSelectionChange = (items, rowIds) => {
+        setSelectedRows(rowIds);
+        setSelection(items);
+    };
 
     //  Refresh on focus  ---
     const isMounted = useIsMounted();
@@ -92,71 +112,109 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
         return store ? store : CreateWUQueryStore();
     }, [store]);
 
-    const columns = React.useMemo((): FluentColumns => {
+    const columnSizingOptions = React.useMemo(() => {
         return {
-            col1: {
-                width: 16,
-                selectorType: "checkbox"
-            },
-            Protected: {
-                headerIcon: "LockSolid",
-                headerTooltip: nlsHPCC.Protected,
-                width: 16,
-                sortable: true,
-                formatter: (_protected) => {
-                    if (_protected === true) {
-                        return <Icon iconName="LockSolid" />;
-                    }
-                    return "";
-                }
-            },
-            Wuid: {
-                label: nlsHPCC.WUID, width: 120,
-                sortable: true,
-                formatter: (Wuid, row) => {
-                    const wu = Get(Wuid);
-                    const search = calcSearch(filter);
-                    return <>
-                        <Image src={wu.getStateImage()} styles={{ root: { minWidth: "16px" } }} />
-                        &nbsp;
-                        <Link href={search ? `#/workunits!${calcSearch(filter)}/${Wuid}` : `#/workunits/${Wuid}`}>{Wuid}</Link >
-                    </>;
-                }
-            },
-            Owner: { label: nlsHPCC.Owner, width: 80 },
-            Jobname: { label: nlsHPCC.JobName },
-            Cluster: { label: nlsHPCC.Cluster },
-            RoxieCluster: { label: nlsHPCC.RoxieCluster, sortable: false },
-            State: { label: nlsHPCC.State, width: 60 },
-            TotalClusterTime: {
-                label: nlsHPCC.TotalClusterTime, width: 120,
-                justify: "right",
-            },
-            "Compile Cost": {
-                label: nlsHPCC.CompileCost, width: 100,
-                justify: "right",
-                formatter: (cost, row) => {
-                    return `${formatCost(row.CompileCost)}`;
-                }
-            },
-            "Execution Cost": {
-                label: nlsHPCC.ExecuteCost, width: 100,
-                justify: "right",
-                formatter: (cost, row) => {
-                    return `${formatCost(row.ExecuteCost)}`;
-                }
-            },
-            "File Access Cost": {
-                label: nlsHPCC.FileAccessCost, width: 100,
-                justify: "right",
-                formatter: (cost, row) => {
-                    return `${formatCost(row.FileAccessCost)}`;
-                }
-            }
+            Protected: { minWidth: 16, defaultWidth: 16 },
+            Wuid: { minWidth: 160, defaultWidth: 160 },
+            Cluster: { minWidth: 64, defaultWidth: 64 },
+            RoxieCluster: { minWidth: 110, defaultWidth: 110 },
+            TotalClusterTime: { minWidth: 120, defaultWidth: 120 },
+            State: { minWidth: 64, defaultWidth: 64 },
         };
-    }, [filter]);
+    }, []);
 
-    const copyButtons = useCopyButtons(columns, selection, "workunits");
+    const columns: TableColumnDefinition<Workunit>[] = React.useMemo(() => [
+        createTableColumn<Workunit>({
+            columnId: "Protected",
+            renderHeaderCell: () => <Tooltip content={nlsHPCC.Protected} relationship="label"><LockClosedFilled title={nlsHPCC.Protected} fontSize={18} /></Tooltip>,
+            renderCell: (cell) => cell.Protected ? <LockClosedFilled /> : "",
+        }),
+        createTableColumn<Workunit>({
+            columnId: "Wuid",
+            compare: (a, b) => a.Wuid.localeCompare(b.Wuid),
+            renderHeaderCell: () => nlsHPCC.WUID,
+            renderCell: (cell) => {
+                const wuid = cell.Wuid;
+                const wu = Get(wuid);
+                return <TableCellLayout>
+                    <Image src={wu.getStateImage()} styles={{ root: { display: "inline-block", minWidth: "16px" } }} />&nbsp;<Link href={`#/workunits/${wuid}`}>{wuid}</Link>
+                </TableCellLayout>;
+            },
+        }),
+        createTableColumn<Workunit>({
+            columnId: "Owner",
+            compare: (a, b) => a.Owner.localeCompare(b.Owner),
+            renderHeaderCell: () => nlsHPCC.Owner,
+            renderCell: (cell) => <TableCellLayout>{cell.Owner}</TableCellLayout>,
+        }),
+        createTableColumn<Workunit>({
+            columnId: "Jobname",
+            compare: (a, b) => a.Jobname.localeCompare(b.Jobname),
+            renderHeaderCell: () => nlsHPCC.JobName,
+            renderCell: (cell) => <TableCellLayout>{cell.Jobname}</TableCellLayout>,
+        }),
+        createTableColumn<Workunit>({
+            columnId: "Cluster",
+            compare: (a, b) => a.Cluster.localeCompare(b.Cluster),
+            renderHeaderCell: () => nlsHPCC.Cluster,
+            renderCell: (cell) => <TableCellLayout>{cell.Cluster}</TableCellLayout>,
+        }),
+        createTableColumn<Workunit>({
+            columnId: "RoxieCluster",
+            compare: (a, b) => a.RoxieCluster.localeCompare(b.RoxieCluster),
+            renderHeaderCell: () => nlsHPCC.RoxieCluster,
+            renderCell: (cell) => <TableCellLayout>{cell.RoxieCluster}</TableCellLayout>,
+        }),
+        createTableColumn<Workunit>({
+            columnId: "State",
+            compare: (a, b) => a.State.localeCompare(b.State),
+            renderHeaderCell: () => nlsHPCC.State,
+            renderCell: (cell) => <TableCellLayout>{cell.State}</TableCellLayout>,
+        }),
+        createTableColumn<Workunit>({
+            columnId: "TotalClusterTime",
+            compare: (a, b) => {
+                const aNum = parseFloat(a.TotalClusterTime);
+                const bNum = parseFloat(b.TotalClusterTime);
+                return aNum - bNum;
+            },
+            renderHeaderCell: () => nlsHPCC.TotalClusterTime,
+            renderCell: (cell) => <TableCellLayout>{cell.TotalClusterTime}</TableCellLayout>,
+        }),
+        createTableColumn<Workunit>({
+            columnId: "CompileCost",
+            compare: (a, b) => a.CompileCost - b.CompileCost,
+            renderHeaderCell: () => nlsHPCC.CompileCost,
+            renderCell: (cell) => <TableCellLayout>{formatCost(cell.CompileCost)}</TableCellLayout>,
+        }),
+        createTableColumn<Workunit>({
+            columnId: "ExecutionCost",
+            compare: (a, b) => a.ExecuteCost - b.ExecuteCost,
+            renderHeaderCell: () => nlsHPCC.ExecuteCost,
+            renderCell: (cell) => <TableCellLayout>{formatCost(cell.ExecuteCost)}</TableCellLayout>,
+        }),
+        createTableColumn<Workunit>({
+            columnId: "FileAccessCost",
+            compare: (a, b) => a.FileAccessCost - b.FileAccessCost,
+            renderHeaderCell: () => nlsHPCC.FileAccessCost,
+            renderCell: (cell) => <TableCellLayout>{formatCost(cell.FileAccessCost)}</TableCellLayout>,
+        }),
+    ], []);
+
+    const columnMap: ColumnMap = React.useMemo(() => {
+        const retVal: ColumnMap = {};
+        columns.forEach((col, idx) => {
+            const columnId = col.columnId.toString();
+            retVal[columnId] = {
+                id: `${columnId}_${idx}`,
+                field: columnId,
+                label: columnId
+            };
+        });
+        return retVal;
+    }, [columns]);
+
+    const copyButtons = useCopyButtons(columnMap, selection, "workunits");
 
     const doActionWithWorkunits = React.useCallback(async (action: "Delete" | "Abort") => {
         const unknownWUs = selection.filter(wu => wu.State === "unknown");
@@ -164,8 +222,10 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
             await WsWorkunits.WUAction(unknownWUs, "SetToFailed");
         }
         await WsWorkunits.WUAction(selection, action);
+        setSelection([]);
+        setSelectedRows(null);
         refreshTable.call(true);
-    }, [refreshTable, selection]);
+    }, [refreshTable, selection, setSelection]);
 
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
@@ -287,6 +347,8 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
         setUIState(state);
     }, [selection]);
 
+    /*
+    // TODO: No such onRenderRow in Fluent v9 DataGrid
     const renderRowTimings = React.useCallback((props: IDetailsRowProps, size: { readonly width: number; readonly height: number; }) => {
         if (showTimeline && props) {
             const total = props.item.timings.page.end - props.item.timings.page.start;
@@ -314,15 +376,16 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
         }
         return <DetailsRow {...props} />;
     }, [palette, showTimeline]);
+    */
 
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}
         main={
             <>
                 <SizeMe monitorHeight>{({ size }) =>
-                    <div style={{ width: "100%", height: "100%" }}>
+                    <div style={{ position: "relative", width: "100%", height: "100%" }}>
                         <div style={{ position: "absolute", width: "100%", height: `${size.height}px` }}>
-                            <FluentPagedGrid
+                            <FluentPagedDataGrid
                                 store={gridStore}
                                 query={query}
                                 sort={sort}
@@ -330,12 +393,14 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
                                 pageSize={pageSize}
                                 total={total}
                                 columns={columns}
-                                height={`${size.height}px`}
+                                sizingOptions={columnSizingOptions}
+                                height={"calc(100vh - 176px)"}
+                                onSelect={onSelectionChange}
+                                selectedItems={selectedRows}
                                 setSelection={setSelection}
                                 setTotal={setTotal}
                                 refresh={refreshTable}
-                                onRenderRow={showTimeline ? props => renderRowTimings(props, size) : undefined}
-                            ></FluentPagedGrid>
+                            ></FluentPagedDataGrid>
                         </div>
                     </div>
                 }</SizeMe>
@@ -351,7 +416,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
             setPageNum={setPageNum}
             setPageSize={setPageSize}
             total={total}
-        ></FluentPagedFooter >}
-        footerStyles={{}}
+        ></FluentPagedFooter>}
+        footerStyles={footerStyles}
     />;
 };

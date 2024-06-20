@@ -1,19 +1,26 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Icon, Link } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link } from "@fluentui/react";
+import { TableCellLayout, TableColumnDefinition, TableRowId, createTableColumn, Tooltip } from "@fluentui/react-components";
+import { CheckmarkCircleFilled, ImportantFilled, ImportantRegular, PauseFilled, WarningRegular } from "@fluentui/react-icons";
+import { WsWorkunits as HPCCWsWorkunits } from "@hpcc-js/comms";
+import { SizeMe } from "react-sizeme";
 import * as WsWorkunits from "src/WsWorkunits";
 import * as ESPQuery from "src/ESPQuery";
+import { ColumnMap } from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
 import { QuerySortItem } from "src/store/Store";
 import { useConfirm } from "../hooks/confirm";
+import { useUserTheme } from "../hooks/theme";
 import { useMyAccount } from "../hooks/user";
 import { useHasFocus, useIsMounted } from "../hooks/util";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
-import { FluentPagedGrid, FluentPagedFooter, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
+import { FluentPagedDataGrid, FluentPagedFooter, useCopyButtons, useFluentStoreState } from "./controls/Grid";
 import { Fields } from "./forms/Fields";
 import { Filter } from "./forms/Filter";
 import { ShortVerticalDivider } from "./Common";
-import { SizeMe } from "react-sizeme";
+
+type Query = HPCCWsWorkunits.QuerySetQuery;
 
 const FilterFields: Fields = {
     "QueryID": { type: "string", label: nlsHPCC.ID, placeholder: nlsHPCC.QueryIDPlaceholder },
@@ -65,6 +72,15 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
     store
 }) => {
 
+    const { themeV9 } = useUserTheme();
+    const footerStyles = React.useMemo(() => {
+        return {
+            zIndex: 2,
+            background: themeV9.colorNeutralBackground1,
+            borderTop: `1px solid ${themeV9.colorNeutralStroke1}`
+        };
+    }, [themeV9]);
+
     const [showFilter, setShowFilter] = React.useState(false);
     const { currentUser } = useMyAccount();
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
@@ -74,6 +90,12 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
         pageSize, setPageSize,
         total, setTotal,
         refreshTable } = useFluentStoreState({ page });
+
+    const [selectedRows, setSelectedRows] = React.useState(new Set<TableRowId>());
+    const onSelectionChange = (items, rowIds) => {
+        setSelectedRows(rowIds);
+        setSelection(items);
+    };
 
     const hasFilter = React.useMemo(() => Object.keys(filter).length > 0, [filter]);
 
@@ -96,87 +118,134 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
         return formatQuery(filter);
     }, [filter]);
 
-    const columns = React.useMemo((): FluentColumns => {
+    const columnSizingOptions = React.useMemo(() => {
         return {
-            col1: {
-                width: 16,
-                selectorType: "checkbox"
-            },
-            Suspended: {
-                headerIcon: "Pause",
-                headerTooltip: nlsHPCC.Suspended,
-                width: 16,
-                sortable: false,
-                formatter: (suspended) => {
-                    if (suspended === true) {
-                        return <Icon iconName="Pause" />;
-                    }
-                    return "";
-                }
-            },
-            ErrorCount: {
-                headerIcon: "Warning",
-                headerTooltip: nlsHPCC.ErrorWarnings,
-                width: 16,
-                sortable: false,
-                formatter: (error) => {
-                    if (error > 0) {
-                        return <Icon iconName="Warning" />;
-                    }
-                    return "";
-                }
-            },
-            MixedNodeStates: {
-                headerIcon: "Error",
-                headerTooltip: nlsHPCC.MixedNodeStates,
-                width: 16,
-                sortable: false,
-                formatter: (mixed) => {
-                    if (mixed === true) {
-                        return <Icon iconName="Error" />;
-                    }
-                    return "";
-                }
-            },
-            Activated: {
-                headerIcon: "SkypeCircleCheck",
-                headerTooltip: nlsHPCC.Active,
-                width: 16,
-                formatter: (activated) => {
-                    if (activated === true) {
-                        return <Icon iconName="SkypeCircleCheck" />;
-                    }
-                    return "";
-                }
-            },
-            Id: {
-                label: nlsHPCC.ID,
-                formatter: (Id, row) => {
-                    return <Link href={`#/queries/${row.QuerySetId}/${Id}`} >{Id}</Link>;
-                }
-            },
-            priority: {
-                label: nlsHPCC.Priority,
-                width: 80,
-                formatter: (priority, row) => {
-                    return priority === undefined ? "" : priority;
-                }
-            },
-            Name: { label: nlsHPCC.Name },
-            QuerySetId: { label: nlsHPCC.Target, sortable: true },
-            Wuid: {
-                label: nlsHPCC.WUID, width: 100,
-                formatter: (Wuid, idx) => {
-                    return <Link href={`#/workunits/${Wuid}`}>{Wuid}</Link>;
-                }
-            },
-            Dll: { label: nlsHPCC.Dll },
-            PublishedBy: { label: nlsHPCC.PublishedBy },
-            Status: { label: nlsHPCC.Status, sortable: false }
+            Suspended: { minWidth: 16, defaultWidth: 16 },
+            ErrorCount: { minWidth: 16, defaultWidth: 16 },
+            MixedNodeStates: { minWidth: 16, defaultWidth: 16 },
+            Activated: { minWidth: 16, defaultWidth: 16 },
         };
     }, []);
 
-    const copyButtons = useCopyButtons(columns, selection, "roxiequeries");
+    const columns: TableColumnDefinition<Query>[] = React.useMemo(() => [
+        createTableColumn<Query>({
+            columnId: "Suspended",
+            renderHeaderCell: () => <Tooltip content={nlsHPCC.Suspended} relationship="label"><PauseFilled fontSize={18} /></Tooltip>,
+            renderCell: (cell) => cell.Suspended ? <PauseFilled /> : "",
+        }),
+        createTableColumn<Query>({
+            columnId: "ErrorCount",
+            renderHeaderCell: () => <Tooltip content={nlsHPCC.ErrorWarnings} relationship="label"><WarningRegular fontSize={18} /></Tooltip>,
+            renderCell: (cell) => cell.Clusters?.ClusterQueryState[0]?.Errors ? <WarningRegular /> : "",
+        }),
+        createTableColumn<Query>({
+            columnId: "MixedNodeStates",
+            renderHeaderCell: () => <Tooltip content={nlsHPCC.MixedNodeStates} relationship="label"><ImportantFilled title={nlsHPCC.MixedNodeStates} fontSize={18} /></Tooltip>,
+            renderCell: (cell) => cell.Clusters?.ClusterQueryState[0]?.MixedNodeStates ? <ImportantRegular /> : "",
+        }),
+        createTableColumn<Query>({
+            columnId: "Activated",
+            renderHeaderCell: () => <Tooltip content={nlsHPCC.Activated} relationship="label"><CheckmarkCircleFilled fontSize={18} /></Tooltip>,
+            renderCell: (cell) => cell.Activated ? <CheckmarkCircleFilled /> : "",
+        }),
+        createTableColumn<Query>({
+            columnId: "Id",
+            compare: (a, b) => a.Id.localeCompare(b.Id),
+            renderHeaderCell: () => nlsHPCC.ID,
+            renderCell: (cell) => <TableCellLayout><Link href={`#/queries/${cell.QuerySetId}/${cell.Id}`}>{cell.Id}</Link></TableCellLayout>,
+        }),
+        createTableColumn<Query>({
+            columnId: "priority",
+            compare: (a, b) => a.priority.localeCompare(b.priority),
+            renderHeaderCell: () => nlsHPCC.Priority,
+            renderCell: (cell) => <TableCellLayout>{cell.priority}</TableCellLayout>,
+        }),
+        createTableColumn<Query>({
+            columnId: "Name",
+            compare: (a, b) => a.Name.localeCompare(b.Name),
+            renderHeaderCell: () => nlsHPCC.Name,
+            renderCell: (cell) => <TableCellLayout>{cell.Name}</TableCellLayout>,
+        }),
+        createTableColumn<Query>({
+            columnId: "QuerySetId",
+            compare: (a, b) => a.QuerySetId.localeCompare(b.QuerySetId),
+            renderHeaderCell: () => nlsHPCC.Target,
+            renderCell: (cell) => <TableCellLayout>{cell.QuerySetId}</TableCellLayout>,
+        }),
+        createTableColumn<Query>({
+            columnId: "Wuid",
+            compare: (a, b) => a.Wuid.localeCompare(b.Wuid),
+            renderHeaderCell: () => nlsHPCC.WUID,
+            renderCell: (cell) => <TableCellLayout><Link href={`#/workunits/${cell.Wuid}`}>{cell.Wuid}</Link></TableCellLayout>,
+        }),
+        createTableColumn<Query>({
+            columnId: "Dll",
+            compare: (a, b) => a.Dll.localeCompare(b.Dll),
+            renderHeaderCell: () => nlsHPCC.CompileCost,
+            renderCell: (cell) => <TableCellLayout>{cell.Dll}</TableCellLayout>,
+        }),
+        createTableColumn<Query>({
+            columnId: "PublishedBy",
+            compare: (a, b) => a.PublishedBy.localeCompare(b.PublishedBy),
+            renderHeaderCell: () => nlsHPCC.PublishedBy,
+            renderCell: (cell) => <TableCellLayout>{cell.PublishedBy}</TableCellLayout>,
+        }),
+        createTableColumn<Query>({
+            columnId: "Status",
+            compare: (a, b) => {
+                let statusA = "";
+                let statusB = "";
+                if (a.Suspended) {
+                    statusA = nlsHPCC.SuspendedByUser;
+                }
+                a?.Clusters?.ClusterQueryState?.some(state => {
+                    if (state.Errors || state.State !== "Available") {
+                        statusA = nlsHPCC.SuspendedByCluster;
+                    } else if (state.MixedNodeStates) {
+                        statusA = nlsHPCC.MixedNodeStates;
+                    }
+                });
+                b?.Clusters?.ClusterQueryState?.some(state => {
+                    if (state.Errors || state.State !== "Available") {
+                        statusB = nlsHPCC.SuspendedByCluster;
+                    } else if (state.MixedNodeStates) {
+                        statusB = nlsHPCC.MixedNodeStates;
+                    }
+                });
+                return statusA.localeCompare(statusB);
+            },
+            renderHeaderCell: () => nlsHPCC.Status,
+            renderCell: (cell) => {
+                let statusMsg = "";
+                if (cell.Suspended) {
+                    statusMsg = nlsHPCC.SuspendedByUser;
+                }
+                cell?.Clusters?.ClusterQueryState?.some(state => {
+                    if (state.Errors || state.State !== "Available") {
+                        statusMsg = nlsHPCC.SuspendedByCluster;
+                    } else if (state.MixedNodeStates) {
+                        statusMsg = nlsHPCC.MixedNodeStates;
+                    }
+                });
+                return <TableCellLayout>{(statusMsg)}</TableCellLayout>;
+            },
+        }),
+    ], []);
+
+    const columnMap: ColumnMap = React.useMemo(() => {
+        const retVal: ColumnMap = {};
+        columns.forEach((col, idx) => {
+            const columnId = col.columnId.toString();
+            retVal[columnId] = {
+                id: `${columnId}_${idx}`,
+                field: columnId,
+                label: columnId
+            };
+        });
+        return retVal;
+    }, [columns]);
+
+    const copyButtons = useCopyButtons(columnMap, selection, "roxiequeries");
 
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
@@ -289,7 +358,7 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
                 <SizeMe monitorHeight>{({ size }) =>
                     <div style={{ position: "relative", width: "100%", height: "100%" }}>
                         <div style={{ position: "absolute", width: "100%", height: `${size.height}px` }}>
-                            <FluentPagedGrid
+                            <FluentPagedDataGrid
                                 store={gridStore}
                                 query={query}
                                 sort={sort}
@@ -297,11 +366,14 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
                                 pageSize={pageSize}
                                 total={total}
                                 columns={columns}
-                                height={`${size.height}px`}
+                                sizingOptions={columnSizingOptions}
+                                height={"calc(100vh - 176px)"}
+                                onSelect={onSelectionChange}
+                                selectedItems={selectedRows}
                                 setSelection={setSelection}
                                 setTotal={setTotal}
                                 refresh={refreshTable}
-                            ></FluentPagedGrid>
+                            ></FluentPagedDataGrid>
                         </div>
                     </div>
                 }</SizeMe>
@@ -317,6 +389,6 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
             setPageSize={setPageSize}
             total={total}
         ></FluentPagedFooter>}
-        footerStyles={{}}
+        footerStyles={footerStyles}
     />;
 };
