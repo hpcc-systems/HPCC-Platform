@@ -924,6 +924,7 @@ export = {
         Statistics: "Statistics",
         SVGSource: "SVG Source",
         SyncSelection: "Sync To Selection",
+        Syntax: "Syntax",
         SystemServers: "System Servers",
         tag: "tag",
         Target: "Target",

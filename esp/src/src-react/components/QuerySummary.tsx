@@ -15,17 +15,20 @@ const logger = scopedLogger("../components/QuerySummary.tsx");
 interface QuerySummaryProps {
     querySet: string;
     queryId: string;
+    isSuspended?: boolean;
+    isActivated?: boolean;
 }
 
 export const QuerySummary: React.FunctionComponent<QuerySummaryProps> = ({
     querySet,
-    queryId
+    queryId,
+    isSuspended = false,
+    isActivated = false
 }) => {
 
     const [query, setQuery] = React.useState<any>();
-    const [wuid, setWuid] = React.useState<string>("");
-    const [suspended, setSuspended] = React.useState(false);
-    const [activated, setActivated] = React.useState(false);
+    const [suspended, setSuspended] = React.useState(isSuspended);
+    const [activated, setActivated] = React.useState(isActivated);
 
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
@@ -57,12 +60,9 @@ export const QuerySummary: React.FunctionComponent<QuerySummaryProps> = ({
     }, [queryId, querySet]);
 
     React.useEffect(() => {
-        query?.getDetails().then(({ WUQueryDetailsResponse }) => {
-            setWuid(query?.Wuid);
-            setSuspended(query.Suspended);
-            setActivated(query.Activated);
-        });
-    }, [query]);
+        setActivated(isActivated);
+        setSuspended(isSuspended);
+    }, [isActivated, isSuspended]);
 
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
@@ -73,7 +73,7 @@ export const QuerySummary: React.FunctionComponent<QuerySummaryProps> = ({
         {
             key: "save", text: nlsHPCC.Save, iconProps: { iconName: "Save" }, disabled: !canSave,
             onClick: () => {
-                const selection = [{ QuerySetId: querySet, Id: queryId }];
+                const selection = [{ QuerySetId: querySet, Id: queryId, Name: query?.QueryName }];
                 const actions = [];
                 if (suspended !== query?.Suspended) {
                     actions.push(WsWorkunits.WUQuerysetQueryAction(selection, suspended ? "Suspend" : "Unsuspend"));
@@ -125,7 +125,7 @@ export const QuerySummary: React.FunctionComponent<QuerySummaryProps> = ({
         }} />
         <Divider>{nlsHPCC.Workunit}</Divider>
         <TableGroup fields={{
-            "wuid": { label: nlsHPCC.WUID, type: "link", value: wuid, href: `#/workunits/${wuid}`, readonly: true },
+            "wuid": { label: nlsHPCC.WUID, type: "link", value: query?.Wuid, href: `#/workunits/${query?.Wuid}`, readonly: true },
             "dll": { label: nlsHPCC.Dll, type: "string", value: query?.Dll, readonly: true },
         }} />
         <Divider>{nlsHPCC.Other}</Divider>
