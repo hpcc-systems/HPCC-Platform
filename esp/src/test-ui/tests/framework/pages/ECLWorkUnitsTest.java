@@ -140,7 +140,7 @@ public class ECLWorkUnitsTest extends BaseTableTest<ECLWorkunit> {
     @Override
     protected String getCurrentPage(WebDriver driver) {
         try {
-            WebElement element = waitForElement(driver, By.id("wuid"));
+            WebElement element = Common.waitForElement(driver, By.xpath("//*[@*[.='wuid']]"));
             if (element != null) {
                 return element.getAttribute("title");
             }

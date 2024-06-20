@@ -50,8 +50,6 @@ public abstract class BaseTableTest<T> {
         Common.openWebPage(driver, getPageUrl());
         
         try {
-            //testingAttribute(driver);
-
             Common.logDebug("Tests started for: " + getPageName() + " page.");
 
             testForAllText(driver);
@@ -63,36 +61,6 @@ public abstract class BaseTableTest<T> {
         } catch (Exception ex) {
             Common.logError(ex.getMessage());
         }
-    }
-
-    private void testingAttribute(WebDriver driver) {
-        WebElement webElement = driver.findElement(By.xpath("//*[@*[.='Wuid']]"));
-
-        JavascriptExecutor executor = (JavascriptExecutor) driver;
-        Object aa=executor.executeScript("var items = {}; for (index = 0; index < arguments[0].attributes.length; ++index) { items[arguments[0].attributes[index].name] = arguments[0].attributes[index].value }; return items;", webElement);
-        System.out.println();
-        String [] attrs = aa.toString().replaceAll("[{}]", "").split(", ");
-        for (String attr:attrs){
-            System.out.println(attr);
-        }
-        System.out.println();
-
-        clickDropdown(driver, 56);
-
-        List<WebElement> elements = driver.findElements(By.xpath("//*[@*[.='Wuid']]"));
-
-        System.out.println(elements.size());
-
-        for (WebElement element : elements) {
-            Object aaa=executor.executeScript("var items = {}; for (index = 0; index < arguments[0].attributes.length; ++index) { items[arguments[0].attributes[index].name] = arguments[0].attributes[index].value }; return items;", element);
-            System.out.println();
-            System.out.println(element.getText());
-            String [] attrs2 = aaa.toString().replaceAll("[{}]", "").split(", ");
-            for (String attr:attrs2){
-                System.out.println(attr);
-            }
-        }
-
     }
 
     private void testLinksInTable(WebDriver driver) {
@@ -107,8 +75,8 @@ public abstract class BaseTableTest<T> {
 
             for (Object value : values) {
                 String name = value.toString().trim();
-                //WebElement element = driver.findElement(By.xpath("//div[contains(text(), '"+name+"')]/.."));
-                WebElement element = waitForElement(driver, By.xpath("//div[contains(text(), '" + name + "')]/.."));
+
+                WebElement element = Common.waitForElement(driver, By.xpath("//div[contains(text(), '" + name + "')]/.."));
                 String href = element.findElement(By.tagName("a")).getAttribute("href");
 
                 String dropdownValueBefore = getSelectedDropdownValue(driver);
@@ -136,10 +104,6 @@ public abstract class BaseTableTest<T> {
                 }
             }
         }
-    }
-
-    protected WebElement waitForElement(WebDriver driver, By locator) {
-        return new WebDriverWait(driver, Duration.ofSeconds(10)).until(ExpectedConditions.presenceOfElementLocated(locator));
     }
 
     private void testContentAndSortingOrder(WebDriver driver) {
@@ -184,12 +148,13 @@ public abstract class BaseTableTest<T> {
 
     private String getCurrentSortingOrder(WebDriver driver, String columnKey) {
 
-        WebElement columnHeader = driver.findElement(By.cssSelector("div[data-item-key='" + columnKey + "']"));
+        WebElement columnHeader = driver.findElement(By.xpath("//*[@*[.='"+columnKey+"']]"));
+
         columnHeader.click();
 
         Common.sleep();
 
-        columnHeader = driver.findElement(By.cssSelector("div[data-item-key='" + columnKey + "']"));
+        columnHeader = driver.findElement(By.xpath("//*[@*[.='"+columnKey+"']]"));
 
         return columnHeader.getAttribute("aria-sort");
     }
@@ -203,10 +168,12 @@ public abstract class BaseTableTest<T> {
     }
 
     private List<Object> getDataFromUIUsingColumnKey(WebDriver driver, String columnKey) {
-        List<WebElement> elements = driver.findElements(By.cssSelector("div[data-automation-key='" + columnKey + "']"));
+
+        List<WebElement> elements = driver.findElements(By.xpath("//*[@*[.='"+columnKey+"']]"));
+
         List<Object> columnData = new ArrayList<>();
-        for (WebElement element : elements) {
-            columnData.add(element.getText());
+        for (int i = 1; i < elements.size(); i++) {
+            columnData.add(elements.get(i).getText());
         }
         return columnData;
     }
@@ -331,7 +298,7 @@ public abstract class BaseTableTest<T> {
     }
 
     private String getSelectedDropdownValue(WebDriver driver) {
-        WebElement dropdown = waitForElement(driver, By.id("pageSize"));
+        WebElement dropdown = Common.waitForElement(driver, By.id("pageSize"));
         return dropdown.getText().trim();
     }
 

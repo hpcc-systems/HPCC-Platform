@@ -1,10 +1,14 @@
 package framework.utility;
 
 import framework.config.Config;
+import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.remote.RemoteWebDriver;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -53,6 +57,10 @@ public class Common {
     public static String getUrl(String url) {
 
         return isRunningOnLocal() ? Config.LOCAL_IP + url : Config.GITHUB_ACTION_IP + url;
+    }
+
+    public static WebElement waitForElement(WebDriver driver, By locator) {
+        return new WebDriverWait(driver, Duration.ofSeconds(10)).until(ExpectedConditions.presenceOfElementLocated(locator));
     }
 
     public static void logError(String message) {
