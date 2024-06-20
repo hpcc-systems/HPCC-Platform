@@ -112,6 +112,8 @@
             function (ready, nlsHPCCMod) {
                 var nlsHPCC = nlsHPCCMod.default;
                 ready(function () {
+                    window.localStorage.setItem("redirectAfterLogin", window.location.hash);
+
                     var loginStr = document.getElementById("loginStr");
                     var error = document.getElementById("hidden_msg");
                     var disabled = document.getElementById('disabled_msg');

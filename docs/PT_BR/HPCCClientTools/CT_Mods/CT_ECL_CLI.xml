@@ -165,6 +165,13 @@
                 <entry>retorna uma lista de todos os IDs de usuário-chave que
                 podem ser usados pelo comando sign.</entry>
               </row>
+
+              <row>
+                <entry>url-secret-name</entry>
+
+                <entry>gerar um nome secreto a partir de uma URL para
+                mapeamento automático de URL</entry>
+              </row>
             </tbody>
           </tgroup>
         </informaltable>
@@ -8559,6 +8566,65 @@ ecl getname -wu W201407*
               </tbody>
             </tgroup>
           </informaltable></para>
+      </sect2>
+
+      <sect2 id="CT-url-secret-name" role="brk">
+        <title>ecl url-secret-name</title>
+
+        <para><emphasis role="bold">ecl url-secret-name url</emphasis>
+        [--<emphasis>username</emphasis>=&lt;username&gt;]</para>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt"/>
+
+              <colspec/>
+
+              <tbody>
+                <row>
+                  <entry>ecl url-secret-name</entry>
+
+                  <entry>Gera um nome secreto a partir de uma URL para
+                  mapeamento automático de URL</entry>
+                </row>
+
+                <row>
+                  <entry>url</entry>
+
+                  <entry>URL para convert em um nome secreto.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>--username</emphasis></entry>
+
+                  <entry>Opcional. O username associado a URL. Isto sobrepõe
+                  qualquer username inserida na URL.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>O comando <emphasis>ecl url-secret-name</emphasis>
+        gera um nome secreto a partir de uma URL que pode ser usado para
+        suportar o mapeamento automático da URL para segredo no ECL
+        SOAPCALL/HTTPCALL.</para>
+
+        <para>Um nome de usuário pode ser inserido na URL, como
+        https://username@example.com, ou passado como um parâmetro usando a
+        opção --username=username. Se um nome de usuário for passado como
+        parâmetro, ele substitui um nome de usuário na URL.</para>
+
+        <para>As senhas inseridas na URL não são necessárias e serão
+        ignoradas.</para>
+
+        <para>Quando o mapeamento secreto de URL do ECL SOAPCALL está ativado,
+        SOAPCALL converterá a URL fornecida em um nome deste formato. ECL,
+        então, tentará localizar o segredo e, se encontrado, usará o conteúdo
+        do segredo, ao invés da URL original.</para>
+
+        <para>Exemplos:</para>
+
+        <programlisting lang="bash">ecl url-secret-name https://example.com --username jimi
+ecl url-secret-name http://example.com --username jimi
+</programlisting>
       </sect2>
 
       <sect2 id="CT-RCTL-MEMLOCK" role="brk">

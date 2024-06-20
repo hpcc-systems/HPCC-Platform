@@ -4938,6 +4938,18 @@ void initializeInternals(IPropertyTree *root)
     root->addPropTree("Status/Servers",createPTree());
 }
 
+void clearStaleMeteData(IPropertyTree *root)
+{
+    // JobQueues
+    // Remove all Client entries from all queues. By definition they are stale (they should normally be removed when the client disconnects)
+    Owned<IPropertyTreeIterator> jobQueues = root->getElements("JobQueues/Queue");
+    ForEach(*jobQueues)
+    {
+        IPropertyTree &queue = jobQueues->query();
+        while (queue.removeProp("Client"));
+    }
+}
+
 IPropertyTree *loadStore(const char *storeFilename, unsigned edition, IPTreeMaker *iMaker, unsigned crcValidation, bool logErrorsOnly=false, const bool *abort=NULL)
 {
     CHECKEDCRITICALBLOCK(loadStoreCrit, fakeCritTimeout);
@@ -6543,6 +6555,7 @@ void CCovenSDSManager::loadStore(const char *storeName, const bool *abort)
     }
     Owned<IRemoteConnection> conn = connect("/", 0, RTM_INTERNAL, INFINITE);
     initializeInternals(conn->queryRoot());
+    clearStaleMeteData(conn->queryRoot());
     conn.clear();
     initializeStorageGroups(oldEnvironment);
 }

@@ -363,9 +363,6 @@ struct xfd_set { __fd_mask fds_bits[XFD_SETSIZE / __NFDBITS]; }; // define our o
 #define T_SOCKET int
 #define SEND_FLAGS (MSG_NOSIGNAL)
 #endif
-#ifdef CENTRAL_NODE_RANDOM_DELAY
-static SocketEndpointArray CentralNodeArray;
-#endif
 enum SOCKETMODE { sm_tcp_server, sm_tcp, sm_udp_server, sm_udp, sm_multicast_server, sm_multicast};
 
 #define BADSOCKERR(err) ((err==JSE_BADF)||(err==JSE_NOTSOCK))
@@ -1538,20 +1535,8 @@ void CSocket::connect_wait(unsigned timems)
     bool exit = false;
     int err;
     unsigned refuseddelay = 1;
-    while (!exit) {
-#ifdef CENTRAL_NODE_RANDOM_DELAY
-        ForEachItemIn(cn,CentralNodeArray) {
-            const SocketEndpoint &ep=CentralNodeArray.item(cn);
-            if (ep.ipequals(targetip)) {
-                unsigned sleeptime = getRandom() % 1000;
-                StringBuffer s;
-                ep.getHostText(s);
-                DBGLOG("Connection to central node %s - sleeping %d milliseconds", s.str(), sleeptime);
-                Sleep(sleeptime);           
-                break;
-            }
-        }
-#endif
+    while (!exit)
+    {
         unsigned remaining;
         exit = tm.timedout(&remaining);
         bool blockselect = exit;                            // if last time round block
@@ -6048,15 +6033,6 @@ public:
 ISocketBufferReader *createSocketBufferReader(const char *trc)
 {
     return new CSocketBufferReader(trc);
-}
-
-
-extern jlib_decl void markNodeCentral(SocketEndpoint &ep)
-{
-#ifdef CENTRAL_NODE_RANDOM_DELAY
-    CriticalBlock block(CSocket::crit);
-    CentralNodeArray.append(ep);
-#endif
 }
 
 
