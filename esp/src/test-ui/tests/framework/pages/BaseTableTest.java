@@ -97,6 +97,8 @@ public abstract class BaseTableTest<T> {
 
     private void testLinksInTable(WebDriver driver) {
 
+        Common.logDebug("Tests started for: " + getPageName() + " page: Testing Links");
+
         for (String columnKey : getColumnKeysWithLinks()) {
 
             List<Object> values = getDataFromUIUsingColumnKey(driver, columnKey);
@@ -147,7 +149,12 @@ public abstract class BaseTableTest<T> {
             int numOfItemsJSON = jsonObjects.size();
             clickDropdown(driver, numOfItemsJSON);
 
+            Common.logDebug("Tests started for: " + getPageName() + " page: Testing Content");
+
             if (testTableContent(driver, jsonObjects)) {
+
+                Common.logDebug("Tests started for: " + getPageName() + " page: Testing Sorting Order");
+
                 for (int i = 0; i < getColumnKeys().length; i++) {
                     testTheSortingOrderForOneColumn(driver, jsonObjects, getColumnKeys()[i], getColumnNames()[i]);
                 }
@@ -329,6 +336,7 @@ public abstract class BaseTableTest<T> {
     }
 
     private void testForAllText(WebDriver driver) {
+        Common.logDebug("Tests started for: " + getPageName() + " page: Testing Text");
         for (String text : getColumnNames()) {
             Common.checkTextPresent(driver, text, getPageName());
         }

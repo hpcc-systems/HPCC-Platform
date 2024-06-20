@@ -56,7 +56,7 @@ public class Common {
     }
 
     public static void logError(String message) {
-        System.out.println(message);
+        System.err.println(message);
         errorLogger.severe(message);
     }
 

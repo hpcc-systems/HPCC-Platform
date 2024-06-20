@@ -43,6 +43,8 @@ public class ActivitiesTest {
 
     private void testForNavigationLinks(WebDriver driver, List<NavigationWebElement> navWebElements) {
 
+        Common.logDebug("Tests started for: Activities page: Testing Navigation Links");
+
         for (NavigationWebElement element : navWebElements) {
             element.webElement().click();
 
@@ -107,7 +109,7 @@ public class ActivitiesTest {
     }
 
     private void testForAllText(WebDriver driver) {
-
+        Common.logDebug("Tests started for: Activities page: Testing Text");
         for (String text : textArray) {
             Common.checkTextPresent(driver, text, "Activities Page");
         }
