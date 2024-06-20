@@ -36,19 +36,23 @@ export const QueryDetails: React.FunctionComponent<QueryDetailsProps> = ({
     const [logicalFileCount, setLogicalFileCount] = React.useState<number>(0);
     const [superFileCount, setSuperFileCount] = React.useState<number>(0);
     const [libsUsedCount, setLibsUsedCount] = React.useState<number>(0);
+    const [suspended, setSuspended] = React.useState(false);
+    const [activated, setActivated] = React.useState(false);
 
     React.useEffect(() => {
         setQuery(ESPQuery.Get(querySet, queryId));
     }, [setQuery, queryId, querySet]);
 
     React.useEffect(() => {
-        query?.getDetails().then(({ WUQueryDetailsResponse }) => {
+        query?.getDetails().then(() => {
             setWuid(query.Wuid);
             setLogicalFileCount(query.LogicalFiles?.Item?.length);
             setSuperFileCount(query.SuperFiles?.SuperFile?.length);
             setLibsUsedCount(query.LibrariesUsed?.Item?.length);
+            setActivated(query.Activated);
+            setSuspended(query.Suspended);
         });
-    }, [query, setLogicalFileCount, setSuperFileCount, setLibsUsedCount]);
+    }, [query]);
 
     const onTabSelect = React.useCallback((tab: TabInfo) => {
         switch (tab.id) {
@@ -100,7 +104,7 @@ export const QueryDetails: React.FunctionComponent<QueryDetailsProps> = ({
         <div style={{ height: "100%" }}>
             <OverflowTabList tabs={tabs} selected={tab} onTabSelect={onTabSelect} size="medium" />
             <DelayLoadedPanel visible={tab === "summary"} size={size}>
-                <QuerySummary queryId={queryId} querySet={querySet} />
+                <QuerySummary queryId={queryId} querySet={querySet} isSuspended={suspended} isActivated={activated} />
             </DelayLoadedPanel>
             <DelayLoadedPanel visible={tab === "errors"} size={size}>
                 <QueryErrors queryId={queryId} querySet={querySet} />

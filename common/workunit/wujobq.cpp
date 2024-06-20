@@ -1122,11 +1122,19 @@ public:
     void disconnect()   // signal no longer wil be dequeing (optional - done automatically on release)
     {
         Cconnlockblock block(this,true);
-        if (connected) {
+        if (connected)
+        {
             dounsubscribe();
-            ForEachQueue(qd) {
+            ForEachQueue(qd)
+            {
                 IPropertyTree *croot = queryClientRootSession(*qd);
-                croot->setPropInt64("@connected",croot->getPropInt64("@connected",0)-1);
+                unsigned connectedCount = croot->getPropInt64("@connected");
+                if (connectedCount) // should never be 0, but guard JIC
+                    connectedCount--;
+                if (connectedCount)
+                    croot->setPropInt64("@connected", connectedCount);
+                else
+                    qd->root->removeTree(croot);
             }
             connected = false;
         }
