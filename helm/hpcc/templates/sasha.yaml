@@ -53,7 +53,7 @@ spec:
         server: {{ $serviceName | quote }}
         app: sasha
         accessDali: {{ (has "dali" $sasha.access) | ternary "yes" "no" | quote }}
-        helmVersion: 9.2.97-closedown0
+        helmVersion: 9.2.99-closedown0
 {{- if hasKey $sasha "labels" }}
 {{ toYaml $sasha.labels | indent 8 }}
 {{- end }}

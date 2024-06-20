@@ -82,7 +82,7 @@ spec:
         run: {{ $dali.name | quote }}
         server: {{ $dali.name | quote }}
         app: dali
-        helmVersion: 9.2.97-closedown0
+        helmVersion: 9.2.99-closedown0
 {{- if hasKey $.Values.global "metrics" }}
  {{- include "hpcc.generateMetricsReporterLabel" $.Values.global.metrics | nindent 8 }}
 {{- end }}

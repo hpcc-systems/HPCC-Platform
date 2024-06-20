@@ -58,7 +58,7 @@ data:
             {{- include "hpcc.addStandardLabels" (dict "root" $ "component" $apptype "name" "eclagent" "instance" $appJobName "instanceOf" (printf "%s-job" .me.name)) | indent 12 }}
             accessDali: "yes"
             accessEsp: "yes"
-            helmVersion: 9.2.97-closedown0
+            helmVersion: 9.2.99-closedown0
 {{- if hasKey .me "labels" }}
 {{ toYaml .me.labels | indent 12 }}
 {{- end }}
@@ -133,7 +133,7 @@ spec:
         run: {{ .name | quote }}
         accessDali: "yes"
         accessEsp: {{ .useChildProcesses | default false | ternary "yes" "no" | quote }}
-        helmVersion: 9.2.97-closedown0
+        helmVersion: 9.2.99-closedown0
 {{- if hasKey . "labels" }}
 {{ toYaml .labels | indent 8 }}
 {{- end }}

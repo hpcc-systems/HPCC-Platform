@@ -120,7 +120,7 @@ spec:
         {{- include "hpcc.addStandardLabels" (dict "root" $ "component" "topology-server" "name" "roxie" "instance" $commonCtx.toponame) | indent 8 }}
         run: {{ $commonCtx.toponame | quote }}
         roxie-cluster: {{ $roxie.name | quote }}
-        helmVersion: 9.2.97-closedown0
+        helmVersion: 9.2.99-closedown0
 {{- if hasKey $.Values.global "metrics" }}
  {{- include "hpcc.generateMetricsReporterLabel"  $.Values.global.metrics | nindent 8}}
 {{- end }}
@@ -178,7 +178,7 @@ kind: Service
 metadata:
   name: {{ $commonCtx.toponame | quote }}
   labels:
-    helmVersion: 9.2.97-closedown0
+    helmVersion: 9.2.99-closedown0
     {{- include "hpcc.addStandardLabels" (dict "root" $ "component" "topology-server" "name" "roxie" "instance" $commonCtx.toponame) | indent 4 }}
 spec:
   ports:
@@ -240,7 +240,7 @@ spec:
         roxie-cluster: {{ $roxie.name | quote }}
         accessDali: "yes"
         accessEsp: "yes"
-        helmVersion: 9.2.97-closedown0
+        helmVersion: 9.2.99-closedown0
         {{- include "hpcc.addStandardLabels" (dict "root" $ "component" "roxie-server" "name" "roxie" "instance" $servername) | indent 8 }}
 {{- if hasKey $.Values.global "metrics" }}
  {{- include "hpcc.generateMetricsReporterLabel" $.Values.global.metrics | nindent 8}}
@@ -346,7 +346,7 @@ spec:
         roxie-cluster: {{ $roxie.name | quote }}
         accessDali: "yes"
         accessEsp: "yes"
-        helmVersion: 9.2.97-closedown0
+        helmVersion: 9.2.99-closedown0
 {{- if hasKey $.Values.global "metrics" }}
  {{- include "hpcc.generateMetricsReporterLabel" $.Values.global.metrics | nindent 8}}
 {{- end }}

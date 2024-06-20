@@ -82,7 +82,7 @@ data:
           labels:
             accessDali: "yes"
             accessEsp: "yes"
-            helmVersion: 9.2.97-closedown0
+            helmVersion: 9.2.99-closedown0
             {{- include "hpcc.addStandardLabels" (dict "root" $ "component" "eclagent" "name" "thor" "instance" $eclAgentJobName "instanceOf" (printf "%s-job" .eclAgentName)) | indent 8 }}
 {{- if hasKey .me "labels" }}
 {{ toYaml .me.labels | indent 12 }}
@@ -145,7 +145,7 @@ data:
             accessEsp: "yes"
             app: "thor"
             component: "thormanager"
-            helmVersion: 9.2.97-closedown0
+            helmVersion: 9.2.99-closedown0
             instance: "_HPCC_JOBNAME_"
             job: "_HPCC_JOBNAME_"
             {{- include "hpcc.addStandardLabels" (dict "root" $ "component" "thormanager" "name" "thor" "instance" $thorManagerJobName "instanceOf" (printf "%s-thormanager-job" .me.name)) | indent 12 }}
@@ -210,7 +210,7 @@ data:
             accessEsp: "yes"
             app: "thor"
             component: "thorworker"
-            helmVersion: 9.2.97-closedown0
+            helmVersion: 9.2.99-closedown0
             instance: "_HPCC_JOBNAME_"
             job: "_HPCC_JOBNAME_"
             {{- include "hpcc.addStandardLabels" (dict "root" $ "component" "thorworker" "name" "thor" "instance" $thorWorkerJobName "instanceOf" (printf "%s-thorworker-job" .me.name)) | indent 12 }}
@@ -341,7 +341,7 @@ spec:
         accessEsp: {{ $commonCtx.eclAgentUseChildProcesses | ternary "yes" "no" | quote }}
         app: "thor"
         component: "thor-eclagent"
-        helmVersion: 9.2.97-closedown0
+        helmVersion: 9.2.99-closedown0
         instance: {{ $commonCtx.eclAgentName | quote }}
         {{- include "hpcc.addStandardLabels" (dict "root" $ "component" "eclagent" "name" "thor" "instance" $commonCtx.eclAgentName ) | indent 8 }}
 {{- if hasKey $commonCtx.me "labels" }}
@@ -404,7 +404,7 @@ spec:
         accessEsp: "no"
         app: "thor"
         component: "thor-thoragent"
-        helmVersion: 9.2.97-closedown0
+        helmVersion: 9.2.99-closedown0
         instance: {{ $commonCtx.thorAgentName | quote }}
         {{- include "hpcc.addStandardLabels" (dict "root" $ "component" "eclagent" "name" "thor" "instance" $commonCtx.thorAgentName ) | indent 8 }}
 {{- if hasKey $commonCtx.me "labels" }}

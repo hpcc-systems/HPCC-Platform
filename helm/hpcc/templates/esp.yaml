@@ -120,7 +120,7 @@ spec:
         accessSasha: "yes"
 {{- end }}
         app: {{ $application }}
-        helmVersion: 9.2.97-closedown0
+        helmVersion: 9.2.99-closedown0
         {{- include "hpcc.addStandardLabels" (dict "root" $ "name" $application "component" "esp" "instance" .name) | indent 8 }}
 {{- if hasKey $.Values.global "metrics" }}
  {{- include "hpcc.generateMetricsReporterLabel" $.Values.global.metrics | nindent 8 }}
