@@ -16,7 +16,6 @@ import org.testng.annotations.Test;
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
-import java.util.logging.Logger;
 
 public class ECLWorkUnitsTest extends BaseTableTest<ECLWorkunit> {
 
@@ -101,7 +100,7 @@ public class ECLWorkUnitsTest extends BaseTableTest<ECLWorkunit> {
             long timeInMilliSecs = TimeUtils.convertToMilliseconds((String) dataUIValue);
             if (timeInMilliSecs == Config.MALFORMED_TIME_STRING) {
                 String errMsg = "Failure: " + getPageName() + ": Incorrect time format for " + columnName + " : " + dataUIValue + " in UI for " + getUniqueKeyName() + " : " + dataIDUIValue;
-                Common.logError(errorLogger, errMsg);
+                Common.logError(errMsg);
                 return dataUIValue;
             }
 
@@ -119,7 +118,7 @@ public class ECLWorkUnitsTest extends BaseTableTest<ECLWorkunit> {
             long timeInMilliSecs = (long) dataJSONValue;
             if (timeInMilliSecs == Config.MALFORMED_TIME_STRING) {
                 String errMsg = "Failure: " + getPageName() + ": Incorrect time format for " + columnName + " in JSON for " + getUniqueKeyName() + " : " + dataIDUIValue;
-                Common.logError(errorLogger, errMsg);
+                Common.logError(errMsg);
                 return dataJSONValue;
             }
 

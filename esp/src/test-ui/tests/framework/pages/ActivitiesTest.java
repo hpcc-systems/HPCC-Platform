@@ -2,8 +2,6 @@ package framework.pages;
 
 import framework.config.Config;
 import framework.model.NavigationWebElement;
-import framework.setup.LoggerHolder;
-import framework.setup.WebDriverHolder;
 import framework.utility.Common;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
@@ -13,7 +11,6 @@ import org.testng.annotations.Test;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
 
 public class ActivitiesTest {
 
@@ -28,17 +25,12 @@ public class ActivitiesTest {
             //"DummyNavName", List.of("DummyTab1", "DummyTab2")
     );
 
-    Logger errorLogger, specificLogger;
-
     @Test
     public void testActivitiesPage() {
-        WebDriver driver = WebDriverHolder.getDriver();
+        WebDriver driver = Common.driver;
         Common.openWebPage(driver, Common.getUrl(Config.ACTIVITIES_URL));
 
-        errorLogger = LoggerHolder.getErrorLogger();
-        specificLogger = LoggerHolder.getSpecificLogger();
-
-        Common.logDebug(specificLogger, "Tests started for: Activities page.");
+        Common.logDebug("Tests started for: Activities page.");
 
         testForAllText(driver);
 
@@ -46,7 +38,7 @@ public class ActivitiesTest {
 
         testForNavigationLinks(driver, navWebElements);
 
-        Common.logDebug(specificLogger, "Tests finished for: Activities page.");
+        Common.logDebug("Tests finished for: Activities page.");
     }
 
     private void testForNavigationLinks(WebDriver driver, List<NavigationWebElement> navWebElements) {
@@ -56,11 +48,11 @@ public class ActivitiesTest {
 
             if (testTabsForNavigationLinks(driver, element)) {
                 String msg = "Success: Navigation Menu Link for " + element.name() + ". URL : " + element.hrefValue();
-                Common.logDetail(specificLogger, msg);
+                Common.logDetail(msg);
             } else {
                 String currentPage = getCurrentPage(driver);
                 String errorMsg = "Failure: Navigation Menu Link for " + element.name() + " page failed. The current navigation page that we landed on is " + currentPage + ". Current URL : " + element.hrefValue();
-                Common.logError(errorLogger, errorMsg);
+                Common.logError(errorMsg);
             }
         }
     }
@@ -117,7 +109,7 @@ public class ActivitiesTest {
     private void testForAllText(WebDriver driver) {
 
         for (String text : textArray) {
-            Common.checkTextPresent(driver, text, "Activities Page", errorLogger, specificLogger);
+            Common.checkTextPresent(driver, text, "Activities Page");
         }
     }
 }

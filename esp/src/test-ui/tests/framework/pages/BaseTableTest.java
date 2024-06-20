@@ -1,8 +1,6 @@
 package framework.pages;
 
 import framework.config.Config;
-import framework.setup.LoggerHolder;
-import framework.setup.WebDriverHolder;
 import framework.utility.Common;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
@@ -16,7 +14,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.Function;
-import java.util.logging.Logger;
 
 public abstract class BaseTableTest<T> {
 
@@ -48,28 +45,23 @@ public abstract class BaseTableTest<T> {
 
     protected abstract String getCurrentPage(WebDriver driver);
 
-    Logger errorLogger, specificLogger;
-
     protected void testPage() {
-        WebDriver driver = WebDriverHolder.getDriver();
+        WebDriver driver = Common.driver;
         Common.openWebPage(driver, getPageUrl());
-
-        errorLogger = LoggerHolder.getErrorLogger();
-        specificLogger = LoggerHolder.getSpecificLogger();
         
         try {
             //testingAttribute(driver);
 
-            Common.logDebug(specificLogger, "Tests started for: " + getPageName() + " page.");
+            Common.logDebug("Tests started for: " + getPageName() + " page.");
 
             testForAllText(driver);
             testContentAndSortingOrder(driver);
             testLinksInTable(driver);
 
-            Common.logDebug(specificLogger, "Tests finished for: " + getPageName() + " page.");
+            Common.logDebug("Tests finished for: " + getPageName() + " page.");
 
         } catch (Exception ex) {
-            Common.logError(errorLogger, ex.getMessage());
+            Common.logError(ex.getMessage());
         }
     }
 
@@ -84,6 +76,8 @@ public abstract class BaseTableTest<T> {
             System.out.println(attr);
         }
         System.out.println();
+
+        clickDropdown(driver, 56);
 
         List<WebElement> elements = driver.findElements(By.xpath("//*[@*[.='Wuid']]"));
 
@@ -121,11 +115,11 @@ public abstract class BaseTableTest<T> {
 
                 if (driver.getPageSource().contains(name)) {
                     String msg = "Success: " + getPageName() + ": Link Test Pass for " + i++ + ". " + name + ". URL : " + href;
-                    Common.logDetail(specificLogger, msg);
+                    Common.logDetail(msg);
                 } else {
                     String currentPage = getCurrentPage(driver);
                     String errorMsg = "Failure: " + getPageName() + ": Link Test Fail for " + i++ + ". " + name + " page failed. The current navigation page that we landed on is " + currentPage + ". Current URL : " + href;
-                    Common.logError(errorLogger, errorMsg);
+                    Common.logError(errorMsg);
                 }
 
                 driver.navigate().to(getPageUrl());
@@ -136,7 +130,7 @@ public abstract class BaseTableTest<T> {
                 // Log error if the dropdown value has changed
                 if (!dropdownValueBefore.equals(dropdownValueAfter)) {
                     String dropdownErrorMsg = "Failure: " + getPageName() + ": Dropdown value changed after navigating back. Before: " + dropdownValueBefore + ", After: " + dropdownValueAfter;
-                    Common.logError(errorLogger, dropdownErrorMsg);
+                    Common.logError(dropdownErrorMsg);
                 }
             }
         }
@@ -173,10 +167,10 @@ public abstract class BaseTableTest<T> {
             List<Object> columnDataIDFromUI = getDataFromUIUsingColumnKey(driver, getUniqueKey());
 
             if (compareData(columnDataFromUI, columnDataFromJSON, columnDataIDFromUI, columnName)) {
-                Common.logDebug(specificLogger, "Success: " + getPageName() + ": Values are correctly sorted in " + currentSortOrder + " order by: " + columnName);
+                Common.logDebug("Success: " + getPageName() + ": Values are correctly sorted in " + currentSortOrder + " order by: " + columnName);
             } else {
                 String errMsg = "Failure: " + getPageName() + ": Values are not correctly sorted in " + currentSortOrder + " order by: " + columnName;
-                Common.logError(errorLogger, errMsg);
+                Common.logError(errMsg);
             }
         }
     }
@@ -219,7 +213,7 @@ public abstract class BaseTableTest<T> {
     }
 
     private boolean testTableContent(WebDriver driver, List<T> jsonObjects) {
-        Common.logDebug(specificLogger, "Page: " + getPageName() + ": Number of Objects from Json: " + jsonObjects.size());
+        Common.logDebug("Page: " + getPageName() + ": Number of Objects from Json: " + jsonObjects.size());
 
         List<Object> columnDataIDFromUI = getDataFromUIUsingColumnKey(driver, getUniqueKey());
 
@@ -228,13 +222,13 @@ public abstract class BaseTableTest<T> {
             columnDataIDFromUI = getDataFromUIUsingColumnKey(driver, getUniqueKey());
         }
 
-        Common.logDebug(specificLogger, "Page: " + getPageName() + ": Number of Objects from UI: " + columnDataIDFromUI.size());
+        Common.logDebug("Page: " + getPageName() + ": Number of Objects from UI: " + columnDataIDFromUI.size());
 
         if (jsonObjects.size() != columnDataIDFromUI.size()) {
             String errMsg = "Failure: " + getPageName() + ": Number of items on UI are not equal to the number of items in JSON" +
                     "\nNumber of Objects from Json: " + jsonObjects.size() +
                     "\nNumber of Objects from UI: " + columnDataIDFromUI.size();
-            Common.logError(errorLogger, errMsg);
+            Common.logError(errMsg);
             return false;
         }
 
@@ -256,10 +250,10 @@ public abstract class BaseTableTest<T> {
         try {
             return parseJson(filePath);
         } catch (Exception e) {
-            Common.logError(errorLogger, "Failure: Exception: " + e.getMessage());
+            Common.logError("Failure: Exception: " + e.getMessage());
         }
 
-        Common.logError(errorLogger, "Failure: Error in JSON Parsing: " + filePath);
+        Common.logError("Failure: Error in JSON Parsing: " + filePath);
         return null;
     }
 
@@ -282,7 +276,7 @@ public abstract class BaseTableTest<T> {
         }
 
         if (pass) {
-            Common.logDetail(specificLogger, "Success: " + getPageName() + ": Content test passed for column: " + columnName);
+            Common.logDetail("Success: " + getPageName() + ": Content test passed for column: " + columnName);
         }
 
         return pass;
@@ -291,7 +285,7 @@ public abstract class BaseTableTest<T> {
     private boolean checkValues(Object dataUIValue, Object dataJSONValue, Object dataIDUIValue, String columnName) {
         if (!dataUIValue.equals(dataJSONValue)) {
             String errMsg = "Failure: " + getPageName() + ": Incorrect " + columnName + " : " + dataUIValue + " in UI for " + getUniqueKeyName() + " : " + dataIDUIValue + ". Correct " + columnName + " is: " + dataJSONValue;
-            Common.logError(errorLogger, errMsg);
+            Common.logError(errMsg);
             return false;
         }
 
@@ -315,7 +309,7 @@ public abstract class BaseTableTest<T> {
             }
         }
 
-        Common.logDebug(specificLogger, "Dropdown selected: " + selectedValue);
+        Common.logDebug("Page: " + getPageName() + ": Dropdown selected: " + selectedValue);
 
         for (WebElement option : options) {
             if (option.getText().equals(String.valueOf(selectedValue))) {
@@ -336,7 +330,7 @@ public abstract class BaseTableTest<T> {
 
     private void testForAllText(WebDriver driver) {
         for (String text : getColumnNames()) {
-            Common.checkTextPresent(driver, text, getPageName(), errorLogger, specificLogger);
+            Common.checkTextPresent(driver, text, getPageName());
         }
     }
 }
