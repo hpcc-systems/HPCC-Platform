@@ -21,6 +21,7 @@
 #define JHASH_HPP
 
 #include <functional>
+#include <list>
 #include <unordered_map>
 #include <utility>
 
@@ -685,6 +686,105 @@ private:
             it->second.first = nowCycles;
         return &it->second;
     }
+};
+
+/**
+ * CLRUCache
+ *
+ * Least-Recently-Used cache class, specialized for key and
+ * value pointer types (the value is a pointer or a data type
+ * where a nullptr could represent a missing value).
+ *
+ * The get() method returns a found object by value.  This
+ * is intentional and very useful for maintaining refcounts.
+ *
+ * There is a minimum size for the cache, defined by
+ * LRU_MIN_CACHE_SIZE.  Attempts to create a smaller cache
+ * will be silently changed to the minimum size.  If no
+ * initial size is provided to the constructor, the cache
+ * size will be set to LRU_MIN_CACHE_SIZE.
+ *
+ * Methods here are not thread-safe.  Callers should block
+ * concurrent access for non-const methods (which are most
+ * of them).
+ */
+
+#define LRU_MIN_CACHE_SIZE 10
+
+template <class KEYTYPE, class PTRTYPE>
+class CLRUCache
+{
+    private:
+        std::list<KEYTYPE> recentList;
+        std::unordered_map<KEYTYPE, std::pair<PTRTYPE, typename std::list<KEYTYPE>::iterator>> lookupMap;
+        size32_t maxCacheSize;
+
+        void _downsize()
+        {
+            while (lookupMap.size() > maxCacheSize)
+            {
+                lookupMap.erase(recentList.back());
+                recentList.pop_back();
+            }
+        }
+    
+    public:
+        CLRUCache() : maxCacheSize(LRU_MIN_CACHE_SIZE) {}
+        CLRUCache(size32_t _maxCacheSize) : maxCacheSize(_maxCacheSize < LRU_MIN_CACHE_SIZE ? LRU_MIN_CACHE_SIZE : _maxCacheSize) {}
+        CLRUCache(const CLRUCache& other) = delete;
+        ~CLRUCache() = default;
+
+        size32_t getCacheSize() const
+        {
+            return lookupMap.size();
+        }
+
+        size32_t setMaxCacheSize(size32_t _maxCacheSize)
+        {
+            maxCacheSize = _maxCacheSize < LRU_MIN_CACHE_SIZE ? LRU_MIN_CACHE_SIZE : _maxCacheSize;
+            _downsize();
+            return maxCacheSize;
+        }
+
+        PTRTYPE get(const KEYTYPE& key)
+        {
+            auto foundIter = lookupMap.find(key);
+            if (foundIter == lookupMap.end())
+                return nullptr;
+            
+            recentList.splice(recentList.begin(), recentList, foundIter->second.second);
+            foundIter->second.second = recentList.begin();
+            return foundIter->second.first;
+        }
+
+        void set(const KEYTYPE& key, const PTRTYPE& value)
+        {
+            auto foundIter = lookupMap.find(key);
+            
+            if (foundIter == lookupMap.end())
+            {
+                recentList.push_front(key);
+                lookupMap[key] = {value, recentList.begin()};
+                _downsize();
+            }
+            else
+            {
+                recentList.splice(recentList.begin(), recentList, foundIter->second.second);
+                foundIter->second.first = value;
+                foundIter->second.second = recentList.begin();
+            }
+        }
+
+        bool remove(const KEYTYPE& key)
+        {
+            auto foundIter = lookupMap.find(key);
+            if (foundIter == lookupMap.end())
+                return false;
+            
+            recentList.erase(foundIter->second.second);
+            lookupMap.erase(foundIter);
+            return true;
+        }
 };
 
 #endif
