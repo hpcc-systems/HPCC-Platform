@@ -7,7 +7,7 @@ import * as ESPRequest from "./ESPRequest";
 
 declare const dojo;
 
-const lfEncode = (path: string) => {
+export const lfEncode = (path: string) => {
     let retVal = "";
     for (let i = 0; i < path.length; ++i) {
         switch (path[i]) {
