@@ -9,10 +9,13 @@ set(VCPKG_INSTALL_OPTIONS "--x-abi-tools-use-exact-versions;--downloads-root=${V
 set(VCPKG_VERBOSE OFF)
 
 if(WIN32)
+    set(VCPKG_HOST_TRIPLET "x64-windows" CACHE STRING "host triplet")
     set(VCPKG_TARGET_TRIPLET "x64-windows" CACHE STRING "target triplet")
 elseif(APPLE)
+    set(VCPKG_HOST_TRIPLET "x64-osx" CACHE STRING "host triplet")
     set(VCPKG_TARGET_TRIPLET "x64-osx" CACHE STRING "target triplet")
 elseif(UNIX)
+    set(VCPKG_HOST_TRIPLET "x64-linux-dynamic" CACHE STRING "host triplet")
     set(VCPKG_TARGET_TRIPLET "x64-linux-dynamic" CACHE STRING "target triplet")
 endif()
 

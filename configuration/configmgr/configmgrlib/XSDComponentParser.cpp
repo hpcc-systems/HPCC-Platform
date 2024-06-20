@@ -27,7 +27,8 @@ void XSDComponentParser::parseXSD(const pt::ptree &compTree)
 {
     bool foundComponentDef = false;
 
-    pt::ptree tree = compTree.get_child("", pt::ptree());
+    pt::ptree treeDefault;
+    pt::ptree tree = compTree.get_child("", treeDefault);
 
     //
     // First time through look for attributeGroups that can be defined and for existence of a sequence element that actually defines the component
@@ -49,7 +50,8 @@ void XSDComponentParser::parseXSD(const pt::ptree &compTree)
 
     if (foundComponentDef)
     {
-        pt::ptree elemTree = tree.get_child("xs:sequence.xs:element", pt::ptree());
+        pt::ptree elemTreeDefault;
+        pt::ptree elemTree = tree.get_child("xs:sequence.xs:element", elemTreeDefault);
         if (!elemTree.empty())
         {
             std::string elementName = getXSDAttributeValue(elemTree, "<xmlattr>.name");
@@ -72,7 +74,8 @@ void XSDComponentParser::parseXSD(const pt::ptree &compTree)
 
             //
             // Parse any attributes, these are located in the xs:complexType section
-            pt::ptree attributeTree = elemTree.get_child("xs:complexType", pt::ptree());
+            pt::ptree attributeTreeDefault;
+            pt::ptree attributeTree = elemTree.get_child("xs:complexType", attributeTreeDefault);
             for (auto attrIt = attributeTree.begin(); attrIt != attributeTree.end(); ++attrIt)
             {
                 //
@@ -90,7 +93,8 @@ void XSDComponentParser::parseXSD(const pt::ptree &compTree)
 
             //
             // Now parse the sequence section (these are sub keys for the component)
-            XSDSchemaParser::parseXSD(elemTree.get_child("xs:complexType.xs:sequence", pt::ptree()));
+            pt::ptree seqDefault;
+            XSDSchemaParser::parseXSD(elemTree.get_child("xs:complexType.xs:sequence", seqDefault));
 
             //
             // If there were other keys that we needed to support, this is where a loop would be added

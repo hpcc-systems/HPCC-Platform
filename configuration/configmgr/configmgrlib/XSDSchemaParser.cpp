@@ -171,7 +171,8 @@ void XSDSchemaParser::parseXSD(const pt::ptree &keys)
         }
         else if (elemType == "xs:sequence")
         {
-            parseXSD(it->second.get_child("", pt::ptree()));
+            pt::ptree emptyTree;
+            parseXSD(it->second.get_child("", emptyTree));
         }
         else if (elemType == "xs:element")
         {
@@ -233,7 +234,8 @@ void XSDSchemaParser::parseAttributeGroup(const pt::ptree &attributeTree)
         std::shared_ptr<XSDValueSetParser> pXSDValueSetParaser = std::make_shared<XSDValueSetParser>(pValueSet);
         std::string groupByName = getXSDAttributeValue(attributeTree, "<xmlattr>.hpcc:groupByName", false, "");
         pXSDValueSetParaser->setGroupByName(groupByName);
-        pXSDValueSetParaser->parseXSD(attributeTree.get_child("", pt::ptree()));
+        pt::ptree emptyTree;
+        pXSDValueSetParaser->parseXSD(attributeTree.get_child("", emptyTree));
         m_pSchemaItem->addSchemaType(pValueSet, groupName);
         m_pSchemaItem->setProperty("attribute_group_default_overrides", getXSDAttributeValue(attributeTree, "<xmlattr>.hpcc:presetValue", false, ""));
     }
@@ -300,7 +302,8 @@ void XSDSchemaParser::parseComplexType(const pt::ptree &typeTree)
         std::shared_ptr<SchemaItem> pComplexType = std::make_shared<SchemaItem>(complexTypeName, "component", m_pSchemaItem);
         pComplexType->setProperty("itemType", complexTypeName);
 
-        pt::ptree childTree = typeTree.get_child("", pt::ptree());
+        pt::ptree childTreeDefault;
+        pt::ptree childTree = typeTree.get_child("", childTreeDefault);
         if (!childTree.empty())
         {
             std::shared_ptr<XSDSchemaParser> pXSDParaser = std::make_shared<XSDSchemaParser>(pComplexType);
@@ -317,7 +320,8 @@ void XSDSchemaParser::parseComplexType(const pt::ptree &typeTree)
     // Just a complexType delimiter, ignore and parse the children
     else
     {
-        parseXSD(typeTree.get_child("", pt::ptree()));
+        pt::ptree emptyTree;
+        parseXSD(typeTree.get_child("", emptyTree));
     }
 }
 
@@ -709,7 +713,8 @@ std::shared_ptr<SchemaType> XSDSchemaParser::getType(const pt::ptree &typeTree, 
 
         if (!restriction->second.empty())
         {
-            pt::ptree restrictTree = restriction->second.get_child("", pt::ptree());
+            pt::ptree restrictTreeDefault;
+            pt::ptree restrictTree = restriction->second.get_child("", restrictTreeDefault);
             if (std::dynamic_pointer_cast<SchemaTypeIntegerLimits>(pLimits) != nullptr)
             {
                 std::shared_ptr<SchemaTypeIntegerLimits> pBaseIntLimits = std::dynamic_pointer_cast<SchemaTypeIntegerLimits>(pLimits);
@@ -905,7 +910,8 @@ std::shared_ptr<SchemaValue> XSDSchemaParser::getSchemaValue(const pt::ptree &at
     }
     else
     {
-        std::shared_ptr<SchemaType> pType = getType(attr.get_child("xs:simpleType", pt::ptree()), false);
+        pt::ptree simpleTypeDefault;
+        std::shared_ptr<SchemaType> pType = getType(attr.get_child("xs:simpleType", simpleTypeDefault), false);
         if (!pType->isValid())
         {
             throw(ParseException("Attribute " + m_pSchemaItem->getProperty("name") + "[@" + attrName + "] does not have a valid type"));
