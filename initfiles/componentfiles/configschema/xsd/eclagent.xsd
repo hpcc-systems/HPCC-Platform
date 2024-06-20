@@ -57,7 +57,7 @@
                                   hpcc:presetValue="false"
                                   hpcc:tooltip="eclAgent analyzes workunit post-execution"/>
                     <xs:attribute name="fieldTranslationEnabled" hpcc:displayName="Enable Field Translation"
-                                  hpcc:presetValue="payload"
+                                  hpcc:presetValue="payloadRemoveOnly"
                                   hpcc:tooltip="Enables translation (where possible) of mismatched index layouts on-the-fly. Specify 'payload' to attempt to translate payload fields only">
                         <xs:simpleType>
                             <xs:restriction base="xs:string">

@@ -4246,6 +4246,10 @@ void EspServInfo::write_esp_binding(const char *packagename)
                 outf("\t\t\tif (clientVer!=-1.0 && clientVer<%s)\n", minVer.str());
                 outs("\t\t\t\tthrow MakeStringException(-1, \"Client version is too old, please update your client application.\");");
             }
+
+            if (mthi->getMetaInt("do_not_log",0))
+                outs(2, "context.queryRequestParameters()->setProp(\"do_not_log\",1);\n");
+
             outs("\t\t\tresponse->set_status(SOAP_OK);\n");
 
             if (servicefeatureurl.length() != 0)
@@ -4653,6 +4657,8 @@ void EspServInfo::write_esp_binding(const char *packagename)
             {
                 if (servicefeatureurl.length() != 0)
                     outf("\t\t\tif(accessmap.ordinality()>0)\n\t\t\t\tonFeaturesAuthorize(context, accessmap, \"%s\", \"%s\");\n", name_, mthi->getName());
+                if (mthi->getMetaInt("do_not_log",0))
+                    outf("\t\t\t\tcontext.queryRequestParameters()->setProp(\"do_not_log\",1);\n");
                 outf("\t\t\tiserv->on%s(*request->queryContext(), *esp_request.get(), *resp);\n", mthi->getName());
                 if (clearCacheGroupIDs.length() > 0)
                     outf("\t\t\tclearCacheByGroupID(\"%s\");\n", clearCacheGroupIDs.str());

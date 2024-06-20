@@ -2463,7 +2463,7 @@ private:
                 if (val)
                     fieldTranslationEnabled = getTranslationMode(val, false);
                 else
-                    fieldTranslationEnabled = RecordTranslationMode::Payload;
+                    fieldTranslationEnabled = RecordTranslationMode::PayloadRemoveOnly;
                 val = getTranslationModeText(fieldTranslationEnabled);
                 topology->setProp("@fieldTranslationEnabled", val);
             }

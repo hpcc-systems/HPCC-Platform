@@ -10212,6 +10212,15 @@ IHqlExpression * convertSetToExpression(bool isAll, size32_t len, const void * p
                 presult += numUChars;
             };
             break;
+        case type_utf8:
+            while (presult < presult_end)
+            {
+                const size32_t numUChars = *((size32_t *) presult);
+                presult += sizeof(size32_t);
+                results.append(*createConstant(createUtf8Value((unsigned)numUChars, (const char*)presult, makeUtf8Type(numUChars, NULL))));
+                presult += rtlUtf8Size(numUChars, presult);
+            };
+            break;
         default:
             UNIMPLEMENTED;
     }
@@ -10709,7 +10718,12 @@ IException * checkRegexSyntax(IHqlExpression * expr)
         {
             try
             {
-                if (isUnicodeType(expr->queryType()))
+                if (isUTF8Type(expr->queryType()))
+                {
+                    ICompiledStrRegExpr * compiled = rtlCreateCompiledU8StrRegExpr(rtlUtf8Length(value->getSize(), value->queryValue()), (const char *)value->queryValue(), false);
+                    rtlDestroyCompiledU8StrRegExpr(compiled);
+                }
+                else if (isUnicodeType(expr->queryType()))
                 {
                     Owned<ITypeInfo> unknownVarUnicodeType = makeVarUnicodeType(UNKNOWN_LENGTH, nullptr);
                     Owned<IValue> castValue = value->castTo(unknownVarUnicodeType);

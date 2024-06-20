@@ -76,7 +76,6 @@ include_directories (
          ./../../system/jlib 
          ./../../roxie/roxiemem
          ./../../testing/unittests
-         ${Boost_INCLUDE_DIRS}
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DECLRTL_EXPORTS )
@@ -87,12 +86,8 @@ endif ()
 
 HPCC_ADD_LIBRARY( eclrtl SHARED ${SRCS} )
 
-if(CENTOS_6_BOOST)
-  add_dependencies(eclrtl boost-regex)
-  target_link_libraries( eclrtl boost-regex)
-elseif(USE_BOOST_REGEX)
-  target_link_libraries( eclrtl Boost::boost Boost::regex )
-endif()
+find_package(pcre2 CONFIG REQUIRED)
+target_link_libraries( eclrtl PCRE2::8BIT )
 
 target_link_libraries ( eclrtl 
       jlib
@@ -106,6 +101,7 @@ if (USE_ICU)
         )
     target_link_libraries ( eclrtl
           ${ICU_LIBRARIES}
+          PCRE2::16BIT
         )
 endif ()
 

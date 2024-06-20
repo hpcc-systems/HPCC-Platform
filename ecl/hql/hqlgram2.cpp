@@ -4703,6 +4703,9 @@ void HqlGram::normalizeExpression(attribute & exprAttr, type_t expectedType, boo
     case type_unicode:
         ensureUnicode(exprAttr);
         break;
+    case type_utf8:
+        ensureUTF8(exprAttr);
+        break;
     default:
         throwUnexpected();
     }
@@ -4970,6 +4973,25 @@ void HqlGram::ensureUnicode(attribute &a)
         {
             StringBuffer s;
             reportError(ERR_TYPE_INCOMPATIBLE, a, "Incompatible types: expected Unicode, given %s", getFriendlyTypeStr(t1, s).str());
+        }
+    }
+}
+
+void HqlGram::ensureUTF8(attribute &a)
+{
+    ITypeInfo *t1 = a.queryExprType();
+    if (t1 && !isUTF8Type(t1))
+    {
+        if (isStringType(t1) || isUnicodeType(t1))
+        {
+            Owned<ITypeInfo> utf8Type = makeUtf8Type(UNKNOWN_LENGTH, NULL);
+            OwnedHqlExpr value = a.getExpr();
+            a.setExpr(ensureExprType(value, utf8Type));
+        }
+        else
+        {
+            StringBuffer s;
+            reportError(ERR_TYPE_INCOMPATIBLE, a, "Incompatible types: expected UTF8, given %s", getFriendlyTypeStr(t1, s).str());
         }
     }
 }

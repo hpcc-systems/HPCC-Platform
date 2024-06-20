@@ -1,6 +1,5 @@
 # Tagging new versions
 
-
 ## General
 
 The file tools/git/aliases.sh contains various git aliases which are useful when using git, and may be used by the merge scripts.
@@ -15,21 +14,28 @@ Before running any of the other scripts, process the contents of that file as a 
 
 to initialize the common environment variables.
 
+## Pre-requisites
+
+The following tools are required:
+
+* **git**
+* **helm**
+
 The following repositories should be checked out in a directory reserved for merging and tagging (default for scripts is ~/git):
 
 ```
-git clone https://github.com/hpcc-systems/eclide.git
-git clone https://github.com/hpcc-systems/HPCC-JAPIs.git
-git clone https://github.com/hpcc-systems/Spark-HPCC.git
-git clone https://github.com/hpcc-systems/LN.git ln
-git clone https://github.com/hpcc-systems/HPCC-Platform.git hpcc
-git clone https://github.com/hpcc-systems/helm-chart.git
+git clone git@github.com:hpcc-systems/eclide.git
+git clone git@github.com:hpcc-systems/hpcc4j.git HPCC-JAPIs
+git clone git@github.com:hpcc-systems/Spark-HPCC.git
+git clone git@github.com:hpcc-systems/LN.git ln
+git clone git@github.com:hpcc-systems/HPCC-Platform.git hpcc
+git clone git@github.com:hpcc-systems/helm-chart.git
 ```
 
 The following are required for builds prior to 8.12.x
 ```
-git clone https://github.com/hpcc-systems/nagios-monitoring.git
-git clone https://github.com/hpcc-systems/ganglia-monitoring.git
+git clone git@github.com:hpcc-systems/nagios-monitoring.git
+git clone git@github.com:hpcc-systems/ganglia-monitoring.git
 ```
 
 The files git-fixversion and git-unupmerge can copied so they are on your default path, and then they will be available as git commands.

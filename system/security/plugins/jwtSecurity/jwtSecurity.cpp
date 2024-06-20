@@ -376,7 +376,7 @@ private:
             userInfo->setExpirationTime(std::chrono::system_clock::to_time_t(decodedToken.get_expires_at()));
             userInfo->setRefreshToken(refreshToken);
             userInfo->setJWTToken(token);
-            for (auto& e : decodedToken.get_payload_claims())
+            for (auto& e : decodedToken.get_payload_json())
             {
                 std::string     key(e.first);
 
@@ -398,50 +398,50 @@ private:
                     if (isPrefixString("AllowWorkunitScope", key) || isPrefixString("DenyWorkunitScope", key))
                     {
                         // Collect permissions for later batch processing
-                        if (e.second.get_type() == jwt::json::type::string)
+                        if (e.second.is<std::string>())
                         {
-                            wuScopePerms.push_back(ScopePermission(key, e.second.as_string()));
+                            wuScopePerms.push_back(ScopePermission(key, e.second.get<std::string>()));
                         }
                         else
                         {
-                            jwt::claim::set_t   valueSet = e.second.as_set();
+                            auto   valueSet = e.second.get<picojson::array>();
 
-                            for (jwt::claim::set_t::const_iterator x = valueSet.begin(); x != valueSet.end(); x++)
+                            for (auto x = valueSet.begin(); x != valueSet.end(); x++)
                             {
-                                wuScopePerms.push_back(ScopePermission(key, *x));
+                                wuScopePerms.push_back(ScopePermission(key, x->get<std::string>()));
                             }
                         }
                     }
                     else if (isPrefixString("AllowFileScope", key) || isPrefixString("DenyFileScope", key))
                     {
                         // Collect permissions for later batch processing
-                        if (e.second.get_type() == jwt::json::type::string)
+                        if (e.second.is<std::string>())
                         {
-                            fileScopePerms.push_back(ScopePermission(key, e.second.as_string()));
+                            fileScopePerms.push_back(ScopePermission(key, e.second.get<std::string>()));
                         }
                         else
                         {
-                            jwt::claim::set_t   valueSet = e.second.as_set();
+                            auto   valueSet = e.second.get<picojson::array>();
 
-                            for (jwt::claim::set_t::const_iterator x = valueSet.begin(); x != valueSet.end(); x++)
+                            for (auto x = valueSet.begin(); x != valueSet.end(); x++)
                             {
-                                fileScopePerms.push_back(ScopePermission(key, *x));
+                                fileScopePerms.push_back(ScopePermission(key, x->get<std::string>()));
                             }
                         }
                     }
-                    else if (e.second.get_type() == jwt::json::type::string)
+                    else if (e.second.is<std::string>())
                     {
                         // Feature permission where value is a single string
-                        userInfo->mergeFeaturePerm(key, e.second.as_string());
+                        userInfo->mergeFeaturePerm(key, e.second.get<std::string>());
                     }
                     else
                     {
                         // Feature permission where value is an array of strings
-                        jwt::claim::set_t   valueSet = e.second.as_set();
+                        auto   valueSet = e.second.get<picojson::array>();
 
-                        for (jwt::claim::set_t::const_iterator x = valueSet.begin(); x != valueSet.end(); x++)
+                        for (auto x = valueSet.begin(); x != valueSet.end(); x++)
                         {
-                            userInfo->mergeFeaturePerm(key, *x);
+                            userInfo->mergeFeaturePerm(key, x->get<std::string>());
                         }
                     }
                 }

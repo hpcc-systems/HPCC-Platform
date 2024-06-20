@@ -1739,7 +1739,7 @@ public:
 
     void doBuildNewRegexFindReplace(BuildCtx & ctx, const CHqlBoundTarget * target, IHqlExpression * expr, CHqlBoundExpr * bound);
     
-    IHqlExpression * doBuildRegexCompileInstance(BuildCtx & ctx, IHqlExpression * pattern, bool unicode, bool caseSensitive);
+    IHqlExpression * doBuildRegexCompileInstance(BuildCtx & ctx, IHqlExpression * pattern, ITypeInfo * stringType, bool caseSensitive);
     IHqlExpression * doBuildRegexFindInstance(BuildCtx & ctx, IHqlExpression * compiled, IHqlExpression * search, bool cloneSearch);
     
     IHqlExpression * doCreateGraphLookup(BuildCtx & declarectx, BuildCtx & resolvectx, unique_id_t id, const char * activity, bool isChild);
