@@ -71,6 +71,7 @@ class CParallelFunnel : implements IRowStream, public CSimpleInterface
         }
 
 // IThreaded impl.
+#if 1
         virtual void threadmain() override
         {
             bool started = false;
@@ -84,8 +85,6 @@ class CParallelFunnel : implements IRowStream, public CSimpleInterface
                 {
                     OwnedConstThorRow row = inputStream->ungroupedNextRow();
                     if (!row) break;
-
-                    if (stopping) break;
 
                     funnel.push(row.getClear());
                     ++readThisInput;
@@ -111,6 +110,59 @@ class CParallelFunnel : implements IRowStream, public CSimpleInterface
             }
             ActPrintLog(&funnel.activity.queryContainer(), "%s: Read %" I64F "d records", idStr.get(), readThisInput);
         }
+#else
+        virtual void threadmain() override
+        {
+            bool started = false;
+            IEngineRowStream *inputStream = nullptr;
+            constexpr unsigned chunkSize = 32;
+            const void * rows[chunkSize];
+            try
+            {
+                funnel.activity.startInput(inputIndex);
+                started = true;
+                inputStream = funnel.activity.queryInputStream(inputIndex);
+                while (!stopping)
+                {
+                    unsigned numRows = 0;
+                    for (;numRows < chunkSize; numRows++)
+                    {
+                        const void * row = inputStream->ungroupedNextRow();
+                        if (!row)
+                            break;
+                        rows[numRows] = row;
+                    }
+
+                    if (numRows == 0) break;
+
+                    funnel.pushMulti(numRows, rows);
+                    readThisInput += numRows;
+                    if (numRows != chunkSize)
+                        break;
+                }
+            }
+            catch (IException *e)
+            {
+                funnel.fireException(e);
+                e->Release();
+            }
+            // Informing EOS before stopping, may allow upstream activities to continue, if input slow to stop
+            funnel.informEos(inputIndex);
+            if (!started)
+                return;
+            try
+            {
+                inputStream->stop();
+            }
+            catch (IException *e)
+            {
+                funnel.fireException(e);
+                e->Release();
+            }
+            ActPrintLog(&funnel.activity.queryContainer(), "%s: Read %" I64F "d records", idStr.get(), readThisInput);
+        }
+#endif
+
     };
 
     CSlaveActivity &activity;
@@ -141,6 +193,34 @@ class CParallelFunnel : implements IRowStream, public CSimpleInterface
             }
             rows.enqueue(row);
             totSize += rowSize;
+            if (totSize > FUNNEL_MIN_BUFF_SIZE)
+            {
+                waiting++;
+                waitForSpace = true;
+            }
+        }
+
+        if (waitForSpace)
+            fullSem.wait(); // block pushers on crit
+    }
+
+    void pushMulti(unsigned numRows, const void * * newRows)
+    {
+        size32_t rowSizes = 0;
+        for (unsigned i=0; i < numRows; i++)
+            rowSizes += thorRowMemoryFootprint(serializer, newRows[i]);
+
+        bool waitForSpace = false;
+        {
+            CriticalBlock b(crit); // will mean first 'push' could block on fullSem, others on this crit.
+            if (stopped)
+            {
+                for (unsigned i=0; i < numRows; i++)
+                    ReleaseThorRow(newRows[i]);
+                return;
+            }
+            rows.enqueueMany(numRows, newRows);
+            totSize += rowSizes;
             if (totSize > FUNNEL_MIN_BUFF_SIZE)
             {
                 waiting++;
