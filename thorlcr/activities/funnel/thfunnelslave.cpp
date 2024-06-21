@@ -41,7 +41,7 @@ class CParallelFunnel : implements IRowStream, public CSimpleInterface
         StringAttr idStr;
         unsigned inputIndex;
         rowcount_t readThisInput; // purely for tracing
-        bool stopping;
+        std::atomic<bool> stopping{false};
     public:
         CInputHandler(CParallelFunnel &_funnel, unsigned _inputIndex)
             : threaded("CInputHandler", this), funnel(_funnel), inputIndex(_inputIndex)
@@ -63,8 +63,6 @@ class CParallelFunnel : implements IRowStream, public CSimpleInterface
         }
         void stop()
         {
-            CriticalBlock b(stopCrit);
-            if (stopping) return;
             stopping = true;
         }
         void join()
@@ -87,10 +85,8 @@ class CParallelFunnel : implements IRowStream, public CSimpleInterface
                     OwnedConstThorRow row = inputStream->ungroupedNextRow();
                     if (!row) break;
 
-                    {
-                        CriticalBlock b(stopCrit);
-                        if (stopping) break;
-                    }
+                    if (stopping) break;
+
                     CriticalBlock b(funnel.crit); // will mean first 'push' could block on fullSem, others on this crit.
                     funnel.push(row.getClear());
                     ++readThisInput;
