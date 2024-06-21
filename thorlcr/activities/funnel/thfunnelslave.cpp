@@ -71,7 +71,7 @@ class CParallelFunnel : implements IRowStream, public CSimpleInterface
         }
 
 // IThreaded impl.
-#if 1
+#if 0
         virtual void threadmain() override
         {
             bool started = false;
@@ -172,6 +172,7 @@ class CParallelFunnel : implements IRowStream, public CSimpleInterface
     StringAttr idStr;
 
     CriticalSection crit;
+    CriticalSection writerCrit;
     SimpleInterThreadQueueOf<const void, true> rows;
     Semaphore fullSem;
     size32_t totSize;
@@ -184,7 +185,9 @@ class CParallelFunnel : implements IRowStream, public CSimpleInterface
         size32_t rowSize = thorRowMemoryFootprint(serializer, row);
 
         bool waitForSpace = false;
+        // only allow a single writer at a time, so only a single thread is waiting on the semaphore - otherwise signal() takes a very long time
         {
+
             CriticalBlock b(crit); // will mean first 'push' could block on fullSem, others on this crit.
             if (stopped)
             {
@@ -201,7 +204,10 @@ class CParallelFunnel : implements IRowStream, public CSimpleInterface
         }
 
         if (waitForSpace)
+        {
+            CriticalBlock b(writerCrit);
             fullSem.wait(); // block pushers on crit
+        }
     }
 
     void pushMulti(unsigned numRows, const void * * newRows)
@@ -211,6 +217,7 @@ class CParallelFunnel : implements IRowStream, public CSimpleInterface
             rowSizes += thorRowMemoryFootprint(serializer, newRows[i]);
 
         bool waitForSpace = false;
+        // only allow a single writer at a time, so only a single thread is waiting on the semaphore - otherwise signal() takes a very long time
         {
             CriticalBlock b(crit); // will mean first 'push' could block on fullSem, others on this crit.
             if (stopped)
@@ -229,7 +236,10 @@ class CParallelFunnel : implements IRowStream, public CSimpleInterface
         }
 
         if (waitForSpace)
+        {
+            CriticalBlock b(writerCrit);
             fullSem.wait(); // block pushers on crit
+        }
     }
 
 public:
