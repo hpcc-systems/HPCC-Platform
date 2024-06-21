@@ -87,7 +87,6 @@ class CParallelFunnel : implements IRowStream, public CSimpleInterface
 
                     if (stopping) break;
 
-                    CriticalBlock b(funnel.crit); // will mean first 'push' could block on fullSem, others on this crit.
                     funnel.push(row.getClear());
                     ++readThisInput;
                 }
@@ -129,6 +128,9 @@ class CParallelFunnel : implements IRowStream, public CSimpleInterface
 
     void push(const void *row)
     {   
+        size32_t rowSize = thorRowMemoryFootprint(serializer, row);
+
+        CriticalBlock b(crit); // will mean first 'push' could block on fullSem, others on this crit.
         CriticalBlock b2(fullCrit); // exclusivity for totSize / full
         if (stopped)
         {
@@ -136,7 +138,7 @@ class CParallelFunnel : implements IRowStream, public CSimpleInterface
             return;
         }
         rows.enqueue(row);
-        totSize += thorRowMemoryFootprint(serializer, row);
+        totSize += rowSize;
         while (totSize > FUNNEL_MIN_BUFF_SIZE)
         {
             full = true;
