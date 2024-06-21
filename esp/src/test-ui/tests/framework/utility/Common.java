@@ -2,6 +2,7 @@ package framework.utility;
 
 import framework.config.Config;
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
@@ -161,5 +162,17 @@ public class Common {
 
         Logger.getLogger("org.openqa.selenium").setLevel(Level.OFF); // Turn off all logging from the Selenium WebDriver.
         return logger;
+    }
+
+    public static String[] getAttributeList(WebDriver driver, WebElement webElement, String pageName) {
+        try {
+            JavascriptExecutor executor = (JavascriptExecutor) driver;
+            Object attributes = executor.executeScript("var items = {}; for (index = 0; index < arguments[0].attributes.length; ++index) { items[arguments[0].attributes[index].name] = arguments[0].attributes[index].value }; return items;", webElement);
+            return attributes.toString().replaceAll("[{}]", "").split(", ");
+        } catch (Exception ex) {
+            Common.logError("Failure: " + pageName + ": Error in getting arguments list for web element: " + webElement.getText() + "Error: " + ex.getMessage());
+        }
+
+        return new String[0];
     }
 }

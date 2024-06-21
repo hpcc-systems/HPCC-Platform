@@ -167,7 +167,7 @@ public abstract class BaseTableTest<T> {
             columnHeader = driver.findElement(By.xpath("//*[@*[.='" + columnKey + "']]"));
 
             //Get the list of attributes for that column header
-            String[] attributes = getAttributeList(driver, columnHeader);
+            String[] attributes = Common.getAttributeList(driver, columnHeader, getPageName());
 
             String sortValue = null;
 
@@ -189,18 +189,6 @@ public abstract class BaseTableTest<T> {
         }
 
         return null;
-    }
-
-    private String[] getAttributeList(WebDriver driver, WebElement webElement) {
-        try {
-            JavascriptExecutor executor = (JavascriptExecutor) driver;
-            Object attributes = executor.executeScript("var items = {}; for (index = 0; index < arguments[0].attributes.length; ++index) { items[arguments[0].attributes[index].name] = arguments[0].attributes[index].value }; return items;", webElement);
-            return attributes.toString().replaceAll("[{}]", "").split(", ");
-        } catch (Exception ex) {
-            Common.logError("Failure: " + getPageName() + ": Error in getting arguments list for web element: " + webElement.getText() + "Error: " + ex.getMessage());
-        }
-
-        return new String[0];
     }
 
     private List<Object> getDataFromJSONUsingColumnKey(String columnKey, List<T> jsonObjects) {
