@@ -119,32 +119,37 @@ class CParallelFunnel : implements IRowStream, public CSimpleInterface
     unsigned eoss;
     StringAttr idStr;
 
-    CriticalSection fullCrit, crit;
+    CriticalSection crit;
     SimpleInterThreadQueueOf<const void, true> rows;
     Semaphore fullSem;
     size32_t totSize;
-    bool full, stopped;
+    unsigned waiting = 0;
+    bool stopped;
     Linked<IOutputRowSerializer> serializer;
 
     void push(const void *row)
     {   
         size32_t rowSize = thorRowMemoryFootprint(serializer, row);
 
-        CriticalBlock b(crit); // will mean first 'push' could block on fullSem, others on this crit.
-        CriticalBlock b2(fullCrit); // exclusivity for totSize / full
-        if (stopped)
+        bool waitForSpace = false;
         {
-            ReleaseThorRow(row);
-            return;
+            CriticalBlock b(crit); // will mean first 'push' could block on fullSem, others on this crit.
+            if (stopped)
+            {
+                ReleaseThorRow(row);
+                return;
+            }
+            rows.enqueue(row);
+            totSize += rowSize;
+            if (totSize > FUNNEL_MIN_BUFF_SIZE)
+            {
+                waiting++;
+                waitForSpace = true;
+            }
         }
-        rows.enqueue(row);
-        totSize += rowSize;
-        while (totSize > FUNNEL_MIN_BUFF_SIZE)
-        {
-            full = true;
-            CriticalUnblock b(fullCrit);
+
+        if (waitForSpace)
             fullSem.wait(); // block pushers on crit
-        }
     }
 
 public:
@@ -166,7 +171,8 @@ public:
     {
         idStr.set(activityKindStr(activity.queryContainer().getKind()));
 
-        stopped = full = false;
+        stopped = false;
+        waiting = 0;
         totSize = 0;
         eoss = 0;
         serializer.set(activity.queryRowSerializer());
@@ -208,10 +214,11 @@ public:
             CInputHandler &handler = inputHandlers.item(h);
             handler.stop();
         }
+
         {
-            CriticalBlock b(fullCrit);
+            CriticalBlock b(crit);
             stopped = true; // ensure any pending push()'s don't enqueue and if big row potentially block again.
-            if (full)
+            if (waiting)
             {
                 for (;;)
                 {
@@ -220,7 +227,8 @@ public:
                 }
                 rows.stop(); // I don't think really needed
                 totSize = 0;
-                fullSem.signal();
+                fullSem.signal(waiting);
+                waiting = 0;
             }
         }
         ForEachItemIn(h2, inputHandlers)
@@ -241,16 +249,19 @@ public:
             return NULL;
         }
         size32_t sz = thorRowMemoryFootprint(serializer, row.get());
+        unsigned numToSignal = 0;
         {
-            CriticalBlock b(fullCrit);
+            CriticalBlock b(crit);
             assertex(totSize>=sz);
             totSize -= sz;
-            if (full)
+            if (waiting && (totSize <= FUNNEL_MIN_BUFF_SIZE))
             {
-                full = false;
-                fullSem.signal();
+                numToSignal = 1;
+                waiting--;
             }
         }
+        if (numToSignal)
+            fullSem.signal(numToSignal);
         return row.getClear();
     }
 
