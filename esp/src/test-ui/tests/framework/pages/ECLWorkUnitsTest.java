@@ -94,19 +94,23 @@ public class ECLWorkUnitsTest extends BaseTableTest<ECLWorkunit> {
 
     @Override
     protected Object parseDataUIValue(Object dataUIValue, String columnName, Object dataIDUIValue) {
-        if (getCostColumns().contains(columnName)) {
-            dataUIValue = Double.parseDouble(((String) dataUIValue).split(" ")[0]);
-        } else if (columnName.equals("Total Cluster Time")) {
-            long timeInMilliSecs = TimeUtils.convertToMilliseconds((String) dataUIValue);
-            if (timeInMilliSecs == Config.MALFORMED_TIME_STRING) {
-                String errMsg = "Failure: " + getPageName() + ": Incorrect time format for " + columnName + " : " + dataUIValue + " in UI for " + getUniqueKeyName() + " : " + dataIDUIValue;
-                Common.logError(errMsg);
-                return dataUIValue;
-            }
+        try {
+            if (getCostColumns().contains(columnName)) {
+                dataUIValue = Double.parseDouble(((String) dataUIValue).split(" ")[0]);
+            } else if (columnName.equals("Total Cluster Time")) {
+                long timeInMilliSecs = TimeUtils.convertToMilliseconds((String) dataUIValue);
+                if (timeInMilliSecs == Config.MALFORMED_TIME_STRING) {
+                    String errMsg = "Failure: " + getPageName() + ": Incorrect time format for " + columnName + " : " + dataUIValue + " in UI for " + getUniqueKeyName() + " : " + dataIDUIValue;
+                    Common.logError(errMsg);
+                    return dataUIValue;
+                }
 
-            return timeInMilliSecs;
-        } else if (dataUIValue instanceof String) {
-            dataUIValue = ((String) dataUIValue).trim();
+                return timeInMilliSecs;
+            } else if (dataUIValue instanceof String) {
+                dataUIValue = ((String) dataUIValue).trim();
+            }
+        } catch (Exception ex) {
+            Common.logError("Failure: " + getPageName() + " Error in parsing UI value: " + dataUIValue + " for column: " + columnName + " ID: " + dataIDUIValue + " Error: " + ex.getMessage());
         }
 
         return dataUIValue;
@@ -144,8 +148,8 @@ public class ECLWorkUnitsTest extends BaseTableTest<ECLWorkunit> {
             if (element != null) {
                 return element.getAttribute("title");
             }
-        } catch (NoSuchElementException e) {
-            return "Invalid Page";
+        } catch (Exception ex) {
+            Common.logError("Error: " + getPageName() + ex.getMessage());
         }
         return "Invalid Page";
     }

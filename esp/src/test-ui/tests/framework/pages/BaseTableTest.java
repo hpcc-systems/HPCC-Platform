@@ -48,7 +48,7 @@ public abstract class BaseTableTest<T> {
     protected void testPage() {
         WebDriver driver = Common.driver;
         Common.openWebPage(driver, getPageUrl());
-        
+
         try {
             Common.logDebug("Tests started for: " + getPageName() + " page.");
 
@@ -74,33 +74,37 @@ public abstract class BaseTableTest<T> {
             int i = 1;
 
             for (Object value : values) {
-                String name = value.toString().trim();
+                try {
+                    String name = value.toString().trim();
 
-                WebElement element = Common.waitForElement(driver, By.xpath("//div[contains(text(), '" + name + "')]/.."));
-                String href = element.findElement(By.tagName("a")).getAttribute("href");
+                    WebElement element = Common.waitForElement(driver, By.xpath("//div[contains(text(), '" + name + "')]/.."));
+                    String href = element.findElement(By.tagName("a")).getAttribute("href");
 
-                String dropdownValueBefore = getSelectedDropdownValue(driver);
+                    String dropdownValueBefore = getSelectedDropdownValue(driver);
 
-                element.click();
+                    element.click();
 
-                if (driver.getPageSource().contains(name)) {
-                    String msg = "Success: " + getPageName() + ": Link Test Pass for " + i++ + ". " + name + ". URL : " + href;
-                    Common.logDetail(msg);
-                } else {
-                    String currentPage = getCurrentPage(driver);
-                    String errorMsg = "Failure: " + getPageName() + ": Link Test Fail for " + i++ + ". " + name + " page failed. The current navigation page that we landed on is " + currentPage + ". Current URL : " + href;
-                    Common.logError(errorMsg);
-                }
+                    if (driver.getPageSource().contains(name)) {
+                        String msg = "Success: " + getPageName() + ": Link Test Pass for " + i++ + ". " + name + ". URL : " + href;
+                        Common.logDetail(msg);
+                    } else {
+                        String currentPage = getCurrentPage(driver);
+                        String errorMsg = "Failure: " + getPageName() + ": Link Test Fail for " + i++ + ". " + name + " page failed. The current navigation page that we landed on is " + currentPage + ". Current URL : " + href;
+                        Common.logError(errorMsg);
+                    }
 
-                driver.navigate().to(getPageUrl());
-                driver.navigate().refresh();
+                    driver.navigate().to(getPageUrl());
+                    driver.navigate().refresh();
 
-                String dropdownValueAfter = getSelectedDropdownValue(driver);
+                    String dropdownValueAfter = getSelectedDropdownValue(driver);
 
-                // Log error if the dropdown value has changed
-                if (!dropdownValueBefore.equals(dropdownValueAfter)) {
-                    String dropdownErrorMsg = "Failure: " + getPageName() + ": Dropdown value changed after navigating back. Before: " + dropdownValueBefore + ", After: " + dropdownValueAfter;
-                    Common.logError(dropdownErrorMsg);
+                    // Log error if the dropdown value has changed
+                    if (!dropdownValueBefore.equals(dropdownValueAfter)) {
+                        String dropdownErrorMsg = "Failure: " + getPageName() + ": Dropdown value changed after navigating back. Before: " + dropdownValueBefore + ", After: " + dropdownValueAfter;
+                        Common.logError(dropdownErrorMsg);
+                    }
+                } catch (Exception ex) {
+                    Common.logError("Failure: " + getPageName() + ": Exception in testing links for column: " + columnKey + " value: " + value + " Error: " + ex.getMessage());
                 }
             }
         }
@@ -130,33 +134,73 @@ public abstract class BaseTableTest<T> {
         for (int i = 0; i < 3; i++) {
 
             String currentSortOrder = getCurrentSortingOrder(driver, columnKey);
-            List<Object> columnDataFromUI = getDataFromUIUsingColumnKey(driver, columnKey);
+            if (currentSortOrder != null) {
+                List<Object> columnDataFromUI = getDataFromUIUsingColumnKey(driver, columnKey);
 
-            sortJsonUsingSortOrder(currentSortOrder, jsonObjects, columnKey);
+                sortJsonUsingSortOrder(currentSortOrder, jsonObjects, columnKey);
 
-            List<Object> columnDataFromJSON = getDataFromJSONUsingColumnKey(columnKey, jsonObjects);
-            List<Object> columnDataIDFromUI = getDataFromUIUsingColumnKey(driver, getUniqueKey());
+                List<Object> columnDataFromJSON = getDataFromJSONUsingColumnKey(columnKey, jsonObjects);
+                List<Object> columnDataIDFromUI = getDataFromUIUsingColumnKey(driver, getUniqueKey());
 
-            if (compareData(columnDataFromUI, columnDataFromJSON, columnDataIDFromUI, columnName)) {
-                Common.logDebug("Success: " + getPageName() + ": Values are correctly sorted in " + currentSortOrder + " order by: " + columnName);
+                if (compareData(columnDataFromUI, columnDataFromJSON, columnDataIDFromUI, columnName)) {
+                    Common.logDebug("Success: " + getPageName() + ": Values are correctly sorted in " + currentSortOrder + " order by: " + columnName);
+                } else {
+                    String errMsg = "Failure: " + getPageName() + ": Values are not correctly sorted in " + currentSortOrder + " order by: " + columnName;
+                    Common.logError(errMsg);
+                }
             } else {
-                String errMsg = "Failure: " + getPageName() + ": Values are not correctly sorted in " + currentSortOrder + " order by: " + columnName;
-                Common.logError(errMsg);
+                Common.logError("Failure: " + getPageName() + " Unable to get sort order for column: " + columnKey);
             }
         }
     }
 
     private String getCurrentSortingOrder(WebDriver driver, String columnKey) {
 
-        WebElement columnHeader = driver.findElement(By.xpath("//*[@*[.='"+columnKey+"']]"));
+        try {
 
-        columnHeader.click();
+            WebElement columnHeader = driver.findElement(By.xpath("//*[@*[.='" + columnKey + "']]"));
 
-        Common.sleep();
+            columnHeader.click();
 
-        columnHeader = driver.findElement(By.xpath("//*[@*[.='"+columnKey+"']]"));
+            Common.sleep();
 
-        return columnHeader.getAttribute("aria-sort");
+            columnHeader = driver.findElement(By.xpath("//*[@*[.='" + columnKey + "']]"));
+
+            //Get the list of attributes for that column header
+            String[] attributes = getAttributeList(driver, columnHeader);
+
+            String sortValue = null;
+
+            // Iterate through the list to find the attribute containing "sort"
+            for (String attribute : attributes) {
+                if (attribute.contains("sort")) {
+                    String[] parts = attribute.split("=", 2);
+                    if (parts.length == 2) {
+                        sortValue = parts[1].replaceAll("['\"]", "");
+                        break;
+                    }
+                }
+            }
+
+            return sortValue;
+
+        } catch (Exception ex) {
+            Common.logError("Failure: " + getPageName() + " Exception in getting sort order for column: " + columnKey + " Error: " + ex.getMessage());
+        }
+
+        return null;
+    }
+
+    private String[] getAttributeList(WebDriver driver, WebElement webElement) {
+        try {
+            JavascriptExecutor executor = (JavascriptExecutor) driver;
+            Object attributes = executor.executeScript("var items = {}; for (index = 0; index < arguments[0].attributes.length; ++index) { items[arguments[0].attributes[index].name] = arguments[0].attributes[index].value }; return items;", webElement);
+            return attributes.toString().replaceAll("[{}]", "").split(", ");
+        } catch (Exception ex) {
+            Common.logError("Failure: " + getPageName() + ": Error in getting arguments list for web element: " + webElement.getText() + "Error: " + ex.getMessage());
+        }
+
+        return new String[0];
     }
 
     private List<Object> getDataFromJSONUsingColumnKey(String columnKey, List<T> jsonObjects) {
@@ -169,21 +213,35 @@ public abstract class BaseTableTest<T> {
 
     private List<Object> getDataFromUIUsingColumnKey(WebDriver driver, String columnKey) {
 
-        List<WebElement> elements = driver.findElements(By.xpath("//*[@*[.='"+columnKey+"']]"));
-
         List<Object> columnData = new ArrayList<>();
-        for (int i = 1; i < elements.size(); i++) {
-            columnData.add(elements.get(i).getText());
+
+        try {
+            List<WebElement> elements = driver.findElements(By.xpath("//*[@*[.='" + columnKey + "']]"));
+
+            for (int i = 1; i < elements.size(); i++) {
+                columnData.add(elements.get(i).getText());
+            }
+        } catch (Exception ex) {
+            Common.logError("Failure: " + getPageName() + ": Error in getting data from UI using column key: " + columnKey + "Error: " + ex.getMessage());
         }
+
         return columnData;
     }
 
     void ascendingSortJson(List<T> jsonObjects, String columnKey) {
-        jsonObjects.sort(Comparator.comparing(jsonObject -> (Comparable) getColumnDataFromJson(jsonObject, columnKey)));
+        try {
+            jsonObjects.sort(Comparator.comparing(jsonObject -> (Comparable) getColumnDataFromJson(jsonObject, columnKey)));
+        } catch (Exception ex) {
+            Common.logError("Failure: " + getPageName() + ": Exception in sorting JSON in ascending order using column key: " + columnKey + " Error: " + ex.getMessage());
+        }
     }
 
     void descendingSortJson(List<T> jsonObjects, String columnKey) {
-        jsonObjects.sort(Comparator.comparing((Function<T, Comparable>) jsonObject -> (Comparable) getColumnDataFromJson(jsonObject, columnKey)).reversed());
+        try {
+            jsonObjects.sort(Comparator.comparing((Function<T, Comparable>) jsonObject -> (Comparable) getColumnDataFromJson(jsonObject, columnKey)).reversed());
+        } catch (Exception ex) {
+            Common.logError("Failure: " + getPageName() + ": Exception in sorting JSON in descending order using column key: " + columnKey + " Error: " + ex.getMessage());
+        }
     }
 
     private boolean testTableContent(WebDriver driver, List<T> jsonObjects) {
@@ -223,11 +281,10 @@ public abstract class BaseTableTest<T> {
         String filePath = getJsonFilePath();
         try {
             return parseJson(filePath);
-        } catch (Exception e) {
-            Common.logError("Failure: Exception: " + e.getMessage());
+        } catch (Exception ex) {
+            Common.logError("Failure: " + getPageName() + " Unable to parse JSON File: Exception: " + ex.getMessage());
         }
 
-        Common.logError("Failure: Error in JSON Parsing: " + filePath);
         return null;
     }
 
@@ -266,40 +323,52 @@ public abstract class BaseTableTest<T> {
         return true;
     }
 
+    // need to change and fix "pageSize" and "ms-Dropdown-item"
     private void clickDropdown(WebDriver driver, int numOfItemsJSON) {
-        WebElement dropdown = driver.findElement(By.id("pageSize"));
-        dropdown.click();
 
-        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
-        List<WebElement> options = wait.until(ExpectedConditions.visibilityOfAllElementsLocatedBy(By.cssSelector(".ms-Dropdown-item")));
+        try {
+            WebElement dropdown = driver.findElement(By.id("pageSize"));
+            dropdown.click();
 
-        int selectedValue = Config.dropdownValues[0];
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+            List<WebElement> options = wait.until(ExpectedConditions.visibilityOfAllElementsLocatedBy(By.cssSelector(".ms-Dropdown-item")));
 
-        // the smallest dropdown value greater than numOfItemsJSON
-        for (int value : Config.dropdownValues) {
-            if (numOfItemsJSON < value) {
-                selectedValue = value;
-                break;
+            int selectedValue = Config.dropdownValues[0];
+
+            // the smallest dropdown value greater than numOfItemsJSON
+            for (int value : Config.dropdownValues) {
+                if (numOfItemsJSON < value) {
+                    selectedValue = value;
+                    break;
+                }
             }
-        }
 
-        Common.logDebug("Page: " + getPageName() + ": Dropdown selected: " + selectedValue);
+            Common.logDebug("Page: " + getPageName() + ": Dropdown selected: " + selectedValue);
 
-        for (WebElement option : options) {
-            if (option.getText().equals(String.valueOf(selectedValue))) {
-                option.click();
-                break;
+            for (WebElement option : options) {
+                if (option.getText().equals(String.valueOf(selectedValue))) {
+                    option.click();
+                    break;
+                }
             }
-        }
 
-        wait.until(ExpectedConditions.invisibilityOfElementLocated(By.cssSelector(".ms-Dropdown-item")));
-        driver.navigate().refresh();
-        Common.sleep();
+            wait.until(ExpectedConditions.invisibilityOfElementLocated(By.cssSelector(".ms-Dropdown-item")));
+            driver.navigate().refresh();
+            Common.sleep();
+        } catch (Exception ex) {
+            Common.logError("Failure: " + getPageName() + ": Error in clicking dropdown: " + ex.getMessage());
+        }
     }
 
     private String getSelectedDropdownValue(WebDriver driver) {
-        WebElement dropdown = Common.waitForElement(driver, By.id("pageSize"));
-        return dropdown.getText().trim();
+        try {
+            WebElement dropdown = Common.waitForElement(driver, By.id("pageSize"));
+            return dropdown.getText().trim();
+        } catch (Exception ex) {
+            Common.logError("Failure: " + getPageName() + ": Error in getting dropdown value: " + ex.getMessage());
+        }
+
+        return "";
     }
 
     private void testForAllText(WebDriver driver) {

@@ -46,15 +46,20 @@ public class ActivitiesTest {
         Common.logDebug("Tests started for: Activities page: Testing Navigation Links");
 
         for (NavigationWebElement element : navWebElements) {
-            element.webElement().click();
 
-            if (testTabsForNavigationLinks(driver, element)) {
-                String msg = "Success: Navigation Menu Link for " + element.name() + ". URL : " + element.hrefValue();
-                Common.logDetail(msg);
-            } else {
-                String currentPage = getCurrentPage(driver);
-                String errorMsg = "Failure: Navigation Menu Link for " + element.name() + " page failed. The current navigation page that we landed on is " + currentPage + ". Current URL : " + element.hrefValue();
-                Common.logError(errorMsg);
+            try {
+                element.webElement().click();
+
+                if (testTabsForNavigationLinks(driver, element)) {
+                    String msg = "Success: Navigation Menu Link for " + element.name() + ". URL : " + element.hrefValue();
+                    Common.logDetail(msg);
+                } else {
+                    String currentPage = getCurrentPage(driver);
+                    String errorMsg = "Failure: Navigation Menu Link for " + element.name() + " page failed. The current navigation page that we landed on is " + currentPage + ". Current URL : " + element.hrefValue();
+                    Common.logError(errorMsg);
+                }
+            } catch (Exception ex) {
+                Common.logError("Failure: Exception in Navigation Link for " + element.name() + ". URL : " + element.hrefValue() + " Error: " + ex.getMessage());
             }
         }
     }
@@ -98,9 +103,13 @@ public class ActivitiesTest {
         List<NavigationWebElement> navWebElements = new ArrayList<>();
 
         for (String navName : navNamesArray) {
-            WebElement webElement = driver.findElement(By.name(navName)).findElement(By.tagName("a"));
-            String hrefValue = webElement.getAttribute("href");
-            navWebElements.add(new NavigationWebElement(navName, hrefValue, webElement));
+            try {
+                WebElement webElement = driver.findElement(By.name(navName)).findElement(By.tagName("a"));
+                String hrefValue = webElement.getAttribute("href");
+                navWebElements.add(new NavigationWebElement(navName, hrefValue, webElement));
+            } catch (Exception ex) {
+                Common.logError("Failure: Activities Page for Navigation Element: " + navName + ": Error: " + ex.getMessage());
+            }
         }
 
         //navWebElements.add(new NavigationWebElement("DummyNavName", "http://192.168.0.221:8010/esp/files/index.html#/files", navWebElements.get(2).webElement()));

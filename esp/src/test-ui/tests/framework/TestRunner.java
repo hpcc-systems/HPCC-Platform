@@ -13,10 +13,12 @@ public class TestRunner {
 
         Common.initializeLoggerAndDriver(args[0]);
 
-        TestNG testng = new TestNG();
-        testng.setTestClasses(loadClasses());
-        testng.run();
-        Common.driver.quit();
+        if (Common.driver != null) {
+            TestNG testng = new TestNG();
+            testng.setTestClasses(loadClasses());
+            testng.run();
+            Common.driver.quit();
+        }
     }
 
     private static Class<?>[] loadClasses() {
@@ -25,8 +27,8 @@ public class TestRunner {
         for (TestClass testClass : TestClasses.testClassesList) {
             try {
                 classes.add(Class.forName(testClass.getPath()));
-            } catch (ClassNotFoundException e) {
-                System.err.println(e.getMessage());
+            } catch (Exception e) {
+                Common.logError("Failure: Error in loading classes: " + e.getMessage());
             }
         }
 
