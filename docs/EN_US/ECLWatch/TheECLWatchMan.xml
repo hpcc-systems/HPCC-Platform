@@ -42,17 +42,17 @@
       <para />
     </legalnotice>
 
-    <xi:include href="common/Version.xml"
+    <xi:include href="../common/Version.xml"
                 xpointer="xpointer(//*[@id='FooterInfo'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="common/Version.xml"
+    <xi:include href="../common/Version.xml"
                 xpointer="xpointer(//*[@id='DateVer'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
-    <xi:include href="common/Version.xml"
+    <xi:include href="../common/Version.xml"
                 xpointer="xpointer(//*[@id='Copyright'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 

@@ -39,15 +39,15 @@
       <para/>
     </legalnotice>
 
-    <xi:include href="../../common/Version.xml" xpointer="FooterInfo"
+    <xi:include href="../../../common/Version.xml" xpointer="FooterInfo"
                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
-    <xi:include href="../../common/Version.xml" xpointer="DateVer"
+    <xi:include href="../../../common/Version.xml" xpointer="DateVer"
                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
     <corpname>HPCC Systems</corpname>
 
-    <xi:include href="../../common/Version.xml" xpointer="Copyright"
+    <xi:include href="../../../common/Version.xml" xpointer="Copyright"
                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
     <mediaobject role="logo">
