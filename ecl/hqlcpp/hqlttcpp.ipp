@@ -729,12 +729,10 @@ public:
     bool neverHoist = false;
 };
 
-class AutoScopeMigrateTransformer : public NewHqlTransformer
+class AutoScopeMigrateTransformer : public HoistingHqlTransformer
 {
 public:
     AutoScopeMigrateTransformer(IWorkUnit * _wu, HqlCppTranslator & _translator);
-
-    void transformRoot(const HqlExprArray & in, HqlExprArray & out);
 
     bool worthTransforming() const { return hasCandidate; }
 
@@ -751,6 +749,7 @@ protected:
     IHqlExpression * transformCond(IHqlExpression * expr);
     void doAnalyseExpr(IHqlExpression * expr);
     void doAnalyseConditionalExpr(IHqlExpression * expr, unsigned firstConditional);
+    virtual IHqlExpression * doTransformIndependent(IHqlExpression * expr) override;
 
     inline AutoScopeMigrateInfo * queryBodyExtra(IHqlExpression * expr)     { return static_cast<AutoScopeMigrateInfo *>(queryTransformExtra(expr->queryBody())); }
 
@@ -765,7 +764,6 @@ private:
     unsigned graphDepth = 0;
     HqlExprArray graphActions;
     unsigned activityDepth;
-    HqlExprArray * globalTarget;
 };
 
 //---------------------------------------------------------------------------
