@@ -153,11 +153,11 @@ public:
     RegexCacheEntry() = delete;
 
     RegexCacheEntry(size32_t _patternSize, const char * _pattern, uint32_t _options, std::shared_ptr<pcre2_code_8> _compiledRegex8)
-    : savedOptions(_options), savedPattern(_pattern, _patternSize), compiledRegex8(_compiledRegex8)
+    : savedOptions(_options), savedPattern(_pattern, _patternSize), compiledRegex8(std::move(_compiledRegex8))
     {}
 
     RegexCacheEntry(size32_t _patternSize, const char * _pattern, uint32_t _options, std::shared_ptr<pcre2_code_16> _compiledRegex16)
-    : savedOptions(_options), savedPattern(_pattern, _patternSize), compiledRegex16(_compiledRegex16)
+    : savedOptions(_options), savedPattern(_pattern, _patternSize), compiledRegex16(std::move(_compiledRegex16))
     {}
 
     RegexCacheEntry(const RegexCacheEntry & other) = delete;
@@ -254,7 +254,7 @@ private:
 
 public:
     CStrRegExprFindInstance(std::shared_ptr<pcre2_code_8> _compiledRegex, const char * _subject, size32_t _from, size32_t _len, bool _keep)
-        : compiledRegex(_compiledRegex)
+        : compiledRegex(std::move(_compiledRegex))
     {
         // See if UTF-8 is enabled on this compiled regex
         uint32_t option_bits;
@@ -663,7 +663,7 @@ private:
 
 public:
     CUStrRegExprFindInstance(std::shared_ptr<pcre2_code_16> _compiledRegex, const UChar * _subject, size32_t _from, size32_t _len)
-        : compiledRegex(_compiledRegex)
+        : compiledRegex(std::move(_compiledRegex))
     {
         subject = _subject + _from;
         matched = false;
