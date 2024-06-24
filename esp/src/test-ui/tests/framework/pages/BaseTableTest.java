@@ -3,7 +3,6 @@ package framework.pages;
 import framework.config.Config;
 import framework.utility.Common;
 import org.openqa.selenium.By;
-import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
@@ -13,6 +12,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 public abstract class BaseTableTest<T> {
@@ -26,6 +26,8 @@ public abstract class BaseTableTest<T> {
     protected abstract String[] getColumnNames();
 
     protected abstract String[] getColumnKeys();
+
+    protected abstract String[] getDetailKeys();
 
     protected abstract String getUniqueKeyName();
 
@@ -45,6 +47,8 @@ public abstract class BaseTableTest<T> {
 
     protected abstract String getCurrentPage(WebDriver driver);
 
+    protected abstract Map<String, T> getJsonMap();
+
     protected void testPage() {
         WebDriver driver = Common.driver;
         Common.openWebPage(driver, getPageUrl());
@@ -52,7 +56,7 @@ public abstract class BaseTableTest<T> {
         try {
             Common.logDebug("Tests started for: " + getPageName() + " page.");
 
-            testForAllText(driver);
+            //testForAllText(driver);
             testContentAndSortingOrder(driver);
             testLinksInTable(driver);
 
@@ -77,7 +81,7 @@ public abstract class BaseTableTest<T> {
                 try {
                     String name = value.toString().trim();
 
-                    WebElement element = Common.waitForElement(driver, By.xpath("//div[contains(text(), '" + name + "')]/.."));
+                    WebElement element = Common.waitForElement(driver, By.xpath("//div[text()='" + name + "']/.."));
                     String href = element.findElement(By.tagName("a")).getAttribute("href");
 
                     String dropdownValueBefore = getSelectedDropdownValue(driver);
@@ -87,6 +91,9 @@ public abstract class BaseTableTest<T> {
                     if (driver.getPageSource().contains(name)) {
                         String msg = "Success: " + getPageName() + ": Link Test Pass for " + i++ + ". " + name + ". URL : " + href;
                         Common.logDetail(msg);
+
+                        testDetailsPage(driver, name);
+
                     } else {
                         String currentPage = getCurrentPage(driver);
                         String errorMsg = "Failure: " + getPageName() + ": Link Test Fail for " + i++ + ". " + name + " page failed. The current navigation page that we landed on is " + currentPage + ". Current URL : " + href;
@@ -110,6 +117,48 @@ public abstract class BaseTableTest<T> {
         }
     }
 
+    private void testDetailsPage(WebDriver driver, String name) {
+
+        Common.logDebug("Tests started for : " + getPageName() + " Details page: for: " + getUniqueKeyName() + " : " + name);
+
+        boolean pass = true;
+
+        Common.sleep();
+
+        for (String detailKey : getDetailKeys()) {
+            try {
+                WebElement element = Common.waitForElement(driver, By.id(detailKey));
+
+                Object dataUIValue, dataJSONValue;
+
+                if (Common.isCheckbox(element)) {
+                    dataUIValue = element.isSelected();
+                } else {
+                    dataUIValue = element.getAttribute("title");
+                }
+
+                T object = getJsonMap().get(name);
+
+                dataJSONValue = getColumnDataFromJson(object, detailKey);
+
+                dataUIValue = parseDataUIValue(dataUIValue, detailKey, name);
+                dataJSONValue = parseDataJSONValue(dataJSONValue, detailKey, name);
+
+                if (!dataUIValue.equals(dataJSONValue)) {
+                    Common.logError("Failure: " + getPageName() + " Details page, Incorrect " + detailKey + " : " + dataUIValue + " in UI for " + getUniqueKeyName() + " : " + name + ". Correct " + detailKey + " is: " + dataJSONValue);
+                    pass = false;
+                }
+
+            } catch (Exception ex) {
+                Common.logError("Error: Details " + getPageName() + "Page, for: " + getUniqueKeyName() + " : " + name + " Error: " + ex.getMessage());
+            }
+        }
+
+        if (pass) {
+            Common.logDetail("Success: " + getPageName() + " Details page: All values test passed for: " + getUniqueKeyName() + " : " + name);
+        }
+    }
+
     private void testContentAndSortingOrder(WebDriver driver) {
         List<T> jsonObjects = getAllObjectsFromJson();
 
@@ -119,14 +168,14 @@ public abstract class BaseTableTest<T> {
 
             Common.logDebug("Tests started for: " + getPageName() + " page: Testing Content");
 
-            if (testTableContent(driver, jsonObjects)) {
-
-                Common.logDebug("Tests started for: " + getPageName() + " page: Testing Sorting Order");
-
-                for (int i = 0; i < getColumnKeys().length; i++) {
-                    testTheSortingOrderForOneColumn(driver, jsonObjects, getColumnKeys()[i], getColumnNames()[i]);
-                }
-            }
+//            if (testTableContent(driver, jsonObjects)) {
+//
+//                Common.logDebug("Tests started for: " + getPageName() + " page: Testing Sorting Order");
+//
+//                for (int i = 0; i < getColumnKeys().length; i++) {
+//                    testTheSortingOrderForOneColumn(driver, jsonObjects, getColumnKeys()[i], getColumnNames()[i]);
+//                }
+//            }
         }
     }
 

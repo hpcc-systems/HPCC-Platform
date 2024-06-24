@@ -8,14 +8,15 @@ import framework.model.WUQueryRoot;
 import framework.utility.Common;
 import framework.utility.TimeUtils;
 import org.openqa.selenium.By;
-import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.testng.annotations.Test;
 
 import java.io.File;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ECLWorkUnitsTest extends BaseTableTest<ECLWorkunit> {
 
@@ -50,6 +51,11 @@ public class ECLWorkUnitsTest extends BaseTableTest<ECLWorkunit> {
     }
 
     @Override
+    protected String[] getDetailKeys() {
+        return new String[]{"wuid", "action", "state", "owner", "jobname", "compileCost", "executeCost", "fileAccessCost", "protected", "cluster", "totalClusterTime"};
+    }
+
+    @Override
     protected String[] getColumnKeysWithLinks() {
         return new String[]{"Wuid"};
     }
@@ -65,29 +71,44 @@ public class ECLWorkUnitsTest extends BaseTableTest<ECLWorkunit> {
     }
 
     private List<String> getCostColumns() {
-        return Arrays.asList("Compile Cost", "Execution Cost", "File Access Cost");
+        return Arrays.asList("Compile Cost", "Execution Cost", "File Access Cost", "compileCost", "executeCost", "fileAccessCost");
     }
+
+    @Override
+    protected Map<String, ECLWorkunit> getJsonMap() {
+        return jsonMap;
+    }
+
+    Map<String, ECLWorkunit> jsonMap = new HashMap<>();
 
     @Override
     protected List<ECLWorkunit> parseJson(String filePath) throws Exception {
         ObjectMapper objectMapper = new ObjectMapper();
         WUQueryRoot wuQueryRoot = objectMapper.readValue(new File(filePath), WUQueryRoot.class);
         WUQueryResponse wuQueryResponse = wuQueryRoot.getWUQueryResponse();
-        return wuQueryResponse.getWorkunits().getECLWorkunit();
+        List<ECLWorkunit> eclWorkunits = wuQueryResponse.getWorkunits().getECLWorkunit();
+
+        for (ECLWorkunit workunit : eclWorkunits) {
+            jsonMap.put(workunit.getWuid(), workunit);
+        }
+
+        return eclWorkunits;
     }
 
     @Override
     protected Object getColumnDataFromJson(ECLWorkunit workunit, String columnKey) {
         return switch (columnKey) {
-            case "Wuid" -> workunit.getWuid();
-            case "Owner" -> workunit.getOwner();
-            case "Jobname" -> workunit.getJobname();
-            case "Cluster" -> workunit.getCluster();
-            case "State" -> workunit.getState();
-            case "TotalClusterTime" -> workunit.getTotalClusterTime();
-            case "Compile Cost" -> workunit.getCompileCost();
-            case "Execution Cost" -> workunit.getExecuteCost();
-            case "File Access Cost" -> workunit.getFileAccessCost();
+            case "Wuid", "wuid" -> workunit.getWuid();
+            case "Owner", "owner" -> workunit.getOwner();
+            case "Jobname", "jobname" -> workunit.getJobname();
+            case "Cluster", "cluster" -> workunit.getCluster();
+            case "State", "state" -> workunit.getState();
+            case "TotalClusterTime", "totalClusterTime" -> workunit.getTotalClusterTime();
+            case "Compile Cost", "compileCost" -> workunit.getCompileCost();
+            case "Execution Cost", "executeCost" -> workunit.getExecuteCost();
+            case "File Access Cost", "fileAccessCost" -> workunit.getFileAccessCost();
+            case "action" -> workunit.getActionEx();
+            case "protected" -> workunit.isProtected();
             default -> null;
         };
     }
@@ -97,7 +118,7 @@ public class ECLWorkUnitsTest extends BaseTableTest<ECLWorkunit> {
         try {
             if (getCostColumns().contains(columnName)) {
                 dataUIValue = Double.parseDouble(((String) dataUIValue).split(" ")[0]);
-            } else if (columnName.equals("Total Cluster Time")) {
+            } else if (columnName.equals("Total Cluster Time") || columnName.equals("totalClusterTime")) {
                 long timeInMilliSecs = TimeUtils.convertToMilliseconds((String) dataUIValue);
                 if (timeInMilliSecs == Config.MALFORMED_TIME_STRING) {
                     String errMsg = "Failure: " + getPageName() + ": Incorrect time format for " + columnName + " : " + dataUIValue + " in UI for " + getUniqueKeyName() + " : " + dataIDUIValue;
@@ -118,7 +139,7 @@ public class ECLWorkUnitsTest extends BaseTableTest<ECLWorkunit> {
 
     @Override
     protected Object parseDataJSONValue(Object dataJSONValue, String columnName, Object dataIDUIValue) {
-        if (columnName.equals("Total Cluster Time")) {
+        if (columnName.equals("Total Cluster Time") || columnName.equals("totalClusterTime")) {
             long timeInMilliSecs = (long) dataJSONValue;
             if (timeInMilliSecs == Config.MALFORMED_TIME_STRING) {
                 String errMsg = "Failure: " + getPageName() + ": Incorrect time format for " + columnName + " in JSON for " + getUniqueKeyName() + " : " + dataIDUIValue;
@@ -144,7 +165,7 @@ public class ECLWorkUnitsTest extends BaseTableTest<ECLWorkunit> {
     @Override
     protected String getCurrentPage(WebDriver driver) {
         try {
-            WebElement element = Common.waitForElement(driver, By.xpath("//*[@*[.='wuid']]"));
+            WebElement element = Common.waitForElement(driver, By.id("wuid"));
             if (element != null) {
                 return element.getAttribute("title");
             }

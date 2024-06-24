@@ -80,6 +80,14 @@ public class ECLWorkunit {
         return totalClusterTime;
     }
 
+    public String getActionEx() {
+        return actionEx;
+    }
+
+    public boolean isProtected() {
+        return isProtected;
+    }
+
     @JsonSetter("TotalClusterTime")
     public void setTotalClusterTime(String totalClusterTime) {
         this.totalClusterTime = TimeUtils.convertToMilliseconds(totalClusterTime);

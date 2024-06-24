@@ -66,6 +66,10 @@ public class Common {
         return new WebDriverWait(driver, Duration.ofSeconds(10)).until(ExpectedConditions.presenceOfElementLocated(locator));
     }
 
+    public static boolean isCheckbox(WebElement element) {
+        return "input".equalsIgnoreCase(element.getTagName()) && "checkbox".equalsIgnoreCase(element.getAttribute("type"));
+    }
+
     public static void logError(String message) {
         System.err.println(message);
         errorLogger.severe(message);
