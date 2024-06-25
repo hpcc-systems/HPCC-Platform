@@ -1751,7 +1751,7 @@ protected:
 
     // NB: Only used by channel 0
     Owned<CFileOwner> overflowWriteFile;
-    Owned<IRowWriter> overflowWriteStream;
+    Owned<IExtRowWriter> overflowWriteStream;
     rowcount_t overflowWriteCount;
     OwnedMalloc<IChannelDistributor *> channelDistributors;
     unsigned nextRhsToSpill = 0;
@@ -1881,7 +1881,7 @@ protected:
                         file.setown(container.queryActivity()->createOwnedTempFile(tempName.str()));
                         VStringBuffer spillPrefixStr("clearAllNonLocalRows(%d)", SPILL_PRIORITY_SPILLABLE_STREAM);
                         // 3rd param. is skipNulls = true, the row arrays may have had the non-local rows delete already.
-                        rows.save(file->queryIFile(), spillCompInfo, true, spillPrefixStr.str()); // saves committed rows
+                        rows.save(*file, spillCompInfo, true, spillPrefixStr.str()); // saves committed rows
                         rows.flushMarker = 0; // reset because array will be moved as a consequence of further adds, so next scan must be from start
                     }
 
@@ -2900,6 +2900,7 @@ public:
             overflowWriteCount += rhsInRowsTemp.ordinality();
             ForEachItemIn(r, rhsInRowsTemp)
                 overflowWriteStream->putRow(rhsInRowsTemp.getClear(r));
+            overflowWriteFile->noteSize(overflowWriteStream->getStatistic(StSizeDiskWrite));
             return true;
         }
         if (hasFailedOverToLocal())
@@ -2949,6 +2950,7 @@ public:
         overflowWriteCount += rhsInRowsTemp.ordinality();
         ForEachItemIn(r, rhsInRowsTemp)
             overflowWriteStream->putRow(rhsInRowsTemp.getClear(r));
+        overflowWriteFile->noteSize(overflowWriteStream->getStatistic(StSizeDiskWrite));
         return true;
     }
     virtual void gatherActiveStats(CRuntimeStatisticCollection &activeStats) const
