@@ -28,7 +28,7 @@ public class ActivitiesTest {
     @Test
     public void testActivitiesPage() {
         WebDriver driver = Common.driver;
-        Common.openWebPage(driver, Common.getUrl(Config.ACTIVITIES_URL));
+        Common.openWebPage(Common.getUrl(Config.ACTIVITIES_URL));
 
         Common.logDebug("Tests started for: Activities page.");
 
@@ -120,7 +120,7 @@ public class ActivitiesTest {
     private void testForAllText(WebDriver driver) {
         Common.logDebug("Tests started for: Activities page: Testing Text");
         for (String text : textArray) {
-            Common.checkTextPresent(driver, text, "Activities Page");
+            Common.checkTextPresent(text, "Activities Page");
         }
     }
 }

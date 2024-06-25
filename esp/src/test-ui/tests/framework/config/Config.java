@@ -18,5 +18,6 @@ public class Config {
     public static final String ECL_WORK_UNITS_URL = "esp/files/index.html#/workunits";
     public static final int[] dropdownValues = {10, 25, 50, 100, 250, 500, 1000};
     public static final int MALFORMED_TIME_STRING = -1;
-    public static final int WAIT_TIME_IN_SECONDS = 4;
+    public static final int WAIT_TIME_IN_SECONDS = 1;
+    public static final int WAIT_TIME_THRESHOLD_IN_SECONDS = 10;
 }

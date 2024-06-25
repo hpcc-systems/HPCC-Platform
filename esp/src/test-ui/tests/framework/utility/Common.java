@@ -1,10 +1,7 @@
 package framework.utility;
 
 import framework.config.Config;
-import org.openqa.selenium.By;
-import org.openqa.selenium.JavascriptExecutor;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
+import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.remote.RemoteWebDriver;
@@ -25,17 +22,20 @@ public class Common {
     public static Logger errorLogger;
     public static Logger specificLogger;
 
-    public static void checkTextPresent(WebDriver driver, String text, String page) {
-        if (driver.getPageSource().contains(text)) {
-            String msg = "Success: " + page + ": Text present: " + text;
-            logDetail(msg);
-        } else {
+    public static void checkTextPresent(String text, String page) {
+        try {
+            WebElement element = Common.waitForElement(By.xpath("//*[text()='" + text + "']"));
+            if (element != null) {
+                String msg = "Success: " + page + ": Text present: " + text;
+                logDetail(msg);
+            }
+        } catch (TimeoutException ex) {
             String errorMsg = "Failure: " + page + ": Text not present: " + text;
             logError(errorMsg);
         }
     }
 
-    public static void openWebPage(WebDriver driver, String url) {
+    public static void openWebPage(String url) {
         try {
             driver.get(url);
             driver.manage().window().maximize();
@@ -53,6 +53,14 @@ public class Common {
         }
     }
 
+    public static void sleepWithTime(int seconds) {
+        try {
+            Thread.sleep(Duration.ofSeconds(seconds));
+        } catch (InterruptedException e) {
+            Common.logError("Error in sleep: " + e.getMessage());
+        }
+    }
+
     public static boolean isRunningOnLocal() {
         return System.getProperty("os.name").startsWith(Config.LOCAL_OS) && System.getenv("USERPROFILE").startsWith(Config.LOCAL_USER_PROFILE);
     }
@@ -62,12 +70,8 @@ public class Common {
         return isRunningOnLocal() ? Config.LOCAL_IP + url : Config.GITHUB_ACTION_IP + url;
     }
 
-    public static WebElement waitForElement(WebDriver driver, By locator) {
-        return new WebDriverWait(driver, Duration.ofSeconds(10)).until(ExpectedConditions.presenceOfElementLocated(locator));
-    }
-
-    public static boolean isCheckbox(WebElement element) {
-        return "input".equalsIgnoreCase(element.getTagName()) && "checkbox".equalsIgnoreCase(element.getAttribute("type"));
+    public static WebElement waitForElement(By locator) {
+        return new WebDriverWait(driver, Duration.ofSeconds(Config.WAIT_TIME_THRESHOLD_IN_SECONDS)).until(ExpectedConditions.presenceOfElementLocated(locator));
     }
 
     public static void logError(String message) {
@@ -168,7 +172,7 @@ public class Common {
         return logger;
     }
 
-    public static String[] getAttributeList(WebDriver driver, WebElement webElement, String pageName) {
+    public static String[] getAttributeList(WebElement webElement, String pageName) {
         try {
             JavascriptExecutor executor = (JavascriptExecutor) driver;
             Object attributes = executor.executeScript("var items = {}; for (index = 0; index < arguments[0].attributes.length; ++index) { items[arguments[0].attributes[index].name] = arguments[0].attributes[index].value }; return items;", webElement);

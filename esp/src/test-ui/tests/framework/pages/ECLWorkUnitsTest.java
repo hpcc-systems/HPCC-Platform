@@ -8,7 +8,6 @@ import framework.model.WUQueryRoot;
 import framework.utility.Common;
 import framework.utility.TimeUtils;
 import org.openqa.selenium.By;
-import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.testng.annotations.Test;
 
@@ -50,9 +49,42 @@ public class ECLWorkUnitsTest extends BaseTableTest<ECLWorkunit> {
         return new String[]{"Wuid", "Owner", "Jobname", "Cluster", "State", "TotalClusterTime", "Compile Cost", "Execution Cost", "File Access Cost"};
     }
 
+    private final List<String> states = Arrays.asList("compiled", "failed");
+
+    @Override
+    protected String[] getDetailNames() {
+        return new String[]{"WUID", "Action", "State", "Owner", "Job Name", "Description", "Potential Savings", "Compile Cost", "Execution Cost", "File Access Cost", "Protected", "Cluster", "Total Cluster Time", "Aborted by", "Aborted time", "Services"};
+    }
+
     @Override
     protected String[] getDetailKeys() {
-        return new String[]{"wuid", "action", "state", "owner", "jobname", "compileCost", "executeCost", "fileAccessCost", "protected", "cluster", "totalClusterTime"};
+        WebElement element = Common.waitForElement(By.id("state"));
+
+        if (states.contains(element.getAttribute(getAttributeTitleForDetailsPage()))) { // compiled means it's published but not executed - no wu exists for this, check only these columns
+            return new String[]{"wuid", "action", "state", "owner", "jobname", "cluster"};
+        } else {
+            return new String[]{"wuid", "action", "state", "owner", "jobname", "compileCost", "executeCost", "fileAccessCost", "protected", "cluster", "totalClusterTime"};
+        }
+    }
+
+    @Override
+    protected String[] getDetailKeysForPageLoad() {
+        return new String[]{"wuid", "state", "jobname", "cluster"};
+    }
+
+    @Override
+    protected String getCheckboxTypeForDetailsPage() {
+        return "checkbox";
+    }
+
+    @Override
+    protected String getAttributeTypeForDetailsPage() {
+        return "type";
+    }
+
+    @Override
+    protected String getAttributeTitleForDetailsPage() {
+        return "title";
     }
 
     @Override
@@ -154,18 +186,18 @@ public class ECLWorkUnitsTest extends BaseTableTest<ECLWorkunit> {
     }
 
     @Override
-    protected void sortJsonUsingSortOrder(String currentSortOrder, List<ECLWorkunit> workunitsJson, String columnKey) {
+    protected void sortJsonUsingSortOrder(String currentSortOrder, String columnKey) {
         switch (currentSortOrder) {
-            case "ascending" -> ascendingSortJson(workunitsJson, columnKey);
-            case "descending" -> descendingSortJson(workunitsJson, columnKey);
-            case "none" -> descendingSortJson(workunitsJson, getUniqueKey());
+            case "ascending" -> ascendingSortJson(columnKey);
+            case "descending" -> descendingSortJson(columnKey);
+            case "none" -> descendingSortJson(getUniqueKey());
         }
     }
 
     @Override
-    protected String getCurrentPage(WebDriver driver) {
+    protected String getCurrentPage() {
         try {
-            WebElement element = Common.waitForElement(driver, By.id("wuid"));
+            WebElement element = Common.waitForElement(By.id("wuid"));
             if (element != null) {
                 return element.getAttribute("title");
             }
