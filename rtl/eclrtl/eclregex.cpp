@@ -386,41 +386,63 @@ public:
         size32_t sourceSize = (isUTF8Enabled ? rtlUtf8Size(slen, str) : slen);
         size32_t replaceSize = (isUTF8Enabled ? rtlUtf8Size(rlen, replace) : rlen);
 
-        uint32_t replaceOptions = PCRE2_SUBSTITUTE_GLOBAL|PCRE2_SUBSTITUTE_EXTENDED;
+        // Execute an explicit match first to see if we match at all; if we do, matchData will be populated
+        // with data that can be used by pcre2_substitute to bypass some work
+        int numMatches = pcre2_match_8(compiledRegex.get(), (PCRE2_SPTR8)str, sourceSize, 0, 0, matchData, pcre2MatchContext8);
 
-        // Call it once to get the size of the output, then allocate memory for it;
-        // Note that pcreLen will include space for a terminating null character;
-        // we have to allocate memory for that byte to avoid a buffer overrun,
-        // but we won't count that terminating byte
-        int replaceResult = pcre2_substitute_8(compiledRegex.get(), (PCRE2_SPTR8)str, sourceSize, 0, replaceOptions|PCRE2_SUBSTITUTE_OVERFLOW_LENGTH, matchData, pcre2MatchContext8, (PCRE2_SPTR8)replace, replaceSize, nullptr, &pcreLen);
-
-        if (replaceResult < 0 && replaceResult != PCRE2_ERROR_NOMEMORY)
+        if (numMatches < 0 && numMatches != PCRE2_ERROR_NOMATCH)
         {
-            // PCRE2_ERROR_NOMEMORY is a normal result when we're just asking for the size of the output
+            // Treat everything other than PCRE2_ERROR_NOMATCH as an error
             pcre2_match_data_free_8(matchData);
-            failWithPCRE2Error(replaceResult, "Error in regex replace: ");
+            failWithPCRE2Error(numMatches, "Error in regex replace: ");
         }
 
-        if (pcreLen > 0)
+        if (numMatches > 0)
         {
-            out = (char *)rtlMalloc(pcreLen);
+            uint32_t replaceOptions = PCRE2_SUBSTITUTE_MATCHED|PCRE2_SUBSTITUTE_GLOBAL|PCRE2_SUBSTITUTE_EXTENDED;
 
-            replaceResult = pcre2_substitute_8(compiledRegex.get(), (PCRE2_SPTR8)str, sourceSize, 0, replaceOptions, matchData, pcre2MatchContext8, (PCRE2_SPTR8)replace, replaceSize, (PCRE2_UCHAR8 *)out, &pcreLen);
+            // Call substitute once to get the size of the output, then allocate memory for it;
+            // Note that pcreLen will include space for a terminating null character;
+            // we have to allocate memory for that byte to avoid a buffer overrun,
+            // but we won't count that terminating byte
+            int replaceResult = pcre2_substitute_8(compiledRegex.get(), (PCRE2_SPTR8)str, sourceSize, 0, replaceOptions|PCRE2_SUBSTITUTE_OVERFLOW_LENGTH, matchData, pcre2MatchContext8, (PCRE2_SPTR8)replace, replaceSize, nullptr, &pcreLen);
 
-            // Note that, weirdly, pcreLen will now contain the number of code points
-            // in the result *excluding* the null terminator, so pcreLen will
-            // become our final result length
-
-            if (replaceResult < 0)
+            if (replaceResult < 0 && replaceResult != PCRE2_ERROR_NOMEMORY)
             {
+                // PCRE2_ERROR_NOMEMORY is a normal result when we're just asking for the size of the output
                 pcre2_match_data_free_8(matchData);
                 failWithPCRE2Error(replaceResult, "Error in regex replace: ");
             }
-        }
 
-        pcre2_match_data_free_8(matchData);
-        // We need to return the number of characters here, not the byte count
-        outlen = (isUTF8Enabled ? rtlUtf8Length(pcreLen, out) : pcreLen);
+            if (pcreLen > 0)
+            {
+                out = (char *)rtlMalloc(pcreLen);
+
+                replaceResult = pcre2_substitute_8(compiledRegex.get(), (PCRE2_SPTR8)str, sourceSize, 0, replaceOptions, matchData, pcre2MatchContext8, (PCRE2_SPTR8)replace, replaceSize, (PCRE2_UCHAR8 *)out, &pcreLen);
+
+                // Note that, weirdly, pcreLen will now contain the number of code points
+                // in the result *excluding* the null terminator, so pcreLen will
+                // become our final result length
+
+                if (replaceResult < 0)
+                {
+                    pcre2_match_data_free_8(matchData);
+                    failWithPCRE2Error(replaceResult, "Error in regex replace: ");
+                }
+            }
+
+            pcre2_match_data_free_8(matchData);
+            // We need to return the number of characters here, not the byte count
+            outlen = (isUTF8Enabled ? rtlUtf8Length(pcreLen, out) : pcreLen);
+        }
+        else
+        {
+            // No match found; return the original string
+            out = (char *)rtlMalloc(sourceSize);
+            memcpy(out, str, sourceSize);
+            outlen = slen;
+            pcre2_match_data_free_8(matchData);
+        }
     }
 
     IStrRegExprFindInstance * find(const char * str, size32_t from, size32_t len, bool needToKeepSearchString) const
@@ -763,41 +785,63 @@ public:
         outlen = 0;
         pcre2_match_data_16 * matchData = pcre2_match_data_create_from_pattern_16(compiledRegex.get(), pcre2GeneralContext16);
 
-        uint32_t replaceOptions = PCRE2_SUBSTITUTE_GLOBAL|PCRE2_SUBSTITUTE_EXTENDED;
+        // Execute an explicit match first to see if we match at all; if we do, matchData will be populated
+        // with data that can be used by pcre2_substitute to bypass some work
+        int numMatches = pcre2_match_16(compiledRegex.get(), (PCRE2_SPTR16)str, slen, 0, 0, matchData, pcre2MatchContext16);
 
-        // Call it once to get the size of the output, then allocate memory for it;
-        // Note that pcreLen will include space for a terminating null character;
-        // we have to allocate memory for that byte to avoid a buffer overrun,
-        // but we won't count that terminating byte
-        int replaceResult = pcre2_substitute_16(compiledRegex.get(), (PCRE2_SPTR16)str, slen, 0, replaceOptions|PCRE2_SUBSTITUTE_OVERFLOW_LENGTH, matchData, pcre2MatchContext16, (PCRE2_SPTR16)replace, rlen, nullptr, &pcreLen);
-
-        if (replaceResult < 0 && replaceResult != PCRE2_ERROR_NOMEMORY)
+        if (numMatches < 0 && numMatches != PCRE2_ERROR_NOMATCH)
         {
-            // PCRE2_ERROR_NOMEMORY is a normal result when we're just asking for the size of the output
+            // Treat everything other than PCRE2_ERROR_NOMATCH as an error
             pcre2_match_data_free_16(matchData);
-            failWithPCRE2Error(replaceResult, "Error in regex replace: ");
+            failWithPCRE2Error(numMatches, "Error in regex replace: ");
         }
 
-        if (pcreLen > 0)
+        if (numMatches > 0)
         {
-            out = (UChar *)rtlMalloc(pcreLen * sizeof(UChar));
+            uint32_t replaceOptions = PCRE2_SUBSTITUTE_MATCHED|PCRE2_SUBSTITUTE_GLOBAL|PCRE2_SUBSTITUTE_EXTENDED;
 
-            replaceResult = pcre2_substitute_16(compiledRegex.get(), (PCRE2_SPTR16)str, slen, 0, replaceOptions, matchData, pcre2MatchContext16, (PCRE2_SPTR16)replace, rlen, (PCRE2_UCHAR16 *)out, &pcreLen);
+            // Call substitute once to get the size of the output, then allocate memory for it;
+            // Note that pcreLen will include space for a terminating null character;
+            // we have to allocate memory for that byte to avoid a buffer overrun,
+            // but we won't count that terminating byte
+            int replaceResult = pcre2_substitute_16(compiledRegex.get(), (PCRE2_SPTR16)str, slen, 0, replaceOptions|PCRE2_SUBSTITUTE_OVERFLOW_LENGTH, matchData, pcre2MatchContext16, (PCRE2_SPTR16)replace, rlen, nullptr, &pcreLen);
 
-            // Note that, weirdly, pcreLen will now contain the number of code points
-            // in the result *excluding* the null terminator, so pcreLen will
-            // become our final result length
-
-            if (replaceResult < 0)
+            if (replaceResult < 0 && replaceResult != PCRE2_ERROR_NOMEMORY)
             {
+                // PCRE2_ERROR_NOMEMORY is a normal result when we're just asking for the size of the output
                 pcre2_match_data_free_16(matchData);
                 failWithPCRE2Error(replaceResult, "Error in regex replace: ");
             }
-        }
 
-        pcre2_match_data_free_16(matchData);
-        // We need to return the number of characters here, not the byte count
-        outlen = pcreLen;
+            if (pcreLen > 0)
+            {
+                out = (UChar *)rtlMalloc(pcreLen * sizeof(UChar));
+
+                replaceResult = pcre2_substitute_16(compiledRegex.get(), (PCRE2_SPTR16)str, slen, 0, replaceOptions, matchData, pcre2MatchContext16, (PCRE2_SPTR16)replace, rlen, (PCRE2_UCHAR16 *)out, &pcreLen);
+
+                // Note that, weirdly, pcreLen will now contain the number of code points
+                // in the result *excluding* the null terminator, so pcreLen will
+                // become our final result length
+
+                if (replaceResult < 0)
+                {
+                    pcre2_match_data_free_16(matchData);
+                    failWithPCRE2Error(replaceResult, "Error in regex replace: ");
+                }
+            }
+
+            pcre2_match_data_free_16(matchData);
+            // We need to return the number of characters here, not the byte count
+            outlen = pcreLen;
+        }
+        else
+        {
+            // No match found; return the original string
+            out = (UChar *)rtlMalloc(slen * sizeof(UChar));
+            memcpy(out, str, slen * sizeof(UChar));
+            outlen = slen;
+            pcre2_match_data_free_16(matchData);
+        }
     }
 
     IUStrRegExprFindInstance * find(const UChar * str, size32_t from, size32_t len) const
