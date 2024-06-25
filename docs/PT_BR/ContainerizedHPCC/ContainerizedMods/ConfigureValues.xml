@@ -1034,7 +1034,7 @@
         <para><ulink
         url="https://github.com/hpcc-systems/HPCC-Platform/blob/master/helm/hpcc/docs/placements.md">https://github.com/hpcc-systems/HPCC-Platform/blob/master/helm/hpcc/docs/placements.md</ulink></para>
 
-        <sect4 id="YAML_FileStruct_Placement">
+        <sect4 id="YAML_FileStruct-Placement">
           <title>Placement</title>
 
           <para>O Placement é responsável por encontrar o melhor nó para um
@@ -1096,21 +1096,9 @@
           posicionamentos para garantir que os pods com requisitos específicos
           sejam colocados nos nós apropriados.</para>
         </sect4>
-      </sect2>
-
-      <sect3 id="ENV_values-yaml1">
-        <title>Environment Values</title>
-
-        <para>Você pode definir variáveis de ambiente em um arquivo YAML. Os
-        valores do ambiente são definidos na parte <emphasis>global.env
-        </emphasis> do arquivo HPCC Systems values.yaml fornecido. Esses
-        valores são especificados como uma lista de pares de valor de nome
-        conforme ilustrado abaixo.</para>
-
-        <programlisting>global:
+      
 
       <programlisting>global:
-bbe9bd8001 (HPCC-32050 -HPCC Portuguese language Update 9.6)
   env:
   - name: SMTPserver 
     value: mysmtpserver</programlisting>
