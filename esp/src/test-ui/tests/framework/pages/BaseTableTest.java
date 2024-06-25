@@ -68,7 +68,7 @@ public abstract class BaseTableTest<T> {
         try {
             Common.logDebug("Tests started for: " + getPageName() + " page.");
 
-            testForAllText(driver);
+            testForAllText();
 
             jsonObjects = getAllObjectsFromJson();
             if (jsonObjects != null) {
@@ -158,7 +158,7 @@ public abstract class BaseTableTest<T> {
                 }
             }
 
-            if(allVisible){
+            if (allVisible) {
                 break;
             }
 
@@ -175,6 +175,8 @@ public abstract class BaseTableTest<T> {
 
         boolean pass = true;
 
+        T object = getJsonMap().get(name);
+
         for (String detailKey : getDetailKeys()) {
             try {
                 WebElement element = Common.waitForElement(By.id(detailKey));
@@ -186,8 +188,6 @@ public abstract class BaseTableTest<T> {
                 } else {
                     dataUIValue = element.getAttribute(getAttributeTitleForDetailsPage());
                 }
-
-                T object = getJsonMap().get(name);
 
                 dataJSONValue = getColumnDataFromJson(object, detailKey);
 
@@ -210,9 +210,9 @@ public abstract class BaseTableTest<T> {
     }
 
     private void testForAllTextInDetailsPage(String name) {
-        Common.logDebug("Tests started for: " + getPageName() + " Details page: "+getUniqueKeyName()+": "+name+" Testing Text");
+        Common.logDebug("Tests started for: " + getPageName() + " Details page: " + getUniqueKeyName() + ": " + name + " Testing Text");
         for (String text : getDetailNames()) {
-            Common.checkTextPresent(text, getPageName() + " Details page: "+getUniqueKeyName()+": "+name);
+            Common.checkTextPresent(text, getPageName() + " Details page: " + getUniqueKeyName() + ": " + name);
         }
     }
 
@@ -320,7 +320,7 @@ public abstract class BaseTableTest<T> {
         return columnData;
     }
 
-    private List<WebElement> waitToLoadListOfAllUIObjects(WebDriver driver, String columnKey){
+    private List<WebElement> waitToLoadListOfAllUIObjects(WebDriver driver, String columnKey) {
 
         int waitTimeInSecs = Config.WAIT_TIME_IN_SECONDS;
         List<WebElement> elements;
@@ -328,7 +328,7 @@ public abstract class BaseTableTest<T> {
         do {
             elements = driver.findElements(By.xpath("//*[@*[.='" + columnKey + "']]"));
 
-            if(elements.size() - 1 == jsonObjects.size()){
+            if (elements.size() - 1 == jsonObjects.size()) {
                 break;
             }
 
@@ -477,7 +477,7 @@ public abstract class BaseTableTest<T> {
         return "";
     }
 
-    private void testForAllText(WebDriver driver) {
+    private void testForAllText() {
         Common.logDebug("Tests started for: " + getPageName() + " page: Testing Text");
         for (String text : getColumnNames()) {
             Common.checkTextPresent(text, getPageName());
