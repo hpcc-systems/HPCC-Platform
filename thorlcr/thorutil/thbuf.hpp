@@ -61,6 +61,7 @@ struct LookAheadOptions : CommonBufferRowRWStreamOptions
 interface ISmartRowBuffer: extends IRowStream
 {
     virtual IRowWriter *queryWriter() = 0;
+    virtual unsigned __int64 getStatistic(StatisticKind kind) const = 0;
 };
 
 class CActivityBase;
