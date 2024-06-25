@@ -4,3 +4,8 @@ global:
     - type: OTLP-GRPC
       endpoint: "http://myotelcollector-opentelemetry-collector.default.svc.cluster.local:4317"
       useSslCredentials: false
+      batch:
+        enabled: true
+        maxQueueSize: 4096
+        scheduledDelayMillis: 6000
+        maxExportBatchSize: 512
