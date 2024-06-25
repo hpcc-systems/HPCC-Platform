@@ -1433,6 +1433,8 @@ public:
 
     virtual void mergeStats(CRuntimeStatisticCollection &stats) const
     {
+        if (piperd)
+            mergeRemappedStats(stats, piperd, diskToSpillStatsMap);
         sender.mergeStats(stats);
     }
     // IExceptionHandler impl.

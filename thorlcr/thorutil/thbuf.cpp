@@ -424,6 +424,13 @@ public:
     {
         return this;
     }
+    virtual unsigned __int64 getStatistic(StatisticKind kind) const override
+    {
+        if (tempFileIO)
+            return tempFileIO->getStatistic(kind);
+        else
+            return 0;
+    }
 };
 
 
@@ -607,6 +614,10 @@ public:
     {
         return this;
     }
+    virtual unsigned __int64 getStatistic(StatisticKind kind) const override
+    {
+        return 0;
+    }
 };
 
 
@@ -734,6 +745,7 @@ class CCompressedSpillingRowStream: public CSimpleInterfaceOf<ISmartRowBuffer>, 
     RowEntry readFromStreamMarker = { nullptr, 0, 0 };
 
     // misc
+    CRuntimeStatisticCollection inactiveStats;
     bool grouped = false; // ctor input parameter
     CriticalSection readerWriterCS;
 #ifdef STRESSTEST_SPILLING_ROWSTREAM
@@ -756,6 +768,9 @@ class CCompressedSpillingRowStream: public CSimpleInterfaceOf<ISmartRowBuffer>, 
     }
     void createNextOutputStream()
     {
+        if (currentOutputIFileIO)
+            mergeRemappedStats(inactiveStats, currentOutputIFileIO, diskToSpillStatsMap);
+
         VStringBuffer tmpFilename("%s.%u", baseTmpFilename.get(), writeTempFileNum++);
         trace("WRITE: writing to %s", tmpFilename.str());
         Owned<IFile> iFile = createIFile(tmpFilename);
@@ -1007,7 +1022,8 @@ public:
 
     explicit CCompressedSpillingRowStream(CActivityBase *_activity, const char *_baseTmpFilename, bool _grouped, IThorRowInterfaces *rowIf, const LookAheadOptions &_options, ICompressHandler *_compressHandler)
         : activity(*_activity), baseTmpFilename(_baseTmpFilename), grouped(_grouped), options(_options), compressHandler(_compressHandler),
-          meta(rowIf->queryRowMetaData()), serializer(rowIf->queryRowSerializer()), allocator(rowIf->queryRowAllocator()), deserializer(rowIf->queryRowDeserializer())
+          meta(rowIf->queryRowMetaData()), serializer(rowIf->queryRowSerializer()), allocator(rowIf->queryRowAllocator()), deserializer(rowIf->queryRowDeserializer()),
+          inactiveStats(spillingWriteAheadStatistics)
     {
         size32_t minSize = meta->getMinRecordSize();
 
@@ -1054,6 +1070,13 @@ public:
     virtual IRowWriter *queryWriter() override
     {
         return this;
+    }
+    virtual unsigned __int64 getStatistic(StatisticKind kind) const
+    {
+        unsigned __int64 v = inactiveStats.queryStatistic(kind).get();
+        if (currentOutputIFileIO)
+            v += currentOutputIFileIO->getStatistic(kind);
+        return v;
     }
 // IRowStream
     virtual const void *nextRow() override
