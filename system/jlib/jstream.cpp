@@ -290,7 +290,7 @@ IByteInputStream *createInputStream(int handle)
 // This means the buffer size is likely to be bigger than the block size - the class is passed
 // an initial estimate for the potential overlap.
 
-class CBlockedSerialInputStream : public CInterfaceOf<IBufferedSerialInputStream>
+class CBlockedSerialInputStream final : public CInterfaceOf<IBufferedSerialInputStream>
 {
 public:
     CBlockedSerialInputStream(ISerialInputStream * _input, size32_t _blockReadSize)
@@ -318,7 +318,7 @@ public:
         }
 
         //While there are blocks larger than the buffer size read directly into the target buffer
-        while (sizeRead + blockReadSize <= len)
+        while (unlikely(sizeRead + blockReadSize <= len))
         {
             size32_t got = readNextBlock(blockReadSize, target+sizeRead);
             if ((got == 0) || (got == BufferTooSmall))
@@ -327,7 +327,7 @@ public:
             nextBlockOffset += got;
         }
 
-        while ((sizeRead < len) && !endOfStream)
+        while (likely((sizeRead < len) && !endOfStream))
         {
             assertex(bufferOffset == dataLength);
             // NOTE: This could read less than a block, even if a whole block was requested.
@@ -368,7 +368,7 @@ public:
     virtual void get(size32_t len, void * ptr) override
     {
         size32_t numRead = read(len, ptr);
-        if (numRead != len)
+        if (unlikely(numRead != len))
             throw makeStringExceptionV(-1, "End of input stream for read of %u bytes at offset %llu", len, tell()-numRead);
     }
 
