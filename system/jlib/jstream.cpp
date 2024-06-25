@@ -405,6 +405,11 @@ public:
         input->reset(_offset, _flen);
     }
 
+    virtual void replaceInput(ISerialInputStream * newInput) override
+    {
+        input.set(newInput);
+    }
+
 protected:
     inline byte * data(size32_t offset) { return (byte *)buffer.get() + offset; }
     inline size32_t available() const { return dataLength - bufferOffset; }
@@ -792,6 +797,11 @@ public:
 
     virtual offset_t tell() const override { return blockOffset+bufferOffset; }
 
+    virtual void replaceOutput(ISerialOutputStream * newOutput) override
+    {
+        output.set(newOutput);
+    }
+
 //-------------------------------------------------------
 //Helper functions for CThreadedBlockedSerialOutputStream
 //doCommit() and doResume are also used by this class
@@ -1005,6 +1015,12 @@ public:
     {
         stream[active].doResume(len, ptr);
         checkForPendingWrite();
+    }
+
+    virtual void replaceOutput(ISerialOutputStream * newOutput) override
+    {
+        stream[0].replaceOutput(newOutput);
+        stream[1].replaceOutput(newOutput);
     }
 
 protected:

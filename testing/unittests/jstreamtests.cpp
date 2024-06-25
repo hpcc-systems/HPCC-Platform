@@ -292,6 +292,7 @@ class NullOuputStream : public CInterfaceOf<IBufferedSerialOutputStream>
     virtual void suspend(size32_t wanted) {}
     virtual void resume(size32_t len, const void * ptr) {}
     virtual offset_t tell() const override { return 0; }
+    virtual void replaceOutput(ISerialOutputStream * newOutput) override {}
 };
 
 class JlibStreamStressTest : public CppUnit::TestFixture
