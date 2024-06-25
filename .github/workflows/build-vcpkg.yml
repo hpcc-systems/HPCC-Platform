@@ -10,9 +10,6 @@ on:
           - 'ubuntu-22.04'
           - 'ubuntu-20.04'
           - 'rockylinux-8'
-          - 'centos-8'
-          - 'centos-7'
-          - 'amazonlinux'
         description: 'Operating System'
         required: false
         default: 'ubuntu-22.04'
@@ -139,29 +136,6 @@ jobs:
     uses: ./.github/workflows/build-docker.yml
     with:
       os: rockylinux-8
-    secrets: inherit
-
-  build-docker-centos-8:
-    if: ${{ contains('schedule,push', github.event_name) }}
-    uses: ./.github/workflows/build-docker.yml
-    with:
-      os: centos-8
-    secrets: inherit
-
-  build-docker-centos-7:
-    if: ${{ contains('pull_request,push', github.event_name) }}
-    uses: ./.github/workflows/build-docker.yml
-    with:
-      os: centos-7
-      cmake-configuration-ex: "-DVCPKG_TARGET_TRIPLET=x64-centos-7-dynamic"
-    secrets: inherit
-
-  build-docker-amazonlinux:
-    if: ${{ contains('schedule,push', github.event_name) }}
-    uses: ./.github/workflows/build-docker.yml
-    with:
-      os: amazonlinux
-      cmake-configuration-ex: "-DVCPKG_TARGET_TRIPLET=x64-amazonlinux-dynamic"
     secrets: inherit
 
   build-gh_runner-ubuntu-22_04:

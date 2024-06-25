@@ -102,11 +102,6 @@ jobs:
             name: docs
             documentation: true
           - os: ubuntu-20.04
-          - os: centos-8
-          - os: centos-7
-            cmake_options_extra: "-DVCPKG_TARGET_TRIPLET=x64-centos-7-dynamic"
-          - os: amazonlinux
-            cmake_options_extra: "-DVCPKG_TARGET_TRIPLET=x64-amazonlinux-dynamic"
           - os: rockylinux-8
           - os: ubuntu-22.04
             name: LN k8s
@@ -121,21 +116,9 @@ jobs:
           - os: ubuntu-20.04
             name: LN
             ln: true
-          - os: centos-8
-            name: LN
-            cmake_options_extra: ""
-            ln: true
-          - os: centos-7
-            name: LN
-            cmake_options_extra: "-DVCPKG_TARGET_TRIPLET=x64-centos-7-dynamic"
-            ln: true
           - os: rockylinux-8
             name: LN
             cmake_options_extra: ""
-            ln: true
-          - os: centos-7-rh-python38
-            name: LN Python 3.8
-            cmake_options_extra: "-DVCPKG_TARGET_TRIPLET=x64-centos-7-dynamic -DCUSTOM_LABEL=_rh_python38"
             ln: true
       fail-fast: false
 
