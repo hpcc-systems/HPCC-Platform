@@ -17,6 +17,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+// This class is a subclass of BaseTableTest, and it includes test cases for ECL Workunits page and along with the tests of workunits details page.
+
 public class ECLWorkUnitsTest extends BaseTableTest<ECLWorkunit> {
 
     @Test
@@ -49,7 +51,7 @@ public class ECLWorkUnitsTest extends BaseTableTest<ECLWorkunit> {
         return new String[]{"Wuid", "Owner", "Jobname", "Cluster", "State", "TotalClusterTime", "Compile Cost", "Execution Cost", "File Access Cost"};
     }
 
-    private final List<String> states = Arrays.asList("compiled", "failed");
+    private final List<String> badStates = Arrays.asList("compiled", "failed");
 
     @Override
     protected String[] getDetailNames() {
@@ -60,7 +62,7 @@ public class ECLWorkUnitsTest extends BaseTableTest<ECLWorkunit> {
     protected String[] getDetailKeys() {
         WebElement element = Common.waitForElement(By.id("state"));
 
-        if (states.contains(element.getAttribute(getAttributeTitleForDetailsPage()))) { // compiled means it's published but not executed - no wu exists for this, check only these columns
+        if (badStates.contains(element.getAttribute(getAttributeTitleForDetailsPage()))) { // compiled means it's published but not executed - no wu exists for this, check only these columns
             return new String[]{"wuid", "action", "state", "owner", "jobname", "cluster"};
         } else {
             return new String[]{"wuid", "action", "state", "owner", "jobname", "compileCost", "executeCost", "fileAccessCost", "protected", "cluster", "totalClusterTime"};
@@ -102,9 +104,7 @@ public class ECLWorkUnitsTest extends BaseTableTest<ECLWorkunit> {
         return "Wuid";
     }
 
-    private List<String> getCostColumns() {
-        return Arrays.asList("Compile Cost", "Execution Cost", "File Access Cost", "compileCost", "executeCost", "fileAccessCost");
-    }
+    private final List<String> costColumns = Arrays.asList("Compile Cost", "Execution Cost", "File Access Cost", "compileCost", "executeCost", "fileAccessCost");
 
     @Override
     protected Map<String, ECLWorkunit> getJsonMap() {
@@ -146,11 +146,16 @@ public class ECLWorkUnitsTest extends BaseTableTest<ECLWorkunit> {
     }
 
     @Override
-    protected Object parseDataUIValue(Object dataUIValue, String columnName, Object dataIDUIValue) {
+    protected Object parseDataUIValue(Object dataUIValue, Object dataJSONValue, String columnName, Object dataIDUIValue) {
         try {
-            if (getCostColumns().contains(columnName)) {
+            if (costColumns.contains(columnName)) {
                 dataUIValue = Double.parseDouble(((String) dataUIValue).split(" ")[0]);
             } else if (columnName.equals("Total Cluster Time") || columnName.equals("totalClusterTime")) {
+
+                if ((long) dataJSONValue == 0 && "".equals(dataUIValue)) {
+                    return 0L; // test ok, if Total Cluster Time is 0 in json and blank in UI - Jira raised - HPCC-32147
+                }
+
                 long timeInMilliSecs = TimeUtils.convertToMilliseconds((String) dataUIValue);
                 if (timeInMilliSecs == Config.MALFORMED_TIME_STRING) {
                     String errMsg = "Failure: " + getPageName() + ": Incorrect time format for " + columnName + " : " + dataUIValue + " in UI for " + getUniqueKeyName() + " : " + dataIDUIValue;

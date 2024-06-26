@@ -9,3 +9,5 @@ file.
 
 Each Java class created to write tests for specific web pages should have at least one method annotated with @Test. The
 code for each class starts to run from this method.
+
+Note: Users need to run these tests with regression test suite only.

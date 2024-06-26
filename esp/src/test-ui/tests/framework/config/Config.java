@@ -19,5 +19,5 @@ public class Config {
     public static final int[] dropdownValues = {10, 25, 50, 100, 250, 500, 1000};
     public static final int MALFORMED_TIME_STRING = -1;
     public static final int WAIT_TIME_IN_SECONDS = 1;
-    public static final int WAIT_TIME_THRESHOLD_IN_SECONDS = 10;
+    public static final int WAIT_TIME_THRESHOLD_IN_SECONDS = 20;
 }

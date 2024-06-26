@@ -3,17 +3,16 @@ package framework.pages;
 import framework.config.Config;
 import framework.utility.Common;
 import org.openqa.selenium.By;
-import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
+
+
+// This class is the super class for all the those web pages that contains a tabular data for e.g. workunits, files, queries etc. It also contains the tests for their respective details page including testing text, content and tabs.
 
 public abstract class BaseTableTest<T> {
 
@@ -45,7 +44,7 @@ public abstract class BaseTableTest<T> {
 
     protected abstract String[] getColumnKeysWithLinks();
 
-    protected abstract Object parseDataUIValue(Object dataUIValue, String columnName, Object dataIDUIValue);
+    protected abstract Object parseDataUIValue(Object dataUIValue, Object dataJSONValue, String columnName, Object dataIDUIValue);
 
     protected abstract Object parseDataJSONValue(Object dataJSONValue, String columnName, Object dataIDUIValue);
 
@@ -62,7 +61,6 @@ public abstract class BaseTableTest<T> {
     protected List<T> jsonObjects;
 
     protected void testPage() {
-        WebDriver driver = Common.driver;
         Common.openWebPage(getPageUrl());
 
         try {
@@ -72,10 +70,10 @@ public abstract class BaseTableTest<T> {
 
             jsonObjects = getAllObjectsFromJson();
             if (jsonObjects != null) {
-                testContentAndSortingOrder(driver);
+                testContentAndSortingOrder();
             }
 
-            testLinksInTable(driver);
+            testLinksInTable();
 
             Common.logDebug("Tests finished for: " + getPageName() + " page.");
 
@@ -84,25 +82,29 @@ public abstract class BaseTableTest<T> {
         }
     }
 
-    private void testDetailsPage(String name) {
+    private void testDetailsPage(String name, int i) {
 
+//        if(i == 0){
+//            testForAllTextInDetailsPage(name);
+//        }
         testForAllTextInDetailsPage(name);
         testDetailsContentPage(name);
     }
 
-    private void testLinksInTable(WebDriver driver) {
+    private void testLinksInTable() {
 
         Common.logDebug("Tests started for: " + getPageName() + " page: Testing Links");
 
+        long startTime = System.currentTimeMillis();
+
         for (String columnKey : getColumnKeysWithLinks()) {
 
-            List<Object> values = getDataFromUIUsingColumnKey(driver, columnKey);
+            List<Object> values = getDataFromUIUsingColumnKey(columnKey);
 
-            int i = 1;
+            for (int i = 0; i < values.size(); i++) {
 
-            for (Object value : values) {
                 try {
-                    String name = value.toString().trim();
+                    String name = values.get(i).toString().trim();
 
                     WebElement element = Common.waitForElement(By.xpath("//div[text()='" + name + "']/.."));
                     String href = element.findElement(By.tagName("a")).getAttribute("href");
@@ -111,20 +113,20 @@ public abstract class BaseTableTest<T> {
 
                     element.click();
 
-                    if (driver.getPageSource().contains(name)) {
-                        String msg = "Success: " + getPageName() + ": Link Test Pass for " + i++ + ". " + name + ". URL : " + href;
+                    if (Common.driver.getPageSource().contains(name)) {
+                        String msg = "Success: " + getPageName() + ": Link Test Pass for " + i + ". " + name + ". URL : " + href;
                         Common.logDetail(msg);
-
-                        testDetailsPage(name);
+                        // after the link test has passed, the code tests the details page(including, the text, content and tabs) it has landed on
+                        testDetailsPage(name, i);
 
                     } else {
                         String currentPage = getCurrentPage();
-                        String errorMsg = "Failure: " + getPageName() + ": Link Test Fail for " + i++ + ". " + name + " page failed. The current navigation page that we landed on is " + currentPage + ". Current URL : " + href;
+                        String errorMsg = "Failure: " + getPageName() + ": Link Test Fail for " + i + ". " + name + " page failed. The current navigation page that we landed on is " + currentPage + ". Current URL : " + href;
                         Common.logError(errorMsg);
                     }
 
-                    driver.navigate().to(getPageUrl());
-                    driver.navigate().refresh();
+                    Common.driver.navigate().to(getPageUrl());
+                    Common.driver.navigate().refresh();
 
                     String dropdownValueAfter = getSelectedDropdownValue();
 
@@ -134,10 +136,14 @@ public abstract class BaseTableTest<T> {
                         Common.logError(dropdownErrorMsg);
                     }
                 } catch (Exception ex) {
-                    Common.logError("Failure: " + getPageName() + ": Exception in testing links for column: " + columnKey + " value: " + value + " Error: " + ex.getMessage());
+                    Common.logError("Failure: " + getPageName() + ": Exception in testing links for column: " + columnKey + " value: " + values.get(i) + " Error: " + ex.getMessage());
                 }
             }
         }
+
+        long endTime = System.currentTimeMillis();
+
+        System.out.println("Total time taken: " + (endTime - startTime) + " ms");
     }
 
     private void waitToLoadDetailsPage() {
@@ -191,7 +197,7 @@ public abstract class BaseTableTest<T> {
 
                 dataJSONValue = getColumnDataFromJson(object, detailKey);
 
-                dataUIValue = parseDataUIValue(dataUIValue, detailKey, name);
+                dataUIValue = parseDataUIValue(dataUIValue, dataJSONValue, detailKey, name);
                 dataJSONValue = parseDataJSONValue(dataJSONValue, detailKey, name);
 
                 if (!dataUIValue.equals(dataJSONValue)) {
@@ -216,34 +222,34 @@ public abstract class BaseTableTest<T> {
         }
     }
 
-    private void testContentAndSortingOrder(WebDriver driver) {
+    private void testContentAndSortingOrder() {
 
         int numOfItemsJSON = jsonObjects.size();
-        clickDropdown(driver, numOfItemsJSON);
+        clickDropdown(numOfItemsJSON);
 
         Common.logDebug("Tests started for: " + getPageName() + " page: Testing Content");
 
-        if (testTableContent(driver)) {
+        if (testTableContent()) {
 
             Common.logDebug("Tests started for: " + getPageName() + " page: Testing Sorting Order");
 
             for (int i = 0; i < getColumnKeys().length; i++) {
-                testTheSortingOrderForOneColumn(driver, getColumnKeys()[i], getColumnNames()[i]);
+                testTheSortingOrderForOneColumn(getColumnKeys()[i], getColumnNames()[i]);
             }
         }
     }
 
-    private void testTheSortingOrderForOneColumn(WebDriver driver, String columnKey, String columnName) {
+    private void testTheSortingOrderForOneColumn(String columnKey, String columnName) {
         for (int i = 0; i < 3; i++) {
 
-            String currentSortOrder = getCurrentSortingOrder(driver, columnKey);
+            String currentSortOrder = getCurrentSortingOrder(columnKey);
             if (currentSortOrder != null) {
-                List<Object> columnDataFromUI = getDataFromUIUsingColumnKey(driver, columnKey);
+                List<Object> columnDataFromUI = getDataFromUIUsingColumnKey(columnKey);
 
                 sortJsonUsingSortOrder(currentSortOrder, columnKey);
 
                 List<Object> columnDataFromJSON = getDataFromJSONUsingColumnKey(columnKey);
-                List<Object> columnDataIDFromUI = getDataFromUIUsingColumnKey(driver, getUniqueKey());
+                List<Object> columnDataIDFromUI = getDataFromUIUsingColumnKey(getUniqueKey());
 
                 if (compareData(columnDataFromUI, columnDataFromJSON, columnDataIDFromUI, columnName)) {
                     Common.logDebug("Success: " + getPageName() + ": Values are correctly sorted in " + currentSortOrder + " order by: " + columnName);
@@ -257,41 +263,65 @@ public abstract class BaseTableTest<T> {
         }
     }
 
-    private String getCurrentSortingOrder(WebDriver driver, String columnKey) {
+    private String getCurrentSortingOrder(String columnKey) {
 
         try {
 
-            WebElement columnHeader = driver.findElement(By.xpath("//*[@*[.='" + columnKey + "']]"));
+            WebElement columnHeader = Common.driver.findElement(By.xpath("//*[@*[.='" + columnKey + "']]"));
+
+            String oldSortOrder = getSortOrderForColumnHeader(columnHeader);
 
             columnHeader.click();
 
-            Common.sleep();
-
-            columnHeader = driver.findElement(By.xpath("//*[@*[.='" + columnKey + "']]"));
-
-            //Get the list of attributes for that column header
-            String[] attributes = Common.getAttributeList(columnHeader, getPageName());
-
-            String sortValue = null;
-
-            // Iterate through the list to find the attribute containing "sort"
-            for (String attribute : attributes) {
-                if (attribute.contains("sort")) {
-                    String[] parts = attribute.split("=", 2);
-                    if (parts.length == 2) {
-                        sortValue = parts[1].replaceAll("['\"]", "");
-                        break;
-                    }
-                }
-            }
-
-            return sortValue;
+            return waitToLoadChangedSortOrder(oldSortOrder, columnKey);
 
         } catch (Exception ex) {
             Common.logError("Failure: " + getPageName() + " Exception in getting sort order for column: " + columnKey + " Error: " + ex.getMessage());
         }
 
         return null;
+    }
+
+    private String getSortOrderForColumnHeader(WebElement columnHeader) {
+
+        String[] attributes = Common.getAttributeList(columnHeader, getPageName());
+        String sortValue = null;
+
+        // Iterate through the list to find the attribute containing "sort"
+        for (String attribute : attributes) {
+            if (attribute.contains("sort")) {
+                String[] parts = attribute.split("=", 2);
+                if (parts.length == 2) {
+                    sortValue = parts[1].replaceAll("['\"]", "");
+                    break;
+                }
+            }
+        }
+
+        return sortValue;
+    }
+
+    private String waitToLoadChangedSortOrder(String oldSortOrder, String columnKey) {
+
+        int waitTimeInSecs = Config.WAIT_TIME_IN_SECONDS;
+        String newSortOrder;
+
+        do {
+            Common.sleepWithTime(waitTimeInSecs);
+
+            WebElement columnHeaderNew = Common.driver.findElement(By.xpath("//*[@*[.='" + columnKey + "']]"));
+
+            newSortOrder = getSortOrderForColumnHeader(columnHeaderNew);
+
+            if (!Objects.equals(newSortOrder, oldSortOrder)) {
+                break;
+            }
+
+            waitTimeInSecs++;
+
+        } while (waitTimeInSecs < Config.WAIT_TIME_THRESHOLD_IN_SECONDS);
+
+        return newSortOrder;
     }
 
     private List<Object> getDataFromJSONUsingColumnKey(String columnKey) {
@@ -302,13 +332,13 @@ public abstract class BaseTableTest<T> {
         return columnDataFromJSON;
     }
 
-    private List<Object> getDataFromUIUsingColumnKey(WebDriver driver, String columnKey) {
+    private List<Object> getDataFromUIUsingColumnKey(String columnKey) {
 
         List<Object> columnData = new ArrayList<>();
 
         try {
 
-            List<WebElement> elements = waitToLoadListOfAllUIObjects(driver, columnKey);
+            List<WebElement> elements = waitToLoadListOfAllUIObjects(columnKey);
             for (int i = 1; i < elements.size(); i++) {
                 columnData.add(elements.get(i).getText());
             }
@@ -320,15 +350,15 @@ public abstract class BaseTableTest<T> {
         return columnData;
     }
 
-    private List<WebElement> waitToLoadListOfAllUIObjects(WebDriver driver, String columnKey) {
+    private List<WebElement> waitToLoadListOfAllUIObjects(String columnKey) {
 
         int waitTimeInSecs = Config.WAIT_TIME_IN_SECONDS;
         List<WebElement> elements;
 
         do {
-            elements = driver.findElements(By.xpath("//*[@*[.='" + columnKey + "']]"));
+            elements = Common.driver.findElements(By.xpath("//*[@*[.='" + columnKey + "']]"));
 
-            if (elements.size() - 1 == jsonObjects.size()) {
+            if (elements.size() - 1 >= jsonObjects.size()) {
                 break;
             }
 
@@ -355,10 +385,10 @@ public abstract class BaseTableTest<T> {
         }
     }
 
-    private boolean testTableContent(WebDriver driver) {
+    private boolean testTableContent() {
         Common.logDebug("Page: " + getPageName() + ": Number of Objects from Json: " + jsonObjects.size());
 
-        List<Object> columnDataIDFromUI = getDataFromUIUsingColumnKey(driver, getUniqueKey());
+        List<Object> columnDataIDFromUI = getDataFromUIUsingColumnKey(getUniqueKey());
 
         Common.logDebug("Page: " + getPageName() + ": Number of Objects from UI: " + columnDataIDFromUI.size());
 
@@ -373,7 +403,7 @@ public abstract class BaseTableTest<T> {
         boolean pass = true;
 
         for (int i = 0; i < getColumnKeys().length; i++) {
-            List<Object> columnDataFromUI = getDataFromUIUsingColumnKey(driver, getColumnKeys()[i]);
+            List<Object> columnDataFromUI = getDataFromUIUsingColumnKey(getColumnKeys()[i]);
             List<Object> columnDataFromJSON = getDataFromJSONUsingColumnKey(getColumnKeys()[i]);
             if (!compareData(columnDataFromUI, columnDataFromJSON, columnDataIDFromUI, getColumnNames()[i])) {
                 pass = false;
@@ -404,7 +434,7 @@ public abstract class BaseTableTest<T> {
             Object dataJSONValue = dataJSON.get(i);
             Object dataIDUIValue = dataIDUI.get(i);
 
-            dataUIValue = parseDataUIValue(dataUIValue, columnName, dataIDUIValue);
+            dataUIValue = parseDataUIValue(dataUIValue, dataJSONValue, columnName, dataIDUIValue);
             dataJSONValue = parseDataJSONValue(dataJSONValue, columnName, dataIDUIValue);
 
             if (!checkValues(dataUIValue, dataJSONValue, dataIDUIValue, columnName)) {
@@ -430,13 +460,13 @@ public abstract class BaseTableTest<T> {
     }
 
     // need to change and fix "pageSize" and "ms-Dropdown-item"
-    private void clickDropdown(WebDriver driver, int numOfItemsJSON) {
+    private void clickDropdown(int numOfItemsJSON) {
 
         try {
-            WebElement dropdown = driver.findElement(By.id("pageSize"));
+            WebElement dropdown = Common.driver.findElement(By.id("pageSize"));
             dropdown.click();
 
-            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(Config.WAIT_TIME_THRESHOLD_IN_SECONDS));
+            WebDriverWait wait = new WebDriverWait(Common.driver, Duration.ofSeconds(Config.WAIT_TIME_THRESHOLD_IN_SECONDS));
             List<WebElement> options = wait.until(ExpectedConditions.visibilityOfAllElementsLocatedBy(By.cssSelector(".ms-Dropdown-item")));
 
             int selectedValue = Config.dropdownValues[0];
@@ -459,7 +489,7 @@ public abstract class BaseTableTest<T> {
             }
 
             wait.until(ExpectedConditions.invisibilityOfElementLocated(By.cssSelector(".ms-Dropdown-item")));
-            driver.navigate().refresh();
+            Common.driver.navigate().refresh();
             Common.sleep();
         } catch (Exception ex) {
             Common.logError("Failure: " + getPageName() + ": Error in clicking dropdown: " + ex.getMessage());

@@ -4,7 +4,6 @@ import framework.config.Config;
 import framework.model.NavigationWebElement;
 import framework.utility.Common;
 import org.openqa.selenium.By;
-import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.testng.annotations.Test;
 
@@ -27,21 +26,20 @@ public class ActivitiesTest {
 
     @Test
     public void testActivitiesPage() {
-        WebDriver driver = Common.driver;
         Common.openWebPage(Common.getUrl(Config.ACTIVITIES_URL));
 
         Common.logDebug("Tests started for: Activities page.");
 
-        testForAllText(driver);
+        testForAllText();
 
-        List<NavigationWebElement> navWebElements = getNavWebElements(driver);
+        List<NavigationWebElement> navWebElements = getNavWebElements();
 
-        testForNavigationLinks(driver, navWebElements);
+        testForNavigationLinks(navWebElements);
 
         Common.logDebug("Tests finished for: Activities page.");
     }
 
-    private void testForNavigationLinks(WebDriver driver, List<NavigationWebElement> navWebElements) {
+    private void testForNavigationLinks(List<NavigationWebElement> navWebElements) {
 
         Common.logDebug("Tests started for: Activities page: Testing Navigation Links");
 
@@ -50,11 +48,11 @@ public class ActivitiesTest {
             try {
                 element.webElement().click();
 
-                if (testTabsForNavigationLinks(driver, element)) {
+                if (testTabsForNavigationLinks(element)) {
                     String msg = "Success: Navigation Menu Link for " + element.name() + ". URL : " + element.hrefValue();
                     Common.logDetail(msg);
                 } else {
-                    String currentPage = getCurrentPage(driver);
+                    String currentPage = getCurrentPage();
                     String errorMsg = "Failure: Navigation Menu Link for " + element.name() + " page failed. The current navigation page that we landed on is " + currentPage + ". Current URL : " + element.hrefValue();
                     Common.logError(errorMsg);
                 }
@@ -64,14 +62,14 @@ public class ActivitiesTest {
         }
     }
 
-    private String getCurrentPage(WebDriver driver) {
+    private String getCurrentPage() {
 
         for (var entry : tabsListMap.entrySet()) {
 
             List<String> tabs = entry.getValue();
             boolean allTabsPresent = true;
             for (String tab : tabs) {
-                if (!driver.getPageSource().contains(tab)) {
+                if (!Common.driver.getPageSource().contains(tab)) {
                     allTabsPresent = false;
                     break;
                 }
@@ -85,9 +83,9 @@ public class ActivitiesTest {
         return "Invalid Page";
     }
 
-    private boolean testTabsForNavigationLinks(WebDriver driver, NavigationWebElement element) {
+    private boolean testTabsForNavigationLinks(NavigationWebElement element) {
         List<String> tabsList = tabsListMap.get(element.name());
-        String pageSource = driver.getPageSource();
+        String pageSource = Common.driver.getPageSource();
 
         for (String tab : tabsList) {
             if (!pageSource.contains(tab)) {
@@ -98,13 +96,13 @@ public class ActivitiesTest {
         return true;
     }
 
-    private List<NavigationWebElement> getNavWebElements(WebDriver driver) {
+    private List<NavigationWebElement> getNavWebElements() {
 
         List<NavigationWebElement> navWebElements = new ArrayList<>();
 
         for (String navName : navNamesArray) {
             try {
-                WebElement webElement = driver.findElement(By.name(navName)).findElement(By.tagName("a"));
+                WebElement webElement = Common.driver.findElement(By.name(navName)).findElement(By.tagName("a"));
                 String hrefValue = webElement.getAttribute("href");
                 navWebElements.add(new NavigationWebElement(navName, hrefValue, webElement));
             } catch (Exception ex) {
@@ -117,7 +115,7 @@ public class ActivitiesTest {
         return navWebElements;
     }
 
-    private void testForAllText(WebDriver driver) {
+    private void testForAllText() {
         Common.logDebug("Tests started for: Activities page: Testing Text");
         for (String text : textArray) {
             Common.checkTextPresent(text, "Activities Page");
