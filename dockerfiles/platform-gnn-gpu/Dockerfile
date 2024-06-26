@@ -85,6 +85,8 @@ RUN apt clean && \
     apt autoremove && \
     apt-get update
 
+RUN apt-get install -y libsvm-dev libsvm-tools
+
 RUN apt-get install -y python3-pip --fix-missing
 RUN python3 -m pip --no-cache-dir install \
     setuptools
