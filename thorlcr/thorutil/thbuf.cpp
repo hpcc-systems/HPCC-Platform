@@ -2150,21 +2150,9 @@ public:
     }
     virtual unsigned __int64 getStatistic(StatisticKind kind) const override
     {
-        switch (kind)
-        {
-            case StSizeSpillFile:
-                return tempFileIO->getStatistic(StSizeDiskWrite);
-            case StCycleDiskWriteIOCycles:
-            case StTimeDiskWriteIO:
-            case StSizeDiskWrite:
-                return 0;
-            case StNumSpills:
-                return 1;
-            case StTimeSpillElapsed:
-                return tempFileIO->getStatistic(StCycleDiskWriteIOCycles);
-            default:
-                return tempFileIO->getStatistic(kind);
-        }
+        if (kind==StNumSpills)
+            return 1;
+        return tempFileIO->getStatistic(kind);
     }
 };
 
@@ -2464,6 +2452,7 @@ class CSharedFullSpillingWriteAhead : public CInterfaceOf<ISharedRowStreamReader
     SharedRowStreamReaderOptions options;
     size32_t inMemReadAheadGranularity = 0;
     CRuntimeStatisticCollection inactiveStats;
+    CRuntimeStatisticCollection previousFileStats;
     StringAttr baseTmpFilename;
 
 
@@ -2493,21 +2482,24 @@ class CSharedFullSpillingWriteAhead : public CInterfaceOf<ISharedRowStreamReader
     {
         if (outputStream)
         {
+            outputStream.clear();
             iFileIO->flush();
             tempFileOwner->noteSize(iFileIO->getStatistic(StSizeDiskWrite));
-            ::mergeStats(inactiveStats, iFileIO);
+            updateRemappedStatsDelta(inactiveStats, previousFileStats, iFileIO, diskToTempStatsMap); // NB: also updates prev to current
+            previousFileStats.reset();
             iFileIO.clear();
-            outputStream.clear();
         }
     }
     void createOutputStream()
     {
+        closeWriter(); // Ensure stats from closing files are preserved in inactiveStats
         // NB: Called once, when spilling starts.
         tempFileOwner.setown(activity.createOwnedTempFile(baseTmpFilename));
         auto res = createSerialOutputStream(&(tempFileOwner->queryIFile()), compressHandler, options, numOutputs + 1);
         outputStream.setown(std::get<0>(res));
         iFileIO.setown(std::get<1>(res));
         totalInputRowsRead = inMemTotalRows;
+        inactiveStats.addStatistic(StNumSpills, 1);
     }
     void writeRowsFromInput()
     {
@@ -2549,6 +2541,7 @@ class CSharedFullSpillingWriteAhead : public CInterfaceOf<ISharedRowStreamReader
         outputStream->flush();
         totalInputRowsRead.fetch_add(newRowsWritten);
         tempFileOwner->noteSize(iFileIO->getStatistic(StSizeDiskWrite));
+        updateRemappedStatsDelta(inactiveStats, previousFileStats, iFileIO, diskToTempStatsMap); // NB: also updates prev to current
         // JCSMORE - could track size written, and start new file at this point (e.g. every 100MB),
         // and track their starting points (by row #) in a vector
         // We could then tell if/when the readers catch up, and remove consumed files as they do.
@@ -2562,7 +2555,7 @@ public:
     explicit CSharedFullSpillingWriteAhead(CActivityBase *_activity, unsigned _numOutputs, IRowStream *_input, bool _inputGrouped, const SharedRowStreamReaderOptions &_options, IThorRowInterfaces *rowIf, const char *_baseTmpFilename, ICompressHandler *_compressHandler)
         : activity(*_activity), numOutputs(_numOutputs), input(_input), inputGrouped(_inputGrouped), options(_options), compressHandler(_compressHandler), baseTmpFilename(_baseTmpFilename),
         meta(rowIf->queryRowMetaData()), serializer(rowIf->queryRowSerializer()), allocator(rowIf->queryRowAllocator()), deserializer(rowIf->queryRowDeserializer()),
-        inactiveStats(spillingWriteAheadStatistics)
+        inactiveStats(spillingWriteAheadStatistics), previousFileStats(spillingWriteAheadStatistics)
     {
         assertex(input);
 
@@ -2726,29 +2719,7 @@ public:
     }
     virtual unsigned __int64 getStatistic(StatisticKind kind) const override
     {
-        StatisticKind useKind;
-        switch (kind)
-        {
-            case StSizeSpillFile:
-                useKind = StSizeDiskWrite;
-                break;
-            case StCycleDiskWriteIOCycles:
-            case StTimeDiskWriteIO:
-            case StSizeDiskWrite:
-                return 0;
-            case StNumSpills:
-                return 1;
-            case StTimeSpillElapsed:
-                useKind = StCycleDiskWriteIOCycles;
-                break;
-            default:
-                useKind = kind;
-        }
-        unsigned __int64 v = 0;
-        if (likely(iFileIO))
-            v = iFileIO->getStatistic(useKind);
-        v += inactiveStats.getStatisticValue(useKind);
-        return v;
+        return inactiveStats.getStatisticValue(kind);
     }
 };
 

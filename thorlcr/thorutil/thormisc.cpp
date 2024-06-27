@@ -99,6 +99,11 @@ const StatisticsMapping hashDistribActivityStatistics({StNumLocalRows, StNumRemo
 const StatisticsMapping nsplitterActivityStatistics({}, spillStatistics, basicActivityStatistics);
 const StatisticsMapping spillingWriteAheadStatistics({}, spillStatistics);
 
+const StatKindMap diskToTempStatsMap
+={ {StSizeDiskWrite, StSizeSpillFile},
+   {StTimeDiskWriteIO, StTimeSpillElapsed}
+ };
+
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
     ClusterMPAllocator.setown(createMPtagRangeAllocator(MPTAG_THORGLOBAL_BASE,MPTAG_THORGLOBAL_COUNT));
