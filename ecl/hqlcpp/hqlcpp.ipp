@@ -2146,19 +2146,23 @@ protected:
     SummaryMap summaries[(int) SummaryType::NumItems];
     void noteSummaryInfo(const char *name, SummaryType type, bool isOpt, bool isSigned)
     {
-        if (type != SummaryType::None)
-        {
-            SummaryMap &map = summaries[(int) type];
-            SummaryFlags flags = SummaryFlags::None;
-            if (isOpt)
-                flags |= SummaryFlags::IsOpt;
-            if (isSigned)
-                flags |= SummaryFlags::IsSigned;
-            if (map.find(name) == map.end())
-                map[name] = flags;
-            else
-                map[name] = map[name] & flags;
-        }
+        if (type == SummaryType::None)
+            return;
+        //Spill files are meaningless in roxie, and no current benefit in recording them for hthor/thor
+        if (type == SummaryType::SpillFile)
+            return;
+
+        SummaryMap &map = summaries[(int) type];
+        SummaryFlags flags = SummaryFlags::None;
+        if (isOpt)
+            flags |= SummaryFlags::IsOpt;
+        if (isSigned)
+            flags |= SummaryFlags::IsSigned;
+        auto match = map.find(name);
+        if (match == map.end())
+            map[name] = flags;
+        else
+            match->second &= flags;
     }
 };
 
