@@ -152,6 +152,7 @@ extern graph_decl const StatisticsMapping indexReadActivityStatistics;
 extern graph_decl const StatisticsMapping indexWriteActivityStatistics;
 extern graph_decl const StatisticsMapping joinActivityStatistics;
 extern graph_decl const StatisticsMapping keyedJoinActivityStatistics;
+extern graph_decl const StatisticsMapping allJoinActivityStatistics;
 extern graph_decl const StatisticsMapping lookupJoinActivityStatistics;
 extern graph_decl const StatisticsMapping loopActivityStatistics;
 extern graph_decl const StatisticsMapping diskReadActivityStatistics;
