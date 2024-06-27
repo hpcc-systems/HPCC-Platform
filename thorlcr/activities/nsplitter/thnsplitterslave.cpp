@@ -152,7 +152,7 @@ class NSplitterSlaveActivity : public CSlaveActivity, implements ISharedSmartBuf
         }
     }
 public:
-    NSplitterSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), writer(*this)
+    NSplitterSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container, nsplitterActivityStatistics), writer(*this)
     {
         numOutputs = container.getOutputs();
         connectedOutputSet.setown(createBitSet());
@@ -400,6 +400,12 @@ public:
         CSlaveActivity::abort();
         if (sharedRowStream)
             sharedRowStream->cancel();
+    }
+    virtual void gatherActiveStats(CRuntimeStatisticCollection &activeStats) const override
+    {
+        PARENT::gatherActiveStats(activeStats);
+        if (sharedRowStream)
+            ::mergeStats(activeStats, sharedRowStream);
     }
 // ISharedSmartBufferCallback impl.
     virtual void paged() { pagedOut = true; }

@@ -87,6 +87,7 @@ interface ISharedRowStreamReader : extends IInterface
     virtual IRowStream *queryOutput(unsigned output) = 0;
     virtual void cancel()=0;
     virtual void reset() = 0;
+    virtual unsigned __int64 getStatistic(StatisticKind kind) const = 0;
 };
 
 
