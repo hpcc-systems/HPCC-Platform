@@ -25,6 +25,7 @@ FROM ${DOCKER_REPO}/platform-core:${BUILD_LABEL}
 USER root
 
 RUN apt-get update -y && apt-get install -y python3-pip --fix-missing
+RUN apt-get install -y libsvm-dev libsvm-tools
 RUN python3 -m pip install --upgrade pip
 
 RUN pip3 install       \
