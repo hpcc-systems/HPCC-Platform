@@ -269,7 +269,8 @@ inline IHqlExpression * makeChildList(IHqlExpression * expr)
 IHqlExpression * CTreeOptimizer::removeChildNode(IHqlExpression * expr)
 {
     IHqlExpression * child = expr->queryChild(0);
-    DBGLOG("Optimizer: Node %s remove child: %s", queryNode0Text(expr), queryNode1Text(child));
+    if (doTrace(traceOptimizations))
+        DBGLOG("Optimizer: Node %s remove child: %s", queryNode0Text(expr), queryNode1Text(child));
     noteUnused(child);
 
     //If removing an operator that also has the side-effect of removing grouping (e.g. distribute), make sure the dataset is still ungrouped
@@ -285,7 +286,8 @@ IHqlExpression * CTreeOptimizer::removeChildNode(IHqlExpression * expr)
 IHqlExpression * CTreeOptimizer::removeParentNode(IHqlExpression * expr)
 {
     IHqlExpression * child = expr->queryChild(0);
-    DBGLOG("Optimizer: Node %s remove self (now %s)", queryNode0Text(expr), queryNode1Text(child));
+    if (doTrace(traceOptimizations))
+        DBGLOG("Optimizer: Node %s remove self (now %s)", queryNode0Text(expr), queryNode1Text(child));
 
     // Need to dec link count of child because it is just about to inherited the link count from the parent
     decUsage(child);        
@@ -295,7 +297,8 @@ IHqlExpression * CTreeOptimizer::removeParentNode(IHqlExpression * expr)
 IHqlExpression * CTreeOptimizer::swapNodeWithChild(IHqlExpression * parent)
 {
     IHqlExpression * child = parent->queryChild(0);
-    DBGLOG("Optimizer: Swap %s and %s", queryNode0Text(parent), queryNode1Text(child));
+    if (doTrace(traceOptimizations))
+        DBGLOG("Optimizer: Swap %s and %s", queryNode0Text(parent), queryNode1Text(child));
     OwnedHqlExpr newParent = swapDatasets(parent);
     //if this is the only reference to the child (almost certainly true) then no longer refd, so don't inc usage for child.
     noteUnused(child);
@@ -314,7 +317,8 @@ IHqlExpression * CTreeOptimizer::forceSwapNodeWithChild(IHqlExpression * parent)
 IHqlExpression * CTreeOptimizer::swapNodeWithChild(IHqlExpression * parent, unsigned childIndex)
 {
     IHqlExpression * child = parent->queryChild(0);
-    DBGLOG("Optimizer: Swap %s and %s", queryNode0Text(parent), queryNode1Text(child));
+    if (doTrace(traceOptimizations))
+        DBGLOG("Optimizer: Swap %s and %s", queryNode0Text(parent), queryNode1Text(child));
     OwnedHqlExpr newChild = replaceChildDataset(parent, child->queryChild(childIndex), 0);
     OwnedHqlExpr swapped = insertChildDataset(child, newChild, childIndex);
     if (!alreadyHasUsage(swapped))
@@ -364,7 +368,8 @@ IHqlExpression * CTreeOptimizer::swapIntoIf(IHqlExpression * expr, bool force)
                 decUsage(newRight);
         }
         noteUnused(child);
-        DBGLOG("Optimizer: Swap %s and %s", queryNode0Text(expr), queryNode1Text(child));
+        if (doTrace(traceOptimizations))
+            DBGLOG("Optimizer: Swap %s and %s", queryNode0Text(expr), queryNode1Text(child));
         return transformedIf.getClear();
     }
 
@@ -420,7 +425,8 @@ IHqlExpression * CTreeOptimizer::swapIntoAddFiles(IHqlExpression * expr, bool fo
         noteUnused(child);
 
         //And create the new funnel
-        DBGLOG("Optimizer: Swap %s and %s", queryNode0Text(expr), queryNode1Text(child));
+        if (doTrace(traceOptimizations))
+            DBGLOG("Optimizer: Swap %s and %s", queryNode0Text(expr), queryNode1Text(child));
         return child->clone(transformedArgs);
     }
 
@@ -463,7 +469,8 @@ IHqlExpression * CTreeOptimizer::moveFilterOverSelect(IHqlExpression * expr)
     if (hoisted.ordinality() == 0)
         return NULL;
 
-    DBGLOG("Optimizer: Move filter over select (%d/%d)", hoisted.ordinality(), args.ordinality());
+    if (doTrace(traceOptimizations))
+        DBGLOG("Optimizer: Move filter over select (%d/%d)", hoisted.ordinality(), args.ordinality());
 
     //Create a filtered dataset
     IHqlExpression * inDs = LINK(ds);
@@ -742,7 +749,8 @@ IHqlExpression * CTreeOptimizer::optimizeAggregateDataset(IHqlExpression * trans
         incUsage(ds);
     }
 
-    DBGLOG("Optimizer: Aggregate replace %s with %s", queryNode0Text(root), queryNode1Text(ds));
+    if (doTrace(traceOptimizations))
+        DBGLOG("Optimizer: Aggregate replace %s with %s", queryNode0Text(root), queryNode1Text(ds));
     children.replace(*ds.getClear(), 0);
     return transformed->clone(children);
 }
@@ -794,7 +802,8 @@ IHqlExpression * CTreeOptimizer::optimizeDatasetIf(IHqlExpression * transformed)
 
         OwnedHqlExpr ret = createDataset(no_filter, args);
 
-        DBGLOG("Optimizer: Convert %s to a filter", queryNode0Text(transformed));
+        if (doTrace(traceOptimizations))
+            DBGLOG("Optimizer: Convert %s to a filter", queryNode0Text(transformed));
 
         //NOTE: left and right never walk over any shared nodes, so don't need to decrement usage for 
         //child(1), child(2) or intermediate nodes to left/right, since not referenced any more.
@@ -869,7 +878,8 @@ IHqlExpression * CTreeOptimizer::optimizeIfAppend(IHqlExpression * expr, node_op
     args.append(*newIf.getClear());
     unwindChildren(args, appendExpr, 2);
     OwnedHqlExpr ret = appendExpr->clone(args);
-    DBGLOG("Optimizer: Extract common branch - replace %s with %s", queryNode0Text(expr), queryNode1Text(ret));
+    if (doTrace(traceOptimizations))
+        DBGLOG("Optimizer: Extract common branch - replace %s with %s", queryNode0Text(expr), queryNode1Text(ret));
     return ret.getClear();
 }
 
@@ -1045,7 +1055,8 @@ IHqlExpression * CTreeOptimizer::optimizeIf(IHqlExpression * expr)
 
         if (args.ordinality())
         {
-            DBGLOG("Optimizer: Merge %s and %s", queryNode0Text(expr), queryNode1Text(trueExpr));
+            if (doTrace(traceOptimizations))
+                DBGLOG("Optimizer: Merge %s and %s", queryNode0Text(expr), queryNode1Text(trueExpr));
             noteUnused(falseExpr);
         }
     }
@@ -1072,7 +1083,8 @@ IHqlExpression * CTreeOptimizer::optimizeIf(IHqlExpression * expr)
 
         if (args.ordinality())
         {
-            DBGLOG("Optimizer: Merge %s and %s", queryNode0Text(expr), queryNode1Text(falseExpr));
+            if (doTrace(traceOptimizations))
+                DBGLOG("Optimizer: Merge %s and %s", queryNode0Text(expr), queryNode1Text(falseExpr));
             noteUnused(trueExpr);
         }
     }
@@ -1122,7 +1134,7 @@ bool CTreeOptimizer::expandFilterCondition(HqlExprArray & expanded, HqlExprArray
                 IValue * value = expandedFilter->queryValue();
                 if (value && !value->getBoolValue())
                 {
-                    if (onlyKeyed)
+                    if (onlyKeyed && doTrace(traceOptimizations))
                         DBGLOG("Optimizer: Merging filter over shared project always false");
                     expanded.kill();
                     expanded.append(*LINK(expandedFilter));
@@ -1197,9 +1209,15 @@ IHqlExpression * CTreeOptimizer::hoistFilterOverProject(IHqlExpression * transfo
 
         OwnedHqlExpr filterExpr = createFilterCondition(expanded);
         if (unexpanded.ordinality())
-            DBGLOG("Optimizer: Move %d/%d filters over %s", expanded.ordinality(), expanded.ordinality()+unexpanded.ordinality(), queryNode1Text(child));
+        {
+            if (doTrace(traceOptimizations))
+                DBGLOG("Optimizer: Move %d/%d filters over %s", expanded.ordinality(), expanded.ordinality()+unexpanded.ordinality(), queryNode1Text(child));
+        }
         else
-            DBGLOG("Optimizer: Swap %s and %s", queryNode0Text(transformed), queryNode1Text(child));
+        {
+            if (doTrace(traceOptimizations))
+                DBGLOG("Optimizer: Swap %s and %s", queryNode0Text(transformed), queryNode1Text(child));
+        }
 
         IHqlExpression * newGrandchild = child->queryChild(0);
         OwnedHqlExpr newFilter = createDataset(no_filter, LINK(newGrandchild), LINK(filterExpr));
@@ -1331,7 +1349,8 @@ IHqlExpression * CTreeOptimizer::getHoistedFilter(IHqlExpression * transformed, 
         //extend the join condition where appropriate
         if (expanded.ordinality())
         {
-            DBGLOG("Optimizer: Merge filters(%d/%d) into %s condition", expanded.ordinality(), conds.ordinality(), queryNode1Text(child));
+            if (doTrace(traceOptimizations))
+                DBGLOG("Optimizer: Merge filters(%d/%d) into %s condition", expanded.ordinality(), conds.ordinality(), queryNode1Text(child));
             OwnedITypeInfo boolType = makeBoolType();
             HqlExprArray args;
             unwindChildren(args, ret);
@@ -1366,7 +1385,8 @@ IHqlExpression * CTreeOptimizer::getHoistedFilter(IHqlExpression * transformed, 
 IHqlExpression * CTreeOptimizer::createHoistedFilter(IHqlExpression * expr, HqlExprArray & conditions, unsigned childIndex, unsigned maxConditions)
 {
     IHqlExpression * grand = expr->queryChild(childIndex);
-    DBGLOG("Optimizer: Hoisting filter(%d/%d) over %s.%d", conditions.ordinality(), maxConditions, queryNode0Text(expr), childIndex);
+    if (doTrace(traceOptimizations))
+        DBGLOG("Optimizer: Hoisting filter(%d/%d) over %s.%d", conditions.ordinality(), maxConditions, queryNode0Text(expr), childIndex);
     conditions.add(*LINK(grand), 0);
     OwnedHqlExpr hoistedFilter = createDataset(no_filter, conditions);
     OwnedHqlExpr ret = insertChildDataset(expr, hoistedFilter, childIndex);
@@ -1401,7 +1421,8 @@ IHqlExpression * CTreeOptimizer::queryPromotedFilter(IHqlExpression * expr, node
     if (hoisted.ordinality() == 0)
         return NULL;
 
-    DBGLOG("Optimizer: Hoisting filter(%d/%d) over %s", hoisted.ordinality(), hoisted.ordinality()+unhoisted.ordinality(), queryNode0Text(child));
+    if (doTrace(traceOptimizations))
+        DBGLOG("Optimizer: Hoisting filter(%d/%d) over %s", hoisted.ordinality(), hoisted.ordinality()+unhoisted.ordinality(), queryNode0Text(child));
 
     OwnedHqlExpr newChild = createHoistedFilter(child, hoisted, childIndex, conds.ordinality());
     noteUnused(child);
@@ -1569,7 +1590,8 @@ IHqlExpression * CTreeOptimizer::optimizeJoinCondition(IHqlExpression * expr)
 
     if (leftOnly.ordinality())
     {
-        DBGLOG("Optimizer: Hoist %d LEFT conditions out of %s", leftOnly.ordinality(), queryNode0Text(expr));
+        if (doTrace(traceOptimizations))
+            DBGLOG("Optimizer: Hoist %d LEFT conditions out of %s", leftOnly.ordinality(), queryNode0Text(expr));
         IHqlExpression * lhs = expr->queryChild(0);
         OwnedHqlExpr left = createSelector(no_left, lhs, seq);
         OwnedHqlExpr leftFilter = createFilterCondition(leftOnly);
@@ -1580,7 +1602,8 @@ IHqlExpression * CTreeOptimizer::optimizeJoinCondition(IHqlExpression * expr)
 
     if (rightOnly.ordinality())
     {
-        DBGLOG("Optimizer: Hoist %d RIGHT conditions out of %s", rightOnly.ordinality(), queryNode0Text(expr));
+        if (doTrace(traceOptimizations))
+            DBGLOG("Optimizer: Hoist %d RIGHT conditions out of %s", rightOnly.ordinality(), queryNode0Text(expr));
         IHqlExpression * rhs = expr->queryChild(1);
         OwnedHqlExpr right = createSelector(no_right, rhs, seq);
         OwnedHqlExpr rightFilter = createFilterCondition(rightOnly);
@@ -1617,7 +1640,8 @@ IHqlExpression * CTreeOptimizer::optimizeDistributeDedup(IHqlExpression * expr)
     if (!matchDedupDistribution(dist, info.equalities))
         return NULL;
 
-    DBGLOG("Optimizer: Swap %s and %s", queryNode0Text(expr), queryNode1Text(child));
+    if (doTrace(traceOptimizations))
+        DBGLOG("Optimizer: Swap %s and %s", queryNode0Text(expr), queryNode1Text(child));
     
     
     OwnedHqlExpr distn;
@@ -1717,7 +1741,8 @@ IHqlExpression * CTreeOptimizer::optimizeProjectInlineTable(IHqlExpression * tra
         newValues.append(*ensureTransformType(next, no_transform));
     }
 
-    DBGLOG("Optimizer: Merge %s and %s", queryNode0Text(transformed), queryNode1Text(child));
+    if (doTrace(traceOptimizations))
+        DBGLOG("Optimizer: Merge %s and %s", queryNode0Text(transformed), queryNode1Text(child));
     HqlExprArray args;
     args.append(*createValue(no_transformlist, makeNullType(), newValues));
     if (projectOp == no_newusertable)
@@ -1848,7 +1873,8 @@ IHqlExpression * CTreeOptimizer::expandProjectedDataset(IHqlExpression * child, 
         IHqlExpression * oldTransform = child->queryChild(transformIndex);
         expandedTransform.setown(ensureTransformType(expandedTransform, oldTransform->getOperator()));
 
-        DBGLOG("Optimizer: Merge %s and %s", queryNode0Text(expr), queryNode1Text(child));
+        if (doTrace(traceOptimizations))
+            DBGLOG("Optimizer: Merge %s and %s", queryNode0Text(expr), queryNode1Text(child));
         HqlExprArray args;
         unwindChildren(args, child);
         args.replace(*expandedTransform.getClear(), transformIndex);
@@ -2093,7 +2119,8 @@ IHqlExpression * CTreeOptimizer::moveProjectionOverSimple(IHqlExpression * trans
         }
     }
     
-    DBGLOG("Optimizer: Swap %s and %s", queryNode0Text(transformed), queryNode1Text(child));
+    if (doTrace(traceOptimizations))
+        DBGLOG("Optimizer: Swap %s and %s", queryNode0Text(transformed), queryNode1Text(child));
     OwnedHqlExpr swapped = child->clone(args);
     if (!alreadyHasUsage(swapped))
         incUsage(newProject);
@@ -2135,7 +2162,8 @@ IHqlExpression * CTreeOptimizer::moveProjectionOverLimit(IHqlExpression * transf
     if (monitor.isComplex())
         return LINK(transformed);
 
-    DBGLOG("Optimizer: Swap %s and %s", queryNode0Text(transformed), queryNode1Text(child));
+    if (doTrace(traceOptimizations))
+        DBGLOG("Optimizer: Swap %s and %s", queryNode0Text(transformed), queryNode1Text(child));
     OwnedHqlExpr swapped = child->clone(args);
     if (!alreadyHasUsage(swapped))
         incUsage(newProject);
@@ -2249,7 +2277,8 @@ IHqlExpression * CTreeOptimizer::getOptimizedFilter(IHqlExpression * transformed
         noteUnused(transformed->queryChild(0));
         //MORE: Really wants to walk down the entire chain until we hit something that is shared.
         IHqlExpression * ret = createNullDataset(transformed);
-        DBGLOG("Optimizer: Replace %s with %s", queryNode0Text(transformed), queryNode1Text(ret));
+        if (doTrace(traceOptimizations))
+            DBGLOG("Optimizer: Replace %s with %s", queryNode0Text(transformed), queryNode1Text(ret));
         return ret;
     }
 }
@@ -2310,7 +2339,8 @@ void CTreeOptimizer::recursiveDecChildUsage(IHqlExpression * expr)
 IHqlExpression * CTreeOptimizer::replaceWithNull(IHqlExpression * transformed)
 {
     IHqlExpression * ret = createNullExpr(transformed);
-    DBGLOG("Optimizer: Replace %s with %s", queryNode0Text(transformed), queryNode1Text(ret));
+    if (doTrace(traceOptimizations))
+        DBGLOG("Optimizer: Replace %s with %s", queryNode0Text(transformed), queryNode1Text(ret));
 
     recursiveDecChildUsage(transformed);
     return ret;
@@ -2320,7 +2350,8 @@ IHqlExpression * CTreeOptimizer::replaceWithNull(IHqlExpression * transformed)
 IHqlExpression * CTreeOptimizer::replaceWithNullRow(IHqlExpression * expr)
 {
     IHqlExpression * ret = createRow(no_null, LINK(expr->queryRecord()));
-    DBGLOG("Optimizer: Replace %s with %s", queryNode0Text(expr), queryNode1Text(ret));
+    if (doTrace(traceOptimizations))
+        DBGLOG("Optimizer: Replace %s with %s", queryNode0Text(expr), queryNode1Text(ret));
     recursiveDecChildUsage(expr);
     return ret;
 
@@ -2329,7 +2360,8 @@ IHqlExpression * CTreeOptimizer::replaceWithNullRowDs(IHqlExpression * expr)
 {
     assertex(!isGrouped(expr));
     IHqlExpression * ret = createDatasetFromRow(createRow(no_null, LINK(expr->queryRecord())));
-    DBGLOG("Optimizer: Replace %s with %s", queryNode0Text(expr), queryNode1Text(ret));
+    if (doTrace(traceOptimizations))
+        DBGLOG("Optimizer: Replace %s with %s", queryNode0Text(expr), queryNode1Text(ret));
     recursiveDecChildUsage(expr);
     return ret;
 
@@ -2452,7 +2484,8 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
             IHqlExpression * ret = optimizeCreateRow(transformed);
             if (ret)
             {
-                DBGLOG("Optimizer: Remove Redundant %s", queryNode0Text(transformed));
+                if (doTrace(traceOptimizations))
+                    DBGLOG("Optimizer: Remove Redundant %s", queryNode0Text(transformed));
                 if (ret->isDataset())
                     return ensureActiveRow(ret);
                 return LINK(ret);
@@ -2529,7 +2562,8 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                 IHqlExpression * rhs = transformed->queryChild(1);
                 if (rhs->getOperator() == no_distribute)
                 {
-                    DBGLOG("Optimizer: Remove %s from RHS of global LOOKUP JOIN", queryNode0Text(rhs));
+                    if (doTrace(traceOptimizations))
+                        DBGLOG("Optimizer: Remove %s from RHS of global LOOKUP JOIN", queryNode0Text(rhs));
                     return ::replaceChild(transformed, 1, rhs->queryChild(0));
                 }
             }
@@ -2638,7 +2672,8 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                     //MORE If trivial projection then might be worth merging with multiple items, but unlikely to occur in practice
                     OwnedHqlExpr ret = createRow(no_createrow, LINK(values->queryChild((unsigned)index-1)));
                     noteUnused(child);
-                    DBGLOG("Optimizer: Replace %s with %s", queryNode0Text(transformed), queryNode1Text(ret));
+                    if (doTrace(traceOptimizations))
+                        DBGLOG("Optimizer: Replace %s with %s", queryNode0Text(transformed), queryNode1Text(ret));
                     return ret.getClear();
                 }
             case no_datasetfromrow:
@@ -2653,7 +2688,8 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                     IHqlExpression * ret = child->queryChild(0);
                     noteUnused(child);
                     decUsage(ret);  // will inherit later
-                    DBGLOG("Optimizer: Replace %s with %s", queryNode0Text(transformed), queryNode1Text(ret));
+                    if (doTrace(traceOptimizations))
+                        DBGLOG("Optimizer: Replace %s with %s", queryNode0Text(transformed), queryNode1Text(ret));
                     return LINK(ret);
                 }
 #if 0
@@ -2693,7 +2729,8 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                                 //being used conditionally within transforms.  See HPCC-11018 for details.
                                 if ((options & HOOexpandselectcreaterow) || isIndependentOfScope(match))
                                 {
-                                    DBGLOG("Optimizer: Extract value %s from %s", queryNode0Text(cur), queryNode1Text(transformed));
+                                    if (doTrace(traceOptimizations))
+                                        DBGLOG("Optimizer: Extract value %s from %s", queryNode0Text(cur), queryNode1Text(transformed));
                                     noteUnused(child);
                                     return match.getClear();
                                 }
@@ -2705,7 +2742,8 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                                 case no_null:
                                 case no_getresult:
                                 case no_getgraphresult:
-                                    DBGLOG("Optimizer: Extract value %s from %s", queryNode0Text(match), queryNode1Text(transformed));
+                                    if (doTrace(traceOptimizations))
+                                        DBGLOG("Optimizer: Extract value %s from %s", queryNode0Text(match), queryNode1Text(transformed));
                                     noteUnused(child);
                                     return match.getClear();
                                 }
@@ -2745,7 +2783,8 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                                 case no_left:
                                 case no_right:
                                     {
-                                        DBGLOG("Optimizer: Extract value %s from %s", queryNode0Text(match), queryNode1Text(transformed));
+                                        if (doTrace(traceOptimizations))
+                                            DBGLOG("Optimizer: Extract value %s from %s", queryNode0Text(match), queryNode1Text(transformed));
                                         noteUnused(child);
                                         return match.getClear();
                                     }
@@ -2788,7 +2827,8 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                                 case no_getresult:
                                 case no_getgraphresult:
                                     {
-                                        DBGLOG("Optimizer: Extract value %s from %s", queryNode0Text(match), queryNode1Text(transformed));
+                                        if (doTrace(traceOptimizations))
+                                            DBGLOG("Optimizer: Extract value %s from %s", queryNode0Text(match), queryNode1Text(transformed));
                                         noteUnused(child);
 
                                         HqlExprArray args;
@@ -2816,7 +2856,8 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
             {
                 assertex(isGrouped(child)); // not grouped handled already.
                 OwnedHqlExpr ret = createDataset(no_group, LINK(child));
-                DBGLOG("Optimizer: replace %s with %s", queryNode0Text(transformed), queryNode1Text(ret));
+                if (doTrace(traceOptimizations))
+                    DBGLOG("Optimizer: replace %s with %s", queryNode0Text(transformed), queryNode1Text(ret));
                 return transformed->cloneAllAnnotations(ret);
             }
             break;
@@ -2890,7 +2931,8 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
             else
                 args.append(*LINK(transform));
 
-            DBGLOG("Optimizer: Convert %s(,1) into PROJECT", queryNode0Text(transformed));
+            if (doTrace(traceOptimizations))
+                DBGLOG("Optimizer: Convert %s(,1) into PROJECT", queryNode0Text(transformed));
             unwindChildren(args, transformed, 3);
             //This is not a count project.. so remove the attribute.
             removeAttribute(args, _countProject_Atom);
@@ -3020,7 +3062,8 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                         else
                             newLimit = const2;
 
-                        DBGLOG("Optimizer: Merge %s and %s", queryNode0Text(transformed), queryNode1Text(child));
+                        if (doTrace(traceOptimizations))
+                            DBGLOG("Optimizer: Merge %s and %s", queryNode0Text(transformed), queryNode1Text(child));
                         return createDataset(no_choosen, LINK(child->queryChild(0)), LINK(newLimit));
                         //don't bother to transform
                     }
@@ -3188,7 +3231,8 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
             {
             case no_filter:
                 {
-                    DBGLOG("Optimizer: Merge %s and %s", queryNode0Text(transformed), queryNode1Text(child));
+                    if (doTrace(traceOptimizations))
+                        DBGLOG("Optimizer: Merge %s and %s", queryNode0Text(transformed), queryNode1Text(child));
                     HqlExprArray args;
                     unwindChildren(args, child);
                     unwindChildren(args, transformed, 1);
@@ -3395,7 +3439,8 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                         if (filtered.ordinality() == values->numChildren())
                             return removeParentNode(transformed);
 
-                        DBGLOG("Optimizer: Node %s reduce values in child: %s from %d to %d", queryNode0Text(transformed), queryNode1Text(child), values->numChildren(), filtered.ordinality());
+                        if (doTrace(traceOptimizations))
+                            DBGLOG("Optimizer: Node %s reduce values in child: %s from %d to %d", queryNode0Text(transformed), queryNode1Text(child), values->numChildren(), filtered.ordinality());
                         HqlExprArray args;
                         args.append(*values->clone(filtered));
                         unwindChildren(args, child, 1);
@@ -3493,7 +3538,8 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                     if (expandedTransform && !monitor.isComplex())
                     {
                         expandedTransform.setown(inheritSkips(expandedTransform, child->queryChild(1), mapper->queryTransformSelector(), newLeft));
-                        DBGLOG("Optimizer: Merge %s and %s", queryNode0Text(transformed), queryNode1Text(child));
+                        if (doTrace(traceOptimizations))
+                            DBGLOG("Optimizer: Merge %s and %s", queryNode0Text(transformed), queryNode1Text(child));
                         //NB: Merging a project with a count project can actually remove the count project..
                         IHqlExpression * countProjectAttr = transformedCountProject;
                         if (childCountProject && transformContainsCounter(expandedTransform, childCountProject->queryChild(0)))
@@ -3632,7 +3678,8 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                     OwnedHqlExpr expandedTransform = expandFields(mapper, transform, oldLeft, NULL, &monitor);
                     if (expandedTransform && !monitor.isComplex())
                     {
-                        DBGLOG("Optimizer: Merge %s and %s", queryNode0Text(transformed), queryNode1Text(child));
+                        if (doTrace(traceOptimizations))
+                            DBGLOG("Optimizer: Merge %s and %s", queryNode0Text(transformed), queryNode1Text(child));
                         HqlExprArray args;
                         unwindChildren(args, child);
                         args.replace(*expandedTransform.getClear(), queryTransformIndex(child));
@@ -3748,7 +3795,8 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
 
                         if (!monitor.isComplex())
                         {
-                            DBGLOG("Optimizer: Merge %s and %s", queryNode0Text(transformed), queryNode1Text(child));
+                            if (doTrace(traceOptimizations))
+                                DBGLOG("Optimizer: Merge %s and %s", queryNode0Text(transformed), queryNode1Text(child));
                             removeAttribute(args, _internal_Atom);
                             noteUnused(child);
                             return exprToClone->clone(args);
@@ -3933,7 +3981,8 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                         break;
                     OwnedHqlExpr newOrder = replaceSelector(sortOrder, queryActiveTableSelector(), child->queryNormalizedSelector());
                     decUsage(child);
-                    DBGLOG("Optimizer: Merge %s and %s", queryNode0Text(transformed), queryNode1Text(child));
+                    if (doTrace(traceOptimizations))
+                        DBGLOG("Optimizer: Merge %s and %s", queryNode0Text(transformed), queryNode1Text(child));
                     return ::replaceChild(child, 1, newOrder);
                 }
 
@@ -4088,7 +4137,8 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                     IHqlExpression * expanded = expandFields(mapper, transformed->queryChild(3), oldLeft, newLeft);
                     if (expanded)
                     {
-                        DBGLOG("Optimizer: Merge %s and %s", queryNode0Text(transformed), queryNode1Text(child));
+                        if (doTrace(traceOptimizations))
+                            DBGLOG("Optimizer: Merge %s and %s", queryNode0Text(transformed), queryNode1Text(child));
                         HqlExprArray args;
                         args.append(*LINK(child->queryChild(0)));
                         args.append(*LINK(transformed->queryChild(1)));
@@ -4122,7 +4172,8 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
             }
             if (!ok)
                 break;
-            DBGLOG("Optimizer: Merge inline tables for %s", queryNode0Text(transformed));
+            if (doTrace(traceOptimizations))
+                DBGLOG("Optimizer: Merge inline tables for %s", queryNode0Text(transformed));
             HqlExprArray args;
             args.append(*createValue(no_transformlist, makeNullType(), allTransforms));
             args.append(*LINK(child->queryRecord()));
@@ -4146,7 +4197,8 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
             OwnedHqlExpr ret = transformTrivialSelectProject(transformed);
             if (ret)
             {
-                DBGLOG("Optimizer: Select %s from %s optimized", ret->queryChild(1)->queryName()->str(), queryNode1Text(child));
+                if (doTrace(traceOptimizations))
+                    DBGLOG("Optimizer: Select %s from %s optimized", ret->queryChild(1)->queryName()->str(), queryNode1Text(child));
                 noteUnused(child);
                 return ret.getClear();
             }
@@ -4161,7 +4213,8 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
             {
             case no_createrow:
                 {
-                    DBGLOG("Optimizer: Merge %s and %s to Inline table", queryNode0Text(transformed), queryNode1Text(child));
+                    if (doTrace(traceOptimizations))
+                        DBGLOG("Optimizer: Merge %s and %s to Inline table", queryNode0Text(transformed), queryNode1Text(child));
                     HqlExprArray args;
                     args.append(*createValue(no_transformlist, makeNullType(), LINK(child->queryChild(0))));
                     args.append(*LINK(child->queryRecord()));
@@ -4219,7 +4272,8 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                             //If expanding the project removed all references to left (very silly join....) make it an all join
                             if (transformed->hasAttribute(lookupAtom) && !exprReferencesDataset(&args.item(2), newLeft))
                                 args.append(*createAttribute(allAtom));
-                            DBGLOG("Optimizer: Merge %s and %s", queryNode0Text(transformed), queryNode1Text(child));
+                            if (doTrace(traceOptimizations))
+                                DBGLOG("Optimizer: Merge %s and %s", queryNode0Text(transformed), queryNode1Text(child));
                             noteUnused(child);
                             OwnedHqlExpr merged = transformed->clone(args);
 
@@ -4255,7 +4309,8 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                         topnArgs.add(*LINK(index), 2);
                         OwnedHqlExpr topn = createDataset(no_topn, topnArgs);
                         incUsage(topn);
-                        DBGLOG("Optimizer: Replace %s with %s", queryNode0Text(child), queryNode1Text(topn));
+                        if (doTrace(traceOptimizations))
+                            DBGLOG("Optimizer: Replace %s with %s", queryNode0Text(child), queryNode1Text(topn));
                         HqlExprArray selectnArgs;
                         selectnArgs.append(*child->cloneAllAnnotations(topn));
                         unwindChildren(selectnArgs, transformed, 1);
