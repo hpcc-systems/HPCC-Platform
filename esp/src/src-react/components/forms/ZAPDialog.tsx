@@ -67,7 +67,7 @@ interface ZAPDialogValues {
             StartDate?: string;
             EndDate?: string;
         };
-        RelativeLogTimeRangeBuffer?: string;
+        RelativeTimeRangeBuffer?: string;
         LineLimit?: string;
         LineStartFrom?: string;
         SelectColumnMode?: ColumnMode;
@@ -103,7 +103,7 @@ const defaultValues: ZAPDialogValues = {
             StartDate: "",
             EndDate: "",
         },
-        RelativeLogTimeRangeBuffer: "",
+        RelativeTimeRangeBuffer: "",
         LineLimit: "10000",
         LineStartFrom: "0",
         SelectColumnMode: ColumnMode.DEFAULT,
@@ -464,7 +464,7 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                 rules={{
                     validate: {
                         hasValue: (value, formValues) => {
-                            if (value === "" && formValues.LogFilter.RelativeLogTimeRangeBuffer === "") {
+                            if (value === "" && formValues.LogFilter.RelativeTimeRangeBuffer === "") {
                                 return nlsHPCC.LogFilterTimeRequired;
                             }
                             return true;
@@ -496,14 +496,14 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                 }
             />
             <Controller
-                control={control} name="LogFilter.RelativeLogTimeRangeBuffer"
+                control={control} name="LogFilter.RelativeTimeRangeBuffer"
                 render={({
                     field: { onChange, name: fieldName, value },
                     fieldState: { error }
                 }) => <TextField
                         name={fieldName}
                         onChange={onChange}
-                        label={nlsHPCC.RelativeLogTimeRange}
+                        label={nlsHPCC.RelativeTimeRange}
                         onRenderLabel={(props: CustomLabelProps) => <CustomLabel
                             id={`${fieldName}_Label`}
                             tooltip={nlsHPCC.LogFilterRelativeTimeRangeTooltip}

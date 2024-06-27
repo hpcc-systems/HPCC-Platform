@@ -763,7 +763,7 @@ export = {
         Recycling: "Recycling",
         RedBook: "Red Book",
         Refresh: "Refresh",
-        RelativeLogTimeRange: "Relative Log Time Range",
+        RelativeTimeRange: "Relative Time Range",
         ReleaseNotes: "Release Notes",
         Reload: "Reload",
         Remaining: "Remaining",
