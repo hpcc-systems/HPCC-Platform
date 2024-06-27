@@ -2150,21 +2150,9 @@ public:
     }
     virtual unsigned __int64 getStatistic(StatisticKind kind) const override
     {
-        switch (kind)
-        {
-            case StSizeSpillFile:
-                return tempFileIO->getStatistic(StSizeDiskWrite);
-            case StCycleDiskWriteIOCycles:
-            case StTimeDiskWriteIO:
-            case StSizeDiskWrite:
-                return 0;
-            case StNumSpills:
-                return 1;
-            case StTimeSpillElapsed:
-                return tempFileIO->getStatistic(StCycleDiskWriteIOCycles);
-            default:
-                return tempFileIO->getStatistic(kind);
-        }
+        if (kind==StNumSpills)
+            return 1;
+        return tempFileIO->getStatistic(kind);
     }
 };
 
@@ -2493,11 +2481,11 @@ class CSharedFullSpillingWriteAhead : public CInterfaceOf<ISharedRowStreamReader
     {
         if (outputStream)
         {
+            outputStream.clear();
             iFileIO->flush();
             tempFileOwner->noteSize(iFileIO->getStatistic(StSizeDiskWrite));
             ::mergeStats(inactiveStats, iFileIO);
             iFileIO.clear();
-            outputStream.clear();
         }
     }
     void createOutputStream()
@@ -2508,6 +2496,7 @@ class CSharedFullSpillingWriteAhead : public CInterfaceOf<ISharedRowStreamReader
         outputStream.setown(std::get<0>(res));
         iFileIO.setown(std::get<1>(res));
         totalInputRowsRead = inMemTotalRows;
+        inactiveStats.addStatistic(StNumSpills, 1);
     }
     void writeRowsFromInput()
     {
@@ -2549,6 +2538,7 @@ class CSharedFullSpillingWriteAhead : public CInterfaceOf<ISharedRowStreamReader
         outputStream->flush();
         totalInputRowsRead.fetch_add(newRowsWritten);
         tempFileOwner->noteSize(iFileIO->getStatistic(StSizeDiskWrite));
+        ::mergeStats(inactiveStats, iFileIO);
         // JCSMORE - could track size written, and start new file at this point (e.g. every 100MB),
         // and track their starting points (by row #) in a vector
         // We could then tell if/when the readers catch up, and remove consumed files as they do.
@@ -2726,29 +2716,7 @@ public:
     }
     virtual unsigned __int64 getStatistic(StatisticKind kind) const override
     {
-        StatisticKind useKind;
-        switch (kind)
-        {
-            case StSizeSpillFile:
-                useKind = StSizeDiskWrite;
-                break;
-            case StCycleDiskWriteIOCycles:
-            case StTimeDiskWriteIO:
-            case StSizeDiskWrite:
-                return 0;
-            case StNumSpills:
-                return 1;
-            case StTimeSpillElapsed:
-                useKind = StCycleDiskWriteIOCycles;
-                break;
-            default:
-                useKind = kind;
-        }
-        unsigned __int64 v = 0;
-        if (likely(iFileIO))
-            v = iFileIO->getStatistic(useKind);
-        v += inactiveStats.getStatisticValue(useKind);
-        return v;
+        return inactiveStats.getStatisticValue(kind);
     }
 };
 
