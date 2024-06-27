@@ -2367,6 +2367,42 @@ StringBuffer &encodeJSON(StringBuffer &s, const char *value)
     return encodeJSON(s, strlen(value), value);
 }
 
+inline StringBuffer & encodeCSVChar(StringBuffer & encodedCSV, char ch)
+{
+    byte next = ch;
+    switch (next)
+    {
+        case '\"':
+            encodedCSV.append("\"");
+            encodedCSV.append(next);
+            break;
+        //Any other character that needs to be escaped?
+        default:
+            encodedCSV.append(next);
+            break;
+    }
+    return encodedCSV;
+}
+
+StringBuffer & encodeCSVColumn(StringBuffer & encodedCSV, unsigned size, const char *rawCSVCol)
+{
+    if (!rawCSVCol)
+        return encodedCSV;
+    encodedCSV.ensureCapacity(size+2); // Minimum size that will be written
+    encodedCSV.append("\"");
+    for (size32_t i = 0; i < size; i++)
+        encodeCSVChar(encodedCSV, rawCSVCol[i]);
+    encodedCSV.append("\"");
+    return encodedCSV;
+}
+
+StringBuffer & encodeCSVColumn(StringBuffer & encodedCSV, const char *rawCSVCol)
+{
+    if (!rawCSVCol)
+        return encodedCSV;
+    return encodeCSVColumn(encodedCSV, strlen(rawCSVCol), rawCSVCol);
+}
+
 bool checkUnicodeLiteral(char const * str, unsigned length, unsigned & ep, StringBuffer & msg)
 {
     unsigned i;

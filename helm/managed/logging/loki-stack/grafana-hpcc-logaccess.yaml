@@ -1,0 +1,43 @@
+# Configures HPCC logAccess to target grafana/loki
+global:
+  logAccess:
+    name: "Grafana/loki stack log access"
+    type: "GrafanaCurl"
+    connection:
+      protocol: "http"
+      host: "myloki4hpcclogs-grafana.default.svc.cluster.local"
+      port: 3000
+    datasource:
+      id: "1"
+      name: "Loki"
+    namespace:
+      name: "hpcc"
+    logFormat:
+      type: "json"
+    logMaps:
+    - type: "global"
+      searchColumn: "log"
+      columnMode: "DEFAULT"
+    - type: "components"
+      storeName: "stream"
+      searchColumn: "component"
+      columnMode: "MIN"
+      columnType: "string"
+    - type: "timestamp"
+      storeName: "values"
+      searchColumn: "time"
+      columnMode: "ALL"
+      columnType: "datetime"
+    - type: "pod"
+      storeName: "stream"
+      searchColumn: "pod"
+      columnMode: "ALL"
+      columnType: "string"
+secrets:
+  esp:
+    grafana-logaccess: "grafana-logaccess"
+vaults:
+  esp:
+  - name: my-grafana-logaccess-vault
+    url: http://${env.VAULT_SERVICE_HOST}:${env.VAULT_SERVICE_PORT}/v1/secret/data/esp/${secret}
+    kind: kv-v2
