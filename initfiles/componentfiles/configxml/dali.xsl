@@ -346,8 +346,8 @@
           </xsl:element>
         </xsl:if>
       </xsl:element>
+      <xsl:call-template name="addMetricsConfig"/>
     </DALI>
-    <xsl:call-template name="addMetricsConfig"/>
   </xsl:template>
 
   <xsl:template name="makeAbsolutePath">
