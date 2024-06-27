@@ -6490,7 +6490,7 @@ class CSocketSerialStream: public CSerialStreamBase
         if (lastpos!=pos)
             throw MakeStringException(-1,"CSocketSerialStream: non-sequential read (%" I64F "d,%" I64F "d)",lastpos,pos);
         size32_t size_read;
-        socket->readtms(ptr, 0, max_size, size_read, timeout); 
+        readtmsAllowClose(socket, ptr, 1, max_size, size_read, timeout);
         lastpos = pos+size_read;
         return size_read;
     }

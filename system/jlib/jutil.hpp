@@ -661,5 +661,7 @@ extern jlib_decl bool getDefaultPlane(StringBuffer &ret, const char * componentO
 
 extern jlib_decl void getResourceFromJfrog(StringBuffer &localPath, IPropertyTree &item);
 
+extern jlib_decl void hold(const char *msg);
+
 #endif
 
