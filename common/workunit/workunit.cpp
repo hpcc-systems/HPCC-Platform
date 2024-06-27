@@ -8745,12 +8745,20 @@ static const char *summaryTypeName(SummaryType type)
 bool CLocalWorkUnit::getSummary(SummaryType type, SummaryMap &map) const
 {
     VStringBuffer xpath("Summaries/%s", summaryTypeName(type));
-    CriticalBlock block(crit);
-    const char *list = p->queryProp(xpath);
-    if (!list)
-        return false;
     StringArray s;
-    s.appendList(list, "\n");
+    {
+        CriticalBlock block(crit);
+        IPropertyTree * match = p->queryPropTree(xpath);
+        //If there is not entry then the information is not recorded in the workunit
+        if (!match)
+            return false;
+
+        const char *list = match->queryProp(nullptr);
+        //If the information was recorded return true, even if ther are no results
+        if (!list)
+            return true;
+        s.appendList(list, "\n");
+    }
     ForEachItemIn(idx, s)
     {
         const char *name = s.item(idx);
@@ -8761,10 +8769,11 @@ bool CLocalWorkUnit::getSummary(SummaryType type, SummaryMap &map) const
             if (*end!=':')
                 return false; // unrecognized format
             name = end+1;
-            if (map.find(name) == map.end())
+            auto match = map.find(name);
+            if (match == map.end())
                 map[name] = flags;
             else
-                map[name] = map[name] & flags;
+                match->second &= flags;
         }
     }
     return true;
