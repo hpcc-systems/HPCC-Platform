@@ -101,11 +101,16 @@ if [ $PMD_ALWAYS = true ] || [ $retVal -ne 0 ]; then
   done
   cp `ls -rt /tmp/postmortem.$progPid.log.*` $POST_MORTEM_DIR
   rm /tmp/postmortem.$progPid.log.*
-  if [ -f core ]; then
-    echo "Generating info from core file to $POST_MORTEM_DIR/info.log" | tee -a $POST_MORTEM_DIR/info.log
-    gdb -batch -ix /opt/HPCCSystems/bin/.gdbinit -x /opt/HPCCSystems/bin/post-mortem-gdb ${PMD_PROGNAME} core 2>$POST_MORTEM_DIR/info.err >>$POST_MORTEM_DIR/info.log
-    echo "Generated info from core file" | tee -a $POST_MORTEM_DIR/info.log
-    rm core
+
+  readarray -t core_files < <(find . -maxdepth 1 -type f -name 'core*' -print)
+  # we only expect one, but cater for multiple
+  if [[ ${#core_files[@]} -gt 0 ]]; then
+    for file in "${core_files[@]}"; do
+      echo "Generating info from core file($file) to $POST_MORTEM_DIR/info.log" | tee -a $POST_MORTEM_DIR/info.log
+      gdb -batch -ix /opt/HPCCSystems/bin/.gdbinit -x /opt/HPCCSystems/bin/post-mortem-gdb ${PMD_PROGNAME} $file 2>$POST_MORTEM_DIR/info.err >>$POST_MORTEM_DIR/info.log
+      echo "Generated info from core file($file)" | tee -a $POST_MORTEM_DIR/info.log
+      rm $file
+    done
   fi
   dmesg -xT > $POST_MORTEM_DIR/dmesg.log
   if [[ -n "${PMD_DALISERVER}" ]] && [[ -n "${PMD_WORKUNIT}" ]]; then
