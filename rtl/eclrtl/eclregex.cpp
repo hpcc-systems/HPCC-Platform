@@ -439,7 +439,7 @@ public:
         {
             // No match found; return the original string
             out = (char *)rtlMalloc(sourceSize);
-            memcpy(out, str, sourceSize);
+            memcpy_iflen(out, str, sourceSize);
             outlen = slen;
             pcre2_match_data_free_8(matchData);
         }
@@ -838,7 +838,7 @@ public:
         {
             // No match found; return the original string
             out = (UChar *)rtlMalloc(slen * sizeof(UChar));
-            memcpy(out, str, slen * sizeof(UChar));
+            memcpy_iflen(out, str, slen * sizeof(UChar));
             outlen = slen;
             pcre2_match_data_free_16(matchData);
         }
