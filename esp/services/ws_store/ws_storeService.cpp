@@ -312,25 +312,11 @@ bool CwsstoreEx::onFetch(IEspContext &context, IEspFetchRequest &req, IEspFetchR
             storename = m_defaultStore.get();
     }
 
-    try
-    {
-        m_storeProvider->fetch(storename, req.getNamespace(), req.getKey(), value, secuser.get(), !req.getUserSpecific());
+    bool success = m_storeProvider->fetch(storename, req.getNamespace(), req.getKey(), value, secuser.get(), !req.getUserSpecific());
+    if (success)
         resp.setValue(value.str());
-    }
-    catch(IException * e)
-    {
-        if (e->errorCode() == ECLWATCH_INVALID_QUERY_KEY)
-        {
-            StringBuffer msg;
-            LOG(MCuserInfo, "WsStore: %s", e->errorMessage(msg).str());
-            e->Release();
-            return false;
-        }
-        else
-            throw e;
-    }
 
-    return true;
+    return success;
 }
 
 bool CwsstoreEx::onFetchKeyMetadata(IEspContext &context, IEspFetchKeyMDRequest &req, IEspFetchKeyMDResponse &resp)
