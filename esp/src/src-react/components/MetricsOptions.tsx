@@ -3,7 +3,7 @@ import { DefaultButton, PrimaryButton, Checkbox, Pivot, PivotItem, TextField } f
 import nlsHPCC from "src/nlsHPCC";
 import { useMetricMeta, useMetricsOptions } from "../hooks/metrics";
 import { MessageBox } from "../layouts/MessageBox";
-import { JSONSourceEditor } from "./SourceEditor";
+import { JSONSourceEditor, SourceEditor } from "./SourceEditor";
 
 const width = 640;
 const innerHeight = 400;
@@ -51,7 +51,7 @@ export const MetricsOptions: React.FunctionComponent<MetricsOptionsProps> = ({
             />
         </>} >
         <Pivot>
-            <PivotItem headerText={nlsHPCC.Metrics}>
+            <PivotItem key="metrics" headerText={nlsHPCC.Metrics}>
                 <div style={{ height: innerHeight, overflow: "auto" }}>
                     <Checkbox key="all" label={nlsHPCC.All} checked={allChecked} onChange={(ev, checked) => {
                         if (checked) {
@@ -71,7 +71,7 @@ export const MetricsOptions: React.FunctionComponent<MetricsOptionsProps> = ({
                     })}
                 </div>
             </PivotItem>
-            <PivotItem headerText={nlsHPCC.Columns}>
+            <PivotItem key="columns" headerText={nlsHPCC.Columns}>
                 <div style={{ height: innerHeight, overflow: "auto" }}>
                     {properties.map(p => {
                         return <Checkbox key={p} label={p} checked={options.properties.indexOf(p) >= 0} onChange={(ev, checked) => {
@@ -84,7 +84,14 @@ export const MetricsOptions: React.FunctionComponent<MetricsOptionsProps> = ({
                     })}
                 </div>
             </PivotItem>
-            <PivotItem headerText={nlsHPCC.Graph}>
+            <PivotItem key="sql" headerText={nlsHPCC.SQL} >
+                <div style={{ height: innerHeight }}>
+                    <SourceEditor mode="sql" text={options.sql} onTextChange={sql => {
+                        setOptions({ ...options, sql });
+                    }} />
+                </div>
+            </PivotItem>
+            <PivotItem key="graph" headerText={nlsHPCC.Graph}>
                 <div style={{ height: innerHeight, overflow: "auto" }}>
                     <Checkbox label={nlsHPCC.IgnoreGlobalStoreOutEdges} checked={options.ignoreGlobalStoreOutEdges} onChange={(ev, checked) => {
                         setOptions({ ...options, ignoreGlobalStoreOutEdges: !!checked });
@@ -100,7 +107,7 @@ export const MetricsOptions: React.FunctionComponent<MetricsOptionsProps> = ({
                     }} />
                 </div>
             </PivotItem>
-            <PivotItem headerText={nlsHPCC.Layout} >
+            <PivotItem key="layout" headerText={nlsHPCC.Layout} >
                 <div style={{ height: innerHeight }}>
                     <JSONSourceEditor json={options.layout} onChange={obj => {
                         if (obj) {
@@ -110,5 +117,5 @@ export const MetricsOptions: React.FunctionComponent<MetricsOptionsProps> = ({
                 </div>
             </PivotItem>
         </Pivot>
-    </MessageBox>;
+    </MessageBox >;
 };

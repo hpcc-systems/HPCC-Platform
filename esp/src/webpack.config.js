@@ -88,8 +88,12 @@ module.exports = function (env) {
         },
         resolve: {
             alias: {
+                "@hpcc-js/wasm/dist/duckdb": path.resolve(__dirname, "node_modules/@hpcc-js/wasm/dist/duckdb.js"),
             },
             fallback: {
+                "@hpcc-js/wasm": [
+                    path.resolve(__dirname, "../../../hpcc-js-wasm"),
+                ],
                 "@hpcc-js": [
                     path.resolve(__dirname, "../../../hpcc-js/packages"),
                     path.resolve(__dirname, "../../../Visualization/packages")
@@ -101,6 +105,7 @@ module.exports = function (env) {
             modules: ["node_modules"]
         },
 
+        target: "web",
         mode: isProduction ? "production" : "development",
         devtool: isProduction ? undefined : "cheap-module-source-map",
 

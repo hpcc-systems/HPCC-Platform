@@ -499,7 +499,7 @@ private:
     void initTracerProviderAndGlobalInternals(const IPropertyTree * traceConfig);
     void initTracer(const IPropertyTree * traceConfig);
     void cleanupTracer();
-    std::unique_ptr<opentelemetry::sdk::trace::SpanExporter> createExporter(const IPropertyTree * exportConfig);
+    std::unique_ptr<opentelemetry::sdk::trace::SpanExporter> createExporter(const IPropertyTree * exportConfig, bool & shouldBatch);
     std::unique_ptr<opentelemetry::sdk::trace::SpanProcessor> createProcessor(const IPropertyTree * exportConfig);
 
 public:
@@ -1177,10 +1177,11 @@ IProperties * getSpanContext(const ISpan * span)
 
 //---------------------------------------------------------------------------------------------------------------------
 
-std::unique_ptr<opentelemetry::sdk::trace::SpanExporter> CTraceManager::createExporter(const IPropertyTree * exportConfig)
+std::unique_ptr<opentelemetry::sdk::trace::SpanExporter> CTraceManager::createExporter(const IPropertyTree * exportConfig, bool & shouldBatch)
 {
     assertex(exportConfig);
 
+    shouldBatch = true;
     StringBuffer exportType;
     exportConfig->getProp("@type", exportType);
 
@@ -1190,6 +1191,7 @@ std::unique_ptr<opentelemetry::sdk::trace::SpanExporter> CTraceManager::createEx
         if (stricmp(exportType.str(), "OS")==0) //To stdout/err
         {
             LOG(MCoperatorInfo, "Tracing exporter set OS");
+            shouldBatch = false;
             return opentelemetry::exporter::trace::OStreamSpanExporterFactory::Create();
         }
         else if (stricmp(exportType.str(), "OTLP")==0 || stricmp(exportType.str(), "OTLP-HTTP")==0)
@@ -1273,6 +1275,7 @@ std::unique_ptr<opentelemetry::sdk::trace::SpanExporter> CTraceManager::createEx
             if (logFlags == SpanLogFlags::LogNone)
                 logFlags = DEFAULT_SPAN_LOG_FLAGS;
 
+            shouldBatch = false;
             LOG(MCoperatorInfo, "Tracing exporter set to JLog: logFlags( LogAttributes LogParentInfo %s)", logFlagsStr.str());
             return JLogSpanExporterFactory::Create(logFlags);
         }
@@ -1286,10 +1289,11 @@ std::unique_ptr<opentelemetry::sdk::trace::SpanExporter> CTraceManager::createEx
 
 std::unique_ptr<opentelemetry::sdk::trace::SpanProcessor> CTraceManager::createProcessor(const IPropertyTree * exportConfig)
 {
+    bool batchDefault; //to be determined by the createExporter function
     std::unique_ptr<opentelemetry::v1::sdk::trace::SpanExporter> exporter;
     try
     {
-        exporter = createExporter(exportConfig);
+        exporter = createExporter(exportConfig, batchDefault);
     }
     catch(const std::exception& e) //polymorphic type std::exception
     {
@@ -1303,16 +1307,25 @@ std::unique_ptr<opentelemetry::sdk::trace::SpanProcessor> CTraceManager::createP
     if (!exporter)
         return nullptr;
 
-    if (exportConfig->getPropBool("batch/@enabled", false))
+    if (exportConfig->getPropBool("batch/@enabled", batchDefault))
     {
         //Groups several spans together, before sending them to an exporter.
-        //MORE: These options should be configurable from batch/@option
-        opentelemetry::v1::sdk::trace::BatchSpanProcessorOptions options; //size_t max_queue_size = 2048;
-                                                                        //The time interval between two consecutive exports
-                                                                        //std::chrono::milliseconds(5000);
-                                                                        //The maximum batch size of every export. It must be smaller or
-                                                                        //equal to max_queue_size.
-                                                                        //size_t max_export_batch_size = 512
+        opentelemetry::v1::sdk::trace::BatchSpanProcessorOptions options;
+        /**
+         * The maximum buffer/queue size. After the size is reached, spans are
+         * dropped.
+         */
+        options.max_queue_size = exportConfig->getPropInt("batch/@maxQueueSize", 2048);
+
+        /* The time interval between two consecutive exports. */
+        options.schedule_delay_millis = std::chrono::milliseconds(exportConfig->getPropInt("batch/@scheduledDelayMillis", 5000));
+
+        /**
+         * The maximum batch size of every export. It must be smaller or
+         * equal to max_queue_size.
+         */
+        options.max_export_batch_size = exportConfig->getPropInt("batch/@maxExportBatchSize", 512);
+
         return opentelemetry::sdk::trace::BatchSpanProcessorFactory::Create(std::move(exporter), options);
     }
 

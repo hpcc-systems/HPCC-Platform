@@ -23,6 +23,7 @@ import { ShortVerticalDivider } from "./Common";
 import { MetricsOptions } from "./MetricsOptions";
 import { BreadcrumbInfo, OverflowBreadcrumb } from "./controls/OverflowBreadcrumb";
 import { MetricsPropertiesTables } from "./MetricsPropertiesTables";
+import { MetricsSQL } from "./MetricsSQL";
 
 const logger = scopedLogger("src-react/components/Metrics.tsx");
 
@@ -77,29 +78,34 @@ class TableEx extends Table {
 
     _rawDataMap: { [id: number]: string } = {};
     metrics(metrics: any[], options: MetricsOptionsT, timelineFilter: string, scopeFilter: string): this {
-        this.columns(["##", nlsHPCC.Type, nlsHPCC.Scope, ...options.properties]);
-        this.data(metrics.filter(m => this.scopeFilterFunc(m, scopeFilter)).filter(row => {
-            return (timelineFilter === "" || row.name?.indexOf(timelineFilter) === 0) &&
-                (options.scopeTypes.indexOf(row.type) >= 0);
-        }).map((row, idx) => {
-            if (idx === 0) {
-                this._rawDataMap = {
-                    0: "##", 1: "type", 2: "name"
-                };
-                options.properties.forEach((p, idx2) => {
-                    this._rawDataMap[3 + idx2] = p;
-                });
-            }
-            row.__hpcc_id = row.name;
-            return [idx, row.type, row.name, ...options.properties.map(p => {
-                return row.__groupedProps[p]?.Value ??
-                    row.__groupedProps[p]?.Max ??
-                    row.__groupedProps[p]?.Avg ??
-                    row.__formattedProps[p] ??
-                    row[p] ??
-                    "";
-            }), row];
-        }));
+        this
+            .columns(["##"])    //  Reset hash to force recalculation of default widths
+            .columns(["##", nlsHPCC.Type, nlsHPCC.Scope, ...options.properties])
+            .data(metrics
+                .filter(m => this.scopeFilterFunc(m, scopeFilter))
+                .filter(row => {
+                    return (timelineFilter === "" || row.name?.indexOf(timelineFilter) === 0) &&
+                        (options.scopeTypes.indexOf(row.type) >= 0);
+                }).map((row, idx) => {
+                    if (idx === 0) {
+                        this._rawDataMap = {
+                            0: "##", 1: "type", 2: "name"
+                        };
+                        options.properties.forEach((p, idx2) => {
+                            this._rawDataMap[3 + idx2] = p;
+                        });
+                    }
+                    row.__hpcc_id = row.name;
+                    return [idx, row.type, row.name, ...options.properties.map(p => {
+                        return row.__groupedProps[p]?.Value ??
+                            row.__groupedProps[p]?.Max ??
+                            row.__groupedProps[p]?.Avg ??
+                            row.__formattedProps[p] ??
+                            row[p] ??
+                            "";
+                    }), row];
+                }))
+            ;
         return this;
     }
 
@@ -129,6 +135,8 @@ class TableEx extends Table {
     }
 }
 
+type SelectedMetricsSource = "" | "scopesTable" | "scopesSqlTable" | "metricGraphWidget" | "hotspot" | "reset";
+
 interface MetricsProps {
     wuid: string;
     querySet?: string;
@@ -146,7 +154,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
 }) => {
     const [_uiState, _setUIState] = React.useState({ ...defaultUIState });
     const [timelineFilter, setTimelineFilter] = React.useState("");
-    const [selectedMetricsSource, setSelectedMetricsSource] = React.useState<"" | "scopesTable" | "metricGraphWidget" | "hotspot" | "reset">("");
+    const [selectedMetricsSource, setSelectedMetricsSource] = React.useState<SelectedMetricsSource>("");
     const [selectedMetrics, setSelectedMetrics] = React.useState<IScope[]>([]);
     const [selectedMetricsPtr, setSelectedMetricsPtr] = React.useState<number>(-1);
     const [metrics, columns, _activities, _properties, _measures, _scopeTypes, fetchStatus, refresh] = useWUQueryMetrics(wuid, querySet, queryId);
@@ -243,15 +251,18 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         setScopeFilter(newValue || "");
     }, []);
 
+    const scopesSelectionChanged = React.useCallback((source: SelectedMetricsSource, selection: IScope[]) => {
+        setSelectedMetricsSource(source);
+        pushUrl(`${parentUrl}/${selection.map(row => row.__lparam?.id ?? row.id).join(",")}`);
+    }, [parentUrl]);
+
     const scopesTable = useConst(() => new TableEx()
         .multiSelect(true)
         .metrics([], options, timelineFilter, scopeFilter)
         .sortable(true)
         .on("click", debounce((row, col, sel) => {
             if (sel) {
-                const selection = scopesTable.selection();
-                setSelectedMetricsSource("scopesTable");
-                pushUrl(`${parentUrl}/${selection.map(row => row.__lparam.id).join(",")}`);
+                scopesSelectionChanged("scopesTable", scopesTable.selection());
             }
         }, 100))
     );
@@ -616,6 +627,9 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                             header={<SearchBox value={scopeFilter} onChange={onChangeScopeFilter} iconProps={filterIcon} placeholder={nlsHPCC.Filter} />}
                             main={<AutosizeHpccJSComponent widget={scopesTable} ></AutosizeHpccJSComponent>}
                         />
+                    </DockPanelItem>
+                    <DockPanelItem key="metricsSql" title={nlsHPCC.MetricsSQL} location="tab-after" relativeTo="scopesTable">
+                        <MetricsSQL defaultSql={options.sql} scopes={metrics} onSelectionChanged={selection => scopesSelectionChanged("scopesSqlTable", selection)}></MetricsSQL>
                     </DockPanelItem>
                     <DockPanelItem key="metricGraph" title={nlsHPCC.Graph} location="split-right" relativeTo="scopesTable" >
                         <HolyGrail
