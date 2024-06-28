@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Icon } from "@fluentui/react";
+import { Icon, Shimmer } from "@fluentui/react";
 import { WsWorkunits, WorkunitsService } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import { SizeMe } from "react-sizeme";
@@ -16,7 +16,6 @@ import { Helpers } from "./Helpers";
 import { IFrame } from "./IFrame";
 import { Logs } from "./Logs";
 import { useNextPrev } from "./Menu";
-import { Metrics } from "./Metrics";
 import { Queries } from "./Queries";
 import { Resources } from "./Resources";
 import { Result } from "./Result";
@@ -28,6 +27,8 @@ import { Workflows } from "./Workflows";
 import { WorkunitSummary } from "./WorkunitSummary";
 import { TabInfo, DelayLoadedPanel, OverflowTabList } from "./controls/TabbedPanes/index";
 import { ECLArchive } from "./ECLArchive";
+
+const Metrics = React.lazy(() => import("./Metrics").then(mod => ({ default: mod.Metrics })));
 
 const logger = scopedLogger("src-react/components/WorkunitDetails.tsx");
 
@@ -197,7 +198,16 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
                 <SourceFiles wuid={wuid} filter={queryParams.inputs} />
             </DelayLoadedPanel>
             <DelayLoadedPanel visible={tab === "metrics"} size={size}>
-                <Metrics wuid={wuid} selection={state?.metrics} />
+                <React.Suspense fallback={
+                    <>
+                        <Shimmer />
+                        <Shimmer />
+                        <Shimmer />
+                        <Shimmer />
+                    </>
+                }>
+                    <Metrics wuid={wuid} selection={state?.metrics} />
+                </React.Suspense>
             </DelayLoadedPanel>
             <DelayLoadedPanel visible={tab === "workflows"} size={size}>
                 <Workflows wuid={wuid} />

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { DetailsList, DetailsListLayoutMode, Dropdown, IColumn as _IColumn, ICommandBarItemProps, IDetailsHeaderProps, IDetailsListStyles, mergeStyleSets, Selection, Stack, TooltipHost, TooltipOverflowMode, IDetailsList, IRenderFunction, IDetailsRowProps } from "@fluentui/react";
+import { DetailsList, DetailsListLayoutMode, Dropdown, IColumn as _IColumn, ICommandBarItemProps, IDetailsHeaderProps, IDetailsListStyles, mergeStyleSets, Selection, Stack, TooltipHost, TooltipOverflowMode, IDetailsList, IRenderFunction, IDetailsRowProps, SelectionMode, ConstrainMode } from "@fluentui/react";
 import { Pagination } from "@fluentui/react-experiments/lib/Pagination";
 import { useConst, useId, useMount, useOnEvent } from "@fluentui/react-hooks";
 import { BaseStore, Memory, QueryRequest, QuerySortItem } from "src/store/Memory";
@@ -34,6 +34,7 @@ export interface FluentColumn {
     formatter?: (value: any, row: any) => any;
     csvFormatter?: (value: any, row: any) => string;
     className?: (value: any, row: any) => string;
+    fluentColumn?: Partial<_IColumn>;
 }
 
 export type FluentColumns = { [key: string]: FluentColumn };
@@ -72,25 +73,42 @@ function columnsAdapter(columns: FluentColumns, columnWidths: Map<string, any>):
         const column = columns[key];
         const width = columnWidths.get(key) ?? column.width;
         if (column?.selectorType === undefined && column?.hidden !== true) {
-            retVal.push({
-                key,
-                name: column.label ?? key,
-                fieldName: column.field ?? key,
-                minWidth: width ?? 70,
-                maxWidth: width,
-                isResizable: true,
-                isSorted: false,
-                isSortedDescending: false,
-                iconName: column.headerIcon,
-                isIconOnly: !!column.headerIcon,
-                data: column,
-                styles: { root: { width, ":hover": { cursor: column?.sortable !== false ? "pointer" : "default" } } },
-                onRender: (item: any, index: number, col: IColumn) => {
-                    col.minWidth = column.width ?? 70;
-                    col.maxWidth = column.width;
-                    return tooltipItemRenderer(item, index, col);
-                }
-            } as IColumn);
+            if (column?.fluentColumn) {
+                retVal.push({
+                    key,
+                    name: column.label ?? key,
+                    fieldName: column.field ?? key,
+                    iconName: column.headerIcon,
+                    isIconOnly: !!column.headerIcon,
+                    data: column,
+                    styles: { root: { width, ":hover": { cursor: column?.sortable !== false ? "pointer" : "default" } } },
+                    onRender: (item: any, index: number, col: IColumn) => {
+                        col.minWidth = column.width ?? 70;
+                        return tooltipItemRenderer(item, index, col);
+                    },
+                    ...column.fluentColumn
+                } as IColumn);
+            } else {
+                retVal.push({
+                    key,
+                    name: column.label ?? key,
+                    fieldName: column.field ?? key,
+                    minWidth: width ?? 70,
+                    maxWidth: width,
+                    isResizable: true,
+                    isSorted: false,
+                    isSortedDescending: false,
+                    iconName: column.headerIcon,
+                    isIconOnly: !!column.headerIcon,
+                    data: column,
+                    styles: { root: { width, ":hover": { cursor: column?.sortable !== false ? "pointer" : "default" } } },
+                    onRender: (item: any, index: number, col: IColumn) => {
+                        col.minWidth = column.width ?? 70;
+                        col.maxWidth = column.width;
+                        return tooltipItemRenderer(item, index, col);
+                    }
+                } as IColumn);
+            }
         }
     }
     return retVal;
@@ -191,6 +209,7 @@ interface FluentStoreGridProps {
     columns: FluentColumns,
     height: string,
     refresh: RefreshTable,
+    selectionMode?: SelectionMode,
     setSelection: (selection: any[]) => void,
     setTotal: (total: number) => void,
     onRenderRow?: IRenderFunction<IDetailsRowProps>
@@ -205,6 +224,7 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
     columns,
     height,
     refresh,
+    selectionMode = SelectionMode.multiple,
     setSelection,
     setTotal,
     onRenderRow
@@ -315,7 +335,8 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
             compact={true}
             items={items}
             columns={fluentColumns}
-            layoutMode={DetailsListLayoutMode.justified}
+            layoutMode={DetailsListLayoutMode.fixedColumns}
+            constrainMode={ConstrainMode.unconstrained}
             selection={selectionHandler}
             isSelectedOnFocus={false}
             selectionPreservedOnEmptyClick={true}
@@ -324,6 +345,7 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
             onColumnResize={columnResize}
             onRenderRow={onRenderRow}
             styles={gridStyles(height)}
+            selectionMode={selectionMode}
         />
     </div>;
 };
@@ -335,6 +357,7 @@ interface FluentGridProps {
     sort?: QuerySortItem,
     columns: FluentColumns,
     height?: string,
+    selectionMode?: SelectionMode,
     setSelection: (selection: any[]) => void,
     setTotal: (total: number) => void,
     refresh: RefreshTable,
@@ -348,6 +371,7 @@ export const FluentGrid: React.FunctionComponent<FluentGridProps> = ({
     sort,
     columns,
     height,
+    selectionMode = SelectionMode.multiple,
     setSelection,
     setTotal,
     refresh,
@@ -362,7 +386,7 @@ export const FluentGrid: React.FunctionComponent<FluentGridProps> = ({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [constStore, data, /*refresh*/]);
 
-    return <FluentStoreGrid store={constStore} columns={columns} sort={sort} start={0} count={data.length} height={height} setSelection={setSelection} setTotal={setTotal} refresh={refresh} onRenderRow={onRenderRow}>
+    return <FluentStoreGrid store={constStore} columns={columns} sort={sort} start={0} count={data.length} height={height} selectionMode={selectionMode} setSelection={setSelection} setTotal={setTotal} refresh={refresh} onRenderRow={onRenderRow}>
     </FluentStoreGrid>;
 };
 
@@ -375,6 +399,7 @@ interface FluentPagedGridProps {
     total: number,
     columns: FluentColumns,
     height?: string,
+    selectionMode?: SelectionMode,
     setSelection: (selection: any[]) => void,
     setTotal: (total: number) => void,
     refresh: RefreshTable,
@@ -390,6 +415,7 @@ export const FluentPagedGrid: React.FunctionComponent<FluentPagedGridProps> = ({
     total,
     columns,
     height,
+    selectionMode = SelectionMode.multiple,
     setSelection,
     setTotal,
     refresh,
@@ -414,7 +440,7 @@ export const FluentPagedGrid: React.FunctionComponent<FluentPagedGridProps> = ({
         setPage(_page);
     }, [pageNum]);
 
-    return <FluentStoreGrid store={store} query={query} columns={columns} sort={sortBy} start={page * pageSize} count={pageSize} height={height} setSelection={setSelection} setTotal={setTotal} refresh={refresh} onRenderRow={onRenderRow}>
+    return <FluentStoreGrid store={store} query={query} columns={columns} sort={sortBy} start={page * pageSize} count={pageSize} height={height} selectionMode={selectionMode} setSelection={setSelection} setTotal={setTotal} refresh={refresh} onRenderRow={onRenderRow}>
     </FluentStoreGrid>;
 };
 
