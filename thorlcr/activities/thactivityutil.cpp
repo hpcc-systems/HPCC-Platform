@@ -66,6 +66,8 @@ class CRowStreamLookAhead : public CSimpleInterfaceOf<IStartableEngineRowStream>
     rowcount_t required;
     Semaphore startSem;
     Owned<IException> getexception;
+    LookAheadOptions options;
+    bool newLookAhead = false;
 
     class CThread: public Thread
     {
@@ -94,12 +96,19 @@ public:
     {
         try
         {
-            StringBuffer temp;
-            if (allowspill)
-                GetTempFilePath(temp,"lookahd");
             assertex(bufsize);
             if (allowspill)
-                smartbuf.setown(createSmartBuffer(&activity, temp.str(), bufsize, rowIf));
+            {
+                StringBuffer temp;
+                GetTempFilePath(temp,"lookahd");
+                if (newLookAhead)
+                {
+                    ICompressHandler *compressHandler = options.totalCompressionBufferSize ? queryDefaultCompressHandler() : nullptr;
+                    smartbuf.setown(createCompressedSpillingRowStream(&activity, temp.str(), preserveGrouping, rowIf, options, compressHandler));
+                }
+                else
+                    smartbuf.setown(createSmartBuffer(&activity, temp.str(), bufsize, rowIf));
+            }
             else
                 smartbuf.setown(createSmartInMemoryBuffer(&activity, rowIf, bufsize));
             startSem.signal();
@@ -207,6 +216,29 @@ public:
         running = true;
         required = _required;
         count = 0;
+
+        newLookAhead = activity.getOptBool("newlookahead", false);
+        if (activity.getOptBool("forcenewlookahead"))
+        {
+            newLookAhead = true;
+            allowspill = true;
+        }
+
+        // for "newlookahead" only
+        if (isContainerized())
+        {
+            // JCSMORE - add CJobBase::getTempBlockSize() to calc. once.
+            StringBuffer planeName;
+            if (!getDefaultPlane(planeName, "@tempPlane", "temp"))
+                getDefaultPlane(planeName, "@spillPlane", "spill");
+            size32_t blockedSequentialIOSize = getPlaneAttributeValue(planeName, BlockedSequentialIO, (size32_t)-1);
+            if ((size32_t)-1 != blockedSequentialIOSize)
+                options.storageBlockSize = blockedSequentialIOSize;
+        }
+        options.totalCompressionBufferSize = activity.getOptInt(THOROPT_LOOKAHEAD_COMPRESSIONTOTALK, options.totalCompressionBufferSize / 1024) * 1024;
+        options.inMemMaxMem = activity.getOptInt(THOROPT_LOOKAHEAD_MAXROWMEMK, options.inMemMaxMem / 1024) * 1024;
+        options.writeAheadSize = activity.getOptInt64(THOROPT_LOOKAHEAD_WRITEAHEADK, options.writeAheadSize / 1024) * 1024;
+        options.tempFileGranularity = activity.getOptInt64(THOROPT_LOOKAHEAD_TEMPFILE_GRANULARITY, options.tempFileGranularity / 0x100000) * 0x100000;
     }
     ~CRowStreamLookAhead()
     {

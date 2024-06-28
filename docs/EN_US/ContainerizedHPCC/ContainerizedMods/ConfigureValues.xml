@@ -22,7 +22,7 @@
 
     <para>The entire HPCC Systems configuration in the container space, is
     governed by a single file, a <emphasis>values.yaml</emphasis> file, and
-    its associated schema (<emphasis>values-schema.json</emphasis>)
+    its associated schema (<emphasis>values.schema.json</emphasis>)
     file.</para>
 
     <sect2 id="WhatIsValues.Yaml">
@@ -509,7 +509,7 @@
 
               <entry>components</entry>
 
-              <entry/>
+              <entry></entry>
             </row>
           </tbody>
         </tgroup>
@@ -845,7 +845,7 @@
         <title>Preferred Storage</title>
 
         <para>The <emphasis>preferredReadPlanes</emphasis> option is available
-        for each type of cluster--hThor, Thor, and Roxie. </para>
+        for each type of cluster--hThor, Thor, and Roxie.</para>
 
         <para>This option is only significant for logical files which reside
         on multiple storage planes. When specified, the HPCC Systems platform
@@ -1332,9 +1332,9 @@ thor:
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
-            <colspec colwidth="125.55pt"/>
+            <colspec colwidth="125.55pt" />
 
-            <colspec/>
+            <colspec />
 
             <tbody>
               <row>

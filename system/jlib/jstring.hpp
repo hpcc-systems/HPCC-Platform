@@ -479,6 +479,11 @@ inline StringBuffer &delimitJSON(StringBuffer &s, bool addNewline=false, bool es
     return s;
 }
 
+/*
+* Encodes a CSV column, not an entire CSV record
+*/
+jlib_decl StringBuffer &encodeCSVColumn(StringBuffer &s, const char *value);
+
 jlib_decl StringBuffer &encodeJSON(StringBuffer &s, const char *value);
 jlib_decl StringBuffer &encodeJSON(StringBuffer &s, unsigned len, const char *value);
 

@@ -63,7 +63,10 @@ interface ISerialStream : extends ISerialInputStream
                                                                     // if got<wanted then approaching eof
                                                                     // if got>wanted then got is size available in buffer
 };
-using IBufferedSerialInputStream = ISerialStream;
+interface IBufferedSerialInputStream : extends ISerialStream
+{
+    virtual void replaceInput(ISerialInputStream * newInput) = 0;
+};
 
 /* example of reading a nul terminated string using ISerialStream peek and skip
 {
@@ -100,6 +103,7 @@ interface IBufferedSerialOutputStream : extends ISerialOutputStream
     virtual void commit(size32_t written) = 0 ;      // commit the data written to the block returned by reserve
     virtual void suspend(size32_t wanted) = 0;   // Reserve some bytes and prevent data being flushed to the next stage until endNested is called.  May nest.
     virtual void resume(size32_t len, const void * ptr) = 0;  // update the data allocated by suspend and allow flushing.
+    virtual void replaceOutput(ISerialOutputStream * newOutput) = 0;
 };
 
 interface ICompressor;

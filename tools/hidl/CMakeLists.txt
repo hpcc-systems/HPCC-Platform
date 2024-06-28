@@ -23,7 +23,7 @@
 
 project( hidl )
 
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR COLLECT_SERVICE_METRICS)
     add_definitions(-DENABLE_DEFAULT_EXECUTION_PROFILING)
 endif()
 

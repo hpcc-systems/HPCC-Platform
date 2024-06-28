@@ -378,6 +378,7 @@ public:
             rhsProgressCount = joinhelper->getRhsProgress();
             {
                 CriticalBlock b(joinHelperCrit);
+                joinhelper->gatherStats(inactiveStats);
                 joinhelper.clear();
             }
             ActPrintLog("SortJoinSlaveActivity::stop");
@@ -627,6 +628,7 @@ public:
         }
         else
         {
+            joinhelper->gatherStats(activeStats);
             activeStats.setStatistic(StNumLeftRows, joinhelper->getLhsProgress());
             if (!isSelfJoin)
                 activeStats.setStatistic(StNumRightRows, joinhelper->getRhsProgress());

@@ -828,9 +828,6 @@ extern da_decl IDFPartFilter *createPartFilter(const char *filter);
               |    <part_number> '-' <part_number>
 */
 
-extern da_decl bool removePhysicalFiles(IGroup *grp,const char *_filemask,unsigned short port, ClusterPartDiskMapSpec &mspec,IMultiException *mexcept);
-// for removing orphaned files
-
 // for server use
 interface IDaliServer;
 extern da_decl IDaliServer *createDaliDFSServer(IPropertyTree *config); // called for coven members

@@ -247,7 +247,7 @@ protected:
         GetTempFilePath(tempName, tempPrefix.str());
         spillFile.setown(activity.createOwnedTempFile(tempName.str()));
         VStringBuffer spillPrefixStr("SpillableStream(%u)", spillPriority);
-        rows.save(spillFile->queryIFile(), spillCompInfo, false, spillPrefixStr.str()); // saves committed rows
+        rows.save(*spillFile, spillCompInfo, false, spillPrefixStr.str()); // saves committed rows
         rows.kill(); // no longer needed, readers will pull from spillFile. NB: ok to kill array as rows is never written to or expanded
         spillFile->noteSize(spillFile->queryIFile().size());
         return true;
@@ -1375,7 +1375,7 @@ static int callbackSortRev(IInterface * const *cb2, IInterface * const *cb1)
     return 1;
 }
 
-rowidx_t CThorSpillableRowArray::save(IFile &iFile, unsigned _spillCompInfo, bool skipNulls, const char *_tracingPrefix)
+rowidx_t CThorSpillableRowArray::save(CFileOwner &iFileOwner, unsigned _spillCompInfo, bool skipNulls, const char *_tracingPrefix)
 {
     rowidx_t n = numCommitted();
     if (0 == n)
@@ -1405,7 +1405,7 @@ rowidx_t CThorSpillableRowArray::save(IFile &iFile, unsigned _spillCompInfo, boo
         nextCB = &cbCopy.popGet();
         nextCBI = nextCB->queryRecordNumber();
     }
-    Owned<IExtRowWriter> writer = createRowWriter(&iFile, rowIf, rwFlags, nullptr, compBlkSz);
+    Owned<IExtRowWriter> writer = createRowWriter(&iFileOwner.queryIFile(), rowIf, rwFlags, nullptr, compBlkSz);
     rowidx_t i=0;
     rowidx_t rowsWritten=0;
     try
@@ -1444,6 +1444,7 @@ rowidx_t CThorSpillableRowArray::save(IFile &iFile, unsigned _spillCompInfo, boo
             ++i;
         }
         writer->flush(NULL);
+        iFileOwner.noteSize(writer->getStatistic(StSizeDiskWrite));
     }
     catch (IException *e)
     {
@@ -1656,7 +1657,7 @@ protected:
         GetTempFilePath(tempName, tempPrefix.str());
         VStringBuffer spillPrefixStr("%sRowCollector(%d)", tracingPrefix.str(), spillPriority);
         Owned<CFileOwner> tempFileOwner = activity.createOwnedTempFile(tempName.str());
-        spillableRows.save(tempFileOwner->queryIFile(), spillCompInfo, false, spillPrefixStr.str()); // saves committed rows
+        spillableRows.save(*tempFileOwner, spillCompInfo, false, spillPrefixStr.str()); // saves committed rows
         spillFiles.append(tempFileOwner.getLink());
         ++overflowCount;
         statOverflowCount.fastAdd(1); // NB: this is total over multiple uses of this class

@@ -307,6 +307,10 @@ enum StatisticKind
     StSizeRemoteWrite,
     StSizePeakTempDisk,
     StSizePeakEphemeralDisk,
+    StNumMatchLeftRowsMax,
+    StNumMatchRightRowsMax,
+    StNumMatchCandidates,
+    StNumMatchCandidatesMax,
     StMax,
 
     //For any quantity there is potentially the following variants.

@@ -4,3 +4,8 @@ global:
     - type: OTLP-HTTP
       endpoint: "http://myotelcollector-opentelemetry-collector.default.svc.cluster.local:4318/v1/traces"
       consoleDebug: true
+      batch:
+        enabled: true
+        maxQueueSize: 4096
+        scheduledDelayMillis: 6000
+        maxExportBatchSize: 512
