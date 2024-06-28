@@ -68,7 +68,7 @@ public abstract class BaseTableTest<T> {
         try {
             Common.logDebug("Tests started for: " + getPageName() + " page.");
 
-            //testForAllText();
+            testForAllText();
 
             jsonObjects = getAllObjectsFromJson();
             if (jsonObjects != null) {
@@ -76,7 +76,7 @@ public abstract class BaseTableTest<T> {
                 int numOfItemsJSON = jsonObjects.size();
                 clickDropdown(numOfItemsJSON);
 
-                //testContentAndSortingOrder();
+                testContentAndSortingOrder();
             }
 
             testLinksInTable();
@@ -90,8 +90,8 @@ public abstract class BaseTableTest<T> {
 
     private void testDetailsPage(String name, int i) {
 
-        //testForAllTextInDetailsPage(name);
-        //testDetailsContentPage(name);
+        testForAllTextInDetailsPage(name);
+        testDetailsContentPage(name);
 
 //        if(i == 0){
 //            testDetailSpecificFunctionality(name);

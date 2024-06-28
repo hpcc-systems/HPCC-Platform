@@ -142,12 +142,10 @@ public class ECLWorkUnitsTest extends BaseTableTest<ECLWorkunit> {
 
         String updatedDescription = element.getAttribute(getAttributeValueForDetailsPage()).trim();
 
-        Common.logDetail("Updated Description After refresh: "+ updatedDescription);
-
         if (newDescription.equals(updatedDescription)) {
-            Common.logDetail("Success: "+ getPageName() +" Details page. Description Update Successfully for WUID: " + wuName);
+            Common.logDetail("Success: "+ getPageName() +" Details page. Description Updated Successfully on click of save button: Description After refresh showing on UI: "+ updatedDescription+", Updated description was: "+newDescription+" for WUID: " + wuName);
         }else{
-            Common.logError("Failure: "+ getPageName() +" Details page. Description Did Not Update for WUID on click of save button: " + wuName);
+            Common.logError("Failure: "+ getPageName() +" Details page. Description Did Not Update on click of save button : Description After refresh showing on UI: "+ updatedDescription+", Updated description should be: "+newDescription+" for WUID: " + wuName);
         }
     }
 
@@ -158,8 +156,6 @@ public class ECLWorkUnitsTest extends BaseTableTest<ECLWorkunit> {
         WebElement element = Common.waitForElement(By.id("description"));
 
         String oldDescription = element.getAttribute(getAttributeValueForDetailsPage());
-
-        Common.logDetail("Old Description: "+ oldDescription);
 
         element.sendKeys(Keys.CONTROL + "a"); // Select all text
         element.sendKeys(Keys.DELETE); // Delete all selected text
@@ -173,7 +169,7 @@ public class ECLWorkUnitsTest extends BaseTableTest<ECLWorkunit> {
         Common.sleepWithTime(4); // need to modify this to wait dynamically
 
         element = Common.waitForElement(By.id("description"));
-        Common.logDetail("Updated Description After Save: " + element.getAttribute(getAttributeValueForDetailsPage()));
+        Common.logDetail("Old Description: "+ oldDescription +", Updated Description After Save: " + element.getAttribute(getAttributeValueForDetailsPage()));
 
         return oldDescription;
     }
