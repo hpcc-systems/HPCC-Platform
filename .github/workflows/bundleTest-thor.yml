@@ -37,11 +37,10 @@ on:
 env:
   ML_SUPPRESS_WARNING_FILES: "RegressionTestModified.ecl ClassificationTestModified.ecl"
   ML_EXCLUDE_FILES: "--ef ClassicTestModified.ecl,SVCTest.ecl,ClassificationTestModified.ecl"
-  BUNDLES_TO_TEST: "ML_Core PBblas GLM  GNN DBSCAN LearningTrees TextVectors KMeans SupportVectorMachines LinearRegression LogisticRegression"       
+  BUNDLES_TO_TEST: "ML_Core PBblas GLM GNN DBSCAN LearningTrees TextVectors KMeans SupportVectorMachines LinearRegression LogisticRegression"       
   uploadArtifact: false 
   
 jobs:
-
   main:
     runs-on: ${{ inputs.os }}
     steps:
@@ -78,6 +77,44 @@ jobs:
           sudo chown -R $USER:$USER /opt/HPCCSystems
           sudo xmlstarlet ed -L -u 'Environment/Software/ThorCluster/@slavesPerNode' -v 2 -u 'Environment/Software/ThorCluster/@channelsPerSlave' -v 1 /etc/HPCCSystems/environment.xml
 
+      - name: Checkout ecl-bundles repository
+        uses: actions/checkout@v4
+        with:
+          repository: hpcc-systems/ecl-bundles
+
+      - name: Scrap Bundles List
+        shell: "bash"
+        run: | 
+          TABLES_DATA=$( cat README.rst | grep -oE -e "\|[^\|]*\|"  -e "==.*==" | sed 's/|//g' )
+          IFS=$'\n'
+          HEADER_NUM_ECL_BUNDLES=2
+          HEADER_COUNT=0
+          for LINE in $TABLES_DATA
+          do
+            LINE=${LINE# }   #removing space from begining of the line
+            LINE=${LINE%% [^A-Za-z0-9]*} #remove trailing spaces.
+            if [[ ${LINE:0:1} == "=" ]]; then 
+              HEADER_COUNT=$(( HEADER_COUNT + 1 ))
+              continue
+            fi
+            if [[ $HEADER_COUNT -eq $HEADER_NUM_ECL_BUNDLES ]]; then 
+              if [[ ${LINE:0:4} == "http" ]]; then
+                echo -e "Bundle Repo : ${LINE}\n" 
+                BUNDLE=$( basename $LINE )
+                BUNDLES_TO_TEST+=" ${BUNDLE%.git}" 
+              else
+                echo "Bundle Name : ${LINE}" 
+              fi
+            elif [[ $HEADER_COUNT -eq $(( HEADER_NUM_ECL_BUNDLES + 1 )) ]]; then 
+              break
+            fi
+          done
+          BUNDLES_TO_TEST=$(echo $BUNDLES_TO_TEST | sed 's/ /\n/g' | sort -bf | uniq -i )
+          #                ( print bundles list   | replace all spaces with new-line | sort the list | select unique items )
+          BUNDLES_TO_TEST=${BUNDLES_TO_TEST//$'\n'/ } # replace all newline characters with spaces
+          echo "BUNDLES TO TEST : $BUNDLES_TO_TEST"
+          echo "BUNDLES_TO_TEST=$BUNDLES_TO_TEST" >> $GITHUB_ENV
+
       - name: Install ML Dependencies
         shell: "bash"
         run: |  
@@ -97,16 +134,16 @@ jobs:
         if: ${{ inputs.test-core-file-generation }}
         shell: "bash"
         run: |
-            echo """
-            boolean seg() := beginc++ #option action
-            #include <csignal>
-            #body
-            raise(SIGABRT);
-            return false;
-            endc++;
-            output(seg()); """ > crash.ecl
-            
-            ecl run -t hthor crash.ecl
+          echo """
+          boolean seg() := beginc++ #option action
+          #include <csignal>
+          #body
+          raise(SIGABRT);
+          return false;
+          endc++;
+          output(seg()); """ > crash.ecl
+          
+          ecl run -t hthor crash.ecl
         continue-on-error: true
 
       - name: Get test from Github
