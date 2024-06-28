@@ -402,7 +402,7 @@ bool CDALIKVStore::fetch(const char * storename, const char * ns, const char * k
         xpath.appendf("/%s", key);
         if(!storetree->hasProp(xpath.str()))
         {
-            throw makeStringExceptionV(ECLWATCH_INVALID_QUERY_KEY, "DALI Keystore fetch: invalid key '%s' detected!", key);
+            throw makeStringExceptionV(ECLWATCH_INVALID_QUERY_KEY, "DALI Keystore fetch: Could not find key '%s'!", key);
         }
         else
         {
