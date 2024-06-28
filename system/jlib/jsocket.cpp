@@ -67,6 +67,7 @@
 #include "jprop.hpp"
 #include "jregexp.hpp"
 #include "jdebug.hpp"
+#include <list>
 
 // epoll only with linux
 
@@ -381,35 +382,38 @@ enum SOCKETMODE { sm_tcp_server, sm_tcp, sm_udp_server, sm_udp, sm_multicast_ser
 # endif
 #endif
 
-static CriticalSection queryKACS;
+enum UseUDE { UNINIT, INITED };
+static std::atomic<UseUDE> expertTCPSettings { UNINIT };
+static CriticalSection queryTCPCS;
 
-enum UseKA { UNINIT, DISABLED, ENABLED };
-static std::atomic<UseKA> doKeepAlive { UNINIT };
+static bool hasKeepAlive = false;
 static int keepAliveTime = -1;
 static int keepAliveInterval = -1;
 static int keepAliveProbes = -1;
+static bool disableDNSTimeout = false;
 
 /*
 <Software>
-  <Globals>
+  <Globals disableDNSTimeout="false">
     <keepalive time="200" interval="75" probes="9"/>
   </Globals>
 
 global:
   expert:
+    disableDNSTimeout: false
     keepalive:
       time: 200
       interval: 75
       probes: 9
 */
 
-extern jlib_decl bool queryKeepAlive(int &time, int &intvl, int &probes)
+static void queryTCPSettings()
 {
-    UseKA state = doKeepAlive.load();
+    UseUDE state = expertTCPSettings.load();
     if (state == UNINIT)
     {
-        CriticalBlock block(queryKACS);
-        state = doKeepAlive.load();
+        CriticalBlock block(queryTCPCS);
+        state = expertTCPSettings.load();
         if (state == UNINIT)
         {
 #ifdef _CONTAINERIZED
@@ -436,7 +440,6 @@ extern jlib_decl bool queryKeepAlive(int &time, int &intvl, int &probes)
             catch (...)
             {
             }
-            state = DISABLED;
             if (expert)
             {
                 IPropertyTree *keepalive = expert->queryPropTree("keepalive");
@@ -445,22 +448,177 @@ extern jlib_decl bool queryKeepAlive(int &time, int &intvl, int &probes)
                     keepAliveTime = keepalive->getPropInt("@time", keepAliveTime);
                     keepAliveInterval = keepalive->getPropInt("@interval", keepAliveInterval);
                     keepAliveProbes = keepalive->getPropInt("@probes", keepAliveProbes);
-                    state = ENABLED;
+                    hasKeepAlive = true;
                 }
+                disableDNSTimeout = expert->getPropBool("@disableDNSTimeout", false);
             }
-            doKeepAlive = state;
+            expertTCPSettings = INITED;
         }
     }
+}
 
-    if (state == ENABLED)
+extern jlib_decl bool queryKeepAlive(int &time, int &intvl, int &probes)
+{
+    queryTCPSettings();
+    if (hasKeepAlive)
     {
         time = keepAliveTime;
         intvl = keepAliveInterval;
         probes = keepAliveProbes;
+    }
+    return hasKeepAlive;
+}
+
+static bool getAddressInfo(const char *name, unsigned *netaddr, bool okToLogErr);
+
+static CriticalSection queryDNSCS;
+
+class GetAddrInfoThread;
+static std::list<GetAddrInfoThread *> gaPtrList;
+
+class GetAddrInfoThread : public Thread
+{
+    StringAttr name;
+    Semaphore semait;
+    std::atomic<bool> ended{false};
+    unsigned netaddr[4] = { 0, 0, 0, 0 };
+    bool result = false;
+
+public:
+    GetAddrInfoThread(const char *_name)
+    {
+        name.set(_name);
+    }
+
+    bool thrdHasEnded()
+    {
+        return ended;
+    }
+
+    bool waitms(unsigned timeoutms, unsigned *resAddr)
+    {
+        bool ret = semait.wait(timeoutms);
+        if (ret)
+        {
+            if (result)
+                memcpy(resAddr, netaddr, sizeof(netaddr));
+            if (join())
+                return true;
+        }
+        {
+            CriticalBlock block(queryDNSCS);
+            // TODO: should we make sure addrinforeaperthrd is running here ?
+            gaPtrList.push_back(this);
+        }
+        return false;
+    }
+
+    virtual int run() override
+    {
+        result = getAddressInfo(name.get(), netaddr, false);
+        ended = true;
+        semait.signal();
+        return 0;
+    }
+
+};
+
+class AddrInfoReaperThread : public Thread
+{
+public:
+    std::atomic<bool> stopped{false};
+    std::atomic<bool> running{false};
+    Semaphore sem;
+
+    AddrInfoReaperThread()
+    {
+    }
+
+    void stop()
+    {
+        if (running)
+        {
+            stopped = true;
+            sem.signal();
+            join();
+            running = false;
+            {
+                CriticalBlock block(queryDNSCS);
+                // TODO: wait a short while for running threads to end ...
+                gaPtrList.clear();
+            }
+        }
+    }
+
+    virtual int run() override
+    {
+        running = true;
+        while(!stopped)
+        {
+            {
+                // reap completed GetAddrInfoThreads ...
+                CriticalBlock block(queryDNSCS);
+                if (!gaPtrList.empty())
+                {
+                    std::list<GetAddrInfoThread *>::iterator iter = gaPtrList.begin();
+                    std::list<GetAddrInfoThread *>::iterator end  = gaPtrList.end();
+                    while (iter != end)
+                    {
+                        GetAddrInfoThread *pItem = *iter;
+                        if ( (pItem->thrdHasEnded()) && (pItem->join(20)) )
+                        {
+                            // TODO: should we log failures ? (but not here inside CS)
+                            delete pItem;
+                            iter = gaPtrList.erase(iter);
+                        }
+                        else
+                            ++iter;
+                    }
+                }
+            }
+            if (sem.wait(500))
+                break;
+        }
+        return 0;
+    }
+
+};
+
+static Owned<AddrInfoReaperThread> addrinforeaperthrd;
+
+static bool useDNSTimeout()
+{
+    queryTCPSettings();
+    if (!disableDNSTimeout)
+    {
+        if (!addrinforeaperthrd)
+        {
+            CriticalBlock block(queryDNSCS);
+            if (!addrinforeaperthrd)
+            {
+                addrinforeaperthrd.setown(new AddrInfoReaperThread());
+                addrinforeaperthrd->start(false);
+            }
+        }
         return true;
     }
-    else
-        return false;
+    return false;
+}
+
+MODULE_INIT(INIT_PRIORITY_STANDARD)
+{
+    return true;
+}
+
+MODULE_EXIT()
+{
+    // NB: this (and other MODULE_EXITs) are not called for Thor and Roxie because they are
+    //     stopped via SIGTERM signal and thus exit() and the atexit handlers are not called
+    if (addrinforeaperthrd)
+    {
+        addrinforeaperthrd->stop();
+        addrinforeaperthrd.clear();
+    }
 }
 
 struct SocketStats
@@ -3313,11 +3471,101 @@ static bool decodeNumericIP(const char *text,unsigned *netaddr)
     return false;
 }
 
-static bool lookupHostAddress(const char *name,unsigned *netaddr)
+static void RecursionSafeLogErr(int ret, int ref, const char *msg, unsigned lineno, const char *name)
+{
+    static bool recursioncheck = false; // needed to stop error message recursing
+    if (!recursioncheck)
+    {
+        recursioncheck = true;
+        LogErr(ret, ref, msg, lineno, name);
+#ifdef _DEBUG
+        PrintStackReport();
+#endif
+        recursioncheck = false;
+    }
+}
+
+bool getAddressInfo(const char *name, unsigned *netaddr, bool okToLogErr)
+{
+    struct addrinfo hints;
+    struct addrinfo *addrInfo = NULL;
+    int retry=10;
+
+    // NOTE: each retry could take up to several seconds, depending on how DNS resolver is configured
+    //       should a few specific non-zero return codes break out early from retry loop (EAI_NONAME) ?
+    while (true)
+    {
+        memset(&hints, 0, sizeof(hints));
+        // dont wait for both A and AAAA records ...
+        if (IP4only || (!IP6preferred))
+            hints.ai_family = AF_INET;
+        int ret = getaddrinfo(name, NULL, &hints, &addrInfo);
+        if (!ret)
+            break;
+        if (--retry > 0)
+            Sleep((10-retry)*100);
+        else
+        {
+            if (okToLogErr)
+                RecursionSafeLogErr(ret, 1, "getaddrinfo failed", __LINE__, name);
+            return false;
+        }
+    }
+
+    struct addrinfo *best = NULL;
+    bool snm = !PreferredSubnet.isNull();
+    for (;;) {
+        struct addrinfo  *ai;
+        for (ai = addrInfo; ai; ai = ai->ai_next) {
+//          printf("flags=%d, family=%d, socktype=%d, protocol=%d, addrlen=%d, canonname=%s\n",ai->ai_flags,ai->ai_family,ai->ai_socktype,ai->ai_protocol,ai->ai_addrlen,ai->ai_canonname?ai->ai_canonname:"NULL");
+            switch (ai->ai_family) {
+            case AF_INET: {
+                    if (snm) {
+                        IpAddress ip;
+                        ip.setNetAddress(sizeof(in_addr),&(((sockaddr_in *)ai->ai_addr)->sin_addr));
+                        if (!PreferredSubnet.test(ip))
+                            continue;
+                    }
+                    if ((best==NULL)||((best->ai_family==AF_INET6)&&!IP6preferred))
+                        best = ai;
+                    break;
+                }
+            case AF_INET6: {
+                    if (snm) {
+                        IpAddress ip;
+                        ip.setNetAddress(sizeof(in_addr6),&(((sockaddr_in6 *)ai->ai_addr)->sin6_addr));
+                        if (!PreferredSubnet.test(ip))
+                            continue;
+                    }
+                    if ((best==NULL)||((best->ai_family==AF_INET)&&IP6preferred))
+                        best = ai;
+                    break;
+                }
+            }
+        }
+        if (best||!snm)
+            break;
+        snm = false;
+    }
+    if (best) {
+        if (best->ai_family==AF_INET6)
+            memcpy(netaddr,&(((sockaddr_in6 *)best->ai_addr)->sin6_addr),sizeof(in6_addr));
+        else {
+            memcpy(netaddr+3,&(((sockaddr_in *)best->ai_addr)->sin_addr),sizeof(in_addr));
+            netaddr[2] = 0xffff0000;
+            netaddr[1] = 0;
+            netaddr[0] = 0;
+        }
+    }
+    freeaddrinfo(addrInfo);
+    return best!=NULL;
+}
+
+static bool lookupHostAddress(const char *name, unsigned *netaddr, unsigned timeoutms=INFINITE)
 {
     // if IP4only or using MS V6 can only resolve IPv4 using 
-    static bool recursioncheck = false; // needed to stop error message recursing
-    unsigned retry=10;
+    int retry=10;
+
 #if defined(__linux__) || defined (__APPLE__) || defined(getaddrinfo)
     if (IP4only) {
 #else
@@ -3327,11 +3575,7 @@ static bool lookupHostAddress(const char *name,unsigned *netaddr)
         hostent * entry = gethostbyname(name);
         while (entry==NULL) {
             if (retry--==0) {
-                if (!recursioncheck) {
-                    recursioncheck = true;
-                    LogErr(h_errno,1,"gethostbyname failed",__LINE__,name);
-                    recursioncheck = false;
-                }
+                RecursionSafeLogErr(h_errno, 1, "gethostbyname failed", __LINE__, name);
                 return false;
             }
             {
@@ -3363,86 +3607,55 @@ static bool lookupHostAddress(const char *name,unsigned *netaddr)
         }
         return false;
     }
+
 #if defined(__linux__) || defined (__APPLE__) || defined(getaddrinfo)
-    struct addrinfo hints;
-    memset(&hints,0,sizeof(hints));
-    struct addrinfo  *addrInfo = NULL;
-    for (;;) {
-        memset(&hints,0,sizeof(hints));
-        // dont wait for both A and AAAA records ...
-        if (IP4only || (!IP6preferred))
-            hints.ai_family = AF_INET;
-        int ret = getaddrinfo(name, NULL , &hints, &addrInfo);
-        if (!ret) 
-            break;
-        if (retry--==0) {
-            if (!recursioncheck) {
-                recursioncheck = true;
-                LogErr(ret,1,"getaddrinfo failed",__LINE__,name);
-#ifdef _DEBUG
-                PrintStackReport();
-#endif
-                recursioncheck = false;
-            }
+    bool ret = false;
+    if ( (timeoutms != INFINITE) && (useDNSTimeout()) )
+    {
+        // NOTES:
+        // getaddrinfo_a() offers an async getaddrinfo method, but has some limitations and a possible mem leak
+        // could implement timeout getaddrinfo functionality without threads by connecting with DNS servers and parsing response ...
+        // lookup performance may be significantly improved if system uses a DNS resolver cache
+
+        // TODO: should this be a threadpool ?
+        GetAddrInfoThread *getaddrthrd = nullptr;
+        try
+        {
+            getaddrthrd = new GetAddrInfoThread(name);
+            // NOTE: if at thread limit, start() might delay for several seconds, can we control this ?
+            getaddrthrd->start(false);
+        }
+        catch (IException *e)
+        {
+            StringBuffer emsg;
+            emsg.appendf("getaddrinfo failed (thread) (exc %d)", e->errorCode());
+            RecursionSafeLogErr(100, 1, emsg.str(), __LINE__, name);
+            e->Release();
             return false;
         }
-        Sleep((10-retry)*100);
-    }
-    struct addrinfo  *best = NULL;
-    bool snm = !PreferredSubnet.isNull();
-    for (;;) {
-        struct addrinfo  *ai;
-        for (ai = addrInfo; ai; ai = ai->ai_next) {
-//          printf("flags=%d, family=%d, socktype=%d, protocol=%d, addrlen=%d, canonname=%s\n",ai->ai_flags,ai->ai_family,ai->ai_socktype,ai->ai_protocol,ai->ai_addrlen,ai->ai_canonname?ai->ai_canonname:"NULL");
-            switch (ai->ai_family) {
-            case AF_INET: {
-                    if (snm) {
-                        IpAddress ip;
-                        ip.setNetAddress(sizeof(in_addr),&(((sockaddr_in *)ai->ai_addr)->sin_addr));
-                        if (!PreferredSubnet.test(ip))
-                            continue;
-                    }
-                    if ((best==NULL)||((best->ai_family==AF_INET6)&&!IP6preferred))
-                        best = ai;
-                    break;
-                }
-            case AF_INET6: {
-                    if (snm) {
-                        IpAddress ip;
-                        ip.setNetAddress(sizeof(in_addr6),&(((sockaddr_in6 *)ai->ai_addr)->sin6_addr));
-                        if (!PreferredSubnet.test(ip))
-                            continue;
-                    }
-                    if ((best==NULL)||((best->ai_family==AF_INET)&&IP6preferred))
-                        best = ai;
-                    break;
-                }                   
-            }
+        catch (...)
+        {
+            RecursionSafeLogErr(101, 1, "getaddrinfo failed (thread) (other exc)", __LINE__, name);
+            return false;
         }
-        if (best||!snm)
-            break;
-        snm = false;
-    }
-    if (best) {
-        if (best->ai_family==AF_INET6)
-            memcpy(netaddr,&(((sockaddr_in6 *)best->ai_addr)->sin6_addr),sizeof(in6_addr));
-        else {
-            memcpy(netaddr+3,&(((sockaddr_in *)best->ai_addr)->sin_addr),sizeof(in_addr));
-            netaddr[2] = 0xffff0000;
-            netaddr[1] = 0;
-            netaddr[0] = 0;
+        // TODO: do we take into account time already passed creating thread above ?
+        ret = getaddrthrd->waitms(timeoutms, netaddr);
+        if (ret)
+        {
+            delete getaddrthrd;
+            return true;
         }
+        StringBuffer emsg;
+        emsg.appendf("getaddrinfo timed out (%d)", timeoutms);
+        RecursionSafeLogErr(EAI_AGAIN, 1, emsg.str(), __LINE__, name);
     }
-    freeaddrinfo(addrInfo);
-    return best!=NULL;
+    else
+        ret = getAddressInfo(name, netaddr, true);
+    return ret;
 #endif
-    return false;
-            
 }
 
-
-
-bool IpAddress::ipset(const char *text)
+bool IpAddress::ipset(const char *text, unsigned timeoutms)
 {
     if (text&&*text)
     {
@@ -3462,7 +3675,7 @@ bool IpAddress::ipset(const char *text)
                 break;
         if (!*s)
             return ipset(NULL);
-        if (lookupHostAddress(text,netaddr))
+        if (lookupHostAddress(text, netaddr, timeoutms))
         {
             hostname.set(text);
             return true;
@@ -3669,7 +3882,7 @@ void SocketEndpoint::serialize(MemoryBuffer & out) const
 }
 
 
-bool SocketEndpoint::set(const char *name,unsigned short _port)
+bool SocketEndpoint::set(const char *name,unsigned short _port, unsigned timeoutms)
 { 
     if (name) {
         if (*name=='[') { 
@@ -3699,7 +3912,7 @@ bool SocketEndpoint::set(const char *name,unsigned short _port)
             name = ips;
             _port = atoi(colon+1);
         }
-        if (ipset(name)) {
+        if (ipset(name, timeoutms)) {
             port = _port; 
             return true;
         }
@@ -6432,44 +6645,15 @@ bool SocketEndpointArray::fromName(const char *name, unsigned defport)
         return ordinality()>0;
     }
 #if defined(__linux__) || defined (__APPLE__) || defined(getaddrinfo)
-    struct addrinfo hints;
-    memset(&hints,0,sizeof(hints));
-    struct addrinfo  *addrInfo = NULL;
-    memset(&hints,0,sizeof(hints));
-    int ret = getaddrinfo(name, NULL , &hints, &addrInfo);
-    if (ret == 0)
+    unsigned netaddr[4];
+    bool ret = getAddressInfo(name, netaddr, true);
+    if (!ret)
     {
-        struct addrinfo  *ai;
-        for (ai = addrInfo; ai; ai = ai->ai_next)
-        {
-            // DBGLOG("flags=%d, family=%d, socktype=%d, protocol=%d, addrlen=%d, canonname=%s",ai->ai_flags,ai->ai_family,ai->ai_socktype,ai->ai_protocol,ai->ai_addrlen,ai->ai_canonname?ai->ai_canonname:"NULL");
-            if (ai->ai_protocol == IPPROTO_IP)
-            {
-                switch (ai->ai_family)
-                {
-                    case AF_INET:
-                    {
-                        SocketEndpoint ep;
-                        ep.setNetAddress(sizeof(in_addr),&(((sockaddr_in *)ai->ai_addr)->sin_addr));
-                        ep.port = defport;
-                        append(ep);
-                        // StringBuffer s;
-                        // DBGLOG("Lookup %s found %s", name, ep.getEndpointHostText(s).str());
-                        break;
-                    }
-                case AF_INET6:
-                    {
-                        SocketEndpoint ep;
-                        ep.setNetAddress(sizeof(in_addr6),&(((sockaddr_in6 *)ai->ai_addr)->sin6_addr));
-                        ep.port = defport;
-                        append(ep);
-                        break;
-                    }
-                }
-            }
-        }
+        SocketEndpoint ep;
+        ep.setNetAddress(sizeof(netaddr),netaddr);
+        ep.port = defport;
+        append(ep);
     }
-    freeaddrinfo(addrInfo);
 #endif
     return ordinality()>0;
 }
