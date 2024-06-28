@@ -8,14 +8,13 @@ import framework.model.WUQueryRoot;
 import framework.utility.Common;
 import framework.utility.TimeUtils;
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebElement;
 import org.testng.annotations.Test;
 
 import java.io.File;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 // This class is a subclass of BaseTableTest, and it includes test cases for ECL Workunits page and along with the tests of workunits details page.
 
@@ -53,6 +52,8 @@ public class ECLWorkUnitsTest extends BaseTableTest<ECLWorkunit> {
 
     private final List<String> badStates = Arrays.asList("compiled", "failed");
 
+    String saveButtonDetailsPage = "Save";
+
     @Override
     protected String[] getDetailNames() {
         return new String[]{"WUID", "Action", "State", "Owner", "Job Name", "Description", "Potential Savings", "Compile Cost", "Execution Cost", "File Access Cost", "Protected", "Cluster", "Total Cluster Time", "Aborted by", "Aborted time", "Services"};
@@ -62,7 +63,7 @@ public class ECLWorkUnitsTest extends BaseTableTest<ECLWorkunit> {
     protected String[] getDetailKeys() {
         WebElement element = Common.waitForElement(By.id("state"));
 
-        if (badStates.contains(element.getAttribute(getAttributeTitleForDetailsPage()))) { // compiled means it's published but not executed - no wu exists for this, check only these columns
+        if (badStates.contains(element.getAttribute(getAttributeValueForDetailsPage()))) { // compiled means it's published but not executed - no wu exists for this, check only these columns
             return new String[]{"wuid", "action", "state", "owner", "jobname", "cluster"};
         } else {
             return new String[]{"wuid", "action", "state", "owner", "jobname", "compileCost", "executeCost", "fileAccessCost", "protected", "cluster", "totalClusterTime"};
@@ -85,8 +86,8 @@ public class ECLWorkUnitsTest extends BaseTableTest<ECLWorkunit> {
     }
 
     @Override
-    protected String getAttributeTitleForDetailsPage() {
-        return "title";
+    protected String getAttributeValueForDetailsPage() {
+        return "value";
     }
 
     @Override
@@ -110,6 +111,176 @@ public class ECLWorkUnitsTest extends BaseTableTest<ECLWorkunit> {
     protected Map<String, ECLWorkunit> getJsonMap() {
         return jsonMap;
     }
+
+    @Override
+    protected void testDetailSpecificFunctionality(String wuName) {
+
+        //testProtectedButtonFunctionality(wuName);
+        testDescriptionUpdateFunctionality(wuName);
+    }
+
+    private void testDescriptionUpdateFunctionality(String wuName) {
+
+        String newDescription = "Testing Description";
+
+        String oldDescription = updateDescriptionAndSave(newDescription);
+
+        testIfTheDescriptionUpdated(wuName, newDescription);
+
+        Common.logDetail("Reverting Description Update To Old Value: "+ getPageName() +" Details page, for WUID: " + wuName);
+
+        updateDescriptionAndSave(oldDescription);
+    }
+
+    private void testIfTheDescriptionUpdated(String wuName, String newDescription) {
+
+        Common.driver.navigate().refresh();
+
+        waitToLoadDetailsPage();
+
+        WebElement element = Common.waitForElement(By.id("description"));
+
+        String updatedDescription = element.getAttribute(getAttributeValueForDetailsPage()).trim();
+
+        Common.logDetail("Updated Description After refresh: "+ updatedDescription);
+
+        if (newDescription.equals(updatedDescription)) {
+            Common.logDetail("Success: "+ getPageName() +" Details page. Description Update Successfully for WUID: " + wuName);
+        }else{
+            Common.logError("Failure: "+ getPageName() +" Details page. Description Did Not Update for WUID on click of save button: " + wuName);
+        }
+    }
+
+    private String updateDescriptionAndSave(String newDescription) {
+
+        waitToLoadDetailsPage();
+
+        WebElement element = Common.waitForElement(By.id("description"));
+
+        String oldDescription = element.getAttribute(getAttributeValueForDetailsPage());
+
+        Common.logDetail("Old Description: "+ oldDescription);
+
+        element.sendKeys(Keys.CONTROL + "a"); // Select all text
+        element.sendKeys(Keys.DELETE); // Delete all selected text
+
+        element.sendKeys(newDescription);
+
+        WebElement saveButton = Common.waitForElement(By.xpath("//button//*[text()='" + saveButtonDetailsPage + "']"));
+
+        Common.waitForElementToBeClickable(saveButton);
+        saveButton.click();
+        Common.sleepWithTime(4); // need to modify this to wait dynamically
+
+        element = Common.waitForElement(By.id("description"));
+        Common.logDetail("Updated Description After Save: " + element.getAttribute(getAttributeValueForDetailsPage()));
+
+        return oldDescription;
+    }
+
+    private void testProtectedButtonFunctionality(String wuName) {
+        try {
+
+            boolean newCheckboxValue = clickProtectedCheckboxAndSave(wuName);
+
+            checkProtectedStatusOnECLWorkunitsPage(wuName, newCheckboxValue);
+
+            WebElement element = Common.waitForElement(By.xpath("//div[text()='" + wuName + "']/.."));
+            element.click();
+
+            waitToLoadDetailsPage();
+
+            if (checkIfNewCheckBoxValuePresentInDetailsPage(newCheckboxValue)) {
+                Common.logDetail(getPageName() + " Details Page: Reverting the checkbox value for WUID: " + wuName);
+                clickProtectedCheckboxAndSave(wuName);
+            }
+
+        } catch (Exception ex) {
+            Common.logError("Error: ECL WorkUnits: Exception in testing the protected functionality for WUID: " + wuName + ": Error: " + ex.getMessage());
+        }
+    }
+
+    private boolean checkIfNewCheckBoxValuePresentInDetailsPage(boolean newCheckboxValue) {
+
+        WebElement protectedCheckbox = Common.waitForElement(By.id("protected"));
+        boolean currentCheckboxValue = protectedCheckbox.isSelected();
+
+        if (currentCheckboxValue != newCheckboxValue) {
+            Common.logError("Failure: " + getPageName() + " Details Page: Testing Protected checkbox value after coming back from ECL Workunits page: Updated value: " + newCheckboxValue + ": Showing: " + currentCheckboxValue + " on Workunits Details page");
+            return false;
+        } else {
+            Common.logDetail("Success: " + getPageName() + " Details Page: Testing Protected checkbox value after coming back from ECL Workunits page: Updated value: " + newCheckboxValue + ": Showing: " + currentCheckboxValue + " on Workunits Details page");
+            return true;
+        }
+    }
+
+    private boolean clickProtectedCheckboxAndSave(String wuName) {
+
+        WebElement protectedCheckbox = Common.waitForElement(By.id("protected"));
+        boolean oldCheckboxValue = protectedCheckbox.isSelected();
+        WebElement parentElement = protectedCheckbox.findElement(By.xpath(".."));
+
+        JavascriptExecutor js = (JavascriptExecutor) Common.driver;
+        js.executeScript("arguments[0].click();", parentElement);
+
+        boolean newCheckboxValue = waitToLoadUpdatedProtectedCheckbox(oldCheckboxValue);
+
+        Common.logDetail("Protected checkbox old Value: " + oldCheckboxValue + ", current value: " + newCheckboxValue + " for WUID: " + wuName);
+
+        WebElement saveButton = Common.waitForElement(By.xpath("//button//*[text()='" + saveButtonDetailsPage + "']"));
+
+        saveButton.click();
+
+        return newCheckboxValue;
+    }
+
+    private boolean waitToLoadUpdatedProtectedCheckbox(boolean oldCheckboxValue) {
+
+        int waitTimeInSecs = Config.WAIT_TIME_IN_SECONDS;
+        boolean newCheckboxValue;
+
+        do {
+            Common.sleepWithTime(waitTimeInSecs);
+
+            WebElement protectedCheckbox = Common.waitForElement(By.id("protected"));
+            newCheckboxValue = protectedCheckbox.isSelected();
+
+            if (!Objects.equals(newCheckboxValue, oldCheckboxValue)) {
+                break;
+            }
+
+            waitTimeInSecs++;
+
+        } while (waitTimeInSecs < Config.WAIT_TIME_THRESHOLD_IN_SECONDS);
+
+        return newCheckboxValue;
+    }
+
+    private void checkProtectedStatusOnECLWorkunitsPage(String wuName, boolean newCheckboxValue) {
+
+        Common.driver.navigate().to(getPageUrl());
+        Common.driver.navigate().refresh();
+
+        List<Object> columnDataWUID = getDataFromUIUsingColumnKey(getUniqueKey());
+        List<Object> columnDataProtected = getDataFromUIUsingColumnKey("Protected");
+
+        for (int i = 1; i < columnDataProtected.size(); i++) { // two web elements are getting fetched for Protected column header
+
+            if (wuName.equals(columnDataWUID.get(i - 1))) {
+
+                String lockStatus = columnDataProtected.get(i) != "" ? "Locked" : "Unlocked";
+
+                if (newCheckboxValue && lockStatus.equals("Locked")) {
+                    Common.logDetail("Success: " + getPageName() + " Details Page: Testing Protected checkbox for value: true : Showing Locked on ECL Workunits page");
+                } else if (!newCheckboxValue && lockStatus.equals("Unlocked")) {
+                    Common.logDetail("Success: " + getPageName() + " Details Page: Testing Protected checkbox for value: false : Showing Unlocked on ECL Workunits page");
+                } else {
+                    Common.logError("Failure: " + getPageName() + " Details Page: Testing Protected checkbox for value: " + newCheckboxValue + ": Showing: " + lockStatus + " on ECL Workunits page");
+                }
+            }
+        }
+    }
+
 
     Map<String, ECLWorkunit> jsonMap = new HashMap<>();
 

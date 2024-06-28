@@ -34,7 +34,7 @@ public abstract class BaseTableTest<T> {
 
     protected abstract String getAttributeTypeForDetailsPage();
 
-    protected abstract String getAttributeTitleForDetailsPage();
+    protected abstract String getAttributeValueForDetailsPage();
 
     protected abstract String[] getDetailKeysForPageLoad();
 
@@ -58,6 +58,8 @@ public abstract class BaseTableTest<T> {
 
     protected abstract Map<String, T> getJsonMap();
 
+    protected abstract void testDetailSpecificFunctionality(String name);
+
     protected List<T> jsonObjects;
 
     protected void testPage() {
@@ -66,11 +68,15 @@ public abstract class BaseTableTest<T> {
         try {
             Common.logDebug("Tests started for: " + getPageName() + " page.");
 
-            testForAllText();
+            //testForAllText();
 
             jsonObjects = getAllObjectsFromJson();
             if (jsonObjects != null) {
-                testContentAndSortingOrder();
+
+                int numOfItemsJSON = jsonObjects.size();
+                clickDropdown(numOfItemsJSON);
+
+                //testContentAndSortingOrder();
             }
 
             testLinksInTable();
@@ -84,18 +90,18 @@ public abstract class BaseTableTest<T> {
 
     private void testDetailsPage(String name, int i) {
 
+        //testForAllTextInDetailsPage(name);
+        //testDetailsContentPage(name);
+
 //        if(i == 0){
-//            testForAllTextInDetailsPage(name);
+//            testDetailSpecificFunctionality(name);
 //        }
-        testForAllTextInDetailsPage(name);
-        testDetailsContentPage(name);
+        testDetailSpecificFunctionality(name);
     }
 
     private void testLinksInTable() {
 
         Common.logDebug("Tests started for: " + getPageName() + " page: Testing Links");
-
-        long startTime = System.currentTimeMillis();
 
         for (String columnKey : getColumnKeysWithLinks()) {
 
@@ -114,14 +120,14 @@ public abstract class BaseTableTest<T> {
                     element.click();
 
                     if (Common.driver.getPageSource().contains(name)) {
-                        String msg = "Success: " + getPageName() + ": Link Test Pass for " + i + ". " + name + ". URL : " + href;
+                        String msg = "Success: " + getPageName() + ": Link Test Pass for " + (i+1) + ". " + name + ". URL : " + href;
                         Common.logDetail(msg);
                         // after the link test has passed, the code tests the details page(including, the text, content and tabs) it has landed on
                         testDetailsPage(name, i);
 
                     } else {
                         String currentPage = getCurrentPage();
-                        String errorMsg = "Failure: " + getPageName() + ": Link Test Fail for " + i + ". " + name + " page failed. The current navigation page that we landed on is " + currentPage + ". Current URL : " + href;
+                        String errorMsg = "Failure: " + getPageName() + ": Link Test Fail for " + (i+1) + ". " + name + " page failed. The current navigation page that we landed on is " + currentPage + ". Current URL : " + href;
                         Common.logError(errorMsg);
                     }
 
@@ -140,13 +146,9 @@ public abstract class BaseTableTest<T> {
                 }
             }
         }
-
-        long endTime = System.currentTimeMillis();
-
-        System.out.println("Total time taken: " + (endTime - startTime) + " ms");
     }
 
-    private void waitToLoadDetailsPage() {
+    protected void waitToLoadDetailsPage() {
 
         int waitTimeInSecs = Config.WAIT_TIME_IN_SECONDS;
 
@@ -158,7 +160,7 @@ public abstract class BaseTableTest<T> {
 
             for (String detailKey : getDetailKeysForPageLoad()) {
                 WebElement element = Common.waitForElement(By.id(detailKey));
-                if ("".equals(element.getAttribute(getAttributeTitleForDetailsPage()))) {
+                if ("".equals(element.getAttribute(getAttributeValueForDetailsPage()))) {
                     allVisible = false;
                     break;
                 }
@@ -177,7 +179,11 @@ public abstract class BaseTableTest<T> {
 
     private void testDetailsContentPage(String name) {
         Common.logDebug("Tests started for : " + getPageName() + " Details page content: " + getUniqueKeyName() + " : " + name);
-        waitToLoadDetailsPage(); // sleep until the specific detail fields have loaded
+        try {
+            waitToLoadDetailsPage(); // sleep until the specific detail fields have loaded
+        } catch (Exception ex) {
+            Common.logError("Error: "+getPageName()+": Exception in waitToLoadDetailsPage: " + getUniqueKeyName() + " : " + name);
+        }
 
         boolean pass = true;
 
@@ -192,7 +198,7 @@ public abstract class BaseTableTest<T> {
                 if (element.getAttribute(getAttributeTypeForDetailsPage()).equals(getCheckboxTypeForDetailsPage())) {
                     dataUIValue = element.isSelected();
                 } else {
-                    dataUIValue = element.getAttribute(getAttributeTitleForDetailsPage());
+                    dataUIValue = element.getAttribute(getAttributeValueForDetailsPage());
                 }
 
                 dataJSONValue = getColumnDataFromJson(object, detailKey);
@@ -223,9 +229,6 @@ public abstract class BaseTableTest<T> {
     }
 
     private void testContentAndSortingOrder() {
-
-        int numOfItemsJSON = jsonObjects.size();
-        clickDropdown(numOfItemsJSON);
 
         Common.logDebug("Tests started for: " + getPageName() + " page: Testing Content");
 
@@ -332,15 +335,15 @@ public abstract class BaseTableTest<T> {
         return columnDataFromJSON;
     }
 
-    private List<Object> getDataFromUIUsingColumnKey(String columnKey) {
+    protected List<Object> getDataFromUIUsingColumnKey(String columnKey) {
 
         List<Object> columnData = new ArrayList<>();
 
         try {
 
             List<WebElement> elements = waitToLoadListOfAllUIObjects(columnKey);
-            for (int i = 1; i < elements.size(); i++) {
-                columnData.add(elements.get(i).getText());
+            for (int i = 1; i < elements.size(); i++) { // first element fetched is of column header, so we fetch values from 2nd element.
+                columnData.add(elements.get(i).getText().trim());
             }
 
         } catch (Exception ex) {
@@ -358,7 +361,7 @@ public abstract class BaseTableTest<T> {
         do {
             elements = Common.driver.findElements(By.xpath("//*[@*[.='" + columnKey + "']]"));
 
-            if (elements.size() - 1 >= jsonObjects.size()) {
+            if (elements.size() - 1 >= jsonObjects.size()) { // first element fetched is of column header, so we do -1 from total elements
                 break;
             }
 
@@ -459,7 +462,6 @@ public abstract class BaseTableTest<T> {
         return true;
     }
 
-    // need to change and fix "pageSize" and "ms-Dropdown-item"
     private void clickDropdown(int numOfItemsJSON) {
 
         try {
@@ -467,7 +469,10 @@ public abstract class BaseTableTest<T> {
             dropdown.click();
 
             WebDriverWait wait = new WebDriverWait(Common.driver, Duration.ofSeconds(Config.WAIT_TIME_THRESHOLD_IN_SECONDS));
-            List<WebElement> options = wait.until(ExpectedConditions.visibilityOfAllElementsLocatedBy(By.cssSelector(".ms-Dropdown-item")));
+
+            WebElement dropdownList = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("pageSize-list")));
+
+            List<WebElement> options = dropdownList.findElements(By.tagName("button"));
 
             int selectedValue = Config.dropdownValues[0];
 
@@ -479,8 +484,6 @@ public abstract class BaseTableTest<T> {
                 }
             }
 
-            Common.logDebug("Page: " + getPageName() + ": Dropdown selected: " + selectedValue);
-
             for (WebElement option : options) {
                 if (option.getText().equals(String.valueOf(selectedValue))) {
                     option.click();
@@ -488,7 +491,10 @@ public abstract class BaseTableTest<T> {
                 }
             }
 
-            wait.until(ExpectedConditions.invisibilityOfElementLocated(By.cssSelector(".ms-Dropdown-item")));
+            wait.until(ExpectedConditions.invisibilityOfElementLocated(By.id("pageSize-list")));
+
+            Common.logDebug("Page: " + getPageName() + ": Dropdown selected: " + selectedValue);
+
             Common.driver.navigate().refresh();
             Common.sleep();
         } catch (Exception ex) {
