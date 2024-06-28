@@ -510,7 +510,7 @@ public:
     public:
         CDataProvider & dataProvider;
         IBufferedSerialOutputStream * out;
-        offset_t totalSent;
+        offset_t totalSent = 0;
         unsigned numRows;
     };
 
