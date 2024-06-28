@@ -222,6 +222,9 @@ bool CDALIKVStore::fetchKeyProperty(StringBuffer & propval , const char * storen
     if (isEmptyString(ns))
         throw MakeStringException(-1, "DALI Keystore fetchKeyProperty(): namespace not provided");
 
+    StringBuffer encodedNamespace;
+    encodePTreeName(encodedNamespace, ns);
+
     ensureAttachedToDali(); //throws if in offline mode
 
     VStringBuffer xpath("%s/Store[%s='%s'][1]/", DALI_KVSTORE_PATH, DALI_KVSTORE_NAME_ATT, storename);
@@ -234,7 +237,7 @@ bool CDALIKVStore::fetchKeyProperty(StringBuffer & propval , const char * storen
     StringBuffer encodedKey;
     encodePTreeName(encodedKey, key);
 
-    xpath.appendf("/%s/%s", ns, encodedKey.str());
+    xpath.appendf("/%s/%s", encodedNamespace.str(), encodedKey.str());
 
     Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_KVSTORE);
     if (!conn)
