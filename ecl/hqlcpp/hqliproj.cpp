@@ -2729,7 +2729,8 @@ void ImplicitProjectTransformer::logChange(const char * message, IHqlExpression 
 
 
     const char * const format = "ImplicitProject: %s %s now %s";
-    DBGLOG(format, message, name.str(), fieldText.str());
+    if (doTrace(traceOptimizations))
+        DBGLOG(format, message, name.str(), fieldText.str());
     if (options.notifyOptimizedProjects)
     {
         if (options.notifyOptimizedProjects >= 2 || exprName)
@@ -3101,10 +3102,13 @@ void ImplicitProjectTransformer::finalizeFields(IHqlExpression * expr)
             extra->fieldsToBlank.optimizeFieldsToBlank(extra->outputFields, queryNewColumnProvider(expr));
             if (!extra->fieldsToBlank.isEmpty())
             {
-                const char * opString = getOpString(expr->getOperator());
-                StringBuffer fieldText;
-                extra->fieldsToBlank.getText(fieldText);
-                DBGLOG("ImplicitProject: Fields %s for %s not required by outputs - so blank in transform", fieldText.str(), opString);
+                if (doTrace(traceOptimizations))
+                {
+                    const char * opString = getOpString(expr->getOperator());
+                    StringBuffer fieldText;
+                    extra->fieldsToBlank.getText(fieldText);
+                    DBGLOG("ImplicitProject: Fields %s for %s not required by outputs - so blank in transform", fieldText.str(), opString);
+                }
             }
             extra->finalizeOutputRecord(false);
             break;
