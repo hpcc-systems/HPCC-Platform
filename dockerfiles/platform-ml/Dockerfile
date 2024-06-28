@@ -26,6 +26,7 @@ USER root
 
 # Machine Learning Dependencies
 RUN apt-get update && apt-get install -y python3 python3-pip --fix-missing
+RUN apt-get install -y libsvm-dev libsvm-tools
 RUN python3 -m pip install --upgrade pip
 RUN pip3 install       \
     scikit-learn

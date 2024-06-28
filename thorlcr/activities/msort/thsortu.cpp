@@ -276,6 +276,7 @@ void swapRows(RtlDynamicRowBuilder &row1, RtlDynamicRowBuilder &row2)
     row1.swapWith(row2);
 }
 
+
 class CJoinHelper : implements IJoinHelper, public CSimpleInterface
 {
     CActivityBase &activity;
@@ -314,11 +315,13 @@ class CJoinHelper : implements IJoinHelper, public CSimpleInterface
     OwnedConstThorRow defaultRight;
     Linked<IRowStream> strmL;
     Linked<IRowStream> strmR;
+    JoinMatchStats matchStats;
     bool abort = false;
     bool nextleftgot = false;
     bool nextrightgot = false;
     unsigned atmost = (unsigned)-1;
     rowcount_t lhsProgressCount = 0, rhsProgressCount = 0;
+    rowcount_t startMatchLhsProgressCount = 0;
     unsigned keepmax = (unsigned)-1;
     unsigned abortlimit = (unsigned)-1;
     unsigned keepremaining = (unsigned)-1;
@@ -819,8 +822,16 @@ public:
                         }
                     }
                     while (state == JSonfail);
+                    //We have read a row that does not match, so decrement by 1 to get the count for the row that mismatched
+                    {
+                        //Nested scope to avoid problems with variable leaking into the following case
+                        rowcount_t nextStartMatchLhsProgressCount = lhsProgressCount - 1;
+                        matchStats.noteGroup(nextStartMatchLhsProgressCount - startMatchLhsProgressCount, 0);
+                        startMatchLhsProgressCount = nextStartMatchLhsProgressCount;
+                    }
                     // fall through
                 case JScompare:                         
+                    //Need to create a new match group when the right has been completely processed
                     if (getL()) {
                         rightidx = 0;
                         rightgroupmatched = NULL;
@@ -896,14 +907,29 @@ public:
                             if (!hitatmost&&rightgroup.ordinality())
                                 state = JSmatch;
                             else if (cmp<0)
+                            {
+                                //Left row and no match right row
+                                matchStats.noteGroup(1, 0); // This will not spot large left groups
+                                startMatchLhsProgressCount = lhsProgressCount;
                                 ret.setown(outrow(Onext,Oouter));
+                            }
                             else 
+                            {
+                                //Right row with no matching left rows.
+                                //This will not spot large right groups since it processes a row at a time
+                                matchStats.noteGroup(0, 1);
                                 ret.setown(outrow(Oouter,Onext));
+                            }
                         }
 
                     }
-                    else if (getR()) 
+                    else if (getR())
+                    {
+                        //We would miss tracking a very large trailing right group, but it is not worth
+                        //the extra work to spot it
+                        //FUTURE: if (!rightouter) we could return null and stop reading the rhs.
                         ret.setown(outrow(Oouter,Onext));
+                    }
                     else
                         return NULL;
                     break;
@@ -920,6 +946,7 @@ public:
                             nextL();
                         }
                         mcoreintercept->addWork(&leftgroup,&rightgroup);
+                        startMatchLhsProgressCount = (lhsProgressCount - 1); // Never used, but keep consistent with other cases
                         state = JScompare;
                     }
                     else if (rightidx<rightgroup.ordinality()) {
@@ -932,8 +959,15 @@ public:
                         rightidx = 0;
                         if (getL()) {
                             int cmp = compareL->docompare(nextleft,prevleft);
-                            if (cmp>0) 
+                            if (cmp>0)
+                            {
+                                //Finished processing this group -> gather the stats for the number of join candidates.
+                                //lhsProgressCount is one higher than the the row count that follows the end of group
+                                rowcount_t numLeftRows = (lhsProgressCount - 1) - startMatchLhsProgressCount;
+                                matchStats.noteGroup(numLeftRows, rightgroup.ordinality());
+                                startMatchLhsProgressCount = (lhsProgressCount - 1);
                                 state = JSrightgrouponly;
+                            }
                             else if (cmp<0) 
                             {
                                 activity.logRow("prev: ", *allocatorL->queryOutputMeta(), prevleft);
@@ -942,10 +976,17 @@ public:
                             }
                         }
                         else
+                        {
+                            //Finished processing this group -> gather the stats for the number of join candidates.
+                            rowcount_t numLeftRows = lhsProgressCount - startMatchLhsProgressCount;
+                            matchStats.noteGroup(numLeftRows, rightgroup.ordinality());
+                            startMatchLhsProgressCount = lhsProgressCount;
                             state = JSrightgrouponly;
+                        }
                     }
                     break;
-                case JSrightgrouponly: 
+                case JSrightgrouponly:
+                    //FUTURE: Avoid walking the right group if it is an inner/left only join.
                     // right group
                     if (rightidx<rightgroup.ordinality())
                         ret.setown(outrow(Oouter,Ogroup));
@@ -965,6 +1006,12 @@ public:
     virtual void stop() { abort = true; }
     virtual rowcount_t getLhsProgress() const { return lhsProgressCount; }
     virtual rowcount_t getRhsProgress() const { return rhsProgressCount; }
+
+    virtual void gatherStats(CRuntimeStatisticCollection & stats) const override
+    {
+        //Left and right progress could be added here.
+        matchStats.gatherStats(stats);
+    }
 };
 
 class SelfJoinHelper: implements IJoinHelper, public CSimpleInterface
@@ -975,6 +1022,7 @@ class SelfJoinHelper: implements IJoinHelper, public CSimpleInterface
     CThorExpandingRowArray curgroup;
     unsigned leftidx = 0;
     unsigned rightidx = 0;
+    JoinMatchStats matchStats;
     bool leftmatched = false;
     MemoryBuffer rightmatchedbuf;
     bool *rightmatched = nullptr;
@@ -1193,6 +1241,7 @@ retry:
                         eof = 0;
                         return NULL;
                     }
+                    matchStats.noteGroup(curgroup.ordinality(), curgroup.ordinality());
                     if (curgroup.ordinality() > INITIAL_SELFJOIN_MATCH_WARNING_LEVEL) {
                         Owned<IThorException> e = MakeActivityWarning(&activity, TE_SelfJoinMatchWarning, "Exceeded initial match limit");
                         e->queryData().append((unsigned)curgroup.ordinality());
@@ -1299,6 +1348,12 @@ retry:
     virtual void stop() { abort = true; }
     virtual rowcount_t getLhsProgress() const { return progressCount; }
     virtual rowcount_t getRhsProgress() const { return progressCount; }
+    virtual void gatherStats(CRuntimeStatisticCollection & stats) const override
+    {
+        //Left and right progress could be added here.
+        matchStats.gatherStats(stats);
+    }
+
 };
 
 IJoinHelper *createDenormalizeHelper(CActivityBase &activity, IHThorDenormalizeArg *helper, IThorRowInterfaces *rowIf)
@@ -1464,7 +1519,7 @@ public:
     Owned<IException> exc;
     CriticalSection sect;
     bool eos, selfJoin;
-
+    JoinMatchStats matchStats;
 
     void setException(IException *e,const char *title)
     {
@@ -1559,6 +1614,18 @@ public:
                 }
             }
         }
+    }
+
+    void noteGroupSizes(CThorExpandingRowArray *lgroup,CThorExpandingRowArray *rgroup)
+    {
+        rowidx_t numLeft = lgroup ? lgroup->ordinality() : 0;
+        rowidx_t numRight = lgroup ? lgroup->ordinality() : 0;
+        matchStats.noteGroup(numLeft, numRight);
+    }
+
+    virtual void gatherStats(CRuntimeStatisticCollection & stats) const override
+    {
+        matchStats.gatherStats(stats);
     }
 
     CMultiCoreJoinHelperBase(CActivityBase &_activity, unsigned numthreads, bool _selfJoin, IJoinHelper *_jhelper, IHThorJoinArg *_helper, IThorRowInterfaces *_rowIf)
@@ -1804,6 +1871,8 @@ public:
          * The pull side, also pulls from the workers in sequence
          * This ensures the output is return in input order.
          */
+        noteGroupSizes(lgroup, rgroup);
+
         cWorker *worker = workers[curin];
         worker->workready.wait();
         workers[curin]->work.set(lgroup,rgroup);
@@ -1987,6 +2056,7 @@ public:
 // IMulticoreIntercept impl.
     virtual void addWork(CThorExpandingRowArray *lgroup,CThorExpandingRowArray *rgroup)
     {
+        noteGroupSizes(lgroup, rgroup);
         cWorkItem *item = new cWorkItem(activity, lgroup, rgroup);
         workqueue.enqueue(item);
     }

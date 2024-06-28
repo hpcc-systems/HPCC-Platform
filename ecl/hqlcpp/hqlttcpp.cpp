@@ -8315,7 +8315,7 @@ IHqlDataset * queryRootDataset(IHqlExpression * dataset)
 //therefore, there is no need to special case if actions.  Thor on the other hand will cause it to be executed unnecessarily.
 static HqlTransformerInfo newScopeMigrateTransformerInfo("NewScopeMigrateTransformer");
 NewScopeMigrateTransformer::NewScopeMigrateTransformer(IWorkUnit * _wu, HqlCppTranslator & _translator)
-: HoistingHqlTransformer(newScopeMigrateTransformerInfo, 0), translator(_translator)
+: HoistingHqlTransformer(newScopeMigrateTransformerInfo, CTFnone), translator(_translator)
 {
     wu = _wu;
     isRoxie = translator.targetRoxie();
@@ -8622,7 +8622,7 @@ bool AutoScopeMigrateInfo::doAutoHoist(IHqlExpression * transformed, bool minimi
 
 static HqlTransformerInfo autoScopeMigrateTransformerInfo("AutoScopeMigrateTransformer");
 AutoScopeMigrateTransformer::AutoScopeMigrateTransformer(IWorkUnit * _wu, HqlCppTranslator & _translator)
-: NewHqlTransformer(autoScopeMigrateTransformerInfo), translator(_translator)
+: HoistingHqlTransformer(autoScopeMigrateTransformerInfo, CTFnone), translator(_translator)
 {
     wu = _wu;
     isRoxie = (translator.getTargetClusterType() == RoxieCluster);
@@ -8631,7 +8631,6 @@ AutoScopeMigrateTransformer::AutoScopeMigrateTransformer(IWorkUnit * _wu, HqlCpp
     hasCandidate = false;
     activityDepth = 0;
     curGraph = 1;
-    globalTarget = NULL;
 }
 
 //Ensure all input activities are marked as never hoisting, but child activities are unaffected
@@ -8861,7 +8860,7 @@ IHqlExpression * AutoScopeMigrateTransformer::createTransformed(IHqlExpression *
         //else hoist it within the current graph, otherwise it can get hoisted before globals on datasets that
         //it is dependent on.
         if (extra->firstUseIsConditional)
-            globalTarget->append(*createWrapper(no_thor, setResult.getClear()));
+            appendToTarget(*createWrapper(no_thor, setResult.getClear()));
         else
             graphActions.append(*setResult.getClear());
         transformed.setown(getResult.getClear());
@@ -8871,11 +8870,20 @@ IHqlExpression * AutoScopeMigrateTransformer::createTransformed(IHqlExpression *
 }
 
 
-void AutoScopeMigrateTransformer::transformRoot(const HqlExprArray & in, HqlExprArray & out)
+IHqlExpression * AutoScopeMigrateTransformer::doTransformIndependent(IHqlExpression * expr)
 {
-    globalTarget = &out;
-    NewHqlTransformer::transformRoot(in, out);
-    globalTarget = NULL;
+    AutoScopeMigrateTransformer transformer(wu, translator);
+
+    HqlExprArray exprs;
+    unwindCommaCompound(exprs, expr);
+    transformer.analyseArray(exprs, 0);
+    transformer.analyseArray(exprs, 1);
+    if (!transformer.worthTransforming())
+        return LINK(expr);
+
+    HqlExprArray results;
+    transformer.transformRoot(exprs, results);
+    return createActionList(results);
 }
 
 

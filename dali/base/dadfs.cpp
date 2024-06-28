@@ -232,6 +232,8 @@ extern da_decl cost_type calcDiskWriteCost(const StringArray & clusters, stat_ty
     return writeCost;
 }
 
+// JCSMORE - I suspect this function should be removed/deprecated. It does not deal with dirPerPart or striping.
+// makePhysicalPartName supports both, but does not deal with groups/endpoints)
 RemoteFilename &constructPartFilename(IGroup *grp,unsigned partno,unsigned partmax,const char *name,const char *partmask,const char *partdir,unsigned copy,ClusterPartDiskMapSpec &mspec,RemoteFilename &rfn)
 {
     partno--;
@@ -12007,95 +12009,6 @@ void CDistributedFileDirectory::setDefaultPreferredClusters(const char *clusters
 {
     defprefclusters.set(clusters);
 }
-
-bool removePhysicalFiles(IGroup *grp,const char *_filemask,unsigned short port,ClusterPartDiskMapSpec &mspec,IMultiException *mexcept)
-{
-    // TBD this won't remove repeated parts
-
-
-    PROGLOG("removePhysicalFiles(%s)",_filemask);
-    if (!isAbsolutePath(_filemask))
-        throw MakeStringException(-1,"removePhysicalFiles: Filename %s must be complete path",_filemask);
-
-    size32_t l = strlen(_filemask);
-    while (l&&isdigit(_filemask[l-1]))
-        l--;
-    unsigned width=0;
-    if (l&&(_filemask[l-1]=='_'))
-        width = atoi(_filemask+l);
-    if (!width)
-        width = grp->ordinality();
-
-    CriticalSection errcrit;
-    class casyncfor: public CAsyncFor
-    {
-        unsigned short port;
-        CriticalSection &errcrit;
-        IMultiException *mexcept;
-        unsigned width;
-        StringAttr filemask;
-        IGroup *grp;
-        ClusterPartDiskMapSpec &mspec;
-    public:
-        bool ok;
-        casyncfor(IGroup *_grp,const char *_filemask,unsigned _width,unsigned short _port,ClusterPartDiskMapSpec &_mspec,IMultiException *_mexcept,CriticalSection &_errcrit)
-            : mspec(_mspec),filemask(_filemask),errcrit(_errcrit)
-        {
-            grp = _grp;
-            port = _port;
-            ok = true;
-            mexcept = _mexcept;
-            width = _width;
-        }
-        void Do(unsigned i)
-        {
-            for (unsigned copy = 0; copy < 2; copy++)   // ** TBD
-            {
-                RemoteFilename rfn;
-                constructPartFilename(grp,i+1,width,NULL,filemask,"",copy>0,mspec,rfn);
-                if (port)
-                    rfn.setPort(port); // if daliservix
-                Owned<IFile> partfile = createIFile(rfn);
-                StringBuffer eps;
-                try
-                {
-                    unsigned start = msTick();
-#if 1
-                    if (partfile->remove()) {
-                        PROGLOG("Removed '%s'",partfile->queryFilename());
-                        unsigned t = msTick()-start;
-                        if (t>5*1000)
-                            DBGLOG("Removing %s from %s took %ds", partfile->queryFilename(), rfn.queryEndpoint().getEndpointHostText(eps).str(), t/1000);
-                    }
-                    else
-                        IWARNLOG("Failed to remove file part %s from %s", partfile->queryFilename(),rfn.queryEndpoint().getEndpointHostText(eps).str());
-#else
-                    if (partfile->exists())
-                        PROGLOG("Would remove '%s'",partfile->queryFilename());
-#endif
-
-                }
-                catch (IException *e)
-                {
-                    CriticalBlock block(errcrit);
-                    if (mexcept)
-                        mexcept->append(*e);
-                    else {
-                        StringBuffer s("Failed to remove file part ");
-                        s.append(partfile->queryFilename()).append(" from ");
-                        rfn.queryEndpoint().getEndpointHostText(s);
-                        EXCLOG(e, s.str());
-                        e->Release();
-                    }
-                    ok = false;
-                }
-            }
-        }
-    } afor(grp,_filemask,width,port,mspec,mexcept,errcrit);
-    afor.For(width,10,false,true);
-    return afor.ok;
-}
-
 
 IDaliServer *createDaliDFSServer(IPropertyTree *config)
 {

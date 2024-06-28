@@ -1169,6 +1169,18 @@
             "enabled": {
               "type": "boolean",
               "description": "If true, trace data is processed in a batch, if false, trace data is processed immediately"
+            },
+            "maxQueueSize": {
+              "type": "number",
+              "description": "The maximum buffer/queue size. After the size is reached, spans are dropped."
+            },
+            "scheduledDelayMillis": {
+              "type": "number",
+              "description": "The time interval between two consecutive exports."
+            },
+            "maxExportBatchSize": {
+              "type": "number",
+              "description": " The maximum batch size of every export. It must be smaller or equal to max_queue_size."
             }
           },
           "additionalProperties": { "type": ["integer", "string", "boolean"] }

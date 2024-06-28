@@ -1886,8 +1886,8 @@ public:
     void doBuildFunctionReturn(BuildCtx & ctx, ITypeInfo * type, IHqlExpression * value);
     void doBuildUserFunctionReturn(BuildCtx & ctx, ITypeInfo * type, IHqlExpression * value);
 
-    void addFilenameConstructorParameter(ActivityInstance & instance, WuAttr attr, IHqlExpression * expr);
-    void buildFilenameFunction(ActivityInstance & instance, BuildCtx & classctx, WuAttr attr, const char * name, IHqlExpression * expr, bool isDynamic);
+    void addFilenameConstructorParameter(ActivityInstance & instance, WuAttr attr, IHqlExpression * expr, SummaryType summaryType);
+    void buildFilenameFunction(ActivityInstance & instance, BuildCtx & classctx, WuAttr attr, const char * name, IHqlExpression * expr, bool isDynamic, SummaryType summaryType, bool isOpt, bool isSigned);
     void buildRefFilenameFunction(ActivityInstance & instance, BuildCtx & classctx, WuAttr attr, const char * name, IHqlExpression * dataset);
     void createAccessFunctions(StringBuffer & helperFunc, BuildCtx & declarectx, unsigned prio, const char * interfaceName, const char * object);
 
@@ -1911,7 +1911,7 @@ protected:
     void buildIteratorNext(BuildCtx & ctx, IHqlExpression * iter, IHqlExpression * row);
     bool shouldEvaluateSelectAsAlias(BuildCtx & ctx, IHqlExpression * expr);
     IWUResult * createWorkunitResult(int sequence, IHqlExpression * nameExpr);
-    void noteFilename(ActivityInstance & instance, WuAttr attr, IHqlExpression * expr, bool isDynamic);
+    void noteFilename(ActivityInstance & instance, WuAttr attr, IHqlExpression * expr, bool isDynamic, SummaryType summaryType, bool isOpt, bool isSigned);
     bool checkGetResultContext(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void buildGetResultInfo(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr * boundTarget, const CHqlBoundTarget * targetAssign);
     void buildGetResultSetInfo(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr * boundTarget, const CHqlBoundTarget * targetAssign);
@@ -2038,6 +2038,7 @@ protected:
     bool isNeverDistributed(IHqlExpression * expr);
 
     void ensureWorkUnitUpdated();
+    void addWorkunitSummaries();
     bool getDebugFlag(const char * name, bool defValue);
     void initOptions();
     void postProcessOptions();
@@ -2140,6 +2141,29 @@ protected:
     Owned<ITimeReporter> timeReporter;
     CIArrayOf<SourceFieldUsage> trackedSources;
     HqlExprArray tracedActivities;
+
+    // These are used to generate workunit summary info, to avoid having to walk the xgmml to get it
+    SummaryMap summaries[(int) SummaryType::NumItems];
+    void noteSummaryInfo(const char *name, SummaryType type, bool isOpt, bool isSigned)
+    {
+        if (type == SummaryType::None)
+            return;
+        //Spill files are meaningless in roxie, and no current benefit in recording them for hthor/thor
+        if (type == SummaryType::SpillFile)
+            return;
+
+        SummaryMap &map = summaries[(int) type];
+        SummaryFlags flags = SummaryFlags::None;
+        if (isOpt)
+            flags |= SummaryFlags::IsOpt;
+        if (isSigned)
+            flags |= SummaryFlags::IsSigned;
+        auto match = map.find(name);
+        if (match == map.end())
+            map[name] = flags;
+        else
+            match->second &= flags;
+    }
 };
 
 

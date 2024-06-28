@@ -512,18 +512,18 @@ export const ECLPlayground: React.FunctionComponent<ECLPlaygroundProps> = (props
                 </ReflexContainer>
             </ReflexElement>
             <ReflexSplitter />
-            <ReflexElement propagateDimensions={true} minSize={100}>
-                {outputMode === OutputMode.ERRORS ? (
-                    <InfoGrid wuid={workunit?.Wuid} syntaxErrors={syntaxErrors} />
+            <ReflexElement propagateDimensions={true} minSize={100} style={{ overflow: "hidden" }}>
+                <div style={{ height: "calc(100% - 44px)" }}>
+                    {outputMode === OutputMode.ERRORS ? (
+                        <InfoGrid wuid={workunit?.Wuid} syntaxErrors={syntaxErrors} />
 
-                ) : outputMode === OutputMode.RESULTS ? (
-                    <TabbedResults wuid={workunit?.Wuid} filter={filter} />
+                    ) : outputMode === OutputMode.RESULTS ? (
+                        <TabbedResults wuid={workunit?.Wuid} filter={filter} />
 
-                ) : outputMode === OutputMode.VIS ? (
-                    <div style={{ height: "calc(100% - 25px)" }}>
+                    ) : outputMode === OutputMode.VIS ? (
                         <DojoAdapter widgetClassID="VizWidget" params={{ Wuid: workunit?.Wuid, Sequence: 0 }} />
-                    </div>
-                ) : null}
+                    ) : null}
+                </div>
             </ReflexElement>
         </ReflexContainer>
     </div>;

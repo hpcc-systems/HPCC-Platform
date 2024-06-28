@@ -379,6 +379,9 @@ public:
     void setTimeScheduled(const IJlibDateTime &val);
     virtual void subscribe(WUSubscribeOptions options) {};
 
+    virtual bool getSummary(SummaryType type, SummaryMap &map) const override;
+    virtual void setSummary(SummaryType type, const SummaryMap &map) override;
+
 // ILocalWorkUnit - used for debugging etc
     void loadXML(const char *xml);
     void serialize(MemoryBuffer &tgt);

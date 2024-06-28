@@ -4042,6 +4042,7 @@ public:
         strmR.clear();
         {
             CriticalBlock b(joinHelperCrit);
+            joinhelper->gatherStats(inactiveStats);
             joinhelper.clear();
         }
         PARENT::stop();
@@ -4087,6 +4088,7 @@ public:
         }
         else
         {
+            joinhelper->gatherStats(activeStats);
             activeStats.setStatistic(StNumLeftRows, joinhelper->getLhsProgress());
             activeStats.setStatistic(StNumRightRows, joinhelper->getRhsProgress());
         }

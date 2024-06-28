@@ -68,7 +68,6 @@ public:
         CPPUNIT_TEST(manualTestScopeEnd);
         CPPUNIT_TEST(testActiveSpans);
         CPPUNIT_TEST(testSpanFetchMethods);
-
         //CPPUNIT_TEST(testJTraceJLOGExporterprintResources);
         //CPPUNIT_TEST(testJTraceJLOGExporterprintAttributes);
         CPPUNIT_TEST(manualTestsDeclaredSpanStartTime);
@@ -826,6 +825,30 @@ protected:
 CPPUNIT_TEST_SUITE_REGISTRATION( JlibTraceTest );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibTraceTest, "JlibTraceTest" );
 
+class JlibStringTest : public CppUnit::TestFixture
+{
+public:
+    CPPUNIT_TEST_SUITE(JlibStringTest);
+        CPPUNIT_TEST(testEncodeCSVColumn);
+    CPPUNIT_TEST_SUITE_END();
+
+protected:
+void testEncodeCSVColumn()
+    {
+        const char * csvCol1 = "hello,world";
+        StringBuffer encodedCSV;
+        encodeCSVColumn(encodedCSV, csvCol1);
+        CPPUNIT_ASSERT_EQUAL_STR(encodedCSV.str(), "\"hello,world\"");
+
+        const char * csvCol2 = "hello world, \"how are you?\"";
+        encodedCSV.clear();
+        encodeCSVColumn(encodedCSV, csvCol2);
+        CPPUNIT_ASSERT_EQUAL_STR(encodedCSV.str(), "\"hello world, \"\"how are you?\"\"\"");
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( JlibStringTest );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibStringTest, "JlibStringTest" );
 
 class JlibSemTest : public CppUnit::TestFixture
 {

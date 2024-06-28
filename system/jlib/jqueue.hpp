@@ -546,5 +546,59 @@ public:
     }
 };
 
+// Lockfree Single Producer Single Conumser bounded queue implementation
+// No mutexes are required to interact with the queue, as long as there's a single consumer thread, and a single writer thread.
+template <typename T>
+class CSPSCQueue
+{
+    size32_t maxCapacity = 0;
+    std::vector<T> elements;
+    std::atomic<size32_t> head = 0;
+    std::atomic<size32_t> tail = 0;
+
+    inline size32_t increment(size32_t idx) const
+    {
+        size32_t next = idx+1;
+        if (next == maxCapacity)
+            next = 0;
+        return next;
+    }
+public:
+    CSPSCQueue()
+    {
+        // should set capacity before using
+    }
+    CSPSCQueue(size32_t _maxCapacity)
+        : maxCapacity(_maxCapacity + 1), // +1 to distinguish full vs empty
+          elements(maxCapacity)
+    {
+    }
+    void setCapacity(size32_t _maxCapacity)
+    {
+        maxCapacity = _maxCapacity + 1;
+        elements.resize(maxCapacity);
+    }
+    bool enqueue(const T e)
+    {
+        size32_t currentHead = head;
+        size32_t nextHead = increment(currentHead);
+        if (nextHead == tail)
+            return false; // full
+
+        elements[currentHead] = std::move(e);
+        head = nextHead;
+        return true;
+    }
+    bool dequeue(T &res)
+    {
+        size32_t currentTail = tail;
+        if (currentTail == head)
+            return false; // empty
+
+        res = std::move(elements[currentTail]);
+        tail = increment(currentTail);
+        return true;
+    }
+};
 
 #endif
