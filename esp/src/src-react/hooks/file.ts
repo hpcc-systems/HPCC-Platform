@@ -14,7 +14,7 @@ export function useFile(cluster: string, name: string): [LogicalFile, boolean, n
     const [count, increment] = useCounter();
 
     React.useEffect(() => {
-        const file = LogicalFile.attach({ baseUrl: "" }, cluster, name);
+        const file = LogicalFile.attach({ baseUrl: "" }, cluster === "undefined" ? undefined : cluster, name);
         let active = true;
         let handle;
         const fetchInfo = singletonDebounce(file, "fetchInfo");
@@ -86,4 +86,24 @@ export function useFileHistory(cluster: string, name: string): [WsDfu.Origin[], 
     }, [file, count]);
 
     return [history, eraseHistory, increment];
+}
+
+export function useSubfiles(cluster: string, name: string): [WsDfu.subfiles, () => void] {
+
+    const [file] = useFile(cluster, name);
+    const [subfiles, setSubfiles] = React.useState<WsDfu.subfiles>({ Item: [] });
+    const [count, increment] = useCounter();
+
+    React.useEffect(() => {
+        if (file) {
+            file.fetchInfo()
+                .then(response => {
+                    setSubfiles(response.subfiles ?? { Item: [] });
+                })
+                .catch(err => logger.error(err))
+                ;
+        }
+    }, [file, count]);
+
+    return [subfiles, increment];
 }
