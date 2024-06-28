@@ -322,7 +322,7 @@ bool CwsstoreEx::onFetch(IEspContext &context, IEspFetchRequest &req, IEspFetchR
         if (e->errorCode() == ECLWATCH_INVALID_QUERY_KEY)
         {
             StringBuffer msg;
-            LOG(MCuserInfo, "WsStore: %s", e->errorMessage(msg).str());
+            DBGLOG("WsStore: Fetch failed: %s", e->errorMessage(msg).str());
             e->Release();
             return false;
         }
