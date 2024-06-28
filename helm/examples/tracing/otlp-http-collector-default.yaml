@@ -4,3 +4,8 @@ global:
     - type: OTLP-HTTP
       endpoint: "localhost:4318/v1/traces"
       consoleDebug: true
+      batch:
+        enabled: true
+        maxQueueSize: 4096
+        scheduledDelayMillis: 6000
+        maxExportBatchSize: 512

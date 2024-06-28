@@ -41,6 +41,7 @@
 #include <vector>
 #include <list>
 #include <utility>
+#include <map>
 #include <string>
 
 #define LEGACY_GLOBAL_SCOPE "workunit"
@@ -1179,6 +1180,40 @@ interface IConstWUScopeIterator : extends IScmIterator
 //---------------------------------------------------------------------------------------------------------------------
 //! IWorkUnit
 //! Provides high level access to WorkUnit "header" data.
+
+// Be sure to update summaryTypeName in workunit.cpp if adding anything here
+enum class SummaryType
+{
+    First,
+    ReadFile = First,
+    ReadIndex,
+    WriteFile,
+    WriteIndex,
+    PersistFile,
+    SpillFile,
+    JobTemp,
+    Service,
+    // Keep these at the end
+    NumItems,
+    None = NumItems
+};
+
+enum SummaryFlags : byte
+{
+    None = 0,
+    IsOpt = 0x01,
+    IsSigned = 0x02,
+};
+BITMASK_ENUM(SummaryFlags);
+
+struct ncasecomp { 
+    bool operator() (const std::string& lhs, const std::string& rhs) const {
+        return stricmp(lhs.c_str(), rhs.c_str()) < 0;
+    }
+};
+
+typedef std::map<std::string, SummaryFlags, ncasecomp> SummaryMap;
+
 interface IWorkUnit;
 interface IUserDescriptor;
 
@@ -1267,6 +1302,7 @@ interface IConstWorkUnit : extends IConstWorkUnitInfo
     virtual unsigned queryFileUsage(const char * filename) const = 0;
     virtual IConstWUFileUsageIterator * getFieldUsage() const = 0;
     virtual bool getFieldUsageArray(StringArray & filenames, StringArray & columnnames, const char * clusterName) const = 0;
+    virtual bool getSummary(SummaryType type, SummaryMap &result) const = 0;
 
     virtual unsigned getCodeVersion() const = 0;
     virtual unsigned getWuidVersion() const  = 0;
@@ -1400,6 +1436,7 @@ interface IWorkUnit : extends IConstWorkUnit
     virtual void setResultDecimal(const char *name, unsigned sequence, int len, int precision, bool isSigned, const void *val) = 0;
     virtual void setResultDataset(const char * name, unsigned sequence, size32_t len, const void *val, unsigned numRows, bool extend) = 0;
     virtual void import(IPropertyTree *wuTree, IPropertyTree *graphProgressTree = nullptr) = 0;
+    virtual void setSummary(SummaryType type, const SummaryMap &map) = 0;
     virtual IConstWorkUnit * unlock() = 0;
 };
 
@@ -1721,6 +1758,8 @@ extern WORKUNIT_API void gatherLibraryNames(StringArray &names, StringArray &unr
 
 //If we add any more parameters we should consider returning an object that can be updated
 extern WORKUNIT_API void associateLocalFile(IWUQuery * query, WUFileType type, const char * name, const char * description, unsigned crc, unsigned minActivity=0, unsigned maxActivity=0);
+
+extern WORKUNIT_API void addWorkunitSummary(IWorkUnit * wu, SummaryType summaryType, SummaryMap &map);
 
 interface ITimeReporter;
 extern WORKUNIT_API void updateWorkunitStat(IWorkUnit * wu, StatisticScopeType scopeType, const char * scope, StatisticKind kind, const char * description, unsigned __int64 value, unsigned wfid=0);

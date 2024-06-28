@@ -152,7 +152,7 @@ class NSplitterSlaveActivity : public CSlaveActivity, implements ISharedSmartBuf
         }
     }
 public:
-    NSplitterSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), writer(*this)
+    NSplitterSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container, nsplitterActivityStatistics), writer(*this)
     {
         numOutputs = container.getOutputs();
         connectedOutputSet.setown(createBitSet());
@@ -251,9 +251,9 @@ public:
                                 if ((size32_t)-1 != blockedSequentialIOSize)
                                     options.storageBlockSize = blockedSequentialIOSize;
                             }
-                            options.totalCompressionBufferSize = getOptInt(THOROPT_SPLITTER_COMPRESSIONTOALK, options.totalCompressionBufferSize / 1024) * 1024;
+                            options.totalCompressionBufferSize = getOptInt(THOROPT_SPLITTER_COMPRESSIONTOTALK, options.totalCompressionBufferSize / 1024) * 1024;
                             options.inMemMaxMem = getOptInt(THOROPT_SPLITTER_MAXROWMEMK, options.inMemMaxMem / 1024) * 1024;
-                            options.spillWriteAheadSize = getOptInt64(THOROPT_SPLITTER_WRITEAHEADK, options.spillWriteAheadSize / 1024) * 1024;
+                            options.writeAheadSize = getOptInt64(THOROPT_SPLITTER_WRITEAHEADK, options.writeAheadSize / 1024) * 1024;
                             options.inMemReadAheadGranularity = getOptInt(THOROPT_SPLITTER_READAHEADGRANULARITYK, options.inMemReadAheadGranularity / 1024) * 1024;
                             options.inMemReadAheadGranularityRows = getOptInt(THOROPT_SPLITTER_READAHEADGRANULARITYROWS, options.inMemReadAheadGranularity);
                             options.heapFlags = getOptInt("spillheapflags", options.heapFlags);
@@ -400,6 +400,12 @@ public:
         CSlaveActivity::abort();
         if (sharedRowStream)
             sharedRowStream->cancel();
+    }
+    virtual void gatherActiveStats(CRuntimeStatisticCollection &activeStats) const override
+    {
+        PARENT::gatherActiveStats(activeStats);
+        if (sharedRowStream)
+            ::mergeStats(activeStats, sharedRowStream);
     }
 // ISharedSmartBufferCallback impl.
     virtual void paged() { pagedOut = true; }

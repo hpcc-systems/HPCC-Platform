@@ -5627,7 +5627,7 @@ public:
                     eps.getEndpointHostText(peerURL.clear());
                     PROGLOG("Server accepting row service socket from %s", peerURL.str());
 #endif
-                    addClient(acceptedRSSock.getClear(), true, true);
+                    addClient(acceptedRSSock.getClear(), rowServiceSSL, true);
                 }
             }
             else

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Checkbox, CommandBar, ICommandBarItemProps, Link } from "@fluentui/react";
+import { Checkbox, CommandBar, ICommandBarItemProps, Link, SelectionMode } from "@fluentui/react";
 import { SizeMe } from "react-sizeme";
 import { formatCost, formatTwoDigits } from "src/Session";
 import nlsHPCC from "src/nlsHPCC";
@@ -123,6 +123,11 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
                         return <><span>{info?.prefix}<Link style={{ marginRight: 3 }} href={`#/workunits/${wuid}/metrics/sg${info.subgraphID}`}>{txt}</Link>{info?.message}</span></>;
                     }
                     return Message;
+                },
+                fluentColumn: {
+                    flexGrow: 1,
+                    minWidth: 320,
+                    isResizable: true
                 }
             },
             Column: { label: nlsHPCC.Col, width: 36 },
@@ -133,7 +138,14 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
                     return activityId ? <Link href={`#/workunits/${wuid}/metrics/a${activityId}`}>a{activityId}</Link> : "";
                 }
             },
-            FileName: { label: nlsHPCC.FileName, width: 360 }
+            FileName: {
+                label: nlsHPCC.FileName,
+                fluentColumn: {
+                    flexGrow: 2,
+                    minWidth: 320,
+                    isResizable: true
+                }
+            }
         };
     }, [wuid]);
 
@@ -210,7 +222,8 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
         });
         setData(filteredExceptions);
         setFilterCounts(filterCounts);
-    }, [costChecked, errorChecked, errors, infoChecked, otherChecked, warningChecked]);
+        setSelection(filteredExceptions);
+    }, [costChecked, errorChecked, errors, infoChecked, otherChecked, setSelection, warningChecked]);
 
     React.useEffect(() => {
         if (data.length) {
@@ -224,19 +237,23 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
         }
     }, [data.length]);
 
-    return <SizeMe monitorHeight>{({ size }) =>
-        <div style={{ height: "100%" }}>
-            <CommandBar items={buttons} farItems={copyButtons} />
-            <div style={pivotItemStyle(size)}>
-                <FluentGrid
-                    data={data}
-                    primaryID={"id"}
-                    columns={columns}
-                    setSelection={setSelection}
-                    setTotal={setTotal}
-                    refresh={refreshTable}
-                ></FluentGrid>
+    return <div style={{ height: "100%", overflowY: "hidden" }}>
+        <CommandBar items={buttons} farItems={copyButtons} />
+        <SizeMe monitorHeight >{({ size }) =>
+            <div style={{ height: "100%", overflowY: "hidden" }}>
+                <div style={{ ...pivotItemStyle(size), overflowY: "hidden" }}>
+                    <FluentGrid
+                        data={data}
+                        primaryID={"id"}
+                        columns={columns}
+                        setSelection={_ => { }}
+                        setTotal={setTotal}
+                        refresh={refreshTable}
+                        height={`${size.height - (44 + 8 + 45 + 12)}px`}
+                        selectionMode={SelectionMode.none}
+                    ></FluentGrid>
+                </div>
             </div>
-        </div>
-    }</SizeMe>;
+        }</SizeMe>
+    </div>;
 };

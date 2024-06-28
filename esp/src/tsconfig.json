@@ -3,9 +3,9 @@
         "baseUrl": ".",
         "outDir": "./lib",
         "declarationDir": "./types",
-        "target": "es5",
-        "module": "amd",
-        "moduleResolution": "node",
+        "target": "ES5",
+        "module": "AMD",
+        "moduleResolution": "Node",
         "allowSyntheticDefaultImports": true,
         "sourceMap": true,
         "declaration": true,
@@ -22,12 +22,16 @@
         "downlevelIteration": true,
         "jsx": "react",
         "lib": [
-            "dom",
-            "es2019"
+            "DOM",
+            "ES2019"
         ],
         "typeRoots": [],
         "types": [],
         "paths": {
+            "@hpcc-js/wasm": [
+                "./node_modules/@hpcc-js/wasm",
+                "../../../hpcc-js-wasm"
+            ],
             "@hpcc-js/*": [
                 "./node_modules/@hpcc-js/*",
                 "../../../hpcc-js/packages/*",

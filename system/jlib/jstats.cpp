@@ -979,6 +979,10 @@ static const constexpr StatisticMeta statsMetaData[StMax] = {
     { SIZESTAT(RemoteWrite), "Size of data sent to remote workers"},
     { PEAKSIZESTAT(PeakTempDisk), "High water mark for temporary files"},
     { PEAKSIZESTAT(PeakEphemeralDisk), "High water mark for emphemeral storage use"},
+    { NUMSTAT(MatchLeftRowsMax), "The largest number of left rows in a join group" },
+    { NUMSTAT(MatchRightRowsMax), "The largest number of right rows in a join group" },
+    { NUMSTAT(MatchCandidates), "The number of candidate combinations of left and right rows forming join groups" },
+    { NUMSTAT(MatchCandidatesMax), "The largest number of candidate combinations of left and right rows in a single group" },
 };
 
 static MapStringTo<StatisticKind, StatisticKind> statisticNameMap(true);
@@ -3105,6 +3109,9 @@ static bool isWorthReportingMergedValue(StatisticKind kind)
     {
     case StSizePeakMemory:
     case StSizePeakRowMemory:
+    case StNumMatchLeftRowsMax:
+    case StNumMatchRightRowsMax:
+    case StNumMatchCandidatesMax:
         //These only make sense for individual nodes, the aggregated value is meaningless
         return false;
     }

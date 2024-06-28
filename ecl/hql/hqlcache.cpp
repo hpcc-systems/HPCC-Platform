@@ -507,6 +507,24 @@ extern HQL_API void expandArchive(const char * path, IPropertyTree * archive, bo
     StringBuffer baseFilename;
     makeAbsolutePath(path, baseFilename, false);
     addPathSepChar(baseFilename);
+    unsigned int embeddedArchiveNum = 0;
+
+    // Look for embedded archives and recursively expand them
+    Owned<IPropertyTreeIterator> embeddedArchives = archive->getElements("Archive");
+    ForEach(*embeddedArchives)
+    {
+        // Append the package value to the path, if it exists
+        StringBuffer embeddedFilename(baseFilename);
+        if (embeddedArchives->query().hasProp("@package"))
+        {
+            embeddedFilename.append(embeddedArchives->query().queryProp("@package"));
+        }
+        else
+        {
+            embeddedFilename.appendf("archive_%0*d", 6, ++embeddedArchiveNum);
+        }
+        expandArchive(embeddedFilename, &embeddedArchives->query(), includePlugins);
+    }
 
     Owned<IPropertyTreeIterator> modules = archive->getElements("Module");
     ForEach(*modules)

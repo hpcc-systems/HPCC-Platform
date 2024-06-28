@@ -60,18 +60,49 @@ interface IJoinHelper: public IRowStream
     virtual rowcount_t getRhsProgress() const = 0;
     virtual const void *nextRow() = 0;
     virtual void stop() = 0;
+    virtual void gatherStats(CRuntimeStatisticCollection & stats) const = 0;
 };
 
 IJoinHelper *createJoinHelper(CActivityBase &activity, IHThorJoinArg *helper, IThorRowInterfaces *rowIf, bool parallelmatch, bool unsortedoutput);
 IJoinHelper *createSelfJoinHelper(CActivityBase &activity, IHThorJoinArg *helper, IThorRowInterfaces *rowIf, bool parallelmatch, bool unsortedoutput);
 IJoinHelper *createDenormalizeHelper(CActivityBase &activity, IHThorDenormalizeArg *helper, IThorRowInterfaces *rowIf);
 
-
-
 ILimitedCompareHelper *createLimitedCompareHelper();
 
+//Included here so this can be shared between join and lookup join.
+class JoinMatchStats
+{
+public:
+    void gatherStats(CRuntimeStatisticCollection & stats) const
+    {
+        //Left and right progress could be added here.
+        if (maxLeftGroupSize)
+            stats.addStatistic(StNumMatchLeftRowsMax, maxLeftGroupSize);
+        if (maxRightGroupSize)
+            stats.addStatistic(StNumMatchRightRowsMax, maxRightGroupSize);
+        if (numMatchCandidates)
+            stats.addStatistic(StNumMatchCandidates, numMatchCandidates);
+        if (maxMatchCandidates)
+            stats.addStatistic(StNumMatchCandidatesMax, maxMatchCandidates);
+    }
 
+    void noteGroup(rowcount_t numLeft, rowcount_t numRight)
+    {
+        rowcount_t numCandidates = numLeft * numRight;
+        if (numLeft > maxLeftGroupSize)
+            maxLeftGroupSize = numLeft;
+        if (numRight > maxRightGroupSize)
+            maxRightGroupSize = numRight;
+        numMatchCandidates += numCandidates;
+        if (numCandidates > maxMatchCandidates)
+            maxMatchCandidates = numCandidates;
+    }
 
-
+public:
+    stat_type maxLeftGroupSize = 0;
+    stat_type maxRightGroupSize = 0;
+    stat_type numMatchCandidates = 0;
+    stat_type maxMatchCandidates = 0;
+};
 
 #endif

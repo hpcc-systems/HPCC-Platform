@@ -59,7 +59,7 @@
 #define THOROPT_SPLITTER_READAHEADGRANULARITYK "inMemReadAheadGranularityK" // Splitter in memory read ahead granularity (K)                     (default = 128K)
 #define THOROPT_SPLITTER_READAHEADGRANULARITYROWS "inMemReadAheadGranularityRows" // Splitter in memory read ahead granularity (# rows)          (default = 64)
 #define THOROPT_SPLITTER_WRITEAHEADK  "splitterWriteAheadK"     // Splitter spilling write ahead size (K)                                        (default = 2MB)
-#define THOROPT_SPLITTER_COMPRESSIONTOALK "splitterCompressionTotalK" // Splitter total compression buffer size (shared between writer and readers) (K) (default = 3MB)
+#define THOROPT_SPLITTER_COMPRESSIONTOTALK "splitterCompressionTotalK" // Splitter total compression buffer size (shared between writer and readers) (K) (default = 3MB)
 #define THOROPT_LOOP_MAX_EMPTY        "loopMaxEmpty"            // Max # of iterations that LOOP can cycle through with 0 results before errors  (default = 1000)
 #define THOROPT_SMALLSORT             "smallSortThreshold"      // Use minisort approach, if estimate size of data to sort is below this setting (default = 0)
 #define THOROPT_PARALLEL_FUNNEL       "parallelFunnel"          // Use parallel funnel impl. if !ordered                                         (default = true)
@@ -121,6 +121,11 @@
 #define THOROPT_SORT_ALGORITHM "sortAlgorithm"                  // The algorithm used to sort records (quicksort/mergesort)
 #define THOROPT_COMPRESS_ALLFILES "compressAllOutputs"          // Compress all output files (default: bare-metal=off, cloud=on)
 #define THOROPT_AVOID_RENAME "avoidRename"                      // Avoid rename, write directly to target physical filenames (no temp file)
+#define THOROPT_LOOKAHEAD_MAXROWMEMK "readAheadRowMemK"         // Splitter max memory (K) to use before spilling                                (default = 2MB)
+#define THOROPT_LOOKAHEAD_WRITEAHEADK "readAheadWriteAheadK"     // Splitter spilling write ahead size (K)                                        (default = 2MB)
+#define THOROPT_LOOKAHEAD_COMPRESSIONTOTALK "readAheadCompressionTotalK" // Splitter total compression buffer size (shared between writer and readers) (K) (default = 3MB)
+#define THOROPT_LOOKAHEAD_TEMPFILE_GRANULARITY "readAheadTempFileGranularity" // Splitter temp file granularity (default = 1GB)
+
 
 
 #define INITIAL_SELFJOIN_MATCH_WARNING_LEVEL 20000  // max of row matches before selfjoin emits warning
@@ -147,6 +152,7 @@ extern graph_decl const StatisticsMapping indexReadActivityStatistics;
 extern graph_decl const StatisticsMapping indexWriteActivityStatistics;
 extern graph_decl const StatisticsMapping joinActivityStatistics;
 extern graph_decl const StatisticsMapping keyedJoinActivityStatistics;
+extern graph_decl const StatisticsMapping allJoinActivityStatistics;
 extern graph_decl const StatisticsMapping lookupJoinActivityStatistics;
 extern graph_decl const StatisticsMapping loopActivityStatistics;
 extern graph_decl const StatisticsMapping diskReadActivityStatistics;
@@ -161,6 +167,8 @@ extern graph_decl const StatisticsMapping soapcallActivityStatistics;
 extern graph_decl const StatisticsMapping indexReadFileStatistics;
 extern graph_decl const StatisticsMapping hashDedupActivityStatistics;
 extern graph_decl const StatisticsMapping hashDistribActivityStatistics;
+extern graph_decl const StatisticsMapping nsplitterActivityStatistics;
+extern graph_decl const StatisticsMapping spillingWriteAheadStatistics;
 
 class BooleanOnOff
 {
