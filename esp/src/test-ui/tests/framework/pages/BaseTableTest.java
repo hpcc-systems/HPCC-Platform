@@ -94,6 +94,8 @@ public abstract class BaseTableTest<T> {
 
         if (!Config.TEST_WU_DETAIL_PAGE_FIELD_NAMES_ALL && i == 0) {
             testForAllTextInDetailsPage(name);
+        } else if (Config.TEST_WU_DETAIL_PAGE_FIELD_NAMES_ALL) {
+            testForAllTextInDetailsPage(name);
         }
 
         testDetailsContentPage(name);

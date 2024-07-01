@@ -120,9 +120,13 @@ public class ECLWorkUnitsTest extends BaseTableTest<ECLWorkunit> {
 
         if (!Config.TEST_WU_DETAIL_PAGE_PROTECTED_ALL && i == 0) {
             testProtectedButtonFunctionality(wuName);
+        } else if (Config.TEST_WU_DETAIL_PAGE_PROTECTED_ALL) {
+            testProtectedButtonFunctionality(wuName);
         }
 
         if (!Config.TEST_WU_DETAIL_PAGE_DESCRIPTION_ALL && i == 0) {
+            testDescriptionUpdateFunctionality(wuName);
+        } else if (Config.TEST_WU_DETAIL_PAGE_DESCRIPTION_ALL) {
             testDescriptionUpdateFunctionality(wuName);
         }
     }
