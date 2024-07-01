@@ -74,8 +74,13 @@ public class Common {
         return new WebDriverWait(driver, Duration.ofSeconds(Config.WAIT_TIME_THRESHOLD_IN_SECONDS)).until(ExpectedConditions.presenceOfElementLocated(locator));
     }
 
-    public static WebElement waitForElementToBeClickable(WebElement element) {
-        return new WebDriverWait(driver, Duration.ofSeconds(Config.WAIT_TIME_THRESHOLD_IN_SECONDS)).until(ExpectedConditions.elementToBeClickable(element));
+    public static void waitForElementToBeClickable(WebElement element) {
+        new WebDriverWait(driver, Duration.ofSeconds(Config.WAIT_TIME_THRESHOLD_IN_SECONDS)).until(ExpectedConditions.elementToBeClickable(element));
+    }
+
+    public static void waitForElementToBeDisabled(WebElement element) {
+        new WebDriverWait(driver, Duration.ofSeconds(Config.WAIT_TIME_THRESHOLD_IN_SECONDS))
+                .until(ExpectedConditions.attributeContains(element, "aria-disabled", "true"));
     }
 
     public static void logError(String message) {

@@ -52,7 +52,10 @@ public class ECLWorkUnitsTest extends BaseTableTest<ECLWorkunit> {
 
     private final List<String> badStates = Arrays.asList("compiled", "failed");
 
-    String saveButtonDetailsPage = "Save";
+    @Override
+    protected String getSaveButtonDetailsPage() {
+        return "Save";
+    }
 
     @Override
     protected String[] getDetailNames() {
@@ -113,23 +116,32 @@ public class ECLWorkUnitsTest extends BaseTableTest<ECLWorkunit> {
     }
 
     @Override
-    protected void testDetailSpecificFunctionality(String wuName) {
+    protected void testDetailSpecificFunctionality(String wuName, int i) {
 
-        //testProtectedButtonFunctionality(wuName);
-        testDescriptionUpdateFunctionality(wuName);
+        if (!Config.TEST_WU_DETAIL_PAGE_PROTECTED_ALL && i == 0) {
+            testProtectedButtonFunctionality(wuName);
+        }
+
+        if (!Config.TEST_WU_DETAIL_PAGE_DESCRIPTION_ALL && i == 0) {
+            testDescriptionUpdateFunctionality(wuName);
+        }
     }
 
     private void testDescriptionUpdateFunctionality(String wuName) {
+        try {
+            String newDescription = Config.TEST_DESCRIPTION_TEXT;
 
-        String newDescription = "Testing Description";
+            String oldDescription = updateDescriptionAndSave(newDescription);
 
-        String oldDescription = updateDescriptionAndSave(newDescription);
+            testIfTheDescriptionUpdated(wuName, newDescription);
 
-        testIfTheDescriptionUpdated(wuName, newDescription);
+            Common.logDetail("Reverting Description Update To Old Value: " + getPageName() + " Details page, for WUID: " + wuName);
 
-        Common.logDetail("Reverting Description Update To Old Value: "+ getPageName() +" Details page, for WUID: " + wuName);
+            updateDescriptionAndSave(oldDescription);
 
-        updateDescriptionAndSave(oldDescription);
+        } catch (Exception ex) {
+            Common.logError("Error: " + getPageName() + " Details page for WUID: " + wuName + ", Exception occurred while testing for description. Exception: " + ex.getMessage());
+        }
     }
 
     private void testIfTheDescriptionUpdated(String wuName, String newDescription) {
@@ -143,9 +155,9 @@ public class ECLWorkUnitsTest extends BaseTableTest<ECLWorkunit> {
         String updatedDescription = element.getAttribute(getAttributeValueForDetailsPage()).trim();
 
         if (newDescription.equals(updatedDescription)) {
-            Common.logDetail("Success: "+ getPageName() +" Details page. Description Updated Successfully on click of save button: Description After refresh showing on UI: "+ updatedDescription+", Updated description was: "+newDescription+" for WUID: " + wuName);
-        }else{
-            Common.logError("Failure: "+ getPageName() +" Details page. Description Did Not Update on click of save button : Description After refresh showing on UI: "+ updatedDescription+", Updated description should be: "+newDescription+" for WUID: " + wuName);
+            Common.logDetail("Success: " + getPageName() + " Details page. Description Updated Successfully on click of save button: Description After refresh showing on UI: " + updatedDescription + ", Updated description was: " + newDescription + " for WUID: " + wuName);
+        } else {
+            Common.logError("Failure: " + getPageName() + " Details page. Description Did Not Update on click of save button : Description After refresh showing on UI: " + updatedDescription + ", Updated description should be: " + newDescription + " for WUID: " + wuName);
         }
     }
 
@@ -162,14 +174,10 @@ public class ECLWorkUnitsTest extends BaseTableTest<ECLWorkunit> {
 
         element.sendKeys(newDescription);
 
-        WebElement saveButton = Common.waitForElement(By.xpath("//button//*[text()='" + saveButtonDetailsPage + "']"));
-
-        Common.waitForElementToBeClickable(saveButton);
-        saveButton.click();
-        Common.sleepWithTime(4); // need to modify this to wait dynamically
+        clickOnSaveButton();
 
         element = Common.waitForElement(By.id("description"));
-        Common.logDetail("Old Description: "+ oldDescription +", Updated Description After Save: " + element.getAttribute(getAttributeValueForDetailsPage()));
+        Common.logDetail("Old Description: " + oldDescription + ", Updated Description After Save: " + element.getAttribute(getAttributeValueForDetailsPage()));
 
         return oldDescription;
     }
@@ -184,8 +192,6 @@ public class ECLWorkUnitsTest extends BaseTableTest<ECLWorkunit> {
             WebElement element = Common.waitForElement(By.xpath("//div[text()='" + wuName + "']/.."));
             element.click();
 
-            waitToLoadDetailsPage();
-
             if (checkIfNewCheckBoxValuePresentInDetailsPage(newCheckboxValue)) {
                 Common.logDetail(getPageName() + " Details Page: Reverting the checkbox value for WUID: " + wuName);
                 clickProtectedCheckboxAndSave(wuName);
@@ -197,6 +203,8 @@ public class ECLWorkUnitsTest extends BaseTableTest<ECLWorkunit> {
     }
 
     private boolean checkIfNewCheckBoxValuePresentInDetailsPage(boolean newCheckboxValue) {
+
+        waitToLoadDetailsPage();
 
         WebElement protectedCheckbox = Common.waitForElement(By.id("protected"));
         boolean currentCheckboxValue = protectedCheckbox.isSelected();
@@ -212,25 +220,26 @@ public class ECLWorkUnitsTest extends BaseTableTest<ECLWorkunit> {
 
     private boolean clickProtectedCheckboxAndSave(String wuName) {
 
+        waitToLoadDetailsPage();
+
         WebElement protectedCheckbox = Common.waitForElement(By.id("protected"));
         boolean oldCheckboxValue = protectedCheckbox.isSelected();
-        WebElement parentElement = protectedCheckbox.findElement(By.xpath(".."));
 
         JavascriptExecutor js = (JavascriptExecutor) Common.driver;
-        js.executeScript("arguments[0].click();", parentElement);
+        js.executeScript("arguments[0].click();", protectedCheckbox);
 
-        boolean newCheckboxValue = waitToLoadUpdatedProtectedCheckbox(oldCheckboxValue);
+        waitToLoadUpdatedProtectedCheckbox(oldCheckboxValue);
 
-        Common.logDetail("Protected checkbox old Value: " + oldCheckboxValue + ", current value: " + newCheckboxValue + " for WUID: " + wuName);
+        clickOnSaveButton();
 
-        WebElement saveButton = Common.waitForElement(By.xpath("//button//*[text()='" + saveButtonDetailsPage + "']"));
+        boolean newCheckboxValue = protectedCheckbox.isSelected();
 
-        saveButton.click();
+        Common.logDetail("Protected checkbox old Value: " + oldCheckboxValue + ", current value after save: " + newCheckboxValue + " for WUID: " + wuName);
 
         return newCheckboxValue;
     }
 
-    private boolean waitToLoadUpdatedProtectedCheckbox(boolean oldCheckboxValue) {
+    private void waitToLoadUpdatedProtectedCheckbox(boolean oldCheckboxValue) {
 
         int waitTimeInSecs = Config.WAIT_TIME_IN_SECONDS;
         boolean newCheckboxValue;
@@ -248,8 +257,6 @@ public class ECLWorkUnitsTest extends BaseTableTest<ECLWorkunit> {
             waitTimeInSecs++;
 
         } while (waitTimeInSecs < Config.WAIT_TIME_THRESHOLD_IN_SECONDS);
-
-        return newCheckboxValue;
     }
 
     private void checkProtectedStatusOnECLWorkunitsPage(String wuName, boolean newCheckboxValue) {

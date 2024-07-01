@@ -22,6 +22,8 @@ public abstract class BaseTableTest<T> {
 
     protected abstract String getJsonFilePath();
 
+    protected abstract String getSaveButtonDetailsPage();
+
     protected abstract String[] getColumnNames();
 
     protected abstract String[] getDetailNames();
@@ -58,7 +60,7 @@ public abstract class BaseTableTest<T> {
 
     protected abstract Map<String, T> getJsonMap();
 
-    protected abstract void testDetailSpecificFunctionality(String name);
+    protected abstract void testDetailSpecificFunctionality(String name, int i);
 
     protected List<T> jsonObjects;
 
@@ -90,13 +92,22 @@ public abstract class BaseTableTest<T> {
 
     private void testDetailsPage(String name, int i) {
 
-        testForAllTextInDetailsPage(name);
-        testDetailsContentPage(name);
+        if (!Config.TEST_WU_DETAIL_PAGE_FIELD_NAMES_ALL && i == 0) {
+            testForAllTextInDetailsPage(name);
+        }
 
-//        if(i == 0){
-//            testDetailSpecificFunctionality(name);
-//        }
-        testDetailSpecificFunctionality(name);
+        testDetailsContentPage(name);
+        testDetailSpecificFunctionality(name, i);
+    }
+
+    protected void clickOnSaveButton() {
+
+        WebElement saveButton = getSaveButtonWebElementDetailsPage();
+        Common.waitForElementToBeClickable(saveButton);
+        saveButton.click();
+
+        saveButton = getSaveButtonWebElementDetailsPage();
+        Common.waitForElementToBeDisabled(saveButton);
     }
 
     private void testLinksInTable() {
@@ -120,14 +131,14 @@ public abstract class BaseTableTest<T> {
                     element.click();
 
                     if (Common.driver.getPageSource().contains(name)) {
-                        String msg = "Success: " + getPageName() + ": Link Test Pass for " + (i+1) + ". " + name + ". URL : " + href;
+                        String msg = "Success: " + getPageName() + ": Link Test Pass for " + (i + 1) + ". " + name + ". URL : " + href;
                         Common.logDetail(msg);
                         // after the link test has passed, the code tests the details page(including, the text, content and tabs) it has landed on
                         testDetailsPage(name, i);
 
                     } else {
                         String currentPage = getCurrentPage();
-                        String errorMsg = "Failure: " + getPageName() + ": Link Test Fail for " + (i+1) + ". " + name + " page failed. The current navigation page that we landed on is " + currentPage + ". Current URL : " + href;
+                        String errorMsg = "Failure: " + getPageName() + ": Link Test Fail for " + (i + 1) + ". " + name + " page failed. The current navigation page that we landed on is " + currentPage + ". Current URL : " + href;
                         Common.logError(errorMsg);
                     }
 
@@ -182,7 +193,7 @@ public abstract class BaseTableTest<T> {
         try {
             waitToLoadDetailsPage(); // sleep until the specific detail fields have loaded
         } catch (Exception ex) {
-            Common.logError("Error: "+getPageName()+": Exception in waitToLoadDetailsPage: " + getUniqueKeyName() + " : " + name);
+            Common.logError("Error: " + getPageName() + ": Exception in waitToLoadDetailsPage: " + getUniqueKeyName() + " : " + name + " Exception: " + ex.getMessage());
         }
 
         boolean pass = true;
@@ -272,7 +283,7 @@ public abstract class BaseTableTest<T> {
 
             WebElement columnHeader = Common.driver.findElement(By.xpath("//*[@*[.='" + columnKey + "']]"));
 
-            String oldSortOrder = getSortOrderForColumnHeader(columnHeader);
+            String oldSortOrder = columnHeader.getAttribute("aria-sort");
 
             columnHeader.click();
 
@@ -285,25 +296,6 @@ public abstract class BaseTableTest<T> {
         return null;
     }
 
-    private String getSortOrderForColumnHeader(WebElement columnHeader) {
-
-        String[] attributes = Common.getAttributeList(columnHeader, getPageName());
-        String sortValue = null;
-
-        // Iterate through the list to find the attribute containing "sort"
-        for (String attribute : attributes) {
-            if (attribute.contains("sort")) {
-                String[] parts = attribute.split("=", 2);
-                if (parts.length == 2) {
-                    sortValue = parts[1].replaceAll("['\"]", "");
-                    break;
-                }
-            }
-        }
-
-        return sortValue;
-    }
-
     private String waitToLoadChangedSortOrder(String oldSortOrder, String columnKey) {
 
         int waitTimeInSecs = Config.WAIT_TIME_IN_SECONDS;
@@ -314,7 +306,7 @@ public abstract class BaseTableTest<T> {
 
             WebElement columnHeaderNew = Common.driver.findElement(By.xpath("//*[@*[.='" + columnKey + "']]"));
 
-            newSortOrder = getSortOrderForColumnHeader(columnHeaderNew);
+            newSortOrder = columnHeaderNew.getAttribute("aria-sort");
 
             if (!Objects.equals(newSortOrder, oldSortOrder)) {
                 break;
@@ -465,7 +457,8 @@ public abstract class BaseTableTest<T> {
     private void clickDropdown(int numOfItemsJSON) {
 
         try {
-            WebElement dropdown = Common.driver.findElement(By.id("pageSize"));
+
+            WebElement dropdown = Common.waitForElement(By.id("pageSize"));
             dropdown.click();
 
             WebDriverWait wait = new WebDriverWait(Common.driver, Duration.ofSeconds(Config.WAIT_TIME_THRESHOLD_IN_SECONDS));
@@ -511,6 +504,10 @@ public abstract class BaseTableTest<T> {
         }
 
         return "";
+    }
+
+    protected WebElement getSaveButtonWebElementDetailsPage() {
+        return Common.waitForElement(By.xpath("//button//*[text()='" + getSaveButtonDetailsPage() + "']/../../.."));
     }
 
     private void testForAllText() {

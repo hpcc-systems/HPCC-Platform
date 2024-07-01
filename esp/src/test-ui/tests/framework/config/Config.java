@@ -20,4 +20,8 @@ public class Config {
     public static final int MALFORMED_TIME_STRING = -1;
     public static final int WAIT_TIME_IN_SECONDS = 1;
     public static final int WAIT_TIME_THRESHOLD_IN_SECONDS = 10;
+    public static final String TEST_DESCRIPTION_TEXT = "Testing Description";
+    public static final boolean TEST_WU_DETAIL_PAGE_FIELD_NAMES_ALL = false;
+    public static final boolean TEST_WU_DETAIL_PAGE_DESCRIPTION_ALL = false;
+    public static final boolean TEST_WU_DETAIL_PAGE_PROTECTED_ALL = false;
 }
