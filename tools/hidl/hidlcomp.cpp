@@ -4059,8 +4059,6 @@ void EspServInfo::write_esp_binding_ipp()
         outf("#endif\n");
     }
 
-    outs("\tstd::map<std::string, std::string> m_qualifiedMethodNames;\n");
-
     outs("};\n\n");
 }
 
