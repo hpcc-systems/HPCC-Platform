@@ -1,0 +1,522 @@
+package framework.pages;
+
+import framework.config.Config;
+import framework.utility.Common;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
+
+import java.time.Duration;
+import java.util.*;
+import java.util.function.Function;
+
+
+// This class is the super class for all the those web pages that contains a tabular data for e.g. workunits, files, queries etc. It also contains the tests for their respective details page including testing text, content and tabs.
+
+public abstract class BaseTableTest<T> {
+
+    protected abstract String getPageName();
+
+    protected abstract String getPageUrl();
+
+    protected abstract String getJsonFilePath();
+
+    protected abstract String getSaveButtonDetailsPage();
+
+    protected abstract String[] getColumnNames();
+
+    protected abstract String[] getDetailNames();
+
+    protected abstract String[] getColumnKeys();
+
+    protected abstract String[] getDetailKeys();
+
+    protected abstract String getCheckboxTypeForDetailsPage();
+
+    protected abstract String getAttributeTypeForDetailsPage();
+
+    protected abstract String getAttributeValueForDetailsPage();
+
+    protected abstract String[] getDetailKeysForPageLoad();
+
+    protected abstract String getUniqueKeyName();
+
+    protected abstract String getUniqueKey();
+
+    protected abstract String[] getColumnKeysWithLinks();
+
+    protected abstract Object parseDataUIValue(Object dataUIValue, Object dataJSONValue, String columnName, Object dataIDUIValue);
+
+    protected abstract Object parseDataJSONValue(Object dataJSONValue, String columnName, Object dataIDUIValue);
+
+    protected abstract List<T> parseJson(String filePath) throws Exception;
+
+    protected abstract Object getColumnDataFromJson(T object, String columnKey);
+
+    protected abstract void sortJsonUsingSortOrder(String currentSortOrder, String columnKey);
+
+    protected abstract String getCurrentPage();
+
+    protected abstract Map<String, T> getJsonMap();
+
+    protected abstract void testDetailSpecificFunctionality(String name, int i);
+
+    protected List<T> jsonObjects;
+
+    protected void testPage() {
+        Common.openWebPage(getPageUrl());
+
+        try {
+            Common.logDebug("Tests started for: " + getPageName() + " page.");
+
+            testForAllText();
+
+            jsonObjects = getAllObjectsFromJson();
+            if (jsonObjects != null) {
+
+                int numOfItemsJSON = jsonObjects.size();
+                clickDropdown(numOfItemsJSON);
+
+                testContentAndSortingOrder();
+            }
+
+            testLinksInTable();
+
+            Common.logDebug("Tests finished for: " + getPageName() + " page.");
+
+        } catch (Exception ex) {
+            Common.logError(ex.getMessage());
+        }
+    }
+
+    private void testDetailsPage(String name, int i) {
+
+        if (!Config.TEST_WU_DETAIL_PAGE_FIELD_NAMES_ALL && i == 0) {
+            testForAllTextInDetailsPage(name);
+        } else if (Config.TEST_WU_DETAIL_PAGE_FIELD_NAMES_ALL) {
+            testForAllTextInDetailsPage(name);
+        }
+
+        testDetailsContentPage(name);
+        testDetailSpecificFunctionality(name, i);
+    }
+
+    protected void clickOnSaveButton() {
+
+        WebElement saveButton = getSaveButtonWebElementDetailsPage();
+        Common.waitForElementToBeClickable(saveButton);
+        saveButton.click();
+
+        saveButton = getSaveButtonWebElementDetailsPage();
+        Common.waitForElementToBeDisabled(saveButton);
+    }
+
+    private void testLinksInTable() {
+
+        Common.logDebug("Tests started for: " + getPageName() + " page: Testing Links");
+
+        for (String columnKey : getColumnKeysWithLinks()) {
+
+            List<Object> values = getDataFromUIUsingColumnKey(columnKey);
+
+            for (int i = 0; i < values.size(); i++) {
+
+                try {
+                    String name = values.get(i).toString().trim();
+
+                    WebElement element = Common.waitForElement(By.xpath("//div[text()='" + name + "']/.."));
+                    String href = element.findElement(By.tagName("a")).getAttribute("href");
+
+                    String dropdownValueBefore = getSelectedDropdownValue();
+
+                    element.click();
+
+                    if (Common.driver.getPageSource().contains(name)) {
+                        String msg = "Success: " + getPageName() + ": Link Test Pass for " + (i + 1) + ". " + name + ". URL : " + href;
+                        Common.logDetail(msg);
+                        // after the link test has passed, the code tests the details page(including, the text, content and tabs) it has landed on
+                        testDetailsPage(name, i);
+
+                    } else {
+                        String currentPage = getCurrentPage();
+                        String errorMsg = "Failure: " + getPageName() + ": Link Test Fail for " + (i + 1) + ". " + name + " page failed. The current navigation page that we landed on is " + currentPage + ". Current URL : " + href;
+                        Common.logError(errorMsg);
+                    }
+
+                    Common.driver.navigate().to(getPageUrl());
+                    Common.driver.navigate().refresh();
+
+                    String dropdownValueAfter = getSelectedDropdownValue();
+
+                    // Log error if the dropdown value has changed
+                    if (!dropdownValueBefore.equals(dropdownValueAfter)) {
+                        String dropdownErrorMsg = "Failure: " + getPageName() + ": Dropdown value changed after navigating back. Before: " + dropdownValueBefore + ", After: " + dropdownValueAfter;
+                        Common.logError(dropdownErrorMsg);
+                    }
+                } catch (Exception ex) {
+                    Common.logError("Failure: " + getPageName() + ": Exception in testing links for column: " + columnKey + " value: " + values.get(i) + " Error: " + ex.getMessage());
+                }
+            }
+        }
+    }
+
+    protected void waitToLoadDetailsPage() {
+
+        int waitTimeInSecs = Config.WAIT_TIME_IN_SECONDS;
+
+        boolean allVisible;
+
+        do {
+            Common.sleepWithTime(waitTimeInSecs);
+            allVisible = true;
+
+            for (String detailKey : getDetailKeysForPageLoad()) {
+                WebElement element = Common.waitForElement(By.id(detailKey));
+                if ("".equals(element.getAttribute(getAttributeValueForDetailsPage()))) {
+                    allVisible = false;
+                    break;
+                }
+            }
+
+            if (allVisible) {
+                break;
+            }
+
+            waitTimeInSecs++;
+
+        } while (waitTimeInSecs < Config.WAIT_TIME_THRESHOLD_IN_SECONDS);
+
+        Common.logDebug("Sleep Time In Seconds To Load Details Page: " + waitTimeInSecs);
+    }
+
+    private void testDetailsContentPage(String name) {
+        Common.logDebug("Tests started for : " + getPageName() + " Details page content: " + getUniqueKeyName() + " : " + name);
+        try {
+            waitToLoadDetailsPage(); // sleep until the specific detail fields have loaded
+        } catch (Exception ex) {
+            Common.logError("Error: " + getPageName() + ": Exception in waitToLoadDetailsPage: " + getUniqueKeyName() + " : " + name + " Exception: " + ex.getMessage());
+        }
+
+        boolean pass = true;
+
+        T object = getJsonMap().get(name);
+
+        for (String detailKey : getDetailKeys()) {
+            try {
+                WebElement element = Common.waitForElement(By.id(detailKey));
+
+                Object dataUIValue, dataJSONValue;
+
+                if (element.getAttribute(getAttributeTypeForDetailsPage()).equals(getCheckboxTypeForDetailsPage())) {
+                    dataUIValue = element.isSelected();
+                } else {
+                    dataUIValue = element.getAttribute(getAttributeValueForDetailsPage());
+                }
+
+                dataJSONValue = getColumnDataFromJson(object, detailKey);
+
+                dataUIValue = parseDataUIValue(dataUIValue, dataJSONValue, detailKey, name);
+                dataJSONValue = parseDataJSONValue(dataJSONValue, detailKey, name);
+
+                if (!dataUIValue.equals(dataJSONValue)) {
+                    Common.logError("Failure: " + getPageName() + " Details page, Incorrect " + detailKey + " : " + dataUIValue + " in UI for " + getUniqueKeyName() + " : " + name + ". Correct " + detailKey + " is: " + dataJSONValue);
+                    pass = false;
+                }
+
+            } catch (Exception ex) {
+                Common.logError("Error: Details " + getPageName() + "Page, for: " + getUniqueKeyName() + " : " + name + " Error: " + ex.getMessage());
+            }
+        }
+
+        if (pass) {
+            Common.logDetail("Success: " + getPageName() + " Details page: All values test passed for: " + getUniqueKeyName() + " : " + name);
+        }
+    }
+
+    private void testForAllTextInDetailsPage(String name) {
+        Common.logDebug("Tests started for: " + getPageName() + " Details page: " + getUniqueKeyName() + ": " + name + " Testing Text");
+        for (String text : getDetailNames()) {
+            Common.checkTextPresent(text, getPageName() + " Details page: " + getUniqueKeyName() + ": " + name);
+        }
+    }
+
+    private void testContentAndSortingOrder() {
+
+        Common.logDebug("Tests started for: " + getPageName() + " page: Testing Content");
+
+        if (testTableContent()) {
+
+            Common.logDebug("Tests started for: " + getPageName() + " page: Testing Sorting Order");
+
+            for (int i = 0; i < getColumnKeys().length; i++) {
+                testTheSortingOrderForOneColumn(getColumnKeys()[i], getColumnNames()[i]);
+            }
+        }
+    }
+
+    private void testTheSortingOrderForOneColumn(String columnKey, String columnName) {
+        for (int i = 0; i < 3; i++) {
+
+            String currentSortOrder = getCurrentSortingOrder(columnKey);
+            if (currentSortOrder != null) {
+                List<Object> columnDataFromUI = getDataFromUIUsingColumnKey(columnKey);
+
+                sortJsonUsingSortOrder(currentSortOrder, columnKey);
+
+                List<Object> columnDataFromJSON = getDataFromJSONUsingColumnKey(columnKey);
+                List<Object> columnDataIDFromUI = getDataFromUIUsingColumnKey(getUniqueKey());
+
+                if (compareData(columnDataFromUI, columnDataFromJSON, columnDataIDFromUI, columnName)) {
+                    Common.logDebug("Success: " + getPageName() + ": Values are correctly sorted in " + currentSortOrder + " order by: " + columnName);
+                } else {
+                    String errMsg = "Failure: " + getPageName() + ": Values are not correctly sorted in " + currentSortOrder + " order by: " + columnName;
+                    Common.logError(errMsg);
+                }
+            } else {
+                Common.logError("Failure: " + getPageName() + " Unable to get sort order for column: " + columnKey);
+            }
+        }
+    }
+
+    private String getCurrentSortingOrder(String columnKey) {
+
+        try {
+
+            WebElement columnHeader = Common.driver.findElement(By.xpath("//*[@*[.='" + columnKey + "']]"));
+
+            String oldSortOrder = columnHeader.getAttribute("aria-sort");
+
+            columnHeader.click();
+
+            return waitToLoadChangedSortOrder(oldSortOrder, columnKey);
+
+        } catch (Exception ex) {
+            Common.logError("Failure: " + getPageName() + " Exception in getting sort order for column: " + columnKey + " Error: " + ex.getMessage());
+        }
+
+        return null;
+    }
+
+    private String waitToLoadChangedSortOrder(String oldSortOrder, String columnKey) {
+
+        int waitTimeInSecs = Config.WAIT_TIME_IN_SECONDS;
+        String newSortOrder;
+
+        do {
+            Common.sleepWithTime(waitTimeInSecs);
+
+            WebElement columnHeaderNew = Common.driver.findElement(By.xpath("//*[@*[.='" + columnKey + "']]"));
+
+            newSortOrder = columnHeaderNew.getAttribute("aria-sort");
+
+            if (!Objects.equals(newSortOrder, oldSortOrder)) {
+                break;
+            }
+
+            waitTimeInSecs++;
+
+        } while (waitTimeInSecs < Config.WAIT_TIME_THRESHOLD_IN_SECONDS);
+
+        return newSortOrder;
+    }
+
+    private List<Object> getDataFromJSONUsingColumnKey(String columnKey) {
+        List<Object> columnDataFromJSON = new ArrayList<>();
+        for (T jsonObject : jsonObjects) {
+            columnDataFromJSON.add(getColumnDataFromJson(jsonObject, columnKey));
+        }
+        return columnDataFromJSON;
+    }
+
+    protected List<Object> getDataFromUIUsingColumnKey(String columnKey) {
+
+        List<Object> columnData = new ArrayList<>();
+
+        try {
+
+            List<WebElement> elements = waitToLoadListOfAllUIObjects(columnKey);
+            for (int i = 1; i < elements.size(); i++) { // first element fetched is of column header, so we fetch values from 2nd element.
+                columnData.add(elements.get(i).getText().trim());
+            }
+
+        } catch (Exception ex) {
+            Common.logError("Failure: " + getPageName() + ": Error in getting data from UI using column key: " + columnKey + "Error: " + ex.getMessage());
+        }
+
+        return columnData;
+    }
+
+    private List<WebElement> waitToLoadListOfAllUIObjects(String columnKey) {
+
+        int waitTimeInSecs = Config.WAIT_TIME_IN_SECONDS;
+        List<WebElement> elements;
+
+        do {
+            elements = Common.driver.findElements(By.xpath("//*[@*[.='" + columnKey + "']]"));
+
+            if (elements.size() - 1 >= jsonObjects.size()) { // first element fetched is of column header, so we do -1 from total elements
+                break;
+            }
+
+            Common.sleepWithTime(waitTimeInSecs++);
+
+        } while (waitTimeInSecs < Config.WAIT_TIME_THRESHOLD_IN_SECONDS);
+
+        return elements;
+    }
+
+    void ascendingSortJson(String columnKey) {
+        try {
+            jsonObjects.sort(Comparator.comparing(jsonObject -> (Comparable) getColumnDataFromJson(jsonObject, columnKey)));
+        } catch (Exception ex) {
+            Common.logError("Failure: " + getPageName() + ": Exception in sorting JSON in ascending order using column key: " + columnKey + " Error: " + ex.getMessage());
+        }
+    }
+
+    void descendingSortJson(String columnKey) {
+        try {
+            jsonObjects.sort(Comparator.comparing((Function<T, Comparable>) jsonObject -> (Comparable) getColumnDataFromJson(jsonObject, columnKey)).reversed());
+        } catch (Exception ex) {
+            Common.logError("Failure: " + getPageName() + ": Exception in sorting JSON in descending order using column key: " + columnKey + " Error: " + ex.getMessage());
+        }
+    }
+
+    private boolean testTableContent() {
+        Common.logDebug("Page: " + getPageName() + ": Number of Objects from Json: " + jsonObjects.size());
+
+        List<Object> columnDataIDFromUI = getDataFromUIUsingColumnKey(getUniqueKey());
+
+        Common.logDebug("Page: " + getPageName() + ": Number of Objects from UI: " + columnDataIDFromUI.size());
+
+        if (jsonObjects.size() != columnDataIDFromUI.size()) {
+            String errMsg = "Failure: " + getPageName() + ": Number of items on UI are not equal to the number of items in JSON" +
+                    "\nNumber of Objects from Json: " + jsonObjects.size() +
+                    "\nNumber of Objects from UI: " + columnDataIDFromUI.size();
+            Common.logError(errMsg);
+            return false;
+        }
+
+        boolean pass = true;
+
+        for (int i = 0; i < getColumnKeys().length; i++) {
+            List<Object> columnDataFromUI = getDataFromUIUsingColumnKey(getColumnKeys()[i]);
+            List<Object> columnDataFromJSON = getDataFromJSONUsingColumnKey(getColumnKeys()[i]);
+            if (!compareData(columnDataFromUI, columnDataFromJSON, columnDataIDFromUI, getColumnNames()[i])) {
+                pass = false;
+            }
+        }
+
+        return pass;
+    }
+
+    private List<T> getAllObjectsFromJson() {
+        String filePath = getJsonFilePath();
+        try {
+            return parseJson(filePath);
+        } catch (Exception ex) {
+            Common.logError("Failure: " + getPageName() + " Unable to parse JSON File: Exception: " + ex.getMessage());
+        }
+
+        return null;
+    }
+
+    private boolean compareData(List<Object> dataUI, List<Object> dataJSON, List<Object> dataIDUI, String columnName) {
+
+        boolean pass = true;
+
+        for (int i = 0; i < dataUI.size(); i++) {
+
+            Object dataUIValue = dataUI.get(i);
+            Object dataJSONValue = dataJSON.get(i);
+            Object dataIDUIValue = dataIDUI.get(i);
+
+            dataUIValue = parseDataUIValue(dataUIValue, dataJSONValue, columnName, dataIDUIValue);
+            dataJSONValue = parseDataJSONValue(dataJSONValue, columnName, dataIDUIValue);
+
+            if (!checkValues(dataUIValue, dataJSONValue, dataIDUIValue, columnName)) {
+                pass = false;
+            }
+        }
+
+        if (pass) {
+            Common.logDetail("Success: " + getPageName() + ": Content test passed for column: " + columnName);
+        }
+
+        return pass;
+    }
+
+    private boolean checkValues(Object dataUIValue, Object dataJSONValue, Object dataIDUIValue, String columnName) {
+        if (!dataUIValue.equals(dataJSONValue)) {
+            String errMsg = "Failure: " + getPageName() + ": Incorrect " + columnName + " : " + dataUIValue + " in UI for " + getUniqueKeyName() + " : " + dataIDUIValue + ". Correct " + columnName + " is: " + dataJSONValue;
+            Common.logError(errMsg);
+            return false;
+        }
+
+        return true;
+    }
+
+    private void clickDropdown(int numOfItemsJSON) {
+
+        try {
+
+            WebElement dropdown = Common.waitForElement(By.id("pageSize"));
+            dropdown.click();
+
+            WebDriverWait wait = new WebDriverWait(Common.driver, Duration.ofSeconds(Config.WAIT_TIME_THRESHOLD_IN_SECONDS));
+
+            WebElement dropdownList = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("pageSize-list")));
+
+            List<WebElement> options = dropdownList.findElements(By.tagName("button"));
+
+            int selectedValue = Config.dropdownValues[0];
+
+            // the smallest dropdown value greater than numOfItemsJSON
+            for (int value : Config.dropdownValues) {
+                if (numOfItemsJSON < value) {
+                    selectedValue = value;
+                    break;
+                }
+            }
+
+            for (WebElement option : options) {
+                if (option.getText().equals(String.valueOf(selectedValue))) {
+                    option.click();
+                    break;
+                }
+            }
+
+            wait.until(ExpectedConditions.invisibilityOfElementLocated(By.id("pageSize-list")));
+
+            Common.logDebug("Page: " + getPageName() + ": Dropdown selected: " + selectedValue);
+
+            Common.driver.navigate().refresh();
+            Common.sleep();
+        } catch (Exception ex) {
+            Common.logError("Failure: " + getPageName() + ": Error in clicking dropdown: " + ex.getMessage());
+        }
+    }
+
+    private String getSelectedDropdownValue() {
+        try {
+            WebElement dropdown = Common.waitForElement(By.id("pageSize"));
+            return dropdown.getText().trim();
+        } catch (Exception ex) {
+            Common.logError("Failure: " + getPageName() + ": Error in getting dropdown value: " + ex.getMessage());
+        }
+
+        return "";
+    }
+
+    protected WebElement getSaveButtonWebElementDetailsPage() {
+        return Common.waitForElement(By.xpath("//button//*[text()='" + getSaveButtonDetailsPage() + "']/../../.."));
+    }
+
+    private void testForAllText() {
+        Common.logDebug("Tests started for: " + getPageName() + " page: Testing Text");
+        for (String text : getColumnNames()) {
+            Common.checkTextPresent(text, getPageName());
+        }
+    }
+}
+
