@@ -1,0 +1,241 @@
+name: Test Hyperlinks 
+
+on: 
+  pull_request:
+    branches:
+      - "master"
+      - "candidate-*"
+      - "!candidate-9.4.*"
+      - "!candidate-9.2.*"
+      - "!candidate-9.0.*"
+      - "!candidate-8.*"
+      - "!candidate-7.*"
+      - "!candidate-6.*"
+  workflow_dispatch: 
+    inputs: 
+      Debug-Mode:
+        type: boolean
+        description:  Run in Debug mode to upload all created files
+        default: false
+        required: false
+        
+jobs:
+  main:
+    runs-on: ubuntu-22.04
+    steps: 
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      
+      - name: List Documentation files
+        run: |
+          if [[ ${{ github.event_name }} == "workflow_dispatch" ]]; then
+            find $PWD -name '*.xml' -type f > xmlFilesList.txt
+            find $PWD -name '*.md' -type f > mdFilesList.txt
+            find $PWD -name '*.rst' -type f > rstFilesList.txt
+          else 
+            git diff --name-only HEAD^1 HEAD > updatedFiles.txt
+            cat updatedFiles.txt | grep -E "*.xml" | tee xmlFilesList.txt 1>&/dev/null
+            cat updatedFiles.txt | grep -E "*.md"  | tee mdFilesList.txt 1>&/dev/null
+            cat updatedFiles.txt | grep -E "*.rst" | tee rstFilesList.txt 1>&/dev/null
+          fi  
+        continue-on-error: true   
+
+      - name: List links from Documentation files
+        run: |
+          IFS=$'\n'
+          for FILE in $( cat xmlFilesList.txt )
+          do 
+            #check if the file is missing
+            if [[ ! -f $FILE ]]; then
+              echo -e "$FILE -\e[31m file missing\e[0m" 
+              echo $FILE >> missingFiles.txt
+              continue
+            fi  
+            grep -onHE -e "<ulink" -e 'url="http[^\"\]+' -e "</ulink>" ${FILE} | sed 's/url="//' > links.tmp
+            FLAG=0
+            for LINE in $( cat links.tmp )
+            do 
+              LINK=$( echo $LINE | cut -d ':' -f3- ) 
+              if [[ ${LINK:0:6} == '<ulink' ]]; then 
+                FLAG=1
+                continue 
+              elif [[  ${LINK:0:8} == '</ulink>' ]]; then 
+                FLAG=0
+                continue
+              fi
+              if [[ $FLAG -eq 1 ]]; then
+                echo $LINE >> linksList.txt
+              fi
+            done  
+          done
+          for FILE in $( cat mdFilesList.txt )
+          do
+            #check if the file is missing
+            if [[ ! -f $FILE ]]; then
+              echo -e "$FILE -\e[31m file missing\e[0m" 
+              echo $FILE >> missingFiles.txt
+              continue
+            fi  
+            grep -onHE -e "\]\([^\)]+" -e "\`\`\`[^\`]*" -e "http://[^\ \;\"\'\<\>\]\[\,\`\)]+" -e "https://[^\ \;\"\'\<\>\]\[\,\`\)]+" ${FILE} | sed 's/](//'  > links.tmp
+            FLAG=0
+            for LINE in $( cat links.tmp )
+            do 
+              LINK=$( echo $LINE | cut -d ':' -f3- ) 
+              if [[ ${LINK:0:3} == '```' ]]; then 
+                FLAG=$(( 1 - FLAG ))
+                continue
+              fi
+              if [[ $FLAG -eq 0 ]]; then
+                echo $LINE >> linksList.txt
+              fi
+            done
+          done
+
+          for FILE in $( cat rstFilesList.txt )
+          do 
+            #check if the file is missing
+            if [[ ! -f $FILE ]]; then
+              echo -e "$FILE -\e[31m file missing\e[0m" 
+              echo $FILE >> missingFiles.txt
+              continue
+            fi  
+            grep -onHE -e ".. _[^\]+" -e "http://[^\ \;\"\'\<\>\,\`\)]+" -e "https://[^\ \;\"\'\<\>\,\`\)]+" ${FILE} | sed 's/.. _[^\:]*: //' >> linksList.txt 
+          done
+
+          if [[ -f linksList.txt ]]; then
+            cat linksList.txt | grep -vE '127.0.0.1|localhost|\$|\[' | grep -E 'https://|http://' | tee externalLinks.txt 1>&/dev/null
+            cat linksList.txt | grep -vE '127.0.0.1|localhost|\$|\[' | grep -vE 'https://|http://' | tee internalLinks.txt 1>&/dev/null
+          fi
+    
+      - name: Test External links
+        run: |
+          touch checkedLinksCache.txt
+          IFS=$'\n'
+          if [[ -f externalLinks.txt ]]; then
+            for LINE in $(cat externalLinks.txt )
+            do 
+              LINK=$( echo $LINE | cut -d ':' -f3- )
+              LINK=${LINK%.} #remove trailing dot(.)
+              LINK=${LINK% } #remove trailing space
+              CHECK_CACHE=$( cat checkedLinksCache.txt | grep "$LINK~" | wc -w )
+              TRY=3   #Max attempts to check status code of hyperlinks
+              if [[ $CHECK_CACHE -eq 0  ]]; then
+                while [[ $TRY -ne 0 ]]
+                do
+                  STATUS_CODE=$(curl -LI -m 60 -s $LINK | grep "HTTP/" | tail -1 | cut -d' ' -f2 ) 
+                  if [[ -n $STATUS_CODE ]]; then
+                    echo "$LINK~$STATUS_CODE" >> checkedLinksCache.txt
+                    break
+                  else  
+                    echo $LINE
+                    echo "retrying..."
+                    TRY=$(( TRY - 1))
+                  fi
+                done
+              else
+                  STATUS_CODE=$( cat checkedLinksCache.txt | grep "$LINK~" | cut -d '~' -f2 )
+              fi
+              if [[ $STATUS_CODE -eq 404 ]]; then 
+                echo -e "${LINK} - \e[31m404 Error\e[0m"
+                echo "${LINE}" >> error-report.log
+              elif [[ ! -n $STATUS_CODE ]]; then
+                echo -e "${LINK} - \e[31mNo Response\e[0m"
+                echo "${LINE}(No-Response)" >> error-report.log
+              else
+                echo "${LINK} - ${STATUS_CODE}" 
+              fi
+            done
+          fi
+          
+      - name: Test Internal Links
+        run: |
+          if [[ -f internalLinks.txt ]]; then
+            for LINE in $( cat internalLinks.txt )
+            do 
+              REFERENCE=$( echo $LINE | cut -d ':' -f3- )
+              FILE=$( echo $LINE | cut -d ':' -f1 )
+              if [[ ${REFERENCE:0:1} == '#' ]]; then 
+                LINK_TEXT=$( cat $FILE | grep  -oE "\[.*\]\(${REFERENCE}\)" | sed 's/\[//' | cut -d ']' -f1 )
+                IS_PRESENT=$(cat $FILE | grep -oE "# ${LINK_TEXT}" | wc -w)
+                if [[ $IS_PRESENT -eq 0 ]]; then 
+                  echo -e "${LINE} -\e[31m invalid reference\e[0m" 
+                  echo "${LINE}" >> error-report.log
+                fi
+              else 
+                if [[ ${REFERENCE:0:1} == '/' ]]; then
+                  BASE_DIR=$PWD
+                else
+                  BASE_DIR=${FILE/$( basename $FILE )}
+                fi
+                SEARCH_FILE="$BASE_DIR/${REFERENCE}"
+                SEARCH_FILE=$( realpath $SEARCH_FILE )
+                if [[ ! -f $SEARCH_FILE ]]; then 
+                  echo -e "${LINE} -\e[31m invalid reference\e[0m" 
+                  echo ${LINE/$REFERENCE/$SEARCH_FILE} >> error-report.log
+                fi
+              fi
+            done
+          fi
+
+      - name: Report Error links
+        run: | 
+          if [[ -f error-report.log ]]; then 
+            NUMBER_OF_404_LINKS=$( cat error-report.log | wc -l )
+          fi
+          echo -e "\e[32mNo. of files scanned : $( cat *FilesList.txt | wc -l )\e[0m"
+          if [[ $NUMBER_OF_404_LINKS -ne 0 ]]; then
+            echo -e "\e[31mNo. of unique broken links : $( cat error-report.log | cut -d: -f3- | sort | uniq | wc -l )\e[0m"
+            echo -e "\e[31mTotal No. of reference to broken links : $( cat error-report.log | cut -d: -f3- | sort | wc -l )\e[0m"
+            exit -1  
+          else
+            echo -e "\e[32mNo Broken-links found\e[0m"
+          fi
+
+      - name: Modify log file
+        if: ${{ failure() || cancelled() }}
+        run: | 
+          BASE_DIR=${PWD%$(basename $PWD)}
+          BASE_DIR=$(echo $BASE_DIR | sed 's/\//\\\//g') 
+          sed -i "s/${BASE_DIR}//g" error-report.log
+          FILE_NAMES_LIST=$(cat error-report.log  | cut -d ':' -f1 | sort | uniq )
+          FILE_COUNT=1
+          for LINE in $FILE_NAMES_LIST
+          do 
+            LINKS_LIST=$( cat error-report.log | grep $LINE | cut -d ':' -f2- ) 
+            echo "$FILE_COUNT. $LINE" >> error-reportTmp.log
+            FILE_COUNT=$(( FILE_COUNT + 1))
+            for LINK in $LINKS_LIST
+            do 
+              echo -e "\t Line $LINK" | sed 's/:/ : /' >> error-reportTmp.log
+            done
+          done
+          if [[ $(cat missingFiles.txt | wc -w ) -eq 0 ]]; then 
+            echo -e "Broken links: \n" > error-report.log
+            cat error-reportTmp.log >> error-report.log
+          else 
+            echo -e "Missing Files: \n" > error-report.log
+            cat missingFiles.txt >> error-report.log
+            echo -e "Broken links: \n" >> error-report.log
+            cat error-reportTmp.log >> error-report.log
+          fi 
+          if [[ ${{ github.event_name }} == "pull_request" || ${{ inputs.Debug-Mode }} == false ]]; then 
+            rm -rf *FilesList.txt \
+                checkedLinksCache.txt \
+                *Links.txt \
+                linksList.txt \
+          fi
+          
+      - name: Upload logs
+        uses: actions/upload-artifact@v4
+        if: ${{ failure() || cancelled() }}
+        with:
+          name: Hyperlinks-testing-log
+          path: |
+            /home/runner/work/HPCC-Platform/HPCC-Platform/error-report.log
+            /home/runner/work/HPCC-Platform/HPCC-Platform/*FilesList.txt
+            /home/runner/work/HPCC-Platform/HPCC-Platform/checkedLinksCache.txt
+            /home/runner/work/HPCC-Platform/HPCC-Platform/*Links.txt
+            /home/runner/work/HPCC-Platform/HPCC-Platform/linksList.txt
+          if-no-files-found: ignore
