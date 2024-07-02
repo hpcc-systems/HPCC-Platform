@@ -1590,7 +1590,7 @@ prometheusMetricsReporter: "yes"
 {{- end -}}
 
 {{/*
-Return access permssions for a given service
+Return access permissions for a given service
 */}}
 {{- define "hpcc.getSashaServiceAccess" }}
 {{- if (eq "coalescer" .name) -}}
@@ -1605,6 +1605,8 @@ dali
 dali data
 {{- else if (eq "thor-qmon" .name) -}}
 dali queues
+{{- else if (eq "xref" .name) -}}
+dali dalidata
 {{- else -}}
 {{- $_ := fail (printf "Unknown sasha service:" .name ) -}}
 {{- end -}}

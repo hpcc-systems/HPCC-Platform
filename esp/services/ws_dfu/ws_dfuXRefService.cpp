@@ -599,11 +599,25 @@ bool CWsDfuXRefEx::onDFUXRefList(IEspContext &context, IEspDFUXRefListRequest &r
 {
     try
     {
-#ifdef _CONTAINERIZED
-        IERRLOG("CONTAINERIZED(CWsDfuXRefEx::onDFUXRefList)");
-#else
         context.ensureFeatureAccess(XREF_FEATURE_URL, SecAccess_Read, ECLWATCH_DFU_XREF_ACCESS_DENIED, "WsDfuXRef::DFUXRefList: Permission denied.");
 
+#ifdef _CONTAINERIZED
+        DBGLOG("CONTAINERIZED(CWsDfuXRefEx::onDFUXRefList)");
+        Owned<IPropertyTreeIterator> planesIter = getPlanesIterator("data", nullptr);
+
+        BoolHash uniquePlanes;
+        Owned<IPropertyTree> xrefNodeTree = createPTree("XRefNodes");
+
+        ForEach(*planesIter)
+        {
+            IPropertyTree &item = planesIter->query();
+
+            addUniqueXRefNode(item.queryProp("@name"), uniquePlanes, xrefNodeTree);
+        }
+
+        StringBuffer buf;
+        resp.setDFUXRefListResult(formatResult(context, xrefNodeTree, buf));
+#else
         CConstWUClusterInfoArray clusters;
         getEnvironmentClusterInfo(clusters);
 
