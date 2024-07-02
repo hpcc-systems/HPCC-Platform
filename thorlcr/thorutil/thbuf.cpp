@@ -424,6 +424,13 @@ public:
     {
         return this;
     }
+    virtual unsigned __int64 getStatistic(StatisticKind kind) const override
+    {
+        if (tempFileIO)
+            return tempFileIO->getStatistic(kind);
+        else
+            return 0;
+    }
 };
 
 
@@ -607,6 +614,10 @@ public:
     {
         return this;
     }
+    virtual unsigned __int64 getStatistic(StatisticKind kind) const override
+    {
+        return 0;
+    }
 };
 
 
@@ -735,6 +746,7 @@ class CCompressedSpillingRowStream: public CSimpleInterfaceOf<ISmartRowBuffer>, 
     RowEntry readFromStreamMarker = { nullptr, 0, 0 };
 
     // misc
+    CRuntimeStatisticCollection inactiveStats;
     bool grouped = false; // ctor input parameter
     CriticalSection readerWriterCS;
 #ifdef STRESSTEST_SPILLING_ROWSTREAM
@@ -757,6 +769,9 @@ class CCompressedSpillingRowStream: public CSimpleInterfaceOf<ISmartRowBuffer>, 
     }
     void createNextOutputStream()
     {
+        if (currentOutputIFileIO)
+            mergeRemappedStats(inactiveStats, currentOutputIFileIO, diskToSpillStatsMap);
+
         VStringBuffer tmpFilename("%s.%u", baseTmpFilename.get(), writeTempFileNum++);
         trace("WRITE: writing to %s", tmpFilename.str());
         Owned<IFile> iFile = createIFile(tmpFilename);
@@ -1008,7 +1023,8 @@ public:
 
     explicit CCompressedSpillingRowStream(CActivityBase *_activity, const char *_baseTmpFilename, bool _grouped, IThorRowInterfaces *rowIf, const LookAheadOptions &_options, ICompressHandler *_compressHandler)
         : activity(*_activity), baseTmpFilename(_baseTmpFilename), grouped(_grouped), options(_options), compressHandler(_compressHandler),
-          meta(rowIf->queryRowMetaData()), serializer(rowIf->queryRowSerializer()), allocator(rowIf->queryRowAllocator()), deserializer(rowIf->queryRowDeserializer())
+          meta(rowIf->queryRowMetaData()), serializer(rowIf->queryRowSerializer()), allocator(rowIf->queryRowAllocator()), deserializer(rowIf->queryRowDeserializer()),
+          inactiveStats(spillingWriteAheadStatistics)
     {
         size32_t minSize = meta->getMinRecordSize();
 
@@ -1055,6 +1071,13 @@ public:
     virtual IRowWriter *queryWriter() override
     {
         return this;
+    }
+    virtual unsigned __int64 getStatistic(StatisticKind kind) const
+    {
+        unsigned __int64 v = inactiveStats.queryStatistic(kind).get();
+        if (currentOutputIFileIO)
+            v += currentOutputIFileIO->getStatistic(kind);
+        return v;
     }
 // IRowStream
     virtual const void *nextRow() override
@@ -2151,21 +2174,9 @@ public:
     }
     virtual unsigned __int64 getStatistic(StatisticKind kind) const override
     {
-        switch (kind)
-        {
-            case StSizeSpillFile:
-                return tempFileIO->getStatistic(StSizeDiskWrite);
-            case StCycleDiskWriteIOCycles:
-            case StTimeDiskWriteIO:
-            case StSizeDiskWrite:
-                return 0;
-            case StNumSpills:
-                return 1;
-            case StTimeSpillElapsed:
-                return tempFileIO->getStatistic(StCycleDiskWriteIOCycles);
-            default:
-                return tempFileIO->getStatistic(kind);
-        }
+        if (kind==StNumSpills)
+            return 1;
+        return tempFileIO->getStatistic(kind);
     }
 };
 
@@ -2727,28 +2738,11 @@ public:
     }
     virtual unsigned __int64 getStatistic(StatisticKind kind) const override
     {
-        StatisticKind useKind;
-        switch (kind)
-        {
-            case StSizeSpillFile:
-                useKind = StSizeDiskWrite;
-                break;
-            case StCycleDiskWriteIOCycles:
-            case StTimeDiskWriteIO:
-            case StSizeDiskWrite:
-                return 0;
-            case StNumSpills:
-                return 1;
-            case StTimeSpillElapsed:
-                useKind = StCycleDiskWriteIOCycles;
-                break;
-            default:
-                useKind = kind;
-        }
-        unsigned __int64 v = 0;
+        if (kind==StNumSpills)
+            return 1;
+        unsigned __int64 v = inactiveStats.getStatisticValue(kind);
         if (likely(iFileIO))
-            v = iFileIO->getStatistic(useKind);
-        v += inactiveStats.getStatisticValue(useKind);
+            v = iFileIO->getStatistic(kind);
         return v;
     }
 };
