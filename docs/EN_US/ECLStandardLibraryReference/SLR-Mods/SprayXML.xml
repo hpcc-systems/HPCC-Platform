@@ -182,7 +182,9 @@
           <entry><emphasis>compress</emphasis></entry>
 
           <entry>Optional. A boolean TRUE or FALSE flag indicating whether to
-          compress the new file. If omitted, the default is FALSE.</entry>
+          compress the new file. If omitted, the default is TRUE in a
+          containerized deployment and FALSE in a bare-metal
+          deployment.</entry>
         </row>
 
         <row>
@@ -241,7 +243,7 @@
 
           <entry>Override the number of parts to be created when spraying. The
           default is 0 which means it will create the same number of parts as
-          the target cluster. </entry>
+          the target cluster.</entry>
         </row>
 
         <row>
