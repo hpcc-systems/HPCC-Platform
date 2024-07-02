@@ -1006,10 +1006,11 @@ ecl publish roxie ArchiveQuery.xml --query-name=FindPersonService --no-activate
                 </row>
 
                 <row>
-                  <entry>--wait=&lt;sec&gt;</entry>
+                  <entry>--wait=&lt;ms&gt;</entry>
 
-                  <entry>Maximum time to wait for cluster finish
-                  updating</entry>
+                  <entry>Maximum time (in milliseconds) to wait for cluster
+                  finish updating. Any value lower than the minimum of 1000 is
+                  ignored. </entry>
                 </row>
 
                 <row>
@@ -1594,8 +1595,9 @@ ecl run thor findperson.ecl -I C:\MyECL\
                 <row>
                   <entry>--wait=&lt;ms&gt;</entry>
 
-                  <entry>Maximum time to wait for cluster finish updating (in
-                  ms)</entry>
+                  <entry>Maximum time (in milliseconds) to wait for cluster
+                  finish updating. Any value lower than the minimum of 1000 is
+                  ignored. </entry>
                 </row>
 
                 <row>
@@ -2803,8 +2805,9 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
                 <row>
                   <entry>--wait=&lt;ms&gt;</entry>
 
-                  <entry>Maximum time to wait for cluster finish updating (in
-                  ms)</entry>
+                  <entry>Maximum time (in milliseconds) to wait for cluster
+                  finish updating. Any value lower than the minimum of 1000 is
+                  ignored. </entry>
                 </row>
 
                 <row>
@@ -3363,10 +3366,11 @@ ecl queries copy-set roxie1 roxie2 --clone-active-state</programlisting>
                 </row>
 
                 <row>
-                  <entry>--wait=&lt;sec&gt;</entry>
+                  <entry>--wait=&lt;ms&gt;</entry>
 
-                  <entry>Maximum time to wait for cluster finish updating (in
-                  ms)</entry>
+                  <entry>Maximum time (in milliseconds) to wait for cluster
+                  finish updating. Any value lower than the minimum of 1000 is
+                  ignored. </entry>
                 </row>
 
                 <row>
@@ -3704,10 +3708,11 @@ ecl queries recreate roxie findpeople roxie2</programlisting>
                 </row>
 
                 <row>
-                  <entry>--wait=&lt;sec&gt;</entry>
+                  <entry>--wait=&lt;ms&gt;</entry>
 
-                  <entry>Maximum time to wait for cluster finish
-                  updating</entry>
+                  <entry>Maximum time (in milliseconds) to wait for cluster
+                  finish updating. Any value lower than the minimum of 1000 is
+                  ignored. </entry>
                 </row>
 
                 <row>
@@ -6549,7 +6554,9 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                 <row>
                   <entry>--wait=&lt;ms&gt;</entry>
 
-                  <entry>The maximum time to wait in milliseconds</entry>
+                  <entry>Maximum time (in milliseconds) to wait for cluster
+                  finish updating. Any value lower than the minimum of 1000 is
+                  ignored. </entry>
                 </row>
 
                 <row>
@@ -6680,7 +6687,9 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                 <row>
                   <entry>--wait=&lt;ms&gt;</entry>
 
-                  <entry>The maximum time to wait in milliseconds</entry>
+                  <entry>Maximum time (in milliseconds) to wait for cluster
+                  finish updating. Any value lower than the minimum of 1000 is
+                  ignored. </entry>
                 </row>
 
                 <row>
@@ -6811,7 +6820,9 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                 <row>
                   <entry>--wait=&lt;ms&gt;</entry>
 
-                  <entry>The maximum time to wait in milliseconds</entry>
+                  <entry>Maximum time (in milliseconds) to wait for cluster
+                  finish updating. Any value lower than the minimum of 1000 is
+                  ignored. </entry>
                 </row>
 
                 <row>
@@ -6942,7 +6953,9 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                 <row>
                   <entry>--wait=&lt;ms&gt;</entry>
 
-                  <entry>The maximum time to wait in milliseconds</entry>
+                  <entry>Maximum time (in milliseconds) to wait for cluster
+                  finish updating. Any value lower than the minimum of 1000 is
+                  ignored. </entry>
                 </row>
 
                 <row>
@@ -7116,7 +7129,9 @@ ecl roxie xref myroxie --queryids=myquery.1,myotherquery.1</programlisting>
                 <row>
                   <entry>--wait=&lt;ms&gt;</entry>
 
-                  <entry>The maximum time to wait in milliseconds</entry>
+                  <entry>Maximum time (in milliseconds) to wait for cluster
+                  finish updating. Any value lower than the minimum of 1000 is
+                  ignored. </entry>
                 </row>
 
                 <row>
@@ -8652,15 +8667,15 @@ ecl zapgen W20171018-091399 --path ~ --inc-thor-slave-logs --description "Unexpe
             </tgroup>
           </informaltable>The <emphasis>ecl url-secret-name </emphasis>command
         generates a secret name from a URL that can be used to support ECL
-        SOAPCALL/HTTPCALL automated URL to Secret mapping. </para>
+        SOAPCALL/HTTPCALL automated URL to Secret mapping.</para>
 
         <para>A username can either be embedded in the URL, such as
         https://username@example.com, or passed in as a parameter using the
         --username=username option. If a username is passed in as a parameter
-        it overrides a username in the URL. </para>
+        it overrides a username in the URL.</para>
 
         <para>Passwords embedded in the URL are not needed and will be
-        ignored. </para>
+        ignored.</para>
 
         <para>When ECL SOAPCALL URL secret mapping is enabled SOAPCALL will
         convert the URL provided into a name of this format. ECL will then
