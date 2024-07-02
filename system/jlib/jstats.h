@@ -23,6 +23,7 @@
 #include "jmutex.hpp"
 #include <vector>
 #include <initializer_list>
+#include <map>
 
 #include "jstatcodes.h"
 
@@ -873,6 +874,37 @@ void setStat(CRuntimeStatisticCollection & stats, INTERFACE * source, StatisticK
 
 template <class INTERFACE>
 void setStat(CRuntimeStatisticCollection & stats, const Shared<INTERFACE> & source, StatisticKind kind) { setStat(stats, source.get(), kind); }
+
+template <class INTERFACE>
+void mergeRemappedStats(CRuntimeStatisticCollection & stats, INTERFACE * source, const StatisticsMapping & mapping, const std::map<StatisticKind, StatisticKind> & remaps)
+{
+    if (!source)
+        return;
+    unsigned max = mapping.numStatistics();
+    for (unsigned i=0; i < max; i++)
+    {
+        StatisticKind kind = mapping.getKind(i);
+        if (remaps.find(kind) == remaps.end())
+            stats.mergeStatistic(kind, source->getStatistic(kind));
+    }
+    for (auto remap: remaps)
+    {
+        if (mapping.hasKind(remap.second))
+            stats.mergeStatistic(remap.second, source->getStatistic(remap.first));
+    }
+}
+
+template <class INTERFACE>
+void mergeRemappedStats(CRuntimeStatisticCollection & stats, INTERFACE * source, const std::map<StatisticKind, StatisticKind> & remaps)
+{
+    mergeRemappedStats(stats, source, stats.queryMapping(), remaps);
+}
+
+template <class INTERFACE>
+void mergeRemappedStats(CRuntimeStatisticCollection & stats, const Shared<INTERFACE> & source, const std::map<StatisticKind, StatisticKind> & remaps)
+{
+    mergeRemappedStats(stats, source.get(), stats.queryMapping(), remaps);
+}
 
 //---------------------------------------------------------------------------------------------------------------------
 
