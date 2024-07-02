@@ -34,7 +34,7 @@ MyValue := (INTEGER) MAP(MyString = '1' =&gt; MyString, '0');
 MySet := (SET OF INTEGER1) [1,2,3,4,5,6,7,8,9,10];
           //casts from a SET OF INTEGER8 (the default) to SET OF INTEGER1
 
-UTPUT(MyBoolean);
+OUTPUT(MyBoolean);
 OUTPUT(MyString);
 OUTPUT(MyValue);
 OUTPUT(MySet);
