@@ -753,3 +753,10 @@ jobs:
         with:
           name: windows-2022-logs
           path: ./ECLIDE/build/**/*.log
+
+  run-package-manifest:
+    needs: [ preamble, build-docker, build-bare-metal, build-bare-metal-eclide ]
+    uses: ./.github/workflows/package-manifests.yml
+    with:
+      tag: ${{ needs.preamble.outputs.community_tag }}
+    secrets: inherit
