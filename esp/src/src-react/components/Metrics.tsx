@@ -9,7 +9,7 @@ import { WorkunitsServiceEx, IScope, splitMetric } from "@hpcc-js/comms";
 import { DBStore, Table } from "@hpcc-js/dgrid";
 import { compare, scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
-import { WUTimelinePatched } from "src/Timings";
+import { WUTimelineNoFetch } from "src/Timings";
 import * as Utility from "src/Utility";
 import { FetchStatus, useMetricsOptions, useWUQueryMetrics, MetricsOptions as MetricsOptionsT } from "../hooks/metrics";
 import { HolyGrail } from "../layouts/HolyGrail";
@@ -200,40 +200,10 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     }, [parentUrl, selection]);
 
     //  Timeline ---
-    const timeline = useConst(() => new WUTimelinePatched()
+    const timeline = useConst(() => new WUTimelineNoFetch()
         .maxZoom(Number.MAX_SAFE_INTEGER)
-        .baseUrl("")
-        .request({
-            ScopeFilter: {
-                MaxDepth: 3,
-                ScopeTypes: []
-            },
-            NestedFilter: {
-                Depth: 0,
-                ScopeTypes: []
-            },
-            PropertiesToReturn: {
-                AllProperties: false,
-                AllStatistics: true,
-                AllHints: false,
-                Properties: ["WhenStarted", "TimeElapsed", "TimeLocalExecute"]
-            },
-            ScopeOptions: {
-                IncludeId: true,
-                IncludeScope: true,
-                IncludeScopeType: true
-            },
-            PropertyOptions: {
-                IncludeName: true,
-                IncludeRawValue: true,
-                IncludeFormatted: true,
-                IncludeMeasure: true,
-                IncludeCreator: true,
-                IncludeCreatorType: false
-            }
-        })
         .on("click", (row, col, sel) => {
-            setTimelineFilter(sel ? row[7].ScopeName : "");
+            setTimelineFilter(sel ? row[7].__hpcc_id : "");
             if (sel) {
                 setSelectedMetricsSource("scopesTable");
                 pushUrl(`${parentUrl}/${row[7].Id}`);
@@ -242,8 +212,11 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     );
 
     React.useEffect(() => {
-        timeline.wuid(wuid);
-    }, [timeline, wuid]);
+        timeline
+            .scopes(metrics)
+            .lazyRender()
+            ;
+    }, [metrics, timeline]);
 
     //  Scopes Table  ---
     const [scopeFilter, setScopeFilter] = React.useState("");
@@ -427,7 +400,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         if (fetchStatus === FetchStatus.STARTED) {
             return nlsHPCC.FetchingData;
         } else if (!isLayoutComplete) {
-            return `${nlsHPCC.PerformingLayout} (${dot.split("\n").length})`;
+            return `${nlsHPCC.PerformingLayout}(${dot.split("\n").length})`;
         } else if (!isRenderComplete) {
             return nlsHPCC.RenderSVG;
         }
