@@ -450,6 +450,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     const propsTable2 = useConst(() => new Table()
         .columns([nlsHPCC.Property, nlsHPCC.Value])
         .columnWidth("auto")
+        .sortable(true)
     );
 
     const updatePropsTable2 = React.useCallback((selection: IScope[]) => {
