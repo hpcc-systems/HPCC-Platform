@@ -31,6 +31,7 @@ export = {
         AddBinding: "Add Binding",
         AddFile: "Add File",
         AddGroup: "Add Group",
+        AddResource: "Add Resource",
         AddtionalProcessesToFilter: "Addtional Processes To Filter",
         AdditionalResources: "Additional Resources",
         AddPart: "Add Part",
