@@ -4,10 +4,10 @@ import { SizeMe } from "react-sizeme";
 import { pushUrl } from "../util/history";
 import { Groups } from "./Groups";
 import { Permissions } from "./Permissions";
+import { PermissionsEditor } from "./PermissionsEditor";
 import { Users } from "./Users";
 import { useBuildInfo } from "../hooks/platform";
 import { pivotItemStyle } from "../layouts/pivot";
-import { DojoAdapter } from "../layouts/DojoAdapter";
 import nlsHPCC from "src/nlsHPCC";
 
 interface SecurityProps {
@@ -59,7 +59,7 @@ export const Security: React.FunctionComponent<SecurityProps> = ({
                         <Permissions />
                     }
                     {name && baseDn &&
-                        <DojoAdapter widgetClassID="ShowIndividualPermissionsWidget" params={{ Basedn: baseDn, Name: name }} />
+                        <PermissionsEditor BaseDn={baseDn} Name={name} />
                     }
                 </PivotItem>
             </Pivot>
