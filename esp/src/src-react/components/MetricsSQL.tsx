@@ -54,12 +54,17 @@ export const MetricsSQL: React.FunctionComponent<MetricsDataProps> = ({
         .multiSelect(true)
         .sortable(true)
         .noDataMessage(nlsHPCC.loadingMessage)
-        .on("click", debounce((row, col, sel) => {
-            if (sel) {
-                onSelectionChanged(scopesTable.selection());
-            }
-        }, 100))
     );
+
+    React.useEffect(() => {
+        scopesTable
+            .on("click", debounce((row, col, sel) => {
+                if (sel) {
+                    onSelectionChanged(scopesTable.selection());
+                }
+            }, 100), true)
+            ;
+    }, [onSelectionChanged, scopesTable]);
 
     React.useEffect(() => {
         if (columns.length === 0 && data.length === 0 && sqlError) {
