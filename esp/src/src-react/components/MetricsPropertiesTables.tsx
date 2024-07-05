@@ -23,6 +23,7 @@ export const MetricsPropertiesTables: React.FunctionComponent<MetricsPropertiesT
     const propsTable = useConst(() => new Table()
         .columns([nlsHPCC.Property, nlsHPCC.Value, "Avg", "Min", "Max", "Delta", "StdDev", "SkewMin", "SkewMax", "NodeMin", "NodeMax"])
         .columnWidth("auto")
+        .sortable(true)
     );
 
     React.useEffect(() => {
