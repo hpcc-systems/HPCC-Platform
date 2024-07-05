@@ -202,14 +202,19 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     //  Timeline ---
     const timeline = useConst(() => new WUTimelineNoFetch()
         .maxZoom(Number.MAX_SAFE_INTEGER)
-        .on("click", (row, col, sel) => {
-            setTimelineFilter(sel ? row[7].__hpcc_id : "");
-            if (sel) {
-                setSelectedMetricsSource("scopesTable");
-                pushUrl(`${parentUrl}/${row[7].Id}`);
-            }
-        })
     );
+
+    React.useEffect(() => {
+        timeline
+            .on("click", (row, col, sel) => {
+                setTimelineFilter(sel ? row[7].__hpcc_id : "");
+                if (sel) {
+                    setSelectedMetricsSource("scopesTable");
+                    pushUrl(`${parentUrl}/${row[7].Id}`);
+                }
+            }, true)
+            ;
+    }, [parentUrl, timeline]);
 
     React.useEffect(() => {
         timeline
@@ -233,12 +238,17 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         .multiSelect(true)
         .metrics([], options, timelineFilter, scopeFilter)
         .sortable(true)
-        .on("click", debounce((row, col, sel) => {
-            if (sel) {
-                scopesSelectionChanged("scopesTable", scopesTable.selection());
-            }
-        }, 100))
     );
+
+    React.useEffect(() => {
+        scopesTable
+            .on("click", debounce((row, col, sel) => {
+                if (sel) {
+                    scopesSelectionChanged("scopesTable", scopesTable.selection());
+                }
+            }), true)
+            ;
+    }, [scopesSelectionChanged, scopesTable]);
 
     React.useEffect(() => {
         scopesTable
@@ -265,12 +275,17 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     const metricGraphWidget = useConst(() => new MetricGraphWidget()
         .zoomToFitLimit(1)
         .selectionGlowColor("DodgerBlue")
-        .on("selectionChanged", () => {
-            const selection = metricGraphWidget.selection().filter(id => metricGraph.item(id)).map(id => metricGraph.item(id).id);
-            setSelectedMetricsSource("metricGraphWidget");
-            pushUrl(`${parentUrl}/${selection.join(",")}`);
-        })
     );
+
+    React.useEffect(() => {
+        metricGraphWidget
+            .on("selectionChanged", () => {
+                const selection = metricGraphWidget.selection().filter(id => metricGraph.item(id)).map(id => metricGraph.item(id).id);
+                setSelectedMetricsSource("metricGraphWidget");
+                pushUrl(`${parentUrl}/${selection.join(",")}`);
+            }, true)
+            ;
+    }, [metricGraph, metricGraphWidget, parentUrl]);
 
     React.useEffect(() => {
         metricGraph.load(metrics);
