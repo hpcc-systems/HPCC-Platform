@@ -17,7 +17,7 @@ on:
         type: string
         description: 'Dependencies'
         required: false
-        default: 'bison flex build-essential binutils-dev curl lsb-release libcppunit-dev python3-dev default-jdk r-base-dev r-cran-rcpp r-cran-rinside r-cran-inline pkg-config libtool autotools-dev automake git cmake xmlstarlet'
+        default: 'bison flex build-essential binutils-dev curl lsb-release libcppunit-dev python3-dev default-jdk r-base-dev r-cran-rcpp r-cran-rinside r-cran-inline libtool autotools-dev automake git cmake xmlstarlet'
 
 jobs:
 

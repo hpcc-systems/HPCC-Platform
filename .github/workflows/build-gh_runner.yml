@@ -93,7 +93,6 @@ jobs:
             gnupg \
             groff-base \
             libtool \
-            pkg-config \
             software-properties-common \
             tar \
             unzip \
