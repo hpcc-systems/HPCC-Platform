@@ -188,13 +188,15 @@ struct WUComponentLogOptions
         }
         else if (!isEmptyString(end))
         {
-            if (isEmptyString(end))
+            if (isEmptyString(start))
                 throw makeStringException(ECLWATCH_INVALID_INPUT, "ZapLogFilter: Empty 'Absolute TimeRange Start' detected!");
         }
         else
         {
             if (relativeTimeBufferSecs > 0 )
                 wuLogSearchTimeBuffSecs = relativeTimeBufferSecs;
+            else
+                throw makeStringException(ECLWATCH_INVALID_INPUT, "ZapLogFilter: Invalid 'TimeRange' detected!");
         }
     }
 
@@ -208,9 +210,9 @@ struct WUComponentLogOptions
             logDataFormat = logAccessFormatFromName(requestedLogDataFormat.str());
 
         StringBuffer start; // Absolute query time range start in YYYY-DD-MMTHH:MM:SS
-        zapHttpRequest->getParameter("LogFilter_AbsoluteTimeRange_Start", start);
+        zapHttpRequest->getParameter("LogFilter_AbsoluteTimeRange_StartDate", start);
         StringBuffer end; // Absolute query time range end in YYYY-DD-MMTHH:MM:SS
-        zapHttpRequest->getParameter("LogFilter_AbsoluteTimeRange_End", end);
+        zapHttpRequest->getParameter("LogFilter_AbsoluteTimeRange_EndDate", end);
         // Query time range based on WU Time +- Buffer in seconds
         unsigned bufferSecs = (unsigned)zapHttpRequest->getParameterInt("LogFilter_RelativeTimeRangeBuffer", 0);
 
