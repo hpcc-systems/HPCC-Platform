@@ -22,7 +22,6 @@ export const MetricsPropertiesTables: React.FunctionComponent<MetricsPropertiesT
     //  Props Table  ---
     const propsTable = useConst(() => new Table()
         .columns([nlsHPCC.Property, nlsHPCC.Value, "Avg", "Min", "Max", "Delta", "StdDev", "SkewMin", "SkewMax", "NodeMin", "NodeMax"])
-        .columnWidth("auto")
         .sortable(true)
     );
 
@@ -53,8 +52,10 @@ export const MetricsPropertiesTables: React.FunctionComponent<MetricsPropertiesT
         });
 
         propsTable
-            ?.data(props)
-            ?.lazyRender()
+            .columns([])
+            .columns([nlsHPCC.Property, nlsHPCC.Value, "Avg", "Min", "Max", "Delta", "StdDev", "SkewMin", "SkewMax", "NodeMin", "NodeMax"])
+            .data(props)
+            .lazyRender()
             ;
     }, [propsTable, scopes, sortByColumns]);
 
