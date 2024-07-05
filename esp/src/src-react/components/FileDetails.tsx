@@ -41,10 +41,10 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
 }) => {
     const [file] = useFile(cluster, logicalFile);
     React.useEffect(() => {
-        if (file?.NodeGroup && cluster === undefined) {
+        if (file?.NodeGroup && cluster === undefined && !file?.isSuperfile) {
             replaceUrl(`/files/${file.NodeGroup}/${logicalFile}`);
         }
-    }, [cluster, file?.NodeGroup, logicalFile]);
+    }, [cluster, file?.NodeGroup, file?.isSuperfile, logicalFile]);
     const [defFile] = useDefFile(cluster, logicalFile, WsDfu.DFUDefFileFormat.def);
     const [xmlFile] = useDefFile(cluster, logicalFile, WsDfu.DFUDefFileFormat.xml);
 

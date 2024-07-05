@@ -67,7 +67,7 @@ export const AddPermissionForm: React.FunctionComponent<AddPermissionFormProps> 
         )();
     }, [closeForm, handleSubmit, refreshGrid, reset]);
 
-    return <MessageBox show={showForm} setShow={closeForm} title={nlsHPCC.AddUser} minWidth={400}
+    return <MessageBox show={showForm} setShow={closeForm} title={nlsHPCC.AddResource} minWidth={400}
         footer={<>
             <PrimaryButton text={nlsHPCC.Add} onClick={handleSubmit(onSubmit)} />
             <DefaultButton text={nlsHPCC.Cancel} onClick={() => { reset(defaultValues); closeForm(); }} />
