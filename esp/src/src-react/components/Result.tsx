@@ -11,7 +11,7 @@ import { csvEncode } from "src/Utility";
 import { useWorkunit, useMyAccount, useConfirm } from "../hooks/index";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
-import { pushParams } from "../util/history";
+import { pushParams, replaceUrl } from "../util/history";
 import { ShortVerticalDivider } from "./Common";
 import { Fields } from "./forms/Fields";
 import { Filter } from "./forms/Filter";
@@ -243,6 +243,12 @@ export const Result: React.FunctionComponent<ResultProps> = ({
         .pageSize(50) as ResultWidget
     );
 
+    const { currentUser } = useMyAccount();
+    const [wu] = useWorkunit(wuid);
+    const [result, setResult] = React.useState<CommsResult>(resultTable.calcResult());
+    const [FilterFields, setFilterFields] = React.useState<Fields>({});
+    const [showFilter, setShowFilter] = React.useState(false);
+
     React.useEffect(() => {
         resultTable
             .wuid(wuid)
@@ -251,19 +257,13 @@ export const Result: React.FunctionComponent<ResultProps> = ({
             .logicalFile(logicalFile)
             .filter(filter)
             .renderHtml(renderHTML)
-            .lazyRender()
+            .render(() => setResult(resultTable.calcResult()))
             ;
     }, [cluster, filter, logicalFile, renderHTML, resultName, resultTable, wuid]);
 
     React.useEffect(() => {
         resultTable.filter(filter);
     }, [filter, resultTable]);
-
-    const { currentUser } = useMyAccount();
-    const [wu] = useWorkunit(wuid);
-    const [result] = React.useState<CommsResult>(resultTable.calcResult());
-    const [FilterFields, setFilterFields] = React.useState<Fields>({});
-    const [showFilter, setShowFilter] = React.useState(false);
 
     React.useEffect(() => {
         result?.fetchXMLSchema().then(() => {
@@ -276,8 +276,13 @@ export const Result: React.FunctionComponent<ResultProps> = ({
                 };
             });
             setFilterFields(filterFields);
-        }).catch(err => logger.error(err));
-    }, [result]);
+        }).catch(err => {
+            logger.error(err);
+            if (err.message.indexOf("Cannot open the workunit result") > -1) {
+                replaceUrl(`/workunits/${wuid}/outputs/`);
+            }
+        });
+    }, [result, wuid]);
 
     //  Filter  ---
     const [filterFields, hasHtml] = React.useMemo(() => {
@@ -310,7 +315,7 @@ export const Result: React.FunctionComponent<ResultProps> = ({
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
             onClick: () => {
                 resultTable.reset();
-                resultTable.lazyRender();
+                resultTable.render(() => setResult(resultTable.calcResult()));
             }
         },
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
