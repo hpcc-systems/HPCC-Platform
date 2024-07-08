@@ -1903,11 +1903,9 @@ class CXRefManager: public CXRefManagerBase
                     Owned<IPropertyTree> results;
                     {
                         CriticalUnblock unblock(manager.logsect);
-#ifdef _CONTAINERIZED
-                        unsigned short port = 0; // No need to connect to Dafs, data is available through mounted storage planes
-#else
-                        unsigned short port = getDafsPort(node.endpoint(),numfails,&crit);
-#endif
+                        unsigned short port = 0;
+                        if (!strieq(msg, "localhost"))
+                            port = getDafsPort(node.endpoint(),numfails,&crit);
                         results.setown(getDirectory(dirlist,&node,port));
                     }
                     manager.log("Crossreferencing %s",msg.str());
