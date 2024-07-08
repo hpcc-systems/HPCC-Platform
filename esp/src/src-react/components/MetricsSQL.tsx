@@ -26,15 +26,7 @@ export const MetricsSQL: React.FunctionComponent<MetricsDataProps> = ({
     onSelectionChanged
 }) => {
 
-    const cleanScopes = React.useMemo(() => {
-        return scopes.map(scope => {
-            const retVal = { ...scope };
-            delete retVal.__children;
-            return retVal;
-        });
-    }, [scopes]);
-
-    const connection = useDuckDBConnection(cleanScopes, "metrics");
+    const connection = useDuckDBConnection(scopes, "metrics");
     const [schema, setSchema] = React.useState<any[]>([]);
     const [sql, setSql] = React.useState<string>(defaultSql);
     const [sqlError, setSqlError] = React.useState<Error | undefined>();
@@ -91,7 +83,7 @@ export const MetricsSQL: React.FunctionComponent<MetricsDataProps> = ({
 
     //  Query  ---
     React.useEffect(() => {
-        if (cleanScopes.length === 0) {
+        if (scopes.length === 0) {
             setSchema([]);
             setData([]);
         } else if (connection) {
@@ -117,7 +109,7 @@ export const MetricsSQL: React.FunctionComponent<MetricsDataProps> = ({
                 scopesTable.noDataMessage(nlsHPCC.noDataMessage);
             });
         }
-    }, [cleanScopes.length, connection, scopesTable, sql]);
+    }, [connection, scopes.length, scopesTable, sql]);
 
     //  Selection  ---
     const onChange = React.useCallback((newSql: string) => {

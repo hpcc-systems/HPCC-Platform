@@ -6,7 +6,7 @@ import { useConst } from "@fluentui/react-hooks";
 import { bundleIcon, Folder20Filled, Folder20Regular, FolderOpen20Filled, FolderOpen20Regular, TextCaseTitleRegular, TextCaseTitleFilled } from "@fluentui/react-icons";
 import { Database } from "@hpcc-js/common";
 import { WorkunitsServiceEx, IScope, splitMetric } from "@hpcc-js/comms";
-import { DBStore, Table } from "@hpcc-js/dgrid";
+import { CellFormatter, ColumnFormat, ColumnType, DBStore, RowType, Table } from "@hpcc-js/dgrid";
 import { compare, scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import { WUTimelineNoFetch } from "src/Timings";
@@ -35,6 +35,16 @@ const SelectedLineageIcon = bundleIcon(FolderOpen20Filled, FolderOpen20Regular);
 const defaultUIState = {
     hasSelection: false
 };
+
+class ColumnFormatEx extends ColumnFormat {
+    formatterFunc(): CellFormatter | undefined {
+        const colIdx = this._owner.columns().indexOf("__StdDevs");
+
+        return function (this: ColumnType, cell: any, row: RowType): string {
+            return row[colIdx];
+        };
+    }
+}
 
 class DBStoreEx extends DBStore {
 
@@ -82,7 +92,17 @@ class TableEx extends Table {
     metrics(metrics: any[], options: MetricsOptionsT, timelineFilter: string, scopeFilter: string, matchCase: boolean): this {
         this
             .columns(["##"])    //  Reset hash to force recalculation of default widths
-            .columns(["##", nlsHPCC.Type, nlsHPCC.Scope, ...options.properties])
+            .columns(["##", nlsHPCC.Type, "StdDevs", nlsHPCC.Scope, ...options.properties, "__StdDevs"])
+            .columnFormats([
+                new ColumnFormatEx()
+                    .column("StdDevs")
+                    .paletteID("StdDevs")
+                    .min(0)
+                    .max(6),
+                new ColumnFormat()
+                    .column("__StdDevs")
+                    .width(0)
+            ])
             .data(metrics
                 .filter(m => this.scopeFilterFunc(m, scopeFilter, matchCase))
                 .filter(row => {
@@ -91,21 +111,21 @@ class TableEx extends Table {
                 }).map((row, idx) => {
                     if (idx === 0) {
                         this._rawDataMap = {
-                            0: "##", 1: "type", 2: "name"
+                            0: "##", 1: "type", 2: "__StdDevs", 3: "name"
                         };
                         options.properties.forEach((p, idx2) => {
-                            this._rawDataMap[3 + idx2] = p;
+                            this._rawDataMap[4 + idx2] = p;
                         });
                     }
                     row.__hpcc_id = row.name;
-                    return [idx, row.type, row.name, ...options.properties.map(p => {
+                    return [idx, row.type, row.__StdDevs === 0 ? undefined : row.__StdDevs, row.name, ...options.properties.map(p => {
                         return row.__groupedProps[p]?.Value ??
                             row.__groupedProps[p]?.Max ??
                             row.__groupedProps[p]?.Avg ??
                             row.__formattedProps[p] ??
                             row[p] ??
                             "";
-                    }), row];
+                    }), row.__StdDevsSource, row];
                 }))
             ;
         return this;
