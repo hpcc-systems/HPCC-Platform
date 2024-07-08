@@ -2638,11 +2638,7 @@ public:
         Owned<IGroup> g;
         unsigned j;
         if (!nclusters) {
-#ifdef _CONTAINERIZED
             error("XREF","No storage planes specified\n");
-#else
-            error("XREF","No clusters specified\n");
-#endif
             return NULL;
         }
         if (!numdirs) {
