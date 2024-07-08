@@ -695,7 +695,6 @@ class CCompressedSpillingRowStream: public CSimpleInterfaceOf<ISmartRowBuffer>, 
     Linked<IOutputRowSerializer> serializer;
     Linked<IEngineRowAllocator> allocator;
     Linked<IOutputRowDeserializer> deserializer;
-    memsize_t compressionBlockSize = 0; // filled in createOutputStream
 
     // in-memory related members
     CSPSCQueue<RowEntry> inMemRows;
