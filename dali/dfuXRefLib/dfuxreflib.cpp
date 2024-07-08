@@ -645,17 +645,19 @@ struct CLogicalNameEntry: public CInterface
         grouped = file.getPropInt("Attr/@grouped", 0)!=0;
         const char *partmask = file.queryProp("@partmask");
         StringBuffer tmp;
+        partDir = file.queryProp("@directory");
         if (partmask&&*partmask) {
             if (!containsPathSepChar(partmask)) {
-                const char *dir = file.queryProp("@directory");
-                if (dir&&*dir) 
-                    tmp.append(dir).append(getPathSepChar(dir));
+                if (!partDir.isEmpty())
+                    tmp.append(partDir).append(getPathSepChar(partDir));
             }
             tmp.append(partmask);
         }
         tmp.toLowerCase();
         substnum(tmp,"$n$",max);
         dirpartmask.set(tmp.str());
+        replicateOffset = file.getPropInt("@replicateOffset",1);
+        dirPerPart = max>1?getDataStoragePlane(grpname, true)->queryDirPerPart():false;
     }
     ~CLogicalNameEntry()
     {
@@ -758,6 +760,36 @@ struct CLogicalNameEntry: public CInterface
         return false;
     }
 
+    RemoteFilename &constructPartFilename(unsigned partNo, unsigned copy, RemoteFilename &rfn)
+    {
+        partNo--;
+        StringBuffer partName;
+        if (pmask.isEmpty())
+        {
+            pmask.set("!ERROR!._$P$_of_$N$");
+            IERRLOG("No partmask for CLogicalNameEntry::constructPartFilename");
+        }
+        expandMask(partName, pmask, partNo, max);
+
+        StringBuffer fullname;
+        addPathSepChar(fullname.append(partDir));
+        if (dirPerPart)
+            addPathSepChar(fullname.append(partNo+1));
+        fullname.append(partName);
+
+        ClusterPartDiskMapSpec mspec;
+        mspec.replicateOffset = replicateOffset;
+        unsigned n;
+        unsigned d;
+        mspec.calcPartLocation(partNo, max, copy, grp?grp->ordinality():max, n, d);
+        setReplicateFilename(fullname, d);
+        SocketEndpoint ep;
+        if (grp)
+            ep = grp->queryNode(n).endpoint();
+        rfn.setPath(ep, fullname.toLowerCase().str());
+        return rfn;
+    }
+
     void resolve(CFileEntry *entry);
     IPropertyTree *addFileBranch(IPropertyTree *dst,unsigned flags);
 
@@ -794,6 +826,9 @@ struct CLogicalNameEntry: public CInterface
     bool grouped;
     StringAttr dirpartmask;
     CXRefManagerBase &manager;
+    StringAttr partDir;
+    int replicateOffset;
+    bool dirPerPart;
 };
 
 
@@ -1529,18 +1564,14 @@ void loadFromDFS(CXRefManagerBase &manager,IGroup *grp,unsigned numdirs,const ch
             }
             else {
                 bool replicate=false;
-                const char *partname = part.queryProp("@name");
-                const char *partmask = file.queryProp("@partmask");
-                const char *partdir = file.queryProp("@directory");
-                int replicateoffset = file.getPropInt("@replicateOffset",1);
                 for (;;) {
-                    RemoteFilename rfn; 
+                    RemoteFilename rfn;
                     IGroup *grp = lnentry->queryGroup();
                     if (!grp) {
                         manager.warn(lnentry->lname.get(),"No group found, ignoring logical file");
                         return;
                     }
-                    constructPartFilename(grp,partno,numparts,partname,partmask,partdir,replicate,replicateoffset,rfn);
+                    lnentry->constructPartFilename(partno, replicate, rfn);
                     SocketEndpoint rep=rfn.queryEndpoint();
                     if (manager.EndpointTable.find(rep)!=NULL) {
                         rfn.getLocalPath(localname.clear());
@@ -1556,9 +1587,9 @@ void loadFromDFS(CXRefManagerBase &manager,IGroup *grp,unsigned numdirs,const ch
                         if (dirmatch)                       {
                             rfn.getRemotePath(remotename.clear());
                             remotename.toLowerCase();
-                            
+
                             CFileEntry *entry= new CFileEntry(remotename.str(),lnentry,partno,replicate,part.getPropInt64("@size", -1),part.getPropInt("@rowCompression", 0)!=0,part.getPropInt("@compressedSize", -1));
-                                                        
+
                             CFileEntry *oldentry= manager.filemap.find(remotename.str());
                             if (oldentry)
                             {
@@ -1581,7 +1612,6 @@ void loadFromDFS(CXRefManagerBase &manager,IGroup *grp,unsigned numdirs,const ch
                             else {
                                 manager.filemap.add(*entry);
                             }
-                            
                         }
                         else {
                             lnentry->outsidedir++;
@@ -1596,29 +1626,23 @@ void loadFromDFS(CXRefManagerBase &manager,IGroup *grp,unsigned numdirs,const ch
                     if (replicate)
                         break;
                     replicate = true;
-                }               
+                }
             }
         }
 
     } scanner(manager,grp,numdirs,dirbaselist);
-    
+
     manager.log("Loading Files branch from SDS");
 
     Owned<IRemoteConnection> conn = querySDS().connect(SDS_DFS_ROOT,myProcessSession(),RTM_LOCK_READ, INFINITE);
     if (!conn) {
         throw MakeStringException(-1,"Could not connect to Files");
-        
     }
     conn->changeMode(RTM_NONE);
     manager.log("Files loaded, scanning");
     scanner.scan(conn);
     manager.log("Scanning done");
-
 }
-
-
-
-    
 
 class CPhysicalXREF
 {
