@@ -142,8 +142,13 @@ jobs:
           sudo chown root:root /usr/bin/chromedriver
           sudo chmod +x /usr/bin/chromedriver
           wget https://selenium-release.storage.googleapis.com/3.141/selenium-server-standalone-3.141.59.jar
-          wget http://www.java2s.com/Code/JarDownload/testng/testng-6.8.7.jar.zip
-          unzip testng-6.8.7.jar.zip
+          wget https://repo1.maven.org/maven2/org/testng/testng/7.7.1/testng-7.7.1.jar
+          wget https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-annotations/2.17.0/jackson-annotations-2.17.0.jar
+          wget https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-core/2.17.0/jackson-core-2.17.0.jar
+          wget https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-databind/2.17.0/jackson-databind-2.17.0.jar
+          wget https://repo1.maven.org/maven2/com/beust/jcommander/1.82/jcommander-1.82.jar
+          wget https://github.com/SeleniumHQ/selenium/releases/download/selenium-4.17.0/selenium-server-4.17.0.jar
+          java -jar selenium-server-4.17.0.jar standalone
 
       - name: Run Tests
         timeout-minutes: 10 # generous, current runtime is ~1min, this should be increased if new tests are added
@@ -158,12 +163,26 @@ jobs:
           [[ $retCode -ne 0 ]] && exit 1
           popd
 
-      - name: eclwatch-ui-test-logs-artifact
+      - name: Run ECL Watch UI Tests
+        timeout-minutes: 80 # generous, current runtime is ~38 minutes, this should be increased if new tests are added
+        if: steps.check.outputs.runtests
+        shell: "bash"
+        run: |
+          export CLASSPATH=".:${{ github.workspace }}/selenium-server-4.17.0.jar:${{ github.workspace }}/testng-7.7.1.jar:${{ github.workspace }}/jackson-annotations-2.17.0.jar:${{ github.workspace }}/jackson-core-2.17.0.jar:${{ github.workspace }}/jackson-databind-2.17.0.jar:${{ github.workspace }}/jcommander-1.82.jar"
+          pushd ${{ inputs.asset-name }}-ecl_watch_ui_tests
+          find ${{ inputs.asset-name }}-ecl_watch_ui_tests -iname '*.java' -type f -exec javac {} \;
+          java TestRunner detail
+          echo "ECL Watch UI test done"
+          lines=$(wc -l < error_ecl_test.log)
+          [[ $lines -ne 0 ]] && exit 1
+          popd
+
+      - name: Upload ECL Watch UI Test Logs To Artifact
         if: ${{ failure() || cancelled() }}
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ inputs.asset-name }}-ui_test-logs
+          name: ${{ inputs.asset-name }}-ecl_watch_ui_tests
           path: |
-            ${{ inputs.asset-name }}-ui_test-files/eclWatchUiTest.log
+            ${{ inputs.asset-name }}-ecl_watch_ui_tests/*.log
             /home/runner/HPCCSystems-regression/log/*.json
           if-no-files-found: error
