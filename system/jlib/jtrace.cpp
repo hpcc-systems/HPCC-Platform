@@ -53,6 +53,8 @@
 //This seems to be defined in some window builds - avoid conflicts with the functions below
 #undef max
 
+#include "jsecrets.hpp"
+
 namespace context     = opentelemetry::context;
 namespace nostd       = opentelemetry::nostd;
 namespace opentel_trace = opentelemetry::trace;
@@ -1224,9 +1226,49 @@ std::unique_ptr<opentelemetry::sdk::trace::SpanExporter> CTraceManager::createEx
 
             if (opts.use_ssl_credentials)
             {
-                StringBuffer sslCACertPath;
-                exportConfig->getProp("@sslCredentialsCACertPath", sslCACertPath);
-                opts.ssl_credentials_cacert_path = sslCACertPath.str();
+                StringBuffer cacert;
+
+                if (exportConfig->hasProp("@sslCertSecretName"))
+                {
+                    StringBuffer secretName;
+                    exportConfig->getProp("@sslCertSecretName", secretName);
+
+                    if (exportConfig->hasProp("@sslCertSecretCategory"))
+                    {
+                        StringBuffer secretCategory;
+                        exportConfig->getProp("@sslCertSecretCategory", secretCategory);
+
+                        DBGLOG("JTrace: loading OTLP-GRPC 'cacert' from secret '%s' category '%s'", secretName.str(), secretCategory.str());
+                        Owned<const IPropertyTree> secretTree = getSecret(secretCategory.str(), secretName.str());
+                        if (secretTree)
+                        {
+                            DBGLOG("JTrace: secret tree created, searching for 'cacert' from secret '%s'", secretName.str());
+                            getSecretKeyValue(cacert.clear(), secretTree, "cacert");
+                            if (isEmptyString(cacert.str()))
+                                DBGLOG("JTrace: Could not load OTLP-GRPC 'cacert' from secret '%s'", secretName.str());
+                            opts.ssl_credentials_cacert_as_string = cacert.str();
+                        }
+                        else
+                        {
+                            DBGLOG("JTrace: Could not load secret '%s'", secretName.str());
+                        }
+                    }
+                    else
+                    {
+                        DBGLOG("JTrace: OTLP-GRPC configuration missing 'sslCertSecretCategory' attribute!");
+                    }
+                }
+  
+                if (isEmptyString(cacert.str()))
+                {
+                    StringBuffer sslCACertPath;
+                    if (exportConfig->hasProp("@sslCredentialsCACertPath"))
+                    {
+                        DBGLOG("JTrace: loading OTLP-GRPC 'cacert path'");
+                        exportConfig->getProp("@sslCredentialsCACertPath", sslCACertPath);
+                        opts.ssl_credentials_cacert_path = sslCACertPath.str();
+                    }
+                }
             }
 
             if (exportConfig->hasProp("@timeOutSecs")) //grpc deadline timeout in seconds
