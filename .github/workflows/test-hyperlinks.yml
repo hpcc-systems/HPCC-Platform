@@ -45,6 +45,7 @@ jobs:
       - name: List links from Documentation files
         run: |
           IFS=$'\n'
+          touch missingFiles.txt
           for FILE in $( cat xmlFilesList.txt )
           do 
             #check if the file is missing
@@ -78,7 +79,7 @@ jobs:
               echo $FILE >> missingFiles.txt
               continue
             fi  
-            grep -onHE -e "\]\([^\)]+" -e "\`\`\`[^\`]*" -e "http://[^\ \;\"\'\<\>\]\[\,\`\)]+" -e "https://[^\ \;\"\'\<\>\]\[\,\`\)]+" ${FILE} | sed 's/](//'  > links.tmp
+            grep -onHE -e "\]\([^\)]+" -e "\`\`\`[^\`]*" -e "http://[^\ \;\"\'\<\>\,\`\)]+" -e "https://[^\ \;\"\'\<\>\,\`\)]+" ${FILE} | sed 's/](//'  > links.tmp
             FLAG=0
             for LINE in $( cat links.tmp )
             do 
@@ -215,16 +216,26 @@ jobs:
             echo -e "Broken links: \n" > error-report.log
             cat error-reportTmp.log >> error-report.log
           else 
-            echo -e "Missing Files: \n" > error-report.log
-            cat missingFiles.txt >> error-report.log
-            echo -e "Broken links: \n" >> error-report.log
+            echo -e "Missing Files:" > error-report.log
+            FILE_COUNT=1
+            for FILE in $( cat missingFiles.txt )
+            do  
+                echo -e "\t${FILE_COUNT}. ${FILE}" >> error-report.log
+                FILE_COUNT=$(( FILE_COUNT + 1 ))
+            done
+            echo -e "\nBroken links: \n" >> error-report.log
             cat error-reportTmp.log >> error-report.log
           fi 
-          if [[ ${{ github.event_name }} == "pull_request" || ${{ inputs.Debug-Mode }} == false ]]; then 
+          if [ -z ${{ inputs.Debug-Mode }} ]; then
+            DEBUG_MODE=false
+          else
+            DEBUG_MODE=${{ inputs.Debug-Mode }}
+          fi
+          if [[ ${{ github.event_name }} == "pull_request" || $DEBUG_MODE == false ]]; then 
             rm -rf *FilesList.txt \
                 checkedLinksCache.txt \
                 *Links.txt \
-                linksList.txt \
+                linksList.txt 
           fi
           
       - name: Upload logs

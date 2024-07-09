@@ -41,6 +41,10 @@ on:
       - "!candidate-7.2.*"
       - "!candidate-7.0.*"
       - "!candidate-6.*"
+    paths:
+      - "!*.md"
+      - "!*.rst"
+      - "!*.xml"
 
   schedule:
     - cron: "0 0 * * *"
