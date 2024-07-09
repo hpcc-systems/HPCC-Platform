@@ -2634,28 +2634,18 @@ public:
         msgcallback.set(_msgcallback);
 
         IPropertyTree *out=NULL;
-        
-        Owned<IGroup> g;
-        unsigned j;
-        if (!nclusters) {
+
+        if (!nclusters)
+        {
             error("XREF","No storage planes specified\n");
             return NULL;
         }
-        if (!numdirs) {
+        if (!numdirs)
+        {
             error("XREF","No directories specified\n");
             return NULL;
         }
-        for (j=0;j<nclusters;j++) {
-            Owned<IGroup> gsub = queryNamedGroupStore().lookup(clusters[j]);
-            if (!gsub) {
-                error(clusters[j],"Could not find cluster group");
-                return NULL;
-            }
-            if (!g)
-                g.set(gsub.get());
-            else
-                g.setown(g->combine(gsub.get()));
-        }
+
         totalSizeOrphans = 0;
         totalNumOrphans = 0;
 
@@ -2663,41 +2653,62 @@ public:
         dirlist.kill();
         orphanlist.kill();
 
-#ifdef _CONTAINERIZED
-        const char *storageDir[1];
-        for (int i = 0; i < nclusters; i++)
+        if (!isContainerized())
         {
-            const char *storagePlane = clusters[i]; // clusters holds a list of storage plane names
-            storageDir[0] = dirbaselist[i]; // dirbaselist holds the storage plane directories
+            Owned<IGroup> g;
+            unsigned j;
 
-            loadFromDFS(*this,g,1,storageDir,storagePlane);
-            xrefRemoteDirectories(g,numdirs,storageDir,numthreads);
+            for (j=0;j<nclusters;j++)
+            {
+                Owned<IGroup> gsub = queryNamedGroupStore().lookup(clusters[j]);
+                if (!gsub)
+                {
+                    error(clusters[j], "Could not find cluster group");
+                    return NULL;
+                }
+                if (!g)
+                    g.set(gsub.get());
+                else
+                    g.setown(g->combine(gsub.get()));
+            }
+
+            const char* cluster = clusters[0];
+            loadFromDFS(*this, g, numdirs, dirbaselist, cluster);
+            xrefRemoteDirectories(g, numdirs, dirbaselist, numthreads);
         }
-#else
-        const char* cluster = clusters[0];
-        loadFromDFS(*this,g,numdirs,dirbaselist,cluster);
+        else
+        {
+            const char *storageDir[1];
+            for (int i = 0; i < nclusters; i++)
+            {
+                const char *storagePlane = clusters[i]; // clusters holds a list of storage plane names
+                storageDir[0] = dirbaselist[i]; // dirbaselist holds the storage plane directories
+                Owned<IGroup> g = queryNamedGroupStore().lookup(clusters[i]);
 
-        xrefRemoteDirectories(g,numdirs,dirbaselist,numthreads);
-#endif
+                loadFromDFS(*this, g, 1, storageDir, storagePlane);
+                xrefRemoteDirectories(g, numdirs, storageDir, numthreads);
+            }
+        }
+
         StringBuffer filename;
         filename.clear().append("xrefrpt");
         addFileTimestamp(filename, true);
         filename.append(".txt");
-        
-        if (flags&PMtextoutput) 
+
+        if (flags&PMtextoutput)
             outputTextReport(filename.str());
         filename.clear().append("xrefrpt");
         addFileTimestamp(filename, true);
         filename.append(".txt");
 
-        if (flags&PMcsvoutput) 
+        if (flags&PMcsvoutput)
             outputCsvReport(filename.str());
 
-        if (flags&PMbackupoutput) 
+        if (flags&PMbackupoutput)
             outputBackupReport();
 
-        if (flags&PMtreeoutput) 
-            out = outputTree(); 
+        if (flags&PMtreeoutput)
+            out = outputTree();
 
         logicalnamemap.kill();
         filemap.kill();
@@ -2723,26 +2734,25 @@ IPropertyTree *  runXRef(unsigned nclusters,const char **clusters,IXRefProgressC
 #else
     bool islinux = true;
 #endif
-#ifdef _CONTAINERIZED
-    DBGLOG("CONTAINERIZED(runXRef)");
-    const char *dirs[nclusters]; // nclusters is the number of storage planes
-    unsigned numdirs = nclusters;
-
-    for (int i = 0; i < numdirs; i++)
-    {
-        Owned<IPropertyTree> storagePlane = getStoragePlane(clusters[i]);
-        dirs[i] = storagePlane->queryProp("@prefix");
-    }
-#else
     const char *dirs[2];
     unsigned numdirs = 2;
-    // assume all nodes same OS
-    Owned<IGroup> group = queryNamedGroupStore().lookup(clusters[0]);
-    if (group)
-        islinux = queryOS(group->queryNode(0).endpoint())==MachineOsLinux;
-    dirs[0] = queryBaseDirectory(grp_unknown, 0,islinux?DFD_OSunix:DFD_OSwindows);  // MORE - should use the info from the group store
-    dirs[1] = queryBaseDirectory(grp_unknown, 1,islinux?DFD_OSunix:DFD_OSwindows);
-#endif
+    if (isContainerized())
+    {
+        DBGLOG("CONTAINERIZED(runXRef)");
+        numdirs = 1;
+        Owned<IPropertyTree> storagePlane = getStoragePlane(clusters[0]);
+        dirs[0] = storagePlane->queryProp("@prefix");
+    }
+    else
+    {
+
+        // assume all nodes same OS
+        Owned<IGroup> group = queryNamedGroupStore().lookup(clusters[0]);
+        if (group)
+            islinux = queryOS(group->queryNode(0).endpoint())==MachineOsLinux;
+        dirs[0] = queryBaseDirectory(grp_unknown, 0,islinux?DFD_OSunix:DFD_OSwindows);  // MORE - should use the info from the group store
+        dirs[1] = queryBaseDirectory(grp_unknown, 1,islinux?DFD_OSunix:DFD_OSwindows);
+    }
     IPropertyTree *ret=NULL;
     try {
         ret = xrefmanager.process(nclusters,clusters,numdirs,dirs,PMtreeoutput,callback,numthreads);
