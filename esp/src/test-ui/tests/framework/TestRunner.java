@@ -7,6 +7,7 @@ import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.remote.RemoteWebDriver;
 
 import java.io.IOException;
+import java.net.URI;
 
 public class TestRunner {
 
@@ -20,7 +21,7 @@ public class TestRunner {
         chromeOptions.addArguments("--no-sandbox");
         chromeOptions.addArguments("--log-level=3");
 
-        WebDriver driver = new ChromeDriver(chromeOptions);
+        WebDriver driver = new RemoteWebDriver(URI.create("http://localhost:4444/wd/hub").toURL(), chromeOptions);
 
         Capabilities caps = ((RemoteWebDriver) driver).getCapabilities();
 
