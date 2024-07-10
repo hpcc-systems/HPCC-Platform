@@ -157,7 +157,7 @@ jobs:
         run: |
           export CLASSPATH=".:${{ github.workspace }}/selenium-server-4.17.0.jar:${{ github.workspace }}/testng-7.7.1.jar:${{ github.workspace }}/jackson-annotations-2.17.0.jar:${{ github.workspace }}/jackson-core-2.17.0.jar:${{ github.workspace }}/jackson-databind-2.17.0.jar:${{ github.workspace }}/jcommander-1.82.jar"
           pushd ${{ inputs.asset-name }}-ecl_watch_ui_tests
-          find -iname '*.java' -type f -exec javac {} \;
+          find . -iname '*.java' -type f -exec javac {} \;
           java TestRunner detail
           echo "ECL Watch UI test done"
           lines=$(wc -l < error_ecl_test.log)
