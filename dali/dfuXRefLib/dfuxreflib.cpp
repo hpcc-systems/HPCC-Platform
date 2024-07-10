@@ -645,11 +645,11 @@ struct CLogicalNameEntry: public CInterface
         grouped = file.getPropInt("Attr/@grouped", 0)!=0;
         const char *partmask = file.queryProp("@partmask");
         StringBuffer tmp;
-        partDir = file.queryProp("@directory");
         if (partmask&&*partmask) {
             if (!containsPathSepChar(partmask)) {
-                if (!partDir.isEmpty())
-                    tmp.append(partDir).append(getPathSepChar(partDir));
+                const char *dir = file.queryProp("@directory");
+                if (dir&&*dir)
+                    tmp.append(dir).append(getPathSepChar(dir));
             }
             tmp.append(partmask);
         }
@@ -657,7 +657,6 @@ struct CLogicalNameEntry: public CInterface
         substnum(tmp,"$n$",max);
         dirpartmask.set(tmp.str());
         replicateOffset = file.getPropInt("@replicateOffset",1);
-        dirPerPart = max>1?getDataStoragePlane(grpname, true)->queryDirPerPart():false;
     }
     ~CLogicalNameEntry()
     {
@@ -772,10 +771,11 @@ struct CLogicalNameEntry: public CInterface
         expandMask(partName, pmask, partNo, max);
 
         StringBuffer fullname;
-        addPathSepChar(fullname.append(partDir));
-        if (dirPerPart)
-            addPathSepChar(fullname.append(partNo+1));
-        fullname.append(partName);
+        Owned<IStoragePlane> plane = getDataStoragePlane(grpname, true);
+        const char * prefix = plane->queryPrefix();
+        unsigned stripeNum = calcStripeNumber(partNo, lname, plane->numDevices());
+        bool dirPerPart = max>1?plane->queryDirPerPart():false;
+        makePhysicalPartName(lname, partNo+1, max, fullname, 0, DFD_OSdefault, prefix, dirPerPart, stripeNum);
 
         ClusterPartDiskMapSpec mspec;
         mspec.replicateOffset = replicateOffset;
@@ -826,9 +826,7 @@ struct CLogicalNameEntry: public CInterface
     bool grouped;
     StringAttr dirpartmask;
     CXRefManagerBase &manager;
-    StringAttr partDir;
     int replicateOffset;
-    bool dirPerPart;
 };
 
 
