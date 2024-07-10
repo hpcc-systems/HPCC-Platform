@@ -160,8 +160,7 @@ jobs:
           find . -iname '*.java' -type f -print -exec javac {} \;
           ls -l
           find . -iname '*.*a*' -type f -exec ls -l {} \;
-          cd framework 
-          java TestRunner detail
+          java ./TestRunner detail
           echo "ECL Watch UI test done"
           lines=$(wc -l < error_ecl_test.log)
           [[ $lines -ne 0 ]] && exit 1
