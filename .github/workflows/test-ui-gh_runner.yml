@@ -33,17 +33,17 @@ jobs:
       - name: Download UI Test Files
         uses: actions/download-artifact@v3
         with:
-          name: ${{ inputs.asset-name }}-ui_test-files
-          path: ${{ inputs.asset-name }}-ui_test-files
+          name: ${{ inputs.asset-name }}-ecl_watch_ui_tests
+          path: ${{ inputs.asset-name }}-ecl_watch_ui_tests
 
       - name: Check ECLWatch UI Test Directory
         id: check
         run: |
-          if [[ ! -d ${{ inputs.asset-name }}-ui_test-files ]]
+          if [[ ! -d ${{ inputs.asset-name }}-ecl_watch_ui_tests ]]
           then
-              echo "ECLWatch UI ${{ inputs.asset-name }}-ui_test-files directory missing."
+              echo "ECLWatch UI ${{ inputs.asset-name }}-ecl_watch_ui_tests directory missing."
           else
-              javaFilesCount=$(find ${{ inputs.asset-name }}-ui_test-files/ -iname '*.java' -type f -print | wc -l )
+              javaFilesCount=$(find ${{ inputs.asset-name }}-ecl_watch_ui_tests/ -iname '*.java' -type f -print | wc -l )
               echo "Number of test java files is $javaFilesCount"
               if [[ ${javaFilesCount} -eq 0 ]]
               then
@@ -95,7 +95,7 @@ jobs:
           chmod +x ./${{ inputs.asset-name }}-support-files/*
           sudo cp ./${{ inputs.asset-name }}-support-files/* /opt/HPCCSystems/bin
 
-          chmod +x ./${{ inputs.asset-name }}-ui_test-files/*
+          chmod +x ./${{ inputs.asset-name }}-ecl_watch_ui_tests/*
 
       - name: Start HPCC-Platform
         shell: "bash"
@@ -149,19 +149,6 @@ jobs:
           wget https://repo1.maven.org/maven2/com/beust/jcommander/1.82/jcommander-1.82.jar
           wget https://github.com/SeleniumHQ/selenium/releases/download/selenium-4.17.0/selenium-server-4.17.0.jar
           java -jar selenium-server-4.17.0.jar standalone
-
-      - name: Run Tests
-        timeout-minutes: 10 # generous, current runtime is ~1min, this should be increased if new tests are added
-        if: steps.check.outputs.runtests
-        shell: "bash"
-        run: |
-          export CLASSPATH=".:${{ github.workspace }}/selenium-server-standalone-3.141.59.jar:${{ github.workspace }}/testng-6.8.7.jar"
-          pushd ${{ inputs.asset-name }}-ui_test-files
-          ./run.sh tests http://localhost:8010 > eclWatchUiTest.log 2>&1
-          retCode=$?
-          echo "UI test done"
-          [[ $retCode -ne 0 ]] && exit 1
-          popd
 
       - name: Run ECL Watch UI Tests
         timeout-minutes: 80 # generous, current runtime is ~38 minutes, this should be increased if new tests are added
