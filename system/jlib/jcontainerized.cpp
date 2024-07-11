@@ -184,7 +184,18 @@ void waitJob(const char *componentName, const char *resourceType, const char *jo
     {
         // Delete jobs unless the pod failed and keepJob==podfailures
         if ((nullptr == exception) || (KeepJobs::podfailures != keepJob) || schedulingTimeout)
-            deleteResource(componentName, "job", job);
+        {
+            try
+            {
+                deleteResource(componentName, "job", job);
+            }
+            catch(IException *e)
+            {
+                // we do not want this error to propagate to the workunit and cause it to fail, and mask other errors
+                OWARNLOG(e, "Failed to delete job");
+                e->Release();
+            }
+        }
     }
     if (exception)
         throw exception.getClear();
@@ -255,7 +266,18 @@ void runJob(const char *componentName, const char *wuid, const char *jobName, co
         exception.setown(e);
     }
     if (removeNetwork)
-        deleteResource(componentName, "networkpolicy", jobName);
+    {
+        try
+        {
+            deleteResource(componentName, "networkpolicy", jobName);
+        }
+        catch(IException *e)
+        {
+            // we do not want this error to propagate to the workunit and cause it to fail, and mask other errors
+            OWARNLOG(e, "Failed to delete networkpolicy");
+            e->Release();
+        }
+    }
     if (exception)
         throw exception.getClear();
 }
