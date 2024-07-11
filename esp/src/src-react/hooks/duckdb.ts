@@ -1,4 +1,5 @@
 import * as React from "react";
+import { IScope } from "@hpcc-js/comms";
 import { DuckDB } from "@hpcc-js/wasm/dist/duckdb";
 
 type AsyncDuckDB = any;
@@ -22,7 +23,7 @@ export function useDuckDB(): [AsyncDuckDB] {
     return [db];
 }
 
-export function useDuckDBConnection<T>(scopes: T, name: string): AsyncDuckDBConnection | undefined {
+export function useDuckDBConnection(scopes: IScope[], name: string): AsyncDuckDBConnection | undefined {
 
     const [db] = useDuckDB();
     const [connection, setConnection] = React.useState<AsyncDuckDBConnection | undefined>(undefined);
@@ -31,7 +32,16 @@ export function useDuckDBConnection<T>(scopes: T, name: string): AsyncDuckDBConn
         let c: AsyncDuckDBConnection | undefined;
         if (db) {
             db.connect().then(async connection => {
-                await db.registerFileText(`${name}.json`, JSON.stringify(scopes));
+                const scopesStr = JSON.stringify(scopes.map((scope, idx) => {
+                    const row = {};
+                    for (const key in scope) {
+                        if (key.indexOf("__") !== 0) {
+                            row[key] = scope[key];
+                        }
+                    }
+                    return row;
+                }));
+                await db.registerFileText(`${name}.json`, scopesStr);
                 await connection.insertJSONFromPath(`${name}.json`, { name });
                 await connection.close();
                 c = await db.connect();

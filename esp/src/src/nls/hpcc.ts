@@ -538,6 +538,7 @@ export = {
         ManualTreeSelection: "(Manual tree selection will be required)",
         Mappings: "Mappings",
         Mask: "Mask",
+        MatchCase: "Match Case",
         Max: "Max",
         MaxConnections: "Max Connections",
         MaxNode: "Max Node",
