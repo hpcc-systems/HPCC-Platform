@@ -22,6 +22,6 @@ set(SRCS
 
 foreach(module ${SRCS})
     SIGN_MODULE(${module})
-    INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/${module} DESTINATION share/ecllibrary/std/DataPatterns COMPONENT Runtime)
+    INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/${module} DESTINATION share/ecllibrary/std/DataPatterns COMPONENT Runtime)
 endforeach()
 
