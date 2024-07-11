@@ -128,6 +128,8 @@ export class MetricGraph extends Graph2<IScope, IScopeEdge, IScope> {
                 parent = this.ensureLineage({
                     __formattedProps: {},
                     __groupedProps: {},
+                    __StdDevs: 0,
+                    __StdDevsSource: "",
                     id: this.scopeID(scope.__parentName),
                     name: scope.__parentName,
                     type: "unknown",

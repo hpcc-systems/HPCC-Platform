@@ -1,6 +1,6 @@
 import { Column } from "@hpcc-js/chart";
 import { ascending as d3Ascending, max as d3Max, scaleLinear as d3ScaleLinear, select as d3Select } from "@hpcc-js/common";
-import { Workunit } from "@hpcc-js/comms";
+import { IScope, Workunit } from "@hpcc-js/comms";
 import { WUTimeline } from "@hpcc-js/eclwatch";
 import { ChartPanel } from "@hpcc-js/layout";
 
@@ -39,7 +39,9 @@ export class WUTimelinePatched extends WUTimeline {
             ;
         this._gantt["_series_idx"] = -1;
         this.strokeWidth(0);
-        this.tooltipHTML(d => "");
+        this.tooltipHTML(d => {
+            return d[7].__hpcc_id;
+        });
     }
 
     data(): any;
@@ -56,6 +58,50 @@ export class WUTimelinePatched extends WUTimeline {
             return row;
         }));
         return this;
+    }
+}
+
+export class WUTimelineNoFetch extends WUTimelinePatched {
+
+    constructor() {
+        super();
+    }
+
+    protected _scopes: IScope[] = [];
+    scopes(): IScope[];
+    scopes(_: IScope[]): this;
+    scopes(_?: IScope[]): IScope[] | this {
+        if (arguments.length === 0) return this._scopes;
+        this._scopes = _;
+        return this;
+    }
+
+    fetchScopes() {
+        const data = this._scopes.filter(scope => {
+            if (!scope.__hpcc_id) {
+                scope.__hpcc_id = scope.name;
+            }
+            return scope.id &&
+                scope.WhenStarted && (scope.WhenFinished || scope.TimeElapsed) &&
+                scope.type !== "activity";
+        }).map((scope: IScope) => {
+            let whenFinished = scope.WhenFinished;
+            if (!whenFinished) {
+                const d = new Date(scope.WhenStarted);
+                d.setMilliseconds(d.getMilliseconds() + scope.TimeElapsed * 1000);
+                whenFinished = d.toISOString();
+            }
+            return [
+                scope.id,
+                scope.WhenStarted,
+                whenFinished,
+                null,
+                this._palette(scope.type),
+                scope.name.split("::").join(":").split(":").slice(0, 1),
+                scope
+            ];
+        });
+        this.data(data);
     }
 }
 
