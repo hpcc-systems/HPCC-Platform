@@ -258,11 +258,11 @@ define([
                             switch (response.MyAccountResponse.passwordDaysRemaining) {
                                 case null:
                                     break;
-                                case -1:
+                                case -1: // password has expired
                                     alert(context.i18n.PasswordExpired);
                                     context._onUserID();
                                     break;
-                                case -2:
+                                case -2: // password never expires
                                     break;
                                 default:
                                     if (response.MyAccountResponse.passwordDaysRemaining && response.MyAccountResponse.passwordDaysRemaining <= response.MyAccountResponse.passwordExpirationWarningDays) {

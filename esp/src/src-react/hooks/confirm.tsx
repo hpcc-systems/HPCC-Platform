@@ -39,7 +39,7 @@ export function useConfirm({ title, message, items = [], onSubmit, submitLabel =
                         setShow(false);
                     }}
                 />
-                <DefaultButton text={cancelLabel} onClick={() => setShow(false)} />
+                {cancelLabel && <DefaultButton text={cancelLabel} onClick={() => setShow(false)} />}
             </DialogFooter>
         </Dialog>;
     }, [cancelLabel, items, message, onSubmit, show, submitLabel, title]);
