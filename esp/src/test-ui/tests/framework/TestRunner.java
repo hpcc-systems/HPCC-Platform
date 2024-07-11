@@ -2,6 +2,7 @@ package framework;
 
 import org.openqa.selenium.Capabilities;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.remote.RemoteWebDriver;
 
@@ -11,7 +12,8 @@ public class TestRunner {
 
     public static void main(String[] args) {
         System.setProperty("webdriver.chrome.silentOutput", "true");
-        System.setProperty("webdriver.chrome.driver", "/usr/bin/chromedriver");
+        System.setProperty("webdriver.chrome.driver", "/usr/bin/chromedriver/chromedriver.exe");
+        //System.setProperty("webdriver.chrome.driver", "C:/Users/nisha/Documents/Internship/Work/jars/chromeDriver/chromedriver.exe");
         // java.util.logging.Logger.getLogger("org.openqa.selenium").setLevel(Level.OFF);
 
         ChromeOptions chromeOptions = new ChromeOptions();
@@ -23,7 +25,7 @@ public class TestRunner {
 
         try {
 
-            driver = new RemoteWebDriver(URI.create("http://localhost:4444/wd/hub").toURL(), chromeOptions);
+            driver = new ChromeDriver(chromeOptions);
 
             Capabilities caps = ((RemoteWebDriver) driver).getCapabilities();
 
@@ -39,6 +41,7 @@ public class TestRunner {
 
             if (driver != null) {
                 driver.get("http://127.0.0.1:8010/");
+                //driver.get("https://play.hpccsystems.com:18010/esp/files/index.html#/activities");
 
                 Thread.sleep(1000);
 
