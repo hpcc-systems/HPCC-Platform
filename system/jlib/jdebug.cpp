@@ -1453,7 +1453,13 @@ static void getMemUsage(unsigned &inuse,unsigned &active,unsigned &total,unsigne
         bufptr = strchr(bufptr, '\n');
     }
     inuse = total-free-cached;
-    swapinuse = swaptotal-swapfree-swapcached;
+
+    // not sure if a bug in kernel or container or ...
+    // but sometimes we see swapfree > 0 when swaptotal == 0
+    if ((swapfree + swapcached) >= swaptotal)
+        swapinuse = 0;
+    else
+        swapinuse = swaptotal-swapfree-swapcached;
 #endif
 }
 
