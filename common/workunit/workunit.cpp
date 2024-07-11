@@ -14502,16 +14502,12 @@ void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IP
             }
         }
     }
-    else
+
     {
         Owned<IWorkUnit> w = &workunit.lock();
         WUState state = w->getState();
         if (WUStateFailed == state)
             throw makeStringException(0, "Workunit failed");
-    }
-
-    {
-        Owned<IWorkUnit> w = &workunit.lock();
         w->setState(WUStateRunning);
     }
 #else

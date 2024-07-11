@@ -206,7 +206,7 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
                         <Shimmer />
                     </>
                 }>
-                    <Metrics wuid={wuid} selection={state?.metrics} />
+                    <Metrics wuid={wuid} parentUrl={`${parentUrl}/${wuid}/metrics`} selection={state?.metrics} />
                 </React.Suspense>
             </DelayLoadedPanel>
             <DelayLoadedPanel visible={tab === "workflows"} size={size}>
