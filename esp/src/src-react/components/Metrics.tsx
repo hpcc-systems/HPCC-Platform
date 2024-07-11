@@ -274,9 +274,12 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     }, [scopesSelectionChanged, scopesTable]);
 
     React.useEffect(() => {
+        if (!scopeFilter || scopeFilter.indexOf("name:") === 0) {
+            setScopeFilter(timelineFilter ? `name:${timelineFilter}` : "");
+        }
         scopesTable
             .metrics(metrics, options, timelineFilter, scopeFilter, matchCase)
-            .render()
+            .lazyRender()
             ;
     }, [matchCase, metrics, options, scopeFilter, scopesTable, timelineFilter]);
 
