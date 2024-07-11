@@ -657,6 +657,7 @@ struct CLogicalNameEntry: public CInterface
         substnum(tmp,"$n$",max);
         dirpartmask.set(tmp.str());
         replicateOffset = file.getPropInt("@replicateOffset",1);
+        lfnHash = file.getPropInt("@lfnHash");
     }
     ~CLogicalNameEntry()
     {
@@ -773,7 +774,7 @@ struct CLogicalNameEntry: public CInterface
         StringBuffer fullname;
         Owned<IStoragePlane> plane = getDataStoragePlane(grpname, true);
         const char * prefix = plane->queryPrefix();
-        unsigned stripeNum = calcStripeNumber(partNo, lname, plane->numDevices());
+        unsigned stripeNum = calcStripeNumber(partNo+1, lfnHash, plane->numDevices());
         bool dirPerPart = max>1?plane->queryDirPerPart():false;
         makePhysicalPartName(lname, partNo+1, max, fullname, 0, DFD_OSdefault, prefix, dirPerPart, stripeNum);
 
@@ -827,6 +828,7 @@ struct CLogicalNameEntry: public CInterface
     StringAttr dirpartmask;
     CXRefManagerBase &manager;
     int replicateOffset;
+    unsigned lfnHash;
 };
 
 
