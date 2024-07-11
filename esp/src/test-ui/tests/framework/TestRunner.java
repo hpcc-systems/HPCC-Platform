@@ -2,16 +2,14 @@ package framework;
 
 import org.openqa.selenium.Capabilities;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.remote.RemoteWebDriver;
 
-import java.io.IOException;
 import java.net.URI;
 
 public class TestRunner {
 
-    public static void main(String[] args) throws IOException, InterruptedException {
+    public static void main(String[] args) {
         System.setProperty("webdriver.chrome.silentOutput", "true");
         System.setProperty("webdriver.chrome.driver", "/usr/bin/chromedriver");
         // java.util.logging.Logger.getLogger("org.openqa.selenium").setLevel(Level.OFF);
@@ -21,34 +19,53 @@ public class TestRunner {
         chromeOptions.addArguments("--no-sandbox");
         chromeOptions.addArguments("--log-level=3");
 
-        WebDriver driver = new RemoteWebDriver(URI.create("http://localhost:4444/wd/hub").toURL(), chromeOptions);
+        WebDriver driver = null;
 
-        Capabilities caps = ((RemoteWebDriver) driver).getCapabilities();
+        try {
 
-        String browserName = caps.getBrowserName();
-        //String browserVersion = caps.getVersion();
-        // System.out.println(browserName+" "+browserVersion);
+            driver = new RemoteWebDriver(URI.create("http://localhost:4444/wd/hub").toURL(), chromeOptions);
 
-        driver.get("http://127.0.0.1:8010/");
+            Capabilities caps = ((RemoteWebDriver) driver).getCapabilities();
 
-        Thread.sleep(1000);
-
-        if (driver.getPageSource().contains("Job Name")) {
-                System.out.println("Pass");
-        } else {
-                System.err.println("Fail");
-        }
-        if (driver.getPageSource().contains("Owner")) {
-                System.out.println("Pass");
-        } else {
-                System.err.println("Fail");
-        }
-        if (driver.getPageSource().contains("Target/Wuid")) {
-                System.out.println("Pass");
-        } else {
-                System.err.println("Fail");
+            String browserName = caps.getBrowserName();
+            System.out.println("browserName: " + browserName);
+            //String browserVersion = caps.getVersion();
+            // System.out.println(browserName+" "+browserVersion);
+        } catch (Exception ex) {
+            System.out.println("Exception in driver initialization: " + ex.getMessage());
         }
 
-        driver.quit();
+        try {
+
+            if (driver != null) {
+                driver.get("http://127.0.0.1:8010/");
+
+                Thread.sleep(1000);
+
+                if (driver.getPageSource().contains("Job Name")) {
+                    System.out.println("Pass");
+                } else {
+                    System.err.println("Fail");
+                }
+                if (driver.getPageSource().contains("Owner")) {
+                    System.out.println("Pass");
+                } else {
+                    System.err.println("Fail");
+                }
+                if (driver.getPageSource().contains("Target/Wuid")) {
+                    System.out.println("Pass");
+                } else {
+                    System.err.println("Fail");
+                }
+
+                driver.quit();
+
+            }else{
+                System.out.println("Error: Driver did not initialize");
+            }
+
+        } catch (Exception ex) {
+            System.out.println("Exception in loading web page: " + ex.getMessage());
+        }
     }
 }
