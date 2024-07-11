@@ -1,9 +1,9 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, IIconProps, SearchBox } from "@fluentui/react";
-import { Label, Spinner } from "@fluentui/react-components";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, IIconProps, SearchBox, Stack } from "@fluentui/react";
+import { Label, Spinner, ToggleButton } from "@fluentui/react-components";
 import { typographyStyles } from "@fluentui/react-theme";
 import { useConst } from "@fluentui/react-hooks";
-import { bundleIcon, Folder20Filled, Folder20Regular, FolderOpen20Filled, FolderOpen20Regular, } from "@fluentui/react-icons";
+import { bundleIcon, Folder20Filled, Folder20Regular, FolderOpen20Filled, FolderOpen20Regular, TextCaseTitleRegular, TextCaseTitleFilled } from "@fluentui/react-icons";
 import { Database } from "@hpcc-js/common";
 import { WorkunitsServiceEx, IScope, splitMetric } from "@hpcc-js/comms";
 import { DBStore, Table } from "@hpcc-js/dgrid";
@@ -55,7 +55,7 @@ class TableEx extends Table {
         this._store = new DBStoreEx(this, this._db);
     }
 
-    scopeFilterFunc(row: object, scopeFilter: string): boolean {
+    scopeFilterFunc(row: object, scopeFilter: string, matchCase: boolean): boolean {
         const filter = scopeFilter.trim();
         if (filter) {
             let field = "";
@@ -64,12 +64,14 @@ class TableEx extends Table {
                 field = filter.substring(0, colonIdx);
             }
             if (field) {
-                return row[field]?.indexOf && row[field]?.indexOf(filter.substring(colonIdx + 1)) >= 0;
+                const value: string = !matchCase ? row[field]?.toString().toLowerCase() : row[field]?.toString();
+                const filterValue: string = !matchCase ? filter.toLowerCase() : filter;
+                return value?.indexOf(filterValue.substring(colonIdx + 1)) >= 0 ?? false;
             }
-            for (const key in row) {
-                if (row[key]?.indexOf && row[key]?.indexOf(filter) >= 0) {
-                    return true;
-                }
+            for (const field in row) {
+                const value: string = !matchCase ? row[field].toString().toLowerCase() : row[field].toString();
+                const filterValue: string = !matchCase ? filter.toLowerCase() : filter;
+                return value?.indexOf(filterValue) >= 0 ?? false;
             }
             return false;
         }
@@ -77,12 +79,12 @@ class TableEx extends Table {
     }
 
     _rawDataMap: { [id: number]: string } = {};
-    metrics(metrics: any[], options: MetricsOptionsT, timelineFilter: string, scopeFilter: string): this {
+    metrics(metrics: any[], options: MetricsOptionsT, timelineFilter: string, scopeFilter: string, matchCase: boolean): this {
         this
             .columns(["##"])    //  Reset hash to force recalculation of default widths
             .columns(["##", nlsHPCC.Type, nlsHPCC.Scope, ...options.properties])
             .data(metrics
-                .filter(m => this.scopeFilterFunc(m, scopeFilter))
+                .filter(m => this.scopeFilterFunc(m, scopeFilter, matchCase))
                 .filter(row => {
                     return (timelineFilter === "" || row.name?.indexOf(timelineFilter) === 0) &&
                         (options.scopeTypes.indexOf(row.type) >= 0);
@@ -170,6 +172,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     const [isLayoutComplete, setIsLayoutComplete] = React.useState<boolean>(false);
     const [isRenderComplete, setIsRenderComplete] = React.useState<boolean>(false);
     const [dot, setDot] = React.useState<string>("");
+    const [matchCase, setMatchCase] = React.useState(false);
 
     React.useEffect(() => {
         const service = new WorkunitsServiceEx({ baseUrl: "" });
@@ -236,7 +239,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
 
     const scopesTable = useConst(() => new TableEx()
         .multiSelect(true)
-        .metrics([], options, timelineFilter, scopeFilter)
+        .metrics([], options, timelineFilter, scopeFilter, matchCase)
         .sortable(true)
     );
 
@@ -252,10 +255,10 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
 
     React.useEffect(() => {
         scopesTable
-            .metrics(metrics, options, timelineFilter, scopeFilter)
+            .metrics(metrics, options, timelineFilter, scopeFilter, matchCase)
             .render()
             ;
-    }, [metrics, options, scopeFilter, scopesTable, timelineFilter]);
+    }, [matchCase, metrics, options, scopeFilter, scopesTable, timelineFilter]);
 
     const updateScopesTable = React.useCallback((selection: IScope[]) => {
         if (scopesTable?.renderCount() > 0) {
@@ -435,13 +438,13 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     }, [lineage, selectedLineage]);
 
     //  Props Table  ---
-    const propsTable2 = useConst(() => new Table()
+    const crossTabTable = useConst(() => new Table()
         .columns([nlsHPCC.Property, nlsHPCC.Value])
         .columnWidth("auto")
         .sortable(true)
     );
 
-    const updatePropsTable2 = React.useCallback((selection: IScope[]) => {
+    const updateCrossTabTable = React.useCallback((selection: IScope[]) => {
         const columns = [];
         const props = [];
         selection.forEach(item => {
@@ -458,12 +461,13 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
             });
             props.push(row);
         });
-        propsTable2
-            ?.columns(columns)
-            ?.data(props)
-            ?.lazyRender()
+        crossTabTable
+            .columns([])
+            .columns(columns)
+            .data(props)
+            .lazyRender()
             ;
-    }, [propsTable2]);
+    }, [crossTabTable]);
 
     React.useEffect(() => {
         const dot = metricGraph.graphTpl(selectedLineage ? [selectedLineage] : [], options);
@@ -491,7 +495,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     React.useEffect(() => {
         if (selectedMetrics) {
             updateScopesTable(selectedMetrics);
-            updatePropsTable2(selectedMetrics);
+            updateCrossTabTable(selectedMetrics);
             updateLineage(selectedMetrics);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -595,13 +599,13 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     const setShowMetricOptionsHook = React.useCallback((show: boolean) => {
         setShowMetricOptions(show);
         scopesTable
-            .metrics(metrics, options, timelineFilter, scopeFilter)
+            .metrics(metrics, options, timelineFilter, scopeFilter, matchCase)
             .render(() => {
                 updateScopesTable(selectedMetrics);
             })
             ;
 
-    }, [metrics, options, scopeFilter, scopesTable, selectedMetrics, timelineFilter, updateScopesTable]);
+    }, [matchCase, metrics, options, scopeFilter, scopesTable, selectedMetrics, timelineFilter, updateScopesTable]);
 
     return <HolyGrail fullscreen={fullscreen}
         header={<>
@@ -613,7 +617,12 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                 <DockPanel layout={options?.layout} onDockPanelCreate={setDockpanel}>
                     <DockPanelItem key="scopesTable" title={nlsHPCC.Metrics}>
                         <HolyGrail
-                            header={<SearchBox value={scopeFilter} onChange={onChangeScopeFilter} iconProps={filterIcon} placeholder={nlsHPCC.Filter} />}
+                            header={<Stack horizontal>
+                                <Stack.Item grow>
+                                    <SearchBox value={scopeFilter} onChange={onChangeScopeFilter} iconProps={filterIcon} placeholder={nlsHPCC.Filter} />
+                                </Stack.Item>
+                                <ToggleButton appearance="subtle" icon={matchCase ? <TextCaseTitleFilled /> : <TextCaseTitleRegular />} title={nlsHPCC.MatchCase} checked={matchCase} onClick={() => { setMatchCase(!matchCase); }} />
+                            </Stack>}
                             main={<AutosizeHpccJSComponent widget={scopesTable} ></AutosizeHpccJSComponent>}
                         />
                     </DockPanelItem>
@@ -643,7 +652,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                         <MetricsPropertiesTables scopesTableColumns={scopesTable.columns()} scopes={selectedMetrics}></MetricsPropertiesTables>
                     </DockPanelItem>
                     <DockPanelItem key="propsTable2" title={nlsHPCC.CrossTab} location="tab-after" relativeTo="propsTable" >
-                        <AutosizeHpccJSComponent widget={propsTable2}></AutosizeHpccJSComponent>
+                        <AutosizeHpccJSComponent widget={crossTabTable}></AutosizeHpccJSComponent>
                     </DockPanelItem>
                 </DockPanel>
                 <MetricsOptions show={showMetricOptions} setShow={setShowMetricOptionsHook} />
