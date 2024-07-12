@@ -420,20 +420,6 @@ jobs:
           cmake -S /hpcc-dev/LN -B /hpcc-dev/build -DHPCC_SOURCE_DIR=/hpcc-dev/HPCC-Platform ${{ needs.preamble.outputs.cmake_docker_config }} -DBUILD_LEVEL=ENTERPRISE -DSIGN_MODULES_PASSPHRASE=${{ secrets.SIGN_MODULES_PASSPHRASE }} -DSIGN_MODULES_KEYID=${{ secrets.SIGN_MODULES_KEYID }} -DPLATFORM=ON -DINCLUDE_PLUGINS=ON -DCONTAINERIZED=OFF -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_SPARK=ON -DCPACK_STRIP_FILES=OFF && \
           cmake --build /hpcc-dev/build --parallel $(nproc) --target package" 
       
-      - name: Upload Assets (enterprise)
-        if: ${{ matrix.ee }}
-        uses: ncipollo/release-action@v1.12.0
-        with:
-          allowUpdates: true
-          generateReleaseNotes: false
-          prerelease: ${{ contains(github.ref, '-rc') }}
-          owner: ${{ secrets.LNB_ACTOR }}
-          repo: LN
-          token: ${{ secrets.LNB_TOKEN }}
-          tag: ${{ needs.preamble.outputs.internal_tag }}
-          artifacts: "${{ needs.preamble.outputs.folder_build }}/hpccsystems-platform-enterprise*.deb,${{ needs.preamble.outputs.folder_build }}/hpccsystems-platform-enterprise*.rpm"
-  
-
       #  Common  ---
       - name: Cleanup Environment
         if: always()
@@ -699,7 +685,7 @@ jobs:
           C:\"Program Files (x86)"\"Microsoft SDKs"\ClickOnce\SignTool\signtool.exe sign /debug /f ../../sign/hpcc_code_signing.pfx /p ${{ secrets.SIGNING_CERTIFICATE_PASSPHRASE}} /t http://timestamp.digicert.com /fd SHA256 hpccsystems-eclide*.exe
 
       - name: Upload Assets
-        uses: ncipollo/release-action@v1.12.0
+        uses: ncipollo/release-action@v1.14.0
         with:
           allowUpdates: true
           generateReleaseNotes: false
