@@ -158,12 +158,7 @@ jobs:
         run: |
           export CLASSPATH=".:${{ inputs.asset-name }}-ecl_watch_ui_tests:${{ github.workspace }}/selenium-libs/*:${{ github.workspace }}/testng-7.7.1.jar:${{ github.workspace }}/jackson-annotations-2.17.0.jar:${{ github.workspace }}/jackson-core-2.17.0.jar:${{ github.workspace }}/jackson-databind-2.17.0.jar:${{ github.workspace }}/jcommander-1.82.jar:${{ github.workspace }}/slf4j-api-1.7.30.jar:${{ github.workspace }}/slf4j-simple-1.7.30.jar"
           pushd ${{ inputs.asset-name }}-ecl_watch_ui_tests
-          pwd
           find . -iname '*.java' -type f -print -exec javac {} \;
-          ps aux
-          sudo apt-get install -y net-tools
-          sudo netstat -tulnap
-          ip -4 addr
           java framework.TestRunner detail
           echo "ECL Watch UI test done"
           lines=$(wc -l < error_ecl_test.log)
