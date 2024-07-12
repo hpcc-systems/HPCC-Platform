@@ -136,9 +136,9 @@ jobs:
         run: |
           wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
           sudo apt-get install -y ./google-chrome-stable_current_amd64.deb
-          wget https://chromedriver.storage.googleapis.com/2.41/chromedriver_linux64.zip
-          unzip chromedriver_linux64.zip
-          sudo mv chromedriver /usr/bin/chromedriver
+          wget https://storage.googleapis.com/chrome-for-testing-public/126.0.6478.126/linux64/chromedriver-linux64.zip
+          unzip chromedriver-linux64.zip -d chromedriver
+          sudo mv chromedriver/chromedriver-linux64/chromedriver /usr/bin/chromedriver
           sudo chown root:root /usr/bin/chromedriver
           sudo chmod +x /usr/bin/chromedriver
           wget https://repo1.maven.org/maven2/org/testng/testng/7.7.1/testng-7.7.1.jar
