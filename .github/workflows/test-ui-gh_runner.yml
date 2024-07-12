@@ -150,7 +150,6 @@ jobs:
           wget https://repo1.maven.org/maven2/org/slf4j/slf4j-api/1.7.30/slf4j-api-1.7.30.jar
           wget https://repo1.maven.org/maven2/org/slf4j/slf4j-simple/1.7.30/slf4j-simple-1.7.30.jar
           unzip selenium-java-4.22.0.zip -d selenium-libs
-          ls -l selenium-libs
 
       - name: Run ECL Watch UI Tests
         timeout-minutes: 80 # generous, current runtime is ~38 minutes, this should be increased if new tests are added
@@ -158,10 +157,12 @@ jobs:
         shell: "bash"
         run: |
           export CLASSPATH=".:${{ inputs.asset-name }}-ecl_watch_ui_tests:${{ github.workspace }}/selenium-libs/*:${{ github.workspace }}/testng-7.7.1.jar:${{ github.workspace }}/jackson-annotations-2.17.0.jar:${{ github.workspace }}/jackson-core-2.17.0.jar:${{ github.workspace }}/jackson-databind-2.17.0.jar:${{ github.workspace }}/jcommander-1.82.jar:${{ github.workspace }}/slf4j-api-1.7.30.jar:${{ github.workspace }}/slf4j-simple-1.7.30.jar"
-          echo "CLASSPATH: $CLASSPATH"
           pushd ${{ inputs.asset-name }}-ecl_watch_ui_tests
           pwd
           find . -iname '*.java' -type f -print -exec javac {} \;
+          ps aux
+          sudo apt-get install -y net-tools
+          sudo netstat -tulnap
           java framework.TestRunner detail
           echo "ECL Watch UI test done"
           lines=$(wc -l < error_ecl_test.log)
