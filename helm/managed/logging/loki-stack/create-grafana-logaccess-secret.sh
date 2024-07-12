@@ -1,30 +1,24 @@
 #!/bin/bash
 WORK_DIR=$(dirname $0)
-source ${WORK_DIR}/env-loganalytics
 
 k8scommand="kubectl"
 secretname="grafana-logaccess"
-secretsdir="${WORK_DIR}/secrets-templates"
 namespace="default"
+username="admin"
+password=""
 
 usage()
 {
     echo "Creates necessary k8s secret used by HPCC's logAccess to access Loki data source through Grafana"
     echo "> create-grafana-logaccess-secret.sh [Options]"
     echo ""
+    echo "Example: create-grafana-logaccess-secret.sh -u admin -p mypassword -n mynamespace"
+    echo ""
     echo "Options:"
-    echo "-d       Specifies directory containing required secret values in self named files."
-    echo "         Defaults to <workingdir>/<${secretssubdir}>"
+    echo "-u       Grafana user name (default: admin)"
+    echo "-p       Grafana password (required)"
     echo "-h       Print Usage message"
-    echo "-n       Specifies namespace for secret"
-    echo ""
-    echo "Requires directory containing secret values in dedicated files."
-    echo "Defaults to  ${secretssubdir} if not specified via -d option."
-    echo ""
-    echo "Expected directory structure:"
-    echo "${secretsdir}/"
-    echo "   password  - Should contain Grafana user name"
-    echo "   username  - Should contain Grafana password"
+    echo "-n       Specifies namespace for secret (default: default)"
 }
 
 while [ "$#" -gt 0 ]; do
@@ -37,6 +31,12 @@ while [ "$#" -gt 0 ]; do
       -d) shift
          secretsdir=$1
          ;;
+      -u) shift
+         username=$1
+         ;;
+      -p) shift
+          password=$1
+          ;;
       -n) shift
          namespace=$1
          ;;
@@ -44,6 +44,13 @@ while [ "$#" -gt 0 ]; do
   shift
 done
 
+if [ -z "${password}" ];
+then
+  echo "Error: Missing required password!"
+  echo >&2
+  usage
+  exit 1
+fi
 echo "Creating '${namespace}/${secretname}' secret."
 
 command -v ${k8scommand} >/dev/null 2>&1 || { echo >&2 "Aborting - '${k8scommand}' not found!"; exit 1; }
@@ -53,10 +60,11 @@ if [[ $? -eq 0 ]]
 then
   echo "WARNING: Target secret '${namespace}/${secretname}' already exists! Delete it and re-run if secret update desired."
   echo "${errormessage}"
+  echo "use this command: '${k8scommand} delete secret ${secretname} -n ${namespace}'"
   exit 1
 fi
 
-errormessage=$(${k8scommand} create secret generic ${secretname} --from-file=${secretsdir} -n ${namespace} )
+errormessage=$(${k8scommand} create secret generic ${secretname} --from-literal=username=${username} --from-literal=password=${password} -n ${namespace})
 if [[ $? -ne 0 ]]
 then
   echo "Error creating: Target secret '${namespace}/${secretname}'!"
