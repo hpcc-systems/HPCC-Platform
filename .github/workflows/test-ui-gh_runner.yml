@@ -163,6 +163,7 @@ jobs:
           ps aux
           sudo apt-get install -y net-tools
           sudo netstat -tulnap
+          ip -4 addr
           java framework.TestRunner detail
           echo "ECL Watch UI test done"
           lines=$(wc -l < error_ecl_test.log)
