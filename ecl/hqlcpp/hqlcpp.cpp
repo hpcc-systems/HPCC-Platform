@@ -2224,8 +2224,28 @@ void HqlCppTranslator::buildFunctionCall(BuildCtx & ctx, IIdAtom * name, HqlExpr
 void HqlCppTranslator::callProcedure(BuildCtx & ctx, IIdAtom * name, HqlExprArray & args)
 {
     OwnedHqlExpr call = bindTranslatedFunctionCall(name, args);
-    assertex(call->queryExternalDefinition());
+    IHqlExpression * funcdef = call->queryExternalDefinition();
+
+    assertex(funcdef);
+
+    CHqlBoundExpr boundTimer, boundStart;
+    IHqlExpression * external = funcdef->queryChild(0);
+    bool isTimed = external->hasAttribute(timeAtom);
+    if (isTimed)
+    {
+        StringBuffer nameTemp;
+        const char * name = str(external->queryId());
+        if (getStringValue(nameTemp, queryAttributeChild(external, timeAtom, 0)).length())
+            name = nameTemp;
+        buildStartTimer(ctx, boundTimer, boundStart, name);
+    }
+
     ctx.addExpr(call);
+
+    if (isTimed)
+    {
+        buildStopTimer(ctx, boundTimer, boundStart);
+    }
 }
 
 bool HqlCppTranslator::getDebugFlag(const char * name, bool defValue)
@@ -6694,6 +6714,10 @@ void HqlCppTranslator::doBuildAssignCast(BuildCtx & ctx, const CHqlBoundTarget &
                 case no_substring:
                     //don't do this if the target type is unicode at the moment
                     ignoreStretched = isStringType(targetType);
+                    break;
+                case no_regex_replace:
+                    // replacing into a fixed-sized target should not require a temp
+                    useTemp = false;
                     break;
                 }
 

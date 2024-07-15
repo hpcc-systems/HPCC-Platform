@@ -558,6 +558,7 @@ const char * cppSystemText[]  = {
     "   boolean regexNewStrFound() : method,pure,entrypoint='found';"
     "   string regexNewStrFoundX(unsigned4 idx) : method,pure,entrypoint='getMatchX';"
     "   string regexNewStrReplaceX(const string _search, const string _replace) : method,pure,entrypoint='replace',time('REGEXREPLACE');"
+    "   regexNewStrReplaceFixed(noconst string _tgt, const string _search, const string _replace) : method,pure,entrypoint='replaceFixed',time('REGEXREPLACE');"
     "   set of string regexMatchSet(const string _search) : method,pure,entrypoint='getMatchSet',time('REGEXFINDSET');"
 
     "   regexNewSetUStrPattern(const varunicode _pattern, boolean isCaseSensitive) : omethod,entrypoint='setPattern',time('CompileUnicodeRegex');"
@@ -565,6 +566,7 @@ const char * cppSystemText[]  = {
     "   boolean regexNewUStrFound() : method,pure,entrypoint='found';"
     "   unicode regexNewUStrFoundX(unsigned4 idx) : method,pure,entrypoint='getMatchX';"
     "   unicode regexNewUStrReplaceX(const unicode _search, const unicode _replace) : method,pure,entrypoint='replace',time('REGEXREPLACE');"
+    "   regexNewUStrReplaceFixed(noconst unicode _tgt, const unicode _search, const unicode _replace) : method,pure,entrypoint='replaceFixed',time('REGEXREPLACE');"
     "   set of unicode regexUStrMatchSet(const unicode _search) : method,pure,entrypoint='getMatchSet',time('REGEXFINDSET');"
 
     "   regexNewSetU8StrPattern(const utf8 _pattern, boolean isCaseSensitive) : omethod,entrypoint='setPattern',time('CompileUTF8Regex');"
@@ -572,6 +574,7 @@ const char * cppSystemText[]  = {
     "   boolean regexNewU8StrFound() : method,pure,entrypoint='found';"
     "   utf8 regexNewU8StrFoundX(unsigned4 idx) : method,pure,entrypoint='getMatchX';"
     "   utf8 regexNewU8StrReplaceX(const utf8 _search, const utf8 _replace) : method,pure,entrypoint='replace',time('REGEXREPLACE');"
+    "   regexNewU8StrReplaceFixed(noconst utf8 _tgt, const utf8 _search, const utf8 _replace) : method,pure,entrypoint='replaceFixed',time('REGEXREPLACE');"
     "   set of utf8 regexU8StrMatchSet(const utf8 _search) : method,pure,entrypoint='getMatchSet',time('REGEXFINDSET');"
 
     //clibrary functions that are called from the code generation

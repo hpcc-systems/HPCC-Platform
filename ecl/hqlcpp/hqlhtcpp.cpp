@@ -18657,20 +18657,54 @@ void HqlCppTranslator::doBuildNewRegexFindReplace(BuildCtx & ctx, const CHqlBoun
     // as long as the find instance.  Only exception could be if call created a temporary class instance.
     if (expr->getOperator() == no_regex_replace)
     {
-        HqlExprArray args;
-        args.append(*LINK(compiled));
-        args.append(*LINK(search));
-        args.append(*LINK(expr->queryChild(2)));
-        IIdAtom * func = nullptr;
-        if (isUTF8Type(searchStringType))
-            func = regexNewU8StrReplaceXId;
-        else if (isUnicodeType(searchStringType))
-            func = regexNewUStrReplaceXId;
+        // If the target is a preallocated fixed-length buffer and the
+        // datatype matches the result expression datatype, we can call an optimized replace function
+        if (target && target->isFixedSize() && target->queryType()->getTypeCode() == expr->queryType()->getTypeCode())
+        {
+            // We need to build our arguments manually because we need to
+            // pass the size of the output buffer (the target) as an argument
+            IHqlExpression * targetVar = target->expr;
+            unsigned targetSize = target->queryType()->getStringLen();
+
+            CHqlBoundExpr searchExpr, replaceExpr;
+            buildCachedExpr(ctx, search, searchExpr);
+            buildCachedExpr(ctx, expr->queryChild(2), replaceExpr);
+
+            HqlExprArray args;
+            args.append(*LINK(compiled)); // instance on which method is called
+            args.append(*getSizetConstant(targetSize)); // size of the output buffer in code units
+            args.append(*getElementPointer(targetVar)); // pointer to the output buffer
+            args.append(*getBoundLength(searchExpr)); // length of regex expression, in characters
+            args.append(*LINK(searchExpr.expr)); // pointer to regex expression
+            args.append(*getBoundLength(replaceExpr)); // length of replacement expression, in characters
+            args.append(*LINK(replaceExpr.expr)); // pointer to replacement expression
+
+            IIdAtom * func = nullptr;
+            if (isUTF8Type(searchStringType))
+                func = regexNewU8StrReplaceFixedId;
+            else if (isUnicodeType(searchStringType))
+                func = regexNewUStrReplaceFixedId;
+            else
+                func = regexNewStrReplaceFixedId;
+            callProcedure(ctx, func, args);
+        }
         else
-            func = regexNewStrReplaceXId;
-        OwnedHqlExpr call = bindFunctionCall(func, args);
-        //Need to associate???
-        buildExprOrAssign(ctx, target, call, bound);
+        {
+            HqlExprArray args;
+            args.append(*LINK(compiled));
+            args.append(*LINK(search));
+            args.append(*LINK(expr->queryChild(2)));
+            IIdAtom * func = nullptr;
+            if (isUTF8Type(searchStringType))
+                func = regexNewU8StrReplaceXId;
+            else if (isUnicodeType(searchStringType))
+                func = regexNewUStrReplaceXId;
+            else
+                func = regexNewStrReplaceXId;
+            OwnedHqlExpr call = bindFunctionCall(func, args);
+            //Need to associate???
+            buildExprOrAssign(ctx, target, call, bound);
+        }
     }
     else
     {
