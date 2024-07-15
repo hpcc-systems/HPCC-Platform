@@ -630,6 +630,8 @@ void CLdapSecManager::init(const char *serviceName, IPropertyTree* cfg)
     m_permissionsCache->setCacheTimeout( 60 * cacheTimeoutMinutes);
     m_permissionsCache->setTransactionalEnabled(true);
     m_permissionsCache->setSecManager(this);
+    m_useLegacyDefaultFileScopePermissionCaching = cfg->getPropBool("@useLegacyDefaultFileScopePermissionCache", m_useLegacyDefaultFileScopePermissionCaching);
+    m_permissionsCache->setUseLegacyDefaultFileScopePermissionCache(m_useLegacyDefaultFileScopePermissionCaching);
     m_passwordExpirationWarningDays = cfg->getPropInt(".//@passwordExpirationWarningDays", 10); //Default to 10 days
     m_checkViewPermissions = cfg->getPropBool(".//@checkViewPermissions", false);
     m_hpccInternalScope.set(queryDfsXmlBranchName(DXB_Internal)).append("::");//HpccInternal::
@@ -1202,7 +1204,7 @@ ISecUser * CLdapSecManager::findUser(const char * username, IEspSecureContext* s
 
 ISecUserIterator * CLdapSecManager::getAllUsers(IEspSecureContext* secureContext)
 {
-    synchronized block(m_monitor);
+    MonitorBlock block(m_monitor);
     m_user_array.popAll(true);
     m_ldap_client->retrieveUsers(m_user_array);
     return new ArrayIIteratorOf<IUserArray, ISecUser, ISecUserIterator>(m_user_array);
@@ -1272,8 +1274,7 @@ IAuthMap * CLdapSecManager::createAuthMap(IPropertyTree * authconfig, IEspSecure
 {
     CAuthMap* authmap = new CAuthMap();
 
-    IPropertyTreeIterator *loc_iter = NULL;
-    loc_iter = authconfig->getElements(".//Location");
+    Owned<IPropertyTreeIterator> loc_iter(authconfig->getElements(".//Location"));
     if (loc_iter != NULL)
     {
         IPropertyTree *location = NULL;
@@ -1308,8 +1309,6 @@ IAuthMap * CLdapSecManager::createAuthMap(IPropertyTree * authconfig, IEspSecure
             }
             loc_iter->next();
         }
-        loc_iter->Release();
-        loc_iter = NULL;
     }
 
     authmap->shareWithManager(*this, secureContext);
@@ -1322,8 +1321,7 @@ IAuthMap * CLdapSecManager::createFeatureMap(IPropertyTree * authconfig, IEspSec
 {
     CAuthMap* feature_authmap = new CAuthMap();
 
-    IPropertyTreeIterator *feature_iter = NULL;
-    feature_iter = authconfig->getElements(".//Feature");
+    Owned<IPropertyTreeIterator> feature_iter(authconfig->getElements(".//Feature"));
     if (feature_iter != NULL)
     {
         IPropertyTree *feature = NULL;
@@ -1355,8 +1353,6 @@ IAuthMap * CLdapSecManager::createFeatureMap(IPropertyTree * authconfig, IEspSec
             }
             feature_iter->next();
         }
-        feature_iter->Release();
-        feature_iter = NULL;
     }
 
     feature_authmap->shareWithManager(*this, secureContext);
@@ -1652,9 +1648,7 @@ LDAPSECURITY_API IAuthMap *newDefaultAuthMap(IPropertyTree* config)
 {
     CAuthMap* authmap = new CAuthMap();
 
-    IPropertyTreeIterator *loc_iter = NULL;
-    loc_iter = config->getElements(".//Location");
-
+    Owned<IPropertyTreeIterator> loc_iter(config->getElements(".//Location"));
     if (loc_iter != NULL)
     {
         IPropertyTree *location = NULL;
@@ -1676,8 +1670,6 @@ LDAPSECURITY_API IAuthMap *newDefaultAuthMap(IPropertyTree* config)
             }
             loc_iter->next();
         }
-        loc_iter->Release();
-        loc_iter = NULL;
     }
 
     return authmap;

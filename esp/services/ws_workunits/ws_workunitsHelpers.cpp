@@ -1203,20 +1203,30 @@ void WsWuInfo::getServiceNames(IEspECLWorkunit &info, unsigned long flags)
 {
     if (!(flags & WUINFO_IncludeServiceNames))
         return;
-
     StringArray serviceNames;
-    WuScopeFilter filter;
-    filter.addScopeType("activity");
-    filter.addOutputAttribute(WaServiceName);
-    filter.addRequiredAttr(WaServiceName);
-    filter.finishedFilter();
-    Owned<IConstWUScopeIterator> it = &cw->getScopeIterator(filter);
-    ForEach(*it)
+    SummaryMap services;
+    if (cw->getSummary(SummaryType::Service, services))
     {
-        StringBuffer serviceName;
-        const char *value = it->queryAttribute(WaServiceName, serviceName);
-        if (!isEmptyString(value))
-            serviceNames.append(value);
+        for (const auto& [serviceName, flags] : services)
+            if (!serviceName.empty())
+                serviceNames.append(serviceName.c_str());
+    }
+    else
+    {
+        // Old method used if new information not present
+        WuScopeFilter filter;
+        filter.addScopeType("activity");
+        filter.addOutputAttribute(WaServiceName);
+        filter.addRequiredAttr(WaServiceName);
+        filter.finishedFilter();
+        Owned<IConstWUScopeIterator> it = &cw->getScopeIterator(filter);
+        ForEach(*it)
+        {
+            StringBuffer serviceName;
+            const char *value = it->queryAttribute(WaServiceName, serviceName);
+            if (!isEmptyString(value))
+                serviceNames.append(value);
+        }
     }
     info.setServiceNames(serviceNames);
 }

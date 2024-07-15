@@ -1493,6 +1493,7 @@ Pass in dict with .root, .name, .service, .defaultPort, .selector defined
     {{- if hasKey $globalServiceInfo "labels" -}}{{- $_ := set $lvars "labels" (merge $lvars.labels $globalServiceInfo.labels) -}}{{- end -}}
     {{- if hasKey $globalServiceInfo "annotations" -}}{{- $_ := set $lvars "annotations" (merge $lvars.annotations $globalServiceInfo.annotations) -}}{{- end -}}
     {{- if hasKey $globalServiceInfo "ingress" -}}{{- $_ := set $lvars "ingress" $globalServiceInfo.ingress -}}{{- end -}}
+    {{- if hasKey $globalServiceInfo "externalTrafficPolicy" -}}{{- $_ := set $lvars "externalTrafficPolicy" $globalServiceInfo.externalTrafficPolicy -}}{{- end -}}
     {{- if hasKey $globalServiceInfo "loadBalancerSourceRanges" -}}{{- $_ := set $lvars "loadBalancerSourceRanges" $globalServiceInfo.loadBalancerSourceRanges -}}{{- end -}}
     {{- $_ := set $lvars "type" $globalServiceInfo.type -}}
    {{- else -}}
@@ -1513,6 +1514,7 @@ Pass in dict with .root, .name, .service, .defaultPort, .selector defined
   {{- end }}
  {{- end -}}
  {{- if hasKey .service "ingress" -}}{{- $_ := set $lvars "ingress" .service.ingress -}}{{- end -}}
+ {{- if hasKey .service "externalTrafficPolicy" -}}{{- $_ := set $lvars "externalTrafficPolicy" .service.externalTrafficPolicy -}}{{- end -}}
  {{- if hasKey .service "loadBalancerSourceRanges" -}}{{- $_ := set $lvars "loadBalancerSourceRanges" .service.loadBalancerSourceRanges -}}{{- end -}}
 {{- end }}
 
@@ -1521,7 +1523,7 @@ kind: Service
 metadata:
   name: {{ $lvars.serviceName | quote }}
   labels:
-    helmVersion: 9.7.0-trunk0
+    helmVersion: 9.9.0-trunk0
     {{- include "hpcc.addStandardLabels" (dict "root" $.root "instance" $lvars.serviceName ) | indent 4 }}
 {{- if $lvars.labels }}
 {{ toYaml $lvars.labels | indent 4 }}
@@ -1541,6 +1543,9 @@ spec:
   selector:
     server: {{ .selector | quote }}
   type: {{ $lvars.type }}
+{{- if $lvars.externalTrafficPolicy }}
+  externalTrafficPolicy: {{ $lvars.externalTrafficPolicy }}
+{{- end }}
 {{- if $lvars.loadBalancerSourceRanges }}
   loadBalancerSourceRanges:
   {{- if ne $lvars.type "LoadBalancer" -}}

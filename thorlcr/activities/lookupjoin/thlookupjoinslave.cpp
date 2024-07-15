@@ -806,6 +806,7 @@ class CInMemJoinBase : public CSlaveActivity, public CAllOrLookupHelper<HELPER>,
 {
     typedef CSlaveActivity PARENT;
 
+    JoinMatchStats matchStats;
     Owned<IException> leftexception;
 
     bool eos, eog, someSinceEog;
@@ -949,6 +950,7 @@ protected:
     unsigned keepLimit;
     unsigned joined;
     unsigned joinCounter;
+    unsigned candidateCounter;
     OwnedConstThorRow defaultLeft;
 
     bool leftMatch, grouped;
@@ -1165,10 +1167,12 @@ protected:
     inline const void *denormalizeNextRow()
     {
         ConstPointerArray filteredRhs;
+        unsigned candidates = 0;
         while (rhsNext)
         {
             if (abortSoon)
                 return NULL;
+            candidates++;
             if (!fuzzyMatch || (HELPERBASE::match(leftRow, rhsNext)))
             {
                 leftMatch = true;
@@ -1187,6 +1191,7 @@ protected:
             }
             rhsNext = tableProxy->getNextRHS(currentHashEntry); // NB: currentHashEntry only used for Lookup,Many case
         }
+        matchStats.noteGroup(1, candidates);
         if (filteredRhs.ordinality() || (!leftMatch && 0!=(flags & JFleftouter)))
         {
             unsigned rcCount = 0;
@@ -1238,6 +1243,7 @@ protected:
                 {
                     leftRow.setown(left->nextRow());
                     joinCounter = 0;
+                    candidateCounter = 0;
                     if (leftRow)
                     {
                         eog = false;
@@ -1273,6 +1279,7 @@ protected:
                     RtlDynamicRowBuilder rowBuilder(allocator);
                     while (rhsNext)
                     {
+                        candidateCounter++;
                         if (!fuzzyMatch || HELPERBASE::match(leftRow, rhsNext))
                         {
                             leftMatch = true;
@@ -1289,12 +1296,15 @@ protected:
                                         rhsNext = NULL;
                                     else
                                         rhsNext = tableProxy->getNextRHS(currentHashEntry); // NB: currentHashEntry only used for Lookup,Many case
+                                    if (!rhsNext)
+                                        matchStats.noteGroup(1, candidateCounter);
                                     return row.getClear();
                                 }
                             }
                         }
                         rhsNext = tableProxy->getNextRHS(currentHashEntry); // NB: currentHashEntry used for Lookup,Many or All cases
                     }
+                    matchStats.noteGroup(1, candidateCounter);
                     if (!leftMatch && NULL == rhsNext && 0!=(flags & JFleftouter))
                     {
                         size32_t sz = HELPERBASE::joinTransform(rowBuilder, leftRow, defaultRight, 0, JTFmatchedleft);
@@ -1330,6 +1340,7 @@ public:
 
         joined = 0;
         joinCounter = 0;
+        candidateCounter = 0;
         leftMatch = false;
         returnMany = false;
 
@@ -1472,6 +1483,7 @@ public:
     {
         joined = 0;
         joinCounter = 0;
+        candidateCounter = 0;
         leftMatch = false;
         rhsNext = NULL;
 
@@ -1631,6 +1643,11 @@ public:
     {
         ActPrintLog("LHS input finished, %" RCPF "d rows read", count);
     }
+    virtual void gatherActiveStats(CRuntimeStatisticCollection &activeStats) const override
+    {
+        PARENT::gatherActiveStats(activeStats);
+        matchStats.gatherStats(activeStats);
+    }
 };
 
 
@@ -1751,7 +1768,7 @@ protected:
 
     // NB: Only used by channel 0
     Owned<CFileOwner> overflowWriteFile;
-    Owned<IRowWriter> overflowWriteStream;
+    Owned<IExtRowWriter> overflowWriteStream;
     rowcount_t overflowWriteCount;
     OwnedMalloc<IChannelDistributor *> channelDistributors;
     unsigned nextRhsToSpill = 0;
@@ -1878,10 +1895,10 @@ protected:
                         VStringBuffer tempPrefix("spill_%d", container.queryId());
                         StringBuffer tempName;
                         GetTempFilePath(tempName, tempPrefix.str());
-                        file.setown(new CFileOwner(createIFile(tempName.str())));
+                        file.setown(container.queryActivity()->createOwnedTempFile(tempName.str()));
                         VStringBuffer spillPrefixStr("clearAllNonLocalRows(%d)", SPILL_PRIORITY_SPILLABLE_STREAM);
                         // 3rd param. is skipNulls = true, the row arrays may have had the non-local rows delete already.
-                        rows.save(file->queryIFile(), spillCompInfo, true, spillPrefixStr.str()); // saves committed rows
+                        rows.save(*file, spillCompInfo, true, spillPrefixStr.str()); // saves committed rows
                         rows.flushMarker = 0; // reset because array will be moved as a consequence of further adds, so next scan must be from start
                     }
 
@@ -2900,6 +2917,7 @@ public:
             overflowWriteCount += rhsInRowsTemp.ordinality();
             ForEachItemIn(r, rhsInRowsTemp)
                 overflowWriteStream->putRow(rhsInRowsTemp.getClear(r));
+            overflowWriteFile->noteSize(overflowWriteStream->getStatistic(StSizeDiskWrite));
             return true;
         }
         if (hasFailedOverToLocal())
@@ -2943,13 +2961,13 @@ public:
         StringBuffer tempFilename;
         GetTempFilePath(tempFilename, "lookup_local");
         ActPrintLog("Overflowing RHS broadcast rows to spill file: %s", tempFilename.str());
-        OwnedIFile iFile = createIFile(tempFilename.str());
-        overflowWriteFile.setown(new CFileOwner(iFile.getLink()));
-        overflowWriteStream.setown(createRowWriter(iFile, queryRowInterfaces(rightITDL), rwFlags));
+        overflowWriteFile.setown(container.queryActivity()->createOwnedTempFile(tempFilename.str()));
+        overflowWriteStream.setown(createRowWriter(&(overflowWriteFile->queryIFile()), queryRowInterfaces(rightITDL), rwFlags));
 
         overflowWriteCount += rhsInRowsTemp.ordinality();
         ForEachItemIn(r, rhsInRowsTemp)
             overflowWriteStream->putRow(rhsInRowsTemp.getClear(r));
+        overflowWriteFile->noteSize(overflowWriteStream->getStatistic(StSizeDiskWrite));
         return true;
     }
     virtual void gatherActiveStats(CRuntimeStatisticCollection &activeStats) const
@@ -3358,7 +3376,7 @@ protected:
         }
     }
 public:
-    CAllJoinSlaveActivity(CGraphElementBase *_container) : PARENT(_container)
+    CAllJoinSlaveActivity(CGraphElementBase *_container) : PARENT(_container, allJoinActivityStatistics)
     {
         returnMany = true;
     }

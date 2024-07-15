@@ -13,3 +13,15 @@
  <Row><orig>Sea       </orig><withcase>Sea       </withcase><wocase>fea       </wocase><uorig>Drei      </uorig><uwithcase>Drëi      </uwithcase><uwocase>Drëi      </uwocase><u8orig>Drei</u8orig><u8withcase>Drëi</u8withcase><u8wocase>Drëi</u8wocase></Row>
  <Row><orig>Shells    </orig><withcase>Shellf    </withcase><wocase>fhellf    </wocase><uorig>Vier      </uorig><uwithcase>Viër      </uwithcase><uwocase>Viër      </uwocase><u8orig>Vier</u8orig><u8withcase>Viër</u8withcase><u8wocase>Viër</u8wocase></Row>
 </Dataset>
+<Dataset name='Result 5'>
+ <Row><Result_5>true</Result_5></Row>
+</Dataset>
+<Dataset name='Result 6'>
+ <Row><Result_6>true</Result_6></Row>
+</Dataset>
+<Dataset name='Result 7'>
+ <Row><Result_7>true</Result_7></Row>
+</Dataset>
+<Dataset name='Result 8'>
+ <Row><Result_8>true</Result_8></Row>
+</Dataset>

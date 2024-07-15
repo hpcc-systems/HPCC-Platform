@@ -181,6 +181,7 @@ define([
                 evt.preventDefault();
                 context.calcPermissionState(evt.cell.column.field, evt.value, evt.cell.row.data);
                 evt.grid.store.put(evt.cell.row.data);
+                const t = window.setTimeout(() => { context.grid.refresh(); window.clearTimeout(t); }, 100);
             });
             return retVal;
         },

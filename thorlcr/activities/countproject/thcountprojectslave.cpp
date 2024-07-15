@@ -235,7 +235,7 @@ public:
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
-        info.buffersInput = true;
+        info.canBufferInput = true;
         info.isSequential = true;
         calcMetaInfoSize(info, queryInput(0));
     }

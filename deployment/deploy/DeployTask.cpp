@@ -752,7 +752,7 @@ public:
          // Prompt to retry on error
          m_errorString.appendf("Cannot copy %s to %s: ", source, target);
 
-         synchronized block(s_monitor);
+         MonitorBlock block(s_monitor);
          if (m_pCallback->getAbortStatus())//has some other thread set the global abort flag?
            break; //go back to beginning of loop where we exit on abort
 
@@ -822,7 +822,7 @@ public:
 
      if (m_msgBoxOwner)//did this thread show the message box in last iteration of this loop?
      {
-       synchronized block(s_monitor);
+       MonitorBlock block(s_monitor);
        s_msgBoxActive = false;
        m_msgBoxOwner = false;//up for grabs by other threads
        s_monitor.notifyAll();

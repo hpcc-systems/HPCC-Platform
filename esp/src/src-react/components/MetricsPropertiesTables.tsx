@@ -1,11 +1,15 @@
 import * as React from "react";
 import { useConst } from "@fluentui/react-hooks";
+import { Palette } from "@hpcc-js/common";
 import { IScope } from "@hpcc-js/comms";
-import { Table } from "@hpcc-js/dgrid";
+import { ColumnFormat, Table } from "@hpcc-js/dgrid";
+import { formatDecimal } from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
 import { AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
 
-interface MetricsPropertiesTablesProps {
+Palette.rainbow("StdDevs", ["white", "white", "#fff0f0", "#ffC0C0", "#ff8080", "#ff0000", "#ff0000"]);
+
+export interface MetricsPropertiesTablesProps {
     scopesTableColumns?: string[];
     scopes?: IScope[];
 }
@@ -21,8 +25,19 @@ export const MetricsPropertiesTables: React.FunctionComponent<MetricsPropertiesT
 
     //  Props Table  ---
     const propsTable = useConst(() => new Table()
-        .columns([nlsHPCC.Property, nlsHPCC.Value, "Avg", "Min", "Max", "Delta", "StdDev", "SkewMin", "SkewMax", "NodeMin", "NodeMax"])
-        .columnWidth("auto")
+        .columns([nlsHPCC.Property, nlsHPCC.Value, "Avg", "Min", "Max", "Delta", "StdDev", "SkewMin", "SkewMax", "NodeMin", "NodeMax", "StdDevs"])
+        .columnFormats([
+            new ColumnFormat()
+                .column(nlsHPCC.Property)
+                .paletteID("StdDevs")
+                .min(0)
+                .max(6)
+                .valueColumn("StdDevs"),
+            new ColumnFormat()
+                .column("StdDevs")
+                .width(0)
+        ])
+        .sortable(true)
     );
 
     React.useEffect(() => {
@@ -31,7 +46,7 @@ export const MetricsPropertiesTables: React.FunctionComponent<MetricsPropertiesT
             const scopeProps = [];
             for (const key in item.__groupedProps) {
                 const row = item.__groupedProps[key];
-                scopeProps.push([row.Key, row.Value, row.Avg, row.Min, row.Max, row.Delta, row.StdDev, row.SkewMin, row.SkewMax, row.NodeMin, row.NodeMax]);
+                scopeProps.push([row.Key, row.Value, row.Avg, row.Min, row.Max, row.Delta, row.StdDev === undefined ? "" : `${row.StdDev} (${formatDecimal(row.StdDevs)}σ)`, row.SkewMin, row.SkewMax, row.NodeMin, row.NodeMax, row.StdDevs]);
             }
             scopeProps.sort((l, r) => {
                 const lIdx = sortByColumns.indexOf(l[0]);
@@ -52,8 +67,10 @@ export const MetricsPropertiesTables: React.FunctionComponent<MetricsPropertiesT
         });
 
         propsTable
-            ?.data(props)
-            ?.lazyRender()
+            .columns([])
+            .columns([nlsHPCC.Property, nlsHPCC.Value, "Avg", "Min", "Max", "Delta", "StdDev", "SkewMin", "SkewMax", "NodeMin", "NodeMax", "StdDevs"])
+            .data(props)
+            .lazyRender()
             ;
     }, [propsTable, scopes, sortByColumns]);
 

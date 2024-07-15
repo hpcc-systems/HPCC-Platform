@@ -116,7 +116,7 @@ public:
     const IPropertyTree * getSecureConfig()
     {
         //Later: return a synced tree...
-        return createSecureSocketConfig(certificate, privateKey, passPhrase);
+        return createSecureSocketConfig(certificate, privateKey, passPhrase, false);
     }
 
 } securitySettings;
@@ -1301,7 +1301,7 @@ protected:
     {
         if (inputStream->tell() != startPos)
         {
-            inputStream->reset(startPos);
+            inputStream->reset(startPos, UnknownOffset);
             return true;
         }
         return false;
@@ -1411,7 +1411,7 @@ class CRemoteDiskReadActivity : public CRemoteStreamReadBaseActivity
     {
         if (prefetchBuffer.tell() != startPos)
         {
-            inputStream->reset(startPos);
+            inputStream->reset(startPos, UnknownOffset);
             prefetchBuffer.clearStream();
             prefetchBuffer.setStream(inputStream);
             return true;
@@ -3629,7 +3629,7 @@ public:
     IMPLEMENT_IINTERFACE
 
     CRemoteFileServer(unsigned maxThreads, unsigned maxThreadsDelayMs, unsigned maxAsyncCopy, IPropertyTree *_keyPairInfo)
-        : asyncCommandManager(maxAsyncCopy), stdCmdThrottler("stdCmdThrotlter"), slowCmdThrottler("slowCmdThrotlter"), keyPairInfo(_keyPairInfo)
+        : asyncCommandManager(maxAsyncCopy), stdCmdThrottler("stdCmdThrottler"), slowCmdThrottler("slowCmdThrottler"), keyPairInfo(_keyPairInfo)
     {
         lasthandle = 0;
         selecthandler.setown(createSocketSelectHandler(NULL));
@@ -3788,7 +3788,10 @@ public:
         }
         IFEflags extraFlags = (IFEflags)extra;
         // none => nocache for remote (hint)
-        // can revert to previous behavior with conf file setting "allow_pgcache_flush=false"
+        // can change this default setting with:
+        //  bare-metal legacy - conf file setting: allow_pgcache_flush=false
+        //  bare-metal - environment.xml dafilesrv expert setting: disableIFileMask=0x1 (IFEnocache)
+        //  containerized - values.yaml dafilesrv expert setting: disableIFileMask: 0x1 (IFEnocache)
         if (extraFlags == IFEnone)
             extraFlags = IFEnocache;
         Owned<IFile> file = createIFile(name->text);
@@ -5285,7 +5288,7 @@ public:
             handleTracer.traceIfReady();
     }
 
-    virtual void run(IPropertyTree *componentConfig, DAFSConnectCfg _connectMethod, const SocketEndpoint &listenep, unsigned sslPort, const SocketEndpoint *rowServiceEp, bool _rowServiceSSL, bool _rowServiceOnStdPort) override
+    virtual void run(IPropertyTree *componentConfig, DAFSConnectCfg _connectMethod, const SocketEndpoint &listenep, unsigned sslPort, unsigned listenQueueLimit, const SocketEndpoint *rowServiceEp, bool _rowServiceSSL, bool _rowServiceOnStdPort) override
     {
         SocketEndpoint sslep(listenep);
 #ifndef _CONTAINERIZED
@@ -5302,12 +5305,12 @@ public:
                 throw createDafsException(DAFSERR_serverinit_failed, "dafilesrv port not specified");
 
             if (listenep.isNull())
-                acceptSock.setown(ISocket::create(listenep.port));
+                acceptSock.setown(ISocket::create(listenep.port, listenQueueLimit));
             else
             {
                 StringBuffer ips;
                 listenep.getHostText(ips);
-                acceptSock.setown(ISocket::create_ip(listenep.port,ips.str()));
+                acceptSock.setown(ISocket::create_ip(listenep.port, ips.str(), listenQueueLimit));
             }
         }
 
@@ -5339,12 +5342,12 @@ public:
 #endif
 
             if (sslep.isNull())
-                secureSock.setown(ISocket::create(sslep.port));
+                secureSock.setown(ISocket::create(sslep.port, listenQueueLimit));
             else
             {
                 StringBuffer ips;
                 sslep.getHostText(ips);
-                secureSock.setown(ISocket::create_ip(sslep.port,ips.str()));
+                secureSock.setown(ISocket::create_ip(sslep.port, ips.str(), listenQueueLimit));
             }
         }
 
@@ -5354,12 +5357,12 @@ public:
             rowServiceOnStdPort = _rowServiceOnStdPort;
 
             if (rowServiceEp->isNull())
-                rowServiceSock.setown(ISocket::create(rowServiceEp->port));
+                rowServiceSock.setown(ISocket::create(rowServiceEp->port, listenQueueLimit));
             else
             {
                 StringBuffer ips;
                 rowServiceEp->getHostText(ips);
-                rowServiceSock.setown(ISocket::create_ip(rowServiceEp->port, ips.str()));
+                rowServiceSock.setown(ISocket::create_ip(rowServiceEp->port, ips.str(), listenQueueLimit));
             }
 
 #ifndef _CONTAINERIZED
@@ -5624,7 +5627,7 @@ public:
                     eps.getEndpointHostText(peerURL.clear());
                     PROGLOG("Server accepting row service socket from %s", peerURL.str());
 #endif
-                    addClient(acceptedRSSock.getClear(), true, true);
+                    addClient(acceptedRSSock.getClear(), rowServiceSSL, true);
                 }
             }
             else

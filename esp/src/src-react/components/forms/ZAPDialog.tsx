@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Checkbox, DefaultButton, Dropdown, Icon, IDropdownProps, IOnRenderComboBoxLabelProps, IStackTokens, ITextFieldProps, mergeStyleSets, PrimaryButton, Stack, TextField, TooltipHost } from "@fluentui/react";
+import { Checkbox, DefaultButton, Dropdown, Icon, IDropdownProps, IOnRenderComboBoxLabelProps, IStackTokens, ITextFieldProps, mergeStyleSets, PrimaryButton, Spinner, Stack, TextField, TooltipHost } from "@fluentui/react";
 import { useForm, Controller } from "react-hook-form";
 import { LogType } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
@@ -69,7 +69,7 @@ interface ZAPDialogValues {
             StartDate?: string;
             EndDate?: string;
         };
-        RelativeLogTimeRangeBuffer?: string;
+        RelativeTimeRangeBuffer?: string;
         LineLimit?: string;
         LineStartFrom?: string;
         SelectColumnMode?: ColumnMode;
@@ -107,7 +107,7 @@ const defaultValues: ZAPDialogValues = {
             StartDate: "",
             EndDate: "",
         },
-        RelativeLogTimeRangeBuffer: "",
+        RelativeTimeRangeBuffer: "",
         LineLimit: "10000",
         LineStartFrom: "0",
         SelectColumnMode: ColumnMode.DEFAULT,
@@ -168,6 +168,8 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
     }), [theme]);
 
     const [emailDisabled, setEmailDisabled] = React.useState(true);
+    const [submitDisabled, setSubmitDisabled] = React.useState(false);
+    const [spinnerHidden, setSpinnerHidden] = React.useState(true);
     const [columnMode, setColumnMode] = React.useState(ColumnMode.DEFAULT);
     const [logFormat, setLogFormat] = React.useState(LogFormat.CSV);
     const [showCustomColumns, setShowCustomColumns] = React.useState(false);
@@ -188,6 +190,8 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                 const logFilter = data.LogFilter;
 
                 delete data.LogFilter;
+                setSubmitDisabled(true);
+                setSpinnerHidden(false);
 
                 for (const key in data) {
                     formData.append(key, data[key]);
@@ -227,6 +231,8 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                         link.click();
                         link.remove();
 
+                        setSubmitDisabled(false);
+                        setSpinnerHidden(true);
                         closeForm();
 
                         if (logAccessorMessage !== "") {
@@ -257,7 +263,8 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
 
     return <MessageBox title={nlsHPCC.ZippedAnalysisPackage} minWidth={440} show={showForm} setShow={closeForm}
         footer={<>
-            <PrimaryButton text={nlsHPCC.Submit} onClick={handleSubmit(onSubmit)} />
+            <Spinner label={nlsHPCC.LoadingData} labelPosition="right" style={{ display: spinnerHidden ? "none" : "inherit" }} />
+            <PrimaryButton text={nlsHPCC.Submit} disabled={submitDisabled} onClick={handleSubmit(onSubmit)} />
             <DefaultButton text={nlsHPCC.Cancel} onClick={() => closeForm()} />
         </>}>
         <Controller
@@ -488,7 +495,7 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                 rules={{
                     validate: {
                         hasValue: (value, formValues) => {
-                            if (value === "" && formValues.LogFilter.RelativeLogTimeRangeBuffer === "") {
+                            if (value === "" && formValues.LogFilter.RelativeTimeRangeBuffer === "") {
                                 return nlsHPCC.LogFilterTimeRequired;
                             }
                             return true;
@@ -520,14 +527,14 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                 }
             />
             <Controller
-                control={control} name="LogFilter.RelativeLogTimeRangeBuffer"
+                control={control} name="LogFilter.RelativeTimeRangeBuffer"
                 render={({
                     field: { onChange, name: fieldName, value },
                     fieldState: { error }
                 }) => <TextField
                         name={fieldName}
                         onChange={onChange}
-                        label={nlsHPCC.RelativeLogTimeRange}
+                        label={nlsHPCC.RelativeTimeRange}
                         onRenderLabel={(props: CustomLabelProps) => <CustomLabel
                             id={`${fieldName}_Label`}
                             tooltip={nlsHPCC.LogFilterRelativeTimeRangeTooltip}

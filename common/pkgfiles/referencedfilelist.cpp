@@ -965,34 +965,15 @@ void ReferencedFileList::addFilesFromPackageMap(IPropertyTree *pm)
 
 bool ReferencedFileList::addFilesFromQuery(IConstWorkUnit *cw, const IHpccPackage *pkg)
 {
-    Owned<IConstWUGraphIterator> graphs = &cw->getGraphs(GraphTypeActivities);
-    ForEach(*graphs)
+    SummaryMap files;
+    if (cw->getSummary(SummaryType::ReadFile, files) && 
+        cw->getSummary(SummaryType::ReadIndex, files))
     {
-        Owned <IPropertyTree> xgmml = graphs->query().getXGMMLTree(false, false);
-        Owned<IPropertyTreeIterator> iter = xgmml->getElements("//node[att/@name='_*ileName']");
-        ForEach(*iter)
+        for (const auto& [lName, summaryFlags] : files)
         {
-            IPropertyTree &node = iter->query();
-            bool isOpt = false;
-            const char *logicalName = node.queryProp("att[@name='_fileName']/@value");
-            if (!logicalName)
-                logicalName = node.queryProp("att[@name='_indexFileName']/@value");
-            if (!logicalName)
-                continue;
-
-            isOpt = node.getPropBool("att[@name='_isIndexOpt']/@value");
-            if (!isOpt)
-                isOpt = node.getPropBool("att[@name='_isOpt']/@value");
-
-            ThorActivityKind kind = (ThorActivityKind) node.getPropInt("att[@name='_kind']/@value", TAKnone);
-            //not likely to be part of roxie queries, but for forward compatibility:
-            if(kind==TAKdiskwrite || kind==TAKspillwrite || kind==TAKindexwrite || kind==TAKcsvwrite || kind==TAKxmlwrite || kind==TAKjsonwrite)
-                continue;
-            if (node.getPropBool("att[@name='_isSpill']/@value") ||
-                node.getPropBool("att[@name='_isTransformSpill']/@value"))
-                continue;
+            const char *logicalName = lName.c_str();
             StringArray subfileNames;
-            unsigned flags = isOpt ? RefFileOptional : RefFileNotOptional;
+            unsigned flags = (summaryFlags & SummaryFlags::IsOpt) ? RefFileOptional : RefFileNotOptional;
             if (pkg)
             {
                 const char *pkgid = pkg->locateSuperFile(logicalName);
@@ -1016,6 +997,62 @@ bool ReferencedFileList::addFilesFromQuery(IConstWorkUnit *cw, const IHpccPackag
             }
             else
                 ensureFile(logicalName, flags, NULL, false, &subfileNames);
+        }
+    }
+    else
+    {
+        Owned<IConstWUGraphIterator> graphs = &cw->getGraphs(GraphTypeActivities);
+        ForEach(*graphs)
+        {
+            Owned <IPropertyTree> xgmml = graphs->query().getXGMMLTree(false, false);
+            Owned<IPropertyTreeIterator> iter = xgmml->getElements("//node[att/@name='_*ileName']");
+            ForEach(*iter)
+            {
+                IPropertyTree &node = iter->query();
+                bool isOpt = false;
+                const char *logicalName = node.queryProp("att[@name='_fileName']/@value");
+                if (!logicalName)
+                    logicalName = node.queryProp("att[@name='_indexFileName']/@value");
+                if (!logicalName)
+                    continue;
+
+                isOpt = node.getPropBool("att[@name='_isIndexOpt']/@value");
+                if (!isOpt)
+                    isOpt = node.getPropBool("att[@name='_isOpt']/@value");
+
+                ThorActivityKind kind = (ThorActivityKind) node.getPropInt("att[@name='_kind']/@value", TAKnone);
+                //not likely to be part of roxie queries, but for forward compatibility:
+                if(kind==TAKdiskwrite || kind==TAKspillwrite || kind==TAKindexwrite || kind==TAKcsvwrite || kind==TAKxmlwrite || kind==TAKjsonwrite)
+                    continue;
+                if (node.getPropBool("att[@name='_isSpill']/@value") ||
+                    node.getPropBool("att[@name='_isTransformSpill']/@value"))
+                    continue;
+                StringArray subfileNames;
+                unsigned flags = isOpt ? RefFileOptional : RefFileNotOptional;
+                if (pkg)
+                {
+                    const char *pkgid = pkg->locateSuperFile(logicalName);
+                    if (pkgid)
+                    {
+                        flags |= (RefFileSuper | RefFileInPackage);
+                        Owned<ISimpleSuperFileEnquiry> ssfe = pkg->resolveSuperFile(logicalName);
+                        if (ssfe && ssfe->numSubFiles()>0)
+                        {
+                            unsigned count = ssfe->numSubFiles();
+                            while (count--)
+                            {
+                                StringBuffer subfile;
+                                ssfe->getSubFileName(count, subfile);
+                                ensureFile(subfile, RefSubFile | RefFileInPackage, pkgid, false, nullptr);
+                                subfileNames.append(subfile);
+                            }
+                        }
+                    }
+                    ensureFile(logicalName, flags, pkgid, pkg->isCompulsory(), &subfileNames);
+                }
+                else
+                    ensureFile(logicalName, flags, NULL, false, &subfileNames);
+            }
         }
     }
     return pkg ? pkg->isCompulsory() : false;

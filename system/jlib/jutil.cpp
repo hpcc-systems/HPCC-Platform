@@ -2759,10 +2759,10 @@ StringBuffer &getFileAccessUrl(StringBuffer &out)
     return out;
 }
 
-
-#ifdef _CONTAINERIZED
 bool getDefaultPlane(StringBuffer &ret, const char * componentOption, const char * category)
 {
+    if (!isContainerized())
+        throwUnexpectedX("getDefaultPlane() called from non-container system");
     // If the plane is specified for the component, then use that
     if (getComponentConfigSP()->getProp(componentOption, ret))
         return true;
@@ -2780,8 +2780,11 @@ bool getDefaultPlane(StringBuffer &ret, const char * componentOption, const char
     return false;
 }
 
+#ifdef _CONTAINERIZED
 static bool getDefaultPlaneDirectory(StringBuffer &ret, const char * componentOption, const char * category)
 {
+    if (!isContainerized())
+        throwUnexpectedX("getDefaultPlaneDirectory() called from non-container system");
     StringBuffer planeName;
     if (!getDefaultPlane(planeName, componentOption, category))
         return false;

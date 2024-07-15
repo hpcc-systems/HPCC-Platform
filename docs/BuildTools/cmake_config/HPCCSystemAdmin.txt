@@ -26,9 +26,7 @@ IF(MAKE_DOCS)
       LIST(APPEND HELP_DEPENDENCIES  ${T})
      ENDIF()
   ENDFOREACH()
-
-  DOCBOOK_TO_HTML(${ECLIPSE_HTML_XSL} "${CMAKE_CURRENT_BINARY_DIR}/HPCCSystemAdministratorsGuide.xml" ${PORTAL_HTML_DIR}/SystemAdministratorsGuide_${DOC_LANG}  "system_administration_guide_html_${DOC_LANG}" "${HPCC_SOURCE_DIR}/docs/common/eclipsehelp.css" "")
-
+  
   SET(HELP_DEPENDENCIES)
   GET_PROPERTY(Current_Targets GLOBAL PROPERTY DOC_TARGETS)
   FOREACH(T ${Current_Targets})
@@ -37,5 +35,4 @@ IF(MAKE_DOCS)
      ENDIF()
   ENDFOREACH()
 
-  DOCBOOK_TO_HTML(${PORTAL_GEN_XSL} "${CMAKE_CURRENT_BINARY_DIR}/SecMgrInc.xml" ${PORTAL_HTML_DIR}/SecurityManagerGuide_${DOC_LANG}  "security_manager_guide_html_${DOC_LANG}" "${HPCC_SOURCE_DIR}/docs/common/eclipsehelp.css" "")
 ENDIF(MAKE_DOCS)

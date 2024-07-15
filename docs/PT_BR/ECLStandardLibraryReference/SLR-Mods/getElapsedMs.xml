@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="getElapsedMs">
+  <title>getElapsedMs</title>
+
+  <para><emphasis>result</emphasis> <emphasis role="bold"> :=
+  STD.System.Log.getElapsedMs<indexterm>
+      <primary>STD.System.Log.getElapsedMs</primary>
+    </indexterm> <indexterm>
+      <primary>System.Log.getElapsedMs</primary>
+    </indexterm> <indexterm>
+      <primary>Log.getElapsedMs</primary>
+    </indexterm> <indexterm>
+      <primary>getElapsedMs</primary>
+    </indexterm></emphasis><emphasis/><emphasis role="bold">
+  ();</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry>Return:</entry>
+
+          <entry>getElapsedMs retorna o tempo decorrido em
+          milissegundos..</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">getElapsedMs</emphasis> retorna o tempo
+  decorrido atual da consulta (em ms) no Roxie.</para>
+
+  <para>Este é o tempo decorrido quando STD.System.Log.getElapsedMs() é
+  chamado. Como ECL é uma linguagem declarativa, o código não é
+  necessariamente executado em sequência. Você tem que ter cuidado ao tentar
+  obter o tempo decorrido para um ponto específico no seu código. Você pode
+  olhar os gráficos do Workunit para ver o ponto exato em que a atividade é
+  executada. &gt;</para>
+
+  <para><emphasis role="bold">Para uso apenas no Roxie.</emphasis> Um erro é
+  retornado se você tentar executar no Thor ou hThor.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific" lang="ECL_Runnable">IMPORT STD;
+STD.System.Debug.Sleep (1054);      // pause processing for 1054 milliseconds.
+OUTPUT(STD.System.Log.getElapsedMs(), NAMED('Elapsed')); //returns total time elapsed
+</programlisting>
+</sect1>

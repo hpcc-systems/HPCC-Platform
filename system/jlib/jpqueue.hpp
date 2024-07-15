@@ -30,7 +30,7 @@
 #include <list>
 #include <vector>
 
-template<typename T> class WaitQueue: public CInterface, protected Mutex
+template<typename T> class WaitQueue: public CInterface
 {
 public:
     WaitQueue(): counter(), stopped(false), waiting(0)
@@ -40,7 +40,7 @@ public:
     ~WaitQueue()
     {
         stop();
-        synchronized block(*this); 
+        synchronized block(mutex); 
         while(waiting)
         {
             counter.signal(waiting); // actually need only one and only once
@@ -50,13 +50,13 @@ public:
 
     unsigned size()
     {
-        synchronized block(*this);
+        synchronized block(mutex);
         return queue.size();
     }
 
     T get(unsigned timeout=INFINITE)
     {
-        synchronized block(*this);
+        synchronized block(mutex);
         for(;;)
         {
             if(stopped)
@@ -73,7 +73,7 @@ public:
 
     bool put(const T& item)
     {
-        synchronized block(*this);
+        synchronized block(mutex);
         if(stopped)
             return true;
         queue.push_back(item);
@@ -83,7 +83,7 @@ public:
 
     void stop()
     {
-        synchronized block(*this);
+        synchronized block(mutex);
         stopped=true;
         queue.clear();
         counter.signal(waiting);
@@ -91,7 +91,7 @@ public:
 
     bool isStopped()
     {
-        synchronized block(*this);
+        synchronized block(mutex);
         return stopped;
     }
     
@@ -102,14 +102,15 @@ private:
         bool ret=false;
         waiting++;
 
-        int locked = unlockAll();
+        mutex.unlock();
         ret=counter.wait(timeout);
-        lockAll(locked);
+        mutex.lock();
 
         waiting--;
         return ret;
     }
 
+    Mutex mutex;
     Semaphore counter;
     std::list<T> queue;
     volatile unsigned waiting;
@@ -146,7 +147,7 @@ public:
         bool needthread=!queue.put(task);
         if(needthread)
         {
-            synchronized block(mworkers);
+            MonitorBlock block(mworkers);
             if(workers.size()<maxsize)
             {
                 workers.push_back(new WorkerThread(*this));
@@ -160,14 +161,14 @@ public:
     {
         queue.stop();
 
-        synchronized block(mworkers); 
+        MonitorBlock block(mworkers); 
         for(Workers::iterator it=workers.begin();it!=workers.end();it++)
             (*it)->stop(); // no good if threads did not clean up
     }
 
     void join()
     {
-        synchronized block(mworkers);
+        MonitorBlock block(mworkers);
         while(!workers.empty())
         {
             mworkers.wait();
@@ -248,7 +249,7 @@ private:
 
     void remove(WorkerThread* th)
     {
-        synchronized block(mworkers);
+        MonitorBlock block(mworkers);
         workers.remove(th);
         if(workers.empty())
             mworkers.notifyAll();

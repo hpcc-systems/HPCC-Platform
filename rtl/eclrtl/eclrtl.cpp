@@ -4960,6 +4960,19 @@ unsigned rtlUtf8Size(unsigned len, const void * _data)
     return offset;
 }
 
+unsigned rtlUtf8Length(const void * _data)
+{
+    const byte * data = (const byte *)_data;
+    size32_t length = 0;
+    unsigned offset = 0;
+    while (data[offset])
+    {
+        offset += readUtf8Size(data+offset);
+        length++;
+    }
+    return length;
+}
+
 unsigned rtlUtf8Length(unsigned size, const void * _data)
 {
     const byte * data = (const byte *)_data;

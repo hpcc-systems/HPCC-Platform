@@ -1668,6 +1668,9 @@ void FileSprayer::analyseFileHeaders(bool setcurheadersize)
     unsigned numEmptyXml = 0;
     ForEachItemIn(idx, sources)
     {
+        if (isAborting())
+            throwError(DFTERR_CopyAborted);
+
         FilePartInfo & cur = sources.item(idx);
         StringBuffer s;
         cur.filename.getPath(s);
@@ -1748,8 +1751,7 @@ void FileSprayer::analyseFileHeaders(bool setcurheadersize)
                     // Despray from distributed file
 
                     // Check XMLheader/footer in file level
-                    DistributedFilePropertyLock lock(distributedSource);
-                    IPropertyTree &curProps = lock.queryAttributes();
+                    IPropertyTree &curProps = distributedSource->queryAttributes();
                     if (curProps.hasProp(FPheaderLength) && curProps.hasProp(FPfooterLength))
                     {
                         cur.xmlHeaderLength = curProps.getPropInt(FPheaderLength, 0);
@@ -2789,14 +2791,13 @@ bool FileSprayer::restorePartition()
 {
     if (allowRecovery && progressTree->getPropBool(ANhasPartition))
     {
-        IPropertyTreeIterator * iter = progressTree->getElements(PNpartition);
+        Owned<IPropertyTreeIterator> iter = progressTree->getElements(PNpartition);
         ForEach(*iter)
         {
             PartitionPoint & next = * new PartitionPoint;
             next.restore(&iter->query());
             partition.append(next);
         }
-        iter->Release();
         return (partition.ordinality() != 0);
     }
     return false;

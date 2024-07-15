@@ -95,7 +95,7 @@ SECURESOCKET_API ISecureSocketContext* createSecureSocketContextSecretSrv(const 
 SECURESOCKET_API ISecureSocketContext* createSecureSocketContextSSF(ISmartSocketFactory* ssf);
 
 //Helper function to aid migration to the functions above.  This should eventually be removed.
-SECURESOCKET_API IPropertyTree * createSecureSocketConfig(const char* certFileOrBuf, const char* privKeyFileOrBuf, const char* passphrase);
+SECURESOCKET_API IPropertyTree * createSecureSocketConfig(const char* certFileOrBuf, const char* privKeyFileOrBuf, const char* passphrase, bool createIfAllNull);
 
 //Legacy factory methods - should be phased out.
 SECURESOCKET_API ISecureSocketContext* createSecureSocketContext(SecureSocketType);
@@ -105,7 +105,7 @@ SECURESOCKET_API int signCertificate(const char* csr, const char* ca_certificate
 };
 
 
-SECURESOCKET_API ISmartSocketFactory *createSecureSmartSocketFactory(const char *_socklist, bool _retry = false, unsigned _retryInterval = 60, unsigned _dnsInterval = (unsigned) -1);
+SECURESOCKET_API ISmartSocketFactory *createSecureSmartSocketFactory(const char *_socklist, IPropertyTree* _tlsConfig, bool _retry = false, unsigned _retryInterval = 60, unsigned _dnsInterval = (unsigned) -1);
 SECURESOCKET_API ISmartSocketFactory *createSecureSmartSocketFactory(IPropertyTree &service, bool _retry = false, unsigned _retryInterval = 60, unsigned _dnsInterval = (unsigned) -1);
 
 SECURESOCKET_API IConversation *createSingletonSecureSocketConnection(unsigned short port,SocketEndpoint *_ep=nullptr);

@@ -124,6 +124,12 @@ bool CThorInput::isFastThrough() const
 {
     return itdl->queryFromActivity()->isFastThrough();
 }
+
+bool CThorInput::suppressLookAhead() const
+{
+    return itdl->queryFromActivity()->suppressLookAhead();
+}
+
 // 
 
 CSlaveActivity::CSlaveActivity(CGraphElementBase *_container, const StatisticsMapping &statsMapping)
@@ -251,28 +257,32 @@ bool CSlaveActivity::isInputFastThrough(unsigned index) const
     return input.isFastThrough();
 }
 
-/* If fastThrough, return false.
- * If !fastThrough (indicating needs look ahead) and has existing lookahead, start it, return false.
- * If !fastThrough (indicating needs look ahead) and no existing lookahead, return true, caller will install.
+/* If fastThrough or suppressLookAhead, return false.
+ * If not (indicating needs look ahead) and has existing lookahead, start it, return false.
+ * If not (indicating needs look ahead) and no existing lookahead, return true, caller will install.
  *
  * NB: only return true if new lookahead needs installing.
  */
 bool CSlaveActivity::ensureStartFTLookAhead(unsigned index)
 {
     CThorInput &input = inputs.item(index);
-    if (input.isFastThrough())
+    if (input.isFastThrough() || input.suppressLookAhead())
         return false; // no look ahead required
     else
     {
         // look ahead required
         if (input.hasLookAhead())
         {
+            //ActPrintLog("Already has lookahead");
             // no change, start existing look ahead
             startLookAhead(index);
             return false; // no [new] look ahead required
         }
         else
+        {
+            //ActPrintLog("lookahead will be inserted");
             return true; // new look ahead required
+        }
     }
 }
 
@@ -308,7 +318,7 @@ bool CSlaveActivity::canStall() const
     getMetaInfo(info);
     if (info.canStall)
         return true;
-    if (info.isSource || info.buffersInput || info.canBufferInput)
+    if (info.isSource || info.canBufferInput)
         return false;
 
     for (unsigned i=0; i<queryNumInputs(); i++)
@@ -324,6 +334,29 @@ bool CSlaveActivity::canStall() const
     return false;
 }
 
+// check if activity is suppressLookAhead, or if fastThrough, check that inputs are suppressLookAhead
+bool CSlaveActivity::suppressLookAhead() const
+{
+    if (!hasStarted())
+        return true;
+    ThorDataLinkMetaInfo info;
+    getMetaInfo(info);
+    if (info.suppressLookAhead)
+        return true;
+    if (!info.fastThrough || info.canStall) // NB: JIC - but should never be marked fastThrough==true if canStall==true
+        return false;
+    for (unsigned i=0; i<queryNumInputs(); i++)
+    {
+        IThorDataLink *input = queryInput(i);
+        if (input && queryInputStarted(i))
+        {
+            CSlaveActivity *inputAct = input->queryFromActivity();
+            if (!inputAct->suppressLookAhead())
+                return false;
+        }
+    }
+    return true;
+}
 
 
 IStrandJunction *CSlaveActivity::getOutputStreams(CActivityBase &ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const CThorStrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks)
@@ -1222,6 +1255,8 @@ void CSlaveGraph::executeSubGraph(size32_t parentExtractSz, const byte *parentEx
 
 void CSlaveGraph::abort(IException *e)
 {
+    if (aborted)
+        return;
     if (!graphDone) // set pre done(), no need to abort if got that far.
         CGraphBase::abort(e);
     getDoneSem.signal();
@@ -1229,23 +1264,27 @@ void CSlaveGraph::abort(IException *e)
 
 void CSlaveGraph::done()
 {
-    GraphPrintLog("End of sub-graph");
-    progressActive.store(false);
-    setProgressUpdated(); // NB: ensure collected after end of graph
-    if (!queryOwner() || isGlobal())
+    if (started)
     {
-        if (aborted || !graphDone)
+        GraphPrintLog("End of sub-graph");
+        progressActive.store(false);
+        setProgressUpdated(); // NB: ensure collected after end of graph
+
+        if (initialized && (!queryOwner() || isGlobal()))
         {
-            if (!getDoneSem.wait(SHORTTIMEOUT)) // wait on master to clear up, gather info from slaves
-                WARNLOG("CSlaveGraph::done - timedout waiting for master to signal done()");
+            if (aborted || !graphDone)
+            {
+                if (!getDoneSem.wait(SHORTTIMEOUT)) // wait on master to clear up, gather info from slaves
+                    WARNLOG("CSlaveGraph::done - timedout waiting for master to signal done()");
+            }
+            else
+                getDoneSem.wait();
         }
-        else
-            getDoneSem.wait();
-    }
-    if (!queryOwner())
-    {
-        if (globals->getPropBool("@watchdogProgressEnabled"))
-            jobS->queryProgressHandler()->stopGraph(*this, NULL);
+        if (!queryOwner())
+        {
+            if (globals->getPropBool("@watchdogProgressEnabled"))
+                jobS->queryProgressHandler()->stopGraph(*this, NULL);
+        }
     }
 
     Owned<IException> exception;

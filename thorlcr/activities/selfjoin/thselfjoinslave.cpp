@@ -195,6 +195,7 @@ public:
             }
             {
                 CriticalBlock b(joinHelperCrit);
+                joinhelper->gatherStats(inactiveStats);
                 joinhelper.clear();
             }
             if (strm)
@@ -224,15 +225,19 @@ public:
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
-        info.buffersInput = true; 
+        info.canBufferInput = true;
         info.unknownRowsOutput = true;
     }
     virtual void gatherActiveStats(CRuntimeStatisticCollection &activeStats) const
     {
         PARENT::gatherActiveStats(activeStats);
         CriticalBlock b(joinHelperCrit);
-        rowcount_t p = joinhelper?joinhelper->getLhsProgress():0;
-        activeStats.setStatistic(StNumLeftRows, p);
+        if (joinhelper)
+        {
+            joinhelper->gatherStats(activeStats);
+            rowcount_t p = joinhelper->getLhsProgress();
+            activeStats.setStatistic(StNumLeftRows, p);
+        }
         mergeStats(activeStats, sorter, spillStatistics);    // No danger of a race with reset() because that never replaces a valid sorter
     }
 };

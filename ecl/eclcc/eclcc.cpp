@@ -3354,7 +3354,7 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
 
 void EclCC::setSecurityOptions()
 {
-    IPropertyTree *eclSecurity = configuration->getPropTree("eclSecurity");
+    Owned<IPropertyTree> eclSecurity = configuration->getPropTree("eclSecurity");
     if (eclSecurity)
     {
         // Name of security option in configuration yaml

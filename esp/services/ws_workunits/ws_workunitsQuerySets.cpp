@@ -349,20 +349,24 @@ void QueryFilesInUse::loadTarget(IPropertyTree *t, const char *target, unsigned 
             queryTree = NULL;
         }
 
-        Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid);
-        if (!cw)
-            continue;
+        Owned<IReferencedFileList> wufiles;
+        //Only lock the workunit while the information is being gathered - not when files are resolved
+        {
+            Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+            Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid);
+            if (!cw)
+                continue;
 
-        queryTree = targetTree->addPropTree("Query", createPTree("Query"));
-        queryTree->setProp("@target", target); //for reference when searching across targets
-        queryTree->setProp("@id", queryid);
-        if (pkgid && *pkgid)
-            queryTree->setProp("@pkgid", pkgid);
+            queryTree = targetTree->addPropTree("Query", createPTree("Query"));
+            queryTree->setProp("@target", target); //for reference when searching across targets
+            queryTree->setProp("@id", queryid);
+            if (pkgid && *pkgid)
+                queryTree->setProp("@pkgid", pkgid);
 
-        IUserDescriptor **roxieUser = roxieUserMap.getValue(target);
-        Owned<IReferencedFileList> wufiles = createReferencedFileList(roxieUser ? *roxieUser : NULL, true, true);
-        wufiles->addFilesFromQuery(cw, pm, queryid);
+            IUserDescriptor **roxieUser = roxieUserMap.getValue(target);
+            wufiles.setown(createReferencedFileList(roxieUser ? *roxieUser : NULL, true, true));
+            wufiles->addFilesFromQuery(cw, pm, queryid);
+        }
         if (aborting)
             return;
         StringArray locations;

@@ -1,15 +1,15 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, IIconProps, SearchBox } from "@fluentui/react";
-import { Label, Spinner } from "@fluentui/react-components";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, IIconProps, SearchBox, Stack } from "@fluentui/react";
+import { Label, Spinner, ToggleButton } from "@fluentui/react-components";
 import { typographyStyles } from "@fluentui/react-theme";
 import { useConst } from "@fluentui/react-hooks";
-import { bundleIcon, Folder20Filled, Folder20Regular, FolderOpen20Filled, FolderOpen20Regular, } from "@fluentui/react-icons";
+import { bundleIcon, Folder20Filled, Folder20Regular, FolderOpen20Filled, FolderOpen20Regular, TextCaseTitleRegular, TextCaseTitleFilled } from "@fluentui/react-icons";
 import { Database } from "@hpcc-js/common";
 import { WorkunitsServiceEx, IScope, splitMetric } from "@hpcc-js/comms";
-import { DBStore, Table } from "@hpcc-js/dgrid";
+import { CellFormatter, ColumnFormat, ColumnType, DBStore, RowType, Table } from "@hpcc-js/dgrid";
 import { compare, scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
-import { WUTimelinePatched } from "src/Timings";
+import { WUTimelineNoFetch } from "src/Timings";
 import * as Utility from "src/Utility";
 import { FetchStatus, useMetricsOptions, useWUQueryMetrics, MetricsOptions as MetricsOptionsT } from "../hooks/metrics";
 import { HolyGrail } from "../layouts/HolyGrail";
@@ -23,6 +23,7 @@ import { ShortVerticalDivider } from "./Common";
 import { MetricsOptions } from "./MetricsOptions";
 import { BreadcrumbInfo, OverflowBreadcrumb } from "./controls/OverflowBreadcrumb";
 import { MetricsPropertiesTables } from "./MetricsPropertiesTables";
+import { MetricsSQL } from "./MetricsSQL";
 
 const logger = scopedLogger("src-react/components/Metrics.tsx");
 
@@ -34,6 +35,16 @@ const SelectedLineageIcon = bundleIcon(FolderOpen20Filled, FolderOpen20Regular);
 const defaultUIState = {
     hasSelection: false
 };
+
+class ColumnFormatEx extends ColumnFormat {
+    formatterFunc(): CellFormatter | undefined {
+        const colIdx = this._owner.columns().indexOf("__StdDevs");
+
+        return function (this: ColumnType, cell: any, row: RowType): string {
+            return row[colIdx];
+        };
+    }
+}
 
 class DBStoreEx extends DBStore {
 
@@ -54,7 +65,7 @@ class TableEx extends Table {
         this._store = new DBStoreEx(this, this._db);
     }
 
-    scopeFilterFunc(row: object, scopeFilter: string): boolean {
+    scopeFilterFunc(row: object, scopeFilter: string, matchCase: boolean): boolean {
         const filter = scopeFilter.trim();
         if (filter) {
             let field = "";
@@ -63,12 +74,14 @@ class TableEx extends Table {
                 field = filter.substring(0, colonIdx);
             }
             if (field) {
-                return row[field]?.indexOf && row[field]?.indexOf(filter.substring(colonIdx + 1)) >= 0;
+                const value: string = !matchCase ? row[field]?.toString().toLowerCase() : row[field]?.toString();
+                const filterValue: string = !matchCase ? filter.toLowerCase() : filter;
+                return value?.indexOf(filterValue.substring(colonIdx + 1)) >= 0 ?? false;
             }
-            for (const key in row) {
-                if (row[key]?.indexOf && row[key]?.indexOf(filter) >= 0) {
-                    return true;
-                }
+            for (const field in row) {
+                const value: string = !matchCase ? row[field].toString().toLowerCase() : row[field].toString();
+                const filterValue: string = !matchCase ? filter.toLowerCase() : filter;
+                return value?.indexOf(filterValue) >= 0 ?? false;
             }
             return false;
         }
@@ -76,30 +89,45 @@ class TableEx extends Table {
     }
 
     _rawDataMap: { [id: number]: string } = {};
-    metrics(metrics: any[], options: MetricsOptionsT, timelineFilter: string, scopeFilter: string): this {
-        this.columns(["##", nlsHPCC.Type, nlsHPCC.Scope, ...options.properties]);
-        this.data(metrics.filter(m => this.scopeFilterFunc(m, scopeFilter)).filter(row => {
-            return (timelineFilter === "" || row.name?.indexOf(timelineFilter) === 0) &&
-                (options.scopeTypes.indexOf(row.type) >= 0);
-        }).map((row, idx) => {
-            if (idx === 0) {
-                this._rawDataMap = {
-                    0: "##", 1: "type", 2: "name"
-                };
-                options.properties.forEach((p, idx2) => {
-                    this._rawDataMap[3 + idx2] = p;
-                });
-            }
-            row.__hpcc_id = row.name;
-            return [idx, row.type, row.name, ...options.properties.map(p => {
-                return row.__groupedProps[p]?.Value ??
-                    row.__groupedProps[p]?.Max ??
-                    row.__groupedProps[p]?.Avg ??
-                    row.__formattedProps[p] ??
-                    row[p] ??
-                    "";
-            }), row];
-        }));
+    metrics(metrics: any[], options: MetricsOptionsT, timelineFilter: string, scopeFilter: string, matchCase: boolean): this {
+        this
+            .columns(["##"])    //  Reset hash to force recalculation of default widths
+            .columns(["##", nlsHPCC.Type, "StdDevs", nlsHPCC.Scope, ...options.properties, "__StdDevs"])
+            .columnFormats([
+                new ColumnFormatEx()
+                    .column("StdDevs")
+                    .paletteID("StdDevs")
+                    .min(0)
+                    .max(6),
+                new ColumnFormat()
+                    .column("__StdDevs")
+                    .width(0)
+            ])
+            .data(metrics
+                .filter(m => this.scopeFilterFunc(m, scopeFilter, matchCase))
+                .filter(row => {
+                    return (timelineFilter === "" || row.name?.indexOf(timelineFilter) === 0) &&
+                        (options.scopeTypes.indexOf(row.type) >= 0);
+                }).map((row, idx) => {
+                    if (idx === 0) {
+                        this._rawDataMap = {
+                            0: "##", 1: "type", 2: "__StdDevs", 3: "name"
+                        };
+                        options.properties.forEach((p, idx2) => {
+                            this._rawDataMap[4 + idx2] = p;
+                        });
+                    }
+                    row.__hpcc_id = row.name;
+                    return [idx, row.type, row.__StdDevs === 0 ? undefined : row.__StdDevs, row.name, ...options.properties.map(p => {
+                        return row.__groupedProps[p]?.Value ??
+                            row.__groupedProps[p]?.Max ??
+                            row.__groupedProps[p]?.Avg ??
+                            row.__formattedProps[p] ??
+                            row[p] ??
+                            "";
+                    }), row.__StdDevsSource, row];
+                }))
+            ;
         return this;
     }
 
@@ -129,6 +157,8 @@ class TableEx extends Table {
     }
 }
 
+type SelectedMetricsSource = "" | "scopesTable" | "scopesSqlTable" | "metricGraphWidget" | "hotspot" | "reset";
+
 interface MetricsProps {
     wuid: string;
     querySet?: string;
@@ -146,7 +176,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
 }) => {
     const [_uiState, _setUIState] = React.useState({ ...defaultUIState });
     const [timelineFilter, setTimelineFilter] = React.useState("");
-    const [selectedMetricsSource, setSelectedMetricsSource] = React.useState<"" | "scopesTable" | "metricGraphWidget" | "hotspot" | "reset">("");
+    const [selectedMetricsSource, setSelectedMetricsSource] = React.useState<SelectedMetricsSource>("");
     const [selectedMetrics, setSelectedMetrics] = React.useState<IScope[]>([]);
     const [selectedMetricsPtr, setSelectedMetricsPtr] = React.useState<number>(-1);
     const [metrics, columns, _activities, _properties, _measures, _scopeTypes, fetchStatus, refresh] = useWUQueryMetrics(wuid, querySet, queryId);
@@ -162,6 +192,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     const [isLayoutComplete, setIsLayoutComplete] = React.useState<boolean>(false);
     const [isRenderComplete, setIsRenderComplete] = React.useState<boolean>(false);
     const [dot, setDot] = React.useState<string>("");
+    const [matchCase, setMatchCase] = React.useState(false);
 
     React.useEffect(() => {
         const service = new WorkunitsServiceEx({ baseUrl: "" });
@@ -192,50 +223,28 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     }, [parentUrl, selection]);
 
     //  Timeline ---
-    const timeline = useConst(() => new WUTimelinePatched()
+    const timeline = useConst(() => new WUTimelineNoFetch()
         .maxZoom(Number.MAX_SAFE_INTEGER)
-        .baseUrl("")
-        .request({
-            ScopeFilter: {
-                MaxDepth: 3,
-                ScopeTypes: { ScopeType: [] }
-            },
-            NestedFilter: {
-                Depth: 0,
-                ScopeTypes: { ScopeType: [] }
-            },
-            PropertiesToReturn: {
-                AllProperties: false,
-                AllStatistics: true,
-                AllHints: false,
-                Properties: { Property: ["WhenStarted", "TimeElapsed", "TimeLocalExecute"] }
-            },
-            ScopeOptions: {
-                IncludeId: true,
-                IncludeScope: true,
-                IncludeScopeType: true
-            },
-            PropertyOptions: {
-                IncludeName: true,
-                IncludeRawValue: true,
-                IncludeFormatted: true,
-                IncludeMeasure: true,
-                IncludeCreator: true,
-                IncludeCreatorType: false
-            }
-        })
-        .on("click", (row, col, sel) => {
-            setTimelineFilter(sel ? row[7].ScopeName : "");
-            if (sel) {
-                setSelectedMetricsSource("scopesTable");
-                pushUrl(`${parentUrl}/${row[7].Id}`);
-            }
-        })
     );
 
     React.useEffect(() => {
-        timeline.wuid(wuid);
-    }, [timeline, wuid]);
+        timeline
+            .on("click", (row, col, sel) => {
+                setTimelineFilter(sel ? row[7].__hpcc_id : "");
+                if (sel) {
+                    setSelectedMetricsSource("scopesTable");
+                    pushUrl(`${parentUrl}/${row[7].Id}`);
+                }
+            }, true)
+            ;
+    }, [parentUrl, timeline]);
+
+    React.useEffect(() => {
+        timeline
+            .scopes(metrics)
+            .lazyRender()
+            ;
+    }, [metrics, timeline]);
 
     //  Scopes Table  ---
     const [scopeFilter, setScopeFilter] = React.useState("");
@@ -243,25 +252,36 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         setScopeFilter(newValue || "");
     }, []);
 
+    const scopesSelectionChanged = React.useCallback((source: SelectedMetricsSource, selection: IScope[]) => {
+        setSelectedMetricsSource(source);
+        pushUrl(`${parentUrl}/${selection.map(row => row.__lparam?.id ?? row.id).join(",")}`);
+    }, [parentUrl]);
+
     const scopesTable = useConst(() => new TableEx()
         .multiSelect(true)
-        .metrics([], options, timelineFilter, scopeFilter)
+        .metrics([], options, timelineFilter, scopeFilter, matchCase)
         .sortable(true)
-        .on("click", debounce((row, col, sel) => {
-            if (sel) {
-                const selection = scopesTable.selection();
-                setSelectedMetricsSource("scopesTable");
-                pushUrl(`${parentUrl}/${selection.map(row => row.__lparam.id).join(",")}`);
-            }
-        }, 100))
     );
 
     React.useEffect(() => {
         scopesTable
-            .metrics(metrics, options, timelineFilter, scopeFilter)
-            .render()
+            .on("click", debounce((row, col, sel) => {
+                if (sel) {
+                    scopesSelectionChanged("scopesTable", scopesTable.selection());
+                }
+            }), true)
             ;
-    }, [metrics, options, scopeFilter, scopesTable, timelineFilter]);
+    }, [scopesSelectionChanged, scopesTable]);
+
+    React.useEffect(() => {
+        if (!scopeFilter || scopeFilter.indexOf("name:") === 0) {
+            setScopeFilter(timelineFilter ? `name:${timelineFilter}` : "");
+        }
+        scopesTable
+            .metrics(metrics, options, timelineFilter, scopeFilter, matchCase)
+            .lazyRender()
+            ;
+    }, [matchCase, metrics, options, scopeFilter, scopesTable, timelineFilter]);
 
     const updateScopesTable = React.useCallback((selection: IScope[]) => {
         if (scopesTable?.renderCount() > 0) {
@@ -281,12 +301,17 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     const metricGraphWidget = useConst(() => new MetricGraphWidget()
         .zoomToFitLimit(1)
         .selectionGlowColor("DodgerBlue")
-        .on("selectionChanged", () => {
-            const selection = metricGraphWidget.selection().filter(id => metricGraph.item(id)).map(id => metricGraph.item(id).id);
-            setSelectedMetricsSource("metricGraphWidget");
-            pushUrl(`${parentUrl}/${selection.join(",")}`);
-        })
     );
+
+    React.useEffect(() => {
+        metricGraphWidget
+            .on("selectionChanged", () => {
+                const selection = metricGraphWidget.selection().filter(id => metricGraph.item(id)).map(id => metricGraph.item(id).id);
+                setSelectedMetricsSource("metricGraphWidget");
+                pushUrl(`${parentUrl}/${selection.join(",")}`);
+            }, true)
+            ;
+    }, [metricGraph, metricGraphWidget, parentUrl]);
 
     React.useEffect(() => {
         metricGraph.load(metrics);
@@ -416,7 +441,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         if (fetchStatus === FetchStatus.STARTED) {
             return nlsHPCC.FetchingData;
         } else if (!isLayoutComplete) {
-            return `${nlsHPCC.PerformingLayout} (${dot.split("\n").length})`;
+            return `${nlsHPCC.PerformingLayout}(${dot.split("\n").length})`;
         } else if (!isRenderComplete) {
             return nlsHPCC.RenderSVG;
         }
@@ -436,12 +461,13 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     }, [lineage, selectedLineage]);
 
     //  Props Table  ---
-    const propsTable2 = useConst(() => new Table()
+    const crossTabTable = useConst(() => new Table()
         .columns([nlsHPCC.Property, nlsHPCC.Value])
         .columnWidth("auto")
+        .sortable(true)
     );
 
-    const updatePropsTable2 = React.useCallback((selection: IScope[]) => {
+    const updateCrossTabTable = React.useCallback((selection: IScope[]) => {
         const columns = [];
         const props = [];
         selection.forEach(item => {
@@ -458,12 +484,13 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
             });
             props.push(row);
         });
-        propsTable2
-            ?.columns(columns)
-            ?.data(props)
-            ?.lazyRender()
+        crossTabTable
+            .columns([])
+            .columns(columns)
+            .data(props)
+            .lazyRender()
             ;
-    }, [propsTable2]);
+    }, [crossTabTable]);
 
     React.useEffect(() => {
         const dot = metricGraph.graphTpl(selectedLineage ? [selectedLineage] : [], options);
@@ -491,7 +518,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     React.useEffect(() => {
         if (selectedMetrics) {
             updateScopesTable(selectedMetrics);
-            updatePropsTable2(selectedMetrics);
+            updateCrossTabTable(selectedMetrics);
             updateLineage(selectedMetrics);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -595,13 +622,13 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     const setShowMetricOptionsHook = React.useCallback((show: boolean) => {
         setShowMetricOptions(show);
         scopesTable
-            .metrics(metrics, options, timelineFilter, scopeFilter)
+            .metrics(metrics, options, timelineFilter, scopeFilter, matchCase)
             .render(() => {
                 updateScopesTable(selectedMetrics);
             })
             ;
 
-    }, [metrics, options, scopeFilter, scopesTable, selectedMetrics, timelineFilter, updateScopesTable]);
+    }, [matchCase, metrics, options, scopeFilter, scopesTable, selectedMetrics, timelineFilter, updateScopesTable]);
 
     return <HolyGrail fullscreen={fullscreen}
         header={<>
@@ -613,9 +640,17 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                 <DockPanel layout={options?.layout} onDockPanelCreate={setDockpanel}>
                     <DockPanelItem key="scopesTable" title={nlsHPCC.Metrics}>
                         <HolyGrail
-                            header={<SearchBox value={scopeFilter} onChange={onChangeScopeFilter} iconProps={filterIcon} placeholder={nlsHPCC.Filter} />}
+                            header={<Stack horizontal>
+                                <Stack.Item grow>
+                                    <SearchBox value={scopeFilter} onChange={onChangeScopeFilter} iconProps={filterIcon} placeholder={nlsHPCC.Filter} />
+                                </Stack.Item>
+                                <ToggleButton appearance="subtle" icon={matchCase ? <TextCaseTitleFilled /> : <TextCaseTitleRegular />} title={nlsHPCC.MatchCase} checked={matchCase} onClick={() => { setMatchCase(!matchCase); }} />
+                            </Stack>}
                             main={<AutosizeHpccJSComponent widget={scopesTable} ></AutosizeHpccJSComponent>}
                         />
+                    </DockPanelItem>
+                    <DockPanelItem key="metricsSql" title={nlsHPCC.MetricsSQL} location="tab-after" relativeTo="scopesTable">
+                        <MetricsSQL defaultSql={options.sql} scopes={metrics} onSelectionChanged={selection => scopesSelectionChanged("scopesSqlTable", selection)}></MetricsSQL>
                     </DockPanelItem>
                     <DockPanelItem key="metricGraph" title={nlsHPCC.Graph} location="split-right" relativeTo="scopesTable" >
                         <HolyGrail
@@ -640,7 +675,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                         <MetricsPropertiesTables scopesTableColumns={scopesTable.columns()} scopes={selectedMetrics}></MetricsPropertiesTables>
                     </DockPanelItem>
                     <DockPanelItem key="propsTable2" title={nlsHPCC.CrossTab} location="tab-after" relativeTo="propsTable" >
-                        <AutosizeHpccJSComponent widget={propsTable2}></AutosizeHpccJSComponent>
+                        <AutosizeHpccJSComponent widget={crossTabTable}></AutosizeHpccJSComponent>
                     </DockPanelItem>
                 </DockPanel>
                 <MetricsOptions show={showMetricOptions} setShow={setShowMetricOptionsHook} />

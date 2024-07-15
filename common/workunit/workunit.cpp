@@ -19,6 +19,7 @@
 #include <unordered_set>
 
 #include "jlib.hpp"
+#include "jconfig.hpp"
 #include "jcontainerized.hpp"
 #include "workunit.hpp"
 #include "jprop.hpp"
@@ -4436,6 +4437,8 @@ public:
             { return c->getFileAccessCost(); }
     virtual cost_type getCompileCost() const
             { return c->getCompileCost(); }
+    virtual bool getSummary(SummaryType type, SummaryMap &map) const override
+            { return c->getSummary(type, map); }
     virtual void import(IPropertyTree *wuTree, IPropertyTree *graphProgressTree)
             { return c->import(wuTree, graphProgressTree); }
 
@@ -4502,6 +4505,8 @@ public:
             { c->setUser(value); }
     virtual void setWuScope(const char * value)
             { c->setWuScope(value); }
+    virtual void setSummary(SummaryType type, const SummaryMap &map) override
+            { c->setSummary(type, map); }
     virtual IWorkflowItem* addWorkflowItem(unsigned wfid, WFType type, WFMode mode, unsigned success, unsigned failure, unsigned recovery, unsigned retriesAllowed, unsigned contingencyFor)
             { return c->addWorkflowItem(wfid, type, mode, success, failure, recovery, retriesAllowed, contingencyFor); }
     virtual void syncRuntimeWorkflow(IWorkflowItemArray * array)
@@ -8720,6 +8725,74 @@ void CLocalWorkUnit::setDebugValue(const char *propname, const char *value, bool
     }
 }
 
+static const char *summaryTypeName(SummaryType type)
+{
+    switch (type)
+    {
+    case SummaryType::ReadFile: return "ReadFile";
+    case SummaryType::ReadIndex: return "ReadIndex";
+    case SummaryType::WriteFile: return "WriteFile";
+    case SummaryType::WriteIndex: return "WriteIndex";
+    case SummaryType::PersistFile: return "PersistFile";
+    case SummaryType::SpillFile: return "SpillFile";
+    case SummaryType::JobTemp: return "JobTemp";
+    case SummaryType::Service: return "Service";
+    default:
+        throwUnexpected();
+    }
+};
+
+bool CLocalWorkUnit::getSummary(SummaryType type, SummaryMap &map) const
+{
+    VStringBuffer xpath("Summaries/%s", summaryTypeName(type));
+    StringArray s;
+    {
+        CriticalBlock block(crit);
+        IPropertyTree * match = p->queryPropTree(xpath);
+        //If there is not entry then the information is not recorded in the workunit
+        if (!match)
+            return false;
+
+        const char *list = match->queryProp(nullptr);
+        //If the information was recorded return true, even if ther are no results
+        if (!list)
+            return true;
+        s.appendList(list, "\n");
+    }
+    ForEachItemIn(idx, s)
+    {
+        const char *name = s.item(idx);
+        if (name && *name)
+        {
+            char *end = nullptr;
+            SummaryFlags flags = (SummaryFlags) strtol(name, &end, 16);
+            if (*end!=':')
+                return false; // unrecognized format
+            name = end+1;
+            auto match = map.find(name);
+            if (match == map.end())
+                map[name] = flags;
+            else
+                match->second &= flags;
+        }
+    }
+    return true;
+}
+
+void CLocalWorkUnit::setSummary(SummaryType type, const SummaryMap &map)
+{
+    StringBuffer list;
+    for (const auto& [name, flags] : map)
+    {
+        if (list.length())
+            list.append('\n');
+        list.appendf("%01x:%s", (unsigned) flags, name.c_str());    
+    }
+    CriticalBlock block(crit);
+    IPropertyTree *summaries = ensurePTree(p, "Summaries");
+    summaries->setProp(summaryTypeName(type), list);
+}
+
 void CLocalWorkUnit::setDebugValueInt(const char *propname, int value, bool overwrite)
 {
     StringBuffer lower;
@@ -10445,7 +10518,7 @@ IPropertyTree * CLocalWUGraph::getXGMMLTreeRaw() const
     return p->getPropTree("xgmml");
 }
 
-bool workunitGraphCacheEnabled = true;
+bool workunitGraphCacheEnabled = false;
 
 IPropertyTree * CLocalWUGraph::getXGMMLTree(bool doMergeProgress, bool doFormatStats) const
 {
@@ -13979,6 +14052,11 @@ extern WORKUNIT_API void descheduleWorkunit(char const * wuid)
         doDescheduleWorkkunit(wuid);
 }
 
+extern WORKUNIT_API void addWorkunitSummary(IWorkUnit * wu, SummaryType summaryType, SummaryMap &map)
+{
+    wu->setSummary(summaryType, map);
+}
+
 extern WORKUNIT_API void updateWorkunitStat(IWorkUnit * wu, StatisticScopeType scopeType, const char * scope, StatisticKind kind, const char * description, unsigned __int64 value, unsigned wfid)
 {
     StringBuffer scopestr;
@@ -14006,7 +14084,6 @@ protected:
     StatisticScopeType scopeType;
     StatisticKind kind;
 };
-
 
 extern WORKUNIT_API void updateWorkunitTimings(IWorkUnit * wu, ITimeReporter *timer)
 {
@@ -14313,17 +14390,36 @@ void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IP
         CCycleTimer elapsedTimer;
 
         bool multiJobLinger = config.getPropBool("@multiJobLinger", defaultThorMultiJobLinger);
+        bool thisThor = true;
+        const char *queue = config.queryProp("@queue");
+        const char *tgt = workunit.queryClusterName();
+        if (!isEmptyString(tgt)) // don't think should ever happen
+        {
+            if (!streq(tgt, queue))
+            {
+                Owned<IStringIterator> thorTarget = config::getContainerTargets("thor", tgt);
+                if (!thorTarget->first())
+                    throw makeStringExceptionV(0, "Thor target not found: %s", tgt);
+                thisThor = false;
+                queue = tgt;
+            }
+        }
 
         // NB: executeGraphOnLingeringThor looks for existing Thor instance that has been used for the same job,
         // and communicates with it directly
         if (!multiJobLinger && executeGraphOnLingeringThor(workunit, wfid, graphName))
+        {
+            if (!thisThor)
+                throw makeStringExceptionV(0, "multiJobLinger mode required to target other thor instances. Target: %s", tgt);
             PROGLOG("Existing lingering Thor handled graph: %s", graphName);
+        }
         else
         {
             // If no existing Thor instance, or for a multi linger configuration,
             // queue the graph, either the thor agent will pick it up and launch a new Thor (up to maxGraphs),
             // or an existing idle Thor listening on the same queue will pick it up.
-            VStringBuffer queueName("%s.thor", config.queryProp("@queue"));
+
+            VStringBuffer queueName("%s.thor", queue);
             DBGLOG("Queueing wuid=%s, graph=%s, on queue=%s, timelimit=%u seconds", wuid.str(), graphName, queueName.str(), timelimit);
 
             {
@@ -14406,16 +14502,12 @@ void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IP
             }
         }
     }
-    else
+
     {
         Owned<IWorkUnit> w = &workunit.lock();
         WUState state = w->getState();
         if (WUStateFailed == state)
             throw makeStringException(0, "Workunit failed");
-    }
-
-    {
-        Owned<IWorkUnit> w = &workunit.lock();
         w->setState(WUStateRunning);
     }
 #else

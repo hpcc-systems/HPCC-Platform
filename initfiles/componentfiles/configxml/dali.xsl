@@ -308,6 +308,12 @@
             <xsl:attribute name="adminGroupName">
                 <xsl:value-of select="/Environment/Software/LDAPServerProcess[@name=$ldapServerName]/@adminGroupName"/>
             </xsl:attribute>
+            <xsl:attribute name="useLegacyDefaultFileScopePermissionCache">
+                <xsl:value-of select="/Environment/Software/LDAPServerProcess[@name=$ldapServerName]/@useLegacyDefaultFileScopePermissionCache"/>
+            </xsl:attribute>
+            <xsl:attribute name="disableDefaultUser">
+              <xsl:value-of select="/Environment/Software/LDAPServerProcess[@name=$ldapServerName]/@disableDefaultUser"/>
+            </xsl:attribute>
             <xsl:variable name="ldapServerNode" select="/Environment/Software/LDAPServerProcess[@name=$ldapServerName]"/>
             <xsl:if test="not($ldapServerNode)">
               <xsl:message terminate="yes">
@@ -343,8 +349,8 @@
           </xsl:element>
         </xsl:if>
       </xsl:element>
+      <xsl:call-template name="addMetricsConfig"/>
     </DALI>
-    <xsl:call-template name="addMetricsConfig"/>
   </xsl:template>
 
   <xsl:template name="makeAbsolutePath">

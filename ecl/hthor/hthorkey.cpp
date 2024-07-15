@@ -2544,7 +2544,7 @@ public:
 
     virtual void processFetch(FetchRequest const * fetch, offset_t pos, ISerialStream *rawStream)
     {
-        rawStream->reset(pos);
+        rawStream->reset(pos, UnknownOffset);
         CriticalBlock procedure(transformCrit);
         size32_t maxRowSize = 10*1024*1024; // MORE - make configurable
         unsigned thisLineLength = csvSplitter.splitLine(rawStream, maxRowSize);

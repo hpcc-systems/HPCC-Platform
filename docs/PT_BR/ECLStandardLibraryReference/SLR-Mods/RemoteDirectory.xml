@@ -4,17 +4,19 @@
 <sect1 id="RemoteDirectory">
   <title>RemoteDirectory</title>
 
-  <para><emphasis role="bold">STD.File.RemoteDirectory<indexterm>
+  <para><emphasis role="bold">STD.File.RemoteDirectory(</emphasis> <emphasis>
+  machineIP, dir </emphasis> <emphasis role="bold">[</emphasis> <emphasis>,
+  mask </emphasis> <emphasis role="bold">][</emphasis> <emphasis>, recurse
+  </emphasis> <emphasis role="bold">]</emphasis><emphasis
+  role="bold">[</emphasis> <emphasis>, planeName</emphasis> <emphasis
+  role="bold">]</emphasis> <emphasis> </emphasis> <emphasis role="bold">)
+  <indexterm>
       <primary>STD.File.RemoteDirectory</primary>
     </indexterm><indexterm>
       <primary>File.RemoteDirectory</primary>
     </indexterm><indexterm>
       <primary>RemoteDirectory</primary>
-    </indexterm>(</emphasis> <emphasis> machineIP, dir </emphasis> <emphasis
-  role="bold">[</emphasis> <emphasis>, mask </emphasis> <emphasis
-  role="bold">][</emphasis> <emphasis>, recurse </emphasis> <emphasis
-  role="bold">]</emphasis> <emphasis> </emphasis> <emphasis
-  role="bold">)</emphasis></para>
+    </indexterm></emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -26,7 +28,9 @@
         <row>
           <entry><emphasis>machineIP</emphasis></entry>
 
-          <entry>Uma string terminada por nulo que contém o endereço IP da
+          <entry>Uma string terminada em nulo contendo o endereço IP da
+          máquina remota. Opcional se <emphasis>planeName</emphasis> for
+          fornecido.Uma string terminada por nulo que contém o endereço IP da
           máquina remota.</entry>
         </row>
 
@@ -56,6 +60,15 @@
         </row>
 
         <row>
+          <entry><emphasis>planeName</emphasis></entry>
+
+          <entry>Uma string terminada em nulo contendo o nome do plano de
+          dados que contém o arquivo. Opcional se
+          <emphasis>machineIP</emphasis> for fornecido, mas
+          <emphasis>planeName</emphasis> é preferível.</entry>
+        </row>
+
+        <row>
           <entry>Return:<emphasis> </emphasis></entry>
 
           <entry>Retorna um dataset no seguinte formato:</entry>
@@ -78,7 +91,10 @@ END;</programlisting>
 
   <para>Exemplo:</para>
 
-  <programlisting format="linespecific">OUTPUT(STD.File.RemoteDirectory('edata12','\in','*.d00'));
-OUTPUT(STD.File.RemoteDirectory('10.150.254.6',
-      '/var/lib/HPCCSystems/hpcc-data/thor/','acc*',TRUE));</programlisting>
+  <programlisting format="linespecific">IMPORT STD;
+machineIP   := '';
+dir := '/var/lib/HPCCSystems/dropzone/training';
+recurse:= FALSE;
+planeName := 'mydropzone';
+OUTPUT(STD.File.RemoteDirectory(machineIP,dir,'*.csv',recurse,planeName));</programlisting>
 </sect1>

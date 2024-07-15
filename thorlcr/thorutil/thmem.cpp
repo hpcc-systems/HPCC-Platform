@@ -233,7 +233,7 @@ protected:
     EmptyRowSemantics emptyRowSemantics;
     unsigned spillCompInfo;
     CThorSpillableRowArray rows;
-    OwnedIFile spillFile;
+    Owned<CFileOwner> spillFile;
 
     bool spillRows()
     {
@@ -245,11 +245,11 @@ protected:
         StringBuffer tempName;
         VStringBuffer tempPrefix("streamspill_%d", activity.queryId());
         GetTempFilePath(tempName, tempPrefix.str());
-        spillFile.setown(createIFile(tempName.str()));
-
+        spillFile.setown(activity.createOwnedTempFile(tempName.str()));
         VStringBuffer spillPrefixStr("SpillableStream(%u)", spillPriority);
         rows.save(*spillFile, spillCompInfo, false, spillPrefixStr.str()); // saves committed rows
         rows.kill(); // no longer needed, readers will pull from spillFile. NB: ok to kill array as rows is never written to or expanded
+        spillFile->noteSize(spillFile->queryIFile().size());
         return true;
     }
 public:
@@ -264,8 +264,6 @@ public:
     ~CSpillableStreamBase()
     {
         ensureSpillingCallbackRemoved();
-        if (spillFile)
-            spillFile->remove();
     }
 // IBufferedRowCallback
     virtual bool freeBufferedRows(bool critical) override
@@ -338,7 +336,7 @@ class CSharedSpillableRowSet : public CSpillableStreamBase
                         block.clearCB = true;
                         assertex(((offset_t)-1) != outputOffset);
                         unsigned rwFlags = DEFAULT_RWFLAGS | mapESRToRWFlags(owner->emptyRowSemantics);
-                        spillStream.setown(::createRowStreamEx(owner->spillFile, owner->rowIf, outputOffset, (offset_t)-1, (unsigned __int64)-1, rwFlags));
+                        spillStream.setown(::createRowStreamEx(&(owner->spillFile->queryIFile()), owner->rowIf, outputOffset, (offset_t)-1, (unsigned __int64)-1, rwFlags));
                         owner->rows.unregisterWriteCallback(*this); // no longer needed
                         ret = spillStream->nextRow();
                     }
@@ -389,7 +387,7 @@ public:
         {
             block.clearCB = true;
             unsigned rwFlags = DEFAULT_RWFLAGS | mapESRToRWFlags(emptyRowSemantics);
-            return ::createRowStream(spillFile, rowIf, rwFlags);
+            return ::createRowStream(&spillFile->queryIFile(), rowIf, rwFlags);
         }
         rowidx_t toRead = rows.numCommitted();
         if (toRead)
@@ -450,7 +448,7 @@ public:
                     rwFlags |= spillCompInfo;
                 }
                 rwFlags |= mapESRToRWFlags(emptyRowSemantics);
-                spillStream.setown(createRowStream(spillFile, rowIf, rwFlags));
+                spillStream.setown(createRowStream(&spillFile->queryIFile(), rowIf, rwFlags));
                 ReleaseThorRow(readRows);
                 readRows = nullptr;
                 return spillStream->nextRow();
@@ -1377,7 +1375,7 @@ static int callbackSortRev(IInterface * const *cb2, IInterface * const *cb1)
     return 1;
 }
 
-rowidx_t CThorSpillableRowArray::save(IFile &iFile, unsigned _spillCompInfo, bool skipNulls, const char *_tracingPrefix)
+rowidx_t CThorSpillableRowArray::save(CFileOwner &iFileOwner, unsigned _spillCompInfo, bool skipNulls, const char *_tracingPrefix)
 {
     rowidx_t n = numCommitted();
     if (0 == n)
@@ -1407,7 +1405,7 @@ rowidx_t CThorSpillableRowArray::save(IFile &iFile, unsigned _spillCompInfo, boo
         nextCB = &cbCopy.popGet();
         nextCBI = nextCB->queryRecordNumber();
     }
-    Owned<IExtRowWriter> writer = createRowWriter(&iFile, rowIf, rwFlags, nullptr, compBlkSz);
+    Owned<IExtRowWriter> writer = createRowWriter(&iFileOwner.queryIFile(), rowIf, rwFlags, nullptr, compBlkSz);
     rowidx_t i=0;
     rowidx_t rowsWritten=0;
     try
@@ -1446,6 +1444,7 @@ rowidx_t CThorSpillableRowArray::save(IFile &iFile, unsigned _spillCompInfo, boo
             ++i;
         }
         writer->flush(NULL);
+        iFileOwner.noteSize(writer->getStatistic(StSizeDiskWrite));
     }
     catch (IException *e)
     {
@@ -1656,13 +1655,15 @@ protected:
         }
         tempPrefix.appendf("spill_%d", activity.queryId());
         GetTempFilePath(tempName, tempPrefix.str());
-        Owned<IFile> iFile = createIFile(tempName.str());
         VStringBuffer spillPrefixStr("%sRowCollector(%d)", tracingPrefix.str(), spillPriority);
-        spillableRows.save(*iFile, spillCompInfo, false, spillPrefixStr.str()); // saves committed rows
-        spillFiles.append(new CFileOwner(iFile.getLink()));
+        Owned<CFileOwner> tempFileOwner = activity.createOwnedTempFile(tempName.str());
+        spillableRows.save(*tempFileOwner, spillCompInfo, false, spillPrefixStr.str()); // saves committed rows
+        spillFiles.append(tempFileOwner.getLink());
         ++overflowCount;
         statOverflowCount.fastAdd(1); // NB: this is total over multiple uses of this class
-        statSizeSpill.fastAdd(iFile->size());
+        offset_t tempFileSize = tempFileOwner->queryIFile().size();
+        statSizeSpill.fastAdd(tempFileSize);
+        tempFileOwner->noteSize(tempFileSize);
         statSpillCycles.fastAdd(spillTimer.elapsedCycles());
         return true;
     }
@@ -1862,9 +1863,19 @@ public:
              * if there are a lot of spill files, the merge opens them all and causes excessive
              * memory usage.
              */
-            size32_t compBlkSz = activity.getOptUInt(THOROPT_SORT_COMPBLKSZ, DEFAULT_SORT_COMPBLKSZ);
-            ActPrintLog(&activity, thorDetailedLogLevel, "%sSpilling will use compressed block size = %u", tracingPrefix.str(), compBlkSz);
-            spillableRows.setCompBlockSize(compBlkSz);
+            /*
+             * However.... HPCC-29385 Changed the way that compressed files are decompressed, so they are only decompressed one
+             * compression buffer at a time.  For LZ4 this means they can only ever expand to the compressed block size (typically 1MB)
+             * rather than 10s of times that space.
+             * LZW could still expand many times its block size, but the default for LZW is already 64K which is low enough.
+             * Therefore only set the compress block size if it has been explicitly set.
+              */
+            size32_t compBlkSz = activity.getOptUInt(THOROPT_SORT_COMPBLKSZ, 0);
+            if (compBlkSz)
+            {
+                ActPrintLog(&activity, thorDetailedLogLevel, "%sSpilling will use compressed block size = %u", tracingPrefix.str(), compBlkSz);
+                spillableRows.setCompBlockSize(compBlkSz);
+            }
         }
     }
     ~CThorRowCollectorBase()

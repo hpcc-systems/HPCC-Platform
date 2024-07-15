@@ -1305,7 +1305,7 @@ public:
         {
             if (clientCert != NULL)
             {
-                Owned<IPropertyTree> config = createSecureSocketConfig(clientCert->certificate, clientCert->privateKey, clientCert->passphrase);
+                Owned<IPropertyTree> config = createSecureSocketConfig(clientCert->certificate, clientCert->privateKey, clientCert->passphrase, true);
                 ownedSC.setown(createSecureSocketContextEx2(config, ClientSocket));
             }
             else if (clientCertIssuer.length())
@@ -2642,12 +2642,11 @@ public:
                 {
                     // other roxie exception ...
                     master->logctx.CTXLOG("Exiting: received Roxie exception");
+                    master->activitySpanScope->recordException(e, true, true);
                     if (e->errorRow())
                         processException(url, e->errorRow(), e);
                     else
                         processException(url, inputRows, e);
-
-                    master->activitySpanScope->recordException(e, true, true);
                     break;
                 }
             }
@@ -2657,10 +2656,10 @@ public:
                     persistentHandler->doneUsing(socket, false);
                 if (master->timeLimitExceeded)
                 {
-                    processException(url, inputRows, e);
                     VStringBuffer msg("%s exiting: time limit (%ums) exceeded", getWsCallTypeName(master->wscType), master->timeLimitMS);
                     master->logctx.CTXLOG("%s", msg.str());
                     master->activitySpanScope->recordError(SpanError(msg.str(), e->errorCode(), true, true));
+                    processException(url, inputRows, e);
                     break;
                 }
 

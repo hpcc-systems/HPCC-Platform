@@ -7,26 +7,9 @@ import { useWorkunit } from "./workunit";
 import { useQuery } from "./query";
 import { useCounter } from "./util";
 
-const logger = scopedLogger("src-react\hooks\metrics.ts");
+const logger = scopedLogger("src-react/hooks/metrics.ts");
 
-const defaults = {
-    scopeTypes: ["graph", "subgraph", "activity", "edge"],
-    properties: ["TimeElapsed"],
-    ignoreGlobalStoreOutEdges: true,
-    subgraphTpl: "%id% - %TimeElapsed%",
-    activityTpl: "%Label%",
-    edgeTpl: "%Label%\n%NumRowsProcessed%\n%SkewMinRowsProcessed% / %SkewMaxRowsProcessed%",
-    layout: undefined
-};
-
-const options = { ...defaults };
-
-function checkLayout(options: MetricsOptions): boolean {
-    if (options?.layout && !options?.layout?.["main"]) {
-        delete options.layout;
-    }
-    return !!options?.layout;
-}
+const MetricOptionsVersion = 2;
 
 export interface MetricsOptions {
     scopeTypes: string[];
@@ -35,7 +18,30 @@ export interface MetricsOptions {
     subgraphTpl;
     activityTpl;
     edgeTpl;
-    layout?: object
+    sql: string;
+    layout?: object;
+    showTimeline: boolean;
+}
+
+const defaults: MetricsOptions = {
+    scopeTypes: ["graph", "subgraph", "activity", "operation", "workflow"],
+    properties: ["TimeElapsed"],
+    ignoreGlobalStoreOutEdges: true,
+    subgraphTpl: "%id% - %TimeElapsed%",
+    activityTpl: "%Label%",
+    edgeTpl: "%Label%\n%NumRowsProcessed%\n%SkewMinRowsProcessed% / %SkewMaxRowsProcessed%",
+    sql: "SELECT type, name, TimeElapsed, id\n    FROM metrics\n    WHERE TimeElapsed IS NOT NULL",
+    layout: undefined,
+    showTimeline: true
+};
+
+const options: MetricsOptions = { ...defaults };
+
+function checkLayout(options: MetricsOptions): boolean {
+    if (options?.layout && !options?.layout?.["main"]) {
+        delete options.layout;
+    }
+    return !!options?.layout;
 }
 
 export function useMetricsOptions(): [MetricsOptions, (opts: MetricsOptions) => void, () => void, (toDefaults?: boolean) => void] {
@@ -52,7 +58,7 @@ export function useMetricsOptions(): [MetricsOptions, (opts: MetricsOptions) => 
 
     const save = React.useCallback(() => {
         if (checkLayout(options)) {
-            store?.set("MetricOptions", JSON.stringify(options), true);
+            store?.set(`MetricOptions-${MetricOptionsVersion}`, JSON.stringify(options), true);
         }
     }, [store]);
 
@@ -60,7 +66,7 @@ export function useMetricsOptions(): [MetricsOptions, (opts: MetricsOptions) => 
         if (toDefaults) {
             setOptions({ ...defaults });
         } else {
-            store?.get("MetricOptions").then(opts => {
+            store?.get(`MetricOptions-${MetricOptionsVersion}`).then(opts => {
                 const options = JSON.parse(opts);
                 checkLayout(options);
                 setOptions({ ...defaults, ...options });
@@ -104,12 +110,12 @@ export enum FetchStatus {
 
 const scopeFilterDefault: Partial<WsWorkunits.ScopeFilter> = {
     MaxDepth: 999999,
-    ScopeTypes: { ScopeType: [] }
+    ScopeTypes: []
 };
 
 const nestedFilterDefault: WsWorkunits.NestedFilter = {
     Depth: 0,
-    ScopeTypes: { ScopeType: [] }
+    ScopeTypes: []
 };
 
 export function useWorkunitMetrics(

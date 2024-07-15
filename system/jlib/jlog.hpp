@@ -1272,7 +1272,7 @@ interface jlib_decl IContextLogger : extends IInterface
     virtual void logOperatorExceptionVA(IException *E, const char *file, unsigned line, const char *format, va_list args) const __attribute__((format(printf,5,0))) = 0;
     virtual void noteStatistic(StatisticKind kind, unsigned __int64 value) const = 0;
     virtual void setStatistic(StatisticKind kind, unsigned __int64 value) const = 0;
-    virtual void mergeStats(const CRuntimeStatisticCollection &from) const = 0;
+    virtual void mergeStats(unsigned activityId, const CRuntimeStatisticCollection &from) const = 0;
     virtual unsigned queryTraceLevel() const = 0;
 
     virtual const char *queryGlobalId() const = 0;
@@ -1389,6 +1389,8 @@ typedef enum
     LOGACCESS_FILTER_host,
     LOGACCESS_FILTER_column,
     LOGACCESS_FILTER_pod,
+    LOGACCESS_FILTER_trace,
+    LOGACCESS_FILTER_span,
     LOGACCESS_FILTER_unknown
 } LogAccessFilterType;
 
@@ -1410,6 +1412,10 @@ inline const char * logAccessFilterTypeToString(LogAccessFilterType field)
         return "instance";
     case LOGACCESS_FILTER_host:
         return "host";
+    case LOGACCESS_FILTER_trace:
+        return "trace";
+    case LOGACCESS_FILTER_span:
+        return "span";
     case LOGACCESS_FILTER_or:
         return "OR";
     case LOGACCESS_FILTER_and:
@@ -1438,6 +1444,10 @@ inline unsigned logAccessFilterTypeFromName(char const * name)
         return LOGACCESS_FILTER_pod;
     if(strieq(name, "instance"))
         return LOGACCESS_FILTER_instance;
+    if(strieq(name, "trace"))
+        return LOGACCESS_FILTER_trace;
+    if(strieq(name, "span"))
+        return LOGACCESS_FILTER_span;
     if(strieq(name, "host"))
         return LOGACCESS_FILTER_host;
     if(strieq(name, "OR"))
@@ -1488,6 +1498,8 @@ enum LogAccessMappedField
     LOGACCESS_MAPPEDFIELD_instance,
     LOGACCESS_MAPPEDFIELD_pod,
     LOGACCESS_MAPPEDFIELD_host,
+    LOGACCESS_MAPPEDFIELD_traceid,
+    LOGACCESS_MAPPEDFIELD_spanid,
     LOGACCESS_MAPPEDFIELD_unmapped
 };
 
@@ -1687,6 +1699,8 @@ extern jlib_decl ILogAccessFilter * getHostLogAccessFilter(const char * host);
 extern jlib_decl ILogAccessFilter * getJobIDLogAccessFilter(const char * jobId);
 extern jlib_decl ILogAccessFilter * getComponentLogAccessFilter(const char * component);
 extern jlib_decl ILogAccessFilter * getPodLogAccessFilter(const char * podName);
+extern jlib_decl ILogAccessFilter * getTraceIDLogAccessFilter(const char * traceId);
+extern jlib_decl ILogAccessFilter * getSpanIDLogAccessFilter(const char * spanId);
 extern jlib_decl ILogAccessFilter * getAudienceLogAccessFilter(MessageAudience audience);
 extern jlib_decl ILogAccessFilter * getClassLogAccessFilter(LogMsgClass logclass);
 extern jlib_decl ILogAccessFilter * getBinaryLogAccessFilter(ILogAccessFilter * arg1, ILogAccessFilter * arg2, LogAccessFilterType type);

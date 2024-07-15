@@ -34,7 +34,11 @@
 # define _TRACELINKCLOSED
 #endif
 
+#ifdef _WIN32
 #define DEFAULT_LISTEN_QUEUE_SIZE    200            // maximum for windows 2000 server
+#else
+#define DEFAULT_LISTEN_QUEUE_SIZE    600
+#endif
 #define DEFAULT_LINGER_TIME          1000 // seconds
 #ifndef WAIT_FOREVER
 #define WAIT_FOREVER                 ((unsigned)-1)
@@ -72,7 +76,6 @@ enum JSOCKET_ERROR_CODES {
 
 #ifndef _WIN32
 #define BLOCK_POLLED_SINGLE_CONNECTS  // NB this is much slower in windows
-#define CENTRAL_NODE_RANDOM_DELAY
 #else
 #define USERECVSEM      // to singlethread BF_SYNC_TRANSFER_PUSH
 #endif
@@ -632,8 +635,6 @@ public:
 };
 
 extern jlib_decl ISocketBufferReader *createSocketBufferReader(const char *trc=NULL);
-
-extern jlib_decl void markNodeCentral(SocketEndpoint &ep); // random delay for linux
 
 interface ISocketConnectNotify
 {

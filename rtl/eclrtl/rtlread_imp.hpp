@@ -94,5 +94,34 @@ protected:
     Linked<ISerialStream> in;           // could use a CStreamSerializer class (with inlines to improve)
 };
 
+class ECLRTL_API COutputStreamSerializer : public CSimpleInterfaceOf<IRowSerializerTarget>
+{
+    Linked<IBufferedSerialOutputStream> outputStream;
+    unsigned nesting = 0;
+    offset_t outerNestingOffset = 0;
+
+public:
+    COutputStreamSerializer(IBufferedSerialOutputStream *_outputStream) : outputStream(_outputStream)
+    {
+    }
+    virtual void put(size32_t len, const void * ptr) override
+    {
+        outputStream->put(len, ptr);
+    }
+    virtual size32_t beginNested(size32_t count) override
+    {
+        outputStream->suspend(sizeof(size32_t));
+        if (nesting++ == 0)
+            outerNestingOffset = outputStream->tell();
+        return outputStream->tell()-outerNestingOffset;
+    }
+    virtual void endNested(size32_t delta) override
+    {
+        size32_t patchedLength = outputStream->tell() - (delta + outerNestingOffset);
+        outputStream->resume(sizeof(size32_t), &patchedLength);
+        nesting--;
+    }
+};
+
 
 #endif

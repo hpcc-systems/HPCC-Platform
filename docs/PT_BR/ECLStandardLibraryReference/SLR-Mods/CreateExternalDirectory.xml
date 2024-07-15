@@ -10,7 +10,9 @@
       <primary>File.CreateExternalDirectory</primary>
     </indexterm><indexterm>
       <primary>CreateExternalDirectory</primary>
-    </indexterm>(</emphasis> <emphasis> location, path </emphasis> <emphasis
+    </indexterm>(</emphasis> <emphasis> location, path <emphasis
+  role="bold">[</emphasis> <emphasis>, planename</emphasis> <emphasis
+  role="bold">]</emphasis> </emphasis> <emphasis
   role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
@@ -23,8 +25,8 @@
         <row>
           <entry><emphasis>location</emphasis></entry>
 
-          <entry>Uma string terminada por nulo que contém o endereço IP da
-          máquina remota.</entry>
+          <entry>Uma string terminada em nulo contendo o endereço IP da
+          máquina remota. Opcional se planename for fornecido.</entry>
         </row>
 
         <row>
@@ -32,6 +34,15 @@
 
           <entry>Uma string terminada por nulo que contém o caminho do
           diretório a ser criado.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>planename</emphasis></entry>
+
+          <entry>Uma string terminada em nulo contendo o nome do plano de
+          dados que contém o arquivo. Opcional se
+          <emphasis>localização</emphasis> for fornecida, mas
+          <emphasis>planename</emphasis> é preferível.</entry>
         </row>
       </tbody>
     </tgroup>
@@ -44,8 +55,10 @@
 
   <para>Exemplo:</para>
 
-  <programlisting format="linespecific">IP   := '10.150.254.6';
-path := '/c$/training/import/NewDir';
-STD.File.CreateExternalDirectory(IP,path);
+  <programlisting format="linespecific">IMPORT STD;
+IP   := '';
+path := '/var/lib/HPCCSystems/dropzone/advancedtraining/';
+planename := 'mydropzone';
+STD.File.CreateExternalDirectory(IP,path,planename);
 </programlisting>
 </sect1>

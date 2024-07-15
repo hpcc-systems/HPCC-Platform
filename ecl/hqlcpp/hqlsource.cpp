@@ -1174,7 +1174,27 @@ void SourceBuilder::rebindFilepositons(BuildCtx & ctx, IHqlExpression * dataset,
 void SourceBuilder::buildFilenameMember()
 {
     //---- virtual const char * getFileName() { return "x.d00"; } ----
-    translator.buildFilenameFunction(*instance, instance->startctx, WaFilename, "getFileName", nameExpr, translator.hasDynamicFilename(tableExpr));
+    SummaryType summaryType = SummaryType::ReadFile;
+    switch (activityKind)
+    {
+        case TAKindexread:
+        case TAKindexnormalize:
+        case TAKindexaggregate:
+        case TAKindexcount:
+        case TAKindexgroupaggregate:
+            summaryType = SummaryType::ReadIndex;
+            break;
+        case TAKspillread:
+            summaryType = SummaryType::SpillFile;
+            break;
+    }
+    if (tableExpr->hasAttribute(_spill_Atom))
+        summaryType = SummaryType::SpillFile;
+    else if (tableExpr->hasAttribute(jobTempAtom))
+        summaryType = SummaryType::JobTemp;
+    else if (tableExpr->hasAttribute(_workflowPersist_Atom))
+        summaryType = SummaryType::PersistFile;
+    translator.buildFilenameFunction(*instance, instance->startctx, WaFilename, "getFileName", nameExpr, translator.hasDynamicFilename(tableExpr), summaryType, tableExpr->hasAttribute(optAtom), tableExpr->hasAttribute(_signed_Atom));
 }
 
 void SourceBuilder::buildReadMembers(IHqlExpression * expr)
@@ -2115,7 +2135,7 @@ ABoundActivity * SourceBuilder::buildActivity(BuildCtx & ctx, IHqlExpression * e
             else
                 throwError1(HQLERR_ReadSpillBeforeWrite, spillName.str());
         }
-        translator.addFilenameConstructorParameter(*instance, WaFilename, nameExpr);
+        translator.addFilenameConstructorParameter(*instance, WaFilename, nameExpr, SummaryType::SpillFile);
     }
 
     if (steppedExpr)
@@ -4843,7 +4863,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityXmlRead(BuildCtx & ctx, IHqlEx
         fieldUsage->noteAll();
 
     //---- virtual const char * getFileName() { return "x.d00"; } ----
-    buildFilenameFunction(*instance, instance->startctx, WaFilename, "getFileName", filename, hasDynamicFilename(tableExpr));
+    buildFilenameFunction(*instance, instance->startctx, WaFilename, "getFileName", filename, hasDynamicFilename(tableExpr), SummaryType::ReadIndex, tableExpr->hasAttribute(optAtom), tableExpr->hasAttribute(_signed_Atom));
     buildEncryptHelper(instance->startctx, tableExpr->queryAttribute(encryptAtom));
 
     bool usesContents = false;

@@ -37,6 +37,25 @@ typedef QueueOf<const void,true> ThorRowQueue;
 
 
 
+struct CommonBufferRowRWStreamOptions
+{
+    offset_t storageBlockSize = 256 * 1024;             // block size of read/write streams
+    size32_t minCompressionBlockSize = 256 * 1024;      // minimum block size for compression
+    memsize_t totalCompressionBufferSize = 3000 * 1024; // compression buffer size of read streams (split between writer and outputs)
+    memsize_t inMemMaxMem = 2000 * 1024;                // before spilling begins.
+    offset_t writeAheadSize = 2000 * 1024;              // once spilling, maximum size to write ahead
+    unsigned heapFlags = roxiemem::RHFunique|roxiemem::RHFblocked;
+};
+
+struct LookAheadOptions : CommonBufferRowRWStreamOptions
+{
+    LookAheadOptions()
+    {
+        // override defaults
+        totalCompressionBufferSize = 2000 * 1024; // compression buffer size of read streams (split between writer and outputs)
+    }
+    offset_t tempFileGranularity = 1000 * 0x100000; // 1GB
+};
 
 
 interface ISmartRowBuffer: extends IRowStream
@@ -55,6 +74,23 @@ extern graph_decl ISmartRowBuffer * createSmartInMemoryBuffer(CActivityBase *act
                                                       IThorRowInterfaces *rowIf,
                                                       size32_t buffsize);
 
+
+extern graph_decl ISmartRowBuffer * createCompressedSpillingRowStream(CActivityBase *activity, const char * tempBasename, bool grouped, IThorRowInterfaces *rowif, const LookAheadOptions &options, ICompressHandler *compressHandler);
+
+struct SharedRowStreamReaderOptions : public CommonBufferRowRWStreamOptions
+{
+    memsize_t inMemReadAheadGranularity = 128 * 1024;  // granularity (K) of read ahead
+    rowcount_t inMemReadAheadGranularityRows = 64;     // granularity (rows) of read ahead. NB: whichever granularity is hit first
+};
+interface ISharedRowStreamReader : extends IInterface
+{
+    virtual IRowStream *queryOutput(unsigned output) = 0;
+    virtual void cancel()=0;
+    virtual void reset() = 0;
+    virtual unsigned __int64 getStatistic(StatisticKind kind) const = 0;
+};
+
+
 // Multiple readers, one writer
 interface ISharedSmartBufferCallback
 {
@@ -62,18 +98,20 @@ interface ISharedSmartBufferCallback
     virtual void blocked() = 0;
     virtual void unblocked() = 0;
 };
-interface ISharedSmartBuffer : extends IRowWriter
+
+interface ISharedSmartBufferRowWriter : extends IRowWriter
 {
-    using IRowWriter::putRow;
     virtual void putRow(const void *row, ISharedSmartBufferCallback *callback) = 0; // extended form of putRow, which signals when pages out via callback
-    virtual IRowStream *queryOutput(unsigned output) = 0;
-    virtual void cancel()=0;
-    virtual void reset() = 0;
+};
+
+interface ISharedSmartBuffer : extends ISharedRowStreamReader
+{
+    virtual ISharedSmartBufferRowWriter *getWriter() = 0;
 };
 
 extern graph_decl ISharedSmartBuffer *createSharedSmartMemBuffer(CActivityBase *activity, unsigned outputs, IThorRowInterfaces *rowif, unsigned buffSize=((unsigned)-1));
 extern graph_decl ISharedSmartBuffer *createSharedSmartDiskBuffer(CActivityBase *activity, const char *tempname, unsigned outputs, IThorRowInterfaces *rowif);
-
+extern graph_decl ISharedRowStreamReader *createSharedFullSpillingWriteAhead(CActivityBase *_activity, unsigned numOutputs, IRowStream *_input, bool _inputGrouped, const SharedRowStreamReaderOptions &options, IThorRowInterfaces *_rowIf, const char *tempFileName, ICompressHandler *compressHandler);
 
 interface IRowWriterMultiReader : extends IRowWriter
 {

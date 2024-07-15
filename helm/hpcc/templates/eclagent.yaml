@@ -43,6 +43,8 @@ data:
 {{- include "hpcc.generateLoggingConfig" . | indent 6 }}
 {{- include "hpcc.generateTracingConfig" . | indent 6 }}
 {{ include "hpcc.generateVaultConfig" . | indent 6 }}
+      queues:
+{{ include "hpcc.generateConfigMapQueues" .root | indent 6 }}
     global:
 {{ include "hpcc.generateGlobalConfigMap" .root | indent 6 }}
 {{- if not .me.useChildProcesses }}
@@ -60,7 +62,7 @@ data:
             {{- include "hpcc.addStandardLabels" (dict "root" $ "component" $apptype "name" "eclagent" "instance" $appJobName "instanceOf" (printf "%s-job" .me.name)) | indent 12 }}
             accessDali: "yes"
             accessEsp: "yes"
-            helmVersion: 9.7.0-trunk0
+            helmVersion: 9.9.0-trunk0
 {{- if hasKey .me "labels" }}
 {{ toYaml .me.labels | indent 12 }}
 {{- end }}
@@ -137,7 +139,7 @@ spec:
         run: {{ .name | quote }}
         accessDali: "yes"
         accessEsp: {{ .useChildProcesses | default false | ternary "yes" "no" | quote }}
-        helmVersion: 9.7.0-trunk0
+        helmVersion: 9.9.0-trunk0
 {{- if hasKey . "labels" }}
 {{ toYaml .labels | indent 8 }}
 {{- end }}

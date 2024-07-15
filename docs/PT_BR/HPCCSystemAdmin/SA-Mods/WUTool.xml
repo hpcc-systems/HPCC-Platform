@@ -17,13 +17,13 @@
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
-      <colspec align="left" colwidth="125.55pt"/>
+      <colspec align="left" colwidth="175.55pt"/>
 
       <colspec/>
 
       <tbody>
         <row>
-          <entry><emphasis role="bold">Actions</emphasis></entry>
+          <entry colsep="0"><emphasis role="bold">Actions</emphasis></entry>
 
           <entry><ns:textPlaceholder
           xmlns:ns="http://www.xmlmind.com/xmleditor/namespace/clipboard"/></entry>
@@ -51,6 +51,21 @@
           <entry>results &lt;workunits&gt;</entry>
 
           <entry>Dump de resultados de uma workunit específica.</entry>
+        </row>
+
+        <row>
+          <entry>info &lt;workunits&gt; &lt;filter&gt;</entry>
+
+          <entry>Este comando fornece acesso filtrado a estatísticas e outras
+          informações de uma workunit.<para>Consulte a tabela seguinte para
+          obter informações adicionais sobre o parâmetro info. </para></entry>
+        </row>
+
+        <row>
+          <entry>analisa a &lt;workunit&gt;</entry>
+
+          <entry>Analisa a workunit para destacar possíveis economias de
+          custos.</entry>
         </row>
 
         <row>
@@ -84,7 +99,7 @@
           <entry>validate</entry>
 
           <entry>Verifique o conteúdo do repositório da workunit quanto a
-          erros. [FIX=1] will try to repair any issues found.</entry>
+          erros. [FIX=1] irá reparar qualquer ocorrência encontrada.</entry>
         </row>
 
         <row>
@@ -98,6 +113,221 @@
           <entry>initialize</entry>
 
           <entry>Inicializa o respositório de uma nova workunit</entry>
+        </row>
+
+        <row>
+          <entry>graph &lt;wu&gt;</entry>
+
+          <entry>Gera uma representação alternativa do graph com detalhes da
+          execução</entry>
+        </row>
+
+        <row>
+          <entry>activity &lt;wu&gt;</entry>
+
+          <entry><para>Quais atividades estão em execução em um determinado
+          intervalo de tempo (em ordem cronológica)</para><para>&lt;wu&gt;
+          ["&gt;scope|mintime"] ["&lt;scope|maxtime"]
+          [threshold=n%]</para></entry>
+        </row>
+
+        <row>
+          <entry>hotspot &lt;wu&gt; [&lt;activity&gt;]</entry>
+
+          <entry>Localiza hotspots para workunit (ou uma atividade em
+          particular)</entry>
+        </row>
+
+        <row>
+          <entry>critical &lt;wu&gt; &lt;activity&gt;</entry>
+
+          <entry>Quais atividades estão em execução em ordem de
+          execução</entry>
+        </row>
+
+        <row>
+          <entry><programlisting role="tab">depend &lt;wu&gt; &lt;activity&gt; 
+&lt;activity&gt;</programlisting></entry>
+
+          <entry>Localiza padrões entre duas atividades</entry>
+        </row>
+
+        <row>
+          <entry>depend &lt;wu&gt; ?&lt;activity&gt;:startTime</entry>
+
+          <entry>Quais depedências consomem um grande % no início da
+          atividade</entry>
+        </row>
+
+        <row>
+          <entry>help &lt;command&gt;</entry>
+
+          <entry>Mais ajuda por meio de comando</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A tabela a seguir fornece mais informações para a utilidade wutool
+  emitida com o parâmetro action=info:</para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec align="left" colwidth="175.55pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry colsep="0"><emphasis role="bold">info
+          parâmetros</emphasis></entry>
+
+          <entry/>
+        </row>
+
+        <row>
+          <entry>info &lt;workunits&gt; &lt;filter&gt;</entry>
+
+          <entry>Este comando fornece acesso filtrado às estatísticas e outras
+          informações de uma workunit.<para>O filtro pode incluir os seguintes
+          elementos (aqueles indicados por * podem ser repetidos):
+          </para></entry>
+        </row>
+
+        <row>
+          <entry colsep="0"/>
+
+          <entry><emphasis role="bold">Quais escopos
+          correspondem:</emphasis></entry>
+        </row>
+
+        <row>
+          <entry><programlisting role="tab">  
+          scope[&lt;scope-id&gt;]*</programlisting></entry>
+
+          <entry>escope para correspodência</entry>
+        </row>
+
+        <row>
+          <entry><programlisting role="tab">  
+          stype[&lt;scope-type&gt;]*</programlisting></entry>
+
+          <entry>escope do tipo de correspondência</entry>
+        </row>
+
+        <row rowsep="0">
+          <entry><programlisting role="tab">  id[&lt;id&gt;]*</programlisting></entry>
+
+          <entry>o id do escopo para correspondência</entry>
+        </row>
+
+        <row>
+          <entry/>
+
+          <entry><emphasis role="bold">NOTA</emphasis>: escopo, stype e id não
+          podem ser especificados no mesmo filtro</entry>
+        </row>
+
+        <row>
+          <entry><programlisting role="tab">  depth[n |
+          low..high]</programlisting></entry>
+
+          <entry>intervalo de profundidades para buscar uma
+          correspondência.</entry>
+        </row>
+
+        <row>
+          <entry><programlisting role="tab">  source[global|stats|graph|all]*</programlisting></entry>
+
+          <entry>quais fontes dentro da workunit a pesquisar. O padrão são as
+          melhores fontes para o resto do filtro.</entry>
+        </row>
+
+        <row>
+          <entry><programlisting role="tab">  where[&lt;statistickind&gt; | &lt;statistickind&gt; 
+(=|&lt;|&lt;=|&gt;|&gt;=) value | 
+&lt;statistickind&gt;=low..high]</programlisting></entry>
+
+          <entry>filtrar pela existência de estatística ou intervalo de
+          valores. </entry>
+        </row>
+
+        <row rowsep="0">
+          <entry colsep="0"/>
+
+          <entry><emphasis role="bold">Quais escopos estão inclusos nos
+          resultados:</emphasis></entry>
+        </row>
+
+        <row>
+          <entry><programlisting role="tab">  matched[true|false]</programlisting></entry>
+
+          <entry>os escopos correspondentes são retornados?</entry>
+        </row>
+
+        <row>
+          <entry><programlisting role="tab">  nested[&lt;depth&gt;|all]</programlisting></entry>
+
+          <entry>qual aninhamento de escopos dentro de um escopo
+          correspondente estão nos resultados (padrão para '0' se
+          correspondente[true] e 'todos' se correspondente[false]).</entry>
+        </row>
+
+        <row>
+          <entry><programlisting role="tab">  includetype[&lt;scope-type&gt;]*</programlisting></entry>
+
+          <entry>quais tipos de escopo devem ser incluídos?</entry>
+        </row>
+
+        <row>
+          <entry colsep="0"/>
+
+          <entry><emphasis role="bold">Qual informação sobre o escopo é
+          reportado:</emphasis></entry>
+        </row>
+
+        <row>
+          <entry><programlisting role="tab">  properties[statistics|hints|
+attributes|scope|all]*</programlisting></entry>
+
+          <entry/>
+        </row>
+
+        <row>
+          <entry><programlisting role="tab">  statistic[&lt;statistic-kind&gt;|none|all]*</programlisting></entry>
+
+          <entry/>
+        </row>
+
+        <row>
+          <entry><programlisting role="tab">  attribute[&lt;attribute-name&gt;|none|all]*</programlisting></entry>
+
+          <entry/>
+        </row>
+
+        <row>
+          <entry><programlisting role="tab">  hint[&lt;hint-name&gt;]*</programlisting></entry>
+
+          <entry/>
+        </row>
+
+        <row>
+          <entry><programlisting role="tab">  property[&lt;statistic-kind&gt;|
+&lt;attribute-name&gt;|&lt;hint-name&gt;]*</programlisting></entry>
+
+          <entry>incluir propriedade (categoria é deduzida)</entry>
+        </row>
+
+        <row>
+          <entry><programlisting role="tab">  measure[&lt;measure&gt;]</programlisting></entry>
+
+          <entry>todas as estatísticas com medidas específicas.</entry>
+        </row>
+
+        <row>
+          <entry><programlisting role="tab">  version[&lt;version&gt;]</programlisting></entry>
+
+          <entry>versão mínima para retornar</entry>
         </row>
       </tbody>
     </tgroup>

@@ -166,7 +166,7 @@ public:
         bool res = true;
         if (op.applyTop(node))
         {
-            IPropertyTreeIterator *iter = node.getElements("*");
+            Owned<IPropertyTreeIterator> iter = node.getElements("*");
             if (iter->first())
             {
                 bool levelBreak = false;
@@ -180,7 +180,6 @@ public:
                     iter->next();
                 }
             }
-            iter->Release();
         }
         return res;
     }

@@ -196,7 +196,6 @@ public:
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
-        info.singleRowOutput = true;
         info.totalRowsMin=1;
         info.totalRowsMax=1;
     }

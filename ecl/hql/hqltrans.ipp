@@ -688,7 +688,8 @@ private:
 class HQL_API ConditionalHqlTransformer : public NewHqlTransformer
 {
 public:
-    enum { CTFnoteifactions     = 0x0001,
+    enum { CTFnone              = 0x0000,
+           CTFnoteifactions     = 0x0001,
            CTFnoteifdatasets    = 0x0002,
            CTFnoteifdatarows    = 0x0004,
            CTFnoteifall         = 0x0008,

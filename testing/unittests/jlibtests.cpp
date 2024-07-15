@@ -68,7 +68,6 @@ public:
         CPPUNIT_TEST(manualTestScopeEnd);
         CPPUNIT_TEST(testActiveSpans);
         CPPUNIT_TEST(testSpanFetchMethods);
-
         //CPPUNIT_TEST(testJTraceJLOGExporterprintResources);
         //CPPUNIT_TEST(testJTraceJLOGExporterprintAttributes);
         CPPUNIT_TEST(manualTestsDeclaredSpanStartTime);
@@ -826,6 +825,30 @@ protected:
 CPPUNIT_TEST_SUITE_REGISTRATION( JlibTraceTest );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibTraceTest, "JlibTraceTest" );
 
+class JlibStringTest : public CppUnit::TestFixture
+{
+public:
+    CPPUNIT_TEST_SUITE(JlibStringTest);
+        CPPUNIT_TEST(testEncodeCSVColumn);
+    CPPUNIT_TEST_SUITE_END();
+
+protected:
+void testEncodeCSVColumn()
+    {
+        const char * csvCol1 = "hello,world";
+        StringBuffer encodedCSV;
+        encodeCSVColumn(encodedCSV, csvCol1);
+        CPPUNIT_ASSERT_EQUAL_STR(encodedCSV.str(), "\"hello,world\"");
+
+        const char * csvCol2 = "hello world, \"how are you?\"";
+        encodedCSV.clear();
+        encodeCSVColumn(encodedCSV, csvCol2);
+        CPPUNIT_ASSERT_EQUAL_STR(encodedCSV.str(), "\"hello world, \"\"how are you?\"\"\"");
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( JlibStringTest );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibStringTest, "JlibStringTest" );
 
 class JlibSemTest : public CppUnit::TestFixture
 {
@@ -3095,9 +3118,9 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(JlibIPTTest, "JlibIPTTest");
 #include "jmutex.hpp"
 
 
-class AtomicTimingTest : public CppUnit::TestFixture
+class AtomicTimingStressTest : public CppUnit::TestFixture
 {
-    CPPUNIT_TEST_SUITE(AtomicTimingTest);
+    CPPUNIT_TEST_SUITE(AtomicTimingStressTest);
         CPPUNIT_TEST(runAllTests);
     CPPUNIT_TEST_SUITE_END();
 
@@ -3191,7 +3214,7 @@ public:
         unsigned __int64 run(const char * title, unsigned numThreads, unsigned numIterations)
         {
             value1 = 0;
-            for (unsigned ix = 1; ix < NUMVALUES; ix++)
+            for (unsigned ix = 0; ix < NUMVALUES; ix++)
                 extraValues[ix] = 0;
             for (unsigned i = 0; i < numThreads; i++)
             {
@@ -3255,6 +3278,18 @@ public:
         DO_TEST(CriticalSection, CriticalBlock, unsigned __int64, 2, 1);
         DO_TEST(CriticalSection, CriticalBlock, unsigned __int64, 5, 1);
         DO_TEST(CriticalSection, CriticalBlock, unsigned __int64, 1, 2);
+        DO_TEST(Mutex, synchronized, unsigned __int64, 1, 1);
+        DO_TEST(Mutex, synchronized, unsigned __int64, 2, 1);
+        DO_TEST(Mutex, synchronized, unsigned __int64, 5, 1);
+        DO_TEST(Mutex, synchronized, unsigned __int64, 1, 2);
+        DO_TEST(SimpleMutex, MutexBlock<SimpleMutex>, unsigned __int64, 1, 1);
+        DO_TEST(SimpleMutex, MutexBlock<SimpleMutex>, unsigned __int64, 2, 1);
+        DO_TEST(SimpleMutex, MutexBlock<SimpleMutex>, unsigned __int64, 5, 1);
+        DO_TEST(SimpleMutex, MutexBlock<SimpleMutex>, unsigned __int64, 1, 2);
+        DO_TEST(TimedMutex, TimedMutexBlock, unsigned __int64, 1, 1);
+        DO_TEST(TimedMutex, TimedMutexBlock, unsigned __int64, 2, 1);
+        DO_TEST(TimedMutex, TimedMutexBlock, unsigned __int64, 5, 1);
+        DO_TEST(TimedMutex, TimedMutexBlock, unsigned __int64, 1, 2);
         DO_TEST(SpinLock, SpinBlock, unsigned __int64, 1, 1);
         DO_TEST(SpinLock, SpinBlock, unsigned __int64, 2, 1);
         DO_TEST(SpinLock, SpinBlock, unsigned __int64, 5, 1);
@@ -3290,10 +3325,10 @@ public:
 
     void summariseTimings(const char * option, UInt64Array & times)
     {
-        DBGLOG("%11s 1x: cs(%3" I64F "u) spin(%3" I64F "u) atomic(%3" I64F "u) ratomic(%3" I64F "u) cas(%3" I64F "u) rd(%3" I64F "u) wr(%3" I64F "u)   "
-                    "5x: cs(%3" I64F "u) spin(%3" I64F "u) atomic(%3" I64F "u) ratomic(%3" I64F "u) cas(%3" I64F "u) rd(%3" I64F "u) wr(%3" I64F "u)", option,
-                    times.item(0), times.item(4), times.item(8), times.item(12), times.item(14), times.item(19), times.item(23),
-                    times.item(2), times.item(6), times.item(10), times.item(13), times.item(15), times.item(21), times.item(25));
+        DBGLOG("%11s 1x: cs(%3" I64F "u) mutex (%3" I64F "u) smutex (%3" I64F "u) tmutex (%3" I64F "u) spin(%3" I64F "u) atomic(%3" I64F "u) ratomic(%3" I64F "u) cas(%3" I64F "u) rd(%3" I64F "u) wr(%3" I64F "u)", option,
+                         times.item(0), times.item(4), times.item(8), times.item(12), times.item(16), times.item(20), times.item(24), times.item(26), times.item(31), times.item(35));
+        DBGLOG("%11s 5x: cs(%3" I64F "u) mutex (%3" I64F "u) smutex (%3" I64F "u) tmutex (%3" I64F "u) spin(%3" I64F "u) atomic(%3" I64F "u) ratomic(%3" I64F "u) cas(%3" I64F "u) rd(%3" I64F "u) wr(%3" I64F "u)", "",
+                         times.item(2), times.item(6), times.item(10), times.item(14), times.item(18), times.item(22), times.item(25), times.item(27), times.item(33), times.item(37));
     }
 
 private:
@@ -3303,8 +3338,8 @@ private:
     UInt64Array contendedTimes;
 };
 
-CPPUNIT_TEST_SUITE_REGISTRATION(AtomicTimingTest);
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(AtomicTimingTest, "AtomicTimingStressTest");
+CPPUNIT_TEST_SUITE_REGISTRATION(AtomicTimingStressTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(AtomicTimingStressTest, "AtomicTimingStressTest");
 
 
 //=====================================================================================================================
@@ -4083,6 +4118,116 @@ CPPUNIT_TEST_SUITE_REGISTRATION( JLibOpensslAESTest );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JLibOpensslAESTest, "JLibOpensslAESTest" );
 #endif
 
+class TopNStressTest : public CppUnit::TestFixture
+{
+public:
+    CPPUNIT_TEST_SUITE(TopNStressTest);
+        CPPUNIT_TEST(testTop5a);
+        CPPUNIT_TEST(testTop5b);
+    CPPUNIT_TEST_SUITE_END();
+
+    struct x
+    {
+    static constexpr const unsigned MaxSlowActivities = 5;
+    mutable unsigned slowActivityIds[MaxSlowActivities] = {};
+    mutable stat_type slowActivityTimes[MaxSlowActivities] = {};
+    unsigned cnt = 0;
+
+        __attribute__((noinline))
+        void noteTime(unsigned activityId, stat_type localTime)
+        {
+            if (localTime > slowActivityTimes[MaxSlowActivities-1])
+            {
+                unsigned pos = MaxSlowActivities-1;
+                while (pos > 0)
+                {
+                    if (localTime <= slowActivityTimes[pos-1])
+                        break;
+                    slowActivityIds[pos] = slowActivityIds[pos-1];
+                    slowActivityTimes[pos] = slowActivityTimes[pos-1];
+                    pos--;
+                }
+                slowActivityIds[pos] = activityId;
+                slowActivityTimes[pos] = localTime;
+                cnt++;
+            }
+        }
+        __attribute__((noinline))
+        void noteTime2(unsigned activityId, stat_type localTime)
+        {
+            if (localTime > slowActivityTimes[0])
+            {
+                unsigned pos = 1;
+                while (pos < MaxSlowActivities)
+                {
+                    if (localTime <= slowActivityTimes[pos])
+                        break;
+                    slowActivityIds[pos-1] = slowActivityIds[pos];
+                    slowActivityTimes[pos-1] = slowActivityTimes[pos];
+                    pos++;
+                }
+                slowActivityIds[pos-1] = activityId;
+                slowActivityTimes[pos-1] = localTime;
+                cnt++;
+            }
+        }
+        void report(__uint64 elapsedNs)
+        {
+            StringBuffer ids, times;
+            for (unsigned i=0; i < MaxSlowActivities; i++)
+            {
+                if (!slowActivityIds[i])
+                    break;
+
+                if (i)
+                {
+                    ids.append(",");
+                    times.append(",");
+                }
+                ids.append(slowActivityIds[i]);
+                formatStatistic(times, cycle_to_nanosec(slowActivityTimes[i]), SMeasureTimeNs);
+            }
+            DBGLOG("SlowActivities={ ids=[%s] times=[%s] } in %llu (x%u)", ids.str(), times.str(), elapsedNs, cnt);
+
+        }
+    };
+
+    static constexpr const unsigned NumIters = 5000;
+
+    void testTop5a()
+    {
+        CCycleTimer timer;
+        stat_type value = 0;
+        x tally;
+        for (unsigned activityId = 1; activityId <= NumIters; activityId++)
+        {
+            value = value * 0x100000001b3ULL + 99;
+            tally.noteTime(activityId, value);
+        }
+
+        __uint64 elapsedNs = timer.elapsedNs();
+        tally.report(elapsedNs);
+    }
+    void testTop5b()
+    {
+        CCycleTimer timer;
+        stat_type value = 0;
+        x tally;
+        for (unsigned activityId = 1; activityId <= NumIters; activityId++)
+        {
+            value = value * 0x100000001b3ULL + 99;
+            tally.noteTime2(activityId, value);
+        }
+
+        __uint64 elapsedNs = timer.elapsedNs();
+        tally.report(elapsedNs);
+    }
+
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( TopNStressTest );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( TopNStressTest, "TopNStressTest" );
+
 class JLibSecretsTest : public CppUnit::TestFixture
 {
 public:
@@ -4407,8 +4552,6 @@ protected:
 
 CPPUNIT_TEST_SUITE_REGISTRATION( JLibSecretsTest );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JLibSecretsTest, "JLibSecretsTest" );
-
-
 
 class JLibStringTest : public CppUnit::TestFixture
 {

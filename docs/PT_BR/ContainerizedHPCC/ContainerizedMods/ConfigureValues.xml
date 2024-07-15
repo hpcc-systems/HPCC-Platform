@@ -917,6 +917,42 @@
         incluindo a categoria "ecl", são lidas internamente pelos componentes
         do sistema e não expostas diretamente ao código ECL.</para>
       </sect3>
+
+      <sect3 id="CV_CrossOriginRes">
+        <title>Manipulação de Recursos de Origem Cruzada</title>
+
+        <para>O compartilhamento de recursos de origem cruzada (CORS) é um
+        mecanismo para integrar aplicativos em diferentes domínios. CORS
+        define como as aplicações web do cliente em um domínio podem interagir
+        com recursos em outro domínio. Você pode configurar as configurações
+        de suporte ao CORS na seção ESP do arquivo values.yaml, conforme
+        ilustrado abaixo:</para>
+
+        <programlisting>esp:
+- name: eclwatch
+  application: eclwatch
+  auth: ldap
+  replicas: 1
+  # The following 'corsAllowed' section is used to configure CORS support
+  #   origin - the origin to support CORS requests from
+  #   headers - the headers to allow for the given origin via CORS
+  #   methods - the HTTP methods to allow for the given origin via CORS
+  #
+  corsAllowed:
+  # origin starting with https will only allow https CORS
+  - origin: https://*.example2.com
+    headers:
+    - "X-Custom-Header"
+    methods:
+    - "GET"
+  # origin starting with http will allow http or https CORS
+  - origin: http://www.example.com
+    headers:
+    - "*"
+    methods:
+    - "GET"
+    - "POST" </programlisting>
+      </sect3>
     </sect2>
 
     <sect2>
@@ -943,7 +979,7 @@
       </sect3>
 
       <sect3 id="RESOURCES_ValuesYAML">
-        <title>Resources</title>
+        <title>Recursos</title>
 
         <para>A maioria dos componentes tem uma seção de recursos que define
         quantos recursos são atribuídos a esse componente. Nos arquivos de
@@ -969,17 +1005,17 @@
         manager, worker e eclagent têm requisitos de recursos
         diferentes.</para>
       </sect3>
+    </sect2>
 
-      <sect3 id="TAINTS_TOLERATIONS_PLACEMENTS">
-        <title>Taints, Tolerations e Placements</title>
+    <sect2 id="ENV_values_yaml">
+      <title>Valores do Ambiente</title>
 
-        <para>Esta é uma consideração importante para sistemas em contêineres.
-        Taints e Tolerations são tipos de restrições de nó do Kubernetes
-        também referidas por <emphasis role="bold">Node Affinity</emphasis>. A
-        afinidade do nó é uma maneira de restringir os pods aos nós. Apenas
-        uma "afinidade" pode ser aplicada a um pod. Se um pod corresponder a
-        várias listas de "pods" de canais, somente a última definição de
-        "afinidade" será aplicada.</para>
+      <para>Você pode definir variáveis de ambiente em um arquivo YAML. Os
+      valores do ambiente são definidos na seção
+      <emphasis>global.env</emphasis> do arquivo values.yaml fornecido
+      peloHPCC Systems. Esses valores são especificados como uma lista de
+      pares de nome-valor, conforme ilustrado abaixo.</para>
+
 
         <para>Os taints e as tolerations trabalham juntos para garantir que os
         pods não sejam agendados em nós inadequados. As tolerâncias são
@@ -996,9 +1032,9 @@
         desenvolvedor:</para>
 
         <para><ulink
-        url="???">https://github.com/hpcc-systems/HPCC-Platform/blob/master/helm/hpcc/docs/placements.md</ulink></para>
+        url="https://github.com/hpcc-systems/HPCC-Platform/blob/master/helm/hpcc/docs/placements.md">https://github.com/hpcc-systems/HPCC-Platform/blob/master/helm/hpcc/docs/placements.md</ulink></para>
 
-        <sect4 id="YAML_FileStruct_Placement">
+        <sect4 id="YAML_FileStruct-Placement">
           <title>Placement</title>
 
           <para>O Placement é responsável por encontrar o melhor nó para um
@@ -1060,31 +1096,628 @@
           posicionamentos para garantir que os pods com requisitos específicos
           sejam colocados nos nós apropriados.</para>
         </sect4>
-      </sect3>
+      
 
-      <sect3 id="ENV_values_yaml">
-        <title>Environment Values</title>
-
-        <para>Você pode definir variáveis de ambiente em um arquivo YAML. Os
-        valores do ambiente são definidos na parte <emphasis>global.env
-        </emphasis> do arquivo HPCC Systems values.yaml fornecido. Esses
-        valores são especificados como uma lista de pares de valor de nome
-        conforme ilustrado abaixo.</para>
-
-        <programlisting>global:
+      <programlisting>global:
   env:
   - name: SMTPserver 
     value: mysmtpserver</programlisting>
 
-        <para>A seção global.env do arquivo values.yaml fornecido adiciona
-        variáveis de ambiente padrão para todos os componentes. Você também
-        pode especificar variáveis de ambiente para os componentes
-        individuais. Consulte o schema para definir esse valor para
-        componentes individuais.</para>
+      <para>A seção global.env do arquivo values.yaml fornecido adiciona
+      variáveis de ambiente padrão para todos os componentes. Você também pode
+      especificar variáveis de ambiente para os componentes individuais.
+      Consulte o esquema para definir este valor para componentes
+      individuais.</para>
 
-        <para>Para adicionar valores de ambiente, você pode inseri-los em seu
-        arquivo YAML de configuração de personalização ao implantar seu HPCC
-        Systems em contêineres.</para>
+      <para>Para adicionar valores de ambiente, você pode inseri-los em seu
+      arquivo YAML de configurações personalizadas ao implantar o HPCC Systems
+      conteinerizados. Esta solicitação é baseada na conversa anterior.</para>
+
+      <sect3>
+        <title>Variáveis de Ambiente para Sistemas Containerizados</title>
+
+        <para>Existem várias configurações em environment.conf para sistemas
+        bare-metal. Embora muitas configurações de environment.conf não sejam
+        válidas para contêineres, algumas podem ser úteis. Em uma implantação
+        em nuvem, essas configurações são herdadas de variáveis de ambiente.
+        Essas variáveis de ambiente são configuráveis usando o arquivo yaml
+        values, seja globalmente ou no nível do componente.</para>
+
+        <para>Algumas dessas variáveis estão disponíveis para implementações
+        em contêiner e na nuvem e podem ser definidas usando o chart Helm. Os
+        seguintes valores de environment.conf para bare-metal têm esses
+        valores equivalentes que podem ser definidos para instâncias
+        conteinerizadas. Esta solicitação é baseada na conversa
+        anterior.</para>
+
+        <para><informaltable>
+            <tgroup cols="2">
+              <tbody>
+                <row>
+                  <entry><emphasis role="bold">Valor
+                  Environment.conf</emphasis></entry>
+
+                  <entry><emphasis role="bold">Variavel Helm
+                  Environment</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>skipPythonCleanup</entry>
+
+                  <entry>SKIP_PYTHON_CLEANUP</entry>
+                </row>
+
+                <row>
+                  <entry>jvmlibpath</entry>
+
+                  <entry>JAVA_LIBRARY_PATH</entry>
+                </row>
+
+                <row>
+                  <entry>jvmoptions</entry>
+
+                  <entry>JVM_OPTIONS</entry>
+                </row>
+
+                <row>
+                  <entry>classpath</entry>
+
+                  <entry>CLASSPATH</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+
+        <para>O seguinte exemplo configura uma variavel de ambiente para pular
+        a limpeza do Python no componente Thor:</para>
+
+        <para><programlisting>thor: 
+  env: 
+  - name: SKIP_PYTHON_CLEANUP 
+    value: true</programlisting></para>
+      </sect3>
+    </sect2>
+
+    <sect2 id="CNT_IndexBuildPlane">
+      <title>Plano de Construção de Index</title>
+
+      <para>Defina o valor <emphasis>indexBuildPlane </emphasis>como uma opção
+      de chart helm para permitir que os arquivos de índice sejam escritos por
+      padrão em um plano de dados diferente. Ao contrário de arquivos planos,
+      arquivos de índices têm requisitos diferentes. Os arquivos de índice se
+      beneficiam de armazenamento de acesso aleatório rápido. Normalmente,
+      arquivos planos e arquivos de índice são resultantes para os planos de
+      dados padrão definidos. Usando esta opção, você pode definir que os
+      arquivos de índice são construídos em um plano de dados separado de
+      outros arquivos comuns. Este valor de chart pode ser fornecido em um
+      nível de componente ou global.</para>
+
+      <para>Por exemplo, adicionando o valor a um nível global sob
+      global.storage:</para>
+
+      <programlisting>global:
+  storage:
+    indexBuildPlane: myindexplane</programlisting>
+
+      <para>Opcionalmente, você pode adicioná-lo ao nível do componente, da
+      seguinte forma:</para>
+
+      <programlisting>thor:
+- name: thor
+  prefix: thor
+  numWorkers: 2
+  maxJobs: 4
+  maxGraphs: 2
+  indexBuildPlane: myindexplane</programlisting>
+
+      <para>Quando este valor é definido no nível do componente, ele sobrepõe
+      o valor definido no nível global.</para>
+    </sect2>
+  </sect1>
+
+  <sect1 id="CV_Pods-Nodes">
+    <title>Pods e Nós</title>
+
+    <para>Uma das principais características do Kubernetes é sua capacidade de
+    agendar pods nos nós do cluster. Um pod é a menor e mais simples unidade
+    no ambiente do Kubernetes que você pode criar ou implantar. Um nó é uma
+    máquina "trabalhadora" física ou virtual no Kubernetes.</para>
+
+    <para>A tarefa de agendar pods para nós específicos do cluster é
+    gerenciada pelo kube-scheduler. O comportamento padrão desse componente é
+    filtrar os nós com base nas solicitações de recursos e limites de cada
+    contêiner no pod criado. Nós viáveis são então pontuados para encontrar o
+    melhor candidato para o posicionamento do pod. O agendador também leva em
+    conta outros fatores como afinidade e anti-afinidade de pods, taints e
+    tolerations, restrições de distribuição de topologia de pod e os rótulos
+    do seletor de nó. O agendador pode ser configurado para usar esses
+    algoritmos e políticas diferentes para otimizar o posicionamento do pod de
+    acordo com as necessidades do seu cluster.</para>
+
+    <para>Você pode implantar esses valores usando o arquivo values.yaml ou
+    pode colocá-los em um arquivo e fazer com que o Kubernetes leia os valores
+    do arquivo fornecido. Consulte a seção acima <emphasis>Técnicas de
+    Personalização</emphasis> para obter mais informações sobre como
+    personalizar sua implantação.</para>
+
+    <sect2 id="YAML_FileStruct_Placement">
+      <title>Placements</title>
+
+      <para>O termo "Placements" é usado pelo HPCC Systems, ao qual o
+      Kubernetes se refere como scheduler ou agendamento/distribuição. Para
+      evitar confusão com os termos específicos do scheduler da HPCC Systems e
+      ECL, referenciaremos o agendamento do Kubernetes como colocações. As
+      colocações são um valor na configuração do HPCC Systems que está em um
+      nível acima dos itens, como o nodeSelector, Toleration, Affinity e
+      Anti-Affinity e TopologySpreadConstraints.</para>
+
+      <para>O placements é responsável por encontrar o melhor nó para um pod.
+      Na maioria das vezes, o agendamento é realizado automaticamente pelo
+      Kubernetes. Você pode restringir um Pod para que ele possa funcionar
+      apenas em um conjunto específico de Nós.</para>
+
+      <para>Os placements, então, seriam usados para garantir que pods ou jobs
+      que desejam nós com características específicas sejam colocados nesses
+      nós.</para>
+
+      <para>Por exemplo, um cluster Thor poderia ser direcionado para machine
+      learning usando nós com GPU. Outro job pode querer nós com boa
+      quantidade de memória ou outro para mais CPU.</para>
+
+      <para>Usando placements, você pode configurar o agendador do Kubernetes
+      para usar uma lista de "pods" para aplicar as configurações aos
+      pods.</para>
+
+      <para>Por exemplo:</para>
+
+      <programlisting> placements:
+   - pods: [list]
+     placement:
+       &lt;supported configurations&gt;</programlisting>
+
+      <sect3 id="PlacementScope">
+        <title>Escopo do Placement</title>
+
+        <para>Use padrões de pods para aplicar o escopo para os
+        placements.</para>
+
+        <para>Os pods: [list] podem conter o seguinte:</para>
+
+        <informaltable colsep="1" frame="all" rowsep="1">
+          <tgroup cols="2">
+            <colspec colwidth="125.55pt"/>
+
+            <colspec/>
+
+            <tbody>
+              <row>
+                <entry>Type: &lt;component&gt;</entry>
+
+                <entry>Cobre todos os pods/trabalhos sob este tipo de
+                componente. Isso é comumente utilizado para os componentes do
+                HPCC Systems. Por exemplo, o <emphasis>type:thor
+                </emphasis>que se aplicará a qualquer componente do tipo Thor;
+                thoragent, thormanager, thoragent e thorworker, etc.</entry>
+              </row>
+
+              <row>
+                <entry>Target: &lt;name&gt;</entry>
+
+                <entry>O campo "name" de cada componente, uso típico para
+                componentes do HPCC Systems refere-se ao nome do cluster. Por
+                exemplo,<emphasis> Roxie: -name: roxie</emphasis> que será o
+                destinoalvo "Roxie" (cluster). Você também pode definir vários
+                alvos, cada um com um nome único, como "roxie", "roxie2",
+                "roxie-web", etc.</entry>
+              </row>
+
+              <row>
+                <entry>Pod: &lt;name&gt;</entry>
+
+                <entry>Este é o nome dos metadados de "Implantação" a partir
+                do nome do item de array de um tipo. Por exemplo, "eclwatch-",
+                "mydali-", "thor-thoragent", o uso de uma expressão regular é
+                preferido, pois o Kubernetes usará o nome dos metadados como
+                prefixo e gerará dinamicamente o nome do pod, como,
+                eclwatch-7f4dd4dd44cb-c0w3x.</entry>
+              </row>
+
+              <row>
+                <entry>Job name:</entry>
+
+                <entry>O nome do job é geralmente também uma expressão
+                regular, já que o nome do job é gerado dinamicamente. Por
+                exemplo, um job de compilação compile-54eB67e567e, pode usar
+                "compile-" ou "compile-.*" ou "^compile-.*$"</entry>
+              </row>
+
+              <row>
+                <entry>All:</entry>
+
+                <entry>Aplica para todos os componentes do HPCC Systems. O
+                padrão de implantação dos placements para pods é [all]</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable>
+
+        <para>Independentemente da ordem em que os placements aparecem na
+        configuração, eles serão processadas na seguinte ordem: "all", "type",
+        "target", e então "pod"/"job".</para>
+
+        <sect4>
+          <title>Combinações mistas</title>
+
+          <para>NodeSelector, taints e tolerations, e outros valores pode ser
+          colocado nos mesmos pods: [list] ambos por zona e por nós no Azure
+          <programlisting>placements:
+- pods: ["eclwatch","roxie-workunit","^compile-.*$","mydali"]
+  placement:
+    nodeSelector:
+      name: npone</programlisting></para>
+        </sect4>
+      </sect3>
+    </sect2>
+
+    <sect2 id="S2NodeSelection">
+      <title>Node Selection</title>
+
+      <para>In a Kubernetes container environment, there are several ways to
+      schedule your nodes. The recommended approaches all use label selectors
+      to facilitate the selection. Generally, you may not need to set such
+      constraints; as the scheduler usually does reasonably acceptable
+      placement automatically. However, with some deployments you may want
+      more control over specific pods.</para>
+
+      <para>Kubernetes uses the following methods to choose where to schedule
+      pods:</para>
+
+      <para><itemizedlist>
+          <listitem>
+            <para>nodeSelector field matching against node labels</para>
+          </listitem>
+
+          <listitem>
+            <para>Affinity and anti-affinity</para>
+          </listitem>
+
+          <listitem>
+            <para>Taints and Tolerations</para>
+          </listitem>
+
+          <listitem>
+            <para>nodeName field</para>
+          </listitem>
+
+          <listitem>
+            <para>Pod topology spread constraints</para>
+          </listitem>
+        </itemizedlist></para>
+
+      <sect3 id="CV_NodeLabels">
+        <title>Node Labels</title>
+
+        <para>Kubernetes nodes have labels. Kubernetes has a standard set of
+        labels used for nodes in a cluster. You can also manually attach
+        labels which is recommended as the value of these labels is
+        cloud-provider specific and not guaranteed to be reliable.</para>
+
+        <para>Adding labels to nodes allows you to schedule pods to nodes or
+        groups of nodes. You can then use this functionality to ensure that
+        specific pods only run on nodes with certain properties.</para>
+      </sect3>
+
+      <sect3 id="CV_nodeSelector">
+        <title>The nodeSelector</title>
+
+        <para>The nodeSelector is a field in the Pod specification that allows
+        you to specify a set of node labels that must be present on the target
+        node for the Pod to be scheduled there. It is the simplest form of
+        node selection constraint. It selects nodes based on the labels, but
+        it has some limitations. It only supports one label key and one label
+        value. If you wanted to match multiple labels or use more complex
+        expressions, you need to use node Affinity.</para>
+
+        <para>Add the nodeSelector field to your pod specification and specify
+        the node labels you want the target node to have. You must have the
+        node labels defined in the job and pod. Then you need to specify each
+        node group the node label to use. Kubernetes only schedules the pod
+        onto nodes that have the labels you specify.</para>
+
+        <para>The following example shows the nodeSelector placed in the pods
+        list. This example schedules "all" HPCC components to use the node
+        pool with the label group: "hpcc".</para>
+
+        <para><programlisting> placements:
+   - pods: ["all"]
+     placement:
+       nodeSelector:
+         group: "hpcc"</programlisting></para>
+
+        <para><emphasis role="bold">Note:</emphasis> The label group:hpcc
+        matches the node pool label:hpcc.</para>
+
+        <para>This next example shows how to configure a node pool to prevent
+        scheduling a Dali component onto this node pool labelled with the key
+        spot: via the value false. As this kind of node is not always
+        available and could get revoked therefore you would not want to use
+        the spot node pool for Dali components. This is an example for how to
+        configure a specific type (Dali) of HPCC Systems component not to use
+        a particular node pool.</para>
+
+        <para><programlisting> placements:
+   - pods: ["type:dali"]
+     placement:
+       nodeSelector:
+         spot: "false"</programlisting></para>
+
+        <para>Quando se usa nodeSelector, vários nodeSelectors podem ser
+        aplicados. Se chaves duplicadas forem definidas, apenas a última
+        prevalece.</para>
+      </sect3>
+
+      <sect3 id="CV-TAINTS_TOLERATIONS">
+        <title>Taints e Tolerations</title>
+
+        <para>Taints e Tolerations são tipos de restrições de nodes do
+        Kubernetes também mencionadas como afinidade de nós. Apenas uma
+        afinidade pode ser aplicada em um pod. Se um pod combinar com várias
+        listas de 'pods' de placements, então apenas a última definição de
+        afinidade será aplicada.</para>
+
+        <para>Taints e tolerations trabalham juntos para garantir que os pods
+        não sejam agendados em nós inadequados. Tolerations são aplicadas aos
+        pods e permitem (mas não exigem) que os pods sejam agendados em nós
+        com taints correspondentes. Taints são o oposto - eles permitem que um
+        nó repila um conjunto de pods. Uma maneira de implantar usando taints,
+        é configurar para repelir todos, exceto um nó específico. Então, esse
+        pod pode ser agendado em outro nó que é tolerante.</para>
+
+        <para>Por exemplo, os jobs Thor devem estar todos no tipo apropriado
+        da VM. Se um job grande Thor vier – então o nível de taints repele
+        todos os pods que tentam ser agendados em um nó que não atende aos
+        requisitos.</para>
+
+        <para>Para mais informações e exemplos de nossos Taints, Tolerations e
+        Placements, por favor, consulte nossa documentação de
+        desenvolvedor:</para>
+
+        <para><ulink
+        url="https://github.com/hpcc-systems/HPCC-Platform/blob/master/helm/hpcc/docs/placements.md">https://github.com/hpcc-systems/HPCC-Platform/blob/master/helm/hpcc/docs/placements.md</ulink></para>
+
+        <sect4 id="CSP_TaintsandTolerationsExamples">
+          <title>Exemplos de Taints e Tolerations</title>
+
+          <para>Os exemplos a seguir ilustram como algumas taints e
+          tolerations podem ser aplicadas.</para>
+
+          <para>O Kubernetes pode agendar um pod em qualquer pool de nós sem
+          uma taint. Nos exemplos a seguir, o Kubernetes só pode agendar os
+          dois componentes nas pools de nós com esses lables exatos, grupo e
+          gpu.</para>
+
+          <para><programlisting> placements:
+   - pods: ["all"]
+     tolerations:
+       key: "group"
+         operator: "Equal" 
+           value: "hpcc"
+             effect: "NoSchedule"         </programlisting></para>
+
+          <programlisting>placements:
+   - pods: ["type:thor"] 
+     tolerations: 
+        key: "gpu" 
+        operator: "Equal" 
+        value: "true" 
+        effect: "NoSchedule" </programlisting>
+
+          <para>Várias tolerações também podem ser usadas. O exemplo a seguir
+          possui dois tolerations, grupo e GPU.</para>
+
+          <programlisting>#The settings will be applied to all thor pods/jobs and myeclccserver pod and job
+- pods: ["thorworker-", "thor-thoragent", "thormanager-","thor-eclagent","hthor-"]
+  placement:
+    nodeSelector:
+      app: tf-gpu
+    tolerations:
+    - key: "group"
+      operator: "Equal"
+      value: "hpcc"
+      effect: "NoSchedule" 
+    - key: "gpu"
+      operator: "Equal" 
+      value: "true"
+      effect: "NoSchedule"
+</programlisting>
+
+          <para>Neste exemplo, o nodeSelector está impedindo o agendador do
+          Kubernetes de implementar qualquer/para todos nesta pool de nodes.
+          Sem taints, o agendador poderia implementar em qualquer pod na pool
+          de nodes. Utilizando o nodeSelector, a taint forçará o pod a ser
+          implementado apenas nos pods que correspondem a esse rótulo de node.
+          Existem duas restrições então, neste exemplo uma da pool de nós e a
+          outra do pod.</para>
+        </sect4>
+      </sect3>
+
+      <sect3 id="CV_TopologySpreadConstraints">
+        <title>Restrições de Espalhamento de Topologia</title>
+
+        <para>Você pode usar as restrições de distribuição de topologia para
+        controlar como os pods são distribuídos pelo seu cluster entre
+        domínios de falha, como regiões, zonas, nós e outros domínios de
+        topologia definidos pelo usuário. Isso pode ajudar a alcançar alta
+        disponibilidade, bem como a utilização eficiente dos recursos. Você
+        pode definir restrições ao nível do cluster como padrão, ou configurar
+        restrições de espalhamento de topologia para cargas de trabalho
+        individuais. As Restrições de Espalhamento de Topologia <emphasis
+        role="bold">topologySpreadConstraints</emphasis> requer Kubernetes
+        v1.19+.ou maior.</para>
+
+        <para>Para mais informações veja:</para>
+
+        <para><ulink
+        url="https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/">https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/</ulink>
+        and</para>
+
+        <para><ulink
+        url="https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/">https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/</ulink></para>
+
+        <para>Usando o exemplo de "topologySpreadConstraints", existem dois
+        agrupamentos de nós que têm "hpcc=nodepool1" e "hpcc=nodepool2"
+        respectivamente. Os pods Roxie serão agendados uniformemente nos dois
+        agrupamentos de nós.</para>
+
+        <para>Após a implementação, você pode verificar emitindo o seguinte
+        comando:</para>
+
+        <programlisting>kubectl get pod -o wide | grep roxie</programlisting>
+
+        <para>O código substituto:</para>
+
+        <programlisting>- pods: ["type:roxie"]
+  placement:
+    topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: hpcc
+      whenUnsatisfiable: ScheduleAnyway
+      labelSelector:
+        matchLabels:
+          roxie-cluster: "roxie"</programlisting>
+      </sect3>
+
+      <sect3 id="CV_Affinity-AntiAffinity">
+        <title>Afinidade (Affinity) e Anti-Afinidade (Anti-Affinity)`</title>
+
+        <para>A afinidade e a anti-afinidade expandem os tipos de restrições
+        que você pode definir. As regras de afinidade e anti-afinidade ainda
+        são baseadas nas labels. Além das labels, eles fornecem regras que
+        orientam o agendador do Kubernetes aonde colocar os pods com base em
+        critérios específicos. A linguagem de afinidade/anti-afinidade é mais
+        expressiva do que labels simples e oferece mais controle sobre a
+        lógica de seleção.</para>
+
+        <para>Há dois tipos principais de afinidade. Afinidade de Nó (Node
+        Affinity) e Afinidade de Pod (Pod Affinity).</para>
+
+        <sect4 id="CS-Node-Affiniy">
+          <title>Node Affinity</title>
+
+          <para>A afinidade de nós é semelhante ao conceito de seletor de nós,
+          que permite limitar em quais nós o seu pod pode ser agendado, com
+          base nas labels desses nós. Estes são usados para limitar os nós que
+          podem receber um pod, correspondendo às labels desses nós. A
+          afinidade de nós e a anti-afinidade de nós só podem ser usadas para
+          estabelecer afinidades positivas que atraem os pods para o nó. Isto
+          é realizado ao limitar os nós que podem receber um pod,
+          correspondendo às labels desses nós. A afinidade de nós e a
+          anti-afinidade de nós só podem ser usadas para estabelecer
+          afinidades positivas que atraem os pods para o nó.</para>
+
+          <para>Não existe uma verificação de esquema para o conteúdo da
+          afinidade. Apenas uma afinidade pode ser aplicada a um pod ou job.
+          Se um pod/job corresponder a várias listas de pods de posição, então
+          apenas a última definição de afinidade será aplicada. Esta
+          solicitação foi feita com base no histórico de conversas
+          anteriores.</para>
+
+          <para>Para mais informações, veja <ulink
+          url="https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/">https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/</ulink></para>
+
+          <para>Existe dois tipos de afinidades de nó:</para>
+
+          <para><emphasis>requiredDuringSchedulingIgnoredDuringExecution:</emphasis>
+          O scheduler não consegue marcar o pod a menos que esta regra seja
+          cumprida. Esta função é semelhante ao nodeSelector, mas com uma
+          sintaxe mais expressiva.</para>
+
+          <para><emphasis>preferredDuringSchedulingIgnoredDuringExecution</emphasis>:
+          O scheduler tenta encontrar um nó que cumpra a regra. Se um nó
+          correspondente não estiver disponível, o scheduler ainda agenda o
+          pod.</para>
+
+          <para>Você pode especificar as afiidades do nós usando o campo
+          .<emphasis>spec.affinity.nodeAffinity</emphasis> na especificação no
+          seu pod.</para>
+        </sect4>
+
+        <sect4>
+          <title>Pod Affinity</title>
+
+          <para>O pod Affinity ou Inter-Pod Affinity é usada para limitar os
+          nós que podem receber um pod, de acordo com as labels dos pods já em
+          execução nesses nós. A afinidade de pod e a anti-afinidade de pod
+          podem ser tanto uma afinidade atraente quanto uma repulsa à
+          afinidade.</para>
+
+          <para>A Inter-Pod Affinity funciona de maneira muito semelhante à
+          afinidade de nó, mas com algumas diferenças importantes. Os modos
+          "hard" e "soft" são indicados usando os mesmos campos
+          r<emphasis>equiredDuringSchedulingIgnoredDuringExecution</emphasis>
+          e
+          <emphasis>preferredDuringSchedulingIgnoredDuringExecution</emphasis>.
+          No entanto, estes deveriam estar aninhados sob os campos
+          <emphasis>spec.affinity.podAffinity</emphasis> ou
+          <emphasis>spec.affinity.podAntiAffinity</emphasis> dependendo de se
+          você deseja aumentar ou diminuir a afinidade do Pod.</para>
+        </sect4>
+
+        <sect4>
+          <title>Exemplo Affinity</title>
+
+          <para>O código a seguir ilustra o exemplo de affinity:</para>
+
+          <programlisting>- pods: ["thorworker-.*"]
+  placement:
+    affinity:<emphasis role="bold"/>
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: kubernetes.io/e2e-az-name
+              operator: In
+              values:
+              - e2e-az1
+              - e2e-az2</programlisting>
+
+          <para>Na seção 'schedulerName' a seguir, as configurações de
+          'afinnity' também podem ser incluídas com este exemplo.</para>
+
+          <para><emphasis role="bold">Nota:</emphasis> O valor "affinity" no
+          campo "schedulerName" é suportado apenas nas versões beta do
+          Kubernetes 1.20.0 e posteriores.</para>
+        </sect4>
+      </sect3>
+
+      <sect3 id="CV_schedulerName">
+        <title>schedulerName</title>
+
+        <para>O campo <emphasis role="bold">schedulerName</emphasis>
+        especifica o nome do agendador responsável por agendar um pod ou uma
+        job. No Kubernetes, você pode configurar vários agendadores com
+        diferentes nomes e perfis para rodar simultaneamente no
+        cluster.</para>
+
+        <para>Apenas um "schedulerName" pode ser aplicado a qualquer
+        pod/job.</para>
+
+        <para>Um exemplo de schedulerName:</para>
+
+        <programlisting>- pods: ["target:roxie"]
+  placement:
+    schedulerName: "my-scheduler"
+#The settings will be applied to all thor pods/jobs and myeclccserver pod and job
+- pods: ["target:myeclccserver", "type:thor"]
+  placement:
+    nodeSelector:
+      app: "tf-gpu"
+    tolerations:
+    - key: "gpu"
+      operator: "Equal"
+      value: "true"
+      effect: "NoSchedule"
+</programlisting>
       </sect3>
     </sect2>
   </sect1>

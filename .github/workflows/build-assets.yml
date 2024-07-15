@@ -76,17 +76,6 @@ jobs:
           generateReleaseNotes: false
           prerelease: ${{ contains(github.ref, '-rc') }}
 
-      - name: Release LN
-        uses: ncipollo/release-action@v1.14.0
-        with:
-          allowUpdates: true
-          generateReleaseNotes: false
-          prerelease: ${{ contains(github.ref, '-rc') }}
-          owner: ${{ secrets.LNB_ACTOR }}
-          repo: LN
-          token: ${{ secrets.LNB_TOKEN }}
-          tag: ${{ steps.vars.outputs.internal_tag }}
-
   build-docker:
     name: Build Docker
     needs: preamble
@@ -102,11 +91,6 @@ jobs:
             name: docs
             documentation: true
           - os: ubuntu-20.04
-          - os: centos-8
-          - os: centos-7
-            cmake_options_extra: "-DVCPKG_TARGET_TRIPLET=x64-centos-7-dynamic"
-          - os: amazonlinux
-            cmake_options_extra: "-DVCPKG_TARGET_TRIPLET=x64-amazonlinux-dynamic"
           - os: rockylinux-8
           - os: ubuntu-22.04
             name: LN k8s
@@ -121,21 +105,9 @@ jobs:
           - os: ubuntu-20.04
             name: LN
             ln: true
-          - os: centos-8
-            name: LN
-            cmake_options_extra: ""
-            ln: true
-          - os: centos-7
-            name: LN
-            cmake_options_extra: "-DVCPKG_TARGET_TRIPLET=x64-centos-7-dynamic"
-            ln: true
           - os: rockylinux-8
             name: LN
             cmake_options_extra: ""
-            ln: true
-          - os: centos-7-rh-python38
-            name: LN Python 3.8
-            cmake_options_extra: "-DVCPKG_TARGET_TRIPLET=x64-centos-7-dynamic -DCUSTOM_LABEL=_rh_python38"
             ln: true
       fail-fast: false
 
@@ -235,6 +207,11 @@ jobs:
             # docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} ${{ steps.vars.outputs.docker_tag_candidate_base }} "cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/build ${{ needs.preamble.outputs.cmake_docker_config }} -D$plugin=ON -DCONTAINERIZED=OFF -DCPACK_STRIP_FILES=ON"
             # docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} ${{ steps.vars.outputs.docker_tag_candidate_base }} "cmake --build /hpcc-dev/build --parallel $(nproc) --target package"
           done
+          cd ${{ needs.preamble.outputs.folder_build }}
+          packages=($(ls -1 hpccsystems-*))
+          for i in "${packages[@]}"; do
+            md5sum "$i" > "$i.md5sum"
+          done
 
       - name: CMake Containerized Packages (community)
         if: ${{ !matrix.ln && !matrix.ee && matrix.container && !matrix.documentation }}
@@ -280,7 +257,16 @@ jobs:
           allowUpdates: true
           generateReleaseNotes: false
           prerelease: ${{ contains(github.ref, '-rc') }}
-          artifacts: "${{ needs.preamble.outputs.folder_build }}/*.deb,${{ needs.preamble.outputs.folder_build }}/*.rpm,${{ needs.preamble.outputs.folder_build }}/Release/docs/*.zip,${{ needs.preamble.outputs.folder_build }}/Release/docs/EN_US/*.zip,${{ needs.preamble.outputs.folder_build }}/Release/docs/PT_BR/*.zip,${{ needs.preamble.outputs.folder_build }}/docs/EN_US/EclipseHelp/*.zip,${{ needs.preamble.outputs.folder_build }}/docs/EN_US/HTMLHelp/*.zip,${{ needs.preamble.outputs.folder_build }}/docs/PT_BR/HTMLHelp/*.zip"
+          artifacts: |
+            ${{ needs.preamble.outputs.folder_build }}/*.deb,
+            ${{ needs.preamble.outputs.folder_build }}/*.rpm,
+            ${{ needs.preamble.outputs.folder_build }}/Release/docs/*.zip,
+            ${{ needs.preamble.outputs.folder_build }}/Release/docs/EN_US/*.zip,
+            ${{ needs.preamble.outputs.folder_build }}/Release/docs/PT_BR/*.zip,
+            ${{ needs.preamble.outputs.folder_build }}/docs/EN_US/EclipseHelp/*.zip,
+            ${{ needs.preamble.outputs.folder_build }}/docs/EN_US/HTMLHelp/*.zip,
+            ${{ needs.preamble.outputs.folder_build }}/docs/PT_BR/HTMLHelp/*.zip,
+            ${{ needs.preamble.outputs.folder_build }}/*.md5sum
 
       - name: Locate k8s deb file (community)
         if: ${{ !matrix.ln && !matrix.ee && matrix.container && !matrix.documentation }}
@@ -355,18 +341,28 @@ jobs:
             cmake -S /hpcc-dev/LN -B /hpcc-dev/build -DHPCC_SOURCE_DIR=/hpcc-dev/HPCC-Platform ${{ needs.preamble.outputs.cmake_docker_config }} -DSIGN_MODULES_PASSPHRASE=${{ secrets.SIGN_MODULES_PASSPHRASE }} -DSIGN_MODULES_KEYID=${{ secrets.SIGN_MODULES_KEYID }} -DINCLUDE_PLUGINS=ON -DCONTAINERIZED=ON -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_SPARK=ON -DCPACK_STRIP_FILES=ON ${{ matrix.cmake_options_extra }} && \
             cmake --build /hpcc-dev/build --parallel $(nproc) --target package"
 
-      - name: Upload Assets (internal)
-        if: ${{ matrix.ln }}
-        uses: ncipollo/release-action@v1.14.0
-        with:
-          allowUpdates: true
-          generateReleaseNotes: false
-          prerelease: ${{ contains(github.ref, '-rc') }}
-          owner: ${{ secrets.LNB_ACTOR }}
-          repo: LN
-          token: ${{ secrets.LNB_TOKEN }}
-          tag: ${{ needs.preamble.outputs.internal_tag }}
-          artifacts: "${{ needs.preamble.outputs.folder_build }}/hpccsystems-*-internal*.deb,${{ needs.preamble.outputs.folder_build }}/hpccsystems-*-internal*.rpm"
+      - name: Upload Assets to Jfrog (debian internal)
+        if: ${{ matrix.ln && !matrix.container && contains(matrix.os, 'ubuntu') && github.repository_owner == 'hpcc-systems'}}
+        shell: bash
+        run: |
+          cd ${{ needs.preamble.outputs.folder_build }}
+          version=$(echo "${{ needs.preamble.outputs.internal_tag }}" | sed 's/internal_//')
+          packages=($(ls -1 hpccsystems-*.deb ))
+          for _package in ${packages[@]}; do
+            distribution=$( echo "${_package}" | sed "s/^.*${version}//" | awk -F '_' '{print $1;}' )
+            curl -u${{ secrets.JFROG_USERNAME }}:${{ secrets.JFROG_PASSWORD }} -XPUT "https://${{ secrets.JFROG_REGISTRY }}/hpccpl-debian-local/pool/LN/${_package};deb.distribution=${distribution};deb.component=LN;deb.architecture=amd64" -T ${{ needs.preamble.outputs.folder_build }}/${_package} 
+          done
+
+      - name: Upload Assets to Jfrog (centos internal)
+        if: ${{ matrix.ln && !matrix.container && !contains(matrix.os, 'ubuntu') && github.repository_owner == 'hpcc-systems'}}
+        shell: bash
+        run: |
+          cd ${{ needs.preamble.outputs.folder_build }}
+          packages=($(ls -1 hpccsystems-*.rpm ))
+          for _package in ${packages[@]}; do
+            distribution=$( echo "${_package}" | awk -F '.' '{print $4;}' )
+            curl -u${{ secrets.JFROG_USERNAME }}:${{ secrets.JFROG_PASSWORD }} -XPUT "https://${{ secrets.JFROG_REGISTRY }}/hpccpl-rpm-local/LN/${distribution}/x86_64/${_package}" -T ${{ needs.preamble.outputs.folder_build }}/${_package} 
+          done
 
       - name: Locate k8s deb file (internal)
         if: ${{ matrix.ln && matrix.container && !matrix.documentation }}
@@ -567,17 +563,25 @@ jobs:
           cd ./build
           C:\"Program Files (x86)"\"Microsoft SDKs"\ClickOnce\SignTool\signtool.exe sign /debug /f ../sign/hpcc_code_signing.pfx /p ${{ secrets.SIGNING_CERTIFICATE_PASSPHRASE }} /t http://timestamp.digicert.com /fd SHA256 hpccsystems-clienttools*.exe
 
-      - name: Upload LN Assets
-        uses: ncipollo/release-action@v1.14.0
-        with:
-          allowUpdates: true
-          generateReleaseNotes: false
-          prerelease: ${{ contains(github.ref, '-rc') }}
-          owner: ${{ secrets.LNB_ACTOR }}
-          repo: LN
-          token: ${{ secrets.LNB_TOKEN }}
-          tag: ${{ needs.preamble.outputs.internal_tag }}
-          artifacts: "./build/hpccsystems-clienttools-internal*.exe,./build/hpccsystems-clienttools-internal*.msi,./build/hpccsystems-clienttools-internal*.dmg,./build/hpccsystems-clienttools-internal*.pkg,./build/hpccsystems-clienttools-internal*.tar.gz"
+      - name: Upload Assets to Jfrog (windows)
+        if: ${{ contains(matrix.os, 'windows') && github.repository_owner == 'hpcc-systems' }}
+        shell: bash
+        run: |
+          cd ./build
+          packages=($(ls -1 hpccsystems-*.exe ))
+          for _package in ${packages[@]}; do
+            curl -u${{ secrets.JFROG_USERNAME }}:${{ secrets.JFROG_PASSWORD }} "https://${{ secrets.JFROG_REGISTRY }}/hpccpl-windows-local/LN/windows/x86_64/${_package}" -T ${_package}
+          done
+
+      - name: Upload Assets to Jfrog (macos)
+        if: ${{ contains(matrix.os, 'macos') && github.repository_owner == 'hpcc-systems' }}
+        shell: bash
+        run: |
+          cd ./build
+          packages=($(ls -1 hpccsystems-*.pkg ))
+          for _package in ${packages[@]}; do
+            curl -u${{ secrets.JFROG_USERNAME }}:${{ secrets.JFROG_PASSWORD }} "https://${{ secrets.JFROG_REGISTRY }}/hpccpl-macos-local/LN/macos/x86_64/${_package}" -T ${_package}
+          done
 
       - name: Upload error logs
         if: ${{ failure() || cancelled() }}

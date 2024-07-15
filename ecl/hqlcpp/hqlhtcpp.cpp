@@ -3382,21 +3382,21 @@ void HqlCppTranslator::doBuildFunction(BuildCtx & ctx, ITypeInfo * type, const c
     }
 }
 
-void HqlCppTranslator::addFilenameConstructorParameter(ActivityInstance & instance, WuAttr attr, IHqlExpression * expr)
+void HqlCppTranslator::addFilenameConstructorParameter(ActivityInstance & instance, WuAttr attr, IHqlExpression * expr, SummaryType summaryType)
 {
     OwnedHqlExpr folded = foldHqlExpression(expr);
     instance.addConstructorParameter(folded);
-    noteFilename(instance, attr, folded, false);
+    noteFilename(instance, attr, folded, false, summaryType, false, false);
 }
 
-void HqlCppTranslator::buildFilenameFunction(ActivityInstance & instance, BuildCtx & classctx, WuAttr attr, const char * name, IHqlExpression * expr, bool isDynamic)
+void HqlCppTranslator::buildFilenameFunction(ActivityInstance & instance, BuildCtx & classctx, WuAttr attr, const char * name, IHqlExpression * expr, bool isDynamic, SummaryType summaryType, bool isOpt, bool isSigned)
 {
     OwnedHqlExpr folded = foldHqlExpression(expr);
     doBuildVarStringFunction(classctx, name, folded);
-    noteFilename(instance, attr, folded, isDynamic);
+    noteFilename(instance, attr, folded, isDynamic, summaryType, isOpt, isSigned);
 }
 
-void HqlCppTranslator::noteFilename(ActivityInstance & instance, WuAttr attr, IHqlExpression * expr, bool isDynamic)
+void HqlCppTranslator::noteFilename(ActivityInstance & instance, WuAttr attr, IHqlExpression * expr, bool isDynamic, SummaryType summaryType, bool isOpt, bool isSigned)
 {
     if (options.addFilesnamesToGraph)
     {
@@ -3417,6 +3417,7 @@ void HqlCppTranslator::noteFilename(ActivityInstance & instance, WuAttr attr, IH
                 StringBuffer propValue;
                 folded->queryValue()->getStringValue(propValue);
                 instance.addAttribute(attr, propValue);
+                noteSummaryInfo(propValue, summaryType, isOpt, isSigned);
             }
         }
         if (isDynamic)
@@ -3459,20 +3460,24 @@ void HqlCppTranslator::buildRefFilenameFunction(ActivityInstance & instance, Bui
     assertex(table);
 
     IHqlExpression * filename = NULL;
+    SummaryType summaryType = SummaryType::ReadFile;
     switch (table->getOperator())
     {
     case no_keyindex:
         filename = table->queryChild(2);
+        summaryType = SummaryType::ReadIndex;
         break;
     case no_newkeyindex:
         filename = table->queryChild(3);
+        summaryType = SummaryType::ReadIndex;
         break;
     case no_table:
         filename = table->queryChild(0);
+        summaryType = SummaryType::ReadFile;
         break;
     }
 
-    buildFilenameFunction(instance, classctx, attr, name, filename, hasDynamicFilename(table));
+    buildFilenameFunction(instance, classctx, attr, name, filename, hasDynamicFilename(table), summaryType, table->hasAttribute(optAtom), table->hasAttribute(_signed_Atom));
 }
 
 void HqlCppTranslator::buildConnectInputOutput(BuildCtx & ctx, ActivityInstance * instance, ABoundActivity * table, unsigned outputIndex, unsigned inputIndex, const char * label, bool nWay)
@@ -6236,10 +6241,15 @@ bool HqlCppTranslator::buildCpp(IHqlCppInstance & _code, HqlQueryContext & query
         ensureWorkUnitUpdated();
         throw;
     }
+    addWorkunitSummaries();
     ensureWorkUnitUpdated();
-
-
     return true;
+}
+
+void HqlCppTranslator::addWorkunitSummaries()
+{
+    for (int i = (int) SummaryType::First; i < (int) SummaryType::NumItems; i++)
+        addWorkunitSummary(wu(), (SummaryType) i, summaries[i]);
 }
 
 void HqlCppTranslator::ensureWorkUnitUpdated()
@@ -10659,7 +10669,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutputIndex(BuildCtx & ctx, IH
     buildInstancePrefix(instance);
 
     //virtual const char * getFileName() { return "x.d00"; }
-    buildFilenameFunction(*instance, instance->startctx, WaFilename, "getFileName", filename, hasDynamicFilename(expr));
+    buildFilenameFunction(*instance, instance->startctx, WaFilename, "getFileName", filename, hasDynamicFilename(expr), SummaryType::WriteIndex, false, expr->hasAttribute(_signed_Atom));
 
     //virtual unsigned getFlags() = 0;
     IHqlExpression * updateAttr = expr->queryAttribute(updateAtom);
@@ -10710,7 +10720,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutputIndex(BuildCtx & ctx, IH
 
     IHqlExpression * indexNameAttr = expr->queryAttribute(indexAtom);
     if (indexNameAttr)
-        buildFilenameFunction(*instance, instance->startctx, WaDistributeIndexname, "getDistributeIndexName", indexNameAttr->queryChild(0), hasDynamicFilename(expr));
+        buildFilenameFunction(*instance, instance->startctx, WaDistributeIndexname, "getDistributeIndexName", indexNameAttr->queryChild(0), hasDynamicFilename(expr), SummaryType::ReadIndex, false, expr->hasAttribute(_signed_Atom));
 
     buildExpiryHelper(instance->createctx, expr->queryAttribute(expireAtom));
     buildUpdateHelper(instance->createctx, *instance, dataset, updateAttr);
@@ -10942,15 +10952,18 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
     Owned<ABoundActivity> boundDataset = buildCachedActivity(ctx, dataset);
     ThorActivityKind kind = TAKdiskwrite;
     const char * activityArgName = "DiskWrite";
+    SummaryType summaryType = SummaryType::WriteFile;
     if (expr->getOperator() == no_spill)
     {
         kind = TAKspill;
         activityArgName = "Spill";
+        summaryType = SummaryType::SpillFile;
     }
     else if (pipe)
     {
         kind = TAKpipewrite;
         activityArgName = "PipeWrite";
+        summaryType = SummaryType::None;
     }
     else if (csvAttr)
     {
@@ -10963,7 +10976,14 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
         activityArgName = "XmlWrite";
     }
     else if (expr->hasAttribute(_spill_Atom))
+    {
         kind = TAKspillwrite;
+        summaryType = SummaryType::SpillFile;
+    }
+    if (expr->hasAttribute(jobTempAtom))
+        summaryType = SummaryType::JobTemp;
+    else if (expr->hasAttribute(_workflowPersist_Atom))
+        summaryType = SummaryType::PersistFile;
 
     bool useImplementationClass = options.minimizeActivityClasses && targetRoxie() && expr->hasAttribute(_spill_Atom);
     Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, kind, expr, activityArgName);
@@ -11061,7 +11081,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
             if (filename && filename->getOperator() != no_pipe)
             {
                 bool isDynamic = expr->hasAttribute(resultAtom) || hasDynamicFilename(expr);
-                buildFilenameFunction(*instance, instance->startctx, WaFilename, "getFileName", filename, isDynamic);
+                buildFilenameFunction(*instance, instance->startctx, WaFilename, "getFileName", filename, isDynamic, summaryType, false, expr->hasAttribute(_signed_Atom));
                 if (!filename->isConstant())
                     constFilename = false;
             }
@@ -11163,7 +11183,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
     {
         assertex(tempCount.get() && !hasDynamic(expr));
         instance->addConstructorParameter(tempCount);
-        addFilenameConstructorParameter(*instance, WaFilename, filename);
+        addFilenameConstructorParameter(*instance, WaFilename, filename, summaryType);
     }
 
     instance->addSignedAttribute(expr->queryAttribute(_signed_Atom));
@@ -18050,6 +18070,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySOAP(BuildCtx & ctx, IHqlExpre
         StringBuffer serviceName;
         getUTF8Value(serviceName, service);
         instance->addAttribute(WaServiceName, serviceName);
+        noteSummaryInfo(serviceName, SummaryType::Service, false, false);
     }
 
     enum class ReqFormat { NONE, XML, JSON, FORM_ENCODED };

@@ -9,7 +9,7 @@
   Plugin) oferece um mecanismo de criação e implementação de Security Manager
   Plugins customizados.</para>
 
-  <sect1 id="how-to-create-a-security-manager-plugin">
+  <sect1 id="how-to-create-a-security-manager-plugin" role="nobrk">
     <title>Desenvolvimento do Plugin</title>
 
     <para>Um Security Manager Plugin customizado consiste de um arquivo de
@@ -47,9 +47,9 @@
       </itemizedlist></para>
 
     <para><emphasis role="bold">Definição de Buildset</emphasis> O plugin
-    declara a si mesmo como um componente do Security Manager Plugin do HPCC ,
-    assim como declara a localização dos arquivos do plugin e o esquema de
-    definição de configuração.</para>
+    declara a si mesmo como um componente do Security Manager Plugin do HPCC
+    Systems, assim como declara a localização dos arquivos do plugin e o
+    esquema de definição de configuração.</para>
 
     <para><emphasis role="bold">EXEMPLO:</emphasis></para>
 
@@ -159,8 +159,6 @@
      &lt;/xs:complexType&gt;
   &lt;/xs:element&gt;
 &lt;/xs:schema&gt;</programlisting>
-
-    <?hard-pagebreak ?>
 
     <para><emphasis role="bold">genenvrules.conf</emphasis> – (opcional) Este
     arquivo permite que o plugin adicione a si mesmo na lista

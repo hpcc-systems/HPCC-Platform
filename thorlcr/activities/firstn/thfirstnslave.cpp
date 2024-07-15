@@ -124,6 +124,11 @@ public:
         }
         return NULL;
     }
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
+    {
+        PARENT::getMetaInfo(info);
+        info.fastThrough = true;
+    }
 };
 
 class CFirstNSlaveGrouped : public CFirstNSlaveBase

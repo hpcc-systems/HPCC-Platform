@@ -184,7 +184,18 @@ void waitJob(const char *componentName, const char *resourceType, const char *jo
     {
         // Delete jobs unless the pod failed and keepJob==podfailures
         if ((nullptr == exception) || (KeepJobs::podfailures != keepJob) || schedulingTimeout)
-            deleteResource(componentName, "job", job);
+        {
+            try
+            {
+                deleteResource(componentName, "job", job);
+            }
+            catch(IException *e)
+            {
+                // we do not want this error to propagate to the workunit and cause it to fail, and mask other errors
+                OWARNLOG(e, "Failed to delete job");
+                e->Release();
+            }
+        }
     }
     if (exception)
         throw exception.getClear();
@@ -220,7 +231,8 @@ bool applyYaml(const char *componentName, const char *wuid, const char *job, con
     }
     jobYaml.replaceString("_HPCC_ARGS_", args.str());
 
-    runKubectlCommand(componentName, "kubectl replace --force -f -", jobYaml, nullptr);
+    // retrySecs=0 - I am not sure want to retry this command systematically..
+    runKubectlCommand(componentName, "kubectl replace --force -f -", jobYaml, nullptr, 0);
 
     if (autoCleanup)
     {
@@ -254,7 +266,18 @@ void runJob(const char *componentName, const char *wuid, const char *jobName, co
         exception.setown(e);
     }
     if (removeNetwork)
-        deleteResource(componentName, "networkpolicy", jobName);
+    {
+        try
+        {
+            deleteResource(componentName, "networkpolicy", jobName);
+        }
+        catch(IException *e)
+        {
+            // we do not want this error to propagate to the workunit and cause it to fail, and mask other errors
+            OWARNLOG(e, "Failed to delete networkpolicy");
+            e->Release();
+        }
+    }
     if (exception)
         throw exception.getClear();
 }
@@ -312,7 +335,7 @@ std::vector<std::vector<std::string>> getPodNodes(const char *selector)
     }
 }
 
-void runKubectlCommand(const char *title, const char *cmd, const char *input, StringBuffer *output)
+void runKubectlCommand(const char *title, const char *cmd, const char *input, StringBuffer *output, unsigned retrySecs)
 {
 #ifndef _CONTAINERIZED
     UNIMPLEMENTED_X("runKubectlCommand");
@@ -322,16 +345,41 @@ void runKubectlCommand(const char *title, const char *cmd, const char *input, St
     StringBuffer _output, error;
     if (!output)
         output = &_output;
-    unsigned ret = runExternalCommand(title, *output, error, cmd, input, ".", nullptr);
-    if (output->length())
-        MLOG(MCdebugInfo, "%s: ret=%u, stdout=%s", cmd, ret, output->trimRight().str());
-    if (error.length())
-        MLOG(MCdebugError, "%s: ret=%u, stderr=%s", cmd, ret, error.trimRight().str());
-    if (ret)
+    CTimeMon tm(retrySecs * 1000);
+    unsigned remainingMs = 0;
+    Owned<IException> exception;
+    while (true)
     {
-        if (input)
-            MLOG(MCdebugError, "Using input %s", input);
-        throw makeStringExceptionV(0, "Failed to run %s: error %u: %s", cmd, ret, error.str());
+        try
+        {
+            unsigned ret = runExternalCommand(title, *output, error, cmd, input, ".", nullptr);
+            if (output->length())
+                MLOG(MCdebugInfo, "%s: ret=%u, stdout=%s", cmd, ret, output->trimRight().str());
+            if (error.length())
+                MLOG(MCdebugError, "%s: ret=%u, stderr=%s", cmd, ret, error.trimRight().str());
+            if (ret)
+            {
+                if (input)
+                    MLOG(MCdebugError, "Using input %s", input);
+                throw makeStringExceptionV(0, "Failed to run %s: error %u: %s", cmd, ret, error.str());
+            }
+            return;
+        }
+        catch (IException *e)
+        {
+            if (0 == retrySecs || tm.timedout(&remainingMs))
+                throw;
+            exception.setown(e);
+        }
+        unsigned sleepMs = remainingMs;
+        // sleep for 10s (or remaining time)
+        if (sleepMs > 10000)
+            sleepMs = 10000;
+        VStringBuffer msg("retrying %s in %u ms", cmd, sleepMs);
+        OWARNLOG(exception, msg);
+        MilliSleep(sleepMs);
+        error.clear();
+        output->clear();
     }
 }
 

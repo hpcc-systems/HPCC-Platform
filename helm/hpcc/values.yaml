@@ -115,6 +115,8 @@ global:
       type: LoadBalancer
       ingress:
       - {}
+      ## route traffic to local VM only. Also preserves source IPs
+      #externalTrafficPolicy: Local
       ## CIDRS allowed to access this service.
       #loadBalancerSourceRanges: [1.2.3.4/32, 5.6.7.8/32]
 
@@ -434,10 +436,13 @@ dafilesrv:
   service:
     servicePort: 7300
     visibility: cluster
-    
+  # example expert section. A disableIFileMask of 0x1 will disable the IFEnocache option
+  # expert:
+  #   disableIFileMask: 0x1
 
 dali:
 - name: mydali
+  #hold: true # (for developers, can be used on any component). Component will enter a hold loop at config load time.
   auth: none
   services: # internal house keeping services
     coalescer:
@@ -642,6 +647,8 @@ esp:
     #  url: "http://abc.com/def?g=1"
     ## CIDRS allowed to access this service.
     #loadBalancerSourceRanges: [1.2.3.4/32, 5.6.7.8/32]
+    ## route traffic to local VM only. Also preserves source IPs
+    #externalTrafficPolicy: Local
   # Increase maxRequestEntityLength when query deployments (or similar actions) start to fail because they surpass the maximum size
   #  default for EclWatch is 60M, default for other services is 8M
   #maxRequestEntityLength: 70M
@@ -810,6 +817,10 @@ roxie:
 ## [worker/manager]Memory.thirdParty.
 thor:
 - name: thor
+  #hold: true # (for developers, can be used on any component). Component will enter a hold loop at config load time.
+  #holdSlave: 0 # (for developers). Similar to hold, but 0 = master, 1-N = worker #.
+  #holdAgent: true # (for developers). Similar to hold, but for this Thor's eclagent.
+  #holdThorAgent: true # (for developers). Similar to hold, but for this Thor's thoragent.
   prefix: thor
   numWorkers: 2
   maxJobs: 4

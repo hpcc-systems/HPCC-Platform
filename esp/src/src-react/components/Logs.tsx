@@ -13,7 +13,7 @@ import { Filter } from "./forms/Filter";
 import { Fields } from "./forms/Fields";
 import { ShortVerticalDivider } from "./Common";
 
-const maximumTimeUntilRefresh = 8 * 60 * 60 * 1000;
+const eightHours = 8 * 60 * 60 * 1000;
 const startTimeOffset = 1 * 60 * 60 * 1000;
 const endTimeOffset = 23 * 60 * 60 * 1000;
 const defaultStartDate = new Date(new Date().getTime() - startTimeOffset);
@@ -116,8 +116,9 @@ export const Logs: React.FunctionComponent<LogsProps> = ({
             if (typeof filter.StartDate === "string") {
                 filter.StartDate = new Date(filter.StartDate + ":00Z");
             }
-            if (filter.StartDate && now.getTime() - filter.StartDate.getTime() > maximumTimeUntilRefresh) {
-                filter.StartDate = new Date(now.getTime() - startTimeOffset);
+            if (!filter.StartDate) {
+                //assign a reasonable default start date if one isn't set
+                filter.StartDate = new Date(now.getTime() - eightHours);
             }
             if (!filter.EndDate) {
                 filter.EndDate = new Date(now.getTime() + endTimeOffset);

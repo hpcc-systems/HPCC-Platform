@@ -2796,7 +2796,7 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
                     StringBuffer pattern, search;
                     v0->getUTF8Value(pattern);
                     v1->getUTF8Value(search);
-                    ICompiledStrRegExpr * compiled = rtlCreateCompiledU8StrRegExpr(pattern, !expr->hasAttribute(noCaseAtom));
+                    ICompiledStrRegExpr * compiled = rtlCreateCompiledU8StrRegExpr(pattern.lengthUtf8(), pattern, !expr->hasAttribute(noCaseAtom));
                     compiled->getMatchSet(isAllResult, resultBytes, matchResults.refdata(), search.lengthUtf8(), search.str());
                     rtlDestroyCompiledU8StrRegExpr(compiled);
                 }

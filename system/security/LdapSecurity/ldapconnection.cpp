@@ -1077,7 +1077,7 @@ public:
 
     virtual ILdapConnection* getConnection()
     {
-        synchronized block(m_monitor);
+        MonitorBlock block(m_monitor);
         ForEachItemIn(x, m_connections)
         {
             CLdapConnection* curcon = (CLdapConnection*)&(m_connections.item(x));

@@ -1437,7 +1437,7 @@ bool CLogMsgManager::MsgProcessor::flush(unsigned timeout)
         return false;
     try
     {
-        synchronized block(pullCycleMutex, timeout+start-now);
+        TimedMutexBlock block(pullCycleMutex, timeout+start-now);
     }
     catch(IException * e)
     {
@@ -2316,8 +2316,6 @@ void setupContainerizedLogMsgHandler()
         if (logConfig->hasProp(logFormatAtt))
         {
             const char *logFormat = logConfig->queryProp(logFormatAtt);
-            LOG(MCdebugInfo, "JLog: log format configuration detected '%s'!", logFormat);
-
             bool newFormatDetected = false;
             if (streq(logFormat, "xml"))
             {
@@ -2329,9 +2327,7 @@ void setupContainerizedLogMsgHandler()
                 theStderrHandler = new HandleLogMsgHandlerJSON(stderr, MSGFIELD_STANDARD);
                 newFormatDetected = true;
             }
-            else if (streq(logFormat, "table"))
-                LOG(MCdebugInfo, "JLog: default log format detected: '%s'!", logFormat);
-            else
+            else if (!streq(logFormat, "table"))
                 LOG(MCoperatorWarning, "JLog: Invalid log format configuration detected '%s'!", logFormat);
 
             if (newFormatDetected)
@@ -2779,7 +2775,7 @@ public:
     virtual void setStatistic(StatisticKind kind, unsigned __int64 value) const
     {
     }
-    virtual void mergeStats(const CRuntimeStatisticCollection &from) const
+    virtual void mergeStats(unsigned activityId, const CRuntimeStatisticCollection &from) const
     {
     }
     virtual unsigned queryTraceLevel() const
@@ -3107,6 +3103,16 @@ ILogAccessFilter * getJobIDLogAccessFilter(const char * jobId)
     return new FieldLogAccessFilter(jobId, LOGACCESS_FILTER_jobid);
 }
 
+ILogAccessFilter * getTraceIDLogAccessFilter(const char * traceId)
+{
+    return new FieldLogAccessFilter(traceId, LOGACCESS_FILTER_trace);
+}
+
+ILogAccessFilter * getSpanIDLogAccessFilter(const char * spanId)
+{
+    return new FieldLogAccessFilter(spanId, LOGACCESS_FILTER_span);
+}
+
 ILogAccessFilter * getColumnLogAccessFilter(const char * columnName, const char * value)
 {
     return new ColumnLogAccessFilter(columnName, value, LOGACCESS_FILTER_column);
@@ -3207,32 +3213,21 @@ IRemoteLogAccess *queryRemoteLogAccessor()
                 {
                     const char * simulatedGlobalYaml = R"!!(global:
   logAccess:
-    name: "Azure LogAnalytics LogAccess"
-    type: "AzureLogAnalyticsCurl"
+    name: "Grafana/loki stack log access"
+    type: "GrafanaCurl"
     connection:
       #workspaceID: "ef060646-ef24-48a5-b88c-b1f3fbe40271"
-      workspaceID: "XYZ"      #ID of the Azure LogAnalytics workspace to query logs from
+      #workspaceID: "XYZ"      #ID of the Azure LogAnalytics workspace to query logs from
       #tenantID: "ABC"         #The Tenant ID, required for KQL API access
-      clientID: "DEF"         #ID of Azure Active Directory registered application with api.loganalytics.io access
-    logMaps:
-    - type: "global"
-      storeName: "ContainerLog"
-      searchColumn: "LogEntry"
-      timeStampColumn: "hpcc_log_timestamp"
-    - type: "workunits"
-      storeName: "ContainerLog"
-      searchColumn: "hpcc_log_jobid"
-    - type: "components"
-      searchColumn: "ContainerID"
-    - type: "audience"
-      searchColumn: "hpcc_log_audience"
-    - type: "class"
-      searchColumn: "hpcc_log_class"
-    - type: "instance"
-      storeName: "ContainerInventory"
-      searchColumn: "Name"
-    - type: "host"
-      searchColumn: "Computer"
+      #clientID: "DEF"         #ID of Azure Active Directory registered application with api.loganalytics.io access
+      protocol: "http"
+      host: "localhost"
+      port: "3000"
+    datasource:
+      id: "1"
+      name: "Loki"
+    namespace:
+      name: "hpcc"
                     )!!";
                     Owned<IPropertyTree> testTree = createPTreeFromYAMLString(simulatedGlobalYaml, ipt_none, ptr_ignoreWhiteSpace, nullptr);
                     logAccessPluginConfig.setown(testTree->getPropTree("global/logAccess"));

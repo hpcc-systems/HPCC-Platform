@@ -155,7 +155,7 @@ class WorkunitAnalyserBase
 public:
     WorkunitAnalyserBase();
 
-    void analyse(IConstWorkUnit * wu);
+    void analyse(IConstWorkUnit * wu, const char * optGraph);
     WuScope * getRootScope() { return LINK(root); }
 
 protected:
@@ -1282,10 +1282,17 @@ WorkunitAnalyserBase::WorkunitAnalyserBase() : root(new WuScope("", nullptr))
 {
 }
 
-void WorkunitAnalyserBase::analyse(IConstWorkUnit * wu)
+void WorkunitAnalyserBase::analyse(IConstWorkUnit * wu, const char * optGraph)
 {
     WuScopeFilter filter;
     filter.addOutputProperties(PTstatistics).addOutputProperties(PTattributes);
+    if (optGraph)
+    {
+        //Only include the specified graph, and include everything that matches below that graph
+        filter.addScopeType(SSTgraph);
+        filter.addId(optGraph);
+        filter.setIncludeNesting((unsigned)-1);
+    }
     filter.finishedFilter();
     collateWorkunitStats(wu, filter);
     root->connectActivities();
@@ -2079,11 +2086,11 @@ void WorkunitStatsAnalyser::traceDependencies()
 
 //---------------------------------------------------------------------------------------------------------------------
 
-void WUANALYSIS_API analyseWorkunit(IWorkUnit * wu, IPropertyTree *options, double costPerMs)
+void WUANALYSIS_API analyseWorkunit(IWorkUnit * wu, const char *optGraph, IPropertyTree *options, double costPerMs)
 {
     WorkunitRuleAnalyser analyser;
     analyser.applyConfig(options, wu);
-    analyser.analyse(wu);
+    analyser.analyse(wu, optGraph);
     analyser.applyRules();
     analyser.update(wu, costPerMs);
 }
@@ -2092,7 +2099,7 @@ void WUANALYSIS_API analyseAndPrintIssues(IConstWorkUnit * wu, double costRate, 
 {
     WorkunitRuleAnalyser analyser;
     analyser.applyConfig(nullptr, wu);
-    analyser.analyse(wu);
+    analyser.analyse(wu, nullptr);
     analyser.applyRules();
     analyser.print();
     if (updatewu)
@@ -2114,7 +2121,7 @@ void analyseActivity(IConstWorkUnit * wu, IPropertyTree * cfg, const StringArray
 {
     WorkunitStatsAnalyser analyser;
     analyser.applyOptions(cfg);
-    analyser.analyse(wu);
+    analyser.analyse(wu, nullptr);
     analyser.adjustTimestamps();
     analyser.reportActivity(args);
 }
@@ -2123,7 +2130,7 @@ void analyseDependencies(IConstWorkUnit * wu, IPropertyTree * cfg, const StringA
 {
     WorkunitStatsAnalyser analyser;
     analyser.applyOptions(cfg);
-    analyser.analyse(wu);
+    analyser.analyse(wu, nullptr);
     analyser.adjustTimestamps();
     analyser.calcDependencies();
     analyser.spotCommonPath(args);
@@ -2137,7 +2144,7 @@ void analyseOutputDependencyGraph(IConstWorkUnit * wu, IPropertyTree * cfg)
 {
     WorkunitStatsAnalyser analyser;
     analyser.applyOptions(cfg);
-    analyser.analyse(wu);
+    analyser.analyse(wu, nullptr);
     analyser.adjustTimestamps();
     analyser.calcDependencies();
     analyser.traceDependencies();
@@ -2147,7 +2154,7 @@ void analyseCriticalPath(IConstWorkUnit * wu, IPropertyTree * cfg, const StringA
 {
     WorkunitStatsAnalyser analyser;
     analyser.applyOptions(cfg);
-    analyser.analyse(wu);
+    analyser.analyse(wu, nullptr);
     analyser.adjustTimestamps();
     analyser.calcDependencies();
     analyser.traceCriticalPaths(args);
@@ -2157,7 +2164,7 @@ void analyseHotspots(IConstWorkUnit * wu, IPropertyTree * cfg, const StringArray
 {
     WorkunitStatsAnalyser analyser;
     analyser.applyOptions(cfg);
-    analyser.analyse(wu);
+    analyser.analyse(wu, nullptr);
 
     const char * rootScope = nullptr;
     if (args.ordinality())
@@ -2177,7 +2184,7 @@ void analyseHotspots(WuHotspotResults & results, IConstWorkUnit * wu, IPropertyT
 {
     WorkunitStatsAnalyser analyser;
     analyser.applyOptions(cfg);
-    analyser.analyse(wu);
+    analyser.analyse(wu, nullptr);
 
     analyser.findHotspots(cfg->queryProp("@rootScope"), results.totalTime, results.hotspots);
     results.root.setown(analyser.getRootScope());

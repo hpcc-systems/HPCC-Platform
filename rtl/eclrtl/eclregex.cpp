@@ -28,7 +28,12 @@
 #include "platform.h"
 #include "eclrtl.hpp"
 #include "eclrtl_imp.hpp"
+#include "jhash.hpp"
 #include "jlib.hpp"
+#include "jmisc.hpp"
+#include "jprop.hpp"
+
+#include <memory>
 
 //---------------------------------------------------------------------------
 
@@ -57,14 +62,16 @@ static void pcre2Free(void * block, void * /*userData*/)
         rtlFree(block);
 }
 
-/// @brief Convert a PCRE2 error code to a string and throw an exception
-/// @param errCode      PCRE2 error code
-/// @param msgPrefix    Prefix for error message; can be an empty string;
-///                     include a trailing space if a non-empty message is passed
-/// @param regex        OPTIONAL; regex pattern that was in play when error occurred
-/// @param errOffset    OPTIONAL; offset in regex pattern where error occurred;
-///                     ignored if regex is null or empty
-static void failWithPCRE2Error(int errCode, const char * msgPrefix, const char * regex = nullptr, int errOffset = -1)
+/**
+ * @brief Handles failure reporting with a regex and throws an exception with the given error code and message.
+ *
+ * @param errCode       The error code indicating the type of error that occurred.
+ * @param msgPrefix     The prefix to be added to the error message; can be an empty string; include a trailing space if a non-empty regex is passed.
+ * @param regex         The regular expression pattern; may be an empty string.
+ * @param regexLength   The length (in code points) of the regular expression pattern.
+ * @param errOffset     The offset into regex at which the error occurred.
+ */
+static void failWithPCRE2Error(int errCode, const std::string & msgPrefix, const std::string & regex, int errOffset)
 {
     const int errBuffSize = 120;
     char errBuff[errBuffSize];
@@ -80,7 +87,7 @@ static void failWithPCRE2Error(int errCode, const char * msgPrefix, const char *
         msg += std::to_string(errCode);
         msg += " (no error message available)";
     }
-    if (regex && regex[0])
+    if (!regex.empty())
     {
         msg += " (regex: '";
         msg += regex;
@@ -95,25 +102,143 @@ static void failWithPCRE2Error(int errCode, const char * msgPrefix, const char *
     rtlFail(0, msg.c_str());
 }
 
-/// @brief Convert a PCRE2 error code to a string and throw an exception
-/// @param errCode      PCRE2 error code
-/// @param msgPrefix    Prefix for error message; can be an empty string;
-///                     include a trailing space if a non-empty message is passed
-/// @param regex        OPTIONAL; Unicode regex pattern that was in play when error occurred
-/// @param errOffset    OPTIONAL; offset in regex pattern where error occurred;
-///                     ignored if regex is null or empty
-static void failWithUPCRE2Error(int errCode, const char * msgPrefix, const UChar * regex = nullptr, int errOffset = -1)
+/**
+ * @brief Handles the failure of a regular expression operation and throws an exception with the given error code and message.
+ *
+ * @param errCode   The error code associated with the failure.
+ * @param msg       The error message describing the failure.
+ */
+static void failWithPCRE2Error(int errCode, const std::string & msg)
+{
+    failWithPCRE2Error(errCode, msg, "", -1);
+}
+
+/**
+ * @brief Handles failure reporting with Unicode regex and throws an exception with the given error code and message.
+ *
+ * @param errCode       The error code indicating the type of error that occurred.
+ * @param msgPrefix     The prefix to be added to the error message; can be an empty string; include a trailing space if a non-empty message is passed.
+ * @param regex         The regular expression pattern in UChar format.
+ * @param regexLength   The length (in code points) of the regular expression pattern.
+ * @param errOffset     The offset into regex at which the error occurred.
+ */
+static void failWithPCRE2Error(int errCode, const std::string & msgPrefix, const UChar * regex, int regexLength, int errOffset)
 {
     std::string regexPattern;
-    if (regex)
+    if (regex && regex[0])
     {
         char * regexStr = nullptr;
         unsigned regexStrLen;
-        rtlUnicodeToEscapedStrX(regexStrLen, regexStr, rtlUnicodeStrlen(regex), regex);
+        rtlUnicodeToEscapedStrX(regexStrLen, regexStr, regexLength, regex);
         regexPattern = std::string(regexStr, regexStrLen);
         rtlFree(regexStr);
     }
-    failWithPCRE2Error(errCode, msgPrefix, regexPattern.c_str(), errOffset);
+    failWithPCRE2Error(errCode, msgPrefix, regexPattern, errOffset);
+}
+
+//---------------------------------------------------------------------------
+
+/**
+ * @brief Parent class of all compiled regular expression pattern classes; used for caching.
+ */
+class RegexCacheEntry
+{
+private:
+    uint32_t savedOptions = 0; // set when the object is cached
+    std::string savedPattern; // used as a blob store; set when the object is cached
+    std::shared_ptr<pcre2_code_8> compiledRegex8 = nullptr;
+    std::shared_ptr<pcre2_code_16> compiledRegex16 = nullptr;
+
+public:
+    RegexCacheEntry() = delete;
+
+    RegexCacheEntry(size32_t _patternSize, const char * _pattern, uint32_t _options, std::shared_ptr<pcre2_code_8> _compiledRegex8)
+    : savedOptions(_options), savedPattern(_pattern, _patternSize), compiledRegex8(std::move(_compiledRegex8))
+    {}
+
+    RegexCacheEntry(size32_t _patternSize, const char * _pattern, uint32_t _options, std::shared_ptr<pcre2_code_16> _compiledRegex16)
+    : savedOptions(_options), savedPattern(_pattern, _patternSize), compiledRegex16(std::move(_compiledRegex16))
+    {}
+
+    RegexCacheEntry(const RegexCacheEntry & other) = delete;
+
+    static hash64_t hashValue(size32_t patternSize, const char * pattern, uint32_t options)
+    {
+        hash64_t hash = HASH64_INIT;
+        hash = rtlHash64Data(patternSize, pattern, hash);
+        hash = rtlHash64Data(sizeof(options), &options, hash);
+        return hash;
+    }
+
+    bool hasSamePattern(size32_t patternSize, const char * pattern, uint32_t options) const
+    {
+        if ((patternSize == 0) || (patternSize != savedPattern.size()))
+            return false;
+        if (options != savedOptions)
+            return false;
+        return (memcmp(pattern, savedPattern.data(), patternSize) == 0);
+    }
+
+    std::shared_ptr<pcre2_code_8> getCompiledRegex8() const { return compiledRegex8; }
+    std::shared_ptr<pcre2_code_16> getCompiledRegex16() const { return compiledRegex16; }
+};
+
+//---------------------------------------------------------------------------
+
+#define DEFAULT_CACHE_MAX_SIZE 500
+static CLRUCache<hash64_t, std::shared_ptr<RegexCacheEntry>> compiledStrRegExprCache(DEFAULT_CACHE_MAX_SIZE);
+static CriticalSection compiledStrRegExprLock;
+static bool compiledCacheEnabled = true;
+
+/**
+ * @brief Provide an optional override to the maximum cache size for regex patterns.
+ *
+ * Functions searches with the containerized "expert" section or the bare-metal
+ * <Software/Globals> section for an optional "regex" subsection with a "cacheSize" attribute
+ * By default, the maximum cache size is set to 500 patterns.  Override with 0 to disable caching.
+ */
+static void initMaxCacheSize()
+{
+#ifdef _CONTAINERIZED
+    Owned<IPropertyTree> expert;
+#else
+    Owned<IPropertyTree> envtree;
+    IPropertyTree * expert = nullptr;
+#endif
+
+    try
+    {
+#ifdef _CONTAINERIZED
+        expert.setown(getGlobalConfigSP()->getPropTree("expert"));
+#else
+        envtree.setown(getHPCCEnvironment());
+        if (envtree)
+            expert = envtree->queryPropTree("Software/Globals");
+#endif
+    }
+    catch (IException *e)
+    {
+        e->Release();
+    }
+    catch (...)
+    {
+    }
+
+    size32_t cacheMaxSize = DEFAULT_CACHE_MAX_SIZE;
+
+    if (expert)
+    {
+        IPropertyTree *regexProps = expert->queryPropTree("regex");
+        if (regexProps)
+        {
+            cacheMaxSize = regexProps->getPropInt("@cacheSize", cacheMaxSize);
+        }
+    }
+
+    if (cacheMaxSize > 0)
+        compiledStrRegExprCache.setMaxCacheSize(cacheMaxSize);
+    else
+        compiledCacheEnabled = false;
 }
 
 //---------------------------------------------------------------------------
@@ -122,18 +247,18 @@ class CStrRegExprFindInstance : implements IStrRegExprFindInstance
 {
 private:
     bool matched = false;
-    pcre2_code_8 * compiledRegex = nullptr; // do not free; this will be owned by caller
+    std::shared_ptr<pcre2_code_8> compiledRegex = nullptr;
     pcre2_match_data_8 * matchData = nullptr;
     const char * subject = nullptr; // points to current subject of regex; do not free
     char * sample = nullptr; //only required if findstr/findvstr will be called
 
 public:
-    CStrRegExprFindInstance(pcre2_code_8 * _compiledRegex, const char * _subject, size32_t _from, size32_t _len, bool _keep)
-        : compiledRegex(_compiledRegex)
+    CStrRegExprFindInstance(std::shared_ptr<pcre2_code_8> _compiledRegex, const char * _subject, size32_t _from, size32_t _len, bool _keep)
+        : compiledRegex(std::move(_compiledRegex))
     {
         // See if UTF-8 is enabled on this compiled regex
         uint32_t option_bits;
-        pcre2_pattern_info_8(compiledRegex, PCRE2_INFO_ALLOPTIONS, &option_bits);
+        pcre2_pattern_info_8(compiledRegex.get(), PCRE2_INFO_ALLOPTIONS, &option_bits);
         bool utf8Enabled = (option_bits & PCRE2_UTF) != 0;
         // Make sure the offset and length is in code points (bytes), not characters
         size32_t subjectOffset = (utf8Enabled ? rtlUtf8Size(_from, _subject) : _from);
@@ -152,9 +277,9 @@ public:
         }
 
         matched = false;
-        matchData = pcre2_match_data_create_from_pattern_8(compiledRegex, pcre2GeneralContext8);
+        matchData = pcre2_match_data_create_from_pattern_8(compiledRegex.get(), pcre2GeneralContext8);
 
-        int numMatches = pcre2_match_8(compiledRegex, (PCRE2_SPTR8)subject, subjectSize, 0, 0, matchData, pcre2MatchContext8);
+        int numMatches = pcre2_match_8(compiledRegex.get(), (PCRE2_SPTR8)subject, subjectSize, 0, 0, matchData, pcre2MatchContext8);
 
         matched = numMatches > 0;
 
@@ -219,25 +344,10 @@ public:
 class CCompiledStrRegExpr : implements ICompiledStrRegExpr
 {
 private:
-    pcre2_code_8 * compiledRegex = nullptr;
+    std::shared_ptr<pcre2_code_8> compiledRegex = nullptr;
     bool isUTF8Enabled = false;
 
 public:
-    CCompiledStrRegExpr(const char * _regex, bool _isCaseSensitive, bool _enableUTF8)
-    : isUTF8Enabled(_enableUTF8)
-    {
-        int errNum = 0;
-        PCRE2_SIZE errOffset;
-        uint32_t options = ((_isCaseSensitive ? 0 : PCRE2_CASELESS) | (_enableUTF8 ? PCRE2_UTF : 0));
-
-        compiledRegex = pcre2_compile_8((PCRE2_SPTR8)_regex, PCRE2_ZERO_TERMINATED, options, &errNum, &errOffset, pcre2CompileContext8);
-
-        if (compiledRegex == nullptr)
-        {
-            failWithPCRE2Error(errNum, "Error in regex pattern: ", _regex, errOffset);
-        }
-    }
-
     CCompiledStrRegExpr(int _regexLength, const char * _regex, bool _isCaseSensitive, bool _enableUTF8)
     : isUTF8Enabled(_enableUTF8)
     {
@@ -246,18 +356,21 @@ public:
         uint32_t options = ((_isCaseSensitive ? 0 : PCRE2_CASELESS) | (_enableUTF8 ? PCRE2_UTF : 0));
         size32_t regexSize = (isUTF8Enabled ? rtlUtf8Size(_regexLength, _regex) : _regexLength);
 
-        compiledRegex = pcre2_compile_8((PCRE2_SPTR8)_regex, regexSize, options, &errNum, &errOffset, pcre2CompileContext8);
+        pcre2_code_8 * newCompiledRegex = pcre2_compile_8((PCRE2_SPTR8)_regex, regexSize, options, &errNum, &errOffset, pcre2CompileContext8);
 
-        if (compiledRegex == nullptr)
+        if (newCompiledRegex == nullptr)
         {
-            failWithPCRE2Error(errNum, "Error in regex pattern: ", _regex, errOffset);
+            failWithPCRE2Error(errNum, "Error in regex pattern: ", std::string(_regex, _regexLength), errOffset);
         }
+
+        compiledRegex = std::shared_ptr<pcre2_code_8>(newCompiledRegex, pcre2_code_free_8);
     }
 
-    ~CCompiledStrRegExpr() //CAVEAT non-virtual destructor !
-    {
-        pcre2_code_free_8(compiledRegex);
-    }
+    CCompiledStrRegExpr(const RegexCacheEntry& cacheEntry, bool _enableUTF8)
+    : compiledRegex(cacheEntry.getCompiledRegex8()), isUTF8Enabled(_enableUTF8)
+    {}
+
+    std::shared_ptr<pcre2_code_8> getCompiledRegex() const { return compiledRegex; }
 
     //ICompiledStrRegExpr
 
@@ -265,7 +378,7 @@ public:
     {
         PCRE2_SIZE pcreLen = 0;
         outlen = 0;
-        pcre2_match_data_8 * matchData = pcre2_match_data_create_from_pattern_8(compiledRegex, pcre2GeneralContext8);
+        pcre2_match_data_8 * matchData = pcre2_match_data_create_from_pattern_8(compiledRegex.get(), pcre2GeneralContext8);
 
         // This method is often called through an ECL interface and the provided lengths
         // (slen and rlen) are in characters, not bytes; we need to convert these to a
@@ -273,39 +386,63 @@ public:
         size32_t sourceSize = (isUTF8Enabled ? rtlUtf8Size(slen, str) : slen);
         size32_t replaceSize = (isUTF8Enabled ? rtlUtf8Size(rlen, replace) : rlen);
 
-        // Call it once to get the size of the output, then allocate memory for it;
-        // Note that pcreLen will include space for a terminating null character;
-        // we have to allocate memory for that byte to avoid a buffer overrun,
-        // but we won't count that terminating byte
-        int replaceResult = pcre2_substitute_8(compiledRegex, (PCRE2_SPTR8)str, sourceSize, 0, PCRE2_SUBSTITUTE_GLOBAL|PCRE2_SUBSTITUTE_OVERFLOW_LENGTH, matchData, pcre2MatchContext8, (PCRE2_SPTR8)replace, replaceSize, nullptr, &pcreLen);
+        // Execute an explicit match first to see if we match at all; if we do, matchData will be populated
+        // with data that can be used by pcre2_substitute to bypass some work
+        int numMatches = pcre2_match_8(compiledRegex.get(), (PCRE2_SPTR8)str, sourceSize, 0, 0, matchData, pcre2MatchContext8);
 
-        if (replaceResult < 0 && replaceResult != PCRE2_ERROR_NOMEMORY)
+        if (numMatches < 0 && numMatches != PCRE2_ERROR_NOMATCH)
         {
-            // PCRE2_ERROR_NOMEMORY is a normal result when we're just asking for the size of the output
+            // Treat everything other than PCRE2_ERROR_NOMATCH as an error
             pcre2_match_data_free_8(matchData);
-            failWithPCRE2Error(replaceResult, "Error in regex replace: ");
+            failWithPCRE2Error(numMatches, "Error in regex replace: ");
         }
 
-        if (pcreLen > 0)
+        if (numMatches > 0)
         {
-            out = (char *)rtlMalloc(pcreLen);
+            uint32_t replaceOptions = PCRE2_SUBSTITUTE_MATCHED|PCRE2_SUBSTITUTE_GLOBAL|PCRE2_SUBSTITUTE_EXTENDED;
 
-            replaceResult = pcre2_substitute_8(compiledRegex, (PCRE2_SPTR8)str, sourceSize, 0, PCRE2_SUBSTITUTE_GLOBAL, matchData, pcre2MatchContext8, (PCRE2_SPTR8)replace, replaceSize, (PCRE2_UCHAR8 *)out, &pcreLen);
+            // Call substitute once to get the size of the output, then allocate memory for it;
+            // Note that pcreLen will include space for a terminating null character;
+            // we have to allocate memory for that byte to avoid a buffer overrun,
+            // but we won't count that terminating byte
+            int replaceResult = pcre2_substitute_8(compiledRegex.get(), (PCRE2_SPTR8)str, sourceSize, 0, replaceOptions|PCRE2_SUBSTITUTE_OVERFLOW_LENGTH, matchData, pcre2MatchContext8, (PCRE2_SPTR8)replace, replaceSize, nullptr, &pcreLen);
 
-            // Note that, weirdly, pcreLen will now contain the number of code points
-            // in the result *excluding* the null terminator, so pcreLen will
-            // become our final result length
-
-            if (replaceResult < 0)
+            if (replaceResult < 0 && replaceResult != PCRE2_ERROR_NOMEMORY)
             {
+                // PCRE2_ERROR_NOMEMORY is a normal result when we're just asking for the size of the output
                 pcre2_match_data_free_8(matchData);
                 failWithPCRE2Error(replaceResult, "Error in regex replace: ");
             }
-        }
 
-        pcre2_match_data_free_8(matchData);
-        // We need to return the number of characters here, not the byte count
-        outlen = (isUTF8Enabled ? rtlUtf8Length(pcreLen, out) : pcreLen);
+            if (pcreLen > 0)
+            {
+                out = (char *)rtlMalloc(pcreLen);
+
+                replaceResult = pcre2_substitute_8(compiledRegex.get(), (PCRE2_SPTR8)str, sourceSize, 0, replaceOptions, matchData, pcre2MatchContext8, (PCRE2_SPTR8)replace, replaceSize, (PCRE2_UCHAR8 *)out, &pcreLen);
+
+                // Note that, weirdly, pcreLen will now contain the number of code points
+                // in the result *excluding* the null terminator, so pcreLen will
+                // become our final result length
+
+                if (replaceResult < 0)
+                {
+                    pcre2_match_data_free_8(matchData);
+                    failWithPCRE2Error(replaceResult, "Error in regex replace: ");
+                }
+            }
+
+            pcre2_match_data_free_8(matchData);
+            // We need to return the number of characters here, not the byte count
+            outlen = (isUTF8Enabled ? rtlUtf8Length(pcreLen, out) : pcreLen);
+        }
+        else
+        {
+            // No match found; return the original string
+            out = (char *)rtlMalloc(sourceSize);
+            memcpy_iflen(out, str, sourceSize);
+            outlen = slen;
+            pcre2_match_data_free_8(matchData);
+        }
     }
 
     IStrRegExprFindInstance * find(const char * str, size32_t from, size32_t len, bool needToKeepSearchString) const
@@ -321,7 +458,7 @@ public:
         PCRE2_SIZE offset = 0;
         uint32_t matchOptions = 0;
         PCRE2_SIZE subjectSize = (isUTF8Enabled ? rtlUtf8Size(_subjectLen, _subject) : _subjectLen);
-        pcre2_match_data_8 * matchData = pcre2_match_data_create_from_pattern_8(compiledRegex, pcre2GeneralContext8);
+        pcre2_match_data_8 * matchData = pcre2_match_data_create_from_pattern_8(compiledRegex.get(), pcre2GeneralContext8);
 
         // Capture groups are ignored when gathering match results into a set,
         // so we will focus on only the first match (the entire matched string);
@@ -330,7 +467,7 @@ public:
 
         while (offset < subjectSize)
         {
-            int numMatches = pcre2_match_8(compiledRegex, (PCRE2_SPTR8)_subject, subjectSize, offset, matchOptions, matchData, pcre2MatchContext8);
+            int numMatches = pcre2_match_8(compiledRegex.get(), (PCRE2_SPTR8)_subject, subjectSize, offset, matchOptions, matchData, pcre2MatchContext8);
 
             if (numMatches < 0)
             {
@@ -387,16 +524,62 @@ public:
 // STRING implementation
 //---------------------------------------------------------------------------
 
+/**
+ * @brief Fetches or creates a compiled string regular expression object.
+ *
+ * This function fetches a compiled string regular expression object from the cache if it exists,
+ * or creates a new one if it doesn't. The regular expression object is created based on the provided
+ * regex pattern, length, and case sensitivity flag. The created object is then cached for future use.
+ *
+ * @param _regexLength      The length of the regex pattern.
+ * @param _regex            The regex pattern.
+ * @param _isCaseSensitive  Flag indicating whether the regex pattern is case sensitive or not.
+ * @return  A pointer to a copy of the fetched or created CCompiledStrRegExpr object.  The returned object
+ * *        must eventually be deleted.
+ */
+CCompiledStrRegExpr* fetchOrCreateCompiledStrRegExpr(int _regexLength, const char * _regex, bool _isCaseSensitive)
+{
+    if (compiledCacheEnabled)
+    {
+        CCompiledStrRegExpr * compiledObjPtr = nullptr;
+        uint32_t options = (_isCaseSensitive ? 0 : PCRE2_CASELESS);
+        hash64_t regexHash = RegexCacheEntry::hashValue(_regexLength, _regex, options);
+        
+        // Check the cache
+        {
+            CriticalBlock lock(compiledStrRegExprLock);
+            RegexCacheEntry * cacheEntry = compiledStrRegExprCache.get(regexHash).get();
+
+            if (cacheEntry && cacheEntry->hasSamePattern(_regexLength, _regex, options))
+            {
+                // Return a new compiled pattern object based on the cached information
+                return new CCompiledStrRegExpr(*cacheEntry, false);
+            }
+
+            // Create a new compiled pattern object
+            compiledObjPtr = new CCompiledStrRegExpr(_regexLength, _regex, _isCaseSensitive, false);
+            // Create a cache entry for the new object
+            compiledStrRegExprCache.set(regexHash, std::make_shared<RegexCacheEntry>(_regexLength, _regex, options, compiledObjPtr->getCompiledRegex()));
+        }
+
+        return compiledObjPtr;
+    }
+    else
+    {
+        return new CCompiledStrRegExpr(_regexLength, _regex, _isCaseSensitive, false);
+    }
+}
+
+//---------------------------------------------------------------------------
+
 ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledStrRegExpr(const char * regExpr, bool isCaseSensitive)
 {
-    CCompiledStrRegExpr * expr = new CCompiledStrRegExpr(regExpr, isCaseSensitive, false);
-    return expr;
+    return fetchOrCreateCompiledStrRegExpr(strlen(regExpr), regExpr, isCaseSensitive);
 }
 
 ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledStrRegExpr(int regExprLength, const char * regExpr, bool isCaseSensitive)
 {
-    CCompiledStrRegExpr * expr = new CCompiledStrRegExpr(regExprLength, regExpr, isCaseSensitive, false);
-    return expr;
+    return fetchOrCreateCompiledStrRegExpr(regExprLength, regExpr, isCaseSensitive);
 }
 
 ECLRTL_API void rtlDestroyCompiledStrRegExpr(ICompiledStrRegExpr * compiledExpr)
@@ -415,16 +598,63 @@ ECLRTL_API void rtlDestroyStrRegExprFindInstance(IStrRegExprFindInstance * findI
 // UTF8 implementation
 //---------------------------------------------------------------------------
 
+/**
+ * @brief Fetches or creates a compiled UTF-8 regular expression object.
+ *
+ * This function fetches a compiled UTF-8 regular expression object from the cache if it exists,
+ * or creates a new one if it doesn't. The regular expression object is created based on the provided
+ * regex pattern, length, and case sensitivity flag. The created object is then cached for future use.
+ *
+ * @param _regexLength      The length of the regex pattern, in code points.
+ * @param _regex            The regex pattern.
+ * @param _isCaseSensitive  Flag indicating whether the regex pattern is case sensitive or not.
+ * @return  A pointer to a copy of the fetched or created CCompiledStrRegExpr object.  The returned object
+ * *        must eventually be deleted.
+ */
+CCompiledStrRegExpr* fetchOrCreateCompiledU8StrRegExpr(int _regexLength, const char * _regex, bool _isCaseSensitive)
+{
+    if (compiledCacheEnabled)
+    {
+        CCompiledStrRegExpr * compiledObjPtr = nullptr;
+        unsigned int regexSize = rtlUtf8Size(_regexLength, _regex);
+        uint32_t options = PCRE2_UTF | (_isCaseSensitive ? 0 : PCRE2_CASELESS);
+        hash64_t regexHash = RegexCacheEntry::hashValue(regexSize, _regex, options);
+        
+        // Check the cache
+        {
+            CriticalBlock lock(compiledStrRegExprLock);
+            RegexCacheEntry * cacheEntry = compiledStrRegExprCache.get(regexHash).get();
+
+            if (cacheEntry && cacheEntry->hasSamePattern(regexSize, _regex, options))
+            {
+                // Return a new compiled pattern object based on the cached information
+                return new CCompiledStrRegExpr(*cacheEntry, true);
+            }
+
+            // Create a new compiled pattern object
+            compiledObjPtr = new CCompiledStrRegExpr(_regexLength, _regex, _isCaseSensitive, true);
+            // Create a cache entry for the new object
+            compiledStrRegExprCache.set(regexHash, std::make_shared<RegexCacheEntry>(regexSize, _regex, options, compiledObjPtr->getCompiledRegex()));
+        }
+
+        return compiledObjPtr;
+    }
+    else
+    {
+        return new CCompiledStrRegExpr(_regexLength, _regex, _isCaseSensitive, true);
+    }
+}
+
+//---------------------------------------------------------------------------
+
 ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledU8StrRegExpr(const char * regExpr, bool isCaseSensitive)
 {
-    CCompiledStrRegExpr * expr = new CCompiledStrRegExpr(regExpr, isCaseSensitive, true);
-    return expr;
+    return fetchOrCreateCompiledU8StrRegExpr(rtlUtf8Length(regExpr), regExpr, isCaseSensitive);
 }
 
 ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledU8StrRegExpr(int regExprLength, const char * regExpr, bool isCaseSensitive)
 {
-    CCompiledStrRegExpr * expr = new CCompiledStrRegExpr(regExprLength, regExpr, isCaseSensitive, true);
-    return expr;
+    return fetchOrCreateCompiledU8StrRegExpr(regExprLength, regExpr, isCaseSensitive);
 }
 
 ECLRTL_API void rtlDestroyCompiledU8StrRegExpr(ICompiledStrRegExpr * compiledExpr)
@@ -449,25 +679,25 @@ class CUStrRegExprFindInstance : implements IUStrRegExprFindInstance
 {
 private:
     bool matched = false;
-    pcre2_code_16 * compiledRegex = nullptr; // do not free; this will be owned by caller
+    std::shared_ptr<pcre2_code_16> compiledRegex = nullptr;
     pcre2_match_data_16 * matchData = nullptr;
     const UChar * subject = nullptr; // points to current subject of regex; do not free
 
 public:
-    CUStrRegExprFindInstance(pcre2_code_16 * _compiledRegex, const UChar * _subject, size32_t _from, size32_t _len)
-        : compiledRegex(_compiledRegex)
+    CUStrRegExprFindInstance(std::shared_ptr<pcre2_code_16> _compiledRegex, const UChar * _subject, size32_t _from, size32_t _len)
+        : compiledRegex(std::move(_compiledRegex))
     {
         subject = _subject + _from;
         matched = false;
-        matchData = pcre2_match_data_create_from_pattern_16(compiledRegex, pcre2GeneralContext16);
-        int numMatches = pcre2_match_16(compiledRegex, (PCRE2_SPTR16)subject, _len, 0, 0, matchData, pcre2MatchContext16);
+        matchData = pcre2_match_data_create_from_pattern_16(compiledRegex.get(), pcre2GeneralContext16);
+        int numMatches = pcre2_match_16(compiledRegex.get(), (PCRE2_SPTR16)subject, _len, 0, 0, matchData, pcre2MatchContext16);
 
         matched = numMatches > 0;
 
         if (numMatches < 0 && numMatches != PCRE2_ERROR_NOMATCH)
         {
             // Treat everything else as an error
-            failWithUPCRE2Error(numMatches, "Error in regex search: ");
+            failWithPCRE2Error(numMatches, "Error in regex search: ");
         }
 
     }
@@ -524,81 +754,94 @@ public:
 class CCompiledUStrRegExpr : implements ICompiledUStrRegExpr
 {
 private:
-    pcre2_code_16 * compiledRegex = nullptr;
+    std::shared_ptr<pcre2_code_16> compiledRegex = nullptr;
 
 public:
-    CCompiledUStrRegExpr(const UChar * _regex, bool _isCaseSensitive = false)
-    {
-        int errNum = 0;
-        PCRE2_SIZE errOffset;
-        uint32_t options = (PCRE2_UCP | (_isCaseSensitive ? 0 : PCRE2_CASELESS));
-
-        compiledRegex = pcre2_compile_16((PCRE2_SPTR16)_regex, PCRE2_ZERO_TERMINATED, options, &errNum, &errOffset, pcre2CompileContext16);
-
-        if (compiledRegex == nullptr)
-        {
-            failWithUPCRE2Error(errNum, "Error in regex pattern: ", _regex, errOffset);
-        }
-    }
-
     CCompiledUStrRegExpr(int _regexLength, const UChar * _regex, bool _isCaseSensitive = false)
     {
         int errNum = 0;
         PCRE2_SIZE errOffset;
         uint32_t options = (PCRE2_UCP | (_isCaseSensitive ? 0 : PCRE2_CASELESS));
 
-        compiledRegex = pcre2_compile_16((PCRE2_SPTR16)_regex, _regexLength, options, &errNum, &errOffset, pcre2CompileContext16);
+        pcre2_code_16 * newCompiledRegex = pcre2_compile_16((PCRE2_SPTR16)_regex, _regexLength, options, &errNum, &errOffset, pcre2CompileContext16);
 
-        if (compiledRegex == nullptr)
+        if (newCompiledRegex == nullptr)
         {
-            failWithUPCRE2Error(errNum, "Error in regex pattern: ", _regex, errOffset);
+            failWithPCRE2Error(errNum, "Error in regex pattern: ", _regex, _regexLength, errOffset);
         }
+
+        compiledRegex = std::shared_ptr<pcre2_code_16>(newCompiledRegex, pcre2_code_free_16);
     }
 
-    ~CCompiledUStrRegExpr()
-    {
-        pcre2_code_free_16(compiledRegex);
-    }
+    CCompiledUStrRegExpr(const RegexCacheEntry& cacheEntry)
+    : compiledRegex(cacheEntry.getCompiledRegex16())
+    {}
+
+    std::shared_ptr<pcre2_code_16> getCompiledRegex() const { return compiledRegex; }
 
     void replace(size32_t & outlen, UChar * & out, size32_t slen, const UChar * str, size32_t rlen, UChar const * replace) const
     {
         PCRE2_SIZE pcreLen = 0;
         outlen = 0;
-        pcre2_match_data_16 * matchData = pcre2_match_data_create_from_pattern_16(compiledRegex, pcre2GeneralContext16);
+        pcre2_match_data_16 * matchData = pcre2_match_data_create_from_pattern_16(compiledRegex.get(), pcre2GeneralContext16);
 
-        // Call it once to get the size of the output, then allocate memory for it;
-        // Note that pcreLen will include space for a terminating null character;
-        // we have to allocate memory for that byte to avoid a buffer overrun,
-        // but we won't count that terminating byte
-        int replaceResult = pcre2_substitute_16(compiledRegex, (PCRE2_SPTR16)str, slen, 0, PCRE2_SUBSTITUTE_GLOBAL|PCRE2_SUBSTITUTE_OVERFLOW_LENGTH, matchData, pcre2MatchContext16, (PCRE2_SPTR16)replace, rlen, nullptr, &pcreLen);
+        // Execute an explicit match first to see if we match at all; if we do, matchData will be populated
+        // with data that can be used by pcre2_substitute to bypass some work
+        int numMatches = pcre2_match_16(compiledRegex.get(), (PCRE2_SPTR16)str, slen, 0, 0, matchData, pcre2MatchContext16);
 
-        if (replaceResult < 0 && replaceResult != PCRE2_ERROR_NOMEMORY)
+        if (numMatches < 0 && numMatches != PCRE2_ERROR_NOMATCH)
         {
-            // PCRE2_ERROR_NOMEMORY is a normal result when we're just asking for the size of the output
+            // Treat everything other than PCRE2_ERROR_NOMATCH as an error
             pcre2_match_data_free_16(matchData);
-            failWithUPCRE2Error(replaceResult, "Error in regex replace: ");
+            failWithPCRE2Error(numMatches, "Error in regex replace: ");
         }
 
-        if (pcreLen > 0)
+        if (numMatches > 0)
         {
-            out = (UChar *)rtlMalloc(pcreLen * sizeof(UChar));
+            uint32_t replaceOptions = PCRE2_SUBSTITUTE_MATCHED|PCRE2_SUBSTITUTE_GLOBAL|PCRE2_SUBSTITUTE_EXTENDED;
 
-            replaceResult = pcre2_substitute_16(compiledRegex, (PCRE2_SPTR16)str, slen, 0, PCRE2_SUBSTITUTE_GLOBAL, matchData, pcre2MatchContext16, (PCRE2_SPTR16)replace, rlen, (PCRE2_UCHAR16 *)out, &pcreLen);
+            // Call substitute once to get the size of the output, then allocate memory for it;
+            // Note that pcreLen will include space for a terminating null character;
+            // we have to allocate memory for that byte to avoid a buffer overrun,
+            // but we won't count that terminating byte
+            int replaceResult = pcre2_substitute_16(compiledRegex.get(), (PCRE2_SPTR16)str, slen, 0, replaceOptions|PCRE2_SUBSTITUTE_OVERFLOW_LENGTH, matchData, pcre2MatchContext16, (PCRE2_SPTR16)replace, rlen, nullptr, &pcreLen);
 
-            // Note that, weirdly, pcreLen will now contain the number of code points
-            // in the result *excluding* the null terminator, so pcreLen will
-            // become our final result length
-
-            if (replaceResult < 0)
+            if (replaceResult < 0 && replaceResult != PCRE2_ERROR_NOMEMORY)
             {
+                // PCRE2_ERROR_NOMEMORY is a normal result when we're just asking for the size of the output
                 pcre2_match_data_free_16(matchData);
-                failWithUPCRE2Error(replaceResult, "Error in regex replace: ");
+                failWithPCRE2Error(replaceResult, "Error in regex replace: ");
             }
-        }
 
-        pcre2_match_data_free_16(matchData);
-        // We need to return the number of characters here, not the byte count
-        outlen = pcreLen;
+            if (pcreLen > 0)
+            {
+                out = (UChar *)rtlMalloc(pcreLen * sizeof(UChar));
+
+                replaceResult = pcre2_substitute_16(compiledRegex.get(), (PCRE2_SPTR16)str, slen, 0, replaceOptions, matchData, pcre2MatchContext16, (PCRE2_SPTR16)replace, rlen, (PCRE2_UCHAR16 *)out, &pcreLen);
+
+                // Note that, weirdly, pcreLen will now contain the number of code points
+                // in the result *excluding* the null terminator, so pcreLen will
+                // become our final result length
+
+                if (replaceResult < 0)
+                {
+                    pcre2_match_data_free_16(matchData);
+                    failWithPCRE2Error(replaceResult, "Error in regex replace: ");
+                }
+            }
+
+            pcre2_match_data_free_16(matchData);
+            // We need to return the number of characters here, not the byte count
+            outlen = pcreLen;
+        }
+        else
+        {
+            // No match found; return the original string
+            out = (UChar *)rtlMalloc(slen * sizeof(UChar));
+            memcpy_iflen(out, str, slen * sizeof(UChar));
+            outlen = slen;
+            pcre2_match_data_free_16(matchData);
+        }
     }
 
     IUStrRegExprFindInstance * find(const UChar * str, size32_t from, size32_t len) const
@@ -613,7 +856,7 @@ public:
         size32_t outBytes = 0;
         PCRE2_SIZE offset = 0;
         uint32_t matchOptions = 0;
-        pcre2_match_data_16 * matchData = pcre2_match_data_create_from_pattern_16(compiledRegex, pcre2GeneralContext16);
+        pcre2_match_data_16 * matchData = pcre2_match_data_create_from_pattern_16(compiledRegex.get(), pcre2GeneralContext16);
 
         // Capture groups are ignored when gathering match results into a set,
         // so we will focus on only the first match (the entire matched string);
@@ -622,7 +865,7 @@ public:
 
         while (offset < _subjectLen)
         {
-            int numMatches = pcre2_match_16(compiledRegex, (PCRE2_SPTR16)_subject, _subjectLen, offset, matchOptions, matchData, pcre2MatchContext16);
+            int numMatches = pcre2_match_16(compiledRegex.get(), (PCRE2_SPTR16)_subject, _subjectLen, offset, matchOptions, matchData, pcre2MatchContext16);
 
             if (numMatches < 0)
             {
@@ -635,7 +878,7 @@ public:
                 {
                     // Treat everything else as an error
                     pcre2_match_data_free_16(matchData);
-                    failWithUPCRE2Error(numMatches, "Error in regex getMatchSet: ");
+                    failWithPCRE2Error(numMatches, "Error in regex getMatchSet: ");
                 }
             }
             else if (numMatches > 0)
@@ -678,16 +921,63 @@ public:
 // UNICODE implementation
 //---------------------------------------------------------------------------
 
+/**
+ * @brief Fetches or creates a compiled Unicode regular expression object.
+ *
+ * This function fetches a compiled Unicode regular expression object from the cache if it exists,
+ * or creates a new one if it doesn't. The regular expression object is created based on the provided
+ * regex pattern, length, and case sensitivity flag. The created object is then cached for future use.
+ *
+ * @param _regexLength      The length of the regex pattern, in code points.
+ * @param _regex            The regex pattern.
+ * @param _isCaseSensitive  Flag indicating whether the regex pattern is case sensitive or not.
+ * @return  A pointer to a copy of the fetched or created CCompiledUStrRegExpr object.  The returned object
+ * *        must eventually be deleted.
+ */
+CCompiledUStrRegExpr* fetchOrCreateCompiledUStrRegExpr(int _regexLength, const UChar * _regex, bool _isCaseSensitive)
+{
+    if (compiledCacheEnabled)
+    {
+        CCompiledUStrRegExpr * compiledObjPtr = nullptr;
+        unsigned int regexSize = _regexLength * sizeof(UChar);
+        uint32_t options = PCRE2_UCP | (_isCaseSensitive ? 0 : PCRE2_CASELESS);
+        hash64_t regexHash = RegexCacheEntry::hashValue(regexSize, reinterpret_cast<const char *>(_regex), options);
+        
+        // Check the cache
+        {
+            CriticalBlock lock(compiledStrRegExprLock);
+            RegexCacheEntry * cacheEntry = compiledStrRegExprCache.get(regexHash).get();
+
+            if (cacheEntry && cacheEntry->hasSamePattern(regexSize, reinterpret_cast<const char *>(_regex), options))
+            {
+                // Return a new copy of the cached object
+                return new CCompiledUStrRegExpr(*cacheEntry);
+            }
+
+            // Create a new compiled pattern object
+            compiledObjPtr = new CCompiledUStrRegExpr(_regexLength, _regex, _isCaseSensitive);
+            // Create a cache entry for the new object
+            compiledStrRegExprCache.set(regexHash, std::make_shared<RegexCacheEntry>(regexSize, reinterpret_cast<const char *>(_regex), options, compiledObjPtr->getCompiledRegex()));
+        }
+
+        return compiledObjPtr;
+    }
+    else
+    {
+        return new CCompiledUStrRegExpr(_regexLength, _regex, _isCaseSensitive);
+    }
+}
+
+//---------------------------------------------------------------------------
+
 ECLRTL_API ICompiledUStrRegExpr * rtlCreateCompiledUStrRegExpr(const UChar * regExpr, bool isCaseSensitive)
 {
-    CCompiledUStrRegExpr * expr = new CCompiledUStrRegExpr(regExpr, isCaseSensitive);
-    return expr;
+    return fetchOrCreateCompiledUStrRegExpr(rtlUnicodeStrlen(regExpr), regExpr, isCaseSensitive);
 }
 
 ECLRTL_API ICompiledUStrRegExpr * rtlCreateCompiledUStrRegExpr(int regExprLength, const UChar * regExpr, bool isCaseSensitive)
 {
-    CCompiledUStrRegExpr * expr = new CCompiledUStrRegExpr(regExprLength, regExpr, isCaseSensitive);
-    return expr;
+    return fetchOrCreateCompiledUStrRegExpr(regExprLength, regExpr, isCaseSensitive);
 }
 
 ECLRTL_API void rtlDestroyCompiledUStrRegExpr(ICompiledUStrRegExpr * compiledExpr)
@@ -733,6 +1023,7 @@ MODULE_INIT(INIT_PRIORITY_ECLRTL_ECLRTL)
     pcre2CompileContext16 = pcre2_compile_context_create_16(pcre2GeneralContext16);
     pcre2MatchContext16 = pcre2_match_context_create_16(pcre2GeneralContext16);
 #endif // _USE_ICU
+    initMaxCacheSize();
     return true;
 }
 

@@ -102,6 +102,10 @@ static inline bool isPCFlushAllowed();
 
 static char ShareChar='$';
 
+// defaults
+static IFEflags expertEnableIFileFlagsMask = IFEnone;
+static IFEflags expertDisableIFileFlagsMask = IFEnone;
+
 bool isShareChar(char c)
 {
     return (c==ShareChar)||(c=='$');
@@ -2055,11 +2059,17 @@ CFileIO::CFileIO(HANDLE handle, IFOmode _openmode, IFSHmode _sharemode, IFEflags
     sharemode = _sharemode;
     openmode = _openmode;
     extraFlags = _extraFlags;
+
+    // leave for compatibility
     if (extraFlags & IFEnocache)
         if (!isPCFlushAllowed())
             extraFlags = static_cast<IFEflags>(extraFlags & ~IFEnocache);
+
+    extraFlags = static_cast<IFEflags>(extraFlags | expertEnableIFileFlagsMask);
+    extraFlags = static_cast<IFEflags>(extraFlags & ~expertDisableIFileFlagsMask);
+
 #ifdef CFILEIOTRACE
-    DBGLOG("CFileIO::CfileIO(%d,%d,%d,%d)", handle, _openmode, _sharemode, _extraFlags);
+    DBGLOG("CFileIO::CfileIO(%d,%d,%d,%d)", handle, _openmode, _sharemode, extraFlags);
 #endif
 }
 
@@ -6240,12 +6250,13 @@ private:
         }
     }
 
-    void getreadnext(size32_t len, void * ptr) __attribute__((noinline))
+    size32_t getreadnext(size32_t len, void * ptr, bool failAtEnd) __attribute__((noinline))
     {
         bufbase += bufmax;
         bufpos = 0;
         bufmax = 0;
         size32_t rd = 0;
+        size32_t totalRead = 0;
         if (!eoinput) {
             //If reading >= bufsize, read any complete blocks directly into the target
             if (len>=bufsize) {
@@ -6254,25 +6265,33 @@ private:
                 bufbase += rd;
                 if (rd!=tord) {
                     eoinput = true;
-                    PrintStackReport();
-                    IERRLOG("CFileSerialStream::get read past end of stream.1 (%u,%u) %s",rd,tord,eoinput?"eoinput":"");
-                    throw MakeStringException(-1,"CFileSerialStream::get read past end of stream");
+                    if (failAtEnd)
+                    {
+                        PrintStackReport();
+                        IERRLOG("CFileSerialStream::get read past end of stream.1 (%u,%u) %s",rd,tord,eoinput?"eoinput":"");
+                        throw MakeStringException(-1,"CFileSerialStream::get read past end of stream");
+                    }
                 }
                 len -= rd;
+                totalRead += rd;
                 if (!len)
-                    return;
+                    return totalRead;
                 ptr = (byte *)ptr+rd;
             }
             const void *p = dopeek(len,rd);
             if (len<=rd) {
                 memcpy(ptr,p,len);
                 bufpos += len;
-                return;
+                return totalRead + len;
             }
         }
-        PrintStackReport();
-        IERRLOG("CFileSerialStream::get read past end of stream.2 (%u,%u) %s",len,rd,eoinput?"eoinput":"");
-        throw MakeStringException(-1,"CFileSerialStream::get read past end of stream");
+        if (failAtEnd)
+        {
+            PrintStackReport();
+            IERRLOG("CFileSerialStream::get read past end of stream.2 (%u,%u) %s",len,rd,eoinput?"eoinput":"");
+            throw MakeStringException(-1,"CFileSerialStream::get read past end of stream");
+        }
+        return 0;
     }
 
 protected:
@@ -6329,7 +6348,21 @@ public:
             bufpos += cpy;
             return;
         }
-        return getreadnext(len, (byte *)ptr+cpy);
+        getreadnext(len, (byte *)ptr+cpy, true);
+    }
+
+    virtual size32_t read(size32_t len, void * ptr) override
+    {
+        size32_t cpy = bufmax-bufpos;
+        if (cpy>len)
+            cpy = len;
+        memcpy(ptr,(const byte *)buf+bufpos,cpy);
+        len -= cpy;
+        if (len==0) {
+            bufpos += cpy;
+            return cpy;
+        }
+        return getreadnext(len, (byte *)ptr+cpy, false) + cpy;
     }
 
     virtual bool eos() override
@@ -6590,6 +6623,18 @@ public:
         mmofs += len;
     }
 
+    virtual size32_t read(size32_t len, void * ptr) override
+    {
+        memsize_t left = mmsize-mmofs;
+        if (len>left)
+            len = left;
+        if (tally)
+            tally->process(mmofs,len,mmbase+mmofs);
+        memcpy(ptr,mmbase+mmofs,len);
+        mmofs += len;
+        return len;
+    }
+
     virtual bool eos() override
     {
         return (mmsize<=mmofs);
@@ -6650,6 +6695,17 @@ public:
         if (tally)
             tally->process(buffer.getPos()-len,len,data);
         memcpy(ptr,data,len);
+    }
+
+    virtual size32_t read(size32_t len, void * ptr) override
+    {
+        if (len>buffer.remaining())
+            len = buffer.remaining();
+        const void * data = buffer.readDirect(len);
+        if (tally)
+            tally->process(buffer.getPos()-len,len,data);
+        memcpy(ptr,data,len);
+        return len;
     }
 
     virtual bool eos() override
@@ -7846,7 +7902,8 @@ bool hasGenericFiletypeName(const char * name)
 ///---------------------------------------------------------------------------------------------------------------------
 
 // Cache/update plane attributes settings
-static unsigned planeAttributeCBId = 0;
+static unsigned jFileHookId = 0;
+
 static const std::array<const char*, PlaneAttributeCount> planeAttributeTypeStrings =
 {
     "blockedFileIOKB",
@@ -7870,14 +7927,26 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
             values[BlockedSequentialIO] = plane.getPropInt(("@" + std::string(planeAttributeTypeStrings[BlockedSequentialIO])).c_str()) * 1024;
             values[BlockedRandomIO] = plane.getPropInt(("@" + std::string(planeAttributeTypeStrings[BlockedRandomIO])).c_str()) * 1024;
         }
+
+        // reset defaults
+        expertEnableIFileFlagsMask = IFEnone;
+        expertDisableIFileFlagsMask = IFEnone;
+
+        StringBuffer fileFlagsStr;
+        if (getComponentConfigSP()->getProp("expert/@enableIFileMask", fileFlagsStr) || getGlobalConfigSP()->getProp("expert/@enableIFileMask", fileFlagsStr))
+            expertEnableIFileFlagsMask = (IFEflags)strtoul(fileFlagsStr, NULL, 0);
+
+        if (getComponentConfigSP()->getProp("expert/@disableIFileMask", fileFlagsStr.clear()) || getGlobalConfigSP()->getProp("expert/@disableIFileMask", fileFlagsStr))
+            expertDisableIFileFlagsMask = (IFEflags)strtoul(fileFlagsStr, NULL, 0);
     };
-    planeAttributeCBId = installConfigUpdateHook(updateFunc, true);
+    jFileHookId = installConfigUpdateHook(updateFunc, true);
+
     return true;
 }
 
 MODULE_EXIT()
 {
-    removeConfigUpdateHook(planeAttributeCBId);
+    removeConfigUpdateHook(jFileHookId);
 }
 
 const char *getPlaneAttributeString(PlaneAttributeType attr)

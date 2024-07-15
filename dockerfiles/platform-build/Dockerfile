@@ -44,7 +44,7 @@ RUN groupadd -g 10001 hpcc
 RUN useradd -s /bin/bash -r -m -N -c "hpcc runtime User" -u 10000 -g hpcc hpcc
 RUN passwd -l hpcc 
 
-RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.27.6/bin/linux/amd64/kubectl && chmod +x ./kubectl && mv ./kubectl /usr/local/bin
+RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.28.10/bin/linux/amd64/kubectl && chmod +x ./kubectl && mv ./kubectl /usr/local/bin
 
 WORKDIR /hpcc-dev
 RUN mkdir build
@@ -68,8 +68,6 @@ RUN git clone --no-checkout https://github.com/${BUILD_USER}/HPCC-Platform.git &
 
 WORKDIR /hpcc-dev/HPCC-Platform/vcpkg
 RUN ./bootstrap-vcpkg.sh
-ARG GITHUB_ACTOR=hpcc-systems
-ARG GITHUB_TOKEN=none
 
 WORKDIR /hpcc-dev/build
 
@@ -84,7 +82,6 @@ RUN --mount=type=secret,id=key,uid=10000 if [[ "${SIGN_MODULES}" != "OFF" ]] ; \
 ARG BUILD_TYPE=RelWithDebInfo
 ARG USE_CPPUNIT=1
 ARG SIGNING_KEYID=HPCCSystems
-ARG SIGNING_PASSPHRASE=none
 RUN --mount=type=secret,id=passphrase,uid=10000 cmake /hpcc-dev/HPCC-Platform \
     -Wno-dev -DCONTAINERIZED=1 \
     -DINCLUDE_PLUGINS=1 -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DUSE_PYTHON2=0 \

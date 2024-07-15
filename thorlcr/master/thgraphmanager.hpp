@@ -34,6 +34,9 @@ int queryExitCode();
 void addConnectedWorkerPod(const char *podName, const char *containerName);
 void publishPodNames(IWorkUnit *workunit, const char *graphName);
 void relayWuidException(IConstWorkUnit *wu, const IException *exception);
+void auditThorSystemEvent(const char *eventName);
+void auditThorSystemEvent(const char *eventName, std::initializer_list<const char*> args);
+void auditThorJobEvent(const char *eventName, const char *wuid, const char *graphName, const char *user);
 
 
 #endif

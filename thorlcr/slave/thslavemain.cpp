@@ -436,7 +436,6 @@ int main( int argc, const char *argv[]  )
         SocketEndpoint masterEp(master);
         localHostToNIC(masterEp);
         setMasterPortBase(masterEp.port);
-        markNodeCentral(masterEp);
 
         if (RegisterSelf(masterEp))
         {

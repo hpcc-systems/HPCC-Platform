@@ -13,6 +13,10 @@
     <para><graphic fileref="../../images/WhatYouNeed.jpg" /></para>
 
     <para>All third-party tools should be 64-bit versions.</para>
+
+    <para><emphasis role="bold">Note:</emphasis> When you install Docker
+    Desktop, it installs Kubernetes and the kubectl command line interface.
+    You merely need to enable it in Docker Desktop settings.</para>
   </sect1>
 
   <sect1 id="addrepo" role="nobrk">
@@ -298,7 +302,7 @@ helm install hpcc-localfile hpcc/hpcc-localfile --set common.hostpath=~/hpccdata
             <term>Note:</term>
 
             <listitem>
-              <para>The value passed to --set common-hostpath is case
+              <para>The value passed to --set common.hostpath is case
               sensitive.</para>
             </listitem>
           </varlistentry>

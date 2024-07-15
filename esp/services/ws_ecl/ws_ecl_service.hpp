@@ -140,6 +140,12 @@ class CWsEclBinding : public CHttpSoapBinding
 private:
     CWsEclService *wsecl;
 
+protected:
+    bool getSchema(StringBuffer& schema, IEspContext &ctx, CHttpRequest* req, const char *service, const char *method,bool standalone) override;
+    int getWsdlOrXsd(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method, bool isWsdl);
+    // Does not provide all the flexibility of the getSchema override. Consider refactoring out to use getSchema in its place.
+    bool getSimpleSchema(StringBuffer& schema, IEspContext &ctx, CHttpRequest* req, WsEclWuInfo &wsinfo) ;
+
 public:
     CWsEclBinding(IPropertyTree *cfg, const char *bindname, const char *procname) : 
         CHttpSoapBinding(cfg, bindname, procname), wsecl(NULL)
@@ -199,7 +205,7 @@ public:
     bool qualifyServiceName(IEspContext &context, const char *servname, const char *methname, StringBuffer &servQName, StringBuffer *methQName){servQName.clear().append(servname); if (methQName) methQName->clear().append(methname); return true;}
 
     int getXsdDefinition(IEspContext &context, CHttpRequest *request, StringBuffer &content, WsEclWuInfo &wsinfo);
-    bool getSchema(StringBuffer& schema, IEspContext &ctx, CHttpRequest* req, WsEclWuInfo &wsinfo) ;
+    
     void appendSchemaNamespaces(IPropertyTree *namespaces, IEspContext &ctx, CHttpRequest* req, WsEclWuInfo &wsinfo);
     void appendSchemaNamespaces(IPropertyTree *namespaces, IEspContext &ctx, CHttpRequest* req, const char *service, const char *method);
 

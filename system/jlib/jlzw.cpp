@@ -303,7 +303,8 @@ void CLZWCompressor::open(void *buf,size32_t max)
         outbuf = malloc(bufalloc);
     }
     outBufMb = NULL;
-    assertex(max>SAFETY_MARGIN+sizeof(size32_t)); // minimum required
+    if (max<=SAFETY_MARGIN+sizeof(size32_t)) // minimum required
+        throw makeStringException(0, "CLZWCompressor: target buffer too small");
     maxlen=max-SAFETY_MARGIN;
     initCommon();
 }
@@ -460,6 +461,16 @@ size32_t CExpanderBase::expandFirst(MemoryBuffer & target, const void * src)
 size32_t CExpanderBase::expandNext(MemoryBuffer & target)
 {
     return 0;
+}
+
+size32_t CExpanderBase::expandDirect(size32_t destSize, void * dest, size32_t srcSize, const void * src)
+{
+    throwUnimplemented();
+}
+
+bool CExpanderBase::supportsBlockDecompression() const
+{
+    return false;
 }
 
 CLZWExpander::CLZWExpander(bool _supportbigendian)
@@ -1386,7 +1397,8 @@ public:
             outbuf = malloc(bufalloc);
         }
         outBufMb = NULL;
-        assertex(max>2+sizeof(size32_t)*2); // minimum required (actually will need enough for recsize so only a guess)
+        if (max<=2+sizeof(size32_t)*2) // minimum required (actually will need enough for recsize so only a guess)
+            throw makeStringException(0, "CRDiffCompressor: target buffer too small");
         initCommon();
         remaining = max-outlen;
     }
@@ -1407,6 +1419,11 @@ public:
     virtual bool supportsIncrementalCompression() const override { return true; }
 
     virtual size32_t compressBlock(size32_t destSize, void * dest, size32_t srcSize, const void * src) override { return 0; }
+
+    virtual size32_t compressDirect(size32_t destSize, void * dest, size32_t srcSize, const void * src, size32_t * numCompressed) override
+    {
+        throwUnimplemented();
+    }
 
     virtual bool adjustLimit(size32_t newLimit) override
     {
@@ -1669,7 +1686,8 @@ public:
             outbuf = malloc(bufalloc);
         }
         outBufMb = NULL;
-        assertex(max>MIN_RRDHEADER_SIZE+sizeof(unsigned short)+3); // hopefully a lot bigger!
+        if (max<=MIN_RRDHEADER_SIZE+sizeof(unsigned short)+3) // hopefully a lot bigger!
+            throw makeStringException(0, "CRandRDiffCompressor: target buffer too small");
         initCommon();
     }
 
@@ -1719,6 +1737,11 @@ public:
     virtual bool supportsIncrementalCompression() const override { return true; }
 
     virtual size32_t compressBlock(size32_t destSize, void * dest, size32_t srcSize, const void * src) override { return 0; }
+
+    virtual size32_t compressDirect(size32_t destSize, void * dest, size32_t srcSize, const void * src, size32_t * numCompressed) override
+    {
+        throwUnimplemented();
+    }
 
     inline size32_t maxcompsize(size32_t s) { return s+((s+254)/255)*2; }
 
@@ -2717,6 +2740,11 @@ public:
     virtual bool supportsIncrementalCompression() const override { return true; }
 
     virtual size32_t compressBlock(size32_t destSize, void * dest, size32_t srcSize, const void * src) override { return 0; }
+
+    virtual size32_t compressDirect(size32_t destSize, void * dest, size32_t srcSize, const void * src, size32_t * numCompressed) override
+    {
+        throwUnimplemented();
+    }
 
     virtual void close() override
     {

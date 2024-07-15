@@ -39,8 +39,6 @@ function formatQuery(_filter): { [id: string]: any } {
     if (filter.Type === true) {
         filter.Type = "archived workunits";
     }
-    filter.includeTimings = true;
-    filter.includeTransferRate = true;
     return filter;
 }
 
@@ -83,7 +81,7 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
 
     //  Grid ---
     const gridStore = React.useMemo(() => {
-        return store || ESPDFUWorkunit.CreateWUQueryStore({});
+        return store || ESPDFUWorkunit.CreateWUQueryStore();
     }, [store]);
 
     const query = React.useMemo(() => {
@@ -133,7 +131,7 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
             JobName: { label: nlsHPCC.JobName, width: 220 },
             ClusterName: { label: nlsHPCC.Cluster, width: 70 },
             StateMessage: { label: nlsHPCC.State, width: 70 },
-            PCTDone: {
+            PercentDone: {
                 label: nlsHPCC.PctComplete, width: 80, sortable: true,
             },
             TimeStarted: { label: nlsHPCC.TimeStarted, width: 100, sortable: true },

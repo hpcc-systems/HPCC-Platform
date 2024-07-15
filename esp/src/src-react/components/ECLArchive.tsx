@@ -17,12 +17,12 @@ const logger = scopedLogger("src-react/components/ECLArchive.tsx");
 
 const scopeFilterDefault: Partial<WsWorkunits.ScopeFilter> = {
     MaxDepth: 999999,
-    ScopeTypes: { ScopeType: ["graph"] }
+    ScopeTypes: ["graph"]
 };
 
 const nestedFilterDefault: WsWorkunits.NestedFilter = {
     Depth: 999999,
-    ScopeTypes: { ScopeType: ["activity"] }
+    ScopeTypes: ["activity"]
 };
 
 interface ECLArchiveProps {

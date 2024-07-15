@@ -26,7 +26,7 @@
 
 #include "anacommon.hpp"
 
-void WUANALYSIS_API analyseWorkunit(IWorkUnit * wu, IPropertyTree *options, double costPerMs);
+void WUANALYSIS_API analyseWorkunit(IWorkUnit * wu, const char *optGraph, IPropertyTree *options, double costPerMs);
 void WUANALYSIS_API analyseAndPrintIssues(IConstWorkUnit * wu, double costPerMs, bool updatewu);
 
 //---------------------------------------------------------------------------------------------------------------------

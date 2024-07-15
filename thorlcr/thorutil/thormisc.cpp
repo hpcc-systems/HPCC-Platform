@@ -73,7 +73,7 @@ Owned<IPropertyTree> globals;
 static Owned<IMPtagAllocator> ClusterMPAllocator;
 
 // stat. mappings shared between master and slave activities
-const StatisticsMapping spillStatistics({StTimeSpillElapsed, StTimeSortElapsed, StNumSpills, StSizeSpillFile});
+const StatisticsMapping spillStatistics({StTimeSpillElapsed, StTimeSortElapsed, StNumSpills, StSizeSpillFile, StSizePeakTempDisk});
 const StatisticsMapping soapcallStatistics({StTimeSoapcall});
 const StatisticsMapping basicActivityStatistics({StTimeTotalExecute, StTimeLocalExecute, StTimeBlocked});
 const StatisticsMapping groupActivityStatistics({StNumGroups, StNumGroupMax}, basicActivityStatistics);
@@ -83,8 +83,10 @@ const StatisticsMapping indexReadActivityStatistics({StNumRowsProcessed}, indexR
 const StatisticsMapping indexWriteActivityStatistics({StPerReplicated, StNumLeafCacheAdds, StNumNodeCacheAdds, StNumBlobCacheAdds }, basicActivityStatistics, diskWriteRemoteStatistics);
 const StatisticsMapping keyedJoinActivityStatistics({ StNumIndexAccepted, StNumPreFiltered, StNumDiskSeeks, StNumDiskAccepted, StNumDiskRejected}, basicActivityStatistics, indexReadFileStatistics);
 const StatisticsMapping loopActivityStatistics({StNumIterations}, basicActivityStatistics);
-const StatisticsMapping lookupJoinActivityStatistics({StNumSmartJoinSlavesDegradedToStd, StNumSmartJoinDegradedToLocal}, basicActivityStatistics);
-const StatisticsMapping joinActivityStatistics({StNumLeftRows, StNumRightRows}, basicActivityStatistics, spillStatistics);
+const StatisticsMapping commonJoinActivityStatistics({StNumMatchLeftRowsMax, StNumMatchRightRowsMax, StNumMatchCandidates, StNumMatchCandidatesMax}, basicActivityStatistics);
+const StatisticsMapping allJoinActivityStatistics({}, commonJoinActivityStatistics);
+const StatisticsMapping lookupJoinActivityStatistics({StNumSmartJoinSlavesDegradedToStd, StNumSmartJoinDegradedToLocal}, spillStatistics, commonJoinActivityStatistics);
+const StatisticsMapping joinActivityStatistics({StNumLeftRows, StNumRightRows}, commonJoinActivityStatistics, spillStatistics);
 const StatisticsMapping diskReadActivityStatistics({StNumDiskRowsRead, }, basicActivityStatistics, diskReadRemoteStatistics);
 const StatisticsMapping diskWriteActivityStatistics({StPerReplicated}, basicActivityStatistics, diskWriteRemoteStatistics);
 const StatisticsMapping sortActivityStatistics({}, basicActivityStatistics, spillStatistics);
@@ -92,8 +94,10 @@ const StatisticsMapping graphStatistics({StNumExecutions, StSizeSpillFile, StSiz
 const StatisticsMapping diskReadPartStatistics({StNumDiskRowsRead}, diskReadRemoteStatistics);
 const StatisticsMapping indexDistribActivityStatistics({}, basicActivityStatistics, jhtreeCacheStatistics);
 const StatisticsMapping soapcallActivityStatistics({}, basicActivityStatistics, soapcallStatistics);
-const StatisticsMapping hashDedupActivityStatistics({StNumSpills, StSizeSpillFile, StTimeSortElapsed, StSizePeakTempDisk}, diskWriteRemoteStatistics, basicActivityStatistics);
+const StatisticsMapping hashDedupActivityStatistics({}, spillStatistics, diskWriteRemoteStatistics, basicActivityStatistics);
 const StatisticsMapping hashDistribActivityStatistics({StNumLocalRows, StNumRemoteRows, StSizeRemoteWrite}, basicActivityStatistics);
+const StatisticsMapping nsplitterActivityStatistics({}, spillStatistics, basicActivityStatistics);
+const StatisticsMapping spillingWriteAheadStatistics({}, spillStatistics);
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
