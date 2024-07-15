@@ -17,7 +17,7 @@ on:
         type: string
         description: 'Dependencies'
         required: false
-        default: 'bison flex build-essential binutils-dev curl lsb-release libcppunit-dev python3-dev default-jdk r-base-dev r-cran-rcpp r-cran-rinside r-cran-inline pkg-config libtool autotools-dev automake git cmake xmlstarlet'
+        default: 'bison flex build-essential binutils-dev curl lsb-release libcppunit-dev python3-dev r-base-dev r-cran-rcpp r-cran-rinside r-cran-inline pkg-config libtool autotools-dev automake git cmake xmlstarlet'
 
 jobs:
 
@@ -66,7 +66,6 @@ jobs:
             unzip \
             xvfb \
             libxi6 \
-            default-jdk \
             gdb \
             ${{ inputs.dependencies }}
 
@@ -134,16 +133,18 @@ jobs:
         if: steps.check.outputs.runtests
         shell: "bash"
         run: |
-          sudo apt remove -y openjdk-11-jdk
+          #sudo apt remove -y openjdk-11-jdk
           sudo apt autoremove -y
           sudo apt update
           sudo apt install -y openjdk-21-jdk
-          sudo update-alternatives --install /usr/bin/java java /usr/lib/jvm/java-21-openjdk-amd64/bin/java 1
-          sudo update-alternatives --set java /usr/lib/jvm/java-21-openjdk-amd64/bin/java
+          #sudo update-alternatives --install /usr/bin/java java /usr/lib/jvm/java-21-openjdk-amd64/bin/java 1
+          #sudo update-alternatives --set java /usr/lib/jvm/java-21-openjdk-amd64/bin/java
           export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64/bin/java
           export PATH=$PATH:$JAVA_HOME/bin
           echo $JAVA_HOME
           echo $PATH
+          which "java"
+          which "javac"
           java -version
           javac -version
           wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
