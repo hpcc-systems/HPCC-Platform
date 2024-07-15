@@ -134,10 +134,13 @@ jobs:
         if: steps.check.outputs.runtests
         shell: "bash"
         run: |
-          sudo apt remove openjdk-11-jdk
-          sudo apt autoremove
+          sudo apt remove -y openjdk-11-jdk
+          sudo apt autoremove -y
           sudo apt update
-          sudo apt install openjdk-21-jdk
+          export DEBIAN_FRONTEND=noninteractive
+          sudo apt install -y openjdk-21-jdk
+          sudo update-alternatives --install /usr/bin/java java /usr/lib/jvm/java-21-openjdk-amd64/bin/java 1
+          sudo update-alternatives --set java /usr/lib/jvm/java-21-openjdk-amd64/bin/java
           java -version
           wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
           sudo apt-get install -y ./google-chrome-stable_current_amd64.deb
