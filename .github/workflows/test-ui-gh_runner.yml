@@ -134,6 +134,10 @@ jobs:
         if: steps.check.outputs.runtests
         shell: "bash"
         run: |
+          sudo apt remove openjdk-11-jdk
+          sudo apt autoremove
+          sudo apt update
+          sudo apt install openjdk-21-jdk
           wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
           sudo apt-get install -y ./google-chrome-stable_current_amd64.deb
           wget https://storage.googleapis.com/chrome-for-testing-public/126.0.6478.126/linux64/chromedriver-linux64.zip
