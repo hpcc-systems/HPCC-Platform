@@ -11,9 +11,9 @@ test classes to be executed, and runs the tests.
 Variables:
 args: Command line arguments passed to the main method. While running the test suite, you can pass arguments in this way -> "-l log_level -p path".
 - "log_level" is of two types "debug" and "detail"
-- "debug" means generate error log file with a debug log file.
-- "detail" means generate error log file with a detailed debug file.
-- If no -l and log_level is passed in the argument, only error log will be generated
+- "debug" means generate error and exception log file with a debug log file.
+- "detail" means generate error and exception log file with a detailed debug file.
+- If no -l and log_level is passed in the argument, only error and exception log will be generated
 - "path" is the path of the folder where the json files are
 - The code will log an error if the '-p' and 'path' arguments are not provided, as the JSON folder path is required for the test suite.
 
@@ -39,6 +39,7 @@ The entry point of the application. It performs the following steps:
 - Sets the test classes to be run by calling loadClasses.
 - Runs the tests using TestNG.
 - Quits the WebDriver session after the tests have completed.
+- Calls Common.printNumOfErrorsAndExceptions to print total number of errors and exceptions to the console, so that we get an idea of the count after the tests are finished.
 
 2. loadClasses Method
 
@@ -142,7 +143,8 @@ to the URLs of different pages and tabs.
 
 ### Common.java
 
-![img.png](Common.png)
+![img.png](Common1.png)
+![img.png](Common2.png)
 
 The Common class in the framework.utility package provides a set of utility
 methods that are frequently used throughout the testing framework. These
@@ -155,6 +157,8 @@ Variables:
 - errorLogger: This public static variable stores a logger instance used for logging error messages.
 - specificLogger: This public static variable stores a logger instance used for logging specific messages 
 based on the provided level (debug or detail).
+- num_errors: A counter to keep a count of total numbers of errors generated in the error log file.
+- num_exceptions: A counter to keep a count of total numbers of exceptions generated in the exceptions log file.
 
 **Methods:**
 
@@ -210,44 +214,46 @@ execution context.
 - This method logs error messages.
 - Prints the error message to the standard error stream.
 - Logs the message using errorLogger.
+- Increments the variable num_errors by 1, to maintain the count of number of errors generated.
 
-8. logDebug Method
+8. logException Method
+
+- This method logs exception messages with complete stack trace.
+- Prints the exception message with complete stack trace to the standard error stream.
+- Logs the message using errorLogger.
+- Increments the variable num_exceptions by 1, to maintain the count of number of num_exceptions generated.
+
+9. logDebug Method
 
 - This method logs debug or detailed messages.
 - Prints the message to the standard output stream.
 - Logs the message using specificLogger if the logging level is INFO or FINE.
 
-9. logDetail method
+10. logDetail method
 
 - This method logs detailed messages.
 - Prints the message to the standard output stream.
 - Logs the message using specificLogger if the logging level is FINE.
 
-10. initializeLoggerAndDriver Method
+11. initializeLoggerAndDriver Method
 
 - This method initializes the logger and WebDriver instances.
 - Sets up the specificLogger based on the provided argument.
 - Sets up the WebDriver instance using setupWebDriver() method.
 
-11. setupWebDriver Method
+12. setupWebDriver Method
 
 - This method sets up the WebDriver instance based on the environment.
 - Configures ChromeOptions for headless mode, no sandbox, and suppressed log output.
 - Sets up the WebDriver based on the environment (local or GitHub Actions).
 - Logs an error message if an exception occurs during setup.
 
-12. setupLogger Method
+13. setupLogger Method
 
-- This method sets up a logger instance based on the provided log level.
+- This method sets up a logger instance based on the provided log level (error, exception, debug and detail).
 - Configures the logger to disable console logging and set up file handlers for different log levels (error, debug, detail).
 - Turns off all logging from Selenium WebDriver. 
 - Logs an error message if an exception occurs during logger setup.
-
-13. getAttributeList Method
-
-- This method retrieves all attributes of a web element.
-- Uses JavaScriptExecutor to extract all attributes of the web element.
-- Logs an error message if an exception occurs during attribute extraction.
 
 14. sleepWithTime Method
 
@@ -545,7 +551,9 @@ This method tests the functionality and navigation of links present in a table o
 
 1. **Logging**: Logs the start of the link tests with `Common.logDebug`.
 
-2. **Iterate Through Columns with Links**: For each column key with links retrieved from `getColumnKeysWithLinks()`:
+2. **Page refresh**: refreshing page as page has scrolled to right for testing the sorting functionality of column headers, so bringing it back to normal view by refreshing it
+
+3. **Iterate Through Columns with Links**: For each column key with links retrieved from `getColumnKeysWithLinks()`:
     - It retrieves the data values from the UI using `getDataFromUIUsingColumnKey(columnKey)`.
     - For each value, it tries to find and click the corresponding link element.
     - After clicking, it checks if the page source contains the name to confirm successful navigation.
@@ -621,11 +629,13 @@ This method retrieves the current sorting order of a column.
 
 1. **Find Column Header**: Locates the column header element for the specified column key.
 
-2. **Retrieve Sort Order**: Retrieves the current sorting order from the column header's attribute `aria-sort`.
+2. **Scrolls To Find Header**: Uses JavascriptExecutor to scroll and bring the column header into view.
 
-3. **Click to Change Sort Order**: Clicks the column header to change the sort order and waits for the sorting order to change using `waitToLoadChangedSortOrder`.
+3. **Retrieve Sort Order**: Retrieves the current sorting order from the column header's attribute `aria-sort`.
 
-4. **Return New Sort Order**: Returns the new sorting order.
+4. **Click to Change Sort Order**: Clicks the column header to change the sort order and waits for the sorting order to change using `waitToLoadChangedSortOrder`.
+
+5. **Return New Sort Order**: Returns the new sorting order.
 
 ####  Method: `waitToLoadChangedSortOrder(String oldSortOrder, String columnKey)`
 
@@ -661,7 +671,7 @@ This method retrieves data from the UI based on a specified column key.
 This method waits until all UI elements corresponding to a column key are loaded.
 
 1. **Initialize Wait Time**: Starts with an initial wait time.
-2. **Find Elements**: Uses a loop to repeatedly find web elements matching the column key's XPath.
+2. **Find Elements**: Uses a loop to repeatedly find web elements in a grid cell matching the column key's XPath.
 3. **Check Element Count**: Checks if the number of elements (excluding the header) matches the number of JSON objects.
 4. **Wait and Retry**: If the elements are not fully loaded, it sleeps for the current wait time, increments the wait time, and retries.
 5. **Return Elements**: Once the elements are fully loaded, returns the list of web elements.
@@ -980,10 +990,12 @@ This method returns the JSON map containing the work unit data.
 2. **Retrieve Column Data**:
     - Retrieves data for work unit IDs and protected statuses from the UI.
 3. **Comparison and Logging**:
-    - Iterates through the protected status data.
-    - Compares the retrieved work unit ID with `wuName`.
-    - Logs success if the protected status matches the expected value.
-    - Logs an error if the protected status does not match the expected value.
+    - Iterates through the protected status data and work unit IDs data.
+    - Compares the work unit ID with the given `wuName`.
+    - If it matches
+      - Logs success if the protected status matches the expected value.
+      - Logs an error if the protected status does not match the expected value.
+    - Breaks the for loop as the protected testing is done for that workunit.
 
 #####  Method: `parseJson`
 

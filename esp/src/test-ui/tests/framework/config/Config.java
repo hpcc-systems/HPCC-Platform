@@ -3,6 +3,7 @@ package framework.config;
 public class Config {
 
     public static final String LOG_FILE_ERROR = "error_ecl_test.log";
+    public static final String LOG_FILE_EXCEPTION = "exception_ecl_test.log";
     public static final String LOG_FILE_DEBUG = "debug_ecl_test.log";
     public static final String LOG_FILE_DETAIL = "detail_ecl_test.log";
     public static final String LOCAL_OS = "Windows";

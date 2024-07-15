@@ -71,10 +71,12 @@ public abstract class BaseTableTest<T> {
     protected List<T> jsonObjects;
 
     protected void testPage() {
-        Common.openWebPage(getPageUrl());
+        if(!Common.openWebPage(getPageUrl())){
+            return;
+        }
 
         try {
-            Common.logDebug("Tests started for: " + getPageName() + " page.");
+            Common.logDebug("\nTests started for: " + getPageName() + " page.");
 
             testForAllText();
 
@@ -89,10 +91,10 @@ public abstract class BaseTableTest<T> {
 
             testLinksInTable();
 
-            Common.logDebug("Tests finished for: " + getPageName() + " page.");
+            Common.logDebug("\nTests finished for: " + getPageName() + " page.");
 
         } catch (Exception ex) {
-            Common.logError(ex.getMessage());
+            Common.logException("Error: " + getPageName() + ": Exception: " + ex.getMessage(), ex);
         }
     }
 
@@ -108,15 +110,15 @@ public abstract class BaseTableTest<T> {
         testDetailSpecificFunctionality(name, i);
 
         if (!Config.TEST_DETAIL_PAGE_TAB_CLICK_ALL && i == 0) { // TEST_DETAIL_PAGE_TAB_CLICK_ALL = true means the test will run for all items and false means it will only run for the first item
-            testTabClickOnDetailsPage();
+            testTabClickOnDetailsPage(name);
         } else if (Config.TEST_DETAIL_PAGE_TAB_CLICK_ALL) {
-            testTabClickOnDetailsPage();
+            testTabClickOnDetailsPage(name);
         }
     }
 
-    private void testTabClickOnDetailsPage() {
+    private void testTabClickOnDetailsPage(String name) {
 
-        Common.logDebug("Test started for: Tab Click on " + getPageName() + " Details Page.");
+        Common.logDebug("\nTest started for: Tab Click on " + getPageName() + " Details Page. For: " + name);
 
         waitToLoadDetailsPage();
 
@@ -127,7 +129,7 @@ public abstract class BaseTableTest<T> {
                 javaScriptElementClick(element);
                 testPresenceOfColumnNames(getColumnNamesForTabsDetailsPage().get(tabValue), tabValue);
             } catch (Exception ex) {
-                Common.logError("Error: " + getPageName() + " Details Page. Testing tab click on: " + tabValue + " Error: " + ex.getMessage());
+                Common.logException("Error: " + getPageName() + " Details Page. Testing tab click on: " + tabValue + " Error: " + ex.getMessage(), ex);
             }
         }
 
@@ -172,6 +174,8 @@ public abstract class BaseTableTest<T> {
 
         Common.logDebug("Tests started for: " + getPageName() + " page: Testing Links");
 
+        Common.driver.navigate().refresh(); // refreshing page as page has scrolled to right for testing the sorting functionality of column headers, so bringing it back to normal view by refreshing it
+
         for (String columnKey : getColumnKeysWithLinks()) {
 
             List<Object> values = getDataFromUIUsingColumnKey(columnKey);
@@ -185,13 +189,12 @@ public abstract class BaseTableTest<T> {
                     String href = Common.driver.getCurrentUrl();
 
                     String dropdownValueBefore = getSelectedDropdownValue();
-
                     element.click();
 
                     if (Common.driver.getPageSource().contains(name)) {
-                        String msg = "Success: " + getPageName() + ": Link Test Pass for " + (i + 1) + ". " + name + ". URL : " + href;
+                        String msg = "\nSuccess: " + getPageName() + ": Link Test Pass for " + (i + 1) + ". " + name + ". URL : " + href;
                         Common.logDetail(msg);
-                        // after the link test has passed, the code tests the details page(including, the text, content and tabs) it has landed on
+                        // after the link test has passed, the code tests the details page(including, the text, content, checkbox, description and tabs)
                         testDetailsPage(name, i);
 
                     } else {
@@ -211,7 +214,7 @@ public abstract class BaseTableTest<T> {
                         Common.logError(dropdownErrorMsg);
                     }
                 } catch (Exception ex) {
-                    Common.logError("Failure: " + getPageName() + ": Exception in testing links for column: " + columnKey + " value: " + values.get(i) + " Error: " + ex.getMessage());
+                    Common.logException("Failure: " + getPageName() + ": Exception in testing links for column: " + columnKey + " value: " + values.get(i) + " Error: " + ex.getMessage(), ex);
                 }
             }
         }
@@ -247,11 +250,11 @@ public abstract class BaseTableTest<T> {
     }
 
     private void testDetailsContentPage(String name) {
-        Common.logDebug("Tests started for : " + getPageName() + " Details page content: " + getUniqueKeyName() + " : " + name);
+        Common.logDebug("\nTests started for : " + getPageName() + " Details page: Testing Content: " + getUniqueKeyName() + " : " + name);
         try {
             waitToLoadDetailsPage(); // sleep until the specific detail fields have loaded
         } catch (Exception ex) {
-            Common.logError("Error: " + getPageName() + ": Exception in waitToLoadDetailsPage: " + getUniqueKeyName() + " : " + name + " Exception: " + ex.getMessage());
+            Common.logException("Error: " + getPageName() + ": Exception in waitToLoadDetailsPage: " + getUniqueKeyName() + " : " + name + " Exception: " + ex.getMessage(), ex);
         }
 
         boolean pass = true;
@@ -281,17 +284,17 @@ public abstract class BaseTableTest<T> {
                 }
 
             } catch (Exception ex) {
-                Common.logError("Error: Details " + getPageName() + "Page, for: " + getUniqueKeyName() + " : " + name + " Error: " + ex.getMessage());
+                Common.logException("Error: Details " + getPageName() + "Page, for: " + getUniqueKeyName() + " : " + name + " Error: " + ex.getMessage(), ex);
             }
         }
 
         if (pass) {
-            Common.logDetail("Success: " + getPageName() + " Details page: All values test passed for: " + getUniqueKeyName() + " : " + name);
+            Common.logDetail("Success: " + getPageName() + " Details page: All content test passed for: " + getUniqueKeyName() + " : " + name);
         }
     }
 
     private void testForAllTextInDetailsPage(String name) {
-        Common.logDebug("Tests started for: " + getPageName() + " Details page: " + getUniqueKeyName() + ": " + name + " Testing Text");
+        Common.logDebug("\nTests started for: " + getPageName() + " Details page: " + getUniqueKeyName() + ": " + name + ": Testing Text");
         for (String text : getDetailNames()) {
             Common.checkTextPresent(text, getPageName() + " Details page: " + getUniqueKeyName() + ": " + name);
         }
@@ -299,14 +302,18 @@ public abstract class BaseTableTest<T> {
 
     private void testContentAndSortingOrder() {
 
-        Common.logDebug("Tests started for: " + getPageName() + " page: Testing Content");
+        Common.logDebug("\nTests started for: " + getPageName() + " page: Testing Content");
 
         if (testTableContent()) {
 
-            Common.logDebug("Tests started for: " + getPageName() + " page: Testing Sorting Order");
+            Common.logDebug("\nTests started for: " + getPageName() + " page: Testing Sorting Order\n");
 
             for (int i = 0; i < getColumnKeys().length; i++) {
-                testTheSortingOrderForOneColumn(getColumnKeys()[i], getColumnNames()[i]);
+                try {
+                    testTheSortingOrderForOneColumn(getColumnKeys()[i], getColumnNames()[i]);
+                } catch (Exception ex) {
+                    Common.logException("Error: " + getPageName() + ": Exception while testing sort order for column: " + getColumnNames()[i] + ": Exception:" + ex.getMessage(), ex);
+                }
             }
         }
     }
@@ -333,13 +340,18 @@ public abstract class BaseTableTest<T> {
                 Common.logError("Failure: " + getPageName() + " Unable to get sort order for column: " + columnKey);
             }
         }
+
+        Common.logDebug("");
     }
 
     private String getCurrentSortingOrder(String columnKey) {
 
         try {
 
-            WebElement columnHeader = Common.driver.findElement(By.xpath("//*[@*[.='" + columnKey + "']]"));
+            WebElement columnHeader = Common.driver.findElement(By.xpath("//*[@role='columnheader' and @*[.='" + columnKey + "']]"));
+
+            // Scroll to bring the column header into view
+            ((JavascriptExecutor) Common.driver).executeScript("arguments[0].scrollIntoView(true);", columnHeader);
 
             String oldSortOrder = columnHeader.getAttribute("aria-sort");
 
@@ -348,7 +360,7 @@ public abstract class BaseTableTest<T> {
             return waitToLoadChangedSortOrder(oldSortOrder, columnKey);
 
         } catch (Exception ex) {
-            Common.logError("Failure: " + getPageName() + " Exception in getting sort order for column: " + columnKey + " Error: " + ex.getMessage());
+            Common.logException("Failure: " + getPageName() + " Exception in getting sort order for column: " + columnKey + " Error: " + ex.getMessage(), ex);
         }
 
         return null;
@@ -362,7 +374,7 @@ public abstract class BaseTableTest<T> {
         do {
             Common.sleepWithTime(waitTimeInSecs);
 
-            WebElement columnHeaderNew = Common.driver.findElement(By.xpath("//*[@*[.='" + columnKey + "']]"));
+            WebElement columnHeaderNew = Common.driver.findElement(By.xpath("//*[@role='columnheader' and @*[.='" + columnKey + "']]"));
 
             newSortOrder = columnHeaderNew.getAttribute("aria-sort");
 
@@ -392,12 +404,12 @@ public abstract class BaseTableTest<T> {
         try {
 
             List<WebElement> elements = waitToLoadListOfAllUIObjects(columnKey);
-            for (int i = 1; i < elements.size(); i++) { // first element fetched is of column header, so we fetch values from 2nd element.
-                columnData.add(elements.get(i).getText().trim());
+            for (WebElement element : elements) {
+                columnData.add(element.getText().trim());
             }
 
         } catch (Exception ex) {
-            Common.logError("Failure: " + getPageName() + ": Error in getting data from UI using column key: " + columnKey + "Error: " + ex.getMessage());
+            Common.logException("Failure: " + getPageName() + ": Error in getting data from UI using column key: " + columnKey + "Error: " + ex.getMessage(), ex);
         }
 
         return columnData;
@@ -409,9 +421,10 @@ public abstract class BaseTableTest<T> {
         List<WebElement> elements;
 
         do {
-            elements = Common.driver.findElements(By.xpath("//*[@*[.='" + columnKey + "']]"));
 
-            if (elements.size() - 1 >= jsonObjects.size()) { // first element fetched is of column header, so we do -1 from total elements
+            elements = Common.driver.findElements(By.xpath("//*[@role='gridcell' and @*[.='" + columnKey + "']]"));
+
+            if (elements.size() >= jsonObjects.size()) {
                 break;
             }
 
@@ -422,28 +435,30 @@ public abstract class BaseTableTest<T> {
         return elements;
     }
 
+    @SuppressWarnings("unchecked")
     void ascendingSortJson(String columnKey) {
         try {
-            jsonObjects.sort(Comparator.comparing(jsonObject -> (Comparable) getColumnDataFromJson(jsonObject, columnKey)));
+            jsonObjects.sort(Comparator.comparing(jsonObject -> (Comparable<Object>) getColumnDataFromJson(jsonObject, columnKey)));
         } catch (Exception ex) {
-            Common.logError("Failure: " + getPageName() + ": Exception in sorting JSON in ascending order using column key: " + columnKey + " Error: " + ex.getMessage());
+            Common.logException("Failure: " + getPageName() + ": Exception in sorting JSON in ascending order using column key: " + columnKey + " Error: " + ex.getMessage(), ex);
         }
     }
 
+    @SuppressWarnings("unchecked")
     void descendingSortJson(String columnKey) {
         try {
-            jsonObjects.sort(Comparator.comparing((Function<T, Comparable>) jsonObject -> (Comparable) getColumnDataFromJson(jsonObject, columnKey)).reversed());
+            jsonObjects.sort(Comparator.comparing((Function<T, Comparable<Object>>) jsonObject -> (Comparable<Object>) getColumnDataFromJson(jsonObject, columnKey)).reversed());
         } catch (Exception ex) {
-            Common.logError("Failure: " + getPageName() + ": Exception in sorting JSON in descending order using column key: " + columnKey + " Error: " + ex.getMessage());
+            Common.logException("Failure: " + getPageName() + ": Exception in sorting JSON in descending order using column key: " + columnKey + " Error: " + ex.getMessage(), ex);
         }
     }
 
     private boolean testTableContent() {
-        Common.logDebug("Page: " + getPageName() + ": Number of Objects from Json: " + jsonObjects.size());
+        Common.logDebug("\nPage: " + getPageName() + ": Number of Objects from Json: " + jsonObjects.size());
 
         List<Object> columnDataIDFromUI = getDataFromUIUsingColumnKey(getUniqueKey());
 
-        Common.logDebug("Page: " + getPageName() + ": Number of Objects from UI: " + columnDataIDFromUI.size());
+        Common.logDebug("Page: " + getPageName() + ": Number of Objects from UI: " + columnDataIDFromUI.size()+"\n");
 
         if (jsonObjects.size() != columnDataIDFromUI.size()) {
             String errMsg = "Failure: " + getPageName() + ": Number of items on UI are not equal to the number of items in JSON" +
@@ -471,7 +486,7 @@ public abstract class BaseTableTest<T> {
         try {
             return parseJson(filePath);
         } catch (Exception ex) {
-            Common.logError("Failure: " + getPageName() + " Unable to parse JSON File: Exception: " + ex.getMessage());
+            Common.logException("Failure: " + getPageName() + " Unable to parse JSON File: Exception: " + ex.getMessage(), ex);
         }
 
         return null;
@@ -544,12 +559,12 @@ public abstract class BaseTableTest<T> {
 
             wait.until(ExpectedConditions.invisibilityOfElementLocated(By.id("pageSize-list")));
 
-            Common.logDebug("Page: " + getPageName() + ": Dropdown selected: " + selectedValue);
+            Common.logDebug("\nPage: " + getPageName() + ": Dropdown selected: " + selectedValue);
 
             Common.driver.navigate().refresh();
             Common.sleep();
         } catch (Exception ex) {
-            Common.logError("Failure: " + getPageName() + ": Error in clicking dropdown: " + ex.getMessage());
+            Common.logException("Failure: " + getPageName() + ": Error in clicking dropdown: " + ex.getMessage(), ex);
         }
     }
 
@@ -558,7 +573,7 @@ public abstract class BaseTableTest<T> {
             WebElement dropdown = Common.waitForElement(By.id("pageSize"));
             return dropdown.getText().trim();
         } catch (Exception ex) {
-            Common.logError("Failure: " + getPageName() + ": Error in getting dropdown value: " + ex.getMessage());
+            Common.logException("Failure: " + getPageName() + ": Error in getting dropdown value: " + ex.getMessage(), ex);
         }
 
         return "";
@@ -569,7 +584,7 @@ public abstract class BaseTableTest<T> {
     }
 
     private void testForAllText() {
-        Common.logDebug("Tests started for: " + getPageName() + " page: Testing Text");
+        Common.logDebug("\nTests started for: " + getPageName() + " page: Testing Text");
         for (String text : getColumnNames()) {
             Common.checkTextPresent(text, getPageName());
         }

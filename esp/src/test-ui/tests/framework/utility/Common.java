@@ -2,15 +2,18 @@ package framework.utility;
 
 import framework.config.Config;
 import framework.config.URLConfig;
-import org.openqa.selenium.*;
+import org.openqa.selenium.By;
+import org.openqa.selenium.TimeoutException;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
-import org.openqa.selenium.remote.RemoteWebDriver;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -20,7 +23,10 @@ public class Common {
 
     public static WebDriver driver;
     public static Logger errorLogger = setupLogger("error");
+    public static Logger exceptionLogger = setupLogger("exception");
     public static Logger specificLogger;
+    public static int num_exceptions = 0;
+    public static int num_errors = 0;
 
     public static void checkTextPresent(String text, String page) {
         try {
@@ -35,13 +41,15 @@ public class Common {
         }
     }
 
-    public static void openWebPage(String url) {
+    public static boolean openWebPage(String url) {
         try {
             driver.get(url);
             driver.manage().window().maximize();
             sleep();
+            return true;
         } catch (Exception ex) {
-            Common.logError("Error in opening web page: " + url);
+            Common.logException("Error in opening web page: " + url, ex);
+            return false;
         }
     }
 
@@ -49,7 +57,7 @@ public class Common {
         try {
             Thread.sleep(Duration.ofSeconds(Config.WAIT_TIME_IN_SECONDS));
         } catch (InterruptedException e) {
-            Common.logError("Error in sleep: " + e.getMessage());
+            Common.logException("Error in sleep: " + e.getMessage(), e);
         }
     }
 
@@ -57,7 +65,7 @@ public class Common {
         try {
             Thread.sleep(Duration.ofSeconds(seconds));
         } catch (InterruptedException e) {
-            Common.logError("Error in sleep: " + e.getMessage());
+            Common.logException("Error in sleep: " + e.getMessage(), e);
         }
     }
 
@@ -89,6 +97,16 @@ public class Common {
     public static void logError(String message) {
         System.err.println(message);
         errorLogger.severe(message);
+        num_errors++;
+    }
+
+    public static void logException(String message, Exception ex) {
+
+        message += Arrays.toString(ex.getStackTrace());
+
+        System.err.println(message);
+        exceptionLogger.severe(message);
+        num_exceptions++;
     }
 
     public static void logDebug(String message) {
@@ -116,6 +134,11 @@ public class Common {
         driver = setupWebDriver();
     }
 
+    public static void printNumOfErrorsAndExceptions() {
+        System.out.println("Total number of exceptions recorded: " + num_exceptions);
+        System.out.println("Total number of errors recorded: " + num_errors);
+    }
+
     private static WebDriver setupWebDriver() {
 
         try {
@@ -132,16 +155,9 @@ public class Common {
                 System.setProperty("webdriver.chrome.driver", Config.PATH_GH_ACTION_CHROME_DRIVER);
             }
 
-            RemoteWebDriver driver = new ChromeDriver(chromeOptions);
-
-            Capabilities caps = driver.getCapabilities();
-            String browserName = caps.getBrowserName();
-            String browserVersion = caps.getBrowserVersion();
-            System.out.println(browserName + " " + browserVersion);
-
-            return driver;
+            return new ChromeDriver(chromeOptions);
         } catch (Exception ex) {
-            errorLogger.severe("Failure: Error in setting up web driver: " + ex.getMessage());
+            logException("Failure: Error in setting up web driver: " + ex.getMessage(), ex);
         }
 
         return null;
@@ -162,6 +178,11 @@ public class Common {
                 errorFileHandler.setFormatter(new SimpleFormatter());
                 logger.addHandler(errorFileHandler);
                 logger.setLevel(Level.SEVERE);
+            } else if (logLevel.equalsIgnoreCase("exception")) {
+                FileHandler errorFileHandler = new FileHandler(Config.LOG_FILE_EXCEPTION);
+                errorFileHandler.setFormatter(new SimpleFormatter());
+                logger.addHandler(errorFileHandler);
+                logger.setLevel(Level.SEVERE);
             } else if (logLevel.equalsIgnoreCase("debug")) {
                 FileHandler debugFileHandler = new FileHandler(Config.LOG_FILE_DEBUG);
                 debugFileHandler.setFormatter(new SimpleFormatter());
@@ -179,17 +200,5 @@ public class Common {
 
         Logger.getLogger("org.openqa.selenium").setLevel(Level.OFF); // Turn off all logging from the Selenium WebDriver.
         return logger;
-    }
-
-    public static String[] getAttributeList(WebElement webElement, String pageName) {
-        try {
-            JavascriptExecutor executor = (JavascriptExecutor) driver;
-            Object attributes = executor.executeScript("var items = {}; for (index = 0; index < arguments[0].attributes.length; ++index) { items[arguments[0].attributes[index].name] = arguments[0].attributes[index].value }; return items;", webElement);
-            return attributes.toString().replaceAll("[{}]", "").split(", ");
-        } catch (Exception ex) {
-            Common.logError("Failure: " + pageName + ": Error in getting arguments list for web element: " + webElement.getText() + "Error: " + ex.getMessage());
-        }
-
-        return new String[0];
     }
 }
