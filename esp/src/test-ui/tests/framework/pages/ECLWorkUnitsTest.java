@@ -32,7 +32,12 @@ public class ECLWorkUnitsTest extends BaseTableTest<ECLWorkunit> {
 
     @Override
     protected String getPageUrl() {
-        return URLConfig.urlMap.get(URLConfig.NAV_ECL).getUrlMappings().get(URLConfig.TAB_ECL_WORKUNITS).getUrl();
+        try {
+            return URLConfig.urlMap.get(URLConfig.NAV_ECL).getUrlMappings().get(URLConfig.TAB_ECL_WORKUNITS).getUrl();
+        } catch (Exception ex){
+            Common.logException("Error in getting page URL "+ getPageName() +": Exception: "+ ex.getMessage(), ex);
+        }
+        return "";
     }
 
     @Override
@@ -167,7 +172,7 @@ public class ECLWorkUnitsTest extends BaseTableTest<ECLWorkunit> {
             updateDescriptionAndSave(oldDescription);
 
         } catch (Exception ex) {
-            Common.logError("Error: " + getPageName() + " Details page for WUID: " + wuName + ", Exception occurred while testing for description. Exception: " + ex.getMessage());
+            Common.logException("Error: " + getPageName() + " Details page for WUID: " + wuName + ", Exception occurred while testing for description. Exception: " + ex.getMessage(), ex);
         }
     }
 
@@ -228,7 +233,7 @@ public class ECLWorkUnitsTest extends BaseTableTest<ECLWorkunit> {
             }
 
         } catch (Exception ex) {
-            Common.logError("Error: ECL WorkUnits: Exception in testing the protected functionality for WUID: " + wuName + ": Error: " + ex.getMessage());
+            Common.logException("Error: ECL WorkUnits: Exception in testing the protected functionality for WUID: " + wuName + ": Error: " + ex.getMessage(), ex);
         }
     }
 
@@ -371,7 +376,7 @@ public class ECLWorkUnitsTest extends BaseTableTest<ECLWorkunit> {
                 dataUIValue = ((String) dataUIValue).trim();
             }
         } catch (Exception ex) {
-            Common.logError("Failure: " + getPageName() + " Error in parsing UI value: " + dataUIValue + " for column: " + columnName + " ID: " + dataIDUIValue + " Error: " + ex.getMessage());
+            Common.logException("Failure: " + getPageName() + " Error in parsing UI value: " + dataUIValue + " for column: " + columnName + " ID: " + dataIDUIValue + " Error: " + ex.getMessage(), ex);
         }
 
         return dataUIValue;
@@ -410,7 +415,7 @@ public class ECLWorkUnitsTest extends BaseTableTest<ECLWorkunit> {
                 return element.getAttribute("title");
             }
         } catch (Exception ex) {
-            Common.logError("Error: " + getPageName() + ex.getMessage());
+            Common.logException("Error: " + getPageName() + ex.getMessage(), ex);
         }
         return "Invalid Page";
     }

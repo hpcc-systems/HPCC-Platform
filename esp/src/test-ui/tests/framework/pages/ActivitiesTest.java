@@ -20,7 +20,9 @@ public class ActivitiesTest {
 
     @Test
     public void testActivitiesPage() {
-        Common.openWebPage(urlMap.get(URLConfig.NAV_ACTIVITIES).getUrl());
+        if(!Common.openWebPage(urlMap.get(URLConfig.NAV_ACTIVITIES).getUrl())){
+            return;
+        }
 
         Common.logDebug("Tests started for: Activities page.");
 
@@ -52,7 +54,7 @@ public class ActivitiesTest {
                     Common.logError(errorMsg);
                 }
             } catch (Exception ex) {
-                Common.logError("Failure: Exception in Navigation Link for " + element.name() + ". URL : " + element.hrefValue() + " Error: " + ex.getMessage());
+                Common.logException("Failure: Exception in Navigation Link for " + element.name() + ". URL : " + element.hrefValue() + " Error: " + ex.getMessage(), ex);
             }
         }
     }
@@ -105,7 +107,7 @@ public class ActivitiesTest {
 
                 urlMap.put(navName, new URLMapping(navName, hrefValue));
             } catch (Exception ex) {
-                Common.logError("Failure: Activities Page for Navigation Element: " + navName + ": Error: " + ex.getMessage());
+                Common.logException("Failure: Activities Page for Navigation Element: " + navName + ": Error: " + ex.getMessage(), ex);
             }
         }
 

@@ -24,8 +24,10 @@ public class TestRunner {
                 Common.driver.quit();
             }
 
+            Common.printNumOfErrorsAndExceptions();
+
         } catch (Exception e) {
-            Common.logError("Exception occurred in TestRunner.java: " + e.getMessage());
+            Common.logException("Exception occurred in TestRunner class: " + e.getMessage(), e);
         }
     }
 
@@ -69,7 +71,7 @@ public class TestRunner {
             try {
                 classes.add(Class.forName(testClass.getPath()));
             } catch (Exception e) {
-                Common.logError("Failure: Error in loading classes: " + e.getMessage());
+                Common.logException("Failure: Error in loading classes: " + e.getMessage(), e);
             }
         }
 

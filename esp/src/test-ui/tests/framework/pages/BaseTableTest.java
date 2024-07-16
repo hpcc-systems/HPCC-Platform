@@ -71,7 +71,9 @@ public abstract class BaseTableTest<T> {
     protected List<T> jsonObjects;
 
     protected void testPage() {
-        Common.openWebPage(getPageUrl());
+        if(!Common.openWebPage(getPageUrl())){
+            return;
+        }
 
         try {
             Common.logDebug("Tests started for: " + getPageName() + " page.");
@@ -92,7 +94,7 @@ public abstract class BaseTableTest<T> {
             Common.logDebug("Tests finished for: " + getPageName() + " page.");
 
         } catch (Exception ex) {
-            Common.logError("Error: " + getPageName() + ": Exception: " + ex.getMessage());
+            Common.logException("Error: " + getPageName() + ": Exception: " + ex.getMessage(), ex);
         }
     }
 
@@ -127,7 +129,7 @@ public abstract class BaseTableTest<T> {
                 javaScriptElementClick(element);
                 testPresenceOfColumnNames(getColumnNamesForTabsDetailsPage().get(tabValue), tabValue);
             } catch (Exception ex) {
-                Common.logError("Error: " + getPageName() + " Details Page. Testing tab click on: " + tabValue + " Error: " + ex.getMessage());
+                Common.logException("Error: " + getPageName() + " Details Page. Testing tab click on: " + tabValue + " Error: " + ex.getMessage(), ex);
             }
         }
 
@@ -211,7 +213,7 @@ public abstract class BaseTableTest<T> {
                         Common.logError(dropdownErrorMsg);
                     }
                 } catch (Exception ex) {
-                    Common.logError("Failure: " + getPageName() + ": Exception in testing links for column: " + columnKey + " value: " + values.get(i) + " Error: " + ex.getMessage());
+                    Common.logException("Failure: " + getPageName() + ": Exception in testing links for column: " + columnKey + " value: " + values.get(i) + " Error: " + ex.getMessage(), ex);
                 }
             }
         }
@@ -251,7 +253,7 @@ public abstract class BaseTableTest<T> {
         try {
             waitToLoadDetailsPage(); // sleep until the specific detail fields have loaded
         } catch (Exception ex) {
-            Common.logError("Error: " + getPageName() + ": Exception in waitToLoadDetailsPage: " + getUniqueKeyName() + " : " + name + " Exception: " + ex.getMessage());
+            Common.logException("Error: " + getPageName() + ": Exception in waitToLoadDetailsPage: " + getUniqueKeyName() + " : " + name + " Exception: " + ex.getMessage(), ex);
         }
 
         boolean pass = true;
@@ -281,7 +283,7 @@ public abstract class BaseTableTest<T> {
                 }
 
             } catch (Exception ex) {
-                Common.logError("Error: Details " + getPageName() + "Page, for: " + getUniqueKeyName() + " : " + name + " Error: " + ex.getMessage());
+                Common.logException("Error: Details " + getPageName() + "Page, for: " + getUniqueKeyName() + " : " + name + " Error: " + ex.getMessage(), ex);
             }
         }
 
@@ -309,7 +311,7 @@ public abstract class BaseTableTest<T> {
                 try {
                     testTheSortingOrderForOneColumn(getColumnKeys()[i], getColumnNames()[i]);
                 } catch (Exception ex) {
-                    Common.logError("Error: " + getPageName() + ": Exception while testing sort order for column: "+getColumnNames()[i]+": Exception:" + ex.getMessage());
+                    Common.logException("Error: " + getPageName() + ": Exception while testing sort order for column: " + getColumnNames()[i] + ": Exception:" + ex.getMessage(), ex);
                 }
             }
         }
@@ -347,12 +349,12 @@ public abstract class BaseTableTest<T> {
 
             String oldSortOrder = columnHeader.getAttribute("aria-sort");
 
-            columnHeader.click();
+            javaScriptElementClick(columnHeader);
 
             return waitToLoadChangedSortOrder(oldSortOrder, columnKey);
 
         } catch (Exception ex) {
-            Common.logError("Failure: " + getPageName() + " Exception in getting sort order for column: " + columnKey + " Error: " + ex.getMessage());
+            Common.logException("Failure: " + getPageName() + " Exception in getting sort order for column: " + columnKey + " Error: " + ex.getMessage(), ex);
         }
 
         return null;
@@ -401,7 +403,7 @@ public abstract class BaseTableTest<T> {
             }
 
         } catch (Exception ex) {
-            Common.logError("Failure: " + getPageName() + ": Error in getting data from UI using column key: " + columnKey + "Error: " + ex.getMessage());
+            Common.logException("Failure: " + getPageName() + ": Error in getting data from UI using column key: " + columnKey + "Error: " + ex.getMessage(), ex);
         }
 
         return columnData;
@@ -431,7 +433,7 @@ public abstract class BaseTableTest<T> {
         try {
             jsonObjects.sort(Comparator.comparing(jsonObject -> (Comparable<Object>) getColumnDataFromJson(jsonObject, columnKey)));
         } catch (Exception ex) {
-            Common.logError("Failure: " + getPageName() + ": Exception in sorting JSON in ascending order using column key: " + columnKey + " Error: " + ex.getMessage());
+            Common.logException("Failure: " + getPageName() + ": Exception in sorting JSON in ascending order using column key: " + columnKey + " Error: " + ex.getMessage(), ex);
         }
     }
 
@@ -440,7 +442,7 @@ public abstract class BaseTableTest<T> {
         try {
             jsonObjects.sort(Comparator.comparing((Function<T, Comparable<Object>>) jsonObject -> (Comparable<Object>) getColumnDataFromJson(jsonObject, columnKey)).reversed());
         } catch (Exception ex) {
-            Common.logError("Failure: " + getPageName() + ": Exception in sorting JSON in descending order using column key: " + columnKey + " Error: " + ex.getMessage());
+            Common.logException("Failure: " + getPageName() + ": Exception in sorting JSON in descending order using column key: " + columnKey + " Error: " + ex.getMessage(), ex);
         }
     }
 
@@ -477,7 +479,7 @@ public abstract class BaseTableTest<T> {
         try {
             return parseJson(filePath);
         } catch (Exception ex) {
-            Common.logError("Failure: " + getPageName() + " Unable to parse JSON File: Exception: " + ex.getMessage());
+            Common.logException("Failure: " + getPageName() + " Unable to parse JSON File: Exception: " + ex.getMessage(), ex);
         }
 
         return null;
@@ -555,7 +557,7 @@ public abstract class BaseTableTest<T> {
             Common.driver.navigate().refresh();
             Common.sleep();
         } catch (Exception ex) {
-            Common.logError("Failure: " + getPageName() + ": Error in clicking dropdown: " + ex.getMessage());
+            Common.logException("Failure: " + getPageName() + ": Error in clicking dropdown: " + ex.getMessage(), ex);
         }
     }
 
@@ -564,7 +566,7 @@ public abstract class BaseTableTest<T> {
             WebElement dropdown = Common.waitForElement(By.id("pageSize"));
             return dropdown.getText().trim();
         } catch (Exception ex) {
-            Common.logError("Failure: " + getPageName() + ": Error in getting dropdown value: " + ex.getMessage());
+            Common.logException("Failure: " + getPageName() + ": Error in getting dropdown value: " + ex.getMessage(), ex);
         }
 
         return "";
