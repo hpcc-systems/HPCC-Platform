@@ -349,6 +349,7 @@ public abstract class BaseTableTest<T> {
 
             String oldSortOrder = columnHeader.getAttribute("aria-sort");
 
+            Common.waitForElementToBeClickable(columnHeader);
             columnHeader.click();
 
             return waitToLoadChangedSortOrder(oldSortOrder, columnKey);
