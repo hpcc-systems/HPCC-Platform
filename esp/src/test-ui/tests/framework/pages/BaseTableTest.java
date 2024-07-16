@@ -349,7 +349,7 @@ public abstract class BaseTableTest<T> {
 
             String oldSortOrder = columnHeader.getAttribute("aria-sort");
 
-            javaScriptElementClick(columnHeader);
+            columnHeader.click();
 
             return waitToLoadChangedSortOrder(oldSortOrder, columnKey);
 
