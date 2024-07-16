@@ -3226,19 +3226,22 @@ public:
         return true;
     }
 
-    virtual bool changePasswordSSL(const char* username, const char* newPassword)
+    virtual bool changePasswordSSL(const char* username, const char* newPassword, LDAP* ld)
     {
         Owned<ILdapConnection> lconn;
-        try
+        if (ld == nullptr)
         {
-            lconn.setown(m_connections->getSSLConnection());
+            try
+            {
+                lconn.setown(m_connections->getSSLConnection());
+            }
+            catch (IException *e)
+            {
+                e->Release();
+                throw MakeStringException(-1, "Failed to set user %s's password because of not being able to create an SSL connection to the ldap server. To set an Active Directory user's password from Linux, you need to enable SSL on the Active Directory ldap server", username);
+            }
+            ld = lconn.get()->getLd();
         }
-        catch(IException*)
-        {
-            throw MakeStringException(-1, "Failed to set user %s's password because of not being able to create an SSL connection to the ldap server. To set an Active Directory user's password from Linux, you need to enable SSL on the Active Directory ldap server", username);
-        }
-
-        LDAP* ld = lconn.get()->getLd();
 
         char        *attribute, **values = NULL;
         LDAPMessage *message;
@@ -3347,7 +3350,7 @@ public:
             return false;
     }
 
-    virtual bool updateUserPassword(ISecUser& user, const char* newPassword, const char* currPassword)
+    virtual bool updateUserPassword(ISecUser& user, const char* newPassword, const char* currPassword, LDAP* ld)
     {
         const char* username = user.getName();
         if(!username || !*username)
@@ -3372,10 +3375,10 @@ public:
                 throw MakeStringException(-1, "Password not changed, invalid credentials");
         }
 
-        return updateUserPassword(username, newPassword);
+        return updateUserPassword(username, newPassword, ld);
     }
 
-    virtual bool updateUserPassword(const char* username, const char* newPassword)
+    virtual bool updateUserPassword(const char* username, const char* newPassword, LDAP* ld)
     {
         if(!username || !*username)
         {
@@ -3472,7 +3475,7 @@ public:
             }
             DBGLOG("Trying changePasswordSSL to change password over regular SSL connection.");
 #endif
-            changePasswordSSL(username, newPassword);
+            changePasswordSSL(username, newPassword, ld);
         }
         else
         {
@@ -3485,7 +3488,7 @@ public:
             TIMEVAL timeOut = {m_ldapconfig->getLdapTimeout(),0};
 
             Owned<ILdapConnection> lconn = m_connections->getConnection();
-            LDAP* ld = lconn.get()->getLd();
+            ld = lconn.get()->getLd();
 
             char        *attrs[] = {LDAP_NO_ATTRS, NULL};
             CLDAPMessage searchResult;
@@ -6032,7 +6035,7 @@ private:
 
         // set the password.
         Owned<ISecUser> tmpuser = new CLdapSecUser(user->getName(), "");
-        if (!updateUserPassword(*tmpuser, user->credentials().getPassword(), nullptr))
+        if (!updateUserPassword(*tmpuser, user->credentials().getPassword(), nullptr, ld))
         {
             DBGLOG("Error updating password for %s",username);
             throw MakeStringException(-1, "Error updating password for %s",username);
@@ -6069,6 +6072,7 @@ private:
 
     virtual bool addUser(ISecUser& user)
     {
+        LdapServerType serverType = m_ldapconfig->getServerType();
         const char* username = user.getName();
         if(username == NULL || *username == '\0')
         {
@@ -6111,7 +6115,7 @@ private:
         const char* employeeNumber = user.getEmployeeNumber();
 
         StringBuffer dn;
-        if(m_ldapconfig->getServerType() == ACTIVE_DIRECTORY)
+        if(serverType == ACTIVE_DIRECTORY)
         {
             dn.append("cn=").append(fullname).append(",");
         }
@@ -6123,7 +6127,7 @@ private:
 
         char* oc_name;
         char* act_fieldname;
-        if(m_ldapconfig->getServerType() == ACTIVE_DIRECTORY)
+        if(serverType == ACTIVE_DIRECTORY)
         {
             oc_name = "User";
             act_fieldname = "sAMAccountName";
@@ -6223,7 +6227,7 @@ private:
             attrs[ind++] = &sn_attr;
         attrs[ind++] = &actname_attr;
 
-        if(m_ldapconfig->getServerType() == ACTIVE_DIRECTORY)
+        if(serverType == ACTIVE_DIRECTORY)
         {
             attrs[ind++] = &username_attr;
             attrs[ind++] = &dispname_attr;
@@ -6239,7 +6243,19 @@ private:
 
         attrs[ind] = NULL;
 
-        Owned<ILdapConnection> lconn = m_connections->getConnection();
+        //
+        // If the server type is ACTIVE_DIRECTORY, an SSL connection will be needed later to
+        // set the new user password, otherwise a non SSL connection is used.
+        Owned<ILdapConnection> lconn;
+        if(serverType == ACTIVE_DIRECTORY)
+        {
+            lconn.setown(m_connections->getSSLConnection());
+        }
+        else
+        {
+            lconn.setown(m_connections->getConnection());
+        }
+
         LDAP* ld = lconn.get()->getLd();
         int rc = ldap_add_ext_s(ld, (char*)dn.str(), attrs, NULL, NULL);
         if ( rc != LDAP_SUCCESS )
@@ -6256,7 +6272,7 @@ private:
             }
         }
 
-        if(m_ldapconfig->getServerType() == ACTIVE_DIRECTORY)
+        if(serverType == ACTIVE_DIRECTORY)
         {
             try
             {
