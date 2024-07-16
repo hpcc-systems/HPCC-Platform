@@ -1494,7 +1494,14 @@ public:
         {
             if (whichProperties & PTattributes)
             {
-                playAttribute(visitor, WaLabel);
+                Owned<IAttributeIterator> nodeAttrs = cur.getAttributes();
+                ForEach(*nodeAttrs)
+                {
+                    const char * name = nodeAttrs->queryName();
+                    WuAttr attr = queryGraphAttrToWuAttr(name+1);
+                    if (attr != WaNone)
+                        visitor.noteAttribute(attr, nodeAttrs->queryValue());
+                }
                 Owned<IPropertyTreeIterator> attrs = cur.getElements("att");
                 ForEach(*attrs)
                 {
@@ -1515,7 +1522,6 @@ public:
             }
             if (whichProperties & PTstatistics)
             {
-                playAttribute(visitor, WaLabel);
                 Owned<IPropertyTreeIterator> attrs = cur.getElements("att");
                 ForEach(*attrs)
                 {
