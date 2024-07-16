@@ -92,7 +92,7 @@ public abstract class BaseTableTest<T> {
             Common.logDebug("Tests finished for: " + getPageName() + " page.");
 
         } catch (Exception ex) {
-            Common.logError(ex.getMessage());
+            Common.logError("Error: " + getPageName() + ": Exception: " + ex.getMessage());
         }
     }
 
@@ -306,7 +306,11 @@ public abstract class BaseTableTest<T> {
             Common.logDebug("Tests started for: " + getPageName() + " page: Testing Sorting Order");
 
             for (int i = 0; i < getColumnKeys().length; i++) {
-                testTheSortingOrderForOneColumn(getColumnKeys()[i], getColumnNames()[i]);
+                try {
+                    testTheSortingOrderForOneColumn(getColumnKeys()[i], getColumnNames()[i]);
+                } catch (Exception ex) {
+                    Common.logError("Error: " + getPageName() + ": Exception while testing sort order for column: "+getColumnNames()[i]+": Exception:" + ex.getMessage());
+                }
             }
         }
     }
@@ -422,17 +426,19 @@ public abstract class BaseTableTest<T> {
         return elements;
     }
 
+    @SuppressWarnings("unchecked")
     void ascendingSortJson(String columnKey) {
         try {
-            jsonObjects.sort(Comparator.comparing(jsonObject -> (Comparable) getColumnDataFromJson(jsonObject, columnKey)));
+            jsonObjects.sort(Comparator.comparing(jsonObject -> (Comparable<Object>) getColumnDataFromJson(jsonObject, columnKey)));
         } catch (Exception ex) {
             Common.logError("Failure: " + getPageName() + ": Exception in sorting JSON in ascending order using column key: " + columnKey + " Error: " + ex.getMessage());
         }
     }
 
+    @SuppressWarnings("unchecked")
     void descendingSortJson(String columnKey) {
         try {
-            jsonObjects.sort(Comparator.comparing((Function<T, Comparable>) jsonObject -> (Comparable) getColumnDataFromJson(jsonObject, columnKey)).reversed());
+            jsonObjects.sort(Comparator.comparing((Function<T, Comparable<Object>>) jsonObject -> (Comparable<Object>) getColumnDataFromJson(jsonObject, columnKey)).reversed());
         } catch (Exception ex) {
             Common.logError("Failure: " + getPageName() + ": Exception in sorting JSON in descending order using column key: " + columnKey + " Error: " + ex.getMessage());
         }
