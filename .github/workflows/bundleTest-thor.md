@@ -46,7 +46,7 @@ on:
         type: string
         description: 'Dependencies'
         required: false
-        default: 'bison flex build-essential binutils-dev curl lsb-release libcppunit-dev python3-dev default-jdk r-base-dev r-cran-rcpp r-cran-rinside r-cran-inline pkg-config libtool autotools-dev automake git cmake xmlstarlet'
+        default: 'bison flex build-essential binutils-dev curl lsb-release libcppunit-dev python3-dev default-jdk r-base-dev r-cran-rcpp r-cran-rinside r-cran-inline libtool autotools-dev automake git cmake xmlstarlet'
       get-stat: 
         type: boolean
         description: 'Run Query stat'
@@ -89,7 +89,7 @@ Example:
 env:
   ML_SUPPRESS_WARNING_FILES: "RegressionTestModified.ecl ClassificationTestModified.ecl"
   ML_EXCLUDE_FILES: "--ef ClassicTestModified.ecl,SVCTest.ecl,ClassificationTestModified.ecl"
-  BUNDLES_TO_TEST: "ML_Core PBblas GLM  GNN DBSCAN LearningTrees TextVectors KMeans SupportVectorMachines LinearRegression LogisticRegression"       
+  BUNDLES_TO_TEST: "ML_Core PBblas GLM GNN DBSCAN LearningTrees TextVectors KMeans SupportVectorMachines LinearRegression LogisticRegression"       
   uploadArtifact: false 
 ```
 - `ML_SUPPRESS_WARNING_FILES:`Specifies the files that require a warning suppression parameter injection into the ECL code before they are executed.
@@ -136,6 +136,58 @@ Install the HPCC Platform from the downloaded artifact, set permissions and conf
         sudo chown -R $USER:$USER /opt/HPCCSystems
         sudo xmlstarlet ed -L -u 'Environment/Software/ThorCluster/@slavesPerNode' -v 2 -u 'Environment/Software/ThorCluster/@channelsPerSlave' -v 1 /etc/HPCCSystems/environment.xml
   ```
+- **Checkout ecl-bundles repository**  
+To update the `BUNDLES_TO_TEST:` list dynamically. We scrap the latest list directly from the `hpcc-systems/ecl-bundles` repository's README.rst file. This step clones `hpcc-systems/ecl-bundles` repository to the working directory.
+  ```yaml
+  - name: Checkout ecl-bundles repository
+    uses: actions/checkout@v4
+    with:
+      repository: hpcc-systems/ecl-bundles
+  ```
+- **Scrap Bundles List**  
+From the [README.rst](https://github.com/hpcc-systems/ecl-bundles/blob/master/README.rst) file in `hpcc-systems/ecl-bundles` repository. We update the `BUNDLES_TO_TEST:` list dynamically. In the [README.rst](https://github.com/hpcc-systems/ecl-bundles/blob/master/README.rst) file, the ecl-bundles data is present in table format. And in reStructuredText(.rst) files, tables are represented by `'|'` pipe character. So to extract the tables data, we `grep` all the lines that start with a `'|'`(pipe character). Along with tables data we also extract `===========`(a continuos string of `=` represents headings in reStructredText(.rst) files.) this helps in differentiating different sections/tables in the file. The extracted data is stored in `TABLES_DATA`. In the [README.rst](https://github.com/hpcc-systems/ecl-bundles/blob/master/README.rst) file the ecl-bundles data is present in the second section of the file, so we set `HEADER_NUM_OF_ECL_BUNDLES=2`. Using this information, we extract the ecl-bundles' names and the repository address from `TABLES_DATA`.
+  ```yaml
+  - name: Scrap Bundles List
+    shell: "bash"
+    run: | 
+      if [[ -f README.rst ]] 
+      then 
+          # append all table information into TABLES_DATA from README.rst 
+          # tables are created using '|' (pipe character) in reStructuredText(.rst) files. So we are extracting all the lines that start with '|'(pipe character).
+          # along with tables, we also extract '============='. This is used to represent headings in .rst files. This helps us to differentiate between different sections/tables of the README file.
+          TABLES_DATA=$( cat README.rst | grep -oE -e "\|[^\|]*\|"  -e "==.*==" | sed 's/|//g' )
+          IFS=$'\n'
+          HEADER_NUM_OF_ECL_BUNDLES=2
+          HEADER_COUNT=0
+          for LINE in $TABLES_DATA
+          do
+            LINE=${LINE# }   #removing space from begining of the line
+            LINE=${LINE%% [^A-Za-z0-9]*} #remove trailing spaces.
+            if [[ ${LINE:0:1} == "=" ]]; then 
+              HEADER_COUNT=$(( HEADER_COUNT + 1 ))
+              continue
+            fi
+            if [[ $HEADER_COUNT -eq $HEADER_NUM_OF_ECL_BUNDLES ]]; then 
+              if [[ ${LINE:0:4} == "http" ]]; then
+                echo -e "Bundle Repo : ${LINE}\n" 
+                BUNDLE=$( basename $LINE )
+                BUNDLES_TO_TEST+=" ${BUNDLE/.git}" 
+              else
+                echo "Bundle Name : ${LINE}" 
+              fi
+            elif [[ $HEADER_COUNT -eq $(( HEADER_NUM_OF_ECL_BUNDLES + 1 )) ]]; then 
+              break
+            fi
+          done
+          BUNDLES_TO_TEST=$(echo $BUNDLES_TO_TEST | sed 's/ /\n/g' | sort -bf -u )
+          #                ( print bundles list   | replace all spaces with new-line | sort the list and select unique items )
+          BUNDLES_TO_TEST=${BUNDLES_TO_TEST//$'\n'/ } # replace all newline characters with spaces
+          echo "BUNDLES TO TEST : $BUNDLES_TO_TEST"
+          echo "BUNDLES_TO_TEST=$BUNDLES_TO_TEST" >> $GITHUB_ENV
+      else 
+          echo "README.rst file not found! in HPCC-Systems/ecl-bundles repository" 
+      fi
+  ```
 - **Install ML Dependencies**  
 Install the necessary Machine learning library dependecies.
   ```yaml
@@ -164,14 +216,15 @@ This step is used to check whether the core handler is working fine as expected 
     if: ${{ inputs.test-core-file-generation }}
     shell: "bash"
     run: |
-        echo """
+        echo > crash.ecl << EOF
         boolean seg() := beginc++ #option action
         #include <csignal>
         #body
         raise(SIGABRT);
         return false;
         endc++;
-        output(seg()); """ > crash.ecl
+        output(seg()); 
+        EOF
         
         ecl run -t hthor crash.ecl
     continue-on-error: true
