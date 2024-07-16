@@ -32,6 +32,9 @@ public class ECLWorkunit {
     @JsonProperty("ActionEx")
     private String actionEx;
 
+    @JsonProperty("DateTimeScheduled")
+    private String dateTimeScheduled;
+
     @JsonProperty("IsPausing")
     private boolean isPausing;
 
