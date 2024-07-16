@@ -1323,20 +1323,7 @@ bool CSlaveGraph::serializeStats(MemoryBuffer &mb)
     if (tempHandler)
         stats.mergeStatistic(StSizeGraphSpill, sizeGraphSpill);
 
-    // calculate peak spill size
-    if (started&&initialized)
-    {
-        offset_t activeTempSize = 0;
-        Owned<IThorActivityIterator> iter = getConnectedIterator();
-        ForEach (*iter)
-        {
-            CGraphElementBase &element = iter->query();
-            CSlaveActivity &activity = (CSlaveActivity &)*element.queryActivity();
-            activeTempSize += activity.queryActiveTempSize();
-        }
-        if (activeTempSize > peakTempSize)
-            peakTempSize = activeTempSize;
-    }
+    offset_t peakTempSize = queryPeakTempSize();
     if (peakTempSize)
         stats.mergeStatistic(StSizePeakTempDisk, peakTempSize);
     if (peakTempSize + sizeGraphSpill)
