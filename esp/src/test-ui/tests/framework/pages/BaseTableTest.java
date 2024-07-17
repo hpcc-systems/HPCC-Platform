@@ -326,8 +326,6 @@ public abstract class BaseTableTest<T> {
 
                 sortJsonUsingSortOrder(currentSortOrder, columnKey);
 
-                Common.sleep();
-
                 List<Object> columnDataFromJSON = getDataFromJSONUsingColumnKey(columnKey);
                 List<Object> columnDataIDFromUI = getDataFromUIUsingColumnKey(getUniqueKey());
 
@@ -351,8 +349,11 @@ public abstract class BaseTableTest<T> {
 
             String oldSortOrder = columnHeader.getAttribute("aria-sort");
 
-            //Common.waitForElementToBeClickable(columnHeader);
             columnHeader.click();
+
+            if(columnKey.equals("Execution Cost")) {
+                columnHeader.click();
+            }
 
             return waitToLoadChangedSortOrder(oldSortOrder, columnKey);
 

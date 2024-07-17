@@ -39,7 +39,7 @@ This documentation provides a comprehensive guide to setting up an Ubuntu VM on 
 
 4. **Check if the installation is successful:**
    ```sh
-   sudo /etc/init.d/hpcc-init status
+   sudo dpkg -l | grep 'hpccsystems-pl'
    ```
 5. **Start HPCC-Platform:**
    ```sh
