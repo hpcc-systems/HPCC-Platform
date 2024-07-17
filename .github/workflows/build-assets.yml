@@ -691,6 +691,16 @@ jobs:
           generateReleaseNotes: false
           prerelease: ${{ contains(github.ref, '-rc') }}
           artifacts: "./ECLIDE/build/*.exe"
+      
+      - name: Upload Assets to Jfrog (windows)
+        if: ${{ github.repository_owner == 'hpcc-systems' }}
+        shell: bash
+        run: |
+          cd ./ECLIDE/build
+          packages=($(ls -1 hpccsystems-*.exe ))
+          for _package in ${packages[@]}; do
+            curl -u${{ secrets.JFROG_USERNAME }}:${{ secrets.JFROG_PASSWORD }} "https://${{ secrets.JFROG_REGISTRY }}/hpccpl-windows-local/LN/windows/x86_64/${_package}" -T ${_package}
+          done
 
       - name: Upload error logs
         if: ${{ failure() || cancelled() }}
