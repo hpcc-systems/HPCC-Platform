@@ -643,7 +643,7 @@ class CLocalResultSpillActivity : public CSlaveActivity
     }
 
 public:
-    CLocalResultSpillActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
+    CLocalResultSpillActivity(CGraphElementBase *_container) : CSlaveActivity(_container, spillingActivityStatistics)
     {
         helper = (IHThorLocalResultSpillArg *)queryHelper();
         appendOutputLinked(this);
@@ -708,7 +708,7 @@ public:
 class CLocalResultWriteActivityBase : public ProcessSlaveActivity
 {
 public:
-    CLocalResultWriteActivityBase(CGraphElementBase *_container) : ProcessSlaveActivity(_container)
+    CLocalResultWriteActivityBase(CGraphElementBase *_container) : ProcessSlaveActivity(_container, spillingActivityStatistics)
     {
     }
     virtual IThorResult *createResult() = 0;
