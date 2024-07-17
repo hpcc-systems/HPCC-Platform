@@ -41,7 +41,9 @@ Below are the dependencies used in the project:
 - https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-core/2.17.0/jackson-core-2.17.0.jar
 - https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-databind/2.17.0/jackson-databind-2.17.0.jar
 - https://repo1.maven.org/maven2/com/beust/jcommander/1.82/jcommander-1.82.jar
-- https://github.com/SeleniumHQ/selenium/releases/download/selenium-4.17.0/selenium-server-4.17.0.jar
+- https://github.com/SeleniumHQ/selenium/releases/download/selenium-4.22.0/selenium-java-4.22.0.zip
+- https://repo1.maven.org/maven2/org/slf4j/slf4j-api/1.7.30/slf4j-api-1.7.30.jar
+- https://repo1.maven.org/maven2/org/slf4j/slf4j-simple/1.7.30/slf4j-simple-1.7.30.jar
 
 Notes: 
 1. Users need to run these tests with regression test suite only.
