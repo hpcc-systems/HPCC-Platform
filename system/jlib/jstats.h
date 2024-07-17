@@ -44,6 +44,8 @@ inline constexpr stat_type statPercentageOf(stat_type value, stat_type per) { re
 inline StatisticKind queryStatsVariant(StatisticKind kind) { return (StatisticKind)(kind & ~StKindMask); }
 inline cost_type money2cost_type(double money) { return money * 1E6; }
 inline double cost_type2money(cost_type cost) { return ((double) cost) / 1E6; }
+
+extern jlib_decl void formatTime(StringBuffer & out, unsigned __int64 value);
 //---------------------------------------------------------------------------------------------------------------------
 
 //Represents a single level of a scope

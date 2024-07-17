@@ -80,7 +80,7 @@ RelaxedAtomic<unsigned> flowRequestsSent;
 RelaxedAtomic<unsigned> flowPermitsReceived;
 RelaxedAtomic<unsigned> dataPacketsSent;
 
-static unsigned lastResentReport = 0;
+static unsigned lastResentReport = msTick();
 static unsigned lastOkToSendTimeouts = 0;
 static unsigned lastPacketsResent = 0;
 static unsigned lastFlowRequestsSent = 0;
