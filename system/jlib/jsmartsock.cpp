@@ -30,6 +30,7 @@ class SmartSocketListParser
 public:
     SmartSocketListParser(const char * text)
     {
+        assertex(text);
         fullText = strdup(text);
     }
 
@@ -235,11 +236,9 @@ CSmartSocketFactory::CSmartSocketFactory(IPropertyTree &service, bool _retry, un
     dnsInterval=_dnsInterval;
 
     retry = _retry;
+    retryInterval = _retryInterval;
     if (retry)
-    {
-        retryInterval = _retryInterval;
         this->start(false);
-    }
 }
 
 CSmartSocketFactory::CSmartSocketFactory(const char *_socklist, IPropertyTree* _tlsConfig, bool _retry, unsigned _retryInterval, unsigned _dnsInterval)
@@ -261,11 +260,9 @@ CSmartSocketFactory::CSmartSocketFactory(const char *_socklist, IPropertyTree* _
     dnsInterval=_dnsInterval;
 
     retry = _retry;
+    retryInterval = _retryInterval;
     if (retry)
-    {
-        retryInterval = _retryInterval;
         this->start(false);
-    }
 }
 
 CSmartSocketFactory::~CSmartSocketFactory()
