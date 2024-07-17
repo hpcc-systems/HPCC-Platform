@@ -28,7 +28,9 @@ import inspect
 import signal
 import argparse
 
+from datetime import datetime
 from hpcc.regression.regress import Regression
+from hpcc.regression import cleanup
 from hpcc.util.util import checkClusters, checkHpccStatus
 from hpcc.util.util import setConfig, checkPqParam, getVersionNumbers, checkXParam, convertPath, isPositiveIntNum
 from hpcc.util.util import getEclRunArgs, isSudoer, getCodeInfo
@@ -273,9 +275,10 @@ class RegressMain:
         parser_run.add_argument('--publish', '-p', help="Publish compiled query instead of run.",
                                 action='store_true')
         parser_run.add_argument('--handleEclccWarningFile', '-w', help="Create/overwrite/delete ECLCC warning file.",
-                                action='store_true')
-
-
+                                action='store_true')                                                   
+        parser_run.add_argument('--cleanup', choices=['workunits', 'passed', 'none'], help="Select the cleanup mode: none(default)/workunits/passed",
+                                nargs='?', type=str, metavar="workunits | passed | none", default='none')
+                                       
         self.parser_query = subparsers.add_parser('query', help='Query help',  parents=[helperParser, commonParser, executionParser])
         self.parser_query.set_defaults(func='query')
         self.parser_query.add_argument('query', help="One or more ECL file(s). It can contain wildcards. (mandatory).",
@@ -285,9 +288,10 @@ class RegressMain:
         self.parser_query.add_argument('--publish', '-p', help="Publish compiled query instead of run.",
                                 action='store_true')
         self.parser_query.add_argument('--handleEclccWarningFile', '-w', help="Create/overwrite/delete ECLCC warning file.",
-                                action='store_true')
-
-
+                                action='store_true')  
+        self.parser_query.add_argument('--cleanup', choices=['workunits', 'passed', 'none'], help="Select the cleanup mode: none(default)/workunits/passed",
+                                nargs='?', type=str, metavar="workunits | passed | none", default='none')                             
+       
         try:
             self.args = parser.parse_args()
         except Error as e:
@@ -470,15 +474,26 @@ class RegressMain:
             else:
                 self.args.excludeFileSet = set()
 
-
             if self.args.func == 'list':
                 self.listClusters()
             elif self.args.func == 'query':
+                startTime = datetime.now()
                 self.query()
             elif self.args.func == 'setup':
                 self.setup()
             elif self.args.func == 'run':
+                startTime = datetime.now()
                 self.run()
+                
+            #Process automatic deletion of workunits after test
+            if 'cleanup' in self.args:
+                cleanupMode = self.args.cleanup
+                if(cleanupMode == 'none'):
+                    logging.debug("Automatic cleanup has not been enabled.")       	    
+                else:
+                    logging.warning("Automatic Cleanup Routine\n")
+                    cleanup.doCleanup(self.config.logDir, cleanupMode, startTime)
+        
         except Error as e:
             logging.critical(e)
             logging.critical(traceback.format_exc())
@@ -497,7 +512,6 @@ class RegressMain:
                 self.regress.close()
                 self.regress = None
         exit()
-
 
 def signalHandler(signum, frame):
     logging.critical("Signal %d received" %(signum))
