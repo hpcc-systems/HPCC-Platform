@@ -257,8 +257,8 @@ public:
         }
         output->flush();
         offset_t end = output->getPosition();
+        dataFile->noteSize(output->getStatistic(StSizeDiskWrite));
         output.clear();
-        dataFile->noteSize(end);
         writeidxofs(end);
         if (idxFileIO)
         {

@@ -326,19 +326,29 @@ class CFileSizeTracker: public CInterface
 {
     RelaxedAtomic<offset_t> activeSize{0};
     RelaxedAtomic<offset_t> peakSize{0};
+    CFileSizeTracker * parentFileSizeTracker;
 public:
+    CFileSizeTracker(CFileSizeTracker *parent=nullptr): parentFileSizeTracker(parent)
+    {
+    }
     void growSize(offset_t size)
     {
         if (size)
         {
             offset_t newActiveSize = activeSize.add_fetch(size);
             peakSize.store_max(newActiveSize);
+            if (parentFileSizeTracker)
+                parentFileSizeTracker->growSize(size);
         }
     }
     void shrinkSize(offset_t size)
     {
         if (size)
+        {
             activeSize.fetch_sub(size);
+            if (parentFileSizeTracker)
+                parentFileSizeTracker->shrinkSize(size);
+        }
     }
     offset_t queryActiveSize() const
     {
