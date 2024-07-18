@@ -11,9 +11,9 @@ test classes to be executed, and runs the tests.
 Variables:
 args: Command line arguments passed to the main method. While running the test suite, you can pass arguments in this way -> "-l log_level -p path".
 - "log_level" is of two types "debug" and "detail"
-- "debug" means generate error log file with a debug log file.
-- "detail" means generate error log file with a detailed debug file.
-- If no -l and log_level is passed in the argument, only error log will be generated
+- "debug" means generate error and exception log file with a debug log file.
+- "detail" means generate error and exception log file with a detailed debug file.
+- If no -l and log_level is passed in the argument, only error and exception log will be generated
 - "path" is the path of the folder where the json files are
 - The code will log an error if the '-p' and 'path' arguments are not provided, as the JSON folder path is required for the test suite.
 
@@ -39,6 +39,7 @@ The entry point of the application. It performs the following steps:
 - Sets the test classes to be run by calling loadClasses.
 - Runs the tests using TestNG.
 - Quits the WebDriver session after the tests have completed.
+- Calls Common.printNumOfErrorsAndExceptions to print total number of errors and exceptions to the console, so that we get an idea of the count after the tests are finished.
 
 2. loadClasses Method
 
@@ -142,7 +143,8 @@ to the URLs of different pages and tabs.
 
 ### Common.java
 
-![img.png](Common.png)
+![img.png](Common1.png)
+![img.png](Common2.png)
 
 The Common class in the framework.utility package provides a set of utility
 methods that are frequently used throughout the testing framework. These
@@ -155,6 +157,8 @@ Variables:
 - errorLogger: This public static variable stores a logger instance used for logging error messages.
 - specificLogger: This public static variable stores a logger instance used for logging specific messages 
 based on the provided level (debug or detail).
+- num_errors: A counter to keep a count of total numbers of errors generated in the error log file.
+- num_exceptions: A counter to keep a count of total numbers of exceptions generated in the exceptions log file.
 
 **Methods:**
 
@@ -210,44 +214,46 @@ execution context.
 - This method logs error messages.
 - Prints the error message to the standard error stream.
 - Logs the message using errorLogger.
+- Increments the variable num_errors by 1, to maintain the count of number of errors generated.
 
-8. logDebug Method
+8. logException Method
+
+- This method logs exception messages with complete stack trace.
+- Prints the exception message with complete stack trace to the standard error stream.
+- Logs the message using errorLogger.
+- Increments the variable num_exceptions by 1, to maintain the count of number of num_exceptions generated.
+
+9. logDebug Method
 
 - This method logs debug or detailed messages.
 - Prints the message to the standard output stream.
 - Logs the message using specificLogger if the logging level is INFO or FINE.
 
-9. logDetail method
+10. logDetail method
 
 - This method logs detailed messages.
 - Prints the message to the standard output stream.
 - Logs the message using specificLogger if the logging level is FINE.
 
-10. initializeLoggerAndDriver Method
+11. initializeLoggerAndDriver Method
 
 - This method initializes the logger and WebDriver instances.
 - Sets up the specificLogger based on the provided argument.
 - Sets up the WebDriver instance using setupWebDriver() method.
 
-11. setupWebDriver Method
+12. setupWebDriver Method
 
 - This method sets up the WebDriver instance based on the environment.
 - Configures ChromeOptions for headless mode, no sandbox, and suppressed log output.
 - Sets up the WebDriver based on the environment (local or GitHub Actions).
 - Logs an error message if an exception occurs during setup.
 
-12. setupLogger Method
+13. setupLogger Method
 
-- This method sets up a logger instance based on the provided log level.
+- This method sets up a logger instance based on the provided log level (error, exception, debug and detail).
 - Configures the logger to disable console logging and set up file handlers for different log levels (error, debug, detail).
 - Turns off all logging from Selenium WebDriver. 
 - Logs an error message if an exception occurs during logger setup.
-
-13. getAttributeList Method
-
-- This method retrieves all attributes of a web element.
-- Uses JavaScriptExecutor to extract all attributes of the web element.
-- Logs an error message if an exception occurs during attribute extraction.
 
 14. sleepWithTime Method
 

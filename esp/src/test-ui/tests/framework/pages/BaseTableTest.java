@@ -351,10 +351,6 @@ public abstract class BaseTableTest<T> {
 
             columnHeader.click();
 
-            if(columnKey.equals("Execution Cost")) {
-                columnHeader.click();
-            }
-
             return waitToLoadChangedSortOrder(oldSortOrder, columnKey);
 
         } catch (Exception ex) {

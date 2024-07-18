@@ -18,9 +18,9 @@ If the Chrome browser version updates in the future, it's crucial to ensure that
 
 While running the test suite, you can pass arguments in this way -> "-l log_level -p path".
 - "log_level" is of two types "debug" and "detail"
-- "debug" means generate error log file with a debug log file.
-- "detail" means generate error log file with a detailed debug file.
-- If no -l and log_level is passed in the argument, only error log will be generated
+- "debug" means generate error and exception log file with a debug log file.
+- "detail" means generate error and exception log file with a detailed debug file.
+- If no -l and log_level is passed in the argument, only error and exception log will be generated
 - "path" is the path of the folder where the json files are
 - The code will log an error if the '-p' and 'path' arguments are not provided, as the JSON folder path is required for the test suite.
 
