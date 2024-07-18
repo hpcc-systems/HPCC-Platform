@@ -336,6 +336,11 @@ class CSharedSpillableRowSet : public CSpillableStreamBase
                         block.clearCB = true;
                         assertex(((offset_t)-1) != outputOffset);
                         unsigned rwFlags = DEFAULT_RWFLAGS | mapESRToRWFlags(owner->emptyRowSemantics);
+                        if (owner->spillCompInfo)
+                        {
+                            rwFlags |= rw_compress;
+                            rwFlags |= owner->spillCompInfo;
+                        }
                         spillStream.setown(::createRowStreamEx(&(owner->spillFile->queryIFile()), owner->rowIf, outputOffset, (offset_t)-1, (unsigned __int64)-1, rwFlags));
                         owner->rows.unregisterWriteCallback(*this); // no longer needed
                         ret = spillStream->nextRow();
@@ -376,9 +381,10 @@ class CSharedSpillableRowSet : public CSpillableStreamBase
     };
 
 public:
-    CSharedSpillableRowSet(CActivityBase &_activity, CThorSpillableRowArray &inRows, IThorRowInterfaces *_rowIf, EmptyRowSemantics _emptyRowSemantics, unsigned _spillPriority)
+    CSharedSpillableRowSet(CActivityBase &_activity, CThorSpillableRowArray &inRows, IThorRowInterfaces *_rowIf, EmptyRowSemantics _emptyRowSemantics, unsigned _spillCompInfo, unsigned _spillPriority)
         : CSpillableStreamBase(_activity, inRows, _rowIf, _emptyRowSemantics, _spillPriority)
     {
+        spillCompInfo = _spillCompInfo;
     }
     IRowStream *createRowStream()
     {
@@ -387,6 +393,11 @@ public:
         {
             block.clearCB = true;
             unsigned rwFlags = DEFAULT_RWFLAGS | mapESRToRWFlags(emptyRowSemantics);
+            if (spillCompInfo)
+            {
+                rwFlags |= rw_compress;
+                rwFlags |= spillCompInfo;
+            }
             return ::createRowStream(&spillFile->queryIFile(), rowIf, rwFlags);
         }
         rowidx_t toRead = rows.numCommitted();
@@ -1380,10 +1391,7 @@ rowidx_t CThorSpillableRowArray::save(CFileOwner &iFileOwner, unsigned _spillCom
     rowidx_t n = numCommitted();
     if (0 == n)
         return 0;
-    ActPrintLog(&activity, "%s: CThorSpillableRowArray::save (skipNulls=%s, emptyRowSemantics=%u) max rows = %"  RIPF "u", _tracingPrefix, boolToStr(skipNulls), emptyRowSemantics, n);
-
-    if (_spillCompInfo)
-        assertex(0 == writeCallbacks.ordinality()); // incompatible
+    ActPrintLog(&activity, "%s: CThorSpillableRowArray::save (skipNulls=%s, emptyRowSemantics=%u) max rows = %" RIPF "u", _tracingPrefix, boolToStr(skipNulls), emptyRowSemantics, n);
 
     unsigned rwFlags = DEFAULT_RWFLAGS;
     if (_spillCompInfo)
@@ -1773,7 +1781,7 @@ protected:
                          * because roxiemem's background thread may be blocked on that lock, and calling roxiemem::addRowBuffer here would cause deadlock
                          */
                         activateSharedCallback = true;
-                        spillableRowSet.setown(new CSharedSpillableRowSet(activity, spillableRows, rowIf, emptyRowSemantics, spillPriority));
+                        spillableRowSet.setown(new CSharedSpillableRowSet(activity, spillableRows, rowIf, emptyRowSemantics, spillCompInfo, spillPriority));
                         spillableRowSet->setTracingPrefix(tracingPrefix);
                     }
                 }
