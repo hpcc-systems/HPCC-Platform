@@ -24,7 +24,7 @@
 class DedupRollupActivityMaster : public CMasterActivity
 {
 public:
-    DedupRollupActivityMaster(CMasterGraphElement * info) : CMasterActivity(info)
+    DedupRollupActivityMaster(CMasterGraphElement * info) : CMasterActivity(info, spillingActivityStatistics)
     {
         mpTag = container.queryJob().allocateMPTag();
     }
@@ -38,7 +38,7 @@ public:
 CActivityBase *createDedupRollupActivityMaster(CMasterGraphElement *container)
 {
     if (container->queryLocalOrGrouped())
-        return new CMasterActivity(container);
+        return new CMasterActivity(container, spillingActivityStatistics);
     else
     {
         if (TAKdedup == container->getKind())

@@ -21,7 +21,7 @@
 class CIterateActivityMaster : public CMasterActivity
 {
 public:
-    CIterateActivityMaster(CMasterGraphElement * info) : CMasterActivity(info)
+    CIterateActivityMaster(CMasterGraphElement * info) : CMasterActivity(info, spillingActivityStatistics)
     {
         mpTag = container.queryJob().allocateMPTag();
     }
@@ -34,7 +34,7 @@ public:
 CActivityBase *createIterateActivityMaster(CMasterGraphElement *container)
 {
     if (container->queryLocalOrGrouped())
-        return new CMasterActivity(container);
+        return new CMasterActivity(container, spillingActivityStatistics);
     else
         return new CIterateActivityMaster(container);
 }

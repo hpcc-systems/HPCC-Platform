@@ -80,7 +80,7 @@ protected:
         }
     }
 public:
-    CWorkUnitWriteMasterBase(CMasterGraphElement * info) : CMasterActivity(info)
+    CWorkUnitWriteMasterBase(CMasterGraphElement * info) : CMasterActivity(info, spillingActivityStatistics)
     {
         numResults = 0;
         totalSize = 0;

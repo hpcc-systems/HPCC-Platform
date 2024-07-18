@@ -23,7 +23,7 @@
 class CEnthActivityMaster : public CMasterActivity
 {
 public:
-    CEnthActivityMaster(CMasterGraphElement *_container) : CMasterActivity(_container)
+    CEnthActivityMaster(CMasterGraphElement *_container) : CMasterActivity(_container, spillingActivityStatistics)
     {
         mpTag = container.queryJob().allocateMPTag();
     }
@@ -37,7 +37,7 @@ public:
 CActivityBase *createEnthActivityMaster(CMasterGraphElement *container)
 {
     if (container->queryLocalOrGrouped())
-        return new CMasterActivity(container);
+        return new CMasterActivity(container, spillingActivityStatistics);
     else
         return new CEnthActivityMaster(container);
 }

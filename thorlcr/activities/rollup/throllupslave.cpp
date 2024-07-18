@@ -168,7 +168,7 @@ protected:
     unsigned numKept; // not used by rollup
 public:
     CDedupRollupBaseActivity(CGraphElementBase *_container, bool _rollup, bool _global, bool _groupOp)
-        : CSlaveActivity(_container)
+        : CSlaveActivity(_container, spillingActivityStatistics)
     {
         rollup = _rollup;
         global = _global;

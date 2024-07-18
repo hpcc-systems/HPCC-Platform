@@ -30,7 +30,7 @@ protected:
     unsigned *tallies;
 
 public:
-    BaseChooseSetsActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
+    BaseChooseSetsActivity(CGraphElementBase *_container, const StatisticsMapping & _mapping = basicActivityStatistics) : CSlaveActivity(_container, _mapping)
     {
         helper = static_cast <IHThorChooseSetsArg *> (queryHelper());
         done = false;
@@ -141,7 +141,7 @@ class ChooseSetsActivity : public BaseChooseSetsActivity
     }
 
 public:
-    ChooseSetsActivity(CGraphElementBase *container) : BaseChooseSetsActivity(container)
+    ChooseSetsActivity(CGraphElementBase *container) : BaseChooseSetsActivity(container, spillingActivityStatistics)
     {
     }
     virtual void init(MemoryBuffer & data, MemoryBuffer &slaveData) override
@@ -248,7 +248,7 @@ protected:
 public:
     IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
-    ChooseSetsPlusActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
+    ChooseSetsPlusActivity(CGraphElementBase *_container) : CSlaveActivity(_container, spillingActivityStatistics)
     {
         helper = static_cast <IHThorChooseSetsExArg *> (queryHelper());
         counts = NULL;

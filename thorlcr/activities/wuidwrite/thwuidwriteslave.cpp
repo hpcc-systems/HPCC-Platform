@@ -36,7 +36,7 @@ protected:
     bool grouped;
 
 public:
-    CWorkUnitWriteSlaveBase(CGraphElementBase *container) : ProcessSlaveActivity(container)
+    CWorkUnitWriteSlaveBase(CGraphElementBase *container, const StatisticsMapping & _mapping = basicActivityStatistics) : ProcessSlaveActivity(container, _mapping)
     {
         grouped = false;
     }
@@ -83,7 +83,7 @@ class CWorkUnitWriteGlobalSlaveBaseActivity : public CWorkUnitWriteSlaveBase
     typedef CWorkUnitWriteSlaveBase PARENT;
 
 public:
-    CWorkUnitWriteGlobalSlaveBaseActivity(CGraphElementBase *container) : CWorkUnitWriteSlaveBase(container)
+    CWorkUnitWriteGlobalSlaveBaseActivity(CGraphElementBase *container) : CWorkUnitWriteSlaveBase(container, spillingActivityStatistics)
     {
     }
     virtual void process() override

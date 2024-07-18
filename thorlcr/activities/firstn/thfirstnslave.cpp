@@ -35,7 +35,7 @@ protected:
     IHThorFirstNArg *helper;
 
 public:
-    CFirstNSlaveBase(CGraphElementBase *_container) : CSlaveActivity(_container)
+    CFirstNSlaveBase(CGraphElementBase *_container, const StatisticsMapping & _mapping = basicActivityStatistics) : CSlaveActivity(_container, _mapping)
     {
         stopped = true;
         helper = (IHThorFirstNArg *)container.queryHelper();
@@ -246,7 +246,7 @@ class CFirstNSlaveGlobal : public CFirstNSlaveBase, implements ILookAheadStopNot
         PARENT::doStopInput();
     }
 public:
-    CFirstNSlaveGlobal(CGraphElementBase *container) : CFirstNSlaveBase(container)
+    CFirstNSlaveGlobal(CGraphElementBase *container) : CFirstNSlaveBase(container, spillingActivityStatistics)
     {
     }
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override

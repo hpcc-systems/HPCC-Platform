@@ -182,7 +182,6 @@ public:
             case TAKnormalizechild:
             case TAKnormalizelinkedchild:
             case TAKinlinetable:
-            case TAKpull:
             case TAKnull:
             case TAKpiperead:
             case TAKpipethrough:
@@ -209,6 +208,7 @@ public:
             case TAKemptyaction:
                 ret = new CMasterActivity(this);
                 break;
+            case TAKpull:
             case TAKsplit:
                 ret = new CMasterActivity(this, spillingActivityStatistics);
                 break;

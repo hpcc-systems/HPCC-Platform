@@ -21,7 +21,7 @@
 class CSelectNthActivityMaster : public CMasterActivity
 {
 public:
-    CSelectNthActivityMaster(CMasterGraphElement * info) : CMasterActivity(info)
+    CSelectNthActivityMaster(CMasterGraphElement * info) : CMasterActivity(info, spillingActivityStatistics)
     {
         mpTag = container.queryJob().allocateMPTag();
     }
@@ -35,7 +35,7 @@ public:
 CActivityBase *createSelectNthActivityMaster(CMasterGraphElement *container)
 {
     if (container->queryLocalOrGrouped())
-        return new CMasterActivity(container);
+        return new CMasterActivity(container, spillingActivityStatistics);
     else
         return new CSelectNthActivityMaster(container);
 }

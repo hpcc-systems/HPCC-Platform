@@ -21,7 +21,7 @@
 class CChooseSetsActivityMaster : public CMasterActivity
 {
 public:
-    CChooseSetsActivityMaster(CMasterGraphElement * info) : CMasterActivity(info)
+    CChooseSetsActivityMaster(CMasterGraphElement * info) : CMasterActivity(info, spillingActivityStatistics)
     {
         mpTag = container.queryJob().allocateMPTag();
     }
@@ -34,7 +34,7 @@ public:
 CActivityBase *createChooseSetsActivityMaster(CMasterGraphElement *container)
 {
     if (container->queryLocalOrGrouped())
-        return new CMasterActivity(container);
+        return new CMasterActivity(container, spillingActivityStatistics);
     else
         return new CChooseSetsActivityMaster(container);
 }

@@ -26,7 +26,7 @@ class PullSlaveActivity : public CSlaveActivity
     typedef CSlaveActivity PARENT;
 
 public:
-    PullSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
+    PullSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container, spillingActivityStatistics)
     {
         setRequireInitData(false);
         appendOutputLinked(this);

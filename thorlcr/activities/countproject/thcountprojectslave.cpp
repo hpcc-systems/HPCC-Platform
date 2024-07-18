@@ -33,7 +33,7 @@ protected:
         count = 0;
     }
 public:
-    BaseCountProjectActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
+    BaseCountProjectActivity(CGraphElementBase *_container, const StatisticsMapping & _mapping = basicActivityStatistics) : CSlaveActivity(_container, _mapping)
     {
         helper = static_cast <IHThorCountProjectArg *> (queryHelper());
         appendOutputLinked(this);
@@ -142,7 +142,7 @@ class CountProjectActivity : public BaseCountProjectActivity, implements ILookAh
             prevRecCountSem.signal();
     }
 public:
-    CountProjectActivity(CGraphElementBase *container) : BaseCountProjectActivity(container)
+    CountProjectActivity(CGraphElementBase *container) : BaseCountProjectActivity(container, spillingActivityStatistics)
     {
     }   
     virtual void init(MemoryBuffer & data, MemoryBuffer &slaveData)

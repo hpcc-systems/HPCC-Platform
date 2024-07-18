@@ -21,7 +21,7 @@
 class CountProjectActivityMaster : public CMasterActivity
 {
 public:
-    CountProjectActivityMaster(CMasterGraphElement * info) : CMasterActivity(info)
+    CountProjectActivityMaster(CMasterGraphElement * info) : CMasterActivity(info, spillingActivityStatistics)
     {
         mpTag = container.queryJob().allocateMPTag();
     }
@@ -34,7 +34,7 @@ public:
 CActivityBase *createCountProjectActivityMaster(CMasterGraphElement *container)
 {
     if (container->queryLocalOrGrouped())
-        return new CMasterActivity(container);
+        return new CMasterActivity(container, spillingActivityStatistics);
     else
         return new CountProjectActivityMaster(container);
 }

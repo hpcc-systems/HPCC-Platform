@@ -34,7 +34,7 @@ protected:
     rowcount_t count;
 
 public:
-    IterateSlaveActivityBase(CGraphElementBase *_container, bool _global) : CSlaveActivity(_container)
+    IterateSlaveActivityBase(CGraphElementBase *_container, bool _global) : CSlaveActivity(_container, spillingActivityStatistics)
     {
         global = _global;
         if (!global)

@@ -63,7 +63,7 @@ class CSelectNthSlaveActivity : public CSlaveActivity, implements ILookAheadStop
     }
 
 public:
-    CSelectNthSlaveActivity(CGraphElementBase *_container, bool _isLocal) : CSlaveActivity(_container)
+    CSelectNthSlaveActivity(CGraphElementBase *_container, bool _isLocal) : CSlaveActivity(_container, spillingActivityStatistics)
     {
         helper = static_cast <IHThorSelectNArg *> (queryHelper());
         isLocal = _isLocal;

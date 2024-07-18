@@ -25,7 +25,7 @@ class CFirstNActivityMaster : public CMasterActivity
 {
     static CriticalSection singlefirstnterm;
 public:
-    CFirstNActivityMaster(CMasterGraphElement * info) : CMasterActivity(info)
+    CFirstNActivityMaster(CMasterGraphElement * info) : CMasterActivity(info, spillingActivityStatistics)
     {
         mpTag = container.queryJob().allocateMPTag();
     }
@@ -89,7 +89,7 @@ CriticalSection CFirstNActivityMaster::singlefirstnterm;
 CActivityBase *createFirstNActivityMaster(CMasterGraphElement *container)
 {
     if (container->queryLocalOrGrouped())
-        return new CMasterActivity(container);
+        return new CMasterActivity(container, spillingActivityStatistics);
     else
         return new CFirstNActivityMaster(container);
 }

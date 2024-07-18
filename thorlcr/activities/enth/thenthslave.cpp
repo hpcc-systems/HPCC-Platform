@@ -93,7 +93,7 @@ protected:
 public:
     IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
-    BaseEnthActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
+    BaseEnthActivity(CGraphElementBase *_container) : CSlaveActivity(_container, spillingActivityStatistics)
     {
         appendOutputLinked(this);
     }
