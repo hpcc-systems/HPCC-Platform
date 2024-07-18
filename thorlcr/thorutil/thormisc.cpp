@@ -81,7 +81,6 @@ const StatisticsMapping indexReadFileStatistics({}, diskReadRemoteStatistics, jh
 const StatisticsMapping indexReadActivityStatistics({StNumRowsProcessed}, indexReadFileStatistics, basicActivityStatistics);
 const StatisticsMapping indexWriteActivityStatistics({StPerReplicated, StNumLeafCacheAdds, StNumNodeCacheAdds, StNumBlobCacheAdds }, basicActivityStatistics, diskWriteRemoteStatistics);
 const StatisticsMapping keyedJoinActivityStatistics({ StNumIndexAccepted, StNumPreFiltered, StNumDiskSeeks, StNumDiskAccepted, StNumDiskRejected}, basicActivityStatistics, indexReadFileStatistics);
-const StatisticsMapping loopActivityStatistics({StNumIterations}, basicActivityStatistics);
 const StatisticsMapping commonJoinActivityStatistics({StNumMatchLeftRowsMax, StNumMatchRightRowsMax, StNumMatchCandidates, StNumMatchCandidatesMax}, basicActivityStatistics);
 const StatisticsMapping hashJoinActivityStatistics({StNumLeftRows, StNumRightRows}, commonJoinActivityStatistics);
 const StatisticsMapping allJoinActivityStatistics({}, commonJoinActivityStatistics);
@@ -96,8 +95,9 @@ const StatisticsMapping indexDistribActivityStatistics({}, basicActivityStatisti
 const StatisticsMapping soapcallActivityStatistics({}, basicActivityStatistics, soapcallStatistics);
 const StatisticsMapping hashDedupActivityStatistics({}, spillStatistics, diskWriteRemoteStatistics, basicActivityStatistics);
 const StatisticsMapping hashDistribActivityStatistics({StNumLocalRows, StNumRemoteRows, StSizeRemoteWrite}, basicActivityStatistics);
-const StatisticsMapping nsplitterActivityStatistics({}, spillStatistics, basicActivityStatistics);
+const StatisticsMapping spillingActivityStatistics({}, spillStatistics, basicActivityStatistics);
 const StatisticsMapping spillingWriteAheadStatistics({}, spillStatistics);
+const StatisticsMapping loopActivityStatistics({StNumIterations}, spillingActivityStatistics);
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {

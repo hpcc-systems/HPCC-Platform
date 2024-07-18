@@ -167,7 +167,7 @@ extern graph_decl const StatisticsMapping soapcallActivityStatistics;
 extern graph_decl const StatisticsMapping indexReadFileStatistics;
 extern graph_decl const StatisticsMapping hashDedupActivityStatistics;
 extern graph_decl const StatisticsMapping hashDistribActivityStatistics;
-extern graph_decl const StatisticsMapping nsplitterActivityStatistics;
+extern graph_decl const StatisticsMapping spillingActivityStatistics;
 extern graph_decl const StatisticsMapping spillingWriteAheadStatistics;
 
 class BooleanOnOff
