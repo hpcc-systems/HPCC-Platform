@@ -654,7 +654,7 @@ bool GrafanaLogAccessCurlClient::fetchLog(LogQueryResultDetails & resultDetails,
         encodeURL(fullQuery, logLineParser.str());
 
         fullQuery.appendf("&start=%s000000000", std::to_string(trange.getStartt().getSimple()).c_str());
-        if (trange.getEndt().isNull() != -1) //aka 'to' has been initialized
+        if (!trange.getEndt().isNull()) //aka 'to' has been initialized
         {
             fullQuery.appendf("&end=%s000000000", std::to_string(trange.getEndt().getSimple()).c_str());
         }
